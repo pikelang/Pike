@@ -147,6 +147,7 @@ ARM_INSTR_COND_SELECT       = 0x1a800000,
 ARM_INSTR_SHIFT_REG         = 0x1ac02000,
 ARM_INSTR_LOADSTORE_PAIR    = 0x28000000,
 ARM_INSTR_COMPARE_N_BRANCH  = 0x34000000,
+ARM_INSTR_TEST_N_BRANCH     = 0x36000000,
 ARM_INSTR_LOADSTORE_SINGLE  = 0x38000000,
 ARM_INSTR_COND_COMPARE      = 0x3a400000,
 ARM_INSTR_COND_BRANCH_IMM   = 0x54000000,
@@ -563,6 +564,41 @@ MACRO void cbnz32_imm(enum arm64_register reg, INT32 dist)
 MACRO void cbnz64_imm(enum arm64_register reg, INT32 dist)
 {
     add_to_program(set_64bit(gen_cbnz(reg, dist)));
+}
+
+OPCODE_FUN gen_tbz(enum arm64_register reg, int bit, INT32 dist)
+{
+    unsigned INT32 instr = ARM_INSTR_TEST_N_BRANCH;
+
+    instr = set_rt_reg(instr, reg);
+    instr |= (dist & 0x3fff) << 5;
+    instr |= (bit&32)<<26;
+    instr |= (bit&31)<<19;
+
+    return instr;
+}
+
+OPCODE_FUN gen_tbnz(enum arm64_register reg, int bit, INT32 dist)
+{
+    return gen_tbz(reg, bit, dist) | (1 << 24);
+}
+
+MACRO void tbz_imm(enum arm64_register reg, int bit, INT32 dist)
+{
+    add_to_program(gen_tbz(reg, bit, dist));
+}
+
+MACRO void tbnz_imm(enum arm64_register reg, int bit, INT32 dist)
+{
+    add_to_program(gen_tbnz(reg, bit, dist));
+}
+
+MACRO int value_to_bit(unsigned INT64 v)
+{
+    int bit = ctz64(v);
+    assert(v != 0);
+    assert(v == (1UL<<bit));
+    return bit;
 }
 
 
@@ -1128,6 +1164,11 @@ MACRO void label_generate(struct label *l) {
 	        Pike_fatal("Setting label distance twice in %x\n", instr);
 	    }
 	    upd_pointer(e->location, instr|((loc - e->location) << 5));
+	} else if ((instr & 0x7e000000) == ARM_INSTR_TEST_N_BRANCH) {
+	    if (instr & 0x7ffe0) {
+	        Pike_fatal("Setting label distance twice in %x\n", instr);
+	    }
+	    upd_pointer(e->location, instr|((loc - e->location) << 5));
 	}
         e = e->next;
     }
@@ -1135,8 +1176,8 @@ MACRO void label_generate(struct label *l) {
     free_list(l->list);
 }
 
-MACRO void arm64_call_if(enum arm64_condition cond1, void *a,
-                         enum arm64_condition cond2, void *b) {
+MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
+				 void *a, void *b) {
     struct label skip;
     enum arm64_register reg = ra_alloc_any();
 
@@ -1146,11 +1187,11 @@ MACRO void arm64_call_if(enum arm64_condition cond1, void *a,
     label_init(&skip);
     if (v1 < v2) {
         arm64_mov_int(reg, v1);
-	b_imm_cond(label_dist(&skip), cond1);
+	tbnz_imm(treg, bit, label_dist(&skip));
 	arm64_add64_reg_int(reg, reg, v2 - v1);
     } else if (v1 > v2) {
         arm64_mov_int(reg, v2);
-	b_imm_cond(label_dist(&skip), cond2);
+	tbz_imm(treg, bit, label_dist(&skip));
 	arm64_add64_reg_int(reg, reg, v1 - v2);
     }
     label_generate(&skip);
@@ -1436,8 +1477,7 @@ MACRO void arm64_assign_svaluep_nofree(enum arm64_register dst, enum arm64_regis
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
 
     label_init(&end);
-    arm64_tst_int(treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
-    b_imm_cond(label_dist(&end), ARM_COND_Z);
+    tbz_imm(treg, value_to_bit(TYPE_SUBTYPE(MIN_REF_TYPE, 0)), label_dist(&end));
 
     load32_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
     arm64_add32_reg_int(treg, treg, 1);
@@ -1470,8 +1510,7 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
     arm64_store_sp_reg();
 
     label_init(&end);
-    arm64_tst_int(tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
-    b_imm_cond(label_dist(&end), ARM_COND_Z);
+    tbz_imm(tmp1, value_to_bit(TYPE_SUBTYPE(MIN_REF_TYPE, 0)), label_dist(&end));
 
     load32_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
     arm64_add32_reg_int(tmp1, tmp1, 1);
@@ -1642,8 +1681,6 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
 }
 
 MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guaranteed) {
-    unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
-    unsigned char imm, rot;
     struct label end;
     enum arm64_register reg = ra_alloc(ARM_REG_ARG1);
     enum arm64_register tmp = ra_alloc_any();
@@ -1656,9 +1693,7 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
 
     load32_reg_imm(reg, src, off);
 
-    arm64_tst_int(reg, combined);
-
-    b_imm_cond(label_dist(&end), ARM_COND_Z);
+    tbz_imm(reg, value_to_bit(TYPE_SUBTYPE(MIN_REF_TYPE, 0)), label_dist(&end));
 
     load64_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
 
@@ -2081,9 +2116,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           load16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
 
-          arm64_tst_int(reg, PIKE_FRAME_RETURN_INTERNAL);
-
-          b_imm_cond(label_dist(&inter_return), ARM_COND_NZ);
+	  tbnz_imm(reg, value_to_bit(PIKE_FRAME_RETURN_INTERNAL), label_dist(&inter_return));
 
           /* return from function */
           arm64_mov_int(ARM_REG_RVAL, -1);
@@ -2092,9 +2125,7 @@ static void low_ins_f_byte(unsigned int opcode)
           /* inter return */
           label_generate(&inter_return);
 
-          arm64_tst_int(reg, PIKE_FRAME_RETURN_POP);
-
-          arm64_call_if(ARM_COND_NZ, low_return_pop, ARM_COND_Z, low_return);
+          arm64_call_if_bit_set(reg, value_to_bit(PIKE_FRAME_RETURN_POP), low_return_pop, low_return);
 
           /* NOTE: the low_return functions pop one frame */
           arm64_invalidate_fp_reg();
