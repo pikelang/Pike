@@ -1157,43 +1157,23 @@ MACRO int ra_is_free(enum arm64_register reg) {
     return !!(rbit & compiler_state.free);
 }
 
-MACRO void add_push(void) {
-    unsigned INT32 registers;
-
-    /* NOTE: number of registers always needs to be even */
-    registers = RBIT(ARM_REG_PIKE_SP)
-                |RBIT(ARM_REG_PIKE_IP)
-                |RBIT(ARM_REG_PIKE_FP)
-                |RBIT(ARM_REG_PIKE_LOCALS)
-                |RBIT(ARM_REG_LR)
-                |RBIT(19);
-
-    store_multiple(ARM_REG_SP, ARM_MULT_DBW, registers);
-}
-
-MACRO void add_pop(void) {
-    unsigned INT32 registers;
-
-    /* NOTE: number of registers always needs to be even */
-    registers = RBIT(ARM_REG_PIKE_SP)
-                |RBIT(ARM_REG_PIKE_IP)
-                |RBIT(ARM_REG_PIKE_FP)
-                |RBIT(ARM_REG_PIKE_LOCALS)
-                |RBIT(ARM_REG_LR)
-                |RBIT(19);
-
-    load_multiple(ARM_REG_SP, ARM_MULT_IAW, registers);
-}
+/* NOTE: this must always be even, in order that we always push an even number of registers.
+ * This is necessary to keep the stack 16 byte aligned.
+ */
+static const unsigned INT32 pushed_registers =
+  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
+  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) |
+  (1 << ARM_REG_LR) | (1 << 19);
 
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm64_prologue(void) {
-    add_push();
+    store_multiple(ARM_REG_SP, ARM_MULT_DBW, pushed_registers);
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
 #define EPILOGUE_SIZE 4
 MACRO void arm64_epilogue(void) {
-    add_pop();
+    load_multiple(ARM_REG_SP, ARM_MULT_IAW, pushed_registers);
     ret_reg(ARM_REG_LR);
 }
 
