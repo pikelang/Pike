@@ -2184,7 +2184,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
       /* check type == INT */
       load32_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+0);
-      arm64_cmp_int(tmp, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+      cbnz32_imm(tmp, label_dist(&fallback)); /* TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER)) == 0 */
       b_imm_cond(label_dist(&fallback), ARM_COND_NE);
 
       /* load integer value and do operation */
@@ -2443,11 +2443,9 @@ int arm64_low_ins_f_jump(unsigned int opcode, int backward_jump) {
 
     arm64_call_c_opcode(opcode);
 
-    cmp_reg_imm(ARM_REG_RVAL, 0, 0);
-
     label_init(&skip);
 
-    b_imm_cond(label_dist(&skip), ARM_COND_EQ);
+    cbz64_imm(ARM_REG_RVAL, label_dist(&skip));
 
     if (backward_jump) {
     }
@@ -2479,12 +2477,11 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
 
             arm64_change_sp(-1);
             load64_reg_imm(tmp, ARM_REG_PIKE_SP, 8);
-            cmp_reg_imm(tmp, 0, 0);
 	    label_init(&skip);
             if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
-	        b_imm_cond(label_dist(&skip), ARM_COND_NZ);
+	        cbnz64_imm(tmp, label_dist(&skip));
             else
-	        b_imm_cond(label_dist(&skip), ARM_COND_Z);
+	        cbz64_imm(tmp, label_dist(&skip));
             ra_free(tmp);
             ret = PIKE_PC;
 	    b_imm(0);
