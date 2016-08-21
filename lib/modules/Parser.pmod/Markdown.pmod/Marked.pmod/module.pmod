@@ -1031,7 +1031,7 @@ protected class InlineLexer
     // em-dashes, en-dashes
     text = replace(text, ([ "---" : "&mdash;", "--" : "&ndash;" ]));
     // opening singles
-    text = REGX("(^|[-—/(\\[{\"\s])'")->replace(text,
+    text = REGX("(^|[-—/(\\[{\"\\s])'")->replace(text,
                                                 lambda (string a, string b) {
                                                   return b + "&lsquo;";
                                                 });
