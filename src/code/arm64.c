@@ -484,6 +484,22 @@ MACRO void cmp_reg_reg(enum arm64_register a, enum arm64_register b) {
     add_to_program(set_64bit(gen_cmp_reg_reg(a, b)));
 }
 
+OPCODE_FUN gen_cmn_reg_reg(enum arm64_register a, enum arm64_register b) {
+    return gen_arith_reg_reg(ARM_ARITH_ADDS, ARM_REG_ZERO, a, b, 0);
+}
+
+MACRO void cmn_reg_reg(enum arm64_register a, enum arm64_register b) {
+    add_to_program(set_64bit(gen_cmn_reg_reg(a, b)));
+}
+
+OPCODE_FUN gen_tst_reg_reg(enum arm64_register a, enum arm64_register b) {
+    return gen_logic_reg_reg(ARM_LOGIC_ANDS, ARM_REG_ZERO, a, b, 0);
+}
+
+MACRO void tst_reg_reg(enum arm64_register a, enum arm64_register b) {
+    add_to_program(set_64bit(gen_tst_reg_reg(a, b)));
+}
+
 OPCODE_FUN gen_ccmp_reg_reg(enum arm64_register a, enum arm64_register b,
 			    enum arm64_condition cond, unsigned char nzcv)
 {
@@ -602,6 +618,14 @@ OPCODE_FUN gen_cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned c
     return gen_arith_reg_imm(ARM_ARITH_SUBS, ARM_REG_ZERO, a, imm, shift);
 }
 
+OPCODE_FUN gen_cmn_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+    return gen_arith_reg_imm(ARM_ARITH_ADDS, ARM_REG_ZERO, a, imm, shift);
+}
+
+OPCODE_FUN gen_tst_reg_imm(enum arm64_register a, unsigned char n, unsigned char immr, unsigned char imms) {
+    return gen_logic_reg_imm(ARM_LOGIC_ANDS, ARM_REG_ZERO, a, n, immr, imms);
+}
+
 OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst,
                              enum arm64_register a, enum arm64_register b) {
     unsigned INT32 instr = ARM_INSTR_SHIFT_REG;
@@ -615,6 +639,14 @@ OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst
 
 MACRO void cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_cmp_reg_imm(a, imm, shift)));
+}
+
+MACRO void cmn_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+    add_to_program(set_64bit(gen_cmn_reg_imm(a, imm, shift)));
+}
+
+MACRO void tst_reg_imm(enum arm64_register a, unsigned char n, unsigned char immr, unsigned char imms) {
+    add_to_program(set_64bit(gen_tst_reg_imm(a, n, immr, imms)));
 }
 
 OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sf) {
@@ -881,6 +913,24 @@ MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
 	        mov_top(reg, v, i);
 	    }
 	}
+    }
+}
+
+MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
+    unsigned short imm;
+    unsigned char shift;
+
+    if (arm64_make_arith_imm(v, &imm, &shift)) {
+      cmp_reg_imm(reg, imm, shift);
+    } else if (arm64_make_arith_imm(-(INT64)v, &imm, &shift)) {
+      cmn_reg_imm(reg, imm, shift);
+    } else {
+      enum arm64_register tmp = ra_alloc_any();
+
+      arm64_mov_int(tmp, v);
+      cmp_reg_reg(reg, tmp);
+
+      ra_free(tmp);
     }
 }
 
@@ -1414,8 +1464,8 @@ static void arm64_ins_maybe_exit(void) {
 
     label_init(&noreturn);
 
-    adds64_reg_imm(ARM_REG_ZERO, ARM_REG_R0, 1, 0);
-    b_imm_cond(label_dist(&noreturn), ARM_COND_NZ);
+    arm64_cmp_int(ARM_REG_R0, (INT64)-1);
+    b_imm_cond(label_dist(&noreturn), ARM_COND_NE);
     arm64_epilogue();
     label_generate(&noreturn);
 }
