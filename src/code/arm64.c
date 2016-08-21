@@ -1555,7 +1555,7 @@ MACRO void arm64_pop_mark(enum arm64_register dst) {
   ra_free(tmp);
 }
 
-#ifdef PIKE_DEBUG
+#ifdef ARM64_PIKE_DEBUG
 MACRO void arm_green_on(void) {
     if (Pike_interpreter.trace_level > 2)
         fprintf(stderr, "\33[032m");
@@ -1609,9 +1609,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-#ifdef PIKE_DEBUG
   assert(opcode-F_OFFSET<=255);
-#endif
 
   flags = instrs[opcode-F_OFFSET].flags;
 
@@ -2354,3 +2352,581 @@ int arm64_read_f_jump(INT32 offset) {
       return (((INT32)(instr << 8)) >> 13) + offset;
     }
 }
+
+#ifdef PIKE_DEBUG
+
+static const char *regname(PIKE_OPCODE_T reg, int sf, int sp)
+{
+    static const char * const regname_str[2][33] = {
+      {"w0","w1","w2","w3","w4","w5","w6","w7",
+       "w8","w9","w10","w11","w12","w13","w14","w15",
+       "w16","w19","w18","w19","w20","w21","w22","w23",
+       "w24","w25","w26","w27","w28","w29","w30","wzr","wsp"},
+      {"x0","x1","x2","x3","x4","x5","x6","x7",
+       "x8","x9","x10","x11","x12","x13","x14","x15",
+       "x16","x19","x18","x19","x20","x21","x22","x23",
+       "x24","x25","x26","x27","x28","x29","x30","xzr","sp"}
+    };
+    unsigned r = (reg & 31);
+    if (r == 31 && sp)
+        r++;
+    return regname_str[sf][r];
+}
+
+static const char *extendname(PIKE_OPCODE_T mode, int sf)
+{
+    static const char * const extendname_str[8] = {
+      "uxtb", "uxth", "uxtw", "uxtx", "sxtb", "sxth", "sxtw", "sxtx"
+    };
+    unsigned m = (mode & 7);
+    unsigned lsl = (sf? 3 : 2);
+    return (m == lsl? "lsl" : extendname_str[m]);
+}
+
+static int decode_bit_masks(unsigned char n, unsigned char imms, unsigned char immr,
+			    int immediate, unsigned long *wmask, unsigned long *tmask)
+{
+    unsigned long welem, telem;
+    unsigned char d, esize = 1<<(31-clz32((n<<6)|(imms^0x3f)));
+    if (esize < 2)
+        return 0;
+    if (immediate && (imms&(esize-1)) == esize-1)
+        return 0;
+    imms &= esize-1;
+    immr &= esize-1;
+    d = (imms - immr)&(esize-1);
+    welem = (1UL<<(imms+1))-1;
+    telem = (1UL<<(d+1))-1;
+    if (immr) {
+        welem = (welem >> immr) | (welem << (esize-immr));
+	if (esize < 64)
+	    welem &= (1UL<<esize)-1;
+    }
+    while (esize < 64) {
+        welem |= welem << esize;
+	telem |= telem << esize;
+	esize <<= 1;
+    }
+    if (wmask)
+        *wmask = welem;
+    if (tmask)
+        *tmask = telem;
+    return 1;
+}
+
+void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
+    size_t i;
+    size_t opcodes = bytes / sizeof(PIKE_OPCODE_T);
+    static const char * const condname[16] = {
+      "eq","ne","cs","cc","mi","pl","vs","vc","hi","ls","ge","lt","gt","le","al","nv"
+    };
+    static const char * const shiftname[4] = {"lsl", "lsr", "asr", "ror"};
+    static const char * const logname[8] = {
+      "and", "bic", "orr", "orn", "eor", "eon", "ands", "bics"
+    };
+
+    for (i = 0; i < opcodes; i++) {
+        PIKE_OPCODE_T instr = addr[i];
+        fprintf(stderr, "  %p\t", addr+i);
+
+	if (((instr >> 26) & 7) == 4) {
+
+	    /* Data processing - immediate */
+
+	    int sf = (instr >> 31) & 1;
+	    switch ((instr >> 24) & 3) {
+	    case 0:
+	        /* PC-rel. addressing */
+	        fprintf(stderr, "%s\t%s,%p\n", (((instr>>31)&1)==0? "adr":"adrp"),
+			regname(instr, 1, 0), ((char *)(addr+i))+
+			(((unsigned long)(((instr>>3)&0xffffff)|((instr>>29)&3)))
+			 <<(((instr>>31)&1)? 12:0)));
+		continue;
+	    case 1:
+	        /* Add/subtract (immediate) */
+	        if (((instr>>23)&1) == 0) {
+		    fprintf(stderr, "%s%s\t%s,%s,#%d",
+			    (((instr>>30)&1)==0? "add":"sub"),
+			    (((instr>>29)&1)==0?"":"s"),
+			    regname(instr, sf, !((instr>29)&1)),
+			    regname(instr>>5, sf, 1),
+			    (int)((instr>>10)&0xfff));
+		    if (((instr>>22)&1) == 1) {
+		        fprintf(stderr, ",lsl #12");
+		    }
+		    fprintf(stderr, "\n");
+		    continue;
+		}
+		break;
+	    case 2:
+	        if (((instr>>23) & 1) == 0) {
+		    /* Logical (immediate) */
+		    unsigned char n = (instr>>22)&1;
+		    unsigned char imms = (instr>>10)&63;
+		    unsigned char immr = (instr>>16)&63;
+		    unsigned char opc = (instr>>29)&3;
+		    unsigned long imm;
+		    if (!decode_bit_masks(n, imms, immr, 1, &imm, NULL))
+		        break;
+		    if (sf || !n) {
+		        if (opc == 3 && ((instr>>5)&31) == 31) {
+			    fprintf(stderr, "tst\t%s", regname(instr, sf, 0));
+		        } else if (opc == 1 && ((instr>>5)&31) == 31 &&
+			    !arm64_move_wide_preferred(n, immr, imms, sf)) {
+			    fprintf(stderr, "mov\t%s", regname(instr, sf, 1));
+			} else {
+			    fprintf(stderr, "%s\t%s,%s", logname[opc<<1],
+				    regname(instr, sf, opc != 3),
+				    regname(instr>>5, sf, 0));
+			}
+		    }
+		    if (!sf)
+		        imm = (unsigned INT32)imm;
+		    fprintf(stderr, ",#0x%lx\n", imm);
+		    continue;
+		} else {
+		    /* Move wide (immediate) */
+		    unsigned char opc = (instr>>29)&3;
+		    unsigned char hw = (instr>>21)&3;
+		    static const char * const movname[4] = {"movn", "", "movz", "movk"};
+		    if (opc == 1 || (hw > 1 && !sf))
+		        break;
+		    if (opc != 3 && !(((instr>>5)&0xffff)==0 && hw!=0) &&
+			(opc != 0 || sf || ((instr>>5)&0xffff)!=0xffff)) {
+		        unsigned long imm = ((unsigned long)((instr>>5)&0xffff))<<(hw<<4);
+			if (opc == 0)
+			    imm = ~imm;
+			if (!sf)
+			    imm = (unsigned INT32)imm;
+		        fprintf(stderr, "mov\t%s,#0x%lx\n", regname(instr, sf, 0), imm);
+		        continue;
+		    }
+		    fprintf(stderr, "%s\t%s,#0x%x", movname[opc], regname(instr, sf, 0),
+			    (unsigned)((instr>>5)&0xffff));
+		    if (hw)
+		        fprintf(stderr, ",lsl #%u", (unsigned)(hw<<4));
+		    fprintf(stderr, "\n");
+		    continue;
+		}
+		break;
+	    case 3:
+	        if (((instr>>23)&1) == 0) {
+		    if (((instr>>29)&3) < 3 && ((int)((instr>>22)&1)) == sf) {
+		        /* Bitfield */
+		        static const char * const bfname[3] = {"sbfm","bfm","ubfm"};
+		        fprintf(stderr, "%s\t%s,%s,#%d,#%d\n", bfname[(instr>>29)&3],
+				regname(instr, sf, 0), regname(instr>>5, sf, 0),
+				(int)((instr>>16)&63), (int)((instr>>10)&63));
+			continue;
+		    }
+		} else {
+		    if (((instr>>29)&3) == 0 && ((int)((instr>>22)&1)) == sf &&
+			((instr>>21)&1) == 0 && (sf || ((instr>>15)&1)==0)) {
+		        /* Extract */
+		        if (((instr>>5)&31) == ((instr>>16)&31))
+			    fprintf(stderr, "ror\t%s,%s", regname(instr, sf, 0),
+				    regname(instr>>5, sf, 0));
+			else
+			    fprintf(stderr, "extr\t%s,%s,%s", regname(instr, sf, 0),
+				    regname(instr>>5, sf, 0), regname(instr>>16, sf, 0));
+		        fprintf(stderr, ",#%d\n", (int)((instr>>10)&63));
+			continue;
+		    }
+		}
+		break;
+	    }
+
+	} else if (((instr >> 26) & 7) == 5) {
+
+	    /* Branch, exception generation and system instructions */
+
+	    if (((instr >> 29) & 3) == 0) {
+	        /* Unconditional branch (immediate) */
+	        fprintf(stderr, "%s\t%p\n", (((instr>>31)&1)? "bl":"b"),
+			addr+i+(((INT32)(instr<<6))>>6));
+		continue;
+	    } else if (((instr >> 29) & 3) == 1) {
+	        if (((instr >> 25) & 1) == 0) {
+		    /* Compare & branch (immediate) */
+		    fprintf(stderr, "%s\t%s,%p\n",
+			    (((instr>>24)&1)==0? "cbz":"cbnz"),
+			    regname(instr, ((instr>>31)&1), 0),
+			    addr+i+(((INT32)(instr<<8))>>13));
+		    continue;
+		} else {
+		    /* Test & branch (immediate) */
+		    fprintf(stderr, "%s\t%s,#%d,%p\n",
+			    (((instr>>24)&1)==0? "tbz":"tbnz"),
+			    regname(instr, ((instr>>31)&1), 0),
+			    (int)(((instr>>26)&32)|((instr>>19)&31)),
+			    addr+i+(((INT32)(instr<<13))>>18));
+		    continue;
+		}
+	    } else if (((instr >> 29) & 3) == 2) {
+	        if (((instr >> 24) & 0xff) == 0x54 && ((instr>>4)&1) == 0) {
+		    /* Conditional branch (immediate) */
+		    fprintf(stderr, "b.%s\t%p\n", condname[(instr&15)],
+			  addr+i+(((INT32)(instr<<8))>>13));
+		    continue;
+		} else if (((instr >> 25) & 0x7f) == 0x6b &&
+			   ((instr >> 10) & 0x7ff) == 0x7c0 &&
+			   (instr & 31) == 0) {
+		    /* Unconditional branch (register) */
+		    unsigned opcode = (instr >> 21) & 15;
+		    if (opcode < 3) {
+		        static const char * const brname[3] = {"br","blr","ret"};
+			fprintf(stderr, "%s", brname[opcode]);
+			if (opcode < 2 || ((instr>>5)&31) != 30)
+			    fprintf(stderr, "\t%s", regname(instr>>5, 1, 0));
+			fprintf(stderr, "\n");
+			continue;
+		    } else if ((opcode & ~1) == 4 && ((instr >> 5)&31) == 31) {
+		        fprintf(stderr, "%s\n", ((opcode&1)? "drps":"eret"));
+		        continue;
+		    }
+		} else if (((instr >> 24) & 0xff) == 0xd4) {
+		    /* Exception generation */
+		    if (((instr>>2)&7) == 0 &&
+			( ((instr&3)==0 && (((instr>>21)&7)==1 || ((instr>>21)&7)==2)) ||
+			  ((instr&3)!=0 && (((instr>>21)&7)==0 || ((instr>>21)&7)==5)) )) {
+		        static const char * const excname[8] = {
+			  "svc","hvc","smc","brk","hlt","dcps1","dcps2","dcps3"
+			};
+			int opc = (instr>>21)&7;
+		        fprintf(stderr, "%s", excname[opc+((instr&3)? (instr&3)-1:2)]);
+			if (opc != 5 || ((instr>>5)&0xffff)!=0)
+			    fprintf(stderr,"\t#0x%x", (unsigned)((instr>>5)&0xffff));
+			fprintf(stderr, "\n");
+		        continue;
+		    }
+		} else if (((instr >> 22) & 0x3ff) == 0x354) {
+		    /* System */
+		    char sregname[16];
+		    sprintf(sregname, "s%d_%d_c%d_c%d_%d", (int)((instr>>19)&3),
+			    (int)((instr>>16)&7), (int)((instr>>12)&15),
+			    (int)((instr>>8)&15), (int)((instr>>5)&7));
+		    if (((instr >> 21)&1) == 0)
+		        fprintf(stderr, "msr\t%s,%s\n", sregname, regname(instr, 1, 0));
+		    else
+		        fprintf(stderr, "mrs\t%s,%s\n", regname(instr, 1, 0), sregname);
+		    continue;
+		}
+	    }
+
+	} else if (((instr >> 25) & 5) == 4) {
+
+	    /* Loads and stores */
+
+	    if (((instr>>28) & 3) == 0) {
+	        if (((instr >> 24) & 7) == 0) {
+		    /* Load/store exclusive */
+		    if (((instr>>15)&0x101) != 0x100 &&
+			(((instr>>21)&1)==0 ||
+			 ( ((instr>>31)&1)==1 && ((instr>>23)&1)==0 )) &&
+			(((instr>>21)&1)==1 || ((instr>>10)&31)==31) &&
+			(((instr>>22)&3)==0 || ((instr>>16)&31)==31)) {
+		        int sf = (((instr>>30)&3) == 3);
+		        fprintf(stderr, "%s%s%s%s%s\t",
+				(((instr>>22)&1)? "ld":"st"),
+				(((instr>>15)&1)? (((instr>>22)&1)? "a":"l") : ""),
+				(((instr>>23)&1)? "":"x"),
+				(((instr>>21)&1)? "p":"r"),
+				(((instr>>31)&1)? "": (((instr>>30)&1)? "h":"b")));
+			if (((instr>>22)&3)==0)
+			    fprintf(stderr, "%s,", regname(instr>>16, 0, 0));
+			fprintf(stderr, "%s,", regname(instr, sf, 0));
+			if (((instr>>21)&1)==1)
+			    fprintf(stderr, "%s,", regname(instr>>10, sf, 0));
+			fprintf(stderr, "[%s]\n", regname(instr>>5, 1, 1));
+			continue;
+		    }
+		} else {
+		    /* AdvSIMD load/store */
+		    /* NYI */
+		}
+	    } else if (((instr>>28) & 3) == 1) {
+	        if (((instr>>24) & 1) == 0) {
+		    /* Load register (literal) */
+		    if (((instr>>26) & 1) == 1) {
+		        /* SIMD & FP */
+		        /* NYI */
+		    } else {
+		        if (((instr>>30) & 3) == 3) {
+			    fprintf(stderr, "prfm\t#%d", (int)(instr&31));
+			} else {
+			    fprintf(stderr, "ldr%s\t%s", (((instr>>30)&3)==2? "sw":""),
+				    regname(instr, (((instr>>30)&3)!=0), 0));
+			}
+		        fprintf(stderr, ",%p\n", addr+i+(((INT32)(instr<<8))>>13));
+			continue;
+		    }
+		}
+	    } else if (((instr>>28) & 3) == 2) {
+	        /* Load/store register pair */
+	        if (((instr>>26) & 1) == 1) {
+		    /* SIMD & FP */
+		    /* NYI */
+		} else if (((instr>>30)&3) != 3 &&
+			   (((instr>>30)&3) != 1 ||
+			    (((instr>>22)&1) == 1 &&
+			     ((instr>>23)&3) != 0))) {
+		    int imm = ((int)(INT32)(instr<<10))>>25;
+		    if (((instr>>30)&3) == 2)
+		        imm <<= 3;
+		    else
+		        imm <<= 2;
+		    fprintf(stderr, "%s%sp%s\t%s,%s,[%s",
+			    (((instr>>22)&1)? "ld":"st"),
+			    (((instr>>23)&3)? "":"n"),
+			    (((instr>>30)&3)==1? "sw":""),
+			    regname(instr, ((instr>>30)&3)>0, 0),
+			    regname(instr>>10, ((instr>>30)&3)>0, 0),
+			    regname(instr>>5, 1, 1));
+		    if (((instr>>23)&3) == 1)
+		        fprintf(stderr, "],#%d\n", imm);
+		    else if (((instr>>23)&3) == 3)
+		        fprintf(stderr, ",#%d]!\n", imm);
+		    else if (imm)
+		        fprintf(stderr, ",#%d]\n", imm);
+		    else
+		        fprintf(stderr, "]\n");
+		    continue;
+		}
+	    } else {
+	        if (((instr>>24) & 1) == 1 ||
+		    ((instr>>21) & 1) == 0 ||
+		    ((instr>>10) & 3) == 2) {
+		    /* Load/store register */
+		    if (((instr>>26)&1) == 1) {
+		        /* SIMD & FP */
+		        /* NYI */
+		    } else {
+		        if (((instr>>31)&1) == 0 ||
+			    ((instr>>23)&1) == 0 ||
+			    (((instr>>22)&3) == 2 &&
+			     (((instr>>30)&1) == 0 || ((instr>>24)&1) == 1 ||
+			      ((instr>>21)&1) == 1 || ((instr>>10)&3) == 0))) {
+			    const char *mod="";
+			    if (((instr>>24) & 1) == 0 && ((instr>>21) & 1) == 0 &&
+				((instr>>10) & 1) == 0)
+			        mod = (((instr>>11) & 1) == 0? "u":"t");
+			    if (((instr>>22)&0x303) == 0x302) {
+			        fprintf(stderr, "prf%sm\t#%d,", mod, (int)(instr&31));
+			    } else {
+			        fprintf(stderr, "%s%sr%s%s\t%s,",
+					(((instr>>22)&3)==0? "st":"ld"), mod,
+					(((instr>>23)&1)==0? "":"s"),
+					(((instr>>30)&3)==0? "b":
+					 (((instr>>30)&3)==1? "h":
+					  (((instr>>23)&1)==1? "w":""))),
+					regname(instr, ((instr>>30)&3)==3 || ((instr>>22)&3)==2, 0));
+			    }
+			    fprintf(stderr, "[%s", regname(instr>>5, 1, 1));
+			    if (((instr>>24) & 1) == 1 ||
+				((instr>>21) & 1) == 0) {
+			        int imm;
+				if (((instr>>24) & 1) == 1) {
+				    imm = ((instr >> 10) & 0xfff) << ((instr >> 30)&3);
+				} else {
+				    imm = ((int)(INT32)(instr << 11)) >> 23;
+				}
+				if (((instr>>24) & 1) == 1 || ((instr>>10)&1) == 0) {
+				    if (imm)
+				        fprintf(stderr, ",#%d", imm);
+				    fprintf(stderr, "]\n");
+				} else if (((instr>>11)&1) == 0) {
+				    fprintf(stderr, "],#%d\n", imm);
+				} else {
+				    fprintf(stderr, ",#%d]!\n", imm);
+				}
+			    } else {
+			        fprintf(stderr, ",%s", regname(instr>>16, ((instr>>13)&3) == 3, 0));
+				if (((instr >> 12) & 1) == 1 || ((instr>>13)&7) != 3) {
+				    fprintf(stderr, ",%s", extendname(instr>>13, 1));
+				    if(((instr >> 12) & 1) == 1 || ((instr>>13)&7) == 3) {
+				        fprintf(stderr, " #%d", (((instr >> 12) & 1) == 1?
+								 (int)((instr>>30)&3) : 0));
+				    }
+				}
+				fprintf(stderr, "]\n");
+			    }
+			    continue;
+			}
+		    }
+		}
+	    }
+
+	} else if (((instr >> 25) & 7) == 5) {
+
+	    /* Data processing - register */
+
+	    int sf = (instr >> 31) & 1;
+	    if (((instr >> 24) & 1) == 1) {
+	        if (((instr >> 28) & 1) == 1) {
+		    /* Data processing (3 source) */
+		    if (((instr >> 29) & 3) == 0)
+		        switch ((instr >> 21) & 7) {
+			case 0:
+			    fprintf(stderr, "m%s\t%s,%s,%s,%s\n",
+				    (((instr>>15)&1)==0? "add":"sub"),
+				    regname(instr, sf, 0), regname(instr>>5, sf, 0),
+				    regname(instr>>16, sf, 0), regname(instr>>10, sf, 0));
+			    continue;
+			case 1:
+			case 5:
+			    if (sf) {
+			        fprintf(stderr, "%sm%sl\t%s,%s,%s,%s\n",
+					(((instr>>23)&1)==0? "s":"u"),
+					(((instr>>15)&1)==0? "add":"sub"),
+					regname(instr, 1, 0), regname(instr>>5, 0, 0),
+					regname(instr>>16, 0, 0), regname(instr>>10, 1, 0));
+				continue;
+			    }
+			    break;
+			case 2:
+			case 6:
+			    if (sf && ((instr>>15)&1) == 0) {
+			        fprintf(stderr, "%smulh\t%s,%s,%s\n",
+					(((instr>>23)&1)==0? "s":"u"),
+					regname(instr, 1, 0), regname(instr>>5, 1, 0),
+					regname(instr>>16, 1, 0));
+				continue;
+			    }
+			}
+	        } else {
+		    if ((((instr>>21)&1) == 0 && ((instr>>22)&3)!=3) ||
+			(((instr>>22)&3) == 0 && ((instr>>10)&7)<=4)) {
+		        /* Add/subtract (shifted/extended register) */
+		        fprintf(stderr, "%s%s\t",
+				(((instr>>30)&1)==0? "add":"sub"),
+				(((instr>>29)&1)==0?"":"s"));
+			if (((instr>>21)&1) == 1) {
+			    fprintf(stderr, "%s,%s,%s",
+				    regname(instr, sf, 1), regname(instr>>5, sf, 1),
+				    regname(instr>>16, sf&&((instr>>13)&3)==3, 0));
+			    if (((instr>>10)&7) != 0 || ((instr>>13)&7) != (unsigned)2+sf) {
+			        fprintf(stderr, ",%s", extendname(instr>>13, sf));
+				if (((instr>>10)&7) != 0 || ((instr>>13)&7) == (unsigned)2+sf) {
+				    fprintf(stderr, " #%d", (int)((instr>>10)&7));
+				}
+			    }
+			} else {
+			    fprintf(stderr, "%s,%s,%s",
+				    regname(instr, sf, 0), regname(instr>>5, sf, 0),
+				    regname(instr>>16, sf, 0));
+			    if (((instr>>10)&63) != 0) {
+			        fprintf(stderr, ",%s #%d",
+					shiftname[(instr>>22)&3], (int)((instr>>10)&63));
+			    }
+			}
+			fprintf(stderr, "\n");
+			continue;
+		    }
+		}
+	    } else if (((instr >> 28) & 1) == 0) {
+	        /* Logical (shifted register) */
+	        if (((instr>>29)&3) == 1 && ((instr>>5)&31)==31 &&
+		    (((instr>>21)&1) == 1 || !((instr>>10)&0x303f)))
+		    fprintf(stderr, "%s\t%s,%s",
+			    (((instr>>21)&1)? "mvn":"mov"),
+			    regname(instr, sf, 0), regname(instr>>16, sf, 0));
+		else
+		    fprintf(stderr, "%s\t%s,%s,%s",
+			    logname[((instr>>28)&6)|((instr>>21)&1)],
+			    regname(instr, sf, 0), regname(instr>>5, sf, 0),
+			    regname(instr>>16, sf, 0));
+		if (((instr>>10)&63) != 0) {
+		  fprintf(stderr, ",%s #%d",
+			  shiftname[(instr>>22)&3], (int)((instr>>10)&63));
+		}
+		fprintf(stderr, "\n");
+	        continue;
+	    } else switch ((instr >> 21) & 7) {
+	    case 0:
+	        if (((instr >> 10) & 63) == 0) {
+		    /* Add/subtract with carry */
+		    fprintf(stderr, "%s%s\t%s,%s,%s\n",
+			    (((instr>>30)&1)==0? "adc":"sbc"),
+			    (((instr>>29)&1)==0?"":"s"),
+			    regname(instr, sf, 0), regname(instr>>5, sf, 0),
+			    regname(instr>>16, sf, 0));
+		    continue;
+		}
+	        break;
+	    case 2:
+	        if (((instr>>29)&1) == 1 && ((instr>>10)&1) == 0 &&
+		    ((instr>>4)&1) == 0) {
+		    /* Conditional compare */
+		    fprintf(stderr, "%s\t%s",
+			    (((instr>>30)&1)==0? "ccmn":"ccmp"),
+			    regname(instr>>5, sf, 0));
+		    if (((instr>>11)&1) == 1) {
+		        fprintf(stderr, ",#%d", (int)((instr>>16)&15));
+		    } else {
+		        fprintf(stderr, ",%s", regname(instr>>16, sf, 0));
+		    }
+		    fprintf(stderr, ",#%d,%s\n", (int)(instr&15), condname[(instr>>12)&15]);
+		    continue;
+		}
+	        break;
+	    case 4:
+	        if (((instr>>29)&1) == 0 && ((instr>>11)&1) == 0) {
+		    /* Conditional select */
+		    static const char * const cselname[4] = {"csel", "csinc", "csinv", "csneg"};
+		    fprintf(stderr, "%s\t%s,%s,%s,%s\n",
+			    cselname[((instr>>29)&2)|((instr>>10)&1)],
+			    regname(instr, sf, 0), regname(instr>>5, sf, 0),
+			    regname(instr>>16, sf, 0), condname[(instr>>12)&15]);
+		    continue;
+		}
+		break;
+	    case 6:
+	        if (((instr>>29)&1) == 0) {
+		    if (((instr>>30)&1) == 1) {
+		        /* Data-processing (1 source) */
+		        unsigned opcode = (instr>>10)&0x7ff;
+			if (opcode < 6 && (sf || opcode != 3)) {
+			    static const char * const dpro1name[6] = {
+			      "rbit","rev16","rev32","rev","clz","cls"
+			    };
+			    if (opcode == 2 && !sf)
+			        opcode++;
+			    fprintf(stderr, "%s\t%s,%s\n", dpro1name[opcode],
+				    regname(instr, sf, 0), regname(instr>>5, sf, 0));
+			    continue;
+			}
+		    } else {
+		        /* Data-processing (2 source) */
+		        unsigned opcode = (instr>>10)&63;
+			if (opcode < 24 &&
+			    ((sf? 0x880fcU : 0x770f0cU) & (1U<<opcode)) != 0) {
+			    static const char * const dpro2name[14] = {
+			      "crc32b","crc32h","crc32w","crc32x","crc32cb","crc32ch","crc32cw","crc32cx",
+			      "lslv","lsrv","asrv","rorv","udiv","sdiv"
+			    };
+			    if (opcode < 8)
+			        opcode += 10;
+			    fprintf(stderr, "%s\t%s,%s,%s\n", dpro2name[opcode&15],
+				    regname(instr, sf && opcode < 16, 0),
+				    regname(instr>>5, sf && opcode < 16, 0),
+				    regname(instr>>16, sf, 0));
+			    continue;
+			}
+		    }
+		}
+		break;
+	    }
+
+	} else if (((instr >> 25) & 7) == 7) {
+
+	    /* Data processing - SIMD and floating point */
+
+	    /* NYI */
+
+	}
+
+        fprintf(stderr, "%x\n", instr);
+    }
+}
+
+#endif
