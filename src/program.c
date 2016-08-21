@@ -7480,7 +7480,6 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
 			  struct svalue *ind)
 {
   int e;
-  struct pike_string *s;
   struct object *parent = NULL;
   struct svalue *sub = NULL;
   struct program *p;
@@ -7507,8 +7506,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
     Pike_error("Can't index a program with a %s (expected string)\n",
 	       get_name_of_type(TYPEOF(*ind)));
   }
-  s = ind->u.string;
-  e=find_shared_string_identifier(s, p);
+  e=find_shared_string_identifier(ind->u.string, p);
   if(e!=-1)
   {
     if (low_program_index_no_free(to, p, e, parent, parent_identifier))
@@ -11894,7 +11892,6 @@ static int low_implements(struct program *a, struct program *b)
   DECLARE_CYCLIC();
   int e;
   int ret = 1;
-  struct pike_string *s=findstring("__INIT");
 
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
@@ -11909,7 +11906,7 @@ static int low_implements(struct program *a, struct program *b)
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
-    if(s == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
@@ -11984,7 +11981,6 @@ static int low_is_compatible(struct program *a, struct program *b)
   DECLARE_CYCLIC();
   int e;
   int ret = 1;
-  struct pike_string *s=findstring("__INIT");
 
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
@@ -12009,7 +12005,7 @@ static int low_is_compatible(struct program *a, struct program *b)
     /* FIXME: What if they aren't protected & hidden in a? */
 
     bid = ID_FROM_INT(b,e);
-    if(s == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       continue;		/* It's ok... */
@@ -12094,7 +12090,6 @@ void yyexplain_not_compatible(int severity_level,
 			      struct program *a, struct program *b)
 {
   int e;
-  struct pike_string *s=findstring("__INIT");
   int res = 1;
   INT_TYPE a_line = 0;
   INT_TYPE b_line = 0;
@@ -12128,7 +12123,7 @@ void yyexplain_not_compatible(int severity_level,
     /* FIXME: What if they aren't protected & hidden in a? */
 
     bid = ID_FROM_INT(b,e);
-    if(s == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       continue;		/* It's ok... */
@@ -12166,7 +12161,6 @@ void yyexplain_not_implements(int severity_level,
 			      struct program *a, struct program *b)
 {
   int e;
-  struct pike_string *s=findstring("__INIT");
   INT_TYPE a_line = 0;
   INT_TYPE b_line = 0;
   struct pike_string *a_file;
@@ -12189,7 +12183,7 @@ void yyexplain_not_implements(int severity_level,
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
-    if(s == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       INT_TYPE bid_line = b_line;
@@ -12242,7 +12236,6 @@ void string_builder_explain_not_compatible(struct string_builder *s,
 					   struct program *b)
 {
   int e;
-  struct pike_string *init_string = findstring("__INIT");
   int res = 1;
   DECLARE_CYCLIC();
 
@@ -12269,7 +12262,7 @@ void string_builder_explain_not_compatible(struct string_builder *s,
     /* FIXME: What if they aren't protected & hidden in a? */
 
     bid = ID_FROM_INT(b,e);
-    if(init_string == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       continue;		/* It's ok... */
@@ -12308,7 +12301,6 @@ void string_builder_explain_not_implements(struct string_builder *s,
 					   struct program *b)
 {
   int e;
-  struct pike_string *init_string = findstring("__INIT");
   DECLARE_CYCLIC();
 
   if (BEGIN_CYCLIC(a, b)) {
@@ -12324,7 +12316,7 @@ void string_builder_explain_not_implements(struct string_builder *s,
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
-    if(init_string == bid->name) continue;	/* Skip __INIT */
+    if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
