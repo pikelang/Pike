@@ -2028,12 +2028,10 @@ static int do_docode2(node *n, int flags)
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
 
-      tmp=findstring("call_function");
-      if(!tmp) yyerror("No call_function efun.");
-      foo=find_module_identifier(tmp,0);
+      foo=find_module_identifier(lfun_strings[LFUN_CALL],0);
       if(!foo || foo->token!=F_CONSTANT)
       {
-	yyerror("No call_function efun.");
+        yyerror("No `() efun.");
       }else{
 	if(TYPEOF(foo->u.sval) == T_FUNCTION &&
 	   SUBTYPEOF(foo->u.sval) == FUNCTION_BUILTIN &&
