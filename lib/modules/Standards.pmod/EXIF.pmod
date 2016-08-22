@@ -1199,12 +1199,22 @@ protected mapping low_get_properties(Stdio.File file, mapping tags,
   seent[offset]=1;
   while(offset>0)
   {
+    // Parse the IFD at offset.
     tiff->exif_seek(offset);
     int num_entries=tiff->read_short();
     for(int i=0; i<num_entries; i++)
       ret|=parse_tag(tiff, ret, tags, discard_unknown);
 
-    offset=tiff->read_long();
+    mixed err;
+    if (err = catch { offset=tiff->read_long(); }) {
+      if (!num_entries) {
+	// Seen in the wild:
+	//   IFD chain terminated by an empty IFD without next field at EOTIFF.
+	offset = 0;
+      } else {
+	throw(err);
+      }
+    }
 
     if(offset == 0 && ret["ExifOffset"])
       offset=(int)m_delete(ret, "ExifOffset");
