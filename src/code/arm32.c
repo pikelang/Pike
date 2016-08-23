@@ -1148,7 +1148,7 @@ MACRO void arm32_push_ref_type(unsigned INT32 type, void * ptr) {
 }
 
 MACRO void arm32_push_constant(struct svalue *sv) {
-    if (TYPEOF(*sv) >= MIN_REF_TYPE) {
+    if (REFCOUNTED_TYPE(TYPEOF(*sv))) {
       arm32_push_ref_type(TYPE_SUBTYPE(TYPEOF(*sv), SUBTYPEOF(*sv)),
                           sv->u.ptr);
     } else {
@@ -1198,7 +1198,10 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     assert(tmp1 < tmp2);
 
     if (offset) {
-        arm32_add_reg_int(tmp1, src, offset*sizeof(struct svalue));
+        if (offset > 0)
+            arm32_add_reg_int(tmp1, src, offset*sizeof(struct svalue));
+        else
+            arm32_sub_reg_int(tmp1, src, -offset*sizeof(struct svalue));
 
         load_multiple(tmp1, ARM_MULT_IA, RBIT(tmp1)|RBIT(tmp2));
     } else {
@@ -1381,11 +1384,11 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
 }
 
 MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
-    unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
     unsigned char imm, rot;
     struct label end;
     enum arm32_register reg = ra_alloc(ARM_REG_ARG1);
     enum arm32_register tmp = ra_alloc_any();
+    int no_free = 1;
 
     guaranteed = guaranteed;
 
@@ -1393,9 +1396,21 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
 
     label_init(&end);
 
+    if (off+OFFSETOF(svalue, u) >= 4096 || off =< -4096) {
+        enum arm32_register reg1 = ra_alloc_any();
+
+        if (off < 0)
+            arm32_sub_reg_int(reg1, src, -off);
+        else
+            arm32_add_reg_int(reg1, src, off);
+        off = 0;
+        src = reg1;
+        no_free = 0;
+    }
+
     load_reg_imm(reg, src, off);
 
-    arm32_tst_int(reg, combined);
+    arm32_tst_int(reg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
     b_imm(label_dist(&end), ARM_COND_Z);
 
@@ -1420,6 +1435,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     label_generate(&end);
     ra_free(reg);
     ra_free(tmp);
+    if (!no_free) ra_free(src);
 }
 
 MACRO void arm32_ins_branch_check_threads_etc(int a) {
