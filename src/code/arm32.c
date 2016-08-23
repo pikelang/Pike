@@ -1396,7 +1396,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
 
     label_init(&end);
 
-    if (off+OFFSETOF(svalue, u) >= 4096 || off =< -4096) {
+    if (off+OFFSETOF(svalue, u) >= 4096 || off <= -4096) {
         enum arm32_register reg1 = ra_alloc_any();
 
         if (off < 0)
