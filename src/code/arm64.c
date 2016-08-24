@@ -1438,15 +1438,14 @@ MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
     arm64_store_sp_reg();
 }
 
-MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
-    unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
+MACRO void arm64_push_non_ref_type(unsigned INT32 type, unsigned INT64 value) {
     enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
     arm64_load_sp_reg();
 
-    arm64_mov_int(tmp1, combined);
+    arm64_mov_int(tmp1, type);
     arm64_mov_int(tmp2, value);
 
     store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2));
@@ -1455,6 +1454,10 @@ MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
     ra_free(tmp2);
 
     arm64_store_sp_reg();
+}
+
+MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
+    arm64_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
 }
 
 MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vreg) {
@@ -1468,6 +1471,29 @@ MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vre
     load32_reg_imm(treg, vreg, 0);
     arm64_add32_reg_int(treg, treg, 1);
     store32_reg_imm(treg, vreg, 0);
+}
+
+MACRO void arm64_push_ref_type(unsigned INT32 type, void * ptr) {
+    enum arm64_register treg = ra_alloc_any(),
+                        vreg = ra_alloc_any();
+
+    arm64_mov_int(treg, type);
+    arm64_mov_int(vreg, (char*)ptr - (char*)NULL);
+
+    arm64_push_ptr_type(treg, vreg);
+
+    ra_free(treg);
+    ra_free(vreg);
+}
+
+MACRO void arm64_push_constant(struct svalue *sv) {
+    if (TYPEOF(*sv) >= MIN_REF_TYPE) {
+      arm64_push_ref_type(TYPE_SUBTYPE(TYPEOF(*sv), SUBTYPEOF(*sv)),
+                          sv->u.ptr);
+    } else {
+      arm64_push_non_ref_type(TYPE_SUBTYPE(TYPEOF(*sv), SUBTYPEOF(*sv)),
+                              sv->u.integer);
+    }
 }
 
 MACRO void arm64_move_svaluep_nofree(enum arm64_register dst, enum arm64_register from) {
@@ -2289,30 +2315,39 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       return;
   case F_STRING:
       arm64_debug_instr_prologue_1(opcode, arg1);
+      arm64_push_ref_type(TYPE_SUBTYPE(PIKE_T_STRING, 0),
+                          Pike_compiler->new_program->strings[arg1]);
+      return;
+  case F_CONSTANT:
+      arm64_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm64_register treg = ra_alloc_any(),
-                              vreg = ra_alloc_any();
-
+        struct svalue *cval = &Pike_compiler->new_program->constants[arg1].sval;
+        /* If the constant is UNDEFINED it _could_ be during compilation of a program
+         * coming from decode_value
+         */
+        if( TYPEOF(*cval) == PIKE_T_INT && SUBTYPEOF(*cval) == NUMBER_UNDEFINED) {
+          enum arm64_register reg = ra_alloc_any();
           arm64_load_fp_reg();
 
-          load64_reg_imm(vreg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
-          load64_reg_imm(vreg, vreg, OFFSETOF(inherit, prog));
-          load64_reg_imm(vreg, vreg, OFFSETOF(program, strings));
-	  if (arg1 < 4096)
-	      load64_reg_imm(vreg, vreg, arg1*sizeof(struct pike_string*));
-	  else {
-	      arm64_mov_int(treg, arg1*(sizeof(struct pike_string*)/sizeof(INT64)));
-	      load64_reg_reg(vreg, vreg, treg, 1);
-	  }
+          load64_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame,context));
+          load64_reg_imm(reg, reg, OFFSETOF(inherit,prog));
+          load64_reg_imm(reg, reg, OFFSETOF(program,constants));
 
-          arm64_mov_int(treg, TYPE_SUBTYPE(PIKE_T_STRING, 0));
+          arm64_add64_reg_int(reg, reg,
+			      arg1 * sizeof(struct program_constant) + OFFSETOF(program_constant,sval));
 
-          arm64_push_ptr_type(treg, vreg);
-
-          ra_free(treg);
-          ra_free(vreg);
-          return;
+          arm64_push_svaluep_off(reg, 0);
+          ra_free(reg);
+        } else {
+          arm64_push_constant(cval);
+        }
+        return;
       }
+  case F_ARROW_STRING:
+      arm64_debug_instr_prologue_1(opcode, arg1);
+      arm64_push_ref_type(TYPE_SUBTYPE(PIKE_T_STRING, 1),
+                          Pike_compiler->new_program->strings[arg1]);
+      return;
   case F_ASSIGN_LOCAL_AND_POP:
   case F_ASSIGN_LOCAL:
       {
