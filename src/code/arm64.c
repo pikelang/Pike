@@ -1487,7 +1487,7 @@ MACRO void arm64_push_ref_type(unsigned INT32 type, void * ptr) {
 }
 
 MACRO void arm64_push_constant(struct svalue *sv) {
-    if (TYPEOF(*sv) >= MIN_REF_TYPE) {
+    if (REFCOUNTED_TYPE(TYPEOF(*sv))) {
       arm64_push_ref_type(TYPE_SUBTYPE(TYPEOF(*sv), SUBTYPEOF(*sv)),
                           sv->u.ptr);
     } else {
@@ -1539,7 +1539,10 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
     assert(tmp1 < tmp2);
 
     if (offset) {
-        arm64_add64_reg_int(tmp1, src, offset*sizeof(struct svalue));
+        if (offset > 0)
+            arm64_add64_reg_int(tmp1, src, offset*sizeof(struct svalue));
+        else
+            arm64_sub64_reg_int(tmp1, src, -offset*sizeof(struct svalue));
 
         load_multiple(tmp1, ARM_MULT_IA, RBIT(tmp1)|RBIT(tmp2));
     } else {
@@ -1727,12 +1730,25 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
     struct label end;
     enum arm64_register reg = ra_alloc(ARM_REG_ARG1);
     enum arm64_register tmp = ra_alloc_any();
+    int no_free = 1;
 
     guaranteed = guaranteed;
 
     off *= sizeof(struct svalue);
 
     label_init(&end);
+
+    if (off+OFFSETOF(svalue, u) >= 32768 || off < -512) {
+        enum arm32_register reg1 = ra_alloc_any();
+
+        if (off < 0)
+            arm64_sub64_reg_int(reg1, src, -off);
+        else
+            arm64_add64_reg_int(reg1, src, off);
+        off = 0;
+        src = reg1;
+        no_free = 0;
+    }
 
     load32_reg_imm(reg, src, off);
 
@@ -1759,6 +1775,7 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
     label_generate(&end);
     ra_free(reg);
     ra_free(tmp);
+    if (!no_free) ra_free(src);
 }
 
 
