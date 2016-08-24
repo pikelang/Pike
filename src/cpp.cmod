@@ -3052,7 +3052,7 @@ static void insert_callback_define(struct cpp *this,
                                    struct string_builder *tmp)
 {
   ref_push_string( def->link.s );
-  push_string( arg );
+  ref_push_string( arg );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 2, 0 ) &&
       TYPEOF(sp[-1]) == T_STRING ) {
