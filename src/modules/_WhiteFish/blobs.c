@@ -181,7 +181,7 @@ static void f_blobs_read( INT32 args )
 
   SET_SVAL(a->item[0], PIKE_T_STRING, 0, string, t->next_h->id);
   SET_SVAL(a->item[1], PIKE_T_STRING, 0, string,
-	   make_shared_binary_string( t->next_h->buffer->data,
+	   make_shared_binary_string( (char*)t->next_h->buffer->data,
 				      t->next_h->buffer->size ));
   wf_buffer_free( t->next_h->buffer );
   t->next_h->buffer = 0;
