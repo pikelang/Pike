@@ -1243,3 +1243,16 @@ void remove_from_perf_map(program p) {
   mv(sprintf("/tmp/perf-%d.map.tmp", getpid()),
      sprintf("/tmp/perf-%d.map", getpid()));
 }
+
+//! Write a hexadecimal dump of the contents of @[raw] to @[Stdio.stderr].
+void hexdump(string(8bit) raw)
+{
+  int offset;
+  foreach(raw/8.0, string(8bit) line) {
+    array(int(8bit)) a = (array(int(8bit))) line;
+    while (sizeof(a) < 8) { a += ({ 0 }); };
+    werror("0x%04x: %{%02x %}: %q\n",
+	   offset, a, line);
+    offset += sizeof(line);
+  }
+}
