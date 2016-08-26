@@ -193,6 +193,9 @@ class CipherSpec {
   //! The signature algorithm used for key exchange signatures.
   SignatureAlgorithm signature_alg;
 
+  //! The number of bytes that is safe to send before we must renegotiate the keys.
+  int max_bytes;
+
   //! The function used to sign packets.
   Stdio.Buffer sign(object session, string(8bit) cookie, Stdio.Buffer struct)
   {
@@ -2322,6 +2325,32 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     SSL3_DEBUG_MSG("Suite not supported prior to TLS 1.2.\n");
     return 0;
   }
+
+  // Calculate a safe value for max_bytes.
+  switch(res->cipher_type) {
+  case CIPHER_block:
+    /* CBC requires the keys to change well before 2^(block_size/2) blocks
+     * have been sent (block_size in bits). cf https://sweet32.info/
+     */
+    int block_size = res->bulk_cipher_algorithm->block_size();
+    /* The strict limit is thus block_size << block_size * 4 (block_size in bytes).
+     * We want some safety margin and multiply the exponent with 3 instead of 4.
+     */
+    res->max_bytes = block_size << block_size*3;
+    break;
+  case CIPHER_stream:
+    /* Currently RC4 is the only stream cipher.
+     * We set the rekey threshold to the same as for DES/DES3.
+     */
+    res->max_bytes = 0x08000000;
+    break;
+  case CIPHER_aead:
+    // All the AEAD modes should handle 2GB without any problem.
+    res->max_bytes = 0x7fffffff;
+    break;
+  }
+  if (res->is_exportable) res->max_bytes >>= 4;
+  if (res->max_bytes > 0x7fffffff) res->max_bytes = 0x7fffffff;
 
   return res;
 }
