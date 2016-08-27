@@ -2280,8 +2280,10 @@ static int push_sprintf_argument_types(PCHARP format,
       }
 
       case 'x':
-      case 'X':
 	if ('f' > max_char) max_char = 'f';
+	/* FALL_THROUGH */
+      case 'X':
+        if ('F' > max_char) max_char = 'F';
 	/* FALL_THROUGH */
       case 'd':
       case 'u':
