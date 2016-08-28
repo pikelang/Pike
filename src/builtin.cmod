@@ -2295,7 +2295,7 @@ PMOD_EXPORT void push_random_string(unsigned len)
     Pike_error("Unable to resolve random function.\n");
   push_int(len);
   apply_svalue(random, 1);
-  if(TYPEOF(Pike_sp[-1])!=T_STRING || Pike_sp[-1].u.string->len != len ||
+  if(TYPEOF(Pike_sp[-1])!=T_STRING || Pike_sp[-1].u.string->len != (ptrdiff_t)len ||
      Pike_sp[-1].u.string->size_shift != 0)
     Pike_error("Couldn't generate random string.\n");
 }
