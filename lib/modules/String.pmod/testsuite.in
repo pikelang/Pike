@@ -246,7 +246,8 @@ test_eq(String.int2hex(Gmp.mpz(1)), "1")
 
 test_eq(String.string2hex(""), "")
 test_eq(String.string2hex("x"), "78")
-test_eq(String.string2hex("x\xff"), "78ff")
+test_eq(String.string2hex("x\xff",0), "78ff")
+test_eq(String.string2hex("x\xff",1), "78FF")
 test_eval_error(return String.string2hex("x\xfff"))
 
 test_eq(String.hex2string(""), "")

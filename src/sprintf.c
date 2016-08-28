@@ -1521,12 +1521,38 @@ cont_2:
 	break;
       }
 
+      case 'x':
+      case 'X':
+      {
+        struct svalue *v;
+        PEEK_SVALUE(v);
+        if(TYPEOF(*v)==T_STRING)
+        {
+          struct pike_string *str;
+          push_svalue(v);
+          if( mode=='X' )
+          {
+            push_int(1);
+            f_string2hex(2);
+          }
+          else
+            f_string2hex(1);
+
+          str = Pike_sp[-1].u.string;
+          fsp->b = MKPCHARP_STR(str);
+          fsp->len = str->len;
+          fsp->to_free_string = str;
+
+          add_ref(str);
+          pop_stack();
+          POP_ARGUMENT();
+          break;
+        }
+      }
       case 'b':
       case 'o':
       case 'd':
       case 'u':
-      case 'x':
-      case 'X':
       {
 	int base = 0, mask_size = 0;
        char *x;
@@ -2281,10 +2307,18 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 'x':
 	if ('f' > max_char) max_char = 'f';
-	/* FALL_THROUGH */
+        /* FALL_THROUGH */
       case 'X':
         if ('F' > max_char) max_char = 'F';
-	/* FALL_THROUGH */
+        if ('+' < min_char) min_char = '+';
+        push_int_type(0, 255);
+	push_type(T_STRING);
+        push_object_type(0, 0);
+        push_type(T_OR);
+        push_int_type(MIN_INT32, MAX_INT32);
+        push_type(T_OR);
+        break;
+
       case 'd':
       case 'u':
 	if ('9' > max_char) max_char = '9';
@@ -2294,10 +2328,10 @@ static int push_sprintf_argument_types(PCHARP format,
 	/* FALL_THROUGH */
       case 'b':
 	if ('1' > max_char) max_char = '1';
-	if ('+' < min_char) min_char = '+';
+        if ('+' < min_char) min_char = '+';
       {
-	push_object_type(0, 0);
-	push_int_type(MIN_INT32, MAX_INT32);
+        push_object_type(0, 0);
+        push_int_type(MIN_INT32, MAX_INT32);
 	push_type(T_OR);
 	break;
       }
@@ -2403,10 +2437,15 @@ static node *optimize_sprintf(node *n)
 	return ret;
 
       case 'x':
-	ADD_NODE_REF2(*arg1,
-		      ret = mkefuncallnode("int2hex",*arg1);
+        if(TYPEOF((*arg1)->u.sval) == T_STRING)
+          ADD_NODE_REF2(*arg1,
+                        ret = mkefuncallnode("string2hex",*arg1);
+          );
+        else
+          ADD_NODE_REF2(*arg1,
+                        ret = mkefuncallnode("int2hex",*arg1);
 	  );
-	return ret;
+        return ret;
       case '%':
 	{
 	  /* FIXME: This code can be removed when the generic
