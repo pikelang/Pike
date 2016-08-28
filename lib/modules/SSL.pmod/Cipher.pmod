@@ -2332,7 +2332,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     /* CBC requires the keys to change well before 2^(block_size/2) blocks
      * have been sent (block_size in bits). cf https://sweet32.info/
      */
-    int block_size = res->bulk_cipher_algorithm->block_size();
+    int block_size = function_object(res->bulk_cipher_algorithm)->block_size();
     /* The strict limit is thus block_size << block_size * 4 (block_size in bytes).
      * We want some safety margin and multiply the exponent with 3 instead of 4.
      */
