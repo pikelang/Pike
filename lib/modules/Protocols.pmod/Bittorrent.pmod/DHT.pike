@@ -649,7 +649,7 @@ class DHTNode {
     ping_fails++;
     if (ping_fails >= 5) {
       if (state == DHT_UNKNOWN) {
-	NODE_STATE_CHANGE("Node %s UNKNOWN => BAD\n", String.string2hex(node_id));
+        NODE_STATE_CHANGE("Node %x UNKNOWN => BAD\n", node_id);
 	state = DHT_BAD;
       }
     } else {
@@ -661,7 +661,7 @@ class DHTNode {
       // unknown after 15 minutes in accordance with BEP005. (We may
       // set it to inactive after 10+timeout minutes though!)
       if (state == DHT_ACTIVE) {
-	NODE_STATE_CHANGE("Node %s ACTIVE => UNKNOWN\n", String.string2hex(node_id));
+        NODE_STATE_CHANGE("Node %x ACTIVE => UNKNOWN\n", node_id);
       }
       state = DHT_UNKNOWN;
 
@@ -697,8 +697,8 @@ class DHTNode {
 
     if (data->y == "e") {
       // An error occured
-      NODE_STATE_CHANGE("Node %s => BAD because of error response to ping\n",
-			String.string2hex(node_id));
+      NODE_STATE_CHANGE("Node %x => BAD because of error response to ping\n",
+                        node_id);
       state = DHTNode.DHT_BAD;
       return;
     }
@@ -821,7 +821,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
 
     if (!node_info) {
       // Response to a transaction we (no longer) expected a response to
-      dwerror("Ignoring unknown TXID %s\n", String.string2hex(txid));
+      dwerror("Ignoring unknown TXID %x\n", txid);
       return;
     }
 
@@ -870,7 +870,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   //! we want to stop waiting for an answer. We call @[run] to
   //! ensure we continue processing requests if more are needed.
   private void query_timeout(string txid) {
-    dwerror("%s timed out in %s\n", String.string2hex(txid), String.string2hex(my_node_id));
+    dwerror("%x timed out in %x\n", txid, my_node_id);
     m_delete(transactions_in_flight, txid);
     dwerror("TXIDs left: %O\n", indices(transactions_in_flight));
     run();
@@ -1651,9 +1651,8 @@ void handle_get_peers(mapping data, string ip, int port) {
     ]),
   ]);
 
-  dwerror("DTH instance %s was asked for peers of %s\n",
-	 String.string2hex(my_node_id),
-	 String.string2hex(target_hash));
+  dwerror("DTH instance %x was asked for peers of %x\n",
+          my_node_id, target_hash);
 
   if (mapping known_peers = peers_by_hash[target_hash]) {
     // We know of peers for this hash, so return what we know.
@@ -1701,9 +1700,8 @@ void handle_announce_peer(mapping data, string ip, int port) {
   peer->source_ip = ip;
   peer->source_port = port;
   add_peer_for_hash(peer, data->a->info_hash, ip, port);
-  dwerror("Peer %s for %s added in DHT instance %s\n",
-	 peer, String.string2hex(data->a->info_hash),
-	 String.string2hex(my_node_id));
+  dwerror("Peer %s for %x added in DHT instance %x\n",
+         peer, data->a->info_hash, my_node_id);
 }
 
 //
@@ -1793,7 +1791,7 @@ protected void announce_to(string peer_ip, int peer_port, string token,
 		   ]),
 		   lambda(mapping r) {
 		   });
-    dwerror("Sent announce to %s:%d TXID: %s\n", peer_ip, peer_port, String.string2hex(txid));
+    dwerror("Sent announce to %s:%d TXID: %x\n", peer_ip, peer_port, txid);
 }
 
 //

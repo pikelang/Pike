@@ -1671,18 +1671,17 @@ class MAChmac_sha {
 
   string hash_packet(object packet, int seq_num, int|void adjust_len)
   {
-    SSL3_DEBUG_CRYPT_MSG("HMAC header: %s\n",
-			 String.string2hex(sprintf("%8c%c%2c%2c", seq_num,
-						   packet->content_type,
-						   packet->protocol_version,
-						   sizeof(packet->fragment) +
-						   adjust_len)));
+    SSL3_DEBUG_CRYPT_MSG("HMAC header: %x\n",
+                         sprintf("%8c%c%2c%2c", seq_num,
+                                 packet->content_type,
+                                 packet->protocol_version,
+                                 sizeof(packet->fragment) +
+                                 adjust_len));
     hmac->update( sprintf("%8c%c%2c%2c", seq_num,
                           packet->content_type,
                           packet->protocol_version,
                           sizeof(packet->fragment) + adjust_len));
-    SSL3_DEBUG_CRYPT_MSG("HMAC data: %s\n",
-			 String.string2hex(packet->fragment));
+    SSL3_DEBUG_CRYPT_MSG("HMAC data: %x\n", packet->fragment);
     hmac->update( packet->fragment );
     return hmac->digest();
   }

@@ -52,7 +52,7 @@ string get_id()
 
 protected string _sprintf(mixed t)
 {
-  return "ObjectId(" + String.string2hex(get_id()) + ")";
+  return sprintf("ObjectId(%x)", get_id());
 }
 
 protected mixed cast(string t)

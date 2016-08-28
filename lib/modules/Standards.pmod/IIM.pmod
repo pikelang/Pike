@@ -132,7 +132,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
   }
   //werror("blocks: %O\n", blocks);
   foreach(blocks, string block) {
-    //werror("block: %O\n", String.string2hex(block));
+    //werror("block: %x\n", block);
     if (sizeof(block) < 6) {
       werror("Malformed 8BIM block\n");
       continue;
@@ -202,7 +202,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 
       //werror("%3d: ", id);
       //werror("%O\n", data);
-      //werror("info: %O\n", String.string2hex(info));
+      //werror("info: %x\n", info);
       string label =
 	fields[record_set][id] ||
 	(string)record_set + ":" + (string)id;

@@ -555,7 +555,7 @@ protected string(8bit) generate_key_block(string(8bit) client_random,
 #ifdef SSL3_DEBUG
 protected void printKey(string name, string key)
 {
-  werror("%s:  len:%d \t\t%s\n", name, sizeof(key), String.string2hex(key));
+  werror("%s:  len:%d \t\t%x\n", name, sizeof(key), key);
 }
 #endif
 
