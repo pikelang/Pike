@@ -1996,6 +1996,9 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       break;
   case F_SUBTRACT_INT:
   case F_ADD_INT:
+  case F_OR_INT:
+  case F_AND_INT:
+  case F_XOR_INT:
     arm32_debug_instr_prologue_1(opcode, arg1);
     {
       struct label fallback;
@@ -2016,14 +2019,26 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       /* load integer value and do operation */
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
 
-      if (opcode == F_SUBTRACT_INT) {
+      switch (opcode) {
+      case F_SUBTRACT_INT:
         arm32_subs_reg_int(tmp, tmp, arg1);
-      } else {
+        b_imm(label_dist(&fallback), ARM_COND_VS);
+        break;
+      case F_ADD_INT:
         arm32_adds_reg_int(tmp, tmp, arg1);
+        b_imm(label_dist(&fallback), ARM_COND_VS);
+        break;
+      case F_OR_INT:
+        arm32_or_reg_int(tmp, tmp, arg1);
+        break;
+      case F_AND_INT:
+        arm32_and_reg_int(tmp, tmp, arg1);
+        break;
+      case F_XOR_INT:
+        arm32_xor_reg_int(tmp, tmp, arg1);
+        break;
       }
 
-      /* check for overflow */
-      b_imm(label_dist(&fallback), ARM_COND_VS);
       store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
       b_imm(label_dist(&done), ARM_COND_AL);
