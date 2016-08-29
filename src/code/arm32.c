@@ -464,8 +464,8 @@ OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm32_register dst,
     instr |= 1<<21;
     instr |= 1<<4;
     instr |= op << 5;
-    instr |= a << 8;
-    instr |= b;
+    instr |= b << 8;
+    instr |= a;
 
     return instr;
 }
