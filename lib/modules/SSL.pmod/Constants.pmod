@@ -259,7 +259,7 @@ constant ALERT_unrecognized_name		= 112;	// RFC 3546
 constant ALERT_bad_certificate_status_response	= 113;	// RFC 3546
 constant ALERT_bad_certificate_hash_value	= 114;	// RFC 3546
 constant ALERT_unknown_psk_identity		= 115;  // RFC 4279
-constant ALERT_no_application_protocol          = 120;  // draft-ietf-tls-applayerprotoneg
+constant ALERT_no_application_protocol          = 120;  // RFC 7301
 constant ALERT_descriptions = ([
   ALERT_close_notify: "Connection closed.",
   ALERT_unexpected_message: "An inappropriate message was received.",
@@ -1460,6 +1460,10 @@ enum HeartBeatMessageType {
   HEARTBEAT_MESSAGE_response = 2,
 };
 
+//! Application Level Protocol Negotiation protocol identifiers.
+//!
+//! @seealso
+//!   @[EXTENSION_application_layer_protocol_negotiation]
 enum ALPNProtocol {
   ALPN_http_1_1		= "http/1.1",		// RFC 7301
   ALPN_spdy_1		= "spdy/1",		// RFC 7301
