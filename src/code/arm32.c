@@ -1855,6 +1855,56 @@ static void low_ins_f_byte(unsigned int opcode)
 
           return;
       }
+  case F_RETURN_IF_TRUE:
+      arm32_debug_instr_prologue_0(opcode);
+      {
+          struct label no_return, do_return, do_return_if_true;
+          enum arm32_register tmp;
+
+          ra_alloc(ARM_REG_ARG1);
+          tmp  = ra_alloc_any();
+
+          label_init(&no_return);
+          label_init(&do_return);
+          label_init(&do_return_if_true);
+
+          arm32_load_sp_reg();
+          arm32_load_fp_reg();
+
+          loadh_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                        -sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
+
+          arm32_mov_int(tmp, 1);
+          lsl_reg_reg(tmp, tmp, ARM_REG_ARG1);
+
+          /* everything which is neither function, object or int is true */
+          arm32_tst_int(tmp, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
+          b_imm(label_dist(&do_return), ARM_COND_Z);
+
+          arm32_tst_int(tmp, BIT_INT);
+
+          ra_free(tmp);
+
+          ARM_IF(ARM_COND_NZ, {
+              load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -sizeof(struct svalue)+OFFSETOF(svalue, u));
+          });
+          b_imm(label_dist(&do_return_if_true), ARM_COND_NZ);
+
+          arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm32_call(complex_svalue_is_true);
+          ra_free(ARM_REG_ARG1);
+
+          label_generate(&do_return_if_true);
+          arm32_cmp_int(ARM_REG_RVAL, 0);
+          b_imm(label_dist(&no_return), ARM_COND_EQ);
+
+          label_generate(&do_return);
+
+          ins_f_byte(F_RETURN);
+
+          label_generate(&no_return);
+      }
+      return;
   case F_RETURN:
   case F_DUMB_RETURN:
       arm32_debug_instr_prologue_0(opcode);
@@ -1908,24 +1958,9 @@ static void low_ins_f_byte(unsigned int opcode)
 
   if (opcode == F_CATCH) ra_free(ARM_REG_R0);
 
-  if (flags & I_RETURN) {
-      enum arm32_register kludge_reg = ARM_REG_NONE;
+  if (flags & I_RETURN)
+    arm32_ins_maybe_exit();
 
-      if (opcode == F_RETURN_IF_TRUE) {
-          kludge_reg = ra_alloc_persistent();
-          /* -4 == 4*(JUMP_EPILOGUE_SIZE - 2) */
-          sub_reg_imm(kludge_reg, ARM_REG_PC, 4, 0);
-      }
-
-      arm32_ins_maybe_exit();
-
-      if (opcode == F_RETURN_IF_TRUE) {
-          arm32_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
-          bx_reg(ARM_REG_R0);
-          ra_free(kludge_reg);
-          return;
-      }
-  }
   if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     bx_reg(ARM_REG_RVAL);
