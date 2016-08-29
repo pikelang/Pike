@@ -2344,7 +2344,46 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
         ret = PIKE_PC;
         b_imm(0, ARM_COND_AL);
         return ret;
+    case F_LOOP: {
+          struct label fallback, jump;
 
+          label_init(&jump);
+          label_init(&fallback);
+
+          ra_alloc(ARM_REG_ARG1);
+
+          arm32_load_sp_reg();
+
+          load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                        -sizeof(struct svalue)+OFFSETOF(svalue, tu));
+          arm32_cmp_int(ARM_REG_ARG1, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          b_imm(label_dist(&fallback), ARM_COND_NE);
+
+          load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                       -sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          subs_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 1, 0);
+
+          store_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                        -sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          label_generate(&jump);
+          ret = PIKE_PC;
+          b_imm(0, ARM_COND_NZ);
+
+          /* the fallback is used both if
+           *  - Pike_sp[-1] is not an integer
+           *  - the loop terminates and we need to pop
+           */
+          label_generate(&fallback);
+          arm32_call_c_opcode_slowpath(opcode);
+
+          arm32_cmp_int(ARM_REG_ARG1, 0);
+          b_imm(label_dist(&jump), ARM_COND_AL);
+          ra_free(ARM_REG_ARG1);
+
+          return ret;
+        }
     case F_BRANCH_WHEN_NE:
     case F_BRANCH_WHEN_EQ:
     case F_BRANCH_WHEN_LT:
