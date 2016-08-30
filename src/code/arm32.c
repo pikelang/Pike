@@ -2362,14 +2362,22 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
           load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
                        -sizeof(struct svalue)+OFFSETOF(svalue, u));
 
-          subs_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 1, 0);
+          /* compare loop count with 0 */
+          cmp_reg_imm(ARM_REG_ARG1, 0, 0);
 
-          store_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
-                        -sizeof(struct svalue)+OFFSETOF(svalue, u));
+          /* subtract 1 and store if the count is > 0 */
+          add_to_program(set_cond(
+              gen_sub_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 1, 0),
+              ARM_COND_GT));
+
+          add_to_program(set_cond(
+              gen_store_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                                -sizeof(struct svalue)+OFFSETOF(svalue, u)),
+              ARM_COND_GT));
 
           label_generate(&jump);
           ret = PIKE_PC;
-          b_imm(0, ARM_COND_NZ);
+          b_imm(0, ARM_COND_GT);
 
           /* the fallback is used both if
            *  - Pike_sp[-1] is not an integer
@@ -2379,7 +2387,7 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
           arm32_call_c_opcode_slowpath(opcode);
 
           arm32_cmp_int(ARM_REG_ARG1, 0);
-          b_imm(label_dist(&jump), ARM_COND_AL);
+          b_imm(label_dist(&jump), ARM_COND_GT);
           ra_free(ARM_REG_ARG1);
 
           return ret;
