@@ -2306,6 +2306,9 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       return;
   case F_SUBTRACT_INT:
   case F_ADD_INT:
+  case F_OR_INT:
+  case F_AND_INT:
+  case F_XOR_INT:
     arm64_debug_instr_prologue_1(opcode, arg1);
     {
       struct label fallback;
@@ -2326,14 +2329,26 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       /* load integer value and do operation */
       load64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
 
-      if (opcode == F_SUBTRACT_INT) {
+      switch (opcode) {
+      case F_SUBTRACT_INT:
         arm64_subs64_reg_int(tmp, tmp, (INT64)arg1);
-      } else {
+        b_imm_cond(label_dist(&fallback), ARM_COND_VS);
+        break;
+      case F_ADD_INT:
         arm64_adds64_reg_int(tmp, tmp, (INT64)arg1);
+        b_imm_cond(label_dist(&fallback), ARM_COND_VS);
+        break;
+      case F_OR_INT:
+        arm64_or64_reg_int(tmp, tmp, (INT64)arg1);
+        break;
+      case F_AND_INT:
+        arm64_and64_reg_int(tmp, tmp, (INT64)arg1);
+        break;
+      case F_XOR_INT:
+        arm64_eor64_reg_int(tmp, tmp, (INT64)arg1);
+        break;
       }
 
-      /* check for overflow */
-      b_imm_cond(label_dist(&fallback), ARM_COND_VS);
       store64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
       ra_free(tmp);
       b_imm(label_dist(&done));
