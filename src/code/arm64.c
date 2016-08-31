@@ -2176,6 +2176,51 @@ static void low_ins_f_byte(unsigned int opcode)
 
           return;
       }
+  case F_RETURN_IF_TRUE:
+      arm64_debug_instr_prologue_0(opcode);
+      {
+          struct label no_return, do_return, do_return_if_true;
+          enum arm64_register tmp;
+
+          ra_alloc(ARM_REG_ARG1);
+          tmp  = ra_alloc_any();
+
+          label_init(&no_return);
+          label_init(&do_return);
+          label_init(&do_return_if_true);
+
+          arm64_load_sp_reg();
+          arm64_load_fp_reg();
+
+          load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+			 -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, tu.t.type));
+
+          arm64_mov_int(tmp, 1);
+          lsl32_reg_reg(tmp, tmp, ARM_REG_ARG1);
+
+          /* everything which is neither function, object or int is true */
+          arm64_tst_int(tmp, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
+          b_imm_cond(label_dist(&do_return), ARM_COND_Z);
+
+	  load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+	  tbnz_imm(tmp, value_to_bit(BIT_INT), label_dist(&do_return_if_true));
+
+          ra_free(tmp);
+
+          arm64_sub64_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm64_call(complex_svalue_is_true);
+          ra_free(ARM_REG_ARG1);
+
+          label_generate(&do_return_if_true);
+	  cbz64_imm(ARM_REG_RVAL, label_dist(&no_return));
+
+          label_generate(&do_return);
+
+          ins_f_byte(F_RETURN);
+
+          label_generate(&no_return);
+      }
+      return;
   case F_RETURN:
   case F_DUMB_RETURN:
       arm64_debug_instr_prologue_0(opcode);
@@ -2226,24 +2271,9 @@ static void low_ins_f_byte(unsigned int opcode)
 
   if (opcode == F_CATCH) ra_free(ARM_REG_R0);
 
-  if (flags & I_RETURN) {
-      enum arm64_register kludge_reg = ARM_REG_NONE;
+  if (flags & I_RETURN)
+    arm64_ins_maybe_exit();
 
-      if (opcode == F_RETURN_IF_TRUE) {
-          kludge_reg = ra_alloc_persistent();
-          /* 4 == 4*(JUMP_EPILOGUE_SIZE) */
-          adr_imm(kludge_reg, 4);
-      }
-
-      arm64_ins_maybe_exit();
-
-      if (opcode == F_RETURN_IF_TRUE) {
-          arm64_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
-          br_reg(ARM_REG_R0);
-          ra_free(kludge_reg);
-          return;
-      }
-  }
   if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     br_reg(ARM_REG_RVAL);
