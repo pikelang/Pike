@@ -109,15 +109,41 @@ struct define
   short inside;		/* 1 - Don't expand. 2 - In use. */
   short varargs;
   struct pike_string *first;
-  struct define_part parts[1];
+  struct define_part *parts;
 };
 
-#define FIND_DEFINE(N) \
-  (this->defines?BASEOF(hash_lookup(this->defines, N), define, link):0)
+static void init_define_struct(struct object *UNUSED(o))
+{
+  struct define *def = (struct define *)(Pike_fp->current_storage);
+  def->magic=0;
+  def->args=-1;
+  def->inside=0;
+  def->varargs=0;
+  def->parts = NULL;
+  def->num_parts=0;
+  def->first=0;
+  def->link.s = NULL;
+}
+
+static void exit_define_struct(struct object *UNUSED(o))
+{
+  struct define *d = (struct define *)(Pike_fp->current_storage);
+  INT32 e;
+  for (e = 0; e < d->num_parts; e++)
+    free_string(d->parts[e].postfix);
+  if (d->parts)
+    free(d->parts);
+  if (d->link.s)
+    free_string(d->link.s);
+  if(d->first)
+    free_string(d->first);
+}
+
+static struct program *define_program = NULL;
 
 struct cpp
 {
-  struct hash_table *defines;
+  struct mapping *defines;
   INT_TYPE current_line;
   INT32 compile_errors;
   struct pike_string *current_file;
@@ -131,6 +157,17 @@ struct cpp
   INT_TYPE picky_cpp, keep_comments, dependencies_fail;
 };
 
+#define FIND_DEFINE(N) find_define(this, (N))
+
+static struct define *find_define(struct cpp *this, struct pike_string *n)
+{
+  struct svalue *s;
+  if (!this->defines) return NULL;
+  if (!(s = low_mapping_string_lookup(this->defines, n))) return NULL;
+  if (TYPEOF(*s) != T_OBJECT) return NULL;
+  return (struct define *)get_storage(s->u.object, define_program);
+}
+
 DECLARE_STORAGE;
 
 static void cpp_error(struct cpp *this, const char *err) ATTRIBUTE((noinline));
@@ -141,6 +178,7 @@ static void cpp_handle_exception(struct cpp *this,
 				 const char *cpp_error_fmt, ...) ATTRIBUTE((noinline));
 static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...) ATTRIBUTE((noinline));
 struct define *defined_macro =0;
+static struct svalue defined_macro_sval;
 
 static void cpp_error(struct cpp *this, const char *err)
 {
@@ -1546,20 +1584,21 @@ past_identifier:
 }
 
 /* devours one reference to 'name'! */
+/* The reference to the define is held by the stack on return. */
 static struct define *alloc_empty_define(struct pike_string *name,
 					 ptrdiff_t parts)
 {
   struct define *def;
-  def=xalloc(sizeof(struct define)+
-             sizeof(struct define_part) * (parts -1));
-  def->magic=0;
-  def->args=-1;
-  def->inside=0;
-  def->varargs=0;
-  def->num_parts=parts;
-  def->first=0;
+  struct object *o;
+
+  push_object(o = clone_object(define_program, 0));
+  def = (struct define *)get_storage(o, define_program);
   def->link.s=name;
   debug_malloc_touch(name);
+  if (parts) {
+    def->parts = xalloc(sizeof(struct define_part) * parts);
+    def->num_parts = parts;
+  }
   return def;
 }
 
@@ -1582,29 +1621,25 @@ static struct define *alloc_empty_define(struct pike_string *name,
  *! @seealso
  *!   @[#define], @[defined()]
  */
-static void undefine(struct cpp *this,
-		     const struct pike_string *name)
+static void undefine(struct cpp *this, struct pike_string *name)
 {
-  INT32 e;
-  struct define *d;
+  ref_push_string(name);
+  push_int(0);
+  map_delete_no_free(this->defines, Pike_sp - 2, Pike_sp - 1);
 
-  d=FIND_DEFINE(name);
-
-  if(!d) return;
-
-  if (d->inside) {
-    cpp_error(this, "Illegal to undefine a macro during its expansion.");
-    return;
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+    struct object *o = Pike_sp[-1].u.object;
+    struct define *def = (struct define *)get_storage(o, define_program);
+    if (def->inside) {
+      /* Restore the #define. */
+      mapping_insert(this->defines, Pike_sp - 2, Pike_sp - 1);
+      cpp_error(this, "Illegal to undefine a macro during its expansion.");
+      pop_n_elems(2);
+      return;
+    }
   }
 
-  this->defines=hash_unlink(this->defines, & d->link);
-
-  for(e=0;e<d->num_parts;e++)
-    free_string(d->parts[e].postfix);
-  free_string(d->link.s);
-  if(d->first)
-    free_string(d->first);
-  free(d);
+  pop_n_elems(2);
 }
 
 /*! @directive #define
@@ -1652,7 +1687,8 @@ static struct define *do_magic_define(struct cpp *this,
   } else
     def = alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
-  this->defines=hash_insert(this->defines, & def->link);
+  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  pop_stack();
 
   return def;
 }
@@ -1665,7 +1701,8 @@ static void add_define(struct cpp *this,
   add_ref (name);
   def=alloc_empty_define(name,0);
   add_ref (def->first = what);
-  this->defines=hash_insert(this->defines, & def->link);
+  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  pop_stack();
 }
 
 static void simple_add_define(struct cpp *this,
@@ -1688,7 +1725,8 @@ static void simple_add_define(struct cpp *this,
     def = alloc_empty_define(make_shared_string(name),0);
 
   def->first=make_shared_string(what);
-  this->defines=hash_insert(this->defines, & def->link);
+  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  pop_stack();
 }
 
 static struct pike_string *recode_string(struct cpp *this, struct pike_string *data)
@@ -1974,18 +2012,6 @@ static struct pike_string *filter_bom(struct pike_string *data)
     }
   }
   return(data);
-}
-
-static void free_one_define(struct hash_entry *h)
-{
-  int e;
-  struct define *d=BASEOF(h, define, link);
-
-  for(e=0;e<d->num_parts;e++)
-    free_string(d->parts[e].postfix);
-  if(d->first)
-    free_string(d->first);
-  free(d);
 }
 
 #define PUSH_STRING0(X,Y,Z) add_quoted_string( X,Y,0,Z)
@@ -3223,7 +3249,7 @@ static void insert_callback_define_no_args(struct cpp *this,
 static void free_cpp(struct cpp *this)
 {
   if(this->defines)
-    free_hashtable(this->defines, free_one_define);
+    free_mapping(this->defines);
 
   if(this->current_file)
     free_string(this->current_file);
@@ -3278,7 +3304,7 @@ PIKEFUN string cpp(string data,
   this.prefix = NULL;
   this.current_line=1;
   this.compile_errors=0;
-  this.defines=0;
+  this.defines = allocate_mapping(32);
   this.keep_comments = 0;
   this.dependencies_fail = 0;
 
@@ -3457,7 +3483,8 @@ PIKEFUN string cpp(string data,
     REF_MAKE_CONST_STRING(def->first, "__attribute__(\"deprecated\", ");
     def->parts[0].argument = 0;
     REF_MAKE_CONST_STRING(def->parts[0].postfix, ")");
-    this.defines = hash_insert(this.defines, &def->link);
+    mapping_string_insert(this.defines, def->link.s, Pike_sp-1);
+    pop_stack();
 #endif /* 0 */
 
     simple_add_define(&this, "__PIKE__", " 1 ");
@@ -3515,7 +3542,8 @@ PIKEFUN string cpp(string data,
           k->ind.u.string->refs++;
           def->magic = insert_callback_define_no_args;
         }
-        this.defines = hash_insert( this.defines, &def->link );
+	mapping_string_insert(this.defines, def->link.s, Pike_sp-1);
+	pop_stack();
       }
       else
 	add_define (&this, k->ind.u.string, empty_pike_string);
@@ -3594,9 +3622,17 @@ void init_cpp()
 {
   struct svalue s;
 
+  start_new_program();
+  ADD_STORAGE(struct define);
+  set_init_callback(init_define_struct);
+  set_exit_callback(exit_define_struct);
+  define_program = end_program();
+
   defined_macro=alloc_empty_define(make_shared_string("defined"),0);
   defined_macro->magic=check_defined;
   defined_macro->args=1;
+  defined_macro_sval = Pike_sp[-1];
+  Pike_sp--;
 
   efun_str = make_shared_string ("efun");
   constant_str = make_shared_string ("constant");
@@ -3660,11 +3696,12 @@ void exit_cpp(void)
     first_predef=tmp->next;
     free(tmp);
   }
-  free_string(defined_macro->link.s);
-  free(defined_macro);
+  free_svalue(&defined_macro_sval);
 
   free_string (efun_str);
   free_string (constant_str);
   free_string (defined_str);
+
+  free_program(define_program);
 #endif
 }

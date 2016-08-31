@@ -1247,11 +1247,13 @@ static ptrdiff_t low_cpp(struct cpp *this,
                     if ((d = FIND_DEFINE(def->link.s)) && (d->inside)) {
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
-                      free_one_define(&(def->link));
                     } else {
-                      this->defines=hash_insert(this->defines, & def->link);
+		      mapping_string_insert(this->defines,
+					    def->link.s,
+					    Pike_sp-1);
                     }
                   }
+		  pop_stack();
                 }
                 else
                   free_string (def_name);
