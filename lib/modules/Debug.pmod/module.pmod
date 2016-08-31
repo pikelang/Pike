@@ -1201,11 +1201,13 @@ string get_perf_map(program p, mapping|void m) {
 
     string pname= sprintf("%O", p);
 
-    int total = m_delete(m, 0);
+    int total_size = m_delete(m, 0);
     array k = indices(m), v = values(m), l = allocate(sizeof(k));
     int i;
 
     sort(v, k);
+
+    int total = v[0] + total_size;
 
     for (i = 1; i < sizeof(k); i++) {
         l[i-1] = v[i]-v[i-1];

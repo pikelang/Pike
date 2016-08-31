@@ -2479,9 +2479,8 @@ PIKEFUN mapping _get_program_layout(program p) {
       struct svalue key, value;
 
       SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      /* FIXME: this could overflow.. typewise, at least. */
       SET_SVAL(value, PIKE_T_INT, NUMBER_NUMBER, integer,
-               PTR_TO_INT(p->program + p->num_program));
+               p->num_program * sizeof(PIKE_OPCODE_T));
       mapping_insert(m, &key, &value);
     }
   }
