@@ -145,7 +145,7 @@ MACRO void arm32_call(void *ptr);
 MACRO enum arm32_register ra_alloc_any(void);
 MACRO void ra_free(enum arm32_register reg);
 
-MACRO void break_my_arm(void) {
+void break_my_arm(void) {
 }
 
 #ifdef ARM32_LOW_DEBUG
@@ -1314,8 +1314,47 @@ void arm32_flush_codegen_state(void) {
     compiler_state.flags = 0;
 }
 
+static struct label my_free_svalue;
+
 void arm32_start_function(int UNUSED(no_pc)) {
     ra_init();
+
+    if (Pike_compiler->new_program->num_program == 0) {
+        /* we are about to generate the first function
+         * of a new program
+         */
+
+        label_init(&my_free_svalue);
+
+        ra_alloc(ARM_REG_ARG1);
+
+        /* this inline function frees an svalue. arguments are:
+         *  base pointer
+         *
+         * the first version does not use the stack at all and
+         * simply decrements the refcount
+         */
+        label_generate(&my_free_svalue);
+
+        /* decrement ->refs */
+
+        load32_reg_imm(ARM_REG_ARG2, ARM_REG_ARG1, OFFSETOF(svalue, u.string));
+
+        load32_reg_imm(ARM_REG_ARG3, ARM_REG_ARG2, OFFSETOF(pike_string, refs));
+        subs_reg_imm(ARM_REG_ARG3, ARM_REG_ARG3, 1, 0);
+        store32_reg_imm(ARM_REG_ARG3, ARM_REG_ARG2, OFFSETOF(pike_string, refs));
+
+        /* cheap return if the refcount is not zero */
+        add_to_program(
+            set_cond(gen_mov_reg(ARM_REG_PC, ARM_REG_LR), ARM_COND_NZ)
+        );
+
+        store_multiple(ARM_REG_SP, ARM_MULT_DBW, RBIT(ARM_REG_R4)|RBIT(ARM_REG_LR));
+        arm32_call(really_free_svalue);
+        load_multiple(ARM_REG_SP, ARM_MULT_IAW, RBIT(ARM_REG_R4)|RBIT(ARM_REG_PC));
+
+        ra_free(ARM_REG_ARG1);
+    }
 }
 
 void arm32_end_function(int UNUSED(no_pc)) {
@@ -1418,58 +1457,55 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
 }
 
 MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
-    unsigned char imm, rot;
-    struct label end;
-    enum arm32_register reg = ra_alloc(ARM_REG_ARG1);
-    enum arm32_register tmp = ra_alloc_any();
     int no_free = 1;
+    struct label done;
+    if (src != ARM_REG_ARG1) ra_alloc(ARM_REG_ARG1);
 
     guaranteed = guaranteed;
 
     off *= sizeof(struct svalue);
 
-    label_init(&end);
+    label_init(&done);
 
     if (off+OFFSETOF(svalue, u) >= 4096 || off <= -4096) {
-        enum arm32_register reg1 = ra_alloc_any();
-
         if (off < 0)
-            arm32_sub_reg_int(reg1, src, -off);
+            arm32_sub_reg_int(ARM_REG_ARG1, src, -off);
         else
-            arm32_add_reg_int(reg1, src, off);
+            arm32_add_reg_int(ARM_REG_ARG1, src, off);
         off = 0;
-        src = reg1;
-        no_free = 0;
+        if (ARM_REG_ARG1 != src) {
+            no_free = 0;
+            src = ARM_REG_ARG1;
+        }
     }
 
-    load32_reg_imm(reg, src, off);
+    /* this has to be free, since we might be doing
+     * a function call anyway */
+    ra_alloc(ARM_REG_ARG2);
 
-    arm32_tst_int(reg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+    load32_reg_imm(ARM_REG_ARG2, src, off);
 
-    b_imm(label_dist(&end), ARM_COND_Z);
+    arm32_tst_int(ARM_REG_ARG2, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
-    load32_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
+    ra_free(ARM_REG_ARG2);
 
-    load32_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
-    subs_reg_imm(reg, reg, 1, 0);
-    store32_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
+    b_imm(label_dist(&done), ARM_COND_Z);
 
-    b_imm(label_dist(&end), ARM_COND_NZ);
-
-    if (off > 0) {
-        arm32_add_reg_int(reg, src, off);
-    } else if (off < 0 ) {
-        arm32_sub_reg_int(reg, src, -off);
-    } else {
-        mov_reg(reg, src);
+    /* if we have a refcounted type, we set up the argument register
+     * and do a call to our function */
+    if (off) {
+        if (off < 0)
+            arm32_sub_reg_int(ARM_REG_ARG1, src, -off);
+        else
+            arm32_add_reg_int(ARM_REG_ARG1, src, off);
+    } else if (src != ARM_REG_ARG1) {
+        mov_reg(ARM_REG_ARG1, src);
     }
 
-    arm32_call(really_free_svalue);
+    bl_imm(label_dist(&my_free_svalue));
+    label_generate(&done);
 
-    label_generate(&end);
-    ra_free(reg);
-    ra_free(tmp);
-    if (!no_free) ra_free(src);
+    if (!no_free || src != ARM_REG_ARG1) ra_free(ARM_REG_ARG1);
 }
 
 MACRO void arm32_ins_branch_check_threads_etc(int a) {
