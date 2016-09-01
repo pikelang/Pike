@@ -1654,8 +1654,9 @@ static void low_ins_f_byte(unsigned int opcode)
                       ands_reg_reg(reg, tmp1, tmp2);
                       b_imm(label_dist(&real_pop), ARM_COND_Z);
                   } else {
-                      xors_reg_reg(reg, tmp1, tmp2);
-                      b_imm(label_dist(&real_pop), ARM_COND_NZ);
+                      cmp_reg_reg(tmp1, tmp2);
+                      mov_imm(reg, 1, 0);
+                      b_imm(label_dist(&real_pop), ARM_COND_NE);
                   }
 
                   load_reg_imm(tmp1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
