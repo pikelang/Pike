@@ -482,7 +482,7 @@ OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_store32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr |= dst << 12;
@@ -501,19 +501,19 @@ OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, 
     return instr;
 }
 
-MACRO void store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_store_reg_imm(dst, base, offset));
+MACRO void store32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_store32_reg_imm(dst, base, offset));
 }
 
-OPCODE_FUN gen_load_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    return gen_store_reg_imm(dst, base, offset) | (1<<20);
+OPCODE_FUN gen_load32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    return gen_store32_reg_imm(dst, base, offset) | (1<<20);
 }
 
-MACRO void load_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_load_reg_imm(dst, base, offset));
+MACRO void load32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_load32_reg_imm(dst, base, offset));
 }
 
-OPCODE_FUN gen_storeh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_store16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr |= dst << 12;
@@ -534,16 +534,16 @@ OPCODE_FUN gen_storeh_reg_imm(enum arm32_register dst, enum arm32_register base,
     return instr;
 }
 
-OPCODE_FUN gen_loadh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    return gen_storeh_reg_imm(dst, base, offset) | (1<<20);
+OPCODE_FUN gen_load16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    return gen_store16_reg_imm(dst, base, offset) | (1<<20);
 }
 
-MACRO void storeh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_storeh_reg_imm(dst, base, offset));
+MACRO void store16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_store16_reg_imm(dst, base, offset));
 }
 
-MACRO void loadh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_loadh_reg_imm(dst, base, offset));
+MACRO void load16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_load16_reg_imm(dst, base, offset));
 }
 
 
@@ -991,7 +991,7 @@ void arm32_flush_instruction_cache(void *addr, size_t len) {
 MACRO void arm32_low_load_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
 
-    load_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+    load32_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
 static void arm32_load_sp_reg(void) {
@@ -1006,14 +1006,14 @@ static void arm32_load_sp_reg(void) {
 static void arm32_store_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
     assert(compiler_state.flags & FLAG_SP_LOADED);
-    store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+    store32_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
 static void arm32_load_fp_reg(void) {
     if (!(compiler_state.flags & FLAG_FP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
-        load_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
+        load32_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
         compiler_state.flags &= ~FLAG_LOCALS_LOADED;
     }
@@ -1029,7 +1029,7 @@ MACRO void arm32_load_locals_reg(void) {
     if (!(compiler_state.flags & FLAG_LOCALS_LOADED)) {
         INT32 offset = OFFSETOF(pike_frame, locals);
 
-        load_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
+        load32_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
 
         compiler_state.flags |= FLAG_LOCALS_LOADED;
     }
@@ -1129,9 +1129,9 @@ MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vre
     arm32_store_sp_reg();
 
     /* add reference */
-    load_reg_imm(treg, vreg, 0);
+    load32_reg_imm(treg, vreg, 0);
     arm32_add_reg_int(treg, treg, 1);
-    store_reg_imm(treg, vreg, 0);
+    store32_reg_imm(treg, vreg, 0);
 }
 
 MACRO void arm32_push_ref_type(unsigned INT32 type, void * ptr) {
@@ -1182,9 +1182,9 @@ MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_regis
     arm32_tst_int(treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
     ARM_IF(ARM_COND_NZ, {
-        load_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
+        load32_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
         add_reg_imm(treg, treg, 1, 0);
-        store_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
+        store32_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
     });
 
     ra_free(treg);
@@ -1217,9 +1217,9 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     arm32_tst_int(tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
     ARM_IF(ARM_COND_NZ, {
-        load_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
+        load32_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
         add_reg_imm(tmp1, tmp1, 1, 0);
-        store_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
+        store32_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
     });
 
     ra_free(tmp1);
@@ -1274,7 +1274,7 @@ void arm32_update_pc(void) {
     arm32_load_fp_reg();
     v = 4*(PIKE_PC - v + 2);
     arm32_sub_reg_int(tmp, ARM_REG_PC, v);
-    store_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
+    store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
     ra_free(tmp);
 }
 
@@ -1386,17 +1386,17 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
         no_free = 0;
     }
 
-    load_reg_imm(reg, src, off);
+    load32_reg_imm(reg, src, off);
 
     arm32_tst_int(reg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
     b_imm(label_dist(&end), ARM_COND_Z);
 
-    load_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
+    load32_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
 
-    load_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
+    load32_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
     subs_reg_imm(reg, reg, 1, 0);
-    store_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
+    store32_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
 
     b_imm(label_dist(&end), ARM_COND_NZ);
 
@@ -1427,7 +1427,7 @@ static void arm32_mark(enum arm32_register base, int offset) {
 
   enum arm32_register tmp = ra_alloc_any();
 
-  load_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  load32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   if (offset) {
     enum arm32_register tmp2 = ra_alloc_any();
@@ -1439,15 +1439,15 @@ static void arm32_mark(enum arm32_register base, int offset) {
     } else {
       arm32_sub_reg_int(tmp2, base, -offset);
     }
-    store_reg_imm(tmp2, tmp, 0);
+    store32_reg_imm(tmp2, tmp, 0);
 
     ra_free(tmp2);
   } else {
-    store_reg_imm(base, tmp, 0);
+    store32_reg_imm(base, tmp, 0);
   }
 
   add_reg_imm(tmp, tmp, sizeof(void*), 0);
-  store_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  store32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   ra_free(tmp);
 }
@@ -1455,13 +1455,13 @@ static void arm32_mark(enum arm32_register base, int offset) {
 MACRO void arm32_pop_mark(enum arm32_register dst) {
   enum arm32_register tmp = ra_alloc_any();
 
-  load_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  load32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   arm32_sub_reg_int(tmp, tmp, sizeof(void*));
 
-  load_reg_imm(dst, tmp, 0);
+  load32_reg_imm(dst, tmp, 0);
 
-  store_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  store32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   ra_free(tmp);
 }
@@ -1614,8 +1614,8 @@ static void low_ins_f_byte(unsigned int opcode)
 
           arm32_load_sp_reg();
 
-          load_reg_imm(type1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
-          load_reg_imm(type2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
+          load32_reg_imm(type1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
+          load32_reg_imm(type2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
 
           switch (opcode) {
           case F_NE:
@@ -1659,8 +1659,8 @@ static void low_ins_f_byte(unsigned int opcode)
                       b_imm(label_dist(&real_pop), ARM_COND_NE);
                   }
 
-                  load_reg_imm(tmp1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
-                  load_reg_imm(tmp2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+                  load32_reg_imm(tmp1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+                  load32_reg_imm(tmp2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
 
                   cmp_reg_reg(tmp1, tmp2);
 
@@ -1694,8 +1694,8 @@ static void low_ins_f_byte(unsigned int opcode)
 
                   tmp = ra_alloc_any();
 
-                  load_reg_imm(tmp, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
-                  load_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+                  load32_reg_imm(tmp, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+                  load32_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
 
                   cmp_reg_reg(tmp, reg);
 
@@ -1735,7 +1735,7 @@ static void low_ins_f_byte(unsigned int opcode)
           /* SIMPLE POP INT: */
 
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
-          store_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+          store32_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
 
           arm32_store_sp_reg();
 
@@ -1825,20 +1825,20 @@ static void low_ins_f_byte(unsigned int opcode)
 
           arm32_load_sp_reg();
 
-          load_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
-          load_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
+          load32_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
+          load32_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
 
           cond = arm32_ne_types(reg1, reg2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
           b_imm(label_dist(&slow), cond);
 
-          load_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
-          load_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+          load32_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+          load32_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
 
           adds_reg_reg(reg1, reg1, reg2);
 
           add_to_program(
             set_cond(
-                gen_store_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u)),
+                gen_store32_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u)),
                 ARM_COND_VC));
 
           ra_free(reg1);
@@ -1872,7 +1872,7 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_load_sp_reg();
           arm32_load_fp_reg();
 
-          loadh_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+          load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
                         -sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
 
           arm32_mov_int(tmp, 1);
@@ -1887,7 +1887,7 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(tmp);
 
           ARM_IF(ARM_COND_NZ, {
-              load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -sizeof(struct svalue)+OFFSETOF(svalue, u));
+              load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -sizeof(struct svalue)+OFFSETOF(svalue, u));
           });
           b_imm(label_dist(&do_return_if_true), ARM_COND_NZ);
 
@@ -1919,7 +1919,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           reg = ra_alloc_any();
 
-          loadh_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
+          load16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
 
           arm32_tst_int(reg, PIKE_FRAME_RETURN_INTERNAL);
 
@@ -1940,7 +1940,7 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_invalidate_fp_reg();
           arm32_load_fp_reg();
 
-          load_reg_imm(ARM_REG_PC, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
+          load32_reg_imm(ARM_REG_PC, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
 
           ra_free(reg);
           return;
@@ -2013,12 +2013,12 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm32_load_sp_reg();
 
       /* check type == INT */
-      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
+      load32_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
       arm32_cmp_int(tmp, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
       b_imm(label_dist(&fallback), ARM_COND_NE);
 
       /* load integer value and do operation */
-      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      load32_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
 
       switch (opcode) {
       case F_SUBTRACT_INT:
@@ -2040,7 +2040,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
         break;
       }
 
-      store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      store32_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
       b_imm(label_dist(&done), ARM_COND_AL);
 
@@ -2099,9 +2099,9 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           enum arm32_register reg = ra_alloc_any();
           arm32_load_fp_reg();
 
-          load_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame,context));
-          load_reg_imm(reg, reg, OFFSETOF(inherit,prog));
-          load_reg_imm(reg, reg, OFFSETOF(program,constants));
+          load32_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame,context));
+          load32_reg_imm(reg, reg, OFFSETOF(inherit,prog));
+          load32_reg_imm(reg, reg, OFFSETOF(program,constants));
 
           arm32_add_reg_int(reg, reg,
                             arg1 * sizeof(struct program_constant) + OFFSETOF(program_constant,sval));
@@ -2153,7 +2153,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           arm32_load_fp_reg();
           reg = ra_alloc_any();
           arm32_mov_int(reg, arg1);
-          storeh_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
+          store16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
 
           ra_free(reg);
           return;
@@ -2172,7 +2172,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           value = ra_alloc_any();
 
           arm32_mov_int(type, TYPE_SUBTYPE(PIKE_T_OBJECT, 0));
-          load_reg_imm(value, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
+          load32_reg_imm(value, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
           arm32_push_ptr_type(type, value);
 
           ra_free(type);
@@ -2230,7 +2230,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           tmp = ra_alloc_any();
           arm32_mov_int(tmp, arg2|(arg1<<16));
 
-          store_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
+          store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
           ra_free(tmp);
           return;
       }
@@ -2330,7 +2330,7 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
             arm32_debug_instr_prologue_0(opcode);
 
             arm32_change_sp(-1);
-            load_reg_imm(tmp, ARM_REG_PIKE_SP, 4);
+            load32_reg_imm(tmp, ARM_REG_PIKE_SP, 4);
             cmp_reg_imm(tmp, 0, 0);
             ret = PIKE_PC;
             if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
@@ -2355,12 +2355,12 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
 
           arm32_load_sp_reg();
 
-          load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+          load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
                         -sizeof(struct svalue)+OFFSETOF(svalue, tu));
           arm32_cmp_int(ARM_REG_ARG1, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
           b_imm(label_dist(&fallback), ARM_COND_NE);
 
-          load_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+          load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
                        -sizeof(struct svalue)+OFFSETOF(svalue, u));
 
           /* compare loop count with 0 */
@@ -2372,7 +2372,7 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
               ARM_COND_GT));
 
           add_to_program(set_cond(
-              gen_store_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+              gen_store32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
                                 -sizeof(struct svalue)+OFFSETOF(svalue, u)),
               ARM_COND_GT));
 
@@ -2836,7 +2836,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
                   reg_to_name(instr));
             continue;
         }
-        if (CHECK_C(load_reg_imm(0, 0, 0)&~(1<<23))) {
+        if (CHECK_C(load32_reg_imm(0, 0, 0)&~(1<<23))) {
             int offset = instr & 0xfff;
             if (!(instr & (1 << 23))) offset = -offset;
             if (offset) {
@@ -2853,7 +2853,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             }
             continue;
         }
-        if (CHECK_C(store_reg_imm(0, 0, 0)&~(1<<23))) {
+        if (CHECK_C(store32_reg_imm(0, 0, 0)&~(1<<23))) {
             int offset = instr & 0xfff;
             if (!(instr & (1 << 23))) offset = -offset;
             if (offset) {
