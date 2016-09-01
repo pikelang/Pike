@@ -94,13 +94,13 @@ struct define_argument {
 };
 
 struct cpp;
-struct define;
+struct define_struct;
 typedef void (*magic_define_fun)(struct cpp *,
-				 struct define *,
+				 struct define_struct *,
                                  struct pike_string *,
 				 struct string_builder *);
 
-struct define
+struct define_struct
 {
   struct hash_entry link; /* must be first */
   magic_define_fun magic;
@@ -114,7 +114,7 @@ struct define
 
 static void init_define_struct(struct object *UNUSED(o))
 {
-  struct define *def = (struct define *)(Pike_fp->current_storage);
+  struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
   def->magic=0;
   def->args=-1;
   def->inside=0;
@@ -127,7 +127,7 @@ static void init_define_struct(struct object *UNUSED(o))
 
 static void exit_define_struct(struct object *UNUSED(o))
 {
-  struct define *d = (struct define *)(Pike_fp->current_storage);
+  struct define_struct *d = (struct define_struct *)(Pike_fp->current_storage);
   INT32 e;
   for (e = 0; e < d->num_parts; e++)
     free_string(d->parts[e].postfix);
@@ -159,13 +159,13 @@ struct cpp
 
 #define FIND_DEFINE(N) find_define(this, (N))
 
-static struct define *find_define(struct cpp *this, struct pike_string *n)
+static struct define_struct *find_define(struct cpp *this, struct pike_string *n)
 {
   struct svalue *s;
   if (!this->defines) return NULL;
   if (!(s = low_mapping_string_lookup(this->defines, n))) return NULL;
   if (TYPEOF(*s) != T_OBJECT) return NULL;
-  return (struct define *)get_storage(s->u.object, define_program);
+  return (struct define_struct *)get_storage(s->u.object, define_program);
 }
 
 DECLARE_STORAGE;
@@ -177,7 +177,7 @@ static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...) ATTRIBUTE(
 static void cpp_handle_exception(struct cpp *this,
 				 const char *cpp_error_fmt, ...) ATTRIBUTE((noinline));
 static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...) ATTRIBUTE((noinline));
-struct define *defined_macro =0;
+struct define_struct *defined_macro = NULL;
 static struct svalue defined_macro_sval;
 
 static void cpp_error(struct cpp *this, const char *err)
@@ -920,7 +920,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!   @[#if], @[#ifdef], @[constant()]
  */
 static void check_defined(struct cpp *this,
-			  struct define *UNUSED(def),
+			  struct define_struct *UNUSED(def),
                           struct pike_string *arg,
 			  struct string_builder *tmp)
 {
@@ -1585,14 +1585,14 @@ past_identifier:
 
 /* devours one reference to 'name'! */
 /* The reference to the define is held by the stack on return. */
-static struct define *alloc_empty_define(struct pike_string *name,
+static struct define_struct *alloc_empty_define(struct pike_string *name,
 					 ptrdiff_t parts)
 {
-  struct define *def;
+  struct define_struct *def;
   struct object *o;
 
   push_object(o = clone_object(define_program, 0));
-  def = (struct define *)get_storage(o, define_program);
+  def = (struct define_struct *)get_storage(o, define_program);
   def->link.s=name;
   debug_malloc_touch(name);
   if (parts) {
@@ -1629,7 +1629,7 @@ static void undefine(struct cpp *this, struct pike_string *name)
 
   if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
     struct object *o = Pike_sp[-1].u.object;
-    struct define *def = (struct define *)get_storage(o, define_program);
+    struct define_struct *def = (struct define_struct *)get_storage(o, define_program);
     if (def->inside) {
       /* Restore the #define. */
       mapping_insert(this->defines, Pike_sp - 2, Pike_sp - 1);
@@ -1668,11 +1668,11 @@ static void undefine(struct cpp *this, struct pike_string *name)
  *!   will be replaced with @tt{something1@} and @tt{something2@}.
  */
 
-static struct define *do_magic_define(struct cpp *this,
+static struct define_struct *do_magic_define(struct cpp *this,
 				      const char *name,
 				      magic_define_fun fun)
 {
-  struct define* def;
+  struct define_struct* def;
 
   if (this->prefix) {
     struct string_builder s;
@@ -1697,7 +1697,7 @@ static void add_define(struct cpp *this,
 		       struct pike_string *name,
 		       struct pike_string *what)
 {
-  struct define* def;
+  struct define_struct* def;
   add_ref (name);
   def=alloc_empty_define(name,0);
   add_ref (def->first = what);
@@ -1709,7 +1709,7 @@ static void simple_add_define(struct cpp *this,
                               const char *name,
                               const char *what)
 {
-  struct define* def;
+  struct define_struct* def;
 
   if (this->prefix) {
     struct string_builder s;
@@ -2215,15 +2215,15 @@ static ptrdiff_t low_cpp(struct cpp *this,
                          int auto_convert,
                          struct pike_string *charset);
 static void insert_callback_define(struct cpp *this,
-                                   struct define *def,
+                                   struct define_struct *def,
                                    struct pike_string *arg,
                                    struct string_builder *tmp);
 static void insert_callback_define_no_args(struct cpp *this,
-                                           struct define *def,
+                                           struct define_struct *def,
                                            struct pike_string *arg,
                                            struct string_builder *tmp);
 static void insert_pragma(struct cpp *this,
-			  struct define *def,
+			  struct define_struct *def,
                           struct pike_string *arg,
 			  struct string_builder *tmp);
 
@@ -2855,7 +2855,7 @@ static ptrdiff_t calc(struct cpp *this, PCHARP data, ptrdiff_t len,
  *! integer, in the source file.
  */
 static void insert_current_line(struct cpp *this,
-				struct define *UNUSED(def),
+				struct define_struct *UNUSED(def),
                                 struct pike_string *UNUSED(arg),
 				struct string_builder *tmp)
 {
@@ -2867,7 +2867,7 @@ static void insert_current_line(struct cpp *this,
  *! This define contains the file path and name of the source file.
  */
 static void insert_current_file_as_string(struct cpp *this,
-					  struct define *UNUSED(def),
+					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
@@ -2880,7 +2880,7 @@ static void insert_current_file_as_string(struct cpp *this,
  *! This define contains the directory path of the source file.
  */
 static void insert_current_dir_as_string(struct cpp *this,
-                                         struct define *UNUSED(def),
+                                         struct define_struct *UNUSED(def),
                                          struct pike_string *UNUSED(arg),
                                          struct string_builder *tmp)
 {
@@ -2898,7 +2898,7 @@ static void insert_current_dir_as_string(struct cpp *this,
  *! e.g. "12:20:51".
  */
 static void insert_current_time_as_string(struct cpp *UNUSED(this),
-					  struct define *UNUSED(def),
+					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
@@ -2917,7 +2917,7 @@ static void insert_current_time_as_string(struct cpp *UNUSED(this),
  *! e.g. "Jul 28 2001".
  */
 static void insert_current_date_as_string(struct cpp *UNUSED(this),
-					  struct define *UNUSED(def),
+					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
@@ -2941,7 +2941,7 @@ static void insert_current_date_as_string(struct cpp *UNUSED(this),
  *!   @[__REAL_VERSION__]
  */
 static void insert_current_version(struct cpp *this,
-				   struct define *UNUSED(def),
+				   struct define_struct *UNUSED(def),
                                    struct pike_string *UNUSED(arg),
 				   struct string_builder *tmp)
 {
@@ -2959,7 +2959,7 @@ static void insert_current_version(struct cpp *this,
  *!   @[__REAL_MINOR__]
  */
 static void insert_current_minor(struct cpp *this,
-				 struct define *UNUSED(def),
+				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
@@ -2972,7 +2972,7 @@ static void insert_current_minor(struct cpp *this,
  *!
  */
 static void insert_current_counter(struct cpp *UNUSED(this),
-				 struct define *UNUSED(def),
+				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
@@ -2990,7 +2990,7 @@ static void insert_current_counter(struct cpp *UNUSED(this),
  *!   @[__REAL_MAJOR__]
  */
 static void insert_current_major(struct cpp *this,
-				 struct define *UNUSED(def),
+				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
@@ -3010,7 +3010,7 @@ static void insert_current_major(struct cpp *this,
  *!   @[#pragma]
  */
 static void insert_pragma(struct cpp *this,
-			  struct define *UNUSED(def),
+			  struct define_struct *UNUSED(def),
                           struct pike_string *arg,
 			  struct string_builder *tmp)
 {
@@ -3069,7 +3069,7 @@ static void insert_pragma(struct cpp *this,
 }
 
 static void insert_callback_define(struct cpp *this,
-                                   struct define *def,
+                                   struct define_struct *def,
                                    struct pike_string *arg,
                                    struct string_builder *tmp)
 {
@@ -3094,7 +3094,7 @@ static void insert_callback_define(struct cpp *this,
 }
 
 static void insert_callback_define_no_args(struct cpp *this,
-                                           struct define *def,
+                                           struct define_struct *def,
                                            struct pike_string *UNUSED(arg),
                                            struct string_builder *tmp)
 {
@@ -3477,7 +3477,7 @@ PIKEFUN string cpp(string data,
   {
 #if 0
     /* Left in place for documentation reference purposes. */
-    struct define *def =
+    struct define_struct *def =
       alloc_empty_define(make_shared_string("__deprecated__"), 1);
     def->args = 1;
     REF_MAKE_CONST_STRING(def->first, "__attribute__(\"deprecated\", ");
@@ -3527,7 +3527,7 @@ PIKEFUN string cpp(string data,
 	add_define (&this, k->ind.u.string, k->val.u.string);
       else if(TYPEOF(k->val) == T_FUNCTION || TYPEOF(k->val) == T_OBJECT)
       {
-        struct define *def;
+        struct define_struct *def;
         if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
         {
           struct pike_string *s = string_slice( k->ind.u.string, 0, k->ind.u.string->len-2);
@@ -3623,7 +3623,7 @@ void init_cpp()
   struct svalue s;
 
   start_new_program();
-  ADD_STORAGE(struct define);
+  ADD_STORAGE(struct define_struct);
   set_init_callback(init_define_struct);
   set_exit_callback(exit_define_struct);
   define_program = end_program();

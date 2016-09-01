@@ -113,7 +113,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
         if(OUTP())
         {
           struct pike_string *s;
-          struct define *d=0;
+          struct define_struct *d = NULL;
 
           pos--;
           s = GOBBLE_IDENTIFIER();
@@ -991,7 +991,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 INT32 argno=-1;
                 ptrdiff_t tmp3;
                 struct pike_string *def_name;
-                struct define *def;
+                struct define_struct *def;
                 struct svalue *partbase,*argbase=Pike_sp;
                 int varargs=0;
 
@@ -1243,7 +1243,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                     Pike_fatal("Internal error in define\n");
 #endif
                   {
-                    struct define *d;
+                    struct define_struct *d;
                     if ((d = FIND_DEFINE(def->link.s)) && (d->inside)) {
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
