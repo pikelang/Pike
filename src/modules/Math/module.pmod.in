@@ -343,9 +343,9 @@ class Angle {
   }
 }
 
-//! Calculate binomial koefficient @[n] choose @[k].
+//! Calculate the binomial coefficient @[n] choose @[k].
 //!
-//! This is equvivalent to @tt{@[n]!/(@[k]!*(@[n]-@[k])!)@}.
+//! This is equal to @tt{@[n]!/(@[k]!*(@[n]-@[k])!)@}.
 int choose(int n, int k)
 {
   if (k*2 > n) k = n-k;
@@ -365,7 +365,7 @@ float log10(int|float x) { return log(x)/log(10.0); }
 //! The 2-logarithm of @[x].
 float log2(int|float x) { return log(x)/log(2.0); }
 
-//! The @[n]-logatirhm of @[x].
+//! The @[n]-logarithm of @[x].
 float logn(int|float n, int|float x) { return log(x)/log(n); }
 
 //! Factorize the integer @[x]. The returned list of factors will
