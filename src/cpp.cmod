@@ -115,32 +115,32 @@ PIKECLASS define
 
   DECLARE_STORAGE;
 
-INIT
-{
-  struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
-  def->magic=0;
-  def->args=-1;
-  def->inside=0;
-  def->varargs=0;
-  def->parts = NULL;
-  def->num_parts=0;
-  def->first=0;
-  def->link.s = NULL;
-}
+  INIT
+  {
+    struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
+    def->magic=0;
+    def->args=-1;
+    def->inside=0;
+    def->varargs=0;
+    def->parts = NULL;
+    def->num_parts=0;
+    def->first=0;
+    def->link.s = NULL;
+  }
 
-EXIT
-{
-  struct define_struct *d = (struct define_struct *)(Pike_fp->current_storage);
-  INT32 e;
-  for (e = 0; e < d->num_parts; e++)
-    free_string(d->parts[e].postfix);
-  if (d->parts)
-    free(d->parts);
-  if (d->link.s)
-    free_string(d->link.s);
-  if(d->first)
-    free_string(d->first);
-}
+  EXIT
+  {
+    struct define_struct *d = (struct define_struct *)(Pike_fp->current_storage);
+    INT32 e;
+    for (e = 0; e < d->num_parts; e++)
+      free_string(d->parts[e].postfix);
+    if (d->parts)
+      free(d->parts);
+    if (d->link.s)
+      free_string(d->link.s);
+    if(d->first)
+      free_string(d->first);
+  }
 }
 
 struct cpp
