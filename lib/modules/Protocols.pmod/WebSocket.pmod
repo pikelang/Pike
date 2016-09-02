@@ -86,7 +86,7 @@ class Parser {
     Frame parse() {
 	if (sizeof(buf) < 2) return 0;
 
-	int opcode, len, hlen;
+	int opcode, len, hlen = 2;
 	int(0..1) masked;
 	string mask, data;
 
