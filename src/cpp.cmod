@@ -100,19 +100,22 @@ typedef void (*magic_define_fun)(struct cpp *,
                                  struct pike_string *,
 				 struct string_builder *);
 
-struct define_struct
-{
-  struct hash_entry link; /* must be first */
-  magic_define_fun magic;
-  int args;
-  ptrdiff_t num_parts;
-  short inside;		/* 1 - Don't expand. 2 - In use. */
-  short varargs;
-  struct pike_string *first;
-  struct define_part *parts;
-};
+DECLARATIONS;
 
-static void init_define_struct(struct object *UNUSED(o))
+PIKECLASS define
+{
+  CVAR struct hash_entry link; /* must be first */
+  CVAR magic_define_fun magic;
+  CVAR int args;
+  CVAR ptrdiff_t num_parts;
+  CVAR short inside;         /* 1 - Don't expand. 2 - In use. */
+  CVAR short varargs;
+  CVAR struct pike_string *first;
+  CVAR struct define_part *parts;
+
+  DECLARE_STORAGE;
+
+INIT
 {
   struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
   def->magic=0;
@@ -125,7 +128,7 @@ static void init_define_struct(struct object *UNUSED(o))
   def->link.s = NULL;
 }
 
-static void exit_define_struct(struct object *UNUSED(o))
+EXIT
 {
   struct define_struct *d = (struct define_struct *)(Pike_fp->current_storage);
   INT32 e;
@@ -138,8 +141,7 @@ static void exit_define_struct(struct object *UNUSED(o))
   if(d->first)
     free_string(d->first);
 }
-
-static struct program *define_program = NULL;
+}
 
 struct cpp
 {
@@ -167,8 +169,6 @@ static struct define_struct *find_define(struct cpp *this, struct pike_string *n
   if (TYPEOF(*s) != T_OBJECT) return NULL;
   return (struct define_struct *)get_storage(s->u.object, define_program);
 }
-
-DECLARE_STORAGE;
 
 static void cpp_error(struct cpp *this, const char *err) ATTRIBUTE((noinline));
 static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
@@ -3622,18 +3622,6 @@ void init_cpp()
 {
   struct svalue s;
 
-  start_new_program();
-  ADD_STORAGE(struct define_struct);
-  set_init_callback(init_define_struct);
-  set_exit_callback(exit_define_struct);
-  define_program = end_program();
-
-  defined_macro=alloc_empty_define(make_shared_string("defined"),0);
-  defined_macro->magic=check_defined;
-  defined_macro->args=1;
-  defined_macro_sval = Pike_sp[-1];
-  Pike_sp--;
-
   efun_str = make_shared_string ("efun");
   constant_str = make_shared_string ("constant");
   defined_str = make_shared_string ("defined");
@@ -3641,6 +3629,12 @@ void init_cpp()
   use_initial_predefs = 1;
 
   INIT;
+
+  defined_macro=alloc_empty_define(make_shared_string("defined"),0);
+  defined_macro->magic=check_defined;
+  defined_macro->args=1;
+  defined_macro_sval = Pike_sp[-1];
+  Pike_sp--;
 
   ADD_INT_CONSTANT("__HAVE_CPP_PREFIX_SUPPORT__", 1, 0);
 
@@ -3702,6 +3696,5 @@ void exit_cpp(void)
   free_string (constant_str);
   free_string (defined_str);
 
-  free_program(define_program);
 #endif
 }
