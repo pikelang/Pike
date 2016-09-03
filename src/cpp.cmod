@@ -10,7 +10,6 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
-#include "hashtable.h"
 #include "program.h"
 #include "object.h"
 #include "pike_error.h"
