@@ -11,6 +11,7 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "constants.h"
 
 #define MACRO  ATTRIBUTE((unused)) static
 
@@ -676,6 +677,7 @@ GEN_PROC_OP(and, AND)
 GEN_PROC_OP(xor, XOR)
 
 GEN_SHIFT_OP(lsl, LSL)
+GEN_SHIFT_OP(asr, ASR)
 
 GEN_PROC_OP1(mov, MOV)
 GEN_PROC_OP1(mvn, MVN)
@@ -1056,6 +1058,7 @@ static void arm32_flush_dirty_regs(void) {
     arm32_store_sp_reg();
 }
 
+
 MACRO void arm32_call_efun(void (*fun)(int), int args) {
     arm32_mov_int(ra_alloc(ARM_REG_ARG1), args);
     arm32_call(fun);
@@ -1063,6 +1066,16 @@ MACRO void arm32_call_efun(void (*fun)(int), int args) {
     if (args != 1 && compiler_state.flags & FLAG_SP_LOADED) {
         arm32_change_sp_reg(-(args-1));
     }
+}
+
+/* NOTE: this variant is for those efuns that might not return
+ * a value
+ */
+MACRO void arm32_safe_call_efun(void (*fun)(int), int args) {
+    arm32_mov_int(ra_alloc(ARM_REG_ARG1), args);
+    arm32_call(fun);
+    ra_free(ARM_REG_ARG1);
+    compiler_state.flags &= ~FLAG_SP_LOADED;
 }
 
 MACRO void arm32_assign_int_reg(enum arm32_register dst, enum arm32_register value, int subtype) {
@@ -2262,6 +2275,60 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           label_generate(&done);
       }
       return;
+  case F_CALL_BUILTIN_AND_POP:
+      ins_f_byte_with_arg(F_CALL_BUILTIN, arg1);
+      ins_f_byte(F_POP_VALUE);
+      return;
+  case F_CALL_BUILTIN_AND_RETURN:
+      ins_f_byte_with_arg(F_CALL_BUILTIN, arg1);
+      ins_f_byte(F_DUMB_RETURN);
+      return;
+  case F_CALL_BUILTIN1:
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      arm32_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 1);
+      return;
+  case F_CALL_BUILTIN1_AND_POP:
+      ins_f_byte_with_arg(F_CALL_BUILTIN1, arg1);
+      ins_f_byte(F_POP_VALUE);
+      return;
+  case F_CALL_BUILTIN:
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      {
+          INT32 offset = OFFSETOF(Pike_interpreter_struct, mark_stack_pointer);
+          enum arm32_register tmp;
+
+          ra_alloc(ARM_REG_ARG1);
+          ra_alloc(ARM_REG_ARG2);
+
+          arm32_load_sp_reg();
+
+          load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_IP, offset);
+          sub_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, sizeof(struct svalue*), 0);
+          load32_reg_imm(ARM_REG_ARG2, ARM_REG_ARG1, 0);
+          store32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_IP, offset);
+          sub_reg_reg(ARM_REG_ARG1, ARM_REG_PIKE_SP, ARM_REG_ARG2);
+          asr_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 3);
+
+          arm32_call(Pike_compiler->new_program->constants[arg1].sval.u.efun->function);
+          compiler_state.flags &= ~FLAG_SP_LOADED;
+
+          ra_free(ARM_REG_ARG1);
+          ra_free(ARM_REG_ARG2);
+      }
+      return;
+  case F_MARK_CALL_BUILTIN:
+  case F_MARK_CALL_BUILTIN_AND_POP:
+  case F_MARK_CALL_BUILTIN_AND_RETURN:
+      arm32_debug_instr_prologue_1(opcode, arg1);
+
+      arm32_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 0);
+
+      if (opcode == F_MARK_CALL_BUILTIN_AND_POP) {
+          ins_f_byte(F_POP_VALUE);
+      } else if (opcode == F_MARK_CALL_BUILTIN_AND_RETURN) {
+          ins_f_byte(F_DUMB_RETURN);
+      }
+      return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
@@ -2334,6 +2401,10 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
   case F_2_LOCALS:
       ins_f_byte_with_arg(F_LOCAL, arg1);
       ins_f_byte_with_arg(F_LOCAL, arg2);
+      return;
+  case F_CALL_BUILTIN_N:
+      arm32_debug_instr_prologue_2(opcode, arg1, arg2);
+      arm32_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, arg2);
       return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
