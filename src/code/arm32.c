@@ -2206,6 +2206,62 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       ins_f_byte_with_arg( F_LOCAL, arg1 );
       ins_f_byte( F_DUMB_RETURN );
       return;
+  case F_INC_LOCAL_AND_POP:
+  case F_DEC_LOCAL_AND_POP:
+  case F_DEC_LOCAL:
+  case F_INC_LOCAL:
+  case F_POST_DEC_LOCAL:
+  case F_POST_INC_LOCAL:
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      {
+          enum arm32_register dst = ra_alloc_any(),
+                              tmp = ra_alloc_any(),
+                              res = ra_alloc_any();
+          size_t offset = arg1 * sizeof(struct svalue);
+          struct label done, fallback;
+
+          label_init(&done);
+          label_init(&fallback);
+
+          arm32_load_locals_reg();
+
+          arm32_add_reg_int(dst, ARM_REG_PIKE_LOCALS, offset);
+          load32_reg_imm(tmp, dst, 0);
+
+          arm32_cmp_int(tmp, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          b_imm(label_dist(&fallback), ARM_COND_NE);
+
+          load32_reg_imm(tmp, dst, OFFSETOF(svalue, u));
+
+          if (opcode == F_INC_LOCAL_AND_POP ||
+              opcode == F_INC_LOCAL ||
+              opcode == F_POST_INC_LOCAL) {
+              adds_reg_imm(res, tmp, 1, 0);
+          } else {
+              subs_reg_imm(res, tmp, 1, 0);
+          }
+
+          b_imm(label_dist(&fallback), ARM_COND_VS);
+
+          if (opcode == F_POST_DEC_LOCAL || opcode == F_POST_INC_LOCAL) {
+              arm32_push_int_reg(tmp, NUMBER_NUMBER);
+          } else if (opcode == F_DEC_LOCAL || opcode == F_INC_LOCAL) {
+              arm32_push_int_reg(res, NUMBER_NUMBER);
+          }
+
+          store32_reg_imm(res, dst, OFFSETOF(svalue, u));
+
+          ra_free(tmp);
+          ra_free(res);
+          ra_free(dst);
+
+          b_imm(label_dist(&done), ARM_COND_AL);
+          label_generate(&fallback);
+          arm32_call_c_opcode_slowpath(opcode);
+
+          label_generate(&done);
+      }
+      return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
