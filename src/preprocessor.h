@@ -182,7 +182,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                     }else{
                       cpp_error_sprintf(this,
                                         "Too few arguments to macro %S, expected %d.",
-                                        d->link.s, d->args);
+                                        d->name, d->args);
                       break;
                     }
                   }
@@ -263,8 +263,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
               SKIPWHITE();
               if(!GOBBLE(')')) {
                 this->current_line = start_line;
-                cpp_error_sprintf(this, "Missing ) in the macro %S.",
-                                  d->link.s);
+                cpp_error_sprintf(this, "Missing ) in the macro %S.", d->name);
               }
             }
 
@@ -1244,13 +1243,11 @@ static ptrdiff_t low_cpp(struct cpp *this,
 #endif
                   {
                     struct define_struct *d;
-                    if ((d = FIND_DEFINE(def->link.s)) && (d->inside)) {
+                    if ((d = FIND_DEFINE(def->name)) && (d->inside)) {
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
                     } else {
-		      mapping_string_insert(this->defines,
-					    def->link.s,
-					    Pike_sp-1);
+		      mapping_string_insert(this->defines, def->name, Pike_sp-1);
                     }
                   }
 		  pop_stack();

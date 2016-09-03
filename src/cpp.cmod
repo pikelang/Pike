@@ -104,7 +104,7 @@ DECLARATIONS;
 
 PIKECLASS define
 {
-  CVAR struct hash_entry link; /* must be first */
+  PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
   CVAR magic_define_fun magic;
   CVAR int args;
   CVAR ptrdiff_t num_parts;
@@ -125,7 +125,6 @@ PIKECLASS define
     def->parts = NULL;
     def->num_parts=0;
     def->first=0;
-    def->link.s = NULL;
   }
 
   EXIT
@@ -136,8 +135,6 @@ PIKECLASS define
       free_string(d->parts[e].postfix);
     if (d->parts)
       free(d->parts);
-    if (d->link.s)
-      free_string(d->link.s);
     if(d->first)
       free_string(d->first);
   }
@@ -1593,7 +1590,7 @@ static struct define_struct *alloc_empty_define(struct pike_string *name,
 
   push_object(o = clone_object(define_program, 0));
   def = (struct define_struct *)get_storage(o, define_program);
-  def->link.s=name;
+  def->name = name;
   debug_malloc_touch(name);
   if (parts) {
     def->parts = xalloc(sizeof(struct define_part) * parts);
@@ -1687,7 +1684,7 @@ static struct define_struct *do_magic_define(struct cpp *this,
   } else
     def = alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
-  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
 
   return def;
@@ -1701,7 +1698,7 @@ static void add_define(struct cpp *this,
   add_ref (name);
   def=alloc_empty_define(name,0);
   add_ref (def->first = what);
-  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
 }
 
@@ -1725,7 +1722,7 @@ static void simple_add_define(struct cpp *this,
     def = alloc_empty_define(make_shared_string(name),0);
 
   def->first=make_shared_string(what);
-  mapping_string_insert(this->defines, def->link.s, Pike_sp-1);
+  mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
 }
 
@@ -3073,7 +3070,7 @@ static void insert_callback_define(struct cpp *this,
                                    struct pike_string *arg,
                                    struct string_builder *tmp)
 {
-  ref_push_string( def->link.s );
+  ref_push_string( def->name );
   ref_push_string( arg );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 2, 0 ) &&
@@ -3099,7 +3096,7 @@ static void insert_callback_define_no_args(struct cpp *this,
                                            struct string_builder *tmp)
 {
   struct svalue *save_sp = Pike_sp;
-  ref_push_string( def->link.s );
+  ref_push_string( def->name );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 1, 0 ) &&
       TYPEOF(sp[-1]) == T_STRING )
@@ -3483,7 +3480,7 @@ PIKEFUN string cpp(string data,
     REF_MAKE_CONST_STRING(def->first, "__attribute__(\"deprecated\", ");
     def->parts[0].argument = 0;
     REF_MAKE_CONST_STRING(def->parts[0].postfix, ")");
-    mapping_string_insert(this.defines, def->link.s, Pike_sp-1);
+    mapping_string_insert(this.defines, def->name, Pike_sp-1);
     pop_stack();
 #endif /* 0 */
 
@@ -3542,7 +3539,7 @@ PIKEFUN string cpp(string data,
           k->ind.u.string->refs++;
           def->magic = insert_callback_define_no_args;
         }
-	mapping_string_insert(this.defines, def->link.s, Pike_sp-1);
+	mapping_string_insert(this.defines, def->name, Pike_sp-1);
 	pop_stack();
       }
       else
