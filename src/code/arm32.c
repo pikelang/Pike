@@ -2329,6 +2329,38 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ins_f_byte(F_DUMB_RETURN);
       }
       return;
+  F_PRIVATE_GLOBAL:
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      {
+          enum arm32_register tmp1, tmp2;
+
+          arm32_load_fp_reg();
+
+          ra_alloc(ARM_REG_ARG1);
+          tmp1 = ra_alloc_any();
+          tmp2 = ra_alloc_any();
+
+          load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
+          load32_reg_imm(tmp1, ARM_REG_ARG1, OFFSETOF(object, prog));
+          cmp_reg_imm(tmp1, 0, 0);
+          /* destructed object */
+          ARM_IF(ARM_COND_EQ, {
+            /* this will not return */
+            arm32_call(object_low_set_index);
+          });
+          load32_reg_imm(tmp1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
+          load32_reg_imm(tmp1, tmp1, OFFSETOF(inherit, storage_offset));
+          load32_reg_imm(tmp2, ARM_REG_ARG1, OFFSETOF(object, storage));
+          add_reg_reg(tmp2, tmp2, tmp1);
+
+          ra_free(tmp1);
+          ra_free(ARM_REG_ARG1);
+
+          arm32_add_reg_int(tmp2, tmp2, arg1);
+          arm32_push_svaluep_off(tmp2, 0);
+          ra_free(tmp2);
+      }
+      return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
