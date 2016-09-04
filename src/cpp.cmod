@@ -81,12 +81,6 @@ struct pike_predef_s
 static int use_initial_predefs;
 static struct pike_predef_s *first_predef = NULL, *last_predef = NULL;
 
-struct define_part
-{
-  int argument;
-  struct pike_string *postfix;
-};
-
 struct define_argument {
   PCHARP arg;
   ptrdiff_t len;
@@ -104,13 +98,11 @@ DECLARATIONS;
 PIKECLASS define
 {
   PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
+  PIKEVAR array(string|int) parts flags ID_PRIVATE|ID_PROTECTED;
   CVAR magic_define_fun magic;
   CVAR int args;
-  CVAR ptrdiff_t num_parts;
   CVAR short inside;         /* 1 - Don't expand. 2 - In use. */
   CVAR short varargs;
-  CVAR struct pike_string *first;
-  CVAR struct define_part *parts;
 
   DECLARE_STORAGE;
 
@@ -121,21 +113,6 @@ PIKECLASS define
     def->args=-1;
     def->inside=0;
     def->varargs=0;
-    def->parts = NULL;
-    def->num_parts=0;
-    def->first=0;
-  }
-
-  EXIT
-  {
-    struct define_struct *d = (struct define_struct *)(Pike_fp->current_storage);
-    INT32 e;
-    for (e = 0; e < d->num_parts; e++)
-      free_string(d->parts[e].postfix);
-    if (d->parts)
-      free(d->parts);
-    if(d->first)
-      free_string(d->first);
   }
 }
 
@@ -1581,8 +1558,7 @@ past_identifier:
 
 /* devours one reference to 'name'! */
 /* The reference to the define is held by the stack on return. */
-static struct define_struct *alloc_empty_define(struct pike_string *name,
-					 ptrdiff_t parts)
+static struct define_struct *alloc_empty_define(struct pike_string *name)
 {
   struct define_struct *def;
   struct object *o;
@@ -1591,10 +1567,6 @@ static struct define_struct *alloc_empty_define(struct pike_string *name,
   def = (struct define_struct *)get_storage(o, define_program);
   def->name = name;
   debug_malloc_touch(name);
-  if (parts) {
-    def->parts = xalloc(sizeof(struct define_part) * parts);
-    def->num_parts = parts;
-  }
   return def;
 }
 
@@ -1679,9 +1651,9 @@ static struct define_struct *do_magic_define(struct cpp *this,
 			  this->prefix->len);
     string_builder_putchar(&s, '_');
     string_builder_binary_strcat(&s, name, len);
-    def = alloc_empty_define(finish_string_builder(&s),0);
+    def = alloc_empty_define(finish_string_builder(&s));
   } else
-    def = alloc_empty_define(make_shared_string(name),0);
+    def = alloc_empty_define(make_shared_string(name));
   def->magic=fun;
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
@@ -1695,8 +1667,11 @@ static void add_define(struct cpp *this,
 {
   struct define_struct* def;
   add_ref (name);
-  def=alloc_empty_define(name,0);
-  add_ref (def->first = what);
+  def=alloc_empty_define(name);
+  ref_push_string(what);
+  f_aggregate(1);
+  def->parts = Pike_sp[-1].u.array;
+  Pike_sp--;
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
 }
@@ -1716,11 +1691,14 @@ static void simple_add_define(struct cpp *this,
 			  this->prefix->len);
     string_builder_putchar(&s, '_');
     string_builder_binary_strcat(&s, name, len);
-    def = alloc_empty_define(finish_string_builder(&s),0);
+    def = alloc_empty_define(finish_string_builder(&s));
   } else
-    def = alloc_empty_define(make_shared_string(name),0);
+    def = alloc_empty_define(make_shared_string(name));
 
-  def->first=make_shared_string(what);
+  push_string(make_shared_string(what));
+  f_aggregate(1);
+  def->parts = Pike_sp[-1].u.array;
+  Pike_sp--;
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
 }
@@ -3527,14 +3505,14 @@ PIKEFUN string cpp(string data,
         if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
         {
           struct pike_string *s = string_slice( k->ind.u.string, 0, k->ind.u.string->len-2);
-          def = alloc_empty_define( s, 0 );
+          def = alloc_empty_define(s);
           def->magic = insert_callback_define;
           def->varargs=1;
           def->args=1;
         }
         else
         {
-          def = alloc_empty_define( k->ind.u.string, 0 );
+          def = alloc_empty_define(k->ind.u.string);
           k->ind.u.string->refs++;
           def->magic = insert_callback_define_no_args;
         }
@@ -3626,7 +3604,7 @@ void init_cpp()
 
   INIT;
 
-  defined_macro=alloc_empty_define(make_shared_string("defined"),0);
+  defined_macro = alloc_empty_define(make_shared_string("defined"));
   defined_macro->magic=check_defined;
   defined_macro->args=1;
   defined_macro_sval = Pike_sp[-1];

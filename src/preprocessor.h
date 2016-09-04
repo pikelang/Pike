@@ -281,117 +281,127 @@ static ptrdiff_t low_cpp(struct cpp *this,
               if( first_arg )
                 free_string(first_arg);
             }else{
-              string_builder_shared_strcat(&tmp, d->first);
-              for(e=0;e<d->num_parts;e++)
+	      struct array *parts = d->parts;
+              for(e = 0; e < parts->size; e++)
               {
                 PCHARP a;
                 ptrdiff_t l;
 
-                if((d->parts[e].argument & DEF_ARG_MASK) >= arg)
-                {
-                  cpp_error(this, "Macro not expanded correctly.");
-                  continue;
-                }
+		switch(TYPEOF(parts->item[e])) {
+		case PIKE_T_INT:
+		  {
+		    int argument = parts->item[e].u.integer;
+		    if((argument & DEF_ARG_MASK) >= arg)
+		    {
+		      cpp_error(this, "Macro not expanded correctly.");
+		      continue;
+		    }
 
-                a = arguments[d->parts[e].argument&DEF_ARG_MASK].arg;
-                l = arguments[d->parts[e].argument&DEF_ARG_MASK].len;
+		    a = arguments[argument & DEF_ARG_MASK].arg;
+		    l = arguments[argument & DEF_ARG_MASK].len;
 
-                if (d->parts[e].argument&DEF_ARG_NEED_COMMA
-                    && !(d->varargs && d->args-1
-                         == (d->parts[e].argument&DEF_ARG_MASK) && l == 0)) {
-		  string_builder_putchar(&tmp, ',');
-		  string_builder_putchar(&tmp, ' ');
-                }
+		    if (argument & DEF_ARG_NEED_COMMA
+			&& !(d->varargs && d->args-1
+			     == (argument & DEF_ARG_MASK) && l == 0)) {
+		      string_builder_putchar(&tmp, ',');
+		      string_builder_putchar(&tmp, ' ');
+		    }
 
-                if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
-                  string_builder_putchar(&tmp, ' ');
+		    if(!(argument & DEF_ARG_NOPRESPACE))
+		      string_builder_putchar(&tmp, ' ');
 
-                if(d->parts[e].argument & DEF_ARG_STRINGIFY)
-                {
-                  /* NOTE: At entry a[0] is non white-space. */
-                  int e = 0;
-                  string_builder_putchar(&tmp, '"');
-                  for(e=0; e<l;) {
-                    if (WC_ISSPACE(INDEX_PCHARP(a,e)) ||
-                        INDEX_PCHARP(a,e)=='"' || INDEX_PCHARP(a,e)=='\\') {
-                      if (e) {
-                        string_builder_append(&tmp, a, e);
-                      }
-                      if (INDEX_PCHARP(a,e) == '"' || INDEX_PCHARP(a,e)=='\\') {
-                        /* String or quote. */
-                        string_builder_putchar(&tmp, '\\');
-                        string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
-                        if (INDEX_PCHARP(a,e) == '"') {
-                          for (e++; e < l; e++) {
-                            if (INDEX_PCHARP(a,e) == '"') {
-                                e++;
-                                break;
-                            }
-                            string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
-                            if (INDEX_PCHARP(a,e) == '\\') {
-                              string_builder_putchar(&tmp, '\\');
-                              string_builder_putchar(&tmp, INDEX_PCHARP(a,++e));
-                              if (INDEX_PCHARP(a,e) == '\\') {
-                                string_builder_putchar(&tmp, '\\');
-                              }
-                            }
-                          }
-                          string_builder_putchar(&tmp, '\\');
-                          string_builder_putchar(&tmp, '"');
-                        }
-                      } else {
-                        /* White space. */
-                        while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a,e))) {
-                          e++;
-                        }
-                        if (e != l) {
-                          string_builder_putchar(&tmp, ' ');
-                        }
-                      }
-                      INC_PCHARP(a,e);
-                      l -= e;
-                      e = 0;
-                    } else {
-                      e++;
-                    }
-                  }
-                  if (l) {
-                    string_builder_append(&tmp,a,l);
-                  }
-                  string_builder_putchar(&tmp, '"');
-                }else{
-                  if(DEF_ARG_NOPRESPACE)
-                    while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
-                      INC_PCHARP(a,1),l--;
+		    if(argument & DEF_ARG_STRINGIFY)
+		    {
+		      /* NOTE: At entry a[0] is non white-space. */
+		      int e = 0;
+		      string_builder_putchar(&tmp, '"');
+		      for(e=0; e<l;) {
+			if (WC_ISSPACE(INDEX_PCHARP(a,e)) ||
+			    INDEX_PCHARP(a,e)=='"' || INDEX_PCHARP(a,e)=='\\') {
+			  if (e) {
+			    string_builder_append(&tmp, a, e);
+			  }
+			  if (INDEX_PCHARP(a,e) == '"' || INDEX_PCHARP(a,e)=='\\') {
+			    /* String or quote. */
+			    string_builder_putchar(&tmp, '\\');
+			    string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
+			    if (INDEX_PCHARP(a,e) == '"') {
+			      for (e++; e < l; e++) {
+				if (INDEX_PCHARP(a,e) == '"') {
+				  e++;
+				  break;
+				}
+				string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
+				if (INDEX_PCHARP(a,e) == '\\') {
+				  string_builder_putchar(&tmp, '\\');
+				  string_builder_putchar(&tmp, INDEX_PCHARP(a,++e));
+				  if (INDEX_PCHARP(a,e) == '\\') {
+				    string_builder_putchar(&tmp, '\\');
+				  }
+				}
+			      }
+			      string_builder_putchar(&tmp, '\\');
+			      string_builder_putchar(&tmp, '"');
+			    }
+			  } else {
+			    /* White space. */
+			    while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a,e))) {
+			      e++;
+			    }
+			    if (e != l) {
+			      string_builder_putchar(&tmp, ' ');
+			    }
+			  }
+			  INC_PCHARP(a,e);
+			  l -= e;
+			  e = 0;
+			} else {
+			  e++;
+			}
+		      }
+		      if (l) {
+			string_builder_append(&tmp,a,l);
+		      }
+		      string_builder_putchar(&tmp, '"');
+		    }else{
+		      /* FIXME: These two tests are always true... */
+		      if(DEF_ARG_NOPRESPACE)
+			while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
+			  INC_PCHARP(a,1),l--;
 
-                  if(DEF_ARG_NOPOSTSPACE)
-                    while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
-                      l--;
+		      if(DEF_ARG_NOPOSTSPACE)
+			while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
+			  l--;
 
-                  if(d->parts[e].argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
-                  {
-                    string_builder_append( &tmp, a, l );
-                  }else{
-                    struct string_builder save;
-                    INT_TYPE line = this->current_line;
-                    /* FIXME: Shouldn't we save current_file too? */
-                    save=this->buf;
-                    this->buf=tmp;
-                    d->inside = 2;
-                    low_cpp(this, a, l,
-			    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-			    auto_convert, charset);
-                    d->inside = inside;
-                    tmp=this->buf;
-                    this->buf=save;
-                    this->current_line=line;
-                  }
-                }
+		      if(argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
+		      {
+			string_builder_append( &tmp, a, l );
+		      }else{
+			struct string_builder save;
+			INT_TYPE line = this->current_line;
+			/* FIXME: Shouldn't we save current_file too? */
+			save=this->buf;
+			this->buf=tmp;
+			d->inside = 2;
+			low_cpp(this, a, l,
+				flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+				auto_convert, charset);
+			d->inside = inside;
+			tmp=this->buf;
+			this->buf=save;
+			this->current_line=line;
+		      }
+		    }
 
-                if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
-                  string_builder_putchar(&tmp, ' ');
+		    if(!(argument & DEF_ARG_NOPOSTSPACE))
+		      string_builder_putchar(&tmp, ' ');
+		  }
+		  break;
 
-                string_builder_shared_strcat(&tmp, d->parts[e].postfix);
+		case PIKE_T_STRING:
+		  string_builder_shared_strcat(&tmp, parts->item[e].u.string);
+		  break;
+		}
               }
             }
 
@@ -1217,30 +1227,14 @@ static ptrdiff_t low_cpp(struct cpp *this,
 
                 if(OUTP())
                 {
-                  def = alloc_empty_define(def_name, (Pike_sp-partbase)/2);
-                  copy_shared_string(def->first, partbase->u.string);
+		  f_aggregate(Pike_sp - partbase);
+
+                  def = alloc_empty_define(def_name);
                   def->args=argno;
                   def->varargs=varargs;
 
-                  for(e=0;e<def->num_parts;e++)
-                  {
-#ifdef PIKE_DEBUG
-                    if(TYPEOF(partbase[e*2+1]) != PIKE_T_INT)
-                      Pike_fatal("Cpp internal error, expected integer!\n");
+		  add_ref(def->parts = Pike_sp[-2].u.array);
 
-                    if(TYPEOF(partbase[e*2+2]) != PIKE_T_STRING)
-                      Pike_fatal("Cpp internal error, expected string!\n");
-#endif
-                    def->parts[e].argument=partbase[e*2+1].u.integer;
-                    copy_shared_string(def->parts[e].postfix,
-                                       partbase[e*2+2].u.string);
-                  }
-
-#ifdef PIKE_DEBUG
-                  if(def->num_parts==1 &&
-                     (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
-                    Pike_fatal("Internal error in define\n");
-#endif
                   {
                     struct define_struct *d;
                     if ((d = FIND_DEFINE(def->name)) && (d->inside)) {
@@ -1250,7 +1244,6 @@ static ptrdiff_t low_cpp(struct cpp *this,
 		      mapping_string_insert(this->defines, def->name, Pike_sp-1);
                     }
                   }
-		  pop_stack();
                 }
                 else
                   free_string (def_name);
