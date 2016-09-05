@@ -90,10 +90,6 @@ Tools
     the chosen Pike integer and float types, and various other basic
     macros.
 
-  hashtable.c
-  hashtable.h
-    A simple hash table for pike strings. Used by cpp.cmod.
-
   malloc.c
     Memory allocation functions. This overrides the libc implementation
     of malloc, etc, when --enable-dlmalloc is active (default on WIN32).
