@@ -45,6 +45,7 @@ enum arm32_register {
     ARM_REG_R6,
     ARM_REG_R7,
     ARM_REG_PIKE_LOCALS = 7,
+    ARM_REG_PIKE_GLOBALS = 7,
 
     ARM_REG_R8,
     ARM_REG_PIKE_IP = 8,
@@ -814,6 +815,8 @@ static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
 #define FLAG_SP_LOADED  1
 #define FLAG_FP_LOADED  2
 #define FLAG_LOCALS_LOADED 4
+#define FLAG_GLOBALS_LOADED 8
+#define FLAG_NOT_DESTRUCTED 16
 
 struct location_list_entry {
     unsigned INT32 location;
@@ -980,6 +983,10 @@ MACRO void arm32_call(void *ptr) {
     unsigned INT32 v = (char*)ptr - (char*)NULL;
     enum arm32_register tmp = ra_alloc_any();
 
+    /* we convervatively assume that any function could destruct
+     * the current object */
+    compiler_state.flags &= ~FLAG_NOT_DESTRUCTED;
+
     arm32_mov_int(tmp, v);
     blx_reg(tmp);
     ra_free(tmp);
@@ -1017,7 +1024,8 @@ static void arm32_load_fp_reg(void) {
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
         load32_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
-        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+
+        compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
     }
 }
 
@@ -1034,7 +1042,42 @@ MACRO void arm32_load_locals_reg(void) {
         load32_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
 
         compiler_state.flags |= FLAG_LOCALS_LOADED;
+        compiler_state.flags &= ~FLAG_GLOBALS_LOADED;
     }
+}
+
+MACRO void arm32_load_globals_reg(void) {
+    arm32_load_fp_reg();
+
+    if (!(compiler_state.flags & FLAG_GLOBALS_LOADED)) {
+        INT32 offset = OFFSETOF(pike_frame, current_storage);
+
+        load32_reg_imm(ARM_REG_PIKE_GLOBALS, ARM_REG_PIKE_FP, offset);
+
+        compiler_state.flags |= FLAG_GLOBALS_LOADED;
+        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    }
+}
+
+MACRO void arm32_check_destructed(void) {
+    arm32_load_fp_reg();
+
+    if (compiler_state.flags & FLAG_NOT_DESTRUCTED) return;
+
+    ra_alloc(ARM_REG_ARG1);
+    ra_alloc(ARM_REG_ARG2);
+
+    load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
+    load32_reg_imm(ARM_REG_ARG2, ARM_REG_ARG1, OFFSETOF(object, prog));
+    cmp_reg_imm(ARM_REG_ARG2, 0, 0);
+    /* destructed object */
+    ARM_IF(ARM_COND_EQ, {
+        /* this will not return */
+        arm32_call(object_low_set_index);
+    });
+    ra_free(ARM_REG_ARG1);
+    ra_free(ARM_REG_ARG2);
+    compiler_state.flags |= FLAG_NOT_DESTRUCTED;
 }
 
 MACRO void arm32_change_sp_reg(INT32 offset) {
@@ -2332,36 +2375,20 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ins_f_byte(F_DUMB_RETURN);
       }
       return;
-  F_PRIVATE_GLOBAL:
+  case F_PRIVATE_GLOBAL:
       arm32_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm32_register tmp1, tmp2;
+          enum arm32_register tmp;
 
-          arm32_load_fp_reg();
+          arm32_check_destructed();
+          arm32_load_globals_reg();
 
-          ra_alloc(ARM_REG_ARG1);
-          tmp1 = ra_alloc_any();
-          tmp2 = ra_alloc_any();
+          tmp = ra_alloc_any();
 
-          load32_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
-          load32_reg_imm(tmp1, ARM_REG_ARG1, OFFSETOF(object, prog));
-          cmp_reg_imm(tmp1, 0, 0);
-          /* destructed object */
-          ARM_IF(ARM_COND_EQ, {
-            /* this will not return */
-            arm32_call(object_low_set_index);
-          });
-          load32_reg_imm(tmp1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
-          load32_reg_imm(tmp1, tmp1, OFFSETOF(inherit, storage_offset));
-          load32_reg_imm(tmp2, ARM_REG_ARG1, OFFSETOF(object, storage));
-          add_reg_reg(tmp2, tmp2, tmp1);
+          arm32_add_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
+          arm32_push_svaluep_off(tmp, 0);
+          ra_free(tmp);
 
-          ra_free(tmp1);
-          ra_free(ARM_REG_ARG1);
-
-          arm32_add_reg_int(tmp2, tmp2, arg1);
-          arm32_push_svaluep_off(tmp2, 0);
-          ra_free(tmp2);
       }
       return;
   }
