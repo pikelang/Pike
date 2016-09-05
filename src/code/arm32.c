@@ -2270,7 +2270,10 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
           b_imm(label_dist(&done), ARM_COND_AL);
           label_generate(&fallback);
+          ra_alloc(ARM_REG_ARG1);
+          arm32_mov_int(ARM_REG_ARG1, arg1);
           arm32_call_c_opcode_slowpath(opcode);
+          ra_free(ARM_REG_ARG1);
 
           label_generate(&done);
       }
