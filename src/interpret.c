@@ -2122,11 +2122,11 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
                 my_strcat(function->name->str);
               do_trace_call(args, &save_buf);
             }
+            new_frame->current_storage = o->storage+context->storage_offset;
             if( type == IDENTIFIER_C_FUNCTION )
             {
               new_frame->num_args = args;
               new_frame->num_locals = args;
-              new_frame->current_storage = o->storage+context->storage_offset;
               new_frame->pc = 0;
 #ifndef PIKE_USE_MACHINE_CODE
               FAST_CHECK_THREADS_ON_CALL();

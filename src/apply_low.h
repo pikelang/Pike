@@ -290,6 +290,7 @@
 #endif
 
 	debug_malloc_touch(Pike_fp);
+	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	pc=new_frame->context->prog->program + function->func.offset;
 
 	new_frame->save_mark_sp=Pike_mark_sp;
