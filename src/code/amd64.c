@@ -1398,9 +1398,9 @@ static void amd64_push_int_reg(enum amd64_reg reg )
 static void amd64_get_storage( enum amd64_reg reg, ptrdiff_t offset )
 {
   amd64_load_fp_reg();
-#if 0
+#if 1
   /* Note: We really should keep pike_frame->current_storage up to date instead.. */
-  mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_storage), P_REG_RAX );
+  mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_storage), reg );
   add_reg_imm( reg, offset );
 #else
   /* fp->current_object->storage */
