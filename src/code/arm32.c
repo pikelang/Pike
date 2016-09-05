@@ -2388,7 +2388,31 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           arm32_add_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
           arm32_push_svaluep_off(tmp, 0);
           ra_free(tmp);
+      }
+      return;
+  case F_ASSIGN_PRIVATE_GLOBAL_AND_POP:
+  case F_ASSIGN_PRIVATE_GLOBAL:
+      break;
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      {
+          enum arm32_register tmp;
 
+          arm32_check_destructed();
+          arm32_load_globals_reg();
+
+          tmp = ra_alloc_persistent();
+
+          arm32_add_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
+          arm32_free_svalue_off(tmp, 0, 0);
+          arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          if (opcode == F_ASSIGN_PRIVATE_GLOBAL_AND_POP) {
+              arm32_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+              arm32_store_sp_reg();
+          } else {
+              arm32_assign_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+              arm32_add_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          }
+          ra_free(tmp);
       }
       return;
   }
