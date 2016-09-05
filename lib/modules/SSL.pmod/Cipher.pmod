@@ -2331,7 +2331,23 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     /* CBC requires the keys to change well before 2^(block_size/2) blocks
      * have been sent (block_size in bits). cf https://sweet32.info/
      */
-    int block_size = function_object(res->bulk_cipher_algorithm)->block_size();
+    object(Crypto.BlockCipher) alg =
+      function_object(res->bulk_cipher_algorithm);
+    if (!alg) {
+      // Special case for the algorithms defined in this file.
+      alg = ([
+	DES: Crypto.DES,
+	DES3: Crypto.DES,
+#if constant(Crypto.Arctwo)
+	RC2: Crypto.Arctwo,
+#endif
+      ])[res->bulk_cipher_algorithm];
+      if (!alg) {
+	error("Failed to determine algorithm for %O\n",
+	      res->bulk_cipher_algorithm);
+      }
+    }
+    int block_size = alg->block_size();
     /* The strict limit is thus block_size << block_size * 4 (block_size in bytes).
      * We want some safety margin and multiply the exponent with 3 instead of 4.
      */
