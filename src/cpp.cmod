@@ -1636,12 +1636,9 @@ static void undefine(struct cpp *this, struct pike_string *name)
  *!   will be replaced with @tt{something1@} and @tt{something2@}.
  */
 
-static struct define_struct *do_magic_define(struct cpp *this,
-				      const char *name,
-				      magic_define_fun fun)
+static struct pike_string *make_define_name(struct cpp *this,
+                                            const char *name)
 {
-  struct define_struct* def;
-
   if (this->prefix) {
     struct string_builder s;
     int len = strlen(name);
@@ -1651,13 +1648,20 @@ static struct define_struct *do_magic_define(struct cpp *this,
 			  this->prefix->len);
     string_builder_putchar(&s, '_');
     string_builder_binary_strcat(&s, name, len);
-    def = alloc_empty_define(finish_string_builder(&s));
-  } else
-    def = alloc_empty_define(make_shared_string(name));
+    return finish_string_builder(&s);
+  }
+  return make_shared_string(name);
+}
+
+static struct define_struct *do_magic_define(struct cpp *this,
+                                             const char *name,
+                                             magic_define_fun fun)
+{
+  struct define_struct* def;
+  def = alloc_empty_define(make_define_name(this, name));
   def->magic=fun;
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
-
   return def;
 }
 
@@ -1680,27 +1684,7 @@ static void simple_add_define(struct cpp *this,
                               const char *name,
                               const char *what)
 {
-  struct define_struct* def;
-
-  if (this->prefix) {
-    struct string_builder s;
-    int len = strlen(name);
-
-    init_string_builder(&s, 0);
-    string_builder_append(&s, MKPCHARP_STR(this->prefix),
-			  this->prefix->len);
-    string_builder_putchar(&s, '_');
-    string_builder_binary_strcat(&s, name, len);
-    def = alloc_empty_define(finish_string_builder(&s));
-  } else
-    def = alloc_empty_define(make_shared_string(name));
-
-  push_string(make_shared_string(what));
-  f_aggregate(1);
-  def->parts = Pike_sp[-1].u.array;
-  Pike_sp--;
-  mapping_string_insert(this->defines, def->name, Pike_sp-1);
-  pop_stack();
+  add_define(this, make_define_name(this, name), make_shared_string(what));
 }
 
 static struct pike_string *recode_string(struct cpp *this, struct pike_string *data)
