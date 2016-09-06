@@ -5348,7 +5348,7 @@ if test "$with_machine_code" = "no"; then :; else
     ], [])
     AC_TRY_COMPILE([
 #if defined(__GNUC__)
-#if !defined(__arm__) || defined(__thumb__) || defined(__thumb2__)
+#if !defined(__arm__)
 #error Not arm32 architecture
 #endif
 #else
