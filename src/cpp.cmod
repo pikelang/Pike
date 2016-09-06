@@ -1556,7 +1556,6 @@ past_identifier:
   return NULL;
 }
 
-/* devours one reference to 'name'! */
 /* The reference to the define is held by the stack on return. */
 static struct define_struct *alloc_empty_define(struct pike_string *name)
 {
@@ -1565,8 +1564,7 @@ static struct define_struct *alloc_empty_define(struct pike_string *name)
 
   push_object(o = clone_object(define_program, 0));
   def = (struct define_struct *)get_storage(o, define_program);
-  def->name = name;
-  debug_malloc_touch(name);
+  add_ref(def->name = name);
   return def;
 }
 
@@ -1658,7 +1656,9 @@ static struct define_struct *do_magic_define(struct cpp *this,
                                              magic_define_fun fun)
 {
   struct define_struct* def;
-  def = alloc_empty_define(make_define_name(this, name));
+  struct pike_string *name_str = make_define_name(this, name);
+  def = alloc_empty_define(name_str);
+  free_string(name_str);
   def->magic=fun;
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
@@ -1670,7 +1670,6 @@ static void add_define(struct cpp *this,
 		       struct pike_string *what)
 {
   struct define_struct* def;
-  add_ref (name);
   def=alloc_empty_define(name);
   ref_push_string(what);
   f_aggregate(1);
@@ -1684,7 +1683,10 @@ static void simple_add_define(struct cpp *this,
                               const char *name,
                               const char *what)
 {
-  add_define(this, make_define_name(this, name), make_shared_string(what));
+
+  struct pike_string *name_str = make_define_name(this, name);
+  add_define(this, name_str, make_shared_string(what));
+  free_string(name_str);
 }
 
 static struct pike_string *recode_string(struct cpp *this, struct pike_string *data)
@@ -3490,6 +3492,7 @@ PIKEFUN string cpp(string data,
         {
           struct pike_string *s = string_slice( k->ind.u.string, 0, k->ind.u.string->len-2);
           def = alloc_empty_define(s);
+	  free_string(s);
           def->magic = insert_callback_define;
           def->varargs=1;
           def->args=1;
@@ -3497,7 +3500,6 @@ PIKEFUN string cpp(string data,
         else
         {
           def = alloc_empty_define(k->ind.u.string);
-          k->ind.u.string->refs++;
           def->magic = insert_callback_define_no_args;
         }
 	mapping_string_insert(this.defines, def->name, Pike_sp-1);
@@ -3588,7 +3590,7 @@ void init_cpp()
 
   INIT;
 
-  defined_macro = alloc_empty_define(make_shared_string("defined"));
+  defined_macro = alloc_empty_define(defined_str);
   defined_macro->magic=check_defined;
   defined_macro->args=1;
   defined_macro_sval = Pike_sp[-1];

@@ -1245,8 +1245,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                     }
                   }
                 }
-                else
-                  free_string (def_name);
+		free_string (def_name);
                 pop_n_elems(Pike_sp-argbase);
                 break;
               }
