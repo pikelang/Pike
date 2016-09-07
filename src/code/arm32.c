@@ -15,6 +15,10 @@
 
 #define MACRO  ATTRIBUTE((unused)) static
 
+#if defined(__ARM_ARCH_6T2__) || defined(__ARM_ARCH_7__)
+# define HAS_WIDE_MOV
+#endif
+
 /* ARM32 machine code backend
  *
  * naming conventions:
@@ -302,7 +306,7 @@ MACRO void load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode
     add_to_program(gen_load_multiple(addr, mode, registers));
 }
 
-#ifdef __ARM_ARCH_6T2__
+#ifdef HAS_WIDE_MOV
 OPCODE_FUN gen_mov_wide(enum arm32_register reg, unsigned short imm) {
     return ARM_COND_AL | (3 << 24) | (imm & 0xfff) | (reg << 12) | ((imm & 0xf000) << 4);
 }
@@ -699,7 +703,7 @@ MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
     } else if (arm32_make_imm(~v, &imm, &rot)) {
         mvn_imm(reg, imm, rot);
     } else {
-#ifdef __ARM_ARCH_6T2__
+#ifdef HAS_WIDE_MOV
         mov_wide(reg, v);
         if (v>>16) mov_top(reg, v>>16);
 #else
@@ -784,7 +788,7 @@ MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
 /* This variant of arm32_mov_int will insert the right instructions into
  * a nop-slide so that the register 'dst' will contains 'v'.
  */
-#ifdef __ARM_ARCH_6T2__
+#ifdef HAS_WIDE_MOV
 #define SIZEOF_ADD_SET_REG_AT   2
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
@@ -3018,7 +3022,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             continue;
         }
         /* popcount 6 */
-#ifdef __ARM_ARCH_6T2__
+#ifdef HAS_WIDE_MOV
         if (CHECK_C(mov_top(0, 0))) {
             imm = (instr & 0xfff) | (instr>>4 & 0xf000);
             if (!(instr & (1<<20))) {
