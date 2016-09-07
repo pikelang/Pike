@@ -1,11 +1,52 @@
 Changes since Pike 8.0.276 (release 4)
 ----------------------------------------------------------------------
 
+New features
+------------
+
 o _Roxen.HeaderParser
 
   It is now possible to enable non-normalization on the entire object,
   and not just on a per call basis. It is also possible to disable
   support for folded headers, as per IETFs latest specification.
+
+o Crypto.ECC
+
+  Zero-pad short signature integers.
+
+o Calendar
+
+  Updated Calendar to use timezonedata from tzdata2016f.
+
+o Protocols.WebSocket
+
+  Fixed handling of truncated frames.
+
+o Standards.EXIF
+
+  Improved robustness of the EXIF parser.
+
+
+Bug fixes
+---------
+
+o cpp
+
+  Fixed stringify operator on strings containing escaped double quotes.
+
+o mkpackage
+
+  Support $EXTRA_PLATFORM_TEST.
+
+o Threads.Condition
+
+  Fixed double free at cleanup on exit.
+
+o Fixed multiple issues with cleanup on exit.
+
+o Whitefish
+
+  Fixed wrong signedness.
 
 
 Changes since Pike 8.0.240 (release 3)
