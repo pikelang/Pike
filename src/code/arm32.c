@@ -135,8 +135,11 @@ enum shift_instr {
 #define ARM_IF(cond, CODE) do {                                                 \
     unsigned INT32 start = PIKE_PC, i;                                          \
     do CODE while(0);                                                           \
-    for (i = start; i < PIKE_PC; i++)                                           \
-        upd_pointer(i, set_cond(read_pointer(i), cond));                        \
+    for (i = start; i < PIKE_PC; i++) {                                         \
+        PIKE_OPCODE_T instr = read_pointer(i);                                  \
+        assert((instr&0xf0000000) == (PIKE_OPCODE_T)ARM_COND_AL);               \
+        upd_pointer(i, set_cond(instr, cond));                                  \
+    }                                                                           \
 } while(0)
 
 
