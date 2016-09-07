@@ -334,10 +334,12 @@ static ptrdiff_t low_cpp(struct cpp *this,
 				string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
 				if (INDEX_PCHARP(a,e) == '\\') {
 				  string_builder_putchar(&tmp, '\\');
-				  string_builder_putchar(&tmp, INDEX_PCHARP(a,++e));
-				  if (INDEX_PCHARP(a,e) == '\\') {
+				  e++;
+				  if (INDEX_PCHARP(a,e) == '\\' ||
+				      INDEX_PCHARP(a,e) == '"') {
 				    string_builder_putchar(&tmp, '\\');
 				  }
+				  string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
 				}
 			      }
 			      string_builder_putchar(&tmp, '\\');
