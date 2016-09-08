@@ -12,10 +12,6 @@ o Crypto.ECC
 
   Zero-pad short signature integers.
 
-o Protocols.WebSocket
-
-  Fixed handling of truncated frames.
-
 o _Roxen.HeaderParser
 
   It is now possible to enable non-normalization on the entire object,
@@ -46,6 +42,10 @@ o Whitefish
 o Standards.EXIF
 
   Improved robustness of the EXIF parser.
+
+o Protocols.WebSocket
+
+  Fixed handling of truncated frames.
 
 
 Changes since Pike 8.0.240 (release 3)
