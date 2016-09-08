@@ -95,13 +95,16 @@ typedef void (*magic_define_fun)(struct cpp *,
 
 DECLARATIONS;
 
+#define CPP_MACRO_DISABLED	1	/* Don't expand. */
+#define CPP_MACRO_IN_USE	2	/* In use. */
+
 PIKECLASS define
 {
   PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
   PIKEVAR array(string|int) parts flags ID_PRIVATE|ID_PROTECTED;
   CVAR magic_define_fun magic;
   CVAR int args;
-  CVAR short inside;         /* 1 - Don't expand. 2 - In use. */
+  CVAR short flags;         /* CPP_MACRO_* */
   CVAR short varargs;
 
   DECLARE_STORAGE;
@@ -111,7 +114,7 @@ PIKECLASS define
     struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
     def->magic=0;
     def->args=-1;
-    def->inside=0;
+    def->flags = 0;
     def->varargs=0;
   }
 }
@@ -1596,7 +1599,7 @@ static void undefine(struct cpp *this, struct pike_string *name)
   if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
     struct object *o = Pike_sp[-1].u.object;
     struct define_struct *def = (struct define_struct *)get_storage(o, define_program);
-    if (def->inside) {
+    if (def->flags & (CPP_MACRO_IN_USE | CPP_MACRO_DISABLED)) {
       /* Restore the #define. */
       mapping_insert(this->defines, Pike_sp - 2, Pike_sp - 1);
       cpp_error(this, "Illegal to undefine a macro during its expansion.");

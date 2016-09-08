@@ -132,13 +132,13 @@ static ptrdiff_t low_cpp(struct cpp *this,
             d=FIND_DEFINE(s);
           }
 
-          if(d && !(d->inside & 1))
+          if(d && !(d->flags & CPP_MACRO_DISABLED))
           {
             int arg=0;
             INT_TYPE start_line = this->current_line;
             struct string_builder tmp;
             struct define_argument arguments[ MAX_ARGS];
-            short inside = d->inside;
+            short flags = d->flags;
 
             if (d == defined_macro) {
               free_string (s);
@@ -384,11 +384,11 @@ static ptrdiff_t low_cpp(struct cpp *this,
 			/* FIXME: Shouldn't we save current_file too? */
 			save=this->buf;
 			this->buf=tmp;
-			d->inside = 2;
+			d->flags = CPP_MACRO_IN_USE;
 			low_cpp(this, a, l,
 				flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 				auto_convert, charset);
-			d->inside = inside;
+			d->flags = flags;
 			tmp=this->buf;
 			this->buf=save;
 			this->current_line=line;
@@ -416,7 +416,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 if(index_shared_string(tmp.s,e)=='\n')
                   SET_INDEX_CHARP(tmp.s->str,e,tmp.s->size_shift,' ');
 
-            if(s) d->inside=1;
+            if(s) d->flags = CPP_MACRO_DISABLED;
 
             string_builder_putchar(&tmp, 0);
             tmp.s->len--;
@@ -427,7 +427,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             if(s)
             {
               if((d=FIND_DEFINE(s)))
-                d->inside = inside;
+                d->flags = flags;
 
               free_string(s);
             }
@@ -1239,7 +1239,8 @@ static ptrdiff_t low_cpp(struct cpp *this,
 
                   {
                     struct define_struct *d;
-                    if ((d = FIND_DEFINE(def->name)) && (d->inside)) {
+                    if ((d = FIND_DEFINE(def->name)) &&
+			(d->flags & (CPP_MACRO_IN_USE | CPP_MACRO_DISABLED))) {
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
                     } else {
