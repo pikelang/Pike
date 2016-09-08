@@ -2547,3 +2547,31 @@ class Set_keep_commented
    {
    }
 }
+
+/* 121 */
+class Local_to_global_reverse
+{
+   inherit _Request;
+
+   array indata(int(0..65535) conf_no,
+                int local_no_ceiling,
+                int no_of_existing_texts)
+   {
+      return ({121,
+               conf_no,
+               local_no_ceiling,
+               no_of_existing_texts});
+   }
+
+   TextMapping textmapping;
+
+   TextMapping reply(array what)
+   {
+      /* ( Text-Mapping ) */
+      return TextMapping(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
