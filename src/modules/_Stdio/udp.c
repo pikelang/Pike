@@ -1435,7 +1435,7 @@ void init_stdio_udp(void)
          tFunc(tInt,tObj),0);
 
   ADD_FUNCTION("query_fd",udp_query_fd,
-         tFunc(tInt,tObj),0);
+         tFunc(tVoid,tInt),0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
