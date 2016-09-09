@@ -753,14 +753,6 @@ MACRO void arm32_tst_int(enum arm32_register reg, unsigned INT32 v) {
     }
 }
 
-/*
- * TODO: work with labels
- */
-MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
-    cmp_reg_reg(reg, b);
-    b_imm(jmp-2, cond);
-}
-
 MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
                          enum arm32_condition cond2, void *b) {
     enum arm32_register reg = ra_alloc_any();
