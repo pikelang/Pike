@@ -1688,7 +1688,9 @@ static void simple_add_define(struct cpp *this,
 {
 
   struct pike_string *name_str = make_define_name(this, name);
-  add_define(this, name_str, make_shared_string(what));
+  struct pike_string *what_str = make_shared_string(what);
+  add_define(this, name_str, what_str);
+  free_string(what_str);
   free_string(name_str);
 }
 
