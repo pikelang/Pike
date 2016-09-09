@@ -2261,7 +2261,7 @@ PIKECLASS RandomInterface
    *!   called in the object.
    *!
    *! @throws
-   *!   Throws an exception if the object doesn't have a _radnom method.
+   *!   Throws an exception if the object doesn't have a _random method.
    *!
    *! @seealso
    *!  @[lfun::_random()]
