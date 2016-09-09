@@ -520,9 +520,9 @@ THREADS_ALLOW();
        sumb=MAXIMUM(sumb, matrix[i++].b);
      }
 
-   if (!sumr) sumr=1; sumr*=div; qr=1.0/sumr;
-   if (!sumg) sumg=1; sumg*=div; qg=1.0/sumg;
-   if (!sumb) sumb=1; sumb*=div; qb=1.0/sumb;
+   if (!sumr) {sumr=1;} sumr*=div; qr=1.0/sumr;
+   if (!sumg) {sumg=1;} sumg*=div; qg=1.0/sumg;
+   if (!sumb) {sumb=1;} sumb*=div; qb=1.0/sumb;
 
    bx=width/2;
    by=height/2;
