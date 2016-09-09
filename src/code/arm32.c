@@ -15,6 +15,14 @@
 
 #define MACRO  ATTRIBUTE((unused)) static
 
+#ifdef PIKE_DEBUG
+#define ARM_ASSERT(x)   do {                                                    \
+    if (!(x))  Pike_fatal("%s:%d\tAssert failed: " #x, __FILE__, __LINE__);     \
+} while (0)
+#else
+#define ARM_ASSERT(x)   do {} while(0)
+#endif
+
 #if defined(__ARM_ARCH_6T2__) || defined(__ARM_ARCH_7__)
 # define HAS_WIDE_MOV
 #endif
@@ -141,7 +149,7 @@ enum shift_instr {
     do CODE while(0);                                                           \
     for (i = start; i < PIKE_PC; i++) {                                         \
         PIKE_OPCODE_T instr = read_pointer(i);                                  \
-        assert((instr&0xf0000000) == (PIKE_OPCODE_T)ARM_COND_AL);               \
+        ARM_ASSERT((instr&0xf0000000) == (PIKE_OPCODE_T)ARM_COND_AL);           \
         upd_pointer(i, set_cond(instr, cond));                                  \
     }                                                                           \
 } while(0)
@@ -352,6 +360,8 @@ MACRO void bx_reg(enum arm32_register to) {
 }
 
 OPCODE_FUN gen_blx_reg(enum arm32_register to) {
+    ARM_ASSERT(to != ARM_REG_LR);
+
     return gen_bx_reg(to) | (1<<5);
 }
 
@@ -361,6 +371,8 @@ MACRO void blx_reg(enum arm32_register to) {
 
 OPCODE_FUN gen_b_imm(INT32 dist) {
     unsigned INT32 instr = ARM_COND_AL | (1<<27)|(1<<25);
+
+    ARM_ASSERT(dist <= 0x7fffff && dist >= ~0x7fffff);
 
     instr |= dist & 0xffffff;
 
@@ -402,7 +414,7 @@ OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm32_register dst,
 
     unsigned INT32 instr = ARM_ADDR_IMMEDIATE | ARM_COND_AL;
 
-    assert(!(rot >> 4));
+    ARM_ASSERT(!(rot >> 4));
 
     instr |= op << 21;
     instr |= dst << 12;
@@ -483,7 +495,7 @@ OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
                              enum arm32_register a, unsigned INT32 imm) {
     unsigned INT32 instr = gen_reg(ARM_PROC_MOV, dst, a);
 
-    assert(!(imm >> 5));
+    ARM_ASSERT(!(imm >> 5));
 
     instr |= op << 5;
     instr |= imm << 7;
@@ -500,11 +512,11 @@ OPCODE_FUN gen_store32_reg_imm(enum arm32_register dst, enum arm32_register base
 
     if (offset < 0) {
         instr |= -offset;
-        assert(!((-offset) >> 12));
+        ARM_ASSERT(!((-offset) >> 12));
     } else {
         instr |= (1<<23);
         instr |= offset;
-        assert(!(offset >> 12));
+        ARM_ASSERT(!(offset >> 12));
     }
 
     return instr;
@@ -529,7 +541,7 @@ OPCODE_FUN gen_store16_reg_imm(enum arm32_register dst, enum arm32_register base
     instr |= base << 16;
     instr |= (1 << 22) | (1<< 24) | (1<<7) | (1<<5) | (1<<4);
 
-    assert(offset < 0xff && offset > -0xff);
+    ARM_ASSERT(offset < 0xff && offset > -0xff);
 
     if (offset < 0) {
         offset =- offset;
@@ -870,7 +882,7 @@ MACRO INT32 label_dist(struct label *l) {
 MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
 
-    assert(l->loc == (unsigned INT32)-1);
+    ARM_ASSERT(l->loc == (unsigned INT32)-1);
 
     l->loc = loc;
 
@@ -889,9 +901,9 @@ MACRO void label_generate(struct label *l) {
 }
 
 void arm32_init_interpreter_state(void) {
-    assert(sizeof(struct svalue) == 8);
-    assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
-    assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
+    ARM_ASSERT(sizeof(struct svalue) == 8);
+    ARM_ASSERT(OFFSETOF(pike_frame, num_locals) % 4 == 0);
+    ARM_ASSERT(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
 
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
@@ -1013,7 +1025,7 @@ static void arm32_load_sp_reg(void) {
 
 static void arm32_store_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
-    assert(compiler_state.flags & FLAG_SP_LOADED);
+    ARM_ASSERT(compiler_state.flags & FLAG_SP_LOADED);
     store32_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
@@ -1080,7 +1092,7 @@ MACRO void arm32_check_destructed(void) {
 }
 
 MACRO void arm32_change_sp_reg(INT32 offset) {
-    assert(compiler_state.flags & FLAG_SP_LOADED);
+    ARM_ASSERT(compiler_state.flags & FLAG_SP_LOADED);
     offset *= sizeof(struct svalue);
     if (offset < 0) {
         offset = -offset;
@@ -1124,7 +1136,7 @@ MACRO void arm32_assign_int_reg(enum arm32_register dst, enum arm32_register val
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm32_mov_int(tmp1, combined);
     mov_reg(tmp2, value);
@@ -1139,7 +1151,7 @@ MACRO void arm32_push_int_reg(enum arm32_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm32_load_sp_reg();
 
@@ -1157,7 +1169,7 @@ MACRO void arm32_push_int_reg(enum arm32_register value, int subtype) {
 MACRO void arm32_push_non_ref_type(unsigned INT32 type, unsigned INT32 value) {
     enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm32_load_sp_reg();
 
@@ -1177,7 +1189,7 @@ MACRO void arm32_push_int(unsigned INT32 value, int subtype) {
 }
 
 MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vreg) {
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     arm32_load_sp_reg();
     store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
@@ -1216,7 +1228,7 @@ MACRO void arm32_move_svaluep_nofree(enum arm32_register dst, enum arm32_registe
     enum arm32_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
@@ -1229,7 +1241,7 @@ MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_regis
     enum arm32_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
@@ -1250,7 +1262,7 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     enum arm32_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     if (offset) {
         if (offset > 0)
@@ -1287,7 +1299,7 @@ MACRO enum arm32_condition arm32_eq_types(enum arm32_register type1, enum arm32_
     unsigned char imm, rot;
     int ok = arm32_make_imm(type_subtype, &imm, &rot);
 
-    assert(ok);
+    ARM_ASSERT(ok);
 
     cmp_reg_reg(type1, type2);
     add_to_program(set_cond(gen_cmp_reg_imm(type1, imm, rot), ARM_COND_EQ));
@@ -1301,7 +1313,7 @@ MACRO enum arm32_condition arm32_ne_types(enum arm32_register type1, enum arm32_
     unsigned char imm, rot;
     int ok = arm32_make_imm(type_subtype, &imm, &rot);
 
-    assert(ok);
+    ARM_ASSERT(ok);
 
     cmp_reg_reg(type1, type2);
     add_to_program(set_cond(gen_cmp_reg_imm(type1, imm, rot), ARM_COND_EQ));
@@ -1659,7 +1671,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-  assert(opcode-F_OFFSET<=255);
+  ARM_ASSERT(opcode-F_OFFSET<=255);
 
   flags = instrs[opcode-F_OFFSET].flags;
 
@@ -2502,7 +2514,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           treg = ra_alloc_any();
           vreg = ra_alloc_any();
 
-          assert(treg < vreg);
+          ARM_ASSERT(treg < vreg);
 
           arm32_add_reg_int(reg, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
 
