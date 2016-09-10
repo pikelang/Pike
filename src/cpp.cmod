@@ -779,7 +779,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *! @example
  *!   @code
  *!   // This code was written for Pike 7.2, and depends on
- *!   // the old behaviour for @[7.2::dirname()].
+ *!   // the old behaviour for @expr{7.2::dirname()@}.
  *!   #pike 7.2
  *!
  *!   // ... Code that uses @[dirname()] ...
