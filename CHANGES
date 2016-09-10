@@ -12,7 +12,7 @@ o Crypto.ECC
 
   Zero-pad short signature integers.
 
-o _Roxen.HeaderParser
+o Protocols.HTTP.Server.HeaderParser
 
   It is now possible to enable non-normalization on the entire object,
   and not just on a per call basis. It is also possible to disable
@@ -54,7 +54,7 @@ Changes since Pike 8.0.240 (release 3)
 New features
 ------------
 
-o _Roxen.HeaderParser
+o Protocols.HTTP.Server.HeaderParser
 
   feed() can now be forced not to normalize (ie lower_case)
   the header names.
