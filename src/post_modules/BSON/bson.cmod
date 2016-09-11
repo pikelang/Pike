@@ -37,25 +37,27 @@
 
 #define DEFAULT_CMOD_STORAGE static
 
-#define TYPE_BSON_DOUBLE 0x01
-#define TYPE_BSON_STRING 0x02
-#define TYPE_BSON_ARRAY 0x04
-#define TYPE_BSON_BINARY 0x05
-#define TYPE_BSON_INTEGER 0x10
-#define TYPE_BSON_INTEGER64 0x12
+#define TYPE_BSON_DOUBLE   0x01
+#define TYPE_BSON_STRING   0x02
+#define TYPE_BSON_DOCUMENT 0x03
+#define TYPE_BSON_ARRAY    0x04
+#define TYPE_BSON_BINARY   0x05
+#define TYPE_BSON_UNDEFINED 0x06 /* not supported */
+#define TYPE_BSON_OBJECTID 0x07
+#define TYPE_BSON_BOOLEAN  0x08
+#define TYPE_BSON_SECOND   0x09
+#define TYPE_BSON_NULL     0x0a
+#define TYPE_BSON_REGEX    0x0b
+
+#define TYPE_BSON_JAVASCRIPT 0x0d
+
+#define TYPE_BSON_INTEGER   0x10
 #define TYPE_BSON_TIMESTAMP 0x11
-#define TYPE_BSON_BOOLEAN 0x08
+#define TYPE_BSON_INTEGER64 0x12
+
 #define TYPE_BSON_MINKEY 0xff
 #define TYPE_BSON_MAXKEY 0x7f
-#define TYPE_BSON_NULL 0x0a
-#define TYPE_BSON_OBJECTID 0x07
-#define TYPE_BSON_SECOND 0x09
-#define TYPE_BSON_REGEX 0x0b
-#define TYPE_BSON_JAVASCRIPT 0x0d
-#define TYPE_BSON_DOCUMENT 0x03
 
-/* not supported. */
-#define TYPE_BSON_UNDEFINED x06
 
 /*
 Types left to implement
