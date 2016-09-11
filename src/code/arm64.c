@@ -2690,6 +2690,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       return;
   case F_CALL_BUILTIN1:
       arm64_debug_instr_prologue_1(opcode, arg1);
+      arm64_maybe_update_pc();
       arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 1);
       return;
   case F_CALL_BUILTIN1_AND_POP:
@@ -2701,6 +2702,8 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       {
           INT32 offset = OFFSETOF(Pike_interpreter_struct, mark_stack_pointer);
           enum arm64_register tmp;
+
+	  arm64_maybe_update_pc();
 
           ra_alloc(ARM_REG_ARG1);
           ra_alloc(ARM_REG_ARG2);
@@ -2726,6 +2729,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_MARK_CALL_BUILTIN_AND_RETURN:
       arm64_debug_instr_prologue_1(opcode, arg1);
 
+      arm64_maybe_update_pc();
       arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 0);
 
       if (opcode == F_MARK_CALL_BUILTIN_AND_POP) {
@@ -2849,6 +2853,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       return;
   case F_CALL_BUILTIN_N:
       arm64_debug_instr_prologue_2(opcode, arg1, arg2);
+      arm64_maybe_update_pc();
       arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, arg2);
       return;
   }
