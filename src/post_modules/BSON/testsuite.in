@@ -5,6 +5,11 @@ define(test_dec,[[
           [[$2]])
 ]])
 
+define(test_enc,[[
+  test_do(Standards.BSON.decode(String.hex2string($2)))
+  test_equal(String.string2hex(Standards.BSON.encode([[$1]])),[[$2]])
+]])
+
 define(test_enc_dec,[[
     test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$1]] ]))
 ]])
@@ -30,5 +35,58 @@ test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
 test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
 test_enc_dec(Standards.BSON.Timestamp(0xdeadbeeff00dbad))
 test_enc_dec(indices(all_constants()))
+
+dnl From libbson tests
+dnl test-bson.c
+
+dnl test_bson_append_utf8
+test_enc((["hello":"world"]), "160000000268656c6c6f0006000000776f726c640000")
+
+dnl test_bson_append_symbol : not supported field type 0x0e
+
+dnl test_bson_append_null
+test_enc((["hello":Val.null]), "0c0000000a68656c6c6f0000")
+
+dnl test_bson_append_bool
+test_enc((["bool":Val.true]), "0c00000008626f6f6c000100")
+
+dnl test_bson_append_double
+test_any([[
+  // We can't explicitly encode doubles with the current API.
+  mapping m = Standards.BSON.decode(String.hex2string("1500000001646f75626c65005305a3923add5e4000"));
+  return (string)m->double;
+]], "123.4567")
+
+dnl test_bson_append_document
+dnl We can't explicitly encode document with the current API.
+test_equal(Standards.BSON.decode(String.hex2string("1400000003646f63756d656e7400050000000000")), ([ "document":([]) ]))
+
+dnl test_bson_append_oid
+test_enc((["oid":Standards.BSON.ObjectId(String.hex2string("1234567890abcdef1234abcd"))]), "16000000076f6964001234567890abcdef1234abcd00")
+
+dnl test_bson_append_array
+test_enc((["array":({"hello","world"})]),
+"2b000000046172726179001f0000000230000600000068656c6c6f0002310006000000776f726c64000000")
+
+dnl test_bson_append_binary : not supported field type 0x34
+
+dnl test_bson_append_time_t
+test_enc((["time_t":Calendar.Second("unix",1234567890)]),
+"150000000974696d655f74005004fb711f01000000")
+
+dnl test_bson_append_undefined : not supported field type 0x06
+
+dnl test_bson_append_regex
+test_enc((["regex":Standards.BSON.Regex("^abcd","ilx")]),
+"160000000b7265676578005e6162636400696c780000")
+
+dnl test_bson_append_code
+test_enc((["code":Standards.BSON.Javascript("var a = {};")]),
+"1b0000000d636f6465000c0000007661722061203d207b7d3b0000")
+
+dnl test_bson_append_code_with_scope not fully implemented
+
+dnl test_bson_append_dbpointer : not supported field type 0x0c
+
 
 END_MARKER
