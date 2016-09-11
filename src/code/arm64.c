@@ -65,6 +65,7 @@ enum arm64_register {
     ARM_REG_R24,
     ARM_REG_R25,
     ARM_REG_PIKE_LOCALS = 25,
+    ARM_REG_PIKE_GLOBALS = 25,
     ARM_REG_R26,
     ARM_REG_PIKE_IP = 26,
     ARM_REG_R27,
@@ -1156,6 +1157,8 @@ static void arm64_adr_imm_at(unsigned INT32 offset, enum arm64_register dst,
 #define FLAG_SP_LOADED  1
 #define FLAG_FP_LOADED  2
 #define FLAG_LOCALS_LOADED 4
+#define FLAG_GLOBALS_LOADED 8
+#define FLAG_NOT_DESTRUCTED 16
 
 struct location_list_entry {
     unsigned INT32 location;
@@ -1363,6 +1366,10 @@ MACRO void arm64_call(void *ptr) {
     unsigned INT64 v = (char*)ptr - (char*)NULL;
     enum arm64_register tmp = ra_alloc_any();
 
+    /* we convervatively assume that any function could destruct
+     * the current object */
+    compiler_state.flags &= ~FLAG_NOT_DESTRUCTED;
+
     arm64_mov_int(tmp, v);
     blr_reg(tmp);
     ra_free(tmp);
@@ -1402,7 +1409,8 @@ static void arm64_load_fp_reg(void) {
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
         load64_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
-        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+
+        compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
     }
 }
 
@@ -1419,7 +1427,43 @@ MACRO void arm64_load_locals_reg(void) {
         load64_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
 
         compiler_state.flags |= FLAG_LOCALS_LOADED;
+        compiler_state.flags &= ~FLAG_GLOBALS_LOADED;
     }
+}
+
+MACRO void arm64_load_globals_reg(void) {
+    arm64_load_fp_reg();
+
+    if (!(compiler_state.flags & FLAG_GLOBALS_LOADED)) {
+        INT32 offset = OFFSETOF(pike_frame, current_storage);
+
+        load64_reg_imm(ARM_REG_PIKE_GLOBALS, ARM_REG_PIKE_FP, offset);
+
+        compiler_state.flags |= FLAG_GLOBALS_LOADED;
+        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    }
+}
+
+MACRO void arm64_check_destructed(void) {
+    struct label skip;
+
+    arm64_load_fp_reg();
+
+    if (compiler_state.flags & FLAG_NOT_DESTRUCTED) return;
+
+    ra_alloc(ARM_REG_ARG1);
+    ra_alloc(ARM_REG_ARG2);
+
+    label_init(&skip);
+    load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
+    load64_reg_imm(ARM_REG_ARG2, ARM_REG_ARG1, OFFSETOF(object, prog));
+    cbnz64_imm(ARM_REG_ARG2, label_dist(&skip));
+    /* destructed object */
+    arm64_call(object_low_set_index);
+    label_generate(&skip);
+    ra_free(ARM_REG_ARG1);
+    ra_free(ARM_REG_ARG2);
+    compiler_state.flags |= FLAG_NOT_DESTRUCTED;
 }
 
 MACRO void arm64_change_sp_reg(INT32 offset) {
@@ -2690,37 +2734,21 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ins_f_byte(F_DUMB_RETURN);
       }
       return;
-  F_PRIVATE_GLOBAL:
+  case F_PRIVATE_GLOBAL:
       arm64_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm64_register tmp1, tmp2;
+          enum arm64_register tmp;
 	  struct label skip;
 
-          arm64_load_fp_reg();
+          arm64_check_destructed();
+          arm64_load_globals_reg();
 
-          ra_alloc(ARM_REG_ARG1);
-          tmp1 = ra_alloc_any();
-          tmp2 = ra_alloc_any();
+	  tmp = ra_alloc_any();
 
-	  label_init(&skip);
-          load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
-          load64_reg_imm(tmp1, ARM_REG_ARG1, OFFSETOF(object, prog));
-          cbnz64_imm(tmp1, label_dist(&skip));
-          /* destructed object */
-	  /* this will not return */
-	  arm64_call(object_low_set_index);
-	  label_generate(&skip);
-          load64_reg_imm(tmp1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
-          load64_reg_imm(tmp1, tmp1, OFFSETOF(inherit, storage_offset));
-          load64_reg_imm(tmp2, ARM_REG_ARG1, OFFSETOF(object, storage));
-          add64_reg_reg(tmp2, tmp2, tmp1);
+          arm64_add64_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
+          arm64_push_svaluep_off(tmp, 0);
+          ra_free(tmp);
 
-          ra_free(tmp1);
-          ra_free(ARM_REG_ARG1);
-
-          arm64_add64_reg_int(tmp2, tmp2, arg1);
-          arm64_push_svaluep_off(tmp2, 0);
-          ra_free(tmp2);
       }
       return;
   }
