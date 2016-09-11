@@ -11,6 +11,7 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "constants.h"
 
 #define MACRO  ATTRIBUTE((unused)) static
 
@@ -135,6 +136,12 @@ enum move_wide_instr {
     ARM_WIDE_MOVK = 3 << 29,
 };
 
+enum bitfield_instr {
+    ARM_BITFIELD_SBFM = 0 << 29,
+    ARM_BITFIELD_BFM = 1 << 29,
+    ARM_BITFIELD_UBFM = 2 << 29,
+};
+
 enum intr_type {
 ARM_INSTR_LOGIC_REG = 0x0a000000,
 ARM_INSTR_ARITH_REG = 0x0b000000,
@@ -142,6 +149,7 @@ ARM_INSTR_PC_REL    = 0x10000000,
 ARM_INSTR_ARITH_IMM = 0x11000000,
 ARM_INSTR_LOGIC_IMM = 0x12000000,
 ARM_INSTR_MOVE_WIDE = 0x12800000,
+ARM_INSTR_BITFIELD_IMM      = 0x13000000,
 ARM_INSTR_UNCOND_BRANCH_IMM = 0x14000000,
 ARM_INSTR_COND_SELECT       = 0x1a800000,
 ARM_INSTR_SHIFT_REG         = 0x1ac02000,
@@ -296,6 +304,9 @@ OPCODE_FUN set_logic_src_imm(unsigned INT32 instr, unsigned char n, unsigned cha
     return ARM_INSTR_LOGIC_IMM | instr | (n<<22) | (immr << 16) | (imms << 10);
 }
 
+OPCODE_FUN set_bitfield_src_imm(unsigned INT32 instr, unsigned char n, unsigned char immr, unsigned char imms) {
+    return ARM_INSTR_BITFIELD_IMM | instr | (n<<22) | (immr << 16) | (imms << 10);
+}
 /* Emulated... */
 enum arm64_multiple_mode {
 #define MODE(P, U, W)   (((P)<<2) | ((U)<<1) | ((W)))
@@ -691,6 +702,19 @@ OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
+OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm64_register dst,
+				enum arm64_register reg, unsigned char immr, unsigned char imms, int sf) {
+    unsigned INT32 instr = set_bitfield_src_imm(op, sf, immr, imms);
+
+    instr = set_rt_reg(instr, dst);
+    instr = set_rn_reg(instr, reg);
+
+    if (sf)
+      instr = set_64bit(instr);
+
+    return instr;
+}
+
 OPCODE_FUN gen_cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
     return gen_arith_reg_imm(ARM_ARITH_SUBS, ARM_REG_ZERO, a, imm, shift);
 }
@@ -712,6 +736,23 @@ OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst
     instr |= mode >> 12;
 
     return instr;
+}
+
+/* Emulated shift instructions */
+OPCODE_FUN gen_asr_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+{
+  return gen_bitfield_reg_imm(ARM_BITFIELD_SBFM, dst, reg, imm, (sf? 63:31), sf);
+}
+
+OPCODE_FUN gen_lsr_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+{
+  return gen_bitfield_reg_imm(ARM_BITFIELD_UBFM, dst, reg, imm, (sf? 63:31), sf);
+}
+
+OPCODE_FUN gen_lsl_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+{
+  unsigned char mask = (sf? 63:31);
+  return gen_bitfield_reg_imm(ARM_BITFIELD_UBFM, dst, reg, (64-imm)&mask, mask-imm, sf);
 }
 
 MACRO void cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
@@ -954,8 +995,14 @@ OPCODE_FUN gen_ ## name ## _reg_reg(enum arm64_register dst, enum arm64_register
     return gen_shift_reg_reg(ARM_SHIFT_ ## NAME, dst, a, b);                                             \
 }                                                                                                        \
                                                                                                          \
+MACRO void name ## 32_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm) {     \
+    add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, 0));                                          \
+}                                                                                                        \
 MACRO void name ## 32_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
+}                                                                                                        \
+MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm) {     \
+    add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, 1));                                          \
 }                                                                                                        \
 MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
@@ -971,6 +1018,7 @@ GEN_LOGIC_OP(eor, EOR)
 GEN_LOGIC_OP(ands, ANDS)
 
 GEN_SHIFT_OP(lsl, LSL)
+GEN_SHIFT_OP(asr, ASR)
 
 
 OPCODE_FUN gen_mov_reg(enum arm64_register dst, enum arm64_register src) {
@@ -1395,6 +1443,7 @@ static void arm64_flush_dirty_regs(void) {
     arm64_store_sp_reg();
 }
 
+
 MACRO void arm64_call_efun(void (*fun)(int), int args) {
     arm64_mov_int(ra_alloc(ARM_REG_ARG1), args);
     arm64_call(fun);
@@ -1402,6 +1451,16 @@ MACRO void arm64_call_efun(void (*fun)(int), int args) {
     if (args != 1 && compiler_state.flags & FLAG_SP_LOADED) {
         arm64_change_sp_reg(-(args-1));
     }
+}
+
+/* NOTE: this variant is for those efuns that might not return
+ * a value
+ */
+MACRO void arm64_safe_call_efun(void (*fun)(int), int args) {
+    arm64_mov_int(ra_alloc(ARM_REG_ARG1), args);
+    arm64_call(fun);
+    ra_free(ARM_REG_ARG1);
+    compiler_state.flags &= ~FLAG_SP_LOADED;
 }
 
 MACRO void arm64_assign_int_reg(enum arm64_register dst, enum arm64_register value, int subtype) {
@@ -2577,6 +2636,60 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           label_generate(&done);
       }
       return;
+  case F_CALL_BUILTIN_AND_POP:
+      ins_f_byte_with_arg(F_CALL_BUILTIN, arg1);
+      ins_f_byte(F_POP_VALUE);
+      return;
+  case F_CALL_BUILTIN_AND_RETURN:
+      ins_f_byte_with_arg(F_CALL_BUILTIN, arg1);
+      ins_f_byte(F_DUMB_RETURN);
+      return;
+  case F_CALL_BUILTIN1:
+      arm64_debug_instr_prologue_1(opcode, arg1);
+      arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 1);
+      return;
+  case F_CALL_BUILTIN1_AND_POP:
+      ins_f_byte_with_arg(F_CALL_BUILTIN1, arg1);
+      ins_f_byte(F_POP_VALUE);
+      return;
+  case F_CALL_BUILTIN:
+      arm64_debug_instr_prologue_1(opcode, arg1);
+      {
+          INT32 offset = OFFSETOF(Pike_interpreter_struct, mark_stack_pointer);
+          enum arm64_register tmp;
+
+          ra_alloc(ARM_REG_ARG1);
+          ra_alloc(ARM_REG_ARG2);
+
+          arm64_load_sp_reg();
+
+          load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_IP, offset);
+          sub64_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, sizeof(struct svalue*), 0);
+          load64_reg_imm(ARM_REG_ARG2, ARM_REG_ARG1, 0);
+          store64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_IP, offset);
+          sub64_reg_reg(ARM_REG_ARG1, ARM_REG_PIKE_SP, ARM_REG_ARG2);
+          asr64_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 4);
+
+          arm64_call(Pike_compiler->new_program->constants[arg1].sval.u.efun->function);
+          compiler_state.flags &= ~FLAG_SP_LOADED;
+
+          ra_free(ARM_REG_ARG1);
+          ra_free(ARM_REG_ARG2);
+      }
+      return;
+  case F_MARK_CALL_BUILTIN:
+  case F_MARK_CALL_BUILTIN_AND_POP:
+  case F_MARK_CALL_BUILTIN_AND_RETURN:
+      arm64_debug_instr_prologue_1(opcode, arg1);
+
+      arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, 0);
+
+      if (opcode == F_MARK_CALL_BUILTIN_AND_POP) {
+          ins_f_byte(F_POP_VALUE);
+      } else if (opcode == F_MARK_CALL_BUILTIN_AND_RETURN) {
+          ins_f_byte(F_DUMB_RETURN);
+      }
+      return;
   }
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
@@ -2648,6 +2761,10 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
   case F_2_LOCALS:
       ins_f_byte_with_arg(F_LOCAL, arg1);
       ins_f_byte_with_arg(F_LOCAL, arg2);
+      return;
+  case F_CALL_BUILTIN_N:
+      arm64_debug_instr_prologue_2(opcode, arg1, arg2);
+      arm64_safe_call_efun(Pike_compiler->new_program->constants[arg1].sval.u.efun->function, arg2);
       return;
   }
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
