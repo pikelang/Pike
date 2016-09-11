@@ -1473,9 +1473,6 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
-      else
-	PIKE_ERROR("has_value",
-		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
       break;
 
     case T_PROGRAM:
@@ -1507,8 +1504,6 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
-      else
-	PIKE_ERROR("has_value", "Search gave incorrect result.\n", Pike_sp, args);
       break;
 
     default:
