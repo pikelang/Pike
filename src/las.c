@@ -4971,8 +4971,8 @@ ptrdiff_t eval_low(node *n,int print_error)
     foo.yes=0;
 
 #ifdef PIKE_USE_MACHINE_CODE
-    make_area_executable ((char *) (prog->program + num_program),
-			  (prog->num_program - num_program) *
+    make_area_executable ((char *) prog->program,
+			  (prog->num_program) *
 			  sizeof (prog->program[0]));
 #endif
 
