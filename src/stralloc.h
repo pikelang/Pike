@@ -90,6 +90,7 @@ struct string_builder
 /* Flags used by string_builder_quote_string() */
 #define QUOTE_NO_STRING_CONCAT	1	/* Don't use string concat in output */
 #define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
+#define QUOTE_NORMALIZE_WS	4	/* Normalize whitespace */
 
 #define free_string(s) do{ \
     struct pike_string *_=(s); \

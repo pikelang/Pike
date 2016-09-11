@@ -2649,6 +2649,7 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  int flags)
 {
   ptrdiff_t old_len = buf->s->len;
+  int inhibit_whitespace = (flags & QUOTE_NORMALIZE_WS);
 
   for (; i < str->len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
@@ -2656,23 +2657,37 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       /* Huge character. */
       string_builder_binary_strcat(buf, "\\U", 2);
       string_builder_append_integer(buf, (unsigned INT32)ch, 16, APPEND_ZERO_PAD, 8, 8);
+      inhibit_whitespace = 0;
     } else if (ch > 0xff) {
       /* Unicode character. */
       string_builder_binary_strcat(buf, "\\u", 2);
       string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 4, 4);
+      inhibit_whitespace = 0;
     } else if (ch & 0x60) {
       /* Printable character or DEL. */
-      if (ch == '\177') {
-	/* DEL */
+      if (ch == '\177' || ch == ' ') {
+	/* DEL or SP */
 	goto ctrl_char;
-      } else if ((ch == '"') || (ch == '\\')) {
+      }
+
+      inhibit_whitespace = 0;
+
+      if ((ch == '"') || (ch == '\\')) {
 	string_builder_putchar(buf, '\\');
       }
       string_builder_putchar(buf, ch);
     } else {
       p_wchar2 next_ch;
     ctrl_char:
-      /* Control character. */
+      /* Control character or whitespace. */
+      if (flags & QUOTE_NORMALIZE_WS) {
+	/* Normalize all sequences of whitespace to a single SP. */
+	if (!inhibit_whitespace) {
+	  string_builder_putchar(buf, ' ');
+	  inhibit_whitespace = 1;
+	}
+	goto next;
+      }
       string_builder_putchar(buf, '\\');
       if ((ch > 6) && (ch < 14)) {
 	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
@@ -2709,9 +2724,14 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
   next:
     if (buf->s->len > max_len) {
       buf->s->len = old_len;
-      return i;
+      inhibit_whitespace = 0;
+      break;
     }
     old_len = buf->s->len;
+  }
+  if (inhibit_whitespace && (inhibit_whitespace != QUOTE_NORMALIZE_WS)) {
+    /* Get rid of the SP at the end of the buffer. */
+    buf->s->len--;
   }
   return i;
 }
