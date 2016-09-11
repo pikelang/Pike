@@ -57,10 +57,16 @@ int getCounter()
 //! @param query_mode
 //!  if set to true, encoding will allow "$" and "." in key names, which
 //!   would normally be disallowed.
-string encode(mapping m, int|void query_mode)
+string encode(array|mapping m, int|void query_mode)
 {
   String.Buffer buf = String.Buffer();
-  low_encode(m, buf, query_mode);
+  if( arrayp(m) )
+  {
+    foreach(m; int i; mixed val)
+      encode_value((string)i, val, buf, query_mode);
+  }
+  else
+    low_encode(m, buf, query_mode);
   return sprintf("%-4c%s%c", sizeof(buf)+5, buf->get(), 0);
 }
 
@@ -102,7 +108,7 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    }
    else if(arrayp(value))
    {
-     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, encode( mkmapping((array(string))indices(value), value), allow_specials));
+     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, encode(value, allow_specials));
    }
    else if(intp(value))
    {
@@ -183,19 +189,6 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    }
    else
      ERROR("Unknown object %O.\n", value);
-}
-
-//! Encode an array of data structures as a BSON formatted string
-string encode_array(array(mapping) documents)
-{
-	String.Buffer buf = String.Buffer();
-
-	foreach(documents;;mixed document)
-	{
-		buf->add(encode(document));
-	}
-
-	return buf->get();
 }
 
 #ifdef BSON_PIKE_ONLY
