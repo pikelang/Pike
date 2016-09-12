@@ -72,7 +72,7 @@ string encode(array|mapping m, int|void query_mode)
 
 protected string toCString(string str)
 {
-  if( String.range(str)[0]==0 )
+  if(has_value(str, 0))
     ERROR("String cannot contain null bytes.\n");
   return string_to_utf8(str) + "\0";
 }
@@ -82,7 +82,7 @@ protected void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
   foreach(m; mixed key; mixed val)
   {
     if(!stringp(key)) ERROR("BSON Keys must be strings.\n");
-    if( String.range(key)[0]==0 ) ERROR("BSON Keys may not contain NULL characters.\n");
+    if(has_value(key, 0)) ERROR("BSON Keys may not contain NULL characters.\n");
     if(!allow_specials && ( has_value(key, '$') || has_value(key, '.') ))
       ERROR("BSON keys may not contain '$' or '.' characters unless in query-mode.\n");
     key = string_to_utf8(key);
