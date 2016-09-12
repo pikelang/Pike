@@ -1542,7 +1542,7 @@ void unregister(program p)
       programs[fname] = no_value;
 
     string name = program_path_to_name (fname);
-    mixed n = has_value (name, ".") ?
+    mixed n = has_value (name, '.') ?
       resolv ((name / ".")[..<1] * ".") :
       get_root_module();
     if (objectp (n) && (n->is_resolv_dirnode || n->is_resolv_joinnode))
@@ -2322,7 +2322,7 @@ class joinnode (array(object|mapping) joined_modules,
   {
     if (as != 'O') return 0;
     if (name) {
-      if (has_value (name, "|"))
+      if (has_value (name, '|'))
 	return "joinnode(" + name + ")";
       else
 	return name;		// Let's be brief.
@@ -2363,7 +2363,7 @@ class joinnode (array(object|mapping) joined_modules,
     path = combine_path(getcwd(), path);
     dirnode node = fc[path] ||
       (fc[path] = dirnode(path, compilation_handler,
-			  name && !has_value (name, "|") && name));
+                          name && !has_value (name, '|') && name));
     if (sizeof(joined_modules) &&
 	joined_modules[0] == node) return;
     joined_modules = ({ node }) + (joined_modules - ({ node }));
@@ -2412,7 +2412,7 @@ class joinnode (array(object|mapping) joined_modules,
       resolv_debug("joinnode(%O)->ind(%O) => new joinnode, fallback: %O\n",
 		   joined_modules, index, fallback_module[index]);
       return joinnode(res, compilation_handler, fallback_module[index],
-		      name && !has_value (name, "|") &&
+                      name && !has_value (name, '|') &&
 		      (name == "predef::" ? index : name + "." + index));
     }
 
