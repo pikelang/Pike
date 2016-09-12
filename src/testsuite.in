@@ -9589,7 +9589,7 @@ test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "#line 1 \"-\"\n\n\n\n\n")
 test_any([[
   #define TOSTR(X)	#X
   return TOSTR(FOO  "String with \\ and \" and  space"  BAR);
-]], "FOO \"String with \\\\ and \\\" and  space" BAR")
+]], "FOO \"String with \\\\ and \\\" and  space\" BAR")
 test_any([[
   Stdio.write_file("testsuite_test.h", "");
   return compile_string(#"
