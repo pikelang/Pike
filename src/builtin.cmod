@@ -2346,11 +2346,13 @@ PIKECLASS RandomSystem
       Pike_error("Failed to create random data.\n");
     }
 #else /* !__NT__ */
-    if( random_fd==-1 )
+    while( random_fd == -1 )
     {
       random_fd = open("/dev/urandom", O_RDONLY);
-      if( random_fd==-1 )
+      if( random_fd==-1 ) {
+	if (errno == EINTR) continue;	/* Retry */
         Pike_error("Failed to open /dev/urandom.\n");
+      }
     }
 
     struct pike_string *ret = begin_shared_string(len);
@@ -2359,6 +2361,8 @@ PIKECLASS RandomSystem
     {
       int sz = read(random_fd, str, len);
       if (sz < 0) {
+	if (errno == EINTR) continue;	/* Retry */
+
 	free_string(ret);
 
 	/* Attempt to recover on next call. */
