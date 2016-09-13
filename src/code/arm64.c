@@ -4,17 +4,6 @@
 || for more information.
 */
 
-#include "global.h"
-#include "svalue.h"
-#include "operators.h"
-#include "bitvector.h"
-#include "object.h"
-#include "builtin_functions.h"
-#include "bignum.h"
-#include "constants.h"
-
-#define MACRO  ATTRIBUTE((unused)) static
-
 /* ARM64 machine code backend
  *
  * naming conventions:
@@ -28,7 +17,7 @@
  *
  */
 
-enum arm64_register {
+enum arm_register {
     ARM_REG_R0,
     ARM_REG_ARG1 = 0,
     ARM_REG_RVAL = 0,
@@ -83,7 +72,7 @@ enum arm64_register {
     ARM_REG_NONE = -1
 };
 
-unsigned INT32 RBIT(enum arm64_register reg) {
+unsigned INT32 RBIT(enum arm_register reg) {
     return 1<<reg;
 }
 
@@ -163,137 +152,39 @@ ARM_INSTR_COND_BRANCH_IMM   = 0x54000000,
 ARM_INSTR_UNCOND_BRANCH_REG = 0xd6000000,
 };
 
-#define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
+/* temporary registers */
+static const unsigned INT32 arm_temp_registers = 0xffff;
+
+/* NOTE: this must always be even, in order that we always push an even number of registers.
+ * This is necessary to keep the stack 16 byte aligned.
+ */
+static const unsigned INT32 arm_push_registers = 
+  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
+  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) |
+  (1 << ARM_REG_LR) | (1 << 19);
+
+/* registers for use by the register allocator */
+static const unsigned INT32 arm_alloc_registers = 0xffff | (1<<19);
+
+#include "arm.c"
 
 
 MACRO void arm64_flush_dirty_regs(void);
 MACRO void arm64_call(void *ptr);
-MACRO enum arm64_register ra_alloc_any(void);
-MACRO void ra_free(enum arm64_register reg);
-
-MACRO void break_my_arm(void) {
-}
-
-#ifdef ARM64_LOW_DEBUG
-static unsigned INT32 stats_m[F_MAX_INSTR - F_OFFSET];
-static unsigned INT32 stats_b[F_MAX_INSTR - F_OFFSET];
-
-#define OPCODE0(X,Y,F) case X: return #X;
-#define OPCODE1(X,Y,F) case X: return #X;
-#define OPCODE2(X,Y,F) case X: return #X;
-#define OPCODE0_TAIL(X,Y,F) case X: return #X;
-#define OPCODE1_TAIL(X,Y,F) case X: return #X;
-#define OPCODE2_TAIL(X,Y,F) case X: return #X;
-#define OPCODE0_JUMP(X,Y,F) case X: return #X;
-#define OPCODE1_JUMP(X,Y,F) case X: return #X;
-#define OPCODE2_JUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_RETURN(X,Y,F) case X: return #X;
-#define OPCODE1_RETURN(X,Y,F) case X: return #X;
-#define OPCODE2_RETURN(X,Y,F) case X: return #X;
-#define OPCODE0_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE1_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE2_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE0_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
-
-const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
-    switch (code+F_OFFSET) {
-#include "interpret_protos.h"
-    default:
-        return "<unknown>";
-    }
-}
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_ALIAS
-#undef OPCODE1_ALIAS
-#undef OPCODE2_ALIAS
-
-ATTRIBUTE((destructor))
-MACRO void write_stats() {
-    int i;
-    FILE* file = fopen("/home/el/opcode.state", "a");
-
-    for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
-        if (!stats_m[i] && !stats_b[i]) continue;
-
-        fprintf(file, "%s\t%u\t%u\n", arm_get_opcode_name(i), stats_b[i], stats_m[i] - stats_b[i]);
-    }
-
-    fclose(file);
-}
-#endif
-
-MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
-    code = code; /* prevent unused warning */
-    bytecode = bytecode;
-#ifdef ARM64_LOW_DEBUG
-    if (bytecode) {
-        stats_b[code - F_OFFSET] ++;
-    } else {
-        stats_m[code - F_OFFSET] ++;
-    }
-#endif
-}
 
 OPCODE_FUN set_64bit(unsigned INT32 instr) {
     return instr | (1<<31);
 }
 
-OPCODE_FUN set_rt_reg(unsigned INT32 instr, enum arm64_register r) {
+OPCODE_FUN set_rt_reg(unsigned INT32 instr, enum arm_register r) {
     return instr | (r);
 }
 
-OPCODE_FUN set_rn_reg(unsigned INT32 instr, enum arm64_register r) {
+OPCODE_FUN set_rn_reg(unsigned INT32 instr, enum arm_register r) {
     return instr | (r << 5);
 }
 
-OPCODE_FUN set_rm_reg(unsigned INT32 instr, enum arm64_register r) {
+OPCODE_FUN set_rm_reg(unsigned INT32 instr, enum arm_register r) {
     return instr | (r << 16);
 }
 
@@ -322,7 +213,7 @@ enum arm64_multiple_mode {
 #undef MODE
 };
 
-static void emulate_multiple(enum arm64_register addr, enum arm64_multiple_mode mode,
+static void emulate_multiple(enum arm_register addr, enum arm64_multiple_mode mode,
 			     unsigned INT32 registers,  int sf, int l)
 {
     /* Note: DA(W) and IB(W) probably use the wrong offset for the
@@ -340,7 +231,7 @@ static void emulate_multiple(enum arm64_register addr, enum arm64_multiple_mode 
 	instr |= (1<<24);
     }
     while (registers) {
-	enum arm64_register rt, rt2;
+	enum arm_register rt, rt2;
 	if (mode & 2) {
 	    /* Ascending, lowest register first */
 	    rt = ctz32(registers);
@@ -371,41 +262,41 @@ static void emulate_multiple(enum arm64_register addr, enum arm64_multiple_mode 
     }
 }
 
-MACRO void store_multiple(enum arm64_register addr, enum arm64_multiple_mode mode,
+MACRO void store_multiple(enum arm_register addr, enum arm64_multiple_mode mode,
                           unsigned INT32 registers) {
     emulate_multiple(addr, mode, registers, 1, 0);
 }
 
-MACRO void load_multiple(enum arm64_register addr, enum arm64_multiple_mode mode,
+MACRO void load_multiple(enum arm_register addr, enum arm64_multiple_mode mode,
                          unsigned INT32 registers) {
     emulate_multiple(addr, mode, registers, 1, 1);
 }
 
-OPCODE_FUN gen_mov_wide(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_mov_wide(enum arm_register reg, unsigned short imm, unsigned char shift) {
     return ARM_INSTR_MOVE_WIDE | ARM_WIDE_MOVZ | (shift << 21) | (imm << 5) | reg;
 }
 
-OPCODE_FUN gen_mov_widen(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_mov_widen(enum arm_register reg, unsigned short imm, unsigned char shift) {
     return ARM_INSTR_MOVE_WIDE | ARM_WIDE_MOVN | (shift << 21) | (imm << 5) | reg;
 }
 
-MACRO void mov_wide(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+MACRO void mov_wide(enum arm_register reg, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_mov_wide(reg, imm, shift)));
 }
 
-MACRO void mov_widen(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+MACRO void mov_widen(enum arm_register reg, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_mov_widen(reg, imm, shift)));
 }
 
-OPCODE_FUN gen_mov_top(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_mov_top(enum arm_register reg, unsigned short imm, unsigned char shift) {
     return ARM_INSTR_MOVE_WIDE | ARM_WIDE_MOVK | (shift << 21) | (imm << 5) | reg;
 }
 
-MACRO void mov_top(enum arm64_register reg, unsigned short imm, unsigned char shift) {
+MACRO void mov_top(enum arm_register reg, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_mov_top(reg, imm, shift)));
 }
 
-OPCODE_FUN gen_br_reg(enum arm64_register to) {
+OPCODE_FUN gen_br_reg(enum arm_register to) {
     unsigned INT32 instr = ARM_INSTR_UNCOND_BRANCH_REG;
 
     instr |= (to << 5);
@@ -414,23 +305,23 @@ OPCODE_FUN gen_br_reg(enum arm64_register to) {
     return instr;
 }
 
-MACRO void br_reg(enum arm64_register to) {
+MACRO void br_reg(enum arm_register to) {
     add_to_program(gen_br_reg(to));
 }
 
-OPCODE_FUN gen_blr_reg(enum arm64_register to) {
+OPCODE_FUN gen_blr_reg(enum arm_register to) {
     return gen_br_reg(to) | (1<<21);
 }
 
-MACRO void blr_reg(enum arm64_register to) {
+MACRO void blr_reg(enum arm_register to) {
     add_to_program(gen_blr_reg(to));
 }
 
-OPCODE_FUN gen_ret_reg(enum arm64_register to) {
+OPCODE_FUN gen_ret_reg(enum arm_register to) {
     return gen_br_reg(to) | (1<<22);
 }
 
-MACRO void ret_reg(enum arm64_register to) {
+MACRO void ret_reg(enum arm_register to) {
     add_to_program(gen_ret_reg(to));
 }
 
@@ -467,8 +358,8 @@ MACRO void bl_imm(INT32 dist) {
     add_to_program(gen_bl_imm(dist));
 }
 
-OPCODE_FUN gen_arith_reg_reg(enum arith_instr op, enum arm64_register dst,
-			     enum arm64_register a, enum arm64_register b,
+OPCODE_FUN gen_arith_reg_reg(enum arith_instr op, enum arm_register dst,
+			     enum arm_register a, enum arm_register b,
 			     unsigned short imm) {
     unsigned INT32 instr = ARM_INSTR_ARITH_REG;
 
@@ -481,8 +372,8 @@ OPCODE_FUN gen_arith_reg_reg(enum arith_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_logic_reg_reg(enum logic_instr op, enum arm64_register dst,
-			     enum arm64_register a, enum arm64_register b,
+OPCODE_FUN gen_logic_reg_reg(enum logic_instr op, enum arm_register dst,
+			     enum arm_register a, enum arm_register b,
 			     unsigned short imm) {
     unsigned INT32 instr = ARM_INSTR_LOGIC_REG;
 
@@ -495,31 +386,31 @@ OPCODE_FUN gen_logic_reg_reg(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_cmp_reg_reg(enum arm64_register a, enum arm64_register b) {
+OPCODE_FUN gen_cmp_reg_reg(enum arm_register a, enum arm_register b) {
     return gen_arith_reg_reg(ARM_ARITH_SUBS, ARM_REG_ZERO, a, b, 0);
 }
 
-MACRO void cmp_reg_reg(enum arm64_register a, enum arm64_register b) {
+MACRO void cmp_reg_reg(enum arm_register a, enum arm_register b) {
     add_to_program(set_64bit(gen_cmp_reg_reg(a, b)));
 }
 
-OPCODE_FUN gen_cmn_reg_reg(enum arm64_register a, enum arm64_register b) {
+OPCODE_FUN gen_cmn_reg_reg(enum arm_register a, enum arm_register b) {
     return gen_arith_reg_reg(ARM_ARITH_ADDS, ARM_REG_ZERO, a, b, 0);
 }
 
-MACRO void cmn_reg_reg(enum arm64_register a, enum arm64_register b) {
+MACRO void cmn_reg_reg(enum arm_register a, enum arm_register b) {
     add_to_program(set_64bit(gen_cmn_reg_reg(a, b)));
 }
 
-OPCODE_FUN gen_tst_reg_reg(enum arm64_register a, enum arm64_register b) {
+OPCODE_FUN gen_tst_reg_reg(enum arm_register a, enum arm_register b) {
     return gen_logic_reg_reg(ARM_LOGIC_ANDS, ARM_REG_ZERO, a, b, 0);
 }
 
-MACRO void tst_reg_reg(enum arm64_register a, enum arm64_register b) {
+MACRO void tst_reg_reg(enum arm_register a, enum arm_register b) {
     add_to_program(set_64bit(gen_tst_reg_reg(a, b)));
 }
 
-OPCODE_FUN gen_ccmp_reg_reg(enum arm64_register a, enum arm64_register b,
+OPCODE_FUN gen_ccmp_reg_reg(enum arm_register a, enum arm_register b,
 			    enum arm64_condition cond, unsigned char nzcv)
 {
     unsigned INT32 instr = ARM_INSTR_COND_COMPARE;
@@ -531,7 +422,7 @@ OPCODE_FUN gen_ccmp_reg_reg(enum arm64_register a, enum arm64_register b,
     return instr;
 }
 
-OPCODE_FUN gen_csinc(enum arm64_register dst, enum arm64_register a, enum arm64_register b,
+OPCODE_FUN gen_csinc(enum arm_register dst, enum arm_register a, enum arm_register b,
 		     enum arm64_condition cond)
 {
     unsigned INT32 instr = ARM_INSTR_COND_SELECT;
@@ -543,7 +434,7 @@ OPCODE_FUN gen_csinc(enum arm64_register dst, enum arm64_register a, enum arm64_
     return instr;
 }
 
-OPCODE_FUN gen_cbz(enum arm64_register reg, INT32 dist)
+OPCODE_FUN gen_cbz(enum arm_register reg, INT32 dist)
 {
     unsigned INT32 instr = ARM_INSTR_COMPARE_N_BRANCH;
 
@@ -553,32 +444,32 @@ OPCODE_FUN gen_cbz(enum arm64_register reg, INT32 dist)
     return instr;
 }
 
-OPCODE_FUN gen_cbnz(enum arm64_register reg, INT32 dist)
+OPCODE_FUN gen_cbnz(enum arm_register reg, INT32 dist)
 {
     return gen_cbz(reg, dist) | (1 << 24);
 }
 
-MACRO void cbz32_imm(enum arm64_register reg, INT32 dist)
+MACRO void cbz32_imm(enum arm_register reg, INT32 dist)
 {
     add_to_program(gen_cbz(reg, dist));
 }
 
-MACRO void cbz64_imm(enum arm64_register reg, INT32 dist)
+MACRO void cbz64_imm(enum arm_register reg, INT32 dist)
 {
     add_to_program(set_64bit(gen_cbz(reg, dist)));
 }
 
-MACRO void cbnz32_imm(enum arm64_register reg, INT32 dist)
+MACRO void cbnz32_imm(enum arm_register reg, INT32 dist)
 {
     add_to_program(gen_cbnz(reg, dist));
 }
 
-MACRO void cbnz64_imm(enum arm64_register reg, INT32 dist)
+MACRO void cbnz64_imm(enum arm_register reg, INT32 dist)
 {
     add_to_program(set_64bit(gen_cbnz(reg, dist)));
 }
 
-OPCODE_FUN gen_tbz(enum arm64_register reg, int bit, INT32 dist)
+OPCODE_FUN gen_tbz(enum arm_register reg, int bit, INT32 dist)
 {
     unsigned INT32 instr = ARM_INSTR_TEST_N_BRANCH;
 
@@ -590,17 +481,17 @@ OPCODE_FUN gen_tbz(enum arm64_register reg, int bit, INT32 dist)
     return instr;
 }
 
-OPCODE_FUN gen_tbnz(enum arm64_register reg, int bit, INT32 dist)
+OPCODE_FUN gen_tbnz(enum arm_register reg, int bit, INT32 dist)
 {
     return gen_tbz(reg, bit, dist) | (1 << 24);
 }
 
-MACRO void tbz_imm(enum arm64_register reg, int bit, INT32 dist)
+MACRO void tbz_imm(enum arm_register reg, int bit, INT32 dist)
 {
     add_to_program(gen_tbz(reg, bit, dist));
 }
 
-MACRO void tbnz_imm(enum arm64_register reg, int bit, INT32 dist)
+MACRO void tbnz_imm(enum arm_register reg, int bit, INT32 dist)
 {
     add_to_program(gen_tbnz(reg, bit, dist));
 }
@@ -681,10 +572,10 @@ MACRO int arm64_make_logic_imm(unsigned INT64 v, unsigned char *n, unsigned char
     return 0;
 }
 
-MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v);
+MACRO void arm64_mov_int(enum arm_register reg, unsigned INT64 v);
 
-OPCODE_FUN gen_arith_reg_imm(enum arith_instr op, enum arm64_register dst,
-			     enum arm64_register reg, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_arith_reg_imm(enum arith_instr op, enum arm_register dst,
+			     enum arm_register reg, unsigned short imm, unsigned char shift) {
     unsigned INT32 instr = set_arith_src_imm(op, imm, shift);
 
     instr = set_rt_reg(instr, dst);
@@ -693,8 +584,8 @@ OPCODE_FUN gen_arith_reg_imm(enum arith_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm64_register dst,
-			     enum arm64_register reg, unsigned char n, unsigned char immr, unsigned char imms) {
+OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm_register dst,
+			     enum arm_register reg, unsigned char n, unsigned char immr, unsigned char imms) {
     unsigned INT32 instr = set_logic_src_imm(op, n, immr, imms);
 
     instr = set_rt_reg(instr, dst);
@@ -703,8 +594,8 @@ OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm64_register dst,
-				enum arm64_register reg, unsigned char immr, unsigned char imms, int sf) {
+OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm_register dst,
+				enum arm_register reg, unsigned char immr, unsigned char imms, int sf) {
     unsigned INT32 instr = set_bitfield_src_imm(op, sf, immr, imms);
 
     instr = set_rt_reg(instr, dst);
@@ -716,20 +607,20 @@ OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_cmp_reg_imm(enum arm_register a, unsigned short imm, unsigned char shift) {
     return gen_arith_reg_imm(ARM_ARITH_SUBS, ARM_REG_ZERO, a, imm, shift);
 }
 
-OPCODE_FUN gen_cmn_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+OPCODE_FUN gen_cmn_reg_imm(enum arm_register a, unsigned short imm, unsigned char shift) {
     return gen_arith_reg_imm(ARM_ARITH_ADDS, ARM_REG_ZERO, a, imm, shift);
 }
 
-OPCODE_FUN gen_tst_reg_imm(enum arm64_register a, unsigned char n, unsigned char immr, unsigned char imms) {
+OPCODE_FUN gen_tst_reg_imm(enum arm_register a, unsigned char n, unsigned char immr, unsigned char imms) {
     return gen_logic_reg_imm(ARM_LOGIC_ANDS, ARM_REG_ZERO, a, n, immr, imms);
 }
 
-OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst,
-                             enum arm64_register a, enum arm64_register b) {
+OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm_register dst,
+                             enum arm_register a, enum arm_register b) {
     unsigned INT32 instr = ARM_INSTR_SHIFT_REG;
     instr = set_rt_reg(instr, dst);
     instr = set_rn_reg(instr, a);
@@ -740,35 +631,35 @@ OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst
 }
 
 /* Emulated shift instructions */
-OPCODE_FUN gen_asr_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+OPCODE_FUN gen_asr_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm, int sf)
 {
   return gen_bitfield_reg_imm(ARM_BITFIELD_SBFM, dst, reg, imm, (sf? 63:31), sf);
 }
 
-OPCODE_FUN gen_lsr_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+OPCODE_FUN gen_lsr_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm, int sf)
 {
   return gen_bitfield_reg_imm(ARM_BITFIELD_UBFM, dst, reg, imm, (sf? 63:31), sf);
 }
 
-OPCODE_FUN gen_lsl_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm, int sf)
+OPCODE_FUN gen_lsl_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm, int sf)
 {
   unsigned char mask = (sf? 63:31);
   return gen_bitfield_reg_imm(ARM_BITFIELD_UBFM, dst, reg, (64-imm)&mask, mask-imm, sf);
 }
 
-MACRO void cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+MACRO void cmp_reg_imm(enum arm_register a, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_cmp_reg_imm(a, imm, shift)));
 }
 
-MACRO void cmn_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+MACRO void cmn_reg_imm(enum arm_register a, unsigned short imm, unsigned char shift) {
     add_to_program(set_64bit(gen_cmn_reg_imm(a, imm, shift)));
 }
 
-MACRO void tst_reg_imm(enum arm64_register a, unsigned char n, unsigned char immr, unsigned char imms) {
+MACRO void tst_reg_imm(enum arm_register a, unsigned char n, unsigned char immr, unsigned char imms) {
     add_to_program(set_64bit(gen_tst_reg_imm(a, n, immr, imms)));
 }
 
-OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz, int index) {
+OPCODE_FUN gen_store_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset, int sz, int index) {
     unsigned INT32 instr = ARM_INSTR_LOADSTORE_SINGLE | (sz << 30);
 
     instr = set_rt_reg(instr, dst);
@@ -790,59 +681,59 @@ OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, 
     return instr;
 }
 
-MACRO void store8_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store8_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 0, 0));
 }
 
-MACRO void store16_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 1, 0));
 }
 
-MACRO void store32_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 2, 0));
 }
 
-MACRO void store64_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store64_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 3, 0));
 }
 
-MACRO void store64_reg_imm_post(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store64_reg_imm_post(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 3, 1));
 }
 
-MACRO void store64_reg_imm_pre(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void store64_reg_imm_pre(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store_reg_imm(dst, base, offset, 3, 3));
 }
 
-OPCODE_FUN gen_load_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz, int index) {
+OPCODE_FUN gen_load_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset, int sz, int index) {
     return gen_store_reg_imm(dst, base, offset, sz, index) | (1<<22);
 }
 
-MACRO void load8_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load8_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 0, 0));
 }
 
-MACRO void load16_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 1, 0));
 }
 
-MACRO void load32_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 2, 0));
 }
 
-MACRO void load64_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load64_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 3, 0));
 }
 
-MACRO void load64_reg_imm_post(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load64_reg_imm_post(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 3, 1));
 }
 
-MACRO void load64_reg_imm_pre(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+MACRO void load64_reg_imm_pre(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load_reg_imm(dst, base, offset, 3, 3));
 }
 
-OPCODE_FUN gen_store_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s, int sz) {
+OPCODE_FUN gen_store_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s, int sz) {
     unsigned INT32 instr = ARM_INSTR_LOADSTORE_SINGLE | (sz << 30);
     instr |= 1<<21;
     instr |= 1<<11;
@@ -854,87 +745,87 @@ OPCODE_FUN gen_store_reg_reg(enum arm64_register dst, enum arm64_register base, 
     return instr;
 }
 
-MACRO void store8_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void store8_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_store_reg_reg(dst, base, index, s, 0));
 }
 
-MACRO void store16_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void store16_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_store_reg_reg(dst, base, index, s, 1));
 }
 
-MACRO void store32_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void store32_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_store_reg_reg(dst, base, index, s, 2));
 }
 
-MACRO void store64_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void store64_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_store_reg_reg(dst, base, index, s, 3));
 }
 
-OPCODE_FUN gen_load_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s, int sz) {
+OPCODE_FUN gen_load_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s, int sz) {
     return gen_store_reg_reg(dst, base, index, s, sz) | (1<<22);
 }
 
-MACRO void load8_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void load8_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_load_reg_reg(dst, base, index, s, 0));
 }
 
-MACRO void load16_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void load16_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_load_reg_reg(dst, base, index, s, 1));
 }
 
-MACRO void load32_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void load32_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_load_reg_reg(dst, base, index, s, 2));
 }
 
-MACRO void load64_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+MACRO void load64_reg_reg(enum arm_register dst, enum arm_register base, enum arm_register index, int s) {
     add_to_program(gen_load_reg_reg(dst, base, index, s, 3));
 }
 
 #define GEN_ARITH_OP(name, NAME)                                                                         \
-OPCODE_FUN gen_ ## name ## _reg_imm(enum arm64_register dst, enum arm64_register reg,                    \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm_register dst, enum arm_register reg,                        \
                                     unsigned short imm, unsigned char shift) {                           \
     return gen_arith_reg_imm(ARM_ARITH_ ## NAME, dst, reg, imm, shift);                                  \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm64_register dst, enum arm64_register a,                      \
-                                    enum arm64_register b) {                                             \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register dst, enum arm_register a,                          \
+                                    enum arm_register b) {                                               \
     return gen_arith_reg_reg(ARM_ARITH_ ## NAME, dst, a, b, 0);                                          \
 }                                                                                                        \
                                                                                                          \
-MACRO void name ## 32_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned short imm,      \
+MACRO void name ## 32_reg_imm(enum arm_register dst, enum arm_register reg, unsigned short imm,          \
                                       unsigned char shift) {                                             \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, shift));                                      \
 }                                                                                                        \
-MACRO void name ## 32_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 32_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 32_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT32 v) {\
+MACRO void arm64_ ## name ## 32_reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {  \
     unsigned short imm;                                                                                  \
     unsigned char shift;                                                                                 \
                                                                                                          \
     if (arm64_make_arith_imm(v, &imm, &shift)) {                                                         \
         name ## 32_reg_imm(dst, a, imm, shift);                                                          \
     } else {                                                                                             \
-        enum arm64_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm64_mov_int(tmp, v);                                                                           \
         name ## 32_reg_reg(dst, a, tmp);                                                                 \
         ra_free(tmp);                                                                                    \
     }                                                                                                    \
 }                                                                                                        \
-MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned short imm,      \
+MACRO void name ## 64_reg_imm(enum arm_register dst, enum arm_register reg, unsigned short imm,          \
                                       unsigned char shift) {                                             \
     add_to_program(set_64bit(gen_ ## name ## _reg_imm(dst, reg, imm, shift)));                           \
 }                                                                                                        \
-MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 64_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT64 v) {\
+MACRO void arm64_ ## name ## 64_reg_int(enum arm_register dst, enum arm_register a, unsigned INT64 v) {  \
     unsigned short imm;                                                                                  \
     unsigned char shift;                                                                                 \
                                                                                                          \
     if (arm64_make_arith_imm(v, &imm, &shift)) {                                                         \
         name ## 64_reg_imm(dst, a, imm, shift);                                                          \
     } else {                                                                                             \
-        enum arm64_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm64_mov_int(tmp, v);                                                                           \
         name ## 64_reg_reg(dst, a, tmp);                                                                 \
         ra_free(tmp);                                                                                    \
@@ -942,48 +833,48 @@ MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_regi
 }                                                                                                        \
 
 #define GEN_LOGIC_OP(name, NAME)                                                                         \
-OPCODE_FUN gen_ ## name ## _reg_imm(enum arm64_register dst, enum arm64_register reg,                    \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm_register dst, enum arm_register reg,                        \
                                     unsigned char n, unsigned char immr, unsigned char imms) {           \
     return gen_logic_reg_imm(ARM_LOGIC_ ## NAME, dst, reg, n, immr, imms);                               \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm64_register dst, enum arm64_register a,                      \
-                                    enum arm64_register b) {                                             \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register dst, enum arm_register a,                          \
+                                    enum arm_register b) {                                               \
     return gen_logic_reg_reg(ARM_LOGIC_ ## NAME, dst, a, b, 0);                                          \
 }                                                                                                        \
                                                                                                          \
-MACRO void name ## 32_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char n,         \
+MACRO void name ## 32_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char n,             \
                                       unsigned char immr, unsigned char imms) {                          \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, n, immr, imms));                                   \
 }                                                                                                        \
-MACRO void name ## 32_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 32_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 32_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT32 v) {\
+MACRO void arm64_ ## name ## 32_reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {  \
     unsigned char n, immr, imms;                                                                         \
                                                                                                          \
     if (arm64_make_logic_imm(v, &n, &immr, &imms, 0)) {                                                  \
         name ## 32_reg_imm(dst, a, n, immr, imms);                                                       \
     } else {                                                                                             \
-        enum arm64_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm64_mov_int(tmp, v);                                                                           \
         name ## 32_reg_reg(dst, a, tmp);                                                                 \
         ra_free(tmp);                                                                                    \
     }                                                                                                    \
 }                                                                                                        \
-MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char n,         \
+MACRO void name ## 64_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char n,             \
                                       unsigned char immr, unsigned char imms) {                          \
     add_to_program(set_64bit(gen_ ## name ## _reg_imm(dst, reg, n, immr, imms)));                        \
 }                                                                                                        \
-MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 64_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT64 v) {\
+MACRO void arm64_ ## name ## 64_reg_int(enum arm_register dst, enum arm_register a, unsigned INT64 v) {  \
     unsigned char n, immr, imms;                                                                         \
                                                                                                          \
     if (arm64_make_logic_imm(v, &n, &immr, &imms, 1)) {                                                  \
         name ## 64_reg_imm(dst, a, n, immr, imms);                                                       \
     } else {                                                                                             \
-        enum arm64_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm64_mov_int(tmp, v);                                                                           \
         name ## 64_reg_reg(dst, a, tmp);                                                                 \
         ra_free(tmp);                                                                                    \
@@ -991,21 +882,21 @@ MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_regi
 }                                                                                                        \
 
 #define GEN_SHIFT_OP(name, NAME)                                                                         \
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm64_register dst, enum arm64_register a,                      \
-                                    enum arm64_register b) {                                             \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register dst, enum arm_register a,                          \
+                                    enum arm_register b) {                                               \
     return gen_shift_reg_reg(ARM_SHIFT_ ## NAME, dst, a, b);                                             \
 }                                                                                                        \
                                                                                                          \
-MACRO void name ## 32_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm) {     \
+MACRO void name ## 32_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm) {         \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, 0));                                          \
 }                                                                                                        \
-MACRO void name ## 32_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 32_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
 }                                                                                                        \
-MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, unsigned char imm) {     \
+MACRO void name ## 64_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm) {         \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, 1));                                          \
 }                                                                                                        \
-MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+MACRO void name ## 64_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {         \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
 }                                                                                                        \
 
@@ -1022,19 +913,19 @@ GEN_SHIFT_OP(lsl, LSL)
 GEN_SHIFT_OP(asr, ASR)
 
 
-OPCODE_FUN gen_mov_reg(enum arm64_register dst, enum arm64_register src) {
+OPCODE_FUN gen_mov_reg(enum arm_register dst, enum arm_register src) {
     return set_64bit(gen_logic_reg_reg(ARM_LOGIC_OR, dst, ARM_REG_ZERO, src, 0));
 }
 
-MACRO void mov_reg(enum arm64_register dst, enum arm64_register src) {
+MACRO void mov_reg(enum arm_register dst, enum arm_register src) {
     add_to_program(gen_mov_reg(dst, src));
 }
 
-OPCODE_FUN gen_mov_imm(enum arm64_register dst, unsigned char n, unsigned char immr, unsigned char imms) {
+OPCODE_FUN gen_mov_imm(enum arm_register dst, unsigned char n, unsigned char immr, unsigned char imms) {
     return gen_logic_reg_imm(ARM_LOGIC_OR, dst, ARM_REG_ZERO, n, immr, imms);
 }
 
-MACRO void mov_imm(enum arm64_register dst, unsigned char n, unsigned char immr, unsigned char imms, int sf) {
+MACRO void mov_imm(enum arm_register dst, unsigned char n, unsigned char immr, unsigned char imms, int sf) {
     unsigned INT32 instr = gen_mov_imm(dst, n, immr, imms);
     add_to_program(sf? set_64bit(instr) : instr);
 }
@@ -1053,7 +944,7 @@ MACRO int arm64_move_wide_preferred(unsigned char n, unsigned char immr, unsigne
   return 0;
 }
 
-MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_mov_int(enum arm_register reg, unsigned INT64 v) {
     unsigned char n, immr, imms;
     int sf = (((unsigned INT32)v) != v);
     if (arm64_make_logic_imm(v, &n, &immr, &imms, sf) &&
@@ -1091,7 +982,7 @@ MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
     }
 }
 
-MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_cmp_int(enum arm_register reg, unsigned INT64 v) {
     unsigned short imm;
     unsigned char shift;
 
@@ -1100,7 +991,7 @@ MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
     } else if (arm64_make_arith_imm(-(INT64)v, &imm, &shift)) {
       cmn_reg_imm(reg, imm, shift);
     } else {
-      enum arm64_register tmp = ra_alloc_any();
+      enum arm_register tmp = ra_alloc_any();
 
       arm64_mov_int(tmp, v);
       cmp_reg_reg(reg, tmp);
@@ -1109,24 +1000,24 @@ MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
     }
 }
 
-OPCODE_FUN gen_adr_imm(enum arm64_register dst, INT32 offs)
+OPCODE_FUN gen_adr_imm(enum arm_register dst, INT32 offs)
 {
     assert ((offs < 0? (offs|0x1fffff) == -1 : (offs&~0x1fffff) == 0));
     return set_rt_reg(ARM_INSTR_PC_REL | ((offs & 3) << 29) | ((offs & 0x1ffffc) << 3), dst);
 }
 
-MACRO void adr_imm(enum arm64_register dst, INT32 offs)
+MACRO void adr_imm(enum arm_register dst, INT32 offs)
 {
     add_to_program(gen_adr_imm(dst, offs));
 }
 
-MACRO void arm64_tst_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_tst_int(enum arm_register reg, unsigned INT64 v) {
     unsigned char n, immr, imms;
 
     if (arm64_make_logic_imm(v, &n, &immr, &imms, 1)) {
         tst_reg_imm(reg, n, immr, imms);
     } else {
-        enum arm64_register tmp = ra_alloc_any();
+        enum arm_register tmp = ra_alloc_any();
 
         arm64_mov_int(tmp, v);
         tst_reg_reg(reg, tmp);
@@ -1138,13 +1029,13 @@ MACRO void arm64_tst_int(enum arm64_register reg, unsigned INT64 v) {
 /*
  * TODO: work with labels
  */
-MACRO void arm64_rel_cond_jmp(enum arm64_register reg, enum arm64_register b, enum arm64_condition cond, int jmp) {
+MACRO void arm64_rel_cond_jmp(enum arm_register reg, enum arm_register b, enum arm64_condition cond, int jmp) {
     cmp_reg_reg(reg, b);
     b_imm_cond(jmp, cond);
 }
 
 
-static void arm64_adr_imm_at(unsigned INT32 offset, enum arm64_register dst,
+static void arm64_adr_imm_at(unsigned INT32 offset, enum arm_register dst,
 			     INT32 offs)
 {
     upd_pointer(offset, gen_adr_imm(dst, offs));
@@ -1153,62 +1044,6 @@ static void arm64_adr_imm_at(unsigned INT32 offset, enum arm64_register dst,
 /*
  * "High" level interface
  */
-
-#define FLAG_SP_LOADED  1
-#define FLAG_FP_LOADED  2
-#define FLAG_LOCALS_LOADED 4
-#define FLAG_GLOBALS_LOADED 8
-#define FLAG_NOT_DESTRUCTED 16
-
-struct location_list_entry {
-    unsigned INT32 location;
-    struct location_list_entry *next;
-};
-
-struct compiler_state {
-    /* currently unused and dirt registers */
-    unsigned INT32 free, dirt;
-    /* address into which the initial stack push has to be
-     * generated
-     */
-    unsigned INT32 push_addr;
-    unsigned INT32 flags;
-} compiler_state;
-
-
-static struct location_list_entry* add_to_list(struct location_list_entry *list, unsigned INT32 location) {
-    struct location_list_entry *e = xalloc(sizeof(struct location_list_entry));
-
-    e->location = location;
-    e->next = list;
-
-    return e;
-}
-
-static void free_list(struct location_list_entry *list) {
-    while (list) {
-        struct location_list_entry * next = list->next;
-        free(list);
-        list = next;
-    }
-}
-
-struct label {
-    struct location_list_entry *list;
-    unsigned INT32 loc;
-};
-
-static void label_init(struct label *l) {
-    l->list = NULL;
-    l->loc = (unsigned INT32)-1;
-}
-
-MACRO INT32 label_dist(struct label *l) {
-    if (l->loc != (unsigned INT32)-1)
-        return l->loc - PIKE_PC;
-    l->list = add_to_list(l->list, PIKE_PC);
-    return 0;
-}
 
 MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
@@ -1244,10 +1079,10 @@ MACRO void label_generate(struct label *l) {
     free_list(l->list);
 }
 
-MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
+MACRO void arm64_call_if_bit_set(enum arm_register treg, int bit,
 				 void *a, void *b) {
     struct label skip;
-    enum arm64_register reg = ra_alloc_any();
+    enum arm_register reg = ra_alloc_any();
 
     unsigned INT64 v1 = (char*)a - (char*)NULL,
                    v2 = (char*)b - (char*)NULL;
@@ -1276,95 +1111,22 @@ void arm64_init_interpreter_state(void) {
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
-MACRO void ra_init(void) {
-    /* FIXME: this ought to happen in init_interpreter_state, only, but it is currently overwritten
-     * later */
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-
-    /* all register r0 through r24 are unused */
-    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5)|
-      RBIT(6)|RBIT(7)|RBIT(8)|RBIT(9)|RBIT(10)|RBIT(11)|RBIT(12)|RBIT(13)|
-      RBIT(14)|RBIT(15)|RBIT(19);
-    compiler_state.dirt = 0;
-    compiler_state.push_addr = -1;
-    compiler_state.flags = 0;
-}
-
-MACRO enum arm64_register ra_alloc(enum arm64_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    if (!(rbit & compiler_state.free))
-        Pike_fatal("Register %d is already in use.\n", reg);
-
-    compiler_state.free ^= rbit;
-    compiler_state.dirt |= rbit;
-
-    return reg;
-}
-
-MACRO enum arm64_register ra_alloc_persistent(void) {
-    unsigned INT32 free = compiler_state.free;
-
-    /* we dont want 0-18 */
-    free &= 0xfffc0000;
-
-    if (!free)
-        Pike_fatal("No register left: %x\n", compiler_state.free);
-
-    return ra_alloc(ctz32(free));
-}
-
-MACRO enum arm64_register ra_alloc_any(void) {
-    if (!compiler_state.free)
-        Pike_fatal("No register left.\n");
-
-    return ra_alloc(ctz32(compiler_state.free));
-}
-
-MACRO void ra_free(enum arm64_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    if (rbit & compiler_state.free)
-        Pike_fatal("Register %d is not in use.\n", reg);
-
-    compiler_state.free |= rbit;
-}
-
-MACRO int ra_is_dirty(enum arm64_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    return !!(rbit & compiler_state.dirt);
-}
-
-MACRO int ra_is_free(enum arm64_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    return !!(rbit & compiler_state.free);
-}
-
-/* NOTE: this must always be even, in order that we always push an even number of registers.
- * This is necessary to keep the stack 16 byte aligned.
- */
-static const unsigned INT32 pushed_registers =
-  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
-  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) |
-  (1 << ARM_REG_LR) | (1 << 19);
 
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm64_prologue(void) {
-    store_multiple(ARM_REG_SP, ARM_MULT_DBW, pushed_registers);
+    store_multiple(ARM_REG_SP, ARM_MULT_DBW, arm_push_registers);
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
 #define EPILOGUE_SIZE 4
 MACRO void arm64_epilogue(void) {
-    load_multiple(ARM_REG_SP, ARM_MULT_IAW, pushed_registers);
+    load_multiple(ARM_REG_SP, ARM_MULT_IAW, arm_push_registers);
     ret_reg(ARM_REG_LR);
 }
 
 MACRO void arm64_call(void *ptr) {
     unsigned INT64 v = (char*)ptr - (char*)NULL;
-    enum arm64_register tmp = ra_alloc_any();
+    enum arm_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
      * the current object */
@@ -1507,9 +1269,9 @@ MACRO void arm64_safe_call_efun(void (*fun)(int), int args) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
 }
 
-MACRO void arm64_assign_int_reg(enum arm64_register dst, enum arm64_register value, int subtype) {
+MACRO void arm64_assign_int_reg(enum arm_register dst, enum arm_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
-    enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1522,9 +1284,9 @@ MACRO void arm64_assign_int_reg(enum arm64_register dst, enum arm64_register val
     ra_free(tmp2);
 }
 
-MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
+MACRO void arm64_push_int_reg(enum arm_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
-    enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1542,7 +1304,7 @@ MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
 }
 
 MACRO void arm64_push_non_ref_type(unsigned INT32 type, unsigned INT64 value) {
-    enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1563,7 +1325,7 @@ MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
     arm64_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
 }
 
-MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vreg) {
+MACRO void arm64_push_ptr_type(enum arm_register treg, enum arm_register vreg) {
     assert(treg < vreg);
 
     arm64_load_sp_reg();
@@ -1577,7 +1339,7 @@ MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vre
 }
 
 MACRO void arm64_push_ref_type(unsigned INT32 type, void * ptr) {
-    enum arm64_register treg = ra_alloc_any(),
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     arm64_mov_int(treg, type);
@@ -1599,8 +1361,8 @@ MACRO void arm64_push_constant(struct svalue *sv) {
     }
 }
 
-MACRO void arm64_move_svaluep_nofree(enum arm64_register dst, enum arm64_register from) {
-    enum arm64_register treg = ra_alloc_any(),
+MACRO void arm64_move_svaluep_nofree(enum arm_register dst, enum arm_register from) {
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     assert(treg < vreg);
@@ -1612,9 +1374,9 @@ MACRO void arm64_move_svaluep_nofree(enum arm64_register dst, enum arm64_registe
     ra_free(vreg);
 }
 
-MACRO void arm64_assign_svaluep_nofree(enum arm64_register dst, enum arm64_register from) {
+MACRO void arm64_assign_svaluep_nofree(enum arm_register dst, enum arm_register from) {
     struct label end;
-    enum arm64_register treg = ra_alloc_any(),
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     assert(treg < vreg);
@@ -1634,9 +1396,9 @@ MACRO void arm64_assign_svaluep_nofree(enum arm64_register dst, enum arm64_regis
     ra_free(vreg);
 }
 
-MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
+MACRO void arm64_push_svaluep_off(enum arm_register src, INT32 offset) {
     struct label end;
-    enum arm64_register tmp1 = ra_alloc_any(),
+    enum arm_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
@@ -1671,7 +1433,7 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
 }
 
 /* the returned condition will be true if both types are type_subtype */
-MACRO enum arm64_condition arm64_eq_types(enum arm64_register type1, enum arm64_register type2,
+MACRO enum arm64_condition arm64_eq_types(enum arm_register type1, enum arm_register type2,
                                           unsigned INT32 type_subtype) {
     unsigned short imm;
     unsigned char shift;
@@ -1686,7 +1448,7 @@ MACRO enum arm64_condition arm64_eq_types(enum arm64_register type1, enum arm64_
 }
 
 /* the returned condition will be true if unless both types are type_subtype */
-MACRO enum arm64_condition arm64_ne_types(enum arm64_register type1, enum arm64_register type2,
+MACRO enum arm64_condition arm64_ne_types(enum arm_register type1, enum arm_register type2,
                                           unsigned INT32 type_subtype) {
     unsigned short imm;
     unsigned char shift;
@@ -1715,7 +1477,7 @@ void arm64_end_function(int UNUSED(no_pc)) {
 void arm64_update_pc(void) {
     unsigned INT32 v = PIKE_PC;
     INT32 offset;
-    enum arm64_register tmp = ra_alloc_any();
+    enum arm_register tmp = ra_alloc_any();
 
     arm64_load_fp_reg();
     v = 4*(PIKE_PC - v);
@@ -1807,10 +1569,10 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
   }
 }
 
-MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guaranteed) {
+MACRO void arm64_free_svalue_off(enum arm_register src, int off, int guaranteed) {
     struct label end;
-    enum arm64_register reg = ra_alloc(ARM_REG_ARG1);
-    enum arm64_register tmp = ra_alloc_any();
+    enum arm_register reg = ra_alloc(ARM_REG_ARG1);
+    enum arm_register tmp = ra_alloc_any();
     int no_free = 1;
 
     guaranteed = guaranteed;
@@ -1820,7 +1582,7 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
     label_init(&end);
 
     if (off+OFFSETOF(svalue, u) >= 32768 || off < -512) {
-        enum arm64_register reg1 = ra_alloc_any();
+        enum arm_register reg1 = ra_alloc_any();
 
         if (off < 0)
             arm64_sub64_reg_int(reg1, src, -off);
@@ -1860,18 +1622,18 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
 }
 
 
-static void arm64_free_svalue(enum arm64_register reg, int guaranteed_ref) {
+static void arm64_free_svalue(enum arm_register reg, int guaranteed_ref) {
     arm64_free_svalue_off(reg, 0, guaranteed_ref);
 }
 
-static void arm64_mark(enum arm64_register base, int offset) {
+static void arm64_mark(enum arm_register base, int offset) {
 
-  enum arm64_register tmp = ra_alloc_any();
+  enum arm_register tmp = ra_alloc_any();
 
   load64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   if (offset) {
-    enum arm64_register tmp2 = ra_alloc_any();
+    enum arm_register tmp2 = ra_alloc_any();
 
     offset *= sizeof(struct svalue);
 
@@ -1893,8 +1655,8 @@ static void arm64_mark(enum arm64_register base, int offset) {
   ra_free(tmp);
 }
 
-MACRO void arm64_pop_mark(enum arm64_register dst) {
-  enum arm64_register tmp = ra_alloc_any();
+MACRO void arm64_pop_mark(enum arm_register dst) {
+  enum arm_register tmp = ra_alloc_any();
 
   load64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
@@ -1996,7 +1758,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_POP_TO_MARK: /* this opcode sucks noodles, introduce F_POP_TO_LOCAL(num) */
       {
           struct label done, loop;
-          enum arm64_register reg = ra_alloc_persistent();
+          enum arm_register reg = ra_alloc_persistent();
 
           label_init(&done);
           label_init(&loop);
@@ -2032,7 +1794,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm64_debug_instr_prologue_0(opcode);
       {
           struct label real_cmp, real_pop, push_result, done;
-          enum arm64_register reg, type1, type2;
+          enum arm_register reg, type1, type2;
           int (*cmp)(const struct svalue *a, const struct svalue *b);
           int swap = 0, negate = 0;
 
@@ -2055,7 +1817,7 @@ static void low_ins_f_byte(unsigned int opcode)
               negate = 1;
               /* FALL THROUGH */
           case F_EQ: {
-                  enum arm64_register tmp1, tmp2;
+                  enum arm_register tmp1, tmp2;
 
                   tmp1 = ra_alloc_any();
                   tmp2 = ra_alloc_any();
@@ -2115,7 +1877,7 @@ static void low_ins_f_byte(unsigned int opcode)
           case F_LE:
           case F_LT: {
                   enum arm64_condition cond;
-                  enum arm64_register tmp;
+                  enum arm_register tmp;
                   
                   cond = arm64_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
                   b_imm_cond(label_dist(&real_cmp), cond);
@@ -2236,7 +1998,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_ADD_INTS:
       {
           struct label end, slow;
-          enum arm64_register reg1, reg2;
+          enum arm_register reg1, reg2;
           enum arm64_condition cond;
 
           label_init(&end);
@@ -2283,7 +2045,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm64_debug_instr_prologue_0(opcode);
       {
           struct label no_return, do_return, do_return_if_true;
-          enum arm64_register tmp;
+          enum arm_register tmp;
 
           ra_alloc(ARM_REG_ARG1);
           tmp  = ra_alloc_any();
@@ -2328,7 +2090,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_DUMB_RETURN:
       arm64_debug_instr_prologue_0(opcode);
       {
-          enum arm64_register reg;
+          enum arm_register reg;
           struct label inter_return;
 
           label_init(&inter_return);
@@ -2416,7 +2178,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
     {
       struct label fallback;
       struct label done;
-      enum arm64_register tmp;
+      enum arm_register tmp;
 
       label_init(&done);
       label_init(&fallback);
@@ -2508,7 +2270,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
          * coming from decode_value
          */
         if( TYPEOF(*cval) == PIKE_T_INT && SUBTYPEOF(*cval) == NUMBER_UNDEFINED) {
-          enum arm64_register reg = ra_alloc_any();
+          enum arm_register reg = ra_alloc_any();
           arm64_load_fp_reg();
 
           load64_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame,context));
@@ -2533,7 +2295,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_ASSIGN_LOCAL_AND_POP:
   case F_ASSIGN_LOCAL:
       {
-          enum arm64_register tmp;
+          enum arm_register tmp;
           arm64_debug_instr_prologue_1(opcode, arg1);
           arm64_load_locals_reg();
 
@@ -2558,7 +2320,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       }
   case F_PROTECT_STACK:
       {
-	  enum arm64_register reg;
+	  enum arm_register reg;
 
           arm64_debug_instr_prologue_1(opcode, arg1);
 
@@ -2577,7 +2339,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       /* NOTE: we only implement this trivial case and let the others be handled by the opcode fun */
       if (arg1) break;
       {
-          enum arm64_register type, value;
+          enum arm_register type, value;
 
           arm64_debug_instr_prologue_1(opcode, arg1);
 
@@ -2629,7 +2391,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_POST_INC_LOCAL:
       arm64_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm64_register dst = ra_alloc_any(),
+          enum arm_register dst = ra_alloc_any(),
                               tmp = ra_alloc_any(),
                               res = ra_alloc_any();
           size_t offset = arg1 * sizeof(struct svalue);
@@ -2701,7 +2463,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm64_debug_instr_prologue_1(opcode, arg1);
       {
           INT32 offset = OFFSETOF(Pike_interpreter_struct, mark_stack_pointer);
-          enum arm64_register tmp;
+          enum arm_register tmp;
 
 	  arm64_maybe_update_pc();
 
@@ -2741,7 +2503,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_PRIVATE_GLOBAL:
       arm64_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm64_register tmp;
+          enum arm_register tmp;
 	  struct label skip;
 
           arm64_check_destructed();
@@ -2759,7 +2521,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       break;
       arm64_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm64_register tmp;
+          enum arm_register tmp;
 
           arm64_check_destructed();
           arm64_load_globals_reg();
@@ -2796,7 +2558,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       ins_f_byte_with_2_args(F_EXTERNAL, arg1, arg2);
       return;
   case F_INIT_FRAME: {
-          enum arm64_register tmp;
+          enum arm_register tmp;
           arm64_debug_instr_prologue_2(opcode, arg1, arg2);
           arm64_load_fp_reg();
 
@@ -2813,7 +2575,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       }
   case F_FILL_STACK:
       {
-          enum arm64_register reg, treg;
+          enum arm_register reg, treg;
           struct label skip, loop;
           label_init(&skip);
           label_init(&loop);
@@ -2898,7 +2660,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_QUICK_BRANCH_WHEN_ZERO:
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
         {
-            enum arm64_register tmp = ra_alloc_any();
+            enum arm_register tmp = ra_alloc_any();
 	    struct label skip;
 
             arm64_debug_instr_prologue_0(opcode);

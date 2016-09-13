@@ -4,17 +4,6 @@
 || for more information.
 */
 
-#include "global.h"
-#include "svalue.h"
-#include "operators.h"
-#include "bitvector.h"
-#include "object.h"
-#include "builtin_functions.h"
-#include "bignum.h"
-#include "constants.h"
-
-#define MACRO  ATTRIBUTE((unused)) static
-
 /* ARM32 machine code backend
  *
  * naming conventions:
@@ -28,7 +17,7 @@
  *
  */
 
-enum arm32_register {
+enum arm_register {
     ARM_REG_R0,
     ARM_REG_ARG1 = 0,
     ARM_REG_RVAL = 0,
@@ -65,10 +54,6 @@ enum arm32_register {
     ARM_REG_PC = 15,
     ARM_REG_NONE = -1
 };
-
-unsigned INT32 RBIT(enum arm32_register reg) {
-    return 1<<reg;
-}
 
 enum arm32_condition {
     ARM_COND_EQ = 0,       /* equal */
@@ -130,8 +115,6 @@ enum shift_instr {
     ARM_SHIFT_ROT
 };
 
-#define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
-
 #define ARM_IF(cond, CODE) do {                                                 \
     unsigned INT32 start = PIKE_PC, i;                                          \
     do CODE while(0);                                                           \
@@ -139,121 +122,23 @@ enum shift_instr {
         upd_pointer(i, set_cond(read_pointer(i), cond));                        \
 } while(0)
 
+/* temporary registers */
+static const unsigned INT32 arm_temp_registers = 0xf|(1<<12);
+
+/* NOTE: this must always be odd, in order that we always push an even number of registers.
+ * This is necessary to keep the stack 8 byte aligned.
+ */
+static const unsigned INT32 arm_push_registers = 
+  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
+  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) | (1 << 4);
+
+/* registers for use by the register allocator */
+static const unsigned INT32 arm_alloc_registers = 0xf | (1<<12) | (1<<4);
+
+#include "arm.c"
 
 MACRO void arm32_flush_dirty_regs(void);
 MACRO void arm32_call(void *ptr);
-MACRO enum arm32_register ra_alloc_any(void);
-MACRO void ra_free(enum arm32_register reg);
-
-MACRO void break_my_arm(void) {
-}
-
-#ifdef ARM32_LOW_DEBUG
-static unsigned INT32 stats_m[F_MAX_INSTR - F_OFFSET];
-static unsigned INT32 stats_b[F_MAX_INSTR - F_OFFSET];
-
-#define OPCODE0(X,Y,F) case X: return #X;
-#define OPCODE1(X,Y,F) case X: return #X;
-#define OPCODE2(X,Y,F) case X: return #X;
-#define OPCODE0_TAIL(X,Y,F) case X: return #X;
-#define OPCODE1_TAIL(X,Y,F) case X: return #X;
-#define OPCODE2_TAIL(X,Y,F) case X: return #X;
-#define OPCODE0_JUMP(X,Y,F) case X: return #X;
-#define OPCODE1_JUMP(X,Y,F) case X: return #X;
-#define OPCODE2_JUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_RETURN(X,Y,F) case X: return #X;
-#define OPCODE1_RETURN(X,Y,F) case X: return #X;
-#define OPCODE2_RETURN(X,Y,F) case X: return #X;
-#define OPCODE0_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE1_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE2_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE0_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
-
-const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
-    switch (code+F_OFFSET) {
-#include "interpret_protos.h"
-    default:
-        return "<unknown>";
-    }
-}
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_ALIAS
-#undef OPCODE1_ALIAS
-#undef OPCODE2_ALIAS
-
-ATTRIBUTE((destructor))
-MACRO void write_stats() {
-    int i;
-    FILE* file = fopen("/home/el/opcode.state", "a");
-
-    for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
-        if (!stats_m[i] && !stats_b[i]) continue;
-
-        fprintf(file, "%s\t%u\t%u\n", arm_get_opcode_name(i), stats_b[i], stats_m[i] - stats_b[i]);
-    }
-
-    fclose(file);
-}
-#endif
-
-MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
-    code = code; /* prevent unused warning */
-    bytecode = bytecode;
-#ifdef ARM32_LOW_DEBUG
-    if (bytecode) {
-        stats_b[code - F_OFFSET] ++;
-    } else {
-        stats_m[code - F_OFFSET] ++;
-    }
-#endif
-}
 
 OPCODE_FUN set_cond(unsigned INT32 instr, enum arm32_condition cond) {
     return (instr&0x0fffffff)|cond;
@@ -273,7 +158,7 @@ enum arm32_multiple_mode {
 #undef MODE
 };
 
-OPCODE_FUN gen_store_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
+OPCODE_FUN gen_store_multiple(enum arm_register addr, enum arm32_multiple_mode mode,
                               unsigned INT32 registers) {
     unsigned INT32 instr = ARM_COND_AL | (1<<27) | registers | mode;
 
@@ -282,37 +167,37 @@ OPCODE_FUN gen_store_multiple(enum arm32_register addr, enum arm32_multiple_mode
     return instr;
 }
 
-MACRO void store_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
+MACRO void store_multiple(enum arm_register addr, enum arm32_multiple_mode mode,
                           unsigned INT32 registers) {
     add_to_program(gen_store_multiple(addr, mode, registers));
 }
 
-OPCODE_FUN gen_load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
+OPCODE_FUN gen_load_multiple(enum arm_register addr, enum arm32_multiple_mode mode,
                              unsigned INT32 registers) {
     unsigned INT32 r = gen_store_multiple(addr, mode, registers) | (1<<20);
 
     return r;
 }
 
-MACRO void load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
+MACRO void load_multiple(enum arm_register addr, enum arm32_multiple_mode mode,
                          unsigned INT32 registers) {
     add_to_program(gen_load_multiple(addr, mode, registers));
 }
 
 #ifdef __ARM_ARCH_6T2__
-OPCODE_FUN gen_mov_wide(enum arm32_register reg, unsigned short imm) {
+OPCODE_FUN gen_mov_wide(enum arm_register reg, unsigned short imm) {
     return ARM_COND_AL | (3 << 24) | (imm & 0xfff) | (reg << 12) | ((imm & 0xf000) << 4);
 }
 
-MACRO void mov_wide(enum arm32_register reg, unsigned short imm) {
+MACRO void mov_wide(enum arm_register reg, unsigned short imm) {
     add_to_program(gen_mov_wide(reg, imm));
 }
 
-OPCODE_FUN gen_mov_top(enum arm32_register reg, unsigned short imm) {
+OPCODE_FUN gen_mov_top(enum arm_register reg, unsigned short imm) {
     return gen_mov_wide(reg, imm) | (1<<22);
 }
 
-MACRO void mov_top(enum arm32_register reg, unsigned short imm) {
+MACRO void mov_top(enum arm_register reg, unsigned short imm) {
     add_to_program(gen_mov_top(reg, imm));
 }
 #endif
@@ -325,7 +210,7 @@ MACRO void nop() {
     add_to_program(gen_nop());
 }
 
-OPCODE_FUN gen_bx_reg(enum arm32_register to) {
+OPCODE_FUN gen_bx_reg(enum arm_register to) {
     unsigned INT32 instr = ARM_COND_AL;
     int i;
 
@@ -340,20 +225,22 @@ OPCODE_FUN gen_bx_reg(enum arm32_register to) {
     return instr;
 }
 
-MACRO void bx_reg(enum arm32_register to) {
+MACRO void bx_reg(enum arm_register to) {
     add_to_program(gen_bx_reg(to));
 }
 
-OPCODE_FUN gen_blx_reg(enum arm32_register to) {
+OPCODE_FUN gen_blx_reg(enum arm_register to) {
     return gen_bx_reg(to) | (1<<5);
 }
 
-MACRO void blx_reg(enum arm32_register to) {
+MACRO void blx_reg(enum arm_register to) {
     add_to_program(gen_blx_reg(to));
 }
 
 OPCODE_FUN gen_b_imm(INT32 dist) {
     unsigned INT32 instr = ARM_COND_AL | (1<<27)|(1<<25);
+
+    if (dist) dist -= 2;
 
     instr |= dist & 0xffffff;
 
@@ -372,7 +259,7 @@ MACRO void bl_imm(INT32 dist) {
     add_to_program(gen_bl_imm(dist));
 }
 
-OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm32_register dst, enum arm32_register src) {
+OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm_register dst, enum arm_register src) {
     unsigned INT32 instr = ARM_ADDR_REGISTER | ARM_COND_AL;
 
     instr |= op << 21;
@@ -383,14 +270,14 @@ OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm32_register dst, enum arm32_
 }
 
 /* Data processing instruction with two register operands */
-OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm32_register dst,
-                       enum arm32_register a, enum arm32_register b) {
+OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm_register dst,
+                       enum arm_register a, enum arm_register b) {
 
     return gen_reg(op, dst, b) | (a << 16);
 }
 
 /* Data processing instruction with immediate */
-OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm32_register dst,
+OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm_register dst,
                    unsigned char imm, unsigned char rot) {
 
     unsigned INT32 instr = ARM_ADDR_IMMEDIATE | ARM_COND_AL;
@@ -446,10 +333,10 @@ MACRO unsigned INT32 arm32_extract_imm(unsigned INT32 v, unsigned char *imm, uns
     return v & ~0xff;
 }
 
-MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v);
+MACRO void arm32_mov_int(enum arm_register reg, unsigned INT32 v);
 
-OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm32_register dst,
-                       enum arm32_register reg, unsigned char imm, unsigned char rot) {
+OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm_register dst,
+                       enum arm_register reg, unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = gen_imm(op, dst, imm, rot);
 
     instr |= reg << 16;
@@ -457,8 +344,8 @@ OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm32_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm32_register dst,
-                             enum arm32_register a, enum arm32_register b) {
+OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm_register dst,
+                             enum arm_register a, enum arm_register b) {
     unsigned INT32 instr = ARM_COND_AL;
     instr |= dst << 12;
     instr |= 1<<24;
@@ -472,8 +359,8 @@ OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm32_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
-                             enum arm32_register a, unsigned INT32 imm) {
+OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm_register dst,
+                             enum arm_register a, unsigned INT32 imm) {
     unsigned INT32 instr = gen_reg(ARM_PROC_MOV, dst, a);
 
     assert(!(imm >> 5));
@@ -484,7 +371,7 @@ OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_store32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_store32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr |= dst << 12;
@@ -503,19 +390,19 @@ OPCODE_FUN gen_store32_reg_imm(enum arm32_register dst, enum arm32_register base
     return instr;
 }
 
-MACRO void store32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+MACRO void store32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store32_reg_imm(dst, base, offset));
 }
 
-OPCODE_FUN gen_load32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_load32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     return gen_store32_reg_imm(dst, base, offset) | (1<<20);
 }
 
-MACRO void load32_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+MACRO void load32_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load32_reg_imm(dst, base, offset));
 }
 
-OPCODE_FUN gen_store16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_store16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr |= dst << 12;
@@ -536,70 +423,70 @@ OPCODE_FUN gen_store16_reg_imm(enum arm32_register dst, enum arm32_register base
     return instr;
 }
 
-OPCODE_FUN gen_load16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_load16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     return gen_store16_reg_imm(dst, base, offset) | (1<<20);
 }
 
-MACRO void store16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+MACRO void store16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_store16_reg_imm(dst, base, offset));
 }
 
-MACRO void load16_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+MACRO void load16_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     add_to_program(gen_load16_reg_imm(dst, base, offset));
 }
 
 
 #define GEN_PROC_OP(name, NAME)                                                                          \
-OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register dst, enum arm32_register reg,                    \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm_register dst, enum arm_register reg,                        \
                                     unsigned char imm, unsigned char rot) {                              \
     return gen_reg_imm(ARM_PROC_ ## NAME, dst, reg, imm, rot);                                           \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm32_register dst, enum arm32_register a,                      \
-                                    enum arm32_register b) {                                             \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register dst, enum arm_register a,                          \
+                                    enum arm_register b) {                                               \
     return gen_reg_reg(ARM_PROC_ ## NAME, dst, a, b);                                                    \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg,                   \
+OPCODE_FUN gen_ ## name ## s_reg_imm(enum arm_register dst, enum arm_register reg,                       \
                                      unsigned char imm, unsigned char rot) {                             \
     return gen_ ## name ## _reg_imm(dst, reg, imm, rot)|(1<<20);                                         \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## s_reg_reg(enum arm32_register dst, enum arm32_register a,                     \
-                                     enum arm32_register b) {                                            \
+OPCODE_FUN gen_ ## name ## s_reg_reg(enum arm_register dst, enum arm_register a,                         \
+                                     enum arm_register b) {                                              \
     return gen_ ## name ## _reg_reg(dst, a, b)|(1<<20);                                                  \
 }                                                                                                        \
                                                                                                          \
-MACRO void name ## _reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm,         \
+MACRO void name ## _reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,             \
                                       unsigned char rot) {                                               \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm, rot));                                        \
 }                                                                                                        \
-MACRO void name ## _reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {     \
+MACRO void name ## _reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {           \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
 }                                                                                                        \
-MACRO void name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm,        \
+MACRO void name ## s_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,            \
                                       unsigned char rot) {                                               \
     add_to_program(gen_ ## name ## s_reg_imm(dst, reg, imm, rot));                                       \
 }                                                                                                        \
-MACRO void name ## s_reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {    \
+MACRO void name ## s_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {          \
     add_to_program(gen_ ## name ## s_reg_reg(dst, a, b));                                                \
 }                                                                                                        \
-MACRO void arm32_ ## name ## _reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+MACRO void arm32_ ## name ## _reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {    \
     unsigned char imm, rot;                                                                              \
                                                                                                          \
     if (arm32_make_imm(v, &imm, &rot)) {                                                                 \
         name ## _reg_imm(dst, a, imm, rot);                                                              \
     } else {                                                                                             \
-        enum arm32_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm32_mov_int(tmp, v);                                                                           \
         name ## _reg_reg(dst, a, tmp);                                                                   \
         ra_free(tmp);                                                                                    \
     }                                                                                                    \
 }                                                                                                        \
-MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+MACRO void arm32_ ## name ## s_reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {   \
     unsigned char imm, rot;                                                                              \
                                                                                                          \
     if (arm32_make_imm(v, &imm, &rot)) {                                                                 \
         name ## s_reg_imm(dst, a, imm, rot);                                                             \
     } else {                                                                                             \
-        enum arm32_register tmp = ra_alloc_any();                                                        \
+        enum arm_register tmp = ra_alloc_any();                                                          \
         arm32_mov_int(tmp, v);                                                                           \
         name ## s_reg_reg(dst, a, tmp);                                                                  \
         ra_free(tmp);                                                                                    \
@@ -607,67 +494,67 @@ MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_regis
 }                                                                                                        \
 
 #define GEN_SHIFT_OP(name, NAME)                                                                         \
-OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register dst, enum arm32_register reg,                    \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm_register dst, enum arm_register reg,                        \
                                     unsigned INT32 imm) {                                                \
     return gen_shift_reg_imm(ARM_SHIFT_ ## NAME, dst, reg, imm);                                         \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm32_register dst, enum arm32_register a,                      \
-                                    enum arm32_register b) {                                             \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register dst, enum arm_register a,                          \
+                                    enum arm_register b) {                                               \
     return gen_shift_reg_reg(ARM_SHIFT_ ## NAME, dst, a, b);                                             \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg,                   \
+OPCODE_FUN gen_ ## name ## s_reg_imm(enum arm_register dst, enum arm_register reg,                       \
                                      unsigned INT32 imm) {                                               \
     return gen_ ## name ## _reg_imm(dst, reg, imm)|(1<<20);                                              \
 }                                                                                                        \
-OPCODE_FUN gen_ ## name ## s_reg_reg(enum arm32_register dst, enum arm32_register a,                     \
-                                     enum arm32_register b) {                                            \
+OPCODE_FUN gen_ ## name ## s_reg_reg(enum arm_register dst, enum arm_register a,                         \
+                                     enum arm_register b) {                                              \
     return gen_ ## name ## _reg_reg(dst, a, b)|(1<<20);                                                  \
 }                                                                                                        \
                                                                                                          \
-MACRO void name ## _reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm) {       \
+MACRO void name ## _reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm) {           \
     add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm));                                             \
 }                                                                                                        \
-MACRO void name ## _reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {     \
+MACRO void name ## _reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {           \
     add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
 }                                                                                                        \
-MACRO void name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm) {      \
+MACRO void name ## s_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm) {          \
     add_to_program(gen_ ## name ## s_reg_imm(dst, reg, imm));                                            \
 }                                                                                                        \
-MACRO void name ## s_reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {    \
+MACRO void name ## s_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {          \
     add_to_program(gen_ ## name ## s_reg_reg(dst, a, b));                                                \
 }                                                                                                        \
-MACRO void arm32_ ## name ## _reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+MACRO void arm32_ ## name ## _reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {    \
     name ## _reg_imm(dst, a, v);                                                                         \
 }                                                                                                        \
-MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+MACRO void arm32_ ## name ## s_reg_int(enum arm_register dst, enum arm_register a, unsigned INT32 v) {   \
     name ## s_reg_imm(dst, a, v);                                                                        \
 }
 
-#define GEN_PROC_OP1(name, NAME)									\
-OPCODE_FUN gen_ ## name ## _reg(enum arm32_register dst, enum arm32_register src) {			\
-    return gen_reg(ARM_PROC_ ## NAME, dst, src);							\
-}													\
-MACRO void name ## _reg(enum arm32_register dst, enum arm32_register src) {				\
-    add_to_program(gen_ ## name ## _reg(dst, src));							\
-}													\
-OPCODE_FUN gen_ ## name ## _imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {	\
-    return gen_imm(ARM_PROC_ ## NAME, dst, imm, rot);							\
-}													\
-MACRO void name ## _imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {		\
-    add_to_program(gen_ ## name ## _imm(dst, imm, rot));						\
+#define GEN_PROC_OP1(name, NAME)									 \
+OPCODE_FUN gen_ ## name ## _reg(enum arm_register dst, enum arm_register src) {			         \
+    return gen_reg(ARM_PROC_ ## NAME, dst, src);							 \
+}													 \
+MACRO void name ## _reg(enum arm_register dst, enum arm_register src) {				         \
+    add_to_program(gen_ ## name ## _reg(dst, src));							 \
+}													 \
+OPCODE_FUN gen_ ## name ## _imm(enum arm_register dst, unsigned char imm, unsigned char rot) {	         \
+    return gen_imm(ARM_PROC_ ## NAME, dst, imm, rot);							 \
+}													 \
+MACRO void name ## _imm(enum arm_register dst, unsigned char imm, unsigned char rot) {		         \
+    add_to_program(gen_ ## name ## _imm(dst, imm, rot));						 \
 }
 
 #define GEN_PROC_CMP_OP(name, NAME)									\
-OPCODE_FUN gen_ ## name ## _reg_reg(enum arm32_register a, enum arm32_register b) {		        \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm_register a, enum arm_register b) {		                \
     return (1<<20)|gen_reg_reg(ARM_PROC_ ## NAME, 0, a, b);						\
 }													\
-MACRO void name ## _reg_reg(enum arm32_register dst, enum arm32_register src) {				\
+MACRO void name ## _reg_reg(enum arm_register dst, enum arm_register src) {				\
     add_to_program(gen_ ## name ## _reg_reg(dst, src));							\
 }													\
-OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {      \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm_register a, unsigned char imm, unsigned char rot) {        \
     return (1<<20)|gen_reg_imm(ARM_PROC_ ## NAME, 0, a, imm, rot);					\
 }													\
-MACRO void name ## _reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {	        \
+MACRO void name ## _reg_imm(enum arm_register a, unsigned char imm, unsigned char rot) {	        \
     add_to_program(gen_ ## name ## _reg_imm(a, imm, rot));					        \
 }
 
@@ -688,7 +575,7 @@ GEN_PROC_CMP_OP(cmn, CMN)
 GEN_PROC_CMP_OP(tst, TST)
 GEN_PROC_CMP_OP(teq, TEQ)
 
-MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
+MACRO void arm32_mov_int(enum arm_register reg, unsigned INT32 v) {
     unsigned char imm, rot;
 
     if (arm32_make_imm(v, &imm, &rot)) {
@@ -714,7 +601,7 @@ MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
     }
 }
 
-MACRO void arm32_cmp_int(enum arm32_register reg, unsigned INT32 v) {
+MACRO void arm32_cmp_int(enum arm_register reg, unsigned INT32 v) {
     unsigned char imm, rot;
 
     if (arm32_make_imm(v, &imm, &rot)) {
@@ -722,7 +609,7 @@ MACRO void arm32_cmp_int(enum arm32_register reg, unsigned INT32 v) {
     } else if (arm32_make_imm(-v, &imm, &rot)) {
         cmn_reg_imm(reg, imm, rot);
     } else {
-        enum arm32_register tmp = ra_alloc_any();
+        enum arm_register tmp = ra_alloc_any();
 
         arm32_mov_int(tmp, v);
         cmp_reg_reg(reg, tmp);
@@ -731,13 +618,13 @@ MACRO void arm32_cmp_int(enum arm32_register reg, unsigned INT32 v) {
     }
 }
 
-MACRO void arm32_tst_int(enum arm32_register reg, unsigned INT32 v) {
+MACRO void arm32_tst_int(enum arm_register reg, unsigned INT32 v) {
     unsigned char imm, rot;
 
     if (arm32_make_imm(v, &imm, &rot)) {
         tst_reg_imm(reg, imm, rot);
     } else {
-        enum arm32_register tmp = ra_alloc_any();
+        enum arm_register tmp = ra_alloc_any();
 
         arm32_mov_int(tmp, v);
         tst_reg_reg(reg, tmp);
@@ -749,14 +636,14 @@ MACRO void arm32_tst_int(enum arm32_register reg, unsigned INT32 v) {
 /*
  * TODO: work with labels
  */
-MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
+MACRO void arm32_rel_cond_jmp(enum arm_register reg, enum arm_register b, enum arm32_condition cond, int jmp) {
     cmp_reg_reg(reg, b);
     b_imm(jmp-2, cond);
 }
 
 MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
                          enum arm32_condition cond2, void *b) {
-    enum arm32_register reg = ra_alloc_any();
+    enum arm_register reg = ra_alloc_any();
 
     unsigned INT32 v1 = (char*)a - (char*)NULL,
                    v2 = (char*)b - (char*)NULL;
@@ -784,14 +671,14 @@ MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
 #ifdef __ARM_ARCH_6T2__
 #define SIZEOF_ADD_SET_REG_AT   2
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
-                           enum arm32_register dst) {
+                           enum arm_register dst) {
     upd_pointer(offset++, gen_mov_wide(dst, v));
     if (v >> 16) upd_pointer(offset++, gen_mov_top(dst, v>>16));
 }
 #else
 #define SIZEOF_ADD_SET_REG_AT   4
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
-                           enum arm32_register dst) {
+                           enum arm_register dst) {
     unsigned char imm, rot = 0;
     int n = 0;
 
@@ -811,62 +698,6 @@ static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
 /*
  * "High" level interface
  */
-
-#define FLAG_SP_LOADED  1
-#define FLAG_FP_LOADED  2
-#define FLAG_LOCALS_LOADED 4
-#define FLAG_GLOBALS_LOADED 8
-#define FLAG_NOT_DESTRUCTED 16
-
-struct location_list_entry {
-    unsigned INT32 location;
-    struct location_list_entry *next;
-};
-
-struct compiler_state {
-    /* currently unused and dirt registers */
-    unsigned short free, dirt;
-    /* address into which the initial stack push has to be
-     * generated
-     */
-    unsigned INT32 push_addr;
-    unsigned INT32 flags;
-} compiler_state;
-
-
-static struct location_list_entry* add_to_list(struct location_list_entry *list, unsigned INT32 location) {
-    struct location_list_entry *e = xalloc(sizeof(struct location_list_entry));
-
-    e->location = location;
-    e->next = list;
-
-    return e;
-}
-
-static void free_list(struct location_list_entry *list) {
-    while (list) {
-        struct location_list_entry * next = list->next;
-        free(list);
-        list = next;
-    }
-}
-
-struct label {
-    struct location_list_entry *list;
-    unsigned INT32 loc;
-};
-
-static void label_init(struct label *l) {
-    l->list = NULL;
-    l->loc = (unsigned INT32)-1;
-}
-
-MACRO INT32 label_dist(struct label *l) {
-    if (l->loc != (unsigned INT32)-1)
-        return l->loc - PIKE_PC - 2;
-    l->list = add_to_list(l->list, PIKE_PC);
-    return 0;
-}
 
 MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
@@ -897,91 +728,20 @@ void arm32_init_interpreter_state(void) {
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
-MACRO void ra_init(void) {
-    /* FIXME: this ought to happen in init_interpreter_state, only, but it is currently overwritten
-     * later */
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-
-    /* all register r0 through r10 are unused */
-    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(12);
-    compiler_state.dirt = 0;
-    compiler_state.push_addr = -1;
-    compiler_state.flags = 0;
-}
-
-MACRO enum arm32_register ra_alloc(enum arm32_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    if (!(rbit & compiler_state.free))
-        Pike_fatal("Register %d is already in use.\n", reg);
-
-    compiler_state.free ^= rbit;
-    compiler_state.dirt |= rbit;
-
-    return reg;
-}
-
-MACRO enum arm32_register ra_alloc_persistent(void) {
-    unsigned short free = compiler_state.free;
-
-    /* we dont want 0-3 or r12 */
-    free &= ~(0xf | RBIT(12));
-
-    if (!free)
-        Pike_fatal("No register left: %x\n", compiler_state.free);
-
-    return ra_alloc(ctz32(free));
-}
-
-MACRO enum arm32_register ra_alloc_any(void) {
-    if (!compiler_state.free)
-        Pike_fatal("No register left.\n");
-
-    return ra_alloc(ctz32(compiler_state.free));
-}
-
-MACRO void ra_free(enum arm32_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    if (rbit & compiler_state.free)
-        Pike_fatal("Register %d is not in use.\n", reg);
-
-    compiler_state.free |= rbit;
-}
-
-MACRO int ra_is_dirty(enum arm32_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    return !!(rbit & compiler_state.dirt);
-}
-
-MACRO int ra_is_free(enum arm32_register reg) {
-    unsigned INT32 rbit = RBIT(reg);
-
-    return !!(rbit & compiler_state.free);
-}
-
-/* NOTE: this must always be odd, in order that we always push an even number of registers.
- * This is necessary to keep the stack 8 byte aligned.
- */
-static const unsigned INT32 pushed_registers =
-                  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
-                  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) | (1 << 4);
-
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm32_prologue(void) {
-    store_multiple(ARM_REG_SP, ARM_MULT_DBW, pushed_registers|RBIT(ARM_REG_LR));
+    store_multiple(ARM_REG_SP, ARM_MULT_DBW, arm_push_registers|RBIT(ARM_REG_LR));
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
 #define EPILOGUE_SIZE 1
 MACRO void arm32_epilogue(void) {
-    load_multiple(ARM_REG_SP, ARM_MULT_IAW, pushed_registers|RBIT(ARM_REG_PC));
+    load_multiple(ARM_REG_SP, ARM_MULT_IAW, arm_push_registers|RBIT(ARM_REG_PC));
 }
 
 MACRO void arm32_call(void *ptr) {
     unsigned INT32 v = (char*)ptr - (char*)NULL;
-    enum arm32_register tmp = ra_alloc_any();
+    enum arm_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
      * the current object */
@@ -1121,9 +881,9 @@ MACRO void arm32_safe_call_efun(void (*fun)(int), int args) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
 }
 
-MACRO void arm32_assign_int_reg(enum arm32_register dst, enum arm32_register value, int subtype) {
+MACRO void arm32_assign_int_reg(enum arm_register dst, enum arm_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
-    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1136,9 +896,9 @@ MACRO void arm32_assign_int_reg(enum arm32_register dst, enum arm32_register val
     ra_free(tmp2);
 }
 
-MACRO void arm32_push_int_reg(enum arm32_register value, int subtype) {
+MACRO void arm32_push_int_reg(enum arm_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
-    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1156,7 +916,7 @@ MACRO void arm32_push_int_reg(enum arm32_register value, int subtype) {
 }
 
 MACRO void arm32_push_non_ref_type(unsigned INT32 type, unsigned INT32 value) {
-    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
 
@@ -1177,7 +937,7 @@ MACRO void arm32_push_int(unsigned INT32 value, int subtype) {
     arm32_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
 }
 
-MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vreg) {
+MACRO void arm32_push_ptr_type(enum arm_register treg, enum arm_register vreg) {
     assert(treg < vreg);
 
     arm32_load_sp_reg();
@@ -1191,7 +951,7 @@ MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vre
 }
 
 MACRO void arm32_push_ref_type(unsigned INT32 type, void * ptr) {
-    enum arm32_register treg = ra_alloc_any(),
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     arm32_mov_int(treg, type);
@@ -1213,8 +973,8 @@ MACRO void arm32_push_constant(struct svalue *sv) {
     }
 }
 
-MACRO void arm32_move_svaluep_nofree(enum arm32_register dst, enum arm32_register from) {
-    enum arm32_register treg = ra_alloc_any(),
+MACRO void arm32_move_svaluep_nofree(enum arm_register dst, enum arm_register from) {
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     assert(treg < vreg);
@@ -1226,8 +986,8 @@ MACRO void arm32_move_svaluep_nofree(enum arm32_register dst, enum arm32_registe
     ra_free(vreg);
 }
 
-MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_register from) {
-    enum arm32_register treg = ra_alloc_any(),
+MACRO void arm32_assign_svaluep_nofree(enum arm_register dst, enum arm_register from) {
+    enum arm_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
     assert(treg < vreg);
@@ -1247,8 +1007,8 @@ MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_regis
     ra_free(vreg);
 }
 
-MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
-    enum arm32_register tmp1 = ra_alloc_any(),
+MACRO void arm32_push_svaluep_off(enum arm_register src, INT32 offset) {
+    enum arm_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
@@ -1283,7 +1043,7 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
 }
 
 /* the returned condition will be true if both types are type_subtype */
-MACRO enum arm32_condition arm32_eq_types(enum arm32_register type1, enum arm32_register type2,
+MACRO enum arm32_condition arm32_eq_types(enum arm_register type1, enum arm_register type2,
                                           unsigned INT32 type_subtype) {
     unsigned char imm, rot;
     int ok = arm32_make_imm(type_subtype, &imm, &rot);
@@ -1297,7 +1057,7 @@ MACRO enum arm32_condition arm32_eq_types(enum arm32_register type1, enum arm32_
 }
 
 /* the returned condition will be true if unless both types are type_subtype */
-MACRO enum arm32_condition arm32_ne_types(enum arm32_register type1, enum arm32_register type2,
+MACRO enum arm32_condition arm32_ne_types(enum arm_register type1, enum arm_register type2,
                                           unsigned INT32 type_subtype) {
     unsigned char imm, rot;
     int ok = arm32_make_imm(type_subtype, &imm, &rot);
@@ -1325,7 +1085,7 @@ void arm32_end_function(int UNUSED(no_pc)) {
 void arm32_update_pc(void) {
     unsigned INT32 v = PIKE_PC;
     INT32 offset;
-    enum arm32_register tmp = ra_alloc_any();
+    enum arm_register tmp = ra_alloc_any();
 
     arm32_load_fp_reg();
     v = 4*(PIKE_PC - v + 2);
@@ -1417,11 +1177,11 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
   }
 }
 
-MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
+MACRO void arm32_free_svalue_off(enum arm_register src, int off, int guaranteed) {
     unsigned char imm, rot;
     struct label end;
-    enum arm32_register reg = ra_alloc(ARM_REG_ARG1);
-    enum arm32_register tmp = ra_alloc_any();
+    enum arm_register reg = ra_alloc(ARM_REG_ARG1);
+    enum arm_register tmp = ra_alloc_any();
     int no_free = 1;
 
     guaranteed = guaranteed;
@@ -1431,7 +1191,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     label_init(&end);
 
     if (off+OFFSETOF(svalue, u) >= 4096 || off <= -4096) {
-        enum arm32_register reg1 = ra_alloc_any();
+        enum arm_register reg1 = ra_alloc_any();
 
         if (off < 0)
             arm32_sub_reg_int(reg1, src, -off);
@@ -1475,18 +1235,18 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
 MACRO void arm32_ins_branch_check_threads_etc(int a) {
 }
 
-static void arm32_free_svalue(enum arm32_register reg, int guaranteed_ref) {
+static void arm32_free_svalue(enum arm_register reg, int guaranteed_ref) {
     arm32_free_svalue_off(reg, 0, guaranteed_ref);
 }
 
-static void arm32_mark(enum arm32_register base, int offset) {
+static void arm32_mark(enum arm_register base, int offset) {
 
-  enum arm32_register tmp = ra_alloc_any();
+  enum arm_register tmp = ra_alloc_any();
 
   load32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   if (offset) {
-    enum arm32_register tmp2 = ra_alloc_any();
+    enum arm_register tmp2 = ra_alloc_any();
 
     offset *= sizeof(struct svalue);
 
@@ -1508,8 +1268,8 @@ static void arm32_mark(enum arm32_register base, int offset) {
   ra_free(tmp);
 }
 
-MACRO void arm32_pop_mark(enum arm32_register dst) {
-  enum arm32_register tmp = ra_alloc_any();
+MACRO void arm32_pop_mark(enum arm_register dst) {
+  enum arm_register tmp = ra_alloc_any();
 
   load32_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
@@ -1619,7 +1379,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_POP_TO_MARK: /* this opcode sucks noodles, introduce F_POP_TO_LOCAL(num) */
       {
           struct label done, loop;
-          enum arm32_register reg = ra_alloc_persistent();
+          enum arm_register reg = ra_alloc_persistent();
 
           label_init(&done);
           label_init(&loop);
@@ -1655,7 +1415,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm32_debug_instr_prologue_0(opcode);
       {
           struct label real_cmp, real_pop, push_result, done;
-          enum arm32_register reg, type1, type2;
+          enum arm_register reg, type1, type2;
           int (*cmp)(const struct svalue *a, const struct svalue *b);
           int swap = 0, negate = 0;
 
@@ -1678,7 +1438,7 @@ static void low_ins_f_byte(unsigned int opcode)
               negate = 1;
               /* FALL THROUGH */
           case F_EQ: {
-                  enum arm32_register tmp1, tmp2;
+                  enum arm_register tmp1, tmp2;
 
                   tmp1 = ra_alloc_any();
                   tmp2 = ra_alloc_any();
@@ -1743,7 +1503,7 @@ static void low_ins_f_byte(unsigned int opcode)
           case F_LE:
           case F_LT: {
                   enum arm32_condition cond;
-                  enum arm32_register tmp;
+                  enum arm_register tmp;
                   
                   cond = arm32_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
                   b_imm(label_dist(&real_cmp), cond);
@@ -1868,7 +1628,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_ADD_INTS:
       {
           struct label end, slow;
-          enum arm32_register reg1, reg2;
+          enum arm_register reg1, reg2;
           enum arm32_condition cond;
 
           label_init(&end);
@@ -1916,7 +1676,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm32_debug_instr_prologue_0(opcode);
       {
           struct label no_return, do_return, do_return_if_true;
-          enum arm32_register tmp;
+          enum arm_register tmp;
 
           ra_alloc(ARM_REG_ARG1);
           tmp  = ra_alloc_any();
@@ -1966,7 +1726,7 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_DUMB_RETURN:
       arm32_debug_instr_prologue_0(opcode);
       {
-          enum arm32_register reg;
+          enum arm_register reg;
           struct label inter_return;
 
           label_init(&inter_return);
@@ -2060,7 +1820,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
     {
       struct label fallback;
       struct label done;
-      enum arm32_register tmp;
+      enum arm_register tmp;
 
       label_init(&done);
       label_init(&fallback);
@@ -2152,7 +1912,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
          * coming from decode_value
          */
         if( TYPEOF(*cval) == PIKE_T_INT && SUBTYPEOF(*cval) == NUMBER_UNDEFINED) {
-          enum arm32_register reg = ra_alloc_any();
+          enum arm_register reg = ra_alloc_any();
           arm32_load_fp_reg();
 
           load32_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame,context));
@@ -2177,7 +1937,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_ASSIGN_LOCAL_AND_POP:
   case F_ASSIGN_LOCAL:
       {
-          enum arm32_register tmp;
+          enum arm_register tmp;
           arm32_debug_instr_prologue_1(opcode, arg1);
           arm32_load_locals_reg();
 
@@ -2202,7 +1962,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       }
   case F_PROTECT_STACK:
       {
-          enum arm32_register reg;
+          enum arm_register reg;
 
           arm32_debug_instr_prologue_1(opcode, arg1);
 
@@ -2218,7 +1978,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       /* NOTE: we only implement this trivial case and let the others be handled by the opcode fun */
       if (arg1) break;
       {
-          enum arm32_register type, value;
+          enum arm_register type, value;
 
           arm32_debug_instr_prologue_1(opcode, arg1);
 
@@ -2270,7 +2030,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_POST_INC_LOCAL:
       arm32_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm32_register dst = ra_alloc_any(),
+          enum arm_register dst = ra_alloc_any(),
                               tmp = ra_alloc_any(),
                               res = ra_alloc_any();
           size_t offset = arg1 * sizeof(struct svalue);
@@ -2342,7 +2102,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm32_debug_instr_prologue_1(opcode, arg1);
       {
           INT32 offset = OFFSETOF(Pike_interpreter_struct, mark_stack_pointer);
-          enum arm32_register tmp;
+          enum arm_register tmp;
 
 	  arm32_maybe_update_pc();
 
@@ -2382,7 +2142,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_PRIVATE_GLOBAL:
       arm32_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm32_register tmp;
+          enum arm_register tmp;
 
           arm32_check_destructed();
           arm32_load_globals_reg();
@@ -2399,7 +2159,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       break;
       arm32_debug_instr_prologue_1(opcode, arg1);
       {
-          enum arm32_register tmp;
+          enum arm_register tmp;
 
           arm32_check_destructed();
           arm32_load_globals_reg();
@@ -2436,7 +2196,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       ins_f_byte_with_2_args(F_EXTERNAL, arg1, arg2);
       return;
   case F_INIT_FRAME: {
-          enum arm32_register tmp;
+          enum arm_register tmp;
           arm32_debug_instr_prologue_2(opcode, arg1, arg2);
           arm32_load_fp_reg();
 
@@ -2449,7 +2209,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       }
   case F_FILL_STACK:
       {
-          enum arm32_register reg, treg, vreg;
+          enum arm_register reg, treg, vreg;
           struct label skip, loop;
           label_init(&skip);
           label_init(&loop);
@@ -2543,7 +2303,7 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_QUICK_BRANCH_WHEN_ZERO:
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
         {
-            enum arm32_register tmp = ra_alloc_any();
+            enum arm_register tmp = ra_alloc_any();
 
             arm32_debug_instr_prologue_0(opcode);
 
@@ -2726,7 +2486,7 @@ unsigned INT32 extract_immediate(PIKE_OPCODE_T instr) {
 }
 
 #define CASE(X, Y) case ARM_REG_ ## X: return #Y;
-MACRO const char *reg_to_name(enum arm32_register reg) {
+MACRO const char *reg_to_name(enum arm_register reg) {
     switch (reg&15) {
         CASE(R0, r0);
         CASE(R1, r1);
@@ -2878,7 +2638,7 @@ MACRO char *get_registers(PIKE_OPCODE_T field, char *outbuf /* >= 256 bytes */) 
     return ret;
 }
 
-char *interpret_location(enum arm32_register reg, int offset) {
+char *interpret_location(enum arm_register reg, int offset) {
     char *ret;
 
     int sv_mod = abs(offset) % sizeof(struct svalue);
