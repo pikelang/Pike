@@ -250,3 +250,70 @@ MACRO int ra_is_free(enum arm_register reg) {
 
     return !!(rbit & compiler_state.free);
 }
+
+/* Generic load/store instruction APIs */
+MACRO void load_ptr_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset);
+MACRO void store_ptr_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset);
+
+/* Pike special register handling */
+MACRO void arm_low_load_sp_reg(void) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+
+    load_ptr_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+}
+
+static void arm_load_sp_reg(void) {
+    if (!(compiler_state.flags & FLAG_SP_LOADED)) {
+
+        compiler_state.flags |= FLAG_SP_LOADED;
+
+        arm_low_load_sp_reg();
+    }
+}
+
+static void arm_store_sp_reg(void) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+    assert(compiler_state.flags & FLAG_SP_LOADED);
+    store_ptr_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+}
+
+static void arm_load_fp_reg(void) {
+    if (!(compiler_state.flags & FLAG_FP_LOADED)) {
+        INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
+        /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
+        load_ptr_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
+        compiler_state.flags |= FLAG_FP_LOADED;
+
+        compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
+    }
+}
+
+static void arm_invalidate_fp_reg(void) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
+}
+
+MACRO void arm_load_locals_reg(void) {
+    arm_load_fp_reg();
+
+    if (!(compiler_state.flags & FLAG_LOCALS_LOADED)) {
+        INT32 offset = OFFSETOF(pike_frame, locals);
+
+        load_ptr_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
+
+        compiler_state.flags |= FLAG_LOCALS_LOADED;
+        compiler_state.flags &= ~FLAG_GLOBALS_LOADED;
+    }
+}
+
+MACRO void arm_load_globals_reg(void) {
+    arm_load_fp_reg();
+
+    if (!(compiler_state.flags & FLAG_GLOBALS_LOADED)) {
+        INT32 offset = OFFSETOF(pike_frame, current_storage);
+
+        load_ptr_reg_imm(ARM_REG_PIKE_GLOBALS, ARM_REG_PIKE_FP, offset);
+
+        compiler_state.flags |= FLAG_GLOBALS_LOADED;
+        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    }
+}
