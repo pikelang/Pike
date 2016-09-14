@@ -8709,6 +8709,14 @@ test_eq("f\77777777\77777777bargaz\77777777nk"[..5],"f\77777777\77777777bar")
 
 test_eq("ABCD\u2019"[1..][1..], "ABCD\u2019"[2..])
 
+test_any_equal([[
+  // Bug 7780
+  string s1 = "aaaaa";
+  string s2 = "BBBBBBBB";
+  s2 = (s2 + s1)[..sizeof(s1) - 1];
+  return (array)s2;
+]], ({ 66, 66, 66, 66, 66 }))
+
 test_equal(({1,2,3})[0..0],({1}))
 test_equal(({1,2,3})[1..2],({2,3}))
 test_equal(({1,2,3})[2..10],({3}))

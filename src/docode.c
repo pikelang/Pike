@@ -1352,6 +1352,8 @@ static int do_docode2(node *n, int flags)
 	emit0(n->token);
 	return n->token==F_ASSIGN; /* So when is this false? /mast */
       }
+      goto do_not_suboptimize_assign;
+
     case F_SOFT_CAST:
         /*  a  = [type]`oper(a,*) */
         if( CAAR(n)->token == F_APPLY &&
