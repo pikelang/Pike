@@ -6044,6 +6044,29 @@ static void f_gethostip(INT32 args) {
   push_mapping(m);
 }
 
+/*! @decl int getprotobyname(string(8bit) name)
+ *!
+ *! Returns the protocol number of the protocol @expr{name@}.
+ *! This calls the POSIX function getprotobyname.
+ *! If the protocol cannot be found an error is thrown.
+ */
+static void f_getprotobyname(INT32 args) {
+#ifdef HAVE_GETPROTOBYNAME
+    struct protoent *proto;
+    const char *name;
+
+    get_all_args("getprotobyname", args, "%c", &name);
+
+    proto = getprotobyname(name);
+
+    if (proto) {
+        push_int(proto->p_proto);
+        return;
+    }
+#endif
+    Pike_error("Could not find protocol.\n");
+}
+
 #ifdef HAVE_OPENPTY
 #include <pty.h>
 #endif
@@ -6278,6 +6301,7 @@ PIKE_MODULE_INIT
 				      0,
 				      0));
 #endif
+  ADD_FUNCTION2("getprotobyname", f_getprotobyname, tFunc(tStr8,tInt), 0, 0);
 }
 
 /*! @endmodule
