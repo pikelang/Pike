@@ -8840,6 +8840,28 @@ static void f_reporter_report(INT32 args)
  *!   @[Reporter()->report()], @[Reporter()->SeverityLevel]
  */
 
+/*! @class lock
+ *!
+ *! This class acts as a lock against other threads accessing the compiler.
+ *!
+ *! The lock is released when the object is destructed.
+ */
+
+static void compiler_environment_lock_event_handler(int e)
+{
+  switch(e) {
+  case PROG_EVENT_INIT:
+    lock_pike_compiler();
+    break;
+  case PROG_EVENT_EXIT:
+    unlock_pike_compiler();
+    break;
+  }
+}
+
+/*! @endclass
+ */
+
 /*! @decl program compile(string source, CompilationHandler|void handler, @
  *!                       int|void major, int|void minor,@
  *!                       program|void target, object|void placeholder)
@@ -10722,6 +10744,12 @@ static void compile_compiler(void)
   add_global_program("Reporter", reporter_program);
 
   low_inherit(reporter_program, NULL, -1, 0, 0, 0);
+
+  start_new_program();
+  Pike_compiler->new_program->event_handler =
+    compiler_environment_lock_event_handler;
+  Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  end_class("lock", 0);
 
   compilation_env_program = end_program();
 
