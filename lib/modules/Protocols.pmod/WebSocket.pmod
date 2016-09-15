@@ -598,9 +598,12 @@ class Request(function(array(string), Request:void) cb) {
     }
 
     protected int parse_variables() {
-	if (has_index(request_headers, "sec-websocket-key"))
-	    return 0;
-	return ::parse_variables();
+	if (!has_index(request_headers, "sec-websocket-key"))
+	    return ::parse_variables();
+	if (query!="")
+	    .HTTP.Server.http_decode_urlencoded_query(query,variables);
+	flatten_headers();
+	return 0;
     }
 
     //! Calling @[websocket_accept] completes the WebSocket connection
