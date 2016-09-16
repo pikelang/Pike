@@ -585,25 +585,22 @@ class Connection {
 class Request(function(array(string), Request:void) cb) {
     inherit Protocols.HTTP.Server.Request;
 
-    protected void parse_request() {
-        ::parse_request();
-	if (cb && has_index(request_headers, "sec-websocket-key")) {
-	    string proto = request_headers["sec-websocket-protocol"];
-	    array(string) protocols =  proto ? proto / ", " : ({});
+    protected int alternatecallback() {
+      if (cb && has_index(request_headers, "sec-websocket-key")) {
+          string proto = request_headers["sec-websocket-protocol"];
+          array(string) protocols =  proto ? proto / ", " : ({});
 #ifdef WEBSOCKET_DEBUG
-            werror("websocket request: %O %O\n", this, protocols);
+          werror("websocket request: %O %O\n", this, protocols);
 #endif
-	    cb(protocols, this);
-	}
+          cb(protocols, this);
+          return 1;
+      }
+      return 0;
     }
 
     protected int parse_variables() {
-	if (!has_index(request_headers, "sec-websocket-key"))
-	    return ::parse_variables();
-	if (query!="")
-	    .HTTP.Server.http_decode_urlencoded_query(query,variables);
-	flatten_headers();
-	return 0;
+	return ::parse_variables(
+          has_index(request_headers, "sec-websocket-key"));
     }
 
     //! Calling @[websocket_accept] completes the WebSocket connection
