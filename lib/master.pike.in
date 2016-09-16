@@ -1462,6 +1462,13 @@ protected program low_findprog(string pname,
 	}
       }
 
+      object compiler_lock = DefaultCompilerEnvironment->lock();
+      if(!undefinedp(ret = programs[fname]) && (ret != no_value)) {
+	destruct(compiler_lock);
+	resolv_debug("low_findprog %s: returning cached (from other thread).\n",
+		     fname);
+	return ret;
+      }
       resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
       INC_RESOLV_MSG_DEPTH();
       programs[fname]=ret=__empty_program(0, fname);
@@ -1484,8 +1491,10 @@ protected program low_findprog(string pname,
 	resolv_debug ("low_findprog %s: compilation failed\n", fname);
 	objects[ret] = no_value;
 	ret=programs[fname]=0;	// Negative cache.
+	destruct(compiler_lock);
         throw(e);
       }
+      destruct(compiler_lock);
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug ("low_findprog %s: compilation ok\n", fname);
       break;
