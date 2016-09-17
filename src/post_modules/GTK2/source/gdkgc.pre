@@ -46,15 +46,14 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     VALUE(ts_y_origin,GDK_GC_TS_Y_ORIGIN);
     VALUE(fill,GDK_GC_FILL);
     VALUE(function,GDK_GC_FUNCTION);
-
-    if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
+    if (g_type_is_a(G_TYPE_FROM_INSTANCE(get_gobject(o)), GDK_TYPE_DRAWABLE))
       gc=gdk_gc_new_with_values(GDK_WINDOW(get_gobject(o)),
 				&values,have_values);
     else
       gc=gdk_gc_new_with_values(GTK_WIDGET(get_gobject(o))->window,
 				&values,have_values);
   } else {
-    if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
+    if (g_type_is_a(G_TYPE_FROM_INSTANCE(get_gobject(o)), GDK_TYPE_DRAWABLE))
       gc=gdk_gc_new(GDK_WINDOW(get_gobject(o)));
     else
       gc=gdk_gc_new(GTK_WIDGET(get_gobject(o))->window);
