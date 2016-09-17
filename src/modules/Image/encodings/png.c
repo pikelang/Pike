@@ -1594,7 +1594,7 @@ static void img_png_decode(INT32 args, int mode)
  *!       (Note: encoding with alpha channel and pseudocolor
  *!       at the same time are not supported)
  *!     @member int(0..9) "zlevel"
- *!       The level of z-compression to be applied. Default is 8.
+ *!       The level of z-compression to be applied. Default is 9.
  *!     @member int "zstrategy"
  *!       The type of LZ77 strategy to be used. Possible values are
  *!       @[Gz.DEFAULT_STRATEGY], @[Gz.FILTERED], @[Gz.HUFFMAN_ONLY],
@@ -1615,7 +1615,7 @@ static void image_png_encode(INT32 args)
    struct neo_colortable *ct=NULL;
 
    int n=0,y,x,bpp;
-   int zlevel=8;
+   int zlevel=9;
    int zstrategy=0;
    char buf[20];
 
