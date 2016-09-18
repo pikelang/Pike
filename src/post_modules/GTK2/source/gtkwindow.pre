@@ -219,7 +219,7 @@ void set_gravity(int gravity);
 //! The default window gravity is GDK2.GRAVITY_NORTH_WEST, which will typically
 //! "do what you mean."
 
-void get_gravity();
+int get_gravity();
 //! Gets the value set by set_gravity().
 
 void set_position(int pos);

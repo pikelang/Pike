@@ -144,7 +144,7 @@ int get_focus_on_map( );
 //!
 //!
 
-GTK2.Window get_gravity( );
+int get_gravity( );
 //! Gets the value set by set_gravity().
 //!
 //!
