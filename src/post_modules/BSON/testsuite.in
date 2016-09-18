@@ -54,8 +54,12 @@ dnl test_bson_append_double
 test_any([[
   // We can't explicitly encode doubles with the current API.
   mapping m = Standards.BSON.decode(String.hex2string("1500000001646f75626c65005305a3923add5e4000"));
-  return (string)m->double;
-]], "123.4567")
+  /* NB: Decodes to 123.4567.
+   *     On 32-bit platforms this gets rounded to 123.457.
+   *     Add 0.0003 so that the result is the same on 64-bit too.
+   */
+  return (string)(m->double + 0.0003);
+]], "123.457")
 
 dnl test_bson_append_document
 dnl We can't explicitly encode document with the current API.
