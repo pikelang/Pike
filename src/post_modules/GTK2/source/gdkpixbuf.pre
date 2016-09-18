@@ -209,6 +209,11 @@ void create(string|mapping options)
 }
 
 require gtk22;
+%{
+/* Hack because this function is supposedly for "backends only". Suppresses an
+otherwise-spurious warning. */
+gboolean gdk_pixbuf_set_option (GdkPixbuf *pixbuf, const gchar *key, const gchar *value);
+%}
 int set_option(string key, string value)
 //! Attaches a key/value pair as an option.  If the key already exists
 //! in the list of options, the new value is ignored.
