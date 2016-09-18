@@ -393,7 +393,7 @@ GTK2.Window set_default( GTK2.Widget child );
 //! The default widget is the widget that's activated when the user presses
 //! Enter in a dialog (for example).  This function sets or unsets the default
 //! widget.  When setting (rather than unsetting) the default widget it's
-//! generally easier to call GTK2.Widget->grab_focus() on the widget.
+//! generally easier to call GTK2.Widget->grab_default() on the widget.
 //!
 //!
 
