@@ -61,11 +61,33 @@ enum CLOSE_STATUS {
     CLOSE_POLICY,
 
     //!
+    CLOSE_OVERFLOW,
+
+    //!
     CLOSE_EXTENSION = 1010,
 
     //!
     CLOSE_UNEXPECTED,
 };
+
+int(0..1) is_valid_close(int close_status) {
+    switch (close_status) {
+    case CLOSE_NORMAL:
+    case CLOSE_GONE_AWAY:
+    case CLOSE_ERROR:
+    case CLOSE_BAD_TYPE:
+    /* case CLOSE_NONE: */
+    case CLOSE_BAD_DATA:
+    case CLOSE_POLICY:
+    case CLOSE_OVERFLOW:
+    case CLOSE_EXTENSION:
+    case CLOSE_UNEXPECTED:
+    case 3000 .. 3999: /* reserved for registration with IANA */
+    case 4000 .. 4999: /* reserved for private use */
+        return 1;
+    }
+    return 0;
+}
 
 #define FOO(x)  if (op == x) return #x
 string describe_opcode(FRAME op) {
@@ -107,6 +129,7 @@ protected Frame low_parse(Stdio.Buffer buf) {
     Frame f = Frame(opcode & 15);
     f->fin = opcode >> 7;
     f->mask = mask;
+    f->rsv = (opcode >> 4) & 7;
 
 
     if (masked) {
@@ -140,6 +163,7 @@ class Frame {
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
     //! fragmented message or a non-fragmentation frame.
     int(0..1) fin = 1;
+    int(3bit) rsv;
 
     string mask;
 
@@ -174,9 +198,11 @@ class Frame {
             this::data = data;
             break;
         case FRAME_CLOSE:
-            if (!intp(data))
-                error("Bad argument. Expected CLOSE_STATUS.\n");
-            this::data = sprintf("%2c", data);
+            if (intp(data)) {
+                this::data = sprintf("%2c", data);
+            } else if (stringp(data) && String.width(data) == 8) {
+                this::data = data;
+            } else error("Bad argument. Expected CLOSE_STATUS or string(8bit).\n");
             break;
         case FRAME_CONTINUATION:
             if (!stringp(data))
@@ -195,16 +221,20 @@ class Frame {
                        describe_opcode(opcode), fin, sizeof(data));
     }
 
+    private string _text;
+
     //! @decl string text
     //! Only exists for frames of type @[FRAME_TEXT].
 
     string `text() {
         if (opcode != FRAME_TEXT) error("Not a text frame.\n");
-        return utf8_to_string(data);
+        if (!_text) _text = utf8_to_string(data);
+        return _text;
     }
 
     string `text=(string s) {
         if (opcode != FRAME_TEXT) error("Not a text frame.\n");
+        _text = s;
         data = string_to_utf8(s);
         return s;
     }
@@ -216,10 +246,9 @@ class Frame {
         int i;
         if (opcode != FRAME_CLOSE)
             error("This is not a close frame.\n");
-        if (sscanf(data, "%2c", i) != 1) {
-            i = CLOSE_NORMAL;
-        }
-        return i;
+        if (!sizeof(data)) return CLOSE_NORMAL;
+        if (sscanf(data, "%2c", i) == 1) return i;
+        return CLOSE_ERROR;
     }
 
     CLOSE_STATUS `reason=(CLOSE_STATUS r) {
@@ -227,6 +256,15 @@ class Frame {
             error("This is not a close frame.\n");
         data = sprintf("%2c", r);
         return r;
+    }
+
+    //! @decl string close_reason
+
+    string `close_reason() {
+        if (opcode != FRAME_CLOSE)
+            error("This is not a close frame.\n");
+        if (sizeof(data) <= 2) return 0;
+        return utf8_to_string(data[2..]);
     }
 
     //!
@@ -324,7 +362,7 @@ class Connection {
 
         state = OPEN;
         if (onopen) onopen(id || this);
-        WS_WERR(1, "opened\n");
+        WS_WERR(2, "opened\n");
     }
 
     //! Constructor for client mode connections
@@ -396,8 +434,6 @@ class Connection {
         return res;
     }
 
-    // Sorry guys...
-
     //!
     function(mixed:void) onopen;
 
@@ -468,7 +504,7 @@ class Connection {
 
             state = OPEN;
             if (onopen) onopen(id || this);
-            WS_WERR(1, "opened\n");
+            WS_WERR(2, "opened\n");
 
             // Is this needed?
             websocket_in(_id, in);
@@ -501,22 +537,78 @@ class Connection {
         // once a close handshake has been received. however,
         // without a read callback pike does not trigger the
         // close event.
-        if (state == CLOSED) return;
 
         while (Frame frame = parse(in)) {
+            if (state == CLOSED) return; 
+
+#ifdef WEBSOCKET_DEBUG
+            if (frame->rsv) {
+                fail();
+                WS_WERR(1, "Received frame with rsv bits sets.\n");
+                return;
+            }
+#endif
+
+            int opcode = frame->opcode;
             WS_WERR(2, "%O in %O\n", this, frame);
-            switch (frame->opcode) {
+
+            if (opcode & 0x8) {
+                /* control frames may not be bigger than 125 bytes */
+                if (sizeof(frame->data) > 125) {
+                    WS_WERR(1, "Received too big control frame. closing connection.\n");
+                    fail();
+                    return;
+                }
+                if (!frame->fin) {
+                    WS_WERR(1, "Received fragmented control frame. closing connection.\n");
+                    fail();
+                    return;
+                }
+                if (opcode > FRAME_PONG) {
+                    WS_WERR(1, "Received unknown control frame. closing connection.\n");
+                    fail();
+                    return;
+                }
+            }
+
+#ifdef WEBSOCKET_DEBUG
+            if (opcode >= 0x3 && opcode <= 0x7) {
+                WS_WERR(1, "Received reserved non control opcode frame.\n");
+                fail();
+                return;
+            }
+#endif
+
+            switch (opcode) {
+            case FRAME_TEXT:
+                /* check if the incoming text is valid utf8 */
+                if (frame->fin && catch(frame->text)) {
+                    fail(CLOSE_BAD_DATA);
+                    return;
+                }
+                break;
             case FRAME_PING:
                 send(Frame(FRAME_PONG, frame->data));
                 continue;
             case FRAME_CLOSE:
+                if (!is_valid_close(frame->reason)) {
+                    WS_WERR(1, "Received invalid close reason: %d\n", frame->reason);
+                    fail();
+                    return;
+                }
                 if (state == OPEN) {
+#ifdef WEBSOCKET_DEBUG
+                    if (catch(frame->close_reason)) {
+                        WS_WERR(1, "Non utf8 text in close frame.\n");
+                        fail(CLOSE_BAD_DATA);
+                        return;
+                    }
+#endif
                     close(frame->reason);
                     // we call close_event here early to allow applications to stop
                     // sending packets. i think this makes more sense than what the
                     // websocket api specification proposes.
                     close_event(frame->reason);
-                    break;
                 } else if (state == CLOSING) {
                     stream->set_nonblocking(0,0,0);
                     catch { stream->close(); };
@@ -524,8 +616,8 @@ class Connection {
                     // we dont use frame->reason here, since that is not guaranteed
                     // to be the same as the one used to start the close handshake
                     close_event(close_reason);
-                    break;
                 }
+                return;
             }
 
             if (onmessage) onmessage(frame, id || this);
@@ -545,7 +637,7 @@ class Connection {
         stream = 0;
         // if this is the end of a proper close handshake, this wont do anything
         close_event(0);
-        WS_WERR(1, "closed\n");
+        WS_WERR(2, "closed\n");
     }
 
     //! Send a WebSocket ping frame.
@@ -556,8 +648,20 @@ class Connection {
     //! Send a WebSocket connection close frame. The close callback will be
     //! called when the close handshake has been completed. No more frames
     //! can be sent after initiating the close handshake.
-    void close(void|CLOSE_STATUS reason) {
-        send(Frame(FRAME_CLOSE, reason||CLOSE_NORMAL));
+    void close(void|string(8bit)|CLOSE_STATUS reason, void|string msg) {
+        if (!reason) reason = CLOSE_NORMAL;
+        if (msg) {
+            send(Frame(FRAME_CLOSE, sprintf("%2c%s", reason, string_to_utf8(msg))));
+        } else send(Frame(FRAME_CLOSE, reason));
+    }
+
+    //! Send a WebSocket connection close frame and terminate the connection.
+    //! The default @expr{reason@} is @[CLOSE_ERROR].
+    void fail(void|CLOSE_STATUS reason) {
+        if (!reason) reason = CLOSE_ERROR;
+        close(reason);
+        close_event(reason);
+        destruct(stream);
     }
 
     //! Send a WebSocket frame.
@@ -600,7 +704,7 @@ class Request(function(array(string), Request:void) cb) {
       if (cb && has_index(request_headers, "sec-websocket-key")) {
           string proto = request_headers["sec-websocket-protocol"];
           array(string) protocols =  proto ? proto / ", " : ({});
-          WS_WERR(1, "websocket request: %O\n", protocols);
+          WS_WERR(3, "websocket request: %O\n", protocols);
           cb(protocols, this);
           return 1;
       }
