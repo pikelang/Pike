@@ -15,6 +15,9 @@ protected string MASK(string data, string mask) {
     return data ^ (mask * (sizeof(data)/(float)sizeof(mask)));
 }
 
+//! 
+typedef function(Frame, mixed:void) message_callback;
+
 //! WebSocket frame opcodes.
 enum FRAME {
     //!
@@ -786,4 +789,50 @@ class SSLPort {
         if (ws_cb)
             request_program = Function.curry(Request)(ws_cb);
     }
+}
+
+//! Returns a new callback which recombines all fragmented frames before
+//! passing them to @expr{cb@}.
+message_callback defragment(message_callback cb, Connection connection) {
+    Frame fragment;
+    void onmessage(Frame frame, mixed id) {
+        int opcode = frame->opcode;
+        int(0..1) fin = frame->fin;
+
+        if (opcode == FRAME_CONTINUATION) {
+            if (!fragment) {
+                connection->fail();
+                WS_WERR(1, "Bad continuation.\n");
+                return;
+            }
+            fragment->data += frame->data;
+
+            if (fin) {
+                frame = fragment;
+                frame->fin = 1;
+                fragment = 0;
+                if (frame->opcode == FRAME_TEXT && catch(frame->text)) {
+                    connection->fail(CLOSE_BAD_DATA);
+                    WS_WERR(1, "Invalid utf8 in text frame.\n");
+                    return;
+                }
+            } else return;
+        } else if (!fin) {
+            if (fragment) {
+                connection->fail();
+                WS_WERR(1, "Unfinished fragmented message.\n");
+                return;
+            }
+            fragment = frame;
+            return;
+        } else if (fragment && !(opcode & 0x8)) {
+            connection->fail();
+            WS_WERR(1, "Non control frame during fragmented traffic.\n");
+            return;
+        }
+
+        cb(frame, id);
+    };
+
+    return onmessage;
 }
