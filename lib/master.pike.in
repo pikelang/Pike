@@ -1095,6 +1095,8 @@ string programs_reverse_lookup (program prog)
 {
   // When running with trace, this function can get called
   // before __INIT has completed.
+  // NB: We need to be reasonably thread safe, as the compiler
+  //     may be running in another thread.
   if (!rev_programs) return UNDEFINED;
   if (sizeof (rev_programs) < sizeof (programs)) {
     foreach (programs; string path; program|NoValue prog)
@@ -1109,6 +1111,8 @@ string programs_reverse_lookup (program prog)
 program objects_reverse_lookup (object obj)
 //! Returns the program for @[obj], if known to the master.
 {
+  // NB: We need to be reasonably thread safe, as the compiler
+  //     may be running in another thread.
   if (sizeof (rev_objects) < sizeof (objects)) {
     foreach (objects; program prog; object|NoValue obj)
       if (obj == no_value)
@@ -1413,6 +1417,14 @@ protected program low_findprog(string pname,
       }
 #endif
 
+    object compiler_lock = DefaultCompilerEnvironment->lock();
+    if(!undefinedp(ret = programs[fname]) && (ret != no_value)) {
+      destruct(compiler_lock);
+      resolv_debug("low_findprog %s: returning cached (from other thread).\n",
+		   fname);
+      return ret;
+    }
+
     switch(ext)
     {
     case "":
@@ -1462,13 +1474,6 @@ protected program low_findprog(string pname,
 	}
       }
 
-      object compiler_lock = DefaultCompilerEnvironment->lock();
-      if(!undefinedp(ret = programs[fname]) && (ret != no_value)) {
-	destruct(compiler_lock);
-	resolv_debug("low_findprog %s: returning cached (from other thread).\n",
-		     fname);
-	return ret;
-      }
       resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
       INC_RESOLV_MSG_DEPTH();
       programs[fname]=ret=__empty_program(0, fname);
@@ -1558,6 +1563,8 @@ protected program low_findprog(string pname,
 void unregister(program p)
 {
   // werror("Unregistering %O...\n", p);
+  object compiler_lock = DefaultCompilerEnvironment->lock();
+
   if(string fname=rev_programs[p] || search(programs,p)) {
     resolv_debug("unregister %s\n", fname);
     if (m_delete (rev_programs, p))
@@ -1633,6 +1640,8 @@ program low_cast_to_program(string pname,
     ext="";
   }
 
+  // NB: No need to lock the compiler here; findprog() will
+  //     lock and reprobe on miss in the programs mapping.
   if(IS_ABSOLUTE_PATH(pname))
   {
     program|NoValue prog = programs[pname];
@@ -1892,8 +1901,12 @@ object low_cast_to_object(string oname, string current_file,
 
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
-  // NB: p might be a function in a fake_object...
-  if(!objectp (o=objects[p])) o=objects[p]=p();
+  if(!objectp(o = objects[p])) {
+    object compiler_lock = DefaultCompilerEnvironment->lock();
+    // NB: p might be a function in a fake_object...
+    if(!objectp(o = objects[p])) o = objects[p] = p();
+    destruct(compiler_lock);
+  }
   return o;
 }
 
@@ -2140,7 +2153,11 @@ class dirnode (string dirname, object|void compilation_handler,
 	    if (!ret->_module_value) {
 	      object o;
 	      // NB: p might be a function in a fake_object...
-	      if(!objectp (o=objects[ret])) o=objects[ret]=ret();
+	      if(!objectp(o = objects[ret])) {
+		object compiler_lock = DefaultCompilerEnvironment->lock();
+		if(!objectp(o = objects[ret])) o = objects[ret] = ret();
+		destruct(compiler_lock);
+	      }
 	      ret = o;
 	    }
 	    if(mixed tmp=ret->_module_value) ret=tmp;
@@ -5176,6 +5193,8 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   object __register_new_program(program p)
   {
     DEC_MSG ("__register_new_program (%O)\n", p);
+    // NB: decode_value() has already locked the compiler, so we
+    //     should not need to lock it here.
     if(unregistered && fname)
     {
       unregistered = 0;
