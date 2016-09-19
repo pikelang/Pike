@@ -148,30 +148,44 @@ class Frame {
     string data = "";
 
     //! @decl void create(FRAME opcode, void|string|CLOSE_STATUS)
-    //! @decl void create(FRAME_TEXT, string text)
-    //! @decl void create(FRAME_BINARY, string(0..255) data)
+    //! @decl void create(FRAME_TEXT, string text, void|int(0..1) fin)
+    //! @decl void create(FRAME_BINARY, string(0..255) data, void|int(0..1) fin)
+    //! @decl void create(FRAME_CONTINUATION, string(0..255) data, void|int(0..1) fin)
     //! @decl void create(FRAME_CLOSE, CLOSE_STATUS reason)
     //! @decl void create(FRAME_PING, string(0..255) data)
     //! @decl void create(FRAME_PONG, string(0..255) data)
-    protected void create(FRAME opcode, void|string|CLOSE_STATUS data) {
+    protected void create(FRAME opcode, void|string|CLOSE_STATUS data, void|int(0..1) fin) {
         this::opcode = opcode;
         if (data) switch (opcode) {
         case FRAME_TEXT:
-            data = string_to_utf8(data);
+            this::data = string_to_utf8(data);
+            this::fin = undefinedp(fin) || fin;
+            break;
         case FRAME_PONG:
         case FRAME_PING:
+            if (!stringp(data) || String.width(data) != 8)
+                error("Bad argument. Expected string(8bit).\n");
+            this::data = data;
+            break;
         case FRAME_BINARY:
-            if (!stringp(data))
-                error("Bad argument. Expected string.\n");
-            if (String.width(data) != 8)
-                error("%s frames cannot hold widestring data.\n",
-                      describe_opcode(opcode));
+            if (!stringp(data) || String.width(data) != 8)
+                error("Bad argument. Expected string(8bit).\n");
+            this::fin = undefinedp(fin) || fin;
             this::data = data;
             break;
         case FRAME_CLOSE:
             if (!intp(data))
                 error("Bad argument. Expected CLOSE_STATUS.\n");
             this::data = sprintf("%2c", data);
+            break;
+        case FRAME_CONTINUATION:
+            if (!stringp(data))
+                error("Bad argument. Expected string.\n");
+            if (String.width(data) != 8)
+                error("%s frames cannot hold widestring data.\n",
+                      describe_opcode(opcode));
+            this::data = data;
+            this::fin = undefinedp(fin) || fin;
             break;
         }
     }
@@ -565,6 +579,10 @@ class Connection {
     //! Send a WebSocket text frame.
     void send_text(string s) {
         send(Frame(FRAME_TEXT, s));
+    }
+
+    void send_continuation(string(8bit) data, void|int(0..1) fin) {
+        send(Frame(FRAME_CONTINUATION, data, fin));
     }
 
     //! Send a WebSocket binary frame.
