@@ -112,7 +112,7 @@ dnl see if we can find the include files in any of the standard locations
     fi
   fi
 
-dnl final ckeck, just to be sure we did not mess up
+dnl final check, just to be sure we did not mess up
   AC_CHECK_HEADERS(postgres.h postgres_fe.h \
 		   server/postgres.h server/postgres_fe.h \
 		   postgresql/server/postgres.h \
@@ -137,6 +137,7 @@ PG_VERSION
     HAVE_PG72=yes
     AC_DEFINE(HAVE_PG72)
   ], [
+    # Detect Postgres 8.x and 9.x.
     AC_EGREP_CPP([\"[8-9]\..*], [
 #ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
 #include <postgresql/server/pg_config.h>
@@ -149,6 +150,21 @@ PG_VERSION
     ], [
       HAVE_PG72=yes
       AC_DEFINE(HAVE_PG72)
+    ], [
+      # Detect Postgres 10.x and anything later.
+      AC_EGREP_CPP([\"[1-9][0-9][0-9]*\..*], [
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif defined(HAVE_SERVER_PG_CONFIG_H)
+#include <server/pg_config.h>
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+PG_VERSION
+      ], [
+        HAVE_PG72=yes
+        AC_DEFINE(HAVE_PG72)
+      ])
     ])
   ])
 
