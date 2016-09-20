@@ -1,6 +1,8 @@
 class GDK2.PixbufLoader;
 inherit G.Object;
 
+//! Application-driven progressive image loading.
+
 signal area_prepared;
 signal area_updated;
 signal closed;
@@ -12,6 +14,7 @@ signal size_prepared;
 %}
 
 void create();
+//!
 
 /*
   Note: not a gobject

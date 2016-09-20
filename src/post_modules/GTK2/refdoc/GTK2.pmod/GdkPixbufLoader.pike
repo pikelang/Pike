@@ -1,3 +1,14 @@
+//! Application-driven progressive image loading.
+//!
+//!
+//!  Signals:
+//! @b{area_prepared@}
+//!
+//! @b{area_updated@}
+//!
+//! @b{closed@}
+//!
+//! @b{size_prepared@}
 //!
 
 inherit G.Object;
@@ -11,6 +22,8 @@ int(0..1) close( );
 //!
 
 protected GDK2.PixbufLoader create( );
+//!
+//!
 //!
 
 GTK2.GdkPixbufAnimation get_animation( );
