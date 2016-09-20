@@ -79,10 +79,16 @@ int errno() { return 0; }
 //! Returns size and the creation time of the string.
 Stdio.Stat stat() {
   Stdio.Stat st = Stdio.Stat();
+  st->isreg = 1;
   st->size = sizeof(data);
   st->mtime=st->ctime=mtime;
   st->atime=time();
   return st;
+}
+
+int mode()
+{
+  return 0x1000; // FILE_READ (from Pike/src/modules/_Stdio/file.h)
 }
 
 //! @seealso
@@ -364,7 +370,6 @@ NOPE(tcsetattr);
 // Stdio.Fd
 NOPE(dup2);
 NOPE(lock); // We could implement this
-NOPE(mode); // We could implement this
 NOPE(proxy); // We could implement this
 NOPE(query_fd);
 NOPE(read_oob);
