@@ -4,10 +4,10 @@
 
 #pike __REAL_VERSION__
 
-//#define EIO_DEBUG  1
-//#define EIO_DEBUGMORE  1
+//#define EIO_DEBUG		1
+//#define EIO_DEBUGMORE		1
 
-//#define EIO_STATS	1	// Collect extra usage statistics
+//#define EIO_STATS		1	// Collect extra usage statistics
 
 #define DRIVERNAME		"Engine.IO"
 
@@ -26,8 +26,8 @@
 #define PT(X ...)		(X)
 #endif
 
-#define SIDBYTES	16
-#define TIMEBYTES	6
+#define SIDBYTES		16
+#define TIMEBYTES		6
 
 //! Global options for all EngineIO instances.
 final mapping options = ([
@@ -38,7 +38,7 @@ final mapping options = ([
   "compressionThreshold":	256		// Compress when size>=
 ]);
 
-constant protocol = 3; // EIO Protocol version
+constant protocol = 3;				// EIO Protocol version
 
 private enum {
   //          0         1      2     3     4        5        6
@@ -47,7 +47,7 @@ private enum {
 };
 
 // All EngineIO sessions indexed on sid.
-private mapping(string:Server) clients=([]);
+private mapping(string:Server) clients = ([]);
 
 private Regexp acceptgzip = Regexp("(^|,)gzip(,|$)");
 private Regexp xxsua = Regexp(";MSIE|Trident/");
@@ -68,11 +68,11 @@ final void setoptions(mapping(string:mixed) _options) {
 //!}
 //!
 //!void httprequest(object req)
-//!{ switch(req.not_query)
+//!{ switch (req.not_query)
 //!  { case "/engine.io/":
 //!      Protocols.EngineIO.Server server = Protocols.EngineIO.farm(req);
 //!      if (server) {
-//!        server->set_read_callback(echo);
+//!        server->set_callbacks(echo);
 //!        server->write("Hello world!");
 //!      }
 //!      break;
@@ -99,7 +99,7 @@ final Server farm(Protocols.WebSocket.Request req) {
 }
 
 class Transport {
-  final function(int,string|Stdio.Buffer:void) read_cb;
+  final function(int, void|string|Stdio.Buffer:void) read_cb;
   final ADT.Queue sendq;
   protected int pingtimeout;
 
@@ -109,7 +109,7 @@ class Transport {
   }
 
   private void droptimeout() {
-    remove_call_out(onclose);
+    remove_call_out(close);
   }
 
   protected void destroy() {
@@ -118,15 +118,17 @@ class Transport {
 
   final protected void kickwatchdog() {
     droptimeout();
-    call_out(onclose, pingtimeout);
+    call_out(close, pingtimeout);
   }
 
-  final protected void onclose() {
-    read_cb(FORCECLOSE, "");
+  //! Close the transport.
+  final void close() {
+    droptimeout();
+    read_cb(FORCECLOSE);
   }
 
   final protected void sendqempty() {
-    read_cb(SENDQEMPTY, "");
+    read_cb(SENDQEMPTY);
   }
 }
 
@@ -223,7 +225,7 @@ class Polling {
                      (type = ci->read_int8())!=0xff;
                      len=len*10+type);
                 len--;
-                type = ci->read_int8();
+                type = ci->read_int8() + (isbin ? OPEN : 0);
                 res = isbin ? ci->read_buffer(len): ci->read(len);
               } else {
                 ci->unread(1);
@@ -261,7 +263,8 @@ class Polling {
     if (req && sendq) {
       while (!sendq->is_empty()) {
         array m = sendq->read();
-        string|Stdio.Buffer msg = m[1];
+        type = m[0];
+        msg = m[1];
         if (stringp(msg)) {
            if (String.width(msg) > 8)
              msg = string_to_utf8(msg);
@@ -271,6 +274,7 @@ class Polling {
           foreach ((string)(1+sizeof(msg));; int i)
             c->add_int8(i-'0');
           c->add_int8(0xff);
+          type -= OPEN;
         } else {
           msg = MIME.encode_base64(msg->read(), 1);
           c->add((string)(1+1+sizeof(msg)))->add_int8(':')->add_int8(BASE64);
@@ -332,22 +336,13 @@ class WebSocket {
    Protocols.WebSocket.Connection _con) {
     con = _con;
     con->onmessage = recv;
-    con->onclose = onclose;
+    con->onclose = close;
     t::create(req);
   }
 
   final void flush(void|int type, void|string|Stdio.Buffer msg) {
-    Stdio.Buffer c = Stdio.Buffer();
-    String.Buffer ssb = String.Buffer();
     void sendit() {
-      if (stringp(msg)) {
-        ssb->putchar(type);
-        ssb->add(msg);
-        con->send_text(ssb->get());
-      } else {
-        c->add_int8(type)->add(msg);
-        con->send_binary(c->read());
-      }
+      con->send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
     };
     if (msg)
       sendit();
@@ -396,7 +391,11 @@ class Server {
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
+  //! Contains the last request seen on this connection.
+  //! Can be used to obtain cookies etc.
+  final Protocols.WebSocket.Request lastrequest;
   private mixed id;
+  //! The unique session identifier.
   final string sid;
   private ADT.Queue sendq = ADT.Queue();
   private ADT.Queue recvq = ADT.Queue();
@@ -411,27 +410,23 @@ class Server {
     id = _id;
   }
 
-  //! Retrieve initial argument on callbacks.
+  //! Retrieve initial argument on callbacks.  Defaults to the Server
+  //! object itself.
   final mixed query_id() {
-    return id;
+    return id || this;
   }
 
-  //! As long as this callback has not been set, all received messages
+  //! As long as the read callback has not been set, all received messages
   //! will be buffered.
-  final void
-   set_read_callback(function(mixed, string|Stdio.Buffer:void) _read_cb) {
-    read_cb = _read_cb;
+  final void set_callbacks(
+    void|function(mixed, string|Stdio.Buffer:void) _read_cb,
+    void|function(mixed:void) _close_cb) {
+    close_cb = _close_cb;		// Set close callback first
+    read_cb = _read_cb;			// to avoid losing the close event
     flushrecvq();
   }
 
-  //! Set this callback before setting the read_callback, or you might miss
-  //! the closing event.
-  final void
-   set_close_callback(function(mixed:void) _close_cb) {
-    close_cb = _close_cb;
-  }
-
-  //! Send text or binary messages.
+  //! Send text (string) or binary (Stdio.Buffer) messages.
   final void write(string|Stdio.Buffer ... msgs) {
     if (state >= SCLOSING)
       throw("Socket already shutting down");
@@ -446,45 +441,53 @@ class Server {
   private void send(int type, void|string|Stdio.Buffer msg) {
     PD("Queue %s %c:%O\n", sid, type, (string)(msg || ""));
     sendq->write(({type, msg || ""}));
-    if (state != PAUSED)
-      transport->flush();
+    switch (state) {
+      case RUNNING:
+      case SCLOSING:
+        transport->flush();
+    }
   }
 
   private void flushrecvq() {
     while (read_cb && !recvq->is_empty())
-      read_cb(id, recvq->read());
+      read_cb(query_id(), recvq->read());
   }
 
-  private void sendclose() {
+  //! Close the socket signalling the other side.
+  final void close() {
     if (state < SCLOSING) {
+      if (close_cb)
+        close_cb(query_id());
       PT("Send close, state %O\n", state);
       state = SCLOSING;
-      send(CLOSE);
+      catch(send(CLOSE));
     }
   }
 
+  private void rclose() {
+    close();
+    state = RCLOSING;
+    m_delete(clients, sid);
+  }
+
   private void clearcallback() {
-    if (close_cb)
-      close_cb(id);
     close_cb = 0;
     read_cb = 0;			// Sort of a race, if multithreading
     id = 0;				// Delete all references to this Server
-    destruct(transport);
+    transport = 0;
   }
 
-  private void recv(int type, string|Stdio.Buffer msg) {
+  private void recv(int type, void|string|Stdio.Buffer msg) {
 #ifndef EIO_DEBUGMORE
     if (type!=SENDQEMPTY)
 #endif
       PD("Received %s %c:%O\n", sid, type, (string)msg);
     switch (type) {
       default:	  // Protocol error or CLOSE
-        sendclose();
+        close();
         break;
       case CLOSE:
-        sendclose();
-        state = RCLOSING;
-        m_delete(clients, sid);
+        rclose();
         if (sendq->is_empty())
           clearcallback();
         break;
@@ -493,8 +496,7 @@ class Server {
           clearcallback();
         break;
       case FORCECLOSE:
-        state = RCLOSING;
-        m_delete(clients, sid);
+        rclose();
 	clearcallback();
         break;
       case PING:
@@ -502,7 +504,7 @@ class Server {
         break;
       case MESSAGE:
         if (read_cb && recvq->is_empty())
-          read_cb(id, msg);
+          read_cb(query_id(), msg);
         else {
           recvq->write(msg);
           flushrecvq();
@@ -517,7 +519,8 @@ class Server {
         upgtransport = 0;
         if (state == PAUSED)
           state = RUNNING;
-        transport->flush();
+        if(transport)
+          transport->flush();
         break;
       case PING:
         state = PAUSED;
@@ -528,9 +531,7 @@ class Server {
         break;
       case UPGRADE: {
         upgtransport->read_cb = recv;
-        Transport oldtrans = transport;
         transport = upgtransport;
-        destruct(oldtrans);
         curtransport = "websocket";
         if (state == PAUSED)
           state = RUNNING;
@@ -542,10 +543,11 @@ class Server {
   }
 
   protected void destroy() {
-    sendclose();
+    close();
   }
 
   protected void create(Protocols.WebSocket.Request req) {
+    lastrequest = req;
     switch (curtransport = req.variables.transport) {
       default:
         req->response_and_finish((["data":"Unsupported transport",
@@ -563,7 +565,7 @@ class Server {
     ci->add(Crypto.Random.random_string(SIDBYTES-TIMEBYTES));
     ci->add_hint(gethrtime(), TIMEBYTES);
     sid = MIME.encode_base64(ci->read());
-    clients[sid] = id = this;		// Default id is this Server object
+    clients[sid] = this;
     send(OPEN, Standards.JSON.encode(
              (["sid":sid,
                "upgrades":
@@ -578,6 +580,7 @@ class Server {
   //! connection.
   final void onrequest(Protocols.WebSocket.Request req) {
     string s;
+    lastrequest = req;
     if ((s = req.variables->transport) == curtransport)
       transport->onrequest(req);
     else
@@ -595,10 +598,11 @@ class Server {
 
   private string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
-    switch(type) {
+    switch (type) {
       case 'O':
-        res = sprintf(DRIVERNAME"(%s,%s,%d,%d,%d)",
-         sid, curtransport, state, sendq->is_empty(), recvq->is_empty());
+        res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d,%d)",
+         sid, protocol, curtransport, state, sendq->is_empty(),
+         recvq->is_empty(),sizeof(clients));
         break;
     }
     return res;
