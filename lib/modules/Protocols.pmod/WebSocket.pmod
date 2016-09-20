@@ -389,7 +389,19 @@ class Connection {
         Stdio.File f = Stdio.File();
         state = CONNECTING;
 
-        int res = f->connect(endpoint->host, endpoint->port);
+        string host = endpoint->host;
+        int port;
+
+        if (endpoint->scheme == "ws") {
+            port = endpoint->port || 80;
+        } else if (endpoint->scheme == "wss") {
+            port = endpoint->port || 443;
+        } else error("Not a WebSocket URL.\n");
+
+        if (endpoint->port) host += ":" + endpoint->port;
+
+        int res = f->connect(endpoint->host, port);
+
         if (!res) {
             websocket_closed();
             return 0;
@@ -414,7 +426,7 @@ class Connection {
 
         stream->set_nonblocking(http_read, websocket_write, websocket_closed);
         mapping headers = ([
-            "Host" : endpoint->host,
+            "Host" : host,
             "Connection" : "Upgrade",
             "User-Agent" : "Pike/8.0",
             "Accept": "*/*",
@@ -428,8 +440,7 @@ class Connection {
         }
 
         // We use our output buffer to generate the request.
-        out->add("GET ", endpoint->path," HTTP/1.1\r\n");
-        out->add("Host: ", endpoint->host, "\r\n");
+        out->add("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
             out->add(h, ": ", v, "\r\n");
         }
@@ -670,7 +681,7 @@ class Connection {
     //! Send a WebSocket frame.
     void send(Frame frame) {
         if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
-        if (masking && sizeof(frame->data))
+        if (masking)
             frame->mask = random_string(4);
         WS_WERR(2, "sending %O\n", frame);
         frame->encode(out);
