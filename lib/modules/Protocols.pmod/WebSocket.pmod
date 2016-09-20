@@ -624,9 +624,7 @@ class Connection {
                     // websocket api specification proposes.
                     close_event(frame->reason);
                 } else if (state == CLOSING) {
-                    stream->set_nonblocking(0,0,0);
-                    catch { stream->close(); };
-                    stream = 0;
+                    destruct(stream);
                     // we dont use frame->reason here, since that is not guaranteed
                     // to be the same as the one used to start the close handshake
                     close_event(close_reason);
@@ -647,8 +645,7 @@ class Connection {
     }
 
     protected void websocket_closed() {
-        stream && stream->set_nonblocking(0,0,0);
-        stream = 0;
+        if (stream) destruct(stream);
         // if this is the end of a proper close handshake, this wont do anything
         close_event(0);
         WS_WERR(2, "closed\n");
@@ -690,7 +687,7 @@ class Connection {
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
-            // TODO: time out the connection
+            stream->close("w");
         }
     }
 
