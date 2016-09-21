@@ -2810,6 +2810,180 @@ static ptrdiff_t calc(struct cpp *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
+static void apply_define(struct cpp *this,
+			 struct define_struct *d,
+			 struct define_argument *arguments,
+			 short flags, short auto_convert,
+			 struct pike_string *charset)
+{
+  struct string_builder tmp;
+
+  init_string_builder(&tmp, 0);
+  if(d->magic)
+  {
+    int i;
+    struct pike_string *a = NULL;
+    if (d->args > 0) {
+      a = make_shared_binary_pcharp(arguments[0].arg, arguments[0].len);
+    }
+    d->magic(this, d, a, &tmp);
+    /* FIXME: Popping the stack should be moved to
+     *        the magic functions.
+     */
+    if (a) free_string(a);
+  }else{
+    struct array *parts = d->parts;
+    int e;
+    for(e = 0; e < parts->size; e++)
+    {
+      PCHARP a;
+      ptrdiff_t l;
+
+      switch(TYPEOF(parts->item[e])) {
+      case PIKE_T_INT:
+	{
+	  int argument = parts->item[e].u.integer;
+	  if((argument & DEF_ARG_MASK) >= d->args)
+	  {
+	    cpp_error(this, "Macro not expanded correctly.");
+	    continue;
+	  }
+
+	  a = arguments[argument & DEF_ARG_MASK].arg;
+	  l = arguments[argument & DEF_ARG_MASK].len;
+
+	  if (argument & DEF_ARG_NEED_COMMA
+	      && !(d->varargs && d->args-1
+		   == (argument & DEF_ARG_MASK) && l == 0)) {
+	    string_builder_putchar(&tmp, ',');
+	    string_builder_putchar(&tmp, ' ');
+	  }
+
+	  if(!(argument & DEF_ARG_NOPRESPACE))
+	    string_builder_putchar(&tmp, ' ');
+
+	  if(argument & DEF_ARG_STRINGIFY)
+	  {
+	    /* NOTE: At entry a[0] is non white-space. */
+	    int e = 0;
+	    string_builder_putchar(&tmp, '"');
+	    for(e=0; e<l;) {
+	      if (WC_ISSPACE(INDEX_PCHARP(a,e)) ||
+		  INDEX_PCHARP(a,e)=='"' || INDEX_PCHARP(a,e)=='\\') {
+		if (e) {
+		  string_builder_append(&tmp, a, e);
+		}
+		if (INDEX_PCHARP(a,e) == '"' || INDEX_PCHARP(a,e)=='\\') {
+		  /* String or quote. */
+		  string_builder_putchar(&tmp, '\\');
+		  string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
+		  if (INDEX_PCHARP(a,e) == '"') {
+		    for (e++; e < l; e++) {
+		      if (INDEX_PCHARP(a,e) == '"') {
+			e++;
+			break;
+		      }
+		      string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
+		      if (INDEX_PCHARP(a,e) == '\\') {
+			string_builder_putchar(&tmp, '\\');
+			e++;
+			if (INDEX_PCHARP(a,e) == '\\' ||
+			    INDEX_PCHARP(a,e) == '"') {
+			  string_builder_putchar(&tmp, '\\');
+			}
+			string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
+		      }
+		    }
+		    string_builder_putchar(&tmp, '\\');
+		    string_builder_putchar(&tmp, '"');
+		  }
+		} else {
+		  /* White space. */
+		  while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a,e))) {
+		    e++;
+		  }
+		  if (e != l) {
+		    string_builder_putchar(&tmp, ' ');
+		  }
+		}
+		INC_PCHARP(a,e);
+		l -= e;
+		e = 0;
+	      } else {
+		e++;
+	      }
+	    }
+	    if (l) {
+	      string_builder_append(&tmp,a,l);
+	    }
+	    string_builder_putchar(&tmp, '"');
+	  }else{
+	    /* FIXME: These two tests are always true... */
+	    if(DEF_ARG_NOPRESPACE)
+	      while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
+		INC_PCHARP(a,1),l--;
+
+	    if(DEF_ARG_NOPOSTSPACE)
+	      while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
+		l--;
+
+	    if(argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
+	    {
+	      string_builder_append( &tmp, a, l );
+	    }else{
+	      struct string_builder save;
+	      INT_TYPE line = this->current_line;
+	      /* FIXME: Shouldn't we save current_file too? */
+	      save=this->buf;
+	      this->buf=tmp;
+	      d->flags = CPP_MACRO_IN_USE;
+	      low_cpp(this, a, l,
+		      flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+		      auto_convert, charset);
+	      d->flags = flags;
+	      tmp=this->buf;
+	      this->buf=save;
+	      this->current_line=line;
+	    }
+	  }
+
+	  if(!(argument & DEF_ARG_NOPOSTSPACE))
+	    string_builder_putchar(&tmp, ' ');
+	}
+	break;
+
+      case PIKE_T_STRING:
+	string_builder_shared_strcat(&tmp, parts->item[e].u.string);
+	break;
+      }
+    }
+  }
+
+  /* Remove any newlines from the completed expression. */
+  if (!(d->magic == insert_callback_define ||
+	d->magic == insert_callback_define_no_args ||
+	d->magic == insert_pragma)) {
+    int e;
+    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+      if(index_shared_string(tmp.s,e)=='\n')
+	SET_INDEX_CHARP(tmp.s->str,e,tmp.s->size_shift,' ');
+  }
+
+  d->flags = CPP_MACRO_DISABLED;
+  /* FIXME: Ought to add a ref to d here. */
+
+  string_builder_putchar(&tmp, 0);
+  tmp.s->len--;
+  low_cpp(this, MKPCHARP_STR(tmp.s),tmp.s->len,
+	  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+	  auto_convert, charset);
+
+  d->flags = flags;
+  /* FIXME: Ought to free the ref to d here. */
+
+  free_string_builder(&tmp);
+}
+
 #include "preprocessor.h"
 
 /*** Magic defines ***/
