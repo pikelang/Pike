@@ -4,7 +4,7 @@
 
 #pike __REAL_VERSION__
 
-#define SIO_DEBUG		1
+//#define SIO_DEBUG		1
 //#define SIO_DEBUGMORE		1
 
 //#define SIO_STATS		1	// Collect extra usage statistics
