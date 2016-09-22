@@ -51,7 +51,7 @@ private enum {
 };
 
 // All EngineIO sessions indexed on sid.
-private mapping(string:Server) clients = ([]);
+private mapping(string:Socket) clients = ([]);
 
 private Regexp acceptgzip = Regexp("(^|,)gzip(,|$)");
 private Regexp xxsua = Regexp(";MSIE|Trident/");
@@ -74,10 +74,10 @@ final void setoptions(mapping(string:mixed) _options) {
 //!void httprequest(object req)
 //!{ switch (req.not_query)
 //!  { case "/engine.io/":
-//!      Protocols.EngineIO.Server server = Protocols.EngineIO.farm(req);
-//!      if (server) {
-//!        server.set_callbacks(echo);
-//!        server.write("Hello world!");
+//!      Protocols.EngineIO.Socket client = Protocols.EngineIO.farm(req);
+//!      if (client) {
+//!        client.set_callbacks(echo);
+//!        client.write("Hello world!");
 //!      }
 //!      break;
 //!  }
@@ -87,18 +87,18 @@ final void setoptions(mapping(string:mixed) _options) {
 //!{ Protocols.WebSocket.Port(httprequest, wsrequest, 80);
 //!  return -1;
 //!}
-final Server farm(Protocols.WebSocket.Request req) {
+final Socket farm(Protocols.WebSocket.Request req) {
   string sid;
   PD("Request %O\n", req.query);
   if (sid = req.variables.sid) {
-    Server client;
+    Socket client;
     if (!(client = clients[sid]))
       req.response_and_finish((["data":"Unknown sid",
        "error":Protocols.HTTP.HTTP_GONE]));
     else
       client.onrequest(req);
   } else
-    return Server(req);
+    return Socket(req);
   return 0;
 }
 
@@ -435,20 +435,21 @@ class WebSocket {
 }
 
 //! Runs a single Engine.IO session.
-class Server {
+class Socket {
+  //! Contains the last request seen on this connection.
+  //! Can be used to obtain cookies etc.
+  final Protocols.WebSocket.Request request;
+  //! The unique session identifier (in the Engine.IO docs referred
+  //! to as simply id).
+  final string sid;
+  private mixed id;			// This is the callback parameter
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
-  //! Contains the last request seen on this connection.
-  //! Can be used to obtain cookies etc.
-  final Protocols.WebSocket.Request lastrequest;
-  private mixed id;
-  //! The unique session identifier.
-  final string sid;
   private Thread.Queue sendq = Thread.Queue();
   private ADT.Queue recvq = ADT.Queue();
   private string curtransport;
-  private Transport transport;
+  private Transport conn;
   private Transport upgtransport;
   private enum {RUNNING = 0, PAUSED, SCLOSING, RCLOSING};
   private int state = RUNNING;
@@ -458,7 +459,7 @@ class Server {
     id = _id;
   }
 
-  //! Retrieve initial argument on callbacks.  Defaults to the Server
+  //! Retrieve initial argument on callbacks.  Defaults to the Socket
   //! object itself.
   final mixed query_id() {
     return id || this;
@@ -497,8 +498,8 @@ class Server {
   }
 
   private void flush() {
-    if(catch(transport.flush()))
-      transport.close();
+    if(catch(conn.flush()))
+      conn.close();
   }
 
   private void flushrecvq() {
@@ -526,8 +527,8 @@ class Server {
   private void clearcallback() {
     close_cb = 0;
     read_cb = 0;			// Sort of a race, if multithreading
-    id = 0;				// Delete all references to this Server
-    transport = 0;
+    id = 0;				// Delete all references to this Socket
+    conn = 0;
   }
 
   private void recv(int type, void|string|Stdio.Buffer msg) {
@@ -572,7 +573,7 @@ class Server {
         upgtransport = 0;
         if (state == PAUSED)
           state = RUNNING;
-        if(transport)
+        if(conn)
           flush();
         break;
       case PING:
@@ -584,7 +585,7 @@ class Server {
         break;
       case UPGRADE: {
         upgtransport.read_cb = recv;
-        transport = upgtransport;
+        conn = upgtransport;
         curtransport = "websocket";
         if (state == PAUSED)
           state = RUNNING;
@@ -600,21 +601,21 @@ class Server {
   }
 
   protected void create(Protocols.WebSocket.Request req) {
-    lastrequest = req;
-    switch (curtransport = req.variables.transport) {
+    request = req;
+    switch (curtransport = req.variables->transport) {
       default:
         req.response_and_finish((["data":"Unsupported transport",
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        transport = WebSocket(req, req.websocket_accept(0));
+        conn = WebSocket(req, req.websocket_accept(0));
         break;
       case "polling":
-        transport = req.variables.j ? JSONP(req) : XHR(req);
+        conn = req.variables.j ? JSONP(req) : XHR(req);
         break;
     }
-    transport.read_cb = recv;
-    transport.sendq = sendq;
+    conn.read_cb = recv;
+    conn.sendq = sendq;
     ci->add(Crypto.Random.random_string(SIDBYTES-TIMEBYTES));
     ci->add_hint(gethrtime(), TIMEBYTES);
     sid = MIME.encode_base64(ci->read());
@@ -629,13 +630,13 @@ class Server {
     PD("New EngineIO sid: %O\n", sid);
   }
 
-  //! Handle request, and returns a new Server object if it's a new
+  //! Handle request, and returns a new Socket object if it's a new
   //! connection.
   final void onrequest(Protocols.WebSocket.Request req) {
     string s;
-    lastrequest = req;
+    request = req;
     if ((s = req.variables->transport) == curtransport)
-      transport.onrequest(req);
+      conn.onrequest(req);
     else
       switch (s) {
         default:
