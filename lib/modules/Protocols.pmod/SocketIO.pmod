@@ -18,6 +18,8 @@
 
 #ifdef SIO_DEBUG
 #define PD(X ...)		werror(X)
+#define PDT(X ...)		(werror(X), \
+				 werror(describe_backtrace(PT(backtrace()))))
 				// PT() puts this in the backtrace
 #define PT(X ...)		(lambda(object _this){return (X);}(this))
 #else
@@ -158,7 +160,7 @@ class Server {
 
   private void send(int type, void|string|array data,
    void|int|function(mixed, mixed ...:void) ack_cb) {
-    PD("Send %s %c:%O\n", con.sid, type, data);
+    PD("Send %s %d %c:%O\n", con.sid, intp(ack_cb)?ack_cb:-1, type, data);
     array sbins = emptyarray;
     int cackid;
 
@@ -206,7 +208,7 @@ class Server {
   //! Close the socket signalling the other side.
   final void close() {
     if (state < SDISCONNECT) {
-      PT("Send disconnect, state %O\n", state);
+      PDT("Send disconnect, state %O\n", state);
       state = SDISCONNECT;
       send(DISCONNECT);
       con.close();
@@ -234,9 +236,10 @@ class Server {
         default: {
           int cackid = curackid;		// Instantiate ackid in
           void sendackcb(mixed ... data) {	// saved callback-stackframe
+            PD("Ack %d %O\n", cackid, data);
             send(ACK, data, cackid);
           };
-          read_cb(query_id(), cackid < 0 && sendackcb, @curevent);
+          read_cb(query_id(), cackid >= 0 && sendackcb, @curevent);
           break;
         }
         case ACK:
@@ -320,6 +323,7 @@ class Server {
             i += sizeof(s);
           curevent = Standards.JSON.decode(data[i..]);
           curbins = allocate(bins);
+          PD("Incoming %c %d %d %O\n", curtype, bins, curackid, curevent);
           switch (curtype) {
             case EVENT:
             case ACK:
