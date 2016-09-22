@@ -71,7 +71,7 @@ final void setoptions(mapping(string:mixed) _options) {
 //!}
 //!
 //!int main(int argc, array(string) argv)
-//!{ Protocols.SocketIO.of("", echo); // Register root namespace
+//!{ Protocols.SocketIO.createnamespace("", echo); // Register root namespace
 //!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
 //!  return -1;
 //!}
@@ -80,8 +80,8 @@ final Server farm(Protocols.WebSocket.Request req) {
   return con && Server(con);
 }
 
-//! Register a new namespace
-final void of(string namespace,
+//! Create a new or update an existing namespace.
+final void createnamespace(string namespace,
  void|function(mixed, function(mixed, mixed ...:void), mixed ...:void) read_cb,
  void|function(mixed:void) close_cb,
  void|function(mixed:void) open_cb) {
@@ -95,7 +95,7 @@ final void of(string namespace,
   }
 }
 
-//! Drop namespace
+//! Drop a namespace.
 final void dropnamespace(string namespace) {
   array nsp = namespaces[namespace];
   if (!nsp)
@@ -154,12 +154,6 @@ class Server {
       send(EVENT, data, ack_cb);
     else
       send(EVENT, ({ack_cb}) + data);
-  }
-
-  //! Alias for write().
-  final void emit(mixed|function(mixed, mixed ...:void) ack_cb,
-   mixed ... data) {
-    write(ack_cb, @data);
   }
 
   private void send(int type, void|string|array data,
