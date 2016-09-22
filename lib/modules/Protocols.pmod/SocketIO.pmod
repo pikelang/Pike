@@ -43,16 +43,21 @@ private enum {
 
 private array emptyarray = ({});
 
-// All Socket.IO namespaces with connected clients
-private mapping(string:array(multiset(.EngineIO.Server)|function))
- namespaces = ([]);
+private enum {
+  ICLIENTS=0, IEVENTS, IREADCB, ICLOSECB, IOPENCB
+};
+
+// All Socket.IO nsps with connected clients
+private mapping(string:
+ array(multiset(.EngineIO.Socket)|mapping(string:multiset(function))|function))
+ nsps = ([]);
 
 final void setoptions(mapping(string:mixed) _options) {
   options += _options;
 }
 
 //! @example
-//! Sample minimal implementation of an SocketIO server farm:
+//! Sample minimal implementation of a SocketIO server farm:
 //!
 //!void echo(mixed id, function sendack, mixed ... data) {
 //!  id->write(data);
@@ -67,9 +72,9 @@ final void setoptions(mapping(string:mixed) _options) {
 //!void httprequest(object req)
 //!{ switch (req.not_query)
 //!  { case "/socket.io/":
-//!      Protocols.SocketIO.Server server = Protocols.SocketIO.farm(req);
-//!      if (server)
-//!        server->write("Hello world!");
+//!      Protocols.SocketIO.Client client = Protocols.SocketIO.farm(req);
+//!      if (client)
+//!        client->write("Hello world!");
 //!      break;
 //!  }
 //!}
@@ -79,9 +84,9 @@ final void setoptions(mapping(string:mixed) _options) {
 //!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
 //!  return -1;
 //!}
-final Server farm(Protocols.WebSocket.Request req) {
-  Protocols.EngineIO.Server con = Protocols.EngineIO.farm(req);
-  return con && Server(con);
+final Client farm(Protocols.WebSocket.Request req) {
+  Protocols.EngineIO.Socket con = Protocols.EngineIO.farm(req);
+  return con && Client(con);
 }
 
 //! Create a new or update an existing namespace.
@@ -89,29 +94,75 @@ final void createnamespace(string namespace,
  void|function(mixed, function(mixed, mixed ...:void), mixed ...:void) read_cb,
  void|function(mixed:void) close_cb,
  void|function(mixed:void) open_cb) {
-  array nsp = namespaces[namespace];
+  array nsp = nsps[namespace];
   if (!nsp)
-    namespaces[namespace] = ({(<>), read_cb, close_cb, open_cb});
+    nsps[namespace] = ({(<>), ([]), read_cb, close_cb, open_cb});
   else {
-    nsp[1] = read_cb;
-    nsp[2] = close_cb;
-    nsp[3] = open_cb;
+    nsp[IREADCB] = read_cb;
+    nsp[ICLOSECB] = close_cb;
+    nsp[IOPENCB] = open_cb;
   }
 }
 
 //! Drop a namespace.
 final void dropnamespace(string namespace) {
-  array nsp = namespaces[namespace];
-  if (!nsp)
-    DUSERERROR("Unknown namespace %s", namespace);
-  m_delete(namespaces, namespace);
-  foreach (nsp[0];; Server client)
+  array nsp = nsps[namespace];
+  m_delete(nsps, namespace);
+  foreach (nsp[ICLIENTS];; Client client)
     if (client)
       client.close();
 }
 
+//! ack_cb can be specified as the first argument following namespace.
+//! Returns the number of clients broadcast to.
+final int broadcast(string namespace, mixed ... data) {
+  Client client;
+  int cnt = 0;
+  array nsp = nsps[namespace];
+  foreach (nsp[ICLIENTS];; client)
+    cnt++, client.write(@data);
+  return cnt;
+}
+
+final int connected(string namespace) {
+  array nsp = nsps[namespace];
+  return sizeof(nsp[ICLIENTS]);
+}
+
+final multiset clients(string namespace) {
+  array nsp = nsps[namespace];
+  return nsp[ICLIENTS];
+}
+
+//! Use the indices to get a list of the nsps in use.
+final mapping namespaces() {
+  return nsps;
+}
+
+private multiset getlisteners(string namespace, string event) {
+  mapping events = nsps[namespace][IEVENTS];
+  multiset listeners = events[event];
+  if (!listeners)
+    events[event] = listeners = (<>);
+  return listeners;
+}
+
+//! Register listener to an event on a namespace.
+final void on(string namespace, string event,
+ function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
+   event_cb) {
+  getlisteners(namespace, event)[event_cb] = 1;
+}
+
+//! Unregister listener to an event on a namespace.
+final void off(string namespace, string event,
+ function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
+   event_cb) {
+  getlisteners(namespace, event)[event_cb] = 0;
+}
+
 //! Runs a single Socket.IO session.
-class Server {
+class Client {
   string namespace="";
 
   private function(mixed,
@@ -123,7 +174,9 @@ class Server {
   private array curevent;
   private array curbins;
   private int ackid = 0, bins = 0, curackid, curtype;
-  private .EngineIO.Server con;
+  //! In the upstream version conn is publicly accessible.
+  //! Until proven otherwise, this sounds like a bad idea.
+  private .EngineIO.Socket conn;
   private mapping(int:function(mixed, mixed ...:void)) ack_cbs = ([]);
 
   //! Set initial argument on callbacks.
@@ -138,21 +191,21 @@ class Server {
 
   //! This session's unique session id.
   final string `sid() {
-    return con.sid;
+    return conn.sid;
   }
 
   //! Contains the last request seen on this connection.
   //! Can be used to obtain cookies etc.
-  final Protocols.WebSocket.Request `lastrequest() {
-    return con.lastrequest;
+  final Protocols.WebSocket.Request `request() {
+    return conn.request;
   }
 
   private void fetchcallbacks() {
-    array nsp = namespaces[namespace];
+    array nsp = nsps[namespace];
     if (nsp) {
-      read_cb = nsp[1];
-      close_cb = nsp[2];
-      open_cb = nsp[3];
+      read_cb = nsp[IREADCB];
+      close_cb = nsp[ICLOSECB];
+      open_cb = nsp[IOPENCB];
     } else {
       read_cb = 0;
       close_cb = 0;
@@ -169,6 +222,14 @@ class Server {
       send(EVENT, data, ack_cb);
     else
       send(EVENT, ({ack_cb}) + data);
+  }
+
+  //! Send text or binary events.
+  final void emit(string|function(mixed, mixed ...:void) ack_cb,
+   mixed ... data) {
+    if (!stringp(ack_cb) || !stringp(data[0]))
+      DUSERERROR("Event must be of type string.");
+    write(ack_cb, @data);
   }
 
   private void send(int type, void|string|array data,
@@ -206,7 +267,7 @@ class Server {
         data = sprintf("%c%d-%s", type, sizeof(sbins), data);
       else
         data = sprintf("%c%d-%d%s", type, sizeof(sbins), cackid, data);
-      con.write(@(({data}) + sbins));
+      conn.write(@(({data}) + sbins));
     } else {
       if (!data)
         data = "";
@@ -214,7 +275,7 @@ class Server {
         data = sprintf("%c%s", type, data);
       else
         data = sprintf("%c%d%s", type, cackid, data);
-      con.write(data);
+      conn.write(data);
     }
   }
 
@@ -224,7 +285,7 @@ class Server {
       PD("Send disconnect, %s state %O\n", sid, state);
       state = SDISCONNECT;
       send(DISCONNECT);
-      con.close();
+      conn.close();
     }
   }
 
@@ -244,14 +305,25 @@ class Server {
   }
 
   private void recvcb() {
+    int cackid = curackid;	        	// Instantiate ackid in
+    void sendackcb(mixed ... data) {		// saved callback-stackframe
+      PD("Ack %d %O\n", cackid, data);
+      send(ACK, data, cackid);
+    };
+    if (sizeof(curevent) && stringp(curevent[0])) {
+      multiset listeners = nsps[namespace][IEVENTS][curevent[0]];
+      if (listeners && sizeof(listeners)) {
+        function(mixed ...:void) cachesendackcb = cackid >= 0 && sendackcb;
+        function(mixed, function(mixed, mixed ...:void), string,
+         mixed ...:void) event_cb;
+        foreach (listeners; event_cb;)
+          event_cb(query_id(), cachesendackcb, @curevent);
+        return;					// Skip the default callback
+      }
+    }
     if (read_cb)
       switch(curtype) {
         default: {
-          int cackid = curackid;		// Instantiate ackid in
-          void sendackcb(mixed ... data) {	// saved callback-stackframe
-            PD("Ack %d %O\n", cackid, data);
-            send(ACK, data, cackid);
-          };
           read_cb(query_id(), cackid >= 0 && sendackcb, @curevent);
           break;
         }
@@ -268,9 +340,9 @@ class Server {
   }
 
   private void unregister() {
-    array nsp = namespaces[namespace];
+    array nsp = nsps[namespace];
     if (nsp)
-      nsp[0][this] = 0;
+      nsp[ICLIENTS][this] = 0;
   }
 
   private void closedown() {
@@ -301,9 +373,9 @@ class Server {
         case ERROR:
           SUSERERROR(data);				// Pass error up
         case CONNECT:
-          if (namespaces[data]) {
+          if (nsps[data]) {
             unregister();				// Old namespace
-            namespaces[namespace = data][0][this] = 1;	// New namespace
+            nsps[namespace = data][ICLIENTS][this] = 1;
             fetchcallbacks();
             state = RUNNING;
             send(CONNECT, namespace);			// Confirm namespace
@@ -317,7 +389,7 @@ class Server {
           close_cb = 0;
           open_cb = 0;
           read_cb = 0;
-          id = 0;			// Delete all references to this Server
+          id = 0;			// Delete all references to this Client
           break;
         case EVENT:
         case ACK:
@@ -353,10 +425,10 @@ class Server {
     closedown();
   }
 
-  protected void create(Protocols.EngineIO.Server _con) {
-    con = _con;
+  protected void create(Protocols.EngineIO.Socket _con) {
+    conn = _con;
     fetchcallbacks();
-    con.set_callbacks(recv, closedown);
+    conn.set_callbacks(recv, closedown);
     send(CONNECT);			// Autconnect to root namespace
     PD("New SocketIO sid: %O\n", sid);
   }
@@ -366,7 +438,7 @@ class Server {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%d,%d)",
-         sid, protocol, state, sizeof(namespaces));
+         sid, protocol, state, sizeof(nsps));
         break;
     }
     return res;
