@@ -100,10 +100,8 @@ final Server farm(Protocols.WebSocket.Request req) {
 
 class Transport {
   final function(int, void|string|Stdio.Buffer:void) read_cb;
-  final ADT.Queue sendq;
+  final Thread.Queue sendq;
   final protected int pingtimeout;
-  final protected Thread.Mutex singleflush = Thread.Mutex();
-  final protected int knock;
 
   protected void create(Protocols.WebSocket.Request req) {
     pingtimeout = options->pingTimeout/1000+1;
@@ -130,7 +128,8 @@ class Transport {
   }
 
   final protected void sendqempty() {
-    read_cb(SENDQEMPTY);
+    if (!sendq.size())
+      read_cb(SENDQEMPTY);
   }
 }
 
@@ -142,41 +141,41 @@ class Polling {
   Stdio.Buffer ci = Stdio.Buffer();
   final mapping headers = ([]);
   final Protocols.WebSocket.Request req;
+  final protected Thread.Mutex getreq = Thread.Mutex();
+  private Thread.Mutex exclpost = Thread.Mutex();
 #if constant(Gz.File)
   private Gz.File gzfile;
 #endif
   protected string noop;
 
   protected void getbody(Protocols.WebSocket.Request _req);
-  protected void wrapfinish(string body);
+  protected void wrapfinish(Protocols.WebSocket.Request req, string body);
 
-  protected void respfinish(void|string body, void|string mimetype) {
-    if (req) {
-      mapping|string comprheads;
-      if (!body)
-        body = noop;
+  protected void respfinish(Protocols.WebSocket.Request req,
+   void|string body, void|string mimetype) {
+    mapping|string comprheads;
+    if (!body)
+      body = noop;
 #if constant(Gz.File)
-      if (gzfile && sizeof(body) >= options->compressionThreshold
-       && (comprheads = req.request_headers["accept-encoding"])
-       && acceptgzip->match(comprheads)) {
-        Stdio.FakeFile f = Stdio.FakeFile("", "wb");
-        gzfile->open(f, "wb");
-        gzfile->write(body);
-        gzfile->close();
-        comprheads = headers;
-        if (sizeof(body)>f->stat()->size) {
-          body = (string)f;
-          comprheads += (["Content-Encoding":"gzip"]);
-        }
-      } else
+    if (gzfile && sizeof(body) >= options->compressionThreshold
+     && (comprheads = req.request_headers["accept-encoding"])
+     && acceptgzip->match(comprheads)) {
+      Stdio.FakeFile f = Stdio.FakeFile("", "wb");
+      gzfile->open(f, "wb");
+      gzfile->write(body);
+      gzfile->close();
+      comprheads = headers;
+      if (sizeof(body)>f->stat()->size) {
+        body = (string)f;
+        comprheads += (["Content-Encoding":"gzip"]);
+      }
+    } else
 #endif
-        comprheads = headers;
-      req->response_and_finish(([
-       "data":body,
-       "type":mimetype||"text/plain;charset=UTF-8",
-       "extra_heads":comprheads]));
-      req = 0;
-    }
+      comprheads = headers;
+    req->response_and_finish(([
+     "data":body,
+     "type":mimetype||"text/plain;charset=UTF-8",
+     "extra_heads":comprheads]));
   }
 
   protected void create(Protocols.WebSocket.Request _req) {
@@ -215,43 +214,59 @@ class Polling {
         break;
       case "POST": {
         getbody(_req);
-        int type;
-        string|Stdio.Buffer res;
-        Stdio.Buffer.RewindKey rewind;
-        rewind = ci->rewind_on_error();
-        while (sizeof(ci)) {
-          if (catch {
-              int len, isbin;
-              if ((isbin = ci->read_int8()) <= 1) {
-                for (len = 0;
-                     (type = ci->read_int8())!=0xff;
-                     len=len*10+type);
-                len--;
-                type = ci->read_int8() + (isbin ? OPEN : 0);
-                res = isbin ? ci->read_buffer(len): ci->read(len);
-              } else {
-                ci->unread(1);
-                len = ci->sscanf("%d:")[0]-1;
-                type = ci->read_int8();
-                if (type == BASE64) {
-                  type = ci->read_int8();
-                  res = Stdio.Buffer(MIME.decode_base64(ci->read(len)));
-                } else
-                  res = ci->read(len);
-              }
-            })
-            break;
-          else {
-            rewind->update();
-            if (stringp(res))
-              res = utf8_to_string(res);
-            read_cb(type, res);
-          }
-        }
         // Strangely enough, EngineIO 3 does not communicate back
         // over the POST request, so wrap it up.
-        _req->response_and_finish((["data":"ok","type":"text/plain",
-         "extra_heads":headers]));
+        function ackpost() {
+          _req->response_and_finish((["data":"ok","type":"text/plain",
+           "extra_heads":headers]));
+        };
+#if constant(Thread.Thread)
+        // This requires _req to remain unaltered for the remainder of
+        // this function.
+        Thread.Thread(ackpost);		// Lower latency by doing it parallel
+#else
+        ackpost();
+#endif
+        do {
+          Thread.MutexKey lock;
+          if (lock = exclpost->trylock()) {
+            int type;
+            string|Stdio.Buffer res;
+            Stdio.Buffer.RewindKey rewind;
+            rewind = ci->rewind_on_error();
+            while (sizeof(ci)) {
+              if (catch {
+                  int len, isbin;
+                  if ((isbin = ci->read_int8()) <= 1) {
+                    for (len = 0;
+                         (type = ci->read_int8())!=0xff;
+                         len=len*10+type);
+                    len--;
+                    type = ci->read_int8() + (isbin ? OPEN : 0);
+                    res = isbin ? ci->read_buffer(len): ci->read(len);
+                  } else {
+                    ci->unread(1);
+                    len = ci->sscanf("%d:")[0]-1;
+                    type = ci->read_int8();
+                    if (type == BASE64) {
+                      type = ci->read_int8();
+                      res = Stdio.Buffer(MIME.decode_base64(ci->read(len)));
+                    } else
+                      res = ci->read(len);
+                  }
+                })
+                break;
+              else {
+                rewind->update();
+                if (stringp(res))
+                  res = utf8_to_string(res);
+                read_cb(type, res);
+              }
+            }
+            lock = 0;
+          } else
+            break;
+        } while (sizeof(ci));
         break;
       }
       default:
@@ -261,56 +276,69 @@ class Polling {
     }
   }
 
+  constant forcebinary = 0;
+
   final void flush(void|int type, void|string|Stdio.Buffer msg) {
-    do {
-      Thread.MutexKey lock = singleflush->trylock();
-      if (lock) {
-        knock = 0;
-        if (req && sendq) {
-          while (knock = 0, !sendq->is_empty()) {
-            array m = sendq->read();
-            type = m[0];
-            msg = m[1];
-            if (stringp(msg)) {
-               if (String.width(msg) > 8)
-                 msg = string_to_utf8(msg);
-              c->add((string)(1+sizeof(msg)))->add_int8(':');
-            } else if (!forceascii) {
-              c->add_int8(1);  // 0 would be inefficient, since it passes UTF-8
-              foreach ((string)(1+sizeof(msg));; int i)
-                c->add_int8(i-'0');
-              c->add_int8(0xff);
-              type -= OPEN;
-            } else {
-              msg = MIME.encode_base64(msg->read(), 1);
-              c->add((string)(1+1+sizeof(msg)))
-               ->add_int8(':')
-               ->add_int8(BASE64);
-            }
-            c->add_int8(type)->add(msg);
-          }
-          if (sizeof(c))
-            wrapfinish(c->read());
-          sendqempty();
-        }
+    Thread.MutexKey lock;
+    if (req && sendq && sendq.size() && (lock = getreq->trylock())) {
+      Protocols.WebSocket.Request myreq;
+      array tosend;
+      if ((myreq = req) && sizeof(tosend = sendq.try_read_array())) {
+        req = 0;
         lock = 0;
-      } else {
-        knock = 1;
-        break;
-      }
-    } while (knock);
+        array m;
+        int anybinary = 0;
+        if (forcebinary && !forceascii)
+          foreach (tosend;; m)
+            if (!stringp(m[1])) {
+              anybinary = 1;
+              break;
+            }
+        foreach (tosend;; m) {
+          type = m[0];
+          msg = m[1];
+          if (!anybinary && stringp(msg)) {
+             if (String.width(msg) > 8)
+               msg = string_to_utf8(msg);
+            c->add((string)(1+sizeof(msg)))->add_int8(':');
+          } else if (!forceascii) {
+            if (stringp(msg))
+              c->add_int8(0);
+            else {
+              type -= OPEN;
+              c->add_int8(1);
+            }
+            foreach ((string)(1+sizeof(msg));; int i)
+              c->add_int8(i-'0');
+            c->add_int8(0xff);
+          } else {
+            msg = MIME.encode_base64(msg->read(), 1);
+            c->add((string)(1+1+sizeof(msg)))
+             ->add_int8(':')
+             ->add_int8(BASE64);
+          }
+          c->add_int8(type)->add(msg);
+        }
+        if (sizeof(c))
+          wrapfinish(myreq, c->read());
+        sendqempty();
+      } else
+        lock = 0;
+    }
   }
 }
 
 class XHR {
   inherit Polling:p;
+  constant forcebinary = 1;
 
   final protected void getbody(Protocols.WebSocket.Request _req) {
     ci->add(_req->body_raw);
   }
 
-  final protected void wrapfinish(string body) {
-    respfinish(body, String.range(body)[1]==0xff
+  final protected
+   void wrapfinish(Protocols.WebSocket.Request req, string body) {
+    respfinish(req, body, String.range(body)[1]==0xff
      ? "application/octet-stream" : 0);
   }
 }
@@ -333,9 +361,10 @@ class JSONP {
       ci->add(replace(d,({"\r\n","\\n"}),({"\r","\n"})));
   }
 
-  final protected void wrapfinish(string body) {
+  final protected
+   void wrapfinish(Protocols.WebSocket.Request req, string body) {
     c->add(head)->add(Standards.JSON.encode(body))->add(");");
-    respfinish(c->read());
+    respfinish(req, c->read());
   }
 }
 
@@ -360,25 +389,18 @@ class WebSocket {
     };
     if (msg)
       sendit();
-    else
-      do {
-        Thread.MutexKey lock = singleflush->trylock();
-        if (lock) {
-          do
-            while (knock = 0, !sendq->is_empty()) {
-              array m = sendq->read();
-              type = m[0];
-              msg = m[1];
-              sendit();
-            }
-          while (knock);
-          sendqempty();
-          lock = 0;
-        } else {
-          knock = 1;
-          break;
+    else {
+      array tosend;
+      while (sizeof(tosend = sendq.try_read_array())) {
+        array m;
+        foreach (tosend;; m) {
+          type = m[0];
+          msg = m[1];
+          sendit();
         }
-      } while(knock);
+      }
+      sendqempty();
+    }
   }
 
   private void recv(Protocols.WebSocket.Frame f) {
@@ -421,7 +443,7 @@ class Server {
   private mixed id;
   //! The unique session identifier.
   final string sid;
-  private ADT.Queue sendq = ADT.Queue();
+  private Thread.Queue sendq = Thread.Queue();
   private ADT.Queue recvq = ADT.Queue();
   private string curtransport;
   private Transport transport;
@@ -516,7 +538,7 @@ class Server {
         break;
       case CLOSE:
         rclose();
-        if (sendq->is_empty())
+        if (!sendq.size())
           clearcallback();
         break;
       case SENDQEMPTY:
@@ -552,7 +574,7 @@ class Server {
         break;
       case PING:
         state = PAUSED;
-        if (!sizeof(sendq))
+        if (!sendq.size())
           send(NOOP);
         flush();
         upgtransport->flush(PONG, msg);
@@ -629,7 +651,7 @@ class Server {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d,%d)",
-         sid, protocol, curtransport, state, sendq->is_empty(),
+         sid, protocol, curtransport, state, sendq->size(),
          recvq->is_empty(),sizeof(clients));
         break;
     }
