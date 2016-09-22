@@ -15,6 +15,7 @@
 #define SERROR(msg ...)		(sprintf(msg))
 #define USERERROR(msg)		throw(msg)
 #define SUSERERROR(msg ...)	USERERROR(SERROR(msg))
+#define DUSERERROR(msg ...)	USERERROR(DERROR(msg))
 
 #ifdef SIO_DEBUG
 #define PD(X ...)		werror(X)
@@ -25,6 +26,7 @@
 #else
 #undef SIO_DEBUGMORE
 #define PD(X ...)		0
+#define PDT(X ...)		0
 #define PT(X ...)		(X)
 #endif
 
@@ -101,7 +103,7 @@ final void createnamespace(string namespace,
 final void dropnamespace(string namespace) {
   array nsp = namespaces[namespace];
   if (!nsp)
-    SUSERERROR("Unknown namespace %s", namespace);
+    DUSERERROR("Unknown namespace %s", namespace);
   m_delete(namespaces, namespace);
   foreach (nsp[0];; Server client)
     if (client)
@@ -134,6 +136,17 @@ class Server {
     return id || this;
   }
 
+  //! This session's unique session id.
+  final string `sid() {
+    return con.sid;
+  }
+
+  //! Contains the last request seen on this connection.
+  //! Can be used to obtain cookies etc.
+  final Protocols.WebSocket.Request `lastrequest() {
+    return con.lastrequest;
+  }
+
   private void fetchcallbacks() {
     array nsp = namespaces[namespace];
     if (nsp) {
@@ -151,7 +164,7 @@ class Server {
   final void write(mixed|function(mixed, mixed ...:void) ack_cb,
    mixed ... data) {
     if (state >= SDISCONNECT)
-      USERERROR("Socket already shutting down");
+      DUSERERROR("Socket already shutting down");
     if (functionp(ack_cb))
       send(EVENT, data, ack_cb);
     else
@@ -160,7 +173,7 @@ class Server {
 
   private void send(int type, void|string|array data,
    void|int|function(mixed, mixed ...:void) ack_cb) {
-    PD("Send %s %d %c:%O\n", con.sid, intp(ack_cb)?ack_cb:-1, type, data);
+    PD("Send %s %d %c:%O\n", sid, intp(ack_cb)?ack_cb:-1, type, data);
     array sbins = emptyarray;
     int cackid;
 
@@ -208,7 +221,7 @@ class Server {
   //! Close the socket signalling the other side.
   final void close() {
     if (state < SDISCONNECT) {
-      PDT("Send disconnect, state %O\n", state);
+      PD("Send disconnect, %s state %O\n", sid, state);
       state = SDISCONNECT;
       send(DISCONNECT);
       con.close();
@@ -271,7 +284,7 @@ class Server {
   }
 
   private void recv(mixed eid, string|Stdio.Buffer data) {
-    PD("Recv %s %O\n", con.sid, (string)data);
+    PD("Recv %s %O\n", sid, (string)data);
     if (!stringp(data)) {
       curbins[-bins] = data;
       if (!--bins) {
@@ -285,6 +298,8 @@ class Server {
         default:	  // Protocol error
           send(ERROR, sprintf("%c,\"Invalid packet type\"", curtype));
           break;
+        case ERROR:
+          SUSERERROR(data);				// Pass error up
         case CONNECT:
           if (namespaces[data]) {
             unregister();				// Old namespace
@@ -341,9 +356,9 @@ class Server {
   protected void create(Protocols.EngineIO.Server _con) {
     con = _con;
     fetchcallbacks();
-    con->set_callbacks(recv, closedown);
+    con.set_callbacks(recv, closedown);
     send(CONNECT);			// Autconnect to root namespace
-    PD("New SocketIO sid: %O\n", con.sid);
+    PD("New SocketIO sid: %O\n", sid);
   }
 
   private string _sprintf(int type, void|mapping flags) {
@@ -351,7 +366,7 @@ class Server {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%d,%d)",
-         con.sid, protocol, state, sizeof(namespaces));
+         sid, protocol, state, sizeof(namespaces));
         break;
     }
     return res;

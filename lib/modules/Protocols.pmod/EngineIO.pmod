@@ -15,14 +15,18 @@
 #define SERROR(msg ...)		(sprintf(msg))
 #define USERERROR(msg)		throw(msg)
 #define SUSERERROR(msg ...)	USERERROR(SERROR(msg))
+#define DUSERERROR(msg ...)	USERERROR(DERROR(msg))
 
 #ifdef EIO_DEBUG
 #define PD(X ...)		werror(X)
+#define PDT(X ...)		(werror(X), \
+				 werror(describe_backtrace(PT(backtrace()))))
 				// PT() puts this in the backtrace
 #define PT(X ...)		(lambda(object _this){return (X);}(this))
 #else
 #undef EIO_DEBUGMORE
 #define PD(X ...)		0
+#define PDT(X ...)		0
 #define PT(X ...)		(X)
 #endif
 
@@ -72,8 +76,8 @@ final void setoptions(mapping(string:mixed) _options) {
 //!  { case "/engine.io/":
 //!      Protocols.EngineIO.Server server = Protocols.EngineIO.farm(req);
 //!      if (server) {
-//!        server->set_callbacks(echo);
-//!        server->write("Hello world!");
+//!        server.set_callbacks(echo);
+//!        server.write("Hello world!");
 //!      }
 //!      break;
 //!  }
@@ -89,10 +93,10 @@ final Server farm(Protocols.WebSocket.Request req) {
   if (sid = req.variables.sid) {
     Server client;
     if (!(client = clients[sid]))
-      req->response_and_finish((["data":"Unknown sid",
+      req.response_and_finish((["data":"Unknown sid",
        "error":Protocols.HTTP.HTTP_GONE]));
     else
-      client->onrequest(req);
+      client.onrequest(req);
   } else
     return Server(req);
   return 0;
@@ -138,10 +142,10 @@ class Polling {
 
   private int forceascii;
   final protected Stdio.Buffer c = Stdio.Buffer();
-  Stdio.Buffer ci = Stdio.Buffer();
-  final mapping headers = ([]);
-  final Protocols.WebSocket.Request req;
-  final protected Thread.Mutex getreq = Thread.Mutex();
+  final protected Stdio.Buffer ci = Stdio.Buffer();
+  final protected Protocols.WebSocket.Request req;
+  private mapping headers = ([]);
+  private Thread.Mutex getreq = Thread.Mutex();
   private Thread.Mutex exclpost = Thread.Mutex();
 #if constant(Gz.File)
   private Gz.File gzfile;
@@ -159,20 +163,20 @@ class Polling {
 #if constant(Gz.File)
     if (gzfile && sizeof(body) >= options->compressionThreshold
      && (comprheads = req.request_headers["accept-encoding"])
-     && acceptgzip->match(comprheads)) {
+     && acceptgzip.match(comprheads)) {
       Stdio.FakeFile f = Stdio.FakeFile("", "wb");
-      gzfile->open(f, "wb");
-      gzfile->write(body);
-      gzfile->close();
+      gzfile.open(f, "wb");
+      gzfile.write(body);
+      gzfile.close();
       comprheads = headers;
-      if (sizeof(body)>f->stat()->size) {
+      if (sizeof(body)>f.stat().size) {
         body = (string)f;
         comprheads += (["Content-Encoding":"gzip"]);
       }
     } else
 #endif
       comprheads = headers;
-    req->response_and_finish(([
+    req.response_and_finish(([
      "data":body,
      "type":mimetype||"text/plain;charset=UTF-8",
      "extra_heads":comprheads]));
@@ -185,7 +189,7 @@ class Polling {
     int clevel;
 #if constant(Gz.File)
     if (clevel = options->compressionLevel)
-      (gzfile = Gz.File())->setparams(clevel, Gz.DEFAULT_STRATEGY);
+      (gzfile = Gz.File()).setparams(clevel, Gz.DEFAULT_STRATEGY);
 #endif
     t::create(_req);
     if (_req.request_headers.origin) {
@@ -195,7 +199,7 @@ class Polling {
       headers["Access-Control-Allow-Origin"] = "*";
     // prevent XSS warnings on IE
     string ua = _req.request_headers["user-agent"];
-    if (ua && xxsua->match(ua))
+    if (ua && xxsua.match(ua))
       headers["X-XSS-Protection"] = "0";
     onrequest(_req);
   }
@@ -210,14 +214,14 @@ class Polling {
         break;
       case "OPTIONS":
         headers["Access-Control-Allow-Headers"] = "Content-Type";
-        _req->response_and_finish((["data":"ok","extra_heads":headers]));
+        _req.response_and_finish((["data":"ok","extra_heads":headers]));
         break;
       case "POST": {
         getbody(_req);
         // Strangely enough, EngineIO 3 does not communicate back
         // over the POST request, so wrap it up.
         function ackpost() {
-          _req->response_and_finish((["data":"ok","type":"text/plain",
+          _req.response_and_finish((["data":"ok","type":"text/plain",
            "extra_heads":headers]));
         };
 #if constant(Thread.Thread)
@@ -229,7 +233,7 @@ class Polling {
 #endif
         do {
           Thread.MutexKey lock;
-          if (lock = exclpost->trylock()) {
+          if (lock = exclpost.trylock()) {
             int type;
             string|Stdio.Buffer res;
             Stdio.Buffer.RewindKey rewind;
@@ -257,7 +261,7 @@ class Polling {
                 })
                 break;
               else {
-                rewind->update();
+                rewind.update();
                 if (stringp(res))
                   res = utf8_to_string(res);
                 read_cb(type, res);
@@ -270,7 +274,7 @@ class Polling {
         break;
       }
       default:
-        _req->response_and_finish((["data":"Unsupported method",
+        _req.response_and_finish((["data":"Unsupported method",
          "error":Protocols.HTTP.HTTP_METHOD_INVALID,
          "extra_heads":(["Allow":"GET,POST,OPTIONS"])]));
     }
@@ -280,7 +284,7 @@ class Polling {
 
   final void flush(void|int type, void|string|Stdio.Buffer msg) {
     Thread.MutexKey lock;
-    if (req && sendq && sendq.size() && (lock = getreq->trylock())) {
+    if (req && sendq && sendq.size() && (lock = getreq.trylock())) {
       Protocols.WebSocket.Request myreq;
       array tosend;
       if ((myreq = req) && sizeof(tosend = sendq.try_read_array())) {
@@ -313,9 +317,7 @@ class Polling {
             c->add_int8(0xff);
           } else {
             msg = MIME.encode_base64(msg->read(), 1);
-            c->add((string)(1+1+sizeof(msg)))
-             ->add_int8(':')
-             ->add_int8(BASE64);
+            c->add((string)(1+1+sizeof(msg)))->add_int8(':')->add_int8(BASE64);
           }
           c->add_int8(type)->add(msg);
         }
@@ -333,7 +335,7 @@ class XHR {
   constant forcebinary = 1;
 
   final protected void getbody(Protocols.WebSocket.Request _req) {
-    ci->add(_req->body_raw);
+    ci->add(_req.body_raw);
   }
 
   final protected
@@ -378,14 +380,14 @@ class WebSocket {
   protected void create(Protocols.WebSocket.Request req,
    Protocols.WebSocket.Connection _con) {
     con = _con;
-    con->onmessage = recv;
-    con->onclose = close;
+    con.onmessage = recv;
+    con.onclose = close;
     t::create(req);
   }
 
   final void flush(void|int type, void|string|Stdio.Buffer msg) {
     void sendit() {
-      con->send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
+      con.send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
     };
     if (msg)
       sendit();
@@ -407,14 +409,14 @@ class WebSocket {
     kickwatchdog();
     switch (f.opcode) {
       case Protocols.WebSocket.FRAME_TEXT:
-        sb->add(f.text);
+        sb.add(f.text);
         break;
       case Protocols.WebSocket.FRAME_BINARY:
         bb->add(f.data);
         break;
       case Protocols.WebSocket.FRAME_CONTINUATION:
         if (sizeof(sb))
-          sb->add(f.text);
+          sb.add(f.text);
         else
           bb->add(f.data);
         break;
@@ -423,7 +425,7 @@ class WebSocket {
     }
     if (f.fin)
       if (sizeof(sb)) {
-        string s = sb->get();
+        string s = sb.get();
         read_cb(s[0], s[1..]);
       } else {
         int type = bb->read_int8();
@@ -475,10 +477,10 @@ class Server {
   //! Send text (string) or binary (Stdio.Buffer) messages.
   final void write(string|Stdio.Buffer ... msgs) {
     if (state >= SCLOSING)
-      throw("Socket already shutting down");
+      DUSERERROR("Socket already shutting down");
     foreach (msgs;; string|Stdio.Buffer msg) {
       PD("Queue %s %c:%O\n", sid, MESSAGE, (string)msg);
-      sendq->write(({MESSAGE, msg}));
+      sendq.write(({MESSAGE, msg}));
     }
     if (state == RUNNING)
       flush();
@@ -486,7 +488,7 @@ class Server {
 
   private void send(int type, void|string|Stdio.Buffer msg) {
     PD("Queue %s %c:%O\n", sid, type, (string)(msg || ""));
-    sendq->write(({type, msg || ""}));
+    sendq.write(({type, msg || ""}));
     switch (state) {
       case RUNNING:
       case SCLOSING:
@@ -495,12 +497,13 @@ class Server {
   }
 
   private void flush() {
-    transport->flush();
+    if(catch(transport.flush()))
+      transport.close();
   }
 
   private void flushrecvq() {
-    while (read_cb && !recvq->is_empty())
-      read_cb(query_id(), recvq->read());
+    while (read_cb && !recvq.is_empty())
+      read_cb(query_id(), recvq.read());
   }
 
   //! Close the socket signalling the other side.
@@ -553,10 +556,10 @@ class Server {
         send(PONG, msg);
         break;
       case MESSAGE:
-        if (read_cb && recvq->is_empty())
+        if (read_cb && recvq.is_empty())
           read_cb(query_id(), msg);
         else {
-          recvq->write(msg);
+          recvq.write(msg);
           flushrecvq();
         }
         break;
@@ -577,10 +580,10 @@ class Server {
         if (!sendq.size())
           send(NOOP);
         flush();
-        upgtransport->flush(PONG, msg);
+        upgtransport.flush(PONG, msg);
         break;
       case UPGRADE: {
-        upgtransport->read_cb = recv;
+        upgtransport.read_cb = recv;
         transport = upgtransport;
         curtransport = "websocket";
         if (state == PAUSED)
@@ -600,18 +603,18 @@ class Server {
     lastrequest = req;
     switch (curtransport = req.variables.transport) {
       default:
-        req->response_and_finish((["data":"Unsupported transport",
+        req.response_and_finish((["data":"Unsupported transport",
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        transport = WebSocket(req, req->websocket_accept(0));
+        transport = WebSocket(req, req.websocket_accept(0));
         break;
       case "polling":
         transport = req.variables.j ? JSONP(req) : XHR(req);
         break;
     }
-    transport->read_cb = recv;
-    transport->sendq = sendq;
+    transport.read_cb = recv;
+    transport.sendq = sendq;
     ci->add(Crypto.Random.random_string(SIDBYTES-TIMEBYTES));
     ci->add_hint(gethrtime(), TIMEBYTES);
     sid = MIME.encode_base64(ci->read());
@@ -632,17 +635,17 @@ class Server {
     string s;
     lastrequest = req;
     if ((s = req.variables->transport) == curtransport)
-      transport->onrequest(req);
+      transport.onrequest(req);
     else
       switch (s) {
         default:
-          req->response_and_finish((["data":"Invalid transport",
+          req.response_and_finish((["data":"Invalid transport",
            "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
           return 0;
         case "websocket":
-          upgtransport = WebSocket(req, req->websocket_accept(0));
-          upgtransport->read_cb = upgrecv;
-          upgtransport->sendq = sendq;
+          upgtransport = WebSocket(req, req.websocket_accept(0));
+          upgtransport.read_cb = upgrecv;
+          upgtransport.sendq = sendq;
       }
   }
 
@@ -651,8 +654,8 @@ class Server {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d,%d)",
-         sid, protocol, curtransport, state, sendq->size(),
-         recvq->is_empty(),sizeof(clients));
+         sid, protocol, curtransport, state, sendq.size(),
+         recvq.is_empty(),sizeof(clients));
         break;
     }
     return res;
