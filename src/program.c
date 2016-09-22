@@ -5791,6 +5791,7 @@ int define_variable(struct pike_string *name,
     {
     case T_OBJECT:
       /* Make place for the object subtype. */
+    case T_MIXED:
     case T_FUNCTION:
       no_this = 1;
       /* FALL_THROUGH */
