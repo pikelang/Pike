@@ -101,7 +101,9 @@ final Server farm(Protocols.WebSocket.Request req) {
 class Transport {
   final function(int, void|string|Stdio.Buffer:void) read_cb;
   final ADT.Queue sendq;
-  protected int pingtimeout;
+  final protected int pingtimeout;
+  final protected Thread.Mutex singleflush = Thread.Mutex();
+  final protected int knock;
 
   protected void create(Protocols.WebSocket.Request req) {
     pingtimeout = options->pingTimeout/1000+1;
@@ -260,31 +262,43 @@ class Polling {
   }
 
   final void flush(void|int type, void|string|Stdio.Buffer msg) {
-    if (req && sendq) {
-      while (!sendq->is_empty()) {
-        array m = sendq->read();
-        type = m[0];
-        msg = m[1];
-        if (stringp(msg)) {
-           if (String.width(msg) > 8)
-             msg = string_to_utf8(msg);
-          c->add((string)(1+sizeof(msg)))->add_int8(':');
-        } else if (!forceascii) {
-          c->add_int8(1);    // 0 would be inefficient, since it passes UTF-8
-          foreach ((string)(1+sizeof(msg));; int i)
-            c->add_int8(i-'0');
-          c->add_int8(0xff);
-          type -= OPEN;
-        } else {
-          msg = MIME.encode_base64(msg->read(), 1);
-          c->add((string)(1+1+sizeof(msg)))->add_int8(':')->add_int8(BASE64);
+    do {
+      Thread.MutexKey lock = singleflush->trylock();
+      if (lock) {
+        knock = 0;
+        if (req && sendq) {
+          while (knock = 0, !sendq->is_empty()) {
+            array m = sendq->read();
+            type = m[0];
+            msg = m[1];
+            if (stringp(msg)) {
+               if (String.width(msg) > 8)
+                 msg = string_to_utf8(msg);
+              c->add((string)(1+sizeof(msg)))->add_int8(':');
+            } else if (!forceascii) {
+              c->add_int8(1);  // 0 would be inefficient, since it passes UTF-8
+              foreach ((string)(1+sizeof(msg));; int i)
+                c->add_int8(i-'0');
+              c->add_int8(0xff);
+              type -= OPEN;
+            } else {
+              msg = MIME.encode_base64(msg->read(), 1);
+              c->add((string)(1+1+sizeof(msg)))
+               ->add_int8(':')
+               ->add_int8(BASE64);
+            }
+            c->add_int8(type)->add(msg);
+          }
+          if (sizeof(c))
+            wrapfinish(c->read());
+          sendqempty();
         }
-        c->add_int8(m[0])->add(msg);
+        lock = 0;
+      } else {
+        knock = 1;
+        break;
       }
-      if (sizeof(c))
-        wrapfinish(c->read());
-      sendqempty();
-    }
+    } while (knock);
   }
 }
 
@@ -346,15 +360,25 @@ class WebSocket {
     };
     if (msg)
       sendit();
-    else {
-      while (!sendq->is_empty()) {
-        array m = sendq->read();
-        type = m[0];
-        msg = m[1];
-        sendit();
-      }
-      sendqempty();
-    }
+    else
+      do {
+        Thread.MutexKey lock = singleflush->trylock();
+        if (lock) {
+          do
+            while (knock = 0, !sendq->is_empty()) {
+              array m = sendq->read();
+              type = m[0];
+              msg = m[1];
+              sendit();
+            }
+          while (knock);
+          sendqempty();
+          lock = 0;
+        } else {
+          knock = 1;
+          break;
+        }
+      } while(knock);
   }
 
   private void recv(Protocols.WebSocket.Frame f) {
@@ -435,7 +459,7 @@ class Server {
       sendq->write(({MESSAGE, msg}));
     }
     if (state == RUNNING)
-      transport->flush();
+      flush();
   }
 
   private void send(int type, void|string|Stdio.Buffer msg) {
@@ -444,8 +468,12 @@ class Server {
     switch (state) {
       case RUNNING:
       case SCLOSING:
-        transport->flush();
+        flush();
     }
+  }
+
+  private void flush() {
+    transport->flush();
   }
 
   private void flushrecvq() {
@@ -520,13 +548,13 @@ class Server {
         if (state == PAUSED)
           state = RUNNING;
         if(transport)
-          transport->flush();
+          flush();
         break;
       case PING:
         state = PAUSED;
         if (!sizeof(sendq))
           send(NOOP);
-        transport->flush();
+        flush();
         upgtransport->flush(PONG, msg);
         break;
       case UPGRADE: {
@@ -536,7 +564,7 @@ class Server {
         if (state == PAUSED)
           state = RUNNING;
         upgtransport = 0;
-        transport->flush();
+        flush();
         break;
       }
     }
