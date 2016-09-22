@@ -160,6 +160,7 @@ int main(int argc, array(string) argv)
     ({"include",Getopt.HAS_ARG, ({"-I"}) }),
     ({"link",Getopt.HAS_ARG, ({"-l"}) }),
     ({"s",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+    ({"f",Getopt.HAS_ARG, ({"-f"}) }),
 #ifdef OLD_VC
     ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
 #endif
@@ -364,6 +365,15 @@ int main(int argc, array(string) argv)
 	    ldopts += ({"-p" + option[1]});
 	  else
 	    error ("Unknown option -p%s\n", option[1]);
+	  break;
+
+        case "f":
+	  if ((option[1] == "PIC") || (option[1] == "pic")) {
+	    werror("Ignoring option -f%s.\n", option[1]);
+	    break;
+	  }
+	  werror("Unsupported option -f%s.\n", option[1]);
+	  exit(1);
 	  break;
       }
     }
