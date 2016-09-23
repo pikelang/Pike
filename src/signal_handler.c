@@ -3711,7 +3711,8 @@ void f_create_process(INT32 args)
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
       while (((e = read(control_pipe[0], buf, 3)) < 0) &&
-	     (errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))
+             (errno == EINTR ||
+               ((errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))))
 	;
 #else /* !EBADF || !EPIPE */
       /* This code *should* work... */
