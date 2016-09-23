@@ -1,6 +1,34 @@
 /*
- * Clean-room Engine.IO implementation
+ * Clean-room Engine.IO implementation for Pike.
  */
+
+//! This is an implementation of the Engine.IO server-side communication's
+//! driver.  It basically is a real-time bidirectional packet-oriented
+//! communication's protocol for communicating between a webbrowser
+//! and a server.
+//! 
+//! The driver mainly is a wrapper around @[Protocol.WebSocket] with
+//! the addition of two fallback mechanisms that work around limitations
+//! imposed by firewalls and/or older browsers that prevent native
+//! @[Protocol.WebSocket] connections from functioning.
+//!
+//! This module supports the following features:
+//! @ul
+//! @item It supports both UTF-8 and binary packets.
+//! @item If both sides support @[Protocol.WebSocket], then
+//!  packet sizes are essentially unlimited.
+//!  The fallback methods have a limit on packet sizes from browser
+//!  to server, determined by the maximum POST request size the involved
+//!  network components allow.
+//! @endul
+//! 
+//! In most cases, Engine.IO is not used directly in applications.  Instead
+//! one uses Socket.IO instead.
+//! 
+//! @seealso
+//!  @[Protocol.SocketIO], @[Protocol.WebSocket],
+//!  @url{http://github.com/socketio/engine.io-protocol@},
+//!  @url{http://socket.io/@}
 
 #pike __REAL_VERSION__
 
@@ -34,6 +62,9 @@
 #define TIMEBYTES		6
 
 //! Global options for all EngineIO instances.
+//!
+//! @seealso
+//!  @[Socket.create()]
 final mapping options = ([
   "pingTimeout":		64*1000,	// Safe for NAT
   "pingInterval":		29*1000,	// Allows for jitter
@@ -42,6 +73,7 @@ final mapping options = ([
   "compressionThreshold":	256		// Compress when size>=
 ]);
 
+//! Engine.IO protocol version.
 constant protocol = 3;				// EIO Protocol version
 
 private enum {
@@ -56,10 +88,11 @@ private mapping(string:Socket) clients = ([]);
 private Regexp acceptgzip = Regexp("(^|,)gzip(,|$)");
 private Regexp xxsua = Regexp(";MSIE|Trident/");
 
-final void setoptions(mapping(string:mixed) _options) {
-  options += _options;
-}
-
+//! @param _options
+//! Optional options to override the defaults.
+//! This parameter is passed down as is to the underlying
+//!  @[Socket].
+//!
 //! @example
 //! Sample minimal implementation of an EngineIO server farm:
 //!
@@ -87,7 +120,10 @@ final void setoptions(mapping(string:mixed) _options) {
 //!{ Protocols.WebSocket.Port(httprequest, wsrequest, 80);
 //!  return -1;
 //!}
-final Socket farm(Protocols.WebSocket.Request req) {
+//!
+//! @seealso
+//!  @[Socket.create()]
+final Socket farm(Protocols.WebSocket.Request req, void|mapping _options) {
   string sid;
   PD("Request %O\n", req.query);
   if (sid = req.variables.sid) {
@@ -98,351 +134,23 @@ final Socket farm(Protocols.WebSocket.Request req) {
     else
       client.onrequest(req);
   } else
-    return Socket(req);
+    return Socket(req, _options);
   return 0;
-}
-
-class Transport {
-  final function(int, void|string|Stdio.Buffer:void) read_cb;
-  final Thread.Queue sendq;
-  final protected int pingtimeout;
-
-  protected void create(Protocols.WebSocket.Request req) {
-    pingtimeout = options->pingTimeout/1000+1;
-    kickwatchdog();
-  }
-
-  private void droptimeout() {
-    remove_call_out(close);
-  }
-
-  protected void destroy() {
-    droptimeout();
-  }
-
-  final protected void kickwatchdog() {
-    droptimeout();
-    call_out(close, pingtimeout);
-  }
-
-  //! Close the transport.
-  final void close() {
-    droptimeout();
-    read_cb(FORCECLOSE);
-  }
-
-  final protected void sendqempty() {
-    if (!sendq.size())
-      read_cb(SENDQEMPTY);
-  }
-}
-
-class Polling {
-  inherit Transport:t;
-
-  private int forceascii;
-  final protected Stdio.Buffer c = Stdio.Buffer();
-  final protected Stdio.Buffer ci = Stdio.Buffer();
-  final protected Protocols.WebSocket.Request req;
-  private mapping headers = ([]);
-  private Thread.Mutex getreq = Thread.Mutex();
-  private Thread.Mutex exclpost = Thread.Mutex();
-#if constant(Gz.File)
-  private Gz.File gzfile;
-#endif
-  protected string noop;
-
-  protected void getbody(Protocols.WebSocket.Request _req);
-  protected void wrapfinish(Protocols.WebSocket.Request req, string body);
-
-  protected void respfinish(Protocols.WebSocket.Request req,
-   void|string body, void|string mimetype) {
-    mapping|string comprheads;
-    if (!body)
-      body = noop;
-#if constant(Gz.File)
-    if (gzfile && sizeof(body) >= options->compressionThreshold
-     && (comprheads = req.request_headers["accept-encoding"])
-     && acceptgzip.match(comprheads)) {
-      Stdio.FakeFile f = Stdio.FakeFile("", "wb");
-      gzfile.open(f, "wb");
-      gzfile.write(body);
-      gzfile.close();
-      comprheads = headers;
-      if (sizeof(body)>f.stat().size) {
-        body = (string)f;
-        comprheads += (["Content-Encoding":"gzip"]);
-      }
-    } else
-#endif
-      comprheads = headers;
-    req.response_and_finish(([
-     "data":body,
-     "type":mimetype||"text/plain;charset=UTF-8",
-     "extra_heads":comprheads]));
-  }
-
-  protected void create(Protocols.WebSocket.Request _req) {
-    noop = sprintf("1:%c", NOOP);
-    forceascii = !zero_type(_req.variables->b64);
-    ci->set_error_mode(1);
-    int clevel;
-#if constant(Gz.File)
-    if (clevel = options->compressionLevel)
-      (gzfile = Gz.File()).setparams(clevel, Gz.DEFAULT_STRATEGY);
-#endif
-    t::create(_req);
-    if (_req.request_headers.origin) {
-      headers["Access-Control-Allow-Credentials"] = "true";
-      headers["Access-Control-Allow-Origin"] = _req.request_headers.origin;
-    } else
-      headers["Access-Control-Allow-Origin"] = "*";
-    // prevent XSS warnings on IE
-    string ua = _req.request_headers["user-agent"];
-    if (ua && xxsua.match(ua))
-      headers["X-XSS-Protection"] = "0";
-    onrequest(_req);
-  }
-
-  final void onrequest(Protocols.WebSocket.Request _req) {
-    kickwatchdog();
-    switch (_req.request_type) {
-      case "GET":
-        flush();
-        req = _req;
-        flush();
-        break;
-      case "OPTIONS":
-        headers["Access-Control-Allow-Headers"] = "Content-Type";
-        _req.response_and_finish((["data":"ok","extra_heads":headers]));
-        break;
-      case "POST": {
-        getbody(_req);
-        // Strangely enough, EngineIO 3 does not communicate back
-        // over the POST request, so wrap it up.
-        function ackpost() {
-          _req.response_and_finish((["data":"ok","type":"text/plain",
-           "extra_heads":headers]));
-        };
-#if constant(Thread.Thread)
-        // This requires _req to remain unaltered for the remainder of
-        // this function.
-        Thread.Thread(ackpost);		// Lower latency by doing it parallel
-#else
-        ackpost();
-#endif
-        do {
-          Thread.MutexKey lock;
-          if (lock = exclpost.trylock()) {
-            int type;
-            string|Stdio.Buffer res;
-            Stdio.Buffer.RewindKey rewind;
-            rewind = ci->rewind_on_error();
-            while (sizeof(ci)) {
-              if (catch {
-                  int len, isbin;
-                  if ((isbin = ci->read_int8()) <= 1) {
-                    for (len = 0;
-                         (type = ci->read_int8())!=0xff;
-                         len=len*10+type);
-                    len--;
-                    type = ci->read_int8() + (isbin ? OPEN : 0);
-                    res = isbin ? ci->read_buffer(len): ci->read(len);
-                  } else {
-                    ci->unread(1);
-                    len = ci->sscanf("%d:")[0]-1;
-                    type = ci->read_int8();
-                    if (type == BASE64) {
-                      type = ci->read_int8();
-                      res = Stdio.Buffer(MIME.decode_base64(ci->read(len)));
-                    } else
-                      res = ci->read(len);
-                  }
-                })
-                break;
-              else {
-                rewind.update();
-                if (stringp(res))
-                  res = utf8_to_string(res);
-                read_cb(type, res);
-              }
-            }
-            lock = 0;
-          } else
-            break;
-        } while (sizeof(ci));
-        break;
-      }
-      default:
-        _req.response_and_finish((["data":"Unsupported method",
-         "error":Protocols.HTTP.HTTP_METHOD_INVALID,
-         "extra_heads":(["Allow":"GET,POST,OPTIONS"])]));
-    }
-  }
-
-  constant forcebinary = 0;
-
-  final void flush(void|int type, void|string|Stdio.Buffer msg) {
-    Thread.MutexKey lock;
-    if (req && sendq && sendq.size() && (lock = getreq.trylock())) {
-      Protocols.WebSocket.Request myreq;
-      array tosend;
-      if ((myreq = req) && sizeof(tosend = sendq.try_read_array())) {
-        req = 0;
-        lock = 0;
-        array m;
-        int anybinary = 0;
-        if (forcebinary && !forceascii)
-          foreach (tosend;; m)
-            if (!stringp(m[1])) {
-              anybinary = 1;
-              break;
-            }
-        foreach (tosend;; m) {
-          type = m[0];
-          msg = m[1];
-          if (!anybinary && stringp(msg)) {
-             if (String.width(msg) > 8)
-               msg = string_to_utf8(msg);
-            c->add((string)(1+sizeof(msg)))->add_int8(':');
-          } else if (!forceascii) {
-            if (stringp(msg))
-              c->add_int8(0);
-            else {
-              type -= OPEN;
-              c->add_int8(1);
-            }
-            foreach ((string)(1+sizeof(msg));; int i)
-              c->add_int8(i-'0');
-            c->add_int8(0xff);
-          } else {
-            msg = MIME.encode_base64(msg->read(), 1);
-            c->add((string)(1+1+sizeof(msg)))->add_int8(':')->add_int8(BASE64);
-          }
-          c->add_int8(type)->add(msg);
-        }
-        if (sizeof(c))
-          wrapfinish(myreq, c->read());
-        sendqempty();
-      } else
-        lock = 0;
-    }
-  }
-}
-
-class XHR {
-  inherit Polling:p;
-  constant forcebinary = 1;
-
-  final protected void getbody(Protocols.WebSocket.Request _req) {
-    ci->add(_req.body_raw);
-  }
-
-  final protected
-   void wrapfinish(Protocols.WebSocket.Request req, string body) {
-    respfinish(req, body, String.range(body)[1]==0xff
-     ? "application/octet-stream" : 0);
-  }
-}
-
-class JSONP {
-  inherit Polling:p;
-
-  private string head;
-
-  protected void create(Protocols.WebSocket.Request req) {
-    p::create(req);
-    head = "___eio[" + (int)req.variables->j + "](";
-    noop = head+"\""+::noop+"\");";
-  }
-
-  final protected void getbody(Protocols.WebSocket.Request _req) {
-    string d;
-    if (d = _req.variables->d)
-      // Reverse-map some braindead escape mechanisms
-      ci->add(replace(d,({"\r\n","\\n"}),({"\r","\n"})));
-  }
-
-  final protected
-   void wrapfinish(Protocols.WebSocket.Request req, string body) {
-    c->add(head)->add(Standards.JSON.encode(body))->add(");");
-    respfinish(req, c->read());
-  }
-}
-
-class WebSocket {
-  inherit Transport:t;
-
-  private Protocols.WebSocket.Connection con;
-  private Stdio.Buffer bb = Stdio.Buffer();
-  private String.Buffer sb = String.Buffer();
-
-  protected void create(Protocols.WebSocket.Request req,
-   Protocols.WebSocket.Connection _con) {
-    con = _con;
-    con.onmessage = recv;
-    con.onclose = close;
-    t::create(req);
-  }
-
-  final void flush(void|int type, void|string|Stdio.Buffer msg) {
-    void sendit() {
-      con.send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
-    };
-    if (msg)
-      sendit();
-    else {
-      array tosend;
-      while (sizeof(tosend = sendq.try_read_array())) {
-        array m;
-        foreach (tosend;; m) {
-          type = m[0];
-          msg = m[1];
-          sendit();
-        }
-      }
-      sendqempty();
-    }
-  }
-
-  private void recv(Protocols.WebSocket.Frame f) {
-    kickwatchdog();
-    switch (f.opcode) {
-      case Protocols.WebSocket.FRAME_TEXT:
-        sb.add(f.text);
-        break;
-      case Protocols.WebSocket.FRAME_BINARY:
-        bb->add(f.data);
-        break;
-      case Protocols.WebSocket.FRAME_CONTINUATION:
-        if (sizeof(sb))
-          sb.add(f.text);
-        else
-          bb->add(f.data);
-        break;
-      default:
-        return;
-    }
-    if (f.fin)
-      if (sizeof(sb)) {
-        string s = sb.get();
-        read_cb(s[0], s[1..]);
-      } else {
-        int type = bb->read_int8();
-        read_cb(type, bb->read_buffer(sizeof(bb)));
-      }
-  }
 }
 
 //! Runs a single Engine.IO session.
 class Socket {
+
   //! Contains the last request seen on this connection.
   //! Can be used to obtain cookies etc.
   final Protocols.WebSocket.Request request;
+
   //! The unique session identifier (in the Engine.IO docs referred
-  //! to as simply id).
+  //! to as simply: id).
   final string sid;
+
   private mixed id;			// This is the callback parameter
+  private mapping options;
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
@@ -453,6 +161,338 @@ class Socket {
   private Transport upgtransport;
   private enum {RUNNING = 0, PAUSED, SCLOSING, RCLOSING};
   private int state = RUNNING;
+
+  class Transport {
+    final function(int, void|string|Stdio.Buffer:void) read_cb;
+    final protected int pingtimeout;
+
+    protected void create(Protocols.WebSocket.Request req) {
+      pingtimeout = options->pingTimeout/1000+1;
+      kickwatchdog();
+    }
+
+    private void droptimeout() {
+      remove_call_out(close);
+    }
+
+    protected void destroy() {
+      droptimeout();
+    }
+
+    final protected void kickwatchdog() {
+      droptimeout();
+      call_out(close, pingtimeout);
+    }
+
+    //! Close the transport.
+    final void close() {
+      droptimeout();
+      read_cb(FORCECLOSE);
+    }
+
+    final protected void sendqempty() {
+      if (!sendq.size())
+        read_cb(SENDQEMPTY);
+    }
+  }
+
+  class Polling {
+    inherit Transport:t;
+
+    private int forceascii;
+    final protected Stdio.Buffer c = Stdio.Buffer();
+    final protected Stdio.Buffer ci = Stdio.Buffer();
+    final protected Protocols.WebSocket.Request req;
+    private mapping headers = ([]);
+    private Thread.Mutex getreq = Thread.Mutex();
+    private Thread.Mutex exclpost = Thread.Mutex();
+  #if constant(Gz.File)
+    private Gz.File gzfile;
+  #endif
+    protected string noop;
+
+    protected void getbody(Protocols.WebSocket.Request _req);
+    protected void wrapfinish(Protocols.WebSocket.Request req, string body);
+
+    protected void respfinish(Protocols.WebSocket.Request req,
+     void|string body, void|string mimetype) {
+      mapping|string comprheads;
+      if (!body)
+        body = noop;
+  #if constant(Gz.File)
+      if (gzfile && sizeof(body) >= options->compressionThreshold
+       && (comprheads = req.request_headers["accept-encoding"])
+       && acceptgzip.match(comprheads)) {
+        Stdio.FakeFile f = Stdio.FakeFile("", "wb");
+        gzfile.open(f, "wb");
+        gzfile.write(body);
+        gzfile.close();
+        comprheads = headers;
+        if (sizeof(body)>f.stat().size) {
+          body = (string)f;
+          comprheads += (["Content-Encoding":"gzip"]);
+        }
+      } else
+  #endif
+        comprheads = headers;
+      req.response_and_finish(([
+       "data":body,
+       "type":mimetype||"text/plain;charset=UTF-8",
+       "extra_heads":comprheads]));
+    }
+
+    protected void create(Protocols.WebSocket.Request _req) {
+      noop = sprintf("1:%c", NOOP);
+      forceascii = !zero_type(_req.variables->b64);
+      ci->set_error_mode(1);
+      int clevel;
+  #if constant(Gz.File)
+      if (clevel = options->compressionLevel)
+        (gzfile = Gz.File()).setparams(clevel, Gz.DEFAULT_STRATEGY);
+  #endif
+      t::create(_req);
+      if (_req.request_headers.origin) {
+        headers["Access-Control-Allow-Credentials"] = "true";
+        headers["Access-Control-Allow-Origin"] = _req.request_headers.origin;
+      } else
+        headers["Access-Control-Allow-Origin"] = "*";
+      // prevent XSS warnings on IE
+      string ua = _req.request_headers["user-agent"];
+      if (ua && xxsua.match(ua))
+        headers["X-XSS-Protection"] = "0";
+      onrequest(_req);
+    }
+
+    final void onrequest(Protocols.WebSocket.Request _req) {
+      kickwatchdog();
+      switch (_req.request_type) {
+        case "GET":
+          flush();
+          req = _req;
+          flush();
+          break;
+        case "OPTIONS":
+          headers["Access-Control-Allow-Headers"] = "Content-Type";
+          _req.response_and_finish((["data":"ok","extra_heads":headers]));
+          break;
+        case "POST": {
+          getbody(_req);
+          // Strangely enough, EngineIO 3 does not communicate back
+          // over the POST request, so wrap it up.
+          function ackpost() {
+            _req.response_and_finish((["data":"ok","type":"text/plain",
+             "extra_heads":headers]));
+          };
+  #if constant(Thread.Thread)
+          // This requires _req to remain unaltered for the remainder of
+          // this function.
+          Thread.Thread(ackpost);	// Lower latency by doing it parallel
+  #else
+          ackpost();
+  #endif
+          do {
+            Thread.MutexKey lock;
+            if (lock = exclpost.trylock()) {
+              int type;
+              string|Stdio.Buffer res;
+              Stdio.Buffer.RewindKey rewind;
+              rewind = ci->rewind_on_error();
+              while (sizeof(ci)) {
+                if (catch {
+                    int len, isbin;
+                    if ((isbin = ci->read_int8()) <= 1) {
+                      for (len = 0;
+                           (type = ci->read_int8())!=0xff;
+                           len=len*10+type);
+                      len--;
+                      type = ci->read_int8() + (isbin ? OPEN : 0);
+                      res = isbin ? ci->read_buffer(len): ci->read(len);
+                    } else {
+                      ci->unread(1);
+                      len = ci->sscanf("%d:")[0]-1;
+                      type = ci->read_int8();
+                      if (type == BASE64) {
+                        type = ci->read_int8();
+                        res = Stdio.Buffer(MIME.decode_base64(ci->read(len)));
+                      } else
+                        res = ci->read(len);
+                    }
+                  })
+                  break;
+                else {
+                  rewind.update();
+                  if (stringp(res))
+                    res = utf8_to_string(res);
+                  read_cb(type, res);
+                }
+              }
+              lock = 0;
+            } else
+              break;
+          } while (sizeof(ci));
+          break;
+        }
+        default:
+          _req.response_and_finish((["data":"Unsupported method",
+           "error":Protocols.HTTP.HTTP_METHOD_INVALID,
+           "extra_heads":(["Allow":"GET,POST,OPTIONS"])]));
+      }
+    }
+
+    constant forcebinary = 0;
+
+    final void flush(void|int type, void|string|Stdio.Buffer msg) {
+      Thread.MutexKey lock;
+      if (req && sendq.size() && (lock = getreq.trylock())) {
+        Protocols.WebSocket.Request myreq;
+        array tosend;
+        if ((myreq = req) && sizeof(tosend = sendq.try_read_array())) {
+          req = 0;
+          lock = 0;
+          array m;
+          int anybinary = 0;
+          if (forcebinary && !forceascii)
+            foreach (tosend;; m)
+              if (!stringp(m[1])) {
+                anybinary = 1;
+                break;
+              }
+          foreach (tosend;; m) {
+            type = m[0];
+            msg = m[1];
+            if (!anybinary && stringp(msg)) {
+               if (String.width(msg) > 8)
+                 msg = string_to_utf8(msg);
+              c->add((string)(1+sizeof(msg)))->add_int8(':');
+            } else if (!forceascii) {
+              if (stringp(msg))
+                c->add_int8(0);
+              else {
+                type -= OPEN;
+                c->add_int8(1);
+              }
+              foreach ((string)(1+sizeof(msg));; int i)
+                c->add_int8(i-'0');
+              c->add_int8(0xff);
+            } else {
+              msg = MIME.encode_base64(msg->read(), 1);
+              c->add((string)(1+1+sizeof(msg)))
+               ->add_int8(':')->add_int8(BASE64);
+            }
+            c->add_int8(type)->add(msg);
+          }
+          if (sizeof(c))
+            wrapfinish(myreq, c->read());
+          sendqempty();
+        } else
+          lock = 0;
+      }
+    }
+  }
+
+  class XHR {
+    inherit Polling:p;
+    constant forcebinary = 1;
+
+    final protected void getbody(Protocols.WebSocket.Request _req) {
+      ci->add(_req.body_raw);
+    }
+
+    final protected
+     void wrapfinish(Protocols.WebSocket.Request req, string body) {
+      respfinish(req, body, String.range(body)[1]==0xff
+       ? "application/octet-stream" : 0);
+    }
+  }
+
+  class JSONP {
+    inherit Polling:p;
+
+    private string head;
+
+    protected void create(Protocols.WebSocket.Request req) {
+      p::create(req);
+      head = "___eio[" + (int)req.variables->j + "](";
+      noop = head+"\""+::noop+"\");";
+    }
+
+    final protected void getbody(Protocols.WebSocket.Request _req) {
+      string d;
+      if (d = _req.variables->d)
+        // Reverse-map some braindead escape mechanisms
+        ci->add(replace(d,({"\r\n","\\n"}),({"\r","\n"})));
+    }
+
+    final protected
+     void wrapfinish(Protocols.WebSocket.Request req, string body) {
+      c->add(head)->add(Standards.JSON.encode(body))->add(");");
+      respfinish(req, c->read());
+    }
+  }
+
+  class WebSocket {
+    inherit Transport:t;
+
+    private Protocols.WebSocket.Connection con;
+    private Stdio.Buffer bb = Stdio.Buffer();
+    private String.Buffer sb = String.Buffer();
+
+    protected void create(Protocols.WebSocket.Request req,
+     Protocols.WebSocket.Connection _con) {
+      con = _con;
+      con.onmessage = recv;
+      con.onclose = close;
+      t::create(req);
+    }
+
+    final void flush(void|int type, void|string|Stdio.Buffer msg) {
+      void sendit() {
+        con.send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
+      };
+      if (msg)
+        sendit();
+      else {
+        array tosend;
+        while (sizeof(tosend = sendq.try_read_array())) {
+          array m;
+          foreach (tosend;; m) {
+            type = m[0];
+            msg = m[1];
+            sendit();
+          }
+        }
+        sendqempty();
+      }
+    }
+
+    private void recv(Protocols.WebSocket.Frame f) {
+      kickwatchdog();
+      switch (f.opcode) {
+        case Protocols.WebSocket.FRAME_TEXT:
+          sb.add(f.text);
+          break;
+        case Protocols.WebSocket.FRAME_BINARY:
+          bb->add(f.data);
+          break;
+        case Protocols.WebSocket.FRAME_CONTINUATION:
+          if (sizeof(sb))
+            sb.add(f.text);
+          else
+            bb->add(f.data);
+          break;
+        default:
+          return;
+      }
+      if (f.fin)
+        if (sizeof(sb)) {
+          string s = sb.get();
+          read_cb(s[0], s[1..]);
+        } else {
+          int type = bb->read_int8();
+          read_cb(type, bb->read_buffer(sizeof(bb)));
+        }
+    }
+  }
 
   //! Set initial argument on callbacks.
   final void set_id(mixed _id) {
@@ -475,7 +515,7 @@ class Socket {
     flushrecvq();
   }
 
-  //! Send text (string) or binary (Stdio.Buffer) messages.
+  //! Send text @[string] or binary @[Stdio.Buffer] messages.
   final void write(string|Stdio.Buffer ... msgs) {
     if (state >= SCLOSING)
       DUSERERROR("Socket already shutting down");
@@ -600,8 +640,29 @@ class Socket {
     close();
   }
 
-  protected void create(Protocols.WebSocket.Request req) {
+  //! @param _options
+  //! Optional options to override the defaults.
+  //! @mapping
+  //!   @member int "pingTimeout"
+  //!     If, the connection is idle for longer than this, the connection
+  //!     is terminated, unit in @expr{ms}.
+  //!   @member int "pingInterval"
+  //!     The browser-client will send a small ping message every
+  //!     @expr{pingInterval ms}.
+  //!   @member int "allowUpgrades"
+  //!     When @expr{true} (default), it allows the server to upgrade
+  //!     the connection to a real @[Protocol.WebSocket] connection.
+  //!   @member int "compressionLevel"
+  //!     The gzip compressionlevel used to compress packets.
+  //!   @member int "compressionThreshold"
+  //!     Packets smaller than this will not be compressed.
+  //! @endmapping
+  protected void create(Protocols.WebSocket.Request req,
+   void|mapping _options) {
     request = req;
+    options = .EngineIO.options;
+    if (_options && sizeof(_options))
+      options += _options;
     switch (curtransport = req.variables->transport) {
       default:
         req.response_and_finish((["data":"Unsupported transport",
@@ -615,7 +676,6 @@ class Socket {
         break;
     }
     conn.read_cb = recv;
-    conn.sendq = sendq;
     ci->add(Crypto.Random.random_string(SIDBYTES-TIMEBYTES));
     ci->add_hint(gethrtime(), TIMEBYTES);
     sid = MIME.encode_base64(ci->read());
@@ -646,7 +706,6 @@ class Socket {
         case "websocket":
           upgtransport = WebSocket(req, req.websocket_accept(0));
           upgtransport.read_cb = upgrecv;
-          upgtransport.sendq = sendq;
       }
   }
 

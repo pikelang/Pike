@@ -1,6 +1,33 @@
 /*
- * Clean-room Socket.IO implementation
+ * Clean-room Socket.IO implementation for Pike.
  */
+
+//! This is an implementation of the Socket.IO server-side communication's
+//! driver.  It basically is a real-time bidirectional object-oriented
+//! communication's protocol for communicating between a webbrowser
+//! and a server.
+//!
+//! This module supports the following features:
+//! @ul
+//! @item Passing any arbitrarily deep nested data object
+//!  which can be represented in basic JavaScript datatypes.
+//! @item In addition to the normal JavaScript datatypes, it also
+//!  supports passing (nested) binary blobs in an efficient manner.
+//! @item Every message/event sent, allows for a callback acknowledge
+//!  to be specified.
+//! @item Acknowledge callbacks which will be called when the other side
+//!  actively decides to acknowledge it (not automatically upon
+//!  message reception).
+//! @item Acknowledgement messages can carry an arbitrary amount of
+//!  data.
+//! @endul
+//!
+//! The driver uses @[Protocol.EngineIO] as the underlying protocol.
+//!
+//! @seealso
+//!  @[Protocol.EngineIO], @[Protocol.WebSocket],
+//!  @url{http://github.com/socketio/socket.io-protocol@},
+//!  @url{http://socket.io/@}
 
 #pike __REAL_VERSION__
 
@@ -31,6 +58,9 @@
 #endif
 
 //! Global options for all SocketIO instances.
+//!
+//! @seealso
+//!  @[SocketIO.farm()]
 final mapping options = ([
 ]);
 
@@ -52,10 +82,11 @@ private mapping(string:
  array(multiset(.EngineIO.Socket)|mapping(string:multiset(function))|function))
  nsps = ([]);
 
-final void setoptions(mapping(string:mixed) _options) {
-  options += _options;
-}
-
+//! @param _options
+//! Optional options to override the defaults.
+//! This parameter is passed down as is to the underlying
+//!  @[EngineIO.Socket].
+//!
 //! @example
 //! Sample minimal implementation of a SocketIO server farm:
 //!
@@ -84,8 +115,15 @@ final void setoptions(mapping(string:mixed) _options) {
 //!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
 //!  return -1;
 //!}
-final Client farm(Protocols.WebSocket.Request req) {
-  Protocols.EngineIO.Socket con = Protocols.EngineIO.farm(req);
+//!
+//! @seealso
+//!  @[EngineIO.farm()]
+final Client farm(Protocols.WebSocket.Request req, void|mapping _options) {
+  if (_options)
+    _options = options + _options;
+  else
+    _options = options;
+  Protocols.EngineIO.Socket con = Protocols.EngineIO.farm(req, _options);
   return con && Client(con);
 }
 
@@ -124,11 +162,13 @@ final int broadcast(string namespace, mixed ... data) {
   return cnt;
 }
 
+//!
 final int connected(string namespace) {
   array nsp = nsps[namespace];
   return sizeof(nsp[ICLIENTS]);
 }
 
+//!
 final multiset clients(string namespace) {
   array nsp = nsps[namespace];
   return nsp[ICLIENTS];
@@ -163,6 +203,8 @@ final void off(string namespace, string event,
 
 //! Runs a single Socket.IO session.
 class Client {
+
+  //!
   string namespace="";
 
   private function(mixed,
@@ -174,8 +216,8 @@ class Client {
   private array curevent;
   private array curbins;
   private int ackid = 0, bins = 0, curackid, curtype;
-  //! In the upstream version conn is publicly accessible.
-  //! Until proven otherwise, this sounds like a bad idea.
+  // In the upstream version conn is publicly accessible.
+  // Until proven otherwise, this sounds like a bad idea.
   private .EngineIO.Socket conn;
   private mapping(int:function(mixed, mixed ...:void)) ack_cbs = ([]);
 
