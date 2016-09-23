@@ -528,7 +528,7 @@ class Socket {
     close_cb = 0;
     read_cb = 0;			// Sort of a race, if multithreading
     id = 0;				// Delete all references to this Socket
-    conn = 0;
+    upgtransport = conn = 0;
   }
 
   private void recv(int type, void|string|Stdio.Buffer msg) {
