@@ -383,11 +383,21 @@ PIKECLASS ECC_Curve
     }
 
     switch(curve) {
+#ifdef HAVE_CURVE_NETTLE_SECP_192R1
     case SECP192R1: THIS->curve = &nettle_secp_192r1; break;
+#endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_224R1
     case SECP224R1: THIS->curve = &nettle_secp_224r1; break;
+#endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_256R1
     case SECP256R1: THIS->curve = &nettle_secp_256r1; break;
+#endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_384R1
     case SECP384R1: THIS->curve = &nettle_secp_384r1; break;
+#endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_521R1
     case SECP521R1: THIS->curve = &nettle_secp_521r1; break;
+#endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
     default:
       Pike_error("Invalid curve\n");
       break;
@@ -1124,11 +1134,21 @@ hogweed_init(void)
   INIT;
 
 #ifdef HAVE_NETTLE_ECDSA_H
+#ifdef HAVE_CURVE_NETTLE_SECP_192R1
   ADD_INT_CONSTANT("SECP192R1", SECP192R1, 0);
+#endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_224R1
   ADD_INT_CONSTANT("SECP224R1", SECP224R1, 0);
+#endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_256R1
   ADD_INT_CONSTANT("SECP256R1", SECP256R1, 0);
+#endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_384R1
   ADD_INT_CONSTANT("SECP384R1", SECP384R1, 0);
+#endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_521R1
   ADD_INT_CONSTANT("SECP521R1", SECP521R1, 0);
+#endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
 #endif /* HAVE_NETTLE_ECDSA_H */
 }
 

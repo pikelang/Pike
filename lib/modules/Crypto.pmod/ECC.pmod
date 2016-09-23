@@ -426,9 +426,19 @@ class Curve {
 //! @endmodule
 
 //! @ignore
+#if constant(Nettle.SECP192R1)
 Curve SECP_192R1 = Curve(Nettle.SECP192R1);
+#endif /* constant(Nettle.SECP192R1) */
+#if constant(Nettle.SECP224R1)
 Curve SECP_224R1 = Curve(Nettle.SECP224R1);
+#endif /* constant(Nettle.SECP224R1) */
+#if constant(Nettle.SECP256R1)
 Curve SECP_256R1 = Curve(Nettle.SECP256R1);
+#endif /* constant(Nettle.SECP256R1) */
+#if constant(Nettle.SECP384R1)
 Curve SECP_384R1 = Curve(Nettle.SECP384R1);
+#endif /* constant(Nettle.SECP384R1) */
+#if constant(Nettle.SECP521R1)
 Curve SECP_521R1 = Curve(Nettle.SECP521R1);
+#endif /* constant(Nettle.SECP521R1) */
 //! @endignore
