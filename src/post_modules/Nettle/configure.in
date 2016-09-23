@@ -54,6 +54,30 @@ else
     fi
   fi
 
+  # NB: Some versions of RedHat have censored the weaker curves
+  #     (secp_192r1 and secp_224r1 (cf [LysLysKOM 21863021])), and
+  #     there are no identifying macros, so we need to probe for them.
+  define(PIKE_CHECK_ECC_CURVE, [
+    AC_MSG_CHECKING(if curve $1 is available)
+    AC_CACHE_VAL(pike_cv_have_curve_$1, [
+      AC_TRY_LINK([#include <nettle/ecc-curve.h>],
+		  [ struct ecc_curve *c = &$1; ],
+		  [ pike_cv_have_curve_$1=yes ],
+		  [ pike_cv_have_curve_$1=no ])
+    ])
+    AC_MSG_RESULT($pike_cv_have_curve_$1);
+    if test "x$pike_cv_have_curve_$1" = "xyes"; then
+      AC_DEFINE(translit(HAVE_CURVE_$1,[a-z],[A-Z]), 1,
+		[Define if your libnettle has the curve $1.])
+    fi
+  ])
+
+  PIKE_CHECK_ECC_CURVE(nettle_secp_192r1)
+  PIKE_CHECK_ECC_CURVE(nettle_secp_224r1)
+  PIKE_CHECK_ECC_CURVE(nettle_secp_256r1)
+  PIKE_CHECK_ECC_CURVE(nettle_secp_384r1)
+  PIKE_CHECK_ECC_CURVE(nettle_secp_521r1)
+
   AC_SUBST(IDEA_OBJ)
 
   if test "x$ac_cv_lib_nettle_nettle_md5_init" = "xyes" -o \
