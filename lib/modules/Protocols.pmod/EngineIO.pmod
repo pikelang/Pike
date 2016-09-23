@@ -499,7 +499,7 @@ class Socket {
 
   private void flush() {
     if(catch(conn.flush()))
-      conn.close();
+      catch(conn.close());
   }
 
   private void flushrecvq() {
