@@ -2918,14 +2918,12 @@ static void apply_define(struct cpp *this,
 	    }
 	    string_builder_putchar(&tmp, '"');
 	  }else{
-	    /* FIXME: These two tests are always true... */
-	    if(DEF_ARG_NOPRESPACE)
-	      while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
-		INC_PCHARP(a,1),l--;
+	    /* Strip leading and trailing white-space. */
+	    while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
+	      INC_PCHARP(a,1),l--;
 
-	    if(DEF_ARG_NOPOSTSPACE)
-	      while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
-		l--;
+	    while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
+	      l--;
 
 	    if(argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
 	    {
