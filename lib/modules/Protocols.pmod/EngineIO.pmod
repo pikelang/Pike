@@ -150,7 +150,7 @@ class Socket {
   final string sid;
 
   private mixed id;			// This is the callback parameter
-  private mapping options;
+  protected mapping options;
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
@@ -185,7 +185,7 @@ class Socket {
     }
 
     //! Close the transport.
-    final void close() {
+    void close() {
       droptimeout();
       read_cb(FORCECLOSE);
     }
@@ -437,11 +437,16 @@ class Socket {
     private Stdio.Buffer bb = Stdio.Buffer();
     private String.Buffer sb = String.Buffer();
 
+    final void close() {
+      if (con)
+        catch(con.close());
+    }
+
     protected void create(Protocols.WebSocket.Request req,
      Protocols.WebSocket.Connection _con) {
       con = _con;
       con.onmessage = recv;
-      con.onclose = close;
+      con.onclose = ::close;
       t::create(req);
     }
 
@@ -538,8 +543,11 @@ class Socket {
   }
 
   private void flush() {
-    if(catch(conn.flush()))
+    if(catch(conn.flush())) {
       catch(conn.close());
+      if (upgtransport)
+        catch(upgtransport.close());
+    }
   }
 
   private void flushrecvq() {
