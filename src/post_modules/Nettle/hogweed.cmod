@@ -453,19 +453,37 @@ PIKECLASS ECC_Curve
    */
   PIKEFUN string(7bit) name()
   {
+#ifdef HAVE_CURVE_NETTLE_SECP_192R1
     if (THIS->curve == &nettle_secp_192r1) {
       ref_push_string(MK_STRING("SECP_192R1"));
-    } else if (THIS->curve == &nettle_secp_224r1) {
-      ref_push_string(MK_STRING("SECP_224R1"));
-    } else if (THIS->curve == &nettle_secp_256r1) {
-      ref_push_string(MK_STRING("SECP_256R1"));
-    } else if (THIS->curve == &nettle_secp_384r1) {
-      ref_push_string(MK_STRING("SECP_384R1"));
-    } else if (THIS->curve == &nettle_secp_521r1) {
-      ref_push_string(MK_STRING("SECP_521R1"));
-    } else {
-      ref_push_string(MK_STRING("UNKNOWN"));
+      return;
     }
+#endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_224R1
+    if (THIS->curve == &nettle_secp_224r1) {
+      ref_push_string(MK_STRING("SECP_224R1"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_256R1
+    if (THIS->curve == &nettle_secp_256r1) {
+      ref_push_string(MK_STRING("SECP_256R1"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_384R1
+    if (THIS->curve == &nettle_secp_384r1) {
+      ref_push_string(MK_STRING("SECP_384R1"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_521R1
+    if (THIS->curve == &nettle_secp_521r1) {
+      ref_push_string(MK_STRING("SECP_521R1"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+    ref_push_string(MK_STRING("UNKNOWN"));
   }
 
   /*! @decl int size()
