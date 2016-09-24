@@ -267,11 +267,12 @@ class Client {
   }
 
   //! Send text or binary events.
-  final void emit(string|function(mixed, mixed ...:void) ack_cb,
-   mixed ... data) {
-    if (!stringp(ack_cb) || !stringp(data[0]))
-      DUSERERROR("Event must be of type string.");
-    write(ack_cb, @data);
+  final variant void emit(function(mixed, mixed ...:void) ack_cb,
+   string event, mixed ... data) {
+    write(ack_cb, event, @data);
+  }
+  final variant void emit(string event, mixed ... data) {
+    write(event, @data);
   }
 
   private void send(int type, void|string|array data,
