@@ -20,6 +20,7 @@ typedef function(Frame, mixed:void) message_callback;
 
 //! WebSocket frame opcodes.
 enum FRAME {
+
     //!
     FRAME_CONTINUATION = 0x0,
 
@@ -42,6 +43,7 @@ enum FRAME {
 //! WebSocket close status codes, as explained in the WebSocket protocol
 //! specification.
 enum CLOSE_STATUS {
+
     //!
     CLOSE_NORMAL = 1000,
 
@@ -72,6 +74,46 @@ enum CLOSE_STATUS {
     //!
     CLOSE_UNEXPECTED,
 };
+
+//! WebSocket RSV extension bits.
+enum RSV {
+
+    //!
+    RSV1 = 0x40,
+
+    //!
+    RSV2 = 0x20,
+
+    //!
+    RSV3 = 0x10
+
+};
+
+//! WebSocket frame compression heuristics override
+enum COMPRESSION {
+
+    //!
+    HEURISTICS_COMPRESS = 0,
+
+    //!
+    OVERRIDE_COMPRESS,
+
+    //!
+    OVERRIDE_SKIPCOMPRESS,
+
+};
+
+//! Global default options for all WebSocket connections.
+mapping options = ([
+#if constant(Gz.deflate)
+    "compressionLevel":1,
+    "compressionThreshold":5,
+    "compressionThresholdNoContext":256,
+    "compressionStrategy":Gz.DEFAULT_STRATEGY,
+    "compressionWindowSize":15,
+    "decompressionWindowSize":15
+#endif
+]);
 
 int(0..1) is_valid_close(int close_status) {
     switch (close_status) {
@@ -104,7 +146,7 @@ string describe_opcode(FRAME op) {
 }
 
 //! Parses one WebSocket frame. Throws an error if there isn't enough data in the buffer.
-protected Frame low_parse(Stdio.Buffer buf) {
+protected Frame low_parse(Connection con, Stdio.Buffer buf) {
     int opcode, len;
     int(0..1) masked;
     string mask, data;
@@ -132,12 +174,36 @@ protected Frame low_parse(Stdio.Buffer buf) {
     Frame f = Frame(opcode & 15);
     f->fin = opcode >> 7;
     f->mask = mask;
-    f->rsv = (opcode >> 4) & 7;
+    f->rsv = opcode;
 
+    if (con.lastopcode & 0x80)	       // FIN
+        con.firstrsv = opcode;
+    con.lastopcode = opcode;
 
     if (masked) {
         data = MASK(data, mask);
     }
+
+#if constant(Gz.deflate)
+    mapping options = con.options;
+    if (options->compressionLevel && con.firstrsv & RSV1 && sizeof(data)) {
+        Gz.inflate uncompress = con.uncompress;
+        if (!uncompress)
+            uncompress = Gz.inflate(-options->decompressionWindowSize);
+        data = uncompress.inflate(data + "\0\0\377\377");
+        string s;
+        while (s = uncompress.end_of_stream()) {
+            // FIXME uncompress.create(...) should have been sufficient.
+            // Probably due to an upstream bug in zlib, this does not work.
+            uncompress = Gz.inflate(-options->decompressionWindowSize);
+            if (s != "\0\0\377\377")
+                data += uncompress.inflate(s);
+        }
+        if (options->decompressionNoContextTakeover)
+          uncompress = 0;	      // Save memory between packets
+        con.uncompress = uncompress;
+    }
+#endif
 
     f->data = data;
 
@@ -145,10 +211,10 @@ protected Frame low_parse(Stdio.Buffer buf) {
 }
 
 //! Parses one WebSocket frame. Returns @expr{0@} if the buffer does not contain enough data.
-Frame parse(Stdio.Buffer in) {
+Frame parse(Connection con, Stdio.Buffer in) {
     // We wrap the low_parse() method to catch read errors, which are thrown, in one place
     mixed err = catch {
-        return low_parse(in);
+        return low_parse(con, in);
       };
 
     if (!objectp(err) || !err->buffer_error) {
@@ -166,7 +232,16 @@ class Frame {
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
     //! fragmented message or a non-fragmentation frame.
     int(0..1) fin = 1;
-    int(3bit) rsv;
+
+    //! Three reserved extension bits.  Binary-and with @expr{RSV1@},
+    //! @expr{RSV2@} or @expr{RSV3@} to single out the corresponding
+    //! extension.  Typically @expr{RSV1@} is set for compressed frames.
+    int rsv;
+
+    //! Set to any of @expr{OVERRIDE_COMPRESS@}
+    //! or @expr{OVERRIDE_SKIPCOMPRESS@}
+    //! to bypass of the compression heuristics.
+    int skip_compression = HEURISTICS_COMPRESS;
 
     string mask;
 
@@ -220,8 +295,10 @@ class Frame {
     }
 
     protected string _sprintf(int type) {
-      return type=='O' && sprintf("%O(%s, fin: %d, %d bytes)", this_program,
-                       describe_opcode(opcode), fin, sizeof(data));
+      return type=='O' && sprintf("%O(%s, fin: %d, rsv: %d, %d bytes)",
+                       this_program,
+                       describe_opcode(opcode), fin, rsv & (RSV1|RSV2|RSV3),
+                       sizeof(data));
     }
 
     private string _text;
@@ -272,7 +349,7 @@ class Frame {
 
     //!
     void encode(Stdio.Buffer buf) {
-        buf->add_int8(fin << 7 | opcode);
+        buf->add_int8(fin << 7 | rsv | opcode);
 
         if (sizeof(data) > 0xffff) {
             buf->add_int8(!!mask << 7 | 127);
@@ -318,6 +395,16 @@ class Connection {
 
     protected mixed id;
 
+    mapping options;
+
+#if constant(Gz.deflate)
+    final Gz.inflate uncompress;
+    private Gz.deflate compress;
+#endif
+
+    final int lastopcode = 0x80;   // FIN
+    final int firstrsv;
+
     //! If true, all outgoing frames are masked.
     int(0..1) masking;
 
@@ -355,7 +442,9 @@ class Connection {
     }
 
     //! Constructor for server mode
-    protected void create(Stdio.File|SSL.File f) {
+    protected void create(Stdio.File|SSL.File f,
+     void|mapping _options) {
+        options = .WebSocket.options + (_options || ([]));
         stream = f;
         if (f->set_buffer_mode) {
             f->set_buffer_mode(in, out);
@@ -370,6 +459,7 @@ class Connection {
 
     //! Constructor for client mode connections
     protected variant void create() {
+        options = ([]);
         masking = 1; // Clients must mask data
         state = CLOSED; // We are closed until we have connected and upgraded the connection;
     }
@@ -552,16 +642,8 @@ class Connection {
         // without a read callback pike does not trigger the
         // close event.
 
-        while (Frame frame = parse(in)) {
+        while (Frame frame = parse(this, in)) {
             if (state == CLOSED) return; 
-
-#ifdef WEBSOCKET_DEBUG
-            if (frame->rsv) {
-                fail();
-                WS_WERR(1, "Received frame with rsv bits sets.\n");
-                return;
-            }
-#endif
 
             int opcode = frame->opcode;
             WS_WERR(2, "%O in %O\n", this, frame);
@@ -677,13 +759,72 @@ class Connection {
 
     //! Send a WebSocket frame.
     void send(Frame frame) {
-        if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
-        if (masking)
-            frame->mask = random_string(4);
+        if (state != OPEN)
+            error("WebSocket connection is not open: %O.\n", this);
+        if (sizeof(frame->data)) {
+            if (masking)
+                frame->mask = random_string(4);
+#if constant(Gz.deflate)
+            if (options->compressionLevel
+             && frame->compress != OVERRIDE_SKIPCOMPRESS
+             && sizeof(frame->data) >=
+                 (options->compressionNoContextTakeover
+                  ? options->compressionThresholdNoContext
+                  : options->compressionThreshold)) {
+                if (!compress)
+                    compress = Gz.deflate(-options->compressionLevel,
+                     options->compressionStrategy,
+                     options->compressionWindowSize);
+                int wsize = options->compressionWindowSize
+                 ? 1<<options->compressionWindowSize : 1<<15;
+                if (options->compressionNoContextTakeover) {
+                    string s
+                     = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
+                    if (sizeof(s) < sizeof(frame->data)) {
+                        frame->data = s;
+                        frame->rsv |= RSV1;
+                    }
+                    compress = 0;
+                } else {
+                    if (frame->compress == OVERRIDE_COMPRESS
+                     || frame->opcode == FRAME_TEXT) {
+                        // Assume text frames are always compressible.
+                        frame->data
+                         = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
+                        frame->rsv |= RSV1;
+                    } else if (4*sizeof(frame->data) <= wsize) {
+                        // If a binary frame is smaller than 25% of the
+                        // LZ77 window size, test if adding it to the
+                        // stream results in zero overhead.  If so, add it,
+                        // if not, reset compression state to before adding it.
+                        Gz.inflate save = compress.clone();
+                        string s
+                         = compress.deflate(frame->data, Gz.SYNC_FLUSH);
+                        if (sizeof(s) < sizeof(frame->data)) {
+                            frame->data = s[..<4];
+                            frame->rsv |= RSV1;
+                        } else
+                          compress = save;
+                    } else {
+                        // Large binary frames we sample the first 1KB of.
+                        // If it compresses better than 6.25%, add them
+                        // to the compressed stream.
+                        Gz.inflate ctest = compress.clone();
+                        string sold = frame->data[..1023];
+                        string s = ctest.deflate(sold, Gz.PARTIAL_FLUSH);
+                        if (sizeof(s) + 64 < sizeof(sold)) {
+                            frame->data = compress.deflate(frame->data,
+                             Gz.SYNC_FLUSH)[..<4];
+                            frame->rsv |= RSV1;
+                        }
+                    }
+                }
+            }
+#endif
+        }
         WS_WERR(2, "sending %O\n", frame);
         frame->encode(out);
         stream->write("");
-
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
@@ -739,6 +880,110 @@ class Request(function(array(string), Request:void) cb) {
 	    "Sec-Websocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
             "Sec-Websocket-Version" : "13",
 	]);
+
+        array parse_extensions() {
+          string exs;
+          array retval;
+          if (exs = request_headers["sec-websocket-extensions"]) {
+            // Parses extensions conforming RFCs, supports quoted values.
+            // FIXME Violates the RFC when commas or semicolons are quoted.
+            array v;
+            int i;
+            retval = array_sscanf(exs,
+             "%*[ \t\r\n]%{%{%[^ \t\r\n=;,]%*[= \t\r\n]%[^;,]%*[ \t\r\n;]%}"
+             "%*[ \t\r\n,]%}")[0];
+            foreach (retval; i; v) {
+              mapping m;
+              array d;
+              v = v[0];
+              retval[i] = ({v[0][0], m = ([])});
+              v = v[1..];
+              foreach (v;; d) {
+                string sv = String.trim_whites(d[1]);
+                if (sizeof(sv) && sv[0] == '"')
+                  sv = sv[1..<1];	    // Strip doublequotes
+                int|float|string tv;	    // Store numeric values natively
+                if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
+                  tv = sv;
+                m[d[0]] = tv;
+              }
+            }
+          } else
+            retval = ({});
+          return retval;
+        };
+
+        mapping rext = ([]);
+
+        // Code has been tuned for serverside.  If used as clientside,
+        // it will need tweaking.
+        foreach (parse_extensions();; array ext) {
+            string name = ext[0];
+            mapping parm = ext[1], rparm = ([]);
+            int|float|string p;
+            switch (name) {
+#if constant(Gz.deflate)
+                case "permessage-deflate":
+                    if (rext[name])
+                        continue;
+                    if (parm->client_no_context_takeover
+                     || options->decompressionNoContextTakeover) {
+                        options->decompressionNoContextTakeover = 1;
+                        rparm->client_no_context_takeover = "";
+                    }
+                    if (stringp(p = parm->client_max_window_bits)) {
+                        if ((p = options->decompressionWindowSize) < 15)
+                            rparm->client_max_window_bits = p;
+                    } else if (!zero_type(p)) {
+                        p = min(p, options->decompressionWindowSize);
+                        options->decompressionWindowSize
+                         = max(rparm->client_max_window_bits = p, 8);
+                    }
+                    if (parm->server_no_context_takeover
+                     || options->compressionNoContextTakeover) {
+                        options->compressionNoContextTakeover = 1;
+                        rparm->server_no_context_takeover = "";
+                    }
+                    if (stringp(p = parm->server_max_window_bits)) {
+                        if ((p = options->compressionWindowSize) < 15)
+                        rparm->server_max_window_bits = p;
+                    } else if (!zero_type(p)) {
+                        p = min(p, options->compressionWindowSize);
+                        if (p < 8)
+                            continue;
+                        options->compressionWindowSize
+                         = rparm->server_max_window_bits = p;
+                    }
+                    rext[name] = rparm;
+                    break;
+#endif
+            }
+        }
+
+        if (sizeof(rext)) {
+            if (!rext["permessage-deflate"])
+                m_delete(options, "compressionLevel");
+            array ev = ({});
+            foreach (rext; string name; mapping ext) {
+                array res = ({name});
+                foreach (ext; string pname; int|float|string pval) {
+                    // FIXME We only look for embedded spaces to decide if
+                    // we need to quote the parametervalue.  If you want to
+                    // embed tabs or other whitespace, this needs to be
+                    // amended.
+                    if (stringp(pval) && has_value(pval, " "))
+                        pval = "\"" + pval + "\"";
+                    pval = (string)pval;
+                    if (sizeof(pval))
+                        pval = "="+pval;
+                    res += ({pname+pval});
+                }
+                ev += ({res * ";"});
+            }
+            heads["Sec-WebSocket-Extensions"] = ev * ",";
+        } else
+            m_delete(options, "compressionLevel");
+
 	if (protocol) heads["Sec-Websocket-Protocol"] = protocol;
 
         Connection ws = Connection(my_fd);
