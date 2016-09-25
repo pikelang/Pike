@@ -59,6 +59,8 @@ struct memobj
 #undef THIS
 #define THIS ((struct zipper *)(Pike_fp->current_storage))
 
+static struct program *deflate_program;
+
 /*! @module Gz
  *!
  *! The Gz module contains functions to compress and uncompress strings using
@@ -290,6 +292,37 @@ LVL_CHECK:
   }
 }
 
+/*! @decl Gz.deflate clone()
+ *!
+ *! Clones the deflate object.  Typically used to test compression
+ *! of new content using the same exact state.
+ *!
+ */
+static void gz_deflate_clone(INT32 args) {
+  int tmp;
+  struct object *ob = low_clone(deflate_program);
+  struct zipper *clone = get_storage(ob, deflate_program);
+
+  clone->level = THIS->level;
+  clone->state = THIS->state;
+
+  push_object(ob);
+
+  switch(tmp = deflateCopy(&clone->gz, &THIS->gz)) {
+    case Z_OK:
+      break;
+
+    case Z_MEM_ERROR:
+      Pike_error ("Out of memory while cloning Gz.deflate.\n");
+      break;
+
+    default:
+      if(THIS->gz.msg)
+        Pike_error("Failed to clone Gz.deflate: %s\n",THIS->gz.msg);
+      else
+        Pike_error("Failed to clone Gz.deflate (%d).\n", tmp);
+  }
+}
 
 #ifdef _REENTRANT
 static void do_mt_unlock (PIKE_MUTEX_T *lock)
@@ -1235,6 +1268,7 @@ PIKE_MODULE_INIT
   int have_fixed = 0;
 
   start_new_program();
+  deflate_program = Pike_compiler->new_program;
   ADD_STORAGE(struct zipper);
 
   /* function(int|void,int|void,int|void:void) */
@@ -1294,8 +1328,10 @@ PIKE_MODULE_INIT
   end_class("inflate",0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
+  add_integer_constant("BLOCK",Z_BLOCK,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
+  add_integer_constant("FULL_FLUSH",Z_FULL_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
   add_integer_constant("DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
   add_integer_constant("FILTERED", Z_FILTERED,0);
