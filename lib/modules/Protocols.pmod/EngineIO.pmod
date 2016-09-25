@@ -64,13 +64,17 @@
 //! Global options for all EngineIO instances.
 //!
 //! @seealso
-//!  @[Socket.create()]
+//!  @[Socket.create()], @[Gz.compress()]
 final mapping options = ([
   "pingTimeout":		64*1000,	// Safe for NAT
   "pingInterval":		29*1000,	// Allows for jitter
-  "allowUpgrades":		1,
-  "compressionLevel":		1,		// gzip
-  "compressionThreshold":	256		// Compress when size>=
+#if constant(Gz.deflate)
+  "compressionLevel":		1,
+  "compressionStrategy":	Gz.DEFAULT_STRATEGY,
+  "compressionThreshold":	256,		// Compress when size>=
+  "compressionWindowSize":	15,		// LZ77 window 2^x (8..15)
+#endif
+  "allowUpgrades":		1
 ]);
 
 //! Engine.IO protocol version.
@@ -150,7 +154,7 @@ class Socket {
   final string sid;
 
   private mixed id;			// This is the callback parameter
-  protected mapping options;
+  mapping options;
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
@@ -206,7 +210,7 @@ class Socket {
     private mapping headers = ([]);
     private Thread.Mutex getreq = Thread.Mutex();
     private Thread.Mutex exclpost = Thread.Mutex();
-  #if constant(Gz.File)
+  #if constant(Gz.deflate)
     private Gz.File gzfile;
   #endif
     protected string noop;
@@ -219,12 +223,14 @@ class Socket {
       mapping|string comprheads;
       if (!body)
         body = noop;
-  #if constant(Gz.File)
+  #if constant(Gz.deflate)
       if (gzfile && sizeof(body) >= options->compressionThreshold
        && (comprheads = req.request_headers["accept-encoding"])
        && acceptgzip.match(comprheads)) {
         Stdio.FakeFile f = Stdio.FakeFile("", "wb");
         gzfile.open(f, "wb");
+        gzfile.setparams(options->compressionLevel,
+         options->compressionStrategy, options->compressionWindowSize);
         gzfile.write(body);
         gzfile.close();
         comprheads = headers;
@@ -245,10 +251,9 @@ class Socket {
       noop = sprintf("1:%c", NOOP);
       forceascii = !zero_type(_req.variables->b64);
       ci->set_error_mode(1);
-      int clevel;
-  #if constant(Gz.File)
-      if (clevel = options->compressionLevel)
-        (gzfile = Gz.File()).setparams(clevel, Gz.DEFAULT_STRATEGY);
+  #if constant(Gz.deflate)
+      if (options->compressionLevel)
+        gzfile = Gz.File();
   #endif
       t::create(_req);
       if (_req.request_headers.origin) {
