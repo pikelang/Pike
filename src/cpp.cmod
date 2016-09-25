@@ -2810,6 +2810,62 @@ static ptrdiff_t calc(struct cpp *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
+static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
+						    PCHARP a,
+						    size_t l)
+{
+  size_t e;
+  for(e=0; e<l;) {
+    if (WC_ISSPACE(INDEX_PCHARP(a, e)) ||
+	INDEX_PCHARP(a, e)=='"' || INDEX_PCHARP(a, e)=='\\') {
+      if (e) {
+	string_builder_append(s, a, e);
+      }
+      if (INDEX_PCHARP(a, e) == '"' || INDEX_PCHARP(a, e)=='\\') {
+	/* String or quote. */
+	string_builder_putchar(s, '\\');
+	string_builder_putchar(s, INDEX_PCHARP(a, e));
+	if (INDEX_PCHARP(a, e) == '"') {
+	  for (e++; e < l; e++) {
+	    if (INDEX_PCHARP(a, e) == '"') {
+	      e++;
+	      break;
+	    }
+	    string_builder_putchar(s, INDEX_PCHARP(a, e));
+	    if (INDEX_PCHARP(a, e) == '\\') {
+	      string_builder_putchar(s, '\\');
+	      e++;
+	      if (INDEX_PCHARP(a, e) == '\\' ||
+		  INDEX_PCHARP(a, e) == '"') {
+		string_builder_putchar(s, '\\');
+	      }
+	      string_builder_putchar(s, INDEX_PCHARP(a, e));
+	    }
+	  }
+	  string_builder_putchar(s, '\\');
+	  string_builder_putchar(s, '"');
+	}
+      } else {
+	/* White space. */
+	while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a, e))) {
+	  e++;
+	}
+	if (e != l) {
+	  string_builder_putchar(s, ' ');
+	}
+      }
+      INC_PCHARP(a, e);
+      l -= e;
+      e = 0;
+    } else {
+      e++;
+    }
+  }
+  if (l) {
+    string_builder_append(s,a,l);
+  }
+}
+
 static void apply_define(struct cpp *this,
 			 struct define_struct *d,
 			 struct define_argument *arguments,
@@ -2865,57 +2921,8 @@ static void apply_define(struct cpp *this,
 	  if(argument & DEF_ARG_STRINGIFY)
 	  {
 	    /* NOTE: At entry a[0] is non white-space. */
-	    int e = 0;
 	    string_builder_putchar(&tmp, '"');
-	    for(e=0; e<l;) {
-	      if (WC_ISSPACE(INDEX_PCHARP(a,e)) ||
-		  INDEX_PCHARP(a,e)=='"' || INDEX_PCHARP(a,e)=='\\') {
-		if (e) {
-		  string_builder_append(&tmp, a, e);
-		}
-		if (INDEX_PCHARP(a,e) == '"' || INDEX_PCHARP(a,e)=='\\') {
-		  /* String or quote. */
-		  string_builder_putchar(&tmp, '\\');
-		  string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
-		  if (INDEX_PCHARP(a,e) == '"') {
-		    for (e++; e < l; e++) {
-		      if (INDEX_PCHARP(a,e) == '"') {
-			e++;
-			break;
-		      }
-		      string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
-		      if (INDEX_PCHARP(a,e) == '\\') {
-			string_builder_putchar(&tmp, '\\');
-			e++;
-			if (INDEX_PCHARP(a,e) == '\\' ||
-			    INDEX_PCHARP(a,e) == '"') {
-			  string_builder_putchar(&tmp, '\\');
-			}
-			string_builder_putchar(&tmp, INDEX_PCHARP(a,e));
-		      }
-		    }
-		    string_builder_putchar(&tmp, '\\');
-		    string_builder_putchar(&tmp, '"');
-		  }
-		} else {
-		  /* White space. */
-		  while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a,e))) {
-		    e++;
-		  }
-		  if (e != l) {
-		    string_builder_putchar(&tmp, ' ');
-		  }
-		}
-		INC_PCHARP(a,e);
-		l -= e;
-		e = 0;
-	      } else {
-		e++;
-	      }
-	    }
-	    if (l) {
-	      string_builder_append(&tmp,a,l);
-	    }
+	    string_builder_append_cpp_quoted_pcharp(&tmp, a, l);
 	    string_builder_putchar(&tmp, '"');
 	  }else{
 	    /* Strip leading and trailing white-space. */
