@@ -1330,50 +1330,21 @@ void arm32_flush_codegen_state(void) {
     compiler_state.flags = 0;
 }
 
-MACRO void arm32_ins_branch_check_threads_etc(int code_only) {
-    struct label count_up, maybe_call;
+static struct label my_free_svalue,
+                    my_pike_return,
+                    check_threads_etc_slowpath;
 
+MACRO void arm32_ins_branch_check_threads_etc(void) {
     /* FIXME: assert_no_temp_regs(); */
 
-    label_init(&count_up);
-    label_init(&maybe_call);
-
-    if (1 /*!branch_check_threads_update_etc*/) {
-        enum arm32_register tmp = ra_alloc_any(),
-                            addr = ra_alloc_any();
-
-        if (!code_only) {
-            b_imm(label_dist(&count_up), ARM_COND_AL);
-        }
-
-        label_generate(&maybe_call);
-
-        /* TODO: use label, was: branch_check_threads_update_etc = PIKE_PC; */
-        arm32_mov_int(addr, (long)&fast_check_threads_counter);
-        load32_reg_imm(tmp, addr, 0);
-        arm32_add_reg_int(tmp, tmp, 0x80);
-        store32_reg_imm(tmp, addr, 0);
-
-        ra_free(addr);
-
-        arm32_mov_int(tmp, (long)branch_check_threads_etc);
-        bx_reg(tmp);
-        ra_free(tmp);
-    }
-    if (!code_only) {
-        label_generate(&count_up);
     /* check counter and jump over next branch */
     arm32_adds_reg_int(ARM_REG_R5, ARM_REG_R5, 1 << 25);
     add_to_program(set_cond(gen_bl_imm(label_dist(&check_threads_etc_slowpath)),
                             ARM_COND_VS));
 }
 
-static struct label my_free_svalue,
-                    my_pike_return;
-
 void arm32_start_function(int UNUSED(no_pc)) {
     ra_init();
-    arm32_ins_branch_check_threads_etc(1);
 
     /* We generate common helper functions at the beginning of
      * every program. Branching to those helpers can be done
@@ -1454,6 +1425,27 @@ void arm32_start_function(int UNUSED(no_pc)) {
         load32_reg_imm(ARM_REG_PC, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
 
         ra_free(ARM_REG_ARG1);
+    }
+
+    /* INS_BRANCH_CHECK_THREADS_ETC (slow path) */
+    {
+        enum arm32_register tmp = ra_alloc_any(),
+                            addr = ra_alloc_any();
+
+        label_init(&check_threads_etc_slowpath);
+        label_generate(&check_threads_etc_slowpath);
+
+        /* TODO: use label, was: branch_check_threads_update_etc = PIKE_PC; */
+        arm32_mov_int(addr, (long)&fast_check_threads_counter);
+        load32_reg_imm(tmp, addr, 0);
+        arm32_add_reg_int(tmp, tmp, 0x80);
+        store32_reg_imm(tmp, addr, 0);
+
+        ra_free(addr);
+
+        arm32_mov_int(tmp, (long)branch_check_threads_etc);
+        bx_reg(tmp);
+        ra_free(tmp);
     }
 }
 
@@ -2611,7 +2603,7 @@ int arm32_low_ins_f_jump(unsigned int opcode, int backward_jump) {
 
         b_imm(label_dist(&skip), ARM_COND_EQ);
 
-        arm32_ins_branch_check_threads_etc(0);
+        arm32_ins_branch_check_threads_etc();
         ret = PIKE_PC;
         b_imm(0, ARM_COND_AL);
 
@@ -2638,7 +2630,7 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
         {
             enum arm32_register tmp;
 
-            arm32_ins_branch_check_threads_etc(0);
+            arm32_ins_branch_check_threads_etc();
 
             tmp = ra_alloc_any();
 
@@ -2656,12 +2648,16 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
             return ret;
         }
     case F_BRANCH:
+        arm32_ins_branch_check_threads_etc();
+
         arm32_debug_instr_prologue_0(opcode);
         ret = PIKE_PC;
         b_imm(0, ARM_COND_AL);
         return ret;
     case F_LOOP: {
           struct label fallback, jump;
+
+          arm32_ins_branch_check_threads_etc();
 
           label_init(&jump);
           label_init(&fallback);
