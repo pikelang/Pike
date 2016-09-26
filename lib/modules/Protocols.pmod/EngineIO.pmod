@@ -92,7 +92,7 @@ private mapping(string:Socket) clients = ([]);
 private Regexp acceptgzip = Regexp("(^|,)gzip(,|$)");
 private Regexp xxsua = Regexp(";MSIE|Trident/");
 
-//! @param _options
+//! @param options
 //! Optional options to override the defaults.
 //! This parameter is passed down as is to the underlying
 //!  @[Socket].
@@ -127,7 +127,7 @@ private Regexp xxsua = Regexp(";MSIE|Trident/");
 //!
 //! @seealso
 //!  @[Socket.create()]
-final Socket farm(Protocols.WebSocket.Request req, void|mapping _options) {
+final Socket farm(Protocols.WebSocket.Request req, void|mapping options) {
   string sid;
   PD("Request %O\n", req.query);
   if (sid = req.variables.sid) {
@@ -138,7 +138,7 @@ final Socket farm(Protocols.WebSocket.Request req, void|mapping _options) {
     else
       client.onrequest(req);
   } else
-    return Socket(req, _options);
+    return Socket(req, options);
   return 0;
 }
 
@@ -154,7 +154,7 @@ class Socket {
   final string sid;
 
   private mixed id;			// This is the callback parameter
-  mapping options;
+  final mapping _options;
   private Stdio.Buffer ci = Stdio.Buffer();
   private function(mixed, string|Stdio.Buffer:void) read_cb;
   private function(mixed:void) close_cb;
@@ -171,7 +171,7 @@ class Socket {
     final protected int pingtimeout;
 
     protected void create(Protocols.WebSocket.Request req) {
-      pingtimeout = options->pingTimeout/1000+1;
+      pingtimeout = _options->pingTimeout/1000+1;
       kickwatchdog();
     }
 
@@ -224,13 +224,13 @@ class Socket {
       if (!body)
         body = noop;
   #if constant(Gz.deflate)
-      if (gzfile && sizeof(body) >= options->compressionThreshold
+      if (gzfile && sizeof(body) >= _options->compressionThreshold
        && (comprheads = req.request_headers["accept-encoding"])
        && acceptgzip.match(comprheads)) {
         Stdio.FakeFile f = Stdio.FakeFile("", "wb");
         gzfile.open(f, "wb");
-        gzfile.setparams(options->compressionLevel,
-         options->compressionStrategy, options->compressionWindowSize);
+        gzfile.setparams(_options->compressionLevel,
+         _options->compressionStrategy, _options->compressionWindowSize);
         gzfile.write(body);
         gzfile.close();
         comprheads = headers;
@@ -252,7 +252,7 @@ class Socket {
       forceascii = !zero_type(_req.variables->b64);
       ci->set_error_mode(1);
   #if constant(Gz.deflate)
-      if (options->compressionLevel)
+      if (_options->compressionLevel)
         gzfile = Gz.File();
   #endif
       t::create(_req);
@@ -653,7 +653,7 @@ class Socket {
     close();
   }
 
-  //! @param _options
+  //! @param options
   //! Optional options to override the defaults.
   //! @mapping
   //!   @member int "pingTimeout"
@@ -671,11 +671,11 @@ class Socket {
   //!     Packets smaller than this will not be compressed.
   //! @endmapping
   protected void create(Protocols.WebSocket.Request req,
-   void|mapping _options) {
+   void|mapping options) {
     request = req;
-    options = .EngineIO.options;
-    if (_options && sizeof(_options))
-      options += _options;
+    _options = .EngineIO.options;
+    if (options && sizeof(options))
+      _options += options;
     switch (curtransport = req.variables->transport) {
       default:
         req.response_and_finish((["data":"Unsupported transport",
@@ -696,9 +696,9 @@ class Socket {
     send(OPEN, Standards.JSON.encode(
              (["sid":sid,
                "upgrades":
-                 options->allowUpgrades ? ({"websocket"}) : ({}),
-               "pingInterval":options->pingInterval,
-               "pingTimeout":options->pingTimeout
+                 _options->allowUpgrades ? ({"websocket"}) : ({}),
+               "pingInterval":_options->pingInterval,
+               "pingTimeout":_options->pingTimeout
              ])));
     PD("New EngineIO sid: %O\n", sid);
   }
