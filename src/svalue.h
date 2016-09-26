@@ -165,10 +165,15 @@ struct svalue
 {
   union {
     struct {
+      /* NB: Ought to be "enum PIKE_TYPE type:16", but then the
+       *     machine code generator can't use the &-operator to
+       *     get the field offset. On the other hand the offset
+       *     should always be zero, so...
+       */
       unsigned short type; /**< the data type, see PIKE_T_... */
       unsigned short subtype; /**< used to store the zero type, among others */
     } t;
-    enum PIKE_TYPE named_type:8;
+    enum PIKE_TYPE named_type:16;
 
 #if PIKE_BYTEORDER == 1234
     ptrdiff_t type_subtype;
