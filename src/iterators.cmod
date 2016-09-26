@@ -424,14 +424,17 @@ PIKECLASS mapping_iterator
       if(THIS->md && THIS->md->hashsize)
       {
         int count = call_random(THIS->md->size);
-        for(int b=0; b<THIS->md->hashsize; b++)
-          for(struct keypair *k=THIS->md->hash[THIS->bucket]; k; k=k->next)
+        int b;
+        for(b=0; b<THIS->md->hashsize; b++) {
+          struct keypair *k;
+          for(k=THIS->md->hash[THIS->bucket]; k; k=k->next)
             if( count-- < 0 )
             {
               THIS->bucket = b;
               THIS->current = k;
               goto done;
             }
+        }
       }else{
 	THIS->bucket=-1;
 	THIS->current=0;

@@ -2149,7 +2149,8 @@ PIKECLASS RandomInterface
     if(limit <= 1) return 0;
     int bits = my_log2(limit-1)+1;
     UINT64 mask = (((UINT64)1)<<bits)-1;
-    for(int i=0; i<1000; i++)
+    int i;
+    for(i=0; i<1000; i++)
     {
       if(THIS->buffer_bits < bits)
         fill_int_buffer();
