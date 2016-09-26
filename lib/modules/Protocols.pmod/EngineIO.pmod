@@ -557,7 +557,7 @@ class Socket {
 
   private void flushrecvq() {
     while (read_cb && !recvq.is_empty())
-      read_cb(query_id(), recvq.read());
+      read_cb(query_id(), recvq.get());
   }
 
   //! Close the socket signalling the other side.
@@ -613,7 +613,7 @@ class Socket {
         if (read_cb && recvq.is_empty())
           read_cb(query_id(), msg);
         else {
-          recvq.write(msg);
+          recvq.put(msg);
           flushrecvq();
         }
         break;
