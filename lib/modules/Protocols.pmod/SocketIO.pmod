@@ -77,132 +77,139 @@ private enum {
   ICLIENTS=0, IEVENTS, IREADCB, ICLOSECB, IOPENCB
 };
 
-// All Socket.IO nsps with connected clients
-private mapping(string:
- array(multiset(.EngineIO.Socket)|mapping(string:multiset(function))|function))
- nsps = ([]);
+class Universe {
+  // All Socket.IO _nsps with connected clients in this universe.
+  final mapping(string: array(multiset(.EngineIO.Socket)|
+    mapping(string:multiset(function))|function))
+   _nsps = ([]);
 
-//! @param _options
-//! Optional options to override the defaults.
-//! This parameter is passed down as is to the underlying
-//!  @[EngineIO.Socket].
-//!
-//! @example
-//! Sample minimal implementation of a SocketIO server farm:
-//!
-//!void echo(mixed id, function sendack, mixed ... data) {
-//!  id->write(data);
-//!  if (sendack)
-//!    sendack("Ack","me","harder");
-//!}
-//!
-//!void wsrequest(array(string) protocols, object req) {
-//!  httprequest(req);
-//!}
-//!
-//!void httprequest(object req)
-//!{ switch (req.not_query)
-//!  { case "/socket.io/":
-//!      Protocols.SocketIO.Client client = Protocols.SocketIO.farm(req);
-//!      if (client)
-//!        client->write("Hello world!");
-//!      break;
-//!  }
-//!}
-//!
-//!int main(int argc, array(string) argv)
-//!{ Protocols.SocketIO.createnamespace("", echo); // Register root namespace
-//!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
-//!  return -1;
-//!}
-//!
-//! @seealso
-//!  @[EngineIO.farm()]
-final Client farm(Protocols.WebSocket.Request req, void|mapping _options) {
-  if (_options)
-    _options = options + _options;
-  else
-    _options = options;
-  Protocols.EngineIO.Socket con = Protocols.EngineIO.farm(req, _options);
-  return con && Client(con);
-}
-
-//! Create a new or update an existing namespace.
-final void createnamespace(string namespace,
- void|function(mixed, function(mixed, mixed ...:void), mixed ...:void) read_cb,
- void|function(mixed:void) close_cb,
- void|function(mixed:void) open_cb) {
-  array nsp = nsps[namespace];
-  if (!nsp)
-    nsps[namespace] = ({(<>), ([]), read_cb, close_cb, open_cb});
-  else {
-    nsp[IREADCB] = read_cb;
-    nsp[ICLOSECB] = close_cb;
-    nsp[IOPENCB] = open_cb;
+  //! @param _options
+  //! Optional options to override the defaults.
+  //! This parameter is passed down as is to the underlying
+  //!  @[EngineIO.Socket].
+  //!
+  //! @example
+  //! Sample minimal implementation of a SocketIO server farm:
+  //!
+  //!Protocols.SocketIO.Universe myuniverse;
+  //!
+  //!void echo(mixed id, function sendack, mixed ... data) {
+  //!  id->write(data);
+  //!  if (sendack)
+  //!    sendack("Ack","me","harder");
+  //!}
+  //!
+  //!void wsrequest(array(string) protocols, object req) {
+  //!  httprequest(req);
+  //!}
+  //!
+  //!void httprequest(object req) {
+  //!  switch (req.not_query) {
+  //!    case "/socket.io/":
+  //!      Protocols.SocketIO.Client client = myuniverse.farm(req);
+  //!      if (client)
+  //!        client->write("Hello world!");
+  //!      break;
+  //!  }
+  //!}
+  //!
+  //!int main(int argc, array(string) argv) {
+  //!  myuniverse = Protocols.SocketIO.Universe(); // Create universe
+  //!  myuniverse.createnamespace("", echo); // Register root namespace
+  //!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
+  //!  return -1;
+  //!}
+  //!
+  //! @seealso
+  //!  @[EngineIO.farm()]
+  final Client farm(Protocols.WebSocket.Request req, void|mapping _options) {
+    if (_options)
+      _options = options + _options;
+    else
+      _options = options;
+    Protocols.EngineIO.Socket con = Protocols.EngineIO.farm(req, _options);
+    return con && Client(this, con);
   }
-}
 
-//! Drop a namespace.
-final void dropnamespace(string namespace) {
-  array nsp = nsps[namespace];
-  m_delete(nsps, namespace);
-  foreach (nsp[ICLIENTS];; Client client)
-    if (client)
-      client.close();
-}
+  //! Create a new or update an existing namespace.
+  final void createnamespace(string namespace,
+   void|function(mixed, function(mixed, mixed ...:void), mixed ...:void)
+    read_cb,
+   void|function(mixed:void) close_cb,
+   void|function(mixed:void) open_cb) {
+    array nsp = _nsps[namespace];
+    if (!nsp)
+      _nsps[namespace] = ({(<>), ([]), read_cb, close_cb, open_cb});
+    else {
+      nsp[IREADCB] = read_cb;
+      nsp[ICLOSECB] = close_cb;
+      nsp[IOPENCB] = open_cb;
+    }
+  }
 
-//! ack_cb can be specified as the first argument following namespace.
-//! Returns the number of clients broadcast to.
-final int broadcast(string namespace, mixed ... data) {
-  Client client;
-  int cnt = 0;
-  array nsp = nsps[namespace];
-  foreach (nsp[ICLIENTS];; client)
-    cnt++, client.write(@data);
-  return cnt;
-}
+  //! Drop a namespace.
+  final void dropnamespace(string namespace) {
+    array nsp = _nsps[namespace];
+    m_delete(_nsps, namespace);
+    foreach (nsp[ICLIENTS];; Client client)
+      if (client)
+        client.close();
+  }
 
-//!
-final int connected(string namespace) {
-  array nsp = nsps[namespace];
-  return sizeof(nsp[ICLIENTS]);
-}
+  //! ack_cb can be specified as the first argument following namespace.
+  //! Returns the number of clients broadcast to.
+  final int broadcast(string namespace, mixed ... data) {
+    Client client;
+    int cnt = 0;
+    array nsp = _nsps[namespace];
+    foreach (nsp[ICLIENTS];; client)
+      cnt++, client.write(@data);
+    return cnt;
+  }
 
-//!
-final multiset clients(string namespace) {
-  array nsp = nsps[namespace];
-  return nsp[ICLIENTS];
-}
+  //!
+  final int connected(string namespace) {
+    array nsp = _nsps[namespace];
+    return sizeof(nsp[ICLIENTS]);
+  }
 
-//! Use the indices to get a list of the nsps in use.
-final mapping namespaces() {
-  return nsps;
-}
+  //!
+  final multiset clients(string namespace) {
+    array nsp = _nsps[namespace];
+    return nsp[ICLIENTS];
+  }
 
-private multiset getlisteners(string namespace, string event) {
-  mapping events = nsps[namespace][IEVENTS];
-  multiset listeners = events[event];
-  if (!listeners)
-    events[event] = listeners = (<>);
-  return listeners;
-}
+  //! Use the indices to get a list of the _nsps in use.
+  final mapping namespaces() {
+    return _nsps;
+  }
 
-//! Register listener to an event on a namespace.
-final void on(string namespace, string event,
- function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
-   event_cb) {
-  getlisteners(namespace, event)[event_cb] = 1;
-}
+  private multiset getlisteners(string namespace, string event) {
+    mapping events = _nsps[namespace][IEVENTS];
+    multiset listeners = events[event];
+    if (!listeners)
+      events[event] = listeners = (<>);
+    return listeners;
+  }
 
-//! Unregister listener to an event on a namespace.
-final void off(string namespace, string event,
- function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
-   event_cb) {
-  getlisteners(namespace, event)[event_cb] = 0;
+  //! Register listener to an event on a namespace.
+  final void on(string namespace, string event,
+   function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
+     event_cb) {
+    getlisteners(namespace, event)[event_cb] = 1;
+  }
+
+  //! Unregister listener to an event on a namespace.
+  final void off(string namespace, string event,
+   function(mixed, function(mixed, mixed ...:void), string, mixed ...:void)
+     event_cb) {
+    getlisteners(namespace, event)[event_cb] = 0;
+  }
 }
 
 //! Runs a single Socket.IO session.
 class Client {
+  private Universe universe;
 
   //!
   string namespace="";
@@ -243,7 +250,7 @@ class Client {
   }
 
   private void fetchcallbacks() {
-    array nsp = nsps[namespace];
+    array nsp = universe._nsps[namespace];
     if (nsp) {
       read_cb = nsp[IREADCB];
       close_cb = nsp[ICLOSECB];
@@ -354,7 +361,7 @@ class Client {
       send(ACK, data, cackid);
     };
     if (sizeof(curevent) && stringp(curevent[0])) {
-      multiset listeners = nsps[namespace][IEVENTS][curevent[0]];
+      multiset listeners = universe._nsps[namespace][IEVENTS][curevent[0]];
       if (listeners && sizeof(listeners)) {
         function(mixed ...:void) cachesendackcb = cackid >= 0 && sendackcb;
         function(mixed, function(mixed, mixed ...:void), string,
@@ -383,7 +390,7 @@ class Client {
   }
 
   private void unregister() {
-    array nsp = nsps[namespace];
+    array nsp = universe._nsps[namespace];
     if (nsp)
       nsp[ICLIENTS][this] = 0;
   }
@@ -416,9 +423,9 @@ class Client {
         case ERROR:
           SUSERERROR(data);				// Pass error up
         case CONNECT:
-          if (nsps[data]) {
+          if (universe._nsps[data]) {
             unregister();				// Old namespace
-            nsps[namespace = data][ICLIENTS][this] = 1;
+            universe._nsps[namespace = data][ICLIENTS][this] = 1;
             fetchcallbacks();
             state = RUNNING;
             send(CONNECT, namespace);			// Confirm namespace
@@ -468,7 +475,8 @@ class Client {
     closedown();
   }
 
-  protected void create(Protocols.EngineIO.Socket _con) {
+  protected void create(Universe _universe, Protocols.EngineIO.Socket _con) {
+    universe = _universe;
     conn = _con;
     fetchcallbacks();
     conn.set_callbacks(recv, closedown);
@@ -481,7 +489,7 @@ class Client {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%d,%d)",
-         sid, protocol, state, sizeof(nsps));
+         sid, protocol, state, sizeof(universe._nsps));
         break;
     }
     return res;
