@@ -187,6 +187,7 @@ protected Frame low_parse(Connection con, Stdio.Buffer buf) {
 #if constant(Gz.deflate)
     mapping options = con.options;
     if (options->compressionLevel && con.firstrsv & RSV1 && sizeof(data)) {
+        f->rsv &= ~RSV1;
         Gz.inflate uncompress = con.uncompress;
         if (!uncompress)
             uncompress = Gz.inflate(-options->decompressionWindowSize);
