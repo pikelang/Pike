@@ -1237,8 +1237,8 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct zipper);
 
-  /* function(int|void,int|void:void) */
-  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
+  /* function(int|void,int|void,int|void:void) */
+  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid),0);
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,int|void:string(8bit)) */
   ADD_FUNCTION("deflate",gz_deflate,tFunc(tOr(tStr8,tObj) tOr(tInt,tVoid),tStr8),0);
   ADD_FUNCTION("_size_object", gz_deflate_size, tFunc(tVoid,tInt), 0);
