@@ -69,7 +69,7 @@ final mapping options = ([
   "pingTimeout":		64*1000,	// Safe for NAT
   "pingInterval":		29*1000,	// Allows for jitter
 #if constant(Gz.deflate)
-  "compressionLevel":		1,
+  "compressionLevel":		3,
   "compressionStrategy":	Gz.DEFAULT_STRATEGY,
   "compressionThreshold":	256,		// Compress when size>=
   "compressionWindowSize":	15,		// LZ77 window 2^x (8..15)

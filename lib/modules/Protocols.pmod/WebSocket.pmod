@@ -93,7 +93,7 @@ enum COMPRESSION {
 //! Global default options for all WebSocket connections.
 mapping options = ([
 #if constant(Gz.deflate)
-    "compressionLevel":1,
+    "compressionLevel":3,
     "compressionThreshold":5,
     "compressionThresholdNoContext":256,
     "compressionStrategy":Gz.DEFAULT_STRATEGY,
