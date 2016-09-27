@@ -201,7 +201,7 @@ class Socket {
   }
 
   class Polling {
-    inherit Transport:t;
+    inherit Transport;
 
     private int forceascii;
     final protected Stdio.Buffer c = Stdio.Buffer();
@@ -255,7 +255,7 @@ class Socket {
       if (_options->compressionLevel)
         gzfile = Gz.File();
   #endif
-      t::create(_req);
+      ::create(_req);
       if (_req.request_headers.origin) {
         headers["Access-Control-Allow-Credentials"] = "true";
         headers["Access-Control-Allow-Origin"] = _req.request_headers.origin;
@@ -396,7 +396,7 @@ class Socket {
   }
 
   class XHR {
-    inherit Polling:p;
+    inherit Polling;
     constant forcebinary = 1;
 
     final protected void getbody(Protocols.WebSocket.Request _req) {
@@ -411,12 +411,12 @@ class Socket {
   }
 
   class JSONP {
-    inherit Polling:p;
+    inherit Polling;
 
     private string head;
 
     protected void create(Protocols.WebSocket.Request req) {
-      p::create(req);
+      ::create(req);
       head = "___eio[" + (int)req.variables->j + "](";
       noop = head+"\""+::noop+"\");";
     }
@@ -436,7 +436,7 @@ class Socket {
   }
 
   class WebSocket {
-    inherit Transport:t;
+    inherit Transport;
 
     private Protocols.WebSocket.Connection con;
     private Stdio.Buffer bb = Stdio.Buffer();
@@ -452,7 +452,7 @@ class Socket {
       con = _con;
       con.onmessage = recv;
       con.onclose = ::close;
-      t::create(req);
+      ::create(req);
     }
 
     final void flush(void|int type, void|string|Stdio.Buffer msg) {
