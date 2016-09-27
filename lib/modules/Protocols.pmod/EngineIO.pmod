@@ -166,6 +166,12 @@ class Socket {
   private enum {RUNNING = 0, PAUSED, SCLOSING, RCLOSING};
   private int state = RUNNING;
 
+  //! Set to any of @expr{Protocols.WebSocket.OVERRIDE_COMPRESS@}
+  //! or @expr{Protocols.WebSocket.OVERRIDE_SKIPCOMPRESS@}
+  //! to bypass of the compression heuristics on binary
+  //! frames in a WebSocket connection only.
+  final int skip_compression = .WebSocket.HEURISTICS_COMPRESS;
+
   class Transport {
     final function(int, void|string|Stdio.Buffer:void) read_cb;
     final protected int pingtimeout;
@@ -457,7 +463,14 @@ class Socket {
 
     final void flush(void|int type, void|string|Stdio.Buffer msg) {
       void sendit() {
-        con.send_text(sprintf("%c%s",type,stringp(msg) ? msg : msg->read()));
+        if (stringp(msg))
+          con.send_text(sprintf("%c%s", type, msg));
+        else {
+          .WebSocket.Frame f = .WebSocket.Frame(.WebSocket.FRAME_BINARY,
+           sprintf("%c%s", type - OPEN, msg->read()));
+          f.skip_compression = skip_compression;
+          con.send(f);
+        }
       };
       if (msg)
         sendit();
@@ -499,7 +512,7 @@ class Socket {
           read_cb(s[0], s[1..]);
         } else {
           int type = bb->read_int8();
-          read_cb(type, bb->read_buffer(sizeof(bb)));
+          read_cb(type + OPEN, bb->read_buffer(sizeof(bb)));
         }
     }
   }
@@ -682,7 +695,7 @@ class Socket {
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        conn = WebSocket(req, req.websocket_accept(0));
+        conn = WebSocket(req, req.websocket_accept(0, _options));
         break;
       case "polling":
         conn = req.variables.j ? JSONP(req) : XHR(req);
@@ -717,7 +730,7 @@ class Socket {
            "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
           return 0;
         case "websocket":
-          upgtransport = WebSocket(req, req.websocket_accept(0));
+          upgtransport = WebSocket(req, req.websocket_accept(0, _options));
           upgtransport.read_cb = upgrecv;
       }
   }
