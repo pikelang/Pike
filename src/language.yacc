@@ -94,6 +94,7 @@
 %token TOK_VARIANT
 %token TOK_VERSION
 %token TOK_VOID_ID
+%token TOK_WEAK
 %token TOK_WHILE
 %token TOK_XOR_EQ
 %token TOK_OPTIONAL
@@ -1136,6 +1137,7 @@ magic_identifiers1:
   | TOK_INLINE     { $$ = "inline"; }
   | TOK_OPTIONAL   { $$ = "optional"; }
   | TOK_VARIANT    { $$ = "variant"; }
+  | TOK_WEAK       { $$ = "__weak__"; }
   ;
 
 magic_identifiers2:
@@ -4402,6 +4404,8 @@ bad_expr_ident:
   { yyerror_reserved("optional"); }
   | TOK_VARIANT
   { yyerror_reserved("variant"); }
+  | TOK_WEAK
+  { yyerror_reserved("__weak__"); }
   | TOK_STATIC
   { yyerror_reserved("static"); }
   | TOK_EXTERN

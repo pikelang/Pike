@@ -627,6 +627,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
+	  if(ISWORD("__weak__"))
+	    return TOK_WEAK;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
