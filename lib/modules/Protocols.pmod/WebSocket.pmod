@@ -873,7 +873,9 @@ class Request(function(array(string), Request:void) cb) {
     //! handshake. The protocol should be either @expr{0@} or a protocol
     //! advertised by the client when initiating the WebSocket connection.
     //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol) {
+    Connection websocket_accept(string protocol, void|mapping _options) {
+        if (_options)
+            options += _options;
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
@@ -925,7 +927,7 @@ class Request(function(array(string), Request:void) cb) {
             switch (name) {
 #if constant(Gz.deflate)
                 case "permessage-deflate":
-                    if (rext[name])
+                    if (rext[name] || !options->compressionLevel)
                         continue;
                     if (parm->client_no_context_takeover
                      || options->decompressionNoContextTakeover) {
