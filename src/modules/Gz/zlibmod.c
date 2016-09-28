@@ -292,11 +292,12 @@ LVL_CHECK:
   }
 }
 
-/*! @decl Gz.deflate clone()
- *!
- *! Clones the deflate object.  Typically used to test compression
- *! of new content using the same exact state.
- *!
+#if 0
+/* @decl Gz.deflate clone()
+ *
+ * Clones the deflate object.  Typically used to test compression
+ * of new content using the same exact state.
+ *
  */
 static void gz_deflate_clone(INT32 args) {
   int tmp;
@@ -323,6 +324,7 @@ static void gz_deflate_clone(INT32 args) {
         Pike_error("Failed to clone Gz.deflate (%d).\n", tmp);
   }
 }
+#endif
 
 #ifdef _REENTRANT
 static void do_mt_unlock (PIKE_MUTEX_T *lock)
