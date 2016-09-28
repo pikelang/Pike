@@ -85,20 +85,18 @@ enum COMPRESSION {
     //!
     OVERRIDE_COMPRESS,
 
-    //!
-    OVERRIDE_SKIPCOMPRESS,
-
 };
 
 //! Global default options for all WebSocket connections.
-mapping options = ([
+mapping(string:mixed) options = ([
 #if constant(Gz.deflate)
     "compressionLevel":3,
     "compressionThreshold":5,
     "compressionThresholdNoContext":256,
     "compressionStrategy":Gz.DEFAULT_STRATEGY,
     "compressionWindowSize":15,
-    "decompressionWindowSize":15
+    "decompressionWindowSize":15,
+    "compressionHeuristics":HEURISTICS_COMPRESS,
 #endif
 ]);
 
@@ -219,10 +217,8 @@ class Frame {
     //! extension.  Typically @expr{RSV1@} is set for compressed frames.
     int rsv;
 
-    //! Set to any of @expr{OVERRIDE_COMPRESS@}
-    //! or @expr{OVERRIDE_SKIPCOMPRESS@}
-    //! to bypass of the compression heuristics.
-    int skip_compression = HEURISTICS_COMPRESS;
+    //! Generic options for this frame.
+    mapping(string:mixed) options;
 
     string mask;
 
@@ -655,19 +651,21 @@ class Connection {
             if (masking)
                 frame->mask = Crypto.Random.random_string(4);
 #if constant(Gz.deflate)
-            if (options->compressionLevel
-             && frame->compress != OVERRIDE_SKIPCOMPRESS
+            mapping(string:mixed) opts = options;
+            if (frame.options)
+              opts += frame.options;
+            if (opts->compressionLevel
              && sizeof(frame->data) >=
-                 (options->compressionNoContextTakeover
-                  ? options->compressionThresholdNoContext
-                  : options->compressionThreshold)) {
+                 (opts->compressionNoContextTakeover
+                  ? opts->compressionThresholdNoContext
+                  : opts->compressionThreshold)) {
                 if (!compress)
-                    compress = Gz.deflate(-options->compressionLevel,
-                     options->compressionStrategy,
-                     options->compressionWindowSize);
-                int wsize = options->compressionWindowSize
-                 ? 1<<options->compressionWindowSize : 1<<15;
-                if (options->compressionNoContextTakeover) {
+                    compress = Gz.deflate(-opts->compressionLevel,
+                     opts->compressionStrategy,
+                     opts->compressionWindowSize);
+                int wsize = opts->compressionWindowSize
+                 ? 1<<opts->compressionWindowSize : 1<<15;
+                if (opts->compressionNoContextTakeover) {
                     string s
                      = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
                     if (sizeof(s) < sizeof(frame->data)) {
@@ -676,7 +674,7 @@ class Connection {
                     }
                     compress = 0;
                 } else {
-                    if (frame->compress == OVERRIDE_COMPRESS
+                    if (opts->compressionHeuristics == OVERRIDE_COMPRESS
                      || frame->opcode == FRAME_TEXT) {
                         // Assume text frames are always compressible.
                         frame->data
@@ -760,8 +758,7 @@ class Request(function(array(string), Request:void) cb) {
     //! advertised by the client when initiating the WebSocket connection.
     //! The returned connection object is in state @[Connection.OPEN].
     Connection websocket_accept(string protocol, void|mapping _options) {
-        if (_options)
-            options += _options;
+        options += _options || ([]);
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
@@ -875,7 +872,7 @@ class Request(function(array(string), Request:void) cb) {
 
 	if (protocol) heads["Sec-WebSocket-Protocol"] = protocol;
 
-        Connection ws = Connection(my_fd);
+        Connection ws = Connection(my_fd, options);
         my_fd = 0;
 
         array a = allocate(1 + sizeof(heads));

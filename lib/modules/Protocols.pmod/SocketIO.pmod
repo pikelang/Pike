@@ -99,8 +99,9 @@ class Universe {
   //!
   //!Protocols.SocketIO.Universe myuniverse;
   //!
-  //!mixed echo(mixed id, string namespace, mixed ... data) {
-  //!  id->write(data);
+  //!mixed echo(mixed id, function sendack, string namespace, string event,
+  //! mixed ... data) {
+  //!  id->emit(event, @data);
   //!  if (sendack)
   //!    sendack("Ack","me","harder");
   //!}
@@ -114,7 +115,7 @@ class Universe {
   //!    case "/socket.io/":
   //!      Protocols.SocketIO.Client client = myuniverse.farm(req);
   //!      if (client)
-  //!        client->write("Hello world!");
+  //!        client->emit("Hello world!");
   //!      break;
   //!  }
   //!}
@@ -163,7 +164,7 @@ class Universe {
   //! Having a default worker per namespace in addition zero or more
   //! event specific ones, is supported.
   variant void register(string namespace, string event,
-   void|function(mixed, void|function(mixed ...:void),
+   void|function(mixed, function(mixed ...:void),
      string, string, mixed ...:mixed) fn) {
     low_register(namespace, event, fn);
   }
@@ -199,7 +200,7 @@ class Universe {
   //!
   mixed read(string namespace, mixed id,
    function(mixed ...:void) sendackcb, mixed ... data) {
-    string|function(mixed, void|function(mixed ...:void),
+    string|function(mixed, function(mixed ...:void),
      string, mixed ...:void) fn;
     if (!functionp(fn = lookupcb(namespace, data)))
       return fn;
@@ -250,42 +251,39 @@ class Client {
     return conn.request;
   }
 
-  //!
-  final int `skip_compression() {
-    return conn.skip_compression;
-  }
-
-  //! Set to any of @expr{Protocols.WebSocket.OVERRIDE_COMPRESS@}
-  //! or @expr{Protocols.WebSocket.OVERRIDE_SKIPCOMPRESS@}
-  //! to bypass of the compression heuristics on binary
-  //! frames in a WebSocket connection only.
-  final int `skip_compression=(int i) {
-    return conn.skip_compression = i;
-  }
-
-  //! Send text or binary messages.
-  final void write(mixed|function(mixed, mixed ...:void) ack_cb,
-   mixed ... data) {
+  //! Send text or binary messages to the client.  When in doubt
+  //! use the emit() interface instead.  write() allows messages
+  //! to be sent which do not have a string event-name up front.
+  final void write(array data,
+   void|function(mixed, mixed ...:void) ack_cb,
+   void|mapping(string:mixed) options) {
     if (state >= SDISCONNECT)
       DUSERERROR("Socket already shutting down");
-    if (functionp(ack_cb))
-      send(EVENT, data, ack_cb);
-    else
-      send(EVENT, ({ack_cb}) + data);
+    send(EVENT, data, ack_cb, options);
   }
 
-  //! Send text or binary events.
+  //! Send text or binary events to the client.
   final variant void emit(function(mixed, mixed ...:void) ack_cb,
    string event, mixed ... data) {
-    write(ack_cb, event, @data);
+    write(({event}) + data, ack_cb);
   }
   final variant void emit(string event, mixed ... data) {
-    write(event, @data);
+    write(({event}) + data);
+  }
+  final variant void emit(function(mixed, mixed ...:void) ack_cb,
+   mapping(string:mixed) options, string event, mixed ... data) {
+    write(({event}) + data, ack_cb, options);
+  }
+  final variant void emit(mapping(string:mixed) options,
+   string event, mixed ... data) {
+    write(({event}) + data, 0, options);
   }
 
   private void send(int type, void|string|array data,
-   void|int|function(mixed, mixed ...:void) ack_cb) {
-    PD("Send %s %d %c:%O\n", sid, intp(ack_cb)?ack_cb:-1, type, data);
+   void|int|function(mixed, mixed ...:void) ack_cb,
+   void|mapping(string:mixed) _options) {
+    PD("Send %s %d %c:%O %O\n", sid, intp(ack_cb)?ack_cb:-1, type, data,
+     _options);
     array sbins = emptyarray;
     int cackid;
 
@@ -318,7 +316,7 @@ class Client {
         data = sprintf("%c%d-%s", type, sizeof(sbins), data);
       else
         data = sprintf("%c%d-%d%s", type, sizeof(sbins), cackid, data);
-      conn.write(@(({data}) + sbins));
+      conn.write(_options, @(({data}) + sbins));
     } else {
       if (!data)
         data = "";
@@ -326,7 +324,7 @@ class Client {
         data = sprintf("%c%s", type, data);
       else
         data = sprintf("%c%d%s", type, cackid, data);
-      conn.write(data);
+      conn.write(_options, data);
     }
   }
 

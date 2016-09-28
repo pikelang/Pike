@@ -69,12 +69,13 @@ final mapping options = ([
   "pingTimeout":		64*1000,	// Safe for NAT
   "pingInterval":		29*1000,	// Allows for jitter
 #if constant(Gz.deflate)
-  "compressionLevel":		3,
+  "compressionLevel":		3,		// Setting to zero disables.
   "compressionStrategy":	Gz.DEFAULT_STRATEGY,
   "compressionThreshold":	256,		// Compress when size>=
   "compressionWindowSize":	15,		// LZ77 window 2^x (8..15)
+  "compressionHeuristics":	.WebSocket.HEURISTICS_COMPRESS,
 #endif
-  "allowUpgrades":		1
+  "allowUpgrades":		1,
 ]);
 
 //! Engine.IO protocol version.
@@ -166,12 +167,6 @@ class Socket {
   private enum {RUNNING = 0, PAUSED, SCLOSING, RCLOSING};
   private int state = RUNNING;
 
-  //! Set to any of @expr{Protocols.WebSocket.OVERRIDE_COMPRESS@}
-  //! or @expr{Protocols.WebSocket.OVERRIDE_SKIPCOMPRESS@}
-  //! to bypass of the compression heuristics on binary
-  //! frames in a WebSocket connection only.
-  final int skip_compression = .WebSocket.HEURISTICS_COMPRESS;
-
   class Transport {
     final function(int, void|string|Stdio.Buffer:void) read_cb;
     final protected int pingtimeout;
@@ -222,21 +217,24 @@ class Socket {
     protected string noop;
 
     protected void getbody(Protocols.WebSocket.Request _req);
-    protected void wrapfinish(Protocols.WebSocket.Request req, string body);
+    protected void wrapfinish(Protocols.WebSocket.Request req, string body,
+     mapping(string:mixed) options);
 
-    protected void respfinish(Protocols.WebSocket.Request req,
-     void|string body, void|string mimetype) {
+    protected void respfinish(Protocols.WebSocket.Request req, string body,
+     int isbin, mapping(string:mixed) options) {
       mapping|string comprheads;
-      if (!body)
-        body = noop;
+      if (!sizeof(body))
+        body = noop;			// Engine.IO does not like empty frames
   #if constant(Gz.deflate)
-      if (gzfile && sizeof(body) >= _options->compressionThreshold
+      if (gzfile
+       && options->compressionLevel>0
+       && sizeof(body) >= options->compressionThreshold
        && (comprheads = req.request_headers["accept-encoding"])
        && acceptgzip.match(comprheads)) {
         Stdio.FakeFile f = Stdio.FakeFile("", "wb");
         gzfile.open(f, "wb");
-        gzfile.setparams(_options->compressionLevel,
-         _options->compressionStrategy, _options->compressionWindowSize);
+        gzfile.setparams(options->compressionLevel,
+         options->compressionStrategy, options->compressionWindowSize);
         gzfile.write(body);
         gzfile.close();
         comprheads = headers;
@@ -249,7 +247,7 @@ class Socket {
         comprheads = headers;
       req.response_and_finish(([
        "data":body,
-       "type":mimetype||"text/plain;charset=UTF-8",
+       "type":isbin ? "application/octet-stream" : "text/plain;charset=UTF-8",
        "extra_heads":comprheads]));
     }
 
@@ -362,15 +360,23 @@ class Socket {
           lock = 0;
           array m;
           int anybinary = 0;
+          mapping(string:mixed) options = _options;
           if (forcebinary && !forceascii)
             foreach (tosend;; m)
-              if (!stringp(m[1])) {
+              if (sizeof(m)>=2 && !stringp(m[1])) {
                 anybinary = 1;
                 break;
               }
           foreach (tosend;; m) {
             type = m[0];
-            msg = m[1];
+            msg = "";
+            switch(sizeof(m)) {
+              case 3:
+                if (m[2])
+                  options += m[2];
+              case 2:
+                msg = m[1] || "";
+            }
             if (!anybinary && stringp(msg)) {
                if (String.width(msg) > 8)
                  msg = string_to_utf8(msg);
@@ -393,7 +399,7 @@ class Socket {
             c->add_int8(type)->add(msg);
           }
           if (sizeof(c))
-            wrapfinish(myreq, c->read());
+            wrapfinish(myreq, c->read(), options);
           sendqempty();
         } else
           lock = 0;
@@ -410,9 +416,9 @@ class Socket {
     }
 
     final protected
-     void wrapfinish(Protocols.WebSocket.Request req, string body) {
-      respfinish(req, body, String.range(body)[1]==0xff
-       ? "application/octet-stream" : 0);
+     void wrapfinish(Protocols.WebSocket.Request req, string body,
+      mapping(string:mixed) options) {
+      respfinish(req, body, String.range(body)[1]==0xff, options);
     }
   }
 
@@ -435,9 +441,10 @@ class Socket {
     }
 
     final protected
-     void wrapfinish(Protocols.WebSocket.Request req, string body) {
+     void wrapfinish(Protocols.WebSocket.Request req, string body,
+      mapping(string:mixed) options) {
       c->add(head)->add(Standards.JSON.encode(body))->add(");");
-      respfinish(req, c->read());
+      respfinish(req, c->read(), 0, options);
     }
   }
 
@@ -462,25 +469,33 @@ class Socket {
     }
 
     final void flush(void|int type, void|string|Stdio.Buffer msg) {
+      mapping(string:mixed) options;
       void sendit() {
-        if (stringp(msg))
-          con.send_text(sprintf("%c%s", type, msg));
-        else {
-          .WebSocket.Frame f = .WebSocket.Frame(.WebSocket.FRAME_BINARY,
-           sprintf("%c%s", type - OPEN, msg->read()));
-          f.skip_compression = skip_compression;
-          con.send(f);
-        }
+        .WebSocket.Frame f = stringp(msg)
+         ? .WebSocket.Frame(.WebSocket.FRAME_TEXT, sprintf("%c%s", type, msg))
+         : .WebSocket.Frame(.WebSocket.FRAME_BINARY,
+            sprintf("%c%s", type - OPEN, msg->read()));
+        f.options += options;
+        con.send(f);
       };
-      if (msg)
+      if (msg) {
+        options = _options;
         sendit();
-      else {
+      } else {
         array tosend;
         while (sizeof(tosend = sendq.try_read_array())) {
           array m;
           foreach (tosend;; m) {
+            options = _options;
             type = m[0];
-            msg = m[1];
+            msg = "";
+            switch(sizeof(m)) {
+              case 3:
+                if (m[2])
+                  options += m[2];
+              case 2:
+                msg = m[1] || "";
+            }
             sendit();
           }
         }
@@ -539,12 +554,13 @@ class Socket {
   }
 
   //! Send text @[string] or binary @[Stdio.Buffer] messages.
-  final void write(string|Stdio.Buffer ... msgs) {
+  final void write(mapping(string:mixed) options,
+   string|Stdio.Buffer ... msgs) {
     if (state >= SCLOSING)
       DUSERERROR("Socket already shutting down");
     foreach (msgs;; string|Stdio.Buffer msg) {
       PD("Queue %s %c:%O\n", sid, MESSAGE, (string)msg);
-      sendq.write(({MESSAGE, msg}));
+      sendq.write(({MESSAGE, msg, options}));
     }
     if (state == RUNNING)
       flush();
@@ -552,7 +568,7 @@ class Socket {
 
   private void send(int type, void|string|Stdio.Buffer msg) {
     PD("Queue %s %c:%O\n", sid, type, (string)(msg || ""));
-    sendq.write(({type, msg || ""}));
+    sendq.write(({type, msg}));
     switch (state) {
       case RUNNING:
       case SCLOSING:
