@@ -1422,19 +1422,19 @@ enum Extension {
 };
 
 constant ECC_CURVES = ([
-#if constant(Crypto.ECC.SECP_192R2)
+#if constant(Crypto.ECC.SECP_192R1)
   GROUP_secp192r1: Crypto.ECC.SECP_192R1,
 #endif
-#if constant(Crypto.ECC.SECP_224R2)
+#if constant(Crypto.ECC.SECP_224R1)
   GROUP_secp224r1: Crypto.ECC.SECP_224R1,
 #endif
-#if constant(Crypto.ECC.SECP_256R2)
+#if constant(Crypto.ECC.SECP_256R1)
   GROUP_secp256r1: Crypto.ECC.SECP_256R1,
 #endif
-#if constant(Crypto.ECC.SECP_384R2)
+#if constant(Crypto.ECC.SECP_384R1)
   GROUP_secp384r1: Crypto.ECC.SECP_384R1,
 #endif
-#if constant(Crypto.ECC.SECP_521R2)
+#if constant(Crypto.ECC.SECP_521R1)
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 ]);
