@@ -1129,19 +1129,19 @@ constant EXTENSION_old_padding                  = 35655;
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 
 constant ECC_CURVES = ([
-#if constant(Crypto.ECC.SECP_192R2)
+#if constant(Crypto.ECC.SECP_192R1)
   CURVE_secp192r1: Crypto.ECC.SECP_192R1,
 #endif
-#if constant(Crypto.ECC.SECP_224R2)
+#if constant(Crypto.ECC.SECP_224R1)
   CURVE_secp224r1: Crypto.ECC.SECP_224R1,
 #endif
-#if constant(Crypto.ECC.SECP_256R2)
+#if constant(Crypto.ECC.SECP_256R1)
   CURVE_secp256r1: Crypto.ECC.SECP_256R1,
 #endif
-#if constant(Crypto.ECC.SECP_384R2)
+#if constant(Crypto.ECC.SECP_384R1)
   CURVE_secp384r1: Crypto.ECC.SECP_384R1,
 #endif
-#if constant(Crypto.ECC.SECP_521R2)
+#if constant(Crypto.ECC.SECP_521R1)
   CURVE_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 ]);
