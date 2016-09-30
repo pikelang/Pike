@@ -292,11 +292,11 @@ LVL_CHECK:
   }
 }
 
-/* @decl Gz.deflate clone()
- *
- * Clones the deflate object.  Typically used to test compression
- * of new content using the same exact state.
- *
+/*! @decl Gz.deflate clone()
+ *!
+ *! Clones the deflate object.  Typically used to test compression
+ *! of new content using the same exact state.
+ *!
  */
 static void gz_deflate_clone(INT32 args) {
   int tmp;
