@@ -213,9 +213,9 @@ static ptrdiff_t low_cpp(struct cpp *this,
                        *       avoid being counted twice.
                        */
                       if(DATA(pos-2)!='#') {
-                        FIND_END_OF_STRING();
+                        FIND_END_OF_STRING(CPP_END_AT_NEWLINE);
                       }else{
-                        FIND_END_OF_STRING2();  /* Newlines allowed */
+                        FIND_END_OF_STRING(0);  /* Newlines allowed */
                       }
                       continue;
 
