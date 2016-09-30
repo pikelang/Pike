@@ -1315,7 +1315,6 @@ static ptrdiff_t find_end_of_string( struct cpp *this, const PCHARP data,
 
 static ptrdiff_t find_end_of_char( struct cpp *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos)
 {
-  int e=0;
   while(1)
   {
     if(pos>=len)
