@@ -22,10 +22,10 @@
 //!  data.
 //! @endul
 //!
-//! The driver uses @[Protocol.EngineIO] as the underlying protocol.
+//! The driver uses @[Protocols.EngineIO] as the underlying protocol.
 //!
 //! @seealso
-//!  @[Protocol.EngineIO], @[Protocol.WebSocket],
+//!  @[Protocols.EngineIO], @[Protocols.WebSocket],
 //!  @url{http://github.com/socketio/socket.io-protocol@},
 //!  @url{http://socket.io/@}
 
@@ -89,43 +89,44 @@ class Universe {
   //! All SocketIO sessions in this universe.
   final multiset(object) clients = (<>);
 
-  //! @param _options
-  //! Optional options to override the defaults.
-  //! This parameter is passed down as is to the underlying
-  //!  @[EngineIO.Socket].
+
+  //! @param options
+  //!  Optional options to override the defaults.
+  //!  This parameter is passed down as is to the underlying @[EngineIO.Socket].
   //!
   //! @example
   //! Sample minimal implementation of a SocketIO server farm:
+  //! @code
+  //! Protocols.SocketIO.Universe myuniverse;
   //!
-  //!Protocols.SocketIO.Universe myuniverse;
+  //! mixed echo(mixed id, function sendack, string namespace, string event,
+  //!  mixed ... data) {
+  //!   id->emit(event, @@data);
+  //!   if (sendack)
+  //!     sendack("Ack","me","harder");
+  //! }
   //!
-  //!mixed echo(mixed id, function sendack, string namespace, string event,
-  //! mixed ... data) {
-  //!  id->emit(event, @data);
-  //!  if (sendack)
-  //!    sendack("Ack","me","harder");
-  //!}
+  //! void wsrequest(array(string) protocols, object req) {
+  //!   httprequest(req);
+  //! }
   //!
-  //!void wsrequest(array(string) protocols, object req) {
-  //!  httprequest(req);
-  //!}
+  //! void httprequest(object req) {
+  //!   switch (req.not_query) {
+  //!     case "/socket.io/":
+  //!       Protocols.SocketIO.Client client = myuniverse.farm(req);
+  //!       if (client)
+  //!         client->emit("Hello world!");
+  //!       break;
+  //!   }
+  //! }
   //!
-  //!void httprequest(object req) {
-  //!  switch (req.not_query) {
-  //!    case "/socket.io/":
-  //!      Protocols.SocketIO.Client client = myuniverse.farm(req);
-  //!      if (client)
-  //!        client->emit("Hello world!");
-  //!      break;
-  //!  }
-  //!}
-  //!
-  //!int main(int argc, array(string) argv) {
-  //!  myuniverse = Protocols.SocketIO.Universe(); // Create universe
-  //!  myuniverse.register("", echo); // Register root namespace
-  //!  Protocols.WebSocket.Port(httprequest, wsrequest, 80);
-  //!  return -1;
-  //!}
+  //! int main(int argc, array(string) argv) {
+  //!   myuniverse = Protocols.SocketIO.Universe(); // Create universe
+  //!   myuniverse.register("", echo); // Register root namespace
+  //!   Protocols.WebSocket.Port(httprequest, wsrequest, 80);
+  //!   return -1;
+  //! }
+  //! @endcode
   //!
   //! @seealso
   //!  @[EngineIO.farm()]

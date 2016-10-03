@@ -7,15 +7,15 @@
 //! communication's protocol for communicating between a webbrowser
 //! and a server.
 //! 
-//! The driver mainly is a wrapper around @[Protocol.WebSocket] with
+//! The driver mainly is a wrapper around @[Protocols.WebSocket] with
 //! the addition of two fallback mechanisms that work around limitations
 //! imposed by firewalls and/or older browsers that prevent native
-//! @[Protocol.WebSocket] connections from functioning.
+//! @[Protocols.WebSocket] connections from functioning.
 //!
 //! This module supports the following features:
 //! @ul
 //! @item It supports both UTF-8 and binary packets.
-//! @item If both sides support @[Protocol.WebSocket], then
+//! @item If both sides support @[Protocols.WebSocket], then
 //!  packet sizes are essentially unlimited.
 //!  The fallback methods have a limit on packet sizes from browser
 //!  to server, determined by the maximum POST request size the involved
@@ -26,7 +26,7 @@
 //! one uses Socket.IO instead.
 //! 
 //! @seealso
-//!  @[Protocol.SocketIO], @[Protocol.WebSocket],
+//!  @[Protocols.SocketIO], @[Protocols.WebSocket],
 //!  @url{http://github.com/socketio/engine.io-protocol@},
 //!  @url{http://socket.io/@}
 
@@ -100,31 +100,32 @@ private Regexp xxsua = Regexp(";MSIE|Trident/");
 //!
 //! @example
 //! Sample minimal implementation of an EngineIO server farm:
+//! @code
+//! void echo(mixed id, string|Stdio.Buffer msg) {
+//!   id->write(msg);
+//! }
 //!
-//!void echo(mixed id, string|Stdio.Buffer msg) {
-//!  id->write(msg);
-//!}
+//! void wsrequest(array(string) protocols, object req) {
+//!   httprequest(req);
+//! }
 //!
-//!void wsrequest(array(string) protocols, object req) {
-//!  httprequest(req);
-//!}
+//! void httprequest(object req)
+//! { switch (req.not_query)
+//!   { case "/engine.io/":
+//!       Protocols.EngineIO.Socket client = Protocols.EngineIO.farm(req);
+//!       if (client) {
+//!         client.set_callbacks(echo);
+//!         client.write("Hello world!");
+//!       }
+//!       break;
+//!   }
+//! }
 //!
-//!void httprequest(object req)
-//!{ switch (req.not_query)
-//!  { case "/engine.io/":
-//!      Protocols.EngineIO.Socket client = Protocols.EngineIO.farm(req);
-//!      if (client) {
-//!        client.set_callbacks(echo);
-//!        client.write("Hello world!");
-//!      }
-//!      break;
-//!  }
-//!}
-//!
-//!int main(int argc, array(string) argv)
-//!{ Protocols.WebSocket.Port(httprequest, wsrequest, 80);
-//!  return -1;
-//!}
+//! int main(int argc, array(string) argv)
+//! { Protocols.WebSocket.Port(httprequest, wsrequest, 80);
+//!   return -1;
+//! }
+//! @endcode
 //!
 //! @seealso
 //!  @[Socket.create()]
@@ -687,13 +688,13 @@ class Socket {
   //! @mapping
   //!   @member int "pingTimeout"
   //!     If, the connection is idle for longer than this, the connection
-  //!     is terminated, unit in @expr{ms}.
+  //!     is terminated, unit in @expr{ms@}.
   //!   @member int "pingInterval"
   //!     The browser-client will send a small ping message every
-  //!     @expr{pingInterval ms}.
+  //!     @expr{pingInterval ms@}.
   //!   @member int "allowUpgrades"
-  //!     When @expr{true} (default), it allows the server to upgrade
-  //!     the connection to a real @[Protocol.WebSocket] connection.
+  //!     When @expr{true@} (default), it allows the server to upgrade
+  //!     the connection to a real @[Protocols.WebSocket] connection.
   //!   @member int "compressionLevel"
   //!     The gzip compressionlevel used to compress packets.
   //!   @member int "compressionThreshold"
