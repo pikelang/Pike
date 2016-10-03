@@ -35,7 +35,17 @@
 //! });
 //! @endcode
 
-//#define HTTP_PROMISE_DEBUG
+// #define HTTP_PROMISE_DESTRUCT_DEBUG
+// #define HTTP_PROMISE_DEBUG
+
+#ifdef HTTP_PROMISE_DESTRUCT_DEBUG
+# define PROMISE_DESTRUCTOR                           \
+  void destroy() {                                    \
+    werror("%O().destroy()\n", object_program(this)); \
+  }
+#else
+# define PROMISE_DESTRUCTOR
+#endif
 
 #ifdef HTTP_PROMISE_DEBUG
 # define TRACE(X...)werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
@@ -154,7 +164,7 @@ public Concurrent.Future do_method(string http_method,
                          lambda (Result fail) {
                            p->failure(fail);
                          },
-                         ({}));
+                         args->extra_args || ({}));
   return p->future();
 }
 
@@ -181,6 +191,9 @@ class Arguments
   //! Should redirects be followed. Default is @tt{true@}.
   bool follow_redirects = true;
 
+  //! Extra arguments that will end up in the @[Result] object
+  array(mixed) extra_args;
+
   //! If @[args] is given the indices that match any of this object's
   //! members will set those object members to the value of the
   //! corresponding mapping member.
@@ -204,6 +217,8 @@ class Arguments
       }
     }
   }
+
+  PROMISE_DESTRUCTOR
 }
 
 
@@ -250,6 +265,12 @@ class Result
     return result->status_desc;
   }
 
+  //! Extra arguments set in the @[Arguments] object.
+  public array(mixed) `extra_args()
+  {
+    return result->extra_args;
+  }
+
   //! @ignore
   protected void create(mapping _result)
   {
@@ -257,6 +278,8 @@ class Result
     result = _result;
   }
   //! @endignore
+
+  PROMISE_DESTRUCTOR
 }
 
 
@@ -345,6 +368,13 @@ protected class Session
   {
     inherit parent::Request;
 
+    protected void set_extra_args_in_result(mapping(string:mixed) r)
+    {
+      if (extra_callback_arguments && sizeof(extra_callback_arguments) > 1) {
+        r->extra_args = extra_callback_arguments[1..];
+      }
+    }
+
     protected void async_fail(object q)
     {
       mapping ret = ([
@@ -354,6 +384,8 @@ protected class Session
         "headers"     : copy_value(q->headers),
         "url"         : url_requested
       ]);
+
+      set_extra_args_in_result(ret);
 
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
@@ -411,6 +443,8 @@ protected class Session
         "url"         : url_requested
       ]);
 
+      set_extra_args_in_result(ret);
+
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
@@ -420,6 +454,8 @@ protected class Session
 
       extra_callback_arguments = 0;
     }
+
+    PROMISE_DESTRUCTOR
   }
 
 
@@ -429,15 +465,17 @@ protected class Session
 
     protected void create()
     {
-#if constant (this::maxtime)
-        if (Session::maxtime) {
-          this::maxtime = Session::maxtime;
-        }
-#endif
+      if (Session::maxtime) {
+        this::maxtime = Session::maxtime;
+      }
 
       if (Session::timeout) {
         this::timeout = Session::timeout;
       }
     }
+
+    PROMISE_DESTRUCTOR
   }
+
+  PROMISE_DESTRUCTOR
 }
