@@ -1500,43 +1500,40 @@ int low_main(string doc_file, string template_file, string outdir,
     werror("Splitting to destination directory %s...\n", outdir);
 
   TopNode top = TopNode(doc);
+
+  string js_constants = sprintf(
+    "PikeDoc.VERSION = '%s';\n"
+    "PikeDoc.PUBDATE = '%s';\n"
+    "PikeDoc.GENERATED = %d;\n",
+    top->pike_version,
+    top->timestamp,
+    time());
+
+  if (exporter) {
+    exporter->filemodify(Git.MODE_FILE, outdir + "/constants.js");
+    exporter->data(js_constants);
+  } else {
+    Stdio.mkdirhier(outdir);
+    Stdio.write_file(outdir + "/constants.js", js_constants);
+  }
+
   if (flags & Tools.AutoDoc.FLAG_NO_DYNAMIC) {
     // Attempt to keep down the number of changed files by
-    // using a client-sice include for the version and date.
-    string pike_version_js =
-      sprintf("PikeDoc.VERSION = '%s';\n", top->pike_version);
-    string timestamp_js =
-      sprintf("PikeDoc.PUBDATE = '%s';\n", top->timestamp);
-    if (exporter) {
-      exporter->filemodify(Git.MODE_FILE, outdir + "/pike_version.js");
-      exporter->data(pike_version_js);
-      exporter->filemodify(Git.MODE_FILE, outdir + "/timestamp.js");
-      exporter->data(timestamp_js);
-    } else {
-      Stdio.mkdirhier(outdir);
-      Stdio.write_file(outdir + "/pike_version.js", pike_version_js);
-      Stdio.write_file(outdir + "/timestamp.js", timestamp_js);
-    }
-
-    // Reduce updating of all files to once a year and when the language
-    // changes name.
-    string product_name = "Pike";
-    sscanf(top->pike_version, "%[^0-9 _]", product_name);
-    int year = localtime(time())->year + 1900;
-    sscanf(top->timestamp, "%d-", year);
-
+    // using a client-side include for the version and date.
     template = replace(template,
-                       ([ "$version_js$":"<script src='$dotdot$pike_version.js'></script>",
-                          "$date_js$":"<script src='$dotdot$timestamp.js'></script>",
+                       ([ "$constants$":"<script src='$dotdot$constants.js'></script>",
                           "$version$":"",
-                          "$date$":""
+                          "$date$":"",
+                          "$generated$":"",
+                          "$nodynamic$":""
                        ]) );
   } else {
     template = replace(template,
-                       ([ "$version$":top->pike_version,
+                       ([ "$constants$":"<script src='$dotdot$constants.js'></script>",
+                          "$version$":top->pike_version,
                           "$date$":top->timestamp,
-                          "$version_js$":"",
-                          "$date_js$":""
+                          "$generated$":time()+"",
+                          "$nodynamic$":"<script>PikeDoc.NO_DYNAMIC = false;</script>"
                        ]) );
   }
 

@@ -55,6 +55,14 @@ low_modref:
           eye-slash.svg; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
+devel:
+	@cp structure/modref.css $(DESTDIR)modref/style.css
+	@cp structure/modref.js $(DESTDIR)modref/site.js
+	@for file in pike-logo.svg pike-logo.png next.gif prev.gif unit.gif \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif \
+          eye-slash.svg; do \
+	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
+
 pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
 	        presentation/make_html.pike presentation/tree-split-autodoc.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_pelix_modref

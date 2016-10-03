@@ -14,6 +14,10 @@ if (!window.console) {
 (function(window, document) {
 'use strict';
 
+var doDebug = false;
+var isdebug = document.location.search.indexOf('debug=1') > -1 || doDebug;
+var wdebug  = isdebug ? window.console.log : function(){};
+
 // The scroll position at which the navbar sticks. This actually gets
 // calculated dynamically upon page load.
 var stickyScrollBreak = 70,
@@ -63,7 +67,7 @@ function hideTopLink() {
 
 // Called when DOM is ready
 function onPageLoad() {
-  var versionElems, dateElems, i, tmp;
+  var versionElems, dateElems, i, max;
 
   maybeHideNavbox();
   navbar       = document.getElementsByClassName('navbar')[0];
@@ -77,26 +81,22 @@ function onPageLoad() {
   burger       = document.getElementById('burger');
 
   // When the doc is compiled with FLAG_NO_DYNAMIC the version and publish date
-  // will not be written to the pages but inserted with JS. If the VERSION
-  // symbol exists we need to put the version and pubdate in the elements with
+  // will not be written to the pages but inserted with JS. If the NO_DYNAMIC
+  // symbol is true we need to put the version and pubdate in the elements with
   // attributes data-id="version" and data-id="date".
-  if (PikeDoc.VERSION) {
+  if (PikeDoc.NO_DYNAMIC) {
     versionElems = document.querySelectorAll('[data-id="version"]');
     dateElems = document.querySelectorAll('[data-id="date"]');
+    max = Math.max(versionElems.length, dateElems.length);
 
-    for (i = 0; i < versionElems.length; i++) {
-      versionElems[i].innerHTML = PikeDoc.VERSION;
+    for (i = 0; i < max; i++) {
+      if (versionElems[i] !== undefined) {
+        versionElems[i].innerHTML = PikeDoc.VERSION;
+      }
+      if (dateElems[i] !== undefined) {
+        dateElems[i].innerHTML = PikeDoc.PUBDATE;
+      }
     }
-
-    for (i = 0; i < dateElems.length; i++) {
-      dateElems[i].innerHTML = PikeDoc.PUBDATE;
-    }
-  }
-  else {
-    tmp = document.querySelector('[data-id="version"]');
-    PikeDoc.VERSION = tmp.textContent;
-    tmp = document.querySelector('[data-id="date"]');
-    PikeDoc.PUBDATE = tmp.textContent;
   }
 
   stickyScrollBreak = headerHeight;
@@ -217,11 +217,7 @@ var cacheFactory = (function() {
       return true;
     }
 
-    if (!cache) {
-      return false;
-    }
-
-    if (isChecked && !m) {
+    if (!cache || (isChecked && !m)) {
       return false;
     }
 
@@ -235,30 +231,19 @@ var cacheFactory = (function() {
         isChecked = false;
         cache.removeItem(PikeDoc.current.link);
       }
+
       return ok;
     }
-    return false;
 
+    return false;
   }
 
   function validateDate(time) {
-    var t = PikeDoc.PUBDATE;
-    // window.console.log('PUBDATE: ', t);
-    if (!t) {
-      t = new Date();
-      // Cache for one day
-      t.setTime(Date.now() - (3600*1000)*24);
-      return t < new Date(time);
-    }
-
     return getPubDate() < new Date(time);
   }
 
   function getPubDate() {
-    if (PikeDoc.PUBDATE) {
-      return new Date(Date.parse(PikeDoc.PUBDATE));
-    }
-    return new Date();
+    return new Date(PikeDoc.GENERATED*1000);
   }
 
   function store() {
@@ -464,7 +449,7 @@ PikeDoc = (function() {
   var scriptQueue = 0;
 
   function loadScript(link, namespace, inherits) {
-    //window.console.log('load: ', link);
+    wdebug('load: ', link);
     if (cacheFactory.hasCache()) {
       return;
     }
@@ -473,11 +458,11 @@ PikeDoc = (function() {
 
     // Already loaded
     if (jsMap[link]) {
-      //window.console.log('Already loaded: ', link);
+      wdebug('Already loaded: ', link);
       return;
     }
 
-    // window.console.log('+++ Load:', link);
+    wdebug('+++ Load:', link);
 
     jsMap[link] = true;
 
@@ -564,7 +549,7 @@ PikeDoc = (function() {
     var old = innerNavbar.querySelectorAll('.sidebar');
     var i, tmp;
     if (old.length) {
-      // window.console.log('Clear cached menu and regenerate', old);
+      wdebug('Clear cached menu and regenerate', old);
       for (i = 0; i < old.length; i++) {
         tmp = old[i];
         tmp.parentNode.removeChild(tmp);
@@ -587,7 +572,7 @@ PikeDoc = (function() {
   }
 
   function maybeRenderNavbar() {
-    //window.console.log('maybeRenderNavbar(', isAllLoaded, isDomReady, scriptQueue, ')');
+    wdebug('maybeRenderNavbar(', isAllLoaded, isDomReady, scriptQueue, ')');
     if (isAllLoaded && isDomReady && scriptQueue === 0) {
       navbar();
       requestAnimationFrame(function() {
@@ -645,9 +630,12 @@ PikeDoc = (function() {
     domReady:       domReady,
     isInline:       isInline,
     current:        current,
-    finish:         finish,
+    finish:         finish
   };
-
 }());
+
+// This is explicitly set to false in the HTML page if the docs are generated
+// with inlined Pike version and timestamp.
+PikeDoc.FLAG_NO_DYNAMIC = true;
 
 }(window, document));
