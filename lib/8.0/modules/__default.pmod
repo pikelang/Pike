@@ -90,6 +90,7 @@ protected Mapping.ShadowedMapping compat_all_constants =
 			    "_refs": Debug.refs,
                             "_next": Debug.next,
                             "_prev": Debug.prev,
+			    "hash": hash_8_0,
                             "next_object": Debug.next_object,
 			    "all_constants": all_constants,
                             "master": master,
