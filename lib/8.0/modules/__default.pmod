@@ -82,8 +82,12 @@ protected Mapping.ShadowedMapping compat_all_constants =
 #if constant(Debug.HAVE_DEBUG)
 			    "_assembler_debug": Debug.assembler_debug,
 			    "_debug": Debug.debug,
+			    "_describe": Debug.describe,
+			    "_dump_backlog": Debug.dump_backlog,
 			    "_dump_program_tables": Debug.dump_program_tables,
+			    "_gc_set_watch": Debug.gc_set_watch,
 			    "_leak": Debug.leak,
+			    "_locate_references": Debug.locate_references,
 			    "_optimizer_debug": Debug.optimizer_debug,
 #endif /* Debug.HAVE_DEBUG */
 			    "_map_all_objects": Debug.map_all_objects,
