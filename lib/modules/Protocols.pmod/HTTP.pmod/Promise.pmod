@@ -5,10 +5,22 @@
 //!
 //! @example
 //! @code
-//! Concurrent.Future q1 = Protocols.HTTP.Promise.get_url("http://www.roxen.com");
-//! Concurrent.Future q2 = Protocols.HTTP.Promise.get_url("http://www.google.com");
+//! Protocols.HTTP.Promise.Arguments a1, a2;
 //!
-//! array(Concurrent.Future) all = ({ p1, p2 });
+//! a1 = Protocols.HTTP.Promise.Arguments(([
+//!   "extra_args" : ({ "Extra arg for Roxen request" }),
+//!   "headers"    : ([ "User-Agent" : "My Special HTTP Client" ])
+//! ]));
+//!
+//! a2 = Protocols.HTTP.Promise.Arguments(([
+//!   "variables" : ([ "q" : "Pike programming language" ]),
+//!   "maxtime"   : 10
+//! ]));
+//!
+//! Concurrent.Future q1 = Protocols.HTTP.Promise.get_url("http://www.roxen.com", a1);
+//! Concurrent.Future q2 = Protocols.HTTP.Promise.get_url("http://www.google.com", a2);
+//!
+//! array(Concurrent.Future) all = ({ q1, q2 });
 //!
 //! /*
 //!   To get a callback for each of the requests
@@ -16,7 +28,8 @@
 //!
 //! all->on_success(lambda (Protocols.HTTP.Promise.Success ok_resp) {
 //!   werror("Got successful response for %O\n", ok_resp->host);
-//! })->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
+//! });
+//! all->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
 //!   werror("Request for %O failed!\n", failed_resp->host);
 //! });
 //!
@@ -30,7 +43,8 @@
 //!
 //! all2->on_success(lambda (array(Protocols.HTTP.Promise.Success) ok_resp) {
 //!   werror("All request were successful: %O\n", ok_resp);
-//! })->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
+//! });
+//! all->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
 //!   werror("The request to %O failed.\n", failed_resp->host);
 //! });
 //! @endcode
@@ -218,7 +232,9 @@ class Arguments
     }
   }
 
+  //! @ignore
   PROMISE_DESTRUCTOR
+  //! @endignore
 }
 
 
@@ -277,9 +293,9 @@ class Result
     //TRACE("this_program(%O)\n", _result->headers);
     result = _result;
   }
-  //! @endignore
 
   PROMISE_DESTRUCTOR
+  //! @endignore
 }
 
 
@@ -455,7 +471,9 @@ protected class Session
       extra_callback_arguments = 0;
     }
 
+    //! @ignore
     PROMISE_DESTRUCTOR
+    //! @endignore
   }
 
 
@@ -474,8 +492,12 @@ protected class Session
       }
     }
 
+    //! @ignore
     PROMISE_DESTRUCTOR
+    //! @endignore
   }
 
+  //! @ignore
   PROMISE_DESTRUCTOR
+  //! @endignore
 }

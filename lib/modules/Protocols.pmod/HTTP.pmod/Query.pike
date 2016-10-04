@@ -1346,7 +1346,15 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   // NB: The timeout is currently not reset on each read, so the whole
   // response has to be read within data_timeout seconds. Is that
   // intentional? /mast
-  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
+  //
+  // This is hopefully fixed now.
+  if (lower_case(headers["transfer-encoding"]) != "chunked")
+    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+  else {
+    con->set_nonblocking(async_fetch_read_chunked,0,async_fetch_close);
+    async_fetch_read_chunked(0, ""); // might already be complete
+                                     // in buffer
+  }
 }
 
 protected string _sprintf(int t)
