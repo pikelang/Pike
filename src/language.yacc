@@ -2042,6 +2042,7 @@ statement: normal_label_statement
   | case
   | default
   | labeled_statement
+  | simple_type2 local_function { $$=$2; }
   ;
 
 labeled_statement: TOK_IDENTIFIER
