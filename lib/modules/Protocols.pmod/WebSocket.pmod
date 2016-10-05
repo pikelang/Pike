@@ -62,20 +62,6 @@ enum CLOSE_STATUS {
     CLOSE_UNEXPECTED,
 };
 
-//! WebSocket RSV extension bits.
-enum RSV {
-
-    //!
-    RSV1 = 0x40,
-
-    //!
-    RSV2 = 0x20,
-
-    //!
-    RSV3 = 0x10
-
-};
-
 //! WebSocket frame compression heuristics override
 enum COMPRESSION {
 
@@ -86,19 +72,6 @@ enum COMPRESSION {
     OVERRIDE_COMPRESS,
 
 };
-
-//! Global default options for all WebSocket connections.
-mapping(string:mixed) options = ([
-#if constant(Gz.deflate)
-    "compressionLevel":3,
-    "compressionThreshold":5,
-    "compressionThresholdNoContext":256,
-    "compressionStrategy":Gz.DEFAULT_STRATEGY,
-    "compressionWindowSize":15,
-    "decompressionWindowSize":15,
-    "compressionHeuristics":HEURISTICS_COMPRESS,
-#endif
-]);
 
 #define FOO(x)  if (op == x) return #x
 string describe_opcode(FRAME op) {
@@ -123,7 +96,7 @@ class Parser {
 
     //! Parses and returns one WebSocket frame from the internal buffer. If
     //! the buffer does not contain a full frame, @expr{0@} is returned.
-    Frame parse(Connection con) {
+    Frame parse() {
 	if (sizeof(buf) < 2) return 0;
 
 	int opcode, len, hlen = 2;
@@ -165,38 +138,13 @@ class Parser {
 
         Frame f = Frame(opcode & 15);
         f->fin = opcode >> 7;
-        f->rsv = opcode;
-        if (con.lastopcode & 0x80)	       // FIN
-            con.firstrsv = opcode;
-        con.lastopcode = opcode;
         f->mask = mask;
 
         data = buf->read(len);
 
-        if (masked)
+        if (masked) {
             data = MASK(data, mask);
-
-#if constant(Gz.deflate)
-        mapping options = con.options;
-        if (options->compressionLevel && con.firstrsv & RSV1 && sizeof(data)) {
-            f->rsv &= ~RSV1;
-            Gz.inflate uncompress = con.uncompress;
-            if (!uncompress)
-                uncompress = Gz.inflate(-options->decompressionWindowSize);
-            data = uncompress.inflate(data + "\0\0\377\377");
-            string s;
-            while (s = uncompress.end_of_stream()) {
-                // FIXME uncompress.create(...) should have been sufficient.
-                // Probably due to an upstream bug in zlib, this does not work.
-                uncompress = Gz.inflate(-options->decompressionWindowSize);
-                if (s != "\0\0\377\377")
-                    data += uncompress.inflate(s);
-            }
-            if (options->decompressionNoContextTakeover)
-              uncompress = 0;	      // Save memory between packets
-            con.uncompress = uncompress;
         }
-#endif
 
         f->data = data;
 
@@ -211,11 +159,6 @@ class Frame {
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
     //! fragmented message or a non-fragmentation frame.
     int(0..1) fin = 1;
-
-    //! Three reserved extension bits.  Binary-and with @expr{RSV1@},
-    //! @expr{RSV2@} or @expr{RSV3@} to single out the corresponding
-    //! extension.  Typically @expr{RSV1@} is set for compressed frames.
-    int rsv;
 
     //! Generic options for this frame.
     mapping(string:mixed) options;
@@ -256,10 +199,8 @@ class Frame {
     }
 
     protected string _sprintf(int type) {
-      return type=='O' && sprintf("%O(%s, fin: %d, rsv: %d, %d bytes)",
-                       this_program,
-                       describe_opcode(opcode), fin, rsv & (RSV1|RSV2|RSV3),
-                       sizeof(data));
+      return type=='O' && sprintf("%O(%s, fin: %d, %d bytes)", this_program,
+                       describe_opcode(opcode), fin, sizeof(data));
     }
 
     //! @decl string text
@@ -298,7 +239,7 @@ class Frame {
 
     //!
     void encode(Stdio.Buffer buf) {
-        buf->add_int8(fin << 7 | rsv | opcode);
+        buf->add_int8(fin << 7 | opcode);
 
         if (sizeof(data) > 0xffff) {
             buf->add_int8(!!mask << 7 | 127);
@@ -346,16 +287,6 @@ class Connection {
     protected int(0..1) will_write = 1;
     protected mixed id;
 
-    mapping options;
-
-#if constant(Gz.deflate)
-    final Gz.inflate uncompress;
-    private Gz.deflate compress;
-#endif
-
-    final int lastopcode = 0x80;   // FIN
-    final int firstrsv;
-
     //! If true, all outgoing frames are masked.
     int(0..1) masking;
 
@@ -388,17 +319,14 @@ class Connection {
 
     //! Create a WebSocket client
     protected void create() {
-      options = ([]);
 	  // Clients start in state CLOSED.
       state = CLOSED;
-      masking = 1;
+	  masking = 1;
       parser = Parser();
     }
 
     //! Create a WebSocket server out of the given Stdio.File-like object
-    protected variant void create(Stdio.File|SSL.File f,
-     void|mapping _options) {
-        options = .WebSocket.options + (_options || ([]));
+    protected variant void create(Stdio.File|SSL.File f) {
         state = CONNECTING;
         parser = Parser();
         stream = f;
@@ -585,7 +513,7 @@ class Connection {
         if (state == CLOSED) return;
         parser->feed(data);
 
-        while (Frame frame = parser->parse(this)) {
+        while (Frame frame = parser->parse()) {
 #ifdef WEBSOCKET_DEBUG
             werror("%O in %O\n", this, frame);
 #endif
@@ -645,71 +573,9 @@ class Connection {
 
     //! Send a WebSocket frame.
     void send(Frame frame) {
-        if (state != OPEN)
-            error("WebSocket connection is not open: %O.\n", this);
-        if (sizeof(frame->data)) {
-            if (masking)
-                frame->mask = Crypto.Random.random_string(4);
-#if constant(Gz.deflate)
-            mapping(string:mixed) opts = options;
-            if (frame.options)
-              opts += frame.options;
-            if (opts->compressionLevel
-             && sizeof(frame->data) >=
-                 (opts->compressionNoContextTakeover
-                  ? opts->compressionThresholdNoContext
-                  : opts->compressionThreshold)) {
-                if (!compress)
-                    compress = Gz.deflate(-opts->compressionLevel,
-                     opts->compressionStrategy,
-                     opts->compressionWindowSize);
-                int wsize = opts->compressionWindowSize
-                 ? 1<<opts->compressionWindowSize : 1<<15;
-                if (opts->compressionNoContextTakeover) {
-                    string s
-                     = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
-                    if (sizeof(s) < sizeof(frame->data)) {
-                        frame->data = s;
-                        frame->rsv |= RSV1;
-                    }
-                    compress = 0;
-                } else {
-                    if (opts->compressionHeuristics == OVERRIDE_COMPRESS
-                     || frame->opcode == FRAME_TEXT) {
-                        // Assume text frames are always compressible.
-                        frame->data
-                         = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
-                        frame->rsv |= RSV1;
-                    } else if (4*sizeof(frame->data) <= wsize) {
-                        // If a binary frame is smaller than 25% of the
-                        // LZ77 window size, test if adding it to the
-                        // stream results in zero overhead.  If so, add it,
-                        // if not, reset compression state to before adding it.
-                        Gz.inflate save = compress.clone();
-                        string s
-                         = compress.deflate(frame->data, Gz.SYNC_FLUSH);
-                        if (sizeof(s) < sizeof(frame->data)) {
-                            frame->data = s[..<4];
-                            frame->rsv |= RSV1;
-                        } else
-                          compress = save;
-                    } else {
-                        // Large binary frames we sample the first 1KB of.
-                        // If it compresses better than 6.25%, add them
-                        // to the compressed stream.
-                        Gz.inflate ctest = compress.clone();
-                        string sold = frame->data[..1023];
-                        string s = ctest.deflate(sold, Gz.PARTIAL_FLUSH);
-                        if (sizeof(s) + 64 < sizeof(sold)) {
-                            frame->data = compress.deflate(frame->data,
-                             Gz.SYNC_FLUSH)[..<4];
-                            frame->rsv |= RSV1;
-                        }
-                    }
-                }
-            }
-#endif
-        }
+        if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
+        if (masking && sizeof(frame->data))
+            frame->mask = Crypto.Random.random_string(4);
         frame->encode(buf);
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
@@ -757,122 +623,17 @@ class Request(function(array(string), Request:void) cb) {
     //! handshake. The protocol should be either @expr{0@} or a protocol
     //! advertised by the client when initiating the WebSocket connection.
     //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol, void|mapping _options) {
-        options += _options || ([]);
+    Connection websocket_accept(string protocol) {
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
-	    "Sec-WebSocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "Sec-WebSocket-Version" : "13",
+	    "sec-websocket-accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
+            "sec-websocket-version" : "13",
 	]);
+	if (protocol) heads["sec-websocket-protocol"] = protocol;
 
-        array parse_extensions() {
-          string exs;
-          array retval;
-          if (exs = request_headers["sec-websocket-extensions"]) {
-            // Parses extensions conforming RFCs, supports quoted values.
-            // FIXME Violates the RFC when commas or semicolons are quoted.
-            array v;
-            int i;
-            retval = array_sscanf(exs,
-             "%*[ \t\r\n]%{%{%[^ \t\r\n=;,]%*[= \t\r\n]%[^;,]%*[ \t\r\n;]%}"
-             "%*[ \t\r\n,]%}")[0];
-            foreach (retval; i; v) {
-              mapping m;
-              array d;
-              v = v[0];
-              retval[i] = ({v[0][0], m = ([])});
-              v = v[1..];
-              foreach (v;; d) {
-                string sv = String.trim_whites(d[1]);
-                if (sizeof(sv) && sv[0] == '"')
-                  sv = sv[1..<1];	    // Strip doublequotes
-                int|float|string tv;	    // Store numeric values natively
-                if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
-                  tv = sv;
-                m[d[0]] = tv;
-              }
-            }
-          } else
-            retval = ({});
-          return retval;
-        };
-
-        mapping rext = ([]);
-
-        // Code has been tuned for serverside.  If used as clientside,
-        // it will need tweaking.
-        foreach (parse_extensions();; array ext) {
-            string name = ext[0];
-            mapping parm = ext[1], rparm = ([]);
-            int|float|string p;
-            switch (name) {
-#if constant(Gz.deflate)
-                case "permessage-deflate":
-                    if (rext[name] || !options->compressionLevel)
-                        continue;
-                    if (parm->client_no_context_takeover
-                     || options->decompressionNoContextTakeover) {
-                        options->decompressionNoContextTakeover = 1;
-                        rparm->client_no_context_takeover = "";
-                    }
-                    if (stringp(p = parm->client_max_window_bits)) {
-                        if ((p = options->decompressionWindowSize) < 15)
-                            rparm->client_max_window_bits = p;
-                    } else if (!zero_type(p)) {
-                        p = min(p, options->decompressionWindowSize);
-                        options->decompressionWindowSize
-                         = max(rparm->client_max_window_bits = p, 8);
-                    }
-                    if (parm->server_no_context_takeover
-                     || options->compressionNoContextTakeover) {
-                        options->compressionNoContextTakeover = 1;
-                        rparm->server_no_context_takeover = "";
-                    }
-                    if (stringp(p = parm->server_max_window_bits)) {
-                        if ((p = options->compressionWindowSize) < 15)
-                        rparm->server_max_window_bits = p;
-                    } else if (!zero_type(p)) {
-                        p = min(p, options->compressionWindowSize);
-                        if (p < 8)
-                            continue;
-                        options->compressionWindowSize
-                         = rparm->server_max_window_bits = p;
-                    }
-                    rext[name] = rparm;
-                    break;
-#endif
-            }
-        }
-
-        if (sizeof(rext)) {
-            if (!rext["permessage-deflate"])
-                m_delete(options, "compressionLevel");
-            array ev = ({});
-            foreach (rext; string name; mapping ext) {
-                array res = ({name});
-                foreach (ext; string pname; int|float|string pval) {
-                    // FIXME We only look for embedded spaces to decide if
-                    // we need to quote the parametervalue.  If you want to
-                    // embed tabs or other whitespace, this needs to be
-                    // amended.
-                    if (stringp(pval) && has_value(pval, " "))
-                        pval = "\"" + pval + "\"";
-                    pval = (string)pval;
-                    if (sizeof(pval))
-                        pval = "="+pval;
-                    res += ({pname+pval});
-                }
-                ev += ({res * ";"});
-            }
-            heads["Sec-WebSocket-Extensions"] = ev * ",";
-        } else
-            m_delete(options, "compressionLevel");
-
-	if (protocol) heads["Sec-WebSocket-Protocol"] = protocol;
-
-        Connection ws = Connection(my_fd, options);
+        Connection ws = Connection(my_fd);
         my_fd = 0;
 
         array a = allocate(1 + sizeof(heads));
