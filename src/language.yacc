@@ -3152,7 +3152,7 @@ safe_comma_expr: comma_expr
 
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; }
-  | simple_type2 local_function { $$=$2; }
+  | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
   ;
 
 
