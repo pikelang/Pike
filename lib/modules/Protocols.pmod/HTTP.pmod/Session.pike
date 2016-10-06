@@ -445,7 +445,7 @@ class Cookie
 	    case "expires": {
                object tmp =
 		  (RUNTIME_RESOLV(Calendar.ISO.parse)("%e, %D %M %Y %h:%m:%s %z",value)||
-		   RUNTIME_RESOLV(Calendar.ISO.parse)("%e, %D-%M-%y %h:%m:%s %z",value) )
+                   RUNTIME_RESOLV(Calendar.ISO.parse)("%e, %D-%M-%y %h:%m:%s %z",value) );
                /* Some servers send malformed expiry dates.
                 * We treat those as if no expiry date had been set */
                if (tmp) expires=tmp->unix_time();
