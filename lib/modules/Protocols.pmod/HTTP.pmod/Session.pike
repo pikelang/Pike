@@ -432,13 +432,15 @@ class Cookie
       foreach (v[1..];;[string what,string value])
 	 switch (lower_case(what))
 	 {
-	    case "expires":
-	       expires=
+	    case "expires": {
+               object tmp =
 		  (Calendar.ISO.parse("%e, %D %M %Y %h:%m:%s %z",value)||
-		   Calendar.ISO.parse("%e, %D-%M-%y %h:%m:%s %z",value) )
-		  ->unix_time();
+		   Calendar.ISO.parse("%e, %D-%M-%y %h:%m:%s %z",value) );
+               /* Some servers send malformed expiry dates.
+                * We treat those as if no expiry date had been set */
+               if (tmp) expires=tmp->unix_time();
 	       break;
-
+            }
 	    case "path":
 	       path=value;
 	       break;
