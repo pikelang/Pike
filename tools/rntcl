@@ -104,6 +104,10 @@ array|object paranoia_stat(string f)
   for (int i=0; i < 100; i++) {
     array|object st = file_stat(f);
     if (st) return st;
+    if ((i & 0x0f) == 0x0f) {
+      // Flush the filesystem buffers hard.
+      Process.system("sync");
+    }
     sleep(0.1);
   }
   return file_stat(f);
