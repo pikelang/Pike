@@ -468,9 +468,10 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	} ufloat;
 	ufloat.f = s->u.float_number;
 	q = (size_t)ufloat.i;
+	break;
     }
-    break;
 #endif
+    /* FALL_THROUGH */
   case T_INT:
     q=(size_t)s->u.integer;
     break;
