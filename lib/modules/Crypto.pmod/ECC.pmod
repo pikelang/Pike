@@ -442,3 +442,15 @@ Curve SECP_384R1 = Curve(Nettle.SECP384R1);
 Curve SECP_521R1 = Curve(Nettle.SECP521R1);
 #endif /* constant(Nettle.SECP521R1) */
 //! @endignore
+
+//! @module Curve25519
+
+//! @decl inherit Nettle.Curve25519
+
+//! @endmodule
+
+//! @ignore
+#if constant(Nettle.Curve25519)
+Nettle.Curve25519 Curve25519 = Nettle.Curve25519();
+#endif /* constant(Nettle.Curve25519) */
+//! @endignore

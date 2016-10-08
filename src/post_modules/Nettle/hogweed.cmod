@@ -10,6 +10,7 @@
 #include "interpret.h"
 #include "module.h"
 #include "mapping.h"
+#include "stralloc.h"
 #include "constants.h"
 
 #include "nettle_config.h"
@@ -1143,6 +1144,290 @@ PIKECLASS ECC_Curve
 
 #endif /* HAVE_NETTLE_ECDSA_H */
 
+#if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H)
+#include <nettle/curve25519.h>
+
+#include <nettle/eddsa.h>
+
+/*! @class Curve25519
+ *!
+ *! Elliptic Curve Definition.
+ */
+PIKECLASS Curve25519
+{
+  DECLARE_STORAGE;
+
+  /*! @decl string(7bit) name()
+   *!
+   *! Returns the name of the curve.
+   */
+  PIKEFUN string(7bit) name()
+  {
+    ref_push_string(MK_STRING("Curve25519"));
+  }
+
+  /*! @decl int size()
+   *!
+   *! @returns
+   *!   Returns the size in bits for a single coordinate on the curve.
+   */
+  PIKEFUN int size()
+  {
+    push_int(255);
+  }
+
+  /*! @decl Gmp.mpz new_scalar(function(int(0..):string(8bit)) rnd)
+   *!
+   *! @param rnd
+   *!   Randomness function to use as source.
+   *!
+   *! @returns
+   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   or as an ECDH exponent.
+   */
+  PIKEFUN string(8bit) new_scalar(function(int(0..):string(8bit)) rnd)
+  {
+    push_int(CURVE25519_SIZE);
+    apply_svalue(rnd, 1);
+  }
+
+  /*! @decl string(8bit) `*(string(8bit) scalar)
+   *!
+   *! Multiply the curve by a scalar.
+   *!
+   *! This can be used to get the public key from a private key.
+   *!
+   *! @returns
+   *!   Returns a new point on the curve.
+   */
+  PIKEFUN string(8bit) `*(string(8bit) scalar)
+  {
+    struct pike_string *res;
+
+    if (scalar->len != CURVE25519_SIZE) Pike_error("Invalid scalar.\n");
+
+    res = begin_shared_string(CURVE25519_SIZE);
+
+    curve25519_mul_g(STR0(res), STR0(scalar));
+
+    push_string(end_shared_string(res));
+  }
+
+  /*! @decl string(8bit) point_mul(string(8bit) x, string(8bit) scalar)
+   *!
+   *! Multiply a point on the curve by a scalar.
+   *!
+   *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
+   *!
+   *! @returns
+   *!   Returns the new point on the curve.
+   */
+  PIKEFUN string(8bit) point_mul(string(8bit) x, string(8bit) scalar)
+  {
+    struct pike_string *res;
+
+    if (x->len != CURVE25519_SIZE) Pike_error("Invalid x.\n");
+    if (scalar->len != CURVE25519_SIZE) Pike_error("Invalid scalar.\n");
+
+    res = begin_shared_string(CURVE25519_SIZE);
+
+    curve25519_mul(STR0(res), STR0(scalar), STR0(x));
+
+    push_string(end_shared_string(res));
+  }
+
+  /*! @class EdDSA
+   *!
+   *! Edwards Curve Digital Signing Algorithm
+   */
+  PIKECLASS EdDSA
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    /*! @decl inherit __builtin.Nettle.Sign
+     */
+    INHERIT "__builtin.Nettle.Sign";
+
+    PIKEVAR string(8bit) private_key flags ID_PRIVATE|ID_HIDDEN;
+
+    PIKEVAR string(8bit) public_key flags ID_PRIVATE|ID_HIDDEN;
+
+    PIKEVAR function(int(0..):string(0..255)) random
+      flags ID_PROTECTED;
+
+    INIT
+    {
+      struct svalue *random =
+        simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+      if(!random || (TYPEOF(*random) != T_FUNCTION))
+        Pike_error("Unable to resolve random function.\n");
+      assign_svalue(&THIS->random, random);
+    }
+
+    /*! @decl string(7bit) name()
+     *!
+     *! Returns the string @expr{"EdDSA"@}.
+     */
+    PIKEFUN string(7bit) name()
+    {
+      ref_push_string(MK_STRING("EdDSA"));
+    }
+
+    /*! @decl Curve25519 get_curve()
+     *!
+     *! Get the elliptic curve that is in use.
+     */
+    PIKEFUN object(Nettle_Curve25519) get_curve()
+    {
+      struct external_variable_context loc;
+      loc.o = Pike_fp->current_object;
+      loc.inherit = Pike_fp->context;
+      find_external_context(&loc, 1);
+      ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
+    }
+
+    /*! @decl string(8bit) get_private_key()
+     *!
+     *! Get the private key.
+     */
+    PIKEFUN string(8bit) get_private_key()
+    {
+      if (THIS->private_key) {
+	ref_push_string(THIS->private_key);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl void set_private_key(string(8bit) k)
+     *!
+     *! Set the private key (and corresponding public key).
+     *!
+     *! @note
+     *!   Throws errors if the key isn't valid for the curve.
+     */
+    PIKEFUN void set_private_key(string(8bit) k)
+    {
+      struct pike_string *pub;
+
+      if (k->len != ED25519_KEY_SIZE) Pike_error("Invalid private key.\n");
+
+      if (THIS->private_key) {
+	free_string(THIS->private_key);
+      }
+      copy_shared_string(THIS->private_key, k);
+
+      /* Set the corresponding public key, */
+      pub = begin_shared_string(ED25519_KEY_SIZE);
+
+      ed25519_sha512_public_key(STR0(pub), STR0(k));
+
+      if (THIS->public_key) {
+	free_string(THIS->public_key);
+      }
+      THIS->public_key = end_shared_string(pub);
+    }
+
+    /*! @decl string(8bit) get_x()
+     *!
+     *! Get the x coordinate of the public key.
+     */
+    PIKEFUN string(8bit) get_x()
+    {
+      if (THIS->public_key) {
+	ref_push_string(THIS->public_key);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl void set_public_key(string(8bit) x)
+     *!
+     *! Change to the selected point on the curve as public key.
+     *!
+     *! @note
+     *!   Throws errors if the point isn't on the curve.
+     */
+    PIKEFUN void set_public_key(string(8bit) x)
+    {
+      if (THIS->public_key == x) return;
+      if (x->len != ED25519_KEY_SIZE) Pike_error("Invalid key.\n");
+      if (THIS->public_key) {
+	free_string(THIS->public_key);
+      }
+      if (THIS->private_key) {
+	free_string(THIS->private_key);
+	THIS->private_key = NULL;
+      }
+      copy_shared_string(THIS->public_key, x);
+    }
+
+    /*! @decl void set_random(function(int(0..):string(8bit)) r)
+     *!
+     *! Set the random function, used to generate keys and parameters,
+     *! to the function @[r].
+     */
+    PIKEFUN void set_random(function(int(0..):string(8bit)) r)
+    {
+      assign_svalue(&THIS->random, r);
+    }
+
+    /*! @decl int(0..1) raw_verify(string(8bit) message, string(8bit) signature)
+     *!
+     *! Verify the @[signature] against the @[message].
+     */
+    PIKEFUN int(0..1) raw_verify(string(8bit) message, string(8bit) signature)
+    {
+      if (!THIS->public_key) Pike_error("No public key.\n");
+
+      if (signature->len != ED25519_SIGNATURE_SIZE) {
+	push_int(0);
+	return;
+      }
+
+      push_int(ed25519_sha512_verify(STR0(THIS->public_key),
+				     message->len, STR0(message),
+				     STR0(signature)));
+    }
+
+    /*! @decl string(8bit) raw_sign(string(8bit) message)
+     *!
+     *! Sign the @[message].
+     */
+    PIKEFUN string(8bit) raw_sign(string(8bit) message)
+    {
+      struct pike_string *res;
+
+      if (!THIS->private_key) Pike_error("No private key.\n");
+      if (!THIS->public_key) Pike_error("No public key.\n");
+
+      res = begin_shared_string(ED25519_SIGNATURE_SIZE);
+
+      ed25519_sha512_sign(STR0(THIS->public_key), STR0(THIS->private_key),
+			  message->len, STR0(message),
+			  STR0(res));
+
+      push_string(end_shared_string(res));
+    }
+
+    /*! @decl void generate_key()
+     *!
+     *! Generate a new set of private and public keys on the current curve.
+     */
+    PIKEFUN void generate_key()
+    {
+      push_int(ED25519_KEY_SIZE);
+      apply_svalue(&THIS->random, 1);
+      apply_current(f_Nettle_Curve25519_EdDSA_set_private_key_fun_num, 1);
+    }
+  }
+  /*! @endclass EdDSA
+   */
+}
+
+/*! @endclass Curve25519
+ */
+#endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE25519_H */
+
 /*! @endmodule Nettle
  */
 
@@ -1168,6 +1453,10 @@ hogweed_init(void)
   ADD_INT_CONSTANT("SECP521R1", SECP521R1, 0);
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
 #endif /* HAVE_NETTLE_ECDSA_H */
+
+#ifdef NETTLE_CURVE25519_RFC7748
+  ADD_INT_CONSTANT("CURVE25519_RFC7748", 1, 0);
+#endif
 }
 
 void
