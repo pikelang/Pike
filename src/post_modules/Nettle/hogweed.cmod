@@ -1151,7 +1151,17 @@ PIKECLASS ECC_Curve
 
 /*! @class Curve25519
  *!
- *! Elliptic Curve Definition.
+ *! Elliptic Curve Definition for the curve
+ *! @expr{y^2 = x^2 + 486662 x^2 + x (mod 2^255 - 19)@}.
+ *!
+ *! This curve is standardized in @rfc{7748@}.
+ *!
+ *! @note
+ *!   The API for this curve differs somewhat from the API
+ *!   used by the other @[Curve]s.
+ *!
+ *! @seealso
+ *!   @[Curve], @rfc{7748@}
  */
 PIKECLASS Curve25519
 {
