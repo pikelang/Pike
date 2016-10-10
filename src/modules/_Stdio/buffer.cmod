@@ -1782,6 +1782,9 @@ PIKECLASS Buffer
    *! If there is not enough data available return UNDEFINED.
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
+   *!
+   *! @seealso
+   *!   @[_search()]
    */
   PIKEFUN string(0..255) read_cstring()
   {
@@ -1802,6 +1805,62 @@ PIKECLASS Buffer
     while ( UNLIKELY(io_range_error(THIS, 0)) );
 
     push_undefined();
+  }
+
+  /*! @decl protected int(-1..) _search(int(8bit) character, int|void start)
+   *!
+   *! Search forward from the indicated @[start] position for the specified
+   *! @[character].
+   *!
+   *! @param character
+   *!   Character to search for.
+   *!
+   *! @param start
+   *!   Start position relative to the current read position of the buffer.
+   *!
+   *!   Negative @[start] values are supported and indicate positions
+   *!   prior to the current read position.
+   *!
+   *! @returns
+   *!   Returns the first found position of @[character] relative to the
+   *!   current read position of the buffer on success, and @[UNDEFINED]
+   *!   on not found. The read position is not advanced.
+   *!
+   *! @seealso
+   *!   @[read_cstring()], @[search()], @[lfun::_search()]
+   */
+  PIKEFUN int _search(int(8bit) character, int|void start)
+    flags ID_PROTECTED;
+  {
+    Buffer *io = THIS;
+    unsigned char *buf = io_read_pointer(io);
+    unsigned char *buf_start = buf;
+    unsigned char *buf_end = buf + io_len(io);
+
+    if (start) {
+      INT_TYPE bytes = start->u.integer;
+      buf_start += bytes;
+
+      if (bytes >= 0) {
+	if (((size_t)bytes) >= io_len(io)) {
+	  push_int(-1);
+	  return;
+	}
+      } else if (((size_t)(-bytes)) > io->offset) {
+	bytes = -(ptrdiff_t)io->offset;
+      }
+      buf += bytes;
+    }
+
+    while (buf < buf_end) {
+      if (UNLIKELY(*buf == character)) {
+	push_int64(buf - io_read_pointer(io));
+	return;
+      }
+      buf++;
+    }
+
+    push_int(-1);
   }
 
   /*! @decl Buffer read_hbuffer( int n )
