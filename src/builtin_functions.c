@@ -877,13 +877,11 @@ void f_query_num_arg(INT32 args)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *! @decl mixed search(object haystack, mixed needle, mixed|void start)
  *!
- *!   Search for @[needle] in @[haystack]. Return the position of @[needle] in
- *!   @[haystack] or @expr{-1@} if not found.
+ *!   Search for @[needle] in @[haystack].
  *!
- *!   If the optional argument @[start] is present search is started at
- *!   this position.
- *!
- *!   @mixed haystack
+ *! @param haystack
+ *!   Item to search in. This can be one of:
+ *!   @mixed
  *!     @type string
  *!       When @[haystack] is a string @[needle] must be a string or an int,
  *!       and the first occurrence of the string or int is returned.
@@ -895,13 +893,12 @@ void f_query_num_arg(INT32 args)
  *!     @type mapping
  *!       When @[haystack] is a mapping, @[search()] tries to find the index
  *!       connected to the data @[needle]. That is, it tries to lookup the
- *!       mapping backwards. If @[needle] isn't present in the mapping, zero
- *!       is returned, and zero_type() will return 1 for this zero.
+ *!       mapping backwards.
  *!
  *!     @type object
  *!       When @[haystack] is an object implementing @[lfun::_search()],
- *!       the result of calling @[lfun::_search()] with @[needle] will
- *!       be returned.
+ *!       the result of calling @[lfun::_search()] with @[needle] and @[start]
+ *!       will be returned.
  *!
  *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
  *!       it is assumed to be an @[Iterator], and implement
@@ -910,8 +907,24 @@ void f_query_num_arg(INT32 args)
  *!       elements with @[`==()] until a match with @[needle] is found.
  *!       If @[needle] is found @[haystack] will be advanced to the element,
  *!       and the iterator index will be returned. If @[needle] is not
- *!       found, @[haystack] will be advanced to the end (and will thus
- *!       evaluate to false), and a zero with zero_type 1 will be returned.
+ *!       found, @[haystack] will be advanced to the end.
+ *!   @endmixed
+ *!
+ *! @param start
+ *!   If the optional argument @[start] is present search is started at
+ *!   this position.
+ *!
+ *! @returns
+ *!   Returns the position of @[needle] in @[haystack] if found.
+ *!
+ *!   If not found the returned value depends on the type of @[haystack]:
+ *!   @mixed
+ *!     @type string|array
+ *!       @expr{-1@}.
+ *!     @type mapping|object(Iterator)
+ *!       @[UNDEFINED].
+ *!     @type object
+ *!       The value returned by @[lfun::_search()].
  *!   @endmixed
  *!
  *! @note
