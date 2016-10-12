@@ -277,7 +277,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
   tFuncV(tZero tRangeBound tZero tRangeBound, tVoid, tMix), /* "`[..]" */
   /* NOTE: After this point there are only fake lfuns. */
-  tFuncV(tZero tOr(tZero, tVoid), tVoid, tMix), /* "_search", */
+  tFuncV(tZero tOr(tZero, tVoid), tZero, tMix), /* "_search", */
   tFuncV(tNone,tVoid,tArray),	/* "_types", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
@@ -1259,9 +1259,22 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /**** END TRUE LFUNS ****/
 /**** BEGIN FAKE LFUNS ****/
 
-/*! @decl mixed lfun::_search(mixed needle, mixed|void start)
+/*! @decl mixed lfun::_search(mixed needle, mixed|void start,
+ *!                           mixed ... extra_args)
  *!
  *!   Search callback.
+ *!
+ *!   The arguments are sent straight from @[search()], and are
+ *!   as follows:
+ *!
+ *! @param needle
+ *!   Value to search for.
+ *!
+ *! @param start
+ *!   The first position to search.
+ *!
+ *! @param extra_args
+ *!   Optional extra arguments as passed to @[search()].
  *!
  *! @seealso
  *!   @[predef::search()]

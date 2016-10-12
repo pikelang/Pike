@@ -908,7 +908,8 @@ void f_query_num_arg(INT32 args)
 /*! @decl int search(string haystack, string|int needle, int|void start)
  *! @decl int search(array haystack, mixed needle, int|void start)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
- *! @decl mixed search(object haystack, mixed needle, mixed|void start)
+ *! @decl mixed search(object haystack, mixed needle, mixed|void start, @
+ *!                    mixed ... extra_args)
  *!
  *!   Search for @[needle] in @[haystack].
  *!
@@ -930,8 +931,8 @@ void f_query_num_arg(INT32 args)
  *!
  *!     @type object
  *!       When @[haystack] is an object implementing @[lfun::_search()],
- *!       the result of calling @[lfun::_search()] with @[needle] and @[start]
- *!       will be returned.
+ *!       the result of calling @[lfun::_search()] with @[needle], @[start]
+ *!       and any @[extra_args] will be returned.
  *!
  *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
  *!       it is assumed to be an @[Iterator], and implement
@@ -9541,7 +9542,7 @@ void init_builtin_efuns(void)
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
                       tOr(tVoid,tVar(1)), tVar(1)),
-		tFunc(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tVar(3))),
+		tFuncV(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tMix, tVar(3))),
 	   0);
 
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
