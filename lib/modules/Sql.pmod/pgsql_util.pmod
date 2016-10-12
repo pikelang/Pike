@@ -79,8 +79,11 @@ private void run_local_backend() {
     looponce=0;
     if(lock=backendmux->trylock()) {
       PD("Starting local backend\n");
-      while(clientsregistered)		// Autoterminate when not needed
-        local_backend(4096.0);
+      while (clientsregistered) {	// Autoterminate when not needed
+        mixed err;
+        if (err = catch(local_backend(4096.0)))
+          werror(describe_backtrace(err));
+      }
       PD("Terminating local backend\n");
       lock=0;
       looponce=clientsregistered;
