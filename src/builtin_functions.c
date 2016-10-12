@@ -946,7 +946,7 @@ void f_query_num_arg(INT32 args)
  *!
  *! @param start
  *!   If the optional argument @[start] is present search is started at
- *!   this position.
+ *!   this position. This has no effect on mappings.
  *!
  *! @returns
  *!   Returns the position of @[needle] in @[haystack] if found.
