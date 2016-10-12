@@ -313,7 +313,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 /*semi*/final void cancelquery() {
   PD("CancelRequest\n");
-  .pgsql_util.conxion lcon=getsocket(1);
+  .pgsql_util.conxion lcon=getsocket(2);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
    ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND);
   lcon=0;
@@ -617,6 +617,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         _connectfail();
       else
         destruct(waitforauthready);
+      unnamedstatement=0;
       termlock=0;
       return;
     }
@@ -625,10 +626,11 @@ final void _processloop(.pgsql_util.conxion ci) {
 }
 
 private void procmessage() {
+  mixed err;
   int terminating=0;
+  err = catch {
   .pgsql_util.conxion ci=c;		// cache value FIXME sensible?
   .pgsql_util.conxiin cr=ci->i;		// cache value FIXME sensible?
-  mixed err;
 #ifdef PG_DEBUG
   PD("Processloop\n");
 
@@ -1190,6 +1192,12 @@ private void procmessage() {
   termlock=0;
   if(err && !stringp(err))
     throw(err);
+  };
+  if (err) {
+    unnamedstatement=0;
+    termlock = 0;
+    throw(err);
+  }
 }
 
 //! Closes the connection to the database, any running queries are
@@ -1201,9 +1209,11 @@ private void procmessage() {
 /*semi*/final void close() {
   if(qportals && qportals->size())
     catch(cancelquery());
-  termlock=unnamedstatement->lock(1);
+  if (unnamedstatement)
+    termlock=unnamedstatement->lock(1);
   c->close();
-  unnamedstatement->lock(1);
+  if (unnamedstatement)
+    unnamedstatement->lock(1);
   destruct(c);destruct(waitforauthready);
 }
 
