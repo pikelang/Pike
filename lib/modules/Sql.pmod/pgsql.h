@@ -72,7 +72,7 @@
 #ifdef PG_DEBUG
 #define PD(X ...)            werror(X)
 			     // PT() puts this in the backtrace
-#define PT(X ...)	     (lambda(object _this){return (X);}(this))
+#define PT(X ...)	     (lambda(object _this){(X);}(this))
 #else
 #undef PG_DEBUGMORE
 #define PD(X ...)	     0
