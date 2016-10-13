@@ -24,7 +24,7 @@ final Pike.Backend local_backend = Pike.SmallBackend();
 private Thread.Mutex backendmux = Thread.Mutex();
 private int clientsregistered;
 
-final array emptyarray=({});
+constant emptyarray = ({});
 final multiset censoroptions=(<"use_ssl","force_ssl",
  "cache_autoprepared_statements","reconnect","text_query","is_superuser",
  "server_encoding","server_version","integer_datetimes",
@@ -287,43 +287,46 @@ class conxion {
     return 0;
   }
 
-  final void sendcmd(void|int mode,void|sql_result portal) {
-    if(portal)
+  final void sendcmd(void|int mode, void|sql_result portal) {
+    if (portal)
       queueup(portal);
+    Thread.MutexKey lock;
+    if (started) {
+      lock = shortmux->lock();
+      if (sizeof(stash)) {
+        add(stash);
+        stash->clear();
+        foreach (stashqueue->try_read_array();; sql_result portal)
+          queueup(portal);
+      }
+      mode = mergemode(this, mode);
+      stashflushmode = KEEP;
+    }
 nosync:
     do {
-      switch(mode) {
+      switch (mode) {
         default:
           break nosync;
         case SYNCSEND:
           PD("%d>Sync %d %d Queue\n",
-           socket->query_fd(),synctransact,++queueoutidx);
+           socket->query_fd(), synctransact, ++queueoutidx);
           add(PGSYNC);
-          mode=SENDOUT;
+          mode = SENDOUT;
           break;
         case FLUSHLOGSEND:
           PD("%d>%O %d Queue simplequery %d bytes\n",
-           socket->query_fd(),portal._portalname,++queueoutidx,sizeof(this));
-          mode=FLUSHSEND;
+           socket->query_fd(), portal._portalname, ++queueoutidx, sizeof(this));
+          mode = FLUSHSEND;
       }
       qportals->write(synctransact++);
-    } while(0);
-    Thread.MutexKey lock;
-    if(started) {
-      lock=shortmux->lock();
-      if(sizeof(stash)) {
-        add(stash); stash->clear();
-        foreach(stashqueue->try_read_array();;sql_result portal)
-          queueup(portal);
-      }
-      mode=mergemode(this,mode);
-      stashflushmode=KEEP;
-    }
+    } while (0);
     catch {
 outer:
       do {
         switch(mode) {
           default:
+            PD("%d>Skip flush %d Queue %O\n",
+             socket->query_fd(), mode, (string)this);
             break outer;
           case FLUSHSEND:
             PD("Flush\n");
