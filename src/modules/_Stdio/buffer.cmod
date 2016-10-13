@@ -1807,7 +1807,8 @@ PIKECLASS Buffer
     push_undefined();
   }
 
-  /*! @decl protected int(-1..) _search(int(8bit) character, int|void start)
+  /*! @decl protected int(-1..) _search(int(8bit) character, int|void start, @
+   *!                                   int|void end)
    *!
    *! Search forward from the indicated @[start] position for the specified
    *! @[character].
@@ -1821,6 +1822,9 @@ PIKECLASS Buffer
    *!   Negative @[start] values are supported and indicate positions
    *!   prior to the current read position.
    *!
+   *! @param end
+   *!   Don't search past this position of the buffer.
+   *!
    *! @returns
    *!   Returns the first found position of @[character] relative to the
    *!   current read position of the buffer on success, and @[UNDEFINED]
@@ -1829,17 +1833,27 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_cstring()], @[search()], @[lfun::_search()]
    */
-  PIKEFUN int _search(int(8bit) character, int|void start)
+  PIKEFUN int _search(int(8bit) character, int|void start, int|void end)
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;
     unsigned char *buf = io_read_pointer(io);
-    unsigned char *buf_start = buf;
     unsigned char *buf_end = buf + io_len(io);
+
+    if (end) {
+      INT_TYPE bytes = end->u.integer;
+
+      if (bytes < 0) {
+	push_int(-1);
+	return;
+      }
+      if (((size_t)bytes) < io_len(io)) {
+	buf_end = buf + bytes + 1;
+      }
+    }
 
     if (start) {
       INT_TYPE bytes = start->u.integer;
-      buf_start += bytes;
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
