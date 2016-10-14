@@ -1825,7 +1825,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       INT_TYPE bytes = end->u.integer;
 
       if (bytes < 0) {
-	push_int(-1);
+	push_undefined();
 	return;
       }
       if (((size_t)bytes) < io_len(io)) {
@@ -1838,7 +1838,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
-	  push_int(-1);
+	  push_undefined();
 	  return;
 	}
       } else if (((size_t)(-bytes)) > io->offset) {
@@ -1855,7 +1855,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       buf++;
     }
 
-    push_int(-1);
+    push_undefined();
   }
 
   /*! @decl Buffer read_hbuffer( int n )
