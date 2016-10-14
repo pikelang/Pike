@@ -514,7 +514,9 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   the exception of stdout and stderr. Each must be either absent, or
 //!   a function accepting a string; if present, the functions will be called
 //!   whenever output is made on the corresponding stream, otherwise the data
-//!   will be collected and returned in the result mapping.
+//!   will be collected and returned in the result mapping. Additionally,
+//!   stderr can be set to the string @["stdout"] to join it to stdout, or to
+//!   @["-"] to keep it attached to the current process's console.
 //!
 //!   If @expr{modifiers->stdin@} is set to a string it will automatically be
 //!   converted to a pipe that is fed to stdin of the started process.
@@ -553,32 +555,37 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   if(!modifiers)
     modifiers = ([]);
 
-  if((modifiers->stdout && !callablep(modifiers->stdout))
-    || (modifiers->stderr && !callablep(modifiers->stderr)))
-    throw( ({ "Can not redirect stdout or stderr in Process.run, "
+  if(modifiers->stdout && !callablep(modifiers->stdout))
+    throw( ({ "Can not redirect stdout in Process.run, "
+              "please use Process.Process instead.", backtrace() }) );
+
+  if(modifiers->stderr && !callablep(modifiers->stderr)
+      && !(<"-", "stdout">)[modifiers->stderr])
+    throw( ({ "Can not redirect stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
   Stdio.File mystdout = Stdio.File();
-  Stdio.File mystderr = Stdio.File();
+  Stdio.File mystderr;
   Stdio.File mystdin;
+  mapping(string:mixed) pipes = (["stdout": mystdout->pipe()]);
+  switch (modifiers->stderr)
+  {
+    case "-": break; //Leave stderr attached to stderr
+    case "stdout": pipes->stderr = pipes->stdout; break;
+    default:
+      mystderr = Stdio.File();
+      pipes->stderr = mystderr->pipe();
+      break;
+  }
 
-  object p;
   if(stringp(modifiers->stdin))
   {
     mystdin = Stdio.File();
     stdin_str = modifiers->stdin;
-    p = Process(cmd, modifiers + ([
-                  "stdout":mystdout->pipe(),
-                  "stderr":mystderr->pipe(),
-                  "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
-                ]));
+    pipes->stdin = mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE);
   }
-  else
-    p = Process(cmd, modifiers + ([
-                  "stdout":mystdout->pipe(),
-                  "stderr":mystderr->pipe(),
-                ]));
-
+  object p = Process(cmd, modifiers + pipes);
+  pipes = 0; //Don't want spare references to the pipes
 #if 0 //constant(Thread.Thread)
   // This is disabled by default since the callback alternative is
   // much more lightweight - creating threads isn't cheap.
@@ -600,13 +607,13 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   Pike.SmallBackend backend = Pike.SmallBackend();
 
   mystdout->set_backend (backend);
-  mystderr->set_backend (backend);
+  if (mystderr) mystderr->set_backend (backend);
 
   mystdout->set_read_callback( lambda( mixed i, string data) {
                                  if (modifiers->stdout) modifiers->stdout(data);
                                  else gotstdout += data;
                                } );
-  mystderr->set_read_callback( lambda( mixed i, string data) {
+  if (mystderr) mystderr->set_read_callback( lambda( mixed i, string data) {
                                  if (modifiers->stderr) modifiers->stderr(data);
                                  else gotstderr += data;
                                } );
@@ -615,7 +622,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 				  catch { mystdout->close(); };
 				  mystdout = 0;
 				});
-  mystderr->set_close_callback( lambda () {
+  if (mystderr) mystderr->set_close_callback( lambda () {
 				  mystderr->set_read_callback(0);
 				  catch { mystderr->close(); };
 				  mystderr = 0;
