@@ -316,7 +316,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
   .pgsql_util.conxion lcon=getsocket(2);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
    ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND);
-  lcon=0;
+  destruct(lcon);		// Destruct explicitly to avoid delayed close
 #ifdef PG_DEBUGMORE
   PD("Closetrace %O\n",backtrace());
 #endif

@@ -279,10 +279,14 @@ class conxion {
   }
 
   private int write_cb() {
-    Thread.MutexKey lock=shortmux->lock();
-    towrite-=output_to(socket,towrite);
-    lock=0;
-    if(!i->fillread && !sizeof(this))
+    Thread.MutexKey lock = shortmux->lock();
+    towrite -= output_to(socket,towrite);
+    lock = 0;
+#ifdef PG_DEBUG
+    if (!i->fillread)
+      PD("%d>Delayed close to go %d\n", socket->query_fd(), sizeof(this));
+#endif
+    if (!i->fillread && !sizeof(this))
       close();
     return 0;
   }
@@ -364,6 +368,7 @@ outer:
   }
 
   protected void destroy() {
+    PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     if(nostash) {
       catch {
         while(sizeof(closecallbacks))
