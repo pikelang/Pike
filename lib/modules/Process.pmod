@@ -646,6 +646,29 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
             "exitcode": exitcode   ]);
 }
 
+//! Run a program and capture its output, raising an exception if it fails.
+//!
+//! @param args
+//!   As per @[Process.run].
+//! @param modifiers
+//!   As per @[Process.run].
+//!
+//! @seealso
+//!   @[Process.run]
+//!
+//! @returns
+//!   As per @[Process.run].
+//!
+//! @example
+//!   Process.check_run( ({ "ls", "-l", "some_file" }) );
+mapping check_run(string|array(string) cmd, void|mapping modifiers)
+{
+  mapping rc = run(cmd, modifiers);
+  if (!rc->exitcode) return rc;
+  if (arrayp(cmd)) cmd = sh_quote(cmd[*]) * " ";
+  error("Process %O failed with rc %d\n", cmd, rc->exitcode);
+}
+
 #if constant(exece)
 //!
 int exec(string file,string ... foo)
