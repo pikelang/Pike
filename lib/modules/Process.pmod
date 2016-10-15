@@ -676,6 +676,27 @@ mapping check_run(string|array(string) cmd, void|mapping modifiers)
   error("Process %O failed with rc %d\n", cmd, rc->exitcode);
 }
 
+//! Very simple, but safe, way to invoke a program and capture its output.
+//! If anything goes wrong, an exception is thrown.
+//!
+//! @param args
+//!   As per @[Process.run].
+//! @param modifiers
+//!   As per @[Process.run].
+//!
+//! @seealso
+//!   @[Process.check_run]
+//!
+//! @returns
+//!   As per @[Process.run].
+//!
+//! @example
+//!   string data = Process.check_output( ({ "soxi", "audio_01.wav" }) );
+string check_output(string|array(string) cmd, void|mapping modifiers)
+{
+  return check_run(cmd, (["stderr": "-"]) + (modifiers||([])))->stdout;
+}
+
 #if constant(exece)
 //!
 int exec(string file,string ... foo)
