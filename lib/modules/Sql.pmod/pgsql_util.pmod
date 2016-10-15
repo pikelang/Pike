@@ -284,10 +284,12 @@ class conxion {
 
   private int write_cb() {
     Thread.MutexKey lock = shortmux->lock();
-    towrite -= output_to(socket, towrite);
-    lock = 0;
-    if (!i->fillread && !sizeof(this))
-      close();
+    if (this) {				// Guard against async destructs
+      towrite -= output_to(socket, towrite);
+      lock = 0;
+      if (!i->fillread && !sizeof(this))
+        close();
+    }
     return 0;
   }
 
