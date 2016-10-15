@@ -156,6 +156,10 @@ class bufcon {
     realbuffer=_realbuffer;
   }
 
+  final int `stashcount() {
+    return realbuffer->stashcount;
+  }
+
   final bufcon start(void|int waitforreal) {
     realbuffer->stashcount++;
 #ifdef PG_DEBUG
@@ -930,11 +934,6 @@ class sql_result {
     PD("%O Try Closeportal %d\n",_portalname,_state);
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
-    int alreadyfilled=sizeof(plugbuffer);
-    /* alreadyfilled will be non-zero if a parse request has been queued
-     * before the close was initiated.
-     * It's a bit of a tricky race, but this check should be sufficient.
-     */
     switch(_state) {
       case PORTALINIT:
         _unnamedstatementkey=0;
@@ -958,7 +957,12 @@ class sql_result {
             PD("Signal no portals in flight\n");
             catch(pgsqlsess->_readyforcommit->signal());
             lockc=0;
-          } else if(!alreadyfilled)
+           /*
+            * stashcount will be non-zero if a parse request has been queued
+            * before the close was initiated.
+            * It's a bit of a tricky race, but this check should be sufficient.
+            */
+          } else if (!plugbuffer->stashcount)
             pgsqlsess->_readyforquerycount++, retval=SYNCSEND;
           pgsqlsess->_pportalcount=0;
         }
