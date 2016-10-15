@@ -3441,6 +3441,7 @@ PIKECLASS Buffer
    *!   Returns the size of the buffer.
    */
   PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
   {
     struct Buffer_struct *str = THIS;
     RETURN str->str.s ? str->str.s->len : 0;
