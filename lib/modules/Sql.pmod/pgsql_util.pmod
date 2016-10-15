@@ -284,14 +284,13 @@ class conxion {
 
   private int write_cb() {
     Thread.MutexKey lock = shortmux->lock();
-    towrite -= output_to(socket,towrite);
-    lock = 0;
-#ifdef PG_DEBUG
-    if (!i->fillread)
-      PD("%d>Delayed close to go %d\n", socket->query_fd(), sizeof(this));
-#endif
-    if (!i->fillread && !sizeof(this))
-      close();
+    if (this) {
+      towrite -= output_to(socket, towrite);
+      lock = 0;
+      if (!i->fillread && !sizeof(this))
+        close();
+    } else
+      lock = 0;
     return 0;
   }
 
