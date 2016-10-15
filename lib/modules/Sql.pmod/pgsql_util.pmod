@@ -284,13 +284,10 @@ class conxion {
 
   private int write_cb() {
     Thread.MutexKey lock = shortmux->lock();
-    if (this) {
-      towrite -= output_to(socket, towrite);
-      lock = 0;
-      if (!i->fillread && !sizeof(this))
-        close();
-    } else
-      lock = 0;
+    towrite -= output_to(socket, towrite);
+    lock = 0;
+    if (!i->fillread && !sizeof(this))
+      close();
     return 0;
   }
 
@@ -378,6 +375,7 @@ outer:
           foreach(closecallbacks;function(void|mixed:void) closecb;)
             closecb();
         destruct(nostash);
+        socket->set_nonblocking();		// Drop all callbacks
         PD("%d>Close socket\n",socket->query_fd());
         socket->close();
       };
