@@ -3447,6 +3447,57 @@ PIKECLASS Buffer
     RETURN str->str.s ? str->str.s->len : 0;
   }
 
+  /*! @decl int(0..) _search(int character, int|void start, int|void end)
+   *!
+   *! Search for a @[character] in the buffer, starting the scan
+   *! from @[start] and ending at @[end] (inclusive).
+   *!
+   *! @returns
+   *!   Returns to position in the buffer where the character was found
+   *!   on success, and @[UNDEFINED] on failure.
+   *!
+   *! @seealso
+   *!   @[Stdio.Buffer()->_search()], @[search()], @[lfun::_search()]
+   */
+  PIKEFUN int(0..) _search(int character, int|void start, int|void end)
+  {
+    PCHARP buf = MKPCHARP_STR(THIS->str.s);
+    ptrdiff_t len = THIS->str.s->len;
+    ptrdiff_t i;
+
+    if (end && (end->u.integer + 1 < len)) {
+      len = end->u.integer + 1;
+    }
+    if (len > 0 && start && (start->u.integer > 0)) {
+      INC_PCHARP(buf, start->u.integer);
+      len -= start->u.integer;
+    }
+    if (len <= 0) {
+      push_undefined();
+      return;
+    }
+    if (UNLIKELY(THIS->str.s->size_shift == thirtytwobit)) {
+#if SIZEOF_INT_TYPE > 4
+      if (UNLIKELY((0x7fffffff < character) || (character < -0x80000000))) {
+	push_undefined();
+	return;
+      }
+#endif
+    } else if (UNLIKELY((1L<<(8<<THIS->str.s->size_shift)) <= character) ||
+	       UNLIKELY(character < 0)) {
+      push_undefined();
+      return;
+    }
+    for (i = 0; i < len; i++) {
+      p_wchar2 c = INDEX_PCHARP(buf, i);
+      if (c == character) {
+	push_int64(i);
+	return;
+      }
+    }
+    push_undefined();
+  }
+
   INIT
     {
       struct Buffer_struct *str = THIS;
