@@ -894,4 +894,36 @@ test_any( [[
   return 0;
 ]], 0)
 
+dnl search
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopp");
+  return search(b, "he");
+]], 0)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopp");
+  return search(b, "ho");
+]], 3)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopp");
+  return search(b, "hi");
+]], 0)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("");
+  return search(b, "");
+]], 0)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopphej");
+  b->read(1);
+  return search(b, "he");
+]], 6)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopphej");
+  return search(b, "he", 1);
+]], 7)
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("hejhopp");
+  return search(b, "ho", 0, 3);
+]], 0)
+
 END_MARKER
