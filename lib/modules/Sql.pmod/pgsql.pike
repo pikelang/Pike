@@ -1207,14 +1207,17 @@ private void procmessage() {
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 /*semi*/final void close() {
-  if(qportals && qportals->size())
+  Thread.MutexKey lock;
+  if (qportals && qportals->size())
     catch(cancelquery());
   if (unnamedstatement)
-    termlock=unnamedstatement->lock(1);
+    termlock = unnamedstatement->lock(1);
   c->close();
   if (unnamedstatement)
-    unnamedstatement->lock(1);
-  destruct(c);destruct(waitforauthready);
+    lock = unnamedstatement->lock(1);
+  destruct(c);
+  lock = 0;
+  destruct(waitforauthready);
 }
 
 protected void destroy() {
@@ -1270,8 +1273,9 @@ private int reconnect() {
 #endif
     termlock=unnamedstatement->lock(1);
     c->close();
-    unnamedstatement->lock(1);
+    Thread.MutexKey lock = unnamedstatement->lock(1);
     destruct(c);
+    lock = 0;
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
