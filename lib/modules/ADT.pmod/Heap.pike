@@ -146,18 +146,18 @@ Element adjust(mixed value)
   return ret;
 }
 
-//! Removes and returns the item on top of the heap,
+//! Removes and returns the @[Element] on top of the heap,
 //! which also is the smallest value in the heap.
 //!
-//! @throws
-//!   Throws an error if the heap is empty.
+//! @returns
+//!   Returns @[UNDEFINED] if the heap is empty.
 //!
 //! @seealso
-//!   @[peek()], @[push()], @[remove()]
-mixed pop()
+//!   @[pop()], @[peek()], @[push()], @[remove()]
+Element low_pop()
 {
   if(!num_values)
-    error("Heap underflow!\n");
+    return UNDEFINED;
 
   Element value = values[0];
   value->pos = -1;
@@ -172,6 +172,23 @@ mixed pop()
   }
   values[num_values]=0;
   verify_heap();
+  return value;
+}
+
+//! Removes and returns the item on top of the heap,
+//! which also is the smallest value in the heap.
+//!
+//! @throws
+//!   Throws an error if the heap is empty.
+//!
+//! @seealso
+//!   @[low_pop()], @[peek()], @[push()], @[remove()]
+mixed pop()
+{
+  Element value = low_pop();
+  if(!value)
+    error("Heap underflow!\n");
+
   return value->value;
 }
 
@@ -186,7 +203,7 @@ int _sizeof() { return num_values; }
 //!   @expr{UNDEFINED@} otherwise.
 //!
 //! @seealso
-//!   @[peek()], @[pop()]
+//!   @[peek()], @[low_pop()], @[pop()]
 Element low_peek()
 {
   if (!num_values)
