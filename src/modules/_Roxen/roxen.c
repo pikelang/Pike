@@ -675,6 +675,47 @@ static void f_html_encode_string( INT32 args )
   }
 }
 
+/*! @decl string websocket_mask(string(8bit) str, string(8bit) mask)
+ *! 
+ *! Returns @expr{str@} XOR @expr{mask@}.
+ */
+static void f_websocket_mask( INT32 args ) {
+    struct pike_string *str, *mask, *ret;
+    const unsigned char *src;
+    unsigned char * restrict dst;
+    size_t len;
+    unsigned INT32 m;
+
+    get_all_args("websocket_mask", args, "%n%n", &str, &mask);
+
+    if (mask->len != 4) Pike_error("Wrong mask length.\n");
+
+    ret = begin_shared_string(str->len);
+
+    len = str->len;
+    m = get_unaligned32(STR0(mask));
+
+    dst = STR0(ret);
+    src = STR0(str);
+
+    for (;len >= 4; len -= 4, dst += 4, src += 4)
+        set_unaligned32(dst, get_unaligned32(src) ^ m);
+
+    if (len) {
+#if PIKE_BYTEORDER == 4321
+        m = bswap32(m);
+#endif
+
+        do {
+            *dst++ = *src++ ^ m;
+            m >>= 8;
+            len --;
+        } while (len);
+    }
+
+    push_string(end_shared_string(ret));
+}
+
 /*! @endmodule
  */
 
@@ -689,6 +730,8 @@ PIKE_MODULE_INIT
 
   ADD_FUNCTION("html_encode_string", f_html_encode_string,
 	       tFunc(tMix,tStr), 0 );
+
+  ADD_FUNCTION("websocket_mask", f_websocket_mask, tFunc(tStr0 tStr0, tStr0), 0);
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
