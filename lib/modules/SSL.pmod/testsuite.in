@@ -381,7 +381,11 @@ test_do([[
 
 test_do([[
 #if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.SECP_192R1)
   object ecdsa = Crypto.ECC.SECP_192R1.ECDSA()->
+#else
+  object ecdsa = Crypto.ECC.SECP_256R1.ECDSA()->
+#endif
     set_random(random_string)->generate_key();
   mapping attrs = ([
     "organizationName" : "Test",
@@ -1468,7 +1472,9 @@ array(int) a() {
 
   foreach( ({
     // Crypto.ECC.SECP_192R1, // Tested above.
+#if constant(Crypto.ECC_SECP_256R1)
     Crypto.ECC.SECP_224R1,
+#endif
     Crypto.ECC.SECP_256R1,
     Crypto.ECC.SECP_384R1,
     Crypto.ECC.SECP_521R1,
@@ -1794,6 +1800,7 @@ test_do([[
   add_constant("threaded_low_test_ssl_connection");
   add_constant("test_ssl_connection");
   add_constant("low_test_ssl_connection");
+  add_constant("low_test_buffered_ssl_connection");
   add_constant("TestContext");
 ]])
 
