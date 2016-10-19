@@ -72,8 +72,11 @@ else
     fi
   ])
 
-  PIKE_CHECK_ECC_CURVE(nettle_secp_192r1)
-  PIKE_CHECK_ECC_CURVE(nettle_secp_224r1)
+  AC_ARG_WITH(weak-curves, [ --with-weak-curves  Include SECP192R1 and SECP224R1, frequently removed from Nettle binary dists ], [weak_curves=yes], [])
+  if test "x$weak_curves" = "xyes" ; then
+    PIKE_CHECK_ECC_CURVE(nettle_secp_192r1)
+    PIKE_CHECK_ECC_CURVE(nettle_secp_224r1)
+  fi
   PIKE_CHECK_ECC_CURVE(nettle_secp_256r1)
   PIKE_CHECK_ECC_CURVE(nettle_secp_384r1)
   PIKE_CHECK_ECC_CURVE(nettle_secp_521r1)
