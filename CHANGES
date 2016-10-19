@@ -48,6 +48,17 @@ o Protocols.WebSocket
   Fixed handling of truncated frames.
 
 
+Building
+--------
+
+o Nettle
+
+  Since there are distributions that have removed nettle_secp_192r1
+  and nettlesecp_224r1 from the nettle library, these curved are now
+  disabled by default. Enable them by compiling with
+  --with-weak-curves.
+
+
 Changes since Pike 8.0.240 (release 3)
 ----------------------------------------------------------------------
 
