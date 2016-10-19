@@ -725,7 +725,7 @@ define([AC_LOW_MODULE_INIT],
   AC_SUBST_FILE(dynamic_module_makefile)
   AC_SUBST_FILE(static_module_makefile)
 
-  AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+  AC_ARG_WITH(root, MY_DESCR([--with-root=path],[specify a cross-compilation root-directory]),[
     case "$with_root" in
       /)
         with_root=""
