@@ -78,7 +78,7 @@ class State {
   //!   The finite-field diffie-hellman group parameters.
   //! @param key
   //!   The public key y parameter.
-  variant this_program set_public_key(__builtin.Nettle.DH_Params params,
+  variant this_program set_public_key(.DH.Parameters params,
 				      Gmp.mpz key)
   {
     p = params->p;
@@ -245,7 +245,7 @@ class State {
 
   //! Generates a public/private key pair with the specified
   //! finite field diffie-hellman parameters.
-  variant this_program generate_key(__builtin.Nettle.DH_Params params)
+  variant this_program generate_key(.DH.Parameters params)
   {
     p = params->p;
     g = params->g;
