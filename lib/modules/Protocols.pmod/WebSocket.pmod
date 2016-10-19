@@ -718,9 +718,9 @@ class Connection {
               if (!frame) return;
             }
         }
-        if (sizeof(frame->data)) {
-            if (masking) frame->mask = random_string(4);
-        }
+        /* NOTE: the mask always needs to be used, even for
+         * empty frames */
+        if (masking) frame->mask = random_string(4);
         WS_WERR(2, "sending %O\n", frame);
         frame->encode(out);
         stream->write("");
