@@ -706,13 +706,11 @@ class Connection {
                     return;
                 }
                 if (state == OPEN) {
-#ifdef WEBSOCKET_DEBUG
                     if (catch(frame->close_reason)) {
                         WS_WERR(1, "Non utf8 text in close frame.\n");
                         fail(CLOSE_BAD_DATA);
                         return;
                     }
-#endif
                     close(frame->reason);
                     // we call close_event here early to allow applications to stop
                     // sending packets. i think this makes more sense than what the
