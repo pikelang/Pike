@@ -20,6 +20,14 @@ private constant agent = sprintf("Pike/%d.%d", __MAJOR__, __MINOR__);
 //! 
 typedef function(Frame, mixed:void) message_callback;
 
+function curry_back(function cb, mixed ... extra_args) {
+    void f(mixed ... args) {
+        cb(@args, @extra_args);
+    };
+
+    return f;
+}
+
 //! WebSocket frame opcodes.
 enum FRAME {
 
@@ -157,6 +165,27 @@ mapping(string:mapping) parse_websocket_extensions(string header) {
     }
   }
   return retval;
+}
+
+string encode_websocket_extensions(mapping(string:mapping) ext) {
+    array ev = ({});
+    foreach (ext; string name; mapping ext) {
+        array res = ({name});
+        foreach (ext; string pname; int|float|string pval) {
+            // FIXME We only look for embedded spaces to decide if
+            // we need to quote the parametervalue.  If you want to
+            // embed tabs or other whitespace, this needs to be
+            // amended.
+            if (stringp(pval) && has_value(pval, " "))
+                pval = "\"" + pval + "\"";
+            pval = (string)pval;
+            if (sizeof(pval))
+                pval = "="+pval;
+            res += ({pname+pval});
+        }
+        ev += ({res * ";"});
+    }
+    return ev * ",";
 }
 
 //! Parses one WebSocket frame. Throws an error if there isn't enough data in the buffer.
@@ -446,7 +475,8 @@ class Connection {
     //! actual HTTP request to switch protocols to the server and once
     //! a HTTP 101 response is returned, switch the connection to
     //! WebSockets and call the @[onopen] callback.
-    int connect(string|Standards.URI endpoint, void|mapping(string:string) extra_headers) {
+    int connect(string|Standards.URI endpoint, void|mapping(string:string) extra_headers,
+                void|array extensions) {
         if (stringp(endpoint)) endpoint = Standards.URI(endpoint);
         this_program::endpoint = endpoint;
         this_program::extra_headers = extra_headers || ([]);
@@ -491,7 +521,6 @@ class Connection {
 
         buffer_mode = 0;
 
-        stream->set_nonblocking(http_read, websocket_write, websocket_closed);
         mapping headers = ([
             "Host" : host,
             "Connection" : "Upgrade",
@@ -506,6 +535,25 @@ class Connection {
             headers[idx] = val;
         }
 
+        mapping rext;
+
+        if (arrayp(extensions)) {
+            rext = ([]);
+            extensions = extensions + ({ });
+
+            foreach (extensions; int i; extension_factory f) {
+              mixed o = f(1, 0, rext);
+              if (objectp(o)) extensions[i] = o;
+            }
+
+            if (sizeof(rext))
+                headers["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
+        }
+
+        stream->set_nonblocking(curry_back(http_read, _Roxen.HeaderParser(), extensions, rext),
+                                websocket_write, websocket_closed);
+
+
         // We use our output buffer to generate the request.
         out->add("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
@@ -516,7 +564,7 @@ class Connection {
     }
 
     //!
-    function(mixed:void) onopen;
+    function(mixed,void|mixed:void) onopen;
 
     //!
     function(Frame, mixed:void) onmessage;
@@ -545,24 +593,23 @@ class Connection {
 
     //! Read HTTP response from remote endpoint and handle connection
     //! upgrade.
-    protected void http_read(mixed _id, string data) {
+    protected void http_read(mixed _id, string data,
+                             object hp, array(extension_factory) extensions, mapping rext) {
 
         if (state != CONNECTING) {
           websocket_closed();
           return;
         }
 
-        in->add(data);
+        array tmp = hp->feed(data);
 
-        array tmp = in->sscanf("%s\r\n\r\n");
-        if (sizeof(tmp)) {
-            // We should now have an HTTP response
-            array(string) lines = tmp[0]/"\r\n";
+        if (tmp) {
             int major, minor;
             int status;
+            mapping headers = tmp[2];
             string status_desc;
 
-            if (sscanf(lines[0], "HTTP/%d.%d %d %s", major, minor, status, status_desc) != 4) {
+            if (sscanf(tmp[1], "HTTP/%d.%d %d %s", major, minor, status, status_desc) != 4) {
                 websocket_closed();
                 return;
             }
@@ -574,7 +621,20 @@ class Connection {
                   return;
             }
 
-            // FIXME: Parse headers and make them available to onopen?
+            if (arrayp(extensions)) {
+                mapping ext = parse_websocket_extensions(headers["sec-websocket-extensions"]);
+                array tmp = ({ });
+
+                /* we finish the extension negotiation */
+                foreach (extensions; int i; object|extension_factory f) {
+                  if (!objectp(f))
+                      extensions[i] = f(1, ext, rext);
+                }
+
+                extensions = filter(extensions, objectp);
+
+                if (sizeof(extensions)) this_program::extensions = extensions;
+            }
 
             if (endpoint->scheme != "wss") {
                 stream->set_buffer_mode(in, out);
@@ -584,11 +644,14 @@ class Connection {
             stream->set_nonblocking(websocket_in, websocket_write, websocket_closed);
 
             state = OPEN;
-            if (onopen) onopen(id || this);
+            if (onopen) onopen(id || this, headers);
             WS_WERR(2, "opened\n");
 
-            // Is this needed?
-            websocket_in(_id, in);
+            if (sizeof(tmp[0])) {
+                in->add(tmp[0]);
+                websocket_in(_id, in);
+            }
+
         }
     }
 
@@ -804,26 +867,8 @@ class Request(function(array(string), Request:void) cb) {
             }
 
             if (sizeof(tmp)) _extensions = tmp;
-            if (sizeof(rext)) {
-                array ev = ({});
-                foreach (rext; string name; mapping ext) {
-                    array res = ({name});
-                    foreach (ext; string pname; int|float|string pval) {
-                        // FIXME We only look for embedded spaces to decide if
-                        // we need to quote the parametervalue.  If you want to
-                        // embed tabs or other whitespace, this needs to be
-                        // amended.
-                        if (stringp(pval) && has_value(pval, " "))
-                            pval = "\"" + pval + "\"";
-                        pval = (string)pval;
-                        if (sizeof(pval))
-                            pval = "="+pval;
-                        res += ({pname+pval});
-                    }
-                    ev += ({res * ";"});
-                }
-                heads["Sec-WebSocket-Extensions"] = ev * ",";
-            }
+            if (sizeof(rext))
+                heads["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
         }
 
 	if (protocol) heads["Sec-Websocket-Protocol"] = protocol;
@@ -1084,52 +1129,61 @@ constant deflate_default_options = ([
 //! @note
 //!     If the @expr{permessage-deflate@} extension is not being used, it falls back to use
 //!     @[defragment].
-object permessagedeflate(void|mapping options) {
+object permessagedeflate(void|mapping default_options) {
 #if constant(Gz.deflate)
-  options = deflate_default_options + (options||([]));
+  default_options = deflate_default_options + (default_options||([]));
 
   object factory(int(0..1) client_mode, mapping ext, mapping rext) {
-    // no support for client mode at the moment
-    if (client_mode) return defragment();
+
+    if (client_mode && !ext) {
+        /* this is the first step, we just offer the extension without any
+         * parameters */
+        rext["permessage-deflate"] = ([]);
+        return 0;
+    }
 
     mapping parm = ext["permessage-deflate"];
 
     // this extension was not offered by the client
     if (!parm) return defragment();
 
-    mapping rparm = ([]);
+    mapping options = default_options + ([]);
 
-    mixed p;
+    if (!client_mode) {
+        mapping rparm = ([]);
 
-    if (parm->client_no_context_takeover
-     || options->decompressionNoContextTakeover) {
-        options->decompressionNoContextTakeover = 1;
-        rparm->client_no_context_takeover = "";
-    }
-    if (stringp(p = parm->client_max_window_bits)) {
-        if ((p = options->decompressionWindowSize) < 15 && p > 8)
-            rparm->client_max_window_bits = p;
-    } else if (!zero_type(p)) {
-        p = min(p, options->decompressionWindowSize);
-        options->decompressionWindowSize
-         = max(rparm->client_max_window_bits = p, 8);
-    }
-    if (parm->server_no_context_takeover
-     || options->compressionNoContextTakeover) {
-        options->compressionNoContextTakeover = 1;
-        rparm->server_no_context_takeover = "";
-    }
-    if (stringp(p = parm->server_max_window_bits)) {
-        if ((p = options->compressionWindowSize) < 15)
-        rparm->server_max_window_bits = p;
-    } else if (!zero_type(p)) {
-        p = min(p, options->compressionWindowSize);
-        if (p >= 8)
-          options->compressionWindowSize
-           = rparm->server_max_window_bits = p;
-    }
+        mixed p;
 
-    rext["permessage-deflate"] = rparm;
+        if (parm->client_no_context_takeover
+         || options->decompressionNoContextTakeover) {
+            options->decompressionNoContextTakeover = 1;
+            rparm->client_no_context_takeover = "";
+        }
+        if (stringp(p = parm->client_max_window_bits)) {
+            if ((p = options->decompressionWindowSize) < 15 && p > 8)
+                rparm->client_max_window_bits = p;
+        } else if (!zero_type(p)) {
+            p = min(p, options->decompressionWindowSize);
+            options->decompressionWindowSize
+             = max(rparm->client_max_window_bits = p, 8);
+        }
+        if (parm->server_no_context_takeover
+         || options->compressionNoContextTakeover) {
+            options->compressionNoContextTakeover = 1;
+            rparm->server_no_context_takeover = "";
+        }
+        if (stringp(p = parm->server_max_window_bits)) {
+            if ((p = options->compressionWindowSize) < 15)
+            rparm->server_max_window_bits = p;
+        } else if (!zero_type(p)) {
+            p = min(p, options->compressionWindowSize);
+            if (p >= 8)
+              options->compressionWindowSize
+               = rparm->server_max_window_bits = p;
+        }
+
+        rext["permessage-deflate"] = rparm;
+    }
 
     return _permessagedeflate(options);
   };
