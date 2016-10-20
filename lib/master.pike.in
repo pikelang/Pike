@@ -3045,7 +3045,9 @@ class CompatResolver
     foreach(tmp,string index) {
       resolv_debug("indexing %O with %O...\n",
 		   ret, index);
-      resolv_debug("indices(%O): %O\n", ret, indices(ret));
+      // NB: Running indices() on directory nodes will force them to load
+      //     all their content, which is probably NOT what you want...
+      // resolv_debug("indices(%O): %O\n", ret, indices(ret));
       if (undefinedp(ret)) break;
       ret = ret[index];
     }
