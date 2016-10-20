@@ -4,12 +4,15 @@
 
   protected string data;
   protected int subtype = 0x00;
-  
+
+  // NB: Code duplication from module.pmod to avoid circular dependencies.
+  private constant BINARY_OLD = 0x02;
+
   //!
   protected void create(string _data, int|void _subtype)
   {
      subtype = _subtype;
-     if(subtype == .BINARY_OLD)
+     if(subtype == BINARY_OLD)
      {
        if( !sscanf(data, "%-4H", data) )
          throw(Error.Generic("old binary data length does not match actual data length.\n"));
@@ -29,8 +32,8 @@
   }
 
   protected int _sizeof()
-  { 
-    if(subtype == .BINARY_OLD)
+  {
+    if(subtype == BINARY_OLD)
       return sizeof(data) + 4;
     else
       return sizeof(data);
@@ -42,7 +45,7 @@
     {
       // the docs are a little sketchy about this, do we need to NULL
       // terminate?
-       if(subtype == .BINARY_OLD)
+       if(subtype == BINARY_OLD)
          return sprintf("%-4H", data);
        else return data;
     }
