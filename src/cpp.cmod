@@ -1056,10 +1056,13 @@ static struct mapping *initial_predefs_mapping(void)
 #ifdef PIKE_DEBUG
   if (!use_initial_predefs) Pike_fatal ("Initial predefs has been taken over.\n");
 #endif
-  for (def = first_predef; def; def = def->next)
-    mapping_string_insert_string(map,
-                                 make_shared_string(def->name),
-                                 make_shared_string(def->value));
+  for (def = first_predef; def; def = def->next) {
+    struct pike_string *name = make_shared_string(def->name);
+    struct pike_string *value = make_shared_string(def->value);
+    mapping_string_insert_string(map, name, value);
+    free_string(value);
+    free_string(name);
+  }
   return map;
 }
 

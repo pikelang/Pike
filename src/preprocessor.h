@@ -274,8 +274,10 @@ static ptrdiff_t low_cpp(struct cpp *this,
           }else{
             if (OUTP())
               string_builder_shared_strcat (&this->buf, s);
-            free_string (s);
           }
+	  if (s) {
+	    free_string(s);
+	  }
         }
         break;
 
