@@ -1185,10 +1185,12 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     m->debug_size--;
 #endif
 
-  if((md->size < md->hashsize * MIN_LINK_LENGTH) &&
-     (md->hashsize > AVG_LINK_LENGTH)) {
-    debug_malloc_touch(m);
-    rehash(m, MAP_SLOTS(m->data->size));
+  if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
+    if((md->size < md->hashsize * MIN_LINK_LENGTH) &&
+       (md->hashsize > AVG_LINK_LENGTH)) {
+      debug_malloc_touch(m);
+      rehash(m, MAP_SLOTS(m->data->size));
+    }
   }
 
 #ifdef PIKE_DEBUG
@@ -1260,10 +1262,12 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     md->val_types = val_types;
     md->ind_types = ind_types;
 
-    if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
-       (md->hashsize > AVG_LINK_LENGTH)) {
-      debug_malloc_touch(m);
-      rehash(m, MAP_SLOTS(md->size));
+    if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
+      if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
+	 (md->hashsize > AVG_LINK_LENGTH)) {
+	debug_malloc_touch(m);
+	rehash(m, MAP_SLOTS(md->size));
+      }
     }
 
 #ifdef PIKE_DEBUG

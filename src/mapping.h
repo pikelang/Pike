@@ -15,6 +15,7 @@
 #define MAPPING_WEAK_VALUES	4
 #define MAPPING_WEAK		6
 #define MAPPING_FLAG_WEAK	6 /* Compat. */
+#define MAPPING_FLAG_NO_SHRINK	0x1000
 
 struct keypair
 {
