@@ -1184,9 +1184,9 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   if(m->data ==md)
     m->debug_size--;
 #endif
-  
-  if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
-  {
+
+  if((md->size < md->hashsize * MIN_LINK_LENGTH) &&
+     (md->hashsize > AVG_LINK_LENGTH)) {
     debug_malloc_touch(m);
     rehash(m, MAP_SLOTS(m->data->size));
   }
@@ -1260,8 +1260,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     md->val_types = val_types;
     md->ind_types = ind_types;
 
-    if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
-    {
+    if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
+       (md->hashsize > AVG_LINK_LENGTH)) {
       debug_malloc_touch(m);
       rehash(m, MAP_SLOTS(md->size));
     }
