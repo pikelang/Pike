@@ -1767,6 +1767,7 @@ void f_encode_value(INT32 args)
   initialize_buf(&data->buf);
   data->canonic = 0;
   data->encoded=allocate_mapping(128);
+  data->encoded->data->flags |= MAPPING_FLAG_NO_SHRINK;
   data->delayed = allocate_array (0);
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
 
