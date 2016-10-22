@@ -94,6 +94,9 @@ int node_is_leaf(node *n)
   case F_LOCAL:
   case F_VERSION:
     return 1;
+  default:
+    /* Inform gcc that we don't care about most values of the enum. */
+    break;
   }
   return 0;
 }
@@ -151,6 +154,10 @@ void check_tree(node *n, int depth)
 	  }
 	}
       }
+
+    default:
+      /* Inform gcc that we don't care about most values of the enum. */
+      break;
     }
 
     if(d_flag<2) break;
@@ -569,7 +576,10 @@ void debug_free_node(node *n)
     }
 #endif /* PIKE_DEBUG */
 
-    switch(n->token)
+    /* NB: Cast below is to get gcc to stop complaining about
+     *     USHRT_MAX not being in the enum.
+     */
+    switch((int)n->token)
     {
     case USHRT_MAX:
       Pike_fatal("Freeing node again!\n");
@@ -577,6 +587,10 @@ void debug_free_node(node *n)
 
     case F_CONSTANT:
       free_svalue(&(n->u.sval));
+      break;
+
+    default:
+      /* Inform gcc that we don't care about most values of the enum. */
       break;
     }
 
@@ -2133,6 +2147,9 @@ node **is_call_to(node *n, c_fun f)
 	 SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
 	 CAR(n)->u.sval.u.efun->function == f)
 	return &_CDR(n);
+    default:
+      /* Inform gcc that we don't care about most values of the enum. */
+      break;
   }
   return 0;
 }
@@ -4889,6 +4906,9 @@ static void optimize(node *n)
 #endif
       continue;
 
+    default:
+      /* Inform gcc that we don't care about some values of the enum. */
+      break;
     }
     n->node_info |= OPT_OPTIMIZED;
     n=n->parent;

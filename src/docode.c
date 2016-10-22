@@ -378,6 +378,9 @@ static void do_cond_jump(node *n, int label, int iftrue, int flags)
     if(!(flags & DO_POP)) break;
     do_cond_jump(CDR(n), label , !iftrue, flags | DO_NOT_COPY);
     return;
+  default:
+    /* Inform gcc that we handle all the values in the enum. */
+    break;
   }
 
   code_expression(n, flags | DO_NOT_COPY, "condition");
