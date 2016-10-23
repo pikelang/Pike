@@ -76,7 +76,7 @@ GTK2.TreeViewColumn clicked( );
 //!
 //!
 
-protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string|void property, int|void col );
+protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string property, int col );
 //! Creates a new W(TreeViewColumn).
 //!
 //!

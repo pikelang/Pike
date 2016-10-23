@@ -26,7 +26,7 @@ endrequire;
 signal clicked;
 
 void create(string|mapping(string:mixed)|void title_or_props,
-	    ?GTK2.CellRenderer renderer, ?string property, ?int col)
+	    ?GTK2.CellRenderer renderer, string property, int col)
 //! Creates a new W(TreeViewColumn).
 {
   pgtk2_verify_not_inited();
