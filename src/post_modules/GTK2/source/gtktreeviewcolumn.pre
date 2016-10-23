@@ -26,8 +26,10 @@ endrequire;
 signal clicked;
 
 void create(string|mapping(string:mixed)|void title_or_props,
-	    ?GTK2.CellRenderer renderer, string property, int col)
-//! Creates a new W(TreeViewColumn).
+	    GTK2.CellRenderer renderer, string property, int col,
+	    int|string ... moreprops)
+//! Creates a new W(TreeViewColumn). At least one property/col pair must be
+//! specified; any number of additional pairs can also be given.
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
@@ -39,11 +41,21 @@ void create(string|mapping(string:mixed)|void title_or_props,
       struct object *o1;
       INT_TYPE col;
       GtkTreeViewColumn *gt;
+      GtkCellRenderer *rend;
+      int i;
       get_all_args("create",args,"%s%o%s%i",&title,&o1,&prop,&col);
+      rend = GTK_CELL_RENDERER(get_gobject(o1));
       gt=gtk_tree_view_column_new_with_attributes(
 			title,
-			GTK_CELL_RENDERER(get_gobject(o1)),
+			rend,
 			prop,col,NULL);
+      /* Any additional (pairs of) arguments get added as attributes. */
+      /* CJA note to self: Is there a better way to do variadic GTK functions? */
+      for (int i = 4; i < args; i += 2) {
+        /* Note that errors from get_all_args here will look a little odd */
+        get_all_args("create", args-i, "%s%i", &prop, &col);
+        gtk_tree_view_column_add_attribute(gt, rend, prop, col);
+      }
       THIS->obj=G_OBJECT(gt);
     }
     pgtk2_pop_n_elems(args);
@@ -58,7 +70,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
 void pack_start(GTK2.CellRenderer cell, int expand);
 //! Packs the cell into the beginning of the column.  If expand is false, then
 //! the cell is allocated no more space than it needs.  Any unused space is
-//! divied evenly between cels for which expand is true.
+//! divied evenly between cells for which expand is true.
 
 void pack_end(GTK2.CellRenderer cell, int expand);
 //! Packs the cell to the end of the column.
