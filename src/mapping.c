@@ -23,8 +23,14 @@
 #include "opcodes.h"
 #include "stuff.h"
 
+/* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4
-#define MIN_LINK_LENGTH 1
+
+/* Minimum number of elements in a hashtable is half of the slots. */
+#define MIN_LINK_LENGTH_NUMERATOR	1
+#define MIN_LINK_LENGTH_DENOMINATOR	2
+
+/* Number of keypairs to allocate for a given size. */
 #define MAP_SLOTS(X) ((X)?((X)+((X)>>4)+8):0)
 
 struct mapping *first_mapping;
@@ -195,7 +201,7 @@ static void init_mapping(struct mapping *m,
   {
     hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
 
-    if (size < hashsize) size = hashsize;
+    if (size < hashsize * AVG_LINK_LENGTH) size = hashsize * AVG_LINK_LENGTH;
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
@@ -519,6 +525,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   INT32 tmp=m->data->size;
 #endif
   INT32 e;
+  INT32 hashsize = 0;
 
   md=m->data;
   debug_malloc_touch(md);
@@ -529,10 +536,10 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(d_flag>1)  check_mapping(m);
 #endif
 
-  /* FIXME: The special case below seems suspect.
-   *	/grubba 2011-09-04
-   */
-  if ((md->hashsize == new_size) && (md->refs == 1)) return m;
+  /* NB: Code duplication from init_mapping(). */
+  if (new_size)
+    hashsize = find_next_power(new_size / AVG_LINK_LENGTH + 1);
+  if ((md->hashsize == hashsize) && (md->refs == 1)) return m;
 
   init_mapping(m, new_size, md->flags);
   debug_malloc_touch(m);
@@ -1183,7 +1190,8 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 #endif
 
   if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
-    if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
+    if((md->size * MIN_LINK_LENGTH_DENOMINATOR <
+	md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
        (md->hashsize > AVG_LINK_LENGTH)) {
       debug_malloc_touch(m);
       rehash(m, MAP_SLOTS(m->data->size));
@@ -1260,7 +1268,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     md->ind_types = ind_types;
 
     if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
-      if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
+      if((md->size * MIN_LINK_LENGTH_DENOMINATOR <
+	  md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
 	 (md->hashsize > AVG_LINK_LENGTH)) {
 	debug_malloc_touch(m);
 	rehash(m, MAP_SLOTS(md->size));
