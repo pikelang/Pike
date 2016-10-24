@@ -215,6 +215,7 @@ protected class ECDSAVerifier
 	break;
       }
     }
+    if(!curve) return;
     DBG("ECC Curve: %O (%O)\n", curve, curve_id);
     pkc = curve->ECDSA()->set_public_key(key);
   }
@@ -271,7 +272,9 @@ protected Verifier make_verifier(Object _keyinfo)
       return NULL("Illegal ECDSA ASN.1\n");
 
     Identifier params = seq[1];
-    return ECDSAVerifier(str->value, params);
+    Verifier ver = ECDSAVerifier(str->value, params);
+    if(ver->pkc) return ver;
+    return NULL("make_verifier: Unsupported ECDSA curve.\n");
   }
 #endif
 
