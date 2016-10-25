@@ -184,24 +184,26 @@ static struct mapping_data weak_both_empty_data =
  * allocated space.
  */
 static void init_mapping(struct mapping *m,
-			 INT32 size,
+			 INT32 hashsize,
 			 INT16 flags)
 {
   struct mapping_data *md;
   ptrdiff_t e;
-  INT32 hashsize;
+  INT32 size;
 
   debug_malloc_touch(m);
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
     Pike_fatal("Can't allocate a new mapping_data inside gc.\n");
-  if(size < 0) Pike_fatal("init_mapping with negative value.\n");
+  if(hashsize < 0) Pike_fatal("init_mapping with negative value.\n");
 #endif
-  if(size)
+  if(hashsize)
   {
-    hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
+    if (hashsize & (hashsize - 1)) {
+      hashsize = find_next_power(hashsize);
+    }
 
-    if (size < hashsize * AVG_LINK_LENGTH) size = hashsize * AVG_LINK_LENGTH;
+    size = hashsize * AVG_LINK_LENGTH;
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
@@ -266,7 +268,7 @@ static struct mapping *allocate_mapping_no_init(void)
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
   struct mapping *m = allocate_mapping_no_init();
-  init_mapping(m,size,0);
+  init_mapping(m, (size + AVG_LINK_LENGTH - 1) / AVG_LINK_LENGTH, 0);
   return m;
 }
 
@@ -515,17 +517,16 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
  * run, but is used seldom enough not to degrade preformance significantly.
  *
  * @param m the mapping to be rehashed
- * @param new_size new mappingsize
+ * @param hashsize new mappingsize
  * @return the rehashed mapping
  */
-static struct mapping *rehash(struct mapping *m, int new_size)
+static struct mapping *rehash(struct mapping *m, int hashsize)
 {
   struct mapping_data *md, *new_md;
 #ifdef PIKE_DEBUG
   INT32 tmp=m->data->size;
 #endif
   INT32 e;
-  INT32 hashsize = 0;
 
   md=m->data;
   debug_malloc_touch(md);
@@ -537,11 +538,11 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #endif
 
   /* NB: Code duplication from init_mapping(). */
-  if (new_size)
-    hashsize = find_next_power(new_size / AVG_LINK_LENGTH + 1);
+  if (hashsize & (hashsize - 1))
+    hashsize = find_next_power(hashsize);
   if ((md->hashsize == hashsize) && (md->refs == 1)) return m;
 
-  init_mapping(m, new_size, md->flags);
+  init_mapping(m, hashsize, md->flags);
   debug_malloc_touch(m);
   new_md=m->data;
 
@@ -967,7 +968,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
      md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->size * 2 + 2);
+    rehash(m, md->hashsize?(md->hashsize<<1):AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1091,7 +1092,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
      md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->size * 2 + 2);
+    rehash(m, md->hashsize?(md->hashsize<<1):AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1194,7 +1195,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 	md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
        (md->hashsize > AVG_LINK_LENGTH)) {
       debug_malloc_touch(m);
-      rehash(m, MAP_SLOTS(m->data->size));
+      rehash(m, md->hashsize>>1);
     }
   }
 
@@ -1272,7 +1273,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 	  md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
 	 (md->hashsize > AVG_LINK_LENGTH)) {
 	debug_malloc_touch(m);
-	rehash(m, MAP_SLOTS(md->size));
+	rehash(m, md->hashsize>>1);
       }
     }
 
@@ -2545,7 +2546,7 @@ void check_mapping(const struct mapping *m)
   if(md->hashsize > md->num_keypairs)
     Pike_fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
 
-  if(md->num_keypairs > (md->hashsize + 3) * AVG_LINK_LENGTH)
+  if(md->num_keypairs > (md->hashsize + AVG_LINK_LENGTH - 1) * AVG_LINK_LENGTH)
     Pike_fatal("Mapping from hell detected, attempting to send it back...\n");
 
   if(md->size > 0 && (!md->ind_types || !md->val_types))
