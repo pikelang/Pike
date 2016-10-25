@@ -692,6 +692,8 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   add_ref(nmd);	/* For DMALLOC... */
   nmd->valrefs=0;
   nmd->hardlinks=0;
+  nmd->ind_types = md->ind_types;
+  nmd->val_types = md->val_types;
 
   /* FIXME: What about nmd->flags? */
 
@@ -1184,6 +1186,10 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   if(m->data ==md)
     m->debug_size--;
 #endif
+
+  if (UNLIKELY(!md->size)) {
+    md->ind_types = md->val_types = 0;
+  }
 
   if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
     if((MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH) &&
