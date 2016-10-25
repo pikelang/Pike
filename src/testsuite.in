@@ -4711,6 +4711,13 @@ test_any([[float p=2.0; return p--;]],2.0);
 test_any([[float p=2.0; p--; return p;]],1.0)
 test_any([[float p=2.0; return --p;]],1.0)
 
+test_any_equal([[
+  // Test that the type fields are cleared when the mapping is cleared.
+  mapping m = (["a":"a"]);
+  m_delete(m, "a");
+  return m;
+]], ([]))
+
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(class c { constant i=1; }()->i)
 test_true(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
