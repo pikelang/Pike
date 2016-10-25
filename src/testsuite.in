@@ -4760,6 +4760,13 @@ test_any([[mapping m=([0:2]); ++m[0]; return ++m[0];]], 4);
 test_any([[mapping m=([0:2]); m[0]--; return m[0]--;]], 1);
 test_any([[mapping m=([0:2]); --m[0]; return --m[0];]], 0);
 
+test_any_equal([[
+  // Test that the type fields are cleared when the mapping is cleared.
+  mapping m = (["a":"a"]);
+  m_delete(m, "a");
+  return m;
+]], ([]))
+
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(class c { constant i=1; }()->i)
 test_true(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
