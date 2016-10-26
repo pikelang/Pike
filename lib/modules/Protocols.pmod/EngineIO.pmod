@@ -712,7 +712,7 @@ class Socket {
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        conn = WebSocket(req, req.websocket_accept(0, _options));
+        conn = WebSocket(req, req.websocket_accept(0, UNDEFINED, _options));
         break;
       case "polling":
         conn = req.variables.j ? JSONP(req) : XHR(req);
