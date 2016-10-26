@@ -22,10 +22,10 @@ class Future
   mixed result = UNDEFINED;
   State state;
 
-  protected function(mixed:void) success_cb;
-  protected array(mixed) success_ctx;
-  protected function(mixed:void) failure_cb;
-  protected array(mixed) failure_ctx;
+  protected array(array(function(mixed, mixed ...: void)|array(mixed)))
+    success_cbs = ({});
+  protected array(array(function(mixed, mixed ...: void)|array(mixed)))
+    failure_cbs = ({});
 
   //! Wait for fullfillment and return the value.
   //!
@@ -53,33 +53,64 @@ class Future
   }
 
   //! Register a callback that is to be called on fulfillment.
+  //!
+  //! @param cb
+  //!   Function to be called. The first argument will be the
+  //!   result of the @[Future].
+  //!
+  //! @param extra
+  //!   Any extra context needed for @[cb]. They will be provided
+  //!   as arguments two and onwards when @[cb] is called.
+  //!
+  //! @note
+  //!   @[cb] will always be called from the main backend.
+  //!
+  //! @seealso
+  //!   @[on_failure()]
   this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     object key = mux->lock();
-    success_cb = cb;
-    success_ctx = extra;
-    State s = state;
-    mixed res = result;
-    key = 0;
-    if (s == STATE_FULFILLED) {
-      call_out(cb, 0, res, @extra);
+
+    if (state == STATE_FULFILLED) {
+      call_out(cb, 0, result, @extra);
+      key = 0;
+      return this;
     }
+
+    success_cbs += ({ ({ cb, extra }) });
+    key = 0;
 
     return this;
   }
 
   //! Register a callback that is to be called on failure.
+  //!
+  //! @param cb
+  //!   Function to be called. The first argument will be the
+  //!   failure result of the @[Future].
+  //!
+  //! @param extra
+  //!   Any extra context needed for @[cb]. They will be provided
+  //!   as arguments two and onwards when @[cb] is called.
+  //!
+  //! @note
+  //!   @[cb] will always be called from the main backend.
+  //!
+  //! @seealso
+  //!   @[on_success()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     object key = mux->lock();
-    failure_cb = cb;
-    failure_ctx = extra;
-    State s = state;
-    mixed res = result;
-    key = 0;
-    if (s == STATE_REJECTED) {
-      call_out(cb, 0, res, @extra);
+
+    if (state == STATE_REJECTED) {
+      call_out(cb, 0, result, @extra);
+      key = 0;
+      return this;
     }
+
+    failure_cbs += ({ ({ cb, extra }) });
+    key = 0;
+
     return this;
   }
 
@@ -245,8 +276,8 @@ class Future
     return results(({ this_program::this }) + others);
   }
 
-  //! Return a @[Future] that will be failed when @[seconds] seconds has
-  //! passed unless it has already been fullfilled.
+  //! Return a @[Future] that will either be fulfilled with the fulfilled
+  //! result of this @[Future], or be failed after @[seconds] have expired.
   this_program timeout(int|float seconds)
   {
     Promise p = Promise();
@@ -281,16 +312,28 @@ class Promise
     if (state < STATE_REJECTED) {
       result = value;
       state = STATE_FULFILLED;
-      function cb = success_cb;
-      array(mixed) extra = success_ctx;
       cond->broadcast();
-      if (cb) {
-	call_out(cb, 0, value, @extra);
+      foreach(success_cbs,
+	      [function(mixed, mixed ...: void) cb,
+	       array(mixed) extra]) {
+	if (cb) {
+	  call_out(cb, 0, value, @extra);
+	}
       }
     }
   }
 
-  //! Fulfill the @[Future] value.
+  //! Fulfill the @[Future].
+  //!
+  //! @param value
+  //!   Result of the @[Future].
+  //!
+  //! Mark the @[Future] as fulfilled if it hasn't already been failed,
+  //! and schedule the @[on_success()] callbacks to be called as soon
+  //! as possible.
+  //!
+  //! @seealso
+  //!   @[maybe_failure()], @[failure()], @[on_success()]
   void success(mixed value)
   {
     object key = mux->lock();
@@ -302,15 +345,26 @@ class Promise
   {
     state = STATE_REJECTED;
     result = value;
-    function cb = failure_cb;
-    array(mixed) extra = failure_ctx;
     cond->broadcast();
-    if (cb) {
-      call_out(cb, 0, value, @extra);
+    foreach(failure_cbs,
+	    [function(mixed, mixed ...: void) cb,
+	     array(mixed) extra]) {
+      if (cb) {
+	call_out(cb, 0, value, @extra);
+      }
     }
   }
 
   //! Reject the @[Future] value.
+  //!
+  //! @param value
+  //!   Failure result of the @[Future].
+  //!
+  //! Mark the @[Future] as failed, and schedule the @[on_failure()]
+  //! callbacks to be called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[maybe_failure()], @[success()], @[on_failure()]
   void failure(mixed value)
   {
     object key = mux->lock();
@@ -318,7 +372,17 @@ class Promise
     key = 0;
   }
 
-  //! Reject the @[Future] value unless it has already been fulfilled.
+  //! Maybe reject the @[Future] value.
+  //!
+  //! @param value
+  //!   Failure result of the @[Future].
+  //!
+  //! Mark the @[Future] as failed if it hasn't already been fulfilled,
+  //! and schedule the @[on_failure()] callbacks to be called as soon
+  //! as possible.
+  //!
+  //! @seealso
+  //!   @[failure()], @[success()], @[on_failure()]
   void maybe_failure(mixed value)
   {
     object key = mux->lock();
