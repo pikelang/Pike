@@ -322,7 +322,7 @@ class Promise
   void maybe_failure(mixed value)
   {
     object key = mux->lock();
-    if (!state) return;
+    if (state) return;
     unlocked_failure(value);
   }
 
