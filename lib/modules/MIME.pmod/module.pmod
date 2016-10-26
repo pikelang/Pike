@@ -761,7 +761,7 @@ string guess_subtype( string type )
 //! The first element is a mapping containing the headers found.  The second
 //! element is a string containing the body.
 //!
-//! Headers that occurr multiple times will have their contents NUL separated,
+//! Headers that occur multiple times will have their contents NUL separated,
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
