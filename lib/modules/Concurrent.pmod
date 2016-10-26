@@ -283,7 +283,7 @@ class Future
     Promise p = Promise();
     on_failure(p->failure);
     on_success(p->success);
-    call_out(p->maybe_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    call_out(p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
     return p->future();
   }
 }
@@ -328,15 +328,40 @@ class Promise
   //! @param value
   //!   Result of the @[Future].
   //!
-  //! Mark the @[Future] as fulfilled if it hasn't already been failed,
-  //! and schedule the @[on_success()] callbacks to be called as soon
-  //! as possible.
+  //! @throws
+  //!   Throws an error if the @[Future] already has been fulfilled
+  //!   or failed.
+  //!
+  //! Mark the @[Future] as fulfilled, and schedule the @[on_success()]
+  //! callbacks to be called as soon as possible.
   //!
   //! @seealso
-  //!   @[maybe_failure()], @[failure()], @[on_success()]
+  //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
   void success(mixed value)
   {
+    if (state) error("Promise has already been finalized.\n");
     object key = mux->lock();
+    if (state) error("Promise has already been finalized.\n");
+    unlocked_success(value);
+    key = 0;
+  }
+
+  //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
+  //!
+  //! @param value
+  //!   Result of the @[Future].
+  //!
+  //! Mark the @[Future] as fulfilled if it hasn't already been fulfilled
+  //! or failed, and in that case schedule the @[on_success()] callbacks
+  //! to be called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
+  void try_success(mixed value)
+  {
+    if (state) return;
+    object key = mux->lock();
+    if (state) return;
     unlocked_success(value);
     key = 0;
   }
@@ -360,14 +385,20 @@ class Promise
   //! @param value
   //!   Failure result of the @[Future].
   //!
+  //! @throws
+  //!   Throws an error if the @[Future] already has been fulfilled
+  //!   or failed.
+  //!
   //! Mark the @[Future] as failed, and schedule the @[on_failure()]
   //! callbacks to be called as soon as possible.
   //!
   //! @seealso
-  //!   @[maybe_failure()], @[success()], @[on_failure()]
+  //!   @[try_failure()], @[success()], @[on_failure()]
   void failure(mixed value)
   {
+    if (state) error("Promise has already been finalized.\n");
     object key = mux->lock();
+    if (state) error("Promise has already been finalized.\n");
     unlocked_failure(value);
     key = 0;
   }
@@ -378,13 +409,14 @@ class Promise
   //!   Failure result of the @[Future].
   //!
   //! Mark the @[Future] as failed if it hasn't already been fulfilled,
-  //! and schedule the @[on_failure()] callbacks to be called as soon
-  //! as possible.
+  //! and in that case schedule the @[on_failure()] callbacks to be
+  //! called as soon as possible.
   //!
   //! @seealso
   //!   @[failure()], @[success()], @[on_failure()]
-  void maybe_failure(mixed value)
+  void try_failure(mixed value)
   {
+    if (state) return;
     object key = mux->lock();
     if (state) return;
     unlocked_failure(value);
@@ -408,20 +440,8 @@ protected class FirstCompleted
       state = STATE_FULFILLED;
       return;
     }
-    futures->on_failure(got_failure);
-    futures->on_success(got_success);
-  }
-
-  protected void got_failure(mixed err)
-  {
-    if (state) return;
-    failure(err);
-  }
-
-  protected void got_success(mixed val)
-  {
-    if (state) return;
-    success(val);
+    futures->on_failure(try_failure);
+    futures->on_success(try_success);
   }
 }
 
