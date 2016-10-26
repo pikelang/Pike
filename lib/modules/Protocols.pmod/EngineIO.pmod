@@ -747,7 +747,8 @@ class Socket {
            "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
           return 0;
         case "websocket":
-          upgtransport = WebSocket(req, req.websocket_accept(0, _options));
+          upgtransport =
+	    WebSocket(req, req.websocket_accept(0, UNDEFINED, _options));
           upgtransport.read_cb = upgrecv;
       }
   }
