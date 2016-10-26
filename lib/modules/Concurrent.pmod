@@ -477,14 +477,15 @@ protected class Results
   protected void got_success(mixed value, int i,
 			     array(mixed) results, array(State) states)
   {
-    if (state == STATE_REJECTED) return;
+    if (state || states[i]) return;
+    object key = mux->lock();
+    if (state || states[i]) return;
     results[i] = value;
     states[i] = STATE_FULFILLED;
-    if (!state) {
-      if (has_value(states, STATE_PENDING)) {
-        return;
-      }
+    if (has_value(states, STATE_PENDING)) {
+      return;
     }
+    key = 0;
     success(results);
   }
 }
@@ -535,13 +536,13 @@ protected class Fold
 			     array(State) states)
   {
     if (state || states[i]) return;
+    object key = mux->lock();
+    if (state || states[i]) return;
     states[i] = STATE_FULFILLED;
     mixed err = catch {
 	// FIXME: What if fun triggers a recursive call?
 	accumulated = fun(val, accumulated, @ctx);
-	if (!state) {
-	  if (has_value(states, STATE_PENDING)) return;
-	}
+	if (has_value(states, STATE_PENDING)) return;
 	success(accumulated);
 	return;
       };
@@ -561,8 +562,13 @@ protected class Fold
 //!   value, and any further from @[extra].
 //!
 //! @note
-//!   @[fun] may be called in any order, and will only be called
-//!   once for every @[Future] in @[futures].
+//!   If @[fun] throws an error it will fail the @[Future].
+//!
+//! @note
+//!   @[fun] may be called in any order, and will be called
+//!   once for every @[Future] in @[futures], unless one of
+//!   calls fails in which case no further calls will be
+//!   performed.
 Future fold(array(Future) futures,
 	    mixed initial,
 	    function(mixed, mixed, mixed ... : mixed) fun,
