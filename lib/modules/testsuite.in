@@ -1,6 +1,102 @@
 
 START_MARKER
 
+dnl - Concurrent
+
+test_do([[
+  class AsyncResult {
+    mixed result = UNDEFINED;
+    int state;
+
+    void failure(mixed val)
+    {
+      if (state) error("Multiple results.\n");
+      state = -1;
+      result = val;
+    }
+
+    void success(mixed val)
+    {
+      if (state) error("Multiple results.\n");
+      state = 1;
+      result = val;
+    }
+
+    mixed get_result(int expected)
+    {
+      mixed res = (state == expected) && result;
+      state = 0;
+      result = UNDEFINED;
+      return res;
+    }
+  };
+  add_constant("AsyncResult", AsyncResult());
+]])
+
+define(init_promise, [[
+  test_do([[
+    Concurrent.Promise p = Concurrent.Promise();
+    Concurrent.Future f = p->future();
+
+    f->on_success(AsyncResult.success);
+    f->on_failure(AsyncResult.failure);
+
+    add_constant("promise", p);
+  ]])
+]])
+
+dnl expected_result_state, expected_result_value
+define(exit_promise, [[
+  test_any([[
+    while(Pike.DefaultBackend(0.0))
+      ;
+    return AsyncResult->get_result($1);
+  ]], $2)
+]])
+
+init_promise()
+
+test_do([[ promise->success(1); ]])
+test_eval_error([[ promise->success(2); ]])
+test_eval_error([[ promise->failure(3); ]])
+test_do([[ promise->try_success(4); ]])
+test_do([[ promise->try_success(5); ]])
+
+exit_promise(1, 1)
+
+init_promise()
+
+test_do([[ promise->failure(6); ]])
+test_eval_error([[ promise->success(7); ]])
+test_eval_error([[ promise->failure(8); ]])
+test_do([[ promise->try_success(9); ]])
+test_do([[ promise->try_success(10); ]])
+
+exit_promise(-1, 6)
+
+init_promise()
+
+test_do([[ promise->try_success(11); ]])
+test_eval_error([[ promise->success(12); ]])
+test_eval_error([[ promise->failure(13); ]])
+test_do([[ promise->try_success(14); ]])
+test_do([[ promise->try_success(15); ]])
+
+exit_promise(1, 11)
+
+init_promise()
+
+test_do([[ promise->try_failure(16); ]])
+test_eval_error([[ promise->success(17); ]])
+test_eval_error([[ promise->failure(18); ]])
+test_do([[ promise->try_success(19); ]])
+test_do([[ promise->try_success(20); ]])
+
+exit_promise(-1, 16)
+
+test_do([[ add_constant("promise"); ]])
+test_do([[ add_constant("AsyncResult"); ]])
+
 dnl - NetUtils
 
 test_equal( NetUtils.string_to_ip( "0.0.0.0" ), 0 );
