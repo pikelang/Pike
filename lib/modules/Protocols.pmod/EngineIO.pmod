@@ -712,7 +712,8 @@ class Socket {
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        conn = WebSocket(req, req.websocket_accept(0, UNDEFINED, _options));
+        conn = WebSocket(req,
+                         req.websocket_accept(0, ({ Protocols.WebSocket.permessagedeflate(_options) })));
         break;
       case "polling":
         conn = req.variables.j ? JSONP(req) : XHR(req);
@@ -748,7 +749,8 @@ class Socket {
           return 0;
         case "websocket":
           upgtransport =
-	    WebSocket(req, req.websocket_accept(0, UNDEFINED, _options));
+	    WebSocket(req,
+                      req.websocket_accept(0, ({ Protocols.WebSocket.permessagedeflate(_options) })));
           upgtransport.read_cb = upgrecv;
       }
   }
