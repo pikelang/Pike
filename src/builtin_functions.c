@@ -2123,10 +2123,11 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   ptrdiff_t len;
   struct pike_string *in;
   struct pike_string *out;
-  ptrdiff_t i,j;
+  ptrdiff_t i;
   INT_TYPE extended = 0;
   PCHARP src;
   INT32 min, max;
+  unsigned char * dst;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
@@ -2186,57 +2187,58 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
     return;
   }
   out = begin_shared_string(len);
+  dst = STR0(out);
 
-  for(i=j=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
     unsigned INT32 c = EXTRACT_PCHARP(src);
     if (!(c & ~0x7f)) {
       /* 7bit */
-      out->str[j++] = c;
+      *dst++ = c;
     } else if (!(c & ~0x7ff)) {
       /* 11bit */
-      out->str[j++] = 0xc0 | (c >> 6);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xc0 | (c >> 6);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0xffff)) {
       /* 16bit */
-      out->str[j++] = 0xe0 | (c >> 12);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xe0 | (c >> 12);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x1fffff)) {
       /* 21bit */
-      out->str[j++] = 0xf0 | (c >> 18);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xf0 | (c >> 18);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x3ffffff)) {
       /* 26bit */
-      out->str[j++] = 0xf8 | (c >> 24);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xf8 | (c >> 24);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x7fffffff)) {
       /* 31bit */
-      out->str[j++] = 0xfc | (c >> 30);
-      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xfc | (c >> 30);
+      *dst++ = 0x80 | ((c >> 24) & 0x3f);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else {
       /* 32 - 36bit */
-      out->str[j++] = (char)0xfe;
-      out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = (char)0xfe;
+      *dst++ = 0x80 | ((c >> 30) & 0x3f);
+      *dst++ = 0x80 | ((c >> 24) & 0x3f);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     }
   }
 #ifdef PIKE_DEBUG
-  if (len != j) {
+  if (len != dst - STR0(out)) {
     Pike_fatal("string_to_utf8(): Calculated and actual lengths differ: "
-	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n", len, j);
+	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n", len, dst - STR0(out));
   }
 #endif /* PIKE_DEBUG */
   out = end_shared_string(out);
