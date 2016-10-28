@@ -36,13 +36,21 @@ test_do([[
 define(init_promise, [[
   test_do([[
     Concurrent.Promise p = Concurrent.Promise();
-    Concurrent.Future f = p->future();
-
-    f->on_success(AsyncResult.success);
-    f->on_failure(AsyncResult.failure);
-
     add_constant("promise", p);
+    add_constant("future", p->future());
   ]])
+]])
+
+define(init_future, [[
+  test_do([[
+    future->on_success(AsyncResult.success);
+    future->on_failure(AsyncResult.failure);
+  ]])
+]])
+
+define(std_init_promise, [[
+  init_promise()
+  init_future()
 ]])
 
 dnl expected_result_state, expected_result_value
@@ -54,46 +62,103 @@ define(exit_promise, [[
   ]], $2)
 ]])
 
-init_promise()
-
+dnl - success()
+std_init_promise()
 test_do([[ promise->success(1); ]])
 test_eval_error([[ promise->success(2); ]])
 test_eval_error([[ promise->failure(3); ]])
 test_do([[ promise->try_success(4); ]])
 test_do([[ promise->try_success(5); ]])
-
 exit_promise(1, 1)
 
-init_promise()
-
+dnl - failure()
+std_init_promise()
 test_do([[ promise->failure(6); ]])
 test_eval_error([[ promise->success(7); ]])
 test_eval_error([[ promise->failure(8); ]])
 test_do([[ promise->try_success(9); ]])
 test_do([[ promise->try_success(10); ]])
-
 exit_promise(-1, 6)
 
-init_promise()
-
+dnl - try_success()
+std_init_promise()
 test_do([[ promise->try_success(11); ]])
 test_eval_error([[ promise->success(12); ]])
 test_eval_error([[ promise->failure(13); ]])
 test_do([[ promise->try_success(14); ]])
 test_do([[ promise->try_success(15); ]])
-
 exit_promise(1, 11)
 
-init_promise()
-
+dnl - try_failure()
+std_init_promise()
 test_do([[ promise->try_failure(16); ]])
 test_eval_error([[ promise->success(17); ]])
 test_eval_error([[ promise->failure(18); ]])
 test_do([[ promise->try_success(19); ]])
 test_do([[ promise->try_success(20); ]])
-
 exit_promise(-1, 16)
 
+dnl - Late adding of callbacks.
+init_promise()
+test_do([[ promise->success(21); ]])
+test_eval_error([[ promise->success(22); ]])
+test_eval_error([[ promise->failure(23); ]])
+test_do([[ promise->try_success(24); ]])
+test_do([[ promise->try_success(25); ]])
+exit_promise(0, 0)
+init_future()
+exit_promise(1, 21)
+
+dnl - map()
+init_promise()
+test_do([[ add_constant("future", future->map(`+, 100)); ]])
+init_future()
+test_do([[ promise->success(17); ]])
+exit_promise(1, 117)
+
+dnl - recover()
+init_promise()
+test_do([[ add_constant("future", future->recover(`+, 12)); ]])
+init_future()
+test_do([[ promise->failure(10); ]])
+exit_promise(1, 22)
+
+dnl - filter() - true
+init_promise()
+test_do([[ add_constant("future", future->filter(`&, 1)); ]])
+init_future()
+test_do([[ promise->success(11); ]])
+exit_promise(1, 11)
+
+dnl - filter() - false
+init_promise()
+test_do([[ add_constant("future", future->filter(`&, 1)); ]])
+init_future()
+test_do([[ promise->success(10); ]])
+exit_promise(-1, UNDEFINED)
+
+dnl - transform() - true
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, `-, 100)); ]])
+init_future()
+test_do([[ promise->success(1); ]])
+exit_promise(1, 101)
+
+dnl - transform() - false
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, `-, 100)); ]])
+init_future()
+test_do([[ promise->failure(1); ]])
+exit_promise(1, -99)
+
+dnl - transform() - exception
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, throw)); ]])
+init_future()
+test_do([[ promise->failure(1); ]])
+exit_promise(-1, 1)
+
+test_do([[ add_constant("future"); ]])
 test_do([[ add_constant("promise"); ]])
 test_do([[ add_constant("AsyncResult"); ]])
 
