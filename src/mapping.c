@@ -2080,6 +2080,8 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if(m_sizeof(a) != m_sizeof(b)) return 0;
 
+  if (m_sizeof(a) == 0) return 1;
+
   if (!check_type_overlaps(a->data->ind_types, b->data->ind_types) ||
       !check_type_overlaps(a->data->val_types, b->data->val_types)) return 0;
 
