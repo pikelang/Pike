@@ -3390,8 +3390,9 @@ PIKE_MODULE_INIT
 #if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
   
 /* function(:string) */
-  ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_TRY_OPTIMIZE);
-  ADD_FUNCTION2("gethostname", f_gethostname,tFunc(tNone,tStr), 0, OPT_TRY_OPTIMIZE);
+  ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("gethostname", f_gethostname,tFunc(tNone,tStr), 0,
+                OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
 #ifdef GETHOST_DECLARE
