@@ -34,47 +34,6 @@
 #define PIKE_TYPE_DEBUG
 #endif /* PIKE_DEBUG */
 
-/*
- * Flags used by low_match_types().
- */
-#define A_EXACT 1
-#define B_EXACT 2
-#define NO_MAX_ARGS 4
-#define NO_SHORTCUTS 8
-
-#define TYPE_GROUPING
-
-/*
- * Flags used by pike_types_le()
- */
-#define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
-#define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
-				 * Relevant for markers.
-				 */
-#ifdef TYPE_GROUPING
-#define LE_A_GROUPED	4	/* Argument A has been grouped.
-				 * Perform weaker checking for OR-nodes. */
-#define LE_B_GROUPED	8	/* Argument B has been grouped.
-				 * Perform weaker checking for OR-nodes. */
-#define LE_A_B_GROUPED	12	/* Both the above two flags. */
-#endif
-#define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
-#define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
-
-/*
- * Flags used by low_get_first_arg_type()
- *
- * Note that these differ for the flags to get_first_arg_type().
- */
-#define FILTER_KEEP_VOID 1	/* Keep void during the filtering. */
-
-/*
- * Flags used as flag_method to mk_type()
- */
-#define PT_COPY_CAR	1
-#define PT_COPY_CDR	2
-#define PT_COPY_BOTH	3
-#define PT_IS_MARKER	4	/* The node is a marker. */
 
 /* Number of entries in the struct pike_type hash-table. */
 /* 256Kb */
