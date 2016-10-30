@@ -842,7 +842,7 @@ array list_signals()
 
     ref_push_string(_STR("params"));
     for (p=0; p<sig.n_params; ++p)
-      PGTK_PUSH_GCHAR(g_type_name(sig.param_types[0]));
+      PGTK_PUSH_GCHAR(g_type_name(sig.param_types[p]));
     f_aggregate(sig.n_params);
 
     ref_push_string(_STR("return"));
