@@ -1584,6 +1584,22 @@ class UnicodeMessage {
     return disp_params["filename"] || params["name"];
   }
 
+  //! This method returns the raw data of the message body entity, decoded
+  //! according to the @[charset] attribute.
+  //!
+  //! The @[type] and @[subtype] attributes indicate how this data should
+  //! be interpreted.
+  //!
+  //! @seealso
+  //! @[setdata()], @[getencoded()], @[data]
+  //!
+  //! @note
+  //! This can throw an exception if the charset is incorrect.
+  string getdata( )
+  {
+    return Charset.decoder(charset)->feed(::getdata())->drain();
+  }
+
   protected string _header_to_string(string header, string hname) {
     return hname + ": " + encode_words_text_remapped(header, "b", "UTF-8");
   }
