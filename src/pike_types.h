@@ -95,6 +95,7 @@ extern size_t pike_type_hash_size;
 #endif
 #define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
 #define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
+#define LE_TYPE_SVALUE	64	/* Same matching as match_type_svalue(). */
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -287,6 +288,7 @@ int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type);
 int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b);
+int check_variant_overload(struct pike_type *a, struct pike_type *b);
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *type_of_index,
 			     node *n);

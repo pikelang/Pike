@@ -4430,6 +4430,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     b = b->cdr;
 
     /* check the returntype */
+    if (flags & LE_TYPE_SVALUE) return 1;
     /* FIXME: Check array_cnt */
     if ((b->type != T_VOID) && (a->type != T_VOID)) {
       if(!low_pike_types_le(a, b, array_cnt, flags)) return 0;
@@ -4444,6 +4445,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   switch(a->type)
   {
   case T_MAPPING:
+    if (flags & LE_TYPE_SVALUE) return 1;
     /*
      *  mapping(A:B) <= mapping(C:D)   iff A <= C && B <= D.
      */
@@ -4548,6 +4550,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case T_MULTISET:
   case T_ARRAY:
   case T_STRING:
+    if (flags & LE_TYPE_SVALUE) return 1;
     a = a->car;
     b = b->car;
     array_cnt = 0;
@@ -4714,6 +4717,11 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
   return low_pike_types_le(a, b, 0, 0);
 }
 
+int check_variant_overload(struct pike_type *a, struct pike_type *b)
+{
+  clear_markers();
+  return !low_pike_types_le(b, a, 0, LE_TYPE_SVALUE);
+}
 
 #ifdef DEBUG_MALLOC
 #define low_index_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(debug_low_index_type((X),(Y),(Z))))
