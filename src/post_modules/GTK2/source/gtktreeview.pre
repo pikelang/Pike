@@ -706,7 +706,7 @@ void unset_rows_drag_source();
 //! Undoes the effect of enable_model_drag_source().
 
 void unset_rows_drag_dest();
-//! Unodes the effect of enable_model_drag_dest().
+//! Undoes the effect of enable_model_drag_dest().
 
 void set_drag_dest_row(GTK2.TreePath path, int pos);
 //! Sets the row that is highlighted for feedback.
