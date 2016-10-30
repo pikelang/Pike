@@ -3063,6 +3063,54 @@ test_any([[
 ]], "A:a():B:a(\"3\"):A:a(\"3\")|B:a(\"foo\")|C:a()")
 
 test_any([[
+  class A {
+    string a() { return "A"; }
+    variant string a(int i) { return "B"+i+"B"; }
+  };
+  return A()->a() + A()->a(1);
+]], "AB1B")
+
+test_compile_warning([[
+  class A {
+    string a() { return "A"; }
+    variant string a(int|void i) { return "B"+i+"B"; }
+  };
+  return A()->a() + A()->a(1);
+]])
+
+dnl test_any([[
+dnl   class A {
+dnl     string a(int|void i) { return "A" + i + "A"; }
+dnl     variant string a(int i) { return "B"+i+"B"; }
+dnl   };
+dnl   return A()->a() + A()->a(1);
+dnl ]], "A0AB1B")
+
+test_compile_warning([[
+  class A {
+    string a(int i) { return "A"+i+"A"; }
+    variant string a(int|void i) { return "B"+i+"B"; }
+  };
+  return A()->a() + A()->a(1);
+]])
+
+dnl test_any([[
+dnl   class A {
+dnl     string a(int|void i) { return "A" + i + "A"; }
+dnl     variant string a(int i, int|void j) { return "B"+i+"C"+j+"C"+"B"; }
+dnl   };
+dnl   return A()->a() + A()->a(1) + A()->a(2, 3);
+dnl ]], "A0AB1C0CBB2C3CB")
+
+test_compile_warning([[
+  class A {
+    string a(int i) { return "A"+i+"A"; }
+    variant string a(int i, int|void j) { return "B"+i+"C"+j+"C"+"B"; }
+  };
+  return A()->a(1) + A()->a(2, 3);
+]])
+
+test_any([[
   // Test symbol lookup for inherit in multi-pass.
   // LysLysKOM 16472935
   // An old pike will attempt to lookup X in the innermost X
