@@ -54,11 +54,6 @@
 //! collected in the array @[Message->body_parts] within the original
 //! Message object. If any of the new @[Message] objects have a body of
 //! type multipart, the process is of course repeated recursively.
-//!
-//! Many of the fields in a @[MIME.Message] represent text, which will often
-//! be ASCII but may contain other character sets. To automatically decode
-//! these to Unicode, use @[MIME.UnicodeMessage], which is otherwise identical
-//! to @[MIME.Message].
 
 
 #pike __REAL_VERSION__
@@ -751,8 +746,7 @@ string guess_subtype( string type )
 //! @decl array(mapping(string:string)|string) parse_headers(string message)
 //! @decl array(mapping(string:array(string))|string) parse_headers( @
 //!                                                     string message, @
-//!                                                     int(1..1) use_multiple, @
-//!                                                     int(1..1) unicode)
+//!                                                     int(1..1) use_multiple)
 //!
 //! This is a low level function that will separate the headers from the body
 //! of an encoded message.  It will also translate the headers into a mapping.
@@ -771,10 +765,8 @@ string guess_subtype( string type )
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
-//! If unicode is specified, RFC 1522 tokens in headers will be decoded.
 array(mapping(string:string|array(string))|string|StringRange)
-  parse_headers(string|StringRange message, void|int(1..1) use_multiple,
-                void|int(1..1) unicode)
+  parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
   string head, header, hname, hcontents;
   string|StringRange body;
@@ -804,8 +796,6 @@ array(mapping(string:string|array(string))|string|StringRange)
     if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
       hname = lower_case(hname);
-      if (unicode)
-        hcontents = decode_words_text_remapped(hcontents);
       if (use_multiple)
 	headers[hname] += ({hcontents});
       else
@@ -822,9 +812,7 @@ array(mapping(string:string|array(string))|string|StringRange)
 }
 
 
-//! This class is used to hold a decoded MIME message. Non-ASCII text strings
-//! are kept in their base encodings; to automatically decode them, see the
-//! @[MIME.UnicodeMessage] subclass.
+//! This class is used to hold a decoded MIME message.
 class Message {
 
   import Array;
@@ -965,10 +953,6 @@ class Message {
   //! @note
   //! An interactive application should always query the user for the actual
   //! filename to use.  This method may provide a reasonable default though.
-  //!
-  //! @note
-  //! This value is a 21-bit Unicode string, and may need to be encoded in the
-  //! file system's encoding (eg UTF-8) before use.
   //!
   string get_filename( )
   {
@@ -1191,11 +1175,6 @@ class Message {
     setparam( "boundary", boundary );
   }
 
-  //Private helper for cast() - can be overridden.
-  protected string _header_to_string(string header, string hname) {
-    return hname + ": " + header;
-  }
-
   //! Casting the message object to a string will yield a byte stream suitable
   //! for transmitting the message over protocols such as ESMTP and NNTP.
   //!
@@ -1238,7 +1217,9 @@ class Message {
 		lambda(string hname){
 		  return map(arrayp(headers[hname]) ? headers[hname] :
 			     headers[hname]/"\0",
-			     _header_to_string,
+			     lambda(string header,string hname) {
+			       return hname+": "+header;
+			     },
 			     replace(map(hname/"-",
 					 String.capitalize)*"-",
 				     "Mime","MIME"))*"\r\n";
@@ -1327,10 +1308,6 @@ class Message {
     }
   }
 
-  //Mode-switch constant for backward compatibility.
-  //Ensures that create() does the right thing.
-  constant _is_unicode_message = 0;
-
   //! @decl void create()
   //! @decl void create(string message)
   //! @decl void create(string message, @
@@ -1399,7 +1376,7 @@ class Message {
 	  headers[lower_case(hname)] = hdrs[hname];
       body_parts = parts;
     } else if (message)
-      [ headers, encoded_data ] = parse_headers(message, UNDEFINED, _is_unicode_message);
+      [ headers, encoded_data ] = parse_headers(message);
 
     if (headers["content-type"]) {
       array(array(string|int)) arr =
@@ -1551,47 +1528,6 @@ class Message {
   {
     if (c == 'O')
       return sprintf("Message(%O)", disp_params);
-    return (string)this;
-  }
-}
-
-//! Subclass of @[MIME.Message] that works with 21-bit Unicode in all places.
-//! Casting to string encodes everything appropriately (eg UTF-8 and Base64).
-//! If anything else returns an 8-bit string in some other encoding, it is a
-//! bug to be fixed.
-class UnicodeMessage {
-  inherit Message;
-  constant _is_unicode_message = 1;
-
-  //! This method tries to find a suitable filename should you want to save the
-  //! body data to disk.
-  //!
-  //! It will examine the @tt{filename@} attribute of the
-  //! @tt{Content-Disposition@} header, and failing that the @tt{name@}
-  //! attribute of the @tt{Content-Type@} header. If neither attribute is set,
-  //! the method returns 0.
-  //!
-  //! @note
-  //! An interactive application should always query the user for the actual
-  //! filename to use.  This method may provide a reasonable default though.
-  //!
-  //! @note
-  //! This value is a 21-bit Unicode string, and may need to be encoded in the
-  //! file system's encoding (eg UTF-8) before use.
-  //!
-  string get_filename( )
-  {
-    return disp_params["filename"] || params["name"];
-  }
-
-  protected string _header_to_string(string header, string hname) {
-    return hname + ": " + encode_words_text_remapped(header, "b", "UTF-8");
-  }
-
-  protected string _sprintf(int c)
-  {
-    if (c == 'O')
-      return sprintf("UnicodeMessage(%O)", disp_params);
     return (string)this;
   }
 }
