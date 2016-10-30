@@ -4136,11 +4136,30 @@ struct program *end_first_pass(int finish)
       /* NB: The dispatcher needs the variant references to
        *     not get overloaded for the ::-operator to work.
        */
-      prog->identifier_references[j].id_flags |= ID_LOCAL;
+      ref->id_flags |= ID_LOCAL;
+      if (type)
       {
-	  struct pike_type * temp = type;
-	  type = or_pike_types(type, id->type, 1);
-	  if (temp) free_type(temp);
+	struct pike_type * temp = type;
+	if ((Pike_compiler->compiler_pass == 2) && !ref->inherit_offset &&
+	    !check_variant_overload(id->type, type)) {
+	  /* This symbol is shadowed by later variants. */
+	  yytype_report(REPORT_WARNING,
+			NULL, 0, NULL,
+			Pike_compiler->new_program->strings[id->filename_strno],
+			id->linenumber, id->type,
+			0, "Variant of function %S masked by later variant(s).",
+			name);
+	  ref_push_type_value(type);
+	  low_yyreport(REPORT_WARNING,
+		       Pike_compiler->new_program->strings[id->filename_strno],
+		       id->linenumber,
+		       type_check_system_string,
+		       1, "Aggregated type: %O.");
+	}
+	type = or_pike_types(type, id->type, 1);
+	free_type(temp);
+      } else {
+	add_ref(type = id->type);
       }
 #ifdef COMPILER_DEBUG
       fprintf(stderr, "type: ");
