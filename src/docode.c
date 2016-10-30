@@ -2788,6 +2788,30 @@ static int do_docode2(node *n, int flags)
   }
 }
 
+static void emit_save_locals(struct compiler_frame *f)
+{
+  struct compilation *c = THIS_COMPILATION;
+  INT16 offset;
+  INT16 idx;
+  INT16 num_locals = f->max_number_of_locals;
+
+  for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
+    INT16 bitmask = 0;
+    for (idx = 0; idx < 16; idx++) {
+      INT16 local_var_idx = offset * 16 + idx;
+      if (local_var_idx >= num_locals) {
+        break;
+      }
+      if (f->variable[local_var_idx].flags & LOCAL_VAR_USED_IN_SCOPE) {
+        bitmask |= 1 << idx;
+      }
+    }
+    if (bitmask) {
+      emit1(F_SAVE_LOCALS, (offset << 16) + bitmask);
+    }
+  }
+}
+
 /* Used to generate code for functions. */
 INT32 do_code_block(node *n)
 {
@@ -2845,7 +2869,7 @@ INT32 do_code_block(node *n)
   emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
         Pike_compiler->compiler_frame->max_number_of_locals);
   if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-    emit1(F_PROTECT_STACK, Pike_compiler->compiler_frame->max_number_of_locals);
+    emit_save_locals(Pike_compiler->compiler_frame);
   }
 
   if(id && (id->id_flags & ID_INLINE))
@@ -2896,8 +2920,7 @@ INT32 do_code_block(node *n)
 	    Pike_compiler->compiler_frame->max_number_of_locals);
     }
     if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-      emit1(F_PROTECT_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals);
+      emit_save_locals(Pike_compiler->compiler_frame);
     }
 
     DO_CODE_BLOCK(n);
