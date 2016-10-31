@@ -3119,6 +3119,33 @@ test_compile_warning([[
 ]])
 
 test_any([[
+  class A { string a(){ return "A"; } };
+  class B { int a(){ return 17; } };
+  class C {
+    string c(A a) { return "C" + a->a() + "C"; }
+    variant string c(B b) { return "CB" + b->a() + "BC"; }
+  };
+  A a = A();
+  B b = B();
+  C c = C();
+  return c->c(a) + c->c(b);
+]], "CACCB17BC")
+
+test_compile_warning([[
+  // Bug 7812.
+  class A { string a(){ return "A"; } };
+  class B { int a(){ return 17; } };
+  class C {
+    string c(array(A) a) { return "C" + (a->a() * "C") + "C"; }
+    variant string c(array(B) b) { return "CB" + `+(0, @b->a()) + "BC"; }
+  };
+  A a = A();
+  B b = B();
+  C c = C();
+  return c->c(({a,a})) + c->c(({b,b}));
+]])
+
+test_any([[
   // Test symbol lookup for inherit in multi-pass.
   // LysLysKOM 16472935
   // An old pike will attempt to lookup X in the innermost X
