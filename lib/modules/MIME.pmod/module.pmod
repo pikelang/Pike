@@ -765,6 +765,11 @@ string guess_subtype( string type )
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
+//! @note
+//! Some headers (eg Subject) may include @rfc{1522@}/@rfc{2047@} encoded words. To
+//! decode these, see @[decode_words_text] and @[decode_words_tokenized] and
+//! their friends.
+//!
 array(mapping(string:string|array(string))|string|StringRange)
   parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
@@ -841,6 +846,11 @@ class Message {
   //! @[type], @[subtype], @[charset], @[boundary], @[transfer_encoding],
   //! @[params], @[disposition], @[disp_params], @[setencoding()],
   //! @[setparam()], @[setdisp_param()], @[setcharset()], @[setboundary()]
+  //!
+  //! @note
+  //! Some headers (eg Subject) may include RFC 1522/RFC 2047 encoded words. To
+  //! decode these, see @[decode_words_text] and @[decode_words_tokenized] and
+  //! their friends.
   //!
   mapping(string:string) headers;
 
