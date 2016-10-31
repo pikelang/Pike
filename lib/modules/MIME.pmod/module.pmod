@@ -270,10 +270,10 @@ string encode( string data, string encoding, void|string filename,
 }
 
 //! Extracts the textual content and character set from an @i{encoded word@}
-//! as specified by @rfc{1522@}.  The result is an array where the first element
-//! is the raw text, and the second element the name of the character set.
-//! If the input string is not an encoded word, the result is still an array,
-//! but the char set element will be set to 0.
+//! as specified by @rfc{1522@}/@rfc{2047@}.  The result is an array where the
+//! first element is the raw text, and the second element the name of the
+//! character set. If the input string is not an encoded word, the result is
+//! still an array, but the char set element will be set to 0.
 //!
 //! @note
 //! Note that this function can only be applied to individual encoded words.
