@@ -3070,6 +3070,14 @@ test_any([[
   return A()->a() + A()->a(1);
 ]], "AB1B")
 
+test_any([[
+  class A {
+    string a(int i) { return "B"+i+"B"; }
+    variant string a() { return "A"; }
+  };
+  return A()->a() + A()->a(1);
+]], "AB1B")
+
 test_compile_warning([[
   class A {
     string a() { return "A"; }

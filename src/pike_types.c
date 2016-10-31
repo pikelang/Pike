@@ -4414,6 +4414,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags ^ LE_A_B_SWAPPED)) {
 	  return 0;
 	}
+      } else if (flags & LE_TYPE_SVALUE) {
+	/* Note: flags never has grouping at this point. */
+	if (!low_pike_types_le(b_tmp, zero_type_string, 0,
+			       flags ^ LE_A_B_SWAPPED)) {
+	  return 0;
+	}
       }
     }
     /* FALL_THROUGH */
@@ -4423,6 +4429,20 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       /* Note: flags never has grouping at this point. */
       if (!low_pike_types_le(b->car, a->car, 0, flags ^ LE_A_B_SWAPPED)) {
 	return 0;
+      }
+    } else if ((flags & LE_TYPE_SVALUE) && (a->car->type != b->car->type)) {
+      if (a->car->type == T_VOID) {
+	/* Note: flags never has grouping at this point. */
+	if (!low_pike_types_le(b->car, zero_type_string, 0,
+			       flags ^ LE_A_B_SWAPPED)) {
+	  return 0;
+	}
+      } else {
+	/* Note: flags never has grouping at this point. */
+	if (!low_pike_types_le(zero_type_string, a->car, 0,
+			       flags ^ LE_A_B_SWAPPED)) {
+	  return 0;
+	}
       }
     }
 
