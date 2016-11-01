@@ -486,11 +486,6 @@ static int pgtk2_push_ctree_node_param(const GValue *a )
 }
 */
 
-static int pgtk2_push_gdk_drag_context_param(const GValue *a) {
-  push_gdkobject(g_value_get_pointer(a),drag_context,0);
-  return PUSHED_VALUE;
-}
-
 static int pgtk2_push_gdk_event_param(const GValue *a) {
   push_gdk_event(g_value_get_boxed(a));
   return NEED_RETURN;
@@ -643,9 +638,6 @@ static void build_push_callbacks() {
   CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
 
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk2_push_accel_group_param );
-  /*#ifndef HAS_GTK_20*/
-  CB( GDK_TYPE_DRAG_CONTEXT, pgtk2_push_gdk_drag_context_param );
-  /*#endif*/
   CB( GDK_TYPE_EVENT,        pgtk2_push_gdk_event_param );
   CB( GDK_TYPE_RECTANGLE, pgtk2_push_gdk_rectangle_param );
 
