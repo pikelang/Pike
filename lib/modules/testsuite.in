@@ -109,6 +109,8 @@ exit_promise(0, 0)
 init_future()
 exit_promise(1, 21)
 
+dnl - TODO: Future()->get().
+
 dnl - map()
 init_promise()
 test_do([[ add_constant("future", future->map(`+, 100)); ]])
@@ -116,12 +118,16 @@ init_future()
 test_do([[ promise->success(17); ]])
 exit_promise(1, 117)
 
+dnl - flat_map()
+
 dnl - recover()
 init_promise()
 test_do([[ add_constant("future", future->recover(`+, 12)); ]])
 init_future()
 test_do([[ promise->failure(10); ]])
 exit_promise(1, 22)
+
+dnl - recover_with()
 
 dnl - filter() - true
 init_promise()
@@ -157,6 +163,18 @@ test_do([[ add_constant("future", future->transform(`+, throw)); ]])
 init_future()
 test_do([[ promise->failure(1); ]])
 exit_promise(-1, 1)
+
+dnl - transform_with()
+
+dnl - zip()
+
+dnl - Concurrent.first_completed()
+
+dnl - Concurrent.results()
+
+dnl - Concurrent.traverse()
+
+dnl - Concurrent.fold()
 
 test_do([[ add_constant("future"); ]])
 test_do([[ add_constant("promise"); ]])
