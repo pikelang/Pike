@@ -18,6 +18,24 @@ o Protocols.HTTP.Server.HeaderParser
   and not just on a per call basis. It is also possible to disable
   support for folded headers, as per IETFs latest specification.
 
+o CompilerEnvironment()->lock()
+
+  This is a class that exposes the compiler internal lock.
+
+o Protocols.EngineIO and Protocols.SocketIO
+
+o Gz.deflate()->clone()
+
+  This allows for testing compression.
+
+o gdb_backtraces()
+
+  gdb_backtraces() is now available even --without-debug.
+
+o ADT.Heap()->low_pop()
+
+  This function is analogous to low_peek().
+
 Bug fixes
 ---------
 
@@ -43,10 +61,62 @@ o Standards.EXIF
 
   Improved robustness of the EXIF parser.
 
+o Protocols.HTTP.Session
+
+  Ignore malformed expiry dates in cookies.
+
 o Protocols.WebSocket
 
   Fixed handling of truncated frames.
 
+  Parse query variables.
+
+  Call either http_cb or ws_cb, not both, at the proper moment.
+
+o _Roxen
+
+  Backported multiple fixes from Pike 8.1.
+
+o Compiler
+
+  Fixed broken range optimization.
+
+  Don't reference count direct cyclic references via mixed variables.
+
+o MasterObject
+
+  Protect against the same file being compiled concurrently in
+  multiple threads.
+
+  Cast to program and cast to object should now be thread-safe.
+
+  Survive RESOLV_DEBUG being enabled.
+
+o Stdio.FakeFile
+
+  Improved sendfile compatibility.
+
+o Process.create_process
+
+  Improved behavior under high signal pressure.
+
+o Sql.pgsql
+
+  Improved robustness against stray destructs and exceptions.
+
+o Standards.BSON
+
+  Fixed circular dependency.
+
+o Mappings
+
+  Multiple optimizations in m_delete() and friends.
+
+  Added flag MAPPING_FLAG_NO_SHRINK.
+
+o Calendar
+
+  Updated timezone data to tzdata2016h.
 
 Building
 --------
