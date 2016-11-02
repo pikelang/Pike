@@ -10,9 +10,18 @@ every other class has its version of this. */
 #define GTK_SELECTION_DATA(object) ((GtkSelectionData *)object)
 %}
 
-void set_text(string text, int len);
-//! Set the selection data to the given text string. Set len to -1
-//! to include the whole string.
+void set_text(string text)
+//! Set the selection data to the given text string.
+{
+  pgtk2_verify_inited();
+  {
+    const gchar *text;
+    get_all_args("set_text", args, "%s", &text);
+    gtk_selection_data_set_text( GTK_SELECTION_DATA(THIS->obj), text, -1 );
+  }
+  RETURN_THIS();
+}
+
 
 string get_text();
 //! Retrieve the selection data as a string.

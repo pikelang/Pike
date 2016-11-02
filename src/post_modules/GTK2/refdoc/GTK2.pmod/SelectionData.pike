@@ -8,8 +8,7 @@ string get_text( );
 //!
 //!
 
-GTK2.SelectionData set_text( string text, int len );
-//! Set the selection data to the given text string. Set len to -1
-//! to include the whole string.
+GTK2.SelectionData set_text( string text );
+//! Set the selection data to the given text string.
 //!
 //!
