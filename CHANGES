@@ -42,6 +42,156 @@ o ** operator added. It's exponentiation and works with most
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
 
+o New syntax for literal strings.
+
+o #pragma disassemble
+
+  The byte code output is now interleaved with the generated machine code
+  on selected architectures.
+
+o Complain about redundant backslash escapes.
+
+o '__weak__' keyword added.
+
+o Function local function declarations are now statements
+  (and not expressions). This means that there is no longer
+  any need to terminate them with a semicolon.
+
+o Complain about shadowed variant functions.
+
+o Machine code support for more architectures.
+
+  There's now machine code support for arm32 and arm64.
+
+o Fixed multiple integer over- and underflow bugs.
+
+
+Incompatible changes
+--------------------
+
+o Gz.crc32 and Nettle.crc32c now only return positive results.
+
+o glob() has changed.
+
+  The main incompatibilities are that [ and \ are now special
+  characters in the pattern, and if you check the return value against
+  1 instead of checking if it's true, and use an array as the first
+  argument you will have to change your code.
+
+  This is in order to extend the glob function to cover what
+  'standard' glob functions do:
+
+  glob() now accepts quotes (\* to match a single *, as an example)
+  and handles ranges ([abc] for a, b or c, [a-z0-9] for a single
+  character between a and z or 0-9
+
+  You can also negate a range using ^ or ! ([^a-zA-Z] as an example).
+
+  When the first argument (the pattern) to glob is an array, glob now
+  returns which pattern in the array matched.
+
+o hash() has been changed to use siphash. The old hash function is
+  available under the name hash_8_0(). Note that this is not a
+  cryptographic hash function.
+
+o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
+
+o If a thread exits with by throwing, the thrown value is propagated to wait().
+
+o String.trim_all_whites() renamed String.trim().
+
+
+New modules
+-----------
+
+o ADT.Scheduler
+o ADT.TreeScheduler
+o Apple.Keychain
+o __builtin.Sql
+o CompilerEnvironment()->lock()
+o Crypto.ECC.Curve.Point
+o Filesystem.Zip
+o Function.bind()
+o Standards.HPack (RFC 7541)
+o Stdio.FakePipe
+o Parser.Markdown
+
+o Concurrent.Future and Concurrent.Promise
+
+  These are used to simplify handling of asynchronous results.
+
+o Crypto.Checksum
+
+  This module collect non-cryptographic checksums. Support for crc32,
+  adler32 and Castagnoli CRC (CRC32C).
+
+  NB: In the future these may be amended to support the Crypto.Hash API.
+
+o Protocols.EngineIO & Protocols.SocketIO
+o Protocols.HTTP2
+o Bittorrent.DHT
+o Standards.MsgPack
+o Web.Auth & Web.Api
+
+
+New features
+------------
+
+o predef::gc()
+
+  gc() called with a weak mapping as argument now removes weak references
+  that are only held by that mapping.
+
+o predef::sprintf()
+
+  sprintf() now replaces %m with strerror(errno()).
+
+o ADT.Heap
+
+  - An indirection object ADT.Heap.Element has been added to make it
+    possible to optimize several heap operations.
+
+  - Added low_pop().
+
+o Crypto & Nettle
+
+  - Added Curve25519 and EdDSA25519.
+
+o Filesystem.Monitor
+
+  The filesystem monitoring system now uses accelleration via
+  Inotify et al.
+
+o Gmp
+
+  - mpf is now implemented using gmpf if the library is available.
+
+  - Improved support for GMP 5.0 and later.
+
+o GTK2
+
+  Multiple runtime fixes.
+
+o JOSE (JSON Object Signing and Encryption)
+
+  Some low-level API support has been added to the Crypto and Web
+  modules to support parts of RFC 7515 - 7520.
+
+o MasterObject
+
+  - Protect against the same file being compiled concurrently
+    in multiple threads.
+
+  - cast_to_program() and cast_to_object() should now be thread safe.
+
+o Parser.Pike
+
+  Support new language features.
+
+o Protocols.WebSocket
+
+  Multiple API changes.
+
 o Random rewrite
 
   The random functions have been rewritten to ensure security by
@@ -117,41 +267,43 @@ o Random rewrite
     add_constant( "random_string", rnd->random_string );
     add_constant( "random", rnd->random );
 
-o JOSE (JSON Object Signing and Encryption)
+o Sql
 
-  Some low-level API support has been added to the Crypto and Web
-  modules to support parts of RFC 7515 - 7520.
+  - Most Sql C-modules converted to cmod.
 
+  - Added next_result().
 
-Incompatible changes
---------------------
+  - ODBC & tds: Support more datatypes.
 
-o Gz.crc32 and Nettle.crc32c now only return positive results.
+  - ODBC: Support big_typed_query().
 
-o glob() has changed.
+  - pgsql: Lots of changes and fixes.
 
-  The main incompatibilities are that [ and \ are now special
-  characters in the pattern, and if you check the return value against
-  1 instead of checking if it's true, and use an array as the first
-  argument you will have to change your code.
+o SSL
 
-  This is in order to extend the glob function to cover what
-  'standard' glob functions do:
+  - Support session tickets.
 
-  glob() now accepts quotes (\* to match a single *, as an example)
-  and handles ranges ([abc] for a, b or c, [a-z0-9] for a single
-  character between a and z or 0-9
+  - Support Negotiated FF-DHE.
 
-  You can also negate a range using ^ or ! ([^a-zA-Z] as an example).
+  - Support client certificates.
 
-  When the first argument (the pattern) to glob is an array, glob now
-  returns which pattern in the array matched.
+  - Support ALPN.
 
-o hash() has been changed to use siphash. The old hash function is
-  available under the name hash_8_0(). Note that this is not a
-  cryptographic hash function.
+  - Prefer AEAD suites to CBC suites.
 
-o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
+  - SSL.File supports set_buffer_mode().
+
+o Standards.PKCS
+
+  Support PKCS#8 private keys.
+
+o String.Buffer & Stdio.Buffer
+
+  Added _search().
+
+o The self testing framework now supports *.test-files.
+
+o Unicode 8.0.0.
 
 
 Deprecated symbols and modules
@@ -160,6 +312,7 @@ Deprecated symbols and modules
 o Sql.mysql_result and Sql.mysqls_result have been deprecated.
   Use Sql.Result instead.
 
+o call_function() has been deprecated. Use `()() instead.
 
 Removed features and modules
 ----------------------------
@@ -167,39 +320,6 @@ Removed features and modules
 o Compatibility for Pike versions before 7.8 is no longer available.
 
 o GTK1 library is deprecated, so glue code is removed.
-
-
-New modules
------------
-
-o ADT.Scheduler
-o ADT.TreeScheduler
-o Filesystem.Zip
-o Stdio.FakePipe
-o Parser.Markdown
-
-o Concurrent.Future and Concurrent.Promise
-
-  These are used to simplify handling of asynchronous results.
-
-o Crypto.Checksum
-
-  This module collect non-cryptographic checksums. Support for crc32,
-  adler32 and Castagnoli CRC (CRC32C).
-
-  NB: In the future these may be amended to support the Crypto.Hash API.
-
-o Protocols.HTTP2
-o Bittorrent.DHT
-o MsgPack
-
-
-New features
-------------
-
-o Gmp.mpf is now implemented using gmpf if the library is available.
-
-o The SSL module now supports session tickets.
 
 
 C-level API changes
@@ -221,6 +341,28 @@ o Removed the functions my_rand and my_srand. Use the random functions
   on the stack for _random lfuns, the push_random_string or look up
   the random function from get_builtin_constants(). For deterministic
   pseudo random, create a private Random.Deterministic object.
+
+o The preprocessor has been converted into a cmod, and been modified
+  to use more standard Pike datatypes.
+
+o The preprocessor-specific hashtable implementation has been removed.
+
+o The gdb_backtraces() function is now available also --without-debug.
+
+o There's now support to block mapping hashtables from being shrunk
+  on map_delete().
+
+
+Documentation
+-------------
+
+o RFC references added.
+
+o Character encoding issues fixed.
+
+o Added @enum/@endenum markup.
+
+o Support undocumented enums with documented constants.
 
 
 Building and installing
