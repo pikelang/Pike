@@ -922,8 +922,8 @@ void drag_source_set(int buttons, array targets, int actions)
 //! buttons is a bitwise 'or' of the mouse buttons that can initiate dragging,
 //! eg GTK2.GDK_BUTTON1_MASK.
 //! <p>
-//! targets is an array of triples eg ({({"STRING", GTK2.TARGET_SAME_APP, 0})})
-//! where each triple gives an identifying type, a flag specifying whether the
+//! targets is an array of triples eg ({({"text/plain", GTK2.TARGET_SAME_APP, 0})})
+//! where each triple gives an identifying MIME type, a flag specifying whether the
 //! drag should be allowed to go to other applications, and an ID which will be
 //! passed on to signal handlers.
 //! <p>
