@@ -903,11 +903,16 @@ static int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
           || TYPEOF(ITEM(cur)[1]) != PIKE_T_INT
           || TYPEOF(ITEM(cur)[2]) != PIKE_T_INT)
         return 1;
-      // TODO: handle wide strings (UTF-8 encode??)
-      // CJA 20161103: I'm not sure whether GTK and other
-      // apps will be happy with non-ASCII strings.
-      if (ITEM(cur)[0].u.string->size_shift) return 1;
-      drag_targets[i].target = ITEM(cur)[0].u.string->str;
+      struct pike_string *str = ITEM(cur)[0].u.string;
+      // The string has to be printable ASCII - it should be a
+      // MIME type.
+      // Quick check: ASCII strings will have size_shift of zero.
+      if (str->size_shift) return 1;
+      // But not all eight-bit strings are printable ASCII.
+      INT32 min, max;
+      check_string_range(str, 0, &min, &max);
+      if (min < ' ' || max >= 128) return 1;
+      drag_targets[i].target = str->str;
       drag_targets[i].flags = ITEM(cur)[1].u.integer;
       drag_targets[i].info = ITEM(cur)[2].u.integer;
     }
