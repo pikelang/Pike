@@ -231,6 +231,8 @@ PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum)
 PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 {
   MP_INT *mpz = OBTOMPZ(bignum);
+  int neg;
+  size_t pos;
 
   if (!IS_MPZ_OBJ(bignum)) return 0;
 #if SIZEOF_INT64 == SIZEOF_LONG
@@ -240,13 +242,13 @@ PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
   return 1;
 #else /*int64 is not signed long. */
 
-  int neg = mpz_sgn (mpz) < 0;
+  neg = mpz_sgn (mpz) < 0;
 
   /* Note: Similar code in mpzmod_reduce */
 
   /* Get the index of the highest limb that have bits within the range
    * of the INT64. */
-  size_t pos = (INT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
+  pos = (INT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
 #ifdef PIKE_DEBUG
   if ((bignum->prog != bignum_program) &&
