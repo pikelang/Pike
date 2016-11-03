@@ -440,16 +440,25 @@ GTK2.Pango.Layout create_pango_layout( string text );
 //!
 
 GTK2.Widget drag_dest_set( int flags, array targets, int actions );
-//! Set this widget up so it can accept drops. Parallel to drag_source_set.
-//! buttons eg GTK2.GDK_BUTTON1_MASK, actions eg
-//! GTK2.GDK_ACTION_COPY. targets eg ({({"STRING", GTK2.TARGET_SAME_APP, 0})}).
-//!
-//!
+//! Set this widget up so it can accept drops. Parallel to @[drag_source_set]
+//! - see there for arg info. flags allows default drop behaviour to turned on
+//! and off; use GTK2.DEST_DEFAULT_ALL for normal behaviour.
+//
 
 GTK2.Widget drag_source_set( int buttons, array targets, int actions );
 //! Set this widget up so a drag operation will start when the user clicks and
-//! drags on this widget. buttons eg GTK2.GDK_BUTTON1_MASK, actions eg
-//! GTK2.GDK_ACTION_COPY. targets eg ({({"STRING", GTK2.TARGET_SAME_APP, 0})}).
+//! drags on this widget.
+//! 
+//! buttons is a bitwise 'or' of the mouse buttons that can initiate dragging,
+//! eg GTK2.GDK_BUTTON1_MASK.
+//! 
+//! targets is an array of triples eg ({({"STRING", GTK2.TARGET_SAME_APP, 0})})
+//! where each triple gives an identifying type, a flag specifying whether the
+//! drag should be allowed to go to other applications, and an ID which will be
+//! passed on to signal handlers.
+//! 
+//! actions is the set of valid actions that can be performed; use constants
+//! GTK2.GDK_ACTION_COPY|GTK2.GDK_ACTION_MOVE etc.
 //!
 //!
 
