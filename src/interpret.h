@@ -111,6 +111,17 @@ struct pike_frame
    */
   INT16 save_sp_offset;
 
+  /**
+   * If PIKE_FRAME_SAVE_LOCALS is set, this is a pointer to a bitmask
+   * represented by an array of 16-bit ints. A set bit indicates that
+   * the corresponding local variable is used from a subscope and
+   * needs to be preserved in LOW_POP_PIKE_FRAME. The least
+   * significant bit of the first entry represents the first local
+   * variable and so on. The array is (num_locals >> 4) + 1 entries
+   * (i.e. it will always have enough space to represent all
+   * locals). */
+  INT16 *save_locals_bitmask;
+
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
