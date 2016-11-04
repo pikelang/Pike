@@ -692,16 +692,51 @@ mapping convert_widget_to_tree_coords(int wx, int wy)
 
 endrequire;
 
-/*
-// Not implemented yet
-void enable_model_drag_dest(array(GTK2.TargetEntry) targets, int n_targets,
-			int actions);
-//! Turns the view into a drop destination for automatic DND.
+%{
+/* Borrow code from gtkwidget.pre */
+int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets);
+%}
 
 void enable_model_drag_source(int start_button_mask, 
-		array(GTK2.TargetEntry) targets, int n_targets, int actions);
+		array(array) targets, int actions)
 //! Turns the view into a drag source for automatic DND.
+//! See also: @[drag_source_set]
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE btn, act;
+    struct array *targ;
 
+    get_all_args("enable_model_drag_source", args, "%d%a%d", &btn, &targ, &act);
+    GtkTargetEntry drag_targets[targ->size]; //C99ism
+    if (_decode_targets(targ, drag_targets))
+      SIMPLE_ARG_TYPE_ERROR("enable_model_drag_source", 2, "array(array(string|int))");
+    gtk_tree_view_enable_model_drag_source(GTK_TREE_VIEW(THIS->obj), btn,
+      drag_targets, targ->size, act);
+  }
+  RETURN_THIS();
+}
+
+void enable_model_drag_dest(array(array) targets, int actions)
+//! Turns the view into a drop destination for automatic DND.
+//! See also: @[drag_dest_set], @[drag_source_set]
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE flags, act;
+    struct array *targ;
+
+    get_all_args("enable_model_drag_dest", args, "%a%d", &targ, &act);
+    GtkTargetEntry drag_targets[targ->size]; //C99ism
+    if (_decode_targets(targ, drag_targets))
+      SIMPLE_ARG_TYPE_ERROR("enable_model_drag_dest", 2, "array(array(string|int))");
+    gtk_tree_view_enable_model_drag_dest(GTK_TREE_VIEW(THIS->obj),
+      drag_targets, targ->size, act);
+  }
+  RETURN_THIS();
+}
+
+/*
 void unset_rows_drag_source();
 //! Undoes the effect of enable_model_drag_source().
 

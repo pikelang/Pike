@@ -120,6 +120,16 @@ protected GTK2.TreeView create( GTK2.TreeModel model_or_props );
 //!
 //!
 
+GTK2.TreeView enable_model_drag_dest( array targets, int actions );
+//! Turns the view into a drop destination for automatic DND.
+//! See also: @[drag_dest_set], @[drag_source_set]
+//
+
+GTK2.TreeView enable_model_drag_source( int start_button_mask, array targets, int actions );
+//! Turns the view into a drag source for automatic DND.
+//! See also: @[drag_source_set]
+//
+
 GTK2.TreeView expand_all( );
 //! Recursively expands all nodes.
 //!

@@ -891,7 +891,8 @@ endnot;
 %{
 //Helper for drag_source_set and drag_dest_set
 //Returns 0 on success, 1 to raise an error
-static int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
+//Also used in gtktreeview.pre
+int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
 {
     int i;
     for (i=0; i<targ->size; i++) {
