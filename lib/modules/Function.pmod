@@ -210,9 +210,6 @@ object Placeholder = class
     class Base
     {
         constant _is_placeholder = true;
-        //! @decl mixed value(bind x, array args);
-        //!
-        //! The function that is called to return the argument value.
     }
 
     class Arg(int num)
@@ -223,6 +220,9 @@ object Placeholder = class
             return sprintf("arg%d",num);
         }
 
+        //! @decl mixed value(bind x, array args);
+        //!
+        //! The function that is called to return the argument value.
         mixed value(bind x, array args)
         {
             if(num>=sizeof(args) || -num>sizeof(args))
@@ -232,9 +232,9 @@ object Placeholder = class
     };
 
     class Splice(int from, void|int end)
-    //! Splice(from) adds all arguments starting with argument number @[from],
+    //! Splice(from) adds all arguments starting with argument number @expr{from@},
     //! optionally ending with end.
-    //! Equivalent to @args[from..end]
+    //! Equivalent to @expr{args[from .. end]@}
     {
         inherit Base;
         constant _splice = true;
@@ -294,7 +294,6 @@ object Placeholder = class
     //! @decl constant arg7;
     //! @decl constant arg8;
     //! @decl constant arg9;
-    //! @decl constant arg...;
     //! arg<n> will return an instance of @[Arg] that returns the n:th arg.
     //! For convenience for c++11 developers _0, _1 etc also works.
     //!
@@ -307,7 +306,9 @@ object Placeholder = class
     //! If _splice is true, zero or more argument is returned in an array
     //!
     //! Function.Placeholder.arg1 is thus more or less equivalent to
-    //! @code Expr(lambda(array args){return args[1];});
+    //! @code
+    //!  Expr(lambda(array args){return args[1];});
+    //! @endcode
     {
         inherit Base;
         protected string _sprintf() {
