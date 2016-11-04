@@ -1259,7 +1259,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /**** END TRUE LFUNS ****/
 /**** BEGIN FAKE LFUNS ****/
 
-/*! @decl mixed lfun::_search(mixed needle, mixed|void start,
+/*! @decl mixed lfun::_search(mixed needle, mixed|void start, @
  *!                           mixed ... extra_args)
  *!
  *!   Search callback.
