@@ -695,6 +695,9 @@ endrequire;
 %{
 /* Borrow code from gtkwidget.pre */
 int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets);
+
+/* Simplify the code by allowing the same form of cast */
+#define GTK_TREE_PATH(object) ((GtkTreePath *)object)
 %}
 
 void enable_model_drag_source(int start_button_mask, 
@@ -736,7 +739,6 @@ void enable_model_drag_dest(array(array) targets, int actions)
   RETURN_THIS();
 }
 
-/*
 void unset_rows_drag_source();
 //! Undoes the effect of enable_model_drag_source().
 
@@ -744,18 +746,53 @@ void unset_rows_drag_dest();
 //! Undoes the effect of enable_model_drag_dest().
 
 void set_drag_dest_row(GTK2.TreePath path, int pos);
-//! Sets the row that is highlighted for feedback.
+//! Sets the row that is highlighted for feedback. pos is one of the four
+//! constants GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
 
-mapping get_drag_dest_row();
+mapping(string:mixed) get_drag_dest_row()
 //! Gets information about the row that is highlighted for feedback.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]);
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkTreePath *path;
+    GtkTreeViewDropPosition pos;
+    gtk_tree_view_get_drag_dest_row(GTK_TREE_VIEW(THIS->obj),&path,&pos);
+    ref_push_string(_STR("path"));push_pgdk2object((GtkTreePath *)path,pgtk2_tree_path_program,1);
+    ref_push_string(_STR("pos")); push_int(pos);
+    f_aggregate_mapping(4);
+  }
+}
 
-mapping get_dest_row_at_pos(int drag_x, int drag_y);
-//! Determines the destination row for a given position;
+mapping(string:mixed) get_dest_row_at_pos(int drag_x, int drag_y)
+//! Determines the destination row for a given position.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]) if there is such
+//! a row, or 0 if not.
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+{
+  pgtk2_verify_inited();
+  {
+    GtkTreePath *path;
+    INT_TYPE drag_x, drag_y;
+    GtkTreeViewDropPosition pos;
+    get_all_args("get_dest_row_at_pos", args, "%d%d", &drag_x, &drag_y);
+    if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(THIS->obj),
+        drag_x, drag_y, &path, &pos))
+    {
+      ref_push_string(_STR("path"));push_pgdk2object((GtkTreePath *)path,pgtk2_tree_path_program,1);
+      ref_push_string(_STR("pos")); push_int(pos);
+      f_aggregate_mapping(4);
+    } else {
+      push_int(0);
+    }
+  }
+}
 
 +GDK2.Pixmap create_row_drag_icon(GTK2.TreePath path);
 //! Creates a GDK2.Pixmap representation of the row at path.  This image is
 //! used for a drag icon.
-*/
 
 void set_enable_search(int enable_search);
 //! If enable_search is set, then the user can type in text to search through

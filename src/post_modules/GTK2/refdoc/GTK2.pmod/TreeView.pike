@@ -120,6 +120,12 @@ protected GTK2.TreeView create( GTK2.TreeModel model_or_props );
 //!
 //!
 
+GTK2.GdkPixmap create_row_drag_icon( GTK2.TreePath path );
+//! Creates a GDK2.Pixmap representation of the row at path.  This image is
+//! used for a drag icon.
+//!
+//!
+
 GTK2.TreeView enable_model_drag_dest( array targets, int actions );
 //! Turns the view into a drop destination for automatic DND.
 //! See also: @[drag_dest_set], @[drag_source_set]
@@ -190,6 +196,21 @@ mapping get_cursor( );
 //! set, then "path" will be 0.  If no column currently has focus, then
 //! "focus_column" will be 0.
 //! Returns ([ "path": GTK2.TreePath, "column": GTK2.TreeViewColumn ]);
+//!
+//!
+
+mapping get_dest_row_at_pos( int drag_x, int drag_y );
+//! Determines the destination row for a given position.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]) if there is such
+//! a row, or 0 if not.
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+//!
+//!
+
+mapping get_drag_dest_row( );
+//! Gets information about the row that is highlighted for feedback.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]);
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
 //!
 //!
 
@@ -415,6 +436,12 @@ GTK2.TreeView set_cursor_on_cell( GTK2.TreePath path, GTK2.TreeViewColumn focus_
 //!
 //!
 
+GTK2.TreeView set_drag_dest_row( GTK2.TreePath path, int pos );
+//! Sets the row that is highlighted for feedback. pos is one of the four
+//! constants GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+//!
+//!
+
 GTK2.TreeView set_enable_search( int enable_search );
 //! If enable_search is set, then the user can type in text to search through
 //! the tree interactively (this is sometimes called "typeahead find").
@@ -549,5 +576,15 @@ GTK2.TreeView set_show_expanders( int show );
 
 GTK2.TreeView set_vadjustment( GTK2.Adjustment vadj );
 //! Sets the W(Adjustment) for the current vertical aspect.
+//!
+//!
+
+GTK2.TreeView unset_rows_drag_dest( );
+//! Undoes the effect of enable_model_drag_dest().
+//!
+//!
+
+GTK2.TreeView unset_rows_drag_source( );
+//! Undoes the effect of enable_model_drag_source().
 //!
 //!
