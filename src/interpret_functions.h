@@ -3095,12 +3095,12 @@ OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
    is an offset, the low 16 bits is a bitmask for that offset. See doc
    for pike_frame.save_locals_bitmask. */
 OPCODE1(F_SAVE_LOCALS, "save_locals", 0, {
-    INT16 offset = ((arg1 & 0xFFFF0000) >> 16);
-    INT16 mask = arg1 & 0xFFFF;
+    unsigned INT16 offset = ((arg1 & 0xFFFF0000) >> 16);
+    unsigned INT16 mask = arg1 & 0xFFFF;
     if (!(Pike_fp->flags & PIKE_FRAME_SAVE_LOCALS)) {
       size_t num_ints = (Pike_fp->num_locals >> 4) + 1;
-      size_t num_bytes = num_ints * sizeof(INT16);
-      Pike_fp->save_locals_bitmask = (INT16*)xalloc(num_bytes);
+      size_t num_bytes = num_ints * sizeof(unsigned INT16);
+      Pike_fp->save_locals_bitmask = (unsigned INT16*)xalloc(num_bytes);
       memset(Pike_fp->save_locals_bitmask, 0, num_bytes);
       Pike_fp->flags |= PIKE_FRAME_SAVE_LOCALS;
     }

@@ -79,6 +79,17 @@ struct pike_frame
   struct program *current_program;	/* program containing the context. */
   PIKE_OPCODE_T *return_addr;	        /** Address of opcode to continue at after call. */
 
+  /**
+   * If PIKE_FRAME_SAVE_LOCALS is set, this is a pointer to a bitmask
+   * represented by an array of 16-bit ints. A set bit indicates that
+   * the corresponding local variable is used from a subscope and
+   * needs to be preserved in LOW_POP_PIKE_FRAME. The least
+   * significant bit of the first entry represents the first local
+   * variable and so on. The array is (num_locals >> 4) + 1 entries
+   * (i.e. it will always have enough space to represent all
+   * locals). */
+  unsigned INT16 *save_locals_bitmask;
+
   unsigned INT16 flags;		/** PIKE_FRAME_* */
   /**
    * This tells us the current level of svalues on the stack that can
@@ -99,17 +110,6 @@ struct pike_frame
    * get replaced by that of the previous frame.
    */
   INT16 save_sp_offset;
-
-  /**
-   * If PIKE_FRAME_SAVE_LOCALS is set, this is a pointer to a bitmask
-   * represented by an array of 16-bit ints. A set bit indicates that
-   * the corresponding local variable is used from a subscope and
-   * needs to be preserved in LOW_POP_PIKE_FRAME. The least
-   * significant bit of the first entry represents the first local
-   * variable and so on. The array is (num_locals >> 4) + 1 entries
-   * (i.e. it will always have enough space to represent all
-   * locals). */
-  INT16 *save_locals_bitmask;
 
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
@@ -582,10 +582,12 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 	struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
 						 _fp_->num_locals);	\
         for (offset = 0; offset < num_entries; offset++) {              \
-          INT16 entry = *(_fp_->save_locals_bitmask + offset);          \
-          INT16 idx;                                                    \
+          unsigned INT16 entry = *(_fp_->save_locals_bitmask + offset); \
+          int idx;                                                      \
+          if (!entry) continue;                                         \
+                                                                        \
           for (idx = 0; idx < 16; idx++) {                              \
-            INT16 local_var_idx = offset * 16 + idx;                    \
+            int local_var_idx = offset * 16 + idx;                      \
             if (local_var_idx >= num_locals) {                          \
               break;                                                    \
             }                                                           \

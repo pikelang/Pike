@@ -2791,14 +2791,14 @@ static int do_docode2(node *n, int flags)
 static void emit_save_locals(struct compiler_frame *f)
 {
   struct compilation *c = THIS_COMPILATION;
-  INT16 offset;
-  INT16 idx;
-  INT16 num_locals = f->max_number_of_locals;
+  unsigned INT16 offset;
+  unsigned INT16 idx;
+  int num_locals = f->max_number_of_locals;
 
   for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
-    INT16 bitmask = 0;
+    unsigned int bitmask = 0;
     for (idx = 0; idx < 16; idx++) {
-      INT16 local_var_idx = offset * 16 + idx;
+      int local_var_idx = offset * 16 + idx;
       if (local_var_idx >= num_locals) {
         break;
       }
@@ -2807,7 +2807,7 @@ static void emit_save_locals(struct compiler_frame *f)
       }
     }
     if (bitmask) {
-      emit1(F_SAVE_LOCALS, (offset << 16) + bitmask);
+      emit1(F_SAVE_LOCALS, (offset << 16) | bitmask);
     }
   }
 }
