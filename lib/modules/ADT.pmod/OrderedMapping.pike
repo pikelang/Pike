@@ -96,7 +96,7 @@ variant protected void create(array keys, array values)
 }
 
 
-protected this_program `[]=(string key, mixed val)
+protected this_program `[]=(mixed key, mixed val)
 {
   int pos;
 
@@ -112,7 +112,7 @@ protected this_program `[]=(string key, mixed val)
 }
 
 
-protected mixed `[](string key)
+protected mixed `[](mixed key)
 {
   int pos;
   if ((pos = search(__indices, key)) > -1) {
@@ -123,7 +123,13 @@ protected mixed `[](string key)
 }
 
 
-protected mixed `->(string key)
+protected mixed `->=(mixed key, mixed val)
+{
+  return `[]=(key, val);
+}
+
+
+protected mixed `->(mixed key)
 {
   return `[](key);
 }
