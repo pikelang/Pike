@@ -98,16 +98,16 @@ function(mixed...:function(mixed...:mixed|void)) curry(function f)
 //!
 //! The first argument is the function to be called.
 //!
-//! All other arguments is either a generic value, which will be sent as-is to the funciton
-//! or one of the placeholder values define in [Function.Placeholder],
-//! or one of your own implementation (inherit
+//! All other arguments is either a generic value, which will be sent
+//! as-is to the funciton or one of the placeholder values define in
+//! [Function.Placeholder], or one of your own implementation (inherit
 //! Function.Placeholder.Base and implement the value function.).
 //!
 //! @example
 //!   This example returns a funciton that limits the given argument
 //!   to between 0 and 99.
 //! @code
-//!   import Functio.Placeholder;
+//!   import Function.Placeholder;
 //!   function clip = Function.bind(limit, 0, arg0, 100);
 //! @endcode
 class bind(function f, mixed ... bind_args)
