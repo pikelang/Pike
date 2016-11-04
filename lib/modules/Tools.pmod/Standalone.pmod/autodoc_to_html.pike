@@ -557,10 +557,10 @@ string parse_code(Node n, void|String.Buffer ret)
   while (text[-1] == '\n')
     text = text[..<1];
 
-  if (search(text, "->") > -1 ||
-      (search(text, "{") > -1 && search(text, "}")  > -1) ||
-      (search(text, "(") > -1 && search(text, "\"") > -1) ||
-      (search(text, ".") > -1 && search(text, "=")  > -1))
+  if (has_value(text, "->") ||
+      (has_value(text, "{") && has_value(text, "}")) ||
+      (has_value(text, "(") && has_value(text, "\"")) ||
+      (has_value(text, ".") && has_value(text, "=")))
   {
     if (!code_highlighter) {
       code_highlighter = Tools.Standalone.pike_to_html();
