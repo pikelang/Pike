@@ -472,7 +472,9 @@ a.reference, a.reference:visited { color: #0087cc; }
 .method { color: #000066; }
 .key { color: green; }
 
-.head--doc { font-weight: bold; color: #777; }
+.head--doc,
+  .head--fixme { font-weight: bold; color: #777; }
+.head--fixme { color: #900; }
 .homogen--name { font-size: large; }
 .group--doc { margin-bottom: 0; }
 .group--doc + hr { margin-top: 10px; }

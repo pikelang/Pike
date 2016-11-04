@@ -4,10 +4,8 @@
 # Henrik Grubbström 2001-02-02
 #
 
-# Maybe clean this file from obsolete stuff. I guess the pelix stuff
-# doesn't apply anymore?
-#
-# Pontus Östlund 2016-01-21
+# make devel can be used if changes are made only to the CSS or JS and you
+# don't feel like recompiling the entire doc to test the changes
 
 BUILDDIR=
 DESTDIR=
@@ -15,7 +13,7 @@ PIKE=pike
 
 all: modref traditional
 
-pike.ida.liu.se: modref pelix_modref traditional
+pike.ida.liu.se: modref traditional
 
 # These are the actual build targets for making manuals...
 
@@ -62,18 +60,6 @@ devel:
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif \
           eye-slash.svg; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
-
-pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
-	        presentation/make_html.pike presentation/tree-split-autodoc.pike
-	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_pelix_modref
-
-low_pelix_modref:
-	-rm -rf pelix_modref
-	@mkdir pelix_modref
-	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref predef
-	@mkdir pelix_modref/images
-	cp $(BUILDDIR)/doc_build/images/* pelix_modref/images
 
 one_page: onepage $(BUILDDIR)/onepage.xml presentation/make_html.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_one_page
