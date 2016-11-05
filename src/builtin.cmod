@@ -3489,29 +3489,31 @@ PIKECLASS Buffer
       len -= start->u.integer;
     }
     if (len <= 0) {
-      push_undefined();
+      push_int(-1);
       return;
     }
     if (UNLIKELY(THIS->str.s->size_shift == thirtytwobit)) {
 #if SIZEOF_INT_TYPE > 4
       if (UNLIKELY((0x7fffffff < character) || (character < -0x80000000))) {
-	push_undefined();
+        push_int(-1);
 	return;
       }
 #endif
     } else if (UNLIKELY((1L<<(8<<THIS->str.s->size_shift)) <= character) ||
 	       UNLIKELY(character < 0)) {
-      push_undefined();
+      push_int(-1);
       return;
     }
     for (i = 0; i < len; i++) {
       p_wchar2 c = INDEX_PCHARP(buf, i);
       if (c == character) {
+        if(start)
+          i += start->u.integer;
 	push_int64(i);
 	return;
       }
     }
-    push_undefined();
+    push_int(-1);
   }
 
   INIT

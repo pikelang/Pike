@@ -88,6 +88,13 @@ test_do([[
   b->add ("x\12345678");
   return (string) b;
 ]])
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b->add("foobar");
+  return ({ search(b, 'f'), search(b, 'o'), search(b, 'x'), search(b, 0),
+	    search(b, -1), search(b, 'o', 1), search(b, 'o', 2),
+	    search(b, 'o', 0, 0), search(b, 'o', 0, 3) });
+]], ({ 0, 1, -1, -1, -1, 1, 2, -1, 1 }))
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)
