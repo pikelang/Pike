@@ -1704,19 +1704,28 @@ void arm64_flush_codegen_state(void) {
     compiler_state.flags = 0;
 }
 
-static struct label my_free_svalue;
+static struct label my_free_svalue,
+                    my_pike_return;
 
 void arm64_start_function(int UNUSED(no_pc)) {
     ra_init();
 
-    if (Pike_compiler->new_program->num_program == 0) {
-        /* we are about to generate the first function
-         * of a new program
-         */
+    /* We generate common helper functions at the beginning of
+     * every program. Branching to those helpers can be done
+     * with a relative jump and does not require loading
+     * a function address into a register first.
+     * We can also rely on the same register conventions
+     * as in the rest of the generated machine code.
+     */
 
+    if (Pike_compiler->new_program->num_program != 0) return;
+
+    /* FREE SVALUE */
+    {
         struct label doreturn;
 	label_init(&doreturn);
         label_init(&my_free_svalue);
+        label_generate(&my_free_svalue);
 
         ra_alloc(ARM_REG_ARG1);
 
@@ -1726,7 +1735,6 @@ void arm64_start_function(int UNUSED(no_pc)) {
          * the first version does not use the stack at all and
          * simply decrements the refcount
          */
-        label_generate(&my_free_svalue);
 
         /* decrement ->refs */
 
@@ -1745,6 +1753,42 @@ void arm64_start_function(int UNUSED(no_pc)) {
 
 	label_generate(&doreturn);
 	ret_reg(ARM_REG_LR);
+
+        ra_free(ARM_REG_ARG1);
+    }
+
+    /* PIKE RETURN */
+    {
+        enum arm64_register reg;
+        struct label inter_return;
+
+        label_init(&inter_return);
+
+        label_init(&my_pike_return);
+        label_generate(&my_pike_return);
+
+        ra_alloc(ARM_REG_ARG1);
+
+        load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
+
+        tbnz_imm(ARM_REG_ARG1, value_to_bit(PIKE_FRAME_RETURN_INTERNAL), label_dist(&inter_return));
+
+        /* return from function */
+        arm64_mov_int(ARM_REG_RVAL, -1);
+        arm64_epilogue();
+
+        /* inter return */
+        label_generate(&inter_return);
+
+	arm64_call_if_bit_set(ARM_REG_ARG1, value_to_bit(PIKE_FRAME_RETURN_POP), low_return_pop, low_return);
+
+        load64_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP,
+                       OFFSETOF(Pike_interpreter_struct, frame_pointer));
+
+	reg = ra_alloc_any();
+	load64_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
+	ret_reg(reg);
+	ra_free(reg);
 
         ra_free(ARM_REG_ARG1);
     }
@@ -2322,14 +2366,12 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_RETURN_IF_TRUE:
       arm64_debug_instr_prologue_0(opcode);
       {
-          struct label no_return, do_return, do_return_if_true;
+          struct label do_return_if_true;
           enum arm64_register tmp;
 
           ra_alloc(ARM_REG_ARG1);
           tmp  = ra_alloc_any();
 
-          label_init(&no_return);
-          label_init(&do_return);
           label_init(&do_return_if_true);
 
           arm64_load_sp_reg();
@@ -2343,7 +2385,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           /* everything which is neither function, object or int is true */
           arm64_tst_int(tmp, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
-          b_imm_cond(label_dist(&do_return), ARM_COND_Z);
+          b_imm_cond(label_dist(&my_pike_return), ARM_COND_Z);
 
 	  load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
 	  tbnz_imm(tmp, value_to_bit(BIT_INT), label_dist(&do_return_if_true));
@@ -2355,51 +2397,15 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(ARM_REG_ARG1);
 
           label_generate(&do_return_if_true);
-	  cbz64_imm(ARM_REG_RVAL, label_dist(&no_return));
-
-          label_generate(&do_return);
-
-          ins_f_byte(F_RETURN);
-
-          label_generate(&no_return);
+	  cbnz64_imm(ARM_REG_RVAL, label_dist(&my_pike_return));
       }
       return;
   case F_RETURN:
   case F_DUMB_RETURN:
       arm64_debug_instr_prologue_0(opcode);
-      {
-          enum arm64_register reg;
-          struct label inter_return;
-
-          label_init(&inter_return);
-
-          arm64_load_fp_reg();
-
-          reg = ra_alloc_any();
-
-          load16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
-
-	  tbnz_imm(reg, value_to_bit(PIKE_FRAME_RETURN_INTERNAL), label_dist(&inter_return));
-
-          /* return from function */
-          arm64_mov_int(ARM_REG_RVAL, -1);
-          arm64_epilogue();
-
-          /* inter return */
-          label_generate(&inter_return);
-
-          arm64_call_if_bit_set(reg, value_to_bit(PIKE_FRAME_RETURN_POP), low_return_pop, low_return);
-
-          /* NOTE: the low_return functions pop one frame */
-          arm64_invalidate_fp_reg();
-          arm64_load_fp_reg();
-
-          load64_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
-	  ret_reg(reg);
-
-          ra_free(reg);
-          return;
-      }
+      arm64_load_fp_reg();
+      b_imm(label_dist(&my_pike_return));
+      return;
   case F_RETURN_0:
       ins_f_byte(F_CONST0);
       ins_f_byte(F_RETURN);
