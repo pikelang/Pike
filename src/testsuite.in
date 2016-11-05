@@ -4500,6 +4500,10 @@ test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) 
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)
 test_eval_error([[return column(({0}),"foo");]])
 
+test_equal([[ ({ })->foo ]], ({ }))
+test_equal([[ `->(({ }), "foo") ]], ({ }))
+test_equal([[ ({ })["foo"] ]], ({ }))
+
 test_any([[
 class A { constant a=0; int foo() { return a; } };
 class B { inherit A; constant a=1; };
@@ -13993,5 +13997,6 @@ test_do([[
 
     return A(0)->get(UNDEFINED);
 ]])
+
 
 END_MARKER
