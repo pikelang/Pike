@@ -396,7 +396,7 @@ static void f_hash_7_0( INT32 args )
  *! @seealso
  *!   @[hash()], @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
-PMOD_EXPORT void f_hash_8_0(INT32 args)
+static void f_hash_8_0(INT32 args)
 {
   size_t i = 0;
   struct pike_string *s;
@@ -463,7 +463,7 @@ PMOD_EXPORT void f_hash_8_0(INT32 args)
  *! @seealso
  *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
  */
-static void f_hash( INT32 args )
+PMOD_EXPORT void f_hash( INT32 args )
 {
   size_t res;
 
