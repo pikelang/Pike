@@ -4,6 +4,9 @@
 //! This is a port of the Javascript Markdown parser
 //! @url{https://github.com/chjj/marked Marked@}. The only method needed to
 //! be used is @[parse()] which will transform Markdown text to HTML.
+//!
+//! For a description on Markdown, go to the web page of the inventor of
+//! Markdown @url{https://daringfireball.net/projects/markdown/@}.
 
 import Regexp.PCRE;
 
