@@ -2007,11 +2007,6 @@ void main(int argc, array argv)
     signal(signum("PIPE"), sigpipe_handler);
   }
 
-  if ((uname()->sysname == "SunOS") && (Pike.get_runtime_info()->abi == 64)) {
-    // There seems to be some sort of problem with SIGPIPE on Solaris/ABI64.
-    show_fds();
-  }
-
   if(!output)
   {
     werror("You must specify an output plugin\n");
