@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //!
 //! NT Lan Manager authentication protocol primitives.
 //!

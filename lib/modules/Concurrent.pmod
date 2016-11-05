@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Module for handling multiple concurrent events.
 //!
 //! The @[Future] and @[Promise] API was inspired by
