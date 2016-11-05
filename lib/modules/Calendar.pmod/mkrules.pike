@@ -25,9 +25,9 @@ mapping links=([]);
 array arules=({});
 array azones=({});
 
-mapping(string:mapping(int:array(string))) abbr2zones = ([
-  "DFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
-  "NFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
+mapping(string:array(string)) abbr2zones = ([
+  "DFT":({ "Europe/Oslo", "Europe/Paris" }),
+  "NFT":({ "Europe/Oslo", "Europe/Paris" }),
 ]);
 
 #define FIXED(D)   (yjd+((D)-1))
@@ -37,11 +37,9 @@ mapping(string:mapping(int:array(string))) abbr2zones = ([
 
 #define FIXID(id) replace(id,"/-+"/1,"__p"/1)
 
-void add_abbr(string abbr, string zone, int until)
+void add_abbr(string abbr, string zone)
 {
-   mapping(int:array(string)) zones = abbr2zones[abbr];
-   if (!zones) abbr2zones[abbr] = zones = ([]);
-   zones[until] += ({ zone });
+   abbr2zones[abbr] += ({ zone });
 }
 
 int parse_offset(string t)
@@ -484,22 +482,21 @@ class Zone (string id)
       a[4]=clone_rule(a);
 
       if (sizeof(a[2])) {
-	 int until = (a[5] == "forever")?0x7fffffff:(int)a[5];
-	 foreach(a[2]/"/", string fmt) {
+         foreach(a[2]/"/", string fmt) {
 	    MyRule rule = global::rules[a[1]];
 	    if (rule) {
 	       foreach(indices(rule->symbols), string sym) {
 		  if ((sizeof(sym) > 2) && (fmt != "%s")) continue;
-		  add_abbr(sprintf(fmt, sym), id, until);
+                  add_abbr(sprintf(fmt, sym), id);
 	       }
 	    } else if (a[1] == "Romania") {
 	       // Kludge for forward reference in tzdata2012c/europe
 	       // for Europe/Chisinau to the Romania rule.
 	       foreach(({ "", "S" }), string sym) {
-		  add_abbr(sprintf(fmt, sym), id, until);
+                  add_abbr(sprintf(fmt, sym), id);
 	       }
 	    } else {
-	       add_abbr(fmt, id, until);
+               add_abbr(fmt, id);
 	    }
 	 }
       }
@@ -867,29 +864,11 @@ int main(int ac,array(string) am)
       "([\n";
 
    foreach(sort(indices(abbr2zones)), string abbr) {
-      string line = sprintf("   %q: ({", abbr);
-
-      mapping(int:array(string)) info = abbr2zones[abbr];
-      array(string) zones = ({});
-      array(int) until = ({});
-      foreach(info; int us; array(string) zs) {
-	 zones += zs;
-	 until += allocate(sizeof(zs), -us);
-      }
-      // Sort so that the most recent use comes first,
-      // and secondarily on the zone name.
-      sort(zones, until);
-      sort(until, zones);
-      foreach(Array.uniq(zones); int i; string zone) {
-	 string seg = sprintf("%s%q", i?", ":"", zone);
-	 if (sizeof(line) + sizeof(seg) < 77) {
-	    line += seg;
-	    continue;
-	 }
-	 t += line + ",\n";
-	 line = sprintf("       %q", zone);
-      }
-      t += line + "}),\n";
+      t += sprintf("   %q: ({\n", abbr);
+      array(string) zones = abbr2zones[abbr];
+      foreach(Array.uniq(sort(zones)); int i; string zone)
+        t += sprintf("%*s%q,\n", 5, "", zone);
+      t += "   }),\n";
    }
 
    t += "]);\n\n" +
