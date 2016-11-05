@@ -11,7 +11,7 @@
 #pike __REAL_VERSION__
 
 #define ERR(msg,args...) error( "(Yabu) "+msg+"\n", args )
-#define IO_ERR(msg) error( "(Yabu) %s, %m (%d)\n", msg, errno() )
+#define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n", msg, strerror(errno()), errno() )
 #define WARN(msg) werror(msg)
 #if constant(hash_7_0)
 #define hash hash_7_0

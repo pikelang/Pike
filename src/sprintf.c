@@ -132,8 +132,6 @@
  *!   @int
  *!     @value '%'
  *!       Percent.
- *!     @value 'm'
- *!       Equivalent to strerror(errno()). Designed for exit() formatting.
  *!     @value 'b'
  *!       Signed binary integer.
  *!     @value 'd'
@@ -347,10 +345,7 @@
 #include <ctype.h>
 #include "module_support.h"
 #include "bitvector.h"
-/*#include "modules/_Stdio/file.h"*/
-extern void f_strerror(INT32 args);
 
-#include <errno.h>
 #define RETURN_SHARED_STRING
 
 #define SPRINTF_UNDECIDED -1027
@@ -1390,16 +1385,6 @@ cont_2:
 	fsp->len=fsp->width=1;
 	break;
 
-      case 'm':
-	{
-	  push_int(errno);
-	  f_strerror(1);
-	  fsp->to_free_string = (--Pike_sp)->u.string;
-	  fsp->b = MKPCHARP_STR(fsp->to_free_string);
-	  fsp->len = fsp->to_free_string->len;
-	}
-	break;
-
       case 'n':
 	fsp->b=MKPCHARP("",0);
 	fsp->len=0;
@@ -2261,10 +2246,6 @@ static int push_sprintf_argument_types(PCHARP format,
 	break;
       }
 
-      case 'm':
-	if (' ' < min_char) min_char = ' ';
-	if ('z' > max_char) max_char = 'z';
-	break;
       case '%':
 	num_snurkel = 0;
 	if ('%' < min_char) min_char = '%';
@@ -2335,6 +2316,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	push_type(T_OR);
 	break;
       }
+
       case 'e':
       case 'f':
       case 'g':

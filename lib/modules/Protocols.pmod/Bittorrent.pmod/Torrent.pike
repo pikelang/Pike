@@ -618,7 +618,7 @@ void update_tracker(void|string event,void|int contact)
 	 if (errno()==0)
 	    warning("tracker request timeout\n");
 	 else
-            warning("tracker request failed, %m\n");
+            warning("tracker request failed, %s\n", strerror(errno()));
       });
 }
 

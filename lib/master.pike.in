@@ -3620,7 +3620,7 @@ void _main(array(string(0..255)) orig_argv)
       if( !file_stat(fn)->isreg )
 	exit(1, "File %O is not a regular file.\n", fn);
       if( !master_read_file(fn) )
-        exit(1, "File %O is not readable. %m.\n", fn);
+        exit(1, "File %O is not readable. %s.\n", fn, strerror(errno()));
       if (objectp (err) && err->is_cpp_or_compilation_error)
 	exit(1, "Pike: Failed to compile script.\n");
       else
@@ -5523,8 +5523,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 #if "#share_prefix#"[0]!='#'
   if (!(files = master_get_dir("#share_prefix#"))) {
-    werror ("Error listing directory %O: %m.\n",
-            "#share_prefix#");
+    werror ("Error listing directory %O: %s.\n",
+            "#share_prefix#", strerror(errno()));
     files = ({});
   }
   foreach(files, string ver)
@@ -5540,8 +5540,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 #if "#lib_prefix#"[0]!='#'
   if (!(files = master_get_dir("#lib_prefix#"))) {
-    werror ("Error listing directory %O: %m.\n",
-            "#lib_prefix#");
+    werror ("Error listing directory %O: %s.\n",
+            "#lib_prefix#", strerror(errno()));
     files = ({});
   }
   foreach(files, string ver)

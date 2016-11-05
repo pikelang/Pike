@@ -188,7 +188,8 @@ do_dump: {
 	  break do_dump;
 	}
 	else {
-          logmsg("Is an unreadable directory (not dumped recursively): %m.\n");
+          logmsg("Is an unreadable directory (not dumped recursively): %s.\n",
+                 strerror(errno()));
           break do_dump;
 	}
       }
@@ -228,7 +229,8 @@ do_dump: {
 	  string dir = combine_path (outfile, "..");
 	  if (!Stdio.is_dir (fakeroot(dir)))
 	    if (!Stdio.mkdirhier (fakeroot(dir))) {
-              logmsg ("Failed to create target directory %O: %m.\n", dir);
+              logmsg ("Failed to create target directory %O: %s.\n", dir,
+                      strerror(errno()));
               break do_dump;
 	    }
 

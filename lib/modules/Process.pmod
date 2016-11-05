@@ -1040,7 +1040,8 @@ class Spawn
 	 {
 	    if(cwd && !cd(cwd))
 	    {
-               error( "pike: cannot change cwd to %O: %m.\n", cwd );
+              error( "pike: cannot change cwd to %O: %s.\n", cwd,
+                     strerror(errno()) );
 	    }
 
 	    if (sizeof(fdp)>0 && fdp[0]) fdp[0]->dup2(Stdio.File("stdin"));
@@ -1059,7 +1060,8 @@ class Spawn
 	    else
 	       exece(cmd,args||({}));
 
-            error( "pike: failed to exece %O: %m.\n", cmd );
+            error( "pike: failed to exece %O: %s.\n", cmd,
+                   strerror(errno()) );
 	 };
 
 	 pied->write(encode_value(err));
@@ -1219,7 +1221,7 @@ void daemon(int nochdir, int noclose,
     };
 
     if (low_daemon(nochdir, noclose) == -1)
-      error("Failed to daemonize: %m.\n");
+      error("Failed to daemonize: %s.\n", strerror(errno()));
     if (!modifiers)
         return;
 

@@ -603,8 +603,6 @@ test_any([[return sprintf("%O", typeof(sprintf("%1H", "foo"))); ]],
 	 "string(8bit)");
 test_any([[return sprintf("%O", typeof(sprintf("foo"))); ]],
 	 "string(102..111)");
-test_any([[return sprintf("%O", typeof(sprintf("%m"))); ]],
-	 "string(32..122)");
 test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
 	 "string(17..17 | 102..111)");
 test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
@@ -13908,8 +13906,6 @@ test_do(sprintf("%9H", "x"*300););
 test_eval_error(return sprintf("%H", "\x100");)
 test_do(return sprintf("%1H", "x"*255);)
 test_eval_error(return sprintf("%1H", "x"*256);)
-
-test_eq(sprintf("%m"),strerror(errno()))
 
 define(test_object_sprintf, [[
        test_eq(sprintf("%"+$1, OBJ), $1);

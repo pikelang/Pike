@@ -906,7 +906,8 @@ class File
 	if(query_num_arg()<3) bits=0666;
 	if(!mode) mode="r";
 	if (!::open(file,mode,bits))
-           error("Failed to open %O mode %O : %m.\n", file, mode);
+          error("Failed to open %O mode %O : %s.\n", file, mode,
+                strerror(errno()));
 	register_open_file (file, open_file_id, backtrace());
         break;
     }
@@ -1147,10 +1148,10 @@ class File
 	BE_WERR ("  got eof");
       }
       else
-        BE_WERR ("  got error %m from read()");
+        BE_WERR ("  got error %s from read()", strerror(errno()));
     }
     else
-      BE_WERR ("  got error %m from backend");
+      BE_WERR ("  got error %s from backend", strerror(errno()));
 
     return __read_callback_error();
   }
@@ -1162,7 +1163,7 @@ class File
     if (!___fs_event_callback) return 0;
 
   	if(errno())
-        BE_WERR ("  got error %m from read()");
+        BE_WERR ("  got error %s from read()", strerror(errno()));
 
     return ___fs_event_callback(___id||this, event_mask);
   }
@@ -1191,7 +1192,7 @@ class File
     {
 #ifdef BACKEND_DEBUG
       if (errno())
-        BE_WERR ("  got error %m from backend");
+        BE_WERR ("  got error %s from backend", strerror(errno()));
       else
 	BE_WERR ("  got eof");
 #endif
@@ -1230,7 +1231,7 @@ class File
       return ___write_callback(___id||this);
     }
 
-    BE_WERR ("  got error %m from backend");
+    BE_WERR ("  got error %s from backend", strerror(errno()));
     // Don't need to report the error to ___close_callback here - we
     // know it isn't installed. If it were, either
     // __stdio_read_callback or __stdio_close_callback would be
@@ -1273,7 +1274,7 @@ class File
     }
 
     else {
-      BE_WERR ("  got error %m from read_oob()");
+      BE_WERR ("  got error %s from read_oob()", strerror(errno()));
 
 #if constant(System.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
@@ -2758,7 +2759,7 @@ string simplify_path(string path)
 //!
 void perror(string s)
 {
-  stderr->write("%s: %m.\n", s);
+  stderr->write("%s: %s.\n", s, strerror(errno()));
 }
 
 /*

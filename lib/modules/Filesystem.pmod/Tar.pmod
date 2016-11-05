@@ -555,8 +555,8 @@ class _Tar
 
 	      if (r->isdir) {
 		if (!mkdirhier(destpath))
-                  error ("Failed to create directory %q: %m.\n",
-                         destpath);
+                  error ("Failed to create directory %q: %s.\n",
+                         destpath, strerror(errno()));
 
 		// Set bits etc afterwards on dirs.
 		if (do_extract_bits)
@@ -566,8 +566,8 @@ class _Tar
 	      else {
 		string dest_dir = (destpath / "/")[..<1] * "/";
 		if (!mkdirhier(dest_dir))
-                  error ("Failed to create directory %q: %m.\n",
-                         destpath);
+                  error ("Failed to create directory %q: %s.\n",
+                         destpath, strerror(errno()));
 
 		if (r->isreg) {
 		  Stdio.File o = Stdio.File();
