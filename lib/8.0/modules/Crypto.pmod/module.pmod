@@ -1,4 +1,5 @@
 #pike 8.1
+#pragma dynamic_dot
 
 protected constant compat_required_methods = ({
   "block_size",

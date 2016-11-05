@@ -3,6 +3,8 @@
  * They are kept here to avoid circular references.
  */
 
+#pragma dynamic_dot
+
 //! The pgsql backend, shared between all connection instances.
 //! It runs even in non-callback mode in a separate thread and makes sure
 //! that communication with the database is real-time and event driven

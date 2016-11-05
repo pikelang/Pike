@@ -1019,7 +1019,7 @@ class _permessagedeflate {
              ? 1<<opts->compressionWindowSize : 1<<15;
             if (opts->compressionNoContextTakeover) {
                 string s
-                 = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
+                 = compress->deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
                 if (sizeof(s) < sizeof(frame->data)) {
                     frame->data = s;
                     frame->rsv |= RSV1;
@@ -1037,9 +1037,9 @@ class _permessagedeflate {
                     // LZ77 window size, test if adding it to the
                     // stream results in zero overhead.  If so, add it,
                     // if not, reset compression state to before adding it.
-                    Gz.inflate save = compress.clone();
+                    Gz.inflate save = compress->clone();
                     string s
-                     = compress.deflate(frame->data, Gz.SYNC_FLUSH);
+                     = compress->deflate(frame->data, Gz.SYNC_FLUSH);
                     if (sizeof(s) < sizeof(frame->data)) {
                         frame->data = s[..<4];
                         frame->rsv |= RSV1;
@@ -1049,11 +1049,11 @@ class _permessagedeflate {
                     // Large binary frames we sample the first 1KB of.
                     // If it compresses better than 6.25%, add them
                     // to the compressed stream.
-                    Gz.inflate ctest = compress.clone();
+                    Gz.inflate ctest = compress->clone();
                     string sold = frame->data[..1023];
-                    string s = ctest.deflate(sold, Gz.PARTIAL_FLUSH);
+                    string s = ctest->deflate(sold, Gz.PARTIAL_FLUSH);
                     if (sizeof(s) + 64 < sizeof(sold)) {
-                        frame->data = compress.deflate(frame->data,
+                        frame->data = compress->deflate(frame->data,
                          Gz.SYNC_FLUSH)[..<4];
                         frame->rsv |= RSV1;
                     }
