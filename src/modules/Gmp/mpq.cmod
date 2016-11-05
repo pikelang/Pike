@@ -297,6 +297,7 @@ PIKECLASS mpq
 
   PIKEFUN float|mpq|int ``**(int|float exponent)
   {
+      double x;
       /* does not support expoent being object,
          `** should have been used in that case. */
       if( TYPEOF(*exponent) == PIKE_T_FLOAT )
@@ -318,7 +319,7 @@ PIKECLASS mpq
           return;
       }
 
-      double x = mpq_get_d(THISMPQ);
+      x = mpq_get_d(THISMPQ);
       Pike_sp[-1].u.float_number = pow( Pike_sp[-1].u.float_number, x);
   }
 
@@ -342,6 +343,7 @@ PIKECLASS mpq
 
   PIKEFUN float|mpq `**(float exponent)
   {
+    double x;
     if( (double)(int)exponent == exponent )
     {
       Pike_sp[-1].u.integer = (INT_TYPE)Pike_sp[-1].u.float_number;
@@ -349,7 +351,7 @@ PIKECLASS mpq
       f_mpq_cq__backtick_2A_2A_1(1);
       return;
     }
-    double x = mpq_get_d(THISMPQ);
+    x = mpq_get_d(THISMPQ);
     x = pow(x, exponent);
     if( (double)(long)x == x )
     {
