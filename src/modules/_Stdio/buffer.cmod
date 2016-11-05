@@ -1825,7 +1825,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       INT_TYPE bytes = end->u.integer;
 
       if (bytes < 0) {
-	push_undefined();
+        push_int(-1);
 	return;
       }
       if (((size_t)bytes) < io_len(io)) {
@@ -1838,7 +1838,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
-	  push_undefined();
+          push_int(-1);
 	  return;
 	}
       } else if (((size_t)(-bytes)) > io->offset) {
@@ -1855,7 +1855,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       buf++;
     }
 
-    push_undefined();
+    push_int(-1);
   }
 
   /*! @decl protected int(-1..) _search(string(8bit) substring, int|void start, @
@@ -1896,7 +1896,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       INT_TYPE bytes = end->u.integer;
 
       if (bytes < 0) {
-	push_undefined();
+        push_int(-1);
 	return;
       }
       if (((size_t)bytes) < io_len(io)) {
@@ -1909,7 +1909,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
-	  push_undefined();
+          push_int(-1);
 	  return;
 	}
       } else if (((size_t)(-bytes)) > io->offset) {
@@ -1919,7 +1919,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     }
 
     if (substring->len > (buf_end - buf)) {
-      push_undefined();
+      push_int(-1);
       return;
     }
     if (!substring->len) {
@@ -1935,7 +1935,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     if (mojt.container) free_object(mojt.container);
 
     if (!buf) {
-      push_undefined();
+      push_int(-1);
     } else {
       push_int64(buf - io_read_pointer(io));
     }
