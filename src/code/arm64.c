@@ -15,6 +15,14 @@
 
 #define MACRO  ATTRIBUTE((unused)) static
 
+#ifdef PIKE_DEBUG
+#define ARM_ASSERT(x)   do {                                                    \
+    if (!(x))  Pike_fatal("%s:%d\tAssert failed: " #x, __FILE__, __LINE__);     \
+} while (0)
+#else
+#define ARM_ASSERT(x)   do {} while(0)
+#endif
+
 /* ARM64 machine code backend
  *
  * naming conventions:
@@ -437,6 +445,8 @@ MACRO void ret_reg(enum arm64_register to) {
 OPCODE_FUN gen_b_imm(INT32 dist) {
     unsigned INT32 instr = ARM_INSTR_UNCOND_BRANCH_IMM;
 
+    ARM_ASSERT(dist <= 0x1ffffff && dist >= ~0x1ffffff);
+
     instr |= dist & 0x3ffffff;
 
     return instr;
@@ -448,6 +458,8 @@ MACRO void b_imm(INT32 dist) {
 
 OPCODE_FUN gen_b_imm_cond(INT32 dist, enum arm64_condition cond) {
     unsigned INT32 instr = ARM_INSTR_COND_BRANCH_IMM;
+
+    ARM_ASSERT(dist <= 0x3ffff && dist >= ~0x3ffff);
 
     instr |= (dist & 0x7ffff) << 5;
     instr |= cond;
@@ -608,8 +620,8 @@ MACRO void tbnz_imm(enum arm64_register reg, int bit, INT32 dist)
 MACRO int value_to_bit(unsigned INT64 v)
 {
     int bit = ctz64(v);
-    assert(v != 0);
-    assert(v == (1UL<<bit));
+    ARM_ASSERT(v != 0);
+    ARM_ASSERT(v == (1UL<<bit));
     return bit;
 }
 
@@ -778,13 +790,13 @@ OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, 
         offset >>= sz;
 	instr |= (1<<24);
 	instr |= offset << 10;
-	assert(!(offset >> 12));
+	ARM_ASSERT(!(offset >> 12));
     } else {
         instr |= index << 10;
 	instr |= (offset & 0x1ff) << 12;
-	assert((offset & 0x100)?
-	       (offset | 0x1ff) == -1 :
-	       (offset & ~0x1ff) == 0);
+	ARM_ASSERT((offset & 0x100)?
+		   (offset | 0x1ff) == -1 :
+		   (offset & ~0x1ff) == 0);
     }
 
     return instr;
@@ -1111,7 +1123,7 @@ MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
 
 OPCODE_FUN gen_adr_imm(enum arm64_register dst, INT32 offs)
 {
-    assert ((offs < 0? (offs|0x1fffff) == -1 : (offs&~0x1fffff) == 0));
+    ARM_ASSERT ((offs < 0? (offs|0x1fffff) == -1 : (offs&~0x1fffff) == 0));
     return set_rt_reg(ARM_INSTR_PC_REL | ((offs & 3) << 29) | ((offs & 0x1ffffc) << 3), dst);
 }
 
@@ -1204,7 +1216,7 @@ MACRO INT32 label_dist(struct label *l) {
 MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
 
-    assert(l->loc == (unsigned INT32)-1);
+    ARM_ASSERT(l->loc == (unsigned INT32)-1);
 
     l->loc = loc;
 
@@ -1260,9 +1272,9 @@ MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
 }
 
 void arm64_init_interpreter_state(void) {
-    assert(sizeof(struct svalue) == 16);
-    assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
-    assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
+    ARM_ASSERT(sizeof(struct svalue) == 16);
+    ARM_ASSERT(OFFSETOF(pike_frame, num_locals) % 4 == 0);
+    ARM_ASSERT(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
 
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
@@ -1390,7 +1402,7 @@ static void arm64_load_sp_reg(void) {
 
 static void arm64_store_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
-    assert(compiler_state.flags & FLAG_SP_LOADED);
+    ARM_ASSERT(compiler_state.flags & FLAG_SP_LOADED);
     store64_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
@@ -1458,7 +1470,7 @@ MACRO void arm64_check_destructed(void) {
 }
 
 MACRO void arm64_change_sp_reg(INT32 offset) {
-    assert(compiler_state.flags & FLAG_SP_LOADED);
+    ARM_ASSERT(compiler_state.flags & FLAG_SP_LOADED);
     offset *= sizeof(struct svalue);
     if (offset < 0) {
         offset = -offset;
@@ -1502,7 +1514,7 @@ MACRO void arm64_assign_int_reg(enum arm64_register dst, enum arm64_register val
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm64_mov_int(tmp1, combined);
     mov_reg(tmp2, value);
@@ -1517,7 +1529,7 @@ MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm64_load_sp_reg();
 
@@ -1535,7 +1547,7 @@ MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
 MACRO void arm64_push_non_ref_type(unsigned INT32 type, unsigned INT64 value) {
     enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     arm64_load_sp_reg();
 
@@ -1555,7 +1567,7 @@ MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
 }
 
 MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vreg) {
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     arm64_load_sp_reg();
     store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
@@ -1594,7 +1606,7 @@ MACRO void arm64_move_svaluep_nofree(enum arm64_register dst, enum arm64_registe
     enum arm64_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
@@ -1608,7 +1620,7 @@ MACRO void arm64_assign_svaluep_nofree(enum arm64_register dst, enum arm64_regis
     enum arm64_register treg = ra_alloc_any(),
                         vreg = ra_alloc_any();
 
-    assert(treg < vreg);
+    ARM_ASSERT(treg < vreg);
 
     load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
@@ -1630,7 +1642,7 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
     enum arm64_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
 
-    assert(tmp1 < tmp2);
+    ARM_ASSERT(tmp1 < tmp2);
 
     if (offset) {
         if (offset > 0)
@@ -1668,7 +1680,7 @@ MACRO enum arm64_condition arm64_eq_types(enum arm64_register type1, enum arm64_
     unsigned char shift;
     int ok = arm64_make_arith_imm(type_subtype, &imm, &shift);
 
-    assert(ok);
+    ARM_ASSERT(ok);
 
     add_to_program(gen_cmp_reg_imm(type1, imm, shift));
     add_to_program(gen_ccmp_reg_reg(type1, type2, ARM_COND_EQ, 0));
@@ -1683,7 +1695,7 @@ MACRO enum arm64_condition arm64_ne_types(enum arm64_register type1, enum arm64_
     unsigned char shift;
     int ok = arm64_make_arith_imm(type_subtype, &imm, &shift);
 
-    assert(ok);
+    ARM_ASSERT(ok);
 
     add_to_program(gen_cmp_reg_imm(type1, imm, shift));
     add_to_program(gen_ccmp_reg_reg(type1, type2, ARM_COND_EQ, 0));
@@ -2037,7 +2049,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-  assert(opcode-F_OFFSET<=255);
+  ARM_ASSERT(opcode-F_OFFSET<=255);
 
   flags = instrs[opcode-F_OFFSET].flags;
 
@@ -3104,15 +3116,15 @@ void arm64_update_f_jump(INT32 offset, INT32 to_offset) {
     to_offset -= offset;
     if (!(instr & 0x60000000)) {
       /* Unconditional branch: 26 bit offset */
-      assert((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
+      ARM_ASSERT((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
       instr &= ~0x03ffffff;
-      assert (to_offset >= -0x02000000 && to_offset < 0x02000000);
+      ARM_ASSERT (to_offset >= -0x02000000 && to_offset < 0x02000000);
       instr |= to_offset & 0x03ffffff;
     } else {
       /* Conditional branch: 19 bit offset */
-      assert((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
+      ARM_ASSERT((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
       instr &= ~0x00ffffe0;
-      assert (to_offset >= -0x00040000 && to_offset < 0x00040000);
+      ARM_ASSERT (to_offset >= -0x00040000 && to_offset < 0x00040000);
       instr |= (to_offset & 0x0007ffff) << 5;
     }
 
@@ -3124,11 +3136,11 @@ int arm64_read_f_jump(INT32 offset) {
 
     if (!(instr & 0x60000000)) {
       /* Unconditional branch: 26 bit offset */
-      assert((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
+      ARM_ASSERT((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
       return (((INT32)(instr << 6)) >> 6) + offset;
     } else {
       /* Conditional branch: 19 bit offset */
-      assert((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
+      ARM_ASSERT((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
       return (((INT32)(instr << 8)) >> 13) + offset;
     }
 }
