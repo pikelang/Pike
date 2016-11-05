@@ -22,8 +22,6 @@ o CompilerEnvironment()->lock()
 
   This is a class that exposes the compiler internal lock.
 
-o Protocols.EngineIO and Protocols.SocketIO
-
 o Gz.deflate()->clone()
 
   This allows for testing compression.
