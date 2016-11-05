@@ -37,7 +37,6 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
     if (_BitScanReverse(&index, (unsigned long)i))
 	return (unsigned INT32)index;
     return 32;
-}
 #else
     unsigned INT32 t;
 
