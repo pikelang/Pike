@@ -5,17 +5,18 @@
 inherit @module@;
 //! @endignore
 
-//! Function prototype for decode extension handlers. The first argument
-//! is the extension type identifier. The second argument is a @[Stdio.Buffer] containing
-//! the payload.
+//! Function prototype for decode extension handlers. The first
+//! argument is the extension type identifier. The second argument is
+//! a @[Stdio.Buffer] containing the payload.
 //! 
 //! @seealso
 //!     @[decode], @[decode_from]
 typedef function(int(-127..128),Stdio.Buffer:mixed) decode_handler;
 
-//! Function prototype for encode extension handlers. The first argument is
-//! the @[Stdio.Buffer], the second the value to encode. Use @[add_extension_header] to
-//! generate the correct extension header.
+//! Function prototype for encode extension handlers. The first
+//! argument is the @[Stdio.Buffer], the second the value to
+//! encode. Use @[add_extension_header] to generate the correct
+//! extension header.
 //! 
 //! @seealso
 //!     @[decode], @[decode_from]
@@ -53,12 +54,16 @@ void decode_error(Stdio.Buffer buffer, int err_pos, void|string reason, void|mix
 
 //! @appears Standards.MsgPack module
 //! 
-//! Tools for handling the MsgPack data format. MsgPack is a binary serialization format with applications
-//! similar to JSON. However, MsgPack is more versatile and is able to serialize arbitrary objects using an
-//! extension format. The following table shows how some special Pike data types are encoded in the MsgPack
-//! format. All basic types, namely @expr{int@}, @expr{string@}, @expr{float@}, @expr{array@} and
-//! @expr{mapping@} are mapped onto their natural MsgPack counterparts. Note that the encoder does not
-//! use all integer and floating point lengths and in particular integers are never encoded as unsigned.
+//! Tools for handling the MsgPack data format. MsgPack is a binary
+//! serialization format with applications similar to JSON. However,
+//! MsgPack is more versatile and is able to serialize arbitrary
+//! objects using an extension format. The following table shows how
+//! some special Pike data types are encoded in the MsgPack
+//! format. All basic types, namely @expr{int@}, @expr{string@},
+//! @expr{float@}, @expr{array@} and @expr{mapping@} are mapped onto
+//! their natural MsgPack counterparts. Note that the encoder does not
+//! use all integer and floating point lengths and in particular
+//! integers are never encoded as unsigned.
 //!
 //! @ul
 //!     @item binary
