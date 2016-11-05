@@ -1135,15 +1135,6 @@ MACRO void arm64_tst_int(enum arm64_register reg, unsigned INT64 v) {
     }
 }
 
-/*
- * TODO: work with labels
- */
-MACRO void arm64_rel_cond_jmp(enum arm64_register reg, enum arm64_register b, enum arm64_condition cond, int jmp) {
-    cmp_reg_reg(reg, b);
-    b_imm_cond(jmp, cond);
-}
-
-
 static void arm64_adr_imm_at(unsigned INT32 offset, enum arm64_register dst,
 			     INT32 offs)
 {
