@@ -81,6 +81,8 @@ o Compiler
 
   Fixed broken range optimization.
 
+  Removed optimization that considered the hostname() constant.
+
   Don't reference count direct cyclic references via mixed variables.
 
 o MasterObject
