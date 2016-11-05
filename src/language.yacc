@@ -1124,6 +1124,7 @@ modifier:
   | TOK_PROTECTED  { $$ = ID_PROTECTED; }
   | TOK_INLINE     { $$ = ID_INLINE; }
   | TOK_VARIANT    { $$ = ID_VARIANT; }
+  | TOK_WEAK       { $$ = ID_WEAK; }
   ;
 
 magic_identifiers1:
