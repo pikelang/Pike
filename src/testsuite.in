@@ -695,7 +695,7 @@ test_any([[
     auto b = typeof(a);
   };
   string test() {
-     return sprintf("a%Ob%O", typeof(Foo().a),typeof(Foo().b));
+     return sprintf("a%Ob%O", typeof(Foo()->a),typeof(Foo()->b));
   };
 };
   return Toplevel()->test();
@@ -707,7 +707,7 @@ test_any([[{
       auto test(){ return 10;return 20;return 30; };
     };
     string test() {
-      return sprintf("%O", typeof(Foo().test));
+      return sprintf("%O", typeof(Foo()->test));
     }
   };
   return Toplevel()->test()-" ";
@@ -3293,6 +3293,7 @@ test_compile_error_any([[
 ]])
 
 test_any([[
+#pragma dynamic_dot
   // Test dynamic module indexing.
   object protocols = Protocols;
   return protocols.HTTP.get_url_data;
