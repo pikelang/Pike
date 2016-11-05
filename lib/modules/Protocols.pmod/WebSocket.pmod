@@ -10,7 +10,6 @@ protected string MASK(string data, string mask) {
 
 //! WebSocket frame opcodes.
 enum FRAME {
-
     //!
     FRAME_CONTINUATION = 0x0,
 
@@ -33,7 +32,6 @@ enum FRAME {
 //! WebSocket close status codes, as explained in the WebSocket protocol
 //! specification.
 enum CLOSE_STATUS {
-
     //!
     CLOSE_NORMAL = 1000,
 
@@ -60,17 +58,6 @@ enum CLOSE_STATUS {
 
     //!
     CLOSE_UNEXPECTED,
-};
-
-//! WebSocket frame compression heuristics override
-enum COMPRESSION {
-
-    //!
-    HEURISTICS_COMPRESS = 0,
-
-    //!
-    OVERRIDE_COMPRESS,
-
 };
 
 #define FOO(x)  if (op == x) return #x
@@ -159,9 +146,6 @@ class Frame {
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
     //! fragmented message or a non-fragmentation frame.
     int(0..1) fin = 1;
-
-    //! Generic options for this frame.
-    mapping(string:mixed) options;
 
     string mask;
 
