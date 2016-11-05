@@ -22,7 +22,7 @@ void arm64_flush_instruction_cache(void *addr, size_t len);
 #define FLUSH_INSTRUCTION_CACHE(ADDR,LEN)         arm64_flush_instruction_cache(ADDR,LEN)
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#define ENTRY_PROLOGUE_SIZE	4
+#define ENTRY_PROLOGUE_SIZE	5
 
 void arm64_start_function(int no_pc);
 void arm64_end_function(int no_pc);

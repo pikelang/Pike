@@ -1293,6 +1293,13 @@ MACRO void ra_init(void) {
     compiler_state.flags = 0;
 }
 
+MACRO void assert_no_temp_regs(void) {
+    assert(compiler_state.free ==
+	   (RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5)|
+	    RBIT(6)|RBIT(7)|RBIT(8)|RBIT(9)|RBIT(10)|RBIT(11)|RBIT(12)|RBIT(13)|
+	    RBIT(14)|RBIT(15)|RBIT(19)));
+}
+
 MACRO enum arm64_register ra_alloc(enum arm64_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
@@ -1351,7 +1358,8 @@ MACRO int ra_is_free(enum arm64_register reg) {
 static const unsigned INT32 pushed_registers =
   (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
   (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) |
-  (1 << ARM_REG_LR) | (1 << 19);
+  (1 << ARM_REG_LR) | (1 << ARM_REG_R19) |
+  (1 << ARM_REG_R20) | (1 << ARM_REG_R21);
 
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm64_prologue(void) {
@@ -1359,7 +1367,7 @@ MACRO void arm64_prologue(void) {
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
-#define EPILOGUE_SIZE 4
+#define EPILOGUE_SIZE 5
 MACRO void arm64_epilogue(void) {
     load_multiple(ARM_REG_SP, ARM_MULT_IAW, pushed_registers);
     ret_reg(ARM_REG_LR);
@@ -1376,9 +1384,6 @@ MACRO void arm64_call(void *ptr) {
     arm64_mov_int(tmp, v);
     blr_reg(tmp);
     ra_free(tmp);
-}
-
-MACRO void arm64_ins_branch_check_threads_etc(int a) {
 }
 
 void arm64_flush_instruction_cache(void *addr, size_t len) {
@@ -1708,7 +1713,21 @@ void arm64_flush_codegen_state(void) {
 }
 
 static struct label my_free_svalue,
-                    my_pike_return;
+                    my_pike_return,
+                    check_threads_etc_slowpath;
+
+MACRO void arm64_ins_branch_check_threads_etc(void) {
+    struct label skip;
+
+    /* FIXME: assert_no_temp_regs(); */
+
+    /* check counter and jump over next branch */
+    label_init(&skip);
+    arm64_adds32_reg_int(ARM_REG_R20, ARM_REG_R20, 1 << 25);
+    b_imm_cond(label_dist(&skip), ARM_COND_VC);
+    bl_imm(label_dist(&check_threads_etc_slowpath));
+    label_generate(&skip);
+}
 
 void arm64_start_function(int UNUSED(no_pc)) {
     ra_init();
@@ -1794,6 +1813,27 @@ void arm64_start_function(int UNUSED(no_pc)) {
 	ra_free(reg);
 
         ra_free(ARM_REG_ARG1);
+    }
+
+    /* INS_BRANCH_CHECK_THREADS_ETC (slow path) */
+    {
+        enum arm64_register tmp = ra_alloc_any(),
+                            addr = ra_alloc_any();
+
+        label_init(&check_threads_etc_slowpath);
+        label_generate(&check_threads_etc_slowpath);
+
+        /* TODO: use label, was: branch_check_threads_update_etc = PIKE_PC; */
+        arm64_mov_int(addr, (unsigned INT64)&fast_check_threads_counter);
+        load32_reg_imm(tmp, addr, 0);
+        arm64_add32_reg_int(tmp, tmp, 0x80);
+        store32_reg_imm(tmp, addr, 0);
+
+        ra_free(addr);
+
+        arm64_mov_int(tmp, (unsigned INT64)branch_check_threads_etc);
+        br_reg(tmp);
+        ra_free(tmp);
     }
 }
 
@@ -2925,6 +2965,7 @@ int arm64_low_ins_f_jump(unsigned int opcode, int backward_jump) {
     cbz64_imm(ARM_REG_RVAL, label_dist(&skip));
 
     if (backward_jump) {
+        arm64_ins_branch_check_threads_etc();
     }
 
     ret = PIKE_PC;
@@ -2947,9 +2988,12 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_QUICK_BRANCH_WHEN_ZERO:
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
         {
-            enum arm64_register tmp = ra_alloc_any();
+	    enum arm64_register tmp;
 	    struct label skip;
 
+            arm64_ins_branch_check_threads_etc();
+
+	    tmp = ra_alloc_any();
             arm64_debug_instr_prologue_0(opcode);
 
             arm64_change_sp(-1);
@@ -2966,12 +3010,16 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
             return ret;
         }
     case F_BRANCH:
+        arm64_ins_branch_check_threads_etc();
+
         arm64_debug_instr_prologue_0(opcode);
         ret = PIKE_PC;
         b_imm(0);
         return ret;
     case F_LOOP: {
           struct label fallback, jump;
+
+          arm64_ins_branch_check_threads_etc();
 
           label_init(&jump);
           label_init(&fallback);
