@@ -663,6 +663,8 @@ test_equal( o("x -v florp"/" ")[Arg.REST], ({ "florp" }) )
 test_equal( o("x -v -v"/" ",([]))->verbose , 2 )
 test_equal( o("x"/" ")->i, 42 )
 test_equal( o("x -i 7"/" ")->i, 7 )
+test_equal( o("/a/b/c -v"/" ")[Arg.PATH], "/a/b/c" )
+test_equal( o("/a/b/c -v"/" ")[Arg.APP], "c")
 
 test_do(add_constant("o"))
 

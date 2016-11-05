@@ -415,17 +415,20 @@ class OptLibrary
 
 } // -- OptLibrary
 
-object REST = class {
-    protected string _sprintf(int t)
-    {
-      return "Arg.REST";
-    }
-  }();
+protected class LookupKey
+{
+  protected string name;
+  protected void create(string name) { this::name = name; }
+  protected string _sprintf(int t) { return t=='O' && "Arg."+name; }
+}
+
+LookupKey REST = LookupKey("REST");
+LookupKey APP  = LookupKey("APP");
+LookupKey PATH = LookupKey("PATH");
 
 //! @decl constant REST = REST();
 //!
 //! Constant used by Arg.parse() to indicate the remaining objects.
-
 
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
 // FIXME: Support for type casts? ( Opt level = Integer(Opt("--level"));
@@ -530,6 +533,8 @@ class Options
   protected mixed `[](mixed id)
   {
     if( id==REST ) return argv;
+    if( id==PATH ) return application;
+    if( id==APP )  return basename(application);
     return values[id];
   }
 
