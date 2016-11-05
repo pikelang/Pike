@@ -34,6 +34,10 @@ o ADT.Heap()->low_pop()
 
   This function is analogous to low_peek().
 
+o Protocols.WebSocket
+
+  Parse query variables in WebSocket Requests.
+
 Bug fixes
 ---------
 
@@ -66,10 +70,6 @@ o Protocols.HTTP.Session
 o Protocols.WebSocket
 
   Fixed handling of truncated frames.
-
-  Parse query variables.
-
-  Call either http_cb or ws_cb, not both, at the proper moment.
 
 o _Roxen
 
