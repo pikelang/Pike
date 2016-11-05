@@ -352,7 +352,7 @@ private void read_cb_chunked( mixed dummy, string data )
   call_out(connection_timeout,connection_timeout_delay);
 }
 
-protected int parse_variables(void|int short)
+protected int parse_variables(int short)
 {
   if (query!="")
     .http_decode_urlencoded_query(query,variables);
