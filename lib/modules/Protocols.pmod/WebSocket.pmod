@@ -1030,7 +1030,7 @@ class _permessagedeflate {
                  || frame->opcode == FRAME_TEXT) {
                     // Assume text frames are always compressible.
                     frame->data
-                     = compress.deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
+                     = compress->deflate(frame->data, Gz.SYNC_FLUSH)[..<4];
                     frame->rsv |= RSV1;
                 } else if (4*sizeof(frame->data) <= wsize) {
                     // If a binary frame is smaller than 25% of the
