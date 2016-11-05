@@ -9,6 +9,7 @@
 
 #pike __REAL_VERSION__
 //#pragma strict_types
+#pragma dynamic_dot
 
 //! @appears predef::MasterObject
 //!

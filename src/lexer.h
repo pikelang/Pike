@@ -804,6 +804,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas &= ~ID_DISASSEMBLE;
 	  }
+          else if (ISWORD("dynamic_dot"))
+          {
+            lex->pragmas |= ID_DYNAMIC_DOT;
+          }
+          else if (ISWORD("no_dynamic_dot"))
+          {
+            lex->pragmas &= ~ID_DYNAMIC_DOT;
+          }
           else
           {
             if( Pike_compiler->compiler_pass == 1 )

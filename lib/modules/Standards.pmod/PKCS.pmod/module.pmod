@@ -39,12 +39,12 @@ Crypto.Sign.State parse_public_key(Sequence seq)
   if (alg_id == .Identifiers.rsa_id) {
     if(!RSA)
       RSA = master()->resolv("Standards.PKCS.RSA");
-    return RSA.parse_public_key(seq->elements[1]->value);
+    return RSA->parse_public_key(seq->elements[1]->value);
   }
   if (alg_id == .Identifiers.dsa_id) {
     if(!DSA)
       DSA = master()->resolv("Standards.PKCS.DSA");
-    return DSA.parse_public_key(seq->elements[1]->value);
+    return DSA->parse_public_key(seq->elements[1]->value);
   }
 #if constant(Crypto.ECC.Curve)
   // RFC 5915:1a.
@@ -54,8 +54,8 @@ Crypto.Sign.State parse_public_key(Sequence seq)
     if(!ECDSA)
       ECDSA = master()->resolv("Standards.PKCS.ECDSA");
     Crypto.ECC.Curve curve =
-      ECDSA.parse_ec_parameters(seq->elements[0]->elements[1]);
-    return ECDSA.parse_public_key(seq->elements[1]->value, curve);
+      ECDSA->parse_ec_parameters(seq->elements[0]->elements[1]);
+    return ECDSA->parse_public_key(seq->elements[1]->value, curve);
   }
 #endif /* Crypto.ECC.Curve */
   return UNDEFINED;
@@ -93,12 +93,12 @@ Crypto.Sign.State parse_private_key(Sequence seq)
   if (alg_id == .Identifiers.rsa_id) {
     if(!RSA)
       RSA = master()->resolv("Standards.PKCS.RSA");
-    return RSA.parse_private_key(seq->elements[2]->value);
+    return RSA->parse_private_key(seq->elements[2]->value);
   }
   if (alg_id == .Identifiers.dsa_id) {
     if(!DSA)
       DSA = master()->resolv("Standards.PKCS.DSA");
-    return DSA.parse_private_key(seq->elements[2]->value);
+    return DSA->parse_private_key(seq->elements[2]->value);
   }
 #if constant(Crypto.ECC.Curve)
   // RFC 5915:1a.
@@ -108,8 +108,8 @@ Crypto.Sign.State parse_private_key(Sequence seq)
     if(!ECDSA)
       ECDSA = master()->resolv("Standards.PKCS.ECDSA");
     Crypto.ECC.Curve curve =
-      ECDSA.parse_ec_parameters(seq->elements[1]->elements[1]);
-    return ECDSA.parse_private_key(seq->elements[2]->value, curve);
+      ECDSA->parse_ec_parameters(seq->elements[1]->elements[1]);
+    return ECDSA->parse_private_key(seq->elements[2]->value, curve);
   }
 #endif /* Crypto.ECC.Curve */
   return UNDEFINED;

@@ -1633,6 +1633,11 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 
   if (!is_const(n)) {
     /* Index dynamically. */
+    if (Pike_compiler->compiler_pass == 2 && !(THIS_COMPILATION->lex.pragmas
+                                               & ID_DYNAMIC_DOT))
+    {
+      yywarning("Using . to index dynamically.");
+    }
     return mknode(F_INDEX, copy_node(n), mkstrnode(id));
   }
 
