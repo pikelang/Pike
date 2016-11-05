@@ -1844,7 +1844,7 @@ PIKECLASS Buffer
       INT_TYPE bytes = end->u.integer;
 
       if (bytes < 0) {
-	push_undefined();
+        push_int(-1);
 	return;
       }
       if (((size_t)bytes) < io_len(io)) {
@@ -1857,7 +1857,7 @@ PIKECLASS Buffer
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
-	  push_undefined();
+          push_int(-1);
 	  return;
 	}
       } else if (((size_t)(-bytes)) > io->offset) {
@@ -1874,7 +1874,7 @@ PIKECLASS Buffer
       buf++;
     }
 
-    push_undefined();
+    push_int(-1);
   }
 
   /*! @decl protected int(-1..) _search(string(8bit) substring, int|void start, @
@@ -1915,7 +1915,7 @@ PIKECLASS Buffer
       INT_TYPE bytes = end->u.integer;
 
       if (bytes < 0) {
-	push_undefined();
+        push_int(-1);
 	return;
       }
       if (((size_t)bytes) < io_len(io)) {
@@ -1928,7 +1928,7 @@ PIKECLASS Buffer
 
       if (bytes >= 0) {
 	if (((size_t)bytes) >= io_len(io)) {
-	  push_undefined();
+          push_int(-1);
 	  return;
 	}
       } else if (((size_t)(-bytes)) > io->offset) {
@@ -1938,7 +1938,7 @@ PIKECLASS Buffer
     }
 
     if (substring->len > (buf_end - buf)) {
-      push_undefined();
+      push_int(-1);
       return;
     }
     if (!substring->len) {
@@ -1954,7 +1954,7 @@ PIKECLASS Buffer
     if (mojt.container) free_object(mojt.container);
 
     if (!buf) {
-      push_undefined();
+      push_int(-1);
     } else {
       push_int64(buf - io_read_pointer(io));
     }
