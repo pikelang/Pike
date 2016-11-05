@@ -989,10 +989,10 @@ void udp_sendto(INT32 args)
        case EINVAL:
 #ifdef ENOTSOCK
        case ENOTSOCK:
+#endif
 	  if (THIS->box.backend)
 	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("Not a socket!!!\n");
-#endif
     }
   }
   pop_n_elems(args);
