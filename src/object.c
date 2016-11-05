@@ -2354,8 +2354,13 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	      dmalloc_touch_svalue(s);
 	      if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
-		  s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
-		gc_mark_svalues(s, 1);
+		  s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) {
+		if (id_flags & IDENTIFIER_WEAK) {
+		  gc_mark_weak_svalues(s, 1);
+		} else {
+		  gc_mark_svalues(s, 1);
+		}
+	      }
 	    }else{
 	      union anything *u;
 	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
@@ -2363,8 +2368,13 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	      if (rtt != T_OBJECT || u->object != o ||
-		  !(id_flags & IDENTIFIER_NO_THIS_REF))
-		gc_mark_short_svalue(u, rtt);
+		  !(id_flags & IDENTIFIER_NO_THIS_REF)) {
+		if (id_flags & IDENTIFIER_WEAK) {
+		  gc_mark_weak_short_svalue(u, rtt);
+		} else {
+		  gc_mark_short_svalue(u, rtt);
+		}
+	      }
 	    }
 	  }
 
@@ -2420,8 +2430,13 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
-		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
-	      gc_cycle_check_svalues(s, 1);
+		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) {
+	      if (id_flags & IDENTIFIER_WEAK) {
+		gc_cycle_check_weak_svalues(s, 1);
+	      } else {
+		gc_cycle_check_svalues(s, 1);
+	      }
+	    }
 	  }else{
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
@@ -2494,8 +2509,13 @@ static void gc_check_object(struct object *o)
 	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
-		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
-	      gc_check_svalues(s, 1);
+		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) {
+	      if (id_flags & IDENTIFIER_WEAK) {
+		gc_check_weak_svalues(s, 1);
+	      } else {
+		gc_check_svalues(s, 1);
+	      }
+	    }
 	  }else{
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
@@ -2503,8 +2523,13 @@ static void gc_check_object(struct object *o)
 	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
-		!(id_flags & IDENTIFIER_NO_THIS_REF))
-	      gc_check_short_svalue(u, rtt);
+		!(id_flags & IDENTIFIER_NO_THIS_REF)) {
+	      if (id_flags & IDENTIFIER_WEAK) {
+		gc_check_weak_short_svalue(u, rtt);
+	      } else {
+		gc_check_short_svalue(u, rtt);
+	      }
+	    }
 	  }
 	}
 

@@ -272,6 +272,7 @@ union idptr
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
 #define IDENTIFIER_HAS_BODY 16  /* Function has a body (set already in pass 1). */
+#define IDENTIFIER_WEAK	16	/* Used for variables only: Weak reference. */
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
 
