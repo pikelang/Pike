@@ -2,6 +2,8 @@
  * Clean-room Socket.IO implementation for Pike.
  */
 
+#pragma dynamic_dot
+
 //! This is an implementation of the Socket.IO server-side communication's
 //! driver.  It basically is a real-time bidirectional object-oriented
 //! communication's protocol for communicating between a webbrowser

@@ -2,6 +2,8 @@
  * Clean-room Engine.IO implementation for Pike.
  */
 
+#pragma dynamic_dot
+
 //! This is an implementation of the Engine.IO server-side communication's
 //! driver.  It basically is a real-time bidirectional packet-oriented
 //! communication's protocol for communicating between a webbrowser
