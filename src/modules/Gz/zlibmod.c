@@ -298,7 +298,7 @@ LVL_CHECK:
  *! of new content using the same exact state.
  *!
  */
-static void gz_deflate_clone(INT32 args) {
+static void gz_deflate_clone(INT32 UNUSED(args)) {
   int tmp;
   struct object *ob = low_clone(deflate_program);
   struct zipper *clone = get_storage(ob, deflate_program);
