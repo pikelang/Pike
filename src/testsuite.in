@@ -3144,6 +3144,20 @@ test_compile_warning([[
 ]])
 
 test_any([[
+  // Test the __weak__ modifier.
+  class A {
+    class Q{};
+    __weak__ Q q_w = Q();
+    __weak__ mixed m_w = Q();
+    Q q = Q();
+    mixed m = Q();
+  };
+  A a = A();
+  gc();
+  return !a->q_w && !a->m_w && a->q && a->m && 1;
+]], 1)
+
+test_any([[
   // Test symbol lookup for inherit in multi-pass.
   // LysLysKOM 16472935
   // An old pike will attempt to lookup X in the innermost X
