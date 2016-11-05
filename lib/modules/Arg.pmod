@@ -1,10 +1,10 @@
-// Argument parser
-// By Martin Nilsson
-//
+#pike __REAL_VERSION__
 
 //! Argument parsing module
-//! This module supports two rather different methods of argument parsing.
-//! The first is suitable quick argument parsing without much in the way of checking:
+//!
+//! This module supports two rather different methods of argument
+//! parsing.  The first is suitable quick argument parsing without
+//! much in the way of checking:
 //!
 //! @code
 //! int main( int c, array(string) argv )
@@ -41,8 +41,6 @@
 //!
 //! See the documentation for @[OptLibrary] for details about the various
 //! Opt classes.
-
-#pike __REAL_VERSION__
 
 //! This class contains a library of parser for different type of
 //! options.
@@ -426,9 +424,21 @@ LookupKey REST = LookupKey("REST");
 LookupKey APP  = LookupKey("APP");
 LookupKey PATH = LookupKey("PATH");
 
-//! @decl constant REST = REST();
+//! @decl constant REST;
 //!
-//! Constant used by Arg.parse() to indicate the remaining objects.
+//! Constant used to represent command line arguments not identified
+//! as options. Can be used both in the response mapping from @[parse]
+//! and when indexing an @[Options] object.
+
+//! @decl constant APP;
+//!
+//! Constant used to represent the name of the application from the
+//! command line. Can be used when indexing an @[Options] object.
+
+//! @decl constant PATH;
+//!
+//! Constant used to represent the full paht of the applicatiojn from
+//! the command line. Can be used when indexing an @[Options] object.
 
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
 // FIXME: Support for type casts? ( Opt level = Integer(Opt("--level"));
