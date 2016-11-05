@@ -51,7 +51,9 @@ o #pragma disassemble
 
 o Complain about redundant backslash escapes.
 
-o '__weak__' keyword added.
+o '__weak__' modifier added.
+
+  It is now possible to declare object variables to have weak references.
 
 o Function local function declarations are now statements
   (and not expressions). This means that there is no longer
