@@ -192,7 +192,7 @@ protected void read_cb(mixed dummy,string s)
       request_raw=v[1];
       parse_request();
 
-      if (parse_variables(0))
+      if (parse_variables())
          finalize();
    }
    else
@@ -348,15 +348,12 @@ private void read_cb_chunked( mixed dummy, string data )
   call_out(connection_timeout,connection_timeout_delay);
 }
 
-protected int parse_variables(int short)
+protected int parse_variables()
 {
   if (query!="")
     .http_decode_urlencoded_query(query,variables);
 
   flatten_headers();
-
-  if (short)
-    return 1;
 
   if ( request_headers->expect )
   {
@@ -434,10 +431,6 @@ protected void parse_post()
   }
 }
 
-protected int alternatecallback() {
-  return 0;
-}
-
 protected void finalize()
 {
   my_fd->set_blocking();
@@ -453,8 +446,7 @@ protected void finalize()
       foreach (request_headers->cookie/";";;string cookie)
         if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
           cookies[a]=b;
-    if (!alternatecallback())
-      request_callback(this);
+    request_callback(this);
   }
 }
 
