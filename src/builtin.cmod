@@ -755,6 +755,22 @@ PIKEFUN string basetype(mixed x)
   }
 }
 
+/*! @decl siphash24(string data, void|int key)
+ *! @appears Crypto.siphash24
+ *!
+ *! Hashes a string, with an optional key, to a 64 bit integer using
+ *! the siphash-2-4 algorithm. Currently the 64 bit @[key] parameter
+ *! is used both for the high and low part of the 128 bit key.
+ *!
+ */
+#include "siphash24.h"
+PIKEFUN int siphash24(string s, void|int key)
+{
+  mpz_t ret;
+  mpz_init(ret);
+  mpz_set_ui(ret, pike_string_siphash24(s, key && key->u.integer) );
+  push_bignum(ret);
+}
 
 /*! @decl string int2char(int x)
  *! @appears String.int2char

@@ -25,6 +25,7 @@
 //!   @[Nettle] enabled (this is the default).
 
 constant HashState = Nettle.Hash.State;
+constant siphash24 = Builtin.siphash24;
 
 //! Abstract class for AE algorithms.
 class AE {
