@@ -29,6 +29,7 @@
 #include "backend.h"
 #include "threads.h"
 #include "operators.h"
+#include "bitvector.h"
 
 
 /*! @module _Roxen
