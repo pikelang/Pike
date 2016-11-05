@@ -5610,6 +5610,7 @@ int low_define_variable(struct pike_string *name,
   if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
 
   if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
+  if (flags & ID_WEAK) dummy.identifier_flags |= IDENTIFIER_WEAK;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;

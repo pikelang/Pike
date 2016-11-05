@@ -342,8 +342,9 @@ struct program_constant
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
+#define ID_WEAK		  0x800 /* Variable has weak references. */
 
-#define ID_MODIFIER_MASK 0x07ff
+#define ID_MODIFIER_MASK 0x0fff
 
 #define ID_STRICT_TYPES             0x8000 /* #pragma strict_types */
 #define ID_SAVE_PARENT             0x10000 /* #pragma save_parent */
