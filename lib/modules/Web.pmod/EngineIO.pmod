@@ -2,13 +2,11 @@
  * Clean-room Engine.IO implementation for Pike.
  */
 
-#pragma dynamic_dot
-
 //! This is an implementation of the Engine.IO server-side communication's
 //! driver.  It basically is a real-time bidirectional packet-oriented
 //! communication's protocol for communicating between a webbrowser
 //! and a server.
-//! 
+//!
 //! The driver mainly is a wrapper around @[Protocols.WebSocket] with
 //! the addition of two fallback mechanisms that work around limitations
 //! imposed by firewalls and/or older browsers that prevent native
@@ -16,23 +14,59 @@
 //!
 //! This module supports the following features:
 //! @ul
-//! @item It supports both UTF-8 and binary packets.
-//! @item If both sides support @[Protocols.WebSocket], then
+//! @item
+//!  It supports both UTF-8 and binary packets.
+//! @item
+//!  If both sides support @[Protocols.WebSocket], then
 //!  packet sizes are essentially unlimited.
 //!  The fallback methods have a limit on packet sizes from browser
 //!  to server, determined by the maximum POST request size the involved
 //!  network components allow.
 //! @endul
-//! 
+//!
 //! In most cases, Engine.IO is not used directly in applications.  Instead
 //! one uses Socket.IO instead.
-//! 
+//!
+//! @example
+//! Sample small implementation of an EngineIO server farm:
+//! @code
+//! class mysocket {
+//!   inherit Web.EngineIO.Socket;
+//!
+//!   void echo(string|Stdio.Buffer msg) {
+//!     write(0, msg);
+//!   }
+//! }
+//!
+//! void wsrequest(array(string) protocols, object req) {
+//!   httprequest(req);
+//! }
+//!
+//! void httprequest(object req) {
+//!   switch (req.not_query) {
+//!     case "/engine.io/":
+//!       mysocket client = Web.EngineIO.farm(mysocket, req);
+//!       if (client) {
+//!         client.open(client.echo);
+//!         client.write(0, "Hello world!");
+//!       }
+//!       break;
+//!   }
+//! }
+//!
+//! int main(int argc, array(string) argv) {
+//!   Protocols.WebSocket.Port(httprequest, wsrequest, 80);
+//!   return -1;
+//! }
+//! @endcode
+//!
 //! @seealso
-//!  @[Protocols.SocketIO], @[Protocols.WebSocket],
+//!  @[farm], @[Web.SocketIO], @[Protocols.WebSocket],
 //!  @url{http://github.com/socketio/engine.io-protocol@},
 //!  @url{http://socket.io/@}
 
 #pike __REAL_VERSION__
+#pragma dynamic_dot
 
 //#define EIO_DEBUG		1
 //#define EIO_DEBUGMORE		1
@@ -63,6 +97,11 @@
 #define SIDBYTES		16
 #define TIMEBYTES		6
 
+constant emptyarray = ({});
+
+//! Engine.IO protocol version.
+constant protocol = 4;				// EIO Protocol version
+
 //! Global options for all EngineIO instances.
 //!
 //! @seealso
@@ -75,18 +114,28 @@ final mapping options = ([
   "compressionStrategy":	Gz.DEFAULT_STRATEGY,
   "compressionThreshold":	256,		// Compress when size>=
   "compressionWindowSize":	15,		// LZ77 window 2^x (8..15)
-  "compressionHeuristics":	.WebSocket.HEURISTICS_COMPRESS,
+  "compressionHeuristics":	Protocols.WebSocket.HEURISTICS_COMPRESS,
 #endif
   "allowUpgrades":		1,
+  "server_mtu":			4*1024,
+  "server_textmtu":		8*1024,
+  "server_inflight":		64*1024,
+  "server_delayack":		20,		// 20ms.
 ]);
 
-//! Engine.IO protocol version.
-constant protocol = 3;				// EIO Protocol version
+final multiset clientoptions = (<
+  "EIO",
+  "pingTimeout",
+  "server_mtu",
+  "server_textmtu",
+  "server_inflight",
+  "server_delayack",
+>);
 
 private enum {
-  //          0         1      2     3     4        5        6
-  BASE64='b', OPEN='0', CLOSE, PING, PONG, MESSAGE, UPGRADE, NOOP,
-  SENDQEMPTY, FORCECLOSE
+  //          0         1      2     3     4        5        6     7
+  BASE64='b', OPEN='0', CLOSE, PING, PONG, MESSAGE, UPGRADE, NOOP, ACK,
+  SENDQEMPTY, SHUTDOWN
 };
 
 // All EngineIO sessions indexed on sid.
@@ -100,38 +149,10 @@ private Regexp xxsua = Regexp(";MSIE|Trident/");
 //! This parameter is passed down as is to the underlying
 //!  @[Socket].
 //!
-//! @example
-//! Sample minimal implementation of an EngineIO server farm:
-//! @code
-//! void echo(mixed id, string|Stdio.Buffer msg) {
-//!   id->write(msg);
-//! }
-//!
-//! void wsrequest(array(string) protocols, object req) {
-//!   httprequest(req);
-//! }
-//!
-//! void httprequest(object req)
-//! { switch (req.not_query)
-//!   { case "/engine.io/":
-//!       Protocols.EngineIO.Socket client = Protocols.EngineIO.farm(req);
-//!       if (client) {
-//!         client.set_callbacks(echo);
-//!         client.write("Hello world!");
-//!       }
-//!       break;
-//!   }
-//! }
-//!
-//! int main(int argc, array(string) argv)
-//! { Protocols.WebSocket.Port(httprequest, wsrequest, 80);
-//!   return -1;
-//! }
-//! @endcode
-//!
 //! @seealso
 //!  @[Socket.create()]
-final Socket farm(Protocols.WebSocket.Request req, void|mapping options) {
+final Socket farm(object createtype, Protocols.WebSocket.Request req,
+ void|mapping(string:mixed) options) {
   string sid;
   PD("Request %O\n", req.query);
   if (sid = req.variables.sid) {
@@ -142,7 +163,7 @@ final Socket farm(Protocols.WebSocket.Request req, void|mapping options) {
     else
       client.onrequest(req);
   } else
-    return Socket(req, options);
+    return createtype(req, options);
   return 0;
 }
 
@@ -157,25 +178,103 @@ class Socket {
   //! to as simply: id).
   final string sid;
 
-  private mixed id;			// This is the callback parameter
-  final mapping _options;
+  final mapping options;
   private Stdio.Buffer ci = Stdio.Buffer();
-  private function(mixed, string|Stdio.Buffer:void) read_cb;
-  private function(mixed:void) close_cb;
-  private Thread.Queue sendq = Thread.Queue();
-  private ADT.Queue recvq = ADT.Queue();
-  private string curtransport;
+  private function(string|Stdio.Buffer:void) read_cb;
+  private function(:void) close_cb;
+  private function(:void) lowmark_cb;
+  private PriorityQueue sendq = PriorityQueue();
   private Transport conn;
   private Transport upgtransport;
   private enum {RUNNING = 0, PAUSED, SCLOSING, RCLOSING};
   private int state = RUNNING;
+  private int curpacketno = -1;
+  private int scheduleack = 0;
+
+  final int sendqbytesize() {
+    return sendq.bytesize;
+  }
+
+#define PACKETLEN(v)	(1 + 2 + 1 + (sizeof(v) >= 2 && sizeof((v)[1])))
+#define ACKRANGE	(1 << 7 << 7)	    // Two 7 bit bytes
+
+  final void flushack(void|int noflush) {
+    if (scheduleack) {
+      remove_call_out(flushack);
+      scheduleack = 0;
+      string msg = sprintf("%c%c", curpacketno & 0x7f, curpacketno >> 7);
+      if (noflush)
+        sendq.write(({ACK, msg}));
+      else
+        send(ACK, msg);
+    }
+  }
+
+  final void sendack() {
+    if (options->EIO > 3 && !scheduleack) {
+      scheduleack = 1;
+      call_out(flushack, options->server_delayack);
+    }
+  }
+
+  class PriorityQueue {
+    inherit Thread.Queue;
+
+    final int bytesize;
+
+    private Thread.Queue priority = Thread.Queue();
+    private Thread.Queue unacked = Thread.Queue();
+    private int lastacked = -1;
+    int insync = 1;
+
+    final int write(array v) {
+      switch (v[0]) {
+        case MESSAGE:
+        case CLOSE:
+          bytesize += PACKETLEN(v);
+          return ::write(v);
+      }
+      return priority.write(v);
+    }
+
+    final int size() {
+      return priority.size() + ::size();
+    }
+
+    final array try_read() {
+      array v = priority.try_read();
+      if (v)
+        return v;
+      if (insync && unacked.size() < ACKRANGE / 2 - 1 && (v = ::try_read()))
+        unacked.write(v);
+      return v;
+    }
+
+    final void gotack(int packetno) {
+      array v;				// Accept half the range in flight
+      while ((packetno - lastacked & ACKRANGE - 1) < ACKRANGE / 2) {
+        lastacked = (lastacked + 1) & ACKRANGE - 1;
+        if (v = unacked.try_read())
+          bytesize -= PACKETLEN(v);
+      }
+      PD("Gotack %s %d left %d\n", sid, packetno, bytesize);
+      if (!insync) {
+        ::write(@(unacked.try_read_array() + ::try_read_array()));
+        insync = 1;
+      }
+      if (lowmark_cb)
+        lowmark_cb();
+    }
+  }
 
   class Transport {
     final function(int, void|string|Stdio.Buffer:void) read_cb;
     final protected int pingtimeout;
 
-    protected void create(Protocols.WebSocket.Request req) {
-      pingtimeout = _options->pingTimeout/1000+1;
+    protected void create(Protocols.WebSocket.Request req,
+     function(int, void|string|Stdio.Buffer:void) read_cb) {
+      this->read_cb = read_cb;
+      pingtimeout = (options->pingTimeout + options->pingInterval)/1000+1;
       kickwatchdog();
     }
 
@@ -184,7 +283,7 @@ class Socket {
     }
 
     protected void destroy() {
-      droptimeout();
+      shutdown();
     }
 
     final protected void kickwatchdog() {
@@ -192,10 +291,16 @@ class Socket {
       call_out(close, pingtimeout);
     }
 
-    //! Close the transport.
-    void close() {
+    //! Shutdown the transport silently.
+    void shutdown() {
       droptimeout();
-      read_cb(FORCECLOSE);
+    }
+
+    //! Close the transport properly, notify the far end.
+    void close() {
+      shutdown();
+      if (read_cb)
+        read_cb(SHUTDOWN);
     }
 
     final protected void sendqempty() {
@@ -207,6 +312,7 @@ class Socket {
   class Polling {
     inherit Transport;
 
+    constant name = "polling";
     private int forceascii;
     final protected Stdio.Buffer c = Stdio.Buffer();
     final protected Stdio.Buffer ci = Stdio.Buffer();
@@ -254,15 +360,16 @@ class Socket {
        "extra_heads":comprheads]));
     }
 
-    protected void create(Protocols.WebSocket.Request _req) {
+    protected void create(Protocols.WebSocket.Request _req,
+     function(int, void|string|Stdio.Buffer:void) read_cb) {
       noop = sprintf("1:%c", NOOP);
       forceascii = !zero_type(_req.variables->b64);
       ci->set_error_mode(1);
   #if constant(Gz.deflate)
-      if (_options->compressionLevel)
+      if (options->compressionLevel)
         gzfile = Gz.File();
   #endif
-      ::create(_req);
+      ::create(_req, read_cb);
       if (_req.request_headers.origin) {
         headers["Access-Control-Allow-Credentials"] = "true";
         headers["Access-Control-Allow-Origin"] = _req.request_headers.origin;
@@ -355,15 +462,31 @@ class Socket {
 
     final void flush(void|int type, void|string|Stdio.Buffer msg) {
       Thread.MutexKey lock;
-      if (req && sendq.size() && (lock = getreq.trylock())) {
-        Protocols.WebSocket.Request myreq;
-        array tosend;
-        if ((myreq = req) && sizeof(tosend = sendq.try_read_array())) {
+      mapping(string:mixed) opts = options;
+      Protocols.WebSocket.Request myreq;
+      if (type) {
+        if (lock = getreq.trylock()) {
+          myreq = req;
           req = 0;
           lock = 0;
-          array m;
+        }
+        if (myreq)
+          wrapfinish(myreq,
+           sprintf("%d:%c%s", 1+sizeof(msg), type, msg), opts);
+      } else if (req && sendq.size() && sendq.bytesize < opts->server_inflight
+       && (lock = getreq.trylock())) {
+        array tosend;
+        flushack(1);
+        if ((myreq = req) && (tosend = sendq.try_read())) {
+          req = 0;
+          array m = tosend;
+          tosend = emptyarray;
+          do
+            tosend += ({m});
+          while (sendq.bytesize < opts->server_inflight
+           && (m = sendq.try_read()));
+          lock = 0;
           int anybinary = 0;
-          mapping(string:mixed) options = _options;
           if (forcebinary && !forceascii)
             foreach (tosend;; m)
               if (sizeof(m)>=2 && !stringp(m[1])) {
@@ -376,7 +499,7 @@ class Socket {
             switch(sizeof(m)) {
               case 3:
                 if (m[2])
-                  options += m[2];
+                  opts += m[2];
               case 2:
                 msg = m[1] || "";
             }
@@ -402,7 +525,7 @@ class Socket {
             c->add_int8(type)->add(msg);
           }
           if (sizeof(c))
-            wrapfinish(myreq, c->read(), options);
+            wrapfinish(myreq, c->read(), opts);
           sendqempty();
         } else
           lock = 0;
@@ -430,8 +553,9 @@ class Socket {
 
     private string head;
 
-    protected void create(Protocols.WebSocket.Request req) {
-      ::create(req);
+    protected void create(Protocols.WebSocket.Request req,
+     function(int, void|string|Stdio.Buffer:void) read_cb) {
+      ::create(req, read_cb);
       head = "___eio[" + (int)req.variables->j + "](";
       noop = head+"\""+::noop+"\");";
     }
@@ -454,53 +578,52 @@ class Socket {
   class WebSocket {
     inherit Transport;
 
+    constant name = "websocket";
     private Protocols.WebSocket.Connection con;
     private Stdio.Buffer bb = Stdio.Buffer();
     private String.Buffer sb = String.Buffer();
 
-    final void close() {
-      if (con)
-        catch(con.close());
-    }
-
     protected void create(Protocols.WebSocket.Request req,
+     function(int, void|string|Stdio.Buffer:void) read_cb,
      Protocols.WebSocket.Connection _con) {
       con = _con;
       con.onmessage = recv;
-      con.onclose = ::close;
-      ::create(req);
+      ::create(req, read_cb);
     }
 
     final void flush(void|int type, void|string|Stdio.Buffer msg) {
-      mapping(string:mixed) options;
+      mapping(string:mixed) opts = options;
       void sendit() {
-        .WebSocket.Frame f = stringp(msg)
-         ? .WebSocket.Frame(.WebSocket.FRAME_TEXT, sprintf("%c%s", type, msg))
-         : .WebSocket.Frame(.WebSocket.FRAME_BINARY,
+        Protocols.WebSocket.Frame f = stringp(msg)
+         ? Protocols.WebSocket.Frame(Protocols.WebSocket.FRAME_TEXT,
+            sprintf("%c%s", type, msg))
+         : Protocols.WebSocket.Frame(Protocols.WebSocket.FRAME_BINARY,
             sprintf("%c%s", type - OPEN, msg->read()));
-        f.options += options;
-        con.send(f);
+        f.options += opts;
+        if (catch(con.send(f))) {
+          con.close();
+          shutdown();
+        }
       };
-      if (msg) {
-        options = _options;
+      if (msg)
         sendit();
-      } else {
-        array tosend;
-        while (sizeof(tosend = sendq.try_read_array())) {
-          array m;
-          foreach (tosend;; m) {
-            options = _options;
-            type = m[0];
-            msg = "";
-            switch(sizeof(m)) {
-              case 3:
-                if (m[2])
-                  options += m[2];
-              case 2:
-                msg = m[1] || "";
-            }
-            sendit();
+      else {
+        array m;
+        if (sendq.size() && sendq.bytesize < opts->server_inflight)
+          flushack(1);
+        while (sendq.bytesize < opts->server_inflight
+         && (m = sendq.try_read())) {
+          opts = options;
+          type = m[0];
+          msg = "";
+          switch(sizeof(m)) {
+            case 3:
+              if (m[2])
+                opts += m[2];
+            case 2:
+              msg = m[1] || "";
           }
+          sendit();
         }
         sendqempty();
       }
@@ -524,7 +647,7 @@ class Socket {
         default:
           return;
       }
-      if (f.fin)
+      if (f.fin && read_cb)
         if (sizeof(sb)) {
           string s = sb.get();
           read_cb(s[0], s[1..]);
@@ -535,25 +658,22 @@ class Socket {
     }
   }
 
-  //! Set initial argument on callbacks.
-  final void set_id(mixed _id) {
-    id = _id;
-  }
-
-  //! Retrieve initial argument on callbacks.  Defaults to the Socket
-  //! object itself.
-  final mixed query_id() {
-    return id || this;
-  }
-
-  //! As long as the read callback has not been set, all received messages
-  //! will be buffered.
-  final void set_callbacks(
-    void|function(mixed, string|Stdio.Buffer:void) _read_cb,
-    void|function(mixed:void) _close_cb) {
-    close_cb = _close_cb;		// Set close callback first
-    read_cb = _read_cb;			// to avoid losing the close event
-    flushrecvq();
+  //! Set callbacks and open socket.
+  final void open(
+    void|function(string|Stdio.Buffer:void) _read_cb,
+    void|function(:void) _close_cb,
+    void|function(:void) _lowmark_cb) {
+    close_cb = _close_cb;
+    lowmark_cb = _lowmark_cb;
+    read_cb = _read_cb;
+    send(OPEN, Standards.JSON.encode(
+             (["sid": sid,
+               "EIO": this.options->EIO || protocol,
+               "upgrades":
+                 this.options->allowUpgrades ? ({"websocket"}) : ({}),
+               "pingInterval": this.options->pingInterval,
+               "pingTimeout":  this.options->pingTimeout
+             ])));
   }
 
   //! Send text @[string] or binary @[Stdio.Buffer] messages.
@@ -580,23 +700,20 @@ class Socket {
   }
 
   private void flush() {
-    if(catch(conn.flush())) {
-      catch(conn.close());
+    mixed err;
+    if (err = catch(conn.flush())) {
+      PD("Flush failed %O\n", describe_backtrace(err));
+      catch(conn.shutdown());
       if (upgtransport)
         catch(upgtransport.close());
     }
-  }
-
-  private void flushrecvq() {
-    while (read_cb && !recvq.is_empty())
-      read_cb(query_id(), recvq.get());
   }
 
   //! Close the socket signalling the other side.
   final void close() {
     if (state < SCLOSING) {
       if (close_cb)
-        close_cb(query_id());
+        close_cb();
       PT("Send close, state %O\n", state);
       state = SCLOSING;
       catch(send(CLOSE));
@@ -611,8 +728,8 @@ class Socket {
 
   private void clearcallback() {
     close_cb = 0;
+    lowmark_cb = 0;
     read_cb = 0;			// Sort of a race, if multithreading
-    id = 0;				// Delete all references to this Socket
     upgtransport = conn = 0;
   }
 
@@ -622,8 +739,20 @@ class Socket {
 #endif
       PD("Received %s %c:%O\n", sid, type, (string)msg);
     switch (type) {
-      default:	  // Protocol error or CLOSE
+      default:	  // Protocol error
+        PD("Protocol error %s %c\n", sid, type);
         close();
+        break;
+      case OPEN:
+        catch {
+          mixed m = Standards.JSON.decode(msg);
+          PD("Received %s client options %O\n", sid, msg);
+          if (mappingp(m)) {
+            this.options += m &= clientoptions;
+            PD("Resulting %s options %O\n", sid, this.options);
+            sendack();
+          }
+        };
         break;
       case CLOSE:
         rclose();
@@ -634,7 +763,7 @@ class Socket {
         if (state == RCLOSING)
           clearcallback();
         break;
-      case FORCECLOSE:
+      case SHUTDOWN:
         rclose();
 	clearcallback();
         break;
@@ -642,24 +771,36 @@ class Socket {
         send(PONG, msg);
         break;
       case MESSAGE:
-        if (read_cb && recvq.is_empty())
-          read_cb(query_id(), msg);
+        curpacketno = curpacketno + 1 & ACKRANGE - 1;
+        sendack();
+        if (read_cb)
+          read_cb(msg);
+        break;
+      case ACK:
+        if (sizeof(msg) != 2)
+          close();			      // Protocol error
         else {
-          recvq.put(msg);
-          flushrecvq();
+          if (!stringp(msg))
+            msg = msg->read();
+          sendq.gotack(msg[1] << 7 | msg[0]);
         }
         break;
     }
   }
 
   private void upgrecv(int type, string|Stdio.Buffer msg) {
+    PD("UPGReceived %s %c:%O\n", sid, type, (string)msg);
     switch (type) {
       default:	  // Protocol error or CLOSE
-        upgtransport = 0;
-        if (state == PAUSED)
-          state = RUNNING;
-        if(conn)
-          flush();
+        if (upgtransport) {
+          upgtransport.shutdown();
+          upgtransport = 0;
+          if (state == PAUSED)
+            state = RUNNING;
+          if (conn)
+            flush();
+        }
+      case SENDQEMPTY:
         break;
       case PING:
         state = PAUSED;
@@ -670,8 +811,12 @@ class Socket {
         break;
       case UPGRADE: {
         upgtransport.read_cb = recv;
+        conn.read_cb = 0;
+        conn.shutdown();
         conn = upgtransport;
-        curtransport = "websocket";
+        sendq.insync = 0;
+        sendack();
+        flush();
         if (state == PAUSED)
           state = RUNNING;
         upgtransport = 0;
@@ -705,34 +850,27 @@ class Socket {
   protected void create(Protocols.WebSocket.Request req,
    void|mapping options) {
     request = req;
-    _options = .EngineIO.options;
+    this.options = .EngineIO.options;
     if (options && sizeof(options))
-      _options += options;
-    switch (curtransport = req.variables->transport) {
+      this.options += options;
+    switch (req.variables->transport) {
       default:
         req.response_and_finish((["data":"Unsupported transport",
          "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
         return;
       case "websocket":
-        conn = WebSocket(req,
-                         req.websocket_accept(0, ({ Protocols.WebSocket.permessagedeflate(_options) })));
+        conn = WebSocket(req, recv,
+          req.websocket_accept(0,
+           ({ Protocols.WebSocket.permessagedeflate(_options) })));
         break;
       case "polling":
-        conn = req.variables.j ? JSONP(req) : XHR(req);
+        conn = (req.variables.j ? JSONP : XHR)(req, recv);
         break;
     }
-    conn.read_cb = recv;
     ci->add(Crypto.Random.random_string(SIDBYTES-TIMEBYTES));
     ci->add_hint(gethrtime(), TIMEBYTES);
     sid = MIME.encode_base64(ci->read());
     clients[sid] = this;
-    send(OPEN, Standards.JSON.encode(
-             (["sid":sid,
-               "upgrades":
-                 _options->allowUpgrades ? ({"websocket"}) : ({}),
-               "pingInterval":_options->pingInterval,
-               "pingTimeout":_options->pingTimeout
-             ])));
     PD("New EngineIO sid: %O\n", sid);
   }
 
@@ -741,29 +879,36 @@ class Socket {
   final void onrequest(Protocols.WebSocket.Request req) {
     string s;
     request = req;
-    if ((s = req.variables->transport) == curtransport)
+    if ((s = req.variables->transport) == conn.name)
       conn.onrequest(req);
-    else
+    else {
+      PD("Transport %s %O\n", sid, s);
       switch (s) {
+        case "polling":
+          if (options->EIO > 3) {
+            upgtransport = (req.variables.j ? JSONP : XHR)(req, upgrecv);
+            upgtransport.flush(PONG, "probe");
+            break;
+          }
         default:
           req.response_and_finish((["data":"Invalid transport",
            "error":Protocols.HTTP.HTTP_UNSUPP_MEDIA]));
-          return 0;
+          return;
         case "websocket":
-          upgtransport =
-	    WebSocket(req,
-                      req.websocket_accept(0, ({ Protocols.WebSocket.permessagedeflate(_options) })));
-          upgtransport.read_cb = upgrecv;
+          upgtransport = WebSocket(req, upgrecv,
+           req.websocket_accept(0,
+            ({Protocols.WebSocket.permessagedeflate(_options) })));
       }
+    }
   }
 
   private string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
     switch (type) {
       case 'O':
-        res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d,%d)",
-         sid, protocol, curtransport, state, sendq.size(),
-         recvq.is_empty(),sizeof(clients));
+        res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d)",
+         sid, protocol, conn.name, state, sendq.size(),
+         sizeof(clients));
         break;
     }
     return res;

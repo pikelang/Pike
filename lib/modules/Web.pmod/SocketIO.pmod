@@ -2,8 +2,6 @@
  * Clean-room Socket.IO implementation for Pike.
  */
 
-#pragma dynamic_dot
-
 //! This is an implementation of the Socket.IO server-side communication's
 //! driver.  It basically is a real-time bidirectional object-oriented
 //! communication's protocol for communicating between a webbrowser
@@ -11,27 +9,70 @@
 //!
 //! This module supports the following features:
 //! @ul
-//! @item Passing any arbitrarily deep nested data object
+//! @item
+//!  Passing any arbitrarily deep nested data object
 //!  which can be represented in basic JavaScript datatypes.
-//! @item In addition to the normal JavaScript datatypes, it also
+//! @item
+//!  In addition to the normal JavaScript datatypes, it also
 //!  supports passing (nested) binary blobs in an efficient manner.
-//! @item Every message/event sent, allows for a callback acknowledge
+//! @item
+//!  Every message/event sent, allows for a callback acknowledge
 //!  to be specified.
-//! @item Acknowledge callbacks which will be called when the other side
+//! @item
+//!  Acknowledge callbacks which will be called when the other side
 //!  actively decides to acknowledge it (not automatically upon
 //!  message reception).
-//! @item Acknowledgement messages can carry an arbitrary amount of
-//!  data.
+//! @item
+//!  Acknowledgement messages can carry an arbitrary amount of data.
 //! @endul
 //!
-//! The driver uses @[Protocols.EngineIO] as the underlying protocol.
+//! The driver uses @[Web.EngineIO] as the underlying protocol.
+//!
+//! @example
+//! Sample minimal implementation of a SocketIO server farm:
+//! @code
+//! Web.SocketIO.Universe myuniverse;
+//!
+//! class myclient {
+//!   inherit Web.SocketIO.Client;
+//! }
+//!
+//! void echo(myclient id, function sendack, string namespace, string event,
+//!  mixed ... data) {
+//!   id->emit(event, @@data);
+//!   if (sendack)
+//!     sendack("Ack","me","harder");
+//! }
+//!
+//! void wsrequest(array(string) protocols, object req) {
+//!   httprequest(req);
+//! }
+//!
+//! void httprequest(object req) {
+//!   switch (req.not_query) {
+//!     case "/socket.io/":
+//!       myclient client = myuniverse.farm(myclient, req);
+//!       if (client)
+//!         client->emit("Hello world!");
+//!       break;
+//!   }
+//! }
+//!
+//! int main(int argc, array(string) argv) {
+//!   myuniverse = Web.SocketIO.Universe(); // Create universe
+//!   myuniverse.register("", echo); // Register root namespace
+//!   Protocols.WebSocket.Port(httprequest, wsrequest, 80);
+//!   return -1;
+//! }
+//! @endcode
 //!
 //! @seealso
-//!  @[Protocols.EngineIO], @[Protocols.WebSocket],
+//!  @[farm], @[Web.EngineIO], @[Protocols.WebSocket],
 //!  @url{http://github.com/socketio/socket.io-protocol@},
 //!  @url{http://socket.io/@}
 
 #pike __REAL_VERSION__
+#pragma dynamic_dot
 
 //#define SIO_DEBUG		1
 //#define SIO_DEBUGMORE		1
@@ -59,22 +100,29 @@
 #define PT(X ...)		(X)
 #endif
 
+constant protocol = 5;		// SIO Protocol version
+
 //! Global options for all SocketIO instances.
 //!
 //! @seealso
 //!  @[SocketIO.Universe.farm()]
-final mapping options = ([
+final mapping(string:mixed) options = ([
+// Forcing the protocol SIO > 4 is a problem when a protocol <= 4 client
+// client connects.  So avoid presetting SIO > 4 here.
+  "sio_server_maxslots":	4,
+  "maxdelay":			20*1000,  // = 20ms (unit in microseconds).
 ]);
-
-constant protocol = 4;		// SIO Protocol version
 
 private enum {
   //    0      1           2      3    4      5             6
-  CONNECT='0', DISCONNECT, EVENT, ACK, ERROR, BINARY_EVENT, BINARY_ACK
+  CONNECT='0', DISCONNECT, EVENT, ACK, ERROR, BINARY_EVENT, BINARY_ACK,
+  //   7
+  CONTAINER,
 };
 
-private array emptyarray = ({});
+constant emptyarray = ({});
 
+//! Convenience function to aid assist in sending the acknowledgment callback.
 final void sendackcb(function(mixed ...:void) fn, mixed arg) {
   if (fn)
     if (arrayp(arg))
@@ -83,76 +131,62 @@ final void sendackcb(function(mixed ...:void) fn, mixed arg) {
       fn(arg);
 }
 
+// Exchanges protocol support information with the client
+private void exchangeoptions(Client client, function(mixed ...:void) ackcb,
+ string namespace, string event, mixed coptions) {
+  mapping(string:mixed) ret;
+  if (mappingp(coptions)) {
+    int i;
+    ret = ([]);
+    client.conn.options->SIO = ret->SIO
+     = min(client.conn.options->SIO, coptions->SIO || 4);
+    if (i = client.conn.options->sio_server_maxslots)
+      ret->sio_server_maxslots = i;
+  } else
+    ret = ([
+      "error": Protocols.HTTP.HTTP_BAD,
+      "msg":   "Invalid options object"
+    ]);
+  if (ackcb)
+    ackcb(ret);    // Inform the client about the lowest common denominator
+}
+
 class Universe {
   // All Socket.IO nsps with connected clients in this universe.
-  private mapping(string:mapping(string|int: function(mixed,
-   void|function(mixed,mixed ...:void),mixed ...:void))) nsps = ([]);
+  private mapping(string:mapping(string|int: function(Client,
+   void|function(Client, mixed ...:void),mixed ...:void))) nsps = ([]);
 
   //! All SocketIO sessions in this universe.
   final multiset(object) clients = (<>);
-
 
   //! @param options
   //!  Optional options to override the defaults.
   //!  This parameter is passed down as is to the underlying @[EngineIO.Socket].
   //!
-  //! @example
-  //! Sample minimal implementation of a SocketIO server farm:
-  //! @code
-  //! Protocols.SocketIO.Universe myuniverse;
-  //!
-  //! mixed echo(mixed id, function sendack, string namespace, string event,
-  //!  mixed ... data) {
-  //!   id->emit(event, @@data);
-  //!   if (sendack)
-  //!     sendack("Ack","me","harder");
-  //! }
-  //!
-  //! void wsrequest(array(string) protocols, object req) {
-  //!   httprequest(req);
-  //! }
-  //!
-  //! void httprequest(object req) {
-  //!   switch (req.not_query) {
-  //!     case "/socket.io/":
-  //!       Protocols.SocketIO.Client client = myuniverse.farm(req);
-  //!       if (client)
-  //!         client->emit("Hello world!");
-  //!       break;
-  //!   }
-  //! }
-  //!
-  //! int main(int argc, array(string) argv) {
-  //!   myuniverse = Protocols.SocketIO.Universe(); // Create universe
-  //!   myuniverse.register("", echo); // Register root namespace
-  //!   Protocols.WebSocket.Port(httprequest, wsrequest, 80);
-  //!   return -1;
-  //! }
-  //! @endcode
-  //!
   //! @seealso
   //!  @[EngineIO.farm()]
-  Client farm(.WebSocket.Request req, void|mapping options) {
+  Client farm(object createtype, Protocols.WebSocket.Request req,
+   void|mapping options) {
     .EngineIO.Socket con = seed(req, options);
-    return con && Client(this, con);
+    return con && createtype(this, con);
   }
 
   //! Seed farm with EngineIO connection.
-  protected .EngineIO.Socket seed(.WebSocket.Request req,
-   void|mapping _options) {
-    if (_options)
-      _options = options + _options;
+  protected .EngineIO.Socket seed(Protocols.WebSocket.Request req,
+   void|mapping options) {
+    if (options)
+      options = .SocketIO->options + options;
     else
-      _options = options;
-    return .EngineIO.farm(req, _options);
+      options = .SocketIO->options;
+    return .EngineIO.farm(.EngineIO.Socket, req, options);
   }
 
   protected void low_register(string namespace, void|mixed event,
-   void|function(mixed, mixed, mixed, mixed ...:mixed) fn) {
+   void|function(Client, function(mixed ...:void), mixed ...:void) fn) {
     mapping nsp = nsps[namespace];
     if (!nsp)
       nsps[namespace] = nsp = ([]);
-    if(fn)
+    if (fn)
       nsp[event] = fn;
     else {
       m_delete(nsp, event);
@@ -167,13 +201,18 @@ class Universe {
   //! Having a default worker per namespace in addition zero or more
   //! event specific ones, is supported.
   variant void register(string namespace, string event,
-   void|function(mixed, function(mixed ...:void),
-     string, string, mixed ...:mixed) fn) {
+   void|function(Client, function(mixed ...:void),
+     string, string, mixed ...:void) fn) {
     low_register(namespace, event, fn);
   }
   variant void register(string namespace,
-   void|function(mixed, string, mixed ...:mixed) fn) {
+   void|function(Client, function(mixed ...:void),
+     string, mixed ...:void) fn) {
     low_register(namespace, 0, fn);
+  }
+
+  protected void create() {
+    register("/", "sio_protocol", exchangeoptions);
   }
 
   private string invalidnamespace = "Invalid namespace";
@@ -183,7 +222,7 @@ class Universe {
   //! @returns
   //!  0 upon success, the error itself otherwise.
   mixed
-   connect(Client client, string oldnamespace, void|string newnamespace) {
+   connect(Client client, void|string newnamespace) {
     clients[client] = !!newnamespace;
     return nsps[newnamespace] ? 0 : invalidnamespace;
   }
@@ -203,7 +242,7 @@ class Universe {
   //!
   mixed read(string namespace, mixed id,
    function(mixed ...:void) sendackcb, mixed ... data) {
-    string|function(mixed, function(mixed ...:void),
+    string|function(Client, function(mixed ...:void),
      string, mixed ...:void) fn;
     if (!functionp(fn = lookupcb(namespace, data)))
       return fn;
@@ -217,31 +256,17 @@ class Client {
   private Universe universe;
 
   //!
-  string namespace="";
-
-  //!
   function(void:void) onclose;
 
-  private mixed id;
   private enum {RUNNING = 0, SDISCONNECT, RDISCONNECT};
   private int state = RUNNING;
   private array curevent;
   private array curbins;
+  private string curnamespace;
+
   private int ackid = 0, bins = 0, curackid, curtype;
-  // In the upstream version conn is publicly accessible.
-  // Until proven otherwise, this sounds like a bad idea.
-  private .EngineIO.Socket conn;
-  private mapping(int:function(mixed, mixed ...:void)) ack_cbs = ([]);
-
-  //! Set initial argument on callbacks.
-  final void set_id(mixed _id) {
-    id = _id;
-  }
-
-  //! Retrieve initial argument on callbacks.
-  final mixed query_id() {
-    return id || this;
-  }
+  .EngineIO.Socket conn;
+  private mapping(int:function(Client, mixed ...:void)) ack_cbs = ([]);
 
   //! This session's unique session id.
   final string `sid() {
@@ -250,7 +275,7 @@ class Client {
 
   //! Contains the last request seen on this connection.
   //! Can be used to obtain cookies etc.
-  final .WebSocket.Request `request() {
+  final Protocols.WebSocket.Request `request() {
     return conn.request;
   }
 
@@ -258,7 +283,7 @@ class Client {
   //! use the emit() interface instead.  write() allows messages
   //! to be sent which do not have a string event-name up front.
   final void write(array data,
-   void|function(mixed, mixed ...:void) ack_cb,
+   void|function(Client, mixed ...:void) ack_cb,
    void|mapping(string:mixed) options) {
     if (state >= SDISCONNECT)
       DUSERERROR("Socket already shutting down");
@@ -266,14 +291,14 @@ class Client {
   }
 
   //! Send text or binary events to the client.
-  final variant void emit(function(mixed, mixed ...:void) ack_cb,
+  final variant void emit(function(Client, mixed ...:void) ack_cb,
    string event, mixed ... data) {
     write(({event}) + data, ack_cb);
   }
   final variant void emit(string event, mixed ... data) {
     write(({event}) + data);
   }
-  final variant void emit(function(mixed, mixed ...:void) ack_cb,
+  final variant void emit(function(Client, mixed ...:void) ack_cb,
    mapping(string:mixed) options, string event, mixed ... data) {
     write(({event}) + data, ack_cb, options);
   }
@@ -283,27 +308,28 @@ class Client {
   }
 
   private void send(int type, void|string|array data,
-   void|int|function(mixed, mixed ...:void) ack_cb,
-   void|mapping(string:mixed) _options) {
+   void|int|function(Client, mixed ...:void) ack_cb,
+   void|mapping(string:mixed) options) {
     PD("Send %s %d %c:%O %O\n", sid, intp(ack_cb)?ack_cb:-1, type, data,
-     _options);
+     options);
     array sbins = emptyarray;
     int cackid;
 
-    void treeexport(mixed level) {
-      foreach(level; mixed i; mixed v)
-        if (arrayp(v) || mappingp(v))
-          treeexport(v);
-        else if(objectp(v)) {
-          level[i] = (["_placeholder":1, "num":sizeof(sbins)]);
-          sbins += ({v});				// Save binary blobs
-        }
+    if (options)
+      options = conn.options + options;
+    else
+      options = conn.options;
+
+    string exportbinary(mixed value) {
+      if (objectp(value)) {
+        sbins += ({value});				// Save binary blobs
+        value = sprintf("{\"_placeholder\":1,\"num\":%d}", sizeof(sbins) - 1);
+      }
+      return value;
     };
 
-    if (arrayp(data)) {
-      treeexport(data);
-      data = Standards.JSON.encode(data);
-    }
+    if (arrayp(data))
+      data = Standards.JSON.encode(data, 0, exportbinary);
     if (!zero_type(ack_cb)) {
       if (type == ACK)
         cackid = ack_cb;
@@ -311,7 +337,7 @@ class Client {
         ack_cbs[cackid = ackid++] = ack_cb;
     }
     if (sizeof(sbins)) {
-      switch(type) {
+      switch (type) {
         case EVENT: type = BINARY_EVENT; break;
         case ACK: type = BINARY_ACK; break;
       }
@@ -319,7 +345,7 @@ class Client {
         data = sprintf("%c%d-%s", type, sizeof(sbins), data);
       else
         data = sprintf("%c%d-%d%s", type, sizeof(sbins), cackid, data);
-      conn.write(_options, @(({data}) + sbins));
+      aggregate(options, data, sbins);
     } else {
       if (!data)
         data = "";
@@ -327,7 +353,199 @@ class Client {
         data = sprintf("%c%s", type, data);
       else
         data = sprintf("%c%d%s", type, cackid, data);
-      conn.write(_options, data);
+      aggregate(options, data);
+    }
+  }
+
+  private array(String.Buffer)
+   trslots;				  // Text receive slots
+  private array(array(int|string|Stdio.Buffer))
+   brslots;				  // Binary receive slots
+  private array(partqueue)
+   qsslots;				  // Send queue slots
+  private int maxslots;
+  private String.Buffer aggtext;
+  private Stdio.Buffer aggbin;
+  private int stamptext, stampbin;
+  private Thread.Mutex flushone;
+
+  private void flushaggtext() {
+    conn.write(conn.options, aggtext.get());
+  };
+
+  private void flushaggbin() {
+    conn.write(conn.options, aggbin);	  // Avoid copying the content
+    aggbin = Stdio.Buffer();		  // Create a new buffer instead
+  };
+
+  /*
+   * CONTAINER:
+   *
+   * Field specs:
+   * ss = stream (0-3)
+   * f = finish packet
+   * b = with more binaries
+   * f = 0 and b = 1 is reserved and should not be used
+   * lllllllll = length in bytes of fragment (1-512) - 1
+   * llllllllllllllll = length in bytes of fragment (1-65536) - 1
+   *
+   * Fragment header:
+   * 76543210 76543210 76543210
+   * 0ll0bfss 0lllllll
+   * 0ll1bfss 0lllllll 0lllllll
+   *
+   *
+   * BINARY_CONTAINER:
+   *
+   * Field specs:
+   * llllllllllll = length in bytes of fragment (0-4095)
+   * llllllllllllllllllll = length in bytes of fragment (0-1048575)
+   *
+   * Fragment header:
+   * 76543210 76543210 76543210
+   * lll0bfss llllllll
+   * lll1bfss llllllll llllllll
+   *
+   * Both CONTAINER and BINARY_CONTAINER are then followed by a content
+   * fragment.
+   */
+
+  class partqueue {
+    inherit Thread.Queue;
+    private int slot;
+
+    protected void create(int slot) {
+      this.slot = slot;
+    }
+
+    private int timestamp;
+    private mapping(string:mixed) opts = conn.options;
+    private array(int|mapping(string:mixed)|string|Stdio.Buffer) cv;
+    private int curoffset;
+
+    final int getchunk() {
+      int sentany = 0;
+      if (!cv && (cv = try_read())) {
+        timestamp = cv[0];
+        opts = cv[1];
+        cv = cv[2..];
+        curoffset = 0;
+      }
+      if (cv) {
+        int finf = 0, mtu = opts->server_textmtu;
+        string|Stdio.Buffer ret = cv[0];
+        if (stringp(ret)) {
+          int room = min(mtu - sizeof(aggtext), 0x10000);
+          if (room <= 0) {
+            flushaggtext();
+            room = mtu;
+            sentany = 1;
+          }
+          if (!sizeof(aggtext)) {
+            stamptext = timestamp;
+            aggtext.putchar(CONTAINER);
+          }
+          int tocopy = sizeof(ret) - curoffset;
+          if (tocopy > room)
+            tocopy = room;
+          else
+            finf = 1;
+          int acc, len = --tocopy;
+          acc = (len&3)<<5 | (finf && sizeof(cv)>1 && 8)
+           | (finf && 4) | slot;
+          if ((len >>= 2) > 0x7f)
+            acc |= 0x10;
+          aggtext.putchar(acc);
+          aggtext.putchar(len & 0x7f);
+          if (len >>= 7)
+            aggtext.putchar(len);
+          aggtext.add(ret[curoffset .. curoffset + tocopy]);
+          if (!finf)
+            curoffset += tocopy;
+          if (sizeof(aggtext) >= mtu)
+            flushaggtext(), sentany = 1;
+        } else {
+          int room = min(mtu - sizeof(aggbin), 0xfffff);
+          if (room <= 0) {
+            flushaggbin();
+            room = mtu;
+          }
+          if (!sizeof(aggbin))
+            stampbin = timestamp;
+          int tocopy = sizeof(ret) - curoffset;
+          if (tocopy > room)
+            tocopy = room;
+          else
+            finf = 1;
+          int acc, len = tocopy;
+          acc = ((len&7)<<5) | (finf && sizeof(cv)>1 && 8)
+           | (finf && 4) | slot;
+          if ((len >>= 3) > 0xff)
+            acc |= 0x10;
+          aggbin->add_int8(acc)->add_int8(len);
+          if (len >>= 8)
+            aggbin->add_int8(len);
+          aggbin->add(ret->read_buffer(tocopy));
+          if (sizeof(aggbin) >= mtu)
+            flushaggbin(), sentany = 1;
+        }
+        cv = finf && sizeof(cv) > 1 ? cv[1..] : 0;
+      }
+      return sentany;
+    }
+  }
+
+  private void aggregate(mapping(string:mixed) options,
+   string text, void|array(Stdio.Buffer) bins) {
+    if (!(maxslots = options->sio_server_maxslots)
+     ||  options->SIO < 5
+     || !options->server_mtu)
+      conn.write(options, text, @(bins || emptyarray));
+    else {
+      int slot;
+      if (!qsslots[slot = options->prio])
+        qsslots[slot] = partqueue(slot);
+      qsslots[slot].write(({gethrtime(), options, text, @bins}));
+      flushsendq();
+    }
+  }
+
+  private void flushsendq() {
+    Thread.MutexKey lock = flushone.trylock(2);
+    if (lock) {		      // There can be only one queue-flusher
+      remove_call_out(flushsendq);
+      {
+        int inflight = conn.options->server_inflight;
+        if (conn.sendqbytesize() < inflight) {
+          int slot;
+outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
+            if (sendq)
+              while (sendq.getchunk())
+                if (conn.sendqbytesize() >= inflight)
+                  break outer;
+        }
+      }
+      {
+        int t, target, maxdelay = conn.options->maxdelay;
+        if (sizeof(aggtext)) {
+          t = gethrtime();
+          if (maxdelay > (t = gethrtime()) - stamptext)
+            flushaggtext();
+          else
+            target = stamptext;
+        }
+        if (sizeof(aggbin)) {
+          if (!t)
+            t = gethrtime();
+          if (maxdelay > t - stampbin)
+            flushaggbin();
+          else
+            target = min(target || stampbin, stampbin);
+        }
+        if (target)
+          call_out(flushsendq, (maxdelay - target)/1000000.0);
+      }
+      lock = 0;
     }
   }
 
@@ -344,7 +562,7 @@ class Client {
   }
 
   private void treeimport(mixed level) {
-    foreach(level; mixed i; mixed v) {
+    foreach (level; mixed i; mixed v) {
       if (arrayp(v))
         ;
       else if (mappingp(v)) {
@@ -364,28 +582,28 @@ class Client {
         PD("Ack %d %O\n", cackid, data);
         send(ACK, data, cackid);
       };
-      string err = universe ? universe.read(namespace, query_id(),
+      string err = universe ? universe.read(curnamespace, this,
        cackid >= 0 && sendackcb, @data) : "\"Unknown universe\"";
       if (err)
-        send(ERROR, namespace + "," + err);
+        send(ERROR, curnamespace + "," + err);
     };
-    switch(curtype) {
+    switch (curtype) {
       default: {
 #if constant(Thread.Thread)
         // Spawn one thread per message/callback.
         // FIXME Too much overhead?
-        Thread.Thread(readthread, namespace, curackid, @curevent);
+        Thread.Thread(readthread, curnamespace, curackid, @curevent);
 #else
-        readthread(namespace, curackid, @curevent);
+        readthread(curnamespace, curackid, @curevent);
 #endif
         break;
       }
       case ACK:
       case BINARY_ACK: {
-        function(mixed, mixed ...:void) ackfn;
-        if(ackfn = ack_cbs[curackid]) {
+        function(Client, mixed ...:void) ackfn;
+        if (ackfn = ack_cbs[curackid]) {
           m_delete(ack_cbs, curackid);		// ACK callbacks can only be
-          ackfn(query_id(), @curevent);			// executed once
+          ackfn(this, @curevent);			// executed once
         }
         break;
       }
@@ -396,17 +614,46 @@ class Client {
     if (state < RDISCONNECT) {
       close();
       state = RDISCONNECT;
-      universe.connect(this, namespace);
+      universe.connect(this);
     }
   }
 
-  private void recv(mixed eid, string|Stdio.Buffer data) {
+  private void recv(string|Stdio.Buffer data) {
+    void flushslot(int slot, int|string ready) {
+      if (ready) {
+        foreach (brslots[slot];; string|Stdio.Buffer v)
+          recv(v);
+        brslots[slot] = ({0, Stdio.Buffer()});
+      }
+    };
     PD("Recv %s %O\n", sid, (string)data);
     if (!stringp(data)) {
-      curbins[-bins] = data->read_buffer(sizeof(data),1);
-      if (!--bins) {
-        treeimport(curevent);
-        recvcb();
+      if (bins) {
+        curbins[-bins] = data->read_buffer(sizeof(data),1);
+        if (!--bins) {
+          treeimport(curevent);
+          recvcb();
+          curbins = emptyarray;
+        }
+      } else {
+        do {
+          int acc, slot, len;
+          acc = data->read_int8();
+          slot = acc & 3;
+          Stdio.Buffer buf = brslots[slot][-1];
+          len = slot >> 5 | data->read_int8() << 3;
+          if (acc & 0x10)
+            len |= data->read_int8() << 11;
+          buf->add(data->read_buffer(len));
+          switch (acc & 0xc) {
+            case 4:				      // finf
+              flushslot(slot, brslots[slot][0]);
+              break;
+            case 0xc:				      // bin + finf
+              brslots[slot] += ({Stdio.Buffer()});
+              break;
+          }
+        } while (sizeof(data));
       }
     } else {
       curtype = data[0];
@@ -420,36 +667,36 @@ class Client {
         case CONNECT:
           if (universe) {
             mixed e;
-            if (e = universe.connect(this, namespace, data)) {
+            if (e = universe.connect(this, data)) {
               send(ERROR, data + "," + Standards.JSON.encode(e));
               break;
             }
             state = RUNNING;
-            send(CONNECT, namespace = data);		// Confirm namespace
+            send(CONNECT, data);			// Confirm namespace
           } else
             send(ERROR, data + ",\"No universe to register to\"");
           break;
         case DISCONNECT:
           closedown();
           universe = 0;
-          id = 0;			// Delete all references to this Client
           break;
         case EVENT:
         case ACK:
         case BINARY_EVENT:
         case BINARY_ACK: {
-          curevent = array_sscanf(data, "%[0-9]%[-]%[0-9]");
+          curevent = array_sscanf(data, "%[0-9]%[-]%[0-9]%[^[,]%*[,]%[0-9]");
           string s;
           int i = 0;
           curackid = -1;
-          if (sizeof(s = curevent[2]))
+          if (sizeof(s = curevent[2]) || sizeof(s = curevent[4]))
             curackid = (int)s;
+          curnamespace = curevent[3];
           if (sizeof(s = curevent[0]))
             if (sizeof(curevent[1]))
               bins = (int)s;
             else
               curackid = (int)s;
-          foreach(curevent;; string s)
+          foreach (curevent;; string s)
             i += sizeof(s);
           curevent = Standards.JSON.decode(data[i..]);
           curbins = allocate(bins);
@@ -459,6 +706,32 @@ class Client {
             case ACK:
               recvcb();
           }
+          break;
+        }
+        case CONTAINER: {
+          int offset = 0;
+          do {
+            int acc, slot, len;
+            String.Buffer buf;
+            acc = data[offset++];
+            slot = acc & 3;
+            if (!(buf = trslots[slot]))
+              trslots[slot] = buf = String.Buffer();
+            len = slot >> 5 | data[offset++] << 2;
+            if (acc & 0x10)
+              len |= data[offset++] << 9;
+            buf->add(data[offset..offset += len]);
+            switch (acc & 0xc) {
+              case 4:				      // finf
+                recv(buf->get());
+                break;
+              case 0xc:				      // bin + finf
+                len = brslots[slot][0];
+                brslots[slot][0] = buf->get();
+                flushslot(slot, len);
+                break;
+            }
+          } while (++offset < sizeof(data));
         }
       }
     }
@@ -470,9 +743,19 @@ class Client {
 
   protected void create(Universe _universe, .EngineIO.Socket _con) {
     universe = _universe;
-    conn = _con;
-    conn.set_callbacks(recv, closedown);
-    send(CONNECT);			// Autconnect to root namespace
+    (conn = _con).open(recv, closedown, flushsendq);
+    int slots;
+    if (slots = conn.options->sio_server_maxslots) {
+      aggtext = String.Buffer();
+      aggbin = Stdio.Buffer();
+      flushone = Thread.Mutex();
+      qsslots = allocate(slots);
+      trslots = allocate(slots);
+      brslots = allocate(slots, ({0, 0}));
+      foreach (brslots;; array v)
+        v[1] = Stdio.Buffer();
+    }
+    send(CONNECT);			// Autoconnect to root namespace
     PD("New SocketIO sid: %O\n", sid);
   }
 
