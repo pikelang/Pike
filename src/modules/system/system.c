@@ -120,9 +120,9 @@
 #endif /* HAVE_IN_ADDR_T */
 
 #ifdef SOCK_DEBUG
-#define SOCKWERR(X...)	fprintf(stderr, X)
+#define SOCKWERR(X, ...)	fprintf(stderr, X, __VA_ARGS__)
 #else
-#define SOCKWERR(X...)
+#define SOCKWERR(X, ...)
 #endif
 
 /*
