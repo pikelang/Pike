@@ -755,7 +755,7 @@ PIKEFUN string basetype(mixed x)
   }
 }
 
-/*! @decl siphash24(string data, void|int key)
+/*! @decl int siphash24(string data, void|int key)
  *! @appears Crypto.siphash24
  *!
  *! Hashes a string, with an optional key, to a 64 bit integer using
