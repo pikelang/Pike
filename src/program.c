@@ -2400,31 +2400,37 @@ struct program *id_to_program(INT32 id)
      * to resolv the id.
      */
     char *module = NULL;
+    DECLARE_CYCLIC();
 
-    /* fprintf(stderr, "reserved "); */
+    if (!BEGIN_CYCLIC(((ptrdiff_t)id), 0)) {
+      SET_CYCLIC_RET(1);
 
-    switch(id) {
-    case PROG_PARSER_HTML_ID:
-      module = "Parser._parser";
-      break;
-    case PROG_GMP_MPZ_ID:
-      module = "Gmp";
-      break;
-    case PROG_MODULE_MIME_ID:
-      module = "___MIME";
-      break;
-    default:
-      if ((id >= 100) && (id < 300)) {
-	module = "Image";
-      } else if ((id >= 300) && (id < 400)) {
-	module = "Nettle";
-      } else if ((id >= 1000) && (id < 2000)) {
-        module = "___GTK1"; /* Deprecated */
-      } else if ((id >= 2000) && (id < 3000)) {
-	module = "___GTK2";
+      /* fprintf(stderr, "reserved "); */
+
+      switch(id) {
+      case PROG_PARSER_HTML_ID:
+	module = "Parser._parser";
+	break;
+      case PROG_GMP_MPZ_ID:
+	module = "Gmp";
+	break;
+      case PROG_MODULE_MIME_ID:
+	module = "___MIME";
+	break;
+      default:
+	if ((id >= 100) && (id < 300)) {
+	  module = "Image";
+	} else if ((id >= 300) && (id < 400)) {
+	  module = "Nettle";
+	} else if ((id >= 1000) && (id < 2000)) {
+	  module = "___GTK1"; /* Deprecated */
+	} else if ((id >= 2000) && (id < 3000)) {
+	  module = "___GTK2";
+	}
+	break;
       }
-      break;
     }
+
     if (module && get_master()) {
       /* fprintf(stderr, "%s... ", module); */
       push_text(module);
@@ -2438,10 +2444,12 @@ struct program *id_to_program(INT32 id)
 	{
 	  id_to_program_cache[h]=p;
 	  /* fprintf(stderr, "found: %p\n", p); */
+	  END_CYCLIC();
 	  return p;
 	}
       }
     }
+    END_CYCLIC();
   }
   /* fprintf(stderr, "not found\n"); */
   return 0;
