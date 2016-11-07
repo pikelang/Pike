@@ -1180,13 +1180,14 @@ private void procmessage() {
   }
   PD("Closing database processloop %O\n",err);
   _delayederror=err;
-  for(;objectp(portal);portal=qportals->read())
+  do
     if(objectp(portal)) {
 #ifdef PG_DEBUG
       showportal(0);
 #endif
       portal->_purgeportal();
     }
+  while (portal = qportals->read());
   if(!terminating && _options.reconnect)
     _connectfail();
   else
