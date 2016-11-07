@@ -1185,7 +1185,7 @@ private void procmessage() {
 #endif
       portal->_purgeportal();
     }
-  while (portal = qportals->read());
+  while (objectp(portal = qportals->read()));
   if(!terminating && _options.reconnect)
     _connectfail();
   else
