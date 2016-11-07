@@ -1964,7 +1964,7 @@ private inline void throwdelayederror(object parent) {
       }
     }
     if (!unnamedstatement)
-      portal._unnamedstatementkey = 0		// Cover for a destruct race
+      portal._unnamedstatementkey = 0;		// Cover for a destruct race
   }
   throwdelayederror(portal);
   return portal;
