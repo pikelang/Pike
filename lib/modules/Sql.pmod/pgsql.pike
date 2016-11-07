@@ -1960,9 +1960,13 @@ private inline void throwdelayederror(object parent) {
     }
     if((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e=catch(portal->_preparebind(tp.datatypeoid));
-      if(e && !portal._delayederror)
+      if (e && !portal._delayederror) {
+        portal._unnamedstatementkey = 0;	// Release early, release often
         throw(e);
+      }
     }
+    if (!unnamedstatement)
+      portal._unnamedstatementkey = 0		// Cover for a destruct race
   }
   throwdelayederror(portal);
   return portal;
