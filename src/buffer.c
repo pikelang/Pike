@@ -64,17 +64,18 @@ PMOD_EXPORT void* buffer_finish(struct byte_buffer *b) {
 
 PMOD_EXPORT struct pike_string *buffer_finish_pike_string(struct byte_buffer *b) {
     struct pike_string *ret;
+    size_t len = buffer_content_length(b);
 
-    if (!buffer_content_length(b)) {
+    if (!len) {
+        buffer_free(b);
         ret = empty_pike_string;
         add_ref(ret);
         return ret;
     }
 
-    /* TODO: realloc here and use directly for a string */
+    /* zero terminate */
+    buffer_add_char(b, 0);
 
-    ret = make_shared_binary_string(buffer_ptr(b), buffer_content_length(b));
-    buffer_free(b);
-    return ret;
+    return make_shared_malloc_string(buffer_finish(b), len, eightbit);
 }
 

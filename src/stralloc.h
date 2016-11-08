@@ -314,6 +314,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
 PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
+PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
