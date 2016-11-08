@@ -654,9 +654,9 @@ int main(int argc, char **argv)
 	init_buf(&buf);
 	describe_svalue(&t,0,0);
 	s=complex_free_buf(&buf);
-
-	fputs(s.str, stderr);
-	free(s.str);
+        buffer_add_char(&s, 0);
+	fputs(buffer_ptr(&s), stderr);
+        buffer_free(&s);
       }
       else
 	call_handle_error();

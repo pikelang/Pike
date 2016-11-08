@@ -59,7 +59,8 @@ long num_instrs = 0;
 
 void init_bytecode(void)
 {
-  initialize_buf(&instrbuf);
+  buffer_init(&instrbuf);
+  buffer_ensure_space(&instrbuf, 512);
   num_instrs = 0;
 }
 
@@ -68,8 +69,8 @@ void exit_bytecode(void)
   ptrdiff_t e, length;
   p_instr *c;
 
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
   for(e=0;e<length;e++) {
     free_string(dmalloc_touch_named(struct pike_string *, c[e].file,
@@ -91,7 +92,7 @@ ptrdiff_t insert_opcode(p_instr *opcode)
   if (!p) Pike_fatal("Out of memory in peep.\n");
   *p = *opcode;
   num_instrs++;
-  return p - (p_instr *)instrbuf.s.str;
+  return p - (p_instr *)buffer_ptr(&instrbuf);
 }
 
 ptrdiff_t insert_opcode2(unsigned int f,
@@ -111,7 +112,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
 
 #ifdef PIKE_DEBUG
-  if(!instrbuf.s.len)
+  if(!buffer_content_length(&instrbuf))
     Pike_fatal("Low make buf space failed!!!!!!\n");
 #endif
 
@@ -123,7 +124,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
   p->arg=b;
   p->arg2=c;
 
-  return p - (p_instr *)instrbuf.s.str;
+  return p - (p_instr *)buffer_ptr(&instrbuf);
 }
 
 ptrdiff_t insert_opcode1(unsigned int f,
@@ -154,10 +155,10 @@ void update_arg(int instr,INT32 arg)
 {
   p_instr *p;
 #ifdef PIKE_DEBUG
-  if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
+  if(instr > (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr) || instr < 0)
     Pike_fatal("update_arg outside known space.\n");
 #endif
-  p=(p_instr *)instrbuf.s.str;
+  p=(p_instr *)buffer_ptr(&instrbuf);
   p[instr].arg=arg;
 }
 
@@ -186,8 +187,8 @@ INT32 assemble(int store_linenumbers)
   CHECK_COMPILER();
   lex = &THIS_COMPILATION->lex;
 
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
 #ifdef PIKE_DEBUG
   if((a_flag > 1 && store_linenumbers) || a_flag > 2)
@@ -296,7 +297,7 @@ INT32 assemble(int store_linenumbers)
 	    "Reference to undefined label %d > %d\n"
 	    "Bad instructions are marked with '***':\n",
 	    max_pointer, max_label);
-    c=(p_instr *)instrbuf.s.str;
+    c=(p_instr *)buffer_ptr(&instrbuf);
     for(e=0;e<length;e++,c++) {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, " * %4ld %4lx ",
@@ -318,7 +319,7 @@ INT32 assemble(int store_linenumbers)
 
 #ifndef INS_ENTRY
   /* Replace F_ENTRY with F_NOP if we have no entry prologue. */
-  for (c = (p_instr *) instrbuf.s.str, e = 0; e < length; e++, c++)
+  for (c = (p_instr *) buffer_ptr(&instrbuf), e = 0; e < length; e++, c++)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
 #endif
 
@@ -333,8 +334,8 @@ INT32 assemble(int store_linenumbers)
     memset(labels, 0xff, ((max_label + 2) * 3) * sizeof(INT32));
     memset(uses, 0x00, (max_label + 2) * sizeof(INT32));
 
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0) {
 	INT32 l = c[e].arg;
@@ -461,8 +462,8 @@ INT32 assemble(int store_linenumbers)
   }
 
   /* Time to create the actual bytecode. */
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
 
@@ -496,10 +497,10 @@ INT32 assemble(int store_linenumbers)
     size_t opcode_start = PIKE_PC;
 # endif
 
-    if (c != (((p_instr *)instrbuf.s.str)+e)) {
+    if (c != (((p_instr *)buffer_ptr(&instrbuf))+e)) {
       Pike_fatal("Instruction loop deviates. "
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
-		 e, c - ((p_instr *)instrbuf.s.str));
+		 e, c - ((p_instr *)buffer_ptr(&instrbuf)));
     }
     if(((a_flag > 2) && store_linenumbers) ||
        (a_flag > 3) ||
@@ -876,14 +877,14 @@ static inline p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 #ifdef PIKE_DEBUG
 static void debug(void)
 {
-  if (num_instrs != (long)instrbuf.s.len / (long)sizeof(p_instr)) {
+  if (num_instrs != (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr)) {
     Pike_fatal("PEEP: instrbuf lost count (%d != %d)\n",
-	       num_instrs, (long)instrbuf.s.len / (long)sizeof(p_instr));
+	       num_instrs, (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr));
   }
-  if(instrbuf.s.len)
+  if(buffer_content_length(&instrbuf))
   {
     p_instr *p;
-    p=(p_instr *)low_make_buf_space(0, &instrbuf);
+    p=(p_instr *)buffer_dst(&instrbuf);
     if(!p[-1].file)
       Pike_fatal("No file name on last instruction!\n");
   }
@@ -897,7 +898,7 @@ static void debug(void)
 static inline p_instr *instr(int offset)
 {
   if (offset >= num_instrs) return NULL;
-  return ((p_instr *)low_make_buf_space(0, &instrbuf)) - (offset + 1);
+  return ((p_instr *)buffer_dst(&instrbuf)) - (offset + 1);
 }
 
 static inline int opcode(int offset)
@@ -951,7 +952,7 @@ static void pop_n_opcodes(int n)
     Pike_fatal("Popping out of instructions.\n");
 #endif
 
-  p = ((p_instr *)low_make_buf_space(0, &instrbuf)) - n;
+  p = ((p_instr *)buffer_dst(&instrbuf)) - n;
   for (e = 0; e < n; e++) {
     free_string(dmalloc_touch_named(struct pike_string *, p[e].file,
 				    "pop_n_opcodes"));
@@ -1080,8 +1081,8 @@ static int asm_opt(void)
     ptrdiff_t e, length;
     int synch_depth = 0;
 
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
     fprintf(stderr,"Before peep optimization:\n");
     for(e=0;e<length;e++,c++)
@@ -1095,9 +1096,8 @@ static int asm_opt(void)
   }
 #endif
 
-  len=instrbuf.s.len/sizeof(p_instr);
-  instructions=(p_instr *)instrbuf.s.str;
-  instrbuf.s.str=0;
+  len=buffer_content_length(&instrbuf)/sizeof(p_instr);
+  instructions=(p_instr *)buffer_ptr(&instrbuf);
   init_bytecode();
 
   for(eye = 0; advance();)
@@ -1127,8 +1127,8 @@ static int asm_opt(void)
     ptrdiff_t e, length;
     int synch_depth = 0;
 
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
     fprintf(stderr,"After peep optimization:\n");
     for(e=0;e<length;e++,c++)

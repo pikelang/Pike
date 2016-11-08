@@ -1769,12 +1769,12 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
   init_buf(&save_buf);
   describe_svalue (s, 0, NULL);
   str = complex_free_buf(&save_buf);
-  while (off < str.len) {
-    SIZE_T num = fwrite (str.str + off, 1, str.len - off, out);
+  while (off < buffer_content_length(&str)) {
+    SIZE_T num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
     if (num) off += num;
     else break;
   }
-  free (str.str);
+  buffer_free(&str);
 }
 
 PMOD_EXPORT void safe_print_svalue (FILE *out, const struct svalue *s)

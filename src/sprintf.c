@@ -1751,9 +1751,9 @@ cont_2:
 	  init_buf(&save_buf);
 	  describe_svalue(t,indent,0);
 	  s=complex_free_buf(&save_buf);
-	  fsp->b=MKPCHARP(s.str,0);
-	  fsp->len=s.len;
-	  fsp->fi_free_string=s.str;
+	  fsp->b=MKPCHARP(buffer_ptr(&s),0);
+	  fsp->len=buffer_content_length(&s);
+	  fsp->fi_free_string=buffer_ptr(&s);
 	  break;
 	}
       }
