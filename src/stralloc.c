@@ -796,6 +796,35 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
   return s;
 }
 
+PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len,
+                                                           enum size_shift shift)
+{
+  struct pike_string *s;
+  ptrdiff_t h = StrHash(str, len);
+
+  s = internal_findstring(str,len,shift,h);
+
+  if (!s) {
+    s = ba_alloc(&string_allocator);
+
+    s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+    s->size_shift = shift;
+    s->alloc_type = STRING_ALLOC_MALLOC;
+    s->struct_type = STRING_STRUCT_STRING;
+    s->str = str;
+    s->refs = 0;
+    s->len = len;
+    add_ref(s);
+
+    link_pike_string(s, h);
+  } else {
+    free(str);
+    add_ref(s);
+  }
+
+  return s;
+}
+
 /*
  * This function assumes that the shift size is already the minimum it
  * can be.
