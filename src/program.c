@@ -1806,18 +1806,21 @@ void use_module(struct svalue *s)
 void unuse_modules(INT32 howmany)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct svalue *s = buffer_dst(&c->used_modules);
   if(!howmany) return;
+  s -= howmany;
 #ifdef PIKE_DEBUG
-  if(howmany *sizeof(struct svalue) > c->used_modules.s.len)
+  if(howmany *sizeof(struct svalue) > buffer_content_length(&c->used_modules))
     Pike_fatal("Unusing too many modules.\n");
 #endif
   c->num_used_modules -= howmany;
   Pike_compiler->num_used_modules-=howmany;
-  low_make_buf_space((ptrdiff_t) sizeof(struct svalue) * -howmany,
-		     &c->used_modules);
-  free_svalues((struct svalue *)low_make_buf_space(0, &c->used_modules),
-	       howmany,
-	       BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);
+  free_svalues(s, howmany, BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);
+  buffer_remove(&c->used_modules, howmany*sizeof(struct svalue));
+#ifdef PIKE_DEBUG
+  if (s != buffer_dst(&c->used_modules))
+    Pike_fatal("buffer_remove is broken.\n");
+#endif
   if(Pike_compiler->module_index_cache)
   {
     free_mapping(Pike_compiler->module_index_cache);
@@ -1909,8 +1912,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
   struct compilation *c = THIS_COMPILATION;
   struct node_s *ret;
 
-  struct svalue *modules=(struct svalue *)
-    (c->used_modules.s.str + c->used_modules.s.len);
+  struct svalue *modules=(struct svalue *)buffer_dst(&c->used_modules);
 
   {
     struct program_state *p=Pike_compiler;
@@ -1947,7 +1949,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 			    modules))) return ret;
       modules-=p->num_used_modules;
 #ifdef PIKE_DEBUG
-      if( ((char *)modules ) < c->used_modules.s.str)
+      if( ((char *)modules ) < (char*)buffer_ptr(&c->used_modules))
 	Pike_fatal("Modules out of whack!\n");
 #endif
     }
@@ -10171,8 +10173,9 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
    */
   if(c->num_used_modules)
   {
-    free_svalue( (struct svalue *)c->used_modules.s.str );
-    ((struct svalue *)c->used_modules.s.str)[0]=sp[-1];
+    struct svalue *dst = buffer_ptr(&c->used_modules);
+    free_svalue( dst );
+    dst[0]=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
     if(Pike_compiler->module_index_cache)
@@ -11057,8 +11060,7 @@ static void sprintf_trampoline (INT32 args)
   describe_svalue (sp - 1, 0, 0);
   str = complex_free_buf(&save_buf);
   pop_stack();
-  push_string (make_shared_binary_string (str.str, str.len));
-  free (str.str);
+  push_string(buffer_finish_pike_string(&str));
 }
 
 static void init_trampoline(struct object *UNUSED(o))

@@ -824,7 +824,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	case T_INT:
 	  if(SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
 	  {
-	    int to_change = data->buf.s.len;
+	    int to_change = buffer_content_length(&data->buf);
 	    struct svalue tmp = entry_id;
 
 	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
@@ -869,7 +869,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	       * become: code_entry(TAG_OBJECT, 1, data);
 	       * -Hubbe
 	       */
-	      data->buf.s.str[to_change] = 99;
+	      ((char*)buffer_ptr(&data->buf))[to_change] = 99;
 
 	      fun = find_identifier("encode_object",
 				    encoder_codec (data)->prog);

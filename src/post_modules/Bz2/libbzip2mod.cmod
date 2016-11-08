@@ -149,7 +149,7 @@ PIKECLASS Deflate
     }
 
     s = &THIS->strm;
-    if(THIS->buffer.bufsize){
+    if(buffer_length(&THIS->buffer)){
       bzCompressEnd(s);
     }
 
@@ -247,7 +247,7 @@ PIKECLASS Deflate
 
     s->next_in = data->str;
     s->avail_in = data->len;
-    s->next_out = retbuf->s.str;
+    s->next_out = buffer_ptr(retbuf);
     s->avail_out = DEFL_BUF_SIZE;
 
     while(1){
@@ -303,16 +303,16 @@ PIKECLASS Deflate
 
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(retbuf.s.str,
+	low_my_binary_strcat(buffer_ptr(&retbuf),
 			     TOTAL_OUT(s) - THIS->total_out_previous_buf,
 			     &THIS->buffer);
 	retstr =
-	  make_shared_binary_string(THIS->buffer.s.str,
+	  make_shared_binary_string(buffer_ptr(&THIS->buffer),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
       }
       else{
 	retstr =
-	  make_shared_binary_string(retbuf.s.str,
+	  make_shared_binary_string(buffer_ptr(&retbuf),
 				    TOTAL_OUT(s)-THIS->total_out_previous_flush);
       }
       low_reinit_buf(&THIS->buffer);
@@ -358,16 +358,16 @@ PIKECLASS Deflate
     /*use perhaps a better check?*/
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(retbuf.s.str,
+	low_my_binary_strcat(buffer_ptr(&retbuf),
 			     TOTAL_OUT(s) - THIS->total_out_previous_buf,
 			     &THIS->buffer);
 	retstr =
-	  make_shared_binary_string(THIS->buffer.s.str,
+	  make_shared_binary_string(buffer_ptr(&THIS->buffer),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
       }
       else{
 	retstr =
-	  make_shared_binary_string(retbuf.s.str,
+	  make_shared_binary_string(buffer_ptr(&retbuf),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
       }
       low_reinit_buf(&THIS->buffer);
@@ -510,7 +510,7 @@ PIKECLASS Inflate
     int retval;
     bz_stream *s = &THIS->strm;
 
-    if(THIS->buffer.bufsize)
+    if(buffer_content_length(&THIS->buffer))
       bzDecompressEnd(s);
 
     low_reinit_buf(&THIS->buffer);
@@ -581,14 +581,14 @@ PIKECLASS Inflate
     /*appending the new data*/
     low_my_binary_strcat(data->str,data->len,&THIS->buffer);
 
-    s->next_in = THIS->buffer.s.str;
+    s->next_in = buffer_ptr(&THIS->buffer);
     s->avail_in += data->len;
 
     /* the input buffer is now provided, provide an output buffer*/
 
     initialize_buf(retbuf);
     low_make_buf_space(INFL_BUF_SIZE, retbuf);
-    s->next_out = retbuf->s.str;
+    s->next_out = buffer_ptr(retbuf);
     s->avail_out = INFL_BUF_SIZE;
 
     while(1){
@@ -641,7 +641,7 @@ PIKECLASS Inflate
     /*return the bytes decompressed since the last time bytes were
       returned from this stream, in other words, return a block*/
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
-      retstr = make_shared_binary_string(ret_buffer.s.str,TOTAL_OUT(s)-THIS->total_out_previous_flush);
+      retstr = make_shared_binary_string(buffer_ptr(&ret_buffer),TOTAL_OUT(s)-THIS->total_out_previous_flush);
     }
     else{
       retstr = make_shared_binary_string("",0);

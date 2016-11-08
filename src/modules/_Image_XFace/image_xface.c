@@ -335,7 +335,6 @@ static struct pike_string *encodeface(rgb_group *in)
   for(i=2; i>=0; --i)
     for(j=2; j>=0; --j)
       comp(val, &newface[i*16][j*16], 16, 0);
-  buf.s.str = NULL;
   initialize_buf( &buf );
   mpz_init(dum);
   i = 0;

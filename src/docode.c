@@ -196,7 +196,7 @@ int do_jump(int token,INT32 lbl)
 
 
 #define LBLCACHESIZE 4711
-#define CURRENT_INSTR ((long)instrbuf.s.len / (long)sizeof(p_instr))
+#define CURRENT_INSTR (buffer_content_length(&instrbuf) / sizeof(p_instr))
 #define MAX_UNWIND 100
 
 static int lbl_cache[LBLCACHESIZE];
@@ -211,7 +211,7 @@ static int do_branch(INT32 lbl)
     INT32 last,pos=lbl_cache[lbl % LBLCACHESIZE];
     if(pos < (last=CURRENT_INSTR) &&  (CURRENT_INSTR - pos) < MAX_UNWIND)
     {
-#define BUF ((p_instr *)instrbuf.s.str)
+#define BUF ((p_instr *)buffer_ptr(&instrbuf))
       if(BUF[pos].opcode == F_LABEL && BUF[pos].arg == lbl)
       {
 	for(;pos < last;pos++)
@@ -2943,7 +2943,6 @@ INT32 docode(node *n)
   struct statement_label *label_save = current_label;
   struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;
 
-  instrbuf.s.str=0;
   label_no=1;
   current_stack_depth = 0;
   current_label = &top_statement_label_dummy;	/* Fix these two to */

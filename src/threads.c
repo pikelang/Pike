@@ -749,7 +749,7 @@ PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
   if (Pike_in_gc > 50 && Pike_in_gc < 300)
     pike_fatal_dloc ("Threads allowed during garbage collection (pass %d).\n",
 		     Pike_in_gc);
-  if (pike_global_buffer.s.str)
+  if (buffer_content_length(&pike_global_buffer))
     pike_fatal_dloc ("Threads allowed while the global dynamic buffer "
 		     "is in use.\n");
   ts->debug_flags |= THREAD_DEBUG_LOOSE;
@@ -823,7 +823,7 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
   if (Pike_in_gc > 50 && Pike_in_gc < 300)
     pike_fatal_dloc ("Threads allowed during garbage collection (pass %d).\n",
 		     Pike_in_gc);
-  if (pike_global_buffer.s.str)
+  if (buffer_content_length(&pike_global_buffer))
     pike_fatal_dloc ("Threads allowed while the global dynamic buffer "
 		     "is in use.\n");
   ts->debug_flags |= THREAD_DEBUG_LOOSE;

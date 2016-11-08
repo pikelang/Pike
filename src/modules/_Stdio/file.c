@@ -739,8 +739,6 @@ static int map(int flags)
   return ret;
 }
 
-static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
-
 static struct pike_string *do_read(int fd,
 				   INT32 r,
 				   int all,
@@ -839,9 +837,8 @@ static struct pike_string *do_read(int fd,
      */
     dynamic_buffer b;
 
-    b.s.str=0;
     initialize_buf(&b);
-    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    SET_ONERROR(ebuf, buffer_free, &b);
     i = all && !INT32_MUL_OVERFLOW(r, 2) ? DIRECT_BUFSIZE : READ_BUFFER;
     do{
       int e;
@@ -874,7 +871,7 @@ static struct pike_string *do_read(int fd,
 	  *err=e;
 	  if(!bytes_read)
 	  {
-	    free(b.s.str);
+            buffer_free(&b);
 	    UNSET_ONERROR(ebuf);
 	    return 0;
 	  }
@@ -1180,9 +1177,8 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
     INT32 try_read;
     dynamic_buffer b;
 
-    b.s.str=0;
     initialize_buf(&b);
-    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    SET_ONERROR(ebuf, buffer_free, &b);
     do{
       int e;
       try_read=MINIMUM(CHUNK,r);
@@ -1235,7 +1231,7 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
 	  ERRNO=e;
 	  if(!bytes_read)
 	  {
-	    free(b.s.str);
+            buffer_free(&b);
 	    UNSET_ONERROR(ebuf);
 	    return 0;
 	  }
