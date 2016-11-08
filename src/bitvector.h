@@ -267,8 +267,12 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
 #define set_unaligned_be16(ptr, x) set_unaligned16(ptr, bswap16(x))
 #define set_unaligned_be32(ptr, x) set_unaligned32(ptr, bswap32(x))
 #define set_unaligned_be64(ptr, x) set_unaligned64(ptr, bswap64(x))
+#define hton16(x) bswap16(x)
 #define hton32(x) bswap32(x)
 #define hton64(x) bswap64(x)
+#define ntoh16(x) (x)
+#define ntoh32(x) (x)
+#define ntoh64(x) (x)
 #else
 #define get_unaligned_be16 get_unaligned16
 #define get_unaligned_be32 get_unaligned32
@@ -282,8 +286,12 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
 #define set_unaligned_le16(ptr, x) set_unaligned16(ptr, bswap16(x))
 #define set_unaligned_le32(ptr, x) set_unaligned32(ptr, bswap32(x))
 #define set_unaligned_le64(ptr, x) set_unaligned64(ptr, bswap64(x))
+#define hton16(x) (x)
 #define hton32(x) (x)
 #define hton64(x) (x)
+#define ntoh16(x) bswap16(x)
+#define ntoh32(x) bswap32(x)
+#define ntoh64(x) bswap64(x)
 #endif
 
 #endif /* BITVECTOR_H */
