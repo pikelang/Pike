@@ -118,6 +118,7 @@
 %left '+' '-'
 %left '*' '%' '/'
 %right TOK_NOT '~'
+%right TOK_POW
 %nonassoc TOK_INC TOK_DEC
 
 %{
