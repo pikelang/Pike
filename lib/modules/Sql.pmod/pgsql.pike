@@ -2,8 +2,6 @@
  * This is the PostgreSQL direct network module for Pike.
  */
 
-#pragma dynamic_dot
-
 //! This is an interface to the PostgreSQL database
 //! server. This module is independent of any external libraries.
 //! Note that you @b{do not@} need to have a
@@ -57,6 +55,7 @@
 //!  @[Sql.Sql], @[Sql.postgres], @url{http://www.postgresql.org/docs/@}
 
 #pike __REAL_VERSION__
+#pragma dynamic_dot
 #require constant(Thread.Thread)
 
 #include "pgsql.h"
