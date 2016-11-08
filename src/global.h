@@ -242,6 +242,12 @@ struct timeval;
 # define UNREACHABLE(X) X
 #endif
 
+#ifdef HAS___BUILTIN_ASSUME
+# define STATIC_ASSUME(X) __builtin_assume(X)
+#else
+# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(); } while(0)
+#endif
+
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
 #endif
