@@ -316,7 +316,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> case
 %type <n> catch
 %type <n> catch_arg
-%type <n> class
+%type <n> anon_class
+%type <n> named_class
 %type <n> enum
 %type <n> enum_value
 %type <n> safe_comma_expr
@@ -1011,7 +1012,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | inheritance {}
   | import {}
   | constant {}
-  | modifiers class { free_node($2); }
+  | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
   | typedef {}
   | error TOK_LEX_EOF
@@ -2045,6 +2046,7 @@ statement: normal_label_statement
   | default
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
+  | implicit_modifiers named_class { $$=mkcastnode(void_type_string, $2); }
   ;
 
 labeled_statement: TOK_IDENTIFIER
@@ -2474,7 +2476,263 @@ failsafe_program: '{' program { $<n>$ = NULL; } end_block
                 ;
 
 /* Modifiers at $0. */
-class: TOK_CLASS line_number_info optional_identifier
+anon_class: TOK_CLASS line_number_info
+  {
+    struct pike_string *s;
+    char buffer[42];
+    sprintf(buffer,"__class_%ld_%ld_line_%d",
+	    (long)Pike_compiler->new_program->id,
+	    (long)Pike_compiler->local_class_counter++,
+	    (int) $2->line_number);
+    s = make_shared_string(buffer);
+    $<n>$ = mkstrnode(s);
+    free_string(s);
+    $<number>0 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
+  }
+  {
+    /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
+    if(Pike_compiler->compiler_pass==1)
+    {
+      if ($<number>0 & ID_EXTERN) {
+	yywarning("Extern declared class definition.");
+      }
+      low_start_new_program(0, 1, $<n>3->u.sval.u.string,
+			    $<number>0,
+			    &$<number>$);
+
+      /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
+	 $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+
+      store_linenumber($2->line_number, $2->current_file);
+      debug_malloc_name(Pike_compiler->new_program,
+			$2->current_file->str,
+			$2->line_number);
+    }else{
+      int i;
+      struct identifier *id;
+      int tmp=Pike_compiler->compiler_pass;
+      i=isidentifier($<n>3->u.sval.u.string);
+      if(i<0)
+      {
+	/* Seriously broken... */
+	yyerror("Pass 2: program not defined!");
+	low_start_new_program(0, 2, 0,
+			      $<number>0,
+			      &$<number>$);
+      }else{
+	id=ID_FROM_INT(Pike_compiler->new_program, i);
+	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
+	{
+	  struct svalue *s;
+	  if ((id->func.const_info.offset >= 0) &&
+	      (TYPEOF(*(s = &PROG_FROM_INT(Pike_compiler->new_program,i)->
+			constants[id->func.const_info.offset].sval)) ==
+	       T_PROGRAM))
+	  {
+	    low_start_new_program(s->u.program, 2,
+				  $<n>3->u.sval.u.string,
+				  $<number>0,
+				  &$<number>$);
+
+	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
+	       $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+
+	  }else{
+	    yyerror("Pass 2: constant redefined!");
+	    low_start_new_program(0, 2, 0,
+				  $<number>0,
+				  &$<number>$);
+	  }
+	}else{
+	  yyerror("Pass 2: class constant no longer constant!");
+	  low_start_new_program(0, 2, 0,
+				$<number>0,
+				&$<number>$);
+	}
+      }
+      Pike_compiler->compiler_pass=tmp;
+    }
+  }
+  {
+    /* Clear scoped modifiers. */
+    $<number>$ = THIS_COMPILATION->lex.pragmas;
+    THIS_COMPILATION->lex.pragmas &= ~ID_MODIFIER_MASK;
+  }
+  optional_create_arguments failsafe_program
+  {
+    struct program *p;
+
+    /* Check if we have create arguments but no locally defined create(). */
+    if ($6) {
+      struct pike_string *create_string = NULL;
+      struct reference *ref = NULL;
+      struct identifier *id = NULL;
+      int ref_id;
+      MAKE_CONST_STRING(create_string, "create");
+      if (((ref_id = isidentifier(create_string)) < 0) ||
+	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
+	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
+	int e;
+	struct pike_type *type = NULL;
+	int nargs = Pike_compiler->num_create_args;
+
+	push_compiler_frame(SCOPE_LOCAL);
+
+	/* Init: Prepend the create arguments. */
+	if (Pike_compiler->num_create_args < 0) {
+	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
+	    id = Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	    /* Note: add_local_name() above will return e. */
+	    Pike_compiler->compiler_frame->variable[e].flags |=
+	      LOCAL_VAR_IS_USED;
+	  }
+	} else {
+	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
+	    id = Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	    /* Note: add_local_name() above will return e. */
+	    Pike_compiler->compiler_frame->variable[e].flags |=
+	      LOCAL_VAR_IS_USED;
+	  }
+	}
+
+	/* First: Deduce the type for the create() function. */
+	push_type(T_VOID); /* Return type. */
+
+	if ((e = nargs) < 0) {
+	  /* Varargs */
+	  e = nargs = -nargs;
+	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
+	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
+	} else {
+	  /* Not varargs. */
+	  push_type(T_VOID);
+	}
+	push_type(T_MANY);
+	while(e--) {
+	  push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	  push_type(T_FUNCTION);
+	}
+
+	type = compiler_pop_type();
+
+	/* Second: Declare the function. */
+
+	Pike_compiler->compiler_frame->current_function_number=
+	  define_function(create_string, type,
+			  ID_INLINE | ID_PROTECTED,
+			  IDENTIFIER_PIKE_FUNCTION |
+			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
+			  0,
+			  OPT_SIDE_EFFECT);
+
+	if (Pike_compiler->compiler_pass == 2) {
+	  node *create_code = NULL;
+	  int f;
+
+	  /* Third: Generate the initialization code.
+	   *
+	   * global_arg = [type]local_arg;
+	   * [,..]
+	   */
+
+	  for(e=0; e<nargs; e++)
+	  {
+	    if(!Pike_compiler->compiler_frame->variable[e].name ||
+	       !Pike_compiler->compiler_frame->variable[e].name->len)
+	    {
+	      my_yyerror("Missing name for argument %d.",e);
+	    } else {
+	      node *local_node = mklocalnode(e, 0);
+
+	      /* FIXME: Should probably use some other flag. */
+	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+		  (Pike_compiler->compiler_pass == 2) &&
+		  (Pike_compiler->compiler_frame->variable[e].type !=
+		   mixed_type_string)) {
+		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+		local_node = mkcastnode(mixed_type_string, local_node);
+
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
+		 */
+		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
+					    variable[e].type, local_node);
+	      }
+	      create_code =
+		mknode(F_COMMA_EXPR, create_code,
+		       mknode(F_ASSIGN, local_node,
+			      mkidentifiernode(e)));
+	    }
+	  }
+
+	  /* Fourth: Add a return 0; at the end. */
+
+	  create_code = mknode(F_COMMA_EXPR,
+			       mknode(F_POP_VALUE, create_code, NULL),
+			       mknode(F_RETURN, mkintnode(0), NULL));
+
+	  /* Fifth: Define the function. */
+
+	  f=dooptcode(create_string, create_code, type, ID_PROTECTED);
+
+#ifdef PIKE_DEBUG
+	  if(Pike_interpreter.recoveries &&
+	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+	    Pike_fatal("Stack error (underflow)\n");
+
+	  if(Pike_compiler->compiler_pass == 1 &&
+	     f!=Pike_compiler->compiler_frame->current_function_number)
+	    Pike_fatal("define_function screwed up! %d != %d\n",
+		       f, Pike_compiler->compiler_frame->current_function_number);
+#endif
+	}
+
+	/* Done. */
+
+	free_type(type);
+	pop_compiler_frame();
+      }
+    }
+
+    if(Pike_compiler->compiler_pass == 1)
+      p=end_first_pass(0);
+    else
+      p=end_first_pass(1);
+
+    /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
+
+    if(p) {
+      /* Update the type for the program constant,
+       * since we might have a lfun::create(). */
+      struct identifier *i;
+      struct svalue sv;
+      SET_SVAL(sv, T_PROGRAM, 0, program, p);
+      i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
+      free_type(i->type);
+      i->type = get_type_of_svalue(&sv);
+      free_program(p);
+    } else if (!Pike_compiler->num_parse_error) {
+      /* Make sure code in this class is aware that something went wrong. */
+      Pike_compiler->num_parse_error = 1;
+    }
+
+    $$=mkidentifiernode($<number>4);
+
+    free_node($2);
+    free_node($<n>3);
+    check_tree($$,0);
+    THIS_COMPILATION->lex.pragmas = $<number>5;
+  }
+  ;
+
+/* Modifiers at $0. */
+named_class: TOK_CLASS line_number_info simple_identifier
   {
     if(!$3)
     {
@@ -3495,7 +3753,7 @@ expr5: literal_expr
   | typeof
   | sscanf
   | lambda
-  | implicit_modifiers class { $$ = $2; }
+  | implicit_modifiers anon_class { $$ = $2; }
   | implicit_modifiers enum { $$ = $2; }
   | apply
   | expr4 open_bracket_with_line_info '*' ']'
