@@ -6,20 +6,20 @@
 //!
 //! @example
 //! @code
-//!  Web.SOAP.Promise("https://foo.bar/Logon.svc?wsdl")
-//!   .on_success(lambda(Web.SOAP.Client soap) {
-//!    Web.SOAP.Arguments args, sh;
-//!    args               = soap->getarguments("Logon");
-//!    sh                 = args->LogonRequestMsg;
-//!    sh->Username       = "foo";
-//!    sh->Password       = "bar";
-//!    sh->WebServiceType = "Publisher";
+//! Web.SOAP.Promise("https://foo.bar/Logon.svc?wsdl")
+//!  .on_success(lambda(Web.SOAP.Client soap) {
+//!   Web.SOAP.Arguments args, sh;
+//!   args               = soap->get_arguments("Logon");
+//!   sh                 = args->LogonRequestMsg;
+//!   sh->Username       = "foo";
+//!   sh->Password       = "bar";
+//!   sh->WebServiceType = "Publisher";
 //!
-//!    soap->call(args)
-//!     .on_success(lambda(mixed resp) {
-//!      string token = resp->CredentialToken;
-//!    });
-//!  });
+//!   soap->call(args)
+//!    .on_success(lambda(mapping resp) {
+//!     string token = resp->CredentialToken;
+//!   });
+//! });
 //! @endcode
 
 #pike __REAL_VERSION__
@@ -127,7 +127,11 @@ private array low_xml2map(object n) {
   return ({n->get_full_name(), sizeof(ret) ? ret : ""});
 }
 
+//! @returns
+//! A @[Concurrent.Future] that eventually delivers a @[Client].
 //!
+//! @seealso
+//!   @[Client()]
 final Concurrent.Future Promise(string wsdlurl, void|mapping headers) {
   if (headers)
     headers = defaultheaders + headers;
@@ -136,7 +140,7 @@ final Concurrent.Future Promise(string wsdlurl, void|mapping headers) {
   return Protocols.HTTP.Promise.get_url(wsdlurl,
    Protocols.HTTP.Promise.Arguments(([
     "headers":headers,
-   ])))->then(Client);
+   ]))).then(Client);
 }
 
 //!
@@ -172,7 +176,23 @@ class Arguments {
   }
 
   inline private array(string) _indices() {
-    return indices(values);
+    return filter(indices(values),
+     lambda(mixed value) { return !has_prefix(value, "/"); });
+  }
+
+  // Clone the Arguments so that they can be reused,
+  // mostly relevant for get_arguments().
+  // A regular clone() method does not work here due to the override
+  // on the -> and [] operators.
+  private Arguments `~() {
+    mapping newvalues = values + ([]);
+    foreach (newvalues; string key; mixed value)
+      if (!has_prefix(key, "/"))
+        if (arrayp(value))
+          newvalues[key] += ({});
+        else if (objectp(value))
+          newvalues[key] = ~value;
+    return Arguments(newvalues);
   }
 
   private string _sprintf(int type, void|mapping flags) {
@@ -180,6 +200,9 @@ class Arguments {
     switch (type) {
       case 'O':
         res = sprintf("%O", values);
+        int indent;
+        if (flags && (indent = flags->indent))
+          res = replace(res, "\n", "\n" + " " * indent);
         break;
     }
     return res;
@@ -197,17 +220,33 @@ class Client {
   private void destroy() {
   }
 
-  //!
-  final Arguments getmethods() {
+  //! @returns
+  //!   A structure describing all available methods on the current wsdl.
+  final Arguments get_methods() {
     return methods;
   }
 
+  //! Primes the @[Client] to perform the @[call()] later.  Use the
+  //! returned structure to pass parameters.  Only assigned parameters
+  //! will be passed to the call.
   //!
-  final Arguments getarguments(string method) {
-    return methods[nextmethod = method]->input;
+  //! @returns
+  //!   A structure describing all arguments for the specified @expr{method@}.
+  //!
+  //! @seealso
+  //!   @[call()]
+  final Arguments get_arguments(string method) {
+    return ~methods[nextmethod = method]->input;
   }
 
+  //! Calls the SOAP method you most recently addressed using
+  //! @[get_arguments()].
   //!
+  //! @returns
+  //! A @[Concurrent.Future] that eventually delivers a result mapping.
+  //!
+  //! @seealso
+  //!   @[get_arguments()]
   final Concurrent.Future call(Arguments args) {
 
     string args2xml(Arguments args) {
@@ -264,7 +303,10 @@ class Client {
     });
   }
 
+  //! Usually not called directly.
   //!
+  //! @seealso
+  //!   @[Promise()]
   protected void create(Protocols.HTTP.Promise.Success resp) {
     if (resp->content_type != "text/xml")
       DERROR("Invalid wsdl response %O: %O\n", resp->content_type, resp->data);
