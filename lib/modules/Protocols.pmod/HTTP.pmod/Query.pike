@@ -995,16 +995,15 @@ string data(int|void max_length)
    }
 
    int len=(int)headers["content-length"];
-   int l;
-// test if len is zero to get around zero_type bug (??!?) /Mirar
-   if(!len && undefinedp( len ))
-      l=0x7fffffff;
-   else {
+   int l = Int.NATIVE_MAX;
+
+   if(!undefinedp( len ))
+   {
       len -= discarded_bytes;
       l=len-sizeof(buf)+datapos;
    }
-   if(!undefinedp(max_length) && l>max_length-sizeof(buf)+datapos)
-     l = max_length-sizeof(buf)+datapos;
+   if(!undefinedp(max_length))
+     l = min(l, max_length-sizeof(buf)+datapos);
 
    DBG("fetch data: %d bytes needed, got %d, %d left\n",
        len,sizeof(buf)-datapos,l);
