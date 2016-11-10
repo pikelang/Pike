@@ -698,7 +698,7 @@ class Options
   Opt quiet = NoOpt("-q")|NoOpt("--quiet");
   Opt compat = NoOpt("--compat");
   Opt no_dynamic = NoOpt("--no-dynamic");
-  Opt keep_going = NoOpt("--kep-going");
+  Opt keep_going = NoOpt("--keep-going");
 }
 
 int(0..1) main(int num, array(string) args)
