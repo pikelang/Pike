@@ -744,159 +744,54 @@ static struct pike_string *do_read(int fd,
 				   int all,
 				   INT_TYPE *err)
 {
-  ONERROR ebuf;
-  ptrdiff_t bytes_read, i;
-  INT32 try_read;
-  bytes_read=0;
-  *err=0;
+  size_t bytes = r;
+  struct byte_buffer buf = BUFFER_INIT();
+  int e = 0, nomem = 0;
 
-  if(r <= DIRECT_BUFSIZE ||
-     (all && !INT32_MUL_OVERFLOW(r, 2) && (((r<<1)-1)&(r<<1))))   /* r<<1 != power of two */
-  {
-    struct pike_string *str;
+  THREADS_ALLOW();
 
-    i=r;
+  while (bytes) {
+      size_t len = MINIMUM(DIRECT_BUFSIZE, bytes);
+      ptrdiff_t i;
 
-    str=begin_shared_string(r);
-
-    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
-
-    do{
-      int fd=FD;
-      int e;
-      THREADS_ALLOW();
-
-      try_read = i;
-      i = fd_read(fd, str->str+bytes_read, i);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>0)
-      {
-	r-=i;
-	bytes_read+=i;
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	break;
-      }
-      else if(e != EINTR)
-      {
-	*err=e;
-	if(!bytes_read)
-	{
-	  do_free_unlinked_pike_string(str);
-	  UNSET_ONERROR(ebuf);
-	  return 0;
-	}
-	break;
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len))) {
+          buffer_free(&buf);
+          e = ENOMEM;
+          break;
       }
 
-      /*
-       * Large reads cause the kernel to validate more memory before
-       * starting the actual read, and hence cause slowdowns.
-       * Ideally you read as much as you're going to receive.
-       * This buffer calculation algorithm tries to optimise the
-       * read length depending on past read chunksizes.
-       * For network reads this allows it to follow the packetsizes.
-       * The initial read will attempt the full buffer.  /srb
-       */
-      if( i < try_read )
-	i += SMALL_NETBUF;
-      else
-	i += (r-i)>>1;
-      if (i < SMALL_NETBUF)
-	i = SMALL_NETBUF;
-      if(i > r-SMALL_NETBUF)
-	i = r;
-    }while(r);
+      i = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
 
-    UNSET_ONERROR(ebuf);
+      if (LIKELY(i >= 0)) {
+          if ((size_t)i < len) buffer_remove(&buf, len - i);
+          bytes -= i;
+          if (!i || !all) break;
+      } else {
+          e=errno;
+          if (e == EINTR) {
+              e = 0;
+              buffer_remove(&buf, len);
+              continue;
+          }
 
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    if(bytes_read == str->len)
-    {
-      return end_shared_string(str);
-    }else{
-      return end_and_resize_shared_string(str, bytes_read);
-    }
-
-  }else{
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     *
-     * The slowdowns most likely are because of memory validation
-     * done by the kernel for buffer space which is later unused
-     * (short read)   /srb
-     */
-    dynamic_buffer b;
-
-    initialize_buf(&b);
-    SET_ONERROR(ebuf, buffer_free, &b);
-    i = all && !INT32_MUL_OVERFLOW(r, 2) ? DIRECT_BUFSIZE : READ_BUFFER;
-    do{
-      int e;
-      char *buf;
-
-      try_read = i;
-
-      buf = low_make_buf_space(try_read, &b);
-
-      THREADS_ALLOW();
-      i = fd_read(fd, buf, try_read);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>=0)
-      {
-	bytes_read+=i;
-	r-=i;
-	if(try_read > i)
-	  low_make_buf_space(i - try_read, &b);
-	if(!all || !i) break;
+          buffer_free(&buf);
+          break;
       }
-      else
-      {
-	low_make_buf_space(-try_read, &b);
-	if(e != EINTR)
-	{
-	  *err=e;
-	  if(!bytes_read)
-	  {
-            buffer_free(&b);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-
-      /* See explanation in previous loop above */
-      if( i < try_read )
-	i += SMALL_NETBUF;
-      else
-	i += (DIRECT_BUFSIZE-i)>>1;
-      if (i < SMALL_NETBUF)
-	i = SMALL_NETBUF;
-      if(i > r-SMALL_NETBUF)
-	i = r;
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    return low_free_buf(&b);
   }
+
+  THREADS_DISALLOW();
+
+  check_threads_etc();
+
+  if (e) {
+    *err = e;
+    return NULL;
+  }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  return buffer_finish_pike_string(&buf);
 }
 
 /* This function is used to analyse anonymous fds, so that
