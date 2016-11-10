@@ -181,6 +181,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
 #define addchar(t)   low_my_putchar((char)(t), &(data->buf))
+#define addchar_unsafe(t)       buffer_add_char_unsafe(&(data->buf), t)
 
 /* Code a pike string */
 
@@ -188,40 +189,37 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #define ENCODE_DATA(S) \
    addstr( (S)->str, (S)->len << (S)->size_shift );
 #else
-#define ENCODE_DATA(S) 				\
-    switch((S)->size_shift)			\
-    {						\
-      case 1:					\
-        for(q=0;q<(S)->len;q++) {		\
-           INT16 s=htons( STR1(S)[q] );		\
-           addstr( (char *)&s, sizeof(s));	\
-        }					\
-        break;					\
-      case 2:					\
-        for(q=0;q<(S)->len;q++) {		\
-           INT32 s=htonl( STR2(S)[q] );		\
-           addstr( (char *)&s, sizeof(s));	\
-        }					\
-        break;					\
-       case 0: /* Silence clang warning */	\
-        break;					\
-    }
+#define ENCODE_DATA(S) do {                                             \
+    buffer_ensure_space(&(data->buf), (S)->len << (S)->size_shift);     \
+    if ((S)->size_shift == 1) {                                         \
+        const p_wchar1 *src = STR1(S);                                  \
+        ptrdiff_t len = (S)->len, q;                                    \
+        for(q=0;q<len;q++) {                                            \
+           buffer_add_be16_unsafe(&(data->buf), src[q]);                \
+        }                                                               \
+    } else { /* shift 2 */                                              \
+        const p_wchar2 *src = STR2(S);                                  \
+        ptrdiff_t len = (S)->len, q;                                    \
+        for(q=0;q<len;q++) {                                            \
+           buffer_add_be32_unsafe(&(data->buf), src[q]);                \
+        }                                                               \
+    }                                                                   \
+} while(0)
 #endif
 
-#define adddata(S) do {					\
-  if((S)->size_shift)					\
-  {							\
+#define adddata(S) do {                                 \
+  const struct pike_string *__str = (S);                \
+  if(__str->size_shift)                                 \
+  {                                                     \
     int q;                                              \
-    code_entry(TAG_STRING,-1, data);			\
-    code_entry((S)->size_shift, (S)->len, data);	\
-    ENCODE_DATA(S);                                     \
-  }else{						\
-    code_entry(TAG_STRING, (S)->len, data);		\
-    addstr((char *)((S)->str),(S)->len);		\
-  }							\
+    code_entry(TAG_STRING,-1, data);                    \
+    code_entry(__str->size_shift, __str->len, data);    \
+    ENCODE_DATA(__str);                                 \
+  }else{                                                \
+    code_entry(TAG_STRING, __str->len, data);           \
+    addstr((char *)(__str->str),__str->len);            \
+  }                                                     \
 }while(0)
-
-#define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
 #ifdef ENCODE_DEBUG
 /* NOTE: Fix when type encodings change. */
@@ -238,6 +236,8 @@ static int tag_to_type(int tag)
 static void code_entry(int tag, INT64 num, struct encode_data *data)
 {
   int t;
+  /* this needs 5 bytes maximal */
+  buffer_ensure_space(&data->buf, 5);
   EDB(5,
     fprintf(stderr,"%*sencode: code_entry(tag=%d (%s), num=%ld)\n",
 	    data->depth, "", tag,
@@ -252,7 +252,7 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
   if(num < MAX_SMALL)
   {
     tag |= TAG_SMALL | (num << SIZE_SHIFT);
-    addchar((char)tag);
+    addchar_unsafe((char)tag);
     return;
   }else{
     num -= MAX_SMALL;
@@ -268,14 +268,14 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
   }
 
   tag |= t << SIZE_SHIFT;
-  addchar((char)tag);
+  addchar_unsafe((char)tag);
 
   switch(t)
   {
-  case 3: addchar((char)((num >> 24)&0xff));
-  case 2: addchar((char)((num >> 16)&0xff));
-  case 1: addchar((char)((num >> 8)&0xff));
-  case 0: addchar((char)(num&0xff));
+  case 3: addchar_unsafe((char)((num >> 24)&0xff));
+  case 2: addchar_unsafe((char)((num >> 16)&0xff));
+  case 1: addchar_unsafe((char)((num >> 8)&0xff));
+  case 0: addchar_unsafe((char)(num&0xff));
   }
 }
 
@@ -376,16 +376,8 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val;
 
-	val = CAR_TO_INT(t);
-	addchar((val >> 24)&0xff);
-	addchar((val >> 16)&0xff);
-	addchar((val >> 8)&0xff);
-	addchar(val & 0xff);
-	val = CDR_TO_INT(t);
-	addchar((val >> 24)&0xff);
-	addchar((val >> 16)&0xff);
-	addchar((val >> 8)&0xff);
-	addchar(val & 0xff);
+        buffer_add_be32(&data->buf, CAR_TO_INT(t));
+        buffer_add_be32(&data->buf, CDR_TO_INT(t));
       }
       break;
 
