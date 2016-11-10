@@ -692,7 +692,8 @@ class Options
 
   Opt pikever = HasOpt("--pike-version")|Default(version());
   Opt timestamp = Int(HasOpt("--timestamp")|HasOpt("--time-stamp")|Default(time()));
-  Opt output = HasOpt("-h")|HasOpt("--output")|HasOpt("--out");
+  Opt help = NoOpt("-h")|NoOpt("--help");
+  Opt output = HasOpt("-o")|HasOpt("--output")|HasOpt("--out");
   Opt verbose = NoOpt("-v")|NoOpt("--verbose");
   Opt quiet = NoOpt("-q")|NoOpt("--quiet");
   Opt compat = NoOpt("--compat");
