@@ -23,6 +23,7 @@ struct byte_buffer {
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
 PMOD_EXPORT void buffer_make_space(struct byte_buffer *b, size_t len);
+PMOD_EXPORT int buffer_make_space_nothrow(struct byte_buffer *b, size_t len);
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 PMOD_EXPORT void* buffer_finish(struct byte_buffer *b);
@@ -95,6 +96,16 @@ MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
         STATIC_ASSUME(len <= b->left);
     }
     return buffer_dst(b);
+}
+
+MACRO int buffer_ensure_space_nothrow(struct byte_buffer *b, size_t len) {
+    if (UNLIKELY(len > b->left)) {
+        if (!buffer_make_space_nothrow(b, len)) return 0;
+
+        STATIC_ASSUME(len <= b->left);
+    }
+
+    return 1;
 }
 
 #define ASSUME_UNCHANGED(b, CODE) do {          \
