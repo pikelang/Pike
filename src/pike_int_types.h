@@ -175,3 +175,5 @@
 # define MAX_TIME_T MAX_INT32
 # define MIN_TIME_T MIN_INT32
 #endif
+
+#define INT_SPRINTF_SIZE(a) (2 + (sizeof(a) * 5 + 1)/2)
