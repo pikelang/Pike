@@ -9,6 +9,7 @@
 #include "pike_error.h"
 #include <math.h>
 #include <ctype.h>
+#include "port.h"
 
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
@@ -1456,7 +1457,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
   FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
-                  fd, (long)(ptrdiff_t)da_handle[fd]), cmd, data);
+                  fd, (long)(ptrdiff_t)da_handle[fd], cmd, data));
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     errno = EBADF;
     return -1;
@@ -1510,7 +1511,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   mt_unlock(&fd_mutex);
 
   FDDEBUG(fprintf(stderr,"Dup %d (%ld) to %d (%d)\n",
-                  from, (long)(ptrdiff_t)da_handle[from]), fd, x);
+                  from, (long)(ptrdiff_t)da_handle[from], fd, x));
   return fd;
 }
 
