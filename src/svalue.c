@@ -1209,38 +1209,37 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
   return is_lt (a, b) || is_eq (a, b);
 }
 
-static void dsv_add_string_to_buf (struct pike_string *str)
+static void dsv_add_string_to_buf (struct byte_buffer *buf, struct pike_string *str)
 {
   int i, backslashes = 0;
   ptrdiff_t len = str->len;
   for(i=0; i < len; i++)
   {
     unsigned j = index_shared_string (str, i);
+    buffer_ensure_space(buf, 16);
     if (j == '\\') {
       backslashes++;
-      my_putchar ('\\');
+      buffer_add_char_unsafe(buf, '\\');
     }
     else {
       if ((j == 'u' || j == 'U') && backslashes % 2) {
 	/* Got a unicode escape in the input. Quote it using the
 	 * double-u method to ensure unambiguousness. */
-	my_putchar (j);
-	my_putchar (j);
+	buffer_add_char_unsafe(buf, j);
+	buffer_add_char_unsafe(buf, j);
       }
       else if ((j < 256) && (isprint(j) || (j=='\n' || j=='\r')))
-	my_putchar (j);
+	buffer_add_char_unsafe(buf, j);
       else {
-	char buf[11];
 	if (backslashes % 2)
 	  /* Got an odd number of preceding backslashes, so adding a
 	   * unicode escape here would make it quoted. Have to escape
 	   * the preceding backslash to avoid that. */
-	  my_strcat ("u005c");	/* The starting backslash is already there. */
+	  buffer_add_str_unsafe(buf, "u005c");	/* The starting backslash is already there. */
 	if (j > 0xffff)
-	  sprintf (buf, "\\U%08x", j);
+	  buffer_advance(buf, sprintf(buffer_dst(buf), "\\U%08x", j));
 	else
-	  sprintf (buf, "\\u%04x", j);
-	my_strcat (buf);
+	  buffer_advance(buf, sprintf(buffer_dst(buf), "\\u%04x", j));
       }
       backslashes = 0;
     }
@@ -1254,7 +1253,7 @@ static int no_pike_calls = 0;	/* FIXME: Use TLS for this. */
  */
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
 {
-  char buf[MAXIMUM (50, MAX_FLOAT_SPRINTF_LEN)];
+  struct byte_buffer *buf = &pike_global_buffer;
 
   /* This needs to be a bit lower than LOW_C_STACK_MARGIN so that the
    * the raw error can be printed in exit_on_error. */
@@ -1269,10 +1268,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
   switch(TYPEOF(*s))
   {
     case T_INT:
-      sprintf(buf,"%"PRINTPIKEINT"d",s->u.integer);
-      my_strcat(buf);
-      break;
-
+      {
+        int len = sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(INT_TYPE)),
+                          "%"PRINTPIKEINT"d", s->u.integer);
+        buffer_advance(buf, len);
+        break;
+      }
     case T_TYPE:
       {
 	struct pike_string *t = describe_type(s->u.type);
@@ -1284,81 +1285,85 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     case T_STRING:
       {
 	struct pike_string *str = s->u.string;
-	int i, len = str->len;
-	my_putchar('"');
+	ptrdiff_t i, len = str->len;
+        buffer_add_char(buf, '"');
 	for(i=0; i < len; i++)
         {
 	  p_wchar2 j;
+          /* the longest possible escape sequence are unicode escapes, which are
+           * 8 byte hex plus \U
+           */
+          buffer_ensure_space(buf, 10);
 	  switch(j = index_shared_string(str,i))
           {
 	  case '\n':
 	    if (i == len-1) {
 	      /* String ends with a new-line. */
-	      my_strcat("\\n");
+	      buffer_add_str_unsafe(buf, "\\n");
 	    } else {
 	      int e;
 	      /* Add line breaks to make the output easier to read. */
-	      my_strcat("\\n\"\n");
+	      buffer_add_str_unsafe(buf, "\\n\"\n");
 	      for (e = 2; e < indent; e++) {
-		my_putchar(' ');
+		buffer_add_char_unsafe(buf, ' ');
 	      }
-	      my_putchar('\"');
+	      buffer_add_char_unsafe(buf, '\"');
 	    }
 	    break;
 
 	  case '\t':
-	    my_putchar('\\');
-	    my_putchar('t');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 't');
 	    break;
 
 	  case '\b':
-	    my_putchar('\\');
-	    my_putchar('b');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 'b');
 	    break;
 
 	  case '\r':
-	    my_putchar('\\');
-	    my_putchar('r');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 'r');
 	    break;
 
 	  case '\f':
-	    my_putchar('\\');
-	    my_putchar('f');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 'f');
 	    break;
 
 	  case '\a':
-	    my_putchar('\\');
-	    my_putchar('a');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 'a');
 	    break;
 
 	  case '\v':
-	    my_putchar('\\');
-	    my_putchar('v');
+	    buffer_add_char_unsafe(buf, '\\');
+	    buffer_add_char_unsafe(buf, 'v');
 	    break;
 
             case '"':
             case '\\':
-              my_putchar('\\');
-              my_putchar(j);
+              buffer_add_char_unsafe(buf, '\\');
+              buffer_add_char_unsafe(buf, j);
 	      break;
 
             default:
 	      if((unsigned INT32) j < 256) {
-		if (isprint(j))
-		  my_putchar(j);
+		if (isprint(j)) {
+		  buffer_add_char_unsafe(buf, j);
 
-		else {
+                } else {
 		  /* Use octal escapes for eight bit chars since
 		   * they're more compact than unicode escapes. */
 		  int char_after = index_shared_string(s->u.string,i+1);
-		  sprintf(buf,"\\%o",j);
-		  my_strcat(buf);
+		  int len = sprintf(buffer_dst(buf), "\\%o",j);
+                  buffer_advance(buf, len);
 		  if (char_after >= '0' && char_after <= '9') {
 		    /* Strictly speaking we don't need to do this if
 		     * char_after is '8' or '9', but I guess it
 		     * improves the readability a bit. */
-		    my_putchar('"');
-		    my_putchar('"');
+		    buffer_add_char_unsafe(buf, '"');
+		    buffer_add_char_unsafe(buf, '"');
 		  }
 		}
 	      }
@@ -1368,21 +1373,20 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		 * double quote trickery. Also, hex is easier to read
 		 * than octal. */
 		if (j > 0xffff)
-		  sprintf (buf, "\\U%08x", j);
+		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\U%08x", j));
 		else
-		  sprintf (buf, "\\u%04x", j);
-		my_strcat (buf);
+		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\u%04x", j));
 	      }
 	  }
         }
-        my_putchar('"');
+        buffer_add_char(buf, '"');
       }
       break;
 
     case T_FUNCTION:
       if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
       {
-	dsv_add_string_to_buf(s->u.efun->name);
+	dsv_add_string_to_buf(buf, s->u.efun->name);
       }else{
 	struct object *obj = s->u.object;
 	struct program *prog = obj->prog;
@@ -1457,8 +1461,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf( sp[-1].u.string );
-		  dsv_add_string_to_buf(name);
+		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
+		  dsv_add_string_to_buf(buf, name);
 
 		  pop_stack();
 		  END_CYCLIC();
@@ -1474,7 +1478,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  }
 
 	  if(name) {
-	    dsv_add_string_to_buf(name);
+	    dsv_add_string_to_buf(buf, name);
 	    break;
 	  }
 	  else if (!prog) {
@@ -1490,8 +1494,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      my_strcat(file);
 	      free(file);
 	      if (line) {
-		sprintf(buf, ":%ld", (long)line);
-		my_strcat(buf);
+                buffer_advance(buf,
+                               sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                       ":%ld", (long)line));
 	      }
 	      my_putchar(')');
 	      break;
@@ -1567,7 +1572,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf( sp[-1].u.string );
+		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
 
 		  pop_stack();
 		  END_CYCLIC();
@@ -1611,7 +1616,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		restore_buffer (&save_buf);
 		Pike_interpreter.trace_level=save_t_flag;
 
-		dsv_add_string_to_buf( sp[-1].u.string );
+		dsv_add_string_to_buf(buf,  sp[-1].u.string );
 
 		pop_stack();
 		END_CYCLIC();
@@ -1638,8 +1643,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    my_strcat(file);
 	    free(file);
 	    if (line) {
-	      sprintf(buf, ":%ld", (long)line);
-	      my_strcat(buf);
+              buffer_advance(buf,
+                             sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                     ":%ld", (long)line));
 	    }
 	    my_putchar(')');
 	    break;
@@ -1690,7 +1696,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 
-	      dsv_add_string_to_buf( sp[-1].u.string );
+	      dsv_add_string_to_buf(buf,  sp[-1].u.string );
 
 	      pop_stack();
 	      END_CYCLIC();
@@ -1712,13 +1718,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  my_strcat(file);
 	  free(file);
 	  if (line) {
-	    sprintf(buf, ":%ld", (long)line);
-	    my_strcat(buf);
+            buffer_advance(buf,
+                           sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                   ":%ld", (long)line));
 	  }
-#if 0
-	  sprintf(buf, " %p", s->u.program);
-	  my_strcat(buf);
-#endif
 	  my_putchar(')');
 	  break;
 	}
@@ -1729,8 +1732,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     }
 
     case T_FLOAT:
-      format_pike_float (buf, s->u.float_number);
-      my_strcat (buf);
+      format_pike_float (buffer_ensure_space(buf, MAX_FLOAT_SPRINTF_LEN), s->u.float_number);
+      /* Advance buffer ptr until null byte */
+      buffer_advance(buf, strlen(buffer_dst(buf)));
       break;
 
     case T_ARRAY:
@@ -1746,8 +1750,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     default:
-      sprintf(buf,"<Unknown %d>", TYPEOF(*s));
-      my_strcat(buf);
+      buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Unknown %d>", TYPEOF(*s)));
+      break;
   }
 }
 
