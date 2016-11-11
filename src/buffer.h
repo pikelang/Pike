@@ -89,6 +89,13 @@ MACRO void buffer_check_space(struct byte_buffer *b, size_t len) {
 #endif
 }
 
+MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
+    char *dst = buffer_dst(b);
+    buffer_check_space(b, len);
+    b->dst = dst + len;
+    b->left -= len;
+}
+
 MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
     if (UNLIKELY(len > b->left)) {
         buffer_make_space(b, len);
