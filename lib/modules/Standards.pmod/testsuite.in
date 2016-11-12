@@ -607,7 +607,7 @@ m7GVvwIUYpUR6uKR45jxvAgL6W4yvRRP7vI=
 
 dnl openssl ecparam -out ec_key.pem -name prime192v1 -genkey
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
-cond_resolv(Crypto.ECC.SECP192R1, [[
+cond_resolv(Crypto.ECC.SECP_192R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBSzCCAQKgAwIBAgIJAMj9iSOoOhP/MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
 UGlrZUNlcnQwHhcNMTQwMjIwMjMwMzUwWhcNMTUwMjIwMjMwMzUwWjATMREwDwYD
@@ -621,7 +621,7 @@ k2RmcnzBakhpsxneFHHW1zYIKmBIAhgDcmopMyY+DdGfY1PyjZQAMK6wd2apnxA=
 
 dnl openssl ecparam -out ec_key.pem -name secp224r1 -genkey
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
-cond_resolv(Crypto.ECC.SECP224R1, [[
+cond_resolv(Crypto.ECC.SECP_224R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBWTCCAQegAwIBAgIJAKy2vVL0uZPvMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
 UGlrZUNlcnQwHhcNMTQwMjIwMjIyODEzWhcNMTUwMjIwMjIyODEzWjATMREwDwYD
@@ -635,7 +635,7 @@ dfPFb1cNwHMDje6/kw==
 ]])
 
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha224 -out cert.pem
-cond_resolv(Crypto.ECC.SECP224R1, [[
+cond_resolv(Crypto.ECC.SECP_224R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBWjCCAQigAwIBAgIJAOha9wA3a+TQMAoGCCqGSM49BAMBMBMxETAPBgNVBAMM
 CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTMxNVoXDTE1MDIyMDIyNTMxNVowEzERMA8G
@@ -649,7 +649,7 @@ b5Z/So1yqBUf4XBq0Es=
 ]])
 
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -out cert.pem
-cond_resolv(Crypto.ECC.SECP224R1, [[
+cond_resolv(Crypto.ECC.SECP_224R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBWjCCAQigAwIBAgIJAJPEMg5QZ2AoMAoGCCqGSM49BAMCMBMxETAPBgNVBAMM
 CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTQzOFoXDTE1MDIyMDIyNTQzOFowEzERMA8G
@@ -663,7 +663,7 @@ kgzS9dNkRDh/CNvJidE=
 ]])
 
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -out cert.pem
-cond_resolv(Crypto.ECC.SECP224R1, [[
+cond_resolv(Crypto.ECC.SECP_224R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBWjCCAQigAwIBAgIJALahVk/hu/hnMAoGCCqGSM49BAMDMBMxETAPBgNVBAMM
 CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTU0NFoXDTE1MDIyMDIyNTU0NFowEzERMA8G
@@ -677,7 +677,7 @@ XRYzQ3xFhbfJ8HcxTbw=
 ]])
 
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -out cert.pem
-cond_resolv(Crypto.ECC.SECP224R1, [[
+cond_resolv(Crypto.ECC.SECP_224R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBWjCCAQigAwIBAgIJAIDLkTGU0TRQMAoGCCqGSM49BAMEMBMxETAPBgNVBAMM
 CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTcwNVoXDTE1MDIyMDIyNTcwNVowEzERMA8G
@@ -692,7 +692,7 @@ Nsv1aJAwJPuGLiymoU4=
 
 dnl openssl ecparam -out ec_key.pem -name prime256v1 -genkey
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
-cond_resolv(Crypto.ECC.SECP256R1, [[
+cond_resolv(Crypto.ECC.SECP_256R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBazCCARKgAwIBAgIJAM1x4Mn082OeMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
 UGlrZUNlcnQwHhcNMTQwMjIwMjMwNTU4WhcNMTUwMjIwMjMwNTU4WjATMREwDwYD
@@ -707,7 +707,7 @@ SM49BAEDSAAwRQIgPKBNFDgNeKuPxrXy4s8JK8IUxMjm9IopfE83FwtS090CIQC9
 
 dnl openssl ecparam -out ec_key.pem -name secp384r1 -genkey
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
-cond_resolv(Crypto.ECC.SECP384R1, [[
+cond_resolv(Crypto.ECC.SECP_384R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIBqDCCAS+gAwIBAgIJANvhD1nHQbI5MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
 UGlrZUNlcnQwHhcNMTQwMjIwMjI1OTIyWhcNMTUwMjIwMjI1OTIyWjATMREwDwYD
@@ -723,7 +723,7 @@ sO5NVHxzBVp4KKpeSo+GYCAxRVgYGWk5OSvNtM7ymVmcMXtzg18atpBaMaw=
 
 dnl openssl ecparam -out ec_key.pem -name secp521r1 -genkey
 dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
-cond_resolv(Crypto.ECC.SECP521R1, [[
+cond_resolv(Crypto.ECC.SECP_521R1, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIB8jCCAVWgAwIBAgIJANiMssVQFtzxMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
 UGlrZUNlcnQwHhcNMTQwMjIwMjMwMDQ1WhcNMTUwMjIwMjMwMDQ1WjATMREwDwYD
