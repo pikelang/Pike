@@ -933,10 +933,16 @@ struct ref_dummy
 
 /* The following macro is useful to initialize static svalues. . */
 /* assumes sizeof void* >= all initialization arguments. */
+#ifdef HAVE_C99_STRUCT_INIT
 #define SVALUE_INIT(TYPE, SUBTYPE, VAL) {.tu.type_subtype=TYPE_SUBTYPE(TYPE, SUBTYPE),.u.refs=(void*)VAL}
 
-#define SVALUE_INIT_INT(VAL)            {.u.integer=VAL}
-/* depends on t_int and number-number being 0 */
+/* Depends on T_INT and NUMBER_NUMBER being 0. */
+#define SVALUE_INIT_INT(VAL)            {.tu.type_subtype=0,.u.integer=VAL}
+#else /* !HAVE_C99_STRUCT_INIT */
+/* FIXME: Assumes that INT_TYPE and void * have the same size. */
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}, {(INT_TYPE)(void*)VAL}}
+#define SVALUE_INIT_INT(VAL)		{{{PIKE_T_INT, NUMBER_NUMBER}}, {VAL}}
+#endif /* !HAVE_C99_STRUCT_INIT */
 
 #define SVALUE_INIT_FREE                SVALUE_INIT(PIKE_T_FREE,0,0)
 
