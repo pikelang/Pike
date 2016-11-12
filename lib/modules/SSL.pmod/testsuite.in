@@ -1472,7 +1472,7 @@ array(int) a() {
 
   foreach( ({
     // Crypto.ECC.SECP_192R1, // Tested above.
-#if constant(Crypto.ECC_SECP_256R1)
+#if constant(Crypto.ECC.SECP_224R1)
     Crypto.ECC.SECP_224R1,
 #endif
     Crypto.ECC.SECP_256R1,
