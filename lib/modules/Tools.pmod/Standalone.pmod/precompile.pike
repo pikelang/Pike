@@ -3389,10 +3389,14 @@ int main(int argc, array(string) argv)
     });
 
     x += ({
-      "  int i = 0;\n"
-      "  while(___cmod_ext_used[i].from ) {\n"
-      "   if( ___cmod_ext_used[i].from == id ) return ___cmod_ext_used[i].to;\n"
-      "   i++;\n"
+      "  {\n"
+      "    int i = 0;\n"
+      "    while(___cmod_ext_used[i].from ) {\n"
+      "      if( ___cmod_ext_used[i].from == id ) {\n"
+      "        return ___cmod_ext_used[i].to;\n"
+      "      }\n"
+      "      i++;\n"
+      "    }\n"
       "  }\n"
     });
   }
