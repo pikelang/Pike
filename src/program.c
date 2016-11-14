@@ -5840,11 +5840,13 @@ int define_variable(struct pike_string *name,
       run_time_type = T_MIXED;
       break;
     case T_INT:
-      run_time_type = T_MIXED;
-      INT_TYPE int_range[] = { MAX_INT32, MIN_INT32 };
-      if (get_int_type_range(type, int_range) &&
-	  (int_range[0] > MIN_INT32) && (int_range[1] < MAX_INT32) ) {
-        run_time_type = T_INT;
+      {
+	INT_TYPE int_range[] = { MAX_INT32, MIN_INT32 };
+	run_time_type = T_MIXED;
+	if (get_int_type_range(type, int_range) &&
+	    (int_range[0] > MIN_INT32) && (int_range[1] < MAX_INT32) ) {
+	  run_time_type = T_INT;
+	}
       }
     }
   }
