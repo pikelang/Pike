@@ -155,10 +155,10 @@ Enter "help me more" for further Hilfe help.
 that can be given to help to see other help pages. "<tt>help me
 more</tt>" returns a brief summary of everything in this manual
 chapter. "<tt>help hilfe todo</tt>" shows the items in the bug section
-below. "<tt>help about hilfe</tt>" show the Hilfe CVS id string and
-some other version information. In addition to these three arguments
-it is also possible to type help follow with the name of any other
-command. That will display the documentation for that command.</p>
+below. "<tt>help about hilfe</tt>" show version information. In
+addition to these three arguments it is also possible to type help
+follow with the name of any other command. That will display the
+documentation for that command.</p>
 
 </subsection>
 

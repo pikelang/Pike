@@ -1,60 +1,60 @@
+<!doctype html>
 <html>
   <head>
-    <title>Pike Reference Manual - $title$</title>
-    <link rel='stylesheet' href='$style$' />
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta charset="utf-8">
+    <title>$title$ - Pike Reference Manual</title>
+    <!-- 221-->
+    <link rel='stylesheet' href='$style$'>
+    <script src='$script$'></script>
+    $constants$
+    $nodynamic$
     $extra_headers$
   </head>
-  <body link="#0768b2" alink="#002040" vlink="#0768b2">
+  <body>
     <header>
-      <div>
-	<div style="text-align:right;">Extracted from $version$ as of $date$.</div>
-	<div style="overflow:hidden;">
-	  <a href="http://pike.lysator.liu.se/"
-	     style="float:left; width:181px; height:41px; margin:10px;
-		    margin-left:22px; margin-right:25px;
-		    background-image:url('$imagedir$pike_logo.gif');"></a>
-	  <div style="margin:10px; height:11px;
-		      margin-top:26px; margin-right:19px;
-		      overflow:hidden;
-		      background-image:url('$imagedir$pike_line_middle.gif');">
-	    <span style="float:left; width:5px; height:11px;
-			 background-image:url('$imagedir$pike_line_left.gif');">&nbsp;</span>
-	    <span style="float:right; width:5px; height:11px;
-			 background-image:url('$imagedir$pike_line_right.gif');">&nbsp;</span>
-	  </div>
-	</div>
+      <div class="header">
+        <div id="version"><strong data-id="version">$version$</strong></div>
+        <div id="burger">&#9776;</div><!-- Hamburger icon -->
+        <h1>
+          <a href="http://pike.lysator.liu.se/" class="logo">
+            <span>Pike programming language</span>
+          </a>
+        </h1>
       </div>
     </header>
-
-    <div>
+    <div id="page">
       <div class="navbar">
-	<nav>
-	  $navbar$
-	</nav>
+        <nav>
+          <div class="inner" id="navbar">
+            $navbar$
+          </div>
+        </nav>
       </div>
-      <div class="navbox">
-	<nav>
-	  <div class="sidebar">
-	    <a href="$prev_url$" class="left"
-	       ><img src="$imagedir$prev.gif" hspace="3"
-		     border="0" alt="previous"
-		     >$prev_title$</a>
-	    <a href="$next_url$" class="right"
-	       >$next_title$<img src="$imagedir$next.gif" hspace="3"
-				 border="0" alt="next"
-				 ></a>
-	  </div>
-	</nav>
-      </div>
-      <div class="contentbox">
-	<article>
-	  <h1>$type$ $title$</h1>
-	  $contents$
-	</article>
-	<footer>
-	  <hr size="1" noshade="1" />
-	</footer>
+      <div class="content">
+        <div class="navbox">
+          <nav>
+            <div class="sidebar">
+              <a href="$prev_url$" class="prev"><span>&#10148;</span> $prev_title$</a>
+              <a href="$next_url$" class="next">$next_title$ <span>&#10148;</span></a>
+            </div>
+          </nav>
+        </div>
+        <div class="contentbox">
+          <article>
+            <h1>$type$ $title$</h1>
+            $contents$
+          </article>
+        </div>
       </div>
     </div>
+    <footer>
+      <div id="build-date">Extracted from <strong data-id="version">$version$</strong> as of <strong data-id="date" data-timestamp="$generated$">$date$</strong>.</div>
+    </footer>
+    $extra_footer$
+    <script>
+      // Tell PikeDoc that next actions are from loaded scripts
+      PikeDoc.isInline = false;
+    </script>
   </body>
 </html>
