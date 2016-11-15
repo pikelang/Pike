@@ -2162,15 +2162,20 @@ PIKECLASS RandomInterface
      summarized as "throw away attempts that are too large". */
   static INT_TYPE read_int(INT_TYPE limit)
   {
-    if(limit <= 1) return 0;
-    int bits = my_log2(limit-1)+1;
-    UINT64 mask = (((UINT64)1)<<bits)-1;
+    int bits;
+    UINT64 mask;
     int i;
+
+    if(limit <= 1) return 0;
+
+    bits = my_log2(limit-1)+1;
+    mask = (((UINT64)1)<<bits)-1;
     for(i=0; i<1000; i++)
     {
+      INT_TYPE ret;
       if(THIS->buffer_bits < bits)
         fill_int_buffer();
-      INT_TYPE ret = THIS->int_buffer&mask;
+      ret = THIS->int_buffer & mask;
       THIS->int_buffer >>= bits;
       THIS->buffer_bits -= bits;
       if( ret < limit )
@@ -2286,9 +2291,12 @@ PIKECLASS RandomInterface
   PIKEFUN mixed random(object o)
   {
     int f = low_find_lfun(o->prog, LFUN__RANDOM);
+    struct object *co;
+
     if (f < 0)
       Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
-    struct object *co = Pike_fp->current_object;
+
+    co = Pike_fp->current_object;
     ref_push_function(co, f_RandomInterface_random_string_fun_num);
     /* FIXME: precompiler doesn't generate usable fun_nums for variant
        symbols. */
@@ -2343,6 +2351,9 @@ PIKECLASS RandomSystem
    */
   PIKEFUN string(8bit) random_string(int(0..) len)
   {
+    struct pike_string *ret;
+    char *str;
+
     if( !len )
       RETURN empty_pike_string;
     if( len<0 )
@@ -2356,8 +2367,9 @@ PIKECLASS RandomSystem
         Pike_error("Failed to set up Crypto Service.\n");
     }
 
-    struct pike_string *ret = begin_shared_string(len);
-    if( !CryptGenRandom(crypto_handle, len, (BYTE*)ret->str) )
+    ret = begin_shared_string(len);
+    str = ret->str;
+    if( !CryptGenRandom(crypto_handle, len, (BYTE*)str) )
     {
       do_free_unlinked_pike_string (ret);
       Pike_error("Failed to create random data.\n");
@@ -2372,8 +2384,8 @@ PIKECLASS RandomSystem
       }
     }
 
-    struct pike_string *ret = begin_shared_string(len);
-    char* str = ret->str;
+    ret = begin_shared_string(len);
+    str = ret->str;
     while( len )
     {
       int sz = read(random_fd, str, len);
