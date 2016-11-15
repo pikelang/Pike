@@ -44,40 +44,6 @@ private constant defaultheaders = ([
   "Accept-Encoding" : "gzip"
 ]);
 
-private array sprintftype(string key, mixed type) {
-  string rkey;
-  sscanf(key, "%s:%s", key, rkey);
-  if (rkey) {
-    if (arrayp(type))
-      type = "string";
-    if (stringp(type)) {
-      switch (type) {
-        case "dateTime":
-        case "string":
-        case "boolean":
-          type = "%s";
-          break;
-        case "int":
-          type = "%d";
-          break;
-        case "decimal":
-        case "double":
-          type = "%f";
-          break;
-        default:
-          type = "%{"+type+"}";
-          break;
-      }
-      type = ({sprintf("<%s:%%s>%s</%s:%%s>", key, type, key)});
-      key = rkey;
-    } else if (mappingp(type)) {
-      type["/"] = key;
-      key = rkey;
-    }
-  }
-  return ({key, type});
-}
-
 private mapping(string:mixed) xml2map(object n) {
   return low_xml2map(n)[1];
 }
@@ -399,6 +365,42 @@ class Client {
 
     mapping(string:multiset) visited = ([]);
     array|mapping repltypes(array|mapping f) {
+
+      array sprintftype(string key, mixed type) {
+        string rkey;
+        sscanf(key, "%s:%s", key, rkey);
+        type = repltypes(type);
+        if (rkey) {
+          if (arrayp(type))
+            type = "string";
+          if (stringp(type)) {
+            switch (type) {
+              case "dateTime":
+              case "string":
+              case "boolean":
+                type = "%s";
+                break;
+              case "int":
+                type = "%d";
+                break;
+              case "decimal":
+              case "double":
+                type = "%f";
+                break;
+              default:
+                type = "%{"+type+"}";
+                break;
+            }
+            type = ({sprintf("<%s:%%s>%s</%s:%%s>", key, type, key)});
+            key = rkey;
+          } else if (mappingp(type)) {
+            type["/"] = key;
+            key = rkey;
+          }
+        }
+        return ({key, type});
+      }
+
       if (arrayp(f) && sizeof(f) == 2
        && stringp(f[0]) && stringp(f[1])) {
         mapping sub = types[f[0]];
@@ -421,7 +423,8 @@ class Client {
                 res = nm;
               }
               string typ = sub["/type"];
-              res = sprintftype(ns+var, repltypes(res));
+              res = sprintftype(ns+var, res);
+              vis[var] = 0;
               f = typ && typ == "complex" ? res[1] : ([res[0]:res[1]]);
             }
           }
@@ -430,7 +433,7 @@ class Client {
       } else
         foreach (f; string key; mixed res)
           if (mappingp(res) || arrayp(res) && !has_prefix(key, "/")) {
-            res = sprintftype(key, repltypes(res));
+            res = sprintftype(key, res);
             if (mappingp(f))
               m_delete(f, key);
             f[res[0]] = res[1];
