@@ -20,7 +20,7 @@ static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t en
     const int validate = !(state->flags&JSON_VALIDATE);
     p_wchar2 unicode = 0;
 
-
+    
 #line 25 "json_string_utf8.c"
 static const int JSON_string_start = 1;
 static const int JSON_string_first_final = 21;
@@ -37,14 +37,14 @@ static const int JSON_string_en_main_hex1 = 15;
 	SET_ONERROR(handle, free_string_builder, &s);
     }
 
-
+    
 #line 42 "json_string_utf8.c"
 	{
 	cs = JSON_string_start;
 	}
 
 #line 151 "rl/json_string_utf8.rl"
-
+    
 #line 49 "json_string_utf8.c"
 	{
 	if ( p == pe )
@@ -169,8 +169,8 @@ tr20:
 	{ unicode |= (p_wchar2)((*p) & (0xbf-0x80)); }
 #line 106 "rl/json_string_utf8.rl"
 	{
-	if (validate) {
-	    string_builder_putchar(&s, unicode);
+	if (validate) { 
+	    string_builder_putchar(&s, unicode); 
 	}
     }
 #line 74 "rl/json_string_utf8.rl"
@@ -178,16 +178,16 @@ tr20:
 	goto st3;
 tr22:
 #line 88 "rl/json_string_utf8.rl"
-	{
+	{ 
 	unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 	if ((unicode < 0x0800 || unicode > 0xd7ff) && (unicode < 0xe000 || unicode > 0xffff)) {
-	    goto failure;
+	    goto failure;	
 	}
     }
 #line 106 "rl/json_string_utf8.rl"
 	{
-	if (validate) {
-	    string_builder_putchar(&s, unicode);
+	if (validate) { 
+	    string_builder_putchar(&s, unicode); 
 	}
     }
 #line 74 "rl/json_string_utf8.rl"
@@ -195,7 +195,7 @@ tr22:
 	goto st3;
 tr25:
 #line 99 "rl/json_string_utf8.rl"
-	{
+	{ 
 	unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 	if (unicode < 0x010000 || unicode > 0x10ffff) {
 	    goto failure;
@@ -203,8 +203,8 @@ tr25:
     }
 #line 106 "rl/json_string_utf8.rl"
 	{
-	if (validate) {
-	    string_builder_putchar(&s, unicode);
+	if (validate) { 
+	    string_builder_putchar(&s, unicode); 
 	}
     }
 #line 74 "rl/json_string_utf8.rl"
@@ -624,27 +624,27 @@ case 20:
 		goto tr31;
 	goto st0;
 	}
-	_test_eof1: cs = 1; goto _test_eof;
-	_test_eof2: cs = 2; goto _test_eof;
-	_test_eof3: cs = 3; goto _test_eof;
-	_test_eof21: cs = 21; goto _test_eof;
-	_test_eof4: cs = 4; goto _test_eof;
-	_test_eof5: cs = 5; goto _test_eof;
-	_test_eof6: cs = 6; goto _test_eof;
-	_test_eof7: cs = 7; goto _test_eof;
-	_test_eof8: cs = 8; goto _test_eof;
-	_test_eof9: cs = 9; goto _test_eof;
-	_test_eof10: cs = 10; goto _test_eof;
-	_test_eof11: cs = 11; goto _test_eof;
-	_test_eof12: cs = 12; goto _test_eof;
-	_test_eof13: cs = 13; goto _test_eof;
-	_test_eof14: cs = 14; goto _test_eof;
-	_test_eof15: cs = 15; goto _test_eof;
-	_test_eof16: cs = 16; goto _test_eof;
-	_test_eof17: cs = 17; goto _test_eof;
-	_test_eof18: cs = 18; goto _test_eof;
-	_test_eof19: cs = 19; goto _test_eof;
-	_test_eof20: cs = 20; goto _test_eof;
+	_test_eof1: cs = 1; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof21: cs = 21; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof11: cs = 11; goto _test_eof; 
+	_test_eof12: cs = 12; goto _test_eof; 
+	_test_eof13: cs = 13; goto _test_eof; 
+	_test_eof14: cs = 14; goto _test_eof; 
+	_test_eof15: cs = 15; goto _test_eof; 
+	_test_eof16: cs = 16; goto _test_eof; 
+	_test_eof17: cs = 17; goto _test_eof; 
+	_test_eof18: cs = 18; goto _test_eof; 
+	_test_eof19: cs = 19; goto _test_eof; 
+	_test_eof20: cs = 20; goto _test_eof; 
 
 	_test_eof: {}
 	_out: {}

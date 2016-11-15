@@ -16,7 +16,7 @@ static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     ONERROR handle;
     const int validate = !(state->flags&JSON_VALIDATE);
 
-
+    
 #line 21 "json_string.c"
 static const int JSON_string_start = 1;
 static const int JSON_string_first_final = 15;
@@ -33,14 +33,14 @@ static const int JSON_string_en_main_hex1 = 9;
 	SET_ONERROR (handle, free_string_builder, &s);
     }
 
-
+    
 #line 38 "json_string.c"
 	{
 	cs = JSON_string_start;
 	}
 
 #line 116 "rl/json_string.rl"
-
+    
 #line 45 "json_string.c"
 	{
 	if ( p == pe )
@@ -91,7 +91,7 @@ case 2:
 		case 34: goto tr3;
 		case 92: goto tr4;
 	}
-	if ( ( ((int)INDEX_PCHARP(str, p))) > 55159 ) {
+	if ( ( ((int)INDEX_PCHARP(str, p))) > 55295 ) {
 		if ( 57344 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 1114111 )
 			goto tr2;
 	} else if ( ( ((int)INDEX_PCHARP(str, p))) >= 32 )
@@ -177,7 +177,7 @@ case 3:
 		case 34: goto tr6;
 		case 92: goto tr7;
 	}
-	if ( ( ((int)INDEX_PCHARP(str, p))) > 55159 ) {
+	if ( ( ((int)INDEX_PCHARP(str, p))) > 55295 ) {
 		if ( 57344 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 1114111 )
 			goto st3;
 	} else if ( ( ((int)INDEX_PCHARP(str, p))) >= 32 )
@@ -418,21 +418,21 @@ case 14:
 		goto tr19;
 	goto st0;
 	}
-	_test_eof1: cs = 1; goto _test_eof;
-	_test_eof2: cs = 2; goto _test_eof;
-	_test_eof3: cs = 3; goto _test_eof;
-	_test_eof15: cs = 15; goto _test_eof;
-	_test_eof4: cs = 4; goto _test_eof;
-	_test_eof5: cs = 5; goto _test_eof;
-	_test_eof6: cs = 6; goto _test_eof;
-	_test_eof7: cs = 7; goto _test_eof;
-	_test_eof8: cs = 8; goto _test_eof;
-	_test_eof9: cs = 9; goto _test_eof;
-	_test_eof10: cs = 10; goto _test_eof;
-	_test_eof11: cs = 11; goto _test_eof;
-	_test_eof12: cs = 12; goto _test_eof;
-	_test_eof13: cs = 13; goto _test_eof;
-	_test_eof14: cs = 14; goto _test_eof;
+	_test_eof1: cs = 1; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof; 
+	_test_eof3: cs = 3; goto _test_eof; 
+	_test_eof15: cs = 15; goto _test_eof; 
+	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof5: cs = 5; goto _test_eof; 
+	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof7: cs = 7; goto _test_eof; 
+	_test_eof8: cs = 8; goto _test_eof; 
+	_test_eof9: cs = 9; goto _test_eof; 
+	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof11: cs = 11; goto _test_eof; 
+	_test_eof12: cs = 12; goto _test_eof; 
+	_test_eof13: cs = 13; goto _test_eof; 
+	_test_eof14: cs = 14; goto _test_eof; 
 
 	_test_eof: {}
 	_out: {}
