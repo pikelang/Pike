@@ -72,6 +72,8 @@ test_eval_error(Standards.JSON.encode("\x0123456"))
 test_dec_enc_string(\u2027\\u2028\\u2029\u2030, \u2027\u2028\u2029\u2030)
 test_dec_enc_string(foo\\ud834\\udd1ebar, foo\U0001d11ebar,
 		    Standards.JSON.ASCII_ONLY)
+test_dec_enc_string(\ud7ff, \ud7ff)
+test_dec_enc_string(\ue000, \ue000)
 test_dec_error("\"\U00110000\"", 1)
 test_dec_error("\"\\ud800\"", 7)
 test_dec_error("\"\\ud800\\ud834\\udd1e\"", 12)

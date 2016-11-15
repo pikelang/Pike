@@ -91,7 +91,7 @@ case 2:
 		case 34: goto tr3;
 		case 92: goto tr4;
 	}
-	if ( ( ((int)INDEX_PCHARP(str, p))) > 55159 ) {
+	if ( ( ((int)INDEX_PCHARP(str, p))) > 55295 ) {
 		if ( 57344 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 1114111 )
 			goto tr2;
 	} else if ( ( ((int)INDEX_PCHARP(str, p))) >= 32 )
@@ -177,7 +177,7 @@ case 3:
 		case 34: goto tr6;
 		case 92: goto tr7;
 	}
-	if ( ( ((int)INDEX_PCHARP(str, p))) > 55159 ) {
+	if ( ( ((int)INDEX_PCHARP(str, p))) > 55295 ) {
 		if ( 57344 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 1114111 )
 			goto st3;
 	} else if ( ( ((int)INDEX_PCHARP(str, p))) >= 32 )
