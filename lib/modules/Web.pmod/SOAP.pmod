@@ -84,7 +84,10 @@ private array low_xml2map(object n) {
       mixed v = ret[text = r[0]];
       r = r[1];
       if (!sizeof(text))
-        ret = r;
+        if (sizeof(ret))
+          ret[""] = r;
+        else
+          ret = r;
       else if (arrayp(v))
         ret[text] += ({r});
       else
