@@ -408,10 +408,10 @@ class Base
   //!  An error if the access token request fails.
   //!
   //! @param oauth_token_uri
-  //!  An URI received from @[get_auth_url()].
+  //!  An URI received from @[get_auth_uri()].
   //!
   //! @param code
-  //!  The code returned from the authorization page via @[get_auth_url()].
+  //!  The code returned from the authorization page via @[get_auth_uri()].
   //!
   //! @param async_cb
   //!  If given an async request will be made and this function will
@@ -884,7 +884,7 @@ class Client
   //!  An error if the access token request fails.
   //!
   //! @param code
-  //!  The code returned from the authorization page via @[get_auth_url()].
+  //!  The code returned from the authorization page via @[get_auth_uri()].
   //!
   //! @param async_cb
   //!  If given an async request will be made and this function will
