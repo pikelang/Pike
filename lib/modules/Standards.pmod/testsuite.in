@@ -128,6 +128,8 @@ test_eq(Standards.URI("HTTP://WWW.COM/")->scheme, "http")
 // test `==
 test_true(Standards.URI("a://b:c@d:1/e?f=g&h")==
           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_true(Standards.URI("a://b:c@d:1/e?f=g&h#i")==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
 test_true(Standards.URI("A://b:c@D:01/e?f=g&h")==
           Standards.URI("a://b:c@d:1/e?f=g&h"))
 test_false(Standards.URI("x://b:c@d:1/e?f=g&h")==
@@ -144,10 +146,13 @@ test_false(Standards.URI("a://b:c@d:1/x?f=g&h")==
            Standards.URI("a://b:c@d:1/e?f=g&h"))
 test_false(Standards.URI("a://b:c@d:1/e?x=g&h")==
            Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/e?f=g&h#i")==
+	   Standards.URI("a://b:c@d:1/e?f=g&h#I"))
 // codec
-test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h")))==
-          Standards.URI("a://b:c@d:1/e?f=g&h"))
-
+test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h#i")))==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
+test_true(Standards.URI(Standards.URI("a://b:c@d:1/e?f=g&h#i"))==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
 
 test_eval_error(Standards.URI(""))
 test_eval_error(Standards.URI("#foo"))
