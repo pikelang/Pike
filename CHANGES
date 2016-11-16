@@ -298,6 +298,11 @@ o Testsuite
 
   Updated the SHA3_* testvectors to FIPS 202.
 
+o JSON
+
+  Fixed a bug in the unicode handling of Standards.JSON.decode(), which
+  treated codepoints slightly below the surrogate range as invalid.
+
 
 Building and installing
 -----------------------
