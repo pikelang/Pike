@@ -679,8 +679,8 @@ class File
   //!   Extra arguments to pass to @[callback].
   //!
   //! @returns
-  //!   Returns @expr{0@} on failure, and @expr{1@} if @[callback]
-  //!   will be used.
+  //!   Returns @expr{0@} on failure to open a socket, and @expr{1@}
+  //!   if @[callback] will be used.
   //!
   //! @note
   //!   The socket may be opened with @[open_socket()] ahead of
