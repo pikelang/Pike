@@ -1583,16 +1583,16 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *! The purpose of sscanf is to match a string @[data] against a @[format]
  *! string and place the matching results into a list of variables. The list
  *! of @[lvalues] are destructively modified (which is only possible because
- *! sscanf really is an opcode, rather than a pike function) with the values
+ *! sscanf really is a special form, rather than a pike function) with the values
  *! extracted from the @[data] according to the @[format] specification. Only
  *! the variables up to the last matching directive of the format string are
  *! touched.
  *!
- *! The @[format] string can contain strings separated by special matching
+ *! The @[format] string may contain strings separated by special matching
  *! directives like @tt{%d@}, @tt{%s@} @tt{%c@} and @tt{%f@}. Every such
- *! directive corresponds to one of the @[lvalues], in order they are listed.
+ *! directive corresponds to one of the @[lvalues], in the order they are listed.
  *! An lvalue is the name of a variable, a name of a local variable, an index
- *! in an array, mapping or object. It is because of these lvalues that sscanf
+ *! into an array, mapping or object. It is because of these lvalues that sscanf
  *! can not be implemented as a normal function.
  *!
  *! Whenever a percent character is found in the format string, a match is
@@ -1609,7 +1609,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     Reads a hexadecimal integer (@expr{"0101"@} makes @expr{257@}).
  *!   @value "%D"
  *!     Reads an integer that is either octal (leading zero),
- *!     hexadecimal (leading 0x) or decimal. (@expr{"0101"@} makes
+ *!     hexadecimal (leading @expr{0x@}) or decimal. (@expr{"0101"@} makes
  *!     @expr{65@}).
  *!   @value "%c"
  *!     Reads one character and returns it as an integer
@@ -1617,7 +1617,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     @expr{"101"@} for later directives). Using the field width and
  *!     endianness modifiers, you can decode integers of any size and
  *!     endianness. For example @expr{"%-2c"@} decodes @expr{"0101"@}
- *!     into @expr{12592@}, leaving @expr{"01"@} fot later directives.
+ *!     into @expr{12592@}, leaving @expr{"01"@} for later directives.
  *!     The sign modifiers can be used to modify the signature of the
  *!     data, making @expr{"%+1c"@} decode @expr{"ä"@} into
  *!     @expr{-28@}.
@@ -1650,7 +1650,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     Matches a string containing a given set of characters (those given
  *!     inside the brackets). Ranges of characters can be defined by using
  *!     a minus character between the first and the last character to be
- *!     included in the range. Example: %[0-9H] means any number or 'H'.
+ *!     included in the range. Example: @expr{%[0-9H]@} means any number or 'H'.
  *!     Note that sets that includes the character '-' must have it first
  *!     (not possible in complemented sets, see below) or last in the brackets
  *!     to avoid having a range defined. Sets including the character ']' must
@@ -1712,6 +1712,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *! were not matched will not be changed.
  *!
  *! @example
+ *! @code
  *! // a will be assigned "oo" and 1 will be returned
  *! sscanf("foo", "f%s", a);
  *!
@@ -1732,6 +1733,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *! // another reason for sscanf not to be an ordinary function:
  *!
  *! sscanf("abc def", "%s %s", string a, string b);
+ *! @endcode
  *!
  *! @returns
  *!   The number of directives matched in the format string. Note that a string
