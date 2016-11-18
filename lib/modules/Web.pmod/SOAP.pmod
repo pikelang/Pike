@@ -109,7 +109,7 @@ final Concurrent.Future Promise(string wsdlurl, void|mapping headers) {
   return Protocols.HTTP.Promise.get_url(wsdlurl,
    Protocols.HTTP.Promise.Arguments(([
     "headers":headers,
-   ]))).then(Client);
+   ]))).map(Client);
 }
 
 //!
@@ -259,7 +259,7 @@ class Client {
      Protocols.HTTP.Promise.Arguments(([
       "headers":h,
       "data":body,
-     ]))).then(lambda(Protocols.HTTP.Promise.Success resp) {
+     ]))).map(lambda(Protocols.HTTP.Promise.Success resp) {
       string res = resp->data;
       if (resp->content_encoding == "gzip")
         res = Gz.uncompress(res[10..<8], true);
