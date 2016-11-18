@@ -305,7 +305,7 @@ class Future
   //!   @[on_success()], @[Promise.success()]
   //!   @[on_failure()], @[Promise.failure()]
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  inline this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
+  this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
    void|function(mixed, mixed ... : mixed) onrejected,
    mixed ... extra) {
     Promise p = Promise();
@@ -518,10 +518,14 @@ protected class FirstCompleted
 //!
 //! @seealso
 //!   @[race()]
-Future first_completed(array(Future) futures)
+variant Future first_completed(array(Future) futures)
 {
   Promise p = FirstCompleted(futures);
   return p->future();
+}
+variant inline Future first_completed(Future ... futures)
+{
+  return first_completed(futures);
 }
 
 //! JavaScript Promise API equivalent of @[first_completed()].
@@ -529,7 +533,11 @@ Future first_completed(array(Future) futures)
 //! @seealso
 //!   @[first_completed()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-inline Future race(array(Future) futures)
+variant inline Future race(array(Future) futures)
+{
+  return first_completed(futures);
+}
+variant inline Future race(Future ... futures)
 {
   return first_completed(futures);
 }
@@ -576,10 +584,14 @@ protected class Results
 //!
 //! @seealso
 //!   @[all()]
-Future results(array(Future) futures)
+variant Future results(array(Future) futures)
 {
   Promise p = Results(futures);
   return p->future();
+}
+inline variant Future results(Future ... futures)
+{
+  return results(futures);
 }
 
 //! JavaScript Promise API equivalent of @[results()].
@@ -606,7 +618,7 @@ Future reject(mixed reason)
 {
   object p = Promise();
   p->failure(reason);
-  return p;
+  return p->future();
 }
 
 //! @returns
@@ -626,7 +638,7 @@ Future resolve(mixed value)
     return value;
   object p = Promise();
   p->success(value);
-  return p;
+  return p->future();
 }
 
 //! Return a @[Future] that represents the array of mapping @[fun]
