@@ -13,3 +13,5 @@ constant DESTRUCT_CLEANUP = __builtin.DESTRUCT_CLEANUP;
 //! @[Object.DESTRUCT_CLEANUP] is @expr{1@} for compatibility.
 
 constant secure = __builtin.object_secure;
+
+constant variablep = object_variablep;
