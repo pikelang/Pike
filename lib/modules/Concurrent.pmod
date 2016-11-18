@@ -279,6 +279,9 @@ class Future
     return results(({ this_program::this }) + others);
   }
 
+  //! JavaScript Promise API close but not identical equivalent
+  //! of @[transform()].
+  //!
   //! @param onfulfilled
   //!   Function to be called on fulfillment. The first argument will be the
   //!   result of @b{this@} @[Future].
@@ -298,26 +301,27 @@ class Future
   //! The new @[Future].
   //!
   //! @seealso
-  //!   @[thencatch()]
+  //!   @[transform()], @[thencatch()]
   //!   @[on_success()], @[Promise.success()]
   //!   @[on_failure()], @[Promise.failure()]
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
+  inline this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
    void|function(mixed, mixed ... : mixed) onrejected,
-   mixed ... extra)
-  {
+   mixed ... extra) {
     Promise p = Promise();
-    void wrapsuccess() {
-      p->success(onfulfilled(result, @extra));
-    }
-    void wrapfailure() {
-      p->failure(onrejected(result, @extra));
-    }
-    on_success(onfulfilled ? wrapsuccess : p->success);
-    on_failure(onrejected  ? wrapfailure : p->failure);
+    if (onfulfilled)
+      on_success(apply, p, onfulfilled, extra);
+    else
+      on_success(p->success);
+    if (onrejected)
+      on_failure(apply, p, onrejected, extra);
+    else
+      on_failure(p->failure);
     return p->future();
   }
 
+  //! JavaScript Promise API equivalent of @[recover()].
+  //!
   //! @param onrejected
   //!   Function to be called. The first argument will be the
   //!   failure result of @b{this@} @[Future].
@@ -332,11 +336,11 @@ class Future
   //! The new @[Future].
   //!
   //! @seealso
-  //!   @[then()], @[on_failure()], @[Promise.failure()]
+  //!   @[recover()], @[then()], @[on_failure()], @[Promise.failure()]
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  this_program thencatch(function(mixed, mixed ... : mixed) onrejected,
+  inline this_program thencatch(function(mixed, mixed ... : mixed) onrejected,
    mixed ... extra) {
-    return then(0, onrejected, @extra);
+    return recover(onrejected, @extra);
   }
 
   //! Return a @[Future] that will either be fulfilled with the fulfilled
@@ -520,7 +524,7 @@ Future first_completed(array(Future) futures)
   return p->future();
 }
 
-//! JavaScript Promise API equivalent of @[first_completed].
+//! JavaScript Promise API equivalent of @[first_completed()].
 //!
 //! @seealso
 //!   @[first_completed()]
@@ -583,7 +587,11 @@ Future results(array(Future) futures)
 //! @seealso
 //!   @[results()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-inline Future all(array(Future) futures)
+inline variant Future all(array(Future) futures)
+{
+  return results(futures);
+}
+inline variant Future all(Future ... futures)
 {
   return results(futures);
 }
@@ -604,7 +612,7 @@ Future reject(mixed reason)
 //! @returns
 //! A new @[Future] that has already been fulfilled with @expr{value@}
 //! as result.  If @expr{value@} is an object which already
-//! has @[failure] and @[success] methods, return it unchanged.
+//! has @[on_failure] and @[on_success] methods, return it unchanged.
 //!
 //! @note
 //! This function can be used to ensure values are futures.
@@ -614,7 +622,7 @@ Future reject(mixed reason)
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 Future resolve(mixed value)
 {
-  if (objectp(value) && functionp(value->failure) && functionp(value->success))
+  if (objectp(value) && value->on_failure && value->on_success)
     return value;
   object p = Promise();
   p->success(value);
