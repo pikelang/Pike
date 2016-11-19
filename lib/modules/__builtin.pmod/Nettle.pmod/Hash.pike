@@ -79,7 +79,10 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
 
 //! @module HMAC
 //!
-//! HMAC (Hashing for Message Authenticity Control) for the hash algorithm.
+//! HMAC (Hashing for Message Authenticity Control) for the hash
+//! algorithm. Typically used as
+//! e.g. @expr{Crypto.SHA256.HMAC(key)(data)@} or
+//! @expr{Crypto.SHA256(key)->update(data)->update(more_data)->digest()@}.
 //!
 //! @rfc{2104@}.
 //!
