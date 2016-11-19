@@ -520,6 +520,7 @@ void f_load_module(INT32 args)
 		mp->name->str, module_name->str);
 	pop_n_elems(args);
 	ref_push_program(mp->module_prog);
+	END_CYCLIC();
 	return;
       }
   }
