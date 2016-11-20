@@ -77,21 +77,21 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
   error("Incompatible object\n");
 }
 
+//! JWS algorithm id (if any) for the HMAC sub-module.
+//! Overloaded by the actual implementations.
+protected constant hmac_jwa_id = "";
+
 //! @module HMAC
 //!
 //! HMAC (Hashing for Message Authenticity Control) for the hash
 //! algorithm. Typically used as
 //! e.g. @expr{Crypto.SHA256.HMAC(key)(data)@} or
-//! @expr{Crypto.SHA256(key)->update(data)->update(more_data)->digest()@}.
+//! @expr{Crypto.SHA256.HMAC(key)->update(data)->update(more_data)->digest()@}.
 //!
 //! @rfc{2104@}.
 //!
 //! @seealso
 //!   @[Crypto.HMAC]
-
-//! JWS algorithm id (if any) for the HMAC sub-module.
-//! Overloaded by the actual implementations.
-protected constant hmac_jwa_id = "";
 
 //! @ignore
 private class _HMAC
