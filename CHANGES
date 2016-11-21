@@ -1,3 +1,7 @@
+Changes since Pike 8.0.358 (release 5)
+----------------------------------------------------------------------
+
+
 Changes since Pike 8.0.276 (release 4)
 ----------------------------------------------------------------------
 
@@ -113,10 +117,6 @@ o Mappings
   Multiple optimizations in m_delete() and friends.
 
   Added flag MAPPING_FLAG_NO_SHRINK.
-
-o Calendar
-
-  Updated timezone data to tzdata2016h.
 
 Building
 --------
