@@ -106,16 +106,39 @@ o String.trim_all_whites() renamed String.trim().
 New modules
 -----------
 
-o ADT.Scheduler
-o ADT.TreeScheduler
+o ADT.Scheduler & ADT.TreeScheduler
+
+  These are variants of ADT.Heap where elements typically aren't
+  removed from the heap.
+
 o Apple.Keychain
+
+  Parser for Apple Keychain format files (like the ones in
+  /System/Library/Keychains/).
+
 o __builtin.Sql
+
+  Generic base classes for Sql API modules.
+
 o CompilerEnvironment()->lock()
+
+  Access to the compiler lock.
+
 o Crypto.ECC.Curve.Point
+
+  A point on an ECC curve.
+
 o Filesystem.Zip
 o Function.bind()
+
+  Partially evaluate a function. Similar to Function.curry, but with
+  better granularity.
+
 o Standards.HPack (RFC 7541)
 o Stdio.FakePipe
+
+  A simulated Stdio.Pipe.
+
 o Parser.Markdown
 
 o Concurrent.Future and Concurrent.Promise
