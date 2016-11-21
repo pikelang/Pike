@@ -562,55 +562,61 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     {									\
       really_free_pike_frame(_fp_);					\
     }else{								\
-      ptrdiff_t num_expendible = _fp_->expendible_offset;               \
+      ptrdiff_t exp_offset = _fp_->expendible_offset;                   \
       DO_IF_DEBUG(							\
 	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
 	    (Pike_sp < _fp_->locals + _fp_->expendible_offset) ||	\
-	    (num_expendible < 0) || (num_expendible > _fp_->num_locals)) \
+	    (exp_offset < 0) || (exp_offset > _fp_->num_locals))        \
 	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %hd!\n", \
 		     _fp_->locals, _fp_->num_locals,			\
 		     _fp_->locals+_fp_->num_locals,			\
 		     Pike_sp,_fp_->expendible_offset));		        \
       debug_malloc_touch(_fp_);						\
-      if (_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                       \
-        /* We need to save the locals indicated by save_locals_bitmask, \
-           but we can ignore/discard the rest. */                       \
-        ptrdiff_t offset;                                               \
+      if (exp_offset || (_fp_->flags & PIKE_FRAME_SAVE_LOCALS)) {       \
         struct svalue *locals = _fp_->locals;                           \
-        INT16 num_locals = _fp_->num_locals;                            \
-        INT16 num_entries = (num_locals >> 4) + 1;                      \
-	struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-						 _fp_->num_locals);	\
-        for (offset = 0; offset < num_entries; offset++) {              \
-          unsigned INT16 entry = *(_fp_->save_locals_bitmask + offset); \
-          int idx;                                                      \
-          if (!entry) continue;                                         \
+        struct svalue *s;                                               \
+        INT16 num_new_locals = 0;                                       \
+        unsigned int num_bitmask_entries = 0;                           \
+        if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
+          ptrdiff_t offset;                                             \
+          for (offset = 0;                                              \
+               offset < (ptrdiff_t)((_fp_->num_locals >> 4) + 1);       \
+               offset++) {                                              \
+            if (*(_fp_->save_locals_bitmask + offset))                  \
+              num_bitmask_entries = offset + 1;                         \
+          }                                                             \
+        }                                                               \
                                                                         \
-          for (idx = 0; idx < 16; idx++) {                              \
-            int local_var_idx = offset * 16 + idx;                      \
-            if (local_var_idx >= num_locals) {                          \
-              break;                                                    \
+        num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4); \
+                                                                        \
+	s=(struct svalue *)xalloc(sizeof(struct svalue)*                \
+                                  num_new_locals);                      \
+        memset(s, 0, sizeof(struct svalue) * num_new_locals);           \
+                                                                        \
+        {                                                               \
+          int idx;                                                      \
+          unsigned INT16 bitmask;                                       \
+                                                                        \
+          for (idx = 0; idx < num_new_locals; idx++) {                  \
+            if (!(idx % 16)) {                                          \
+              ptrdiff_t offset = (ptrdiff_t)(idx >> 4);                 \
+              if (offset < num_bitmask_entries) {                       \
+                bitmask = *(_fp_->save_locals_bitmask + offset);        \
+              } else {                                                  \
+                bitmask = 0;                                            \
+              }                                                         \
             }                                                           \
-            if (entry & (1 << idx)) {                                   \
-              assign_svalue(s + (ptrdiff_t)local_var_idx,               \
-                            locals + (ptrdiff_t)local_var_idx);         \
-            } else {                                                    \
-              mark_free_svalue(s + (ptrdiff_t)local_var_idx);           \
+            if (bitmask & (1 << (idx % 16)) || idx < exp_offset) {      \
+              assign_svalue_no_free(s + (ptrdiff_t)idx,                 \
+                                    locals + (ptrdiff_t)idx);           \
             }                                                           \
           }                                                             \
         }                                                               \
         _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;                         \
         free(_fp_->save_locals_bitmask);                                \
+	_fp_->num_locals = num_new_locals;                              \
 	_fp_->locals=s;                                                 \
 	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;                        \
-      } else if(num_expendible) {                                       \
-	struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-						 num_expendible);	\
-	_fp_->num_locals = num_expendible;				\
-	assign_svalues_no_free(s, _fp_->locals, num_expendible,		\
-			       BIT_MIXED);				\
-	_fp_->locals=s;							\
-	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;			\
       } else {                                                          \
 	_fp_->locals=0;							\
       }									\
