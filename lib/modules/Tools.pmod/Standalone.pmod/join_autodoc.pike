@@ -12,43 +12,54 @@ mapping sub_cache = ([]);
 
 int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
+#define TOSTR(X)	#X
+#define DEFINETOSTR(X)	TOSTR(X)
+
 protected constant Node = Parser.XML.Tree.SimpleNode;
 protected constant SimpleHeaderNode = Parser.XML.Tree.SimpleHeaderNode;
 protected constant SimpleRootNode = Parser.XML.Tree.SimpleRootNode;
 protected constant SimpleTextNode = Parser.XML.Tree.SimpleTextNode;
 
+class Options
+{
+  inherit Arg.Options;
+
+  constant help_pre =
+    "pike -x join_autodoc <destination.xml> <builddir>\n"
+    "pike -x join_autodoc";
+  constant help_post = "\t<destination.xml> files_to_join.xml [...]\n";
+
+  Opt quiet = NoOpt("-q")|NoOpt("--quiet");
+  Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+  Opt postprocess = NoOpt("--post-process");
+  Opt pikever = HasOpt("--pike-version")|
+    Default(DEFINETOSTR(__MAJOR__) "." DEFINETOSTR(__MINOR__));
+}
+
 int main(int n, array(string) args)
 {
-  int post_process = has_value(args, "--post-process");
-  args -= ({ "--post-process" });
+  Options options = Options(args);
+
+  int post_process = options->post_process;
   Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
-  if (has_value(args, "-q")) {
+  if (options->quiet) {
     // quiet.
     verbosity = 0;
     args -= ({ "-q" });
-  } else if (has_value(args, "--quiet")) {
-    // quiet.
-    verbosity = 0;
-    args -= ({ "--quiet" });
-  } else if (has_value(args, "--verbose")) {
-    args -= ({ "--verbose" });
-    verbosity++;
-  } else if (has_value(args, "-v")) {
-    args -= ({ "-v" });
+  } else if (options->verbose) {
     verbosity++;
   }
 
   flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|verbosity;
 
-  if(has_value(args, "--help") || sizeof(args)<3) {
-    write("pike -x join_autodoc <destination.xml> <builddir>\n");
-    write("pike -x join_autodoc [--post-process] [-q|--quiet] [-v|--verbose]\n"
-	  "     <dest.xml> files_to_join.xml [...]\n");
+  if (options->help) {
     return 1;
   }
 
-  recurse( args[2..], args[1], post_process, flags );
+  args = options[Arg.REST];
+
+  recurse( args[1..], args[0], post_process, flags );
   foreach(values(sub_cache), Node n) {
     n->zap_tree();
   }
