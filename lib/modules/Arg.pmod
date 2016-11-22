@@ -562,19 +562,42 @@ class Options
 
     string s = index("help_pre");
     if( s )
-      write( s+"\n" );
+      write( "%s\n", s );
 
     foreach(opts; string i; Opt opt)
     {
-      write( opt->get_opts()*", " + "\n");
+      string opts = opt->get_opts()*", ";
       s = index(i+"_help");
-      if( s )
-        write( s ); // FIXME: Format
+      if ((sizeof(opts) > 23) || !s) {
+	write( "\t" + opts + "\n");
+	if (s) write("\t\t\t\t");
+      } else if (sizeof(opts) > 15) {
+	write( "\t" + opts + "\t");
+      } else if (sizeof(opts) > 7) {
+	write( "\t" + opts + "\t\t");
+      } else {
+	write( "\t" + opts + "\t\t\t");
+      }
+      if (s) {
+	array(string) lines = s/"\n";
+	foreach(lines, string line) {
+	  if (sizeof(line) <= 46) {
+	    write("%s\n", line);
+	  } else {
+	    line = sprintf("%-46=s", line);
+	    array(string) a = line/"\n";
+	    write("%s\n", a[0]);
+	    foreach(a[1..], string l) {
+	      write("\t\t\t\t%s\n", l);
+	    }
+	  }
+	}
+      }
     }
 
     s = index("help_post");
     if( s )
-      write( "\n"+s );
+      write( "%s\n", s );
   }
 
   protected string index(string i)
@@ -584,8 +607,6 @@ class Options
     if( !stringp(s) ) error("%O is not a string.\n", i);
     if( sizeof(s) )
     {
-      if( s[-1]!='\n' )
-        s += "\n";
       return s;
     }
     return 0;
