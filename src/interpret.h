@@ -79,6 +79,17 @@ struct pike_frame
   struct program *current_program;	/* program containing the context. */
   PIKE_OPCODE_T *return_addr;	        /** Address of opcode to continue at after call. */
 
+  /**
+   * If PIKE_FRAME_SAVE_LOCALS is set, this is a pointer to a bitmask
+   * represented by an array of 16-bit ints. A set bit indicates that
+   * the corresponding local variable is used from a subscope and
+   * needs to be preserved in LOW_POP_PIKE_FRAME. The least
+   * significant bit of the first entry represents the first local
+   * variable and so on. The array is (num_locals >> 4) + 1 entries
+   * (i.e. it will always have enough space to represent all
+   * locals). */
+  unsigned INT16 *save_locals_bitmask;
+
   unsigned INT16 flags;		/** PIKE_FRAME_* */
   /**
    * This tells us the current level of svalues on the stack that can
@@ -134,6 +145,7 @@ static inline void frame_set_expendible(struct pike_frame *frame, struct svalue 
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
 #define PIKE_FRAME_RETURN_POP 2
+#define PIKE_FRAME_SAVE_LOCALS 0x4000 /* save_locals_bitmask is set */
 #define PIKE_FRAME_MALLOCED_LOCALS 0x8000
 
 struct external_variable_context
@@ -550,26 +562,62 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     {									\
       really_free_pike_frame(_fp_);					\
     }else{								\
-      ptrdiff_t num_expendible = _fp_->expendible_offset;               \
+      ptrdiff_t exp_offset = _fp_->expendible_offset;                   \
       DO_IF_DEBUG(							\
 	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
 	    (Pike_sp < _fp_->locals + _fp_->expendible_offset) ||	\
-	    (num_expendible < 0) || (num_expendible > _fp_->num_locals)) \
+	    (exp_offset < 0) || (exp_offset > _fp_->num_locals))        \
 	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %hd!\n", \
 		     _fp_->locals, _fp_->num_locals,			\
 		     _fp_->locals+_fp_->num_locals,			\
 		     Pike_sp,_fp_->expendible_offset));		        \
       debug_malloc_touch(_fp_);						\
-      if(num_expendible)						\
-      {									\
-	struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-						 num_expendible);	\
-	_fp_->num_locals = num_expendible;				\
-	assign_svalues_no_free(s, _fp_->locals, num_expendible,		\
-			       BIT_MIXED);				\
-	_fp_->locals=s;							\
-	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;			\
-      }else{								\
+      if (exp_offset || (_fp_->flags & PIKE_FRAME_SAVE_LOCALS)) {       \
+        struct svalue *locals = _fp_->locals;                           \
+        struct svalue *s;                                               \
+        INT16 num_new_locals = 0;                                       \
+        unsigned int num_bitmask_entries = 0;                           \
+        if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
+          ptrdiff_t offset;                                             \
+          for (offset = 0;                                              \
+               offset < (ptrdiff_t)((_fp_->num_locals >> 4) + 1);       \
+               offset++) {                                              \
+            if (*(_fp_->save_locals_bitmask + offset))                  \
+              num_bitmask_entries = offset + 1;                         \
+          }                                                             \
+        }                                                               \
+                                                                        \
+        num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4); \
+                                                                        \
+	s=(struct svalue *)xalloc(sizeof(struct svalue)*                \
+                                  num_new_locals);                      \
+        memset(s, 0, sizeof(struct svalue) * num_new_locals);           \
+                                                                        \
+        {                                                               \
+          int idx;                                                      \
+          unsigned INT16 bitmask;                                       \
+                                                                        \
+          for (idx = 0; idx < num_new_locals; idx++) {                  \
+            if (!(idx % 16)) {                                          \
+              ptrdiff_t offset = (ptrdiff_t)(idx >> 4);                 \
+              if (offset < num_bitmask_entries) {                       \
+                bitmask = *(_fp_->save_locals_bitmask + offset);        \
+              } else {                                                  \
+                bitmask = 0;                                            \
+              }                                                         \
+            }                                                           \
+            if (bitmask & (1 << (idx % 16)) || idx < exp_offset) {      \
+              assign_svalue_no_free(s + (ptrdiff_t)idx,                 \
+                                    locals + (ptrdiff_t)idx);           \
+            }                                                           \
+          }                                                             \
+        }                                                               \
+        _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;                         \
+        free(_fp_->save_locals_bitmask);                                \
+	_fp_->num_locals = num_new_locals;                              \
+	_fp_->locals=s;                                                 \
+	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;                        \
+      } else {                                                          \
 	_fp_->locals=0;							\
       }									\
       _fp_->next=0;							\

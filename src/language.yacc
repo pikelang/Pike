@@ -4978,6 +4978,7 @@ static node *lexical_islocal(struct pike_string *str)
 
 	  if(q->min_number_of_locals < e+1)
 	    q->min_number_of_locals = e+1;
+          q->variable[e].flags |= LOCAL_VAR_USED_IN_SCOPE;
 	}
 
 	if(f->variable[e].def) {
