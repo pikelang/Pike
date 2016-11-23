@@ -1,0 +1,425 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include <sass.h>
+
+#include "global.h"
+#include "interpret.h"
+#include "module.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "pike_types.h"
+
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_URL
+#undef PACKAGE_VERSION
+
+DECLARATIONS
+
+/*! @module Tools
+ */
+/*! @module Sass
+ */
+
+// #define SASS_DEBUG
+
+#ifdef SASS_DEBUG
+# define SASS_TRACE(X...) printf ("# " X)
+#else
+# define SASS_TRACE(X...) 0
+#endif
+
+typedef struct sass_opts {
+  int     style;
+  char*   include_path;
+  long    precision;
+  bool    comments;
+  char*   map_path;
+  bool    map_embed;
+} sass_opts;
+
+
+void set_options (sass_opts *opts, struct Sass_Context *ctx)
+{
+  struct Sass_Options *s_opts = sass_context_get_options (ctx);
+
+  sass_option_set_precision (s_opts, opts->precision);
+  sass_option_set_output_style (s_opts, opts->style);
+
+  if (opts->include_path) {
+    sass_option_set_include_path (s_opts, opts->include_path);
+  }
+
+  sass_option_set_source_comments (s_opts, opts->comments);
+
+  // if (opts->comments) {
+  // }
+
+  if (opts->map_path != NULL) {
+    sass_option_set_source_map_file (s_opts, opts->map_path);
+  }
+  else {
+    sass_option_set_source_map_embed (s_opts, opts->map_embed);
+  }
+}
+
+PIKECLASS _Api
+{
+  // CVAR sass_object *sobj;
+  CVAR sass_opts* options;
+
+  /*! @decl void set_include_path(string path)
+   *!
+   *! Set include path of @code{@imports@}
+   *!
+   *! @seealso
+   *!  get_include_path()
+   *!
+   *! @param path
+   */
+  PIKEFUN void set_include_path (string path)
+  {
+    if (path && path->len) {
+      if (access (path->str, F_OK) == -1) {
+        Pike_error ("Include path \"%s\" does not exist!\n", path->str);
+      }
+
+      THIS->options->include_path = strdup (path->str);
+    }
+  }
+
+  /*! @decl string get_include_path()
+   *!
+   *! Get include path of @code{@imports@}
+   *!
+   *! @seealso
+   *!  set_include_path()
+   */
+  PIKEFUN string get_include_path ()
+  {
+    const char* p = THIS->options->include_path;
+
+    if (p) {
+      push_text (p);
+    }
+    else {
+      push_int (0);
+    }
+  }
+
+  /*! @decl void get_output_style(int style)
+   *!
+   *! Set the output style. Default is @[Tools.Sass.STYLE_NESTED]
+   *!
+   *! @seealso
+   *!  @[get_output_style()]
+   *!
+   *! @param style
+   *!  See @[Tools.Sass.STYLE_NESTED], @[Tools.Sass.STYLE_EXPANDED],
+   *!  @[Tools.Sass.STYLE_COMPACT] and @[Tools.Sass.STYLE_COMPRESSED]
+   */
+  PIKEFUN void set_output_style (int style)
+  {
+    THIS->options->style = style;
+  }
+
+  /*! @decl int get_output_style(int style)
+   *!
+   *! Returns the output style.
+   *!
+   *! @seealso
+   *!  @[set_output_style()]
+   */
+  PIKEFUN int get_output_style ()
+  {
+    RETURN (THIS->options->style);
+  }
+
+  /*! @decl void set_source_comments(bool set)
+   *!
+   *! Set whether comments of source line number should be printed in the
+   *! generated CSS or not. Default is @code{false@}.
+   *!
+   *! @seealso
+   *!  @[get_source_comments()]
+   */
+  PIKEFUN void set_source_comments (int(0..1) set)
+  {
+    THIS->options->comments = set;
+  }
+
+  /*! @decl bool get_source_comments()
+   *!
+   *! Getter for @[set_source_comments()].
+   *!
+   *! @seealso
+   *!  @[set_source_comments()]
+   */
+  PIKEFUN int(0..1) get_source_comments ()
+  {
+    RETURN (THIS->options->comments);
+  }
+
+  /*! @decl void set_source_map_file(string path)
+   *!
+   *! Set the path of where to write the source map file. If this isn't set
+   *! no source map will be generated.
+   *!
+   *! @note
+   *!  This only has effect in @[compile_file()].
+   *!
+   *! @seealso
+   *!  @[get_source_map_file()], @[get_source_map_embed()],
+   *!  @[set_source_map_embed()]
+   */
+  PIKEFUN void set_source_map_file (string path)
+  {
+    THIS->options->map_path = strdup (path->str);
+  }
+
+
+  /*! @decl string get_source_map_file()
+   *!
+   *! Returns the path of the source map file.
+   *!
+   *! @seealso
+   *!  @[set_source_map_file()], @[set_source_map_embed()],
+   *!  @[get_source_map_embed()]
+   */
+  PIKEFUN string get_source_map_file ()
+  {
+    const char* f = THIS->options->map_path;
+
+    if (f) {
+      push_text (f);
+    }
+    else {
+      push_int (0);
+    }
+  }
+
+
+  /*! @decl void set_source_map_embed(bool embed)
+   *!
+   *! Should a source map be embedded in the compiled output?
+   *!
+   *! @seealso
+   *!  @[get_source_map_embed()], @[set_source_map_file()],
+   *!  @[get_source_map_file()]
+   *!
+   *! @param embed
+   */
+  PIKEFUN void set_source_map_embed (int(0..1) embed)
+  {
+    THIS->options->map_embed = embed;
+  }
+
+  /*! @decl bool get_source_map_embed()
+   *!
+   *! Will a source map be embedded or not?
+   *!
+   *! @seealso
+   *!  @[set_source_map_embed()], @[set_source_map_file()],
+   *!  @[get_source_map_file()]
+   */
+  PIKEFUN int(0..1) get_source_map_embed ()
+  {
+    RETURN (THIS->options->map_embed);
+  }
+
+
+  /*! @decl void set_precision(int(0..) p)
+   *!
+   *! Set the precision of floating point values
+   *!
+   *! @seealso
+   *!  @[get_precision()]
+   *!
+   *! @param p
+   */
+  PIKEFUN void set_precision (int(0..) p)
+  {
+    THIS->options->precision = p;
+  }
+
+
+  /*! @decl int(0..) get_precision()
+   *!
+   *! Returns the precision of floating point values
+   *!
+   *! @seealso
+   *!  @[set_precision()]
+   */
+  PIKEFUN int(0..) get_precision ()
+  {
+    RETURN (THIS->options->precision);
+  }
+
+
+  /*! @decl void compile_file (string in, string out)
+   *!
+   *! Compile the file @[in] and write it to @[out]
+   *!
+   *! @throws
+   *!  And error is thown if something fails.
+   *!
+   *! @param in
+   *!  The file to compile
+   *! @param out
+   *!  The file to write the output to
+   */
+  PIKEFUN void compile_file (string in, string out)
+  {
+    SASS_TRACE ("compile_file(%s)\n", in->str);
+
+    if (access (in->str, F_OK) == -1) {
+      Pike_error ("Input file \"%s\" does not exist!\n", in->str);
+    }
+
+    struct Sass_File_Context* ctx = sass_make_file_context (strdup (in->str));
+    struct Sass_Context* ctx_out = sass_file_context_get_context (ctx);
+
+    set_options (THIS->options, ctx_out);
+
+    int err = sass_compile_file_context (ctx);
+
+    if (err) {
+      const char* emsg = sass_context_get_error_message (ctx_out);
+      Pike_error ("Sass compile error (code: %d): %s\n",
+                  err, emsg);
+    }
+
+    const char* scss = sass_context_get_output_string (ctx_out);
+
+    FILE* fp;
+    fp = fopen (out->str, "wb");
+
+    if (!fp) {
+      Pike_error ("Error opening output file");
+    }
+
+    if (fprintf (fp, "%s", scss) < 0) {
+      fclose (fp);
+      Pike_error ("Error writing to output file");
+    }
+
+    fclose (fp);
+
+    struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
+
+    if (sass_option_get_source_map_file (s_opts)) {
+      const char* smap = sass_context_get_source_map_string (ctx_out);
+
+      if ((err = sass_context_get_error_status (ctx_out))) {
+        Pike_error ("Failed generating source map (code: %ld): %s",
+                    err, sass_context_get_error_message (ctx_out));
+      }
+
+      fp = fopen (sass_option_get_source_map_file (s_opts), "wb");
+
+      if (!fp) {
+        Pike_error ("Error opening source map file");
+      }
+
+      if (fprintf (fp, "%s", smap) < 0) {
+        fclose (fp);
+        Pike_error ("Error writing to source map file");
+      }
+
+      fclose (fp);
+    }
+
+    sass_delete_file_context (ctx);
+  }
+
+
+  /*! @decl string compile_string(string source)
+   *!
+   *! Compile the string @[source]
+   *!
+   *! @param source
+   *!  The string to compile
+   */
+  PIKEFUN string compile_string (string source)
+  {
+    struct Sass_Data_Context* ctx;
+    ctx = sass_make_data_context (strdup (source->str));
+    struct Sass_Context* ctx_out = sass_data_context_get_context (ctx);
+
+    set_options (THIS->options, ctx_out);
+
+    sass_compile_data_context (ctx);
+
+    int err = sass_context_get_error_status (ctx_out);
+
+    if (err) {
+      Pike_error ("Sass error (code: %ld): %s",
+                  err, sass_context_get_error_message (ctx_out));
+    }
+
+    const char* out = sass_context_get_output_string (ctx_out);
+    push_text (out);
+
+    sass_delete_data_context (ctx);
+  }
+
+  INIT {
+    SASS_TRACE ("INIT Sass._Api\n");
+
+    THIS->options = (sass_opts *) malloc (sizeof (sass_opts));
+    memset (THIS->options, 0, sizeof (sass_opts));
+
+    THIS->options->style = SASS_STYLE_NESTED;
+    THIS->options->include_path = NULL;
+    THIS->options->precision = 5;
+    THIS->options->map_path = NULL;
+    // THIS->options->map_root = NULL;
+    THIS->options->comments = false;
+    THIS->options->map_embed = false;
+    // THIS->options->map_contents = false;
+    // THIS->options->omit_map_url = true;
+  }
+
+  EXIT {
+    SASS_TRACE ("EXIT Sass._Api\n");
+
+    if (THIS->options->include_path != NULL) {
+      free (THIS->options->include_path);
+    }
+
+    if (THIS->options->map_path != NULL) {
+      free (THIS->options->map_path);
+    }
+
+    free (THIS->options);
+  }
+}
+
+PIKE_MODULE_INIT
+{
+  add_string_constant ("LIBSASS_VERSION",   LIBSASS_VERSION, 0);
+
+  add_integer_constant ("STYLE_NESTED",     SASS_STYLE_NESTED,     0);
+  add_integer_constant ("STYLE_EXPANDED",   SASS_STYLE_EXPANDED,   0);
+  add_integer_constant ("STYLE_COMPACT",    SASS_STYLE_COMPACT,    0);
+  add_integer_constant ("STYLE_COMPRESSED", SASS_STYLE_COMPRESSED, 0);
+
+  INIT
+}
+
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+
+/*! @endmodule
+ */
+/*! @endmodule
+ */

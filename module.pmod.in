@@ -1,0 +1,91 @@
+/*
+  Author: Pontus Östlund <https://profiles.google.com/poppanator>
+
+  Permission to copy, modify, and distribute this source for any legal
+  purpose granted as long as my name is still attached to it. More
+  specifically, the GPL, LGPL and MPL licenses apply to this software.
+*/
+
+#pike __REAL_VERSION__
+#require constant(Tools._Sass)
+
+//! @ignore
+inherit Tools@module@;
+//! @endignore
+
+//! SCSS compiler
+class SCSS
+{
+  inherit Tools@module@._Api;
+
+  protected multiset(string) known_opts = (<
+    "output_style", "include_path", "source_map_file", "source_comments",
+    "source_map_embed" >);
+
+  //! Set options to the SASS compiler
+  //!
+  //! @param opts
+  //!  @mapping
+  //!   @member int "output_style"
+  //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
+  //!    or @[STYLE_COMPRESSED] constants. See also @[set_output_style()].
+  //!   @member string "include_path"
+  //!    Path to root of incude files. See also @[set_include_path()].
+  //!   @member string "source_map_file"
+  //!    File to write source map file to. Only has effect in @[compile_file()].
+  //!    See also @[set_source_map_file()].
+  //!   @member bool "source_comments"
+  //!    Turn on/off comments in the output containing info about the source
+  //!    file - line numbers and such. Default of @code{false@}. See also
+  //!    @[set_source_comments()].
+  //!   @member bool "source_map_embed"
+  //!    Turn on/off if a source map should be embedded in the output or not.
+  //!    Default is @code{false@}. See also @[set_source_map_embed()].
+  //!  @endmapping
+  void set_options(mapping(string:string|int) opts)
+  {
+    foreach (opts; string opt; string|int val) {
+      if (!known_opts[opt]) {
+        error("Unknown option %O!\n", opt);
+      }
+
+      switch (opt)
+      {
+        case "output_style":
+          if (!intp(val)) {
+            error("Value to set_output_style() must be an integer!\n");
+          }
+          set_output_style(val);
+          break;
+
+        case "include_path":
+          if (!stringp(val)) {
+            error("Value to set_include_path() must be a string!\n");
+          }
+          set_include_path(val);
+          break;
+
+        case "source_map_file":
+          if (!stringp(val)) {
+            error("Value to set_source_map_file() must be a string!\n");
+          }
+          set_source_map_file(val);
+          break;
+
+        case "source_map_embed":
+          if (!intp(val)) {
+            error("Value to set_source_map_embed() must be an int(0..1)\n");
+          }
+          set_source_map_embed(val);
+          break;
+
+        case "source_comments":
+          if (!intp(val)) {
+            error("Value to set_source_comments() must be an integer!\n");
+          }
+          set_source_comments(val);
+          break;
+      }
+    }
+  }
+}
