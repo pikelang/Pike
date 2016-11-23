@@ -513,53 +513,20 @@ class LowOptions
 
   }
 
-  //!
-  protected int(0..1) unhandled_argument(array(string) argv,
-                                      mapping(string:string) env)
+  protected string index(string i)
   {
+    string s = ::`[](i, this, 0);
+    if( !s ) return 0;
+    if( !stringp(s) ) error("%O is not a string.\n", i);
+    if( sizeof(s) )
+    {
+      return s;
+    }
     return 0;
   }
 
-  //!
-  protected mixed cast(string to)
+  void usage()
   {
-    switch( to )
-    {
-    case "mapping":
-      return values + ([ REST : argv ]);
-    case "array":
-      return argv;
-    }
-    return UNDEFINED;
-  }
-}
-
-//! The option parser class that contains all the argument objects.
-//!
-class Options
-{
-  inherit LowOptions;
-
-  protected mixed `[](mixed id)
-  {
-    if( id==REST ) return argv;
-    if( id==PATH ) return application;
-    if( id==APP )  return basename(application);
-    return values[id];
-  }
-
-  protected mixed `->(string id)
-  {
-    return values[id];
-  }
-
-  //!
-  protected int(0..1)|string unhandled_argument(array(string) argv,
-                                             mapping(string:string) env)
-  {
-    if( !sizeof(argv) || argv[0]!="--help" ) return 0;
-    if(!values->help) values->help=1;
-
     string s = index("help_pre");
     if( s )
       write( "%s\n", s );
@@ -600,16 +567,65 @@ class Options
       write( "%s\n", s );
   }
 
-  protected string index(string i)
+  //!
+  protected int(0..1) unhandled_argument(array(string) argv,
+                                      mapping(string:string) env)
   {
-    string s = ::`[](i, this, 0);
-    if( !s ) return 0;
-    if( !stringp(s) ) error("%O is not a string.\n", i);
-    if( sizeof(s) )
-    {
-      return s;
-    }
     return 0;
+  }
+
+  //!
+  protected mixed cast(string to)
+  {
+    switch( to )
+    {
+    case "mapping":
+      return values + ([ REST : argv ]);
+    case "array":
+      return argv;
+    }
+    return UNDEFINED;
+  }
+}
+
+//! The option parser class that contains all the argument objects.
+//!
+class Options
+{
+  inherit LowOptions;
+
+  //! Options that trigger help output.
+  Opt help = NoOpt("--help");
+  string help_help = "Help about usage.";
+
+  protected void create(array(string) argv, void|mapping(string:string) env)
+  {
+    ::create(argv, env);
+
+    if (values->help) {
+      usage();
+    }
+  }
+
+  protected mixed `[](mixed id)
+  {
+    if( id==REST ) return argv;
+    if( id==PATH ) return application;
+    if( id==APP )  return basename(application);
+    return values[id];
+  }
+
+  protected mixed `->(string id)
+  {
+    return values[id];
+  }
+
+  //!
+  protected int(0..1) unhandled_argument(array(string) argv,
+					 mapping(string:string) env)
+  {
+    if( !sizeof(argv) || argv[0]!="--help" ) return 0;
+    if(!values->help) values->help=1;
   }
 }
 
