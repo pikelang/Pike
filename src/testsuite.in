@@ -6288,7 +6288,7 @@ test_any([[
     return sizeof(q);
   ]],2)
 
-  test_eq([[
+  test_any([[
     int dummy;
     gc();
     function f = lambda() {
@@ -6303,6 +6303,37 @@ test_any([[
     dummy += f();
     return n;
   ]], 0)
+
+  test_any([[
+    // Make sure we don't get trampoline garbage with (named) lambdas
+    // that reference variables in the parent scope.
+    gc();
+    mapping m = ([]);
+    class Refcounter()
+    { mapping state;
+      void create(mapping m) { state = m; state->refs++;}
+      void destroy() {state->refs--;}
+    };
+    int final_res;
+    function foo()
+    {
+      object refc = Refcounter(m);
+      final_res += m->refs; // Should add 1 here.
+      int i = 1;
+      int bar()
+      {
+        return i++;
+      };
+      return bar;
+    };
+    function bar = foo();
+    final_res += m->refs; // Should add 0 here.
+    bar();
+    bar = 0;
+    final_res += m->refs; // Should add 0 here.
+    final_res += gc(); // Should add 0 here.
+    return final_res; // 1 expected.
+  ]], 1)
 
   test_true([[
     class Foo
