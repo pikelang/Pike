@@ -1,0 +1,15 @@
+Makefile
+autom4te*
+configure
+config.cache
+config.log
+config.status
+make_variables
+modlist_segment
+module.pmod
+module.so
+propagated_variables
+sass.c
+*.o
+plib/
+refdoc/
