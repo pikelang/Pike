@@ -13,3 +13,5 @@ sass.c
 *.o
 plib/
 refdoc/
+*.css
+*.map

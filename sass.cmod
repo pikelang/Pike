@@ -42,6 +42,8 @@ typedef struct sass_opts {
   bool    comments;
   char*   map_path;
   bool    map_embed;
+  char*   map_root;
+  bool    omit_map_url;
 } sass_opts;
 
 
@@ -56,16 +58,24 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
     sass_option_set_include_path (s_opts, opts->include_path);
   }
 
+  sass_option_set_omit_source_map_url (s_opts, opts->omit_map_url);
   sass_option_set_source_comments (s_opts, opts->comments);
 
   // if (opts->comments) {
+  //   sass_option_set_omit_source_map_url (s_opts, false);
   // }
 
   if (opts->map_path != NULL) {
     sass_option_set_source_map_file (s_opts, opts->map_path);
+    // sass_option_set_omit_source_map_url (s_opts, false);
+    sass_option_set_source_map_contents (s_opts, true);
   }
   else {
     sass_option_set_source_map_embed (s_opts, opts->map_embed);
+  }
+
+  if (opts->map_root != NULL) {
+    sass_option_set_source_map_root (s_opts, opts->map_root);
   }
 }
 
@@ -115,7 +125,8 @@ PIKECLASS _Api
 
   /*! @decl void get_output_style(int style)
    *!
-   *! Set the output style. Default is @[Tools.Sass.STYLE_NESTED]
+   *! Set the output style for the generated CSS code.
+   *! Default is @[Tools.Sass.STYLE_NESTED].
    *!
    *! @seealso
    *!  @[get_output_style()]
@@ -131,7 +142,7 @@ PIKECLASS _Api
 
   /*! @decl int get_output_style(int style)
    *!
-   *! Returns the output style.
+   *! Returns the output style of the generated CSS code.
    *!
    *! @seealso
    *!  @[set_output_style()]
@@ -143,8 +154,8 @@ PIKECLASS _Api
 
   /*! @decl void set_source_comments(bool set)
    *!
-   *! Set whether comments of source line number should be printed in the
-   *! generated CSS or not. Default is @code{false@}.
+   *! Emit comments in the generated CSS indicating the corresponding
+   *! source line. Default is @code{false@}.
    *!
    *! @seealso
    *!  @[get_source_comments()]
@@ -168,8 +179,9 @@ PIKECLASS _Api
 
   /*! @decl void set_source_map_file(string path)
    *!
-   *! Set the path of where to write the source map file. If this isn't set
-   *! no source map will be generated.
+   *! Path to source map file. Enables the source map generating.
+   *! Used to create sourceMappingUrl. If this isn't set no source map will
+   *! be generated.
    *!
    *! @note
    *!  This only has effect in @[compile_file()].
@@ -207,7 +219,7 @@ PIKECLASS _Api
 
   /*! @decl void set_source_map_embed(bool embed)
    *!
-   *! Should a source map be embedded in the compiled output?
+   *! Set whether embedding sourceMappingUrl as data uri or not.
    *!
    *! @seealso
    *!  @[get_source_map_embed()], @[set_source_map_file()],
@@ -233,10 +245,74 @@ PIKECLASS _Api
     RETURN (THIS->options->map_embed);
   }
 
+  /*! @decl void set_source_map_root(string path)
+   *!
+   *! Directly inserted in source maps.
+   *!
+   *! @seealso
+   *!  @[set_source_map_file()], @[get_source_map_file()]
+   *!
+   *! @param path
+   */
+  PIKEFUN void set_source_map_root (string path)
+  {
+    THIS->options->map_root = strdup (path->str);
+  }
+
+
+  /*! @decl string get_source_map_root()
+   *!
+   *! Returns the path of the source maps root.
+   *!
+   *! @seealso
+   *!  @[set_source_map_root()], @[set_source_map_file()],
+   *!  @[set_source_map_file()]
+   */
+  PIKEFUN string get_source_map_root ()
+  {
+    if (THIS->options->map_root) {
+      push_text (THIS->options->map_root);
+    }
+    else {
+      push_int (0);
+    }
+  }
+
+
+  /*! @decl void set_omit_source_map_url(bool embed)
+   *!
+   *! Set whether writing sourceMappingUrl or not.
+   *!
+   *! @seealso
+   *!  @[set_source_map_embed()], @[set_source_map_file()],
+   *!  @[get_source_map_embed()], @[get_source_map_file()]
+   *!
+   *! @param embed
+   */
+  PIKEFUN void set_omit_source_map_url (int(0..1) omit)
+  {
+    THIS->options->omit_map_url = omit;
+  }
+
+
+  /*! @decl int(0..1) get_omit_source_map_url()
+   *!
+   *! Getter for @[set_omit_source_map_url()].
+   *!
+   *! @seealso
+   *!  @[set_omit_source_map_url()],
+   *!  @[set_source_map_embed()], @[set_source_map_file()],
+   *!  @[get_source_map_embed()], @[get_source_map_file()]
+   */
+  PIKEFUN int(0..1) get_omit_source_map_url ()
+  {
+    RETURN (THIS->options->omit_map_url);
+  }
+
 
   /*! @decl void set_precision(int(0..) p)
    *!
-   *! Set the precision of floating point values
+   *! Set the precision of fractional numbers. Default is @{5}.
    *!
    *! @seealso
    *!  @[get_precision()]
@@ -379,11 +455,11 @@ PIKECLASS _Api
     THIS->options->include_path = NULL;
     THIS->options->precision = 5;
     THIS->options->map_path = NULL;
-    // THIS->options->map_root = NULL;
+    THIS->options->map_root = NULL;
     THIS->options->comments = false;
     THIS->options->map_embed = false;
     // THIS->options->map_contents = false;
-    // THIS->options->omit_map_url = true;
+    THIS->options->omit_map_url = true;
   }
 
   EXIT {
@@ -395,6 +471,10 @@ PIKECLASS _Api
 
     if (THIS->options->map_path != NULL) {
       free (THIS->options->map_path);
+    }
+
+    if (THIS->options->map_root != NULL) {
+      free (THIS->options->map_root);
     }
 
     free (THIS->options);
