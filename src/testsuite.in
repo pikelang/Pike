@@ -949,20 +949,20 @@ test_any([[
 ]], "int")
 
 test_compile_any([[
-  class { ; }
+  class Foo { ; }
 ]])
 
 test_compile_any([[
-  class { ; ; }
+  class Foo { ; ; }
 ]])
 
 test_compile_any([[
-  class { ; constant c = 0; }
+  class Foo { ; constant c = 0; }
 ]])
 
 test_compile_any([[
-  class { mixed a() {  constant c = 17; return c; }
-	  mixed b() {  constant c = 17; return c; }  }
+  class Foo { mixed a() {  constant c = 17; return c; }
+	      mixed b() {  constant c = 17; return c; }  }
 ]])
 
 test_compile_any([[
@@ -997,7 +997,7 @@ test_compile_any([[
 // Also, if it is repeated it doesn't generate the warning the second
 // time. Not very reassuring.. /mast
 
-test_any([[return class Z {
+test_any([[return class {
 string bonk() { return "oiff"; }
 
 class A
@@ -2154,9 +2154,9 @@ test_program([[
 ]]);
 test_do(add_constant("f"))
 
-test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"foo")]])
-test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"z")]])
-test_true([[object_variablep(class X { int y; int z() { return 1; }}(),"y")]])
+test_false([[object_variablep(class { int y; int z() { return 1; }}(),"foo")]])
+test_false([[object_variablep(class { int y; int z() { return 1; }}(),"z")]])
+test_true([[object_variablep(class { int y; int z() { return 1; }}(),"y")]])
 
 test_any([[ int a,b; [a,b]=({1,2}); return a]],1)
 test_any([[ int a,b; [a,b]=({1,2}); return b]],2)
@@ -4484,14 +4484,14 @@ test_any([[class C1 {
  class Y { program YinD() { return D; }} };
  class C2 { inherit C1; class D { string id() { return "bar"; } } };
  return C2()->Y()->YinD()()->id()]],"bar")
-test_any([[object o=class foo{int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
+test_any([[object o=class {int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
 test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() {c+=17;}}}()); ]])
 test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 
 test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() { class sune { void create() {c+=17;}}(); }}}()); ]])
-test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
-test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
+test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
+test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
 
 test_eq(class { protected int foo=17; }()->foo,0)
@@ -4690,7 +4690,7 @@ test_any([[
   return my_lambda(); really_magic_var;
 ]],"foo")
 
-test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
+test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
@@ -4868,13 +4868,13 @@ test_any_equal([[
 ]], ([]))
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
-test_true(class c { constant i=1; }()->i)
-test_true(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
-test_true(class c { constant i=1; mixed `->(string s) { return 0; }}()["i"])
-test_true(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class c { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
-test_true(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
+test_true(class { constant i=1; }()->i)
+test_true(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
+test_true(class { constant i=1; mixed `->(string s) { return 0; }}()["i"])
+test_true(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
+test_true(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
 
 test_do([[
 #pragma strict_types
@@ -5257,14 +5257,18 @@ test_any([[
 ]],[[this]])
 
 
-test_compile(class c { object(Stdio.File) foo=class foobar {} ();})
-test_compile(class c { object(Stdio.File) foo=class {} ();})
-test_compile_error(class c { object(Stdio.File) foo=class {float is_file;} ();})
-test_compile(class c { object(Stdio.File) foo=class { int is_file;} ();})
-test_do(class c { object foo; object(Stdio.File) bar=foo; })
-test_do(class c { object foo; Stdio.File bar=foo; })
-test_do(class c { object(Stdio.File) foo; object bar=foo; })
-test_do(class c { Stdio.File foo; object bar=foo; })
+test_compile([[
+  class {
+    class foobar {} ();
+    object(Stdio.File) foo = foobar();
+  }]])
+test_compile(class { object(Stdio.File) foo=class {} ();})
+test_compile_error(class { object(Stdio.File) foo = class {float is_file;} ();})
+test_compile(class { object(Stdio.File) foo = class { int is_file;} ();})
+test_do(class { object foo; object(Stdio.File) bar=foo; })
+test_do(class { object foo; Stdio.File bar=foo; })
+test_do(class { object(Stdio.File) foo; object bar=foo; })
+test_do(class { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){i;})
@@ -6098,7 +6102,8 @@ void create()
     gurka[Tomat()]=-3;
   }
 }
-}();
+}
+  X();
 
 ]])
 
@@ -6353,7 +6358,7 @@ test_any([[
   ]], 1)
 
   test_true([[
-    class Foo
+    class
     {
       object c;
       class A {object b;}
@@ -6435,7 +6440,7 @@ test_any([[
   }]], ({4711, 0x54325827a124*0x12348795482485425}))
 
   test_any_equal([[{
-    object o = class Live {
+    object o = class {
       array g;
       array a = ({17});
       void create() {g = ({this});}
@@ -6446,7 +6451,7 @@ test_any([[
     return all_constants()->kablutt;
   }]], ({17}));
   test_any([[{
-    object o = class Live {
+    object o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
@@ -6459,7 +6464,7 @@ test_any([[
     return gc() >= 3;
   }]], 1);
   test_any_equal([[{
-    object o = class Live {
+    object o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
@@ -7137,8 +7142,8 @@ test_true([[Pike.count_memory (0, ({"some string with no other ref in memory " +
 test_true([[Pike.count_memory (-1, ({time(1)})) +
 	    Pike.count_memory (-1, ([1: time(1)])) ==
 	    Pike.count_memory (0, ({([1: time(1)])}))]])
-test_true([[Pike.count_memory (0, class X {mapping(X:array(int)) x;}) >
-	    Pike.count_memory (0, class Y {int x;})]])
+test_true([[Pike.count_memory (0, class {mapping(X:array(int)) x;}) >
+	    Pike.count_memory (0, class {int x;})]])
 test_true([[Pike.count_memory (0, ({compile (
 				      "constant x = ([1: " + time(1) +
 				      "]);")})) >
@@ -7953,12 +7958,12 @@ ifefun(_verify_internals,
 ]])
 
 test_eq("\377"[0],255)
-test_do(add_constant("foo",class c {int i;}()))
+test_do(add_constant("foo",class {int i;}()))
 test_eq(foo->i,0)
 test_do(foo->i=17)
 test_eq(foo->i,17)
 test_do(add_constant("foo"));
-test_do(add_constant("foo",class c {array(int) i=({0});}()))
+test_do(add_constant("foo",class {array(int) i=({0});}()))
 test_eq(foo->i[0],0)
 test_do(foo->i[0]=17)
 test_eq(foo->i[0],17)
@@ -8007,12 +8012,12 @@ test_false(class c { int foo() { return 1; }}()->bar)
 test_eq(class c { program foo=class c { int i=20; }; }()->foo()->i,20)
 
 // class()
-test_true(programp(class c(){}))
-test_equal(indices(class c(string a,protected int b){}("foo",0)), ({"a"}))
-test_equal(values(class c(string a,protected int b){}("foo",0)), ({"foo"}))
-test_true(programp(class c(string ... a){}))
-test_equal(indices(class c(string a,protected int ... b){}("foo",0)), ({"a"}))
-test_equal(values(class c(protected string a, int ... b){}("foo",0)), ({({0})}))
+test_true(programp(class (){}))
+test_equal(indices(class (string a,protected int b){}("foo",0)), ({"a"}))
+test_equal(values(class (string a,protected int b){}("foo",0)), ({"foo"}))
+test_true(programp(class (string ... a){}))
+test_equal(indices(class (string a,protected int ... b){}("foo",0)), ({"a"}))
+test_equal(values(class (protected string a, int ... b){}("foo",0)), ({({0})}))
 
 test_do([[
   class A (int i) {};
@@ -8776,7 +8781,7 @@ test_eq((<'f','o','o'>)['f'],1)
 test_eq((<'f','o','o'>)[random(0)+'b'],0)
 test_eq((<'f','o','o'>)[ [int](mixed)-1],0)
 
-test_eq([[class Z { mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
+test_eq([[class { mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
 
 // Test some indexing opcodes.
 test_eval_error([[return ({1})[1];]])
@@ -12979,7 +12984,7 @@ test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;ret
 test_eq(a,this_object()->a)
 
 // - catch
-test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
+test_false([[class { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
 

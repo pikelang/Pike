@@ -14,7 +14,8 @@ class A {
     foreach(indices(b_to_t), string symbol)
       if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
   }
-}(); )
+}
+A(); )
 
 
 // - Standards.PEM

@@ -171,9 +171,9 @@ define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
 mixed a() { [[\$1]]; })]])
 
 define(test_define_program,[[DOTEST(RUN,dnl
-void a() { add_constant("[[\$1]]",class c {
-  [[\$2]]
-});})]])
+void a() { class [[$\1]] { [[\$2]] })
+           add_constant("[[\$1]]", [[\$1]]);
+})]])
 
 define(test_program, [[DOTEST(TRUE,dnl
 [[\$1]])]])
