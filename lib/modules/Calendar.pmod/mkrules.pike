@@ -725,8 +725,8 @@ int main(int ac,array(string) am)
    if (!sizeof(files))
    {
       werror("defaulting to reading zonefiles from %s...",
-	     combine_path(__FILE__, "../tzdata"));
-      files = get_dir(combine_path(__FILE__, "../tzdata"));
+             combine_path(__DIR__, "tzdata"));
+      files = get_dir(combine_path(__DIR__, "tzdata"));
       files = map(sort(files),
 		  lambda(string fname) {
 		    if ((< ".gitignore", "Makefile", "Theory",
@@ -738,7 +738,7 @@ int main(int ac,array(string) am)
 			has_suffix(fname, ".pl") ||
 			has_suffix(fname, ".sh") ||
 			has_suffix(fname, ".tab")) return 0;
-		    return combine_path(__FILE__, "../tzdata", fname);
+                    return combine_path(__DIR__, "tzdata", fname);
 		  }) - ({ 0 });
    }
    map(files, collect_rules);
