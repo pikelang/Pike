@@ -3303,7 +3303,7 @@ test_compile([[float x=(gauge { return; },1.0);]])
 test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[float t=gauge { string foo; foo; };]])
-test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
+test_compile_any([[class Foo { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 
 test_any([[class G { mapping t=([]);
@@ -4485,11 +4485,11 @@ test_any([[class C1 {
  class C2 { inherit C1; class D { string id() { return "bar"; } } };
  return C2()->Y()->YinD()()->id()]],"bar")
 test_any([[object o=class {int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
-test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() {c+=17;}}}()); ]])
-test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
-test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
+test_do([[add_constant("GURKA2",class { int c; class bar{void create() {c+=17;}}}()); ]])
+test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
+test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 
-test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() { class sune { void create() {c+=17;}}(); }}}()); ]])
+test_do([[add_constant("GURKA2",class { int c; class bar{void create() { class { void create() {c+=17;}}(); }}}()); ]])
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
@@ -8004,12 +8004,12 @@ test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
 
 
 // class
-test_true(programp(class c {}))
-test_true(functionp(class c { int foo() { return 1; }}()->foo))
-test_true(class c { int foo() { return 1; }}()->foo())
-test_true(class c { int i=1; }()->i)
-test_false(class c { int foo() { return 1; }}()->bar)
-test_eq(class c { program foo=class c { int i=20; }; }()->foo()->i,20)
+test_true(programp(class {}))
+test_true(functionp(class { int foo() { return 1; }}()->foo))
+test_true(class { int foo() { return 1; }}()->foo())
+test_true(class { int i=1; }()->i)
+test_false(class { int foo() { return 1; }}()->bar)
+test_eq(class { program foo=class c { int i=20; }; }()->foo()->i,20)
 
 // class()
 test_true(programp(class (){}))
