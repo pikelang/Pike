@@ -512,6 +512,11 @@ table.box td *:first-child { margin-top: 0; }
 table.box td *:last-child { margin-bottom: 0; }
 table.box table.box { width: 100%; }
 
+p + pre {
+	margin-top: -15px;
+	padding-top: 0px;
+}
+
 pre code .comment { color: #999; }
 pre code .type { color: #00007B; font-weight: bold; }
 pre code .string { color: #037F00; }

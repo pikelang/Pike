@@ -551,11 +551,10 @@ string parse_code(Node n, void|String.Buffer ret)
     text = lines*"";
   }
 
-  if (sizeof(text) && text[-1] == '\n');
-    text = text[..<1];
-
   while (text[-1] == '\n')
     text = text[..<1];
+
+  bool is_quoted = false;
 
   if (has_value(text, "->") ||
       (has_value(text, "{") && has_value(text, "}")) ||
@@ -566,12 +565,19 @@ string parse_code(Node n, void|String.Buffer ret)
       code_highlighter = Tools.Standalone.pike_to_html();
     }
 
+    is_quoted = true;
+
     if (catch(text = code_highlighter->convert(text))) {
       text = text;
+      is_quoted = false;
     }
   }
 
   if (ret) {
+    if (!is_quoted) {
+      text = quote(text);
+    }
+
     ret->add(text);
   }
   else return quote(text);
