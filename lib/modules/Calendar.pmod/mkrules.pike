@@ -731,7 +731,7 @@ int main(int ac,array(string) am)
       files = map(sort(files),
 		  lambda(string fname) {
 		    if ((< ".gitignore", "Makefile", "Theory",
-			   "factory", "leapseconds", >)[fname] ||
+			   "leapseconds", "version", >)[fname] ||
 			(upper_case(fname) == fname) ||
 			has_prefix(fname, "solar") ||
 			has_suffix(fname, ".awk") ||
