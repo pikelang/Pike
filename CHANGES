@@ -1,6 +1,13 @@
 Changes since Pike 8.0.358 (release 5)
 ----------------------------------------------------------------------
 
+New features
+------------
+
+o Calendar
+
+  Updated Calendar to use timezonedata from tzdata2016j.
+
 Bug fixes
 ---------
 
