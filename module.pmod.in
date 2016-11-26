@@ -32,11 +32,11 @@ class SCSS
   //!    See also @[set_source_map_file()].
   //!   @member bool "source_comments"
   //!    Turn on/off comments in the output containing info about the source
-  //!    file - line numbers and such. Default of @code{false@}. See also
+  //!    file - line numbers and such. Default of @tt{false@}. See also
   //!    @[set_source_comments()].
   //!   @member bool "source_map_embed"
   //!    Turn on/off if a source map should be embedded in the output or not.
-  //!    Default is @code{false@}. See also @[set_source_map_embed()].
+  //!    Default is @tt{false@}. See also @[set_source_map_embed()].
   //!  @endmapping
   void set_options(mapping(string:string|int) opts)
   {

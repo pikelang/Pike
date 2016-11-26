@@ -32,7 +32,7 @@ DECLARATIONS
 #ifdef SASS_DEBUG
 # define SASS_TRACE(X...) printf ("# " X)
 #else
-# define SASS_TRACE(X...) 0
+# define SASS_TRACE(X...)
 #endif
 
 typedef struct sass_opts {
@@ -67,7 +67,7 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
 
   if (opts->map_path != NULL) {
     sass_option_set_source_map_file (s_opts, opts->map_path);
-    // sass_option_set_omit_source_map_url (s_opts, false);
+    sass_option_set_omit_source_map_url (s_opts, false);
     sass_option_set_source_map_contents (s_opts, true);
   }
   else {
@@ -86,7 +86,7 @@ PIKECLASS _Api
 
   /*! @decl void set_include_path(string path)
    *!
-   *! Set include path of @code{@imports@}
+   *! Set include path of @tt{@imports@}
    *!
    *! @seealso
    *!  get_include_path()
@@ -106,7 +106,7 @@ PIKECLASS _Api
 
   /*! @decl string get_include_path()
    *!
-   *! Get include path of @code{@imports@}
+   *! Get include path of @tt{@imports@}
    *!
    *! @seealso
    *!  set_include_path()
@@ -155,7 +155,7 @@ PIKECLASS _Api
   /*! @decl void set_source_comments(bool set)
    *!
    *! Emit comments in the generated CSS indicating the corresponding
-   *! source line. Default is @code{false@}.
+   *! source line. Default is @tt{false@}.
    *!
    *! @seealso
    *!  @[get_source_comments()]
