@@ -430,6 +430,7 @@ mapping abbr2zones =
      "Antarctica/Syowa",
      "Antarctica/Troll",
      "Antarctica/Vostok",
+     "Factory",
      "Indian/Kerguelen",
    }),
    "-01": ({
