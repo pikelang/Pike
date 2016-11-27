@@ -663,7 +663,7 @@ void complain(string fmt,mixed ... args)
 void collect_rules(string file)
 {
    int n=0;
-   werror("reading %O...\n",file);
+   werror("Reading %O...\n",file);
    string s=Stdio.read_bytes(file),t;
    if (!s)
    {
@@ -724,7 +724,7 @@ int main(int ac,array(string) am)
    array(string) files = am[1..];
    if (!sizeof(files))
    {
-      werror("defaulting to reading zonefiles from %s...",
+      werror("Defaulting to reading zonefiles from %s...\n",
              combine_path(__DIR__, "tzdata"));
       files = get_dir(combine_path(__DIR__, "tzdata"));
       files = map(sort(files),
@@ -743,7 +743,7 @@ int main(int ac,array(string) am)
    }
    map(files, collect_rules);
 
-   write("thinking...\n");
+   write("Thinking...\n");
 
    string t="#pike "+__MAJOR__+"."+__MINOR__+"\n\n" + TZrules_base;
 
@@ -753,7 +753,7 @@ int main(int ac,array(string) am)
    tzrules=compile_string(t)();
 
    mv("TZrules.pmod","TZrules.pmod~");
-   werror("writing TZrules.pmod (%d bytes)...",sizeof(t));
+   werror("Writing TZrules.pmod (%d bytes)...",sizeof(t));
    Stdio.File("TZrules.pmod","wtc")->write(t);
    werror("\n");
 
@@ -807,7 +807,7 @@ int main(int ac,array(string) am)
        "// "+"-"*70+"\n");
 
    mv("TZs.h","TZs.h~");
-   werror("writing TZs.h (%d bytes)...",sizeof(t));
+   werror("Writing TZs.h (%d bytes)...",sizeof(t));
    Stdio.File("TZs.h","wtc")->write(t);
    werror("\n");
 
@@ -889,7 +889,7 @@ int main(int ac,array(string) am)
    }
 
    mv("TZnames.pmod","TZnames.pmod~");
-   werror("writing TZnames.pmod (%d bytes)...",sizeof(t));
+   werror("Writing TZnames.pmod (%d bytes)...",sizeof(t));
    Stdio.File("TZnames.pmod","wtc")->write(t);
    werror("\n");
 
