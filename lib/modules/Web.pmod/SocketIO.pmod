@@ -161,7 +161,7 @@ class Universe {
 
   //! @param options
   //!  Optional options to override the defaults.
-  //!  This parameter is passed down as is to the underlying @[EngineIO.Socket].
+  //!  This parameter is passed down as-is to the underlying @[EngineIO.Socket].
   //!
   //! @seealso
   //!  @[EngineIO.farm()]
