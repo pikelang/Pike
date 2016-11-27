@@ -415,7 +415,7 @@ class Client {
     private int slot;
 
     protected void create(int slot) {
-      this.slot = slot;
+      this::slot = slot;
     }
 
     private int timestamp;

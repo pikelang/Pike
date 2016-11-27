@@ -504,8 +504,7 @@ class Socket {
                 msg = m[1] || "";
             }
             if (!anybinary && stringp(msg)) {
-               if (String.width(msg) > 8)
-                 msg = string_to_utf8(msg);
+              msg = string_to_utf8(msg);
               c->add((string)(1+sizeof(msg)))->add_int8(':');
             } else if (!forceascii) {
               if (stringp(msg))
@@ -668,11 +667,11 @@ class Socket {
     read_cb = _read_cb;
     send(OPEN, Standards.JSON.encode(
              (["sid": sid,
-               "EIO": this.options->EIO || protocol,
+               "EIO": this::options->EIO || protocol,
                "upgrades":
-                 this.options->allowUpgrades ? ({"websocket"}) : ({}),
-               "pingInterval": this.options->pingInterval,
-               "pingTimeout":  this.options->pingTimeout
+                 this::options->allowUpgrades ? ({"websocket"}) : ({}),
+               "pingInterval": this::options->pingInterval,
+               "pingTimeout":  this::options->pingTimeout
              ])));
   }
 
@@ -748,8 +747,8 @@ class Socket {
           mixed m = Standards.JSON.decode(msg);
           PD("Received %s client options %O\n", sid, msg);
           if (mappingp(m)) {
-            this.options += m &= clientoptions;
-            PD("Resulting %s options %O\n", sid, this.options);
+            this::options += m &= clientoptions;
+            PD("Resulting %s options %O\n", sid, this::options);
             sendack();
           }
         };
@@ -850,9 +849,9 @@ class Socket {
   protected void create(Protocols.WebSocket.Request req,
    void|mapping options) {
     request = req;
-    this.options = .EngineIO.options;
+    this::options = .EngineIO.options;
     if (options && sizeof(options))
-      this.options += options;
+      this::options += options;
     switch (req.variables->transport) {
       default:
         req.response_and_finish((["data":"Unsupported transport",
@@ -861,7 +860,7 @@ class Socket {
       case "websocket":
         conn = WebSocket(req, recv,
           req.websocket_accept(0,
-           ({ Protocols.WebSocket.permessagedeflate(_options) })));
+           ({ Protocols.WebSocket.permessagedeflate(options) })));
         break;
       case "polling":
         conn = (req.variables.j ? JSONP : XHR)(req, recv);
@@ -897,7 +896,7 @@ class Socket {
         case "websocket":
           upgtransport = WebSocket(req, upgrecv,
            req.websocket_accept(0,
-            ({Protocols.WebSocket.permessagedeflate(_options) })));
+            ({Protocols.WebSocket.permessagedeflate(options) })));
       }
     }
   }
