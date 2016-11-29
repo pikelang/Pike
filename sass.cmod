@@ -24,8 +24,8 @@ DECLARATIONS
 
 /*! @module Tools
  */
-/*! @module _Sass
- *! Low level module of @[Tools.Sass]
+/*! @module __Sass
+ *! Low level @tt{libsass@} module. Use @[Tools.Sass] instead.
  */
 
 // #define SASS_DEBUG
@@ -81,11 +81,14 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
 }
 
 
-/*! @class _Api
+/*! @class Api
  *!
- *! Base class and stuff
+ *! Base glue for @tt{libsass@}.
+ *!
+ *! @note
+ *!  Use @[Tools.Sass.SCSS] instead
  */
-PIKECLASS _Api
+PIKECLASS Api
 {
   // CVAR sass_object *sobj;
   CVAR sass_opts* options;
@@ -129,7 +132,7 @@ PIKECLASS _Api
     }
   }
 
-  /*! @decl void get_output_style(int style)
+  /*! @decl void set_output_style(int style)
    *!
    *! Set the output style for the generated CSS code.
    *! Default is @[Tools.Sass.STYLE_NESTED].
@@ -490,6 +493,7 @@ PIKECLASS _Api
 }
 /*! @endclass */
 
+
 /*! @decl string libsass_version()
  *!
  *! Returns the @tt{libsass@} version this module was compiled against
@@ -499,6 +503,7 @@ PIKEFUN string libsass_version()
   const char* v = libsass_version();
   push_string (make_shared_string (v));
 }
+
 
 /*! @decl string sass2scss_version()
  *!
@@ -510,6 +515,7 @@ PIKEFUN string sass2scss_version()
   push_string (make_shared_string (v));
 }
 
+
 #if HAVE_LIBSASS_LANGUAGE_VERSION
 /* Returns the @tt{language@} version of Sass this module was compiled against
 */
@@ -520,8 +526,14 @@ PIKEFUN string libsass_language_version()
 }
 #endif
 
+
 PIKE_MODULE_INIT
 {
+  /*! @decl constant LIBSASS_VERSION
+   *!
+   *! The @tt{libsass@} version, as a string, this module was compiled agains.
+   */
+
   add_string_constant ("LIBSASS_VERSION",   LIBSASS_VERSION, 0);
 
   /*! @decl constant STYLE_NESTED
@@ -529,7 +541,7 @@ PIKE_MODULE_INIT
    *! @decl constant STYLE_COMPACT
    *! @decl constant STYLE_COMPRESSED
    *!
-   *! Styling of output. Use as argument to @[set_output_style()]
+   *! Styling of output. Use as argument to @[Api.set_output_style()]
    */
 
   add_integer_constant ("STYLE_NESTED",     SASS_STYLE_NESTED,     0);

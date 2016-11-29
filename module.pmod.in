@@ -1,22 +1,35 @@
 /*
   Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
 */
+//! Sass is a scripting language that is interpreted into Cascading Style
+//! Sheets (CSS). This module is a glue for @tt{libsass@}.
+//!
+//! @seealso
+//!  SASS @url{http://sass-lang.com/@}
 
 #pike __REAL_VERSION__
-#require constant(Tools._Sass)
+#require constant(Tools@module@)
 
-//! @ignore
 inherit Tools@module@;
-//! @endignore
 
 //! SCSS compiler
+//!
+//! @example
+//! @code
+//! Tools.Sass.SCSS compiler = Tools.Sass.SCSS();
+//! // Minify the output and create a source map file.
+//! compiler->set_options(([
+//!   "output_style" : Tools.Sass.STYLE_COMPRESSED
+//!   "source_map_file" : "path/to/write/source.map"
+//! ]));
+//!
+//! if (mixed e = catch(compiler->compile_file("input.scss", "output.css"))) {
+//!   werror("Failed compiling input.scss to output.css\n");
+//! }
+//! @endcode
 class SCSS
 {
-  inherit Tools@module@._Api;
+  inherit Tools@module@.Api;
 
   //! Set options to the SASS compiler. @[opts]
   //!
