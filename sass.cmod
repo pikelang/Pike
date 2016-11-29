@@ -5,7 +5,7 @@
 */
 
 #include <sass.h>
-
+#include "config.h"
 #include "global.h"
 #include "interpret.h"
 #include "module.h"
@@ -24,7 +24,8 @@ DECLARATIONS
 
 /*! @module Tools
  */
-/*! @module Sass
+/*! @module _Sass
+ *! Low level module of @[Tools.Sass]
  */
 
 // #define SASS_DEBUG
@@ -79,6 +80,11 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
   }
 }
 
+
+/*! @class _Api
+ *!
+ *! Base class and stuff
+ */
 PIKECLASS _Api
 {
   // CVAR sass_object *sobj;
@@ -86,10 +92,10 @@ PIKECLASS _Api
 
   /*! @decl void set_include_path(string path)
    *!
-   *! Set include path of @tt{@imports@}
+   *! Set include path of @tt{imports@}
    *!
    *! @seealso
-   *!  get_include_path()
+   *!  @[get_include_path()]
    *!
    *! @param path
    */
@@ -106,10 +112,10 @@ PIKECLASS _Api
 
   /*! @decl string get_include_path()
    *!
-   *! Get include path of @tt{@imports@}
+   *! Get include path of @tt{imports@}
    *!
    *! @seealso
-   *!  set_include_path()
+   *!  @[set_include_path()]
    */
   PIKEFUN string get_include_path ()
   {
@@ -177,6 +183,7 @@ PIKECLASS _Api
     RETURN (THIS->options->comments);
   }
 
+
   /*! @decl void set_source_map_file(string path)
    *!
    *! Path to source map file. Enables the source map generating.
@@ -212,7 +219,7 @@ PIKECLASS _Api
       push_text (f);
     }
     else {
-      push_int (0);
+      push_undefined ();
     }
   }
 
@@ -231,6 +238,7 @@ PIKECLASS _Api
   {
     THIS->options->map_embed = embed;
   }
+
 
   /*! @decl bool get_source_map_embed()
    *!
@@ -274,7 +282,7 @@ PIKECLASS _Api
       push_text (THIS->options->map_root);
     }
     else {
-      push_int (0);
+      push_undefined ();
     }
   }
 
@@ -312,7 +320,7 @@ PIKECLASS _Api
 
   /*! @decl void set_precision(int(0..) p)
    *!
-   *! Set the precision of fractional numbers. Default is @{5}.
+   *! Set the precision of fractional numbers. Default is @tt{5@}.
    *!
    *! @seealso
    *!  @[get_precision()]
@@ -480,10 +488,49 @@ PIKECLASS _Api
     free (THIS->options);
   }
 }
+/*! @endclass */
+
+/*! @decl string libsass_version()
+ *!
+ *! Returns the @tt{libsass@} version this module was compiled against
+ */
+PIKEFUN string libsass_version()
+{
+  const char* v = libsass_version();
+  push_string (make_shared_string (v));
+}
+
+/*! @decl string sass2scss_version()
+ *!
+ *! Returns the @tt{sass2scss@} version this module was compiled against
+ */
+PIKEFUN string sass2scss_version()
+{
+  const char* v = sass2scss_version();
+  push_string (make_shared_string (v));
+}
+
+#if HAVE_LIBSASS_LANGUAGE_VERSION
+/* Returns the @tt{language@} version of Sass this module was compiled against
+*/
+PIKEFUN string libsass_language_version()
+{
+  const char* v = libsass_language_version();
+  push_string (make_shared_string (v));
+}
+#endif
 
 PIKE_MODULE_INIT
 {
   add_string_constant ("LIBSASS_VERSION",   LIBSASS_VERSION, 0);
+
+  /*! @decl constant STYLE_NESTED
+   *! @decl constant STYLE_EXPANDED
+   *! @decl constant STYLE_COMPACT
+   *! @decl constant STYLE_COMPRESSED
+   *!
+   *! Styling of output. Use as argument to @[set_output_style()]
+   */
 
   add_integer_constant ("STYLE_NESTED",     SASS_STYLE_NESTED,     0);
   add_integer_constant ("STYLE_EXPANDED",   SASS_STYLE_EXPANDED,   0);

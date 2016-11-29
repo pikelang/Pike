@@ -18,7 +18,7 @@ class SCSS
 {
   inherit Tools@module@._Api;
 
-  //! Set options to the SASS compiler
+  //! Set options to the SASS compiler. @[opts]
   //!
   //! @param opts
   //!  @mapping
@@ -97,4 +97,13 @@ class SCSS
       }
     }
   }
+
+  // //! Test if @[set_options()] will be linked to from @[a]?
+  // //!
+  // //! @param a
+  // //!  Just a parameter
+  // void test_func(mapping a)
+  // {
+  //   return a;
+  // }
 }

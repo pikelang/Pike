@@ -4,6 +4,7 @@ configure
 config.cache
 config.log
 config.status
+config.h
 make_variables
 modlist_segment
 module.pmod
@@ -13,5 +14,6 @@ sass.c
 *.o
 plib/
 refdoc/
+_build/
 *.css
 *.map
