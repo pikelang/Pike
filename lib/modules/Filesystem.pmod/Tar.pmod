@@ -674,14 +674,27 @@ class _TarFS
     return tar->filename_to_entry[root+file];
   }
 
+  protected string fixup_dir(string path, string dir)
+  {
+    path = path[sizeof(dir)..];
+    return (path/"/")[0];
+  }
+
   array(string) get_dir(void|string directory, void|string|array globs)
   {
     directory = combine_path_unix(wd, (directory||""), "");
 
-    array f = glob(root+directory+"?*", tar->filenames);
-    f -= glob(root+directory+"*/*", f); // stay here
+    if (!has_suffix(directory, "/")) directory += "/";
 
-    return f;
+    array(string) f =
+      map(filter(tar->filenames, has_prefix, directory),
+	  fixup_dir, directory);
+
+    if (globs) {
+      f = glob(globs, f);
+    }
+
+    return Array.uniq(f - ({ "" }));
   }
 
   Filesystem.Base cd(string directory)
