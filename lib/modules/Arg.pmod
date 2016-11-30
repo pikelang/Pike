@@ -515,7 +515,7 @@ class LowOptions
 
   protected string index(string i)
   {
-    string s = ::`[](i, this, 0);
+    string s = ::`[](i, this, 1);
     if( !s ) return 0;
     if( !stringp(s) ) error("%O is not a string.\n", i);
     if( sizeof(s) )
@@ -525,7 +525,7 @@ class LowOptions
     return 0;
   }
 
-  void usage()
+  protected void usage()
   {
     string s = index("help_pre");
     if( s )
@@ -596,7 +596,7 @@ class Options
 
   //! Options that trigger help output.
   Opt help = NoOpt("--help");
-  string help_help = "Help about usage.";
+  protected string help_help = "Help about usage.";
 
   protected void create(array(string) argv, void|mapping(string:string) env)
   {
