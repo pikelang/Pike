@@ -16,6 +16,9 @@ o JSON
   Fixed a bug in the unicode handling of Standards.JSON.decode(), which
   treated codepoints slightly below the surrogate range as invalid.
 
+o pike -x pmar_install
+
+  Works again and properly verifies PMAR checksums.
 
 Changes since Pike 8.0.276 (release 4)
 ----------------------------------------------------------------------
