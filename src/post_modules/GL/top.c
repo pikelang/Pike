@@ -23,15 +23,20 @@
 #ifdef HAVE_WINDEF_H
 #include <windows.h>
 #endif /* HAVE_WINDEF_H */
+
+/* OpenGL/gl.h, a MacOSX-ism, precludes GL/gl.h and GL/glx.h */
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#else 
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
-#ifdef HAVE_OPENGL_GL_H
-#include <OpenGL/gl.h>
-#endif /* HAVE_OPENGL_GL_H */
 #ifdef HAVE_GL_GLX_H
 #include <GL/glx.h>
 #endif /* HAVE_GL_GLX_H */
+#endif /* HAVE_OPENGL_GL_H */
+
+
 
 /* Restore INT64, INT32, INT16 and INT8. */
 #include "pike_int_types.h"
