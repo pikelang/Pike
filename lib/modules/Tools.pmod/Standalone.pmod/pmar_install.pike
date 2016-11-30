@@ -549,7 +549,7 @@ string savetemp_pmar(string data, string filename)
 
 string md5hash(string input)
 {
-  string h = Crypto.MD5()->hash(input);
+  string h = Crypto.MD5.hash(input);
   return String.string2hex(h);
 }
 
