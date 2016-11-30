@@ -149,6 +149,26 @@ class Future
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
+  //! and update @[p] with the eventual result.
+  protected void apply_smart(mixed val, Promise p,
+			    function(mixed, mixed ... : mixed|Future) fun,
+			    array(mixed) ctx)
+  {
+    mixed err = catch {
+	mixed|Future f = fun(val, @ctx);
+	if (!objectp(f)
+         || !functionp(f->on_failure) || !functionp(f->on_success)) {
+	  p->success(f);
+	  return;
+	}
+	f->on_failure(p->failure);
+	f->on_success(p->success);
+	return;
+      };
+    p->failure(err);
+  }
+
+  //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with @[val] if @[fun] didn't return false.
   //! If @[fun] returned false fail @[p] with @[UNDEFINED].
   protected void apply_filter(mixed val, Promise p,
@@ -280,17 +300,19 @@ class Future
   }
 
   //! JavaScript Promise API close but not identical equivalent
-  //! of @[transform()].
+  //! of a combined @[transform()] and @[transform_with()].
   //!
   //! @param onfulfilled
   //!   Function to be called on fulfillment. The first argument will be the
   //!   result of @b{this@} @[Future].
   //!   The return value will be the result of the new @[Future].
+  //!   If the return value already is a @[Future], pass it as-is.
   //!
   //! @param onrejected
   //!   Function to be called on failure. The first argument will be the
   //!   failure result of @b{this@} @[Future].
   //!   The return value will be the failure result of the new @[Future].
+  //!   If the return value already is a @[Future], pass it as-is.
   //!
   //! @param extra
   //!   Any extra context needed for @expr{onfulfilled@} and
@@ -301,31 +323,33 @@ class Future
   //! The new @[Future].
   //!
   //! @seealso
-  //!   @[transform()], @[thencatch()]
-  //!   @[on_success()], @[Promise.success()]
-  //!   @[on_failure()], @[Promise.failure()]
+  //!   @[transform()], @[transform_with()], @[thencatch()],
+  //!   @[on_success()], @[Promise.success()],
+  //!   @[on_failure()], @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
   this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
    void|function(mixed, mixed ... : mixed) onrejected,
    mixed ... extra) {
     Promise p = Promise();
     if (onfulfilled)
-      on_success(apply, p, onfulfilled, extra);
+      on_success(apply_smart, p, onfulfilled, extra);
     else
       on_success(p->success);
     if (onrejected)
-      on_failure(apply, p, onrejected, extra);
+      on_failure(apply_smart, p, onrejected, extra);
     else
       on_failure(p->failure);
     return p->future();
   }
 
-  //! JavaScript Promise API equivalent of @[recover()].
+  //! JavaScript Promise API equivalent of a combination of @[recover()]
+  //! and @[recover_with()].
   //!
   //! @param onrejected
   //!   Function to be called. The first argument will be the
   //!   failure result of @b{this@} @[Future].
   //!   The return value will the failure result of the new @[Future].
+  //!   If the return value already is a @[Future], pass it as-is.
   //!
   //! @param extra
   //!   Any extra context needed for
@@ -336,11 +360,12 @@ class Future
   //! The new @[Future].
   //!
   //! @seealso
-  //!   @[recover()], @[then()], @[on_failure()], @[Promise.failure()]
+  //!   @[recover()], @[recover_with()], @[then()], @[on_failure()],
+  //!   @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
   inline this_program thencatch(function(mixed, mixed ... : mixed) onrejected,
    mixed ... extra) {
-    return recover(onrejected, @extra);
+    return then(0, onrejected, @extra);
   }
 
   //! Return a @[Future] that will either be fulfilled with the fulfilled
