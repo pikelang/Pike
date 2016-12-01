@@ -3,6 +3,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if libsass has sass_delete_options() */
+#undef HAVE_LIBSASS_DELETE_OPTIONS
+
 /* Define to 1 if libsass has sass_language_version() */
 #undef HAVE_LIBSASS_LANGUAGE_VERSION
 

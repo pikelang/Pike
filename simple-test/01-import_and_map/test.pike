@@ -11,6 +11,8 @@ int run()
     "omit_source_map" : false
   ]));
 
+  werror("Include path: %O\n", compiler->get_include_path());
+
   mixed err = catch {
     compiler->compile_file(combine_path(BASE, "input.scss"),
                            combine_path(BASE, "output.css"));

@@ -113,6 +113,7 @@ PIKECLASS Api
     }
   }
 
+
   /*! @decl string get_include_path()
    *!
    *! Get include path of @tt{imports@}
@@ -128,9 +129,10 @@ PIKECLASS Api
       push_text (p);
     }
     else {
-      push_int (0);
+      push_undefined ();
     }
   }
+
 
   /*! @decl void set_output_style(int style)
    *!
@@ -149,6 +151,7 @@ PIKECLASS Api
     THIS->options->style = style;
   }
 
+
   /*! @decl int get_output_style(int style)
    *!
    *! Returns the output style of the generated CSS code.
@@ -160,6 +163,7 @@ PIKECLASS Api
   {
     RETURN (THIS->options->style);
   }
+
 
   /*! @decl void set_source_comments(bool set)
    *!
@@ -173,6 +177,7 @@ PIKECLASS Api
   {
     THIS->options->comments = set;
   }
+
 
   /*! @decl bool get_source_comments()
    *!
@@ -255,6 +260,7 @@ PIKECLASS Api
   {
     RETURN (THIS->options->map_embed);
   }
+
 
   /*! @decl void set_source_map_root(string path)
    *!
@@ -348,6 +354,11 @@ PIKECLASS Api
     RETURN (THIS->options->precision);
   }
 
+#define SASS_COMPILE_FILE_ERR(X...)    \
+  do {                                 \
+    sass_delete_file_context (ctx);    \
+    Pike_error (X);                    \
+  } while (0)
 
   /*! @decl void compile_file (string in, string out)
    *!
@@ -377,9 +388,9 @@ PIKECLASS Api
     int err = sass_compile_file_context (ctx);
 
     if (err) {
-      const char* emsg = sass_context_get_error_message (ctx_out);
-      Pike_error ("Sass compile error (code: %d): %s\n",
-                  err, emsg);
+      const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+      SASS_COMPILE_FILE_ERR ("Sass compile error (code: %d):\n%s\n",
+                             err, errstr);
     }
 
     const char* scss = sass_context_get_output_string (ctx_out);
@@ -388,12 +399,12 @@ PIKECLASS Api
     fp = fopen (out->str, "wb");
 
     if (!fp) {
-      Pike_error ("Error opening output file");
+      SASS_COMPILE_FILE_ERR ("Error opening output file");
     }
 
     if (fprintf (fp, "%s", scss) < 0) {
       fclose (fp);
-      Pike_error ("Error writing to output file");
+      SASS_COMPILE_FILE_ERR ("Error writing to output file");
     }
 
     fclose (fp);
@@ -404,19 +415,20 @@ PIKECLASS Api
       const char* smap = sass_context_get_source_map_string (ctx_out);
 
       if ((err = sass_context_get_error_status (ctx_out))) {
-        Pike_error ("Failed generating source map (code: %ld): %s",
-                    err, sass_context_get_error_message (ctx_out));
+        const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+        SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
+                               err, errstr);
       }
 
       fp = fopen (sass_option_get_source_map_file (s_opts), "wb");
 
       if (!fp) {
-        Pike_error ("Error opening source map file");
+        SASS_COMPILE_FILE_ERR ("Error opening source map file");
       }
 
       if (fprintf (fp, "%s", smap) < 0) {
         fclose (fp);
-        Pike_error ("Error writing to source map file");
+        SASS_COMPILE_FILE_ERR ("Error writing to source map file");
       }
 
       fclose (fp);
@@ -425,6 +437,11 @@ PIKECLASS Api
     sass_delete_file_context (ctx);
   }
 
+#define SASS_COMPILE_STRING_ERR(X...)  \
+  do {                                 \
+    sass_delete_data_context (ctx);    \
+    Pike_error (X);                    \
+  } while (0)
 
   /*! @decl string compile_string(string source)
    *!
@@ -446,8 +463,9 @@ PIKECLASS Api
     int err = sass_context_get_error_status (ctx_out);
 
     if (err) {
-      Pike_error ("Sass error (code: %ld): %s",
-                  err, sass_context_get_error_message (ctx_out));
+      const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+      SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s",
+                               err, errstr);
     }
 
     const char* out = sass_context_get_output_string (ctx_out);
@@ -457,7 +475,7 @@ PIKECLASS Api
   }
 
   INIT {
-    SASS_TRACE ("INIT Sass._Api\n");
+    SASS_TRACE ("INIT __Sass.Api\n");
 
     THIS->options = (sass_opts *) malloc (sizeof (sass_opts));
     memset (THIS->options, 0, sizeof (sass_opts));
@@ -474,7 +492,7 @@ PIKECLASS Api
   }
 
   EXIT {
-    SASS_TRACE ("EXIT Sass._Api\n");
+    SASS_TRACE ("EXIT __Sass.Api\n");
 
     if (THIS->options->include_path != NULL) {
       free (THIS->options->include_path);

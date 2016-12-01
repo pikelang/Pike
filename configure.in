@@ -6,6 +6,9 @@ AC_MODULE_INIT()
 AH_TEMPLATE([HAVE_LIBSASS_LANGUAGE_VERSION],
             [Define to 1 if libsass has sass_language_version()])
 
+AH_TEMPLATE([HAVE_LIBSASS_DELETE_OPTIONS],
+            [Define to 1 if libsass has sass_delete_options()])
+
 CMOD_LIBS="-lsass"
 CMOD_CFLAGS=""
 
@@ -16,6 +19,9 @@ AC_CHECK_HEADERS([sass.h])
 # Check for features in libsass
 #
 AC_SEARCH_LIBS(sass_language_version, sass,
+  [ AC_DEFINE([HAVE_LIBSASS_LANGUAGE_VERSION], [1]) ])
+
+AC_SEARCH_LIBS(sass_delete_options, sass,
   [ AC_DEFINE([HAVE_LIBSASS_LANGUAGE_VERSION], [1]) ])
 
 
