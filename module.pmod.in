@@ -10,7 +10,9 @@
 #pike __REAL_VERSION__
 #require constant(Tools@module@)
 
+//! @ignore
 inherit Tools@module@;
+//! @endignore
 
 //! SCSS compiler
 //!
@@ -38,18 +40,31 @@ class SCSS
   //!   @member int "output_style"
   //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
   //!    or @[STYLE_COMPRESSED] constants. See also @[set_output_style()].
+  //!
   //!   @member string "include_path"
   //!    Path to root of incude files. See also @[set_include_path()].
+  //!
   //!   @member string "source_map_file"
   //!    File to write source map file to. Only has effect in @[compile_file()].
   //!    See also @[set_source_map_file()].
+  //!
   //!   @member bool "source_comments"
   //!    Turn on/off comments in the output containing info about the source
   //!    file - line numbers and such. Default of @tt{false@}. See also
   //!    @[set_source_comments()].
+  //!
   //!   @member bool "source_map_embed"
   //!    Turn on/off if a source map should be embedded in the output or not.
   //!    Default is @tt{false@}. See also @[set_source_map_embed()].
+  //!
+  //!   @member string "source_map_root"
+  //!    Set the root path of the source files, relative to where the
+  //!    source.map file is written.
+  //!    See also @[set_source_map_root()]
+  //!
+  //!   @member bool "omit_source_map"
+  //!    Omit the #sourceMappingURL or not.
+  //!    See also @[set_omit_source_map_url()]
   //!  @endmapping
   void set_options(mapping(string:string|int) opts)
   {
@@ -110,13 +125,4 @@ class SCSS
       }
     }
   }
-
-  // //! Test if @[set_options()] will be linked to from @[a]?
-  // //!
-  // //! @param a
-  // //!  Just a parameter
-  // void test_func(mapping a)
-  // {
-  //   return a;
-  // }
 }

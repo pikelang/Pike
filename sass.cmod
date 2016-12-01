@@ -25,7 +25,7 @@ DECLARATIONS
 /*! @module Tools
  */
 /*! @module __Sass
- *! Low level @tt{libsass@} module. Use @[Tools.Sass] instead.
+ *! @appears Tools.Sass
  */
 
 // #define SASS_DEBUG
@@ -82,11 +82,7 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
 
 
 /*! @class Api
- *!
- *! Base glue for @tt{libsass@}.
- *!
- *! @note
- *!  Use @[Tools.Sass.SCSS] instead
+ *! @appears Tools.Sass.SCSS
  */
 PIKECLASS Api
 {
@@ -94,6 +90,7 @@ PIKECLASS Api
   CVAR sass_opts* options;
 
   /*! @decl void set_include_path(string path)
+   *! @appears Tools.Sass.SCSS.set_include_path()
    *!
    *! Set include path of @tt{imports@}
    *!
@@ -115,6 +112,7 @@ PIKECLASS Api
 
 
   /*! @decl string get_include_path()
+   *! @appears Tools.Sass.SCSS.get_include_path()
    *!
    *! Get include path of @tt{imports@}
    *!
@@ -135,6 +133,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_output_style(int style)
+   *! @appears Tools.Sass.SCSS.set_output_style()
    *!
    *! Set the output style for the generated CSS code.
    *! Default is @[Tools.Sass.STYLE_NESTED].
@@ -153,6 +152,7 @@ PIKECLASS Api
 
 
   /*! @decl int get_output_style(int style)
+   *! @appears Tools.Sass.SCSS.get_output_style()
    *!
    *! Returns the output style of the generated CSS code.
    *!
@@ -166,6 +166,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_comments(bool set)
+   *! @appears Tools.Sass.SCSS.set_source_comments()
    *!
    *! Emit comments in the generated CSS indicating the corresponding
    *! source line. Default is @tt{false@}.
@@ -180,6 +181,7 @@ PIKECLASS Api
 
 
   /*! @decl bool get_source_comments()
+   *! @appears Tools.Sass.SCSS.get_source_comments()
    *!
    *! Getter for @[set_source_comments()].
    *!
@@ -193,6 +195,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_file(string path)
+   *! @appears Tools.Sass.SCSS.set_source_map_file()
    *!
    *! Path to source map file. Enables the source map generating.
    *! Used to create sourceMappingUrl. If this isn't set no source map will
@@ -212,6 +215,7 @@ PIKECLASS Api
 
 
   /*! @decl string get_source_map_file()
+   *! @appears Tools.Sass.SCSS.get_source_map_file()
    *!
    *! Returns the path of the source map file.
    *!
@@ -233,6 +237,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_embed(bool embed)
+   *! @appears Tools.Sass.SCSS.set_source_map_embed()
    *!
    *! Set whether embedding sourceMappingUrl as data uri or not.
    *!
@@ -249,8 +254,9 @@ PIKECLASS Api
 
 
   /*! @decl bool get_source_map_embed()
+   *! @appears Tools.Sass.SCSS.get_source_map_embed()
    *!
-   *! Will a source map be embedded or not?
+   *! Will a source map be embedded in the CSS file or not?
    *!
    *! @seealso
    *!  @[set_source_map_embed()], @[set_source_map_file()],
@@ -263,11 +269,14 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_root(string path)
+   *! @appears Tools.Sass.SCSS.set_source_map_root()
    *!
-   *! Directly inserted in source maps.
+   *! Set the root path of the source files, relative to where the
+   *! source.map file is written.
    *!
    *! @seealso
-   *!  @[set_source_map_file()], @[get_source_map_file()]
+   *!  @[get_source_map_root()], @[set_source_map_file()],
+   *!  @[get_source_map_file()]
    *!
    *! @param path
    */
@@ -278,12 +287,13 @@ PIKECLASS Api
 
 
   /*! @decl string get_source_map_root()
+   *! @appears Tools.Sass.SCSS.get_source_map_root()
    *!
    *! Returns the path of the source maps root.
    *!
    *! @seealso
    *!  @[set_source_map_root()], @[set_source_map_file()],
-   *!  @[set_source_map_file()]
+   *!  @[get_source_map_file()]
    */
   PIKEFUN string get_source_map_root ()
   {
@@ -297,6 +307,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_omit_source_map_url(bool embed)
+   *! @appears Tools.Sass.SCSS.set_omit_source_map_url()
    *!
    *! Set whether writing sourceMappingUrl or not.
    *!
@@ -313,6 +324,7 @@ PIKECLASS Api
 
 
   /*! @decl int(0..1) get_omit_source_map_url()
+   *! @appears Tools.Sass.SCSS.get_omit_source_map_url()
    *!
    *! Getter for @[set_omit_source_map_url()].
    *!
@@ -328,6 +340,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_precision(int(0..) p)
+   *! @appears Tools.Sass.SCSS.set_precision()
    *!
    *! Set the precision of fractional numbers. Default is @tt{5@}.
    *!
@@ -343,6 +356,7 @@ PIKECLASS Api
 
 
   /*! @decl int(0..) get_precision()
+   *! @appears Tools.Sass.SCSS.get_precision()
    *!
    *! Returns the precision of floating point values
    *!
@@ -361,6 +375,7 @@ PIKECLASS Api
   } while (0)
 
   /*! @decl void compile_file (string in, string out)
+   *! @appears Tools.Sass.SCSS.compile_file()
    *!
    *! Compile the file @[in] and write it to @[out]
    *!
@@ -444,6 +459,7 @@ PIKECLASS Api
   } while (0)
 
   /*! @decl string compile_string(string source)
+   *! @appears Tools.Sass.SCSS.compile_string()
    *!
    *! Compile the string @[source]
    *!
