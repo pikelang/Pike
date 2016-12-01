@@ -27,13 +27,18 @@ class Options
   constant help_pre =
     "pike -x join_autodoc <destination.xml> <builddir>\n"
     "pike -x join_autodoc";
-  constant help_post = "\t<destination.xml> files_to_join.xml [...]\n";
+  constant help_post = "\t<destination.xml> <files_to_join.xml> [...]";
 
+  Opt help = NoOpt("-h")|NoOpt("--help");
   Opt quiet = NoOpt("-q")|NoOpt("--quiet");
+  constant quiet_help = "Quiet mode.";
   Opt verbose = NoOpt("-v")|NoOpt("--verbose");
-  Opt postprocess = NoOpt("--post-process");
+  constant verbose_help = "Verbose mode.";
+  Opt post_process = NoOpt("--post-process");
+  constant post_process_help = "Perform post processing (resolve references, etc).";
   Opt pikever = HasOpt("--pike-version")|
     Default(DEFINETOSTR(__MAJOR__) "." DEFINETOSTR(__MINOR__));
+  constant pikever_help = "Set the pike version.";
 }
 
 int main(int n, array(string) args)
@@ -46,7 +51,6 @@ int main(int n, array(string) args)
   if (options->quiet) {
     // quiet.
     verbosity = 0;
-    args -= ({ "-q" });
   } else if (options->verbose) {
     verbosity++;
   }
