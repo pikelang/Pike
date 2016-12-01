@@ -6,14 +6,14 @@ int run()
 {
   werror("Run in test: %s\n", basename(BASE));
 
+  compiler->set_include_path(BASE);
+
   mixed err = catch {
     compiler->compile_file(combine_path(BASE, "input.scss"),
                            combine_path(BASE, "output.css"));
   };
 
-  if (err) {
-    werror(">> Compile file error:\n%s\n", describe_error(err));
-  }
+  handle_err(err);
 
   string cont = Stdio.read_file(combine_path(BASE, "input.scss"));
 
@@ -21,7 +21,5 @@ int run()
     compiler->compile_string(cont);
   };
 
-  if (err) {
-    werror(">> Compile string error:\n%s\n", describe_error(err));
-  }
+  handle_err(err);
 }

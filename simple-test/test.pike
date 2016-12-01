@@ -21,7 +21,14 @@ int main(int argc, array(string) argv)
   return 0;
 }
 
-int run()
+protected int run()
 {
   error("Method run() not implemented!\n");
+}
+
+protected void handle_err(mixed e)
+{
+  if (e) {
+    werror("%s\n", describe_backtrace(e));
+  }
 }

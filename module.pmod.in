@@ -33,6 +33,58 @@ class SCSS
 {
   inherit Tools@module@.Api;
 
+  //! Compile the file @[input_file] and return the result
+  //!
+  //! @param input_file
+  //!  The SCSS file to compile
+  //!
+  //! @returns
+  //!  A mapping with the generated CSS and source mapping file if such is
+  //!  set to be generated
+  //!
+  //!  @mapping
+  //!   @member string "css"
+  //!    The generated CSS
+  //!   @member string "map"
+  //!    The generated source mapping data
+  //!  @endmapping
+  mapping(string:string) compile_file(string input_file)
+  {
+    mapping(string:string) val = ::compile_file(input_file);
+    return val;
+  }
+
+  //! Compile the file @[input_file] and write the result to @[output_file].
+  //! If a source mapping file is set to be generated either via
+  //! @[set_options()] or @[set_source_map_file()] it will be written as per
+  //! the value set in the option.
+  //!
+  //! @param input_file
+  //!  The SCSS file to compile
+  //! @param output_file
+  //!  The name of the CSS file to save the result in.
+  variant void compile_file(string input_file, string output_file)
+  {
+    mapping(string:string) val = ::compile_file(input_file);
+    Stdio.write_file(output_file, val->css);
+
+    if (val->map) {
+      string smap_path = ::get_source_map_file();
+      Stdio.write_file(smap_path, val->map);
+    }
+  }
+
+
+  //! Compile the string @[source]
+  //!
+  //! @param source
+  //!  The string to compile
+  string(8bit) compile_string(string(8bit) source)
+  {
+    string(8bit) out = ::compile_string(source);
+    return out;
+  }
+
   //! Set options to the SASS compiler. @[opts]
   //!
   //! @param opts

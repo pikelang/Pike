@@ -10,6 +10,7 @@
 #include "interpret.h"
 #include "module.h"
 #include "stralloc.h"
+#include "mapping.h"
 #include "svalue.h"
 #include "pike_types.h"
 
@@ -57,6 +58,7 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
 
   if (opts->include_path) {
     sass_option_set_include_path (s_opts, opts->include_path);
+    // sass_option_push_include_path (s_opts, opts->include_path);
   }
 
   sass_option_set_omit_source_map_url (s_opts, opts->omit_map_url);
@@ -374,28 +376,18 @@ PIKECLASS Api
     Pike_error (X);                    \
   } while (0)
 
-  /*! @decl void compile_file (string in, string out)
-   *! @appears Tools.Sass.SCSS.compile_file()
-   *!
-   *! Compile the file @[in] and write it to @[out]
-   *!
-   *! @throws
-   *!  And error is thown if something fails.
-   *!
-   *! @param in
-   *!  The file to compile
-   *! @param out
-   *!  The file to write the output to
-   */
-  PIKEFUN void compile_file (string in, string out)
+  // Compile the file input_file and return the result.
+  // This method is over ridden in the the pmod.
+  PIKEFUN mapping(string:string) compile_file (string input_file)
   {
-    SASS_TRACE ("compile_file(%s)\n", in->str);
+    SASS_TRACE ("compile_file(%s)\n", input_file->str);
 
-    if (access (in->str, F_OK) == -1) {
-      Pike_error ("Input file \"%s\" does not exist!\n", in->str);
+    if (access (input_file->str, F_OK) == -1) {
+      Pike_error ("Input file \"%s\" does not exist!\n", input_file->str);
     }
 
-    struct Sass_File_Context* ctx = sass_make_file_context (strdup (in->str));
+    struct Sass_File_Context* ctx =
+      sass_make_file_context (strdup (input_file->str));
     struct Sass_Context* ctx_out = sass_file_context_get_context (ctx);
 
     set_options (THIS->options, ctx_out);
@@ -410,43 +402,34 @@ PIKECLASS Api
 
     const char* scss = sass_context_get_output_string (ctx_out);
 
-    FILE* fp;
-    fp = fopen (out->str, "wb");
+    if (scss) {
+      // push_text (scss);
+      int aggr = 2;
+      const char* smap = NULL;
+      struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
 
-    if (!fp) {
-      SASS_COMPILE_FILE_ERR ("Error opening output file");
+      if (sass_option_get_source_map_file (s_opts)) {
+        smap = sass_context_get_source_map_string (ctx_out);
+
+        if ((err = sass_context_get_error_status (ctx_out))) {
+          const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+          SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
+                                 err, errstr);
+        }
+
+        aggr = 4;
+      }
+
+      push_constant_text ("css"); push_text (scss);
+
+      if (smap != NULL) {
+        push_constant_text ("map"); push_text (smap);
+      }
+
+      f_aggregate_mapping (aggr);
     }
-
-    if (fprintf (fp, "%s", scss) < 0) {
-      fclose (fp);
-      SASS_COMPILE_FILE_ERR ("Error writing to output file");
-    }
-
-    fclose (fp);
-
-    struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
-
-    if (sass_option_get_source_map_file (s_opts)) {
-      const char* smap = sass_context_get_source_map_string (ctx_out);
-
-      if ((err = sass_context_get_error_status (ctx_out))) {
-        const char* errstr = strdup (sass_context_get_error_message (ctx_out));
-        SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
-                               err, errstr);
-      }
-
-      fp = fopen (sass_option_get_source_map_file (s_opts), "wb");
-
-      if (!fp) {
-        SASS_COMPILE_FILE_ERR ("Error opening source map file");
-      }
-
-      if (fprintf (fp, "%s", smap) < 0) {
-        fclose (fp);
-        SASS_COMPILE_FILE_ERR ("Error writing to source map file");
-      }
-
-      fclose (fp);
+    else  {
+      push_undefined ();
     }
 
     sass_delete_file_context (ctx);
@@ -458,15 +441,10 @@ PIKECLASS Api
     Pike_error (X);                    \
   } while (0)
 
-  /*! @decl string compile_string(string source)
-   *! @appears Tools.Sass.SCSS.compile_string()
-   *!
-   *! Compile the string @[source]
-   *!
-   *! @param source
-   *!  The string to compile
-   */
-  PIKEFUN string compile_string (string source)
+
+  // Compile the string source and return a string.
+  // This method is over ridden in the pmod
+  PIKEFUN string(8bit) compile_string (string(8bit) source)
   {
     struct Sass_Data_Context* ctx;
     ctx = sass_make_data_context (strdup (source->str));
