@@ -5261,7 +5261,7 @@ test_any([[
 
 test_compile([[
   class {
-    class foobar {} ();
+    class foobar {};
     object(Stdio.File) foo = foobar();
   }]])
 test_compile(class { object(Stdio.File) foo=class {} ();})
@@ -7144,7 +7144,7 @@ test_true([[Pike.count_memory (0, ({"some string with no other ref in memory " +
 test_true([[Pike.count_memory (-1, ({time(1)})) +
 	    Pike.count_memory (-1, ([1: time(1)])) ==
 	    Pike.count_memory (0, ({([1: time(1)])}))]])
-test_true([[Pike.count_memory (0, class {mapping(X:array(int)) x;}) >
+test_true([[Pike.count_memory (0, class {mapping(this_program:array(int)) x;}) >
 	    Pike.count_memory (0, class {int x;})]])
 test_true([[Pike.count_memory (0, ({compile (
 				      "constant x = ([1: " + time(1) +
@@ -8011,7 +8011,7 @@ test_true(functionp(class { int foo() { return 1; }}()->foo))
 test_true(class { int foo() { return 1; }}()->foo())
 test_true(class { int i=1; }()->i)
 test_false(class { int foo() { return 1; }}()->bar)
-test_eq(class { program foo=class c { int i=20; }; }()->foo()->i,20)
+test_eq(class { program foo = class { int i=20; }; }()->foo()->i,20)
 
 // class()
 test_true(programp(class (){}))
