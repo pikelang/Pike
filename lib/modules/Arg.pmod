@@ -615,6 +615,32 @@ class Options
     return values[id];
   }
 
+  protected array _indices(object|void ctx, int|void access)
+  {
+    if (!access) {
+      return indices(values) + ({ REST, PATH, APP });
+    }
+    return ::_indices(ctx, access);
+  }
+
+  protected array _values(object|void ctx, int|void access)
+  {
+    if (!access) {
+      return predef::values(values) +
+	({ argv, application, basename(application) });
+    }
+    return ::_values(ctx, access);
+  }
+
+  protected array _types(object|void ctx, int|void access)
+  {
+    if (!access) {
+      return map(predef::values(values) +
+		 ({ argv, application, basename(application) }), _typeof);
+    }
+    return ::_types(ctx, access);
+  }
+
   protected mixed `->(string id)
   {
     return values[id];
