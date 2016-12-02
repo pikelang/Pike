@@ -12,6 +12,22 @@
 
 //! @ignore
 inherit Tools@module@;
+
+string __resolve_external_import(string path, Tools.__Sass.Api api)
+{
+  Protocols.HTTP.Query q = Protocols.HTTP.get_url(path);
+
+  if (q->status == 200) {
+    return q->data();
+  }
+
+  return UNDEFINED;
+}
+
+string __resolve_internal_import(string path, Tools.__Sass.Api api)
+{
+
+}
 //! @endignore
 
 //! SCSS compiler
@@ -32,6 +48,66 @@ inherit Tools@module@;
 class SCSS
 {
   inherit Tools@module@.Api;
+
+  //! If a Sass file is importing an external URI this flag determines if
+  //! thats allowed at all, or if the content type of the imported file has
+  //! to be text/scss or if anything goes. Default is @[EXTERNAL_IMPORT_NONE].
+  //!
+  //! @seealso
+  //!  @[EXTERNAL_IMPORT_NONE], @[EXTERNAL_IMPORT_GREEDY] and
+  //!  @[EXTERNAL_IMPORT_ANY].
+  public int(0..2) external_use = EXTERNAL_IMPORT_NONE;
+
+
+  //! @ignore
+  protected void create()
+  {
+    ::__set_importer_callback(__resolve_import);
+  }
+  //! @endignore
+
+  //! @ignore
+  //! Resolve external imports in sass files.
+  protected string __resolve_import(string path)
+  {
+    Standards.URI uri;
+
+    if (catch (uri = Standards.URI(path))) {
+      return UNDEFINED;
+    }
+
+    Protocols.HTTP.Query q = Protocols.HTTP.get_url(uri);
+
+    if (q->status != 200) {
+      error("Bad HTTP status (%d) for @import %q!\n",
+            q->status, (string) uri);
+    }
+
+    array(string) ct_parts = map(q->headers["content-type"]/";",
+                                 String.trim_all_whites);
+
+    if (external_use == EXTERNAL_IMPORT_GREEDY) {
+      if (ct_parts[0] != "text/scss") {
+        error("Returned content type from import (%s) was %q. "
+              "Expected \"text/scss\"!\n",
+              uri, ct_parts[0]);
+      }
+    }
+
+    string(8bit) data = q->data();
+
+    if (sizeof(ct_parts) > 1) {
+      sscanf(ct_parts[1], "%*s=%s", string charset);
+      // In case of charset="utf-8" and alike.
+      if (charset && charset[0] < 65) {
+        charset = charset[1..<1];
+      }
+    }
+
+    return data;
+  }
+  //! @endignore
+
 
   //! Compile the file @[input_file] and return the result
   //!
@@ -84,6 +160,7 @@ class SCSS
     string(8bit) out = ::compile_string(source);
     return out;
   }
+
 
   //! Set options to the SASS compiler. @[opts]
   //!

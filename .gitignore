@@ -15,5 +15,6 @@ sass.c
 plib/
 refdoc/
 _build/
+tmp/
 *.css
 *.map

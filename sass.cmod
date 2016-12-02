@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#include <sass.h>
 #include "config.h"
 #include "global.h"
 #include "interpret.h"
@@ -13,6 +12,8 @@
 #include "mapping.h"
 #include "svalue.h"
 #include "pike_types.h"
+
+#include <sass.h>
 
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
@@ -88,8 +89,63 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
  */
 PIKECLASS Api
 {
-  // CVAR sass_object *sobj;
   CVAR sass_opts* options;
+
+
+  // Used to resolve external imports. Set by default from the constructor
+  // in SCSS in module.pmod.
+  PIKEVAR function(string:string) __importer_cb
+    flags ID_PRIVATE;
+
+
+  // Libsass import callback. This will be called for every @import directive
+  // in the Sass files. The callback __importer_cb will be called with
+  // @path as argument and if @path is an URI __importer_cb will fetch
+  // it and return the data as a string. If it's not a string that's retured,
+  // e.g. @path was not an URI, NULL is returned from here and libsass will
+  // try to resolve @path. If it was an URI a Sass_Import_List will be
+  // returned so that the contents of @path will replace the @import directive.
+  Sass_Import_List
+  pike_sass_string_importer (const char* path, Sass_Importer_Entry cb,
+                             struct Sass_Compiler* comp)
+  {
+    SASS_TRACE ("pike_sass_importer(%s)\n", path);
+
+    if (&THIS->__importer_cb != NULL) {
+      push_text (path);
+
+      safe_apply_svalue (&THIS->__importer_cb, 1, 1);
+
+      if (TYPEOF (Pike_sp[-1]) == T_STRING) {
+        SASS_TRACE ("Got return value from import: %s\n",
+                    Pike_sp[-1].u.string->str);
+
+        Sass_Import_List list = sass_make_import_list (1);
+        list[0] = sass_make_import_entry (path, strdup (Pike_sp[-1].u.string->str), 0);
+
+        return list;
+      }
+    }
+
+    return NULL;
+  }
+
+
+  /* This is a strictly internal method that's called from the constructor of
+   * the implementing class inheriting this one. The callback @fn should
+   * only resolve external URI:s.
+   */
+  PIKEFUN void __set_importer_callback(function(string:string) fn)
+  flags ID_PROTECTED;
+  {
+    if (fn && TYPEOF (*fn) == T_FUNCTION) {
+      assign_svalue (&THIS->__importer_cb, fn);
+    }
+    else {
+      SIMPLE_ARG_TYPE_ERROR ("fn", 1, "function");
+    }
+  }
+
 
   /*! @decl void set_include_path(string path)
    *! @appears Tools.Sass.SCSS.set_include_path()
@@ -370,11 +426,13 @@ PIKECLASS Api
     RETURN (THIS->options->precision);
   }
 
+
 #define SASS_COMPILE_FILE_ERR(X...)    \
   do {                                 \
     sass_delete_file_context (ctx);    \
     Pike_error (X);                    \
   } while (0)
+
 
   // Compile the file input_file and return the result.
   // This method is over ridden in the the pmod.
@@ -435,6 +493,7 @@ PIKECLASS Api
     sass_delete_file_context (ctx);
   }
 
+
 #define SASS_COMPILE_STRING_ERR(X...)  \
   do {                                 \
     sass_delete_data_context (ctx);    \
@@ -451,6 +510,14 @@ PIKECLASS Api
     struct Sass_Context* ctx_out = sass_data_context_get_context (ctx);
 
     set_options (THIS->options, ctx_out);
+
+    struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
+
+    Sass_Importer_Entry c_imp;
+    c_imp = sass_make_importer (pike_sass_string_importer, 0, 0);
+    Sass_Importer_List imp_list = sass_make_importer_list (1);
+    sass_importer_set_list_entry (imp_list, 0, c_imp);
+    sass_option_set_c_importers (s_opts, imp_list);
 
     sass_compile_data_context (ctx);
 
@@ -512,8 +579,7 @@ PIKECLASS Api
  */
 PIKEFUN string libsass_version()
 {
-  const char* v = libsass_version();
-  push_string (make_shared_string (v));
+  push_text (libsass_version ());
 }
 
 
@@ -523,8 +589,7 @@ PIKEFUN string libsass_version()
  */
 PIKEFUN string sass2scss_version()
 {
-  const char* v = sass2scss_version();
-  push_string (make_shared_string (v));
+  push_text (sass2scss_version ());
 }
 
 
@@ -533,25 +598,24 @@ PIKEFUN string sass2scss_version()
 */
 PIKEFUN string libsass_language_version()
 {
-  const char* v = libsass_language_version();
-  push_string (make_shared_string (v));
+  push_text (libsass_language_version ());
 }
 #endif
 
 
 PIKE_MODULE_INIT
 {
-  /*! @decl constant LIBSASS_VERSION
+  /*! @decl constant LIBSASS_VERSION = ""
    *!
    *! The @tt{libsass@} version, as a string, this module was compiled agains.
    */
 
   add_string_constant ("LIBSASS_VERSION",   LIBSASS_VERSION, 0);
 
-  /*! @decl constant STYLE_NESTED
-   *! @decl constant STYLE_EXPANDED
-   *! @decl constant STYLE_COMPACT
-   *! @decl constant STYLE_COMPRESSED
+  /*! @decl constant STYLE_NESTED = 1
+   *! @decl constant STYLE_EXPANDED = 1
+   *! @decl constant STYLE_COMPACT = 1
+   *! @decl constant STYLE_COMPRESSED = 1
    *!
    *! Styling of output. Use as argument to @[Api.set_output_style()]
    */
@@ -560,6 +624,15 @@ PIKE_MODULE_INIT
   add_integer_constant ("STYLE_EXPANDED",   SASS_STYLE_EXPANDED,   0);
   add_integer_constant ("STYLE_COMPACT",    SASS_STYLE_COMPACT,    0);
   add_integer_constant ("STYLE_COMPRESSED", SASS_STYLE_COMPRESSED, 0);
+
+  /*! @decl constant EXTERNAL_IMPORT_NONE = 0
+   *! @decl constant EXTERNAL_IMPORT_GREEDY = 1
+   *! @decl constant EXTERNAL_IMPORT_ANY = 2
+   */
+
+  add_integer_constant ("EXTERNAL_IMPORT_NONE",   0, 0);
+  add_integer_constant ("EXTERNAL_IMPORT_GREEDY", 1, 0);
+  add_integer_constant ("EXTERNAL_IMPORT_ANY",    2, 0);
 
   INIT
 }

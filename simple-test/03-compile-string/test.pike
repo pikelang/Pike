@@ -6,6 +6,8 @@ int run()
 {
   werror("Run in test: %s\n", basename(BASE));
 
+  compiler->set_include_path (BASE);
+
   mixed err = catch {
     string filec = Stdio.read_file(combine_path(BASE, "input.scss"));
     string data = compiler->compile_string(filec);
