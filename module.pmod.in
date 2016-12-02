@@ -12,22 +12,6 @@
 
 //! @ignore
 inherit Tools@module@;
-
-string __resolve_external_import(string path, Tools.__Sass.Api api)
-{
-  Protocols.HTTP.Query q = Protocols.HTTP.get_url(path);
-
-  if (q->status == 200) {
-    return q->data();
-  }
-
-  return UNDEFINED;
-}
-
-string __resolve_internal_import(string path, Tools.__Sass.Api api)
-{
-
-}
 //! @endignore
 
 //! SCSS compiler
