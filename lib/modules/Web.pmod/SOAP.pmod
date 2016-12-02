@@ -44,58 +44,6 @@ private constant defaultheaders = ([
   "Accept-Encoding" : "gzip"
 ]);
 
-private mapping(string:mixed) xml2map(object n) {
-  return low_xml2map(n)[1];
-}
-
-private array low_xml2map(object n) {
-  string|mapping ret = ([]);
-  {
-    mapping m = n->get_attributes();
-    {
-      mapping n = n->get_short_attributes();
-      if (n)
-        if (m)
-          m += n;
-        else
-          m = n;
-    }
-    if (m && sizeof(m)) {
-      string ns, value;
-      foreach (({"type", "base", "element"}); ; string atn) {
-        if (m[atn] && 2 == sscanf(m[atn], "%s:%s", ns, value))
-          m[atn] = ({n->get_defined_nss()[ns], value});
-      }
-      ret["/"] = m;
-    }
-  }
-  string text = n->get_ns();
-  if (0 && text)
-    ret["/ns"] = text;
-  text = utf8_to_string(n->get_text());
-  if (sizeof(text))
-    if (sizeof(ret))
-      ret[""] = text;
-    else
-      ret = text;
-  else
-    foreach (n->get_children();; object child) {
-      mixed r = low_xml2map(child);
-      mixed v = ret[text = r[0]];
-      r = r[1];
-      if (!sizeof(text))
-        if (sizeof(ret))
-          ret[""] = r;
-        else
-          ret = r;
-      else if (arrayp(v))
-        ret[text] += ({r});
-      else
-        ret[text] = zero_type(v) ? r : ({v, r});
-    }
-  return ({n->get_full_name(), sizeof(ret) ? ret : ""});
-}
-
 //! @returns
 //! A @[Concurrent.Future] that eventually delivers a @[Client].
 //!
@@ -265,7 +213,7 @@ class Client {
         res = Gz.uncompress(res[10..<8], true);
       PD("\nGot: %O\n", res);
       Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(res);
-      mapping m = xml2map(root)->Envelope->Body;
+      mapping m = Parser.XML.node_to_struct(root)->Envelope->Body;
       root->zap_tree();
       PD("\nGotmapping: %O\n", m);
       return m;
@@ -280,7 +228,7 @@ class Client {
     if (resp->content_type != "text/xml")
       DERROR("Invalid wsdl response %O: %O\n", resp->content_type, resp->data);
     Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(resp->data);
-    mapping m = xml2map(root)->definitions;
+    mapping m = Parser.XML.node_to_struct(root)->definitions;
     root->zap_tree();
     PD("wsdl: %O\n", m);
     mapping types = ([]);
