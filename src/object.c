@@ -3266,6 +3266,9 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  /* NB: The type for this function is duplicated in las.c for
+   *     opcode F_MAGIC_INDEX.
+   */
   ADD_FUNCTION("`()", f_magic_index,
 	       tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tMix), ID_PROTECTED);
@@ -3276,6 +3279,9 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  /* NB: The type for this function is duplicated in las.c for
+   *     opcode F_MAGIC_SET_INDEX.
+   */
   ADD_FUNCTION("`()", f_magic_set_index,
 	       tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt))
 		     tOr(tVoid,tInt), tVoid), ID_PROTECTED);
@@ -3286,6 +3292,9 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  /* NB: The type for this function is duplicated in las.c for
+   *     opcode F_MAGIC_INDICES.
+   */
   ADD_FUNCTION("`()", f_magic_indices,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tArr(tStr)), ID_PROTECTED);
@@ -3296,6 +3305,9 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  /* NB: The type for this function is duplicated in las.c for
+   *     opcode F_MAGIC_VALUES.
+   */
   ADD_FUNCTION("`()", f_magic_values,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tArray), ID_PROTECTED);
@@ -3306,9 +3318,12 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  /* NB: The type for this function is duplicated in las.c for
+   *     opcode F_MAGIC_TYPES.
+   */
   ADD_FUNCTION("`()", f_magic_types,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
-		     tArray), ID_PROTECTED);
+		     tArr(tType(tMix))), ID_PROTECTED);
   magic_types_program=end_program();
 
   exit_compiler();
