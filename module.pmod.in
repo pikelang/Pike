@@ -1,6 +1,7 @@
 /*
   Author: Pontus Östlund <https://profiles.google.com/poppanator>
 */
+
 //! Sass is a scripting language that is interpreted into Cascading Style
 //! Sheets (CSS). This module is a glue for @tt{libsass@}.
 //!
@@ -18,7 +19,7 @@ inherit Tools@module@;
 //!
 //! @example
 //! @code
-//! Tools.Sass.SCSS compiler = Tools.Sass.SCSS();
+//! Tools.Sass.Compiler compiler = Tools.Sass.Compiler();
 //! // Minify the output and create a source map file.
 //! compiler->set_options(([
 //!   "output_style" : Tools.Sass.STYLE_COMPRESSED
@@ -29,18 +30,20 @@ inherit Tools@module@;
 //!   werror("Failed compiling input.scss to output.css\n");
 //! }
 //! @endcode
-class SCSS
+class Compiler
 {
+  //! @ignore
   inherit Tools@module@.Api;
+  //! @endignore
 
   //! If a Sass file is importing an external URI this flag determines if
   //! thats allowed at all, or if the content type of the imported file has
-  //! to be text/scss or if anything goes. Default is @[EXTERNAL_IMPORT_NONE].
+  //! to be text/scss or if anything goes. Default is @[HTTP_IMPORT_NONE].
   //!
   //! @seealso
-  //!  @[EXTERNAL_IMPORT_NONE], @[EXTERNAL_IMPORT_GREEDY] and
-  //!  @[EXTERNAL_IMPORT_ANY].
-  public int(0..2) external_use = EXTERNAL_IMPORT_NONE;
+  //!  @[HTTP_IMPORT_NONE], @[HTTP_IMPORT_GREEDY] and
+  //!  @[HTTP_IMPORT_ANY].
+  public int(0..2) import_http = HTTP_IMPORT_NONE;
 
 
   //! @ignore
@@ -60,6 +63,10 @@ class SCSS
       return UNDEFINED;
     }
 
+    if (import_http == HTTP_IMPORT_NONE) {
+      error("Imports over HTTP not allowed!\n");
+    }
+
     Protocols.HTTP.Query q = Protocols.HTTP.get_url(uri);
 
     if (q->status != 200) {
@@ -70,7 +77,7 @@ class SCSS
     array(string) ct_parts = map(q->headers["content-type"]/";",
                                  String.trim_all_whites);
 
-    if (external_use == EXTERNAL_IMPORT_GREEDY) {
+    if (import_http == HTTP_IMPORT_GREEDY) {
       if (ct_parts[0] != "text/scss") {
         error("Returned content type from import (%s) was %q. "
               "Expected \"text/scss\"!\n",

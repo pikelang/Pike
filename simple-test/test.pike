@@ -1,5 +1,5 @@
 
-protected Tools.Sass.SCSS compiler;
+protected Tools.Sass.Compiler compiler;
 
 constant BASE = __DIR__;
 
@@ -11,7 +11,7 @@ int main(int argc, array(string) argv)
     return 0;
   }
 
-  compiler = Tools.Sass.SCSS();
+  compiler = Tools.Sass.Compiler();
   compiler->set_options(([
     "output_style" : Tools.Sass.STYLE_EXPANDED
   ]));

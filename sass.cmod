@@ -84,8 +84,19 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
 }
 
 
+#define REGISTER_IMPORTER(CTX)                                    \
+  do {                                                            \
+    struct Sass_Options *s_opts = sass_context_get_options (CTX); \
+    Sass_Importer_Entry c_imp;                                    \
+    c_imp = sass_make_importer (pike_sass_string_importer, 0, 0); \
+    Sass_Importer_List imp_list = sass_make_importer_list (1);    \
+    sass_importer_set_list_entry (imp_list, 0, c_imp);            \
+    sass_option_set_c_importers (s_opts, imp_list);               \
+  } while (0)
+
+
 /*! @class Api
- *! @appears Tools.Sass.SCSS
+ *! @appears Tools.Sass.Compiler
  */
 PIKECLASS Api
 {
@@ -93,7 +104,7 @@ PIKECLASS Api
 
 
   // Used to resolve external imports. Set by default from the constructor
-  // in SCSS in module.pmod.
+  // in Compiler in module.pmod.
   PIKEVAR function(string:string) __importer_cb
     flags ID_PRIVATE;
 
@@ -113,7 +124,6 @@ PIKECLASS Api
 
     if (&THIS->__importer_cb != NULL) {
       push_text (path);
-
       safe_apply_svalue (&THIS->__importer_cb, 1, 1);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
@@ -121,8 +131,9 @@ PIKECLASS Api
                     Pike_sp[-1].u.string->str);
 
         Sass_Import_List list = sass_make_import_list (1);
-        list[0] = sass_make_import_entry (path, strdup (Pike_sp[-1].u.string->str), 0);
-
+        list[0] = sass_make_import_entry (path,
+                                          strdup (Pike_sp[-1].u.string->str),
+                                          0);
         return list;
       }
     }
@@ -148,7 +159,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_include_path(string path)
-   *! @appears Tools.Sass.SCSS.set_include_path()
+   *! @appears Tools.Sass.Compiler.set_include_path()
    *!
    *! Set include path of @tt{imports@}
    *!
@@ -170,7 +181,7 @@ PIKECLASS Api
 
 
   /*! @decl string get_include_path()
-   *! @appears Tools.Sass.SCSS.get_include_path()
+   *! @appears Tools.Sass.Compiler.get_include_path()
    *!
    *! Get include path of @tt{imports@}
    *!
@@ -191,7 +202,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_output_style(int style)
-   *! @appears Tools.Sass.SCSS.set_output_style()
+   *! @appears Tools.Sass.Compiler.set_output_style()
    *!
    *! Set the output style for the generated CSS code.
    *! Default is @[Tools.Sass.STYLE_NESTED].
@@ -210,7 +221,7 @@ PIKECLASS Api
 
 
   /*! @decl int get_output_style(int style)
-   *! @appears Tools.Sass.SCSS.get_output_style()
+   *! @appears Tools.Sass.Compiler.get_output_style()
    *!
    *! Returns the output style of the generated CSS code.
    *!
@@ -224,7 +235,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_comments(bool set)
-   *! @appears Tools.Sass.SCSS.set_source_comments()
+   *! @appears Tools.Sass.Compiler.set_source_comments()
    *!
    *! Emit comments in the generated CSS indicating the corresponding
    *! source line. Default is @tt{false@}.
@@ -239,7 +250,7 @@ PIKECLASS Api
 
 
   /*! @decl bool get_source_comments()
-   *! @appears Tools.Sass.SCSS.get_source_comments()
+   *! @appears Tools.Sass.Compiler.get_source_comments()
    *!
    *! Getter for @[set_source_comments()].
    *!
@@ -253,7 +264,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_file(string path)
-   *! @appears Tools.Sass.SCSS.set_source_map_file()
+   *! @appears Tools.Sass.Compiler.set_source_map_file()
    *!
    *! Path to source map file. Enables the source map generating.
    *! Used to create sourceMappingUrl. If this isn't set no source map will
@@ -273,7 +284,7 @@ PIKECLASS Api
 
 
   /*! @decl string get_source_map_file()
-   *! @appears Tools.Sass.SCSS.get_source_map_file()
+   *! @appears Tools.Sass.Compiler.get_source_map_file()
    *!
    *! Returns the path of the source map file.
    *!
@@ -295,7 +306,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_embed(bool embed)
-   *! @appears Tools.Sass.SCSS.set_source_map_embed()
+   *! @appears Tools.Sass.Compiler.set_source_map_embed()
    *!
    *! Set whether embedding sourceMappingUrl as data uri or not.
    *!
@@ -312,7 +323,7 @@ PIKECLASS Api
 
 
   /*! @decl bool get_source_map_embed()
-   *! @appears Tools.Sass.SCSS.get_source_map_embed()
+   *! @appears Tools.Sass.Compiler.get_source_map_embed()
    *!
    *! Will a source map be embedded in the CSS file or not?
    *!
@@ -327,7 +338,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_source_map_root(string path)
-   *! @appears Tools.Sass.SCSS.set_source_map_root()
+   *! @appears Tools.Sass.Compiler.set_source_map_root()
    *!
    *! Set the root path of the source files, relative to where the
    *! source.map file is written.
@@ -345,7 +356,7 @@ PIKECLASS Api
 
 
   /*! @decl string get_source_map_root()
-   *! @appears Tools.Sass.SCSS.get_source_map_root()
+   *! @appears Tools.Sass.Compiler.get_source_map_root()
    *!
    *! Returns the path of the source maps root.
    *!
@@ -365,7 +376,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_omit_source_map_url(bool embed)
-   *! @appears Tools.Sass.SCSS.set_omit_source_map_url()
+   *! @appears Tools.Sass.Compiler.set_omit_source_map_url()
    *!
    *! Set whether writing sourceMappingUrl or not.
    *!
@@ -382,7 +393,7 @@ PIKECLASS Api
 
 
   /*! @decl int(0..1) get_omit_source_map_url()
-   *! @appears Tools.Sass.SCSS.get_omit_source_map_url()
+   *! @appears Tools.Sass.Compiler.get_omit_source_map_url()
    *!
    *! Getter for @[set_omit_source_map_url()].
    *!
@@ -398,7 +409,7 @@ PIKECLASS Api
 
 
   /*! @decl void set_precision(int(0..) p)
-   *! @appears Tools.Sass.SCSS.set_precision()
+   *! @appears Tools.Sass.Compiler.set_precision()
    *!
    *! Set the precision of fractional numbers. Default is @tt{5@}.
    *!
@@ -414,7 +425,7 @@ PIKECLASS Api
 
 
   /*! @decl int(0..) get_precision()
-   *! @appears Tools.Sass.SCSS.get_precision()
+   *! @appears Tools.Sass.Compiler.get_precision()
    *!
    *! Returns the precision of floating point values
    *!
@@ -444,11 +455,15 @@ PIKECLASS Api
       Pike_error ("Input file \"%s\" does not exist!\n", input_file->str);
     }
 
-    struct Sass_File_Context* ctx =
-      sass_make_file_context (strdup (input_file->str));
-    struct Sass_Context* ctx_out = sass_file_context_get_context (ctx);
+    struct Sass_File_Context* ctx;
+    struct Sass_Context* ctx_out;
+
+    ctx = sass_make_file_context (strdup (input_file->str));
+    ctx_out = sass_file_context_get_context (ctx);
 
     set_options (THIS->options, ctx_out);
+
+    REGISTER_IMPORTER (ctx_out);
 
     int err = sass_compile_file_context (ctx);
 
@@ -461,8 +476,6 @@ PIKECLASS Api
     const char* scss = sass_context_get_output_string (ctx_out);
 
     if (scss) {
-      // push_text (scss);
-      int aggr = 2;
       const char* smap = NULL;
       struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
 
@@ -474,17 +487,19 @@ PIKECLASS Api
           SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
                                  err, errstr);
         }
-
-        aggr = 4;
       }
 
       push_constant_text ("css"); push_text (scss);
+      push_constant_text ("map");
 
       if (smap != NULL) {
-        push_constant_text ("map"); push_text (smap);
+        push_text (smap);
+      }
+      else {
+        push_undefined ();
       }
 
-      f_aggregate_mapping (aggr);
+      f_aggregate_mapping (4);
     }
     else  {
       push_undefined ();
@@ -506,18 +521,14 @@ PIKECLASS Api
   PIKEFUN string(8bit) compile_string (string(8bit) source)
   {
     struct Sass_Data_Context* ctx;
+    struct Sass_Context* ctx_out;
+
     ctx = sass_make_data_context (strdup (source->str));
-    struct Sass_Context* ctx_out = sass_data_context_get_context (ctx);
+    ctx_out = sass_data_context_get_context (ctx);
 
     set_options (THIS->options, ctx_out);
 
-    struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
-
-    Sass_Importer_Entry c_imp;
-    c_imp = sass_make_importer (pike_sass_string_importer, 0, 0);
-    Sass_Importer_List imp_list = sass_make_importer_list (1);
-    sass_importer_set_list_entry (imp_list, 0, c_imp);
-    sass_option_set_c_importers (s_opts, imp_list);
+    REGISTER_IMPORTER (ctx_out);
 
     sass_compile_data_context (ctx);
 
@@ -536,7 +547,7 @@ PIKECLASS Api
   }
 
   INIT {
-    SASS_TRACE ("INIT __Sass.Api\n");
+    SASS_TRACE ("INIT __Sass.__Compiler\n");
 
     THIS->options = (sass_opts *) malloc (sizeof (sass_opts));
     memset (THIS->options, 0, sizeof (sass_opts));
@@ -553,7 +564,7 @@ PIKECLASS Api
   }
 
   EXIT {
-    SASS_TRACE ("EXIT __Sass.Api\n");
+    SASS_TRACE ("EXIT __Sass.__Compiler\n");
 
     if (THIS->options->include_path != NULL) {
       free (THIS->options->include_path);
@@ -617,7 +628,44 @@ PIKE_MODULE_INIT
    *! @decl constant STYLE_COMPACT = 1
    *! @decl constant STYLE_COMPRESSED = 1
    *!
-   *! Styling of output. Use as argument to @[Api.set_output_style()]
+   *! Styling of output. Use as argument to @[Compiler.set_output_style()]
+   *!
+   *! @string
+   *! @value STYLE_NESTED
+   *! The default setting. The output will look like:
+   *! @code
+   *! a {
+   *!   property: value;
+   *!   other-property: value; }
+   *! b {
+   *!   property: value; }
+   *! @endcode
+   *!
+   *! @value STYLE_EXPANDED
+   *! Fully expanded output:
+   *! @code
+   *! a {
+   *!   property: value;
+   *!   other-property: value;
+   *! }
+   *! b {
+   *!   property: value;
+   *! }
+   *! @endcode
+   *!
+   *! @value STYLE_COMPACT
+   *! Somewhat minified output:
+   *! @code
+   *! a { property: value; other-prop: value }
+   *! b { property: value; }
+   *! @endcode
+   *!
+   *! @value STYLE_COMPRESSED
+   *! Minified output
+   *! @code
+   *! a{property:value;other-property:value}b{property:value}
+   *! @endcode
+   *! @endstring
    */
 
   add_integer_constant ("STYLE_NESTED",     SASS_STYLE_NESTED,     0);
@@ -625,14 +673,25 @@ PIKE_MODULE_INIT
   add_integer_constant ("STYLE_COMPACT",    SASS_STYLE_COMPACT,    0);
   add_integer_constant ("STYLE_COMPRESSED", SASS_STYLE_COMPRESSED, 0);
 
-  /*! @decl constant EXTERNAL_IMPORT_NONE = 0
-   *! @decl constant EXTERNAL_IMPORT_GREEDY = 1
-   *! @decl constant EXTERNAL_IMPORT_ANY = 2
+  /*! @decl constant HTTP_IMPORT_NONE = 0
+   *! @decl constant HTTP_IMPORT_GREEDY = 1
+   *! @decl constant HTTP_IMPORT_ANY = 2
+   *!
+   *! Description:
+   *!
+   *! @string
+   *! @value HTTP_IMPORT_NONE
+   *!  Default value of @[Compiler.import_http]. Prohibits imports over HTTP.
+   *! @value HTTP_IMPOrt_GREEDY
+   *!  Allow imports over HTTP only if the returned content type is text/scss.
+   *! @value HTTP_IMPORT_ANY
+   *!  Anything goes.
+   *! @endstring
    */
 
-  add_integer_constant ("EXTERNAL_IMPORT_NONE",   0, 0);
-  add_integer_constant ("EXTERNAL_IMPORT_GREEDY", 1, 0);
-  add_integer_constant ("EXTERNAL_IMPORT_ANY",    2, 0);
+  add_integer_constant ("HTTP_IMPORT_NONE",   0, 0);
+  add_integer_constant ("HTTP_IMPORT_GREEDY", 1, 0);
+  add_integer_constant ("HTTP_IMPORT_ANY",    2, 0);
 
   INIT
 }
