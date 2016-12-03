@@ -124,7 +124,16 @@ PIKECLASS Api
 
     if (&THIS->__importer_cb != NULL) {
       push_text (path);
-      safe_apply_svalue (&THIS->__importer_cb, 1, 1);
+      apply_svalue (&THIS->__importer_cb, 1);
+
+      JMP_BUF recovery;
+
+      if (SETJMP (recovery)) {
+        UNSETJMP(recovery);
+        Pike_error ("%s", throw_value);
+      }
+
+      UNSETJMP (recovery);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         SASS_TRACE ("Got return value from import: %s\n",
