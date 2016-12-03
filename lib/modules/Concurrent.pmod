@@ -393,6 +393,18 @@ class Promise
 {
   inherit Future;
 
+  //! Creates a new promise, optionally initialised from a traditional callback
+  //! driven method via @expr{executor(resolve, reject, extra ... )@}.
+  //!
+  //! @seealso
+  //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
+  protected void create(void|
+   function(function(mixed:void),
+            function(mixed:void), mixed ...:void) executor, mixed ... extra) {
+    if (executor)
+      executor(success, failure, @extra);
+  }
+
   //! The future value that we promise.
   Future future()
   {
