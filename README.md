@@ -1,7 +1,8 @@
 # pike-libsass
 A Pike module wrapper for libsass.
 
-## How to install:
+How to install
+_______________
 
 First off you'll need [`libsass`](http://sass-lang.com/libsass) installed.
 In Ubuntu/Debian you can get it via `sudo apt install libsass`.
@@ -14,14 +15,20 @@ In Ubuntu/Debian you can get it via `sudo apt install libsass`.
 
 * `pike -x module install`
 
-## How to use
+
+How to use
+__________
 
 It's pretty straight forward to use:
 
 ```pike
 import Tools.Sass;
 
-SCSS compiler = SCSS();
+Compiler compiler = Compiler();
+
+// Allow imports over HTTP. HTTP_IMPORT_GREEDY will raise an error if the
+// content type of the imported file isn't text/scss.
+compiler->import_http = HTTP_IMPORT_GREEDY;
 
 compiler->set_options(([
   "output_style"    : STYLE_COMPRESSED,    // Minifies the output
