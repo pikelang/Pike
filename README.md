@@ -28,11 +28,11 @@ Compiler compiler = Compiler();
 
 // Allow imports over HTTP. HTTP_IMPORT_GREEDY will raise an error if the
 // content type of the imported file isn't text/scss.
-compiler->import_http = HTTP_IMPORT_GREEDY;
+compiler->http_import = HTTP_IMPORT_GREEDY;
 
 compiler->set_options(([
-  "output_style"    : STYLE_COMPRESSED,    // Minifies the output
-  "source_map_file" : "my.source.map" // Will write a source.map file
+  "output_style"    : STYLE_COMPRESSED,  // Minifies the output
+  "source_map_file" : "my.source.map"    // Will write a source.map file
 ]));
 
 // Compile my.scss to my.css. my.source.map will also be written.
