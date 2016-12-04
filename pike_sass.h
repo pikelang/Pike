@@ -8,6 +8,14 @@
 # define SASS_TRACE(X...)
 #endif
 
+
+#define MY_THROW_ERR(Y...)              \
+  do {                                  \
+    my_opts_delete (THIS->options);     \
+    Pike_error (Y);                     \
+  } while (0)
+
+
 #define OPTS_INC_ARRAY_BLK_SIZE 4
 
 typedef struct my_opts_array
@@ -32,14 +40,13 @@ typedef struct my_opts
 
 my_opts* my_opts_create ()
 {
-  my_opts *opts            = malloc (sizeof (my_opts));
-  opts->include_paths      = NULL;
-  // opts->more_include_paths = NULL;
-  opts->map_path           = NULL;
-  opts->map_root           = NULL;
-  opts->style              = SASS_STYLE_NESTED;
-  opts->precision          = 5;
-  opts->omit_map_url       = true;
+  my_opts *opts             = malloc (sizeof (my_opts));
+  opts->include_paths       = NULL;
+  opts->map_path            = NULL;
+  opts->map_root            = NULL;
+  opts->style               = SASS_STYLE_NESTED;
+  opts->precision           = 5;
+  opts->omit_map_url        = true;
 
   return opts;
 }
@@ -47,10 +54,6 @@ my_opts* my_opts_create ()
 
 void my_opts_push_include_path (my_opts *opts, const char *path)
 {
-  if (access (path, F_OK) == -1) {
-    Pike_error ("Include path \"%s\" does not exist!\n", path);
-  }
-
   if (opts->include_paths == NULL) {
     int blksize = OPTS_INC_ARRAY_BLK_SIZE * sizeof (char*);
     opts->include_paths = malloc (sizeof (my_opts_array));
@@ -78,10 +81,6 @@ void my_opts_set_include_path (my_opts *opts, const char *path)
 {
   if (path != NULL) {
     SASS_TRACE ("::: my_opts_set_include_path(%s)\n", path);
-
-    if (access (path, F_OK) == -1) {
-      Pike_error ("Include path \"%s\" does not exist!\n", path);
-    }
 
     if (opts->include_paths == NULL) {
       my_opts_push_include_path (opts, path);

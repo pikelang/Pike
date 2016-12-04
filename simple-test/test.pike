@@ -18,6 +18,8 @@ int main(int argc, array(string) argv)
 
   run();
 
+  destruct(compiler);
+
   return 0;
 }
 

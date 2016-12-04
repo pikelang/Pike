@@ -79,7 +79,7 @@ void set_options (my_opts *opts, struct Sass_Context *ctx)
   do {                                                            \
     struct Sass_Options *s_opts = sass_context_get_options (CTX); \
     Sass_Importer_Entry c_imp;                                    \
-    c_imp = sass_make_importer (pike_sass_string_importer, 0, 0); \
+    c_imp = sass_make_importer (pike_sass_importer, 0, 0);        \
     Sass_Importer_List imp_list = sass_make_importer_list (1);    \
     sass_importer_set_list_entry (imp_list, 0, c_imp);            \
     sass_option_set_c_importers (s_opts, imp_list);               \
@@ -107,9 +107,8 @@ PIKECLASS Api
   // e.g. @path was not an URI, NULL is returned from here and libsass will
   // try to resolve @path. If it was an URI a Sass_Import_List will be
   // returned so that the contents of @path will replace the @import directive.
-  Sass_Import_List
-  pike_sass_string_importer (const char *path, Sass_Importer_Entry cb,
-                             struct Sass_Compiler *comp)
+  Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
+                                       struct Sass_Compiler *comp)
   {
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
@@ -121,7 +120,7 @@ PIKECLASS Api
 
       if (SETJMP (recovery)) {
         UNSETJMP(recovery);
-        Pike_error ("%s", throw_value);
+        MY_THROW_ERR ("%s", throw_value);
       }
 
       UNSETJMP (recovery);
@@ -161,16 +160,15 @@ PIKECLASS Api
   /*! @decl void set_include_path(string path)
    *! @appears Tools.Sass.Compiler.set_include_path()
    *!
-   *! Set include path of @tt{imports@}
+   *! Set the base path of @tt{@@import@}s to @[path].
    *!
    *! @seealso
-   *!  @[get_include_path()], @[push_include_paths()]
+   *!  @[get_include_path()], @[push_include_path()], @[set_include_paths()]
    *!
    *! @param path
    */
   PIKEFUN void set_include_path (string path)
   {
-    SASS_TRACE (" ***** SET INCLUDE PATH (%s) ******\n", path->str);
     my_opts_set_include_path (THIS->options, path->str);
   }
 
@@ -504,10 +502,6 @@ PIKECLASS Api
   {
     SASS_TRACE ("compile_file(%s)\n", input_file->str);
 
-    if (access (input_file->str, F_OK) == -1) {
-      Pike_error ("Input file \"%s\" does not exist!\n", input_file->str);
-    }
-
     struct Sass_File_Context *ctx;
     struct Sass_Context      *ctx_out;
 
@@ -710,9 +704,10 @@ PIKE_MODULE_INIT
    *!
    *! @string
    *! @value HTTP_IMPORT_NONE
-   *!  Default value of @[Compiler.import_http]. Prohibits imports over HTTP.
-   *! @value HTTP_IMPOrt_GREEDY
-   *!  Allow imports over HTTP only if the returned content type is text/scss.
+   *!  Default value of @[Compiler.http_import]. Prohibits imports over HTTP.
+   *! @value HTTP_IMPORT_GREEDY
+   *!  Allow imports over HTTP only if the returned content type is
+   *!  @tt{text/scss@}.
    *! @value HTTP_IMPORT_ANY
    *!  Anything goes.
    *! @endstring

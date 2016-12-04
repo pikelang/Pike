@@ -15,11 +15,23 @@
 inherit Tools@module@;
 //! @endignore
 
-//! SCSS compiler
+//! Sass/SCSS compiler.
+//!
+//! @note
+//!  @b{Some notes on the @tt{*_include_*@} stuff.@}
+//!
+//!  The methods @[push_include_path()] and @[set_include_paths()] may not
+//!  behave as expected. At the moment the support for setting multiple
+//!  include paths seem to be lacking in @tt{libsass@}. So don't rely on
+//!  setting multiple include paths.
 //!
 //! @example
 //! @code
 //! Tools.Sass.Compiler compiler = Tools.Sass.Compiler();
+//!
+//! // Allow for HTTP imports, disallowed by default.
+//! compiler->http_import = Tools.Sass.HTTP_IMPORT_ANY;
+//!
 //! // Minify the output and create a source map file.
 //! compiler->set_options(([
 //!   "output_style" : Tools.Sass.STYLE_COMPRESSED
@@ -43,7 +55,12 @@ class Compiler
   //! @seealso
   //!  @[HTTP_IMPORT_NONE], @[HTTP_IMPORT_GREEDY] and
   //!  @[HTTP_IMPORT_ANY].
-  public int(0..2) import_http = HTTP_IMPORT_NONE;
+  public int(0..2) http_import = HTTP_IMPORT_NONE;
+
+
+  //! Should file access be tested right away when paths are set or should that
+  //! be left to Sass to handle? The default value is @tt{true@}.
+  public bool check_file_access = true;
 
 
   //! @ignore
@@ -59,11 +76,14 @@ class Compiler
   {
     Standards.URI uri;
 
+    // If it's not an URI we assume it's a local import and we let Sass handle
+    // it. This could of course be a, by mistake, malformed URI, but then Sass
+    // will eventually throw.
     if (catch (uri = Standards.URI(path))) {
       return UNDEFINED;
     }
 
-    if (import_http == HTTP_IMPORT_NONE) {
+    if (http_import == HTTP_IMPORT_NONE) {
       error("Imports over HTTP not allowed!\n");
     }
 
@@ -77,7 +97,7 @@ class Compiler
     array(string) ct_parts = map(q->headers["content-type"]/";",
                                  String.trim_all_whites);
 
-    if (import_http == HTTP_IMPORT_GREEDY) {
+    if (http_import == HTTP_IMPORT_GREEDY) {
       if (ct_parts[0] != "text/scss") {
         error("Returned content type from import (%s) was %q. "
               "Expected \"text/scss\"!\n",
@@ -100,12 +120,30 @@ class Compiler
   //! @endignore
 
 
+  //! @ignore
+  //! Documented i the CMOD
+  void set_include_path(string path)
+  {
+    if (check_file_access && !Stdio.exist(path)) {
+      error("Include path %q does not exist or isn't accessible!\n",
+            path);
+    }
+
+    ::set_include_path(path);
+  }
+  //! @endignore
+
   //! Set include paths
   //!
   //! @param paths
   void set_include_paths(array(string) paths)
   {
     foreach (paths, string path) {
+      if (check_file_access && !Stdio.exist(path)) {
+        error("Include path %q does not exist or isn't accessible!\n",
+              path);
+      }
+
       push_include_path(path);
     }
   }
@@ -128,6 +166,11 @@ class Compiler
   //!  @endmapping
   mapping(string:string) compile_file(string input_file)
   {
+    if (check_file_access && !Stdio.exist(input_file)) {
+      error("Input file %q does not exist or isn't accessible!\n",
+            input_file);
+    }
+
     mapping(string:string) val = ::compile_file(input_file);
     return val;
   }
@@ -143,6 +186,11 @@ class Compiler
   //!  The name of the CSS file to save the result in.
   variant void compile_file(string input_file, string output_file)
   {
+    if (check_file_access && !Stdio.exist(input_file)) {
+      error("Input file %q does not exist or isn't accessible!\n",
+            input_file);
+    }
+
     mapping(string:string) val = ::compile_file(input_file);
     Stdio.write_file(output_file, val->css);
 
@@ -154,6 +202,10 @@ class Compiler
 
 
   //! Compile the string @[source]
+  //!
+  //! @note
+  //!  If the @[source] contain @tt{@@import@} directives you have to
+  //!  explicitly set the include path via @[set_include_path()].
   //!
   //! @param source
   //!  The string to compile
