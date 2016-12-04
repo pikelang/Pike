@@ -282,9 +282,24 @@ static void port_bind(INT32 args)
 #ifdef SO_REUSEPORT
   if( args > 3 && Pike_sp[3-args].u.integer )
   {
+    /* FreeBSD 7.x wants this to reuse portnumbers.
+     * Linux 2.6.x seems to have reserved a slot for the option, but not
+     * enabled it. Survive libc's with the option on kernels without.
+     *
+     * The emulated Linux runtime on MS Windows 10 fails this with EINVAL.
+     */
     int o=1;
-    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
-    {
+    if((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
+#ifdef ENOPROTOOPT
+       && (errno != ENOPROTOOPT)
+#endif
+#ifdef EINVAL
+       && (errno != EINVAL)
+#endif
+#ifdef WSAENOPROTOOPT
+       && (errno != WSAENOPROTOOPT)
+#endif
+       ){
       p->my_errno=errno;
       while (fd_close(fd) && errno == EINTR) {}
       errno = p->my_errno;
