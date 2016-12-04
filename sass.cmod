@@ -4,16 +4,21 @@
 || for more information.
 */
 
+// #define SASS_DEBUG
+
 #include "config.h"
 #include "global.h"
 #include "interpret.h"
 #include "module.h"
 #include "stralloc.h"
 #include "mapping.h"
+#include "array.h"
+#include "builtin_functions.h"
 #include "svalue.h"
 #include "pike_types.h"
 
 #include <sass.h>
+#include "pike_sass.h"
 
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
@@ -30,36 +35,22 @@ DECLARATIONS
  *! @appears Tools.Sass
  */
 
-// #define SASS_DEBUG
-
-#ifdef SASS_DEBUG
-# define SASS_TRACE(X...) printf ("# " X)
-#else
-# define SASS_TRACE(X...)
-#endif
-
-typedef struct sass_opts {
-  int     style;
-  char*   include_path;
-  long    precision;
-  bool    comments;
-  char*   map_path;
-  bool    map_embed;
-  char*   map_root;
-  bool    omit_map_url;
-} sass_opts;
-
-
-void set_options (sass_opts *opts, struct Sass_Context *ctx)
+void set_options (my_opts *opts, struct Sass_Context *ctx)
 {
   struct Sass_Options *s_opts = sass_context_get_options (ctx);
 
   sass_option_set_precision (s_opts, opts->precision);
   sass_option_set_output_style (s_opts, opts->style);
 
-  if (opts->include_path) {
-    sass_option_set_include_path (s_opts, opts->include_path);
-    // sass_option_push_include_path (s_opts, opts->include_path);
+  if (opts->include_paths) {
+    sass_option_set_include_path (s_opts, opts->include_paths->items[0]);
+
+    if (opts->include_paths->len > 1) {
+      for (int i = 1; i < opts->include_paths->len; i++) {
+        SASS_TRACE ("Push include path: %s\n", opts->include_paths->items[i]);
+        sass_option_push_include_path (s_opts, opts->include_paths->items[i]);
+      }
+    }
   }
 
   sass_option_set_omit_source_map_url (s_opts, opts->omit_map_url);
@@ -100,7 +91,7 @@ void set_options (sass_opts *opts, struct Sass_Context *ctx)
  */
 PIKECLASS Api
 {
-  CVAR sass_opts* options;
+  CVAR my_opts* options;
 
 
   // Used to resolve external imports. Set by default from the constructor
@@ -117,8 +108,8 @@ PIKECLASS Api
   // try to resolve @path. If it was an URI a Sass_Import_List will be
   // returned so that the contents of @path will replace the @import directive.
   Sass_Import_List
-  pike_sass_string_importer (const char* path, Sass_Importer_Entry cb,
-                             struct Sass_Compiler* comp)
+  pike_sass_string_importer (const char *path, Sass_Importer_Entry cb,
+                             struct Sass_Compiler *comp)
   {
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
@@ -155,7 +146,7 @@ PIKECLASS Api
    * the implementing class inheriting this one. The callback @fn should
    * only resolve external URI:s.
    */
-  PIKEFUN void __set_importer_callback(function(string:string) fn)
+  PIKEFUN void __set_importer_callback (function(string:string) fn)
   flags ID_PROTECTED;
   {
     if (fn && TYPEOF (*fn) == T_FUNCTION) {
@@ -173,19 +164,26 @@ PIKECLASS Api
    *! Set include path of @tt{imports@}
    *!
    *! @seealso
-   *!  @[get_include_path()]
+   *!  @[get_include_path()], @[push_include_paths()]
    *!
    *! @param path
    */
   PIKEFUN void set_include_path (string path)
   {
-    if (path && path->len) {
-      if (access (path->str, F_OK) == -1) {
-        Pike_error ("Include path \"%s\" does not exist!\n", path->str);
-      }
+    SASS_TRACE (" ***** SET INCLUDE PATH (%s) ******\n", path->str);
+    my_opts_set_include_path (THIS->options, path->str);
+  }
 
-      THIS->options->include_path = strdup (path->str);
-    }
+
+  /*! @decl void unset_include_path()
+   *! @appears Tools.Sass.Compiler.unset_include_path()
+   *!
+   *! Unset all include paths either set via @[set_include_path()] or
+   *! @[push_include_path()].
+   */
+  PIKEFUN void unset_include_path ()
+  {
+    my_opts_include_paths_delete (THIS->options);
   }
 
 
@@ -195,14 +193,52 @@ PIKECLASS Api
    *! Get include path of @tt{imports@}
    *!
    *! @seealso
-   *!  @[set_include_path()]
+   *!  @[set_include_path()], @[get_include_paths()]
    */
   PIKEFUN string get_include_path ()
   {
-    const char* p = THIS->options->include_path;
+    const char *p = NULL;
+
+    if (THIS->options->include_paths != NULL) {
+      p = THIS->options->include_paths->items[0];
+    }
 
     if (p) {
       push_text (p);
+    }
+    else {
+      push_undefined ();
+    }
+  }
+
+
+  /*! @decl void push_include_path(string path)
+   *! @appears Tools.Sass.Compiler.push_include_path()
+   *!
+   *! Push path to list of include paths
+   *!
+   *! @param path
+   */
+  PIKEFUN void push_include_path (string path)
+  {
+    my_opts_push_include_path (THIS->options, path->str);
+  }
+
+
+  /*! @decl array(string) get_include_paths()
+   *! @appears Tools.Sass.Compiler.get_include_paths()
+   *!
+   *! Returns an array of all registered include paths set either via
+   *! @[set_include_path()] or @[push_include_path()]
+   */
+  PIKEFUN array(string) get_include_paths ()
+  {
+    if (THIS->options->include_paths != NULL) {
+      for (int i = 0; i < THIS->options->include_paths->len; i++) {
+        push_text (THIS->options->include_paths->items[i]);
+      }
+
+      f_aggregate (THIS->options->include_paths->len);
     }
     else {
       push_undefined ();
@@ -288,6 +324,11 @@ PIKECLASS Api
    */
   PIKEFUN void set_source_map_file (string path)
   {
+    if (THIS->options->map_path) {
+      free (THIS->options->map_path);
+      THIS->options->map_path = NULL;
+    }
+
     THIS->options->map_path = strdup (path->str);
   }
 
@@ -303,7 +344,7 @@ PIKECLASS Api
    */
   PIKEFUN string get_source_map_file ()
   {
-    const char* f = THIS->options->map_path;
+    const char *f = THIS->options->map_path;
 
     if (f) {
       push_text (f);
@@ -360,6 +401,9 @@ PIKECLASS Api
    */
   PIKEFUN void set_source_map_root (string path)
   {
+    // if (THIS->options->map_root) {
+    //   free (THIS->options->map_root);
+    // }
     THIS->options->map_root = strdup (path->str);
   }
 
@@ -464,8 +508,8 @@ PIKECLASS Api
       Pike_error ("Input file \"%s\" does not exist!\n", input_file->str);
     }
 
-    struct Sass_File_Context* ctx;
-    struct Sass_Context* ctx_out;
+    struct Sass_File_Context *ctx;
+    struct Sass_Context      *ctx_out;
 
     ctx = sass_make_file_context (strdup (input_file->str));
     ctx_out = sass_file_context_get_context (ctx);
@@ -477,22 +521,22 @@ PIKECLASS Api
     int err = sass_compile_file_context (ctx);
 
     if (err) {
-      const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+      const char *errstr = strdup (sass_context_get_error_message (ctx_out));
       SASS_COMPILE_FILE_ERR ("Sass compile error (code: %d):\n%s\n",
                              err, errstr);
     }
 
-    const char* scss = sass_context_get_output_string (ctx_out);
+    const char *scss = sass_context_get_output_string (ctx_out);
 
     if (scss) {
-      const char* smap = NULL;
+      const char *smap = NULL;
       struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
 
       if (sass_option_get_source_map_file (s_opts)) {
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+          const char *errstr = strdup (sass_context_get_error_message (ctx_out));
           SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
                                  err, errstr);
         }
@@ -529,8 +573,8 @@ PIKECLASS Api
   // This method is over ridden in the pmod
   PIKEFUN string(8bit) compile_string (string(8bit) source)
   {
-    struct Sass_Data_Context* ctx;
-    struct Sass_Context* ctx_out;
+    struct Sass_Data_Context *ctx;
+    struct Sass_Context      *ctx_out;
 
     ctx = sass_make_data_context (strdup (source->str));
     ctx_out = sass_data_context_get_context (ctx);
@@ -544,50 +588,26 @@ PIKECLASS Api
     int err = sass_context_get_error_status (ctx_out);
 
     if (err) {
-      const char* errstr = strdup (sass_context_get_error_message (ctx_out));
+      const char *errstr = strdup (sass_context_get_error_message (ctx_out));
       SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s",
                                err, errstr);
     }
 
-    const char* out = sass_context_get_output_string (ctx_out);
+    const char *out = sass_context_get_output_string (ctx_out);
     push_text (out);
 
     sass_delete_data_context (ctx);
   }
 
   INIT {
-    SASS_TRACE ("INIT __Sass.__Compiler\n");
-
-    THIS->options = (sass_opts *) malloc (sizeof (sass_opts));
-    memset (THIS->options, 0, sizeof (sass_opts));
-
-    THIS->options->style = SASS_STYLE_NESTED;
-    THIS->options->include_path = NULL;
-    THIS->options->precision = 5;
-    THIS->options->map_path = NULL;
-    THIS->options->map_root = NULL;
-    THIS->options->comments = false;
-    THIS->options->map_embed = false;
-    // THIS->options->map_contents = false;
-    THIS->options->omit_map_url = true;
+    SASS_TRACE ("INIT __Sass.Api\n");
+    THIS->options = my_opts_create ();
+    memset (THIS->options, 0, sizeof (my_opts));
   }
 
   EXIT {
-    SASS_TRACE ("EXIT __Sass.__Compiler\n");
-
-    if (THIS->options->include_path != NULL) {
-      free (THIS->options->include_path);
-    }
-
-    if (THIS->options->map_path != NULL) {
-      free (THIS->options->map_path);
-    }
-
-    if (THIS->options->map_root != NULL) {
-      free (THIS->options->map_root);
-    }
-
-    free (THIS->options);
+    my_opts_delete (THIS->options);
+    SASS_TRACE ("EXIT __Sass.Api\n");
   }
 }
 /*! @endclass */

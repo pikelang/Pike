@@ -1,0 +1,7 @@
+@import 'v1';
+@import 'v2';
+
+body {
+  background: $v2;
+  color: $v1;
+}
