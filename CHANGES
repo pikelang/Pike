@@ -8,6 +8,14 @@ o Calendar
 
   Updated Calendar to use timezonedata from tzdata2016j.
 
+o Nettle
+
+  Added version().
+
+o Refdoc
+
+  Updated to new Pike site layout.
+
 Bug fixes
 ---------
 
@@ -19,6 +27,19 @@ o JSON
 o pike -x pmar_install
 
   Works again and properly verifies PMAR checksums.
+
+o ::_indices(), ::_values(), ::_types(), ::`->(), ::`->=()
+
+  Fixed several argument checking bugs in the magic_* functions.
+
+o Fixed some bugs in the pmar installer.
+
+Runtime
+-------
+
+o Added workaround for incompatibility in MS Windows 10's Linux
+  emulation layer.
+
 
 Changes since Pike 8.0.276 (release 4)
 ----------------------------------------------------------------------
