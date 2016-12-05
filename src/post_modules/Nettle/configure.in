@@ -105,6 +105,7 @@ else
 		     nettle/chacha.h nettle/chacha-poly1305.h \
 		     nettle/poly1305.h nettle/eax.h \
                      nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
+		     nettle/version.h \
 		    )
     # Check that the libraries match.
     #
@@ -120,6 +121,7 @@ else
 		   nettle_chacha_crypt nettle_chacha_poly1305_encrypt \
 		   nettle_poly1305_digest nettle_eax_encrypt \
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
+		   nettle_version_major \
 		   )
 
     AC_MSG_CHECKING([for idea.c])

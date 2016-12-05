@@ -29,6 +29,28 @@ DECLARATIONS
  *! Crypto module instead.
  */
 
+/*! @decl string version()
+ *! Returns the version of the Nettle library, e.g. "3.1". 0 is
+ *! returned when runtime version is unknown.
+ */
+PIKEFUN string version()
+{
+#ifdef HAVE_NETTLE_VERSION_H
+  push_constant_text("%d.%d");
+#ifdef HAVE_NETTLE_VERSION_MAJOR
+  push_int( nettle_version_major() );
+  push_int( nettle_version_minor() );
+#else
+  /* Probably Nettle 3.1.1. */
+  push_int( NETTLE_VERSION_MAJOR );
+  push_int( NETTLE_VERSION_MINOR );
+#endif
+  f_sprintf(3);
+#else
+  push_int(0);
+#endif
+}
+
 /*! @class Yarrow
  *!
  *! Yarrow is a family of pseudo-randomness generators, designed for

@@ -10,6 +10,8 @@ test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
 
+test_do( Nettle.version() )
+
 // Hashes
 
 define(test_hash, [[
