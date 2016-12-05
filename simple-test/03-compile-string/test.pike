@@ -6,7 +6,7 @@ int run()
 {
   werror("Run in test: %s\n", basename(BASE));
 
-  compiler->set_include_path (BASE);
+  compiler->include_path = BASE;
   compiler->http_import = Tools.Sass.HTTP_IMPORT_ANY;
 
   mixed err = catch {

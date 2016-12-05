@@ -17,14 +17,6 @@ inherit Tools@module@;
 
 //! Sass/SCSS compiler.
 //!
-//! @note
-//!  @b{Some notes on the @tt{*_include_*@} stuff.@}
-//!
-//!  The methods @[push_include_path()] and @[set_include_paths()] may not
-//!  behave as expected. At the moment the support for setting multiple
-//!  include paths seem to be lacking in @tt{libsass@}. So don't rely on
-//!  setting multiple include paths.
-//!
 //! @example
 //! @code
 //! Tools.Sass.Compiler compiler = Tools.Sass.Compiler();
@@ -70,8 +62,9 @@ class Compiler
   }
   //! @endignore
 
+
   //! @ignore
-  //! Resolve external imports in sass files.
+  //! Resolve external imports in sass/scss files.
   protected string __resolve_import(string path)
   {
     Standards.URI uri;
@@ -109,7 +102,7 @@ class Compiler
 
     if (sizeof(ct_parts) > 1) {
       sscanf(ct_parts[1], "%*s=%s", string charset);
-      // In case of charset="utf-8" and alike.
+      // In case of charset="utf-8" or charset='utf-8', remove the "fnutts"
       if (charset && charset[0] < 65) {
         charset = charset[1..<1];
       }
@@ -120,32 +113,21 @@ class Compiler
   //! @endignore
 
 
-  //! @ignore
-  //! Documented i the CMOD
-  void set_include_path(string path)
+  // Documented in the CMOD
+  void `include_path=(string(8bit) path)
   {
     if (check_file_access && !Stdio.exist(path)) {
-      error("Include path %q does not exist or isn't accessible!\n",
-            path);
+      error("Include path %q does not exist!\n", path);
     }
 
-    ::set_include_path(path);
+    ::include_path = path;
   }
-  //! @endignore
 
-  //! Set include paths
-  //!
-  //! @param paths
-  void set_include_paths(array(string) paths)
+
+  // Documented in the CMOD
+  string `include_path()
   {
-    foreach (paths, string path) {
-      if (check_file_access && !Stdio.exist(path)) {
-        error("Include path %q does not exist or isn't accessible!\n",
-              path);
-      }
-
-      push_include_path(path);
-    }
+    return ::include_path;
   }
 
 
@@ -194,9 +176,8 @@ class Compiler
     mapping(string:string) val = ::compile_file(input_file);
     Stdio.write_file(output_file, val->css);
 
-    if (val->map) {
-      string smap_path = ::get_source_map_file();
-      Stdio.write_file(smap_path, val->map);
+    if (val->map && source_map_file) {
+      Stdio.write_file(source_map_file, val->map);
     }
   }
 
@@ -222,32 +203,32 @@ class Compiler
   //!  @mapping
   //!   @member int "output_style"
   //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
-  //!    or @[STYLE_COMPRESSED] constants. See also @[set_output_style()].
+  //!    or @[STYLE_COMPRESSED] constants. See also @[output_style].
   //!
   //!   @member string "include_path"
-  //!    Path to root of incude files. See also @[set_include_path()].
+  //!    Path to root of incude files. See also @[include_path].
   //!
   //!   @member string "source_map_file"
-  //!    File to write source map file to. Only has effect in @[compile_file()].
-  //!    See also @[set_source_map_file()].
+  //!    File to write source map file to.
+  //!    See also @[source_map_file].
   //!
   //!   @member bool "source_comments"
   //!    Turn on/off comments in the output containing info about the source
   //!    file - line numbers and such. Default of @tt{false@}. See also
-  //!    @[set_source_comments()].
+  //!    @[source_comments].
   //!
   //!   @member bool "source_map_embed"
   //!    Turn on/off if a source map should be embedded in the output or not.
-  //!    Default is @tt{false@}. See also @[set_source_map_embed()].
+  //!    Default is @tt{false@}. See also @[source_map_embed].
   //!
   //!   @member string "source_map_root"
   //!    Set the root path of the source files, relative to where the
   //!    source.map file is written.
-  //!    See also @[set_source_map_root()]
+  //!    See also @[source_map_root]
   //!
-  //!   @member bool "omit_source_map"
+  //!   @member bool "omit_source_map_url"
   //!    Omit the #sourceMappingURL or not.
-  //!    See also @[set_omit_source_map_url()]
+  //!    See also @[omit_source_map_url]
   //!  @endmapping
   void set_options(mapping(string:string|int) opts)
   {
@@ -256,51 +237,51 @@ class Compiler
       {
         case "output_style":
           if (!intp(val)) {
-            error("Value to set_output_style() must be an integer!\n");
+            error("Value to `output_style` must be an integer!\n");
           }
-          set_output_style(val);
+          output_style = val;
           break;
 
         case "include_path":
           if (!stringp(val)) {
-            error("Value to set_include_path() must be a string!\n");
+            error("Value to `include_path` must be a string!\n");
           }
-          set_include_path(val);
+          include_path = val;
           break;
 
         case "source_map_file":
           if (!stringp(val)) {
-            error("Value to set_source_map_file() must be a string!\n");
+            error("Value to `source_map_file` must be a string!\n");
           }
-          set_source_map_file(val);
+          source_map_file = val;
           break;
 
         case "source_map_embed":
           if (!intp(val)) {
-            error("Value to set_source_map_embed() must be an int(0..1)!\n");
+            error("Value to  `source_map_embed` must be an int(0..1)!\n");
           }
-          set_source_map_embed(val);
+          source_map_embed = val;
           break;
 
         case "source_map_root":
           if (!stringp(val)) {
-            error("Value to set_source_map_root() must be a string!\n");
+            error("Value to `source_map_root` must be a string!\n");
           }
-          set_source_map_root(val);
+          source_map_root = val;
           break;
 
-        case "omit_source_map":
+        case "omit_source_map_url":
           if (!intp(val)) {
-            error("Value to set_omit_source_map_url() must be an integer!\n");
+            error("Value to `omit_source_map_url` must be an integer!\n");
           }
-          set_omit_source_map_url(val);
+          omit_source_map_url = val;
           break;
 
         case "source_comments":
           if (!intp(val)) {
-            error("Value to set_source_comments() must be an integer!\n");
+            error("Value to `source_comments` must be an integer!\n");
           }
-          set_source_comments(val);
+          source_comments = val;
           break;
 
         default:

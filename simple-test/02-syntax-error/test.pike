@@ -6,7 +6,7 @@ int run()
 {
   werror("Run in test: %s\n", basename(BASE));
 
-  compiler->set_include_path(BASE);
+  compiler->include_path = BASE;
 
   mixed err = catch {
     compiler->compile_file(combine_path(BASE, "input.scss"),

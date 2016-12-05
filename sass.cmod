@@ -35,46 +35,6 @@ DECLARATIONS
  *! @appears Tools.Sass
  */
 
-void set_options (my_opts *opts, struct Sass_Context *ctx)
-{
-  struct Sass_Options *s_opts = sass_context_get_options (ctx);
-
-  sass_option_set_precision (s_opts, opts->precision);
-  sass_option_set_output_style (s_opts, opts->style);
-
-  if (opts->include_paths) {
-    sass_option_set_include_path (s_opts, opts->include_paths->items[0]);
-
-    if (opts->include_paths->len > 1) {
-      for (int i = 1; i < opts->include_paths->len; i++) {
-        SASS_TRACE ("Push include path: %s\n", opts->include_paths->items[i]);
-        sass_option_push_include_path (s_opts, opts->include_paths->items[i]);
-      }
-    }
-  }
-
-  sass_option_set_omit_source_map_url (s_opts, opts->omit_map_url);
-  sass_option_set_source_comments (s_opts, opts->comments);
-
-  // if (opts->comments) {
-  //   sass_option_set_omit_source_map_url (s_opts, false);
-  // }
-
-  if (opts->map_path != NULL) {
-    sass_option_set_source_map_file (s_opts, opts->map_path);
-    sass_option_set_omit_source_map_url (s_opts, false);
-    sass_option_set_source_map_contents (s_opts, true);
-  }
-  else {
-    sass_option_set_source_map_embed (s_opts, opts->map_embed);
-  }
-
-  if (opts->map_root != NULL) {
-    sass_option_set_source_map_root (s_opts, opts->map_root);
-  }
-}
-
-
 #define REGISTER_IMPORTER(CTX)                                    \
   do {                                                            \
     struct Sass_Options *s_opts = sass_context_get_options (CTX); \
@@ -91,13 +51,103 @@ void set_options (my_opts *opts, struct Sass_Context *ctx)
  */
 PIKECLASS Api
 {
-  CVAR my_opts* options;
+  /*! @decl int(0..3) output_style = 0
+   *! @appears Tools.Sass.Compiler.output_style
+   *!
+   *! Determines the level of compression on the generated output.
+   *!
+   *! @seealso
+   *!  @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT] and
+   *!  @[STYLE_COMPRESSED].
+   */
+  PIKEVAR int(0..3)    output_style;
+
+  /*! @decl string(8bit) source_map_file = UNDEFINED
+   *! @appears Tools.Sass.Compiler.source_map_file
+   *!
+   *! Set the path of the source map file.
+   */
+  PIKEVAR string(8bit) source_map_file;
+
+  /*! @decl string(8bit) source_map_root
+   *! @appears Tools.Sass.Compiler.source_map_root
+   *!
+   *! Set the root path of the source files, relative to where the source.map
+   *! file is written.
+   */
+  PIKEVAR string(8bit) source_map_root;
+
+  /*! @decl string(8bit) include_path
+   *! @appears Tools.Sass.Compiler.include_path
+   *!
+   *! The base path of @tt{@@import@}s. Note! This needs to be set when
+   *! @[compile_string()] is used.
+   */
+  PIKEVAR string(8bit) include_path;
+
+  /*! @decl int precision
+   *! @appears Tools.Sass.Compiler.precision
+   *!
+   *! Set the precision of fractional numbers. Default is @tt{5@}.
+   */
+  PIKEVAR int          precision;
+
+  /*! @decl bool source_comments
+   *! @appears Tools.Sass.Compiler.source_comments
+   *!
+   *! Emit comments in the generated CSS indicating the corresponding source
+   *! line. Default is @tt{false@}.
+   */
+  PIKEVAR int(0..1)    source_comments;
+
+  /*! @decl bool source_map_embed
+   *! @appears Tools.Sass.Compiler.source_map_embed
+   *!
+   *! Set whether embedding @tt{sourceMappingUrl=#@} as data uri or not.
+   */
+  PIKEVAR int(0..1)    source_map_embed;
+
+  /*! @decl bool omit_source_map_url
+   *! @appears Tools.Sass.Compiler.omit_source_map_url
+   *!
+   *! Set whether writing the @tt{sourceMappingUrl=#@} or not.
+   */
+  PIKEVAR int(0..1)    omit_source_map_url;
 
 
   // Used to resolve external imports. Set by default from the constructor
   // in Compiler in module.pmod.
   PIKEVAR function(string:string) __importer_cb
     flags ID_PRIVATE;
+
+
+  void set_options (struct Sass_Context *ctx)
+  {
+    struct Sass_Options *s_opts = sass_context_get_options (ctx);
+
+    sass_option_set_precision (s_opts, THIS->precision);
+    sass_option_set_output_style (s_opts, THIS->output_style);
+
+    if (THIS->include_path) {
+      sass_option_set_include_path (s_opts, THIS->include_path->str);
+    }
+
+    sass_option_set_omit_source_map_url (s_opts, THIS->omit_source_map_url);
+    sass_option_set_source_comments (s_opts, THIS->source_comments);
+
+    if (THIS->source_map_file != NULL) {
+      sass_option_set_source_map_file (s_opts, THIS->source_map_file->str);
+      sass_option_set_omit_source_map_url (s_opts, false);
+      sass_option_set_source_map_contents (s_opts, true);
+    }
+    else {
+      sass_option_set_source_map_embed (s_opts, THIS->source_map_embed);
+    }
+
+    if (THIS->source_map_root != NULL) {
+      sass_option_set_source_map_root (s_opts, THIS->source_map_root->str);
+    }
+  }
 
 
   // Libsass import callback. This will be called for every @import directive
@@ -157,338 +207,6 @@ PIKECLASS Api
   }
 
 
-  /*! @decl void set_include_path(string path)
-   *! @appears Tools.Sass.Compiler.set_include_path()
-   *!
-   *! Set the base path of @tt{@@import@}s to @[path].
-   *!
-   *! @seealso
-   *!  @[get_include_path()], @[push_include_path()], @[set_include_paths()]
-   *!
-   *! @param path
-   */
-  PIKEFUN void set_include_path (string path)
-  {
-    my_opts_set_include_path (THIS->options, path->str);
-  }
-
-
-  /*! @decl void unset_include_path()
-   *! @appears Tools.Sass.Compiler.unset_include_path()
-   *!
-   *! Unset all include paths either set via @[set_include_path()] or
-   *! @[push_include_path()].
-   */
-  PIKEFUN void unset_include_path ()
-  {
-    my_opts_include_paths_delete (THIS->options);
-  }
-
-
-  /*! @decl string get_include_path()
-   *! @appears Tools.Sass.Compiler.get_include_path()
-   *!
-   *! Get include path of @tt{imports@}
-   *!
-   *! @seealso
-   *!  @[set_include_path()], @[get_include_paths()]
-   */
-  PIKEFUN string get_include_path ()
-  {
-    const char *p = NULL;
-
-    if (THIS->options->include_paths != NULL) {
-      p = THIS->options->include_paths->items[0];
-    }
-
-    if (p) {
-      push_text (p);
-    }
-    else {
-      push_undefined ();
-    }
-  }
-
-
-  /*! @decl void push_include_path(string path)
-   *! @appears Tools.Sass.Compiler.push_include_path()
-   *!
-   *! Push path to list of include paths
-   *!
-   *! @param path
-   */
-  PIKEFUN void push_include_path (string path)
-  {
-    my_opts_push_include_path (THIS->options, path->str);
-  }
-
-
-  /*! @decl array(string) get_include_paths()
-   *! @appears Tools.Sass.Compiler.get_include_paths()
-   *!
-   *! Returns an array of all registered include paths set either via
-   *! @[set_include_path()] or @[push_include_path()]
-   */
-  PIKEFUN array(string) get_include_paths ()
-  {
-    if (THIS->options->include_paths != NULL) {
-      for (int i = 0; i < THIS->options->include_paths->len; i++) {
-        push_text (THIS->options->include_paths->items[i]);
-      }
-
-      f_aggregate (THIS->options->include_paths->len);
-    }
-    else {
-      push_undefined ();
-    }
-  }
-
-
-  /*! @decl void set_output_style(int style)
-   *! @appears Tools.Sass.Compiler.set_output_style()
-   *!
-   *! Set the output style for the generated CSS code.
-   *! Default is @[Tools.Sass.STYLE_NESTED].
-   *!
-   *! @seealso
-   *!  @[get_output_style()]
-   *!
-   *! @param style
-   *!  See @[Tools.Sass.STYLE_NESTED], @[Tools.Sass.STYLE_EXPANDED],
-   *!  @[Tools.Sass.STYLE_COMPACT] and @[Tools.Sass.STYLE_COMPRESSED]
-   */
-  PIKEFUN void set_output_style (int style)
-  {
-    THIS->options->style = style;
-  }
-
-
-  /*! @decl int get_output_style(int style)
-   *! @appears Tools.Sass.Compiler.get_output_style()
-   *!
-   *! Returns the output style of the generated CSS code.
-   *!
-   *! @seealso
-   *!  @[set_output_style()]
-   */
-  PIKEFUN int get_output_style ()
-  {
-    RETURN (THIS->options->style);
-  }
-
-
-  /*! @decl void set_source_comments(bool set)
-   *! @appears Tools.Sass.Compiler.set_source_comments()
-   *!
-   *! Emit comments in the generated CSS indicating the corresponding
-   *! source line. Default is @tt{false@}.
-   *!
-   *! @seealso
-   *!  @[get_source_comments()]
-   */
-  PIKEFUN void set_source_comments (int(0..1) set)
-  {
-    THIS->options->comments = set;
-  }
-
-
-  /*! @decl bool get_source_comments()
-   *! @appears Tools.Sass.Compiler.get_source_comments()
-   *!
-   *! Getter for @[set_source_comments()].
-   *!
-   *! @seealso
-   *!  @[set_source_comments()]
-   */
-  PIKEFUN int(0..1) get_source_comments ()
-  {
-    RETURN (THIS->options->comments);
-  }
-
-
-  /*! @decl void set_source_map_file(string path)
-   *! @appears Tools.Sass.Compiler.set_source_map_file()
-   *!
-   *! Path to source map file. Enables the source map generating.
-   *! Used to create sourceMappingUrl. If this isn't set no source map will
-   *! be generated.
-   *!
-   *! @note
-   *!  This only has effect in @[compile_file()].
-   *!
-   *! @seealso
-   *!  @[get_source_map_file()], @[get_source_map_embed()],
-   *!  @[set_source_map_embed()]
-   */
-  PIKEFUN void set_source_map_file (string path)
-  {
-    if (THIS->options->map_path) {
-      free (THIS->options->map_path);
-      THIS->options->map_path = NULL;
-    }
-
-    THIS->options->map_path = strdup (path->str);
-  }
-
-
-  /*! @decl string get_source_map_file()
-   *! @appears Tools.Sass.Compiler.get_source_map_file()
-   *!
-   *! Returns the path of the source map file.
-   *!
-   *! @seealso
-   *!  @[set_source_map_file()], @[set_source_map_embed()],
-   *!  @[get_source_map_embed()]
-   */
-  PIKEFUN string get_source_map_file ()
-  {
-    const char *f = THIS->options->map_path;
-
-    if (f) {
-      push_text (f);
-    }
-    else {
-      push_undefined ();
-    }
-  }
-
-
-  /*! @decl void set_source_map_embed(bool embed)
-   *! @appears Tools.Sass.Compiler.set_source_map_embed()
-   *!
-   *! Set whether embedding sourceMappingUrl as data uri or not.
-   *!
-   *! @seealso
-   *!  @[get_source_map_embed()], @[set_source_map_file()],
-   *!  @[get_source_map_file()]
-   *!
-   *! @param embed
-   */
-  PIKEFUN void set_source_map_embed (int(0..1) embed)
-  {
-    THIS->options->map_embed = embed;
-  }
-
-
-  /*! @decl bool get_source_map_embed()
-   *! @appears Tools.Sass.Compiler.get_source_map_embed()
-   *!
-   *! Will a source map be embedded in the CSS file or not?
-   *!
-   *! @seealso
-   *!  @[set_source_map_embed()], @[set_source_map_file()],
-   *!  @[get_source_map_file()]
-   */
-  PIKEFUN int(0..1) get_source_map_embed ()
-  {
-    RETURN (THIS->options->map_embed);
-  }
-
-
-  /*! @decl void set_source_map_root(string path)
-   *! @appears Tools.Sass.Compiler.set_source_map_root()
-   *!
-   *! Set the root path of the source files, relative to where the
-   *! source.map file is written.
-   *!
-   *! @seealso
-   *!  @[get_source_map_root()], @[set_source_map_file()],
-   *!  @[get_source_map_file()]
-   *!
-   *! @param path
-   */
-  PIKEFUN void set_source_map_root (string path)
-  {
-    // if (THIS->options->map_root) {
-    //   free (THIS->options->map_root);
-    // }
-    THIS->options->map_root = strdup (path->str);
-  }
-
-
-  /*! @decl string get_source_map_root()
-   *! @appears Tools.Sass.Compiler.get_source_map_root()
-   *!
-   *! Returns the path of the source maps root.
-   *!
-   *! @seealso
-   *!  @[set_source_map_root()], @[set_source_map_file()],
-   *!  @[get_source_map_file()]
-   */
-  PIKEFUN string get_source_map_root ()
-  {
-    if (THIS->options->map_root) {
-      push_text (THIS->options->map_root);
-    }
-    else {
-      push_undefined ();
-    }
-  }
-
-
-  /*! @decl void set_omit_source_map_url(bool embed)
-   *! @appears Tools.Sass.Compiler.set_omit_source_map_url()
-   *!
-   *! Set whether writing sourceMappingUrl or not.
-   *!
-   *! @seealso
-   *!  @[set_source_map_embed()], @[set_source_map_file()],
-   *!  @[get_source_map_embed()], @[get_source_map_file()]
-   *!
-   *! @param embed
-   */
-  PIKEFUN void set_omit_source_map_url (int(0..1) omit)
-  {
-    THIS->options->omit_map_url = omit;
-  }
-
-
-  /*! @decl int(0..1) get_omit_source_map_url()
-   *! @appears Tools.Sass.Compiler.get_omit_source_map_url()
-   *!
-   *! Getter for @[set_omit_source_map_url()].
-   *!
-   *! @seealso
-   *!  @[set_omit_source_map_url()],
-   *!  @[set_source_map_embed()], @[set_source_map_file()],
-   *!  @[get_source_map_embed()], @[get_source_map_file()]
-   */
-  PIKEFUN int(0..1) get_omit_source_map_url ()
-  {
-    RETURN (THIS->options->omit_map_url);
-  }
-
-
-  /*! @decl void set_precision(int(0..) p)
-   *! @appears Tools.Sass.Compiler.set_precision()
-   *!
-   *! Set the precision of fractional numbers. Default is @tt{5@}.
-   *!
-   *! @seealso
-   *!  @[get_precision()]
-   *!
-   *! @param p
-   */
-  PIKEFUN void set_precision (int(0..) p)
-  {
-    THIS->options->precision = p;
-  }
-
-
-  /*! @decl int(0..) get_precision()
-   *! @appears Tools.Sass.Compiler.get_precision()
-   *!
-   *! Returns the precision of floating point values
-   *!
-   *! @seealso
-   *!  @[set_precision()]
-   */
-  PIKEFUN int(0..) get_precision ()
-  {
-    RETURN (THIS->options->precision);
-  }
-
-
 #define SASS_COMPILE_FILE_ERR(X...)    \
   do {                                 \
     sass_delete_file_context (ctx);    \
@@ -508,7 +226,7 @@ PIKECLASS Api
     ctx = sass_make_file_context (strdup (input_file->str));
     ctx_out = sass_file_context_get_context (ctx);
 
-    set_options (THIS->options, ctx_out);
+    set_options (ctx_out);
 
     REGISTER_IMPORTER (ctx_out);
 
@@ -573,7 +291,7 @@ PIKECLASS Api
     ctx = sass_make_data_context (strdup (source->str));
     ctx_out = sass_data_context_get_context (ctx);
 
-    set_options (THIS->options, ctx_out);
+    set_options (ctx_out);
 
     REGISTER_IMPORTER (ctx_out);
 
@@ -595,12 +313,11 @@ PIKECLASS Api
 
   INIT {
     SASS_TRACE ("INIT __Sass.Api\n");
-    THIS->options = my_opts_create ();
-    memset (THIS->options, 0, sizeof (my_opts));
+    THIS->precision = 5;
+    THIS->output_style = SASS_STYLE_NESTED;
   }
 
   EXIT {
-    my_opts_delete (THIS->options);
     SASS_TRACE ("EXIT __Sass.Api\n");
   }
 }
@@ -660,6 +377,8 @@ PIKE_MODULE_INIT
    *! a {
    *!   property: value;
    *!   other-property: value; }
+   *!   a:hover {
+   *!     property: value; }
    *! b {
    *!   property: value; }
    *! @endcode
@@ -671,6 +390,9 @@ PIKE_MODULE_INIT
    *!   property: value;
    *!   other-property: value;
    *! }
+   *! a:hover {
+   *!   property: value;
+   *! }
    *! b {
    *!   property: value;
    *! }
@@ -680,13 +402,14 @@ PIKE_MODULE_INIT
    *! Somewhat minified output:
    *! @code
    *! a { property: value; other-prop: value }
+   *! a:hover { property: value; }
    *! b { property: value; }
    *! @endcode
    *!
    *! @value STYLE_COMPRESSED
    *! Minified output
    *! @code
-   *! a{property:value;other-property:value}b{property:value}
+   *! a{property:value;other-property:value}a:hover{property:value}b{property:value}
    *! @endcode
    *! @endstring
    */
