@@ -2754,7 +2754,7 @@ static void f_magic_index(INT32 args)
     default:
     case 3:
       if (TYPEOF(sp[2-args]) != T_INT)
-	SIMPLE_ARG_TYPE_ERROR ("::`->", 2, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::`->", 3, "void|int");
       type = sp[2-args].u.integer & 1;
       /* FALL THROUGH */
     case 2:
@@ -2976,7 +2976,7 @@ static void f_magic_indices (INT32 args)
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
-      type = sp[-args].u.integer;
+      type = sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) == T_INT) {
@@ -2989,13 +2989,13 @@ static void f_magic_indices (INT32 args)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
-	obj = sp[2-args].u.object;
+      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
+	obj = sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_indices context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_indices on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 1, "void|object|int");
       }
@@ -3086,7 +3086,7 @@ static void f_magic_values (INT32 args)
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
-      type = sp[-args].u.integer;
+      type = sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) == T_INT) {
@@ -3099,13 +3099,13 @@ static void f_magic_values (INT32 args)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
-	obj = sp[2-args].u.object;
+      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
+	obj = sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_values context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_values on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_values", 1, "void|object|int");
       }
@@ -3199,7 +3199,7 @@ static void f_magic_types (INT32 args)
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 2, "void|int");
-      type = sp[-args].u.integer;
+      type = sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) == T_INT) {
@@ -3212,13 +3212,13 @@ static void f_magic_types (INT32 args)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
-	obj = sp[2-args].u.object;
+      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
+	obj = sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_types context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_types on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 1, "void|object|int");
       }
