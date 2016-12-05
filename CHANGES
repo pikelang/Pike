@@ -34,6 +34,10 @@ o ::_indices(), ::_values(), ::_types(), ::`->(), ::`->=()
 
 o Fixed some bugs in the pmar installer.
 
+o Msql
+
+  Fixed some compilation issues.
+
 Runtime
 -------
 

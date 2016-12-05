@@ -673,6 +673,9 @@ static void do_host_info (INT32 args)
 	return;
 }
 
+#undef INT_TYPE
+#define INT_TYPE long
+
 /*! @decl string error()
  *!
  *! This function returns the textual description of the last server-related
@@ -834,7 +837,7 @@ static void do_list_fields (INT32 args)
     
     push_text("name");
 		push_text(field->name);
-		ref_push_string(literal_type_string);
+		push_text("type");
 		push_text(decode_msql_type(field->type));
 		push_text("length");
 		push_int(field->length);
