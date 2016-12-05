@@ -595,7 +595,7 @@ PMOD_EXPORT extern void push_static_text( const char *x );
                                                                         \
         {                                                               \
           int idx;                                                      \
-          unsigned INT16 bitmask;                                       \
+          unsigned INT16 bitmask=0;                                     \
                                                                         \
           for (idx = 0; idx < num_new_locals; idx++) {                  \
             if (!(idx % 16)) {                                          \
