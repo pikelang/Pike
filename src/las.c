@@ -3972,29 +3972,22 @@ void fix_type_field(node *n)
 
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
-    /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt))
-				      tOr(tVoid,tInt), tMix));
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_INDEX);
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
-    /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt))
-				      tOr(tVoid,tInt), tVoid));
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_SET_INDEX);
     break;
   case F_MAGIC_INDICES:
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tOr3(tVoid,tObj,tDeprecated(tInt))
-				      tOr(tVoid,tInt), tArr(tStr)));
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_INDICES);
     break;
   case F_MAGIC_VALUES:
     /* FIXME: Could have a stricter type for ::_values. */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tOr3(tVoid,tObj,tDeprecated(tInt))
-				      tOr(tVoid,tInt), tArray));
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_VALUES);
     break;
   case F_MAGIC_TYPES:
     /* FIXME: Could have a stricter type for ::_types. */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tOr3(tVoid,tObj,tDeprecated(tInt))
-				      tOr(tVoid,tInt), tArr(tType(tMix))));
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_TYPES);
     break;
 
   case F_CATCH:

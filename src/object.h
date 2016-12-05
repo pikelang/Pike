@@ -197,5 +197,15 @@ void check_all_objects(void);
   low_object_index_no_free((TO), Pike_fp->current_object,		\
 			   Pike_fp->context->identifier_level + (FUN))
 
+#define tF_MAGIC_INDEX tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt)) \
+                             tOr(tVoid,tInt), tMix)
+#define tF_MAGIC_SET_INDEX tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt)) \
+                                 tOr(tVoid,tInt), tVoid)
+#define tF_MAGIC_INDICES tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
+                               tOr(tVoid,tInt), tArr(tStr))
+#define tF_MAGIC_VALUES tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
+                              tOr(tVoid,tInt), tArray)
+#define tF_MAGIC_TYPES tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
+                             tOr(tVoid,tInt), tArr(tType(tMix)))
 
 #endif /* OBJECT_H */
