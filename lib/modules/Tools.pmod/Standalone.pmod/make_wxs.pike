@@ -68,7 +68,7 @@ int main(int argc, array(string) argv)
   argv = Getopt.get_args(argv);
 
   string version_guid =
-    Standards.UUID.make_version3(base_guid, version_str)->str();
+    Standards.UUID.make_version3(version_str, base_guid)->str();
   Standards.XML.Wix.Directory root =
     Standards.XML.Wix.Directory("SourceDir",
 				Standards.UUID.UUID(version_guid)->encode(),
