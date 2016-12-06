@@ -1178,13 +1178,12 @@ private void procmessage() {
   }
   PD("Closing database processloop %O\n",err);
   _delayederror=err;
-  for(; objectp(portal); portal = qportals->read())
-    if(objectp(portal)) {
-#ifdef PG_DEBUG
-      showportal(0);
-#endif
-      portal->_purgeportal();
-    }
+  if (objectp(portal)) {
+  #ifdef PG_DEBUG
+    showportal(0);
+  #endif
+    portal->_purgeportal();
+  }
   if(!terminating && _options.reconnect)
     _connectfail();
   else
@@ -1227,7 +1226,6 @@ protected void destroy() {
 
 final void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
-  destruct(waitforauthready);
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
@@ -1237,8 +1235,11 @@ final void _connectfail(void|mixed err) {
       default:
         if(err)
           _delayederror=err;
-        if(_options.reconnect!=-1)
+        if (_options.reconnect!=-1) {
+          destruct(waitforauthready);
+          destruct(c);
           return;
+        }
         reconnectdelay=RECONNECTBACKOFF;
         break;
     }
@@ -1258,11 +1259,8 @@ private int reconnect() {
   PD("(Re)connect\n");
   {
     Thread.MutexKey lock=_shortmux->lock();
-    if(waitforauthready) {
-      lock=0;
-      return 1;			// Connect still in progress in other thread
-    }
-    waitforauthready=Thread.Condition();
+    if (!waitforauthready)
+      waitforauthready=Thread.Condition();
     lock=0;
   }
   if(c) {
@@ -1272,10 +1270,10 @@ private int reconnect() {
     prepstmtused=0;
 #endif
     termlock=unnamedstatement->lock(1);
-    c->close();
-    Thread.MutexKey lock = unnamedstatement->lock(1);
+    catch(c->close());
+    unnamedstatement = 0;
+    termlock = 0;
     destruct(c);
-    lock = 0;
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");

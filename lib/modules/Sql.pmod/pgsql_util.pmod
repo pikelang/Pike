@@ -371,6 +371,10 @@ outer:
 
   protected void destroy() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
+    int|.pgsql_util.sql_result portal;
+    while (portal = qportals->try_read())
+      if (objectp(portal))
+        portal->_purgeportal();
     if(nostash) {
       catch {
         while(sizeof(closecallbacks))
@@ -402,7 +406,8 @@ outer:
                 socket=fcon;
                 break;
               }
-            default:PD("%d>Close socket\n",socket->query_fd());
+            default:
+              PD("%d>Close socket short\n", socket->query_fd());
               socket->close();
               pgsqlsess.nossl=1;
               continue;
@@ -420,9 +425,9 @@ outer:
 #endif
         break;
       }
+      connectfail=pgsqlsess->_connectfail;
       if(!socket->is_open())
         error(strerror(socket->errno())+".\n");
-      connectfail=pgsqlsess->_connectfail;
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i,0);
       socket->set_nonblocking(i->read_cb,write_cb,close);
