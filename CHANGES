@@ -151,6 +151,8 @@ o Sql.pgsql
 
   Improved robustness against stray destructs and exceptions.
 
+  Fixed broken reconnect behaviour when the database connection dies.
+
 o Standards.BSON
 
   Fixed circular dependency.
