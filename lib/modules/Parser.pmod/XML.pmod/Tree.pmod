@@ -1346,11 +1346,27 @@ protected class VirtualNode {
   //!
   //! @param namespace_lookup
   //!   Mapping from namespace prefix to namespace symbol prefix.
+  //!
+  //! @param encoding
+  //!   Force a specific output character encoding. By default the
+  //!   encoding set in the document XML processing instruction will
+  //!   be used, with UTF-8 as a fallback. Setting this value will
+  //!   change the XML processing instruction, if present.
   string render_xml(void|int(0..1) preserve_roxen_entities,
-		    void|mapping(string:string) namespace_lookup)
+                    void|mapping(string:string) namespace_lookup,
+                    void|string encoding)
   {
     String.Buffer data = String.Buffer();
-    string encoding = get_encoding();
+    if( encoding )
+    {
+      Node xml_header;
+      if (sizeof(get_children()) &&
+          (xml_header = get_children()[0])->get_node_type()==XML_HEADER)
+        xml_header->get_attributes()->encoding=encoding;
+    }
+    else
+      encoding = get_encoding();
+
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
@@ -1358,8 +1374,13 @@ protected class VirtualNode {
 		     namespace_lookup);
     else
       low_render_xml(data, this, text_quote, attribute_quote,
-		     namespace_lookup);
-    return Charset.encoder(encoding)->feed((string)data)->drain();
+                     namespace_lookup);
+    Charset.Encoder enc = Charset.encoder(encoding);
+    enc->set_replacement_callback(lambda(string c)
+      {
+        return sprintf("&#%x;", c[0]);
+      });
+    return enc->feed((string)data)->drain();
   }
 
   //! Creates an XML representation for the node sub tree and streams
@@ -1376,7 +1397,7 @@ protected class VirtualNode {
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
-		     roxen_attribute_quote);
+                     roxen_attribute_quote);
     else
       low_render_xml(data, this, text_quote, attribute_quote);
   }
