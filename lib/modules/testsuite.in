@@ -648,7 +648,7 @@ add_constant("o",Opt);
 return 1;
 ]], 1)
 
-test_equal( sort(indices(o(({"x"})))) , ({ "debug", "help", "i", "name", "verbose" }) )
+test_equal( sort(indices(o(({"x"})))) , sort(({ Arg.PATH, Arg.REST, Arg.APP, "debug", "help", "i", "name", "verbose" })) )
 test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", "i":42, Arg.REST:({}) ]) )
 test_equal( o(({"x"}),([]))->verbose , 0 )
 test_equal( o(({"x"}),([]))->debug , 0 )

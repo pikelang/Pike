@@ -467,7 +467,7 @@ class LowOptions
       env = getenv();
 
     // Make a list of all the arguments we can parse.
-    foreach(::_indices(2), string index)
+    foreach(::_indices(this, 0), string index)
     {
       mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
@@ -618,7 +618,7 @@ class Options
   protected array _indices(object|void ctx, int|void access)
   {
     if (!access) {
-      return indices(values) + ({ REST, PATH, APP });
+      return ::_indices(this, access) + ({ REST, PATH, APP });
     }
     return ::_indices(ctx, access);
   }
@@ -626,7 +626,7 @@ class Options
   protected array _values(object|void ctx, int|void access)
   {
     if (!access) {
-      return predef::values(values) +
+      return ::_values(this, access) +
 	({ argv, application, basename(application) });
     }
     return ::_values(ctx, access);
