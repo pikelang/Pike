@@ -159,7 +159,7 @@ class Compiler
 
   //! Compile the file @[input_file] and write the result to @[output_file].
   //! If a source mapping file is set to be generated either via
-  //! @[set_options()] or @[set_source_map_file()] it will be written as per
+  //! @[set_options()] or @[source_map_file] it will be written as per
   //! the value set in the option.
   //!
   //! @param input_file
@@ -186,7 +186,7 @@ class Compiler
   //!
   //! @note
   //!  If the @[source] contain @tt{@@import@} directives you have to
-  //!  explicitly set the include path via @[set_include_path()].
+  //!  explicitly set the include path via @[include_path].
   //!
   //! @param source
   //!  The string to compile
@@ -197,7 +197,7 @@ class Compiler
   }
 
 
-  //! Set options to the SASS compiler. @[opts]
+  //! Set options to the SASS compiler.
   //!
   //! @param opts
   //!  @mapping

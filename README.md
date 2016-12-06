@@ -36,7 +36,7 @@ compiler->set_options(([
 ]));
 
 // Compile my.scss to my.css. my.source.map will also be written.
-if (mixed e = catch(compile_file("my.scss", "my.css"))) {
+if (mixed e = catch(compiler->compile_file("my.scss", "my.css"))) {
   werror("Compilation failed: %s\n", describe_error(e));
 }
 ```
