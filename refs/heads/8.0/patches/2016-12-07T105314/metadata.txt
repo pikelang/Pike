@@ -2,7 +2,7 @@ subject: Pike 8.0: ECC curves, refdoc, tzdata, pmar, make_wxs, pgsql
 from: fa59a63228eae6be3aca116faa7e0455bd0c0164
 to: 1cdfda204ee6b68725840b987ec82a36d0e346f8
 originator: Marcus Wellhardh
-depends: pike/8.0.354
+depends: pike/8.0.354|2016-11-28T170321
 restart: true
 
 • release number bumped to 8.0.369 by export.pike
