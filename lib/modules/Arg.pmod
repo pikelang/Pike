@@ -531,8 +531,9 @@ class LowOptions
     if( s )
       write( "%s\n", s );
 
-    foreach(opts; string i; Opt opt)
+    foreach(sort(indices(opts)), string i)
     {
+      Opt opt = opts[i];
       string opts = opt->get_opts()*", ";
       s = index(i+"_help");
       if ((sizeof(opts) > 23) || !s) {
