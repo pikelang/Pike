@@ -38,6 +38,10 @@ o Msql
 
   Fixed some compilation issues.
 
+o Sql.pgsql
+
+  Fixed broken reconnect behaviour when the database connection dies.
+
 Runtime
 -------
 
@@ -150,8 +154,6 @@ o Process.create_process
 o Sql.pgsql
 
   Improved robustness against stray destructs and exceptions.
-
-  Fixed broken reconnect behaviour when the database connection dies.
 
 o Standards.BSON
 
