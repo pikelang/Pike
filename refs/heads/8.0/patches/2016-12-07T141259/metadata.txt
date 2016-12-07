@@ -1,0 +1,8 @@
+subject: Pike 8.0: Dummy patch
+from: 1cdfda204ee6b68725840b987ec82a36d0e346f8
+to: 606892be5514c6839ee5ee66788a383538f271a7
+originator: Marcus Wellhardh
+depends: 2016-12-07T105314
+restart: true
+
+• release number bumped to 8.0.371 by export.pike
