@@ -134,6 +134,8 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
+
+  push_object(this_object());
 }
 
 static int call_repcb(struct svalue *repcb, p_wchar2 ch)

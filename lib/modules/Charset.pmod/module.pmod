@@ -174,7 +174,11 @@ class Encoder
   //! @param rc
   //!   Function that is called to encode characters
   //!   outside the current character encoding.
-  void set_replacement_callback(function(string:string) rc);
+  //!
+  //! @returns
+  //!   Returns the current object to allow for chaining
+  //!   of calls.
+  this_program set_replacement_callback(function(string:string) rc);
 }
 
 private class ASCIIDec {
@@ -591,9 +595,10 @@ private class ASCIIEnc
     s = "";
     return this;
   }
-  void set_replacement_callback(function(string:string) rc)
+  this_program set_replacement_callback(function(string:string) rc)
   {
     repcb = rc;
+    return this;
   }
   protected void create(string|void r, string|void rc)
   {

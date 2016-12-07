@@ -1375,12 +1375,10 @@ protected class VirtualNode {
     else
       low_render_xml(data, this, text_quote, attribute_quote,
                      namespace_lookup);
-    Charset.Encoder enc = Charset.encoder(encoding);
-    enc->set_replacement_callback(lambda(string c)
+    return Charset.encoder(encoding)->set_replacement_callback(lambda(string c)
       {
         return sprintf("&#%x;", c[0]);
-      });
-    return enc->feed((string)data)->drain();
+      })->feed((string)data)->drain();
   }
 
   //! Creates an XML representation for the node sub tree and streams
