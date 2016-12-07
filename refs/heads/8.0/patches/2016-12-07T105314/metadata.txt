@@ -1,0 +1,28 @@
+subject: Pike 8.0: ECC curves, refdoc, tzdata, pmar, make_wxs, pgsql
+from: fa59a63228eae6be3aca116faa7e0455bd0c0164
+to: 1cdfda204ee6b68725840b987ec82a36d0e346f8
+originator: Marcus Wellhardh
+depends: pike/8.0.354
+restart: true
+
+• release number bumped to 8.0.369 by export.pike
+
+• pgsql: Reconnect logic was broken, works reliably now.
+
+• Tools.Standalone.make_wxs: Fix argument order to Standards.UUID.make_version3.
+
+• pmar installer: MD5 hash function has moved.
+
+• Updated to tzdata2015j.
+
+• Calendar [mkrules]: Updated default set of files to use.
+
+• Fixed quotation of non-highlighted @code blocks
+
+• Tools.Standalone.git_export_autodoc: Install images in modref/images/ too.
+
+• Tools.Standalone.git_export_autodoc: Include the modref javascript.
+
+• Major redesign of the refdoc. Also removed some obsolete stuff.
+
+• Fix issues with missing ECC curves.
