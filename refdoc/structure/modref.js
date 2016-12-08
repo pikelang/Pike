@@ -152,12 +152,69 @@ function onBurgerClick() {
   return false;
 }
 
+// function nextElem(node, type) {
+//   var n = node.nextSibling;
+
+//   if (!n) {
+//     return null;
+//   }
+
+//   if (type) {
+//     if (type[1] === '.') {
+//       while (n && !n.classList.contains(type)) {
+//         n = n.nextSibling;
+//       }
+//     }
+//     else if (type[1] === '#') {
+//       while (n && n.getAttribute('id') !== type) {
+//         n = n.nextSibling;
+//       }
+//     }
+//     else {
+//       while (n  && n.nodeName.toLowerCase() !== type) {
+//         n = n.nextSibling;
+//       }
+//     }
+//   }
+//   else {
+//     while (n && n.nodeType !== 1) {
+//       n = n.nextSibling;
+//     }
+//   }
+
+//   return n;
+// }
+
+// function onNavbarHeadClick(e) {
+//   e.stopPropagation();
+//   e.preventDefault();
+
+//   var x = this;
+
+//   if (this.parentNode.nodeName === 'A') {
+//     x = this.parentNode;
+//   }
+
+//   var nb = nextElem(x, 'div');
+//   if (nb) {
+//     this.classList.toggle('open');
+//     nb.classList.toggle('open');
+//   }
+// }
+
 function setMobileMode() {
   document.removeEventListener('scroll', onPageScroll);
   document.addEventListener('scroll', onMobilePageScroll, false);
   burger.removeEventListener('click', onBurgerClick);
   burger.addEventListener('click', onBurgerClick, false);
   navbar.classList.remove('sticky');
+  // navbar.querySelectorAll('b.head').forEach(function(el) {
+  //   if (el.classList.contains('top')) {
+  //     return;
+  //   }
+
+  //   el.addEventListener('click', onNavbarHeadClick, false);
+  // });
   iAmSticky = false;
 }
 
