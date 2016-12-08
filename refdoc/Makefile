@@ -32,12 +32,12 @@ low_module_modref:
 	@cp structure/modref.js $(DESTDIR)modref/site.js
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/module_modref.xml structure/modref.html $(DESTDIR)modref predef
-	@mkdir $(DESTDIR)modref/images
-	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
+	@test -d $(DESTDIR)modref/images || mkdir $(DESTDIR)modref/images
 	@for file in pike-logo.svg pike-logo.png next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif \
           eye-slash.svg; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
+	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images/
 
 low_modref:
 	-rm -rf $(DESTDIR)modref
