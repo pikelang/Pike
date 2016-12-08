@@ -1525,7 +1525,7 @@ int low_main(string doc_file, string template_file, string outdir,
                           "$version$":"",
                           "$date$":"",
                           "$generated$":"",
-                          "$nodynamic$":""
+                          "$nodynamic$":"<script>PikeDoc.NO_DYNAMIC = true;</script>"
                        ]) );
   } else {
     template = replace(template,
