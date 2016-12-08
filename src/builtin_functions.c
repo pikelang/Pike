@@ -3207,6 +3207,7 @@ PMOD_EXPORT void f_time(INT32 args)
 /*! @decl string(46..122) crypt(string(1..255) password)
  *! @decl int(0..1) crypt(string(1..255) input_password, @
  *!                       string(46..122) crypted_password)
+ *! @decl string(46..122) crypt()
  *!
  *!   This function crypts and verifies a short string (only the first
  *!   8 characters are significant).
@@ -3217,6 +3218,9 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   The second syntax is used to verify @[typed_password] against
  *!   @[crypted_password], and returns @expr{1@} if they match, and
  *!   @expr{0@} (zero) otherwise.
+ *!
+ *!   The third syntax generates a random string and then crypts it,
+ *!   creating a string useful as a password.
  *!
  *! @note
  *!   Note that strings containing null characters will only be
@@ -3229,7 +3233,16 @@ PMOD_EXPORT void f_crypt(INT32 args)
   char *alphabet =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-  get_all_args("crypt", args, "%s.%s", &pwd, &saltp);
+  get_all_args("crypt", args, ".%s%s", &pwd, &saltp);
+
+  if( !pwd )
+  {
+    do {
+      push_random_string(16);
+      push_constant_text("\0");
+      f_minus(2);
+    } while(Pike_sp[-1].u.string->len<8);
+  }
 
   if(saltp)
   {
@@ -9405,7 +9418,7 @@ void init_builtin_efuns(void)
 
   /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
-	   tOr(tFunc(tStr,tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
+           tOr(tFunc(tOr(tStr,tVoid),tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
 
   /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
