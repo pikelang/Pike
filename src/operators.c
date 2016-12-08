@@ -4852,7 +4852,7 @@ static const char *range_func_name (int bound_types)
       Pike_fatal ("Unexpected bound_types.\n");
 #endif
   }
-  return "Unexpected bound_types"; /* Make compiler quiet */
+  UNREACHABLE(return "Unexpected bound_types");
 }
 
 PMOD_EXPORT void o_range2 (int bound_types)
