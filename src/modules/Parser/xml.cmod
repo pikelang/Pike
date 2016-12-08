@@ -1281,8 +1281,7 @@ static int gobble(char *s)
 	    push_constant_text("%");					 \
 	    ref_push_string(name);					 \
 	    push_int(1);						 \
-	    push_int(0x7fffffff);					 \
-	    o_range();							 \
+            o_range2(RANGE_LOW_FROM_BEG|RANGE_HIGH_OPEN);                \
 	  }else{							 \
 	    push_constant_text("&");					 \
 	    ref_push_string(name);					 \
