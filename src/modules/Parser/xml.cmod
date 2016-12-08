@@ -3310,7 +3310,7 @@ PIKEFUN string autoconvert(string s)
 	return;
 
       case 0xefbb: /* UTF-8 */
-	if (STR0(s)[3] != 0xbf) break;
+        if (STR0(s)[2] != 0xbf) break;
 	IF_XMLDEBUG(fprintf(stderr, "UTF-8 detected.\n"));
 	push_int(3);
 	push_int(0x7fffffff);
