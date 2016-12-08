@@ -167,10 +167,6 @@ o predef::gc()
   gc() called with a weak mapping as argument now removes weak references
   that are only held by that mapping.
 
-o predef::sprintf()
-
-  sprintf() now replaces %m with strerror(errno()).
-
 o ADT.Heap
 
   - An indirection object ADT.Heap.Element has been added to make it
