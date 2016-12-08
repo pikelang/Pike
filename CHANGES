@@ -42,6 +42,10 @@ o Sql.pgsql
 
   Fixed broken reconnect behaviour when the database connection dies.
 
+o VCDiff
+
+  Fixed type of decode_chunk().
+
 Runtime
 -------
 
