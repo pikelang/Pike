@@ -3239,8 +3239,6 @@ PIKEFUN string autoconvert(string s)
   INT32 e;
   struct string_builder b;
 
-  pop_n_elems(args-1);
-
   if(!s->size_shift)
   {
     int pos = 0;
@@ -3260,17 +3258,15 @@ PIKEFUN string autoconvert(string s)
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
 	push_int(2);
-	push_int(0x7fffffff);
-	o_range();
+        o_range2(RANGE_LOW_FROM_BEG|RANGE_HIGH_OPEN);
 	f_unicode_to_string(1);
 	return;
 
       case 0xefbb: /* UTF-8 */
-	if (STR0(s)[3] != 0xbf) break;
+        if (STR0(s)[2] != 0xbf) break;
 	IF_XMLDEBUG(fprintf(stderr, "UTF-8 detected.\n"));
 	push_int(3);
-	push_int(0x7fffffff);
-	o_range();
+        o_range2(RANGE_LOW_FROM_BEG|RANGE_HIGH_OPEN);
 	f_utf8_to_string(1);
 	return;
       }
