@@ -623,11 +623,13 @@ ISWRAP(isHexChar)
 
 #ifdef VERBOSE_XMLDEBUG
 #define IF_XMLDEBUG(X) X
+#define XMLDEBUGUSE(X) X
 #ifndef PIKE_DEBUG
 #define PIKE_DEBUG
 #endif
 #else
 #define IF_XMLDEBUG(X)
+#define XMLDEBUGUSE(X) UNUSED(X)
 #endif
 
 #ifdef PIKE_DEBUG
@@ -1010,7 +1012,7 @@ PIKECLASS Simple
       really_free_xmlinput(i);						\
       IF_XMLDEBUG(if (THIS->input)					\
 		    fprintf(stderr,					\
-			    "ptr=%p len=%d pos=%d to_free=%p\n",	\
+                            "ptr=%p len=%ld pos=%ld to_free=%p\n",	\
 			    THIS->input->datap.ptr,			\
 			    THIS->input->len,				\
 			    THIS->input->pos,				\
@@ -1070,11 +1072,11 @@ PIKECLASS Simple
 #endif /* PIKE_DEBUG */
 
 
-static inline int xmlread(int z, int UNUSED(line))
+static inline int xmlread(int z, int XMLDEBUGUSE(line))
 {
   int popped=0;
   THIS->input->pos += z;
-  IF_XMLDEBUG(fprintf(stderr,"Step(%d) (at %d) to %d/%d '%c%c%c%c'\n",
+  IF_XMLDEBUG(fprintf(stderr,"Step(%d) (at %d) to %ld/%ld '%c%c%c%c'\n",
 		      z,
 		      line,
 		      THIS->input->pos,
@@ -1577,7 +1579,7 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
       if(TYPEOF(sp[-1]) == T_STRING)
       {
 	struct pike_string *s=sp[-1].u.string;
-	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
+        IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%ld pos=%ld to_free=%p\n",
 			    THIS->input->datap.ptr, THIS->input->len,
 			    THIS->input->pos, THIS->input->to_free));
 
