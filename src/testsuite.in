@@ -4195,9 +4195,9 @@ test_any([[
   class A(array foo) {
     int counter;
 
-    mixed `->=(string sym, mixed v) {
+    void `->=(string sym, mixed v) {
       counter += !!v;
-      return ::`->=(sym, v);
+      ::`->=(sym, v);
     }
   };
 
