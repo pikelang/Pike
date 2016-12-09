@@ -62,6 +62,50 @@ struct svalue gc_destruct_cb;
 /* Callback called when the gc() is about to exit. */
 struct svalue gc_done_cb;
 
+/* The gc has the following passes:
+ *
+ * GC_PASS_PREPARE
+ *
+ * GC_PASS_PRETOUCH
+ *   Debug.
+ *
+ * GC_PASS_CHECK
+ *   Counts all internal references (strong, normal and weak)
+ *   by calling gc_check() or gc_check_weak() (and thus
+ *   real_gc_check() or real_gc_check_weak()). They increase
+ *   the reference counters in the marker.
+ *
+ * GC_PASS_MARK
+ *   Recursively mark objects that have more references than
+ *   internal references for keeping. Sets the flag
+ *   GC_MARKED and clears the flag GC_NOT_REFERENCED
+ *   in the marker.
+ *
+ * GC_PASS_CYCLE
+ *   Identify cycles in the unmarked objects.
+ *
+ * GC_PASS_ZAP_WEAK
+ *   Zap weak references to unmarked objects.
+ *
+ * GC_PASS_POSTTOUCH
+ *   Debug.
+ *
+ * GC_PASS_FREE
+ *   Free remaining unmarked objects.
+ *
+ * GC_PASS_KILL
+ *   Destruct remaining unmarked live (lfun::destroy()) objects.
+ *
+ * GC_PASS_DESTRUCT
+ *   Destruct objects to destruct.
+ *
+ * And the following simulated passes:
+ *
+ * GC_PASS_LOCATE
+ *
+ * GC_PASS_DISABLED
+ */
+
 /* The gc will free all things with no external nonweak references
  * that isn't referenced by live objects. An object is considered
  * "live" if it contains code that must be executed when it is
