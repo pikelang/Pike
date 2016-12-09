@@ -1364,6 +1364,15 @@ protected string call_describe_error(mixed /* object|array */ err)
   return (all_constants()["describe_error"]||describe_error)(err);
 }
 
+protected object lock_compiler()
+{
+  // Compat with older Pike 8.0 binaries.
+  if (DefaultCompilerEnvironment->lock) {
+    return DefaultCompilerEnvironment->lock();
+  }
+  return UNDEFINED;
+}
+
 protected program low_findprog(string pname,
 			       string ext,
 			       object|void handler,
@@ -1417,7 +1426,7 @@ protected program low_findprog(string pname,
       }
 #endif
 
-    object compiler_lock = DefaultCompilerEnvironment->lock();
+    object compiler_lock = lock_compiler();
     if(!undefinedp(ret = programs[fname]) && (ret != no_value)) {
       destruct(compiler_lock);
       resolv_debug("low_findprog %s: returning cached (from other thread).\n",
@@ -1563,7 +1572,7 @@ protected program low_findprog(string pname,
 void unregister(program p)
 {
   // werror("Unregistering %O...\n", p);
-  object compiler_lock = DefaultCompilerEnvironment->lock();
+  object compiler_lock = lock_compiler();
 
   if(string fname=rev_programs[p] || search(programs,p)) {
     resolv_debug("unregister %s\n", fname);
@@ -1902,7 +1911,7 @@ object low_cast_to_object(string oname, string current_file,
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
   if(!objectp(o = objects[p])) {
-    object compiler_lock = DefaultCompilerEnvironment->lock();
+    object compiler_lock = lock_compiler();
     // NB: p might be a function in a fake_object...
     if(!objectp(o = objects[p])) o = objects[p] = p();
     destruct(compiler_lock);
@@ -2154,7 +2163,7 @@ class dirnode (string dirname, object|void compilation_handler,
 	      object o;
 	      // NB: p might be a function in a fake_object...
 	      if(!objectp(o = objects[ret])) {
-		object compiler_lock = DefaultCompilerEnvironment->lock();
+		object compiler_lock = lock_compiler();
 		if(!objectp(o = objects[ret])) o = objects[ret] = ret();
 		destruct(compiler_lock);
 	      }
