@@ -1,0 +1,17 @@
+subject: Pike 8.0: MasterObject, Parser.XML
+from: 606892be5514c6839ee5ee66788a383538f271a7
+to: 233eb91f443a764b29dd8008d5212078e23aa19e
+originator: Henrik Grubbstrom
+depends: 2016-12-07T141259
+restart: true
+
+• MasterObject: Survive older pike 8.0 binaries.
+
+DefaultCompilerEnvironment->lock() doesn't exist
+in older versions of Pike 8.0.
+
+Potential fix for such binaries failing with recent master.pike.
+
+REQUIRED for Roxen 6.0.130 if 2016-11-28T170321 has been applied.
+
+• Parser.XML: Bugfix decoding of UTF-8 encoded BOM.
