@@ -3229,7 +3229,7 @@ PMOD_EXPORT void f_time(INT32 args)
 PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
-  char *ret, *pwd, *saltp = NULL;
+  char *ret, *pwd = NULL, *saltp = NULL;
   char *alphabet =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -3242,6 +3242,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
       push_constant_text("\0");
       f_minus(2);
     } while(Pike_sp[-1].u.string->len<8);
+    pwd = Pike_sp[-1].u.string->str;
   }
 
   if(saltp)
