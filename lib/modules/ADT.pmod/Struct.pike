@@ -48,7 +48,7 @@ int id = ADT.get_item_id();
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
-  foreach(::_indices(2), string index) {
+  foreach(::_indices(this, 0), string index) {
     mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }

@@ -459,7 +459,8 @@ mixed `[]=(string property, mixed value)
 
     case "query":
       variables = 0;
-      return ::`[]=(property, value);
+      ::`[]=(property, value);
+      return value;
 
     case "scheme":
       /* RFC 3986 §3.1
@@ -475,7 +476,8 @@ mixed `[]=(string property, mixed value)
 
       // FALL_THROUGH
     default:
-      return ::`[]=(property, value); // Set and return the new value
+      ::`[]=(property, value); // Set and return the new value
+      return value;
   }
 }
 
@@ -645,9 +647,9 @@ mapping(string:string|int|this_program) _encode()
 
 // Master codec API function. Allows for deserialization with
 // decode_value.
-void _decode(mapping m)
+void _decode(mapping(string:mixed) m)
 {
-    foreach(m; mixed index; mixed value)
+    foreach(m; string index; mixed value)
       ::`[]=(index, value);
 }
 
