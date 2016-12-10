@@ -315,7 +315,7 @@ class _Tar
 	error ("Failed to seek to position %d in %O.\n", pos, fd);
     }
 
-    filename_to_entry = mkmapping(entries->fullpath, entries);
+    filename_to_entry = mkmapping(filenames = entries->fullpath, entries);
 
     // create missing dirnodes
 
@@ -326,12 +326,18 @@ class _Tar
       if(path[..<1]==last) continue; // same dir
       last = path[..<1];
 
-      for(int i = 0; i<sizeof(last); i++)
-	if(!filename_to_entry[last[..i]*"/"])
-	  mkdirnode(last[..i]*"/", r, parent);
+      for(int i = 0; i<sizeof(last); i++) {
+	if(!filename_to_entry[last[..i]*"/"]) {
+	  string dir = last[..i]*"/";
+	  mkdirnode(dir, r, parent);
+	  filenames += ({ dir });
+	}
+      }
     }
 
-    filenames = indices(filename_to_entry);
+    // NB: It's legal to have several entries for the same path;
+    //     the last one wins.
+    filenames = Array.uniq(filenames);
   }
 
   protected void extract_bits (string dest, Stdio.Stat r, int which_bits)
