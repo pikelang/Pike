@@ -11092,7 +11092,11 @@ test_do(add_constant("random",Random.Deterministic(17)->random))
 test_eq(crypt("hello"),"yWUNYFIhtQEg6")
 test_eq(crypt("hello"),"tB0k4A51tkBFI")
 test_eq(crypt("hello"),"qLKH6pE54iDM.")
+test_do(add_constant("random_string",Random.Deterministic(17)->random_string))
+test_eq(crypt(), "SQn8XrmeKKetI");
+test_eq(crypt(), "WkF1H7X4pX7YA");
 test_do(add_constant("random",Random.System()->random))
+test_do(add_constant("random_string",Random.System()->random_string))
 test_true(crypt("hej",crypt("hej")))
 test_true(crypt("hej","Oz5i0K.16qkgA"))
 test_true(crypt("hej","buf8/Z7taE6qs"))
