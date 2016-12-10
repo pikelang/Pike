@@ -46,6 +46,10 @@ o VCDiff
 
   Fixed type of decode_chunk().
 
+o Parser.XML
+
+  UTF-8 encoded documents with inital BOM was not decoded correctly.
+
 Runtime
 -------
 
