@@ -2931,15 +2931,12 @@ static void f_magic_set_index(INT32 args)
       Pike_error("No such variable (%S) in object.\n", s);
     else
       Pike_error("No such variable in object.\n");
-  }else{
-    object_low_set_index(o, f+inherit->identifier_level,
-			 val);
-    pop_n_elems(args);
-    push_int(0);
   }
+  object_low_set_index(o, f+inherit->identifier_level, val);
+  pop_n_elems(args);
 }
 
-/*! @decl mixed ::_indices(object|void context, int|void access)
+/*! @decl array(string) ::_indices(object|void context, int|void access)
  *!
  *! @param context
  *!   Context in the current object to start the list from.
@@ -3048,7 +3045,7 @@ static void f_magic_indices (INT32 args)
   res->type_field = BIT_STRING;
 }
 
-/*! @decl mixed ::_values(object|void context, int|void access)
+/*! @decl array ::_values(object|void context, int|void access)
  *!
  *! @param context
  *!   Context in the current object to start the list from.
@@ -3161,7 +3158,7 @@ static void f_magic_values (INT32 args)
   res->type_field = types;
 }
 
-/*! @decl mixed ::_types(object|void context, int|void access)
+/*! @decl array ::_types(object|void context, int|void access)
  *!
  *! @param context
  *!   Context in the current object to start the list from.
