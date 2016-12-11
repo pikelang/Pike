@@ -2870,7 +2870,6 @@ static void f_thread_id_interrupt(INT32 args)
     /* FIXME: Actually interrupt the thread. */
   }
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
-  push_int(0);
 }
 
 static void low_thread_kill (struct thread_state *th)
@@ -2897,7 +2896,6 @@ static void f_thread_id_kill(INT32 args)
 {
   pop_n_elems(args);
   low_thread_kill (THIS_THREAD);
-  push_int(0);
 }
 
 void init_thread_obj(struct object *UNUSED(o))

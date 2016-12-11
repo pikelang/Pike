@@ -1348,7 +1348,6 @@ protected class VirtualNode {
       });
   }
 
-
   //! Creates an XML representation of the node sub tree. If the
   //! flag @[preserve_roxen_entities] is set, entities on the form
   //! @tt{&foo.bar;@} will not be escaped.

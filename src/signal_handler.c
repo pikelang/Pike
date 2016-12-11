@@ -1960,7 +1960,6 @@ static void f_trace_process_exit(INT32 args)
     Pike_error("Failed to exit process. errno:%d\n", err);
   }
   pop_n_elems(args);
-  push_int(0);
 }
 
 #if 0	/* Disabled for now. */
@@ -3657,8 +3656,7 @@ void f_create_process(INT32 args)
       if (!e) {
 	/* OK! */
 	pop_n_elems(args);
-	push_int(0);
-	return;
+        return;
       } else if (e < 0) {
 	/* Something went wrong with our read(2). */
 #ifdef ENODEV
@@ -4188,7 +4186,6 @@ void f_create_process(INT32 args)
 #endif /* __amigaos__ */
 #endif /* __NT__ */
   pop_n_elems(args);
-  push_int(0);
 }
 
 #ifdef HAVE_FORK
