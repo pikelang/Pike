@@ -693,6 +693,7 @@ define([PIKE_RETAIN_VARIABLES],
 
   # This allows module configure scripts to extend these variables.
   CFLAGS=$BASE_CFLAGS
+  CXXFLAGS=$BASE_CXXFLAGS
   CPPFLAGS=$BASE_CPPFLAGS
   LDFLAGS=$BASE_LDFLAGS
 

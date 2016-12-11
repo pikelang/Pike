@@ -7,8 +7,10 @@
 #
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) $(LINKAGE_CPPFLAGS) $(MODULE_CPPFLAGS) $(DEFINES)
-CFLAGS=$(MODULE_CFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
-NOOPT_CFLAGS=$(MODULE_CFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
+CFLAGS=$(BASE_CFLAGS) $(MODULE_CFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
+NOOPT_CFLAGS=$(BASE_CFLAGS) $(MODULE_CFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
+CXXFLAGS=$(BASE_CXXFLAGS) $(MODULE_CXXFLAGS) $(OTHERFLAGS) $(LINKAGE_CXXFLAGS)
+NOOPT_CXXFLAGS=$(BASE_CXXFLAGS) $(MODULE_CXXFLAGS) $(NOOPTFLAGS) $(LINKAGE_CXXFLAGS)
 
 # MAKE_FLAGS_BASE must not contain LINKAGE_*.
 MAKE_FLAGS_BASE = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
@@ -89,10 +91,10 @@ $(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/pre
 .cc.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	if $(CXX) $(PREFLAGS) $(CXXFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  echo "Compilation command was:" >&2;\
-	  echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  echo "$(CXX) $(PREFLAGS) $(CXXFLAGS) -c $< -o $@" >&2 ;\
 	  exit $$status; \
 	fi
 
