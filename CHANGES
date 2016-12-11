@@ -50,6 +50,10 @@ o Parser.XML
 
   UTF-8 encoded documents with inital BOM was not decoded correctly.
 
+  Serializing Parser.XML.Tree objects will now entity escape
+  characters that can not be encoded in the selected outupt charser.
+
+
 Runtime
 -------
 

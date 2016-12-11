@@ -1341,6 +1341,16 @@ protected class VirtualNode {
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
 
+  protected Charset.Encoder get_encoder(string encoding)
+  {
+    Charset.Encoder e = Charset.encoder(encoding);
+    e->set_replacement_callback(lambda(string c)
+      {
+        return sprintf("&#%x;", c[0]);
+      });
+    return e;
+  }
+
   //! Creates an XML representation of the node sub tree. If the
   //! flag @[preserve_roxen_entities] is set, entities on the form
   //! @tt{&foo.bar;@} will not be escaped.
@@ -1360,7 +1370,7 @@ protected class VirtualNode {
     else
       low_render_xml(data, this, text_quote, attribute_quote,
 		     namespace_lookup);
-    return Charset.encoder(encoding)->feed((string)data)->drain();
+    return get_encoder(encoding)->feed((string)data)->drain();
   }
 
   //! Creates an XML representation for the node sub tree and streams
@@ -1373,7 +1383,7 @@ protected class VirtualNode {
 	encoder->feed(args[*]);
 	f->write(encoder->drain());
       }
-    } (f, Charset.encoder(get_encoding()));
+    } (f, get_encoder(get_encoding()));
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
