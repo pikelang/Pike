@@ -1275,9 +1275,10 @@ class KeyExchangeECDHE
       session->curve = ECC_CURVES[c];
       if (!session->curve) {
 	connection->ke = UNDEFINED;
-	error("Unsupported curve.\n");
+	error("Unsupported curve: %s.\n", fmt_constant(c, "CURVE"));
       }
-      SSL3_DEBUG_MSG("Curve: %O (%O)\n", session->curve, c);
+      SSL3_DEBUG_MSG("Curve: %O (%O: %s)\n",
+		     session->curve, c, fmt_constant(c, "CURVE"));
       break;
     default:
       connection->ke = UNDEFINED;
