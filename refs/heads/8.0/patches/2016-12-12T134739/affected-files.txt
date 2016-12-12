@@ -1,0 +1,5 @@
+Modified files:
+  pike/lib/modules/Crypto.pmod/ECC.pmod
+  pike/lib/modules/Parser.pmod/XML.pmod/Tree.pmod
+  pike/lib/modules/SSL.pmod/Cipher.pmod
+  pike/lib/modules/SSL.pmod/Context.pike
