@@ -1272,7 +1272,7 @@ class KeyExchangeECDHE
     switch(input->read_int(1)) {
     case CURVETYPE_named_curve:
       int c = input->read_int(2);
-      if (has_value(session->ecc_curves, c)) {
+      if (has_value(context->ecc_curves, c)) {
 	// Only look up curves that we are configured to support.
 	session->curve = ECC_CURVES[c];
       }
