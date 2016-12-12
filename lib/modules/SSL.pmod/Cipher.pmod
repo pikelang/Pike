@@ -1124,7 +1124,10 @@ class KeyExchangeECDHE
       temp_struct->put_uint(CURVETYPE_named_curve, 1);
       int c = input->get_uint(2);
       temp_struct->put_uint(c, 2);
-      session->curve = ECC_CURVES[c];
+      if (has_value(session->ecc_curves, c)) {
+	// Only look up curves that we are configured to support.
+	session->curve = ECC_CURVES[c];
+      }
       if (!session->curve) {
 	connection->ke = UNDEFINED;
 	error("Unsupported curve: %s.\n", fmt_constant(c, "CURVE"));
