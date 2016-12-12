@@ -3824,7 +3824,10 @@ static void f_GetComputerName(INT32 args)
   pop_n_elems(args);
 
   if (!GetComputerName(name, &len))
+  {
     push_int(0);
+    return;
+  }
 
   push_string(make_shared_binary_string(name, len));
 }
@@ -3847,7 +3850,10 @@ static void f_GetUserName(INT32 args)
   pop_n_elems(args);
 
   if (!GetUserName(name, &len))
+  {
     push_int(0);
+    return;
+  }
 
   push_string(make_shared_binary_string(name, len-1));
 }
