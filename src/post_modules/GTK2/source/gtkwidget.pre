@@ -897,6 +897,8 @@ int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
     int i;
     for (i=0; i<targ->size; i++) {
       struct array *cur;
+      struct pike_string *str;
+      INT32 min, max;
       if (TYPEOF(ITEM(targ)[i]) != PIKE_T_ARRAY) return 1;
       cur = ITEM(targ)[i].u.array;
       if (cur->size != 3) return 1;
@@ -904,13 +906,12 @@ int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
           || TYPEOF(ITEM(cur)[1]) != PIKE_T_INT
           || TYPEOF(ITEM(cur)[2]) != PIKE_T_INT)
         return 1;
-      struct pike_string *str = ITEM(cur)[0].u.string;
+      str = ITEM(cur)[0].u.string;
       // The string has to be printable ASCII - it should be a
       // MIME type.
       // Quick check: ASCII strings will have size_shift of zero.
       if (str->size_shift) return 1;
       // But not all eight-bit strings are printable ASCII.
-      INT32 min, max;
       check_string_range(str, 0, &min, &max);
       if (min < ' ' || max >= 128) return 1;
       drag_targets[i].target = str->str;
