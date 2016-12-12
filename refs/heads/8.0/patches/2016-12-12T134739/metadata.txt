@@ -1,0 +1,20 @@
+subject: Pike 8.0: Crypto.ECC & SSL, XML charset. 
+from: 233eb91f443a764b29dd8008d5212078e23aa19e
+to: fe5f5483ece93f5d3a42da8cb16cdc465cb59641
+originator: Erik Allemann
+depends: 2016-12-09T120914
+restart: true
+
+• SSL [Client]: Support disabling of some ECC curves via Context.
+
+Fixes remainder of [bug 7825].
+
+• SSL: Survive Context()->ecc_curves being empty.
+
+Fixes some more of [bug 7825].
+
+• Crypto.ECC: Survive use with old Pike 8.0 binaries.
+
+Fixes some of [bug 7825].
+
+• Backported XML serialization charset fix.
