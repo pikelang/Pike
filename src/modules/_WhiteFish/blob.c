@@ -394,7 +394,6 @@ static void f_blob_remove_list( INT32 args )
     }
   }
   pop_n_elems(args);
-  push_int( 0 );
 }
 
 void wf_blob_low_add( struct object *o,
@@ -424,7 +423,6 @@ static void f_blob_add( INT32 args )
   get_all_args("add", args, "%d%d%d", &docid, &field, &off);
   wf_blob_low_add( Pike_fp->current_object, docid, field, off );
   pop_n_elems( args );
-  push_int( 0 );
 }
 
 int cmp_zipp( void *a, void *b )

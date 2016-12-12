@@ -208,7 +208,6 @@ static void f_resultset_create( INT32 args )
       }
   }
   pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_resultset_slice( INT32 args );
@@ -959,7 +958,6 @@ static void f_resultset_add( INT32 args )
   get_all_args( "add", args, "%l%l", &d, &h );
   wf_resultset_add( Pike_fp->current_object, d, h );
   pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_resultset_add_many( INT32 args )
@@ -991,7 +989,6 @@ static void f_resultset_add_many( INT32 args )
     wf_resultset_add( Pike_fp->current_object, di, ri );
   }
   pop_n_elems(args);
-  push_int(0);
 }
 
 void init_resultset_program(void)
