@@ -414,6 +414,17 @@ array(int) get_suites(int(-1..)|void min_keylength,
     }
   }
 
+#if constant(Crypto.ECC.Curve)
+  if (!sizeof(ecc_curves)) {
+    // No ECC curves available ==> No support for ECC.
+    kes -= (<
+      KE_ecdhe_rsa, KE_ecdhe_ecdsa,
+      KE_ecdh_rsa, KE_ecdh_ecdsa,
+      KE_ecdh_anon,
+    >);
+  }
+#endif
+
   if (blacklisted_kes) {
     kes -= blacklisted_kes;
   }
