@@ -407,19 +407,22 @@ class Curve {
 //! @endmodule
 
 //! @ignore
-#if constant(Nettle.SECP192R1)
+// NB: These constants were added during Pike 8.0.315.
+//     Prior to this availability of Nettle.ECC_Curve implied
+//     that all of the SECP curves were available.
+#if constant(Nettle.SECP192R1) || (__BUILD__ <= 314)
 Curve SECP_192R1 = Curve(1, 192, 1);
 #endif /* constant(Nettle.SECP192R1) */
-#if constant(Nettle.SECP224R1)
+#if constant(Nettle.SECP224R1) || (__BUILD__ <= 314)
 Curve SECP_224R1 = Curve(1, 224, 1);
 #endif /* constant(Nettle.SECP224R1) */
-#if constant(Nettle.SECP256R1)
+#if constant(Nettle.SECP256R1) || (__BUILD__ <= 314)
 Curve SECP_256R1 = Curve(1, 256, 1);
 #endif /* constant(Nettle.SECP256R1) */
-#if constant(Nettle.SECP384R1)
+#if constant(Nettle.SECP384R1) || (__BUILD__ <= 314)
 Curve SECP_384R1 = Curve(1, 384, 1);
 #endif /* constant(Nettle.SECP384R1) */
-#if constant(Nettle.SECP521R1)
+#if constant(Nettle.SECP521R1) || (__BUILD__ <= 314)
 Curve SECP_521R1 = Curve(1, 521, 1);
 #endif /* constant(Nettle.SECP521R1) */
 //! @endignore
