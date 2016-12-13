@@ -711,7 +711,8 @@ void enable_model_drag_source(int start_button_mask,
     struct array *targ;
 
     get_all_args("enable_model_drag_source", args, "%d%a%d", &btn, &targ, &act);
-    GtkTargetEntry drag_targets[targ->size]; //C99ism
+    /* GtkTargetEntry drag_targets[targ->size]; //C99 */
+    GtkTargetEntry *drag_targets = alloca(sizeof(GtkTargetEntry) * targ->size); /* C89 equiv */
     if (_decode_targets(targ, drag_targets))
       SIMPLE_ARG_TYPE_ERROR("enable_model_drag_source", 2, "array(array(string|int))");
     gtk_tree_view_enable_model_drag_source(GTK_TREE_VIEW(THIS->obj), btn,
@@ -730,7 +731,8 @@ void enable_model_drag_dest(array(array) targets, int actions)
     struct array *targ;
 
     get_all_args("enable_model_drag_dest", args, "%a%d", &targ, &act);
-    GtkTargetEntry drag_targets[targ->size]; //C99ism
+    /* GtkTargetEntry drag_targets[targ->size]; //C99 */
+    GtkTargetEntry *drag_targets = alloca(sizeof(GtkTargetEntry) * targ->size); /* C89 equiv */
     if (_decode_targets(targ, drag_targets))
       SIMPLE_ARG_TYPE_ERROR("enable_model_drag_dest", 2, "array(array(string|int))");
     gtk_tree_view_enable_model_drag_dest(GTK_TREE_VIEW(THIS->obj),
