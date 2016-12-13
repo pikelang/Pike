@@ -1,0 +1,10 @@
+subject: Pike 8.0: More SSL ECC fixes
+from: fe5f5483ece93f5d3a42da8cb16cdc465cb59641
+to: 4021cddd47105945d75abc5f40c1633d3643ae82
+originator: Jonas Lonnberg
+depends: 2016-12-12T134739
+restart: true
+
+• SSL.Cipher: More ECC-related fixes.
+
+• SSL.Cipher: Fixed debug output.
