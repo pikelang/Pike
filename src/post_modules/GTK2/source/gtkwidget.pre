@@ -931,7 +931,8 @@ void drag_source_set(int buttons, array targets, int actions)
 //! targets is an array of triples eg ({({"text/plain", GTK2.TARGET_SAME_APP, 0})})
 //! where each triple gives an identifying MIME type, a flag specifying whether the
 //! drag should be allowed to go to other applications, and an ID which will be
-//! passed on to signal handlers.
+//! passed on to signal handlers. NOTE: For internal reasons, you are currently
+//! permitted a maximum of ten targets.
 //! <p>
 //! actions is the set of valid actions that can be performed; use constants
 //! GTK2.GDK_ACTION_COPY|GTK2.GDK_ACTION_MOVE etc.
