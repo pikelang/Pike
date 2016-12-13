@@ -183,7 +183,7 @@ protected string class_name( Class cls, int|void nmn )
 }
 
 
-protected string make_function_doc( Function f, Class c )
+protected string make_function_doc( GtkFunction f, Class c )
 {
   if( f->name == "_sprintf" ||
       (f->name == "destroy" && (< 0, "" >)[f->doc] ) )

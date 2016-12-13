@@ -144,7 +144,7 @@ string unsillycaps(string what)
   return res;
 }
 
-class Function(Class parent,
+class GtkFunction(Class parent,
                string name,
                Type return_type,
                array(Type) arg_types,
@@ -157,7 +157,7 @@ class Function(Class parent,
 {
   protected string _sprintf(int fmt)
   {
-    return fmt=='O' && sprintf("Function( %O, %O )",name, return_type );
+    return fmt=='O' && sprintf("GtkFunction( %O, %O )",name, return_type );
   }
 
   string pike_type( )
@@ -1078,10 +1078,10 @@ int last_class_id = 2000;
 class Class( string name, string file, int line )
 {
   array(Class) inherits = ({});
-  mapping(string:Function) functions = ([]);
-  mapping(string:Signal)   signals   = ([]);
-  mapping(string:Member)   members   = ([]);
-  mapping(string:Property) properties= ([]);
+  mapping(string:GtkFunction) functions = ([]);
+  mapping(string:Signal)      signals   = ([]);
+  mapping(string:Member)      members   = ([]);
+  mapping(string:Property)    properties= ([]);
   string doc = "";
   Class mixin_for;
 
@@ -1128,7 +1128,7 @@ class Class( string name, string file, int line )
   void create_default_sprintf( )
   {
     if( name == "_global" || mixin_for ) return 0;
-    add_function( Function(this,
+    add_function( GtkFunction(this,
                            "_sprintf",
                            Type("string"), ({
                              Type("int"),
@@ -1157,10 +1157,10 @@ class Class( string name, string file, int line )
 		   file) + init;
 
     if( sizeof(init) )
-      add_function( Function(this, "_init", 0, ({}), ({}),
+      add_function( GtkFunction(this, "_init", 0, ({}), ({}),
 			     init, ({}), "", file, line ) );
     if( sizeof(exit) )
-      add_function( Function(this, "_exit", 0, ({}), ({}),
+      add_function( GtkFunction(this, "_exit", 0, ({}), ({}),
 			     exit, ({}), "", file, line ) );
   }
 
@@ -1869,7 +1869,7 @@ string parse_pre_file( string file )
          [arg_types,arg_names] = parse_args( args[1..sizeof(args)-2] );
          if( arrayp(body) )
            make_strings(body);
-         Function f = Function( current_class, name->text, type,
+         GtkFunction f = GtkFunction( current_class, name->text, type,
                                 arg_types, arg_names, body, 
                                 current_require, doc, file, token->line );
          current_class->add_function( f );
@@ -2022,7 +2022,7 @@ void main(int argc, array argv)
 
   object|array(object) q;
   add_constant( "Node", typeof( q ) );
-  add_constant( "Function", Function );
+  add_constant( "GtkFunction", GtkFunction );
   add_constant( "Constant", Constant );
   add_constant( "COMPOSE", Parser.Pike.reconstitute_with_line_numbers );
   object output_plugin = ((program)output)( source_dir, destination_dir,
