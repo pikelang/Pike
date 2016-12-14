@@ -113,7 +113,7 @@ public void set_maxtime(int t)
 //! Sends a @tt{GET@}, @tt{POST@}, @tt{PUT@} or @tt{DELETE@} request to @[url]
 //! asynchronously. A @[Concurrent.Future] object is returned on which you
 //! can register callbacks via @[Concurrent.Future->on_success()] and
-//! @[Concurrent.Future.on_failure()] which will get a @[Sucess] or @[Failure]
+//! @[Concurrent.Future.on_failure()] which will get a @[Success] or @[Failure]
 //! object as argument respectively.
 //!
 //! For an example of usage see @[Protocols.HTTP.Promise]
