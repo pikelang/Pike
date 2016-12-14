@@ -6,6 +6,9 @@
 
 %pure-parser
 
+/* Expect a single shift/reduce conflict (dangling else). */
+%expect 1
+
 %token TOK_ARROW
 
 /*
