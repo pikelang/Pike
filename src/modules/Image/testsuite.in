@@ -779,15 +779,17 @@ test_false( Image.Colortable(Image.Image(10,10,255,0,0))->greyp() )
 dnl #### Encodings
 
 define(test_image_any,[[
-  test_any([[
-    return Image.ANY.decode(Image.$1.encode(Image.Image(10,10)))->xsize();
-  ]],10)
-  test_any([[
-    mapping m=Image.ANY._decode(Image.$1.encode(Image.Image(10,10)));
-    if(!m->image || !m->type) return -1;
-    if(!has_prefix(m->type, "image/")) return -2;
-    return 1;
-  ]], 1)
+  cond_resolv(Image.$1, [[
+    test_any([[
+      return Image.ANY.decode(Image.$1.encode(Image.Image(10,10)))->xsize();
+    ]],10)
+    test_any([[
+      mapping m=Image.ANY._decode(Image.$1.encode(Image.Image(10,10)));
+      if(!m->image || !m->type) return -1;
+      if(!has_prefix(m->type, "image/")) return -2;
+      return 1;
+    ]], 1)
+  ]])
 ]])
 
 ; Missing tests for XCF, PSD, TIM, XWD
