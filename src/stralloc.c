@@ -1697,7 +1697,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 
   r=begin_wide_shared_string(size,shift);
   pike_string_cpy(MKPCHARP_STR(r),a);
-  r->flags |= (a->flags & ~15);
+  r->flags |= (a->flags & STRING_CHECKED_MASK);
   r->min = a->min;
   r->max = a->max;
   free_string(a);
@@ -1870,7 +1870,7 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
                                     struct pike_string *b)
 {
   if( !b->len ) {
-    ret->flags |= aflags & ~15;
+    ret->flags |= aflags & STRING_CHECKED_MASK;
     ret->min = amin;
     ret->max = amax;
     return;

@@ -55,6 +55,8 @@ struct string_builder
 #define STRING_IS_LOWERCASE    32
 #define STRING_IS_UPPERCASE    64
 
+#define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
+
 #define CLEAR_STRING_CHECKED(X) do{(X)->flags &= 15;}while(0)
 
 /* Flags used by string_builder_append_integer() */
