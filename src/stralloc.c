@@ -1787,7 +1787,7 @@ static void set_flags_for_add( struct pike_string *ret,
                                const struct pike_string *b)
 {
   if( !b->len ) {
-    ret->flags |= aflags & ~15;
+    ret->flags |= aflags & STRING_CHECKED_MASK;
     ret->min = amin;
     ret->max = amax;
     return;
