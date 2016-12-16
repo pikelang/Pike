@@ -439,6 +439,30 @@ GTK2.Pango.Layout create_pango_layout( string text );
 //!
 //!
 
+GTK2.Widget drag_dest_set( int flags, array targets, int actions );
+//! Set this widget up so it can accept drops. Parallel to @[drag_source_set]
+//! - see there for arg info. flags allows default drop behaviour to turned on
+//! and off; use GTK2.DEST_DEFAULT_ALL for normal behaviour.
+//
+
+GTK2.Widget drag_source_set( int buttons, array targets, int actions );
+//! Set this widget up so a drag operation will start when the user clicks and
+//! drags on this widget.
+//! 
+//! buttons is a bitwise 'or' of the mouse buttons that can initiate dragging,
+//! eg GTK2.GDK_BUTTON1_MASK.
+//! 
+//! targets is an array of triples eg ({({"text/plain", GTK2.TARGET_SAME_APP, 0})})
+//! where each triple gives an identifying MIME type, a flag specifying whether the
+//! drag should be allowed to go to other applications, and an ID which will be
+//! passed on to signal handlers. NOTE: For internal reasons, you are currently
+//! permitted a maximum of ten targets.
+//! 
+//! actions is the set of valid actions that can be performed; use constants
+//! GTK2.GDK_ACTION_COPY|GTK2.GDK_ACTION_MOVE etc.
+//!
+//!
+
 GTK2.Widget error_bell( );
 //! Notifies the user about an input-related error on this widget. If the 
 //! "gtk-error-bell" setting is TRUE, it calls gdk_window_beep(), otherwise it 

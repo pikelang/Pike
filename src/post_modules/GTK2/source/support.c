@@ -472,14 +472,6 @@ void push_gdk_event(GdkEvent *e) {
 
 enum { PUSHED_NOTHING, PUSHED_VALUE, NEED_RETURN, };
 
-/*
-static int pgtk2_push_selection_data_param( GValue *a )
-{
-  push_pgdk2object( GTK_VALUE_POINTER(*a), pgtk2_selection_data_program);
-  return PUSHED_VALUE;
-}
-*/
-
 static int pgtk2_push_accel_group_param(const GValue *a) {
   g_object_ref(g_value_get_pointer(a));
   push_gobjectclass(g_value_get_pointer(a),pgtk2_accel_group_program);
@@ -493,11 +485,6 @@ static int pgtk2_push_ctree_node_param(const GValue *a )
   return PUSHED_VALUE;
 }
 */
-
-static int pgtk2_push_gdk_drag_context_param(const GValue *a) {
-  push_gdkobject(g_value_get_pointer(a),drag_context,0);
-  return PUSHED_VALUE;
-}
 
 static int pgtk2_push_gdk_event_param(const GValue *a) {
   push_gdk_event(g_value_get_boxed(a));
@@ -591,6 +578,8 @@ static int pgtk2_push_object_param(const GValue *a) {
       push_pgdk2object(gp,pgtk2_tree_path_program,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTextIter"))) {
       push_pgdk2object(gp,pgtk2_text_iter_program,0);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkSelectionData"))) {
+      push_pgdk2object(gp,pgtk2_selection_data_program,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRectangle"))) {
       push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
@@ -649,9 +638,6 @@ static void build_push_callbacks() {
   CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
 
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk2_push_accel_group_param );
-  /*#ifndef HAS_GTK_20*/
-  CB( GDK_TYPE_DRAG_CONTEXT, pgtk2_push_gdk_drag_context_param );
-  /*#endif*/
   CB( GDK_TYPE_EVENT,        pgtk2_push_gdk_event_param );
   CB( GDK_TYPE_RECTANGLE, pgtk2_push_gdk_rectangle_param );
 
