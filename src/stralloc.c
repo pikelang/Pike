@@ -1895,8 +1895,13 @@ PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string
   {
     if(b->flags & STRING_CONTENT_CHECKED)
     {
-      if( b->min < a->min ) a->min = b->min;
-      if( b->max > a->max ) a->max = b->max;
+      if (a->len) {
+	if( b->min < a->min ) a->min = b->min;
+	if( b->max > a->max ) a->max = b->max;
+      } else {
+	a->min = b->min;
+	a->max = b->max;
+      }
     }
     else
       a->flags &= ~STRING_CONTENT_CHECKED;
