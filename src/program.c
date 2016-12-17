@@ -934,9 +934,36 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`[]()], @[predef::`[..]]
  */
 
-/*! @decl mixed lfun::`[]=(zero arg1, zero arg2)
+/*! @decl void lfun::`[]=(zero index, zero value, @
+ *!                       object|void context, int|void access)
  *!
  *!   Index assignment callback.
+ *!
+ *! @param index
+ *!   Index to change the value of.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ *! @param context
+ *!   Context in the current object to index.
+ *!
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   is to be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! This function is to set the value at index @[index] of the current
+ *! object to @[value].
  *!
  *! @seealso
  *!   @[predef::`[]=()], @[lfun::`->=()]
@@ -976,7 +1003,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`->()], @[::`->()]
  */
 
-/*! @decl mixed lfun::`->=(string index, zero value, @
+/*! @decl void lfun::`->=(string index, zero value, @
  *!                        object|void context, int|void access)
  *!
  *!   Arrow index assignment callback.
@@ -988,7 +1015,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   The new value.
  *!
  *! @param context
- *!   Context in the current object to start the search from.
+ *!   Context in the current object to index.
+ *!
  *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
  *!   is to be used (ie start at the current context and ignore
  *!   any overloaded symbols).
@@ -1003,11 +1031,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!       See protected symbols as well.
  *!   @endint
  *!
- *! This function is to index the current object with the string @[index],
- *! and set it to @[value].
- *!
- *! @returns
- *!   Returns the set @[value].
+ *! This function is to set the value at symbol @[index] of the current
+ *! object to @[value].
  *!
  *! @seealso
  *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()]
