@@ -3550,7 +3550,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   s = nptr;
 
   /* Eat whitespace.  */
-  while (EXTRACT_PCHARP(s) <256 && wide_isspace(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
+  while (wide_isspace(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
 
   /* Get the sign.  */
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
