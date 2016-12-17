@@ -19,6 +19,7 @@
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
+#include "stuff.h"
 
 #include <errno.h>
 #include <ctype.h>
@@ -3246,20 +3247,20 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
   UNREACHABLE(MKPCHARP(0,0));
 }
 
-#define DIGIT(x)	(WIDE_ISDIGIT(x) ? (x) - '0' : \
-			 WIDE_ISLOWER(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
+#define DIGIT(x)	( (x)<256 ? hexdecode[x] : 16 )
 #define MBASE	('z' - 'a' + 1 + 10)
 
-PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
+PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, unsigned int base)
 {
   /* Note: Code duplication in strtol and pcharp_to_svalue_inumber. */
 
   unsigned long val, mul_limit;
   int c;
-  int xx, neg = 0, add_limit, overflow = 0;
+  unsigned add_limit, xx;
+  int neg = 0, overflow = 0;
 
   if (ptr)  *ptr = str;
-  if (base < 0 || base > MBASE)  return 0;
+  if (base > MBASE)  return 0;
   if (!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
     while (wide_isspace(c))
@@ -3288,13 +3289,15 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
       base = 8;
   }
 
-  if (!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
+  if ((val = DIGIT(c)) >= base)
     return 0;			/* no number formed */
   if (base == 16 && c == '0' && isxdigit(INDEX_PCHARP(str,2)) &&
       (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
   {
     INC_PCHARP(str,2);
     c = EXTRACT_PCHARP(str);		/* skip over leading "0x" or "0X" */
+    if ((val = DIGIT(c)) >= base)
+      return 0;			/* no number formed */
   }
 
   mul_limit = ((unsigned long)LONG_MAX)/base;
@@ -3306,12 +3309,11 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     }
   }
 
-  val=DIGIT(c);
   while(1)
   {
     INC_PCHARP(str,1);
     c=EXTRACT_PCHARP(str);
-    if(!(WIDE_ISALNUM(c)  && (xx=DIGIT(c)) < base)) break;
+    if((xx=DIGIT(c)) >= base) break;
     if (val > mul_limit || (val == mul_limit && xx > add_limit)) {
       overflow = 1;
     } else
@@ -3383,7 +3385,7 @@ int safe_wide_string_to_svalue_inumber(struct svalue *r,
 PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 PCHARP str,
 					 PCHARP *ptr,
-					 int base,
+                                         unsigned int base,
 					 ptrdiff_t maxlength)
 {
   /* Note: Code duplication in strtol and STRTOL_PCHARP. */
@@ -3392,7 +3394,8 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 
   unsigned INT_TYPE val, mul_limit;
   int c;
-  int xx, neg = 0, add_limit, overflow = 0;
+  unsigned int xx, add_limit;
+  int neg = 0, overflow = 0;
 
   maxlength--;   /* max_length <= 0 means no max length. */
   str_start = str;
@@ -3402,7 +3405,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   if(ptr != 0)
     *ptr = str;
 
-  if(base < 0 || MBASE < base)
+  if(MBASE < base)
     return 0;
 
   if(!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
@@ -3436,11 +3439,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       base = 8;
   }
 
-  /*
-   * For any base > 10, the digits incrementally following
-   * 9 are assumed to be "abc...z" or "ABC...Z".
-   */
-  if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
+  if((val=DIGIT(c)) >= base)
     return 0;   /* No number formed. */
 
   if(c == '0' &&
@@ -3452,6 +3451,8 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
     c=EXTRACT_PCHARP(str);
+    if((val=DIGIT(c)) >= base)
+      return 0;   /* No number formed. */
   }
   str_start=str;
 
@@ -3464,7 +3465,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     add_limit = (int) (MAX_INT_TYPE % base);
   }
 
-  for(val = DIGIT(c);
+  for(;
       (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
 	(xx = DIGIT(c)) < base &&
 	0 != maxlength--; )
@@ -3563,7 +3564,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   exponent = 0;
   for (;; INC_PCHARP(s,1))
   {
-    if (EXTRACT_PCHARP(s)<256 && WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
+    if (EXTRACT_PCHARP(s)<256 && hexdecode[EXTRACT_PCHARP(s)])
     {
       got_digit = 1;
 
