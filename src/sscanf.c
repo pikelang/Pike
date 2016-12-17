@@ -338,7 +338,8 @@ static int pcharp_to_svalue_rec(PCHARP *str,
 	      CONSUME(1);
 	      FINISH(f_aggregate_multiset);
 	    }
-	    pcharp_to_svalue_rec(str,len);
+            if( !pcharp_to_svalue_rec(str,len) )
+              goto fail;
 	    skip_to_token(str,len);
 	    tmp=READ();
 	    if(tmp == '>' )
