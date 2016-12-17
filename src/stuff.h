@@ -17,6 +17,5 @@ unsigned INT32 find_next_power(unsigned INT32 x) ATTRIBUTE((const));
 /* Prototypes end here */
 
 extern const INT32 hashprimes[32];
-extern const unsigned char hexdecode[256];
 
 #endif

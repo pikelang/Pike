@@ -431,7 +431,7 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
-PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, unsigned int base);
+PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 int wide_string_to_svalue_inumber(struct svalue *r,
 					      void * str,
 					      void *ptr,
@@ -447,7 +447,7 @@ int safe_wide_string_to_svalue_inumber(struct svalue *r,
 PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 PCHARP str,
 					 PCHARP *ptr,
-                                         unsigned int base,
+					 int base,
 					 ptrdiff_t maxlength);
 PMOD_EXPORT int convert_stack_top_string_to_inumber(int base);
 PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr);
