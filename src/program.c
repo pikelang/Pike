@@ -6337,9 +6337,8 @@ INT32 define_function(struct pike_string *name,
 	      (index_shared_string(name, 1) == '-') &&
 	      (index_shared_string(name, 2) == '>')) ||
 	     ((name->len > 1) &&
-	      (index_shared_string(name, 0) == '`') &&
-	      ((index_shared_string(name, 1) >= 256) ||
-	       isidchar(index_shared_string(name, 1))))) {
+              (index_shared_string(name, 0) == '`') &&
+              wide_isidchar(index_shared_string(name, 1)))) {
     /* Getter setter. */
     struct pike_string *symbol = NULL;
     struct pike_type *symbol_type = NULL;

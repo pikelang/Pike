@@ -356,7 +356,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
               if (DATA(i) == '_') {
                 FIND_EOS();
                 goto ADD_TO_BUFFER;
-              } else if (!WC_ISIDCHAR(DATA(i)))
+              } else if (!wide_isidchar(DATA(i)))
                 break;
             }
           }

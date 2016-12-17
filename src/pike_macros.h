@@ -38,10 +38,6 @@
 PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 #define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
 
-#define isidchar(X) is8bitalnum(X)
-
-
-
 #define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & ~((Y)-1))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 

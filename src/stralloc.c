@@ -3747,3 +3747,11 @@ PMOD_EXPORT int wide_isspace(int c)
   }
   return 0;
 }
+
+PMOD_EXPORT int wide_isidchar(int c)
+{
+  if(c<0) return 0;
+  if(c<256) return is8bitalnum(c);
+  if(wide_isspace(c)) return 0;
+  return 1;
+}

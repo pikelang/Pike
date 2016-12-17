@@ -1406,10 +1406,6 @@ static ptrdiff_t find_end_brace(struct cpp *this,
   }
 }
 
-static inline int wide_isidchar( int c ) {
-  return WIDE_ISIDCHAR(c);
-}
-
 static struct pike_string *gobble_identifier (struct cpp *this, const PCHARP data, ptrdiff_t *pos)
 {
   ptrdiff_t p = *pos;
@@ -1922,7 +1918,7 @@ static struct pike_string *filter_bom(struct pike_string *data)
 
 #define PUSH_STRING0(X,Y,Z) add_quoted_string( X,Y,0,Z)
 #define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
-#define WC_ISIDCHAR	wide_isidchar
+
 /*
  * Generic macros
  */

@@ -52,7 +52,7 @@
 #define lex_atoi atoi
 #define lex_strtol strtol
 #define lex_strtod my_strtod
-#define lex_isidchar isidchar
+#define lex_isidchar is8bitalnum
 
 #else /* SHIFT != 0 */
 
@@ -106,7 +106,7 @@
 #endif /* SHIFT == 1 */
 
 
-#define lex_isidchar(X) ((((unsigned) X)>=256) || isidchar(X))
+#define lex_isidchar(X) wide_isidchar(X)
 
 static int low_isword(char *buf, char *X, size_t len)
 {

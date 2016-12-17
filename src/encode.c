@@ -1247,11 +1247,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    free_string(symbol);
 		  }
 		} else if (id->name && (id->name->len>1) &&
-			   (index_shared_string(id->name, 0) == '`') &&
-			   ((((unsigned)index_shared_string(id->name, 1)) >=
-			     256) ||
-			    isidchar(index_shared_string(id->name, 1)))) {
-		  /* New-style getter/setter. */
+                           (index_shared_string(id->name, 0) == '`') &&
+                           wide_isidchar(index_shared_string(id->name, 1))) {
+                  /* New-style getter/setter. */
 		  struct pike_string *symbol = NULL;
 		  if (index_shared_string(id->name, id->name->len-1) != '=') {
 		    /* Getter callback. */
