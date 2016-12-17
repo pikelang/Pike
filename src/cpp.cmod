@@ -1922,7 +1922,6 @@ static struct pike_string *filter_bom(struct pike_string *data)
 
 #define PUSH_STRING0(X,Y,Z) add_quoted_string( X,Y,0,Z)
 #define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
-#define WC_ISSPACE	wide_isspace
 #define WC_ISIDCHAR	wide_isidchar
 /*
  * Generic macros
@@ -2277,7 +2276,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	    }
 	    /* FALL_THROUGH */
 	  default:
-	    if (WC_ISSPACE(DATA(pos-1))) {
+	    if (wide_isspace(DATA(pos-1))) {
 	      SKIPWHITE();
 	      continue;
 	    }
@@ -2756,7 +2755,7 @@ static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
 {
   size_t e;
   for(e=0; e<l;) {
-    if (WC_ISSPACE(INDEX_PCHARP(a, e)) ||
+    if (wide_isspace(INDEX_PCHARP(a, e)) ||
 	INDEX_PCHARP(a, e)=='"' || INDEX_PCHARP(a, e)=='\\') {
       if (e) {
 	string_builder_append(s, a, e);
@@ -2787,7 +2786,7 @@ static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
 	}
       } else {
 	/* White space. */
-	while ((e < l) && WC_ISSPACE(INDEX_PCHARP(a, e))) {
+	while ((e < l) && wide_isspace(INDEX_PCHARP(a, e))) {
 	  e++;
 	}
 	if (e != l) {
@@ -2866,10 +2865,10 @@ static void apply_define(struct cpp *this,
 	    string_builder_putchar(&tmp, '"');
 	  }else{
 	    /* Strip leading and trailing white-space. */
-	    while(l && WC_ISSPACE(EXTRACT_PCHARP(a)))
+	    while(l && wide_isspace(EXTRACT_PCHARP(a)))
 	      INC_PCHARP(a,1),l--;
 
-	    while(l && WC_ISSPACE(INDEX_PCHARP(a,l-1)))
+	    while(l && wide_isspace(INDEX_PCHARP(a,l-1)))
 	      l--;
 
 	    if(argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
