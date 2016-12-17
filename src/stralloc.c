@@ -3248,7 +3248,6 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
 }
 
 #define DIGIT(x)	( (x)<256 ? hexdecode[x] : 16 )
-#define ISHEX(x) (DIGIT(x)<16)
 #define MBASE	('z' - 'a' + 1 + 10)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, unsigned int base)
@@ -3292,7 +3291,7 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, unsigned int base)
 
   if ((val = DIGIT(c)) >= base)
     return 0;			/* no number formed */
-  if (base == 16 && c == '0' && ISHEX(INDEX_PCHARP(str,2)) &&
+  if (base == 16 && c == '0' && isxdigit(INDEX_PCHARP(str,2)) &&
       (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
   {
     INC_PCHARP(str,2);
@@ -3446,7 +3445,8 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   if(c == '0' &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
       (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
-     ISHEX(INDEX_PCHARP(str,2)))
+     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
+     isxdigit(INDEX_PCHARP(str,2)))
   {
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
