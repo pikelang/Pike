@@ -48,19 +48,6 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
 }
 #define READ() next_char(str,len)
 
-
-static int pcharp_isspace( PCHARP *str )
-{
-  return wide_isspace(EXTRACT_PCHARP(*str));
-}
-
-static void skip_space( PCHARP *str, ptrdiff_t *len )
-{
-  while(*len && wide_isspace(READ()))
-    ;
-  CONSUME(-1);
-}
-
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
 {
   CONSUME(1); // Start '/' 
@@ -88,10 +75,10 @@ static void skip_to_token( PCHARP *str, ptrdiff_t *len )
   do
   {
     worked=0;
-    if(pcharp_isspace(str))
+    while(*len && wide_isspace(EXTRACT_PCHARP(*str)))
     {
-      skip_space(str,len);
-      worked=1;
+      worked = 1;
+      CONSUME(1);
     }
     if( EXTRACT_PCHARP(*str) == '/' )
     {
