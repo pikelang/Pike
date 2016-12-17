@@ -1406,11 +1406,6 @@ static ptrdiff_t find_end_brace(struct cpp *this,
   }
 }
 
-
-static inline int wide_isspace( int c ) {
-  return WIDE_ISSPACE(c);
-}
-
 static inline int wide_isidchar( int c ) {
   return WIDE_ISIDCHAR(c);
 }

@@ -51,12 +51,12 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
 
 static int pcharp_isspace( PCHARP *str )
 {
-  return WIDE_ISSPACE(EXTRACT_PCHARP(*str));
+  return wide_isspace(EXTRACT_PCHARP(*str));
 }
 
 static void skip_space( PCHARP *str, ptrdiff_t *len )
 {
-  while(*len && WIDE_ISSPACE(READ()))
+  while(*len && wide_isspace(READ()))
     ;
   CONSUME(-1);
 }

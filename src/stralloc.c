@@ -18,6 +18,7 @@
 #include "pike_float.h"
 #include "pike_types.h"
 #include "block_allocator.h"
+#include "whitespace.h"
 
 #include <errno.h>
 #include <ctype.h>
@@ -3261,7 +3262,7 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   if (base < 0 || base > MBASE)  return 0;
   if (!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
-    while (WIDE_ISSPACE(c))
+    while (wide_isspace(c))
     {
       INC_PCHARP(str,1);
       c=EXTRACT_PCHARP(str);
@@ -3406,7 +3407,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 
   if(!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
-    while(WIDE_ISSPACE(c))
+    while(wide_isspace(c))
     {
       INC_PCHARP(str,1);
       c = EXTRACT_PCHARP(str);
@@ -3549,7 +3550,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   s = nptr;
 
   /* Eat whitespace.  */
-  while (EXTRACT_PCHARP(s) <256 && WIDE_ISSPACE(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
+  while (EXTRACT_PCHARP(s) <256 && wide_isspace(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
 
   /* Get the sign.  */
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
@@ -3614,7 +3615,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 	 * We need to find the sign of the exponent by hand.
 	 */
 	p_wchar2 c;
-	while(WIDE_ISSPACE(c = EXTRACT_PCHARP(s))) {
+	while(wide_isspace(c = EXTRACT_PCHARP(s))) {
 	  INC_PCHARP(s, 1);
 	}
 	if (endptr != NULL)
@@ -3735,4 +3736,14 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
       return STR2(s);
   }
   UNREACHABLE(return 0);
+}
+
+PMOD_EXPORT int wide_isspace(int c)
+{
+  switch(c)
+  {
+    SPACECASE16;
+    return 1;
+  }
+  return 0;
 }

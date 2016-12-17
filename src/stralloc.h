@@ -457,6 +457,7 @@ PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
                                        char **to_free);
 PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
                                        char **to_free);
+PMOD_EXPORT int wide_isspace(int c);
 /* Prototypes end here */
 
 static inline void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,
@@ -543,7 +544,7 @@ void exit_sprintf(void);
 /* FIXME: Is it that great that every wide char is considered an
  * identifier char? Doesn't strike me as very unicode compliant.
  * isalnum, isdigit and islower also look seriously borken. /mast */
-#define WIDE_ISSPACE(C)	(((C) < 256)?isspace(C):0)
+#define WIDE_ISSPACE(C)	wide_isspace(C)
 #define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
 #define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
 #define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
