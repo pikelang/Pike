@@ -67,6 +67,13 @@ o Machine code support for more architectures.
 
 o Fixed multiple integer over- and underflow bugs.
 
+o Extended sscanf %O
+
+  sscanf() is now able to parse all base types that sprintf %O can
+  output. It can now also parse most literal constants pike accepts,
+  including integers prefixed with 0x and 0b, and floating point
+  numbers in scientific notation.
+
 
 Incompatible changes
 --------------------
