@@ -8882,6 +8882,9 @@ static void f_reporter_report(INT32 args)
  *!   @[CompilerEnvironment], @[predef::compile()]
  */
 
+/*! @decl inherit CompilerEnvironment
+ */
+
 /*! @endmodule
  */
 
