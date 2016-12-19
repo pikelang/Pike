@@ -2,6 +2,9 @@
 
 #define ERR(msg) throw(({ "(Install) "+sprintf msg+"\n", backtrace() }))
 
+// Kludge for [bug 7826].
+private constant kludge_bug7826 = "#!/";
+
 int mkdirhier(string path, int|void mod)
 {
   string a = "";
