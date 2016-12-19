@@ -270,7 +270,12 @@ static ptrdiff_t low_cpp(struct cpp *this,
             if(d->args >= 0 && arg != d->args)
               cpp_error(this, "Wrong number of arguments to macro.");
 
-	    apply_define(this, d, arguments, flags, auto_convert, charset);
+	    /* NB: If there have been errors in the loop above, arguments may
+	     *     remain (partially) uninitialized.
+	     */
+	    if (!this->compile_errors) {
+	      apply_define(this, d, arguments, flags, auto_convert, charset);
+	    }
           }else{
             if (OUTP())
               string_builder_shared_strcat (&this->buf, s);
