@@ -1,6 +1,14 @@
 Changes since Pike 8.0.370 (release 6)
 ----------------------------------------------------------------------
 
+New features
+------------
+
+o Thread
+
+  _sprintf() improvements: Thread.Mutex now prints the ID of the thread
+  holding the lock, and thread IDs are shown as hexadecimal numbers.
+
 Bug fixes
 ---------
 
