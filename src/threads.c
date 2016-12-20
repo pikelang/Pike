@@ -2343,6 +2343,33 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
     push_int(0);
 }
 
+/*! @decl protected string _sprintf(int c)
+ *!
+ *! Describes the mutex including the thread that currently holds the lock
+ *! (if any).
+ */
+void f_mutex__sprintf (INT32 args)
+{
+  struct mutex_storage *m = THIS_MUTEX;
+  int c = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    c = Pike_sp[-args].u.integer;
+  pop_n_elems (args);
+  if(c != 'O') {
+    push_undefined();
+    return;
+  }
+  if (m->key && OB2KEY(m->key)->owner) {
+    push_text("Thread.Mutex(/*locked by 0x");
+    push_int64(PTR_TO_INT(THREAD_T_TO_PTR(OB2KEY(m->key)->owner->id)));
+    f_int2hex(1);
+    push_text("*/)");
+    f_add(3);
+  } else {
+    push_text("Thread.Mutex()");
+  }
+}
+
 void init_mutex_obj(struct object *UNUSED(o))
 {
   co_init(& THIS_MUTEX->condition);
@@ -2752,8 +2779,9 @@ void f_thread_id__sprintf (INT32 args)
     push_undefined();
     return;
   }
-  push_static_text ("Thread.Thread(");
+  push_static_text ("Thread.Thread(0x");
   push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
+  f_int2hex(1);
   push_static_text (")");
   f_add (3);
 }
@@ -3312,6 +3340,7 @@ void th_init(void)
 	   tFunc(tNone,tObjIs_THREAD_ID), 0);
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
+  ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tNone,tStr),0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);

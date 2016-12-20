@@ -331,6 +331,11 @@ o String.Buffer & Stdio.Buffer
 
 o The self testing framework now supports *.test-files.
 
+o Thread
+
+  _sprintf() improvements: Thread.Mutex now prints the ID of the thread
+  holding the lock, and thread IDs are shown as hexadecimal numbers.
+
 o Unicode 8.0.0.
 
 
