@@ -166,6 +166,12 @@ test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 
 test_do([[add_constant("xmlblob");]])
 
+test_any([[
+  object o=Parser.XML.Tree.parse_input("<x><a/><b/><c/></x>");
+  o[0][1]->replace_node( ({ Parser.XML.Tree.ElementNode("q",([])), Parser.XML.Tree.ElementNode("r",([])) }) );
+  return (string)o;
+]], "<x><a/><q/><r/><c/></x>")
+
 // NSTree
 
 // XML NS section 2

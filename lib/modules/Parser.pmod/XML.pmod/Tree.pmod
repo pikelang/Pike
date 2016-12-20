@@ -402,7 +402,7 @@ class AbstractSimpleNode {
 
 
   //! Replaces the first occurrence of the old node child with
-  //! the new node child.
+  //! the new node child or children.
   //! @note
   //!   The return value differs from the one returned
   //!   by @[Node()->replace_child()].
@@ -410,12 +410,15 @@ class AbstractSimpleNode {
   //!   Returns the current node on success, and @expr{0@} (zero)
   //!   if the node @[old] wasn't found.
   AbstractSimpleNode replace_child(AbstractSimpleNode old,
-				   AbstractSimpleNode new)
+                                   AbstractSimpleNode|array(AbstractSimpleNode) new)
   {
     int index = search(mChildren, old);
     if (index < 0)
       return 0;
-    mChildren[index] = new;
+    if( arrayp(new) )
+      mChildren = mChildren[..index-1] + new + mChildren[index+1..];
+    else
+      mChildren[index] = new;
     return this;
   }
 
@@ -678,14 +681,14 @@ class AbstractNode {
   }
 
 
-  //! Replaces the first occurrence of the old node child with
-  //! the new node child. All parent references are updated.
+  //! Replaces the first occurrence of the old node child with the new
+  //! node child or children. All parent references are updated.
   //! @note
   //!   The returned value is NOT the current node.
   //! @returns
   //!   Returns the new child node.
   AbstractNode replace_child(AbstractNode old,
-			     AbstractNode new)
+                             AbstractNode|array(AbstractNode) new)
   {
     if (!::replace_child(old, new)) return 0;
     new->mParent = this;
@@ -696,7 +699,9 @@ class AbstractNode {
   //! Replaces this node with the provided one.
   //! @returns
   //!   Returns the new node.
-  AbstractNode replace_node(AbstractNode new) {
+  AbstractNode|array(AbstractNode)
+    replace_node(AbstractNode|array(AbstractNode) new)
+  {
     mParent->replace_child(this, new);
     return new;
   }
