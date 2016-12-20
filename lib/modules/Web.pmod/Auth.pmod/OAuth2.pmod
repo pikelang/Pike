@@ -188,43 +188,35 @@ class Base
   //!  second argument will be the result encoded with
   //!  @[predef::encode_value()], which can be stored and later used
   //!  to populate an instance via @[set_from_cookie()].
+  //!
+  //! @seealso
+  //!  @[Web.encode_jwt()]
   string get_token_from_jwt(string jwt, string token_endpoint, string|void sub,
                             void|function(bool,string:void) async_cb)
   {
     mapping j = Standards.JSON.decode(jwt);
-    mapping header = ([ "alg" : "RS256", "typ" : "JWT" ]);
 
-    int now = time();
-    int exp = now + 3600;
-
-    mapping claim = ([
+    mapping claims = ([
       "iss"   : j->client_email,
       "scope" : get_valid_scopes(_scope),
       "aud"   : token_endpoint,
-      "exp"   : exp,
-      "iat"   : now
+      "exp"   : time(1) + 3600,
     ]);
 
     if (sub) {
-      claim->sub = sub;
+      claims->sub = sub;
     }
-
-    string s = MIME.encode_base64url(Standards.JSON.encode(header));
-    s += "." + MIME.encode_base64url(Standards.JSON.encode(claim));
 
     string key =
       Standards.PEM.simple_decode(j->private_key);
 
-    object x = [object(Standards.ASN1.Types.Sequence)]
-                  Standards.ASN1.Decode.simple_der_decode(key);
+    object(Standards.ASN1.Types.Sequence) x =
+      [object(Standards.ASN1.Types.Sequence)]
+      Standards.ASN1.Decode.simple_der_decode(key);
 
-    string ss;
+    Crypto.Sign.State sign = Standards.PKCS.parse_private_key(x);
 
-    Crypto.RSA.State state;
-    state = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
-    ss = state->pkcs_sign(s, Crypto.SHA256);
-
-    s += "." + MIME.encode_base64url(ss);
+    string s = Web.encode_jwt(sign, claims);
 
     string body = "grant_type="+Protocols.HTTP.uri_encode(GRANT_TYPE_JWT)+"&"+
                   "assertion="+Protocols.HTTP.uri_encode(s);
@@ -857,7 +849,7 @@ class Client
     ::create(client_id, client_secret, redirect_uri, scope);
   }
 
-  //! Make an JWT (JSON Web Token) authentication.
+  //! Make a JWT (JSON Web Token) authentication.
   string get_token_from_jwt(string jwt, void|string sub,
                             void|function(bool,string:void) async_cb)
   {
