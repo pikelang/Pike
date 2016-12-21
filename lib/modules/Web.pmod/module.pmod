@@ -68,7 +68,7 @@ mapping(string:string|int) decode_jwt(Crypto.Sign.State|Crypto.MAC.State|
   if (!jws) return 0;
   [mapping(string(7bit):string(7bit)|int) jose_header,
    string(8bit) encoded_claims] = jws;
-  if (jose_header->typ != "JWT") return 0;
+  if ((jose_header->typ || "JWT") != "JWT") return 0;
   catch {
     mapping(string:string|int) claims = Standards.JSON.decode(encoded_claims);
     if (!mappingp(claims)) return 0;
