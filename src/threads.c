@@ -2360,13 +2360,13 @@ void f_mutex__sprintf (INT32 args)
     return;
   }
   if (m->key && OB2KEY(m->key)->owner) {
-    push_text("Thread.Mutex(/*locked by 0x");
+    push_static_text("Thread.Mutex(/*locked by 0x");
     push_int64(PTR_TO_INT(THREAD_T_TO_PTR(OB2KEY(m->key)->owner->id)));
     f_int2hex(1);
-    push_text("*/)");
+    push_static_text("*/)");
     f_add(3);
   } else {
-    push_text("Thread.Mutex()");
+    push_static_text("Thread.Mutex()");
   }
 }
 
