@@ -1,9 +1,5 @@
 START_MARKER
 
-// MIME
-test_true([[objectp(MIME)]])
-test_true([[programp(MIME.Message)]])
-
 // Global functions
 
 // Bug 3171
