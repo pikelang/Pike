@@ -67,11 +67,28 @@ protected class LowState {
   // --- Key methods
   //
 
-  //! Can be initialized with a mapping with the elements n, e, d, p and
-  //! q.
-  protected void create(mapping(string(8bit):Gmp.mpz|int)|void params)
+  //! Can be initialized with a mapping with the elements n, e, d, p and q.
+  //!
+  //! The mapping can either contain integer values, or be an @rfc{7517@}
+  //! JWK-style mapping with @tt{kty@} set to @expr{"RSA"@} and contain
+  //! @[MIME.encode_base64url()]-encoded values.
+  protected void create(mapping(string(8bit):Gmp.mpz|int|string(7bit))|void params)
   {
     if(!params) return;
+    if (params->kty == "RSA") {
+      // RFC 7517 JWK encoded key.
+      mapping(string(8bit):string(7bit)) jwk = params;
+      params = ([]);
+      foreach(({ "n", "e", "d", "p", "q" }), string s) {
+	string(7bit) val;
+	if (!zero_type(val = jwk[s])) {
+	  // RFC 7517 A.1:
+	  //    In both cases, integers are represented using the base64url
+	  //    encoding of their big-endian representations.
+	  params[s] = Gmp.mpz(MIME.decode_base64url(val), 256);
+	}
+      }
+    }
     if( params->n && params->e )
       set_public_key(params->n, params->e);
     if( params->d )
@@ -834,6 +851,7 @@ class PKCS1_5State
   //!     @elem string(8bit) 1
   //!       The signed message.
   //!   @endarray
+  //!   on success.
   //!
   //! @seealso
   //!   @[pkcs_verify()], @rfc{7515:3.5@}
@@ -999,8 +1017,11 @@ class State
   inherit PKCS1_5State;
 }
 
-//! Calling `() will return a @[State] object.
-protected State `()(mapping(string(8bit):Gmp.mpz|int)|void params)
+//! Calling `() will return a @[State] object with the given @[params].
+//!
+//! @seealso
+//!   @[State()]
+protected State `()(mapping(string(8bit):Gmp.mpz|int|string(7bit))|void params)
 {
   return State(params);
 }
