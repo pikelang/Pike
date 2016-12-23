@@ -32,7 +32,40 @@ define(dotest,[[
     string readback = f->read();
     f->close();
     return orig==readback;
-]], 1)
+  ]], 1)
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]], "\37\213\b\0\0\0\0\0\0\3KO\254\312\317\313\6\0\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb9");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]], "\37\213\b\0\0\0\0\0\0\3KO\254\312\317\313\6\0\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb0");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]],  "\37\213\b\0\0\0\0\0\0\3x\1\1\6\0\371\377gazonk\b\321\2\213\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb");
+    g->setparams(0);
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]],  "\37\213\b\0\0\0\0\0\0\3x\1\1\6\0\371\377gazonk\b\321\2\213\240\362vf\6\0\0\0")
 
   dotest(random_string(32768))
   dotest(random_string(524288))
