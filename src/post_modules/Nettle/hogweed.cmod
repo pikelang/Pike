@@ -451,6 +451,9 @@ PIKECLASS ECC_Curve
   /*! @decl string(7bit) name()
    *!
    *! Returns the name of the curve.
+   *!
+   *! @seealso
+   *!   @[jose_name()]
    */
   PIKEFUN string(7bit) name()
   {
@@ -485,6 +488,41 @@ PIKECLASS ECC_Curve
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
     ref_push_string(MK_STRING("UNKNOWN"));
+  }
+
+  /*! @decl string(7bit) jose_name()
+   *!
+   *! Returns the name of the curve according to JOSE
+   *! (@rfc{7518:6.2.1.1@}).
+   *!
+   *! @returns
+   *!   Returns the JOSE name for supported curves,
+   *!   and @[UNDEFINED] otherwise.
+   *!
+   *! @seealso
+   *!   @[name()]
+   */
+  PIKEFUN string(7bit) jose_name()
+  {
+#ifdef HAVE_CURVE_NETTLE_SECP_256R1
+    if (THIS->curve == &nettle_secp_256r1) {
+      ref_push_string(MK_STRING("P-256R"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_384R1
+    if (THIS->curve == &nettle_secp_384r1) {
+      ref_push_string(MK_STRING("P-384"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
+#ifdef HAVE_CURVE_NETTLE_SECP_521R1
+    if (THIS->curve == &nettle_secp_521r1) {
+      ref_push_string(MK_STRING("P-521"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+    push_undefined();
   }
 
   /*! @decl int size()
