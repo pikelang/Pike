@@ -289,7 +289,7 @@ class _file {
   //!
   //! @seealso
   //!   @[Gz.deflate]
-  int setparams(void|int(-9..9) level, void|int strategy,
+  int setparams(void|int(0..9) level, void|int strategy,
    void|int(8..15) window_size) {
     if (def) {
       string s = def->deflate("", SYNC_FLUSH);
