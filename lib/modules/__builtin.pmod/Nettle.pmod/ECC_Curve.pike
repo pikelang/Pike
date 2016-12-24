@@ -72,7 +72,6 @@ class Point {
     set([object(Gmp.mpz)]p->x, [object(Gmp.mpz)]p->y);
   }
 
-  //! @decl void create()
   //! @decl void create(Point p)
   //! @decl void create(mapping(string(7bit):int|Gmp.mpz) p)
   //! @decl void create(mapping(string(7bit):string(7bit)) jwk)
@@ -135,10 +134,6 @@ class Point {
     }
 
     set(x, y);
-  }
-
-  variant protected void create()
-  {
   }
 
   // FIXME: Parameter to select encoding format.
