@@ -360,7 +360,15 @@ PIKECLASS ECC_Curve
 
   CVAR const struct ecc_curve *curve;
 
+  /* Initialized to the scalar constant 1. */
+  CVAR struct ecc_scalar scalar_one;
+
   DECLARE_STORAGE;
+
+  EXIT
+  {
+    ecc_scalar_clear(&THIS->scalar_one);
+  }
 
   /*! @decl void create(int(0..) curve)
    *!
@@ -379,6 +387,8 @@ PIKECLASS ECC_Curve
   PIKEFUN void create(int(0..) curve)
     flags ID_STATIC
   {
+    mpz_t mpz_one;
+
     if (THIS->curve) {
       Pike_error("The curve has already been initialized!\n");
     }
@@ -403,6 +413,11 @@ PIKECLASS ECC_Curve
       Pike_error("Invalid curve\n");
       break;
     }
+
+    ecc_scalar_init(&THIS->scalar_one, THIS->curve);
+    mpz_init_set_si(mpz_one, 1);
+    ecc_scalar_set(&THIS->scalar_one, mpz_one);
+    mpz_clear(mpz_one);
   }
 
   /*! @decl protected local int(0..1) `==(mixed x)
@@ -721,16 +736,23 @@ PIKECLASS ECC_Curve
 
     INIT
     {
-      const struct ecc_curve *curve =
-	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
+      const struct Nettle_ECC_Curve_struct *parent =
+	parent_storage(1, Nettle_ECC_Curve_program);
+      const struct ecc_curve *curve = parent->curve;
+
       if (!curve) Pike_error("No curve selected.\n");
       ecc_point_init(&THIS->point, curve);
+
+      /* Make sure that the point is on the curve by initializing it to 'g'. */
+      ecc_point_mul_g(&THIS->point, &parent->scalar_one);
     }
 
     EXIT
     {
-      const struct ecc_curve *curve =
-	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
+      const struct Nettle_ECC_Curve_struct *parent =
+	parent_storage(1, Nettle_ECC_Curve_program);
+      const struct ecc_curve *curve = parent->curve;
+
       if (!curve) return;
       ecc_point_clear(&THIS->point);
     }
