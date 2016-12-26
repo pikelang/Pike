@@ -367,7 +367,9 @@ PIKECLASS ECC_Curve
 
   EXIT
   {
-    ecc_scalar_clear(&THIS->scalar_one);
+    if (THIS->curve) {
+      ecc_scalar_clear(&THIS->scalar_one);
+    }
   }
 
   /*! @decl void create(int(0..) curve)
