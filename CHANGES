@@ -26,10 +26,10 @@ o VCDiff
 
 o Parser.XML
 
-  UTF-8 encoded documents with inital BOM was not decoded correctly.
+  UTF-8 encoded documents with initial BOM was not decoded correctly.
 
   Serializing Parser.XML.Tree objects will now entity escape
-  characters that can not be encoded in the selected outupt charser.
+  characters that can not be encoded in the selected output charset.
 
 
 Changes since Pike 8.0.358 (release 5)
