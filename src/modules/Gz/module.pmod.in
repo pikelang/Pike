@@ -85,7 +85,28 @@ class _file {
   //!   The filename or an open filedescriptor or Stream for the GZip
   //!   file to use.
   //! @param mode
-  //!   Mode for the fileoperations. Defaults to read only.
+  //!   Mode for the file operations. Defaults to read only. The
+  //!   following mode characters are unique to Gz.File.
+  //!
+  //!   @string
+  //!     @value "0"
+  //!     @value "1"
+  //!     @value "2"
+  //!     @value "3"
+  //!     @value "4"
+  //!     @value "5"
+  //!     @value "6"
+  //!     @value "7"
+  //!     @value "8"
+  //!     @value "9"
+  //!       Values 0 to 9 set the compression level from no
+  //!       compression to maximum available compression. Defaults to
+  //!       6.
+  //!     @value "f"
+  //!       Sets the compression strategy to @[FILTERED].
+  //!     @value "h"
+  //!       Sets the compression strategy to @[HUFFMAN_ONLY].
+  //!   @endstring
   //!
   //! @note
   //!   If the object already has been opened, it will first be closed.

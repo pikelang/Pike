@@ -482,7 +482,7 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
  *!
  *! @param level
  *!   Indicates the level of effort spent to make the data compress
- *!   well. Zero means no packing, 2-3 is considered 'fast', 6 is
+ *!   well. Zero means no packing, 2-3 is considered 'fast', 8 is
  *!   default and higher is considered 'slow' but gives better
  *!   packing.
  *!
