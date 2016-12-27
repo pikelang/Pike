@@ -26,7 +26,7 @@ o VCDiff
 
 o Parser.XML
 
-  UTF-8 encoded documents with initial BOM was not decoded correctly.
+  UTF-8 encoded documents with initial BOM were not decoded correctly.
 
   Serializing Parser.XML.Tree objects will now entity escape
   characters that can not be encoded in the selected output charset.
