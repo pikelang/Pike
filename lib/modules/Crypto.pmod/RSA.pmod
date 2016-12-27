@@ -77,7 +77,8 @@ protected class LowState {
     if(!params) return;
     if (params->kty == "RSA") {
       // RFC 7517 JWK encoded key.
-      mapping(string(8bit):string(7bit)) jwk = params;
+      mapping(string(8bit):string(7bit)) jwk =
+	[mapping(string(8bit):string(7bit))]params;
       params = ([]);
       foreach(({ "n", "e", "d", "p", "q" }), string s) {
 	string(7bit) val;
@@ -90,9 +91,11 @@ protected class LowState {
       }
     }
     if( params->n && params->e )
-      set_public_key(params->n, params->e);
+      set_public_key([object(Gmp.mpz)]params->n,
+		     [object(Gmp.mpz)]params->e);
     if( params->d )
-      set_private_key(params->d, ({ params->p, params->q, params->n }));
+      set_private_key([object(Gmp.mpz)]params->d,
+		      [array(Gmp.mpz)]({ params->p, params->q, params->n }));
   }
 
   //! Sets the public key.
