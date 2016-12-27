@@ -14,7 +14,7 @@ Bug fixes
 
 o String character range
 
-  Fixed a bug where a string could incorrectly have it's character
+  Fixed a bug where a string could incorrectly have its character
   range start point set to 0 when added with an empty string. This in
   turn would incorrectly block the string from being used by functions
   that require strings without null characters as argument or
