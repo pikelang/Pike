@@ -118,6 +118,55 @@ struct pike_frame
 #endif /* PROFILING */
 };
 
+enum pike_calltype {
+    CALLTYPE_NONE,
+    CALLTYPE_EFUN,
+    CALLTYPE_CFUN,
+    CALLTYPE_PIKEFUN,
+    CALLTYPE_CAST,
+    CALLTYPE_ARRAY,
+    CALLTYPE_CLONE,
+    CALLTYPE_PARENT_CLONE,
+};
+
+enum pike_callflags {
+    /* there is no need to push a zero */
+    CALL_NEED_NO_RETVAL = 1,
+    /* the data in this callsite can be cached */
+    CALL_CACHE_FUNCTION = 2,
+};
+
+struct pike_callsite {
+    /* type of the current call */
+    enum pike_calltype type;
+    unsigned INT16 flags;
+    INT32 args;
+
+    /* the actual frame struct. not used for EFUN */
+    struct pike_frame *frame;
+
+    /* where the retval will go */
+    struct svalue *retval;
+
+    /* this is used for many things */
+    void *ptr;
+
+    /* this error handler is used to restore Pike_interpreter.catching_eval_jmpbuf to
+     * saved_jmpbuf when an error happens. only used for calls to pike code. */
+    LOW_JMP_BUF *saved_jmpbuf;
+    ONERROR onerror;
+};
+
+PMOD_EXPORT void callsite_init(struct pike_callsite *c);
+PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args);
+PMOD_EXPORT void callsite_free(struct pike_callsite *c);
+PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *site, struct svalue *s);
+PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *site, struct object *o, INT16 fun);
+PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *site, struct object *o, int lfun);
+PMOD_EXPORT void callsite_prepare(struct pike_callsite *c);
+PMOD_EXPORT void callsite_execute(const struct pike_callsite *site);
+PMOD_EXPORT void callsite_return(struct pike_callsite *site);
+
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
     return frame->locals + frame->save_sp_offset;
 }

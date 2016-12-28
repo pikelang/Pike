@@ -3790,3 +3790,370 @@ void really_clean_up_interpret(void)
   free_all_catch_context_blocks();
 #endif
 }
+
+/*
+ * Low level function call API.
+ *
+ */
+
+ATTRIBUTE((noreturn, noinline))
+static void callsite_svalue_error(struct pike_callsite *c, const struct svalue *s) {
+  INT32 args = c->args; 
+
+  switch(TYPEOF(*s))
+  {
+  case T_INT:
+    if (!s->u.integer) {
+      PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
+    } else {
+      Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n",
+                 s->u.integer);
+    }
+    break;
+
+  case T_STRING:
+    if (s->u.string->len > 20) {
+      Pike_error("Attempt to call the string \"%20S\"...\n", s->u.string);
+    } else {
+      Pike_error("Attempt to call the string \"%S\"\n", s->u.string);
+    }
+    break;
+
+  case T_MAPPING:
+    Pike_error("Attempt to call a mapping\n");
+    break;
+
+  default:
+    Pike_error("Call to non-function value type:%s.\n",
+               get_name_of_type(TYPEOF(*s)));
+    break;
+  }
+}
+
+PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o, INT16 fun) {
+  struct program *p = o->prog;
+  struct inherit *context;
+  struct reference *ref;
+  struct identifier *function;
+  struct pike_frame *scope = NULL;
+  INT32 args = c->args;
+
+  if(!p)
+    PIKE_ERROR("destructed object->function",
+          "Cannot call functions in destructed objects.\n", Pike_sp, args);
+
+  if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
+    PIKE_ERROR("__empty_program() -> function",
+          "Cannot call functions in unfinished objects.\n", Pike_sp, args);
+
+  if(p == pike_trampoline_program &&
+     fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
+  {
+    scope = ((struct pike_trampoline *)(o->storage))->frame;
+    fun = ((struct pike_trampoline *)(o->storage))->func;
+    o = scope->current_object;
+    callsite_resolve_fun(c, o, fun);
+    c->frame->scope = scope;
+    add_ref(scope);
+    return;
+  }
+
+#ifdef PIKE_DEBUG
+  if(fun>=(int)p->num_identifier_references)
+  {
+    fprintf(stderr, "Function index out of range. %ld >= %d\n",
+            (long)fun, (int)p->num_identifier_references);
+    fprintf(stderr,"########Program is:\n");
+    describe(p);
+    fprintf(stderr,"########Object is:\n");
+    describe(o);
+    Pike_fatal("Function index out of range.\n");
+  }
+#endif
+
+  ref = p->identifier_references + fun;
+
+  context = p->inherits + ref->inherit_offset;
+
+#ifdef PIKE_DEBUG
+  if(ref->inherit_offset>=p->num_inherits)
+    Pike_fatal("Inherit offset out of range in program.\n");
+#endif
+
+  function = context->prog->identifiers + ref->identifier_offset;
+
+  if(function->func.offset == -1) {
+    generic_error(NULL, Pike_sp, args,
+                  "Calling undefined function.\n");
+  }
+
+  switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
+  {
+  case IDENTIFIER_C_FUNCTION:
+    c->type = CALLTYPE_CFUN;
+    c->ptr = function->func.c_fun;
+    break;
+
+  case IDENTIFIER_CONSTANT:
+  {
+    struct svalue *s=&(context->prog->
+                       constants[function->func.const_info.offset].sval);
+    debug_malloc_touch(Pike_fp);
+    if(TYPEOF(*s) == T_PROGRAM)
+    {
+      c->type = CALLTYPE_PARENT_CLONE;
+      c->ptr = s->u.program;
+      /* this case needs a frame, too */
+      break;
+    }
+    /* Fall through */
+  }
+
+  case IDENTIFIER_VARIABLE:
+  {
+    struct svalue *save_sp = c->retval;
+
+    if(Pike_sp-save_sp-args<=0)
+    {
+      /* Create an extra svalue for tail recursion style call */
+      Pike_sp++;
+      memmove(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
+    }else{
+      free_svalue(Pike_sp-args-1);
+    }
+    mark_free_svalue (Pike_sp - args - 1);
+    low_object_index_no_free(Pike_sp-args-1,o,fun);
+
+    callsite_resolve_svalue(c, Pike_sp-args-1);
+    return;
+  }
+
+  case IDENTIFIER_PIKE_FUNCTION:
+  {
+    c->type = CALLTYPE_PIKEFUN;
+    c->ptr = context->prog->program + function->func.offset
+#ifdef ENTRY_PROLOGUE_SIZE
+      + ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+      ;
+    break;
+  }
+
+  default:
+    if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
+      do {
+        struct external_variable_context loc;
+        loc.o = o;
+        loc.inherit = INHERIT_FROM_INT(p, fun);
+        loc.parent_identifier = 0;
+        find_external_context(&loc, function->func.ext_ref.depth);
+        fun = function->func.ext_ref.id;
+        p = (o = loc.o)->prog;
+        function = ID_FROM_INT(p, fun);
+      } while (IDENTIFIER_IS_ALIAS(function->identifier_flags));
+
+      callsite_resolve_fun(c, o, fun);
+      return;
+    }
+#ifdef PIKE_DEBUG
+    Pike_fatal("Unknown identifier type.\n");
+#endif
+    UNREACHABLE(break);
+  }
+
+  /*
+   * The cases which do _not_ return, have a frame created. These are:
+   * CALLTYPE_CFUN, CALLTYPE_PIKEFUN and CALLTYPE_PARENT_CLONE.
+   */
+
+  add_ref(o);
+  add_ref(p);
+
+  struct pike_frame *frame = alloc_pike_frame();
+
+  frame->next = Pike_fp;
+  frame->current_object = o;
+  frame->current_program = p;
+  frame->context = context;
+  frame->fun = fun;
+  frame->locals = Pike_sp - args;
+  if (c->type == CALLTYPE_PIKEFUN)
+    frame->pc = c->ptr;
+  else 
+    frame->pc = NULL;
+  frame->current_storage = o->storage + context->storage_offset;
+  frame->expendible_offset = 0;
+  frame->args = args;
+  frame->num_locals = 0;
+  frame->num_args = 0;
+  frame->scope = scope;
+  frame->save_mark_sp=Pike_mark_sp;
+  frame_set_save_sp(frame, c->retval);
+
+  Pike_fp = frame;
+  c->frame = frame;
+}
+
+PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *c, struct object *o, int lfun) {
+  struct program *p = o->prog;
+
+#ifdef PIKE_DEBUG
+  if(lfun < 0 || lfun >= NUM_LFUNS)
+    Pike_fatal("Illegal lfun.\n");
+#endif
+  if(!p)
+    PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, c->args);
+
+  int fun = FIND_LFUN(p, lfun);
+
+  if (fun < 0)
+    Pike_error ("Cannot call undefined lfun %s.\n", lfun_names[lfun]);
+
+  callsite_resolve_fun(c, o, fun);
+}
+
+PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue *s) {
+  switch(TYPEOF(*s))
+  {
+  default:
+    callsite_svalue_error(c, s);
+    UNREACHABLE(break);
+  case T_FUNCTION:
+    if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
+    {
+      c->type = CALLTYPE_EFUN;
+      c->ptr = s->u.efun->function;
+    }else{
+      callsite_resolve_fun(c, s->u.object, SUBTYPEOF(*s));
+      return;
+    }
+    break;
+  case T_ARRAY:
+    c->type = CALLTYPE_ARRAY;
+    c->ptr = s->u.array;
+    break;
+  case PIKE_T_TYPE:
+    c->type = CALLTYPE_CAST;
+    c->ptr = s->u.type;
+    break;
+  case T_PROGRAM:
+    c->type = CALLTYPE_CLONE;
+    c->ptr = s->u.program;
+    break;
+  case T_OBJECT:
+    callsite_resolve_lfun(c, s->u.object, LFUN_CALL);
+    return;
+  }
+}
+
+PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
+  FAST_CHECK_THREADS_ON_CALL();
+  switch (c->type) {
+  default:
+  case CALLTYPE_NONE:
+#ifdef PIKE_DEBUG
+    Pike_fatal("Unknown callsite type: %d\n", c->type);
+#endif
+  case CALLTYPE_EFUN:
+  case CALLTYPE_CFUN:
+    {
+      void (*fun)(INT32) = c->ptr;
+      fun(c->args);
+    }
+    break;
+  case CALLTYPE_PIKEFUN:
+    {
+      PIKE_OPCODE_T *pc = c->ptr;
+#ifdef ENTRY_PROLOGUE_SIZE
+      pc -= ENTRY_PROLOGUE_SIZE;
+#endif
+      eval_instruction(pc);
+    }
+    break;
+  case CALLTYPE_CAST:
+    o_cast(c->ptr, compile_type_to_runtime_type(c->ptr));
+    break;
+  case CALLTYPE_ARRAY:
+    /* TODO: reenable destructive operation */
+    apply_array(c->ptr, c->args, 0);
+    break;
+  case CALLTYPE_CLONE:
+    push_object(clone_object(c->ptr, c->args));
+    break;
+  case CALLTYPE_PARENT_CLONE:
+    {
+      struct object *tmp;
+      tmp=parent_clone_object(c->ptr,
+                              c->frame->current_object,
+                              c->frame->fun,
+                              c->args);
+      push_object(tmp);
+    }
+    break;
+  }
+}
+
+PMOD_EXPORT void callsite_init(struct pike_callsite *c) {
+  c->type = CALLTYPE_NONE;
+  c->flags = 0;
+  c->frame = NULL;
+  c->saved_jmpbuf = NULL;
+}
+
+PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args) {
+  c->args = args;
+  c->retval = Pike_sp - args;
+}
+
+PMOD_EXPORT void callsite_prepare(struct pike_callsite *c) {
+  if (c->type != CALLTYPE_PIKEFUN) return;
+    
+  c->saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+  SET_ONERROR (c->onerror, restore_catching_eval_jmpbuf, c->saved_jmpbuf);
+  Pike_interpreter.catching_eval_jmpbuf = NULL;
+}
+
+PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
+  if (!c->frame) return;
+
+  /* FREE FRAME */
+
+  POP_PIKE_FRAME();
+
+  if (c->type != CALLTYPE_PIKEFUN) return;
+
+  /* restore catching_eval_jmpbuf */
+
+  Pike_interpreter.catching_eval_jmpbuf = c->saved_jmpbuf;
+  UNSET_ONERROR(c->onerror);
+}
+
+PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
+  const struct svalue *sp = Pike_sp;
+  struct svalue *retval = c->retval;
+  struct pike_frame *frame = c->frame;
+  int got_retval = 1;
+
+  if (retval >= sp) {
+#ifdef PIKE_DEBUG
+      if (retval - sp > 1)
+        Pike_fatal("Stack too small after function call.\n");
+#endif
+      /* return value missing */
+      if (!(c->flags & CALL_NEED_NO_RETVAL)) {
+          push_int(0);
+      } else got_retval = 0;
+  } else if (retval+1 < sp) {
+    /* garbage left on the stack */
+    assign_svalue(retval,sp-1);
+    pop_n_elems(sp-retval-1);
+    low_destruct_objects_to_destruct();
+  }
+
+  if (c->frame) {
+      if (c->frame != Pike_fp) {
+          fprintf(stderr, "frame changed %p vs %p\n", c->frame, Pike_fp);
+          c->frame = Pike_fp;
+      }
+  }
+}
