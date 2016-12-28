@@ -158,16 +158,7 @@
 
       if(Pike_interpreter.trace_level)
       {
-        struct byte_buffer b = BUFFER_INIT();
-	char buf[50];
-
-        sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-	buffer_add_str(&b, buf);
-	if (function->name->size_shift)
-	  buffer_add_str (&b, "[widestring function name]");
-	else
-	  buffer_add_str (&b, function->name->str);
-	do_trace_call(&b, args);
+        do_trace_function_call(o, function, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe

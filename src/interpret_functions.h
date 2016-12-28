@@ -2626,13 +2626,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   s = &Pike_fp->context->prog->constants[arg1].sval;			 \
   if(Pike_interpreter.trace_level)					 \
   {									 \
-    LOCAL_VAR(dynamic_buffer save_buf);					 \
-    init_buf(&save_buf);						 \
-    if (s->u.efun->name->size_shift)					 \
-      my_strcat ("[widestring function name]");				 \
-    else								 \
-      my_strcat (s->u.efun->name->str);					 \
-    do_trace_call(args_, &save_buf);					 \
+    do_trace_efun_call(s, args_);                                        \
   }									 \
   if (PIKE_FN_START_ENABLED()) {					 \
     /* DTrace enter probe						 \
@@ -2663,14 +2657,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
   }									 \
   if(Pike_interpreter.trace_level>1) {					 \
-    LOCAL_VAR(dynamic_buffer save_buf);					 \
-    init_buf(&save_buf);						 \
-    if (s->u.efun->name->size_shift)					 \
-      my_strcat ("[widestring function name]");				 \
-    else								 \
-      my_strcat (s->u.efun->name->str);					 \
-    my_strcat ("() ");							 \
-    do_trace_return (Pike_sp>expected_stack, &save_buf);		 \
+    do_trace_efun_return(s, Pike_sp>expected_stack);                     \
   }									 \
   if (PIKE_FN_DONE_ENABLED()) {						 \
     /* DTrace leave probe						 \
