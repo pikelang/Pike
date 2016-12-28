@@ -18,11 +18,12 @@ struct byte_buffer {
     void * restrict dst;
 };
 
-#define BUFFER_INIT() { 0, 0, NULL }
+#define BUFFER_INIT() ((struct byte_buffer){ 0, 0, NULL })
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
 PMOD_EXPORT void buffer_make_space(struct byte_buffer *b, size_t len);
 PMOD_EXPORT int buffer_make_space_nothrow(struct byte_buffer *b, size_t len);
+PMOD_EXPORT const char *buffer_get_string(struct byte_buffer *b);
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 PMOD_EXPORT void* buffer_finish(struct byte_buffer *b);
