@@ -8,7 +8,6 @@
 
 #include "bitvector.h"
 #include "pike_memory.h"
-#include "pike_error.h"
 #include "global.h"
 
 #define MACRO   static inline PIKE_UNUSED_ATTRIBUTE
@@ -67,27 +66,22 @@ MACRO void buffer_clear(struct byte_buffer *b) {
     }
 }
 
+#ifdef PIKE_DEBUG
+PMOD_EXPORT void buffer_remove(struct byte_buffer *b, size_t len);
+#else
 MACRO void buffer_remove(struct byte_buffer *b, size_t len) {
     char *dst = buffer_dst(b);
-
-#ifdef PIKE_DEBUG
-    if (len > buffer_content_length(b))
-        Pike_fatal("Bad call to buffer_remove.\n");
-#endif
 
     b->dst = dst - len;
     b->left += len;
 }
-
-MACRO void buffer_check_space(struct byte_buffer *b, size_t len) {
-#ifdef PIKE_DEBUG
-    if (len > b->left)
-        Pike_fatal("buffer_check_space failed.\n");
-#else
-    b = b;
-    len = len;
 #endif
-}
+
+#ifdef PIKE_DEBUG
+PMOD_EXPORT void buffer_check_space(struct byte_buffer *b, size_t len);
+#else
+MACRO void buffer_check_space(struct byte_buffer *PIKE_UNUSED(b), size_t PIKE_UNUSED(len)) { }
+#endif
 
 MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
     char *dst = buffer_dst(b);
