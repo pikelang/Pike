@@ -418,7 +418,7 @@ class LowOptions
       env = getenv();
 
     // Make a list of all the arguments we can parse.
-    foreach(::_indices(2), string index)
+    foreach(::_indices(this, 0), string index)
     {
       mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
