@@ -83,6 +83,15 @@ PMOD_EXPORT struct pike_string *buffer_finish_pike_string(struct byte_buffer *b)
     return make_shared_malloc_string(buffer_finish(b), len, eightbit);
 }
 
+PMOD_EXPORT const char *buffer_get_string(struct byte_buffer *b) {
+    buffer_ensure_space(b, 1);
+
+    /* zero terminate */
+    *(char*)buffer_dst(b) = 0;
+
+    return buffer_ptr(b);
+}
+
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void buffer_check_space(struct byte_buffer *b, size_t len) {
     if (len > b->left)
