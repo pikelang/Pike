@@ -8,6 +8,7 @@
 #define SVALUE_H
 
 #include "global.h"
+#include "buffer.h"
 
 #ifndef STRUCT_ARRAY_DECLARED
 #define STRUCT_ARRAY_DECLARED
@@ -813,8 +814,10 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
 PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b);
-PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p);
-PMOD_EXPORT void safe_describe_svalue(const struct svalue *s,int indent,struct processing *p);
+PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s,int indent,
+                                 struct processing *p);
+PMOD_EXPORT void safe_describe_svalue(struct byte_buffer *buf, const struct svalue *s,
+                                      int indent,struct processing *p);
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s);
 PMOD_EXPORT void safe_print_svalue (FILE *out, const struct svalue *s);
 PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T type);

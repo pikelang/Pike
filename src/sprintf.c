@@ -1745,15 +1745,12 @@ cont_2:
 	struct svalue *t;
 	GET_SVALUE(t);
 	{
-	  dynamic_buffer save_buf;
-	  dynbuf_string s;
+          struct byte_buffer buf = BUFFER_INIT();
 
-	  init_buf(&save_buf);
-	  describe_svalue(t,indent,0);
-	  s=complex_free_buf(&save_buf);
-	  fsp->b=MKPCHARP(buffer_ptr(&s),0);
-	  fsp->len=buffer_content_length(&s);
-	  fsp->fi_free_string=buffer_ptr(&s);
+	  describe_svalue(&buf,t,indent,0);
+	  fsp->b=MKPCHARP(buffer_ptr(&buf),0);
+	  fsp->len=buffer_content_length(&buf);
+	  fsp->fi_free_string=buffer_ptr(&buf);
 	  break;
 	}
       }
@@ -1762,18 +1759,15 @@ cont_2:
       /* This can be useful when doing low level debugging. */
       case 'p':
       {
-	dynamic_buffer save_buf;
-	dynbuf_string s;
+	dynamic_buffer b = BUFFER_INIT();
 	char buf[50];
 	struct svalue *t;
 	GET_SVALUE(t);
-	init_buf(&save_buf);
 	sprintf (buf, "%p", t->u.refs);
-	my_strcat (buf);
-	s=complex_free_buf(&save_buf);
-	fsp->b=MKPCHARP(s.str,0);
-	fsp->len=s.len;
-	fsp->fi_free_string=s.str;
+	buffer_add_str (&b, buf);
+	fsp->b=MKPCHARP(buffer_ptr(&b),0);
+	fsp->len=buffer_content_length(&b);
+	fsp->fi_free_string=buffer_ptr(&b);
 	break;
       }
 #endif

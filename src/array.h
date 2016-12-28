@@ -171,7 +171,7 @@ int array_is_constant(struct array *a,
 		      struct processing *p);
 node *make_node_from_array(struct array *a);
 PMOD_EXPORT void push_array_items(struct array *a);
-void describe_array_low(struct array *a, struct processing *p, int indent);
+void describe_array_low(struct byte_buffer *buf, struct array *a, struct processing *p, int indent);
 #ifdef PIKE_DEBUG
 void simple_describe_array(struct array *a);
 void describe_index(struct array *a,
@@ -179,7 +179,7 @@ void describe_index(struct array *a,
 		    struct processing *p,
 		    int indent);
 #endif
-void describe_array(struct array *a,struct processing *p,int indent);
+void describe_array(struct byte_buffer *buf,struct array *a,struct processing *p,int indent);
 PMOD_EXPORT struct array *aggregate_array(INT32 args);
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *explode(struct pike_string *str,

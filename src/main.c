@@ -34,6 +34,7 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
+#include "buffer.h"
 
 #include "pike_embed.h"
 
@@ -640,8 +641,7 @@ int main(int argc, char **argv)
 	 * master it'd be reported with a raw error dump otherwise. */
 	struct generic_error_struct *err;
 
-	dynamic_buffer buf;
-	dynbuf_string s;
+        struct byte_buffer buf = BUFFER_INIT();
 	struct svalue t;
 
 	move_svalue (Pike_sp++, &throw_value);
@@ -651,12 +651,9 @@ int main(int argc, char **argv)
 
 	SET_SVAL(t, PIKE_T_STRING, 0, string, err->error_message);
 
-	init_buf(&buf);
-	describe_svalue(&t,0,0);
-	s=complex_free_buf(&buf);
-        buffer_add_char(&s, 0);
-	fputs(buffer_ptr(&s), stderr);
-        buffer_free(&s);
+	describe_svalue(&buf, &t,0,0);
+	fputs(buffer_get_string(&buf), stderr);
+        buffer_free(&buf);
       }
       else
 	call_handle_error();

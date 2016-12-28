@@ -11044,8 +11044,7 @@ static void not_trampoline(INT32 args)
 
 static void sprintf_trampoline (INT32 args)
 {
-  dynamic_buffer save_buf;
-  dynbuf_string str;
+  struct byte_buffer buf = BUFFER_INIT();
 
   if (!args || TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer != 'O' ||
       !THIS->frame || !THIS->frame->current_object) {
@@ -11056,11 +11055,9 @@ static void sprintf_trampoline (INT32 args)
   pop_n_elems (args);
 
   ref_push_function (THIS->frame->current_object, THIS->func);
-  init_buf(&save_buf);
-  describe_svalue (sp - 1, 0, 0);
-  str = complex_free_buf(&save_buf);
+  describe_svalue (&buf, sp - 1, 0, 0);
   pop_stack();
-  push_string(buffer_finish_pike_string(&str));
+  push_string(buffer_finish_pike_string(&buf));
 }
 
 static void init_trampoline(struct object *UNUSED(o))

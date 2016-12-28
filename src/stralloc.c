@@ -3050,13 +3050,10 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'O':
 	  {
 	    /* FIXME: Doesn't care about field or integer widths yet. */
-	    dynamic_buffer old_buf;
-	    init_buf(&old_buf);
-	    describe_svalue(va_arg(args, struct svalue *), 0, NULL);
-	    string_builder_binary_strcat(s, buffer_ptr(&pike_global_buffer),
-					 buffer_content_length(&pike_global_buffer));
-	    toss_buffer(&pike_global_buffer);
-	    restore_buffer(&old_buf);
+            struct byte_buffer buf = BUFFER_INIT();
+	    describe_svalue(&buf, va_arg(args, struct svalue *), 0, NULL);
+	    string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+	    buffer_free(&buf);
 	  }
 	  break;
 	case 'S':

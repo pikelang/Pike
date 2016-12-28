@@ -2895,7 +2895,7 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
   return res;
 }
 
-void describe_multiset (struct multiset *l, struct processing *p, int indent)
+void describe_multiset (struct byte_buffer *b, struct multiset *l, struct processing *p, int indent)
 {
   struct processing curr;
   struct multiset_data *msd;
@@ -2911,7 +2911,7 @@ void describe_multiset (struct multiset *l, struct processing *p, int indent)
     if (p->pointer_a == (void *) l) {
       char buf[20];
       sprintf (buf, "@%d", depth);
-      my_strcat (buf);
+      buffer_add_str (b, buf);
       return;
     }
 
@@ -2919,7 +2919,7 @@ void describe_multiset (struct multiset *l, struct processing *p, int indent)
   msd = l->msd;
 
   if (!msd->root)
-    my_strcat ("(< >)");
+    buffer_add_str (b, "(< >)");
   else {
     union msnode *node;
     struct svalue ind;
@@ -2928,11 +2928,11 @@ void describe_multiset (struct multiset *l, struct processing *p, int indent)
     ONERROR uwp;
 
     if (size == 1)
-      my_strcat ("(< /* 1 element */\n");
+      buffer_add_str (b, "(< /* 1 element */\n");
     else {
       char buf[40];
       sprintf (buf, "(< /* %ld elements */\n", (long) size);
-      my_strcat (buf);
+      buffer_add_str (b, buf);
     }
 
     indent += 2;
@@ -2942,21 +2942,21 @@ void describe_multiset (struct multiset *l, struct processing *p, int indent)
 
 #define WITH_NODES_BLOCK(TYPE, IND)					\
     do {								\
-      if (notfirst) my_strcat (",\n");					\
+      if (notfirst) buffer_add_str (b, ",\n");				\
       else notfirst = 1;						\
 									\
-      for (depth = 2; depth < indent; depth++) my_putchar (' ');	\
+      for (depth = 2; depth < indent; depth++) buffer_add_char (b, ' ');\
       low_use_multiset_index (node, ind);				\
-      describe_svalue (&ind, indent, &curr);				\
+      describe_svalue (b, &ind, indent, &curr);				\
     } while ((node = low_multiset_next (node)));
 
     DO_WITH_NODES (msd);
 
 #undef WITH_NODES_BLOCK
 
-    my_putchar ('\n');
-    for (depth = 4; depth < indent; depth++) my_putchar (' ');
-    my_strcat (">)");
+    buffer_add_char (b, '\n');
+    for (depth = 4; depth < indent; depth++) buffer_add_char (b, ' ');
+    buffer_add_str (b, ">)");
 
     UNSET_ONERROR (uwp);
     if (!sub_ref (msd)) free_multiset_data (msd);
@@ -4023,13 +4023,11 @@ static void debug_dump_ind_data (struct msnode_ind *node,
 #ifndef PIKE_DEBUG
 static void simple_describe_multiset (struct multiset *l)
 {
-  dynamic_buffer save_buf;
-  char *desc;
-  init_buf(&save_buf);
-  describe_multiset (l, NULL, 2);
-  desc = simple_free_buf(&save_buf);
-  fprintf (stderr, "%s\n", desc);
-  free (desc);
+  struct byte_buffer buf = BUFFER_INIT();
+  describe_multiset (&buf, l, NULL, 2);
+  buffer_add_str(&buf "\n");
+  fputs(buffer_get_string(&buf), stderr);
+  buffer_free (desc);
 }
 #endif
 

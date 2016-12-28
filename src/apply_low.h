@@ -158,33 +158,30 @@
 
       if(Pike_interpreter.trace_level)
       {
-	dynamic_buffer save_buf;
+        struct byte_buffer b = BUFFER_INIT();
 	char buf[50];
 
-	init_buf(&save_buf);
         sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-	my_strcat(buf);
+	buffer_add_str(&b, buf);
 	if (function->name->size_shift)
-	  my_strcat ("[widestring function name]");
+	  buffer_add_str (&b, "[widestring function name]");
 	else
-	  my_strcat(function->name->str);
-	do_trace_call(args, &save_buf);
+	  buffer_add_str (&b, function->name->str);
+	do_trace_call(&b, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe
 	   arg0: function name
 	   arg1: object
 	*/
-	dynamic_buffer save_buf;
-	dynbuf_string obj_name;
+	struct byte_buffer obj_name = BUFFER_INIT();
 	struct svalue obj_sval;
 	SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
-	init_buf(&save_buf);
-	safe_describe_svalue(&obj_sval, 0, NULL);
-	obj_name = complex_free_buf(&save_buf);
+	safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
 	PIKE_FN_START(function->name->size_shift == 0 ?
 		      function->name->str : "[widestring fn name]",
-		      obj_name.str);
+		      buffer_get_string(&obj_name));
+        buffer_free(&obj_name);
       }
 
 #ifdef PROFILING

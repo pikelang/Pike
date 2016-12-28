@@ -361,7 +361,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op);
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
-void describe_mapping(struct mapping *m,struct processing *p,int indent);
+void describe_mapping(struct byte_buffer *buf, struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
