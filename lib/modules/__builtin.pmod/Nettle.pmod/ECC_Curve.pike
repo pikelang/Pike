@@ -17,6 +17,11 @@ class Point {
   extern Gmp.mpz get_x();
   extern Gmp.mpz get_y();
 
+  string(7bit) jose_name()
+  {
+    return global::jose_name();
+  }
+
   protected void create(Gmp.mpz|int x, Gmp.mpz|int y)
   {
     set(x, y);
