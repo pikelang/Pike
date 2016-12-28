@@ -5,5 +5,3 @@
 */
 
 #include "dynamic_buffer.h"
-
-PMOD_EXPORT dynamic_buffer pike_global_buffer = BUFFER_INIT();
