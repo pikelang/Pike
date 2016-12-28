@@ -648,7 +648,7 @@ protected class Lexer
             item->align[i] = "center";
           }
           else if (REGX("^ *:-+ *$")->match(item->align[i])) {
-            item.align[i] = "left";
+            item->align[i] = "left";
           }
           else {
             item->align[i] = UNDEFINED;
