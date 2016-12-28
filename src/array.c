@@ -2190,16 +2190,17 @@ PMOD_EXPORT void push_array_items(struct array *a)
   }
 }
 
-void describe_array_low(struct array *a, struct processing *p, int indent)
+void describe_array_low(struct byte_buffer *buf, struct array *a, struct processing *p, int indent)
 {
   INT32 e,d;
   indent += 2;
 
   for(e=0; e<a->size; e++)
   {
-    if(e) my_strcat(",\n");
-    for(d=0; d<indent; d++) my_putchar(' ');
-    describe_svalue(ITEM(a)+e,indent,p);
+    buffer_ensure_space(buf, indent + 2);
+    if(e) buffer_add_str_unsafe(buf, ",\n");
+    for(d=0; d<indent; d++) buffer_add_char_unsafe(buf, ' ');
+    describe_svalue(buf, ITEM(a)+e,indent,p);
   }
 }
 
@@ -2207,37 +2208,27 @@ void describe_array_low(struct array *a, struct processing *p, int indent)
 #ifdef PIKE_DEBUG
 void simple_describe_array(struct array *a)
 {
-  dynamic_buffer save_buf;
   char *s;
   if (a->size) {
-    init_buf(&save_buf);
-    describe_array_low(a,0,0);
-    s=simple_free_buf(&save_buf);
-    fprintf(stderr,"({\n%s\n})\n",s);
-    free(s);
+    byte_buffer buf = BUFFER_INIT();
+    describe_array_low(buf,a,0,0);
+    fprintf(stderr,"({\n%s\n})\n",buffer_get_string(&buf));
+    buffer_free(&buf);
   }
   else
     fputs ("({ })\n", stderr);
 }
-
-void describe_index(struct array *a,
-		    int e,
-		    struct processing *p,
-		    int indent)
-{
-  describe_svalue(ITEM(a)+e, indent, p);
-}
 #endif
 
 
-void describe_array(struct array *a,struct processing *p,int indent)
+void describe_array(struct byte_buffer *buffer,struct array *a,struct processing *p,int indent)
 {
   struct processing doing;
   INT32 e;
   char buf[60];
   if(! a->size)
   {
-    my_strcat("({ })");
+    buffer_add_str(buffer, "({ })");
     return;
   }
 
@@ -2248,7 +2239,7 @@ void describe_array(struct array *a,struct processing *p,int indent)
     if(p->pointer_a == (void *)a)
     {
       sprintf(buf,"@%ld",(long)e);
-      my_strcat(buf);
+      buffer_add_str(buffer, buf);
       return;
     }
   }
@@ -2258,11 +2249,11 @@ void describe_array(struct array *a,struct processing *p,int indent)
   } else {
     sprintf(buf, "({ /* %ld elements */\n", (long)a->size);
   }
-  my_strcat(buf);
-  describe_array_low(a,&doing,indent);
-  my_putchar('\n');
-  for(e=2; e<indent; e++) my_putchar(' ');
-  my_strcat("})");
+  buffer_add_str(buffer, buf);
+  describe_array_low(buffer,a,&doing,indent);
+  buffer_add_char(buffer, '\n');
+  for(e=2; e<indent; e++) buffer_add_char(buffer, ' ');
+  buffer_add_str(buffer, "})");
 }
 
 /**

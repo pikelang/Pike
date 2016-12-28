@@ -57,7 +57,7 @@
  */
 #define EVALUATOR_STACK_SIZE	100000
 
-#define TRACE_LEN (100 + Pike_interpreter.trace_level * 10)
+#define TRACE_LEN (size_t)(100 + Pike_interpreter.trace_level * 10)
 
 /* Keep some margin on the stack space checks. They're lifted when
  * handle_error runs to give it some room. */
@@ -105,9 +105,9 @@ int fast_check_threads_counter = 0;
 
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
-static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
+static void do_trace_call(struct byte_buffer *buf, INT32 args);
 static void do_trace_func_return (int got_retval, struct object *o, int fun);
-static void do_trace_return (int got_retval, dynamic_buffer *old_buf);
+static void do_trace_return (struct byte_buffer *buf, int got_retval);
 
 void push_sp_mark(void)
 {
@@ -796,21 +796,16 @@ void print_return_value(void)
 {
   if(Pike_interpreter.trace_level>3)
   {
-    char *s;
-    dynamic_buffer save_buf;
+    struct byte_buffer buf = BUFFER_INIT();
 
-    init_buf(&save_buf);
-    safe_describe_svalue(Pike_sp-1,0,0);
-    s=simple_free_buf(&save_buf);
-    if((size_t)strlen(s) > (size_t)TRACE_LEN)
+    safe_describe_svalue(&buf, Pike_sp-1,0,0);
+    if(buffer_content_length(&buf) > TRACE_LEN)
     {
-      s[TRACE_LEN]=0;
-      s[TRACE_LEN-1]='.';
-      s[TRACE_LEN-2]='.';
-      s[TRACE_LEN-3]='.';
+      buffer_remove(&buf, buffer_content_length(&buf) - TRACE_LEN - 3);
+      buffer_add_str(&buf, "...");
     }
-    fprintf(stderr,"-    value: %s\n",s);
-    free(s);
+    fprintf(stderr,"-    value: %s\n",buffer_get_string(&buf));
+    buffer_free(&buf);
   }
 }
 #else
@@ -1766,29 +1761,27 @@ static inline int eval_instruction(unsigned char *pc)
 #undef DO_IF_NOT_REAL_DEBUG
 
 
-static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
+static void do_trace_call(struct byte_buffer *b, INT32 args)
 {
   struct pike_string *filep = NULL;
-  char *file, *s;
+  char *file;
+  const char *s;
   INT_TYPE linep;
   INT32 e;
   ptrdiff_t len = 0;
 
-  my_strcat("(");
+  buffer_add_str(b, "(");
   for(e=0;e<args;e++)
   {
-    if(e) my_strcat(",");
-    safe_describe_svalue(Pike_sp-args+e,0,0);
+    if(e) buffer_add_str(b, ",");
+    safe_describe_svalue(b, Pike_sp-args+e,0,0);
   }
-  my_strcat(")");
+  buffer_add_str(b, ")");
 
-  s=simple_free_buf(old_buf);
-  if((size_t)strlen(s) > (size_t)TRACE_LEN)
+  if(buffer_content_length(b) > TRACE_LEN)
   {
-    s[TRACE_LEN]=0;
-    s[TRACE_LEN-1]='.';
-    s[TRACE_LEN-2]='.';
-    s[TRACE_LEN-3]='.';
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_add_str(b, "...");
   }
 
   if(Pike_fp && Pike_fp->pc)
@@ -1812,6 +1805,8 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
     file="-";
   }
 
+  s = buffer_get_string(b);
+
   if (len < 30)
   {
     char buf[40];
@@ -1829,52 +1824,51 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   if (filep) {
     free_string(filep);
   }
-  free(s);
+  buffer_free(b);
 }
 
 static void do_trace_func_return (int got_retval, struct object *o, int fun)
 {
-  dynamic_buffer save_buf;
-  init_buf (&save_buf);
+  struct byte_buffer b = BUFFER_INIT();
   if (o) {
     if (o->prog) {
       struct identifier *id = ID_FROM_INT (o->prog, fun);
       char buf[50];
       sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-      my_strcat(buf);
+      buffer_add_str(&b, buf);
       if (id->name->size_shift)
-	my_strcat ("[widestring function name]");
+	buffer_add_str (&b, "[widestring function name]");
       else
-	my_strcat(id->name->str);
-      my_strcat ("() ");
+	buffer_add_str(&b, id->name->str);
+      buffer_add_str (&b, "() ");
     }
     else
-      my_strcat ("function in destructed object ");
+      buffer_add_str (&b, "function in destructed object ");
   }
-  do_trace_return (got_retval, &save_buf);
+  do_trace_return (&b, got_retval);
 }
 
-static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
+static void do_trace_return (struct byte_buffer *b, int got_retval)
 {
   struct pike_string *filep = NULL;
-  char *file, *s;
+  char *file;
+  const char *s;
   INT_TYPE linep;
 
   if (got_retval) {
-    my_strcat ("returns: ");
-    safe_describe_svalue(Pike_sp-1,0,0);
+    buffer_add_str (b, "returns: ");
+    safe_describe_svalue(b, Pike_sp-1,0,0);
   }
   else
-    my_strcat ("returns with no value");
+    buffer_add_str (b, "returns with no value");
 
-  s=simple_free_buf(old_buf);
-  if((size_t)strlen(s) > (size_t)TRACE_LEN)
+  if(buffer_content_length(b) > TRACE_LEN)
   {
-    s[TRACE_LEN]=0;
-    s[TRACE_LEN-1]='.';
-    s[TRACE_LEN-2]='.';
-    s[TRACE_LEN-3]='.';
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_add_str(b, "...");
   }
+
+  s = buffer_get_string(b);
 
   if(Pike_fp && Pike_fp->pc)
   {
@@ -1904,7 +1898,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   if (filep) {
     free_string(filep);
   }
-  free(s);
+  buffer_free(b);
 }
 
 static struct pike_frame_chunk {
@@ -2097,30 +2091,27 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
                  arg0: function name
                  arg1: object
               */
-              dynamic_buffer save_buf;
-              dynbuf_string obj_name;
+              struct byte_buffer obj_name = BUFFER_INIT();
               struct svalue obj_sval;
               SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
-              init_buf(&save_buf);
-              safe_describe_svalue(&obj_sval, 0, NULL);
-              obj_name = complex_free_buf(&save_buf);
+              safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
               PIKE_FN_START(function->name->size_shift == 0 ?
                             function->name->str : "[widestring fn name]",
-                            obj_name.str);
+                            buffer_get_string(s));
+              buffer_free(&obj_name);
             }
             if(UNLIKELY(Pike_interpreter.trace_level))
             {
-              dynamic_buffer save_buf;
+              struct byte_buffer buffer = BUFFER_INIT();
               char buf[50];
 
-              init_buf(&save_buf);
               sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-              my_strcat(buf);
+              buffer_add_str(&buffer, buf);
               if (function->name->size_shift)
-                my_strcat ("[widestring function name]");
+                buffer_add_str (&buffer, "[widestring function name]");
               else
-                my_strcat(function->name->str);
-              do_trace_call(args, &save_buf);
+                buffer_add_str(&buffer, function->name->str);
+              do_trace_call(&buffer, args);
             }
             new_frame->current_storage = o->storage+context->storage_offset;
             if( type == IDENTIFIER_C_FUNCTION )
@@ -2271,13 +2262,12 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 	if(Pike_interpreter.trace_level>1)
 	{
-	  dynamic_buffer save_buf;
-	  init_buf(&save_buf);
+	  struct byte_buffer buf = BUFFER_INIT();
 	  if (s->u.efun->name->size_shift)
-	    my_strcat ("[widestring function name]");
+	    buffer_add_str (&buf, "[widestring function name]");
 	  else
-	    my_strcat (s->u.efun->name->str);
-	  do_trace_call(args, &save_buf);
+	    buffer_add_str (&buf, s->u.efun->name->str);
+	  do_trace_call(&buf, args);
 	}
 	if (PIKE_FN_START_ENABLED()) {
 	  /* DTrace enter probe
@@ -2336,10 +2326,9 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_ARRAY:
       if(Pike_interpreter.trace_level)
       {
-	dynamic_buffer save_buf;
-	init_buf(&save_buf);
-	safe_describe_svalue(s,0,0);
-	do_trace_call(args, &save_buf);
+        struct byte_buffer buf = BUFFER_INIT();
+	safe_describe_svalue(&buf, s,0,0);
+	do_trace_call(&buf, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe
@@ -2362,22 +2351,19 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_PROGRAM:
       if(Pike_interpreter.trace_level)
       {
-	dynamic_buffer save_buf;
-	init_buf(&save_buf);
-	safe_describe_svalue(s,0,0);
-	do_trace_call(args, &save_buf);
+        struct byte_buffer buf = BUFFER_INIT();
+	safe_describe_svalue(&buf, s,0,0);
+	do_trace_call(&buf, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe
 	   arg0: function name
 	   arg1: object
 	*/
-	dynamic_buffer save_buf;
-	dynbuf_string prog_name;
-	init_buf(&save_buf);
-	safe_describe_svalue(s,0,0);
-	prog_name = complex_free_buf(&save_buf);
-	PIKE_FN_START("[program]", prog_name.str);
+        struct byte_buffer buf = BUFFER_INIT();
+	safe_describe_svalue(&buf, s,0,0);
+	PIKE_FN_START("[program]", buffer_get_string(&buf));
+        buffer_free(&buf);
       }
       push_object(clone_object(s->u.program,args));
       break;
@@ -2780,25 +2766,21 @@ PMOD_EXPORT void call_handle_error(void)
       UNSET_ONERROR(tmp);
     }
     else {
-      dynamic_buffer save_buf;
-      char *s;
+      struct byte_buffer buf = BUFFER_INIT();
       fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
-      init_buf(&save_buf);
-      safe_describe_svalue (Pike_sp - 1, 0, 0);
-      s=simple_free_buf(&save_buf);
-      fprintf(stderr,"%s\n",s);
-      free(s);
+      safe_describe_svalue (&buf, Pike_sp - 1, 0, 0);
+      fprintf(stderr,"%s\n",buffer_get_string(&buf));
+      buffer_free(&buf);
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
 	int fun = find_identifier("backtrace", Pike_sp[-1].u.object->prog);
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-	  init_buf(&save_buf);
-	  safe_describe_svalue(Pike_sp - 1, 0, 0);
+          buf = BUFFER_INIT();
+	  safe_describe_svalue(&buf, Pike_sp - 1, 0, 0);
 	  pop_stack();
-	  s=simple_free_buf(&save_buf);
-	  fprintf(stderr,"%s\n",s);
-	  free(s);
+	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
+	  buffer_free(&buf);
 	}
       }
     }

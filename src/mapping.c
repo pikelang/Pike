@@ -2144,7 +2144,7 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   return eq;
 }
 
-void describe_mapping(struct mapping *m,struct processing *p,int indent)
+void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing *p,int indent)
 {
   struct processing doing;
   struct array *a;
@@ -2160,7 +2160,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
   if(! m->data->size)
   {
-    my_strcat("([ ])");
+    buffer_add_str(b, "([ ])");
     return;
   }
 
@@ -2171,7 +2171,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     if(p->pointer_a == (void *)m)
     {
       sprintf(buf,"@%ld",(long)e);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
       return;
     }
   }
@@ -2182,25 +2182,25 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     int notfirst = 0;
 
     if (m->data->size == 1) {
-      my_strcat("([ /* 1 element */\n");
+      buffer_add_str(b, "([ /* 1 element */\n");
     } else {
       sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
     }
 
     NEW_MAPPING_LOOP(m->data) {
-      if (notfirst) my_strcat(",\n");
+      if (notfirst) buffer_add_str(b, ",\n");
       else notfirst = 1;
       for(d = 0; d < indent; d++)
-	my_putchar(' ');
-      describe_svalue(&k->ind, indent+2, &doing);
-      my_strcat (": ");
-      describe_svalue(&k->val, indent+2, &doing);
+	buffer_add_char(b, ' ');
+      describe_svalue(b, &k->ind, indent+2, &doing);
+      buffer_add_str (b, ": ");
+      describe_svalue(b, &k->val, indent+2, &doing);
     }
 
-    my_putchar('\n');
-    for(e=2; e<indent; e++) my_putchar(' ');
-    my_strcat("])");
+    buffer_add_char(b, '\n');
+    for(e=2; e<indent; e++) buffer_add_char(b, ' ');
+    buffer_add_str(b, "])");
     return;
   }
 
@@ -2208,20 +2208,18 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   SET_ONERROR(err, do_free_array, a);
 
   if(! m->data->size) {		/* mapping_indices may remove elements */
-    my_strcat("([ ])");
+    buffer_add_str(b, "([ ])");
   }
   else {
     int save_t_flag = Pike_interpreter.trace_level;
-    dynamic_buffer save_buf;
 
     if (m->data->size == 1) {
-      my_strcat("([ /* 1 element */\n");
+      buffer_add_str(b, "([ /* 1 element */\n");
     } else {
       sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
     }
 
-    save_buffer (&save_buf);
     Pike_interpreter.trace_level = 0;
     if(SETJMP(catch)) {
       free_svalue(&throw_value);
@@ -2231,19 +2229,18 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       sort_array_destructively(a);
     UNSETJMP(catch);
     Pike_interpreter.trace_level = save_t_flag;
-    restore_buffer (&save_buf);
 
     for(e = 0; e < a->size; e++)
     {
       struct svalue *tmp;
       if(e)
-	my_strcat(",\n");
+	buffer_add_str(b, ",\n");
 
       for(d = 0; d < indent; d++)
-	my_putchar(' ');
+	buffer_add_char(b, ' ');
 
-      describe_svalue(ITEM(a)+e, indent+2, &doing);
-      my_strcat (": ");
+      describe_svalue(b, ITEM(a)+e, indent+2, &doing);
+      buffer_add_str (b, ": ");
 
       {
 	int save_t_flag=Pike_interpreter.trace_level;
@@ -2254,14 +2251,14 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 	Pike_interpreter.trace_level=save_t_flag;
       }
       if(tmp)
-	describe_svalue(tmp, indent+2, &doing);
+	describe_svalue(b, tmp, indent+2, &doing);
       else
-	my_strcat("** gone **");
+	buffer_add_str(b, "** gone **");
     }
 
-    my_putchar('\n');
-    for(e=2; e<indent; e++) my_putchar(' ');
-    my_strcat("])");
+    buffer_add_char(b, '\n');
+    for(e=2; e<indent; e++) buffer_add_char(b, ' ');
+    buffer_add_str(b, "])");
   }
 
   UNSET_ONERROR(err);
@@ -3068,13 +3065,11 @@ size_t gc_free_all_unreferenced_mappings(void)
 
 void simple_describe_mapping(struct mapping *m)
 {
-  dynamic_buffer save_buf;
-  char *s;
-  init_buf(&save_buf);
-  describe_mapping(m,0,2);
-  s=simple_free_buf(&save_buf);
-  fprintf(stderr,"%s\n",s);
-  free(s);
+  struct byte_buffer buf = BUFFER_INIT();
+  describe_mapping(&buf,m,0,2);
+  buffer_add_str(&buf, "\n");
+  fputs(buffer_get_string(&buf), stderr);
+  buffer_free(&buf);
 }
 
 

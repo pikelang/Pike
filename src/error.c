@@ -426,7 +426,7 @@ PMOD_EXPORT void exit_on_error(const void *msg)
     fprintf (stderr, "Got recursive error in exit_on_error: %s\n", (char *) msg);
 
   else {
-    dynamic_buffer save_buf;
+    struct byte_buffer buf = BUFFER_INIT();
     char *s;
     struct svalue thrown;
 
@@ -446,14 +446,12 @@ PMOD_EXPORT void exit_on_error(const void *msg)
     Pike_interpreter.svalue_stack_margin = 0;
     Pike_interpreter.c_stack_margin = 0;
     fprintf(stderr,"Attempting to dump raw error: (may fail)\n");
-    init_buf(&save_buf);
     move_svalue (&thrown, &throw_value);
     mark_free_svalue (&throw_value);
-    describe_svalue(&thrown,0,0);
+    describe_svalue(&buf, &thrown,0,0);
     free_svalue (&thrown);
-    s=simple_free_buf(&save_buf);
-    fprintf(stderr,"%s\n",s);
-    free(s);
+    fprintf(stderr,"%s\n",buffer_get_string(&buf));
+    buffer_free(&buf);
   }
 
   exit(1);

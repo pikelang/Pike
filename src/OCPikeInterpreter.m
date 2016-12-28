@@ -146,8 +146,7 @@ void shared_interpreter_cleanup(int exitcode)
 	         * master it'd be reported with a raw error dump otherwise. */
 	        struct generic_error_struct *err;
 
-	        dynamic_buffer buf;
-	        dynbuf_string s;
+	        byte_buffer buf = BUFFER_INIT();
 	        struct svalue t;
 
 		move_svalue (Pike_sp++, &throw_value);
@@ -157,12 +156,10 @@ void shared_interpreter_cleanup(int exitcode)
 	        t.type = PIKE_T_STRING;
 	        t.u.string = err->error_message;
 
-	        init_buf(&buf);
-	        describe_svalue(&t,0,0);
-	        s=complex_free_buf(&buf);
+	        describe_svalue(&buf,&t,0,0);
 
-	        fputs(s.str, stderr);
-	        free(s.str);
+	        fputs(buffer_get_string(&buf), stderr);
+                buffer_free(&buf);
 	      } 
 	      else
 	        call_handle_error();

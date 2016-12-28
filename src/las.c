@@ -2315,13 +2315,10 @@ static void low_print_tree(node *foo,int needlval)
 
   case F_CONSTANT:
   {
-    dynamic_buffer save_buf;
-    char *s;
-    init_buf(&save_buf);
-    describe_svalue(& foo->u.sval, 0, 0);
-    s=simple_free_buf(&save_buf);
-    fprintf(stderr, "const(%s)",s);
-    free(s);
+    struct byte_buffer buf = BUFFER_INIT();
+    describe_svalue(&buf, & foo->u.sval, 0, 0);
+    fprintf(stderr, "const(%s)",buffer_get_string(&buf));
+    buffer_free(&buf);
     break;
   }
 

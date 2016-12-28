@@ -1248,13 +1248,10 @@ static void dsv_add_string_to_buf (struct byte_buffer *buf, struct pike_string *
 
 static int no_pike_calls = 0;	/* FIXME: Use TLS for this. */
 
-/* FIXME: Ought to be rewritten to use string_builder.
- * FIXME: Ought not to have global state.
- */
-PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
+/* FIXME: Ought to be rewritten to use string_builder. */
+PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s, int indent,
+                                 struct processing *p)
 {
-  struct byte_buffer *buf = &pike_global_buffer;
-
   /* This needs to be a bit lower than LOW_C_STACK_MARGIN so that the
    * the raw error can be printed in exit_on_error. */
   check_c_stack(250);
@@ -1277,7 +1274,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     case T_TYPE:
       {
 	struct pike_string *t = describe_type(s->u.type);
-	my_binary_strcat(t->str, t->len);
+	buffer_memcpy(buf,t->str, t->len);
 	free_string(t);
       }
       break;
@@ -1398,13 +1395,13 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  if (t->frame->current_object->prog) {
 	    struct svalue f;
 	    SET_SVAL(f, T_FUNCTION, t->func, object, t->frame->current_object);
-	    describe_svalue (&f, indent, p);
+	    describe_svalue (buf, &f, indent, p);
 	    break;
 	  }
 	}
 
 	if(!prog)
-	  my_strcat("0");
+	  buffer_add_char(buf, '0');
 	else {
 	  struct pike_string *name = NULL;
 	  struct identifier *id;
@@ -1439,8 +1436,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	       * with tracing...
 	       */
 	      int save_t_flag=Pike_interpreter.trace_level;
-	      dynamic_buffer save_buf;
-	      save_buffer (&save_buf);
 
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
@@ -1458,7 +1453,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		      push_static_text("(master returned illegal value from describe_module)");
 		    }
 
-		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 
 		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
@@ -1469,7 +1463,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  break;
 		}
 
-	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      prog = obj->prog;
@@ -1482,7 +1475,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    break;
 	  }
 	  else if (!prog) {
-	    my_strcat("0");
+	    buffer_add_char(buf, '0');
 	    break;
 	  }
 	  else if (id && id->func.offset != -1) {
@@ -1490,20 +1483,20 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    INT_TYPE line;
 	    if ((file = low_get_line_plain (prog->program + id->func.offset,
 					    prog, &line, 1))) {
-	      my_strcat("function(");
-	      my_strcat(file);
+	      buffer_add_str(buf, "function(");
+	      buffer_add_str(buf, file);
 	      free(file);
 	      if (line) {
                 buffer_advance(buf,
                                sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
                                        ":%ld", (long)line));
 	      }
-	      my_putchar(')');
+	      buffer_add_char(buf, ')');
 	      break;
 	    }
 	  }
 
-	  my_strcat("function");
+	  buffer_add_str(buf, "function");
 	}
       }
       break;
@@ -1513,7 +1506,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       struct program *prog = obj->prog;
 
       if (!prog)
-	my_strcat("0");
+	buffer_add_char(buf, '0');
       else {
 	int describe_nicely;
 	struct inherit *inh;
@@ -1544,8 +1537,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	       * with tracing...
 	       */
 	      int save_t_flag=Pike_interpreter.trace_level;
-	      dynamic_buffer save_buf;
-	      save_buffer (&save_buf);
 
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
@@ -1569,7 +1560,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		      push_static_text("(object returned illegal value from _sprintf)");
 		    }
 
-		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 
 		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
@@ -1579,7 +1569,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  break;
 		}
 
-	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      if (!obj->prog) prog = NULL;
@@ -1592,8 +1581,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	     * with tracing...
 	     */
 	    int save_t_flag=Pike_interpreter.trace_level;
-	    dynamic_buffer save_buf;
-	    save_buffer (&save_buf);
 
 	    Pike_interpreter.trace_level=0;
 	    SET_CYCLIC_RET(1);
@@ -1613,7 +1600,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		    push_static_text("(master returned illegal value from describe_object)");
 		  }
 
-		restore_buffer (&save_buf);
 		Pike_interpreter.trace_level=save_t_flag;
 
 		dsv_add_string_to_buf(buf,  sp[-1].u.string );
@@ -1623,7 +1609,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		break;
 	      }
 
-	    restore_buffer (&save_buf);
 	    Pike_interpreter.trace_level=save_t_flag;
 	    pop_stack();
 	    if (!obj->prog) prog = NULL;
@@ -1632,27 +1617,27 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	}
 
 	if (!prog) {
-	  my_strcat("0");
+	  buffer_add_char(buf, '0');
 	  break;
 	}
 	else {
 	  char *file;
 	  INT_TYPE line;
 	  if ((file = low_get_program_line_plain (prog, &line, 1))) {
-	    my_strcat("object(");
-	    my_strcat(file);
+	    buffer_add_str(buf, "object(");
+	    buffer_add_str(buf, file);
 	    free(file);
 	    if (line) {
               buffer_advance(buf,
                              sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
                                      ":%ld", (long)line));
 	    }
-	    my_putchar(')');
+	    buffer_add_char(buf, ')');
 	    break;
 	  }
 	}
 
-	my_strcat("object");
+	buffer_add_str(buf, "object");
       }
       break;
     }
@@ -1672,8 +1657,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	   * with tracing...
 	   */
 	  int save_t_flag=Pike_interpreter.trace_level;
-	  dynamic_buffer save_buf;
-	  save_buffer (&save_buf);
 
 	  Pike_interpreter.trace_level=0;
 	  SET_CYCLIC_RET(1);
@@ -1693,7 +1676,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  push_static_text("(master returned illegal value from describe_program)");
 		}
 
-	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 
 	      dsv_add_string_to_buf(buf,  sp[-1].u.string );
@@ -1703,7 +1685,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      break;
 	    }
 
-	  restore_buffer (&save_buf);
 	  Pike_interpreter.trace_level=save_t_flag;
 	  pop_stack();
 	}
@@ -1714,20 +1695,20 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	char *file;
 	INT_TYPE line;
 	if ((file = low_get_program_line_plain (prog, &line, 1))) {
-	  my_strcat("program(");
-	  my_strcat(file);
+	  buffer_add_str(buf, "program(");
+	  buffer_add_str(buf, file);
 	  free(file);
 	  if (line) {
             buffer_advance(buf,
                            sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
                                    ":%ld", (long)line));
 	  }
-	  my_putchar(')');
+	  buffer_add_char(buf, ')');
 	  break;
 	}
       }
 
-      my_strcat("program");
+      buffer_add_str(buf, "program");
       break;
     }
 
@@ -1738,15 +1719,15 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_ARRAY:
-      describe_array(s->u.array, p, indent);
+      describe_array(buf, s->u.array, p, indent);
       break;
 
     case T_MULTISET:
-      describe_multiset(s->u.multiset, p, indent);
+      describe_multiset(buf, s->u.multiset, p, indent);
       break;
 
     case T_MAPPING:
-      describe_mapping(s->u.mapping, p, indent);
+      describe_mapping(buf, s->u.mapping, p, indent);
       break;
 
     default:
@@ -1757,22 +1738,19 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 /* Variant of describe_svalue that never calls pike code nor releases
  * the interpreter lock. */
-PMOD_EXPORT void safe_describe_svalue (const struct svalue *s, int i,
-				       struct processing *p)
+PMOD_EXPORT void safe_describe_svalue (struct byte_buffer *buf, const struct svalue *s,
+                                       int i, struct processing *p)
 {
   no_pike_calls++;
-  describe_svalue (s, i, p);
+  describe_svalue (buf, s, i, p);
   no_pike_calls--;
 }
 
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
-  dynamic_buffer save_buf;
-  dynbuf_string str;
+  struct byte_buffer str = BUFFER_INIT();
   SIZE_T off = 0;
-  init_buf(&save_buf);
-  describe_svalue (s, 0, NULL);
-  str = complex_free_buf(&save_buf);
+  describe_svalue (&str, s, 0, NULL);
   while (off < buffer_content_length(&str)) {
     SIZE_T num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
     if (num) off += num;

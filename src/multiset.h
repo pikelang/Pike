@@ -363,7 +363,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 PMOD_EXPORT struct multiset *add_multisets (struct svalue *argp, int count);
 PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 				  struct processing *p);
-void describe_multiset (struct multiset *l, struct processing *p, int indent);
+void describe_multiset (struct byte_buffer *buf, struct multiset *l, struct processing *p, int indent);
 int multiset_is_constant (struct multiset *l, struct processing *p);
 node *make_node_from_multiset (struct multiset *l);
 PMOD_EXPORT void f_aggregate_multiset (int args);
