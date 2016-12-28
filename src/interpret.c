@@ -1761,6 +1761,7 @@ static inline int eval_instruction(unsigned char *pc)
 #undef DO_IF_NOT_REAL_DEBUG
 
 
+ATTRIBUTE((noinline))
 static void do_trace_call(struct byte_buffer *b, INT32 args)
 {
   struct pike_string *filep = NULL;
@@ -1827,6 +1828,39 @@ static void do_trace_call(struct byte_buffer *b, INT32 args)
   buffer_free(b);
 }
 
+ATTRIBUTE((noinline))
+static void do_trace_function_call(const struct object *o, const struct identifier *function, INT32 args) {
+  struct byte_buffer buffer = BUFFER_INIT();
+  char buf[50];
+
+  sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
+  buffer_add_str(&buffer, buf);
+  if (function->name->size_shift)
+    buffer_add_str (&buffer, "[widestring function name]");
+  else
+    buffer_add_str(&buffer, function->name->str);
+  do_trace_call(&buffer, args);
+}
+
+ATTRIBUTE((noinline))
+static void do_trace_efun_call(const struct svalue *s, INT32 args) {
+  struct byte_buffer buf = BUFFER_INIT();
+  if (s->u.efun->name->size_shift)
+    buffer_add_str (&buf, "[widestring function name]");
+  else
+    buffer_add_str (&buf, s->u.efun->name->str);
+  do_trace_call(&buf, args);
+}
+
+ATTRIBUTE((noinline))
+static void do_trace_svalue_call(const struct svalue *s, INT32 args) {
+  struct byte_buffer buf = BUFFER_INIT();
+  safe_describe_svalue(&buf, s,0,0);
+  do_trace_call(&buf, args);
+}
+
+
+ATTRIBUTE((noinline))
 static void do_trace_func_return (int got_retval, struct object *o, int fun)
 {
   struct byte_buffer b = BUFFER_INIT();
@@ -1848,6 +1882,20 @@ static void do_trace_func_return (int got_retval, struct object *o, int fun)
   do_trace_return (&b, got_retval);
 }
 
+#ifdef PIKE_DEBUG
+ATTRIBUTE((noinline))
+static void do_trace_efun_return(const struct svalue *s, int got_retval) {
+  struct byte_buffer buf = BUFFER_INIT();
+  if (s->u.efun->name->size_shift)
+    buffer_add_str (&buf, "[widestring function name]");
+  else
+    buffer_add_str (&buf, s->u.efun->name->str);
+  buffer_add_str (&buf, "() ");
+  do_trace_return (&buf, got_retval);
+}
+#endif
+
+ATTRIBUTE((noinline))
 static void do_trace_return (struct byte_buffer *b, int got_retval)
 {
   struct pike_string *filep = NULL;
@@ -2102,16 +2150,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
             }
             if(UNLIKELY(Pike_interpreter.trace_level))
             {
-              struct byte_buffer buffer = BUFFER_INIT();
-              char buf[50];
-
-              sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-              buffer_add_str(&buffer, buf);
-              if (function->name->size_shift)
-                buffer_add_str (&buffer, "[widestring function name]");
-              else
-                buffer_add_str(&buffer, function->name->str);
-              do_trace_call(&buffer, args);
+              do_trace_function_call(o, function, args);
             }
             new_frame->current_storage = o->storage+context->storage_offset;
             if( type == IDENTIFIER_C_FUNCTION )
@@ -2262,12 +2301,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 	if(Pike_interpreter.trace_level>1)
 	{
-	  struct byte_buffer buf = BUFFER_INIT();
-	  if (s->u.efun->name->size_shift)
-	    buffer_add_str (&buf, "[widestring function name]");
-	  else
-	    buffer_add_str (&buf, s->u.efun->name->str);
-	  do_trace_call(&buf, args);
+          do_trace_efun_call(s, args);
 	}
 	if (PIKE_FN_START_ENABLED()) {
 	  /* DTrace enter probe
@@ -2326,9 +2360,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_ARRAY:
       if(Pike_interpreter.trace_level)
       {
-        struct byte_buffer buf = BUFFER_INIT();
-	safe_describe_svalue(&buf, s,0,0);
-	do_trace_call(&buf, args);
+        do_trace_svalue_call(s, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe
@@ -2351,9 +2383,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_PROGRAM:
       if(Pike_interpreter.trace_level)
       {
-        struct byte_buffer buf = BUFFER_INIT();
-	safe_describe_svalue(&buf, s,0,0);
-	do_trace_call(&buf, args);
+        do_trace_svalue_call(s, args);
       }
       if (PIKE_FN_START_ENABLED()) {
 	/* DTrace enter probe
