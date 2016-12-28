@@ -8509,7 +8509,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
   }
 }
 
-static void low_type_to_string(struct pike_type *t)
+static void low_type_to_string(struct byte_buffer *buf, struct pike_type *t)
 {
  recurse:
   switch(t->type) {
@@ -8517,18 +8517,18 @@ static void low_type_to_string(struct pike_type *t)
   case T_MULTISET:
   case T_TYPE:
   case T_PROGRAM:
-    my_putchar(t->type ^ MIN_REF_TYPE);
+    buffer_add_char(buf, t->type ^ MIN_REF_TYPE);
     t = t->car;
     goto recurse;
 
   case T_NOT:
-    my_putchar(t->type);
+    buffer_add_char(buf, t->type);
     t = t->car;
     goto recurse;
 
   case T_MAPPING:
-    my_putchar(t->type ^ MIN_REF_TYPE);
-    low_type_to_string(t->car);
+    buffer_add_char(buf, t->type ^ MIN_REF_TYPE);
+    low_type_to_string(buf, t->car);
     t = t->cdr;
     goto recurse;
 
@@ -8536,14 +8536,14 @@ static void low_type_to_string(struct pike_type *t)
   case T_TUPLE:
   case T_OR:
   case T_AND:
-    my_putchar(t->type);
-    low_type_to_string(t->car);
+    buffer_add_char(buf, t->type);
+    low_type_to_string(buf, t->car);
     t = t->cdr;
     goto recurse;
 
   case T_FLOAT:
   case T_ZERO:
-    my_putchar(t->type ^ MIN_REF_TYPE);
+    buffer_add_char(buf, t->type ^ MIN_REF_TYPE);
     break;
 
   case '0':
@@ -8558,33 +8558,30 @@ static void low_type_to_string(struct pike_type *t)
   case '9':
   case T_VOID:
   case T_MIXED:
-    my_putchar(t->type);
+    buffer_add_char(buf, t->type);
     break;
 
   case T_OBJECT:
     {
       INT32 i;
-      my_putchar(T_OBJECT ^ MIN_REF_TYPE);
+      buffer_add_char(buf, T_OBJECT ^ MIN_REF_TYPE);
       i = (INT32)CAR_TO_INT(t);
-      my_putchar( i );
+      buffer_add_char(buf, i);
       i = (INT32)CDR_TO_INT(t);
 
       if( i > 65535 )  i = 0; /* Not constant between recompilations */
 
-      my_putchar((i >> 24) & 0xff);
-      my_putchar((i >> 16) & 0xff);
-      my_putchar((i >> 8)  & 0xff);
-      my_putchar(i & 0xff);
+      buffer_add_be32(buf, i);
     }
     break;
 
   case T_STRING:
     {
       if (t->car == int_type_string) {
-	my_putchar(T_STRING ^ MIN_REF_TYPE);
+	buffer_add_char(buf, T_STRING ^ MIN_REF_TYPE);
       } else {
-	my_putchar(PIKE_T_NSTRING);
-	low_type_to_string(t->car);
+	buffer_add_char(buf, PIKE_T_NSTRING);
+	low_type_to_string(buf, t->car);
       }
     }
     break;
@@ -8592,45 +8589,39 @@ static void low_type_to_string(struct pike_type *t)
   case T_INT:
     {
       INT32 i;
-      my_putchar(T_INT ^ MIN_REF_TYPE);
+      buffer_add_char(buf, T_INT ^ MIN_REF_TYPE);
       i = (INT32)CAR_TO_INT(t);
-      my_putchar((i >> 24) & 0xff);
-      my_putchar((i >> 16) & 0xff);
-      my_putchar((i >> 8) & 0xff);
-      my_putchar(i & 0xff);
+      buffer_add_be32(buf, i);
       i = (INT32)CDR_TO_INT(t);
-      my_putchar((i >> 24) & 0xff);
-      my_putchar((i >> 16) & 0xff);
-      my_putchar((i >> 8) & 0xff);
-      my_putchar(i & 0xff);
+      buffer_add_be32(buf, i);
     }
     break;
 
   case T_FUNCTION:
   case T_MANY:
-    my_putchar(T_FUNCTION ^ MIN_REF_TYPE);
+    buffer_add_char(buf, T_FUNCTION ^ MIN_REF_TYPE);
     while(t->type == T_FUNCTION) {
-      low_type_to_string(t->car);
+      low_type_to_string(buf, t->car);
       t = t->cdr;
     }
-    my_putchar(T_MANY);
-    low_type_to_string(t->car);
+    buffer_add_char(buf, T_MANY);
+    low_type_to_string(buf, t->car);
     t = t->cdr;
     goto recurse;
 
   case T_SCOPE:
   case T_ASSIGN:
-    my_putchar(t->type);
-    my_putchar('0' + CAR_TO_INT(t));
+    buffer_add_char(buf, t->type);
+    buffer_add_char(buf, '0' + CAR_TO_INT(t));
     t = t->cdr;
     goto recurse;
 
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
-    my_putchar(t->type);
-    my_putchar(0);
-    my_strcat(((struct pike_string *)t->car)->str);
-    my_putchar(0);
+    buffer_add_char(buf, t->type);
+    buffer_add_char(buf, 0);
+    buffer_add_str(buf, ((struct pike_string *)t->car)->str);
+    buffer_add_char(buf, 0);
     t = t->cdr;
     goto recurse;
 
@@ -8643,12 +8634,11 @@ static void low_type_to_string(struct pike_type *t)
 struct pike_string *type_to_string(struct pike_type *t)
 {
   ONERROR err;
-  dynamic_buffer save_buf;
-  init_buf(&save_buf);
-  SET_ONERROR(err, abandon_buf, &save_buf);
-  low_type_to_string(t);
+  struct byte_buffer buf = BUFFER_INIT();
+  SET_ONERROR(err, buffer_free, &buf);
+  low_type_to_string(&buf, t);
   UNSET_ONERROR(err);
-  return free_buf(&save_buf);
+  return buffer_finish_pike_string(&buf);
 }
 
 #ifdef PIKE_DEBUG
