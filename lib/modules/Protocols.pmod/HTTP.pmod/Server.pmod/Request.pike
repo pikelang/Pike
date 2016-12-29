@@ -789,6 +789,12 @@ void response_and_finish(mapping m, function|void _log_cb)
    my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
+//! Finishes this request, as in removing timeouts, calling the
+//! logging callback etc. If @[clean] is given, then the processing of
+//! this request went fine and all data was sent properly, in which
+//! case the connection will be reused if keep-alive was
+//! negotiated. Otherwise the connection will be closed and
+//! destructed.
 void finish(int clean)
 {
    if( log_cb )
