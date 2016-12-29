@@ -7,7 +7,7 @@
 #include "global.h"
 #include "program.h"
 #include "object.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "pike_types.h"
 #include "stralloc.h"
 #include "las.h"
@@ -1786,8 +1786,7 @@ void use_module(struct svalue *s)
     c->num_used_modules++;
     Pike_compiler->num_used_modules++;
     assign_svalue_no_free((struct svalue *)
-			  low_make_buf_space(sizeof(struct svalue),
-					     &c->used_modules), s);
+			  buffer_alloc(&c->used_modules, sizeof(struct svalue)), s);
     if(Pike_compiler->module_index_cache)
     {
       free_mapping(Pike_compiler->module_index_cache);
@@ -9624,7 +9623,7 @@ static void compilation_event_handler(int e)
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;
-    initialize_buf(&c->used_modules);
+    buffer_init(&c->used_modules);
     SET_SVAL(c->default_module, T_MAPPING, 0, mapping, get_builtin_constants());
     add_ref(c->default_module.u.mapping);
     c->major = -1;
@@ -9635,7 +9634,7 @@ static void compilation_event_handler(int e)
     break;
   case PROG_EVENT_EXIT:
     CDFPRINTF("th(%ld) compilation: EXIT(%p).\n", (long) th_self(), c);
-    toss_buffer(&c->used_modules);
+    buffer_free(&c->used_modules);
     free_compilation(c);
     break;
   }

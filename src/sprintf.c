@@ -7,7 +7,7 @@
 /*
   Pike Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
   Should be reasonably compatible and somewhat faster than v1.05+ of Lynscar's
-  sprintf. It requires the buffering function provided in dynamic_buffer.c
+  sprintf. It requires the buffering function provided in buffer.h
    Fail-safe memory-leak-protection is implemented through a stack that can
    be deallocated at any time. If something fails horribly this stack will be
   deallocated at next call of sprintf. Most operators doesn't need this
@@ -326,7 +326,7 @@
 #include "array.h"
 #include "svalue.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "pike_types.h"
 #include "constants.h"
 #include "interpret.h"
@@ -1759,7 +1759,7 @@ cont_2:
       /* This can be useful when doing low level debugging. */
       case 'p':
       {
-	dynamic_buffer b = BUFFER_INIT();
+	struct byte_buffer b = BUFFER_INIT();
 	char buf[50];
 	struct svalue *t;
 	GET_SVALUE(t);

@@ -217,9 +217,9 @@ extern void ppc32_flush_instruction_cache(void *addr, size_t len);
 #define FLUSH_INSTRUCTION_CACHE ppc32_flush_instruction_cache
 
 #if 0
-struct dynamic_buffer_s;
+struct byte_buffer;
 
-void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+void ppc32_encode_program(struct program *p, struct byte_buffer *buf);
 void ppc32_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	ppc32_encode_program(P, BUF)

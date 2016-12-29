@@ -822,7 +822,7 @@ void ins_f_byte_with_2_args(unsigned int a,
   return;
 }
 
-#define addstr(s, l) low_my_binary_strcat((s), (l), buf)
+#define addstr(s, l) buffer_memcpy(buf, (s), (l))
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
 int sparc_force_fp(void)
@@ -830,7 +830,7 @@ int sparc_force_fp(void)
   return 0;
 }
 
-void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf)
+void sparc_encode_program(struct program *p, struct byte_buffer *buf)
 {
   size_t prev = 0, rel;
   /* De-relocate the program... */

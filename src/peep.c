@@ -6,7 +6,7 @@
 
 #include "global.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "program.h"
 #include "las.h"
 #include "docode.h"
@@ -53,7 +53,7 @@ static void dump_instr(p_instr *p)
 static int asm_opt(void);
 
 /* Output buffer. The optimization eye is at the end of the buffer. */
-dynamic_buffer instrbuf;
+struct byte_buffer instrbuf;
 long num_instrs = 0;
 
 
@@ -80,7 +80,7 @@ void exit_bytecode(void)
 #endif
   }
 
-  toss_buffer(&instrbuf);
+  buffer_free(&instrbuf);
 }
 
 /* insert_opcode{,0,1,2}() append an opcode to the instrbuf. */
@@ -88,7 +88,7 @@ void exit_bytecode(void)
 ptrdiff_t insert_opcode(p_instr *opcode)
 {
   /* Note: Steals references from opcode. */
-  p_instr *p = (p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
+  p_instr *p = (p_instr *)buffer_alloc(&instrbuf, sizeof(p_instr));
   if (!p) Pike_fatal("Out of memory in peep.\n");
   *p = *opcode;
   num_instrs++;
@@ -108,7 +108,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
     Pike_fatal("hasarg2(%d) is wrong!\n",f);
 #endif
 
-  p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
+  p=(p_instr *)buffer_alloc(&instrbuf, sizeof(p_instr));
 
 
 #ifdef PIKE_DEBUG
@@ -958,7 +958,7 @@ static void pop_n_opcodes(int n)
 				    "pop_n_opcodes"));
   }
   num_instrs -= n;
-  low_make_buf_space(-((INT32)sizeof(p_instr))*n, &instrbuf);
+  buffer_remove(&instrbuf, sizeof(p_instr)*n);
 }
 
 

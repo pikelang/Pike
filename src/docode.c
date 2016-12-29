@@ -2938,7 +2938,7 @@ INT32 docode(node *n)
 {
   INT32 entry_point;
   int label_no_save = label_no;
-  dynamic_buffer instrbuf_save = instrbuf;
+  struct byte_buffer instrbuf_save = instrbuf;
   int stack_depth_save = current_stack_depth;
   struct statement_label *label_save = current_label;
   struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;

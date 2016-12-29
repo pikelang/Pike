@@ -156,7 +156,7 @@ static void f_read( INT32 args )
   struct svalue *old_sp;
   /* #define DYNAMIC_BUF */
 #ifdef DYNAMIC_BUF
-  dynamic_buffer buf;
+  struct byte_buffer buf;
 #else
 #define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = xrealloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
 #define PUSHBUF() do { push_string( make_shared_binary_string( buf,bufpos ) ); bufpos=0; } while(0)
@@ -261,9 +261,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -274,14 +273,14 @@ static void f_read( INT32 args )
       case 1:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* remotehost */
+	push_string( buffer_finish_pike_string( &buf ) ); /* remotehost */
 #else
 	PUSHBUF();
 #endif
@@ -295,9 +294,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -310,7 +308,7 @@ static void f_read( INT32 args )
       case 3:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -318,7 +316,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* rfc931 */
+	push_string( buffer_finish_pike_string( &buf ) ); /* rfc931 */
 #else
 	PUSHBUF(); /* rfc931 */
 #endif
@@ -332,9 +330,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -347,7 +344,7 @@ static void f_read( INT32 args )
       case 5:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -355,7 +352,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* authuser */
+	push_string( buffer_finish_pike_string( &buf ) ); /* authuser */
 #else
 	PUSHBUF(); /* authuser */
 #endif
@@ -376,8 +373,7 @@ static void f_read( INT32 args )
       case 7:
 	if(cls == CLS_QUOTE) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
+	  buffer_init( &buf );
 #else
 	  bufpos = 0;
 #endif
@@ -396,14 +392,14 @@ static void f_read( INT32 args )
 	  state = 9;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
 	  state = 0;
 	} else
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -412,8 +408,8 @@ static void f_read( INT32 args )
       case 9:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( '"', &buf);
-	  low_my_putchar( c, &buf);
+	  buffer_add_char( &buf,  '"');
+	  buffer_add_char( &buf,  c);
 #else
 	  BUFSET('"');
 	  BUFSET(c);
@@ -422,7 +418,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* protocol */
+	push_string( buffer_finish_pike_string( &buf ) ); /* protocol */
 #else
 	PUSHBUF(); /* protoocl */
 #endif
@@ -635,7 +631,7 @@ static void f_read( INT32 args )
       case 31:
 	if(cls == CLS_QUOTE) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
@@ -644,14 +640,14 @@ static void f_read( INT32 args )
 	  state = 10;
 	} else if(cls >= CLS_TOKEN)
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
 
 	else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); /* method */
+	  push_string( buffer_finish_pike_string( &buf ) ); /* method */
 #else
 	  PUSHBUF(); /* method */
 #endif
@@ -665,9 +661,8 @@ static void f_read( INT32 args )
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -683,21 +678,21 @@ static void f_read( INT32 args )
 	  state = 34;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
 	  state = 0;
 	} else if(cls == CLS_WSPACE) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );  /* path */
+	  push_string( buffer_finish_pike_string( &buf ) );  /* path */
 #else
 	  PUSHBUF();  /* path */
 #endif
 	  state = 35;
 	} else
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -706,8 +701,8 @@ static void f_read( INT32 args )
       case 34:
 	if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( '"', &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  '"');
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET('"');
 	  BUFSET(c);
@@ -716,14 +711,14 @@ static void f_read( INT32 args )
 	  state = 33;
 	} else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
 	  state = 0;
 	} else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
@@ -737,9 +732,8 @@ static void f_read( INT32 args )
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -757,7 +751,7 @@ static void f_read( INT32 args )
      state == 8 || state == 9 ||
      state == 31 || state == 33 || state == 34) {
 #ifdef DYNAMIC_BUF
-    push_string( low_free_buf( &buf ) );
+    push_string( buffer_finish_pike_string( &buf ) );
 #else
     PUSHBUF();
 #endif

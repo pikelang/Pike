@@ -2073,7 +2073,7 @@ struct perishables
   BPTR stdout_b;
   BPTR stderr_b;
   BPTR cwd_lock;
-  dynamic_buffer cmd_buf;
+  struct byte_buffer cmd_buf;
 };
 
 static void free_perishables(struct perishables *storage)
@@ -2083,7 +2083,7 @@ static void free_perishables(struct perishables *storage)
   if(storage->stderr_b!=0) Close(storage->stderr_b);
   if(storage->cwd_lock!=0)
     UnLock(storage->cwd_lock);
-  low_free_buf(&storage->cmd_buf);
+  buffer_finish_pike_string(&storage->cmd_buf);
 }
 
 #else /* !__amigaos__ */
@@ -2810,14 +2810,14 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
-      dynamic_buffer buf;
-      initialize_buf(&buf);
+      struct byte_buffer buf;
+      buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
 	int quote=0;
 	if(e)
 	{
-	  low_my_putchar(' ', &buf);
+	  buffer_add_char( &buf, ' ');
 	}
         /* If the argument begins AND ends with double quote assume
          * it is already correctly quoted
@@ -2833,7 +2833,7 @@ void f_create_process(INT32 args)
 	if(quote)
 	{
           int numslash;
-	  low_my_putchar('"', &buf);
+	  buffer_add_char( &buf, '"');
 
           /* Quoting rules used by Microsoft VC startup code:
            * literal double quote must be preceeded by
@@ -2861,29 +2861,27 @@ void f_create_process(INT32 args)
 
                 /* insert the correct number of backslashes */
                 for (;numslash > 0; numslash--)
-                  low_my_putchar('\\', &buf);
+                  buffer_add_char( &buf, '\\');
 
                 /* add the character following backslash, if any */
                 if (d<ITEM(cmd)[e].u.string->len)
-                  low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+                  buffer_add_char( &buf, ITEM(cmd)[e].u.string->str[d]);
 
 		break;
 
 	      case '"':
-		low_my_putchar('\\', &buf);
+		buffer_add_char( &buf, '\\');
                 /* fall through */
 	      default:
-		low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+		buffer_add_char( &buf, ITEM(cmd)[e].u.string->str[d]);
 	    }
 	  }
-	  low_my_putchar('"', &buf);
+	  buffer_add_char( &buf, '"');
 	}else{
-	  low_my_binary_strcat(ITEM(cmd)[e].u.string->str,
-			       ITEM(cmd)[e].u.string->len,
-			       &buf);
+	  buffer_memcpy(&buf, ITEM(cmd)[e].u.string->str, ITEM(cmd)[e].u.string->len);
 	}
       }
-      low_my_putchar(0, &buf);
+      buffer_add_char( &buf, 0);
 
 /*      fprintf(stderr,"COM: %s\n",buf.s.str); */
 
@@ -3025,34 +3023,32 @@ void f_create_process(INT32 args)
 
     storage.stdin_b = storage.stdout_b = storage.stderr_b = 0;
     storage.cwd_lock = 0;
-    initialize_buf(&storage.cmd_buf);
+    buffer_init(&storage.cmd_buf);
 
     SET_ONERROR(err, free_perishables, &storage);
 
     for(e=0;e<cmd->size;e++)
     {
       if(e)
-        low_my_putchar(' ', &storage.cmd_buf);
+        buffer_add_char( &storage.cmd_buf, ' ');
       if(strchr(STR0(ITEM(cmd)[e].u.string),'"') || strchr(STR0(ITEM(cmd)[e].u.string),' ')) {
-        low_my_putchar('"', &storage.cmd_buf);
+        buffer_add_char( &storage.cmd_buf, '"');
 	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
 	{
 	  switch(STR0(ITEM(cmd)[e].u.string)[d])
 	  {
 	    case '*':
 	    case '"':
-	      low_my_putchar('*', &storage.cmd_buf);
+	      buffer_add_char( &storage.cmd_buf, '*');
             default:
-	      low_my_putchar(STR0(ITEM(cmd)[e].u.string)[d], &storage.cmd_buf);
+	      buffer_add_char( &storage.cmd_buf, STR0(ITEM(cmd)[e].u.string)[d]);
 	  }
 	}
-        low_my_putchar('"', &storage.cmd_buf);
+        buffer_add_char( &storage.cmd_buf, '"');
       } else
-        low_my_binary_strcat(STR0(ITEM(cmd)[e].u.string),
-			     ITEM(cmd)[e].u.string->len,
-			     &storage.cmd_buf);
+        buffer_memcpy(&storage.cmd_buf, STR0(ITEM(cmd)[e].u.string), ITEM(cmd)[e].u.string->len);
     }
-    low_my_putchar('\0', &storage.cmd_buf);
+    buffer_add_char( &storage.cmd_buf, '\0');
 
     if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
       if(TYPEOF(*tmp) == T_STRING)
@@ -3088,7 +3084,7 @@ void f_create_process(INT32 args)
 
       if(storage.cwd_lock!=0)
         UnLock(storage.cwd_lock);
-      low_free_buf(&storage.cmd_buf);
+      buffer_finish_pike_string(&storage.cmd_buf);
 
     */
   }

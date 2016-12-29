@@ -39,15 +39,15 @@ extern struct program *image_program;
 #ifdef DYNAMIC_MODULE
 typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
-typedef void (_pack)(struct pike_string*, dynamic_buffer*, int, int, int);
-typedef void (_unpack)(struct pike_string*, dynamic_buffer*, int);
+typedef void (_pack)(struct pike_string*, struct byte_buffer*, int, int, int);
+typedef void (_unpack)(struct pike_string*, struct byte_buffer*, int);
 static _crc32 *crc32;
 static _pack *zlibmod_pack;
 static _unpack *zlibmod_unpack;
 #else
 extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
-extern void zlibmod_pack(struct pike_string*, dynamic_buffer*, int, int, int);
-extern void zlibmod_unpack(struct pike_string*, dynamic_buffer*, int);
+extern void zlibmod_pack(struct pike_string*, struct byte_buffer*, int, int, int);
+extern void zlibmod_unpack(struct pike_string*, struct byte_buffer*, int);
 #endif
 
 static struct pike_string *param_palette;
@@ -127,36 +127,36 @@ static void push_png_chunk(const char *type,    /* 4 bytes */
 
 static void png_decompress(int style)
 {
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   ONERROR err;
 
   if (style!=0)
     Pike_error("Internal error: Illegal decompression style %d.\n",style);
 
-  initialize_buf(&buf);
-  SET_ONERROR(err, toss_buffer, &buf);
+  buffer_init(&buf);
+  SET_ONERROR(err, buffer_free, &buf);
   zlibmod_unpack(Pike_sp[-1].u.string, &buf, 0);
   UNSET_ONERROR(err);
 
   pop_stack();
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 }
 
 static void png_compress(int style, int zlevel, int zstrategy)
 {
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   ONERROR err;
 
   if (style)
     Pike_error("Internal error: Illegal decompression style %d.\n",style);
 
-  initialize_buf(&buf);
-  SET_ONERROR(err, toss_buffer, &buf);
+  buffer_init(&buf);
+  SET_ONERROR(err, buffer_free, &buf);
   zlibmod_pack(Pike_sp[-1].u.string, &buf, zlevel, zstrategy, 15);
   UNSET_ONERROR(err);
 
   pop_stack();
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 }
 
 /*! @decl string _chunk(string type, string data)

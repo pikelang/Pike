@@ -15,7 +15,7 @@
 #include "program.h"
 #include "constants.h"
 #include "pike_error.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "interpret.h"
 #include "gc.h"
 #include "pike_macros.h"

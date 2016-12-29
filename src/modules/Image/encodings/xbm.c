@@ -144,15 +144,15 @@ static struct object *load_xbm( struct pike_string *data )
 
 static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 {
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   char size[32];
   int x, y, first=-1;
 
-#define ccat( X )   low_my_binary_strcat( X, (sizeof(X)-sizeof("")), &buf );
+#define ccat( X )   buffer_memcpy(&buf, X, (sizeof(X)-sizeof("")))
 
 #define cname()  do{                                          \
       if(name)                                                \
-        low_my_binary_strcat( name->str, name->len, &buf );   \
+        buffer_memcpy( &buf, name->str, name->len );          \
       else                                                    \
         ccat( "image" );                                      \
    } while(0)                                                 \
@@ -165,18 +165,18 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
       else                                                              \
         sprintf( size, ",%s0x%02x", (first%12?" ":"\n "), (X) );        \
       (X)=0;                                                            \
-      low_my_binary_strcat( size, strlen(size), &buf );                 \
+      buffer_add_str( &buf, size );                                     \
   } while(0)
 
 
-  initialize_buf(&buf);
+  buffer_init(&buf);
   ccat( "#define ");  cname();  ccat( "_width " );
   sprintf( size, "%"PRINTPIKEINT"d\n", i->xsize );
-  low_my_binary_strcat( size, strlen(size), &buf );
+  buffer_add_str( &buf, size );
 
   ccat( "#define ");  cname();  ccat( "_height " );
   sprintf( size, "%"PRINTPIKEINT"d\n", i->ysize );
-  low_my_binary_strcat( size, strlen(size), &buf );
+  buffer_add_str( &buf, size );
 
   ccat( "static char " );  cname();  ccat( "_bits[] = {\n" );
 
@@ -196,7 +196,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
       OUTPUT_BYTE( next_byte );
   }
   ccat( "};\n" );
-  return low_free_buf(&buf);
+  return buffer_finish_pike_string(&buf);
 }
 
 

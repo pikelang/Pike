@@ -1070,9 +1070,9 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
      */
 #define CHUNK ( 1024 * 8 )
     INT32 try_read;
-    dynamic_buffer b;
+    struct byte_buffer b;
 
-    initialize_buf(&b);
+    buffer_init(&b);
     SET_ONERROR(ebuf, buffer_free, &b);
     do{
       int e;
@@ -1085,7 +1085,7 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
-      message.iov.iov_base = low_make_buf_space(try_read, &b);
+      message.iov.iov_base = buffer_alloc(&b, try_read);
       message.iov.iov_len = try_read;
 
       THREADS_ALLOW();
@@ -1109,18 +1109,18 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
 	  check_message(&message.msg);
 	}
 	if (i != try_read) {
-	  low_make_buf_space(i - try_read, &b);
+	  buffer_remove(&b, try_read - i);
 	}
 	if(!all) break;
       }
       else if(i==0)
       {
-	low_make_buf_space(-try_read, &b);
+	buffer_remove(&b, try_read);
 	break;
       }
       else
       {
-	low_make_buf_space(-try_read, &b);
+	buffer_remove(&b, try_read);
 	if(e != EINTR)
 	{
 	  ERRNO=e;
@@ -1140,7 +1140,7 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
     if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
       ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
-    return low_free_buf(&b);
+    return buffer_finish_pike_string(&b);
 #undef CHUNK
   }
 }

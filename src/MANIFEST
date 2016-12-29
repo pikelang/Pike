@@ -73,8 +73,8 @@ Tools
     Functions for dmalloc (DEBUG_MALLOC). The code is in
     pike_memory.c.
 
-  dynamic_buffer.c
-  dynamic_buffer.h
+  buffer.c
+  buffer.h
     Tool for building strings in streaming fashion.
 
   fsort.c

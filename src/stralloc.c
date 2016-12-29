@@ -7,7 +7,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "pike_macros.h"
 #include "pike_memory.h"
 #include "pike_error.h"

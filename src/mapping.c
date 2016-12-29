@@ -14,7 +14,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 #include "pike_types.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "interpret.h"
 #include "las.h"
 #include "gc.h"
