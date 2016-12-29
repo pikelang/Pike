@@ -2083,7 +2083,7 @@ static void free_perishables(struct perishables *storage)
   if(storage->stderr_b!=0) Close(storage->stderr_b);
   if(storage->cwd_lock!=0)
     UnLock(storage->cwd_lock);
-  buffer_finish_pike_string(&storage->cmd_buf);
+  buffer_free(&storage->cmd_buf);
 }
 
 #else /* !__amigaos__ */
@@ -3084,7 +3084,7 @@ void f_create_process(INT32 args)
 
       if(storage.cwd_lock!=0)
         UnLock(storage.cwd_lock);
-      buffer_finish_pike_string(&storage.cmd_buf);
+      buffer_free(&storage.cmd_buf);
 
     */
   }
