@@ -9,7 +9,7 @@
 
 #include "global.h"
 #include "svalue.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "block_allocator.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
@@ -410,7 +410,7 @@ void check_foreach_type(node *expression, node *lvalues,
 
 #define GAUGE_RUSAGE_INDEX 0
 
-#define add_to_mem_block(N,Data,Size) low_my_binary_strcat(Data,Size,areas+N)
+#define add_to_mem_block(N,Data,Size) buffer_memcpy(areas+N, Data,Size)
 #define IDENTIFIERP(i) (Pike_compiler->new_program->identifier_references+(i))
 #define INHERIT(i) (Pike_compiler->new_program->inherits+(i))
 #define PIKE_PC (Pike_compiler->new_program->num_program)

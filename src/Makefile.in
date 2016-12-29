@@ -150,7 +150,6 @@ CORE_OBJ= \
  callback.o \
  encode.o \
  docode.o \
- dynamic_buffer.o \
  dynamic_load.o \
  error.o \
  fd_control.o \
@@ -1391,6 +1390,7 @@ HFILES=						\
   block_allocator.protos					\
   stuff.protos					\
   dynamic_buffer.protos				\
+  buffer.protos				\
   svalue.protos					\
   dynamic_load.protos				\
   module_support.protos				\

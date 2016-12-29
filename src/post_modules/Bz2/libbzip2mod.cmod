@@ -15,7 +15,7 @@
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "libbzip2mod_config.h"
@@ -123,7 +123,7 @@ DECLARATIONS
 #ifdef HAVE_BZLIB_H
 PIKECLASS Deflate
 {
-  CVAR dynamic_buffer buffer;
+  CVAR struct byte_buffer buffer;
   CVAR bz_stream strm;
   CVAR int total_out_previous_flush;
   CVAR int total_out_previous_buf;
@@ -153,7 +153,7 @@ PIKECLASS Deflate
       bzCompressEnd(s);
     }
 
-    low_reinit_buf(&THIS->buffer);
+    buffer_clear(&THIS->buffer);
 
     s->bzalloc = NULL;
     s->bzfree = NULL;
@@ -223,8 +223,7 @@ PIKECLASS Deflate
 
       if(TOTAL_OUT(s) - THIS->total_out_previous_buf > 0){
 	/*if something was written to the outbuffer, then buffer it internally*/
-	low_my_binary_strcat(tmp, TOTAL_OUT(s) - THIS->total_out_previous_buf,
-                             &THIS->buffer);
+	buffer_memcpy(&THIS->buffer, tmp, TOTAL_OUT(s) - THIS->total_out_previous_buf);
 	THIS->total_out_previous_buf = TOTAL_OUT(s);
       }
       /*free the outbuffer*/
@@ -236,7 +235,7 @@ PIKECLASS Deflate
     }
   }
 
-  void do_deflate(struct pike_string *data, dynamic_buffer *retbuf,
+  void do_deflate(struct pike_string *data, struct byte_buffer *retbuf,
 		  int mode){
     char *tmp = NULL;
     int retval;
@@ -254,7 +253,7 @@ PIKECLASS Deflate
       retval = bzCompress(s, mode);
 
       if(tmp != NULL){
-	low_my_binary_strcat(tmp, TOTAL_OUT(s)-total_out_old, retbuf);
+	buffer_memcpy(retbuf, tmp, TOTAL_OUT(s)-total_out_old);
 	free(tmp);
       }
       if(retval < 0){
@@ -291,21 +290,19 @@ PIKECLASS Deflate
   PIKEFUN string read(string data){
     struct pike_string *retstr;
     /* FIXME: Ought to use string_builder instead. */
-    dynamic_buffer retbuf;
+    struct byte_buffer retbuf;
     bz_stream *s = &THIS->strm;
     ONERROR err;
 
-    initialize_buf(&retbuf);
-    SET_ONERROR(err, toss_buffer, &retbuf);
+    buffer_init(&retbuf);
+    SET_ONERROR(err, buffer_free, &retbuf);
 
-    low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
+    buffer_alloc(&retbuf, DEFL_BUF_SIZE);
     do_deflate(data, &retbuf, BZ_FLUSH);
 
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(buffer_ptr(&retbuf),
-			     TOTAL_OUT(s) - THIS->total_out_previous_buf,
-			     &THIS->buffer);
+	buffer_memcpy(&THIS->buffer, buffer_ptr(&retbuf), TOTAL_OUT(s) - THIS->total_out_previous_buf);
 	retstr =
 	  make_shared_binary_string(buffer_ptr(&THIS->buffer),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
@@ -315,7 +312,7 @@ PIKECLASS Deflate
 	  make_shared_binary_string(buffer_ptr(&retbuf),
 				    TOTAL_OUT(s)-THIS->total_out_previous_flush);
       }
-      low_reinit_buf(&THIS->buffer);
+      buffer_clear(&THIS->buffer);
       THIS->total_out_previous_flush = TOTAL_OUT(s);
       THIS->total_out_previous_buf = TOTAL_OUT(s);
     }
@@ -344,23 +341,21 @@ PIKECLASS Deflate
   PIKEFUN string finish(string data){
     struct pike_string *retstr;
     int retval = 0;
-    dynamic_buffer retbuf;
+    struct byte_buffer retbuf;
     ONERROR err;
     bz_stream *s = &THIS->strm;
 
-    initialize_buf(&retbuf);
-    SET_ONERROR(err, toss_buffer, &retbuf);
+    buffer_init(&retbuf);
+    SET_ONERROR(err, buffer_free, &retbuf);
 
-    low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
+    buffer_alloc(&retbuf, DEFL_BUF_SIZE);
 
     do_deflate(data, &retbuf, BZ_FINISH);
 
     /*use perhaps a better check?*/
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(buffer_ptr(&retbuf),
-			     TOTAL_OUT(s) - THIS->total_out_previous_buf,
-			     &THIS->buffer);
+	buffer_memcpy(&THIS->buffer, buffer_ptr(&retbuf), TOTAL_OUT(s) - THIS->total_out_previous_buf);
 	retstr =
 	  make_shared_binary_string(buffer_ptr(&THIS->buffer),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
@@ -370,7 +365,7 @@ PIKECLASS Deflate
 	  make_shared_binary_string(buffer_ptr(&retbuf),
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
       }
-      low_reinit_buf(&THIS->buffer);
+      buffer_clear(&THIS->buffer);
       THIS->total_out_previous_flush = TOTAL_OUT(s);
       THIS->total_out_previous_buf = TOTAL_OUT(s);
     }
@@ -465,14 +460,14 @@ PIKECLASS Deflate
       s->avail_in = 0;
       s->avail_out = 0;
 
-      initialize_buf(&THIS->buffer);
+      buffer_init(&THIS->buffer);
     }
 
   EXIT
     gc_trivial;
     {
       bzCompressEnd(&THIS->strm);
-      toss_buffer(&THIS->buffer);
+      buffer_free(&THIS->buffer);
     }
 }
 
@@ -498,7 +493,7 @@ PIKECLASS Deflate
 
 PIKECLASS Inflate
 {
-  CVAR dynamic_buffer buffer;
+  CVAR struct byte_buffer buffer;
   CVAR bz_stream strm;
   CVAR int total_out_previous_flush;
   CVAR int total_out_previous_buf;
@@ -513,7 +508,7 @@ PIKECLASS Inflate
     if(buffer_content_length(&THIS->buffer))
       bzDecompressEnd(s);
 
-    low_reinit_buf(&THIS->buffer);
+    buffer_clear(&THIS->buffer);
 
     s->bzalloc = NULL;
     s->bzfree = NULL;
@@ -560,8 +555,8 @@ PIKECLASS Inflate
     int total_out_old = 0;
     char *tmp = NULL;
     char *tmp_internbuf = NULL;
-    dynamic_buffer ret_buffer;
-    dynamic_buffer *retbuf = &ret_buffer;
+    struct byte_buffer ret_buffer;
+    struct byte_buffer *retbuf = &ret_buffer;
     bz_stream *s = &THIS->strm;
 
     /*the incoming string has to be appended to the input buffer*/
@@ -571,23 +566,23 @@ PIKECLASS Inflate
       memcpy (tmp_internbuf, s->next_in, s->avail_in);
     }
     /* free buf space*/
-    low_reinit_buf(&THIS->buffer);
+    buffer_clear(&THIS->buffer);
 
     if(tmp_internbuf != NULL){
       /*copying data that could not be unpacked in previous call*/
-      low_my_binary_strcat(tmp_internbuf,s->avail_in,&THIS->buffer);
+      buffer_memcpy(&THIS->buffer, tmp_internbuf,s->avail_in);
       free(tmp_internbuf);
     }
     /*appending the new data*/
-    low_my_binary_strcat(data->str,data->len,&THIS->buffer);
+    buffer_memcpy(&THIS->buffer, data->str,data->len);
 
     s->next_in = buffer_ptr(&THIS->buffer);
     s->avail_in += data->len;
 
     /* the input buffer is now provided, provide an output buffer*/
 
-    initialize_buf(retbuf);
-    low_make_buf_space(INFL_BUF_SIZE, retbuf);
+    buffer_init(retbuf);
+    buffer_alloc(retbuf, INFL_BUF_SIZE);
     s->next_out = buffer_ptr(retbuf);
     s->avail_out = INFL_BUF_SIZE;
 
@@ -599,18 +594,18 @@ PIKECLASS Inflate
       retval = bzDecompress(s); /* updates next_in, avail_in, total_in, next_out, avail_out, total_out*/
 
       if(tmp != NULL){
-	low_my_binary_strcat(tmp,TOTAL_OUT(s)-total_out_old,&ret_buffer);
+	buffer_memcpy(&ret_buffer, tmp,TOTAL_OUT(s)-total_out_old);
 	free(tmp);
       }
       /* errorcheck*/
       if(retval == BZ_STREAM_END && s->avail_in > 0){
 	bzDecompressEnd(s);
-	toss_buffer(&ret_buffer);
+	buffer_free(&ret_buffer);
 	Pike_error("No data may follow after end of stream.\n");
       }
       if((retval != BZ_STREAM_END) && (retval != BZ_OK)){
 	bzDecompressEnd(s);
-	toss_buffer(&ret_buffer);
+	buffer_free(&ret_buffer);
 	Pike_error("Error when decompressing, probably because inflate "
 		   "is fed with invalid data.\n");
       }
@@ -627,7 +622,7 @@ PIKECLASS Inflate
 	i = i*2;
 	tmp = calloc(i, INFL_BUF_SIZE);
 	if(tmp == NULL){
-	  toss_buffer(&ret_buffer);
+	  buffer_free(&ret_buffer);
           SIMPLE_OUT_OF_MEMORY_ERROR("inflate", i*INFL_BUF_SIZE);
 	}
 	s->next_out = tmp;
@@ -649,7 +644,7 @@ PIKECLASS Inflate
     THIS->total_out_previous_flush = TOTAL_OUT(s);
     if(retval == BZ_STREAM_END){
       bzDecompressEnd(s);
-      low_reinit_buf(&THIS->buffer);
+      buffer_clear(&THIS->buffer);
 
       s->bzalloc = NULL;
       s->bzfree = NULL;
@@ -670,7 +665,7 @@ PIKECLASS Inflate
       /*reset the counted bytes*/
       THIS->total_out_previous_flush = 0;
     }
-    toss_buffer(&ret_buffer);
+    buffer_free(&ret_buffer);
     RETURN(retstr);
   }
 
@@ -686,14 +681,14 @@ PIKECLASS Inflate
       s->avail_in = 0;
       s->avail_out = 0;
 
-      initialize_buf(&THIS->buffer);
+      buffer_init(&THIS->buffer);
     }
 
   EXIT
     gc_trivial;
     {
       bzDecompressEnd(&THIS->strm);
-      toss_buffer(&THIS->buffer);
+      buffer_free(&THIS->buffer);
     }
 }
 /*! @endclass

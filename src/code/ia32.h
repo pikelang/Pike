@@ -100,9 +100,9 @@ extern ptrdiff_t ia32_prev_stored_pc;
   } while(0)
 
 
-struct dynamic_buffer_s;
+struct byte_buffer;
 struct program;
-void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+void ia32_encode_program(struct program *p, struct byte_buffer *buf);
 void ia32_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)

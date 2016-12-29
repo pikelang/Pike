@@ -10,7 +10,7 @@
 #include "array.h"
 #include "object.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "lex.h"
 #include "pike_types.h"
 #include "constants.h"

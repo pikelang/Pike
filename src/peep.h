@@ -7,8 +7,8 @@
 #ifndef PEEP_H
 #define PEEP_H
 
-#include "dynamic_buffer.h"
-extern dynamic_buffer instrbuf;
+#include "buffer.h"
+extern struct byte_buffer instrbuf;
 
 struct p_instr_s
 {

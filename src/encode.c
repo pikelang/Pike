@@ -15,7 +15,7 @@
 #include "array.h"
 #include "multiset.h"
 #include "lex.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -160,7 +160,7 @@ struct encode_data
    * value less than COUNTER_START means that it's a forward reference
    * to a thing not yet encoded. */
   struct array *delayed;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
@@ -179,8 +179,8 @@ static struct object *encoder_codec (struct encode_data *data)
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
-#define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
-#define addchar(t)   low_my_putchar((char)(t), &(data->buf))
+#define addstr(s, l) buffer_memcpy(&(data->buf), (s), (l))
+#define addchar(t)   buffer_add_char(&(data->buf), (char)(t))
 #define addchar_unsafe(t)       buffer_add_char_unsafe(&(data->buf), t)
 
 /* Code a pike string */
@@ -1692,7 +1692,7 @@ encode_done:;
 
 static void free_encode_data(struct encode_data *data)
 {
-  toss_buffer(& data->buf);
+  buffer_free(& data->buf);
   if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array(data->delayed);
@@ -1754,7 +1754,7 @@ void f_encode_value(INT32 args)
 #endif
 		 0);
 
-  initialize_buf(&data->buf);
+  buffer_init(&data->buf);
   data->canonic = 0;
   data->encoded=allocate_mapping(128);
   data->encoded->data->flags |= MAPPING_FLAG_NO_SHRINK;
@@ -1792,7 +1792,7 @@ void f_encode_value(INT32 args)
   free_array (data->delayed);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&data->buf));
+  push_string(buffer_finish_pike_string(&data->buf));
 }
 
 /*! @decl string encode_value_canonic(mixed value, object|void codec)
@@ -1832,7 +1832,7 @@ void f_encode_value_canonic(INT32 args)
 #endif
 		 0);
 
-  initialize_buf(&data->buf);
+  buffer_init(&data->buf);
   data->canonic = 1;
   data->encoded=allocate_mapping(128);
   data->delayed = allocate_array (0);
@@ -1869,7 +1869,7 @@ void f_encode_value_canonic(INT32 args)
   free_array (data->delayed);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&data->buf));
+  push_string(buffer_finish_pike_string(&data->buf));
 }
 
 

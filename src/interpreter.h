@@ -102,7 +102,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   struct object *o;
   struct svalue *s;
   PIKE_OPCODE_T *addr;
-  DO_IF_DEBUG(dynamic_buffer save_buf);
+  DO_IF_DEBUG(struct byte_buffer save_buf);
 
 #undef LOCAL_VAR
 #define LOCAL_VAR(X)	/* Local variable defined above. */

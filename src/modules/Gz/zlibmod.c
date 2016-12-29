@@ -26,7 +26,7 @@
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "operators.h"
 #include "bignum.h"
 
@@ -331,7 +331,7 @@ static void do_mt_unlock (PIKE_MUTEX_T *lock)
 }
 #endif
 
-static int do_deflate(dynamic_buffer *buf,
+static int do_deflate(struct byte_buffer *buf,
 		      struct zipper *this,
 		      int flush)
 {
@@ -350,20 +350,19 @@ static int do_deflate(dynamic_buffer *buf,
    else
       do
       {
-	 this->gz.next_out=(Bytef *)low_make_buf_space(
+	 this->gz.next_out=(Bytef *)buffer_alloc(buf,
 	    /* recommended by the zlib people */
 	    (this->gz.avail_out =
 	     this->gz.avail_in ?
 	     this->gz.avail_in+this->gz.avail_in/1000+42 :
-	      4096),
-	    buf);
+	      4096));
 
 	 THREADS_ALLOW();
 	 ret=deflate(& this->gz, flush);
 	 THREADS_DISALLOW();
 
 	 /* Absorb any unused space /Hubbe */
-	 low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
+	 buffer_remove(buf, this->gz.avail_out);
 
 	 if(ret == Z_BUF_ERROR) ret=Z_OK;
       }
@@ -375,7 +374,7 @@ static int do_deflate(dynamic_buffer *buf,
    return ret;
 }
 
-void low_zlibmod_pack(struct memobj data, dynamic_buffer *buf,
+void low_zlibmod_pack(struct memobj data, struct byte_buffer *buf,
                       int level, int strategy, int wbits)
 {
   struct zipper z;
@@ -451,7 +450,7 @@ void low_zlibmod_pack(struct memobj data, dynamic_buffer *buf,
     Pike_error("Error while deflating data (%d).\n",ret);
 }
 
-void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
+void zlibmod_pack(struct pike_string *data, struct byte_buffer *buf,
                   int level, int strategy, int wbits)
 {
   struct memobj lowdata;
@@ -523,7 +522,7 @@ static void gz_compress(INT32 args)
 {
   struct svalue *data_arg;
   struct memobj data;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   ONERROR err;
 
   int wbits = 15;
@@ -565,13 +564,13 @@ static void gz_compress(INT32 args)
   if( raw )
     wbits = -wbits;
 
-  initialize_buf(&buf);
-  SET_ONERROR(err, toss_buffer, &buf);
+  buffer_init(&buf);
+  SET_ONERROR(err, buffer_free, &buf);
   low_zlibmod_pack(data, &buf, level, strategy, wbits);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 }
 
 /*! @class deflate
@@ -604,7 +603,7 @@ static void gz_deflate(INT32 args)
   struct memobj data;
   int flush, fail;
   struct zipper *this=THIS;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   ONERROR err;
 
   if(THIS->state == 1)
@@ -671,15 +670,15 @@ static void gz_deflate(INT32 args)
   this->gz.next_in=(Bytef *)data.ptr;
   this->gz.avail_in = (unsigned INT32)(data.len);
 
-  initialize_buf(&buf);
+  buffer_init(&buf);
 
-  SET_ONERROR(err,toss_buffer,&buf);
+  SET_ONERROR(err,buffer_free,&buf);
   fail=do_deflate(&buf,this,flush);
   UNSET_ONERROR(err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
-    toss_buffer(&buf);
+    buffer_free(&buf);
     if(THIS->gz.msg)
       Pike_error("Error in gz_deflate->deflate(): %s\n",THIS->gz.msg);
     else
@@ -691,7 +690,7 @@ static void gz_deflate(INT32 args)
 
   pop_n_elems(args);
 
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 }
 
 
@@ -847,7 +846,7 @@ static void gz_inflate_create(INT32 args)
   }
 }
 
-static int do_inflate(dynamic_buffer *buf,
+static int do_inflate(struct byte_buffer *buf,
 		      struct zipper *this,
 		      int flush)
 {
@@ -874,7 +873,7 @@ static int do_inflate(dynamic_buffer *buf,
     {
       char *loc;
       int ret;
-      loc=low_make_buf_space(BUF,buf);
+      loc=buffer_alloc(buf, BUF);
       THREADS_ALLOW();
       this->gz.next_out=(Bytef *)loc;
       this->gz.avail_out=BUF;
@@ -882,7 +881,7 @@ static int do_inflate(dynamic_buffer *buf,
       ret=inflate(& this->gz, flush);
 
       THREADS_DISALLOW();
-      low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
+      buffer_remove(buf, this->gz.avail_out);
 
       if(ret == Z_BUF_ERROR) ret=Z_OK;
 
@@ -905,7 +904,7 @@ static int do_inflate(dynamic_buffer *buf,
   return fail;
 }
 
-void low_zlibmod_unpack(struct memobj data, dynamic_buffer *buf, int raw)
+void low_zlibmod_unpack(struct memobj data, struct byte_buffer *buf, int raw)
 {
   struct zipper z;
   int ret;
@@ -955,7 +954,7 @@ void low_zlibmod_unpack(struct memobj data, dynamic_buffer *buf, int raw)
     Pike_error("Failed to inflate data (%d).\n", ret);
 }
 
-void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+void zlibmod_unpack(struct pike_string *data, struct byte_buffer *buf, int raw)
 {
   struct memobj lowdata;
   lowdata.ptr = data->str;
@@ -975,7 +974,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
  */
 static void gz_uncompress(INT32 args)
 {
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   struct memobj data;
   ONERROR err;
   int raw = 0;
@@ -1014,13 +1013,13 @@ static void gz_uncompress(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("uncompress", 2, "int");
   }
 
-  initialize_buf(&buf);
-  SET_ONERROR(err, toss_buffer, &buf);
+  buffer_init(&buf);
+  SET_ONERROR(err, buffer_free, &buf);
   low_zlibmod_unpack(data, &buf, raw);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 
 }
 
@@ -1051,7 +1050,7 @@ static void gz_inflate(INT32 args)
   struct memobj data;
   int fail;
   struct zipper *this=THIS;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
   ONERROR err;
 
   if(!THIS->gz.state)
@@ -1089,15 +1088,15 @@ static void gz_inflate(INT32 args)
   this->gz.next_in=(Bytef *)data.ptr;
   this->gz.avail_in = (unsigned INT32)(data.len);
 
-  initialize_buf(&buf);
+  buffer_init(&buf);
 
-  SET_ONERROR(err,toss_buffer,&buf);
+  SET_ONERROR(err,buffer_free,&buf);
   fail=do_inflate(&buf,this,Z_SYNC_FLUSH);
   UNSET_ONERROR(err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
-    toss_buffer(&buf);
+    buffer_free(&buf);
     if(THIS->gz.msg)
       Pike_error("Error in gz_inflate->inflate(): %s\n",THIS->gz.msg);
     else
@@ -1106,7 +1105,7 @@ static void gz_inflate(INT32 args)
 
   pop_n_elems(args);
 
-  push_string(low_free_buf(&buf));
+  push_string(buffer_finish_pike_string(&buf));
 
   if(fail == Z_STREAM_END)
   {

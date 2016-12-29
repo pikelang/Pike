@@ -3278,7 +3278,7 @@ static const char *safe_idname_from_int(struct program *prog, int func)
 
 /*: Prints the Pike backtrace for the interpreter context in the given
  *: thread to stderr, without messing in the internals (doesn't even
- *: use dynamic_buffer).
+ *: use struct byte_buffer).
  *:
  *: This function is intended only for convenient use inside a
  *: debugger session; it can't be used from inside the code.

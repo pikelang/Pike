@@ -18,7 +18,7 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "pike_types.h"
@@ -318,7 +318,7 @@ static struct pike_string *encodeface(rgb_group *in)
   int i, j;
   unsigned long int n;
   mpz_t val, dum;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
 
   for(i=0; i<48; i++)
     for(j=0; j<48; j++) {
@@ -335,19 +335,19 @@ static struct pike_string *encodeface(rgb_group *in)
   for(i=2; i>=0; --i)
     for(j=2; j>=0; --j)
       comp(val, &newface[i*16][j*16], 16, 0);
-  initialize_buf( &buf );
+  buffer_init( &buf );
   mpz_init(dum);
   i = 0;
   while(mpz_cmp_ui(val, 0)) {
     n = mpz_fdiv_qr_ui(val, dum, val, 94);
-    low_my_putchar( (char)(n+'!'), &buf );
+    buffer_add_char( &buf ,  (char)(n+'!'));
     i++;
   }
   if (i==0)
-    low_my_putchar( '!', &buf );
+    buffer_add_char( &buf ,  '!');
   mpz_clear(dum);
   mpz_clear(val);
-  return low_free_buf( &buf );
+  return buffer_finish_pike_string( &buf );
 }
 
 

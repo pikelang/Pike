@@ -1190,10 +1190,10 @@ INT32 ia32_read_f_jump(INT32 offset)
   return read_pointer(offset) + offset + 4;
 }
 
-#define addstr(s, l) low_my_binary_strcat((s), (l), buf)
+#define addstr(s, l) buffer_memcpy(buf, (s), (l))
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
-void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
+void ia32_encode_program(struct program *p, struct byte_buffer *buf)
 {
   size_t prev = 0, rel;
   /* De-relocate the program... */

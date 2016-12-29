@@ -27,7 +27,7 @@ struct compilation
 					 * compilation_program. */
 
   struct svalue default_module;		/* predef:: */
-  dynamic_buffer used_modules;		/* Stack of svalues with imported
+  struct byte_buffer used_modules;		/* Stack of svalues with imported
 					 * modules. */
   INT32 num_used_modules;		/* Number of entries on the stack. */
 
