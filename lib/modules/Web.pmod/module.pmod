@@ -79,3 +79,53 @@ mapping(string:string|int) decode_jwt(Crypto.Sign.State|Crypto.MAC.State|
   };
   return 0;
 }
+
+#if constant(Crypto.ECC.Curve)
+constant jose_to_pike = ([
+  "P-256": "SECP_256R1",
+  "P-384": "SECP_384R1",
+  "P-521": "SECP_521R1",
+]);
+#endif
+
+//! Decode a JSON Web Key (JWK).
+//!
+//! @returns
+//!   Returns an initialized @[Crypto.Sign.State] on success
+//!   and @[UNDEFINED] on failure.
+Crypto.Sign.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
+{
+  mapping(string(7bit):Gmp.mpz) decoded_coordinates = ([]);
+  foreach(({ "n", "e", "d", "x", "y" }), string coord) {
+    if (!jwk[coord]) continue;
+    string(8bit) bin = MIME.decode_base64url(jwk[coord]);
+    decoded_coordinates[coord] = Gmp.mpz(bin, 256);
+  }
+  switch(jwk->kty) {
+  case "RSA":
+    return Crypto.RSA(decoded_coordinates);
+#if constant(Crypto.ECC.Curve)
+  case "EC":
+    // RFC 7517:6.2.1.1
+    string(7bit) pike_curve = jose_to_pike[jwk->crv];
+    if (!pike_curve) break;
+    Crypto.ECC.Curve c = Crypto.ECC[pike_curve];
+    if (!c) break;
+    return c.Point(decoded_coordinates->x, decoded_coordinates->y);
+#endif /* constant(Crypto.ECC.Curve) */
+  default:
+    break;
+  }
+  return UNDEFINED;
+}
+
+//! Decode a JSON Web Key (JWK) Set.
+//!
+//! @seealso
+//!   @rfc{7517:5@}, @[decode_jwk()]
+array(Crypto.Sign.State)
+  decode_jwk_set(mapping(string(8bit):
+			 array(mapping(string(7bit):string(7bit)))) jwk_set)
+{
+  return filter(map(jwk_set->keys, decode_jwk), objectp);
+}
