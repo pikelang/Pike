@@ -79,3 +79,57 @@ mapping(string:string|int) decode_jwt(Crypto.Sign.State|Crypto.MAC.State|
   };
   return 0;
 }
+
+#if constant(Crypto.ECC.Curve)
+// NB: We index the Curve with the dot operator to get the Point.
+#pragma dynamic_dot
+protected mapping(string(7bit):Crypto.ECC.Curve) curve_lookup;
+#endif
+
+//! Decode a JSON Web Key (JWK).
+//!
+//! @returns
+//!   Returns an initialized @[Crypto.Sign.State] on success
+//!   and @[UNDEFINED] on failure.
+Crypto.Sign.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
+{
+  switch(jwk->kty) {
+  case "RSA":
+    return Crypto.RSA(jwk);
+#if constant(Crypto.ECC.Curve)
+  case "EC":
+    // RFC 7517:6.2
+    if (!curve_lookup) {
+      // NB: Thread safe.
+      mapping(string(7bit):Crypto.ECC.Curve) m = ([]);
+      foreach(values(Crypto.ECC), Crypto.ECC.Curve c) {
+	string(7bit) n = objectp(c) && c->jose_name && c->jose_name();
+	if (n) {
+	  m[n] = c;
+	}
+      }
+      curve_lookup = m;
+    }
+    // RFC 7517:6.2.1.1
+    Crypto.ECC.Curve c = curve_lookup[jwk->crv];
+    if (!c) break;
+    return c.Point(jwk);
+#endif /* constant(Crypto.ECC.Curve) */
+  default:
+    break;
+  }
+  return UNDEFINED;
+}
+
+#pragma no_dynamic_dot
+
+//! Decode a JSON Web Key (JWK) Set.
+//!
+//! @seealso
+//!   @rfc{7517:5@}, @[decode_jwk()]
+array(Crypto.Sign.State)
+  decode_jwk_set(mapping(string(8bit):
+			 array(mapping(string(7bit):string(7bit)))) jwk_set)
+{
+  return filter(map(jwk_set->keys, decode_jwk), objectp);
+}
