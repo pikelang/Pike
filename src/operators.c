@@ -37,15 +37,6 @@
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
 
-/* The destructive multiset merge code is broken.
- * l->msd gets -1 refs.
- *
- * Disable it for now.
- *	/grubba 2008-07-08
- */
-#undef PIKE_MERGE_DESTR_A
-#define PIKE_MERGE_DESTR_A	0
-
     /* This calculation should always give some margin based on the size. */
     /* It utilizes that log10(256) ~= 2.4 < 5/2. */
     /* One extra char for the sign and one for the \0 terminator. */
@@ -2347,13 +2338,8 @@ PMOD_EXPORT void o_subtract(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_SUB | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_SUB);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_SUB);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -2646,13 +2632,8 @@ PMOD_EXPORT void o_and(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_AND | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_AND);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_AND);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -2944,13 +2925,8 @@ PMOD_EXPORT void o_or(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_OR_LEFT | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_OR_LEFT);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -3200,13 +3176,8 @@ PMOD_EXPORT void o_xor(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_XOR | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_XOR);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_multiset(l);
     return;
