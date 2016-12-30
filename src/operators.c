@@ -3832,10 +3832,7 @@ PMOD_EXPORT void f_multiply(INT32 args)
   case 1: return;
   case 2: o_multiply(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
     {
-      CALL_OPERATOR(LFUN_MULTIPLY, args);
-    } else {
       INT32 i = -args, j = -1;
       /* Reverse the arguments */
       while(i < j) {
