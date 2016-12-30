@@ -3120,6 +3120,8 @@ PIKEFUN array(mixed) backtrace()
 /*! @module String
  */
 
+#define PROG_BUFFER_ID	PROG_STRING_BUFFER_ID
+
 /*! @class Buffer
  *!    A buffer, used for building strings. It's
  *!    conceptually similar to a string, but you can only @[add]
