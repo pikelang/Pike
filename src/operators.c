@@ -243,7 +243,6 @@ PMOD_EXPORT void o_cast_to_int(void)
       else if(SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
         Pike_error("Cannot cast this object to int.\n");
     }
-
     break;
 
   case T_FLOAT: {
@@ -251,6 +250,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 
       if ( PIKE_ISINF(f) || PIKE_ISNAN(f) )
         Pike_error("Can't cast infinites or NaN to int.\n");
+      /* should perhaps convert to Int.Inf now that we have them? */
 
       if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {
         convert_stack_top_to_bignum();
@@ -1132,7 +1132,8 @@ PMOD_EXPORT void ID(INT32 args)				\
 PMOD_EXPORT void f_ne(INT32 args)
 {
   f_eq(args);
-  o_not();
+  /* f_eq and friends always returns 1 or 0. */
+  Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
 }
 
 /*! @decl int(0..1) `==(mixed arg1, mixed arg2, mixed ... extras)
@@ -2221,7 +2222,7 @@ static int float_promote(void)
   return 0;
 }
 
-static int call_lfun(int left, int right)
+static int call_lfun(enum LFUN left, enum LFUN right)
 {
   struct object *o;
   struct program *p;
@@ -2526,7 +2527,7 @@ static int generate_minus(node *n)
 
 PMOD_EXPORT void o_and(void)
 {
-  if(TYPEOF(sp[-1]) != TYPEOF(sp[-2]))
+  if(UNLIKELY(TYPEOF(sp[-1]) != TYPEOF(sp[-2])))
   {
      if(call_lfun(LFUN_AND, LFUN_RAND))
 	return;
