@@ -2835,12 +2835,7 @@ PMOD_EXPORT void f_and(INT32 args)
   case 1: return;
   case 2: o_and(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_AND, args);
-    }else{
-      speedup(args, o_and);
-    }
+    speedup(args, o_and);
   }
 }
 
@@ -3085,12 +3080,7 @@ PMOD_EXPORT void f_or(INT32 args)
   case 1: return;
   case 2: o_or(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_OR, args);
-    } else {
-      speedup(args, o_or);
-    }
+    speedup(args, o_or);
   }
 }
 
@@ -3325,12 +3315,7 @@ PMOD_EXPORT void f_xor(INT32 args)
   case 1: return;
   case 2: o_xor(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_XOR, args);
-    } else {
-      speedup(args, o_xor);
-    }
+    speedup(args, o_xor);
   }
 }
 
