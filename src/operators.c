@@ -2312,8 +2312,10 @@ PMOD_EXPORT void o_subtract(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_SUBTRACT,2);
-    break;
+    if(!call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
+      bad_arg_error("`-", sp-2, 2, 2, get_name_of_type(TYPEOF(sp[-2])),
+                    sp-1, "Subtract on objects without subtract operator.\n");
+    return;
 
   case T_ARRAY:
   {
@@ -2355,7 +2357,7 @@ PMOD_EXPORT void o_subtract(void)
     if(INT_TYPE_SUB_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
-      f_minus(2);
+      call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT);
       return;
     }
     sp--;
@@ -2612,7 +2614,7 @@ PMOD_EXPORT void o_and(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_AND,2);
+    call_lfun(LFUN_AND,LFUN_RAND);
     break;
 
   case T_INT:
@@ -2900,7 +2902,7 @@ PMOD_EXPORT void o_or(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_OR,2);
+    call_lfun(LFUN_OR,LFUN_ROR);
     break;
 
   case T_INT:
@@ -3146,7 +3148,11 @@ PMOD_EXPORT void o_xor(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_XOR,2);
+    if(!call_lfun(LFUN_XOR,LFUN_RXOR))
+    {
+      int args = 2;
+      SIMPLE_ARG_TYPE_ERROR("`^", 1, "type");
+    }
     break;
 
   case T_INT:
@@ -4052,9 +4058,8 @@ PMOD_EXPORT void o_divide(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-  do_lfun_division:
-    CALL_OPERATOR(LFUN_DIVIDE,2);
-    break;
+    call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
+    return;
 
   case T_STRING:
   {
@@ -4094,7 +4099,8 @@ PMOD_EXPORT void o_divide(void)
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
-      goto do_lfun_division;
+      call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
+      return;
     }
     else
       tmp = sp[-2].u.integer/sp[-1].u.integer;
@@ -4280,8 +4286,9 @@ do_lfun_modulo:
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_MOD,2);
-    break;
+    if(!call_lfun(LFUN_MOD,LFUN_RMOD))
+      PIKE_ERROR("`%", "Modulo on different types.\n", sp, 2);
+    return;
 
   case T_FLOAT:
   {
