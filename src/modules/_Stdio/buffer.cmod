@@ -46,6 +46,11 @@ static struct program *buffer_error_program;
 /*! @module Stdio
  */
 
+/* Remap to not clash with String.Buffer. */
+#define     PROG_BUFFER_ID     PROG_STDIO_BUFFER_ID
+#define tObjImpl_BUFFER	   tObjImpl_STDIO_BUFFER
+#define tObjIs_BUFFER	     tObjIs_STDIO_BUFFER
+
 /*! @class Buffer
  *!
  *! A buffer to use as input or buffering when doing I/O. It is
