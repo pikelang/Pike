@@ -108,6 +108,8 @@
 #define tObjImpl_LIST			      "\003\000\000\000\000\055"
 #define     PROG_LIST__GET_ITERATOR_ID				    056
 #define tObjImpl_LIST__GET_ITERATOR	      "\003\000\000\000\000\056"
+#define     PROG_STRING_BUFFER_ID				    057
+#define tObjImpl_STRING_BUFFER                "\003\000\000\000\000\057"
 
 /* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
@@ -116,6 +118,11 @@
 #define	    PROG_BASIC_TOKENIZER_ID				   0110
 #define	    PROG_TOKEN_ID					   0111
 #define tObjImpl_TOKEN			      "\003\000\000\000\000\111"
+
+/* Stdio.Buffer */
+#define     PROG_STDIO_BUFFER_ID				   0120
+#define tObjImpl_STDIO_BUFFER		      "\003\000\000\000\000\120"
+#define   tObjIs_STDIO_BUFFER		      "\003\001\000\000\000\120"
 
 /* NOTE: 0144 == 100. */
 /* 100 - 299 reserverd for Image.Image */
