@@ -575,7 +575,7 @@ PIKECLASS ECC_Curve
    *!
    *! @returns
    *!   Returns a random scalar suitable to use as an @[ECDSA] private key
-   *!   or as an ECDH exponent.
+   *!   or as an ECDH secret factor.
    */
   PIKEFUN object(Gmp.mpz) new_scalar(function(int(0..):string(8bit)) rnd)
   {
@@ -867,6 +867,7 @@ PIKECLASS ECC_Curve
      *!   Throws errors if the point isn't on the curve.
      */
     PIKEFUN void set(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+      flags ID_VARIANT;
     {
       convert_svalue_to_bignum(x);
       convert_svalue_to_bignum(y);
@@ -1227,6 +1228,10 @@ PIKECLASS ECC_Curve
  */
 PIKECLASS Curve25519
 {
+  /*! @decl inherit __builtin.Nettle.ECC_Curve
+   */
+  INHERIT "__builtin.Nettle.ECC_Curve";
+
   DECLARE_STORAGE;
 
   /*! @decl string(7bit) name()
@@ -1263,7 +1268,7 @@ PIKECLASS Curve25519
     apply_svalue(rnd, 1);
   }
 
-  /*! @decl string(8bit) `*(string(8bit) scalar)
+  /*! @decl Point `*(string(8bit) scalar)
    *!
    *! Multiply the curve by a scalar.
    *!
@@ -1283,6 +1288,8 @@ PIKECLASS Curve25519
     curve25519_mul_g(STR0(res), STR0(scalar));
 
     push_string(end_shared_string(res));
+
+    apply_current(Nettle_Curve25519_Point_program_fun_num, 1);
   }
 
   /*! @decl string(8bit) point_mul(string(8bit) x, string(8bit) scalar)
@@ -1307,6 +1314,108 @@ PIKECLASS Curve25519
 
     push_string(end_shared_string(res));
   }
+
+  /*! @class Point
+   *!
+   *! A point on an elliptic curve.
+   */
+  PIKECLASS Point
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    PIKEVAR string(8bit) point flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+
+    /*! @decl inherit ECC_Curve::Point
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the Point class that our parent
+       * contains via its inherit of __builtin.Nettle.ECC_Curve.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_Point_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("Point"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_Point_fun_num >= 0) {
+	struct program *parent_Point_prog =
+	  low_program_from_function(parent_obj, parent_Point_fun_num);
+	if (parent_Point_prog) {
+	  parent_Point_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_Point_fun_num);
+	  low_inherit(parent_Point_prog, 0,
+		      parent_Point_fun_num,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    PIKEFUN void set(string(8bit) x, string(8bit)|void y)
+      flags ID_VARIANT;
+    {
+      if (x->len != CURVE25519_SIZE) {
+	Pike_error("Invalid x.\n");
+      }
+      if (y && y->len) {
+	Pike_error("Invalid y.\n");
+      }
+      if (THIS->point) {
+	free_string(THIS->point);
+      }
+      add_ref(THIS->point = x);
+    }
+
+    /* NB: Little-endian byte-order! */
+    const p_wchar0 curve25519_scalar_one[CURVE25519_SIZE] = {
+      1, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+    };
+
+    PIKEFUN string(8bit) get_x()
+    {
+      if (!THIS->point) {
+	/* Default to 'g'. */
+	struct pike_string *res;
+	res = begin_shared_string(CURVE25519_SIZE);
+	curve25519_mul_g(STR0(res), curve25519_scalar_one);
+	THIS->point = end_shared_string(res);
+      }
+      ref_push_string(THIS->point);
+    }
+
+    PIKEFUN string(8bit) get_y()
+    {
+      push_text("");
+    }
+
+    PIKEFUN void create(string(8bit)|Stdio_Buffer data)
+      flags ID_PROTECTED|ID_VARIANT;
+    {
+      if (TYPEOF(*data) == PIKE_T_OBJECT) {
+	apply(data->u.object, "read", 0);
+      }
+      apply_current(f_Nettle_Curve25519_Point_set_fun_num, 1);
+    }
+
+    PIKEFUN Nettle_Curve25519_Point `*(string(8bit) scalar)
+      flags ID_PROTECTED;
+    {
+      struct pike_string *res;
+      if (scalar->len != CURVE25519_SIZE) Pike_error("Invalid scalar.\n");
+      res = begin_shared_string(CURVE25519_SIZE);
+      if (THIS->point) {
+	curve25519_mul(STR0(res), STR0(scalar), STR0(THIS->point));
+      } else {
+	curve25519_mul_g(STR0(res), STR0(scalar));
+      }
+      push_string(end_shared_string(res));
+
+      apply_external(1, Nettle_Curve25519_Point_program_fun_num, 1);
+    }
+  }
+  /*! @endclass Point
+   */
 
   /*! @class EdDSA
    *!
