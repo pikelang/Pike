@@ -6,7 +6,6 @@
 
 #include "global.h"
 #include "object.h"
-#include "buffer.h"
 #include "interpret.h"
 #include "program.h"
 #include "stralloc.h"

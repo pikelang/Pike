@@ -14,7 +14,6 @@
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "pike_memory.h"
-#include "buffer.h"
 #include "interpret.h"
 #include "las.h"
 #include "gc.h"
