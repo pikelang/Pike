@@ -239,9 +239,9 @@ PMOD_EXPORT void o_cast_to_int(void)
               }
             pop_stack();
           }
-        }
+	}
         Pike_error("Cast failed, wanted int, got %s\n",
-		   get_name_of_type(TYPEOF(sp[-1])));
+                   get_name_of_type(TYPEOF(sp[-1])));
       }
       else if(SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
         Pike_error("Cannot cast this object to int.\n");
@@ -2214,13 +2214,13 @@ static int has_lfun(enum LFUN lfun, int arg)
 
 static int call_lhs_lfun( enum LFUN lfun, int arg )
 {
-   int i = has_lfun(lfun,arg);
+  int i = has_lfun(lfun,arg);
 
-   if(i != -1)
-   {
-     apply_low(Pike_sp[-arg].u.object, i, arg-1);
-     return 1;
-   }
+  if(i != -1)
+  {
+    apply_low(Pike_sp[-arg].u.object, i, arg-1);
+    return 1;
+  }
   return 0;
 }
 
