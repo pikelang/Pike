@@ -121,7 +121,11 @@ class Point {
 
   variant protected void create(mapping(string(7bit):int|Gmp.mpz|string(8bit)) p)
   {
-    if (p->kty == jose_name()) {
+    if (p->kty == "EC") {
+      if (p->crv != jose_name()) {
+	error("Invalid curve selected. %O != %O.\n",
+	      p->crv, jose_name());
+      }
       mapping(string(7bit):string(7bit)) jwk =
 	[mapping(string(7bit):string(7bit))]p;
       p = ([]);
