@@ -10720,6 +10720,10 @@ test_eval_error([[
 ]])
 test_do(add_constant("A"));
 
+test_eq(`%(Gmp.mpz(4), 1.5), Gmp.mpz(0))
+test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
+
+
 // - `&
 
 test_do([[
@@ -10808,10 +10812,16 @@ test_eval_error([[
 ]])
 test_do(add_constant("A"));
 
+test_eq(`-(4.5, Gmp.mpz(1)), Gmp.mpz(3))
+test_eq(`-(Gmp.mpz(1), 4.5), Gmp.mpz(-3))
 
 // - `->
 // - `->=
 // - `/
+
+test_eq(`/(4.5, Gmp.mpz(2)), 2.25)
+test_eq(`/(Gmp.mpz(2), 4.0), 0.5))
+
 // - `<
 // - `<<
 // - `<=
