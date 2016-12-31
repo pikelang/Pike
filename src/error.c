@@ -327,9 +327,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 					      const char *text,
 					      struct svalue *oldsp,
-					      INT32 args,
-					      const char *file,
-					      int line) ATTRIBUTE((noreturn))
+                                              INT32 args) ATTRIBUTE((noreturn))
 {
   int i;
 
@@ -356,8 +354,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 
     fprintf(stderr,"No error recovery context!\n%s():%s",
 	    name ? name : "<unknown>", text);
-    if(file)
-      fprintf(stderr,"at %s:%d\n",file,line);
     exit(99);
   }
 
@@ -365,13 +361,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 
   f_backtrace(0);
 
-  if (file) {
-    push_text(file);
-    push_int(line);
-  } else {
-    push_int(0);
-    push_int(0);
-  }
+  push_int(0);
+  push_int(0);
 
   if (name)
     push_text(name);

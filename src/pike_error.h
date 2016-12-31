@@ -229,14 +229,7 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
      X.func(X.arg);				\
   }while(0)
 
-#if defined(PIKE_DEBUG) && 0
-/* Works, but probably not interresting for most people
- *	/grubba 1998-04-11
- */
-#define PIKE_ERROR(NAME, TEXT, SP, ARGS) new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__)
-#else
-#define PIKE_ERROR(NAME, TEXT, SP, ARGS) new_error(NAME, TEXT, SP, ARGS, NULL, 0)
-#endif /* PIKE_DEBUG */
+#define PIKE_ERROR(NAME, TEXT, SP, ARGS) new_error(NAME, TEXT, SP, ARGS)
 
 /* Prototypes begin here */
 PMOD_EXPORT void check_recovery_context(void);
@@ -249,8 +242,7 @@ PMOD_EXPORT void va_make_error (const char *fmt, va_list args);
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void make_error (const char *fmt, ...);
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn));
-PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
-	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
+PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp, INT32 args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void exit_on_error(const void *msg);
 PMOD_EXPORT void fatal_on_error(const void *msg);
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
