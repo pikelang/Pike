@@ -1265,21 +1265,6 @@ COMPARISON(f_gt,"`>" , is_gt)
  */
 COMPARISON(f_ge,"`>=",is_ge)
 
-
-#define CALL_OPERATOR(OP, args) do {					\
-    struct object *o_ = sp[-args].u.object;				\
-    int i;								\
-    if(!o_->prog)							\
-      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-		    "Called in destructed object.\n");			\
-    if((i = FIND_LFUN(o_->prog->inherits[SUBTYPEOF(sp[-args])].prog,	\
-		      OP)) == -1)					\
-      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-		    "Operator not in object.\n");			\
-    apply_low(o_, i, args-1);						\
-    stack_pop_keep_top();						\
-  } while (0)
-
 /* Helper function for calling ``-operators.
  *
  * Assumes o is at Pike_sp[e - args].
@@ -4523,7 +4508,9 @@ PMOD_EXPORT void o_compl(void)
   switch(TYPEOF(sp[-1]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_COMPL,1);
+    if(!call_lhs_lfun(LFUN_COMPL,1))
+      PIKE_ERROR("`~", "Complement on object without `~ operator.\n", sp, 1);
+    stack_pop_keep_top();
     break;
 
   case T_INT:
@@ -4643,7 +4630,9 @@ PMOD_EXPORT void o_negate(void)
   {
   case T_OBJECT:
   do_lfun_negate:
-    CALL_OPERATOR(LFUN_SUBTRACT,1);
+    if(!call_lhs_lfun(LFUN_SUBTRACT,1))
+      PIKE_ERROR("`-", "Negate on object without `- operator.\n", sp, 1);
+    stack_pop_keep_top();
     break;
 
   case T_FLOAT:

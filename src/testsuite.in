@@ -10797,6 +10797,18 @@ test_eval_error([[
 ]])
 test_do(add_constant("A"));
 
+test_do([[
+   class A (int x) { mixed `-(mixed y) { return this_program(-x); } };
+   add_constant("A",A);
+]])
+test_eq(`-(A(5))->x, -5)
+test_eval_error([[
+   class B {};
+   return `-(B());
+]])
+test_do(add_constant("A"));
+
+
 // - `->
 // - `->=
 // - `/
@@ -10838,6 +10850,17 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 // - `~
+
+test_do([[
+   class A (int x) { mixed `~() { return this_program(~x); } };
+   add_constant("A",A);
+]])
+test_eq(`~(A(5))->x, -6)
+test_eval_error([[
+   class B {};
+   return `-(B());
+]])
+test_do(add_constant("A"));
 
 // - abs
 // - acos
