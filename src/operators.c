@@ -46,6 +46,9 @@
      */
 #define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN))
 
+static int has_lfun( enum LFUN lfun, int arg );
+static int call_lhs_lfun( enum LFUN lfun, int arg );
+
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
   switch(TYPEOF(*what))
@@ -208,36 +211,36 @@ PMOD_EXPORT void o_cast_to_int(void)
       pop_stack();
       push_int (0);
     }
+    else
+    {
+      if( sp[-1].u.object->prog == bignum_program )
+        return;
 
-    else {
-      {
-	struct object *o = sp[-1].u.object;
-	struct program *p = o->prog->inherits[SUBTYPEOF(sp[-1])].prog;
-	int f = FIND_LFUN(p, LFUN_CAST);
-	if(f == -1)
-	  Pike_error("No cast method in object.\n");
-	ref_push_string(literal_int_string);
-	apply_low(o, f, 1);
-	stack_pop_keep_top();
-      }
+      ref_push_string(literal_int_string);
+      if(!call_lhs_lfun(LFUN_CAST,2))
+        Pike_error("No cast method in object <2>.\n");
+      stack_pop_keep_top(); /* pop object. */
 
       if(TYPEOF(sp[-1]) != PIKE_T_INT)
       {
-	if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
+        if(TYPEOF(sp[-1]) == T_OBJECT)
 	{
-	  struct object *o = sp[-1].u.object;
-	  int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
-			    LFUN__IS_TYPE);
-	  if( f != -1)
-	  {
-	    ref_push_string(literal_int_string);
-	    apply_low(o, f, 1);
-	    f=!UNSAFE_IS_ZERO(sp-1);
-	    pop_stack();
-	    if(f) return;
-	  }
-	}
-	Pike_error("Cast failed, wanted int, got %s\n",
+          struct object *o = sp[-1].u.object;
+          if( o->prog == bignum_program )
+            return;
+          else if( o->prog )
+          {
+            ref_push_string(literal_int_string);
+            if( call_lhs_lfun(LFUN__IS_TYPE,2) )
+              if( !UNSAFE_IS_ZERO(sp-1) )
+              {
+                pop_stack();
+                return;
+              }
+            pop_stack();
+          }
+        }
+        Pike_error("Cast failed, wanted int, got %s\n",
 		   get_name_of_type(TYPEOF(sp[-1])));
       }
       else if(SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
@@ -295,16 +298,12 @@ PMOD_EXPORT void o_cast_to_string(void)
       /* Casting a destructed object should be like casting a zero. */
       pop_stack();
       push_constant_text("0");
-    } else {
-      {
-	struct object *o = sp[-1].u.object;
-	int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog, LFUN_CAST);
-	if(f == -1)
-	  Pike_error("No cast method in object.\n");
-	ref_push_string(literal_string_string);
-	apply_low(o, f, 1);
-	stack_pop_keep_top();
-      }
+    } else
+    {
+      ref_push_string(literal_string_string);
+      if(!call_lhs_lfun(LFUN_CAST,2))
+        Pike_error("No cast method in object.\n");
+      stack_pop_keep_top();
 
       if(TYPEOF(sp[-1]) != PIKE_T_STRING)
       {
@@ -312,18 +311,15 @@ PMOD_EXPORT void o_cast_to_string(void)
            Pike_error("Cannot cast this object to string.\n");
 	if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
 	{
-	  struct object *o = sp[-1].u.object;
-	  int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
-			    LFUN__IS_TYPE);
-	  if( f != -1)
-	  {
-            ref_push_string(literal_string_string);
-	    apply_low(o, f, 1);
-	    f=!UNSAFE_IS_ZERO(sp-1);
-	    pop_stack();
-	    if(f) return;
-	  }
-	}
+          ref_push_string(literal_string_string);
+          if( call_lhs_lfun( LFUN__IS_TYPE,2 ) )
+            if( !UNSAFE_IS_ZERO(sp-1) )
+            {
+              pop_stack();
+              return;
+            }
+          pop_stack();
+        }
 	Pike_error("Cast failed, wanted string, got %s\n",
 		   get_name_of_type(TYPEOF(sp[-1])));
       }
@@ -2219,6 +2215,27 @@ static int float_promote(void)
     return 1;
   }
 
+  return 0;
+}
+
+static int has_lfun(enum LFUN lfun, int arg)
+{
+  struct program *p;
+
+  if(TYPEOF(sp[-arg]) == T_OBJECT && (p = sp[-arg].u.object->prog))
+    return FIND_LFUN(p->inherits[SUBTYPEOF(sp[-arg])].prog, lfun);
+  return -1;
+}
+
+static int call_lhs_lfun( enum LFUN lfun, int arg )
+{
+   int i = has_lfun(lfun,arg);
+
+   if(i != -1)
+   {
+     apply_low(Pike_sp[-arg].u.object, i, arg-1);
+     return 1;
+   }
   return 0;
 }
 

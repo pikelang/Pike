@@ -8945,6 +8945,14 @@ test_eq([[(int)"1"]],[[1]])
 test_eq([[(int)"-1"]],[[-1]])
 test_eq([[(int)"0x1"]],[[0]])
 test_eq([[(int)"010"]],[[10]])
+test_eq((int)Gmp.mpz(5), 5)
+test_eq((int)class { mixed cast(string x) { return x=="int" && 7; } }(), 7)
+test_eval_error([[ return (int)class { mixed cast(string x) {
+  return 1.0; } }(); ]]);
+test_eval_error([[ return (int)class { mixed cast(string x) {
+  return ADT.Heap(); } }(); ]]);
+test_any([[ return (int)class { mixed cast(string x) {
+  return Gmp.mpz(7); } }(); ]], Gmp.mpz(7));
 test_eq([[(float)"1"]],[[1.0]])
 test_eq([[(float)"-1"]],[[-1.0]])
 test_eq([[(float)"1.0"]],[[1.0]])
@@ -8957,6 +8965,16 @@ test_eq([[(string)1]],[["1"]])
 test_eq([[(string)-1]],[["-1"]])
 test_eq([[(string)1.0]],[["1.0"]])
 test_eq([[(string)-1.0]],[["-1.0"]])
+test_eq((string)Gmp.mpz(5), "5")
+test_eq((string)class { mixed cast(string x) {
+  return x=="string" && "7"; } }(), "7")
+test_eval_error((string)class { mixed cast(string x) { return 1.0; }}();)
+test_eval_error((string)class { mixed cast(string x) {
+  return ADT.Heap(); }}();)
+test_any([[
+  class A { int q=9; int _is_type(string x) { return x=="string"; } };
+  mixed o = (string)class { mixed cast(string x) { return A(); } }();
+  return o->q;]], 9)
 // Note: 32-bit floats overflow at ~3.4e38.
 test_true([[has_value ((string)1e38, ".") ||
 	    has_value ((string)1e38, "e")]])
