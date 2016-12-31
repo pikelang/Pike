@@ -10692,12 +10692,36 @@ ifefun(_verify_internals,
 // - `%
 // - `&
 
+test_do([[
+   class A (int x) { mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`&(A(7),A(5))->x, 5)
+test_eq(`&(A(7),A(5),A(4))->x, 4)
+test_eval_error([[
+   class B {}
+   `&(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 // - `()
 test_eq(1,`()(a))
 test_eq(1,`()(lambda(int a){ return a; },1))
 test_eq(1,`()(intp,1))
 
 // - `*
+
+test_do([[
+   class A (int x) { mixed `*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`*(A(3),A(2))->x, 6)
+test_eq(`*(A(3),A(2),A(5))->x, 30)
+test_eval_error([[
+   class B {}
+   `*(B(),A(5));
+]])
+test_do(add_constant("A"));
 
 // - `+
 test_eq(`+(1,1),2)
@@ -10730,6 +10754,19 @@ test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1
 test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
 
 // - `-
+
+test_do([[
+   class A (int x) { mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`-(A(5),A(2))->x, 3)
+test_eq(`-(A(5),A(2),A(1))->x, 2)
+test_eval_error([[
+   class B {}
+   `-(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 // - `->
 // - `->=
 // - `/
@@ -10743,7 +10780,33 @@ test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return 
 // - `[]
 // - `[]=
 // - `^
+
+test_do([[
+   class A (int x) { mixed `^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`^(A(7),A(1))->x, 6)
+test_eq(`^(A(7),A(1),A(7))->x, 1)
+test_eval_error([[
+   class B {}
+   `^(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 // - `|
+
+test_do([[
+   class A (int x) { mixed `|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`|(A(3),A(6))->x, 7)
+test_eq(`|(A(3),A(6),A(9))->x, 15)
+test_eval_error([[
+   class B {}
+   `|(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 // - `~
 
 // - abs

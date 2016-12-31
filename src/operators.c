@@ -2313,8 +2313,7 @@ PMOD_EXPORT void o_subtract(void)
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
-      bad_arg_error("`-", sp-2, 2, 2, get_name_of_type(TYPEOF(sp[-2])),
-                    sp-1, "Subtract on objects without subtract operator.\n");
+      PIKE_ERROR("`-", "Subtract on objects without `- operator.\n", sp, 2);
     return;
 
   case T_ARRAY:
@@ -2614,14 +2613,15 @@ PMOD_EXPORT void o_and(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    call_lfun(LFUN_AND,LFUN_RAND);
-    break;
+    if(!call_lfun(LFUN_AND,LFUN_RAND))
+      PIKE_ERROR("`&", "Bitwise and on objects without `& operator.\n", sp, 2);
+    return;
 
   case T_INT:
     sp--;
     SET_SVAL(sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer,
 	     sp[-1].u.integer & sp[0].u.integer);
-    break;
+    return;
 
   case T_MAPPING:
   {
@@ -2902,14 +2902,15 @@ PMOD_EXPORT void o_or(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    call_lfun(LFUN_OR,LFUN_ROR);
-    break;
+    if(!call_lfun(LFUN_OR,LFUN_ROR))
+      PIKE_ERROR("`|", "Bitwise or on objects without `| operator.\n", sp, 2);
+    return;
 
   case T_INT:
     sp--;
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	     sp[-1].u.integer | sp[0].u.integer);
-    break;
+    return;
 
   case T_MAPPING:
   {
@@ -3149,17 +3150,14 @@ PMOD_EXPORT void o_xor(void)
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_XOR,LFUN_RXOR))
-    {
-      int args = 2;
-      SIMPLE_ARG_TYPE_ERROR("`^", 1, "type");
-    }
-    break;
+      PIKE_ERROR("`^", "Bitwise xor on objects without `^ operator.\n", sp, 2);
+    return;
 
   case T_INT:
     sp--;
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	     sp[-1].u.integer ^ sp[0].u.integer);
-    break;
+    return;
 
   case T_MAPPING:
   {
@@ -3700,10 +3698,9 @@ PMOD_EXPORT void o_multiply(void)
   }
   default:
   do_lfun_multiply:
-    if(call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
-      return;
-
-    PIKE_ERROR("`*", "Bad arguments.\n", sp, 2);
+    if(!call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
+      PIKE_ERROR("`*", "Multiplication on objects without `* operator.\n", sp, 2);
+    return;
   }
 }
 
@@ -4058,7 +4055,8 @@ PMOD_EXPORT void o_divide(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
+    if(!call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE))
+      PIKE_ERROR("`/", "Division on objects without `/ operator.\n", sp, 2);
     return;
 
   case T_STRING:
