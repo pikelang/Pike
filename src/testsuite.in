@@ -10690,6 +10690,18 @@ ifefun(_verify_internals,
 // - `!
 // - `!=
 // - `%
+
+test_do([[
+   class A (int x) { mixed `%(mixed y) { return this_program(x % (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`%(A(13),A(5))->x, 3)
+test_eval_error([[
+   class B {}
+   `%(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 // - `&
 
 test_do([[

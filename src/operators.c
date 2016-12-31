@@ -4285,7 +4285,7 @@ do_lfun_modulo:
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_MOD,LFUN_RMOD))
-      PIKE_ERROR("`%", "Modulo on different types.\n", sp, 2);
+      PIKE_ERROR("`%", "Modulo on objects without `% operator.\n", sp, 2);
     return;
 
   case T_FLOAT:
