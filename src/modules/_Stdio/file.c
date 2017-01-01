@@ -989,95 +989,27 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
   message.msg.msg_flags = 0;
 #endif
 
-  if(r <= 65536)
   {
-    struct pike_string *str;
-
-    str=begin_shared_string(r);
-
-    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
-
-    do{
-      int fd=FD;
-      int e;
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-      /* XPG 4.2 */
-      message.msg.msg_control = &message.cmsgbuf;
-      message.msg.msg_controllen = sizeof(message.cmsgbuf);
-#else
-      /* BSD */
-      message.msg.msg_accrights = (void *)&message.cmsgbuf;
-      message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
-#endif
-      message.iov.iov_base = str->str + bytes_read;
-      message.iov.iov_len = r;
-      THREADS_ALLOW();
-      i = recvmsg(fd, &message.msg, 0);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>0)
-      {
-	r-=i;
-	bytes_read+=i;
-
-	if (
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	    message.msg.msg_controllen
-#else
-	    message.msg.msg_accrightslen
-#endif
-	    ) {
-	  check_message(&message.msg);
-	}
-
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	break;
-      }
-      else if(e != EINTR)
-      {
-	ERRNO=e;
-	if(!bytes_read)
-	{
-	  do_free_unlinked_pike_string(str);
-	  UNSET_ONERROR(ebuf);
-	  return 0;
-	}
-	break;
-      }
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    if(bytes_read == str->len)
-    {
-      return end_shared_string(str);
-    }else{
-      return end_and_resize_shared_string(str, bytes_read);
-    }
-
-  }else{
     /* For some reason, 8k seems to work faster than 64k.
      * (4k seems to be about 2% faster than 8k when using linux though)
      * /Hubbe (Per pointed it out to me..)
      */
-#define CHUNK ( 1024 * 8 )
-    INT32 try_read;
-    struct byte_buffer b;
+    struct byte_buffer b = BUFFER_INIT();
 
-    buffer_init(&b);
+    /* for small reads we allocate the whole size in the beginning,
+     * instead of only by individual chunks. We may want to change
+     * what small means.
+     */
+    if (r < 65*1024) buffer_make_space(&b, r+1);
+
     SET_ONERROR(ebuf, buffer_free, &b);
     do{
       int e;
-      try_read=MINIMUM(CHUNK,r);
+      const INT32 CHUNK = 1024 * 8;
+      INT32 try_read=MINIMUM(CHUNK,r);
+
+      /* allocate try_read bytes + the trailing null byte */
+      buffer_make_space(&b, try_read+1);
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
       message.msg.msg_control = &message.cmsgbuf;
@@ -1142,7 +1074,6 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
     return buffer_finish_pike_string(&b);
-#undef CHUNK
   }
 }
 
