@@ -109,6 +109,13 @@ o If a thread exits with by throwing, the thrown value is propagated to wait().
 
 o String.trim_all_whites() renamed String.trim().
 
+o Floats are no longer by default sorted before added. This may reduce
+  the precision but increases the speed of adding large number of
+  floats by a factor of 500. Applications handling floats with large
+  differences in magnitudes needs to apply the appropritate sorting
+  before arithmetics. As `+ was the only operator that performed
+  sorting, and functions like Array.sum did not, this was already a
+  concern.
 
 New modules
 -----------
