@@ -746,7 +746,7 @@ static struct pike_string *do_read(int fd,
 {
   size_t bytes = r;
   struct byte_buffer buf = BUFFER_INIT();
-  int e = 0, nomem = 0;
+  int e = 0;
 
   THREADS_ALLOW();
 
@@ -754,7 +754,8 @@ static struct pike_string *do_read(int fd,
       size_t len = MINIMUM(DIRECT_BUFSIZE, bytes);
       ptrdiff_t i;
 
-      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len))) {
+      /* make space for exactly len bytes plus the terminating null byte */
+      if (UNLIKELY(!buffer_make_space_nothrow(&buf, len+1))) {
           buffer_free(&buf);
           e = ENOMEM;
           break;
