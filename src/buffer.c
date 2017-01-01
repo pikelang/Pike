@@ -7,15 +7,12 @@
 PMOD_EXPORT void buffer_free(struct byte_buffer *b) {
     if (!b->dst) return;
     free(buffer_ptr(b));
-    b->length = 0;
-    b->left = 0;
-    b->dst = NULL;
+    buffer_init(b);
 }
 
-PMOD_EXPORT int buffer_make_space_nothrow(struct byte_buffer *b, size_t len) {
-    size_t new_length = b->length;
+PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2) {
     const size_t content_length = buffer_content_length(b);
-    size_t needed = content_length;
+    size_t new_length, needed;
     void *ptr;
 
 #ifdef PIKE_DEBUG
@@ -23,31 +20,44 @@ PMOD_EXPORT int buffer_make_space_nothrow(struct byte_buffer *b, size_t len) {
 #endif
     if (DO_SIZE_T_ADD_OVERFLOW(len, content_length, &needed)) goto OUT_OF_MEMORY_FATAL;
 
-    if (new_length < 16) new_length = 16;
+    if (pow2) {
+        if (new_length < 16) new_length = 16;
 
-    while (new_length < needed) {
-        if (DO_SIZE_T_MUL_OVERFLOW(new_length, 2, &new_length)) goto OUT_OF_MEMORY_FATAL;
+        while (new_length < needed) {
+            if (DO_SIZE_T_MUL_OVERFLOW(new_length, 2, &new_length)) goto OUT_OF_MEMORY_FATAL;
+        }
+    } else {
+        new_length = needed;
     }
 
-    /* fprintf(stderr, "BUF { left=%llu; length=%llu; dst=%p; }\n", b->left, b->length, b->dst); */
+#if 0
+    fprintf(stderr, "BUF { left=%llu; length=%llu; dst=%p; }\n", b->left, b->length, b->dst);
+#endif
 
     ptr = realloc(buffer_ptr(b), new_length);
 
     if (UNLIKELY(!ptr)) return 0;
 
-    /* fprintf(stderr, "realloc(%p, %llu) = %p\n", buffer_ptr(b), new_length, ptr); */
-    /* fprintf(stderr, "content_length: %llu\n", content_length); */
+#if 0
+    fprintf(stderr, "realloc(%p, %llu) = %p\n", buffer_ptr(b), new_length, ptr);
+    fprintf(stderr, "content_length: %llu\n", content_length);
+#endif
 
     b->dst = (char*)ptr + content_length;
     b->length = new_length;
     b->left = new_length - content_length;
     return 1;
 OUT_OF_MEMORY_FATAL:
+    /* This happens on overflow. */
+#ifdef PIKE_DEBUG
     Pike_fatal(msg_out_of_mem_2, len);
+#else
+    return 0;
+#endif
 }
 
-PMOD_EXPORT void buffer_make_space(struct byte_buffer *b, size_t len) {
-    if (UNLIKELY(!buffer_make_space_nothrow(b, len))) Pike_error(msg_out_of_mem_2, len);
+PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len, int pow2) {
+    if (UNLIKELY(!buffer_grow_nothrow(b, len, pow2))) Pike_error(msg_out_of_mem_2, len);
 }
 
 PMOD_EXPORT void* buffer_finish(struct byte_buffer *b) {
@@ -59,9 +69,7 @@ PMOD_EXPORT void* buffer_finish(struct byte_buffer *b) {
         if (!ret) ret = buffer_ptr(b);
     }
 
-    b->left = 0;
-    b->length = 0;
-    b->dst = NULL;
+    buffer_init(b);
 
     return ret;
 }

@@ -21,8 +21,8 @@ struct byte_buffer {
 #define BUFFER_INIT() ((struct byte_buffer){ 0, 0, NULL })
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
-PMOD_EXPORT void buffer_make_space(struct byte_buffer *b, size_t len);
-PMOD_EXPORT int buffer_make_space_nothrow(struct byte_buffer *b, size_t len);
+PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2);
+PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len, int pow2);
 PMOD_EXPORT const char *buffer_get_string(struct byte_buffer *b);
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
@@ -91,18 +91,57 @@ MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
     b->left -= len;
 }
 
+/**
+ * Ensures that the buffer has at least len bytes free space.
+ * If more space is be allocated, it will be power of 2 bytes.
+ * Throws an exception in out-of-memory situations.
+ */
 MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
     if (UNLIKELY(len > b->left)) {
-        buffer_make_space(b, len);
+        buffer_grow(b, len, 1);
 
         STATIC_ASSUME(len <= b->left);
     }
     return buffer_dst(b);
 }
 
+/**
+ * Same as buffer_ensure_space() but returns 0 in out-of-memory situations
+ * instead of throwing an exception.
+ */
 MACRO int buffer_ensure_space_nothrow(struct byte_buffer *b, size_t len) {
     if (UNLIKELY(len > b->left)) {
-        if (!buffer_make_space_nothrow(b, len)) return 0;
+        if (!buffer_grow_nothrow(b, len, 1)) return 0;
+
+        STATIC_ASSUME(len <= b->left);
+    }
+
+    return 1;
+}
+
+/**
+ * Ensures that the buffer has at least len bytes free space.
+ * If more space is be allocated, it will be exactly what is
+ * needed to fit len more bytes.
+ *
+ * Throws an exception in out-of-memory situations.
+ */
+MACRO void* buffer_make_space(struct byte_buffer *b, size_t len) {
+    if (UNLIKELY(len > b->left)) {
+        buffer_grow(b, len, 0);
+
+        STATIC_ASSUME(len <= b->left);
+    }
+    return buffer_dst(b);
+}
+
+/**
+ * Same as buffer_make_space() but returns 0 in out-of-memory situations
+ * instead of throwing an exception.
+ */
+MACRO int buffer_make_space_nothrow(struct byte_buffer *b, size_t len) {
+    if (UNLIKELY(len > b->left)) {
+        if (!buffer_grow_nothrow(b, len, 0)) return 0;
 
         STATIC_ASSUME(len <= b->left);
     }
