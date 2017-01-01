@@ -19,7 +19,7 @@ o 'auto' type added.
   similar.
 
   auto can be used as return type for a function, it will be the
-  logical or of all the types of the return statements in the
+  type-union of all the types of the return statements in the
   function.
 
 o typeof(X) can now be used as a type.
@@ -41,8 +41,6 @@ o ** operator added. It's exponentiation and works with most
   function called a "_pow" function in the first argument if it was an
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
-
-o New syntax for literal strings.
 
 o #pragma disassemble
 
@@ -112,10 +110,11 @@ o String.trim_all_whites() renamed String.trim().
 o Floats are no longer by default sorted before added. This may reduce
   the precision but increases the speed of adding large number of
   floats by a factor of 500. Applications handling floats with large
-  differences in magnitudes needs to apply the appropritate sorting
+  differences in magnitude need to apply the appropritate sorting
   before arithmetics. As `+ was the only operator that performed
   sorting, and functions like Array.sum did not, this was already a
   concern.
+
 
 New modules
 -----------
@@ -353,6 +352,7 @@ o Sql.mysql_result and Sql.mysqls_result have been deprecated.
   Use Sql.Result instead.
 
 o call_function() has been deprecated. Use `()() instead.
+
 
 Removed features and modules
 ----------------------------
