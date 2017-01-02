@@ -1,6 +1,20 @@
 Changes since Pike 8.0.388 (release 7)
 ----------------------------------------------------------------------
 
+Runtime
+-------
+
+o Stdio.Buffer & String.Buffer
+
+  Allocated constant program identifiers for both of the above.
+
+Building
+--------
+
+o Stdio
+
+  Fixed compilation issue on platforms without readdir_r().
+
 
 Changes since Pike 8.0.370 (release 6)
 ----------------------------------------------------------------------
