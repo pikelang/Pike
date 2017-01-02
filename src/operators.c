@@ -46,9 +46,9 @@
      */
 #define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN))
 
-static int has_lfun( enum LFUN lfun, int arg );
+static int has_lfun(enum LFUN lfun, int arg);
 static int call_lfun(enum LFUN left, enum LFUN right);
-static int call_lhs_lfun( enum LFUN lfun, int arg );
+static int call_lhs_lfun(enum LFUN lfun, int arg);
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1340,7 +1340,6 @@ static int pair_add()
     if(call_lfun(LFUN_ADD, LFUN_RADD))
       return 1; /* standard editon */
   }
-
 
   if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
   {
