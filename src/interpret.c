@@ -1583,7 +1583,9 @@ GLOBAL_DEF_PROG_COUNTER;
 #endif
 
 static void do_trace_efun_call(const struct svalue *s, INT32 args);
+#ifdef PIKE_DEBUG
 static void do_trace_efun_return(const struct svalue *s, int got_retval);
+#endif
 
 #include "interpret_functions_fixed.h"
 
