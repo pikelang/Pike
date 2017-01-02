@@ -245,7 +245,7 @@ struct timeval;
 #ifdef HAS___BUILTIN_ASSUME
 # define STATIC_ASSUME(X) __builtin_assume(X)
 #else
-# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(); } while(0)
+# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
 #endif
 
 #ifndef HAVE_WORKING_REALLOC_NULL
