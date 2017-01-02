@@ -73,6 +73,16 @@ o Extended sscanf %O
   numbers in scientific notation.
 
 
+Bug fixes
+---------
+
+o Operator functions
+
+  Calling operator functions with more than two arguments will now
+  work correctly for objects, where previously only the first two
+  objects where added.
+
+
 Incompatible changes
 --------------------
 
