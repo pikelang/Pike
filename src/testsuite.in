@@ -10787,8 +10787,49 @@ test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1
 
 test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
 
+test_do([[
+   class A (int x) { mixed `+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`+(A(3),A(2))->x, 5)
+test_eq(`+(A(3),A(2),A(5))->x, 10)
+test_eval_error([[
+   class B {}
+   `+(B(),A(5));
+]])
+test_do(add_constant("A"));
+
 test_eq(`+(1.0,2,3.0), 6.0)
 test_eq(`+(1,2.0,3), 6.0)
+
+test_do([[
+  class A {
+    mixed `+(string s) { return "`+"+s; }
+    mixed ``+(string s) { return s+"``+"; }
+    mixed `+=(string s) { return "`+="+s; }
+  };
+  add_constant("A",A);
+]])
+test_eq(`+(A(),"e"), "`+=e")
+test_any([[
+  array a=({ A() });
+  return `+(a[0],"e");
+]], "`+e")
+test_eq(`+("e",A()), "e``+")
+dnl test_eq(`+(UNDEFINED,"x"), "x")
+test_eq(`+(UNDEFINED,"x",A()), "x``+")
+dnl test_eq(`+("x",UNDEFINED), "x")
+test_eq(`+("x",UNDEFINED,A()), "x``+")
+test_eq(`+(0,"x"), "0x")
+test_eq(`+(0,"x",A()), "0x``+")
+test_eq(`+("x",0), "x0")
+test_eq(`+("x",0,A()), "x0``+")
+test_eq(`+(1,2.0,A()), "3.0``+")
+test_eq(`+(1.0,2,A()), "3.0``+")
+test_eq(`+(1,2,A()), "3``+")
+test_eq(`+(1.0,2.0,A()), "3.0``+")
+test_eq(`+("a","b",A()), "ab``+")
+test_do(add_constant("A"))
 
 // - `-
 

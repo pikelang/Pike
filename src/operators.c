@@ -47,6 +47,7 @@
 #define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN))
 
 static int has_lfun( enum LFUN lfun, int arg );
+static int call_lfun(enum LFUN left, enum LFUN right);
 static int call_lhs_lfun( enum LFUN lfun, int arg );
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
@@ -1326,6 +1327,118 @@ PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
   }
 }
 
+static int pair_add()
+{
+  if(TYPEOF(sp[-1]) == PIKE_T_OBJECT ||
+     TYPEOF(sp[-2]) == PIKE_T_OBJECT)
+  {
+    if(TYPEOF(sp[-2]) == PIKE_T_OBJECT &&
+       /* Note: pairwise add always has an extra reference! */
+       sp[-2].u.object->refs == 2 &&
+       call_lhs_lfun(LFUN_ADD_EQ,2))
+      return 1; /* optimized version of +. */
+    if(call_lfun(LFUN_ADD, LFUN_RADD))
+      return 1; /* standard editon */
+  }
+
+
+  if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
+  {
+    if(IS_UNDEFINED(sp-2))
+    {
+      stack_swap();
+      pop_stack();
+      return 1;
+    }
+
+    if(IS_UNDEFINED(sp-1))
+    {
+      pop_stack();
+      return 1;
+    }
+
+    /* string + X && X + string -> string */
+    if( TYPEOF(Pike_sp[-2]) == PIKE_T_STRING )
+      o_cast_to_string();
+    else if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING )
+    {
+      stack_swap();
+      o_cast_to_string();
+      stack_swap();
+    }
+    else if( TYPEOF(Pike_sp[-2]) == PIKE_T_FLOAT )
+    {
+      if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+      {
+        Pike_sp[-1].u.float_number = Pike_sp[-1].u.integer;
+        TYPEOF(Pike_sp[-1]) = PIKE_T_FLOAT;
+      }
+    }
+    else if( TYPEOF(Pike_sp[-1]) == PIKE_T_FLOAT )
+    {
+      if( TYPEOF(Pike_sp[-2]) == PIKE_T_INT )
+      {
+        Pike_sp[-2].u.float_number = Pike_sp[-2].u.integer;
+        TYPEOF(Pike_sp[-2]) = PIKE_T_FLOAT;
+      }
+    }
+
+    if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
+      return 0;
+  }
+
+  /* types now identical. */
+  switch(TYPEOF(sp[-1]))
+  {
+      /*
+        Note: these cases mainly tend to happen when there is an object
+        in the argument list.  otherwise pairwise addition is not done
+        using this code.
+      */
+    case PIKE_T_INT:
+      {
+        INT_TYPE res;
+        if (DO_INT_TYPE_ADD_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer, &res))
+        {
+          convert_svalue_to_bignum(sp-2);
+          call_lfun(LFUN_ADD,LFUN_RADD);
+          return 1;
+        }
+        sp[-2].u.integer = res;
+        sp--;
+      }
+      return 1;
+    case PIKE_T_FLOAT:
+      sp[-2].u.float_number += sp[-1].u.float_number;
+      sp--;
+      return 1;
+    case PIKE_T_STRING:
+      Pike_sp[-2].u.string = add_and_free_shared_strings(Pike_sp[-2].u.string,
+                                                         Pike_sp[-1].u.string);
+      Pike_sp--;
+      return 1;
+
+    case PIKE_T_ARRAY:
+      push_array( add_arrays(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_MAPPING:
+      push_mapping( add_mappings(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_MULTISET:
+      push_multiset( add_multisets(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_OBJECT:
+      return call_lfun(LFUN_ADD,LFUN_RADD);
+  }
+  return 0;
+}
+
 /*! @decl mixed `+(mixed arg)
  *! @decl mixed `+(object arg, mixed ... more)
  *! @decl int `+(int arg, int ... more)
@@ -1405,6 +1518,9 @@ PMOD_EXPORT void f_add(INT32 args)
   INT_TYPE e,size;
   TYPE_FIELD types;
 
+  if(!args)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
+
  tail_recurse:
   if (args == 1) return;
 
@@ -1414,67 +1530,23 @@ PMOD_EXPORT void f_add(INT32 args)
   switch(types)
   {
   default:
-    if(!args)
     {
-      SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
-    }else{
-      if(types & BIT_OBJECT)
+    struct svalue *s=sp-args;
+    push_svalue(s);
+    for(e=1;e<args;e++)
+    {
+      push_svalue(s+e);
+      if(!pair_add())
       {
-	struct object *o;
-	struct program *p;
-	int i;
-
-	if(TYPEOF(sp[-args]) == T_OBJECT && sp[-args].u.object->prog)
-	{
-	  /* The first argument is an object. */
-	  o = sp[-args].u.object;
-	  p = o->prog->inherits[SUBTYPEOF(sp[-args])].prog;
-	  if(o->refs==1 &&
-	     (i = FIND_LFUN(p, LFUN_ADD_EQ)) != -1)
-	  {
-	    apply_low(o, i, args-1);
-	    stack_pop_keep_top();
-	    return;
-	  }
-	  if((i = FIND_LFUN(p, LFUN_ADD)) != -1)
-	  {
-	    apply_low(o, i, args-1);
-	    free_svalue(sp-2);
-	    sp[-2]=sp[-1];
-	    sp--;
-	    dmalloc_touch_svalue(sp);
-	    return;
-	  }
-	}
-
-	for(e=1;e<args;e++)
-	{
-	  if(TYPEOF(sp[e-args]) == T_OBJECT &&
-	     (p = (o = sp[e-args].u.object)->prog) &&
-	     (i = FIND_LFUN(p->inherits[SUBTYPEOF(sp[e-args])].prog,
-			    LFUN_RADD)) != -1)
-	  {
-	    /* There's an object with a lfun::``+() at argument @[e]. */
-	    if ((args = low_rop(o, i, e, args)) > 1) {
-	      goto tail_recurse;
-	    }
-	    return;
-	  }
-	}
+        Pike_error("Addition on unsupported types: %s + %s\nm",
+                   get_name_of_type(TYPEOF(sp[-1])),
+                   get_name_of_type(TYPEOF(*s)));
       }
     }
-
-    switch(TYPEOF(sp[-args]))
-    {
-      case T_PROGRAM:
-      case T_FUNCTION:
-	SIMPLE_ARG_TYPE_ERROR("`+", 1,
-                              "string|object|int|float|array|mapping|multiset");
+    assign_svalue(s,sp-1);
+    pop_n_elems(sp-s-1);
+    return;
     }
-    bad_arg_error("`+", sp-args, args, 1,
-		  "string|object|int|float|array|mapping|multiset", sp-args,
-		  "Incompatible types\n");
-    return; /* compiler hint */
 
   case BIT_STRING:
   {
