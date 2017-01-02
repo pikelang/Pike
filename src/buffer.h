@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "bitvector.h"
 #include "pike_memory.h"
