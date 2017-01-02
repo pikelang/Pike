@@ -21,6 +21,7 @@ PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2)
     if (DO_SIZE_T_ADD_OVERFLOW(len, content_length, &needed)) goto OUT_OF_MEMORY_FATAL;
 
     if (pow2) {
+        new_length = b->length;
         if (new_length < 16) new_length = 16;
 
         while (new_length < needed) {
