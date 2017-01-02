@@ -297,7 +297,8 @@ PIKECLASS Deflate
     buffer_init(&retbuf);
     SET_ONERROR(err, buffer_free, &retbuf);
 
-    buffer_alloc(&retbuf, DEFL_BUF_SIZE);
+    buffer_make_space(&retbuf, DEFL_BUF_SIZE);
+    buffer_advance(&retbuf, DEFL_BUF_SIZE);
     do_deflate(data, &retbuf, BZ_FLUSH);
 
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
@@ -348,7 +349,8 @@ PIKECLASS Deflate
     buffer_init(&retbuf);
     SET_ONERROR(err, buffer_free, &retbuf);
 
-    buffer_alloc(&retbuf, DEFL_BUF_SIZE);
+    buffer_make_space(&retbuf, DEFL_BUF_SIZE);
+    buffer_advance(&retbuf, DEFL_BUF_SIZE);
 
     do_deflate(data, &retbuf, BZ_FINISH);
 
@@ -582,7 +584,8 @@ PIKECLASS Inflate
     /* the input buffer is now provided, provide an output buffer*/
 
     buffer_init(retbuf);
-    buffer_alloc(retbuf, INFL_BUF_SIZE);
+    buffer_make_space(retbuf, INFL_BUF_SIZE);
+    buffer_advance(retbuf, INFL_BUF_SIZE);
     s->next_out = buffer_ptr(retbuf);
     s->avail_out = INFL_BUF_SIZE;
 
