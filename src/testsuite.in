@@ -10831,6 +10831,15 @@ test_eq(`+(1.0,2.0,A()), "3.0``+")
 test_eq(`+("a","b",A()), "ab``+")
 test_do(add_constant("A"))
 
+test_do([[
+  class A { mixed ``+(mixed x) { return sprintf("%O",x)-" "-"\n"; } };
+  add_constant("A",A);
+]])
+test_eq(`+(({1}),({2}),A()), "({/*2elements*/1,2})")
+test_eq(`+((<1>),(<2>),A()), "(</*2elements*/1,2>)")
+test_eq(`+(([1:2]),([3:4]),A()), "([/*2elements*/1:2,3:4])")
+test_do(add_constant("A"))
+
 // - `-
 
 test_do([[
