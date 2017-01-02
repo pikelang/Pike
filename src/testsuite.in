@@ -10731,7 +10731,9 @@ test_do([[
    add_constant("A",A);
 ]])
 test_eq(`&(A(7),A(5))->x, 5)
+test_eq(`&(A(7),5)->x, 5)
 test_eq(`&(A(7),A(5),A(4))->x, 4)
+test_eq(`&(A(7),A(5),4)->x, 4)
 test_eval_error([[
    class B {}
    `&(B(),A(5));
@@ -10750,7 +10752,9 @@ test_do([[
    add_constant("A",A);
 ]])
 test_eq(`*(A(3),A(2))->x, 6)
+test_eq(`*(A(3),2)->x, 6)
 test_eq(`*(A(3),A(2),A(5))->x, 30)
+test_eq(`*(A(3),A(2),5)->x, 30)
 test_eval_error([[
    class B {}
    `*(B(),A(5));
@@ -10792,6 +10796,7 @@ test_do([[
    add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
+test_eq(`+(A(3),2)->x, 5)
 test_eq(`+(A(3),A(2),A(5))->x, 10)
 test_eval_error([[
    class B {}
@@ -10843,11 +10848,17 @@ test_do(add_constant("A"))
 // - `-
 
 test_do([[
-   class A (int x) { mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); } };
+   class A (int x) {
+     mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); }
+     // Optimizer will modify the code which requires `+.
+     mixed `+(int y) { return this_program(x+y); }
+   };
    add_constant("A",A);
 ]])
 test_eq(`-(A(5),A(2))->x, 3)
+test_eq(`-(A(5),2)->x, 3)
 test_eq(`-(A(5),A(2),A(1))->x, 2)
+test_eq(`-(A(5),A(2),1)->x, 2)
 test_eval_error([[
    class B {}
    `-(B(),A(5));
@@ -10871,6 +10882,20 @@ test_eq(`-(Gmp.mpz(1), 4.5), Gmp.mpz(-3))
 // - `->
 // - `->=
 // - `/
+
+test_do([[
+   class A (int x) { mixed `/(mixed y) { return this_program(x / (objectp(y)?y->x:y)); } };
+   add_constant("A",A);
+]])
+test_eq(`/(A(8),A(2))->x, 4)
+test_eq(`/(A(8),2)->x, 4)
+test_eq(`/(A(8),A(2),A(2))->x, 2)
+test_eq(`/(A(8),A(2),2)->x, 2)
+test_eval_error([[
+   class B {}
+   `/(B(),A(5));
+]])
+test_do(add_constant("A"));
 
 test_eq(`/(4.5, Gmp.mpz(2)), 2.25)
 test_eq(`/(Gmp.mpz(2), 4.0), 0.5))
@@ -10905,7 +10930,9 @@ test_do([[
    add_constant("A",A);
 ]])
 test_eq(`|(A(3),A(6))->x, 7)
+test_eq(`|(A(3),6)->x, 7)
 test_eq(`|(A(3),A(6),A(9))->x, 15)
+test_eq(`|(A(3),A(6),9)->x, 15)
 test_eval_error([[
    class B {}
    `|(B(),A(5));
