@@ -1575,7 +1575,7 @@ static int pair_add()
  */
 PMOD_EXPORT void f_add(INT32 args)
 {
-  INT_TYPE e,size;
+  INT_TYPE e;
   TYPE_FIELD types=0;
 
   if(!args)
@@ -1635,8 +1635,8 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_INT:
   {
-    size = 0;
-    for(e = -args; e < 0; e++)
+    INT_TYPE size = sp[-args].u.integer;
+    for(e = -args+1; e < 0; e++)
     {
       if (DO_INT_TYPE_ADD_OVERFLOW(size, sp[e].u.integer, &size))
       {
@@ -1648,8 +1648,8 @@ PMOD_EXPORT void f_add(INT32 args)
     sp-=args;
     push_int(size);
     break;
-
   }
+
   case BIT_FLOAT:
     {
       double res = Pike_sp[-args].u.float_number;
@@ -1673,38 +1673,6 @@ PMOD_EXPORT void f_add(INT32 args)
     return;
   }
 
-#define ADD_WITH_UNDEFINED(TYPE, T_TYPEID, ADD_FUNC, PUSH_FUNC) do {	\
-    int e;								\
-    if (TYPEOF(sp[-args]) == T_INT) {					\
-      if(IS_UNDEFINED(sp-args))						\
-      {									\
-	struct TYPE *x;							\
-									\
-	for(e=1;e<args;e++)						\
-	  if(TYPEOF(sp[e-args]) != T_TYPEID)				\
-	    SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
-									\
-	x = ADD_FUNC(sp-args+1,args-1);					\
-	pop_n_elems(args);						\
-	PUSH_FUNC(x);							\
-	return;								\
-      }									\
-      									\
-      for(e=1;e<args;e++)						\
-	if (TYPEOF(sp[e-args]) != T_INT)				\
-	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, "int");			\
-    }									\
-									\
-    else {								\
-      for(e=1;e<args;e++)						\
-	if (TYPEOF(sp[e-args]) != T_TYPEID)				\
-	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
-    }									\
-									\
-    DO_IF_DEBUG (Pike_fatal ("Shouldn't be reached.\n"));		\
-    break;								\
-  } while (0)
-
 #define ADD(TYPE, ADD_FUNC, PUSH_FUNC) do {				\
     struct TYPE *x = ADD_FUNC (sp - args, args);			\
     pop_n_elems (args);							\
@@ -1712,31 +1680,48 @@ PMOD_EXPORT void f_add(INT32 args)
     return;								\
   } while (0)
 
-  case BIT_ARRAY|BIT_INT:
-    ADD_WITH_UNDEFINED (array, T_ARRAY, add_arrays, push_array);
-    break;
+#define REMOVE_UNDEFINED(TYPE)                                        \
+  do {                                                                \
+    int to = -args, i=-args;                                          \
+    for(; i<0; i++)                                                   \
+    {                                                                 \
+      if(TYPEOF(Pike_sp[i]) == PIKE_T_INT)                            \
+      {                                                               \
+        if(!IS_UNDEFINED(Pike_sp+i))                                  \
+          SIMPLE_ARG_TYPE_ERROR("`+", args+i, #TYPE);                 \
+      }                                                               \
+      else if(to!=i)                                                  \
+        Pike_sp[to++] = Pike_sp[i];                                   \
+      else to++;                                                      \
+    }                                                                 \
+    for(int i=to; i<0; i++)                                           \
+      TYPEOF(Pike_sp[i])=PIKE_T_INT;                                  \
+    Pike_sp += to;                                                    \
+    args += to;                                                       \
+  } while(0);
 
+  case BIT_ARRAY|BIT_INT:
+    REMOVE_UNDEFINED (array);
+    /* Fallthrough */
   case BIT_ARRAY:
     ADD (array, add_arrays, push_array);
     break;
 
   case BIT_MAPPING|BIT_INT:
-    ADD_WITH_UNDEFINED (mapping, T_MAPPING, add_mappings, push_mapping);
-    break;
-
+    REMOVE_UNDEFINED (mapping);
+    /* Fallthrough */
   case BIT_MAPPING:
     ADD (mapping, add_mappings, push_mapping);
     break;
 
   case BIT_MULTISET|BIT_INT:
-    ADD_WITH_UNDEFINED (multiset, T_MULTISET, add_multisets, push_multiset);
-    break;
-
+    REMOVE_UNDEFINED (multiset);
+    /* Fallthrough */
   case BIT_MULTISET:
     ADD (multiset, add_multisets, push_multiset);
     break;
 
-#undef ADD_WITH_UNDEFINED
+#undef REMOVE_UNDEFINED
 #undef ADD
   }
 }
