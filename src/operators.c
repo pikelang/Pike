@@ -1327,6 +1327,67 @@ PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
   }
 }
 
+static void add_strings(INT32 args)
+{
+  struct pike_string *r;
+  PCHARP buf;
+  ptrdiff_t tmp;
+  int max_shift=0;
+  ptrdiff_t size=0,e;
+  int num=0;
+
+  for(e=-args;e<0;e++)
+  {
+    if(sp[e].u.string->len != 0) num++;
+    size += sp[e].u.string->len;
+    if(sp[e].u.string->size_shift > max_shift)
+      max_shift=sp[e].u.string->size_shift;
+  }
+
+  /* All strings are empty. */
+  if(num == 0)
+  {
+    pop_n_elems(args-1);
+    return;
+  }
+
+  /* Only one string has length. */
+  if(num == 1)
+  {
+    for(e=-args;e<0;e++)
+    {
+      if( sp[e].u.string->len )
+      {
+        if( e != -args )
+        {
+          r = sp[e].u.string;
+          sp[e].u.string = sp[-args].u.string;
+          sp[-args].u.string = r;
+        }
+      }
+    }
+    pop_n_elems(args-1);
+    return;
+  }
+
+  tmp=sp[-args].u.string->len;
+  r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
+  mark_free_svalue (sp - args);
+  buf=MKPCHARP_STR_OFF(r,tmp);
+  for(e=-args+1;e<0;e++)
+  {
+    if( sp[e].u.string->len )
+    {
+      update_flags_for_add( r, sp[e].u.string );
+      pike_string_cpy(buf,sp[e].u.string);
+      INC_PCHARP(buf,sp[e].u.string->len);
+      free_string(sp[e].u.string);
+    }
+  }
+  Pike_sp -= args-1;
+  SET_SVAL(sp[-1], T_STRING, 0, string, low_end_shared_string(r));
+}
+
 static int pair_add()
 {
   if(TYPEOF(sp[-1]) == PIKE_T_OBJECT ||
@@ -1515,218 +1576,65 @@ static int pair_add()
 PMOD_EXPORT void f_add(INT32 args)
 {
   INT_TYPE e,size;
-  TYPE_FIELD types;
+  TYPE_FIELD types=0;
 
   if(!args)
     SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
 
- tail_recurse:
   if (args == 1) return;
 
-  types=0;
   for(e=-args;e<0;e++) types |= 1<<TYPEOF(sp[e]);
 
   switch(types)
   {
   default:
+  pairwise_add:
     {
-    struct svalue *s=sp-args;
-    push_svalue(s);
-    for(e=1;e<args;e++)
-    {
-      push_svalue(s+e);
-      if(!pair_add())
+      struct svalue *s=sp-args;
+      push_svalue(s);
+      for(e=1;e<args;e++)
       {
-        Pike_error("Addition on unsupported types: %s + %s\nm",
-                   get_name_of_type(TYPEOF(sp[-1])),
-                   get_name_of_type(TYPEOF(*s)));
+        push_svalue(s+e);
+        if(!pair_add())
+        {
+          Pike_error("Addition on unsupported types: %s + %s\nm",
+                     get_name_of_type(TYPEOF(sp[-1])),
+                     get_name_of_type(TYPEOF(*s)));
+        }
       }
-    }
-    assign_svalue(s,sp-1);
-    pop_n_elems(sp-s-1);
-    return;
+      assign_svalue(s,sp-1);
+      pop_n_elems(sp-s-1);
+      return;
     }
 
   case BIT_STRING:
-  {
-    struct pike_string *r;
-    PCHARP buf;
-    ptrdiff_t tmp;
-    int max_shift=0;
-
-    size=0;
-    for(e=-args;e<0;e++)
-    {
-      size+=sp[e].u.string->len;
-      if(sp[e].u.string->size_shift > max_shift)
-	max_shift=sp[e].u.string->size_shift;
-    }
-
-    if(size == sp[-args].u.string->len)
-    {
-      pop_n_elems(args-1);
-      return;
-    }
-    else if(args == 2 && (size == sp[-1].u.string->len))
-    {
-      stack_swap();
-      pop_stack();
-      return;
-    }
-
-    tmp=sp[-args].u.string->len;
-    r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
-    mark_free_svalue (sp - args);
-    buf=MKPCHARP_STR_OFF(r,tmp);
-    for(e=-args+1;e<0;e++)
-    {
-      if( sp[e].u.string->len )
-      {
-        update_flags_for_add( r, sp[e].u.string );
-        pike_string_cpy(buf,sp[e].u.string);
-        INC_PCHARP(buf,sp[e].u.string->len);
-      }
-    }
-    SET_SVAL(sp[-args], T_STRING, 0, string, low_end_shared_string(r));
-
-    for(e=-args+1;e<0;e++)
-      free_string(sp[e].u.string);
-
-    sp-=args-1;
-
-    break;
-  }
+    add_strings(args);
+    return;
 
   case BIT_STRING | BIT_INT:
   case BIT_STRING | BIT_FLOAT:
   case BIT_STRING | BIT_FLOAT | BIT_INT:
-  {
-    struct pike_string *r;
-    PCHARP buf;
-    char buffer[MAX_NUM_BUF];
-    int max_shift=0, len;
-
-    if ((TYPEOF(sp[-args]) != T_STRING) && (TYPEOF(sp[1-args]) != T_STRING)) {
-      struct svalue *save_sp = sp;
-      /* We need to perform a normal addition first.
-       */
-      for (e=-args; e < 0; e++) {
-	if (TYPEOF(save_sp[e]) == T_STRING)
-	  break;
-	*(sp++) = save_sp[e];
-	dmalloc_touch_svalue(Pike_sp-1);
-      }
-      /* Perform the addition. */
-      f_add(args+e);
-      dmalloc_touch_svalue(Pike_sp-1);
-      save_sp[--e] = *(--sp);
-#ifdef PIKE_DEBUG
-      if (sp != save_sp) {
-	Pike_fatal("f_add(): Lost track of stack %p != %p\n", sp, save_sp);
-      }
-#endif /* PIKE_DEBUG */
-      /* Perform the rest of the addition. */
-      f_add(-e);
-#ifdef PIKE_DEBUG
-      if (sp != save_sp + 1 + e) {
-	Pike_fatal("f_add(): Lost track of stack (2) %p != %p\n",
-	      sp, save_sp + 1 + e);
-      }
-#endif /* PIKE_DEBUG */
-      /* Adjust the stack. */
-      save_sp[-args] = sp[-1];
-      sp = save_sp + 1 - args;
-      return;
-    } else {
-      e = -args;
+    if ((TYPEOF(sp[-args]) != T_STRING) && (TYPEOF(sp[1-args]) != T_STRING))
+    {
+      /* Note: Could easily use pairwise add until at first string. */
+      goto pairwise_add;
     }
-
-    size=0;
     for(e=-args;e<0;e++)
     {
-      switch(TYPEOF(sp[e]))
+      if( TYPEOF(sp[e]) != PIKE_T_STRING )
       {
-      case T_STRING:
-	size+=sp[e].u.string->len;
-	if(sp[e].u.string->size_shift > max_shift)
-	  max_shift=sp[e].u.string->size_shift;
-	break;
-
-      case T_INT:
-	size += MAX_INT_SPRINTF_LEN;
-	break;
-
-      case T_FLOAT:
-	size += MAX_FLOAT_SPRINTF_LEN;
-	break;
+        *Pike_sp = sp[e];
+        Pike_sp++;
+        o_cast_to_string(); /* free:s old sp[e] */
+        sp[e-1] = Pike_sp[-1];
+        Pike_sp--;
       }
     }
-
-    r=begin_wide_shared_string(size,max_shift);
-    buf=MKPCHARP_STR(r);
-    size=0;
-
-    for(e=-args;e<0;e++)
-    {
-      switch(TYPEOF(sp[e]))
-      {
-      case T_STRING:
-	pike_string_cpy(buf,sp[e].u.string);
-	INC_PCHARP(buf,sp[e].u.string->len);
-	break;
-
-      case T_INT:
-	sprintf(buffer,"%"PRINTPIKEINT"d",sp[e].u.integer);
-#ifdef PIKE_DEBUG
-	if (strlen (buffer) > MAX_INT_SPRINTF_LEN)
-	  Pike_fatal ("Formatted integer %s is %"PRINTSIZET"u, "
-		      "longer than assumed max %"PRINTSIZET"u.\n",
-		      buffer, strlen (buffer), MAX_INT_SPRINTF_LEN);
-#endif
-	goto append_buffer;
-
-      case T_FLOAT:
-	sprintf(buffer,"%.*"PRINTPIKEFLOAT"g",
-		PIKEFLOAT_DIG, sp[e].u.float_number);
-	/* See comment for T_FLOAT in o_cast_to_string. */
-	if (!strchr (buffer, '.') && !strchr (buffer, 'e'))
-	  strcat (buffer, ".0");
-#ifdef PIKE_DEBUG
-	if (strlen (buffer) > MAX_FLOAT_SPRINTF_LEN)
-	  Pike_fatal ("Formatted float %s is %"PRINTSIZET"u, "
-		      "longer than assumed max %"PRINTSIZET"u.\n",
-		      buffer, strlen (buffer), MAX_FLOAT_SPRINTF_LEN);
-#endif
-
-      append_buffer:
-        len = strlen(buffer);
-	switch(max_shift)
-	{
-	  case 0:
-	    convert_0_to_0((p_wchar0 *)buf.ptr,buffer,len);
-	    break;
-
-	  case 1:
-	    convert_0_to_1((p_wchar1 *)buf.ptr,(p_wchar0 *)buffer,len);
-	    break;
-
-	  case 2:
-	    convert_0_to_2((p_wchar2 *)buf.ptr,(p_wchar0 *)buffer,len);
-	    break;
-	}
-	INC_PCHARP(buf,len);
-      }
-    }
-    r = realloc_unlinked_string(r, SUBTRACT_PCHARP(buf, MKPCHARP_STR(r)));
-    r = low_end_shared_string(r);
-    pop_n_elems(args);
-    push_string(r);
-    break;
-  }
+    add_strings(args);
+    return;
 
   case BIT_INT:
   {
-    int of = 0;
     size = 0;
     for(e = -args; e < 0; e++)
     {
