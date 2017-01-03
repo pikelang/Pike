@@ -1393,7 +1393,8 @@ PIKECLASS Curve25519
       flags ID_PROTECTED|ID_VARIANT;
     {
       if (TYPEOF(*data) == PIKE_T_OBJECT) {
-	apply(data->u.object, "read", 0);
+	push_int(CURVE25519_SIZE);
+	apply(data->u.object, "read", 1);
       }
       apply_current(f_Nettle_Curve25519_Point_set_fun_num, 1);
     }
