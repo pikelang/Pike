@@ -82,6 +82,10 @@ o Operator functions
   work correctly for objects, where previously only the first two
   objects where added.
 
+  When adding arrays, multisets and mappings, UNDEFINED will now
+  always be ignored. Previously it was only ignored when first in the
+  argument list, otherwise an exception would be thrown.
+
 
 Incompatible changes
 --------------------
