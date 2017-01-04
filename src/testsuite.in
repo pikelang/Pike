@@ -10895,6 +10895,17 @@ test_eq(`+((<1>),(<2>),A()), "(</*2elements*/1,2>)")
 test_eq(`+(([1:2]),([3:4]),A()), "([/*2elements*/1:2,3:4])")
 test_do(add_constant("A"))
 
+test_do([[
+  class A {
+    mixed `+(mixed x) { return UNDEFINED; }
+    mixed ``+(mixed x) { return UNDEFINED; }
+  };
+  add_constant("A",A);
+]])
+test_eval_error(`+(A(), ({1}), ({2})), ({1,2}))
+test_eval_error(`+(({1}), A(), ({2})), ({1,2}))
+test_do(add_constant("A"))
+
 // - `-
 
 test_do([[

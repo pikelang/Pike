@@ -1399,7 +1399,7 @@ static int pair_add()
        call_lhs_lfun(LFUN_ADD_EQ,2))
       return 1; /* optimized version of +. */
     if(call_lfun(LFUN_ADD, LFUN_RADD))
-      return 1; /* standard editon */
+      return !IS_UNDEFINED(sp-1);
   }
 
   if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
@@ -1598,7 +1598,7 @@ PMOD_EXPORT void f_add(INT32 args)
         if(!pair_add())
         {
           Pike_error("Addition on unsupported types: %s + %s\nm",
-                     get_name_of_type(TYPEOF(sp[-1])),
+                     get_name_of_type(TYPEOF(*(s+e))),
                      get_name_of_type(TYPEOF(*s)));
         }
       }
