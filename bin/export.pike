@@ -132,7 +132,7 @@ string git_cmd(string ... args)
   mapping r = Process.run( ({ "git" }) + args );
   if( r->exitcode )
     exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
-  return String.trim_all_whites(r->stdout||"");
+  return String.trim(r->stdout||"");
 }
 
 void git_bump_version()

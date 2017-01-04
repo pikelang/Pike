@@ -2956,7 +2956,7 @@ class Debug
       case "breakpoint":
       case "break":
       {
-	if(String.trim_all_whites(foo[1..]*"")=="")
+        if(String.trim(foo[1..]*"")=="")
 	  return "No breakpoint given.\n";
 	Breakpoint bp=set_breakpoint(foo[1..]*" ");
 	return sprintf("%s\n",bp);
