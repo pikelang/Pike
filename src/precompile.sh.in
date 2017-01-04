@@ -17,7 +17,17 @@ export LIBDIR_SRC
 export TMP_BUILDDIR
 export SRCDIR
 
-TMP_OUT="${TMPDIR-/tmp}/precompile-$$.out"
+# NB: /usr/bin/id on Solaris doesn't support -u.
+for ID in /usr/xpg4/bin/id /usr/bin/id /bin/id id; do
+    if [ -x "$ID" ]; then
+	if "$ID" -u >/dev/null 2>&1; then
+	    break;
+	fi
+    fi
+done
+export ID
+
+TMP_OUT="${TMPDIR-/tmp}/precompile-`$ID -u 2>/dev/null`-$$.out"
 export TMP_OUT
 
 # Attempt to avoid leaving droppings on user abort.
