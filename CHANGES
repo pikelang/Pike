@@ -129,6 +129,9 @@ o Floats are no longer by default sorted before added. This may reduce
   sorting, and functions like Array.sum did not, this was already a
   concern.
 
+o Returning UNDEFINED from `+ and ``+ is not allowed and will cause an
+  exception.
+
 
 New modules
 -----------
