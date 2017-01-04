@@ -17,6 +17,19 @@ export LIBDIR_SRC
 export TMP_BUILDDIR
 export SRCDIR
 
+TMP_OUT="${TMPDIR-/tmp}/precompile-$$.out"
+export TMP_OUT
+
+# Attempt to avoid leaving droppings on user abort.
+signal_exit()
+{
+    echo "Aborted by signal." >&2
+    rm -f "${TMP_OUT}"
+    exit 1
+}
+# HUP, INT, TERM
+trap signal_exit 1 2 15
+
 retries=.
 
 if test "@CROSS@" = "yes"; then
@@ -132,14 +145,14 @@ if test "x${RUNPIKE-}" != x ; then
 # Do not output directly, if this generates data but the command
 # fails we have an issue. So, first output to a temporary file.
 
-  $RUNPIKE $SCRIPT "$@" >${TMPDIR-/tmp}/precompile-$$.out
+  $RUNPIKE $SCRIPT "$@" >${TMP_OUT}
 
   if [ $? = 0 ]; then
-    cat ${TMPDIR-/tmp}/precompile-$$.out >&5
-    rm -f ${TMPDIR-/tmp}/precompile-$$.out
+    cat ${TMP_OUT} >&5
+    rm -f ${TMP_OUT}
     exit 0
   fi
-  rm -f ${TMPDIR-/tmp}/precompile-$$.out
+  rm -f ${TMP_OUT}
 fi
 
 method="Q$method"
