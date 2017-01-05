@@ -5339,10 +5339,25 @@ int dooptcode(struct pike_string *name,
     if(!Pike_compiler->num_parse_error)
     {
       extern int remove_clear_locals;
+      int saved_fun_num =
+	Pike_compiler->compiler_frame->current_function_number;
+      /* NB: The following prototype is needed to propagate
+       *     the IDENTIFIER_VARARGS flag to do_code_block().
+       */
+      Pike_compiler->compiler_frame->current_function_number =
+	define_function(name,
+			type,
+			(unsigned INT16)modifiers,
+			(unsigned INT8)(IDENTIFIER_PIKE_FUNCTION |
+					IDENTIFIER_HAS_BODY |
+					vargs),
+			NULL, (unsigned INT16)
+			(Pike_compiler->compiler_frame->opt_flags));
       remove_clear_locals=args;
       if(vargs) remove_clear_locals++;
       tmp.offset=do_code_block(n);
       remove_clear_locals=0x7fffffff;
+      Pike_compiler->compiler_frame->current_function_number = saved_fun_num;
     }
   }
 
