@@ -53,6 +53,11 @@ o '__weak__' modifier added.
 
   It is now possible to declare object variables to have weak references.
 
+o Support for arguments to implicit lambdas added.
+
+  Implicit lambdas now behave as if they were declared as
+  lambda(mixed ... __ARGS__).
+
 o Function local function declarations are now statements
   (and not expressions). This means that there is no longer
   any need to terminate them with a semicolon.

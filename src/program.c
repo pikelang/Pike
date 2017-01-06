@@ -151,7 +151,7 @@ static const int lock_depth = 1;
 #define DECLARE
 #include "compilation.h"
 
-struct pike_string *this_program_string, *this_string;
+struct pike_string *this_program_string, *this_string, *args_string;
 static struct pike_string *this_function_string;
 static struct pike_string *UNDEFINED_string;
 
@@ -11148,6 +11148,7 @@ void init_program(void)
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
+  MAKE_CONST_STRING(args_string, "__ARGS__");
 
   MAKE_CONST_STRING(parser_system_string, "parser");
   MAKE_CONST_STRING(type_check_system_string, "type_check");

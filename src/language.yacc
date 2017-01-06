@@ -3617,6 +3617,10 @@ optional_block: /* EMPTY */ { $$=0; }
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
+
+    push_type(T_MIXED);
+    push_type(T_ARRAY);
+    add_local_name(args_string, compiler_pop_type(), 0);
   }
   statements end_block
   {
@@ -3629,12 +3633,6 @@ optional_block: /* EMPTY */ { $$=0; }
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
 
-    /* block code */
-    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    $5 = pop_local_variables($<number>4, $5);
-
-    debug_malloc_touch($5);
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
     if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
@@ -3651,15 +3649,25 @@ optional_block: /* EMPTY */ { $$=0; }
       push_type(T_MIXED);
     }
 
-    push_type(T_VOID);
+    if (Pike_compiler->compiler_frame->variable[0].flags & LOCAL_VAR_IS_USED) {
+      /* __ARGS__ is used. */
+      push_type(T_MIXED);
+    } else {
+      /* Don't warn about the unused argument. */
+      Pike_compiler->compiler_frame->variable[0].flags |= LOCAL_VAR_IS_USED;
+      push_type(T_VOID);
+    }
+
     push_type(T_MANY);
-/*
-    e=$5-1;
-    for(; e>=0; e--)
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-*/
 
     type=compiler_pop_type();
+
+    /* block code */
+    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
+    $5 = pop_local_variables($<number>4, $5);
+
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
     name = get_new_name(NULL);
 
