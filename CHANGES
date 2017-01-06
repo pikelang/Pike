@@ -91,6 +91,11 @@ o Operator functions
   always be ignored. Previously it was only ignored when first in the
   argument list, otherwise an exception would be thrown.
 
+  The LFUNs will now be called with a consistent number of
+  arguments. Pike implementations rarely implemented varargs on
+  operator LFUNs, so this change should address many potential hidden
+  errors.
+
 
 Incompatible changes
 --------------------

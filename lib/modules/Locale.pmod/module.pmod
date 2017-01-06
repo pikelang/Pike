@@ -521,29 +521,29 @@ class DeferredLocale( protected string project,
     }
   }
 
-  protected string `+(mixed ... args)
+  protected string `+(mixed arg)
   {
-    return predef::`+(lookup(), @args);
+    return predef::`+(lookup(), arg);
   }
 
-  protected string ``+(mixed ... args)
+  protected string ``+(mixed arg)
   {
-    return predef::`+(@args, lookup());
+    return predef::`+(arg, lookup());
   }
 
-  protected string `-(mixed ... args)
+  protected string `-(mixed arg)
   {
-    return predef::`-(lookup(), @args);
+    return predef::`-(lookup(), arg);
   }
 
-  protected string ``-(mixed ... args)
+  protected string ``-(mixed arg)
   {
-    return predef::`-(@args, lookup());
+    return predef::`-(arg, lookup());
   }
 
-  protected string `*(mixed ... args)
+  protected string `*(mixed arg)
   {
-    return predef::`*(lookup(), @args);
+    return predef::`*(lookup(), arg);
   }
 
   protected string ``*(mixed arg)

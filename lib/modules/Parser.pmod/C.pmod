@@ -120,16 +120,16 @@ class Token
 
   //! A string can be added to the Token, which will be added to the
   //! text contents.
-  protected string `+(string ... s)
+  protected string `+(string s)
     {
-      return predef::`+(text,@s);
+      return predef::`+(text, s);
     }
 
   //! A string can be added to the Token, which will be added to the
   //! text contents.
-  protected string ``+(string ... s)
+  protected string ``+(string s)
     {
-      return predef::`+(@s,text);
+      return predef::`+(s, text);
     }
 
   //! It is possible to case a Token object to a string. The text content

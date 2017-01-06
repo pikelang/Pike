@@ -102,64 +102,64 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
     return values(joined);
   }
 
-  protected mixed `+(mixed ... args)
+  protected mixed `+(mixed arg)
   {
     update_joined();
-    return predef::`+(joined, @args);
+    return predef::`+(joined, arg);
   }
 
-  protected mixed ``+(mixed ... args)
+  protected mixed ``+(mixed arg)
   {
     update_joined();
-    return predef::`+(@args, joined);
+    return predef::`+(arg, joined);
   }
 
-  protected mixed `-(mixed ... args)
+  protected mixed `-(mixed arg)
   {
     update_joined();
-    return predef::`-(joined, @args);
+    return predef::`-(joined, arg);
   }
 
-  protected mixed ``-(mixed ... args)
+  protected mixed ``-(mixed arg)
   {
     update_joined();
-    return predef::`-(@args, joined);
+    return predef::`-(arg, joined);
   }
 
-  protected mixed `|(mixed ... args)
+  protected mixed `|(mixed arg)
   {
     update_joined();
-    return predef::`|(joined, @args);
+    return predef::`|(joined, [mapping|object]arg);
   }
 
-  protected mixed ``|(mixed ... args)
+  protected mixed ``|(mixed arg)
   {
     update_joined();
-    return predef::`|(@args, joined);
+    return predef::`|(arg, joined);
   }
 
-  protected mixed `&(mixed ... args)
+  protected mixed `&(mixed arg)
   {
     update_joined();
-    return predef::`&(joined, @args);
+    return predef::`&(joined, [array|mapping|multiset|object]arg);
   }
 
-  protected mixed ``&(mixed ... args)
+  protected mixed ``&(mixed arg)
   {
     update_joined();
-    return predef::`&(@args, joined);
+    return predef::`&(arg, joined);
   }
 
-  protected mixed `^(mixed ... args)
+  protected mixed `^(mixed arg)
   {
     update_joined();
-    return predef::`^(joined, @args);
+    return predef::`^(joined, [mapping|object]arg);
   }
 
-  protected mixed ``^(mixed ... args)
+  protected mixed ``^(mixed arg)
   {
     update_joined();
-    return predef::`^(@args, joined);
+    return predef::`^(arg, joined);
   }
 
   protected mixed cast(string type)

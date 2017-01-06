@@ -104,27 +104,24 @@ class Inf {
   protected mixed _sqrt() { return this; }
   // % == nan
   // & == nan
-  protected mixed `*(mixed ... args) {
+  protected mixed `*(mixed arg) {
     int n = neg;
-    foreach(args, mixed arg)
-      if(arg<0) n = !n;
+    if(arg<0) n = !n;
     if(n) return ninf;
     return inf;
   }
-  protected mixed ``*(mixed ... args) { return `*(@args); }
-  protected mixed `+(mixed ... args) {
-    foreach(args, mixed arg)
-      if(arg==`-()) error("NaN\n");
+  protected mixed ``*(mixed arg) { return `*(arg); }
+  protected mixed `+(mixed arg) {
+    if(arg==`-()) error("NaN\n");
     return this;
   }
-  protected mixed ``+(mixed ... args) { return ``+(@args); }
-  protected mixed `-(mixed ... args) {
-    if(!sizeof(args)) {
+  protected mixed ``+(mixed arg) { return ``+(arg); }
+  protected mixed `-(void|mixed arg) {
+    if(!query_num_arg()) {
       if(neg) return inf;
       return ninf;
     }
-    foreach(args, mixed arg)
-      if(arg==inf || arg==ninf) error("NaN\n");
+    if(arg==inf || arg==ninf) error("NaN\n");
     return this;
   }
   protected mixed ``-(mixed arg) {
