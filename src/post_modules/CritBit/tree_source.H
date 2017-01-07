@@ -367,9 +367,6 @@ DOCEND()
 	return;
     }
 
-    /* FIXME: we should allow for extra arguments and call += on the copy
-     * of the first one
-     */
     /*! @decl mixed `+(mixed o)
      *!	Add callback. Returns the union of two trees.
      */
