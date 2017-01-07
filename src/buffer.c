@@ -115,6 +115,10 @@ PMOD_EXPORT void buffer_check_space(struct byte_buffer *b, size_t len) {
     if (len > b->left)
         Pike_fatal("buffer_check_space failed.\n");
 }
+PMOD_EXPORT void buffer_check_position(struct byte_buffer *b, size_t pos) {
+    if (pos > b->length)
+        Pike_fatal("buffer_check_position failed.\n");
+}
 PMOD_EXPORT void buffer_remove(struct byte_buffer *b, size_t len) {
     char *dst = buffer_dst(b);
 

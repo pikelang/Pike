@@ -91,8 +91,10 @@ MACRO void buffer_remove(struct byte_buffer *b, size_t len) {
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void buffer_check_space(struct byte_buffer *b, size_t len);
+PMOD_EXPORT void buffer_check_position(struct byte_buffer *b, size_t pos);
 #else
 MACRO void buffer_check_space(struct byte_buffer *PIKE_UNUSED(b), size_t PIKE_UNUSED(len)) { }
+MACRO void buffer_check_position(struct byte_buffer *PIKE_UNUSED(b), size_t PIKE_UNUSED(pos)) { }
 #endif
 
 MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
@@ -188,7 +190,7 @@ MACRO void* buffer_alloc(struct byte_buffer *b, size_t len) {
     return buffer_alloc_unsafe(b, len);
 }
 
-#define GEN_BUFFER_ADD(name, type, transform)                                   \
+#define GEN_BUFFER_ADD(name, type, transform, transform_back)                   \
 MACRO void buffer_add_ ## name ## _unsafe(struct byte_buffer *b, type a) {      \
     unsigned INT8 * dst = buffer_dst(b);                                        \
     const size_t left = b->left;                                                \
@@ -203,22 +205,44 @@ MACRO void buffer_add_ ## name ## _unsafe(struct byte_buffer *b, type a) {      
 MACRO void buffer_add_ ## name (struct byte_buffer *b, type a) {                \
     buffer_ensure_space(b, sizeof(a));                                          \
     buffer_add_##name##_unsafe(b, a);                                           \
+}                                                                               \
+MACRO void buffer_set_ ## name (struct byte_buffer *b, size_t pos, type a) {    \
+    unsigned INT8 * dst = buffer_ptr(b);                                        \
+    /* If the second addition overflows, the first check will fail */           \
+    buffer_check_position(b, pos);                                              \
+    buffer_check_position(b, pos + sizeof(a));                                  \
+    dst += pos;                                                                 \
+    ASSUME_UNCHANGED(b, {                                                       \
+        a = transform(a);                                                       \
+        memcpy(dst, &a, sizeof(a));                                             \
+    });                                                                         \
+}                                                                               \
+MACRO type buffer_get_ ## name (struct byte_buffer *b, size_t pos) {            \
+    type a;                                                                     \
+    unsigned INT8 * src = buffer_ptr(b);                                        \
+    /* If the second addition overflows, the first check will fail */           \
+    buffer_check_position(b, pos);                                              \
+    buffer_check_position(b, pos + sizeof(a));                                  \
+    src += pos;                                                                 \
+    memcpy(&a, src, sizeof(a));                                                 \
+    a = transform_back(a);                                                      \
+    return a;                                                                   \
 }
 
-GEN_BUFFER_ADD(be16, unsigned INT16, hton16)
-GEN_BUFFER_ADD(le16, unsigned INT16, ntoh16)
-GEN_BUFFER_ADD(u16, unsigned INT16, )
+GEN_BUFFER_ADD(be16, unsigned INT16, hton16, ntoh16)
+GEN_BUFFER_ADD(le16, unsigned INT16, ntoh16, hton16)
+GEN_BUFFER_ADD(u16, unsigned INT16, , )
 
-GEN_BUFFER_ADD(be32, unsigned INT32, hton32)
-GEN_BUFFER_ADD(le32, unsigned INT32, ntoh32)
-GEN_BUFFER_ADD(u32, unsigned INT32, )
+GEN_BUFFER_ADD(be32, unsigned INT32, hton32, ntoh32)
+GEN_BUFFER_ADD(le32, unsigned INT32, ntoh32, hton32)
+GEN_BUFFER_ADD(u32, unsigned INT32, , )
 
-GEN_BUFFER_ADD(be64, unsigned INT64, hton64)
-GEN_BUFFER_ADD(le64, unsigned INT64, ntoh64)
-GEN_BUFFER_ADD(u64, unsigned INT64, )
+GEN_BUFFER_ADD(be64, unsigned INT64, hton64, ntoh64)
+GEN_BUFFER_ADD(le64, unsigned INT64, ntoh64, hton64)
+GEN_BUFFER_ADD(u64, unsigned INT64, , )
 
-GEN_BUFFER_ADD(u8, unsigned INT8, )
-GEN_BUFFER_ADD(char, char, )
+GEN_BUFFER_ADD(u8, unsigned INT8, , )
+GEN_BUFFER_ADD(char, char, , )
 
 #undef GEN_BUFFER_ADD
 #undef MACRO
@@ -238,6 +262,16 @@ GEN_BUFFER_ADD(char, char, )
 #define BUFFER_ADD(b, a) do {                   \
     buffer_ensure_space(b, sizeof(a));          \
     BUFFER_ADD_UNSAFE(b, a);                    \
+} while(0)
+#define BUFFER_SET(b, pos, a) do {                      \
+    struct byte_buffer *__b__ = (b);                    \
+    size_t __pos__ = (pos);                             \
+    unsigned INT8 * dst = buffer_ptr(__b__);            \
+    buffer_check_position(__b__, __pos__);              \
+    buffer_check_position(__b__, __pos__ + sizeof(a));  \
+    ASSUME_UNCHANGED(__b__, {                           \
+        memcpy(dst, &a, sizeof(a));                     \
+    });                                                 \
 } while(0)
 
 #endif /* BUFFER_H */
