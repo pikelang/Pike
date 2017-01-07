@@ -3618,6 +3618,11 @@ optional_block: /* EMPTY */ { $$=0; }
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
 
+    /* Declare the argument variable.
+     *
+     * NB: The code in the next block knows that this variable
+     *     will be variable  #0.
+     */
     push_type(T_MIXED);
     push_type(T_ARRAY);
     add_local_name(args_string, compiler_pop_type(), 0);
@@ -3630,8 +3635,21 @@ optional_block: /* EMPTY */ { $$=0; }
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
+    int args_used =
+      Pike_compiler->compiler_frame->variable[0].flags & LOCAL_VAR_IS_USED;
+
+    /* Don't warn about the argument if unused. */
+    Pike_compiler->compiler_frame->variable[0].flags |= LOCAL_VAR_IS_USED;
+
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
+
+    /* block code */
+    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
+    $5 = pop_local_variables($<number>4, $5);
+
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
     if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
@@ -3649,25 +3667,16 @@ optional_block: /* EMPTY */ { $$=0; }
       push_type(T_MIXED);
     }
 
-    if (Pike_compiler->compiler_frame->variable[0].flags & LOCAL_VAR_IS_USED) {
+    if (args_used) {
       /* __ARGS__ is used. */
       push_type(T_MIXED);
     } else {
-      /* Don't warn about the unused argument. */
-      Pike_compiler->compiler_frame->variable[0].flags |= LOCAL_VAR_IS_USED;
       push_type(T_VOID);
     }
 
     push_type(T_MANY);
 
     type=compiler_pop_type();
-
-    /* block code */
-    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    $5 = pop_local_variables($<number>4, $5);
-
-    debug_malloc_touch($5);
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
     name = get_new_name(NULL);
 
