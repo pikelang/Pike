@@ -748,6 +748,8 @@ static struct pike_string *do_read(int fd,
   struct byte_buffer buf = BUFFER_INIT();
   int e = 0;
 
+  buffer_set_flags(&buf, BUFFER_GROW_EXACT);
+
   THREADS_ALLOW();
 
   while (bytes) {
@@ -755,7 +757,7 @@ static struct pike_string *do_read(int fd,
       ptrdiff_t i;
 
       /* make space for exactly len bytes plus the terminating null byte */
-      if (UNLIKELY(!buffer_make_space_nothrow(&buf, len+1))) {
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
           buffer_free(&buf);
           e = ENOMEM;
           break;
@@ -996,11 +998,13 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
      */
     struct byte_buffer b = BUFFER_INIT();
 
+    buffer_set_flags(&b, BUFFER_GROW_EXACT);
+
     /* for small reads we allocate the whole size in the beginning,
      * instead of only by individual chunks. We may want to change
      * what small means.
      */
-    if (r < 65*1024) buffer_make_space(&b, r+1);
+    if (r < 65*1024) buffer_ensure_space(&b, r+1);
 
     SET_ONERROR(ebuf, buffer_free, &b);
     do{
@@ -1009,7 +1013,7 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       INT32 try_read=MINIMUM(CHUNK,r);
 
       /* allocate try_read bytes + the trailing null byte */
-      buffer_make_space(&b, try_read+1);
+      buffer_ensure_space(&b, try_read+1);
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
       message.msg.msg_control = &message.cmsgbuf;

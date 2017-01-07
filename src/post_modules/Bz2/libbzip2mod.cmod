@@ -289,15 +289,16 @@ PIKECLASS Deflate
 
   PIKEFUN string read(string data){
     struct pike_string *retstr;
-    /* FIXME: Ought to use string_builder instead. */
     struct byte_buffer retbuf;
     bz_stream *s = &THIS->strm;
     ONERROR err;
 
     buffer_init(&retbuf);
+    buffer_set_flags(&retbuf, BUFFER_GROW_EXACT);
+
     SET_ONERROR(err, buffer_free, &retbuf);
 
-    buffer_make_space(&retbuf, DEFL_BUF_SIZE);
+    buffer_ensure_space(&retbuf, DEFL_BUF_SIZE);
     buffer_advance(&retbuf, DEFL_BUF_SIZE);
     do_deflate(data, &retbuf, BZ_FLUSH);
 
@@ -347,9 +348,11 @@ PIKECLASS Deflate
     bz_stream *s = &THIS->strm;
 
     buffer_init(&retbuf);
+    buffer_set_flags(&retbuf, BUFFER_GROW_EXACT);
+
     SET_ONERROR(err, buffer_free, &retbuf);
 
-    buffer_make_space(&retbuf, DEFL_BUF_SIZE);
+    buffer_ensure_space(&retbuf, DEFL_BUF_SIZE);
     buffer_advance(&retbuf, DEFL_BUF_SIZE);
 
     do_deflate(data, &retbuf, BZ_FINISH);
@@ -584,9 +587,8 @@ PIKECLASS Inflate
     /* the input buffer is now provided, provide an output buffer*/
 
     buffer_init(retbuf);
-    buffer_make_space(retbuf, INFL_BUF_SIZE);
-    buffer_advance(retbuf, INFL_BUF_SIZE);
-    s->next_out = buffer_ptr(retbuf);
+    buffer_set_flags(retbuf, BUFFER_GROW_EXACT);
+    s->next_out = buffer_alloc(retbuf, INFL_BUF_SIZE);
     s->avail_out = INFL_BUF_SIZE;
 
     while(1){

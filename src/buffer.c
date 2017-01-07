@@ -10,17 +10,26 @@ PMOD_EXPORT void buffer_free(struct byte_buffer *b) {
     buffer_init(b);
 }
 
-PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2) {
+static void *buffer_realloc(struct byte_buffer *b, size_t len) {
+    if (b->flags & BUFFER_GROW_MEXEC) {
+        return mexec_realloc(buffer_ptr(b), len);
+    } else {
+        return realloc(buffer_ptr(b), len);
+    }
+}
+
+PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len) {
     const size_t content_length = buffer_content_length(b);
     size_t new_length, needed;
+    unsigned INT16 flags = b->flags;
     void *ptr;
 
 #ifdef PIKE_DEBUG
-    if (b->left >= len) Pike_fatal("Misuse of buffer_make_space.\n");
+    if (buffer_space(b) >= len) Pike_fatal("Misuse of buffer_make_space.\n");
 #endif
     if (DO_SIZE_T_ADD_OVERFLOW(len, content_length, &needed)) goto OUT_OF_MEMORY_FATAL;
 
-    if (pow2) {
+    if (!(flags & BUFFER_GROW_EXACT)) {
         new_length = b->length;
         if (new_length < 16) new_length = 16;
 
@@ -32,10 +41,10 @@ PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2)
     }
 
 #if 0
-    fprintf(stderr, "BUF { left=%llu; length=%llu; dst=%p; }\n", b->left, b->length, b->dst);
+    fprintf(stderr, "BUF { left=%llu; length=%llu; dst=%p; }\n", buffer_space(b), b->length, b->dst);
 #endif
 
-    ptr = realloc(buffer_ptr(b), new_length);
+    ptr = buffer_realloc(b, new_length);
 
     if (UNLIKELY(!ptr)) return 0;
 
@@ -57,18 +66,18 @@ OUT_OF_MEMORY_FATAL:
 #endif
 }
 
-PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len, int pow2) {
-    if (UNLIKELY(!buffer_grow_nothrow(b, len, pow2))) Pike_error(msg_out_of_mem_2, len);
+PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len) {
+    if (UNLIKELY(!buffer_grow_nothrow(b, len))) Pike_error(msg_out_of_mem_2, len);
 }
 
 PMOD_EXPORT void* buffer_finish(struct byte_buffer *b) {
-    void *ret = buffer_ptr(b);
+    void *ret;
 
     if (buffer_content_length(b) < buffer_length(b)) {
-        ret = realloc(ret, buffer_content_length(b));
+        ret = buffer_realloc(b, buffer_content_length(b));
         /* we cannot shrink, that does not matter */
         if (!ret) ret = buffer_ptr(b);
-    }
+    } else ret = buffer_ptr(b);
 
     buffer_init(b);
 

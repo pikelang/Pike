@@ -15,13 +15,17 @@ struct byte_buffer {
     size_t left;
     size_t length;
     void * restrict dst;
+    unsigned INT16 flags;
 };
 
-#define BUFFER_INIT() ((struct byte_buffer){ 0, 0, NULL })
+static const INT16 BUFFER_GROW_EXACT = 0x1;
+static const INT16 BUFFER_GROW_MEXEC = 0x2;
+
+#define BUFFER_INIT() ((struct byte_buffer){ 0, 0, NULL, 0 })
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
-PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len, int pow2);
-PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len, int pow2);
+PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len);
+PMOD_EXPORT void buffer_grow(struct byte_buffer *b, size_t len);
 PMOD_EXPORT const char *buffer_get_string(struct byte_buffer *b);
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
@@ -37,6 +41,14 @@ MACRO void* buffer_ptr(const struct byte_buffer *b) {
 
 MALLOC_FUNCTION MACRO void *buffer_dst(const struct byte_buffer *b) {
     return b->dst;
+}
+
+MACRO void buffer_set_flags(struct byte_buffer *b, INT16 flags) {
+    b->flags = flags;
+}
+
+MACRO void buffer_add_flags(struct byte_buffer *b, INT16 flags) {
+    b->flags |= flags;
 }
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
@@ -90,6 +102,13 @@ MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
     b->left -= len;
 }
 
+MACRO void buffer_init_from_mem(struct byte_buffer *b, void *ptr, size_t len, size_t pos) {
+    b->dst = ptr;
+    b->length = len;
+    b->left = len;
+    buffer_advance(b, pos);
+}
+
 /**
  * Ensures that the buffer has at least len bytes free space.
  * If more space is be allocated, it will be power of 2 bytes.
@@ -97,7 +116,7 @@ MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
  */
 MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
     if (UNLIKELY(len > b->left)) {
-        buffer_grow(b, len, 1);
+        buffer_grow(b, len);
 
         STATIC_ASSUME(len <= b->left);
     }
@@ -110,37 +129,8 @@ MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
  */
 MACRO int buffer_ensure_space_nothrow(struct byte_buffer *b, size_t len) {
     if (UNLIKELY(len > b->left)) {
-        if (!buffer_grow_nothrow(b, len, 1)) return 0;
+        if (!buffer_grow_nothrow(b, len)) return 0;
 
-        STATIC_ASSUME(len <= b->left);
-    }
-
-    return 1;
-}
-
-/**
- * Ensures that the buffer has at least len bytes free space.
- * If more space is be allocated, it will be exactly what is
- * needed to fit len more bytes.
- *
- * Throws an exception in out-of-memory situations.
- */
-MACRO void* buffer_make_space(struct byte_buffer *b, size_t len) {
-    if (UNLIKELY(len > b->left)) {
-        buffer_grow(b, len, 0);
-
-        STATIC_ASSUME(len <= b->left);
-    }
-    return buffer_dst(b);
-}
-
-/**
- * Same as buffer_make_space() but returns 0 in out-of-memory situations
- * instead of throwing an exception.
- */
-MACRO int buffer_make_space_nothrow(struct byte_buffer *b, size_t len) {
-    if (UNLIKELY(len > b->left)) {
-        if (!buffer_grow_nothrow(b, len, 0)) return 0;
 
         STATIC_ASSUME(len <= b->left);
     }
@@ -154,6 +144,7 @@ MACRO int buffer_make_space_nothrow(struct byte_buffer *b, size_t len) {
     STATIC_ASSUME(__B.dst == b->dst);           \
     STATIC_ASSUME(__B.length == b->length);     \
     STATIC_ASSUME(__B.left == b->left);         \
+    STATIC_ASSUME(__B.flags == b->flags);       \
 } while (0)
 
 MACRO void buffer_memcpy_unsafe(struct byte_buffer *b, const void * src, size_t len) {
