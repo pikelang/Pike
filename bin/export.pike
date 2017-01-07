@@ -5,6 +5,14 @@ string vpath;
 
 string main_branch;
 
+// NB: This script is run with an installed Pike binary, which
+//     is likely to be older than the one we are exporting...
+#if constant(String.trim)
+constant trim = String.trim;
+#else
+constant trim = String.trim_all_whites;
+#endif
+
 string dirname(string dir)
 {
   array tmp=dir/"/";
@@ -132,7 +140,7 @@ string git_cmd(string ... args)
   mapping r = Process.run( ({ "git" }) + args );
   if( r->exitcode )
     exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
-  return String.trim(r->stdout||"");
+  return trim(r->stdout||"");
 }
 
 void git_bump_version()
