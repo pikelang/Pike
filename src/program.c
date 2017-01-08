@@ -11148,7 +11148,7 @@ void init_program(void)
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
-  MAKE_CONST_STRING(args_string, "__ARGS__");
+  MAKE_CONST_STRING(args_string, "__args__");
 
   MAKE_CONST_STRING(parser_system_string, "parser");
   MAKE_CONST_STRING(type_check_system_string, "type_check");

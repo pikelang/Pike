@@ -659,6 +659,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
+	    if(ISWORD("__args__")) {
+	      free_string(tmp);
+	      return TOK_IDENTIFIER;
+	    }
 	    while(len--) {
 	      int c = tmp->str[len];
 	      if ((c >= 'A') && (c <= 'Z')) {

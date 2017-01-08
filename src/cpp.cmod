@@ -3545,6 +3545,8 @@ PIKEFUN string cpp(string data,
   do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
   simple_add_define(&this, "static_assert", "_Static_assert");
 
+  simple_add_define(&this, "__ARGS__", "__args__");
+
   do_magic_define(&this,"__COUNTER__",insert_current_counter);
 
   /* These are Pike extensions. */
