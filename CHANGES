@@ -371,6 +371,11 @@ o Thread
 
 o Unicode 8.0.0.
 
+o Unicode.is_whitespace()
+
+  This new function returns if a unicode character is a whitespace
+  characer or not.
+
 
 Deprecated symbols and modules
 ------------------------------

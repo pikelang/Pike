@@ -210,6 +210,16 @@ PIKEFUN int is_rtlstring( string s )
   RETURN 0;
 }
 
+/*! @decl int(0..1) is_whitespace( int c )
+ *! Returns @expr{1@} if the character is a white space character,
+ *! otherwise @expr{0@}.
+ */
+PIKEFUN int(0..1) is_whitespace( int c )
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN wide_isspace(c);
+}
+
 /*! @decl constant version
  *! Contains the version of the current Unicode database as a string,
  *! e.g. @expr{"5.0.0"@}.
