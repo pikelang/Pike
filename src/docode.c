@@ -2813,11 +2813,10 @@ static void emit_save_locals(struct compiler_frame *f)
 }
 
 /* Used to generate code for functions. */
-INT32 do_code_block(node *n)
+INT32 do_code_block(node *n, int identifier_flags)
 {
   struct compilation *c = THIS_COMPILATION;
   struct reference *id = NULL;
-  struct identifier *i = NULL;
   INT32 entry_point;
   int aggregate_cnum = -1;
 #ifdef PIKE_DEBUG
@@ -2828,7 +2827,6 @@ INT32 do_code_block(node *n)
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
       Pike_compiler->compiler_frame->current_function_number;
-    i = ID_FROM_PTR(Pike_compiler->new_program, id);
   }
 
   init_bytecode();
@@ -2843,7 +2841,7 @@ INT32 do_code_block(node *n)
     emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
   }
   emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-  if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+  if (identifier_flags & IDENTIFIER_VARARGS) {
     struct svalue *sval =
       simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
     if (!sval) {
@@ -2900,7 +2898,7 @@ INT32 do_code_block(node *n)
       emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
     }
     emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-    if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+    if (identifier_flags & IDENTIFIER_VARARGS) {
       emit1(F_CALL_BUILTIN, aggregate_cnum);
       if (Pike_compiler->compiler_frame->max_number_of_locals !=
 	  Pike_compiler->compiler_frame->num_args+1) {

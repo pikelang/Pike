@@ -5341,8 +5341,8 @@ int dooptcode(struct pike_string *name,
       extern int remove_clear_locals;
       int saved_fun_num =
 	Pike_compiler->compiler_frame->current_function_number;
-      /* NB: The following prototype is needed to propagate
-       *     the IDENTIFIER_VARARGS flag to do_code_block().
+      /* NB: The following prototype is needed to propagate the
+       *     ID_LOCAL flags for the identifier to do_code_block().
        */
       Pike_compiler->compiler_frame->current_function_number =
 	define_function(name,
@@ -5355,7 +5355,7 @@ int dooptcode(struct pike_string *name,
 			(Pike_compiler->compiler_frame->opt_flags));
       remove_clear_locals=args;
       if(vargs) remove_clear_locals++;
-      tmp.offset=do_code_block(n);
+      tmp.offset=do_code_block(n, vargs);
       remove_clear_locals=0x7fffffff;
       Pike_compiler->compiler_frame->current_function_number = saved_fun_num;
     }

@@ -31,7 +31,7 @@ int do_jump(int token,INT32 lbl);
 void modify_stack_depth(int delta);
 void do_pop(int x);
 int do_docode(node *n, int flags);
-INT32 do_code_block(node *n);
+INT32 do_code_block(node *n, int identifier_flags);
 INT32 docode(node *n);
 /* Prototypes end here */
 
