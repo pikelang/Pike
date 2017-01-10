@@ -19,6 +19,15 @@
 
 DECLARATIONS
 
+/* NB: Usually pulled in from crtbeginS.o, but we compile with -nostartfiles...
+ *
+ *     cf http://wiki.osdev.org/C%2B%2B#GCC
+ *     and http://www.linuxquestions.org/questions/programming-9/fyi-shared-libs-and-iostream-c-331113/#post1681605
+ *
+ *     It is needed due to vcdiff_wrapper.cc pulling in iostream.
+ */
+void *__dso_handle = NULL;
+
 /*! @module VCDiff
  *!
  *! Pike glue for the open-vcdiff differential compression library. 
