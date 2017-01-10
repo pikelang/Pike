@@ -3435,7 +3435,7 @@ PIKEFUN string cpp(string data,
 	  Pike_error("No widechars allowed in cpp prefix.\n");
       }
       for (i = 0; i < prefix->len; i++) {
-	  if (!isalnum(prefix->str[i])) {
+          if (!is8bitalnum(prefix->str[i])) {
 	      Pike_error("Invalid char in prefix.\n");
 	  }
       }

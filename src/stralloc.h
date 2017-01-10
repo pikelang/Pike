@@ -548,7 +548,7 @@ void exit_sprintf(void);
  * isalnum, isdigit and islower also look seriously borken. /mast */
 #define WIDE_ISSPACE(C)	wide_isspace(C)
 #define WIDE_ISIDCHAR(C) wide_isidchar(C)
-#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
+#define WIDE_ISALNUM(C)	(((C) < 256)?is8bitalnum(C):0)
 #define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
 #define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
 
