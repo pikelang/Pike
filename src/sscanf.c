@@ -21,8 +21,6 @@
 #include "sscanf.h"
 #include "bitvector.h"
 
-#include <ctype.h>
-
 #define sp Pike_sp
 
 /*

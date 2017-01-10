@@ -8,7 +8,6 @@
 #include "fdlib.h"
 #include "pike_error.h"
 #include <math.h>
-#include <ctype.h>
 #include "port.h"
 
 #ifdef HAVE_DIRECT_H

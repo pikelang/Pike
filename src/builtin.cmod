@@ -33,7 +33,6 @@
 #include "opcodes.h"
 #include "whitespace.h"
 
-#include <ctype.h>
 #include <errno.h>
 #include <math.h>
 #include <fcntl.h>
