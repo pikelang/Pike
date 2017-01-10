@@ -35,8 +35,8 @@
 #define MAXIMUM(X,Y) ((X)>(Y)?(X):(Y))
 
 
-PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
-#define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
+PMOD_EXPORT extern const char Pike_isidchar_vector[];
+#define isidchar(X)	(Pike_isidchar_vector[((unsigned)(X))&0xff] == '1')
 
 #define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & ~((Y)-1))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))

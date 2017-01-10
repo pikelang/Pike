@@ -52,7 +52,7 @@
 #define lex_atoi atoi
 #define lex_strtol strtol
 #define lex_strtod my_strtod
-#define lex_isidchar is8bitalnum
+#define lex_isidchar isidchar
 
 #else /* SHIFT != 0 */
 

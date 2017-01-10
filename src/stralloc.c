@@ -1440,7 +1440,7 @@ PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
       case '\b': fprintf(stderr,"\\b"); max-=2; break;
 
       default:
-       if(is8bitalnum(c) || c==' ' || isgraph(c))
+       if(isidchar(c) || c==' ' || isgraph(c))
        {
          putc(c,stderr);
          max--;
@@ -3777,7 +3777,7 @@ PMOD_EXPORT int wide_isspace(int c)
 PMOD_EXPORT int wide_isidchar(int c)
 {
   if(c<0) return 0;
-  if(c<256) return is8bitalnum(c);
+  if(c<256) return isidchar(c);
   if(wide_isspace(c)) return 0;
   return 1;
 }

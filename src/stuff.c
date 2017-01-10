@@ -10,8 +10,8 @@
 #include "pike_cpulib.h"
 #include "pike_memory.h"
 
-/* Used by is8bitalnum in pike_macros.h. */
-PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
+/* Used by isidchar in pike_macros.h. */
+PMOD_EXPORT const char Pike_isidchar_vector[] =
   "0000000000000000"
   "0000000000000000"
   "0000000000000000"

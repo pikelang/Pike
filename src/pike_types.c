@@ -1401,7 +1401,7 @@ static void internal_parse_typeA(const char **_s)
 
   while(isspace(**s)) ++*s;
 
-  for(len=0;is8bitalnum(EXTRACT_UCHAR(s[0]+len));len++)
+  for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
     if(len>=sizeof(buf)-1) {
       my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %"PRINTSIZET"d).",
