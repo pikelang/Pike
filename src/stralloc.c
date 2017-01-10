@@ -1440,7 +1440,7 @@ PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
       case '\b': fprintf(stderr,"\\b"); max-=2; break;
 
       default:
-       if(isidchar(c) || c==' ' || isgraph(c))
+       if(isprint(c))
        {
          putc(c,stderr);
          max--;
