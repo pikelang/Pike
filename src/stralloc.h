@@ -549,7 +549,6 @@ void exit_sprintf(void);
 #define WIDE_ISSPACE(C)	wide_isspace(C)
 #define WIDE_ISIDCHAR(C) wide_isidchar(C)
 #define WIDE_ISALNUM(C)	(((C) < 256)?isidchar(C):0)
-#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
-#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
+#define WIDE_ISDIGIT(C)	((C)>='0' && (C)<='9')
 
 #endif /* STRALLOC_H */

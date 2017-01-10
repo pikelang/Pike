@@ -19,6 +19,7 @@
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
+#include "stuff.h"
 
 #include <errno.h>
 #include <ctype.h>
@@ -3272,8 +3273,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
   UNREACHABLE(MKPCHARP(0,0));
 }
 
-#define DIGIT(x)	(WIDE_ISDIGIT(x) ? (x) - '0' : \
-			 WIDE_ISLOWER(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
+#define DIGIT(x)	hexdecode[x]
 #define MBASE	('z' - 'a' + 1 + 10)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)

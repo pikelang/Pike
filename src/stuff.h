@@ -16,6 +16,7 @@ PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
 unsigned INT32 find_next_power(unsigned INT32 x) ATTRIBUTE((const));
 /* Prototypes end here */
 
+extern const unsigned char hexdecode[256];
 extern const INT32 hashprimes[32];
 
 #endif
