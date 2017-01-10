@@ -121,7 +121,7 @@ static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str, i
 
 When inlined the ret/eax is of course somewhat different, it can be
 less or more optimal, but this is at least actually smaller than the
-expanded code for the oldINDEX_CHARP.
+expanded code for the old INDEX_CHARP.
 */
   if( LIKELY(size == 0) ) return ((p_wchar0 *)str)[pos];
   if( LIKELY(size == 1) ) return ((p_wchar1 *)str)[pos];
