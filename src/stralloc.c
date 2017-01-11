@@ -22,7 +22,6 @@
 #include "stuff.h"
 
 #include <errno.h>
-#include <ctype.h>
 
 #define SET_HSIZE(X) htable_mask=(htable_size=(X))-1
 #define HMODULO(X) ((X) & (htable_mask))
@@ -3621,7 +3620,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   if (!got_digit)
     goto noconv;
 
-  if (EXTRACT_PCHARP(s) <256 && tolower(EXTRACT_PCHARP(s)) == 'e')
+  if (EXTRACT_PCHARP(s) == 'E' || EXTRACT_PCHARP(s) == 'e')
     {
       /* Get the exponent specified after the `e' or `E'.  */
       int save = errno;
