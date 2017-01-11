@@ -3273,12 +3273,12 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
   UNREACHABLE(MKPCHARP(0,0));
 }
 
-#define DIGIT(x)	hexdecode[x]
+#define DIGIT(x)	( (x)<256 ? hexdecode[x] : 16 )
 #define MBASE	('z' - 'a' + 1 + 10)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
-  /* Note: Code duplication in strtol and pcharp_to_svalue_inumber. */
+  /* Note: Code duplication in pcharp_to_svalue_inumber. */
 
   unsigned long val, mul_limit;
   int c;
@@ -3314,9 +3314,9 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
       base = 8;
   }
 
-  if (!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
+  if (DIGIT(c) >= base)
     return 0;			/* no number formed */
-  if (base == 16 && c == '0' && isxdigit(INDEX_PCHARP(str,2)) &&
+  if (base == 16 && c == '0' && DIGIT(INDEX_PCHARP(str,2))<16 &&
       (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
   {
     INC_PCHARP(str,2);
@@ -3337,7 +3337,7 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   {
     INC_PCHARP(str,1);
     c=EXTRACT_PCHARP(str);
-    if(!(WIDE_ISALNUM(c)  && (xx=DIGIT(c)) < base)) break;
+    if( (xx=DIGIT(c)) >= base ) break;
     if (val > mul_limit || (val == mul_limit && xx > add_limit)) {
       overflow = 1;
     } else
@@ -3412,7 +3412,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength)
 {
-  /* Note: Code duplication in strtol and STRTOL_PCHARP. */
+  /* Note: Code duplication in STRTOL_PCHARP. */
 
   PCHARP str_start;
 
@@ -3466,14 +3466,13 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
    * For any base > 10, the digits incrementally following
    * 9 are assumed to be "abc...z" or "ABC...Z".
    */
-  if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
+  if(DIGIT(c) >= base)
     return 0;   /* No number formed. */
 
   if(c == '0' &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
       (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
-     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
-     isxdigit(INDEX_PCHARP(str,2)))
+     DIGIT(INDEX_PCHARP(str,2))<16 )
   {
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
@@ -3589,7 +3588,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   exponent = 0;
   for (;; INC_PCHARP(s,1))
   {
-    if (EXTRACT_PCHARP(s)<256 && WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
+    if (WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
     {
       got_digit = 1;
 
