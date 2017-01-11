@@ -165,6 +165,14 @@ protected constant mysql_datetime_types = ([
   "datetime": 1, "date": 1, "time": 1, "year": 1,
 ]);
 
+// Cache for _sizeof().
+protected int num_entries = -1;
+
+protected void invalidate_cache()
+{
+  num_entries = -1;
+}
+
 // FIXME: Add a setting to be able to "deprecate" columns for
 // migration from a column to a field in the properties blob. The
 // deprecation means the column will be queried, but the value will be
@@ -710,6 +718,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
   conn->big_query ("INSERT `" + table + "` " +
 		   make_insert_clause (records),
 		   0, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
@@ -731,6 +740,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
   conn->big_query ("INSERT IGNORE `" + table + "` " +
 		   make_insert_clause (records),
 		   0, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
   int last_insert_id = conn->insert_id();
   if (last_insert_id &&
@@ -755,6 +765,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
   conn->big_query ("REPLACE `" + table + "` " +
 		   make_insert_clause (records),
 		   0, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
@@ -788,6 +799,7 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 		   "WHERE " + pk_where + " "
 		   "LIMIT 1",	// The limit is just extra paranoia.
 		   0, query_charset);
+  invalidate_cache();
 }
 
 int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
@@ -860,6 +872,8 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 		    "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
 		   0, query_charset);
 
+  invalidate_cache();
+
   if (id_col && !has_index (record, id_col))
     record[id_col] = conn->insert_id();
 
@@ -906,6 +920,7 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   db_conn->master_sql->big_query ("DELETE FROM `" + table + "` "
 				  "WHERE (" + where + ") " + (rest || ""),
 				  bindings);
+  invalidate_cache();
 }
 
 void conn_remove (Sql.Sql db_conn, mixed id)
@@ -917,6 +932,7 @@ void conn_remove (Sql.Sql db_conn, mixed id)
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + simple_make_pk_where (id),
 		   0, query_charset);
+  invalidate_cache();
 }
 
 void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
@@ -929,6 +945,7 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + make_multi_pk_where (ids),
 		   0, query_charset);
+  invalidate_cache();
 }
 
 Result conn_select (Sql.Sql db_conn, string|array where,
@@ -1762,4 +1779,14 @@ protected string make_set_clause (mapping(string:mixed) rec,
     }
 
   return buf->get();
+}
+
+protected int _sizeof()
+{
+  int ret = num_entries;
+  if (ret < 0) {
+    // NB: Thread safe!
+    ret = num_entries = (int)(select1("COUNT(*)", "TRUE")[0]);
+  }
+  return ret;
 }
