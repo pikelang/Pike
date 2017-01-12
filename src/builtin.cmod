@@ -3498,6 +3498,59 @@ PIKECLASS Buffer
     push_int(-1);
   }
 
+  /*! @decl int(0..) _search(string substring, int|void start, int|void end)
+   *!
+   *! Search for a @[substring] in the buffer, starting the scan
+   *! from @[start] and ending at @[end] (inclusive).
+   *!
+   *! @returns
+   *!   Returns to position in the buffer where the substring was found
+   *!   on success, and @[UNDEFINED] on failure.
+   *!
+   *! @seealso
+   *!   @[Stdio.Buffer()->_search()], @[search()], @[lfun::_search()]
+   */
+  PIKEFUN int(0..) _search(string substring, int|void start, int|void end)
+  {
+    PCHARP buf = MKPCHARP_STR(THIS->str.s);
+    ptrdiff_t len = THIS->str.s->len;
+    ptrdiff_t i;
+    SearchMojt mojt;
+    PCHARP res;
+
+    if (end && (end->u.integer + 1 < len)) {
+      len = end->u.integer + 1;
+    }
+    if (len > 0 && start && (start->u.integer > 0)) {
+      INC_PCHARP(buf, start->u.integer);
+      len -= start->u.integer;
+    }
+    if (len < substring->len) {
+      push_undefined();
+      return;
+    }
+    if (!substring->len) {
+      push_int(0);
+      return;
+    }
+    if (substring->size_shift > THIS->str.s->size_shift) {
+      push_undefined();
+      return;
+    }
+
+    mojt = compile_memsearcher(MKPCHARP_STR(substring), substring->len,
+			       len, substring);
+
+    res = mojt.vtab->funcN(mojt.data, buf, len);
+
+    if (!res.ptr) {
+      push_undefined();
+    } else {
+      push_int64((((char *)res.ptr) - ((char *)buf.ptr)) >>
+		 THIS->str.s->size_shift);
+    }
+  }
+
   INIT
     {
       struct Buffer_struct *str = THIS;
