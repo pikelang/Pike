@@ -4464,3 +4464,468 @@ INT32 amd64_read_f_jump(INT32 offset)
 {
   return read_pointer(offset) + offset + 4;
 }
+
+#define OP_PREFIX	0x10000000UL
+#define G1		(OP_PREFIX|0)
+#define G2		(OP_PREFIX|1)
+#define G3		(OP_PREFIX|2)
+#define G4		(OP_PREFIX|3)
+
+/* Additional fields */
+#define OP_RM		0x00010000	/* ModR/M */
+#define OP_DISPL	0x00020000	/* Displacement */
+#define OP_IMM		0x00040000	/* Immediate */
+
+#define OP_PCREL	0x00080000	/* PC-relative */
+
+/* Implicit arguments */
+#define OP_REG		0x00100000	/* Register in low 3 bits. */
+#define OP_IMPLICIT_A	0x00200000
+#define OP_IMPLICIT_C	0x00800000
+#define OP_REG_S	0x00400000
+
+/* Argument ordering */
+
+#define OP_B_RM		0x00008000	/* B arg before RM arg. */
+
+/* Operand widths */
+#define OP_8		0x01000000	/* 8-bit */
+#define OP_S8		0x02000000	/* 8-bit sign extended to 16 */
+
+/* ModRM lookup */
+#define OP_OPS		0x10000000	/* Lookup in modrm_ops */
+
+/* Table switch */
+#define OP_F		0x20000000	/* Switch to table amd64_opcodes_F */
+
+#define OP_S		0
+
+#define REG		(OP_REG)
+
+
+#define RRM8		(OP_8|OP_RM|OP_B_RM)
+#define RMR8		(OP_8|OP_RM)
+#define RMR		(OP_RM)
+#define RRM		(OP_RM|OP_B_RM)
+#define RRMI8		(OP_8|OP_RM|OP_B_RM|OP_IMM)
+#define RRMI		(OP_RM|OP_B_RM|OP_IMM)
+#define SRM		(OP_S|OP_RM|OP_B_RM)
+#define RMS		(OP_S|OP_RM)
+#define ALM8		(OP_8|OP_IMPLICIT_A|OP_RM|OP_B_RM)
+#define AM		(OP_IMPLICIT_A|OP_RM|OP_B_RM)
+#define MAL8		(OP_IMPLICIT_A|OP_RM|OP_8)
+#define MA		(OP_IMPLICIT_A|OP_RM)
+#define RI8		(OP_RM|OP_IMM|OP_8)
+#define RI		(OP_RM|OP_IMM)
+#define RMI8OP		(OP_RM|OP_IMM|OP_8|OP_OPS)
+#define RMSI8OP		(OP_RM|OP_IMM|OP_S8|OP_OPS)
+#define RMIOP		(OP_RM|OP_IMM|OP_OPS)
+#define ALI8		(OP_IMPLICIT_A|OP_IMM|OP_8)
+#define AI		(OP_IMPLICIT_A|OP_IMM)
+#define RM8OP		(OP_RM|OP_8|OP_OPS)
+#define RMOP		(OP_RM|OP_OPS)
+#define RMC8OP		(OP_RM|OP_8|OP_OPS|OP_IMPLICIT_C)
+#define RMCOP		(OP_RM|OP_OPS|OP_IMPLICIT_C)
+#define PCREL		(OP_PCREL)
+#define PCREL8		(OP_PCREL|OP_8)
+#define RM		(OP_RM)
+
+static const char *modrm_ops[5][8] = {
+  /* #0: ALU operations */
+  {
+    "add", "or", NULL, "and",
+    NULL, "sub", NULL, "cmp",
+  },
+  /* #1: Shift operations */
+  {
+    NULL, NULL, NULL, NULL,
+    "sal", "shr", NULL, "sar",
+  },
+  /* #2: More ALU operations */
+  {
+    NULL, NULL, NULL, "neg",
+    "imul", NULL, NULL, "idiv",
+  },
+  /* #3: Inc/dec */
+  {
+    "inc", "dec", "call", "call",
+    "jmp", "jmp", NULL, NULL,
+  },
+  /* #4: Test */
+  {
+    "test", NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+  },
+};
+
+struct amd64_opcode {
+  const char *name;
+  unsigned INT64 flags;
+};
+
+static struct amd64_opcode amd64_opcodes[256] = {
+  /* 0x00 */
+  { "add", RMR8, }, { "add", RMR, }, { "add", RRM8, }, { "add", RRM, },
+  { "add", ALI8, }, { "add", AI, }, { NULL, 0, }, { NULL, 0, },
+  { "or", RMR8, }, { "or", RMR, }, { "or", RRM8, }, { "or", RRM, },
+  { "or", ALI8, }, { "or", AI, }, { NULL, 0, }, { "", OP_F, },
+
+  /* 0x10 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x20 */
+  { "and", RMR8, }, { "and", RMR, }, { "and", RRM8, }, { "and", RRM, },
+  { "and", ALI8, }, { "and", AI, }, { "es", G2, }, { NULL, 0, },
+  { "sub", RMR8, }, { "sub", RMR, }, { "sub", RRM8, }, { "sub", RRM, },
+  { "sub", ALI8, }, { "sub", AI, }, { "cs", G2, }, { NULL, 0, },
+
+  /* 0x30 */
+  { "xor", RMR8, }, { "xor", RMR, }, { "xor", RRM8, }, { "xor", RRM, },
+  { NULL, 0, }, { NULL, 0, }, { "ss", G2, }, { NULL, 0, },
+  { "cmp", RMR8, }, { "cmp", RMR, }, { "cmp", RRM8, }, { "cmp", RRM, },
+  { "cmp", ALI8, }, { "cmp", AI, }, { "ds", G2, }, { NULL, 0, },
+
+  /* 0x40 - REX */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x50 */
+  { "push", REG, }, { "push", REG, }, { "push", REG, }, { "push", REG, },
+  { "push", REG, }, { "push", REG, }, { "push", REG, }, { "push", REG, },
+  { "pop", REG, }, { "pop", REG, }, { "pop", REG, }, { "pop", REG, },
+  { "pop", REG, }, { "pop", REG, }, { "pop", REG, }, { "pop", REG, },
+
+  /* 0x60 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "fs", G2, }, { "gs", G2, }, { "osize", G3, }, { "asize", G4, },
+  { NULL, 0, }, { "imul", RRMI, }, { NULL, 0, }, { "imul", RRMI8, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x70 */
+  { "jo", PCREL8, }, { "jno", PCREL8, }, { "jb", PCREL8, }, { "jae", PCREL8, },
+  { "jz", PCREL8, }, { "jnz", PCREL8, }, { "jbe", PCREL8, }, { "ja", PCREL8, },
+  { "js", PCREL8, }, { "jns", PCREL8, }, { "jp", PCREL8, }, { "jpo", PCREL8, },
+  { "jnge", PCREL8, }, { "jge", PCREL8, }, { "jle", PCREL8, }, { "jg", PCREL8, },
+
+  /* 0x80 */
+  { "and", RMI8OP, }, { "and", RMIOP, }, { NULL, 0, }, { "and", RMSI8OP, },
+  { "test", RMR8, }, { "test", RMR, }, { NULL, 0, }, { NULL, 0, },
+  { "mov", RMR8, }, { "mov", RMR, }, { "mov", RRM8, }, { "mov", RRM, },
+  { "mov", RMS, }, { "lea", RRM, }, { "mov", SRM, }, { NULL, 0, },
+
+  /* 0x90 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xa0 */
+  { "mov", ALM8, }, { "mov", AM, }, { "mov", MAL8, }, { "mov", MA, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "test", ALI8, }, { "test", AI, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xb0 */
+  { "mov", RI8, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "mov", RI, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xc0 */
+  { "sal", RMI8OP|1, }, { "sal", RMIOP|1, }, { NULL, 0, }, { "ret", 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "mov", RI, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xd0 */
+  { "sal", RM8OP|1, }, { "sal", RMOP|1, }, { "sal", RMC8OP|1, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { "jmp", PCREL, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "jmp", PCREL8, }, { NULL, 0, },
+
+  /* 0xe0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "jcxz", PCREL8, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "call", PCREL, }, { NULL, 0, }, { "jmp", 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xf0 */
+  { "lock", G1, }, { NULL, 0, }, { "repne", G1, }, { "rep", G1, },
+  { NULL, 0, }, { NULL, 0, }, { "neg", RM8OP|2, }, { "neg", RMOP|2, },
+  { NULL, 0, }, { NULL, 0, }, { "test", RMI8OP|4, }, { "test", RMI8OP|4, },
+  { NULL, 0, }, { NULL, 0, }, { "dec", RM8OP|3, }, { "dec", RMOP|3, },
+};
+
+static struct amd64_opcode amd64_opcodes_F[256] = {
+  /* 0x00 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x10 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x20 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x30 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x40 */
+  { "cmovo", RRM, }, { "cmovno", RRM, }, { "cmovb", RRM, }, { "cmovae", RRM, },
+  { "cmove", RRM, }, { "cmovne", RRM, }, { "cmovbe", RRM, }, { "cmova", RRM, },
+  { "cmovs", RRM, }, { "cmovns", RRM, }, { "cmovp", RRM, }, { "cmovnp", RRM, },
+  { "cmovel", RRM, }, { "cmovge", RRM, }, { "cmovle", RRM, }, { "cmovg", RRM, },
+
+  /* 0x50 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x60 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "movdqa", RRM, },
+
+  /* 0x70 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "movdqa", RMR, },
+
+  /* 0x80 */
+  { "jo", PCREL, }, { "jno", PCREL, }, { "jb", PCREL, }, { "jae", PCREL, },
+  { "je", PCREL, }, { "jne", PCREL, }, { "jbe", PCREL, }, { "ja", PCREL, },
+  { "js", PCREL, }, { "jns", PCREL, }, { "jp", PCREL, }, { "jnp", PCREL, },
+  { "jl", PCREL, }, { "jge", PCREL, }, { "jle", PCREL, }, { "jg", PCREL, },
+
+  /* 0x90 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "eq", RM, }, { "neq", RM, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "lt", RM, }, { "gte", RM, }, { "lte", RM, }, { "gt", RM, },
+
+  /* 0xa0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "bt", RMR, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "imul", RRM, },
+
+  /* 0xb0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "movzx", RRM, }, { "movzx", RRM, },
+  { NULL, 0, }, { NULL, 0, }, { "bt", RI, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xc0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xd0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xe0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xf0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+};
+
+const char *amd64_registers[16] = {
+  "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi",
+  "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+};
+
+const char *amd64_describe_reg(int rex, int reg)
+{
+  if (rex) reg += 8;
+  return amd64_registers[reg];
+}
+
+size_t amd64_readint32(PIKE_OPCODE_T *pc, char *buf)
+{
+  unsigned INT32 val = ((unsigned INT32 *)pc)[0];
+  buf += strlen(buf);
+  sprintf(buf, "+0x%08x", val);
+  return 4;
+}
+
+size_t amd64_disassemble_sib(PIKE_OPCODE_T *UNUSED(pc),
+			     char *UNUSED(buf),
+			     const int *UNUSED(legacy_prefix),
+			     int UNUSED(rex))
+{
+  return 0;
+}
+
+size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
+			       char *buf,
+			       const int *legacy_prefix,
+			       int modrm,
+			       int rex)
+{
+  size_t bytes = 0;
+  int mod;
+
+  if (legacy_prefix[3]) {
+    /* Size prefix override. ==> 16 bits*/
+  }
+
+  buf[0] = 0;
+  switch(modrm & 0xc0) {
+  default:
+    if ((modrm & 0xf8) == 0x48) {
+      /* disp32 */
+      return amd64_readint32(pc, buf);
+    }
+    if ((modrm & 0x38) == 0x20) {
+      bytes += amd64_disassemble_sib(pc + bytes, buf, legacy_prefix, rex & 4);
+    } else {
+      sprintf(buf, "[%s]", amd64_describe_reg(rex & 4, (modrm>>3) & 7));
+    }
+    switch(modrm & 0xc0) {
+    case 0x00:
+      break;
+    case 0x40:
+      sprintf(buf + strlen(buf), "%+d", ((signed char *)pc)[bytes]);
+      bytes++;
+      break;
+    case 0x80:
+      bytes += amd64_readint32(pc + bytes, buf);
+      break;
+    }
+    break;
+  case 0xc0:
+    sprintf(buf, "%s", amd64_describe_reg(rex & 4, (modrm>>3) & 7));
+    break;
+  }
+  return bytes;
+}
+
+void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
+{
+  size_t pos;
+  for (pos = 0; pos < len;) {
+    size_t op_start = pos;
+    size_t i;
+    const char *opcode = NULL;
+    const char *params[4] = { NULL, NULL, NULL, NULL, };
+    int legacy_prefix[4] = { 0, 0, 0, 0 };
+    int byte;
+    int rex = 0;
+    int modrm = 0;
+    struct amd64_opcode *table = amd64_opcodes;
+    struct amd64_opcode *op;
+    char buffers[4][256];
+
+    fprintf(stderr, "%p:\t", pc + pos);
+
+    // Handle prefixes.
+    while(1) {
+      byte = pc[pos++];
+      op = table + byte;
+      if (op->flags & OP_PREFIX) {
+	legacy_prefix[op->flags & 3] = byte;
+	continue;
+      }
+      break;
+    }
+
+    /* Handle REX */
+    if ((byte & 0xf0) == 0x40) {
+      rex = byte;
+      byte = pc[pos++];
+      op = table + byte;
+    }
+
+    if (byte == 0x0f) {
+      table = amd64_opcodes_F;
+      byte = pc[pos++];
+      op = table + byte;
+    }
+
+    opcode = op->name;
+
+    if (op->flags & OP_RM) {
+      modrm = pc[pos++];
+      params[1] = amd64_describe_reg(rex & 1, modrm & 0x07);
+      if (op->flags & OP_OPS) {
+	opcode = modrm_ops[op->flags & 0x0f][(modrm >> 3) & 0x07];
+      } else {
+	params[0] = buffers[0];
+	pos += amd64_disassemble_modrm(pc + pos, buffers[0],
+				       legacy_prefix, modrm, rex);
+      }
+    }
+
+    if (op->flags & OP_REG) {
+      int reg = byte & 0x07;
+      params[1] = amd64_describe_reg(rex & 1, byte & 0x07);
+    }
+
+    if (op->flags & OP_IMM) {
+      if (!params[0]) {
+	params[0] = buffers[0];
+	buffers[0][0] = 0;
+      }
+      if (op->flags & (OP_8|OP_S8)) {
+	sprintf(buffers[0] + strlen(buffers[0]), "%+d", ((signed char *)pc)[pos++]);
+      } else {
+	pos += amd64_readint32(pc + pos, buffers[0] + strlen(buffers[0]));
+      }
+    }
+
+    if (opcode) {
+      fprintf(stderr, "%s", opcode);
+
+      if (params[0]) {
+	fprintf(stderr, " %s", params[0]);
+	if (params[1]) {
+	  fprintf(stderr, ",");
+	}
+      }
+
+      if (params[1]) {
+	fprintf(stderr, " %s", params[1]);
+      }
+    } else {
+      fprintf(stderr, ".byte 0x%02x", byte);
+    }
+    fprintf(stderr, "\n\t");
+    for(i = 0; (op_start + i) < pos; i++) {
+      fprintf(stderr, "%02x ", pc[op_start + i]);
+      if (((i & 7) == 7) && (i + 1 < pos)) {
+	fprintf(stderr, "\n\t");
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+}
