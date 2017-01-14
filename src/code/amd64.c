@@ -4760,8 +4760,8 @@ static struct amd64_opcode amd64_opcodes_F[256] = {
 };
 
 const char *amd64_registers[16] = {
-  "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi",
-  "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+  "%rax", "%rcx", "%rdx", "%rbx", "%rsp", "%rbp", "%rsi", "%rdi",
+  "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15",
 };
 
 const char *amd64_describe_reg(int rex, int reg)
@@ -4778,12 +4778,66 @@ size_t amd64_readint32(PIKE_OPCODE_T *pc, char *buf)
   return 4;
 }
 
-size_t amd64_disassemble_sib(PIKE_OPCODE_T *UNUSED(pc),
-			     char *UNUSED(buf),
+size_t amd64_disassemble_sib(PIKE_OPCODE_T *pc,
+			     char *buf,
 			     const int *UNUSED(legacy_prefix),
-			     int UNUSED(rex))
+			     int modrm,
+			     int rex)
 {
-  return 0;
+  int sib = pc[0];
+  int bytes = 1;
+  buf[0] = 0;
+  if (((sib & 0x07) == 0x05) && !(rex & 1)) {
+    switch (modrm & 0xc0) {
+    case 0x00:	/* Disp32 */
+      {
+	INT32 val = ((INT32 *)(pc + 1))[0];
+	bytes += 4;
+	if (val < 0) {
+	  sprintf(buf, "-0x%x", -val);
+	} else {
+	  sprintf(buf, "0x%x", val);
+	}
+      }
+      break;
+    case 0x40:	/* Disp8 + [EBP] */
+      {
+	INT32 val = (pc + 1)[0];
+	bytes++;
+	if (val < 0) {
+	  sprintf(buf, "-0x%x(%%rbp)", -val);
+	} else {
+	  sprintf(buf, "0x%x(%%rbp)", val);
+	}
+      }
+      break;
+    case 0x80:	/* Disp32 + [EBP] */
+      {
+	INT32 val = ((INT32 *)(pc + 1))[0];
+	bytes += 4;
+	if (val < 0) {
+	  sprintf(buf, "-0x%x(%%rbp)", -val);
+	} else {
+	  sprintf(buf, "0x%x(%%rbp)", val);
+	}
+      }
+      break;
+    }
+  } else {
+    sprintf(buf, "%s", amd64_describe_reg(rex & 1, sib & 0x07));
+  }
+  if ((sib & 0x38) != 0x20) {
+    if (sib & 0xc0) {
+      /* Scale factor active */
+      sprintf(buf + strlen(buf), "(%s*%d)",
+	      amd64_describe_reg(rex & 2, (sib>>3) & 0x07),
+	      1<<((sib>>6) & 3));
+    } else {
+      sprintf(buf + strlen(buf), "(%s)",
+	      amd64_describe_reg(rex & 2, (sib>>3) & 0x07));
+    }
+  }
+  return bytes;
 }
 
 size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
@@ -4794,37 +4848,48 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
 {
   size_t bytes = 0;
   int mod;
+  char reg_buf[256];
 
   if (legacy_prefix[3]) {
-    /* Size prefix override. ==> 16 bits*/
+    /* Size prefix override. ==> 16 bits */
   }
 
+  reg_buf[0] = 0;
   buf[0] = 0;
   switch(modrm & 0xc0) {
   default:
-    if ((modrm & 0xf8) == 0x48) {
-      /* disp32 */
-      return amd64_readint32(pc, buf);
+    if ((modrm & 0xc7) == 0x05) {
+      /* RIP + disp32 */
+      INT32 val = ((INT32 *)pc)[0];
+      if (val < 0) {
+	sprintf(buf, "-0x%x(%%rip)", -val);
+      } else {
+	sprintf(buf, "0x%x(%%rip)", val);
+      }
+      return 4;
     }
-    if ((modrm & 0x38) == 0x20) {
-      bytes += amd64_disassemble_sib(pc + bytes, buf, legacy_prefix, rex & 4);
+    if ((modrm & 0x07) == 0x04) {
+      bytes += amd64_disassemble_sib(pc + bytes, reg_buf, legacy_prefix,
+				     modrm, rex);
     } else {
-      sprintf(buf, "[%s]", amd64_describe_reg(rex & 4, (modrm>>3) & 7));
+      sprintf(reg_buf, "%s", amd64_describe_reg(rex & 1, modrm & 7));
     }
     switch(modrm & 0xc0) {
     case 0x00:
+      sprintf(buf, "%s", reg_buf);
       break;
     case 0x40:
-      sprintf(buf + strlen(buf), "%+d", ((signed char *)pc)[bytes]);
+      sprintf(buf, "%d(%s)", ((signed char *)pc)[bytes], reg_buf);
       bytes++;
       break;
     case 0x80:
       bytes += amd64_readint32(pc + bytes, buf);
+      sprintf(buf + strlen(buf), "(%s)", reg_buf);
       break;
     }
     break;
   case 0xc0:
-    sprintf(buf, "%s", amd64_describe_reg(rex & 4, (modrm>>3) & 7));
+    sprintf(buf, "%s", amd64_describe_reg(rex & 1, modrm & 7));
     break;
   }
   return bytes;
@@ -4876,30 +4941,32 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
 
     if (op->flags & OP_RM) {
       modrm = pc[pos++];
-      params[1] = amd64_describe_reg(rex & 1, modrm & 0x07);
+      params[0] = amd64_describe_reg(rex & 1, modrm & 0x07);
       if (op->flags & OP_OPS) {
 	opcode = modrm_ops[op->flags & 0x0f][(modrm >> 3) & 0x07];
       } else {
-	params[0] = buffers[0];
-	pos += amd64_disassemble_modrm(pc + pos, buffers[0],
+	params[0] = amd64_describe_reg(rex & 4, (modrm>>3) & 0x07);
+	params[1] = buffers[1];
+	pos += amd64_disassemble_modrm(pc + pos, buffers[1],
 				       legacy_prefix, modrm, rex);
       }
     }
 
     if (op->flags & OP_REG) {
       int reg = byte & 0x07;
-      params[1] = amd64_describe_reg(rex & 1, byte & 0x07);
+      params[0] = amd64_describe_reg(rex & 1, byte & 0x07);
     }
 
     if (op->flags & OP_IMM) {
-      if (!params[0]) {
-	params[0] = buffers[0];
-	buffers[0][0] = 0;
+      if (!params[1]) {
+	params[1] = buffers[1];
+	buffers[1][0] = 0;
       }
       if (op->flags & (OP_8|OP_S8)) {
-	sprintf(buffers[0] + strlen(buffers[0]), "%+d", ((signed char *)pc)[pos++]);
+	sprintf(buffers[1] + strlen(buffers[1]), "$%+d", ((signed char *)pc)[pos++]);
       } else {
-	pos += amd64_readint32(pc + pos, buffers[0] + strlen(buffers[0]));
+	sprintf(buffers[1] + strlen(buffers[1]), "$");
+	pos += amd64_readint32(pc + pos, buffers[1] + strlen(buffers[1]));
       }
     }
 
@@ -4919,12 +4986,11 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
     } else {
       fprintf(stderr, ".byte 0x%02x", byte);
     }
-    fprintf(stderr, "\n\t");
     for(i = 0; (op_start + i) < pos; i++) {
-      fprintf(stderr, "%02x ", pc[op_start + i]);
-      if (((i & 7) == 7) && (i + 1 < pos)) {
-	fprintf(stderr, "\n\t");
+      if (!(i & 7)) {
+	fprintf(stderr, "\n\t#");
       }
+      fprintf(stderr, " %02x", pc[op_start + i]);
     }
     fprintf(stderr, "\n");
   }
