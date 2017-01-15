@@ -415,8 +415,24 @@ class protocol
                     return sprintf("%1H", t);
                   })*"";
      case T_LOC:
-       // FIXME: Not implemented yet.
-     default:
+       int encode_T_LOC_tinyfloat(float|int subject)
+       {
+	 int power = min((int)(log(subject*100.0)/log(10.0)), 9);
+	 int base =  min((int)(subject*100.0/pow(10.0,power)), 9);
+	 return ((base&0xf)<<4)|(power&0xf);
+       };
+       if ((entry->version? entry->version:1) != 1)
+	 error("Only T_LOC version 1 is supported");
+       return sprintf("%1c%1c%1c%1c%4c%4c%4c",
+		      0, // Only version that currently exists
+		      encode_T_LOC_tinyfloat(entry->size? entry->size:100.0), //Default is 1M
+		      encode_T_LOC_tinyfloat(entry->h_prec? entry->h_prec:1000*100.0), // Default is 10KM
+		      encode_T_LOC_tinyfloat(entry->v_prec? entry->v_prec:10*100.0), // Default is 10M
+		      entry->lat?(int)(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
+		      );
+    default:
        return "";
     }
   }
@@ -634,12 +650,12 @@ class protocol
   //!             @member int "version"
   //!               Version, currently only version @expr{0@} (zero) is
   //!               supported.
-  //!             @member int "size"
-  //!             @member int "h_perc"
-  //!             @member int "v_perc"
-  //!             @member int "lat"
-  //!             @member int "long"
-  //!             @member int "alt"
+  //!             @member float "size"
+  //!             @member float "h_perc"
+  //!             @member float "v_perc"
+  //!             @member float "lat"
+  //!             @member float "long"
+  //!             @member float "alt"
   //!           @endmapping
   //!         @value T_SOA
   //!           @mapping
@@ -751,11 +767,11 @@ class protocol
 	{
 	  int aByte;
 	  aByte  = decode_byte(s,next);
-	  m->size = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->size = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->h_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->h_perc = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->v_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->v_perc = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  m->lat = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->long = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->alt = ((decode_int(s,next)/100.0)-100000.0);
