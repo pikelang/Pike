@@ -4651,14 +4651,14 @@ static struct amd64_opcode amd64_opcodes[256] = {
   /* 0xe0 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "jcxz", PCREL8, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { "call", PCREL, }, { NULL, 0, }, { "jmp", 0, }, { NULL, 0, },
+  { "call", PCREL, }, { NULL, 0, }, { NULL, 0, }, { "jmp", PCREL8, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0xf0 */
   { "lock", G1, }, { NULL, 0, }, { "repne", G1, }, { "rep", G1, },
-  { NULL, 0, }, { NULL, 0, }, { "neg", RM8OP|2, }, { "neg", RMOP|2, },
-  { NULL, 0, }, { NULL, 0, }, { "test", RMI8OP|4, }, { "test", RMI8OP|4, },
-  { NULL, 0, }, { NULL, 0, }, { "dec", RM8OP|3, }, { "dec", RMOP|3, },
+  { NULL, 0, }, { "cmc", 0, }, { "neg", RM8OP|2, }, { "neg", RMOP|2, },
+  { "clc", 0, }, { NULL, 0, }, { "cli", 0, }, { NULL, 0, },
+  { "cld", 0, }, { NULL, 0, }, { "dec", RM8OP|3, }, { "dec", RMOP|3, },
 };
 
 static struct amd64_opcode amd64_opcodes_F[256] = {
