@@ -714,11 +714,11 @@ class protocol
 	{
 	  int aByte;
 	  aByte  = decode_byte(s,next);
-	  m->size = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->size = (((aByte>>4)&0xf)%10)*(pow(10, (aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->h_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->h_perc = (((aByte>>4)&0xf)%10)*(pow(10, (aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->v_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->v_perc = (((aByte>>4)&0xf)%10)*(pow(10, (aByte&0xf)%10)/100.0);
 	  m->lat = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->long = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->alt = ((decode_int(s,next)/100.0)-100000.0);
