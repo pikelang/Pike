@@ -44,6 +44,8 @@ o ** operator added. It's exponentiation and works with most
 
 o #pragma disassemble
 
+  This directive is now available even in pikes compiled --without-debug.
+
   The byte code output is now interleaved with the generated machine code
   on selected architectures.
 

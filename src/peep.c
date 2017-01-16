@@ -24,7 +24,6 @@
 #include "pikecode.h"
 #include "pike_compiler.h"
 
-#ifdef PIKE_DEBUG
 static int hasarg(int opcode)
 {
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
@@ -47,7 +46,6 @@ static void dump_instr(p_instr *p)
     fprintf(stderr,")");
   }
 }
-#endif
 
 
 static int asm_opt(void);
@@ -492,28 +490,36 @@ INT32 assemble(int store_linenumbers)
   FLUSH_CODE_GENERATOR_STATE();
   for(e=0;e<length;e++)
   {
-#ifdef PIKE_DEBUG
-# ifdef DISASSEMBLE_CODE
+#ifdef DISASSEMBLE_CODE
     size_t opcode_start = PIKE_PC;
-# endif
-
+#endif
+#ifdef PIKE_DEBUG
     if (c != (((p_instr *)buffer_ptr(&instrbuf))+e)) {
       Pike_fatal("Instruction loop deviates. "
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
 		 e, c - ((p_instr *)buffer_ptr(&instrbuf)));
     }
-    if(((a_flag > 2) && store_linenumbers) ||
+#endif
+    if(
+#ifdef PIKEDEBUG
+       ((a_flag > 2) && store_linenumbers) ||
        (a_flag > 3) ||
+#endif
        (lex->pragmas & ID_DISASSEMBLE))
     {
+#ifdef PIKE_DEBUG
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
               (unsigned long)PIKE_PC, synch_depth, "");
+#else
+      fprintf(stderr, "===%4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
+#endif
       dump_instr(c);
       fprintf(stderr,"\n");
+#ifdef PIKE_DEBUG
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
-    }
 #endif
+    }
 
     if(store_linenumbers) {
       store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
@@ -693,7 +699,7 @@ INT32 assemble(int store_linenumbers)
       }
     }
 
-#if defined(PIKE_DEBUG) && defined(DISASSEMBLE_CODE)
+#ifdef DISASSEMBLE_CODE
     if((lex->pragmas & ID_DISASSEMBLE) && PIKE_PC > opcode_start)
     {
         DISASSEMBLE_CODE(Pike_compiler->new_program->program + opcode_start,

@@ -93,9 +93,7 @@ struct instr
 #ifdef PIKE_DEBUG
   long compiles;
 #endif
-#ifdef PIKE_DEBUG
   const char *name;
-#endif
   int flags;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
@@ -304,8 +302,8 @@ const char *get_opcode_name(PIKE_INSTR_T n);
 #else /* !HAVE_COMPUTED_GOTO */
 #define get_opcode_name(n) get_f_name(n + F_OFFSET)
 #endif /* HAVE_COMPUTED_GOTO */
-const char *get_token_name(int n);
 #endif
+const char *get_token_name(int n);
 void init_opcodes(void);
 void exit_opcodes(void);
 

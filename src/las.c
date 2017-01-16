@@ -5240,9 +5240,7 @@ int dooptcode(struct pike_string *name,
   union idptr tmp;
   int args, vargs, ret;
   struct svalue *foo;
-#ifdef PIKE_DEBUG
   struct compilation *c = THIS_COMPILATION;
-#endif
 
   CHECK_COMPILER();
 
@@ -5250,11 +5248,13 @@ int dooptcode(struct pike_string *name,
 
   check_tree(n, 0);
 
+  if(
 #ifdef PIKE_DEBUG
-  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
+     (a_flag > 1) ||
+#endif
+     (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
             (unsigned long)PIKE_PC);
-#endif
 
   args=count_arguments(type);
   if(args < 0)

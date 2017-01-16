@@ -375,6 +375,7 @@ const char *get_opcode_name(PIKE_INSTR_T n)
   return buf;
 }
 #endif /* HAVE_COMPUTED_GOTO */
+#endif /* PIKE_DEBUG */
 
 const char *get_token_name(int n)
 {
@@ -387,7 +388,6 @@ const char *get_token_name(int n)
     return buf;
   }
 }
-#endif /* PIKE_DEBUG */
 
 void init_opcodes(void)
 {
@@ -415,9 +415,7 @@ void init_opcodes(void)
     }
 #endif
 
-#ifdef PIKE_DEBUG
     instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
-#endif
     instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
 #ifdef PIKE_USE_MACHINE_CODE
     instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;

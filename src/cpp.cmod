@@ -873,8 +873,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!       Note that this option essentially has a function-level
  *!       scope, so enabling it for just a few lines is usually
  *!       a noop. This is similar to @[Debug.assembler_debug()]
- *!       level @expr{3@}. Note that this @tt{#pragma@} is a noop
- *!       if Pike hasn't been compiled @tt{--with-debug@}.
+ *!       level @expr{3@}.
  *!     @value "no_disassemble"
  *!       Disable disassembly output (default).
  *!   @endstring
