@@ -1,0 +1,8 @@
+subject: Pike 7.8: Improved backtrace formatting.
+from: 829935dcd2b118b685bd50bc6b4f83f7b4acde2a
+to: b10a923d7c614213a7330537166fe0d54af361aa
+originator: Henrik Grubbstrom <grubba@grubba.org>
+depends: 2016-08-10T183422
+restart: true
+
+• MasterObject: describe_string() now shows some of the end of the string.
