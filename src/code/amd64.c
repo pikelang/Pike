@@ -4968,6 +4968,26 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
 	sprintf(buffers[1] + strlen(buffers[1]), "$");
 	pos += amd64_readint32(pc + pos, buffers[1] + strlen(buffers[1]));
       }
+    } else if (op->flags & OP_PCREL) {
+      INT32 val;
+      if (!params[1]) {
+	params[1] = buffers[1];
+	buffers[1][0] = 0;
+      }
+      if (op->flags & (OP_8|OP_S8)) {
+	val = ((signed char *)pc)[pos++];
+      } else {
+	val = ((INT32 *)(pc + pos))[0];
+	pos += 4;
+      }
+      sprintf(buffers[1] + strlen(buffers[1]), "%p", pc + (pos + val));
+    }
+
+    if (op->flags & OP_B_RM) {
+      /* Swap the two parameters. */
+      const char *tmp = params[0];
+      params[0] = params[1];
+      params[1] = tmp;
     }
 
     if (opcode) {
