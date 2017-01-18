@@ -4471,6 +4471,12 @@ INT32 amd64_read_f_jump(INT32 offset)
 #define G3		(OP_PREFIX|2)
 #define G4		(OP_PREFIX|3)
 
+/* Table switch */
+#define OP_MULTIBYTE	0x20000000UL
+#define OP_F		(OP_MULTIBYTE|0)
+#define OP_F_38		(OP_MULTIBYTE|1)
+#define OP_F_3A		(OP_MULTIBYTE|2)
+
 /* Additional fields */
 #define OP_RM		0x00010000	/* ModR/M */
 #define OP_DISPL	0x00020000	/* Displacement */
@@ -4495,8 +4501,6 @@ INT32 amd64_read_f_jump(INT32 offset)
 /* ModRM lookup */
 #define OP_OPS		0x10000000	/* Lookup in modrm_ops */
 
-/* Table switch */
-#define OP_F		0x20000000	/* Switch to table amd64_opcodes_F */
 
 #define OP_S		0
 
@@ -4563,12 +4567,14 @@ struct amd64_opcode {
   unsigned INT64 flags;
 };
 
-static struct amd64_opcode amd64_opcodes[256] = {
+static struct amd64_opcode amd64_opcodes[3][256] = {
+  /* Main table. */
+{
   /* 0x00 */
   { "add", RMR8, }, { "add", RMR, }, { "add", RRM8, }, { "add", RRM, },
   { "add", ALI8, }, { "add", AI, }, { NULL, 0, }, { NULL, 0, },
   { "or", RMR8, }, { "or", RMR, }, { "or", RRM8, }, { "or", RRM, },
-  { "or", ALI8, }, { "or", AI, }, { NULL, 0, }, { "", OP_F, },
+  { "or", ALI8, }, { "or", AI, }, { NULL, 0, }, { "F", OP_F, },
 
   /* 0x10 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
@@ -4659,9 +4665,9 @@ static struct amd64_opcode amd64_opcodes[256] = {
   { NULL, 0, }, { "cmc", 0, }, { "neg", RM8OP|2, }, { "neg", RMOP|2, },
   { "clc", 0, }, { NULL, 0, }, { "cli", 0, }, { NULL, 0, },
   { "cld", 0, }, { NULL, 0, }, { "dec", RM8OP|3, }, { "dec", RMOP|3, },
-};
-
-static struct amd64_opcode amd64_opcodes_F[256] = {
+},
+/* Opcode prefix 0x0f. */
+{
   /* 0x00 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
@@ -4683,7 +4689,7 @@ static struct amd64_opcode amd64_opcodes_F[256] = {
   /* 0x30 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "aes|blendvps/d|crc32", OP_F_38, }, { NULL, 0, }, { "aes|blendps/d", OP_F_3A, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0x40 */
@@ -4723,25 +4729,25 @@ static struct amd64_opcode amd64_opcodes_F[256] = {
   { "lt", RM, }, { "gte", RM, }, { "lte", RM, }, { "gt", RM, },
 
   /* 0xa0 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "bt", RMR, },
+  { NULL, 0, }, { NULL, 0, }, { "cpuid", 0, }, { "bt", RMR, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "imul", RRM, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "bts", RMR, },
+  { NULL, 0, }, { NULL, 0, }, { "clflush", RM, }, { "imul", RRM, },
 
   /* 0xb0 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "cmpxchg", RMR8, }, { "cmpxchg", RMR, }, { NULL, 0, }, { "btr", RMR, },
   { NULL, 0, }, { NULL, 0, }, { "movzx", RRM, }, { "movzx", RRM, },
-  { NULL, 0, }, { NULL, 0, }, { "bt", RI, }, { NULL, 0, },
+  { "bsf", RRM, }, { "bsr", RRM, }, { "bt", RIOP|5, }, { "btc", RMR, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0xc0 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "cmpp/ss/d", RRMI8, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "cmpxchg8b", RM, },
+  { "bswap", REG, }, { "bswap", REG, }, { "bswap", REG, }, { "bswap", REG, },
+  { "bswap", REG, }, { "bswap", REG, }, { "bswap", REG, }, { "bswap", REG, },
 
   /* 0xd0 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "addsubps/d", RRM, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
@@ -4757,6 +4763,203 @@ static struct amd64_opcode amd64_opcodes_F[256] = {
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+},
+/* Opcode prefix 0x0f 0x38: AES, BLENDVP, CRC32. */
+{
+  /* 0x00 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x10 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "blendvps", RRM, }, { "blendvpd", RRM, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x20 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x30 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x40 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x50 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x60 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x70 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x80 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x90 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xa0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xb0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xc0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xd0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "aesimc", RRM, },
+  { "aesenc", RRM, }, { "aesenclast", RRM, }, { "aesdec", RRM, }, { "aesdeclast", RRM, },
+
+  /* 0xe0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xf0 */
+  { "crc32", RRM8, }, { "crc32", RRM, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+},
+/* Opcode prefix 0x0f 0x3a: AES, BLENDP. */
+{
+  /* 0x00 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "blendps", RRMI8, }, { "blendpd", RRMI8, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x10 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x20 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x30 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x40 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x50 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x60 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x70 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x80 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0x90 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xa0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xb0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xc0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xd0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "aeskeygenassist", RRMI8, },
+
+  /* 0xe0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+
+  /* 0xf0 */
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+},
 };
 
 const char *amd64_registers[16] = {
@@ -4907,7 +5110,7 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
     int byte;
     int rex = 0;
     int modrm = 0;
-    struct amd64_opcode *table = amd64_opcodes;
+    struct amd64_opcode *table = amd64_opcodes[0];
     struct amd64_opcode *op;
     char buffers[4][256];
 
@@ -4931,8 +5134,8 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       op = table + byte;
     }
 
-    if (byte == 0x0f) {
-      table = amd64_opcodes_F;
+    while (op->flags & OP_MULTIBYTE) {
+      table = amd64_opcodes[1 + op->flags & 0xff];
       byte = pc[pos++];
       op = table + byte;
     }
