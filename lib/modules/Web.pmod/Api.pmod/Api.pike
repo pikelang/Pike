@@ -311,8 +311,8 @@ mixed call(string api_method, void|ParamsArg params,
       if (queue) {
         queue->write("@");
       }
-    })
-    ->on_failure(lambda (Protocols.HTTP.Promise.Result res) {
+    });
+    fut->on_failure(lambda (Protocols.HTTP.Promise.Result res) {
       cb && cb(0, res);
       if (queue) {
         queue->write("@");
