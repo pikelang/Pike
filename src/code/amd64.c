@@ -4535,9 +4535,9 @@ INT32 amd64_read_f_jump(INT32 offset)
 #define RM		(OP_RM)
 
 static const char *modrm_ops[5][8] = {
-  /* #0: ALU operations */
+  /* #0: ALU operations (Opcodes 0x80, 0x81, 0x83). */
   {
-    "add", "or", NULL, "and",
+    "add", "or", "adc", "and",
     NULL, "sub", NULL, "cmp",
   },
   /* #1: Shift operations */
@@ -4545,20 +4545,25 @@ static const char *modrm_ops[5][8] = {
     NULL, NULL, NULL, NULL,
     "sal", "shr", NULL, "sar",
   },
-  /* #2: More ALU operations */
+  /* #2: More ALU operations (Opcodes 0xf6, 0xf7). */
   {
-    NULL, NULL, NULL, "neg",
+    "test", NULL, NULL, "neg",
     "imul", NULL, NULL, "idiv",
   },
-  /* #3: Inc/dec */
+  /* #3: Inc/dec (Opcode 0xff) */
   {
     "inc", "dec", "call", "call",
     "jmp", "jmp", NULL, NULL,
   },
-  /* #4: Test */
+  /* #4: Mov (Opcodes 0xc6, 0xc7). */
   {
-    "test", NULL, NULL, NULL,
+    "mov", NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
+  },
+  /* #5: Bit tests (Opcode 0xba) */
+  {
+    NULL, NULL, NULL, NULL,
+    "bt", "bts", "btr", "btc",
   },
 };
 
