@@ -311,7 +311,16 @@ class Success
   public bool `ok() { return true; }
 
   //! The response body, i.e the content of the requested URL
-  public string `data() { return result->data; }
+  public string `data()
+  {
+    string data = result->data;
+
+    if (content_encoding && content_encoding == "gzip") {
+      data = Gz.uncompress(data[10..<8], true);
+    }
+
+    return data;
+  }
 
   //! Returns the value of the @tt{content-length@} header.
   public int `length()
@@ -342,6 +351,14 @@ class Success
         }
         return ce;
       }
+    }
+  }
+
+  //! Returns the content encoding of the response if set by the remote server.
+  public string `content_encoding()
+  {
+    if (string ce = (headers && headers["content-encoding"])) {
+      return ce;
     }
   }
 }

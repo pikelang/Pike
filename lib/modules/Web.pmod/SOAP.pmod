@@ -209,8 +209,6 @@ class Client {
       "data":body,
      ]))).map(lambda(Protocols.HTTP.Promise.Success resp) {
       string res = resp->data;
-      if (resp->content_encoding == "gzip")
-        res = Gz.uncompress(res[10..<8], true);
       PD("\nGot: %O\n", res);
       Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(res);
       mapping m = Parser.XML.node_to_struct(root)->Envelope->Body;
