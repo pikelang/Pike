@@ -290,7 +290,7 @@ class Result
   //! @ignore
   protected void create(mapping _result)
   {
-    //TRACE("this_program(%O)\n", _result->headers);
+    TRACE("this_program(%O)\n", _result->headers);
     result = _result;
   }
 
@@ -323,14 +323,17 @@ class Success
   public string `content_type()
   {
     if (string ct = (headers && headers["content-type"])) {
-      sscanf (ct, "%s;", ct);
+      if (sscanf (ct, "%s;", string c) == 1) {
+        return c;
+      }
+
       return ct;
     }
   }
 
-  //! Returns the content encoding of the requested document, if given by the
+  //! Returns the charset of the requested document, if given by the
   //! response headers.
-  public string `content_encoding()
+  public string `charset()
   {
     if (string ce = (headers && headers["content-type"])) {
       if (sscanf (ce, "%*s;%*scharset=%s", ce) == 3) {
