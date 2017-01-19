@@ -4649,7 +4649,7 @@ static struct amd64_opcode amd64_opcodes[3][256] = {
 
   /* 0xc0 */
   { "sal", RMI8OP|1, }, { "sal", RMIOP|1, }, { NULL, 0, }, { "ret", 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "mov", RI, },
+  { NULL, 0, }, { NULL, 0, }, { "mov", RMI8OP|4, }, { "mov", RMIOP|4, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4742,7 +4742,7 @@ static struct amd64_opcode amd64_opcodes[3][256] = {
   /* 0xb0 */
   { "cmpxchg", RMR8, }, { "cmpxchg", RMR, }, { NULL, 0, }, { "btr", RMR, },
   { NULL, 0, }, { NULL, 0, }, { "movzx", RRM, }, { "movzx", RRM, },
-  { "bsf", RRM, }, { "bsr", RRM, }, { "bt", RIOP|5, }, { "btc", RMR, },
+  { "bsf", RRM, }, { "bsr", RRM, }, { "bt", RMIOP|5, }, { "btc", RMR, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0xc0 */
