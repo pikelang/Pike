@@ -4499,7 +4499,7 @@ INT32 amd64_read_f_jump(INT32 offset)
 #define OP_S8		0x02000000	/* 8-bit sign extended to 16 */
 
 /* ModRM lookup */
-#define OP_OPS		0x10000000	/* Lookup in modrm_ops */
+#define OP_OPS		0x40000000	/* Lookup in modrm_ops */
 
 
 #define OP_S		0
@@ -4534,7 +4534,7 @@ INT32 amd64_read_f_jump(INT32 offset)
 #define PCREL8		(OP_PCREL|OP_8)
 #define RM		(OP_RM)
 
-static const char *modrm_ops[5][8] = {
+static const char *modrm_ops[6][8] = {
   /* #0: ALU operations (Opcodes 0x80, 0x81, 0x83). */
   {
     "add", "or", "adc", "and",
@@ -4572,7 +4572,7 @@ struct amd64_opcode {
   unsigned INT64 flags;
 };
 
-static struct amd64_opcode amd64_opcodes[3][256] = {
+static struct amd64_opcode amd64_opcodes[4][256] = {
   /* Main table. */
 {
   /* 0x00 */
