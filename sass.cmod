@@ -348,7 +348,7 @@ PIKECLASS Api
  *!
  *! Returns the @tt{libsass@} version this module was compiled against
  */
-PIKEFUN string libsass_version()
+PIKEFUN string libsass_version ()
 {
   push_text (libsass_version ());
 }
@@ -358,7 +358,7 @@ PIKEFUN string libsass_version()
  *!
  *! Returns the @tt{sass2scss@} version this module was compiled against
  */
-PIKEFUN string sass2scss_version()
+PIKEFUN string sass2scss_version ()
 {
   push_text (sass2scss_version ());
 }
@@ -367,7 +367,7 @@ PIKEFUN string sass2scss_version()
 #if HAVE_LIBSASS_LANGUAGE_VERSION
 /* Returns the @tt{language@} version of Sass this module was compiled against
 */
-PIKEFUN string libsass_language_version()
+PIKEFUN string libsass_language_version ()
 {
   push_text (libsass_language_version ());
 }
