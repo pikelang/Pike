@@ -4,7 +4,7 @@
 || for more information.
 */
 
-// #define SASS_DEBUG
+//#define SASS_DEBUG
 
 #include "config.h"
 #include "global.h"
@@ -36,6 +36,7 @@ DECLARATIONS
  */
 
 #define REGISTER_IMPORTER(CTX)                                    \
+  Sass_Importer_Entry c_imp = NULL;                               \
   do {                                                            \
     struct Sass_Options *s_opts = sass_context_get_options (CTX); \
     Sass_Importer_Entry c_imp;                                    \
@@ -45,12 +46,15 @@ DECLARATIONS
     sass_option_set_c_importers (s_opts, imp_list);               \
   } while (0)
 
+#define UNREGISTER_IMPORTER()  sass_delete_importer (c_imp)
 
 /*! @class Api
  *! @appears Tools.Sass.Compiler
  */
 PIKECLASS Api
 {
+  // CVAR struct svalue thrown_err;
+
   /*! @decl int(0..3) output_style = 0
    *! @appears Tools.Sass.Compiler.output_style
    *!
@@ -90,7 +94,7 @@ PIKECLASS Api
    *!
    *! Set the precision of fractional numbers. Default is @tt{5@}.
    */
-  PIKEVAR int          precision;
+  PIKEVAR int(0..)     precision;
 
   /*! @decl bool source_comments
    *! @appears Tools.Sass.Compiler.source_comments
@@ -163,17 +167,18 @@ PIKECLASS Api
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
     if (&THIS->__importer_cb != NULL) {
+      // JMP_BUF recovery;
+      // if (SETJMP (recovery)) {
+      //   UNSETJMP (recovery);
+      //   THIS->thrown_err = throw_value;
+      //   SASS_TRACE ("Got error, perhaps find out how to set a SASS error?\n");
+      //   return NULL;
+      // }
+
       push_text (path);
       apply_svalue (&THIS->__importer_cb, 1);
 
-      JMP_BUF recovery;
-
-      if (SETJMP (recovery)) {
-        UNSETJMP(recovery);
-        MY_THROW_ERR ("%s", throw_value);
-      }
-
-      UNSETJMP (recovery);
+      // UNSETJMP (recovery);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         SASS_TRACE ("Got return value from import: %s\n",
@@ -231,6 +236,13 @@ PIKECLASS Api
     REGISTER_IMPORTER (ctx_out);
 
     int err = sass_compile_file_context (ctx);
+
+    UNREGISTER_IMPORTER ();
+
+    // if (&THIS->thrown_err != NULL) {
+    //   sass_delete_file_context (ctx);
+    //   Pike_error ("%s", THIS->thrown_err.u.string->str);
+    // }
 
     if (err) {
       const char *errstr = strdup (sass_context_get_error_message (ctx_out));
@@ -297,6 +309,13 @@ PIKECLASS Api
 
     sass_compile_data_context (ctx);
 
+    UNREGISTER_IMPORTER ();
+
+    // if (&THIS->thrown_err != NULL) {
+    //   sass_delete_data_context (ctx);
+    //   Pike_error ("%s", THIS->thrown_err.u.string->str);
+    // }
+
     int err = sass_context_get_error_status (ctx_out);
 
     if (err) {
@@ -315,6 +334,7 @@ PIKECLASS Api
     SASS_TRACE ("INIT __Sass.Api\n");
     THIS->precision = 5;
     THIS->output_style = SASS_STYLE_NESTED;
+    // THIS->thrown_err;
   }
 
   EXIT {

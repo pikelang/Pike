@@ -65,7 +65,7 @@ class Compiler
 
   //! @ignore
   //! Resolve external imports in sass/scss files.
-  protected string __resolve_import(string path)
+  protected string(8bit) __resolve_import(string(8bit) path)
   {
     Standards.URI uri;
 
@@ -146,15 +146,14 @@ class Compiler
   //!   @member string "map"
   //!    The generated source mapping data
   //!  @endmapping
-  mapping(string:string) compile_file(string input_file)
+  mapping(string(8bit):string(8bit)) compile_file(string(8bit) input_file)
   {
     if (check_file_access && !Stdio.exist(input_file)) {
       error("Input file %q does not exist or isn't accessible!\n",
             input_file);
     }
 
-    mapping(string:string) val = ::compile_file(input_file);
-    return val;
+    return ::compile_file(input_file);
   }
 
   //! Compile the file @[input_file] and write the result to @[output_file].
@@ -166,14 +165,14 @@ class Compiler
   //!  The SCSS file to compile
   //! @param output_file
   //!  The name of the CSS file to save the result in.
-  variant void compile_file(string input_file, string output_file)
+  variant void compile_file(string(8bit) input_file, string(8bit) output_file)
   {
     if (check_file_access && !Stdio.exist(input_file)) {
       error("Input file %q does not exist or isn't accessible!\n",
             input_file);
     }
 
-    mapping(string:string) val = ::compile_file(input_file);
+    mapping(string(8bit):string(8bit)) val = ::compile_file(input_file);
     Stdio.write_file(output_file, val->css);
 
     if (val->map && source_map_file) {

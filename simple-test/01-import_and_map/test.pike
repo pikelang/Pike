@@ -9,8 +9,8 @@ int run()
   compiler->http_import = Tools.Sass.HTTP_IMPORT_GREEDY;
 
   compiler->set_options(([
-    "source_map_file"     : combine_path(BASE, "output.source.map"),
-    "include_path"        : combine_path(BASE, "inc")
+    "source_map_file" : combine_path(BASE, "output.source.map"),
+    "include_path"    : combine_path(BASE, "inc")
   ]));
 
   mixed err = catch {
