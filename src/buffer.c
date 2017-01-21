@@ -25,7 +25,7 @@ PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len) {
     void *ptr;
 
 #ifdef PIKE_DEBUG
-    if (buffer_space(b) >= len) Pike_fatal("Misuse of buffer_make_space.\n");
+    if (buffer_space(b) >= len) Pike_fatal("Misuse of buffer_grow.\n");
 #endif
     if (DO_SIZE_T_ADD_OVERFLOW(len, content_length, &needed)) goto OUT_OF_MEMORY_FATAL;
 
@@ -54,8 +54,8 @@ PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len) {
 #endif
 
     b->dst = (char*)ptr + content_length;
+    b->end = (char*)ptr + new_length;
     b->length = new_length;
-    b->left = new_length - content_length;
     return 1;
 OUT_OF_MEMORY_FATAL:
     /* This happens on overflow. */
@@ -112,7 +112,7 @@ PMOD_EXPORT const char *buffer_get_string(struct byte_buffer *b) {
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void buffer_check_space(struct byte_buffer *b, size_t len) {
-    if (len > b->left)
+    if (len > buffer_space(b))
         Pike_fatal("buffer_check_space failed.\n");
 }
 PMOD_EXPORT void buffer_check_position(struct byte_buffer *b, size_t pos) {
@@ -120,12 +120,9 @@ PMOD_EXPORT void buffer_check_position(struct byte_buffer *b, size_t pos) {
         Pike_fatal("buffer_check_position failed.\n");
 }
 PMOD_EXPORT void buffer_remove(struct byte_buffer *b, size_t len) {
-    char *dst = buffer_dst(b);
-
     if (len > buffer_content_length(b))
         Pike_fatal("Bad call to buffer_remove.\n");
 
-    b->dst = dst - len;
-    b->left += len;
+    b->dst = (char*)b->dst - len;
 }
 #endif

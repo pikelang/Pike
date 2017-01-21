@@ -12,16 +12,16 @@
 #define MACRO   static inline PIKE_UNUSED_ATTRIBUTE
 
 struct byte_buffer {
-    size_t left;
-    size_t length;
     void * restrict dst;
+    void * end;
+    size_t length;
     unsigned INT16 flags;
 };
 
 static const INT16 BUFFER_GROW_EXACT = 0x1;
 static const INT16 BUFFER_GROW_MEXEC = 0x2;
 
-#define BUFFER_INIT() ((struct byte_buffer){ 0, 0, NULL, 0 })
+#define BUFFER_INIT() ((struct byte_buffer){ NULL, NULL, 0, 0 })
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
 PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len);
@@ -36,7 +36,7 @@ PMOD_EXPORT struct pike_string *buffer_finish_pike_string(struct byte_buffer *b)
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 MACRO void* buffer_ptr(const struct byte_buffer *b) {
-    return (char*)b->dst + b->left - b->length;
+    return (char*)b->end - b->length;
 }
 
 MALLOC_FUNCTION MACRO void *buffer_dst(const struct byte_buffer *b) {
@@ -53,7 +53,7 @@ MACRO void buffer_add_flags(struct byte_buffer *b, INT16 flags) {
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 MACRO size_t buffer_content_length(const struct byte_buffer *b) {
-    return b->length - b->left;
+    return (char*)b->dst - (char*)buffer_ptr(b);
 }
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
@@ -63,7 +63,7 @@ MACRO size_t buffer_length(const struct byte_buffer *b) {
 
 PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 MACRO size_t buffer_space(struct byte_buffer *b) {
-    return b->left;
+    return (char*)b->end - (char*)b->dst;
 }
 
 MACRO void buffer_init(struct byte_buffer *buf) {
@@ -72,20 +72,14 @@ MACRO void buffer_init(struct byte_buffer *buf) {
 }
 
 MACRO void buffer_clear(struct byte_buffer *b) {
-    if (b->length) {
-        b->dst = buffer_ptr(b);
-        b->left = b->length;
-    }
+    b->dst = buffer_ptr(b);
 }
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void buffer_remove(struct byte_buffer *b, size_t len);
 #else
 MACRO void buffer_remove(struct byte_buffer *b, size_t len) {
-    char *dst = buffer_dst(b);
-
-    b->dst = dst - len;
-    b->left += len;
+    b->dst = (char*)b->dst - len;
 }
 #endif
 
@@ -101,13 +95,12 @@ MACRO void buffer_advance(struct byte_buffer *b, size_t len) {
     char *dst = buffer_dst(b);
     buffer_check_space(b, len);
     b->dst = dst + len;
-    b->left -= len;
 }
 
 MACRO void buffer_init_from_mem(struct byte_buffer *b, void *ptr, size_t len, size_t pos) {
     b->dst = ptr;
+    b->end = (char*)ptr + len;
     b->length = len;
-    b->left = len;
     buffer_advance(b, pos);
 }
 
@@ -117,10 +110,10 @@ MACRO void buffer_init_from_mem(struct byte_buffer *b, void *ptr, size_t len, si
  * Throws an exception in out-of-memory situations.
  */
 MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
-    if (UNLIKELY(len > b->left)) {
+    if (UNLIKELY((char*)b->dst + len > (char*)b->end)) {
         buffer_grow(b, len);
 
-        STATIC_ASSUME(len <= b->left);
+        STATIC_ASSUME((char*)b->dst + len <= (char*)b->end);
     }
     return buffer_dst(b);
 }
@@ -130,11 +123,10 @@ MACRO void* buffer_ensure_space(struct byte_buffer *b, size_t len) {
  * instead of throwing an exception.
  */
 MACRO int buffer_ensure_space_nothrow(struct byte_buffer *b, size_t len) {
-    if (UNLIKELY(len > b->left)) {
+    if (UNLIKELY((char*)b->dst + len > (char*)b->end)) {
         if (!buffer_grow_nothrow(b, len)) return 0;
 
-
-        STATIC_ASSUME(len <= b->left);
+        STATIC_ASSUME((char*)b->dst + len <= (char*)b->end);
     }
 
     return 1;
@@ -144,20 +136,18 @@ MACRO int buffer_ensure_space_nothrow(struct byte_buffer *b, size_t len) {
     const struct byte_buffer __B = *b;          \
     do CODE while(0);                           \
     STATIC_ASSUME(__B.dst == b->dst);           \
+    STATIC_ASSUME(__B.end == b->end);           \
     STATIC_ASSUME(__B.length == b->length);     \
-    STATIC_ASSUME(__B.left == b->left);         \
     STATIC_ASSUME(__B.flags == b->flags);       \
 } while (0)
 
 MACRO void buffer_memcpy_unsafe(struct byte_buffer *b, const void * src, size_t len) {
     unsigned INT8 * restrict dst = buffer_dst(b);
-    const size_t left = b->left;
     buffer_check_space(b, len);
     ASSUME_UNCHANGED(b, {
         memcpy(dst, src, len);
     });
     b->dst = dst + len;
-    b->left = left - len;
 }
 MACRO void buffer_memcpy(struct byte_buffer *b, const void * src, size_t len) {
     buffer_ensure_space(b, len);
@@ -179,7 +169,6 @@ MACRO void* buffer_alloc_unsafe(struct byte_buffer *b, size_t len) {
     buffer_check_space(b, len);
 
     b->dst = dst + len;
-    b->left -= len;
 
     return dst;
 }
@@ -193,14 +182,12 @@ MACRO void* buffer_alloc(struct byte_buffer *b, size_t len) {
 #define GEN_BUFFER_ADD(name, type, transform, transform_back)                   \
 MACRO void buffer_add_ ## name ## _unsafe(struct byte_buffer *b, type a) {      \
     unsigned INT8 * dst = buffer_dst(b);                                        \
-    const size_t left = b->left;                                                \
     buffer_check_space(b, sizeof(a));                                           \
     ASSUME_UNCHANGED(b, {                                                       \
         a = transform(a);                                                       \
         memcpy(dst, &a, sizeof(a));                                             \
     });                                                                         \
     b->dst = dst + sizeof(a);                                                   \
-    b->left = left - sizeof(a);                                                 \
 }                                                                               \
 MACRO void buffer_add_ ## name (struct byte_buffer *b, type a) {                \
     buffer_ensure_space(b, sizeof(a));                                          \
@@ -251,13 +238,11 @@ GEN_BUFFER_ADD(char, char, , )
 #define BUFFER_ADD_UNSAFE(b, a) do {            \
     struct byte_buffer *__b__ = (b);            \
     unsigned INT8 * dst = buffer_dst(__b__);    \
-    const size_t left = __b__->left;            \
     buffer_check_space(__b__, sizeof(a));       \
     ASSUME_UNCHANGED(__b__, {                   \
         memcpy(dst, &a, sizeof(a));             \
     });                                         \
     __b__->dst = dst + sizeof(a);               \
-    __b__->left = left - sizeof(a);             \
 } while(0)
 #define BUFFER_ADD(b, a) do {                   \
     buffer_ensure_space(b, sizeof(a));          \
