@@ -4537,8 +4537,8 @@ INT32 amd64_read_f_jump(INT32 offset)
 static const char *modrm_ops[6][8] = {
   /* #0: ALU operations (Opcodes 0x80, 0x81, 0x83). */
   {
-    "add", "or", "adc", "and",
-    NULL, "sub", NULL, "cmp",
+    "add", "or", "adc", NULL,
+    "and", "sub", NULL, "cmp",
   },
   /* #1: Shift operations */
   {
