@@ -1,42 +1,51 @@
 #pike __REAL_VERSION__
 //#pragma strict_types
 
-constant doc = #"Usage: httpserver [flags] [port]
-Starts a simple HTTP server on port 8080 unless another port is specified. The
-server will present the contents of the current directory and it's children to
-the world without any authentication.
-
-      --version             print version information and exit
-      --help                display this help and exit
-";
-
 constant version = sprintf(#"Pike httpserver %d.%d.%d
 ",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 
 constant description = "Minimal HTTP-server.";
 
+class Options
+{
+  inherit Arg.Options;
+
+  constant help_pre = #"Usage: httpserver [flags] [path]
+Starts a simple HTTP server on port 8080 unless another port is specified. The
+server will present the contents of the current directory and it's children to
+the world without any authentication.
+";
+
+  constant port_help = "Port to use. Defaults to 8080.";
+  constant version_help = "Displays version information.";
+
+  Opt port = Int(HasOpt("--port")|Default(8080));
+  Opt version = NoOpt("--version");
+}
+
+Options opt;
+
 int main(int argc, array(string) argv)
 {
-    int my_port = 8080;
-    if(argc>1)
-        switch (argv[-1])
-        {
-         case "--version":
-             exit(0, version);
-         case "--help":
-             exit(0, doc);
-         default:
-           string home = combine_path(getcwd(), argv[-1]);
-           if( Stdio.is_dir(home) )
-             cd(home);
-           else
-             my_port=(int)argv[-1];
-        }
+  opt = Options(argv);
 
-    Protocols.HTTP.Server.Port(handle_request, my_port, NetUtils.ANY);
-    write("%s is now accessible on port %d through http, "
-          "without password.\n", getcwd(), my_port);
-    return -1;
+  if(opt->version)
+    exit(0, version);
+
+  int port = opt->port;
+  if(sizeof(argv=opt[Arg.REST]))
+  {
+    string home = combine_path(getcwd(), argv[-1]);
+    if( Stdio.is_dir(home) )
+      cd(home);
+    else if(port==8080 && (int)argv[-1])
+      port=(int)argv[-1];
+  }
+
+  Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
+  write("%s is now accessible on port %d through http, "
+        "without password.\n", getcwd(), port);
+  return -1;
 }
 
 string dirlist( string dir )
