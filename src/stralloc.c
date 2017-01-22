@@ -3020,6 +3020,15 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  continue;
 
+	case '*':
+	  if (state == STATE_PRECISION) {
+	    precision = va_arg(args, int);
+	  } else {
+	    state = STATE_MIN_WIDTH;
+	    min_width = va_arg(args, int);
+	  }
+	  continue;
+
 	case '.':
 	  state = STATE_PRECISION;
 	  continue;
