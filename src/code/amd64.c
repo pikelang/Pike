@@ -5105,7 +5105,10 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
 
 void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
 {
+  struct string_builder buf;
   size_t pos;
+
+  init_string_builder(&buf, 0);
   for (pos = 0; pos < len;) {
     size_t op_start = pos;
     size_t i;
@@ -5119,7 +5122,9 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
     struct amd64_opcode *op;
     char buffers[4][256];
 
+#if 0
     fprintf(stderr, "%p:\t", pc + pos);
+#endif
 
     // Handle prefixes.
     while(1) {
@@ -5178,9 +5183,9 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
     } else if (op->flags & OP_PCREL) {
       INT32 val;
-      if (!params[1]) {
-	params[1] = buffers[1];
-	buffers[1][0] = 0;
+      if (!params[0]) {
+	params[0] = buffers[0];
+	buffers[0][0] = 0;
       }
       if (op->flags & (OP_8|OP_S8)) {
 	val = ((signed char *)pc)[pos++];
@@ -5188,7 +5193,7 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
 	val = ((INT32 *)(pc + pos))[0];
 	pos += 4;
       }
-      sprintf(buffers[1] + strlen(buffers[1]), "%p", pc + (pos + val));
+      sprintf(buffers[0] + strlen(buffers[0]), "%p", pc + (pos + val));
     }
 
     if (op->flags & OP_B_RM) {
@@ -5198,6 +5203,10 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       params[1] = tmp;
     }
 
+#if 1
+    string_builder_append_disassembly(&buf, pc + op_start, pc + pos,
+				      opcode, params, NULL);
+#else
     if (opcode) {
       fprintf(stderr, "%s", opcode);
 
@@ -5221,5 +5230,11 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       fprintf(stderr, " %02x", pc[op_start + i]);
     }
     fprintf(stderr, "\n");
+#endif
   }
+#if 1
+  string_builder_putchar(&buf, 0);
+  fprintf(stderr, "%s", buf.s->str);
+  free_string_builder(&buf);
+#endif
 }
