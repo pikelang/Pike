@@ -235,6 +235,10 @@ START_MARKER
   test_eq(0<<Gmp.mpz("100000000000000000000"), 0)
 
   test_eq([[`+(1,1,1,Gmp.mpz(1),1,1)]],6)
+  test_eq(Gmp.mpz(2)/Gmp.mpf(2.0), Gmp.mpf(1.0))
+  test_eq(Gmp.mpf(2.0)/Gmp.mpz(2), Gmp.mpf(1.0))
+  test_eq(Gmp.mpz(2)/Gmp.mpq(2,1), Gmp.mpq(1,1))
+  test_eq(Gmp.mpq(2,1)/Gmp.mpz(2), Gmp.mpq(1,1))
 
   // uniop
   test_eq(-Gmp.mpz(17),-17)
@@ -429,7 +433,7 @@ cond_end // Gmp.mpf
     mpx_test($1,$2,$3,)
     mpx_test($1,$2,$3,Gmp.mpz)
 dnl    mpx_test($1,$2,$3,Gmp.mpq)
-dnl    mpx_test($1,$2,$3,Gmp.mpf)
+    mpx_test($1,$2,$3,Gmp.mpf)
   ]])
 
   mpx_mega_test(1,2,3)
