@@ -1092,6 +1092,12 @@ PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
+PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
+						   const PIKE_OPCODE_T *start,
+						   const PIKE_OPCODE_T *end,
+						   const char *opcode,
+						   const char **params,
+						   const char *comment);
 /* Prototypes end here */
 
 /**
