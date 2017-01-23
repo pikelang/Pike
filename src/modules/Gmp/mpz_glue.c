@@ -1378,7 +1378,7 @@ static void mpzmod_rdiv(INT32 args)
 
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
-  pop_n_elems(args);
+  pop_stack();
   PUSH_REDUCED(res);
 }
 
@@ -1387,19 +1387,19 @@ static void mpzmod_rdiv(INT32 args)
 static void mpzmod_mod(INT32 args)
 {
   DECLARE_THIS();
-  INT32 e;
   struct object *res;
 
-  for(e=0;e<args;e++)
-    if (!mpz_sgn(get_mpz(sp+e-args, 1, "`%", e + 1, args)))
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`%", 1);
+
+  if (!mpz_sgn(get_mpz(sp-1, 1, "`%", 1, 1)))
       SIMPLE_DIVISION_BY_ZERO_ERROR ("`%");
 
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
-  for(e=0;e<args;e++)
-    mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+  mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[-1].u.object));
 
-  pop_n_elems(args);
+  pop_stack();
   PUSH_REDUCED(res);
 }
 
@@ -1421,7 +1421,7 @@ static void mpzmod_rmod(INT32 args)
 
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
-  pop_n_elems(args);
+  pop_stack();
   PUSH_REDUCED(res);
 }
 
@@ -1621,7 +1621,8 @@ static void mpzmod_compl(INT32 args)
 {
   DECLARE_THIS();
   struct object *o;
-  pop_n_elems(args);
+  if (args)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`~", 0);
   o=fast_clone_object(THIS_PROGRAM);
   mpz_com(OBTOMPZ(o), THIS);
   PUSH_REDUCED(o);
