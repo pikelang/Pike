@@ -1282,74 +1282,72 @@ static void mpzmod_rsub(INT32 args)
 static void mpzmod_div(INT32 args)
 {
   DECLARE_THIS();
-  INT32 e;
   struct object *res;
   double post_div = 1.0;
   int float_promote = 0;
 
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`/", 1);
+
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
 
-  for(e=0;e<args;e++)
+  if((TYPEOF(sp[-1]) == T_OBJECT) &&
+     (sp[-1].u.object->prog == mpf_program ||
+      sp[-1].u.object->prog == mpq_program ))
   {
-    if((TYPEOF(sp[e-args]) == T_OBJECT) &&
-       (sp[e-args].u.object->prog == mpf_program ||
-        sp[e-args].u.object->prog == mpq_program ))
-    {
-      /* Use rdiv in other object.
-         Then continue div in result.*/
-      push_object( res ); /* Gives ref to rdiv. */
-      apply_lfun( sp[-2].u.object, LFUN_RDIVIDE, 1 );
-      if( e < args-1 )
-        apply_lfun( sp[-1].u.object, LFUN_DIVIDE, args-e-1 );
-      if( post_div )
-        push_float( post_div );
-      o_divide();
-      return;
-    }
-    else if(TYPEOF(sp[e-args]) == T_FLOAT )
-    {
-      post_div *= sp[-1].u.float_number;
-      float_promote++;
-      /* FIXME: should do rest of divisions with float as type.*/
-    }
-    else if(TYPEOF(sp[e-args]) == T_INT)
-    {
-      INT_TYPE i = sp[e-args].u.integer;
-      if(!i) {
-	SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
-      } else {
-	int negate = 0;
-	if (i < 0) {
-	  i = -i;
-	  negate = 1;
-	}
-#ifdef BIG_PIKE_INT
-	if ( (unsigned long int)i == (unsigned INT_TYPE)i)
-	{
-	  mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), (unsigned long int)i);
-	}
-	else
-	{
-	  MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
-	  mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
-	  /* will this leak? there is no simple way of poking at the references to tmp */
-	}
-#else
-	mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
-#endif
-	if (negate) {
-	  mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
-	}
-      }
-    }
-    else {
-      if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
-        SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+    /* Use rdiv in other object.
+       Then continue div in result.*/
+    push_object( res ); /* Gives ref to rdiv. */
+    apply_lfun( sp[-2].u.object, LFUN_RDIVIDE, 1 );
+    if( post_div )
+      push_float( post_div );
+    o_divide();
+    return;
+  }
+  else if(TYPEOF(sp[-1]) == T_FLOAT )
+  {
+    post_div *= sp[-1].u.float_number;
+    float_promote++;
+    /* FIXME: should do rest of divisions with float as type.*/
+  }
+  else if(TYPEOF(sp[-1]) == T_INT)
+  {
+    INT_TYPE i = sp[-1].u.integer;
+    if(!i)
+      SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
 
-      mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    int negate = 0;
+    if (i < 0) {
+      i = -i;
+      negate = 1;
+    }
+#ifdef BIG_PIKE_INT
+    if ( (unsigned long int)i == (unsigned INT_TYPE)i)
+    {
+      mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), (unsigned long int)i);
+    }
+    else
+    {
+      MP_INT *tmp=get_mpz(sp-1,1,"`/",e,e);
+      mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
+      /* will this leak? there is no simple way of poking at the
+         references to tmp */
+    }
+#else
+    mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
+#endif
+    if (negate) {
+      mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
     }
   }
+  else {
+    if (!mpz_sgn(get_mpz(sp-1, 1, "`/", 1, 1)))
+      SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+
+    mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[-1].u.object));
+  }
+
   if( float_promote )
   {
     double me = mpz_get_d( OBTOMPZ(res) );
