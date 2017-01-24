@@ -1155,40 +1155,36 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
 static void mpzmod_add_eq(INT32 args)
 {
   DECLARE_THIS();
-  INT32 e;
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`+=", 1);
+
   if(THIS_PROGRAM == bignum_program)
   {
     double ret;
-    for(e=0; e<args; e++)
+    switch(TYPEOF(sp[-1]))
     {
-      switch(TYPEOF(sp[e-args]))
-      {
-        case T_FLOAT:
-          ret=mpz_get_d(THIS);
-          for(e=0; e<args; e++)
-            ret = ret + double_from_sval(sp-args);
-          pop_n_elems(args);
-          push_float( (FLOAT_TYPE)ret );
-          return;
-        case T_STRING:
-          memmove(sp-args+1, sp-args, sizeof(struct svalue)*args);
-          sp++; args++;
-          SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);
-          SET_SVAL(sp[-args], T_STRING, 0, string,
-                   low_get_mpz_digits(THIS, 10));
-          f_add(args);
-          return;
-      }
+    case T_FLOAT:
+      ret=mpz_get_d(THIS) + double_from_sval(sp-1);
+      pop_stack();
+      push_float( (FLOAT_TYPE)ret );
+      return;
+    case T_STRING:
+      memmove(sp-2, sp-args, sizeof(struct svalue));
+      sp++;
+      SET_SVAL_TYPE(sp[-2], PIKE_T_FREE);
+      SET_SVAL(sp[-2], T_STRING, 0, string,
+               low_get_mpz_digits(THIS, 10));
+      f_add(2);
+      return;
     }
   }
-  for(e=0; e<args; e++)
-    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer))
-      get_mpz(sp+e-args, 1, "`+", e + 1, args);
-  for(e=0;e<args;e++)
-    if(TYPEOF(sp[e-args]) != T_INT)
-      mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
-    else
-      mpz_add_ui(THIS,THIS, sp[e-args].u.integer);
+  if(TYPEOF(sp[-1]) != T_INT || !FITS_ULONG (sp[-1].u.integer))
+    get_mpz(sp-1, 1, "`+", 1, 1);
+
+  if(TYPEOF(sp[-1]) != T_INT)
+    mpz_add(THIS, THIS, OBTOMPZ(sp[-1].u.object));
+  else
+    mpz_add_ui(THIS,THIS, sp[-1].u.integer);
   add_ref(THIS_OBJECT);
   PUSH_REDUCED(THIS_OBJECT);
 }
