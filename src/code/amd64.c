@@ -4982,7 +4982,7 @@ size_t amd64_readint32(PIKE_OPCODE_T *pc, char *buf)
 {
   unsigned INT32 val = ((unsigned INT32 *)pc)[0];
   buf += strlen(buf);
-  sprintf(buf, "+0x%08x", val);
+  sprintf(buf, "0x%08x", val);
   return 4;
 }
 
@@ -5084,7 +5084,7 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
     }
     switch(modrm & 0xc0) {
     case 0x00:
-      sprintf(buf, "%s", reg_buf);
+      sprintf(buf, "(%s)", reg_buf);
       break;
     case 0x40:
       sprintf(buf, "%d(%s)", ((signed char *)pc)[bytes], reg_buf);
@@ -5122,10 +5122,6 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
     struct amd64_opcode *op;
     char buffers[4][256];
 
-#if 0
-    fprintf(stderr, "%p:\t", pc + pos);
-#endif
-
     // Handle prefixes.
     while(1) {
       byte = pc[pos++];
@@ -5145,7 +5141,7 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
     }
 
     while (op->flags & OP_MULTIBYTE) {
-      table = amd64_opcodes[1 + op->flags & 0xff];
+      table = amd64_opcodes[1 + (op->flags & 0xff)];
       byte = pc[pos++];
       op = table + byte;
     }
@@ -5154,32 +5150,31 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
 
     if (op->flags & OP_RM) {
       modrm = pc[pos++];
-      params[0] = amd64_describe_reg(rex & 1, modrm & 0x07);
+      params[0] = amd64_describe_reg(rex & 4, (modrm>>3) & 0x07);
+      params[1] = buffers[1];
+      pos += amd64_disassemble_modrm(pc + pos, buffers[1],
+				     legacy_prefix, modrm, rex);
       if (op->flags & OP_OPS) {
+	params[0] = NULL;
 	opcode = modrm_ops[op->flags & 0x0f][(modrm >> 3) & 0x07];
-      } else {
-	params[0] = amd64_describe_reg(rex & 4, (modrm>>3) & 0x07);
-	params[1] = buffers[1];
-	pos += amd64_disassemble_modrm(pc + pos, buffers[1],
-				       legacy_prefix, modrm, rex);
       }
     }
 
     if (op->flags & OP_REG) {
       int reg = byte & 0x07;
-      params[0] = amd64_describe_reg(rex & 1, byte & 0x07);
+      params[1] = amd64_describe_reg(rex & 1, byte & 0x07);
     }
 
     if (op->flags & OP_IMM) {
-      if (!params[1]) {
-	params[1] = buffers[1];
-	buffers[1][0] = 0;
+      if (!params[0]) {
+	params[0] = buffers[0];
+	buffers[0][0] = 0;
       }
       if (op->flags & (OP_8|OP_S8)) {
-	sprintf(buffers[1] + strlen(buffers[1]), "$%+d", ((signed char *)pc)[pos++]);
+	sprintf(buffers[0] + strlen(buffers[0]), "$%d", ((signed char *)pc)[pos++]);
       } else {
-	sprintf(buffers[1] + strlen(buffers[1]), "$");
-	pos += amd64_readint32(pc + pos, buffers[1] + strlen(buffers[1]));
+	sprintf(buffers[0] + strlen(buffers[0]), "$");
+	pos += amd64_readint32(pc + pos, buffers[0] + strlen(buffers[0]));
       }
     } else if (op->flags & OP_PCREL) {
       INT32 val;
@@ -5203,38 +5198,31 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       params[1] = tmp;
     }
 
-#if 1
+    if (!params[0]) {
+      params[0] = params[1];
+      params[1] = NULL;
+    }
+
+    if (!opcode) {
+      opcode = ".byte";
+    }
+
+    if (params[0]) {
+      if ((params[0][0] == '%') &&
+	  (!strcmp(opcode, "call") || !strcmp(opcode, "jmp"))) {
+	/* NB: We know that these opcodes only have one parameter. */
+	/* Add the star prefix. */
+	sprintf(buffers[0], "*%s", params[0]);
+	params[0] = buffers[0];
+      }
+    }
+
     string_builder_append_disassembly(&buf, pc + op_start, pc + pos,
 				      opcode, params, NULL);
-#else
-    if (opcode) {
-      fprintf(stderr, "%s", opcode);
-
-      if (params[0]) {
-	fprintf(stderr, " %s", params[0]);
-	if (params[1]) {
-	  fprintf(stderr, ",");
-	}
-      }
-
-      if (params[1]) {
-	fprintf(stderr, " %s", params[1]);
-      }
-    } else {
-      fprintf(stderr, ".byte 0x%02x", byte);
-    }
-    for(i = 0; (op_start + i) < pos; i++) {
-      if (!(i & 7)) {
-	fprintf(stderr, "\n\t#");
-      }
-      fprintf(stderr, " %02x", pc[op_start + i]);
-    }
-    fprintf(stderr, "\n");
-#endif
   }
-#if 1
+
+  /* NUL-terminate. */
   string_builder_putchar(&buf, 0);
   fprintf(stderr, "%s", buf.s->str);
   free_string_builder(&buf);
-#endif
 }
