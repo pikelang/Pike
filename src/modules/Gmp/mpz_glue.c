@@ -783,13 +783,13 @@ static void mpzmod__sprintf(INT32 args)
 
   switch(method = sp[-args].u.integer)
   {
-    case 't':
-      pop_n_elems(args);
-      if(THIS_PROGRAM == bignum_program)
-	push_static_text("int");
-      else
-	push_static_text("object");
-      return;
+  case 't':
+    pop_n_elems(args);
+    if(THIS_PROGRAM == bignum_program)
+      push_static_text("int");
+    else
+      push_static_text("object");
+    return;
 
   case 'O':
     if (THIS_PROGRAM == mpzmod_program) {
@@ -836,74 +836,72 @@ static void mpzmod__sprintf(INT32 args)
     break;
 
   case 'c':
-  {
-    INT_TYPE neg = mpz_sgn (THIS) < 0;
-    unsigned char *dst;
-    size_t pos, length = mpz_size (THIS);
-    mpz_t tmp;
-    MP_INT *n;
-    INT_TYPE i;
-
-    if(width_undecided)
     {
-      p_wchar2 ch = mpz_get_ui(THIS);
-      if(neg)
-	ch = (~ch)+1;
-      s = make_shared_binary_string2(&ch, 1);
-      break;
-    }
+      INT_TYPE neg = mpz_sgn (THIS) < 0;
+      unsigned char *dst;
+      size_t pos, length = mpz_size (THIS);
+      mpz_t tmp;
+      MP_INT *n;
+      INT_TYPE i;
 
-    if (neg)
-    {
-      mpz_init_set(tmp, THIS);
-      mpz_add_ui(tmp, tmp, 1);
-      length = mpz_size (tmp);
-      n = tmp;
-    }
-    else
-      n = THIS;
+      if(width_undecided)
+      {
+        p_wchar2 ch = mpz_get_ui(THIS);
+        if(neg)
+          ch = (~ch)+1;
+        s = make_shared_binary_string2(&ch, 1);
+        break;
+      }
 
-    if(width < 1)
-      width = 1;
+      if (neg)
+      {
+        mpz_init_set(tmp, THIS);
+        mpz_add_ui(tmp, tmp, 1);
+        length = mpz_size (tmp);
+        n = tmp;
+      }
+      else
+        n = THIS;
 
-    s = begin_shared_string(width);
+      if(width < 1)
+        width = 1;
 
-    if (!flag_left)
-       dst = (unsigned char *)STR0(s) + width;
-    else
-       dst = (unsigned char *)STR0(s);
-
-    pos = 0;
-    while(width > 0)
-    {
-      mp_limb_t x = (length-->0? mpz_getlimbn(n, pos++) : 0);
+      s = begin_shared_string(width);
 
       if (!flag_left)
-	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
-	 {
+        dst = (unsigned char *)STR0(s) + width;
+      else
+        dst = (unsigned char *)STR0(s);
+
+      pos = 0;
+      while(width > 0)
+      {
+        mp_limb_t x = (length-->0? mpz_getlimbn(n, pos++) : 0);
+
+        if (!flag_left)
+          for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
+          {
             *(--dst) = (unsigned char)((neg ? ~x : x) & 0xff);
 	    x >>= 8;
 	    if(!--width)
-	       break;
-	 }
-      else
-	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
-	 {
+              break;
+          }
+        else
+          for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
+          {
             *(dst++) = (unsigned char)((neg ? ~x : x) & 0xff);
 	    x >>= 8;
 	    if(!--width)
-	       break;
-	 }
-    }
+              break;
+          }
+      }
 
-    if(neg)
-    {
-      mpz_clear(tmp);
-    }
+      if(neg)
+        mpz_clear(tmp);
 
-    s = end_shared_string(s);
-  }
-  break;
+      s = end_shared_string(s);
+    }
+    break;
   }
 
   debug_malloc_touch(THIS_OBJECT);
@@ -912,12 +910,11 @@ static void mpzmod__sprintf(INT32 args)
 
   if(s) {
     push_string(s);
-    if (method == 'X') {
+    if (method == 'X')
       f_upper_case(1);
-    }
-  } else {
-    push_undefined();
   }
+  else
+    push_undefined();
 }
 
 /* protected int(0..1) _is_type(string type)
@@ -989,29 +986,6 @@ static void mpzmod_cast(INT32 args)
   else
     push_undefined();
 }
-
-/* Non-reentrant */
-#if 0
-/* These two functions are here so we can allocate temporary
- * objects without having to worry about them leaking in
- * case of errors..
- */
-static struct object *temporary;
-MP_INT *get_tmp(void)
-{
-  if(!temporary)
-    temporary=clone_object(mpzmod_program,0);
-
-  return (MP_INT *)temporary->storage;
-}
-
-static void return_temporary(INT32 args)
-{
-  pop_n_elems(args);
-  push_object(temporary);
-  temporary=0;
-}
-#endif
 
 double double_from_sval(struct svalue *s)
 {
