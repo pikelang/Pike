@@ -8,6 +8,14 @@ o Stdio.Buffer & String.Buffer
 
   Allocated constant program identifiers for both of the above.
 
+Bug fixes
+---------
+
+Protocols.DNS:  
+
+  The size and percision fields of T_LOC records are now properly
+  decoded.
+
 Building
 --------
 
