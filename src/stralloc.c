@@ -2783,3 +2783,254 @@ PMOD_EXPORT int wide_isidchar(int c)
   if(wide_isspace(c)) return 0;
   return 1;
 }
+
+/*
+ * UTF8 encoding functions. This code uses the following observation:
+ *
+ *    For codepoints c > 0x7f, the length of the resulting utf8 encoding is
+ *    1 + (fls32(c) - 2)/5.
+ *
+ * This is used to calculate the resulting length without any branches.
+ */
+#if defined(HAS___BUILTIN_POPCOUNTLL) && SIZEOF_CHARP == 8
+# define poptype        unsigned long long
+# define POPCOUNT       __builtin_popcountll
+#elif defined(HAS___BUILTIN_POPCOUNTL)
+# define poptype        unsigned long
+# define POPCOUNT       __builtin_popcountl
+#else
+# if SIZEOF_CHARP == 8
+#  define poptype       unsigned INT64
+# else
+#  define poptype       unsigned INT32
+# endif
+# define POPCOUNT	popcount_fallback
+const poptype m1 = (poptype)0x5555555555555555ULL;
+const poptype m2 = (poptype)0x3333333333333333ULL;
+const poptype m4 = (poptype)0x0f0f0f0f0f0f0f0fULL;
+
+static unsigned int popcount_fallback(poptype x)
+{
+    x -= (x >> 1) & m1;
+    x = (x & m2) + ((x >> 2) & m2);
+    x = (x + (x >> 4)) & m4;
+    x += x >>  8;
+    x += x >> 16;
+# if SIZEOF_CHARP == 8
+    x += x >> 32;
+# endif
+    return x & 0x7f;
+}
+#endif
+
+/* The reason for using handmade divide is that on some arm32 targets there is
+ * no integer divisions. The reason why we can do better than the compiler is
+ * that we know that the argument is smaller than 32.
+ */
+static inline unsigned INT32 div5_8bit(unsigned INT32 x) {
+   return ((x * 0xCD) >> 8) >> 2;
+}
+
+PMOD_EXPORT size_t pike_string_utf8_length(const struct pike_string *s, INT32 args, int extended) {
+  size_t len = s->len;
+  size_t elen = s->len;
+
+  /* This 8bit version counts the number of high bits in each byte.
+   * The loop is unrolled 4 times and starts with a Duff's device style
+   * loop entry to process the tail.
+   */
+  if (LIKELY(s->size_shift == eightbit)) {
+    /*
+     * We force the compiler to load this constant only once. Otherwise,
+     * GCC will decide to reload it into a register 4 times per loop.
+     */
+    static volatile poptype foo = (poptype)0x8080808080808080ULL;
+    const unsigned char *in;
+    const poptype mask = foo;
+    const poptype *in8 = (poptype*)STR0(s);
+    const poptype *end8 = in8 + (s->len / sizeof(poptype));
+
+    if (in8 < end8) {
+      const size_t tail = (size_t)(end8 - in8) % 4;
+      poptype a = 0, b = 0, c = 0, d = 0;
+
+      in8 += tail;
+      switch (tail) {
+        do {
+      case 0:
+          in8 += 4;
+          a = in8[-4];
+      case 3:
+          b = in8[-3];
+      case 2:
+          c = in8[-2];
+      case 1:
+          d = in8[-1];
+
+          a &= mask;
+          b &= mask;
+          c &= mask;
+          d &= mask;
+
+          b >>= 1;
+          c >>= 2;
+          d >>= 3;
+
+          elen += POPCOUNT(a | b | c | d);
+        } while (in8 < end8);
+        break;
+      default: UNREACHABLE(break);
+      }
+    }
+
+    in = (unsigned char*)end8;
+
+    switch ((size_t)s->len % sizeof(poptype)) {
+    case 7: elen += (*in++) >> 7;
+    case 6: elen += (*in++) >> 7;
+    case 5: elen += (*in++) >> 7;
+    case 4: elen += (*in++) >> 7;
+    case 3: elen += (*in++) >> 7;
+    case 2: elen += (*in++) >> 7;
+    case 1: elen += (*in++) >> 7;
+    case 0: break;
+    default: UNREACHABLE(break);
+    }
+
+    return elen;
+#undef poptype
+#undef POPCOUNT
+  } else {
+    unsigned INT32 c;
+    size_t i;
+
+    if (s->size_shift == sixteenbit) {
+      unsigned INT16 *in = (unsigned INT16*)STR1(s);
+
+      for (i = 0; i < len; i++) {
+        c = in[i];
+        if (c <= 0x7f) continue;
+        elen += div5_8bit(fls32(c) - 2);
+        if (extended) continue;
+        if (UNLIKELY(c >= 0xd800 && c <= 0xdfff)) goto surrogate_error;
+      }
+    } else {
+      unsigned INT32 *in = (unsigned INT32*)STR2(s);
+
+      for (i = 0; i < len; i++) {
+        c = in[i];
+        if (c <= 0x7f) continue;
+        elen += div5_8bit(fls32(c) - 2);
+        if (extended) continue;
+        if (UNLIKELY(c >= 0xd800 && c <= 0xdfff)) goto surrogate_error;
+        if (UNLIKELY(c > 0x10ffff)) goto extended_error;
+      }
+    }
+
+    return elen;
+surrogate_error:
+    bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+                   NULL, Pike_sp - args,
+                   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
+                   "in the surrogate range and therefore invalid.\n",
+                   c, i);
+extended_error:
+    bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+		   NULL, Pike_sp - args,
+		   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
+		   "outside the allowed range.\n",
+		   c, i);
+  }
+  UNREACHABLE(return 0);
+}
+
+PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const struct pike_string *s) {
+    size_t len = s->len;
+
+    switch (s->size_shift) {
+    case eightbit:
+      {
+        const unsigned char *in = STR0(s);
+
+        for (size_t i = 0; i < len; i++) {
+          unsigned char c = *in++;
+
+          if (c & 0x80) {
+            *dst++ = 0xc0 | (c >> 6);
+            *dst++ = 0x80 | (c & 0x3f);
+          } else *dst++ = c;
+        }
+
+        break;
+      }
+    case sixteenbit:
+      {
+        const unsigned INT16 *in = STR1(s);
+
+        for (size_t i = 0; i < len; i++) {
+          unsigned INT16 c = *in++;
+
+          if (LIKELY(c <= 0x7f)) {
+            *dst++ = c;
+            continue;
+          }
+
+          if (c <= 0x7ff) {
+            /* 11bit */
+            *dst++ = 0xc0 | (c >> 6);
+            *dst++ = 0x80 | (c & 0x3f);
+          } else {
+            /* 16bit */
+            *dst++ = 0xe0 | (c >> 12);
+            *dst++ = 0x80 | ((c >> 6) & 0x3f);
+            *dst++ = 0x80 | (c & 0x3f);
+          }
+        }
+        break;
+      }
+    case thirtytwobit:
+      {
+        const unsigned INT32 *in = (unsigned INT32*)STR2(s);
+
+        for (size_t i = 0; i < len; i++) {
+          unsigned INT32 bytes, shift, first;
+          unsigned INT32 c = in[i];
+
+          if (c <= 0x7f) {
+            *dst++ = c;
+            continue;
+          }
+
+          bytes = 1 + div5_8bit(fls32(c) - 2);
+          shift = 6 * (bytes - 1);
+          first = -0x40 >> (bytes - 2);
+
+          /* the > 31bit case */
+          if (UNLIKELY(bytes >= 7)) {
+            bytes = 7;
+            shift = 32;
+          }
+
+          *dst = first | (c >> shift);
+
+          dst += bytes;
+
+          bytes -= 2;
+
+          switch (bytes) {
+          case 5: dst[-6] = 0x80 | ((c >> 30) & 0x3f);
+          case 4: dst[-5] = 0x80 | ((c >> 24) & 0x3f);
+          case 3: dst[-4] = 0x80 | ((c >> 18) & 0x3f);
+          case 2: dst[-3] = 0x80 | ((c >> 12) & 0x3f);
+          case 1: dst[-2] = 0x80 | ((c >> 6) & 0x3f);
+          case 0: dst[-1] = 0x80 | (c & 0x3f); break;
+          default: UNREACHABLE(break);
+          }
+        }
+
+        break;
+      }
+    }
+
+    return dst;
+}

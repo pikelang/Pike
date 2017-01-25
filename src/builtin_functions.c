@@ -2123,15 +2123,12 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   ptrdiff_t len;
   struct pike_string *in;
   struct pike_string *out;
-  ptrdiff_t i;
   INT_TYPE extended = 0;
   PCHARP src;
   INT32 min, max;
   unsigned char * dst;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
-
-  len = in->len;
 
   check_string_range(in, 1, &min, &max);
 
@@ -2141,100 +2138,16 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
     return;
   }
 
-  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
-    unsigned INT32 c = EXTRACT_PCHARP(src);
-    if (c & ~0x7f) {
-      /* 8bit or more. */
-      len++;
-      if (c & ~0x7ff) {
-	/* 12bit or more. */
-	len++;
-	if (c & ~0xffff) {
-	  /* 17bit or more. */
-	  len++;
-	  if (!extended && c > 0x10ffff)
-	    bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
-			   NULL, Pike_sp - args,
-			   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
-			   "outside the allowed range.\n",
-			   c, i);
-	  if (c & ~0x1fffff) {
-	    /* 22bit or more. */
-	    len++;
-	    if (c & ~0x3ffffff) {
-	      /* 27bit or more. */
-	      len++;
-	      if (c & ~0x7fffffff) {
-		/* 32bit or more. */
-		len++;
-		/* FIXME: Needs fixing when we get 64bit chars... */
-	      }
-	    }
-	  }
-	}
-	else if (!extended && c >= 0xd800 && c <= 0xdfff)
-	  bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
-			 NULL, Pike_sp - args,
-			 "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
-			 "in the surrogate range and therefore invalid.\n",
-			 c, i);
-      }
-    }
-  }
+  len = pike_string_utf8_length(in, args, extended);
+
   if (len == in->len) {
     /* 7bit string -- already valid utf8. */
     pop_n_elems(args - 1);
     return;
   }
   out = begin_shared_string(len);
-  dst = STR0(out);
 
-  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
-    unsigned INT32 c = EXTRACT_PCHARP(src);
-    if (!(c & ~0x7f)) {
-      /* 7bit */
-      *dst++ = c;
-    } else if (!(c & ~0x7ff)) {
-      /* 11bit */
-      *dst++ = 0xc0 | (c >> 6);
-      *dst++ = 0x80 | (c & 0x3f);
-    } else if (!(c & ~0xffff)) {
-      /* 16bit */
-      *dst++ = 0xe0 | (c >> 12);
-      *dst++ = 0x80 | ((c >> 6) & 0x3f);
-      *dst++ = 0x80 | (c & 0x3f);
-    } else if (!(c & ~0x1fffff)) {
-      /* 21bit */
-      *dst++ = 0xf0 | (c >> 18);
-      *dst++ = 0x80 | ((c >> 12) & 0x3f);
-      *dst++ = 0x80 | ((c >> 6) & 0x3f);
-      *dst++ = 0x80 | (c & 0x3f);
-    } else if (!(c & ~0x3ffffff)) {
-      /* 26bit */
-      *dst++ = 0xf8 | (c >> 24);
-      *dst++ = 0x80 | ((c >> 18) & 0x3f);
-      *dst++ = 0x80 | ((c >> 12) & 0x3f);
-      *dst++ = 0x80 | ((c >> 6) & 0x3f);
-      *dst++ = 0x80 | (c & 0x3f);
-    } else if (!(c & ~0x7fffffff)) {
-      /* 31bit */
-      *dst++ = 0xfc | (c >> 30);
-      *dst++ = 0x80 | ((c >> 24) & 0x3f);
-      *dst++ = 0x80 | ((c >> 18) & 0x3f);
-      *dst++ = 0x80 | ((c >> 12) & 0x3f);
-      *dst++ = 0x80 | ((c >> 6) & 0x3f);
-      *dst++ = 0x80 | (c & 0x3f);
-    } else {
-      /* 32 - 36bit */
-      *dst++ = (char)0xfe;
-      *dst++ = 0x80 | ((c >> 30) & 0x3f);
-      *dst++ = 0x80 | ((c >> 24) & 0x3f);
-      *dst++ = 0x80 | ((c >> 18) & 0x3f);
-      *dst++ = 0x80 | ((c >> 12) & 0x3f);
-      *dst++ = 0x80 | ((c >> 6) & 0x3f);
-      *dst++ = 0x80 | (c & 0x3f);
-    }
-  }
+  dst = pike_string_utf8_encode(STR0(out), in);
 #ifdef PIKE_DEBUG
   if (len != dst - STR0(out)) {
     Pike_fatal("string_to_utf8(): Calculated and actual lengths differ: "

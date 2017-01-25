@@ -383,6 +383,8 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
                                        char **to_free);
 PMOD_EXPORT int wide_isspace(int c);
 PMOD_EXPORT int wide_isidchar(int c);
+PMOD_EXPORT size_t pike_string_utf8_length(const struct pike_string *s, INT32 args, int extended);
+PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const struct pike_string *s);
 /* Prototypes end here */
 
 /* Note: Does not work 100% correctly with shift==2 strings. */

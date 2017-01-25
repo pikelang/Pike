@@ -12554,6 +12554,25 @@ test_eq(string_to_utf8("\7077077", 1), "\367\207\270\277")
 test_eq(string_to_utf8("\77077077", 1), "\370\277\207\270\277")
 test_eq(string_to_utf8("\7077077077", 1), "\374\270\277\207\270\277")
 
+define(test_utf8_encdec, [[
+    test_eq(utf8_to_string(string_to_utf8($1, $2), $2), $1)
+    test_eq(utf8_to_string(string_to_utf8($1*13, $2), $2), $1*13)
+    test_eq(utf8_to_string(string_to_utf8($1*64, $2), $2), $1*64)
+]])
+// Boundary tests for each encoding length
+test_utf8_encdec("\u00000000", 0)
+test_utf8_encdec("\u00000080", 0)
+test_utf8_encdec("\u00000800", 0)
+test_utf8_encdec("\u00010000", 0)
+test_utf8_encdec("\u00200000", 1)
+test_utf8_encdec("\u04000000", 1)
+test_utf8_encdec("\u0000007F", 0)
+test_utf8_encdec("\u000007FF", 0)
+test_utf8_encdec("\u0000FFFF", 0)
+test_utf8_encdec("\u001FFFFF", 0)
+test_utf8_encdec("\u03FFFFFF", 1)
+test_utf8_encdec("\u7FFFFFFF", 1)
+
 // 077077077077 has 33 bits unsigned. The escape sequence parser used
 // to silently truncate too long char values, but not anymore.
 dnl test_eq(string_to_utf8("\77077077077", 1), "\376\203\270\277\207\270\277")
