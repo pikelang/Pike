@@ -599,15 +599,10 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
             break;
         case PIKE_T_STRING:
             {
-                struct pike_string *s;
-                size_t len;
-                ref_push_string(value->u.string);
-                f_string_to_utf8(1);
+                struct pike_string *s = value->u.string;
+                size_t len = pike_string_utf8_length(s, 1, 0);
 
-                s = Pike_sp[-1].u.string;
-                len = s->len;
-
-                dst = io_add_space(io, MAXIMUM(len, 1), 0);
+                dst = io_add_space(io, len + 4, 0);
 
                 if (len <= 31) {
                     io->len ++;
@@ -616,16 +611,22 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                     io->len += 3;
                     *(dst++) = 0xda;
                     set_unaligned_be16(dst, len);
+                    dst += 2;
                 } else if (len < MAX_UINT32) {
                     io->len += 5;
                     *(dst++) = 0xdb;
                     set_unaligned_be32(dst, len);
+                    dst += 4;
                 } else Pike_error("String is too large.\n");
 
-                memcpy(io_add_space(io, len, 0), STR0(s), len);
-                io->len += len;
+                /* 7bit */
+                if (len == (size_t)s->len) {
+                    memcpy(dst, STR0(s), len);
+                } else {
+                    pike_string_utf8_encode(dst, s);
+                }
 
-                pop_stack();
+                io->len += len;
             }
             break;
         case PIKE_T_ARRAY:
