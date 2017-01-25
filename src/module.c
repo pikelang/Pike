@@ -29,6 +29,7 @@
 #include "constants.h"
 #include "bignum.h"
 #include "module_support.h"
+#include "sprintf.h"
 
 #include "modules/modlist_headers.h"
 #ifndef PRE_PIKE

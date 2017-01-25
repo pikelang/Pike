@@ -16,6 +16,7 @@
 #include "program_id.h"
 #include "file_machine.h"
 #include "pike_types.h"
+#include "sprintf.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H

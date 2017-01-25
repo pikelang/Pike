@@ -35,6 +35,7 @@
 #include "pike_compiler.h"
 #include "module_support.h"
 #include "bitvector.h"
+#include "sprintf.h"
 
 #include <errno.h>
 #include <fcntl.h>

@@ -326,6 +326,7 @@
 #include "array.h"
 #include "svalue.h"
 #include "stralloc.h"
+#include "sprintf.h"
 #include "buffer.h"
 #include "pike_types.h"
 #include "constants.h"

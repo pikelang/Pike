@@ -536,12 +536,6 @@ static inline int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
 
 #endif
 
-PMOD_EXPORT void f_sprintf(INT32 num_arg);
-void f___handle_sprintf_format(INT32 args);
-void low_f_sprintf(INT32 args, struct string_builder *r);
-void init_sprintf(void);
-void exit_sprintf(void);
-
 /* Warning, these run 'C' more than once */
 /* FIXME: Is it that great that every wide char is considered an
  * identifier char? Doesn't strike me as very unicode compliant.

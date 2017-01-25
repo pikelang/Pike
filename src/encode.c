@@ -31,6 +31,7 @@
 #include "pike_compiler.h"
 #include "bitvector.h"
 #include "pike_float.h"
+#include "sprintf.h"
 
 /* #define ENCODE_DEBUG */
 

@@ -22,6 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 #include "pike_types.h"
+#include "sprintf.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */

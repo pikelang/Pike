@@ -28,6 +28,7 @@
 
 /* Includes <gmp.h> */
 #include "bignum.h"
+#include "sprintf.h"
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>

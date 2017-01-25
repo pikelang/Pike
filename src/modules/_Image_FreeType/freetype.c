@@ -37,6 +37,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "sprintf.h"
 #include "../Image/image.h"
 
 

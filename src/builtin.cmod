@@ -32,6 +32,7 @@
 #include "pikecode.h"
 #include "opcodes.h"
 #include "whitespace.h"
+#include "sprintf.h"
 
 #include <errno.h>
 #include <math.h>

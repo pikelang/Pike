@@ -20,6 +20,7 @@
 #include <threads.h>
 #include <builtin_functions.h>
 #include <operators.h>
+#include <sprintf.h>
 
 /*
 #include <glib.h>

@@ -122,6 +122,7 @@
 #include "mapping.h"
 #include "constants.h"
 #include "operators.h"
+#include "sprintf.h"
 
 #include "image.h"
 #include "colortable.h"

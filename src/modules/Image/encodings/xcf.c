@@ -22,6 +22,7 @@
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "pike_types.h"
+#include "sprintf.h"
 
 #include "image.h"
 #include "colortable.h"

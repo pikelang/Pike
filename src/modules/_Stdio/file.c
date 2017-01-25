@@ -30,6 +30,7 @@
 #include "pike_types.h"
 #include "threads.h"
 #include "program_id.h"
+#include "sprintf.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H

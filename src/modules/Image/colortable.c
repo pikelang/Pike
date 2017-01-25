@@ -40,6 +40,7 @@
 #include "bignum.h"
 #include "pike_types.h"
 #include "constants.h"
+#include "sprintf.h"
 
 #include "image.h"
 #include "colortable.h"

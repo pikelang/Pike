@@ -23,6 +23,7 @@
 #include "pike_types.h"
 #include "cpp.h"
 #include "lex.h"
+#include "sprintf.h"
 
 #include <ctype.h>
 

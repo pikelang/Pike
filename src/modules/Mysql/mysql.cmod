@@ -76,6 +76,7 @@
 #include "bignum.h"
 #include "signal_handler.h"
 #include "module_support.h"
+#include "sprintf.h"
 
 #ifdef HAVE_POLL_H
 #include <poll.h>

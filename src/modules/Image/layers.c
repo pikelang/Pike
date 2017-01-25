@@ -28,6 +28,7 @@
 #include "operators.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "sprintf.h"
 
 #include "image.h"
 
