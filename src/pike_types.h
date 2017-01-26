@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "stralloc.h"
+#include "string_builder.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
 

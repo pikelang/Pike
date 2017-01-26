@@ -2,7 +2,7 @@
 #define SPRINTF_H
 #include "global.h"
 
-#include "stralloc.h"
+#include "string_builder.h"
 
 /* Prototypes begin here */
 PMOD_EXPORT void f_sprintf(INT32 num_arg);

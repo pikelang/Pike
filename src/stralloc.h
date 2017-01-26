@@ -44,11 +44,9 @@ struct pike_string
   char * str;			/* NUL terminated. */
 };
 
-struct string_builder
-{
-  struct pike_string *s;
-  ptrdiff_t malloced;
-  enum size_shift known_shift;
+struct substring_pike_string {
+  struct pike_string str;
+  struct pike_string *parent;
 };
 
 /* Flags used in pike_string->flags. */
@@ -63,34 +61,6 @@ struct string_builder
 #define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
 
 #define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
-
-/* Flags used by string_builder_append_integer() */
-#define APPEND_SIGNED		1	/* Value is signed */
-/* Note: The following are NOT true flags. */
-#define APPEND_WIDTH_HALF	2	/* h-flag. */
-#define APPEND_WIDTH_LONG	4	/* l-flag. */
-#define APPEND_WIDTH_LONG_LONG	6	/* ll-flag. */
-#define APPEND_WIDTH_MASK	6	/* Corresponding mask. */
-/* More real flags here. */
-#define APPEND_POSITIVE		8	/* Sign positive values too. */
-#define APPEND_UPPER_CASE	16	/* Use upper case hex. */
-#define APPEND_ZERO_PAD		32	/* Zero pad. */
-#define APPEND_LEFT		64	/* Left align. */
-
-#if SIZEOF_CHAR_P == SIZEOF_INT
-#define APPEND_WIDTH_PTR	0
-#elif SIZEOF_CHAR_P == SIZEOF_LONG
-#define APPEND_WIDTH_PTR	APPEND_WIDTH_LONG
-#elif SIZEOF_CHAR_P == SIZEOF_LONG_LONG
-#define APPEND_WIDTH_PTR	APPEND_WIDTH_LONG_LONG
-#else
-#error "Unknown way to read pointer-wide integers."
-#endif
-
-/* Flags used by string_builder_quote_string() */
-#define QUOTE_NO_STRING_CONCAT	1	/* Don't use string concat in output */
-#define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
-#define QUOTE_NORMALIZE_WS	4	/* Normalize whitespace */
 
 #define free_string(s) do{ \
     struct pike_string *_=(s); \
@@ -328,6 +298,7 @@ PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
 /* Returns true if str could contain n. */
 PMOD_EXPORT int string_range_contains( struct pike_string *str, int n );
 
+void unlink_pike_string(struct pike_string *s);
 PMOD_EXPORT void do_free_string(struct pike_string *s);
 PMOD_EXPORT void do_free_unlinked_pike_string(struct pike_string *s);
 PMOD_EXPORT void really_free_string(struct pike_string *s);
@@ -359,6 +330,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
+void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
                                                    const struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
@@ -382,55 +354,6 @@ void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
 PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s);
-PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
-PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
-PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
-					  const struct string_builder *from);
-PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
-				      ptrdiff_t chars, int mag);
-PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
-PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
-PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
-					 ptrdiff_t count);
-PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
-					       const p_wchar0 *str, ptrdiff_t len);
-PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
-					       const p_wchar1 *str, ptrdiff_t len);
-PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
-					       const p_wchar2 *str, ptrdiff_t len);
-PMOD_EXPORT void string_builder_append(struct string_builder *s,
-				       const PCHARP from,
-				       ptrdiff_t len);
-PMOD_EXPORT void string_builder_fill(struct string_builder *s,
-				     ptrdiff_t howmany,
-				     const PCHARP from,
-				     ptrdiff_t len,
-				     ptrdiff_t offset);
-PMOD_EXPORT void string_builder_utf16_strcat(struct string_builder *s,
-					     const p_wchar1 *utf16str);
-PMOD_EXPORT void string_builder_strcat(struct string_builder *s, const char *str);
-PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s,
-                                              const struct pike_string *str);
-PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
-						  const struct pike_string *str,
-						  ptrdiff_t start,
-						  ptrdiff_t max_len,
-						  int flags);
-void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
-PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
-                                               INT64 val,
-					       unsigned int base,
-					       int flags,
-					       size_t min_width,
-					       size_t precision);
-PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
-					 const char *fmt,
-					 va_list args);
-PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
-					const char *fmt, ...);
-PMOD_EXPORT void reset_string_builder(struct string_builder *s);
-PMOD_EXPORT void free_string_builder(struct string_builder *s);
-PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 int wide_string_to_svalue_inumber(struct svalue *r,
@@ -462,12 +385,6 @@ PMOD_EXPORT int wide_isspace(int c);
 PMOD_EXPORT int wide_isidchar(int c);
 /* Prototypes end here */
 
-static inline void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,
-						const char *str, ptrdiff_t len)
-{
-  string_builder_binary_strcat0 (s, (const p_wchar0 *) str, len);
-}
-
 /* Note: Does not work 100% correctly with shift==2 strings. */
 static inline int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
 {
@@ -475,6 +392,71 @@ static inline int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
     if( !x->len ) return 0;
     check_string_range(x,0,&min,0);
     return min <= 0;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_is_block_allocated(const struct pike_string * s) {
+  return (s->alloc_type == STRING_ALLOC_BA);
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
+ return (s->alloc_type == STRING_ALLOC_MALLOC);
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_is_static(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_STATIC;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_is_substring(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_SUBSTRING;
+}
+
+static struct pike_string PIKE_UNUSED_ATTRIBUTE *substring_content_string(const struct pike_string *s)
+{
+  return ((struct substring_pike_string*)s)->parent;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_may_modify(const struct pike_string * s)
+{
+    return !string_is_static(s) && !string_is_substring(s)
+      && s->refs == 1;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE string_may_modify_len(const struct pike_string * s)
+{
+    return s->refs == 1;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
+{
+  const p_wchar1 *e=s+len;
+  while(s<e)
+    if(*s++>=256)
+      return 1;
+  return 0;
+}
+
+static inline int PIKE_UNUSED_ATTRIBUTE find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
+{
+  const p_wchar2 *e=s+len;
+  while(s<e)
+  {
+    if((unsigned INT32)*s>=256)
+    {
+      do
+      {
+	if((unsigned INT32)*s++>=65536)
+	  return 2;
+      }while(s<e);
+      return 1;
+    }
+    s++;
+  }
+  return 0;
+}
+
+static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned c)
+{
+  return LIKELY(c<256) ? 0 : LIKELY(c<65536) ? 1 : 2;
 }
 
 #define visit_string_ref(S, REF_TYPE, EXTRA)			\

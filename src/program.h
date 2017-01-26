@@ -15,6 +15,7 @@
 #include "program_id.h"
 #include "pike_rusage.h"
 #include "block_allocator.h"
+#include "string_builder.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;

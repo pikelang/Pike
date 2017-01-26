@@ -178,6 +178,7 @@ CORE_OBJ= \
  sprintf.o \
  sscanf.o \
  stralloc.o \
+ string_builder.o \
  stuff.o \
  threads.o \
  version.o \
