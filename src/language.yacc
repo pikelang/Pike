@@ -4998,6 +4998,9 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   int old_major = Pike_compiler->compat_major;
   int old_minor = Pike_compiler->compat_minor;
   struct svalue *efun = NULL;
+  /* NOTE: Compilers warn about res being globbered by the setjmp,longjmp
+   * below. This warning is spurious because pop_stack() does not actually
+   * do the longjmp, instead f_index() does. */
   node *res = NULL;
 
   change_compiler_compatibility(major, minor);
