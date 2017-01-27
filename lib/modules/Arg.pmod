@@ -56,16 +56,17 @@ class OptLibrary
 
     //! The overloading method should calculate the value of the
     //! option and return it. Methods processing @[argv] should only
-    //! look at argv[0] and if it matches, set it to 0. Returning 0
-    //! means the option was not set (or matched). To properly chain
-    //! arguments parsers, return @expr{::get_value(argv, env,
-    //! previous)@} instead of @expr{0@}, unless you want to
-    //! explicitly stop the chain and not set this option.
+    //! look at argv[0] and if it matches, set it to 0. Returning
+    //! @expr{UNDEFINED@} means the option was not set (or
+    //! matched). To properly chain arguments parsers, return
+    //! @expr{::get_value(argv, env, previous)@} instead of
+    //! @expr{UNDEFINED@}, unless you want to explicitly stop the
+    //! chain and not set this option.
     mixed get_value(array(string) argv, mapping(string:string) env,
                     mixed previous)
     {
       if(next) return next->get_value(argv, env, previous);
-      return 0;
+      return UNDEFINED;
     }
 
     //! Should return a list of options that are parsed. To properly
@@ -136,6 +137,40 @@ class OptLibrary
     protected string _sprintf(int t)
     {
       return t=='O' && sprintf("%O(%O)", this_program, opt);
+    }
+  }
+
+  //! Wrapper class that allows multiple instances of an option.
+  //! @example
+  //!   Opt filter = Multiple(HasOpt("--filter"));
+  class Multiple(Opt opt)
+  {
+    inherit Opt;
+
+    protected mixed values = ({});
+
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
+    {
+      mixed v = opt->get_value(argv, env, previous);
+      if(undefinedp(v)) return UNDEFINED;
+      values += ({ v });
+      return values;
+    }
+
+    array(string) get_opts()
+    {
+      return opt->get_opts();
+    }
+
+    protected this_program `|(mixed thing)
+    {
+      error("OR:ing Multiple objects not supported.\n");
+    }
+
+    protected string _sprintf(int t)
+    {
+      return t=='O' && sprintf("%O(%O)", this_program, values);
     }
   }
 
@@ -482,8 +517,8 @@ class LowOptions
       array(string) pre = argv+({});
       foreach(opts; string index; Opt arg)
       {
-        int(0..1)|string value = arg->get_value(argv, env, values[index]);
-        if(value)
+        mixed value = arg->get_value(argv, env, values[index]);
+        if(!undefinedp(value))
         {
           m_delete(unset, index);
           values[index] = value;
@@ -502,11 +537,11 @@ class LowOptions
 
     if( sizeof(unset) )
     {
-      int(0..1)|string value;
+      mixed value;
       foreach(unset; string index; Opt arg)
       {
         value = arg->get_value(({}), env, values[index]);
-        if(value)
+        if(!undefinedp(value))
           values[index] = value;
       }
     }

@@ -642,13 +642,14 @@ class Opt
   Opt name = HasOpt("-n")|HasOpt("--name")|Default("Donald");
   Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
   Opt i = Int(HasOpt("-i")|Default(42));
+  Opt m = Multiple(HasOpt("-m"));
 };
 
 add_constant("o",Opt);
 return 1;
 ]], 1)
 
-test_equal( sort(indices(o(({"x"})))) , sort(({ Arg.PATH, Arg.REST, Arg.APP, "debug", "help", "i", "name", "verbose" })) )
+test_equal( sort(indices(o(({"x"})))) , sort(({ Arg.PATH, Arg.REST, Arg.APP, "debug", "help", "i", "m", "name", "verbose" })) )
 test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", "i":42, Arg.REST:({}) ]) )
 test_equal( o(({"x"}),([]))->verbose , 0 )
 test_equal( o(({"x"}),([]))->debug , 0 )
@@ -665,6 +666,9 @@ test_equal( o("x"/" ")->i, 42 )
 test_equal( o("x -i 7"/" ")->i, 7 )
 test_equal( o("/a/b/c -v"/" ")[Arg.PATH], "/a/b/c" )
 test_equal( o("/a/b/c -v"/" ")[Arg.APP], "c")
+test_equal( o("x"/" ")->m, 0)
+test_equal( o("x -m a"/" ")->m, ({ "a" }))
+test_equal( o("x -m a -m b"/" ")->m, ({ "a", "b" }))
 
 test_do(add_constant("o"))
 
