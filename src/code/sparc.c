@@ -909,28 +909,35 @@ const unsigned INT32 sparc_flush_instruction_cache[] = {
   0x80100000|(SPARC_REG_O0<<25),
 };
 
-static void sparc_disass_rd_reg(int reg_no)
+static void sparc_disass_rd_reg(char *buf, int reg_no)
 {
   switch(reg_no & 0x1f) {
-  case SPARC_RD_REG_CCR:	fprintf(stderr, "%%ccr"); break;
-  case SPARC_RD_REG_PC:		fprintf(stderr, "%%pc"); break;
-  default:	fprintf(stderr, "%%sr(%d)", reg_no & 0x1f); break;
+  case SPARC_RD_REG_CCR:	sprintf(buf, "%%ccr"); break;
+  case SPARC_RD_REG_PC:		sprintf(buf, "%%pc"); break;
+  default:	sprintf(buf, "%%sr(%d)", reg_no & 0x1f); break;
   }
 }
 
-static void sparc_disass_reg(int reg_no)
+static void sparc_disass_reg(char *buf, int reg_no)
 {
-  fprintf(stderr, "%%%c%1x", "goli"[(reg_no>>3)&3], reg_no & 7);
+  sprintf(buf, "%%%c%1x", "goli"[(reg_no>>3)&3], reg_no & 7);
 }
 
 void sparc_disassemble_code(void *addr, size_t bytes)
 {
+  struct string_builder buf;
   unsigned INT32 *code = addr;
   size_t len = (bytes+3)>>2;
 
+  init_string_builder(&buf, 0);
+
   while(len--) {
     unsigned INT32 opcode = *code;
-    fprintf(stderr, "%p  %08x      ", code, opcode);
+    char buffers[3][256];
+    const char *params[4] = { NULL, NULL, NULL, NULL };
+    char mnemonic_buf[16];
+    const char *mnemonic = NULL;
+
     switch(opcode & 0xc0000000) {
     case 0x00000000:
       {
@@ -938,23 +945,25 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	int op2 = (opcode >> 22) & 0x7;
 	switch(op2) {
 	case 4:
-	  fprintf(stderr, "sethi %%hi(0x%08x), ", opcode << 10);
+	  mnemonic = "sethi";
+	  params[0] = buffers[0];
+	  sprintf(buffers[0], "%%hi(0x%08x)", opcode << 10);
 	  break;
 	}
-	sparc_disass_reg(opcode>>25);
-	fprintf(stderr, "\n");
+	params[1] = buffers[1];
+	sparc_disass_reg(buffers[1], opcode>>25);
       }
       break;
     case 0x40000000:
       /* Call */
-      fprintf(stderr, "call 0x%p\n", ((char *)code) + (opcode << 2));
+      mnemonic = "call";
+      params[0] = buffers[0];
+      sprintf(buffers[0], "0x%p", ((char *)code) + (opcode << 2));
       break;
     case 0x80000000:
       {
 	/* ALU operation. */
 	int op3 = (opcode >> 19) & 0x3f;
-	char buf[16];
-	char *mnemonic = NULL;
 	if (!(op3 & 0x20)) {
 	  switch(op3 & 0xf) {
 	  case SPARC_OP3_ADD:	mnemonic = "add"; break;	/* 0 */
@@ -969,14 +978,17 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 
 	  case SPARC_OP3_SUBC:	mnemonic = "subc"; break;	/* c */
 	  default:
-	    sprintf(buf, "op3(0x%02x)", op3 & 0xf);
-	    mnemonic = buf;
+	    sprintf(mnemonic_buf, "op3(0x%02x)", op3 & 0xf);
+	    mnemonic = mnemonic_buf;
 	    break;
 	  }
 	  if (op3 & 0x10) {
-	    fprintf(stderr, "%scc ", mnemonic);
-	  } else {
-	    fprintf(stderr, "%s ", mnemonic);
+	    if (mnemonic == mnemonic_buf) {
+	      sprintf(mnemonic_buf + strlen(mnemonic_buf), "cc");
+	    } else {
+	      sprintf(mnemonic_buf, "%scc ", mnemonic);
+	      mnemonic = mnemonic_buf;
+	    }
 	  }
 	} else {
 	  switch(op3) {
@@ -989,35 +1001,32 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	  case SPARC_OP3_SAVE:	mnemonic = "save"; break;
 	  case SPARC_OP3_RESTORE:mnemonic = "restore"; break;
 	  default:
-	    sprintf(buf, "op3(0x%02x)", op3);
-	    mnemonic = buf;
+	    sprintf(mnemonic_buf, "op3(0x%02x)", op3);
+	    mnemonic = mnemonic_buf;
 	    break;
 	  }
-	  fprintf(stderr, "%s ", mnemonic);
 	}
 	if (op3 == SPARC_OP3_RD) {
-	  sparc_disass_rd_reg(opcode>>14);
-	  fprintf(stderr, ", ");
+	  params[0] = buffers[0];
+	  sparc_disass_rd_reg(buffers[0], opcode>>14);
 	} else {
-	  sparc_disass_reg(opcode>>14);
-	  fprintf(stderr, ", ");
+	  params[0] = buffers[0];
+	  sparc_disass_reg(buffers[0], opcode>>14);
+	  params[1] = buffers[1];
 	  if (opcode & 0x00002000) {
-	    fprintf(stderr, "0x%04x, ", opcode & 0x1fff);
+	    sprintf(buffers[1], "0x%04x", opcode & 0x1fff);
 	  } else {
-	    sparc_disass_reg(opcode);
-	    fprintf(stderr, ", ");
+	    sparc_disass_reg(buffers[1], opcode);
 	  }
 	}
-	sparc_disass_reg(opcode >> 25);
-	fprintf(stderr, "\n");
+	params[2] = buffers[2];
+	sparc_disass_reg(buffers[2], opcode >> 25);
       }
       break;
     case 0xc0000000:
       {
 	/* Memory operations. */
 	int op3 = (opcode >> 19) & 0x3f;
-	char buf[16];
-	char *mnemonic = NULL;
 	switch(op3) {
 	case 0x00:	mnemonic="lduw"; break;
 	case 0x01:	mnemonic="ldub"; break;
@@ -1033,40 +1042,57 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	case 0x0b:	mnemonic="ldx"; break;
 	case 0x0e:	mnemonic="stx"; break;
 	default:
-	  sprintf(buf, "op3(0x%02x)", op3);
-	  mnemonic = buf;
+	  sprintf(mnemonic_buf, "op3(0x%02x)", op3);
+	  mnemonic = mnemonic_buf;
 	  break;
 	}
+
+	params[0] = buffers[0];
+	buffers[0][0] = '[';
+	buffers[0][1] = ' ';
+	sparc_disass_reg(buffers[0] + 2, opcode >> 14);
+	if (opcode & 0x00002000) {
+	  int val = opcode & 0x1fff;
+	  if (val) {
+	    sprintf(buffers[0] + strlen(buffers[0]), " + 0x%04x", val);
+	  }
+	} else {
+	  int reg = opcode & 0x1f;
+	  if (reg) {
+	    sprintf(buffers[0] + strlen(buffers[0]), " + ");
+	    sparc_disass_reg(buffers[0] + strlen(buffers[0]), opcode);
+	  }
+	}
+	sprintf(buffers[0] + strlen(buffers[0]), " ]");
+	params[1] = buffers[1];
+	sparc_disass_reg(buffers[1], opcode >> 25);
+
 	if (op3 & 0x04) {
 	  /* Store */
-	  fprintf(stderr, "%s ", mnemonic);
-	  sparc_disass_reg(opcode >> 25);
-	  fprintf(stderr, ", [");
-	  sparc_disass_reg(opcode >> 14);
-	  if (opcode & 0x00002000) {
-	    fprintf(stderr, ", 0x%04x", opcode & 0x1fff);
-	  } else {
-	    fprintf(stderr, ", ");
-	    sparc_disass_reg(opcode);
-	  }
-	  fprintf(stderr, "]\n");
+	  const char *tmp = params[0];
+	  params[0] = params[1];
+	  params[1] = tmp;
 	} else {
 	  /* Load */
-	  fprintf(stderr, "%s [", mnemonic);
-	  sparc_disass_reg(opcode >> 14);
-	  if (opcode & 0x00002000) {
-	    fprintf(stderr, ", 0x%04x", opcode & 0x1fff);
-	  } else {
-	    fprintf(stderr, ", ");
-	    sparc_disass_reg(opcode);
-	  }
-	  fprintf(stderr, "], ");
-	  sparc_disass_reg(opcode >> 25);
-	  fprintf(stderr, "\n");
 	}
       }
       break;
     }
+    if (!params[1]) {
+      params[1] = params[2];
+      params[2] = NULL;
+    }
+    if (!params[0]) {
+      params[0] = params[1];
+      params[1] = NULL;
+    }
+    string_builder_append_disassembly(&buf, code, code+1,
+				      mnemonic, params, NULL);
     code++;
   }
+
+  /* NUL-terminate. */
+  string_builder_putchar(&buf, 0);
+  fprintf(stderr, "%s", buf.s->str);
+  free_string_builder(&buf);
 }
