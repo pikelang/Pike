@@ -18,12 +18,15 @@ the world without any authentication.
 
   constant port_help = "Port to use. Defaults to 8080.";
   constant version_help = "Displays version information.";
+  constant headers_help = "Set additional header and value, e.g. --header X-Content-Type-Options:nosniff";
 
   Opt port = Int(HasOpt("--port")|Default(8080));
   Opt version = NoOpt("--version");
+  Opt headers = Multiple(HasOpt("--header"));
 }
 
 Options opt;
+mapping headers = ([]);
 
 int main(int argc, array(string) argv)
 {
@@ -40,6 +43,16 @@ int main(int argc, array(string) argv)
       cd(home);
     else if(port==8080 && (int)argv[-1])
       port=(int)argv[-1];
+  }
+
+  if( opt->headers )
+  {
+    foreach(opt->headers, string hdr)
+    {
+      array h = hdr/":";
+      if(sizeof(h)<2) error("Illegal header format %O.\n", hdr);
+      headers[h[0]] = h[1..]*":";
+    }
   }
 
   Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
@@ -99,20 +112,18 @@ void handle_request(Protocols.HTTP.Server.Request request)
     file = Protocols.HTTP.uri_decode(file);
     Stdio.Stat s = file_stat( file );
 
-    mapping hdr = ([]);
-
     if( !s )
 	request->response_and_finish( (["data":
 					file_not_found(request->not_query),
 					"type":"text/html",
-                                        "extra_heads" : hdr,
+                                        "extra_heads" : headers,
                                         "error":404]) );
     else if( s->isdir )
         request->response_and_finish( ([ "data":dirlist(file),
-                                         "extra_heads" : hdr,
+                                         "extra_heads" : headers,
                                          "type":"text/html" ]) );
     else
       request->response_and_finish( ([ "file":Stdio.File(file),
-                                       "extra_heads" : hdr,
+                                       "extra_heads" : headers,
                                     ]) );
 }
