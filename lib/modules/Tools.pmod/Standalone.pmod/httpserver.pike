@@ -19,10 +19,12 @@ the world without any authentication.
   constant port_help = "Port to use. Defaults to 8080.";
   constant version_help = "Displays version information.";
   constant headers_help = "Set additional header and value, e.g. --header X-Content-Type-Options:nosniff";
+  constant log_help = "Logs request in 'commonlog', 'raw' or 'string' format.";
 
   Opt port = Int(HasOpt("--port")|Default(8080));
   Opt version = NoOpt("--version");
   Opt headers = Multiple(HasOpt("--header"));
+  Opt log = HasOpt("--log");
 }
 
 Options opt;
@@ -54,6 +56,8 @@ int main(int argc, array(string) argv)
       headers[h[0]] = h[1..]*":";
     }
   }
+
+  write("%O\n", opt->verbose);
 
   Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
   write("%s is now accessible on port %d through http, "
@@ -111,6 +115,32 @@ void handle_request(Protocols.HTTP.Server.Request request)
     string file = "."+combine_path("/",request->not_query);
     file = Protocols.HTTP.uri_decode(file);
     Stdio.Stat s = file_stat( file );
+
+    switch(opt->log)
+    {
+    case 1:
+    case "commonlog":
+      {
+        object now = Calendar.now();
+        write("%s - - [%d/%s/%d:%02d:%02d:%02d %s] %O %d %d\n",
+              (request->my_fd->query_address()/" ")[0],
+              now->month_day(), now->month_name()[..2], now->year_no(),
+              now->hour_no(), now->minute_no(), now->second_no(),
+              now->tzname_utc_offset(),
+              request->request_raw,
+              s ? 200 : 404,
+              s && s->isreg && s->size); // Not showing generated data.
+      }
+      break;
+    case "raw":
+      write("%s\n\n", request->raw);
+      break;
+    case "string":
+      write("%O\n\n", request->raw);
+      break;
+    default:
+      break;
+    }
 
     if( !s )
 	request->response_and_finish( (["data":
