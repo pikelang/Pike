@@ -2075,19 +2075,24 @@ PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
  * @param inh
  *   >0 Specified inherit.
  *   =0 this_program:: or this::.
- *   -1 global::
- *   -2 ::
+ *   -1 local::
+ *   -2 global::
+ *   -3 ::
  */
 struct node_s *find_inherited_identifier(struct program_state *inherit_state,
                                          int inherit_depth, int inh,
 					 struct pike_string *ident)
 {
   int id;
+  struct program *p = inherit_state->new_program;
 
+#if 0
+  fprintf(stderr, "find_inherited_identifier(%p, %d, %d, \"%s\")\n",
+	  inherit_state, inherit_depth, inh, ident->str);
+#endif /* 0 */
   if (inh == INHERIT_ALL) {
     /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;
-    struct program *p = inherit_state->new_program;
     for (inh = 1; inh < p->num_inherits; inh++) {
       struct node_s *n;
       if (p->inherits[inh].inherit_level != 1) continue;
@@ -2119,18 +2124,60 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       id = low_reference_inherited_identifier(inherit_state, inh, ident,
 					      SEE_PROTECTED);
     } else {
-      /* this_program:: (0) or global:: (-1). */
+      /* this_program:: (0), local:: (-1) or global:: (-2). */
       id = really_low_find_shared_string_identifier(ident,
 						    inherit_state->new_program,
 						    SEE_PROTECTED|SEE_PRIVATE);
     }
 
     if (id != -1) {
+      if (inh == INHERIT_LOCAL) {
+	/* local:: */
+	struct reference *ref = p->identifier_references + id;
+	if (IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(p, ref)->identifier_flags)) {
+	  /* Allowing local:: on variables would lead to pathological
+	   * behavior: If a non-local variable in a class is referenced
+	   * both with and without local::, both references would
+	   * address the same variable in all cases except where an
+	   * inheriting program overrides it (c.f. [bug 1252]).
+	   *
+	   * Furthermore, that's not how it works currently; if this
+	   * error is removed then local:: will do nothing on variables
+	   * except forcing a lookup in the closest surrounding class
+	   * scope. */
+	  yyerror ("Cannot make local references to variables.");
+	  return NULL;
+	}
+	if (!(ref->id_flags & ID_LOCAL)) {
+	  /* We need to generate a new reference. */
+	  int d;
+	  struct reference funp = *ref;
+	  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
+	  id = -1;
+	  for(d = 0; d < (int)p->num_identifier_references; d++) {
+	    struct reference *refp;
+	    refp = p->identifier_references + d;
+
+	    if (!(refp->id_flags & ID_LOCAL)) continue;
+
+	    if((refp->inherit_offset == funp.inherit_offset) &&
+	       (refp->identifier_offset == funp.identifier_offset)) {
+	      id = d;
+	      break;
+	    }
+	  }
+	  if (id < 0) {
+	    low_add_to_identifier_references(inherit_state, funp);
+	    id = p->num_identifier_references - 1;
+	  }
+	}
+      }
       if (inherit_depth > 0) {
 	return mkexternalnode(inherit_state->new_program, id);
       }
       return mkidentifiernode(id);
     }
+    if (inh < 0) inh = -1;
   }
 
   return program_magic_identifier(inherit_state, inherit_depth, inh, ident, 1);
@@ -2206,7 +2253,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
 					 int colon_colon_ref)
 {
 #if 0
-  fprintf (stderr, "magic_identifier (state, %d, %d, %s, %d)\n",
+  fprintf (stderr, "magic_identifier (state, %d, %d, \"%s\", %d)\n",
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 

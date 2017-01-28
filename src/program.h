@@ -508,8 +508,9 @@ struct inherit
  * These are used by find_inherited_identifier().
  */
 #define INHERIT_SELF	0	/* Self. */
-#define INHERIT_GLOBAL	-1	/* Self and overrideable. */
-#define INHERIT_ALL	-2	/* All inherits but not self. */
+#define INHERIT_LOCAL	-1	/* Self and not overrideable (force local). */
+#define INHERIT_GLOBAL	-2	/* Self and overrideable. */
+#define INHERIT_ALL	-3	/* All inherits but not self. */
 
 /*
  * Storage struct for a trampoline object

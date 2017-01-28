@@ -3936,63 +3936,16 @@ expr5: literal_expr
 idents2: idents
   | TOK_LOCAL_ID TOK_COLON_COLON TOK_IDENTIFIER
   {
-    int i;
-
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    if(Pike_compiler->last_identifier) {
+      free_string(Pike_compiler->last_identifier);
+    }
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
-    if (((i = find_shared_string_identifier(Pike_compiler->last_identifier,
-					    Pike_compiler->new_program)) >= 0) ||
-	((i = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
-						       Pike_compiler->new_program,
-						       SEE_PROTECTED|
-						       SEE_PRIVATE)) >= 0)) {
-      struct reference *ref = Pike_compiler->new_program->identifier_references + i;
-      if (IDENTIFIER_IS_VARIABLE (
-	    ID_FROM_PTR (Pike_compiler->new_program, ref)->identifier_flags)) {
-	/* Allowing local:: on variables would lead to pathological
-	 * behavior: If a non-local variable in a class is referenced
-	 * both with and without local::, both references would
-	 * address the same variable in all cases except where an
-	 * inheriting program overrides it (c.f. [bug 1252]).
-	 *
-	 * Furthermore, that's not how it works currently; if this
-	 * error is removed then local:: will do nothing on variables
-	 * except forcing a lookup in the closest surrounding class
-	 * scope. */
-	yyerror ("Cannot make local references to variables.");
-	$$ = 0;
-      }
-      else {
-	if (!(ref->id_flags & ID_LOCAL)) {
-	  /* We need to generate a new reference. */
-	  int d;
-	  struct reference funp = *ref;
-	  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
-	  i = -1;
-	  for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
-	    struct reference *refp;
-	    refp = Pike_compiler->new_program->identifier_references + d;
-
-	    if (!(refp->id_flags & ID_LOCAL)) continue;
-
-	    if((refp->inherit_offset == funp.inherit_offset) &&
-	       (refp->identifier_offset == funp.identifier_offset)) {
-	      i = d;
-	      break;
-	    }
-	  }
-	  if (i < 0) {
-	    add_to_identifier_references(funp);
-	    i = Pike_compiler->new_program->num_identifier_references - 1;
-	  }
-	}
-	$$ = mkidentifiernode(i);
-      }
-    } else {
+    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_LOCAL,
+				   Pike_compiler->last_identifier);
+    if (!$$) {
       if (Pike_compiler->compiler_pass == 2) {
-	my_yyerror("%S not defined in local scope.",
-		   Pike_compiler->last_identifier);
+	my_yyerror("%S not defined in local scope.", $3->u.sval.u.string);
 	$$ = 0;
       } else {
 	$$ = mknode(F_UNDEFINED, 0, 0);
