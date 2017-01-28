@@ -57,8 +57,6 @@ int main(int argc, array(string) argv)
     }
   }
 
-  write("%O\n", opt->verbose);
-
   Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
   write("%s is now accessible on port %d through http, "
         "without password.\n", getcwd(), port);
