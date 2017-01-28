@@ -4229,14 +4229,14 @@ struct program *end_first_pass(int finish)
 			NULL, 0, NULL,
 			Pike_compiler->new_program->strings[id->filename_strno],
 			id->linenumber, id->type,
-			0, "Variant of function %S masked by later variant(s).",
+			0, "Function %S() masked by later variant.",
 			name);
 	  ref_push_type_value(type);
 	  low_yyreport(REPORT_WARNING,
 		       Pike_compiler->new_program->strings[id->filename_strno],
 		       id->linenumber,
 		       type_check_system_string,
-		       1, "Aggregated type: %O.");
+		       1, "Variant : %O.");
 	}
 	type = or_pike_types(type, id->type, 1);
 	free_type(temp);
