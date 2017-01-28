@@ -2701,7 +2701,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
     }
 
 #ifdef PROGRAM_BUILD_DEBUG
-    fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
+    fprintf(stderr, "%*soverloaded reference %d (id_flags:0x%04x)\n",
 	    c->compilation_depth, "", cur_id, ref->id_flags);
 #endif
 
@@ -3224,7 +3224,7 @@ void low_start_new_program(struct program *p,
 
 #ifdef PROGRAM_BUILD_DEBUG
   if (name) {
-    fprintf (stderr, "%.*sstarting program %d (pass=%d): ",
+    fprintf (stderr, "%*sstarting program %d (pass=%d): ",
 	     c->compilation_depth, "",
 	     Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
     push_string (name);
@@ -3232,7 +3232,7 @@ void low_start_new_program(struct program *p,
     putc ('\n', stderr);
   }
   else
-    fprintf (stderr, "%.*sstarting program %d (pass=%d)\n",
+    fprintf (stderr, "%*sstarting program %d (pass=%d)\n",
 	     c->compilation_depth, "",
 	     Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
@@ -4400,7 +4400,7 @@ struct program *end_first_pass(int finish)
   }
 
 #ifdef PROGRAM_BUILD_DEBUG
-  fprintf (stderr, "%.*sfinishing program %d (pass=%d)\n",
+  fprintf (stderr, "%*sfinishing program %d (pass=%d)\n",
 	   c->compilation_depth, "",
 	   Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
@@ -5729,7 +5729,7 @@ PMOD_EXPORT int quick_map_variable(const char *name,
   {
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *d = describe_type (t);
-    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
+    fprintf (stderr, "%*sdefining variable (pass=%d): %s ",
 	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (n);
@@ -5782,7 +5782,7 @@ int define_variable(struct pike_string *name,
   {
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *d = describe_type (type);
-    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
+    fprintf (stderr, "%*sdefining variable (pass=%d): %s ",
 	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
@@ -5950,7 +5950,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if (c) {
       struct pike_type *t = get_type_of_svalue(c);
       struct pike_string *d = describe_type (t);
-      fprintf (stderr, "%.*sdefining constant (pass=%d): %s ",
+      fprintf (stderr, "%*sdefining constant (pass=%d): %s ",
 	       cc->compilation_depth, "",
 	       Pike_compiler->compiler_pass, d->str);
       free_type(t);
@@ -5961,7 +5961,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       print_svalue (stderr, c);
     }
     else {
-      fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
+      fprintf (stderr, "%*sdeclaring constant (pass=%d): ",
 	       cc->compilation_depth, "",
 	       Pike_compiler->compiler_pass);
       push_string (name);
@@ -6070,7 +6070,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       else
           id->type = get_type_of_svalue( c );
 #ifdef PROGRAM_BUILD_DEBUG
-      fprintf (stderr, "%.*sstored constant #%d at %d\n",
+      fprintf (stderr, "%*sstored constant #%d at %d\n",
 	       cc->compilation_depth, "",
 	       n, id->func.const_info.offset);
 #endif
@@ -6341,7 +6341,7 @@ INT32 define_function(struct pike_string *name,
 #ifdef PROGRAM_BUILD_DEBUG
   {
     struct pike_string *d = describe_type (type);
-    fprintf (stderr, "%.*sdefining function (pass=%d): %s ",
+    fprintf (stderr, "%*sdefining function (pass=%d): %s ",
 	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
@@ -6563,7 +6563,7 @@ INT32 define_function(struct pike_string *name,
     /* already defined */
 
 #ifdef PROGRAM_BUILD_DEBUG
-    fprintf(stderr, "%.*sexisted as identifier #%d\n",
+    fprintf(stderr, "%*sexisted as identifier #%d\n",
 	  c->compilation_depth, "", i);
 #endif
 
@@ -6621,7 +6621,7 @@ INT32 define_function(struct pike_string *name,
       copy_pike_type(funp->type, type);
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
-      fprintf(stderr, "%.*sidentifier was inherited\n",
+      fprintf(stderr, "%*sidentifier was inherited\n",
 	      c->compilation_depth, "");
 #endif
 
@@ -6661,7 +6661,7 @@ INT32 define_function(struct pike_string *name,
       if(ref.id_flags & ID_INLINE)
       {
 #ifdef PROGRAM_BUILD_DEBUG
-	fprintf(stderr, "%.*sidentifier is local\n",
+	fprintf(stderr, "%*sidentifier is local\n",
 		c->compilation_depth, "");
 #endif
 	/* Hide the previous definition, and make a new definition. */
@@ -6671,7 +6671,7 @@ INT32 define_function(struct pike_string *name,
 
       /* Otherwise we alter the existing definition */
 #ifdef PROGRAM_BUILD_DEBUG
-      fprintf(stderr, "%.*saltering the existing definition\n",
+      fprintf(stderr, "%*saltering the existing definition\n",
 	      c->compilation_depth, "");
 #endif
 
@@ -6794,7 +6794,7 @@ INT32 define_function(struct pike_string *name,
   add_to_identifier_references(ref);
 
 #ifdef PROGRAM_BUILD_DEBUG
-  fprintf(stderr, "%.*sadded new definition #%d\n",
+  fprintf(stderr, "%*sadded new definition #%d\n",
 	  c->compilation_depth, "", i);
 #endif
 
