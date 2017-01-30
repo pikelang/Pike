@@ -12651,7 +12651,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
       if (strlen(opcode) < 8) {
 	string_builder_sprintf(s, " %-8s ", opcode);
       } else if (strlen(opcode) < 32) {
-	string_builder_sprintf(s, " %-27s ", opcode);
+	string_builder_sprintf(s, " %-28s ", opcode);
 	skip_params = 1;
       } else {
 	string_builder_sprintf(s, " %s", opcode);
@@ -12666,7 +12666,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
     /* Params */
     if (skip_params) {
     } else if (params && params[0]) {
-      ptrdiff_t bytes_left = 19;
+      ptrdiff_t bytes_left = 20;
       do {
 	string_builder_sprintf(s, "%s", params[0]);
 	bytes_left -= strlen(params[0]);
@@ -12675,7 +12675,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 	  string_builder_sprintf(s, ", ");
 	  bytes_left -= 2;
 	}
-      } while (params[0] && (((ptrdiff_t)strlen(params[0])) < bytes_left));
+      } while (params[0] && (((ptrdiff_t)strlen(params[0])) <= bytes_left));
       if (bytes_left < 0) {
 	skip_comment = 1;
       } else if (comment && comment[0]) {
@@ -12684,7 +12684,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
       }
     } else if (comment && comment[0]) {
       /* No need to pad if there's no comment. */
-      string_builder_sprintf(s, "%*s ", 18, "");
+      string_builder_sprintf(s, "%*s ", 19, "");
     }
 
     /* Comment */
