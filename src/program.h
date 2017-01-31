@@ -1100,6 +1100,10 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 						   const char *opcode,
 						   const char **params,
 						   const char *comment);
+PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr);
+PMOD_EXPORT void simple_add_reverse_symbol(const char *sym, void *addr);
+PMOD_EXPORT void init_reverse_symbol_table();
+PMOD_EXPORT struct pike_string *reverse_symbol_lookup(void *addr);
 /* Prototypes end here */
 
 /**

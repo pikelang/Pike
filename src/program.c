@@ -86,6 +86,9 @@ static size_t add_xstorage(size_t size,
 			   size_t alignment,
 			   ptrdiff_t modulo_orig);
 
+/* mapping(int:string) */
+static struct mapping *reverse_symbol_table = NULL;
+
 static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct program), 4);
 
 ATTRIBUTE((malloc))
@@ -11308,6 +11311,11 @@ void cleanup_program(void)
 #endif
 
 #ifdef DO_PIKE_CLEANUP
+  if (reverse_symbol_table) {
+    free_mapping(reverse_symbol_table);
+    reverse_symbol_table = NULL;
+  }
+
   if(pike_trampoline_program)
   {
     free_program(pike_trampoline_program);
@@ -12702,4 +12710,78 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
       string_builder_sprintf(s, "\n");
     }
   }
+}
+
+PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr)
+{
+  struct svalue key;
+  struct svalue val;
+  SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, (ptrdiff_t)addr);
+  SET_SVAL(val, PIKE_T_STRING, 0, string, sym);
+  low_mapping_insert(reverse_symbol_table, &key, &val, 1);
+}
+
+PMOD_EXPORT void simple_add_reverse_symbol(const char *sym, void *addr)
+{
+  struct pike_string *s = make_shared_string(sym);
+  add_reverse_symbol(s, addr);
+  free_string(s);
+}
+
+PMOD_EXPORT void init_reverse_symbol_table()
+{
+  int op;
+
+  if (reverse_symbol_table) return;
+  reverse_symbol_table = allocate_mapping(256);
+
+  /* Initialize with the most popular symbols. */
+#define ADD_SYMBOL(SYM)	simple_add_reverse_symbol(#SYM "()", (void *)(SYM))
+#ifdef PIKE_DEBUG
+  ADD_SYMBOL(simple_debug_instr_prologue_0);
+  ADD_SYMBOL(simple_debug_instr_prologue_1);
+  ADD_SYMBOL(simple_debug_instr_prologue_2);
+#endif
+  ADD_SYMBOL(low_return);
+  ADD_SYMBOL(low_return_pop);
+  ADD_SYMBOL(really_free_svalue);
+  ADD_SYMBOL(lvalue_to_svalue_no_free);
+  ADD_SYMBOL(f_add);
+  ADD_SYMBOL(really_free_string);
+  ADD_SYMBOL(pike_sizeof);
+  ADD_SYMBOL(o_subtract);
+  ADD_SYMBOL(svalue_is_true);
+  ADD_SYMBOL(assign_lvalue);
+  ADD_SYMBOL(really_free_array);
+  ADD_SYMBOL(object_low_set_index);
+  ADD_SYMBOL(low_object_index_no_free);
+  ADD_SYMBOL(assign_to_short_svalue);
+  ADD_SYMBOL(really_free_short_svalue_ptr);
+  ADD_SYMBOL(mega_apply);
+
+  simple_add_reverse_symbol("Pike_interpreter_pointer",
+			    &Pike_interpreter_pointer);
+
+#ifdef PIKE_USE_MACHINE_CODE
+  /* Add the opcodes as well. */
+  for (op = 1; op < (F_MAX_INSTR - F_OFFSET); op++) {
+    if (!instrs[op].address) continue;
+    simple_add_reverse_symbol(instrs[op].name, instrs[op].address);
+  }
+#endif /* PIKE_USE_MACHINE_CODE */
+}
+
+PMOD_EXPORT struct pike_string *reverse_symbol_lookup(void *addr)
+{
+  struct svalue key;
+  struct svalue *s;
+  if (!reverse_symbol_table) {
+    init_reverse_symbol_table();
+  }
+  SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, (ptrdiff_t)addr);
+  s = low_mapping_lookup(reverse_symbol_table, &key);
+
+  /* FIXME: Fall back to using dladdr() on supported OSes? */
+  if (!s || (TYPEOF(*s) != PIKE_T_STRING)) return NULL;
+  return s->u.string;
 }
