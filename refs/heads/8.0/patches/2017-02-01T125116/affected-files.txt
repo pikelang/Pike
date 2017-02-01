@@ -1,0 +1,4 @@
+Modified files:
+  pike/lib/modules/ADT.pmod/Struct.pike
+  pike/lib/modules/Standards.pmod/URI.pike
+  pike/lib/modules/Web.pmod/module.pmod
