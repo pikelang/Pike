@@ -565,6 +565,7 @@ PIKECLASS TM
     {
         memset( &THIS->t, 0, sizeof( struct tm ) );
         THIS->t.tm_isdst = -1;
+        THIS->t.tm_mday = 1;
         THIS->unix_time = 0;
         THIS->modified = 1;
     }
