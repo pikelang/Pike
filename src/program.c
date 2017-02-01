@@ -1961,6 +1961,18 @@ struct node_s *find_module_identifier(struct pike_string *ident,
   return resolve_identifier(ident);
 }
 
+/* Look up a predefined identifier. */
+struct node_s *find_predef_identifier(struct pike_string *ident)
+{
+  struct compilation *c = THIS_COMPILATION;
+  node *tmp = mkconstantsvaluenode(&c->default_module);
+  node *ret = index_node(tmp, "predef", ident);
+  if(ret && !ret->name)
+    add_ref(ret->name = ident);
+  free_node(tmp);
+  return ret;
+}
+
 /*! @decl constant UNDEFINED
  *!
  *! The undefined value; ie a zero for which @[zero_type()] returns 1.

@@ -810,6 +810,7 @@ void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
 node *find_module_identifier(struct pike_string *ident,
 			     int see_inherit);
+node *find_predef_identifier(struct pike_string *ident);
 node *resolve_identifier(struct pike_string *ident);
 PMOD_EXPORT struct program *resolve_program(struct pike_string *ident);
 node *find_inherited_identifier(struct program_state *inherit_state,
