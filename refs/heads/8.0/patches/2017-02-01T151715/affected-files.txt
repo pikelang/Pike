@@ -1,0 +1,6 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/Arg.pmod
+  pike/lib/modules/Mysql.pmod/SqlTable.pike
+  pike/lib/modules/Protocols.pmod/DNS.pmod
+  pike/lib/modules/Web.pmod/module.pmod
