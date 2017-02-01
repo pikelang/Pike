@@ -1,0 +1,25 @@
+subject: Pike 8.0: sizeof on Mysql.SqlTable, JWT & JWK
+from: 659d59b4ce44d107e9c22b40170d68f983f1ec31
+to: 2f348f6c568400be0a8afea04f34f6b59e41d026
+originator: Henrik Grubbstrom <grubba@grubba.org>
+depends: 2017-02-01T125116|pike/8.0.386
+restart: true
+
+Multiple fixes:
+
+• Web: Added decode_jwk{,_set}().
+
+These decode JOSE keys coded according to RFC 7515.
+
+Backported from Pike 8.1.
+
+Fixes [PIKE-3]
+
+• Web: Updated {en,de}code_jwt() to support HMAC signatures.
+
+• Protocols.DNS: Fix decoding of LOC RRs.
+
+• Mysql.SqlTable: Added _sizeof().
+
+sizeof() on an SqlTable now returns the (cached) number
+of rows in the table.
