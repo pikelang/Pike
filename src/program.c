@@ -406,7 +406,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   int bar;
  *!   protected void create(int foo)
  *!   {
- *!     local::foo = foo;
+ *!     this::foo = foo;
  *!   }
  *! }
  *! @endcode
