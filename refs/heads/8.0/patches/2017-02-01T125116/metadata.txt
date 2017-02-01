@@ -1,0 +1,23 @@
+subject: Pike 8.0: Sync with Roxen 6.1.184, JWT, String addition.
+from: 4021cddd47105945d75abc5f40c1633d3643ae82
+to: 659d59b4ce44d107e9c22b40170d68f983f1ec31
+originator: Henrik Grubbstrom <grubba@grubba.org>
+depends: 2016-12-13T095946
+restart: true
+
+• release number bumped to 8.0.386 by export.pike
+
+• Fix fallout from improved types on ::`[]= and ::_indices
+
+• Web.decode_jwt: Assume JWT if no type set in header.
+
+Fixes decoding of JWTs from Google OpenIDConnect.
+
+• Note about the empty string addition bug.
+
+• mkpackage: Added kludge for [bug 7826].
+
+Make sure that the first string in the mkdirhier loop has the
+correct character range by preloading the initial non-empty string.
+
+Needed by the Roxen build system.
