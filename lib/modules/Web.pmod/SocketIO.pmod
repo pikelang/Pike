@@ -482,7 +482,7 @@ class Client {
            | (finf && 4) | slot;
           if ((len >>= 3) > 0xff)
             acc |= 0x10;
-          aggbin->add_int8(acc)->add_int8(len);
+          aggbin->add(acc, len);
           if (len >>= 8)
             aggbin->add_int8(len);
           aggbin->add(ret->read_buffer(tocopy));

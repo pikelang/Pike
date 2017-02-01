@@ -505,7 +505,7 @@ class Socket {
             }
             if (!anybinary && stringp(msg)) {
               msg = string_to_utf8(msg);
-              c->add((string)(1+sizeof(msg)))->add_int8(':');
+              c->add((string)(1+sizeof(msg)), ':');
             } else if (!forceascii) {
               if (stringp(msg))
                 c->add_int8(0);
@@ -518,10 +518,9 @@ class Socket {
               c->add_int8(0xff);
             } else {
               msg = MIME.encode_base64(msg->read(), 1);
-              c->add((string)(1+1+sizeof(msg)))
-               ->add_int8(':')->add_int8(BASE64);
+              c->add((string)(1+1+sizeof(msg)), ':', BASE64);
             }
-            c->add_int8(type)->add(msg);
+            c->add(type, msg);
           }
           if (sizeof(c))
             wrapfinish(myreq, c->read(), opts);
@@ -569,7 +568,7 @@ class Socket {
     final protected
      void wrapfinish(Protocols.WebSocket.Request req, string body,
       mapping(string:mixed) options) {
-      c->add(head)->add(Standards.JSON.encode(body))->add(");");
+      c->add(head, Standards.JSON.encode(body), ");");
       respfinish(req, c->read(), 0, options);
     }
   }

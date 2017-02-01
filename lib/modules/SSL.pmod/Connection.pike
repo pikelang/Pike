@@ -877,8 +877,7 @@ void handle_heartbeat(string(8bit) s)
     hb_msg = Buffer();
     hb_msg->add_int(HEARTBEAT_MESSAGE_response, 1);
     hb_msg->add_int(hb_len, 2);
-    hb_msg->add(payload);
-    hb_msg->add(random_string(pad_len));
+    hb_msg->add(payload, random_string(pad_len));
     send_packet(heartbeat_packet(hb_msg));
     break;
   case HEARTBEAT_MESSAGE_response:
