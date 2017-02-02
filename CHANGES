@@ -1,6 +1,19 @@
 Changes since Pike 8.0.388 (release 7)
 ----------------------------------------------------------------------
 
+New Features
+------------
+
+o Mysql.SqlTable
+
+  sizeof() on an SqlTable now returns the number of rows in the table.
+
+o Web
+
+  - Updated {en,de}code_jwt() to support HMAC signatures.
+
+  - Added decode_jwk{,_set}(), which decode RFC 7515-style JOSE keys.
+
 Runtime
 -------
 
@@ -23,6 +36,10 @@ System.TM
 
 Building
 --------
+
+o Configure
+
+  Fixed issues with the LDSHARED test on some BSD-derivates.
 
 o Stdio
 
