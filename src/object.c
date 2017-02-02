@@ -8,6 +8,7 @@
 #include "object.h"
 #include "interpret.h"
 #include "program.h"
+#include "pike_compiler.h"
 #include "stralloc.h"
 #include "svalue.h"
 #include "pike_macros.h"

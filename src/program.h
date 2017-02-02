@@ -732,9 +732,6 @@ void free_all_program_blocks(void);
 
 extern struct program *first_program;
 extern struct program *null_program;
-extern struct program *compilation_env_program;
-extern struct program *compilation_program;
-extern struct object *compilation_environment;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;
@@ -765,44 +762,7 @@ extern struct object *placeholder_object;
   void PIKE_CONCAT(add_to_,NAME)(ARGTYPE ARG);
 #include "program_areas.h"
 
-typedef int supporter_callback (void *, int);
-
-struct Supporter
-{
-#ifdef PIKE_DEBUG
-  int magic;
-#endif
-
-  struct Supporter *previous;
-  /* Makes up a linked list of supporters with the first one in
-   * current_supporter. Supporters are linked onto this list during
-   * the (recursive) compilation of each compilation unit (i.e.
-   * compiled string). Thus nested programs and programs built from C
-   * don't have supporters. */
-
-  struct Supporter *depends_on;
-  /* The supporter furthest in on the current_supporter linked list
-   * that this one depends on. When it gets unlinked from that list,
-   * this becomes a back pointer for the dependants linked list
-   * below. */
-
-  struct Supporter *dependants, *next_dependant;
-  /* dependants points to a linked list of supporters that depends on
-   * this one, and next_dependant makes up the links between those
-   * supporters. A supporter is linked onto this list when it is
-   * unlinked from the current_supporter list. */
-
-  struct object *self;
-  supporter_callback *fun;
-  void *data;
-
-  struct program *prog;
-  /* The top level program in the compilation unit. */
-};
-
 /* Prototypes begin here */
-PMOD_EXPORT void lock_pike_compiler(void);
-PMOD_EXPORT void unlock_pike_compiler(void);
 PMOD_EXPORT void do_free_program (struct program *p);
 void ins_int(INT32 i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
@@ -1025,23 +985,6 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
 void count_memory_in_supporter_markers(size_t *num, size_t *size);
-void verify_supporters(void);
-void init_supporter(struct Supporter *s,
-		    supporter_callback *fun,
-		    void *data);
-int unlink_current_supporter(struct Supporter *c);
-int call_dependants(struct Supporter *s, int finish);
-int report_compiler_dependency(struct program *p);
-struct compilation;
-void run_pass2(struct compilation *c);
-PMOD_EXPORT void enter_compiler(struct pike_string *filename,
-				INT_TYPE linenumber);
-PMOD_EXPORT void exit_compiler(void);
-struct program *compile(struct pike_string *aprog,
-			struct object *ahandler,
-			int amajor, int aminor,
-			struct program *atarget,
-			struct object *aplaceholder);
 PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
                                        void (*cfun)(INT32),
                                        const char *type,

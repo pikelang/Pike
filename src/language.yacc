@@ -5079,7 +5079,3 @@ static void update_current_type()
     free_type(Pike_compiler->compiler_frame->current_type);
   Pike_compiler->compiler_frame->current_type = compiler_pop_type();
 }
-
-void cleanup_compiler(void)
-{
-}

@@ -170,6 +170,7 @@ CORE_OBJ= \
  stack_allocator.o \
  opcodes.o \
  operators.o \
+ pike_compiler.o \
  pike_float.o \
  port.o \
  program.o \

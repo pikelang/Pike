@@ -10,6 +10,45 @@
 #include "lex.h"
 #include "program.h"
 
+extern struct program *compilation_env_program;
+extern struct program *compilation_program;
+extern struct object *compilation_environment;
+
+typedef int supporter_callback (void *, int);
+
+struct Supporter
+{
+#ifdef PIKE_DEBUG
+  int magic;
+#endif
+
+  struct Supporter *previous;
+  /* Makes up a linked list of supporters with the first one in
+   * current_supporter. Supporters are linked onto this list during
+   * the (recursive) compilation of each compilation unit (i.e.
+   * compiled string). Thus nested programs and programs built from C
+   * don't have supporters. */
+
+  struct Supporter *depends_on;
+  /* The supporter furthest in on the current_supporter linked list
+   * that this one depends on. When it gets unlinked from that list,
+   * this becomes a back pointer for the dependants linked list
+   * below. */
+
+  struct Supporter *dependants, *next_dependant;
+  /* dependants points to a linked list of supporters that depends on
+   * this one, and next_dependant makes up the links between those
+   * supporters. A supporter is linked onto this list when it is
+   * unlinked from the current_supporter list. */
+
+  struct object *self;
+  supporter_callback *fun;
+  void *data;
+
+  struct program *prog;
+  /* The top level program in the compilation unit. */
+};
+
 struct compilation
 {
   struct Supporter supporter;
@@ -78,5 +117,29 @@ struct compilation
 #define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			9
 #define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			10
 #define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		11
+
+/* Prototypes begin here */
+PMOD_EXPORT void lock_pike_compiler(void);
+PMOD_EXPORT void unlock_pike_compiler(void);
+void verify_supporters(void);
+void init_supporter(struct Supporter *s,
+		    supporter_callback *fun,
+		    void *data);
+int unlink_current_supporter(struct Supporter *c);
+int call_dependants(struct Supporter *s, int finish);
+int report_compiler_dependency(struct program *p);
+struct compilation;
+void run_pass2(struct compilation *c);
+PMOD_EXPORT void enter_compiler(struct pike_string *filename,
+				INT_TYPE linenumber);
+PMOD_EXPORT void exit_compiler(void);
+struct program *compile(struct pike_string *aprog,
+			struct object *ahandler,
+			int amajor, int aminor,
+			struct program *atarget,
+			struct object *aplaceholder);
+void init_pike_compiler(void);
+void cleanup_pike_compiler(void);
+/* Prototypes end here */
 
 #endif	/* !PIKE_COMPILER_H */

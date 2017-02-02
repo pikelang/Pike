@@ -126,7 +126,6 @@ static void exit_builtin_modules(void)
   exit_operators();
   exit_iterators();
   cleanup_program();
-  cleanup_compiler();
   cleanup_error();
   exit_backend();
   exit_mc();

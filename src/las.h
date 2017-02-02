@@ -30,7 +30,6 @@ int add_local_name(struct pike_string *str,
                    struct pike_type *type,
                    node *def);
 int verify_declared(struct pike_string *str);
-void cleanup_compiler(void);
 
 
 extern int cumulative_parse_error;
