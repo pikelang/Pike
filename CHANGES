@@ -24,12 +24,12 @@ o Stdio.Buffer & String.Buffer
 Bug fixes
 ---------
 
-Protocols.DNS:  
+o Protocols.DNS
 
   The size and percision fields of T_LOC records are now properly
   decoded.
 
-System.TM
+o System.TM
 
   When a System.TM object was created without any arguments some
   operations would crash on Windows, and possibly other platforms.
