@@ -494,17 +494,43 @@ static void port_close (INT32 UNUSED(args))
   do_close (THIS);
 }
 
+/* If we are given multiple sockets by systemd, they can be used with
+multiple calls to Stdio.Port("systemd"). */
+static int systemd_max_socket = 0;
+static int systemd_last_socket = 0;
+
+/* Interrogate the environment to see if systemd has handed us
+any sockets. Does similar work to sd_listen_fds(). */
+static void find_systemd_sockets()
+{
+	/* If anything doesn't match, assume there are no sockets. */
+	systemd_max_socket = systemd_last_socket = 2;
+	const char *pid = getenv("LISTEN_PID");
+	if (!pid) return;
+	if (atoi(pid) != getpid()) return;
+	const char *fds = getenv("LISTEN_FDS");
+	if (!fds) return;
+	int n = atoi(fds);
+	if (n > 0) systemd_max_socket += n;
+}
+
 /*! @decl void create(int|string port, void|function accept_callback, @
  *!                   void|string ip)
  *! @decl void create("stdin", void|function accept_callback)
+ *! @decl void create("systemd", void|function accept_callback)
  *!
- *! When called with an int or any string except @expr{"stdin"@} as
+ *! When called with an int or any string except those mentioned below as
  *! first argument, this function does the same as @[bind()] would do
  *! with the same arguments.
  *!
  *! When called with @expr{"stdin"@} as argument, a socket is created
  *! out of the file descriptor 0. This is only useful if that actually
  *! IS a socket to begin with.
+ *!
+ *! When called with @expr{"systemd"@} as its argument, a socket is created
+ *! out of the next file descriptor handed to this process from systemd. If
+ *! no such sockets were provided, or all have been used, an exception is
+ *! raised.
  *!
  *! @seealso
  *!   @[bind], @[listen_fd]
@@ -516,7 +542,9 @@ static void port_create(INT32 args)
     if(TYPEOF(Pike_sp[-args]) == PIKE_T_INT ||
        (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING &&
 	(Pike_sp[-args].u.string->len != 5 ||
-	 strcmp("stdin",Pike_sp[-args].u.string->str))))
+	 strcmp("stdin",Pike_sp[-args].u.string->str)) &&
+	(Pike_sp[-args].u.string->len != 7 ||
+	 strcmp("systemd",Pike_sp[-args].u.string->str))))
     {
       port_bind(args);
       return;
@@ -526,10 +554,17 @@ static void port_create(INT32 args)
       if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
 	SIMPLE_WRONG_NUM_ARGS_ERROR("create", 1);
 
-      /* FIXME: Check that the argument is "stdin". */
+      int fd = 0;
+      if (!strcmp("systemd",Pike_sp[-args].u.string->str))
+      {
+        if (!systemd_max_socket) find_systemd_sockets();
+        if (systemd_last_socket >= systemd_max_socket)
+          Pike_error("No systemd-provided socket available\n");
+	fd = ++systemd_last_socket;
+      }
 
       do_close(p);
-      change_fd_for_box (&p->box, 0);
+      change_fd_for_box (&p->box, fd);
 
       if(fd_listen(p->box.fd, 16384) < 0)
       {
