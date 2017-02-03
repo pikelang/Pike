@@ -1800,13 +1800,21 @@ class Port
   //! @decl void create(int|string port, function accept_callback, string ip)
   //! @decl void create("stdin")
   //! @decl void create("stdin", function accept_callback)
+  //! @decl void create("systemd")
+  //! @decl void create("systemd", function accept_callback)
   //!
-  //! If the first argument is other than @expr{"stdin"@} the arguments will
-  //! be passed to @[bind()].
+  //! When called with an int or any string except those mentioned below as
+  //! first argument, this function does the same as @[bind()] would do
+  //! with the same arguments.
   //!
-  //! When create is called with @expr{"stdin"@} as the first argument, a
-  //! socket is created out of the file descriptor @expr{0@}. This is only
-  //! useful if it actually is a socket to begin with.
+  //! When called with @expr{"stdin"@} as argument, a socket is created
+  //! out of the file descriptor 0. This is only useful if that actually
+  //! IS a socket to begin with.
+  //!
+  //! When called with @expr{"systemd"@} as its argument, a socket is created
+  //! out of the next file descriptor handed to this process from systemd. If
+  //! no such sockets were provided, or all have been used, an exception is
+  //! raised.
   //!
   //! @seealso
   //! @[bind]
