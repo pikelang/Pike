@@ -536,7 +536,7 @@ void create()
   active_sessions = ADT.Queue();
   session_cache = ([ ]);
   /* Backwards compatibility */
-  rsa_mode(128);
+  rsa_mode(112);
 }
 
 // update the cached decoded authorities list
