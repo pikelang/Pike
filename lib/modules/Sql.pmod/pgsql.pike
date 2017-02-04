@@ -1901,7 +1901,7 @@ private inline void throwdelayederror(object parent) {
     tp=UNDEFINED;
   .pgsql_util.sql_result portal;
   portal=.pgsql_util.sql_result(this,c,q,
-                            portalbuffersize,_alltyped,from,forcetext,timeout);
+            portalbuffersize, _alltyped, from, forcetext, timeout, syncparse);
   portal._tprepared=tp;
 #ifdef PG_STATS
   portalsopened++;
@@ -1922,11 +1922,8 @@ private inline void throwdelayederror(object parent) {
     if(!sizeof(preparedname) || !tp || !tp.preparedname) {
       if(!sizeof(preparedname))
         preparedname=
-          (portal._unnamedstatementkey=
-           (syncparse?unnamedstatement->lock:unnamedstatement->trylock)(1))
+          (portal._unnamedstatementkey = unnamedstatement->trylock(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
-      else if(syncparse)
-        portal._unnamedstatementkey=unnamedstatement->lock(1);
       PD("Parse statement %O=%O\n",preparedname,q);
       plugbuffer=c->start()->add_int8('P')
        ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)
