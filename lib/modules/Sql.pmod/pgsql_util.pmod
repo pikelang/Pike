@@ -491,6 +491,7 @@ class sql_result {
   final int _fetchlimit;
   private int alltext;
   final int _forcetext;
+  private int syncparse;
 
   final string _portalname;
 
@@ -535,7 +536,7 @@ class sql_result {
 
   protected void create(object _pgsqlsess,conxion _c,string query,
    int _portalbuffersize,int alltyped,array params,int forcetext,
-   int _timeout) {
+   int _timeout, int _syncparse) {
     pgsqlsess = _pgsqlsess;
     cr = (c = _c)->i;
     _query = query;
@@ -549,6 +550,7 @@ class sql_result {
     _forcetext = forcetext;
     _state = PORTALINIT;
     timeout = _timeout;
+    syncparse = _syncparse;
     gottimeout = _pgsqlsess->cancelquery;
     c->closecallbacks+=(<destroy>);
   }
@@ -877,7 +879,7 @@ class sql_result {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if(sizeof(datarowtypes))
           plugbuffer->add_ints(map(datarowtypes,oidformat),2);
-        else if(!paralleliseprefix->match(_query)) {
+        else if (syncparse || !paralleliseprefix->match(_query)) {
           lock=pgsqlsess->_shortmux->lock();
           if(pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
