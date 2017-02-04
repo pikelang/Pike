@@ -1004,10 +1004,6 @@ void gc_mark_all_programs(void);
 void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
 size_t gc_free_all_unreferenced_programs(void);
-void push_compiler_frame(int lexical_scope);
-node *low_pop_local_variables(int level, node *block);
-node *pop_local_variables(int level, node *block);
-void pop_compiler_frame(void);
 PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT void *get_storage(struct object *o, struct program *p);
@@ -1035,7 +1031,6 @@ void string_builder_explain_not_implements(struct string_builder *s,
 					   struct program *b);
 PMOD_EXPORT void *parent_storage(int depth, struct program *expected);
 PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected);
-PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
 PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
