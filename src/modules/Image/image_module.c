@@ -11,6 +11,7 @@
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
+#include "pike_compiler.h"
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
