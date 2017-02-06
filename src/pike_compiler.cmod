@@ -2720,10 +2720,19 @@ void init_pike_compiler(void)
 #endif
 
   compile_compiler();
+
+  /*
+   * Now that the compiler has been compiled,
+   * we can use the usual cmod stuff.
+   */
+
+  INIT;
 }
 
 void cleanup_pike_compiler(void)
 {
+  EXIT;
+
   if (compilation_program) {
     free_program(compilation_program);
     compilation_program = 0;

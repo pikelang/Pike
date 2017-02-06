@@ -51,6 +51,7 @@ autom4te.cache
 /pike
 /pike.syms
 /pike.tmp
+/pike_compiler.c
 /posix_to_native.sh
 /precompile
 /precompile-method

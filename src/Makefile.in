@@ -1242,6 +1242,8 @@ backend.o: $(SRCDIR)/backend.c
 
 libpike.o: $(SRCDIR)/libpike.c
 
+pike_compiler.o: $(SRCDIR)/pike_compiler.c
+
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
