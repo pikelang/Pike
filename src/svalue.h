@@ -425,6 +425,19 @@ struct svalue
 extern PMOD_EXPORT const  struct svalue svalue_undefined, svalue_int_zero;
 extern PMOD_EXPORT const  struct svalue svalue_int_one;
 
+/*
+ * Storage struct for a trampoline object
+ * (not a part of the program type)
+ */
+struct pike_trampoline
+{
+  struct pike_frame *frame;
+  INT32 func;
+};
+
+/* NB: From builtin.cmod. */
+extern struct program *pike_trampoline_program;
+
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
 

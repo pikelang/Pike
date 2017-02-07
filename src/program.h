@@ -512,15 +512,6 @@ struct inherit
 #define INHERIT_GLOBAL	-2	/* Self and overrideable. */
 #define INHERIT_ALL	-3	/* All inherits but not self. */
 
-/*
- * Storage struct for a trampoline object
- * (not a part of the program type)
- */
-struct pike_trampoline
-{
-  struct pike_frame *frame;
-  INT32 func;
-};
 
 
 
@@ -732,7 +723,6 @@ void free_all_program_blocks(void);
 
 extern struct program *first_program;
 extern struct program *null_program;
-extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;
 extern struct object *placeholder_object;

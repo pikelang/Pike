@@ -6159,6 +6159,100 @@ PIKECLASS __Backtrace_Tester__
   }
 }
 
+#undef DEFAULT_CMOD_STORAGE
+#define DEFAULT_CMOD_STORAGE	static
+
+PIKECLASS pike_trampoline
+{
+  CVAR struct pike_trampoline trampoline;
+
+  DECLARE_STORAGE;
+
+  INIT
+  {
+    THIS->trampoline.frame=0;
+  }
+
+  EXIT
+  {
+    if(THIS->trampoline.frame)
+    {
+      free_pike_scope(THIS->trampoline.frame);
+      THIS->trampoline.frame=0;
+    }
+  }
+
+  static void gc_check_frame(struct pike_frame *f)
+  {
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+    {
+      if(f->current_object)
+	debug_gc_check (f->current_object, " as current_object in trampoline frame");
+      if(f->current_program)
+	debug_gc_check (f->current_program, " as current_program in trampoline frame");
+      debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
+      if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
+	gc_check_frame(f->scope);
+    }
+  }
+
+  GC_CHECK
+  {
+    if (THIS->trampoline.frame &&
+	!debug_gc_check(THIS->trampoline.frame, " as trampoline frame"))
+      gc_check_frame(THIS->trampoline.frame);
+  }
+
+  static void gc_recurse_frame(struct pike_frame *f)
+  {
+    if(f->current_object) gc_recurse_object(f->current_object);
+    if(f->current_program) gc_recurse_program(f->current_program);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      gc_recurse_svalues(f->locals,f->num_locals);
+    if(f->scope)          gc_recurse_frame(f->scope);
+  }
+
+  GC_RECURSE
+  {
+    if (THIS->trampoline.frame) gc_recurse_frame(THIS->trampoline.frame);
+  }
+
+  PIKEFUN void `()(mixed ... ignored)
+  {
+    Pike_error("Internal error: Trampoline magic failed!\n");
+  }
+
+  PIKEFUN int(0..1) `!()
+  {
+    if (!THIS->trampoline.frame || !THIS->trampoline.frame->current_object ||
+	!THIS->trampoline.frame->current_object->prog) {
+      push_int(1);
+    } else {
+      push_int(0);
+    }
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+  {
+    struct byte_buffer buf = BUFFER_INIT();
+
+    if (!args || TYPEOF(Pike_sp[-args]) != T_INT ||
+	Pike_sp[-args].u.integer != 'O' ||
+	!THIS->trampoline.frame || !THIS->trampoline.frame->current_object) {
+      pop_n_elems (args);
+      push_int (0);
+      return;
+    }
+    pop_n_elems (args);
+
+    ref_push_function (THIS->trampoline.frame->current_object,
+		       THIS->trampoline.func);
+    describe_svalue (&buf, Pike_sp - 1, 0, 0);
+    pop_stack();
+    push_string(buffer_finish_pike_string(&buf));
+  }
+}
+
 void init_builtin(void)
 {
   SET_SVAL(gc_pre_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);

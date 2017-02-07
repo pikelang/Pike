@@ -8553,94 +8553,6 @@ void check_all_programs(void)
 }
 #endif
 
-#undef THIS
-#define THIS ((struct pike_trampoline *)(CURRENT_STORAGE))
-struct program *pike_trampoline_program=0;
-
-static void apply_trampoline(INT32 UNUSED(args))
-{
-  Pike_error("Internal error: Trampoline magic failed!\n");
-}
-
-static void not_trampoline(INT32 args)
-{
-  pop_n_elems(args);
-  if (!THIS->frame || !THIS->frame->current_object ||
-      !THIS->frame->current_object->prog) {
-    push_int(1);
-  } else {
-    push_int(0);
-  }
-}
-
-static void sprintf_trampoline (INT32 args)
-{
-  struct byte_buffer buf = BUFFER_INIT();
-
-  if (!args || TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer != 'O' ||
-      !THIS->frame || !THIS->frame->current_object) {
-    pop_n_elems (args);
-    push_int (0);
-    return;
-  }
-  pop_n_elems (args);
-
-  ref_push_function (THIS->frame->current_object, THIS->func);
-  describe_svalue (&buf, sp - 1, 0, 0);
-  pop_stack();
-  push_string(buffer_finish_pike_string(&buf));
-}
-
-static void init_trampoline(struct object *UNUSED(o))
-{
-  THIS->frame=0;
-}
-
-static void exit_trampoline(struct object *UNUSED(o))
-{
-  if(THIS->frame)
-  {
-    free_pike_scope(THIS->frame);
-    THIS->frame=0;
-  }
-}
-
-static void gc_check_frame(struct pike_frame *f)
-{
-  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-  {
-    if(f->current_object)
-      debug_gc_check (f->current_object, " as current_object in trampoline frame");
-    if(f->current_program)
-      debug_gc_check (f->current_program, " as current_program in trampoline frame");
-    debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
-    if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
-      gc_check_frame(f->scope);
-  }
-}
-
-static void gc_check_trampoline(struct object *UNUSED(o))
-{
-  if (THIS->frame &&
-      !debug_gc_check (THIS->frame, " as trampoline frame"))
-    gc_check_frame(THIS->frame);
-}
-
-static void gc_recurse_frame(struct pike_frame *f)
-{
-  if(f->current_object) gc_recurse_object(f->current_object);
-  if(f->current_program) gc_recurse_program(f->current_program);
-  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-    gc_recurse_svalues(f->locals,f->num_locals);
-  if(f->scope)          gc_recurse_frame(f->scope);
-}
-
-static void gc_recurse_trampoline(struct object *UNUSED(o))
-{
-  if (THIS->frame) gc_recurse_frame(THIS->frame);
-}
-
-
 /* This placeholder should be used
  * in the first compiler pass to take the place
  * of unknown things
@@ -8706,21 +8618,6 @@ void init_program(void)
 
   enter_compiler(NULL, 0);
 
-  start_new_program();
-  debug_malloc_touch(Pike_compiler->fake_object);
-  debug_malloc_touch(Pike_compiler->fake_object->storage);
-  ADD_STORAGE(struct pike_trampoline);
-  ADD_FUNCTION("`()",apply_trampoline,tFunction,0);
-  ADD_FUNCTION("`!",not_trampoline,tFunc(tVoid,tInt),0);
-  ADD_FUNCTION("_sprintf", sprintf_trampoline,
-	       tFunc(tInt tOr(tMapping,tVoid),tStr), 0);
-  set_init_callback(init_trampoline);
-  set_exit_callback(exit_trampoline);
-  set_gc_check_callback(gc_check_trampoline);
-  set_gc_recurse_callback(gc_recurse_trampoline);
-  debug_malloc_touch(Pike_compiler->fake_object);
-  debug_malloc_touch(Pike_compiler->fake_object->storage);
-  pike_trampoline_program=end_program();
 
   /*! @decl constant __null_program
    *!
@@ -8791,12 +8688,6 @@ void cleanup_program(void)
   if (reverse_symbol_table) {
     free_mapping(reverse_symbol_table);
     reverse_symbol_table = NULL;
-  }
-
-  if(pike_trampoline_program)
-  {
-    free_program(pike_trampoline_program);
-    pike_trampoline_program=0;
   }
 
   if(null_program)
