@@ -26,7 +26,7 @@ Bug fixes
 
 o Protocols.DNS
 
-  The size and percision fields of T_LOC records are now properly
+  The size and precision fields of T_LOC records are now properly
   decoded.
 
 o System.TM
@@ -39,7 +39,7 @@ Building
 
 o Configure
 
-  Fixed issues with the LDSHARED test on some BSD-derivates.
+  Fixed issues with the LDSHARED test on some BSD-derivatives.
 
 o Stdio
 
