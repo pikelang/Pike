@@ -6237,6 +6237,7 @@ PMOD_EXPORT int add_program_constant(const char *name,
     SET_SVAL(tmp, T_INT, NUMBER_UNDEFINED, integer, 0);
     my_yyerror("Program constant \"%s\" is NULL.", name);
   }
+  if (!Pike_compiler->new_program) return -1;
   ret=simple_add_constant(name, &tmp, flags);
   return ret;
 }
