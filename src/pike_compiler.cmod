@@ -2713,6 +2713,51 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
   pop_stack();
 }
 
+#define DEFAULT_CMOD_STORAGE	static
+
+/*! @decl constant __null_program
+ *!
+ *! Program used internally by the compiler to create objects
+ *! that are later modified into instances of the compiled program
+ *! by the compiler.
+ *!
+ *! @seealso
+ *!   @[__placeholder_object]
+ */
+struct program *null_program = NULL;
+PIKECLASS null
+{
+}
+
+/* This placeholder should be used
+ * in the first compiler pass to take the place
+ * of unknown things
+ */
+struct program *placeholder_program = NULL;
+struct object *placeholder_object = NULL;
+PIKECLASS placeholder
+{
+  PIKEFUN object `()(mixed ... params)
+  {
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  PIKEFUN object `[](mixed ... params)
+  {
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+  {
+    if (c != 'O') {
+      push_int(0);
+      return;
+    }
+
+    push_text("__placeholder_object");
+  }
+}
+
 void init_pike_compiler(void)
 {
 #ifdef PIKE_THREADS
@@ -2721,12 +2766,37 @@ void init_pike_compiler(void)
 
   compile_compiler();
 
+  enter_compiler(NULL, 0);
+
   /*
    * Now that the compiler has been compiled,
    * we can use the usual cmod stuff.
    */
 
   INIT;
+
+  {
+    struct svalue s;
+    SET_SVAL(s, T_PROGRAM, 0, program, null_program);
+    low_add_constant("__null_program", &s);
+  }
+
+  /*! @decl constant __placeholder_object
+   *!
+   *! Object used internally by the compiler.
+   *!
+   *! @seealso
+   *!   @[__null_program]
+   */
+  {
+    struct svalue s;
+    placeholder_object = fast_clone_object(placeholder_program);
+
+    SET_SVAL(s, T_OBJECT, 0, object, placeholder_object);
+    low_add_constant("__placeholder_object", &s);
+  }
+
+  exit_compiler();
 }
 
 void cleanup_pike_compiler(void)

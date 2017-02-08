@@ -11,6 +11,7 @@
 #include "svalue.h"
 #include "pike_macros.h"
 #include "program.h"
+#include "pike_compiler.h"
 #include "object.h"
 #include "pike_error.h"
 #include "array.h"

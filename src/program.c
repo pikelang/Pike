@@ -1488,8 +1488,6 @@ static struct pike_type *lfun_setter_type_string = NULL;
 struct program *first_program = 0;
 static int current_program_id = PROG_DYNAMIC_ID_START;
 
-struct program *null_program=0;
-
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
@@ -8553,33 +8551,6 @@ void check_all_programs(void)
 }
 #endif
 
-/* This placeholder should be used
- * in the first compiler pass to take the place
- * of unknown things
- */
-struct program *placeholder_program;
-struct object *placeholder_object;
-
-void placeholder_index(INT32 args)
-{
-  pop_n_elems(args);
-  ref_push_object(Pike_fp->current_object);
-}
-
-static void placeholder_sprintf (INT32 args)
-{
-  struct pike_string *s;
-
-  if (!args || TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer != 'O') {
-    pop_n_elems (args);
-    push_int (0);
-    return;
-  }
-
-  pop_n_elems (args);
-  MAKE_CONST_STRING (s, "__placeholder_object");
-  ref_push_string (s);
-}
 
 void init_program(void)
 {
@@ -8617,47 +8588,6 @@ void init_program(void)
   init_pike_compiler();
 
   enter_compiler(NULL, 0);
-
-
-  /*! @decl constant __null_program
-   *!
-   *! Program used internally by the compiler to create objects
-   *! that are later modified into instances of the compiled program
-   *! by the compiler.
-   *!
-   *! @seealso
-   *!   @[__placeholder_object]
-   */
-  {
-    struct svalue s;
-    debug_start_new_program(0, "__null_program");
-    null_program=end_program();
-    SET_SVAL(s, T_PROGRAM, 0, program, null_program);
-    low_add_constant("__null_program",&s);
-    debug_malloc_touch(null_program);
-  }
-
-  /*! @decl constant __placeholder_object
-   *!
-   *! Object used internally by the compiler.
-   *!
-   *! @seealso
-   *!   @[__null_program]
-   */
-  {
-    struct svalue s;
-    start_new_program();
-    ADD_FUNCTION("`()", placeholder_index, tFuncV(tNone,tMix,tObj), 0);
-    ADD_FUNCTION("`[]", placeholder_index, tFunc(tMix,tObj), 0);
-    ADD_FUNCTION("_sprintf", placeholder_sprintf,
-		 tFunc(tInt tOr(tMapping,tVoid),tStr), 0);
-    placeholder_program=end_program();
-    placeholder_object=fast_clone_object(placeholder_program);
-
-    SET_SVAL(s, T_OBJECT, 0, object, placeholder_object);
-    low_add_constant("__placeholder_object",&s);
-    debug_malloc_touch(placeholder_object);
-  }
 
   exit_compiler();
 }

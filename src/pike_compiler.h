@@ -118,6 +118,10 @@ struct compilation
 #define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			10
 #define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		11
 
+extern struct program *null_program;
+extern struct program *placeholder_program;
+extern struct object *placeholder_object;
+
 /* Prototypes begin here */
 PMOD_EXPORT void lock_pike_compiler(void);
 PMOD_EXPORT void unlock_pike_compiler(void);

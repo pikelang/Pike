@@ -722,10 +722,7 @@ void free_all_program_blocks(void);
 
 
 extern struct program *first_program;
-extern struct program *null_program;
 extern struct program *gc_internal_program;
-extern struct program *placeholder_program;
-extern struct object *placeholder_object;
 
 /* Flags for identifier finding... */
 #define SEE_STATIC 1
@@ -982,7 +979,6 @@ PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
                                        unsigned flags,
                                        unsigned opt_flags);
 void check_all_programs(void);
-void placeholder_index(INT32 args);
 void init_program(void);
 void cleanup_program(void);
 PMOD_EXPORT void visit_program (struct program *p, int action, void *extra);
