@@ -7,6 +7,7 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "pike_compiler.h"
 
 /* These come from linux include files. */
 #ifdef REG_RBX

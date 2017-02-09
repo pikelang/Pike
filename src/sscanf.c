@@ -16,6 +16,7 @@
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
+#include "pike_compiler.h"
 #include "pike_float.h"
 #include "pike_types.h"
 #include "sscanf.h"

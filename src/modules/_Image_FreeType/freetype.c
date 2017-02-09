@@ -24,6 +24,7 @@
 #endif /* HAVE_LIBFT2 */
 
 #include "module.h"
+#include "pike_compiler.h"
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "object.h"

@@ -11,6 +11,7 @@
 #undef HAVE_JPEGLIB_H
 #endif
 
+#include "pike_compiler.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

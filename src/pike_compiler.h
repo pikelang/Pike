@@ -137,6 +137,29 @@ void run_pass2(struct compilation *c);
 PMOD_EXPORT void enter_compiler(struct pike_string *filename,
 				INT_TYPE linenumber);
 PMOD_EXPORT void exit_compiler(void);
+PMOD_EXPORT void va_yyreport(int severity_level,
+			     struct pike_string *file, INT_TYPE line,
+			     struct pike_string *system, INT32 args,
+			     const char *fmt, va_list vargs);
+PMOD_EXPORT void low_yyreport(int severity_level,
+			      struct pike_string *file, INT_TYPE line,
+			      struct pike_string *system,
+			      INT32 args, const char *fmt, ...);
+PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
+			  INT32 args, const char *fmt, ...);
+PMOD_EXPORT void yywarning(char *fmt, ...);
+PMOD_EXPORT void my_yyerror(const char *fmt,...);
+PMOD_EXPORT void yyerror(const char *s);
+void yytype_report(int severity_level,
+		   struct pike_string *expect_file, INT_TYPE expect_line,
+		   struct pike_type *expected_t,
+		   struct pike_string *got_file, INT_TYPE got_line,
+		   struct pike_type *got_t,
+		   INT32 args, const char *fmt, ...);
+void yytype_error(const char *msg, struct pike_type *expected_t,
+		  struct pike_type *got_t, unsigned int flags);
+struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
+void handle_compile_exception (const char *yyerror_fmt, ...);
 struct program *compile(struct pike_string *aprog,
 			struct object *ahandler,
 			int amajor, int aminor,

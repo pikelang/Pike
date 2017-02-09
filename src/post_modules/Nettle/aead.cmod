@@ -13,6 +13,7 @@
 
 /* For this_object() */
 #include "object.h"
+#include "pike_compiler.h"
 #include "module_support.h"
 
 #include "nettle_config.h"

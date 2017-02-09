@@ -328,6 +328,7 @@
 #include "stralloc.h"
 #include "sprintf.h"
 #include "buffer.h"
+#include "pike_compiler.h"
 #include "pike_types.h"
 #include "constants.h"
 #include "interpret.h"

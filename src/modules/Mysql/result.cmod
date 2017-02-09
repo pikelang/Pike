@@ -52,6 +52,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "object.h"
+#include "pike_compiler.h"
 #include "program.h"
 #include "stralloc.h"
 #include "interpret.h"
