@@ -265,7 +265,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      push_int( get_unaligned_le32(n) );
+      push_int( (INT32)get_unaligned_le32(n) );
       n+=4;
       break;
     }
@@ -277,7 +277,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      push_int64( get_unaligned_le64(n) );
+      push_int64( (INT64)get_unaligned_le64(n) );
       n+=8;
       break;
     }
