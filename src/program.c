@@ -1731,6 +1731,32 @@ static void debug_add_to_identifiers (struct identifier id)
 #define debug_add_to_identifiers(ARG) add_to_identifiers(ARG)
 #endif
 
+static void add_identifier(struct compilation *c,
+			   struct pike_type *type,
+			   struct pike_string *name,
+			   unsigned int identifier_flags,
+			   unsigned int opt_flags,
+			   union idptr func,
+			   int run_time_type)
+{
+  struct identifier dummy;
+  copy_shared_string(dummy.name, name);
+  copy_pike_type(dummy.type, type);
+  dummy.filename_strno = store_prog_string(c->lex.current_file);
+  dummy.linenumber = c->lex.current_line;
+  dummy.identifier_flags = identifier_flags;
+  dummy.run_time_type = run_time_type;
+  dummy.func = func;
+  dummy.opt_flags = opt_flags;
+#ifdef PROFILING
+  dummy.self_time=0;
+  dummy.num_calls=0;
+  dummy.recur_depth=0;
+  dummy.total_time=0;
+#endif
+  debug_add_to_identifiers(dummy);
+}
+
 void add_relocated_int_to_program(INT32 i)
 {
   add_to_relocations(Pike_compiler->new_program->num_program);
@@ -5476,8 +5502,9 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
 
   struct compilation *c = THIS_COMPILATION;
   struct program_state *state = Pike_compiler;
-  struct identifier dummy, *id;
+  struct identifier *id;
   struct reference ref;
+  union idptr func;
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
@@ -5504,29 +5531,8 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
 
   id = ID_FROM_INT(state->new_program, refno);
 
-  if (name) {
-    copy_shared_string(dummy.name, name);
-  } else {
-    copy_shared_string(dummy.name, id->name);
-  }
-  if (type) {
-    copy_pike_type(dummy.type, type);
-  } else {
-    copy_pike_type(dummy.type, id->type);
-  }
-  dummy.filename_strno = store_prog_string(c->lex.current_file);
-  dummy.linenumber = c->lex.current_line;
-  dummy.identifier_flags = id->identifier_flags | IDENTIFIER_ALIAS;
-  dummy.run_time_type = id->run_time_type;	/* Not actually used. */
-  dummy.func.ext_ref.depth = depth;
-  dummy.func.ext_ref.id = refno;
-  dummy.opt_flags = 0;
-#ifdef PROFILING
-  dummy.self_time=0;
-  dummy.num_calls=0;
-  dummy.recur_depth=0;
-  dummy.total_time=0;
-#endif
+  func.ext_ref.depth = depth;
+  func.ext_ref.id = refno;
 
   if (flags & ID_PRIVATE) flags |= ID_INLINE;
 
@@ -5535,7 +5541,9 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   ref.inherit_offset=0;
   ref.run_time_type = PIKE_T_UNKNOWN;
 
-  debug_add_to_identifiers(dummy);
+  add_identifier(c, type ? type : id->type, name ? name : id->name,
+		 id->identifier_flags | IDENTIFIER_ALIAS, 0,
+		 func, id->run_time_type);
 
   n = Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
@@ -5634,6 +5642,7 @@ int low_define_variable(struct pike_string *name,
   struct compilation *c = THIS_COMPILATION;
   struct identifier dummy;
   struct reference ref;
+  union idptr func;
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
@@ -5644,25 +5653,10 @@ int low_define_variable(struct pike_string *name,
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
-  copy_shared_string(dummy.name, name);
-  copy_pike_type(dummy.type, type);
-  dummy.filename_strno = store_prog_string(c->lex.current_file);
-  dummy.linenumber = c->lex.current_line;
-  dummy.identifier_flags = IDENTIFIER_VARIABLE;
-  dummy.run_time_type=run_time_type;
-  dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
-  dummy.opt_flags = 0;
-#ifdef PROFILING
-  dummy.self_time=0;
-  dummy.num_calls=0;
-  dummy.recur_depth=0;
-  dummy.total_time=0;
-#endif
-
-  if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
+  func.offset = offset - Pike_compiler->new_program->inherits[0].storage_offset;
+  if (run_time_type == PIKE_T_FREE) func.offset = -1;
 
   if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
-  if (flags & ID_WEAK) dummy.identifier_flags |= IDENTIFIER_WEAK;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5671,7 +5665,17 @@ int low_define_variable(struct pike_string *name,
 
   add_to_variable_index(ref.identifier_offset);
 
-  debug_add_to_identifiers(dummy);
+  if (flags & ID_WEAK) {
+    add_identifier(c, type, name,
+		   IDENTIFIER_VARIABLE|IDENTIFIER_WEAK, 0,
+		   func,
+		   run_time_type);
+  } else {
+    add_identifier(c, type, name,
+		   IDENTIFIER_VARIABLE, 0,
+		   func,
+		   run_time_type);
+  }
 
   n=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
@@ -5914,6 +5918,9 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   struct compilation *cc = THIS_COMPILATION;
   struct identifier dummy;
   struct reference ref;
+  struct pike_type *type;
+  unsigned int opt_flags;
+  union idptr func;
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
@@ -6060,30 +6067,23 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   }
 #endif
 
-  copy_shared_string(dummy.name, name);
-  dummy.identifier_flags = IDENTIFIER_CONSTANT;
-  dummy.filename_strno = store_prog_string(cc->lex.current_file);
-  dummy.linenumber = cc->lex.current_line;
-
 #if 1
   if (c) {
 #endif
    if( !(flags & ID_INLINE) )
-      dummy.type = get_lax_type_of_svalue( c );
+      type = get_lax_type_of_svalue( c );
     else
-      dummy.type = get_type_of_svalue( c );
-    dummy.run_time_type = (unsigned char) TYPEOF(*c);
-    dummy.func.const_info.offset = store_constant(c, 0, 0);
-    dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+      type = get_type_of_svalue( c );
+    func.const_info.offset = store_constant(c, 0, 0);
+    opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(TYPEOF(*c) == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
-       dummy.opt_flags=0;
+       opt_flags = 0;
 #if 1
   }
   else {
-    copy_pike_type(dummy.type, mixed_type_string);
-    dummy.run_time_type=T_MIXED;
-    dummy.func.const_info.offset = -1;
-    dummy.opt_flags=0;
+    copy_pike_type(type, mixed_type_string);
+    func.const_info.offset = -1;
+    opt_flags = 0;
   }
 #endif
 
@@ -6094,14 +6094,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   ref.inherit_offset=0;
   ref.run_time_type = PIKE_T_UNKNOWN;
 
-#ifdef PROFILING
-  dummy.self_time=0;
-  dummy.num_calls=0;
-  dummy.recur_depth=0;
-  dummy.total_time=0;
-#endif
-
-  debug_add_to_identifiers(dummy);
+  add_identifier(cc, type, name,
+		 IDENTIFIER_CONSTANT, opt_flags,
+		 func, c ? TYPEOF(*c) : T_MIXED);
+  free_pike_type(type);
 
   if(n != -1)
   {
@@ -6299,7 +6295,8 @@ INT32 define_function(struct pike_string *name,
 {
   struct compilation *c = THIS_COMPILATION;
   struct program *prog = Pike_compiler->new_program;
-  struct identifier *funp,fun;
+  struct identifier *funp;
+  union idptr idptr;
   struct reference ref;
   struct svalue *lfun_type;
   int run_time_type = T_FUNCTION;
@@ -6646,24 +6643,16 @@ INT32 define_function(struct pike_string *name,
 	      c->compilation_depth, "");
 #endif
 
-      copy_shared_string(fun.name, name);
-      copy_pike_type(fun.type, type);
-      fun.filename_strno = store_prog_string(c->lex.current_file);
-      fun.linenumber = c->lex.current_line;
-
-      fun.run_time_type = run_time_type;
-
-      fun.identifier_flags=function_flags;
-
       if(func)
-	fun.func = *func;
+	idptr = *func;
       else
-	fun.func.offset = -1;
-
-      fun.opt_flags = opt_flags;
+	idptr.offset = -1;
 
       ref.identifier_offset = prog->num_identifiers;
-      debug_add_to_identifiers(fun);
+
+      add_identifier(c, type, name,
+		     function_flags, opt_flags,
+		     idptr, run_time_type);
     }
 
     if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
@@ -6720,20 +6709,10 @@ INT32 define_function(struct pike_string *name,
 
     /* Define a new function */
 
-    copy_shared_string(fun.name, name);
-    copy_pike_type(fun.type, type);
-    fun.filename_strno = store_prog_string(c->lex.current_file);
-    fun.linenumber = c->lex.current_line;
-
-    fun.identifier_flags=function_flags;
-    fun.run_time_type = run_time_type;
-
     if(func)
-      fun.func = *func;
+      idptr = *func;
     else
-      fun.func.offset = -1;
-
-    fun.opt_flags = opt_flags;
+      idptr.offset = -1;
 
 #ifdef PIKE_DEBUG
     if (a_flag > 5) {
@@ -6741,14 +6720,16 @@ INT32 define_function(struct pike_string *name,
 	      "Adding new function #%d: '%s'\n"
 	      "  identifier_flags:0x%02x opt_flags:0x%04x\n",
 	      prog->num_identifiers,
-	      fun.name->str,
-	      fun.identifier_flags, fun.opt_flags);
+	      name->str,
+	      function_flags, opt_flags);
     }
 #endif /* PIKE_DEBUG */
 
     i = prog->num_identifiers;
 
-    debug_add_to_identifiers(fun);
+    add_identifier(c, type, name,
+		   function_flags, opt_flags,
+		   idptr, run_time_type);
 
     if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
