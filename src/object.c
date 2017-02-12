@@ -505,6 +505,12 @@ struct pike_string *low_read_file(const char *file)
 
     while (((len = fd_lseek(f, 0, SEEK_END)) < 0) && (errno == EINTR))
       check_threads_etc();
+
+    if (len < 0) {
+      Pike_fatal("low_read_file(%s): Failed to determine size of file. Errno: %d\n",
+		 file, errno);
+    }
+
     while ((fd_lseek(f, 0, SEEK_SET) < 0) && (errno == EINTR))
       check_threads_etc();
 
