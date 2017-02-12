@@ -9726,7 +9726,6 @@ PMOD_EXPORT void init_reverse_symbol_table()
   ADD_SYMBOL(simple_debug_instr_prologue_2);
 #endif
   ADD_SYMBOL(low_return);
-  ADD_SYMBOL(low_return_pop);
   ADD_SYMBOL(really_free_svalue);
   ADD_SYMBOL(lvalue_to_svalue_no_free);
   ADD_SYMBOL(f_add);

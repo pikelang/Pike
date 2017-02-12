@@ -143,11 +143,7 @@
 #define DO_DUMB_RETURN {				\
   if(Pike_fp -> flags & PIKE_FRAME_RETURN_INTERNAL)	\
   {							\
-    int f=Pike_fp->flags;				\
-    if(f & PIKE_FRAME_RETURN_POP)			\
-       low_return_pop();				\
-     else						\
-       low_return();					\
+    low_return();					\
 							\
     DO_IF_DEBUG(if (Pike_interpreter.trace_level > 5)	\
       fprintf(stderr, "Returning to 0x%p\n",		\

@@ -1303,9 +1303,7 @@ void arm32_start_function(int UNUSED(no_pc)) {
         /* inter return */
         label_generate(&inter_return);
 
-        arm32_tst_int(ARM_REG_ARG1, PIKE_FRAME_RETURN_POP);
-
-        arm32_call_if(ARM_COND_NZ, low_return_pop, ARM_COND_Z, low_return);
+        arm32_call(low_return);
 
         load32_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, 
                        OFFSETOF(Pike_interpreter_struct, frame_pointer));

@@ -1727,7 +1727,7 @@ void arm64_start_function(int UNUSED(no_pc)) {
         /* inter return */
         label_generate(&inter_return);
 
-	arm64_call_if_bit_set(ARM_REG_ARG1, value_to_bit(PIKE_FRAME_RETURN_POP), low_return_pop, low_return);
+	arm64_call(low_return);
 
         load64_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP,
                        OFFSETOF(Pike_interpreter_struct, frame_pointer));

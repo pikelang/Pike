@@ -2198,7 +2198,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
  *   Returns one if a frame has been set up to start the function
  *   with eval_instruction(Pike_fp->pc - ENTRY_PROLOGUE_SIZE). After
  *   eval_instruction() is done the frame needs to be removed by a call
- *   to low_return() or low_return_pop().
+ *   to low_return().
  */
 void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
@@ -2739,24 +2739,12 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 
 
-#define basic_low_return(save_sp)			\
-  DO_IF_DEBUG(						\
-    if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
-      Pike_fatal("Popped below save_mark_sp!\n");	\
-    if(Pike_sp<Pike_interpreter.evaluator_stack)	\
-      Pike_fatal("Stack error (also simple).\n");	\
-    )							\
-							\
-    Pike_mark_sp=Pike_fp->save_mark_sp;			\
-							\
-  POP_PIKE_FRAME()
-
-
 void low_return(void)
 {
-  struct svalue *save_sp = frame_get_save_sp(Pike_fp)+1;
+  struct svalue *save_sp = frame_get_save_sp(Pike_fp);
   struct object *o = Pike_fp->current_object;
   int fun = Pike_fp->fun;
+  int pop = Pike_fp->flags & PIKE_FRAME_RETURN_POP;
 
   if (PIKE_FN_DONE_ENABLED()) {
     /* DTrace leave probe
@@ -2781,9 +2769,20 @@ void low_return(void)
   add_ref (o);
 #endif
 
-  basic_low_return (save_sp);
+#ifdef PIKE_DEBUG
+  if(Pike_mark_sp < Pike_fp->save_mark_sp)
+    Pike_fatal("Popped below save_mark_sp!\n");
+  if(Pike_sp<Pike_interpreter.evaluator_stack)
+    Pike_fatal("Stack error (also simple).\n");
+#endif
+  Pike_mark_sp=Pike_fp->save_mark_sp;
+  POP_PIKE_FRAME();
 
-  stack_pop_n_elems_keep_top (Pike_sp - save_sp);
+  if (pop)
+    pop_n_elems(Pike_sp-save_sp);
+  else
+    stack_pop_n_elems_keep_top (Pike_sp - save_sp - 1);
+
   {
       /* consider using a flag for immediate destruct instead... */
       extern struct object *objects_to_destruct;
@@ -2792,8 +2791,8 @@ void low_return(void)
   }
 
 #ifdef PIKE_DEBUG
-  if(save_sp > Pike_sp)
-      Pike_fatal("Pike function did not leave an return value\n");
+  if(save_sp+1 > Pike_sp && !pop)
+      Pike_fatal("Pike function did not leave a return value\n");
 #endif
 
   if(UNLIKELY(Pike_interpreter.trace_level>1))
@@ -2803,41 +2802,6 @@ void low_return(void)
   free_object (o);
 #endif
 }
-
-void low_return_pop(void)
-{
-  struct svalue *save_sp = frame_get_save_sp(Pike_fp);
-#if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
-  /* See note above. */
-  struct object *o = Pike_fp->current_object;
-  add_ref (o);
-#endif
-
-  if (PIKE_FN_DONE_ENABLED()) {
-    /* DTrace leave probe
-       arg0: function name
-    */
-    char *fn = "(unknown)";
-    struct object *o = Pike_fp->current_object;
-    int fun = Pike_fp->fun;
-    if (o && o->prog) {
-      struct identifier *id = ID_FROM_INT(o->prog, fun);
-      fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
-    }
-    PIKE_FN_DONE(fn);
-  }
-
-  basic_low_return (save_sp);
-
-  pop_n_elems(Pike_sp-save_sp);
-  /* consider using a flag for immediate destruct instead... */
-  destruct_objects_to_destruct();
-
-#if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
-  free_object (o);
-#endif
-}
-
 
 void unlink_previous_frame(void)
 {
