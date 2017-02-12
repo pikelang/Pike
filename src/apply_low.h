@@ -161,18 +161,7 @@
         do_trace_function_call(o, function, args);
       }
       if (PIKE_FN_START_ENABLED()) {
-	/* DTrace enter probe
-	   arg0: function name
-	   arg1: object
-	*/
-	struct byte_buffer obj_name = BUFFER_INIT();
-	struct svalue obj_sval;
-	SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
-	safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
-	PIKE_FN_START(function->name->size_shift == 0 ?
-		      function->name->str : "[widestring fn name]",
-		      buffer_get_string(&obj_name));
-        buffer_free(&obj_name);
+        do_dtrace_function_call(o, function, args);
       }
 
 #ifdef PROFILING

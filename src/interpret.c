@@ -1890,6 +1890,54 @@ static void do_trace_call(struct byte_buffer *b, INT32 args)
 }
 
 ATTRIBUTE((noinline))
+static void do_dtrace_function_call(struct object *o, const struct identifier *function, INT32 args) {
+  /* DTrace enter probe
+     arg0: function name
+     arg1: object
+  */
+  struct byte_buffer obj_name = BUFFER_INIT();
+  struct svalue obj_sval;
+  SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
+  safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
+  PIKE_FN_START(function->name->size_shift == 0 ?
+                function->name->str : "[widestring fn name]",
+                buffer_get_string(s));
+  buffer_free(&obj_name);
+}
+
+ATTRIBUTE((noinline))
+static void do_dtrace_func_return(struct object *o, int fun) {
+  /* DTrace leave probe
+     arg0: function name
+  */
+  char *fn = "(unknown)";
+  if (o && o->prog) {
+    struct identifier *id = ID_FROM_INT(o->prog, fun);
+    fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
+  }
+  PIKE_FN_DONE(fn);
+}
+
+ATTRIBUTE((noinline))
+static void do_dtrace_efun_call(const struct svalue *s, INT32 args) {
+  /* DTrace enter probe
+     arg0: function name
+     arg1: object
+   */
+  PIKE_FN_START(s->u.efun->name->size_shift == 0 ?
+                s->u.efun->name->str : "[widestring fn name]",
+                "");
+}
+ATTRIBUTE((noinline))
+static void do_dtrace_efun_return(const struct svalue *s, INT32 args) {
+  /* DTrace leave probe
+     arg0: function name
+  */
+  PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?
+               s->u.efun->name->str : "[widestring fn name]");
+}
+
+ATTRIBUTE((noinline))
 static void do_trace_function_call(const struct object *o, const struct identifier *function, INT32 args) {
   struct byte_buffer buffer = BUFFER_INIT();
   char buf[50];
@@ -2229,22 +2277,12 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
           do_trace_efun_call(s, args);
 	}
 	if (PIKE_FN_START_ENABLED()) {
-	  /* DTrace enter probe
-	     arg0: function name
-	     arg1: object
-	   */
-	  PIKE_FN_START(s->u.efun->name->size_shift == 0 ?
-			s->u.efun->name->str : "[widestring fn name]",
-			"");
+          do_dtrace_efun_call(s, args);
 	}
 	FAST_CHECK_THREADS_ON_CALL();
 	(*(s->u.efun->function))(args);
 	if (PIKE_FN_DONE_ENABLED()) {
-	  /* DTrace leave probe
-	     arg0: function name
-	  */
-	  PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?
-		       s->u.efun->name->str : "[widestring fn name]");
+          do_dtrace_efun_return(s, args);
 	}
 
 #ifdef PIKE_DEBUG
@@ -2393,15 +2431,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   }
 
   if (PIKE_FN_DONE_ENABLED()) {
-    /* DTrace leave probe
-       arg0: function name
-    */
-    char *fn = "(unknown)";
-    if (o && o->prog) {
-      struct identifier *id = ID_FROM_INT(o->prog, fun);
-      fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
-    }
-    PIKE_FN_DONE(fn);
+    do_dtrace_func_return(o, fun);
   }
 
   return 0;
