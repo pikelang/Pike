@@ -504,7 +504,8 @@ static void port_close (INT32 UNUSED(args))
  *!
  *! When called with @expr{"stdin"@} as argument, a socket is created
  *! out of the file descriptor 0. This is only useful if that actually
- *! IS a socket to begin with.
+ *! IS a socket to begin with, and is equivalent to creating a port and
+ *! initializing it with @[listen_fd](0).
  *!
  *! @seealso
  *!   @[bind], @[listen_fd]

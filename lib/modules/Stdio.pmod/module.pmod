@@ -1806,7 +1806,8 @@ class Port
   //!
   //! When create is called with @expr{"stdin"@} as the first argument, a
   //! socket is created out of the file descriptor @expr{0@}. This is only
-  //! useful if it actually is a socket to begin with.
+  //! useful if it actually is a socket to begin with, and is equivalent to
+  //! creating a port and initializing it with @[listen_fd](0).
   //!
   //! @seealso
   //! @[bind]
