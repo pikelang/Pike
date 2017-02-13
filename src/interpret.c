@@ -2174,7 +2174,17 @@ void really_free_pike_scope(struct pike_frame *scope)
 
 void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
 {
-  return low_mega_apply( APPLY_LOW, args, o, (void*)fun );
+  struct pike_callsite C;
+  callsite_init(&C);
+  callsite_set_args(&C, args);
+  callsite_resolve_fun(&C, o, fun);
+  if (C.type == CALLTYPE_PIKEFUN) return C.ptr;
+  /* This is only needed for pike functions right now:
+   * callsite_prepare(&C); */
+  callsite_execute(&C);
+  callsite_return(&C);
+  callsite_free(&C);
+  return NULL;
 }
 
 /* Apply a function.
