@@ -1,34 +1,42 @@
 #pike __REAL_VERSION__
 
-// There are three different read callbacks that can be active, which
-// has the following call graphs. read_cb is the default read
-// callback, installed by attach_fd.
-//
-//   | (Incoming data)
-//   v
-// read_cb
-//   | If complete headers are read
-//   v
-// parse_request
-//   v
-// parse_variables
-//   | If callback isn't changed to read_cb_chunked or read_cb_post
-//   v
-// finalize
-//
-//   | (Incoming data)
-//   v
-// read_cb_post
-//   | If enough data has been received
-//   v
-// finalize
-//
-//   | (Incoming data)
-//   v
-// read_cb_chunked
-//   | If all data chunked transfer-encoding needs
-//   v
-// finalize
+//! This class represents a connection from a client to the server.
+//!
+//! There are three different read callbacks that can be active, which
+//! have the following call graphs. @[read_cb] is the default read
+//! callback, installed by @[attach_fd].
+//!
+//! @code{
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb]
+//!     | If complete headers are read
+//!     v
+//!   @[parse_request]
+//!     v
+//!   @[parse_variables]
+//!     | If callback isn't changed to @[read_cb_chunked] or @[read_cb_post]
+//!     v
+//!   @[finalize]
+//! @}
+//!
+//! @code{
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb_post]
+//!     | If enough data has been received
+//!     v
+//!   @[finalize]
+//! @}
+//!
+//! @code{
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb_chunked]
+//!     | If all data chunked transfer-encoding needs
+//!     v
+//!   @[finalize]
+//! @}
 
 
 int max_request_size = 0;
