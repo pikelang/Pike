@@ -905,8 +905,9 @@ void f_query_num_arg(INT32 args)
   push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
-/*! @decl int search(string haystack, string|int needle, int|void start)
- *! @decl int search(array haystack, mixed needle, int|void start)
+/*! @decl int search(string haystack, string|int needle, int|void start, @
+ *!                  int|void end)
+ *! @decl int search(array haystack, mixed needle, int|void start, int|void end)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *! @decl mixed search(object haystack, mixed needle, mixed|void start, @
  *!                    mixed ... extra_args)
@@ -948,6 +949,10 @@ void f_query_num_arg(INT32 args)
  *!   If the optional argument @[start] is present search is started at
  *!   this position. This has no effect on mappings.
  *!
+ *! @param end
+ *!   If the optional argument @[end] is present, the search will terminate
+ *!   at this position if not found earlier.
+ *!
  *! @returns
  *!   Returns the position of @[needle] in @[haystack] if found.
  *!
@@ -977,6 +982,7 @@ void f_query_num_arg(INT32 args)
 PMOD_EXPORT void f_search(INT32 args)
 {
   ptrdiff_t start;
+  ptrdiff_t end;
 
   if(args < 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR("search", 2);
@@ -988,6 +994,7 @@ PMOD_EXPORT void f_search(INT32 args)
     struct pike_string *haystack = Pike_sp[-args].u.string;
 
     start=0;
+    end = haystack->len;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
@@ -998,12 +1005,32 @@ PMOD_EXPORT void f_search(INT32 args)
 	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(start<0) {
+	    bad_arg_error("search", Pike_sp-args, args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
+      }
     }
 
     if(haystack->len < start)
       bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
+
+    if (end <= start) {
+      pop_n_elems(args);
+      push_int(-1);
+      return;
+    }
 
     if ((TYPEOF(Pike_sp[1-args]) == T_INT) ||
 	((TYPEOF(Pike_sp[1-args]) == T_STRING) &&
@@ -1029,7 +1056,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -1042,7 +1069,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -1051,15 +1078,12 @@ PMOD_EXPORT void f_search(INT32 args)
       case 2:
 	{
 	  p_wchar2 *str = STR2(haystack);
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == (p_wchar2)val) break;
 	    start++;
 	  }
 	}
 	break;
-      }
-      if (start >= haystack->len) {
-	start = -1;
       }
     } else if(TYPEOF(Pike_sp[1-args]) == T_STRING) {
       /* Handle searching for the empty string. */
@@ -1072,12 +1096,16 @@ PMOD_EXPORT void f_search(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("search", 2, "string | int");
     }
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
   }
 
   case T_ARRAY:
     start=0;
+    end = Pike_sp[-args].u.array->size;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
@@ -1088,9 +1116,26 @@ PMOD_EXPORT void f_search(INT32 args)
 	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(end<0) {
+	    bad_arg_error("search", Pike_sp-args, args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
+      }
     }
     start=array_search(Pike_sp[-args].u.array,Pike_sp+1-args,start);
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
 
@@ -9552,9 +9597,9 @@ void init_builtin_efuns(void)
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
-	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt),
+	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
-		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
                       tOr(tVoid,tVar(1)), tVar(1)),
