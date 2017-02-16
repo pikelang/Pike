@@ -4128,6 +4128,8 @@ PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
 
   /* FREE FRAME */
 
+  if (c->type == CALLTYPE_PIKEFUN)
+      Pike_mark_sp=Pike_fp->save_mark_sp;
   POP_PIKE_FRAME();
 
   if (c->type != CALLTYPE_PIKEFUN) return;
@@ -4141,8 +4143,19 @@ PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
 PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
   struct svalue *retval = c->retval;
-  struct pike_frame *frame = c->frame;
+  struct pike_frame *frame;
   int got_retval = 1;
+  int pop;
+
+  /* NOTE: this is necessary because of recursion */
+  c->frame = frame = Pike_fp;
+
+  pop = frame->flags & PIKE_FRAME_RETURN_POP;
+
+  if(Pike_mark_sp < Pike_fp->save_mark_sp)
+    Pike_fatal("Popped below save_mark_sp!\n");
+  if(Pike_sp<Pike_interpreter.evaluator_stack)
+    Pike_fatal("Stack error (also simple).\n");
 
   if (retval >= sp) {
 #ifdef PIKE_DEBUG
@@ -4150,13 +4163,15 @@ PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
         Pike_fatal("Stack too small after function call.\n");
 #endif
       /* return value missing */
-      if (!(c->flags & CALL_NEED_NO_RETVAL)) {
+      if (!(c->flags & CALL_NEED_NO_RETVAL) && !pop) {
           push_int(0);
       } else got_retval = 0;
   } else if (retval+1 < sp) {
     /* garbage left on the stack */
-    assign_svalue(retval,sp-1);
-    pop_n_elems(sp-retval-1);
+      if (pop)
+        pop_n_elems(sp-retval);
+      else
+        stack_pop_n_elems_keep_top (sp - retval - 1);
     low_destruct_objects_to_destruct();
   }
 
