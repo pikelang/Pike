@@ -157,6 +157,8 @@ struct pike_callsite {
     ONERROR onerror;
 };
 
+void LOW_POP_PIKE_FRAME(struct pike_frame *frame);
+void POP_PIKE_FRAME(void);
 PMOD_EXPORT void callsite_init(struct pike_callsite *c);
 PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args);
 PMOD_EXPORT void callsite_free(struct pike_callsite *c);
@@ -604,139 +606,6 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 
 /* A scope is any frame which may have malloced locals */
 #define free_pike_scope(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_scope(f_); }while(0)
-
-/* Without fancy accounting stuff. This one can't assume there is an
- * identifier corresponding to the frame (i.e. _fp_->ident might be
- * bogus). */
-#define LOW_POP_PIKE_FRAME(_fp_) do {					\
-    struct pike_frame *tmp_=_fp_->next;					\
-    if(!sub_ref(_fp_))							\
-    {									\
-      really_free_pike_frame(_fp_);					\
-    }else{								\
-      ptrdiff_t exp_offset = _fp_->expendible_offset;                   \
-      debug_malloc_touch(_fp_);						\
-      if (exp_offset || (_fp_->flags & PIKE_FRAME_SAVE_LOCALS)) {       \
-        struct svalue *locals = _fp_->locals;                           \
-        struct svalue *s;                                               \
-        INT16 num_new_locals = 0;                                       \
-        unsigned int num_bitmask_entries = 0;                           \
-        if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
-          ptrdiff_t offset;                                             \
-          for (offset = 0;                                              \
-               offset < (ptrdiff_t)((_fp_->num_locals >> 4) + 1);       \
-               offset++) {                                              \
-            if (*(_fp_->save_locals_bitmask + offset))                  \
-              num_bitmask_entries = offset + 1;                         \
-          }                                                             \
-	} else {							\
-	  DO_IF_DEBUG(							\
-	    if( (locals + _fp_->num_locals > Pike_sp) ||		\
-		(Pike_sp < locals + exp_offset) ||			\
-		(exp_offset < 0) || (exp_offset > _fp_->num_locals))	\
-	      Pike_fatal("Stack failure in POP_PIKE_FRAME "		\
-			 "%p+%d=%p %p %hd!\n",				\
-			 locals, _fp_->num_locals,			\
-			 locals + _fp_->num_locals,			\
-			 Pike_sp, exp_offset));				\
-        }                                                               \
-                                                                        \
-        num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4); \
-                                                                        \
-	s=(struct svalue *)xalloc(sizeof(struct svalue)*                \
-                                  num_new_locals);                      \
-        memset(s, 0, sizeof(struct svalue) * num_new_locals);           \
-                                                                        \
-        {                                                               \
-          int idx;                                                      \
-          unsigned INT16 bitmask=0;                                     \
-                                                                        \
-          for (idx = 0; idx < num_new_locals; idx++) {                  \
-            if (!(idx % 16)) {                                          \
-              ptrdiff_t offset = (ptrdiff_t)(idx >> 4);                 \
-              if (offset < num_bitmask_entries) {                       \
-                bitmask = *(_fp_->save_locals_bitmask + offset);        \
-              } else {                                                  \
-                bitmask = 0;                                            \
-              }                                                         \
-            }                                                           \
-            if (bitmask & (1 << (idx % 16)) || idx < exp_offset) {      \
-              assign_svalue_no_free(s + (ptrdiff_t)idx,                 \
-                                    locals + (ptrdiff_t)idx);           \
-            }                                                           \
-          }                                                             \
-        }                                                               \
-        if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
-	  _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;			\
-	  free(_fp_->save_locals_bitmask);				\
-	}								\
-	_fp_->num_locals = num_new_locals;                              \
-	_fp_->locals=s;                                                 \
-	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;                        \
-      } else {                                                          \
-	_fp_->locals=0;							\
-      }									\
-      _fp_->next=0;							\
-    }									\
-    Pike_fp=tmp_;							\
-  } while (0)
-
-#define POP_PIKE_FRAME() do {						\
-  struct pike_frame *_fp_ = Pike_fp;					\
-  DO_IF_PROFILING({							\
-      /* Time spent in this frame + children. */			\
-      cpu_time_t time_passed =						\
-	get_cpu_time() - Pike_interpreter.unlocked_time;		\
-      /* Time spent in children to this frame. */			\
-      cpu_time_t time_in_children;					\
-      /* Time spent in just this frame. */				\
-      cpu_time_t self_time;						\
-      struct identifier *function;					\
-      W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME                 \
-                        " (%" PRINT_CPU_TIME ")"                        \
-                        " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",	\
-                        Pike_interpreter.thread_state, time_passed,     \
-                        _fp_->start_time,                               \
-                        Pike_interpreter.accounted_time,                \
-                        _fp_->children_base);                           \
-      time_passed -= _fp_->start_time;					\
-      DO_IF_DEBUG(if (time_passed < 0) {				\
-		    Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME	\
-			       " now: %" PRINT_CPU_TIME			\
-			       " unlocked_time: %" PRINT_CPU_TIME	\
-			       " start_time: %" PRINT_CPU_TIME		\
-			       "\n", time_passed, get_cpu_time(),	\
-			       Pike_interpreter.unlocked_time,		\
-			       _fp_->start_time);			\
-		  });							\
-      time_in_children =						\
-	Pike_interpreter.accounted_time - _fp_->children_base;		\
-      DO_IF_DEBUG(if (time_in_children < 0) {				\
-		    Pike_fatal("Negative time_in_children: %"		\
-			       PRINT_CPU_TIME				\
-			       " accounted_time: %" PRINT_CPU_TIME	\
-			       " children_base: %" PRINT_CPU_TIME	\
-			       "\n", time_in_children,			\
-			       Pike_interpreter.accounted_time,		\
-			       _fp_->children_base);			\
-		  });							\
-      self_time = time_passed - time_in_children;			\
-      DO_IF_DEBUG(if (self_time < 0) {					\
-		    Pike_fatal("Negative self_time: %" PRINT_CPU_TIME	\
-			       " time_passed: %" PRINT_CPU_TIME		\
-			       " time_in_children: %" PRINT_CPU_TIME	\
-			       "\n", self_time, time_passed,		\
-			       time_in_children);			\
-		  });							\
-      Pike_interpreter.accounted_time += self_time;			\
-      /* FIXME: Can context->prog be NULL? */				\
-      function = _fp_->context->prog->identifiers + _fp_->ident;	\
-      if (!--function->recur_depth)					\
-	function->total_time += time_passed;				\
-      function->self_time += self_time;					\
-    });									\
-  LOW_POP_PIKE_FRAME (_fp_);						\
- }while(0)
 
 #define ASSIGN_CURRENT_STORAGE(VAR, TYPE, INH, EXPECTED_PROGRAM)	\
   do {									\
