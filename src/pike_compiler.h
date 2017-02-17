@@ -160,11 +160,6 @@ void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
-struct program *compile(struct pike_string *aprog,
-			struct object *ahandler,
-			int amajor, int aminor,
-			struct program *atarget,
-			struct object *aplaceholder);
 void push_compiler_frame(int lexical_scope);
 node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
