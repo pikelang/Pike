@@ -9658,7 +9658,7 @@ PMOD_EXPORT void init_reverse_symbol_table()
   ADD_SYMBOL(mega_apply);
 
   simple_add_reverse_symbol("Pike_interpreter_pointer",
-			    &Pike_interpreter_pointer);
+			    (void *)&Pike_interpreter_pointer);
 
 #ifdef PIKE_USE_MACHINE_CODE
   /* Add the opcodes as well. */
