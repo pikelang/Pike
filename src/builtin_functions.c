@@ -8583,71 +8583,46 @@ PMOD_EXPORT void f_map(INT32 args)
       case T_PROGRAM:
       case T_OBJECT:
       case T_ARRAY:
+        {
 	 /* ret[i]=fun(arr[i],@extra); */
+         struct pike_callsite C;
          push_array(d=allocate_array(n));
-	 d=Pike_sp[-1].u.array;
 	 types = 0;
 
-	 if(TYPEOF(mysp[-2]) == T_FUNCTION &&
-	    SUBTYPEOF(mysp[-2]) == FUNCTION_BUILTIN)
-	 {
-	   c_fun fun=mysp[-2].u.efun->function;
-	   struct svalue *spbase=Pike_sp;
+         callsite_init(&C);
+         callsite_set_args(&C, 0);
+         callsite_resolve_svalue(&C, mysp-2);
+         callsite_prepare(&C);
 
-	   if(splice)
-	   {
-	     for (i=0; i<n; i++)
-	     {
-	       push_svalue(a->item+i);
-	       add_ref_svalue(mysp-1);
-	       push_array_items(mysp[-1].u.array);
-	       (* fun)(1+splice);
-	       if(Pike_sp>spbase)
-	       {
-		 stack_pop_to_no_free (ITEM(d) + i);
-		 types |= 1 << TYPEOF(ITEM(d)[i]);
-		 pop_n_elems(Pike_sp-spbase);
-	       }
-	       else
-		 types |= BIT_INT;
-	     }
-	   }else{
-	     for (i=0; i<n; i++)
-	     {
-	       push_svalue(ITEM(a)+i);
-	       (* fun)(1);
-	       if(Pike_sp>spbase)
-	       {
-		 stack_pop_to_no_free (ITEM(d) + i);
-		 types |= 1 << TYPEOF(ITEM(d)[i]);
-		 pop_n_elems(Pike_sp-spbase);
-	       }
-	       else
-		 types |= BIT_INT;
-	     }
-	   }
-	 }else{
-	   for (i=0; i<n; i++)
-	   {
-	     push_svalue(ITEM(a)+i);
-	     if (splice)
-	     {
-	       add_ref_svalue(mysp-1);
-	       push_array_items(mysp[-1].u.array);
-	       apply_svalue(mysp-2,1+splice);
-	     }
-	     else
-	     {
-	       apply_svalue(mysp-2,1);
-	     }
-	     stack_pop_to_no_free (ITEM(d) + i);
-	     types |= 1 << TYPEOF(ITEM(d)[i]);
-	   }
-	 }
+         /* We need to do this manually, because
+          * currently no arguments are on the stack, yet */
+         C.args = 1+splice;
+         if (C.frame) {
+             C.frame->args = 1+splice;
+             C.frame->flags |= PIKE_FRAME_NO_REUSE;
+         }
+
+         for (i=0; i<n; i++)
+         {
+           push_svalue(ITEM(a)+i);
+           if (splice)
+           {
+             add_ref_svalue(mysp-1);
+             push_array_items(mysp[-1].u.array);
+           }
+           if (i) callsite_reset(&C);
+           callsite_execute(&C);
+           callsite_return(&C);
+
+           stack_pop_to_no_free (ITEM(d) + i);
+           types |= 1 << TYPEOF(ITEM(d)[i]);
+         }
 	 d->type_field = types;
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
-	 return;
 
+         callsite_free(&C);
+	 return;
+        }
       case T_MAPPING:
       case T_MULTISET:
 	 /* ret[i]=fun[arr[i]]; */
