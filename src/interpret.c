@@ -3998,6 +3998,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   frame->num_args = 0;
   frame->scope = scope;
   frame->save_mark_sp=Pike_mark_sp;
+  frame->return_addr = NULL;
   frame_set_save_sp(frame, c->retval);
 
   Pike_fp = frame;
@@ -4064,11 +4065,12 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
 #ifdef PIKE_DEBUG
     Pike_fatal("Unknown callsite type: %d\n", c->type);
 #endif
+    break;
   case CALLTYPE_EFUN:
   case CALLTYPE_CFUN:
     {
       void (*fun)(INT32) = c->ptr;
-      fun(c->args);
+      (* fun)(c->args);
     }
     break;
   case CALLTYPE_PIKEFUN:
@@ -4143,14 +4145,15 @@ PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
 PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
   struct svalue *retval = c->retval;
-  struct pike_frame *frame;
+  struct pike_frame *frame = c->frame;
   int got_retval = 1;
-  int pop;
+  int pop = 0;
 
   /* NOTE: this is necessary because of recursion */
-  c->frame = frame = Pike_fp;
-
-  pop = frame->flags & PIKE_FRAME_RETURN_POP;
+  if (c->type == CALLTYPE_PIKEFUN) {
+    c->frame = frame = Pike_fp;
+    pop = frame->flags & PIKE_FRAME_RETURN_POP;
+  }
 
   if(Pike_mark_sp < Pike_fp->save_mark_sp)
     Pike_fatal("Popped below save_mark_sp!\n");
