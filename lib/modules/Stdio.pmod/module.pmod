@@ -479,7 +479,7 @@ class File
   //!
   //! Note that TCP_FAST_OPEN requires server support, the connection
   //! might fail even though the remote server exists. It might be
-  //! advicable to retry without TCP_FAST_OPEN (and remember this
+  //! advisable to retry without TCP_FAST_OPEN (and remember this
   //! fact)
   //!
   //! @returns
