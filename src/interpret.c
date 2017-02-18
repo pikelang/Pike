@@ -3368,8 +3368,18 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
     push_int(0);
   }else{
     ptrdiff_t expected_stack=Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
+    struct pike_callsite C;
 
-    strict_apply_svalue(s,args);
+    callsite_init(&C);
+    callsite_set_args(&C, args);
+    callsite_resolve_svalue(&C, s);
+    callsite_prepare(&C);
+    callsite_execute(&C);
+    callsite_return(&C);
+    callsite_free(&C);
+
+    /* Note: do we still need those? I guess callsite_return takes care
+     * of this stuff */
     if(Pike_sp > (expected_stack + Pike_interpreter.evaluator_stack))
     {
       pop_n_elems(Pike_sp-(expected_stack + Pike_interpreter.evaluator_stack));
