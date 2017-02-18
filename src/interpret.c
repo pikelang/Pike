@@ -4067,6 +4067,46 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
   }
 }
 
+PMOD_EXPORT void callsite_reset(struct pike_callsite *c) {
+  struct pike_frame *frame;
+
+  /* nothing to do, only frames for pike functions
+   * might need to be reallocatd */
+  if (c->type != CALLTYPE_PIKEFUN) return;
+
+  frame = c->frame;
+
+#ifdef PIKE_DEBUG
+  if (frame != Pike_fp)
+    Pike_fatal("Resetting frame which is not Pike_fp\n");
+#endif
+
+  Pike_mark_sp=frame->save_mark_sp;
+
+  /* reset some entries which are changed during
+   * execution of Pike code. We can probably 
+   * make most of these PIKE_DEBUG stuff */
+  frame->pc = c->ptr;
+  frame->num_locals = 0;
+  frame->num_args = 0;
+  frame->return_addr = NULL;
+
+  if (frame->refs == 1) return;
+
+  fprintf(stderr, "callsite_reset for real\n");
+
+  struct pike_frame * n = alloc_pike_frame();
+  *n = *frame;
+  n->refs = 1;
+
+  LOW_POP_PIKE_FRAME(frame);
+
+  c->frame = n;
+  Pike_fp = n;
+
+  if (!n->refs) Pike_fatal("help!\n");
+}
+
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
   FAST_CHECK_THREADS_ON_CALL();
   switch (c->type) {

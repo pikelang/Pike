@@ -167,6 +167,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *site, struct object 
 PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *site, struct object *o, int lfun);
 PMOD_EXPORT void callsite_prepare(struct pike_callsite *c);
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *site);
+PMOD_EXPORT void callsite_reset(struct pike_callsite *site);
 PMOD_EXPORT void callsite_return(struct pike_callsite *site);
 
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
