@@ -4438,30 +4438,71 @@ static void low_automap(int d,
   push_array(ret=allocate_array(size));
   types = 0;
 
-  for(x=0;x<size;x++)
-  {
-    for(e=0;e<args;e++)
+  if (d != depth) {
+    for(x=0;x<size;x++)
     {
-      if(TYPEOF(real_args[e]) == T_OBJECT &&
-	 real_args[e].u.object->prog == automap_marker_program &&
-	 OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
+      for(e=0;e<args;e++)
       {
+        if(TYPEOF(real_args[e]) == T_OBJECT &&
+           real_args[e].u.object->prog == automap_marker_program &&
+           OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
+        {
 #ifdef PIKE_DEBUG
-	if(x >= tmpargs[e].u.array->size)
-	  Pike_fatal("low_automap failed to determine size!\n");
+          if(x >= tmpargs[e].u.array->size)
+            Pike_fatal("low_automap failed to determine size!\n");
 #endif
-	push_svalue(ITEM(tmpargs[e].u.array)+x);
-      }else{
-	push_svalue(tmpargs+e);
+          push_svalue(ITEM(tmpargs[e].u.array)+x);
+        }else{
+          push_svalue(tmpargs+e);
+        }
       }
+
+      low_automap(d+1,depth,fun,real_args,args);
+      stack_pop_to_no_free (ITEM(ret) + x);
+      types |= 1 << TYPEOF(ITEM(ret)[x]);
+    }
+  } else if (TYPEOF(*fun) == T_INT) {
+    push_int(size);
+    f_allocate(1);
+  } else {
+    struct pike_callsite C;
+    callsite_init(&C);
+    callsite_set_args(&C, 0);
+    callsite_resolve_svalue(&C, fun);
+    callsite_prepare(&C);
+    /* We need to do this manually, because
+     * currently no arguments are on the stack, yet */
+    C.args = args;
+    if (C.frame) {
+        C.frame->args = args;
+        C.frame->flags |= PIKE_FRAME_NO_REUSE;
     }
 
-    if(d == depth)
-      apply_svalue(fun,args);
-    else
-      low_automap(d+1,depth,fun,real_args,args);
-    stack_pop_to_no_free (ITEM(ret) + x);
-    types |= 1 << TYPEOF(ITEM(ret)[x]);
+    for(x=0;x<size;x++)
+    {
+      for(e=0;e<args;e++)
+      {
+        if(TYPEOF(real_args[e]) == T_OBJECT &&
+           real_args[e].u.object->prog == automap_marker_program &&
+           OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
+        {
+#ifdef PIKE_DEBUG
+          if(x >= tmpargs[e].u.array->size)
+            Pike_fatal("low_automap failed to determine size!\n");
+#endif
+          push_svalue(ITEM(tmpargs[e].u.array)+x);
+        }else{
+          push_svalue(tmpargs+e);
+        }
+      }
+
+      if (x) callsite_reset(&C);
+      callsite_execute(&C);
+      callsite_return(&C);
+      stack_pop_to_no_free (ITEM(ret) + x);
+      types |= 1 << TYPEOF(ITEM(ret)[x]);
+    }
+    callsite_free(&C);
   }
   ret->type_field = types;
   stack_unlink(args);
