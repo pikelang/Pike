@@ -2003,14 +2003,15 @@ struct node_s *find_predef_identifier(struct pike_string *ident)
  *! The undefined value; ie a zero for which @[zero_type()] returns 1.
  */
 
-struct node_s *resolve_identifier(struct pike_string *ident)
+int low_resolve_identifier(struct pike_string *ident)
 {
   struct compilation *c = THIS_COMPILATION;
   node *ret = NULL;
 
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
-    return mkconstantsvaluenode(&svalue_undefined);
+    push_undefined();
+    return 1;
   }
 
   if(c->resolve_cache)
@@ -2018,10 +2019,12 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     struct svalue *tmp=low_mapping_string_lookup(c->resolve_cache,ident);
     if(tmp)
     {
-      if(!IS_UNDEFINED (tmp))
-	return mkconstantsvaluenode(tmp);
+      if(IS_UNDEFINED (tmp)) {
+	return 0;
+      }
 
-      return 0;
+      push_svalue(tmp);
+      return 1;
     }
   }
 
@@ -2068,11 +2071,22 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
     if(!IS_UNDEFINED (Pike_sp-1))
     {
-      ret=mkconstantsvaluenode(Pike_sp-1);
+      return 1;
     }
   }
   pop_stack();
 
+  return 0;
+}
+
+struct node_s *resolve_identifier(struct pike_string *ident)
+{
+  node *ret = NULL;
+
+  if (low_resolve_identifier(ident)) {
+    ret = mkconstantsvaluenode(Pike_sp-1);
+    pop_stack();
+  }
   return ret;
 }
 
