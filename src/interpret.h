@@ -157,18 +157,73 @@ struct pike_callsite {
     ONERROR onerror;
 };
 
+PMOD_EXPORT extern int Pike_stack_size;
+struct callback;
+PMOD_EXPORT extern struct callback_list evaluator_callbacks;
+
+PMOD_EXPORT extern struct Pike_interpreter_struct *
+#if defined(__GNUC__) && __GNUC__ >= 3
+    __restrict
+#endif
+    Pike_interpreter_pointer;
+#define Pike_interpreter (*Pike_interpreter_pointer)
+
+#define Pike_sp Pike_interpreter.stack_pointer
+#define Pike_fp Pike_interpreter.frame_pointer
+#define Pike_mark_sp Pike_interpreter.mark_stack_pointer
+
+
 void LOW_POP_PIKE_FRAME(struct pike_frame *frame);
 void POP_PIKE_FRAME(void);
-PMOD_EXPORT void callsite_init(struct pike_callsite *c);
+
+static inline void callsite_init(struct pike_callsite *c) {
+  c->type = CALLTYPE_NONE;
+  c->flags = 0;
+  c->frame = NULL;
+  c->saved_jmpbuf = NULL;
+}
+
+static inline void callsite_set_args(struct pike_callsite *c, INT32 args) {
+  c->args = args;
+  c->retval = Pike_sp - args;
+}
+
+PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c);
+
+static inline void callsite_prepare(struct pike_callsite *c) {
+  if (LIKELY(c->type != CALLTYPE_PIKEFUN)) return;
+  callsite_save_jmpbuf(c);
+}
+
 PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args);
-PMOD_EXPORT void callsite_free(struct pike_callsite *c);
+PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c);
+
+static inline void callsite_free(struct pike_callsite *c) {
+  if (LIKELY(!c->frame)) return;
+  callsite_free_frame(c);
+}
+
 PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *site, struct svalue *s);
 PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *site, struct object *o, INT16 fun);
 PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *site, struct object *o, int lfun);
-PMOD_EXPORT void callsite_prepare(struct pike_callsite *c);
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *site);
-PMOD_EXPORT void callsite_reset(struct pike_callsite *site);
-PMOD_EXPORT void callsite_return(struct pike_callsite *site);
+PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *s);
+
+static inline void callsite_reset(struct pike_callsite *c) {
+  /* nothing to do, only frames for pike functions
+   * might need to be reallocatd */
+  if (LIKELY(c->type != CALLTYPE_PIKEFUN)) return;
+  callsite_reset_pikecall(c);
+}
+
+PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c);
+
+static inline void callsite_return(struct pike_callsite *c) {
+  /* pike functions might recurse or set PIKE_FRAME_RETURN_POP */
+  if (LIKELY(c->type != CALLTYPE_PIKEFUN && c->retval+1 == Pike_sp))
+    return;
+  callsite_return_slowpath(c);
+}
 
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
     return frame->locals + frame->save_sp_offset;
@@ -854,21 +909,6 @@ void really_clean_up_interpret(void);
   safe_apply_low2(Pike_fp->current_object,			\
 		  (FUN) + Pike_fp->context->identifier_level,	\
 		  (ARGS), (FUNNAME))
-
-PMOD_EXPORT extern int Pike_stack_size;
-struct callback;
-PMOD_EXPORT extern struct callback_list evaluator_callbacks;
-
-PMOD_EXPORT extern struct Pike_interpreter_struct *
-#if defined(__GNUC__) && __GNUC__ >= 3
-    __restrict
-#endif
-    Pike_interpreter_pointer;
-#define Pike_interpreter (*Pike_interpreter_pointer)
-
-#define Pike_sp Pike_interpreter.stack_pointer
-#define Pike_fp Pike_interpreter.frame_pointer
-#define Pike_mark_sp Pike_interpreter.mark_stack_pointer
 
 
 #define CURRENT_STORAGE (dmalloc_touch(struct pike_frame *,Pike_fp)->current_storage)

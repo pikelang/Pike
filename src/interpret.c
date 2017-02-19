@@ -4067,12 +4067,13 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
   }
 }
 
-PMOD_EXPORT void callsite_reset(struct pike_callsite *c) {
+PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
   struct pike_frame *frame;
 
-  /* nothing to do, only frames for pike functions
-   * might need to be reallocatd */
-  if (c->type != CALLTYPE_PIKEFUN) return;
+#ifdef PIKE_DEBUG
+  if (c->type != CALLTYPE_PIKEFUN)
+    Pike_fatal("Calling callsite_reset_pikecall() on non pike frame.\n");
+#endif
 
   frame = c->frame;
 
@@ -4155,28 +4156,22 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
   }
 }
 
-PMOD_EXPORT void callsite_init(struct pike_callsite *c) {
-  c->type = CALLTYPE_NONE;
-  c->flags = 0;
-  c->frame = NULL;
-  c->saved_jmpbuf = NULL;
-}
-
-PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args) {
-  c->args = args;
-  c->retval = Pike_sp - args;
-}
-
-PMOD_EXPORT void callsite_prepare(struct pike_callsite *c) {
-  if (c->type != CALLTYPE_PIKEFUN) return;
+PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c) {
+#ifdef PIKE_DEBUG
+  if (c->type != CALLTYPE_PIKEFUN)
+    Pike_fatal("callsite_save_jmpbuf called for non pike frame.\n");
+#endif
     
   c->saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   SET_ONERROR (c->onerror, restore_catching_eval_jmpbuf, c->saved_jmpbuf);
   Pike_interpreter.catching_eval_jmpbuf = NULL;
 }
 
-PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
-  if (!c->frame) return;
+PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c) {
+#ifdef PIKE_DEBUG
+  if (!c->frame)
+    Pike_fatal("callsite_free_frame called without frame.\n");
+#endif
 
   /* FREE FRAME */
 
@@ -4192,7 +4187,7 @@ PMOD_EXPORT void callsite_free(struct pike_callsite *c) {
   UNSET_ONERROR(c->onerror);
 }
 
-PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
+PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
   struct svalue *retval = c->retval;
   struct pike_frame *frame = c->frame;
@@ -4205,10 +4200,12 @@ PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
     pop = frame->flags & PIKE_FRAME_RETURN_POP;
   }
 
+#ifdef PIKE_DEBUG
   if(Pike_mark_sp < Pike_fp->save_mark_sp)
     Pike_fatal("Popped below save_mark_sp!\n");
   if(Pike_sp<Pike_interpreter.evaluator_stack)
     Pike_fatal("Stack error (also simple).\n");
+#endif
 
   if (retval >= sp) {
 #ifdef PIKE_DEBUG
@@ -4226,13 +4223,6 @@ PMOD_EXPORT void callsite_return(struct pike_callsite *c) {
       else
         stack_pop_n_elems_keep_top (sp - retval - 1);
     low_destruct_objects_to_destruct();
-  }
-
-  if (c->frame) {
-      if (c->frame != Pike_fp) {
-          fprintf(stderr, "frame changed %p vs %p\n", c->frame, Pike_fp);
-          c->frame = Pike_fp;
-      }
   }
 }
 
