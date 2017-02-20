@@ -936,7 +936,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_PROGRAM:
     {
       int d;
-      if (val->u.program->id < PROG_DYNAMIC_ID_START) {
+      if ((val->u.program->id < PROG_DYNAMIC_ID_START) &&
+	  (val->u.program->id >= 0)) {
 	code_entry(TAG_PROGRAM, 3, data);
 	push_int(val->u.program->id);
 	encode_value2(Pike_sp-1, data, 0);
