@@ -1451,6 +1451,9 @@ MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
 MY_AC_ARG_WITH(internal-profiling, MY_DESCR([--with-internal-profiling],
 				   [add profiling code for various internal things]),
 	       [AC_DEFINE(INTERNAL_PROFILING)])
+MY_AC_ARG_WITH(mc-stack-frames, MY_DESCR([--with-mc-stack-frames],
+				   [add machine code to generate proper stack frames (X86-64 only)]),
+	       [AC_DEFINE(MACHINE_CODE_STACK_FRAMES)])
 MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 	       [PROFIL=-pg])
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [

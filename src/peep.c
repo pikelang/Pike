@@ -527,9 +527,13 @@ INT32 assemble(int store_linenumbers)
 
     switch(c->opcode)
     {
+    case F_START_FUNCTION:
+#ifdef INS_START_FUNCTION
+      INS_START_FUNCTION();
+#endif
+      break;
     case F_NOP:
     case F_NOTREACHED:
-    case F_START_FUNCTION:
       break;
     case F_ALIGN:
       ins_align(c->arg);

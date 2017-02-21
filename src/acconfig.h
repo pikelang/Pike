@@ -91,6 +91,9 @@
 /* Enable internal profiling */
 #undef INTERNAL_PROFILING
 
+/* Enable machine code stack frames */
+#undef MACHINE_CODE_STACK_FRAMES
+
 /* If possible, the expansion for a "#define short" to avoid that bison
  * uses short everywhere internally. */
 #undef BISON_SHORT_EXPANSION

@@ -1204,6 +1204,39 @@ void amd64_end_function(int UNUSED(no_pc))
   branch_check_threads_update_etc = 0;
 }
 
+#ifdef MACHINE_CODE_STACK_FRAMES
+static void amd64_pop_internal_c_frame()
+{
+  /* C.f. amd64_ins_start_function() */
+  mov_reg_reg(P_REG_RBP, P_REG_RSP);
+  pop(P_REG_RBP);
+  add_reg_imm(P_REG_RSP, 8);
+}
+#endif /* MACHINE_CODE_STACK_FRAMES */
+
+static void amd64_load_fp_reg(void);
+
+void amd64_ins_start_function(void)
+{
+#ifdef MACHINE_CODE_STACK_FRAMES
+  LABELS();
+  amd64_load_fp_reg();
+  /* Note: really mem16, but we & with PIKE_FRAME_RETURN_INTERNAL anyway */
+  mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
+  and_reg32_imm( P_REG_RAX, PIKE_FRAME_RETURN_INTERNAL);
+  jz( &label_A );
+
+  /* This is an internal frame (no entry prologue), so we'll insert a
+     minimal frame that can be used to unwind the C stack. */
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, next), P_REG_RAX);
+  mov_mem_reg(P_REG_RAX, OFFSETOF(pike_frame, return_addr), P_REG_RAX);
+  push(P_REG_RAX);
+  push(P_REG_RBP);
+  mov_reg_reg(P_REG_RSP, P_REG_RBP);
+
+  LABEL_A;
+#endif /* MACHINE_CODE_STACK_FRAMES */
+}
 
 /* Machine code entry prologue.
  *
@@ -1742,8 +1775,15 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
     LABEL_A;
     /* Use C-stack for counter. We have padding added in entry */
 #ifndef USE_VALGRIND
+#ifndef MACHINE_CODE_STACK_FRAMES
+    /* FIXME: Counter disabled when internal stack frames are used
+       since RSP won't point to the entry-level stack frame with
+       padding. Dunno if there should be a counter for every internal
+       frame too? But that would double C-stack usage per internal
+       frame due to 16 byte alignment. */
     add_mem8_imm( P_REG_RSP, 0, 1 );
     jno( &label_B );
+#endif
 #endif
     call_rel_imm32( branch_check_threads_update_etc );
 #ifndef USE_VALGRIND
@@ -1806,7 +1846,7 @@ void ins_f_byte(unsigned int b)
 {
   int flags;
   void *addr;
-  INT32 rel_addr = 0;
+
   LABELS();
 
   b-=F_OFFSET;
@@ -2715,6 +2755,11 @@ void ins_f_byte(unsigned int b)
     amd64_call_c_function( low_return_pop );
 
     LABEL_D;
+#ifdef MACHINE_CODE_STACK_FRAMES
+    /* We know that this is a RETURN_INTERNAL frame, so we must pop
+       the C stack. */
+    amd64_pop_internal_c_frame();
+#endif /* MACHINE_CODE_STACK_FRAMES */
     fp_reg = -1;
     amd64_load_fp_reg();
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame, return_addr), P_REG_RAX );
@@ -2736,6 +2781,17 @@ void ins_f_byte(unsigned int b)
     LABEL_A;
     return;
   }
+
+  if (instrs[b].flags & I_RETURN) {
+#ifdef MACHINE_CODE_STACK_FRAMES
+    amd64_load_fp_reg();
+    /* Load flags prior to calling the C opcode (which typically pops
+       the frame in I_RETURN instructions. Note: really mem16, but we
+       & with PIKE_FRAME_RETURN_INTERNAL below. */
+    mov_mem32_reg(fp_reg, OFFSETOF(pike_frame, flags), P_REG_RBX);
+#endif /* MACHINE_CODE_STACK_FRAMES */
+  }
+
   amd64_call_c_opcode(addr,flags);
 
   if (instrs[b].flags & I_RETURN) {
@@ -2747,20 +2803,33 @@ void ins_f_byte(unsigned int b)
       mov_rip_imm_reg(JUMP_EPILOGUE_SIZE, P_REG_RCX);
     }
     cmp_reg_imm(P_REG_RAX, -1);
-   jne(&label_A);
+    jne(&label_A);
     amd64_return_from_function();
-   LABEL_A;
+    LABEL_A;
 
     if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
       cmp_reg_reg( P_REG_RAX, P_REG_RCX );
-      je( &label_B );
-      jmp_reg(P_REG_RAX);
-      LABEL_B;
-      return;
+      je( &label_C );
     }
+
+#ifdef MACHINE_CODE_STACK_FRAMES
+    /* Check if we should pop C stack. The flags word of the frame
+       prior to calling the C opcode is loaded into RBX above. */
+    and_reg32_imm(P_REG_RBX, PIKE_FRAME_RETURN_INTERNAL);
+    jz( &label_B );
+    amd64_pop_internal_c_frame();
+
+    LABEL_B;
+#endif /* MACHINE_CODE_STACK_FRAMES */
+
+    jmp_reg(P_REG_RAX);
+
+    LABEL_C;
+    return;
   }
+
   if (flags & I_JUMP) {
     jmp_reg(P_REG_RAX);
   }
@@ -4001,8 +4070,10 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       amd64_load_fp_reg();
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
       add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
-      if( c > 1 )
+      if( c > 1 ) {
+	push(P_REG_RBP);
         add_reg_imm_reg(P_REG_RBX, c*sizeof(struct svalue), P_REG_RBP );
+      }
 
      LABEL_A;
       amd64_free_svalue(P_REG_RBX, 0);
@@ -4013,6 +4084,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
         add_reg_imm(P_REG_RBX, sizeof(struct svalue ) );
         cmp_reg_reg( P_REG_RBX, P_REG_RBP );
         jne(&label_A);
+	pop(P_REG_RBP);
       }
     }
     return;
