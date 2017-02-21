@@ -23,6 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 #include "pike_types.h"
+#include "pikecode.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -239,6 +240,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   accept_unfinished_type_fields--;
 #endif
 
+#ifndef OPCODE_INLINE_CATCH
   if (Pike_interpreter.catch_ctx &&
       &Pike_interpreter.catch_ctx->recovery == Pike_interpreter.recoveries) {
     /* This is a phony recovery made in F_CATCH that hasn't been passed
@@ -250,6 +252,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     LOW_LONGJMP (*Pike_interpreter.catching_eval_jmpbuf, 1);
   }
   else
+#endif /* OPCODE_INLINE_CATCH */
     LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
 }
 

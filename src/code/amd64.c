@@ -1765,7 +1765,6 @@ void amd64_init_interpreter_state(void)
   if( OFFSETOF(svalue,u.integer) != 8 )
     Pike_fatal("assumption failed: offsetof(svalue.u.integer) != 8\n");
 #endif
-  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
 static void amd64_return_from_function()
@@ -2415,12 +2414,87 @@ void ins_f_byte(unsigned int b)
 
   case F_CATCH:
     {
-      /* Special argument for the F_CATCH instruction. */
-      addr = inter_return_opcode_F_CATCH;
+      INT32 base_addr = 0;
+
+      LABELS();
       mov_rip_imm_reg(0, ARG1_REG);	/* Address for the POINTER. */
-      rel_addr = PIKE_PC;
+      base_addr = PIKE_PC;
+
+      amd64_call_c_function (setup_catch_context);
+      mov_reg_reg(P_REG_RAX, P_REG_RBX);
+
+      /* Pass a pointer to Pike_interpreter.catch_ctx.recovery.recovery to
+	 LOW_SET_JMP. */
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catch_ctx),
+		   ARG1_REG);
+      add_reg_imm_reg (ARG1_REG,
+		       OFFSETOF(catch_context, recovery) +
+		       OFFSETOF(JMP_BUF, recovery),
+		       ARG1_REG);
+
+      /* Copy the pointer to Pike_interpreter.catching_eval_jmpbuf
+	 too, for compliance with F_CATCH conventions.
+	 FIXME: Just ignore catching_eval_jmpbuf in OPCODE_INLINE_CATCH mode? */
+      mov_reg_mem (ARG1_REG,
+		   Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+
+      /* Now, call the actual setjmp function. */
+      amd64_call_c_function (LOW_SETJMP_FUNC);
+
+      test_reg (P_REG_RAX);
+      jnz (&label_A);
+
+      jmp (&label_B);
+
+      LABEL_A; // Got exception
+
+      amd64_call_c_function (handle_caught_exception);
+      mov_reg_reg(P_REG_RAX, P_REG_RBX);
+
+      /* Restore catching_eval_jmpbuf from catch_ctx->recovery.
+         FIXME: Just ignore catching_eval_jmpbuf in OPCODE_INLINE_CATCH mode? */
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catch_ctx),
+		   P_REG_RAX);
+
+      test_reg (P_REG_RAX);
+      jz (&label_B); /* Pike_interpreter.catch_ctx == 0 */
+
+      add_reg_imm_reg (P_REG_RAX,
+		       OFFSETOF(catch_context, recovery),
+		       P_REG_RAX);
+
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, recoveries),
+		   P_REG_RCX);
+
+      cmp_reg_reg(P_REG_RAX, P_REG_RCX);
+      jne (&label_B); /* Pike_interpreter.recoveries !=
+			 Pike_interpreter.catch_ctx->recovery */
+      add_reg_imm_reg (P_REG_RAX,
+		       OFFSETOF(JMP_BUF, recovery),
+		       P_REG_RAX);
+      mov_reg_mem (P_REG_RAX,
+		   Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+      jmp (&label_C);
+      LABEL_B;
+      /* Zero Pike_interpreter.catching_eval_jmpbuf. */
+      mov_imm_mem(0,
+		  Pike_interpreter_reg,
+		  OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+
+      LABEL_C;
+      /* RBX now contains either the address returned from
+	 setup_catch_context, or the one from
+	 handle_caught_exception. */
+      jmp_reg(P_REG_RBX);
+
+      upd_pointer(base_addr - 4, PIKE_PC - base_addr);
     }
-    break;
+    return;
 
     /* sp-1 = undefinedp(sp-1) */
   case F_UNDEFINEDP:
@@ -2689,10 +2763,6 @@ void ins_f_byte(unsigned int b)
   }
   if (flags & I_JUMP) {
     jmp_reg(P_REG_RAX);
-
-    if (b + F_OFFSET == F_CATCH) {
-      upd_pointer(rel_addr - 4, PIKE_PC - rel_addr);
-    }
   }
 }
 

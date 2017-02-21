@@ -1102,7 +1102,26 @@ void dump_backlog(void)
 
 #endif	/* !PIKE_DEBUG */
 
-
+#ifdef OPCODE_INLINE_CATCH
+#define POP_CATCH_CONTEXT do {                                         \
+    struct catch_context *cc = Pike_interpreter.catch_ctx;             \
+    DO_IF_DEBUG (                                                      \
+      TRACE((3,"-   Popping catch context %p ==> %p\n",                        \
+            cc, cc ? cc->prev : NULL));                                \
+      if (!cc)                                                         \
+       Pike_fatal ("Catch context dropoff.\n");                        \
+      if (cc->frame != Pike_fp)                                                \
+       Pike_fatal ("Catch context doesn't belong to this frame.\n");   \
+      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
+       Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+    );                                                                 \
+    debug_malloc_touch (cc);                                           \
+    UNSETJMP (cc->recovery);                                           \
+    frame_set_expendible(Pike_fp, cc->save_expendible);                \
+    Pike_interpreter.catch_ctx = cc->prev;                             \
+    really_free_catch_context (cc);                                    \
+  } while (0)
+#else
 #define POP_CATCH_CONTEXT do {                                         \
     struct catch_context *cc = Pike_interpreter.catch_ctx;             \
     DO_IF_DEBUG (                                                      \
@@ -1123,6 +1142,7 @@ void dump_backlog(void)
     Pike_interpreter.catch_ctx = cc->prev;                             \
     really_free_catch_context (cc);                                    \
   } while (0)
+#endif
 
 static struct catch_context *free_catch_context;
 static int num_catch_ctx, num_free_catch_ctx;
@@ -1348,12 +1368,96 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 }
 
 void *do_inter_return_label = (void*)(ptrdiff_t)-1;
-#else
+#else /* OPCODE_INLINE_RETURN */
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
 void *dummy_label = NULL;
+#endif /* OPCODE_INLINE_RETURN */
+
+#ifdef OPCODE_INLINE_CATCH
+/* Helper function for F_CATCH machine code.
+   For a description of the addr argument, see inter_return_opcode_F_CATCH.
+   Returns the jump destination (for the catch body). */
+PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
+{
+#ifdef PIKE_DEBUG
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (F_CATCH - F_OFFSET);
+    if (Pike_interpreter.trace_level>3) {
+      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      write_to_stderr(trace_buffer,strlen(trace_buffer));
+    }
+  }
 #endif
+  {
+    struct catch_context *new_catch_ctx = alloc_catch_context();
+#ifdef PIKE_DEBUG
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+#else
+      init_recovery (&new_catch_ctx->recovery, 0);
+#endif
+    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
+
+    /* Note: no prologue. */
+    new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr);
+
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
+  }
+
+  Pike_fp->expendible_offset = Pike_fp->num_locals;
+
+  /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+   * address to the continue position after the catch block. */
+  return (PIKE_OPCODE_T *) ((INT32 *) addr + 1) + ENTRY_PROLOGUE_SIZE;
+}
+
+/* Helper function for F_CATCH machine code. Called when an exception
+   is caught. Pops the catch context and returns the continue jump
+   destination. */
+PIKE_OPCODE_T *handle_caught_exception(void)
+{
+  /* Caught an exception. */
+  struct catch_context *cc = Pike_interpreter.catch_ctx;
+  PIKE_OPCODE_T *addr;
+
+  DO_IF_DEBUG ({
+      TRACE((3,"-   Caught exception. catch context: %p\n", cc));
+      if (!cc) Pike_fatal ("Catch context dropoff.\n");
+      if (cc->frame != Pike_fp)
+	Pike_fatal ("Catch context doesn't belong to this frame.\n");
+    });
+
+  debug_malloc_touch_named (cc, "(3)");
+  UNSETJMP (cc->recovery);
+  frame_set_expendible(Pike_fp, cc->save_expendible);
+  move_svalue (Pike_sp++, &throw_value);
+  mark_free_svalue (&throw_value);
+  low_destruct_objects_to_destruct();
+
+  if (cc->continue_reladdr < 0)
+    FAST_CHECK_THREADS_ON_BRANCH();
+  addr = cc->next_addr + cc->continue_reladdr;
+
+  DO_IF_DEBUG({
+      TRACE((3,"-   Popping catch context %p ==> %p\n",
+	     cc, cc->prev));
+      if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+    });
+
+  Pike_interpreter.catch_ctx = cc->prev;
+  really_free_catch_context (cc);
+
+  return addr;
+}
+
+#endif /* OPCODE_INLINE_CATCH */
 
 #ifndef CALL_MACHINE_CODE
 #define CALL_MACHINE_CODE(pc)					\

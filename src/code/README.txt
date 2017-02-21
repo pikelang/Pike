@@ -221,6 +221,11 @@ OPCODE_RETURN_JUMPADDR
 	return to. This macro allows faster code on cpus where setting
 	the return address wreaks havoc in the instruction pipelines.
 
+OPCODE_INLINE_CATCH
+	If defined, each F_CATCH opcode should set up its own
+	recovery. Pike_interpreter.catching_eval_jmpbuf isn't used in
+	that case.
+
 JUMP_SET_TO_PC_AT_NEXT(PIKE_OPCODE_T *PC)
 	Used in I_JUMP opcodes to store the pc to the next
 	instruction, to compensate for any machine code that is
@@ -243,3 +248,9 @@ struct instr instrs[];
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 	Function to simplify implementation of F_CATCH in
 	OPCODE_INLINE_RETURN mode. See interpret.c for details.
+
+PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
+	Helper function for F_CATCH machine code. See interpret.c for details.
+
+PIKE_OPCODE_T *handle_caught_exception(void)
+	Helper function for F_CATCH machine code. See interpret.c for details.

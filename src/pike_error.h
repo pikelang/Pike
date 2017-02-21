@@ -34,17 +34,20 @@ static inline void Pike_fatal (const char *fmt, ...)
 #define HAVE_AND_USE_SIGSETJMP
 #define LOW_JMP_BUF		sigjmp_buf
 #define LOW_SETJMP(X)		sigsetjmp(X, 0)
+#define LOW_SETJMP_FUNC         sigsetjmp
 #define LOW_LONGJMP(X, Y)	siglongjmp(X, Y)
 #elif defined(HAVE__SETJMP) && defined(HAVE__LONGJMP)
 #define HAVE_AND_USE__SETJMP
 #define LOW_JMP_BUF		jmp_buf
 #define LOW_SETJMP(X)		_setjmp(X)
+#define LOW_SETJMP_FUNC         _setjmp
 #define LOW_LONGJMP(X, Y)	_longjmp(X, Y)
 #else
 /* Assume we have setjmp and longjmp, they are after all defined by ANSI C. */
 #define HAVE_AND_USE_SETJMP
 #define LOW_JMP_BUF		jmp_buf
 #define LOW_SETJMP(X)		setjmp(X)
+#define LOW_SETJMP_FUNC         setjmp
 #define LOW_LONGJMP(X, Y)	longjmp(X, Y)
 #endif
 
