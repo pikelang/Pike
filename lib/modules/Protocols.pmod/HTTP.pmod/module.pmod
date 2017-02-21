@@ -188,6 +188,7 @@ constant response_codes =
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;
@@ -546,6 +547,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;
