@@ -2109,6 +2109,7 @@ struct pike_frame *alloc_pike_frame(void)
       res->scope=0;
       res->pc = NULL;
 
+      res->save_locals_bitmask = NULL;
       return res;
     }
 
@@ -4092,8 +4093,10 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
     frame->num_locals = 0;
     frame->num_args = 0;
     frame->return_addr = NULL;
-    if (UNLIKELY(frame->flags & PIKE_FRAME_SAVE_LOCALS))
+    if (UNLIKELY(frame->save_locals_bitmask)) {
       free(frame->save_locals_bitmask);
+      frame->save_locals_bitmask = NULL;
+    }
     frame->flags = 0;
     return;
   }
@@ -4300,6 +4303,7 @@ void LOW_POP_PIKE_FRAME(struct pike_frame *frame) {
       if (frame->flags & PIKE_FRAME_SAVE_LOCALS) {
         frame->flags &= ~PIKE_FRAME_SAVE_LOCALS;
         free(frame->save_locals_bitmask);
+        frame->save_locals_bitmask = NULL;
       }
       frame->num_locals = num_new_locals;
       frame->locals=s;
