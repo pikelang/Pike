@@ -87,6 +87,16 @@ object conthread;
 local function request_ok,request_fail;
 array extra_args;
 
+void init_async_timeout()
+{
+  call_out(async_timeout, timeout);
+}
+
+void remove_async_timeout()
+{
+  remove_call_out(async_timeout);
+}
+
 /****** internal stuff *********************************************/
 
 protected int ponder_answer( int|void start_position )
@@ -162,7 +172,7 @@ protected int ponder_answer( int|void start_position )
 
    // done
    ok=1;
-   remove_call_out(async_timeout);
+   remove_async_timeout();
 
    if (request_ok) request_ok(this,@extra_args);
    return 1;
@@ -317,7 +327,7 @@ protected void low_async_failed(int errno)
      this::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
-   remove_call_out(async_timeout);
+   remove_async_timeout();
 }
 
 protected void async_failed()
@@ -393,7 +403,7 @@ void async_fetch_read(mixed dummy,string data)
    if (has_index(headers, "content-length") &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
-      remove_call_out(async_timeout); // Bug 4773
+      remove_async_timeout(); // Bug 4773
       con->set_nonblocking(0,0,0);
       request_ok(this_object(), @extra_args);
    }
@@ -426,7 +436,7 @@ OUTER: while (sizeof(buf) > cpos) {
 	    }
 	    return;
 	} while(0);
-	remove_call_out(async_timeout);
+	remove_async_timeout();
 	con->set_nonblocking(0,0,0);
 	request_ok(this, @extra_args);
 	break;
@@ -437,7 +447,7 @@ void async_fetch_close()
 {
    DBG("-> close\n");
    close_connection();
-   remove_call_out(async_timeout);
+   remove_async_timeout();
    if (errno) {
      if (request_fail) (request_fail)(this_object(), @extra_args);
    } else {
@@ -803,7 +813,7 @@ this_program async_request(string server,int port,string query,
 
    // start open the connection
 
-   call_out(async_timeout,timeout);
+   init_async_timeout();
 
    // prepare the request
 
@@ -1289,6 +1299,8 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
+
+  // NB: Different timeout than init_async_timeout().
   call_out(async_timeout, data_timeout);
 
   // NB: The timeout is currently not reset on each read, so the whole
