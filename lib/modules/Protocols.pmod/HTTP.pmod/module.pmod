@@ -454,8 +454,14 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 {
   con->set_callbacks(@orig_cb_info);
 
+  // Install the timeout handler for the interval until
+  // the TLS connection is up.
+  con->init_async_timeout();
   con->con->set_nonblocking(0,
 			    lambda() {
+			      // Remove the timeout handler; it will be
+			      // reinstated by do_async_method() below.
+			      con->remove_async_timeout();
 			      do_async_method(method, url, query_variables,
 					      request_headers, con, data);
 			    }, con->async_failed);
