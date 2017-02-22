@@ -48,7 +48,15 @@ int id = ADT.get_item_id();
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
-  foreach(::_indices(this, 0), string index) {
+  foreach(
+#if __BUILD__ < 368
+	  // NB: Prior to 8.0.368 the new-style argument checking in _indices()
+	  //     was broken.
+	  ::_indices(2),
+#else
+	  ::_indices(this, 0),
+#endif
+	  string index) {
     mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }

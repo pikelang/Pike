@@ -418,7 +418,15 @@ class LowOptions
       env = getenv();
 
     // Make a list of all the arguments we can parse.
-    foreach(::_indices(this, 0), string index)
+    foreach(
+#if __BUILD__ < 368
+	    // NB: Prior to 8.0.368 the new-style argument checking in _indices()
+	    //     was broken.
+	    ::_indices(2),
+#else
+	    ::_indices(this, 0),
+#endif
+	    string index)
     {
       mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
