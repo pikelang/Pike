@@ -1,0 +1,8 @@
+subject: Pike 8.0: Protocols.HTTP: Support connecting to proxies via https
+from: d58b977dec60d2bb01371af35228acf3e519792a
+to: 5ab0a3901b8f549eaabd6c3defe3322888cbe362
+originator: Marcus Wellhardh
+depends: 2017-02-22T140859|pike/8.0.408
+restart: true
+
+• Protocols.HTTP: Support connecting to proxies via https.
