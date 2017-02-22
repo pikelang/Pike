@@ -4084,28 +4084,37 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
 
   Pike_mark_sp=frame->save_mark_sp;
 
-  /* reset some entries which are changed during
-   * execution of Pike code. We can probably 
-   * make most of these PIKE_DEBUG stuff */
-  frame->pc = c->ptr;
-  frame->num_locals = 0;
-  frame->num_args = 0;
-  frame->return_addr = NULL;
+  if (LIKELY(frame->refs == 1)) {
+    /* reset some entries which are changed during
+     * execution of Pike code. We can probably 
+     * make most of these PIKE_DEBUG stuff */
+    frame->pc = c->ptr;
+    frame->num_locals = 0;
+    frame->num_args = 0;
+    frame->return_addr = NULL;
+    if (UNLIKELY(frame->flags & PIKE_FRAME_SAVE_LOCALS))
+      free(frame->save_locals_bitmask);
+    frame->flags = 0;
+    return;
+  }
 
-  if (frame->refs == 1) return;
+  struct pike_frame *n = alloc_pike_frame();
 
-  fprintf(stderr, "callsite_reset for real\n");
-
-  struct pike_frame * n = alloc_pike_frame();
   *n = *frame;
   n->refs = 1;
+  n->flags = 0;
+  n->pc = c->ptr;
+  n->num_locals = 0;
+  n->num_args = 0;
+  n->return_addr = NULL;
+  if (n->scope) add_ref(n->scope);
+  add_ref(n->current_object);
+  add_ref(n->current_program);
 
   LOW_POP_PIKE_FRAME(frame);
 
   c->frame = n;
   Pike_fp = n;
-
-  if (!n->refs) Pike_fatal("help!\n");
 }
 
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
