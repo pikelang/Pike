@@ -1,0 +1,8 @@
+subject: Pike 8.0: Sync with release 6.1.200-r2
+from: 2f348f6c568400be0a8afea04f34f6b59e41d026
+to: d58b977dec60d2bb01371af35228acf3e519792a
+originator: Marcus Wellhardh
+depends: 2017-02-01T151715
+restart: true
+
+• release number bumped to 8.0.408 by export.pike
