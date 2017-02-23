@@ -1,0 +1,25 @@
+subject: Pike 8.0: Proxy support, Arg, ADT.Struct
+from: 5ab0a3901b8f549eaabd6c3defe3322888cbe362
+to: c9427bffcdd3e9b06fa2f5b917d2eff8f014b021
+originator: Marcus Wellhardh
+depends: 2017-02-22T140946
+restart: true
+
+• Arg & ADT.Struct: Survive use by old (ie 8.0.232) pike binaries.
+
+Prior to Pike 8.0.368 the new-style argument checking in ::_indices()
+was broken.
+
+Roxen 6.0.130 uses a Pike 8.0.232 binary with current modules.
+
+Fixes [PIKE-6].
+
+• Protocols.HTTP.do_async_proxied_method: Fix timeout handling.
+
+The HTTP timeout was lost during TLS negotiation.
+
+Fixes [PIKE-7].
+
+• Protocols.HTTP.Query: Added {init,remove}_async_timeout().
+
+Some code clean up in preparation for fixing [PIKE-7].
