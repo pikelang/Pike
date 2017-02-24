@@ -9646,7 +9646,7 @@ PMOD_EXPORT void init_reverse_symbol_table()
 
   /* Initialize with the most popular symbols. */
 #define ADD_SYMBOL(SYM)	simple_add_reverse_symbol(#SYM "()", (void *)(SYM))
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG) && defined(PIKE_USE_MACHINE_CODE)
   ADD_SYMBOL(simple_debug_instr_prologue_0);
   ADD_SYMBOL(simple_debug_instr_prologue_1);
   ADD_SYMBOL(simple_debug_instr_prologue_2);
