@@ -17,11 +17,11 @@ protected Thread.Condition cond = Thread.Condition();
 //! Global failure callback, called when a promise without failure
 //! callback fails. This is useful to log exceptions, so they are not
 //! just silently caught and ignored.
-void on_failure(function(mixed, mixed ... : void) f)
+void on_failure(function(mixed : void) f)
 {
   global_on_failure = f;
 }
-protected function(mixed, mixed ... : void) global_on_failure;
+protected function(mixed : void) global_on_failure;
 
 //! Value that will be provided asynchronously
 //! sometime in the future.
