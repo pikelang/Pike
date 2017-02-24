@@ -14,6 +14,15 @@ protected enum State {
 protected Thread.Mutex mux = Thread.Mutex();
 protected Thread.Condition cond = Thread.Condition();
 
+//! Global failure callback, called when a promise without failure
+//! callback fails. This is useful to log exceptions, so they are not
+//! just silently caught and ignored.
+void on_failure(function(mixed, mixed ... : void) f)
+{
+  global_on_failure = f;
+}
+protected function(mixed, mixed ... : void) global_on_failure;
+
 //! Value that will be provided asynchronously
 //! sometime in the future.
 //!
@@ -475,6 +484,8 @@ class Promise
     state = STATE_REJECTED;
     result = value;
     cond->broadcast();
+    if( !sizeof(failure_cbs) && global_on_failure )
+      call_out(global_on_failure, 0, value);
     foreach(failure_cbs,
 	    [function(mixed, mixed ...: void) cb,
 	     array(mixed) extra]) {
