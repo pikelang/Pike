@@ -1786,7 +1786,7 @@ static void do_trace_call(struct byte_buffer *b, INT32 args)
 
   if(buffer_content_length(b) > TRACE_LEN)
   {
-    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN);
     buffer_add_str(b, "...");
   }
 
@@ -1917,7 +1917,7 @@ static void do_trace_return (struct byte_buffer *b, int got_retval)
 
   if(buffer_content_length(b) > TRACE_LEN)
   {
-    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN);
     buffer_add_str(b, "...");
   }
 
