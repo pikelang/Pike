@@ -64,6 +64,12 @@ o Function local function declarations are now statements
   (and not expressions). This means that there is no longer
   any need to terminate them with a semicolon.
 
+o Anonymous class definitions are now always expressions.
+
+o Function local class definitions are now statements
+  (and not expressions). This means that there is no longer
+  any need to terminate them with a semicolon.
+
 o Complain about shadowed variant functions.
 
 o Machine code support for more architectures.
