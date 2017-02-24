@@ -2603,19 +2603,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   struct svalue *expected_stack=Pike_sp-args_;				 \
   struct svalue *s;						         \
   s = &Pike_fp->context->prog->constants[arg1].sval;			 \
-  if(Pike_interpreter.trace_level)					 \
-  {									 \
+  if(PIKE_NEEDS_TRACE())					         \
     do_trace_efun_call(s, args_);                                        \
-  }									 \
-  if (PIKE_FN_START_ENABLED()) {					 \
-    /* DTrace enter probe						 \
-       arg0: function name						 \
-       arg1: object							 \
-    */									 \
-    PIKE_FN_START(s->u.efun->name->size_shift == 0 ?			 \
-		  s->u.efun->name->str : "[widestring fn name]",	 \
-		  "");							 \
-  }									 \
   (*(s->u.efun->function))(args_);					 \
   DO_IF_PROFILING (s->u.efun->runs++);					 \
   if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
@@ -2635,16 +2624,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       Pike_fatal("Void function returned with a value on the stack: %s %d\n", \
 	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
   }									 \
-  if(Pike_interpreter.trace_level>1) {					 \
+  if (PIKE_NEEDS_TRACE())                                                \
     do_trace_efun_return(s, Pike_sp>expected_stack);                     \
-  }									 \
-  if (PIKE_FN_DONE_ENABLED()) {						 \
-    /* DTrace leave probe						 \
-       arg0: function name						 \
-    */									 \
-    PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?			 \
-		 s->u.efun->name->str : "[widestring fn name]");	 \
-  }									 \
 }while(0)
 #else
 #define DO_CALL_BUILTIN(ARGS) do {					\

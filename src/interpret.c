@@ -106,10 +106,10 @@ int fast_check_threads_counter = 0;
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
 static void do_trace_call(struct byte_buffer *buf, INT32 args);
-static void do_trace_func_return (int got_retval, struct object *o, int fun);
+static void do_trace_func_return (struct object *o, int fun, int got_retval);
 static void do_trace_return (struct byte_buffer *buf, int got_retval);
-static void do_trace_efun_call(const struct svalue *s, INT32 args);
 #ifdef PIKE_DEBUG
+static void do_trace_efun_call(const struct svalue *s, INT32 args);
 static void do_trace_efun_return(const struct svalue *s, int got_retval);
 #endif
 
@@ -1821,7 +1821,6 @@ static inline int eval_instruction(unsigned char *pc)
 #undef DO_IF_REAL_DEBUG
 #undef DO_IF_NOT_REAL_DEBUG
 
-
 ATTRIBUTE((noinline))
 static void do_trace_call(struct byte_buffer *b, INT32 args)
 {
@@ -1889,88 +1888,51 @@ static void do_trace_call(struct byte_buffer *b, INT32 args)
   buffer_free(b);
 }
 
-ATTRIBUTE((noinline))
-static void do_dtrace_function_call(struct object *o, const struct identifier *function, INT32 args) {
-  /* DTrace enter probe
-     arg0: function name
-     arg1: object
-  */
-  struct byte_buffer obj_name = BUFFER_INIT();
-  struct svalue obj_sval;
-  SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
-  safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
-  PIKE_FN_START(function->name->size_shift == 0 ?
-                function->name->str : "[widestring fn name]",
-                buffer_get_string(s));
-  buffer_free(&obj_name);
-}
-
-ATTRIBUTE((noinline))
-static void do_dtrace_func_return(struct object *o, int fun) {
-  /* DTrace leave probe
-     arg0: function name
-  */
-  char *fn = "(unknown)";
-  if (o && o->prog) {
-    struct identifier *id = ID_FROM_INT(o->prog, fun);
-    fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
-  }
-  PIKE_FN_DONE(fn);
-}
-
-ATTRIBUTE((noinline))
-static void do_dtrace_efun_call(const struct svalue *s, INT32 args) {
-  /* DTrace enter probe
-     arg0: function name
-     arg1: object
-   */
-  PIKE_FN_START(s->u.efun->name->size_shift == 0 ?
-                s->u.efun->name->str : "[widestring fn name]",
-                "");
-}
-ATTRIBUTE((noinline))
-static void do_dtrace_efun_return(const struct svalue *s, INT32 args) {
-  /* DTrace leave probe
-     arg0: function name
-  */
-  PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?
-               s->u.efun->name->str : "[widestring fn name]");
-}
-
-ATTRIBUTE((noinline))
-static void do_trace_function_call(const struct object *o, const struct identifier *function, INT32 args) {
-  struct byte_buffer buffer = BUFFER_INIT();
-  char buf[50];
-
-  sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
-  buffer_add_str(&buffer, buf);
-  if (function->name->size_shift)
-    buffer_add_str (&buffer, "[widestring function name]");
-  else
-    buffer_add_str(&buffer, function->name->str);
-  do_trace_call(&buffer, args);
-}
-
+#ifdef PIKE_DEBUG
 ATTRIBUTE((noinline))
 static void do_trace_efun_call(const struct svalue *s, INT32 args) {
-  struct byte_buffer buf = BUFFER_INIT();
-  if (s->u.efun->name->size_shift)
-    buffer_add_str (&buf, "[widestring function name]");
-  else
-    buffer_add_str (&buf, s->u.efun->name->str);
-  do_trace_call(&buf, args);
+  if (Pike_interpreter.trace_level > 1) {
+    struct byte_buffer buf = BUFFER_INIT();
+    if (s->u.efun->name->size_shift)
+      buffer_add_str (&buf, "[widestring function name]");
+    else
+      buffer_add_str (&buf, s->u.efun->name->str);
+    do_trace_call(&buf, args);
+  }
+  if (PIKE_FN_START_ENABLED()) {
+    /* DTrace enter probe
+       arg0: function name
+       arg1: object
+     */
+    PIKE_FN_START(s->u.efun->name->size_shift == 0 ?
+                  s->u.efun->name->str : "[widestring fn name]",
+                  "");
+  }
 }
 
 ATTRIBUTE((noinline))
-static void do_trace_svalue_call(const struct svalue *s, INT32 args) {
-  struct byte_buffer buf = BUFFER_INIT();
-  safe_describe_svalue(&buf, s,0,0);
-  do_trace_call(&buf, args);
+static void do_trace_efun_return(const struct svalue *s, int got_retval) {
+  if (Pike_interpreter.trace_level > 1) {
+    struct byte_buffer buf = BUFFER_INIT();
+    if (s->u.efun->name->size_shift)
+      buffer_add_str (&buf, "[widestring function name]");
+    else
+      buffer_add_str (&buf, s->u.efun->name->str);
+    buffer_add_str (&buf, "() ");
+    do_trace_return (&buf, got_retval);
+  }
+  if (PIKE_FN_DONE_ENABLED()) {
+    /* DTrace leave probe
+       arg0: function name
+    */
+    PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?
+                 s->u.efun->name->str : "[widestring fn name]");
+  }
 }
-
+#endif
 
 ATTRIBUTE((noinline))
-static void do_trace_func_return (int got_retval, struct object *o, int fun)
+static void do_trace_func_return (struct object *o, int fun, int got_retval)
 {
   struct byte_buffer b = BUFFER_INIT();
   if (o) {
@@ -1990,19 +1952,6 @@ static void do_trace_func_return (int got_retval, struct object *o, int fun)
   }
   do_trace_return (&b, got_retval);
 }
-
-#ifdef PIKE_DEBUG
-ATTRIBUTE((noinline))
-static void do_trace_efun_return(const struct svalue *s, int got_retval) {
-  struct byte_buffer buf = BUFFER_INIT();
-  if (s->u.efun->name->size_shift)
-    buffer_add_str (&buf, "[widestring function name]");
-  else
-    buffer_add_str (&buf, s->u.efun->name->str);
-  buffer_add_str (&buf, "() ");
-  do_trace_return (&buf, got_retval);
-}
-#endif
 
 ATTRIBUTE((noinline))
 static void do_trace_return (struct byte_buffer *b, int got_retval)
@@ -2307,7 +2256,7 @@ void low_return(void)
 #endif
 
   if(UNLIKELY(Pike_interpreter.trace_level>1))
-    do_trace_func_return (1, o, fun);
+    do_trace_func_return (o, fun, 1);
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   free_object (o);
@@ -3317,6 +3266,10 @@ void really_clean_up_interpret(void)
  *
  */
 
+static void callsite_trace_return(const struct pike_callsite *c);
+static void callsite_trace_call_fun(const struct pike_callsite *c);
+static void callsite_trace_call_svalue(const struct pike_callsite *c, const struct svalue *s);
+
 ATTRIBUTE((noreturn, noinline))
 static void callsite_svalue_error(struct pike_callsite *c, const struct svalue *s) {
   INT32 args = c->args; 
@@ -3481,7 +3434,6 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
 #endif
     UNREACHABLE(break);
   }
-
   /*
    * The cases which do _not_ return, have a frame created. These are:
    * CALLTYPE_CFUN, CALLTYPE_PIKEFUN and CALLTYPE_PARENT_CLONE.
@@ -3517,6 +3469,9 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
 
   check_stack(256);
   check_mark_stack(256);
+
+  if (PIKE_NEEDS_TRACE())
+    callsite_trace_call_fun(c);
 }
 
 PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *c, struct object *o, int lfun) {
@@ -3569,6 +3524,8 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
     callsite_resolve_lfun(c, s->u.object, LFUN_CALL);
     return;
   }
+  if (PIKE_NEEDS_TRACE())
+    callsite_trace_call_svalue(c, s);
 }
 
 PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
@@ -3739,7 +3696,125 @@ PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
         stack_pop_n_elems_keep_top (sp - retval - 1);
     low_destruct_objects_to_destruct();
   }
+
+  if (PIKE_NEEDS_TRACE())
+    callsite_trace_return(c);
 }
+
+ATTRIBUTE((noinline))
+static void callsite_trace_call_fun(const struct pike_callsite *c) {
+  struct object *o = Pike_fp->current_object;
+  struct identifier *function = ID_FROM_INT (o->prog, Pike_fp->fun);
+
+  if (Pike_interpreter.trace_level > 1) {
+    struct byte_buffer buf = BUFFER_INIT();
+    char tmp[50];
+
+    sprintf(tmp, "%lx->", (long) PTR_TO_INT (o));
+    buffer_add_str(&buf, tmp);
+    if (function->name->size_shift)
+      buffer_add_str (&buf, "[widestring function name]");
+    else
+      buffer_add_str(&buf, function->name->str);
+    do_trace_call(&buf, c->args);
+  }
+  if (PIKE_FN_START_ENABLED()) {
+    /* DTrace enter probe
+       arg0: function name
+       arg1: object
+    */
+    struct byte_buffer buf = BUFFER_INIT();
+    struct svalue obj_sval;
+    SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
+    safe_describe_svalue(&buf, &obj_sval, 0, NULL);
+    PIKE_FN_START(function->name->size_shift == 0 ?
+                  function->name->str : "[widestring fn name]",
+                  buffer_get_string(s));
+    buffer_free(&buf);
+  }
+}
+
+ATTRIBUTE((noinline))
+static void callsite_trace_call_svalue(const struct pike_callsite *c, const struct svalue *s) {
+  if (Pike_interpreter.trace_level > 1) {
+    struct byte_buffer buf = BUFFER_INIT();
+
+    switch (c->type) {
+    case CALLTYPE_EFUN:
+      if (s->u.efun->name->size_shift)
+        buffer_add_str (&buf, "[widestring function name]");
+      else
+        buffer_add_str (&buf, s->u.efun->name->str);
+      break;
+    default:
+      /* this is CAST, CALL_ARRAY and the CLONE variants */
+      safe_describe_svalue(&buf, s, 0, 0);
+      break;
+    }
+
+    do_trace_call(&buf, c->args);
+  }
+  if (PIKE_FN_START_ENABLED()) {
+    struct byte_buffer buf = BUFFER_INIT();
+    const char *str;
+
+    switch (c->type) {
+    case CALLTYPE_EFUN:
+      if (s->u.efun->name->size_shift)
+        buffer_add_str (&buf, "[widestring function name]");
+      else
+        buffer_add_str (&buf, s->u.efun->name->str);
+      break;
+    default:
+      /* this is CAST, CALL_ARRAY and the CLONE variants */
+      safe_describe_svalue(&buf, s, 0, 0);
+      break;
+    }
+
+    PIKE_FN_START(buffer_get_string(&buf), "");
+    buffer_free(&buf);
+  }
+}
+
+ATTRIBUTE((noinline))
+static void callsite_trace_return(const struct pike_callsite *c) {
+  if (Pike_interpreter.trace_level > 1) {
+    int got_retval = c->retval < Pike_sp;
+
+    if (c->type == CALLTYPE_CFUN || c->type == CALLTYPE_PIKEFUN) {
+      do_trace_func_return(c->frame->current_object, c->frame->fun, got_retval);
+    } else {
+      struct byte_buffer buf = BUFFER_INIT();
+
+      if (c->type == CALLTYPE_EFUN) {
+        buffer_add_str(&buf, "EFUN");
+      } else {
+        struct svalue sv;
+
+        switch (c->type) {
+        case CALLTYPE_PARENT_CLONE:
+        case CALLTYPE_CLONE:
+          SET_SVAL(sv, T_PROGRAM, 0, program, c->ptr);
+          break;
+        case CALLTYPE_CAST:
+          SET_SVAL(sv, T_TYPE, 0, type, c->ptr);
+          break;
+        default:
+          /* not really reachable */
+          SET_SVAL(sv, T_INT, 0, integer, 0);
+          break;
+        }
+        safe_describe_svalue(&buf, &sv, 0, 0);
+      }
+
+      do_trace_return(&buf, got_retval);
+    }
+  }
+  if (PIKE_FN_DONE_ENABLED()) {
+    /* TODO: fixme */
+  }
+}
+
 
 /* Without fancy accounting stuff. This one can't assume there is an
  * identifier corresponding to the frame (i.e. _fp_->ident might be

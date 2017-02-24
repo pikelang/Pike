@@ -172,6 +172,12 @@ PMOD_EXPORT extern struct Pike_interpreter_struct *
 #define Pike_fp Pike_interpreter.frame_pointer
 #define Pike_mark_sp Pike_interpreter.mark_stack_pointer
 
+/*
+ * This is true when any of the tracing slowpaths need to be called.
+ */
+#define PIKE_NEEDS_TRACE()      UNLIKELY(Pike_interpreter.trace_level > 1 ||\
+                                 PIKE_FN_START_ENABLED() || PIKE_FN_DONE_ENABLED())
+
 
 void LOW_POP_PIKE_FRAME(struct pike_frame *frame);
 void POP_PIKE_FRAME(void);
