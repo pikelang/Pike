@@ -1,0 +1,23 @@
+subject: Pike 7.8: SSL cipher strength requirement, HTTP proxy
+from: b10a923d7c614213a7330537166fe0d54af361aa
+to: f0cec2c1662fd83672287fc98b78c14eb30ba7b1
+originator: Marcus Wellhardh
+depends: 2017-01-17T114856
+restart: true
+
+• Protocols.HTTP.do_async_proxied_method: Fix timeout handling.
+
+  The HTTP timeout was lost during TLS negotiation.
+
+  Fixes [PIKE-7].
+
+• Protocols.HTTP.Query: Added {init,remove}_async_timeout().
+
+  Some code clean up in preparation for fixing [PIKE-7].
+
+• Protocols.HTTP: Support connecting to proxies via https.
+
+• SSL.context: Reduce default cipher strength requirement to 112.
+
+  There are still some servers in the wild that require DES3 when
+  there's no support for elliptic curves.
