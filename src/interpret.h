@@ -201,7 +201,6 @@ static inline void callsite_prepare(struct pike_callsite *c) {
   callsite_save_jmpbuf(c);
 }
 
-PMOD_EXPORT void callsite_set_args(struct pike_callsite *c, INT32 args);
 PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c);
 
 static inline void callsite_free(struct pike_callsite *c) {
@@ -868,7 +867,6 @@ void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void *low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
-void unlink_previous_frame(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();

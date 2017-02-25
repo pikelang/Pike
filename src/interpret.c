@@ -2140,28 +2140,6 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
   return NULL;
 }
 
-void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
-  struct pike_frame *frame = Pike_fp;
-  void *ret;
-
-  if (frame->flags & PIKE_FRAME_NO_REUSE) {
-    /* We cannot reuse this frame. So we simply call mega_apply_low and are done. */
-    mega_apply_low(args, o, fun);
-    return NULL;
-  }
-
-  ret = lower_mega_apply(args, o, fun);
-
-  if (ret) {
-#ifdef PIKE_DEBUG
-    frame->pc = 0;
-#endif
-    unlink_previous_frame();
-  }
-
-  return ret;
-}
-
 /* Apply a function.
  *
  * Application types:
@@ -2219,27 +2197,84 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   return NULL;
 }
 
+/* TAILCALL optimization variants. They try to reuse the current frame */
 void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void *arg2) {
   struct pike_frame *frame = Pike_fp;
-  void *ret;
+  struct pike_callsite C;
 
-  if (frame->flags & PIKE_FRAME_NO_REUSE) {
-    /* We cannot reuse this frame. So we simply call mega_apply and are done. */
-    mega_apply(type, args, arg1, arg2);
-    return NULL;
+  callsite_init(&C);
+  callsite_set_args(&C, args);
+
+  /* We can reuse the current frame, so we set it into C here
+   * to allow callsite_resolve_* to pick it up
+   */
+  if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
+      C.frame = Pike_fp;
   }
 
-  ret = low_mega_apply(type, args, arg1, arg2);
-
-  if (ret) {
-#ifdef PIKE_DEBUG
-    frame->pc = 0;
-#endif
-    unlink_previous_frame();
+  switch (type) {
+  case APPLY_STACK:
+      C.args--;
+      callsite_resolve_svalue(&C, Pike_sp - args);
+      break;
+  case APPLY_SVALUE_STRICT:
+      C.flags |= CALL_NEED_NO_RETVAL;
+  case APPLY_SVALUE:
+      callsite_resolve_svalue(&C, arg1);
+      break;
+  case APPLY_LOW:
+      Pike_fatal("Deprecated. Use lower_mega_apply instead.\n");
+      break;
   }
 
+  /* If the same frame is still set, either
+   *    - this is a pike function and we can just return
+   *      the jmp target
+   *    - or this is some other calltype which does not
+   *      use a frame at all, so we just set it to NULL
+   */
+  if (C.frame == frame) {
+      if (C.type == CALLTYPE_PIKEFUN) {
+          FAST_CHECK_THREADS_ON_CALL();
+          return C.ptr;
+      } else C.frame = NULL;
+  }
 
-  return ret;
+  callsite_prepare(&C);
+  callsite_execute(&C);
+  callsite_return(&C);
+  callsite_free(&C);
+
+  return NULL;
+}
+
+/* NOTE: see comments in low_mega_apply_tailcall() */
+void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
+  struct pike_frame *frame = Pike_fp;
+  struct pike_callsite C;
+
+  callsite_init(&C);
+  callsite_set_args(&C, args);
+
+  if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
+      C.frame = Pike_fp;
+  }
+
+  callsite_resolve_fun(&C, o, fun);
+
+  if (C.frame == frame) {
+      if (C.type == CALLTYPE_PIKEFUN) {
+          FAST_CHECK_THREADS_ON_CALL();
+          return C.ptr;
+      } else C.frame = NULL;
+  }
+
+  callsite_prepare(&C);
+  callsite_execute(&C);
+  callsite_return(&C);
+  callsite_free(&C);
+
+  return NULL;
 }
 
 void low_return(void)
@@ -2304,77 +2339,6 @@ void low_return(void)
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   free_object (o);
 #endif
-}
-
-void unlink_previous_frame(void)
-{
-  struct pike_frame *current, *prev;
-
-  current=Pike_interpreter.frame_pointer;
-  prev=current->next;
-#ifdef PIKE_DEBUG
-  {
-    JMP_BUF *rec;
-
-    /* Check if any recoveries belong to the frame we're
-     * about to unlink.
-     */
-    if((rec=Pike_interpreter.recoveries))
-    {
-      while(rec->frame_pointer == current) rec=rec->previous;
-      /* FIXME: Wouldn't a simple return be ok? */
-      if(rec->frame_pointer == current->next)
-	Pike_fatal("You can't touch this!\n");
-    }
-  }
-#endif
-  /* Save various fields from the previous frame.
-   */
-  frame_set_save_sp(current, frame_get_save_sp(prev));
-  current->save_mark_sp=prev->save_mark_sp;
-  current->flags = prev->flags & PIKE_FRAME_RETURN_MASK;
-
-  /* Unlink the top frame temporarily. */
-  Pike_interpreter.frame_pointer=prev;
-
-#ifdef PROFILING
-  {
-    /* We must update the profiling info of the previous frame
-     * to account for that the current frame has gone away.
-     */
-    cpu_time_t total_time =
-      get_cpu_time() - (Pike_interpreter.unlocked_time + current->start_time);
-    cpu_time_t child_time =
-      Pike_interpreter.accounted_time - current->children_base;
-    struct identifier *function =
-      current->context->prog->identifiers + current->ident;
-    if (!function->recur_depth)
-      function->total_time += total_time;
-    total_time -= child_time;
-    function->self_time += total_time;
-    Pike_interpreter.accounted_time += total_time;
-#ifdef PROFILING_DEBUG
-    fprintf(stderr, "%p: Unlinking previous frame.\n"
-	    "Previous: %" PRINT_CPU_TIME " %" PRINT_CPU_TIME "\n"
-	    "Current:  %" PRINT_CPU_TIME " %" PRINT_CPU_TIME "\n",
-	    Pike_interpreter.thread_state,
-	    prev->start_time, prev->children_base,
-	    current->start_time, current->children_base);
-#endif /* PROFILING_DEBUG */
-  }
-#endif /* PROFILING */
-
-  /* Unlink the frame. */
-  POP_PIKE_FRAME();
-
-  /* Hook our frame again. */
-  current->next=Pike_interpreter.frame_pointer;
-  Pike_interpreter.frame_pointer=current;
-
-#ifdef PROFILING
-  current->children_base = Pike_interpreter.accounted_time;
-  current->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
-#endif /* PROFILING */
 }
 
 static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
@@ -3482,14 +3446,39 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
    * CALLTYPE_CFUN, CALLTYPE_PIKEFUN and CALLTYPE_PARENT_CLONE.
    */
 
-  add_ref(o);
-  add_ref(p);
 
-  struct pike_frame *frame = alloc_pike_frame();
+  struct pike_frame *frame = c->frame;
 
-  frame->next = Pike_fp;
-  frame->current_object = o;
-  frame->current_program = p;
+  if (!frame || c->type != CALLTYPE_PIKEFUN) {
+      add_ref(o);
+      add_ref(p);
+      frame = alloc_pike_frame();
+
+      c->frame = frame;
+      frame->current_object = o;
+      frame->current_program = p;
+      frame->save_mark_sp=Pike_mark_sp;
+      frame->locals = Pike_sp - args;
+      frame_set_save_sp(frame, c->retval);
+
+      /* link new frame */
+      frame->next = Pike_fp;
+      Pike_fp = frame;
+  } else {
+      if (o != frame->current_object) {
+          free_object(frame->current_object);
+          add_ref(frame->current_object = o);
+
+          if (p != frame->current_program) {
+              free_program(frame->current_program);
+              add_ref(frame->current_program = p);
+          }
+      }
+      struct svalue *save_sp = frame_get_save_sp(frame);
+      frame->locals = Pike_sp - args;
+      frame_set_save_sp(frame, save_sp);
+  }
+
   frame->context = context;
   frame->fun = fun;
   frame->locals = Pike_sp - args;
@@ -3503,12 +3492,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   frame->num_locals = 0;
   frame->num_args = 0;
   frame->scope = scope;
-  frame->save_mark_sp=Pike_mark_sp;
   frame->return_addr = NULL;
-  frame_set_save_sp(frame, c->retval);
-
-  Pike_fp = frame;
-  c->frame = frame;
 
   check_stack(256);
   check_mark_stack(256);
@@ -3600,7 +3584,7 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
       free(frame->save_locals_bitmask);
       frame->save_locals_bitmask = NULL;
     }
-    frame->flags = 0;
+    frame->flags &= PIKE_FRAME_NO_REUSE;
     return;
   }
 
@@ -3608,7 +3592,7 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
 
   *n = *frame;
   n->refs = 1;
-  n->flags = 0;
+  n->flags = frame->flags & PIKE_FRAME_NO_REUSE;
   n->pc = c->ptr;
   n->num_locals = 0;
   n->num_args = 0;
@@ -3711,7 +3695,6 @@ PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
 
   /* NOTE: this is necessary because of recursion */
   if (c->type == CALLTYPE_PIKEFUN) {
-    c->frame = frame = Pike_fp;
     pop = frame->flags & PIKE_FRAME_RETURN_POP;
   }
 
