@@ -258,7 +258,19 @@ static inline void frame_set_expendible(struct pike_frame *frame, struct svalue 
 }
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
+
+/*
+ * If _RETURN_POP is set, the return value
+ * should be popped from the stack after the call.
+ */
 #define PIKE_FRAME_RETURN_POP 2
+
+/*
+ * If _NO_REPLACE is set, the frame *must* not be reused
+ * by tailcall optimizations. This is usually the case
+ * when one frame is used repeatedly, e.g. in f_map()
+ */
+#define PIKE_FRAME_NO_REUSE 4
 #define PIKE_FRAME_SAVE_LOCALS 0x4000 /* save_locals_bitmask is set */
 #define PIKE_FRAME_MALLOCED_LOCALS 0x8000
 
@@ -851,7 +863,9 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
 void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
+void *lower_mega_apply_tailcall( INT32 args, struct object *o, ptrdiff_t fun );
 void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+void *low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
@@ -859,7 +873,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
-PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2);
+PMOD_EXPORT void mega_apply_low(INT32 args, struct object *o, ptrdiff_t fun);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int safe_apply_low(struct object *o,int fun,int args);

@@ -2244,11 +2244,10 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		\
                         NAME " & return",I_UPDATE_ALL,                  \
 {                                                                       \
   PIKE_OPCODE_T *addr;                                                  \
-  if((addr = low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),   \
-                            ARG2,ARG3)))                                \
+  if((addr = low_mega_apply_tailcall(TYPE,                              \
+                                    (INT32)(Pike_sp - *--Pike_mark_sp), \
+                                    ARG2,ARG3)))                        \
   {                                                                     \
-    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
-    unlink_previous_frame();                                            \
     DO_JUMP_TO(addr);                                                   \
   }                                                                     \
   else {                                                                \
@@ -2296,10 +2295,8 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	\
                         "mark, " NAME " & return",I_UPDATE_ALL,         \
 {                                                                       \
   PIKE_OPCODE_T *addr;                                                  \
-  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
+  if((addr=low_mega_apply_tailcall(TYPE, 0, ARG2, ARG3)))               \
   {									\
-    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
-    unlink_previous_frame();                                            \
     DO_JUMP_TO(addr);                                                   \
   }                                                                     \
   else {                                                                \
@@ -2359,12 +2356,10 @@ OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
 
 OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
         PIKE_OPCODE_T *addr;
-        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
+        if((addr = lower_mega_apply_tailcall((INT32)(Pike_sp - *--Pike_mark_sp),
                             Pike_fp->current_object,
                                     (arg1+Pike_fp->context->identifier_level))))
         {
-            DO_IF_DEBUG(Pike_fp->next->pc=0);
-            unlink_previous_frame();
             DO_JUMP_TO(addr);
         }else{
             DO_DUMB_RETURN;
@@ -2401,11 +2396,9 @@ OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop", I_UPDATE_ALL, 
 
 OPCODE1_RETURN(F_MARK_CALL_LFUN_AND_RETURN , "mark, call lfun & return", I_UPDATE_ALL, {
     PIKE_OPCODE_T *addr;
-    if((addr = lower_mega_apply(0, Pike_fp->current_object,
+    if((addr = lower_mega_apply_tailcall(0, Pike_fp->current_object,
                                 (arg1+Pike_fp->context->identifier_level))))
     {
-      DO_IF_DEBUG(Pike_fp->next->pc=0);
-      unlink_previous_frame();
       DO_JUMP_TO(addr);
     }
     else
@@ -2543,7 +2536,12 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   struct svalue *s;
   s = Pike_sp - args;
-  if(TYPEOF(*s) == T_OBJECT)
+  /*
+   * this optimization is broken since *_tailcall was introduced.
+   * I have no idea why... Disable it for now.
+   *
+   */
+  if(0 && TYPEOF(*s) == T_OBJECT)
   {
     struct object *o;
     struct program *p;
@@ -2560,11 +2558,9 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 	if(fun >= 0)
 	{
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
-	  if((addr = lower_mega_apply(args-1, o, fun)))
+	  if((addr = lower_mega_apply_tailcall(args-1, o, fun)))
 	  {
 	    Pike_fp->save_sp_offset--;
-	    DO_IF_DEBUG(Pike_fp->next->pc=0);
-	    unlink_previous_frame();
 	    DO_JUMP_TO(addr);
 	  }
 	  stack_pop_keep_top();
@@ -2586,10 +2582,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if((addr = low_mega_apply(APPLY_STACK, args, 0, 0)))
+    if((addr = low_mega_apply_tailcall(APPLY_STACK, args, 0, 0)))
     {
-      DO_IF_DEBUG(Pike_fp->next->pc=0);
-      unlink_previous_frame();
       DO_JUMP_TO(addr);
     }
     DO_DUMB_RETURN;

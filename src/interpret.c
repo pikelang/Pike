@@ -2140,6 +2140,28 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
   return NULL;
 }
 
+void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
+  struct pike_frame *frame = Pike_fp;
+  void *ret;
+
+  if (frame->flags & PIKE_FRAME_NO_REUSE) {
+    /* We cannot reuse this frame. So we simply call mega_apply_low and are done. */
+    mega_apply_low(args, o, fun);
+    return NULL;
+  }
+
+  ret = lower_mega_apply(args, o, fun);
+
+  if (ret) {
+#ifdef PIKE_DEBUG
+    frame->pc = 0;
+#endif
+    unlink_previous_frame();
+  }
+
+  return ret;
+}
+
 /* Apply a function.
  *
  * Application types:
@@ -2197,7 +2219,28 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   return NULL;
 }
 
+void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void *arg2) {
+  struct pike_frame *frame = Pike_fp;
+  void *ret;
 
+  if (frame->flags & PIKE_FRAME_NO_REUSE) {
+    /* We cannot reuse this frame. So we simply call mega_apply and are done. */
+    mega_apply(type, args, arg1, arg2);
+    return NULL;
+  }
+
+  ret = low_mega_apply(type, args, arg1, arg2);
+
+  if (ret) {
+#ifdef PIKE_DEBUG
+    frame->pc = 0;
+#endif
+    unlink_previous_frame();
+  }
+
+
+  return ret;
+}
 
 void low_return(void)
 {
@@ -2366,7 +2409,7 @@ PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *
   CALL_AND_UNSET_ONERROR(uwp);
 }
 
-PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
+PMOD_EXPORT void mega_apply_low(INT32 args, struct object *o, ptrdiff_t fun)
 {
   /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
    * following eval_instruction will install a LOW_JMP_BUF of its
@@ -2381,7 +2424,7 @@ PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
    * practically zero. */
   check_c_stack(Pike_interpreter.c_stack_margin ?
 		Pike_interpreter.c_stack_margin : 100);
-  if( lower_mega_apply( args, arg1, arg2 ) )
+  if( lower_mega_apply( args, o, fun ) )
   {
     eval_instruction(Pike_fp->pc
 #ifdef ENTRY_PROLOGUE_SIZE
