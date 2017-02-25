@@ -2100,17 +2100,14 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
 {
   struct program *ret = NULL;
-  struct node_s *n = resolve_identifier(ident);
-  if (n) {
-    if ((n->token == F_CONSTANT) && (TYPEOF(n->u.sval) == T_PROGRAM) &&
-	(ret = n->u.sval.u.program)) {
+  if (low_resolve_identifier(ident)) {
+    if ((ret = program_from_svalue(Pike_sp-1))) {
       add_ref(ret);
-    } else {
-      my_yyerror("Invalid program identifier '%S'.", ident);
     }
-    free_node(n);
-  } else {
-    my_yyerror("Unknown program identifier '%S'.", ident);
+    pop_stack();
+  }
+  if (!ret) {
+    my_yyerror("Invalid program identifier '%S'.", ident);
   }
   return ret;
 }
