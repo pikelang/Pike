@@ -1146,29 +1146,16 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 {
   if(dir) {
     struct dirent *d;
-    struct dirent *tmp = NULL;
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+#if defined(_REENTRANT)
 #define FPR 1024
     char buffer[MAXPATHLEN * 4];
     char *ptrs[FPR];
     ptrdiff_t lens[FPR];
-
-#ifndef NAME_MAX
-#define NAME_MAX 1024
-#endif
-    if (name_max < NAME_MAX)
-      name_max = NAME_MAX;
-    if (name_max < 1024) name_max = 1024;
-
-    if (!(tmp = malloc(sizeof(struct dirent) + name_max + 1))) {
-      closedir(dir);
-      Pike_error("get_dir(): Out of memory\n");
-    }
-#endif /* _REENTRANT && HAVE_READDIR_R */
+#endif /* _REENTRANT */
 
     BEGIN_AGGREGATE_ARRAY(10);
 
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+#if defined(_REENTRANT)
     while(1)
     {
       int e;
@@ -1180,65 +1167,27 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 
       while(1)
       {
-#if defined(HAVE_SOLARIS_READDIR_R)
-	/* Solaris readdir_r returns the second arg on success,
-	 * and returns NULL on error or at end of dir.
-	 */
-	errno=0;
-	do {
-	  d=readdir_r(dir, tmp);
-	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
-	if (!d) {
-	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
-	   */
-	  if (errno == ENOENT) {
-	    err = 0;
-	  } else {
-	    err = errno;
-	  }
-	  break;
-	}
-#elif defined(HAVE_HPUX_READDIR_R)
-	/* HPUX's readdir_r returns an int instead:
+	/* Modern impementations of readdir(3C) are thread-safe with
+	 * respect to unique DIRs.
 	 *
-	 *  0	- Successfull operation.
-	 * -1	- End of directory or encountered an error (sets errno).
+	 * Linux Glibc has deprecated readdir_r(3C).
 	 */
-	errno=0;
-	if (readdir_r(dir, tmp)) {
-	  d = NULL;
-	  err = errno;
-	  break;
-	} else {
-	  d = tmp;
-	}
-#elif defined(HAVE_POSIX_READDIR_R)
-	/* POSIX readdir_r returns 0 on success, and ERRNO on failure.
-	 * at end of dir it sets the third arg to NULL.
-	 */
-	d = NULL;
 	errno = 0;
-	if ((err = readdir_r(dir, tmp, &d)) || !d) {
-          RDWERR("POSIX readdir_r() => err %d\n", err);
-          RDWERR("POSIX readdir_r(), d= 0x%08x\n", (unsigned int)d);
-          if (err == -1) {
-	    /* Solaris readdir_r returns -1, and sets errno. */
-	    err = errno;
-	  }
-          RDWERR("POSIX readdir_r() => errno %d\n", err);
+	while (!(d = readdir(dir)) && (errno == EINTR))
+	  ;
+	if (!d) {
+          RDWERR("readdir(), d= %p\n", d);
+          RDWERR("readdir() => errno %d\n", errno);
           /* Solaris readdir_r seems to set errno to ENOENT sometimes.
 	   *
-	   * AIX readdir_r seems to set errno to EBADF at end of dir.
+	   * AIX readdir seems to set errno to EBADF at end of dir.
 	   */
-	  if ((err == ENOENT) || (err == EBADF)) {
-	    err = 0;
+	  if ((errno == ENOENT) || (errno == EBADF)) {
+	    errno = 0;
 	  }
 	  break;
 	}
         RDWERR("POSIX readdir_r() => \"%s\"\n", d->d_name);
-#else
-#error Unknown readdir_r variant
-#endif
 	/* Filter "." and ".." from the list. */
 	if(d->d_name[0]=='.')
 	{
@@ -1255,7 +1204,6 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
       }
       THREADS_DISALLOW();
       if ((!d) && err) {
-	free(tmp);
 	Pike_error("get_dir(): readdir_r() failed: %d\n", err);
       }
       RDWERR("Pushing %d filenames...\n", num_files);
@@ -1269,8 +1217,6 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 	break;
       DO_AGGREGATE_ARRAY(120);
     }
-
-    free(tmp);
 #else
     for(d=readdir(dir); d; d=readdir(dir))
     {

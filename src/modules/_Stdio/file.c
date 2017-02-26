@@ -5572,11 +5572,10 @@ static void f_get_all_active_fd(INT32 args)
       {
         INT_TYPE fd;
         char *ep;
-        struct dirent ent, *res;
+        struct dirent *res;
         /* solaris, linux, cygwin, darwin, netbsd et.al. */
         res = NULL;
-        while( UNLIKELY(readdir_r( tmp, &ent, &res ))
-               && UNLIKELY(errno==EINTR))
+        while( UNLIKELY(!(res = readdir(tmp))) && UNLIKELY(errno==EINTR))
           ;
         if( !res )
           break;
