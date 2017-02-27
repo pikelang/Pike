@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -1046,7 +1046,7 @@ PIKECLASS ECC_Curve
 
     /*! @decl void set_private_key(object(Gmp.mpz)|int k)
      *!
-     *! Set the private key (and corresponding private key).
+     *! Set the private key (and corresponding public key).
      *!
      *! @note
      *!   Throws errors if the key isn't valid for the curve.
