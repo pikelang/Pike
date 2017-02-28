@@ -284,6 +284,10 @@ PIKECLASS odbc
 
   DECLARE_STORAGE;
 
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
+
 /*
  * Helper functions
  */
@@ -609,6 +613,7 @@ static void odbc_free_string(struct pike_string *s)
 }
 
 PIKEFUN object big_query(string q)
+  flags ID_VARIANT;
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG
@@ -671,6 +676,7 @@ PIKEFUN object big_query(string q)
 }
 
 PIKEFUN object big_typed_query(string q)
+  flags ID_VARIANT;
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG
