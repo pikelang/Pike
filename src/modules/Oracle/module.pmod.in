@@ -12,10 +12,10 @@ class oracle
 {
   inherit M::oracle : O;
 
-  object big_typed_query(object(compile_query)|string query,
-			 void|mapping(int|string:
-				      int|float|string|multiset(string)) binds,
-			 void|int autocommit)
+  variant Sql.Result big_typed_query(object(compile_query)|string query,
+				     void|mapping(int|string:
+						  int|float|string|multiset(string)) binds,
+				     void|int autocommit)
     {
       if(stringp(query)) query=compile_query(query);
       object ret = query->big_typed_query(binds, autocommit, this);
@@ -29,7 +29,7 @@ class oracle
       }
     }
 
-  object list_tables(void|string wild)
+  Sql.Result list_tables(void|string wild)
     {
       if(wild)
       {
