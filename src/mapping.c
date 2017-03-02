@@ -541,8 +541,11 @@ static struct mapping *rehash(struct mapping *m, int hashsize)
   if (hashsize & (hashsize - 1))
     hashsize = find_next_power(hashsize);
   if ((md->hashsize == hashsize) && (md->refs == 1)
+      /* FIXME: Paranoia check below; is this needed? */
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
       && md->free_list
+#else
+      && (md->size < md->num_keypairs)
 #endif
       ) return m;
 
@@ -902,7 +905,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md, *omd;
-  int md_too_small;
+  int grow_md;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -966,20 +969,19 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
   free_mapping_data(md);
 
-  md_too_small =
+  grow_md =
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
-    (!md->free_list);
+    (!md->free_list)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
-    (md->size >= md->num_keypairs);
+    (md->size >= md->num_keypairs)
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
+    ;
 
   /* We do a re-hash here instead of copying the mapping. */
-  if(md_too_small || md->refs>1)
+  if(grow_md || md->refs>1)
   {
-    int base_hashsize = md->hashsize ? md->hashsize : AVG_LINK_LENGTH;
-    int shift = md_too_small ? 1 : 0;
     debug_malloc_touch(m);
-    rehash(m, base_hashsize << shift);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1027,7 +1029,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   size_t h, h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
-  int md_too_small;
+  int grow_md;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -1094,20 +1096,19 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 
   if(t != T_INT) return 0;
 
-  md_too_small =
+  grow_md =
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
-    !(md->free_list);
+    (!md->free_list)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
-    (md->size >= md->num_keypairs);
+    (md->size >= md->num_keypairs)
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
+    ;
 
   /* no need to call PREPARE_* because we re-hash instead */
-  if(md_too_small || md->refs>1)
+  if(grow_md || md->refs>1)
   {
-    int base_hashsize = md->hashsize ? md->hashsize : AVG_LINK_LENGTH;
-    int shift = md_too_small ? 1 : 0;
     debug_malloc_touch(m);
-    rehash(m, base_hashsize << shift);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
