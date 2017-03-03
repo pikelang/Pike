@@ -542,12 +542,8 @@ static struct mapping *rehash(struct mapping *m, int hashsize)
     hashsize = find_next_power(hashsize);
   if ((md->hashsize == hashsize) && (md->refs == 1)
       /* FIXME: Paranoia check below; is this needed? */
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-      && md->free_list
-#else
-      && (md->size < md->num_keypairs)
-#endif
-      ) return m;
+      && !MD_FULLP(md))
+    return m;
 
   init_mapping(m, hashsize, md->flags);
   debug_malloc_touch(m);
@@ -969,13 +965,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
   free_mapping_data(md);
 
-  grow_md =
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-    (!md->free_list)
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-    (md->size >= md->num_keypairs)
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-    ;
+  grow_md = MD_FULLP(md);
 
   /* We do a re-hash here instead of copying the mapping. */
   if(grow_md || md->refs>1)
@@ -1096,13 +1086,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 
   if(t != T_INT) return 0;
 
-  grow_md =
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-    (!md->free_list)
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-    (md->size >= md->num_keypairs)
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-    ;
+  grow_md = MD_FULLP(md);
 
   /* no need to call PREPARE_* because we re-hash instead */
   if(grow_md || md->refs>1)

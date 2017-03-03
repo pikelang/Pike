@@ -71,11 +71,12 @@ extern struct mapping *gc_internal_mapping;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<(md)->hashsize;e++) for(k=(md)->hash[e];k;k=k->next)
-
+#define MD_FULLP(md) (!(md)->free_list)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define NEW_MAPPING_LOOP(md) \
   for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
+#define MD_FULLP(md) ((md)->size >= (md)->num_keypairs)
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
