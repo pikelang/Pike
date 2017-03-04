@@ -157,14 +157,14 @@ PIKECLASS SQLite
 {
   CVAR sqlite3 *db;
 
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
+
 /*! @class ResObj
  *!
  *! Result object from @[big_query()].
  */
-
-  /*! @decl inherit __builtin.Sql.Connection
-   */
-  INHERIT "__builtin.Sql.Connection";
 
 PIKECLASS ResObj
   flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
