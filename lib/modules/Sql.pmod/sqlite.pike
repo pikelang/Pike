@@ -1,11 +1,13 @@
-
 #pike __REAL_VERSION__
 #require constant(SQLite.SQLite)
+
+//! Interface to SQLite3 databases.
 
 // Cannot dump this since the #require check may depend on the
 // presence of system libs at runtime.
 constant dont_dump_program = 1;
 
+//!
 inherit SQLite.SQLite;
 
 void create(string a, void|string b, void|mixed c, void|mixed d,
@@ -14,6 +16,7 @@ void create(string a, void|string b, void|mixed c, void|mixed d,
   ::create(a);
 }
 
+//!
 array list_fields(string n, string|void wild)
 {
   string qry = "";
@@ -79,6 +82,7 @@ array list_fields(string n, string|void wild)
   return fields;
 }
 
+//!
 array list_tables(string|void n)
 {
   string qry = "";

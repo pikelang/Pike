@@ -5,6 +5,7 @@
 */
 
 #include "global.h"
+#include "pike_compiler.h"
 #include "interpret.h"
 #include "backend.h"
 #include "module_support.h"
@@ -145,7 +146,6 @@ static void push_field(sqlite3_stmt *stmt, int field)
 }
 
 /*! @class SQLite
- *! @appears predef::Sql.sqlite
  *!
  *! Low-level interface to SQLite3 databases.
  *!
@@ -162,6 +162,10 @@ PIKECLASS SQLite
  *! Result object from @[big_query()].
  */
 
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
+
 PIKECLASS ResObj
   flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
 {
@@ -170,6 +174,10 @@ PIKECLASS ResObj
   CVAR sqlite3_stmt *stmt;
   CVAR int eof;
   CVAR int columns;
+
+  /*! @decl inherit __builtin.Sql.Result
+   */
+  INHERIT "__builtin.Sql.Result";
 
   static void ResObj_handle_error(void) {
     Pike_error("Sql.SQLite: %s\n",
@@ -434,7 +442,9 @@ PIKECLASS ResObj
    *!   @[Sql.Sql()->big_query()]
    */
   PIKEFUN object big_query(string query,
-			   mapping(string|int:mixed)|void bindings) {
+			   mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
 
     struct object *res;
     sqlite3_stmt *stmt;
@@ -458,7 +468,10 @@ PIKECLASS ResObj
     store->stmt = stmt;
 
     /* Add a reference to the database to prevent it from being
-       destroyed before the query object. */
+     * destroyed before the query object.
+     *
+     * FIXME: Use parent pointer instead?
+     */
     store->dbobj = this_object();
 
     if(bindings) {
