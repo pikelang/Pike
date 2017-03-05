@@ -1006,7 +1006,7 @@ string data(int|void max_length)
    }
 
    int len=(int)headers["content-length"];
-   int l = Int.NATIVE_MAX;
+   int l = (1<<31)-1;
 
    if(!undefinedp( len ))
    {
