@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2008-12-28 from http://www.iana.org/domains/root/db/
+// Updated 2017-03-05 from http://www.iana.org/domains/root/db/
 
 #pike __REAL_VERSION__
 
@@ -60,6 +60,7 @@ constant cc = ([
   "cs": "Serbia and Montenegro", // Deprecated
   "cu": "Cuba",
   "cv": "Cape Verde",
+  "cw": "Curacao",
   "cx": "Christmas Island",
   "cy": "Cyprus",
   "cz": "Czech Republic",
@@ -216,9 +217,10 @@ constant cc = ([
   "so": "Somalia",
   "sr": "Suriname",
   "st": "Sao Tome and Principe",
-  "su": "Soviet Union", // Deprecated
+  "su": "Soviet Union", // Deprecated // Revived...
   "sv": "El Salvador",
   "sy": "Syrian Arab Republic",
+  "sx": "Sint Maarten",
   "sz": "Swaziland",
   "tc": "Turks and Caicos Islands",
   "td": "Chad",
@@ -255,7 +257,7 @@ constant cc = ([
   "ws": "Samoa",
   "ye": "Yemen",
   "yt": "Mayotte",
-  "yu": "Yugoslavia",
+  "yu": "Yugoslavia", // Deprecated
   "za": "South Africa",
   "zm": "Zambia",
   "zw": "Zimbabwe"
@@ -285,3 +287,44 @@ multiset generic = (<
   "tel",
   "travel",
 >);
+
+#ifdef UPDATE
+void main()
+{
+  multiset new_generic = (<>);
+  mapping new_cctld = ([]);
+  string page = Protocols.HTTP.get_url_nice("http://www.iana.org/domains/root/db")[1];
+  Parser.HTML p = Parser.HTML();
+  array tds = ({});
+  p->add_tag("tr") {
+    tds = ({});
+  };
+  p->add_container("td", lambda(Parser.HTML p, mapping m, string c)
+    {
+      tds += ({ c });
+      if( sizeof(tds)==3 )
+      {
+        sscanf(tds[0], "%*s>.%s<", tds[0]);
+        sscanf(tds[0], "%*s>&#x200f;.%s&#200e;<", tds[0]);
+
+        switch(tds[1])
+        {
+        case "generic":
+          new_generic[tds[0]]=1;
+          break;
+        case "country-code":
+          new_cctld[tds[0]]=tds[2];
+          break;
+        }
+      }
+    });
+  p->finish(page);
+
+  //  foreach(new_cctld; string domain;)
+  //    if(!cc[domain]) write("Missing cctld %O\n", domain);
+  //  foreach(cc; string domain;)
+  //    if(!new_cctld[domain]) write("Removed cctld %O\n", domain);
+  //  foreach(new_generic; string domain;)
+  //    if(!generic[domain]) write("Missing generic %O\n", domain);
+}
+#endif
