@@ -54,6 +54,7 @@ return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
 
 
 // - Standards.URI
+// RFC 3986 5.4.1 Normal Examples
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
 test_equal((string)Standards.URI("g",             "http://a/b/c/d;p?q"), "http://a/b/c/g")
 test_equal((string)Standards.URI("./g",           "http://a/b/c/d;p?q"), "http://a/b/c/g")
@@ -76,7 +77,10 @@ test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
+
 test_equal((string)Standards.URI("",              "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q")
+
+// RFC 3986 5.4.2 Abnormal Examples
 test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
@@ -96,6 +100,7 @@ test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
 test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
+
 test_equal((string)Standards.URI("c?d=e", "http://a.b"), "http://a.b/c?d=e")
 test_equal(Standards.URI("http://www.com/")->get_query_variables(),([]))
 test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"]))
