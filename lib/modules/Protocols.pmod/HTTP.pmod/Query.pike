@@ -420,25 +420,29 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   con->async_connect(server, port,
-		      lambda(int success)
-		      {
-			if (success) {
-			  // Connect ok.
-			  if(https) {
-			    start_tls(0, 1);
-			  }
-			  else
-			    async_connected();
-			} else {
-			  // Connect failed.
-			  if (!con->is_open())
-			    // Other code assumes an existing con is
-			    // an open one.
-			    con = 0;
-			  async_failed();
-			}
-		      });
+   if( !con->async_connect(server, port,
+                           lambda(int success)
+                           {
+                             if (success) {
+                               // Connect ok.
+                               if(https) {
+                                 start_tls(0, 1);
+                               }
+                               else
+                                 async_connected();
+                             } else {
+                               // Connect failed.
+                               if (!con->is_open())
+                                 // Other code assumes an existing con is
+                                 // an open one.
+                                 con = 0;
+                               async_failed();
+                             }
+                           }))
+   {
+     DBG("Failed to open socket: %s.\n", strerror(con->errno()));
+     async_failed();
+   }
    // NOTE: In case of failure the timeout is already in place.
 }
 
