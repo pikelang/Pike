@@ -3687,7 +3687,7 @@ PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c) {
   Pike_interpreter.catching_eval_jmpbuf = NULL;
 }
 
-PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c) {
+PMOD_EXPORT void callsite_free_frame(const struct pike_callsite *c) {
   struct pike_frame *frame = c->frame;
   INT32 refs;
 
@@ -3723,7 +3723,7 @@ PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c) {
   UNSET_ONERROR(c->onerror);
 }
 
-PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
+PMOD_EXPORT void callsite_return_slowpath(const struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
   struct svalue *save_sp = c->retval;
   struct pike_frame *frame = c->frame;

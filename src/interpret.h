@@ -201,9 +201,9 @@ static inline void callsite_prepare(struct pike_callsite *c) {
   callsite_save_jmpbuf(c);
 }
 
-PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c);
+PMOD_EXPORT void callsite_free_frame(const struct pike_callsite *c);
 
-static inline void callsite_free(struct pike_callsite *c) {
+static inline void callsite_free(const struct pike_callsite *c) {
   if (LIKELY(!c->frame)) return;
   callsite_free_frame(c);
 }
@@ -221,9 +221,9 @@ static inline void callsite_reset(struct pike_callsite *c) {
   callsite_reset_pikecall(c);
 }
 
-PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c);
+PMOD_EXPORT void callsite_return_slowpath(const struct pike_callsite *c);
 
-static inline void callsite_return(struct pike_callsite *c) {
+static inline void callsite_return(const struct pike_callsite *c) {
   /* pike functions might recurse or set PIKE_FRAME_RETURN_POP */
   if (LIKELY(c->type != CALLTYPE_PIKEFUN && c->retval+1 == Pike_sp))
     return;
