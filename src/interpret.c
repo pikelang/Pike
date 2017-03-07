@@ -3319,16 +3319,16 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   struct pike_frame *scope = NULL;
   INT32 args = c->args;
 
-  if(!p)
+  if(UNLIKELY(!p))
     PIKE_ERROR("destructed object->function",
           "Cannot call functions in destructed objects.\n", Pike_sp, args);
 
-  if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
+  if(UNLIKELY(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK)))
     PIKE_ERROR("__empty_program() -> function",
           "Cannot call functions in unfinished objects.\n", Pike_sp, args);
 
-  if(p == pike_trampoline_program &&
-     fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
+  if(UNLIKELY(p == pike_trampoline_program &&
+     fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL)))
   {
     scope = ((struct pike_trampoline *)(o->storage))->frame;
     fun = ((struct pike_trampoline *)(o->storage))->func;
@@ -3363,7 +3363,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
 
   function = context->prog->identifiers + ref->identifier_offset;
 
-  if(function->func.offset == -1) {
+  if(UNLIKELY(function->func.offset == -1)) {
     generic_error(NULL, Pike_sp, args,
                   "Calling undefined function.\n");
   }
@@ -3446,7 +3446,6 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
    * CALLTYPE_CFUN, CALLTYPE_PIKEFUN and CALLTYPE_PARENT_CLONE.
    */
 
-
   struct pike_frame *frame = c->frame;
 
   if (!frame || c->type != CALLTYPE_PIKEFUN) {
@@ -3508,12 +3507,12 @@ PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *c, struct object *o
   if(lfun < 0 || lfun >= NUM_LFUNS)
     Pike_fatal("Illegal lfun.\n");
 #endif
-  if(!p)
+  if(UNLIKELY(!p))
     PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, c->args);
 
   int fun = FIND_LFUN(p, lfun);
 
-  if (fun < 0)
+  if (UNLIKELY(fun < 0))
     Pike_error ("Cannot call undefined lfun %s.\n", lfun_names[lfun]);
 
   callsite_resolve_fun(c, o, fun);
@@ -3591,9 +3590,11 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
      * execution of Pike code. We can probably 
      * make most of these PIKE_DEBUG stuff */
     frame->pc = c->ptr;
+#ifdef PIKE_DEBUG
     frame->num_locals = 0;
     frame->num_args = 0;
     frame->return_addr = NULL;
+#endif
     if (UNLIKELY(frame->save_locals_bitmask)) {
       free(frame->save_locals_bitmask);
       frame->save_locals_bitmask = NULL;
@@ -3608,9 +3609,11 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
   n->refs = 1;
   n->flags = frame->flags & PIKE_FRAME_NO_REUSE;
   n->pc = c->ptr;
+#ifdef PIKE_DEBUG
   n->num_locals = 0;
   n->num_args = 0;
   n->return_addr = NULL;
+#endif
   if (n->scope) add_ref(n->scope);
   add_ref(n->current_object);
   add_ref(n->current_program);
