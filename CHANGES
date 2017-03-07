@@ -1,6 +1,27 @@
 Changes since Pike 8.0.404 (release 8)
 ----------------------------------------------------------------------
 
+New Features
+------------
+
+o Calendar
+
+  Updated Calendar to use timezonedata from tzdata2017a.
+
+o Protocols.HTTP
+
+  - Connecting to HTTP proxies over HTTPS is now supported.
+
+  - do_async_proxied_method() lost the timeout during TLS negotiation.
+
+Bug fixes
+---------
+
+o Arg & ADT.Struct
+
+  Survive use by old (ie 8.0.232) pike binaries.
+
+  Roxen 6.0.130 uses a Pike 8.0.232 binary with current modules.
 
 
 Changes since Pike 8.0.388 (release 7)
