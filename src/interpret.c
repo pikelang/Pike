@@ -3555,6 +3555,20 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
     callsite_trace_call_svalue(c, s);
 }
 
+static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n) {
+  struct svalue *sp = Pike_sp;
+  ptrdiff_t pop = sp - save_sp - n;
+
+  if (!pop) return;
+
+  free_svalues(save_sp, pop, T_MIXED);
+  Pike_sp -= pop;
+
+  if (n) memmove(save_sp, save_sp+pop, n*sizeof(struct svalue));
+
+  low_destruct_objects_to_destruct();
+}
+
 PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
   struct pike_frame *frame;
 
@@ -3605,6 +3619,13 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
 
   c->frame = n;
   Pike_fp = n;
+
+  /*
+   * We pop all 'leftover' locals here, since that
+   * was not done in the last call to callsite_return.
+   */
+  if (c->retval + c->args < Pike_sp)
+    pike_pop_locals(c->retval, c->args);
 }
 
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
@@ -3667,16 +3688,32 @@ PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c) {
 }
 
 PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c) {
+  struct pike_frame *frame = c->frame;
+  INT32 refs;
+
 #ifdef PIKE_DEBUG
-  if (!c->frame)
+  if (!frame)
     Pike_fatal("callsite_free_frame called without frame.\n");
 #endif
 
   /* FREE FRAME */
 
   if (c->type == CALLTYPE_PIKEFUN)
-      Pike_mark_sp=Pike_fp->save_mark_sp;
-  POP_PIKE_FRAME();
+      Pike_mark_sp=frame->save_mark_sp;
+
+  refs = frame->refs;
+
+  LOW_POP_PIKE_FRAME(frame);
+
+  /* If the frame had more than 1 reference, no
+   * locals were poped, yet.
+   */
+  if (UNLIKELY(refs > 1)) {
+    ptrdiff_t needs_retval = !(frame->flags & PIKE_FRAME_RETURN_POP);
+
+    if (c->retval + needs_retval < Pike_sp)
+      pike_pop_locals(c->retval, needs_retval);
+  }
 
   if (c->type != CALLTYPE_PIKEFUN) return;
 
@@ -3688,15 +3725,9 @@ PMOD_EXPORT void callsite_free_frame(struct pike_callsite *c) {
 
 PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
-  struct svalue *retval = c->retval;
+  struct svalue *save_sp = c->retval;
   struct pike_frame *frame = c->frame;
-  int got_retval = 1;
-  int pop = 0;
-
-  /* NOTE: this is necessary because of recursion */
-  if (c->type == CALLTYPE_PIKEFUN) {
-    pop = frame->flags & PIKE_FRAME_RETURN_POP;
-  }
+  ptrdiff_t needs_retval = (c->type != CALLTYPE_PIKEFUN || !(frame->flags & PIKE_FRAME_RETURN_POP));
 
 #ifdef PIKE_DEBUG
   if(Pike_mark_sp < Pike_fp->save_mark_sp)
@@ -3705,22 +3736,23 @@ PMOD_EXPORT void callsite_return_slowpath(struct pike_callsite *c) {
     Pike_fatal("Stack error (also simple).\n");
 #endif
 
-  if (retval >= sp) {
+  if (save_sp >= sp) {
 #ifdef PIKE_DEBUG
-      if (retval - sp > 1)
+      if (save_sp - sp > 1)
         Pike_fatal("Stack too small after function call.\n");
 #endif
       /* return value missing */
-      if (!(c->flags & CALL_NEED_NO_RETVAL) && !pop) {
+      if (!(c->flags & CALL_NEED_NO_RETVAL) && needs_retval) {
           push_int(0);
-      } else got_retval = 0;
-  } else if (retval+1 < sp) {
-    /* garbage left on the stack */
-      if (pop)
-        pop_n_elems(sp-retval);
-      else
-        stack_pop_n_elems_keep_top (sp - retval - 1);
-    low_destruct_objects_to_destruct();
+      }
+  } else if ((!frame || frame->refs == 1)) {
+    /*
+     * some locals left on the stack. We can pop them here
+     * if the frame has one reference, only. Otherwise
+     * they will either be popped in callsite_reset or callsite_free
+     */
+    if (save_sp + needs_retval < sp)
+      pike_pop_locals(save_sp, needs_retval);
   }
 
   if (PIKE_NEEDS_TRACE())

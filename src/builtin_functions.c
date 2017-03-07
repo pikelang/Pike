@@ -8618,9 +8618,10 @@ PMOD_EXPORT void f_map(INT32 args)
            types |= 1 << TYPEOF(ITEM(d)[i]);
          }
 	 d->type_field = types;
-	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 
-         callsite_free(&C);
+         callsite_free_pop(&C);
+
+	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
         }
       case T_MAPPING:

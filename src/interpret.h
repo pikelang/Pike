@@ -377,6 +377,13 @@ PMOD_EXPORT extern void check_c_stack_margin(void);
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
+static inline void callsite_free_pop(const struct pike_callsite *c) {
+  if (LIKELY(c->frame))
+    callsite_free_frame(c);
+  if (c->retval < Pike_sp) pop_stack();
+}
+
+
 PMOD_EXPORT extern const char msg_pop_neg[];
 #define pop_n_elems(X)							\
  do {									\

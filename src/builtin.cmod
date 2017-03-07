@@ -4502,7 +4502,7 @@ static void low_automap(int d,
       stack_pop_to_no_free (ITEM(ret) + x);
       types |= 1 << TYPEOF(ITEM(ret)[x]);
     }
-    callsite_free(&C);
+    callsite_free_pop(&C);
   }
   ret->type_field = types;
   stack_unlink(args);
