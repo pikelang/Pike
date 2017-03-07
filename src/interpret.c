@@ -801,7 +801,7 @@ void print_return_value(void)
     safe_describe_svalue(&buf, Pike_sp-1,0,0);
     if(buffer_content_length(&buf) > TRACE_LEN)
     {
-      buffer_remove(&buf, buffer_content_length(&buf) - TRACE_LEN - 3);
+      buffer_remove(&buf, buffer_content_length(&buf) - TRACE_LEN);
       buffer_add_str(&buf, "...");
     }
     fprintf(stderr,"-    value: %s\n",buffer_get_string(&buf));
