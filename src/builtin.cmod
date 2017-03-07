@@ -4466,8 +4466,7 @@ static void low_automap(int d,
     f_allocate(1);
   } else {
     struct pike_callsite C;
-    callsite_init(&C);
-    callsite_set_args(&C, 0);
+    callsite_init(&C, 0);
     callsite_resolve_svalue(&C, fun);
     callsite_prepare(&C);
     /* We need to do this manually, because

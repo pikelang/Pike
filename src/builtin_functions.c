@@ -8589,8 +8589,7 @@ PMOD_EXPORT void f_map(INT32 args)
          push_array(d=allocate_array(n));
 	 types = 0;
 
-         callsite_init(&C);
-         callsite_set_args(&C, 0);
+         callsite_init(&C, 0);
          callsite_resolve_svalue(&C, mysp-2);
          callsite_prepare(&C);
 

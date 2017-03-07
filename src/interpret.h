@@ -182,14 +182,13 @@ PMOD_EXPORT extern struct Pike_interpreter_struct *
 void LOW_POP_PIKE_FRAME(struct pike_frame *frame);
 void POP_PIKE_FRAME(void);
 
-static inline void callsite_init(struct pike_callsite *c) {
+static inline void callsite_init(struct pike_callsite *c, INT32 args) {
+#ifdef PIKE_DEBUG
   c->type = CALLTYPE_NONE;
+  c->saved_jmpbuf = NULL;
+#endif
   c->flags = 0;
   c->frame = NULL;
-  c->saved_jmpbuf = NULL;
-}
-
-static inline void callsite_set_args(struct pike_callsite *c, INT32 args) {
   c->args = args;
   c->retval = Pike_sp - args;
 }
