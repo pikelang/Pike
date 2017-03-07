@@ -23,8 +23,10 @@ o Arg & ADT.Struct
 
 o Protocols.HTTP
 
-  Fixed do_async_proxied_method() losing the timeout during TLS
-  negotiation.
+  - Fixed do_async_proxied_method() losing the timeout during TLS
+    negotiation.
+
+  - Now avoids a deadlock if Query is unable to open socket.
 
 
 Changes since Pike 8.0.388 (release 7)
