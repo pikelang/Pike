@@ -933,7 +933,7 @@ static void f_signal(int args)
 #endif
     )
   {
-    Pike_error("Signal out of range.\n");
+    Pike_error("Signal %d out of range.\n", signum);
   }
 
   if(!signal_evaluator_callback)
