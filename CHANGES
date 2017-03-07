@@ -10,9 +10,7 @@ o Calendar
 
 o Protocols.HTTP
 
-  - Connecting to HTTP proxies over HTTPS is now supported.
-
-  - do_async_proxied_method() lost the timeout during TLS negotiation.
+  Connecting to HTTP proxies over HTTPS is now supported.
 
 Bug fixes
 ---------
@@ -22,6 +20,11 @@ o Arg & ADT.Struct
   Survive use by old (ie 8.0.232) pike binaries.
 
   Roxen 6.0.130 uses a Pike 8.0.232 binary with current modules.
+
+o Protocols.HTTP
+
+  Fixed do_async_proxied_method() losing the timeout during TLS
+  negotiation.
 
 
 Changes since Pike 8.0.388 (release 7)
