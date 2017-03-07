@@ -1301,6 +1301,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	      int e;
 	      /* Add line breaks to make the output easier to read. */
 	      buffer_add_str_unsafe(buf, "\\n\"\n");
+	      buffer_ensure_space(buf, indent);
 	      for (e = 2; e < indent; e++) {
 		buffer_add_char_unsafe(buf, ' ');
 	      }
