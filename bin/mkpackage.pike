@@ -151,6 +151,9 @@ class Package
 		    // Figure out the contents.
 		    "CONTENTS=`tar tf \"$TARFILE\" | sed -ne '/^"+
 		    replace(basename(install_filename), ".", "\\.")+"/,$p'`\n"
+		    // The same file may appear multiple times
+		    // in a tar archive if it has been replaced.
+		    "CONTENTS=`echo $CONTENTS|sort|uniq`\n"
 		    // Check if we're going to use a special tar for e.g. --add.
 		    "[ x\"$TAR\" = x ] && TAR=tar\n"
 		    "[ x\"$CPIO\" = x ] && CPIO=cpio\n"
