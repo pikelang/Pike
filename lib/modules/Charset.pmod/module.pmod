@@ -315,6 +315,7 @@ private class GSM03_38dec {
   {
     // Escape sequences for GSM 03.38.
     // cf http://en.wikipedia.org/wiki/Short_message_service
+    // https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=139
     string res =
       replace(trailer + decoder->drain(),
 	      "\eØ\e\u039b\e(\e)\e/\e<\e=\e>\e¡\ee"/2,
