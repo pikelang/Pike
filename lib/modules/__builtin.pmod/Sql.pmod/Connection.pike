@@ -40,6 +40,9 @@
 //! @note
 //!   Typed operation was not supported at all prior to Pike 7.8.363,
 //!   and may not be supported for all databases.
+//!
+//! @seealso
+//!   @[Sql.Connection], @[Sql.Sql()], @[Result]
 
 #define ERROR(X ...)	predef::error(X)
 
@@ -260,13 +263,19 @@ int decode_datetime(string datetime)
 //!   (eg @[Mysql.mysql()->create()]).
 //!
 //! @note
+//!   This function is typically called via @[Sql.Sql()].
+//!
+//! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
 //! @note
 //!   The base class (@[__builtin.Sql.Connection]) only has a prototype.
-void create(string host, void|string|mapping(string:int|string) db,
-	    void|string user, void|string _password,
-	    void|mapping(string:int|string) options);
+//!
+//! @seealso
+//!   @[Sql.Sql()]
+protected void create(string host, void|string|mapping(string:int|string) db,
+		      void|string user, void|string _password,
+		      void|mapping(string:int|string) options);
 
 //! Returns true if the connection seems to be open.
 //!
@@ -314,6 +323,7 @@ int ping()
   catch {
     return sizeof(query("SELECT 0 AS zero") || ({})) - 1;
   };
+  // FIXME: Inform is_open()?
   return -1;
 }
 
@@ -356,6 +366,8 @@ string get_charset()
 {
   return UNDEFINED;
 }
+
+// FIXME: _sprintf().
 
 protected array(mapping(string:mixed)) res_obj_to_array(.Result res_obj)
 {

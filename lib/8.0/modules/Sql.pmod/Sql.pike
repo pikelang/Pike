@@ -4,7 +4,7 @@
  * Henrik Grubbström 1996-01-09
  */
 
-#pike __REAL_VERSION__
+#pike 8.1
 
 //! This class encapsulates a connection to an SQL server. It is a
 //! generic interface on top of the DB server specific
