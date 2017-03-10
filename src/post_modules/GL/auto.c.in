@@ -20,11 +20,12 @@
 #include "mapping.h"
 #include "pike_types.h"
 
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#else
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
-#ifdef HAVE_OPENGL_GL_H
-#include <OpenGL/gl.h>
 #endif /* HAVE_OPENGL_GL_H */
 
 
