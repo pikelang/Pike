@@ -9,6 +9,7 @@
 #include "module_support.h"
 #include "sequence.h"
 #include "circular_list.h"
+#include "module.h"
 
 DECLARATIONS
 
