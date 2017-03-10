@@ -50,6 +50,9 @@
 //! @enddl
 //!
 //! @endsection
+//!
+//! @seealso
+//!   @[Sql.Connection], @[Sql.Sql()]
 
 #pike __REAL_VERSION__
 #require constant(Mysql.mysql)
@@ -58,6 +61,7 @@
 // presence of system libs at runtime.
 constant dont_dump_program = 1;
 
+//!
 inherit Mysql.mysql;
 
 #define UNICODE_DECODE_MODE	1 // Unicode decode mode
