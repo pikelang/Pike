@@ -3298,7 +3298,6 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   struct inherit *context;
   struct reference *ref;
   struct identifier *function;
-  struct pike_frame *scope = NULL;
   INT32 args = c->args;
 
   if(UNLIKELY(!p))
@@ -3312,7 +3311,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   if(UNLIKELY(p == pike_trampoline_program &&
      fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL)))
   {
-    scope = ((struct pike_trampoline *)(o->storage))->frame;
+    struct pike_frame *scope = ((struct pike_trampoline *)(o->storage))->frame;
     fun = ((struct pike_trampoline *)(o->storage))->func;
     o = scope->current_object;
     callsite_resolve_fun(c, o, fun);
@@ -3369,7 +3368,8 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
       /* this case needs a frame, too */
       break;
     }
-    /* Fall through */
+    callsite_resolve_svalue(c, s);
+    return;
   }
 
   case IDENTIFIER_VARIABLE:
@@ -3403,7 +3403,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   }
 
   default:
-    if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
+    if (UNLIKELY(IDENTIFIER_IS_ALIAS(function->identifier_flags))) {
       do {
         struct external_variable_context loc;
         loc.o = o;
@@ -3470,9 +3470,9 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   frame->current_storage = o->storage + context->storage_offset;
   frame->expendible_offset = 0;
   frame->args = args;
+  frame->scope = NULL;
   frame->num_locals = 0;
   frame->num_args = 0;
-  frame->scope = scope;
   frame->return_addr = NULL;
 
   check_stack(256);
