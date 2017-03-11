@@ -2134,7 +2134,6 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
   /* This is only needed for pike functions right now:
    * callsite_prepare(&C); */
   callsite_execute(&C);
-  callsite_return(&C);
   callsite_free(&C);
   return NULL;
 }
@@ -2189,7 +2188,6 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   }
   
   callsite_execute(&C);
-  callsite_return(&C);
   callsite_free(&C);
 
   return NULL;
@@ -2239,7 +2237,6 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
 
   callsite_prepare(&C);
   callsite_execute(&C);
-  callsite_return(&C);
   callsite_free(&C);
 
   return NULL;
@@ -2267,7 +2264,6 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
 
   callsite_prepare(&C);
   callsite_execute(&C);
-  callsite_return(&C);
   callsite_free(&C);
 
   return NULL;
@@ -2827,7 +2823,6 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
     callsite_resolve_svalue(&C, s);
     callsite_prepare(&C);
     callsite_execute(&C);
-    callsite_return(&C);
     callsite_free(&C);
 
     /* Note: do we still need those? I guess callsite_return takes care
@@ -3626,6 +3621,8 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
     pike_pop_locals(c->retval, c->args);
 }
 
+static void callsite_return_slowpath(const struct pike_callsite *c);
+
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
   FAST_CHECK_THREADS_ON_CALL();
   switch (c->type) {
@@ -3634,7 +3631,7 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
 #ifdef PIKE_DEBUG
     Pike_fatal("Unknown callsite type: %d\n", c->type);
 #endif
-    break;
+    UNREACHABLE(break);
   case CALLTYPE_EFUN:
   case CALLTYPE_CFUN:
     {
@@ -3650,7 +3647,7 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
 #endif
       eval_instruction(pc);
     }
-    break;
+    goto do_return;
   case CALLTYPE_CAST:
     o_cast(c->ptr, compile_type_to_runtime_type(c->ptr));
     break;
@@ -3672,6 +3669,10 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
     }
     break;
   }
+
+  if (LIKELY(c->retval+1 == Pike_sp)) return;
+do_return:
+  callsite_return_slowpath(c);
 }
 
 PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c) {
@@ -3721,7 +3722,7 @@ PMOD_EXPORT void callsite_free_frame(const struct pike_callsite *c) {
   UNSET_ONERROR(c->onerror);
 }
 
-PMOD_EXPORT void callsite_return_slowpath(const struct pike_callsite *c) {
+static void callsite_return_slowpath(const struct pike_callsite *c) {
   const struct svalue *sp = Pike_sp;
   struct svalue *save_sp = c->retval;
   struct pike_frame *frame = c->frame;

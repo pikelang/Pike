@@ -220,15 +220,6 @@ static inline void callsite_reset(struct pike_callsite *c) {
   callsite_reset_pikecall(c);
 }
 
-PMOD_EXPORT void callsite_return_slowpath(const struct pike_callsite *c);
-
-static inline void callsite_return(const struct pike_callsite *c) {
-  /* pike functions might recurse or set PIKE_FRAME_RETURN_POP */
-  if (LIKELY(c->type != CALLTYPE_PIKEFUN && c->retval+1 == Pike_sp))
-    return;
-  callsite_return_slowpath(c);
-}
-
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
     return frame->locals + frame->save_sp_offset;
 }

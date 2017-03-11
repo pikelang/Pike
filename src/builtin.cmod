@@ -4497,7 +4497,6 @@ static void low_automap(int d,
 
       if (x) callsite_reset(&C);
       callsite_execute(&C);
-      callsite_return(&C);
       stack_pop_to_no_free (ITEM(ret) + x);
       types |= 1 << TYPEOF(ITEM(ret)[x]);
     }
