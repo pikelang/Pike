@@ -700,7 +700,6 @@ enum apply_type
   APPLY_STACK, /* The function is the first argument */
   APPLY_SVALUE, /* arg1 points to an svalue containing the function */
   APPLY_SVALUE_STRICT, /* Like APPLY_SVALUE, but does not return values for void functions */
-  APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
 };
 
 #define APPLY_MASTER(FUN,ARGS) \
