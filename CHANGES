@@ -108,6 +108,12 @@ o Operator functions
 Incompatible changes
 --------------------
 
+o Sql.Sql is no longer a wrapper class, but a function.
+
+  The wrapper class has been obsoleted by introduction of the
+  new base class __builtin.Sql.Connection. Note that it is
+  still possible to use Sql.Sql as the type of connection objects.
+
 o Gz.crc32 and Nettle.crc32c now only return positive results.
 
 o glob() has changed.
