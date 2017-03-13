@@ -2,13 +2,6 @@
 class GDK2.Drawable;
 inherit G.Object;
 
-%{
-#ifndef __NT__
-#include <gdk/gdkx.h>
-#else
-#include <gdk/gdkwin32.h>
-#endif
-%}
 //! The GDK2.Bitmap, GDK2.Window and GDK2.Pixmap classes are all GDK drawables.
 //! <br />
 //! This means that you can use the same set of functions to draw in them.<br />
