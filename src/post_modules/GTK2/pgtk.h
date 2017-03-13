@@ -51,6 +51,16 @@
 #include <arpa/inet.h>
 #endif
 
+#if defined(HAVE_GDK_GDKX_H)
+#include <gdk/gdkx.h>
+#elif defined(HAVE_GDK_GDKWIN32_H)
+#include <gdk/gdkwin32.h>
+#elif defined(HAVE_GDK_GDKQUARTZ_H)
+#include <gdk/gdkquartz.h>
+#else
+#error Must have one of gdkx.h, gdkwin32.h, or gdkquartz.h available
+#endif
+
 /*
 #undef GTK_STYLE
 #define GTK_STYLE(X) ((GtkStyle *)X)
