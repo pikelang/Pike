@@ -10,12 +10,6 @@ inherit GDK2.Drawable;
 //!
 //! NOIMG
 %{
-#ifdef __NT__
-#include <gdk/gdkwin32.h>
-#else
-#include <gdk/gdkx.h>
-#endif
-
 GdkImage *pgtk2_pixmap_setup(struct object *o, int *free)
 {
   if (get_gdkobject(o,image))

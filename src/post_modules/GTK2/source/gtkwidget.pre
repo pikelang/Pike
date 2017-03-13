@@ -3,11 +3,6 @@ class GTK2.Widget;
 inherit GTK2.Object;
 
 %{
-#ifndef __NT__
-#include <gdk/gdkx.h>
-#else
-#include <gdk/gdkwin32.h>
-#endif
 #undef TWIN
 #undef _GC
 #define TWIN (GTK_WIDGET(THIS->obj)->window)
