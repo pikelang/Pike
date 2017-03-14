@@ -58,6 +58,7 @@ START_MARKER
           "\23\320D\330\346\231\211 \363\252\221\377\37\3")
 
   // _random
+cond_resolv(Random.Deterministic, [[
   test_do( add_constant("real_random", random) )
   test_do( add_constant("random", Random.Deterministic(54321)->random) )
   test_eq(random(Gmp.mpz(-1)), 0)
@@ -79,6 +80,7 @@ START_MARKER
   test_eval_error(random(Gmp.mpz(4711)))
   test_do( add_constant("random", real_random) )
   test_do( add_constant("real_random") )
+]])
 
   // _encode / _decode
   test_eq(decode_value(encode_value(Gmp.mpz(-1))), Gmp.mpz(-1))
