@@ -62,6 +62,8 @@
 
 #define ERROR(X ...)	     predef::error(X)
 
+inherit __builtin.Sql.Connection;
+
 final int _fetchlimit=FETCHLIMIT;
 final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;

@@ -480,6 +480,8 @@ outer:
 //!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
 class sql_result {
 
+  inherit __builtin.Sql.Result;
+
   private object pgsqlsess;
   private int eoffound;
   private conxion c;
