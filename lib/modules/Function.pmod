@@ -52,6 +52,9 @@ mixed splice_call(array args, function f, mixed|void ... extra)
 //! @code
 //!   Function.Y(lambda(function f, int n) { return n>1? n*f(n-1) : 1; })
 //! @endcode
+//!
+//! @seealso
+//!   @[this_function]
 function Y(function f)
 {
   return lambda(function p) {
@@ -96,20 +99,23 @@ function(mixed...:function(mixed...:mixed|void)) curry(function f)
 //! first argument unspecified while setting others, or simply change
 //! the argument order.
 //!
-//! The first argument is the function to be called.
+//! @param f
+//!   The first argument is the function to be called.
 //!
-//! All other arguments is either a generic value, which will be sent
-//! as-is to the funciton or one of the placeholder values define in
-//! [Function.Placeholder], or one of your own implementation (inherit
-//! Function.Placeholder.Base and implement the value function.).
+//! @param bind_args
+//!   All other arguments are either a generic value, which will be sent
+//!   as-is to the function or one of the placeholder values defined in
+//!   @[Function.Placeholder], or one of your own implementation (inherit
+//!   @[Function.Placeholder.Base] and implement the value function.).
 //!
 //! @example
-//!   This example returns a funciton that limits the given argument
+//!   This example returns a function that limits the given argument
 //!   to between 0 and 99.
-//! @code
-//!   import Function.Placeholder;
-//!   function clip = Function.bind(limit, 0, arg0, 100);
-//! @endcode
+//!
+//!   @code
+//!     import Function.Placeholder;
+//!     function clip = Function.bind(limit, 0, arg0, 100);
+//!   @endcode
 class bind(function f, mixed ... bind_args)
 {
     protected string _sprintf() {
@@ -200,7 +206,7 @@ function composite(function ... f)
 
 //! @module Placeholder
 //!
-//! Placeholder arguments for Function.bind
+//! Placeholder arguments for @[Function.bind]
 
 //! @ignore
 object Placeholder = class
