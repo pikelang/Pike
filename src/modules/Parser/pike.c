@@ -42,18 +42,11 @@
 
 inline static int m_isidchar( unsigned int x )
 {
-  if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x == '_')
-    return 1;
-  return 0;
+  if( (x>='0' && x<='9') ) return 0;
+  return isidchar(x);
 }
 
-inline static int m_isidchar2( unsigned int x )
-{
-  if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x=='_' ||
-      (x>='0'&&x<='9')||x=='$')
-    return 1;
-  return 0;
-}
+#define m_isidchar2(X) isidchar(X)
 
 
 #define PUSH_TOKEN push_token0
