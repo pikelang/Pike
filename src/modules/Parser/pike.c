@@ -20,6 +20,7 @@
 #include "stralloc.h"
 #include "program_id.h"
 #include <ctype.h>
+#include "whitespace.h"
 
 #include "parser.h"
 
@@ -46,13 +47,14 @@ inline static int m_isidchar( unsigned int x )
   return isidchar(x);
 }
 
-#define m_isidchar2(X) isidchar(X)
-
-
 #define PUSH_TOKEN push_token0
 #define TOKENIZE     tokenize0
 #define CHAR       p_wchar0
+#define m_isidchar2(X) isidchar(X)
+#define SPACECASE SPACECASE8
 #include "pike_tokenizer.h"
+#undef SPACECASE
+#undef m_isidchar2
 #undef TOKENIZE
 #undef CHAR
 #undef PUSH_TOKEN
@@ -60,7 +62,11 @@ inline static int m_isidchar( unsigned int x )
 #define PUSH_TOKEN push_token1
 #define TOKENIZE   tokenize1
 #define CHAR       p_wchar1
+#define m_isidchar2(X) wide_isidchar(X)
+#define SPACECASE SPACECASE16
 #include "pike_tokenizer.h"
+#undef SPACECASE
+#undef m_isidchar2
 #undef TOKENIZE
 #undef CHAR
 #undef PUSH_TOKEN
@@ -68,7 +74,11 @@ inline static int m_isidchar( unsigned int x )
 #define PUSH_TOKEN push_token2
 #define TOKENIZE   tokenize2
 #define CHAR       p_wchar2
+#define m_isidchar2(X) wide_isidchar(X)
+#define SPACECASE SPACECASE16
 #include "pike_tokenizer.h"
+#undef SPACECASE
+#undef m_isidchar2
 #undef TOKENIZE
 #undef CHAR
 #undef PUSH_TOKEN
