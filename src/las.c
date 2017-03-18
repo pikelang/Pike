@@ -2235,16 +2235,16 @@ static void low_print_tree(node *foo,int needlval)
     break;
 
   case F_ASSIGN:
-    low_print_tree(_CDR(foo),1);
+    low_print_tree(_CAR(foo),1);
     fputc('=', stderr);
-    low_print_tree(_CAR(foo),0);
+    low_print_tree(_CDR(foo),0);
     break;
 
   case F_ASSIGN_SELF:
-    low_print_tree(_CDR(foo),1);
+    low_print_tree(_CAR(foo),1);
     fputc(':', stderr);
     fputc('=', stderr);
-    low_print_tree(_CAR(foo),0);
+    low_print_tree(_CDR(foo),0);
     break;
 
   case F_POP_VALUE:
@@ -2653,8 +2653,8 @@ static int find_used_variables(node *n,
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    find_used_variables(CAR(n),p,noblock,0);
-    find_used_variables(CDR(n),p,noblock,1);
+    find_used_variables(CDR(n),p,noblock,0);
+    find_used_variables(CAR(n),p,noblock,1);
     break;
 
   case '?':
@@ -2779,8 +2779,8 @@ static void find_written_vars(node *n,
   case F_ASSIGN:
   case F_ASSIGN_SELF:
   case F_MULTI_ASSIGN:
-    find_written_vars(CAR(n), p, 0);
-    find_written_vars(CDR(n), p, 1);
+    find_written_vars(CDR(n), p, 0);
+    find_written_vars(CAR(n), p, 1);
     break;
 
   case F_APPEND_MAPPING:
@@ -3017,7 +3017,7 @@ static int depend2_p(node *n, node *lval)
 
   /* Make a temporary node (lval = 0), so that we can use depend_p(). */
   ADD_NODE_REF2(lval,
-		tmp = mknode(F_ASSIGN, mkintnode(0), lval));
+		tmp = mknode(F_ASSIGN, lval, mkintnode(0)));
   ret = depend_p(n, tmp);
   free_node(tmp);
   return ret;
@@ -3438,21 +3438,21 @@ void fix_type_field(node *n)
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+    if (!CDR(n) || (CDR(n)->type == void_type_string)) {
       yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
-    } else if (!CDR(n)) {
-      copy_pike_type(n->type, CAR(n)->type);
+    } else if (!CAR(n)) {
+      copy_pike_type(n->type, CDR(n)->type);
     } else {
       /* Ensure that the type-fields are up to date. */
       struct pike_type *t;
-      fix_type_field(CAR(n));
       fix_type_field(CDR(n));
-      if( CAR(n)->type->type == PIKE_T_AUTO )
+      fix_type_field(CAR(n));
+      if( CDR(n)->type->type == PIKE_T_AUTO )
       {
           /* Update to actual type (assign from soft-cast to auto). */
-          free_type( CAR(n)->type );
-          copy_pike_type( CAR(n)->type, CDR(n)->type );
+          free_type( CDR(n)->type );
+          copy_pike_type( CDR(n)->type, CAR(n)->type );
 
           /* potential extension: fix general case:
              auto z;
@@ -3464,9 +3464,9 @@ void fix_type_field(node *n)
       }
 #if 0
       /* This test isn't sufficient, see below. */
-      check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
+      check_node_type(CDR(n), CAR(n)->type, "Bad type in assignment.");
 #else /* !0 */
-      if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
+      if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
 	 *
 	 * FIXME: Exactly what case is the problem?
@@ -3477,16 +3477,16 @@ void fix_type_field(node *n)
 	 *   tmp->foo = 7;		// Multi-assign.
 	 *	/grubba 2007-04-27
 	 */
-	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
-	     !(match_types(array_type_string, CADR(n)->type))) &&
-	    !match_types(CDR(n)->type,CAR(n)->type)) {
-	  yytype_report(REPORT_ERROR, NULL, 0, CDR(n)->type,
-			NULL, 0, CAR(n)->type,
+	if (((CAR(n)->token != F_INDEX && CAR(n)->token != F_ARROW) ||
+	     !(match_types(array_type_string, CAAR(n)->type))) &&
+	    !match_types(CAR(n)->type, CDR(n)->type)) {
+	  yytype_report(REPORT_ERROR, NULL, 0, CAR(n)->type,
+			NULL, 0, CDR(n)->type,
 			0, "Bad type in assignment.");
 	} else {
 	  if (c->lex.pragmas & ID_STRICT_TYPES) {
-	    struct pike_string *t1 = describe_type(CAR(n)->type);
-	    struct pike_string *t2 = describe_type(CDR(n)->type);
+	    struct pike_string *t1 = describe_type(CDR(n)->type);
+	    struct pike_string *t2 = describe_type(CAR(n)->type);
 #ifdef PIKE_DEBUG
 	    if (l_flag > 0) {
 	      fputs("Warning: Invalid assignment: ", stderr);
@@ -3499,13 +3499,13 @@ void fix_type_field(node *n)
 	    free_string(t1);
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
-	    _CAR(n) = mksoftcastnode(CDR(n)->type,
-				     mkcastnode(mixed_type_string, CAR(n)));
+	    _CDR(n) = mksoftcastnode(CAR(n)->type,
+				     mkcastnode(mixed_type_string, CDR(n)));
 	  }
 	}
       }
 #endif /* 0 */
-      n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
+      n->type = and_pike_types(CDR(n)->type, CAR(n)->type);
     }
     break;
 
@@ -4062,12 +4062,12 @@ static void find_usage(node *n, unsigned char *usage,
   switch(n->token) {
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
-      usage[CDR(n)->u.integer.a] = 0;
-    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+    if ((CAR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
+      usage[CAR(n)->u.integer.a] = 0;
+    } else if (CAR(n)->token == F_ARRAY_LVALUE) {
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
     }
-    find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
+    find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     return;
 
   case F_SSCANF:
@@ -4331,31 +4331,31 @@ static node *low_localopt(node *n,
     /* FIXME: Does not support F_LOOP yet. */
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
+    if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
       /* Assignment of local variable */
-      if (!(usage[CDR(n)->u.integer.a] & 1)) {
+      if (!(usage[CAR(n)->u.integer.a] & 1)) {
 	/* Value isn't used. */
 	struct pike_type *ref_type;
 	MAKE_CONSTANT_TYPE(ref_type, tOr(tComplex, tString));
-	if (!match_types(CDR(n)->type, ref_type)) {
+	if (!match_types(CAR(n)->type, ref_type)) {
 	  /* The variable doesn't hold a refcounted value. */
 	  free_type(ref_type);
-	  return low_localopt(CAR(n), usage, switch_u, cont_u,
+	  return low_localopt(CDR(n), usage, switch_u, cont_u,
 			      break_u, catch_u);
 	}
 	free_type(ref_type);
       }
-      usage[CDR(n)->u.integer.a] = 0;
-      cdr = CDR(n);
-      ADD_NODE_REF(cdr);
-    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+      usage[CAR(n)->u.integer.a] = 0;
+      car = CAR(n);
+      ADD_NODE_REF(car);
+    } else if (CAR(n)->token == F_ARRAY_LVALUE) {
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
     } else {
-      cdr = CDR(n);
-      ADD_NODE_REF(cdr);
+      car = CAR(n);
+      ADD_NODE_REF(car);
     }
-    return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u, catch_u), cdr);
+    return mknode(n->token, low_localopt(CDR(n), usage, switch_u, cont_u,
+					 break_u, catch_u), car);
 
   case F_SSCANF:
     {

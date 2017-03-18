@@ -2738,8 +2738,8 @@ node *low_pop_local_variables(int level, node *block)
       block = mknode(F_COMMA_EXPR, block,
 		     mknode(F_POP_VALUE,
 			    mknode(F_ASSIGN,
-				   mkintnode(0),
-				   mklocalnode(e, 0)),
+				   mklocalnode(e, 0),
+				   mkintnode(0)),
 			    NULL));
     }
     if ((Pike_compiler->compiler_pass == 2) &&

@@ -891,8 +891,8 @@ def: modifiers optional_attributes simple_type optional_constant
 	for (e = $<number>8; e--;) {
 	  $12 = mknode(F_COMMA_EXPR,
 		       mknode(F_POP_VALUE,
-			      mknode(F_ASSIGN, mklocalnode(e, 0),
-				     mkidentifiernode(e)), NULL),
+			      mknode(F_ASSIGN, mkidentifiernode(e),
+				     mklocalnode(e, 0)), NULL),
 		       $12);
 	}
       }
@@ -1775,8 +1775,8 @@ new_name: TOK_IDENTIFIER
       }
       Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
 		       mkcastnode(void_type_string,
-				  mknode(F_ASSIGN,$4,
-					 mkidentifiernode($<number>3))));
+				  mknode(F_ASSIGN,
+					 mkidentifiernode($<number>3), $4)));
     }
     free_node($1);
   }
@@ -1810,7 +1810,7 @@ new_local_name: TOK_IDENTIFIER
 
     if (id >= 0) {
       /* FIXME: Consider using mklocalnode(id, -1). */
-      $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
+      $$=mknode(F_ASSIGN, mklocalnode(id,0), mkintnode(0));
     } else
       $$ = 0;
     free_node($1);
@@ -1840,7 +1840,7 @@ new_local_name: TOK_IDENTIFIER
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
-      $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
+      $$=mknode(F_ASSIGN, mklocalnode(id,0), $4);
     } else
       $$ = 0;
     free_node($1);
@@ -2669,8 +2669,7 @@ anon_class: TOK_CLASS line_number_info
 	      }
 	      create_code =
 		mknode(F_COMMA_EXPR, create_code,
-		       mknode(F_ASSIGN, local_node,
-			      mkidentifiernode(e)));
+		       mknode(F_ASSIGN, mkidentifiernode(e), local_node));
 	    }
 	  }
 
@@ -2926,8 +2925,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	      }
 	      create_code =
 		mknode(F_COMMA_EXPR, create_code,
-		       mknode(F_ASSIGN, local_node,
-			      mkidentifiernode(e)));
+		       mknode(F_ASSIGN, mkidentifiernode(e), local_node));
 	    }
 	  }
 
@@ -3430,23 +3428,13 @@ splice_expr: expr0
       | '@' expr0 { $$=mknode(F_PUSH_ARRAY,$2,0); };
 
 expr0: expr01
-  | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
-  | expr4 '=' error { $$=$1; reset_type_stack(); yyerrok; }
-  | bad_expr_ident '=' expr0 { $$=$3; }
-  | open_bracket_with_line_info low_lvalue_list ']' '=' expr0
+  | expr4 assign expr0  { $$=mknode($2,$1,$3); }
+  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | open_bracket_with_line_info low_lvalue_list ']' assign expr0
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($2);
     }
-    $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0));
-    COPY_LINE_NUMBER_INFO($$, $1);
-    free_node ($1);
-  }
-  | expr4 assign expr0  { $$=mknode($2,$1,$3); }
-  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
-  | bad_expr_ident assign expr0 { $$=$3; }
-  | open_bracket_with_line_info low_lvalue_list ']' assign expr0
-  {
     $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
@@ -3462,7 +3450,8 @@ expr01: expr1
   | expr1 '?' expr01 ':' expr01 { $$=mknode('?',$1,mknode(':',$3,$5)); }
   ;
 
-assign: TOK_AND_EQ { $$=F_AND_EQ; }
+assign: '='    { $$=F_ASSIGN; }
+  | TOK_AND_EQ { $$=F_AND_EQ; }
   | TOK_OR_EQ  { $$=F_OR_EQ; }
   | TOK_XOR_EQ { $$=F_XOR_EQ; }
   | TOK_LSH_EQ { $$=F_LSH_EQ; }
@@ -3813,7 +3802,7 @@ expr5: literal_expr
         temporary = add_local_name(empty_pike_string, $1->type, 0);
         Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
                   mknode(F_INDEX,  mklocalnode(temporary,0), $4));
 	$$ = pop_local_variables(temporary, $$);
       }
@@ -3846,7 +3835,7 @@ expr5: literal_expr
         temporary = add_local_name(empty_pike_string, $1->type, 0);
         Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0) ),
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
                   mknode(F_RANGE,  mklocalnode(temporary,0), range) );
 	$$ = pop_local_variables(temporary, $$);
       }
@@ -3917,7 +3906,7 @@ expr5: literal_expr
         Pike_compiler->compiler_frame->variable[temporary].flags |=
 	  LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
                   mknode(F_ARROW,  mklocalnode(temporary,0), $4));
 	$$ = pop_local_variables(temporary, $$);
       }
@@ -4886,8 +4875,8 @@ static node *add_protected_variable(struct pike_string *name,
 	p->init_node =
 	  mknode(F_COMMA_EXPR, Pike_compiler->init_node,
 		 mkcastnode(void_type_string,
-			    mknode(F_ASSIGN, initializer,
-				   mkidentifiernode(id))));
+			    mknode(F_ASSIGN,
+				   mkidentifiernode(id), initializer)));
 	initializer = NULL;
       }
       n = mkexternalnode(id, parent_depth);
@@ -4908,7 +4897,7 @@ static node *add_protected_variable(struct pike_string *name,
   id = add_local_name(name, type, n);
   if (id >= 0) {
     if (initializer) {
-      return mknode(F_ASSIGN, initializer, mklocalnode(id,0));
+      return mknode(F_ASSIGN, mklocalnode(id,0), initializer);
     }
     return mklocalnode(id, 0);
   }
