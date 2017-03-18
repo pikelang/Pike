@@ -1,3 +1,4 @@
+#include "whitespace.h"
 #define NEWLINE() do { while( pos<len && data[pos]!='\n' )pos++; } while(0)
 #define SKIPWHT() do {while(data[pos]==' '||data[pos]=='\t')pos++; } while(0)
 
@@ -186,22 +187,14 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  pos++;
 	break;
 
-      case ' ':
-      case '\n':
-      case '\r':
-      case '\t':
-      case '\14':
-	pos++;
+      SPACECASE8
+        pos++;
 	while( pos < len )
 	{
 	  switch(data[pos])
-	  {
-	    case ' ':
-	    case '\n':
-	    case '\r':
-	    case '\t':
-	    case '\14':
-	      pos++;
+          {
+            SPACECASE8
+              pos++;
 	      continue;
 	  }
 	  break;
