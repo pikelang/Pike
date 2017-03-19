@@ -1288,7 +1288,7 @@ static int do_docode2(node *n, int flags)
     if( CAR(n)->token == F_AUTO_MAP_MARKER )
     {
         int depth = 0;
-        node *lval = CAR(n);
+        node *lval = CDR(n);
         while( lval->token == F_AUTO_MAP_MARKER )
         {
             lval = CDR(lval);
