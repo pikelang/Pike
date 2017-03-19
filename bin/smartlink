@@ -200,11 +200,15 @@ fi
 case "$UNAME" in
   Darwin\ 1[3-9]*|Darwin\ [2-9][0-9]*)
     # C++ Name mangling changed here, need to be able to interoperate with modern libs
-    export MACOSX_DEPLOYMENT_TARGET=10.9
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x" ; then
+      export MACOSX_DEPLOYMENT_TARGET=10.9
+    fi
   ;;
   Darwin\ [7-9]*|Darwin\ [1-9][0-9]*)
     # Needs to be 10.3 or better for ld to accept "-undefined dynamic_lookup"
-    export MACOSX_DEPLOYMENT_TARGET=10.3
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x" ; then
+      export MACOSX_DEPLOYMENT_TARGET=10.3
+    fi
   ;;
   *)
   ;;
