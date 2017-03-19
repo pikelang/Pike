@@ -2261,6 +2261,8 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
   return NULL;
 }
 
+static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n);
+
 void low_return(void)
 {
   struct svalue *save_sp = frame_get_save_sp(Pike_fp);
@@ -2300,17 +2302,7 @@ void low_return(void)
   Pike_mark_sp=Pike_fp->save_mark_sp;
   POP_PIKE_FRAME();
 
-  if (pop)
-    pop_n_elems(Pike_sp-save_sp);
-  else
-    stack_pop_n_elems_keep_top (Pike_sp - save_sp - 1);
-
-  {
-      /* consider using a flag for immediate destruct instead... */
-      extern struct object *objects_to_destruct;
-      if( objects_to_destruct )
-          destruct_objects_to_destruct();
-  }
+  pike_pop_locals(save_sp, !pop);
 
 #ifdef PIKE_DEBUG
   if(save_sp+1 > Pike_sp && !pop)
@@ -3531,7 +3523,11 @@ static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n) {
 
   if (n) memmove(save_sp, save_sp+pop, n*sizeof(struct svalue));
 
-  low_destruct_objects_to_destruct();
+  {
+    extern struct object *objects_to_destruct;
+    if (UNLIKELY(objects_to_destruct))
+      low_destruct_objects_to_destruct();
+  }
 }
 
 PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
