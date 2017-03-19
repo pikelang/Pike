@@ -2579,13 +2579,12 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
     push_array(aa);
     for (e=0; e < a->size; e++)
     {
-      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
       Pike_sp+=args;
+      assign_svalues_no_free(Pike_sp-args, argp, args, BIT_MIXED);
       /* FIXME: Don't throw apply errors from apply_svalue here. */
       apply_svalue(ITEM(a)+e, args);
-      new_types |= 1 << TYPEOF(Pike_sp[-1]);
-      assign_svalue(ITEM(aa)+e, &Pike_sp[-1]);
-      pop_stack();
+      stack_pop_to_no_free(ITEM(aa)+e);
+      new_types |= 1 << TYPEOF(ITEM(aa)[e]);
     }
     aa->type_field = new_types;
 #ifdef PIKE_DEBUG
