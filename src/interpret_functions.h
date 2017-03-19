@@ -2898,7 +2898,21 @@ OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_ALL, {
 /* FIXME: adjust Pike_mark_sp */
 OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   PIKE_OPCODE_T *addr;
-  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
+  struct svalue *sp = Pike_sp;
+  struct svalue *locals = Pike_fp->locals;
+  INT32 args = (INT32)(sp - *--Pike_mark_sp);
+
+  if(sp != locals + args)
+  {
+    DO_IF_DEBUG({
+      if (sp < locals + args)
+	Pike_fatal("Pike_sp (%p) < Pike_fp->locals (%p) + args (%d)\n",
+	           sp, locals, args);
+    });
+    free_svalues(locals, sp - (locals + args), BIT_MIXED);
+    memmove(locals, sp-args, args*sizeof(struct svalue));
+    Pike_sp = locals + args;
+  }
 
   FAST_CHECK_THREADS_ON_CALL();
 
@@ -2906,17 +2920,6 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   addr += GET_JUMP();
   addr += ENTRY_PROLOGUE_SIZE;
   SET_PROG_COUNTER(addr);
-
-  if(Pike_sp-args != Pike_fp->locals)
-  {
-    DO_IF_DEBUG({
-      if (Pike_sp < Pike_fp->locals + args)
-	Pike_fatal("Pike_sp (%p) < Pike_fp->locals (%p) + args (%d)\n",
-	      Pike_sp, Pike_fp->locals, args);
-    });
-    assign_svalues(Pike_fp->locals, Pike_sp-args, args, BIT_MIXED);
-    pop_n_elems(Pike_sp - (Pike_fp->locals + args));
-  }
 
   FETCH;
   JUMP_DONE;
