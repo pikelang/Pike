@@ -140,7 +140,28 @@ static void push_field(sqlite3_stmt *stmt, int field)
       f_utf8_to_string(1);
     break;
   case SQLITE_NULL:
-    push_int(0); /* Val.Null instead? */
+    push_int(0); /* FIXME: Ought to be Val.Null. */
+    break;
+  }
+}
+
+static void push_string_field(sqlite3_stmt *stmt, int field)
+{
+  switch( sqlite3_column_type(stmt, field) ) {
+  case SQLITE_INTEGER:
+  case SQLITE_FLOAT:
+    push_text( (char*)sqlite3_column_text(stmt, field) );
+    break;
+  case SQLITE_BLOB:
+  case SQLITE_TEXT:
+    push_string( make_shared_binary_string
+                 ( sqlite3_column_blob(stmt, field),
+                   sqlite3_column_bytes(stmt, field) ) );
+    if( sqlite3_column_type(stmt, field)==SQLITE_TEXT )
+      f_utf8_to_string(1);
+    break;
+  case SQLITE_NULL:
+    push_int(0);
     break;
   }
 }
@@ -161,12 +182,12 @@ PIKECLASS SQLite
    */
   INHERIT "__builtin.Sql.Connection";
 
-/*! @class ResObj
+/*! @class TypedResult
  *!
- *! Result object from @[big_query()].
+ *! Result object from @[typed_big_query()].
  */
 
-PIKECLASS ResObj
+PIKECLASS TypedResult
   flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
 {
   CVAR struct object *dbobj;
@@ -179,7 +200,7 @@ PIKECLASS ResObj
    */
   INHERIT "__builtin.Sql.Result";
 
-  static void ResObj_handle_error(void) {
+  static void SQLite_TypedResult_handle_error(void) {
     Pike_error("Sql.SQLite: %s\n",
 	       sqlite3_errmsg(OBJ2_SQLITE(THIS->dbobj)->db));
   }
@@ -297,7 +318,7 @@ PIKECLASS ResObj
     case SQLITE_ROW:
       break;
     default:
-      ResObj_handle_error();
+      SQLite_TypedResult_handle_error();
     }
 
     for(i=0; i<THIS->columns; i++)
@@ -337,6 +358,58 @@ PIKECLASS ResObj
 /*! @endclass
  */
 
+/*! @class Result
+ *!
+ *! Result object from @[big_query()].
+ */
+
+PIKECLASS Result
+  flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
+{
+  /*! @decl inherit TypedResult */
+  INHERIT SQLite_TypedResult;
+
+  /* Access the inherited variables directly... */
+#undef THIS
+#define THIS	THIS_SQLITE_TYPEDRESULT
+
+  /*! @decl array fetch_row()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_row()]
+   */
+  PIKEFUN array fetch_row()
+  {
+    int i;
+    sqlite3_stmt *stmt = THIS->stmt;
+
+    if(THIS->eof) {
+      push_int(0);
+      return;
+    }
+
+    switch( step(stmt) ) {
+    case SQLITE_DONE:
+      THIS->eof = 1;
+      sqlite3_finalize(stmt);
+      THIS->stmt = 0;
+      push_int(0);
+      return;
+    case SQLITE_ROW:
+      break;
+    default:
+      SQLite_TypedResult_handle_error();
+    }
+
+    for(i=0; i<THIS->columns; i++)
+      push_string_field(stmt, i);
+    f_aggregate(THIS->columns);
+  }
+}
+
+/*! @endclass
+ */
+
 #undef THIS
 #define THIS THIS_SQLITE
 
@@ -354,17 +427,20 @@ PIKECLASS ResObj
     ERR( sqlite3_open(Pike_sp[-1].u.string->str, &THIS->db), THIS->db );
   }
 
-  /*! @decl array|int query(string query, @
-   *!			    mapping(string|int:mixed)|void bindings)
+  /*! @decl array|int typed_query(string query, @
+   *!			          mapping(string|int:mixed)|void bindings)
    *!
-   *! Perform a query against a SQLite database.
+   *! Perform a typed_query against a SQLite database.
+   *!
+   *! @note
+   *!   This was the behavior of @[query()] in Pike 8.0 and earlier.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->query()]
+   *!   @[Sql.Sql()->query()], @[query()]
    */
-  PIKEFUN array|int query(string query,
-			  mapping(string|int:mixed)|void bindings) {
-
+  PIKEFUN array|int typed_query(string query,
+				mapping(string|int:mixed)|void bindings)
+  {
     sqlite3_stmt *stmt;
     const char *tail;
     struct pike_string *q;
@@ -379,7 +455,7 @@ PIKECLASS ResObj
     ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
 	 THIS->db);
     if( tail[0] )
-      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
+      Pike_error("Sql.SQLite->typed_query: Trailing query data (\"%s\")\n",
 		 tail);
     pop_stack();
 
@@ -433,23 +509,108 @@ PIKECLASS ResObj
     }
   }
 
-  /*! @decl ResObj big_query(string query, @
-   *!			     mapping(string|int:mixed)|void bindings)
+  /*! @decl array|int query(string query, @
+   *!			    mapping(string|int:mixed)|void bindings)
    *!
-   *! Perform a streaming query against a SQLite database.
+   *! Perform a query against a SQLite database.
+   *!
+   *! @note
+   *!   In Pike 8.0 and earlier this function behaved as @[typed_query()].
    *!
    *! @seealso
-   *!   @[Sql.Sql()->big_query()]
+   *!   @[Sql.Sql()->query()], @[typed_query()]
    */
-  PIKEFUN object big_query(string query,
-			   mapping(string|int:mixed)|void bindings)
+  PIKEFUN array|int query(string query,
+			  mapping(string|int:mixed)|void bindings)
+  {
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct pike_string *q;
+    INT32 res_count = 0;
+    INT32 columns;
+    INT32 i;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+    }
+
+    columns = sqlite3_column_count(stmt);
+
+    check_stack(128);
+
+    BEGIN_AGGREGATE_ARRAY(100) {
+      while(stmt) {
+
+	int sr=step(stmt);
+
+	switch(sr) {
+	case SQLITE_OK:		/* Fallthrough */
+	case SQLITE_DONE:
+	  sqlite3_finalize(stmt);
+	  stmt = 0;
+	  break;
+
+	case SQLITE_ROW:
+	  for(i=0; i<columns; i++) {
+            push_text(sqlite3_column_name(stmt, i));
+            f_utf8_to_string(1);
+            push_string_field(stmt, i);
+          }
+	  f_aggregate_mapping(columns*2);
+	  DO_AGGREGATE_ARRAY(100);
+	  break;
+
+	case SQLITE_MISUSE:
+	  Pike_error("Sql.SQLite: Library misuse.");
+
+	default:
+	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));
+	}
+      }
+    } END_AGGREGATE_ARRAY;
+
+    if (!Pike_sp[-1].u.array->size && !columns) {
+      /* No rows and no columns. */
+      pop_stack();
+      push_int(0);
+    }
+  }
+
+  /*! @decl TypedResult big_typed_query(string query, @
+   *!			                mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming typed query against a SQLite database.
+   *!
+   *! @note
+   *!   This was the behavior of @[big_query()] in Pike 8.0 and earlier.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_typed_query()], @[big_query()]
+   */
+  PIKEFUN Result big_typed_query(string query,
+			         mapping(string|int:mixed)|void bindings)
     flags ID_VARIANT;
   {
 
     struct object *res;
     sqlite3_stmt *stmt;
     const char *tail;
-    struct SQLite_ResObj_struct *store;
+    struct SQLite_TypedResult_struct *store;
     struct pike_string *q;
 
     if(args==2) stack_swap();
@@ -463,8 +624,8 @@ PIKECLASS ResObj
 		 tail);
     pop_stack();
 
-    res=fast_clone_object(SQLite_ResObj_program);
-    store = OBJ2_SQLITE_RESOBJ(res);
+    res=fast_clone_object(SQLite_TypedResult_program);
+    store = OBJ2_SQLITE_TYPEDRESULT(res);
     store->stmt = stmt;
 
     /* Add a reference to the database to prevent it from being
@@ -483,7 +644,63 @@ PIKECLASS ResObj
       store->bindings = bindings;
     }
 
-    apply_low(res, f_SQLite_ResObj_create_fun_num, 0);
+    apply_low(res, f_SQLite_TypedResult_create_fun_num, 0);
+    push_object(res);
+  }
+
+  /*! @decl Result big_query(string query, @
+   *!			     mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming query against a SQLite database.
+   *!
+   *! @note
+   *!   In Pike 8.0 and earlier this function behaved as @[big_typed_query()].
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_query()], @[big_typed_query()]
+   */
+  PIKEFUN Result big_query(string query,
+			   mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
+    struct object *res;
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct SQLite_TypedResult_struct *store;
+    struct pike_string *q;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+    res=fast_clone_object(SQLite_Result_program);
+    store = OBJ2_SQLITE_TYPEDRESULT(res);
+    store->stmt = stmt;
+
+    /* Add a reference to the database to prevent it from being
+     * destroyed before the query object.
+     *
+     * FIXME: Use parent pointer instead?
+     */
+    store->dbobj = this_object();
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+
+      /* Add a reference so that the bound strings are kept, which in
+	 turn allows us to use SQLITE_STATIC. */
+      add_ref(bindings);
+      store->bindings = bindings;
+    }
+
+    apply_low(res, f_SQLite_TypedResult_create_fun_num, 0);
     push_object(res);
   }
 
