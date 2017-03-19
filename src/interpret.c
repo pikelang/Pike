@@ -3406,21 +3406,21 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
 
   struct pike_frame *frame = c->frame;
 
-  if (!frame || c->type != CALLTYPE_PIKEFUN) {
+  if (LIKELY(!frame) || c->type != CALLTYPE_PIKEFUN) {
       add_ref(o);
       add_ref(p);
       frame = alloc_pike_frame();
 
-      c->frame = frame;
-      frame->current_object = o;
-      frame->current_program = p;
-      frame->save_mark_sp=Pike_mark_sp;
-      frame->locals = Pike_sp - args;
-      frame_set_save_sp(frame, c->retval);
-
       /* link new frame */
       frame->next = Pike_fp;
       Pike_fp = frame;
+      c->frame = frame;
+
+      frame->save_mark_sp=Pike_mark_sp;
+      frame->locals = Pike_sp - args;
+      frame_set_save_sp(frame, c->retval);
+      frame->current_object = o;
+      frame->current_program = p;
   } else {
       if (o != frame->current_object) {
           free_object(frame->current_object);
@@ -3436,20 +3436,23 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
       frame_set_save_sp(frame, save_sp);
   }
 
+  if (LIKELY(c->type == CALLTYPE_PIKEFUN)) {
+    frame->pc = c->ptr;
+    frame->expendible_offset = 0;
+#ifdef PIKE_DEBUG
+    frame->num_locals = 0;
+    frame->num_args = 0;
+    frame->return_addr = NULL;
+#endif
+  } else {
+    frame->pc = NULL;
+  }
+
   frame->context = context;
   frame->fun = fun;
-  frame->locals = Pike_sp - args;
-  if (c->type == CALLTYPE_PIKEFUN)
-    frame->pc = c->ptr;
-  else 
-    frame->pc = NULL;
   frame->current_storage = o->storage + context->storage_offset;
-  frame->expendible_offset = 0;
   frame->args = args;
   frame->scope = NULL;
-  frame->num_locals = 0;
-  frame->num_args = 0;
-  frame->return_addr = NULL;
 
   check_stack(256);
   check_mark_stack(256);
