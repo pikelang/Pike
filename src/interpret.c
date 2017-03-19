@@ -2803,12 +2803,11 @@ PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
 {
-  if(TYPEOF(*s) == T_INT)
+  if(UNLIKELY(TYPEOF(*s) == T_INT))
   {
     pop_n_elems(args);
     push_int(0);
   }else{
-    ptrdiff_t expected_stack=Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
     struct pike_callsite C;
 
     callsite_init(&C, args);
@@ -2816,21 +2815,6 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
     callsite_prepare(&C);
     callsite_execute(&C);
     callsite_free(&C);
-
-    /* Note: do we still need those? I guess callsite_return takes care
-     * of this stuff */
-    if(Pike_sp > (expected_stack + Pike_interpreter.evaluator_stack))
-    {
-      pop_n_elems(Pike_sp-(expected_stack + Pike_interpreter.evaluator_stack));
-    }
-    else if(Pike_sp < (expected_stack + Pike_interpreter.evaluator_stack))
-    {
-      push_int(0);
-    }
-#ifdef PIKE_DEBUG
-    if(Pike_sp < (expected_stack + Pike_interpreter.evaluator_stack))
-      Pike_fatal("Stack underflow!\n");
-#endif
   }
 }
 
