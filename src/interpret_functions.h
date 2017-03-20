@@ -2337,6 +2337,17 @@ OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
         }
     });
 
+OPCODE2_RETURN(F_CALL_LFUN_N_AND_RETURN , "call lfun <n> & return", I_UPDATE_ALL, {
+        PIKE_OPCODE_T *addr;
+        if((addr = lower_mega_apply_tailcall(arg2, Pike_fp->current_object,
+                                    (arg1+Pike_fp->context->identifier_level))))
+        {
+            DO_JUMP_TO(addr);
+        }else{
+            DO_DUMB_RETURN;
+        }
+  });
+
 OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
         PIKE_OPCODE_T *addr;
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
