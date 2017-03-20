@@ -88,12 +88,14 @@ constant jose_to_pike = ([
 ]);
 #endif
 
+protected mapping(string(7bit):Crypto.MAC) mac_lookup;
+
 //! Decode a JSON Web Key (JWK).
 //!
 //! @returns
-//!   Returns an initialized @[Crypto.Sign.State] on success
-//!   and @[UNDEFINED] on failure.
-Crypto.Sign.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
+//!   Returns an initialized @[Crypto.Sign.State] or @[Crypto.MAC.State]
+//!   on success and @[UNDEFINED] on failure.
+Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
 {
   mapping(string(7bit):Gmp.mpz) decoded_coordinates = ([]);
   foreach(({ "n", "e", "d", "x", "y" }), string coord) {
@@ -113,19 +115,57 @@ Crypto.Sign.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
     if (!c) break;
     return c.Point(decoded_coordinates->x, decoded_coordinates->y);
 #endif /* constant(Crypto.ECC.Curve) */
+  case "oct":
+    // RFC 7518:6.4
+    if (!mac_lookup) {
+      // NB: Thread safe.
+      mapping(string(7bit):Crypto.MAC) m = ([]);
+      foreach(values(Crypto), mixed x) {
+	if (!objectp(x) || !objectp(x = x["HMAC"]) || !x->jwa) continue;
+	string(7bit) jwa = x->jwa();
+	if (!jwa) continue;
+	m[jwa] = x;
+      }
+      mac_lookup = m;
+    }
+    Crypto.MAC mac = mac_lookup[jwk->alg];
+    if (!mac) break;
+    string(7bit) key = jwk->k;
+    if (!key) break;
+    return mac(MIME.decode_base64url(key));
   default:
     break;
   }
   return UNDEFINED;
 }
 
+//! Decode a JSON Web Key (JWK).
+//!
+//! @returns
+//!   Returns an initialized @[Crypto.Sign.State] or @[Crypto.MAC.State]
+//!   on success and @[UNDEFINED] on failure.
+variant Crypto.Sign.State|Crypto.MAC.State decode_jwk(string(7bit) jwk)
+{
+  return decode_jwk(Standards.JSON.decode(MIME.decode_base64url(jwk)));
+}
+
 //! Decode a JSON Web Key (JWK) Set.
 //!
 //! @seealso
 //!   @rfc{7517:5@}, @[decode_jwk()]
-array(Crypto.Sign.State)
+array(Crypto.Sign.State|Crypto.MAC.State)
   decode_jwk_set(mapping(string(8bit):
 			 array(mapping(string(7bit):string(7bit)))) jwk_set)
 {
   return filter(map(jwk_set->keys, decode_jwk), objectp);
+}
+
+//! Decode a JSON Web Key (JWK) Set.
+//!
+//! @seealso
+//!   @rfc{7517:5@}, @[decode_jwk()]
+variant array(Crypto.Sign.State|Crypto.MAC.State)
+  decode_jwk_set(string(7bit) jwk_set)
+{
+  return decode_jwk_set(Standards.JSON.decode(jwk_set));
 }
