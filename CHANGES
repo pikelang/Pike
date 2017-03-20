@@ -12,6 +12,10 @@ o Protocols.HTTP
 
   Connecting to HTTP proxies over HTTPS is now supported.
 
+o Web.decode_jwk()
+
+  Support decoding of symmetric (ie HMAC) keys.
+
 Bug fixes
 ---------
 
