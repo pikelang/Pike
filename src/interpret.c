@@ -2186,10 +2186,15 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   return NULL;
 }
 
+static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n);
+
 /* TAILCALL optimization variants. They try to reuse the current frame */
 void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void *arg2) {
   struct pike_frame *frame = Pike_fp;
   struct pike_callsite C;
+
+  if(Pike_sp != frame->locals + args)
+    pike_pop_locals(frame->locals, args);
 
   callsite_init(&C, args);
 
@@ -2197,7 +2202,7 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
    * to allow callsite_resolve_* to pick it up
    */
   if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
-      C.frame = Pike_fp;
+      C.frame = frame;
   }
 
   switch (type) {
@@ -2236,10 +2241,13 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
   struct pike_frame *frame = Pike_fp;
   struct pike_callsite C;
 
+  if(Pike_sp != frame->locals + args)
+    pike_pop_locals(frame->locals, args);
+
   callsite_init(&C, args);
 
   if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
-      C.frame = Pike_fp;
+      C.frame = frame;
   }
 
   callsite_resolve_fun(&C, o, fun);
@@ -2256,8 +2264,6 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
 
   return NULL;
 }
-
-static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n);
 
 void low_return(void)
 {
