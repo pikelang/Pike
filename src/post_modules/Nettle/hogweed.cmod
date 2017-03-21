@@ -1264,6 +1264,22 @@ PIKECLASS Curve25519
     ref_push_string(MK_STRING("Curve25519"));
   }
 
+  /*! @decl string(7bit) jose_name()
+   *!
+   *! Returns the name of the curve according to JOSE
+   *! (@rfc{8037:3.1@}).
+   *!
+   *! @returns
+   *!   Returns the string @expr{"X25519"@}.
+   *!
+   *! @seealso
+   *!   @[name()]
+   */
+  PIKEFUN string(7bit) jose_name()
+  {
+    ref_push_string(MK_STRING("X25519"));
+  }
+
   /*! @decl int size()
    *!
    *! @returns
@@ -1446,13 +1462,46 @@ PIKECLASS Curve25519
   PIKECLASS EdDSA
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
   {
+    /*! @decl inherit Point
+     *!
+     *! This point represents the public key.
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the Point class that our parent contains.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_Point_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("Point"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_Point_fun_num >= 0) {
+	struct program *parent_Point_prog =
+	  low_program_from_function(parent_obj, parent_Point_fun_num);
+
+#ifdef PIKE_DEBUG
+	if (parent_Point_prog != Nettle_Curve25519_Point_program) {
+	  Pike_fatal("Unexpected Point program.\n");
+	}
+#endif
+
+	if (parent_Point_prog) {
+	  parent_Point_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_Point_fun_num);
+	  low_inherit(parent_Point_prog, 0,
+		      parent_Point_fun_num,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
     /*! @decl inherit __builtin.Nettle.Sign
      */
     INHERIT "__builtin.Nettle.Sign";
 
     PIKEVAR string(8bit) private_key flags ID_PRIVATE|ID_HIDDEN;
-
-    PIKEVAR string(8bit) public_key flags ID_PRIVATE|ID_HIDDEN;
 
     PIKEVAR function(int(0..):string(0..255)) random
       flags ID_PROTECTED;
@@ -1473,6 +1522,15 @@ PIKECLASS Curve25519
     PIKEFUN string(7bit) name()
     {
       ref_push_string(MK_STRING("EdDSA"));
+    }
+
+    /*! @decl string(7bit) jose_name()
+     *!
+     *! Returns the string @expr{"Ed25519"@}.
+     */
+    PIKEFUN string(7bit) jose_name()
+    {
+      ref_push_string(MK_STRING("Ed25519"));
     }
 
     /*! @decl Curve25519 get_curve()
@@ -1511,6 +1569,7 @@ PIKECLASS Curve25519
     PIKEFUN void set_private_key(string(8bit) k)
     {
       struct pike_string *pub;
+      struct Nettle_Curve25519_Point_struct *point;
 
       if (k->len != ED25519_KEY_SIZE) Pike_error("Invalid private key.\n");
 
@@ -1524,10 +1583,11 @@ PIKECLASS Curve25519
 
       ed25519_sha512_public_key(STR0(pub), STR0(k));
 
-      if (THIS->public_key) {
-	free_string(THIS->public_key);
+      point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
+      if (point->point) {
+	free_string(point->point);
       }
-      THIS->public_key = end_shared_string(pub);
+      point->point = end_shared_string(pub);
     }
 
     /*! @decl string(8bit) get_x()
@@ -1536,8 +1596,10 @@ PIKECLASS Curve25519
      */
     PIKEFUN string(8bit) get_x()
     {
-      if (THIS->public_key) {
-	ref_push_string(THIS->public_key);
+      struct Nettle_Curve25519_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
+      if (point->point) {
+	ref_push_string(point->point);
       } else {
 	push_undefined();
       }
@@ -1552,16 +1614,18 @@ PIKECLASS Curve25519
      */
     PIKEFUN void set_public_key(string(8bit) x)
     {
-      if (THIS->public_key == x) return;
+      struct Nettle_Curve25519_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
+      if (point->point == x) return;
       if (x->len != ED25519_KEY_SIZE) Pike_error("Invalid key.\n");
-      if (THIS->public_key) {
-	free_string(THIS->public_key);
+      if (point->point) {
+	free_string(point->point);
       }
       if (THIS->private_key) {
 	free_string(THIS->private_key);
 	THIS->private_key = NULL;
       }
-      copy_shared_string(THIS->public_key, x);
+      copy_shared_string(point->point, x);
     }
 
     /*! @decl void set_random(function(int(0..):string(8bit)) r)
@@ -1580,14 +1644,16 @@ PIKECLASS Curve25519
      */
     PIKEFUN int(0..1) raw_verify(string(8bit) message, string(8bit) signature)
     {
-      if (!THIS->public_key) Pike_error("No public key.\n");
+      struct Nettle_Curve25519_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
+      if (!point->point) Pike_error("No public key.\n");
 
       if (signature->len != ED25519_SIGNATURE_SIZE) {
 	push_int(0);
 	return;
       }
 
-      push_int(ed25519_sha512_verify(STR0(THIS->public_key),
+      push_int(ed25519_sha512_verify(STR0(point->point),
 				     message->len, STR0(message),
 				     STR0(signature)));
     }
@@ -1599,13 +1665,15 @@ PIKECLASS Curve25519
     PIKEFUN string(8bit) raw_sign(string(8bit) message)
     {
       struct pike_string *res;
+      struct Nettle_Curve25519_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
 
       if (!THIS->private_key) Pike_error("No private key.\n");
-      if (!THIS->public_key) Pike_error("No public key.\n");
+      if (!point->point) Pike_error("No public key.\n");
 
       res = begin_shared_string(ED25519_SIGNATURE_SIZE);
 
-      ed25519_sha512_sign(STR0(THIS->public_key), STR0(THIS->private_key),
+      ed25519_sha512_sign(STR0(point->point), STR0(THIS->private_key),
 			  message->len, STR0(message),
 			  STR0(res));
 
