@@ -12,8 +12,8 @@
 //! @param tbs
 //!   The value to sign.
 //!
-//! @param content_type
-//!   The content type of @[tbs].
+//! @param media_type
+//!   The media type of @[tbs], cf @rfc{7515:4.1.9@}.
 //!
 //! @returns
 //!   Returns @expr{0@} (zero) on encoding failure (usually
@@ -24,12 +24,16 @@
 //! @seealso
 //!   @[decode_jwt()], @rfc{7515@}
 string(7bit) encode_jws(Crypto.Sign.State|Crypto.MAC.State sign,
-			string(7bit) content_type,
-			mixed tbs)
+			mixed tbs,
+			string(7bit)|void media_type)
 {
   string json_tbs = Standards.JSON.encode(tbs);
+  mapping(string(7bit):string(7bit)) header = ([]);
+  if (media_type) {
+    header->typ = media_type;
+  }
   return sign->jose_sign &&
-    sign->jose_sign(string_to_utf8(json_tbs), ([ "typ": content_type ]));
+    sign->jose_sign(string_to_utf8(json_tbs), header);
 }
 
 //! Decode a JSON Web Signature (JWS).
@@ -100,7 +104,7 @@ string(7bit) encode_jwt(Crypto.Sign.State|Crypto.MAC.State sign,
 {
   claims->iat = time(1);
   if (!claims->jti) claims->jti = (string)Standards.UUID.make_version4();
-  return encode_jws(sign, "JWT", claims);
+  return encode_jws(sign, claims, "JWT");
 }
 
 //! Decode a JSON Web Token (JWT).
