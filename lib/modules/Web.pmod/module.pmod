@@ -4,6 +4,76 @@
 //! Modules implementing various web standards.
 //!
 
+//! Encode a JSON Web Signature (JWS).
+//!
+//! @param sign
+//!   The asymetric private or MAC key to use for signing the result.
+//!
+//! @param tbs
+//!   The value to sign.
+//!
+//! @param content_type
+//!   The content type of @[tbs].
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) on encoding failure (usually
+//!   that @[sign] doesn't support JWS.
+//!
+//!   Returns a corresponding JWS on success.
+//!
+//! @seealso
+//!   @[decode_jwt()], @rfc{7515@}
+string(7bit) encode_jws(Crypto.Sign.State|Crypto.MAC.State sign,
+			string(7bit) content_type,
+			mixed tbs)
+{
+  string json_tbs = Standards.JSON.encode(tbs);
+  return sign->jose_sign &&
+    sign->jose_sign(string_to_utf8(json_tbs), ([ "typ": content_type ]));
+}
+
+//! Decode a JSON Web Signature (JWS).
+//!
+//! @param sign
+//!   The asymetric public or MAC key(s) to validate the jws against.
+//!
+//! @param jws
+//!   A JWS as eg returned by @[encode_jws()].
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) on validation failure.
+//!
+//!   Returns an array with two elements on success:
+//!   @array
+//!     @elem mapping(string(7bit):string(7bit)|int) 0
+//!       The JOSE header.
+//!     @elem mixed 1
+//!       The JWS payload.
+//!   @endarray
+//!   See @rfc{7515:3@}.
+//!
+//! @seealso
+//!   @[encode_jws()], @[decode_jwt()], @[Crypto.Sign.State()->jose_decode()],
+//!   @rfc{7515@}
+array decode_jws(array(Crypto.Sign.State|Crypto.MAC.State)|
+		 Crypto.Sign.State|Crypto.MAC.State sign,
+		 string(7bit) jws)
+{
+  if (!arrayp(sign)) sign = ({ sign });
+  array(mapping(string(7bit):string(7bit)|int)|string(8bit)) decoded_jws;
+  foreach(sign, Crypto.Sign s) {
+    if (decoded_jws = s->jose_decode(jws)) {
+      break;
+    }
+  }
+  if (!decoded_jws) return 0;
+  catch {
+    decoded_jws[1] = Standards.JSON.decode(decoded_jws[1]);
+    return decoded_jws;
+  };
+  return 0;
+}
+
 //! Encode a JSON Web Token (JWT).
 //!
 //! @param sign
@@ -30,9 +100,7 @@ string(7bit) encode_jwt(Crypto.Sign.State|Crypto.MAC.State sign,
 {
   claims->iat = time(1);
   if (!claims->jti) claims->jti = (string)Standards.UUID.make_version4();
-  string json_claims = Standards.JSON.encode(claims);
-  return sign->jose_sign &&
-    sign->jose_sign(string_to_utf8(json_claims), ([ "typ": "JWT" ]));
+  return encode_jws(sign, "JWT", claims);
 }
 
 //! Decode a JSON Web Token (JWT).
@@ -55,29 +123,22 @@ string(7bit) encode_jwt(Crypto.Sign.State|Crypto.MAC.State sign,
 //!   60 second grace time (as allowed by @rfc{7519:4.1.5@}).
 //!
 //! @seealso
-//!   @[encode_jwt()], @rfc{7519:4@}
-mapping(string:string|int) decode_jwt(Crypto.Sign.State|Crypto.MAC.State|
-				      array(Crypto.Sign|Crypto.MAC.State) sign,
+//!   @[encode_jwt()], @[decode_jws()], @rfc{7519:4@}
+mapping(string:string|int) decode_jwt(array(Crypto.Sign.State|Crypto.MAC.State)|
+				      Crypto.Sign.State|Crypto.MAC.State sign,
 				      string(7bit) jwt)
 {
-  if (!arrayp(sign)) sign = ({ sign });
-  array(mapping(string(7bit):string(7bit)|int)|string(8bit)) jws;
-  foreach(sign, Crypto.Sign s) {
-    if (jws = s->jose_decode(jwt)) break;
-  }
+  array(mapping(string(7bit):string(7bit)|int)|string(8bit)) jws =
+    decode_jws(sign, jwt);
   if (!jws) return 0;
   [mapping(string(7bit):string(7bit)|int) jose_header,
-   string(8bit) encoded_claims] = jws;
+   mapping(string:string|int) claims] = jws;
   if ((jose_header->typ || "JWT") != "JWT") return 0;
-  catch {
-    mapping(string:string|int) claims = Standards.JSON.decode(encoded_claims);
-    if (!mappingp(claims)) return 0;
-    int now = time(1);
-    if (!zero_type(claims->exp) && (claims->exp < now)) return 0;
-    if (claims->nbf - 60 > now) return 0;
-    return claims;
-  };
-  return 0;
+  if (!mappingp(claims)) return 0;
+  int now = time(1);
+  if (!zero_type(claims->exp) && (claims->exp < now)) return 0;
+  if (claims->nbf - 60 > now) return 0;
+  return claims;
 }
 
 #if constant(Crypto.ECC.Curve)
