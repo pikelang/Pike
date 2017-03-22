@@ -452,5 +452,13 @@ AC_SUBST(WITH_GTK)
 PGTK_CFLAGS="$GTK_CFLAGS"
 PGTK_LIBS="$GTK_LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
+
+case "$pike_cv_sys_os" in
+  Darwin)
+    PGTK_CFLAGS="$PGTK_CFLAGS -x objective-c"
+;;
+esac
+
 LIBS="$MODULE_LDFLAGS $LIBS"
+
 AC_OUTPUT(Makefile options)
