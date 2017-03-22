@@ -1,0 +1,22 @@
+subject: Pike 8.0: Web.{en,de}code_jws, Web.decode_jwk, Protocols.HTTP.Query, tzdata 2017a
+from: c9427bffcdd3e9b06fa2f5b917d2eff8f014b021
+to: 27a3d0b521a4d8a880c40d96f9525d0a2240e4e3
+originator: Henrik Grubbstrom <grubba@grubba.org>
+depends: 2017-02-23T104403
+restart: true
+
+Multiple fixes:
+
+• Web: Added {en,de}code_jws().
+
+These simplify handling of JWSes other than JWTs.
+
+• Web.decode_jwk: Added support for decoding of symmetric keys.
+
+Decoding of JWK encoded keys for SHA256/HMAC, etc is now supported.
+
+Also adds some convenience variants.
+
+• Protocols.HTTP.Query: Don't hang in if we are unable to open a socket.
+
+• Updated timezone data to 2017a.
