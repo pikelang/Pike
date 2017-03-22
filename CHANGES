@@ -16,6 +16,10 @@ o Web.decode_jwk()
 
   Support decoding of symmetric (ie HMAC) keys.
 
+o Web.encode_jws() and Web.decode_jws()
+
+  Added simplified API for dealing with JSON Web Signature values.
+
 Bug fixes
 ---------
 
