@@ -153,6 +153,15 @@ Identifier brainpool_p384t1 = ec_curve_ver1_id->append(12);
 Identifier brainpool_p521r1 = ec_curve_ver1_id->append(13);
 Identifier brainpool_p521t1 = ec_curve_ver1_id->append(14);
 
+/* Edwards curves from draft-ietf-curdle-pkix-03. */
+protected Identifier ed_curve_algs_id = Identifier(1, 3, 101);
+Identifier x25519_id = ed_curve_algs_id->append(110);
+Identifier x448_id = ed_curve_algs_id->append(111);
+Identifier eddsa25519_id = ed_curve_algs_id->append(112);
+Identifier eddsa448_id = ed_curve_algs_id->append(113);
+Identifier eddsa25519ph_id = ed_curve_algs_id->append(114);	/* pre-hash */
+Identifier eddsa448ph_id = ed_curve_algs_id->append(115);	/* pre-hash */
+
 /* For public key
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
