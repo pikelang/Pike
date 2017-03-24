@@ -6229,8 +6229,7 @@ static int match_type_svalue(struct pike_type *type,
         {
           if( string_min < min )
           {
-            if( s->size_shift )
-              check_string_range( s, 0, &string_min, &string_max );
+	    check_string_range( s, 0, &string_min, &string_max );
             if( string_min < min )
               goto do_return;
             checked = 1;
@@ -6241,7 +6240,7 @@ static int match_type_svalue(struct pike_type *type,
         {
           if( string_max > max )
           {
-            if( s->size_shift && !checked )
+            if( !checked )
               check_string_range( s, 0, NULL, &string_max );
 
             if( string_max > max )
