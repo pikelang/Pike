@@ -1,0 +1,10 @@
+subject: Pike 8.0: JWK
+from: 27a3d0b521a4d8a880c40d96f9525d0a2240e4e3
+to: ac486e400d01c0bd9ec59cfa92f4b438920c1974
+originator: Henrik Grubbström <grubba@grubba.org>
+depends: 2017-03-22T162850
+restart: true
+
+• Web.decode_jwk: Relax the variant type check somewhat.
+
+Work around for variant dispatcher bug in older Pike 8.0.
