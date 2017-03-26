@@ -3343,10 +3343,9 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
     {
       c->type = CALLTYPE_PARENT_CLONE;
       c->ptr = s->u.program;
-      /* this case needs a frame, too */
-      break;
-    }
-    callsite_resolve_svalue(c, s);
+      c->u.parent_clone.parent = o;
+      c->u.parent_clone.fun = fun;
+    } else callsite_resolve_svalue(c, s);
     return;
   }
 
@@ -3403,7 +3402,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
   }
   /*
    * The cases which do _not_ return, have a frame created. These are:
-   * CALLTYPE_CFUN, CALLTYPE_PIKEFUN and CALLTYPE_PARENT_CLONE.
+   * CALLTYPE_CFUN, CALLTYPE_PIKEFUN.
    */
 
   struct pike_frame *frame = c->frame;
@@ -3508,6 +3507,7 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
   case PIKE_T_TYPE:
     c->type = CALLTYPE_CAST;
     c->ptr = s->u.type;
+    c->u.cast.run_time_type = compile_type_to_runtime_type(c->ptr);
     break;
   case T_PROGRAM:
     c->type = CALLTYPE_CLONE;
@@ -3631,7 +3631,7 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
     }
     goto do_return;
   case CALLTYPE_CAST:
-    o_cast(c->ptr, compile_type_to_runtime_type(c->ptr));
+    o_cast(c->ptr, c->u.cast.run_time_type);
     break;
   case CALLTYPE_ARRAY:
   case CALLTYPE_ARRAY_ON_STACK:
@@ -3644,8 +3644,8 @@ PMOD_EXPORT void callsite_execute(const struct pike_callsite *c) {
     {
       struct object *tmp;
       tmp=parent_clone_object(c->ptr,
-                              c->frame->current_object,
-                              c->frame->fun,
+                              c->u.parent_clone.parent,
+                              c->u.parent_clone.fun,
                               c->args);
       push_object(tmp);
     }
@@ -3663,8 +3663,8 @@ PMOD_EXPORT void callsite_save_jmpbuf(struct pike_callsite *c) {
     Pike_fatal("callsite_save_jmpbuf called for non pike frame.\n");
 #endif
     
-  c->saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
-  SET_ONERROR (c->onerror, restore_catching_eval_jmpbuf, c->saved_jmpbuf);
+  c->u.pike.saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+  SET_ONERROR (c->u.pike.onerror, restore_catching_eval_jmpbuf, c->u.pike.saved_jmpbuf);
   Pike_interpreter.catching_eval_jmpbuf = NULL;
 }
 
@@ -3700,8 +3700,8 @@ PMOD_EXPORT void callsite_free_frame(const struct pike_callsite *c) {
 
   /* restore catching_eval_jmpbuf */
 
-  Pike_interpreter.catching_eval_jmpbuf = c->saved_jmpbuf;
-  UNSET_ONERROR(c->onerror);
+  Pike_interpreter.catching_eval_jmpbuf = c->u.pike.saved_jmpbuf;
+  UNSET_ONERROR(c->u.pike.onerror);
 }
 
 static void callsite_return_slowpath(const struct pike_callsite *c) {
