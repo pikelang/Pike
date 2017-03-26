@@ -657,9 +657,6 @@ mapping abbr2zones =
    "-0020": ({
      "Africa/Freetown",
    }),
-   "-004430": ({
-     "Africa/Monrovia",
-   }),
    "-01": ({
      "Africa/Bamako",
      "Africa/Banjul",
