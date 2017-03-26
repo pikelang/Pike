@@ -1625,17 +1625,3 @@ int|object reconstruct_partial(array(object) collection)
     return reconstructed;
   } else return (maxgot>total? -1 : total-got);
 }
-
-//! Encode strings according to @rfc{4648@} base64url encoding.
-string(7bit) encode_base64url(string(8bit) x)
-{
-  x = replace(encode_base64(x,1),({ "+", "/" }),({ "-", "_" }));
-  while( sizeof(x) && x[-1]=='=' ) x=x[..<1];
-  return x;
-}
-
-//! Decode strings according to @rfc{4648@} base64url encoding.
-string(8bit) decode_base64url(string(7bit) x)
-{
-  return decode_base64(replace(x,({ "-", "_" }),({ "+", "/" })));
-}

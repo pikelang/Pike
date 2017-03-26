@@ -36,7 +36,9 @@
 /** Forward declarations of functions implementing Pike functions **/
 
 static void f_decode_base64( INT32 args );
+static void f_decode_base64url( INT32 args );
 static void f_encode_base64( INT32 args );
+static void f_encode_base64url( INT32 args );
 static void f_decode_qp( INT32 args );
 static void f_encode_qp( INT32 args );
 static void f_decode_uue( INT32 args );
@@ -51,7 +53,9 @@ static void f_quote_labled( INT32 args );
 /** Global tables **/
 
 static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64urltab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
+static SIGNED char base64urlrtab[(1<<(CHAR_BIT-1))-' '];
 static const char qptab[16] = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
@@ -95,6 +99,11 @@ PIKE_MODULE_INIT
   for (i = 0; i < 64; i++)
     base64rtab[base64tab[i] - ' '] = i;
 
+  /* Init reverse base64url mapping */
+  memset( base64urlrtab, -1, sizeof(base64urlrtab) );
+  for (i = 0; i < 64; i++)
+    base64urlrtab[base64urltab[i] - ' '] = i;
+
   /* Init reverse qp mapping */
   memset( qprtab, -1, sizeof(qprtab) );
   for (i = 0; i < 16; i++)
@@ -125,7 +134,13 @@ PIKE_MODULE_INIT
   ADD_FUNCTION2( "decode_base64", f_decode_base64,
                  tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
 
+  ADD_FUNCTION2( "decode_base64url", f_decode_base64url,
+                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
+
   ADD_FUNCTION2( "encode_base64", f_encode_base64,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_base64url", f_encode_base64url,
                  tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_function_constant( "decode_qp", f_decode_qp,
@@ -162,6 +177,72 @@ PIKE_MODULE_EXIT
 {
 }
 
+static void decode_base64( INT32 args, const char *name, const char *tab)
+{
+  if(args != 1)
+    Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
+  if (TYPEOF(sp[-1]) != T_STRING)
+    Pike_error( "Wrong type of argument to MIME.%s()\n",name );
+  if (sp[-1].u.string->size_shift != 0)
+    Pike_error( "Char out of range for MIME.%s()\n",name );
+
+  /* Decode the string in sp[-1].u.string.  Any whitespace etc must be
+     ignored, so the size of the result can't be exactly calculated
+     from the input size.  We'll use a string builder instead. */
+
+  struct string_builder buf;
+  SIGNED char *src;
+  ptrdiff_t cnt;
+  INT32 d = 1;
+  int pads = 3;
+
+  init_string_builder( &buf, 0 );
+
+  for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
+       cnt--; src++)
+    if(*src>=' ' && tab[*src-' ']>=0) {
+      /* 6 more bits to put into d */
+      if((d=(d<<6)|tab[*src-' '])>=0x1000000) {
+        /* d now contains 24 valid bits.  Put them in the buffer */
+        string_builder_putchar( &buf, (d>>16)&0xff );
+        string_builder_putchar( &buf, (d>>8)&0xff );
+        string_builder_putchar( &buf, d&0xff );
+        d=1;
+      }
+    } else if (*src=='=') {
+      /* A pad character has been encountered. */
+      break;
+    }
+
+  /* If data size not an even multiple of 3 bytes, output remaining data */
+  if (d & 0x3f000000) {
+    /* NOT_REACHED, but here for symmetry. */
+    pads = 0;
+  } else if (d & 0xfc0000) {
+    pads = 1;
+    /* Remove unused bits from d. */
+    d >>= 2;
+  } else if (d & 0x3f000) {
+    pads = 2;
+    /* Remove unused bits from d. */
+    d >>= 4;
+  }
+  switch(pads) {
+  case 0:
+    /* NOT_REACHED, but here for symmetry. */
+    string_builder_putchar( &buf, (d>>16)&0xff );
+    /* FALL_THROUGH */
+  case 1:
+    string_builder_putchar( &buf, (d>>8)&0xff );
+    /* FALL_THROUGH */
+  case 2:
+    string_builder_putchar( &buf, d&0xff );
+  }
+
+  /* Return result */
+  pop_n_elems( 1 );
+  push_string( finish_string_builder( &buf ) );
+}
 
 /** Functions implementing Pike functions **/
 
@@ -175,79 +256,26 @@ PIKE_MODULE_EXIT
  */
 static void f_decode_base64( INT32 args )
 {
-  if(args != 1)
-    Pike_error( "Wrong number of arguments to MIME.decode_base64()\n" );
-  else if (TYPEOF(sp[-1]) != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.decode_base64()\n" );
-  else if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.decode_base64()\n" );
-  else {
+  decode_base64(args, "decode_base64", base64rtab);
+}
 
-    /* Decode the string in sp[-1].u.string.  Any whitespace etc
-       must be ignored, so the size of the result can't be exactly
-       calculated from the input size.  We'll use a string builder
-       instead. */
-
-    struct string_builder buf;
-    SIGNED char *src;
-    ptrdiff_t cnt;
-    INT32 d = 1;
-    int pads = 3;
-
-    init_string_builder( &buf, 0 );
-
-    for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
-	 cnt--; src++)
-      if(*src>=' ' && base64rtab[*src-' ']>=0) {
-	/* 6 more bits to put into d */
-	if((d=(d<<6)|base64rtab[*src-' '])>=0x1000000) {
-	  /* d now contains 24 valid bits.  Put them in the buffer */
-	  string_builder_putchar( &buf, (d>>16)&0xff );
-	  string_builder_putchar( &buf, (d>>8)&0xff );
-	  string_builder_putchar( &buf, d&0xff );
-	  d=1;
-	}
-      } else if (*src=='=') {
-	/* A pad character has been encountered. */
-        break;
-      }
-
-    /* If data size not an even multiple of 3 bytes, output remaining data */
-    if (d & 0x3f000000) {
-      /* NOT_REACHED, but here for symmetry. */
-      pads = 0;
-    } else if (d & 0xfc0000) {
-      pads = 1;
-      /* Remove unused bits from d. */
-      d >>= 2;
-    } else if (d & 0x3f000) {
-      pads = 2;
-      /* Remove unused bits from d. */
-      d >>= 4;
-    }
-    switch(pads) {
-    case 0:
-      /* NOT_REACHED, but here for symmetry. */
-      string_builder_putchar( &buf, (d>>16)&0xff );
-      /* FALL_THROUGH */
-    case 1:
-      string_builder_putchar( &buf, (d>>8)&0xff );
-      /* FALL_THROUGH */
-    case 2:
-      string_builder_putchar( &buf, d&0xff );
-    }
-
-    /* Return result */
-    pop_n_elems( 1 );
-    push_string( finish_string_builder( &buf ) );
-  }
+/*! @decl string decode_base64url(string encoded_data)
+ *!
+ *! Decode strings according to @rfc{4648@} base64url encoding.
+ *!
+ *! @seealso
+ *! @[MIME.decode_base64]
+ */
+static void f_decode_base64url( INT32 args )
+{
+  decode_base64(args, "decode_base64url", base64urlrtab);
 }
 
 /*  Convenience function for encode_base64();  Encode groups*3 bytes from
  *  *srcp into groups*4 bytes at *destp.
  */
 static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
-			  int insert_crlf )
+                          int insert_crlf, const char *tab )
 {
   unsigned char *src = *srcp;
   char *dest = *destp;
@@ -259,10 +287,10 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d = (*src++|d)<<8;
     d |= *src++;
     /* Output in encoded from to dest */
-    *dest++ = base64tab[d>>18];
-    *dest++ = base64tab[(d>>12)&63];
-    *dest++ = base64tab[(d>>6)&63];
-    *dest++ = base64tab[d&63];
+    *dest++ = tab[d>>18];
+    *dest++ = tab[(d>>12)&63];
+    *dest++ = tab[(d>>6)&63];
+    *dest++ = tab[d&63];
     /* Insert a linebreak once in a while... */
     if(insert_crlf && ++g == 19) {
       *dest++ = 13;
@@ -277,6 +305,67 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
   return g;
 }
 
+static void encode_base64( INT32 args, const char *name, const char *tab,
+                           int pad )
+{
+  if(args != 1 && args != 2)
+    Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
+  if(TYPEOF(sp[-args]) != T_STRING)
+    Pike_error( "Wrong type of argument to MIME.%s()\n",name );
+  if (sp[-args].u.string->size_shift != 0)
+    Pike_error( "Char out of range for MIME.%s()\n",name );
+
+  /* Encode the string in sp[-args].u.string.  First, we need to know
+     the number of 24 bit groups in the input, and the number of bytes
+     actually present in the last group. */
+
+  ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
+  ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
+
+  int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
+                      sp[-1].u.integer != 0);
+
+  /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
+  ptrdiff_t length = groups*4+(insert_crlf? (groups/19)*2 : 0);
+  struct pike_string *str = begin_shared_string( length );
+
+  unsigned char *src = (unsigned char *)sp[-args].u.string->str;
+  char *dest = str->str;
+
+  if (groups) {
+    /* Temporary storage for the last group, as we may have to read an
+       extra byte or two and don't want to get any page-faults.  */
+    unsigned char tmp[3], *tmpp = tmp;
+    int i;
+
+    if (do_b64_encode( groups-1, &src, &dest, insert_crlf, tab ) == 18)
+      /* Skip the final linebreak if it's not to be followed by anything */
+      str->len -= 2;
+
+    /* Copy the last group to temporary storage */
+    tmp[1] = tmp[2] = 0;
+    for (i = 0; i < last; i++)
+      tmp[i] = *src++;
+
+    /* Encode the last group, and replace output codes with pads as needed */
+    do_b64_encode( 1, &tmpp, &dest, 0, tab );
+    switch (last) {
+    case 1:
+      *--dest = '=';
+      /* FALL_THROUGH */
+    case 2:
+      *--dest = '=';
+    }
+  }
+
+  /* Return the result */
+  pop_n_elems( args );
+  if( pad )
+    push_string( end_shared_string( str ) );
+  else
+    push_string( end_and_resize_shared_string( str, length-(3-last) ) );
+}
+
 /*! @decl string encode_base64(string data, void|int no_linebreaks)
  *!
  *! This function encodes data using the @tt{base64@} transfer encoding.
@@ -289,61 +378,19 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
  */
 static void f_encode_base64( INT32 args )
 {
-  if(args != 1 && args != 2)
-    Pike_error( "Wrong number of arguments to MIME.encode_base64()\n" );
-  else if(TYPEOF(sp[-args]) != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.encode_base64()\n" );
-  else if (sp[-args].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.encode_base64()\n" );
-  else {
+  encode_base64(args, "encode_base64", base64tab, 1);
+}
 
-    /* Encode the string in sp[-args].u.string.  First, we need to know
-       the number of 24 bit groups in the input, and the number of
-       bytes actually present in the last group. */
-
-    ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
-    ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
-
-    int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
-			sp[-1].u.integer != 0);
-
-    /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
-    struct pike_string *str =
-      begin_shared_string( groups*4+(insert_crlf? (groups/19)*2 : 0) );
-
-    unsigned char *src = (unsigned char *)sp[-args].u.string->str;
-    char *dest = str->str;
-
-    if (groups) {
-      /* Temporary storage for the last group, as we may have to read
-	 an extra byte or two and don't want to get any page-faults.  */
-      unsigned char tmp[3], *tmpp = tmp;
-      int i;
-
-      if (do_b64_encode( groups-1, &src, &dest, insert_crlf ) == 18)
-	/* Skip the final linebreak if it's not to be followed by anything */
-	str->len -= 2;
-
-      /* Copy the last group to temporary storage */
-      tmp[1] = tmp[2] = 0;
-      for (i = 0; i < last; i++)
-	tmp[i] = *src++;
-
-      /* Encode the last group, and replace output codes with pads as needed */
-      do_b64_encode( 1, &tmpp, &dest, 0 );
-      switch (last) {
-      case 1:
-	*--dest = '=';
-	/* FALL_THROUGH */
-      case 2:
-	*--dest = '=';
-      }
-    }
-
-    /* Return the result */
-    pop_n_elems( args );
-    push_string( end_shared_string( str ) );
-  }
+/*! @decl string encode_base64url(string data, void|int no_linebreaks)
+ *!
+ *! Encode strings according to @rfc{4648@} base64url encoding.
+ *!
+ *! @seealso
+ *! @[MIME.encode_base64]
+ */
+static void f_encode_base64url( INT32 args )
+{
+  encode_base64(args, "encode_base64url", base64urltab, 0);
 }
 
 /*! @decl string decode_qp(string encoded_data)
