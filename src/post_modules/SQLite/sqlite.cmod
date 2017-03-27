@@ -602,7 +602,7 @@ PIKECLASS Result
    *! @seealso
    *!   @[Sql.Sql()->big_typed_query()], @[big_query()]
    */
-  PIKEFUN Result big_typed_query(string query,
+  PIKEFUN object big_typed_query(string query,
 			         mapping(string|int:mixed)|void bindings)
     flags ID_VARIANT;
   {
@@ -659,7 +659,7 @@ PIKECLASS Result
    *! @seealso
    *!   @[Sql.Sql()->big_query()], @[big_typed_query()]
    */
-  PIKEFUN Result big_query(string query,
+  PIKEFUN object big_query(string query,
 			   mapping(string|int:mixed)|void bindings)
     flags ID_VARIANT;
   {
