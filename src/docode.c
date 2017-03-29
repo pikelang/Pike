@@ -2819,10 +2819,8 @@ INT32 do_code_block(node *n, int identifier_flags)
   struct reference *id = NULL;
   INT32 entry_point;
   int aggregate_cnum = -1;
-#ifdef PIKE_DEBUG
-  if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");
+  int save_stack_depth = current_stack_depth;
   current_stack_depth = 0;
-#endif
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
@@ -2925,9 +2923,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   }
   entry_point = assemble(1);
 
-#ifdef PIKE_DEBUG
-  current_stack_depth = -4711;
-#endif
+  current_stack_depth = save_stack_depth;
   return entry_point;
 }
 
