@@ -1,5 +1,5 @@
 
-#pike __REAL_VERSION__
+#pike 8.1
 
 inherit .sql_result;
 
