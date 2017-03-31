@@ -9,7 +9,7 @@
 
 // Cannot dump this since the #require check below depend on the
 // presence of system libs at runtime.
-constant dont_dump_program = 1;
+optional constant dont_dump_program = 1;
 
 inherit Odbc.odbc;
 

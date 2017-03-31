@@ -7,7 +7,7 @@
 
 // Cannot dump this since the #if constant(...) check below may depend
 // on the presence of system libs at runtime.
-constant dont_dump_program = 1;
+optional constant dont_dump_program = 1;
 
 #if constant(Postgres.postgres)
 
