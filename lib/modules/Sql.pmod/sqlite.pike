@@ -25,6 +25,10 @@ array list_fields(string n, string|void wild)
 
   array r = query(qry);
 
+  if (!r || !sizeof(r)) {
+    predef::error("Unknown table: %s\n", n);
+  }
+
   // now, we weed out the ones that don't match wild, if provided
   if(wild)
   {
