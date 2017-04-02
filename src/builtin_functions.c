@@ -951,7 +951,7 @@ void f_query_num_arg(INT32 args)
  *!
  *! @param end
  *!   If the optional argument @[end] is present, the search will terminate
- *!   at this position if not found earlier.
+ *!   at this position (exclusive) if not found earlier.
  *!
  *! @returns
  *!   Returns the position of @[needle] in @[haystack] if found.
@@ -1091,6 +1091,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	start = string_search(haystack,
 			      Pike_sp[1-args].u.string,
 			      start);
+	end -= Pike_sp[1-args].u.string->len-1;
       }
     } else {
       SIMPLE_ARG_TYPE_ERROR("search", 2, "string | int");
