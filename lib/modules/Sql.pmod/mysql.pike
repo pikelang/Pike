@@ -760,6 +760,28 @@ Result streaming_typed_query (string query,
   QUERY_BODY (streaming_typed_query);
 }
 
+array(string) list_dbs(string|void wild)
+{
+  Result res = ::list_dbs(wild);
+  array(string) ret = ({});
+  array(string) row;
+  while((row = res->fetch_row()) && sizeof(row)) {
+    ret += ({ row[0] });
+  }
+  return ret;
+}
+
+array(string) list_tables(string|void wild)
+{
+  Result res = ::list_tables(wild);
+  array(string) ret = ({});
+  array(string) row;
+  while((row = res->fetch_row()) && sizeof(row)) {
+    ret += ({ row[0] });
+  }
+  return ret;
+}
+
 int(0..1) is_keyword( string name )
 //! Return 1 if the argument @[name] is a mysql keyword that needs to
 //! be quoted in a query. The list is currently up-to-date with MySQL
