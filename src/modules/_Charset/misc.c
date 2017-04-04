@@ -2059,8 +2059,8 @@ static const struct {
   { "ebcdicus", map_EBCDIC_US, 32, 255 },                             /* :: ebcdic-us */
   { "gsm", map_gsm_03_38, 0, 127 },                                   /* :: gsm 03.38 */
   { "gsm0338", map_gsm_03_38, 0, 127 },                               /* :: gsm 03.38 */
-  { "gsmext", map_gsm_03_38_ext, 0, 127 },                            /* :: gsm 03.38-ext */
   { "gsm0338ext", map_gsm_03_38_ext, 0, 127 },                        /* :: gsm 03.38-ext */
+  { "gsmext", map_gsm_03_38_ext, 0, 127 },                            /* :: gsm 03.38-ext */
   { "halfwidthkatakana", map_JIS_X0201, 92, 255 },
   { "hproman8", map_hp_roman8, 161, 255 },                            /* :: hp-roman8 */
   { "ibmebcdicatde", map_EBCDIC_AT_DE, 32, 255 },
