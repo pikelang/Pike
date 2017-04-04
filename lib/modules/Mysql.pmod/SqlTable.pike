@@ -708,7 +708,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
@@ -730,7 +730,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert_ignore], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
@@ -755,7 +755,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[replace], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
@@ -778,7 +778,7 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[update], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 #ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
@@ -807,7 +807,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[insert_or_update], but a database connection object is
 //! passed explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 #ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
@@ -917,9 +917,9 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
 
-  db_conn->master_sql->big_query ("DELETE FROM `" + table + "` "
-				  "WHERE (" + where + ") " + (rest || ""),
-				  bindings);
+  db_conn->big_query ("DELETE FROM `" + table + "` "
+		      "WHERE (" + where + ") " + (rest || ""),
+		      bindings);
   invalidate_cache();
 }
 
@@ -928,7 +928,7 @@ void conn_remove (Sql.Sql db_conn, mixed id)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove %O\n", this, id);
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + simple_make_pk_where (id),
 		   0, query_charset);
@@ -940,7 +940,7 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove_multi %{%O,%}\n", this, ids);
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   // FIXME: Split into several queries if the list is very long.
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + make_multi_pk_where (ids),
@@ -969,7 +969,7 @@ Result conn_select (Sql.Sql db_conn, string|array where,
   query += res->prepare_select_expr (fields, select_exprs, !!table_refs) +
     " FROM `" + table + "` " + (table_refs || "");
 
-  res->res = db_conn->master_sql->big_typed_query (
+  res->res = db_conn->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
   return res;
@@ -1007,7 +1007,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     query += select_expr;
   query += " FROM `" + table + "` " + (table_refs || "");
 
-  Sql.Result res = db_conn->master_sql->big_typed_query (
+  Sql.Result res = db_conn->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
 #ifdef MYSQL_DEBUG
@@ -1039,7 +1039,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
 //! Like @[get], but a database connection object is passed explicitly
 //! instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 
 #ifdef MYSQL_DEBUG
   if (fields && !sizeof (fields)) error ("No fields selected.\n");
@@ -1127,7 +1127,7 @@ Result conn_get_multi (Sql.Sql db_conn, array(mixed) ids,
 //! Like @[get_multi], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   Result res = Result();
   // FIXME: Split into several queries if the list is very long.
   res->res =
