@@ -8,7 +8,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-charsetmod.o: $(SRCDIR)/gb18030.h
+charsetmod.o: $(SRCDIR)/gb18030.h $(SRCDIR)/charsetmod.c
 
 tables.o: $(SRCDIR)/gbk_tables.h $(SRCDIR)/jisx0213_tables.h
 

@@ -2417,6 +2417,8 @@ PIKE_MODULE_INIT
 
   iso2022_init();
 
+  INIT;
+
   start_new_program();
   ADD_STORAGE(struct std_cs_stor);
   /* function(:string) */
@@ -2640,6 +2642,8 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
+  EXIT;
+
   if(utf7e_program != NULL)
     free_program(utf7e_program);
 

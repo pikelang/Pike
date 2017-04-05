@@ -1,5 +1,6 @@
 /.pure
 /Makefile
+/charsetmod.c
 /config.h
 /config.h.in
 /config.log
