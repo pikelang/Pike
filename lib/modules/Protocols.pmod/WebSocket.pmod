@@ -898,6 +898,7 @@ class Request(function(array(string), Request:void) cb) {
 class Port {
     inherit Protocols.HTTP.Server.Port;
 
+    //!
     protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
                           function(array(string), Request:void)|void ws_cb,
                           void|int portno, void|string interface) {
