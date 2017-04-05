@@ -242,7 +242,7 @@ Frame parse(Connection con, Stdio.Buffer in) {
 }
 
 class Frame {
-    //!
+    //! Type of frame eg @expr{FRAME_TEXT@} or @expr{FRAME_BINARY@}
     FRAME opcode;
 
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
