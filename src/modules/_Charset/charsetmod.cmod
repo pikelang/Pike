@@ -29,6 +29,8 @@
 #define SIGNED
 #endif
 
+#define DEFAULT_CMOD_STORAGE static
+
 static struct program *std_cs_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
@@ -1390,7 +1392,36 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   return s16;
 }
 
-static void f_rfc1345(INT32 args)
+/*! @decl object rfc1345(string charset, int(0..1)|void encoder, string|void rep, @
+ *!                      function(string:string)|void repcb)
+ *!
+ *!   Low-level charset codec factory.
+ *!
+ *! @decl charset
+ *!   Canonical name of character set to look up.
+ *!
+ *! @decl encoder
+ *!   Flag indicating that an encoder and not a decoder is wanted.
+ *!
+ *! @decl rep
+ *!   String to use for characters not representable in the @[charset].
+ *!   Only used for encoders.
+ *!
+ *! @decl repcb
+ *!   Function to call for characters not representable in the @[charset].
+ *!   Only used for encoders.
+ *!
+ *!   This is the main entrypoint into the low-level @[_Charset] module.
+ *!
+ *| @returns
+ *!   Returns a suitable encoder or decoder on success and @expr{0@}
+ *!   (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[Charset.decoder()]
+ */
+PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
+		       function(string:string)|void repcb)
 {
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
@@ -2632,10 +2663,6 @@ PIKE_MODULE_INIT
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_8bit,tFunc(tStr,tObj), 0);
   std_8bit_program = end_program();
-
-  add_function_constant("rfc1345", f_rfc1345,
-			"function(string,int|void,string|void,"
-			"function(string:string)|void:object)", 0);
 
   PIKE_MODULE_EXPORT (_Charset, transcode_error_va);
 }
