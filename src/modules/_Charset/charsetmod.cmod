@@ -1427,21 +1427,17 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
   int lo=0, hi=num_charset_def-1;
   p_wchar1 const *tabl;
 
-  check_all_args("rfc1345()", args, BIT_STRING, BIT_INT|BIT_VOID,
-		 BIT_STRING|BIT_VOID|BIT_INT, BIT_FUNCTION|BIT_VOID|BIT_INT,
-		 0);
-
-  str = sp[-args].u.string;
-
-  if(str->size_shift>0)
-    hi = -1;
+  if(charset->size_shift) {
+    push_int(0);
+    return;
+  }
 
   while(lo<=hi) {
     int c, mid = (lo+hi)>>1;
-    if((c = strcmp((char *)STR0(str), charset_map[mid].name))==0) {
+    if(!(c = strcmp((char *)STR0(charset), charset_map[mid].name))) {
       struct program *p = NULL;
 
-      if(args>1 && TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer != 0) {
+      if(encoder && encoder->u.integer) {
 	unsigned lowtrans = 0;
 	int i, j, lo2=0, hi2=0, z, c;
 
@@ -1504,8 +1500,7 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 	  ->table = charset_map[mid].table;
 	copy_shared_string (*(struct pike_string **) (o->storage +
 						      rfc_charset_name_offs),
-			    sp[-args].u.string);
-	pop_n_elems(args);
+			    charset);
 	push_object (o);
       }
       return;
@@ -1516,10 +1511,9 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
       lo=mid+1;
   }
 
-  if(str->size_shift==0 &&
-     (tabl = misc_charset_lookup((char *)STR0(str), &lo, &hi))!=NULL) {
+  if((tabl = misc_charset_lookup((char *)STR0(charset), &lo, &hi))) {
 
-    if(args>1 && TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer != 0) {
+    if(encoder && encoder->u.integer) {
       struct std8e_stor *s8;
       int i, c;
 
@@ -1558,14 +1552,12 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 	->hi = hi;
       copy_shared_string (*(struct pike_string **) (o->storage +
 						    rfc_charset_name_offs),
-			  sp[-args].u.string);
-      pop_n_elems(args);
+			  charset);
       push_object(o);
     }
     return;
   }
 
-  pop_n_elems(args);
   push_int(0);
 }
 
