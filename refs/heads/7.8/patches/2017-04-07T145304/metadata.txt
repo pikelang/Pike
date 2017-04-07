@@ -1,0 +1,23 @@
+subject: Pike 7.8: ADT: Fixed compilation issue.
+from: f0cec2c1662fd83672287fc98b78c14eb30ba7b1
+to: 753463364a8f64178d7976f0de82d845bdca0196
+originator: Jonas Lonnberg
+depends: 2017-02-24T150718
+restart: true
+
+• release number bumped to 953 by export.pike
+
+• release number bumped to 952 by export.pike
+
+• release number bumped to 951 by export.pike
+
+• release number bumped to 950 by export.pike
+
+• ADT: Fixed compilation issue.
+
+For some reason this started failing when the system pike binary
+switched to 8.0.
+
+• release number bumped to 949 by export.pike
+
+• release number bumped to 948 by export.pike
