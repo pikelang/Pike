@@ -1,3 +1,4 @@
+/* charsetmod.cmod -*- c -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -18,10 +19,6 @@
 #include "builtin_functions.h"
 
 #include "charsetmod.h"
-
-
-#define sp Pike_sp
-#define fp Pike_fp
 
 #ifdef __CHAR_UNSIGNED__
 #define SIGNED signed
@@ -112,30 +109,30 @@ static char fwd64t[64]=
 
 static void f_create(INT32 args)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
 		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
-  if(args>0 && TYPEOF(sp[-args]) == T_STRING) {
+  if(args>0 && TYPEOF(Pike_sp[-args]) == T_STRING) {
     if(s->replace != NULL)
       free_string(s->replace);
-    add_ref(s->replace = sp[-args].u.string);
+    add_ref(s->replace = Pike_sp[-args].u.string);
   }
 
-  if(args>1 && TYPEOF(sp[1-args]) == T_FUNCTION)
-    assign_svalue(&s->repcb, &sp[1-args]);
+  if(args>1 && TYPEOF(Pike_sp[1-args]) == T_FUNCTION)
+    assign_svalue(&s->repcb, &Pike_sp[1-args]);
 }
 
 static void f_set_repcb(INT32 args)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   check_all_args("set_replacement_callback()", args,
 		 BIT_FUNCTION|BIT_INT, 0);
 
   if(args>0)
-    assign_svalue(&s->repcb, &sp[-args]);
+    assign_svalue(&s->repcb, &Pike_sp[-args]);
 
   push_object(this_object());
 }
@@ -144,7 +141,7 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 {
   push_string(make_shared_binary_string2(&ch, 1));
   apply_svalue(repcb, 1);
-  if(TYPEOF(sp[-1]) == T_STRING)
+  if(TYPEOF(Pike_sp[-1]) == T_STRING)
     return 1;
   pop_stack();
   return 0;
@@ -167,10 +164,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
     if (TYPEOF(encode_err_prog) == T_INT) {
       push_static_text ("Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
-      if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
+      if (TYPEOF(Pike_sp[-1]) != T_PROGRAM && TYPEOF(Pike_sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Charset.EncodeError "
 		    "to a program - unable to throw an encode error.\n");
-      move_svalue (&encode_err_prog, --sp);
+      move_svalue (&encode_err_prog, --Pike_sp);
     }
     err_prog = &encode_err_prog;
   }
@@ -179,10 +176,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
     if (TYPEOF(decode_err_prog) == T_INT) {
       push_static_text ("Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
-      if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
+      if (TYPEOF(Pike_sp[-1]) != T_PROGRAM && TYPEOF(Pike_sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Charset.DecodeError "
 		    "to a program - unable to throw an decode error.\n");
-      move_svalue (&decode_err_prog, --sp);
+      move_svalue (&decode_err_prog, --Pike_sp);
     }
     err_prog = &decode_err_prog;
   }
@@ -222,14 +219,14 @@ void DECLSPEC(noreturn) transcoder_error (
   SET_SVAL_SUBTYPE(charset_str, 0);
   MAKE_CONST_STRING (charset_str.u.string, "charset");
   SET_SVAL_TYPE(charset_str, T_STRING);
-  object_index_no_free (&charset, fp->current_object, 0, &charset_str);
+  object_index_no_free (&charset, Pike_fp->current_object, 0, &charset_str);
   transcode_error_va (str, pos, charset.u.string, encode, reason, args);
   va_end (args);
 }
 
 #define REPLACE_CHAR(ch, func, ctx, str, pos) do {			\
     if(repcb != NULL && call_repcb(repcb, ch)) {			\
-      func(ctx, sb, sp[-1].u.string, rep, NULL);			\
+      func(ctx, sb, Pike_sp[-1].u.string, rep, NULL);			\
       pop_stack();							\
     } else if(rep != NULL)						\
       func(ctx, sb, rep, NULL, NULL);					\
@@ -241,7 +238,7 @@ void DECLSPEC(noreturn) transcoder_error (
 
 static void f_drain(INT32 args)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   pop_n_elems(args);
   push_string(finish_string_builder(&s->strbuild));
@@ -250,7 +247,7 @@ static void f_drain(INT32 args)
 
 static void f_drain_rfc1345(INT32 args)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
   UNICHAR trailer = 0;
   int double_combiners = 0;
 
@@ -373,7 +370,7 @@ static void f_drain_rfc1345(INT32 args)
 
 static void f_clear(INT32 args)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   pop_n_elems(args);
 
@@ -389,7 +386,7 @@ static void f_clear(INT32 args)
 
 static void init_stor(struct object *UNUSED(o))
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   s->retain = NULL;
   s->replace = NULL;
@@ -399,7 +396,7 @@ static void init_stor(struct object *UNUSED(o))
 
 static void exit_stor(struct object *UNUSED(o))
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
   if(s->retain != NULL) {
     free_string(s->retain);
@@ -417,7 +414,7 @@ static void exit_stor(struct object *UNUSED(o))
 static void f_std_feed(INT32 args, ptrdiff_t (*func)(struct pike_string *,
 						     struct std_cs_stor *))
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
   struct pike_string *str;
   ptrdiff_t l;
 
@@ -747,7 +744,7 @@ static ptrdiff_t feed_utf7(struct pike_string *str, struct std_cs_stor *s)
 static void f_clear_utf7(INT32 args)
 {
   struct utf7_stor *u7 =
-    (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
+    (struct utf7_stor *)(Pike_fp->current_storage+utf7_stor_offs);
 
   f_clear(args);
 
@@ -760,7 +757,7 @@ static void f_clear_utf7(INT32 args)
 static void utf7_init_stor(struct object *UNUSED(o))
 {
   struct utf7_stor *u7 =
-    (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
+    (struct utf7_stor *)(Pike_fp->current_storage+utf7_stor_offs);
 
   u7->dat = 0;
   u7->surro = 0;
@@ -883,13 +880,13 @@ static void f_feed_euc(INT32 args)
 
 static void f_create_euc(INT32 args)
 {
-  struct euc_stor *s = (struct euc_stor *)(fp->current_storage + euc_stor_offs);
+  struct euc_stor *s = (struct euc_stor *)(Pike_fp->current_storage + euc_stor_offs);
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
 
   check_all_args("create()", args, BIT_STRING, BIT_STRING, 0);
 
-  str = sp[-args].u.string;
+  str = Pike_sp[-args].u.string;
 
   if(str->size_shift>0)
     hi = -1;
@@ -918,14 +915,14 @@ static void f_create_euc(INT32 args)
     s->table3 = NULL;
   }
 
-  copy_shared_string (s->name, sp[1-args].u.string);
+  copy_shared_string (s->name, Pike_sp[1-args].u.string);
 }
 
 static void f_create_multichar(INT32 args)
 {
   char *name;
   const struct multichar_def *def = multichar_map;
-  struct multichar_stor *s = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
+  struct multichar_stor *s = (struct multichar_stor *)(Pike_fp->current_storage + multichar_stor_offs);
 
   get_all_args("create", args, "%s", &name);
 
@@ -941,7 +938,7 @@ static void f_create_multichar(INT32 args)
   /* NOTE: gb18030 is the first in the multichar map! */
   s->is_gb18030 = (def == multichar_map);
 
-  copy_shared_string (s->name, sp[-args].u.string);
+  copy_shared_string (s->name, Pike_sp[-args].u.string);
 }
 
 #include "gb18030.h"
@@ -990,7 +987,7 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
 static ptrdiff_t feed_multichar(struct pike_string *str,
 				struct std_cs_stor *s)
 {
-  struct multichar_stor *m = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
+  struct multichar_stor *m = (struct multichar_stor *)(Pike_fp->current_storage + multichar_stor_offs);
   const struct multichar_table *table = m->table;
 
   const p_wchar0 *p = STR0(str);
@@ -1150,7 +1147,7 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
 static void f_feed_gb18030e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
@@ -1227,7 +1224,7 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
 static void f_feed_gbke(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
@@ -1239,7 +1236,7 @@ static void f_feed_gbke(INT32 args)
 
 static void f_create_sjise(INT32 args)
 {
-  struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
+  struct std16e_stor *s = (struct std16e_stor *)(Pike_fp->current_storage + std16e_stor_offs);
   int i, j, z;
 
   s->lowtrans = 0x5c;
@@ -1270,7 +1267,7 @@ static void f_create_sjise(INT32 args)
 
   /* Could use a program constant in this case, but that'd require a
    * quirky inherit structure. /mast */
-  REF_MAKE_CONST_STRING (*(struct pike_string **) (fp->current_storage +
+  REF_MAKE_CONST_STRING (*(struct pike_string **) (Pike_fp->current_storage +
 						   rfc_charset_name_offs),
                          "shiftjis");
   f_create(args);
@@ -1278,7 +1275,7 @@ static void f_create_sjise(INT32 args)
 
 static void f_create_euce(INT32 args)
 {
-  struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
+  struct std16e_stor *s = (struct std16e_stor *)(Pike_fp->current_storage + std16e_stor_offs);
   struct pike_string *str;
   int i, j, z, lo=0, hi=num_charset_def-1;
   UNICHAR const *table=NULL;
@@ -1287,7 +1284,7 @@ static void f_create_euce(INT32 args)
 		 BIT_STRING|BIT_VOID|BIT_INT,
 		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
-  str = sp[-args].u.string;
+  str = Pike_sp[-args].u.string;
 
   if(str->size_shift>0)
     hi = -1;
@@ -1349,9 +1346,9 @@ static void f_create_euce(INT32 args)
       }
   }
 
-  copy_shared_string (*(struct pike_string **) (fp->current_storage +
+  copy_shared_string (*(struct pike_string **) (Pike_fp->current_storage +
 						rfc_charset_name_offs),
-		      sp[1-args].u.string);
+		      Pike_sp[1-args].u.string);
 
   f_create(args-2);
 }
@@ -1363,10 +1360,10 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
   allargs -= args;
   copy_shared_string (*(struct pike_string **) (o->storage +
 						rfc_charset_name_offs),
-		      sp[-allargs].u.string);
+		      Pike_sp[-allargs].u.string);
   pop_n_elems(allargs);
   push_object(o);
-  s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
+  s8 = (struct std8e_stor *)(Pike_sp[-1].u.object->storage+std8e_stor_offs);
   s8->revtab = xcalloc(hi-lo, sizeof(p_wchar0));
   s8->lo = lo;
   s8->hi = hi;
@@ -1381,10 +1378,10 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   allargs -= args;
   copy_shared_string (*(struct pike_string **) (o->storage +
 						rfc_charset_name_offs),
-		      sp[-allargs].u.string);
+		      Pike_sp[-allargs].u.string);
   pop_n_elems(allargs);
   push_object(o);
-  s16 = (struct std16e_stor *)(sp[-1].u.object->storage+std16e_stor_offs);
+  s16 = (struct std16e_stor *)(Pike_sp[-1].u.object->storage+std16e_stor_offs);
   s16->revtab = xcalloc(hi-lo, sizeof(p_wchar1));
   s16->lo = lo;
   s16->hi = hi;
@@ -1825,7 +1822,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 static void f_feed_utf8e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
@@ -1957,7 +1954,7 @@ static void feed_utf_ebcdice(struct std_cs_stor *cs, struct string_builder *sb,
 static void f_feed_utf_ebcdice(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
@@ -2026,7 +2023,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 static void f_feed_utf7_5e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
@@ -2182,11 +2179,11 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 static void f_feed_utf7e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_utf7e((struct utf7_stor *)(((char*)fp->current_storage)+utf7_stor_offs),
+  feed_utf7e((struct utf7_stor *)(((char*)Pike_fp->current_storage)+utf7_stor_offs),
 	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
@@ -2195,9 +2192,9 @@ static void f_feed_utf7e(INT32 args)
 
 static void f_drain_utf7e(INT32 args)
 {
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
   struct utf7_stor *u7 =
-    (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
+    (struct utf7_stor *)(Pike_fp->current_storage+utf7_stor_offs);
 
   if(u7->shift) {
     if(u7->datbit) {
@@ -2214,7 +2211,7 @@ static void f_drain_utf7e(INT32 args)
 static void std_8bite_init_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
-    (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
+    (struct std8e_stor *)(Pike_fp->current_storage+std8e_stor_offs);
 
   s8->revtab = NULL;
   s8->lowtrans = 32;
@@ -2226,7 +2223,7 @@ static void std_8bite_init_stor(struct object *UNUSED(o))
 static void std_8bite_exit_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
-    (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
+    (struct std8e_stor *)(Pike_fp->current_storage+std8e_stor_offs);
 
   if(s8->revtab != NULL)
     free(s8->revtab);
@@ -2291,11 +2288,11 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 static void f_feed_std8e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_std8e((struct std8e_stor *)(((char*)fp->current_storage)+
+  feed_std8e((struct std8e_stor *)(((char*)Pike_fp->current_storage)+
 				   std8e_stor_offs),
 	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -2306,7 +2303,7 @@ static void f_feed_std8e(INT32 args)
 static void std_16bite_init_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
-    (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
+    (struct std16e_stor *)(Pike_fp->current_storage+std16e_stor_offs);
 
   s16->revtab = NULL;
   s16->lowtrans = 32;
@@ -2318,7 +2315,7 @@ static void std_16bite_init_stor(struct object *UNUSED(o))
 static void std_16bite_exit_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
-    (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
+    (struct std16e_stor *)(Pike_fp->current_storage+std16e_stor_offs);
 
   if(s16->revtab != NULL)
     free(s16->revtab);
@@ -2396,11 +2393,11 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 static void f_feed_std16e(INT32 args)
 {
   struct pike_string *str;
-  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct std_cs_stor *cs = (struct std_cs_stor *)Pike_fp->current_storage;
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_std16e((struct std16e_stor *)(((char*)fp->current_storage)+
+  feed_std16e((struct std16e_stor *)(((char*)Pike_fp->current_storage)+
 				     std16e_stor_offs),
 	      &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
