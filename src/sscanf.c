@@ -914,7 +914,7 @@ INPUT_IS_WIDE(								 \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
-             int pos=0;						 \
+             int pos=0;                                                  \
 	     if (field_length >= 0) {					 \
 	       pos = (eye += field_length);				 \
 	     }								 \
@@ -973,60 +973,60 @@ INPUT_IS_WIDE(								 \
 	  break;							 \
         }								 \
  								         \
-      case 'H':								\
-	{								\
+      case 'H':								 \
+        {								 \
           unsigned long len=0;                                           \
-          if(field_length == -1)					\
-	    field_length=1;						\
-          if(field_length == 0)                                         \
-            Pike_error("%%H size field is 0.\n");                       \
-          if(eye+field_length > input_len)				\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  INPUT_IS_WIDE (						\
-	    for(e=0;e<field_length;e++)					\
-	    {								\
-	      if((unsigned INT32) input[eye+e] > 255)			\
-	      {								\
-		chars_matched[0]=eye;					\
-		return matches;						\
-	      }								\
-	    }								\
-	  );								\
-	  if (minus_flag)						\
-	  {								\
-	    int pos=0;							\
-	    pos = (eye += field_length);				\
-            while(--field_length >= 0)					\
-	    {								\
-	      len<<=8;							\
-	      len |= input[--pos];					\
-	    }								\
-	  } else {							\
-	    while(--field_length >= 0)					\
-	    {								\
-	      len<<=8;							\
-	      len |= input[eye];					\
-	      eye++;							\
-	    }								\
-	  }								\
-	  if(len > (unsigned long)(input_len-eye))                      \
-	  {								\
-	    chars_matched[0]=eye-field_length;				\
-	    return matches;						\
-	  }								\
-	  if (no_assign) {						\
-	    no_assign = 2;						\
-	  } else {							\
-	    SET_SVAL(sval, T_STRING, 0, string,				\
-		     PIKE_CONCAT(make_shared_binary_string,		\
-				 INPUT_SHIFT)(input+eye, len));		\
-	  }								\
-	  eye+=len;							\
-	  break;							\
-        }								\
+          if(field_length == -1)					 \
+            field_length=1;						 \
+          if(field_length == 0)                                          \
+            Pike_error("%%H size field is 0.\n");                        \
+          if(eye+field_length > input_len)				 \
+          {								 \
+            chars_matched[0]=eye;					 \
+            return matches;						 \
+          }								 \
+          INPUT_IS_WIDE (						 \
+            for(e=0;e<field_length;e++)					 \
+            {								 \
+              if((unsigned INT32) input[eye+e] > 255)			 \
+              {								 \
+                chars_matched[0]=eye;					 \
+                return matches;						 \
+              }								 \
+            }								 \
+          );								 \
+          if (minus_flag)						 \
+          {								 \
+            int pos=0;							 \
+            pos = (eye += field_length);				 \
+            while(--field_length >= 0)					 \
+            {								 \
+              len<<=8;							 \
+              len |= input[--pos];					 \
+            }								 \
+          } else {							 \
+            while(--field_length >= 0)					 \
+            {								 \
+              len<<=8;							 \
+              len |= input[eye];					 \
+              eye++;							 \
+            }								 \
+          }								 \
+          if(len > (unsigned long)(input_len-eye))                       \
+          {								 \
+            chars_matched[0]=eye-field_length;				 \
+            return matches;						 \
+          }								 \
+          if (no_assign) {						 \
+            no_assign = 2;						 \
+          } else {							 \
+            SET_SVAL(sval, T_STRING, 0, string,				 \
+                     PIKE_CONCAT(make_shared_binary_string,		 \
+                                 INPUT_SHIFT)(input+eye, len));		 \
+          }								 \
+          eye+=len;							 \
+          break;							 \
+        }								 \
 									 \
         case 'b':							 \
         case 'o':							 \
@@ -1092,9 +1092,9 @@ INPUT_IS_WIDE(								 \
 	case 'F':							 \
 	  if(field_length == -1) field_length = 4;			 \
 	  if(field_length != 4 && field_length != 8)			 \
-	    Pike_error("Invalid IEEE width %ld in sscanf format string.\n",	 \
-                       (long)field_length);                             \
-	  if(eye+field_length > input_len)				 \
+            Pike_error("Invalid IEEE width %ld in sscanf format string.\n", \
+                       (long)field_length);                              \
+          if(eye+field_length > input_len)				 \
 	  {								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
@@ -1102,13 +1102,17 @@ INPUT_IS_WIDE(								 \
 	  SET_SVAL(sval, T_FLOAT, 0, float_number, 0.0);		 \
 	  switch(field_length) {					 \
 	    case 4:							 \
-              if (minus_flag) EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le);    \
-              else EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be);               \
-	      eye += 4;							 \
-	      break;							 \
+              if (minus_flag)                                            \
+                EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le); \
+              else                                                       \
+                EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be); \
+              eye += 4;                                                  \
+              break;							 \
 	    case 8:							 \
-              if (minus_flag) EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le);    \
-              else EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be);               \
+              if (minus_flag)                                            \
+                EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le); \
+              else                                                       \
+                EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be); \
 	      eye += 8;							 \
 	      break;							 \
 	  }								 \
@@ -1216,7 +1220,7 @@ INPUT_IS_WIDE(								 \
 		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
 						    s-match+1,		 \
 						    &set,		 \
-						    match_len);         \
+                                                    match_len);          \
 		  set.neg=!set.neg;					 \
 		  goto match_set;					 \
 	      }								 \
