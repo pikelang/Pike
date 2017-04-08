@@ -1,7 +1,9 @@
+#charset utf-8
 // ----------------------------------------------------------------
 // Timezone names
 //
-// this file is created half-manually
+// This file is created half-manually. It is read and updated
+// by mkrules.pike.
 // ----------------------------------------------------------------
 
 //! module Calendar
