@@ -16,8 +16,6 @@
 #include "operators.h"
 #include "bignum.h"
 
-#define sp Pike_sp
-
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
  * If something went wrong, 'exepect_result' tells you what went wrong.
@@ -72,7 +70,7 @@ PMOD_EXPORT int check_args(int args, ...)
   struct expect_result tmp;
 
   va_start(arglist, args);
-  va_check_args(sp - args, args, &tmp, arglist);
+  va_check_args(Pike_sp - args, args, &tmp, arglist);
   va_end(arglist);
 
   if(tmp.error_type == ERR_NONE) return 0;
@@ -88,17 +86,17 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   struct expect_result tmp;
 
   va_start(arglist, args);
-  va_check_args(sp - args, args, &tmp, arglist);
+  va_check_args(Pike_sp - args, args, &tmp, arglist);
   va_end(arglist);
 
   switch(tmp.error_type)
   {
   case ERR_NONE: return;
   case ERR_TOO_FEW:
-    new_error(fnname, "Too few arguments.\n", sp, args);
+    new_error(fnname, "Too few arguments.\n", Pike_sp, args);
     break;
   case ERR_TOO_MANY:
-    new_error(fnname, "Too many arguments.\n", sp, args);
+    new_error(fnname, "Too many arguments.\n", Pike_sp, args);
     break;
 
   case ERR_BAD_ARG:
@@ -281,12 +279,12 @@ static int va_get_args_2(struct svalue *s,
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
-	if(TYPEOF(sp[-1]) == T_INT)
+	if(TYPEOF(Pike_sp[-1]) == T_INT)
 	  /* FIXME: Range checks. */
-	  *cast_arg(ptr, int *)=sp[-1].u.integer;
+	  *cast_arg(ptr, int *)=Pike_sp[-1].u.integer;
 	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
-          *cast_arg(ptr, int *)=(int)sp[-1].u.float_number;
+          *cast_arg(ptr, int *)=(int)Pike_sp[-1].u.float_number;
 	else
 	  Pike_error("Cast to int failed.\n");
         pop_stack();
@@ -305,11 +303,11 @@ static int va_get_args_2(struct svalue *s,
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
-	if(TYPEOF(sp[-1]) == T_INT)
-	  *cast_arg(ptr, INT_TYPE *)=sp[-1].u.integer;
+	if(TYPEOF(Pike_sp[-1]) == T_INT)
+	  *cast_arg(ptr, INT_TYPE *)=Pike_sp[-1].u.integer;
 	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
-          *cast_arg(ptr, INT_TYPE *)=(INT_TYPE)sp[-1].u.float_number;
+          *cast_arg(ptr, INT_TYPE *)=(INT_TYPE)Pike_sp[-1].u.float_number;
 	else
 	  Pike_error("Cast to int failed.\n");
         pop_stack();
@@ -396,7 +394,7 @@ static int va_get_args_2(struct svalue *s,
         ref_push_type_value(float_type_string);
         push_svalue( s );
         f_cast( );
-        *cast_arg(ptr, FLOAT_TYPE *)=sp[-1].u.float_number;
+        *cast_arg(ptr, FLOAT_TYPE *)=Pike_sp[-1].u.float_number;
         pop_stack();
       }
       break;
@@ -494,7 +492,7 @@ int va_get_args(struct svalue *s,
 #ifdef NOT_USED
 /* get_args does NOT generate errors, it simply returns how
  * many arguments were actually matched.
- * usage: get_args(sp-args, args, "%i",&an_int)
+ * usage: get_args(Pike_sp-args, args, "%i",&an_int)
  */
 PMOD_EXPORT int get_args(struct svalue *s,
 			 INT32 num_args,
@@ -515,7 +513,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
   va_list ptr;
   int ret, info;
   va_start(ptr, format);
-  ret=va_get_args_2(sp-args, args, format, ptr, &info);
+  ret=va_get_args_2(Pike_sp-args, args, format, ptr, &info);
   va_end(ptr);
 
   switch (info) {
@@ -525,17 +523,17 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       break;
     case ARGS_NUL_IN_STRING:
       bad_arg_error(
-	fname, sp-args, args,
+	fname, Pike_sp-args, args,
 	ret+1,
 	"string(1..255)",
-	sp+ret-args,
+	Pike_sp+ret-args,
 	"Bad argument %d to %s(). NUL in string.\n",
         ret+1, fname);
       UNREACHABLE();
 
     case ARGS_SUBTYPED_OBJECT:
-      bad_arg_error(fname, sp-args, args, ret+1, "object",
-		    sp+ret-args,
+      bad_arg_error(fname, Pike_sp-args, args, ret+1, "object",
+		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
       UNREACHABLE();
 
@@ -582,17 +580,17 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 
       if (info != ARGS_SHORT) {
 	bad_arg_error(
-	  fname, sp-args, args,
+	  fname, Pike_sp-args, args,
 	  ret+1,
 	  expected_type,
-	  sp+ret-args,
+	  Pike_sp+ret-args,
 	  "Bad argument %d to %s(). Expected %s.\n",
 	  ret+1, fname, expected_type);
       } else {
 	const char *req_args_end = strchr (format, '.');
 	if (!req_args_end) req_args_end = strchr (format, 0);
 	bad_arg_error(
-	  fname, sp-args, args,
+	  fname, Pike_sp-args, args,
 	  ret+1,
 	  expected_type,
 	  0,

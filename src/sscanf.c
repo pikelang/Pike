@@ -22,8 +22,6 @@
 #include "sscanf.h"
 #include "bitvector.h"
 
-#define sp Pike_sp
-
 /*
  * helper functions for sscanf %O
  */
@@ -438,7 +436,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Unterminated negated sscanf set.\n");	\
+      Pike_error("Unterminated negated sscanf set.\n");         \
   }else{							\
     set->neg=0;							\
   }								\
@@ -489,7 +487,7 @@ MATCH_IS_WIDE(							\
       }								\
       else							\
       {								\
-	sp[-1].u.integer=match[cnt];				\
+        Pike_sp[-1].u.integer=match[cnt];                       \
       }								\
 )								\
     } else {							\
@@ -501,9 +499,9 @@ MATCH_IS_WIDE(							\
 MATCH_IS_WIDE(							\
       else{							\
         if(set_size &&						\
-	   ((p_wchar2)sp[-1].u.integer) == last-1)		\
+	   ((p_wchar2)Pike_sp[-1].u.integer) == last-1)		\
         {							\
-	  sp[-1].u.integer++;					\
+          Pike_sp[-1].u.integer++;                              \
         }else{							\
 	  check_stack(2);					\
 	  push_int(last);					\
@@ -855,9 +853,9 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  SET_ONERROR(err, do_free_array, sval.u.array);		 \
 									 \
 	  while(input_len-eye)						 \
-	  {								 \
+          {								 \
 	    int yes;							 \
-	    struct svalue *save_sp=sp;					 \
+            struct svalue *save_sp=Pike_sp;                              \
 	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)( \
                          input+eye,					 \
 			 input_len-eye,					 \
@@ -867,12 +865,12 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          &yes,0);                                        \
 	    if(yes && tmp)						 \
 	    {								 \
-              f_aggregate((INT32)(sp-save_sp));                          \
-	      sval.u.array=append_array(sval.u.array,sp-1);		 \
+              f_aggregate((INT32)(Pike_sp-save_sp));                     \
+              sval.u.array=append_array(sval.u.array,Pike_sp-1);         \
 	      pop_stack();						 \
 	      eye+=tmp;							 \
 	    }else{							 \
-	      pop_n_elems(sp-save_sp);					 \
+              pop_n_elems(Pike_sp-save_sp);                              \
 	      break;							 \
 	    }								 \
 	  }								 \
@@ -906,7 +904,7 @@ INPUT_IS_WIDE(								 \
 INPUT_IS_WIDE(								 \
           for(e=0;e<field_length;e++)					 \
           {								 \
-	    if((unsigned INT32) input[eye+e] > 255)			\
+            if((unsigned INT32) input[eye+e] > 255)			 \
              {								 \
                chars_matched[0]=eye;					 \
                return matches;						 \
@@ -916,7 +914,7 @@ INPUT_IS_WIDE(								 \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
-	     int pos=0;						 \
+             int pos=0;						 \
 	     if (field_length >= 0) {					 \
 	       pos = (eye += field_length);				 \
 	     }								 \
@@ -938,7 +936,7 @@ INPUT_IS_WIDE(								 \
 		   o_or();						 \
 		 }							 \
                  dmalloc_touch_svalue(Pike_sp-1);			 \
-		 sval=*--sp;						 \
+                 sval=*--Pike_sp;                                        \
 		 break;							 \
 	       }							 \
 	       sval.u.integer<<=8;					 \
@@ -964,7 +962,7 @@ INPUT_IS_WIDE(								 \
 		   eye++;						 \
 		 }							 \
                  dmalloc_touch_svalue(Pike_sp-1);			 \
-		 sval=*--sp;						 \
+                 sval=*--Pike_sp;                                        \
 		 break;							 \
 	       }							 \
 	       sval.u.integer<<=8;					 \
@@ -1406,7 +1404,7 @@ INPUT_IS_WIDE(								 \
 	free_svalue(&sval);						 \
     } else {								 \
       check_stack(1);							 \
-      *sp++=sval;							 \
+      *Pike_sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
       DO_IF_DEBUG(INVALIDATE_SVAL(sval));				 \
     }									 \
@@ -1734,22 +1732,22 @@ void o_sscanf(INT32 args)
 {
   INT32 i=0;
   int x;
-  struct svalue *save_sp=sp;
+  struct svalue *save_sp=Pike_sp;
 
-  if(TYPEOF(sp[-args]) != T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("sscanf", 1, "string");
 
-  if(TYPEOF(sp[1-args]) != T_STRING)
+  if(TYPEOF(Pike_sp[1-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("sscanf", 2, "string");
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
 
-  if(sp-save_sp > args/2-1)
+  if(Pike_sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
 
-  for(x=0;x<sp-save_sp;x++)
+  for(x=0;x<Pike_sp-save_sp;x++)
     assign_lvalue(save_sp-args+2+x*2,save_sp+x);
-  pop_n_elems(sp-save_sp +args);
+  pop_n_elems(Pike_sp-save_sp +args);
 
 #ifdef PIKE_DEBUG
   if(Pike_interpreter.trace_level >2)
@@ -1778,14 +1776,14 @@ void o_sscanf(INT32 args)
 PMOD_EXPORT void f_sscanf(INT32 args)
 {
   INT32 i;
-  struct svalue *save_sp=sp;
+  struct svalue *save_sp=Pike_sp;
   struct array *a;
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
 
-  a = aggregate_array(sp - save_sp);
+  a = aggregate_array(Pike_sp - save_sp);
   pop_n_elems(args);
   push_array(a);
 }

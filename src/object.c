@@ -40,8 +40,6 @@
 
 #include <sys/stat.h>
 
-#define sp Pike_sp
-
 /* #define GC_VERBOSE */
 /* #define DEBUG */
 
@@ -640,7 +638,7 @@ PMOD_EXPORT struct object *get_master(void)
 	f_decode_value(2);
 	UNSETJMP(tmp);
 
-	if(TYPEOF(sp[-1]) == T_PROGRAM)
+	if(TYPEOF(Pike_sp[-1]) == T_PROGRAM)
 	  goto compiled;
 
 	pop_stack();
@@ -670,14 +668,14 @@ PMOD_EXPORT struct object *get_master(void)
       f_compile(1);
 
     compiled:
-      if(TYPEOF(sp[-1]) != T_PROGRAM)
+      if(TYPEOF(Pike_sp[-1]) != T_PROGRAM)
       {
 	pop_stack();
 	return 0;
       }
-      master_program=sp[-1].u.program;
-      sp--;
-      dmalloc_touch_svalue(sp);
+      master_program=Pike_sp[-1].u.program;
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
     }else{
       throw_error_object(fast_clone_object(master_load_error_program), 0, 0, 0,
 			 "Couldn't load master program from %s.\n", master_file);
@@ -1531,9 +1529,9 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
     l += inh->identifier_level;
     push_svalue(index);
     apply_lfun(o, lfun, 1);
-    *to=sp[-1];
-    sp--;
-    dmalloc_touch_svalue(sp);
+    *to=Pike_sp[-1];
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
     return PIKE_T_GET_SET;
   } else {
     return object_index_no_free2(to, o, inherit_number, index);
@@ -2061,11 +2059,11 @@ PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_number)
     a->type_field = BIT_STRING;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(TYPEOF(sp[-1]) != T_ARRAY)
+    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_indices()\n");
-    a=sp[-1].u.array;
-    sp--;
-    dmalloc_touch_svalue(sp);
+    a=Pike_sp[-1].u.array;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
   }
   return a;
 }
@@ -2097,11 +2095,11 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
     a->type_field = types;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(TYPEOF(sp[-1]) != T_ARRAY)
+    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_values()\n");
-    a=sp[-1].u.array;
-    sp--;
-    dmalloc_touch_svalue(sp);
+    a=Pike_sp[-1].u.array;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
   }
   return a;
 }
@@ -2143,11 +2141,11 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
     a->type_field = BIT_TYPE;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(TYPEOF(sp[-1]) != T_ARRAY)
+    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_types()\n");
-    a=sp[-1].u.array;
-    sp--;
-    dmalloc_touch_svalue(sp);
+    a=Pike_sp[-1].u.array;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
   }
   return a;
 }
@@ -2759,36 +2757,36 @@ static void f_magic_index(INT32 args)
   switch(args) {
     default:
     case 3:
-      if (TYPEOF(sp[2-args]) != T_INT)
+      if (TYPEOF(Pike_sp[2-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 3, "void|int");
-      type = sp[2-args].u.integer & 1;
+      type = Pike_sp[2-args].u.integer & 1;
       /* FALL THROUGH */
     case 2:
-      if (TYPEOF(sp[1-args]) == T_INT) {
+      if (TYPEOF(Pike_sp[1-args]) == T_INT) {
 	/* Compat with old-style args. */
-	type |= (sp[1-args].u.integer & 1);
-	if (sp[1-args].u.integer & 2) {
+	type |= (Pike_sp[1-args].u.integer & 1);
+	if (Pike_sp[1-args].u.integer & 2) {
 	  if(!(o=MAGIC_THIS->o))
 	    Pike_error("Magic index error\n");
 	  if(!o->prog)
 	    Pike_error("::`-> on destructed object.\n");
 	  inherit = o->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[1-args]) == T_OBJECT) {
-	o = sp[1-args].u.object;
+      } else if (TYPEOF(Pike_sp[1-args]) == T_OBJECT) {
+	o = Pike_sp[1-args].u.object;
 	if (o != MAGIC_THIS->o)
 	  Pike_error("::`-> context is not the current object.\n");
 	if(!o->prog)
 	  Pike_error("::`-> on destructed object.\n");
-	inherit = o->prog->inherits + SUBTYPEOF(sp[1-args]);
+	inherit = o->prog->inherits + SUBTYPEOF(Pike_sp[1-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 2, "void|object|int");
       }
       /* FALL THROUGH */
     case 1:
-      if (TYPEOF(sp[-args]) != T_STRING)
+      if (TYPEOF(Pike_sp[-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 1, "string");
-      s = sp[-args].u.string;
+      s = Pike_sp[-args].u.string;
       break;
     case 0:
       SIMPLE_WRONG_NUM_ARGS_ERROR ("::`->", 1);
@@ -2822,8 +2820,8 @@ static void f_magic_index(INT32 args)
   }else{
     struct svalue sval;
     low_object_index_no_free(&sval,o,f+inherit->identifier_level);
-    *sp=sval;
-    sp++;
+    *Pike_sp=sval;
+    Pike_sp++;
     dmalloc_touch_svalue(Pike_sp-1);
   }
 }
@@ -2873,37 +2871,37 @@ static void f_magic_set_index(INT32 args)
   switch (args) {
     default:
     case 4:
-      if (TYPEOF(sp[3-args]) != T_INT)
+      if (TYPEOF(Pike_sp[3-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::`->=", 4, "void|int");
-      type = sp[3-args].u.integer & 1;
+      type = Pike_sp[3-args].u.integer & 1;
       /* FALL THROUGH */
     case 3:
-      if (TYPEOF(sp[2-args]) == T_INT) {
+      if (TYPEOF(Pike_sp[2-args]) == T_INT) {
 	/* Compat with old-style args. */
-	type |= (sp[2-args].u.integer & 1);
-	if (sp[2-args].u.integer & 2) {
+	type |= (Pike_sp[2-args].u.integer & 1);
+	if (Pike_sp[2-args].u.integer & 2) {
 	  if(!(o=MAGIC_THIS->o))
 	    Pike_error("Magic index error\n");
 	  if(!o->prog)
 	    Pike_error("::`-> on destructed object.\n");
 	  inherit = o->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
-	o = sp[2-args].u.object;
+      } else if (TYPEOF(Pike_sp[2-args]) == T_OBJECT) {
+	o = Pike_sp[2-args].u.object;
 	if (o != MAGIC_THIS->o)
 	  Pike_error("::`->= context is not the current object.\n");
 	if(!o->prog)
 	  Pike_error("::`->= on destructed object.\n");
-	inherit = o->prog->inherits + SUBTYPEOF(sp[2-args]);
+	inherit = o->prog->inherits + SUBTYPEOF(Pike_sp[2-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::`->=", 3, "void|object|int");
       }
       /* FALL THROUGH */
     case 2:
-      val = sp-args+1;
-      if (TYPEOF(sp[-args]) != T_STRING)
+      val = Pike_sp-args+1;
+      if (TYPEOF(Pike_sp[-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("::`->=", 1, "string");
-      s = sp[-args].u.string;
+      s = Pike_sp[-args].u.string;
       break;
     case 1:
     case 0:
@@ -2977,28 +2975,28 @@ static void f_magic_indices (INT32 args)
   switch(args) {
     default:
     case 2:
-      if (TYPEOF(sp[1-args]) != T_INT)
+      if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
-      type = sp[1-args].u.integer;
+      type = Pike_sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
-      if (TYPEOF(sp[-args]) == T_INT) {
+      if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
-	type |= (sp[-args].u.integer & 1);
-	if (sp[-args].u.integer & 2) {
+	type |= (Pike_sp[-args].u.integer & 1);
+	if (Pike_sp[-args].u.integer & 2) {
 	  if(!(obj=MAGIC_THIS->o))
 	    Pike_error("Magic index error\n");
 	  if(!obj->prog)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
-	obj = sp[-args].u.object;
+      } else if (TYPEOF(Pike_sp[-args]) == T_OBJECT) {
+	obj = Pike_sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_indices context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_indices on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(Pike_sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 1, "void|object|int");
       }
@@ -3036,7 +3034,7 @@ static void f_magic_indices (INT32 args)
       i++;
     }
     res->type_field |= BIT_STRING;
-    sp[-1].u.array = resize_array (res, i);
+    Pike_sp[-1].u.array = resize_array (res, i);
     res->type_field = BIT_STRING;
     return;
   }
@@ -3087,28 +3085,28 @@ static void f_magic_values (INT32 args)
   switch(args) {
     default:
     case 2:
-      if (TYPEOF(sp[1-args]) != T_INT)
+      if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
-      type = sp[1-args].u.integer;
+      type = Pike_sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
-      if (TYPEOF(sp[-args]) == T_INT) {
+      if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
-	type |= (sp[-args].u.integer & 1);
-	if (sp[-args].u.integer & 2) {
+	type |= (Pike_sp[-args].u.integer & 1);
+	if (Pike_sp[-args].u.integer & 2) {
 	  if(!(obj=MAGIC_THIS->o))
 	    Pike_error("Magic index error\n");
 	  if(!obj->prog)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
-	obj = sp[-args].u.object;
+      } else if (TYPEOF(Pike_sp[-args]) == T_OBJECT) {
+	obj = Pike_sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_values context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_values on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(Pike_sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_values", 1, "void|object|int");
       }
@@ -3148,7 +3146,7 @@ static void f_magic_values (INT32 args)
       i++;
     }
     res->type_field |= types;
-    sp[-1].u.array = resize_array (res, i);
+    Pike_sp[-1].u.array = resize_array (res, i);
     res->type_field = types;
     return;
   }
@@ -3200,28 +3198,28 @@ static void f_magic_types (INT32 args)
   switch(args) {
     default:
     case 2:
-      if (TYPEOF(sp[1-args]) != T_INT)
+      if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 2, "void|int");
-      type = sp[1-args].u.integer;
+      type = Pike_sp[1-args].u.integer;
       /* FALL THROUGH */
     case 1:
-      if (TYPEOF(sp[-args]) == T_INT) {
+      if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
-	type |= (sp[-args].u.integer & 1);
-	if (sp[-args].u.integer & 2) {
+	type |= (Pike_sp[-args].u.integer & 1);
+	if (Pike_sp[-args].u.integer & 2) {
 	  if(!(obj=MAGIC_THIS->o))
 	    Pike_error("Magic index error\n");
 	  if(!obj->prog)
 	    Pike_error("Object is destructed.\n");
 	  inherit = obj->prog->inherits + 0;
 	}
-      } else if (TYPEOF(sp[-args]) == T_OBJECT) {
-	obj = sp[-args].u.object;
+      } else if (TYPEOF(Pike_sp[-args]) == T_OBJECT) {
+	obj = Pike_sp[-args].u.object;
 	if (obj != MAGIC_THIS->o)
 	  Pike_error("::_types context is not the current object.\n");
 	if(!obj->prog)
 	  Pike_error("::_types on destructed object.\n");
-	inherit = obj->prog->inherits + SUBTYPEOF(sp[-args]);
+	inherit = obj->prog->inherits + SUBTYPEOF(Pike_sp[-args]);
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 1, "void|object|int");
       }
@@ -3261,7 +3259,7 @@ static void f_magic_types (INT32 args)
       types = BIT_TYPE;
     }
     res->type_field |= types;
-    sp[-1].u.array = resize_array (res, i);
+    Pike_sp[-1].u.array = resize_array (res, i);
     res->type_field = types;
     return;
   }

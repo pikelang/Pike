@@ -26,8 +26,6 @@
 #include "cyclic.h"
 #include "pike_float.h"
 
-#define sp Pike_sp
-
 PMOD_EXPORT const struct svalue svalue_undefined = SVALUE_INIT (T_INT, NUMBER_UNDEFINED, 0);
 PMOD_EXPORT const struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
 PMOD_EXPORT const struct svalue svalue_int_one = SVALUE_INIT_INT (1);
@@ -431,9 +429,9 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
-	if(TYPEOF(sp[-1]) == T_INT)
+	if(TYPEOF(Pike_sp[-1]) == T_INT)
 	{
-	  q=sp[-1].u.integer;
+	  q=Pike_sp[-1].u.integer;
 	}else{
 	  q=0;
 	}
@@ -542,7 +540,7 @@ int complex_svalue_is_true( const struct svalue *s )
 
       apply_low(s->u.object,
                 fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
-      if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
+      if(TYPEOF(Pike_sp[-1]) == T_INT && Pike_sp[-1].u.integer == 0)
       {
 	  pop_stack();
 	  return 1;
@@ -606,7 +604,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0,
 			"`!");
-	if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
+	if(TYPEOF(Pike_sp[-1]) == T_INT && Pike_sp[-1].u.integer == 0)
 	{
 	  pop_stack();
 	  return 1;
@@ -698,7 +696,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	  push_svalue(b);
 	  apply_low(a->u.object,
 		    fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	  if(UNSAFE_IS_ZERO(sp-1))
+	  if(UNSAFE_IS_ZERO(Pike_sp-1))
 	  {
 	    pop_stack();
 	    return 0;
@@ -732,7 +730,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	  push_svalue(a);
 	  apply_low(b->u.object,
 		    fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-	  if(UNSAFE_IS_ZERO(sp-1))
+	  if(UNSAFE_IS_ZERO(Pike_sp-1))
 	  {
 	    pop_stack();
 	    return 0;
@@ -839,7 +837,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	push_svalue(b);
 	apply_low(a->u.object,
 		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(Pike_sp-1))
 	{
 	  pop_stack();
 	  return 0;
@@ -856,7 +854,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       push_svalue(a);
       apply_low(b->u.object,
 		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-      if(UNSAFE_IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return 0;
@@ -1007,9 +1005,9 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
 	push_svalue(b);
 	apply_low(a->u.object,
 		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(Pike_sp-1))
 	{
-	  if(!SUBTYPEOF(sp[-1]))
+	  if(!SUBTYPEOF(Pike_sp[-1]))
 	  {
 	    pop_stack();
 	    return 0;
@@ -1046,9 +1044,9 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       push_svalue(a);
       apply_low(b->u.object,
 		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-      if(UNSAFE_IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
       {
-	if(!SUBTYPEOF(sp[-1]))
+	if(!SUBTYPEOF(Pike_sp[-1]))
 	{
 	  pop_stack();
 	  return 0;
@@ -1446,9 +1444,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      debug_malloc_touch(s->u.program);
 
-	      if(!SAFE_IS_ZERO(sp-1))
+	      if(!SAFE_IS_ZERO(Pike_sp-1))
 		{
-		  if(TYPEOF(sp[-1]) != T_STRING)
+		  if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_static_text("(master returned illegal value from describe_module)");
@@ -1456,7 +1454,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                  dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 		  dsv_add_string_to_buf(buf, name);
 
 		  pop_stack();
@@ -1553,9 +1551,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      debug_malloc_touch(obj);
 
-	      if(!SAFE_IS_ZERO(sp-1))
+	      if(!SAFE_IS_ZERO(Pike_sp-1))
 		{
-		  if(TYPEOF(sp[-1]) != T_STRING)
+		  if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_static_text("(object returned illegal value from _sprintf)");
@@ -1563,7 +1561,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                  dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 		  pop_stack();
 		  END_CYCLIC();
@@ -1593,9 +1591,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	    debug_malloc_touch(obj);
 
-	    if(!SAFE_IS_ZERO(sp-1))
+	    if(!SAFE_IS_ZERO(Pike_sp-1))
 	      {
-		if(TYPEOF(sp[-1]) != T_STRING)
+		if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		  {
 		    pop_stack();
 		    push_static_text("(master returned illegal value from describe_object)");
@@ -1603,7 +1601,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		Pike_interpreter.trace_level=save_t_flag;
 
-		dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 		pop_stack();
 		END_CYCLIC();
@@ -1669,9 +1667,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	  debug_malloc_touch(prog);
 
-	  if(!SAFE_IS_ZERO(sp-1))
+	  if(!SAFE_IS_ZERO(Pike_sp-1))
 	    {
-	      if(TYPEOF(sp[-1]) != T_STRING)
+	      if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		{
 		  pop_stack();
 		  push_static_text("(master returned illegal value from describe_program)");
@@ -1679,7 +1677,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      Pike_interpreter.trace_level=save_t_flag;
 
-	      dsv_add_string_to_buf(buf,  sp[-1].u.string );
+              dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 	      pop_stack();
 	      END_CYCLIC();
@@ -2530,11 +2528,11 @@ PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
       }else{
 	apply_low(s->u.object,
 		  fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
-	if(TYPEOF(sp[-1]) != T_INT)
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("Bad return type from o->_sizeof() (not int)\n");
 	dmalloc_touch_svalue(Pike_sp-1);
-	sp--;
-	return sp->u.integer;
+	Pike_sp--;
+	return Pike_sp->u.integer;
       }
     }
   default:

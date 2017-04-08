@@ -25,8 +25,6 @@
 #include "builtin_functions.h"
 #include "constants.h"
 
-#define sp Pike_sp
-
 #define DEFAULT_CMOD_STORAGE
 
 DECLARATIONS
@@ -1898,7 +1896,7 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
       {
 	apply_low (data->u.object,
 		   fun + p->inherits[SUBTYPEOF(*data)].identifier_level, 0);
-	if (TYPEOF(sp[-1]) != T_OBJECT) {
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  /* FIXME: Ought to include what we got in the error message. */
 	  pop_stack();
 	  SIMPLE_ARG_ERROR ("get_iterator", 1,
@@ -1917,7 +1915,7 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
   }
 }
 
-/* sp[-4] = index; sp[-2] = value */
+/* Pike_sp[-4] = index; Pike_sp[-2] = value */
 int foreach_iterate(struct object *o, int do_step)
 {
   struct program *prog = o->prog;

@@ -40,9 +40,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define sp Pike_sp
-
-
 static void exit_program_struct(struct program *);
 static size_t add_xstorage(size_t size,
 			   size_t alignment,

@@ -30,8 +30,6 @@
 
 #define DEFAULT_CMOD_STORAGE
 
-#define sp Pike_sp
-
 #define CPP_NO_OUTPUT 1		/* Inside false section of #if/#else */
 #define CPP_EXPECT_ELSE 2	/* Expect #else/#elif/#elseif. */
 #define CPP_EXPECT_ENDIF 4	/* Expect #endif */
@@ -247,7 +245,7 @@ static void cpp_handle_exception(struct cpp *this,
   low_safe_apply_handler("compile_exception",
 			 this->handler, this->compat_handler, 1);
 
-  if (SAFE_IS_ZERO(sp-1)) {
+  if (SAFE_IS_ZERO(Pike_sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
       cpp_error_sprintf(this, "%S", s);
@@ -511,15 +509,15 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   push_int(major);
   push_int(minor);
   SAFE_APPLY_MASTER("get_compilation_handler",2);
-  if(TYPEOF(sp[-1]) == T_OBJECT)
+  if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
   {
-    if (SUBTYPEOF(sp[-1])) {
+    if (SUBTYPEOF(Pike_sp[-1])) {
       cpp_error(this,
 		"#pike: Subtyped compilation handlers are not supported yet.");
     }
-    this->compat_handler=sp[-1].u.object;
+    this->compat_handler=Pike_sp[-1].u.object;
     dmalloc_touch_svalue(Pike_sp-1);
-    sp--;
+    Pike_sp--;
   }
   this->compat_major=major;
   this->compat_minor=minor;
@@ -922,7 +920,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
     ref_push_string(s);
     f_index(2);
 
-    res=!(UNSAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
+    res=!(UNSAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
   }
   UNSETJMP(recovery);
   return res;
@@ -938,7 +936,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
  */
 static void cpp_constant(struct cpp *this, int value)
 {
-  struct svalue *save_stack=sp;
+  struct svalue *save_stack=Pike_sp;
   struct array *arr;
   INT_TYPE res = 0;
   int n;
@@ -1002,7 +1000,7 @@ static void cpp_constant(struct cpp *this, int value)
 			     str);
 	}
 	else
-	  res = !(SAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
+	  res = !(SAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
       }
       else if (TYPEOF(throw_value) == T_STRING &&
 	       !throw_value.u.string->size_shift) {
@@ -1029,7 +1027,7 @@ static void cpp_constant(struct cpp *this, int value)
     if (safe_apply_handler("handle_import", this->handler,
 			   this->compat_handler, 3,
 			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
-      res = !(SAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
+      res = !(SAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
     else {
       cpp_handle_exception (this, "Error importing '.'.");
     }
@@ -1040,13 +1038,13 @@ static void cpp_constant(struct cpp *this, int value)
   }
 
   if (value && res) {
-    if (TYPEOF(sp[-1]) == T_INT)
-      res = sp[-1].u.integer;
+    if (TYPEOF(Pike_sp[-1]) == T_INT)
+      res = Pike_sp[-1].u.integer;
     else
       res = 0;
   }
 
-  pop_n_elems(1 + sp - save_stack);
+  pop_n_elems(1 + Pike_sp - save_stack);
   push_int(res);
 }
 
@@ -1716,7 +1714,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
       /* Note: We lose the extra reference to data here. */
       push_string(data);
       f_unicode_to_string(1);
-      add_ref(data = sp[-1].u.string);
+      add_ref(data = Pike_sp[-1].u.string);
       pop_stack();
       return data;
     }
@@ -1767,9 +1765,9 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
     if (safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
 			    2, BIT_STRING)) {
       /* Various consistency checks. */
-      if ((sp[-1].u.string->size_shift) ||
-	  (((size_t)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
-	  (sp[-1].u.string->str[0] != '#')) {
+      if ((Pike_sp[-1].u.string->size_shift) ||
+	  (((size_t)Pike_sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
+	  (Pike_sp[-1].u.string->str[0] != '#')) {
 	pop_stack();
 	return data;
       }
@@ -1783,7 +1781,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     /* Extract the charset name */
 
-    p = sp[-1].u.string->str + 1;
+    p = Pike_sp[-1].u.string->str + 1;
     while (*p && isspace(*((unsigned char *)p))) {
       p++;
     }
@@ -1847,7 +1845,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
     /* Accept the new string */
 
     free_string(data);
-    add_ref(data = sp[-1].u.string);
+    add_ref(data = Pike_sp[-1].u.string);
     pop_stack();
   }
   return data;
@@ -3157,11 +3155,11 @@ static void insert_callback_define(struct cpp *this,
   ref_push_string( arg );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 2, 0 ) &&
-      TYPEOF(sp[-1]) == T_STRING ) {
-    string_builder_shared_strcat(tmp, sp[-1].u.string);
+      TYPEOF(Pike_sp[-1]) == T_STRING ) {
+    string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
     if( !this->prefix ){
         int min;
-        check_string_range( sp[-1].u.string, 0, &min, 0 );
+        check_string_range( Pike_sp[-1].u.string, 0, &min, 0 );
         if( min < 32 )
         {
             string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
@@ -3182,8 +3180,8 @@ static void insert_callback_define_no_args(struct cpp *this,
   ref_push_string( def->name );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 1, 0 ) &&
-      TYPEOF(sp[-1]) == T_STRING )
-    string_builder_shared_strcat(tmp, sp[-1].u.string);
+      TYPEOF(Pike_sp[-1]) == T_STRING )
+    string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
   if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
 }
 
@@ -3362,7 +3360,7 @@ PIKEFUN string cpp(string data,
      efun;
 {
   struct cpp this;
-  struct svalue *save_sp = sp - args;
+  struct svalue *save_sp = Pike_sp - args;
   struct mapping *predefs = NULL;
 
   struct pike_string *prefix = NULL;
@@ -3457,9 +3455,9 @@ PIKEFUN string cpp(string data,
 			      charset);
 	Pike_error("Unknown charset.\n");
       }
-      this.data = data = sp[-1].u.string;
-      sp--;
-      dmalloc_touch_svalue(sp);
+      this.data = data = Pike_sp[-1].u.string;
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
     }
     else if(TYPEOF(*charset_sv) == T_INT)
       auto_convert = charset_sv->u.integer;
@@ -3479,16 +3477,16 @@ PIKEFUN string cpp(string data,
   else {
     low_unsafe_apply_handler ("get_predefines", this.handler,
 			      this.compat_handler, 0);
-    if (!UNSAFE_IS_ZERO (sp - 1)) {
+    if (!UNSAFE_IS_ZERO (Pike_sp - 1)) {
       struct keypair *k;
       int e, sprintf_args = 0;
-      if (TYPEOF(sp[-1]) != T_MAPPING) {
+      if (TYPEOF(Pike_sp[-1]) != T_MAPPING) {
 	push_static_text ("Invalid return value from get_predefines, got %O\n");
-	push_svalue (sp - 3);
+	push_svalue (Pike_sp - 3);
 	sprintf_args = 2;
       }
       else {
-	predefs = copy_mapping (sp[-1].u.mapping);
+	predefs = copy_mapping (Pike_sp[-1].u.mapping);
 	NEW_MAPPING_LOOP (predefs->data) {
 	  if (TYPEOF(k->ind) != T_STRING || !k->ind.u.string->len) {
 	    push_static_text ("Expected nonempty string as predefine name, got %O\n");
@@ -3515,7 +3513,7 @@ PIKEFUN string cpp(string data,
       if (!predefs) {
       predef_map_error:
 	f_sprintf (sprintf_args);
-	Pike_error("%S", sp[-1].u.string);
+	Pike_error("%S", Pike_sp[-1].u.string);
       }
     }
     pop_stack();
@@ -3662,12 +3660,12 @@ PIKEFUN string cpp(string data,
   else if(this.dependencies_fail)
   {
     free_string_builder(&this.buf);
-    pop_n_elems(sp - save_sp);
+    pop_n_elems(Pike_sp - save_sp);
     push_int(0);
   }
   else
   {
-    pop_n_elems(sp - save_sp);
+    pop_n_elems(Pike_sp - save_sp);
     push_string(finish_string_builder(&this.buf));
   }
 }
