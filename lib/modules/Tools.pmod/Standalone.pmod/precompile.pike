@@ -2043,6 +2043,10 @@ sprintf("        } else {\n"
 			      program_var)}));
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
+	    // Restore THIS to the parent class.
+	    ret+=
+	      IFDEF("THIS_" + upper_case(base),
+		    DEFINE("THIS", "THIS_" + upper_case(base)));
 
             need_obj_defines["tObjImpl_"+upper_case(lname)] = 1;
             map_types[subclass->local_id] = ({ define, "return "+program_var+"->id;" });
