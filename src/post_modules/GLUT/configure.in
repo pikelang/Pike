@@ -96,16 +96,17 @@ else
   else
     AC_MSG_RESULT(no)
   fi
-  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
-    AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
-    LIBS="-lglut $LIBS"
-    AUTO=auto.o
-    PIKE_FEATURE(GLUT,[yes (libglut)])
-  elif test x"$ac_cv_header_GLUT_glut_h$pike_cv_framework_GLUT" = "xyesyes"; then
+
+  if test x"$ac_cv_header_GLUT_glut_h$pike_cv_framework_GLUT" = "xyesyes"; then
     AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
     LIBS="-framework GLUT -lobjc $LIBS"
     AUTO=auto.o
     PIKE_FEATURE(GLUT,[yes (framework GLUT)])
+  elif test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
+    AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
+    LIBS="-lglut $LIBS"
+    AUTO=auto.o
+    PIKE_FEATURE(GLUT,[yes (libglut)])
   else
     AUTO=""
     PIKE_FEATURE_NODEP(GLUT)
