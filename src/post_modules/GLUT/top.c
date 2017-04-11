@@ -24,7 +24,7 @@
 #include <GLUT/glut.h>
 #else
 #ifdef HAVE_GL_GLUT_H
-#include <GLU/glut.h>
+#include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
 #endif /* HAVE_GLUT_GLUT_H */
 #endif /* HAVE_LIBGLUT */
