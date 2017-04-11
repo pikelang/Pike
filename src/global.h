@@ -706,12 +706,12 @@ char *getenv (char *);
 
 #ifdef HAVE_C99_STRUCT_LITERAL_EXPR
 /* This macro is used for eg type-safe struct initializers. */
-#define CAST_STRUCT_LITERAL(TYPE, LITERAL)	((TYPE)LITERAL)
+#define CAST_STRUCT_LITERAL(TYPE)	(TYPE)
 #else
 /* Prior to C99 the literal was a special form only valid in
  * initializers (ie not in general expressions).
  */
-#define CAST_STRUCT_LITERAL(TYPE, LITERAL)	LITERAL
+#define CAST_STRUCT_LITERAL(TYPE)
 #endif
 
 #endif

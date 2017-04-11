@@ -21,7 +21,7 @@ struct byte_buffer {
 static const INT16 BUFFER_GROW_EXACT = 0x1;
 static const INT16 BUFFER_GROW_MEXEC = 0x2;
 
-#define BUFFER_INIT() CAST_STRUCT_LITERAL(struct byte_buffer, { NULL, NULL, 0, 0 })
+#define BUFFER_INIT() CAST_STRUCT_LITERAL(struct byte_buffer){ NULL, NULL, 0, 0 }
 
 PMOD_EXPORT void buffer_free(struct byte_buffer *b);
 PMOD_EXPORT int buffer_grow_nothrow(struct byte_buffer *b, size_t len);
