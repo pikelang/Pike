@@ -57,11 +57,12 @@ else
     oldLIBS="$LIBS"
     LIBS="-lglut $LIBS"
     AC_TRY_LINK([
+#ifdef HAVE_GLUT_GLUT_H
+#include <GLUT/glut.h>
+#else
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
-#ifdef HAVE_GLUT_GLUT_H
-#include <GL/glut.h>
 #endif /* HAVE_GLUT_GLUT_H */
     ], [ glutSolidTeapot(1.0) ],
        [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
@@ -79,11 +80,13 @@ else
     oldLIBS="$LIBS"
     LIBS="-framework GLUT -lobjc $LIBS"
     AC_TRY_LINK([
+#ifdef HAVE_GLUT_GLUT_H
+#include <GLUT/glut.h>
+#else
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
-#ifdef HAVE_GLUT_GLUT_H
-#include <GL/glut.h>
+#endif /* HAVE_GLUT_GLUT_H */
     ], [ glutSolidTeapot(1.0) ],
        [ pike_cv_framework_GLUT=yes ], [ pike_cv_framework_GLUT=no ])
     LIBS="$oldLIBS"

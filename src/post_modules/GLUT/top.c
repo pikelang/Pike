@@ -20,14 +20,14 @@
 #define GLUT_API_VERSION 4
 
 #ifdef HAVE_LIBGLUT
-#ifdef HAVE_GL_GLUT_H
-#include <GL/glut.h>
-#else
 #ifdef HAVE_GLUT_GLUT_H
 #include <GLUT/glut.h>
-#endif
-#endif
-#endif
+#else
+#ifdef HAVE_GL_GLUT_H
+#include <GLU/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+#endif /* HAVE_GLUT_GLUT_H */
+#endif /* HAVE_LIBGLUT */
 
 
 PIKE_MODULE_INIT
