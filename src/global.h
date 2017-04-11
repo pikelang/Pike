@@ -704,4 +704,14 @@ char *getenv (char *);
 #define W_PROFILING_DEBIG(...)
 #endif /* PROFILING_DEBUG */
 
+#ifdef HAVE_C99_STRUCT_LITERAL_EXPR
+/* This macro is used for eg type-safe struct initializers. */
+#define CAST_STRUCT_LITERAL(TYPE, LITERAL)	((TYPE)LITERAL)
+#else
+/* Prior to C99 the literal was a special form only valid in
+ * initializers (ie not in general expressions).
+ */
+#define CAST_STRUCT_LITERAL(TYPE, LITERAL)	LITERAL
+#endif
+
 #endif
