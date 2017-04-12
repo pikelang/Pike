@@ -383,7 +383,7 @@ o Thread
   _sprintf() improvements: Thread.Mutex now prints the ID of the thread
   holding the lock, and thread IDs are shown as hexadecimal numbers.
 
-o Unicode 8.0.0.
+o Unicode 9.0.0.
 
 o Unicode.is_whitespace()
 
