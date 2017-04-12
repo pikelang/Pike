@@ -2811,7 +2811,6 @@ PMOD_EXPORT void call_handle_error(void)
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-          buf = BUFFER_INIT();
 	  safe_describe_svalue(&buf, Pike_sp - 1, 0, 0);
 	  pop_stack();
 	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
