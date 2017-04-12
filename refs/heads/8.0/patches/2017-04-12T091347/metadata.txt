@@ -1,0 +1,20 @@
+subject: Pike 8.0: Various GLUT fixes. 
+from: ac486e400d01c0bd9ec59cfa92f4b438920c1974
+to: a485a81dddd402cdd7bab52d0cf14f8a9eef78df
+originator: Jonas Lonnberg
+depends: 2017-03-24T155638
+restart: true
+
+• GLUT: perform lib checks in proper order for Quartz GLUT
+
+• GLUT: Prefer Quartz GLUT when present (OSX).
+
+• GL: Prefer Quartz GL on systems that have it (OSX)
+
+• GLUT: Prefer GLUT framework on OSX over X11 GL installation.
+
+• release number bumped to 8.0.421 by export.pike
+
+• release number bumped to 8.0.420 by export.pike
+
+• Fix sort order. Needed for correct lookup.
