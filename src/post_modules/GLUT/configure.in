@@ -11,23 +11,6 @@ AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],
 if test x$without_GLUT = xyes; then
   AUTO=""
 else
-  AC_PATH_XTRA()
-  # The variables from the PATH_XTRA macro are missnamed...
-  #
-  #   Variable     Function	Contents
-  #   X_CFLAGS     CPPFLAGS	-I
-  #   X_LIBS       LDFLAGS	-L & -R
-  #   X_EXTRA_LIBS LIBS		-lsocket -lnsl
-  #   X_PRE_LIBS   LIBS  	-lSM -lICE
-  #
-  # /grubba 1999-11-21
-  echo "X_CFLAGS:     $X_CFLAGS"
-  echo "X_LIBS:       $X_LIBS"
-  echo "X_EXTRA_LIBS: $X_EXTRA_LIBS"
-  echo "X_PRE_LIBS:   $X_PRE_LIBS"
-
-  AC_CHECK_HEADERS(GL/glut.h)
-
   DO_IF_OS(Darwin,
   [
     # MaxOS X
@@ -37,42 +20,6 @@ else
     AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, CPPFLAGS)
   ])
   AC_CHECK_HEADERS(GLUT/glut.h)
-
-  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-  LIBS="$X_EXTRA_LIBS $LIBS"
-  LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
-  AC_CHECK_LIB(X11, XDrawPoint)
-  AC_CHECK_LIB(Xext, XShmPutImage)
-  AC_CHECK_LIB(Xmu, XmuStandardColormap)
-  AC_CHECK_LIB(GL, glOrtho)
-  AC_CHECK_LIB(OpenGL, glOrtho)
-  AC_CHECK_LIB(MesaGL, glOrtho)
-  AC_CHECK_LIB(GLU, gluCylinder)
-  AC_CHECK_LIB(MesaGLU, gluCylinder)
-  AC_CHECK_LIB(Xinput, XOpenDevice)
-  AC_CHECK_LIB(Xi, XOpenDevice)
-
-  AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
-  AC_CACHE_VAL(pike_cv_lib_glut, [
-    oldLIBS="$LIBS"
-    LIBS="-lglut $LIBS"
-    AC_TRY_LINK([
-#ifdef HAVE_GLUT_GLUT_H
-#include <GLUT/glut.h>
-#else
-#ifdef HAVE_GL_GLUT_H
-#include <GL/glut.h>
-#endif /* HAVE_GL_GLUT_H */
-#endif /* HAVE_GLUT_GLUT_H */
-    ], [ glutSolidTeapot(1.0) ],
-       [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
-    LIBS="$oldLIBS"
-  ])
-  if test x"$pike_cv_lib_glut" = "xyes"; then
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no)
-  fi
 
   # FIXME: Ought to just check -lobjc, since -framework GLUT is checked above.
   AC_MSG_CHECKING(for glutSolidTeapot in GLUT.framework)
@@ -102,7 +49,57 @@ else
     LIBS="-framework GLUT -lobjc $LIBS"
     AUTO=auto.o
     PIKE_FEATURE(GLUT,[yes (framework GLUT)])
-  elif test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
+  else
+
+  AC_PATH_XTRA()
+  # The variables from the PATH_XTRA macro are missnamed...
+  #
+  #   Variable     Function	Contents
+  #   X_CFLAGS     CPPFLAGS	-I
+  #   X_LIBS       LDFLAGS	-L & -R
+  #   X_EXTRA_LIBS LIBS		-lsocket -lnsl
+  #   X_PRE_LIBS   LIBS  	-lSM -lICE
+  #
+  # /grubba 1999-11-21
+  echo "X_CFLAGS:     $X_CFLAGS"
+  echo "X_LIBS:       $X_LIBS"
+  echo "X_EXTRA_LIBS: $X_EXTRA_LIBS"
+  echo "X_PRE_LIBS:   $X_PRE_LIBS"
+
+  AC_CHECK_HEADERS(GL/glut.h)
+
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+  LIBS="$X_EXTRA_LIBS $LIBS"
+  LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
+  AC_CHECK_LIB(X11, XDrawPoint)
+  AC_CHECK_LIB(Xext, XShmPutImage)
+  AC_CHECK_LIB(Xmu, XmuStandardColormap)
+  AC_CHECK_LIB(Xinput, XOpenDevice)
+  AC_CHECK_LIB(Xi, XOpenDevice)
+
+  AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
+  AC_CACHE_VAL(pike_cv_lib_glut, [
+    oldLIBS="$LIBS"
+    LIBS="-lglut $LIBS"
+    AC_TRY_LINK([
+#ifdef HAVE_GLUT_GLUT_H
+#include <GLUT/glut.h>
+#else
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+#endif /* HAVE_GLUT_GLUT_H */
+    ], [ glutSolidTeapot(1.0) ],
+       [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
+    LIBS="$oldLIBS"
+  ])
+  if test x"$pike_cv_lib_glut" = "xyes"; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+
+  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
     AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
     LIBS="-lglut $LIBS"
     AUTO=auto.o
@@ -111,6 +108,14 @@ else
     AUTO=""
     PIKE_FEATURE_NODEP(GLUT)
   fi
+
+fi
+
+  AC_CHECK_LIB(GL, glOrtho)
+  AC_CHECK_LIB(OpenGL, glOrtho)
+  AC_CHECK_LIB(MesaGL, glOrtho)
+  AC_CHECK_LIB(GLU, gluCylinder)
+  AC_CHECK_LIB(MesaGLU, gluCylinder)
 
   # Check for availability of some functions that aren't present in
   # all versions of GLUT (they are missing in eg AIX 4.3).
