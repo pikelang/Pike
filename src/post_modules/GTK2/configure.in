@@ -7,6 +7,12 @@ PIKE_FEATURE_WITHOUT(GTK2)
 
 AC_MODULE_INIT()
 
+case "$pike_cv_sys_os" in
+  Darwin)
+    CFLAGS="$CFLAGS -x objective-c"
+;;
+esac
+
 dnl AC_DEFINE(FUNCPROTO)
 dnl AC_DEFINE(HAVE_GNOME)
 dnl AC_DEFINE(HAVE_DPMS)
@@ -452,12 +458,6 @@ AC_SUBST(WITH_GTK)
 PGTK_CFLAGS="$GTK_CFLAGS"
 PGTK_LIBS="$GTK_LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
-
-case "$pike_cv_sys_os" in
-  Darwin)
-    PGTK_CFLAGS="$PGTK_CFLAGS -x objective-c"
-;;
-esac
 
 LIBS="$MODULE_LDFLAGS $LIBS"
 
