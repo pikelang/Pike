@@ -2800,6 +2800,7 @@ void f_create_process(INT32 args)
     int ret,err;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     void *env=NULL;
+    struct byte_buffer buf;
 
     /* Quote command to allow all characters (if possible) */
     /* Damn! NT doesn't have quoting! The below code attempts to
@@ -2810,7 +2811,6 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
-      struct byte_buffer buf;
       buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
@@ -2889,7 +2889,7 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line=(TCHAR *)buf.s.str;
+      command_line = (TCHAR *)buffer_get_string(&buf);
     }
 
     /* FIXME: Ought to set filename properly.
@@ -2997,7 +2997,7 @@ void f_create_process(INT32 args)
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
     if(env) pop_stack();
-    if(command_line) free(command_line);
+    buffer_free(&buf);
 #if 1
     if(t1 != INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2 != INVALID_HANDLE_VALUE) CloseHandle(t2);
