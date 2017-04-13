@@ -280,7 +280,7 @@ void flush()
 void low_flush()
 //! Flush, but do not process events. Not normally needed.
 {
-#ifndef __NT__
+#ifdef HAVE_GDK_GDKX_H
   XFlush( GDK_DISPLAY() );
 #else
   gdk_flush();
