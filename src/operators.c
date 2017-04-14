@@ -1682,7 +1682,6 @@ PMOD_EXPORT void f_add(INT32 args)
 #define REMOVE_UNDEFINED(TYPE)                                        \
   do {                                                                \
     int to = -args, i=-args;                                          \
-    int i;							      \
     for(; i<0; i++)                                                   \
     {                                                                 \
       if(TYPEOF(Pike_sp[i]) == PIKE_T_INT)                            \
