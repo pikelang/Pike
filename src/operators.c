@@ -1661,7 +1661,8 @@ PMOD_EXPORT void f_add(INT32 args)
   case BIT_FLOAT|BIT_INT:
   {
     double res = 0.0;
-    for(int i=0;i<args;i++)
+    int i;
+    for(i=0; i<args; i++)
       if (TYPEOF(Pike_sp[i-args]) == T_FLOAT)
         res += Pike_sp[i-args].u.float_number;
       else
@@ -1681,6 +1682,7 @@ PMOD_EXPORT void f_add(INT32 args)
 #define REMOVE_UNDEFINED(TYPE)                                        \
   do {                                                                \
     int to = -args, i=-args;                                          \
+    int i;							      \
     for(; i<0; i++)                                                   \
     {                                                                 \
       if(TYPEOF(Pike_sp[i]) == PIKE_T_INT)                            \
@@ -1692,7 +1694,7 @@ PMOD_EXPORT void f_add(INT32 args)
         Pike_sp[to++] = Pike_sp[i];                                   \
       else to++;                                                      \
     }                                                                 \
-    for(int i=to; i<0; i++)                                           \
+    for(i=to; i<0; i++)						      \
       TYPEOF(Pike_sp[i])=PIKE_T_INT;                                  \
     Pike_sp += to;                                                    \
     args += to;                                                       \
