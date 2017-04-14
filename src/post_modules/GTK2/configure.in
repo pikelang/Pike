@@ -7,6 +7,8 @@ PIKE_FEATURE_WITHOUT(GTK2)
 
 AC_MODULE_INIT()
 
+# some Darwin/OSX headers have Objective-C syntax, so we need 
+# to enable that on the compiler in order for header checks to succeed.
 case "$pike_cv_sys_os" in
   Darwin)
     CFLAGS="$CFLAGS -x objective-c"
@@ -418,6 +420,14 @@ if test "x$pgtk2_have_x11" = "xx11"; then
 else
   AC_MSG_RESULT(no)
 fi
+
+# some Darwin/OSX headers have Objective-C syntax,
+# so we need to enable that on the compiler.
+case "$pike_cv_sys_os" in
+  Darwin)
+    GTK_CFLAGS="$GTK_CFLAGS -x objective-c"
+;;
+esac
 
 LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
