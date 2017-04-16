@@ -2177,8 +2177,8 @@ PIKECLASS RandomInterface
    */
   PIKEFUN float random(float f)
   {
-    if(f<=0.0) RETURN 0.0;
     UINT64 value;
+    if(f<=0.0) RETURN 0.0;
     if (THIS->buffer_bits < 64)
         fill_int_buffer();
     value = THIS->int_buffer;
