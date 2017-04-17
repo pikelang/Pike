@@ -272,13 +272,14 @@ PIKECLASS Iterator
 
 /* Calls the random(int) function of the top of the stack with the
    given range limit. */
-static INT32 call_random(INT32 limit)
+static unsigned INT_TYPE call_random(unsigned INT_TYPE limit)
 {
+  unsigned INT_TYPE value;
   push_int(limit);
   apply_svalue(&Pike_sp[-2], 1);
   if( TYPEOF(Pike_sp[-1])!=T_INT )
     Pike_error("Wrong return type from random.\n");
-  int value = Pike_sp[-1].u.integer;
+  value = Pike_sp[-1].u.integer;
   if( value >= limit )
     Pike_error("random returned value out of bounds.\n");
   pop_stack();
