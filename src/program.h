@@ -1023,7 +1023,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 }
 
 #define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
-    low_quick_add_function(__builtin_constant_p(NAME)                           \
+    low_quick_add_function(STATIC_IS_CONSTANT(NAME)                             \
                            ? make_shared_static_string(NAME, NLEN, eightbit)    \
                            : make_shared_binary_string(NAME, NLEN),             \
                            FUNC, TYPE, TLEN, FLAGS, OPT)

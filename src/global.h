@@ -248,6 +248,12 @@ struct timeval;
 # define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
 #endif
 
+#ifdef HAS___BUILTIN_CONSTANT_P
+# define STATIC_IS_CONSTANT(X)	__builtin_constant_p(X)
+#else
+# define STATIC_IS_CONSTANT(X)	0
+#endif
+
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
 #endif

@@ -495,7 +495,7 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
 #else
-#define make_shared_string(s) (__builtin_constant_p(s)                                  \
+#define make_shared_string(s) (STATIC_IS_CONSTANT(s)                                     \
                                ? make_shared_static_string(s, strlen(s), eightbit)       \
                                : debug_make_shared_string(s))
 
