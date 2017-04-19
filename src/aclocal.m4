@@ -265,7 +265,17 @@ AC_DEFUN([PIKE_FUNCS_NEED_DECLS],
 [
   test "x$1" != x && pike_cv_funcs_need_decls="$1"
   if test "x$pike_cv_funcs_need_decls" = xyes; then
-    echo > hdrlist.h
+    cat > hdrlist.h <<EOF
+/* Some C89 header files. */
+#include <math.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+EOF
   fi
 ])
 
