@@ -83,7 +83,6 @@ PIKECLASS TM
 #define strftime_zone strftime
 #define mktime_zone mktime
 #define strptime_zone strptime
-#define asctime_zone asctime
 #define localtime_zone(X,Y) localtime(X)
 #ifndef HAVE_EXTERNAL_TIMEZONE
 #undef timezone
@@ -413,11 +412,12 @@ PIKECLASS TM
     {
         FIX_THIS();
         {
-            char *tval = asctime_zone( &THIS->t );
-            if( tval )
-                push_text( tval );
-            else
-                push_undefined();
+          int maxsize = 26;
+          char s[maxsize];
+          if( !strftime(s, maxsize, "%c", &THIS->t) )
+            push_undefined();
+          else
+            push_text(s);
         }
     }
 
