@@ -412,9 +412,9 @@ PIKECLASS TM
     {
         FIX_THIS();
         {
-          int maxsize = 26;
-          char s[maxsize];
-          if( !strftime(s, maxsize, "%c", &THIS->t) )
+#define STRFTIME_MAXSIZE 26
+          char s[STRFTIME_MAXSIZE];
+          if( !strftime(s, STRFTIME_MAXSIZE, "%c", &THIS->t) )
             push_undefined();
           else
             push_text(s);
