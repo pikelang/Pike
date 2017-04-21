@@ -117,6 +117,12 @@ void GETTIMEOFDAY(struct timeval *t);
 #define snprintf _snprintf
 #endif
 
+#ifndef HAVE_RINT
+#define rintf(X) floorf ((X) + 0.5)
+#define rint(X) floor( (X) + 0.5 )
+#define rintl(X) floorl ((X) + 0.5)
+#endif
+
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else

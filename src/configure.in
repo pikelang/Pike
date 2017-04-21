@@ -5527,6 +5527,30 @@ MY_CHECK_FUNCTION(dlopen,
   exit(0);
 ])
 
+########################################################################
+MY_CHECK_FUNCTION(rint,
+[
+#include <math.h>
+#ifdef HAVE_FLOATINGPOINT_H
+#include <floatingpoint.h>
+#endif
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif /* HAVE_IEEEFP_H */
+], [
+#ifdef HAVE_FPSETROUND
+  /* Round to nearest */
+#ifndef FP_RN
+#define FP_RN 0
+#endif /* FP_RN */
+  fpsetround(FP_RN);
+#endif /* HAVE_FPSETROUND */
+  if(rint(0.1) != 0.0 ||
+     rint(0.6) != 1.0) exit(1);
+  exit(0);
+])
+
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [
