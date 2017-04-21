@@ -34,6 +34,27 @@
 #define FL(FN) PIKE_CONCAT(FN,f)
 #endif
 
+#ifndef HAVE_ASINH
+/* Visual Studio versions prior to 2013 did not implement
+ * the arcus hyperbolic functions.
+ */
+FLOAT_TYPE FL(asinh)(FLOAT_TYPE x)
+{
+  if (x < 0) {
+    return -FL(log)(FL(sqrt)(x*x + 1.0) - x);
+  }
+  return FL(log)(FL(sqrt)(x*x + 1.0) + x);
+}
+FLOAT_TYPE FL(acosh)(FLOAT_TYPE x)
+{
+  return FL(log)(FL(sqrt)(x*x - 1.0) + x);
+}
+FLOAT_TYPE FL(atanh)(FLOAT_TYPE x)
+{
+  return 0.5 * (FL(log)(1.0 + x) - FL(log)(1.0 - x));
+}
+#endif
+
 /*! @decl float sin(int|float f)
  *!
  *! Returns the sine value for @[f].
