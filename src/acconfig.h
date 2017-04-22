@@ -295,6 +295,9 @@
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
 
+/* Define if you have rint.  */
+#undef HAVE_RINT
+
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 
