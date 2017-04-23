@@ -751,8 +751,6 @@ static struct pike_string *do_read(int fd,
 
   buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-  THREADS_ALLOW();
-
   while (bytes) {
       size_t len = MINIMUM(DIRECT_BUFSIZE, bytes);
       ptrdiff_t i;
@@ -764,7 +762,13 @@ static struct pike_string *do_read(int fd,
           break;
       }
 
+      THREADS_ALLOW();
+
       i = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
+
+      THREADS_DISALLOW();
+
+      check_threads_etc();
 
       if (LIKELY(i >= 0)) {
           if ((size_t)i < len) buffer_remove(&buf, len - i);
@@ -783,9 +787,6 @@ static struct pike_string *do_read(int fd,
       }
   }
 
-  THREADS_DISALLOW();
-
-  check_threads_etc();
 
   if (e) {
     *err = e;
