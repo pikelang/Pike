@@ -935,17 +935,20 @@ static void image_create_method(INT32 args)
    }
    else if (sp[-args].u.string==s_raw)
    {
+     struct pike_string *s;
+     int size;
+     char *dst;
      if( args!=2 || TYPEOF(sp[1-args])!=T_STRING ||
          sp[1-args].u.string->size_shift)
        SIMPLE_ARG_TYPE_ERROR("create",2,"string(8bit)");
 
-     struct pike_string *s = sp[1-args].u.string;
-     int size = sizeof(rgb_group)*THIS->xsize*THIS->ysize;
+     s = sp[1-args].u.string;
+     size = sizeof(rgb_group)*THIS->xsize*THIS->ysize;
      if( s->len > size )
        SIMPLE_ARG_ERROR("create",2,"String size too large.");
 
      THIS->img = xalloc(size+RGB_VEC_PAD);
-     char *dst = (char*)THIS->img;
+     dst = (char*)THIS->img;
      memcpy(THIS->img, s->str, s->len);
      memset(dst+s->len, 0, size - s->len);
      return;
