@@ -540,13 +540,14 @@ static void select_random_string(INT32 args)
   }
   else if(TYPEOF(sp[-1])==T_INT)
   {
+    struct program *p;
     push_constant_text("Random.Deterministic");
     SAFE_APPLY_MASTER("resolv_or_error",1);
     if(TYPEOF(sp[-1])!=T_PROGRAM)
       Pike_error("Unable to resolve Random.Deterministic program.\n");
-    struct program *o = sp[-1].u.program;
+    p = sp[-1].u.program;
     stack_swap();
-    push_object(clone_object(o, 1));
+    push_object(clone_object(p, 1));
     push_constant_text("random_string");
     o_index();
     if(TYPEOF(sp[-1])!=T_FUNCTION)
