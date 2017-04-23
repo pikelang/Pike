@@ -2220,11 +2220,12 @@ static void select_random(INT32 args)
   }
   else if(TYPEOF(sp[-1])==T_INT)
   {
+    struct program *o;
     push_constant_text("Random.Deterministic");
     SAFE_APPLY_MASTER("resolv_or_error",1);
     if(TYPEOF(sp[-1])!=T_PROGRAM)
       Pike_error("Unable to resolve Random.Deterministic program.\n");
-    struct program *o = sp[-1].u.program;
+    o = sp[-1].u.program;
     stack_swap();
     push_object(clone_object(o, 1));
     push_constant_text("random");
@@ -2264,8 +2265,9 @@ static void select_random(INT32 args)
 static void image_test(INT32 args)
 {
    int i;
+   struct svalue *s;
    select_random(args);
-   struct svalue *s = &Pike_sp[-1];
+   s = &Pike_sp[-1];
 
    for (i=0; i<5; i++)
    {
