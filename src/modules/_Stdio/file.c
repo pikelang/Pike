@@ -757,7 +757,6 @@ static struct pike_string *do_read(int fd,
 
       /* make space for exactly len bytes plus the terminating null byte */
       if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
-          buffer_free(&buf);
           e = ENOMEM;
           break;
       }
@@ -768,27 +767,28 @@ static struct pike_string *do_read(int fd,
 
       THREADS_DISALLOW();
 
-      check_threads_etc();
-
       if (LIKELY(i >= 0)) {
           if ((size_t)i < len) buffer_remove(&buf, len - i);
           bytes -= i;
           if (!i || !all) break;
       } else {
           e=errno;
+	  buffer_remove(&buf, len);
+
+	  check_threads_etc();
+
           if (e == EINTR) {
               e = 0;
-              buffer_remove(&buf, len);
               continue;
           }
 
-          buffer_free(&buf);
           break;
       }
   }
 
 
-  if (e) {
+  if (e && !buffer_content_length(&buf)) {
+    buffer_free(&buf);
     *err = e;
     return NULL;
   }
