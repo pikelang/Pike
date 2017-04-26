@@ -2518,11 +2518,22 @@ void exit_mutex_obj(struct object *UNUSED(o))
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, (stderr, "Destructed mutex is being waited on.\n"));
+      THREADS_ALLOW();
       /* exit_mutex_key_obj has already signalled, but since the
        * waiting threads will throw an error instead of making a new
        * lock we need to double it to a broadcast. The last thread
        * that stops waiting will destroy m->condition. */
       co_broadcast (&m->condition);
+
+      /* Try to wake up the waiting thread(s) immediately
+       * in an attempt to avoid starvation.
+       */
+#ifdef HAVE_NO_YIELD
+      sleep(0);
+#else /* HAVE_NO_YIELD */
+      th_yield();
+#endif /* HAVE_NO_YIELD */
+      THREADS_DISALLOW();
     }
   }
   else {
@@ -2612,11 +2623,24 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
     THIS_KEY->initialized=0;
     mutex_obj = THIS_KEY->mutex_obj;
     THIS_KEY->mutex_obj = NULL;
-    if (mut->num_waiting)
+
+    if (mut->num_waiting) {
+      THREADS_ALLOW();
       co_signal(&mut->condition);
-    else if (mutex_obj && !mutex_obj->prog) {
+
+      /* Try to wake up the waiting thread(s) immediately
+       * in an attempt to avoid starvation.
+       */
+#ifdef HAVE_NO_YIELD
+      sleep(0);
+#else /* HAVE_NO_YIELD */
+      th_yield();
+#endif /* HAVE_NO_YIELD */
+      THREADS_DISALLOW();
+    } else if (mutex_obj && !mutex_obj->prog) {
       co_destroy (&mut->condition);
     }
+
     if (mutex_obj)
       free_object(mutex_obj);
   }
