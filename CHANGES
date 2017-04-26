@@ -37,6 +37,11 @@ o Protocols.HTTP
   - Now fails immediately if Query is unable to open a socket, instead
     of waiting 120 seconds for a time out.
 
+o Thread.Mutex
+
+  - Perform a thread yield on mutex onlock in attempt to reduce
+    thread starvation.
+
 
 Changes since Pike 8.0.388 (release 7)
 ----------------------------------------------------------------------
