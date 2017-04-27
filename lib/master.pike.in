@@ -1785,7 +1785,8 @@ constant master_efuns = ({
 #endif
 });
 
-enum bool { false=0, true=1 };
+typedef int(0..1) bool;
+enum { false=0, true=1 };
 
 //! Prefix for Pike-related C header files.
 string include_prefix;
