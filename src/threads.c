@@ -722,10 +722,8 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
 
 PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
-  /* Might get here after th_cleanup() when reporting leaks. */
+  /* May get here after th_cleanup() when reporting leaks. */
   if (!ts) return;
-#endif
 
   if (UNLIKELY(thread_quanta > 0)) {
     cpu_time_t now = get_real_time();
@@ -771,9 +769,8 @@ PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
 
 PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
+  /* May get here if early init code throws errors. */
   if (!ts) return;
-#endif
 
   if (ts->swapped) {
     pike_lock_interpreter (DLOC_ARGS_OPT);
