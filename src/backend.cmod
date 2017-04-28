@@ -3256,18 +3256,30 @@ PIKECLASS PollDeviceBackend
 
   DECLARE_STORAGE
 
-  /*! @decl void set_signal_event_callback(int signum, function cb)
+  /*! @decl optional void set_signal_event_callback(int signum, function cb)
+   *!
+   *! Request @[cb] to be called from the backend when the signal
+   *! @[signum] is received.
    *!
    *! @note
    *!   This function is a noop except for the @tt{kqueue@} case.
+   *!
+   *! @note
+   *!   Caveat emptor: Unlikely to work.
+   *!
+   *! @seealso
+   *!   @[signal()]
    */
   PIKEFUN void set_signal_event_callback(int signum, function cb)
+    flags ID_OPTIONAL;
   {
     int q;
 #ifdef BACKEND_USES_KQUEUE
     struct kevent ev[2];
     EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
     q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
+
+    /* FIXME: Shouldn't cb be registered somewhere? */
 #endif
   }
 
