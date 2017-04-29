@@ -1808,10 +1808,11 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 {
    rgbd_group *er;
    int i;
+   unsigned INT16 *rnd;
 
    er=dith->u.floyd_steinberg.errors;
    push_random_string(dith->rowlen*2*3);
-   unsigned INT16 *rnd = (unsigned INT16*)Pike_sp[-1].u.string->str;
+   rnd = (unsigned INT16*)Pike_sp[-1].u.string->str;
    for (i=0; i<dith->rowlen; i++)
    {
       er[i].r = (float)(rnd[i*3+0]*(1.0/65536)-0.49999);
@@ -1842,11 +1843,12 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 
 static int randomcube_rnd(struct nct_dither *dith, int limit)
 {
+  int value;
   push_int(limit);
   apply_svalue(dith->u.randomcube.rnd, 1);
   if(TYPEOF(Pike_sp[-1])!=T_INT)
     Pike_error("Couldn't generate random number.\n");
-  int value = Pike_sp[-1].u.integer;
+  value = Pike_sp[-1].u.integer;
   pop_stack();
   return value;
 }
