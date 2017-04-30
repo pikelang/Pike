@@ -2180,8 +2180,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       }
       else
       {
+	 UINT64 *rnd;
          push_random_string(len*8);
-         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
+         rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len]%(255*255) <
@@ -2199,8 +2200,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       int v = (int)(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
       {
+	 unsigned char *rnd
          push_random_string(len);
-         unsigned char *rnd = (unsigned char*)Pike_sp[-1].u.string->str;
+         rnd = (unsigned char*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len] < (unsigned)v)
@@ -2213,8 +2215,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       }
       else
       {
+	 UINT64 *rnd;
          push_random_string(len*8);
-         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
+         rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len]%(255*255) <
