@@ -2200,7 +2200,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       int v = (int)(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
       {
-	 unsigned char *rnd
+         unsigned char *rnd;
          push_random_string(len);
          rnd = (unsigned char*)Pike_sp[-1].u.string->str;
 	 while (len--)
