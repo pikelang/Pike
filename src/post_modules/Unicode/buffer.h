@@ -15,7 +15,7 @@ struct buffer
 
 void uc_buffer_write( struct buffer *d, p_wchar2 data );
 INT32 uc_buffer_read( struct buffer *d );
-struct buffer *uc_buffer_new( );
+struct buffer *uc_buffer_new( void );
 struct buffer *uc_buffer_write_pikestring( struct buffer *d,
 					   struct pike_string *s );
 void uc_buffer_free( struct buffer *d);

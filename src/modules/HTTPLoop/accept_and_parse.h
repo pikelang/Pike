@@ -163,4 +163,4 @@ struct c_request_object
 
 void aap_handle_connection(struct args *arg);
 void free_args( struct args *arg );
-struct args *new_args( );
+struct args *new_args( void );

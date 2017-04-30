@@ -18,7 +18,7 @@ void init_resultset_program(void);
 void exit_resultset_program(void);
 
 
-struct object *wf_resultset_new( );
+struct object *wf_resultset_new( void );
 /* Create a new (empty) set */
 
 void wf_resultset_push( struct object *o );
