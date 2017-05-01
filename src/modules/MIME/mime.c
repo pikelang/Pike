@@ -179,13 +179,6 @@ PIKE_MODULE_EXIT
 
 static void decode_base64( INT32 args, const char *name, const char *tab)
 {
-  if(args != 1)
-    Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
-  if (TYPEOF(sp[-1]) != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.%s()\n",name );
-  if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.%s()\n",name );
-
   /* Decode the string in sp[-1].u.string.  Any whitespace etc must be
      ignored, so the size of the result can't be exactly calculated
      from the input size.  We'll use a string builder instead. */
@@ -195,6 +188,13 @@ static void decode_base64( INT32 args, const char *name, const char *tab)
   ptrdiff_t cnt;
   INT32 d = 1;
   int pads = 3;
+
+  if(args != 1)
+    Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
+  if (TYPEOF(sp[-1]) != T_STRING)
+    Pike_error( "Wrong type of argument to MIME.%s()\n",name );
+  if (sp[-1].u.string->size_shift != 0)
+    Pike_error( "Char out of range for MIME.%s()\n",name );
 
   init_string_builder( &buf, 0 );
 
@@ -308,6 +308,14 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
 static void encode_base64( INT32 args, const char *name, const char *tab,
                            int pad )
 {
+  ptrdiff_t groups;
+  ptrdiff_t last;
+  int insert_crlf;
+  ptrdiff_t length;
+  struct pike_string *str;
+  unsigned char *src;
+  char *dest;
+
   if(args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
   if(TYPEOF(sp[-args]) != T_STRING)
@@ -319,18 +327,18 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
      the number of 24 bit groups in the input, and the number of bytes
      actually present in the last group. */
 
-  ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
-  ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
+  groups = (sp[-args].u.string->len+2)/3;
+  last = (sp[-args].u.string->len-1)%3+1;
 
-  int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
-                      sp[-1].u.integer != 0);
+  insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
+		  sp[-1].u.integer != 0);
 
   /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
-  ptrdiff_t length = groups*4+(insert_crlf? (groups/19)*2 : 0);
-  struct pike_string *str = begin_shared_string( length );
+  length = groups*4+(insert_crlf? (groups/19)*2 : 0);
+  str = begin_shared_string( length );
 
-  unsigned char *src = (unsigned char *)sp[-args].u.string->str;
-  char *dest = str->str;
+  src = (unsigned char *)sp[-args].u.string->str;
+  dest = str->str;
 
   if (groups) {
     /* Temporary storage for the last group, as we may have to read an
