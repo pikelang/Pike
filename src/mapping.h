@@ -135,7 +135,6 @@ PMOD_EXPORT void really_free_mapping(struct mapping *md);
 }while(0)
 
 /* Prototypes begin here */
-void really_free_mapping(struct mapping * m);
 void count_memory_in_mappings(size_t * num, size_t * size);
 
 
