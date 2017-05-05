@@ -583,7 +583,7 @@ static void cval_push_result(INT32 args, int flags)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-    UNREACHBLE(return);
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
