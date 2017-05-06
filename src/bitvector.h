@@ -34,8 +34,10 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
     return i ? __cntlz4(i) : 32;
 #elif defined(HAS__BITSCANREVERSE)
     unsigned long index;
-    if (_BitScanReverse(&index, (unsigned long)i))
-	return (unsigned INT32)index;
+    if (_BitScanReverse(&index, (unsigned long)i)) {
+	/* NB: index is the bit number of the highest set bit [0..31]. */
+	return (unsigned INT32)(31 - index);
+    }
     return 32;
 #else
     unsigned INT32 t;
@@ -113,8 +115,10 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(UINT64 i) {
     return i ? __cntlz8(i) : 64;
 # elif defined(HAS__BITSCANREVERSE64)
     unsigned long index;
-    if (_BitScanReverse64(&index, i))
-	return index;
+    if (_BitScanReverse64(&index, i)) {
+	/* NB: index is the bit number of the highest set bit [0..63]. */
+	return (63 - index);
+    }
     return 64;
 # else
     UINT64 t;
