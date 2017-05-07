@@ -1964,7 +1964,7 @@ PIKE_MODULE_INIT
                tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid),tObj), 0);
   ADD_FUNCTION("GetTypeInfo", f_get_typeinfo, tFunc(tObj,tMix), 0);
   ADD_FUNCTION("GetConstants", f_get_constants,
-               tFunc(tOr(tObj,Str),tMapping), 0);
+               tFunc(tOr(tObj,tStr),tMapping), 0);
   ADD_FUNCTION("_sprintf", f_com__sprintf, tFunc(tMix,tMix), 0);
 
 #ifdef USE_COM_PROG
