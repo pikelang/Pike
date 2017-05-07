@@ -196,19 +196,18 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
 mixed decode(string bson)
 {
   int len;
-  string slist;
   if(sscanf(bson, "%-4c%s", len, bson)!=2)
     ERROR("Unable to read length from BSON stream.\n");
   if(sizeof(bson) < (len -4))
     ERROR("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1);
-  slist = bson[0..<1];
+
   mapping list = ([]);
 
-  while(sizeof(slist))
-  {
-    if(slist == "") break;
-    slist = decode_next_value(slist, list);
-  }
+  while(sizeof(bson)>1)
+    bson = decode_next_value(bson, list);
+
+  if(bson!="\0")
+    ERROR("Illegal termination of document.\n");
 
   return list;
 }
