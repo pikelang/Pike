@@ -596,6 +596,15 @@ PIKECLASS Buffer
     return res;
   }
 
+  static INT_TYPE io_read_le_number_uc( Buffer *io, size_t len )
+  {
+    INT_TYPE res = 0;
+    size_t i;
+    for(i=0; i<len; i++)
+      res |= (io_read_byte_uc(io) << i*8);
+    return res;
+  }
+
   static INT_TYPE io_read_signed_number_uc( Buffer *io, size_t len )
   {
     INT_TYPE res = 0;
@@ -609,7 +618,7 @@ PIKECLASS Buffer
     return res;
   }
 
-  static INT64 io_read_number( Buffer *io, size_t len )
+  static INT64 io_read_number( Buffer *io, size_t len, int endian )
   {
     INT64 res;
     if( !io_avail(io, len) )
@@ -619,14 +628,17 @@ PIKECLASS Buffer
       if( UNLIKELY(io_read_byte_uc(io)) )
         Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
 
-    res = io_read_number_uc( io, len );
+    if( endian )
+      res = io_read_number_uc( io, len );
+    else
+      res = io_read_le_number_uc( io, len );
 
     if ( UNLIKELY(res < 0) )
       Pike_error("Signed (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
     return res;
   }
 
-  static struct object *io_read_bignum( Buffer *io, size_t len )
+  static struct object *io_read_bignum( Buffer *io, size_t len, int endian )
   {
     struct object *o;
     MP_INT *i;
@@ -635,7 +647,7 @@ PIKECLASS Buffer
     if( !io_avail(io,len) ) return NULL;
     o = fast_clone_object(bignum_program);
     i = (void*)o->storage;
-    mpz_import( i, len, 1, 1, 0, 0, io_read_pointer(io) );
+    mpz_import( i, len, 1, endian, 0, 0, io_read_pointer(io) );
     io_consume(io,len);
     return o;
   }
@@ -1716,7 +1728,7 @@ PIKECLASS Buffer
     ONERROR e;
 
     io_rewind_on_error( io, &e );
-    len = io_read_number( io, bytes );
+    len = io_read_number( io, bytes, 1 );
 
     if (offset)
       len -= offset->u.integer;
@@ -1978,7 +1990,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     if( copy )  do_copy = copy->u.integer;
     Pike_sp-=args;
 
-    len = io_read_number( io, bytes );
+    len = io_read_number( io, bytes, 1 );
     if( len >= 0 && io_avail( io, len ) )
     {
       push_object( io_read_buffer( io, len, do_copy ) );
@@ -2407,7 +2419,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       {
 	io_rewind( io, 4 );
 	pop_stack();
-	push_object( io_read_bignum(io, 4) );
+        push_object( io_read_bignum(io, 4, 1) );
       }
 #endif
     }
@@ -2422,6 +2434,9 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!
    *! Will return -1 if there is not enough buffer space available
    *! unless error mode is set to throw errors.
+   *!
+   *! @seealso
+   *!   @[read_le_int]
    */
   PIKEFUN int(0..) read_int( int len )
   {
@@ -2432,11 +2447,44 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
     {
-      push_int( io_read_number( io, len ) );
+      push_int( io_read_number( io, len, 1 ) );
       return;
     }
 
-    if( (o = io_read_bignum(io, len )) )
+    if( (o = io_read_bignum(io, len, 1)) )
+    {
+      push_object(o);
+      reduce_stack_top_bignum();
+      return;
+    }
+    push_int(-1);
+  }
+
+  /*! @decl int read_int( int n )
+   *!
+   *! Read a big endian byte order unsigned number of size n*8 bits,
+   *! then return it.
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
+   *!
+   *! @seealso
+   *!   @[read_int]
+   */
+  PIKEFUN int(0..) read_le_int( int len )
+  {
+    Buffer *io = THIS;
+    struct object *o;
+
+    Pike_sp--;
+
+    if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
+    {
+      push_int( io_read_number( io, len, 0 ) );
+      return;
+    }
+
+    if( (o = io_read_bignum(io, len, 0)) )
     {
       push_object(o);
       reduce_stack_top_bignum();
@@ -2463,15 +2511,15 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     io_rewind_on_error( io, &e );
 
-    len = io_read_number( io, size_len );
+    len = io_read_number( io, size_len, 1 );
     if( len >= 0 )
     {
       if( len < SIZEOF_INT_TYPE )
       {
-        if( (Pike_sp[-1].u.integer = io_read_number( io, len )) == -1 )
+        if( (Pike_sp[-1].u.integer = io_read_number( io, len, 1 )) == -1 )
           goto neg_one;
       }
-      else if( (o = io_read_bignum( io, len )) )
+      else if( (o = io_read_bignum( io, len, 1 )) )
       {
         Pike_sp--;
         push_object(o);
@@ -2520,7 +2568,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     for( i=0; i<num; i++ )
     {
-      push_object(io_read_bignum( io, len ));
+      push_object(io_read_bignum( io, len, 1 ));
       reduce_stack_top_bignum();
     }
     f_aggregate(num);
