@@ -137,7 +137,7 @@ void decode_document(char *slist, INT32 slist_len)
   char * end;
   struct mapping * list;
 
-  check_c_stack (1024);
+  check_c_stack (8);
 
   n = slist;
   end = n + (slist_len -1);
