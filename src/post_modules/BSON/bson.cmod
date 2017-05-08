@@ -79,7 +79,7 @@ struct program * Timestamp;
 
 struct svalue low_Second;
 
-char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list);
+char *decode_next_value(char *, size_t, struct mapping *);
 
 struct object * lookup_object(const char * obj)
 {
@@ -130,9 +130,8 @@ struct svalue * lookup_svalue(const char * prog)
 
 DECLARATIONS
 
-struct mapping * decode_document(struct pike_string * pike_slist)
+struct mapping * decode_document(char *slist, INT32 slist_len)
 {
-  char * slist;
   struct mapping * doc;
   INT32 len;
   INT32 left;
@@ -142,17 +141,16 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 
   check_c_stack (1024);
 
-  slist = pike_slist->str;
   n = slist;
-  end = n + (pike_slist->len -1);
+  end = n + (slist_len -1);
 
-  left = pike_slist->len;
+  left = slist_len;
   if(left < 4)
     Pike_error("invalid BSON. not enough data.\n");
 
   len = get_unaligned_le32(n);
 
-  left = pike_slist->len - (n - slist);
+  left = slist_len - (n - slist);
 
   if(left < len)
   {
@@ -172,7 +170,7 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 
   while(n < end)
   {
-    n = decode_next_value(pike_slist, n, list);
+    n = decode_next_value(n, end-n, list);
   }
 
   /* pop mapping off the stack, but keep a reference */
@@ -181,9 +179,9 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   return list;
 }
 
-char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list)
+char * decode_next_value(char * n, size_t n_len, struct mapping * list)
 {
-  char * slist = pike_slist->str;
+  char *slist = n;
   unsigned INT8 type;
   char * cname;
   INT32 name_len;
@@ -202,8 +200,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       struct pike_string * fstr;
       struct array * a;
-      INT32 left;
-      left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(8 > left)
         Pike_error("Invalid BSON. Not enough data.\n");
       fstr = make_shared_binary_string(n, 8);
@@ -225,7 +222,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       INT32 bump;
       INT32 left;
       bump = get_unaligned_le32(n);
-      left = pike_slist->len - (n - slist);
+      left = n_len - (n - slist);
 
       if(bump <= 0 || bump > left)
       {
@@ -243,7 +240,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       INT32 bump = get_unaligned_le32(n);
       INT32 left;
       n+=4;
-      left = pike_slist->len - (n - slist);
+      left = n_len - (n - slist);
 
       if(bump <= 0 || bump > left)
       {
@@ -257,7 +254,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 
     case TYPE_BSON_INTEGER:
     {
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 4)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
@@ -269,7 +266,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 
     case TYPE_BSON_INTEGER64:
     {
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
@@ -330,7 +327,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       struct pike_string * str;
 
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 12)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
@@ -350,7 +347,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_TIMESTAMP:
     {
       UINT64 sec;
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
@@ -371,7 +368,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_SECOND:
     {
       UINT64 sec;
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
@@ -387,7 +384,6 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     }
     case TYPE_BSON_ARRAY:
     {
-      struct pike_string * d;
       struct mapping * doc;
       struct array * arr;
       INT_TYPE asize;
@@ -397,7 +393,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       const struct mapping_data *md;
       INT32 e;
 
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
 
       if(left < 4)
       {
@@ -405,16 +401,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       }
       len = get_unaligned_le32(n);
 
-      left = pike_slist->len - (n - slist);
+      left = n_len - (n - slist);
       if(left < len)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
 
-      d = make_shared_binary_string(n, len);
-      push_string(d);
-      doc = decode_document(d);
-      pop_stack();
+      doc = decode_document(n, len);
 
       /*
        * arrays are encoded as mappings with indices containing
@@ -449,25 +442,22 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 
     case TYPE_BSON_DOCUMENT:
     {
-      struct pike_string * d;
       struct mapping * doc;
       INT32 len;
-      INT32 left = pike_slist->len - (n - slist);
+      INT32 left = n_len - (n - slist);
       if(left < 4)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
       len = get_unaligned_le32(n);
 
-      left = pike_slist->len - (n - slist);
+      left = n_len - (n - slist);
       if(left < len)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
 
-      d = make_shared_binary_string(n, len);
-      doc = decode_document(d);
-      free_string(d);
+      doc = decode_document(n, len);
       push_mapping(doc);
       n += (len);
       break;
@@ -504,7 +494,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       INT32 bump = get_unaligned_le32(n);
       INT32 left;
       n+=4;
-      left = pike_slist->len - (n - slist);
+      left = n_len - (n - slist);
       if(bump <= 0 || bump > left)
         Pike_error("Invalid BSON. Not enough data.\n");
       val = make_shared_binary_string(n, bump-1); /* length includes null. */
@@ -545,7 +535,7 @@ PIKEFUN mapping decode(string(8bit) document)
   if(document->size_shift)
     Pike_error("wide strings are not allowed.\n");
 
-  doc = decode_document(document);
+  doc = decode_document(document->str, document->len);
 
   pop_stack();
   push_mapping(doc);
