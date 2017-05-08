@@ -133,7 +133,6 @@ DECLARATIONS
 void decode_document(char *slist, INT32 slist_len)
 {
   INT32 len;
-  INT32 left;
   char * n;
   char * end;
   struct mapping * list;
@@ -143,20 +142,16 @@ void decode_document(char *slist, INT32 slist_len)
   n = slist;
   end = n + (slist_len -1);
 
-  left = slist_len;
-  if(left < 4)
+  if(slist_len < 4)
     Pike_error("invalid BSON. not enough data.\n");
 
   len = get_unaligned_le32(n);
-
-  left = slist_len - (n - slist);
-
-  if(left < len)
-  {
-    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, left);
-  }
-
   n += 4;
+
+  if(slist_len < len)
+  {
+    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, slist_len);
+  }
 
   if((char)*end != 0x0)
   {
