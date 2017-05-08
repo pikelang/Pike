@@ -142,8 +142,6 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 
   check_c_stack (1024);
 
-  if(pike_slist->size_shift) Pike_error("wide strings are not allowed.\n");
-
   slist = pike_slist->str;
   n = slist;
   end = n + (pike_slist->len -1);
@@ -170,7 +168,6 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   }
 
   list = allocate_mapping(2);
-
   push_mapping(list);
 
   while(n < end)
@@ -541,9 +538,12 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
   return n;
 }
 
-PIKEFUN mapping decode(string document)
+PIKEFUN mapping decode(string(8bit) document)
 {
-  struct mapping * doc;
+  struct mapping *doc;
+
+  if(document->size_shift)
+    Pike_error("wide strings are not allowed.\n");
 
   doc = decode_document(document);
 
