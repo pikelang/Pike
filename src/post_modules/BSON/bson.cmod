@@ -140,12 +140,12 @@ void decode_document(char *slist, INT32 slist_len)
   check_c_stack (8);
 
   n = slist;
-  end = n + (slist_len -1);
 
   if(slist_len < 4)
     Pike_error("invalid BSON. not enough data.\n");
 
   len = get_unaligned_le32(n);
+  end = n + (len -1);
   n += 4;
 
   if(slist_len < len)
@@ -154,10 +154,7 @@ void decode_document(char *slist, INT32 slist_len)
   }
 
   if((char)*end != 0x0)
-  {
-    char x = *end;
     Pike_error("invalid BSON, last byte of document must be NULL.\n");
-  }
 
   list = allocate_mapping(2);
   push_mapping(list);
