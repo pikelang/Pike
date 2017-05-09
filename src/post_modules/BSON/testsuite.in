@@ -41,6 +41,7 @@ test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
 test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
 test_enc_dec(Standards.BSON.Timestamp(0xdeadbeeff00dbad))
 test_enc_dec(indices(all_constants()))
+test_enc_dec(([ "x" : ([ "y" : ([ "z" : 7 ]) ]) ]))
 
 dnl From libbson tests
 dnl test-bson.c
