@@ -37,9 +37,9 @@ static inline unsigned INT32 gclz(mp_limb_t a) {
 #define CB_GC_CHECK_KEY(key)	gc_check((key).str)
 #define CB_GC_RECURSE_KEY(key)	gc_recurse_object((key).str)
 
-// int mpz_cmp (mpz_t op1, mpz_t op2)
-#define CB_KEY_EQ(k1, k2)	( (k1).str == (k2).str || !mpz_cmp(K2G(k1), K2G(k2)) )
-#define CB_KEY_LT(k1, k2)	( (k1).str != (k2).str && mpz_cmp(K2G(k1), K2G(k2)) < 0 )
+// int low_compare_bignums (MP_INT op1, MP_INT op2)
+#define CB_KEY_EQ(k1, k2)	( (k1).str == (k2).str || !low_compare_bignums(K2G(k1), K2G(k2)) )
+#define CB_KEY_LT(k1, k2)	( (k1).str != (k2).str && low_compare_bignums(K2G(k1), K2G(k2)) < 0 )
 
 static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
     MP_INT * i = O2G(s);
