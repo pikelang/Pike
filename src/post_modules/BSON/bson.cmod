@@ -35,6 +35,8 @@
 #include "operators.h"
 #include "sscanf.h"
 
+#include "modules/_Stdio/buffer.h"
+
 #define DEFAULT_CMOD_STORAGE static
 
 #define TYPE_BSON_DOUBLE   0x01
@@ -130,7 +132,7 @@ struct svalue * lookup_svalue(const char * prog)
 
 DECLARATIONS
 
-void decode_document(char *slist, INT32 slist_len)
+size_t decode_document(char *slist, INT32 slist_len)
 {
   INT32 len;
   char * n;
@@ -160,9 +162,9 @@ void decode_document(char *slist, INT32 slist_len)
   push_mapping(list);
 
   while(n < end)
-  {
     n = decode_next_value(n, end-n, list);
-  }
+
+  return end-slist;
 }
 
 char * decode_next_value(char * n, size_t n_len, struct mapping * list)
@@ -517,6 +519,15 @@ PIKEFUN mapping decode(string(8bit) document)
     Pike_error("wide strings are not allowed.\n");
 
   decode_document(document->str, document->len);
+}
+
+PIKEFUN mapping decode(Stdio.Buffer document)
+  rawtype tFunc(tObjIs_STDIO_BUFFER, tMapping);
+{
+  Buffer *io = io_buffer_from_object(document);
+  if (!io) SIMPLE_ARG_TYPE_ERROR("decode_from", 1, "object(Stdio.Buffer)");
+  io_consume(io,
+             decode_document((char*)io_read_pointer(io), io_len(io)));
 }
 
 PIKE_MODULE_INIT

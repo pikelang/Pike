@@ -3,15 +3,19 @@ START_MARKER
 define(test_dec,[[
   test_equal(Standards.BSON.decode([[$1]]),
           [[$2]])
+  test_equal(Standards.BSON.decode(Stdio.Buffer([[$1]])),
+          [[$2]])
 ]])
 
 define(test_enc,[[
   test_do(Standards.BSON.decode(String.hex2string($2)))
+  test_do(Standards.BSON.decode(Stdio.Buffer(String.hex2string($2))))
   test_equal(String.string2hex(Standards.BSON.encode([[$1]])),[[$2]])
 ]])
 
 define(test_enc_dec,[[
     test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$1]] ]))
+    test_equal(Standards.BSON.decode(Stdio.Buffer(Standards.BSON.encode(([ "foo" : [[$1]] ])))), ([ "foo" : [[$1]] ]))
 ]])
 
 test_true(Val.true)
