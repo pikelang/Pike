@@ -33,9 +33,19 @@ struct pike_string
 {
   INT32 refs;
   unsigned char flags;
+#ifdef __GCC__
   enum size_shift   size_shift:2;
   enum string_type  alloc_type:5;
   enum struct_type struct_type:1;
+#else /* !__GCC__ */
+  /* NB: Some compliers (eg MSVC) use signed integers for the
+   *     enum bit fields, causing thirtytwobit (2) to be -2
+   *     when extracted from the size_shift field.
+   */
+  unsigned char size_shift:2;
+  unsigned char alloc_type:5;
+  unsigned char struct_type:1;
+#endif /* __GCC__ */
   unsigned char  min;
   unsigned char  max;
   ptrdiff_t len; /* Not counting terminating NUL. */
