@@ -36,7 +36,6 @@ DECLARATIONS
  */
 
 #define REGISTER_IMPORTER(CTX)                                    \
-  Sass_Importer_Entry c_imp = NULL;                               \
   do {                                                            \
     struct Sass_Options *s_opts = sass_context_get_options (CTX); \
     Sass_Importer_Entry c_imp;                                    \
@@ -46,7 +45,6 @@ DECLARATIONS
     sass_option_set_c_importers (s_opts, imp_list);               \
   } while (0)
 
-#define UNREGISTER_IMPORTER()  sass_delete_importer (c_imp)
 
 /*! @class Api
  *! @appears Tools.Sass.Compiler
@@ -157,7 +155,7 @@ PIKECLASS Api
   // Libsass import callback. This will be called for every @import directive
   // in the Sass files. The callback __importer_cb will be called with
   // @path as argument and if @path is an URI __importer_cb will fetch
-  // it and return the data as a string. If it's not a string that's retured,
+  // it and return the data as a string. If it's not a string that's returned,
   // e.g. @path was not an URI, NULL is returned from here and libsass will
   // try to resolve @path. If it was an URI a Sass_Import_List will be
   // returned so that the contents of @path will replace the @import directive.
@@ -237,8 +235,6 @@ PIKECLASS Api
 
     int err = sass_compile_file_context (ctx);
 
-    UNREGISTER_IMPORTER ();
-
     // if (&THIS->thrown_err != NULL) {
     //   sass_delete_file_context (ctx);
     //   Pike_error ("%s", THIS->thrown_err.u.string->str);
@@ -308,8 +304,6 @@ PIKECLASS Api
     REGISTER_IMPORTER (ctx_out);
 
     sass_compile_data_context (ctx);
-
-    UNREGISTER_IMPORTER ();
 
     // if (&THIS->thrown_err != NULL) {
     //   sass_delete_data_context (ctx);
