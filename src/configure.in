@@ -7946,7 +7946,7 @@ if test x$with_dynamic_modules = xyes ; then
   CCSHARED="${CCSHARED} ${DYNAMIC_MODULE_FLAGS}"
   PIKE_LIB="libpike.so"
   MODULE_O=tmodule.o
-  BUILD_PIKE=pike$EXEEXT
+  BUILD_PIKE=pike
   POST_MODULE_BUILD_TYPE=dynamic
   STATIC_POST_MODULES_LINKOPTS=
 else
@@ -7954,7 +7954,7 @@ else
   dmmsrc="modules/semidynamic_module_makefile.in"
   PIKE_LIB="libpike.a"
   MODULE_O=module.o
-  BUILD_PIKE=tpike$EXEEXT
+  BUILD_PIKE=tpike
   POST_MODULE_BUILD_TYPE=static
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options
   DYNAMIC_MODULE_FLAGS=""

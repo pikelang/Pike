@@ -1167,7 +1167,7 @@ modules/modlist_headers.h: static-modules-stamp
 
 modules/linker_options: static-modules-stamp
 
-post-module-pike-stamp: @BUILD_PIKE@ dynamic-modules-stamp
+post-module-pike-stamp: @BUILD_PIKE@@EXEEXT@ dynamic-modules-stamp
 	@touch post-module-pike-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
