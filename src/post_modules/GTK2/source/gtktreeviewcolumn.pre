@@ -51,7 +51,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
 			prop,col,NULL);
       /* Any additional (pairs of) arguments get added as attributes. */
       /* CJA note to self: Is there a better way to do variadic GTK functions? */
-      for (int i = 4; i < args; i += 2) {
+      for (i = 4; i < args; i += 2) {
         /* Note that errors from get_all_args here will look a little odd */
         get_all_args("create", args-i, "%s%i", &prop, &col);
         gtk_tree_view_column_add_attribute(gt, rend, prop, col);
