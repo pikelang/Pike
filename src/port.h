@@ -103,7 +103,7 @@ struct timeval;
 #endif
 
 #ifndef HAVE_GETTIMEOFDAY
-void GETTIMEOFDAY(struct timeval *t);
+PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #else
 #  ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
 #    define GETTIMEOFDAY(X) gettimeofday((X),NULL)
