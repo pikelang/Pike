@@ -999,13 +999,14 @@ PIKECLASS ECC_Curve
 
     INIT
     {
+      struct svalue *random;
       const struct ecc_curve *curve =
 	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
       if (!curve) Pike_error("No curve selected.\n");
       ecc_scalar_init(&THIS->key, curve);
 
-      struct svalue *random =
-        simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+      random =
+	simple_mapping_string_lookup(get_builtin_constants(), "random_string");
       if(!random || (TYPEOF(*random) != T_FUNCTION))
         Pike_error("Unable to resolve random function.\n");
       assign_svalue(&THIS->random, random);
