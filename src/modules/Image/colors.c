@@ -22,7 +22,7 @@
 **!	Image.Color(string prefix_string) // "lightblue"
 **!	Image.Color(string hex_name)      // "#ff00ff"
 **!	Image.Color(string cmyk_string)   // "%17,42,0,19.4"
-**!	Image.Color(string hsv_string)    // "%@327,90,32"
+**!	Image.Color(string hsv_string)    // "@327,90,32"
 **!	Image.Color(int red, int green, int blue)
 **!     </pre>
 **!
