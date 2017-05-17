@@ -615,8 +615,6 @@ PIKECLASS ECC_Curve
     ecc_scalar_clear(&s);
   }
 
-  static int Nettle_ECC_Curve_Point_program_fun_num;
-
   /*! @decl Point `*(Gmp.mpz|int scalar)
    *!
    *! Multiply the curve by a scalar.
