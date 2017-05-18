@@ -49,7 +49,7 @@ static void check_callback_chain(struct callback_list *lst)
   {
     for(foo=lst->callbacks;foo;foo=foo->next)
     {
-      if((len & 1024)==1023)
+      if((len & 1023)==1023)
       {
 	int len2=0;
 	struct callback *tmp;
