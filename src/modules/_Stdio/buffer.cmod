@@ -628,6 +628,9 @@ PIKECLASS Buffer
       if( UNLIKELY(io_read_byte_uc(io)) )
         Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
 
+    /* NB: endian == 0 for little endian,
+     *               1 for big endian.
+     */
     if( endian )
       res = io_read_number_uc( io, len );
     else
@@ -647,7 +650,11 @@ PIKECLASS Buffer
     if( !io_avail(io,len) ) return NULL;
     o = fast_clone_object(bignum_program);
     i = (void*)o->storage;
-    mpz_import( i, len, 1, endian, 0, 0, io_read_pointer(io) );
+    /* NB: endian == -1 for little endian,
+     *                0 for native,
+     *                1 for big endian.
+     */
+    mpz_import( i, len, endian, 1, endian, 0, io_read_pointer(io) );
     io_consume(io,len);
     return o;
   }
@@ -2445,7 +2452,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     Pike_sp--;
 
-    if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
+    if( len < SIZEOF_INT_TYPE ) /* will for sure fit. */
     {
       push_int( io_read_number( io, len, 1 ) );
       return;
@@ -2460,7 +2467,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     push_int(-1);
   }
 
-  /*! @decl int read_int( int n )
+  /*! @decl int read_le_int( int n )
    *!
    *! Read a big endian byte order unsigned number of size n*8 bits,
    *! then return it.
@@ -2478,13 +2485,13 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     Pike_sp--;
 
-    if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
+    if( len < SIZEOF_INT_TYPE ) /* will for sure fit. */
     {
       push_int( io_read_number( io, len, 0 ) );
       return;
     }
 
-    if( (o = io_read_bignum(io, len, 0)) )
+    if( (o = io_read_bignum(io, len, -1)) )
     {
       push_object(o);
       reduce_stack_top_bignum();
