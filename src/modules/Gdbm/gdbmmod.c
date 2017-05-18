@@ -20,6 +20,9 @@
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
+/* This symbol conflicts with the Gdbm 1.13 header files. */
+#undef fatal
+
 #include <gdbm.h>
 
 #ifdef _REENTRANT
