@@ -1321,6 +1321,47 @@ define([DO_IF_OS],
 
 # ABI selection.
 
+dnl variable, file-path
+AC_DEFUN(PIKE_CHECK_FILE_ABI,
+[
+  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/.*://'`
+  case "[$]PIKE_filetype" in
+    *64-bit*)
+      $1=64
+      ;;
+    *32-bit*)
+      $1=32
+      ;;
+    *64*)
+      $1=64
+      ;;
+    *32*)
+      $1=32
+      ;;
+    *386*)
+      # Probably NT or SCO file for i386:
+      #   iAPX 386 executable (COFF)
+      #   80386 COFF executable
+      $1=32
+      ;;
+    *ppc*)
+      # Probably 32-bit MacOS X object file:
+      #   Mach-O object ppc
+      $1=32
+      ;;
+    *)
+      # Unknown. Probably cross-compiling.
+      PIKE_MSG_WARN([Unrecognized object file format: $filetype])
+      if dd if="$2" count=2 bs=1 2>/dev/null | \
+	grep 'L' >/dev/null; then
+	# A common case is rntcl...
+	# If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
+	$1=32
+      fi
+      ;;
+  esac
+])
+
 AC_DEFUN(PIKE_CHECK_DEFAULT_ABI,
 [
   if test "x$ac_cv_objext" = "x"; then
@@ -1341,42 +1382,7 @@ int main(int argc, char **argv)
 EOF
     pike_cv_default_compiler_abi="unknown"
     if (eval $ac_compile) 2>&AC_FD_CC; then
-      filetype=`file "conftest.$ac_cv_objext" 2>/dev/null | sed -e 's/.*://'`
-      case "$filetype" in
-        *64-bit*)
-          pike_cv_default_compiler_abi=64
-	  ;;
-        *32-bit*)
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *64*)
-          pike_cv_default_compiler_abi=64
-	  ;;
-        *32*)
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *386*)
-          # Probably NT or SCO file for i386:
-          #   iAPX 386 executable (COFF)
-          #   80386 COFF executable
-          pike_cv_default_compiler_abi=32
-	  ;;
-	*ppc*)
-          # Probably 32-bit MacOS X object file:
-          #   Mach-O object ppc
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *)
-          # Unknown. Probably cross-compiling.
-          PIKE_MSG_WARN([Unrecognized object file format: $filetype])
-	  if dd if="conftest.$ac_cv_objext" count=2 bs=1 2>/dev/null | \
-	     grep 'L' >/dev/null; then
-	    # A common case is rntcl...
-	    # If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
-            pike_cv_default_compiler_abi=32
-	  fi
-          ;;
-      esac
+      PIKE_CHECK_FILE_ABI(pike_cv_default_compiler_abi, conftest.$ac_cv_objext)
     fi
     rm -f conftest.$ac_cv_objext conftest.$ac_ext
   ])
