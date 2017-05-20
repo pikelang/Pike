@@ -1549,6 +1549,39 @@ AC_DEFUN(PIKE_SELECT_ABI,
   ])
   AC_MSG_RESULT($pike_cv_abi_suffixes)
 
+  # Prefix for pkg-config and other tools that don't support multiple ABIs
+  # natively.
+  if test "x$ac_tool_prefix" = x; then
+    AC_MSG_CHECKING(For $pike_cv_abi ABI tool prefix)
+    AC_CACHE_VAL(pike_cv_tool_prefix, [
+      SAVE_IFS="$IFS"
+      IFS=":"
+      file_abi=""
+      for d in $PATH; do
+	IFS="$SAVE_IFS"
+	for f in "$d/"*-pkg-config"$exeext"; do
+	  if test -f "$f"; then
+	    PIKE_CHECK_FILE_ABI(file_abi, "$f")
+	    if test "x$file_abi" = "x$pike_cv_abi"; then
+	      pike_cv_tool_prefix=`echo "$f" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
+	      break;
+	    fi
+	  fi
+	done
+        if test "x$pike_cv_tool_prefix" = x; then :; else
+	  break;
+	fi
+      done
+      IFS="$SAVE_IFS"
+    ])
+    if test "x$pike_cv_tool_prefix" = "x"; then
+      AC_MSG_RESULT(no)
+    else
+      AC_MSG_RESULT($pike_cv_tool_prefix)
+      ac_tool_prefix="$pike_cv_tool_prefix"
+    fi
+  fi
+
   # Compat
   with_abi="$pike_cv_abi"
 ])
@@ -1852,7 +1885,8 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
-  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
+  # NB: pkg-config does not have native support for multiple ABIs.
+  MY_AC_PATH_PROGS(PKG_CONFIG, ${ac_tool_prefix}pkg-config pkg-config, no)
 ])
 
 dnl package, variable, options
