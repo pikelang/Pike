@@ -227,7 +227,9 @@ private class _HMAC
     }
   }
 
-  //! Returns a new @[State] object initialized with a @[password].
+  //! Returns a new @[State] object initialized with a @[password],
+  //! and optionally block size @[b]. Block size defaults to the hash
+  //! function block size.
   State `()(string password, void|int b)
   {
     return State(password, b);
