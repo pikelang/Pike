@@ -45,8 +45,6 @@ static void free_source( struct source *s )
   free( s );
 }
 
-DEFAULT_CMOD_STORAGE struct program *Shuffler_program;
-
 /*! @module Shuffler
  *!
  *! Module implementing sending to and from nonblocking streams and other sources.
