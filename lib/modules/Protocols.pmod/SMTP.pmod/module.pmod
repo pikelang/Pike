@@ -14,7 +14,7 @@ mapping(int:string) replycodes =
    421:"<host> Service not available, closing transmission channel "
        "[This may be a reply to any command if the service knows it "
        "must shut down]",
-   454:"TLS not available dur to temporary reason",
+   454:"TLS not available due to temporary reason",
    450:"Requested mail action not taken: mailbox unavailable "
        "[E.g., mailbox busy]",
    451:"Requested action aborted: local error in processing",
