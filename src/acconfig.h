@@ -12,6 +12,10 @@
 #define POSIX_SOURCE	1
 #endif
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE	200112L
+#endif
+
 /* Get more declarations in GNU libc. */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

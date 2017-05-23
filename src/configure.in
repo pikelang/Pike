@@ -7091,6 +7091,9 @@ fi
 AC_MSG_CHECKING(if rusage.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
   AC_TRY_RUN([
+#define POSIX_SOURCE	1
+#define _POSIX_C_SOURCE	200112L
+
 #include <stdio.h>
 
 #define CONFIGURE_TEST
@@ -7126,6 +7129,9 @@ fi
 AC_MSG_CHECKING(if threads.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
   AC_TRY_RUN([
+#define POSIX_SOURCE	1
+#define _POSIX_C_SOURCE	200112L
+
 #include <stdio.h>
 
 #define CONFIGURE_TEST
@@ -7163,6 +7169,9 @@ AC_MSG_CHECKING(if fallback cpu time is thread local)
 AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
   rm -f confdefs.out.2 2>/dev/null
   AC_TRY_RUN([
+#define POSIX_SOURCE	1
+#define _POSIX_C_SOURCE	200112L
+
 #include <stdio.h>
 
 /* libc_r:fputs on AIX 4.2 is broken. */
