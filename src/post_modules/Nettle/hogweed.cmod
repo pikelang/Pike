@@ -329,7 +329,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
 #endif /* dsa_params_init */
 
-#ifdef HAVE_NETTLE_ECDSA_H
+#if defined(HAVE_NETTLE_ECDSA_H) && (defined(HAVE_CURVE_NETTLE_SECP_192R1) || defined(HAVE_CURVE_NETTLE_SECP_224R1) || defined(HAVE_CURVE_NETTLE_SECP_256R1) || defined(HAVE_CURVE_NETTLE_SECP_384R1) || defined(HAVE_CURVE_NETTLE_SECP_521R1))
 #include <nettle/ecc-curve.h>
 
 #include <nettle/ecc.h>
