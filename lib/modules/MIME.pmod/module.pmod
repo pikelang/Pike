@@ -161,21 +161,6 @@ protected class StringRange
   }
 }
 
-#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 413))
-// Compat with some older Pikes...
-
-// Support has_prefix on objects.
-protected int(0..1) has_prefix(string|object s, string prefix)
-{
-  if (!objectp(s)) return predef::has_prefix(s, prefix);
-  for(int i = 0; i < sizeof(prefix); i++) {
-    if (s[i] != prefix[i]) return 0;
-  }
-  return 1;
-}
-
-#endif
-
 //! This function will create a string that can be used as a separator string
 //! for multipart messages.  The generated string is guaranteed not to appear
 //! in @tt{base64@}, @tt{quoted-printable@}, or @tt{x-uue@} encoded data.
