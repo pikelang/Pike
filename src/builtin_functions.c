@@ -5021,7 +5021,7 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 
 /*! @decl void sleep(int|float s, void|int abort_on_signal)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep, and only when
  *!   @[abort_on_signal] is set. If more than one thread is running
@@ -5063,7 +5063,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
 
 /*! @decl void delay(int|float s)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during delay. Beware that this function uses busy-waiting
