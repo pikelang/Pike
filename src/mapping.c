@@ -721,6 +721,34 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
 #define MAPPING_DATA_IN_USE(MD) ((MD)->refs != (MD)->hardlinks + 1)
 
+/**
+ * void LOW_FIND(int (*FUN)(const struct svalue *IND, const struct svalue *KEY),
+ *               const struct svalue *KEY,
+ *               CODE_IF_FOUND,
+ *               CODE_IF_NOT_FOUND)
+ *
+ * Needs local variables:
+ *   struct mapping *m;
+ *   struct mapping_data *md;
+ *   size_t h, h2;
+ *   struct svalue *key;
+ *   struct keypair *k, **prev;
+ *
+ * CODE_IF_FOUND must end with a return, goto or longjmp to
+ * avoid CODE_IF_NOT_FOUND being called afterwards, or for
+ * potential multiple matches.
+ *
+ * On entry:
+ *   m is the mapping to search.
+ *   key === KEY.
+ *   h2 = hash_svalue(key).
+ *
+ * Internals:
+ *   md = m->data.
+ *   md gets an extra ref.
+ *
+ * When CODE_IF_FOUND gets executed k points to the matching keypair.
+ */
 #define LOW_FIND(FUN, KEY, FOUND, NOT_FOUND) do {		\
   md=m->data;                                                   \
   add_ref(md);						        \
