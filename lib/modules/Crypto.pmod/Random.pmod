@@ -3,6 +3,8 @@
 
 inherit Random.Fast;
 
+constant dont_dump_program = 1;
+
 //! This module contains a pseudo random number generator (PRNG)
 //! designed to give you the best possible random number generation.
 //! The current design is based on the Fortuna PRNG, but uses the
