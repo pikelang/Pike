@@ -1667,6 +1667,7 @@ static int do_docode2(node *n, int flags)
   }
 
   case ' ':
+    /* FIXME: Is this code reached? */
     ret = do_docode(CAR(n),0);
     return ret + do_docode(CDR(n),DO_LVALUE);
 
