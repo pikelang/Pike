@@ -13,7 +13,8 @@
 //! @[Blowfish], @[CAST], @[DES], @[DES3], @[IDEA], @[Serpent],
 //! @[Twofish]. The @[Substitution] program is compatible with the
 //! CipherState. Also conforming to the API are the helper modules
-//! @[Buffer], @[CBC], @[GCM] and @[Pipe].
+//! @[Buffer], @[predef::Nettle.BlockCipher.CBC],
+//! @[predef::Nettle.BlockCipher.GCM] and @[Pipe].
 //!
 //! As the cryptographic services offered from this module isn't
 //! necessarily used for security applications, none of the strings
@@ -55,6 +56,7 @@ class Sign {
   //! Returns the printable name of the signing algorithm.
   string(7bit) name();
 
+  //!
   class State {
     inherit __builtin.Nettle.Sign;
   }
