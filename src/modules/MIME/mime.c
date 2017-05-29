@@ -323,7 +323,10 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
   if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.%s()\n",name );
   if (sp[-args].u.string->len == 0)
+  {
+    pop_n_elems(args-1);
     return;
+  }
 
 
   /* Encode the string in sp[-args].u.string.  First, we need to know
@@ -394,13 +397,19 @@ static void f_encode_base64( INT32 args )
 
 /*! @decl string encode_base64url(string data, void|int no_linebreaks)
  *!
- *! Encode strings according to @rfc{4648@} base64url encoding.
+ *! Encode strings according to @rfc{4648@} base64url encoding. No
+ *! padding is performed and no_linebreaks defaults to true.
  *!
  *! @seealso
  *! @[MIME.encode_base64]
  */
 static void f_encode_base64url( INT32 args )
 {
+  if( args==1 )
+  {
+    push_int(1);
+    args++;
+  }
   encode_base64(args, "encode_base64url", base64urltab, 0);
 }
 
