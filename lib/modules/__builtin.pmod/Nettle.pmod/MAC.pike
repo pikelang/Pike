@@ -83,11 +83,11 @@ class State
     headers += ([ "alg": alg ]);
     string(7bit) tbs =
       sprintf("%s.%s",
-	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
-	      MIME.encode_base64url(message));
+              MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers)),1),
+              MIME.encode_base64url(message,1));
     init(tbs);
     string(8bit) raw = digest();
-    return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
+    return sprintf("%s.%s", tbs, MIME.encode_base64url(raw,1));
   }
 
   //! Verify and decode a JOSE JWS MAC signed value.
