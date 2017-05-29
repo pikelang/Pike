@@ -322,6 +322,9 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     Pike_error( "Wrong type of argument to MIME.%s()\n",name );
   if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.%s()\n",name );
+  if (sp[-args].u.string->len == 0)
+    return;
+
 
   /* Encode the string in sp[-args].u.string.  First, we need to know
      the number of 24 bit groups in the input, and the number of bytes
