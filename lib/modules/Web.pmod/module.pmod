@@ -78,7 +78,8 @@ array decode_jws(array(Crypto.Sign.State|Crypto.MAC.State)|
   return 0;
 }
 
-//! Encode a JSON Web Token (JWT).
+//! Encode a JSON Web Token (JWT). Automatically adds the optional
+//! "issued at" timestamp and JWD ID (using UUID v4).
 //!
 //! @param sign
 //!   The asymetric private or MAC key to use for signing the result.
