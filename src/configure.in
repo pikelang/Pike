@@ -813,6 +813,11 @@ export FALLBACK_CC
 fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
+# Define various *_SOURCE macros to enable later POSIX versions, etc.
+# NB: As these affect the visibility/availability of symbols these
+#     must be defined before other probes.
+PIKE_USE_SYSTEM_EXTENSIONS
+
 # Something seems to mess with the stack ulimit on some architectures...
 #
 # Cause found. GNU make 3.81 apparently raises the stack ulimit to max

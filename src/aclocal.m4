@@ -249,6 +249,60 @@ define([MY_AC_PROG_CC],
   fi
 ])
 
+dnl Not available before Autoconf 2.60.
+ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
+  AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
+[/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+])
+  AC_DEFINE(_ALL_SOURCE)
+  AC_DEFINE(_GNU_SOURCE)
+  AC_DEFINE(_POSIX_PTHREAD_SEMANTICS)
+  AC_DEFINE(_TANDEM_SOURCE)
+])
+
+AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
+[
+  dnl Autoconf default extensions macro.
+  AC_REQUIRE([AC_USE_SYSTEM_EXTENSIONS])dnl
+
+  AH_VERBATIM([USE_POSIX_C_EXTENSIONS],
+[
+#ifndef POSIX_SOURCE
+ /* We must define this *always* */
+# define POSIX_SOURCE	1
+#endif
+#ifndef _POSIX_C_SOURCE
+  /* Version of POSIX that we want to support.
+   *	undef		Not POSIX.
+   *	1		POSIX.1-1990
+   *	2		POSIX.2-1992
+   *	199309L		POSIX.1b-1993 (Real Time)
+   *	199506L		POSIX.1c-1995 (POSIX Threads)
+   *	200112L		POSIX.1-2001 (Austin Group Revision)
+   */
+# undef _POSIX_C_SOURCE
+#endif
+])
+
+  AC_DEFINE(POSIX_SOURCE, 1)
+  AC_DEFINE(_POSIX_C_SOURCE, 200112L)
+])
+
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
 dnl proper declarations are required to test function presence in
 dnl AC_CHECK_FUNC. Necessary on Windows since various attributes cause
@@ -722,6 +776,8 @@ define([AC_LOW_MODULE_INIT],
   MY_AC_PROG_CC
 
   PIKE_SELECT_ABI
+
+  PIKE_USE_SYSTEM_EXTENSIONS
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the

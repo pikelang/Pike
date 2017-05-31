@@ -7,25 +7,6 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-/* We must define this *always* */
-#ifndef POSIX_SOURCE
-#define POSIX_SOURCE	1
-#endif
-
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE	200112L
-#endif
-
-/* Get more declarations in GNU libc. */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-/* Get more declarations from AIX libc. */
-#ifndef _ALL_SOURCE
-#define _ALL_SOURCE
-#endif
-
 /* Building as a library? */
 #undef LIBPIKE
 
