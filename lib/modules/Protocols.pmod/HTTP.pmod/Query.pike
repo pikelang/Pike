@@ -588,6 +588,7 @@ string dns_lookup(string hostname)
        //  Prefer IPv4 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
+       
        if (sizeof(v4))
 	 return v4[random(sizeof(v4))];
        return sizeof(v6) && v6[random(sizeof(v6))];
@@ -727,6 +728,9 @@ this_program sync_request(string server, int port, string query,
         this::host, this::port);
     close_connection();	// Close any old connection.
 
+    this::host = server;
+    this::port = port;
+
     string ip = dns_lookup( server );
     if(ip) server = ip; // cheaty, if host doesn't exist
 
@@ -738,9 +742,6 @@ this_program sync_request(string server, int port, string query,
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
     }
     con = new_con;
-
-    this::host = server;
-    this::port = port;
   }
 
   // prepare the request
