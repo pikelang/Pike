@@ -2126,7 +2126,10 @@ sprintf("        } else {\n"
         {
             thestruct+=
                 IFDEF(define,
-                      ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
+                      ({ PC.Token(sprintf("  %s %s;\n",
+					  type->c_storage_type(1), name),
+				  x[pos2]->line),
+		      }));
         }
         else
         {
@@ -2137,11 +2140,12 @@ sprintf("        } else {\n"
 	    addfuncs+=
 	      IFDEF(define,
 		    ({
-		      sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
-			      "                    %s, %s, %s);",
-                              ((string)name/".")[-1], base, base, name,
-			      type->output_c_type(), type->type_number(),
-			      attributes->flags || "0"),
+		      PC.Token(sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
+				       "                    %s, %s, %s);",
+				       ((string)name/".")[-1], base, base, name,
+				       type->output_c_type(), type->type_number(),
+				       attributes->flags || "0"),
+			       x[pos2]->line),
 		    }));
 	    ret+=DEFINE(define);
 	    ret+=({ PC.Token("DECLARE_STORAGE") });
