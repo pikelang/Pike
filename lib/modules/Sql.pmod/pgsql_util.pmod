@@ -66,10 +66,10 @@ private Regexp iregexp(string expr) {
   return Regexp(ret->read());
 }
 
-final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
+final void closestatement(bufcon|conxsess plugbuffer,string oldprep) {
   if(oldprep) {
     PD("Close statement %s\n",oldprep);
-    plugbuffer->add_int8('C')->add_hstring(({'S',oldprep,0}),4,4);
+    CHAIN(plugbuffer)->add_int8('C')->add_hstring(({'S', oldprep, 0}), 4, 4);
   }
 }
 
@@ -151,6 +151,12 @@ private inline mixed callout(function(mixed ...:void) f,
 class bufcon {
   inherit Stdio.Buffer;
 
+#ifdef PG_DEBUGRACE
+  final bufcon `chain() {
+    return this;
+  }
+#endif
+
   private conxion realbuffer;
 
   protected void create(conxion _realbuffer) {
@@ -181,11 +187,18 @@ class bufcon {
     lock=0;
     this->clear();
     if(lock=realbuffer->nostash->trylock(1)) {
-      realbuffer->started=lock; lock=0;
+#ifdef PG_DEBUGRACE
+      conxsess sess = conxsess(realbuffer);
+      realbuffer->started = lock;
+      lock = 0;
+      sess->sendcmd(SENDOUT);
+#else
+      realbuffer->started = lock;
+      lock = 0;
       realbuffer->sendcmd(SENDOUT);
+#endif
     }
   }
-
 };
 
 class conxiin {
@@ -255,6 +268,9 @@ class conxion {
   final int stashflushmode;
   final int stashcount;
   final int synctransact;
+#ifdef PG_DEBUGRACE
+  final mixed nostrack;
+#endif
 #ifdef PG_DEBUG
   final int queueoutidx;
   final int queueinidx=-1;
@@ -266,10 +282,13 @@ class conxion {
      portal._portalname,++queueoutidx,synctransact,sizeof(this));
   }
 
-  final conxion|bufcon start(void|int waitforreal) {
+  final bufcon|conxsess start(void|int waitforreal) {
     Thread.MutexKey lock;
     if(lock=(waitforreal?nostash->lock:nostash->trylock)(1)) {
-      started=lock;
+#ifdef PG_DEBUGRACE
+      conxsess sess = conxsess(this);
+#endif
+      started = lock;
       lock=shortmux->lock();
       if(stashcount)
         PT(stashavail.wait(lock));
@@ -277,7 +296,11 @@ class conxion {
       foreach(stashqueue->try_read_array();;sql_result portal)
         queueup(portal);
       lock=0;
+#ifdef PG_DEBUGRACE
+      return sess;
+#else
       return this;
+#endif
     }
     stashcount++;
     return bufcon(this);
@@ -449,9 +472,11 @@ outer:
         if(socket)
           catch(fd=socket->query_fd());
         res=predef::sprintf("conxion  fd: %d input queue: %d/%d "
-                    "queued portals: %d  output queue: %d/%d\n",
+                    "queued portals: %d  output queue: %d/%d\n"
+                    "started: %d\n",
                     fd,sizeof(i),i->_size_object(),
-                    qportals->size(),sizeof(this),_size_object());
+                    qportals->size(),sizeof(this),_size_object(),
+                    !!started);
         break;
     }
     return res;
@@ -472,6 +497,32 @@ outer:
     Thread.Thread(connectloop,pgsqlsess,nossl);
   }
 };
+
+#ifdef PG_DEBUGRACE
+class conxsess {
+  final conxion chain;
+
+  void create(conxion parent) {
+    if (parent->started)
+      werror("Overwriting conxsess %s %s\n",
+        describe_backtrace(({"new ", backtrace()[..<1]})),
+        describe_backtrace(({"old ", parent->nostrack})));
+    parent->nostrack = backtrace();
+    chain = parent;
+  }
+
+  final void sendcmd(int mode,void|sql_result portal) {
+    chain->sendcmd(mode, portal);
+    chain = 0;
+  }
+
+  void destroy() {
+    if (chain)
+      werror("Untransmitted conxsess %s\n",
+       describe_backtrace(({"", backtrace()[..<1]})));
+  }
+};
+#endif
 
 //! The result object returned by @[Sql.pgsql()->big_query()], except for
 //! the noted differences it behaves the same as @[Sql.sql_result].
@@ -892,11 +943,11 @@ class sql_result {
         PD("Bind portal %O statement %O\n",_portalname,_preparedname);
         _fetchlimit=pgsqlsess->_fetchlimit;
         _openportal();
-        conxion bindbuffer=c->start();
+        conxsess bindbuffer = c->start();
         _unnamedstatementkey=0;
-        bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
+        CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
         if(!_tprepared && sizeof(_preparedname))
-          closestatement(bindbuffer,_preparedname);
+          closestatement(CHAIN(bindbuffer), _preparedname);
         _sendexecute(_fetchlimit
                              && !(cachealways[_query]
                                   || sizeof(_query)>=MINPREPARELENGTH &&
@@ -938,7 +989,8 @@ class sql_result {
     releaseconditions();
   }
 
-  final int _closeportal(bufcon plugbuffer) {
+  final int _closeportal(conxsess cs) {
+    object plugbuffer = CHAIN(cs);
     int retval=KEEP;
     PD("%O Try Closeportal %d\n",_portalname,_state);
     Thread.MutexKey lock=closemux->lock();
@@ -1021,10 +1073,9 @@ class sql_result {
     if(statusccomplete && !statuscmdcomplete)
       statuscmdcomplete=statusccomplete;
     inflight=0;
-    catch {
-      conxion plugbuffer=c->start();
+    conxsess plugbuffer;
+    if (!catch(plugbuffer = c->start()))
       plugbuffer->sendcmd(_closeportal(plugbuffer));
-    };
     _state=CLOSED;
     datarows->write(1);				// Signal EOF
     releaseconditions();
@@ -1036,12 +1087,12 @@ class sql_result {
     };
   }
 
-  final void _sendexecute(int fetchlimit,void|bufcon plugbuffer) {
+  final void _sendexecute(int fetchlimit,void|bufcon|conxsess plugbuffer) {
     int flushmode;
     PD("Execute portal %O fetchlimit %d\n",_portalname,fetchlimit);
     if(!plugbuffer)
       plugbuffer=c->start(1);
-    plugbuffer->add_int8('E')->add_hstring(({_portalname,0}),4,8)
+    CHAIN(plugbuffer)->add_int8('E')->add_hstring(({_portalname,0}), 4, 8)
      ->add_int32(fetchlimit);
     if(!fetchlimit)
       flushmode=_closeportal(plugbuffer)==SYNCSEND?SYNCSEND:FLUSHSEND;
@@ -1119,7 +1170,9 @@ class sql_result {
     trydelayederror();
     if(copydata) {
       PD("CopyData\n");
-      c->start()->add_int8('d')->add_hstring(copydata,4,4)->sendcmd(SENDOUT);
+      object cs = c->start();
+      CHAIN(cs)->add_int8('d')->add_hstring(copydata, 4, 4);
+      cs->sendcmd(SENDOUT);
     } else
       _releasesession();
   }

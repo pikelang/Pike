@@ -324,7 +324,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
   PD("Closetrace %O\n",backtrace());
 #endif
   if(c) {
-    .pgsql_util.conxion plugbuffer;
+    .pgsql_util.conxsess plugbuffer;
     if(!catch(plugbuffer=c->start(1))) {
       foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
         if(objectp(portal))
@@ -615,7 +615,8 @@ final void _processloop(.pgsql_util.conxion ci) {
       plugbuffer->add(name,0,(string)value,0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
-    if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
+    object cs;
+    if (catch(cs = ci->start())) {
       if(_options.reconnect)
         _connectfail();
       else
@@ -623,6 +624,9 @@ final void _processloop(.pgsql_util.conxion ci) {
       unnamedstatement=0;
       termlock=0;
       return;
+    } else {
+      CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
+      cs->sendcmd(SENDOUT);
     }
   }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
   procmessage();
@@ -780,9 +784,11 @@ private void procmessage() {
           }
           switch(errtype) {
             case NOERROR:
-              if(cancelsecret!="")
-                ci->start()->add_int8('p')->add_hstring(({sendpass,0}),4,4)
-                 ->sendcmd(SENDOUT);
+              if(cancelsecret!="") {
+                object cs = ci->start();
+                CHAIN(cs)->add_int8('p')->add_hstring(({sendpass, 0}), 4, 4);
+                cs->sendcmd(SENDOUT);
+              }
               break;	// No flushing here, PostgreSQL 9.4 disapproves
             default:
             case PROTOCOLUNSUPPORTED:
@@ -1162,7 +1168,9 @@ private void procmessage() {
       }
     };				// We only get here if there is an error
     if(err==MAGICTERMINATE) {	// Announce connection termination to server
-      ci->start()->add("X\0\0\0\4")->sendcmd(SENDOUT);
+      object cs = ci->start();
+      CHAIN(cs)->add("X\0\0\0\4");
+      cs->sendcmd(SENDOUT);
       terminating=1;
       err=0;
     } else if(stringp(err)) {
@@ -1272,7 +1280,8 @@ private int reconnect() {
 #ifdef PG_STATS
     prepstmtused=0;
 #endif
-    termlock=unnamedstatement->lock(1);
+    if (unnamedstatement)
+      termlock = unnamedstatement->lock(1);
     catch(c->close());
     unnamedstatement = 0;
     termlock = 0;
@@ -1711,7 +1720,7 @@ final string status_commit() {
 }
 
 private inline void closestatement(
-  .pgsql_util.conxion|.pgsql_util.bufcon plugbuffer,string oldprep) {
+  .pgsql_util.bufcon|.pgsql_util.conxsess plugbuffer,string oldprep) {
   .pgsql_util.closestatement(plugbuffer,oldprep);
 }
 
@@ -1894,8 +1903,8 @@ private inline void throwdelayederror(object parent) {
 	m_delete(np,"preparedname");
       }
     }
-    if(sizeof(plugbuffer)) {
-      PD("%O\n",(string)plugbuffer);
+    if(sizeof(CHAIN(plugbuffer))) {
+      PD("%O\n",(string)CHAIN(plugbuffer));
       plugbuffer->sendcmd(FLUSHSEND);			      // close expireds
     } else
       plugbuffer->sendcmd(KEEP);			       // close start()
@@ -1916,8 +1925,9 @@ private inline void throwdelayederror(object parent) {
     portal->_openportal();
     _readyforquerycount++;
     Thread.MutexKey lock=unnamedstatement->lock(1);
-    c->start(1)->add_int8('Q')->add_hstring(({q,0}),4,4)
-     ->sendcmd(FLUSHLOGSEND,portal);
+    .pgsql_util.conxsess cs = c->start(1);
+    CHAIN(cs)->add_int8('Q')->add_hstring(({q, 0}), 4, 4);
+    cs->sendcmd(FLUSHLOGSEND,portal);
     lock=0;
     PD("Simple query: %O\n",q);
   } else {
@@ -1928,7 +1938,8 @@ private inline void throwdelayederror(object parent) {
           (portal._unnamedstatementkey = unnamedstatement->trylock(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
       PD("Parse statement %O=%O\n",preparedname,q);
-      plugbuffer=c->start()->add_int8('P')
+      plugbuffer = c->start();
+      CHAIN(plugbuffer)->add_int8('P')
        ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)
 #if 0
       // Even though the protocol doesn't require the Parse command to be
@@ -1943,8 +1954,11 @@ private inline void throwdelayederror(object parent) {
     portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
-      (plugbuffer||c->start())->add_int8('D')
-       ->add_hstring(({'S',preparedname,0}),4,4)->sendcmd(FLUSHSEND,portal);
+      if (!plugbuffer)
+        plugbuffer = c->start();
+      CHAIN(plugbuffer)->add_int8('D')
+       ->add_hstring(({'S', preparedname, 0}), 4, 4);
+      plugbuffer->sendcmd(FLUSHSEND,portal);
     } else {
       if(plugbuffer)
         plugbuffer->sendcmd(KEEP);

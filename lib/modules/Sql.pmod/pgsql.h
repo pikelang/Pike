@@ -7,6 +7,7 @@
 
 //#define PG_DEBUG  1
 //#define PG_DEBUGMORE  1
+//#define PG_DEBUGRACE	1
 
 //#define PG_STATS	1	    // Collect extra usage statistics
 
@@ -77,6 +78,13 @@
 #undef PG_DEBUGMORE
 #define PD(X ...)	     0
 #define PT(X ...)	     (X)
+#endif
+
+#ifdef PG_DEBUGRACE
+#define CHAIN(x)	((x)->chain)
+#else
+#define CHAIN(x)	(x)
+#define conxsess	conxion
 #endif
 
 #define PORTALINIT	0		// Portal states
