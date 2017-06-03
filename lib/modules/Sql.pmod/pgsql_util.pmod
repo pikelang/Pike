@@ -889,7 +889,7 @@ class sql_result {
         PD("Bind portal %O statement %O\n",_portalname,_preparedname);
         _fetchlimit=pgsqlsess->_fetchlimit;
         _openportal();
-        conxion bindbuffer=c->start(1);
+        conxion bindbuffer=c->start();
         _unnamedstatementkey=0;
         bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
         if(!_tprepared && sizeof(_preparedname))
@@ -1019,7 +1019,7 @@ class sql_result {
       statuscmdcomplete=statusccomplete;
     inflight=0;
     catch {
-      conxion plugbuffer=c->start(1);
+      conxion plugbuffer=c->start();
       plugbuffer->sendcmd(_closeportal(plugbuffer));
     };
     _state=CLOSED;
