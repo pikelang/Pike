@@ -156,6 +156,7 @@ string usage = #"[options] <from> > <to>
                   type, e.g. tInt, tMix etc.
    errname;       The name used when throwing errors.
    name;          The name used when doing add_function.
+   c_name;        The name to use for a PIKEVAR in a C struct.
    prototype;     Ignore the function body, just add a prototype entry.
    program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
@@ -1471,6 +1472,7 @@ constant valid_attributes = (<
   "rawtype",
   "errname",
   "name",
+  "c_name",		/* Override of generated C-symbol */
   "prototype",
   "program_flags",
 >);
@@ -2122,12 +2124,13 @@ sprintf("        } else {\n"
         }
 	    mapping attributes = parse_attributes(x[pos2+1..pos]);
 //    werror("type: %O\n",type);
-        if( !has_value( name, "." ) )
+	    mixed csym = attributes->c_name || name;
+        if( !has_value( csym, "." ) )
         {
             thestruct+=
                 IFDEF(define,
                       ({ PC.Token(sprintf("  %s %s;\n",
-					  type->c_storage_type(1), name),
+					  type->c_storage_type(1), csym),
 				  x[pos2]->line),
 		      }));
         }
@@ -2142,7 +2145,7 @@ sprintf("        } else {\n"
 		    ({
 		      PC.Token(sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
 				       "                    %s, %s, %s);",
-				       ((string)name/".")[-1], base, base, name,
+				       ((string)name/".")[-1], base, base, csym,
 				       type->output_c_type(), type->type_number(),
 				       attributes->flags || "0"),
 			       x[pos2]->line),
