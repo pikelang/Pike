@@ -39,8 +39,15 @@ o Protocols.HTTP
 
 o Thread.Mutex
 
-  - Perform a thread yield on mutex onlock in attempt to reduce
+  - Perform a thread yield on mutex onlock in an attempt to reduce
     thread starvation.
+
+o Sql.pgsql
+
+  - Added an extra synchronisation condition, and increased parallelisation
+    to resolve all detected race conditions (which in rare circumstances
+    (many parallel queries on a single filedescriptor) could have resulted
+    in a deadlock).
 
 
 Changes since Pike 8.0.388 (release 7)
