@@ -2,6 +2,11 @@
 
 inherit _Debug;
 
+//! Can be custom filled from within your program in order to
+//! have global references to explore live datastructures using
+//! @[Peek]; comes preinitialised with the empty mapping, ready for use.
+mapping globals = ([]);
+
 constant verify_internals = _verify_internals;
 constant memory_usage = _memory_usage;
 constant gc_status = _gc_status;

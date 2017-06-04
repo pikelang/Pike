@@ -39,10 +39,13 @@
 //! Starts up the background thread.
 //!
 //! @param cb
-//! Specified either the callback function which is invoked on each iteration,
+//! Specifies either the callback function which is invoked on each iteration,
 //! or the
 //! name of a file which contains a class which is (re)compiled automatically
-//! with an optional main() method, which will be called on each iteration.
+//! with an optional @expr{main()@} method, which will be called on each
+//! iteration.
+//! If the @expr{main()@} method returns 0, new stacktraces will be dumped
+//! every iteration; if it returns 1, stacktrace dumping will be suppressed.
 //!
 //! @note
 //!   The compilation and the running of the callback is guarded by
@@ -54,9 +57,10 @@
 //!   will be suppressed.
 //!
 //! @seealso
-//!  @[triggersignal], @[pollinterval], @[loopthread], @[callback]
+//!  @[triggersignal], @[pollinterval], @[_loopthread], @[_callback],
+//!  @[Debug.globals]
 void create(string|function(void:void)|void cb) {
-  callback = cb;
+  _callback = cb;
   Thread.Thread(loop);
 }
 
@@ -75,15 +79,18 @@ int triggersignal;
 int pollinterval = POLLINTERVAL;
 
 //! The peek-thread.  It will not appear in the displayed thread-list.
-Thread.Thread loopthread;
+Thread.Thread _loopthread;
 
 //! Either the callback function which is invoked on each iteration, or the
 //! name of a file which contains a class which is (re)compiled automatically
-//! with an optional main() method, which will be called on each iteration.
-string|function(void:void) callback;
+//! and called on each iteration.
+//!
+//! @seealso
+//!  @[create]
+string|function(void:void) _callback;
 
 private void loop(int sig) {
-  loopthread = Thread.this_thread();
+  _loopthread = Thread.this_thread();
   for(;; peek()) {
     sleep(pollinterval, 1);
     if (triggersignal != oldsignal) {
@@ -104,7 +111,7 @@ private void peek() {
       String.Buffer buf = String.Buffer();
       buf.add("\n{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{\n");
       foreach(Thread.all_threads(); ; Thread.Thread ct)
-        if (ct != thisthread && ct != loopthread)
+        if (ct != thisthread && ct != _loopthread)
           buf.sprintf("====================================== Thread: %d\n%s\n",
            i++, describe_backtrace(ct.backtrace(), -1));
       buf.add("}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}\n");
@@ -112,15 +119,15 @@ private void peek() {
       if (s != lasttrace)		    // I shall say this only wence!
         werror(lasttrace = s);
     }
-    if (callback) {
+    if (_callback) {
       mixed err = catch {
-        if (stringp(callback)) {
-          Stdio.Stat st = file_stat(callback);
+        if (stringp(_callback)) {
+          Stdio.Stat st = file_stat(_callback);
           if (st) {
             if (st->mtime > lastmtime) {
               lastmtime = st->mtime;
               runit = 0;	// Explicitly, so that the destructor is called
-              runit = compile_file(callback)();
+              runit = compile_file(_callback)();
               skipnext = runit->main && runit->main();
             } else if (runit && runit->main)
               skipnext = runit->main();
@@ -129,7 +136,7 @@ private void peek() {
           } else
             runit = 0;
         } else
-          callback();
+          _callback();
       };
       if (err)
         werror("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
