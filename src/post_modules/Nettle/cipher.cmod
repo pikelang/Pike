@@ -4812,7 +4812,11 @@ PIKECLASS BlockCipher16
    *! @seealso
    *!   @[CBC], @[CTR], @[BlockCipher16.CCM], @[BlockCipher16.GCM]
    */
-  PIKEVAR object(Nettle_AEAD) EAX;
+  PIKEVAR object(Nettle_AEAD) EAX
+    /* NB: Solaris 11/x86 has a conflicting #define of EAX in <sys/regset.h>,
+     *     which gets included when __EXTENSIONS__ is defined.
+     */
+    c_name EAX_object;
 
   PIKECLASS _EAX
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
@@ -5787,7 +5791,7 @@ PIKECLASS BlockCipher16
 #ifdef HAVE_NETTLE_EAX_H
     apply_current(Nettle_BlockCipher16_cq__EAX_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-      add_ref(THIS_NETTLE_BLOCKCIPHER16->EAX = Pike_sp[-1].u.object);
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->EAX_object = Pike_sp[-1].u.object);
     }
     pop_stack();
 #endif
