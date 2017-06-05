@@ -22,6 +22,7 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
+
 #include <sqlite3.h>
 #include <time.h>
 
@@ -29,6 +30,10 @@
 
 DECLARATIONS
 
+/* NB: On Solaris 11 with __EXTENSIONS__ defined <stdlib.h> et el indirectly
+ *     include <sys/regset.h> which has a conflicting definition of ERR...
+ */
+#undef ERR
 #define ERR(X, db)				\
 if((X)!=SQLITE_OK) {				\
   SQLite_handle_error((db));			\
