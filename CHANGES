@@ -8,6 +8,16 @@ o Calendar
 
   Updated Calendar to use timezonedata from tzdata2017a.
 
+o GL & GLUT
+
+  Prefer Quartz implementation on systems that have it (OS X).
+
+o GTK2
+
+  - Add -x objective-c for Darwin.
+
+  - Support linking against other implementations than X11.
+
 o Protocols.HTTP
 
   Connecting to HTTP proxies over HTTPS is now supported.
