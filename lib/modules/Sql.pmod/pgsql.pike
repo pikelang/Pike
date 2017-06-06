@@ -1935,7 +1935,8 @@ private inline void throwdelayederror(object parent) {
     if(!sizeof(preparedname) || !tp || !tp.preparedname) {
       if(!sizeof(preparedname))
         preparedname=
-          (portal._unnamedstatementkey = unnamedstatement->trylock(1))
+          (portal._unnamedstatementkey =
+           (syncparse ? unnamedstatement->lock : unnamedstatement->trylock)(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
       PD("Parse statement %O=%O\n",preparedname,q);
       plugbuffer = c->start();
