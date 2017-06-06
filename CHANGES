@@ -52,6 +52,13 @@ o mkpackage
 
   This can happen when a sub-package has been replaced with a fixed version.
 
+o smartlink
+
+  Don't override MACOS_DEPLOYMENT_TARGET if it's been specified.
+
+  This should prevent "compiled against version x but linking against
+  version y" warnings.
+
 o Arg & ADT.Struct
 
   Survive use by old (ie 8.0.232) pike binaries.
