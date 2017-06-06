@@ -465,6 +465,8 @@ static void do_abort()
 
 PMOD_EXPORT void fatal_on_error(const void *msg)
 {
+  JMP_BUF tmp;
+
   /* It's ok if we're exiting. */
   if (throw_severity == THROW_EXIT) return;
 
@@ -475,6 +477,14 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   }
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
+
+  if (SETJMP(tmp)) {
+    fprintf(stderr, "Error in handle_error().\n");
+  } else {
+    call_handle_error();
+  }
+  UNSETJMP(tmp);
+
   do_abort();
 }
 
