@@ -65,6 +65,19 @@ o Arg & ADT.Struct
 
   Roxen 6.0.130 uses a Pike 8.0.232 binary with current modules.
 
+o Backend.PollDeviceBackend
+
+  Make set_signal_event_callback() optional.
+
+  This fixes the warning "An expression of type function({ Backend =
+  object(implements _static_modules.Builtin()->defaultBackendClass) } :
+  void) cannot be assigned to a variable of type function({ Backend =
+  object(implements _static_modules.Builtin()->Backend) } : void).".
+
+o bool
+
+  Make sure that 0 is part of the range for the bool type.
+
 o Protocols.HTTP
 
   - Fixed do_async_proxied_method() losing the timeout during TLS
