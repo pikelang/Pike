@@ -33,6 +33,15 @@ o Web.encode_jws() and Web.decode_jws()
 Bug fixes
 ---------
 
+o Runtime
+
+  - Variant dispatcher
+
+    Improved string range checking.
+
+    Fixes mismatches due to te lazy string range (ed string(8bit))
+    exceeding the typed string range (eg string(7bit)) for narrow strings.
+
 o Arg & ADT.Struct
 
   Survive use by old (ie 8.0.232) pike binaries.
