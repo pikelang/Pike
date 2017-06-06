@@ -42,6 +42,16 @@ o Runtime
     Fixes mismatches due to te lazy string range (ed string(8bit))
     exceeding the typed string range (eg string(7bit)) for narrow strings.
 
+o mkpackage
+
+  Support multiple sub-packages with the same name.
+
+  Gnu-tar doesn't like being asked to extract the same file multiple
+  times from the same tar-file. It claims that the second file doesn't
+  exist in the archive.
+
+  This can happen when a sub-package has been replaced with a fixed version.
+
 o Arg & ADT.Struct
 
   Survive use by old (ie 8.0.232) pike binaries.
