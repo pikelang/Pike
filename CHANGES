@@ -78,6 +78,16 @@ o bool
 
   Make sure that 0 is part of the range for the bool type.
 
+o Charset
+
+  Fixed encoding errors for two characters in the GSM-03.38 charset.
+
+o Debug
+
+  Fixed typo in mask in check_callback_chain().
+
+  Fixes infinite loop in circularity detection.
+
 o Gdbm
 
   Support building with gdbc 1.13.
@@ -99,6 +109,8 @@ o Protocols.HTTP
 
   - Now fails immediately if Query is unable to open a socket, instead
     of waiting 120 seconds for a time out.
+
+  - Allow connection reuse also when the server is a hostname.
 
 o Thread.Mutex
 
