@@ -269,7 +269,7 @@ void do_pop(int x)
   case 1: emit0(F_POP_VALUE); break;
   default: emit1(F_POP_N_ELEMS,x); break;
   }
-  current_stack_depth -= x;
+  modify_stack_depth(-x);
 }
 
 static void do_pop_mark(void *UNUSED(ignored))
@@ -391,7 +391,7 @@ static void do_cond_jump(node *n, int label, int iftrue, int flags)
       do_jump(F_BRANCH_WHEN_NON_ZERO, label);
     else
       do_jump(F_BRANCH_WHEN_ZERO, label);
-    current_stack_depth--;
+    modify_stack_depth(-1);
   }else{
     if(iftrue)
       do_jump(F_LOR, label);
@@ -1690,7 +1690,7 @@ static int do_docode2(node *n, int flags)
       }else{
 	emit0(F_CONST0);
 	emit0(F_CONST0);
-	current_stack_depth+=2;
+	modify_stack_depth(2);
       }
 
       if(CDDR(arr))
@@ -1699,7 +1699,7 @@ static int do_docode2(node *n, int flags)
       }else{
 	emit0(F_CONST0);
 	emit0(F_CONST0);
-	current_stack_depth+=2;
+	modify_stack_depth(2);
       }
 
       PUSH_CLEANUP_FRAME(do_pop, 5);
@@ -1764,7 +1764,7 @@ static int do_docode2(node *n, int flags)
     }
     do_docode(arr,DO_NOT_COPY);
     emit0(F_CONST0);
-    current_stack_depth++;
+    modify_stack_depth(1);
   foreach_arg_pushed:
     PUSH_CLEANUP_FRAME(do_pop, 4);
 
@@ -2142,7 +2142,7 @@ static int do_docode2(node *n, int flags)
     cases=count_cases(CDR(n));
 
     tmp1=emit1(F_SWITCH,0);
-    current_stack_depth--;
+    modify_stack_depth(-1);
     emit1(F_ALIGN,sizeof(INT32));
 
     current_switch.values_on_stack=0;
@@ -2492,7 +2492,7 @@ static int do_docode2(node *n, int flags)
     current_switch.jumptable = prev_switch_jumptable;
     do_branch (tmp1);
 
-    current_stack_depth++;
+    modify_stack_depth(1);
     /* Entry point called via catching_eval_instruction() after
      * catching an error.
      *
