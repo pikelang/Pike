@@ -387,6 +387,15 @@ class Future
     call_out(p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
     return p->future();
   }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%s,%O)", this_program,
+                             ([ STATE_PENDING : "pending",
+                                STATE_REJECTED : "rejected",
+                                STATE_FULFILLED : "fulfilled" ])[state],
+                             result);
+  }
 }
 
 //! Promise to provide a @[Future] value.
