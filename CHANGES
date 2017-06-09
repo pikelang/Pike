@@ -124,6 +124,10 @@ o Sql.pgsql
     (many parallel queries on a single filedescriptor) could have resulted
     in a deadlock).
 
+o mappings
+  - Fixed an off by one error in random(mapping) that randomly caused
+    values of type PIKE_T_FREE from the freelist to be exposed to Pike.
+
 
 Changes since Pike 8.0.388 (release 7)
 ----------------------------------------------------------------------
