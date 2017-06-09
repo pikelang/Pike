@@ -1485,7 +1485,7 @@ PIKEFUN array random(mapping m)
   /* Find a random, nonempty bucket */
   bucket=my_rand() % md->hashsize;
   while(! md->hash[bucket] )
-    if(++bucket > (size_t)md->hashsize)
+    if(++bucket >= (size_t)md->hashsize)
       bucket=0;
   
   /* Count entries in bucket */
