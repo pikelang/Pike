@@ -958,6 +958,10 @@ protected void store_to_db( void|string mergedfilename )
 
     //  Don't unlock and lock every word to reduce overhead
     if (q % 32 == 0) {
+      // Flush the accumulated updates before releasing the lock.
+      if( sizeof( multi_query ) )
+	db->query( multi_query->get());
+
       db->query("UNLOCK TABLES");
       db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
     }
