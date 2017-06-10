@@ -301,7 +301,23 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 ])
 
   AC_DEFINE(POSIX_SOURCE, 1)
-  AC_DEFINE(_POSIX_C_SOURCE, 200809L)
+
+  AC_MSG_CHECKING(for level of POSIX to support)
+  AC_CACHE_VAL(pike_cv_posix_c_source, [
+    ORIG_CPPFLAGS="$CPPFLAGS"
+    # NB: Older Solaris fails on attempts to enable newer POSIX
+    #     than supported.
+    for pike_cv_posix_c_source in 200809L 200112L 199506L 199309L 2 1; do
+      CPPFLAGS="$ORIG_CPP_FLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
+      AC_TRY_CPP([
+#include <stdio.h>
+#include <stdlib.h>
+      ],break;)
+    done
+    CPPFLAGS="$ORIG_CPPFLAGS"
+  ])
+  AC_MSG_RESULT($pike_cv_posix_c_source)
+  AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
