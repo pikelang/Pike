@@ -308,7 +308,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
     # NB: Older Solaris fails on attempts to enable newer POSIX
     #     than supported.
     for pike_cv_posix_c_source in 200809L 200112L 199506L 199309L 2 1; do
-      CPPFLAGS="$ORIG_CPP_FLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
+      CPPFLAGS="$ORIG_CPPFLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
       AC_TRY_CPP([
 #include <stdio.h>
 #include <stdlib.h>
