@@ -813,11 +813,6 @@ export FALLBACK_CC
 fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
-# Define various *_SOURCE macros to enable later POSIX versions, etc.
-# NB: As these affect the visibility/availability of symbols these
-#     must be defined before other probes.
-PIKE_USE_SYSTEM_EXTENSIONS
-
 # Something seems to mess with the stack ulimit on some architectures...
 #
 # Cause found. GNU make 3.81 apparently raises the stack ulimit to max
@@ -2228,6 +2223,11 @@ else
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
   ])
 fi
+
+# Define various *_SOURCE macros to enable later POSIX versions, etc.
+# NB: As these affect the visibility/availability of symbols these
+#     must be defined before other probes.
+PIKE_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([crc32 intrinsics])
 AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
