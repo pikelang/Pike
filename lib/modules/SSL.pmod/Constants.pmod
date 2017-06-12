@@ -1,3 +1,4 @@
+
 #pike __REAL_VERSION__
 
 //! Protocol constants
@@ -131,6 +132,9 @@ enum HashAlgorithm {
   HASH_sha384	= 5,
   HASH_sha512	= 6,
 }
+
+// Compatibility with Pike 8.0
+constant HASH_sha = HASH_sha1;
 
 //! Cipher operation modes.
 enum CipherModes {
