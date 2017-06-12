@@ -2523,6 +2523,7 @@ static newstate handle_result(struct parser_html_storage *this,
 		 put_out_feed_range(this,*head,*c_head,pos,cpos);
 		 if (skip) skip_feed_range(st,head,c_head,pos,cpos);
 		 this->out_ctx = CTX_TAG;
+		 pop_stack();
 		 return STATE_REREAD;
 	       }
 	       else if (*head) {
