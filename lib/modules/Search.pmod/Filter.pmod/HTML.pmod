@@ -370,13 +370,14 @@ void parse_http_header(string header, string value, .Output res)
 				 dadd(data);
 				 space = 1;
 			       }
+			       return ({});
 			     });
   parser->_set_entity_callback(lambda(Parser.HTML p, string data, mapping e) {
 				 if(!e->noindex) {
 				   if(entities[data]) {
 				     dadd(entities[data]);
 				     space = 0;
-				     return;
+				     return ({});
 				   }
 				   string c = Parser.
 				     decode_numeric_xml_entity(data);
@@ -385,8 +386,9 @@ void parse_http_header(string header, string value, .Output res)
 				     dadd(c);
 				   }
 				 }
+				 return ({});
 			       });
-  
+
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";
