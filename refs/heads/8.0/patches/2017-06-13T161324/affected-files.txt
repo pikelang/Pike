@@ -1,0 +1,12 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/ADT.pmod/Heap.pike
+  pike/lib/modules/Apple.pmod/Keychain.pike
+  pike/lib/modules/Crypto.pmod/None.pmod
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
+  pike/lib/modules/Protocols.pmod/OBEX.pmod
+  pike/lib/modules/Search.pmod/Database.pmod/MySQL.pike
+  pike/lib/modules/Search.pmod/Filter.pmod/HTML.pmod
+  pike/lib/modules/Sql.pmod/pgsql.h
+  pike/lib/modules/Sql.pmod/pgsql.pike
+  pike/lib/modules/Sql.pmod/pgsql_util.pmod
