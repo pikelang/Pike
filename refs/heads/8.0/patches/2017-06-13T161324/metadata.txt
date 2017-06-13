@@ -1,0 +1,44 @@
+subject: Pike 8.0: bool type, Protocols.HTTP, Sql.pgsql, Search.Database.MySQL, Search.Filter.HTML, ADT.Heap
+from: a485a81dddd402cdd7bab52d0cf14f8a9eef78df
+to: c680dcf686a5bc2787f078a2473e75b6541d73ec
+originator: Marcus Wellhardh
+depends: 2017-04-12T091347
+restart: true
+
+• ADT.Heap: Survive the same Element being pushed multiple times.
+
+Calling push() with an Element already present on the heap is
+now equivalent to calling adjust() with the same element.
+
+Previously the heap got corrupted in the above case.
+
+• Search.Filter.HTML: Work around for Parser.HTML leak.
+
+This changes a few callbacks to returning the empty array instead
+of returning zero.
+
+Work around for [PIKE-14].
+
+• Search.Database.MySQL: Fixed race condition on update.
+
+Data was retained between different critical zones.
+
+• Protocols.OBEX: Whitespace change.
+
+• pgsql: By default serialise portal use; avoids unexpected parallelism.
+
+• pgsql: Add instrumentation to aid in diagnosing raceconditions.
+
+• pgsql: Increase parallelism, inhibits rare deadlocks.
+
+• pgsql: Make _sync wait for executions instead of just parsing.
+
+• Protocols.HTTP: allow connection reuse when server is a hostname.
+
+• Added #pike.
+
+• Master: Fix range for bool type.
+
+Makes sure that 0 is part of the range for the bool type.
+
+Fixes [PIKE-8].
