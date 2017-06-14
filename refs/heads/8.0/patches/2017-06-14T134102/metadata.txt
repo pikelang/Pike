@@ -1,0 +1,13 @@
+subject: Pike 8.0: Search.Filter.HTML
+from: c680dcf686a5bc2787f078a2473e75b6541d73ec
+to: dd30e6ba18eda78b8f28fd17f9824f3cf1f1c61d
+originator: Marcus Wellhardh
+depends: 2017-06-13T161324
+restart: true
+
+• Search.Filter.HTML: More work arounds for Parser.HTML leak.
+
+This changes a few more callbacks to returning the empty array
+instead of returning zero.
+
+Work around for [PIKE-14].
