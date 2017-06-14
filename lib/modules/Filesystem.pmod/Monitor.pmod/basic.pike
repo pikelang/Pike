@@ -783,7 +783,7 @@ protected array(string) eventstream_paths = ({});
 
 //! This function is called when the FSEvents EventStream detects a change
 //! in one of the monitored directories.
-protected void eventstream_callback(string path, int flags, int event_id)
+protected void low_eventstream_callback(string path, int flags, int event_id)
 {
   MON_WERR("eventstream_callback(%O, 0x%08x, %O)\n", path, flags, event_id);
   if(path[-1] == '/') path = path[0..<1];
@@ -808,6 +808,14 @@ protected void eventstream_callback(string path, int flags, int event_id)
 
   if (!found)
     MON_WERR("No monitor found for path %O.\n", path);
+}
+
+protected void eventstream_callback(string path, int flags, int event_id)
+{
+  if (backend)
+    backend->call_out(low_eventstream_callback, 0, path, flags, event_id);
+  else
+    low_eventstream_callback(path, flags, event_id);
 }
 
 //! FSEvents EventStream-accellerated @[Monitor].
@@ -850,11 +858,6 @@ protected class EventStreamMonitor
 
   protected void register_path(int|void initial)
   {
-    if (backend) {
-      // CFRunLoop only works with the primary backend.
-      ::register_path(initial);
-      return;
-    }
 #ifndef INHIBIT_EVENTSTREAM_MONITOR
     if (!initial) return;
 
@@ -865,6 +868,8 @@ protected class EventStreamMonitor
       call_out (register_path, 0, initial);
       return;
     }
+
+    // We're now in the main backend.
 
     if (!eventstream) {
       // Make sure that the main backend is in CF-mode.
@@ -895,7 +900,7 @@ protected class EventStreamMonitor
 	MON_WERR("Path %O is accellerated via %O.\n", path, found);
 	accellerated = 1;
 	monitors[path] = this;
-        check();
+        (backend || Pike.DefaultBackend)->call_out(check, 0);
 	return;
       }
     }
@@ -911,7 +916,7 @@ protected class EventStreamMonitor
 
     if (!err) {
       monitors[path] = this;
-      check();
+      (backend || Pike.DefaultBackend)->call_out(check, 0);
       return;
     }
 
