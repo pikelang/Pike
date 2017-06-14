@@ -1,0 +1,8 @@
+subject: Pike 8.0: Filesystem.Monitor: Fix EventStreamMonitor to work with other backends
+from: dd30e6ba18eda78b8f28fd17f9824f3cf1f1c61d
+to: 76839ae70eed868a29fc0dc8e70bd578cdebae39
+originator: Martin Karlgren
+depends: 2017-06-14T134102
+restart: true
+
+• Filesystem.Monitor: Fix EventStreamMonitor to work with other backends.
