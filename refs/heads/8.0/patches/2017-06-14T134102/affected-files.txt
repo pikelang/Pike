@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Search.pmod/Filter.pmod/Charset.pmod
+  pike/lib/modules/Search.pmod/Filter.pmod/HTML.pmod
