@@ -36,6 +36,7 @@ protected void create() {
 			      //  Do nothing! Callback still needed so that
 			      //  unknown tags aren't sent to
 			      //  _set_data_callback.
+			      return ({});
 			    });
 
   constant ignore_tags = ({ "script", "style", });
