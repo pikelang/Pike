@@ -141,7 +141,7 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    // BSON.Binary instance
    else if(objectp(value) && Program.inherits(object_program(value), .Binary))
    {
-     buf->sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value)+1, value->subtype, (string)value);
+     buf->sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value), value->subtype, (string)value);
    }
    // BSON.Symbol instance
    else if(objectp(value) && Program.inherits(object_program(value), .Symbol))
@@ -259,7 +259,7 @@ protected string decode_next_value(string slist, mapping list)
      case TYPE_BINARY:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
          ERROR("Unable to read binary length from BSON stream.\n");
-       if(sscanf(slist, "%c%" + (len-1) + "s\0%s", subtype, value, slist) != 2)
+       if(sscanf(slist, "%c%" + (len) + "s%s", subtype, value, slist) < 2)
          ERROR("Unable to read binary from BSON stream.\n");
        value = .Binary(value, subtype);
        break;

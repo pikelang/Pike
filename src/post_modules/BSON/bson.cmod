@@ -69,6 +69,7 @@ struct object * MaxKey;
 struct program * Javascript;
 struct svalue * Second;
 struct program * ObjectId;
+struct program * Binary;
 struct program * Symbol;
 struct program * Regex;
 struct program * Timestamp;
@@ -251,16 +252,32 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct pike_string * val;
       INT32 bump = get_unaligned_le32(n);
       INT32 left;
+      INT8 subtype;
       n+=4;
+      subtype = *(INT8*)n;
+      n++;
+
       left = pike_slist->len - (n - slist);
 
       if(bump <= 0 || bump > left)
       {
         Pike_error("invalid BSON. not enough data 5.\n");
       }
-      val = make_shared_binary_string(n, bump-1); /* length includes null. */
+
+      if (!Binary)
+	Binary = lookup_program("Standards.BSON.Binary");
+
+      val = make_shared_binary_string(n, bump);
       n += (bump);
+
+      ref_push_program(Binary);
       push_string(val);
+      push_int(subtype);
+
+      apply_svalue( Pike_sp-3, 2 );
+      stack_swap();
+      pop_stack();
+
       break;
     }
     
