@@ -565,6 +565,7 @@ PIKECLASS Buffer
       return NULL;
 
     b = low_clone( Buffer_program );
+    call_c_initializers(b);
     to = get_storage(b,Buffer_program);
 
     io_lock( io );
