@@ -99,25 +99,18 @@ class Conn (SSL.File sslfile)
 
 class Client
 {
-  constant request =
+  Stdio.Buffer request = Stdio.Buffer(
     "HEAD / HTTP/1.0\r\n"
     "Host: " HOST ":" + PORT + "\r\n"
-    "\r\n";
+    "\r\n");
 
-  SSL.File ssl;
-  int sent;
-
-  void write_cb()
+  void write_cb(SSL.File fd)
   {
-    int bytes = ssl->write(request[sent..]);
-    if (bytes > 0) {
-      sent += bytes;
-    } else if (sent < 0) {
-      exit(1, "Failed to write data: %s.\n", strerror(ssl->errno()));
-    }
-    if (sent == sizeof(request)) {
-      ssl->set_write_callback(UNDEFINED);
-    }
+    if( request->output_to(fd) < 0 )
+      exit(1, "Failed to write data: %s.\n", strerror(fd->errno()));
+
+    if( sizeof(request) ) return;
+    fd->set_write_callback(UNDEFINED);
   }
 
   void got_data(mixed ignored, string data)
@@ -136,7 +129,7 @@ class Client
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
-    ssl = SSL.File(con, ctx);
+    SSL.File ssl = SSL.File(con, ctx);
     ssl->connect();
     ssl->set_nonblocking(got_data, write_cb, con_closed);
   }
