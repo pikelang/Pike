@@ -28,6 +28,16 @@
 
 #define DEFAULT_CMOD_STORAGE static
 
+/*! @module _Charset
+ *!
+ *! Low-level tables and code for the @[Charset] module.
+ *!
+ *! This is probably not the module you want; try the @[Charset] module.
+ *!
+ *! @seealso
+ *!   @[Charset]
+ */
+
 static struct program *std_cs_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
@@ -2746,3 +2756,6 @@ PIKE_MODULE_EXIT
   free_array(double_custom_chars);
   free_array(double_combiner_chars);
 }
+
+/*! @endmodule
+ */
