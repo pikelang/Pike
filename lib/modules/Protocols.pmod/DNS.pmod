@@ -1646,7 +1646,7 @@ class client
   protected mapping low_gethostbyname(string s, int type)
   {
     mapping m;
-    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
+    if(sizeof(domains) && sizeof(s) && s[-1] != '.' && sizeof(s/".") < 3) {
       mapping m = do_sync_query(mkquery(s, C_IN, type));
       if(!m || !m->an || !sizeof(m->an))
 	foreach(domains, string domain)
@@ -1988,7 +1988,7 @@ class async_client
       {
 	string req=low_mkquery(lid,domain,cl,type);
 
-	object r = Request(domain, req, callback, args);
+        object r = Request(domain, req, callback, args);
 	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
 	requests[lid] = r;
 	udp::send(nameservers[0], 53, req);
