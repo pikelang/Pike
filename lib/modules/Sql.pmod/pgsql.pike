@@ -69,6 +69,7 @@ final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;
 private Thread.MutexKey termlock;
 final int _portalsinflight;
+final int _wasparallelisable;
 
 private .pgsql_util.conxion c;
 private string cancelsecret;
@@ -1305,6 +1306,7 @@ private int reconnect() {
   unnamedstatement=Thread.Mutex();
   readyforquery_cb=recon?reconnect_cb:connect_cb;
   _portalsinflight=0;
+  _wasparallelisable = 0;
   return 1;
 }
 
@@ -1891,6 +1893,7 @@ private inline void throwdelayederror(object parent) {
 	  }
 	}
       if(forcecache!=1 && .pgsql_util.createprefix->match(q)) {
+        PD("Invalidate cache\n");
 	invalidatecache=1;			// Flush cache on CREATE
         tp=UNDEFINED;
       } else
@@ -1922,7 +1925,7 @@ private inline void throwdelayederror(object parent) {
   if(forcetext) {	// FIXME What happens if portals are still open?
     portal._unnamedportalkey=_unnamedportalmux->lock(1);
     portal._portalname="";
-    portal->_openportal();
+    portal->_parseportal(); portal->_bindportal();
     _readyforquerycount++;
     Thread.MutexKey lock=unnamedstatement->lock(1);
     .pgsql_util.conxsess cs = c->start(1);
@@ -1932,11 +1935,11 @@ private inline void throwdelayederror(object parent) {
     PD("Simple query: %O\n",q);
   } else {
     object plugbuffer;
+    portal->_parseportal();
     if(!sizeof(preparedname) || !tp || !tp.preparedname) {
       if(!sizeof(preparedname))
         preparedname=
-          (portal._unnamedstatementkey =
-           (syncparse ? unnamedstatement->lock : unnamedstatement->trylock)(1))
+          (portal._unnamedstatementkey = unnamedstatement->trylock(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
       PD("Parse statement %O=%O\n",preparedname,q);
       plugbuffer = c->start();

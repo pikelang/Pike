@@ -88,10 +88,11 @@
 #endif
 
 #define PORTALINIT	0		// Portal states
-#define BOUND		1
-#define COPYINPROGRESS	2
-#define CLOSING		3
-#define CLOSED		4
+#define PARSING	  	1
+#define BOUND		2
+#define COPYINPROGRESS	3
+#define CLOSING		4
+#define CLOSED		5
 
 #define KEEP		0		// Sendcmd subcommands
 #define SENDOUT		1

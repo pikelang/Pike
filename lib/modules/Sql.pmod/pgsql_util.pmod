@@ -46,7 +46,7 @@ private Regexp dontcacheprefix=iregexp("^\a*(FETCH|COPY)\a");
   * run to completion
   */
 private Regexp paralleliseprefix
- =iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|FETCH)\a");
+ =iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|(FETC|WIT)H)\a");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces
@@ -930,19 +930,23 @@ class sql_result {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if(sizeof(datarowtypes))
           plugbuffer->add_ints(map(datarowtypes,oidformat),2);
-        else if (syncparse || !paralleliseprefix->match(_query)) {
+        else if (syncparse < 0 && !pgsqlsess->_wasparallelisable
+         && pgsqlsess->_portalsinflight > 1) {
           lock=pgsqlsess->_shortmux->lock();
-          if(pgsqlsess->_portalsinflight) {
+          // Decrement temporarily to account for ourselves
+          if(--pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
             PD("Commit waiting for portals to finish\n");
             catch(PT(pgsqlsess->_readyforcommit->wait(lock)));
             pgsqlsess->_waittocommit--;
           }
+          // Increment again to account for ourselves
+          pgsqlsess->_portalsinflight++;
         }
         lock=0;
         PD("Bind portal %O statement %O\n",_portalname,_preparedname);
         _fetchlimit=pgsqlsess->_fetchlimit;
-        _openportal();
+        _bindportal();
         conxsess bindbuffer = c->start();
         _unnamedstatementkey=0;
         CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
@@ -967,21 +971,43 @@ class sql_result {
     }
   }
 
-  final void _openportal() {
+  final void _parseportal() {
+    Thread.MutexKey lock;
+    if (syncparse || syncparse < 0 && pgsqlsess->_wasparallelisable) {
+      lock = pgsqlsess->_shortmux->lock();
+      if(pgsqlsess->_portalsinflight) {
+        pgsqlsess->_waittocommit++;
+        PD("Commit waiting for portals to finish\n");
+        // Do NOT put this in a function, it would require passing a lock
+        // variable on the argumentstack to the function, which will cause
+        // unpredictable lock release issues due to the extra copy on the stack
+        catch(PT(pgsqlsess->_readyforcommit->wait(lock)));
+        pgsqlsess->_waittocommit--;
+      }
+    }
     pgsqlsess->_portalsinflight++;
+    lock = closemux->lock();
+    _state=PARSING;
+    lock=0;
+    statuscmdcomplete=UNDEFINED;
+    pgsqlsess->_wasparallelisable = paralleliseprefix->match(_query);
+  }
+
+  final void _bindportal() {
     Thread.MutexKey lock=closemux->lock();
     _state=BOUND;
     lock=0;
-    statuscmdcomplete=UNDEFINED;
   }
 
   final void _purgeportal() {
+    PD("Purge portal\n");
     datarows->write(1);				   // Signal EOF
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
       case COPYINPROGRESS:
       case BOUND:
+      case PARSING:
         --pgsqlsess->_portalsinflight;
     }
     _state=CLOSED;
@@ -1012,6 +1038,10 @@ class sql_result {
           retval=FLUSHSEND;
         } else
           _unnamedportalkey=0;
+      case PARSING:
+        _unnamedstatementkey = 0;
+        _state = CLOSING;
+        lock = 0;
         Thread.MutexKey lockc=pgsqlsess->_shortmux->lock();
         if(!--pgsqlsess->_portalsinflight) {
           if(pgsqlsess->_waittocommit) {
