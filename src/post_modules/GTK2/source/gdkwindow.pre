@@ -206,8 +206,7 @@ array(GDK2.Window) children()
 
 /*
     struct object *o;
-    o=low_clone(pgdk2_window_program);
-    call_c_initializers(o);
+    o=fast_clone_object(pgdk2_window_program);
 */
     /* ugly...*/
 /*

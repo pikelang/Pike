@@ -2959,11 +2959,9 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   push_array(res);
 
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
-    struct object *o = low_clone(backtrace_frame_program);
+    struct object *o = fast_clone_object(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
     struct identifier *function = NULL;
-
-    call_c_initializers(o);
 
     size--;
 

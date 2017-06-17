@@ -3873,9 +3873,8 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
     f->flags |= (THIS->flags & FILE_HAVE_RECV_FD);
   } else {
     /* Clone a plain Fd object. */
-    o = low_clone(file_program);
+    o = fast_clone_object(file_program);
     f = (struct my_file *) o->storage + file_program->inherits->storage_offset;
-    call_c_initializers(o);
   }
   change_fd_for_box(&f->box, fd);
   if (fd >= 0) {

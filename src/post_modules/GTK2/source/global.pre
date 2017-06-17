@@ -94,8 +94,7 @@ GDK2.Window root_window()
     return;
   } else if( _pgtk_root_window )
     free_object( _pgtk_root_window );
-  _pgtk_root_window = low_clone( pgdk2_window_program );
-  call_c_initializers( _pgtk_root_window );
+  _pgtk_root_window = fast_clone_object( pgdk2_window_program );
   /* ugly...*/
 #ifdef GDK_ROOT_PARENT
   ((struct object_wrapper *)_pgtk_root_window->storage)->obj=

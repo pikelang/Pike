@@ -4287,8 +4287,7 @@ void Pike_f_fork(INT32 args)
     }
 #endif
 
-    o=low_clone(pid_status_program);
-    call_c_initializers(o);
+    o=fast_clone_object(pid_status_program);
     p=get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;

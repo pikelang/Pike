@@ -9,8 +9,7 @@ static void return_gdkregion( int n, void *r )
   struct object *o;
   if( n )
     pgtk2_pop_n_elems( n );
-  o = low_clone( pgdk2_region_program );
-  call_c_initializers( o );
+  o = fast_clone_object( pgdk2_region_program );
   ((struct object_wrapper *)o->storage)->obj = r;
   push_object( o );
 }

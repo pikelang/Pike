@@ -32,8 +32,7 @@ object get_cairo_context()
     struct object *o;
 
     ctx=gtk_print_context_get_cairo_context(GTK_PRINT_CONTEXT(THIS->obj));
-    o=low_clone(cairo_program);
-    call_c_initializers(o);
+    o=fast_clone_object(cairo_program);
     ((struct cairo_mod_context *)o->storage)->ctx=ctx;
     ref_push_object(o);
   }
