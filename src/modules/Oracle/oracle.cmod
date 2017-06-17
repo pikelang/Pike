@@ -1075,13 +1075,10 @@ OCIError *get_global_error_handle(void)
 		     tFunc(tStr tMix,tVoid), ID_STATIC);
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,
 		     tFunc(tStr tMix,tVoid), ID_STATIC);
-#ifdef ORACLE_DEBUG
-	set_gc_check_callback(gc_dbresultinfo_struct);
-#endif
       }
 
 #ifdef ORACLE_DEBUG
-      static void gc_dbresultinfo_struct(struct object *UNUSED(o))
+      GC_CHECK
       {
 	THIS_RESULTINFO;
       }
