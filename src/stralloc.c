@@ -1194,6 +1194,7 @@ struct pike_string *add_string_status(int verbose)
 }
 
 #ifdef PIKE_DEBUG
+#include <ctype.h>
 
 static long last_stralloc_verify=0;
 extern long current_do_debug_cycle;
