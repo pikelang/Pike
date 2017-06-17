@@ -407,9 +407,7 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
 PMOD_EXPORT struct object *fast_clone_object(struct program *p)
 {
   struct object *o=low_clone(p);
-  push_object(o);
   call_c_initializers(o);
-  Pike_sp--;
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   return o;
