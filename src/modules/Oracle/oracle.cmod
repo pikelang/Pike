@@ -1756,9 +1756,8 @@ OCIError *get_global_error_handle(void)
 	case SQLT_CLOB:
 	case SQLT_BLOB:
 	  /* FIXME: Consider using parent pointers? */
-	  push_object(low_clone(Oracle_oracle_LOB_program));
-	  call_c_initializers(Pike_sp[-1].u.object);
-	  ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
+          push_object(fast_clone_object(Oracle_oracle_LOB_program));
+          ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
 	    (inout->ftype == SQLT_CLOB);
 	  ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->lob =
 	    inout->u.lob;
@@ -1775,9 +1774,8 @@ OCIError *get_global_error_handle(void)
 	  fprintf(stderr,"\n");
 #endif
 
-	  push_object(low_clone(Oracle_oracle_Date_program));
-	  call_c_initializers(Pike_sp[-1].u.object);
-	  ((struct Oracle_oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
+          push_object(fast_clone_object(Oracle_oracle_Date_program));
+          ((struct Oracle_oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
 	    inout->u.date;
 	  break;
 
@@ -2759,8 +2757,7 @@ PIKE_MODULE_INIT
   add_object_constant("NULLfloat", nullfloat_object =
 		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 
-  push_object(low_clone(Oracle_oracle_Date_program));
-  call_c_initializers(Pike_sp[-1].u.object);
+  push_object(fast_clone_object(Oracle_oracle_Date_program));
   add_object_constant("NULLdate", nulldate_object =
 		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 #ifdef OCI_UTF16ID
