@@ -407,6 +407,10 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
 PMOD_EXPORT struct object *fast_clone_object(struct program *p)
 {
   struct object *o=low_clone(p);
+  /* Let the stack hold the reference to the object during
+   * the time that the initializers are called, to avoid
+   * needing to have an ONERROR.
+   */
   push_object(o);
   call_c_initializers(o);
   Pike_sp--;
