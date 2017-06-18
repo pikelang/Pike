@@ -174,14 +174,6 @@ o __builtin.Sql
 
   Generic base classes for Sql API modules.
 
-o CompilerEnvironment()->lock()
-
-  Access to the compiler lock.
-
-o Crypto.ECC.Curve.Point
-
-  A point on an ECC curve.
-
 o Filesystem.Zip
 o Function.bind()
 
@@ -194,10 +186,6 @@ o Stdio.FakePipe
   A simulated Stdio.Pipe.
 
 o Parser.Markdown
-
-o Concurrent.Future and Concurrent.Promise
-
-  These are used to simplify handling of asynchronous results.
 
 o Crypto.Checksum
 
@@ -258,6 +246,14 @@ o MasterObject
     in multiple threads.
 
   - cast_to_program() and cast_to_object() should now be thread safe.
+
+o CompilerEnvironment()->lock()
+
+  Access to the compiler lock.
+
+o Crypto.ECC.Curve.Point
+
+  A point on an ECC curve.
 
 o Parser.Pike
 
