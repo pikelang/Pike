@@ -69,6 +69,7 @@ final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;
 private Thread.MutexKey termlock;
 final int _portalsinflight;
+final int _statementsinflight;
 final int _wasparallelisable;
 
 private .pgsql_util.conxion c;
@@ -458,6 +459,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
     "bytes_received":_bytesreceived,
     "reconnect_count":reconnected,
     "portals_in_flight":_portalsinflight,
+    "statements_in_flight":_statementsinflight,
    ]);
   return stats;
 }
@@ -1030,6 +1032,7 @@ private void procmessage() {
 #endif
           break;
         case 'G':
+          portal->_releasestatement();
           portal->_setrowdesc(@getcols());
           PD("%O CopyInResponse\n",portal._portalname);
           portal._state=COPYINPROGRESS;
@@ -1306,6 +1309,7 @@ private int reconnect() {
   unnamedstatement=Thread.Mutex();
   readyforquery_cb=recon?reconnect_cb:connect_cb;
   _portalsinflight=0;
+  _statementsinflight = 0;
   _wasparallelisable = 0;
   return 1;
 }
@@ -1366,7 +1370,8 @@ private void sendsync() {
   mixed err;
   if(is_open()) {
     err = catch {
-      PD("Portalsinflight: %d\n",_portalsinflight);
+      PD("Statementsinflight: %d  Portalsinflight: %d\n",
+       _statementsinflight, _portalsinflight);
       if(!waitforauthready) {
         readyforquery_cb=resync_cb;
         sendsync();
