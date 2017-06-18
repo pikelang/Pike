@@ -1,3 +1,98 @@
+Changes since Pike 8.0.438 (releas 9)
+----------------------------------------------------------------------
+
+New Features
+------------
+
+o Concurrent
+
+  The Concurrent module simplify asynchronous code by synchronizing
+  events in different ways. As an example the connection() function
+  shown will repond with Concurrent.Promise object that at some point
+  will represent either a connected socket or a failure.
+
+    Concurrent.Promise connection(string host, int port)
+    {
+      Stdio.File con = Stdio.File();
+      Concurrent.Promise p = Concurrent.Promise();
+      if( !con->async_connect(host, port, lambda(int success)
+        {
+          if(success)
+            p->success(con);
+          else
+            p->failure("Failed to connect to "+host+":"+port+"\n");
+        }))
+      {
+        p->failure("Failed to open socket.\n");
+      }
+      return p;
+    }
+
+  The returned promise could the be used in various ways.
+
+    // On success, call make_request(con, query). On failure call
+    // werror(msg).
+    connection(host, port)
+      ->on_failure(werror)
+      ->on_success(make_request, query);
+
+    // On success, call make_request(con, query1) followed by
+    // make_request(resp, query2), where resp is the return value from
+    // make_reqest.
+    connection(host, port)
+      ->then(make_request, werror, query1)
+      ->then(make_request, werror, query2);
+
+    // Call bridge_ports(con1, con2) when both connections are
+    // established.
+    Concurrent.all(connection(host1, port1), connection(host2, port2))
+      ->then(bridge_ports, failure);
+
+    // Call make_request(con) once either of the connections are
+    // established.
+    Concurrent.race(connection(host1, port1), connection(host2, port2))
+      ->then(make_requet, query);
+
+
+Bug fixes
+---------
+
+o Search
+
+  Fixed a race condition when updating the database.
+
+o Parser.HTML
+
+  Fixed a condition where Pike would run out of stack space for large
+  documents.
+
+o ADT.Heap
+
+  Fixed heap corruption when the same object is pushed more than
+  once. It will now be considered as calling adjust().
+
+o Inotify
+
+  - Addressed an issue where the backend might be stuck in pending
+    indefinitely.
+
+  - EventStreamMonitor now works with other backends.
+
+o Standards.BSON
+
+  Fixed incorrect encoding/decoding of Binary data.
+
+o Stdio.Buffer
+
+  Fixed a crash when attempting to create a rewind key on a buffer
+  returned by read_buffer().
+
+o mappings
+
+  Fixed an off by one error in random(mapping) that randomly caused
+  values of type PIKE_T_FREE from the freelist to be exposed to Pike.
+
+
 Changes since Pike 8.0.404 (release 8)
 ----------------------------------------------------------------------
 
@@ -123,10 +218,6 @@ o Sql.pgsql
     to resolve all detected race conditions (which in rare circumstances
     (many parallel queries on a single filedescriptor) could have resulted
     in a deadlock).
-
-o mappings
-  - Fixed an off by one error in random(mapping) that randomly caused
-    values of type PIKE_T_FREE from the freelist to be exposed to Pike.
 
 
 Changes since Pike 8.0.388 (release 7)
