@@ -662,7 +662,7 @@ PIKECLASS Sequence
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct object *o=fast_clone_object(Sequence_SequenceIterator_program);
       struct Sequence_SequenceIterator_struct *new;
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
@@ -714,7 +714,7 @@ PIKECLASS Sequence
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct object *o=fast_clone_object(Sequence_SequenceIterator_program);
       struct Sequence_SequenceIterator_struct *new;
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;

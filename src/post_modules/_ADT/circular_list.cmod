@@ -966,7 +966,7 @@ PIKECLASS CircularList
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
@@ -1019,7 +1019,7 @@ PIKECLASS CircularList
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;

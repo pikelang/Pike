@@ -916,16 +916,15 @@ void f_LogonUser(INT32 args)
   THREADS_ALLOW();
   ret=logonuser(username, domain, pw, logontype, logonprovider, &x);
   THREADS_DISALLOW();
+  pop_n_elems(args);
   if(ret)
   {
     struct object *o;
-    pop_n_elems(args);
-    o=low_clone(token_program);
+    o=fast_clone_object(token_program);
     (*(HANDLE *)(o->storage))=x;
     push_object(o);
   }else{
     errno=GetLastError();
-    pop_n_elems(args);
     push_int(0);
   }
 }
@@ -1186,17 +1185,17 @@ static void encode_localgroup_users_info(BYTE *u, int level)
 static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
 {
 
-#define SAFE_PUSH_SID(X) do {			\
-  if(getlengthsid && (X) && sid_program) {	\
-    int lentmp=getlengthsid( (X) );		\
-    PSID psidtmp=xalloc(lentmp);		\
-    struct object *o=low_clone(sid_program);	\
-    memcpy( psidtmp, (X), lentmp);		\
-    (*(PSID *)(o->storage))=psidtmp;		\
-    push_object(o);				\
-  } else {					\
-    push_int(0);                                \
-  } } while(0)
+#define SAFE_PUSH_SID(X) do {                           \
+    if(getlengthsid && (X) && sid_program) {            \
+      int lentmp=getlengthsid( (X) );                   \
+      PSID psidtmp=xalloc(lentmp);                      \
+      struct object *o=fast_clone_object(sid_program);	\
+      memcpy( psidtmp, (X), lentmp);                    \
+      (*(PSID *)(o->storage))=psidtmp;                  \
+      push_object(o);                                   \
+    } else {                                            \
+      push_int(0);                                      \
+    } } while(0)
 
   SAFE_PUSH_SID(tmp->lgrmi0_sid);
 }
@@ -2979,7 +2978,7 @@ static void f_LookupAccountName(INT32 args)
     {
       struct object *o;
       pop_n_elems(args);
-      o=low_clone(sid_program);
+      o=fast_clone_object(sid_program);
       (*(PSID *)(o->storage))=sid;
       push_object(o);
       push_string(end_shared_string(dom));

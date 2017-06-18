@@ -219,7 +219,7 @@ void shared_interpreter_cleanup(int exitcode)
  
 	i=find_identifier("foo", p);
 
-    o = low_clone(p);
+    o = fast_clone_object(p);
 
     apply_low(o, i, 0);
 
