@@ -694,7 +694,7 @@ class sql_result {
 #define INTVOID void
 #endif
   final INTVOID _decodedata(int msglen,string cenc) {
-    _storetiming();
+    _storetiming(); _releasestatement();
     string serror;
     bytesreceived+=msglen;
     int cols=cr->read_int16();
@@ -928,17 +928,17 @@ class sql_result {
         if(sizeof(datarowtypes))
           plugbuffer->add_ints(map(datarowtypes,oidformat),2);
         else if (syncparse < 0 && !pgsqlsess->_wasparallelisable
-         && pgsqlsess->_portalsinflight > 1) {
+         && pgsqlsess->_statementsinflight > 1) {
           lock=pgsqlsess->_shortmux->lock();
           // Decrement temporarily to account for ourselves
-          if(--pgsqlsess->_portalsinflight) {
+          if(--pgsqlsess->_statementsinflight) {
             pgsqlsess->_waittocommit++;
-            PD("Commit waiting for portals to finish\n");
+            PD("Commit waiting for statements to finish\n");
             catch(PT(pgsqlsess->_readyforcommit->wait(lock)));
             pgsqlsess->_waittocommit--;
           }
           // Increment again to account for ourselves
-          pgsqlsess->_portalsinflight++;
+          pgsqlsess->_statementsinflight++;
         }
         lock=0;
         PD("Bind portal %O statement %O\n",_portalname,_preparedname);
@@ -969,30 +969,48 @@ class sql_result {
   }
 
   final void _parseportal() {
-    Thread.MutexKey lock;
+    Thread.MutexKey lock = closemux->lock();
+    _state=PARSING;
+    Thread.MutexKey lockc = pgsqlsess->_shortmux->lock();
     if (syncparse || syncparse < 0 && pgsqlsess->_wasparallelisable) {
-      lock = pgsqlsess->_shortmux->lock();
-      if(pgsqlsess->_portalsinflight) {
+      if(pgsqlsess->_statementsinflight) {
         pgsqlsess->_waittocommit++;
-        PD("Commit waiting for portals to finish\n");
+        PD("Commit waiting for statements to finish\n");
         // Do NOT put this in a function, it would require passing a lock
         // variable on the argumentstack to the function, which will cause
         // unpredictable lock release issues due to the extra copy on the stack
-        catch(PT(pgsqlsess->_readyforcommit->wait(lock)));
+        catch(PT(pgsqlsess->_readyforcommit->wait(lockc)));
         pgsqlsess->_waittocommit--;
       }
     }
-    pgsqlsess->_portalsinflight++;
-    lock = closemux->lock();
-    _state=PARSING;
+    pgsqlsess->_statementsinflight++;
+    lockc = 0;
     lock=0;
     statuscmdcomplete=UNDEFINED;
     pgsqlsess->_wasparallelisable = paralleliseprefix->match(_query);
   }
 
+  final void _releasestatement(void|int nolock) {
+    Thread.MutexKey lock;
+    if (!nolock)
+      lock = closemux->lock();
+    if (_state <= BOUND) {
+      _state = COMMITTED;
+      lock = pgsqlsess->_shortmux->lock();
+      if (!--pgsqlsess->_statementsinflight && pgsqlsess->_waittocommit) {
+        PD("Signal no statements in flight\n");
+        catch(pgsqlsess->_readyforcommit->signal());
+      }
+    }
+    lock = 0;
+  }
+
   final void _bindportal() {
-    Thread.MutexKey lock=closemux->lock();
+    Thread.MutexKey lock = closemux->lock();
     _state=BOUND;
+    Thread.MutexKey lockc = pgsqlsess->_shortmux->lock();
+    pgsqlsess->_portalsinflight++;
+    lockc = 0;
     lock=0;
   }
 
@@ -1003,9 +1021,14 @@ class sql_result {
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
       case COPYINPROGRESS:
+      case COMMITTED:
+      case BOUND:
+        --pgsqlsess->_portalsinflight;
+    }
+    switch(_state) {
       case BOUND:
       case PARSING:
-        --pgsqlsess->_portalsinflight;
+        --pgsqlsess->_statementsinflight;
     }
     _state=CLOSED;
     lock=0;
@@ -1019,13 +1042,20 @@ class sql_result {
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
+      case PARSING:
+      case BOUND:
+        _releasestatement(1);
+    }
+    switch(_state) {
       case PORTALINIT:
+      case PARSING:
         _unnamedstatementkey=0;
         _state=CLOSING;
         break;
       case COPYINPROGRESS:
         PD("CopyDone\n");
         plugbuffer->add("c\0\0\0\4");
+      case COMMITTED:
       case BOUND:
         _state=CLOSING;
         lock=0;
@@ -1035,22 +1065,14 @@ class sql_result {
           retval=FLUSHSEND;
         } else
           _unnamedportalkey=0;
-      case PARSING:
-        _unnamedstatementkey = 0;
-        _state = CLOSING;
-        lock = 0;
         Thread.MutexKey lockc=pgsqlsess->_shortmux->lock();
         if(!--pgsqlsess->_portalsinflight) {
-          if(pgsqlsess->_waittocommit) {
-            PD("Signal no portals in flight\n");
-            catch(pgsqlsess->_readyforcommit->signal());
-            lockc=0;
+          if(!pgsqlsess->_waittocommit && !plugbuffer->stashcount)
            /*
             * stashcount will be non-zero if a parse request has been queued
             * before the close was initiated.
             * It's a bit of a tricky race, but this check should be sufficient.
             */
-          } else if (!plugbuffer->stashcount)
             pgsqlsess->_readyforquerycount++, retval=SYNCSEND;
           pgsqlsess->_pportalcount=0;
         }
