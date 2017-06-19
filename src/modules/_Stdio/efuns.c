@@ -552,7 +552,9 @@ void f_file_truncate(INT32 args)
  *!       on all systems.
  *!     @member string "fstype"
  *!       Type of filesystem (eg @expr{"nfs"@}). This item is not
- *!       available on all systems.
+ *!       available on all systems. For some more uncommon filesystems
+ *!       this may be an integer representing the magic number for the
+ *!       filesystem type (cf @tt{statfs(2)@} on eg Linux systems).
  *!   @endmapping
  *!
  *! @note
@@ -614,8 +616,15 @@ void f_filesystem_stat( INT32 args )
 
 #else /* !__NT__ */
 
-#if  !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
+#if !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
 #undef HAVE_STATFS
+#endif
+
+#if defined(HAVE_STATFS) && defined(HAVE_STATVFS) && !defined(HAVE_STATVFS_F_BASETYPE)
+/* Linux libc doesn't provide fs type info in statvfs(2),
+ * so use statfs(2) instead.
+ */
+#undef HAVE_STATVFS
 #endif
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
@@ -634,6 +643,9 @@ void f_filesystem_stat( INT32 args )
 #endif /* HAVE_SYS_VFS_H */
 #ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
+#ifdef HAVE_LINUX_MAGIC_H
+#include <linux/magic.h>
+#endif /* HAVE_LINUX_MAGIC_H */
 #endif /* HAVE_SYS_STATFS_H */
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -755,6 +767,30 @@ void f_filesystem_stat(INT32 args)
     push_static_text("bavail");       push_int(st.f_bavail);
     num_fields++;
 #endif /* HAVE_STATFS_F_BAVAIL */
+    push_static_text("fstype");
+    switch(st.f_type) {
+    case BTRFS_SUPER_MAGIC:	push_static_text("btrfs");	break;
+    case EXT2_SUPER_MAGIC:	push_static_text("ext");	break;
+    case ISOFS_SUPER_MAGIC:	push_static_text("isofs");	break;
+    case JFFS2_SUPER_MAGIC:	push_static_text("jffs2");	break;
+    case MSDOS_SUPER_MAGIC:	push_static_text("msdos");	break;
+    case NFS_SUPER_MAGIC:	push_static_text("nfs");	break;
+#ifndef NTFS_SB_MAGIC
+#define NTFS_SB_MAGIC	0x5346544e
+#endif
+    case NTFS_SB_MAGIC:		push_static_text("ntfs");	break;
+    case PROC_SUPER_MAGIC:	push_static_text("procfs");	break;
+    case RAMFS_MAGIC:		push_static_text("ramfs");	break;
+    case REISERFS_SUPER_MAGIC:	push_static_text("reiserfs");	break;
+    case SMB_SUPER_MAGIC:	push_static_text("smb");	break;
+    case SYSFS_MAGIC:		push_static_text("sysfs");	break;
+    case TMPFS_MAGIC:		push_static_text("tmpfs");	break;
+    case XENFS_SUPER_MAGIC:	push_static_text("xenfs");	break;
+    default:
+      push_int(st.f_type);
+      break;
+    }
+    num_fields++;
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA
     /* ULTRIX */
