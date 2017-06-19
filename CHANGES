@@ -6,12 +6,12 @@ New Features
 
 o Concurrent
 
-  The Concurrent module simplify asynchronous code by synchronizing
-  events in different ways. As an example the connection() function
-  shown will repond with Concurrent.Promise object that at some point
+  The Concurrent module simplifies asynchronous code by synchronizing
+  events in different ways. As an example the connect() function shown
+  below will repond with a Concurrent.Future object that at some point
   will represent either a connected socket or a failure.
 
-    Concurrent.Promise connection(string host, int port)
+    Concurrent.Future connect(string host, int port)
     {
       Stdio.File con = Stdio.File();
       Concurrent.Promise p = Concurrent.Promise();
@@ -25,34 +25,33 @@ o Concurrent
       {
         p->failure("Failed to open socket.\n");
       }
-      return p;
+      return p->future();
     }
 
-  The returned promise could the be used in various ways.
+  The returned future can then be used in various ways.
 
     // On success, call make_request(con, query). On failure call
     // werror(msg).
-    connection(host, port)
+    connect(host, port)
       ->on_failure(werror)
       ->on_success(make_request, query);
 
     // On success, call make_request(con, query1) followed by
     // make_request(resp, query2), where resp is the return value from
     // make_reqest.
-    connection(host, port)
+    connect(host, port)
       ->then(make_request, werror, query1)
       ->then(make_request, werror, query2);
 
     // Call bridge_ports(con1, con2) when both connections are
     // established.
-    Concurrent.all(connection(host1, port1), connection(host2, port2))
+    Concurrent.all(connect(host1, port1), connect(host2, port2))
       ->then(bridge_ports, failure);
 
     // Call make_request(con) once either of the connections are
     // established.
-    Concurrent.race(connection(host1, port1), connection(host2, port2))
+    Concurrent.race(connect(host1, port1), connect(host2, port2))
       ->then(make_requet, query);
-
 
 Bug fixes
 ---------
@@ -73,10 +72,12 @@ o ADT.Heap
 
 o Inotify
 
-  - Addressed an issue where the backend might be stuck in pending
-    indefinitely.
+  Addressed an issue where the backend might be stuck in pending
+  indefinitely.
 
-  - EventStreamMonitor now works with other backends.
+o FSEvents
+
+  EventStreamMonitor now works with other backends.
 
 o Standards.BSON
 
