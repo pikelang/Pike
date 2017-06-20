@@ -1379,8 +1379,8 @@ static void add_strings(INT32 args)
       update_flags_for_add( r, Pike_sp[e].u.string );
       pike_string_cpy(buf,Pike_sp[e].u.string);
       INC_PCHARP(buf,Pike_sp[e].u.string->len);
-      free_string(Pike_sp[e].u.string);
     }
+    free_string(Pike_sp[e].u.string);
   }
   Pike_sp -= args-1;
   SET_SVAL(Pike_sp[-1], T_STRING, 0, string, low_end_shared_string(r));
