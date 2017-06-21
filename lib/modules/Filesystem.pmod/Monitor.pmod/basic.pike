@@ -1593,18 +1593,6 @@ void set_backend(Pike.Backend|void backend)
   set_blocking();
   this::backend = backend;
 #if HAVE_EVENTSTREAM
-#if 0 /* FIXME: The following does NOT work properly. */
-  if (eventstream && backend) {
-    mixed key = monitor_mutex->lock();
-    foreach(monitors; string path; Monitor m) {
-      if (m->accellerated) {
-	m->accellerated = 0;
-	monitor_queue->push(m);
-      }
-    }
-    key = UNDEFINED;
-  }
-#endif
 #elif HAVE_INOTIFY
   if (instance) {
     instance->set_backend(backend || Pike.DefaultBackend);
