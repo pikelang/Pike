@@ -40,7 +40,7 @@ struct words *uc_words_write( struct words *d,
   return d;
 }
 
-struct words *uc_words_new( )
+struct words *uc_words_new( void )
 {
   struct words *s = malloc( sizeof( struct words ) + 31*8 );
   s->allocated_size = 32;
