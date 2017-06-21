@@ -1218,6 +1218,7 @@ private void procmessage() {
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 /*semi*/final void close() {
+  throwdelayederror(this);
   Thread.MutexKey lock;
   if (qportals && qportals->size())
     catch(cancelquery());
@@ -1232,8 +1233,17 @@ private void procmessage() {
 }
 
 protected void destroy() {
-  catch(close());
+  string errstring;
+  mixed err = catch(close());
   .pgsql_util.unregister_backend();
+  /*
+   * Flush out any asynchronously reported errors to stderr; because we are
+   * inside a destructor, throwing an error will not work anymore.
+   */
+  if (err || (err = catch(errstring = error(1))))
+    werror(describe_backtrace(err));
+  else if (sizeof(errstring))
+    werror(errstring);
 }
 
 final void _connectfail(void|mixed err) {
