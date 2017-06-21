@@ -1063,7 +1063,7 @@ class sql_result {
         _state=CLOSING;
         lock=0;
         PD("Close portal %O\n",_portalname);
-        if(sizeof(_portalname)) {
+        if (_portalname && sizeof(_portalname)) {
           plugbuffer->add_int8('C')->add_hstring(({'P',_portalname,0}),4,4);
           retval=FLUSHSEND;
         } else
