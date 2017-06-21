@@ -638,15 +638,9 @@ protected class Monitor(string path,
 	    file = canonic_path(Stdio.append_path(path, file));
 	    if (Monitor submon = monitors[file]) {
 	      // Adjust next_poll, so that the monitor will be checked soon.
-	      // Accelerated monitors will never get polled so check them
-	      // right away.
-	      if (submon->accellerated) {
-		submon->check(flags);
-	      } else {
-		submon->next_poll = time(1)-1;
-		adjust_monitor(submon);
-		delay = 1;
-	      }
+	      submon->next_poll = time(1)-1;
+	      adjust_monitor(submon);
+	      delay = 1;
 	    }
 	  }
 	}
@@ -818,76 +812,48 @@ protected void eventstream_callback(string path, int flags, int event_id)
     low_eventstream_callback(path, flags, event_id);
 }
 
+protected void start_accellerator()
+{
+  // Make sure that the main backend is in CF-mode.
+  Pike.DefaultBackend.enable_core_foundation(1);
+
+  MON_WERR("Creating event stream.\n");
+#if constant (System.FSEvents.kFSEventStreamCreateFlagFileEvents)
+  int flags = System.FSEvents.kFSEventStreamCreateFlagFileEvents;
+#else
+  int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
+#endif
+
+  eventstream =
+    System.FSEvents.EventStream(({}), 1.0,
+				System.FSEvents.kFSEventStreamEventIdSinceNow,
+				flags);
+  eventstream->callback_func = eventstream_callback;
+}
+
 //! FSEvents EventStream-accellerated @[Monitor].
 protected class EventStreamMonitor
 {
   inherit Monitor;
 
-  int(0..1) accellerated;
-
-  protected void do_stable_check()
-  {
-    check();
-    if (last_change != 0x7fffffff) {
-      // Not stable yet.
-      int t = time(1) - last_change;
-      if (t < 0) t = 0;
-      t = (stable_time || global::stable_time) + 1 - t;
-      if (t <= 0) t = 1;
-      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
-    }
-  }
-
-  protected void file_exists(string path, Stdio.Stat st)
-  {
-    ::file_exists(path, st);
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-  }
-
-  protected void file_created(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::file_created(path, st);
-  }
-
-  protected void attr_changed(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::attr_changed(path, st);
-  }
-
   protected void register_path(int|void initial)
   {
 #ifndef INHIBIT_EVENTSTREAM_MONITOR
-    if (!initial) return;
+    if (initial) {
+      if (Pike.DefaultBackend.executing_thread() != Thread.this_thread()) {
+	// eventstream stuff (especially start()) must be called from
+	// the backend thread, otherwise events will be fired in
+	// CFRunLoop contexts where noone listens.
+	call_out(register_path, 0, initial);
+	return;
+      }
 
-    if (Pike.DefaultBackend.executing_thread() != Thread.this_thread()) {
-      // eventstream stuff (especially start()) must be called from
-      // the backend thread, otherwise events will be fired in
-      // CFRunLoop contexts where noone listens.
-      call_out (register_path, 0, initial);
-      return;
-    }
+      // We're now in the main backend.
 
-    // We're now in the main backend.
+      if (!eventstream) {
+	start_accellerator();
+      }
 
-    if (!eventstream) {
-      // Make sure that the main backend is in CF-mode.
-      Pike.DefaultBackend.enable_core_foundation(1);
-
-      MON_WERR("Creating event stream.\n");
-#if constant (System.FSEvents.kFSEventStreamCreateFlagFileEvents)
-      int flags = System.FSEvents.kFSEventStreamCreateFlagFileEvents;
-#else
-      int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
-#endif
-
-      eventstream =
-	System.FSEvents.EventStream(({}), 1.0,
-				    System.FSEvents.kFSEventStreamEventIdSinceNow,
-                                    flags);
-      eventstream->callback_func = eventstream_callback;
-    } else {
       string found;
       foreach(eventstream_paths;;string p) {
 	if((path == p) || has_prefix(path, p + "/")) {
@@ -898,34 +864,28 @@ protected class EventStreamMonitor
       }
       if (found) {
 	MON_WERR("Path %O is accellerated via %O.\n", path, found);
-	accellerated = 1;
-	monitors[path] = this;
-        (backend || Pike.DefaultBackend)->call_out(check, 0);
-	return;
+      } else {
+	// NB: Eventstream doesn't notify on the monitored path;
+	//     only on its contents.
+	mixed err = catch {
+	    MON_WERR("Adding %O to the set of monitored paths.\n", path);
+	    eventstream_paths += ({path});
+	    if(eventstream->is_started())
+	      eventstream->stop();
+	    eventstream->add_path(path);
+	    eventstream->start();
+	  };
+
+	if (err) {
+	  werror("%O: Failed to register path %O.\n", this_function, path);
+	  master()->handle_error(err);
+	}
       }
+      // Note: Falling through to ::register_path() below.
+      //       This is needed to handle paths mounted on eg network
+      //       filesystems that are modified on other machines.
     }
-
-    mixed err = catch {
-        MON_WERR("Adding %O to the set of monitored paths.\n", path);
-        eventstream_paths += ({path});
-        if(eventstream->is_started())
-          eventstream->stop();
-        eventstream->add_path(path);
-        eventstream->start();
-      };
-
-    if (!err) {
-      monitors[path] = this;
-      (backend || Pike.DefaultBackend)->call_out(check, 0);
-      return;
-    }
-
-    werror (describe_backtrace (err));
-    // Note: falling through to ::register_path() below.
-
 #endif /* !INHIBIT_EVENTSTREAM_MONITOR */
-    // NB: Eventstream doesn't notify on the monitored path;
-    //     only on its contents.
     ::register_path(initial);
   }
 }
@@ -979,115 +939,80 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
   }
 }
 
+protected void start_accellerator()
+{
+  MON_WERR("Creating Inotify monitor instance.\n");
+  instance = System.Inotify._Instance();
+  if (backend) instance->set_backend(backend);
+  instance->set_event_callback(inotify_event);
+  if (co_id) {
+    MON_WERR("Turning on nonblocking mode for Inotify.\n");
+    instance->set_nonblocking();
+  }
+}
+
 //! Inotify-accellerated @[Monitor].
 protected class InotifyMonitor
 {
   inherit Monitor;
 
   protected int wd = -1;
-  int `accellerated() { return wd != -1; }
   protected int(0..) out_of_inotify_space;
-
-  protected void do_stable_check()
-  {
-    check();
-    if (last_change != 0x7fffffff) {
-      // Not stable yet.
-      int t = time(1) - last_change;
-      if (t < 0) t = 0;
-      t = (stable_time || global::stable_time) + 1 - t;
-      if (t <= 0) t = 1;
-      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
-    }
-  }
-
-  protected void file_exists(string path, Stdio.Stat st)
-  {
-    ::file_exists(path, st);
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-  }
-
-  protected void file_created(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::file_created(path, st);
-  }
-
-  protected void attr_changed(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::attr_changed(path, st);
-  }
 
   protected void register_path(int|void initial)
   {
-    if (wd != -1) return;
-
 #ifndef INHIBIT_INOTIFY_MONITOR
-    if (initial && !instance) {
-      MON_WERR("Creating Inotify monitor instance.\n");
-      instance = System.Inotify._Instance();
-      if (backend) instance->set_backend(backend);
-      instance->set_event_callback(inotify_event);
-      if (co_id) {
-	MON_WERR("Turning on nonblocking mode for Inotify.\n");
-	instance->set_nonblocking();
+    if (wd == -1) {
+      if (!instance) {
+	start_accellerator();
       }
-    }
 
-    // NB: We need to follow symlinks here.
-    // Currently we only support changing symlinks and symlinks to directories.
-    // FIXME: Handle broken symlinks where the target later shows up and
-    //        symlinks to changing files.
-    Stdio.Stat st = file_stat(path);
-    mixed err;
-    if (st && (!(flags & MF_AUTO) || st->isdir)) {
-      // Note: We only want to add watchers on directories. File
-      // notifications will take place on the directory watch
-      // descriptors. Expansion of the path to cover notifications
-      // on individual files is handled in the inotify_event
-      // callback.
+      // NB: We need to follow symlinks here.
+      // Currently we only support changing symlinks and symlinks to directories.
+      // FIXME: Handle broken symlinks where the target later shows up and
+      //        symlinks to changing files.
+      Stdio.Stat st = file_stat(path);
+      mixed err;
+      if (st && (!(flags & MF_AUTO) || st->isdir)) {
+	// Note: We only want to add watchers on directories. File
+	// notifications will take place on the directory watch
+	// descriptors. Expansion of the path to cover notifications
+	// on individual files is handled in the inotify_event
+	// callback.
 
-      if (err = catch {
-	  int new_wd = instance->add_watch(path,
-					   System.Inotify.IN_MOVED_FROM |
-					   System.Inotify.IN_UNMOUNT |
-					   System.Inotify.IN_MOVED_TO |
-					   System.Inotify.IN_MASK_ADD |
-					   System.Inotify.IN_MOVE_SELF |
-					   System.Inotify.IN_DELETE |
-					   System.Inotify.IN_MOVE |
-					   System.Inotify.IN_MODIFY |
-					   System.Inotify.IN_ATTRIB |
-					   System.Inotify.IN_DELETE_SELF |
-					   System.Inotify.IN_CREATE |
-					   System.Inotify.IN_CLOSE_WRITE);
+	if (err = catch {
+	    int new_wd = instance->add_watch(path,
+					     System.Inotify.IN_MOVED_FROM |
+					     System.Inotify.IN_UNMOUNT |
+					     System.Inotify.IN_MOVED_TO |
+					     System.Inotify.IN_MASK_ADD |
+					     System.Inotify.IN_MOVE_SELF |
+					     System.Inotify.IN_DELETE |
+					     System.Inotify.IN_MOVE |
+					     System.Inotify.IN_MODIFY |
+					     System.Inotify.IN_ATTRIB |
+					     System.Inotify.IN_DELETE_SELF |
+					     System.Inotify.IN_CREATE |
+					     System.Inotify.IN_CLOSE_WRITE);
 
-	  if (new_wd != -1) {
-	    MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
-	    out_of_inotify_space = 0;
-	    // We shouldn't need to be polled.
-	    if (!initial) {
-	      MON_WERR("Unregistering from polling.\n");
-	      release_monitor(this);
+	    if (new_wd != -1) {
+	      MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
+	      out_of_inotify_space = 0;
+	      wd = new_wd;
+	      monitors[inotify_cookie(wd)] = this;
 	    }
-	    wd = new_wd;
-	    monitors[inotify_cookie(wd)] = this;
+	  }) {
+	  if (!has_value(lower_case(describe_error(err)), "no space left")) {
+	    master()->handle_error(err);
+	  } else if (!(out_of_inotify_space++ % 100)) {
+	    werror("%O: Out of inotify space (%d attempts):\n",
+		   this_function, out_of_inotify_space);
+	    master()->handle_error(err);
+	    werror("Consider increasing '/proc/sys/fs/inotify/max_user_watches'.\n");
 	  }
-	}) {
-	if (!has_value(lower_case(describe_error(err)), "no space left")) {
-	  master()->handle_error (err);
-	} else if (!(out_of_inotify_space++ % 100)) {
-	  werror("Out of inotify space (%d attempts):\n", out_of_inotify_space);
-	  master()->handle_error (err);
-	  werror("Consider increasing '/proc/sys/fs/inotify/max_user_watches'.\n");
 	}
       }
     }
-
-    if (st && !err)
-      return; // Return early if setup was successful, i.e. avoid
-              // registering a polling monitor.
 
 #endif /* !INHIBIT_INOTIFY_MONITOR */
     MON_WERR("Registering %O for polling.\n", path);
@@ -1230,7 +1155,6 @@ void clear()
 //!   @[release()]
 protected void release_monitor(Monitor m)
 {
-  if (m->accellerated) return;
   mixed key = monitor_mutex->lock();
   monitor_queue->remove(m);
 }
@@ -1239,7 +1163,6 @@ protected void release_monitor(Monitor m)
 //! to account for an updated next_poll value.
 protected void adjust_monitor(Monitor m)
 {
-  if (m->accellerated) return;
   mixed key = monitor_mutex->lock();
   monitor_queue->adjust(m);
 }
