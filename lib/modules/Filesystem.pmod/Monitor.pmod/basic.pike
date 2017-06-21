@@ -1164,7 +1164,17 @@ protected void release_monitor(Monitor m)
 protected void adjust_monitor(Monitor m)
 {
   mixed key = monitor_mutex->lock();
+  int old_min = monitor_queue->peek()->next_poll;
   monitor_queue->adjust(m);
+  if ((m->next_poll < old_min) && co_id && (co_id != 1)) {
+    // Nonblocking mode and we need to poll earlier,
+    // so reschedule the call_out.
+    MON_WERR("Rescheduling call_out.\n");
+    if (backend) backend->remove_call_out(co_id);
+    else remove_call_out(co_id);
+    co_id = 0;
+    set_nonblocking();
+  }
 }
 
 //! Create a new @[Monitor] for a @[path].
