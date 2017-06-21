@@ -816,7 +816,7 @@ protected void eventstream_callback(string path, int flags, int event_id)
     low_eventstream_callback(path, flags, event_id);
 }
 
-protected void start_accellerator()
+protected void start_accelerator()
 {
   // Make sure that the main backend is in CF-mode.
   Pike.DefaultBackend.enable_core_foundation(1);
@@ -835,7 +835,7 @@ protected void start_accellerator()
   eventstream->callback_func = eventstream_callback;
 }
 
-//! FSEvents EventStream-accellerated @[Monitor].
+//! FSEvents EventStream-accelerated @[Monitor].
 protected class EventStreamMonitor
 {
   inherit Monitor;
@@ -855,7 +855,7 @@ protected class EventStreamMonitor
       // We're now in the main backend.
 
       if (!eventstream) {
-	start_accellerator();
+	start_accelerator();
       }
 
       string found;
@@ -867,7 +867,7 @@ protected class EventStreamMonitor
 	}
       }
       if (found) {
-	MON_WERR("Path %O is accellerated via %O.\n", path, found);
+	MON_WERR("Path %O is accelerated via %O.\n", path, found);
       } else {
 	// NB: Eventstream doesn't notify on the monitored path;
 	//     only on its contents.
@@ -943,7 +943,7 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
   }
 }
 
-protected void start_accellerator()
+protected void start_accelerator()
 {
   MON_WERR("Creating Inotify monitor instance.\n");
   instance = System.Inotify._Instance();
@@ -955,7 +955,7 @@ protected void start_accellerator()
   }
 }
 
-//! Inotify-accellerated @[Monitor].
+//! Inotify-accelerated @[Monitor].
 protected class InotifyMonitor
 {
   inherit Monitor;
@@ -968,7 +968,7 @@ protected class InotifyMonitor
 #ifndef INHIBIT_INOTIFY_MONITOR
     if (wd == -1) {
       if (!instance) {
-	start_accellerator();
+	start_accelerator();
       }
 
       // NB: We need to follow symlinks here.
@@ -1603,7 +1603,7 @@ void set_nonblocking(int|void t)
 #endif
   if (co_id) return;
   // NB: Other stuff than plain files may be used with the monitoring
-  //     system, so the call_out may be needed even with accellerators.
+  //     system, so the call_out may be needed even with accelerators.
   //
   // NB: Also note that Inotify doesn't support monitoring of non-existing
   //     paths, so it still needs the call_out-loop.
