@@ -1081,6 +1081,7 @@ private void procmessage() {
               switch(msgresponse.S) {
                 case "PANIC":werror(a2nls(lastmessage));
               }
+            case "25P02":    // Preserve last error message
               USERERROR(a2nls(lastmessage));
           }
           if(objectp(portal))
