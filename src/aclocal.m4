@@ -260,6 +260,10 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 #ifndef _GNU_SOURCE
 # undef _GNU_SOURCE
 #endif
+/* Enable non-POSIX declarations on Darwin. */
+#ifndef _DARWIN_C_SOURCE
+# undef _DARWIN_C_SOURCE
+#endif
 /* Enable threading extensions on Solaris.  */
 #ifndef _POSIX_PTHREAD_SEMANTICS
 # undef _POSIX_PTHREAD_SEMANTICS
@@ -271,6 +275,7 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 ])
   AC_DEFINE(_ALL_SOURCE)
   AC_DEFINE(_GNU_SOURCE)
+  AC_DEFINE(_DARWIN_C_SOURCE)
   AC_DEFINE(_POSIX_PTHREAD_SEMANTICS)
   AC_DEFINE(_TANDEM_SOURCE)
 ])
@@ -298,6 +303,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    */
 # undef _POSIX_C_SOURCE
 #endif
+#ifndef _DARWIN_C_SOURCE
+#undef _DARWIN_C_SOURCE
+#endif
 ])
 
   AC_DEFINE(POSIX_SOURCE, 1)
@@ -318,6 +326,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   ])
   AC_MSG_RESULT($pike_cv_posix_c_source)
   AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
+  AC_DEFINE(_DARWIN_C_SOURCE)
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
