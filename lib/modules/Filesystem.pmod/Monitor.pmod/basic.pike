@@ -1044,13 +1044,6 @@ protected class InotifyMonitor
 	}
       }
       wd = -1;
-      if (!dying && !(flags & MF_AUTO)) {
-	// We now need to be polled...
-	MON_WERR("Registering for polling.\n");
-	mixed key = monitor_mutex->lock();
-	monitor_queue->push(this);
-	key = UNDEFINED;
-      }
     }
     ::unregister_path(dying);
   }
