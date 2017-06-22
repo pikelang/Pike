@@ -1167,10 +1167,25 @@ protected void release_monitor(Monitor m)
 //! to account for an updated next_poll value.
 protected void adjust_monitor(Monitor m)
 {
+  // NB: May be called with monitors not on the monitor_queue due
+  //     to double checks when using acceleration.
+  if (m->pos < 0) return;	// Not on the monitor_queue.
+
   mixed key = monitor_mutex->lock();
-  int old_min = monitor_queue->peek()->next_poll;
+  if (m->pos < 0) return;	// Not on the monitor_queue any more (race).
+
+  Monitor next_monitor = monitor_queue->peek();
+  if (!next_monitor) {
+    error("%O: Monitor queue is empty!\n", this_function);
+  }
+
+  int old_min = next_monitor->next_poll;
   monitor_queue->adjust(m);
-  if ((m->next_poll < old_min) && co_id && (co_id != 1)) {
+  if (m->next_poll >= old_min) {
+    return;
+  }
+
+  if (co_id && (co_id != 1)) {
     // Nonblocking mode and we need to poll earlier,
     // so reschedule the call_out.
     MON_WERR("Rescheduling call_out.\n");
