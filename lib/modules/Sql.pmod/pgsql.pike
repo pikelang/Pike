@@ -1042,7 +1042,7 @@ private void procmessage() {
           portal=0;
           break;
         case 'E': {
-          if(!_readyforquerycount)
+          if (_portalsinflight <= 1 && !_readyforquerycount)
             sendsync();
           PD("%O ErrorResponse %O\n",
            objectp(portal)&&(portal._portalname||portal._preparedname),
@@ -1084,8 +1084,6 @@ private void procmessage() {
             case "25P02":    // Preserve last error message
               USERERROR(a2nls(lastmessage));
           }
-          if(objectp(portal))
-            portal->_releasesession();
           break;
         }
         case 'N': {
