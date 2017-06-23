@@ -5553,12 +5553,14 @@ PIKECLASS SelectBackend
     /* me->set.num_fds=0; */
   }
 
+#ifdef POLL_DEBUG
   EXIT
     gc_trivial;
   {
     struct Backend_struct *me = THIS->backend;
     PDWERR("[%d]BACKEND[%d]: exit generic backend\n", THR_NO, me->id);
   }
+#endif /* POLL_DEBUG */
 }
 
 /*! @endclass
