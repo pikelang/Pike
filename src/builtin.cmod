@@ -609,7 +609,9 @@ PIKECLASS TM
         THIS->modified = 0;
     }
 
-    EXIT {
+    EXIT
+      gc_trivial;
+    {
         if( THIS->set_zone )
             free_string( THIS->set_zone );
     }
