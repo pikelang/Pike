@@ -3355,7 +3355,7 @@ void th_init(void)
 	   tFunc(tNone,tObjIs_THREAD_ID), 0);
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
-  ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tInt,tStr),0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
@@ -3404,7 +3404,7 @@ void th_init(void)
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
   ADD_FUNCTION("create", f_thread_local_create,
-	       tFunc(tVoid,tVoid), ID_PROTECTED);
+	       tFunc(tNone,tVoid), ID_PROTECTED);
 #ifdef PIKE_DEBUG
   set_gc_check_callback(gc_check_thread_local);
 #endif
@@ -3425,7 +3425,7 @@ void th_init(void)
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
-  ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tInt,tStr),0);
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
   ADD_FUNCTION("interrupt", f_thread_id_interrupt,
 	       tFunc(tOr(tVoid,tStr), tVoid), 0);
