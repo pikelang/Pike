@@ -2744,7 +2744,6 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
   INIT {
     Buffer *this = THIS;
-    memset( this, 0, sizeof(Buffer));
     this->max_waste = 0.615;
     this->this = Pike_fp->current_object;
   }
