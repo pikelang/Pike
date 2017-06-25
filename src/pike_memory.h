@@ -41,7 +41,7 @@
     PIKE_MEM_NA_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_NA_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_NOACCESS(addr, bytes));		\
+    VALGRIND_MAKE_MEM_NOACCESS(addr, bytes);                            \
   } while (0)
 
 /* Write Only -- Will become RW when having been written to */
@@ -49,7 +49,7 @@
     PIKE_MEM_WO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_WO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes);                           \
   } while (0)
 
 /* Read/Write */
@@ -57,7 +57,7 @@
     PIKE_MEM_RW_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RW_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_DEFINED(addr, bytes);                             \
   } while (0)
 
 /* Read Only -- Not currently supported by valgrind */
@@ -65,7 +65,7 @@
     PIKE_MEM_RO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_DEFINED(addr, bytes);                             \
   } while (0)
 
 /* Return true if a memchecker is in use. */
