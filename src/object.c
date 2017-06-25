@@ -1000,8 +1000,10 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( frame_pushed )
     POP_FRAME2();
 
-  if (o->storage && (o->flags & OBJECT_CLEAR_ON_EXIT)) {
-    guaranteed_memset(o->storage, 0, p->storage_needed);
+  if (o->storage) {
+    if (o->flags & OBJECT_CLEAR_ON_EXIT)
+      guaranteed_memset(o->storage, 0, p->storage_needed);
+    PIKE_MEM_WO_RANGE(o->storage, p->storage_needed);
   }
 
   free_object( o );
