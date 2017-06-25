@@ -94,8 +94,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
     Pike_error("Too large array (size %ld exceeds %ld).\n",
 	       (long)(size+extra_space-1),
 	       (long)((LONG_MAX-sizeof(struct array))/sizeof(struct svalue)) );
-  v=malloc(sizeof(struct array)+
-           (size+extra_space-1)*sizeof(struct svalue));
+  v=calloc(sizeof(struct array)+
+           (size+extra_space-1)*sizeof(struct svalue), 1);
   if(!v)
     Pike_error(msg_out_of_mem_2, sizeof(struct array)+
 	       (size+extra_space-1)*sizeof(struct svalue));
@@ -115,13 +115,6 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->size = (INT32)size;
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
-
-  {
-    struct svalue *item = ITEM(v);
-    struct svalue *item_end = item + v->size;
-    while (item < item_end)
-      *item++ = svalue_int_zero;
-  }
 
   return v;
 }
