@@ -943,12 +943,14 @@ PIKECLASS Sequence
       }
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->sequence=0;
       THIS->pos=0;
       THIS->obj = NULL;
     }
+#endif
 
     EXIT
       gc_trivial;

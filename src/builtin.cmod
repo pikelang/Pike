@@ -604,10 +604,12 @@ PIKECLASS TM
         THIS->unix_time = mktime_zone( t );
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT {
         THIS->set_zone = 0;
         THIS->modified = 0;
     }
+#endif
 
     EXIT
       gc_trivial;
@@ -2092,11 +2094,13 @@ PIKECLASS RandomInterface
   CVAR UINT64 int_buffer;
   CVAR int   buffer_bits;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->int_buffer = 0;
     THIS->buffer_bits = 0;
   }
+#endif
 
   /*! @decl string(8bit) random_string(int(0..))
    *!
@@ -3721,10 +3725,12 @@ PIKECLASS multi_string_replace
     f_multi_string_replace_create(i);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     memset(&THIS->ctx, 0, sizeof(struct replace_many_context));
   }
+#endif
 
   EXIT
     gc_trivial;
@@ -6168,10 +6174,12 @@ PIKECLASS pike_trampoline
 
   DECLARE_STORAGE;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->trampoline.frame=0;
   }
+#endif
 
   EXIT
   {

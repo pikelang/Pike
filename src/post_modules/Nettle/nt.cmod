@@ -114,10 +114,13 @@ PIKECLASS CryptContext
     }
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->handle = 0;
   }
+#endif
+
   EXIT
     gc_trivial;
   {

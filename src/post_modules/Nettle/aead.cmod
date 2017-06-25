@@ -170,10 +170,12 @@ PIKECLASS AEAD
     push_int(THIS->meta->iv_size);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->meta = NULL;
   }
+#endif
 
   /*! @class State
    *!
@@ -506,12 +508,14 @@ PIKECLASS AEAD
       push_string(end_shared_string(digest));
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->ctx = NULL;
       THIS->crypt = NULL;
       THIS->key_size = 0;
     }
+#endif
 
     EXIT
     {

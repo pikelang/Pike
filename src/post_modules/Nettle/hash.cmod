@@ -443,11 +443,13 @@ PIKECLASS Hash
     memset(abcbuf, 0, 3*dsz);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       werror("Hash->INIT\n");
       THIS->meta = NULL;
     }
+#endif
 
   /*! @class State
    *!
@@ -566,11 +568,13 @@ PIKECLASS Hash
       push_string(end_shared_string(digest));
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       werror("State->INIT\n");
       THIS->ctx = NULL;
     }
+#endif
 
     EXIT
     {

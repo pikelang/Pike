@@ -470,6 +470,7 @@ PIKECLASS mapping_iterator
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->m=0;
@@ -477,6 +478,7 @@ PIKECLASS mapping_iterator
       THIS->current=0;
       THIS->bucket=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -612,11 +614,13 @@ PIKECLASS array_iterator
       add_ref(THIS->a=a);
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->a=0;
       THIS->pos=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -819,10 +823,12 @@ PIKECLASS multiset_iterator
       THIS->nodepos = multiset_first (THIS->l);
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->l = NULL;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -981,11 +987,13 @@ PIKECLASS string_iterator
       add_ref(THIS->s=s);
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->s=0;
       THIS->pos=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -1157,10 +1165,12 @@ PIKECLASS file_line_iterator
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       THIS->buffer = NULL;
       THIS->current = NULL;
       THIS->offset = 0;
       THIS->index = 0;
+#endif
       mark_free_svalue (&THIS->feed);
     }
 
@@ -1645,6 +1655,7 @@ PIKECLASS string_split_iterator
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       THIS->buffer = NULL;
       THIS->current = NULL;
       THIS->offset = 0;
@@ -1652,6 +1663,7 @@ PIKECLASS string_split_iterator
       THIS->split_set = NULL;
       THIS->split_set_size = 0;
       THIS->flags = 0;
+#endif
       mark_free_svalue (&THIS->feed);
     }
 

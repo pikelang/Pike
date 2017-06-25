@@ -111,11 +111,13 @@ PIKECLASS define
 
   INIT
   {
-    struct define_struct *def = (struct define_struct *)(Pike_fp->current_storage);
-    def->magic=0;
+    struct define_struct *def = (struct define_struct *)CURRENT_STORAGE;
     def->args=-1;
+#ifdef PIKE_NULL_IS_SPECIAL
+    def->magic=0;
     def->flags = 0;
     def->varargs=0;
+#endif
   }
 }
 

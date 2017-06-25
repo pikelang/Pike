@@ -847,12 +847,14 @@ PIKECLASS CircularList
    */
 
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->a=NULL;
     THIS->pos=0;
     THIS->size=0;
   }
+#endif
 
   EXIT
     gc_trivial;
@@ -1245,12 +1247,14 @@ PIKECLASS CircularList
       }
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->list=0;
       THIS->pos=0;
       THIS->obj = NULL;
     }
+#endif
 
     EXIT
       gc_trivial;

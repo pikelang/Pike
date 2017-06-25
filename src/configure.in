@@ -5240,6 +5240,30 @@ AC_DEFINE_UNQUOTED(PIKE_BYTEORDER,$pike_cv_hardware_byteorder)
 
 ########################################################################
 
+AC_MSG_CHECKING(null is special)
+AC_CACHE_VAL(pike_cv_null_is_special,
+[
+  AC_TRY_RUN([
+#include <stdio.h>
+union test {
+  void * ptr;
+  int val;
+};
+int main()
+{
+  union test t;
+  t.ptr = NULL;
+  if( t.val == 0 ) return 0;
+  return 1;
+}], pike_cv_null_is_special=yes, pike_cv_null_is_special=no, pike_cv_null_is_special=no)
+])
+AC_MSG_RESULT($pike_cv_null_is_special)
+if test "x$pike_cv_null_is_special" = xyes ; then
+  AC_DEFINE(PIKE_NULL_IS_SPECIAL)
+fi
+
+########################################################################
+
 AC_MSG_CHECKING(pointer alignment)
 AC_CACHE_VAL(pike_cv_hardware_alignment,
 [

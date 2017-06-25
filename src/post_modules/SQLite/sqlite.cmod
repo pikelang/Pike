@@ -334,11 +334,13 @@ PIKECLASS TypedResult
   }
 
   INIT {
-    THIS->eof = 0;
     THIS->columns = -1;
+#ifdef PIKE_NULL_IS_SPECIAL
+    THIS->eof = 0;
     THIS->dbobj = NULL;
     THIS->stmt = NULL;
     THIS->bindings = NULL;
+#endif
   }
 
   EXIT
@@ -841,9 +843,11 @@ PIKECLASS Result
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
+#ifndef PIKE_NULL_IS_ZERO
   INIT {
     THIS->db = NULL;
   }
+#endif
 
   EXIT
     gc_trivial;

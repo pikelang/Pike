@@ -2364,8 +2364,10 @@ void f_mutex__sprintf (INT32 args)
 void init_mutex_obj(struct object *UNUSED(o))
 {
   co_init(& THIS_MUTEX->condition);
+#ifdef PIKE_NULL_IS_SPECIAL
   THIS_MUTEX->key=0;
   THIS_MUTEX->num_waiting = 0;
+#endif
 }
 
 void exit_mutex_obj(struct object *UNUSED(o))
@@ -2460,8 +2462,10 @@ void init_mutex_key_obj(struct object *UNUSED(o))
 {
   THREADS_FPRINTF(1, "KEY k:%p, t:%p\n",
                   THIS_KEY, Pike_interpreter.thread_state);
+#ifdef PIKE_NULL_IS_SPECIAL
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
+#endif
   THIS_KEY->owner = Pike_interpreter.thread_state;
   THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
   if (THIS_KEY->owner_obj)
