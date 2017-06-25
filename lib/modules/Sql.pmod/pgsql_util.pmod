@@ -29,7 +29,6 @@ final multiset censoroptions=(<"use_ssl","force_ssl",
  "cache_autoprepared_statements","reconnect","text_query","is_superuser",
  "server_encoding","server_version","integer_datetimes",
  "session_authorization">);
-final multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
 
  /* Statements matching createprefix cause the prepared statement cache
   * to be flushed to prevent stale references to (temporary) tables
@@ -46,6 +45,22 @@ private Regexp dontcacheprefix=iregexp("^\a*(FETCH|COPY)\a");
   */
 private Regexp paralleliseprefix
  =iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|(FETC|WIT)H)\a");
+
+ /* Statements matching transbeginprefix will cause the driver
+  * insert a sync after the statement.
+  * Failure to do so, will result in portal synchronisation errors
+  * in the event of an ErrorResponse.
+  */
+final Regexp transbeginprefix
+ =iregexp("^\a*BEGIN[; \t\f\r\n]*$");
+
+ /* Statements matching transendprefix will cause the driver
+  * insert a sync after the statement.
+  * Failure to do so, will result in portal synchronisation errors
+  * in the event of an ErrorResponse.
+  */
+final Regexp transendprefix
+ =iregexp("^\a*(COMMIT|ROLLBACK|END)[; \t\f\r\n]*$");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces
@@ -317,25 +332,32 @@ class conxion {
   }
 
   final void sendcmd(void|int mode, void|sql_result portal) {
-    if (portal)
-      queueup(portal);
     Thread.MutexKey lock;
-    if (started) {
-      lock = shortmux->lock();
-      if (sizeof(stash)) {
-        add(stash);
-        stash->clear();
-        foreach (stashqueue->try_read_array();; sql_result portal)
-          queueup(portal);
+
+    int emptystash() {
+      int ret = 0;
+      if (started) {
+        lock = shortmux->lock();
+        if (sizeof(stash)) {
+          add(stash);
+          stash->clear();
+          foreach (stashqueue->try_read_array();; sql_result portal)
+            queueup(portal);
+          ret = 1;
+        }
+        mode = mergemode(this, mode);
+        stashflushmode = KEEP;
       }
-      mode = mergemode(this, mode);
-      stashflushmode = KEEP;
-    }
-nosync:
+      return ret;
+    };
+
+    emptystash();
     do {
+      if (portal)
+        queueup(portal);
       switch (mode) {
         default:
-          break nosync;
+          continue;
         case SYNCSEND:
           PD("%d>Sync %d %d Queue\n",
            socket->query_fd(), synctransact, ++queueoutidx);
@@ -348,7 +370,7 @@ nosync:
           mode = FLUSHSEND;
       }
       qportals->write(synctransact++);
-    } while (0);
+    } while (!lock && emptystash());
     catch {
 outer:
       do {
@@ -540,6 +562,7 @@ class sql_result {
   private int alltext;
   final int _forcetext;
   private int syncparse;
+  private int transtype;
 
   final string _portalname;
 
@@ -573,9 +596,10 @@ class sql_result {
         res=sprintf("sql_result state: %d numrows: %d eof: %d inflight: %d\n"
                     "query: %O\n"
                     "fd: %O portalname: %O  datarows: %d"
-                    "  laststatus: %s\n",
+                    "  synctransact: %d laststatus: %s\n",
                     _state,rowsreceived,eoffound,inflight,
                     _query,fd,_portalname,datarowtypes&&sizeof(datarowtypes),
+                    _synctransact,
                     statuscmdcomplete||(_unnamedstatementkey?"*parsing*":""));
         break;
     }
@@ -584,7 +608,7 @@ class sql_result {
 
   protected void create(object _pgsqlsess,conxion _c,string query,
    int _portalbuffersize,int alltyped,array params,int forcetext,
-   int _timeout, int _syncparse) {
+   int _timeout, int _syncparse, int _transtype) {
     pgsqlsess = _pgsqlsess;
     cr = (c = _c)->i;
     _query = query;
@@ -601,6 +625,7 @@ class sql_result {
     syncparse = _syncparse;
     gottimeout = _pgsqlsess->cancelquery;
     c->closecallbacks+=(<destroy>);
+    transtype = _transtype;
   }
 
   //! Returns the command-complete status for this query.
@@ -950,7 +975,7 @@ class sql_result {
         if(!_tprepared && sizeof(_preparedname))
           closestatement(CHAIN(bindbuffer), _preparedname);
         _sendexecute(_fetchlimit
-                             && !(cachealways[_query]
+                             && !(transtype != NOTRANS
                                   || sizeof(_query)>=MINPREPARELENGTH &&
                                   execfetchlimit->match(_query))
                              && _fetchlimit,bindbuffer);
@@ -1067,7 +1092,8 @@ class sql_result {
           _unnamedportalkey=0;
         Thread.MutexKey lockc=pgsqlsess->_shortmux->lock();
         if(!--pgsqlsess->_portalsinflight) {
-          if(!pgsqlsess->_waittocommit && !plugbuffer->stashcount)
+          if(!pgsqlsess->_waittocommit && !plugbuffer->stashcount
+           && transtype != TRANSBEGIN)
            /*
             * stashcount will be non-zero if a parse request has been queued
             * before the close was initiated.
@@ -1143,9 +1169,12 @@ class sql_result {
       plugbuffer=c->start(1);
     CHAIN(plugbuffer)->add_int8('E')->add_hstring(({_portalname,0}), 4, 8)
      ->add_int32(fetchlimit);
-    if(!fetchlimit)
-      flushmode=_closeportal(plugbuffer)==SYNCSEND?SYNCSEND:FLUSHSEND;
-    else
+    if (!fetchlimit) {
+      if (transtype != NOTRANS)
+        pgsqlsess._intransaction = transtype == TRANSBEGIN;
+      flushmode = _closeportal(plugbuffer) == SYNCSEND
+       || transtype == TRANSEND ? SYNCSEND : FLUSHSEND;
+    } else
       inflight+=fetchlimit, flushmode=FLUSHSEND;
     plugbuffer->sendcmd(flushmode,this);
   }
