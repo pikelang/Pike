@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(thread_create)
+#if constant(__builtin.thread_id)
 constant Thread=__builtin.thread_id;
 
 optional constant MutexKey=__builtin.mutex_key;
@@ -10,10 +10,10 @@ optional constant _Disabled=__builtin.threads_disabled;
 optional constant Local=__builtin.thread_local;
 
 optional constant thread_create = predef::thread_create;
-
 optional constant this_thread = predef::this_thread;
-
 optional constant all_threads = predef::all_threads;
+optional constant get_thread_quanta = predef::get_thread_quanta;
+optional constant set_thread_quatna = predef::set_thread_quanta;
 
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
