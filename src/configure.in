@@ -5253,8 +5253,8 @@ int main()
 {
   union test t;
   t.ptr = NULL;
-  if( t.val == 0 ) return 0;
-  return 1;
+  if( t.val == 0 ) return 1;
+  return 0;
 }], pike_cv_null_is_special=yes, pike_cv_null_is_special=no, pike_cv_null_is_special=no)
 ])
 AC_MSG_RESULT($pike_cv_null_is_special)
