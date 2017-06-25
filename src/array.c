@@ -22,6 +22,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 #include "mapping.h"
+#include "bignum.h"
 
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
@@ -81,34 +82,34 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
 {
   struct array *v;
+  size_t length = size;
 
-  if(size+extra_space == 0)
+  if (DO_SIZE_T_ADD_OVERFLOW(length, (size_t)extra_space, &length)) goto TOO_BIG;
+
+  if(length == 0)
   {
     add_ref(&empty_array);
     return &empty_array;
   }
 
-  /* Limits size to (1<<29)-4 */
-  if( (size_t)(size+extra_space-1) >
-      (LONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
-    Pike_error("Too large array (size %ld exceeds %ld).\n",
-	       (long)(size+extra_space-1),
-	       (long)((LONG_MAX-sizeof(struct array))/sizeof(struct svalue)) );
-  v=calloc(sizeof(struct array)+
-           (size+extra_space-1)*sizeof(struct svalue), 1);
-  if(!v)
-    Pike_error(msg_out_of_mem_2, sizeof(struct array)+
-	       (size+extra_space-1)*sizeof(struct svalue));
+  /*
+   * Do we really need this limit?
+   *    - arne
+   */
+  if (length > 1U<<29) goto TOO_BIG;
+
+  /* struct array contains one svalue already */
+  length --;
+
+  if (DO_SIZE_T_MUL_OVERFLOW(length, sizeof(struct svalue), &length) ||
+      DO_SIZE_T_ADD_OVERFLOW(length, sizeof(struct array), &length)) goto TOO_BIG;
+
+  v=xcalloc(length, 1);
 
   GC_ALLOC(v);
 
-
-  if (size+extra_space)
-    /* for now, we don't know what will go in here */
-    v->type_field = BIT_MIXED | BIT_UNFINISHED;
-  else
-    v->type_field = 0;
-  v->flags=0;
+  /* for now, we don't know what will go in here */
+  v->type_field = BIT_MIXED | BIT_UNFINISHED;
 
   v->malloced_size = (INT32)(size + extra_space);
   v->item=v->real_item;
@@ -117,6 +118,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   DOUBLELINK (first_array, v);
 
   return v;
+TOO_BIG:
+  Pike_error("Too large array (size %ld is too big).\n", length);
 }
 
 /**
