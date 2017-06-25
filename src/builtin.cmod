@@ -2599,16 +2599,18 @@ PIKECLASS backtrace_frame
   CVAR PIKE_OPCODE_T *pc;
 
   /* These two are considered to be uninitialized from prog, pc and
-   * fun as long as lineno == -1. */
+   * fun as long as lineno == 0. */
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->pc = NULL;
-    THIS->lineno = -1;
+    THIS->lineno = 0;
     THIS->filename = NULL;
   }
+#endif
 
   EXIT
     gc_trivial;
@@ -2618,7 +2620,7 @@ PIKECLASS backtrace_frame
       THIS->filename = NULL;
     }
     THIS->pc = NULL;
-    THIS->lineno = -1;
+    THIS->lineno = 0;
   }
 
   /* NOTE: Use old-style getter/setter syntax for compatibility with
@@ -2655,7 +2657,7 @@ PIKECLASS backtrace_frame
   static void fill_in_file_and_line()
   {
     struct pike_string *file = NULL;
-    assert (THIS->lineno == -1);
+    assert (THIS->lineno == 0);
 
     if (THIS->pc && THIS->prog) {
       file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
@@ -2672,7 +2674,7 @@ PIKECLASS backtrace_frame
       }
 #endif
       file = low_get_function_line (THIS->_fun.u.object, SUBTYPEOF(THIS->_fun),
-				    &THIS->lineno);
+                                    &THIS->lineno);
     }
     else if (THIS->prog) {
       file = low_get_program_line (THIS->prog, &THIS->lineno);
@@ -2702,7 +2704,7 @@ PIKECLASS backtrace_frame
 
     push_static_text("backtrace_frame(");
 
-    if (THIS->lineno == -1) fill_in_file_and_line();
+    if (THIS->lineno == 0) fill_in_file_and_line();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
@@ -2803,14 +2805,14 @@ PIKECLASS backtrace_frame
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-	if (THIS->lineno == -1) fill_in_file_and_line();
+        if (THIS->lineno == 0) fill_in_file_and_line();
 	if (THIS->filename)
 	  ref_push_string(THIS->filename);
 	else
 	  push_int(0);
 	break;
       case 1:	/* Linenumber */
-	if (THIS->lineno == -1) fill_in_file_and_line();
+        if (THIS->lineno == 0) fill_in_file_and_line();
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
@@ -2858,7 +2860,7 @@ PIKECLASS backtrace_frame
 
     switch(index) {
     case 0:	/* Filename */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
@@ -2878,14 +2880,14 @@ PIKECLASS backtrace_frame
       break;
 
     case 1:	/* Linenumber */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_ARG_TYPE_ERROR("`[]=", 2, "int(1..)");
       THIS->lineno = value->u.integer;
       break;
 
     case 2:	/* Function */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
