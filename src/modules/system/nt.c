@@ -726,7 +726,7 @@ void f_attachconsole(INT32 args)
 
 static struct program *token_program;
 
-#define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
+#define THIS_TOKEN (*(HANDLE *)CURRENT_STORAGE)
 
 typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
 typedef DWORD (WINAPI *getlengthsidtype)(PSID);
@@ -755,7 +755,7 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 
 HINSTANCE advapilib;
 
-#define THIS_PSID (*(PSID *)Pike_fp->current_storage)
+#define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
 static void init_sid(struct object *o)
 {
@@ -3525,7 +3525,7 @@ struct sctx_storage {
   int        lastError;
 };
 
-#define THIS_SCTX ((struct sctx_storage *)Pike_fp->current_storage)
+#define THIS_SCTX ((struct sctx_storage *)CURRENT_STORAGE)
 static struct program *sctx_program;
 static void init_sctx(struct object *o)
 {
