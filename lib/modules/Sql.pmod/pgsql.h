@@ -104,3 +104,7 @@
 #define NOERROR			0	// Error states networkparser
 #define PROTOCOLERROR		1
 #define PROTOCOLUNSUPPORTED	2
+
+#define NOTRANS         0
+#define TRANSBEGIN      1
+#define TRANSEND        2

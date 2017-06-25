@@ -71,6 +71,7 @@ private Thread.MutexKey termlock;
 final int _portalsinflight;
 final int _statementsinflight;
 final int _wasparallelisable;
+final int _intransaction;
 
 private .pgsql_util.conxion c;
 private string cancelsecret;
@@ -644,6 +645,14 @@ private void procmessage() {
 #ifdef PG_DEBUG
   PD("Processloop\n");
 
+#ifdef PG_DEBUGMORE
+  void showportalstack(string label) {
+    PD(sprintf(">>>>>>>>>>> Portalstack %s: %O\n", label, portal));
+    foreach(qportals->peek_array();;int|.pgsql_util.sql_result qp)
+      PD(" =========== Portal: %O\n",qp);
+    PD("<<<<<<<<<<<<<< Portalstack end\n");
+  };
+#endif
   void showportal(int msgtype) {
     if(objectp(portal))
       PD("%d<%O %d %c switch portal\n",
@@ -660,6 +669,9 @@ private void procmessage() {
         PD("%s rows %d\n",datarowdebug,datarowdebugcount);
         datarowdebug=0; datarowdebugcount=0;
       }
+#endif
+#ifdef PG_DEBUGMORE
+      showportalstack("LOOPTOP");
 #endif
       if(!sizeof(cr)) {				// Preliminary check, fast path
         Thread.MutexKey lock=cr->fillreadmux->lock();
@@ -829,18 +841,29 @@ private void procmessage() {
           msglen-=4;
 #endif
           break;
-        case 'Z':
+        case 'Z': {
           backendstatus=cr->read_int8();
 #ifdef PG_DEBUG
           msglen-=4+1;
           PD("ReadyForQuery %c\n",backendstatus);
 #endif
-          for(;objectp(portal);portal=qportals->read()) {
-#ifdef PG_DEBUG
-            showportal(msgtype);
+#ifdef PG_DEBUGMORE
+          showportalstack("READYFORQUERY");
 #endif
-            portal->_purgeportal();
-          }
+          int keeplooking;
+          do
+            for(keeplooking = 0; objectp(portal); portal = qportals->read()) {
+#ifdef PG_DEBUG
+              showportal(msgtype);
+#endif
+              if (backendstatus == 'I' && _intransaction
+               && portal->transtype != TRANSEND)
+                keeplooking = 1;
+              portal->_purgeportal();
+            }
+          while (keeplooking && (portal = qportals->read()));
+          if (backendstatus == 'I')
+            _intransaction = 0;
           foreach(qportals->peek_array();;.pgsql_util.sql_result qp) {
             if(objectp(qp) && qp._synctransact && qp._synctransact<=portal) {
               PD("Checking portal %O %d<=%d\n",
@@ -849,14 +872,18 @@ private void procmessage() {
             }
           }
           portal=0;
+#ifdef PG_DEBUGMORE
+          showportalstack("AFTER READYFORQUERY");
+#endif
           _readyforquerycount--;
           if(readyforquery_cb)
             readyforquery_cb(),readyforquery_cb=0;
           destruct(waitforauthready);
           break;
+        }
         case '1':
 #ifdef PG_DEBUG
-          PD("ParseComplete\n");
+          PD("ParseComplete portal %O\n", portal);
           msglen-=4;
 #endif
           break;
@@ -945,53 +972,55 @@ private void procmessage() {
           mapping tp;
 #ifdef PG_DEBUG
           msglen-=4;
-          PD("%O BindComplete\n",portal._portalname);
+	  PD("%O BindComplete\n",portal._portalname);
 #endif
-          if(tp=portal._tprepared) {
-            int tend=gethrtime();
-            int tstart=tp.trun;
-            if(tend==tstart)
-              m_delete(_prepareds,portal._query);
-            else {
-              tp.hits++;
-              totalhits++;
-              if(!tp.preparedname) {
-                if(sizeof(portal._preparedname))
-                  tp.preparedname=portal._preparedname;
-                tstart=tend-tstart;
-                if(!tp.tparse || tp.tparse>tstart)
-                  tp.tparse=tstart;
-              }
-              tp.trunstart=tend;
-            }
-          }
-          break;
+	  if (tp=portal._tprepared) {
+	    int tend = gethrtime();
+	    int tstart = tp.trun;
+	    if (tend == tstart)
+	      m_delete(_prepareds,portal._query);
+	    else {
+	      tp.hits++;
+	      totalhits++;
+	      if (!tp.preparedname) {
+	        if (sizeof(portal._preparedname)) {
+	          PD("Finalising stored statement %s\n", portal._preparedname);
+	          tp.preparedname = portal._preparedname;
+	        }
+	        tstart = tend - tstart;
+	        if (!tp.tparse || tp.tparse>tstart)
+	          tp.tparse = tstart;
+	      }
+	      tp.trunstart = tend;
+	    }
+	  }
+	  break;
         }
         case 'D':
-          msglen-=4;
+	  msglen-=4;
 #ifdef PG_DEBUG
 #ifdef PG_DEBUGMORE
-          PD("%O DataRow %d bytes\n",portal._portalname,msglen);
+	  PD("%O DataRow %d bytes\n",portal._portalname,msglen);
 #endif
-          datarowdebugcount++;
-          if(!datarowdebug)
-            datarowdebug=sprintf(
-             "%O DataRow %d bytes",portal._portalname,msglen);
+	  datarowdebugcount++;
+	  if (!datarowdebug)
+	    datarowdebug = sprintf(
+	     "%O DataRow %d bytes",portal._portalname,msglen);
 #endif
 #ifdef PG_DEBUG
-          msglen=
+	  msglen=
 #endif
-          portal->_decodedata(msglen,_runtimeparameter[CLIENT_ENCODING]);
-          break;
+	  portal->_decodedata(msglen,_runtimeparameter[CLIENT_ENCODING]);
+	  break;
         case 's':
 #ifdef PG_DEBUG
-          PD("%O PortalSuspended\n",portal._portalname);
-          msglen-=4;
+	  PD("%O PortalSuspended\n",portal._portalname);
+	  msglen-=4;
 #endif
-          portal=0;
-          break;
+	  portal=0;
+	  break;
         case 'C': {
-          msglen-=4;
+	  msglen-=4;
 #ifdef PG_DEBUG
           if(msglen<1)
             errtype=PROTOCOLERROR;
@@ -1006,6 +1035,9 @@ private void procmessage() {
 #else
           cr->consume(1);
 #endif
+#ifdef PG_DEBUGMORE
+          showportalstack("COMMANDCOMPLETE");
+#endif
           portal->_releasesession(s);
           portal=0;
           break;
@@ -1014,6 +1046,9 @@ private void procmessage() {
 #ifdef PG_DEBUG
           PD("EmptyQueryResponse %O\n",portal._portalname);
           msglen-=4;
+#endif
+#ifdef PG_DEBUGMORE
+          showportalstack("EMPTYQUERYRESPONSE");
 #endif
           portal->_releasesession();
           portal=0;
@@ -1045,7 +1080,10 @@ private void procmessage() {
           portal=0;
           break;
         case 'E': {
-          if (_portalsinflight <= 1 && !_readyforquerycount)
+#ifdef PG_DEBUGMORE
+          showportalstack("ERRORRESPONSE");
+#endif
+          if (!_portalsinflight && !_readyforquerycount)
             sendsync();
           PD("%O ErrorResponse %O\n",
            objectp(portal)&&(portal._portalname||portal._preparedname),
@@ -1084,8 +1122,8 @@ private void procmessage() {
               switch(msgresponse.S) {
                 case "PANIC":werror(a2nls(lastmessage));
               }
-            case "25P02":    // Preserve last error message
-              USERERROR(a2nls(lastmessage));
+            case "25P02":		        // Preserve last error message
+              USERERROR(a2nls(lastmessage));	// Implicitly closed portal
           }
           break;
         }
@@ -1182,6 +1220,9 @@ private void procmessage() {
         or=this;
       if(!or._delayederror)
         or._delayederror=err;
+#ifdef PG_DEBUGMORE
+      showportalstack("THROWN");
+#endif
       if(objectp(portal))
         portal->_releasesession();
       portal=0;
@@ -1879,9 +1920,15 @@ private inline void throwdelayederror(object parent) {
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
   int tstart;
+  /*
+   * FIXME What happens with regards to this detection when presented with
+   *       multistatement text-queries?
+   */
+  int transtype = .pgsql_util.transendprefix->match(q) ? TRANSEND
+   : .pgsql_util.transbeginprefix->match(q) ? TRANSBEGIN : NOTRANS;
   if(!forcetext && forcecache==1
         || forcecache!=0
-         && (sizeof(q)>=MINPREPARELENGTH || .pgsql_util.cachealways[q])) {
+         && (sizeof(q)>=MINPREPARELENGTH || transtype != NOTRANS)) {
     object plugbuffer;
     while(catch(plugbuffer=c->start()))
       reconnect();
@@ -1929,8 +1976,8 @@ private inline void throwdelayederror(object parent) {
   } else				  // sql_result autoassigns to portal
     tp=UNDEFINED;
   .pgsql_util.sql_result portal;
-  portal=.pgsql_util.sql_result(this,c,q,
-            portalbuffersize, _alltyped, from, forcetext, timeout, syncparse);
+  portal=.pgsql_util.sql_result(this,c,q, portalbuffersize, _alltyped, from,
+   forcetext, timeout, syncparse, transtype);
   portal._tprepared=tp;
 #ifdef PG_STATS
   portalsopened++;
@@ -1968,7 +2015,8 @@ private inline void throwdelayederror(object parent) {
       ->add(PGFLUSH)
 #endif
       ;
-    }
+    } else
+     PD("Using prepared statement for %O\n", q);
     portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
