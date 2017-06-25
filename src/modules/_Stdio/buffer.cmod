@@ -1136,8 +1136,8 @@ PIKECLASS Buffer
 
   /*! @decl int read_sint( int size )
    *!
-   *! Read a network byte order two:s complement signed number of size n*8 bits, then
-   *! return it.
+   *! Read a network byte order two:s complement signed number of size
+   *! n*8 bits, then return it.
    *!
    *! Will return UNDEFINED if there is not enough buffer space
    *! available unless error mode is set to throw errors.
