@@ -244,7 +244,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tArray),	/* "_types", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
-  tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
+  tFuncV(tNone, tVoid, tInt),	/* "_size_object", */
   tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
