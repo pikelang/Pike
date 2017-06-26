@@ -414,6 +414,9 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
 
 }
 
+/*! @endclass
+ */
+
 #endif /* HAVE_FRAMEWORK_CORESERVICES */
 
 PIKE_MODULE_INIT
@@ -625,9 +628,6 @@ PIKE_MODULE_EXIT
 {
   EXIT;
 }
-
-/*! @endclass
- */
 
 /*! @endmodule
  */
