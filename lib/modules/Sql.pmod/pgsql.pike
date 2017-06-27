@@ -1282,7 +1282,7 @@ protected void destroy() {
    */
   if (err || (err = catch(errstring = error(1))))
     werror(describe_backtrace(err));
-  else if (sizeof(errstring))
+  else if (errstring && sizeof(errstring))
     werror(errstring);
 }
 
