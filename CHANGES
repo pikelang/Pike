@@ -53,6 +53,26 @@ o Concurrent
     Concurrent.race(connect(host1, port1), connect(host2, port2))
       ->then(make_requet, query);
 
+o Filesystem.Monitor
+
+  - Changed the polling heuristic.
+
+    This is intended to reduce poll (and notification) delays in
+    some circumstances.
+
+  - Improved robostness of adjust_monitor().
+
+  - Removed some dead and obsolete code.
+
+  - Scan accelerated monitors too.
+
+    Both the Inotify and FSEvents APIs claim that they support
+    notifications on eg network file systems, and while they will
+    succeed in notifying on changes performed by the local host
+    on such file systems, they will not on changes performed by
+    other hosts. To avoid missing such changes these monitors
+    need to be actively scanned too.
+
 o Sql.pgsql
 
   Sped up BEGIN/COMMIT statements.
