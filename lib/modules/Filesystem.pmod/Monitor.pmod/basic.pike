@@ -1019,13 +1019,11 @@ protected class InotifyMonitor
     }
 
 #endif /* !INHIBIT_INOTIFY_MONITOR */
-    MON_WERR("Registering %O for polling.\n", path);
     ::register_path(initial);
   }
 
   protected void unregister_path(int|void dying)
   {
-    MON_WERR("Unregistering %O...\n", path);
     if (wd != -1) {
       // NB: instance may be null if the main object has been destructed
       //     and we've been called via a destroy().
@@ -1040,7 +1038,8 @@ protected class InotifyMonitor
 	    instance->rm_watch(wd);
 	  };
 	if (err) {
-	  MON_WERR("### Failed: %s\n", describe_backtrace(err));
+	  MON_WERR("### Failed to unregister %O: %s\n",
+		   path, describe_backtrace(err));
 	}
       }
       wd = -1;
