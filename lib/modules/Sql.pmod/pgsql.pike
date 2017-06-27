@@ -1920,6 +1920,8 @@ private inline void throwdelayederror(object parent) {
   /*
    * FIXME What happens with regards to this detection when presented with
    *       multistatement text-queries?
+   *       The primary function of this detection is to ensure a SYNC
+   *       right after a COMMIT, and no SYNC after a BEGIN.
    */
   int transtype = .pgsql_util.transendprefix->match(q) ? TRANSEND
    : .pgsql_util.transbeginprefix->match(q) ? TRANSBEGIN : NOTRANS;
@@ -2013,8 +2015,10 @@ private inline void throwdelayederror(object parent) {
       ->add(PGFLUSH)
 #endif
       ;
-    } else
-     PD("Using prepared statement for %O\n", q);
+    } else {				// Use the name from the cache
+      preparedname = tp.preparedname;	// to shortcut a potential race
+      PD("Using prepared statement %s for %O\n", preparedname, q);
+    }
     portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
