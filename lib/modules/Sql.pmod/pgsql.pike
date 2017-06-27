@@ -1926,9 +1926,10 @@ private inline void throwdelayederror(object parent) {
    */
   int transtype = .pgsql_util.transendprefix->match(q) ? TRANSEND
    : .pgsql_util.transbeginprefix->match(q) ? TRANSBEGIN : NOTRANS;
-  if(!forcetext && forcecache==1
-        || forcecache!=0
-         && (sizeof(q)>=MINPREPARELENGTH || transtype != NOTRANS)) {
+  if (transtype != NOTRANS)
+    tp = .pgsql_util.describenodata;		// Description already known
+  else if (!forcetext && forcecache == 1
+        || forcecache && sizeof(q) >= MINPREPARELENGTH) {
     object plugbuffer;
     while(catch(plugbuffer=c->start()))
       reconnect();
@@ -1956,7 +1957,7 @@ private inline void throwdelayederror(object parent) {
       if(forcecache!=1 && .pgsql_util.createprefix->match(q)) {
         PD("Invalidate cache\n");
 	invalidatecache=1;			// Flush cache on CREATE
-        tp=UNDEFINED;
+        tp = 0;
       } else
 	_prepareds[q]=tp=([]);
     }
@@ -1974,7 +1975,7 @@ private inline void throwdelayederror(object parent) {
       plugbuffer->sendcmd(KEEP);			       // close start()
     tstart=gethrtime();
   } else				  // sql_result autoassigns to portal
-    tp=UNDEFINED;
+    tp = 0;
   .pgsql_util.sql_result portal;
   portal=.pgsql_util.sql_result(this,c,q, portalbuffersize, _alltyped, from,
    forcetext, timeout, syncparse, transtype);
