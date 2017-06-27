@@ -8,7 +8,7 @@ o Concurrent
 
   The Concurrent module simplifies asynchronous code by synchronizing
   events in different ways. As an example the connect() function shown
-  below will repond with a Concurrent.Future object that at some point
+  below will respond with a Concurrent.Future object that at some point
   will represent either a connected socket or a failure.
 
     Concurrent.Future connect(string host, int port)
@@ -53,6 +53,13 @@ o Concurrent
     Concurrent.race(connect(host1, port1), connect(host2, port2))
       ->then(make_requet, query);
 
+o Sql.pgsql
+
+  Sped up BEGIN/COMMIT statements.
+  Preserve the initial error message in case of multiple error messages
+  during the same transaction.
+  Flush out unseen error messages upon connection close to stderr.
+
 Bug fixes
 ---------
 
@@ -93,6 +100,12 @@ o mappings
   Fixed an off by one error in random(mapping) that randomly caused
   values of type PIKE_T_FREE from the freelist to be exposed to Pike.
 
+o Sql.pgsql
+
+  Closed a prepared-statement-cache race when the same statement
+  is offered multiple times before it finalises the cache entry.
+  Fix sync errors with the database in case of multiple running
+  statements on a single connection that generate multiple errors.
 
 Changes since Pike 8.0.404 (release 8)
 ----------------------------------------------------------------------
