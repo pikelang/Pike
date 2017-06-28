@@ -213,7 +213,7 @@ class File
   //!  adding more data to the output buffer will work as well.
   //!
   //! @seealso
-  //!  @[get_buffer_mode()]
+  //!  @[query_buffer_mode()]
   void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
     if (in && inbuffer && sizeof(inbuffer)) {
