@@ -326,15 +326,6 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 #ifdef PG_DEBUGMORE
   PD("Closetrace %O\n",backtrace());
 #endif
-  if(c) {
-    .pgsql_util.conxsess plugbuffer;
-    if(!catch(plugbuffer=c->start(1))) {
-      foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
-        if(objectp(portal))
-          portal->_closeportal(plugbuffer);
-      plugbuffer->sendcmd(SENDOUT);
-    }
-  }
 }
 
 //! Changes the connection charset.  When set to @expr{"UTF8"@}, the query,
