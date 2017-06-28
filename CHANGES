@@ -80,6 +80,34 @@ o Sql.pgsql
   during the same transaction.
   Flush out unseen error messages upon connection close to stderr.
 
+o Debug.Peek
+
+  Allows for interactive debugging and live data structure inspection
+  in both single- and multi-threaded programs.
+
+  Example:
+  In the program you'd like to inspect, insert the following one-liner:
+      Debug.Peek("/tmp/test.pike");
+
+  Then start the program and keep it running.
+  Next you create a /tmp/test.pike with the following content:
+      void create() {
+        werror("Only once per modification of test.pike\n");
+      }
+
+      int main() {
+        werror("This will run every iteration\n");
+        werror("By returning 1 here, we disable the stacktrace dumps\n");
+        return 0;
+      }
+
+      void destroy() {
+        werror("destroy() runs just as often as create()\n");
+      }
+
+  Whenever you edit /tmp/test.pike, it will automatically reload
+  the file.
+
 Bug fixes
 ---------
 
@@ -1518,7 +1546,7 @@ o Stdio.UDP():
 
   + added set_buffer
 
-o Stdio.Port(): 
+o Stdio.Port():
   + Added client and server support for TCP_FASTCONNECT
 
     To connect using this TCP extension simply pass the data as the
