@@ -18,6 +18,12 @@
 //! @seealso
 //!   @[Filesystem.Monitor.basic]
 
+#ifdef FILESYSTEM_MONITOR_DEBUG
+#define MON_WERR(X...)	werror(X)
+#else
+#define MON_WERR(X...)
+#endif
+
 //! @decl inherit Filesystem.Monitor.basic
 inherit "basic.pike" : basic;
 
@@ -165,6 +171,10 @@ protected class DefaultMonitor
   {
     if (!cb || state[path] || (st && st->islnk)) return;
     state[path] = 1;
+
+    MON_WERR("%O: path: %O, cb: %O, symlink_targets: %O\n",
+	     this_function, path, cb, symlink_targets);
+
     if (!symlink || !symlink_targets[symlink]) {
       cb(path, st);
     }
@@ -215,12 +225,15 @@ protected class DefaultMonitor
   //! Called when the symlink @[path] is no more.
   protected void zap_symlink(string path)
   {
+    MON_WERR("%O(%O)\n", this_function, path);
+
     string old_dest = global::symlink_targets[path];
 
     if (old_dest) {
       int sym_id = global::symlink_ids[path];
       foreach(monitors; string m_path; Monitor m) {
 	if (m->symlinks & sym_id) {
+	  MON_WERR("Found monitor %O reached through %O.\n", m, path);
 	  m->low_call_callback(global::file_deleted, ([]),
 			       global::symlink_targets,
 			       m_path, UNDEFINED, path);
@@ -239,6 +252,8 @@ protected class DefaultMonitor
   protected void check_symlink(string path, Stdio.Stat st,
 			       int|void inhibit_notify)
   {
+    MON_WERR("%O(%O, %O, %O)...\n", this_function, path, st, inhibit_notify);
+
     string dest;
     if (st && st->islnk) {
       dest = readlink(path);
@@ -252,6 +267,7 @@ protected class DefaultMonitor
     }
     if (dest) {
       // We have a new symbolic link.
+      MON_WERR("Found new symlink %O ==> %O.\n", path, dest);
       symlink_targets[path] = dest;
       int sym_id = allocate_symlink(path);
       int sym_mask = sym_id | symlink_ids[dest];
