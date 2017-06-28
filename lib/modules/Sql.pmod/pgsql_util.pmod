@@ -27,7 +27,8 @@ private int clientsregistered;
 
 constant emptyarray = ({});
 constant describenodata
- = (["datarowdesc":emptyarray,"datarowtypes":emptyarray]);
+ = (["datarowdesc":emptyarray, "datarowtypes":emptyarray,
+     "datatypeoid":emptyarray]);
 final multiset censoroptions=(<"use_ssl","force_ssl",
  "cache_autoprepared_statements","reconnect","text_query","is_superuser",
  "server_encoding","server_version","integer_datetimes",
