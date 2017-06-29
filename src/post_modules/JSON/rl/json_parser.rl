@@ -43,7 +43,7 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
 }%%
 
 static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    p_wchar2 i = p;
+    ptrdiff_t i = p;
     int cs;
     int c = 0;
     %% write data;
