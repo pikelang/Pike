@@ -132,7 +132,7 @@ PIKECLASS Buffer
   static void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
 
-  static INT_TYPE io_consume( Buffer *io, int num )
+  static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
   {
     io->offset += num;
     if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
@@ -1953,7 +1953,8 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN mixed read_json(int|void require_whitespace)
   {
-    int stop, whites = 0;
+    INT_TYPES whites = 0;
+    ptrdiff_t stop;
     static ptrdiff_t(*parse_json_pcharp)(PCHARP,size_t,int,char**);
     char *err = NULL;
     if( require_whitespace )
