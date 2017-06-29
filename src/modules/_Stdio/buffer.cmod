@@ -1953,7 +1953,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN mixed read_json(int|void require_whitespace)
   {
-    INT_TYPES whites = 0;
+    INT_TYPE whites = 0;
     ptrdiff_t stop;
     static ptrdiff_t(*parse_json_pcharp)(PCHARP,size_t,int,char**);
     char *err = NULL;
