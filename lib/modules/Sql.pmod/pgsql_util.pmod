@@ -201,7 +201,7 @@ class bufcon {
       if (mode == SYNCSEND) {
         add(PGSYNC);
         realbuffer->stashqueue->write(1);
-        mode = SENDOUT;
+        mode = SENDOUT;	    // Demote it to prevent an extra SYNC upon stashflush
       }
     }
     realbuffer->stash->add(this);

@@ -5,8 +5,8 @@
 //! This is an interface to the PostgreSQL database
 //! server. This module is independent of any external libraries.
 //! Note that you @b{do not@} need to have a
-//! PostgreSQL server running on your host to use this module: you can
-//! connect to the database over a TCP/IP socket.
+//! PostgreSQL server running on @b{your@} host to use this module: you can
+//! connect to the database over a TCP/IP socket on a different host.
 //!
 //! This module replaces the functionality of the older @[Sql.postgres]
 //! and @[Postgres.postgres] modules.
@@ -1196,9 +1196,11 @@ private void procmessage() {
       }
     };				// We only get here if there is an error
     if(err==MAGICTERMINATE) {	// Announce connection termination to server
-      object cs = ci->start();
-      CHAIN(cs)->add("X\0\0\0\4");
-      cs->sendcmd(SENDOUT);
+      catch {
+        object cs = ci->start();
+        CHAIN(cs)->add("X\0\0\0\4");
+        cs->sendcmd(SENDOUT);
+      };
       terminating=1;
       err=0;
     } else if(stringp(err)) {
