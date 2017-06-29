@@ -59,7 +59,7 @@ static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
 }
 
 PIKE_UNUSED_ATTRIBUTE
-static INT_TYPE io_consume( Buffer *io, int num )
+static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
 {
   io->offset += num;
   if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
