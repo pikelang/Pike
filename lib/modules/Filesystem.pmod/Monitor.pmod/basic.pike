@@ -830,8 +830,10 @@ protected void start_accelerator()
   int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
 #endif
 
+  // Note: We let the polling system find the initial contents of
+  //       any pre-existing directories.
   eventstream =
-    System.FSEvents.EventStream(({}), 1.0,
+    System.FSEvents.EventStream(({}), 0.1,
 				System.FSEvents.kFSEventStreamEventIdSinceNow,
 				flags);
   eventstream->callback_func = eventstream_callback;
@@ -890,6 +892,7 @@ protected class EventStreamMonitor
       // Note: Falling through to ::register_path() below.
       //       This is needed to handle paths mounted on eg network
       //       filesystems that are modified on other machines.
+      // It is also used to find the initial contents of a monitored directory.
     }
 #endif /* !INHIBIT_EVENTSTREAM_MONITOR */
     ::register_path(initial);
