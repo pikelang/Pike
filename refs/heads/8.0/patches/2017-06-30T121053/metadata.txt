@@ -1,0 +1,82 @@
+subject: Pike 8.0: BSON, pgsql, Filesystem.Monitor, Debug.Peek
+from: 76839ae70eed868a29fc0dc8e70bd578cdebae39
+to: aa94b06ba7f4baa76f0cddbcf9d06e31f1d34928
+originator: Marcus Wellhardh
+depends: 2017-06-14T204349
+restart: true
+
+• Filesystem.Monitor: Fixed symlink issue with Inotify.
+
+• Filesystem.Monitor.symlinks: Added some diagnostics.
+
+• Debug.Peek: New class for interactive debugging and live data inspection.
+
+• pgsql: Do not mess with the portal stack on cancellations.
+
+• pgsql: Accellerate BEGIN/COMMIT statements: forgot 3rd parameter to enable it.
+
+• pgsql: Suppress spurious message if there are no pending messages.
+
+• Filesystem.Monitor: Improved diagnostics.
+
+Fixes some double messages with FILESYSTEM_MONITOR_DEBUG.
+
+• Filesystem.Monitor: Removed some obsolete code.
+
+• Filesystem.Monitor: Improved robustness in adjust_monitor().
+
+When using acceleration, adjust_monitor() may get called with
+monitors not on the monitor queue (typically due to deletions,
+and both polled and accelerated checks).
+
+Fixes [Pike-15#comment=89-766]/[LysLysKOM 22120285].
+
+• Filesystem.Monitor: Fixed some typos.
+
+• Filesystem.Monitor: Improved polling heuristic in update().
+
+• Filesystem.Monitor: Reschedule the poll earlier on demand.
+
+Don't wait for the full old poll interval if we know that we need
+to check earlier than it expires.
+
+Reduces poll (and notification) delays in some circumstances.
+
+• Filesystem.Monitor: Scan accelerated monitors too.
+
+Both the Inotify and FSEvents APIs claim that they support
+notifications on eg network file systems, and while they will
+succeed in notifying on changes performed by the local host
+on such file systems, they will not on changes performed by
+other hosts. To avoid missing such changes such monitors
+need to be actively scanned too.
+
+Fixes [Pike-15].
+
+• Filesystem.Monitor: Removed some dead and obsolete code.
+
+This disabled code was intended to support separate backends
+with EventStreamMonitor, but was broken and recently rendered
+obsolete by proper support.
+
+• pgsql: Short circuit prepared statement-cache race.
+
+• pgsql: Accellerate BEGIN/COMMIT statements.
+
+• pgsql: Disentangle portal-sync race for concurrent db-errors.
+
+• pgsql: Trim in-flight portal stack aware of transactions in progress.
+
+• pgsql: Avoid dangling portals on errors.
+
+• pgsql: Cater for an unopened portal in case of a parsing error.
+
+• pgsql: Preserve initial errormessage for multiple failures in one transaction.
+
+• pgsql: Flush out unseen error/warning messages upon connection close.
+
+• pgsql: Break up query to allow more parallelism.
+
+• pgsql: Move sync point before parsing, to avoid race.
+
+• BSON Binary data is not null terminated.
