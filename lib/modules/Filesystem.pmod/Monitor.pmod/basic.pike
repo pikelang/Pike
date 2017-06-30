@@ -439,8 +439,10 @@ protected class Monitor(string path,
       if (d < delta) delta = d;
     }
     if (!next_poll) {
-      // Attempt to distribute polls evenly at startup.
-      delta = 1 + random(delta);
+      // Attempt to distribute polls evenly at startup, and to
+      // make sure that the full set of directory contents is
+      // found reasonably fast.
+      delta = 1 + random(delta >> 2);
     }
 
     MON_WERR("Next poll in %d seconds.\n", (delta || 1));
