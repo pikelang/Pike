@@ -32,8 +32,6 @@
 
 #pike __REAL_VERSION__
 
-#pragma dynamic_dot
-
 #define POLLINTERVAL 4
 
 //! Starts up the background thread.
