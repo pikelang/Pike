@@ -426,9 +426,10 @@ outer:
   protected void destroy() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     int|.pgsql_util.sql_result portal;
-    while (portal = qportals->try_read())
-      if (objectp(portal))
-        portal->_purgeportal();
+    if (qportals)			// CancelRequest does not use qportals
+      while (portal = qportals->try_read())
+        if (objectp(portal))
+          portal->_purgeportal();
     if(nostash) {
       catch {
         while(sizeof(closecallbacks))
@@ -505,7 +506,7 @@ outer:
                     "queued portals: %d  output queue: %d/%d\n"
                     "started: %d\n",
                     fd,sizeof(i),i->_size_object(),
-                    qportals->size(),sizeof(this),_size_object(),
+                    qportals && qportals->size(), sizeof(this), _size_object(),
                     !!started);
         break;
     }
