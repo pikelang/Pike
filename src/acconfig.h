@@ -295,6 +295,9 @@
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
 
+/* Define this if NULL ptr is not exactly 0 on your plaform. */
+#undef PIKE_NULL_IS_SPECIAL
+
 /* Define if you have the RDTSC instruction */
 #undef HAVE_RDTSC
 
