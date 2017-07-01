@@ -302,10 +302,6 @@ protected void create(void|string host, void|string database,
    ? !!reconnected : -1;
 }
 
-private .pgsql_util.conxion getsocket(void|int nossl) {
-  return .pgsql_util.conxion(this,qportals,(int)nossl);
-}
-
 //! Cancels all currently running queries in this session.
 //!
 //! @seealso
@@ -316,7 +312,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 /*semi*/final void cancelquery() {
   PD("CancelRequest\n");
-  .pgsql_util.conxion lcon=getsocket(2);
+  .pgsql_util.conxion lcon = .pgsql_util.conxion(this, 0, 2);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
    ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND);
   destruct(lcon);		// Destruct explicitly to avoid delayed close
@@ -1340,7 +1336,7 @@ private int reconnect() {
   _readyforquerycount=1;
   _waittocommit=0;
   qportals->write(1);
-  if(!(c=getsocket()))
+  if (!(c = .pgsql_util.conxion(this, qportals, 0)))
     ERROR("Couldn't connect to database on %s:%d\n",_host,_port);
   _runtimeparameter=([]);
   _unnamedportalmux=Thread.Mutex();
