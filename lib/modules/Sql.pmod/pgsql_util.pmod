@@ -153,12 +153,6 @@ final int oidformat(int oid) {
   return 0;	// text
 }
 
-private int mergemode(conxion realbuffer,int mode) {
-  if(mode>realbuffer->stashflushmode)
-    realbuffer->stashflushmode=mode;
-  return realbuffer->stashflushmode;
-}
-
 private inline mixed callout(function(mixed ...:void) f,
  float|int delay,mixed ... args) {
   return local_backend->call_out(f,delay,@args);
@@ -205,7 +199,10 @@ class bufcon {
       }
     }
     realbuffer->stash->add(this);
-    mergemode(realbuffer, mode);
+    PD("%d>Got stash mode %d > %d\n",
+     realbuffer->socket->query_fd(), mode, realbuffer->stashflushmode);
+    if (mode > realbuffer->stashflushmode)
+      realbuffer->stashflushmode = mode;
     if(!--realbuffer->stashcount)
       realbuffer->stashavail.signal();
     lock=0;
@@ -350,7 +347,10 @@ class conxion {
           qportals->write(synctransact++);
         else
           queueup(portal);
-      mode = mergemode(this, mode);
+      PD("%d>Got stash mode %d > %d\n",
+       socket->query_fd(), stashflushmode, mode);
+      if (stashflushmode > mode)
+        mode = stashflushmode;
       stashflushmode = KEEP;
     }
     return mode;
@@ -392,7 +392,6 @@ outer:
           case FLUSHSEND:
             PD("Flush\n");
             add(PGFLUSH);
-          case SYNCSEND:
           case SENDOUT:;
         }
         if(towrite=sizeof(this)) {
