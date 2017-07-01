@@ -249,7 +249,7 @@ class conxiin {
   }
 
   final int read_cb(mixed id,mixed b) {
-    PD("Read callback %O\n",((string)b)
+    PD("Read callback %O\n", b && ((string)b)
 #ifndef PG_DEBUGMORE
       [..255]
 #endif

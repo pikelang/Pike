@@ -1215,12 +1215,12 @@ private void procmessage() {
     }
     break;
   }
-  PD("Closing database processloop %O\n",err);
+  PD("Closing database processloop %s\n", err ? describe_backtrace(err) : "");
   _delayederror=err;
   if (objectp(portal)) {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
     showportal(0);
-  #endif
+#endif
     portal->_purgeportal();
   }
   if(!terminating && _options.reconnect)
@@ -1234,7 +1234,7 @@ private void procmessage() {
   if (err) {
     unnamedstatement=0;
     termlock = 0;
-    throw(err);
+    PD("Terminating processloop due to %s\n", describe_backtrace(err));
   }
 }
 
@@ -1251,10 +1251,12 @@ private void procmessage() {
     catch(cancelquery());
   if (unnamedstatement)
     termlock = unnamedstatement->lock(1);
-  c->close();
+  if (c)				// Prevent trivial backtraces
+    c->close();
   if (unnamedstatement)
     lock = unnamedstatement->lock(1);
-  destruct(c);
+  if (c)
+    destruct(c);
   lock = 0;
   destruct(waitforauthready);
 }
