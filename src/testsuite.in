@@ -14378,6 +14378,8 @@ test_do([[
 
 dnl Verify some coding practices.
 test_tests([[
+  constant srcdir="]]SRCDIR[[";
+
   void report_test(array res, int failed, string fail_msg, mixed ... extra)
   {
     if (!failed) {
@@ -14392,21 +14394,24 @@ test_tests([[
   {
     log_status("Testing directory %s/.\n", dir);
 
-    string configure_script = Stdio.read_bytes(combine_path(dir, "configure.in"));
+    string configure_script =
+      Stdio.read_bytes(combine_path(srcdir, dir, "configure.in"));
     array(int) res = ({ 0, 0 });
 
     if (!configure_script) return res;
 
     // Makefile.in should exist.
-    string makefile_in = Stdio.read_bytes(combine_path(dir, "Makefile.in"));
-    report_test(res, !makefile_in, "Makefile.in missing in directory %O.\n", dir);
+    string makefile_in =
+      Stdio.read_bytes(combine_path(srcdir, dir, "Makefile.in"));
+    report_test(res, !makefile_in,
+		"Makefile.in missing in directory %O.\n", dir);
 
     if (sscanf(configure_script, "%*sAC_CONFIG_HEADER(%s)", string config_h)) {
       // acconfig.h should exist.
-      report_test(res, !Stdio.is_file(combine_path(dir, "acconfig.h")),
+      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, "acconfig.h")),
 		  "acconfig.h missing in directory %s.\n", dir);
       // config_h + ".in" should exist.
-      report_test(res, !Stdio.is_file(combine_path(dir, config_h + ".in")),
+      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, config_h + ".in")),
 		  "%s missing in directory %s.\n", config_h + ".in", dir);
       // The Makefile should regenerate config_h et al.
       report_test(res,
@@ -14420,9 +14425,9 @@ test_tests([[
   {
     array(int) res = test_dir(dir);
 
-    foreach(get_dir(dir), string f) {
+    foreach(get_dir(combine_path(srcdir, dir)), string f) {
       string path = combine_path(dir, f);
-      if (Stdio.is_dir(path)) {
+      if (Stdio.is_dir(combine_path(srcdir, path))) {
 	array(int) delta = recur_test_dir(path);
 	res[0] += delta[0];
 	res[1] += delta[1];
@@ -14433,7 +14438,7 @@ test_tests([[
 
   array(int) a()
   {
-    return recur_test_dir("]]SRCDIR[[");
+    return recur_test_dir(".");
   }
 ]])
 
