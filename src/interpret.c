@@ -1970,6 +1970,8 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     DO_IF_DEBUG(
         if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)
             Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));
+  if (X->flags & PIKE_FRAME_SAVE_LOCALS)
+    free(X->save_locals_bitmask);
   DO_IF_DMALLOC(
     X->current_program=0;
     X->context=0;
