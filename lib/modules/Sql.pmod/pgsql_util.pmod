@@ -190,16 +190,15 @@ class bufcon {
 
   final void sendcmd(int mode,void|sql_result portal) {
     Thread.MutexKey lock=realbuffer->shortmux->lock();
-    if(portal) {
+    if (portal)
       realbuffer->stashqueue->write(portal);
-      if (mode == SYNCSEND) {
-        add(PGSYNC);
-        realbuffer->stashqueue->write(1);
-        mode = SENDOUT;	    // Demote it to prevent an extra SYNC upon stashflush
-      }
+    if (mode == SYNCSEND) {
+      add(PGSYNC);
+      realbuffer->stashqueue->write(1);
+      mode = SENDOUT;	    // Demote it to prevent an extra SYNC upon stashflush
     }
     realbuffer->stash->add(this);
-    PD("%d>Got stash mode %d > %d\n",
+    PD("%d>Stashed mode %d > %d\n",
      realbuffer->socket->query_fd(), mode, realbuffer->stashflushmode);
     if (mode > realbuffer->stashflushmode)
       realbuffer->stashflushmode = mode;
@@ -388,7 +387,6 @@ outer:
             PD("%d>Skip flush %d Queue %O\n",
              socket->query_fd(), mode, (string)this);
             break outer;
-          case FLUSHLOGSEND:
           case FLUSHSEND:
             PD("Flush\n");
             add(PGFLUSH);
