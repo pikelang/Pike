@@ -1327,7 +1327,7 @@ private int reconnect() {
     catch(c->close());
     unnamedstatement = 0;
     termlock = 0;
-    destruct(c);
+    catch(destruct(c));
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
