@@ -14416,7 +14416,7 @@ test_tests([[
       // The Makefile should regenerate config_h et al.
       report_test(res,
 		  !has_value(makefile_in||"", "CONFIG_HEADERS=@CONFIG_HEADERS@"),
-		  "Makefile.in in directory %s is missing CONFIG_HEADERS.", dir);
+		  "Makefile.in in directory %s is missing CONFIG_HEADERS.\n", dir);
     }
     return res;
   }
