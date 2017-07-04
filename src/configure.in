@@ -1,6 +1,8 @@
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
+AC_SUBST(CONFIG_HEADERS)
+
 rm -f config.warnings 2>/dev/null
 
 if_autoconf(2,50,, [
