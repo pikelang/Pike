@@ -154,6 +154,11 @@ o Sql.pgsql
   is offered multiple times before it finalises the cache entry.
   Fix sync errors with the database in case of multiple running
   statements on a single connection that generate multiple errors.
+  Eliminate spurious sync errors on pipe-lined transactions
+  (multiple transactions in flight on a single file descriptor).
+  CancelRequests (to cancel running queries) caused sync errors with
+  the database when multiple queries were in flight: fixed.
+  Eliminate transient error messages on database restarts.
 
 Changes since Pike 8.0.404 (release 8)
 ----------------------------------------------------------------------
