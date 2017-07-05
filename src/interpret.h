@@ -148,6 +148,9 @@ static inline void frame_set_expendible(struct pike_frame *frame, struct svalue 
 #define PIKE_FRAME_SAVE_LOCALS 0x4000 /* save_locals_bitmask is set */
 #define PIKE_FRAME_MALLOCED_LOCALS 0x8000
 
+#define PIKE_FRAME_RETURN_MASK	(PIKE_FRAME_RETURN_INTERNAL|PIKE_FRAME_RETURN_POP)
+#define PIKE_FRAME_LOCALS_MASK	(PIKE_FRAME_SAVE_LOCALS|PIKE_FRAME_MALLOCED_LOCALS)
+
 struct external_variable_context
 {
   struct object *o;
@@ -612,8 +615,10 @@ PMOD_EXPORT extern void push_static_text( const char *x );
             }                                                           \
           }                                                             \
         }                                                               \
-        _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;                         \
-        free(_fp_->save_locals_bitmask);                                \
+        if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
+	  _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;			\
+	  free(_fp_->save_locals_bitmask);				\
+	}								\
 	_fp_->num_locals = num_new_locals;                              \
 	_fp_->locals=s;                                                 \
 	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;                        \
