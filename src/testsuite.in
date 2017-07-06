@@ -14418,6 +14418,26 @@ test_tests([[
 		  !has_value(makefile_in||"", "CONFIG_HEADERS=@CONFIG_HEADERS@"),
 		  "Makefile.in in directory %s is missing CONFIG_HEADERS.\n", dir);
     }
+
+    foreach(get_dir(combine_path(srcdir, dir)), string f) {
+      if (has_suffix(f, ".cmod")) {
+	// Ensure that there's an explicit rule to precompile the file.
+	string fbase = f[..<sizeof(".cmod")];
+	int found;
+	foreach(replace(makefile_in, "\\\n", " ")/"\n", string line) {
+	  sscanf(line, "%s#%*s", line);
+	  if (!has_value(line, ":")) continue;
+	  if (!has_prefix(line, fbase + ".o")) continue;
+	  if (has_value((line/":")[1..]*":", "$(SRCDIR)/" + fbase + ".c")) {
+	    found = 1;
+	    break;
+	  }
+	}
+	report_test(res, !found,
+		    "No explicit makefile rule to generate %s.c from %s in %s/.\n",
+		    fbase, f, dir);
+      }
+    }
     return res;
   }
 
