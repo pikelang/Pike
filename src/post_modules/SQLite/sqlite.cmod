@@ -16,6 +16,7 @@
 #include "threads.h"
 #include "bignum.h"
 #include "pike_types.h"
+#include "multiset.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
@@ -69,6 +70,15 @@ static int step(sqlite3_stmt *stmt) {
   return ret;
 }
 
+/* NOTE: SQLite is flexible about the data stored within any field 
+    and as such, any field in any row may hold any type of data, 
+    regardless of the field's definition. Thus, when using bindings,
+    this module will use the datatype of the value to determine the
+    type stored in the field: ints and floats as numbers, strings as
+    text. Binary (blob) data may be stored by wrapping the string
+    containing the binary data in a multiset. For example:
+    (< "some binary value">).
+*/
 static void bind_arguments(sqlite3 *db,
 			   sqlite3_stmt *stmt,
 			   struct mapping *bindings) {
@@ -100,27 +110,40 @@ static void bind_arguments(sqlite3 *db,
     case T_STRING:
       {
 	struct pike_string *s = k->val.u.string;
-	switch(s->size_shift) {
-	case 0:
-	case 1:
-	case 2:
-	  ref_push_string(s);
-	  f_string_to_utf8(1);
-	  s = Pike_sp[-1].u.string;
-	  ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
-				 SQLITE_TRANSIENT),
-	       db);
-	  pop_stack();
-	  break;
-        }
+	ref_push_string(s);
+	f_string_to_utf8(1);
+	s = Pike_sp[-1].u.string;
+	ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
+			 SQLITE_TRANSIENT),
+	     db);
+        pop_stack();
       }
       break;
     case T_FLOAT:
       ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
 	   db);
       break;
+    case T_MULTISET:
+      if(multiset_sizeof(k->val.u.multiset) == 1) {
+        struct pike_string *s;
+        {
+          struct svalue tmp;
+          if (TYPEOF(*use_multiset_index (k->val.u.multiset,
+                       multiset_first (k->val.u.multiset),
+                      tmp)) == T_STRING)
+             s = tmp.u.string;
+          else
+             s = NULL;
+       }
+       if(s) {
+         ERR(sqlite3_bind_blob(stmt, idx, s->str, s->len,
+                           SQLITE_STATIC),
+                           db);
+      	   break;
+         }
+      }
     default:
-      Pike_error("Can only bind string|int|float.\n");
+      Pike_error("Can only bind string|int|float or single-valued multiset as blob.\n");
     }
   }
 }
