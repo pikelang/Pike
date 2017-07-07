@@ -123,6 +123,7 @@ static void bind_arguments(sqlite3 *db,
       ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
 	   db);
       break;
+
     case T_MULTISET:
       if(multiset_sizeof(k->val.u.multiset) == 1) {
         struct pike_string *s;
@@ -142,6 +143,8 @@ static void bind_arguments(sqlite3 *db,
       	   break;
          }
       }
+      /* Fallthrough */
+
     default:
       Pike_error("Can only bind string|int|float or single-valued multiset as blob.\n");
     }
