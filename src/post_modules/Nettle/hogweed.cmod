@@ -419,7 +419,12 @@ PIKECLASS ECC_Curve
 
     ecc_scalar_init(&THIS->scalar_one, THIS->curve);
     mpz_init_set_si(mpz_one, 1);
+#ifdef PIKE_DEBUG
+    if( !ecc_scalar_set(&THIS->scalar_one, mpz_one) )
+      Pike_fatal("Unable to set scalar 1 on ECC curve.\n");
+#else
     ecc_scalar_set(&THIS->scalar_one, mpz_one);
+#endif
     mpz_clear(mpz_one);
   }
 
