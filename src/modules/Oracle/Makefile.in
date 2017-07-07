@@ -7,6 +7,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-$(SRCDIR)/oracle.c: oracle.cmod
+oracle.o: $(SRCDIR)/oracle.c
 
 @dependencies@
