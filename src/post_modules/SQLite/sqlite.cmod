@@ -16,7 +16,6 @@
 #include "threads.h"
 #include "bignum.h"
 #include "pike_types.h"
-#include "multiset.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
@@ -76,8 +75,8 @@ static int step(sqlite3_stmt *stmt) {
     this module will use the datatype of the value to determine the
     type stored in the field: ints and floats as numbers, strings as
     text. Binary (blob) data may be stored by wrapping the string
-    containing the binary data in a multiset. For example:
-    (< "some binary value">).
+    containing the binary data in a
+     String.Buffer/Stdio.Buffer/System.Memory object.
 */
 static void bind_arguments(sqlite3 *db,
 			   sqlite3_stmt *stmt,
@@ -124,29 +123,21 @@ static void bind_arguments(sqlite3 *db,
 	   db);
       break;
 
-    case T_MULTISET:
-      if(multiset_sizeof(k->val.u.multiset) == 1) {
-        struct pike_string *s;
+    case T_OBJECT:
+      {
+        size_t len;
+        void *ptr;
+        if( get_memory_object_memory(k->val.u.object, &ptr, &len, NULL)!=
+            MEMOBJ_NONE )
         {
-          struct svalue tmp;
-          if (TYPEOF(*use_multiset_index (k->val.u.multiset,
-                       multiset_first (k->val.u.multiset),
-                      tmp)) == T_STRING)
-             s = tmp.u.string;
-          else
-             s = NULL;
-       }
-       if(s) {
-         ERR(sqlite3_bind_blob(stmt, idx, s->str, s->len,
-                           SQLITE_STATIC),
-                           db);
-      	   break;
-         }
+          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_STATIC), db);
+          break;
+        }
       }
       /* Fallthrough */
 
     default:
-      Pike_error("Can only bind string|int|float or single-valued multiset as blob.\n");
+      Pike_error("Can only bind string|int|float or String.Buffer/Stdio.Buffer/System.Memory as blob.\n");
     }
   }
 }
