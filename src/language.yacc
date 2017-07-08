@@ -9,102 +9,112 @@
 /* Expect a single shift/reduce conflict (dangling else). */
 %expect 1
 
-%token TOK_ARROW
+%token TOK_ARROW "->"
 
 /*
  * Basic value pushing
  */
-%token TOK_CONSTANT TOK_FLOAT TOK_STRING
-%token TOK_NUMBER
+%token TOK_CONSTANT "constant"
+%token TOK_FLOAT "float literal"
+%token TOK_STRING "string literal"
+%token TOK_NUMBER "integer literal"
 
 /*
  * These are the predefined functions that can be accessed from Pike.
  */
 
-%token TOK_INC TOK_DEC
-%token TOK_RETURN
+%token TOK_INC "++"
+%token TOK_DEC "--"
+%token TOK_RETURN "return"
 
-%token TOK_EQ TOK_GE TOK_LE TOK_NE
-%token TOK_NOT
-%token TOK_LSH TOK_RSH
-%token TOK_LAND TOK_LOR
+%token TOK_EQ "=="
+%token TOK_GE ">="
+%token TOK_LE "<="
+%token TOK_NE "!="
+%token TOK_NOT "!"
+%token TOK_LSH "<<"
+%token TOK_RSH ">>"
+%token TOK_LAND "&&"
+%token TOK_LOR "||"
 
-%token TOK_SWITCH TOK_SSCANF TOK_CATCH
-%token TOK_FOREACH
+%token TOK_SWITCH "switch"
+%token TOK_SSCANF "sscanf"
+%token TOK_CATCH "catch"
+%token TOK_FOREACH "foreach"
 
 /* This is the end of file marker used by the lexer
  * to enable nicer EOF in error handling.
  */
-%token TOK_LEX_EOF
+%token TOK_LEX_EOF "end of file"
 
-%token TOK_ADD_EQ
-%token TOK_AND_EQ
-%token TOK_ARRAY_ID
-%token TOK_ATTRIBUTE_ID
-%token TOK_BREAK
-%token TOK_CASE
-%token TOK_CLASS
-%token TOK_COLON_COLON
-%token TOK_CONTINUE
-%token TOK_DEFAULT
-%token TOK_DEPRECATED_ID
-%token TOK_DIV_EQ
-%token TOK_DO
-%token TOK_DOT_DOT
-%token TOK_DOT_DOT_DOT
-%token TOK_ELSE
-%token TOK_ENUM
-%token TOK_EXTERN
-%token TOK_FLOAT_ID
-%token TOK_FOR
-%token TOK_FUNCTION_ID
-%token TOK_GAUGE
-%token TOK_GLOBAL
-%token TOK_IDENTIFIER
-%token TOK_RESERVED
-%token TOK_IF
-%token TOK_IMPORT
-%token TOK_INHERIT
-%token TOK_INLINE
-%token TOK_LOCAL_ID
-%token TOK_FINAL_ID
-%token TOK_FUNCTION_NAME
-%token TOK_INT_ID
-%token TOK_LAMBDA
-%token TOK_MULTISET_ID
-%token TOK_MULTISET_END
-%token TOK_MULTISET_START
-%token TOK_LSH_EQ
-%token TOK_MAPPING_ID
-%token TOK_MIXED_ID
-%token TOK_MOD_EQ
-%token TOK_MULT_EQ
-%token TOK_OBJECT_ID
-%token TOK_OR_EQ
-%token TOK_POW
-%token TOK_POW_EQ
-%token TOK_PRIVATE
-%token TOK_PROGRAM_ID
-%token TOK_PROTECTED
-%token TOK_PREDEF
-%token TOK_PUBLIC
-%token TOK_RSH_EQ
-%token TOK_STATIC
-%token TOK_STRING_ID
-%token TOK_SUB_EQ
-%token TOK_TYPEDEF
-%token TOK_TYPEOF
-%token TOK_VARIANT
-%token TOK_VERSION
-%token TOK_VOID_ID
-%token TOK_WEAK
-%token TOK_WHILE
-%token TOK_XOR_EQ
-%token TOK_OPTIONAL
-%token TOK_SAFE_INDEX
-%token TOK_SAFE_START_INDEX
-%token TOK_BITS
-%token TOK_AUTO_ID
+%token TOK_ADD_EQ "+="
+%token TOK_AND_EQ "&="
+%token TOK_ARRAY_ID "array"
+%token TOK_ATTRIBUTE_ID "__attribute__"
+%token TOK_BREAK "break"
+%token TOK_CASE "case"
+%token TOK_CLASS "class"
+%token TOK_COLON_COLON "::"
+%token TOK_CONTINUE "continue"
+%token TOK_DEFAULT "default"
+%token TOK_DEPRECATED_ID "__deprecated__"
+%token TOK_DIV_EQ "/="
+%token TOK_DO "do"
+%token TOK_DOT_DOT ".."
+%token TOK_DOT_DOT_DOT "..."
+%token TOK_ELSE "else"
+%token TOK_ENUM "enum"
+%token TOK_EXTERN "extern"
+%token TOK_FLOAT_ID "float"
+%token TOK_FOR "for"
+%token TOK_FUNCTION_ID "function"
+%token TOK_GAUGE "gauge"
+%token TOK_GLOBAL "global"
+%token TOK_IDENTIFIER "identifier"
+%token TOK_RESERVED "reserved identifier"
+%token TOK_IF "if"
+%token TOK_IMPORT "import"
+%token TOK_INHERIT "inherit"
+%token TOK_INLINE "inline"
+%token TOK_LOCAL_ID "local"
+%token TOK_FINAL_ID "final"
+%token TOK_FUNCTION_NAME "__func__"
+%token TOK_INT_ID "int"
+%token TOK_LAMBDA "lambda"
+%token TOK_MULTISET_ID "multiset"
+%token TOK_MULTISET_END ">)"
+%token TOK_MULTISET_START "(<"
+%token TOK_LSH_EQ "<<="
+%token TOK_MAPPING_ID "mapping"
+%token TOK_MIXED_ID "mixed"
+%token TOK_MOD_EQ "%="
+%token TOK_MULT_EQ "*="
+%token TOK_OBJECT_ID "object"
+%token TOK_OR_EQ "|="
+%token TOK_POW "**"
+%token TOK_POW_EQ "**="
+%token TOK_PRIVATE "private"
+%token TOK_PROGRAM_ID "program"
+%token TOK_PROTECTED "protected"
+%token TOK_PREDEF "predef"
+%token TOK_PUBLIC "public"
+%token TOK_RSH_EQ ">>="
+%token TOK_STATIC "static"
+%token TOK_STRING_ID "string"
+%token TOK_SUB_EQ "-="
+%token TOK_TYPEDEF "typedef"
+%token TOK_TYPEOF "typeof"
+%token TOK_VARIANT "variant"
+%token TOK_VERSION "version prefix"
+%token TOK_VOID_ID "void"
+%token TOK_WEAK "__weak__"
+%token TOK_WHILE "while"
+%token TOK_XOR_EQ "^="
+%token TOK_OPTIONAL "optional"
+%token TOK_SAFE_INDEX "?->"
+%token TOK_SAFE_START_INDEX "[?"
+%token TOK_BITS "bits"
+%token TOK_AUTO_ID "auto"
 
 
 %right '='
