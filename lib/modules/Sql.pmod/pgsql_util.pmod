@@ -56,7 +56,7 @@ private Regexp paralleliseprefix
   * in the event of an ErrorResponse.
   */
 final Regexp transbeginprefix
- =iregexp("^\a*BEGIN[; \t\f\r\n]*$");
+ =iregexp("^\a*(BEGIN|START)([; \t\f\r\n]|$)");
 
  /* Statements matching transendprefix will cause the driver
   * insert a sync after the statement.
@@ -64,7 +64,7 @@ final Regexp transbeginprefix
   * in the event of an ErrorResponse.
   */
 final Regexp transendprefix
- =iregexp("^\a*(COMMIT|ROLLBACK|END)[; \t\f\r\n]*$");
+ =iregexp("^\a*(COMMIT|ROLLBACK|END)([; \t\f\r\n]|$)");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces
