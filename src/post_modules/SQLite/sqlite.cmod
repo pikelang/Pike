@@ -137,7 +137,7 @@ static void bind_arguments(sqlite3 *db,
       /* Fallthrough */
 
     default:
-      Pike_error("Can only bind string|int|float or String.Buffer/Stdio.Buffer/System.Memory as blob.\n");
+      Pike_error("Can only bind string|int|float or String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
     }
   }
 }
