@@ -80,6 +80,17 @@ o Sql.pgsql
   during the same transaction.
   Flush out unseen error messages upon connection close to stderr.
 
+o Sql.SQLite
+  
+  When using query bindings, strings are now always stored as strings; 
+  previously, 8-bit strings were stored as binary objects (BLOBs) and 
+  wide strings were stored as unicode strings, which caused 8-bit strings
+  to be unequal (and thus not returned) when used in a standard string query.
+
+  Binary values may be stored as BLOBs using bindings by wrapping the 
+  binary string in a multiset. For example, to store the value "myBinary"
+  as a BLOB value using a binding, use: (<"myBinary">).
+
 o Debug.Peek
 
   Allows for interactive debugging and live data structure inspection
