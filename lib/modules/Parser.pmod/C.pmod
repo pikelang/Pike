@@ -254,28 +254,20 @@ array hide_whitespaces(array tokens)
 {
   array(Token) ret=({tokens[0]});
   foreach(tokens[1..], array|object(Token) t)
+  {
+    if(arrayp(t))
     {
-      if(arrayp(t))
-      {
-	ret+=({ hide_whitespaces(t) });
-      }else{
-	switch( ((string)t) [0])
-	{
-	  case ' ':
-	  case '\t':
-	  case '\14':
-	  case '\r':
-	  case '\n':
-	    mixed tmp=ret[-1];
-	    while(arrayp(tmp)) tmp=tmp[-1];
-	    tmp->trailing_whitespaces+=(string)t;
-	    break;
-
-	  default:
-	    ret+=({t});
-	}
-      }
+      ret+=({ hide_whitespaces(t) });
     }
+    else if( Unicode.is_whitespace(t->text[0]) )
+    {
+      mixed tmp=ret[-1];
+      while(arrayp(tmp)) tmp=tmp[-1];
+      tmp->trailing_whitespaces+=(string)t;
+    }
+    else
+      ret+=({t});
+  }
   return ret;
 }
 
