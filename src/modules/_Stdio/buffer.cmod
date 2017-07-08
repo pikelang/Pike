@@ -1177,7 +1177,15 @@ PIKECLASS Buffer
 
   PIKEFUN int(0..) _size_object( )
   {
-      RETURN THIS->malloced ? THIS->allocated : 0;
+      Buffer *io = THIS;
+      if (io->malloced)
+      {
+        push_ulongest(THIS->allocated);
+      }
+      else
+      {
+        push_int(0);
+      }
   }
 
   /*! @decl Buffer add_padding( int(0..) nbytes, int(0..255)|void byte )
@@ -1562,7 +1570,7 @@ PIKECLASS Buffer
   PIKEFUN int(0..) _sizeof()
     flags ID_PROTECTED;
   {
-    push_int64(io_len(THIS));
+    push_ulongest(io_len(THIS));
   }
 
   /*! @decl string cast(string type)
