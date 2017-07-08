@@ -59,6 +59,13 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
   test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
 
+  test_any([[
+    String.Buffer b = String.Buffer();
+    b->add("ab\0c");
+    return db->big_query("INSERT INTO test (aa,dd) VALUES (:1,:2)", ([ 1:15, 2:b ]))->fetch_row();
+  ]], 0)
+  test_equal( db->big_query("SELECT dd FROM test WHERE aa=15")->fetch_row(), ({ "ab\0c" }))
+
   test_do( add_constant("db"); )
   test_do( rm("testdb"); )
 
