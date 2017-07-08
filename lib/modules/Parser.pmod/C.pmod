@@ -263,7 +263,7 @@ array hide_whitespaces(array tokens)
     {
       mixed tmp=ret[-1];
       while(arrayp(tmp)) tmp=tmp[-1];
-      tmp->trailing_whitespaces+=(string)t;
+      tmp->trailing_whitespaces+=t->text+t->trailing_whitespaces;
     }
     else
       ret+=({t});
