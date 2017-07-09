@@ -7,6 +7,19 @@
 
 protected constant splitter = Parser._parser._Pike.tokenize;
 
+// NB: This module is used by several of the precompilers,
+//     and may thus be used before the Unicode module has
+//     been compiled!
+#if constant(Unicode.is_whitespace)
+protected constant is_whitespace = Unicode.is_whitespace;
+#else
+protected constant whitespace_tab = (< ' ', '\t', '\14', '\r', '\n', >);
+protected int is_whitespace(int c)
+{
+  return whitespace_tab[c];
+}
+#endif
+
 class UnterminatedStringError
 //! Error thrown when an unterminated string token is encountered.
 {
@@ -259,7 +272,7 @@ array hide_whitespaces(array tokens)
     {
       ret+=({ hide_whitespaces(t) });
     }
-    else if( Unicode.is_whitespace(t->text[0]) )
+    else if( is_whitespace(t->text[0]) )
     {
       mixed tmp=ret[-1];
       while(arrayp(tmp)) tmp=tmp[-1];
