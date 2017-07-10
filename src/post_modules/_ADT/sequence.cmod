@@ -553,7 +553,6 @@ PIKECLASS Sequence
   INIT
   {
     add_ref(THIS->a = &empty_array);
-    THIS->pos=0;
   }
 
   EXIT
@@ -956,10 +955,7 @@ PIKECLASS Sequence
       gc_trivial;
     {
       if( THIS->obj )
-      {
         free_object(THIS->obj);
-        THIS->obj = NULL;
-      }
     }
 
   }

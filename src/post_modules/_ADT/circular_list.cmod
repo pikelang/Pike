@@ -860,10 +860,7 @@ PIKECLASS CircularList
     gc_trivial;
   {
     if( THIS->a )
-    {
       free_array(THIS->a);
-      THIS->a = NULL;
-    }
   }
 
 
@@ -1260,10 +1257,7 @@ PIKECLASS CircularList
       gc_trivial;
     {
       if( THIS->obj )
-      {
         free_object(THIS->obj);
-        THIS->obj = NULL;
-      }
     }
 
   }

@@ -408,15 +408,11 @@ static void exit_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
-  if(s->retain != NULL) {
+  if(s->retain)
     free_string(s->retain);
-    s->retain = NULL;
-  }
 
-  if(s->replace != NULL) {
+  if(s->replace)
     free_string(s->replace);
-    s->replace = NULL;
-  }
 
   free_string_builder(&s->strbuild);
 }
@@ -2235,7 +2231,7 @@ static void std_8bite_exit_stor(struct object *UNUSED(o))
   struct std8e_stor *s8 =
     (struct std8e_stor *)(Pike_fp->current_storage+std8e_stor_offs);
 
-  if(s8->revtab != NULL)
+  if(s8->revtab)
     free(s8->revtab);
 }
 
@@ -2327,7 +2323,7 @@ static void std_16bite_exit_stor(struct object *UNUSED(o))
   struct std16e_stor *s16 =
     (struct std16e_stor *)(Pike_fp->current_storage+std16e_stor_offs);
 
-  if(s16->revtab != NULL)
+  if(s16->revtab)
     free(s16->revtab);
 }
 

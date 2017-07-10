@@ -158,39 +158,31 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
 {
   SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
 
-  if (THIS->iovs) {
+  if (THIS->iovs)
     free(THIS->iovs);
-    THIS->iovs = NULL;
-  }
-  if (THIS->buffer) {
+
+  if (THIS->buffer)
     free(THIS->buffer);
-    THIS->buffer = NULL;
-  }
-  if (THIS->headers) {
+
+  if (THIS->headers)
     free_array(THIS->headers);
-    THIS->headers = NULL;
-  }
-  if (THIS->trailers) {
+
+  if (THIS->trailers)
     free_array(THIS->trailers);
-    THIS->trailers = NULL;
-  }
-  if (THIS->from_file) {
+
+  if (THIS->from_file)
     free_object(THIS->from_file);
-    THIS->from_file = NULL;
-  }
-  if (THIS->to_file) {
+
+  if (THIS->to_file)
     free_object(THIS->to_file);
-    THIS->to_file = NULL;
-  }
-  if (THIS->args) {
+
+  if (THIS->args)
     free_array(THIS->args);
-    THIS->args = NULL;
-  }
-  if (THIS->self) {
-    /* This can occur if Pike exits before the backend has started. */
+
+  /* This can occur if Pike exits before the backend has started. */
+  if (THIS->self)
     free_object(THIS->self);
-    THIS->self = NULL;
-  }
+
   /* This is not required since this is a mapped variable.
    * /Hubbe
    * But we do it anyway for paranoia reasons.
@@ -198,10 +190,8 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
    */
   free_svalue(&(THIS->callback));
   SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-  if (THIS->backend_callback) {
+  if (THIS->backend_callback)
     remove_callback (THIS->backend_callback);
-    THIS->backend_callback = NULL;
-  }
 }
 
 /*

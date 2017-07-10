@@ -843,7 +843,6 @@ PIKECLASS multiset_iterator
 #endif
 	}
 	free_multiset (THIS->l);
-	THIS->l = NULL;
       }
     }
 };
@@ -1177,19 +1176,13 @@ PIKECLASS file_line_iterator
   EXIT
     gc_trivial;
     {
-      if (THIS->buffer) {
+      if (THIS->buffer)
 	free_string(THIS->buffer);
-	THIS->buffer = NULL;
-      }
-      if (THIS->current) {
+      if (THIS->current)
 	free_string(THIS->current);
-	THIS->current = NULL;
-      }
       free_svalue(&THIS->feed);
       assert_free_svalue (&THIS->feed);
     }
-
-
 }
 
 /*! @module String
@@ -1670,16 +1663,11 @@ PIKECLASS string_split_iterator
   EXIT
     gc_trivial;
     {
-      if (THIS->buffer) {
+      if (THIS->buffer)
 	free_string(THIS->buffer);
-	THIS->buffer = NULL;
-      }
-      if (THIS->current) {
+      if (THIS->current)
 	free_string(THIS->current);
-	THIS->current = NULL;
-      }
       free(THIS->split_set);
-      THIS->split_set = NULL;
       free_svalue(&THIS->feed);
       mark_free_svalue (&THIS->feed);
     }

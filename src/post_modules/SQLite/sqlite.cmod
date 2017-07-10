@@ -360,20 +360,11 @@ PIKECLASS TypedResult
     gc_trivial;
   {
     if(THIS->stmt)
-    {
       sqlite3_finalize(THIS->stmt);
-      THIS->stmt = NULL;
-    }
     if(THIS->dbobj)
-    {
       free_object(THIS->dbobj);
-      THIS->dbobj = NULL;
-    }
     if(THIS->bindings)
-    {
       free_mapping(THIS->bindings);
-      THIS->bindings = NULL;
-    }
   }
 }
 

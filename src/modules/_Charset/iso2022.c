@@ -1493,10 +1493,8 @@ static void exit_stor(struct object *UNUSED(o))
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
-  if(s->retain != NULL) {
+  if(s->retain)
     free_string(s->retain);
-    s->retain = NULL;
-  }
 
   free_string_builder(&s->strbuild);
 }
@@ -1526,10 +1524,8 @@ static void exit_enc_stor(struct object *UNUSED(o))
       free(s->r[i].map);
   }
 
-  if(s->replace != NULL) {
+  if(s->replace)
     free_string(s->replace);
-    s->replace = NULL;
-  }
 
   free_string_builder(&s->strbuild);
 }
