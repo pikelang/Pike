@@ -154,17 +154,6 @@ static struct program *pike_sendfile_prog = NULL;
  * Struct init code.
  */
 
-static void init_pike_sendfile(struct object *UNUSED(o))
-{
-  memset(THIS, 0, sizeof(struct pike_sendfile));
-
-  /* callback doesn't actually need to be initialized since it is a
-   * mapped variable, but since we just zapped it with zeroes we need
-   * to set the type to T_INT again.. /Hubbe
-   */
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-}
-
 static void exit_pike_sendfile(struct object *UNUSED(o))
 {
   SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
@@ -1221,7 +1210,6 @@ void init_stdio_sendfile(void)
 	       tFuncV(tArr(tStr) tObj tInt tInt tArr(tStr) tObj
 		      tFuncV(tInt, tMix, tVoid), tMix, tVoid), 0);
 
-  set_init_callback(init_pike_sendfile);
   set_exit_callback(exit_pike_sendfile);
 
   pike_sendfile_prog = end_program();
