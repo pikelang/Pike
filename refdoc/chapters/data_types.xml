@@ -4,9 +4,24 @@
 <p>In this chapter we will discuss all the different ways to store data
 in Pike in detail. We have seen examples of many of these, but we haven't
 really gone into how they work. In this chapter we will also see which
-operators and functions work with the different types.
-There are two categories of data types in Pike: <b>basic types</b>, and
-<b>pointer types</b>. The difference is that basic types are copied when
+operators and functions work with the different types.</p>
+<p>Types in Pike are used in two different contexts; during compile-time,
+and during run-time. Some types are only used during compile-time
+(<tt>void</tt>, <tt>mixed</tt> and all constructed types), all other types
+are also used during run-time. Also note the following functions and special
+forms:</p>
+<dl>
+<dt><tt>type <ref>typeof</ref>(mixed <i>x</i>)</tt></dt>
+<dd>This special form returns the compile-time type for the expression <i>x</i>
+(which is not evaluated). Ie the type that the compiler believes that the
+expression will return if evaluated.</dd>
+<dt><tt>type <ref>_typeof</ref>(mixed <i>x</i>)</tt></dt>
+<dd>This function returns the run-type of the value <i>x</i> (which is
+evaluated).</dd>
+</dl>
+
+<p>There are two categories of run-time data types in Pike: <b>basic types</b>,
+and <b>pointer types</b>. The difference is that basic types are copied when
 assigned to a variable. With pointer types, merely the pointer is copied,
 that way you get two variables pointing to the same thing.</p>
 
@@ -953,6 +968,67 @@ integer argument and another function 'foo' which takes a float argument.</p>
      do not have a name.</dd>
 </dl>
 </subsection>
+</section>
+
+<section title="Compile-time types">
+<p>There are two types that are pure compile-time types:</p>
+
+<subsection title="void">
+
+<p>The type <tt>void</tt> is used to indicate the absence or optionality
+of a value. There are two typical use cases:</p>
+
+<dl>
+<dt>As the return type of a function (eg <tt>void foo();</tt>).</dt>
+<dd>This indicates that the function does not return any value.</dd>
+<dt>As one of the types in a type set for a function parameter
+(eg <tt>int foo(int|void param)</tt>).</dt>
+<dd>This indicates that the caller of the function may omit that parameter
+when calling the function, in which case it will default to the special
+value <tt><ref>UNDEFINED</ref></tt>.</dd>
+</dl>
+
+<p>When creating functions with optional parameters the following functions
+may be of interest:</p>
+
+<dl>
+<dt><tt>int <ref>undefinedp</ref>(mixed <i>x</i>)</tt></dt>
+<dd>This function returns 1 if <i>x</i> is <tt><ref>UNDEFINED</ref></tt>,
+and 0 otherwise.</dd>
+<dt><tt>int <ref>query_num_arg</ref>()</tt></dt>
+<dd>This function returns the number of arguments that the calling function
+got called with.</dd>
+</dl>
+
+</subsection>
+
+<subsection title="mixed"
+
+<p>The type <tt>mixed</tt> is used to indicate that values of any type
+may be passed here, and that the actual type of the values that will
+be used at run-time is totally unknown.</p>
+
+<p>This type is typically used when implementing container classes (where
+the actual values won't be manipulated by the code in the class), or as a
+convenience fall-back when the actual compile-time type is getting too
+complicated.</p>
+
+</subsection>
+
+<subsection title="Constructed types">
+
+<p>Futhermore more specific compile-time types may be constructed by
+either subtyping the basic types by specifying parameters (eg
+<tt>function(string(7bit), int(0..): string(7bit))</tt> instead of
+just plain <tt>function</tt>), or by using the type union operator
+(<tt>`|</tt>) to specify several alternative types (eg <tt>int|float</tt>
+instead of <tt>mixed</tt>). Note that the run-time type may differ
+from the declared compile-time type (like eg
+<tt>function(string, int: string(7bit))</tt> and <tt>int(17..17)</tt>
+respectively).</p>
+
+</subsection>
+
 </section>
 
 <section title="Sharing data">
