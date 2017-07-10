@@ -91,6 +91,7 @@ else
     # sha3 and gosthash94 are available in Nettle 2.6 and later.
     # chacha, poly1305 and eax are available in Nettle 3.0 and later.
     # curve25519 and eddsa are available in Nettle 3.1 and later.
+    # pbkdf2 is available in Nettle 3.1 and later.
     # version.h was added in Nettle 3.1.1, but nettle_version_{major,minor}()
     # are first available in Nettle 3.2 and later.
     AC_CHECK_HEADERS(nettle/camellia.h \
@@ -101,7 +102,7 @@ else
 		     nettle/poly1305.h nettle/eax.h \
 		     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
 		     nettle/curve25519.h nettle/eddsa.h \
-		     nettle/version.h \
+                     nettle/version.h nettle/pbkdf2.h \
 		    )
     # Check that the libraries match.
     #
@@ -115,7 +116,7 @@ else
 		   nettle_poly1305_digest nettle_eax_encrypt \
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
 		   nettle_curve25519_mul nettle_ed25519_sha512_sign \
-		   nettle_version_major \
+                   nettle_version_major \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
