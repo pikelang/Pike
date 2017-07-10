@@ -33,6 +33,7 @@ final multiset censoroptions=(<"use_ssl","force_ssl",
  "cache_autoprepared_statements","reconnect","text_query","is_superuser",
  "server_encoding","server_version","integer_datetimes",
  "session_authorization">);
+constant stdiobuftype = typeof(Stdio.Buffer());
 
  /* Statements matching createprefix cause the prepared statement cache
   * to be flushed to prevent stale references to (temporary) tables
@@ -882,15 +883,30 @@ class sql_result {
                 plugbuffer->add_int32(-1);
                 break;
               }
-              value=(string)value;
-              if(String.width(value)>8)
-                if(dtoid[i]==BYTEAOID)
-                  value=string_to_utf8(value);
-                else {
-                  SUSERERROR("Wide string %O not supported for type OID %d\n",
-                             value,dtoid[i]);
-                  value="";
-                }
+	      if (!objectp(value) || typeof(value) != stdiobuftype)
+	        /*
+	         *  Like Oracle and SQLite, we accept literal binary values
+	         *  from single-valued multisets.
+	         */
+	        if (multisetp(value) && sizeof(value) == 1)
+	          value = indices(value)[0];
+	        else {
+                  value = (string)value;
+                  if (String.width(value) > 8)
+                    if (dtoid[i] == BYTEAOID)
+	              /*
+                       *  FIXME We should throw an error here, it would
+		       *  have been correct, but for historical reasons and
+		       *  as a DWIM convenience we autoconvert to UTF8 here.
+                       */
+                      value = string_to_utf8(value);
+                    else {
+                      SUSERERROR(
+	                "Wide string %O not supported for type OID %d\n",
+                        value,dtoid[i]);
+                      value="";
+                    }
+	        }
               plugbuffer->add_hstring(value,4);
               break;
             }
