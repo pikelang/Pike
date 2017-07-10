@@ -697,7 +697,6 @@ static void gz_deflate(INT32 args)
 static void init_gz_deflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -712,7 +711,6 @@ static void exit_gz_deflate(struct object *UNUSED(o))
   deflateEnd(&THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -1146,7 +1144,6 @@ static void gz_end_of_stream(INT32 args)
 static void init_gz_inflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -1161,7 +1158,6 @@ static void exit_gz_inflate(struct object *UNUSED(o))
   inflateEnd(& THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
