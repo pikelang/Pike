@@ -4,7 +4,7 @@ inherit _Debug;
 
 //! Can be custom filled from within your program in order to
 //! have global references to explore live datastructures using
-//! @[Peek]; comes preinitialised with the empty mapping, ready for use.
+//! @[Inspect]; comes preinitialised with the empty mapping, ready for use.
 mapping globals = ([]);
 
 constant verify_internals = _verify_internals;
