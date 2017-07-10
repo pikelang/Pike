@@ -8,7 +8,7 @@
 //! Example:
 //!  In the program you'd like to inspect, insert the following one-liner:
 //! @code
-//!      Debug.Peek("/tmp/test.pike");
+//!      Debug.Inspect("/tmp/test.pike");
 //! @endcode
 //!  Then start the program and keep it running.
 //!  Next you create a /tmp/test.pike with the following content:
@@ -69,14 +69,14 @@ private int lastmtime;
 private int skipnext;
 private int oldsignal;
 
-//! If assigned to, it will allow the diagnostics peek to be triggered
+//! If assigned to, it will allow the diagnostics inspection to be triggered
 //! by this signal.
 int triggersignal;
 
 //! The polling interval in seconds, defaults to 4.
 int pollinterval = POLLINTERVAL;
 
-//! The peek-thread.  It will not appear in the displayed thread-list.
+//! The inspect-thread.  It will not appear in the displayed thread-list.
 Thread.Thread _loopthread;
 
 //! Either the callback function which is invoked on each iteration, or the
@@ -89,18 +89,18 @@ string|function(void:void) _callback;
 
 private void loop(int sig) {
   _loopthread = Thread.this_thread();
-  for(;; peek()) {
+  for(;; inspect()) {
     sleep(pollinterval, 1);
     if (triggersignal != oldsignal) {
-      werror("\nTo peek use: kill -%d %d\n\n",
+      werror("\nTo inspect use: kill -%d %d\n\n",
        triggersignal, getpid());
-      signal(triggersignal, peek);
+      signal(triggersignal, inspect);
     }
   }
 }
 
 //! The internal function which does all the work each pollinterval.
-private void peek() {
+private void inspect() {
   Thread.MutexKey lock;
   if (lock = running->trylock(1)) {
     Thread.Thread thisthread = Thread.this_thread();

@@ -91,14 +91,14 @@ o Sql.SQLite
   binary string in a multiset. For example, to store the value "myBinary"
   as a BLOB value using a binding, use: (<"myBinary">).
 
-o Debug.Peek
+o Debug.Inspect
 
   Allows for interactive debugging and live data structure inspection
   in both single- and multi-threaded programs.
 
   Example:
   In the program you'd like to inspect, insert the following one-liner:
-      Debug.Peek("/tmp/test.pike");
+      Debug.Inspect("/tmp/test.pike");
 
   Then start the program and keep it running.
   Next you create a /tmp/test.pike with the following content:
