@@ -12,7 +12,6 @@ nettle.o: $(SRCDIR)/nettle.c
 aead.o: $(SRCDIR)/aead.c
 cipher.o: $(SRCDIR)/cipher.c
 hash.o: $(SRCDIR)/hash.c
-_hash.o: $(SRCDIR)/_hash.c
 hogweed.o: $(SRCDIR)/hogweed.c
 mac.o: $(SRCDIR)/mac.c
 nt.o: $(SRCDIR)/nt.c
