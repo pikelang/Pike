@@ -209,11 +209,6 @@ static void regexp_split(INT32 args)
   }
 }
 
-static void init_regexp_glue(struct object *UNUSED(o))
-{
-  THIS->regexp=0;
-}
-
 static void exit_regexp_glue(struct object *UNUSED(o))
 {
   do_free();
@@ -243,7 +238,6 @@ PIKE_MODULE_INIT
   /* function(string:string*) */
   ADD_FUNCTION("split",regexp_split,tFunc(tStr,tArr(tStr)),0);
 
-  set_init_callback(init_regexp_glue);
   set_exit_callback(exit_regexp_glue);
   end_class("_SimpleRegexp", 0);
 }

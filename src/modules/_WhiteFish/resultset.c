@@ -145,17 +145,9 @@ struct object *wf_resultset_new(void)
   return o;
 }
 
-static void init_rs(struct object *UNUSED(o))
-{
-  THIS->d = 0;
-  THIS->allocated_size = 0;
-}
-
 static void free_rs(struct object *UNUSED(o))
 {
-  THIS->allocated_size = 0;
   if( THIS->d )  free( THIS->d );
-  THIS->d = 0;
 }
 
 
@@ -1033,7 +1025,6 @@ void init_resultset_program(void)
     ADD_FUNCTION("test", f_resultset_test, tFunc(tInt tInt tInt,tInt), 0 );
     ADD_FUNCTION( "finalize", f_dateset_finalize, tFunc(tVoid,tObj), 0 );
 
-    set_init_callback( init_rs );
     set_exit_callback( free_rs );
   }
   resultset_program = end_program( );

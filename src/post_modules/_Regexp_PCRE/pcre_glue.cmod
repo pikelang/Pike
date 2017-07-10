@@ -503,12 +503,14 @@ PIKECLASS _pcre
 
 /* init and exit */
 
+#ifdef PIKE_NULL_IS_SPECIAL
    INIT
       {
 	 THIS->re=NULL;
 	 THIS->extra=NULL;
 	 THIS->pattern=NULL;
       }
+#endif
 
    EXIT
      gc_trivial;

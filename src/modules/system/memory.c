@@ -97,12 +97,14 @@ static void memory_shm(INT32 args);
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_memory(struct object *UNUSED(o))
 {
    THIS->p=NULL;
    THIS->size=0;
    THIS->flags=0;
 }
+#endif
 
 static void memory__size_object( INT32 UNUSED(args) )
 {
@@ -970,7 +972,9 @@ void init_system_memory(void)
    ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_memory);
+#endif
    set_exit_callback(exit_memory);
    end_class("Memory",0);
 

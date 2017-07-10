@@ -197,12 +197,6 @@ static void f_linkfarm_read( INT32 args )
 /*! @endmodule
  */
 
-
-static void init_linkfarm_struct(struct object * UNUSED(o))
-{
-  memset( THIS, 0, sizeof( struct linkfarm ) );
-}
-
 static void exit_linkfarm_struct(struct object *o)
 {
   int i;
@@ -210,11 +204,6 @@ static void exit_linkfarm_struct(struct object *o)
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-
-/*   if( THIS->buffer ) */
-/*     wf_buffer_free( THIS->buffer ); */
-
-  init_linkfarm_struct(o);
 }
 
 
@@ -225,7 +214,6 @@ void init_linkfarm_program(void)
   ADD_FUNCTION("add",f_linkfarm_add,tFunc(tStr,tVoid),0);
   ADD_FUNCTION("memsize", f_linkfarm_memsize, tFunc(tVoid,tInt), 0 );
   ADD_FUNCTION("read", f_linkfarm_read, tFunc(tVoid,tArr(tStr)), 0 );
-  set_init_callback( init_linkfarm_struct );
   set_exit_callback( exit_linkfarm_struct );
   linkfarm_program = end_program( );
   add_program_constant( "LinkFarm", linkfarm_program, 0 );

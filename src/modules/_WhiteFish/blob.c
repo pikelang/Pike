@@ -556,19 +556,12 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void init_blob_struct(struct object * UNUSED(o))
-{
-  memset( THIS, 0, sizeof( struct blob_data ) );
-}
-
 static void exit_blob_struct(struct object * o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  /* why? */
-  init_blob_struct(o);
 }
 
 void init_blob_program(void)
@@ -582,7 +575,6 @@ void init_blob_program(void)
   ADD_FUNCTION( "remove_list", f_blob_remove_list, tFunc(tArr(tInt),tVoid), 0);
   ADD_FUNCTION( "data", f_blob__cast, tFunc(tVoid,tStr), 0 );
   ADD_FUNCTION( "memsize", f_blob_memsize, tFunc(tVoid,tInt), 0 );
-  set_init_callback( init_blob_struct );
   set_exit_callback( exit_blob_struct );
   blob_program = end_program( );
   add_program_constant( "Blob", blob_program, 0 );
