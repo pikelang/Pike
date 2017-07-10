@@ -1273,11 +1273,13 @@ protected void destroy() {
   /*
    * Flush out any asynchronously reported errors to stderr; because we are
    * inside a destructor, throwing an error will not work anymore.
+   * Warnings will be silently discarded at this point.
    */
+  lastmessage = filter(lastmessage, has_prefix, "ERROR ");
   if (err || (err = catch(errstring = error(1))))
     werror(describe_backtrace(err));
   else if (errstring && sizeof(errstring))
-    werror(errstring);
+    werror("%s\n", errstring);		// Add missing terminating newline
 }
 
 final void _connectfail(void|mixed err) {
