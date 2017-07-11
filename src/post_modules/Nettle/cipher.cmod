@@ -1203,11 +1203,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if(THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -1708,11 +1703,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if(THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -2110,11 +2100,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if(THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -2514,11 +2499,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if (THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -2992,11 +2972,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if (THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -3384,11 +3359,6 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object) {
-          free_object(THIS->object);
-          THIS->object;
-        }
-
         if (THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -3876,11 +3846,6 @@ PIKECLASS BlockCipher16
       EXIT
 	gc_trivial;
       {
-        if(THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-
         if(THIS->iv)
 	  free_string(THIS->iv);
       }
@@ -4903,15 +4868,6 @@ PIKECLASS BlockCipher16
 	}
       }
 
-      EXIT
-	gc_trivial;
-      {
-        if (THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
-      }
-
       /*! @decl Cipher::State substate_factory()
        *!
        *! Returns the @[Cipher::State] object that this object
@@ -5372,15 +5328,6 @@ PIKECLASS BlockCipher16
       INIT
       {
 	THIS->mode = -1;
-      }
-
-      EXIT
-	gc_trivial;
-      {
-        if (THIS->object) {
-          free_object(THIS->object);
-          THIS->object = NULL;
-        }
       }
 
       /*! @decl Cipher::State substate_factory()
