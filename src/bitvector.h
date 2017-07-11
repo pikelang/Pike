@@ -75,7 +75,7 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) ctz32(unsigned INT32 i) {
 #define ctz16(i) (i ? ctz32(i) : 16)
 #define ctz8(i) (i ? ctz32(i) : 8)
 
-
+#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32)
 static INLINE unsigned INT32 ATTRIBUTE((unused)) bswap32(unsigned INT32 x) {
 #ifdef HAS___BUILTIN_BSWAP32
     return __builtin_bswap32(x);
@@ -88,6 +88,7 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) bswap32(unsigned INT32 x) {
             | ((x & 0x00ff0000) >> 8) | ((x & 0x0000ff00) << 8));
 #endif
 }
+#endif /* !HAVE___BSWAP32 && !HAVE_BSWAP32 */
 
 #ifdef INT64
 
@@ -150,6 +151,7 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) ctz64(unsigned INT64 i) {
 # endif
 }
 
+#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64)
 static INLINE unsigned INT64 ATTRIBUTE((unused)) bswap64(unsigned INT64 x) {
 #ifdef HAS___BUILTIN_BSWAP64
     return __builtin_bswap64(x);
@@ -161,6 +163,7 @@ static INLINE unsigned INT64 ATTRIBUTE((unused)) bswap64(unsigned INT64 x) {
     return bswap32(x >> 32) | (unsigned INT64)bswap32(x & 0xffffffff) << 32;
 #endif
 }
+#endif /* !HAVE___BSWAP64 && !HAVE_BSWAP64 */
 
 static INLINE unsigned INT64 PIKE_UNUSED_ATTRIBUTE round_up64(unsigned INT64 v) {
     unsigned INT32 i;
@@ -213,7 +216,9 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
 
+#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16)
 #define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
+#endif /* !HAVE___BSWAP16 && !HAVE_BSWAP16 */
 
 #if PIKE_BYTEORDER == 1234
 #define get_unaligned_le16 get_unaligned16
