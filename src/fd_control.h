@@ -11,31 +11,6 @@
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
-/* NB: The default values are compatible with Linux,
- *     but should work on other OSs as well, since
- *     accept4(2) is emulated by us anyway.
- */
-enum pike_sock_flags {
-#ifndef SOCK_CLOEXEC
-#if !defined(SOCK_NONBLOCK) || (SOCK_NONBLOCK != 0x80000)
-  SOCK_CLOEXEC = 0x80000,
-#else
-  /* Unlikely, but... */
-  SOCK_CLOEXEC = 0x40000,
-#endif /* !SOCK_NONBLOCK || SOCK_NONBLOCK != 0x80000 */
-#define SOCK_CLOEXEC	SOCK_CLOEXEC
-#endif
-#ifndef SOCK_NONBLOCK
-#if (SOCK_CLOEXEC != 0x00800)
-  SOCK_NONBLOCK = 0x00800,
-#else
-  /* Unlikely, but... */
-  SOCK_NONBLOCK = 0x00400,
-#endif
-#define SOCK_NONBLOCK	SOCK_NONBLOCK
-#endif
-};
 #endif /* !HAVE_ACCEPT4 */
 
 /* Prototypes begin here */
