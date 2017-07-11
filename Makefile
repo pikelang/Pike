@@ -394,11 +394,7 @@ distclean:
 	-rm -f bin/pike
 
 srcclean:
-	for d in `find src -type d -print`; do \
-	  if test -f "$$d/.gitignore"; then \
-	    (cd "$$d" && rm -f `cat ".gitignore"`); \
-	  else :; fi; \
-	done
+	@git clean -X -f
 
 gitclean: srcclean distclean docclean
 	-rm -rf build
