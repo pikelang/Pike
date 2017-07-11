@@ -5494,16 +5494,7 @@ static void exit_file_lock_key(struct object *DEBUGUSED(o))
       }
     }while(err<0 && errno==EINTR);
 
-#ifdef _REENTRANT
-    THIS_KEY->owner = NULL;
-    if(THIS_KEY->owner_obj)
-    {
-      free_object(THIS_KEY->owner_obj);
-      THIS_KEY->owner_obj = NULL;
-    }
-#endif
     THIS_KEY->f->key = 0;
-    THIS_KEY->f = 0;
   }
 }
 
