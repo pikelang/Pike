@@ -4414,7 +4414,7 @@ AC_CHECK_FUNCS( \
  socketpair \
  bswap16 \
  __bswap16 \
- bswap32 \ 
+ bswap32 \
  __bswap32 \
  bswap64 \
  __bswap64 \
