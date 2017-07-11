@@ -340,6 +340,8 @@ Building
 o Configure
 
   Fixed issues with the LDSHARED test on some BSD-derivatives.
+ 
+  Detect systems that provide bswap16,32,64 in their libc.
 
 o Stdio
 
