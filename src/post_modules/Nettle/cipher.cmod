@@ -620,7 +620,10 @@ PIKECLASS BufferedCipher
 	  free(THIS->backlog);
         }
         if(THIS->object)
-	  free_object(THIS->object);
+        {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -1200,8 +1203,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object)
-	  free_object(THIS->object);
+        if(THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if(THIS->iv)
 	  free_string(THIS->iv);
@@ -1703,8 +1708,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object)
+        if(THIS->object) {
           free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if(THIS->iv)
 	  free_string(THIS->iv);
@@ -2103,8 +2110,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if(THIS->object)
-	  free_object(THIS->object);
+        if(THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if(THIS->iv)
 	  free_string(THIS->iv);
@@ -2505,8 +2514,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object)
-	  free_object(THIS->object);
+        if (THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if (THIS->iv)
 	  free_string(THIS->iv);
@@ -2981,8 +2992,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object)
-	  free_object(THIS->object);
+        if (THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if (THIS->iv)
 	  free_string(THIS->iv);
@@ -3371,8 +3384,10 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-        if (THIS->object)
-	  free_object(THIS->object);
+        if (THIS->object) {
+          free_object(THIS->object);
+          THIS->object;
+        }
 
         if (THIS->iv)
 	  free_string(THIS->iv);
@@ -3861,8 +3876,10 @@ PIKECLASS BlockCipher16
       EXIT
 	gc_trivial;
       {
-        if(THIS->object)
-	  free_object(THIS->object);
+        if(THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
 
         if(THIS->iv)
 	  free_string(THIS->iv);
@@ -4889,8 +4906,10 @@ PIKECLASS BlockCipher16
       EXIT
 	gc_trivial;
       {
-        if (THIS->object)
-	  free_object(THIS->object);
+        if (THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -5358,8 +5377,10 @@ PIKECLASS BlockCipher16
       EXIT
 	gc_trivial;
       {
-        if (THIS->object)
-	  free_object(THIS->object);
+        if (THIS->object) {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
       }
 
       /*! @decl Cipher::State substate_factory()
