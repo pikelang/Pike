@@ -277,12 +277,15 @@ PIKECLASS Hash
     unsigned char *s;
     int plen;
     int slen;
-    int dsz = meta->digest_size;
+    int dsz;
 
     int i;
     int r;
 
     int a, b, c;
+
+    if (!meta)
+      Pike_error("HashInfo not properly initialized.\n");
 
     if (!rounds) rounds = 5000;
     if (rounds < 1000) rounds = 1000;
