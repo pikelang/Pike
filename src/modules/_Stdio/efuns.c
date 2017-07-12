@@ -769,23 +769,49 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STATFS_F_BAVAIL */
     push_static_text("fstype");
     switch(st.f_type) {
-    case BTRFS_SUPER_MAGIC:	push_static_text("btrfs");	break;
+#ifdef BTRFS_SUPER_MAGIC
+   case BTRFS_SUPER_MAGIC:	push_static_text("btrfs");	break;
+#endif /* BTRFS_SUPER_MAGIC */
+#ifdef EXT2_SUPER_MAGIC
     case EXT2_SUPER_MAGIC:	push_static_text("ext");	break;
+#endif /* EXT2_SUPER_MAGIC */
+#ifdef ISOFS_SUPER_MAGIC
     case ISOFS_SUPER_MAGIC:	push_static_text("isofs");	break;
+#endif /* ISOFS_SUPER_MAGIC */
+#ifdef JFFS2_SUPER_MAGIC
     case JFFS2_SUPER_MAGIC:	push_static_text("jffs2");	break;
+#endif /* JFFS2_SUPER_MAGIC */
+#ifdef MSDOS_SUPER_MAGIC
     case MSDOS_SUPER_MAGIC:	push_static_text("msdos");	break;
+#endif /* MSDOS_SUPER_MAGIC */
+#ifdef NFS_SUPER_MAGIC
     case NFS_SUPER_MAGIC:	push_static_text("nfs");	break;
+#endif /* NFS_SUPER_MAGIC */
 #ifndef NTFS_SB_MAGIC
 #define NTFS_SB_MAGIC	0x5346544e
 #endif
     case NTFS_SB_MAGIC:		push_static_text("ntfs");	break;
+#ifdef PROC_SUPER_MAGIC
     case PROC_SUPER_MAGIC:	push_static_text("procfs");	break;
+#endif /* PROC_SUPER_MAGIC */
+#ifdef RAMFS_MAGIC
     case RAMFS_MAGIC:		push_static_text("ramfs");	break;
+#endif /* RAMFS_MAGIC */
+#ifdef REISERFS_SUPER_MAGIC
     case REISERFS_SUPER_MAGIC:	push_static_text("reiserfs");	break;
+#endif /* REISERFS_SUPER_MAGIC */
+#ifdef SMB_SUPER_MAGIC 
     case SMB_SUPER_MAGIC:	push_static_text("smb");	break;
+#endif /* SMB_SUPER_MAGIC */
+#ifdef SYSFS_MAGIC
     case SYSFS_MAGIC:		push_static_text("sysfs");	break;
+#endif /* SYSFS_MAGIC */
+#ifdef TMPFS_MAGIC
     case TMPFS_MAGIC:		push_static_text("tmpfs");	break;
+#endif /* TMPFS_MAGIC */
+#ifdef XENFS_SUPER_MAGIC
     case XENFS_SUPER_MAGIC:	push_static_text("xenfs");	break;
+#endif /* XENFS_SUPER_MAGIC */
     default:
       push_int(st.f_type);
       break;
