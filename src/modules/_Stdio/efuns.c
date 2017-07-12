@@ -768,6 +768,9 @@ void f_filesystem_stat(INT32 args)
     num_fields++;
 #endif /* HAVE_STATFS_F_BAVAIL */
     push_static_text("fstype");
+#ifdef HAVE_STATFS_F_FSTYPENAME
+    push_text(st.f_fstypename);
+#else
     switch(st.f_type) {
 #ifdef BTRFS_SUPER_MAGIC
    case BTRFS_SUPER_MAGIC:	push_static_text("btrfs");	break;
@@ -816,6 +819,7 @@ void f_filesystem_stat(INT32 args)
       push_int(st.f_type);
       break;
     }
+#endif /* HAVE_STATFS_F_FSTYPENAME */
     num_fields++;
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA

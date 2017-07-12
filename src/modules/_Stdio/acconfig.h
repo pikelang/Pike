@@ -62,6 +62,9 @@
 /* Define if your statfs struct has the f_bavail member */
 #undef HAVE_STATFS_F_BAVAIL
 
+/* Define if your statfs struct has the f_fstypename member */
+#undef HAVE_STATFS_F_FSTYPENAME
+
 /* Define if you have the struct fs_data */
 #undef HAVE_STRUCT_FS_DATA
 
