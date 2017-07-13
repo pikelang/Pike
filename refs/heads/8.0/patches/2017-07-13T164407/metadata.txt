@@ -1,0 +1,8 @@
+subject: Pike 8.0: Filesystem.Monitor initialization latency
+from: aa94b06ba7f4baa76f0cddbcf9d06e31f1d34928
+to: be692018d8d9adfd94c047032880b2d870e6b567
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2017-06-30T121053
+restart: true
+
+• Filesystem.Monitor: Reduce initialization latency.
