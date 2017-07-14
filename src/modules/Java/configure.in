@@ -301,6 +301,8 @@ if test "x$with_java" = xyes; then
     done
   fi
 
+  AC_SYS_COMPILER_FLAG(-framework JavaVM, framework_JavaVM, JAVA_FRAMEWORKS)
+  
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
   AC_CACHE_VAL(pike_cv_java_javavm, [
     pike_cv_java_javavm=no;
@@ -332,7 +334,7 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_HEADERS(jni.h JavaVM/jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
 #else
@@ -347,7 +349,7 @@ if test "x$with_java" = xyes; then
 
   pike_cv_java=no
 
-  if test "$ac_cv_header_jni_h" = yes; then
+  if test "$ac_cv_header_jni_h" = yes -o "$ac_cv_header_JavaVM_jni_h" = yes; then
 
     AC_CHECK_LIB(hpi, sysOpen, [
       LIBS="$LIBS -lhpi"
@@ -371,6 +373,27 @@ if test "x$with_java" = xyes; then
         LIBS="$pike_cv_java_javavm $LIBS"
         JAVA_LIBS="$pike_cv_java_javavm ${JAVA_LIBS}"
         pike_cv_java=yes;
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
+    fi
+
+    if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
+      AC_MSG_CHECKING([for JNI_CreateJavaVM in -framework JavaVM])
+      AC_CACHE_VAL(ac_cv_framework_JavaVM_JNI_CreateJavaVM, [
+        ac_save_LIBS="$LIBS"
+        LIBS="-framework JavaVM $LIBS"
+        AC_TRY_LINK([#include <JavaVM/jni.h>], dnl
+          [JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
+          [ac_cv_framework_JavaVM_JNI_CreateJavaVM=yes], dnl
+          [ac_cv_framework_JavaVM_JNI_CreateJavaVM=no])
+        LIBS="$ac_save_LIBS"
+      ])
+      if test x"$ac_cv_framework_JavaVM_JNI_CreateJavaVM" = xyes; then
+        LIBS="-framework JavaVM ${LIBS}"
+        JAVA_LIBS="-framework JavaVM ${JAVA_LIBS}"
+        pike_cv_java=yes   
         AC_MSG_RESULT(yes)
       else
         AC_MSG_RESULT(no)
@@ -472,6 +495,9 @@ if test "x$with_java" = xyes; then
       CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
+#endif
+#ifdef HAVE_JAVAVM_JNI_H
+#include <JavaVM/jni.h>
 #endif
 #include <setjmp.h>
 #include <stdio.h>
