@@ -39,6 +39,12 @@
 
 #define DEFAULT_CMOD_STORAGE static
 
+/*! @module Standards
+ */
+
+/*! @module _BSON
+ */
+
 #define TYPE_BSON_DOUBLE   0x01
 #define TYPE_BSON_STRING   0x02
 #define TYPE_BSON_DOCUMENT 0x03
@@ -498,6 +504,8 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
   return n;
 }
 
+/*! @decl mapping decode(string(8bit) document)
+ */
 PIKEFUN mapping decode(string(8bit) document)
 {
   if(document->size_shift)
@@ -506,6 +514,8 @@ PIKEFUN mapping decode(string(8bit) document)
   decode_document(document->str, document->len);
 }
 
+/*! @decl mapping decode(Stdio.Buffer document)
+ */
 PIKEFUN mapping decode(Stdio.Buffer document)
   rawtype tFunc(tObjIs_STDIO_BUFFER, tMapping);
 {
@@ -549,3 +559,9 @@ PIKE_MODULE_EXIT
   if( Timestamp ) free_program(Timestamp);
   EXIT;
 }
+
+/*! @endmodule _BSON
+ */
+
+/*! @endmodule Standards
+ */
