@@ -1,0 +1,125 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+
+int compare(mixed bson, mixed facit)
+{
+  //  write("CMP %O %O\n", bson, facit);
+  if( arrayp(bson) )
+  {
+    if( !arrayp(facit) || sizeof(bson) != sizeof(facit) )
+      return 0;
+    foreach(bson; int pos; mixed val)
+      if( !compare(val, facit[pos]) )
+        return 0;
+    return 1;
+  }
+  if( mappingp(bson) )
+  {
+    if( !mappingp(facit) ) return 0;
+    foreach(bson; string idx; mixed val)
+    {
+      if( !compare(val, facit[idx]) )
+        return 0;
+    }
+    return 1;
+  }
+  if( mappingp(facit) )
+  {
+    if( facit["$numberInt"] ) return bson == (int)facit["$numberInt"];
+    if( facit["$numberLong"] ) return bson == (int)facit["$numberLong"];
+    if( facit["$code"] )
+    {
+      return (string)bson==facit["$code"] &&
+        compare(bson->scope,facit["$scope"]||([]));
+    }
+    if( facit["$date"] )
+    {
+      if( mappingp(facit["$date"]) )
+      {
+        int s = (int)facit["$date"]["$numberLong"][..<3];
+        return bson->unix_time() == s;
+      }
+      write("No canonical representation.\n");
+      return 0;
+    }
+    if( facit["$oid"] ) return (string)bson==facit["$oid"];
+    if( facit["$numberDouble"] )
+    {
+      if( !floatp(bson) ) return 0;
+      string f = facit["$numberDouble"];
+      if( f=="NaN" ) return bson!=bson;
+      if( f=="Infinity" ) return bson==Math.inf;
+      if( f=="-Infinity" ) return bson==-Math.inf;
+      return bson == (float)f;
+    }
+    if( facit["$maxKey"] ) return bson==Standards.BSON.MaxKey;
+    if( facit["$minKey"] ) return bson==Standards.BSON.MinKey;
+    if( facit["$regularExpression"] )
+    {
+      facit = facit["$regularExpression"];
+      return bson->regex == facit->pattern &&
+        bson->options == facit->options;
+    }
+    if( facit["$timestamp"] )
+    {
+      facit = facit["$timestamp"];
+      return bson->timestamp==facit->t && bson->counter==facit->i;
+    }
+    if( facit["$binary"] )
+    {
+      facit = facit["$binary"];
+      string data = MIME.decode_base64(facit->base64);
+      int sub; sscanf(facit->subType, "%x", sub); // Really hex?
+      return bson->get_subtype() == sub && (string)bson == data;
+    }
+  }
+  return equal(bson, facit);
+}
+
+int success, fail;
+void do_tests(mapping json)
+{
+  if( json->deprecated ) return;
+  if( has_prefix(json->description, "Decimal128") ) return;
+  werror("%s\n", string_to_utf8(json->description));
+  foreach(json->valid, mapping test)
+  {
+    werror("  %s : ", string_to_utf8(test->description));
+    mixed err = catch  {
+        mapping d = Standards.BSON.decode(String.hex2string(test->canonical_bson || test->bson));
+        mapping ext = Standards.JSON.decode(utf8_to_string(test->canonical_extjson || test->extjson));
+
+        if( compare(d, ext) )
+        {
+          success++;
+          werror("OK\n");
+        }
+        else
+        {
+          fail++;
+          werror("NO\n");
+        }
+      };
+    if(err)
+    {
+      fail++;
+      werror("exception %s\n", describe_backtrace(err));
+    }
+  }
+}
+
+void main(int n, array args)
+{
+  if(n!=1)
+  {
+    do_tests( Standards.JSON.decode(Stdio.read_file(args[1])) );
+    return;
+  }
+
+  foreach(glob("*.json",get_dir(__DIR__)), string file)
+  {
+    file = combine_path(__DIR__,file);
+    do_tests( Standards.JSON.decode(Stdio.read_file(file)) );
+  }
+
+  Tools.Testsuite.report_result(success, fail);
+}
