@@ -301,20 +301,24 @@ if test "x$with_java" = xyes; then
     done
   fi
 
-  AC_SYS_COMPILER_FLAG(-framework JavaVM, framework_JavaVM, JAVA_FRAMEWORKS)
-  
-  AC_MSG_CHECKING([for JavaVM (MacOS X)])
-  AC_CACHE_VAL(pike_cv_java_javavm, [
-    pike_cv_java_javavm=no;
-    for tmp_java_javavm in ../.. .. . ../../../../Frameworks/JavaVM.framework/; do
-      if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
-        pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
-      else
-        :
-      fi
-    done
-  ])
-  AC_MSG_RESULT($pike_cv_java_javavm)
+  # the JavaVM framework is deprecated, so we should only use it when
+  # there is no other option available.
+  if test x"$pike_cv_java_java_home" = "xno" ; then
+    AC_SYS_COMPILER_FLAG(-framework JavaVM, framework_JavaVM, JAVA_FRAMEWORKS)
+ 
+    AC_MSG_CHECKING([for JavaVM (MacOS X)])
+    AC_CACHE_VAL(pike_cv_java_javavm, [
+      pike_cv_java_javavm=no;
+      for tmp_java_javavm in ../.. .. . ../../../../Frameworks/JavaVM.framework/; do
+        if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
+          pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
+        else
+          :
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_java_javavm)
+  fi
 
   if test osf1 = "$pike_cv_java_sysos"; then
     CPPFLAGS="-D_REENTRANT $CPPFLAGS"
@@ -334,7 +338,12 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h JavaVM/jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
+
+  if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
+  AC_CHECK_HEADERS(JavaVM/jni.h)
+  fi
+
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
 #else
