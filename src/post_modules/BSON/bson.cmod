@@ -234,13 +234,13 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
     {
       INT32 bump = get_unaligned_le32(n);
       INT32 left;
-      INT8 subtype;
+      unsigned INT8 subtype;
       n+=4;
-      subtype = *(INT8*)n;
+      subtype = *(unsigned INT8*)n;
       n++;
       left = n_len - (n - slist);
 
-      if(bump <= 0 || bump > left)
+      if(bump < 0 || bump > left)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
