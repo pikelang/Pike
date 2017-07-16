@@ -547,7 +547,7 @@ MATCH_IS_WIDE(							\
 
 #ifdef NEED_CUSTOM_IEEE
 
-static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
+static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
 {
   unsigned INT32 f, extra_f;
   int s, e;
@@ -586,14 +586,17 @@ static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
     } else
       e -= 1022+20;
   }
+
   if(e>=9999)
+  {
     if(f||extra_f) {
       /* NAN */
       return (FLOAT_TYPE)MAKE_NAN();
     } else {
       /* +/- Infinity */
-      return (FLOAT_TYPE)MAKE_INF(s? -1:1);
+      return (FLOAT_TYPE)MAKE_INF() * (s? -1:1);
     }
+  }
 
   r = (double)f;
   if(extra_f)
