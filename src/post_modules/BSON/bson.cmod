@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #define _GNU_SOURCE
 
 #include "bson_config.h"
@@ -431,7 +437,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_SECOND:
     {
 #ifdef INT64
-      UINT64 sec;
+      INT64 sec;
 #endif
       INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
