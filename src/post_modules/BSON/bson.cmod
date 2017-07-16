@@ -258,14 +258,14 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct pike_string * val;
       INT32 bump = get_unaligned_le32(n);
       INT32 left;
-      INT8 subtype;
+      unsigned INT8 subtype;
       n+=4;
-      subtype = *(INT8*)n;
+      subtype = *(unsigned INT8*)n;
       n++;
 
       left = pike_slist->len - (n - slist);
 
-      if(bump <= 0 || bump > left)
+      if(bump < 0 || bump > left)
       {
         Pike_error("invalid BSON. not enough data 5.\n");
       }
