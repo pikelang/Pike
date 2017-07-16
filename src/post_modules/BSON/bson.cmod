@@ -68,12 +68,6 @@
 #define TYPE_BSON_MINKEY 0xff
 #define TYPE_BSON_MAXKEY 0x7f
 
-
-/*
-Types left to implement
-|	"\x0F" e_name code_w_s	JavaScript code w/ scope
-*/
-
 struct object * True;
 struct object * False;
 struct object * Null;
