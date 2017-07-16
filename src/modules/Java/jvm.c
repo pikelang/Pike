@@ -45,6 +45,11 @@
 #include <jni.h>
 #endif /* HAVE_JNI_H */
 
+#ifdef HAVE_JAVAVM_JNI_H
+#undef UNUSED
+#include <JavaVM/jni.h>
+#endif /* HAVE_JAVAVM_JNI_H */
+
 #ifdef HAVE_WINBASE_H
 #include <winbase.h>
 #endif /* HAVE_WINBASE_H */
