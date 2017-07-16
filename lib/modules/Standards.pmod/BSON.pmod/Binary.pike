@@ -14,7 +14,7 @@
      subtype = _subtype;
      if(subtype == BINARY_OLD)
      {
-       if( !sscanf(data, "%-4H", data) )
+       if( !sscanf(_data, "%-4H", data) )
          throw(Error.Generic("old binary data length does not match actual data length.\n"));
      }
      else
@@ -42,13 +42,7 @@
   protected mixed cast(string type)
   {
     if(type == "string")
-    {
-      // the docs are a little sketchy about this, do we need to NULL
-      // terminate?
-       if(subtype == BINARY_OLD)
-         return sprintf("%-4H", data);
-       else return data;
-    }
+      return data;
     return UNDEFINED;
   }
 
