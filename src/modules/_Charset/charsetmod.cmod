@@ -38,7 +38,10 @@
  *!   @[Charset]
  */
 
-static struct program *std_cs_program = NULL;
+/* Remap old symbols */
+#define std_cs_stor		cq__Charset_Std_CS_struct
+#define std_cs_program		cq__Charset_Std_CS_program
+
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
@@ -62,11 +65,7 @@ static size_t rfc_charset_name_offs = 0;
 static struct array *double_custom_chars = NULL;
 static struct array *double_combiner_chars = NULL;
 
-struct std_cs_stor {
-  struct string_builder strbuild;
-  struct pike_string *retain, *replace;
-  struct svalue repcb;
-};
+DECLARATIONS;
 
 struct std_rfc_stor {
   UNICHAR const *table;
@@ -117,35 +116,90 @@ static SIGNED char rev64t['z'-'+'+1];
 static char fwd64t[64]=
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static void f_create(INT32 args)
+/* Start std_cs */
+
+PIKECLASS Std_CS
+  flags ID_PROTECTED;
+{
+  CVAR struct string_builder strbuild;
+  CVAR struct pike_string *retain, *replace;
+  PIKEVAR mixed _repcb flags ID_PROTECTED;
+
+  DECLARE_STORAGE;
+
+PIKEFUN void create(string|void replace, function(string:string)|void repcb)
 {
   struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
-  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
-		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
-
-  if(args>0 && TYPEOF(Pike_sp[-args]) == T_STRING) {
+  if(replace) {
     if(s->replace != NULL)
       free_string(s->replace);
-    add_ref(s->replace = Pike_sp[-args].u.string);
+    add_ref(s->replace = replace);
   }
 
-  if(args>1 && TYPEOF(Pike_sp[1-args]) == T_FUNCTION)
-    assign_svalue(&s->repcb, &Pike_sp[1-args]);
+  if(repcb && TYPEOF(*repcb) == T_FUNCTION)
+    assign_svalue(&s->_repcb, repcb);
 }
 
-static void f_set_repcb(INT32 args)
+PIKEFUN void set_replacement_callback(function(string:string) repcb)
 {
   struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
 
-  check_all_args("set_replacement_callback()", args,
-		 BIT_FUNCTION|BIT_INT, 0);
-
-  if(args>0)
-    assign_svalue(&s->repcb, &Pike_sp[-args]);
+  if(repcb)
+    assign_svalue(&s->_repcb, repcb);
 
   push_object(this_object());
 }
+
+PIKEFUN string drain()
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+
+  pop_n_elems(args);
+  push_string(finish_string_builder(&s->strbuild));
+  init_string_builder(&s->strbuild, 0);
+}
+
+PIKEFUN object clear()
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+
+  pop_n_elems(args);
+
+  if(s->retain != NULL) {
+    free_string(s->retain);
+    s->retain = NULL;
+  }
+
+  reset_string_builder(&s->strbuild);
+
+  push_object(this_object());
+}
+
+INIT
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+
+  s->retain = NULL;
+  s->replace = NULL;
+
+  init_string_builder(&s->strbuild,0);
+}
+
+EXIT
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+
+  if(s->retain != NULL)
+    free_string(s->retain);
+
+  if(s->replace != NULL)
+    free_string(s->replace);
+
+  free_string_builder(&s->strbuild);
+}
+}
+/* End std_cs */
 
 static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 {
@@ -245,15 +299,6 @@ void DECLSPEC(noreturn) transcoder_error (
   } while (0)
 
 #define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
-
-static void f_drain(INT32 args)
-{
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
-
-  pop_n_elems(args);
-  push_string(finish_string_builder(&s->strbuild));
-  init_string_builder(&s->strbuild, 0);
-}
 
 static void f_drain_rfc1345(INT32 args)
 {
@@ -363,7 +408,9 @@ static void f_drain_rfc1345(INT32 args)
       break;
     }
   }
-  f_drain(args);
+
+  f_cq__Charset_Std_CS_drain(args);
+
   if (trailer) {
     /* The last character was a non-spacing character.
      * Restore it for the next pass.
@@ -376,45 +423,6 @@ static void f_drain_rfc1345(INT32 args)
     ref_push_array(double_combiner_chars);
     f_replace(3);
   }
-}
-
-static void f_clear(INT32 args)
-{
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
-
-  pop_n_elems(args);
-
-  if(s->retain != NULL) {
-    free_string(s->retain);
-    s->retain = NULL;
-  }
-
-  reset_string_builder(&s->strbuild);
-
-  push_object(this_object());
-}
-
-static void init_stor(struct object *UNUSED(o))
-{
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
-
-  s->retain = NULL;
-  s->replace = NULL;
-
-  init_string_builder(&s->strbuild,0);
-}
-
-static void exit_stor(struct object *UNUSED(o))
-{
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
-
-  if(s->retain)
-    free_string(s->retain);
-
-  if(s->replace)
-    free_string(s->replace);
-
-  free_string_builder(&s->strbuild);
 }
 
 static void f_std_feed(INT32 args, ptrdiff_t (*func)(struct pike_string *,
@@ -752,7 +760,7 @@ static void f_clear_utf7(INT32 args)
   struct utf7_stor *u7 =
     (struct utf7_stor *)(Pike_fp->current_storage+utf7_stor_offs);
 
-  f_clear(args);
+  f_cq__Charset_Std_CS_clear(args);
 
   u7->dat = 0;
   u7->surro = 0;
@@ -1157,7 +1165,7 @@ static void f_feed_gb18030e(INT32 args)
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_gb18030e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+  feed_gb18030e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -1234,7 +1242,7 @@ static void f_feed_gbke(INT32 args)
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_gbke(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+  feed_gbke(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -1276,7 +1284,7 @@ static void f_create_sjise(INT32 args)
   REF_MAKE_CONST_STRING (*(struct pike_string **) (Pike_fp->current_storage +
 						   rfc_charset_name_offs),
                          "shiftjis");
-  f_create(args);
+  f_cq__Charset_Std_CS_create(args);
 }
 
 static void f_create_euce(INT32 args)
@@ -1356,7 +1364,7 @@ static void f_create_euce(INT32 args)
 						rfc_charset_name_offs),
 		      Pike_sp[1-args].u.string);
 
-  f_create(args-2);
+  f_cq__Charset_Std_CS_create(args-2);
 }
 
 static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
@@ -1832,7 +1840,7 @@ static void f_feed_utf8e(INT32 args)
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_utf8e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+  feed_utf8e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -1964,7 +1972,7 @@ static void f_feed_utf_ebcdice(INT32 args)
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_utf_ebcdice(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+  feed_utf_ebcdice(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2033,7 +2041,7 @@ static void f_feed_utf7_5e(INT32 args)
 
   get_all_args("feed", args, "%W", &str);
 
-  feed_utf7_5e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+  feed_utf7_5e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2190,7 +2198,7 @@ static void f_feed_utf7e(INT32 args)
   get_all_args("feed", args, "%W", &str);
 
   feed_utf7e((struct utf7_stor *)(((char*)Pike_fp->current_storage)+utf7_stor_offs),
-	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+	     &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2211,7 +2219,7 @@ static void f_drain_utf7e(INT32 args)
     string_builder_putchar(&cs->strbuild, '-');
     u7->shift = 0;
   }
-  f_drain(args);
+  f_cq__Charset_Std_CS_drain(args);
 }
 
 static void std_8bite_init_stor(struct object *UNUSED(o))
@@ -2300,7 +2308,7 @@ static void f_feed_std8e(INT32 args)
 
   feed_std8e((struct std8e_stor *)(((char*)Pike_fp->current_storage)+
 				   std8e_stor_offs),
-	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+	     &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2405,7 +2413,7 @@ static void f_feed_std16e(INT32 args)
 
   feed_std16e((struct std16e_stor *)(((char*)Pike_fp->current_storage)+
 				     std16e_stor_offs),
-	      &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+	      &cs->strbuild, str, cs->replace, MKREPCB(cs->_repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2444,23 +2452,6 @@ PIKE_MODULE_INIT
   iso2022_init();
 
   INIT;
-
-  start_new_program();
-  ADD_STORAGE(struct std_cs_stor);
-  /* function(:string) */
-  ADD_FUNCTION("drain", f_drain,tFunc(tNone,tStr), 0);
-  /* function(:object) */
-  ADD_FUNCTION("clear", f_clear,tFunc(tNone,tObj), 0);
-  /* function(string|void,function(string:string)|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
-  /* function(function(string:string):void) */
-  ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
-  PIKE_MAP_VARIABLE("_repcb", OFFSETOF(std_cs_stor, repcb),
-                    tFunc(tStr,tStr), T_MIXED, ID_PROTECTED);
-
-  set_init_callback(init_stor);
-  set_exit_callback(exit_stor);
-  std_cs_program = end_program();
 
   SET_SVAL(prog, T_PROGRAM, 0, program, std_cs_program);
 
@@ -2731,9 +2722,6 @@ PIKE_MODULE_EXIT
 
   if(std_rfc_program != NULL)
     free_program(std_rfc_program);
-
-  if(std_cs_program != NULL)
-    free_program(std_cs_program);
 
   if(gb18030e_program != NULL)
     free_program(gb18030e_program);
