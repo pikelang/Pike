@@ -45,23 +45,25 @@
 /*! @module _BSON
  */
 
-#define TYPE_BSON_DOUBLE   0x01
-#define TYPE_BSON_STRING   0x02
-#define TYPE_BSON_DOCUMENT 0x03
-#define TYPE_BSON_ARRAY    0x04
-#define TYPE_BSON_BINARY   0x05
-#define TYPE_BSON_UNDEFINED 0x06 /* not supported */
-#define TYPE_BSON_OBJECTID 0x07
-#define TYPE_BSON_BOOLEAN  0x08
-#define TYPE_BSON_SECOND   0x09
-#define TYPE_BSON_NULL     0x0a
-#define TYPE_BSON_REGEX    0x0b
-
-#define TYPE_BSON_JAVASCRIPT 0x0d
-
+#define TYPE_BSON_DOUBLE    0x01
+#define TYPE_BSON_STRING    0x02
+#define TYPE_BSON_DOCUMENT  0x03
+#define TYPE_BSON_ARRAY     0x04
+#define TYPE_BSON_BINARY    0x05
+#define TYPE_BSON_UNDEFINED 0x06 /* deprecated */
+#define TYPE_BSON_OBJECTID  0x07
+#define TYPE_BSON_BOOLEAN   0x08
+#define TYPE_BSON_SECOND    0x09
+#define TYPE_BSON_NULL      0x0a
+#define TYPE_BSON_REGEX     0x0b
+#define TYPE_BSON_DBPTR     0x0c /* deprecated */
+#define TYPE_BSON_JS        0x0d
+#define TYPE_BSON_SYMBOL    0x0e /* deprecated */
+#define TYPE_BSON_JS_W_C    0x0f
 #define TYPE_BSON_INTEGER   0x10
 #define TYPE_BSON_TIMESTAMP 0x11
 #define TYPE_BSON_INTEGER64 0x12
+#define TYPE_BSON_DECIMAL128 0x13 /* not supported */
 
 #define TYPE_BSON_MINKEY 0xff
 #define TYPE_BSON_MAXKEY 0x7f
@@ -464,7 +466,7 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
       break;
     }
 
-    case TYPE_BSON_JAVASCRIPT:
+    case TYPE_BSON_JS:
     {
       struct pike_string * val;
       INT32 bump = get_unaligned_le32(n);
@@ -484,6 +486,41 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
       f_utf8_to_string(1);
 
       apply_svalue( Pike_sp-2, 1);
+      stack_swap();
+      pop_stack();
+
+      break;
+    }
+
+    case TYPE_BSON_JS_W_C:
+    {
+      struct pike_string * val;
+      INT32 len, jslen, left;
+
+      len = get_unaligned_le32(n);
+      left = n_len - (n - slist);
+      n += 4;
+      if( len<0 || len > left )
+        Pike_error("Invalid BSON. Not enough data %d %d.\n", len, left);
+      jslen = get_unaligned_le32(n);
+      n += 4;
+      if( jslen<0 || jslen > len-4 )
+        Pike_error("Invalid BSON. Not enough data 2.\n");
+
+      val = make_shared_binary_string(n, jslen-1); /* length includes null. */
+      n += jslen;
+
+      if(!Javascript)
+        Javascript = lookup_program("Standards.BSON.Javascript");
+
+      ref_push_program(Javascript);
+      push_string(val);
+      f_utf8_to_string(1);
+
+      left = n_len - (n - slist);
+      n += decode_document(n, left);
+
+      apply_svalue( Pike_sp-3, 2);
       stack_swap();
       pop_stack();
 
