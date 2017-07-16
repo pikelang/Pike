@@ -301,8 +301,6 @@ if test "x$with_java" = xyes; then
     done
   fi
 
-  # the JavaVM framework is deprecated, so we should only use it when
-  # there is no other option available.
   if test x"$pike_cv_java_java_home" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-framework JavaVM, framework_JavaVM, JAVA_FRAMEWORKS)
  
@@ -338,7 +336,7 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h setjmp.h)
 
   if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
   AC_CHECK_HEADERS(JavaVM/jni.h)
@@ -508,7 +506,9 @@ if test "x$with_java" = xyes; then
 #ifdef HAVE_JAVAVM_JNI_H
 #include <JavaVM/jni.h>
 #endif
+#ifdef HAVE_SETJMP_H
 #include <setjmp.h>
+#endif
 #include <stdio.h>
 #ifdef __NT__
 #include <windows.h>
