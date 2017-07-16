@@ -55,6 +55,8 @@ static const struct math_class
 
 /*! @decl constant nan
  *! Floating point not-a-number (e.g. inf/inf).
+ *! @seealso
+ *!   @[Float.isnan()]
  */
 
 /*! @endmodule */
