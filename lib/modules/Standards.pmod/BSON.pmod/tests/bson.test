@@ -96,7 +96,7 @@ void do_tests(mapping json)
         else
         {
           fail++;
-          werror("NO\n");
+          werror("FAIL\n");
         }
       };
     if(err)
@@ -105,6 +105,25 @@ void do_tests(mapping json)
       werror("exception %s\n", describe_backtrace(err));
     }
   }
+#if 0
+  foreach(json->decodeErrors || ({}), mapping test)
+  {
+    werror("  %s : ", string_to_utf8(test->description));
+    mixed err = catch {
+        mapping d = Standards.BSON.decode(String.hex2string(test->canonical_bson || test->bson));
+      };
+    if( err )
+    {
+      success++;
+      werror("OK\n");
+    }
+    else
+    {
+      fail++;
+      werror("FAIL\n");
+    }
+  }
+#endif
 }
 
 void main(int n, array args)
