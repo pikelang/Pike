@@ -55,6 +55,8 @@ o Concurrent
 
 o Filesystem.Monitor
 
+  - Reduced initialization latency.
+
   - Changed the polling heuristic.
 
     This is intended to reduce poll (and notification) delays in
@@ -72,6 +74,13 @@ o Filesystem.Monitor
     on such file systems, they will not on changes performed by
     other hosts. To avoid missing such changes these monitors
     need to be actively scanned too.
+
+  - Fixed lost acceleration with InotifyMonitor
+
+    Recover from race-condition where when a file was repeatedly
+    created and deleted, acceleration was lost.
+
+  - Fixed symlink issue with InotifyMonitor.
 
 o Sql.pgsql
 
