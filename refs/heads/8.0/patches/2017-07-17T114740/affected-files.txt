@@ -1,0 +1,10 @@
+Added files:
+  pike/lib/modules/Debug.pmod/Inspect.pike
+Modified files:
+  pike/lib/modules/Debug.pmod/module.pmod
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike
+  pike/lib/modules/Sql.pmod/pgsql.pike
+  pike/lib/modules/Sql.pmod/pgsql_util.pmod
+  pike/lib/modules/Standards.pmod/BSON.pmod/Binary.pike
+Deleted files:
+  pike/lib/modules/Debug.pmod/Peek.pike
