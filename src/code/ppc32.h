@@ -19,6 +19,8 @@
 		     ((XO)<<1)|(LK))
 #define PPC_INSTR_XFX_FORM(OPCD,S,SPR,XO)			\
       add_to_program(((OPCD)<<26)|((S)<<21)|((SPR)<<11)|((XO)<<1))
+#define PPC_INSTR_XO_FORM(OPCD,D,A,B,OE,XO,Rc)				\
+      add_to_program(((OPCD)<<26)|((D)<<21)|((A)<<16)|((B)<<11)|((OE)<<10)|((XO)<<1)|(Rc))
 
 #define BC(BO,BI,BD) PPC_INSTR_B_FORM(16,BO,BI,BD,0,0)
 
@@ -30,6 +32,7 @@
 #define LWZ(D,A,d) PPC_INSTR_D_FORM(32,D,A,d)
 #define STW(S,A,d) PPC_INSTR_D_FORM(36,S,A,d)
 #define LHA(D,A,d) PPC_INSTR_D_FORM(42,D,A,d)
+#define STH(S,A,d) PPC_INSTR_D_FORM(44,S,A,d)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
 
@@ -41,6 +44,9 @@
 #define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
 #define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
+
+#define SUBF(D,A,B) PPC_INSTR_XO_FORM(31,D,A,B,0,40,0)
+#define DIVWU(D,A,B) PPC_INSTR_XO_FORM(31,D,A,B,0,459,0)
 
 #define LOW_GET_JUMP()	((INT32)PROG_COUNTER[JUMP_EPILOGUE_SIZE])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))

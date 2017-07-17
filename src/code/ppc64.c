@@ -5,7 +5,7 @@
 */
 
 /*
- * Machine code generator for 32 bit PowerPC
+ * Machine code generator for 64 bit PowerPC
  *
  * Marcus Comstedt 20010726
  */
@@ -367,9 +367,18 @@ static void ppc64_escape_catch(void)
   /* ld r4,save_expendible(r3) */
   LD(PPC_REG_ARG2, PPC_REG_ARG1,
      OFFSETOF(catch_context, save_expendible));
-  /* std r4,expendible(pike_fp) */
-  STD(PPC_REG_ARG2, PPC_REG_PIKE_FP,
-      OFFSETOF(pike_frame, expendible));
+  /* ld r5,locals(pike_fp) */
+  LD(PPC_REG_ARG3, PPC_REG_PIKE_FP,
+     OFFSETOF(pike_frame, locals));
+  /* subf r4,r5,r4 */
+  SUBF(PPC_REG_ARG2, PPC_REG_ARG3, PPC_REG_ARG2);
+  /* addi r5,0,sizeof(struct svalue) */
+  SET_REG32(PPC_REG_ARG3, sizeof(struct svalue));
+  /* divdu r4,r4,r5 */
+  DIVDU(PPC_REG_ARG2, PPC_REG_ARG2, PPC_REG_ARG3);
+  /* sth r4,expendible(pike_fp) */
+  STH(PPC_REG_ARG2, PPC_REG_PIKE_FP,
+      OFFSETOF(pike_frame, expendible_offset));
   /* ld r4,prev(r3) */
   LD(PPC_REG_ARG2, PPC_REG_ARG1,
      OFFSETOF(catch_context, prev));
