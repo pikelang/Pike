@@ -198,7 +198,7 @@ static inline void ATTRIBUTE((unused)) set_unaligned64(void * ptr, UINT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static inline UINT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
+static inline unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;
