@@ -263,7 +263,7 @@ void ppc64_push_global(INT32 arg)
   INCR_SP_REG(sizeof(struct svalue));
 }
 
-void ppc64_push_int(INT32 x, int s)
+void ppc64_push_int(INT64 x, int s)
 {
   LOAD_SP_REG();
 
@@ -280,7 +280,7 @@ void ppc64_push_int(INT32 x, int s)
   }
   STW(0, PPC_REG_PIKE_SP, 4);
   if(x != 0)
-    SET_REG32(0, x);
+    SET_REG64(0, x);
   STD(0, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.integer));
   if(x != MAKE_TYPE_WORD(PIKE_T_INT, s))
     SET_REG32(0, MAKE_TYPE_WORD(PIKE_T_INT, s));
@@ -512,7 +512,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
      return;
 
    case F_NEG_NUMBER:
-     ppc64_push_int(-b, 0);
+     ppc64_push_int(-(INT64)b, 0);
      return;
 
    case F_CONSTANT:
