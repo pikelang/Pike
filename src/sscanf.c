@@ -554,13 +554,20 @@ static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
   unsigned char x[4];
   double r;
 
-  x[0] = EXTRACT_UCHAR(b);
-  x[1] = EXTRACT_UCHAR(b+1);
-  x[2] = EXTRACT_UCHAR(b+2);
-  x[3] = EXTRACT_UCHAR(b+3);
+  if (sz < 0) {
+    x[0] = EXTRACT_UCHAR(b-sz-1);
+    x[1] = EXTRACT_UCHAR(b-sz-2);
+    x[2] = EXTRACT_UCHAR(b-sz-3);
+    x[3] = EXTRACT_UCHAR(b-sz-4);
+  } else {
+    x[0] = EXTRACT_UCHAR(b);
+    x[1] = EXTRACT_UCHAR(b+1);
+    x[2] = EXTRACT_UCHAR(b+2);
+    x[3] = EXTRACT_UCHAR(b+3);
+  }
   s = ((x[0]&0x80)? 1 : 0);
 
-  if(sz==4) {
+  if(sz==4 || sz==-4) {
     e = (((int)(x[0]&0x7f))<<1)|((x[1]&0x80)>>7);
     f = (((unsigned INT32)(x[1]&0x7f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
     extra_f = 0;
@@ -574,10 +581,16 @@ static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
   } else {
     e = (((int)(x[0]&0x7f))<<4)|((x[1]&0xf0)>>4);
     f = (((unsigned INT32)(x[1]&0x0f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
-    extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+4))<<24)|
-      (((unsigned INT32)EXTRACT_UCHAR(b+5))<<16)|
-      (((unsigned INT32)EXTRACT_UCHAR(b+6))<<8)|
-      ((unsigned INT32)EXTRACT_UCHAR(b+7));
+    if (sz < 0)
+      extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+3))<<24)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+2))<<16)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+1))<<8)|
+	((unsigned INT32)EXTRACT_UCHAR(b));
+    else
+      extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+4))<<24)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+5))<<16)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+6))<<8)|
+	((unsigned INT32)EXTRACT_UCHAR(b+7));
     if(e==2047)
       e = 9999;
     else if(e>0) {
@@ -606,68 +619,92 @@ static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
 
 #endif
 
-static float extract_float_be(const char * x) {
-    float f;
-
+static FLOAT_TYPE extract_float_be(const char * x) {
 #ifdef FLOAT_IS_IEEE_BIG
-    memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_LITTLE
-    unsigned INT32 tmp = get_unaligned32(x);
-    tmp = bswap32(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    f = low_parse_IEEE_float(x, 4);
-#endif
-    return f;
-}
-
-static double extract_double_be(const char * x) {
-    double f;
-
-#ifdef DOUBLE_IS_IEEE_BIG
-    memcpy(&f, x, sizeof(f));
-#elif DOUBLE_IS_IEEE_LITTLE
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    f = low_parse_IEEE_float(x, 8);
-#endif
-    return f;
-}
-
-static float extract_float_le(const char * x) {
     float f;
-
-#ifdef FLOAT_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_BIG
+    return f;
+#elif FLOAT_IS_IEEE_LITTLE
+    float f;
     unsigned INT32 tmp = get_unaligned32(x);
     tmp = bswap32(tmp);
     memcpy(&f, &tmp, sizeof(f));
-#else
-    unsigned INT32 tmp = get_unaligned32(x);
-    tmp = bswap32(tmp);
-    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
-#endif
     return f;
+#else
+    return low_parse_IEEE_float(x, 4);
+#endif
 }
 
-static double extract_double_le(const char * x) {
+static FLOAT_TYPE extract_double_be(const char * x) {
+#ifdef DOUBLE_IS_IEEE_BIG
     double f;
-
-#ifdef DOUBLE_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
-#elif DOUBLE_IS_IEEE_BIG
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
-#endif
     return f;
+#elif DOUBLE_IS_IEEE_LITTLE
+    double f;
+#ifdef UINT64
+    UINT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+#else
+    char tmp[8];
+    tmp[7] = x[0];
+    tmp[6] = x[1];
+    tmp[5] = x[2];
+    tmp[4] = x[3];
+    tmp[3] = x[4];
+    tmp[2] = x[5];
+    tmp[1] = x[6];
+    tmp[0] = x[7];
+#endif
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, 8);
+#endif
+}
+
+static FLOAT_TYPE extract_float_le(const char * x) {
+#ifdef FLOAT_IS_IEEE_LITTLE
+    float f;
+    memcpy(&f, x, sizeof(f));
+    return f;
+#elif FLOAT_IS_IEEE_BIG
+    float f;
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, -4);
+#endif
+}
+
+static FLOAT_TYPE extract_double_le(const char * x) {
+#ifdef DOUBLE_IS_IEEE_LITTLE
+    double f;
+    memcpy(&f, x, sizeof(f));
+    return f;
+#elif DOUBLE_IS_IEEE_BIG
+    double f;
+#ifdef UINT64
+    UINT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+#else
+    char tmp[8];
+    tmp[7] = x[0];
+    tmp[6] = x[1];
+    tmp[5] = x[2];
+    tmp[4] = x[3];
+    tmp[3] = x[4];
+    tmp[2] = x[5];
+    tmp[1] = x[6];
+    tmp[0] = x[7];
+#endif
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, -8);
+#endif
 }
 
 #define EXTRACT_FLOAT(SVAL, input, shift, fun)    do {      \
