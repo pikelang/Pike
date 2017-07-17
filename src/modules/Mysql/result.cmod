@@ -645,7 +645,7 @@ PIKEFUN int|array(string) fetch_row()
 #if defined (HAVE_MYSQL_FETCH_LENGTHS)
 	  case FIELD_TYPE_BIT:
             if (row_lengths[i] <= SIZEOF_INT64) {
-              unsigned INT64 val = 0;
+              UINT64 val = 0;
 	      unsigned j;
 	      for (j = 0; j < row_lengths[i]; j++)
 		val = (val << 8) | (unsigned char) row[i][j];

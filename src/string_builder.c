@@ -467,7 +467,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       size_t min_width,
 					       size_t precision)
 {
-  unsigned INT64 tmp;
+  UINT64 tmp;
   size_t len = 1;
   const char *numbers = "0123456789abcdef";
   if ((base < 2) || (base > 16)) {

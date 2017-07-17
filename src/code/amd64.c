@@ -4570,7 +4570,7 @@ static const char *modrm_ops[6][8] = {
 
 struct amd64_opcode {
   const char *name;
-  unsigned INT64 flags;
+  UINT64 flags;
 };
 
 static struct amd64_opcode amd64_opcodes[4][256] = {

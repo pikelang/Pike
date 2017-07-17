@@ -432,10 +432,10 @@ static void check_interpreter_lock (DLOC_DECL)
   }
 }
 
-static unsigned INT64 thread_swaps = 0;
-static unsigned INT64 check_threads_calls = 0;
-static unsigned INT64 check_threads_yields = 0;
-static unsigned INT64 check_threads_swaps = 0;
+static UINT64 thread_swaps = 0;
+static UINT64 check_threads_calls = 0;
+static UINT64 check_threads_yields = 0;
+static UINT64 check_threads_swaps = 0;
 static void f__thread_swaps (INT32 UNUSED(args))
   {push_ulongest (thread_swaps);}
 static void f__check_threads_calls (INT32 UNUSED(args))
@@ -1609,7 +1609,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
   {
 #ifdef PIKE_DEBUG
-    unsigned INT64 old_thread_swaps = thread_swaps;
+    UINT64 old_thread_swaps = thread_swaps;
 #endif
     pike_thread_yield();
 #ifdef PIKE_DEBUG

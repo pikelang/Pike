@@ -617,7 +617,7 @@ MACRO void tbnz_imm(enum arm64_register reg, int bit, INT32 dist)
     add_to_program(gen_tbnz(reg, bit, dist));
 }
 
-MACRO int value_to_bit(unsigned INT64 v)
+MACRO int value_to_bit(UINT64 v)
 {
     int bit = ctz64(v);
     ARM_ASSERT(v != 0);
@@ -627,7 +627,7 @@ MACRO int value_to_bit(unsigned INT64 v)
 
 
 /* returns 1 if v can be represented as a shifted imm, with imm and shift set */
-MACRO int arm64_make_arith_imm(unsigned INT64 v, unsigned short *imm, unsigned char *shift) {
+MACRO int arm64_make_arith_imm(UINT64 v, unsigned short *imm, unsigned char *shift) {
     if (!(v & ~0xfff)) {
         *imm = v;
         *shift = 0;
@@ -642,7 +642,7 @@ MACRO int arm64_make_arith_imm(unsigned INT64 v, unsigned short *imm, unsigned c
 }
 
 /* returns 1 if v can be represented as a bitmask imm, with n, immr and imms set */
-MACRO int arm64_make_logic_imm(unsigned INT64 v, unsigned char *n, unsigned char *immr, unsigned char *imms, int sf) {
+MACRO int arm64_make_logic_imm(UINT64 v, unsigned char *n, unsigned char *immr, unsigned char *imms, int sf) {
     int e = (sf? 64 : 32);
     if (!sf) {
         v = (v << 32) | (unsigned INT32)v;
@@ -653,9 +653,9 @@ MACRO int arm64_make_logic_imm(unsigned INT64 v, unsigned char *n, unsigned char
 	return 0;
     }
     for (; e >= 2; e>>=1) {
-	unsigned INT64 elt;
+	UINT64 elt;
 	if (e < 64) {
-	    unsigned INT64 mask = (1UL<<e)-1;
+	    UINT64 mask = (1UL<<e)-1;
 	    elt = v & mask;
 	    if (((v >> e)&mask) != elt)
 		break;
@@ -693,7 +693,7 @@ MACRO int arm64_make_logic_imm(unsigned INT64 v, unsigned char *n, unsigned char
     return 0;
 }
 
-MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v);
+MACRO void arm64_mov_int(enum arm64_register reg, UINT64 v);
 
 OPCODE_FUN gen_arith_reg_imm(enum arith_instr op, enum arm64_register dst,
 			     enum arm64_register reg, unsigned short imm, unsigned char shift) {
@@ -939,7 +939,7 @@ MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, 
 MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT64 v) {\
+MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, UINT64 v) {\
     unsigned short imm;                                                                                  \
     unsigned char shift;                                                                                 \
                                                                                                          \
@@ -989,7 +989,7 @@ MACRO void name ## 64_reg_imm(enum arm64_register dst, enum arm64_register reg, 
 MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
     add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
 }                                                                                                        \
-MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, unsigned INT64 v) {\
+MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_register a, UINT64 v) {\
     unsigned char n, immr, imms;                                                                         \
                                                                                                          \
     if (arm64_make_logic_imm(v, &n, &immr, &imms, 1)) {                                                  \
@@ -1065,7 +1065,7 @@ MACRO int arm64_move_wide_preferred(unsigned char n, unsigned char immr, unsigne
   return 0;
 }
 
-MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_mov_int(enum arm64_register reg, UINT64 v) {
     unsigned char n, immr, imms;
     int sf = (((unsigned INT32)v) != v);
     if (arm64_make_logic_imm(v, &n, &immr, &imms, sf) &&
@@ -1074,7 +1074,7 @@ MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
     } else {
         int i;
 	int pos = 0, neg = 0;
-	unsigned INT64 v2;
+	UINT64 v2;
 	for (i = 0, v2 = v; i < 4; i++) {
 	    if (!(v2 & 0xffff)) pos++;
 	    if (!((~v2) & 0xffff)) neg++;
@@ -1103,7 +1103,7 @@ MACRO void arm64_mov_int(enum arm64_register reg, unsigned INT64 v) {
     }
 }
 
-MACRO void arm64_cmp_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_cmp_int(enum arm64_register reg, UINT64 v) {
     unsigned short imm;
     unsigned char shift;
 
@@ -1132,7 +1132,7 @@ MACRO void adr_imm(enum arm64_register dst, INT32 offs)
     add_to_program(gen_adr_imm(dst, offs));
 }
 
-MACRO void arm64_tst_int(enum arm64_register reg, unsigned INT64 v) {
+MACRO void arm64_tst_int(enum arm64_register reg, UINT64 v) {
     unsigned char n, immr, imms;
 
     if (arm64_make_logic_imm(v, &n, &immr, &imms, 1)) {
@@ -1252,8 +1252,8 @@ MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
     struct label skip;
     enum arm64_register reg = ra_alloc_any();
 
-    unsigned INT64 v1 = (char*)a - (char*)NULL,
-                   v2 = (char*)b - (char*)NULL;
+    UINT64 v1 = (char*)a - (char*)NULL,
+           v2 = (char*)b - (char*)NULL;
 
     label_init(&skip);
     if (v1 < v2) {
@@ -1374,7 +1374,7 @@ MACRO void arm64_epilogue(void) {
 }
 
 MACRO void arm64_call(void *ptr) {
-    unsigned INT64 v = (char*)ptr - (char*)NULL;
+    UINT64 v = (char*)ptr - (char*)NULL;
     enum arm64_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
@@ -1549,7 +1549,7 @@ MACRO void arm64_push_int_reg(enum arm64_register value, int subtype) {
     arm64_store_sp_reg();
 }
 
-MACRO void arm64_push_non_ref_type(unsigned INT32 type, unsigned INT64 value) {
+MACRO void arm64_push_non_ref_type(unsigned INT32 type, UINT64 value) {
     enum arm64_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     ARM_ASSERT(tmp1 < tmp2);
@@ -1567,7 +1567,7 @@ MACRO void arm64_push_non_ref_type(unsigned INT32 type, unsigned INT64 value) {
     arm64_store_sp_reg();
 }
 
-MACRO void arm64_push_int(unsigned INT64 value, int subtype) {
+MACRO void arm64_push_int(UINT64 value, int subtype) {
     arm64_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
 }
 
@@ -1824,14 +1824,14 @@ void arm64_start_function(int UNUSED(no_pc)) {
         label_generate(&check_threads_etc_slowpath);
 
         /* TODO: use label, was: branch_check_threads_update_etc = PIKE_PC; */
-        arm64_mov_int(addr, (unsigned INT64)&fast_check_threads_counter);
+        arm64_mov_int(addr, (UINT64)&fast_check_threads_counter);
         load32_reg_imm(tmp, addr, 0);
         arm64_add32_reg_int(tmp, tmp, 0x80);
         store32_reg_imm(tmp, addr, 0);
 
         ra_free(addr);
 
-        arm64_mov_int(tmp, (unsigned INT64)branch_check_threads_etc);
+        arm64_mov_int(tmp, (UINT64)branch_check_threads_etc);
         br_reg(tmp);
         ra_free(tmp);
     }

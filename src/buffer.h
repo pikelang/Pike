@@ -224,9 +224,9 @@ GEN_BUFFER_ADD(be32, unsigned INT32, hton32, ntoh32)
 GEN_BUFFER_ADD(le32, unsigned INT32, ntoh32, hton32)
 GEN_BUFFER_ADD(u32, unsigned INT32, , )
 
-GEN_BUFFER_ADD(be64, unsigned INT64, hton64, ntoh64)
-GEN_BUFFER_ADD(le64, unsigned INT64, ntoh64, hton64)
-GEN_BUFFER_ADD(u64, unsigned INT64, , )
+GEN_BUFFER_ADD(be64, UINT64, hton64, ntoh64)
+GEN_BUFFER_ADD(le64, UINT64, ntoh64, hton64)
+GEN_BUFFER_ADD(u64, UINT64, , )
 
 GEN_BUFFER_ADD(u8, unsigned INT8, , )
 GEN_BUFFER_ADD(char, char, , )
