@@ -38,7 +38,7 @@ int compare(mixed bson, mixed facit)
         int s = (int)facit["$date"]["$numberLong"][..<3];
         return bson->unix_time() == s;
       }
-      write("No canonical representation.\n");
+      werror("No canonical representation.\n");
       return 0;
     }
     if( facit["$oid"] ) return (string)bson==facit["$oid"];
@@ -79,7 +79,6 @@ int success, fail;
 void do_tests(mapping json)
 {
   if( json->deprecated ) return;
-  if( has_prefix(json->description, "Decimal128") ) return;
   werror("%s\n", string_to_utf8(json->description));
   foreach(json->valid, mapping test)
   {
