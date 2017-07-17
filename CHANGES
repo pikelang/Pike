@@ -53,53 +53,6 @@ o Concurrent
     Concurrent.race(connect(host1, port1), connect(host2, port2))
       ->then(make_requet, query);
 
-o Filesystem.Monitor
-
-  - Reduced initialization latency.
-
-  - Changed the polling heuristic.
-
-    This is intended to reduce poll (and notification) delays in
-    some circumstances.
-
-  - Improved robostness of adjust_monitor().
-
-  - Removed some dead and obsolete code.
-
-  - Scan accelerated monitors too.
-
-    Both the Inotify and FSEvents APIs claim that they support
-    notifications on eg network file systems, and while they will
-    succeed in notifying on changes performed by the local host
-    on such file systems, they will not on changes performed by
-    other hosts. To avoid missing such changes these monitors
-    need to be actively scanned too.
-
-  - Fixed lost acceleration with InotifyMonitor
-
-    Recover from race-condition where when a file was repeatedly
-    created and deleted, acceleration was lost.
-
-  - Fixed symlink issue with InotifyMonitor.
-
-o Sql.pgsql
-
-  Sped up BEGIN/COMMIT statements.
-  Preserve the initial error message in case of multiple error messages
-  during the same transaction.
-  Flush out unseen error messages upon connection close to stderr.
-
-o Sql.SQLite
-  
-  When using query bindings, strings are now always stored as strings; 
-  previously, 8-bit strings were stored as binary objects (BLOBs) and 
-  wide strings were stored as unicode strings, which caused 8-bit strings
-  to be unequal (and thus not returned) when used in a standard string query.
-
-  Binary values may be stored as BLOBs using bindings by wrapping the 
-  binary string in a multiset. For example, to store the value "myBinary"
-  as a BLOB value using a binding, use: (<"myBinary">).
-
 o Debug.Inspect
 
   Allows for interactive debugging and live data structure inspection
@@ -131,60 +84,136 @@ o Debug.Inspect
 Bug fixes
 ---------
 
-o Search
-
-  Fixed a race condition when updating the database.
-
-o Parser.HTML
-
-  Fixed a condition where Pike would run out of stack space for large
-  documents.
-
 o ADT.Heap
 
   Fixed heap corruption when the same object is pushed more than
   once. It will now be considered as calling adjust().
+
+o FSEvents
+
+  EventStreamMonitor now works with other backends.
+
+o Filesystem.Monitor
+
+  - Reduced initialization latency.
+
+  - Changed the polling heuristic.
+
+    This is intended to reduce poll (and notification) delays in
+    some circumstances.
+
+  - Improved robostness of adjust_monitor().
+
+  - Removed some dead and obsolete code.
+
+  - Scan accelerated monitors too.
+
+    Both the Inotify and FSEvents APIs claim that they support
+    notifications on eg network file systems, and while they will
+    succeed in notifying on changes performed by the local host
+    on such file systems, they will not on changes performed by
+    other hosts. To avoid missing such changes these monitors
+    need to be actively scanned too.
+
+  - Fixed lost acceleration with InotifyMonitor
+
+    Recover from race-condition where when a file was repeatedly
+    created and deleted, acceleration was lost.
+
+  - Fixed symlink issue with InotifyMonitor.
 
 o Inotify
 
   Addressed an issue where the backend might be stuck in pending
   indefinitely.
 
-o FSEvents
-
-  EventStreamMonitor now works with other backends.
-
-o Standards.BSON
-
-  Fixed incorrect encoding/decoding of Binary data.
-
-o Stdio.Buffer
-
-  Fixed a crash when attempting to create a rewind key on a buffer
-  returned by read_buffer().
-
 o mappings
 
   Fixed an off by one error in random(mapping) that randomly caused
   values of type PIKE_T_FREE from the freelist to be exposed to Pike.
 
+o Nettle.Hash
+
+  Fixed NULL-dereference in Nettle.Hash()->crypt_hash().
+
+o Parser.HTML
+
+  Fixed a condition where Pike would run out of stack space for large
+  documents.
+
+o Search
+
+  Fixed a race condition when updating the database.
+
 o Sql.pgsql
 
-  Closed a prepared-statement-cache race when the same statement
-  is offered multiple times before it finalises the cache entry.
-  Fix sync errors with the database in case of multiple running
-  statements on a single connection that generate multiple errors.
-  Eliminate spurious sync errors on pipe-lined transactions
-  (multiple transactions in flight on a single file descriptor).
-  CancelRequests (to cancel running queries) caused sync errors with
-  the database when multiple queries were in flight: fixed.
-  Eliminate transient error messages on database restarts.
+  - Sped up BEGIN/COMMIT statements.
+
+  - Preserve the initial error message in case of multiple error messages
+    during the same transaction.
+
+  - Flush out unseen error messages upon connection close to stderr.
+
+  - Closed a prepared-statement-cache race when the same statement
+    is offered multiple times before it finalises the cache entry.
+
+  - Fix sync errors with the database in case of multiple running
+    statements on a single connection that generate multiple errors.
+
+  - Eliminate spurious sync errors on pipe-lined transactions
+    (multiple transactions in flight on a single file descriptor).
+
+  - CancelRequests (to cancel running queries) caused sync errors with
+    the database when multiple queries were in flight.
+
+  - Eliminate transient error messages on database restarts.
+
+o Sql.SQLite
+
+  When using query bindings, strings are now always stored as strings;
+  previously, 8-bit strings were stored as binary objects (BLOBs) and
+  wide strings were stored as unicode strings, which caused 8-bit strings
+  to be unequal (and thus not returned) when used in a standard string query.
+
+  Binary values may be stored as BLOBs using bindings by wrapping the
+  binary string in a multiset. For example, to store the value "myBinary"
+  as a BLOB value using a binding, use: (<"myBinary">).
 
 o Standards.BSON
 
-  Bugfixes for the decoding of Binary values of subtype 2, Binary
-  values of subtypes above 0x7f and Datetime values with negative
-  values.
+  - Fixed incorrect encoding/decoding of Binary data.
+
+  - Bugfixes for the decoding of Binary values of subtype 2, Binary
+    values of subtypes above 0x7f and Datetime values with negative
+    values.
+
+o Standards.JSON
+
+  Fixed integer overflow in decode() on 64-bit platforms.
+
+o Stdio.Buffer
+
+  - Fixed a crash when attempting to create a rewind key on a buffer
+    returned by read_buffer().
+
+  - Fixed integer overflow in read_json().
+
+Building
+--------
+
+o Configure
+
+  Attempt to detect the tool prefix depending on ABI.
+
+  Improves detection of pkg-config.
+
+o Java
+
+  Detect system installation of JavaVM framework on MacOS X.
+
+o Stdio
+
+  Improved support for NetBSD.
 
 
 Changes since Pike 8.0.404 (release 8)
