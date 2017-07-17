@@ -920,10 +920,28 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
   Monitor m;
   if((m = monitors[icookie])) {
     if (sizeof (path)) {
-      string full_path = canonic_path (combine_path (m->path, path));
+      string full_path = canonic_path(Stdio.append_path(m->path, path));
       // We're interested in the sub monitor, if it exists.
-      if (Monitor submon = monitors[full_path])
+      if (Monitor submon = monitors[full_path]) {
 	m = submon;
+      } else if (m->flags & MF_RECURSE) {
+	// We've missed creation of the submonitor.
+	//
+	// This can happen in the
+	//
+	//   Exist ==> Deleted ==> Exists
+	//
+	// with no update of the directory inbetween race-condition.
+	//
+	// Create the submonitor.
+	MON_WERR("Monitor lost for path %O.\n", full_path);
+	monitor(full_path, m->flags | MF_AUTO | MF_HARD,
+		m->max_dir_check_interval,
+		m->file_interval_factor,
+		m->stable_time);
+	m = monitors[full_path];
+	m->check(0);	// Init monitor.
+      }
     }
   }
 
@@ -944,7 +962,8 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
       master()->handle_error(err);
     }
   } else {
-    MON_WERR("No monitor found for path %O.\n", path);
+    // Most likely not reached.
+    MON_WERR("Monitor not found for cookie %O, path %O.\n", icookie, path);
   }
 }
 
