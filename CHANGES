@@ -180,6 +180,13 @@ o Sql.pgsql
   the database when multiple queries were in flight: fixed.
   Eliminate transient error messages on database restarts.
 
+o Standards.BSON
+
+  Bugfixes for the decoding of Binary values of subtype 2, Binary
+  values of subtypes above 0x7f and Datetime values with negative
+  values.
+
+
 Changes since Pike 8.0.404 (release 8)
 ----------------------------------------------------------------------
 
