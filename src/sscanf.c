@@ -483,9 +483,9 @@ static float extract_float_be(const char * x) {
 static double extract_double_be(const char * x) {
     double f;
 
-#ifdef FLOAT_IS_IEEE_BIG
+#ifdef DOUBLE_IS_IEEE_BIG
     memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_LITTLE
+#elif DOUBLE_IS_IEEE_LITTLE
     unsigned INT64 tmp = get_unaligned64(x);
     tmp = bswap64(tmp);
     memcpy(&f, &tmp, sizeof(f));
@@ -515,9 +515,9 @@ static float extract_float_le(const char * x) {
 static double extract_double_le(const char * x) {
     double f;
 
-#ifdef FLOAT_IS_IEEE_LITTLE
+#ifdef DOUBLE_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_BIG
+#elif DOUBLE_IS_IEEE_BIG
     unsigned INT64 tmp = get_unaligned64(x);
     tmp = bswap64(tmp);
     memcpy(&f, &tmp, sizeof(f));
