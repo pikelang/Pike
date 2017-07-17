@@ -1,0 +1,39 @@
+subject: Pike 8.0: Filesystem.Monitor, Sql.pgsql, Standards.BSON
+from: be692018d8d9adfd94c047032880b2d870e6b567
+to: 14f32827117e93ada3c7bcb896cf074a5b516c3f
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2017-07-13T164407
+restart: true
+
+Multiple changes:
+
+• Filesystem.Monitor [InotifyMonitor]: Improved handling of race.
+
+Handle the case where Inotify notifies about a file that has been
+deleted and then resurrected without its parent directory having
+been updated in the interval. This is apparently an operation
+characteristic of the MacOS X Finder.
+
+Improves notification times for the above case.
+
+Fixes [PIKE-16].
+
+• BSON: Working decoding of binary subtype 0x02.
+
+• Rename Debug.Peek to Debug.Inspect.
+
+• pgsql: Clean up transient error/warning messages.
+
+• pgsql: Support multiset binary literals and avoid copying Stdio.Buffer() bindings.
+
+• pgsql: Recognise all generic BEGIN/START commands.
+
+• pgsql: Support spurious syncs in a stashed queue.
+
+• pgsql: Stashflushmode is now managed consistently.
+
+• pgsql: Suppress errors if the server gets lost.
+
+• pgsql: Improve debugging log.
+
+• pgsql: Omit qportals on CancelRequest connections, eliminates interference.
