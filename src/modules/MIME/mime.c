@@ -177,7 +177,7 @@ PIKE_MODULE_EXIT
 {
 }
 
-static void decode_base64( INT32 args, const char *name, const char *tab)
+static void decode_base64( INT32 args, const char *name, const SIGNED char *tab)
 {
   /* Decode the string in sp[-1].u.string.  Any whitespace etc must be
      ignored, so the size of the result can't be exactly calculated
