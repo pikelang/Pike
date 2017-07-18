@@ -15,13 +15,7 @@
 //! overhead monitoring; other systems use a less efficient polling approach.
 //!
 //! @seealso
-//!  @[System.FSEvents], @[System.Inotify]
-
-#ifdef FILESYSTEM_MONITOR_DEBUG
-#define MON_WERR(X...)	werror(X)
-#else
-#define MON_WERR(X...)
-#endif
+//!  @[Filesystem.Monitor.symlinks], @[System.FSEvents], @[System.Inotify]
 
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
@@ -56,7 +50,46 @@ protected int max_dir_check_interval = default_max_dir_check_interval;
 protected int file_interval_factor = default_file_interval_factor;
 protected int stable_time = default_stable_time;
 
+protected inline constant SeverityLevel = DefaultCompilerEnvironment.SeverityLevel;
+protected inline constant NOTICE = DefaultCompilerEnvironment.NOTICE;
+protected inline constant WARNING = DefaultCompilerEnvironment.WARNING;
+protected inline constant ERROR = DefaultCompilerEnvironment.ERROR;
+protected inline constant FATAL = DefaultCompilerEnvironment.FATAL;
+
 // Callbacks
+
+//! Event tracing callback.
+//!
+//! @param level
+//!   Severity level of the event.
+//!
+//! @param fun
+//!   Name of the function that called @[report()].
+//!
+//! @param format
+//!   @[sprintf()] formatting string describing the event.
+//!
+//! @param args
+//!   Optional extra arguments for the @[format] string.
+//!
+//! This function is called in various places to provide
+//! granular tracing of the monitor state.
+//!
+//! The default implementation calls @[werror()] with
+//! @[format] and @[args] if @[level] is @[ERROR] or higher,
+//! or if @tt{FILESYSTEM_MONITOR_DEBUG@} has been defined.
+protected void report(SeverityLevel level, string(7bit) fun,
+		      sprintf_format format, sprintf_args ... args)
+{
+#ifndef FILESYSTEM_MONITOR_DEBUG
+  if (level < ERROR) return;
+#endif
+  werror(format, @args);
+}
+
+#define MON_WERR(X...)	report(NOTICE,	__func__, X)
+#define MON_WARN(X...)	report(WARNING,	__func__, X)
+#define MON_ERROR(X...)	report(ERROR,	__func__, X)
 
 //! File content changed callback.
 //!
@@ -193,6 +226,31 @@ protected class Monitor(string path,
 				// (avoid an extra check() round to
 				// let the stat stabilize).
   array(string) files;
+
+  //! Event tracing callback.
+  //!
+  //! @param level
+  //!   Severity level of the event.
+  //!
+  //! @param fun
+  //!   Name of the function that called @[report()].
+  //!
+  //! @param format
+  //!   @[sprintf()] formatting string describing the event.
+  //!
+  //! @param args
+  //!   Optional extra arguments for the @[format] string.
+  //!
+  //! This function is called in various places to provide
+  //! granular tracing of the monitor state.
+  //!
+  //! The default implementation just calls @[global::report()]
+  //! with the same arguments.
+  protected void report(SeverityLevel level, string(7bit) fun,
+			sprintf_format format, sprintf_args ... args)
+  {
+    global::report(level, fun, format, @args);
+  }
 
   //! Register the @[Monitor] with the monitoring system.
   //!
@@ -807,7 +865,7 @@ protected void low_eventstream_callback(string path, int flags, int event_id)
   }
 
   if (!found)
-    MON_WERR("No monitor found for path %O.\n", path);
+    MON_WARN("No monitor found for path %O.\n", path);
 }
 
 protected void eventstream_callback(string path, int flags, int event_id)
@@ -852,6 +910,7 @@ protected class EventStreamMonitor
 	// eventstream stuff (especially start()) must be called from
 	// the backend thread, otherwise events will be fired in
 	// CFRunLoop contexts where noone listens.
+	MON_WERR("%O: Switching to backend thread.\n", this_function);
 	call_out(register_path, 0, initial);
 	return;
       }
@@ -885,7 +944,7 @@ protected class EventStreamMonitor
 	  };
 
 	if (err) {
-	  werror("%O: Failed to register path %O.\n", this_function, path);
+	  MON_ERROR("%O: Failed to register path %O.\n", this_function, path);
 	  master()->handle_error(err);
 	}
       }
@@ -934,7 +993,7 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
 	// with no update of the directory inbetween race-condition.
 	//
 	// Create the submonitor.
-	MON_WERR("Monitor lost for path %O.\n", full_path);
+	MON_WARN("Monitor lost for path %O.\n", full_path);
 	monitor(full_path, m->flags | MF_AUTO | MF_HARD,
 		m->max_dir_check_interval,
 		m->file_interval_factor,
@@ -963,7 +1022,7 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
     }
   } else {
     // Most likely not reached.
-    MON_WERR("Monitor not found for cookie %O, path %O.\n", icookie, path);
+    MON_WARN("Monitor not found for cookie %O, path %O.\n", icookie, path);
   }
 }
 
@@ -1062,7 +1121,7 @@ protected class InotifyMonitor
 	    instance->rm_watch(wd);
 	  };
 	if (err) {
-	  MON_WERR("### Failed to unregister %O: %s\n",
+	  MON_WARN("### Failed to unregister %O: %s\n",
 		   path, describe_backtrace(err));
 	}
       }

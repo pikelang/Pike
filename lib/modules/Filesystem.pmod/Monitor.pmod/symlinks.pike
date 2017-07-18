@@ -18,14 +18,12 @@
 //! @seealso
 //!   @[Filesystem.Monitor.basic]
 
-#ifdef FILESYSTEM_MONITOR_DEBUG
-#define MON_WERR(X...)	werror(X)
-#else
-#define MON_WERR(X...)
-#endif
-
 //! @decl inherit Filesystem.Monitor.basic
 inherit "basic.pike" : basic;
+
+#define MON_WERR(X...)	report(NOTICE,	__func__, X)
+#define MON_WARN(X...)	report(WARNING,	__func__, X)
+#define MON_ERROR(X...)	report(ERROR,	__func__, X)
 
 #if constant(readlink)
 
