@@ -122,6 +122,8 @@ o Filesystem.Monitor
 
   - Fixed symlink issue with InotifyMonitor.
 
+  - Added support for more fine-grained tracing of monitors.
+
 o Inotify
 
   Addressed an issue where the backend might be stuck in pending
