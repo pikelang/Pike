@@ -128,7 +128,7 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    // BSON.Timestamp instance
    else if(objectp(value) && Program.inherits(object_program(value), .Timestamp))
    {
-     buf->sprintf("%c%s%c%-8c", TYPE_TIMESTAMP, key, 0, value->get_timestamp());
+     buf->sprintf("%c%s%c%-4c%-4c", TYPE_TIMESTAMP, key, 0, value->counter, value->timestamp);
    }
 
    // BSON.Binary instance

@@ -26,3 +26,13 @@
     this::timestamp = timestamp & 0xffffffff;
     counter = timestamp>>32;
   }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O, %O)", this_program, counter, timestamp);
+  }
+
+  protected int(0..1) _equal(mixed o)
+  {
+    return objectp(o) && o->counter==counter && o->timestamp==timestamp;
+  }
