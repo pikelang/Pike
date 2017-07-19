@@ -12,8 +12,8 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
+#ifdef HAVE_INOTIFY_CONFIG_H
+# include "inotify_config.h"
 #endif
 
 #include "global.h"
@@ -265,11 +265,12 @@ PIKECLASS _Instance {
 		pad = 0x08 - (ev.len & 0x07);
 		ev.len += pad;
 	      }
-
+#ifdef HAVE_DIRENT_D_TYPE
 	      if (dirent->d_type == DT_DIR) {
 		ev.mask |= IN_ISDIR;
 	      }
 	      /* FIXME: Handle DT_UNKNOWN. */
+#endif /* HAVE_DIRENT_T_TYPE */
 
 	      string_build_mkspace(&THIS->buf, sizeof(ev) + ev.len, 0);
 	      string_builder_binary_strcat0(&THIS->buf,
