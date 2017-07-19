@@ -16,6 +16,12 @@
     this::timestamp = timestamp;
   }
 
+  variant protected void create(int ticks)
+  {
+    this::counter = ticks & 0xffffffff;
+    this::timestamp = ticks >> 32;
+  }
+
   int get_timestamp()
   {
     return timestamp<<32 | counter;
