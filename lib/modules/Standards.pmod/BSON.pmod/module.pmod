@@ -141,7 +141,7 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    // BSON.Binary instance
    else if(objectp(value) && Program.inherits(object_program(value), .Binary))
    {
-     buf->sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value), value->subtype, (string)value);
+     buf->sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value), value->get_subtype(), (string)value);
    }
    // BSON.Symbol instance
    else if(objectp(value) && Program.inherits(object_program(value), .Symbol))
