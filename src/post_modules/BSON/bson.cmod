@@ -570,6 +570,7 @@ PIKE_MODULE_INIT
   Javascript = NULL;
   Second = NULL;
   ObjectId = NULL;
+  Binary = NULL;
   Symbol = NULL;
   Regex = NULL;
   Timestamp = NULL;
@@ -585,6 +586,7 @@ PIKE_MODULE_EXIT
   if( Javascript ) free_program(Javascript);
   if( Second ) free_svalue(Second);
   if( ObjectId ) free_program(ObjectId);
+  if( Binary ) free_program(Binary);
   if( Symbol ) free_program(Symbol);
   if( Regex ) free_program(Regex);
   if( Timestamp ) free_program(Timestamp);
