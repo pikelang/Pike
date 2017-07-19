@@ -187,6 +187,7 @@ static void chrono(char *x)
 
 /***************** init & exit *********************************/
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_image_struct(struct object *UNUSED(obj))
 {
   THIS->img=NULL;
@@ -195,8 +196,8 @@ static void init_image_struct(struct object *UNUSED(obj))
   THIS->rgb.b=0;
   THIS->xsize=THIS->ysize=0;
   THIS->alpha=0;
-/*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
+#endif
 
 static void exit_image_struct(struct object *UNUSED(obj))
 {
@@ -204,13 +205,7 @@ static void exit_image_struct(struct object *UNUSED(obj))
         if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
             memset( THIS->img, 0, sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize );
         free(THIS->img);
-        THIS->img=NULL;
     }
-/*
-  fprintf(stderr,"exit %lx (%d) %dx%d=%.1fKb\n",obj,--obj_counter,
-	  THIS->xsize,THIS->ysize,
-	  (THIS->xsize*THIS->ysize*sizeof(rgb_group)+sizeof(struct image))/1024.0);
-	  */
 }
 
 /***************** internals ***********************************/
@@ -5196,7 +5191,9 @@ void init_image_image(void)
    ADD_FUNCTION("test",image_test,
 		tFunc(tOr(tVoid,tInt),tObj),0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_image_struct);
+#endif
    set_exit_callback(exit_image_struct);
 
 

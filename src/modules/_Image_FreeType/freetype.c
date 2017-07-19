@@ -110,10 +110,12 @@ static void image_ft_error(const char *msg, FT_Error errcode)
  *! A FreeType font face. We recommend using the more generic font handling
  *! interfaces in @[Image.Fonts] instead.
  */
+#ifdef PIKE_NULL_IS_SPECIAL
 static void image_ft_face_init( struct object *UNUSED(o) )
 {
   TFACE = NULL;
 }
+#endif
 
 static void image_ft_face_free( struct object *UNUSED(o) )
 {
@@ -454,7 +456,9 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
     set_init_callback( image_ft_face_init );
+#endif
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();

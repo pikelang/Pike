@@ -199,10 +199,7 @@ static void push_substring( struct pike_string *s,
 static void free_substring(struct object *UNUSED(o))
 {
   if( SS(fp->current_object)->s )
-  {
     free_string( SS(fp->current_object)->s );
-    SS(fp->current_object)->s = 0;
-  }
 }
 
 
@@ -1503,7 +1500,6 @@ void init_image_xcf(void)
   ADD_FUNCTION("get_uint", f_substring_get_uint, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("_sprintf",f_substring__sprintf, tFunc(tInt tMapping,tMix), 0);
 
-/*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
   substring_program = end_program();
 }

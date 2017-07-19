@@ -689,10 +689,6 @@ static void free_layer(struct layer *UNUSED(l))
    if (THIS->image) free_object(THIS->image);
    if (THIS->alpha) free_object(THIS->alpha);
    if (THIS->misc)  free_mapping(THIS->misc);
-   THIS->image=NULL;
-   THIS->alpha=NULL;
-   THIS->img=NULL;
-   THIS->alp=NULL;
 }
 
 static void exit_layer(struct object *UNUSED(dummy))

@@ -164,10 +164,8 @@ static DNSServiceErrorType start_service(struct service *svc,
 
 static void stop_service(struct service *svc)
 {
-  if (svc->service_ref) {
+  if (svc->service_ref)
     DNSServiceRefDeallocate(svc->service_ref);
-    svc->service_ref = NULL;
-  }
 }
 
 
@@ -369,12 +367,6 @@ static void f_create(INT32 args)
 }
 
 
-static void init_service_struct(struct object *UNUSED(o))
-{
-  THIS->service_ref = 0;
-}
-
-
 static void exit_service_struct(struct object *UNUSED(o))
 {
   /* Stop an existing service */
@@ -388,7 +380,6 @@ PIKE_MODULE_INIT
 
   ADD_STORAGE(struct service);
 
-  set_init_callback(init_service_struct);
   set_exit_callback(exit_service_struct);
 
   /* function(string, string, string, int, string|void:void) */

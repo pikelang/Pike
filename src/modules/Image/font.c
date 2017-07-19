@@ -177,27 +177,26 @@ static inline void free_font_struct(struct font *font)
       if (font->mem && font->mem!=image_default_font)
       {
 #ifdef HAVE_MMAP
-	 if (font->mmaped_size) {
+         if (font->mmaped_size)
 	    munmap(font->mem,font->mmaped_size);
-	 } else
 #else
-	   free(font->mem);
+         free(font->mem);
 #endif
-	 font->mem = NULL;
       }
       free(font);
    }
 }
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_font_struct(struct object *UNUSED(o))
 {
   THIS=NULL;
 }
+#endif
 
 static void exit_font_struct(struct object *UNUSED(obj))
 {
    free_font_struct(THIS);
-   THIS=NULL;
 }
 
 /***************** internals ***********************************/
@@ -933,7 +932,9 @@ void init_image_font(void)
    /* function(void:void) */
    ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_font_struct);
+#endif
    set_exit_callback(exit_font_struct);
 }
 

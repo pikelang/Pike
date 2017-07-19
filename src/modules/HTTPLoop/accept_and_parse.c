@@ -846,7 +846,6 @@ PIKE_MODULE_INIT
                tFunc(tOr(tStr,tVoid) tOr(tObj,tVoid) tOr(tInt,tVoid),tVoid),0);
   ADD_FUNCTION("reply_with_cache", f_aap_reply_with_cache,
                tFunc(tStr tInt,tVoid), 0);
-  set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
   add_program_constant("RequestProgram", c_request_program, 0 );

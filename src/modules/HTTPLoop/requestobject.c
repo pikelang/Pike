@@ -905,11 +905,6 @@ void f_low_aap_reqo__init(struct c_request_object *o)
 	  o->request->res.url, o->request->res.url_len);
 }
 
-void aap_init_request_object(struct object *UNUSED(o))
-{
-  memset(THIS, 0, sizeof(*THIS));
-}
-
 void aap_exit_request_object(struct object *UNUSED(o))
 {
   if(THIS->request)

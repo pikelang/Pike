@@ -327,19 +327,17 @@ static void make_colors(void)
 #define THIS ((struct color_struct*)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_color_struct(struct object *UNUSED(dummy))
 {
-   THIS->rgb.r=THIS->rgb.g=THIS->rgb.b=0;
    THIS->name=NULL;
 }
+#endif
 
 static void exit_color_struct(struct object *UNUSED(dummy))
 {
    if (THIS->name)
-   {
-      free_string(THIS->name);
-      THIS->name=NULL;
-   }
+     free_string(THIS->name);
 }
 
 void _img_nct_map_to_flat_cubicles(rgb_group *s,
@@ -1730,7 +1728,9 @@ void init_image_colors(void)
    start_new_program();
 
    ADD_STORAGE(struct color_struct);
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_color_struct);
+#endif
    set_exit_callback(exit_color_struct);
 
    /* color info methods */
