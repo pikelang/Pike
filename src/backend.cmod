@@ -497,7 +497,7 @@ PIKECLASS Backend
      *! The array containing the function and arguments.
      */
     PIKEVAR array args
-      flags ID_STATIC;
+      flags ID_PROTECTED;
     CVAR struct object *this;
 
     DECLARE_STORAGE;

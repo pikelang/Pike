@@ -388,7 +388,7 @@ PIKECLASS ECC_Curve
    *! @endint
    */
   PIKEFUN void create(int(0..) curve)
-    flags ID_STATIC
+    flags ID_PROTECTED;
   {
     mpz_t mpz_one;
 

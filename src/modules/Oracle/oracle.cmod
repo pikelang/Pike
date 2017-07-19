@@ -1072,9 +1072,9 @@ OCIError *get_global_error_handle(void)
         PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, real_type),tInt,T_INT,0);
 
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
+                     tFunc(tStr tMix,tVoid), ID_PROTECTED);
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
+		     tFunc(tStr tMix,tVoid), ID_PROTECTED);
       }
 
 #ifdef ORACLE_DEBUG

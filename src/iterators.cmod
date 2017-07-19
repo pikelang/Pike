@@ -329,7 +329,7 @@ PIKECLASS mapping_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->md) {
       push_int(THIS->md->size);
@@ -535,7 +535,7 @@ PIKECLASS array_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->a) {
       push_int(THIS->a->size);
@@ -672,7 +672,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->l) {
       push_int(THIS->l->msd->size);
@@ -889,7 +889,7 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->s) {
       push_int(THIS->s->len);

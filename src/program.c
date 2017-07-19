@@ -5883,7 +5883,7 @@ int define_variable(struct pike_string *name,
     } else if ((IDENTIFIERP(n)->id_flags & (ID_EXTERN|ID_INHERITED)) ==
 	       (ID_EXTERN|ID_INHERITED)) {
       /* Hide the overloaded inherited symbol. */
-      IDENTIFIERP(n)->id_flags |= ID_STATIC|ID_PRIVATE|ID_USED;
+      IDENTIFIERP(n)->id_flags |= ID_PROTECTED|ID_PRIVATE|ID_USED;
     }
   }
 

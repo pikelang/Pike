@@ -1256,7 +1256,7 @@ PIKECLASS Name
    *!   then @[name_type] should be @[GSSAPI.NT_EXPORT_NAME].
    */
   PIKEFUN void create (string name, void|string name_type)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     gss_OID_desc type_desc;
     gss_OID type;
@@ -1383,7 +1383,7 @@ PIKECLASS Name
   }
 
   PIKEFUN string _sprintf (int flag, ...)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     pop_n_elems (args);
 
@@ -1536,7 +1536,7 @@ PIKECLASS Name
    *!   of them are ill-formed.
    */
   PIKEFUN int `== (mixed other)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->name != GSS_C_NO_NAME &&
 	TYPEOF(*other) == T_OBJECT) {
@@ -1567,7 +1567,7 @@ PIKECLASS Name
    *! identity.
    */
   PIKEFUN int __hash()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     int got_hash = 0;
 
@@ -2277,7 +2277,7 @@ PIKECLASS Cred
   }
 
   PIKEFUN string _sprintf (int flag, ...)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     pop_n_elems (args);
 
@@ -2576,7 +2576,7 @@ PIKECLASS Context
    */
   PIKEFUN void create (string interprocess_token,
 		       void|zero|int required_services)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     gss_buffer_desc input_token;
 
@@ -2937,7 +2937,7 @@ PIKECLASS Context
   }
 
   PIKEFUN string _sprintf (int flag, ...)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     pop_n_elems (args);
 
@@ -3730,7 +3730,7 @@ PIKECLASS InitContext
 		       void|zero|int required_services,
 		       void|zero|int desired_services,
 		       void|zero|int(0..) desired_time)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
 #ifndef PRECOMPILE_API_VERSION
     /* Live with the pessimal precompile.pike in 7.4.. :P */
@@ -4083,7 +4083,7 @@ PIKECLASS AcceptContext
    */
   PIKEFUN void create (void|object(Cred) cred,
 		       void|zero|int required_services)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
 #ifndef PRECOMPILE_API_VERSION
     /* Live with the pessimal precompile.pike in 7.4.. :P */
@@ -4358,7 +4358,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION ("create", gssapi_err_create,
 		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tString)
 		      tOr(tVoid,tString) tOr(tVoid,tArray),
-		      tVoid), ID_STATIC);
+		      tVoid), ID_PROTECTED);
   ADD_FUNCTION ("major_status_messages", gssapi_err_major_msgs,
 		tFunc(tVoid,tArr(tString)), 0);
   ADD_FUNCTION ("minor_status_messages", gssapi_err_minor_msgs,
@@ -4382,7 +4382,7 @@ PIKE_MODULE_INIT
   Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
 #endif
   ADD_FUNCTION ("create", missing_err_create,
-		tFunc(tOr(tVoid,tInt), tVoid), ID_STATIC);
+		tFunc(tOr(tVoid,tInt), tVoid), ID_PROTECTED);
   missing_err_program = end_program();
   add_program_constant ("MissingServicesError", missing_err_program, 0);
 

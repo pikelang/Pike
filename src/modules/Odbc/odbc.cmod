@@ -477,7 +477,7 @@ PIKEFUN string error()
 PIKEFUN void create(string|void server, string|void database,
 		    string|void user, string|void pwd,
 		    mapping|int|void options)
-  flags ID_STATIC;
+  flags ID_PROTECTED;
 {
   HDBC hdbc = PIKE_ODBC->hdbc;
   RETCODE code;

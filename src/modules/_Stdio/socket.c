@@ -804,7 +804,7 @@ void init_stdio_port(void)
   /* function(:object) */
   port_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", port_fd_factory, tFunc(tNone,tObjIs_STDIO_FD),
-		 ID_STATIC);
+                 ID_PROTECTED);
   ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create", port_create,
