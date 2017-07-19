@@ -25,6 +25,24 @@ PIKECLASS PIKE_NAME
       hash->meta = &cmod_CONCAT_EVAL(nettle_, NETTLE_NAME);
     }
 
+#ifdef SPECIAL_PBKDF2
+  PIKEFUN string pbkdf2(string(8bit) password, string(8bit) salt,
+                        int rounds, int bytes)
+  {
+    struct pike_string *dst = begin_shared_string(bytes);
+    NO_WIDE_STRING(password);
+    NO_WIDE_STRING(salt);
+    cmod_CONCAT_EVAL(pbkdf2_hmac_,NETTLE_NAME)(password->len,
+                                               (const uint8_t *)password->str,
+                                               rounds,
+                                               salt->len,
+                                               (const uint8_t *)salt->str,
+                                               bytes,
+                                               (uint8_t *)dst->str);
+    push_string(end_shared_string(dst));
+  }
+#endif
+
   DOCSTART() @class State
     *!
     *! State for PIKE_NAME hashing.

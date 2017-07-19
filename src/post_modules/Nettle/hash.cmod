@@ -36,6 +36,9 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_GOSTHASH94_H
 #include <nettle/gosthash94.h>
 #endif
+#ifdef HAVE_NETTLE_PBKDF2_H
+#include <nettle/pbkdf2.h>
+#endif
 
 #include "fdlib.h"
 
@@ -602,6 +605,8 @@ PIKECLASS Hash
 /* The algorithm objects can be overloaded in pike. */
 
 #cmod_define TOSTR(DEF)	#DEF
+#undef SPECIAL_PBKDF2
+
 
 #cmod_define PIKE_NAME MD5
 #cmod_define NETTLE_NAME md5
@@ -623,7 +628,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA1
 #cmod_define NETTLE_NAME sha1
+#define SPECIAL_PBKDF2
 #cmod_include "hash.H"
+#undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -639,7 +646,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA256
 #cmod_define NETTLE_NAME sha256
+#define SPECIAL_PBKDF2
 #cmod_include "hash.H"
+#undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
