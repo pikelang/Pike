@@ -1620,7 +1620,6 @@ if test "$cflags_is_set" = "no"; then
   if test "x$enable_werror" = "xyes"; then
     AC_SYS_COMPILER_FLAG(-Werror,error,WARN)
   fi
-
   if test "x${GCC-}" = xyes ; then
   # Do not use -Wall, since that produces a lot of warnings that are not
   # really interresting (such as the warning for if( ... ) ... if(
@@ -1654,9 +1653,9 @@ if test "$cflags_is_set" = "no"; then
     # NB: Both $CPP and $CC need to be configured to support
     #     the same version of the C standard. Otherwise there
     #     will be build failures on eg Solaris.
-    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CPP)
-    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CC)
-
+    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
+    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
+    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS)
     if test "x$with_gcov" = "xyes"; then
       # Support for gcov
       AC_SYS_COMPILER_FLAG(-fprofile-arcs, fprofile_arcs, CFLAGS)
