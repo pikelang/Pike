@@ -980,7 +980,7 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
       // We're interested in the sub monitor, if it exists.
       if (Monitor submon = monitors[full_path]) {
 	m = submon;
-      } else if (m->flags & MF_RECURSE) {
+      } else if ((m->flags & MF_RECURSE) && !(event & System.Inotify.IN_DELETE)) {
 	// We've missed creation of the submonitor.
 	//
 	// This can happen in the
