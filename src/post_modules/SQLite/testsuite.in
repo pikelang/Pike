@@ -3,7 +3,7 @@ START_MARKER
 cond_resolv( SQLite.SQLite, [[
 
   test_do( rm("testdb"); )
-  test_do( add_constant("db", Sql.Sql("sqlite://testdb")); )
+  test_do( add_constant("db", Sql.sqlite("testdb")); )
 
   test_eq( db->master_sql->changes(), 0 )
   test_eq( db->master_sql->total_changes(), 0 )
@@ -58,7 +58,8 @@ cond_resolv( SQLite.SQLite, [[
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:14,2:"f\x103456",3:"f\x103456"]))->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
   test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
-
+]])
+cond_resolv( SQLite.SQLite, [[
   test_any([[
     String.Buffer b = String.Buffer();
     b->add("ab\0c");
@@ -66,8 +67,12 @@ cond_resolv( SQLite.SQLite, [[
   ]], 0)
   test_equal( db->big_query("SELECT dd FROM test WHERE aa=15")->fetch_row(), ({ "ab\0c" }))
 
+  test_any([[
+    return db->big_query("INSERT INTO test (aa,dd) VALUES (:1,:2)", ([ 1:16, 2:(<"cd\0e">) ]))->fetch_row();
+  ]], 0)
+  test_equal( db->big_query("SELECT dd FROM test WHERE aa=16")->fetch_row(), ({ "cd\0e" }))
+
   test_do( add_constant("db"); )
   test_do( rm("testdb"); )
-
 ]])
 END_MARKER

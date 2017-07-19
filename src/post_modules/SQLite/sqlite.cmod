@@ -13,6 +13,7 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+#include "multiset.h"
 #include "threads.h"
 #include "bignum.h"
 #include "pike_types.h"
@@ -123,6 +124,27 @@ static void bind_arguments(sqlite3 *db,
 	   db);
       break;
 
+    case T_MULTISET:
+      if(multiset_sizeof(k->val.u.multiset) == 1) {
+        struct pike_string *s;
+        {
+          struct svalue tmp;
+          if (TYPEOF(*use_multiset_index (k->val.u.multiset,
+                    multiset_first (k->val.u.multiset),
+                    tmp)) == T_STRING)
+            s = tmp.u.string;
+          else
+            s = NULL;
+        }
+        if(s) {
+          ERR(sqlite3_bind_blob(stmt, idx, s->str, s->len,
+                SQLITE_STATIC),
+                db);
+          break;
+        }
+      }
+      Pike_error("Can only bind string|int|float or single-valued multiset(string)|String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
+      break; /* for good measure */
     case T_OBJECT:
       {
         size_t len;
@@ -137,7 +159,7 @@ static void bind_arguments(sqlite3 *db,
       /* Fallthrough */
 
     default:
-      Pike_error("Can only bind string|int|float or String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
+      Pike_error("Can only bind string|int|float or single-valued multiset(string)|String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
     }
   }
 }
