@@ -18,13 +18,13 @@
 
   int get_timestamp()
   {
-    return counter<<32 | timestamp;
+    return timestamp<<32 | counter;
   }
 
-  int set_timestamp(int timestamp)
+  int set_timestamp(int ticks)
   {
-    this::timestamp = timestamp & 0xffffffff;
-    counter = timestamp>>32;
+    counter = ticks & 0xffffffff;
+    this::timestamp = ticks >> 32;
   }
 
   protected string _sprintf(int t)
