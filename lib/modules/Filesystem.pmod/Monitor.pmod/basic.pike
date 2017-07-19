@@ -688,6 +688,9 @@ protected class Monitor(string path,
 	}
 	// Signal file_exists for path as an end marker.
 	file_exists(path, st);
+      } else  {
+	// The path we're supposed to monitor is already gone.
+	check_for_release(MF_AUTO, MF_AUTO);
       }
       return 1;
     }
