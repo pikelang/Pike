@@ -253,6 +253,12 @@ do_dump: {
       }
     }
 
+    else if (arrayp(err) && err[0] == "Required feature missing.\n") {
+	ok = 1;			// Don't count this as a failure.
+	if(!quiet)
+	  logmsg("Not dumped due to missing feature.\n");
+    }
+
     else {
       // This should never happen. If it does then it's not safe to
       // continue dumping since later modules might do #if constant(...)
