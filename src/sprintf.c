@@ -2415,14 +2415,19 @@ static node *optimize_sprintf(node *n)
 	return ret;
 
       case 'x':
-        if(TYPEOF((*arg1)->u.sval) == T_STRING)
+        switch( TYPEOF((*arg1)->u.sval) )
+        {
+        case T_STRING:
           ADD_NODE_REF2(*arg1,
                         ret = mkefuncallnode("string2hex",*arg1);
           );
-        else
+          break;
+        case T_INT:
           ADD_NODE_REF2(*arg1,
                         ret = mkefuncallnode("int2hex",*arg1);
-	  );
+          );
+          break;
+        }
         return ret;
       case '%':
 	{
