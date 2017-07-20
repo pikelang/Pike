@@ -2819,7 +2819,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	 * has the same type. */
 	unsigned char *str_bin_base =
 	  (unsigned char *) str->str + len + strlen (str->str + len) + 1;
-	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
+        unsigned int str_bin_len = get_unaligned16 (str_bin_base);
 	str_bin_base += 2;
 	if (str_bin_len != bin_data_len ||
 	    memcmp (bin_data, str_bin_base, str_bin_len))
@@ -2975,7 +2975,7 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
     int i, frames;
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
-    unsigned int bin_len = EXTRACT_UWORD (bin_base);
+    unsigned int bin_len = get_unaligned16 (bin_base);
     memcpy (bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 

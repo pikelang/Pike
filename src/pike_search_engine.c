@@ -130,7 +130,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     tmp<<=8;
     tmp|=*(q++);
 #else
-    /* FIXME tmp=EXTRACT_INT(q); */
+    /* FIXME tmp=(INT32)get_unaligned32(q); */
     tmp=NameN(GET_4_UNALIGNED_CHARS)(q);
     q++;
 #endif

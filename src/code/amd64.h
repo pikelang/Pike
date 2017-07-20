@@ -66,7 +66,7 @@ void amd64_init_interpreter_state(void);
 #endif
 
 #define LOW_GET_JUMP()							\
-  EXTRACT_INT(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+  (INT32)get_unaligned32(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #define LOW_SKIPJUMP()							\
   (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
@@ -81,7 +81,7 @@ void amd64_init_interpreter_state(void);
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
-#define read_program_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
+#define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
 
 void amd64_update_pc(void);
 

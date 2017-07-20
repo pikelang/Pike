@@ -179,7 +179,7 @@ void upd_int(int offset, INT32 tmp)
 
 INT32 read_int(int offset)
 {
-  return EXTRACT_INT(Pike_compiler->new_program->program+offset);
+  return (INT32)get_unaligned32(Pike_compiler->new_program->program+offset);
 }
 
 static int label_no=0;
