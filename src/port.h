@@ -8,6 +8,7 @@
 #define PORT_H
 
 #include "global.h"
+#include "pike_memory.h"
 
 #ifdef __MINGW32__
 /******************************************************/
@@ -156,43 +157,10 @@ char *strchr(const char *s,int c);
 static inline int EXTRACT_CHAR(const char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #endif
 
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-#  define EXTRACT_UWORD(p) (*(unsigned INT16 *)(p))
-#  define EXTRACT_WORD(p) (*(INT16 *)(p))
-#  define EXTRACT_INT(p) (*(INT32 *)(p))
-#else
-#ifdef PIKE_DEBUG
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p);
-PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p);
-PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p);
-#else
-/*@unused@*/ static inline unsigned EXTRACT_UWORD_(const unsigned char *p)
-{
-  unsigned INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-/*@unused@*/ static inline int EXTRACT_WORD_(const unsigned char *p)
-{
-  INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-/*@unused@*/ static inline INT32 EXTRACT_INT_(const unsigned char *p)
-{
-  INT32 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-#endif
-
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((const unsigned char *)(p))
-#define EXTRACT_WORD(p) EXTRACT_WORD_((const unsigned char *)(p))
-#define EXTRACT_INT(p) EXTRACT_INT_((const unsigned char *)(p))
-
-#endif
+/* Implementation in pike_memory.h */
+#define EXTRACT_UWORD(p) (get_unaligned16(p))
+#define EXTRACT_WORD(p) ((INT16)get_unaligned16(p))
+#define EXTRACT_INT(p) ((INT32)get_unaligned32(p))
 
 PMOD_EXPORT void sysleep(double left);
 

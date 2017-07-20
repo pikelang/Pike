@@ -136,30 +136,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
-
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p)
-{
-  unsigned INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p)
-{
-  INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p)
-{
-  INT32 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-#endif
-
 #ifdef HAVE_BROKEN_CHKSTK
 /* Intels ecl compiler adds calls to _stkchk() in the prologue,
  * MicroSoft seems to have renamed it to __stkchk() in later

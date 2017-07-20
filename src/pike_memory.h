@@ -162,7 +162,7 @@ static inline void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size
     return (void *)p;
 }
 
-#ifdef __x86_64__
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
 /* it is faster to just do the unaligned operation. */
 static inline UINT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
   return *(UINT64*)ptr;
