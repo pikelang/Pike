@@ -2548,6 +2548,7 @@ void dump_modules()
   // very short memory for application arguments.
 
   int offset = 1;
+ dumploop:
   foreach(to_dump/25.0, array delta_dump)
   {
     mixed err = catch {
@@ -2560,10 +2561,12 @@ void dump_modules()
 				 }) : ({}) ) +
 			       delta_dump, options);
       int retcode=p->wait();
-      if (retcode)
+      if (retcode) {
 	error_msg("Dumping of some modules failed (not fatal) (0x%:08x):\n"
 		  "%{  %O\n%}",
 		  retcode, delta_dump);
+	break dumploop;
+      }
     };
     if (err) {
       error_msg ("Failed to spawn module dumper (not fatal):\n"
