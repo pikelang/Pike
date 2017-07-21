@@ -150,7 +150,7 @@ class Node
           pp->clear_containers();
           pp->add_tags(([
             "protected" : cb_modifier,
-            "private "  : cb_modifier,
+            "private"   : cb_modifier,
             "static"    : cb_modifier
           ]));
           return cc;
