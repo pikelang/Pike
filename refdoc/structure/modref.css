@@ -274,7 +274,9 @@ em {
 .sidebar a.mod-protected {
 	color: #999;
 }
-
+.sidebar .mod-private {
+	display: none !important;
+}
 .sidebar .mod-protected::before {
 	content: ' ';
 	display: inline-block;
