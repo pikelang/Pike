@@ -7,6 +7,7 @@
 /* #define ALIGN_PIKE_JUMPS 8 */
 
 #include "pike_cpulib.h"
+#include "pike_memory.h"
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
@@ -49,7 +50,7 @@ void ia32_ins_entry(void);
 #endif
 
 #define LOW_GET_JUMP()							\
-  (INT32)get_unaliged32(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+  (INT32)get_unaligned32(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #define LOW_SKIPJUMP()							\
   (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
