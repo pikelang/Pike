@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+//! Some non-cryptographic checksums.
+
 //! @decl int(0..) crc32(string(8bit) data, void|int(0..) offset)
 //!
 //!   This function calculates the standard ISO3309 Cyclic Redundancy
