@@ -230,6 +230,7 @@ cond_resolv(Random.Deterministic, [[
   test_eval_error(Gmp.mpz(17) - 18 - "19")
   test_compile_error(return Gmp.mpz(17) / 0)
   test_eval_error([[ int i; return Gmp.mpz(17)/i; ]])
+  test_eval_error([[ return Gmp.mpz(17)/Gmp.mpz(0); ]])
   test_compile_error(return Gmp.mpz(49) % 0)
   test_eval_error([[ int i; return Gmp.mpz(17)%i; ]])
   test_eval_error(1<<Gmp.mpz("100000000000000000000"))

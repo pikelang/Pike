@@ -1275,7 +1275,10 @@ static void mpzmod_div(INT32 args)
       int negate = 0;
 
       if(!i)
+      {
+        free_object(res);
         SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+      }
 
       if (i < 0) {
         i = -i;
@@ -1315,7 +1318,10 @@ static void mpzmod_div(INT32 args)
     /* Fallthrough */
   default:
     if (!mpz_sgn(get_mpz(sp-1, 1, "`/", 1, 1)))
+    {
+      free_object(res);
       SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+    }
 
     mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[-1].u.object));
   }
