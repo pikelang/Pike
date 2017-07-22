@@ -138,13 +138,15 @@ static void bind_arguments(sqlite3 *db,
         }
         if(s) {
           ERR(sqlite3_bind_blob(stmt, idx, s->str, s->len,
-                SQLITE_STATIC),
+                SQLITE_TRANSIENT),
                 db);
-          break;
         }
+        sub_msnode_ref(k->val.u.multiset);
+        if(s) break;
       }
       Pike_error("Can only bind string|int|float or single-valued multiset(string)|String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
-      break; /* for good measure */
+      break;
+
     case T_OBJECT:
       {
         size_t len;
@@ -152,7 +154,7 @@ static void bind_arguments(sqlite3 *db,
         if( get_memory_object_memory(k->val.u.object, &ptr, &len, NULL)!=
             MEMOBJ_NONE )
         {
-          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_STATIC), db);
+          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_TRANSIENT), db);
           break;
         }
       }
