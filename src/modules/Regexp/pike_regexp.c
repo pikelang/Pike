@@ -310,11 +310,7 @@ regexp *pike_regcomp(const char *exp)
   }
 
   /* Allocate space. */
-  r = malloc(sizeof(regexp) + (unsigned) regsize);
-  if(!r)
-  {
-    Pike_error(msg_out_of_mem);
-  }
+  r = xalloc(sizeof(regexp) + (unsigned) regsize);
 
   /* Second pass: emit code. */
   regparse = exp2;
