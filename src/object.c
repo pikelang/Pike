@@ -2557,13 +2557,17 @@ unsigned gc_touch_all_objects(void)
 {
   unsigned n = 0;
   struct object *o;
+#ifdef PIKE_DEBUG
   if (first_object && first_object->prev)
     Pike_fatal("Error in object link list.\n");
+#endif
   for (o = first_object; o; o = o->next) {
     debug_gc_touch(o);
     n++;
+#ifdef PIKE_DEBUG
     if (o->next && o->next->prev != o)
       Pike_fatal("Error in object link list.\n");
+#endif
   }
   for (o = objects_to_destruct; o; o = o->next) n++;
   return n;

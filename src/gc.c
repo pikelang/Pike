@@ -1889,23 +1889,20 @@ void debug_gc_touch(void *a)
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_touch()");
   }
-#endif
-
   if (!a) Pike_fatal("Got null pointer.\n");
+#endif
 
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
       m = find_marker(a);
+#ifdef PIKE_DEBUG
       if (
 #ifdef DO_PIKE_CLEANUP
 	  !gc_keep_markers &&
 #endif
-	  m && !(m->flags & (GC_PRETOUCHED
-#ifdef PIKE_DEBUG
-			     |GC_WATCHED
-#endif
-			    )))
+          m && !(m->flags & (GC_PRETOUCHED|GC_WATCHED )))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
+#endif /* PIKE_DEBUG */
       m = get_marker(a);
       m->flags |= GC_PRETOUCHED;
 #ifdef PIKE_DEBUG
@@ -1918,13 +1915,13 @@ void debug_gc_touch(void *a)
       int extra_ref;
 #endif
       m = find_marker(a);
+#ifdef PIKE_DEBUG
       if (!m)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
       else if (!(m->flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
       if (gc_destruct_everything && (m->flags & GC_MARKED))
 	gc_fatal (a, 1, "Thing got marked in gc_destruct_everything mode.\n");
-#ifdef PIKE_DEBUG
       extra_ref = (m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF;
       if (m->saved_refs + extra_ref < *(INT32 *) a)
 	if (m->flags & GC_WEAK_FREED)
