@@ -3,16 +3,22 @@
   constant BSONTimestamp = 1;
 
   int timestamp;
-  int counter;
+  int(0..) counter;
 
   //!
   protected void create()
   {
   }
 
-  variant protected void create(int counter, int timestamp)
+  variant protected void create(int(0..) counter, int timestamp)
   {
+    if (counter < 0) {
+      error("Invalid counter.\n");
+    }
     this::counter = counter;
+    if (timestamp > 0x7fffffff) {
+      error("Invalid timestamp.\n");
+    }
     this::timestamp = timestamp;
   }
 
