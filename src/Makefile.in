@@ -1069,7 +1069,7 @@ interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
 
 # make dependencies
 depend: $(SRC_TARGETS)
-	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
+	$(CC) -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \

@@ -175,7 +175,7 @@ spotless: clean_here
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 	@if [ "x$(DO_DEPEND)" = "x" ]; then \
-	  gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)" ; \
+	  $(CC) -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)" ; \
 	  CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status ; \
 	  for a in '' $(MODULE_SUBDIRS) ; do \
 	    if test "x$$a" = "x"; then :; else \
