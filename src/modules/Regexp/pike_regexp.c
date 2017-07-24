@@ -257,11 +257,13 @@ regexp *pike_regcomp(char *exp,int excompat)
     register ptrdiff_t len;
     int             flags;
     short	   *exp2,*dest,c;
+    ONERROR oerr;
 
     if (exp == (char *)NULL)
 	FAIL("NULL argument");
 
     exp2=xalloc( (strlen(exp)+1) * sizeof(short) );
+    SET_ONERROR(oerr, free, exp2);
     for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
@@ -361,7 +363,8 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    r->regmlen = len;
 	}
     }
-    free(exp2);
+
+    CALL_AND_UNSET_ONERROR(oerr);
     return (r);
 }
 

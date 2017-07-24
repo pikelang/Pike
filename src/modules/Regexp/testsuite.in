@@ -38,6 +38,7 @@ test_equal([[Regexp("c|a")->match(({ "a", "b", "c" }))]],({ "a", "c" }))
 
 dnl Regexp->split
 test_equal([[Regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
+test_eval_error(Regexp("(a)"*40)->split("a"*50))
 
 dnl Regexp->replace
 test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
