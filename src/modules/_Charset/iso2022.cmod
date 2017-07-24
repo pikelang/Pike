@@ -24,6 +24,9 @@
 
 #define PRGM_NAME "Charset.ISO2022"
 
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS;
 
 static struct program *iso2022dec_program = NULL;
 static struct program *iso2022enc_program = NULL;
@@ -1532,6 +1535,8 @@ static void exit_enc_stor(struct object *UNUSED(o))
 
 void iso2022_init(void)
 {
+  INIT;
+
   start_new_program();
   ADD_STORAGE(struct iso2022_stor);
   add_string_constant ("charset", "iso2022", 0);
@@ -1579,4 +1584,6 @@ void iso2022_exit(void)
     free_program(iso2022enc_program);
     iso2022enc_program = NULL;
   }
+
+  EXIT;
 }

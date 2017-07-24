@@ -9,6 +9,7 @@
 /dependencies
 /gb18030.h
 /gbk_tables.h
+/iso2022.c
 /jisx0213_tables.h
 /linker_options
 /make_variables

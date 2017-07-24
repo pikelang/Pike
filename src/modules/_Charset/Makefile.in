@@ -10,6 +10,8 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 charsetmod.o: $(SRCDIR)/gb18030.h $(SRCDIR)/charsetmod.c
 
+iso2022.o: $(SRCDIR)/iso2022.c
+
 tables.o: $(SRCDIR)/gbk_tables.h $(SRCDIR)/jisx0213_tables.h
 
 $(SRCDIR)/gb18030.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gb18030_h.pike
