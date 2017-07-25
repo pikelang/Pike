@@ -80,8 +80,8 @@ static int step(sqlite3_stmt *stmt) {
      String.Buffer/Stdio.Buffer/System.Memory object.
 */
 static void bind_arguments(sqlite3 *db,
-			   sqlite3_stmt *stmt,
-			   struct mapping *bindings) {
+                           sqlite3_stmt *stmt,
+                           struct mapping *bindings) {
   struct mapping_data *md = bindings->data;
   INT32 e;
   struct keypair *k;
@@ -154,7 +154,7 @@ static void bind_arguments(sqlite3 *db,
         if( get_memory_object_memory(k->val.u.object, &ptr, &len, NULL)!=
             MEMOBJ_NONE )
         {
-          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_TRANSIENT), db);
+          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_STATIC), db);
           break;
         }
       }
