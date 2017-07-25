@@ -305,6 +305,7 @@ void describe_location(void *real_memblock,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...);
+#ifdef PIKE_DEBUG
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
@@ -315,6 +316,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags, void *
 PMOD_EXPORT void describe(void *x);
 PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
 PMOD_EXPORT void gc_watch(void *a);
+#endif
 void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
 PMOD_EXPORT int real_gc_check_weak(void *a);
