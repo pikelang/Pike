@@ -1,4 +1,10 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * The following is the reference implementation of siphash as of
  * november 2013. All tests have been removed from the file and the
  * function signatures have been changed to match the one used by pike.
