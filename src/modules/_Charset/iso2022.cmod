@@ -28,7 +28,6 @@
 
 DECLARATIONS;
 
-static struct program *iso2022dec_program = NULL;
 static struct program *iso2022enc_program = NULL;
 
 struct gdesc {
@@ -36,13 +35,22 @@ struct gdesc {
   int mode, index;
 };
 
-struct iso2022_stor {
-  struct gdesc g[4], *gl, *gr;
-  struct pike_string *retain;
+PIKECLASS ISO2022Dec
+flags ID_PROTECTED|ID_FINAL;
+{
+  CVAR struct gdesc g[4], *gl, *gr;
+  CVAR struct pike_string *retain;
 
-  struct string_builder strbuild;
+  CVAR struct string_builder strbuild;
 
-};
+  DECLARE_STORAGE;
+
+#define iso2022_stor	cq__Charset_ISO2022Dec_struct
+
+  EXTRA
+  {
+    add_string_constant ("charset", "iso2022", 0);
+  }
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
 
@@ -396,19 +404,15 @@ static void eat_string(struct pike_string *str, struct iso2022_stor *s)
     free_string(tmpstr);
 }
 
-static void f_feed(INT32 args)
+PIKEFUN object feed(string(8bit) str)
 {
-  struct pike_string *str;
-
-  get_all_args("feed", args, "%S", &str);
-
   eat_string(str, (struct iso2022_stor *)fp->current_storage);
 
   pop_n_elems(args);
   push_object(this_object());
 }
 
-static void f_drain(INT32 args)
+PIKEFUN string drain()
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
   UNICHAR trailer = 0;
@@ -471,7 +475,7 @@ static void f_drain(INT32 args)
   }
 }
 
-static void f_clear(INT32 args)
+PIKEFUN object clear()
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
   int i;
@@ -503,7 +507,7 @@ static void f_clear(INT32 args)
   push_object(this_object());
 }
 
-static void init_stor(struct object *UNUSED(o))
+INIT
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -511,11 +515,11 @@ static void init_stor(struct object *UNUSED(o))
 
   init_string_builder(&s->strbuild,0);
 
-  f_clear(0);
+  f_cq__Charset_ISO2022Dec_clear(0);
   pop_n_elems(1);
 }
 
-static void exit_stor(struct object *UNUSED(o))
+EXIT
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -523,6 +527,7 @@ static void exit_stor(struct object *UNUSED(o))
     free_string(s->retain);
 
   free_string_builder(&s->strbuild);
+}
 }
 
 
@@ -1532,24 +1537,12 @@ static void exit_enc_stor(struct object *UNUSED(o))
 
   free_string_builder(&s->strbuild);
 }
+}
+
 
 void iso2022_init(void)
 {
   INIT;
-
-  start_new_program();
-  ADD_STORAGE(struct iso2022_stor);
-  add_string_constant ("charset", "iso2022", 0);
-  /* function(string:object) */
-  ADD_FUNCTION("feed", f_feed,tFunc(tStr,tObj), 0);
-  /* function(:string) */
-  ADD_FUNCTION("drain", f_drain,tFunc(tNone,tStr), 0);
-  /* function(:object) */
-  ADD_FUNCTION("clear", f_clear,tFunc(tNone,tObj), 0);
-  set_init_callback(init_stor);
-  set_exit_callback(exit_stor);
-  add_program_constant("ISO2022Dec", iso2022dec_program = end_program(),
-		       ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   ADD_STORAGE(struct iso2022enc_stor);
@@ -1576,10 +1569,6 @@ void iso2022_init(void)
 
 void iso2022_exit(void)
 {
-  if(iso2022dec_program) {
-    free_program(iso2022dec_program);
-    iso2022dec_program = NULL;
-  }
   if(iso2022enc_program) {
     free_program(iso2022enc_program);
     iso2022enc_program = NULL;
