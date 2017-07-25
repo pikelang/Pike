@@ -1408,17 +1408,17 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
  *!
  *!   Low-level charset codec factory.
  *!
- *! @decl charset
+ *! @param charset
  *!   Canonical name of character set to look up.
  *!
- *! @decl encoder
+ *! @param encoder
  *!   Flag indicating that an encoder and not a decoder is wanted.
  *!
- *! @decl rep
+ *! @param rep
  *!   String to use for characters not representable in the @[charset].
  *!   Only used for encoders.
  *!
- *! @decl repcb
+ *! @param repcb
  *!   Function to call for characters not representable in the @[charset].
  *!   Only used for encoders.
  *!

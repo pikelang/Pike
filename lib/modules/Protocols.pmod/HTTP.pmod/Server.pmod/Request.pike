@@ -6,7 +6,7 @@
 //! have the following call graphs. @[read_cb] is the default read
 //! callback, installed by @[attach_fd].
 //!
-//! @code{
+//! @code
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb]
@@ -18,25 +18,25 @@
 //!     | If callback isn't changed to @[read_cb_chunked] or @[read_cb_post]
 //!     v
 //!   @[finalize]
-//! @}
+//! @endcode
 //!
-//! @code{
+//! @code
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb_post]
 //!     | If enough data has been received
 //!     v
 //!   @[finalize]
-//! @}
+//! @endcode
 //!
-//! @code{
+//! @code
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb_chunked]
 //!     | If all data chunked transfer-encoding needs
 //!     v
 //!   @[finalize]
-//! @}
+//! @endcode
 
 
 int max_request_size = 0;
