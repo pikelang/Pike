@@ -15,7 +15,7 @@
     this::data = data;
     if(subtype == BINARY_OLD)
     {
-      if( !sscanf(data, "%-4H", data) )
+      if( !sscanf(data, "%-4H", this::data) )
         throw(Error.Generic("old binary data length does not match actual data length.\n"));
     }
   }
