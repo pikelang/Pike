@@ -5,6 +5,8 @@ config.cache
 config.log
 config.status
 config.h
+config.warnings
+config.h.in
 make_variables
 modlist_segment
 module.pmod
