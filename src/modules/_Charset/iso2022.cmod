@@ -29,8 +29,6 @@
 
 DECLARATIONS;
 
-static struct program *iso2022enc_program = NULL;
-
 struct gdesc {
   const UNICHAR *transl;
   int mode, index;
@@ -532,18 +530,23 @@ EXIT
 }
 
 
-struct iso2022enc_stor {
-  struct gdesc g[2];
-  struct {
+PIKECLASS ISO2022Enc
+flags ID_PROTECTED|ID_FINAL;
+{
+  CVAR struct gdesc g[2];
+  CVAR struct {
     p_wchar1 *map;
     int lo, hi;
   } r[2];
-  int variant;
-  struct pike_string *replace;
-  struct string_builder strbuild;
-  struct svalue repcb;
-  struct pike_string *name;
-};
+  CVAR int variant;
+  CVAR struct pike_string *replace;
+  CVAR struct string_builder strbuild;
+  PIKEVAR function(string:string) _repcb;
+  PIKEVAR string name;
+
+  DECLARE_STORAGE;
+
+#define iso2022enc_stor	cq__Charset_ISO2022Enc_struct
 
 static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 {
@@ -1396,23 +1399,20 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
   }
 }
 
-static void f_enc_feed(INT32 args)
+PIKEFUN object feed(string str)
 {
-  struct pike_string *str;
-
-  get_all_args("feed", args, "%W", &str);
   if( str->len )
     eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
 		   ((struct iso2022enc_stor *)fp->current_storage)->replace,
-		   (TYPEOF(((struct iso2022enc_stor *)fp->current_storage)->repcb)
+		   (TYPEOF(((struct iso2022enc_stor *)fp->current_storage)->_repcb)
 		    == T_FUNCTION?
-		    &((struct iso2022enc_stor *)fp->current_storage)->repcb :
+		    &((struct iso2022enc_stor *)fp->current_storage)->_repcb :
 		    NULL));
   pop_n_elems(args);
   push_object(this_object());
 }
 
-static void f_enc_drain(INT32 args)
+PIKEFUN string drain()
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
 
@@ -1421,7 +1421,7 @@ static void f_enc_drain(INT32 args)
   init_string_builder(&s->strbuild, 0);
 }
 
-static void f_enc_clear(INT32 args)
+PIKEFUN object clear()
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
@@ -1478,37 +1478,32 @@ static void select_encoding_parameters(struct iso2022enc_stor *s,
     Pike_error("Invalid ISO2022 encoding variant\n");
 }
 
-static void f_create(INT32 args)
+PIKEFUN void create(string enc, string|void replace,
+		    function(string: string)|void repcb)
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
-
-  check_all_args("create()", args, BIT_STRING, BIT_STRING|BIT_VOID|BIT_INT,
-		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
   select_encoding_parameters(s, sp[-args].u.string);
 
-  if(args>1 && TYPEOF(sp[1-args]) == T_STRING) {
+  if(replace) {
     if(s->replace != NULL)
       free_string(s->replace);
-    add_ref(s->replace = sp[1-args].u.string);
+    add_ref(s->replace = replace);
   }
 
-  if(args>2 && TYPEOF(sp[2-args]) == T_FUNCTION)
-    assign_svalue(&s->repcb, &sp[2-args]);
+  if(repcb && TYPEOF(*repcb) == T_FUNCTION)
+    assign_svalue(&s->_repcb, repcb);
 }
 
-static void f_set_repcb(INT32 args)
+PIKEFUN void set_replacement_callback(function(string: string)|void repcb)
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
 
-  check_all_args("set_replacement_callback()", args,
-		 BIT_FUNCTION|BIT_INT, 0);
-
-  if(args>0)
-    assign_svalue(&s->repcb, &sp[-args]);
+  if(repcb)
+    assign_svalue(&s->_repcb, repcb);
 }
 
-static void init_enc_stor(struct object *UNUSED(o))
+INIT
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
@@ -1519,11 +1514,11 @@ static void init_enc_stor(struct object *UNUSED(o))
 
   for(i=0; i<2; i++)
     s->r[i].map = NULL;
-  f_enc_clear(0);
+  f_cq__Charset_ISO2022Enc_clear(0);
   pop_n_elems(1);
 }
 
-static void exit_enc_stor(struct object *UNUSED(o))
+EXIT
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
@@ -1538,41 +1533,15 @@ static void exit_enc_stor(struct object *UNUSED(o))
 
   free_string_builder(&s->strbuild);
 }
+}
 
 
 void iso2022_init(void)
 {
   INIT;
-
-  start_new_program();
-  ADD_STORAGE(struct iso2022enc_stor);
-  PIKE_MAP_VARIABLE ("charset", OFFSETOF (iso2022enc_stor, name),
-		     tStr, T_STRING, 0);
-  /* function(string:object) */
-  ADD_FUNCTION("feed", f_enc_feed,tFunc(tStr,tObj), 0);
-  /* function(:string) */
-  ADD_FUNCTION("drain", f_enc_drain,tFunc(tNone,tStr), 0);
-  /* function(:object) */
-  ADD_FUNCTION("clear", f_enc_clear,tFunc(tNone,tObj), 0);
-  /* function(string,string|void,function(string:string)|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
-  /* function(function(string:string):void) */
-  ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
-  PIKE_MAP_VARIABLE("_repcb", OFFSETOF(iso2022enc_stor, repcb),
-                    tFunc(tStr,tStr), T_MIXED, ID_PROTECTED);
-
-  set_init_callback(init_enc_stor);
-  set_exit_callback(exit_enc_stor);
-  add_program_constant("ISO2022Enc", iso2022enc_program = end_program(),
-		       ID_PROTECTED|ID_FINAL);
 }
 
 void iso2022_exit(void)
 {
-  if(iso2022enc_program) {
-    free_program(iso2022enc_program);
-    iso2022enc_program = NULL;
-  }
-
   EXIT;
 }
