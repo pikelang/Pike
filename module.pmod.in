@@ -141,9 +141,9 @@ class Compiler
   //!  set to be generated
   //!
   //!  @mapping
-  //!   @member string "css"
+  //!   @member string(8bit) "css"
   //!    The generated CSS
-  //!   @member string "map"
+  //!   @member string(8bit) "map"
   //!    The generated source mapping data
   //!  @endmapping
   mapping(string(8bit):string(8bit)) compile_file(string(8bit) input_file)
@@ -204,10 +204,10 @@ class Compiler
   //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
   //!    or @[STYLE_COMPRESSED] constants. See also @[output_style].
   //!
-  //!   @member string "include_path"
+  //!   @member string(8bit) "include_path"
   //!    Path to root of incude files. See also @[include_path].
   //!
-  //!   @member string "source_map_file"
+  //!   @member string(8bit) "source_map_file"
   //!    File to write source map file to.
   //!    See also @[source_map_file].
   //!
@@ -220,7 +220,7 @@ class Compiler
   //!    Turn on/off if a source map should be embedded in the output or not.
   //!    Default is @tt{false@}. See also @[source_map_embed].
   //!
-  //!   @member string "source_map_root"
+  //!   @member string(8bit) "source_map_root"
   //!    Set the root path of the source files, relative to where the
   //!    source.map file is written.
   //!    See also @[source_map_root]
@@ -229,7 +229,7 @@ class Compiler
   //!    Omit the #sourceMappingURL or not.
   //!    See also @[omit_source_map_url]
   //!  @endmapping
-  void set_options(mapping(string:string|int) opts)
+  void set_options(mapping(string(8bit):string(8bit)|int) opts)
   {
     foreach (opts; string opt; string|int val) {
       switch (opt)
@@ -237,6 +237,11 @@ class Compiler
         case "output_style":
           if (!intp(val)) {
             error("Value to `output_style` must be an integer!\n");
+          }
+          if (!(< STYLE_NESTED, STYLE_COMPRESSED, STYLE_COMPACT,
+                  STYLE_EXPANDED >)[val])
+          {
+            error("Unrecognized output style value!\n");
           }
           output_style = val;
           break;
