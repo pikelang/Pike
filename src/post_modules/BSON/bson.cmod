@@ -358,15 +358,11 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
       if(!Timestamp)
 	Timestamp = lookup_program("Standards.BSON.Timestamp");
       ref_push_program(Timestamp);
-      /* counter
-       * NB: Unsigned.
-       */
+      /* counter */
       push_int64( get_unaligned_le32(n) );
       n+=4;
-      /* timestamp
-       * NB: Signed.
-       */
-      push_int( (INT32)get_unaligned_le32(n) );
+      /* timestamp */
+      push_int64( get_unaligned_le32(n) );
       n+=4;
 
      apply_svalue( Pike_sp-3, 2);
