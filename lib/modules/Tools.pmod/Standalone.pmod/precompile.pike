@@ -2350,6 +2350,12 @@ static struct %s *%s_gdb_dummy_ptr;
 	  if(arrayp(func[p]) && func[p][0]=="{")
 	    break;
 
+	if (p >= sizeof(func)) {
+	  error("%s:%d: Invalid function declaration.\n",
+		func[0]->file||"-",
+		func[0]->line);
+	}
+
 	array proto=func[..p-1];
 	array body=func[p];
 	array rest=func[p+1..];
