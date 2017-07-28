@@ -1595,7 +1595,7 @@ class FuncData
   int min_args;
   array(Argument) args;
 
-  string _sprintf()
+  string _sprintf(int c)
     {
       return sprintf("FuncData(%s)",define);
     }
