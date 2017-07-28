@@ -67,7 +67,16 @@ final Regexp transendprefix
  =iregexp("^\a*(COMMIT|ROLLBACK|END)([; \t\f\r\n]|$)");
 
  /* For statements matching execfetchlimit the resultrows will not be
-  * fetched in pieces
+  * fetched in pieces.  This heuristic will be sub-optimal whenever
+  * either an UPDATE/DELETE/INSERT statement is prefixed by WITH, or
+  * if there is a RETURNING with a *lot* of results.  In those cases
+  * the portal will be busy until all results have been fetched, and will
+  * not be able to deliver results belonging to other parallel queries
+  * running on the same filedescriptor.
+  *
+  * However, considering that the current heuristic increases query-speed
+  * in the majority of the real-world cases, it would be considered a good
+  * tradeoff.
   */
 private Regexp execfetchlimit
  =iregexp("^\a*((UPDA|DELE)TE|INSERT)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
