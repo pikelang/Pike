@@ -1,4 +1,4 @@
-AC_INIT(iso2022.c)
+AC_INIT(iso2022.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT(_Charset)
