@@ -2292,7 +2292,7 @@ OCIError *get_global_error_handle(void)
 	      }
 	      {
 		size_t buf_len;
-		if( get_memory_object_memory(values->u.object, &addr,
+		if( get_memory_object_memory(value->u.object, &addr,
 					     &buf_len, NULL) != MEMOBJ_NONE )
 		{
 		  len = buf_len;
