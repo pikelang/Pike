@@ -874,4 +874,24 @@ test_any( [[
     "_static_modules._Stdio()->Buffer(6 bytes, read=[..-1] data=[0..5] free=[6..0] string)|"
     "ABC\"\n\0")
 
+dnl unread
+
+test_any( [[
+  /* The documentation promises that we can always unread() */
+  Stdio.Buffer b = Stdio.Buffer();
+  b->add("0" * 90);
+  b->add(" " * 10);
+  b->read(90);
+  if (b->unread(90) != 0) return 1;
+  b->sscanf("%d");
+  if (b->unread(90) != 0) return 2;
+  b->read_buffer(90);
+  if (b->unread(90) != 0) return 3;
+  b->match("%d");
+  if (b->unread(90) != 0) return 4;
+  b->consume(90);
+  if (b->unread(90) != 0) return 5;
+  return 0;
+]], 0)
+
 END_MARKER
