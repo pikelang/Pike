@@ -2290,6 +2290,16 @@ OCIError *get_global_error_handle(void)
 		  &((struct Oracle_oracle_NULL_struct *)STORAGE(value->u.object))->type;
 		goto retry;
 	      }
+	      {
+		size_t buf_len;
+		if( get_memory_object_memory(values->u.object, &addr,
+					     &buf_len, NULL) != MEMOBJ_NONE )
+		{
+		  len = buf_len;
+		  fty = SQLT_LBI;
+		  break;
+		}
+	      }
 	      Pike_error("Bad value type in argument 2 to "
 			 "Oracle.oracle->TypedResult()\n");
 	      break;
@@ -2353,23 +2363,6 @@ OCIError *get_global_error_handle(void)
 		  fty = SQLT_LBI;
 		  break;
 		}
-              }
-              Pike_error("Bad value type in argument 2 to "
-                         "Oracle.oracle->TypedResult()\n");
-              break;
-
-            case T_OBJECT:
-              {
-                size_t buf_len;
-                void *ptr;
-                if( get_memory_object_memory(k->val.u.object, &ptr,
-                                             &buf_len, NULL) != MEMOBJ_NONE )
-                {
-                  addr = (ubl *)ptr;
-                  len = buf_len;
-                  fty = SQLT_LBI;
-                  break;
-                }
               }
               /* Fallthrough */
 
