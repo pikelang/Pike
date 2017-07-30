@@ -129,6 +129,12 @@ PIKECLASS Buffer
   PMOD_EXPORT void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
 
+  static void io_trim_waste( Buffer *io )
+  {
+    if( UNLIKELY(io->allocated > (io_len(io) * (1.0+io->max_waste))) )
+        io_trim(io);
+  }
+
   static int io_is_whitespace( Buffer *io, size_t pos )
   {
     if( pos > io_len( io ) )
@@ -2247,7 +2253,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       Buffer *io = THIS;
       io->max_waste = howmuch;
       io_add_space( io, 0, 1 );
-      io_consume( io, 0 );
+      io_trim_waste( io );
   }
 
   /*! @decl void trim()

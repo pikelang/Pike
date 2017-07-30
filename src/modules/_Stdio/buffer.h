@@ -62,8 +62,6 @@ PIKE_UNUSED_ATTRIBUTE
 static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
 {
   io->offset += num;
-  if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
-      io_trim(io);
   return io_len(io);
 }
 
