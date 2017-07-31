@@ -721,52 +721,70 @@ static int map(int flags)
   return ret;
 }
 
+/* read only once */
+#define PIKE_READ_ONCE       1U
+
+/* ignore the number of bytes, read as much as possible.
+ * count is used as the numer of bytes read per call
+ * to read(2). */
+#define PIKE_READ_NO_LENGTH  2U
+
 static struct pike_string *do_read(int fd,
-				   INT32 r,
-				   int all,
+				   size_t count,
+				   unsigned int mode,
 				   INT_TYPE *err)
 {
-  size_t bytes = r;
   struct byte_buffer buf = BUFFER_INIT();
   int e = 0;
 
   buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-  while (bytes) {
-      size_t len = MINIMUM(DIRECT_BUFSIZE, bytes);
-      ptrdiff_t i;
+  while (1) {
 
-      /* make space for exactly len bytes plus the terminating null byte */
+    THREADS_ALLOW();
+
+    while (count) {
+      size_t len = count;
+      ptrdiff_t bytes_read;
+
+      /* make space for exactly len bytes plus the terminating null byte. */
+      /* NOTE: as long as count comes from pike, it was signed, i.e. len+1
+       * cannot overflow */
       if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
-          e = ENOMEM;
-          break;
+        e = ENOMEM;
+        break;
       }
 
-      THREADS_ALLOW();
+      bytes_read = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
 
-      i = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
 
-      THREADS_DISALLOW();
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
 
-      if (LIKELY(i >= 0)) {
-          if ((size_t)i < len) buffer_remove(&buf, len - i);
-          bytes -= i;
-          if (!i || !all) break;
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
       } else {
-          e=errno;
-	  buffer_remove(&buf, len);
-
-	  check_threads_etc();
-
-          if (e == EINTR) {
-              e = 0;
-              continue;
-          }
-
-          break;
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
       }
-  }
+    }
 
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if (e == EINTR) {
+      e = 0;
+      continue;
+    }
+
+    break;
+  }
 
   if (e && !buffer_content_length(&buf)) {
     buffer_free(&buf);
@@ -952,18 +970,16 @@ static void check_message(struct msghdr *msg)
 #define CMSG_LEN(x)	(x)
 #endif
 
-static struct pike_string *do_recvmsg(INT32 r, int all)
+static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *err)
 {
-  ONERROR ebuf;
-  ptrdiff_t bytes_read = 0, i;
-  int fd = FD;
   struct {
     struct msghdr msg;
     struct iovec iov;
     char cmsgbuf[CMSG_LEN(sizeof(int)*128)];
   } message;
-
-  ERRNO=0;
+  struct byte_buffer buf = BUFFER_INIT();
+  int e = 0;
+  ptrdiff_t bytes_read = 0;
 
   message.msg.msg_name = NULL;
   message.msg.msg_namelen = 0;
@@ -974,29 +990,21 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
   message.msg.msg_flags = 0;
 #endif
 
-  {
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     */
-    struct byte_buffer b = BUFFER_INIT();
+  buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-    buffer_set_flags(&b, BUFFER_GROW_EXACT);
+  while (1) {
 
-    /* for small reads we allocate the whole size in the beginning,
-     * instead of only by individual chunks. We may want to change
-     * what small means.
-     */
-    if (r < 65*1024) buffer_ensure_space(&b, r+1);
+    THREADS_ALLOW();
 
-    SET_ONERROR(ebuf, buffer_free, &b);
-    do{
-      int e;
-      const INT32 CHUNK = 1024 * 8;
-      INT32 try_read=MINIMUM(CHUNK,r);
+    while (count) {
+      size_t len = count;
 
-      /* allocate try_read bytes + the trailing null byte */
-      buffer_ensure_space(&b, try_read+1);
+      /* make space for exactly len bytes plus the terminating null byte */
+      /* as long as count comes from pike, it was signed, i.e. len+1 is safe */
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
+        e = ENOMEM;
+        break;
+      }
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
       message.msg.msg_control = &message.cmsgbuf;
@@ -1005,20 +1013,23 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
-      message.iov.iov_base = buffer_alloc(&b, try_read);
-      message.iov.iov_len = try_read;
+      message.iov.iov_base = buffer_alloc_unsafe(&buf, len);
+      message.iov.iov_len = len;
 
-      THREADS_ALLOW();
-      i = recvmsg(fd, &message.msg, 0);
+      bytes_read = recvmsg(fd, &message.msg, 0);
       e=errno;
-      THREADS_DISALLOW();
 
-      check_threads_etc();
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
 
-      if(i>0)
-      {
-	bytes_read+=i;
-	r-=i;
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
+
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
+
 	if (
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	    message.msg.msg_controllen
@@ -1026,42 +1037,57 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
 	    message.msg.msg_accrightslen
 #endif
 	    ) {
-	  check_message(&message.msg);
-	}
-	if (i != try_read) {
-	  buffer_remove(&b, try_read - i);
-	}
-	if(!all) break;
+          /* we have to call receive_fds, so break out of the loop */
+          break;
+        }
+      } else {
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
       }
-      else if(i==0)
-      {
-	buffer_remove(&b, try_read);
-	break;
+    }
+
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if (e) {
+      if (e == EINTR) {
+        e = 0;
+        continue;
       }
-      else
-      {
-	buffer_remove(&b, try_read);
-	if(e != EINTR)
-	{
-	  ERRNO=e;
-	  if(!bytes_read)
-	  {
-            buffer_free(&b);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-    }while(r);
+      break;
+    }
 
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    return buffer_finish_pike_string(&b);
+    if (UNLIKELY(
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+        message.msg.msg_controllen
+#else
+        message.msg.msg_accrightslen
+#endif
+        )) {
+      ONERROR ebuf;
+      SET_ONERROR(ebuf, buffer_free, &buf);
+      check_message(&message.msg);
+      UNSET_ONERROR(ebuf);
+      if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
+    }
+    break;
   }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  if (e) {
+    *err = e;
+
+    if (!buffer_content_length(&buf)) {
+      buffer_free(&buf);
+      return NULL;
+    }
+  }
+
+  return buffer_finish_pike_string(&buf);
 }
 
 /* Send a set of iovecs and fds over an fd. */
@@ -1121,7 +1147,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 #endif /* HAVE_PIKE_SEND_FD */
 
 static struct pike_string *do_read_oob(int UNUSED(fd),
-				       INT32 r,
+				       ptrdiff_t r,
 				       int all,
 				       INT_TYPE *err)
 {
@@ -1252,32 +1278,34 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
 static void file_read(INT32 args)
 {
   struct pike_string *tmp;
-  INT32 all, len;
+  unsigned INT32 mode = 0;
+  size_t count = DIRECT_BUFSIZE;
 
   if(FD < 0)
     Pike_error("File not open.\n");
 
   if(!args)
   {
-    len=0x7fffffff;
+    mode |= PIKE_READ_NO_LENGTH;
   }
   else
   {
+    INT_TYPE len;
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
       SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
     if (!len && SUBTYPEOF(Pike_sp[-args])) {
-      len = 0x7fffffff;
+      mode |= PIKE_READ_NO_LENGTH;
+    } else {
+      count = len;
     }
   }
 
   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
   {
-    all=0;
-  }else{
-    all=1;
+    mode |= PIKE_READ_ONCE;
   }
 
   pop_n_elems(args);
@@ -1286,7 +1314,7 @@ static void file_read(INT32 args)
   /* Check if there's any need to use recvmsg(2). */
   if ((THIS->open_mode & fd_SEND_FD) &&
       (THIS->flags & FILE_HAVE_RECV_FD)) {
-    if ((tmp = do_recvmsg(len, all)))
+    if ((tmp = do_recvmsg(FD, count, mode, & ERRNO)))
       push_string(tmp);
     else {
       errno = ERRNO;
@@ -1294,7 +1322,7 @@ static void file_read(INT32 args)
     }
   } else
 #endif /* HAVE_PIKE_SEND_FD */
-    if((tmp=do_read(FD, len, all, & ERRNO)))
+    if((tmp=do_read(FD, count, mode, & ERRNO)))
       push_string(tmp);
     else {
       errno = ERRNO;
