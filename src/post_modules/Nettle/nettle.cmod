@@ -576,7 +576,7 @@ PIKEFUN int(0..) crc32c(string(8bit) data)
 /*! @endmodule
  */
 
-struct program *inherit_internal_class(struct pike_string *name)
+struct program *inherit_internal_class(const struct pike_string *name)
 {
   struct program *parent_prog = Pike_compiler->previous->new_program;
   struct object *parent_obj = Pike_compiler->previous->fake_object;

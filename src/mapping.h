@@ -246,7 +246,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
   * @see simple_mapping_string_lookup
   */
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p);
+                                                     const struct pike_string *p);
 
 /** A shortcut function for inserting an entry into a mapping for cases
   * where the key is a Pike string.

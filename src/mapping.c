@@ -1342,10 +1342,13 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p)
+                                                     const struct pike_string *p)
 {
   struct svalue tmp;
-  SET_SVAL(tmp, T_STRING, 0, string, p);
+  /* Expanded SET_SVALUE macro to silence discard const warning. */
+  struct svalue *ptr = &tmp;
+  ptr->u.string = (struct pike_string *)p;
+  SET_SVAL_TYPE_SUBTYPE(*ptr, T_STRING, 0);
   return low_mapping_lookup(m, &tmp);
 }
 

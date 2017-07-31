@@ -2297,7 +2297,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  */
 struct node_s *program_magic_identifier (struct program_state *state,
 					 int state_depth, int inherit_num,
-					 struct pike_string *ident,
+                                         struct pike_string *ident,
 					 int colon_colon_ref)
 {
 #if 0
@@ -3035,7 +3035,7 @@ void fixate_program(void)
       if((p->identifier_references[i].id_flags & (ID_FINAL|ID_HIDDEN)) ==
 	 ID_FINAL)
       {
-	struct pike_string *name=ID_FROM_INT(p, i)->name;
+        struct pike_string *name=ID_FROM_INT(p, i)->name;
 
 	e=find_shared_string_identifier(name,p);
 	if(e == -1)
@@ -4860,7 +4860,7 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 
 PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 						   int e,
-						   struct pike_string *name,
+                                                   struct pike_string *name,
 						   int flags)
 {
   struct program *np=(q?q:Pike_compiler)->new_program;
@@ -4885,7 +4885,7 @@ PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
   return really_low_reference_inherited_identifier(q, e, i);
 }
 
-int find_inherit(struct program *p, struct pike_string *name)
+int find_inherit(const struct program *p, const struct pike_string *name)
 {
   int e;
   int level = p->num_inherits;	/* Larger than any inherit_level. */
@@ -5519,7 +5519,7 @@ void simple_do_inherit(struct pike_string *s,
  *
  * @return Return the index of the identifier found, otherwise -1.
  */
-int isidentifier(struct pike_string *s)
+int isidentifier(const struct pike_string *s)
 {
   return really_low_find_shared_string_identifier(s,
 						  Pike_compiler->new_program,
@@ -6881,7 +6881,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  *   |
  *   +-E---foo		Pike 7.7.34 ---
  */
-PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_string *name,
 							 const struct program *prog,
 							 int flags)
 {
@@ -7141,7 +7141,7 @@ static void f_dispatch_variant(INT32 args)
 
 PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 {
-  struct pike_string *lfun_name;
+  const struct pike_string *lfun_name;
   unsigned int flags = 0;
   int i;
   struct identifier *id;
@@ -7186,7 +7186,7 @@ int lfun_lookup_id(struct pike_string *lfun_name)
  * Lookup the number of a function in a program given the name in
  * a shared_string
  */
-int low_find_shared_string_identifier(struct pike_string *name,
+int low_find_shared_string_identifier(const struct pike_string *name,
 				      const struct program *prog)
 {
   int max,min,tst;

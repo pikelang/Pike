@@ -805,9 +805,9 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 							  int f);
 PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 						   int e,
-						   struct pike_string *name,
+                                                   struct pike_string *name,
 						   int flags);
-int find_inherit(struct program *p, struct pike_string *name);
+int find_inherit(const struct program *p, const struct pike_string *name);
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
 					       struct pike_string *name);
@@ -832,7 +832,7 @@ int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
-int isidentifier(struct pike_string *s);
+int isidentifier(const struct pike_string *s);
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
@@ -894,7 +894,7 @@ INT32 define_function(struct pike_string *name,
 		      unsigned function_flags,
 		      union idptr *func,
 		      unsigned opt_flags);
-PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_string *name,
 							 const struct program *prog,
 							 int flags);
 int really_low_find_variant_identifier(struct pike_string *name,
@@ -905,7 +905,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
 PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun);
 PMOD_EXPORT int find_lfun_fatal(struct program *p, enum LFUN lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
-int low_find_shared_string_identifier(struct pike_string *name,
+int low_find_shared_string_identifier(const struct pike_string *name,
 				      const struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
