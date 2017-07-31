@@ -261,24 +261,7 @@ PIKECLASS Cipher
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.Hash.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
     CVAR pike_nettle_crypt_func crypt;
@@ -1173,24 +1156,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -1673,24 +1639,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -2070,24 +2019,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -2469,24 +2401,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -2943,24 +2858,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -3330,24 +3228,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -3817,24 +3698,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -4188,24 +4052,7 @@ PIKECLASS BlockCipher16
       /* Perform an inherit if the _CTR class that our parent contains
        * via its inherit of BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent__CTR_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("_CTR"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent__CTR_fun_num >= 0) {
-	struct program *parent__CTR_prog =
-	  low_program_from_function(parent_obj, parent__CTR_fun_num);
-	if (parent__CTR_prog) {
-	  parent__CTR_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent__CTR_fun_num);
-	  low_inherit(parent__CTR_prog, 0,
-		      parent__CTR_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("_CTR"));
     }
 
     /*! @decl string(8bit) name()
@@ -4268,24 +4115,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the _CTR.State class that our parent
 	 * contains via its inherit of _CTR.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
 
 	/* We want to call some of our inherited functions recursively... */
 	ccm_state_inh_ctr_state_create_fun_num =
@@ -4848,24 +4678,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class that our parent
 	 * contains via its inherit of AEAD.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -5293,24 +5106,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.AEAD.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        inherit_internal_class(MK_STRING("State"));
       }
 
       PIKEVAR object object
@@ -5840,29 +5636,14 @@ PIKECLASS ARCTWO
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Nettle_Cipher_State_set_encrypt_key_fun_num);
-	  f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Nettle_Cipher_State_set_decrypt_key_fun_num);
-	}
+      if( inherit_internal_class(MK_STRING("State")) )
+      {
+        f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
+          really_low_reference_inherited_identifier(NULL, 1,
+                                                    f_Nettle_Cipher_State_set_encrypt_key_fun_num);
+        f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
+          really_low_reference_inherited_identifier(NULL, 1,
+                                                    f_Nettle_Cipher_State_set_decrypt_key_fun_num);
       }
     }
 
@@ -6214,24 +5995,7 @@ PIKECLASS CHACHA
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
     CVAR struct chacha_ctx chacha;
@@ -6427,24 +6191,7 @@ PIKECLASS DES
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
     CVAR struct des_ctx des;
@@ -6671,24 +6418,7 @@ PIKECLASS DES3
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
     CVAR struct des3_ctx des3;
@@ -6795,24 +6525,7 @@ PIKECLASS SALSA20
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
     CVAR struct salsa20_ctx salsa20;

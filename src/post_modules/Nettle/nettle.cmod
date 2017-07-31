@@ -576,6 +576,30 @@ PIKEFUN int(0..) crc32c(string(8bit) data)
 /*! @endmodule
  */
 
+struct program *inherit_internal_class(struct pike_string *name)
+{
+  struct program *parent_prog = Pike_compiler->previous->new_program;
+  struct object *parent_obj = Pike_compiler->previous->fake_object;
+  int parent_class_fun_num =
+    really_low_find_shared_string_identifier(name,
+                                             parent_prog,
+                                             SEE_PROTECTED|SEE_PRIVATE);
+  if (parent_class_fun_num >= 0) {
+    struct program *parent_class_prog =
+      low_program_from_function(parent_obj, parent_class_fun_num);
+    if (parent_class_prog) {
+      parent_class_fun_num =
+        really_low_reference_inherited_identifier(Pike_compiler->previous,
+                                                  0, parent_class_fun_num);
+      low_inherit(parent_class_prog, 0,
+                  parent_class_fun_num,
+                  1 + 42, 0, NULL);
+    }
+    return parent_class_prog;
+  }
+  return NULL;
+}
+
 #endif /* HAVE_LIBNETTLE */
 
 PIKE_MODULE_INIT

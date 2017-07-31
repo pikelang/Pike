@@ -77,6 +77,8 @@ char *pike_crypt_md5(int pl, const char *const pw,
                      int sl, const char *const salt,
                      int ml, const char *const magic);
 
+struct program *inherit_internal_class(struct pike_string *name);
+
 void hash_init(void);
 
 void hash_exit(void);

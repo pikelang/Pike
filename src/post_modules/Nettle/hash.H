@@ -59,24 +59,7 @@ PIKECLASS PIKE_NAME
       /* Perform an inherit of the Hash.State class that our parent
        * contains via its inherit of Hash.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      inherit_internal_class(MK_STRING("State"));
     }
 
   CVAR struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) NETTLE_NAME;
