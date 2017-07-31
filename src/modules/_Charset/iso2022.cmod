@@ -542,7 +542,7 @@ flags ID_PROTECTED|ID_FINAL;
   CVAR struct pike_string *replace;
   CVAR struct string_builder strbuild;
   PIKEVAR function(string:string) _repcb;
-  PIKEVAR string name;
+  PIKEVAR string charset;
 
   DECLARE_STORAGE;
 
@@ -1456,23 +1456,23 @@ static void select_encoding_parameters(struct iso2022enc_stor *s,
   var = (char *)STR0(str);
   if(!*var) {
     s->variant = 0;
-    REF_MAKE_CONST_STRING (s->name, "iso2022");
+    REF_MAKE_CONST_STRING (s->charset, "iso2022");
   }
   else if(!strcmp(var, "jp")) {
     s->variant = VARIANT_JP;
-    REF_MAKE_CONST_STRING (s->name, "iso2022jp");
+    REF_MAKE_CONST_STRING (s->charset, "iso2022jp");
   }
   else if(!strcmp(var, "cn") || !strcmp(var, "cnext")) {
     s->variant = VARIANT_CN;
-    REF_MAKE_CONST_STRING (s->name, "iso2022cn");
+    REF_MAKE_CONST_STRING (s->charset, "iso2022cn");
   }
   else if(!strcmp(var, "kr")) {
     s->variant = VARIANT_KR;
-    REF_MAKE_CONST_STRING (s->name, "iso2022kr");
+    REF_MAKE_CONST_STRING (s->charset, "iso2022kr");
   }
   else if(!strcmp(var, "jp2")) {
     s->variant = VARIANT_JP2;
-    REF_MAKE_CONST_STRING (s->name, "iso2022jp2");
+    REF_MAKE_CONST_STRING (s->charset, "iso2022jp2");
   }
   else
     Pike_error("Invalid ISO2022 encoding variant\n");
