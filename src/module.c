@@ -486,7 +486,12 @@ void exit_modules(void)
 #ifdef PIKE_THREADS
     cleanup_all_other_threads();
 #endif
+#ifndef USE_VALGRIND
+    /* Some module exit code will use destructed objects, which
+       valgrind will complain about as the storage area is marked
+       write only. */
     gc_destruct_everything = 1;
+#endif
     count = do_gc (NULL, 1);
     while (count) {
       size_t new_count = do_gc (NULL, 1);
