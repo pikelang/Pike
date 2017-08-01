@@ -125,6 +125,10 @@
 #define SOCKWERR(X, ...)
 #endif
 
+#ifdef USE_VALGRIND
+#undef HAS___BUILTIN_IA32_RDRAND64_STEP
+#endif
+
 /*
  * Functions
  */
