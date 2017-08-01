@@ -74,6 +74,7 @@ PIKECLASS PIKE_NAME
         struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) state;
         int bytes = THIS->meta->digest_size;
         struct pike_string *dst = begin_shared_string(bytes);
+        NO_WIDE_STRING(text);
 
         memcpy(&state, &THIS->ctx.inner, THIS->meta->context_size);
         THIS->meta->update(&state, text->len, (const uint8_t *)text->str);
@@ -86,6 +87,7 @@ PIKECLASS PIKE_NAME
         optflags OPT_SIDE_EFFECT;
         rawtype tFunc(tStr8, tObjImpl_NETTLE_HASH_STATE);
       {
+        NO_WIDE_STRING(data);
         THIS->meta->update(&THIS->ctx.state, data->len, (const uint8_t *)data->str);
         push_object(this_object());
       }
@@ -96,7 +98,10 @@ PIKECLASS PIKE_NAME
       {
         memcpy(&THIS->ctx.state, &THIS->ctx.inner, THIS->meta->context_size);
         if(data)
+        {
+          NO_WIDE_STRING(data);
           THIS->meta->update(&THIS->ctx.state, data->len, (const uint8_t *)data->str);
+        }
         push_object(this_object());
       }
 
@@ -114,6 +119,25 @@ PIKECLASS PIKE_NAME
         push_string(end_shared_string(dst));
       }
 
+      PIKEFUN string(8bit) digest_info(string(8bit) text)
+      {
+        struct external_variable_context loc;
+        apply_current(cmod_CONCAT_EVAL(f_Nettle_,PIKE_NAME,_cq__HMAC_State_update_fun_num),1);
+
+        /* Basically apply_external() with find_identifier() added. */
+        loc.o = Pike_fp->current_object;
+        loc.parent_identifier = Pike_fp->fun;
+        if (loc.o->prog) {
+          loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+          find_external_context(&loc, 2);
+          int id = find_identifier("pkcs_digest", loc.o->prog);
+          if( id<0 )
+            Pike_error("Could not find pkcs_digest.\n");
+          apply_low(loc.o, id + loc.inherit->identifier_level, 1);
+        }
+        else
+          Pike_error("Apply on parent of destructed object.\n");
+      }
     }
   }
 #endif

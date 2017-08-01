@@ -266,6 +266,7 @@ cond_resolv( Crypto.$1.pkcs_hash_id, [[
   test_any([[
     return Standards.PKCS.Identifiers[lower_case("$1")+"_id"];
   ]], Crypto.$1.pkcs_hash_id())
+  test_eq( Standards.ASN1.Decode.secure_der_decode(Crypto.$1.HMAC("x")->digest_info("y"))->elements[1]->value, Crypto.$1.HMAC("x")("y") )
 ]])
 ]])
 
