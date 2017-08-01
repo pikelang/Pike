@@ -94,7 +94,7 @@ protected constant hmac_jwa_id = "";
 //!   @[Crypto.HMAC]
 
 //! @ignore
-private class _HMAC
+protected class _HMAC
 {
 //! @endignore
 
