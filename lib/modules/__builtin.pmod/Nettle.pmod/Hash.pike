@@ -200,7 +200,7 @@ private class _HMAC
       return this;
     }
 
-    string digest(int|void length)
+    string digest(int(0..)|void length)
     {
       string res = hash(okey + h->digest());
       h = 0;
