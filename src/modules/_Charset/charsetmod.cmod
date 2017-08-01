@@ -250,7 +250,7 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   ref_push_string (str);
   push_int (pos);
-  push_string (charset);
+  ref_push_string (charset);
   if (reason) {
     struct string_builder s;
     init_string_builder (&s, 0);
@@ -277,14 +277,19 @@ void DECLSPEC(noreturn) transcode_error (
 void DECLSPEC(noreturn) transcoder_error (
   struct pike_string *str, ptrdiff_t pos, int encode, const char *reason, ...)
 {
-  struct svalue charset_str, charset;
+  struct svalue charset_str;
   va_list args;
   va_start (args, reason);
   SET_SVAL_SUBTYPE(charset_str, 0);
   MAKE_CONST_STRING (charset_str.u.string, "charset");
   SET_SVAL_TYPE(charset_str, T_STRING);
-  object_index_no_free (&charset, Pike_fp->current_object, 0, &charset_str);
-  transcode_error_va (str, pos, charset.u.string, encode, reason, args);
+  object_index_no_free (Pike_sp, Pike_fp->current_object, 0, &charset_str);
+  Pike_sp++;
+  if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+    transcode_error_va (str, pos, Pike_sp[-1].u.string, encode, reason, args);
+  } else {
+    transcode_error_va (str, pos, MK_STRING("UNDEFINED"), encode, reason, args);
+  }
   va_end (args);
 }
 
