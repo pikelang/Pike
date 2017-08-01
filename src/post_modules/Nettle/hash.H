@@ -43,6 +43,81 @@ PIKECLASS PIKE_NAME
   }
 #endif
 
+#ifdef HAVE_NETTLE_HMAC_H
+  PIKECLASS _HMAC
+    flags ID_PROTECTED;
+  {
+    EXTRA
+    {
+      inherit_internal_class(MK_STRING("_HMAC"));
+    }
+
+    PIKECLASS State
+    {
+      CVAR struct HMAC_CTX(struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx)) ctx;
+      CVAR const struct nettle_hash *meta;
+
+      EXTRA
+      {
+        inherit_internal_class(MK_STRING("State"));
+      }
+
+      PIKEFUN void create(string(8bit) passwd, void|int b)
+      {
+        const struct nettle_hash *meta = THIS->meta = ((struct Nettle_Hash_struct *)parent_storage(2, Nettle_Hash_program))->meta;
+        NO_WIDE_STRING(passwd);
+        HMAC_SET_KEY(&THIS->ctx, meta, passwd->len, (const uint8_t *)passwd->str);
+      }
+
+      PIKEFUN string(8bit) `()(string(8bit) text)
+      {
+        struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) state;
+        int bytes = THIS->meta->digest_size;
+        struct pike_string *dst = begin_shared_string(bytes);
+
+        memcpy(&state, &THIS->ctx.inner, THIS->meta->context_size);
+        THIS->meta->update(&state, text->len, (const uint8_t *)text->str);
+        hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &state,
+                    THIS->meta, THIS->meta->digest_size, (uint8_t *)dst->str);
+        push_string(end_shared_string(dst));
+      }
+
+      PIKEFUN object update(string(8bit) data)
+        optflags OPT_SIDE_EFFECT;
+        rawtype tFunc(tStr8, tObjImpl_NETTLE_HASH_STATE);
+      {
+        THIS->meta->update(&THIS->ctx.state, data->len, (const uint8_t *)data->str);
+        push_object(this_object());
+      }
+
+      PIKEFUN object init(string(8bit)|void data)
+        optflags OPT_SIDE_EFFECT;
+        rawtype tFunc(tOr(tVoid, tStr8), tObjImpl_NETTLE_HASH_STATE);
+      {
+        memcpy(&THIS->ctx.state, &THIS->ctx.inner, THIS->meta->context_size);
+        if(data)
+          THIS->meta->update(&THIS->ctx.state, data->len, (const uint8_t *)data->str);
+        push_object(this_object());
+      }
+
+      PIKEFUN string(8bit) digest(int(0..)|void length)
+      {
+        int bytes = THIS->meta->digest_size;
+        struct pike_string *dst;
+        if(length)
+          bytes = MINIMUM(bytes, length->u.integer);
+        dst = begin_shared_string(bytes);
+
+        hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &THIS->ctx.state,
+                    THIS->meta, bytes, (uint8_t *)dst->str);
+
+        push_string(end_shared_string(dst));
+      }
+
+    }
+  }
+#endif
+
   DOCSTART() @class State
     *!
     *! State for PIKE_NAME hashing.

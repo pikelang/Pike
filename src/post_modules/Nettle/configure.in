@@ -102,7 +102,7 @@ else
 		     nettle/poly1305.h nettle/eax.h \
 		     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
 		     nettle/curve25519.h nettle/eddsa.h \
-                     nettle/version.h nettle/pbkdf2.h \
+                     nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
 		    )
     # Check that the libraries match.
     #
