@@ -49,7 +49,7 @@ PIKECLASS PIKE_NAME
   {
     EXTRA
     {
-      inherit_internal_class(MK_STRING("_HMAC"));
+      lexical_inherit(1, MK_STRING("_HMAC"), 0, REPORT_ERROR);
     }
 
     PIKECLASS State
@@ -59,7 +59,7 @@ PIKECLASS PIKE_NAME
 
       EXTRA
       {
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEFUN void create(string(8bit) passwd, void|int b)
@@ -158,7 +158,7 @@ PIKECLASS PIKE_NAME
       /* Perform an inherit of the Hash.State class that our parent
        * contains via its inherit of Hash.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
   CVAR struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) NETTLE_NAME;

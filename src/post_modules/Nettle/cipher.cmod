@@ -261,7 +261,7 @@ PIKECLASS Cipher
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.Hash.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
     CVAR pike_nettle_crypt_func crypt;
@@ -1156,7 +1156,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -1639,7 +1639,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -2019,7 +2019,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -2401,7 +2401,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -2858,7 +2858,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -3228,7 +3228,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -3698,7 +3698,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -4052,7 +4052,7 @@ PIKECLASS BlockCipher16
       /* Perform an inherit if the _CTR class that our parent contains
        * via its inherit of BlockCipher.
        */
-      inherit_internal_class(MK_STRING("_CTR"));
+      lexical_inherit(1, MK_STRING("_CTR"), 0, REPORT_ERROR);
     }
 
     /*! @decl string(8bit) name()
@@ -4115,7 +4115,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the _CTR.State class that our parent
 	 * contains via its inherit of _CTR.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
 
 	/* We want to call some of our inherited functions recursively... */
 	ccm_state_inh_ctr_state_create_fun_num =
@@ -4678,7 +4678,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class that our parent
 	 * contains via its inherit of AEAD.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -5106,7 +5106,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.AEAD.
 	 */
-        inherit_internal_class(MK_STRING("State"));
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -5636,7 +5636,7 @@ PIKECLASS ARCTWO
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      if( inherit_internal_class(MK_STRING("State")) )
+      if( lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR) )
       {
         f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
           really_low_reference_inherited_identifier(NULL, 1,
@@ -5995,7 +5995,7 @@ PIKECLASS CHACHA
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
     CVAR struct chacha_ctx chacha;
@@ -6191,7 +6191,7 @@ PIKECLASS DES
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
     CVAR struct des_ctx des;
@@ -6418,7 +6418,7 @@ PIKECLASS DES3
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
     CVAR struct des3_ctx des3;
@@ -6525,7 +6525,7 @@ PIKECLASS SALSA20
       /* Perform an inherit of the Cipher.State class that our parent
        * contains via its inherit of Cipher.
        */
-      inherit_internal_class(MK_STRING("State"));
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
     }
 
     CVAR struct salsa20_ctx salsa20;
