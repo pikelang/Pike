@@ -824,6 +824,10 @@ PMOD_EXPORT void low_inherit(struct program *p,
 			     int parent_offset,
 			     INT32 flags,
 			     struct pike_string *name);
+PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
+					    struct pike_string *symbol,
+					    INT32 flags,
+					    int failure_severity_level);
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);

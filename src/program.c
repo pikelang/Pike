@@ -5348,6 +5348,73 @@ PMOD_EXPORT void low_inherit(struct program *p,
   }
 }
 
+/**
+ * Inherit a class from a lexically scoped identifier.
+ *
+ * @param scope_depth
+ *   Scope at which the identifier is expected to be found.
+ *
+ * @param symbol
+ *   Name of symbol to inherit from the specified scope.
+ *
+ * @param flags
+ *   Modifier flags for the inherit.
+ *
+ * @param failure_severity_level
+ *   Severity level to yyreport() failures to perform the inherit.
+ *   Typically REPORT_ERROR, but eg REPORT_NOTICE and REPORT_WARNING
+ *   are useful if the sybol is expected to sometimes be missing.
+ *
+ * @returns
+ *   Returns NULL on failure and the inherited program on success.
+ */
+PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
+					    struct pike_string *symbol,
+					    INT32 flags,
+					    int failure_severity_level)
+{
+  struct program_state *state = Pike_compiler;
+  int e;
+  int class_fun_num;
+  struct program *prog;
+
+  for (e = 0; e < scope_depth; e++) {
+    state = state->previous;
+    if (!state) {
+      my_yyerror("Invalid lexical inherit of symbol %S at depth %d (max_depth: %d).",
+		 symbol, scope_depth, e+1);
+      return NULL;
+    }
+  }
+
+  class_fun_num =
+    really_low_find_shared_string_identifier(symbol, state->new_program,
+					     SEE_PROTECTED|SEE_PRIVATE);
+  if (class_fun_num < 0) {
+    yyreport(failure_severity_level, parser_system_string, 0,
+	     "Symbol to inherit (%S) not found in parent scope #%d.",
+	     symbol, scope_depth);
+    return NULL;
+  }
+
+  prog = low_program_from_function(state->fake_object, class_fun_num);
+  if (!prog) {
+    yyreport(failure_severity_level, parser_system_string, 0,
+	     "Symbol %S in parent scope #%d is not a program.",
+	     symbol, scope_depth);
+    return NULL;
+  }
+
+  if (scope_depth) {
+    /* Add a reference to the identifier. */
+    class_fun_num =
+      really_low_reference_inherited_identifier(state, 0, class_fun_num);
+  }
+  low_inherit(prog, 0, class_fun_num, 42 + scope_depth, flags, symbol);
+
+  return prog;
+}
+
 PMOD_EXPORT void do_inherit(struct svalue *s,
 			    INT32 flags,
 			    struct pike_string *name)
