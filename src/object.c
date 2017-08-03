@@ -1003,7 +1003,10 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if (o->storage) {
     if (o->flags & OBJECT_CLEAR_ON_EXIT)
       guaranteed_memset(o->storage, 0, p->storage_needed);
-    PIKE_MEM_WO_RANGE(o->storage, p->storage_needed);
+    /* NB: The storage is still valid until all refs are gone from o. */
+    if (o->refs == 1) {
+      PIKE_MEM_WO_RANGE(o->storage, p->storage_needed);
+    }
   }
 
   free_object( o );
