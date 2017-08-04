@@ -39,7 +39,7 @@ test_enc_dec(Val.true)
 test_enc_dec(({ 2.15392757010452e+18, Math.e, Math.pi, Math.inf }));
 test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
 test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
-test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebad))
+test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebabe))
 test_eval_error(Standards.BSON.Timestamp(-0xdeadbeef, 0xcafebad))
 test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebad))
 test_eval_error(Standards.BSON.Timestamp(0xdeadbeef, -0xcafebad))
