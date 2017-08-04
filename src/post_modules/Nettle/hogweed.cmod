@@ -737,10 +737,10 @@ PIKECLASS ECC_Curve
      */
     EXTRA
     {
-      /* Perform an inherit of the Point class that our parent
-       * contains via its inherit of __builtin.Nettle.ECC_Curve.
+      /* Perform an inherit of the Point class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.ECC_Curve.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING);
     }
 
     INIT
@@ -1328,10 +1328,10 @@ PIKECLASS Curve25519
      */
     EXTRA
     {
-      /* Perform an inherit of the Point class that our parent
-       * contains via its inherit of __builtin.Nettle.ECC_Curve.
+      /* Perform an inherit of the Point class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.ECC_Curve.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING);
     }
 
     PIKEFUN void set(string(8bit) x, string(8bit)|void y)

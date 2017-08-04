@@ -475,7 +475,7 @@ PIKECLASS Hash
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.Hash.
        */
-      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
 #define GET_META(o)						\
