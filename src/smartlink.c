@@ -207,12 +207,14 @@ int main(int argc, char **argv)
 	      new_argv[new_argc++] = argv[i];
 	      new_argv[new_argc++] = argv[i+1];
 	    }
+            i++;
 	  }
 	} else {
 	  if (add_path(lpath, argv[i]+2)) {
 	    new_argv[new_argc++] = argv[i];
 	  }
 	}
+        continue;
       } else if (argv[i][1] == 'R') {
 	/* -R */
 	if (!argv[i][2]) {
