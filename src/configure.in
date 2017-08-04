@@ -717,6 +717,9 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=yp_
       fi
     ;;
+    Darwin\ *)
+      pike_cv_run_path_method=darwin_rpath
+    ;;
     *)
       pike_cv_run_path_method=ld_library_path
     ;;
@@ -750,6 +753,10 @@ case "$pike_cv_run_path_method" in
   wl)
     AC_DEFINE(USE_Wl)
     AC_MSG_RESULT([use -Wl,-rpath])
+  ;;
+   darwin_rpath)
+    AC_DEFINE(USE_Wl_rpath_darwin)
+    AC_MSG_RESULT([use -Wl,-rpath (Darwin-style)])
   ;;
   qoption)
     AC_DEFINE(USE_Qoption)
@@ -2167,7 +2174,7 @@ if test "$cflags_is_set" = "no"; then
     # IRIX
     DO_IF_OS(IRIX,
     [
-      # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
+      # sopt disabled since it takes too long time on interpret.c (>45min on an Oï¿½)
       # AC_SYS_COMPILER_FLAG(-sopt,sopt,OPTIMIZE)
 
       # -n32 moved to smartlink so it will affect cc as well as linker
