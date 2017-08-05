@@ -166,12 +166,12 @@ void init_tables()
 void clear()
 {
   Sql.Sql db = get_db();
-  db->query("delete from word_hit");
-  db->query("delete from uri");
-  db->query("delete from document");
-  db->query("delete from deleted_document");
-  db->query("delete from metadata");
-  db->query("delete from lastmodified");
+  db->query("TRUNCATE word_hit");
+  db->query("TRUNCATE uri");
+  db->query("TRUNCATE document");
+  db->query("TRUNCATE deleted_document");
+  db->query("TRUNCATE metadata");
+  db->query("TRUNCATE lastmodified");
 }
 
 
