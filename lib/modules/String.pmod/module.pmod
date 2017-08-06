@@ -17,7 +17,6 @@ constant normalize_space = __builtin.string_normalize_space;
 constant range = __builtin.string_range;
 constant secure = __builtin.string_secure;
 constant status = __builtin.string_status;
-constant string2hex = predef::string2hex;
 constant trim = __builtin.string_trim;
 /* deprecated */ constant trim_all_whites = __builtin.string_trim;
 constant trim_whites = __builtin.string_trim_whites;
@@ -25,6 +24,21 @@ constant width = __builtin.string_width;
 
 constant __HAVE_SPRINTF_STAR_MAPPING__ = 1;
 constant __HAVE_SPRINTF_NEGATIVE_F__ = 1;
+
+#if constant(predef::string2hex)
+/* NB: This module is used from the precompiler, and may thus be used
+ *     with older versions of Pike.
+ */
+constant string2hex = predef::string2hex;
+#else
+/* NB: Intentionally uses integer ranges instead of 7bit/8bit
+ *     for improved backward compat.
+ */
+string(0..127) string2hex(string(0..255) s)
+{
+  return sprintf("%{%02x%}", (array(int(0..255)))s);
+}
+#endif
 
 //! This function implodes a list of words to a readable string, e.g.
 //! @expr{({"straw","berry","pie"})@} becomes
