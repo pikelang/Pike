@@ -1993,7 +1993,6 @@ void f_thread_create(INT32 args)
   struct thread_state *thread_state =
     (struct thread_state *)Pike_fp->current_storage;
   int tmp;
-  int orig_threads_disabled = threads_disabled;
 
   if (args < 1) {
     SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
@@ -2056,7 +2055,7 @@ void f_thread_create(INT32 args)
 			thread_state));
     while (thread_state->status == THREAD_NOT_STARTED)
       low_co_wait_interpreter (&thread_state->status_change);
-    if (!orig_threads_disabled && threads_disabled) {
+    if (threads_disabled) {
       /* Some other thread disabled threads while we were waiting for
        * the cond var. Wait for the threads disabled lock to be released.
        */
