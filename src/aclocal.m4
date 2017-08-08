@@ -252,11 +252,7 @@ define([MY_AC_PROG_CC],
 dnl Not available before Autoconf 2.60.
 ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
   AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
-[/* Enable extensions on AIX 3, Interix.  */
-#ifndef _ALL_SOURCE
-# undef _ALL_SOURCE
-#endif
-/* Enable GNU extensions on systems that have them.  */
+[/* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE
 # undef _GNU_SOURCE
 #endif
@@ -277,7 +273,6 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 # undef _TANDEM_SOURCE
 #endif
 ])
-  AC_DEFINE(_ALL_SOURCE)
   AC_DEFINE(_GNU_SOURCE)
   AC_DEFINE(_DARWIN_C_SOURCE)
   AC_DEFINE(_NETBSD_SOURCE)
