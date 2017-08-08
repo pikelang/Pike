@@ -2055,12 +2055,6 @@ void f_thread_create(INT32 args)
 			thread_state));
     while (thread_state->status == THREAD_NOT_STARTED)
       low_co_wait_interpreter (&thread_state->status_change);
-    if (threads_disabled) {
-      /* Some other thread disabled threads while we were waiting for
-       * the cond var. Wait for the threads disabled lock to be released.
-       */
-      threads_disabled_wait(DLOC);
-    }
     THREADS_FPRINTF(0, (stderr, "f_thread_create %p continue\n", thread_state));
     SWAP_IN_CURRENT_THREAD();
   } else {
@@ -2332,15 +2326,6 @@ void f_mutex_lock(INT32 args)
       SWAP_IN_CURRENT_THREAD();
       check_threads_etc();
     }while(m->key);
-    if (threads_disabled) {
-      /* Some other thread disabled threads while we were waiting for
-       * the mutex. Wait for the threads disabled lock to be released.
-       */
-      SWAP_OUT_CURRENT_THREAD();
-      threads_disabled_wait(DLOC);
-      SWAP_IN_CURRENT_THREAD();
-      check_threads_etc();
-    }
     m->num_waiting--;
   }
 
@@ -2801,15 +2786,6 @@ void f_cond_wait(INT32 args)
     SWAP_IN_CURRENT_THREAD();
     check_threads_etc();
   }
-  if (threads_disabled) {
-    /* Some other thread disabled threads while we were waiting for the mutex
-     * or the cond var. Wait for the threads disabled lock to be released.
-     */
-    SWAP_OUT_CURRENT_THREAD();
-    threads_disabled_wait(DLOC);
-    SWAP_IN_CURRENT_THREAD();
-    check_threads_etc();
-  }
   mut->key=key;
   OB2KEY(key)->mut=mut;
   OB2KEY(key)->mutex_obj = mutex_obj;
@@ -2995,12 +2971,6 @@ static void f_thread_id_result(INT32 UNUSED(args))
   while(th->status < THREAD_EXITED) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
-    if (threads_disabled) {
-      /* Some other thread disabled threads while we were waiting for
-       * the cond var. Wait for the threads disabled lock to be released.
-       */
-      threads_disabled_wait(DLOC);
-    }
     SWAP_IN_CURRENT_THREAD();
     check_threads_etc();
     THREADS_FPRINTF(0,
