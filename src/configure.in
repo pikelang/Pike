@@ -1425,20 +1425,12 @@ MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX)
+    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX|AIX)
 #    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
 # Nothing to warn about, really...
 # NOTE: Darwin (OSX/iOS) have poll, but it's layered on kqueue, so there's no
 #   real benefit to supporting it separately there.
       with_poll=yes
-    ;;
-    AIX)
-      # poll(2) is broken on AIX 4.1 and earlier.
-      if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
-        with_poll=yes
-      elif test "`uname -v`" -gt 4 ; then
-        with_poll=yes
-      else :; fi
     ;;
   esac
 ])
@@ -3726,11 +3718,7 @@ int main(int argc, char **argv)
     ;;
 
     xAIX*)
-      if test "`uname -v`" -gt 4 ; then
-        LIBS="${OLDLIBS} -lpthread"
-      else
-        LIBS="${OLDLIBS} -lpthreads -lc_r"
-      fi
+      LIBS="${OLDLIBS} -lpthread"
     ;;
 
     xSolaris*)
@@ -7222,9 +7210,6 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 
 #include <stdio.h>
 
-/* libc_r:fputs on AIX 4.2 is broken. */
-#define FPUTS(S, F)	fwrite(S, sizeof(S)-sizeof(""), 1, F)
-
 #ifdef PIKE_THREADS
 
 #define CONFIGURE_TEST
@@ -7248,9 +7233,9 @@ TH_RETURN_TYPE work_thread (void *dummy)
 {
   struct timeval rt_start, rt;
   cpu_time_t start;
-  FPUTS("work_thread waiting.\n", stderr);
+  fputs("work_thread waiting.\n", stderr);
   mt_lock (&m);
-  FPUTS("work_thread start.\n", stderr);
+  fputs("work_thread start.\n", stderr);
   GETTIMEOFDAY (&rt_start);
   start = get_cpu_time();
   do {
@@ -7262,10 +7247,10 @@ TH_RETURN_TYPE work_thread (void *dummy)
     }
     work_time = t - start;
   } while (work_time < (CPU_TIME_TICKS / 10) && rt.tv_sec <= rt_start.tv_sec + 1);
-  FPUTS("work_thread releasing main.\n", stderr);
+  fputs("work_thread releasing main.\n", stderr);
   co_signal (&c);
   mt_unlock (&m);
-  FPUTS("work_thread done.\n", stderr);
+  fputs("work_thread done.\n", stderr);
   return 0;
 }
 
@@ -7283,9 +7268,9 @@ int main()
   co_init (&c);
 
   mt_lock (&m);
-  FPUTS("Creating work_thread.\n", stderr);
+  fputs("Creating work_thread.\n", stderr);
   if (th_create (&worker, work_thread, NULL)) {
-    FPUTS("unknown (failed to create thread)", res);
+    fputs("unknown (failed to create thread)", res);
     fclose (res);
     return 3;
   }
@@ -7294,7 +7279,7 @@ int main()
   co_wait (&c, &m);
   wait_time = get_cpu_time() - start;
   if (start == (cpu_time_t) -1 || work_time == (cpu_time_t) -1) {
-    FPUTS("unknown (get_cpu_time does not work)", res);
+    fputs("unknown (get_cpu_time does not work)", res);
     fclose (res);
     return 4;
   }
@@ -7308,7 +7293,7 @@ int main()
   if (work_time > wait_time)
     return 0; /* It is thread local. */
   else {
-    FPUTS("no", res);
+    fputs("no", res);
     fclose (res);
     return 1; /* It is not thread local. */
   }
@@ -7319,7 +7304,7 @@ int main()
 {
   FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 6;
-  FPUTS("no", res);
+  fputs("no", res);
   fclose (res);
   return 1;
 }
@@ -7413,35 +7398,7 @@ if test -z "$LDSHARED" ; then
   ldshared_is_cc=yes
   case "$pike_cv_sys_os" in
     AIX*)
-      if test "$GCC" = yes ; then
-        if test "`uname -r`" -ge 2 -a "`uname -v`" -eq 4 ; then
-          LDSHARED="ld -G -bexpall"
-	elif test "`uname -v`" -gt 4 ; then
-	  # AIX 5L+
-	  LDSHARED="ld -G"
-	else
-	  # AIX 4.1 and earlier don't have/have unreliable
-	  # handling of dlopen et al.
-	  #
-	  # Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
-	  # to dlopen a file that hasn't been linked with -G.
-	  pike_cv_sys_dynamic_loading=no
-	  LDSHARED="ld"
-        fi
-      elif test "`uname -r`" -ge 3 -a "`uname -v`" -eq 4 ; then
-        LDSHARED="ld -G -bexpall"
-      elif test "`uname -v`" -gt 4 ; then
-	# AIX 5L+
-	LDSHARED="ld -G"
-      else
-	# AIX 4.1 and earlier don't have/have unreliable
-	# handling of dlopen et al.
-	#
-	# Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
-	# to dlopen a file that hasn't been linked with -G.
-	pike_cv_sys_dynamic_loading=no
-	LDSHARED="ld"
-      fi
+      LDSHARED="ld -G"
       ldshared_is_cc=no
     ;;
     Darwin*)
@@ -7616,12 +7573,8 @@ then
   if test "$GCC" = yes ; then
     case "$pike_cv_sys_os" in
       AIX*)
-        if test "`uname -v`" -gt 4 ; then
-	  # This is probably wrong, but I don't have a man page for ld yet.
-	  LINKFORSHARED=""
-	else
-	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
-	fi
+        # This is probably wrong, but I don't have a man page for ld yet.
+        LINKFORSHARED=""
       ;;
       Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
@@ -7657,13 +7610,7 @@ then
     esac
   else
     case "$pike_cv_sys_os" in
-      AIX*)
-        if test "`uname -v`" -gt 4 ; then
-	  LINKFORSHARED="-Bexport"
-	else
-	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
-	fi
-      ;;
+      AIX*) LINKFORSHARED="-Bexport";;
       Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
