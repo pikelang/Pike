@@ -22,7 +22,6 @@
  * Used on:
  *   Solaris 7 + patches and above.
  *   OSF/1 + patches and above.
- *   IRIX 5.6.15m and above.
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVPOLL

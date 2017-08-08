@@ -656,12 +656,6 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     HPUX\ 11.*)
       pike_cv_run_path_method=plus_b
     ;;
-    IRIX\ 6.*)
-      pike_cv_run_path_method=rpath
-    ;;
-    IRIX\ 5.*)
-      pike_cv_run_path_method=rpath
-    ;;
     SunOS\ 5.*)
       if test "$TCC" = "yes"; then
   	# tcc doesn't know about -R
@@ -1425,7 +1419,7 @@ MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX|AIX)
+    Solaris|HP-UX|OSF1|Linux|UnixWare|OpenUNIX|AIX)
 #    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
 # Nothing to warn about, really...
 # NOTE: Darwin (OSX/iOS) have poll, but it's layered on kqueue, so there's no
@@ -1966,12 +1960,6 @@ if test "$cflags_is_set" = "no"; then
         LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -non_shared"
       ])
 
-      DO_IF_OS(IRIX,
-      [
-        AC_SYS_COMPILER_FLAG(-non_shared,non_shared,CFLAGS)
-        LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -B static"
-      ])
-
       # how do you link statically on HP-UX ?
     else
       :
@@ -2102,26 +2090,6 @@ if test "$cflags_is_set" = "no"; then
       # /Hubbe
       AC_SYS_COMPILER_FLAG(-std1,std1,CFLAGS)
       AC_SYS_COMPILER_FLAG(-warnprotos,warnprotos,WARN)
-    ])
-
-    # IRIX
-    DO_IF_OS(IRIX,
-    [
-      # sopt disabled since it takes too long time on interpret.c (>45min on an O�)
-      # AC_SYS_COMPILER_FLAG(-sopt,sopt,OPTIMIZE)
-
-      # -n32 moved to smartlink so it will affect cc as well as linker
-      # this way the user can override it by setting LDFLAGS and/or CFLAGS
-      # AC_SYS_COMPILER_FLAG(-n32,n32,CFLAGS)
-      AC_SYS_COMPILER_FLAG(-fullwarn,fullwarn,WARN)
-      AC_SYS_COMPILER_FLAG(-woff 1209,woff_1209,WARN)
-      AC_SYS_COMPILER_FLAG(-OPT:Olimit_opt=on,OPT_Olimit_opt_on,OPTIMIZE)
-      if test x$with_cdebug = xyes ; then
-        AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
-      fi
-      if test x$with_rtldebug = xyes ; then
-        AC_SYS_COMPILER_FLAG(-trapuw,trapuw,WARN)
-      fi
     ])
 
     # Windows NT
@@ -6152,10 +6120,6 @@ else
 fi
 
 ########################################################################
-#
-# IRIX also has procfs support, but it it different, a separate test
-# should be made. /Hubbe
-#
 
 if test "$ac_cv_header_sys_procfs_h" = "yes"; then
   AC_MSG_CHECKING(getrusage() through procfs)
@@ -7392,7 +7356,7 @@ then
 fi
 AC_MSG_RESULT($SO)
 # LDSHARED is the ld *command* used to create shared library
-# -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x, "ld -shared" on IRIX 5
+# -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x
 AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED" ; then
   ldshared_is_cc=yes
@@ -7412,19 +7376,6 @@ if test -z "$LDSHARED" ; then
         # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
         LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
       fi
-    ;;
-    IRIX*)
-      if test "$GCC" = yes ; then
-        # egcs defaults to building -n32 objects
-        LDSHARED="ld -shared -n32"
-      else
-        LDSHARED="ld -shared"
-      fi
-      # -woff isn't understood by ld on Irix 5.
-      if test "`uname -r`" -ge 6 ; then
-        LDSHARED="$LDSHARED -woff 84,85,134"
-      else :; fi
-      ldshared_is_cc=no
     ;;
     SunOS*)
       LDSHARED="ld"
@@ -7533,10 +7484,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	Darwin*)
 	  CCSHARED="-fPIC"
 	;;
-        IRIX*)
-          AC_SYS_COMPILER_FLAG(-share,cc_shared,CCSHARED)
-        ;;
-	hp*|HP*) CCSHARED="+z"; ;;
+        hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
         UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;

@@ -1363,25 +1363,3 @@ PIKE_MODULE_INIT
 }
 
 PIKE_MODULE_EXIT {}
-
-#if defined(HAVE___VTBL__9TYPE_INFO) || defined(HAVE___T_9__NOTHROW)
-/* Super-special kluge for IRIX 6.3 */
-#ifdef HAVE___VTBL__9TYPE_INFO
-extern void __vtbl__9type_info(void);
-#endif /* HAVE___VTBL__9TYPE_INFO */
-#ifdef HAVE___T_9__NOTHROW
-extern void __T_9__nothrow(void);
-#endif /* HAVE___T_9__NOTHROW */
-/* Don't even think of calling this one
- * Not static, so the compiler can't optimize it away totally.
- */
-void zlibmod_strap_kluge(void)
-{
-#ifdef HAVE___VTBL__9TYPE_INFO
-  __vtbl__9type_info();
-#endif /* HAVE___VTBL__9TYPE_INFO */
-#ifdef HAVE___T_9__NOTHROW
-  __T_9__nothrow();
-#endif /* HAVE___T_9__NOTHROW */
-}
-#endif /* HAVE___VTBL__9TYPE_INFO || HAVE___T_9__NOTHROW */
