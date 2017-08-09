@@ -281,7 +281,7 @@ else
   :;
 fi
 
-if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
+if test "x$GCC" = "xno"; then
 
   if test "x$ac_cv_prog_cc_cross" = "xyes"; then
     # The AIX 5L/cc beta can not generate working binaries without a
@@ -335,39 +335,6 @@ EOF
     else
       AC_MSG_RESULT(yes)
     fi
-  fi
-elif test "x$TCC" = "xyes"; then
-  AC_MSG_CHECKING(if we can use pragma TenDRA longlong)
-  AC_CACHE_VAL(pike_cv_pragma_tendra_longlong, [
-    AC_TRY_COMPILE([
-#pragma TenDRA longlong type allow
-    ], [], [ pike_cv_pragma_tendra_longlong=yes
-    ], [ pike_cv_pragma_tendra_longlong=no ])
-  ])
-  if test "x$pike_cv_pragma_tendra_longlong" = "xyes"; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_PRAGMA_TENDRA_LONGLONG)
-  else
-    AC_MSG_RESULT(no)
-  fi
-
-  AC_MSG_CHECKING(if we can use pragma TenDRA set longlong type)
-  AC_CACHE_VAL(pike_cv_pragma_tendra_set_longlong_type, [
-    AC_TRY_COMPILE([
-#ifdef HAVE_TENDRA_LONGLONG
-#pragma TenDRA longlong type allow
-#endif /* HAVE_TENDRA_LONGLONG */
-#pragma TenDRA set longlong type : long long
-
-long long foo;
-    ], [], [ pike_cv_pragma_tendra_set_longlong_type=yes
-    ], [ pike_cv_pragma_tendra_set_longlong_type=no ])
-  ])
-  if test "x$pike_cv_pragma_tendra_set_longlong_type" = "xyes"; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE)
-  else
-    AC_MSG_RESULT(no)
   fi
 else :; fi
 
@@ -657,12 +624,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
       pike_cv_run_path_method=plus_b
     ;;
     SunOS\ 5.*)
-      if test "$TCC" = "yes"; then
-  	# tcc doesn't know about -R
-        pike_cv_run_path_method=wl_r
-      else
-        pike_cv_run_path_method=r
-      fi
+      pike_cv_run_path_method=r
     ;;
     Linux\ 2.* | GNU/kFreeBSD* )
       if test "$ICC" = "yes"; then
@@ -1912,36 +1874,6 @@ if test "$cflags_is_set" = "no"; then
   #       ])
   #     fi
   ])
-
-  elif test "x${TCC-}" = xyes ; then
-
-    # Yikes! We're using the TenDRA compiler!
-
-    # Make sure we can use the system headerfiles...
-    # Already done by the CC test in aclocal.m4.
-    # AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
-
-    # Use lenient ANSI compliance...
-    #AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
-
-    # Find out where libtdf.a is hidden.
-    AC_MSG_CHECKING(for machine dependant library directory)
-    AC_CACHE_VAL(pike_cv_tcc_lib_path,
-    [
-      pike_cv_tcc_lib_path="`${CC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/p' -ed| head -n 1`"
-      if test -d "$pike_cv_tcc_lib_path/." ; then :; else
-        # Failed.
-        pike_cv_tcc_lib_path="no"
-      fi
-    ])
-    AC_MSG_RESULT($pike_cv_tcc_lib_path)
-
-    if test "$pike_cv_tcc_lib_path" = "no" ; then :; else
-      LDFLAGS="$LDFLAGS -L$pike_cv_tcc_lib_path"
-
-      # This library is needed for 64bit support on 32bit machines/OS's.
-      AC_CHECK_LIB(tdf, __TDFUnot)
-    fi
 
   else
 

@@ -79,26 +79,6 @@ pushdef([AC_PROG_CC],
     else :; fi
   fi
 
-  AC_MSG_CHECKING([if we are using TCC (TenDRA C Compiler)])
-  AC_CACHE_VAL(pike_cv_prog_tcc, [
-    if $CC -V 2>&1 | grep -i TenDRA >/dev/null; then
-      pike_cv_prog_tcc="yes"
-    else
-      pike_cv_prog_tcc="no"
-    fi
-  ])
-  if test "x$pike_cv_prog_tcc" = "xyes"; then
-    AC_MSG_RESULT(yes)
-    TCC="yes"
-    if echo "$CC $CFLAGS $CPPFLAGS" | grep " -Y" >/dev/null; then :; else
-      # We want to use the system API's...
-      CPPFLAGS="-Ysystem $CPPFLAGS"
-    fi
-  else
-    AC_MSG_RESULT(no)
-    TCC=no
-  fi
-
   AC_MSG_CHECKING([if we are using ICC (Intel C Compiler)])
   AC_CACHE_VAL(pike_cv_prog_icc, [
     if $CC -V 2>&1 | grep -i Intel >/dev/null; then
@@ -536,7 +516,7 @@ pushdef([AC_CHECK_SIZEOF],
   changequote(<<, >>)dnl
   define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
   changequote([, ])dnl
-  if test "x$cross_compiling" = "xyes" -o "x$TCC" = "xyes"; then
+  if test "x$cross_compiling" = "xyes"; then
     AC_MSG_CHECKING(size of $1 ... crosscompiling or tcc)
     AC_CACHE_VAL(AC_CV_NAME,[
       cat > conftest.$ac_ext <<EOF
@@ -544,21 +524,6 @@ dnl This sometimes fails to find confdefs.h, for some reason.
 dnl [#]line __oline__ "[$]0"
 [#]line __oline__ "configure"
 #include "confdefs.h"
-
-/* The worlds most stringent C compiler? */
-#ifdef __TenDRA__
-/* We want to be able to use 64bit arithmetic */
-#ifdef HAVE_PRAGMA_TENDRA_LONGLONG
-#pragma TenDRA longlong type allow
-#endif /* HAVE_PRAGMA_TENDRA_LONGLONG */
-#ifdef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-#pragma TenDRA set longlong type : long long
-#endif /* HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE */
-
-#ifdef _NO_LONGLONG
-#undef _NO_LONGLONG
-#endif /* _NO_LONGLONG */
-#endif /* __TenDRA__ */
 
 #include <stdio.h>
 
