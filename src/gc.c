@@ -4580,7 +4580,9 @@ PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
 
 #define MC_WQ_START_SIZE 1024
 
+#ifdef PIKE_THREADS
 static IMUTEX_T mc_mutex;
+#endif
 
 PMOD_EXPORT int mc_pass;
 PMOD_EXPORT size_t mc_counted_bytes;
