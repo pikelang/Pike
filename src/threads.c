@@ -2054,7 +2054,7 @@ void f_thread_create(INT32 args)
     THREADS_FPRINTF(0, (stderr, "f_thread_create %p waiting...\n",
 			thread_state));
     while (thread_state->status == THREAD_NOT_STARTED)
-      low_co_wait_interpreter (&thread_state->status_change);
+      co_wait_interpreter (&thread_state->status_change);
     THREADS_FPRINTF(0, (stderr, "f_thread_create %p continue\n", thread_state));
     SWAP_IN_CURRENT_THREAD();
   } else {
