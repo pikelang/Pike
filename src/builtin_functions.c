@@ -8135,12 +8135,17 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 static void f_gethrdtime(INT32 args)
 {
   int nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
-  cpu_time_t time = threads_disabled_acc_time;
-  pop_n_elems(args);
-
+  cpu_time_t time;
+#ifdef PIKE_THREADS
+  time = threads_disabled_acc_time;
   if (threads_disabled) {
     time += get_real_time() - threads_disabled_start;
   }
+#else
+  time = get_real_time();
+#endif
+  pop_n_elems(args);
+
   if (nsec) {
     push_int64(time);
 #ifndef LONG_CPU_TIME
