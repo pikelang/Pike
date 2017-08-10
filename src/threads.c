@@ -538,7 +538,13 @@ PMOD_EXPORT void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   int owner = threads_disabled;
   pike_low_wait_interpreter (cond COMMA_DLOC_ARGS_OPT);
-  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) {
+    /* Some other thread has disabled threads while we were waiting
+     * for the cond var. We must wait for threads to be reenabled
+     * before proceeding.
+     */
+    threads_disabled_wait (DLOC_ARGS_OPT);
+  }
 }
 
 PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
@@ -548,7 +554,13 @@ PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
   int owner = threads_disabled;
   int res = pike_low_timedwait_interpreter (cond, sec, nsec
 					    COMMA_DLOC_ARGS_OPT);
-  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) {
+    /* Some other thread has disabled threads while we were waiting
+     * for the cond var. We must wait for threads to be reenabled
+     * before proceeding.
+     */
+    threads_disabled_wait (DLOC_ARGS_OPT);
+  }
   return res;
 }
 
