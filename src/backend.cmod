@@ -2201,8 +2201,9 @@ PIKECLASS Backend
 	  return -1;
 	}
 	return 1;
-      } else {
+      } else
 #endif
+      {
 	/* It's actually not a problem to make this function
 	 * reentrant, but that'd introduce a risk of races in the
 	 * callbacks (i.e. between when a read callback is called
