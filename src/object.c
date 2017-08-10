@@ -836,17 +836,21 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   struct program *p;
   struct pike_frame *pike_frame=0;
   int frame_pushed = 0, destroy_called = 0;
+#ifdef PIKE_THREADS
   int inhibit_mask = ~THREAD_FLAG_INHIBIT |
     (Pike_interpreter.thread_state?
      (Pike_interpreter.thread_state->flags & THREAD_FLAG_INHIBIT):0);
+#endif
 #ifdef PIKE_DEBUG
   ONERROR uwp;
 #endif
 
+#ifdef PIKE_THREADS
   if (Pike_interpreter.thread_state) {
     /* Make sure we don't exit due to signals before we're done. */
     Pike_interpreter.thread_state->flags |= THREAD_FLAG_INHIBIT;
   }
+#endif
 
 #ifdef PIKE_DEBUG
   fatal_check_c_stack(8192);
@@ -875,9 +879,11 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 #ifdef PIKE_DEBUG
       UNSET_ONERROR(uwp);
 #endif
+#ifdef PIKE_THREADS
       if (Pike_interpreter.thread_state) {
 	Pike_interpreter.thread_state->flags &= inhibit_mask;
       }
+#endif
       return;
   }
   add_ref( o );
@@ -891,9 +897,11 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 #ifdef PIKE_DEBUG
           UNSET_ONERROR(uwp);
 #endif
+#ifdef PIKE_THREADS
 	  if (Pike_interpreter.thread_state) {
 	    Pike_interpreter.thread_state->flags &= inhibit_mask;
-	  }
+          }
+#endif
           return;
       }
       destroy_called = 1;
@@ -1006,9 +1014,11 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( destroy_called )
       remove_destroy_called_mark(o);
 
+#ifdef PIKE_THREADS
   if (Pike_interpreter.thread_state) {
     Pike_interpreter.thread_state->flags &= inhibit_mask;
   }
+#endif
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(uwp);
 #endif
