@@ -1079,7 +1079,7 @@ class Easter
       int solar=century-century/4;
       int lunar=(century-15-(century-17)/25)/3;
       int epact=(13+11*(y%19)-solar+lunar)%30;
-//  if (epact<0) epact+=30; // not neccesary for pike
+//  if (epact<0) epact+=30; // not necessary for pike
       int new_moon=31-epact;
 //        werror("epact: %O\n",epact);
 //        werror("new_moon: %O\n",new_moon);

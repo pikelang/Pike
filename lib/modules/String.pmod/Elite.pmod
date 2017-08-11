@@ -1,7 +1,7 @@
 
 #pike __REAL_VERSION__
 
-// neccesary translation (in order)
+// necessary translation (in order)
 array(array(string|array(string))) elite_short =
 ({
   ({" you are"," your"}),
@@ -240,7 +240,7 @@ string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
 //! leetness (100=max leet, 0=no leet).
 //!
 //! The translation is performed in three steps,
-//! first the neccesary elite translations (picture -> pic,
+//! first the necessary elite translations (picture -> pic,
 //! cool->kewl etc), then optional translations
 //! (ok->k, dude->dood, -ers -> -orz), then
 //! calls elite_word on the resulting words.
