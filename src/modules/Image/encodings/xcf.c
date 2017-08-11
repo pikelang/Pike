@@ -1292,7 +1292,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
     if( (size_t)(tile.len) < (size_t)(eheight * ewidth * bpp ))
     {
-      if( df ) free( df ); df=0;
+      if( df ) {free( df ); df=0;}
       continue;
     }
     s = (unsigned char *)tile.str;
