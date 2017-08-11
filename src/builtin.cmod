@@ -2331,7 +2331,7 @@ PIKECLASS RandomSystem
     char *str;
 
     if( !len )
-      RETURN empty_pike_string;
+      REF_RETURN empty_pike_string;
     if( len<0 )
       Pike_error("Bad argument 1 to random_string(). Expected int(0..).\n");
 
