@@ -7,7 +7,7 @@
 //! @note
 //! Note that this implementation is far
 //! from complete and that interface changes
-//! might be neccessary during the implementation
+//! might be necessary during the implementation
 //! of the full standard.
 
 //

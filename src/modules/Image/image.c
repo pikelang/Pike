@@ -1283,10 +1283,10 @@ static void image_change_color(INT32 args)
 **! method array(int) find_autocrop()
 **! method array(int) find_autocrop(int border)
 **! method array(int) find_autocrop(int border,int left,int right,int top,int bottom)
-**! 	Removes "unneccesary" borders around the image, adds one of
+**! 	Removes "unnecessary" borders around the image, adds one of
 **!	its own if wanted to, in selected directions.
 **!
-**!	"Unneccesary" is all pixels that are equal -- ie if all the same pixels
+**!	"Unnecessary" is all pixels that are equal -- ie if all the same pixels
 **!	to the left are the same color, that column of pixels are removed.
 **!
 **!	The find_autocrop() function simply returns x1,y1,x2,y2 for the
@@ -1301,7 +1301,7 @@ static void image_change_color(INT32 args)
 **! arg int top
 **! arg int bottom
 **!	which borders to scan and cut the image;
-**!	a typical example is removing the top and bottom unneccesary
+**!	a typical example is removing the top and bottom unnecessary
 **!	pixels:
 **!	<pre>img=img->autocrop(0, 0,0,1,1);</pre>
 **!

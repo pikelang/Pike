@@ -757,7 +757,7 @@ static void f_encode_uue( INT32 args )
       /* Restore the saved character */
       *kp = k;
 
-      /* Replace final nulls with pad characters if neccesary */
+      /* Replace final nulls with pad characters if necessary */
       switch (last) {
       case 1:
 	dest[-2] = '`';

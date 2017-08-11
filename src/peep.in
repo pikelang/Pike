@@ -448,7 +448,7 @@ EQ BRANCH_WHEN_NON_ZERO : EQ QUICK_BRANCH_WHEN_NON_ZERO($2a)
 SIZEOF BRANCH_WHEN_NON_ZERO : SIZEOF($1a) QUICK_BRANCH_WHEN_NON_ZERO($2a)
 SIZEOF_LOCAL BRANCH_WHEN_NON_ZERO : SIZEOF_LOCAL($1a) QUICK_BRANCH_WHEN_NON_ZERO($2a)
 
-// It is not really neccessary to set up a frame for these cases.
+// It is not really necessary to set up a frame for these cases.
 // Deluxe version: Also avoid the argument/local clearing, asm-level
 // register pushing etc.
 //
