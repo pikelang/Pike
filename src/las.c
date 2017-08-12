@@ -3758,7 +3758,9 @@ void fix_type_field(node *n)
 	if( t->car != zero_type_string )
 	{
 	  /* Not the first one.. */
-	  push_finished_type( or_pike_types( t->car, CAR(n)->type, 1 ) );
+	  struct pike_type *t2;
+	  push_finished_type( t2 = or_pike_types( t->car, CAR(n)->type, 1 ) );
+	  free_type(t2);
 	}
 	else
 	{
