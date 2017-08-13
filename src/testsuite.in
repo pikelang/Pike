@@ -12732,7 +12732,8 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 test_do(add_constant("test"))
 test_do(add_constant("test2"))
 
-test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
+test_eval_error(return class {int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
+test_compile_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
 test_eq(a,this_object()->a)
 
 // - catch
