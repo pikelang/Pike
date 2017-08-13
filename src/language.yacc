@@ -1918,14 +1918,29 @@ block:'{'
     else
       Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
+  {
+    $<ptr>$ = Pike_compiler;
+  }
   statements end_block
   {
+    /* Recover compilation context on syntax errors. */
+    while (Pike_compiler != $<ptr>5) {
+      struct program *p;
+      /* fprintf(stderr, "Compiler context out of sync. Attempting to recover...\n"); */
+      if(Pike_compiler->compiler_pass == 1)
+	p = end_first_pass(0);
+      else
+	p=end_first_pass(1);
+
+      if (p) free_program(p);
+    }
+
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    $5 = pop_local_variables($<number>2, $5);
+    $6 = pop_local_variables($<number>2, $6);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
-    if ($5) COPY_LINE_NUMBER_INFO($5, $3);
+    if ($6) COPY_LINE_NUMBER_INFO($6, $3);
     free_node ($3);
-    $$=$5;
+    $$=$6;
   }
   ;
 
