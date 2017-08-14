@@ -516,10 +516,10 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char
    visit_short_svalue ((U), (T), REF_TYPE_WEAK, NULL))
 
 #define GC_RECURSE_THING(V, T)						\
-  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
-   PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   PIKE_CONCAT(gc_cycle_check_, T)(V, DMALLOC_TOUCH_MARKER(V, 0)) :	\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
-   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
+   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(DMALLOC_TOUCH_MARKER(V, V)) : \
    PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V),			\
 				 REF_TYPE_NORMAL, NULL))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
