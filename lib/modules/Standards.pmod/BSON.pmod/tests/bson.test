@@ -75,14 +75,46 @@ int compare(mixed bson, mixed facit)
   return equal(bson, facit);
 }
 
+int verbose;
+string section;
+string test;
+void msg_set_section(string s)
+{
+  section = s;
+  if( verbose )
+    werror("%s\n", s);
+}
+
+void msg_set_test(string s)
+{
+  test = s;
+  if( verbose )
+    werror("  %s : ", s);
+}
+
+void msg_set_result(int ok)
+{
+  if( verbose )
+    werror("%s\n", ok ? "OK" : "FAIL");
+  else
+  {
+    if( ok )
+      werror("BSON test %d\r", success+fail);
+    else
+      werror("FAIL @ %s:%s´n", section, test);
+  }
+}
+
+
+
 int success, fail;
 void do_tests(mapping json)
 {
   if( json->deprecated ) return;
-  werror("%s\n", string_to_utf8(json->description));
+  msg_set_section(string_to_utf8(json->description));
   foreach(json->valid, mapping test)
   {
-    werror("  %s : ", string_to_utf8(test->description));
+    msg_set_test(string_to_utf8(test->description));
     mixed err = catch  {
         mapping d = Standards.BSON.decode(String.hex2string(test->canonical_bson || test->bson));
         mapping ext = Standards.JSON.decode(utf8_to_string(test->canonical_extjson || test->extjson));
@@ -90,12 +122,12 @@ void do_tests(mapping json)
         if( compare(d, ext) )
         {
           success++;
-          werror("OK\n");
+          msg_set_result(1);
         }
         else
         {
           fail++;
-          werror("FAIL\n");
+          msg_set_result(0);
         }
       };
     if(err)
@@ -127,7 +159,12 @@ void do_tests(mapping json)
 
 void main(int n, array args)
 {
-  if(n!=1)
+  if( has_value(args, "--verbose") )
+  {
+    verbose = 1;
+    args -= ({ "--verbose" });
+  }
+  if(sizeof(args)!=1)
   {
     do_tests( Standards.JSON.decode(Stdio.read_file(args[1])) );
     return;
