@@ -419,8 +419,6 @@ static ptrdiff_t low_cpp(struct cpp *this,
 	      {
 		if((d=FIND_DEFINE(s)))
 		  d->inside = inside;
-
-		free_string(s);
 	      }
 
 	      free_string_builder(&tmp);
@@ -428,8 +426,10 @@ static ptrdiff_t low_cpp(struct cpp *this,
           }else{
             if (OUTP())
               string_builder_shared_strcat (&this->buf, s);
-            free_string (s);
           }
+	  if (s) {
+	    free_string(s);
+	  }
         }
         break;
 
