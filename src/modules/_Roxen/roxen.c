@@ -194,7 +194,7 @@ static void f_hp_feed( INT32 args )
 
   /*leftovers*/
   push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
-  headers = allocate_mapping( 5 );
+
   in = hp->headers;
   l = pp - hp->headers;
 
@@ -210,6 +210,9 @@ static void f_hp_feed( INT32 args )
   i++;
 
   in += i; l -= i;
+
+  headers = allocate_mapping( 5 );
+  push_mapping(headers);
 
   /* Parse headers. */
   for(i = 0; i < l; i++)
@@ -285,7 +288,6 @@ static void f_hp_feed( INT32 args )
         os = i+1;
     }
   }
-  push_mapping( headers );
   f_aggregate( 3 );             /* data, firstline, headers */
 }
 
