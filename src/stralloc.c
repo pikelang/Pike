@@ -713,7 +713,10 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
     s = make_static_string(str, len, shift);
     link_pike_string(s, h);
   } else {
-    if (!string_is_static(s))
+    /* NB: The following is only possible if there are no substring references
+     *     to the old string.
+     */
+    if (!(s->flags & STRING_IS_LOCKED) && !string_is_static(s))
     {
       free_string_content(s);
       s->alloc_type = STRING_ALLOC_STATIC;
@@ -1877,6 +1880,7 @@ static struct pike_string *make_shared_substring( struct pike_string *s,
   }
   res = ba_alloc(&substring_allocator);
   res->parent = s;
+  s->flags |= STRING_IS_LOCKED;	/* Make sure the string data isn't reallocated. */
   add_ref(s);
   existing = &res->str;
 

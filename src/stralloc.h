@@ -68,6 +68,8 @@ struct substring_pike_string {
 #define STRING_IS_LOWERCASE        16
 #define STRING_IS_UPPERCASE        32
 
+#define STRING_IS_LOCKED	   64	/* The str field MUST NOT be reallocated. */
+
 #define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
 
 #define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
