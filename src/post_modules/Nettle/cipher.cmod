@@ -337,7 +337,7 @@ PIKECLASS Cipher
      *!
      *! @returns
      *!   The generated key. The key memory will be cleared before
-     *!   released.
+     *!   being released.
      *!
      *! @seealso
      *!   @[set_encrypt_key]
@@ -348,12 +348,25 @@ PIKECLASS Cipher
       struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
 
-      push_random_string(info->meta->key_size);
+      /* NB: Some ciphers (eg Blowfish) have weak keys, for which
+       *     set_encrypt_key() will throw an error. We thus need
+       *     to retry with a new key on error.
+       */
+      while(1) {
+	JMP_BUF recover;
+	if (!SETJMP(recover)) {
+	  push_random_string(info->meta->key_size);
 
-      stack_dup();
-      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
-      apply_current(f_Nettle_Cipher_State_set_encrypt_key_fun_num, 1);
-      pop_stack();
+	  stack_dup();
+	  Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+	  apply_current(f_Nettle_Cipher_State_set_encrypt_key_fun_num, 1);
+	  pop_stack();
+
+	  UNSETJMP(recover);
+	  return;
+	}
+	UNSETJMP(recover);
+      }
     }
 
     /*! @decl string(0..255) crypt(string(0..255) data)
