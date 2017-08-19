@@ -259,7 +259,7 @@ static void exit_builtin_modules(void)
 
     {
       size_t index;
-      for (index = 0; index < pike_type_hash_size; index++) {
+      for (index = 0; index <= pike_type_hash_size; index++) {
 	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], NOTHING, PIKE_T_TYPE, "Type", {});
       }
     }
@@ -313,7 +313,7 @@ static void exit_builtin_modules(void)
 
     {
       size_t index;
-      for (index = 0; index < pike_type_hash_size; index++) {
+      for (index = 0; index <= pike_type_hash_size; index++) {
 	ZAP_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], NOTHING);
       }
     }

@@ -731,7 +731,7 @@ int attempt_to_identify(void *something, void **inblock)
     return T_STRING;
 
   if (pike_type_hash)
-    for (i = 0; i < pike_type_hash_size; i++)
+    for (i = 0; i <= pike_type_hash_size; i++)
       for (t = pike_type_hash[i]; t; t = t->next)
 	if (t == (struct pike_type *) something)
 	  return T_TYPE;
