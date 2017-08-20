@@ -1947,10 +1947,11 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``**(int|float|Gmp.mpz x)
+/*! @decl Gmp.mpz|Gmp.mpq ``**(int|float|Gmp.mpz|Gmp.mpq x)
  *!
  *! Return @[x] raised to the value of this object. The case when zero is
- *! raised to zero yields one.
+ *! raised to zero yields one. When this object has a negative value and
+ *! @[x] is not a float, a @[Gmp.mpq] object will be returned.
  *!
  *! @seealso
  *!   @[pow]
@@ -1958,6 +1959,10 @@ static void mpzmod_powm(INT32 args)
 static void mpzmod_rpow(INT32 args)
 {
   DECLARE_THIS();
+
+  if (args != 1) {
+    SIMPLE_WRONG_NUM_ARGS_ERROR("``**", 1);
+  }
 
   if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
   {
@@ -1990,12 +1995,6 @@ static void mpzmod_rpow(INT32 args)
     }
   }
 
-  if( mpz_sgn(THIS) < 0 ) /* integer whatever ** -x -> 0 */
-  {
-    push_int(0);
-    return;
-  }
-
   /* Convert the argument to a bignum. */
   get_mpz(sp-1, 1, "``**", 1, args);
   assert(TYPEOF(sp[-1]) == PIKE_T_OBJECT);
@@ -2024,16 +2023,29 @@ static void mpzmod_pow(INT32 args)
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
 
-  if (TYPEOF(sp[-1]) == T_INT)
-  {
-    if( sp[-1].u.integer < 0 )
-    {
-        push_int(0);
-        return;
-    }
+  if (TYPEOF(sp[-1]) == T_INT) {
     exponent = sp[-1].u.integer;
-  }
-  else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+    if (sp[-1].u.integer < 0) {
+    negative_exponent:
+      if (!mpz_sgn(THIS)) {
+	Pike_error("Division by zero.\n");
+      }
+      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0) {
+	/* Not -1 or +1. */
+	o_negate();	/* NB: Use o_negate() to handle MIN_INT_TYPE. */
+	mpzmod_pow(1);
+	push_int(1);
+	stack_swap();
+	push_object(clone_object(mpq_program, 2));
+	return;
+      }
+      /* We are either -1 or +1 here. Flipping the sign of the
+       * exponent is ok. And we only care about the exponent
+       * being even or odd.
+       */
+      exponent &= 1;
+    }
+  } else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
   {
       sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
       return;
@@ -2057,13 +2069,11 @@ static void mpzmod_pow(INT32 args)
       else
       {
           mi = get_mpz(sp-1, 1, "pow", 1, 1);
-          if(mpz_sgn(mi)<0)
-          {
-              pop_n_elems(args);
-              push_int(0);
-              return;
-          }
           exponent=mpz_get_ui(mi);
+	  if(mpz_sgn(mi)<0)
+	  {
+	    goto negative_exponent;
+	  }
       }
   }
 
