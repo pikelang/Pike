@@ -59,6 +59,11 @@ class State
     return global::iv_size();
   }
 
+  private function(int|float|array|mapping|object|string,
+		   void|int,
+		   void|function(mixed ...: void|mixed)|object|program|string,
+		   void|int: string) JSON_encode;
+
   //! Signs the @[message] with a JOSE JWS MAC signature.
   //!
   //! @param message
@@ -81,14 +86,21 @@ class State
     if (!alg) return 0;
     headers = headers || ([]);
     headers += ([ "alg": alg ]);
+    if (!JSON_encode) {
+      JSON_encode = [function(mixed ...:string)]master()->
+	resolv("Standards.JSON.encode");
+      if (!JSON_encode) error("No Standards.JSON.encode().\n");
+    }
     string(7bit) tbs =
       sprintf("%s.%s",
-              MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
-              MIME.encode_base64url(message));
+	      MIME.encode_base64url(string_to_utf8(JSON_encode(headers))),
+	      MIME.encode_base64url(message));
     init(tbs);
     string(8bit) raw = digest();
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
+
+  private function(string: int|float|array|mapping|object|string) JSON_decode;
 
   //! Verify and decode a JOSE JWS MAC signed value.
   //!
@@ -114,10 +126,15 @@ class State
     if (!alg) return 0;
     array(string(7bit)) segments = [array(string(7bit))](jws/".");
     if (sizeof(segments) != 3) return 0;
+    if (!JSON_decode) {
+      JSON_decode = [function(mixed ...:string)]master()->
+	resolv("Standards.JSON.decode");
+      if (!JSON_decode) return 0;
+    }
     mapping(string(7bit):string(7bit)|int) headers;
     catch {
       headers = [mapping(string(7bit):string(7bit)|int)](mixed)
-	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+	JSON_decode(utf8_to_string(MIME.decode_base64url(segments[0])));
       if (!mappingp(headers)) return 0;
       if (headers->alg != alg) return 0;
       string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
