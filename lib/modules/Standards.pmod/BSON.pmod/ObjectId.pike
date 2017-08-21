@@ -5,7 +5,6 @@ int timestamp;
 int host;
 int pid;
 int counter;
-private function getCounter;
 
 //!
 protected void create(string|void _id)
@@ -32,8 +31,7 @@ protected string make_host_hash()
 
 protected int make_counter()
 {
-  if(!getCounter) getCounter = master()->resolv("Standards.BSON.getCounter");
-  return getCounter();
+  return Pike.Lazy.Standards.BSON.getCounter();
 }
 
 protected void populate()

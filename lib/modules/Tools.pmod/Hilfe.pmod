@@ -557,7 +557,7 @@ class CommandDump {
       write(e->history->status());
       return;
     case "memory":
-      write(master()->resolv("Debug.pp_memory_usage")());
+      write(Pike.Lazy.Debug.pp_memory_usage());
       return;
     case "":
       dump(e);
@@ -675,7 +675,7 @@ protected class SubSysBackend {
 
   protected void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
-    object backend = master()->resolv("Pike.DefaultBackend");
+    object backend = Pike.DefaultBackend;
     mixed err;
     do {
       err = catch {

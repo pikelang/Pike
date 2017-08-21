@@ -558,21 +558,13 @@ string openssl_pbkdf(string password, string salt, int rounds, int bytes)
   return out[..bytes-1];
 }
 
-protected function(object|string, this_program:string) build_digestinfo;
-
 //! Make a PKCS-1 digest info block with the message @[s].
 //!
 //! @seealso
 //!   @[Standards.PKCS.build_digestinfo()]
 string pkcs_digest(object|string s)
 {
-  if (!build_digestinfo) {
-    // NB: We MUST NOT use other modules at compile-time,
-    //     so we load Standards.PKCS.Signature on demand.
-    object pkcs = [object]master()->resolv("Standards.PKCS.Signature");
-    build_digestinfo = [function(object|string,this_program:string)]pkcs->build_digestinfo;
-  }
-  return build_digestinfo(s, this);
+  return [string]Pike.Lazy.Standards.PKCS.Signature.build_digestinfo(s, this);
 }
 
 //! This is the Password-Based Key Derivation Function used in TLS.
