@@ -83,7 +83,7 @@ class State
     headers += ([ "alg": alg ]);
     string(7bit) tbs =
       sprintf("%s.%s",
-	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
+              MIME.encode_base64url(string_to_utf8([string]Pike.Lazy.Standards.JSON.encode(headers))),
 	      MIME.encode_base64url(message));
     init(tbs);
     string(8bit) raw = [string(8bit)]digest();
@@ -117,7 +117,7 @@ class State
     mapping(string(7bit):string(7bit)|int) headers;
     catch {
       headers = [mapping(string(7bit):string(7bit)|int)](mixed)
-	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+        Pike.Lazy.Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
       if (!mappingp(headers)) return 0;
       if (headers->alg != alg) return 0;
       string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
