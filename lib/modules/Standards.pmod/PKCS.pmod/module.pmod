@@ -29,7 +29,7 @@ Crypto.Sign.State parse_public_key(Sequence seq)
 {
   if ((sizeof(seq->elements) != 2) ||
       (seq->elements[0]->type_name != "SEQUENCE") ||
-      (seq->elements[1]->type_name != "OCTET STRING") ||
+      (seq->elements[1]->type_name != "BIT STRING") ||
       (sizeof(seq->elements[0]->elements) != 2) ||
       (seq->elements[0]->elements[0]->type_name != "OBJECT IDENTIFIER"))
     return UNDEFINED;
