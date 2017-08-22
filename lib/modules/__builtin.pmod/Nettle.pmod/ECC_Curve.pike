@@ -130,7 +130,7 @@ class Point {
 	[mapping(string(7bit):string(7bit))]p;
       p = ([]);
       foreach(({ "x", "y" }), string coord) {
-	p[coord] = MIME.decode_base64url(jwk[coord] || "");
+        p[coord] = [string(8bit)]Pike.Lazy.MIME.decode_base64url(jwk[coord] || "");
       }
     }
     set(p->x, p->y);
