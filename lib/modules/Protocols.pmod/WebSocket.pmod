@@ -358,7 +358,7 @@ class Connection {
 		  // websocket callback handlers
           masking = 1; // RFC6455 dictates that clients always use masking!
           state = OPEN;
-          if (onopen) onopen(id || this);
+          if (onopen) onopen(this_program::id || this);
 
           if (sizeof(http_buffer))
             websocket_in(id, http_buffer->read());
