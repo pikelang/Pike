@@ -108,6 +108,10 @@ PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 static void do_trace_call(struct byte_buffer *buf, INT32 args);
 static void do_trace_func_return (int got_retval, struct object *o, int fun);
 static void do_trace_return (struct byte_buffer *buf, int got_retval);
+static void do_trace_efun_call(const struct svalue *s, INT32 args);
+#ifdef PIKE_DEBUG
+static void do_trace_efun_return(const struct svalue *s, int got_retval);
+#endif
 
 void push_sp_mark(void)
 {
@@ -1580,11 +1584,6 @@ GLOBAL_DEF_PROG_COUNTER;
 #if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
 /* Disable frame pointer optimization */
 #pragma optimize("y", off)
-#endif
-
-static void do_trace_efun_call(const struct svalue *s, INT32 args);
-#ifdef PIKE_DEBUG
-static void do_trace_efun_return(const struct svalue *s, int got_retval);
 #endif
 
 #include "interpret_functions_fixed.h"
