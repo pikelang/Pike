@@ -273,6 +273,8 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #endif
 #ifndef _POSIX_C_SOURCE
   /* Version of POSIX that we want to support.
+   * Note that POSIX.1-2001 and later require C99, and the earlier
+   * require C89.
    *	undef		Not POSIX.
    *	1		POSIX.1-1990
    *	2		POSIX.2-1992
@@ -282,6 +284,25 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    *	200809L		POSIX.1-2008
    */
 # undef _POSIX_C_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
+  /* Version of XPG that we want to support.
+   * Note that this interacts with _POSIX_C_SOURCE above.
+   *	undef		Not XPG (X Open Group).
+   *	1		XPG 3 or 4 or 4v2 (see below).
+   *	500		XPG 5 (POSIX.1c-1995).
+   *	600		XPG 6 (POSIX.1-2001).
+   *	700		XPG 7 (POSIX.1-2008).
+   */
+# undef _XOPEN_SOURCE
+
+# if defined(_XOPEN_SOURCE) && ((_XOPEN_SOURCE + 0) < 500)
+   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below). */
+#  undef _XOPEN_VERSION
+
+   /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
+#  undef _XOPEN_SOURCE_EXTENDED
+# endif
 #endif
 #ifndef _DARWIN_C_SOURCE
 #undef _DARWIN_C_SOURCE
@@ -309,6 +330,20 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   ])
   AC_MSG_RESULT($pike_cv_posix_c_source)
   AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
+
+  # NB: _XOPEN_SOURCE overrides _POSIX_C_SOURCE on FreeBSD 10.3.
+  if test "$pike_cv_posix_c_source" = "200809L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 700)
+  elif test "$pike_cv_posix_c_source" = "200112L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 600)
+  elif test "$pike_cv_posix_c_source" = "199506L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 500)
+  else
+    # Attempt XPG 4v2.
+    AC_DEFINE(_XOPEN_SOURCE, 1)
+    AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1)
+  fi
+
   AC_DEFINE(_DARWIN_C_SOURCE)
   AC_DEFINE(_NETBSD_SOURCE)
 ])
