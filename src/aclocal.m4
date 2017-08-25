@@ -310,6 +310,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
 #endif
+#ifndef __BSD_VISIBLE
+#undef __BSD_VISIBLE
+#endif
 ])
 
   AC_DEFINE(POSIX_SOURCE, 1)
@@ -346,6 +349,8 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 
   AC_DEFINE(_DARWIN_C_SOURCE)
   AC_DEFINE(_NETBSD_SOURCE)
+  # Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
+  AC_DEFINE(__BSD_VISIBLE, 1)
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
