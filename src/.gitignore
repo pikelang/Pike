@@ -45,8 +45,6 @@ autom4te.cache
 /master-stamp
 /module_magic.c
 /num_files_to_install
-/patch_cc1
-/patch_cc1.o
 /peep_engine.c
 /pike
 /pike.syms

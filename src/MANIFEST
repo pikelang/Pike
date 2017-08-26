@@ -477,10 +477,6 @@ Build system
   make_variables.in
     Template for propagating make variables in the subdirectories.
 
-  patch_cc1.c
-    Small utility that binary patches gcc so that it doesn't use
-    .ua{half,word} directives. May be invoked by configure.
-
   Pike_ui.wxs
     User interface description for the Pike WIN32 installer.
 
