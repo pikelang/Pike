@@ -20,7 +20,6 @@ autom4te.cache
 /cpp.c
 /dependencies
 /dumpmodule.log
-/hilfe
 /hsort_template.h
 /interpret_functions_fixed.h
 /interpret_protos.h
