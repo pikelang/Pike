@@ -9,7 +9,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
   sys/param.h sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
-  direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h \
+  direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h sys/termios.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
   sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
   AvailabilityMacros.h,,,[

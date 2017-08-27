@@ -7,9 +7,15 @@
 #include "global.h"
 #include "file_machine.h"
 
-#if defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
 
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#else /* HAVE_SYS_TERMIOS_H */
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
+#endif
+
 #include <errno.h>
 #include <sys/ioctl.h>
 

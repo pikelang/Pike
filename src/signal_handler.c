@@ -89,7 +89,10 @@
 # include <sys/termio.h>
 #endif
 
-#ifdef HAVE_SYS_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
 # include <sys/termios.h>
 #endif
 
