@@ -259,6 +259,12 @@ o Parser.Pike
 
   Support new language features.
 
+o Protocols.DNS.server
+
+  Derived classes can now override report_decode_error() and
+  handle_decode_error() to change how errors while decoding a DNS
+  packet are reported and handled.
+
 o Protocols.WebSocket
 
   Multiple API changes.
