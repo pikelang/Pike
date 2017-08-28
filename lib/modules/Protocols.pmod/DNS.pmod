@@ -811,6 +811,27 @@ class server
     // This is a stub intended to simplify servers which allow recursion
   }
 
+  //! Report a failure to decode a DNS request.
+  //!
+  //! The default implementation writes a backtrace to stderr.  This
+  //! method exists so that derived servers can replace it with more
+  //! appropriate error handling for their environment.
+  protected void report_decode_error(mixed err, mapping m, Stdio.UDP udp)
+  {
+    werror("DNS: Failed to read UDP packet.\n%s\n",
+           describe_backtrace(err));
+  }
+
+  //! Respond to a query that cannot be decoded.
+  //!
+  //! This method exists so that servers can override the default behaviour.
+  protected void handle_decode_error(mapping err, mapping m, Stdio.UDP udp)
+  {
+    if(m && m->data && sizeof(m->data)>=2)
+      send_reply((["rcode":1]),
+                 mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+  }
+
   protected private void rec_data(mapping m, Stdio.UDP udp)
   {
     mixed err;
@@ -818,11 +839,8 @@ class server
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror("DNS: Failed to read UDP packet.\n%s\n",
-	     describe_backtrace(err));
-      if(m && m->data && sizeof(m->data)>=2)
-	send_reply((["rcode":1]),
-		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+      report_decode_error(err, m, udp);
+      handle_decode_error(err, m, udp);
     }
     else if(q->qr)
       handle_response(q, m, udp);

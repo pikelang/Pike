@@ -263,6 +263,11 @@ Protocols.DNS:
     - Support multiple strings per TXT record in the client, via new txta 
         mapping entry.
 
+    - Derived classes can now override report_decode_error() and
+        handle_decode_error() to change how errors while decoding a
+        DNS packet are reported and handled.
+
+
 Protocols.HTTP:
 
     - Don't modify the mapping sent to response_and_finish.
