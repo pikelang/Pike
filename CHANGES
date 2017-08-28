@@ -81,6 +81,12 @@ o Debug.Inspect
   Whenever you edit /tmp/test.pike, it will automatically reload
   the file.
 
+o Protocols.DNS.server
+
+  Derived classes can now override report_decode_error() and
+  handle_decode_error() to change how errors while decoding a DNS
+  packet are reported and handled.
+
 Bug fixes
 ---------
 
