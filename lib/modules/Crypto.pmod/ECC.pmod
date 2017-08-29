@@ -515,6 +515,16 @@ class _Curve25519 {
       return _Curve25519::size();
     }
 
+    //! Set the private key.
+    //!
+    //! @note
+    //!   Throws errors if the key isn't valid for the curve.
+    this_program set_private_key(string(8bit) k)
+    {
+      ::set_private_key(k);
+      return this;
+    }
+
     //!
     this_program set_public_key(string(8bit) key)
     {
