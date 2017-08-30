@@ -31,9 +31,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>

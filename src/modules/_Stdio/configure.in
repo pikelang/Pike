@@ -14,9 +14,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
   AvailabilityMacros.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 /* Needed for <sys/socketvar.h> on Solaris 10. */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
@@ -87,9 +85,7 @@ AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -213,9 +209,7 @@ fi
 AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -237,9 +231,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX or MacOS X) or 7(FreeBSD) arguments)
   AC_CACHE_VAL(pike_cv_sendfile_args, [
     AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -252,9 +244,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       # Probably FreeBSD-style, but we need to check that
       # we indeed have a prototype...
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -270,9 +260,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=7 ])
     ], [
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -345,9 +333,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       AC_MSG_CHECKING(struct sf_hdtr)
       AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
         AC_TRY_LINK([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -727,9 +713,7 @@ if test x$ac_cv_func_statvfs = xyes ; then
 #ifdef HAVE_SYS_SYSPROTO_H
 #include <sys/sysproto.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #include <sys/stat.h>
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>

@@ -2890,9 +2890,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #undef HAVE_WINDOWS_H
 #endif
 /* Necessary to find sys/socket.h on MacOS X 10.3 */
-#if HAVE_SYS_TYPES_H
 # include <sys/types.h>
-#endif
 /* Necessary to find ws2tcpip.h on WIN32. */
 #ifdef HAVE_WINSOCK2_H
 # include <winsock2.h>
@@ -2996,9 +2994,7 @@ fi
 AC_MSG_CHECKING([for sys/resource.h])
 AC_CACHE_VAL(pike_cv_sys_resource_h, [
   AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #include <time.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -3929,10 +3925,7 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
   AC_CACHE_VAL(pike_cv_mmap_PROT_EXEC, [
     AC_TRY_RUN([
 #include <stdio.h>
-
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -3985,9 +3978,7 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
       pike_cv_mmap_PROT_EXEC="no"
     ], [
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -4325,9 +4316,7 @@ AC_MSG_CHECKING(whether F_SETFD exists and works)
 
 AC_CACHE_VAL(pike_cv_broken_f_setfd, [
   AC_TRY_RUN([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #include <sys/stat.h>
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
@@ -4393,9 +4382,7 @@ AC_MSG_CHECKING(struct sockaddr_in6)
 
 AC_CACHE_VAL(pike_cv_has_struct_sockaddr_in6,[
 AC_TRY_LINK([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -4615,9 +4602,7 @@ AC_MSG_RESULT($pike_cv_struct_tm_has___tm_gmtoff)
 AC_MSG_CHECKING(if struct iovec is defined)
 AC_CACHE_VAL(pike_cv_struct_iovec, [
   AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #include <unistd.h>
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -4643,9 +4628,7 @@ AC_MSG_CHECKING(if struct msghdr is defined)
 AC_CACHE_VAL(pike_cv_struct_msghdr, [
   AC_TRY_COMPILE([
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -4664,9 +4647,7 @@ if test "$pike_cv_struct_msghdr" = "yes"; then
   AC_CACHE_VAL(pike_cv_struct_msghdr_msg_control, [
     AC_TRY_COMPILE([
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -4689,9 +4670,7 @@ if test "$pike_cv_struct_msghdr" = "yes"; then
   AC_CACHE_VAL(pike_cv_struct_msghdr_msg_accrights, [
     AC_TRY_COMPILE([
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -4796,9 +4775,7 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif /* HAVE_SYS_PTRACE_H */
@@ -4818,9 +4795,7 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif /* HAVE_SYS_PTRACE_H */
@@ -5156,9 +5131,7 @@ fi
 ########################################################################
 MY_CHECK_FUNCTION(fork,
 [
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
