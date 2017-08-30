@@ -10,9 +10,7 @@
  *
  */
 
-#ifdef HAVE_INOTIFY_CONFIG_H
-# include "inotify_config.h"
-#endif
+#include "inotify_config.h"
 
 #include "global.h"
 #include "interpret.h"
