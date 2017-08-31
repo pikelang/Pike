@@ -29,7 +29,9 @@ ifefun(db,[[
   test_eq( db->big_query("select 1")->num_rows(), 1 )
   test_eq( db->big_query("select 1,2")->num_fields(), 2 )
   test_equal( db->big_query("select 1")->fetch_fields()->name, ({ "1" }) )
-  test_true( objectp(db->big_query("select 1")->master_res) )
+  test_eq( 1, [[#pragma no_deprecation_warnings
+    objectp(db->big_query("select 1")->master_res)
+  ]])
   test_eq( db->big_query("select 1")->index, 0 )
   test_any([[
     object q=db->big_query("show status");

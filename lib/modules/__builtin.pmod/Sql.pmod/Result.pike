@@ -32,6 +32,21 @@ protected string _sprintf(int type, mapping|void flags)
 	    f = num_fields(), f!=1?"s":"");
 }
 
+//! Getter for the actual result object.
+//!
+//! @returns
+//!   Returns the current object.
+//!
+//! @note
+//!   Obsoleted in Pike 8.1 due to the wrapper class no longer
+//!   existing, and this symbol thus essentially being a noop..
+//!
+//! @deprecated __builtin.Sql.Result.
+__deprecated__ this_program `master_res()
+{
+  return this;
+}
+
 //! Returns the number of rows in the result.
 int num_rows();
 
