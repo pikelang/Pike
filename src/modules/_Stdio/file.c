@@ -447,13 +447,18 @@ static void init_fd(int fd, int open_mode, int flags)
 
 /* Use ptrdiff_t for the fd since we're passed a void * and should
  * read it as an integer of the same size. */
-static void do_close_fd(ptrdiff_t fd)
+static int do_close_fd(ptrdiff_t fd)
 {
   int ret;
-  if (fd < 0) return;
+  int preve;
+  if (fd < 0) return 0;
+  errno = 0;
   do {
+    preve = errno;
     ret = fd_close(fd);
   } while ((ret == -1) && (errno == EINTR));
+  if ((ret == -1) && preve) return 0;
+  return ret;
 }
 
 #ifdef HAVE_PIKE_SEND_FD
@@ -555,72 +560,21 @@ static void free_fd_stuff(void)
   }
 }
 
-static void close_fd_quietly(void)
+static void close_fd(int quiet)
 {
   int fd=FD;
+  int olde = 0;
   if(fd<0) return;
 
   free_fd_stuff();
   SUB_FD_EVENTS (THIS, ~0);
-  change_fd_for_box (&THIS->box, -1);
-
-  while(1)
-  {
-    int i, e;
-    THREADS_ALLOW_UID();
-    i=fd_close(fd);
-    e=errno;
-    THREADS_DISALLOW_UID();
-
-    check_threads_etc();
-
-    if(i < 0)
-    {
-      switch(e)
-      {
-	default: {
-	  JMP_BUF jmp;
-	  if (SETJMP (jmp))
-	    call_handle_error();
-	  else {
-	    ERRNO=errno=e;
-	    change_fd_for_box (&THIS->box, fd);
-	    push_int(e);
-	    f_strerror(1);
-	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
-	  }
-	  UNSETJMP (jmp);
-	  break;
-	}
-
-	case EBADF:
-	  break;
-
-#ifdef SOLARIS
-	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
-#endif
-
-       case EINTR:
-	 continue;
-      }
-    }
-    break;
-  }
-}
-
-static void close_fd(void)
-{
-  int fd=FD;
-  if(fd<0) return;
-
-  free_fd_stuff();
-  SUB_FD_EVENTS (THIS, ~0);
+  /* NB: The fd will always be closed on return from fd_close()
+   *     (except for the EINTR case on eg HPUX).
+   */
   change_fd_for_box (&THIS->box, -1);
 
   if ( (THIS->flags & FILE_NOT_OPENED) )
-     return;
+    return;
 
   while(1)
   {
@@ -630,32 +584,65 @@ static void close_fd(void)
     e=errno;
     THREADS_DISALLOW_UID();
 
+    /* fprintf(stderr, "fd_close(%d): ret: %d, errno: %d\n", fd, i, e); */
+
     check_threads_etc();
 
     if(i < 0)
     {
+      ERRNO = errno = e;
       switch(e)
       {
 	default:
-	  ERRNO=errno=e;
-	  change_fd_for_box (&THIS->box, fd);
 	  push_int(e);
 	  f_strerror(1);
-	  Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+
+	  if (quiet) {
+	    /* NB: FIXME: This has quite a bit of overhead... */
+	    JMP_BUF jmp;
+	    if (SETJMP (jmp))
+	      call_handle_error();
+	    else {
+	      Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	    }
+	    UNSETJMP (jmp);
+	  } else {
+	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	  }
 	  break;
 
+#if 0
+#ifdef ENOSPC
+        case ENOSPC:
+	  /* FreeBSD: The underlying object did not fit, cached data was lost. */
+	  break;
+#endif
+#endif
+#ifdef ECONNRESET
+        case ECONNRESET:
+	  /* FreeBSD: The peer shut down the connection before all pending data
+	   *          was delivered.
+	   */
+	  break;
+#endif
+
 	case EBADF:
+	  if (olde) {
+	    /* Probably an OS where fds are closed on EINTR (ie most). */
+	    ERRNO = errno = 0;
+	    break;
+	  }
 	  Pike_error("Internal error: Closing a non-active file descriptor %d.\n",fd);
 	  break;
 
 #ifdef SOLARIS
 	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
+        case EAGAIN:
+	  break;
 #endif
-
-       case EINTR:
-	 continue;
+        case EINTR:
+	  olde = e;
+	  continue;
       }
     }
     break;
@@ -2360,6 +2347,13 @@ static void file_nodelay(INT32 args)
 }
 #endif
 
+#ifndef SHUT_RD
+#define SHUT_RD	0
+#endif
+#ifndef SHUT_WR
+#define SHUT_WR	1
+#endif
+
 static int do_close(int flags)
 {
   struct my_file *f = THIS;
@@ -2377,12 +2371,12 @@ static int do_close(int flags)
     if(f->open_mode & FILE_WRITE)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 0);
+      fd_shutdown(FD, SHUT_RD);
       f->open_mode &=~ FILE_READ;
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
@@ -2390,7 +2384,7 @@ static int do_close(int flags)
     if(f->open_mode & FILE_READ)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 1);
+      fd_shutdown(FD, SHUT_WR);
       f->open_mode &=~ FILE_WRITE;
 #ifdef HAVE_PIKE_SEND_FD
       if (f->fd_info) do_close_fd_info(f->fd_info);
@@ -2398,13 +2392,13 @@ static int do_close(int flags)
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
     f->flags&=~FILE_NOT_OPENED;
-    close_fd();
+    close_fd(0);
     return 1;
 
   default:
@@ -2491,12 +2485,12 @@ static void file_grantpt( INT32 args )
  *! Close a file or stream.
  *!
  *! If direction is not specified, both the read and the write
- *! direction is closed. Otherwise only the directions specified is
+ *! direction are closed. Otherwise only the directions specified is
  *! closed.
  *!
  *! @returns
- *! Nonzero is returned if the file or stream wasn't open in the
- *! specified direction, zero otherwise.
+ *!   Returns @expr{1@} if the file or stream now is closed in
+ *!   all directions, and @expr{0@} otherwise.
  *!
  *! @throws
  *! An exception is thrown if an I/O error occurs.
@@ -2614,7 +2608,7 @@ static void file_open(INT32 args)
   int access;
   int err;
   struct pike_string *str, *flag_str;
-  close_fd();
+  close_fd(0);
 
   if(args < 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR("open", 2);
@@ -2774,7 +2768,7 @@ static void file_openpt(INT32 args)
 #ifdef HAVE_POSIX_OPENPT
   struct pike_string *flag_str;
 #endif
-  close_fd();
+  close_fd(0);
 
   if(args < 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("openpt", 1);
@@ -4278,7 +4272,7 @@ static void file_pipe(INT32 args)
   reverse = type & fd_REVERSE;
   type &= ~fd_REVERSE;
 
-  close_fd();
+  close_fd(0);
   pop_n_elems(args);
   ERRNO=0;
 
@@ -4391,7 +4385,7 @@ static void file_handle_events(int event)
       if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
 		       FILE_LOCK_FD |
 		       FILE_NOT_OPENED)))
-	close_fd_quietly();
+	close_fd(1);
       else
 	free_fd_stuff();
 #ifdef HAVE_PIKE_SEND_FD
@@ -4574,7 +4568,7 @@ static void file_open_socket(INT32 args)
   int fd;
   int family=-1;
 
-  close_fd();
+  close_fd(0);
 
   if (args > 2 && TYPEOF(Pike_sp[2-args]) == PIKE_T_INT &&
       Pike_sp[2-args].u.integer != 0)
@@ -4890,7 +4884,7 @@ static void file_connect_unix( INT32 args )
 #endif
   pop_n_elems(args);
 
-  close_fd();
+  close_fd(0);
   change_fd_for_box (&THIS->box, socket(AF_UNIX,SOCK_STREAM,0));
 
   if( FD < 0 )
@@ -5207,7 +5201,7 @@ static void file_create(INT32 args)
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("create", 1, "int|string");
 
-  close_fd();
+  close_fd(0);
   file_open(args);
 }
 
