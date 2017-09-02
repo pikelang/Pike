@@ -556,23 +556,28 @@ PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
-/*! @decl void seek(int rows)
+/*! @decl void low_seek(int row)
  *!
- *! Skip ahead @[rows] rows.
+ *! Seek to the specified @[row].
  *!
  *! @note
- *!   Can only seek forward.
+ *!   In Pike 8.0 and earlier this function was named @[seek()], but
+ *!   as it has a conflicting behavior vis-a-vis @[Sql.Result()->seek()],
+ *!   and was shadowed by a function that did use relative row addressing,
+ *!   it has been renamed in Pike 8.1.
+ *!
+ *! @bugs
+ *!   This function currently does NOT update @[index].
  *!
  *! @seealso
- *!   @[fetch_row()]
+ *!   @[fetch_row()], @[seek()]
  */
-PIKEFUN void seek(int skip)
+PIKEFUN void low_seek(int row)
 {
   if (!PIKE_MYSQL_RES->result)
     Pike_error("Can't seek in uninitialized result object.\n");
 
-  mysql_data_seek(PIKE_MYSQL_RES->result, skip);
-
+  mysql_data_seek(PIKE_MYSQL_RES->result, row);
   pop_n_elems(args);
 }
 
