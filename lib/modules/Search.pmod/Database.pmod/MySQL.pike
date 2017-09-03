@@ -1331,7 +1331,7 @@ array(array) get_most_common_words(void|int count)
 void list_url_by_prefix(string url_prefix, function(string:void) cb)
 {
   Sql.Sql db = get_db();
-  Sql.sql_result q =
+  Sql.Result q =
     db->big_query("SELECT uri "
 		  "  FROM uri "
 		  " WHERE uri LIKE '"+db->quote(url_prefix)+"%'");
