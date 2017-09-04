@@ -833,13 +833,15 @@ int main(int argc, array(string) argv)
 	array(int) subres =
           low_run_script (forked + ({ testsuite }), ([]));
 	if (!subres) {
+	  log_status ("");
+	  log_msg("Failed to spawn testsuite %O.\n", testsuite);
 	  errors++;
 	  failure = 1;
 	} else {
 	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
 	  if (!(sub_succeeded || sub_failed || sub_skipped))
 	    continue;
-	  if (verbose) {
+	  if (verbose || sub_failed) {
 	    log_status ("");
 	    log_msg("Subresult: %d tests, %d failed, %d skipped\n",
 		    sub_succeeded + sub_failed, sub_failed, sub_skipped);
@@ -1261,7 +1263,7 @@ int main(int argc, array(string) argv)
 	      successes += a[0];
 	      errors += a[1];
 	      if (sizeof (a) >= 3) skipped += a[2];
-	      if (verbose>1)
+	      if ((verbose>1) || a[1])
 		if(a[1])
 		  log_msg("%d/%d tests failed%s.\n",
 		      a[1], a[0]+a[1],
