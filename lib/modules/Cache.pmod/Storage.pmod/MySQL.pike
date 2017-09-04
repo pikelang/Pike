@@ -82,7 +82,7 @@ class Data {
 //we'll know now.
 //Notice: this will fail miserably with Sybase, for instance.
 //Notice: can and will throw exceptions if anything fails.
-private object(Sql.sql_result) enum_result;
+private object(Sql.Result) enum_result;
 int(0..0)|string first() {
   debug("first()");
   if (enum_result)
