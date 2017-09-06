@@ -5760,9 +5760,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
   UNREACHABLE(return 0);
 }
 
-#define WRAP(CB, EVENT_BIT)						\
-  void PIKE_CONCAT3(set_, CB, _callback)				\
-       (int fd, file_callback cb, void *data)				\
+#define LOW_WRAP_SET_CB(CB, EVENT_BIT, SFLAGS, CFLAGS)			\
   {									\
     struct Backend_struct *b = really_get_backend_for_fd (fd);		\
     struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
@@ -5792,17 +5790,18 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 									\
     if (cb)								\
       set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_BIT, \
-			      cbox->flags);				\
+			      (SFLAGS));				\
     else {								\
       set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_BIT, \
-			      cbox->flags);				\
+			      (CFLAGS));				\
       if (!cbox->box.events) {						\
 	unhook_fd_callback_box (&cbox->box);				\
 	really_free_compat_cb_box (cbox);				\
       }									\
     }									\
-  }									\
-  									\
+  }
+
+#define LOW_WRAP(CB, EVENT_BIT)						\
   file_callback PIKE_CONCAT3(query_, CB, _callback) (int fd)		\
   {									\
     struct Backend_struct *b=get_backend_for_fd (fd);			\
@@ -5843,88 +5842,21 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     return cbox->PIKE_CONCAT (CB, _data);				\
   }
 
+#define WRAP(CB, EVENT_BIT)						\
+  void PIKE_CONCAT3(set_, CB, _callback)				\
+       (int fd, file_callback cb, void *data)				\
+  {									\
+    LOW_WRAP_SET_CB(CB, EVENT_BIT, cbox->flags, cbox->flags);		\
+  }									\
+  LOW_WRAP(CB, EVENT_BIT)
+
 #define WRAP2(CB, EVENT_BIT)						\
   void PIKE_CONCAT3(set_, CB, _callback)				\
        (int fd, file_callback cb, void *data, int flags)		\
   {									\
-    struct Backend_struct *b = really_get_backend_for_fd (fd);		\
-    struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
-    struct compat_cb_box *cbox;						\
-									\
-    PDWERR("[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",      \
-           THR_NO, b->id, fd, cb, data);                                \
-									\
-    if (box) {								\
-      check_box (box, fd);						\
-      DO_IF_DEBUG (							\
-	if (box->callback != compat_box_dispatcher)			\
-	  Pike_fatal ("Mixing old and new style "			\
-		      "backend interfaces for fd %d.\n", fd);		\
-      );								\
-      cbox = (struct compat_cb_box *) box;				\
-    }									\
-    else {								\
-      if (!cb) return;							\
-      cbox = alloc_compat_cb_box();					\
-      INIT_FD_CALLBACK_BOX (&cbox->box, b, NULL,			\
-			    fd, 0, compat_box_dispatcher, flags);	\
-    }									\
-									\
-    cbox->CB = cb;							\
-    cbox->PIKE_CONCAT (CB, _data) = data;				\
-									\
-    if (cb)								\
-      set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_BIT, \
-			      cbox->flags);				\
-    else {								\
-      set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_BIT, \
-			      cbox->flags);				\
-      if (!cbox->box.events) {						\
-	unhook_fd_callback_box (&cbox->box);				\
-	really_free_compat_cb_box (cbox);				\
-      }									\
-    }									\
+    LOW_WRAP_SET_CB(CB, EVENT_BIT, flags, 0);				\
   }									\
-  									\
-  file_callback PIKE_CONCAT3(query_, CB, _callback) (int fd)		\
-  {									\
-    struct Backend_struct *b=get_backend_for_fd (fd);			\
-    struct fd_callback_box *box;					\
-    struct compat_cb_box *cbox;						\
-									\
-    if (!b) return NULL;						\
-    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
-    check_box (box, fd);						\
-    DO_IF_DEBUG (							\
-      if (box->callback != compat_box_dispatcher)			\
-	Pike_fatal ("Mixing old and new style "				\
-		    "backend interfaces for fd %d.\n", fd);		\
-    );									\
-									\
-    cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
-    return cbox->CB;							\
-  }									\
-  									\
-  void *PIKE_CONCAT3(query_, CB, _callback_data) (int fd)		\
-  {									\
-    struct Backend_struct *b=get_backend_for_fd (fd);			\
-    struct fd_callback_box *box;					\
-    struct compat_cb_box *cbox;						\
-									\
-    if (!b) return NULL;						\
-    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
-    check_box (box, fd);						\
-    DO_IF_DEBUG (							\
-      if (box->callback != compat_box_dispatcher)			\
-	Pike_fatal ("Mixing old and new style "				\
-		    "backend interfaces for fd %d.\n", fd);		\
-    );									\
-									\
-    cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
-    return cbox->PIKE_CONCAT (CB, _data);				\
-  }
+  LOW_WRAP(CB, EVENT_BIT)
 
 WRAP(read, PIKE_BIT_FD_READ)
 WRAP(write, PIKE_BIT_FD_WRITE)
