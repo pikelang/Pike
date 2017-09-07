@@ -128,9 +128,10 @@ PIKECLASS PIKE_NAME
         loc.o = Pike_fp->current_object;
         loc.parent_identifier = Pike_fp->fun;
         if (loc.o->prog) {
+	  int id;
           loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
           find_external_context(&loc, 2);
-          int id = find_identifier("pkcs_digest", loc.o->prog);
+          id = find_identifier("pkcs_digest", loc.o->prog);
           if( id<0 )
             Pike_error("Could not find pkcs_digest.\n");
           apply_low(loc.o, id + loc.inherit->identifier_level, 1);
