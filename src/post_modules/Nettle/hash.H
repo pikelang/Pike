@@ -170,9 +170,7 @@ PIKECLASS PIKE_NAME
       ASSIGN_CURRENT_STORAGE(instance, struct Nettle_Hash_State_struct, 1,
 			     Nettle_Hash_State_program);
 
-      werror(cmod_STRFY_EVAL(PIKE_NAME) ".State->INIT\n");
-
-      cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&THIS->NETTLE_NAME);      
+      cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&THIS->NETTLE_NAME);
       instance->ctx = &THIS->NETTLE_NAME;
     }
   }
