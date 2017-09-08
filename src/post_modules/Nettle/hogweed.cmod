@@ -1191,7 +1191,7 @@ PIKECLASS ECC_Curve
 
 #endif /* HAVE_NETTLE_ECDSA_H */
 
-#if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H)
+#if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H) && defined(HAVE_NETTLE_ED25519_SHA512_SIGN)
 #include <nettle/curve25519.h>
 
 #include <nettle/eddsa.h>
@@ -1619,7 +1619,7 @@ PIKECLASS Curve25519
 
 /*! @endclass Curve25519
  */
-#endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE25519_H */
+#endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE25519_H && HAVE_NETTLE_ED25519_SHA512_SIGN */
 
 /*! @endmodule Nettle
  */
@@ -1647,8 +1647,10 @@ hogweed_init(void)
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
 #endif /* HAVE_NETTLE_ECDSA_H */
 
+#if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H) && defined(HAVE_NETTLE_ED25519_SHA512_SIGN)
 #ifdef NETTLE_CURVE25519_RFC7748
   ADD_INT_CONSTANT("CURVE25519_RFC7748", 1, 0);
+#endif
 #endif
 }
 
