@@ -85,6 +85,13 @@ o Extended sscanf %O
   including integers prefixed with 0x and 0b, and floating point
   numbers in scientific notation.
 
+o Returning void
+
+  It is now possible to return void responses from void functions.
+
+    void a() { return; }
+    void b() { return a(); }
+
 
 Bug fixes
 ---------

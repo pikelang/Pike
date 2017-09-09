@@ -3233,6 +3233,20 @@ test_any([[
   return Test()->bar;
 ]], 0)
 
+test_compile_error([[
+  class {
+  int a() { }
+  void b() { return a(); }
+  }
+]])
+
+test_do([[
+  class {
+  void a() { }
+  void b() { return a(); }
+  }
+]])
+
 test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
 
 dnl this should really work...
