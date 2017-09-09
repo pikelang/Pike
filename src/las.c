@@ -3738,7 +3738,6 @@ void fix_type_field(node *n)
 
   case F_RETURN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yywarning("Returning a void expression. Converted to zero.");
       if (!CAR(n)) {
 	_CAR(n) = mkintnode(0);
 	copy_pike_type(n->type, CAR(n)->type);
@@ -3746,7 +3745,12 @@ void fix_type_field(node *n)
 	_CAR(n) = mknode(F_COMMA_EXPR, CAR(n), mkintnode(0));
 	copy_pike_type(n->type, CDAR(n)->type);
       }
-      break;
+      if (!Pike_compiler->compiler_frame ||
+	  Pike_compiler->compiler_frame->current_return_type !=
+	  void_type_string) {
+	yywarning("Returning a void expression. Converted to zero.");
+	break;
+      }
     }
     else if(Pike_compiler->compiler_frame &&
             Pike_compiler->compiler_frame->current_return_type)
@@ -3771,11 +3775,17 @@ void fix_type_field(node *n)
 	free_type( t );
 	t = pop_type();
 	Pike_compiler->compiler_frame->current_return_type = t;
-      } else if ((Pike_compiler->compiler_frame->current_return_type !=
+      } else {
+	node *retval = CAR(n);
+	if (retval->token == F_COMMA_EXPR) {
+	  retval = CDR(retval);
+	}
+	if ((Pike_compiler->compiler_frame->current_return_type !=
 		  void_type_string) ||
-		 (CAR(n)->token != F_CONSTANT) ||
-		 !SAFE_IS_ZERO(&CAR(n)->u.sval)) {
-	check_node_type(CAR(n), t, "Wrong return type.");
+	    (retval->token != F_CONSTANT) ||
+	    !SAFE_IS_ZERO(&retval->u.sval)) {
+	  check_node_type(CAR(n), t, "Wrong return type.");
+	}
       }
     }
     copy_pike_type(n->type, void_type_string);
