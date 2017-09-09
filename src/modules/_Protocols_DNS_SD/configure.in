@@ -11,7 +11,7 @@ if test x$with_dnssd = xyes ; then
 
   PIKE_FEATURE(DNS-SD,[no (dns_sd.h or howl.h not found)])
 
-  AC_CHECK_HEADERS(dns_sd.h howl.h)
+  AC_CHECK_HEADERS(dns_sd.h howl.h arpa/inet.h netinet/in.h)
 
   if test x$ac_cv_header_dns_sd_h = xyes; then
     PIKE_FEATURE(DNS-SD,[no (libdns_sd not found)])
