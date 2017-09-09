@@ -60,6 +60,14 @@
 
 #define IS_ERR(x) ((x) != kDNSServiceErr_NoError)
 
+/* Include these for htons(3SOCKET) et al. */
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 /* Instance variables for each service registration */
 struct service {
   DNSServiceRef  service_ref;
