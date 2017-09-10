@@ -3247,6 +3247,16 @@ test_do([[
   }
 ]])
 
+test_any([[
+  class X {
+    int add(int a, int b) = a + b;
+    string `id() = "foo";
+    void print(string s) = (void)write(s);
+  };
+  X x = X();
+  return x->add(3,4)==7 && x->id == "foo";
+]], 1)
+
 test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
 
 dnl this should really work...

@@ -92,6 +92,13 @@ o Returning void
     void a() { return; }
     void b() { return a(); }
 
+o Abbreviated function declarations
+
+  Functions containing only a single return statement can now be
+  defined with an abbreviated syntax:
+
+    int add(int a, int b) = a + b;
+
 
 Bug fixes
 ---------

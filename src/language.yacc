@@ -643,6 +643,7 @@ block_or_semi: block
     COPY_LINE_NUMBER_INFO($$, $1);
   }
   | ';' { $$ = NULL; }
+  | '=' safe_comma_expr expected_semicolon { $$=mknode(F_RETURN,$2,0); }
   | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
   | error { $$ = NULL; }
   ;
