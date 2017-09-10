@@ -4806,8 +4806,6 @@ static void optimize(node *n)
     if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
     if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
 
-    if(!n->parent) break;
-
     if(n->tree_info & (OPT_NOT_CONST|
 		       OPT_SIDE_EFFECT|
 		       OPT_EXTERNAL_DEPEND|
@@ -4849,6 +4847,8 @@ static void optimize(node *n)
       fix_type_field(n);
     }
     debug_malloc_touch(n->type);
+
+    if(!n->parent) break;
 
 #ifdef PIKE_DEBUG
     if(l_flag > 3 && n)
