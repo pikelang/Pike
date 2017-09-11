@@ -2326,56 +2326,36 @@ static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
 
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
-  /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
-  ONERROR uwp;
-  Pike_interpreter.catching_eval_jmpbuf = NULL;
-  SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
+  struct pike_callsite C;
 
-  /* The C stack margin is normally 8 kb, but if we get here during a
-   * lowered margin then don't fail just because of that, unless it's
-   * practically zero. */
-  check_c_stack(Pike_interpreter.c_stack_margin ?
-		Pike_interpreter.c_stack_margin : 100);
-  if( low_mega_apply(type, args, arg1, arg2) )
-  {
-    eval_instruction(Pike_fp->pc
-#ifdef ENTRY_PROLOGUE_SIZE
-		     - ENTRY_PROLOGUE_SIZE
-#endif /* ENTRY_PROLOGUE_SIZE */
-		     );
-    low_return();
+  callsite_init(&C, args);
+
+  switch (type) {
+  case APPLY_STACK:
+      C.args--;
+      callsite_resolve_svalue(&C, Pike_sp - args);
+      break;
+  case APPLY_SVALUE_STRICT:
+      C.flags |= CALL_NEED_NO_RETVAL;
+  case APPLY_SVALUE:
+      callsite_resolve_svalue(&C, arg1);
+      break;
   }
-  CALL_AND_UNSET_ONERROR(uwp);
+
+  callsite_prepare(&C);
+  callsite_execute(&C);
+  callsite_free(&C);
 }
 
 PMOD_EXPORT void mega_apply_low(INT32 args, struct object *o, ptrdiff_t fun)
 {
-  /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
-  ONERROR uwp;
-  Pike_interpreter.catching_eval_jmpbuf = NULL;
-  SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
+  struct pike_callsite C;
 
-  /* The C stack margin is normally 8 kb, but if we get here during a
-   * lowered margin then don't fail just because of that, unless it's
-   * practically zero. */
-  check_c_stack(Pike_interpreter.c_stack_margin ?
-		Pike_interpreter.c_stack_margin : 100);
-  if( lower_mega_apply( args, o, fun ) )
-  {
-    eval_instruction(Pike_fp->pc
-#ifdef ENTRY_PROLOGUE_SIZE
-		     - ENTRY_PROLOGUE_SIZE
-#endif /* ENTRY_PROLOGUE_SIZE */
-		     );
-    low_return();
-  }
-  CALL_AND_UNSET_ONERROR(uwp);
+  callsite_init(&C, args);
+  callsite_resolve_fun(&C, o, fun);
+  callsite_prepare(&C);
+  callsite_execute(&C);
+  callsite_free(&C);
 }
 
 /* Put catch outside of eval_instruction, so the setjmp won't affect
