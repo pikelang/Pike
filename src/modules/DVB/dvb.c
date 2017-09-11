@@ -104,7 +104,7 @@ typedef audio_mixer_t audioMixer_t;
 #define channelSelect channel_select
 #define bypassMode bypass_mode
 /* dmx.h */
-typedef __u16 dvb_pid_t;
+typedef unsigned INT16 dvb_pid_t;
 #define dmxSctFilterParams dmx_sct_filter_params
 #define dmxPesFilterParams dmx_pes_filter_params
 #define pesType pes_type
