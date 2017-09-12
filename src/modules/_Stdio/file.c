@@ -744,7 +744,7 @@ static struct pike_string *do_read(int fd,
     THREADS_ALLOW();
 
     while (count) {
-      size_t len = count;
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
       ptrdiff_t bytes_read;
 
       /* make space for exactly len bytes plus the terminating null byte. */
@@ -997,7 +997,7 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
     THREADS_ALLOW();
 
     while (count) {
-      size_t len = count;
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
 
       /* make space for exactly len bytes plus the terminating null byte */
       /* as long as count comes from pike, it was signed, i.e. len+1 is safe */
