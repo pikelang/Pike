@@ -1770,7 +1770,6 @@ void amd64_init_interpreter_state(void)
   if( OFFSETOF(svalue,u.integer) != 8 )
     Pike_fatal("assumption failed: offsetof(svalue.u.integer) != 8\n");
 #endif
-  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
 static void amd64_return_from_function()
