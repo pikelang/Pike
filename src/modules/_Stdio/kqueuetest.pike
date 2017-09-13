@@ -21,7 +21,7 @@ constant log_status = Tools.Testsuite.log_status;
 void exit_test()
 {
   Tools.Testsuite.report_result (max (testno - failures, 0), failures);
-  exit(!!failure);
+  exit(!!failures);
 }
 
 void fail_test(string msg)
