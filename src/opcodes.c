@@ -329,9 +329,6 @@ const struct instr instrs[] = {
   { "offset", 0 NULLADDR },
 #include "opcode_list.h"
 };
-#ifdef PIKE_USE_MACHINE_CODE
-size_t instrs_checksum;
-#endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
 unsigned long pike_instrs_compiles[F_MAX_OPCODE-F_OFFSET];
@@ -433,12 +430,6 @@ void init_opcodes(void)
     }
   }
 #endif
-
-#ifdef PIKE_USE_MACHINE_CODE
-  instrs_checksum = hashmem((const unsigned char*)instrs, sizeof(instrs),
-			    sizeof(struct instr));
-  /* fprintf(stderr, "Instruction checksum: %d\n", instrs_checksum); */
-#endif /* PIKE_USE_MACHINE_CODE */
 }
 
 void exit_opcodes(void)
