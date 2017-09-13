@@ -24,7 +24,7 @@ void exit_test()
   exit(!!failure);
 }
 
-void fail_test(string)
+void fail_test(string msg)
 {
   log_msg("Test %d failed: %s.\n", testno, msg);
   failures++;
