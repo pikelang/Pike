@@ -237,86 +237,105 @@ void present_runned(struct instr_counter *d, int depth, int maxdepth)
 #define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) OPCODE1_BRANCH(OP,DESC,FLAGS)
 #define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) OPCODE2_BRANCH(OP,DESC,FLAGS)
 
+#define OPCODE_NOCODE(DESC, OP, FLAGS)   { DESC, OP, FLAGS NULLADDR },
+
 const struct keyword instr_names[]=
 {
-#ifndef PIKE_PRECOMPILER
-#include "interpret_protos.h"
-#endif /* !PIKE_PRECOMPILER */
-{ "%=",			F_MOD_EQ,0 NULLADDR },
-{ "&=",			F_AND_EQ,0 NULLADDR },
-{ "|=",			F_OR_EQ,0 NULLADDR },
-{ "*=",			F_MULT_EQ,0 NULLADDR },
-{ "+=",			F_ADD_EQ,0 NULLADDR },
-{ "-=",			F_SUB_EQ,0 NULLADDR },
-{ "/=",			F_DIV_EQ,0 NULLADDR },
-{ "<<=",		F_LSH_EQ,0 NULLADDR },
-{ ">>=",		F_RSH_EQ,0 NULLADDR },
-{ "^=",			F_XOR_EQ,0 NULLADDR },
-{ "**=",		F_POW_EQ,0 NULLADDR },
-{ "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
-{ "arg+=256",		F_PREFIX_256,0 NULLADDR },
-{ "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },
-{ "arg+=256*XX",	F_PREFIX_WORDX256,0 NULLADDR },
-{ "arg+=256*XXX",	F_PREFIX_24BITX256,0 NULLADDR },
-{ "arg+=512",		F_PREFIX_512,0 NULLADDR },
-{ "arg+=768",		F_PREFIX_768,0 NULLADDR },
-
-{ "arg+=1024",		F_PREFIX2_1024,0 NULLADDR },
-{ "arg+=256",		F_PREFIX2_256,0 NULLADDR },
-{ "arg+=256*X",		F_PREFIX2_CHARX256,0 NULLADDR },
-{ "arg+=256*XX",	F_PREFIX2_WORDX256,0 NULLADDR },
-{ "arg+=256*XXX",	F_PREFIX2_24BITX256,0 NULLADDR },
-{ "arg+=512",		F_PREFIX2_512,0 NULLADDR },
-{ "arg+=768",		F_PREFIX2_768,0 NULLADDR },
-
-{ "[i..]",		F_RANGE_FROM_BEG, 0 NULLADDR },
-{ "[<i..]",		F_RANGE_FROM_END, 0 NULLADDR },
-{ "[..]",		F_RANGE_OPEN, 0 NULLADDR },
-
-{ "break",		F_BREAK,0 NULLADDR },
-{ "case",		F_CASE,0 NULLADDR },
-{ "case_range",		F_CASE_RANGE,0 NULLADDR },
-{ "continue",		F_CONTINUE,0 NULLADDR },
-{ "default",		F_DEFAULT,0 NULLADDR },
-{ "do-while",		F_DO,0 NULLADDR },
-{ "for",		F_FOR,0 NULLADDR },
-
-{ "auto_map",		F_AUTO_MAP, 0 NULLADDR },
-{ "auto_map_marker",	F_AUTO_MAP_MARKER, 0 NULLADDR },
-{ "volatile_return",	F_VOLATILE_RETURN, 0 NULLADDR },
-{ "version",		F_VERSION, 0 NULLADDR },
-
-{ "pointer",		F_POINTER, I_ISPOINTER NULLADDR },
-{ "data",		F_DATA, I_DATA NULLADDR },
-{ "byte",		F_BYTE, I_DATA NULLADDR },
-{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },
-{ "arg_list",		F_ARG_LIST, 0 NULLADDR },
-{ "comma_expr",		F_COMMA_EXPR, 0 NULLADDR },
-{ "val_lval",		F_VAL_LVAL, 0 NULLADDR },
-{ "multi_assign",	F_MULTI_ASSIGN, 0 NULLADDR },
-{ "assign_self",	F_ASSIGN_SELF, 0 NULLADDR },
-{ "label",		F_LABEL,I_HASARG NULLADDR },
-{ "stmt_label",		F_NORMAL_STMT_LABEL,I_HASARG NULLADDR },
-{ "custom_label",	F_CUSTOM_STMT_LABEL,I_HASARG NULLADDR },
-{ "align",		F_ALIGN, I_HASARG NULLADDR },
-{ "nop",                F_NOP,0 NULLADDR },
-{ "entry",		F_ENTRY,0 NULLADDR },
-{ "filename", 		F_FILENAME, 0 NULLADDR },
-{ "line",		F_LINE, 0 NULLADDR },
-{ "get/set",		F_GET_SET, 0 NULLADDR },
-{ "call_efun",		F_EFUN_CALL, 0 NULLADDR },
-{ "function start",     F_START_FUNCTION,0 NULLADDR },
-{ "notreached!",        F_NOTREACHED, 0 NULLADDR },
-{ "opcode_max",		F_MAX_OPCODE, 0 NULLADDR },
-{ "instr_max",		F_MAX_INSTR, 0 NULLADDR },
+#include "opcode_list.h"
 };
 
-struct instr instrs[F_MAX_INSTR - F_OFFSET];
+#undef OPCODE0
+#undef OPCODE1
+#undef OPCODE2
+#undef OPCODE0_TAIL
+#undef OPCODE1_TAIL
+#undef OPCODE2_TAIL
+
+#undef OPCODE0_JUMP
+#undef OPCODE1_JUMP
+#undef OPCODE2_JUMP
+#undef OPCODE0_TAILJUMP
+#undef OPCODE1_TAILJUMP
+#undef OPCODE2_TAILJUMP
+
+#undef OPCODE0_PTRJUMP
+#undef OPCODE1_PTRJUMP
+#undef OPCODE2_PTRJUMP
+#undef OPCODE0_TAILPTRJUMP
+#undef OPCODE1_TAILPTRJUMP
+#undef OPCODE2_TAILPTRJUMP
+
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
+
+#undef OPCODE0_ALIAS
+#undef OPCODE1_ALIAS
+#undef OPCODE2_ALIAS
+
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
+#undef OPCODE_NOCODE
+
+#define OPCODE0(OP,DESC,FLAGS) { DESC, FLAGS ADDR(OP) },
+#define OPCODE1(OP,DESC,FLAGS) { DESC, FLAGS | I_HASARG ADDR(OP) },
+#define OPCODE2(OP,DESC,FLAGS) { DESC, FLAGS | I_TWO_ARGS ADDR(OP) },
+#define OPCODE0_TAIL(OP,DESC,FLAGS) OPCODE0(OP,DESC,FLAGS)
+#define OPCODE1_TAIL(OP,DESC,FLAGS) OPCODE1(OP,DESC,FLAGS)
+#define OPCODE2_TAIL(OP,DESC,FLAGS) OPCODE2(OP,DESC,FLAGS)
+
+#define OPCODE0_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMP JUMPADDR(OP) },
+#define OPCODE1_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMPARG JUMPADDR(OP) },
+#define OPCODE2_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMPARGS JUMPADDR(OP) },
+#define OPCODE0_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE0_PTRJUMP(OP,DESC,FLAGS)
+#define OPCODE1_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE1_PTRJUMP(OP,DESC,FLAGS)
+#define OPCODE2_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE2_PTRJUMP(OP,DESC,FLAGS)
+
+#define OPCODE0_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMP JUMPADDR(OP) },
+#define OPCODE1_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMPARG JUMPADDR(OP) },
+#define OPCODE2_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMPARGS JUMPADDR(OP) },
+#define OPCODE0_TAILJUMP(OP, DESC, FLAGS) OPCODE0_JUMP(OP,DESC,FLAGS)
+#define OPCODE1_TAILJUMP(OP, DESC, FLAGS) OPCODE1_JUMP(OP,DESC,FLAGS)
+#define OPCODE2_TAILJUMP(OP, DESC, FLAGS) OPCODE2_JUMP(OP,DESC,FLAGS)
+
+#define OPCODE0_RETURN(OP, DESC, FLAGS) OPCODE0_JUMP(OP,DESC,FLAGS | I_RETURN)
+#define OPCODE1_RETURN(OP, DESC, FLAGS) OPCODE1_JUMP(OP,DESC,FLAGS | I_RETURN)
+#define OPCODE2_RETURN(OP, DESC, FLAGS) OPCODE2_JUMP(OP,DESC,FLAGS | I_RETURN)
+#define OPCODE0_TAILRETURN(OP, DESC, FLAGS) OPCODE0_RETURN(OP,DESC,FLAGS)
+#define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_RETURN(OP,DESC,FLAGS)
+#define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_RETURN(OP,DESC,FLAGS)
+
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS ALIASADDR(A) },
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS | I_HASARG ALIASADDR(A) },
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS | I_TWO_ARGS ALIASADDR(A) },
+
+#define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
+#define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },
+#define OPCODE2_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCHARGS BRANCHADDR(OP) },
+#define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) OPCODE0_BRANCH(OP,DESC,FLAGS)
+#define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) OPCODE1_BRANCH(OP,DESC,FLAGS)
+#define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) OPCODE2_BRANCH(OP,DESC,FLAGS)
+
+#define OPCODE_NOCODE(DESC, OP, FLAGS)   { DESC, FLAGS NULLADDR },
+
+const struct instr instrs[] = {
+  { "offset", 0 NULLADDR },
+#include "opcode_list.h"
+};
 #ifdef PIKE_USE_MACHINE_CODE
 size_t instrs_checksum;
 #endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
+unsigned long pike_instrs_compiles[F_MAX_OPCODE-F_OFFSET];
+
 const char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
@@ -391,57 +410,35 @@ const char *get_token_name(int n)
 
 void init_opcodes(void)
 {
-  unsigned int i;
 #ifdef PIKE_DEBUG
   int fatal_later=0;
 #ifdef INSTR_PROFILING
   instr_counter_storage=init_instr_storage_pointers(p_flag);
 #endif
-#endif
 
-  for(i=0; i<NELEM(instr_names);i++)
+  for(unsigned int i=0; i<NELEM(instr_names);i++)
   {
-#ifdef PIKE_DEBUG
-    if(instr_names[i].token > F_MAX_INSTR)
-    {
-      fprintf(stderr,"Error in instr_names[%u]\n\n",i);
-      fatal_later++;
+    const char *word = instr_names[i].word;
+    int token = instr_names[i].token - F_OFFSET;
+    const char *name;
+
+    if ((size_t)token >= NELEM(instrs)) {
+      Pike_fatal("Instruction out of bounds.\n");
     }
 
-    if(instrs[instr_names[i].token - F_OFFSET].name)
-    {
-      fprintf(stderr,"Duplicate name for %s\n",instr_names[i].word);
-      fatal_later++;
-    }
-#endif
+    name = instrs[token].name;
 
-    instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
-    instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
-#ifdef PIKE_USE_MACHINE_CODE
-    instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;
-#endif
+    if (name && name != word) {
+      Pike_fatal("Wrong instruction name: %s vs. %s\n", name, word);
+    }
   }
+#endif
 
 #ifdef PIKE_USE_MACHINE_CODE
   instrs_checksum = hashmem((const unsigned char*)instrs, sizeof(instrs),
 			    sizeof(struct instr));
   /* fprintf(stderr, "Instruction checksum: %d\n", instrs_checksum); */
 #endif /* PIKE_USE_MACHINE_CODE */
-
-#ifdef PIKE_DEBUG
-  for(i=1; i<F_MAX_INSTR-F_OFFSET;i++)
-  {
-    if(!instrs[i].name)
-    {
-      fprintf(stderr,"Opcode %d does not have a name.\n",i);
-      fatal_later++;
-    }
-  }
-  if(fatal_later)
-    Pike_fatal("Found %d errors in instrs.\n",fatal_later);
-
-#endif
-
 }
 
 void exit_opcodes(void)
@@ -457,7 +454,7 @@ void exit_opcodes(void)
     for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
     {
       fprintf(stderr,"%08ld;;%-30s\n",
-	      (long)instrs[e].compiles,
+	      (long)pike_instrs_compiles[e],
 	      low_get_f_name(e+F_OFFSET,0));
     }
 

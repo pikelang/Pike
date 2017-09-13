@@ -90,9 +90,6 @@ struct keyword
 
 struct instr
 {
-#ifdef PIKE_DEBUG
-  long compiles;
-#endif
   const char *name;
   int flags;
 #ifdef PIKE_USE_MACHINE_CODE
@@ -101,7 +98,8 @@ struct instr
 };
 
 #ifdef PIKE_DEBUG
-#define ADD_COMPILED(X) instrs[(X)-F_OFFSET].compiles++
+extern unsigned long pike_instrs_compiles[];
+#define ADD_COMPILED(X) pike_instrs_compiles[(X)-F_OFFSET]++
 #ifdef INSTR_PROFILING
 extern void add_runned(PIKE_INSTR_T);
 #define ADD_RUNNED(X) add_runned(X)
@@ -123,7 +121,7 @@ struct hash_entry;
 struct hash_table;
 #endif
 
-extern struct instr instrs[];
+extern const struct instr instrs[];
 #ifdef PIKE_USE_MACHINE_CODE
 extern size_t instrs_checksum;
 #endif /* PIKE_USE_MACHINE_CODE */
@@ -164,100 +162,12 @@ extern size_t instrs_checksum;
 #define OPCODE1_ALIAS(X,Y,F,A) X,
 #define OPCODE2_ALIAS(X,Y,F,A) X,
 
+#define OPCODE_NOCODE(DESC, OP, FLAGS)   OP,
+
 enum Pike_opcodes
 {
-  /*
-   * These values are used by the stack machine, and can not be directly
-   * called from Pike.
-   */
   F_OFFSET = 257,
-  F_PREFIX_256,
-  F_PREFIX_512,
-  F_PREFIX_768,
-  F_PREFIX_1024,
-  F_PREFIX_CHARX256,
-  F_PREFIX_WORDX256,
-  F_PREFIX_24BITX256,
-  F_PREFIX2_256,
-  F_PREFIX2_512,
-  F_PREFIX2_768,
-  F_PREFIX2_1024,
-  F_PREFIX2_CHARX256,
-  F_PREFIX2_WORDX256,
-  F_PREFIX2_24BITX256,
-
-  /*
-   * These are the predefined functions that can be accessed from Pike.
-   */
-
-#include "interpret_protos.h"
-
-  /* Used to mark an entry point from eval_instruction(). */
-  F_ENTRY,
-
-  /* These two are only used for dumping. */
-  F_FILENAME,
-  F_LINE,
-
-  /* Alias for F_EXTERNAL when the identifier is a getter/setter. */
-  F_GET_SET,
-
-  /*
-   * These are token values that needn't have an associated code for the
-   * compiled file
-   */
-  F_MAX_OPCODE,
-
-  F_ADD_EQ,
-  F_AND_EQ,
-  F_ARG_LIST,
-  F_COMMA_EXPR,
-  F_BREAK,
-  F_CASE,
-  F_CASE_RANGE,
-  F_CONTINUE,
-  F_DEFAULT,
-  F_DIV_EQ,
-  F_DO,
-  F_EFUN_CALL,
-  F_FOR,
-  F_LSH_EQ,
-  F_LVALUE_LIST,
-  F_MOD_EQ,
-  F_MULT_EQ,
-  F_OR_EQ,
-  F_POW_EQ,
-  F_RSH_EQ,
-  F_SUB_EQ,
-  F_VAL_LVAL,
-  F_XOR_EQ,
-  F_MULTI_ASSIGN,
-  F_NOP,
-  F_RANGE_FROM_BEG,		/* a[i.. */
-  F_RANGE_FROM_END,		/* a[<i.. */
-  F_RANGE_OPEN,			/* a[.. */
-  F_VERSION,
-
-  F_ALIGN,
-  F_POINTER,
-  F_LABEL,
-  F_NORMAL_STMT_LABEL,
-  F_CUSTOM_STMT_LABEL,
-  F_DATA,
-  F_START_FUNCTION,
-  F_BYTE,
-  F_NOTREACHED,
-  F_AUTO_MAP_MARKER,
-  F_AUTO_MAP,
-
-  /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
-  F_VOLATILE_RETURN,
-
-  /* Alias for F_ASSIGN, used when LHS has side-effects that should
-   * only be evaluated once. */
-  F_ASSIGN_SELF,
-
-  F_MAX_INSTR,
+#include "opcode_list.h"
 };
 
 #undef OPCODE0
@@ -293,6 +203,7 @@ enum Pike_opcodes
 #undef OPCODE0_ALIAS
 #undef OPCODE1_ALIAS
 #undef OPCODE2_ALIAS
+#undef OPCODE_NOCODE
 
 #ifdef PIKE_DEBUG
 const char *low_get_f_name(int n,struct program *p);
