@@ -1303,8 +1303,4 @@ void ia32_init_interpreter_state(void)
       ia32_clflush_size = cpu_info.clflush_size * 8;
     }
   }
-
-#ifdef OPCODE_INLINE_RETURN
-  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-#endif
 }
