@@ -163,112 +163,6 @@ MACRO void ra_free(enum arm32_register reg);
 void break_my_arm(void) {
 }
 
-#ifdef ARM32_LOW_DEBUG
-static unsigned INT32 stats_m[F_MAX_INSTR - F_OFFSET];
-static unsigned INT32 stats_b[F_MAX_INSTR - F_OFFSET];
-
-#define OPCODE0(X,Y,F) case X: return #X;
-#define OPCODE1(X,Y,F) case X: return #X;
-#define OPCODE2(X,Y,F) case X: return #X;
-#define OPCODE0_TAIL(X,Y,F) case X: return #X;
-#define OPCODE1_TAIL(X,Y,F) case X: return #X;
-#define OPCODE2_TAIL(X,Y,F) case X: return #X;
-#define OPCODE0_JUMP(X,Y,F) case X: return #X;
-#define OPCODE1_JUMP(X,Y,F) case X: return #X;
-#define OPCODE2_JUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_RETURN(X,Y,F) case X: return #X;
-#define OPCODE1_RETURN(X,Y,F) case X: return #X;
-#define OPCODE2_RETURN(X,Y,F) case X: return #X;
-#define OPCODE0_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE1_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE2_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE0_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
-
-const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
-    switch (code+F_OFFSET) {
-#include "interpret_protos.h"
-    default:
-        return "<unknown>";
-    }
-}
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_ALIAS
-#undef OPCODE1_ALIAS
-#undef OPCODE2_ALIAS
-
-ATTRIBUTE((destructor))
-MACRO void write_stats() {
-    int i;
-    FILE* file = fopen("/home/el/opcode.state", "a");
-
-    for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
-        if (!stats_m[i] && !stats_b[i]) continue;
-
-        fprintf(file, "%s\t%u\t%u\n", arm_get_opcode_name(i), stats_b[i], stats_m[i] - stats_b[i]);
-    }
-
-    fclose(file);
-}
-#endif
-
-MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
-    code = code; /* prevent unused warning */
-    bytecode = bytecode;
-#ifdef ARM32_LOW_DEBUG
-    if (bytecode) {
-        stats_b[code - F_OFFSET] ++;
-    } else {
-        stats_m[code - F_OFFSET] ++;
-    }
-#endif
-}
 
 OPCODE_FUN set_cond(unsigned INT32 instr, enum arm32_condition cond) {
     return (instr&0x0fffffff)|cond;
@@ -1530,8 +1424,6 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
   if (opcode == F_CATCH)
     addr = inter_return_opcode_F_CATCH;
 
-  record_opcode(opcode, 1);
-
   arm32_maybe_update_pc();
 
   arm32_call(addr);
@@ -2111,15 +2003,11 @@ static void low_ins_f_byte(unsigned int opcode)
 
 void ins_f_byte(unsigned int opcode)
 {
-  record_opcode(opcode, 0);
-
   low_ins_f_byte(opcode);
 }
 
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
-  record_opcode(opcode, 0);
-
   switch (opcode) {
   case F_NUMBER:
       arm32_debug_instr_prologue_1(opcode, arg1);
@@ -2509,8 +2397,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
 void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 {
-  record_opcode(opcode, 0);
-
   switch (opcode) {
   case F_MARK_AND_EXTERNAL:
       ins_f_byte(F_MARK);
@@ -2618,8 +2504,6 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
 
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
-
-    record_opcode(opcode, 0);
 
     switch (opcode) {
     case F_QUICK_BRANCH_WHEN_ZERO:
@@ -2762,8 +2646,6 @@ int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
 
-    record_opcode(opcode, 0);
-
     arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
 
     instr = arm32_low_ins_f_jump(opcode, backward_jump);
@@ -2778,8 +2660,6 @@ int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, in
 
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
-
-    record_opcode(opcode, 0);
 
     arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
     arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg2);
