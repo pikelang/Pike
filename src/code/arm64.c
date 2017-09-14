@@ -1169,15 +1169,9 @@ void arm64_init_interpreter_state(void) {
     ARM_ASSERT(sizeof(struct svalue) == 16);
     ARM_ASSERT(OFFSETOF(pike_frame, num_locals) % 4 == 0);
     ARM_ASSERT(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
-
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
 MACRO void ra_init(void) {
-    /* FIXME: this ought to happen in init_interpreter_state, only, but it is currently overwritten
-     * later */
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-
     /* all register r0 through r24 are unused */
     compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5)|
       RBIT(6)|RBIT(7)|RBIT(8)|RBIT(9)|RBIT(10)|RBIT(11)|RBIT(12)|RBIT(13)|
@@ -1816,6 +1810,9 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
   int flags = instrs[opcode-F_OFFSET].flags;
 
   arm64_maybe_update_pc();
+
+  if (opcode == F_CATCH)
+    addr = inter_return_opcode_F_CATCH;
 
   arm64_call(addr);
 
