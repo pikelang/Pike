@@ -153,7 +153,7 @@ void do_rename()
 
 void do_chmod()
 {
-  System.chmod("kqueue.tst", 777);
+  System.chmod("kqueue.tst", 0640);
 }
 
 void do_write()
@@ -190,6 +190,7 @@ void do_delete()
 int main(int argc, array(string) argv)
 {
   verbose = (int) (getenv()->TEST_VERBOSITY || 2);
+  umask(0022);
 #if constant(alarm)
   alarm(5*60);	// 5 minutes should be sufficient for this test.
 #endif
