@@ -1798,9 +1798,9 @@ PIKECLASS Backend
     int old_events = box->events;
     check_box (box, INT_MAX);
     PDWERR("[%d]BACKEND[%d]: set_fd_callback_events: "
-           "fd %d, events from 0x%x to 0x%x, object %p\n",
-           THR_NO, box->backend->id, box->fd, old_events, events,
-           box->ref_obj);
+           "fd %d, events from 0x%x [0x%x] to 0x%x [0x%x], object %p\n",
+           THR_NO, box->backend->id,
+	   box->fd, old_events, box->flags, events, flags, box->ref_obj);
     if (box->fd >= 0) {
       update_fd_set (box->backend, box->fd, old_events, events, flags);
     }
@@ -2372,8 +2372,7 @@ PIKECLASS Backend
 	 * Note: This disables any further callbacks.
 	 */
 	old_events = box->events;
-	set_fd_callback_events(box, box->events & PIKE_BIT_FD_ERROR,
-			       box->flags);
+	set_fd_callback_events(box, box->events & PIKE_BIT_FD_ERROR, 0);
 	if (WANT_EVENT (box, ERROR)) {
           PDWERR("[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
                  THR_NO, me->id, fd, box->ref_obj);
@@ -3338,8 +3337,8 @@ PIKECLASS PollDeviceBackend
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_FS_EVENT) {
-      /* kqueue TODO generate fflags from the high bits of
-       *             the wanted_events argument.
+      /* kqueue TODO: Generate fflags from the high bits of
+       *              the wanted_events argument.
        */
       EV_SET(ev+nev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
       nev++;
@@ -3613,6 +3612,26 @@ PIKECLASS PollDeviceBackend
 	}
       }
 
+      if (new_events & PIKE_BIT_FD_FS_EVENT) {
+	struct fd_callback_box *box = safe_get_box(me, fd);
+	if (flags != box->flags) {
+	  changed_events |= PIKE_BIT_FD_FS_EVENT;
+	}
+      }
+      if (changed_events & PIKE_BIT_FD_FS_EVENT) {
+	if ((new_events & PIKE_BIT_FD_FS_EVENT) && flags) {
+	  /* kqueue TODO: Generate fflags from the high bits of
+	   *              the wanted_events argument.
+	   */
+          PDWERR("[%d]BACKEND[%d]: fd:%d FSEVENT, ADD [0x%08x]\n",
+		 THR_NO, me->id, fd, flags);
+	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
+	} else {
+          PDWERR("[%d]BACKEND[%d]: fd:%d FSEVENT, DISABLE\n",
+                 THR_NO, me->id, fd);
+	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
+	}
+      }
 #else  /* !BACKEND_USES_POLL_DEVICE */
       if (changed_events & PIKE_BIT_FD_READ) {
 	if (new_events & PIKE_BIT_FD_READ) {
