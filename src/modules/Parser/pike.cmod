@@ -41,6 +41,8 @@
  *!   @[Parser.Pike], @[_C].
  */
 
+DECLARATIONS
+
 inline static int m_isidchar( unsigned int x )
 {
   if( (x>='0' && x<='9') ) return 0;
@@ -96,15 +98,12 @@ static void do_free_arrayptr( struct array **x )
  *!   Returns an array with Pike-level tokens and the remainder (a
  *!   partial token), if any.
  */
-static void f_tokenize( INT32 args )
+PIKEFUN array(array(string)|string) tokenize(string data)
 {
   struct array *res;
   struct pike_string *left_s = NULL; /* Make gcc happy. */
-  struct pike_string *data;
   int left;
   ONERROR tmp;
-
-  get_all_args("tokenize", args, "%W", &data);
 
   if(!data->len)
   {
@@ -157,10 +156,10 @@ static void f_tokenize( INT32 args )
 
 void init_parser_pike()
 {
-  ADD_FUNCTION2("tokenize", f_tokenize,
-		tFunc(tStr,tArr(tOr(tArr(tStr),tStr))), 0, 0);
+  INIT;
 }
 
 void exit_parser_pike()
 {
+  EXIT;
 }
