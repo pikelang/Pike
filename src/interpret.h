@@ -566,20 +566,21 @@ PMOD_EXPORT extern void push_static_text( const char *x );
       really_free_pike_frame(_fp_);					\
     }else{								\
       ptrdiff_t exp_offset = _fp_->expendible_offset;                   \
-      DO_IF_DEBUG(							\
-	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
-	    (Pike_sp < _fp_->locals + _fp_->expendible_offset) ||	\
-	    (exp_offset < 0) || (exp_offset > _fp_->num_locals))        \
-	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %hd!\n", \
-		     _fp_->locals, _fp_->num_locals,			\
-		     _fp_->locals+_fp_->num_locals,			\
-		     Pike_sp,_fp_->expendible_offset));		        \
       debug_malloc_touch(_fp_);						\
       if (exp_offset || (_fp_->flags & PIKE_FRAME_SAVE_LOCALS)) {       \
         struct svalue *locals = _fp_->locals;                           \
         struct svalue *s;                                               \
         INT16 num_new_locals = 0;                                       \
         unsigned int num_bitmask_entries = 0;                           \
+	DO_IF_DEBUG(							\
+	  if( (locals + _fp_->num_locals > Pike_sp) ||			\
+	      (Pike_sp < locals + exp_offset) ||			\
+	      (exp_offset < 0) || (exp_offset > _fp_->num_locals))	\
+	    Pike_fatal("Stack failure in POP_PIKE_FRAME "		\
+		       "%p+%d=%p %p %hd!\n",				\
+		       locals, _fp_->num_locals,			\
+		       locals + _fp_->num_locals,			\
+		       Pike_sp, exp_offset));				\
         if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {                      \
           ptrdiff_t offset;                                             \
           for (offset = 0;                                              \
