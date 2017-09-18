@@ -432,6 +432,11 @@ class protocol
 		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
 		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
 		      );
+     case T_CAA:
+       if (entry->tag == "" || !entry->tag)
+         error("An empty tag is not permitted.\n");
+       return sprintf("%c%H%s", entry->flags | (!!entry->critical << 7),
+                      entry->tag, entry->value || "");
     default:
        return "";
     }
@@ -697,6 +702,16 @@ class protocol
   //!           @mapping
   //!             @member string "spf"
   //!           @endmapping
+  //!         @value T_CAA
+  //!           @mapping
+  //!             @member int "critical"
+  //!               Sets the critical bit of the flag field.
+  //!             @member int "flags"
+  //!
+  //!             @member string "tag"
+  //!               Cannot be empty.
+  //!             @member string "value"
+  //!         @endmapping
   //!       @endint
   //!   @endarray
   array decode_entries(string s,int num, array(int) next)
@@ -809,6 +824,15 @@ class protocol
       case T_SPF:
 	m->spf = decode_string(s, next);
 	break;
+      case T_CAA:
+        {
+          string tag;
+
+          m->critical = !!((m->flags = decode_byte(s, next)) & 0x80);
+          tag = m->tag = decode_string(s, next);
+          m->value = s[next[0]..next[0] + m->len - 3 - sizeof(tag)];
+        }
+        break;
     }
 
     next[0]=tmp+m->len;

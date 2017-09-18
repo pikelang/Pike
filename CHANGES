@@ -92,6 +92,7 @@ o Returning void
     void a() { return; }
     void b() { return a(); }
 
+o Protocols.DNS now supports encoding and decoding CAA RRs.
 
 Bug fixes
 ---------
