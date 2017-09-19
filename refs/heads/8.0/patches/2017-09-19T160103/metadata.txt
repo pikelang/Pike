@@ -1,0 +1,22 @@
+subject: Pike 8.0: Search.Database.MySQL
+from: b5f998d49f09841dafff425e038d9a57f3bea51d
+to: 1ca24ae337244be43451c355707cba79cadf6041
+originator: Henrik Grubbstrom (Grubba) <grubba@grubba.org>
+depends: 2017-09-19T155913|pike/8.0.482
+restart: true
+
+• Search.Database.MySQL: Fixed bugs in store_to_db().
+
+Work around for MySQL/MariaDB interpreting
+
+  INSERT('ABC', 3, 3, 'DEF')
+
+as equivalent to just 'ABC' (and NOT 'ABCDEF').
+
+Note that
+
+  INSERT('ABCX', 3, 3, 'DEF')
+
+does result in 'ABCDEF'.
+
+Also some code clean up to reduce the number of special cases.
