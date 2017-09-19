@@ -1,0 +1,63 @@
+subject: Pike 8.0: Sync with 8.0.482 (Roxen 6.1.215).
+from: 14f32827117e93ada3c7bcb896cf074a5b516c3f
+to: b5f998d49f09841dafff425e038d9a57f3bea51d
+originator: Henrik Grubbstrom (Grubba) <grubba@grubba.org>
+depends: 2017-07-17T114740
+restart: true
+
+Multiple fixes:
+
+• release number bumped to 8.0.482 by export.pike
+
+• Add extensible error handling in Protocols.DNS.server
+
+Some servers might want to report errors during other mechanisms than
+werror.  By moving the error reporting to the new
+report_decode_error() method, it is easy to override that method and
+do something else.
+
+Likewise, some servers might want to not reply to malformed requests.
+Move that code to the new handle_decode_error() method.
+
+• Sql.sqlite: Throw an error in list_fields() if no such table.
+
+Fixes testsuite failures.
+
+• Standards.PKCS: Fixed decoding of PKCS#10 public keys.
+
+The public key data is for some reason kept in a BIT STRING
+(and not in an OCTET STRING)...
+
+• Parser.PKCS: Added some support for PKCS#10.
+
+• Protocols.WebSocket: The id variable will be overridden by the local variable, so the id
+passed to onopen() will be the Stdio.File object which seems wrong.
+
+• Fix spelling of 'necessary' in comments and docs
+
+• pgsql: Document implementation decision.
+
+• Tools.Testsuite: Survive wide string log message.
+
+• Filesystem.Monitor: Survive transient files.
+
+Automatically created monitors for paths that are deleted before the
+monitor has initialized are now removed instead of being kept until
+the next time the path is created and deleted.
+
+Fixes infinite loops on directory deletion some more.
+
+• Filesystem.Monitor [Inotify]: Fixed infinite loop.
+
+Creating new monitors for deleted files or directories is not a good idea...
+
+Fixes testsuite failures on Linux.
+
+• Standards.BSON: Bugfix for Binary of non-zero subtype.
+
+• Filesystem.Monitor: Added report().
+
+This provides an API to simplify targeting tracing of the
+Filesystem.Monitor operation.
+
+Fixes [PIKE-17].
