@@ -1,0 +1,16 @@
+Modified files:
+  pike/lib/modules/Calendar.pmod/Event.pmod
+  pike/lib/modules/Calendar.pmod/TimeRanges.pmod
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/debug.pike
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/symlinks.pike
+  pike/lib/modules/Protocols.pmod/DNS.pmod
+  pike/lib/modules/Protocols.pmod/WebSocket.pmod
+  pike/lib/modules/Sql.pmod/pgsql_util.pmod
+  pike/lib/modules/Sql.pmod/sqlite.pike
+  pike/lib/modules/Standards.pmod/BSON.pmod/module.pmod
+  pike/lib/modules/Standards.pmod/ID3.pmod
+  pike/lib/modules/Standards.pmod/PKCS.pmod/ECDSA.pmod
+  pike/lib/modules/Standards.pmod/PKCS.pmod/module.pmod
+  pike/lib/modules/String.pmod/Elite.pmod
+  pike/lib/modules/Tools.pmod/Testsuite.pmod
