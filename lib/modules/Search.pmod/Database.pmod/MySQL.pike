@@ -971,6 +971,7 @@ protected void store_to_db( void|string mergedfilename )
     //  the only code path that adds words also invalidates the old docid and
     //  gets a fresh one.
 
+    // FIXME: The following two functions ought to be able to use multi_query().
     void add_padded_blobs(string word, array new_blobs)
     {
       //  Write all blobs except the last one that should be padded
@@ -1018,7 +1019,8 @@ protected void store_to_db( void|string mergedfilename )
 		      "ORDER BY first_doc_id DESC "
 		      "   LIMIT 1", word);
     } else {
-      old = db->query("  SELECT first_doc_id, LENGTH(hits) AS used_len "
+      old = db->query("  SELECT first_doc_id, LENGTH(hits) AS used_len, "
+		      "         LENGTH(hits) AS real_len "
 		      "    FROM word_hit "
 		      "   WHERE word=%s "
 		      "ORDER BY first_doc_id DESC "
@@ -1027,37 +1029,46 @@ protected void store_to_db( void|string mergedfilename )
 
     if (sizeof(old)) {
       int used_len = (int) old[-1]->used_len;
-      int real_len = use_padded_blobs ? ((int) old[-1]->real_len) : used_len;
+      int real_len = (int) old[-1]->real_len;
       int first_doc_id = (int) old[-1]->first_doc_id;
+      int new_used_len = used_len + sizeof(blob);
+      int new_real_len;
 
-      //  Can the new blob fit in the existing padding space?
-      //
-      //  NOTE: This is never true for old-style blobs.
-      if (real_len - used_len >= sizeof(blob)) {
-	//  Yes, update in place
-	db->query(" UPDATE word_hit "
-		  "    SET hits = INSERT(hits, %d, %d, %s), "
-		  "        used_len = %d "
-		  "  WHERE word = %s "
-		  "    AND first_doc_id = %d",
-		  used_len + 1, sizeof(blob), blob,
-		  used_len + sizeof(blob),
-		  word, first_doc_id);
-      } else if (used_len + sizeof(blob) <= max_blob_size) {
-	//  The old blob can grow to accomodate the new data without
-	//  exceeding the maximum blob size.
+      array new_blobs = ({ blob });
+
+      if (new_used_len > max_blob_size) {
+	//  Need to split blobs
+	array new_blobs = split_blobs(used_len, blob, max_blob_size);
+	blob = new_blobs[0][1];
+	new_used_len = used_len + sizeof(blob);
+
+	// NB: No extra padding!
+	new_real_len = new_used_len;
+      } else if (use_padded_blobs) {
+	new_real_len = get_padded_blob_length(new_used_len);
+      } else {
+	new_real_len = new_used_len;
+      }
+
+      // Do we need to grow the old blob?
+      if (new_real_len != real_len) {
 	if (use_padded_blobs) {
-	  //  Make sure we make room for new padding for future use
-	  int new_used_len = used_len + sizeof(blob);
-	  int new_real_len = get_padded_blob_length(new_used_len);
-	  int space_count = new_real_len - new_used_len;
+	  //  We can grow the old blob to accomodate the new data without
+	  //  exceeding the maximum blob size.
+
+	  int space_count = new_real_len - real_len;
+	  if (space_count < 0) space_count = 0;
+
+	  // NB: Concat the padding first, and then overwrite it with INSERT(),
+	  //     to work around the corner case that INSERT() doesn't support
+	  //     being a CONCAT().
 	  db->query("UPDATE word_hit "
-		    "   SET hits = INSERT(hits, %d, %d, CONCAT(%s, SPACE(%d))),"
+		    "   SET hits = INSERT(CONCAT(hits, SPACE(%d)), %d, %d, %s),"
 		    "       used_len = %d, "
 		    "       real_len = %d "
 		    " WHERE word = %s "
 		    "   AND first_doc_id = %d",
-		    used_len + 1, sizeof(blob) + space_count, blob, space_count,
+		    space_count, used_len + 1, sizeof(blob), blob,
 		    new_used_len,
 		    new_real_len,
 		    word, first_doc_id);
@@ -1070,34 +1081,20 @@ protected void store_to_db( void|string mergedfilename )
 		    blob, word, first_doc_id);
 	}
       } else {
-	//  Need to split blobs
-	array new_blobs = split_blobs(used_len, blob, max_blob_size);
-	blob = new_blobs[0][1];
+	//  NOTE: This is never true for old-style blobs.
+	//
+	//  Update in place
+	db->query(" UPDATE word_hit "
+		  "    SET hits = INSERT(hits, %d, %d, %s), "
+		  "        used_len = %d "
+		  "  WHERE word = %s "
+		  "    AND first_doc_id = %d",
+		  used_len + 1, sizeof(blob), blob,
+		  used_len + sizeof(blob),
+		  word, first_doc_id);
+      }
 
-	if (use_padded_blobs) {
-	  //  Write the first chunk at the end of the existing blob and remove
-	  //  any left-over padding by giving a sufficiently bigger blob size
-	  //  as third parameter compared to the actual data.
-	  int new_used_len = used_len + sizeof(blob);
-	  db->query("UPDATE word_hit "
-		    "   SET hits = INSERT(hits, %d, %d, %s), "
-		    "       used_len = %d, "
-		    "       real_len = %d "
-		    " WHERE word = %s "
-		    "   AND first_doc_id = %d",
-		    used_len + 1, sizeof(blob) + max_blob_size, blob,
-		    new_used_len,
-		    new_used_len,
-		    word, first_doc_id);
-	} else {
-	  //  Write the first chunk at the end of the existing blob
-	  db->query("UPDATE word_hit "
-		    "   SET hits = CONCAT(hits, %s) "
-		    " WHERE word = %s "
-		    "   AND first_doc_id = %d",
-		    blob, word, first_doc_id);
-	}
-
+      if (sizeof(new_blobs) > 1) {
 	//  Write remaining ones
 	if (use_padded_blobs)
 	  add_padded_blobs(word, new_blobs[1..]);
