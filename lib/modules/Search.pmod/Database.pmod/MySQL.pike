@@ -6,6 +6,8 @@ inherit .Base;
 
 //#define SEARCH_DEBUG
 
+//#define SEARCH_DB_CONSISTENCY_CHECKS
+
 #define DB_MAX_WORD_SIZE 64
 
 protected
@@ -994,6 +996,19 @@ protected void store_to_db( void|string mergedfilename )
 		"     VALUES (%s, %d, %d, %d, CONCAT(%s, SPACE(%d)))",
 		word, first_doc_id, new_used_len, new_real_len,
 		blob, space_count);
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      array new = db->query("SELECT real_len, LENGTH(hits) AS actual_len "
+			    "  FROM word_hit "
+			    " WHERE word = %s "
+			    "   AND first_doc_id = %d",
+			    word, first_doc_id);
+      if (!sizeof(new)) {
+	werror("Search.Database: Added blob not in db!\n");
+      } else if (new_real_len != (int)new[0]->actual_len) {
+	werror("Search.Database: Added blob has different real_len: %d != %d\n",
+	       new_real_len, (int)new[0]->actual_len);
+      }
+#endif
     };
 
     void add_oldstyle_blobs(string word, array new_blobs)
@@ -1008,12 +1023,24 @@ protected void store_to_db( void|string mergedfilename )
       }
     };
 
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+    string consistency_log = "";
+#define CONSISTENCY_LOG(X ...)			do {	\
+      consistency_log += sprintf(X);			\
+    } while(0)
+#else
+#define CONSISTENCY_LOG(X ...)
+#endif
+
     //  We only care about the most recent blob for the given word so look
     //  for the highest document ID.
     int first_doc_id;
     array old;
     if (use_padded_blobs) {
       old = db->query("  SELECT first_doc_id, used_len, real_len "
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+		      "  , LENGTH(hits) AS actual_len "
+#endif
 		      "    FROM word_hit "
 		      "   WHERE word=%s "
 		      "ORDER BY first_doc_id DESC "
@@ -1021,6 +1048,9 @@ protected void store_to_db( void|string mergedfilename )
     } else {
       old = db->query("  SELECT first_doc_id, LENGTH(hits) AS used_len, "
 		      "         LENGTH(hits) AS real_len "
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+		      "  , LENGTH(hits) AS actual_len "
+#endif
 		      "    FROM word_hit "
 		      "   WHERE word=%s "
 		      "ORDER BY first_doc_id DESC "
@@ -1036,9 +1066,20 @@ protected void store_to_db( void|string mergedfilename )
 
       array new_blobs = ({ blob });
 
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      if (real_len != (int)old[0]->actual_len) {
+	werror("Search.Database: Broken accounting for old word %O: %d != %d\n",
+	       word, real_len, (int)old[0]->actual_len);
+	CONSISTENCY_LOG("Broken accounting for old word %O: %d != %d\n",
+			word, real_len, (int)old[0]->actual_len);
+      }
+#endif
+
       if (new_used_len > max_blob_size) {
 	//  Need to split blobs
 	array new_blobs = split_blobs(used_len, blob, max_blob_size);
+	CONSISTENCY_LOG("Splitting old %d byte blob into %d bytes.\n",
+			sizeof(blob), sizeof(new_blobs[0][1]));
 	blob = new_blobs[0][1];
 	new_used_len = used_len + sizeof(blob);
 
@@ -1051,6 +1092,8 @@ protected void store_to_db( void|string mergedfilename )
 
       // Do we need to grow the old blob?
       if (new_real_len != real_len) {
+	CONSISTENCY_LOG("Old (%d bytes) and new real_len (%d bytes) differ.\n",
+			real_len, new_real_len);
 	if (use_padded_blobs) {
 	  //  We can grow the old blob to accomodate the new data without
 	  //  exceeding the maximum blob size.
@@ -1065,6 +1108,8 @@ protected void store_to_db( void|string mergedfilename )
 	    // padding bytes to remove. Note that space_count is negative.
 	    repl_size -= space_count;
 	    space_count = 0;
+	    CONSISTENCY_LOG("Truncating old hits by %d bytes.\n",
+			    repl_size - sizeof(blob));
 	  }
 
 	  // NB: Concat the padding first, and then overwrite it with INSERT(),
@@ -1080,6 +1125,8 @@ protected void store_to_db( void|string mergedfilename )
 		    new_used_len,
 		    new_real_len,
 		    word, first_doc_id);
+	  CONSISTENCY_LOG("Updating used_len %d ==> %d and real_len %d ==> %d.\n",
+			  used_len, new_used_len, real_len, new_real_len);
 	} else {
 	  //  Append blob data to old record
 	  db->query("UPDATE word_hit "
@@ -1100,7 +1147,28 @@ protected void store_to_db( void|string mergedfilename )
 		  used_len + 1, sizeof(blob), blob,
 		  used_len + sizeof(blob),
 		  word, first_doc_id);
+	CONSISTENCY_LOG("Updating in place (real_len: %d). used_len %d ==> %d\n",
+			real_len, used_len, used_len + sizeof(blob));
       }
+
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      if (use_padded_blobs) {
+	array new = db->query("SELECT used_len, real_len, "
+			      "       LENGTH(hits) AS actual_len "
+			      "  FROM work_hit "
+			      " WHERE word = %s "
+			      "   AND first_doc_id = %d",
+			      word, first_doc_id);
+	if (!sizeof(new)) {
+	  werror("Search.Database: Lost track of word %O!\n", word);
+	  werror("Log:\n%s\n", consistency_log);
+	} else if (new[0]->real_len != new[0]->actual_len) {
+	  werror("Search.Database: Broken accounting for new word %O: %d != %d\n",
+		 word, (int)new[0]->real_len, (int)new[0]->actual_len);
+	  werror("Log:\n%s\n", consistency_log);
+	}
+      }
+#endif
 
       if (sizeof(new_blobs) > 1) {
 	//  Write remaining ones
