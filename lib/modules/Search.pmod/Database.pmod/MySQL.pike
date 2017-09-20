@@ -1028,11 +1028,11 @@ protected void store_to_db( void|string mergedfilename )
     }
 
     if (sizeof(old)) {
-      int used_len = (int) old[-1]->used_len;
-      int real_len = (int) old[-1]->real_len;
-      int first_doc_id = (int) old[-1]->first_doc_id;
+      int used_len = (int) old[0]->used_len;
+      int real_len = (int) old[0]->real_len;
+      int first_doc_id = (int) old[0]->first_doc_id;
       int new_used_len = used_len + sizeof(blob);
-      int new_real_len;
+      int new_real_len = new_used_len;	// NB: No padding.
 
       array new_blobs = ({ blob });
 
@@ -1045,9 +1045,8 @@ protected void store_to_db( void|string mergedfilename )
 	// NB: No extra padding!
 	new_real_len = new_used_len;
       } else if (use_padded_blobs) {
+	// Add padding.
 	new_real_len = get_padded_blob_length(new_used_len);
-      } else {
-	new_real_len = new_used_len;
       }
 
       // Do we need to grow the old blob?
@@ -1057,7 +1056,16 @@ protected void store_to_db( void|string mergedfilename )
 	  //  exceeding the maximum blob size.
 
 	  int space_count = new_real_len - real_len;
-	  if (space_count < 0) space_count = 0;
+	  int repl_size = sizeof(blob);
+
+	  if (space_count < 0) {
+	    // Truncate hits to new_real_len size (typically == new_used_len).
+	    //
+	    // Increase the third argument to INSERT() with the number of
+	    // padding bytes to remove. Note that space_count is negative.
+	    repl_size -= space_count;
+	    space_count = 0;
+	  }
 
 	  // NB: Concat the padding first, and then overwrite it with INSERT(),
 	  //     to work around the corner case that INSERT() doesn't support
@@ -1068,7 +1076,7 @@ protected void store_to_db( void|string mergedfilename )
 		    "       real_len = %d "
 		    " WHERE word = %s "
 		    "   AND first_doc_id = %d",
-		    space_count, used_len + 1, sizeof(blob), blob,
+		    space_count, used_len + 1, repl_size, blob,
 		    new_used_len,
 		    new_real_len,
 		    word, first_doc_id);
