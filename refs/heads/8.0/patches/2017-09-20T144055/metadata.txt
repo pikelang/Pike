@@ -1,0 +1,18 @@
+subject: Pike 8.0: Search.Database.MySQL truncation and consistency checks
+from: 1ca24ae337244be43451c355707cba79cadf6041
+to: 2a156066d524d4d61f52a1e4c43f8da117a31325
+originator: Marcus Wellhardh
+depends: 2017-09-19T160103
+restart: true
+
+• Search.Database.MySQL: Added some optional consistency checks.
+
+Defining SEARCH_DB_CONSISTENCY_CHECKS will now cause the module
+to perform some extra SQL queries to make sure that the modified
+entries are consistent.
+
+• Search.Database.MySQL: Fixed truncation of word_hit.hits.
+
+word_hit.hits should now lose its padding on the last write.
+
+Also some related code cleanup.
