@@ -558,6 +558,37 @@ class State {
     return s->powm(e, n) == rsa_pad(digest, 1, 0);
   }
 
+  //! Generate a JWK-style mapping of the object.
+  //!
+  //! @param private_key
+  //!   If true, include the private key in the result.
+  //!   Note that if the private key isn't known, the function
+  //!   will fail (and return @expr{0@}).
+  //!
+  //! @returns
+  //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+  //!   on failure.
+  //!
+  //! @seealso
+  //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.3@}
+  mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+  {
+    if (!n) return 0;	// Not initialized.
+    mapping(string(7bit):string(7bit)) jwk = ([
+      "kty":"RSA",
+      "n": MIME.encode_base64url(n->digits(256)),
+      "e": MIME.encode_base64url(e->digits(256)),
+    ]);
+    if (private_key) {
+      if (!d) return 0;	// Private key not known.
+
+      jwk->d = MIME.encode_base64url(d->digits(256));
+      jwk->p = MIME.encode_base64url(p->digits(256));
+      jwk->q = MIME.encode_base64url(q->digits(256));
+    }
+    return jwk;
+  }
+
   //
   // --- Deprecated stuff
   //
