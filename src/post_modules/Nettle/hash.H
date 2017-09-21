@@ -57,9 +57,18 @@ PIKECLASS PIKE_NAME
       CVAR struct HMAC_CTX(struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx)) ctx;
       CVAR const struct nettle_hash *meta;
 
+      static int cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) = -1;
+
       EXTRA
       {
+	int hmac_create_fun_num = -1;
         lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
+	hmac_create_fun_num =
+	  FIND_LFUN(Pike_compiler->new_program->inherits[1].prog, LFUN_CREATE);
+	if (hmac_create_fun_num >= 0) {
+	  cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) =
+	    really_low_reference_inherited_identifier(NULL, 1, hmac_create_fun_num);
+	}
       }
 
       PIKEFUN void create(string(8bit) passwd, void|int b)
@@ -67,6 +76,11 @@ PIKECLASS PIKE_NAME
         const struct nettle_hash *meta = THIS->meta = ((struct Nettle_Hash_struct *)parent_storage(2, Nettle_Hash_program))->meta;
         NO_WIDE_STRING(passwd);
         HMAC_SET_KEY(&THIS->ctx, meta, passwd->len, (const uint8_t *)passwd->str);
+	if (cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) != -1) {
+	  /* Pass along the password to the inherited pike-level code. */
+	  apply_current(cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME,
+					 _create_fun_num), args);
+	}
       }
 
       PIKEFUN string(8bit) `()(string(8bit) text)
