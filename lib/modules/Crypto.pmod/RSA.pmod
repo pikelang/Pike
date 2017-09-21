@@ -348,7 +348,7 @@ class OAEPState {
     //! Get the OAEP encryption state.
     this_program `OAEP() { return this_program::this; }
 
-    string(7bit) name() { return "RSAES-OEAP"; }
+    string(7bit) name() { return "RSAES-OAEP"; }
 
     protected .Hash hash_alg = .SHA1;
 
