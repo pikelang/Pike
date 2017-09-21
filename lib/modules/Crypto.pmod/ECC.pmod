@@ -19,6 +19,15 @@ constant dont_dump_module = 1;
 class Curve {
   inherit Nettle.ECC_Curve;
 
+  string(7bit) jose_name()
+  {
+    return ([
+      "SECP_256R1":"P-256",
+      "SECP_384R1":"P-384",
+      "SECP_521R1":"P-521",
+    ])[name()];
+  }
+
 #define BitString Standards.ASN1.Types.BitString
 #define Identifier Standards.ASN1.Types.Identifier
 #define Integer Standards.ASN1.Types.Integer
@@ -373,6 +382,35 @@ class Curve {
 #undef Integer
 #undef Identifier
 #undef BitString
+
+    //! Generate a JWK-style mapping of the object.
+    //!
+    //! @param private_key
+    //!   If true, include the private key in the result.
+    //!
+    //! @returns
+    //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+    //!   on failure.
+    //!
+    //! @seealso
+    //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.2@}
+    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    {
+      string jose_name = Curve::jose_name();
+      if (!jose_name) return 0;	// Not supported for this curve.
+      int bytes = (size()+7)>>3;
+      mapping(string(7bit):string(7bit)) jwk = ([
+	"kty":"EC",
+	"crv":jose_name,
+	"x": MIME.encode_base64url(sprintf("%*c", bytes, get_x())),
+	"y": MIME.encode_base64url(sprintf("%*c", bytes, get_y())),
+      ]);
+      if (private_key) {
+	// FIXME: Detect if the private key hasn't been set.
+	jwk->d = MIME.encode_base64url(get_private_key()->digits(256));
+      }
+      return jwk;
+    }
   }
 }
 
