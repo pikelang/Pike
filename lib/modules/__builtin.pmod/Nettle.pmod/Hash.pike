@@ -194,6 +194,28 @@ private class _HMAC
     {
       return pkcs_digest(okey + hash(ikey + text));
     }
+
+    //! Generate a JWK-style mapping of the object.
+    //!
+    //! @param private_key
+    //!   Ignored.
+    //!
+    //! @returns
+    //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+    //!   on failure.
+    //!
+    //! @seealso
+    //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.4@}
+    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    {
+      if (!jwa()) return 0;	// Not supported for this hash.
+      mapping(string(7bit):string(7bit)) jwk = ([
+	"kty":"oct",
+	"alg":jwa(),
+	"k": MIME.encode_base64url([string(8bit)](ikey ^ ("6" * block_size()))),
+      ]);
+      return jwk;
+    }
   }
 
   //! Returns a new @[State] object initialized with a @[password].
