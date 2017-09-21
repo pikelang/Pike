@@ -58,7 +58,25 @@ Sequence pkcs_public_key();
 
 // JOSE JWS (RFC 7515).
 
-//! Signs the @[message] with a JSON JWS signature using hash
+//! Generate a JOSE JWK mapping representation of the object.
+//!
+//! @param private_key
+//!   If true, include private fields in the result.
+//!
+//! @returns
+//!   Returns a mapping as per @rfc{7517:4@} on success,
+//!   and @expr{0@} (zero) on failure (typically that
+//!   the object isn't initialized properly, or that
+//!   it isn't supported by JWK).
+//!
+//! @seealso
+//!   @[Web.encode_jwk()], @[Web.decode_jwk()], @rfc{7517:4@}
+mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+{
+  return 0;
+}
+
+//! Signs the @[message] with a JOSE JWS signature using hash
 //! algorithm @[h] and JOSE headers @[headers].
 //!
 //! @param message

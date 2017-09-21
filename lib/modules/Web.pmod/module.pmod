@@ -219,6 +219,33 @@ variant Crypto.Sign.State|Crypto.MAC.State decode_jwk(string(7bit) jwk)
   return decode_jwk(Standards.JSON.decode(MIME.decode_base64url(jwk)));
 }
 
+//! Encode a JSON Web Key (JWK).
+string(7bit) encode_jwk(mapping(string(7bit):string(7bit)) jwk)
+{
+  if (!mappingp(jwk)) return UNDEFINED;
+  return MIME.encode_base64url(Standards.JSON.encode(jwk));
+}
+
+//! Encode a JSON Web Key (JWK).
+//!
+//! @param sign
+//!   The initialized @[Crypto.Sign.State] or @[Crypto.MAC.State]
+//!   for which a JWK is to be generated.
+//!
+//! @param private_key
+//!   If true the private fields of @[sign] will also be encoded into
+//!   the result.
+//!
+//! @returns
+//!   Returns the corresponding JWK.
+variant string(7bit) encode_jwk(Crypto.Sign.State|Crypto.MAC.State sign,
+				int(0..1)|void private_key)
+{
+  mapping(string(7bit):string(7bit)) jwk = sign && sign->jwk(private_key);
+  if (!jwk) return UNDEFINED;
+  return encode_jwk(jwk);
+}
+
 //! Decode a JSON Web Key (JWK) Set.
 //!
 //! @seealso
