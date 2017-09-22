@@ -184,6 +184,11 @@ class Curve {
 		     (size() + 7)>>3, get_y());
     }
 
+    Point get_point()
+    {
+      return Point(get_x(), get_y());
+    }
+
     //! Get the JWS algorithm identifier for a hash.
     //!
     //! @returns
