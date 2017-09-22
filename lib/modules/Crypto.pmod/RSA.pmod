@@ -509,9 +509,14 @@ class PSSState {
 
     protected int(0..1) _equal(mixed x)
     {
-      return objectp(x) && (object_program(x) == this_program) &&
-	(salt_size == ([object(this_program)]x)->salt_size) &&
-	::_equal(x);
+      if (!objectp(x) || (object_program(x) != object_program(this))) {
+	return 0;
+      }
+      if (object_program(this) == this::this_program) {
+	// We've got a PSSState object.
+	if (salt_size != ([object(this_program)]x)->salt_size) return 0;
+      }
+      return ::_equal(x);
     }
 
     //! Signs the @[message] with a RSASSA-PSS signature using hash
