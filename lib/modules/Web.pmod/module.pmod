@@ -181,6 +181,11 @@ Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit))
     // RFC 7518:6.2.1.1
     Crypto.ECC.Curve c = curve_lookup[jwk->crv];
     if (!c) break;
+    if (jwk->d) {
+      Crypto.ECC.Curve.ECDSA ecdsa = c.ECDSA(jwk);
+      ecdsa->set_private_key(MIME.decode_base64url(jwk->d));
+      return ecdsa;
+    }
     return c.Point(jwk);
 #endif /* constant(Crypto.ECC.Curve) */
   case "oct":
