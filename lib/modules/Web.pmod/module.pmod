@@ -219,7 +219,7 @@ Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit))
 //! @returns
 //!   Returns an initialized @[Crypto.Sign.State] or @[Crypto.MAC.State]
 //!   on success and @[UNDEFINED] on failure.
-variant Crypto.Sign.State|Crypto.MAC.State decode_jwk(string(7bit) jwk)
+variant Crypto.Sign.State|Crypto.MAC.State decode_jwk(string(/*7bit*/8bit) jwk)
 {
   return decode_jwk(Standards.JSON.decode(MIME.decode_base64url(jwk)));
 }
