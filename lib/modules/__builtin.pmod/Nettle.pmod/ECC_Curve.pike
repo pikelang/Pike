@@ -81,4 +81,10 @@ class Point {
     return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
   }
 
+  protected int(0..1) _equal(mixed x)
+  {
+    if (!objectp(x) || (object_program(x) != this_program)) return 0;
+    object(this_program) p = [object(this_program)]x;
+    return (p->get_x() == get_x()) && (p->get_y() == get_y());
+  }
 }
