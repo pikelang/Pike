@@ -163,7 +163,7 @@ protected mapping(string(7bit):Crypto.MAC) mac_lookup;
 Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit)) jwk)
 {
   mapping(string(7bit):Gmp.mpz) decoded_coordinates = ([]);
-  foreach(({ "n", "e", "d", "x", "y" }), string coord) {
+  foreach(({ "n", "e", "d", "p", "q", "x", "y" }), string coord) {
     if (!jwk[coord]) continue;
     string(8bit) bin = MIME.decode_base64url(jwk[coord]);
     decoded_coordinates[coord] = Gmp.mpz(bin, 256);
@@ -178,6 +178,12 @@ Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit))
     if (!pike_curve) break;
     Crypto.ECC.Curve c = Crypto.ECC[pike_curve];
     if (!c) break;
+    if (jwk->d) {
+      Crypto.ECC.Curve.ECDSA ecdsa = c.ECDSA();
+      ecdsa->set_public_key(decoded_coordinates->x, decoded_coordinates->y);
+      ecdsa->set_private_key(decoded_coordinates->d);
+      return ecdsa;
+    }
     return c.Point(decoded_coordinates->x, decoded_coordinates->y);
 #endif /* constant(Crypto.ECC.Curve) */
   case "oct":
