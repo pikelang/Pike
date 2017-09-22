@@ -551,15 +551,25 @@ dnl Same as above, but use the wrong type when unpadding.
 test_eq( RSA->rsa_unpad(Gmp.mpz(8653122978089085258180412110456916522630219813380302393826135590094230922558301290311148252831586181145986834552965198025012975236458341391807284),1), 0 )
 dnl Same as above, but one digit to few.
 test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338030239382613559009423092255830129031114825283158618114598683455296519802501297523645834139180728),2), 0 )
+test_equal(Web.decode_jwk(Web.encode_jwk(RSA, 1)), RSA)
 test_do( add_constant("RSA") )
 
-test_eq(Crypto.SHA256.HMAC.jwa(), "HS256")
-cond_resolv( Crypto.SHA384, [[
-  test_eq(Crypto.SHA384.HMAC.jwa(), "HS384")
+// Hash, JWA
+define(test_jwk_hmac, [[
+  cond_resolv($1, [[
+    test_eq($1.jwa(), $2)
+    test_any([[
+      Crypto.MAC.State hmac = $1("foobar");
+      Crypto.MAC.State hmac2 = Web.decode_jwk(Web.encode_jwk(hmac));
+      // NB: No LFUN::_equal in HMAC, so compare them indirectly.
+      return hmac->update($2*4)->digest() == hmac2->update($2*4)->digest();
+    ]], 1)
+  ]])
 ]])
-cond_resolv( Crypto.SHA512, [[
-  test_eq(Crypto.SHA512.HMAC.jwa(), "HS512")
-]])
+
+test_jwk_hmac(Crypto.SHA256.HMAC, "HS256")
+test_jwk_hmac(Crypto.SHA384.HMAC, "HS384")
+test_jwk_hmac(Crypto.SHA512.HMAC, "HS512")
 
 // Hash, Key, JWS
 define(test_jws_hmac, [[
@@ -715,6 +725,7 @@ test_do( add_constant("DSA") )
 
 // Crypto.ECC
 
+// Curve, ASN.1-id, JSON-crv
 define(test_curve,[[
 cond_resolv(Crypto.ECC.$1, [[
   test_eq(Crypto.ECC.$1->name(),"$1")
@@ -731,13 +742,18 @@ cond_resolv(Crypto.ECC.$1, [[
     array sign = ecdsa->raw_sign("hej");
     return ecdsa->raw_verify("hej", @sign);
   ]], 1)
+  ifelse([[$3]],,,[[
+    test_eq(ecdsa->get_curve()->jose_name(), $3)
+    test_equal(Web.decode_jwk(Web.encode_jwk(ecdsa)), ecdsa->get_point())
+    test_equal(Web.decode_jwk(Web.encode_jwk(ecdsa, 1)), ecdsa)
+  ]])
   test_do(add_constant("ecdsa"))
 ]])]])
 test_curve(SECP_192R1,"1.2.840.10045.3.1.1")
 test_curve(SECP_224R1,"1.3.132.0.33")
-test_curve(SECP_256R1,"1.2.840.10045.3.1.7")
-test_curve(SECP_384R1,"1.3.132.0.34")
-test_curve(SECP_521R1,"1.3.132.0.35")
+test_curve(SECP_256R1,"1.2.840.10045.3.1.7", "P-256")
+test_curve(SECP_384R1,"1.3.132.0.34", "P-384")
+test_curve(SECP_521R1,"1.3.132.0.35", "P-521")
 cond_resolv(Crypto.ECC.SECP_192R1, [[
   test_do( Crypto.ECC.SECP_192R1.ECDSA()->generate_key())
 ]])
