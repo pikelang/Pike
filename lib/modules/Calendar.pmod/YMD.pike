@@ -464,6 +464,7 @@ class YMD
 //! method string format_ymd();
 //! method string format_ymd_short();
 //! method string format_ymd_xshort();
+//! method string format_mdy();
 //! method string format_iso_week();
 //! method string format_iso_week_short();
 //! method string format_week();
@@ -574,6 +575,12 @@ class YMD
    {
       if (m==CALUNKNOWN) make_month();
       return sprintf("%04d-%02d-%02d",y,m,md);
+   }
+
+   string format_mdy()
+   {
+      if (m==CALUNKNOWN) make_month();
+      return sprintf("%d/%d/%d",m,md,y%100);
    }
 
    string format_ymd_short()
