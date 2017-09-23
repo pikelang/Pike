@@ -313,6 +313,12 @@ class YMD
       return md;
    }
 
+   int month_days()
+   {
+      if (mnd==CALUNKNOWN) make_month();
+      return mnd;
+   }
+
    int week_day()
    {
       if (wd==CALUNKNOWN) make_week();
