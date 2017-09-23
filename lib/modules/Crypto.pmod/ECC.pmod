@@ -105,6 +105,15 @@ class Curve {
       return this;
     }
 
+    //! Set the private key.
+    //!
+    //! @note
+    //!   Throws errors if the key isn't valid for the curve.
+    variant this_program set_private_key(string(8bit) k)
+    {
+      return set_private_key(Gmp.mpz(k, 256));
+    }
+
     //! Change to the selected point on the curve as public key.
     //!
     //! @note
