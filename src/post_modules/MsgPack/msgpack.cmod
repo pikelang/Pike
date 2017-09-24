@@ -825,6 +825,8 @@ PIKEFUN void encode_to(object to, mixed value, function|object handler) {
     ctx.handler = handler;
 
     mpack_low_encode(&ctx, value, 1);
+
+    io_trigger_output(io);
 }
 
 /*! @endmodule */

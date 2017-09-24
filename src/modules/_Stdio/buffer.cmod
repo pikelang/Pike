@@ -443,10 +443,10 @@ PIKECLASS Buffer
     return -1;
   }
 
-  static ptrdiff_t io_actually_trigger_output( Buffer *io )
+  PMOD_EXPORT ptrdiff_t io_actually_trigger_output( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  static ptrdiff_t io_actually_trigger_output( Buffer *io )
+  PMOD_EXPORT ptrdiff_t io_actually_trigger_output( Buffer *io )
   {
     struct program *prog;
     struct reference *ref;
@@ -471,13 +471,6 @@ PIKECLASS Buffer
     }
     else
       return io_call_write( io, &io->output, MINIMUM( io_len(io), 100 ) );
-  }
-
-  static ptrdiff_t io_trigger_output( Buffer *io )
-  {
-    if( UNLIKELY(io->output.u.object) && UNLIKELY(!io->output_triggered) )
-      return io_actually_trigger_output(io);
-    return 0;
   }
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )

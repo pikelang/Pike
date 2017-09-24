@@ -34,6 +34,7 @@ PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes );
 PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
 PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o);
 PMOD_EXPORT void io_trim( Buffer *io );
+PMOD_EXPORT ptrdiff_t io_actually_trigger_output( Buffer *io );
 
 PIKE_UNUSED_ATTRIBUTE
 static size_t io_len( Buffer *io )
@@ -63,5 +64,13 @@ static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
 {
   io->offset += num;
   return io_len(io);
+}
+
+PIKE_UNUSED_ATTRIBUTE
+static ptrdiff_t io_trigger_output( Buffer *io )
+{
+  if( UNLIKELY(io->output.u.object) && UNLIKELY(!io->output_triggered) )
+    return io_actually_trigger_output(io);
+  return 0;
 }
 
