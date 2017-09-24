@@ -719,6 +719,7 @@ PIKECLASS Buffer
         *d++ ^= 0xff; /* pad, but that is 0xff */
       mpz_clear(&tmp);
     }
+    io_trigger_output( io );
   }
 
   static void io_add_int_uc( Buffer *io, ptrdiff_t i, size_t bytes )
@@ -1214,6 +1215,7 @@ PIKECLASS Buffer
     memset( io_add_space( io, nbytes,0), byte, nbytes );
     io->len += nbytes;
     Pike_sp -= args;
+    io_trigger_output( io );
     ref_push_object( io->this );
   }
 
@@ -1320,6 +1322,7 @@ PIKECLASS Buffer
     p[2] = i>>8;
     p[3] = i;
     io->len += 4;
+    io_trigger_output( io );
     ref_push_object(Pike_fp->current_object);
   }
 
