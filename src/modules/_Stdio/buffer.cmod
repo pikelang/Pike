@@ -997,6 +997,8 @@ PIKECLASS Buffer
 
     if (!bread) RETURN -1;
 
+    io_trigger_output( io );
+
     RETURN bread;
   }
 
@@ -1282,6 +1284,7 @@ PIKECLASS Buffer
     *io_add_space(io,1,0)=i;
     io->len++;
     Pike_sp--;
+    io_trigger_output( io );
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1296,6 +1299,7 @@ PIKECLASS Buffer
     p[0] = i>>8;
     p[1] = i;
     io->len += 2;
+    io_trigger_output( io );
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1311,6 +1315,7 @@ PIKECLASS Buffer
     p[2] = i>>8;
     p[3] = i;
     io->len += 4;
+    io_trigger_output( io );
     ref_push_object(Pike_fp->current_object);
   }
 
