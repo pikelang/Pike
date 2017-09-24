@@ -7,6 +7,15 @@ New Features
 Bug fixes
 ---------
 
+o Stdio.Buffer
+
+  - Some methods (add_int*, input_from, add_padding) did not trigger
+    a call to the fd output function. When using an Stdio.Buffer instance
+    in Stdio.File buffer mode, this could result in new data not being
+    written.
+
+  - Due to an error in the realloc strategy, in some cases unread() did
+    not succeed after reading or writing data to a fd.
 
 
 Changes since Pike 8.0.438 (release 9)
