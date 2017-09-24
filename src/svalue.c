@@ -818,13 +818,14 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 			     const struct svalue *b,
 			     struct processing *proc)
 {
+  struct program *p;
+
   check_svalue_type (a);
   check_svalue_type (b);
   check_refs(a);
   check_refs(b);
 
   {
-    struct program *p;
     int fun;
 
     if(TYPEOF(*a) == T_OBJECT) {
@@ -868,6 +869,8 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
   if(is_eq(a,b)) return 1;
 
   if(UNSAFE_IS_ZERO(a) && UNSAFE_IS_ZERO(b)) return 1;
+
+  if ((p = program_from_svalue(a)) && (p == program_from_svalue(b))) return 1;
 
   if(TYPEOF(*a) != TYPEOF(*b)) return 0;
 
