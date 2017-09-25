@@ -31,7 +31,7 @@ o Stdio.Buffer
   - Due to an error in the realloc strategy, in some cases unread() did
     not succeed after reading or writing data to a fd.
 
-o Thread
+o Threads
 
   Fixed a race condition when creating a new thread while disabling
   threads.
@@ -61,8 +61,8 @@ o Pike core
     conditions.
 
 
-Build Change
-------------
+Building
+--------
 
 o Configuration
 
