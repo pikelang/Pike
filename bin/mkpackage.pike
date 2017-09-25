@@ -245,8 +245,8 @@ class Package
     if (extra_platform_test) {
       setup +=     ("if ./" + basename(extra_platform_test) + "\n"
 		    "then :; else\n"
-		    "  EXIT=yes\n"
 		    "  EXITCODE=$?\n"
+		    "  EXIT=yes\n"
 		    "fi\n");
     }
     setup +=       ("if [ $EXIT = no ]\n"
