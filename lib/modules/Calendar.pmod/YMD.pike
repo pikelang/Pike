@@ -225,6 +225,7 @@ class YMD
 //! method int leap_year()
 //! method int minute_no()
 //! method int month_day()
+//! method int month_days()
 //! method int month_no()
 //! method int second_no()
 //! method int utc_offset()
