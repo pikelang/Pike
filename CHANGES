@@ -4,22 +4,51 @@ Changes since Pike 8.0.466 (release 10)
 New Features
 ------------
 
+o Crypto.ECC
+
+  - Added get_point() to Crypto.ECC.Curve.
+
+  - Crypto.ECC.Curve.Point objects can now be compared with _equal().
+
+o JWK
+
+  - Added Web.encode_jwk().
+
+  - Added jwk() to signatures (Nettle.Sign, Crypo.RSA, Crypto.ECC.Curve.ECDSA)
+
+  - Added jwk() to Crypto.Hash.HMAC.
+
+  - decode_jwk() on a ECC private key now returns an ECDSA object (and a
+    Point object for an ECC public key).
+
 o Standards.PKCS
 
   Support for decoding PKCS #10 public keys through
   Standard.PKCS.parse_public_key.
 
-o JWK
-
-  - Added Web.encode_jwk.
-  - Added jwk to signatures (Nettle.Sign, Crypo.RSA, Crypto.ECC.Curve)
-  - Added jwk to hashes (Nettle.Hash)
-  - Added decode_jwk support to Crypto.ECC.Curve
-  - Added get_point to Crypto.ECC.Curve
-
-
 Bug fixes
 ---------
+
+o Protocols.DNS
+
+  Added hooks for controlling error handling in Protocols.DNS.server.
+
+o Protocols.HTTP
+
+  Fixed a memory leak in the HTTP header parser upon receiving
+  malformed HTTP headers.
+
+o Protocols.WebSocket
+
+  Fixed a case where the onopen callback would get the wrong argument.
+
+o Search
+
+  Fixes some broken SQL queries causing data corruption.
+
+o Sql.sqlite
+
+  list_fields() now throws an error when used on a non-existant table.
 
 o Stdio.Buffer
 
@@ -33,40 +62,34 @@ o Stdio.Buffer
 
 o Threads
 
-  Fixed a race condition when creating a new thread while disabling
-  threads.
+  Fixed a race condition when creating a new thread while threads
+  are disabled.
 
-o Protocols.HTTP
-
-  Fixed a memoery leak in the HTTP header parser upon receiving
-  malformed HTTP headers.
-
-o Protocols.WebSocket
-
-  Fixed a case where the onopen callback would get the wrong argument.
-
-o Standards.PKCS
-
-  Fixed bugs in decoding of PKCS #8 public keys.
-
-o Search
-
-  Fixes some broken SQL queries causing data corruption.
-
-o Pike core
-
-  - Fixed a memory leak in the preprocessor.
-
-  - Improved syntax error recovery, including eliminating some fatal
-    conditions.
-
-
-Building
+Compiler
 --------
+
+o Improved syntax error recovery, including eliminating some fatal conditions.
+
+o Fixed a memory leak in the preprocessor.
+
+Runtime
+-------
+
+o Fixed NULL-dereference by the gc when running count_memory() --with-dmalloc.
+
+o Fixed fatal "Didn't find gc marker as expected" at exit --with-cleanup-on-exit.
+
+Building & Tools
+----------------
 
 o Configuration
 
   Fixes to the detection of MariaDB, MySQL and Inotify.
+
+o mkpackage
+
+  Fixed issue where the error code from extra platform tests wasn't
+  propagated all the way to exit from the install script.
 
 
 Changes since Pike 8.0.438 (release 9)
