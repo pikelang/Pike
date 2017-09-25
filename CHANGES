@@ -4,6 +4,20 @@ Changes since Pike 8.0.466 (release 10)
 New Features
 ------------
 
+o Standards.PKCS
+
+  Support for decoding PKCS #10 public keys through
+  Standard.PKCS.parse_public_key.
+
+o JWK
+
+  - Added Web.encode_jwk.
+  - Added jwk to signatures (Nettle.Sign, Crypo.RSA, Crypto.ECC.Curve)
+  - Added jwk to hashes (Nettle.Hash)
+  - Added decode_jwk support to Crypto.ECC.Curve
+  - Added get_point to Crypto.ECC.Curve
+
+
 Bug fixes
 ---------
 
@@ -16,6 +30,43 @@ o Stdio.Buffer
 
   - Due to an error in the realloc strategy, in some cases unread() did
     not succeed after reading or writing data to a fd.
+
+o Thread
+
+  Fixed a race condition when creating a new thread while disabling
+  threads.
+
+o Protocols.HTTP
+
+  Fixed a memoery leak in the HTTP header parser upon receiving
+  malformed HTTP headers.
+
+o Protocols.WebSocket
+
+  Fixed a case where the onopen callback would get the wrong argument.
+
+o Standards.PKCS
+
+  Fixed bugs in decoding of PKCS #8 public keys.
+
+o Search
+
+  Fixes some broken SQL queries causing data corruption.
+
+o Pike core
+
+  - Fixed a memory leak in the preprocessor.
+
+  - Improved syntax error recovery, including eliminating some fatal
+    conditions.
+
+
+Build Change
+------------
+
+o Configuration
+
+  Fixes to the detection of MariaDB, MySQL and Inotify.
 
 
 Changes since Pike 8.0.438 (release 9)
