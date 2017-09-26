@@ -48,7 +48,7 @@ o Search
 
 o Sql.sqlite
 
-  list_fields() now throws an error when used on a non-existant table.
+  list_fields() now throws an error when used on a non-existent table.
 
 o Stdio.Buffer
 
