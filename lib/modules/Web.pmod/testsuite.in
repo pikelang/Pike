@@ -51,9 +51,13 @@ test_eq(JOSE_KEYS[0]->get_e(), 65537);
 dnl Test the ECC keys.
 cond_resolv(Crypto.ECC.Curve, [[
   test_do([[
-    foreach(JOSE_KEYS[1..], Crypto.ECC.Curve.Point p) {
-      if (!equal(p, (p->get_curve() * 17))) {
-	error("Invalid decoded key; %O != %O.\n", p, p->get_curve() * 17);
+    foreach(JOSE_KEYS[1..], Crypto.ECC.Curve.ECDSA ecdsa) {
+      if (ecdsa->get_private_key() != 17) {
+	error("Unexpected private key; %O, %O != 17.\n",
+	      ecdsa, ecdsa->get_private_key);
+      }
+      if (!equal(ecdsa->get_point(), (ecdsa->get_curve() * 17))) {
+	error("Invalid decoded key; %O != %O.\n", ecdsa, ecdsa->get_curve() * 17);
       }
     }
   ]])
