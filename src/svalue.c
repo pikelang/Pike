@@ -870,7 +870,16 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 
   if(UNSAFE_IS_ZERO(a) && UNSAFE_IS_ZERO(b)) return 1;
 
-  if ((p = program_from_svalue(a)) && (p == program_from_svalue(b))) return 1;
+  /* NB: Don't allow DWIM casting of objects to programs here,
+   *     as that leads to unwanted matches...
+   *
+   * The other cases (functions, programs and types) that
+   * program_from_svalue() supports are fine.
+   */
+  if ((TYPEOF(*a) != T_OBJECT) && (TYPEOF(*b) != T_OBJECT) &&
+      (p = program_from_svalue(a)) && (p == program_from_svalue(b))) {
+    return 1;
+  }
 
   if(TYPEOF(*a) != TYPEOF(*b)) return 0;
 
