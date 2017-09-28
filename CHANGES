@@ -60,6 +60,8 @@ o Support for arguments to implicit lambdas added.
   Implicit lambdas now behave as if they were declared as
   lambda(mixed ... __ARGS__).
 
+  Support for this feature can be detected with #ifdef __ARGS__.
+
 o Function local function declarations are now statements
   (and not expressions). This means that there is no longer
   any need to terminate them with a semicolon.
@@ -93,6 +95,7 @@ o Returning void
     void b() { return a(); }
 
 o Protocols.DNS now supports encoding and decoding CAA RRs.
+
 
 Bug fixes
 ---------
