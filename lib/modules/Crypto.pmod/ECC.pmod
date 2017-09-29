@@ -762,6 +762,32 @@ class _Curve25519 {
 #undef Integer
 #undef Identifier
 #undef BitString
+
+    //! Generate a JWK-style mapping of the object.
+    //!
+    //! @param private_key
+    //!   If true, include the private key in the result.
+    //!
+    //! @returns
+    //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+    //!   on failure.
+    //!
+    //! @seealso
+    //!   @[create()], @[Web.encode_jwk()], @rfc{8037@}
+    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    {
+      if (!jose_name()) return 0;	// Not supported for this curve.
+      mapping(string(7bit):string(7bit)) jwk = ([
+	"kty":"OKP",
+	"crv":jose_name(),
+	"x": MIME.encode_base64url(get_x_str()),
+      ]);
+      if (private_key) {
+	// FIXME: Detect if the private key hasn't been set.
+	jwk->d = MIME.encode_base64url(get_private_key());
+      }
+      return jwk;
+    }
   }
 }
 
