@@ -758,6 +758,13 @@ node *debug_mknode(int token, node *a, node *b)
       }
       break;
 
+    case F_ASSIGN:
+    case F_MULTI_ASSIGN:
+    case F_ASSIGN_SELF:
+      if ((!a || a->token == F_CONSTANT) && (Pike_compiler->compiler_pass == 2)) {
+	yyerror("Illegal lvalue.");
+      }
+      break;
 #ifdef PIKE_DEBUG
     case F_CAST:
     case F_SOFT_CAST:
