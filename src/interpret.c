@@ -2126,7 +2126,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
 {
   struct pike_callsite C;
   callsite_init(&C, args);
-  callsite_resolve_fun(&C, o, fun);
+  callsite_resolve_identifier(&C, o, fun);
   if (C.type == CALLTYPE_PIKEFUN) {
     return C.ptr;
   }
@@ -2250,7 +2250,7 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
       C.frame = frame;
   }
 
-  callsite_resolve_fun(&C, o, fun);
+  callsite_resolve_identifier(&C, o, fun);
 
   if (C.frame == frame) {
       if (C.type == CALLTYPE_PIKEFUN) {
@@ -2352,7 +2352,7 @@ PMOD_EXPORT void mega_apply_low(INT32 args, struct object *o, ptrdiff_t fun)
   struct pike_callsite C;
 
   callsite_init(&C, args);
-  callsite_resolve_fun(&C, o, fun);
+  callsite_resolve_identifier(&C, o, fun);
   callsite_prepare(&C);
   callsite_execute(&C);
   callsite_free(&C);
@@ -3251,7 +3251,7 @@ static void callsite_svalue_error(struct pike_callsite *c, const struct svalue *
   }
 }
 
-PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o, INT16 fun) {
+PMOD_EXPORT void callsite_resolve_identifier(struct pike_callsite *c, struct object *o, INT16 fun) {
   struct program *p = o->prog;
   struct inherit *context;
   struct reference *ref;
@@ -3272,7 +3272,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
     struct pike_frame *scope = ((struct pike_trampoline *)(o->storage))->frame;
     fun = ((struct pike_trampoline *)(o->storage))->func;
     o = scope->current_object;
-    callsite_resolve_fun(c, o, fun);
+    callsite_resolve_identifier(c, o, fun);
     c->frame->scope = scope;
     add_ref(scope);
     return;
@@ -3372,7 +3372,7 @@ PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *c, struct object *o,
         function = ID_FROM_INT(p, fun);
       } while (IDENTIFIER_IS_ALIAS(function->identifier_flags));
 
-      callsite_resolve_fun(c, o, fun);
+      callsite_resolve_identifier(c, o, fun);
       return;
     }
 #ifdef PIKE_DEBUG
@@ -3459,7 +3459,7 @@ PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *c, struct object *o
   if (UNLIKELY(fun < 0))
     Pike_error ("Cannot call undefined lfun %s.\n", lfun_names[lfun]);
 
-  callsite_resolve_fun(c, o, fun);
+  callsite_resolve_identifier(c, o, fun);
 }
 
 PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue *s) {
@@ -3474,7 +3474,7 @@ PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *c, struct svalue 
       c->type = CALLTYPE_EFUN;
       c->ptr = s->u.efun->function;
     }else{
-      callsite_resolve_fun(c, s->u.object, SUBTYPEOF(*s));
+      callsite_resolve_identifier(c, s->u.object, SUBTYPEOF(*s));
       return;
     }
     break;

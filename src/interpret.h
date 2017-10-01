@@ -221,7 +221,7 @@ static inline void callsite_free(const struct pike_callsite *c) {
 }
 
 PMOD_EXPORT void callsite_resolve_svalue(struct pike_callsite *site, struct svalue *s);
-PMOD_EXPORT void callsite_resolve_fun(struct pike_callsite *site, struct object *o, INT16 fun);
+PMOD_EXPORT void callsite_resolve_identifier(struct pike_callsite *site, struct object *o, INT16 fun);
 PMOD_EXPORT void callsite_resolve_lfun(struct pike_callsite *site, struct object *o, int lfun);
 PMOD_EXPORT void callsite_execute(const struct pike_callsite *site);
 PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *s);
