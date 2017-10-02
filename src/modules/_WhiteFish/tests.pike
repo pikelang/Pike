@@ -1,11 +1,14 @@
 int failed;
 
+constant log_msg = Tools.Testsuite.log_msg;
+constant log_status = Tools.Testsuite.log_status;
+
 /* Ensure the sets contains the same indices */
 void ensure( mixed t, string msg )
 {
   if( !t )
   {
-    werror( msg+"\n" );
+    log_msg(msg+"\n");
     failed++;
   }
 }
@@ -14,9 +17,11 @@ void ensure_i( object r1, object r2, string msg )
 {
   if( !equal( column((array)r1,0), column((array)r2,0) ) )
   {
-    werror( msg+"\nOP1: %{%d, %}\nOP2: %{%d, %}\n",
-	  column((array)r1,0),
-	  column((array)r2,0) );
+    log_msg(msg+"\n"
+	    "OP1: %{%d, %}\n"
+	    "OP2: %{%d, %}\n",
+	    column((array)r1,0),
+	    column((array)r2,0));
     failed++;
   }
 }
@@ -26,10 +31,11 @@ void ensure_v( object r1, object r2, string msg )
 {
   if( !equal( (array)r1, (array)r2 ) )
   {
-    werror( msg+"\nGot     : %{%d, %} : %{%d, %}\nExpected: %{%d, %} : %{%d, %}\n\n\n",
+    log_msg(msg+"\n"
+	    "Got     : %{%d, %} : %{%d, %}\n"
+	    "Expected: %{%d, %} : %{%d, %}\n",
 	    column((array)r1,0), column((array)r1,1),
-	    column((array)r2,0), column((array)r2,1)
-	  );
+	    column((array)r2,0), column((array)r2,1));
     failed++;
   }
 }
@@ -38,7 +44,7 @@ void ensure_v( object r1, object r2, string msg )
 #define OP( X, Y ) ensure_v(X,Y,"Test "+(test++)+" failed: "+#X+" != "+#Y);
 #define ENSURE( X ) ensure(X,"Test "+(test++)+" failed: "+#X+" is not true");
 
-void main()
+int main()
 {
   int test;
   object r0 = _WhiteFish.ResultSet();
@@ -52,17 +58,27 @@ void main()
   ENSURE( r0->size() == 0 );  ENSURE( r1->size() == 3 );
   ENSURE( r2->size() == 3 );  ENSURE( r3->size() == 6 );
 
+  log_status("r0->memsize(): %d\n", r0->memsize());
   ENSURE( r0->memsize() );
+  log_status("r1->memsize(): %d\n", r1->memsize());
   ENSURE( r0->memsize() <= r1->memsize() );
+  log_status("r2->memsize(): %d\n", r2->memsize());
   ENSURE( r1->memsize() == r2->memsize() );
+  log_status("r3->memsize(): %d\n", r3->memsize());
   ENSURE( r2->memsize() <= r3->memsize() );
 
+  log_status("r0->overhead(): %d\n", r0->overhead());
   ENSURE( r0->overhead() );
+  log_status("r1->overhead(): %d\n", r1->overhead());
+  log_status("r2->overhead(): %d\n", r2->overhead());
   ENSURE( r1->overhead() == r2->overhead() );
+  log_status("r3->overhead(): %d\n", r3->overhead());
   ENSURE( r2->overhead() > r3->overhead() );
 
 
+  log_status("r1->dup()->overhead: %d\n", r1->dup()->overhead());
   ENSURE( r1->overhead() >= r1->dup()->overhead() );
+  log_status("r3->dup()->overhead: %d\n", r3->dup()->overhead());
   ENSURE( r2->overhead() >= r3->dup()->overhead() );
   ENSURE( r3->overhead() >= r3->dup()->overhead() );
   ENSURE( r0->overhead() >= r3->dup()->overhead() );
@@ -143,5 +159,6 @@ void main()
   OP( r3->add_ranking( r2 ), r3_r2 );
   OP( r3->add_ranking( r3 ), r3_r3 );
 
-  werror("Done %d tests, %d failed\n", test, failed );
+  Tools.Testsuite.report_result(test-failed, failed);
+  return !!failed;
 }
