@@ -1,1 +1,10 @@
-// -*- Pike -*-
+START_MARKER
+
+dnl -*- Pike -*-
+dnl Tests of the _WhiteFish module.
+
+test_tests([[
+  array a() { return Tools.Testsuite.run_script(({ "]]SRCDIR[[/tests.pike" })); }
+]])
+
+END_MARKER
