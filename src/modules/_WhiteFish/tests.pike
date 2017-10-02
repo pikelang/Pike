@@ -53,7 +53,7 @@ void main()
   ENSURE( r2->size() == 3 );  ENSURE( r3->size() == 6 );
 
   ENSURE( r0->memsize() );
-  ENSURE( r0->memsize() < r1->memsize() );
+  ENSURE( r0->memsize() <= r1->memsize() );
   ENSURE( r1->memsize() == r2->memsize() );
   ENSURE( r2->memsize() <= r3->memsize() );
 
@@ -65,7 +65,7 @@ void main()
   ENSURE( r1->overhead() >= r1->dup()->overhead() );
   ENSURE( r2->overhead() >= r3->dup()->overhead() );
   ENSURE( r3->overhead() >= r3->dup()->overhead() );
-  ENSURE( r0->overhead() == r3->dup()->overhead() );
+  ENSURE( r0->overhead() >= r3->dup()->overhead() );
   
   // 2: Check set _indices_
 
