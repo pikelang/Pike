@@ -453,7 +453,7 @@ static void f_resultset_or( INT32 args )
   struct object *right;
   int lp=-1, rp=-1;
 
-  int left_used=1, right_used=1;
+  int left_valid = 0, right_valid = 0;
   int left_left=1, right_left=1;
   int right_size, left_size;
 
@@ -464,8 +464,7 @@ static void f_resultset_or( INT32 args )
 
   set_r = T( WF_RESULTSET(right) )->d;
 
-
-  if( !set_l )
+  if( !set_l || !set_l->num_docs )
   {
     if( set_r )
       duplicate_resultset( res, right );
@@ -474,7 +473,7 @@ static void f_resultset_or( INT32 args )
     return;
   }
 
-  if( !set_r )
+  if( !set_r || !set_r->num_docs )
   {
     duplicate_resultset( res, left );
     pop_n_elems(args);
@@ -482,74 +481,63 @@ static void f_resultset_or( INT32 args )
     return;
   }
 
-  left_size = set_l->num_docs;
-  right_size = set_r->num_docs;
-  
+  left_left = !!(left_size = set_l->num_docs);
+  right_left = !!(right_size = set_r->num_docs);
+
   while( left_left || right_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( left_left && !left_valid ) /* New from left */
     {
-      if( ++lp == left_size )
+      if( ++lp >= left_size )
       {
 	left_left = 0;
 	left_rank = 0;
+	lp = left_size;
 	if( !right_left )
-	  continue;
+	  break;
       }
       else
       {
 	left_doc = set_l->hits[lp].doc_id;
 	left_rank = set_l->hits[lp].ranking;
-	left_used = 0;
-	if( !left_rank ) left_rank = right_rank;
-	if( !right_left )right_rank = left_rank;
+	left_valid = 1;
       }
     }
 
-    if( right_left && right_used ) /* New from right */
+    if( right_left && !right_valid ) /* New from right */
     {
-      if( ++rp == right_size )
+      if( ++rp >= right_size )
       {
 	right_left = 0;
 	right_rank = 0;
+	rp = right_size;
 	if( !left_left )
-	  continue;
+	  break;
       }
       else
       {
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
-	right_used = 0;
-	if( !left_rank ) left_rank = right_rank;
-	if( !right_left )right_rank = left_rank;
+	right_valid = 1;
       }
     }
 
-
-    if(!right_left || (left_doc <= right_doc))
+    if(left_valid && ((left_doc <= right_doc) || !right_valid))
     {
       if(left_doc>last)
 	wf_resultset_add( res, (last = left_doc), left_rank );
       else if( left_doc == last )
 	wf_resultset_add_ranking( res, -1, left_rank );
-      left_used=1;
-    }
-
-    if(!left_left || (right_doc <= left_doc ) )
+      left_valid = 0;
+    } else if(right_valid && (right_doc <= left_doc || !left_valid ) )
     {
       if(right_doc>last)
 	wf_resultset_add( res, (last = right_doc), right_rank );
       else if( right_doc == last )
 	wf_resultset_add_ranking( res, -1, right_rank );
-      right_used=1;
+      right_valid = 0;
     }
   }
-  if( !left_used )
-    if(left_doc!=last)
-      wf_resultset_add( res, (last = left_doc), left_rank );
-  if( !right_used )
-    if(right_doc!=last)
-      wf_resultset_add( res, (last = right_doc), right_rank );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -568,7 +556,7 @@ static void f_resultset_intersect( INT32 args )
   struct object *right;
   int lp=-1, rp=-1;
 
-  int left_used=1, right_used=1;
+  int left_valid = 0, right_valid = 0;
   int left_left=1, right_left=1;
   int right_size, left_size;
 
@@ -580,21 +568,22 @@ static void f_resultset_intersect( INT32 args )
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
 
-  if( !set_l || !set_r ) /* ({}) & X == ({}) && X & ({}) == ({}) */
+  if( !set_l || !set_l->num_docs || !set_r || !set_r->num_docs )
   {
+    /* ({}) & X == ({}) && X & ({}) == ({}) */
     pop_n_elems(args);
     wf_resultset_push(res);
     return;
   }
 
-  left_size = set_l->num_docs;
-  right_size = set_r->num_docs;
+  left_left = !!(left_size = set_l->num_docs);
+  right_left = !!(right_size = set_r->num_docs);
 
   while( left_left && right_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( !left_valid ) /* New from left */
     {
-      if( ++lp == left_size )
+      if( ++lp >= left_size )
       {
 	left_left = 0;
 	continue;
@@ -603,15 +592,13 @@ static void f_resultset_intersect( INT32 args )
       {
 	left_doc = set_l->hits[lp].doc_id;
 	left_rank = set_l->hits[lp].ranking;
-	if( !left_rank ) left_rank = right_rank;
-	if( !right_left )right_rank = left_rank;
-	left_used = 0;
+	left_valid = 1;
       }
     }
 
-    if( right_left && right_used ) /* New from right */
+    if( !right_valid ) /* New from right */
     {
-      if( ++rp == right_size )
+      if( ++rp >= right_size )
       {
 	right_left = 0;
 	continue;
@@ -620,33 +607,23 @@ static void f_resultset_intersect( INT32 args )
       {
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
-	if( !right_rank ) right_rank = left_rank;
-	if( !left_left ) left_rank = right_rank;
-	right_used = 0;
+	right_valid = 1;
       }
     }
 
-    if(!right_left || (left_doc <= right_doc))
-    {
-      if( left_doc == right_doc )
-      {	
-	if(left_doc>last)
-	  wf_resultset_add( res, (last = left_doc),
-			    left_rank+right_rank ); 
-      }
-      left_used=1;
+    if (left_doc < right_doc) {
+      left_valid = 0;
+      continue;
     }
 
-    if(!left_left || (right_doc <= left_doc))
-    {
-      if( right_doc == left_doc )
-      {	
-	if(right_doc>last)
-	  wf_resultset_add( res, (last = right_doc),
-			    left_rank+right_rank );
-      }
-      right_used=1;
+    if (right_doc < left_doc) {
+      right_valid = 0;
+      continue;
     }
+
+    if (right_rank < left_rank) left_rank = right_rank;
+    wf_resultset_add(res, left_doc, left_rank);
+    left_valid = right_valid = 0;
   }
   pop_n_elems( args );
   wf_resultset_push( res );
