@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-static void exit_blob_struct( );
+static void exit_blob_struct(struct object *o);
 
 /*
   +-----------+----------+---------+---------+---------+
@@ -544,7 +544,7 @@ static void f_blob__cast( INT32 args )
 
   free( zipp );
 
-  exit_blob_struct(); /* Clear this buffer */
+  exit_blob_struct(NULL); /* Clear this buffer */
   pop_n_elems( args );
   push_string( make_shared_binary_string( (char *)res->data, res->size ) );
   wf_buffer_free( res );
@@ -556,12 +556,18 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void exit_blob_struct(struct object * o)
+/* NB: This function is called directly from f_blob__cast() above,
+ *     and thus needs to be prepared to be called again.
+ */
+static void exit_blob_struct(struct object * UNUSED(o))
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
-    if( THIS->hash[i] )
+    if( THIS->hash[i] ) {
       free_hash( THIS->hash[i] );
+      THIS->hash[i] = NULL;
+    }
+  THIS->memsize = THIS->size = 0;
 }
 
 void init_blob_program(void)
