@@ -563,11 +563,10 @@ static void exit_blob_struct(struct object * UNUSED(o))
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
-    if( THIS->hash[i] ) {
+    if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-      THIS->hash[i] = NULL;
-    }
-  THIS->memsize = THIS->size = 0;
+  /* Prepare for next use. */
+  memset(THIS, 0, sizeof(struct blob_data));
 }
 
 void init_blob_program(void)
