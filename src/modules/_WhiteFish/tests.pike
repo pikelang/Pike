@@ -44,9 +44,10 @@ void ensure_v( object r1, object r2, string msg )
 #define OP( X, Y ) ensure_v(X,Y,"Test "+(test++)+" failed: "+#X+" != "+#Y);
 #define ENSURE( X ) ensure(X,"Test "+(test++)+" failed: "+#X+" is not true");
 
-int main()
+int test;
+
+void resultset_tests()
 {
-  int test;
   object r0 = _WhiteFish.ResultSet();
   object r1 = _WhiteFish.ResultSet( ({ 1,    3,    5 }));
   object r2 = _WhiteFish.ResultSet( ({    2,    4,    6 }));
@@ -158,6 +159,116 @@ int main()
   OP( r3->add_ranking( r1 ), r3_r1 );
   OP( r3->add_ranking( r2 ), r3_r2 );
   OP( r3->add_ranking( r3 ), r3_r3 );
+}
+
+void blob_tests()
+{
+  object bs1 = _WhiteFish.Blobs();
+  object bs2 = _WhiteFish.Blobs();
+
+  log_status("Adding words to blobs...\n");
+  test++;
+  for(int i=0; i < 1024; i++) {
+    // Six binary words per document...
+    array(string) words = sprintf("%09b", ((i*521) & 511))/3;
+    bs1->add_words(i, words, 0);
+    bs1->add_words(i, sprintf("%09b", i & 511)/3, 1);
+
+    words = sprintf("%09b", ((i*523) & 511))/3;
+    bs2->add_words(i, words, 0);
+    bs2->add_words(i, sprintf("%09b", i & 511)/3, 1);
+  }
+
+  log_status("Reading blobs [1]...\n");
+  test++;
+  mapping(string:_WhiteFish.Blob) blobs1 = ([]);
+  int btest = test;
+  while(1) {
+    array(string) word_hits = bs1->read();
+    if (!word_hits[0]) {
+      if (sizeof(blobs1) != 8) {
+	log_msg("Test %d: Unexpected number of words in blobs #1!\n", btest);
+	failed++;
+      }
+      break;
+    }
+    log_status("Blobs #1, Word: %O\n", word_hits[0]);
+    test++;
+    if (blobs1[word_hits[0]]) {
+      log_msg("Test %d: Blob for word %O already existed!\n",
+	      test, word_hits[0]);
+      failed++;
+    }
+    // NB: Direct init.
+    blobs1[word_hits[0]] = _WhiteFish.Blob(word_hits[1]);
+    string probe = blobs1[word_hits[0]]->data();
+    test++;
+    if (word_hits[1] != probe) {
+      log_msg("Test %d: probe mismatch: %O != %O\n", test, probe, word_hits[1]);
+      failed++;
+    }
+    blobs1[word_hits[0]]->merge(probe);
+  }
+
+  log_status("Reading blobs [2]...\n");
+  test++;
+  mapping(string:_WhiteFish.Blob) blobs2 = ([]);
+  btest = test;
+  while(1) {
+    array(string) word_hits = bs2->read();
+    if (!word_hits[0]) {
+      if (sizeof(blobs2) != 8) {
+	log_msg("Test %d: Unexpected number of words in blobs #2!\n", btest);
+	failed++;
+      }
+      break;
+    }
+    log_status("Blobs #2, Word: %O\n", word_hits[0]);
+    test++;
+    if (blobs2[word_hits[0]]) {
+      log_msg("Test %d: Blob for word %O already existed!\n",
+	      test, word_hits[0]);
+      failed++;
+    }
+    // NB: Empty init followed by merge.
+    blobs2[word_hits[0]] = _WhiteFish.Blob();
+    blobs2[word_hits[0]]->merge(word_hits[1]);
+    string probe = blobs2[word_hits[0]]->data();
+    test++;
+    if (word_hits[1] != probe) {
+      log_msg("Test %d: probe mismatch: %O != %O\n", test, probe, word_hits[1]);
+      failed++;
+    }
+    blobs2[word_hits[0]]->merge(probe);
+  }
+
+  log_status("Merging blob 1 and 2...\n");
+  foreach(blobs1; string word; _WhiteFish.Blob b1) {
+    test++;
+    _WhiteFish.Blob b2 = m_delete(blobs2, word);
+    if (!b2) {
+      log_msg("Test %d: No blob #2 for word %O.\n", test, word);
+      failed++;
+      b2 = _WhiteFish.Blob();
+    }
+    test++;
+    log_status("Merging blobs for word %O...", word);
+    b1->merge(b2->data());
+  }
+
+  test++;
+  if (sizeof(blobs2)) {
+    log_msg("Test %d: Blobs #2 still contains %d unmerged words.\n",
+	    test, sizeof(blobs2));
+    failed++;
+  }
+}
+
+int main()
+{
+  resultset_tests();
+
+  blob_tests();
 
   Tools.Testsuite.report_result(test-failed, failed);
   return !!failed;
