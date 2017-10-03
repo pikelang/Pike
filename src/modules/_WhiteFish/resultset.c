@@ -377,10 +377,13 @@ static void f_resultset_dup( INT32 args )
   struct object *o = clone_object( resultset_program, 0 );
   if(THIS->d)
   {
-    ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
-    memcpy( d, THIS->d, THIS->d->num_docs * 8 + 4 );
-    T(o)->d = d;
-    T(o)->allocated_size = T(o)->d->num_docs;
+    if (T(o)->allocated_size < THIS->d->num_docs) {
+      ResultSet *d = xalloc( THIS->d->num_docs * 8 + 4 );
+      if (T(o)->d) free(T(o)->d);
+      T(o)->d = d;
+      T(o)->allocated_size = T(o)->d->num_docs;
+    }
+    memcpy( T(o)->d, THIS->d, THIS->d->num_docs * 8 + 4 );
   }
   pop_n_elems( args );
   wf_resultset_push( o );
@@ -420,6 +423,10 @@ static void f_resultset_overhead( INT32 args )
 static void duplicate_resultset( struct object *dest,
 				 struct object *src )
 {
+  if (T(dest)->d) {
+    free(T(dest)->d);
+    T(dest)->d = NULL;
+  }
   if( src->refs == 1 )
   {
     /* Destructively move the data. */
@@ -433,7 +440,7 @@ static void duplicate_resultset( struct object *dest,
     /* Ok, we have to copy it. */
     int size = 4+4*T(src)->allocated_size*2;
     T(dest)->allocated_size = T(src)->allocated_size;
-    T(dest)->d              = malloc( size );
+    T(dest)->d              = xalloc( size );
     memcpy( T(dest)->d, T(src)->d, size );
   }
 }
@@ -844,9 +851,13 @@ static struct object *dup_dateset()
   struct object *o = clone_object( dateset_program, 0 );
   if(THIS->d)
   {
-    ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
-    T(o)->d = d;
-    T(o)->allocated_size = T(o)->d->num_docs;
+    ResultSet *d;
+    if (T(o)->allocated_size <= THIS->d->num_docs) {
+      d = xalloc( THIS->d->num_docs * 8 + 4 );
+      if (T(o)->d) free(T(o)->d);
+      T(o)->d = d;
+      T(o)->allocated_size = T(o)->d->num_docs;
+    }
     T(o)->d->num_docs = 0;
   }
   else
