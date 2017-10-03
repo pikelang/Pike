@@ -308,6 +308,7 @@
 #define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
 
 #define INIT_FIFO(pre,TYPE)
+#define REINIT_FIFO(pre,TYPE)
 
 #else /* NEED_SIGNAL_SAFE_FIFO */
 
@@ -351,6 +352,12 @@
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[0], 1);	\
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
 }while(0)
+
+#define REINIT_FIFO(pre,TYPE) do {			\
+  close(PIKE_CONCAT(pre,_fd)[0]);			\
+  close(PIKE_CONCAT(pre,_fd)[1]);			\
+  INIT_FIFO(pre,TYPE);					\
+} while(0)
 
 #endif /* else NEED_SIGNAL_SAFE_FIFO */
 
@@ -4303,6 +4310,10 @@ void Pike_f_fork(INT32 args)
     /* forked copy. there is now only one thread running, this one. */
     num_threads=1;
 #endif
+
+    REINIT_FIFO(sig, unsigned char);
+    REINIT_FIFO(wait,wait_data);
+
     /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
     push_int(0);
