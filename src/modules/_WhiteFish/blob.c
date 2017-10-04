@@ -538,7 +538,7 @@ static void f_blob__cast( INT32 args )
     if( zipp[i].b->size < 5 ) {
       fprintf(stderr, "zipp[%d]: doc_id: %d, b: %p (%d bytes)\n",
 	      i, zipp[i].id, zipp[i].b->data, zipp[i].b->size);
-      Pike_fatal( "Expected at least 7 bytes! (0 hits)\n");
+      Pike_fatal( "Expected at least 5 bytes! (0 hits)\n");
     }
 #endif
     if((nh = zipp[i].b->data[4]) > 1 )
