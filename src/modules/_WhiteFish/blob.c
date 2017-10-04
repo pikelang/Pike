@@ -273,13 +273,27 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
   {
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
-    struct hash *h = find_hash( d, docid );
+    int remaining = b->size - b->rpos;
+    struct hash *h;
+    if (nhits > (remaining>>1)) {
+      fprintf(stderr, "Invalid blob entry for doc 0x%08x: %d hits of %d missing.\n",
+	      (unsigned INT32)docid, nhits - (remaining>>1), nhits);
+      nhits = remaining>>1;
+      remaining = -1;
+    }
+    if (!nhits) {
+      fprintf(stderr, "Invalid blob entry for document 0x%08x (0 hits!).\n",
+	      (unsigned INT32)docid);
+      break;
+    }
+    h = find_hash( d, docid );
     /* Make use of the fact that this dochash should be empty, and
      * assume that the incoming data is valid
      */
-    wf_buffer_rewind_r( b, 5 );
-    wf_buffer_rewind_w( h->data, -1 );
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
+    wf_buffer_rewind_w( h->data, 1 );
+    wf_buffer_wbyte(h->data, nhits);
+    wf_buffer_memcpy( h->data, b, nhits*2 );
+    if (remaining < 0) break;
   }
   wf_buffer_free( b );
 }
