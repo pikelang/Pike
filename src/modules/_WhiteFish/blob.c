@@ -534,16 +534,33 @@ static void f_blob__cast( INT32 args )
   {
     int nh;
 #ifdef PIKE_DEBUG
-    if( zipp[i].b->size < 7 )
-      fatal( "Expected at least 7 bytes! (1 hit)\n");
-    else
+    /* NB: As new_hash() returns a zero-length hash struct (ie 5 bytes),
+     *     requiring 7 bytes is a bit excessive.
+     */
+    if( zipp[i].b->size < 5 ) {
+      fprintf(stderr, "zipp[%d]: doc_id: %d, b: %p (%d bytes)\n",
+	      i, zipp[i].id, zipp[i].b->data, zipp[i].b->size);
+      Pike_fatal( "Expected at least 5 bytes! (0 hits)\n");
+    }
 #endif
     if((nh = zipp[i].b->data[4]) > 1 )
     {
 #ifdef HANDLES_UNALIGNED_READ
+#ifdef PIKE_DEBUG
+      if (nh<<1 != zipp[i].b->size-5) {
+	Pike_fatal("Unexpected blob size: %d != %d\n",
+		   nh<<1, zipp[i].b->size-5);
+      }
+#endif
       fsort( zipp[i].b->data+5, nh, 2, (void *)cmp_hit );
 #else
       short *data = malloc( nh * 2 );
+#ifdef PIKE_DEBUG
+      if (nh<<1 != zipp[i].b->size-5) {
+	Pike_fatal("Unexpected blob size: %d != %d\n",
+		   nh<<1, zipp[i].b->size-5);
+      }
+#endif
       memcpy( data,  zipp[i].b->data+5, nh * 2 );
       fsort( data, nh, 2, (void *)cmp_hit );
       memcpy( zipp[i].b->data+5, data, nh * 2 );

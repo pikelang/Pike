@@ -114,8 +114,13 @@ int wf_buffer_memcpy( struct buffer *d,
 		      struct buffer *s,
 		      int nelems )
 {
-  if( (s->rpos+nelems) > s->size )
+  if( (s->rpos+nelems) > s->size ) {
+#ifdef PIKE_DEBUG
+    Pike_fatal("wf_buffer_memcpy(%p, %p, %d): Attempt to copy more than source (%d).\n",
+	       d, s, nelems, s->size-s->rpos);
+#endif
     nelems = s->size-s->rpos;
+  }
   if( nelems <= 0 )
     return 0;
   wf_buffer_make_space( d, nelems );
