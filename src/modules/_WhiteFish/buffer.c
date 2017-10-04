@@ -93,6 +93,7 @@ void wf_buffer_rewind_w( struct buffer *b, int n )
     b->size -= n;
   else
     b->size = 0;
+  if (b->size > b->rpos) b->rpos = b->size;
 }
 
 int wf_buffer_rbyte( struct buffer *b )
