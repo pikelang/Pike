@@ -242,7 +242,7 @@ static inline int my_abs(int a) { return (a<0)?-a:a; }
 **!        string foo=Stina->make_ascii(@Stina4,40,4,8);
 **!     </pre>
 **!
-**! returns some nice acsii-art.
+**! returns some nice ASCII art.
 **! see also: orient, orient4
 **! note
 **!	<b>experimental status</b>; may not be exact the same
