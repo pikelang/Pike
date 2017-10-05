@@ -65,12 +65,6 @@ o Threads
   Fixed a race condition when creating a new thread while threads
   are disabled.
 
-o Signal handling
-
-  Fixed an error where processes would share the same queue for
-  pending signals after using fork().  As a result, a signal sent to
-  one process could trigger a signal handler in the other process.
-
 o WhiteFish
 
   - Fixed issues with merging of empty sets.
@@ -96,6 +90,12 @@ Runtime
 o Fixed NULL-dereference by the gc when running count_memory() --with-dmalloc.
 
 o Fixed fatal "Didn't find gc marker as expected" at exit --with-cleanup-on-exit.
+
+o Signal handling
+
+  Fixed an error where processes would share the same queue for
+  pending signals after using fork().  As a result, a signal sent to
+  one process could trigger a signal handler in the other process.
 
 Building & Tools
 ----------------
