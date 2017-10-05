@@ -65,6 +65,18 @@ o Threads
   Fixed a race condition when creating a new thread while threads
   are disabled.
 
+o WhiteFish
+
+  - Fixed issues with merging of empty sets.
+
+  - Fixed rank calculation on intersection of sets.
+
+  - Fixed multiple memory leaks.
+
+  - Improved behavior when provided with corrupted input.
+
+  - The module is now tested by the normal testsuite.
+
 Compiler
 --------
 
