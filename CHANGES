@@ -8,7 +8,7 @@ o Crypto.ECC
 
   - Added get_point() to Crypto.ECC.Curve.
 
-  - Crypto.ECC.Curve.Point objects can now be compared with _equal().
+  - Crypto.ECC.Curve.Point objects can now be compared with equal().
 
 o JWK
 
@@ -80,16 +80,19 @@ o WhiteFish
 Compiler
 --------
 
-o Improved syntax error recovery, including eliminating some fatal conditions.
+o Improved syntax error recovery, including eliminating some fatal
+  conditions.
 
 o Fixed a memory leak in the preprocessor.
 
 Runtime
 -------
 
-o Fixed NULL-dereference by the gc when running count_memory() --with-dmalloc.
+o Fixed NULL-dereference by the GC when running count_memory() on a
+  Pike compiled with --with-dmalloc.
 
-o Fixed fatal "Didn't find gc marker as expected" at exit --with-cleanup-on-exit.
+o Fixed fatal "Didn't find gc marker as expected" at exit on a Pike
+  compiled with --with-cleanup-on-exit.
 
 o Signal handling
 
