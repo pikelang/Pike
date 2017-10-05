@@ -532,7 +532,7 @@ static void f_blob__cast( INT32 args )
   /* 2: Sort in the blobs */
   for( i = 0; i<zp; i++ )
   {
-    int nh;
+    unsigned int nh;
 #ifdef PIKE_DEBUG
     /* NB: As new_hash() returns a zero-length hash struct (ie 5 bytes),
      *     requiring 7 bytes is a bit excessive.
