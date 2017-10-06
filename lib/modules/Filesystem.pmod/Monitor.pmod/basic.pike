@@ -11,7 +11,7 @@
 //! This module is intended to be used for incremental scanning of
 //! a filesystem.
 //!
-//! Supports FSEvents on MacOS X and Inotify on Linux to provide low 
+//! Supports FSEvents on MacOS X and Inotify on Linux to provide low
 //! overhead monitoring; other systems use a less efficient polling approach.
 //!
 //! @seealso
@@ -770,7 +770,7 @@ protected class Monitor(string path,
     } else {
       return 0;
     }
-    
+
     //  Note: ctime seems to change unexpectedly when running ImageMagick
     //        on NFS disk so we disable it for the moment [bug 5587].
     if (last_change != -0x7fffffff &&
@@ -1364,7 +1364,7 @@ int filter_file(string path)
       MON_WERR("skipping %O\n", path);
       return 1;
     }
-    
+
   return 0;
 }
 
