@@ -225,6 +225,7 @@ protected class Monitor(string path,
 				// to indicate immediate stabilization
 				// (avoid an extra check() round to
 				// let the stat stabilize).
+  private bool initialized = false;
   array(string) files;
 
   //! Event tracing callback.
@@ -483,7 +484,7 @@ protected class Monitor(string path,
       //  adjusted to the max interval.
       int mtime = max(st->mtime, st->ctime);
       int d = ((time(1) - mtime) >> 2);
-      if (!next_poll && (d >= 0)) {
+      if (!initialized && (d >= 0)) {
 	// Assume that mtime is reasonable at startup.
 	last_change = mtime;
       }
@@ -496,11 +497,12 @@ protected class Monitor(string path,
       if (d < 0) d = 1;
       if (d < delta) delta = d;
     }
-    if (!next_poll) {
+    if (!initialized) {
       // Attempt to distribute polls evenly at startup, and to
       // make sure that the full set of directory contents is
       // found reasonably fast.
       delta = 1 + random(delta >> 2);
+      initialized = true;
     }
 
     MON_WERR("Next poll in %d seconds.\n", (delta || 1));
