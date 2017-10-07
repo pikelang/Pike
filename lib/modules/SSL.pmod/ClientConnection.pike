@@ -777,7 +777,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 		     "version = %s\n"
 		     "session_id=%O\n"
-		     "cipher suite: %O\n"
+                     "cipher suite: 0x%x\n"
 		     "compression method: %O\n",
 		     fmt_version(version),
 		     session_id, cipher_suite, compression_method);
