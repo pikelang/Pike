@@ -1213,6 +1213,39 @@ void amd64_end_function(int UNUSED(no_pc))
   branch_check_threads_update_etc = 0;
 }
 
+#ifdef MACHINE_CODE_STACK_FRAMES
+static void amd64_pop_internal_c_frame()
+{
+  /* C.f. amd64_ins_start_function() */
+  mov_reg_reg(P_REG_RBP, P_REG_RSP);
+  pop(P_REG_RBP);
+  add_reg_imm(P_REG_RSP, 8);
+}
+#endif /* MACHINE_CODE_STACK_FRAMES */
+
+static void amd64_load_fp_reg(void);
+
+void amd64_ins_start_function(void)
+{
+#ifdef MACHINE_CODE_STACK_FRAMES
+  LABELS();
+  amd64_load_fp_reg();
+  /* Note: really mem16, but we & with PIKE_FRAME_RETURN_INTERNAL anyway */
+  mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
+  and_reg32_imm( P_REG_RAX, PIKE_FRAME_RETURN_INTERNAL);
+  jz( &label_A );
+
+  /* This is an internal frame (no entry prologue), so we'll insert a
+     minimal frame that can be used to unwind the C stack. */
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, next), P_REG_RAX);
+  mov_mem_reg(P_REG_RAX, OFFSETOF(pike_frame, return_addr), P_REG_RAX);
+  push(P_REG_RAX);
+  push(P_REG_RBP);
+  mov_reg_reg(P_REG_RSP, P_REG_RBP);
+
+  LABEL_A;
+#endif /* MACHINE_CODE_STACK_FRAMES */
+}
 
 /* Machine code entry prologue.
  *
@@ -1747,8 +1780,15 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
     LABEL_A;
     /* Use C-stack for counter. We have padding added in entry */
 #ifndef USE_VALGRIND
+#ifndef MACHINE_CODE_STACK_FRAMES
+    /* FIXME: Counter disabled when internal stack frames are used
+       since RSP won't point to the entry-level stack frame with
+       padding. Dunno if there should be a counter for every internal
+       frame too? But that would double C-stack usage per internal
+       frame due to 16 byte alignment. */
     add_mem8_imm( P_REG_RSP, 0, 1 );
     jno( &label_B );
+#endif
 #endif
     call_rel_imm32( branch_check_threads_update_etc );
 #ifndef USE_VALGRIND
@@ -1811,7 +1851,7 @@ void ins_f_byte(unsigned int b)
 {
   int flags;
   void *addr;
-  INT32 rel_addr = 0;
+
   LABELS();
 
   b-=F_OFFSET;
@@ -2425,12 +2465,87 @@ void ins_f_byte(unsigned int b)
 
   case F_CATCH:
     {
-      /* Special argument for the F_CATCH instruction. */
-      addr = inter_return_opcode_F_CATCH;
+      INT32 base_addr = 0;
+
+      LABELS();
       mov_rip_imm_reg(0, ARG1_REG);	/* Address for the POINTER. */
-      rel_addr = PIKE_PC;
+      base_addr = PIKE_PC;
+
+      amd64_call_c_function (setup_catch_context);
+      mov_reg_reg(P_REG_RAX, P_REG_RBX);
+
+      /* Pass a pointer to Pike_interpreter.catch_ctx.recovery.recovery to
+	 LOW_SET_JMP. */
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catch_ctx),
+		   ARG1_REG);
+      add_reg_imm_reg (ARG1_REG,
+		       OFFSETOF(catch_context, recovery) +
+		       OFFSETOF(JMP_BUF, recovery),
+		       ARG1_REG);
+
+      /* Copy the pointer to Pike_interpreter.catching_eval_jmpbuf
+	 too, for compliance with F_CATCH conventions.
+	 FIXME: Just ignore catching_eval_jmpbuf in OPCODE_INLINE_CATCH mode? */
+      mov_reg_mem (ARG1_REG,
+		   Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+
+      /* Now, call the actual setjmp function. */
+      amd64_call_c_function (LOW_SETJMP_FUNC);
+
+      test_reg (P_REG_RAX);
+      jnz (&label_A);
+
+      jmp (&label_B);
+
+      LABEL_A; // Got exception
+
+      amd64_call_c_function (handle_caught_exception);
+      mov_reg_reg(P_REG_RAX, P_REG_RBX);
+
+      /* Restore catching_eval_jmpbuf from catch_ctx->recovery.
+         FIXME: Just ignore catching_eval_jmpbuf in OPCODE_INLINE_CATCH mode? */
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catch_ctx),
+		   P_REG_RAX);
+
+      test_reg (P_REG_RAX);
+      jz (&label_B); /* Pike_interpreter.catch_ctx == 0 */
+
+      add_reg_imm_reg (P_REG_RAX,
+		       OFFSETOF(catch_context, recovery),
+		       P_REG_RAX);
+
+      mov_mem_reg (Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, recoveries),
+		   P_REG_RCX);
+
+      cmp_reg_reg(P_REG_RAX, P_REG_RCX);
+      jne (&label_B); /* Pike_interpreter.recoveries !=
+			 Pike_interpreter.catch_ctx->recovery */
+      add_reg_imm_reg (P_REG_RAX,
+		       OFFSETOF(JMP_BUF, recovery),
+		       P_REG_RAX);
+      mov_reg_mem (P_REG_RAX,
+		   Pike_interpreter_reg,
+		   OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+      jmp (&label_C);
+      LABEL_B;
+      /* Zero Pike_interpreter.catching_eval_jmpbuf. */
+      mov_imm_mem(0,
+		  Pike_interpreter_reg,
+		  OFFSETOF(Pike_interpreter_struct, catching_eval_jmpbuf));
+
+      LABEL_C;
+      /* RBX now contains either the address returned from
+	 setup_catch_context, or the one from
+	 handle_caught_exception. */
+      jmp_reg(P_REG_RBX);
+
+      upd_pointer(base_addr - 4, PIKE_PC - base_addr);
     }
-    break;
+    return;
 
     /* sp-1 = undefinedp(sp-1) */
   case F_UNDEFINEDP:
@@ -2651,6 +2766,11 @@ void ins_f_byte(unsigned int b)
     amd64_call_c_function( low_return_pop );
 
     LABEL_D;
+#ifdef MACHINE_CODE_STACK_FRAMES
+    /* We know that this is a RETURN_INTERNAL frame, so we must pop
+       the C stack. */
+    amd64_pop_internal_c_frame();
+#endif /* MACHINE_CODE_STACK_FRAMES */
     fp_reg = -1;
     amd64_load_fp_reg();
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame, return_addr), P_REG_RAX );
@@ -2672,6 +2792,17 @@ void ins_f_byte(unsigned int b)
     LABEL_A;
     return;
   }
+
+  if (instrs[b].flags & I_RETURN) {
+#ifdef MACHINE_CODE_STACK_FRAMES
+    amd64_load_fp_reg();
+    /* Load flags prior to calling the C opcode (which typically pops
+       the frame in I_RETURN instructions. Note: really mem16, but we
+       & with PIKE_FRAME_RETURN_INTERNAL below. */
+    mov_mem32_reg(fp_reg, OFFSETOF(pike_frame, flags), P_REG_RBX);
+#endif /* MACHINE_CODE_STACK_FRAMES */
+  }
+
   amd64_call_c_opcode(addr,flags);
 
   if (instrs[b].flags & I_RETURN) {
@@ -2683,26 +2814,35 @@ void ins_f_byte(unsigned int b)
       mov_rip_imm_reg(JUMP_EPILOGUE_SIZE, P_REG_RCX);
     }
     cmp_reg_imm(P_REG_RAX, -1);
-   jne(&label_A);
+    jne(&label_A);
     amd64_return_from_function();
-   LABEL_A;
+    LABEL_A;
 
     if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
       cmp_reg_reg( P_REG_RAX, P_REG_RCX );
-      je( &label_B );
-      jmp_reg(P_REG_RAX);
-      LABEL_B;
-      return;
+      je( &label_C );
     }
-  }
-  if (flags & I_JUMP) {
+
+#ifdef MACHINE_CODE_STACK_FRAMES
+    /* Check if we should pop C stack. The flags word of the frame
+       prior to calling the C opcode is loaded into RBX above. */
+    and_reg32_imm(P_REG_RBX, PIKE_FRAME_RETURN_INTERNAL);
+    jz( &label_B );
+    amd64_pop_internal_c_frame();
+
+    LABEL_B;
+#endif /* MACHINE_CODE_STACK_FRAMES */
+
     jmp_reg(P_REG_RAX);
 
-    if (b + F_OFFSET == F_CATCH) {
-      upd_pointer(rel_addr - 4, PIKE_PC - rel_addr);
-    }
+    LABEL_C;
+    return;
+  }
+
+  if (flags & I_JUMP) {
+    jmp_reg(P_REG_RAX);
   }
 }
 
@@ -3970,8 +4110,10 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       amd64_load_fp_reg();
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
       add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
-      if( c > 1 )
+      if( c > 1 ) {
+	push(P_REG_RBP);
         add_reg_imm_reg(P_REG_RBX, c*sizeof(struct svalue), P_REG_RBP );
+      }
 
      LABEL_A;
       amd64_free_svalue(P_REG_RBX, 0);
@@ -3982,6 +4124,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
         add_reg_imm(P_REG_RBX, sizeof(struct svalue ) );
         cmp_reg_reg( P_REG_RBX, P_REG_RBP );
         jne(&label_A);
+	pop(P_REG_RBP);
       }
     }
     return;
