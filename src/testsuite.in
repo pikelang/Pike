@@ -1245,6 +1245,22 @@ test_any([[
   return Bar()->f();
 ]], 1)
 
+dnl equal() on functions.
+test_any([[
+  class A { int a(){} }
+  return equal(A()->a, A()->a);
+]], 1)
+test_any([[
+  class A { int a(){} }
+  class B { inherit A; }
+  return equal(A()->a, B()->a);
+]], 1)
+test_any([[
+  class A { int a(){} }
+  class B { inherit A; int a(){} }
+  return equal(A()->a, C()->a);
+]], 0)
+
 test_do([[
 class Foo
 {

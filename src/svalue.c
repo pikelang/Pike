@@ -888,9 +888,44 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
     case T_INT:
     case T_STRING:
     case T_FLOAT:
-    case T_FUNCTION:
     case T_PROGRAM:
       return 0;
+
+    case T_FUNCTION:
+      {
+	/* Consider functions the same if they are references to the same
+	 * identifier in the same class.
+	 */
+	struct object *a_obj = NULL, *b_obj = NULL;
+	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
+	struct identifier *a_id, *b_id;
+	if ((a_fun == FUNCTION_BUILTIN) || (b_fun == FUNCTION_BUILTIN)) {
+	  /* NB: Handled by is_eq() above. */
+	  return 0;
+	}
+	a_obj = a->u.object;
+	b_obj = b->u.object;
+	if ((a_obj->prog == pike_trampoline_program) &&
+	    (a_fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))) {
+	  struct pike_trampoline *a_tramp = get_storage(a_obj, pike_trampoline_program);
+	  if (!a_tramp || !a_tramp->frame) return 0;
+	  a_obj = a_tramp->frame->current_object;
+	  a_fun = a_tramp->func;
+	}
+	if ((b_obj->prog == pike_trampoline_program) &&
+	    (b_fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))) {
+	  struct pike_trampoline *b_tramp = get_storage(b_obj, pike_trampoline_program);
+	  if (!b_tramp || !b_tramp->frame) return 0;
+	  b_obj = b_tramp->frame->current_object;
+	  b_fun = b_tramp->func;
+	}
+	if (a_obj->prog == b_obj->prog) {
+	  /* Common case. */
+	  if (a_fun == b_fun) return 1;
+	}
+	/* Consider a and b the same if they are the same identifier. */
+	return ID_FROM_INT(a_obj->prog, a_fun) == ID_FROM_INT(b_obj->prog, b_fun);
+      }
 
     case T_TYPE:
       return pike_types_le(a->u.type, b->u.type) &&

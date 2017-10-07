@@ -215,6 +215,11 @@ o Web.Auth & Web.Api
 New features
 ------------
 
+o predef::equal()
+
+  equal() on functions now checks if their definitions are same identifier
+  in the same program.
+
 o predef::gc()
 
   gc() called with a weak mapping as argument now removes weak references
