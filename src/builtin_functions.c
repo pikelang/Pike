@@ -2194,7 +2194,6 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   struct pike_string *out;
   ptrdiff_t len = 0;
   int shift = 0;
-  ptrdiff_t i,j=0;
   INT_TYPE extended = 0;
   INT32 min, max;
 
@@ -2221,48 +2220,57 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   switch (shift) {
     case 0: {
       p_wchar0 *out_str = STR0 (out);
-      for(i=0; i < in->len;) {
-	unsigned int c = STR0(in)[i++];
+      const p_wchar0 *in_str = STR0(in);
+      ptrdiff_t len = out->len;
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  /* 11bit */
-	  unsigned int c2 = STR0(in)[i++] & 0x3f;
+	  unsigned int c2 = *(in_str++) & 0x3f;
 	  c &= 0x1f;
 	  c = (c << 6) | c2;
 	}
-	out_str[j++] = c;
+	out_str[j] = c;
       }
       break;
     }
 
     case 1: {
       p_wchar1 *out_str = STR1 (out);
-      for(i=0; i < in->len;) {
-	unsigned int c = STR0(in)[i++];
+      const p_wchar0 *in_str = STR0(in);
+      ptrdiff_t len = out->len;
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  if ((c & 0xe0) == 0xc0) {
 	    /* 11bit */
-	    unsigned int c2 = STR0(in)[i++] & 0x3f;
+	    unsigned int c2 = *(in_str++) & 0x3f;
 	    c &= 0x1f;
 	    c = (c << 6) | c2;
 	  } else {
 	    /* 16bit */
-	    unsigned int c2 = STR0(in)[i++] & 0x3f;
-	    unsigned int c3 = STR0(in)[i++] & 0x3f;
+	    unsigned int c2 = *(in_str++) & 0x3f;
+	    unsigned int c3 = *(in_str++) & 0x3f;
 	    c &= 0x0f;
 	    c = (c << 12) | (c2 << 6) | c3;
 	  }
 	}
-	out_str[j++] = c;
+	out_str[j] = c;
       }
       break;
     }
 
     case 2: {
       p_wchar2 *out_str = STR2 (out);
-      for(i=0; i < in->len;) {
-	unsigned int c = STR0(in)[i++];
+      const p_wchar0 *in_str = STR0(in);
+      ptrdiff_t len = out->len;
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  int cont = 0;
@@ -2292,7 +2300,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	    c = 0;
 	  }
 	  while(cont--) {
-	    unsigned int c2 = STR0(in)[i++] & 0x3f;
+	    unsigned int c2 = *(in_str++) & 0x3f;
 	    c = (c << 6) | c2;
 	  }
 	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
@@ -2301,7 +2309,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
 	  }
 	}
-	out_str[j++] = c;
+	out_str[j] = c;
       }
       break;
     }
