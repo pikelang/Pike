@@ -1258,7 +1258,7 @@ test_any([[
 test_any([[
   class A { int a(){} }
   class B { inherit A; int a(){} }
-  return equal(A()->a, C()->a);
+  return equal(A()->a, B()->a);
 ]], 0)
 
 test_do([[
