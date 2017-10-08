@@ -2831,6 +2831,284 @@ static inline unsigned INT32 div5_8bit(unsigned INT32 x) {
    return ((x * 0xCD) >> 8) >> 2;
 }
 
+ATTRIBUTE((noinline))
+static size_t pike_string_utf8_decode_length_slowpath(size_t len, const unsigned char *in,
+                                                      const unsigned char *end, INT32 args,
+                                                      int extended, int *_shift) {
+  int shift = 0;
+
+  for(; in < end; in++) {
+    unsigned int c = *in;
+    len++;
+    if (LIKELY(!(c & 0x80))) continue;
+    int cont = 0;
+
+    /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+     * Byte Sequences
+     *
+     *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+     * 000000-00007f   00-7f
+     * 000080-0007ff   c2-df     80-bf
+     * 000800-000fff    e0       a0-bf     80-bf
+     * 001000-00cfff   e1-ec     80-bf     80-bf
+     * 00d000-00d7ff    ed       80-9f     80-bf
+     * 00e000-00ffff   ee-ef     80-bf     80-bf
+     * 010000-03ffff    f0       90-bf     80-bf     80-bf
+     * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+     * 100000-10ffff    f4       80-8f     80-bf     80-bf
+     */
+
+    if ((c & 0xc0) == 0x80) {
+      bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+                     NULL, Pike_sp - args,
+                     "Invalid continuation character 0x%02x.\n", c);
+    }
+
+#define GET_CHAR(in, c) do {						\
+      in++;								\
+      if (in >= end)						        \
+        bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+                       NULL, Pike_sp - args,				\
+                       "Truncated UTF-8 sequence at end of string.\n"); \
+      c = *in;						                \
+    } while(0)
+#define GET_CONT_CHAR(in, c) do {					\
+      GET_CHAR(in, c);						        \
+      if ((c & 0xc0) != 0x80)						\
+        bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+                       NULL, Pike_sp - args,				\
+                       "Expected continuation character, "              \
+                       "got 0x%02x.\n",				        \
+                       c);						\
+    } while (0)
+
+#define UTF8_SEQ_ERROR(prefix, c, problem) do {			        \
+      bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	        \
+                     NULL, Pike_sp - args,				\
+                     "UTF-8 sequence beginning with %s0x%02x "	        \
+                     " %s.\n",		                                \
+                     prefix, c, problem);				\
+    } while (0)
+
+    if ((c & 0xe0) == 0xc0) {
+      /* 11bit */
+      if (!(c & 0x1e))
+        UTF8_SEQ_ERROR ("", c, "is a non-shortest form");
+      cont = 1;
+      if (c & 0x1c) {
+        if (shift < 1) {
+          shift = 1;
+        }
+      }
+    }
+
+    else if ((c & 0xf0) == 0xe0) {
+      /* 16bit */
+      if (c == 0xe0) {
+        GET_CONT_CHAR (in, c);
+        if (!(c & 0x20))
+          UTF8_SEQ_ERROR ("0xe0 ", c, "is a non-shortest form");
+        cont = 1;
+      }
+      else if (!(extended & 1) && c == 0xed) {
+        GET_CONT_CHAR (in, c);
+        if (c & 0x20) {
+          /* Surrogate. */
+          if (!(extended & 2)) {
+            UTF8_SEQ_ERROR ("0xed ", c, "would decode to "
+                            "a UTF-16 surrogate character");
+          }
+          if (c & 0x10) {
+            UTF8_SEQ_ERROR ("0xed ", c, "would decode to "
+                            "a UTF-16 low surrogate character");
+          }
+          GET_CONT_CHAR(in, c);
+
+          GET_CHAR (in, c);
+          if (c != 0xed) {
+            UTF8_SEQ_ERROR ("", c, "UTF-16 low surrogate "
+                            "character required");
+          }
+          GET_CONT_CHAR (in, c);
+          if ((c & 0xf0) != 0xb0) {
+            UTF8_SEQ_ERROR ("0xed ", c, "UTF-16 low surrogate "
+                            "character required");
+          }
+          shift = 2;
+        }
+        cont = 1;
+      }
+      else
+        cont = 2;
+      if (shift < 1) {
+        shift = 1;
+      }
+    }
+
+    else {
+      if ((c & 0xf8) == 0xf0) {
+        /* 21bit */
+        if (c == 0xf0) {
+          GET_CONT_CHAR (in, c);
+          if (!(c & 0x30))
+            UTF8_SEQ_ERROR ("0xf0 ", c, "is a non-shortest form");
+          cont = 2;
+        }
+        else if (!(extended & 1)) {
+          if (c > 0xf4)
+            UTF8_SEQ_ERROR ("", c, "would decode to "
+                            "a character outside the valid UTF-8 range");
+          else if (c == 0xf4) {
+            GET_CONT_CHAR (in, c);
+            if (c > 0x8f)
+              UTF8_SEQ_ERROR ("0xf4 ", c, "would decode to "
+                              "a character outside the valid UTF-8 range");
+            cont = 2;
+          }
+          else
+            cont = 3;
+        }
+        else
+          cont = 3;
+      }
+
+      else if (c == 0xff)
+        bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+                       NULL, Pike_sp - args,
+                       "Invalid character 0xff");
+
+      else if (!(extended & 1))
+        UTF8_SEQ_ERROR ("", c, "would decode to "
+                        "a character outside the valid UTF-8 range");
+
+      else {
+        if ((c & 0xfc) == 0xf8) {
+          /* 26bit */
+          if (c == 0xf8) {
+            GET_CONT_CHAR (in, c);
+            if (!(c & 0x38))
+              UTF8_SEQ_ERROR ("0xf8 ", c, "is a non-shortest form");
+            cont = 3;
+          }
+          else
+            cont = 4;
+        } else if ((c & 0xfe) == 0xfc) {
+          /* 31bit */
+          if (c == 0xfc) {
+            GET_CONT_CHAR (in, c);
+            if (!(c & 0x3c))
+              UTF8_SEQ_ERROR ("0xfc ", c, "is a non-shortest form");
+            cont = 4;
+          }
+          else
+            cont = 5;
+        } else if (c == 0xfe) {
+          /* 36bit */
+          GET_CONT_CHAR (in, c);
+          if (!(c & 0x3e))
+            UTF8_SEQ_ERROR ("0xfe ", c, "is a non-shortest form");
+          else if (c & 0x3c)
+            UTF8_SEQ_ERROR ("0xfe ", c, "would decode to "
+                            "a too large character value");
+          cont = 5;
+        }
+      }
+
+      shift = 2;
+    }
+
+    while(cont--)
+      GET_CONT_CHAR (in, c);
+
+#undef GET_CHAR
+#undef GET_CONT_CHAR
+#undef UTF8_SEQ_ERROR
+  }
+
+  *_shift = shift;
+  return len;
+}
+
+PMOD_EXPORT size_t pike_string_utf8_decode_length(const struct pike_string *s, INT32 args, int extended,
+                                                  int *_shift) {
+  static volatile poptype foo = (poptype)0x8080808080808080ULL;
+  const unsigned char *in;
+  size_t len = 0;
+  size_t elen;
+  const poptype mask = foo;
+  const poptype *in8 = (poptype*)STR0(s);
+  const poptype *end8 = in8 + (s->len / sizeof(poptype));
+
+  if (in8 < end8) {
+    const size_t tail = (size_t)(end8 - in8) % 4;
+    elen = tail*sizeof(poptype);
+    poptype a = 0, b = 0, c = 0, d = 0;
+
+    in8 += tail;
+    switch (tail) {
+      do {
+    case 0:
+        in8 += 4;
+        elen = sizeof(poptype)*4;
+        a = in8[-4];
+    case 3:
+        b = in8[-3];
+    case 2:
+        c = in8[-2];
+    case 1:
+        d = in8[-1];
+
+        a &= mask;
+        b &= mask;
+        c &= mask;
+        d &= mask;
+
+        if (UNLIKELY(a | b | c | d)) {
+          /* we have to begin from the beginning of the last chunk */
+          in = (const unsigned char*)(in8) - elen;
+          goto not_7bit;
+        }
+        len += elen;
+      } while (in8 < end8);
+      break;
+    default: UNREACHABLE(break);
+    }
+  }
+
+  /* process the single byte tail */
+
+  elen = (size_t)s->len % sizeof(poptype);
+
+  if (elen) {
+    poptype a = 0;
+
+    in = (const unsigned char*)in8;
+
+    switch (7-elen) {
+    case 0: a |= in[0] & 0x80;
+    case 1: a |= in[1] & 0x80;
+    case 2: a |= in[2] & 0x80;
+    case 3: a |= in[3] & 0x80;
+    case 4: a |= in[4] & 0x80;
+    case 5: a |= in[5] & 0x80;
+    case 6: a |= in[6] & 0x80; break;
+    default: UNREACHABLE(break);
+    }
+
+    if (UNLIKELY(a)) {
+      goto not_7bit;
+    }
+    len += elen;
+  }
+
+  *_shift = 0;
+  return len;
+not_7bit:
+
+  return pike_string_utf8_decode_length_slowpath(len, in, (const unsigned char*)STR0(s) + s->len, args,
+                                                 extended, _shift);
+}
+
 PMOD_EXPORT size_t pike_string_utf8_length(const struct pike_string *s, INT32 args, int extended) {
   size_t len = s->len;
   size_t elen = s->len;
