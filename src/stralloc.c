@@ -130,9 +130,9 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
     {
       switch( str->size_shift )
       {
-        case 2: s_min = MIN_INT32; s_max=MAX_INT32; break;
-        case 1: s_min = 0; s_max = 65535; break;
-        case 0: s_min = 0; s_max = 255; break;
+        case thirtytwobit: s_min = MIN_INT32; s_max = MAX_INT32; break;
+        case sixteenbit:   s_min = 0; s_max = 65535; break;
+        case eightbit:     s_min = 0; s_max = 255; break;
       }
     }
   }
@@ -142,7 +142,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
 
     switch( str->size_shift )
     {
-      case 0:
+      case eightbit:
        {
          p_wchar0 *p = (p_wchar0*)str->str;
          int upper = 0, lower = 0;
@@ -170,7 +170,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
        str->max = s_max;
        break;
 
-      case 1:
+      case sixteenbit:
        {
          p_wchar1 *p = (p_wchar1*)str->str;
          for( i=0; i<str->len; i++,p++ )
@@ -183,7 +183,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
        str->max = s_max / 256;
        break;
 
-      case 2:
+      case thirtytwobit:
        {
          p_wchar2 *p = (p_wchar2*)str->str;
          for( i=0; i<str->len; i++,p++ )
@@ -326,13 +326,14 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s,
   return generic_extract(s->str,s->size_shift,pos);
 }
 
-PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+PMOD_EXPORT p_wchar2 generic_extract(const void *str, enum size_shift size,
+				     ptrdiff_t pos)
 {
   switch(size)
   {
-    case 0: return ((p_wchar0 *)str)[pos];
-    case 1: return ((p_wchar1 *)str)[pos];
-    case 2: return ((p_wchar2 *)str)[pos];
+    case eightbit:     return ((p_wchar0 *)str)[pos];
+    case sixteenbit:   return ((p_wchar1 *)str)[pos];
+    case thirtytwobit: return ((p_wchar2 *)str)[pos];
   }
   UNREACHABLE(return 0);
 }
@@ -770,15 +771,15 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
 #ifdef PIKE_DEBUG
   if (d_flag) {
     switch (s->size_shift) {
-      case 0:
+      case eightbit:
        break;
 
-      case 1:
+      case sixteenbit:
        if(!find_magnitude1(STR1(s),s->len))
          Pike_fatal ("String %p that should have shift 1 really got 0.\n", s);
        break;
 
-      case 2: {
+      case thirtytwobit: {
        int m = find_magnitude2 (STR2 (s), s->len);
        if (m != 2)
          Pike_fatal ("String %p that should have shift 2 really got %d.\n",
@@ -825,17 +826,17 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 
   switch(UNLIKELY(s->size_shift))
   {
-    case 2:
+    case thirtytwobit:
       switch(find_magnitude2(STR2(s),s->len))
       {
-       case 0:
+       case eightbit:
          s2=begin_shared_string(s->len);
          convert_2_to_0(STR0(s2),STR2(s),s->len);
          free_string(s);
          s=s2;
          break;
 
-       case 1:
+       case sixteenbit:
          s2=begin_wide_shared_string(s->len,1);
          convert_2_to_1(STR1(s2),STR2(s),s->len);
          free_string(s);
@@ -844,7 +845,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
       }
       break;
 
-    case 1:
+    case sixteenbit:
       if(!find_magnitude1(STR1(s),s->len))
       {
        s2=begin_shared_string(s->len);
@@ -854,7 +855,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
       }
       break;
 
-    case 0: break;
+    case eightbit: break;
   }
 
   return low_end_shared_string(s);
@@ -897,11 +898,11 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
 {
   switch(str.shift)
   {
-    case 0:
+    case eightbit:
       return make_shared_binary_string((char *)(str.ptr),  len);
-    case 1:
+    case sixteenbit:
       return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
-    case 2:
+    case thirtytwobit:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
   }
   UNREACHABLE(return NULL);
@@ -1211,9 +1212,9 @@ PMOD_EXPORT void check_string(struct pike_string *s)
   }else{
 
     switch (s->size_shift) {
-      case 0:
+      case eightbit:
        break;
-      case 1: {
+      case sixteenbit: {
        ptrdiff_t i;
        p_wchar1 *str = STR1 (s);
        for (i = 0; i < s->len; i++)
@@ -1221,7 +1222,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
            goto size_shift_check_done;
        Pike_fatal ("Shared string is too wide.\n");
       }
-      case 2: {
+      case thirtytwobit: {
        ptrdiff_t i;
        p_wchar2 *str = STR2 (s);
        for (i = 0; i < s->len; i++)
@@ -1661,10 +1662,10 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 
     switch(a->size_shift)
     {
-      case 0:
+      case eightbit:
 	Pike_fatal("Unshrinkable!\n");
 
-      case 1:
+      case sixteenbit:
 	/* Test if we *actually* can shrink it.. */
 	if(find_magnitude1(STR1(a),index)) break;
 	if(find_magnitude1(STR1(a)+index+1,a->len-index-1))
@@ -1676,7 +1677,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	free_string(a);
 	return end_shared_string(b);
 
-      case 2:
+      case thirtytwobit:
 	/* Test if we *actually* can shrink it.. */
 	size=find_magnitude2(STR2(a),index);
 	if(size==2) break; /* nope */
@@ -1686,14 +1687,14 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 
 	switch(size)
 	{
-	  case 0:
+	  case eightbit:
 	    b=begin_shared_string(a->len);
 	    convert_2_to_0((p_wchar0 *)b->str,STR2(a),a->len);
 	    b->str[index]=c;
 	    free_string(a);
 	    return end_shared_string(b);
 
-	  case 1:
+	  case sixteenbit:
 	    b=begin_wide_shared_string(a->len,1);
 	    convert_2_to_1((p_wchar1 *)b->str,STR2(a),a->len);
 	    STR1(b)[index]=c;
@@ -1953,13 +1954,13 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 
   switch(s->size_shift)
   {
-    case 0:
+    case eightbit:
       return make_shared_binary_string((char *)STR0(s)+start,len);
 
-    case 1:
+    case sixteenbit:
       return make_shared_binary_string1(STR1(s)+start,len);
 
-    case 2:
+    case thirtytwobit:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
   UNREACHABLE(return 0);
@@ -2015,9 +2016,9 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
     ret=begin_wide_shared_string(str->len,shift);
     switch(str->size_shift)
     {
-      case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
-      case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
-      case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
+    case eightbit:	f=(replace_searchfunc)mojt.vtab->func0; break;
+    case sixteenbit:	f=(replace_searchfunc)mojt.vtab->func1; break;
+    case thirtytwobit:	f=(replace_searchfunc)mojt.vtab->func2; break;
     }
 
   }else{
@@ -2030,9 +2031,9 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 
     switch(str->size_shift)
     {
-      case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
-      case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
-      case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
+    case eightbit:	f=(replace_searchfunc)mojt.vtab->func0; break;
+    case sixteenbit:	f=(replace_searchfunc)mojt.vtab->func1; break;
+    case thirtytwobit:	f=(replace_searchfunc)mojt.vtab->func2; break;
     }
 
     while((s = f(mojt.data, s, (end-s)>>str->size_shift)))
@@ -2274,9 +2275,9 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {
-    case 0: return MKPCHARP(memchr(ptr.ptr,chr,len),0);
-    case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
-    case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
+    case eightbit:     return MKPCHARP(memchr(ptr.ptr,chr,len),0);
+    case sixteenbit:   return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
+    case thirtytwobit: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
   UNREACHABLE(MKPCHARP(0,0));
 }
@@ -2718,11 +2719,11 @@ PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
 {
   switch(s->size_shift)
   {
-    case 0:
+    case eightbit:
       *to_free=0;
       return STR0(s);
-    case 1:
-    case 2:
+    case sixteenbit:
+    case thirtytwobit:
       return 0;
   }
   UNREACHABLE(return 0);
@@ -2733,16 +2734,16 @@ PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
 {
   switch(s->size_shift)
   {
-    case 0:
+    case eightbit:
       *to_free=xalloc((s->len+1)*2);
       convert_0_to_1((p_wchar1 *)*to_free, STR0(s),s->len+1);
       return (p_wchar1 *)*to_free;
 
-    case 1:
+    case sixteenbit:
       *to_free=0;
       return STR1(s);
 
-    case 2:
+    case thirtytwobit:
       return 0;
   }
   UNREACHABLE(return 0);
@@ -2754,17 +2755,17 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
 {
   switch(s->size_shift)
   {
-    case 0:
+    case eightbit:
       *to_free=xalloc((s->len+1)*4);
       convert_0_to_2((p_wchar2 *)*to_free, STR0(s),s->len+1);
       return (p_wchar2 *)*to_free;
 
-    case 1:
+    case sixteenbit:
       *to_free=xalloc((s->len+1)*4);
       convert_1_to_2((p_wchar2 *)*to_free, STR1(s),s->len+1);
       return (p_wchar2 *)*to_free;
 
-    case 2:
+    case thirtytwobit:
       *to_free=0;
       return STR2(s);
   }

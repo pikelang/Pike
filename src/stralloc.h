@@ -95,9 +95,12 @@ struct substring_pike_string {
 #endif
 
 #ifndef PIKE_DEBUG
-static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
+static p_wchar2 generic_extract (const void *str, enum size_shift size,
+				 ptrdiff_t pos) ATTRIBUTE((pure));
 
-static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str, int size, ptrdiff_t pos)
+static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str,
+							      enum size_shift size,
+							      ptrdiff_t pos)
 {
 /* this gives better code than a lot of other versions I have tested.
 
@@ -115,7 +118,8 @@ static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE index_shared_string(const struct pi
   return generic_extract(s->str,s->size_shift,pos);
 }
 #else
-PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos);
+PMOD_EXPORT p_wchar2 generic_extract (const void *str, enum size_shift size,
+				      ptrdiff_t pos);
 PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t pos);
 #endif
 
