@@ -2859,8 +2859,8 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
       !SAME_CMP_LESS (rd.a_msd, rd.b_msd))
     return 0;
 
-  if (!rd.a_msd->root && !rd.b_msd->root)
-    return 1;
+  if (!rd.a_msd->root) return !rd.b_msd->root;
+  if (!rd.b_msd->root) return 0;
 
   curr.pointer_a = (void *) a;
   curr.pointer_b = (void *) b;
