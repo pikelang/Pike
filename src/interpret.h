@@ -225,6 +225,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
       });								\
   }while(0)
 
+PMOD_EXPORT extern void check_c_stack_margin(void);
 
 #ifdef PIKE_DEBUG
 #define STACK_LEVEL_START(depth)	\

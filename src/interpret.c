@@ -91,6 +91,10 @@ PMOD_EXPORT const char msg_pop_neg[] =
   "Popping negative number of args.... (%"PRINTPTRDIFFT"d) \n";
 #endif
 
+PMOD_EXPORT extern void check_c_stack_margin(void)
+{
+  check_c_stack(Pike_interpreter.c_stack_margin);
+}
 
 #ifdef PIKE_DEBUG
 static char trace_buffer[2000];

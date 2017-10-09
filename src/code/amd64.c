@@ -1224,6 +1224,7 @@ static void amd64_pop_internal_c_frame()
 #endif /* MACHINE_CODE_STACK_FRAMES */
 
 static void amd64_load_fp_reg(void);
+static void amd64_call_c_function(void *addr);
 
 void amd64_ins_start_function(void)
 {
@@ -1234,6 +1235,8 @@ void amd64_ins_start_function(void)
   mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
   and_reg32_imm( P_REG_RAX, PIKE_FRAME_RETURN_INTERNAL);
   jz( &label_A );
+
+  amd64_call_c_function(check_c_stack_margin);
 
   /* This is an internal frame (no entry prologue), so we'll insert a
      minimal frame that can be used to unwind the C stack. */
