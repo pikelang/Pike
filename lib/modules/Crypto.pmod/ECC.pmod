@@ -523,7 +523,7 @@ class _Curve25519 {
 		}) );
   }
 
-  //! Elliptic Curve Digital Signing Algorithm
+  //! Edwards Curve Digital Signing Algorithm
   //!
   class EdDSA
   {
