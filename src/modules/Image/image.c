@@ -4098,12 +4098,17 @@ static void image_apply_curve( INT32 args )
          if( TYPEOF(sp[-args+i]) != T_ARRAY ||
              sp[-args+i].u.array->size != 256 )
            bad_arg_error("apply_curve",
-                         sp-args, args, 0, "", sp-args,
-                         "Bad arguments to apply_curve.\n");
+                         sp-args, args, i+1, "array(int(8bit))", sp-args,
+                         "Bad argument to apply_curve.\n");
          else
-           for( j = 0; j<256; j++ )
-             if( TYPEOF(sp[-args+i].u.array->item[j]) == T_INT )
-               curve[i][j]=MINIMUM(sp[-args+i].u.array->item[j].u.integer,255);
+           for( j = 0; j<256; j++ ) {
+             if( TYPEOF(sp[-args+i].u.array->item[j]) != T_INT ) {
+	       bad_arg_error("apply_curve",
+			     sp-args, args, i+1, "array(int(8bit))", sp-args,
+			     "Bad argument to apply_curve.\n");
+	     }
+	     curve[i][j]=MINIMUM(sp[-args+i].u.array->item[j].u.integer,255);
+	   }
        pop_n_elems( args );
        image_apply_curve_3( curve );
        return;
@@ -4118,11 +4123,18 @@ static void image_apply_curve( INT32 args )
 	 SIMPLE_BAD_ARG_ERROR("apply_curve", 1, "string");
        if( TYPEOF(sp[-args+1]) != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-	 SIMPLE_BAD_ARG_ERROR("apply_curve", 2, "256 element array");
+	 bad_arg_error("apply_curve",
+		       sp-args, args, 2, "array(int(8bit))", sp-args,
+		       "Bad argument to apply_curve.\n");
 
-       for( j = 0; j<256; j++ )
-	 if( TYPEOF(sp[-args+1].u.array->item[j]) == T_INT )
-	   curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+       for( j = 0; j<256; j++ ) {
+	 if( TYPEOF(sp[-args+1].u.array->item[j]) != T_INT ) {
+	   bad_arg_error("apply_curve",
+			 sp-args, args, 2, "array(int(8bit))", sp-args,
+			 "Bad argument to apply_curve.\n");
+	 }
+	 curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+       }
 
        MAKE_CONST_STRING(s_red,"red");
        MAKE_CONST_STRING(s_green,"green");
@@ -4194,12 +4206,17 @@ static void image_apply_curve( INT32 args )
        if( TYPEOF(sp[-args]) != T_ARRAY ||
            sp[-args].u.array->size != 256 )
          bad_arg_error("apply_curve",
-                       sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve.\n" );
+                       sp-args, args, 0, "array(int(8bit))", sp-args,
+                       "Bad argument to apply_curve.\n" );
        else
-         for( j = 0; j<256; j++ )
-           if( TYPEOF(sp[-args].u.array->item[j]) == T_INT )
-             curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
+         for( j = 0; j<256; j++ ) {
+           if(TYPEOF(sp[-args].u.array->item[j]) != T_INT) {
+	     bad_arg_error("apply_curve",
+			   sp-args, args, 0, "array(int(8bit))", sp-args,
+			   "Bad argument to apply_curve.\n");
+	   }
+	   curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
+	 }
        pop_n_elems( args );
        image_apply_curve_1( curve );
        return;
