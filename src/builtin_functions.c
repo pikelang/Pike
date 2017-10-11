@@ -2207,7 +2207,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     return;
   }
 
-  len = pike_string_utf8_decode_length(in, args, extended, &shift);
+  len = pike_string_utf8_decode_length(STR0(in), in->len, args, extended, &shift);
 
   if (len == in->len) {
     /* 7bit in == 7bit out */
@@ -2215,118 +2215,10 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     return;
   }
 
-  out = begin_wide_shared_string(len, shift);
+  out = pike_string_utf8_decode(STR0(in), (enum size_shift)shift, len);
 
-  switch (shift) {
-    case 0: {
-      p_wchar0 *out_str = STR0 (out);
-      const p_wchar0 *in_str = STR0(in);
-      ptrdiff_t len = out->len;
-
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
-	/* NOTE: No tests here since we've already tested the string above. */
-	if (c & 0x80) {
-	  /* 11bit */
-	  unsigned int c2 = *(in_str++) & 0x3f;
-	  c &= 0x1f;
-	  c = (c << 6) | c2;
-	}
-	out_str[j] = c;
-      }
-      break;
-    }
-
-    case 1: {
-      p_wchar1 *out_str = STR1 (out);
-      const p_wchar0 *in_str = STR0(in);
-      ptrdiff_t len = out->len;
-
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
-	/* NOTE: No tests here since we've already tested the string above. */
-	if (c & 0x80) {
-	  if ((c & 0xe0) == 0xc0) {
-	    /* 11bit */
-	    unsigned int c2 = *(in_str++) & 0x3f;
-	    c &= 0x1f;
-	    c = (c << 6) | c2;
-	  } else {
-	    /* 16bit */
-	    unsigned int c2 = *(in_str++) & 0x3f;
-	    unsigned int c3 = *(in_str++) & 0x3f;
-	    c &= 0x0f;
-	    c = (c << 12) | (c2 << 6) | c3;
-	  }
-	}
-	out_str[j] = c;
-      }
-      break;
-    }
-
-    case 2: {
-      p_wchar2 *out_str = STR2 (out);
-      const p_wchar0 *in_str = STR0(in);
-      ptrdiff_t len = out->len;
-
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
-	/* NOTE: No tests here since we've already tested the string above. */
-	if (c & 0x80) {
-	  int cont = 0;
-	  if ((c & 0xe0) == 0xc0) {
-	    /* 11bit */
-	    cont = 1;
-	    c &= 0x1f;
-	  } else if ((c & 0xf0) == 0xe0) {
-	    /* 16bit */
-	    cont = 2;
-	    c &= 0x0f;
-	  } else if ((c & 0xf8) == 0xf0) {
-	    /* 21bit */
-	    cont = 3;
-	    c &= 0x07;
-	  } else if ((c & 0xfc) == 0xf8) {
-	    /* 26bit */
-	    cont = 4;
-	    c &= 0x03;
-	  } else if ((c & 0xfe) == 0xfc) {
-	    /* 31bit */
-	    cont = 5;
-	    c &= 0x01;
-	  } else {
-	    /* 36bit */
-	    cont = 6;
-	    c = 0;
-	  }
-	  while(cont--) {
-	    unsigned int c2 = *(in_str++) & 0x3f;
-	    c = (c << 6) | c2;
-	  }
-	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
-	    /* Low surrogate */
-	    c &= 0x3ff;
-	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
-	  }
-	}
-	out_str[j] = c;
-      }
-      break;
-    }
-  }
-
-#ifdef PIKE_DEBUG
-  if (j != len) {
-    Pike_fatal("Calculated and actual lengths differ: "
-	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
-               len, j);
-  }
-#endif /* PIKE_DEBUG */
-  out = low_end_shared_string(out);
-#ifdef PIKE_DEBUG
-  check_string (out);
-#endif
   pop_n_elems(args);
+
   push_string(out);
 }
 

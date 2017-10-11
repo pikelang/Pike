@@ -3029,15 +3029,15 @@ static size_t pike_string_utf8_decode_length_slowpath(size_t len, const unsigned
   return len;
 }
 
-PMOD_EXPORT size_t pike_string_utf8_decode_length(const struct pike_string *s, INT32 args, int extended,
-                                                  int *_shift) {
+PMOD_EXPORT size_t pike_string_utf8_decode_length(const unsigned char *in, size_t inlen,
+                                                  INT32 args, int extended, int *_shift) {
   static volatile poptype foo = (poptype)0x8080808080808080ULL;
-  const unsigned char *in;
   size_t len = 0;
   size_t elen;
   const poptype mask = foo;
-  const poptype *in8 = (poptype*)STR0(s);
-  const poptype *end8 = in8 + (s->len / sizeof(poptype));
+  const poptype *in8 = (poptype*)in;
+  const poptype *end8 = in8 + (inlen / sizeof(poptype));
+  const unsigned char *end = in + inlen;
 
   if (in8 < end8) {
     const size_t tail = (size_t)(end8 - in8) % 4;
@@ -3077,7 +3077,7 @@ PMOD_EXPORT size_t pike_string_utf8_decode_length(const struct pike_string *s, I
 
   /* process the single byte tail */
 
-  elen = (size_t)s->len % sizeof(poptype);
+  elen = (size_t)inlen % sizeof(poptype);
 
   if (elen) {
     poptype a = 0;
@@ -3105,7 +3105,7 @@ PMOD_EXPORT size_t pike_string_utf8_decode_length(const struct pike_string *s, I
   return len;
 not_7bit:
 
-  return pike_string_utf8_decode_length_slowpath(len, in, (const unsigned char*)STR0(s) + s->len, args,
+  return pike_string_utf8_decode_length_slowpath(len, in, end, args,
                                                  extended, _shift);
 }
 
@@ -3220,6 +3220,113 @@ extended_error:
 		   c, i);
   }
   UNREACHABLE(return 0);
+}
+
+PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
+                                                        enum size_shift shift, ptrdiff_t len) {
+
+  struct pike_string *out = begin_wide_shared_string(len, shift);
+
+  switch (shift) {
+    case eightbit: {
+      p_wchar0 *out_str = STR0 (out);
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  /* 11bit */
+	  unsigned int c2 = *(in_str++) & 0x3f;
+	  c &= 0x1f;
+	  c = (c << 6) | c2;
+	}
+	out_str[j] = c;
+      }
+      break;
+    }
+
+    case sixteenbit: {
+      p_wchar1 *out_str = STR1 (out);
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  if ((c & 0xe0) == 0xc0) {
+	    /* 11bit */
+	    unsigned int c2 = *(in_str++) & 0x3f;
+	    c &= 0x1f;
+	    c = (c << 6) | c2;
+	  } else {
+	    /* 16bit */
+	    unsigned int c2 = *(in_str++) & 0x3f;
+	    unsigned int c3 = *(in_str++) & 0x3f;
+	    c &= 0x0f;
+	    c = (c << 12) | (c2 << 6) | c3;
+	  }
+	}
+	out_str[j] = c;
+      }
+      break;
+    }
+
+    case thirtytwobit: {
+      p_wchar2 *out_str = STR2 (out);
+
+      for(ptrdiff_t j=0; j < len; j++) {
+	unsigned int c = *(in_str++);
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  int cont = 0;
+	  if ((c & 0xe0) == 0xc0) {
+	    /* 11bit */
+	    cont = 1;
+	    c &= 0x1f;
+	  } else if ((c & 0xf0) == 0xe0) {
+	    /* 16bit */
+	    cont = 2;
+	    c &= 0x0f;
+	  } else if ((c & 0xf8) == 0xf0) {
+	    /* 21bit */
+	    cont = 3;
+	    c &= 0x07;
+	  } else if ((c & 0xfc) == 0xf8) {
+	    /* 26bit */
+	    cont = 4;
+	    c &= 0x03;
+	  } else if ((c & 0xfe) == 0xfc) {
+	    /* 31bit */
+	    cont = 5;
+	    c &= 0x01;
+	  } else {
+	    /* 36bit */
+	    cont = 6;
+	    c = 0;
+	  }
+	  while(cont--) {
+	    unsigned int c2 = *(in_str++) & 0x3f;
+	    c = (c << 6) | c2;
+	  }
+	  if (/*(extended & 2) && */(c & 0xfc00) == 0xdc00) {
+	    /* Low surrogate */
+	    c &= 0x3ff;
+	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
+	  }
+	}
+	out_str[j] = c;
+      }
+      break;
+    }
+    default: UNREACHABLE(break);
+  }
+
+  out = low_end_shared_string(out);
+
+#ifdef PIKE_DEBUG
+  check_string (out);
+#endif
+
+  return out;
 }
 
 PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const struct pike_string *s) {
