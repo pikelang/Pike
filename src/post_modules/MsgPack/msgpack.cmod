@@ -136,13 +136,17 @@ static int mpack_decode_string(struct svalue *dst, size_t len,
 
     if (src_len < len) return 0;
 
-    s = make_shared_binary_string((const char*)*_src, len);
+    int shift;
+    size_t dlen = pike_string_utf8_decode_length(*_src, len, 1, 0, &shift);
 
-    push_string(s);
-    f_utf8_to_string(1);
+    if (dlen == len) {
+      /* 7bit */
+      s = make_shared_binary_string((const char*)*_src, len);
+    } else {
+      s = pike_string_utf8_decode(*_src, shift, dlen);
+    }
 
-    Pike_sp --;
-    *dst = *Pike_sp;
+    SET_SVAL(*dst, PIKE_T_STRING, 0, string, s);
 
     src_len -= len;
 
