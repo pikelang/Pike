@@ -999,12 +999,15 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
 	//
 	// Create the submonitor.
 	MON_WARN("Monitor lost for path %O.\n", full_path);
-	monitor(full_path, m->flags | MF_AUTO | MF_HARD,
-		m->max_dir_check_interval,
-		m->file_interval_factor,
-		m->stable_time);
-	m = monitors[full_path];
-	m->check(0);	// Init monitor.
+        m = monitor(full_path, m->flags | MF_AUTO | MF_HARD,
+            m->max_dir_check_interval,
+            m->file_interval_factor,
+            m->stable_time);
+        // monitor() will not register monitor for path if filter_file()
+        // returns 0.
+        if (m) {
+          m->check(0);    // Init monitor.
+        }
       }
     }
   }
@@ -1328,7 +1331,7 @@ protected DefaultMonitor monitor_factory(string path, MonitorFlags|void flags,
 //!
 //! @seealso
 //!   @[release()]
-void monitor(string path, MonitorFlags|void flags,
+Monitor|void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void max_dir_check_interval,
 	     int(0..)|void file_interval_factor,
 	     int(0..)|void stable_time)
@@ -1359,6 +1362,7 @@ void monitor(string path, MonitorFlags|void flags,
     // NB: Registering with the monitor_queue is done as
     //     needed by register_path() as called by create().
   }
+  return m;
 }
 
 int filter_file(string path)
