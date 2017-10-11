@@ -1982,6 +1982,108 @@ static void low_ins_f_byte(unsigned int opcode)
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
       return;
+  case F_DUP:
+      arm32_debug_instr_prologue_0(opcode);
+      arm32_load_sp_reg();
+      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      return;
+  case F_SWAP:
+      arm32_debug_instr_prologue_0(opcode);
+      {
+        enum arm32_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        ARM_ASSERT(tmp1 < tmp2 && tmp2 < tmp3 && tmp3 < tmp4);
+
+        arm32_load_sp_reg();
+        load_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp3, tmp1, tmp3);
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        xor_reg_reg(tmp4, tmp2, tmp4);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
+  case F_NOT:
+      arm32_debug_instr_prologue_0(opcode);
+      {
+          struct label done, check_rval, complex;
+          enum arm32_register type, value;
+
+          ARM_ASSERT(ARM_REG_ARG1 == ARM_REG_RVAL);
+          ARM_ASSERT(PIKE_T_INT == 0);
+
+          ra_alloc(ARM_REG_ARG1);
+          value = ra_alloc_persistent();
+
+          label_init(&done);
+          label_init(&check_rval);
+          label_init(&complex);
+
+          arm32_load_sp_reg();
+
+          load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                        -sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
+
+          arm32_mov_int(value, 1);
+          lsl_reg_reg(value, value, ARM_REG_ARG1);
+
+          /* everything which is neither function, object or int is true */
+          arm32_tst_int(value, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
+          /* here we use the fact that the type is nonzero */
+          b_imm(label_dist(&check_rval), ARM_COND_Z);
+
+          arm32_tst_int(value, BIT_INT);
+
+          b_imm(label_dist(&complex), ARM_COND_Z);
+
+          load32_reg_imm(value, ARM_REG_PIKE_SP, -sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          /* jump to the check, we are done */
+          b_imm(label_dist(&done), ARM_COND_AL);
+
+          arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm32_call(complex_svalue_is_true);
+          ra_free(ARM_REG_ARG1);
+
+          mov_reg(value, ARM_REG_RVAL);
+
+          label_generate(&check_rval);
+
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+
+          label_generate(&done);
+          /* push integer to stack */
+
+          arm32_cmp_int(value, 0);
+
+          ARM_IF(ARM_COND_NE, {
+            arm32_mov_int(value, 0);
+          });
+          ARM_IF(ARM_COND_EQ, {
+            arm32_mov_int(value, 1);
+          });
+
+          type = ra_alloc_any();
+
+          ARM_ASSERT(type < value);
+
+          arm32_mov_int(type, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(type)|RBIT(value));
+
+          ra_free(type);
+          ra_free(value);
+      }
+      return;
   }
 
   arm32_call_c_opcode(opcode);
