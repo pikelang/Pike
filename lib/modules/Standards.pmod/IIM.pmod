@@ -186,7 +186,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	    continue;
 	  }
 	}
-#if 1
+#if 0
 	werror("Unknown segment marker: 0x%02x\n"
 	       "record_set: %d\n"
 	       "id: %d\n"
