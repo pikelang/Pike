@@ -461,6 +461,20 @@ static void low_accept_loop(struct args *arg)
 	struct cache *c, *p = NULL;
 	struct log *l, *n = NULL;
 	/* oups. */
+
+	/* NB: log_head is protected by the log_lock mutex. */
+	mt_lock(&arg->log->log_lock);
+	while(arg->log->log_head)
+	{
+	  struct log_entry *l = arg->log->log_head->next;
+	  free(arg->log->log_head);
+	  arg->log->log_head = l;
+	}
+	mt_unlock(&arg->log->log_lock);
+
+	/* NB: The cache, and the variables first_cache and aap_first_log
+	 *     are protected by the interpreter lock.
+	 */
 	low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 	for(i=0; i<CACHE_HTABLE_SIZE; i++)
 	{
@@ -474,12 +488,6 @@ static void low_accept_loop(struct args *arg)
 	    free(t->url);
 	    free(t);
 	  }
-	}
-	while(arg->log->log_head)
-	{
-	  struct log_entry *l = arg->log->log_head->next;
-	  free(arg->log->log_head);
-	  arg->log->log_head = l;
 	}
 
 	c = first_cache;
