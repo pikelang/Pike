@@ -90,12 +90,14 @@ void f_aap_log_as_array(INT32 args)
   struct log *l = LTHIS->log;
   int n = 0;
   pop_n_elems(args);
-  
+
+  THREADS_ALLOW();
   mt_lock( &l->log_lock );
   le = l->log_head;
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
-  
+  THREADS_DISALLOW();
+
   while(le)
   {
     struct log_entry *l;
@@ -127,11 +129,13 @@ void f_aap_log_size(INT32 UNUSED(args))
     push_int(0);
     return;
   }
+  THREADS_ALLOW();
   mt_lock( &l->log_lock );
   le = l->log_head; 
   while((le = le->next))
     n++;
   mt_unlock( &l->log_lock );
+  THREADS_DISALLOW();
   push_int(n);
 }
 
