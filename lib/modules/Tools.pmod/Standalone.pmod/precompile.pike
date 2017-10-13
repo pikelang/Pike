@@ -1120,7 +1120,12 @@ class PikeType
 		  if (sizeof(tmp) == 1) {
 		    int bits;
 		    /* Support the string(Xbit) syntax too. */
-		    if ((sizeof(q) == 4) && ((string)q[2] == "bit") &&
+		    if (sizeof(q) == 3 && sscanf((string)q[1], "%dbit", bits))
+                    {
+		      low = "0";
+		      high = sprintf("%d", (1 << bits) - 1);
+		    }
+		    else if ((sizeof(q) == 4) && ((string)q[2] == "bit") &&
 			((bits = (int)(string)q[1]) > 0)) {
 		      low = "0";
 		      high = sprintf("%d", (1 << bits) - 1);
