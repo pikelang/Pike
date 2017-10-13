@@ -1230,6 +1230,17 @@ class History
     maxhistory = maxhist;
   }
 
+  //! Pop the last string off the history, discarding it.
+  //! If text is provided, will only pop that string.
+  //! Returns 1 if a string was removed, 0 if not.
+  int(0..1) pop(string|void text)
+  {
+    if (sizeof(historylist) < 2) return 0; //Not enough to pop
+    if (text && historylist[-2] != text) return 0; //Wrong string
+    historylist = historylist[..<2] + ({historylist[-1]});
+    return 1;
+  }
+
   //!
   void create(int maxhist, void|array(string) hist)
   {
