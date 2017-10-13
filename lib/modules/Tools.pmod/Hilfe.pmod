@@ -2406,6 +2406,18 @@ class Evaluator {
         // TODO: Also pick up autodoc from that function, if any.
         break;
       }
+      case "program":
+      {
+        string name = function_name(what);
+        if (name) safe_write("Program: %s\n", name);
+        else safe_write("Program (nameless)\n");
+        string defined = Program.defined(what);
+        if (defined) safe_write("Defined in: %s\n", defined);
+        foreach (Program.inherit_list(what), program p)
+          safe_write("Inherits: %s\n", function_name(p) || "(nameless)");
+        // TODO: As above, also pick up autodoc where available.
+        break;
+      }
       default:
         safe_write("This is a %t: %<O\n", what);
     }
