@@ -2393,7 +2393,7 @@ class Evaluator {
   {
     switch (sprintf("%t", what))
     {
-      case "int": case "string":
+      case "int": case "string": case "float":
         safe_write("Nothing more than the %t %<O\n", what);
         break;
       case "function":
@@ -2406,11 +2406,15 @@ class Evaluator {
         // TODO: Also pick up autodoc from that function, if any.
         break;
       }
+      case "object":
+        string description = "Instance of program";
+        what = object_program(what);
       case "program":
       {
+        if (!description) description = "Program";
         string name = function_name(what);
-        if (name) safe_write("Program: %s\n", name);
-        else safe_write("Program (nameless)\n");
+        if (name) safe_write("%s: %s\n", description, name);
+        else safe_write("%s (nameless)\n", description);
         string defined = Program.defined(what);
         if (defined) safe_write("Defined in: %s\n", defined);
         foreach (Program.inherit_list(what), program p)
@@ -2418,6 +2422,11 @@ class Evaluator {
         // TODO: As above, also pick up autodoc where available.
         break;
       }
+      case "array": case "multiset": case "mapping":
+        safe_write("A%s %t with %d items in it\n",
+          arrayp(what) ? "n" : "", what, sizeof(what));
+        // TODO: For arrays of functions or programs, show them all?
+        break;
       default:
         safe_write("This is a %t: %<O\n", what);
     }
