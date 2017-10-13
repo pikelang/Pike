@@ -2396,6 +2396,16 @@ class Evaluator {
       case "int": case "string":
         safe_write("Nothing more than the %t %<O\n", what);
         break;
+      case "function":
+      {
+        string name = function_name(what);
+        if (name) safe_write("Function: %s\n", name);
+        else safe_write("Function (nameless)\n");
+        string defined = Function.defined(what);
+        if (defined) safe_write("Defined in: %s\n", defined);
+        // TODO: Also pick up autodoc from that function, if any.
+        break;
+      }
       default:
         safe_write("This is a %t: %<O\n", what);
     }
