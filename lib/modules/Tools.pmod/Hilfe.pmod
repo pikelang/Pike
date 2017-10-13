@@ -13,9 +13,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle named lambdas.
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
-- Filter exit/quit from history. Could be done by adding a 'pop'
-  method to Readline.History and calling it from StdinHilfe's
-  _destruct.
 - Add some better multiline edit support.
 - Improve doc command to get documentation from c-code.
 ";
@@ -302,6 +299,10 @@ protected class CommandExit {
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
+    if (e->readline) {
+      e->readline->get_history()->pop(line);
+      e->save_history();
+    }
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
