@@ -399,6 +399,9 @@ protected class CommandHelp {
       return;
     }
 
+    // TODO: If line is a valid Pike expression, call help() on the
+    // value given, so that 'help getcwd' is the same as 'help(getcwd)'.
+
     write("\n");
     e->print_version();
     write( #"Hilfe is a tool to evaluate Pike code interactively and
@@ -2285,6 +2288,7 @@ class Evaluator {
     handler->hilfe_symbols = symbols;
     handler->hilfe_symbols->___Hilfe = this;
     handler->hilfe_symbols->write = safe_write;
+    handler->hilfe_symbols->help = show_documentation;
 
     last_compiled_expr = prog;
     program p;
@@ -2378,6 +2382,22 @@ class Evaluator {
 	  reswrite( safe_write, 0, history->get_latest_entry_num(), 0,
 		    last_compile_time, last_eval_time );
       }
+    }
+  }
+
+  //Show documentation for some object. If nothing else, fall back on
+  //the object's %O representation.
+  //TODO: If called with a string that the 'help' command recognizes,
+  //pass it back to that command, somehow.
+  int show_documentation(mixed what)
+  {
+    switch (sprintf("%t", what))
+    {
+      case "int": case "string":
+        safe_write("Nothing more than the %t %<O\n", what);
+        break;
+      default:
+        safe_write("This is a %t: %<O\n", what);
     }
   }
 }
