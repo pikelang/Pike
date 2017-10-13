@@ -1982,6 +1982,7 @@ struct pike_frame *alloc_pike_frame(void)
       res->flags=0;
       res->next=0;
       res->scope=0;
+      res->pc = NULL;
 
       DO_IF_SECURITY(
         if(CURRENT_CREDS) {
