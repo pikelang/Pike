@@ -136,6 +136,10 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   o->flags = 0;
 
+  if(p->flags & PROGRAM_USES_PARENT) {
+    assert(p->storage_needed);
+  }
+
   o->storage=p->storage_needed ? (char *)xcalloc(p->storage_needed, 1) : (char *)NULL;
 
   if (p->flags & PROGRAM_CLEAR_STORAGE) {
