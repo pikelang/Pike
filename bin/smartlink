@@ -176,6 +176,17 @@ if test x$# != x0 ; then
        LDOPTS="$LDOPTS -Xlinker -YP, -Xlinker $RPATH"
      fi
    ;;
+   Darwin\ *|NetBSD\ *)
+    if test x$LINKING != xno -a "x$RPATH" != x ; then
+      OIFS="$IFS"
+      IFS=":"
+      RPP="$PATH"
+      for RP in $RPATH ; do
+       LDOPTS="$LDOPTS -Wl,-rpath,$RP"
+     done
+     IFS="$OIFS"
+     fi
+   ;;
    *)
     LD_LIBRARY_PATH="$RPATH"
     LD_RUN_PATH="$RPATH"
