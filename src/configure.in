@@ -641,7 +641,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=yp_
       fi
     ;;
-    Darwin\ *)
+    Darwin\ *|NetBSD\ *)
       pike_cv_run_path_method=darwin_rpath
     ;;
     *)
