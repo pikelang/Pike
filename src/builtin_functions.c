@@ -7666,7 +7666,16 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
             break;
     }
     res /= *s->u.refs;
-    low_mapping_lookup(*m,s)->u.integer = res;
+
+    /* NB: We added s to the mapping above the switch, so we should
+     *     always find something here, but...
+     */
+    x = low_mapping_lookup(*m, s);
+    assert(x);
+    assert(TYPEOF(*x) == PIKE_T_INT);
+    assert(!SUBTYPEOF(*x));
+    x->u.integer = res;
+
     return res;
 }
 
