@@ -930,6 +930,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   struct keypair *k, **prev;
   struct mapping_data *md, *omd;
   int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -991,7 +992,15 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
 
   grow_md = MD_FULLP(md);
 
@@ -1048,6 +1057,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
   int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -1110,7 +1120,15 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag)
     check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
 
   if(t != T_INT) return 0;
 
