@@ -2019,6 +2019,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
     case eightbit:	f=(replace_searchfunc)mojt.vtab->func0; break;
     case sixteenbit:	f=(replace_searchfunc)mojt.vtab->func1; break;
     case thirtytwobit:	f=(replace_searchfunc)mojt.vtab->func2; break;
+    default: Pike_fatal("Invalid size_shift: %d.\n", str->size_shift); break;
     }
 
   }else{
@@ -2034,6 +2035,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
     case eightbit:	f=(replace_searchfunc)mojt.vtab->func0; break;
     case sixteenbit:	f=(replace_searchfunc)mojt.vtab->func1; break;
     case thirtytwobit:	f=(replace_searchfunc)mojt.vtab->func2; break;
+    default: Pike_fatal("Invalid size_shift: %d.\n", str->size_shift); break;
     }
 
     while((s = f(mojt.data, s, (end-s)>>str->size_shift)))
