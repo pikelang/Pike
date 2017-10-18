@@ -839,6 +839,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 #define PREPARE_FOR_INDEX_CHANGE2() \
   if(md->refs>1) COPYMAP2()
 
+#if 0
 #define PROPAGATE() do {			\
    if(md->refs==1)				\
    {						\
@@ -848,6 +849,9 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
      md->hash[h]=k;				\
    }						\
  }while(0)
+#else
+#define PROPAGATE()
+#endif
 
 
 /* Assumes md is locked */
