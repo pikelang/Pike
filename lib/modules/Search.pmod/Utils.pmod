@@ -716,7 +716,7 @@ class Logger {
 		       "notice" :  "Notice", ]);
 
     werror(sprintf("%sSearch: %s: %s\n",
-		   "          : ",
+		   "                    : ",
 		   types[type],
 		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
   }
