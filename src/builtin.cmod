@@ -1531,10 +1531,10 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 
   {
     unsigned bshift = shift, wshift;
-    if(whitespace)
-      if(!(wlen = whitespace->len))
+    if(whitespace) {
+      if(!(wlen = whitespace->len)) {
         REF_RETURN s;
-      else {
+      } else {
         ws = whitespace->str; wshift = whitespace->size_shift;
         replspace = index_shared_string(whitespace, 0);
 	if(replspace > 0xffff)
@@ -1559,7 +1559,7 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 	  ws = wstemp;
 	}
       }
-    else
+    } else
       ws = 0;
 
     init_string_builder_alloc (&sb, len, bshift);
