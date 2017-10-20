@@ -187,8 +187,8 @@ static void *handle_timeouts(void *UNUSED(ignored))
 #ifdef HAVE_POLL
     {
       /*  MacOS X is stupid, and requires a non-NULL pollfd pointer. */
-      struct pollfd sentinel;
-      poll(&sentinel,0,1000);
+      struct pollfd sentinel[1];
+      poll(sentinel, 0, 1000);
     }
 #else
     sleep(1);
