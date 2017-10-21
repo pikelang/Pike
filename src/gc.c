@@ -5717,7 +5717,8 @@ void f_count_memory (INT32 args)
 	continue;
 
       else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-	free (mc_work_queue + 1);
+	mc_work_queue++;		/* Compensate for 1-based indexing. */
+	free(mc_work_queue);
 	mc_work_queue = NULL;
 	stop_mc();
 	SIMPLE_ARG_TYPE_ERROR (
@@ -5729,7 +5730,8 @@ void f_count_memory (INT32 args)
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
 	  if (!(s2.u.program = program_from_function (s))) {
-	    free (mc_work_queue + 1);
+	    mc_work_queue++;		/* Compensate for 1-based indexing. */
+	    free(mc_work_queue);
 	    mc_work_queue = NULL;
 	    stop_mc();
 	    SIMPLE_ARG_TYPE_ERROR (
@@ -5753,7 +5755,8 @@ void f_count_memory (INT32 args)
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
 	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	      free (mc_work_queue + 1);
+	      mc_work_queue++;		/* Compensate for 1-based indexing. */
+	      free(mc_work_queue);
 	      mc_work_queue = NULL;
 	      stop_mc();
 	      throw_severity = THROW_ERROR;
@@ -5882,7 +5885,8 @@ void f_count_memory (INT32 args)
       }
 
       if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	free (mc_work_queue + 1);
+	mc_work_queue++;		/* Compensate for 1-based indexing. */
+	free(mc_work_queue);
 	mc_work_queue = NULL;
 	stop_mc();
 	throw_severity = THROW_ERROR;
@@ -6287,8 +6291,7 @@ void f_identify_cycle(INT32 args)
   mc_ref_from = (void *) (ptrdiff_t) -1;
 #endif
 
-  /* NB: 1-based indexing in mc_work_queue. */
-  mc_work_queue++;
+  mc_work_queue++;		/* Compensate for 1-based indexing. */
   free(mc_work_queue);
   mc_work_queue = NULL;
 
