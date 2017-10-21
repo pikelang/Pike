@@ -6131,7 +6131,8 @@ void f_count_memory (INT32 args)
 #endif
 
   assert (mc_wq_used == 1);
-  free (mc_work_queue + 1);
+  mc_work_queue++;		/* Compensate for 1-based indexing. */
+  free(mc_work_queue);
   mc_work_queue = NULL;
   stop_mc();
 
