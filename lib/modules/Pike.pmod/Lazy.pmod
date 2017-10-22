@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! This module provides lazy resolving of
-//! function. @code{Pike.Lazy.Standards.JSON.decode("{}");@} will not
+//! function. @expr{Pike.Lazy.Standards.JSON.decode("{}");@} will not
 //! resolve until the line is executed the first time. Note that this
 //! destroys type information and delays resolver errors.
 
