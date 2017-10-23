@@ -659,9 +659,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      pike_ftype=Pike_FP_NINF;
 	      break;
 
+#ifdef HAVE_ISZERO
 	    case Pike_FP_PZERO:
 	      pike_ftype=Pike_FP_NZERO;
 	      break;
+#endif
 	  }
 	}
 
