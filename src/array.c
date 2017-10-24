@@ -2389,9 +2389,10 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 
     switch(str->size_shift)
     {
-      case 0: f=(explode_searchfunc)mojt.vtab->func0; break;
-      case 1: f=(explode_searchfunc)mojt.vtab->func1; break;
-      case 2: f=(explode_searchfunc)mojt.vtab->func2; break;
+      case eightbit:     f=(explode_searchfunc)mojt.vtab->func0; break;
+      case sixteenbit:   f=(explode_searchfunc)mojt.vtab->func1; break;
+      case thirtytwobit: f=(explode_searchfunc)mojt.vtab->func2; break;
+      default: Pike_fatal("Invalid size_shift: %d.\n", str->size_shift);
     }
 
     while((tmp = f(mojt.data, s, (end-s)>> str->size_shift)))
