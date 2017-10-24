@@ -1,0 +1,7 @@
+Modified files:
+  pike/lib/modules/Crypto.pmod/ECC.pmod
+  pike/lib/modules/Crypto.pmod/RSA.pmod
+  pike/lib/modules/Web.pmod/module.pmod
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/ECC_Curve.pike
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/Hash.pike
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/Sign.pike
