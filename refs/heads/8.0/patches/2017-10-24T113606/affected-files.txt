@@ -1,0 +1,5 @@
+Modified files:
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike
+  pike/lib/modules/Search.pmod/Utils.pmod
+  pike/lib/modules/Standards.pmod/IIM.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/precompile.pike
