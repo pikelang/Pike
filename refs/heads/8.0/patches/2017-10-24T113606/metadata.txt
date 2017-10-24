@@ -1,0 +1,23 @@
+subject: Pike 8.0: Debug logging, Filesystem.Monitor
+from: 55404609480f1dd6496608f62466841abad94b38
+to: 80bd858d0879c37e5a7e55845426966f08930c39
+originator: Henrik Grubbstrom (Grubba) <grubba@grubba.org>
+depends: 2017-10-24T112338
+restart: true
+
+Multiple fixes:
+
+• Search.Utils: Updated debug output indentation to Roxen 6.1 conventions.
+
+• Filesystem.Monitor: Improved handling of filtered paths.
+
+Fixes an indexing the null value error when paths are filtered.
+
+• Standards.IIM: Disabled debug message.
+
+Disabled output of "Unknown segment marker:"' since it spams the log.
+
+• Filesystem.Monitor: Fixed bug in Monitor()->update().
+
+To check if the class was initialized, code looked at the variable "next_poll", this
+caused the monitor to be polled every second if a subclass later set "next_poll" to 0.
