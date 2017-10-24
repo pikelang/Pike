@@ -1,0 +1,38 @@
+subject: Pike 8.0: Add support for JWK encoding.
+from: 2a156066d524d4d61f52a1e4c43f8da117a31325
+to: 55404609480f1dd6496608f62466841abad94b38
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2017-09-20T144055
+restart: true
+
+Multiple changes:
+
+• Crypto.ECC.Curve.ECDSA: Added get_point().
+
+• __builtin.Nettle.ECC_Curve.Point: Added _equal().
+
+• Web: decode_jwk() now returns an ECDSA object for private keys.
+
+• __builtin.Nettle.Hash._HMAC.State: Implement jwk().
+
+Web.encode_jwk() should now support generating JWKs for HMACs.
+
+Fixes remainder of [PIKE-39].
+
+• Crypto.ECC.Curve.ECDSA: Implemented jwk().
+
+Support generation of JSON Web Keys (JWKs) from ECDSA objects.
+
+Fixes more of [PIKE-39].
+
+• Crypto.RSA: Implemented jwk().
+
+Support generation of JSON Web Keys (JWKs) from RSA objects.
+
+Fixes some of [PIKE-39].
+
+• Web [Crypto]: Added encode_jwk().
+
+This is the reverse of Web.decode_jwk().
+
+Fixes some of [PIKE-39].
