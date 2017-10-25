@@ -425,6 +425,7 @@ struct inherit
   /* All the identifier references in the inherited program have been
    * copied to this program with the first one at this offset. */
   INT16 identifier_level;
+  /* TODO: why is this signed. */
 
   /* The index of the identifier reference in the parent program for
    * the identifier from which this inherit was done. -1 if there's no
@@ -666,29 +667,50 @@ struct program
 };
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
+
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x, const struct program *p) {
 #ifdef PIKE_DEBUG
-static inline int PIKE_UNUSED_ATTRIBUTE CHECK_IDREF_RANGE (int x, const struct program *p)
-{
-  if (x < 0 || x >= p->num_identifier_references) {
+  if (x >= p->num_identifier_references) {
     dump_program_tables(p, 4);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
   }
+#endif
   return x;
 }
-#else
-#define CHECK_IDREF_RANGE(X, P) (X)
-#endif
 
-#define PTR_FROM_INT(P, X)	((P)->identifier_references + \
-				 CHECK_IDREF_RANGE((X), (P)))
+static inline struct reference *PTR_FROM_INT(const struct program *p, unsigned INT16 x) {
+  x = CHECK_IDREF_RANGE(x, p);
+  return p->identifier_references + x;
+}
 
-#define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
-#define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
-#define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
-#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
+static inline struct inherit *INHERIT_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *,p)->inherits + x->inherit_offset;
+}
+
+static inline struct program *PROG_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *, INHERIT_FROM_PTR(p,x)->prog);
+}
+
+static inline struct identifier *ID_FROM_PTR(const struct program *p, const struct reference *x) {
+  return PROG_FROM_PTR(p,x)->identifiers + x->identifier_offset;
+}
+
+static inline struct inherit *INHERIT_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return INHERIT_FROM_PTR(p, ref);
+}
+
+static inline struct program *PROG_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return PROG_FROM_PTR(p, ref);
+}
+
+static inline struct identifier *ID_FROM_INT(const struct program *p, unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return ID_FROM_PTR(p, ref);
+}
 
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
