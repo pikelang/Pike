@@ -315,8 +315,9 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
      * however, those are only available when compiling to amd64.
      */
   return (((size_t)h)<<32) | h;
-#endif
+#else
   return h;
+#endif
 }
 
 #ifdef __i386__
