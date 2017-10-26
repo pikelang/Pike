@@ -176,20 +176,10 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
   if (THIS->to_file)
     free_object(THIS->to_file);
 
-  if (THIS->args)
-    free_array(THIS->args);
-
   /* This can occur if Pike exits before the backend has started. */
   if (THIS->self)
     free_object(THIS->self);
 
-  /* This is not required since this is a mapped variable.
-   * /Hubbe
-   * But we do it anyway for paranoia reasons.
-   * /grubba 1999-10-14
-   */
-  free_svalue(&(THIS->callback));
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
   if (THIS->backend_callback)
     remove_callback (THIS->backend_callback);
 }
