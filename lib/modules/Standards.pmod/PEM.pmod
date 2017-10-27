@@ -68,14 +68,17 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
 class Message
 {
   //! Pre-encapsulation boundary string.
+  //!
+  //! Typically a string like @expr{"CERTIFICATE"@} or @expr{"PRIVATE KEY"@}.
   string pre;
 
   //! Post-encapsulation boundary string.
+  //!
+  //! Usually the same value as @[pre].
   string post;
 
-  //! Encapsulated headers. If headers occurred multiple times, they
-  //! will be concatenated to the value with a null character as
-  //! delimiter.
+  //! Encapsulated headers. If headers occur multiple times, they
+  //! will be concatenated separated by delimiting NUL characters.
   mapping(string:string) headers;
 
   //! The decode message body.
