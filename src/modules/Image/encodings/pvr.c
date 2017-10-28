@@ -1112,7 +1112,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_TWIDDLED_RECTANGLE:
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
-	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
+	   (w>=h && (h<8 || h>1024 || (h&(h-1)) || w%h)))
 	  Pike_error("invalid size for twiddle rectangle texture\n");
 	break;
       case MODE_COMPRESSED_MIPMAP:
@@ -1122,7 +1122,7 @@ void img_pvr_decode(INT32 args,int header_only)
 	compress = 1;
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
-	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
+	   (w>=h && (h<8 || h>1024 || (h&(h-1)) || w%h)))
 	  Pike_error("invalid size for vq texture\n");
 	break;
       case MODE_CLUT4:
