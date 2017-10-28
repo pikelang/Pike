@@ -1,9 +1,17 @@
 #pike __REAL_VERSION__
 
-//! This module provides lazy resolving of
-//! function. @expr{Pike.Lazy.Standards.JSON.decode("{}");@} will not
-//! resolve until the line is executed the first time. Note that this
-//! destroys type information and delays resolver errors.
+//! This module provides lazy resolving of functions.
+//!
+//! @example
+//!   The expression @expr{Pike.Lazy.Standards.JSON.decode@} will
+//!   evaluate to @[Standards.JSON.decode], but the resolution
+//!   (and associated compilation) of @[Standards.JSON] will be
+//!   delayed until the first time that the expression is evaluated.
+//!
+//! @note
+//!   Note that this destroys type information and delays resolver errors.
+//!
+//! Typical use is to break circular compilation dependencies between modules.
 
 protected string path;
 
@@ -27,4 +35,4 @@ protected mixed lookup(mixed ... args)
   return f(@args);
 }
 
-protected mixed `() = lookup;
+protected function(mixed...:int(0..0)) `() = lookup;
