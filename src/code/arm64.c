@@ -195,6 +195,10 @@ OPCODE_FUN set_rn_reg(unsigned INT32 instr, enum arm64_register r) {
     return instr | (r << 5);
 }
 
+OPCODE_FUN set_rt2_reg(unsigned INT32 instr, enum arm64_register r) {
+    return instr | (r << 10);
+}
+
 OPCODE_FUN set_rm_reg(unsigned INT32 instr, enum arm64_register r) {
     return instr | (r << 16);
 }
@@ -281,6 +285,39 @@ MACRO void store_multiple(enum arm64_register addr, enum arm64_multiple_mode mod
 MACRO void load_multiple(enum arm64_register addr, enum arm64_multiple_mode mode,
                          unsigned INT32 registers) {
     emulate_multiple(addr, mode, registers, 1, 1);
+}
+
+OPCODE_FUN gen_store_pair_imm(enum arm64_register reg1, enum arm64_register reg2, enum arm64_register base, INT32 offset, int sf, int index) {
+    unsigned INT32 instr = ARM_INSTR_LOADSTORE_PAIR | (sf << 31);
+
+    instr = set_rt_reg(instr, reg1);
+    instr = set_rt2_reg(instr, reg2);
+    instr = set_rn_reg(instr, base);
+
+    ARM_ASSERT(!(offset & ((4<<sf)-1)));
+    offset >>= sf+2;
+
+    instr |= index << 23;
+    instr |= (offset & 0x7f) << 15;
+    ARM_ASSERT((offset & 0x40)?
+	       (offset | 0x7f) == -1 :
+	       (offset & ~0x7f) == 0);
+
+    return instr;
+}
+
+MACRO void store64_pair_imm(enum arm64_register reg1, enum arm64_register reg2, enum arm64_register base, INT32 offset)
+{
+    add_to_program(gen_store_pair_imm(reg1, reg2, base, offset, 1, 2));
+}
+
+OPCODE_FUN gen_load_pair_imm(enum arm64_register reg1, enum arm64_register reg2, enum arm64_register base, INT32 offset, int sf, int index) {
+    return gen_store_pair_imm(reg1, reg2,  base, offset, sf, index) | (1<<22);
+}
+
+MACRO void load64_pair_imm(enum arm64_register reg1, enum arm64_register reg2, enum arm64_register base, INT32 offset)
+{
+    add_to_program(gen_load_pair_imm(reg1, reg2, base, offset, 1, 2));
 }
 
 OPCODE_FUN gen_mov_wide(enum arm64_register reg, unsigned short imm, unsigned char shift) {
@@ -2345,6 +2382,93 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_RETURN_1:
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
+      return;
+  case F_DUP:
+      arm64_debug_instr_prologue_0(opcode);
+      arm64_load_sp_reg();
+      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      return;
+  case F_SWAP:
+      arm64_debug_instr_prologue_0(opcode);
+      {
+        enum arm64_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        arm64_load_sp_reg();
+	load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+	load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+	store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+	store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
+  case F_NOT:
+      arm64_debug_instr_prologue_0(opcode);
+      {
+          struct label done, check_rval, complex;
+          enum arm64_register type, value;
+
+          ARM_ASSERT(ARM_REG_ARG1 == ARM_REG_RVAL);
+          ARM_ASSERT(PIKE_T_INT == 0);
+
+          ra_alloc(ARM_REG_ARG1);
+          value = ra_alloc_persistent();
+
+          label_init(&done);
+          label_init(&check_rval);
+          label_init(&complex);
+
+          arm64_load_sp_reg();
+
+          load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+			 (INT32)(-sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type)));
+
+          arm64_mov_int(value, 1);
+          lsl32_reg_reg(value, value, ARM_REG_ARG1);
+
+          /* everything which is neither function, object or int is true */
+          arm64_tst_int(value, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
+          /* here we use the fact that the type is nonzero */
+          b_imm_cond(label_dist(&check_rval), ARM_COND_Z);
+
+          tbz_imm(value, PIKE_T_INT, label_dist(&complex));
+
+          load64_reg_imm(value, ARM_REG_PIKE_SP, (INT32)(-sizeof(struct svalue)+OFFSETOF(svalue, u)));
+
+          /* jump to the check, we are done */
+          b_imm(label_dist(&done));
+
+          label_generate(&complex);
+          arm64_sub64_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm64_call(complex_svalue_is_true);
+          ra_free(ARM_REG_ARG1);
+
+          mov_reg(value, ARM_REG_RVAL);
+
+          label_generate(&check_rval);
+
+          arm64_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+
+          label_generate(&done);
+          /* push integer to stack */
+
+	  cmp_reg_reg(value, ARM_REG_ZERO);
+	  add_to_program(set_64bit(gen_csinc(value, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_NE)));
+
+          type = ra_alloc_any();
+
+          arm64_mov_int(type, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          store64_pair_imm(type, value, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
+
+          ra_free(type);
+          ra_free(value);
+      }
       return;
   }
 
