@@ -276,6 +276,13 @@ class conxiin {
   }
 };
 
+class sfile {
+  inherit Stdio.File;
+  int query_fd() {
+    return is_open() ? ::query_fd() : -1;
+  }
+};
+
 class conxion {
   inherit Stdio.Buffer:o;
   final conxiin i;
@@ -284,7 +291,7 @@ class conxion {
   final Thread.Mutex shortmux;
   private int closenext;
 
-  final Stdio.File socket;
+  final sfile socket;
   private function(void|mixed:void) connectfail;
   private int towrite;
   final multiset(function(void|mixed:void)) closecallbacks=(<>);
@@ -523,7 +530,7 @@ outer:
     o::create();
     qportals = _qportals;
     synctransact = 1;
-    socket=Stdio.File();
+    socket=sfile();
     i=conxiin();
     shortmux=Thread.Mutex();
     nostash=Thread.Mutex();
