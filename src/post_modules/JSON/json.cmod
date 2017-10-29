@@ -33,14 +33,14 @@ DECLARATIONS
 
 /*! @module JSON */
 
-#define ASCII_ONLY 1
-#define HUMAN_READABLE 2
-#define PIKE_CANONICAL 4
+#define JSON_ASCII_ONLY     (2<<0)
+#define JSON_HUMAN_READABLE (2<<1)
+#define JSON_PIKE_CANONICAL (2<<2)
 
-#define JSON_UTF8	1
-#define JSON_ERROR	2
-#define JSON_VALIDATE	4
-#define JSON_FIRST_VALUE 8
+#define JSON_UTF8	    (2<<3)
+#define JSON_ERROR	    (2<<4)
+#define JSON_VALIDATE	    (2<<5)
+#define JSON_FIRST_VALUE    (2<<6)
 
 static char *err_msg;
 
@@ -88,7 +88,7 @@ static void json_escape_string (struct string_builder *buf, int flags,
       Pike_error ("Cannot json encode non-unicode char "
 		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
     if (c == '"' || c == '\\' || c <= 0x1f ||
-	(c >= 0x7f && flags & ASCII_ONLY) ||
+        (c >= 0x7f && flags & JSON_ASCII_ONLY) ||
 	/* Let's escape U+2028 and U+2029 as well for compat with
 	 * parsers built in javascript - see
 	 * http://timelessrepo.com/json-isnt-a-javascript-subset. */
@@ -323,7 +323,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       string_builder_putchar (&ctx->buf, '{');
       check_mapping_for_destruct (val->u.mapping);
       if (m_sizeof (val->u.mapping)) {
-	if (ctx->flags & PIKE_CANONICAL)
+        if (ctx->flags & JSON_PIKE_CANONICAL)
 	  encode_mapcont_canon (ctx, val->u.mapping);
 	else
 	  encode_mapcont (ctx, val->u.mapping);
@@ -463,7 +463,7 @@ PIKEFUN string encode (int|float|string|array|mapping|object val,
   struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
-  ctx.indent = (ctx.flags & HUMAN_READABLE ? base_indent ? base_indent->u.integer : 0 : -1);
+  ctx.indent = (ctx.flags & JSON_HUMAN_READABLE ? base_indent ? base_indent->u.integer : 0 : -1);
   ctx.callback = callback;
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
@@ -649,9 +649,9 @@ PIKEFUN array|mapping|string|float|int|object decode_utf8(string data) {
 
 PIKE_MODULE_INIT
 {
-  add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
-  add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
-  add_integer_constant ("PIKE_CANONICAL", PIKE_CANONICAL, 0);
+  add_integer_constant ("ASCII_ONLY", JSON_ASCII_ONLY, 0);
+  add_integer_constant ("HUMAN_READABLE", JSON_HUMAN_READABLE, 0);
+  add_integer_constant ("PIKE_CANONICAL", JSON_PIKE_CANONICAL, 0);
 
   INIT;
 
