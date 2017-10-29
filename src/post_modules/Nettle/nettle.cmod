@@ -463,11 +463,12 @@ PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
 static int supports_sse42 = 0;
 
 static ATTRIBUTE((target("sse4")))
-  unsigned int intel_crc32c(const unsigned int *p, size_t len)
+  unsigned int intel_crc32c(const unsigned int *p, size_t len,
+   unsigned int h)
 {
-  unsigned int h=0xffffffff;
   const unsigned int *e = p + (len>>2);
   const unsigned char *c = (const unsigned char*)e;
+  h = ~h;
 
   /* .. all full integers .. */
   while( p<e )
@@ -479,7 +480,7 @@ static ATTRIBUTE((target("sse4")))
   while( len-- )
     h = __builtin_ia32_crc32qi(h, *(c++));
 
-  return h ^ 0xffffffff;
+  return ~h;
 }
 #endif /* HAVE_CRC32_INTRINSICS */
 
@@ -552,24 +553,34 @@ static const INT32 crc[256] = {
   0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
 };
 
-/*! @decl int(0..) crc32c(string(8bit) data)
+/*! @decl int(0..) crc32c(string(8bit) data, void|int seed)
  *! Implements the Castagnoli CRC, CRC32C. Hardware optimized on Intel
  *! CPUs with SSE 4.2.
+ *!
+ *! @param seed
+ *! Can be fed with the result of the previous invocation to chain on new data.
+ *! Defaults to zero on virgin runs.
  */
-PIKEFUN int(0..) crc32c(string(8bit) data)
+PIKEFUN int(0..) crc32c(string(8bit) data, void|int seed)
 {
+  unsigned int h = 0;
+  if(seed) {
+    if (TYPEOF(*seed) != PIKE_T_INT)
+      Pike_error("Bad argument type.\n");
+    h = seed->u.integer;
+  }
 #ifdef HAVE_CRC32_INTRINSICS
   if(supports_sse42)
   {
-    push_int64(intel_crc32c((const unsigned int *)data->str, data->len));
+    push_int64(intel_crc32c((const unsigned int *)data->str, data->len, h));
   }
   else
 #endif /* HAVE_CRC32_INTRISINCS */
   {
-    unsigned int h=0xffffffff, i=0;
-    for(; i<data->len; i++)
+    unsigned int i=0, len = data->len;
+    for(h = ~h; i<len; i++)
       h = (h>>8)^crc[(h^data->str[i])&0xFF];
-    push_int64(h ^ 0xffffffff);
+    push_int64(~h);
   }
 }
 

@@ -2187,5 +2187,6 @@ test_do( add_constant( "S" ) )
 
 test_eq( Nettle.crc32c(""), 0 )
 test_eq( Nettle.crc32c("123456789"), 0xe3069283 )
+test_eq( Nettle.crc32c("456789", Nettle.crc32c("123")), 0xe3069283 )
 
 END_MARKER
