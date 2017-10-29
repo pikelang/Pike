@@ -97,15 +97,15 @@ tr8:
 	goto st12;
 tr12:
 #line 32 "rl/json_parser.rl"
-	{ PUSH_SPECIAL(false); }
+	{ PUSH_SPECIAL(false, push_int(0)); }
 	goto st12;
 tr15:
 #line 33 "rl/json_parser.rl"
-	{ PUSH_SPECIAL(null); }
+	{ PUSH_SPECIAL(null, push_undefined()); }
 	goto st12;
 tr18:
 #line 31 "rl/json_parser.rl"
-	{ PUSH_SPECIAL(true); }
+	{ PUSH_SPECIAL(true, push_int(1)); }
 	goto st12;
 st12:
 	if ( ++p == pe )
@@ -190,18 +190,18 @@ case 11:
 		goto tr18;
 	goto st0;
 	}
-	_test_eof1: cs = 1; goto _test_eof;
-	_test_eof12: cs = 12; goto _test_eof;
-	_test_eof2: cs = 2; goto _test_eof;
-	_test_eof3: cs = 3; goto _test_eof;
-	_test_eof4: cs = 4; goto _test_eof;
-	_test_eof5: cs = 5; goto _test_eof;
-	_test_eof6: cs = 6; goto _test_eof;
-	_test_eof7: cs = 7; goto _test_eof;
-	_test_eof8: cs = 8; goto _test_eof;
-	_test_eof9: cs = 9; goto _test_eof;
-	_test_eof10: cs = 10; goto _test_eof;
-	_test_eof11: cs = 11; goto _test_eof;
+        _test_eof1: cs = 1; goto _test_eof;
+        _test_eof12: cs = 12; goto _test_eof;
+        _test_eof2: cs = 2; goto _test_eof;
+        _test_eof3: cs = 3; goto _test_eof;
+        _test_eof4: cs = 4; goto _test_eof;
+        _test_eof5: cs = 5; goto _test_eof;
+        _test_eof6: cs = 6; goto _test_eof;
+        _test_eof7: cs = 7; goto _test_eof;
+        _test_eof8: cs = 8; goto _test_eof;
+        _test_eof9: cs = 9; goto _test_eof;
+        _test_eof10: cs = 10; goto _test_eof;
+        _test_eof11: cs = 11; goto _test_eof;
 
 	_test_eof: {}
 	_out: {}
