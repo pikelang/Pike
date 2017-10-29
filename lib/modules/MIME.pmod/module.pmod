@@ -1510,7 +1510,7 @@ class Message {
 	} else
 	  error("boundary missing from multipart-body\n");
       }
-      if ((epilogue != "") && !guess) {
+      if (epilogue != "" && epilogue != "\n" && epilogue != "\r\n" && !guess) {
 	error("multipart message improperly terminated (%O%s)\n",
 	      epilogue[..200],
 	      sizeof(epilogue) > 201 ? "[...]" : "");
