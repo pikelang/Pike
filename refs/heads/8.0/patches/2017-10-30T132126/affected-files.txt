@@ -1,0 +1,2 @@
+Modified files:
+  pike/lib/modules/Protocols.pmod/LDAP.pmod/client.pike
