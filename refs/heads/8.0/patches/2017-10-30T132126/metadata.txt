@@ -1,0 +1,17 @@
+subject: Pike 8.0: Fixes to Protocols.LDAP and Image.PVR
+from: 80bd858d0879c37e5a7e55845426966f08930c39
+to: 08eda6ba48c38b9bb59e4ccec727a6cb262c5799
+originator: Erik Allemann
+depends: 2017-10-24T113606
+restart: true
+
+• Protocols.LDAP: Use SSL in blocking mode.
+
+SSL.File defaults to non-blocking mode and the LDAP module
+attempts syncronous blocking writes. Non-blocking mode causes
+these writes to eg fail with EAGAIN if the connection hasn't
+finished being negotiated before the first write.
+
+Fixes "LDAP write error: Resource temporarily unavailable".
+
+• Image.PVR: Fix size check for twiddled images. Fixes [CID 1294661].
