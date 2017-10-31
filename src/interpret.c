@@ -3054,9 +3054,10 @@ void low_safe_apply_handler(const char *fun,
 
 PMOD_EXPORT void push_text( const char *x )
 {
+    struct pike_string *s = make_shared_string(x);
     struct svalue *_sp_ = Pike_sp++;
     SET_SVAL_SUBTYPE(*_sp_, 0);
-    _sp_->u.string=make_shared_string(x);
+    _sp_->u.string=s
     debug_malloc_touch(_sp_->u.string);
     SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);
 }
