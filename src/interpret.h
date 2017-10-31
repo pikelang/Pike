@@ -411,9 +411,10 @@ PMOD_EXPORT extern void push_text( const char *x );
 PMOD_EXPORT extern void push_static_text( const char *x );
 
 #define push_constant_text(T) do{					\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct svalue *_sp_ = Pike_sp;					\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
+    Pike_sp = _sp_ + 1;                                                 \
   }while(0)
 
 #define push_constant_string_code(STR, CODE) do{			\
@@ -423,10 +424,11 @@ PMOD_EXPORT extern void push_static_text( const char *x );
   }while(0)
 
 #define push_function(OBJ, FUN) do {					\
+    INT16 _fun_ = (FUN);                                                \
     struct object *_=(OBJ);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));  	        \
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION, _fun_);  	        \
     _sp_->u.object=_;							\
   } while (0)
 
@@ -485,25 +487,28 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 #define ref_push_object(O) ref_push_object_inherit(O,0)
 
 #define ref_push_object_inherit(O, INH_NUM) do{				\
+    INT16 _inherit_ = (INH_NUM);                                        \
     struct object  *_ = (O);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT, (INH_NUM));		\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT, _inherit_);		\
     _sp_->u.object = _;							\
   }while(0)
 
 #define ref_push_function(OBJ, FUN) do {				\
+    INT16 _fun_ = (FUN);                                                \
     struct object *_=(OBJ);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));		\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION, _fun_);		\
     _sp_->u.object=_;							\
   } while (0)
 
 #define push_svalue(S) do {						\
     const struct svalue *_=(S);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct svalue *_sp_ = Pike_sp;					\
     assign_svalue_no_free(_sp_,_);					\
+    Pike_sp = _sp_ + 1;                                                 \
   }while(0)
 
 #define stack_dup() push_svalue(Pike_sp-1)
