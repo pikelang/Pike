@@ -553,7 +553,7 @@ static const INT32 crc[256] = {
   0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
 };
 
-/*! @decl int(0..) crc32c(string(8bit) data, void|int seed)
+/*! @decl int(0..) crc32c(string(8bit) data, void|int(0..) seed)
  *! Implements the Castagnoli CRC, CRC32C. Hardware optimized on Intel
  *! CPUs with SSE 4.2.
  *!
@@ -561,7 +561,7 @@ static const INT32 crc[256] = {
  *! Can be fed with the result of the previous invocation to chain on new data.
  *! Defaults to zero on virgin runs.
  */
-PIKEFUN int(0..) crc32c(string(8bit) data, void|int seed)
+PIKEFUN int(0..) crc32c(string(8bit) data, void|int(0..) seed)
 {
   unsigned int h = 0;
   if(seed) {
