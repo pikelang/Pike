@@ -3207,14 +3207,15 @@ void f__exit(INT32 args)
  *!   This function returns the number of seconds since 00:00:00 UTC, 1 Jan 1970.
  *!
  *!   The second syntax does not query the system for the current
- *!   time. Instead the latest done by the pike process is returned
- *!   again. That's slightly faster but can be wildly inaccurate. Pike
+ *!   time, instead the last time value used by the pike process is returned
+ *!   again. It avoids a system call, and thus is slightly faster,
+ *!   but can be wildly inaccurate. Pike
  *!   queries the time internally when a thread has waited for
  *!   something, typically in @[sleep] or in a backend (see
  *!   @[Pike.Backend]).
  *!
- *!   The third syntax can be used to measure time more preciely than one
- *!   second. It return how many seconds has passed since @[t]. The precision
+ *!   The third syntax can be used to measure time more precisely than one
+ *!   second. It returns how many seconds have passed since @[t]. The precision
  *!   of this function varies from system to system.
  *!
  *! @seealso
