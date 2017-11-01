@@ -229,13 +229,16 @@ PIKECLASS Buffer
      */
     if( LIKELY(!io->locked_move) )
     {
-      if( UNLIKELY((force && io->offset) || (io->offset > io->len)) )
+      if( UNLIKELY((force && io->offset) || (io_len(io) && io->offset > io->allocated / 2)) )
       {
         /* more than 50% of the buffer is available before the read pointer,
          * and we can discard that data. Move the data to the beginning, making
          * room for more data.
+         *
+         * NOTE: since the empty space at the beginning is bigger than half of the full
+         * allocated space, src and dst do not overlap. We can therefore use memcpy().
          */
-        memmove( io->buffer, io_read_pointer(io), io_len(io) );
+        memcpy( io->buffer, io_read_pointer(io), io_len(io) );
         io->num_move++;
         io->len -= io->offset;
         io->offset = 0;
