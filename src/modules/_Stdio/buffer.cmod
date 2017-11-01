@@ -1526,9 +1526,13 @@ PIKECLASS Buffer
     ref_push_object(io->this);
   }
 
-  /*! @decl protected int `[](int off)
+  /*! @decl protected int(-1..255) `[](int off)
    *!
    *! Return the character at the specified offset.
+   *!
+   *! @returns
+   *!   Returns the character at offset @[off] on success,
+   *!   and @expr{-1@} otherwise.
    */
   PIKEFUN int(8bit) `[]( int off )
     flags ID_PROTECTED;
@@ -1543,11 +1547,11 @@ PIKECLASS Buffer
       Pike_sp[-1].u.integer = -1;
   }
 
-  /*! @decl protected int `[]=(int off, int char)
+  /*! @decl protected void `[]=(int off, int char)
    *!
    *! Set the character at the specified offset to @[char].
    */
-  PIKEFUN int(8bit) `[]=( int off, int val )
+  PIKEFUN void `[]=( int off, int val )
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;
@@ -2639,7 +2643,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   /*! @decl RewindKey rewind_on_error()
    *! @decl RewindKey rewind_key()
    *!
-   *! These functions are very similar. The @[rewind_on_error] edition
+   *! These functions are very similar. The @[rewind_on_error] variant
    *! will create an object that, when it goes out of scope without
    *! having been destructed explicitly, will cause the buffer to
    *! rewind to the location it had when this function is called.
