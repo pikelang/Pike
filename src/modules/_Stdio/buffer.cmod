@@ -234,11 +234,8 @@ PIKECLASS Buffer
         /* more than 50% of the buffer is available before the read pointer,
          * and we can discard that data. Move the data to the beginning, making
          * room for more data.
-         *
-         * NOTE: since the empty space at the beginning is bigger than half of the full
-         * allocated space, src and dst do not overlap. We can therefore use memcpy().
          */
-        memcpy( io->buffer, io_read_pointer(io), io_len(io) );
+        memmove( io->buffer, io_read_pointer(io), io_len(io) );
         io->num_move++;
         io->len -= io->offset;
         io->offset = 0;
