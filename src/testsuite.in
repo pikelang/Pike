@@ -747,6 +747,11 @@ test_eq([[
   `()(){ return 1; }
 ]], 1)
 
+test_equal([[
+  lambda(array a, function f) { return f(@a); }
+	(({ 0, 1, 2, 3 })){ return __ARGS__; }
+]], ({ 0, 1, 2, 3}))
+
 // Argument checking
 
 // Test new_check_call.
