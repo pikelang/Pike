@@ -1304,6 +1304,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
+  cpos = datapos;
 
   // NB: Different timeout than init_async_timeout().
   call_out(async_timeout, data_timeout);
