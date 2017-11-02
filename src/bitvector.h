@@ -9,7 +9,6 @@
 
 #include "machine.h"
 #include "global.h"
-#include "pike_int_types.h"
 
 #if defined(HAS__BITSCANFORWARD) || defined(HAS__BITSCANFORWARD64) || defined(HAS__BITSCANREVERSE) || defined(HAS__BITSCANREVERSE64)
 # include <intrin.h>

@@ -91,6 +91,9 @@ extern struct array *gc_internal_array;
       really_free_array(v_);						\
   }while(0)
 
+#define low_allocate_array(size, extra_space)				\
+  dmalloc_touch (struct array *,					\
+		 real_allocate_array ((size), (extra_space)))
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
 
@@ -103,11 +106,6 @@ extern struct array *gc_internal_array;
 typedef int (*cmpfun)(const struct svalue *, const struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
 typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
-
-
-#define low_allocate_array(size, extra_space)				\
-  dmalloc_touch (struct array *,					\
-		 real_allocate_array ((size), (extra_space)))
 
 /* Prototypes begin here */
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
