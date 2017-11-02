@@ -480,7 +480,7 @@ OUTER: while (sizeof(buf) > cpos) {
 		if (sscanf(buf[cpos..f], "%x", np)) {
 		    if (np) cpos = f+np+4;
 		    else {
-			if (sscanf(buf[cpos..f+3], "%*x%*[ ]%s", data)
+			if (sscanf(buf[cpos..f+3], "%*x%*[^\r\n]%s", data)
 				== 3 && sizeof(data) == 4) break;
 			return;
 		    }
@@ -944,7 +944,7 @@ string data(int|void max_length)
 
 	 DBG("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
 
-	 if (sscanf(rbuf,"%x%*[ ]\r\n%s",len,s)==3)
+	 if (sscanf(rbuf,"%x%*[^\r\n]\r\n%s",len,s)==3)
 	 {
 	    if (len==0)
 	    {
