@@ -470,12 +470,17 @@ protected class Session
 
     protected void async_data()
     {
+      string s = con->data();
+
+      if (!s)		// data incomplete, try again later
+        return;
+
       mapping ret = ([
         "host"        : con->host,
         "status"      : con->status,
         "status_desc" : con->status_desc,
         "headers"     : copy_value(con->headers),
-        "data"        : con->data(),
+        "data"        : s,
         "url"         : url_requested
       ]);
 
