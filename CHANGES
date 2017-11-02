@@ -35,8 +35,11 @@ o Protocols.DNS
 
 o Protocols.HTTP
 
-  Fixed a memory leak in the HTTP header parser upon receiving
-  malformed HTTP headers.
+  - Fixed a memory leak in the HTTP header parser upon receiving
+    malformed HTTP headers.
+
+  - Fixed incoming chunked transfers (timed async works now, chunk
+    options are properly 'parsed').
 
 o Protocols.WebSocket
 
@@ -49,6 +52,11 @@ o Search
 o Sql.sqlite
 
   list_fields() now throws an error when used on a non-existent table.
+
+o Sql.pgsql
+
+  Suppress spurious 'File not open' blurts on stderr when the
+  connection is still pending and we inspect the connection object.
 
 o Stdio.Buffer
 
