@@ -290,7 +290,7 @@ struct timeval;
 #define GC2
 #endif
 
-#if defined(i386) || defined(__powerpc__) || defined(__x86_64__) || defined(__ARM_FEATURE_UNALIGNED)
+#if defined(i386) || defined(__powerpc__) || defined(__x86_64__) || (defined(__aarch64__) && defined(__ARM_FEATURE_UNALIGNED))
 #ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define HANDLES_UNALIGNED_MEMORY_ACCESS
 #endif
