@@ -3646,9 +3646,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	  copy_pike_type(types[argno], arg->type);
 	}
 	argno = !argno;
-	/* Handle the special case where CAR & CDR are the same.
-	 * Only occurrs with SHARED_NODES.
-	 */
+	/* Handle the special case where CAR & CDR are the same.  */
       } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
       goto retrace;
     }

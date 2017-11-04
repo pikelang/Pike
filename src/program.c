@@ -4468,10 +4468,6 @@ struct program *end_first_pass(int finish)
     c->resolve_cache=0;
   }
 
-#ifdef SHARED_NODES
-  /* free(node_hash.table); */
-#endif /* SHARED_NODES */
-
 #define POP
 #include "compilation.h"
 

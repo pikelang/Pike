@@ -1184,13 +1184,6 @@ MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
-dnl Shared nodes has been disabled in an ugly way. To enable it you
-dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
-dnl top of freeze_node in src/las.c. /mast
-dnl AC_ARG_WITH(shared-nodes,
-dnl 		MY_DESCR([--without-shared-nodes],
-dnl 			 [disable the SHARED_NODES mode of the optimizer]),
-dnl 		[],[with_shared_nodes=yes])
 AC_ARG_WITH(computed-goto,
 	    MY_DESCR([--with-computed-goto],
 		     [enable use of gcc-style computed goto (EXPERIMENTAL).]),
@@ -1240,13 +1233,6 @@ fi
 if test "x$with_gmp" = xno; then
   AC_MSG_ERROR([The GMP library is required to compile Pike.])
 fi
-
-dnl Pike currently breaks miserably if SHARED_NODES is not defined.
-dnl Shared nodes are still disabled bluntly. (See note above.)
-dnl if test "x$with_shared_nodes" != xno; then
-dnl  echo 'Enabling the SHARED_NODES mode of the optimizer.'
-  AC_DEFINE(SHARED_NODES)
-dnl else :; fi
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)

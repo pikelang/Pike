@@ -55,9 +55,6 @@
 /* Define this to simulate dynamic module loading with static modules. */
 #undef USE_SEMIDYNAMIC_MODULES
 
-/* Define this if you want to enable the shared nodes mode of the optimizer. */
-#undef SHARED_NODES
-
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
 

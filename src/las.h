@@ -90,9 +90,7 @@ union node_data
   {
     int ident;
     struct compiler_frame *frame;
-#ifdef SHARED_NODES
     struct program *prog;
-#endif
   } trampoline;
   struct svalue sval;
   struct
@@ -272,13 +270,8 @@ void check_foreach_type(node *expression, node *lvalues,
 #define _CDAR(n) _CDR(_CAR(n))
 #define _CDDR(n) _CDR(_CDR(n))
 
-#ifdef SHARED_NODES
 #define ADD_NODE_REF(n)	do { if (n) add_ref(n); } while(0)
 #define ADD_NODE_REF2(n, code)	do { ADD_NODE_REF(n); code; } while(0)
-#else /* !SHARED_NODES */
-#define ADD_NODE_REF(n)	(n = 0)
-#define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
-#endif /* SHARED_NODES */
 
 #define CAR(n) _CAR(n)
 #define CDR(n) _CDR(n)
