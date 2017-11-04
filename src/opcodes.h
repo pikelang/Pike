@@ -208,11 +208,7 @@ enum Pike_opcodes
 #ifdef PIKE_DEBUG
 const char *low_get_f_name(int n,struct program *p);
 const char *get_f_name(int n);
-#ifdef HAVE_COMPUTED_GOTO
-const char *get_opcode_name(PIKE_INSTR_T n);
-#else /* !HAVE_COMPUTED_GOTO */
 #define get_opcode_name(n) get_f_name(n + F_OFFSET)
-#endif /* HAVE_COMPUTED_GOTO */
 #endif
 const char *get_token_name(int n);
 void init_opcodes(void);

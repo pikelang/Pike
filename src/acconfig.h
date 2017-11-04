@@ -292,9 +292,6 @@
 /* Define this if eval_instruction gets large on your platform. */
 #undef PIKE_SMALL_EVAL_INSTRUCTION
 
-/* Define if you have gcc-style computed goto, and want to use them. */
-#undef HAVE_COMPUTED_GOTO
-
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
 

@@ -56,9 +56,7 @@ void add_runned(PIKE_INSTR_T instr)
     tmp=tmp[0]->next + last_instruction[e];
     last_instruction[e]=last_instruction[e+1];
   }
-#ifndef HAVE_COMPUTED_GOTO
   ((char **)(tmp))[0]++;
-#endif /* !HAVE_COMPUTED_GOTO */
   last_instruction[e]=instr;
 }
 
@@ -278,33 +276,6 @@ const char *get_f_name(int n)
   return low_get_f_name(n, NULL);
 }
 
-#ifdef HAVE_COMPUTED_GOTO
-const char *get_opcode_name(PIKE_INSTR_T n)
-{
-  int fcode;
-  int low = 0;
-  int high = F_MAX_OPCODE - F_OFFSET;
-  static char buf[64];
-
-  if (!n) {
-    return "<NULL opcode!>";
-  }
-
-  while (low < high) {
-    int mid = (low+high)/2;
-    if (opcode_to_fcode[mid].opcode < n) {
-      low = mid + 1;
-    } else if (opcode_to_fcode[mid].opcode > n) {
-      high = mid;
-    } else {
-      return get_f_name(opcode_to_fcode[mid].fcode);
-    }
-  }
-
-  sprintf(buf, "<Unknown opcode 0x%p>", n);
-  return buf;
-}
-#endif /* HAVE_COMPUTED_GOTO */
 #endif /* PIKE_DEBUG */
 
 const char *get_token_name(int n)

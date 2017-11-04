@@ -19,28 +19,6 @@
 #undef JUMP_DONE
 #define JUMP_DONE DONE
 
-#ifdef HAVE_COMPUTED_GOTO
-
-#define CASE(OP)	PIKE_CONCAT(LABEL_,OP): FETCH
-#define FETCH		(instr = PROG_COUNTER[0])
-#ifdef PIKE_DEBUG
-#define DONE		continue
-#else /* !PIKE_DEBUG */
-#define DONE		do {	\
-    Pike_fp->pc = PROG_COUNTER++;		\
-    goto *instr;		\
-  } while(0)
-
-#endif /* PIKE_DEBUG */
-
-#define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(PROG_COUNTER++)))
-#define LOW_GET_JUMP()	((INT32)(ptrdiff_t)(*(PROG_COUNTER)))
-#define LOW_SKIPJUMP()	(instr = (++PROG_COUNTER)[0])
-
-#define GET_ARG()	LOW_GET_ARG()
-#define GET_ARG2()	LOW_GET_ARG()
-
-#else /* !HAVE_COMPUTED_GOTO */
 
 #define CASE(X)		case (X)-F_OFFSET:
 #define DONE		break
@@ -78,7 +56,6 @@
 
 #endif /* PIKE_DEBUG */
 
-#endif /* HAVE_COMPUTED_GOTO */
 
 #ifndef STEP_BREAK_LINE
 #define STEP_BREAK_LINE
@@ -87,12 +64,7 @@
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
   PIKE_INSTR_T instr;
-#ifdef HAVE_COMPUTED_GOTO
-  static void *strap = &&init_strap;
-  instr = NULL;
-#else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 prefix2=0,prefix=0;
-#endif /* HAVE_COMPUTED_GOTO */
   /* Variables that are commonly used by the various opcodes.
    * They are defined here to reduce the size of the stack frame.
    */
@@ -107,10 +79,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #undef LOCAL_VAR
 #define LOCAL_VAR(X)	/* Local variable defined above. */
 
-#ifdef HAVE_COMPUTED_GOTO
-  goto *strap;
- normal_strap:
-#endif /* HAVE_COMPUTED_GOTO */
 
   debug_malloc_touch(Pike_fp);
   while(1)
@@ -126,9 +94,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       low_debug_instr_prologue (instr);
 #endif
 
-#ifdef HAVE_COMPUTED_GOTO
-    goto *instr;
-#else /* !HAVE_COMPUTED_GOTO */
     switch(instr)
     {
       /* NOTE: The prefix handling is not needed in computed-goto mode. */
@@ -157,7 +122,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX2_CHARX256);
         prefix2 += (pc++)[0]<<8;
       DONE;
-#endif /* HAVE_COMPUTED_GOTO */
 
 
 #define INTERPRETER
@@ -230,139 +194,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #include "interpret_functions.h"
 
-#ifndef HAVE_COMPUTED_GOTO
     default:
       Pike_fatal("Strange instruction %ld\n",(long)instr);
     }
-#endif /* !HAVE_COMPUTED_GOTO */
   }
 
   UNREACHABLE();
 
-#ifdef HAVE_COMPUTED_GOTO
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-  /* NOTE: No need to redefine these.
-   * #undef OPCODE0_ALIAS
-   * #undef OPCODE1_ALIAS
-   * #undef OPCODE2_ALIAS
-   */
-#undef LABEL
-#define LABEL(OP)			&&PIKE_CONCAT(LABEL_,OP)
-#define NULL_LABEL(OP)			NULL
-#define OPCODE0(OP,DESC)		LABEL(OP),
-#define OPCODE1(OP,DESC)		LABEL(OP),
-#define OPCODE2(OP,DESC)		LABEL(OP),
-#define OPCODE0_TAIL(OP,DESC)		LABEL(OP),
-#define OPCODE1_TAIL(OP,DESC)		LABEL(OP),
-#define OPCODE2_TAIL(OP,DESC)		LABEL(OP),
-#define OPCODE0_PTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE1_PTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE2_PTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE0_TAILPTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE1_TAILPTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE2_TAILPTRJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE0_RETURN(OP,DESC)		LABEL(OP),
-#define OPCODE1_RETURN(OP,DESC)		LABEL(OP),
-#define OPCODE2_RETURN(OP,DESC)		LABEL(OP),
-#define OPCODE0_TAILRETURN(OP,DESC)	LABEL(OP),
-#define OPCODE1_TAILRETURN(OP,DESC)	LABEL(OP),
-#define OPCODE2_TAILRETURN(OP,DESC)	LABEL(OP),
-
- init_strap:
-  strap = &&normal_strap;
-  {
-    static void *table[] = {
-      NULL_LABEL(F_OFFSET),
-
-      NULL_LABEL(F_PREFIX_256),
-      NULL_LABEL(F_PREFIX_512),
-      NULL_LABEL(F_PREFIX_768),
-      NULL_LABEL(F_PREFIX_1024),
-      NULL_LABEL(F_PREFIX_CHARX256),
-      NULL_LABEL(F_PREFIX_WORDX256),
-      NULL_LABEL(F_PREFIX_24BITX256),
-
-      NULL_LABEL(F_PREFIX2_256),
-      NULL_LABEL(F_PREFIX2_512),
-      NULL_LABEL(F_PREFIX2_768),
-      NULL_LABEL(F_PREFIX2_1024),
-      NULL_LABEL(F_PREFIX2_CHARX256),
-      NULL_LABEL(F_PREFIX2_WORDX256),
-      NULL_LABEL(F_PREFIX2_24BITX256),
-
-#include "interpret_protos.h"
-    };
-
-    static struct op_2_f lookup[] = {
-#undef LABEL
-#define LABEL(OP)	{ &&PIKE_CONCAT(LABEL_, OP), OP }
-#undef NULL_LABEL
-#define NULL_LABEL(OP)	{ NULL, OP }
-
-      NULL_LABEL(F_OFFSET),
-
-      NULL_LABEL(F_PREFIX_256),
-      NULL_LABEL(F_PREFIX_512),
-      NULL_LABEL(F_PREFIX_768),
-      NULL_LABEL(F_PREFIX_1024),
-      NULL_LABEL(F_PREFIX_CHARX256),
-      NULL_LABEL(F_PREFIX_WORDX256),
-      NULL_LABEL(F_PREFIX_24BITX256),
-
-      NULL_LABEL(F_PREFIX2_256),
-      NULL_LABEL(F_PREFIX2_512),
-      NULL_LABEL(F_PREFIX2_768),
-      NULL_LABEL(F_PREFIX2_1024),
-      NULL_LABEL(F_PREFIX2_CHARX256),
-      NULL_LABEL(F_PREFIX2_WORDX256),
-      NULL_LABEL(F_PREFIX2_24BITX256),
-
-#include "interpret_protos.h"
-    };
-
-#ifdef PIKE_DEBUG
-    if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
-      Pike_fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
-            (long)sizeof(table),
-            (long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *)));
-#endif /* PIKE_DEBUG */
-    fcode_to_opcode = table;
-    opcode_to_fcode = lookup;
-
-    qsort(lookup, F_MAX_OPCODE-F_OFFSET, sizeof(struct op_2_f),
-	  lookup_sort_fun);
-
-    return 0;
-  }
-#endif /* HAVE_COMPUTED_GOTO */
 }

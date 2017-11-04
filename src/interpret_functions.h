@@ -16,13 +16,6 @@
 #undef MKAPPLY
 #undef DO_CALL_BUILTIN
 
-#undef DO_IF_ELSE_COMPUTED_GOTO
-#ifdef HAVE_COMPUTED_GOTO
-#define DO_IF_ELSE_COMPUTED_GOTO(A, B)	(A)
-#else /* !HAVE_COMPUTED_GOTO */
-#define DO_IF_ELSE_COMPUTED_GOTO(A, B)	(B)
-#endif /* HAVE_COMPUTED_GOTO */
-
 #ifdef GEN_PROTOS
 /* Used to generate the interpret_protos.h file. */
 #define OPCODE0(A, B, F, C)		OPCODE0(A, B, F) --- C
@@ -1638,9 +1631,7 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
   JUMP_SET_TO_PC_AT_NEXT (addr);
   tmp=switch_lookup(Pike_fp->context->prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
-  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(PTR_TO_INT(addr),
-					   ((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   pop_stack();
@@ -1658,9 +1649,7 @@ OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
   tmp=switch_lookup(Pike_fp->context->prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   pop_n_elems(3);
-  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(PTR_TO_INT(addr),
-					   ((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   DO_JUMP_TO(addr + *(INT32*)addr);
@@ -1672,9 +1661,7 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
   JUMP_SET_TO_PC_AT_NEXT (addr);
   tmp=switch_lookup(Pike_fp->context->prog->
 		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
-  addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(PTR_TO_INT(addr),
-					   ((ptrdiff_t)sizeof(INT32))));
+  addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   DO_JUMP_TO(addr + *(INT32*)addr);

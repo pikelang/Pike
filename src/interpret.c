@@ -72,10 +72,6 @@
 #define LOW_SVALUE_STACK_MARGIN 20
 #define LOW_C_STACK_MARGIN 500
 
-#ifdef HAVE_COMPUTED_GOTO
-PIKE_OPCODE_T *fcode_to_opcode = NULL;
-struct op_2_f *opcode_to_fcode = NULL;
-#endif /* HAVE_COMPUTED_GOTO */
 
 PMOD_EXPORT const char Pike_check_stack_errmsg[] =
   "Svalue stack overflow. "
@@ -311,7 +307,7 @@ PMOD_EXPORT void init_interpreter(void)
     }
   }
 #endif
-#if defined(HAVE_COMPUTED_GOTO) || defined(PIKE_USE_MACHINE_CODE)
+#ifdef PIKE_USE_MACHINE_CODE
   {
     static int tables_need_init=1;
     if(tables_need_init) {
@@ -325,7 +321,7 @@ PMOD_EXPORT void init_interpreter(void)
 #endif
     }
   }
-#endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
+#endif /* PIKE_USE_MACHINE_CODE */
 }
 
 /*
@@ -863,15 +859,8 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     free_string(filep);
   }
 
-#ifdef HAVE_COMPUTED_GOTO
-  if (instr)
-    ADD_RUNNED(instr);
-  else
-    Pike_fatal("NULL Instruction!\n");
-#else /* !HAVE_COMPUTED_GOTO */
   if(instr + F_OFFSET < F_MAX_OPCODE)
     ADD_RUNNED(instr);
-#endif /* HAVE_COMPUTED_GOTO */
 
   if(d_flag )
   {
@@ -1008,13 +997,6 @@ PMOD_EXPORT void dump_backlog(void)
 #endif
 
       file = get_line(backlog[e].pc,p, &line);
-#ifdef HAVE_COMPUTED_GOTO
-      fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
-	      file->str,
-	      (long)line,
-	      backlog[e].pc - p->program,
-	      get_opcode_name(backlog[e].instruction));
-#else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
 	fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): ILLEGAL INSTRUCTION %d\n",
@@ -1047,7 +1029,6 @@ PMOD_EXPORT void dump_backlog(void)
       }
       fprintf(stderr," %ld, %ld\n", (long)backlog[e].stack,
               (long)backlog[e].mark_stack);
-#endif /* HAVE_COMPUTED_GOTO */
       free_string(file);
     }
   }while(e!=backlogp);
@@ -1652,8 +1633,6 @@ ptrdiff_t PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define OPCODE1_ALIAS(O,N,F,C)
 #define OPCODE2_ALIAS(O,N,F,C)
 
-#undef HAVE_COMPUTED_GOTO
-
 #ifdef GLOBAL_DEF_PROG_COUNTER
 GLOBAL_DEF_PROG_COUNTER;
 #endif
@@ -1800,18 +1779,11 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
 #endif /* SET_PROG_COUNTER */
 
-#ifdef HAVE_COMPUTED_GOTO
-int lookup_sort_fun(const void *a, const void *b)
-{
-  return (int)(((ptrdiff_t)((struct op_2_f *)a)->opcode) -
-	       ((ptrdiff_t)((struct op_2_f *)b)->opcode));
-}
-#endif /* HAVE_COMPUTED_GOTO */
 
 /* NOTE: Due to the implementation of computed goto,
  *       interpreter.h may only be included once.
  */
-#if defined(PIKE_DEBUG) && !defined(HAVE_COMPUTED_GOTO)
+#if defined(PIKE_DEBUG)
 #define eval_instruction eval_instruction_with_debug
 #include "interpreter_debug.h"
 
@@ -1842,7 +1814,7 @@ static inline int eval_instruction(unsigned char *pc)
 }
 
 
-#else /* !PIKE_DEBUG || HAVE_COMPUTED_GOTO */
+#else /* !PIKE_DEBUG */
 #include "interpreter.h"
 #endif
 

@@ -159,13 +159,6 @@ struct external_variable_context
   int parent_identifier;
 };
 
-#ifdef HAVE_COMPUTED_GOTO
-extern PIKE_OPCODE_T *fcode_to_opcode;
-extern struct op_2_f {
-  PIKE_OPCODE_T opcode;
-  INT32 fcode;
-} *opcode_to_fcode;
-#endif /* HAVE_COMPUTED_GOTO */
 
 
 

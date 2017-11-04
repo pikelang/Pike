@@ -1184,10 +1184,6 @@ MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
-AC_ARG_WITH(computed-goto,
-	    MY_DESCR([--with-computed-goto],
-		     [enable use of gcc-style computed goto (EXPERIMENTAL).]),
-	    [], [with_computed_goto=no])
 
 AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
@@ -1217,7 +1213,6 @@ AC_ARG_WITH(small-eval-instruction,
 		 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
 	  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
 	  with_machine_code="no"
-	  with_computed_goto="no"
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
@@ -5912,35 +5907,9 @@ else :; fi
 
 #############################################################################
 
-if test "x$with_computed_goto" = "xyes"; then
-  AC_MSG_CHECKING(for gcc-style computed goto)
-  AC_CACHE_VAL(pike_cv_gcc_computed_goto, [
-    AC_TRY_COMPILE([], [
-      void *skip = &&label;
-
-      goto *skip;
-
-      return 1;
-
-    label:
-      return 0;
-    ], [ pike_cv_gcc_computed_goto=yes ], [ pike_cv_gcc_computed_goto=no ])
-  ])
-  AC_MSG_RESULT($pike_cv_gcc_computed_goto)
-  if test "x$pike_cv_gcc_computed_goto" = "xyes"; then
-    PIKE_MSG_WARN([Enabling computed goto (EXPERIMENTAL).])
-    AC_DEFINE(HAVE_COMPUTED_GOTO)
-  else :; fi
-else :; fi
-
-#############################################################################
-
 if test "$with_machine_code" = "yes" ; then
   AC_DEFINE_UNQUOTED(PIKE_BYTECODE_METHOD, [[PIKE_BYTECODE_`echo $pike_cv_machine_code_arch | tr '[a-z]' '[A-Z]'`]])
   byte_code_format=$pike_cv_machine_code_arch
-elif test "x$with_computed_goto" = "xyes" -a "x$pike_cv_gcc_computed_goto" = "xyes"; then
-  AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_GOTO)
-  byte_code_format="computed goto"
 else
   AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_DEFAULT)
   byte_code_format="virtual machine"

@@ -1909,9 +1909,6 @@ static struct node_s *index_modules(struct pike_string *ident,
 	      *module_index_cache = allocate_mapping(10);
 	    mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
 	    ret = mksvaluenode(Pike_sp-1);
-#if 0 && defined (COMPILER_DEBUG)
-	    safe_pike_fprintf (stderr, "Index %S: %O\n", ident, Pike_sp - 1);
-#endif
 	  }
 	  pop_stack();
 	  return ret;
@@ -1922,9 +1919,6 @@ static struct node_s *index_modules(struct pike_string *ident,
     UNSETJMP(tmp);
   }
 
-#if 0 && defined (COMPILER_DEBUG)
-  safe_pike_fprintf (stderr, "Index %S: undefined\n", ident);
-#endif
 
   return 0;
 }
@@ -4624,12 +4618,8 @@ static void add_compat_event_handler(void)
     for(d=0;d<NUM_PROG_EVENTS;d++) {
       /* FIXME: This looks like it might be broken. */
       /* Broken how? -Hubbe */
-#ifdef HAVE_COMPUTED_GOTO
-      add_to_program(Pike_compiler->new_program->event_handler);
-#else /* !HAVE_COMPUTED_GOTO */
       for(e=0;e<sizeof(Pike_compiler->new_program->event_handler);e++)
 	add_to_program(tmp[e]);
-#endif /* HAVE_COMPUTED_GOTO */
     }
     Pike_compiler->new_program->event_handler=compat_event_handler;
   }
@@ -7598,10 +7588,6 @@ int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 
     if (loc.o != &fake_object) {
       low_object_index_no_free(to, loc.o, refid);
-#if 0 && defined (COMPILER_DEBUG)
-      safe_pike_fprintf (stderr, "low_program_index_no_free1 %O->%S: %O\n",
-			 what, s, to);
-#endif
       return 1;
     }
   }
@@ -7615,10 +7601,6 @@ int low_program_index_no_free(struct svalue *to, struct program *p, int e,
       /* Prototype constant. */
       SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
     }
-#if 0 && defined (COMPILER_DEBUG)
-    safe_pike_fprintf (stderr, "low_program_index_no_free2 %O->%S: %O\n",
-		       what, s, to);
-#endif
     return 1;
   }
   return 0;
