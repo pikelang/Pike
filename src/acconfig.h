@@ -105,27 +105,6 @@
 /* Define this on OS X to get two-level namespace support in ld */
 #undef USE_OSX_TWOLEVEL_NAMESPACE
 
-/* Define if your tcc supports #pragma TenDRA longlong type allow. */
-#undef HAVE_PRAGMA_TENDRA_LONGLONG
-
-/* Define if your tcc supports #pragma TenDRA set longlong type : long long. */
-#undef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-
-/* The worlds most stringent C compiler? */
-#ifdef __TenDRA__
-/* We want to be able to use 64bit arithmetic */
-#ifdef HAVE_PRAGMA_TENDRA_LONGLONG
-#pragma TenDRA longlong type allow
-#endif /* HAVE_PRAGMA_TENDRA_LONGLONG */
-#ifdef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-#pragma TenDRA set longlong type : long long
-#endif /* HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE */
-
-#ifdef _NO_LONGLONG
-#undef _NO_LONGLONG
-#endif /* _NO_LONGLONG */
-#endif /* __TenDRA__ */
-
 @TOP@
 
 /* Define this if your compiler attempts to use _chkstk, but libc contains
