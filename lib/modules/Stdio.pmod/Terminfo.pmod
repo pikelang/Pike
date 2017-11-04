@@ -671,7 +671,7 @@ class TerminfoDB {
   protected private mapping(string:Terminfo) cache = ([]);
   protected private int complete_index=0;
 
-  protected string _sprintf()
+  protected string _sprintf(int c)
   {
     return sprintf("Stdio.Terminfo.TerminfoDB(%O)", dir);
   }
