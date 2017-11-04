@@ -3843,9 +3843,10 @@ PIKECLASS single_string_replace
 
       switch(str->size_shift)
       {
-      case 0: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
-      case 1: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
-      case 2: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
+      case eightbit: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
+      case sixteenbit: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
+      case thirtytwobit: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
+      default: UNREACHABLE();
       }
 
       if(del->len == to->len)
