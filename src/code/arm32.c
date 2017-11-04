@@ -2051,6 +2051,7 @@ static void low_ins_f_byte(unsigned int opcode)
           /* jump to the check, we are done */
           b_imm(label_dist(&done), ARM_COND_AL);
 
+          label_generate(&complex);
           arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
           arm32_call(complex_svalue_is_true);
           ra_free(ARM_REG_ARG1);
