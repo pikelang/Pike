@@ -1933,14 +1933,13 @@ static void arm64_mark(enum arm64_register base, int offset) {
     } else {
       arm64_sub64_reg_int(tmp2, base, -offset);
     }
-    store64_reg_imm(tmp2, tmp, 0);
+    store64_reg_imm_post(tmp2, tmp, sizeof(void*));
 
     ra_free(tmp2);
   } else {
-    store64_reg_imm(base, tmp, 0);
+    store64_reg_imm_post(base, tmp, sizeof(void*));
   }
 
-  add64_reg_imm(tmp, tmp, sizeof(void*), 0);
   store64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   ra_free(tmp);
