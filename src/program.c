@@ -7169,7 +7169,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 						 dmalloc_touch(struct program *,
 							       p),
 						 SEE_PROTECTED);
-    if ((i >= 0) && !(p->flags & PROGRAM_FINISHED)) {
+    if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
       yywarning("Compat: Substituting destroy() for _destruct().");
     }
   }
