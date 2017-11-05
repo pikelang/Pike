@@ -63,24 +63,13 @@
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
-  PIKE_INSTR_T instr;
   unsigned INT32 prefix2=0,prefix=0;
-  /* Variables that are commonly used by the various opcodes.
-   * They are defined here to reduce the size of the stack frame.
-   */
-  struct svalue tmp, tmp2;
-  struct external_variable_context loc;
-  struct program *p;
-  struct object *o;
-  struct svalue *s;
-  PIKE_OPCODE_T *addr;
-  DO_IF_DEBUG(struct byte_buffer save_buf);
 
   debug_malloc_touch(Pike_fp);
   while(1)
   {
     INT32 arg1, arg2;
-    instr = pc[0];
+    PIKE_INSTR_T instr = pc[0];
     Pike_fp->pc = pc++;
 
     STEP_BREAK_LINE
