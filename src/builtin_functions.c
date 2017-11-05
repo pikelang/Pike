@@ -7497,7 +7497,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(callback);
   COUNT(catch_context);
   COUNT(compat_cb_box);
-  COUNT(destroy_called_mark);
+  COUNT(destruct_called_mark);
   COUNT(gc_rec_frame);
   COUNT(mapping);
   COUNT(marker);
