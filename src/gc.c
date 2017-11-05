@@ -94,7 +94,7 @@ struct svalue gc_done_cb;
  *   Free remaining unmarked objects.
  *
  * GC_PASS_KILL
- *   Destruct remaining unmarked live (lfun::destroy()) objects.
+ *   Destruct remaining unmarked live (lfun::_destruct()) objects.
  *
  * GC_PASS_DESTRUCT
  *   Destruct objects to destruct.
@@ -149,7 +149,7 @@ struct svalue gc_done_cb;
  * gc pass will be freed. That's done before the live object destruct
  * pass. Internal weak references are however still intact.
  *
- * Note: Keep the doc for lfun::destroy up-to-date with the above.
+ * Note: Keep the doc for lfun::_destruct up-to-date with the above.
  */
 
 /* #define GC_DEBUG */
@@ -4059,7 +4059,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 
     /* At this point, unreferenced contains the number of things that
      * were without external references during the check and mark
-     * passes. In the process of freeing them, destroy functions might
+     * passes. In the process of freeing them, _destruct functions might
      * have been called which means anything might have happened.
      * Therefore we use that figure instead of the difference between
      * the number of allocated things to measure the amount of

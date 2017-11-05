@@ -490,7 +490,7 @@ void exit_modules(void)
     while (count) {
       size_t new_count = do_gc (NULL, 1);
       if (new_count >= count) {
-	fprintf (stderr, "Some destroy function is creating new objects "
+	fprintf (stderr, "Some _destruct function is creating new objects "
 		 "during final cleanup - can't exit cleanly.\n");
 	break;
       }

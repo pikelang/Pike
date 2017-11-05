@@ -60,7 +60,7 @@ extern struct pike_string *type_check_system_string;
 enum LFUN {
     LFUN___INIT,
     LFUN_CREATE,
-    LFUN_DESTROY,
+    LFUN__DESTRUCT,
     LFUN_ADD,
     LFUN_SUBTRACT,
     LFUN_AND,

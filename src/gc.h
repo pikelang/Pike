@@ -209,7 +209,7 @@ struct marker
 #define GC_CYCLE_CHECKED	0x0004
 /* The thing has been pushed in the cycle check pass. */
 #define GC_LIVE			0x0008
-/* The thing is a live object (i.e. not destructed and got a destroy
+/* The thing is a live object (i.e. not destructed and got a _destruct
  * function) or is referenced from a live object. Set in the cycle
  * check pass. */
 #define GC_LIVE_OBJ		0x0010
@@ -362,7 +362,7 @@ void cleanup_gc(void);
 
 /* An object is considered live if its program has the flag
  * PROGRAM_LIVE_OBJ set. That flag gets set if:
- * o  There's a destroy LFUN,
+ * o  There's a _destruct LFUN,
  * o  a program event callback is set with pike_set_prog_event_callback,
  * o  an exit callback is set with set_exit_callback, or
  * o  any inherited program has PROGRAM_LIVE_OBJ set.

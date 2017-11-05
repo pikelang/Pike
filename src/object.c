@@ -742,13 +742,13 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
   if(!o || !o->prog) {
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
-      fprintf(stderr, "|   Not calling destroy() in "
+      fprintf(stderr, "|   Not calling _destruct() in "
 	      "destructed %p with %d refs.\n", o, o->refs);
 #endif
     return; /* Object already destructed */
   }
 
-  e=FIND_LFUN(o->prog,LFUN_DESTROY);
+  e=FIND_LFUN(o->prog,LFUN__DESTRUCT);
   if(e != -1
 #ifdef DO_PIKE_CLEANUP
      && Pike_interpreter.evaluator_stack
@@ -757,7 +757,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
   {
 #ifdef PIKE_DEBUG
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-      Pike_fatal("Calling destroy() inside gc.\n");
+      Pike_fatal("Calling _destruct() inside gc.\n");
 #endif
     if(check_destroy_called_mark_semaphore(o))
     {
@@ -765,7 +765,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
-	fprintf(stderr, "|   Calling destroy() in %p with %d refs.\n",
+	fprintf(stderr, "|   Calling _destruct() in %p with %d refs.\n",
 		o, o->refs);
 #endif
 
@@ -807,7 +807,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
-	fprintf(stderr, "|   Called destroy() in %p with %d refs.\n",
+	fprintf(stderr, "|   Called _destruct() in %p with %d refs.\n",
 		o, o->refs);
 #endif
     }
@@ -815,14 +815,14 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #ifdef GC_VERBOSE
   else
     if (Pike_in_gc > GC_PASS_PREPARE)
-      fprintf(stderr, "|   No destroy() to call in %p with %d refs.\n",
+      fprintf(stderr, "|   No _destruct() to call in %p with %d refs.\n",
 	      o, o->refs);
 #endif
 }
 
 static int object_has_destroy( struct object *o )
 {
-    return QUICK_FIND_LFUN( o->prog, LFUN_DESTROY ) != -1;
+    return QUICK_FIND_LFUN( o->prog, LFUN__DESTRUCT ) != -1;
 }
 
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
@@ -879,7 +879,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( object_has_destroy( o ) )
   {
       call_destroy(o, reason);
-      /* destructed in destroy() */
+      /* destructed in _destruct() */
       if(!(p=o->prog))
       {
           free_object(o);
@@ -1057,7 +1057,7 @@ void low_destruct_objects_to_destruct(void)
       /* Link object back to list of objects */
       DOUBLELINK(first_object,o);
 
-      /* call destroy, keep one ref */
+      /* call _destruct, keep one ref */
       add_ref(o);
       destruct_object (o, DESTRUCT_NO_REFS);
       free_object(o);

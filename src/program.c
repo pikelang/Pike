@@ -125,6 +125,8 @@ static struct pike_string *UNDEFINED_string;
 struct pike_string *parser_system_string;
 struct pike_string *type_check_system_string;
 
+struct pike_string *compat_lfun_destroy_string;
+
 /* NOTE: There is a corresponding list to this one in
    Tools.AutoDoc.PikeObjects
 
@@ -134,7 +136,7 @@ struct pike_string *type_check_system_string;
 const char *const lfun_names[]  = {
   "__INIT",
   "create",
-  "destroy",
+  "_destruct",
   "`+",
   "`-",
   "`&",
@@ -199,7 +201,7 @@ static struct mapping *lfun_types;
 static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
-  tFuncV(tOr(tVoid,tInt),tVoid,tVoid), /* "destroy", */
+  tFuncV(tOr(tVoid,tInt),tVoid,tVoid), /* "_destruct", */
   tFuncV(tZero,tZero,tMix),	/* "`+", */
   tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
   tFuncV(tNone,tZero,tMix),	/* "`&", */
@@ -268,7 +270,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @item
  *!     Object initialization and destruction.
  *!
- *!     @[__INIT()], @[create()], @[destroy()]
+ *!     @[__INIT()], @[create()], @[_destruct()]
  *!
  *!   @item
  *!     Unary operator overloading.
@@ -374,10 +376,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @endcode
  *!
  *! @seealso
- *!   @[lfun::__INIT()], @[lfun::destroy()]
+ *!   @[lfun::__INIT()], @[lfun::_destruct()]
  */
 
-/*! @decl void lfun::destroy (void|int reason)
+/*! @decl void lfun::_destruct (void|int reason)
  *!
  *!   Object destruction callback.
  *!
@@ -406,7 +408,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @note
  *! Objects are normally not destructed when a process exits, so
- *! @expr{destroy@} functions aren't called then. Use @[atexit] to get
+ *! @expr{_destruct@} functions aren't called then. Use @[atexit] to get
  *! called when the process exits.
  *!
  *! @note
@@ -414,7 +416,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! If an object is destructed by the garbage collector, it's part of
  *! a reference cycle with other things but with no external
- *! references. If there are other objects with @expr{destroy@}
+ *! references. If there are other objects with @expr{_destruct@}
  *! functions in the same cycle, it becomes a problem which to call
  *! first.
  *!
@@ -428,7 +430,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @ul
  *! @item
- *!   If an object A contains an @[lfun::destroy] and an object B does
+ *!   If an object A contains an @[lfun::_destruct] and an object B does
  *!   not, then A is destructed before B.
  *! @item
  *!   If A references B single way, then A is destructed before B.
@@ -459,13 +461,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @code
  *! class Super {
  *!   class Sub {
- *!     protected void destroy() {
+ *!     protected void _destruct() {
  *!       if (!Super::this)
  *!         error ("My parent has been destructed!\n");
  *!     }
  *!   }
  *!   Sub sub = Sub();
- *!   protected void destroy() {
+ *!   protected void _destruct() {
  *!     if (!sub)
  *!       werror ("sub already destructed.\n");
  *!   }
@@ -477,11 +479,11 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @expr{error@} in @expr{Sub@}.
  *!
  *! @note
- *! When the garbage collector calls @[lfun::destroy], all accessible
- *! non-objects and objects without @expr{destroy@} functions are
- *! still intact. They are not freed if the @expr{destroy@} function
+ *! When the garbage collector calls @[lfun::_destruct], all accessible
+ *! non-objects and objects without @expr{_destruct@} functions are
+ *! still intact. They are not freed if the @expr{_destruct@} function
  *! adds external references to them. However, all objects with
- *! @[lfun::destroy] in the cycle are already scheduled for
+ *! @[lfun::_destruct] in the cycle are already scheduled for
  *! destruction and will therefore be destroyed even if external
  *! references are added to them.
  *!
@@ -2927,17 +2929,17 @@ void fixate_program(void)
     }
   }
 
-  /* Set the PROGRAM_LIVE_OBJ flag by looking for destroy() and
+  /* Set the PROGRAM_LIVE_OBJ flag by looking for _destruct() and
    * inherited PROGRAM_LIVE_OBJ flags. This is done at fixation time
    * to allow the user to set and clear that flag while the program is
    * being built. */
   if (!(p->flags & PROGRAM_LIVE_OBJ)) {
-    int e, destroy = p->lfuns[LFUN_DESTROY];
-    if (destroy > -1) {
-      struct identifier *id = ID_FROM_INT (p, destroy);
+    int e, destruct = p->lfuns[LFUN__DESTRUCT];
+    if (destruct > -1) {
+      struct identifier *id = ID_FROM_INT (p, destruct);
       if (!IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags) ||
 	  id->func.offset != -1) {
-	/* Got a destroy function that isn't a prototype. */
+	/* Got a _destruct function that isn't a prototype. */
 	p->flags |= PROGRAM_LIVE_OBJ;
 	goto program_live_obj_set;
       }
@@ -7160,7 +7162,21 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 					       dmalloc_touch(struct program *,
 							     p),
 					       SEE_PROTECTED);
-  if (i < 0 || !(p->flags & PROGRAM_FIXED)) return i;
+
+  if ((i < 0) && (lfun == LFUN__DESTRUCT)) {
+    /* Try the Pike 8.0 compatibility name. */
+    i = really_low_find_shared_string_identifier(compat_lfun_destroy_string,
+						 dmalloc_touch(struct program *,
+							       p),
+						 SEE_PROTECTED);
+    if ((i >= 0) && !(p->flags & PROGRAM_FINISHED)) {
+      yywarning("Compat: Substituting destroy() for _destruct().");
+    }
+  }
+
+  if (i < 0 || !(p->flags & PROGRAM_FIXED)) {
+    return i;
+  }
   id = ID_FROM_INT(p, i);
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
       (id->func.offset == -1)) {
@@ -8683,6 +8699,8 @@ void init_program(void)
 
   MAKE_CONST_STRING(parser_system_string, "parser");
   MAKE_CONST_STRING(type_check_system_string, "type_check");
+
+  MAKE_CONST_STRING(compat_lfun_destroy_string, "destroy");
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);

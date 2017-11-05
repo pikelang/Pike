@@ -3315,7 +3315,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @expr{o->destroy()@}, and then clears all variables in the
+ *!   Calls @expr{o->_destruct()@}, and then clears all variables in the
  *!   object. If no argument is given, the current object is destructed.
  *!
  *!   All pointers and function pointers to this object will become zero.
@@ -5075,7 +5075,7 @@ PMOD_EXPORT void f_delay(INT32 args)
  *!   mappings, multisets, objects and programs that had no nonweak
  *!   external references during the garbage collection. It's normally
  *!   the same as the number of freed things, but there might be some
- *!   difference since destroy() functions are called during freeing,
+ *!   difference since _destruct() functions are called during freeing,
  *!   which can cause more things to be freed or allocated.
  *!
  *! @seealso
