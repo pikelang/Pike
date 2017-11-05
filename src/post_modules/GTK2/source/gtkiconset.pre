@@ -26,7 +26,7 @@ void create(?GDK2.Pixbuf pixbuf)
   pgtk2__init_this_object();
 }
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj)
     gtk_icon_set_unref((GtkIconSet *)THIS->obj);

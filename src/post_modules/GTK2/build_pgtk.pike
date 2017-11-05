@@ -166,7 +166,7 @@ class GtkFunction(Class parent,
       return 0;
     string rt = return_type->pike_type( 1 );
     if( parent->name != "_global" && has_prefix(rt, "void" ) ) {
-      if ((name != "create") && (name != "destroy")) {
+      if ((name != "create") && (name != "_destruct")) {
 	rt = parent->pike_type( 1 );
       }
     }
@@ -360,7 +360,7 @@ class GtkFunction(Class parent,
       }
       else
       {
-        if( (name != "create" ) && (name != "destroy") )
+        if( (name != "create" ) && (name != "_destruct") )
           emit("  RETURN_THIS();\n");
         else
         {

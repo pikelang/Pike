@@ -11,7 +11,7 @@ class GTK2.TextIter;
 			pgtk2_text_buffer_program);
 }
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned)
       g_free((GtkTextIter *)(THIS->obj)); // Cannot use gtk_text_iter_free except on iters allocated using gtk_text_iter_copy.

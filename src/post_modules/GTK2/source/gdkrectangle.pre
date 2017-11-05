@@ -70,7 +70,7 @@ mixed cast(string type)
   }
 }
 
-void destroy()
+void _destruct()
 {
   if( THIS->obj && THIS->owned )
       g_free(THIS->obj);

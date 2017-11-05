@@ -91,7 +91,7 @@ void set(GDK2.Image|Image.Image image)
   RETURN_THIS();
 }
 
-void destroy()
+void _destruct()
 {
   /*
       if (THIS->obj)

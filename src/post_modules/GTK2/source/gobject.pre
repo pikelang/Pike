@@ -6,7 +6,7 @@ class G.Object;
 
 signal notify;
 
-void destroy()
+void _destruct()
 //! Destroy this object. This is the normal way to (eg) close a window.
 {
   if (THIS->obj)

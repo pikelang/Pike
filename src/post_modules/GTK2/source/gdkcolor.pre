@@ -101,7 +101,7 @@ Image.Color.Color image_color_object()
   pgtk2_index_stack((char *)colorname);
 }
 
-void destroy()
+void _destruct()
 //! Destroys the color object. Please note that this function does
 //! not free the color from the X-colormap (in case of pseudocolor)
 //! right now.

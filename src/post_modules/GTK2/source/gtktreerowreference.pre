@@ -65,7 +65,7 @@ int valid()
   }
 }
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned)
     gtk_tree_row_reference_free((GtkTreeRowReference *)THIS->obj);

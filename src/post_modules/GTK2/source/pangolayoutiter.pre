@@ -5,7 +5,7 @@ class Pango.LayoutIter;
 
 //! PangoLayoutIter.
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned)
     pango_layout_iter_free((PangoLayoutIter *)THIS->obj);

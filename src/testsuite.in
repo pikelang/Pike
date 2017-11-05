@@ -1441,7 +1441,7 @@ test_do([[
 	c = count++;
       }
 
-      void destroy()
+      void _destruct()
       {
 	count--;
 	if (count != c)

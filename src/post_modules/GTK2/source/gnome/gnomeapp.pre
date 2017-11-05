@@ -286,7 +286,7 @@ void set(float percent)
   RETURN_THIS();
 }
 
-void destroy()
+void _destruct()
 {
   if( THIS->obj )
     gnome_app_progress_done( (GnomeAppProgressKey)THIS->obj );

@@ -116,7 +116,7 @@ array(int) get_indices()
   }
 }
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned)
     gtk_tree_path_free((GtkTreePath *)THIS->obj);
