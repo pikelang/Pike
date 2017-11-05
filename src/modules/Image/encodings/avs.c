@@ -60,8 +60,11 @@ void image_avs_f__decode(INT32 args)
   struct object *io, *ao;
   struct pike_string *s;
   unsigned int c;
+  unsigned int len;
   int w, h;
   unsigned char *q;
+  rgb_group *img_i, *img_a;
+
   get_all_args( "decode", args, "%S", &s);
 
   if (s->len < 12)	/* Width + height + one pixel */
@@ -73,7 +76,7 @@ void image_avs_f__decode(INT32 args)
 
   /* Check for under- and overflow. */
   if ((w <= 0) || (h <= 0) || INT32_MUL_OVERFLOW(w, h) ||
-      ((w * h) & -0x40000000))
+      INT32_MUL_OVERFLOW(w*h, 4) || ((w * h) & -0x40000000))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
   if((size_t)w*h*4 != (size_t)(s->len-8))
@@ -87,15 +90,20 @@ void image_avs_f__decode(INT32 args)
   push_int( h );
   ao = clone_object( image_program, 2);
 
-  for(c=0; c< (unsigned) w * h; c++)
+  img_i = ((struct image *)io->storage)->img;
+  img_a = ((struct image *)ao->storage)->img;
+
+  len = (s->len - 8) / 4;
+
+  for(c=0; c< len; c++)
   {
     rgb_group pix, apix;
     apix.r = apix.g = apix.b = q[c*4+8];
     pix.r = q[c*4+9];
     pix.g = q[c*4+10];
     pix.b = q[c*4+11];
-    ((struct image *)io->storage)->img[c] = pix;
-    ((struct image *)ao->storage)->img[c] = apix;
+    img_i[c] = pix;
+    img_a[c] = apix;
   }
   pop_n_elems(args);
   push_static_text("image");
