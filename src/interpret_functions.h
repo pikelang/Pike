@@ -2299,12 +2299,12 @@ PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
 PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	\
                         "mark, " NAME " & return",I_UPDATE_ALL,         \
 {                                                                       \
-  PIKE_OPCODE_T *pc;                                                    \
-  if((pc=low_mega_apply(TYPE, 0, ARG2, ARG3)))                          \
+  PIKE_OPCODE_T *addr;                                                  \
+  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
   {									\
     DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
     unlink_previous_frame();                                            \
-    DO_JUMP_TO(pc);                                                     \
+    DO_JUMP_TO(addr);                                                   \
   }                                                                     \
   else {                                                                \
     DO_DUMB_RETURN;                                                     \
