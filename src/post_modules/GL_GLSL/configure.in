@@ -1,0 +1,21 @@
+AC_INIT()
+AC_MODULE_INIT()
+
+AC_CONFIG_HEADER(config.h)
+
+AC_SUBST(WARN)
+AC_SUBST(PIKEINCLUDE)
+if test "x$GCC" = xyes ; then
+   WARN="-Wall -W"
+fi
+
+AC_CHECK_HEADER([GL/gl.h], [], [echo "No GL.";exit 1])
+AC_CHECK_HEADER([GL/glext.h], [], [], [#include <GL/gl.h>])
+
+AC_CHECK_LIB(GL, glCompileShader, [], [echo "Failed to find glCompileShader in libgl"; exit 1])
+# GL_GLEXT_PROTOTYPES needed to get the prototypes tested below.
+AC_DEFINE(GL_GLEXT_PROTOTYPES, [], [Needed to get prototypes])
+AC_CHECK_FUNCS([glGenFramebuffersEXT glGenRenderbuffersEXT glGenerateMipmapEXT glGenBuffers])
+AC_CHECK_PROGS(PIKE, pike)
+
+AC_OUTPUT(Makefile)

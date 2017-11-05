@@ -1,0 +1,801 @@
+#include "machine.h"
+#include "config.h"
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+
+#include "global.h"
+#include "interpret.h"
+#include "port.h"
+#include "mapping.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+
+#include <GL/gl.h>
+#include <GL/glext.h>
+
+#define UI(X) ((GLuint)X)
+
+/*! @module GLSL
+ *!
+ *! Low-level functions needed to do 'modern' OpenGL rendering.
+ *!
+ *! You probably want to start by looking at the @[GLSLUtils] module,
+ *! or the examples included in the module.
+ *!
+ *! @decl constant GLSL_FLOAT_SIZE = sizeof(GLfloat);
+ *!
+ *! @decl constant GL_GENERATE_MIPMAP;
+ *!
+ *! @decl constant GL_GENERATE_MIPMAP_HINT;
+ *!
+ *! @decl constant GL_VERTEX_ARRAY;
+ *!
+ *! @decl constant GL_NORMAL_ARRAY;
+ *!
+ *! @decl constant GL_COLOR_ARRAY;
+ *!
+ *! @decl constant GL_SECONDARY_COLOR_ARRAY;
+ *!
+ *! @decl constant GL_INDEX_ARRAY;
+ *!
+ *! @decl constant GL_EDGE_FLAG_ARRAY;
+ *!
+ *! @decl constant GL_TEXTURE_COORD_ARRAY;
+ *!
+ *! @decl constant GL_VERTEX_PROGRAM_POINT_SIZE;
+ *!
+ *! @decl constant GL_POINT_SPRITE
+ *!
+ *! @decl constant GL_ARRAY_BUFFER
+ *!
+ *! @decl constant GL_ELEMENT_ARRAY_BUFFER
+ *!
+ *! @decl constant GL_ARRAY_BUFFER_BINDING
+ *!
+ *!
+ *! @decl constant GL_ELEMENT_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_NORMAL_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_VERTEX_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_COLOR_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_INDEX_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_SECONDARY_COLOR_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_EDGE_FLAG_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_FOG_COORDINATE_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_WEIGHT_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING
+ *!
+ *! @decl constant GL_STREAM_DRAW
+ *!
+ *! @decl constant GL_STREAM_READ
+ *!
+ *! @decl constant GL_STREAM_COPY
+ *!
+ *! @decl constant GL_STATIC_DRAW
+ *!
+ *! @decl constant GL_STATIC_READ
+ *!
+ *!
+ *! @decl constant GL_STATIC_COPY
+ *!
+ *! @decl constant GL_DYNAMIC_DRAW
+ *!
+ *! @decl constant GL_DYNAMIC_READ
+ *!
+ *! @decl constant GL_DYNAMIC_COPY
+ *!
+ *! @decl constant GL_DEPTH_COMPONENT
+ *!
+ *! @decl constant GL_DEPTH_COMPONENT16
+ *!
+ *! @decl constant GL_DEPTH_COMPONENT24
+ *!
+ *! @decl constant GL_DEPTH_COMPONENT32
+ *!
+ *!
+ *! @decl constant GL_DEPTH_ATTACHMENT_EXT
+ *!
+ *! @decl constant GL_COLOR_ATTACHMENT0_EXT
+ *!
+ *! @decl constant GL_COLOR_ATTACHMENT1_EXT
+ *!
+ *! @decl constant GL_COLOR_ATTACHMENT2_EXT
+ *!
+ *! @decl constant GL_COLOR_ATTACHMENT3_EXT
+ *!
+ *! @decl constant GL_COLOR_ATTACHMENT4_EXT
+ *!
+ *! @decl constant GL_FRAMEBUFFER_COMPLETE_EXT
+ *!
+ *! @decl constant GL_VERTEX_SHADER
+ *!
+ *! @decl constant GL_FRAGMENT_SHADER
+ *!
+ *! @decl constant GL_DEPTH_CLAMP_NV
+ *!
+ *! @decl constant GL_TEXTURE_RECTANGLE_ARB
+ *!
+ *! @decl constant GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB
+ *!
+ *! @decl constant GL_RGBA32F_ARB
+ *!
+ *! @decl constant GL_RGB32F_ARB
+ *!
+ *! @decl constant GL_ALPHA32F_ARB
+ *!
+ *! @decl constant GL_INTENSITY32F_ARB
+ *!
+ *! @decl constant GL_LUMINANCE32F_ARB
+ *!
+ *! @decl constant GL_LUMINANCE_ALPHA32F_ARB
+ *!
+ *! @decl constant GL_RGBA16F_ARB
+ *!
+ *! @decl constant GL_RGB16F_ARB
+ *!
+ *! @decl constant GL_ALPHA16F_ARB
+ *!
+ *! @decl constant GL_INTENSITY16F_ARB
+ *!
+ *! @decl constant GL_LUMINANCE16F_ARB
+ *!
+ *! @decl constant GL_LUMINANCE_ALPHA16F_ARB
+ *!
+ *! @decl constant GL_LUMINANCE8_EXT
+ *!
+ *! @decl constant GL_FRAMEBUFFER_EXT
+ *!
+ *! @decl constant GL_READ_FRAMEBUFFER_EXT
+ *!
+ *! @decl constant GL_DRAW_FRAMEBUFFER_EXT
+ */
+
+DECLARATIONS
+
+// shader..
+
+PIKEFUN int glCreateShader(int type)
+/*! @decl int glCreateShader( int type )
+ */
+{
+    RETURN (INT_TYPE)glCreateShader(type);
+}
+
+PIKEFUN void glShaderSource( int shader, string src )
+/*! @decl void glShaderSource( int shader, string source )
+ */
+{
+    const char *p[1];
+    p[0]=src->str;
+    glShaderSource( UI(shader), 1, p, NULL );
+}
+
+PIKEFUN void glCompileShader( int shader )
+/*! @decl void glCompileShader( int shader )
+ */
+{
+    int ok;
+    glCompileShader( UI(shader) );
+    glGetShaderiv( UI(shader), GL_COMPILE_STATUS, &ok );
+    if( !ok )
+    {
+	char errorlog[65536];
+	int len;
+	glGetShaderInfoLog( UI(shader), 65535, &len, errorlog);
+	errorlog[len]=0;
+	Pike_error("Compilation failed: %s\n",errorlog);
+    }
+}
+
+
+// .. program
+PIKEFUN int glCreateProgram()
+/*! @decl int glCreateProgram()
+ */
+{
+    RETURN (INT_TYPE)glCreateProgram();
+}
+
+PIKEFUN void glAttachShader(int prg, int shader )
+/*! @decl void glAttachShader( int program, int shader )
+ */
+{
+    glAttachShader( UI(prg), UI(shader) );
+}
+
+PIKEFUN void glLinkProgram( int prg )
+/*! @decl void glLinkProgram( int program );
+ */
+{
+    int ok;
+    glLinkProgram( UI(prg) );
+    glGetProgramiv( UI(prg), GL_LINK_STATUS, &ok );
+    if( !ok )
+    {
+	char errorlog[65536];
+	int len;
+	glGetProgramInfoLog( UI(prg), 65535, &len, errorlog);
+	errorlog[len]=0;
+	Pike_error("Linking failed: %s\n",errorlog);
+    }
+}
+
+PIKEFUN void glUseProgram( int prg )
+/*! @decl void glUseProgram( int program );
+ */
+{
+    glUseProgram( UI(prg) );
+}
+
+// uniforms
+PIKEFUN int glGetUniformLocation(int prg, string name )
+/*! @decl  void glGetUniformLocation(int program, string uniform )
+ */
+{
+    RETURN (INT_TYPE)glGetUniformLocation(UI(prg),name->str);
+}
+
+PIKEFUN void glUniform(int location, float v0);
+/*
+ *! @decl void glUniform( int location, float value )
+ *! @decl void glUniform( int location, float v1, float v2 )
+ *! @decl void glUniform( int location, float v1, float v2, float v3 )
+ *! @decl void glUniform( int location, float v1, float v2, float v3, float v4 )
+ *! @decl void glUniform( int location, int value )
+ *! @decl void glUniform( int location, int v1, int v2 )
+ *! @decl void glUniform( int location, int v1, int v2, int v3 )
+ *! @decl void glUniform( int location, int v1, int v2, int v3, int v4 )
+ */
+{
+    glUniform1f(location,v0);
+}
+
+PIKEFUN void glUniform(int location, float v0, float v1);
+{
+    glUniform2f(location,v0,v1);
+}
+
+PIKEFUN void glUniform(int location, float v0, float v1, float v2);
+{
+    glUniform3f(location,v0,v1,v2);
+}
+
+PIKEFUN void glUniform(int location, float v0, float v1, float v2, float v3);
+{
+    glUniform4f(location,v0,v1,v2,v3);
+}
+
+PIKEFUN void glUniform(int location, int v0);
+{
+    glUniform1i(location,v0);
+}
+
+PIKEFUN void glUniform(int location, int v0, int v1);
+{
+    glUniform2i(location,v0,v1);
+}
+
+PIKEFUN void glUniform(int location, int v0, int v1, int v2);
+{
+    glUniform3i(location,v0,v1,v2);
+}
+
+PIKEFUN void glUniform(int location, int v0, int v1, int v2, int v3);
+{
+    glUniform4i(location,v0,v1,v2,v3);
+}
+/*PIKEFUN glUnifomMatrix(int location, */
+
+
+/* per-vertex attributes */
+PIKEFUN int glGetAttribLocation(int prog,string name)
+/*! @decl int glGetAttribLocation( int progra, string name )
+ *! @decl void glVertexAttrib( int location, float value )
+ *! @decl void glVertexAttrib( int location, float v1, float v2 )
+ *! @decl void glVertexAttrib( int location, float v1, float v2, float v3 )
+ *! @decl void glVertexAttrib( int location, float v1, float v2, float v3, float v4 )
+ */
+
+{
+    RETURN glGetAttribLocation(UI(prog),name->str);
+}
+
+PIKEFUN void glVertexAttrib(int location, float v0);
+{
+    glVertexAttrib1f(location,v0);
+}
+
+PIKEFUN void glVertexAttrib(int location, float v0, float v1);
+{
+    glVertexAttrib2f(location,v0,v1);
+}
+
+PIKEFUN void glVertexAttrib(int location, float v0, float v1, float v2);
+{
+    glVertexAttrib3f(location,v0,v1,v2);
+}
+
+PIKEFUN void glVertexAttrib(int location, float v0, float v1, float v2, float v3);
+{
+    glVertexAttrib4f(location,v0,v1,v2,v3);
+}
+
+// Multitexturing
+
+PIKEFUN void glActiveTexture(int tex)
+/*! @decl void glActiveTexture( int texture_unit )
+ */
+{
+    glActiveTexture(tex);
+}
+
+PIKEFUN void glMultiTexCoord(int tex,float x)
+/*! @decl void glMultiTexCoord( int texture_unit, float x )
+ *! @decl void glMultiTexCoord( int texture_unit, float x, float y )
+ *! @decl void glMultiTexCoord( int texture_unit, float x, float y, float z )
+ */
+{
+    glMultiTexCoord1f(tex,x);
+}
+
+PIKEFUN void glMultiTexCoord(int tex,float x, float y)
+{
+    glMultiTexCoord2f(tex,x,y);
+}
+
+PIKEFUN void glMultiTexCoord(int tex,float x, float y,float z)
+{
+    glMultiTexCoord3f(tex,x,y,z);
+}
+
+
+#if defined(HAVE_GLGENFRAMEBUFFERSEXT) && defined(HAVE_GLGENRENDERBUFFERSEXT)
+// FBO:s
+
+PIKEFUN array(int) glGenFramebuffersEXT(int num)
+/*! @decl array(int) glGenFramebuffersEXT( int num )
+ */
+{
+    int i;
+    GLuint *res = xalloc( sizeof(GLuint) * num );
+    glGenFramebuffersEXT(num,res);
+    pop_stack();
+    for( i=0;i<num;i++ )
+	push_int( (INT_TYPE)res[i] );
+    f_aggregate( num );
+    free(res);
+}
+
+PIKEFUN void glBindFramebufferEXT( int which, int x )
+/*! @decl void glBindFramebufferEXT( int which, int fbo )
+ */
+{
+    glBindFramebufferEXT( which, UI(x));
+}
+
+PIKEFUN void glBindRenderbufferEXT( int x )
+/*! @decl void glBindRenderbufferEXT( int renderbuffer )
+ */
+{
+    glBindRenderbufferEXT( GL_RENDERBUFFER_EXT, UI(x));
+}
+
+PIKEFUN array(int) glGenRenderbuffersEXT(int num)
+/*! @decl array(int) glGenRenderbuffersEXT( int num )
+ */
+{
+    int i;
+    GLuint *res = xalloc( sizeof(GLuint) * num );
+    glGenRenderbuffersEXT(num,res);
+    pop_stack();
+    for( i=0;i<num;i++ )
+	push_int( (INT_TYPE)res[i] );
+    f_aggregate( num );
+    free(res);
+}
+
+PIKEFUN void glRenderbufferStorageEXT(int type,int width, int height)
+/*! @decl void glRenderbufferStorageET(int type, int width, int height )
+ */
+{
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT,type,width,height);
+}
+
+PIKEFUN void glFramebufferRenderbufferEXT( int attachment, int which )
+/*! @decl void glFramebufferRenderbufferEXT(int attachment, int renderbuffer_object )
+ */
+{
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,attachment,GL_RENDERBUFFER_EXT,UI(which));
+}
+
+PIKEFUN void glFramebufferTexture2DEXT( int attachment, int type,int texture, int mipmap )
+/*! @decl void glFramebufferTexture2DEXT(int attachment, int type, int texture, int mipmap )
+ */
+{
+    glFramebufferTexture2DEXT( GL_FRAMEBUFFER_EXT,attachment,type,texture,mipmap);
+}
+
+PIKEFUN int glCheckFramebufferStatusEXT()
+/*!  @decl int glCheckFramebufferStatusEXT()
+ */
+{
+    push_int(glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT));
+}
+#endif
+
+#if defined(HAVE_GLGENERATEMIPMAPEXT)
+PIKEFUN void glGenerateMipmapEXT(int f)
+/*!  @decl int glGenerateMipmapEXT(int target)
+ */
+{
+    glGenerateMipmapEXT(f);
+}
+#endif
+
+#ifdef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
+PIKEFUN void glCompressedTexImage2D( int target, int level, int internal,
+                                     int width, int height, int border,
+                                     string data )
+{
+	glCompressedTexImage2D(target,level,internal,width,height,border,data->len,data->str);
+}
+#endif
+
+
+
+PIKEFUN void glTexImage2DNoImage( int target, int level, int internal, int width, int height,
+				  int border, int format, int type )
+/*!  @decl int glTexImage2DNoImage( int target, int level, int internal, int width, int height, int border, int format, int type )
+ *! This is used by the framebuffer code on the pikelevel.
+ */
+{
+    glTexImage2D( target, level, internal, width, height, border, format, type, NULL );
+}
+
+
+// Vertex buffer objects.
+PIKEFUN void glBindBuffer( int target, int buffer )
+/*! @decl void glBindBuffer(int target, int buffer )
+ */
+{
+    glBindBuffer( target, UI(buffer) );
+}
+
+PIKEFUN array(int) glGenBuffers(int num)
+/*! @decl array(int) glGenBuffers(int num)
+ */
+{
+    int i;
+    GLuint *res = xalloc( sizeof(GLuint) * num );
+    glGenBuffers(num,res);
+    pop_stack();
+    for( i=0;i<num;i++ )
+	push_int( (INT_TYPE)res[i] );
+    f_aggregate( num );
+    free(res);
+}
+
+PIKEFUN int(0..1) glIsBuffer(int num)
+/*! @decl bool glIsBuffer(int id )
+ */
+{
+    RETURN glIsBuffer(UI(num));
+}
+
+struct memory
+{
+	unsigned char *p;
+	size_t size;
+};
+
+static struct program *shm_program;
+static struct memory get_memptr( struct object *o )
+{
+    struct memory res;
+    void *p;
+    if(shm_program == NULL) {
+        push_text("System.Memory");
+        SAFE_APPLY_MASTER("resolv",1);
+        shm_program=program_from_svalue(Pike_sp-1);
+        pop_stack();
+        if(shm_program == NULL)
+            Pike_error("Can't resolve System.Memory!\n");
+    }
+    res.size = 0;
+    res.p = 0;
+    if( (p = (void *)get_storage( o, shm_program )) )
+        res = *(struct memory *)p;
+    return res;
+}
+
+PIKEFUN void glBufferData(int target, object data, int usage )
+/*! @decl void glBufferData(int target, System.Memory data, int usage )
+ *! @decl void glBufferData(int target, array(float) data, int usage )
+ *! @decl void glBufferData(int target, int size, int usage )
+ */
+{
+    struct memory mem = get_memptr( data );
+    if( !mem.size ) Pike_error("Invalid memory object\n");
+    glBufferData(target, mem.size, mem.p, usage );
+}
+
+PIKEFUN void glBufferData(int target, int size, int usage )
+{
+    glBufferData( target, size, NULL, usage );
+}
+
+PIKEFUN void glBufferData(int target, array(float) data, int usage )
+{
+    int size = data->size * sizeof(GLfloat);
+    int i;
+    glBufferData( target, size, NULL, usage );
+    GLfloat *x = (GLfloat *)glMapBuffer( target, GL_WRITE_ONLY );
+    for( i=0; i<data->size; i++ )
+        x[i] = (GLfloat)data->item[i].u.float_number;
+    glUnmapBuffer(target);
+}
+
+
+PIKEFUN void glBufferSubData( int type, int dest, object data, int mem_start, int mem_len )
+{
+    struct memory mem = get_memptr( data );
+    if(mem.size < mem_start+mem_len || mem_start < 0)
+        Pike_error("Invalid memory object or offset\n");
+    glBufferSubData( type, dest, mem_len, mem.p+mem_start );
+}
+
+PIKEFUN void glBufferSubData(int target, int offset, object data )
+/*! @decl void glBufferData(int target, int offset, System.Memory data )
+ *! @decl void glBufferData(int target, int offset, System.Memory data, int data_start, int data_len )
+ *! @decl void glBufferData(int target, int offset, array(float) data )
+ */
+{
+    struct memory mem = get_memptr( data );
+    if( !mem.size ) Pike_error("Invalid memory object\n");
+    glBufferSubData(target, offset, mem.size, mem.p );
+}
+
+PIKEFUN void glBufferSubData(int target, int offset, array(float) data )
+{
+    int size = data->size * sizeof(GLfloat), i;
+    GLfloat *x = malloc( size );
+    for(i=0; i<data->size; i++ )
+	x[i] = (GLfloat)data->item[i].u.float_number;
+    glBufferSubData(target, offset, size, x );
+    free(x);
+}
+
+PIKEFUN void glColorPointer( int size, int type, int stride, int offset )
+/*! @decl void glColorPointer( int size, int type, int stride, int offset )
+ */
+{
+    glColorPointer( size, type, stride, (void*)offset );
+}
+
+PIKEFUN void glFogCoordPointer( int type, int stride, int offset )
+/*! @decl void glFogCoordPointer( int type, int stride, int offset )
+ */
+{
+    glFogCoordPointer( type, stride, (void*)offset );
+}
+
+PIKEFUN void glSecondaryColorPointer( int size, int type, int stride, int offset )
+/*! @decl void glSecondaryColorPointer( int size, int type, int stride, int offset )
+ */
+{
+    glColorPointer( size, type, stride, (void*)offset );
+}
+
+PIKEFUN void glNormalPointer( int type, int stride, int offset )
+/*! @decl void glNormalPointer(int type, int stride, int offset )
+ */
+{
+    glNormalPointer( type, stride, (void*)offset );
+}
+
+PIKEFUN void glVertexPointer( int size, int type, int stride, int offset )
+/*! @decl void glVertexPointer(int size, int type, int stride, int offset )
+ */
+{
+    glVertexPointer( size, type, stride, (void*)offset );
+}
+
+PIKEFUN void glEdgeFlagPointer( int stride, int offset )
+/*! @decl void glEdgeFlagPointer( int stride, int offset )
+ */
+{
+    glEdgeFlagPointer( stride, (void*)offset );
+}
+
+PIKEFUN void glTexCoordPointer( int size, int type, int stride, int offset )
+/*! @decl void glTexCoordPointer( int size, int type, int stride, int offset )
+ */
+{
+    glTexCoordPointer( size, type, stride, (void*)offset );
+}
+
+PIKEFUN void glVertexAttribPointer( int index, int size, int type, int normalized, int stride, int offset )
+/*! @decl void glVertexAttribPointer( int index, int size, int type, bool normalize, int stride, int offset )
+ */
+{
+    glVertexAttribPointer( UI(index), size, type, normalized, stride, (void*)offset );
+}
+
+PIKEFUN void glVertexAttribPointer( int index, int size, int type, int normalized, int stride, object data )
+/*! @decl void glVertexAttribPointer( int index, int size, int type, bool normalize, int stride, System.Memory data )
+ */
+{
+    struct memory mem = get_memptr( data );
+    if( !mem.size ) Pike_error("Invalid memory object\n");
+    glVertexAttribPointer( UI(index), size, type, normalized, stride, (void*)mem.p );
+}
+
+PIKEFUN void glEnableClientState( int state )
+/*! @decl void glEnableClientState( int state )
+ */
+{
+    glEnableClientState( state );
+}
+
+PIKEFUN void glDisableClientState( int state )
+/*! @decl void glDisableClientState( int state )
+ */
+{
+    glEnableClientState( state );
+}
+
+PIKEFUN void glEnableVertexAttribArray( int index )
+/*! @decl void glEnableVertexAttribArray( int index )
+ */
+{
+    glEnableVertexAttribArray( index );
+}
+
+PIKEFUN void glDisableVertexAttribArray( int index )
+/*! @decl void glDisableVertexAttribArray( int index )
+ */
+{
+    glDisableVertexAttribArray( index );
+}
+
+PIKEFUN void glDrawArrays(int mode, int first, int count )
+/*! @decl void glDrawArrays(int mode, int first, int count )
+ */
+{
+    glDrawArrays(mode,first,count);
+}
+
+
+
+#define GLCONST(X) add_integer_constant( "GL_" #X,GL_##X,0);
+EXTRA
+{
+    add_integer_constant( "GLSL_FLOAT_SIZE", sizeof(GLfloat), 0 );
+
+#ifdef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
+    GLCONST(COMPRESSED_RGB_S3TC_DXT1_EXT);
+    GLCONST(COMPRESSED_RGBA_S3TC_DXT1_EXT);
+    GLCONST(COMPRESSED_RGBA_S3TC_DXT3_EXT);
+    GLCONST(COMPRESSED_RGBA_S3TC_DXT5_EXT);
+#endif
+#ifdef GL_COMPRESSED_LUMINANCE_LATC1_EXT
+    GLCONST(COMPRESSED_LUMINANCE_LATC1_EXT);
+    GLCONST(COMPRESSED_SIGNED_LUMINANCE_LATC1_EXT);
+    GLCONST(COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT);
+    GLCONST(COMPRESSED_SIGNED_LUMINANCE_ALPHA_LATC2_EXT);
+#endif
+#ifdef GL_COMPRESSED_RED_RGTC1_EXT
+    GLCONST(COMPRESSED_RED_RGTC1_EXT);
+    GLCONST(COMPRESSED_SIGNED_RED_RGTC1_EXT);
+    GLCONST(COMPRESSED_RED_GREEN_RGTC2_EXT);
+    GLCONST(COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT);
+#endif
+#ifdef GL_GENERATE_MIPMAP
+    GLCONST(GENERATE_MIPMAP);
+    GLCONST(GENERATE_MIPMAP_HINT);
+#endif
+#ifdef GL_VERTEX_ARRAY
+    GLCONST(VERTEX_ARRAY);
+    GLCONST(NORMAL_ARRAY);
+    GLCONST(COLOR_ARRAY);
+    GLCONST(SECONDARY_COLOR_ARRAY);
+    GLCONST(INDEX_ARRAY);
+    GLCONST(EDGE_FLAG_ARRAY);
+    GLCONST(FOG_COORD_ARRAY);
+    GLCONST(TEXTURE_COORD_ARRAY);
+    GLCONST(VERTEX_PROGRAM_POINT_SIZE);
+#endif
+#ifdef GL_POINT_SPRITE
+    GLCONST(POINT_SPRITE);
+#endif
+#ifdef GL_ARRAY_BUFFER
+    GLCONST(ARRAY_BUFFER);
+    GLCONST(ELEMENT_ARRAY_BUFFER);
+
+    GLCONST(ARRAY_BUFFER_BINDING);
+    GLCONST(ELEMENT_ARRAY_BUFFER_BINDING);
+    GLCONST(VERTEX_ARRAY_BUFFER_BINDING);
+    GLCONST(NORMAL_ARRAY_BUFFER_BINDING);
+    GLCONST(COLOR_ARRAY_BUFFER_BINDING);
+    GLCONST(INDEX_ARRAY_BUFFER_BINDING);
+    GLCONST(TEXTURE_COORD_ARRAY_BUFFER_BINDING);
+    GLCONST(EDGE_FLAG_ARRAY_BUFFER_BINDING);
+    GLCONST(SECONDARY_COLOR_ARRAY_BUFFER_BINDING);
+    GLCONST(FOG_COORDINATE_ARRAY_BUFFER_BINDING);
+    GLCONST(WEIGHT_ARRAY_BUFFER_BINDING);
+    GLCONST(VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
+#endif
+#ifdef GL_STREAM_DRAW
+    GLCONST(STREAM_DRAW);
+    GLCONST(STREAM_READ);
+    GLCONST(STREAM_COPY);
+    GLCONST(STATIC_DRAW);
+    GLCONST(STATIC_READ);
+    GLCONST(STATIC_COPY);
+    GLCONST(DYNAMIC_DRAW);
+    GLCONST(DYNAMIC_READ);
+    GLCONST(DYNAMIC_COPY);
+#endif
+#ifdef HAVE_GLGENRENDERBUFFERSEXT
+    GLCONST(DEPTH_COMPONENT);
+    GLCONST(DEPTH_COMPONENT16);
+    GLCONST(DEPTH_COMPONENT24);
+    GLCONST(DEPTH_COMPONENT32);
+    GLCONST(DEPTH_ATTACHMENT_EXT);
+    GLCONST(COLOR_ATTACHMENT0_EXT);
+    GLCONST(COLOR_ATTACHMENT1_EXT);
+    GLCONST(COLOR_ATTACHMENT2_EXT);
+    GLCONST(COLOR_ATTACHMENT3_EXT);
+    GLCONST(COLOR_ATTACHMENT4_EXT);
+#endif
+#ifdef GL_FRAMEBUFFER_COMPLETE_EXT
+    GLCONST(FRAMEBUFFER_COMPLETE_EXT);
+#endif
+    GLCONST(VERTEX_SHADER);
+    GLCONST(FRAGMENT_SHADER);
+
+#ifdef GL_DEPTH_CLAMP_NV
+    GLCONST(DEPTH_CLAMP_NV);
+#endif
+
+#ifdef GL_TEXTURE_RECTANGLE_ARB
+    GLCONST(TEXTURE_RECTANGLE_ARB);
+    GLCONST(MAX_RECTANGLE_TEXTURE_SIZE_ARB);
+#endif
+
+#ifdef GL_RGBA32F_ARB
+    GLCONST(RGBA32F_ARB);
+    GLCONST(RGB32F_ARB);
+    GLCONST(ALPHA32F_ARB);
+    GLCONST(INTENSITY32F_ARB);
+    GLCONST(LUMINANCE32F_ARB);
+    GLCONST(LUMINANCE_ALPHA32F_ARB);
+    GLCONST(RGBA16F_ARB);
+    GLCONST(RGB16F_ARB);
+    GLCONST(ALPHA16F_ARB);
+    GLCONST(INTENSITY16F_ARB);
+    GLCONST(LUMINANCE16F_ARB);
+    GLCONST(LUMINANCE_ALPHA16F_ARB);
+    GLCONST(LUMINANCE8_EXT);
+#endif
+#ifdef GL_FRAMEBUFFER_EXT
+    GLCONST(FRAMEBUFFER_EXT);
+    GLCONST(READ_FRAMEBUFFER_EXT);
+    GLCONST(DRAW_FRAMEBUFFER_EXT);
+#endif
+}
+/*! @endmodule */

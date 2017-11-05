@@ -1,0 +1,20 @@
+@make_variables@
+
+VPATH=@srcdir@
+LDFLAGS:=$(LDFLAGS) @LDFLAGS@ -lGL
+MODNAME=GLSL
+MODDIR=GL.pmod/
+OBJS=GLSL.o
+
+CXXFLAGS=$(CFLAGS)
+
+LD=$(CC) -shared
+
+objects=$(subst .so,.o,$(modules))
+sources=$(subst .so,.c,$(modules))
+
+@dynamic_module_makefile@
+
+GLSL.o : $(SRCDIR/GLSL.c)
+
+@dependencies@
