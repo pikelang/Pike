@@ -3193,8 +3193,6 @@ int arm64_read_f_jump(INT32 offset) {
     }
 }
 
-#ifdef PIKE_DEBUG
-
 static const char *regname(PIKE_OPCODE_T reg, int sf, int sp)
 {
     static const char * const regname_str[2][33] = {
@@ -3768,5 +3766,3 @@ void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         fprintf(stderr, "%x\n", instr);
     }
 }
-
-#endif
