@@ -1514,7 +1514,7 @@ class NScopeStack
     this::flags = flags;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (sizeof(failures)) {
       logfile = logfile || "resolution.log";

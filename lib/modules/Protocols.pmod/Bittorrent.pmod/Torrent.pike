@@ -1324,7 +1324,7 @@ void got_piece_drop_interest()
 
 // ----------------------------------------------------------------
 
-void destroy()
+protected void _destruct()
 {
   // some clean-up
    if (targets) map(targets,destruct);

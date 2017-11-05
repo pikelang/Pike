@@ -1437,7 +1437,7 @@ class Connection {
      call_out(handle_timeout, 300, "'First connexion'");
    }
 
-   void destroy()
+   protected void _destruct()
    {
      shutdown_fd();
    }

@@ -252,7 +252,7 @@ class Consumer
     parent->children->update_quanta();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (parent) {
       detach();
@@ -316,7 +316,7 @@ protected string _sprintf(int c)
   return (string)buf;
 }
 
-protected void destroy()
+protected void _destruct()
 {
   // Zap the circular references in the dependency tree.
   .Stack todo = .Stack();

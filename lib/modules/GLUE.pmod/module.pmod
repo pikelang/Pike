@@ -560,7 +560,7 @@ class List {
   }
 
   //! Deletes this list and frees the list id from the id pool.
-  protected void destroy() {
+  protected void _destruct() {
 #ifdef __NT__
     all_lists[this] = 0;
 #endif
@@ -769,7 +769,7 @@ class BaseTexture {
   }
 
   //! Properly deallocates the texture.
-  protected void destroy()
+  protected void _destruct()
   {
     all_textures[this] = 0;
     texture_ids->free(id);

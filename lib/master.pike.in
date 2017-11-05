@@ -3874,11 +3874,11 @@ void runtime_warning (string where, string what, mixed... args)
     switch (where + "." + what) {
       case "gc.bad_cycle":
 	// args[0] is an array containing the objects in the cycle
-	// which aren't destructed and have destroy() functions.
+	// which aren't destructed and have _destruct() functions.
 #if 0
 	// Ignore this warning for now since we do not yet have a weak
 	// modifier, so it can't be avoided in a reasonable way.
-	werror ("GC warning: Garbing cycle where destroy() will be called "
+	werror ("GC warning: Garbing cycle where _destruct() will be called "
 		"in arbitrary order:\n%{            %s\n%}",
 		sprintf("%O", args[0][*]));
 #endif

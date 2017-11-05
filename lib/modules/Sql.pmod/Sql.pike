@@ -367,7 +367,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
-protected void destroy() {
+protected void _destruct() {
   if (master_sql)
     destruct(master_sql);
 }

@@ -1220,7 +1220,7 @@ private void procmessage() {
   destruct(waitforauthready);
 }
 
-protected void destroy() {
+protected void _destruct() {
   catch(close());
   .pgsql_util.unregister_backend();
 }

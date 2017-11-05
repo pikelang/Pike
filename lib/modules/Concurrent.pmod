@@ -526,7 +526,7 @@ class Promise
     unlocked_failure(value);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (!state) {
       unlocked_failure(({ "Promise broken.\n", backtrace() }));

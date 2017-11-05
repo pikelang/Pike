@@ -162,7 +162,7 @@ string usage = #"[options] <from> > <to>
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
                   is an EXIT function, the gc has to take the same care as if
-                  there is a destroy function. But if the EXIT function
+                  there is a _destruct function. But if the EXIT function
                   doesn't mind that arbitrary referenced pike objects gets
                   destructed before this one (a very common trait since most
                   EXIT functions only do simple cleanup), then this attribute
@@ -223,7 +223,7 @@ mapping(string:string) strings = ([
   // lfuns:
   "__INIT":"lfun_strings[LFUN___INIT]",
   "create":"lfun_strings[LFUN_CREATE]",
-  "destroy":"lfun_strings[LFUN_DESTROY]",
+  "_destruct":"lfun_strings[LFUN__DESTRUCT]",
   "`+":"lfun_strings[LFUN_ADD]",
   "`-":"lfun_strings[LFUN_SUBTRACT]",
   "`&":"lfun_strings[LFUN_AND]",

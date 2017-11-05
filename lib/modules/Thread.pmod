@@ -826,7 +826,7 @@ optional class MutexKey (protected function(:void) dec_locks)
     return 1;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (dec_locks) dec_locks();
   }

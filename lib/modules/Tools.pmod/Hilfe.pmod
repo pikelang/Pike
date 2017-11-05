@@ -15,7 +15,7 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   local variables/constants/functions/programs.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and calling it from StdinHilfe's
-  destroy.
+  _destruct.
 - Add some better multiline edit support.
 - Improve doc command to get documentation from c-code.
 ";
@@ -712,7 +712,7 @@ protected class SubSysLogger {
       running = 1;
     }
 
-    protected void destroy() {
+    protected void _destruct() {
       e && e->remove_input_hook(this);
       running = 0;
     }

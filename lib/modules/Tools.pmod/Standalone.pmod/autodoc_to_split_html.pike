@@ -185,7 +185,7 @@ class Node
         method_children[i] = 0;
         operator_children += ({ m });
       }
-      else if( (<"create","destroy">)[m->name] )
+      else if( (<"create","_destruct">)[m->name] )
       {
         /*if( m->name == "create" )
           _children -= ({ m });*/

@@ -903,7 +903,7 @@ void reset_options()
   }
 
 #if 0
-  void destroy() {
+  protected void _destruct() {
 
     //send_unbind_op();
 

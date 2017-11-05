@@ -35,7 +35,7 @@ void close()
    port=0;
 }
 
-void destroy() { close(); }
+protected void _destruct() { close(); }
 
 // the port accept callback
 

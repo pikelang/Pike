@@ -1024,7 +1024,7 @@ string _sprintf(int t)
    return 0;
 }
 
-void destroy()
+protected void _destruct()
 {
    drop(0);
 }

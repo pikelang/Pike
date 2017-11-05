@@ -173,7 +173,7 @@ close():
 	ssl_read_callback and rotate the local backend until
 	connection closed from other end, or linger time expires.
 
-destroy()
+_destruct()
 	Clear user callbacks and switch to nonblocking mode.
 	Attempt to send a close packet. Terminate the
 	internal_poll() call_out-loop.

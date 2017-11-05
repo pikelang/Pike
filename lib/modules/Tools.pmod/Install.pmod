@@ -232,9 +232,9 @@ class Readline
     exit(1);
   }
 
-  void destroy()
+  protected void _destruct()
   {
-    ::destroy();
+    ::_destruct();
     signal(signum("SIGINT"));
   }
 

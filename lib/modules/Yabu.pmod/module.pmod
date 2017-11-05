@@ -49,7 +49,7 @@ protected private class ProcessLock {
     return (int)Stdio.read_file(lock_file);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     /* Release PID lock when the object is destroyed. */
     if(have_lock)
@@ -463,7 +463,7 @@ class Chunk {
     UNLOCK();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(parent && write)
       parent->sync();
@@ -540,7 +540,7 @@ class Transaction
     table->sync();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(table)
       table->t_destroy(id);
@@ -940,7 +940,7 @@ class Table
     return val;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     sync();
     destruct(index);
@@ -1125,7 +1125,7 @@ class _Table
     return map(_indices(), `[]);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(table_destroyed)
       table_destroyed(handle);
@@ -1290,7 +1290,7 @@ class DB
     UNLOCK();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     sync();
     foreach(values(tables), Table o)
