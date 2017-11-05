@@ -40,7 +40,7 @@ void create(string db_url, void|mapping _options)
 }
 
 #ifdef SEARCH_DEBUG
-void destroy()
+void _destruct()
 {
   if (blobs_dirty)
     werror("Search.Database.MySQL: WARNING: Forgot to sync before "

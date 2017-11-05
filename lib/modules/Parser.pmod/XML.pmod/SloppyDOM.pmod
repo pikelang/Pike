@@ -1022,7 +1022,7 @@ class Document
 
   /*protected*/ void _xml_format (String.Buffer into) {xml_format_children (into);}
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (arrayp (content))
       foreach (content, string|Node child)

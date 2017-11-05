@@ -1462,7 +1462,7 @@ test_do([[
 	c = count++;
       }
 
-      void destroy()
+      void _destruct()
       {
 	count--;
 	if (count != c)
@@ -2404,11 +2404,11 @@ test_compile_error(1())
 test_compile_error(""())
 test_compile_error(([])())
 test_compile_error(([])())
-test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
-test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
+test_eval_error([[ class Z { int _destruct() { return 1/y; } }(); ]])
 
-test_any([[ class X { int y; class Z { protected void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
 ifefun(_debug,
@@ -6371,7 +6371,7 @@ test_any([[
     class Refcounter()
     { mapping state;
       void create(mapping m) { state = m; state->refs++;}
-      void destroy() {state->refs--;}
+      void _destruct() {state->refs--;}
     };
     int final_res;
     function foo()
@@ -6399,7 +6399,7 @@ test_any([[
     {
       object c;
       class A {object b;}
-      class B {object a; void destroy() {c = class{}();}}
+      class B {object a; void _destruct() {c = class{}();}}
       mixed test()
       {
 	object a = A(), b = B();
@@ -6429,43 +6429,43 @@ test_any([[
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Dead(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     array a = set_weak_flag(({Live()}), 1);
     gc();
     return set_weak_flag(a, 0);
   }]], ({0}))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     multiset l = set_weak_flag((<Live()>), 1);
     gc();
     return set_weak_flag(l, 0);
   }]], (<>))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     mapping m = set_weak_flag(([0: Live()]), 1);
     gc();
     return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     mapping m = set_weak_flag(([Live(): 0]), 1);
     gc();
     return set_weak_flag(m, 0);
@@ -6481,7 +6481,7 @@ test_any([[
       array g;
       array a = ({17});
       void create() {g = ({this});}
-      void destroy() {all_constants()->kablutt = a;}
+      void _destruct() {all_constants()->kablutt = a;}
     }();
     o = 0;
     gc();
@@ -6492,7 +6492,7 @@ test_any([[
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
-      void destroy() {
+      void _destruct() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
@@ -6505,7 +6505,7 @@ test_any([[
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
-      void destroy() {all_constants()->blatinka = a;}
+      void _destruct() {all_constants()->blatinka = a;}
     }();
     o = 0;
     gc();
@@ -6546,14 +6546,14 @@ test_do(add_constant("blatinka");)
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Dead(); o->o = Live();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
@@ -6604,7 +6604,7 @@ test_do(add_constant("blatinka");)
     class Foo {
       array(Foo) f = ({this});
       multiset(Foo) g = set_weak_flag((<this>), 1);
-      void destroy() {add_constant("beltbent_oblivion", 1);}
+      void _destruct() {add_constant("beltbent_oblivion", 1);}
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
     gc();
@@ -6650,7 +6650,7 @@ test_do(add_constant("blatinka");)
 	array b = set_weak_flag (({a}), 1);
 	a[0] = b;
       }
-      void destroy()
+      void _destruct()
       {
 	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
 	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
@@ -6669,7 +6669,7 @@ test_do(add_constant("blatinka");)
     class Live
     {
       Foo f;
-      void destroy()
+      void _destruct()
       {
 	if (!f->l || !f->a || !f->a[0] || !f->a[1])
 	  add_constant ("my_little_error", "GC garbed live things.\n");
@@ -7058,7 +7058,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    mapping a = ([1: this]);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7073,7 +7073,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    multiset a = (<this>);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7088,7 +7088,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    array a = ({this});
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7098,13 +7098,13 @@ test_do(add_constant("blatinka");)
   ]], 1)
   test_any([[
     return class {
-      class Obj (object o) {void destroy() {}}
+      class Obj (object o) {void _destruct() {}}
       Obj x;
       int test()
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7120,7 +7120,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();

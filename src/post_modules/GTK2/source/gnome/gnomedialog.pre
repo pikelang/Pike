@@ -108,7 +108,7 @@ void close();
 //! the hide or destroy will be blocked. You can do this to avoid
 //! closing the dialog if the user gives invalid input, for example.
 //! <p>
-//! Using close() in place of hide() or destroy() allows you to easily
+//! Using close() in place of hide() or _destruct() allows you to easily
 //! catch all sources of dialog closure, including delete_event and
 //! button clicks, and handle them in a central location. </p>
 

@@ -1101,7 +1101,7 @@ class server_base
   protected void send_reply(mapping r, mapping q, mapping m,
 			    Stdio.UDP|object con);
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(sizeof(ports))
     {
@@ -1263,7 +1263,7 @@ class tcp_server
       c_id = call_out(destruct, 120, this);
     }
 
-    void destroy() {
+    protected void _destruct() {
       if (con) con->close();
       destruct(con);
       m_delete(connections, this);
@@ -1329,13 +1329,13 @@ class tcp_server
     }
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     foreach (connections; Connection con;) {
       destruct(con);
     }
 
-    ::destroy();
+    ::_destruct();
   }
 }
 
@@ -1365,9 +1365,9 @@ class dual_server {
     ::create(arg1, @args);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
-    ::destroy();
+    ::_destruct();
   }
 }
 

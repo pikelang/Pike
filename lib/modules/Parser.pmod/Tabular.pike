@@ -136,7 +136,7 @@ class _checkpoint
     oldalread=0;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(oldalread)
     {

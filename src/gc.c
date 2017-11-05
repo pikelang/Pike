@@ -94,7 +94,7 @@ struct svalue gc_done_cb;
  *   Free remaining unmarked objects.
  *
  * GC_PASS_KILL
- *   Destruct remaining unmarked live (lfun::destroy()) objects.
+ *   Destruct remaining unmarked live (lfun::_destruct()) objects.
  *
  * GC_PASS_DESTRUCT
  *   Destruct objects to destruct.
@@ -149,7 +149,7 @@ struct svalue gc_done_cb;
  * gc pass will be freed. That's done before the live object destruct
  * pass. Internal weak references are however still intact.
  *
- * Note: Keep the doc for lfun::destroy up-to-date with the above.
+ * Note: Keep the doc for lfun::_destruct up-to-date with the above.
  */
 
 /* #define GC_DEBUG */
@@ -3504,7 +3504,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   cpu_time_t gc_start_time, gc_start_real_time;
   ptrdiff_t objs, pre_kill_objs;
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-  unsigned destroy_count;
+  unsigned destruct_count;
 #endif
 #ifdef PIKE_DEBUG
   unsigned obj_count;
@@ -3860,7 +3860,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     objs += num_objects;
   }
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-  destroy_count = 0;
+  destruct_count = 0;
 #endif
 
   if (!SAFE_IS_ZERO(&gc_post_cb)) {
@@ -3936,7 +3936,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
       free_object(o);
       gc_free_extra_ref(o);
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-      destroy_count++;
+      destruct_count++;
 #endif
       really_free_gc_rec_frame (kill_list);
       kill_list = next;
@@ -3950,7 +3950,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 
   GC_VERBOSE_DO(fprintf(stderr, "| kill: %u objects killed, "
 			"%"PRINTSIZET"u things really freed\n",
-			destroy_count, pre_kill_objs - num_objects));
+			destruct_count, pre_kill_objs - num_objects));
 
   Pike_in_gc=GC_PASS_DESTRUCT;
   /* Destruct objects on the destruct queue. */
@@ -4056,7 +4056,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 
     /* At this point, unreferenced contains the number of things that
      * were without external references during the check and mark
-     * passes. In the process of freeing them, destroy functions might
+     * passes. In the process of freeing them, _destruct functions might
      * have been called which means anything might have happened.
      * Therefore we use that figure instead of the difference between
      * the number of allocated things to measure the amount of
@@ -4175,7 +4175,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 #ifdef DO_PIKE_CLEANUP
       if (gc_destruct_everything)
 	fprintf(stderr, "done (%u %s destructed)%s\n",
-		destroy_count, destroy_count == 1 ? "was" : "were", timestr);
+		destruct_count, destruct_count == 1 ? "was" : "were", timestr);
       else
 #endif
 	fprintf(stderr, "done (%"PRINTSIZET"u of %"PRINTSIZET"u "
@@ -4207,7 +4207,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 
 #ifdef DO_PIKE_CLEANUP
   if (gc_destruct_everything)
-    return destroy_count;
+    return destruct_count;
 #endif
 
   if (!SAFE_IS_ZERO(&gc_done_cb)) {

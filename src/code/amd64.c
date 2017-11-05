@@ -4270,7 +4270,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
        some other function.  It is sort of hard to know when that
        happens while generating the code, however. Simply assigning
        the global could in theory actually destruct this object (old
-       value includes something with a destroy that calls destruct on
+       value includes something with a _destruct that calls destruct on
        this object...)
 
        Note that nothing crash if we do the assign. We "just" leak the

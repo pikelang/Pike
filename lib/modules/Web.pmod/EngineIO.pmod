@@ -282,7 +282,7 @@ class Socket {
       remove_call_out(close);
     }
 
-    protected void destroy() {
+    protected void _destruct() {
       shutdown();
     }
 
@@ -824,7 +824,7 @@ class Socket {
     }
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     close();
   }
 

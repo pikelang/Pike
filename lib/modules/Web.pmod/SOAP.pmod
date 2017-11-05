@@ -134,7 +134,7 @@ class Client {
   private mapping nss = ([]);
   private string nextmethod;
 
-  private void destroy() {
+  private void _destruct() {
   }
 
   //! @returns

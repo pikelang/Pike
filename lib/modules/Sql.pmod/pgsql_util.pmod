@@ -437,7 +437,7 @@ outer:
       return -1;
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     int|.pgsql_util.sql_result portal;
     if (qportals)			// CancelRequest does not use qportals
@@ -650,7 +650,7 @@ class sql_result {
     timeout = _timeout;
     syncparse = _syncparse;
     gottimeout = _pgsqlsess->cancelquery;
-    c->closecallbacks+=(<destroy>);
+    c->closecallbacks+=(<_destruct>);
     transtype = _transtype;
   }
 
@@ -1185,7 +1185,7 @@ class sql_result {
   }
 
   final void _releasesession(void|string statusccomplete) {
-    c->closecallbacks-=(<destroy>);
+    c->closecallbacks-=(<_destruct>);
     if(statusccomplete && !statuscmdcomplete)
       statuscmdcomplete=statusccomplete;
     inflight=0;
@@ -1197,7 +1197,7 @@ class sql_result {
     releaseconditions();
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     catch {			   // inside destructors, exceptions don't work
       _releasesession();
     };

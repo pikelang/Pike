@@ -55,7 +55,7 @@ class XResource
     }
   }
 
-  void destroy()
+  protected void _destruct()
   {
     if(autofree) Free();
   }

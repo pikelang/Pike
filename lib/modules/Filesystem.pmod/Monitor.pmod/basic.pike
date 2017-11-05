@@ -804,7 +804,7 @@ protected class Monitor(string path,
     return 0;
   }
 
-  protected void destroy(int cause)
+  protected void _destruct(int cause)
   {
     // NB: Cause #0 == DESTRUCT_EXPLICIT.
     //     Any other cause and unregistering is irrelevant.
@@ -1117,7 +1117,7 @@ protected class InotifyMonitor
   {
     if (wd != -1) {
       // NB: instance may be null if the main object has been destructed
-      //     and we've been called via a destroy().
+      //     and we've been called via a _destruct().
       if (instance && dying) {
 	MON_WERR("### Unregistering from inotify.\n");
 	// NB: Inotify automatically removes watches for deleted files,
@@ -1211,7 +1211,7 @@ protected void create(int|void max_dir_check_interval,
   clear();
 }
 
-protected void destroy()
+protected void _destruct()
 {
   // Destruct monitors before we're destructed ourselves, since they
   // will attempt to unregister with us.

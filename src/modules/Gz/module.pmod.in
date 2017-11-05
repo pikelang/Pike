@@ -378,7 +378,7 @@ class File {
     return ::close();
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     close();
   }
 

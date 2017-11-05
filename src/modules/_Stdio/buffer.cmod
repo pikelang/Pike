@@ -2825,7 +2825,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       free_object( THIS->obj );
     }
 
-    PIKEFUN void destroy( int reason )
+    PIKEFUN void _destruct( int reason )
       flags ID_PRIVATE;
     {
       if( reason > 1 && THIS->auto_mode ) /* no refs or gc */

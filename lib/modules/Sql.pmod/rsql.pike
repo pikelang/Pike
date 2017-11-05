@@ -195,7 +195,7 @@ string quote(string s)
 protected class RemoteResult(protected function(int,mixed:mixed) do_request,
 			     protected mixed qid)
 {
-  void destroy()
+  protected void _destruct()
   {
     do_request('Z', qid);
   }

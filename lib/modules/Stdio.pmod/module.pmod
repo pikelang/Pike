@@ -1762,9 +1762,9 @@ class File
      ::set_nonblocking();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
-    BE_WERR("destroy()");
+    BE_WERR("_destruct()");
     register_close_file (open_file_id);
   }
 }
@@ -3417,7 +3417,7 @@ protected class nb_sendfile
   }
 
 #ifdef SENDFILE_DEBUG
-  void destroy()
+  protected void _destruct()
   {
     werror("Stdio.sendfile(): Destructed.\n");
   }

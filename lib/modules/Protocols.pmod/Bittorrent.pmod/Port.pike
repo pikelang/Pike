@@ -33,7 +33,7 @@ void create(.Torrent _parent)
    error("Failed to bind port for incoming traffic.\n");
 }
 
-void destroy() { destruct(port); }
+protected void _destruct() { destruct(port); }
 
 protected void new_connection()
 {

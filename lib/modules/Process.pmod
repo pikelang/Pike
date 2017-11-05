@@ -389,7 +389,7 @@ class Process
   }
 #endif /* __HAVE_SEND_FD__ */
 
-  protected void destroy() {
+  protected void _destruct() {
     remove_call_out(watcher);
     remove_call_out(killer);
 #if constant(Stdio.__HAVE_SEND_FD__)

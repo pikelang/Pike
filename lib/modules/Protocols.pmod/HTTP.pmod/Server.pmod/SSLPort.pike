@@ -60,7 +60,7 @@ protected void create(function(Request:void) callback,
           interface?interface+":":"", portno, strerror(errno()));
 }
 
-void destroy() { close(); }
+protected void _destruct() { close(); }
 
 //! The port accept callback
 protected void new_connection()

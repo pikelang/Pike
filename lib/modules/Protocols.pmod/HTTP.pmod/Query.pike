@@ -1269,7 +1269,7 @@ object datafile()
    return PseudoFile(buf[datapos..], (int)(headers["content-length"]||0x7ffffff));
 }
 
-protected void destroy()
+protected void _destruct()
 {
    if (async_id) {
      remove_call_out(async_id);

@@ -26,7 +26,7 @@ void create()
   pgtk2_pop_n_elems(args);
 }
 
-void destroy()
+void _destruct()
 {
   if( THIS->obj && THIS->owned )
     gdk_region_destroy((GdkRegion *)THIS->obj);

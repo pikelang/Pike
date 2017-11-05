@@ -196,7 +196,7 @@ PIKEFUN void create(object o)
 #endif
 }
 
-  PIKEFUN void destroy()
+  PIKEFUN void _destruct()
     flags ID_PROTECTED;
   {
     if (THIS->pgod) {

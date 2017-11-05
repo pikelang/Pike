@@ -37,7 +37,7 @@ void create(string|void name, string|void ppd_display_name,
   pgtk2__init_this_object();
 }
 
-void destroy()
+void _destruct()
 //! Destructor.
 {
   if (THIS->obj && THIS->owned)

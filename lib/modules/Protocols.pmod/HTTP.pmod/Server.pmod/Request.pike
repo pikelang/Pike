@@ -56,7 +56,7 @@ protected class Port {
 	      void|int _portno,
 	      void|string _interface);
   void close();
-  void destroy();
+  protected void _destruct();
 }
 
 //! The socket that this request came in on.

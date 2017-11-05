@@ -729,24 +729,24 @@ PMOD_EXPORT struct object *debug_master(void)
   return o;
 }
 
-struct destroy_called_mark
+struct destruct_called_mark
 {
-  struct destroy_called_mark *next;
+  struct destruct_called_mark *next;
   void *data;
   struct program *p; /* for magic */
 };
 
-PTR_HASH_ALLOC(destroy_called_mark,128)
+PTR_HASH_ALLOC(destruct_called_mark,128)
 
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o)
 {
-  struct destroy_called_mark * tmp;
-  if(( tmp = find_destroy_called_mark(o)))
+  struct destruct_called_mark * tmp;
+  if(( tmp = find_destruct_called_mark(o)))
     return tmp->p;
   return 0;
 }
 
-static void call_destroy(struct object *o, enum object_destruct_reason reason)
+static void call_destruct(struct object *o, enum object_destruct_reason reason)
 {
   volatile int e;
 
@@ -754,13 +754,13 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
   if(!o || !o->prog) {
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
-      fprintf(stderr, "|   Not calling destroy() in "
+      fprintf(stderr, "|   Not calling _destruct() in "
 	      "destructed %p with %d refs.\n", o, o->refs);
 #endif
     return; /* Object already destructed */
   }
 
-  e=FIND_LFUN(o->prog,LFUN_DESTROY);
+  e=FIND_LFUN(o->prog,LFUN__DESTRUCT);
   if(e != -1
 #ifdef DO_PIKE_CLEANUP
      && Pike_interpreter.evaluator_stack
@@ -769,15 +769,15 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
   {
 #ifdef PIKE_DEBUG
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-      Pike_fatal("Calling destroy() inside gc.\n");
+      Pike_fatal("Calling _destruct() inside gc.\n");
 #endif
-    if(check_destroy_called_mark_semaphore(o))
+    if(check_destruct_called_mark_semaphore(o))
     {
       JMP_BUF jmp;
 
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
-	fprintf(stderr, "|   Calling destroy() in %p with %d refs.\n",
+	fprintf(stderr, "|   Calling _destruct() in %p with %d refs.\n",
 		o, o->refs);
 #endif
 
@@ -819,7 +819,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
-	fprintf(stderr, "|   Called destroy() in %p with %d refs.\n",
+	fprintf(stderr, "|   Called _destruct() in %p with %d refs.\n",
 		o, o->refs);
 #endif
     }
@@ -827,14 +827,14 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #ifdef GC_VERBOSE
   else
     if (Pike_in_gc > GC_PASS_PREPARE)
-      fprintf(stderr, "|   No destroy() to call in %p with %d refs.\n",
+      fprintf(stderr, "|   No _destruct() to call in %p with %d refs.\n",
 	      o, o->refs);
 #endif
 }
 
-static int object_has_destroy( struct object *o )
+static int object_has__destruct( struct object *o )
 {
-    return QUICK_FIND_LFUN( o->prog, LFUN_DESTROY ) != -1;
+    return QUICK_FIND_LFUN( o->prog, LFUN__DESTRUCT ) != -1;
 }
 
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
@@ -842,7 +842,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   int e;
   struct program *p;
   struct pike_frame *pike_frame=0;
-  int frame_pushed = 0, destroy_called = 0;
+  int frame_pushed = 0, destruct_called = 0;
 #ifdef PIKE_THREADS
   int inhibit_mask = ~THREAD_FLAG_INHIBIT |
     (Pike_interpreter.thread_state?
@@ -894,10 +894,10 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
       return;
   }
   add_ref( o );
-  if( object_has_destroy( o ) )
+  if( object_has__destruct( o ) )
   {
-      call_destroy(o, reason);
-      /* destructed in destroy() */
+      call_destruct(o, reason);
+      /* destructed in _destruct() */
       if(!(p=o->prog))
       {
           free_object(o);
@@ -911,15 +911,15 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 #endif
           return;
       }
-      destroy_called = 1;
-      get_destroy_called_mark(o)->p=p;
+      destruct_called = 1;
+      get_destruct_called_mark(o)->p=p;
   } else if ((p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) ==
 	     (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) {
     /* We might have event handlers that need
      * the program to reach the parent.
      */
-    get_destroy_called_mark(o)->p=p;
-    destroy_called = 1;
+    get_destruct_called_mark(o)->p=p;
+    destruct_called = 1;
   }
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
@@ -1023,8 +1023,8 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 
   free_object( o );
   free_program(p);
-  if( destroy_called )
-      remove_destroy_called_mark(o);
+  if( destruct_called )
+      remove_destruct_called_mark(o);
 
 #ifdef PIKE_THREADS
   if (Pike_interpreter.thread_state) {
@@ -1084,7 +1084,7 @@ void low_destruct_objects_to_destruct(void)
       /* Link object back to list of objects */
       DOUBLELINK(first_object,o);
 
-      /* call destroy, keep one ref */
+      /* call _destruct, keep one ref */
       add_ref(o);
       destruct_object (o, DESTRUCT_NO_REFS);
       free_object(o);
@@ -2656,7 +2656,7 @@ size_t gc_free_all_unreferenced_objects(void)
       /* Got an extra ref from gc_cycle_pop_object(). */
 #ifdef PIKE_DEBUG
       if (gc_object_is_live (o) &&
-	  !find_destroy_called_mark(o))
+	  !find_destruct_called_mark(o))
 	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif
       debug_malloc_touch(o);
@@ -3308,7 +3308,7 @@ static void f_magic_types (INT32 args)
 
 void low_init_object(void)
 {
-  init_destroy_called_mark_hash();
+  init_destruct_called_mark_hash();
 }
 
 void init_object(void)
@@ -3461,7 +3461,7 @@ void exit_object(void)
 
   master_is_cleaned_up = 1;
   if (master_object) {
-    call_destroy (master_object, 1);
+    call_destruct (master_object, 1);
     destruct_object (master_object, DESTRUCT_CLEANUP);
     free_object(master_object);
     master_object=0;
@@ -3524,7 +3524,7 @@ void exit_object(void)
 
 void late_exit_object(void)
 {
-  exit_destroy_called_mark_hash();
+  exit_destruct_called_mark_hash();
 }
 
 #ifdef PIKE_DEBUG

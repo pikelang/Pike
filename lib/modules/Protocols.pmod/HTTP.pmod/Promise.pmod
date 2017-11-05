@@ -54,8 +54,8 @@
 
 #ifdef HTTP_PROMISE_DESTRUCT_DEBUG
 # define PROMISE_DESTRUCTOR                           \
-  void destroy() {                                    \
-    werror("%O().destroy()\n", object_program(this)); \
+  protected void _destruct() {				\
+    werror("%O()._destruct()\n", object_program(this)); \
   }
 #else
 # define PROMISE_DESTRUCTOR

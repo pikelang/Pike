@@ -82,7 +82,7 @@ class _Tar
 	error ("Failed to seek to position %d in %O.\n", start, fd);
     }
 
-    protected void destroy()
+    protected void _destruct()
     {
       fd_in_use = -1;
     }

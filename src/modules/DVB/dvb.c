@@ -1330,7 +1330,7 @@ static void f_stream_create(INT32 args) {
 
 }
 
-/*! @decl int destroy()
+/*! @decl int _destruct()
  *!
  *! Purge a stream reader.
  *!
@@ -1790,7 +1790,7 @@ PIKE_MODULE_INIT {
   set_exit_callback(exit_dvb_stream);
 
   ADD_FUNCTION("create", f_stream_create, tFunc(tObj tInt tOr(tFunction,tInt) tInt, tVoid), 0);
-  ADD_FUNCTION("destroy", f_stream_detach, tFunc(tVoid,tVoid), 0);
+  ADD_FUNCTION("_destruct", f_stream_detach, tFunc(tVoid,tVoid), 0);
   ADD_FUNCTION("read", f_stream_read, tFunc(tOr(tInt,tVoid),tOr(tInt,tStr)),0);
   ADD_FUNCTION("set_buffer", f_stream_set_buffer, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("info", f_stream_info, tFunc(tInt, tOr(tMapping,tInt)), 0);

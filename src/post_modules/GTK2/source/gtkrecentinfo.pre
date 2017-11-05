@@ -3,7 +3,7 @@ require gtk210;
 class GTK2.RecentInfo;
 //!
 
-void destroy()
+void _destruct()
 //! Destructor.
 {
   if (THIS->obj && THIS->owned)
