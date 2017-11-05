@@ -149,7 +149,7 @@ struct object;
 /* Byte-code method identification. */
 #define PIKE_BYTECODE_PORTABLE	-1	/* Only used by the codec. */
 #define PIKE_BYTECODE_DEFAULT	0
-#define PIKE_BYTECODE_GOTO	1
+#define PIKE_BYTECODE_GOTO	1       /* Not in use */
 #define PIKE_BYTECODE_SPARC	2
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32    4
@@ -172,9 +172,6 @@ struct object;
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #define PIKE_OPCODE_T unsigned INT32
-#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-#define PIKE_OPCODE_T void *
-#define PIKE_INSTR_T void *
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
