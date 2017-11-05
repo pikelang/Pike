@@ -64,7 +64,7 @@ int main(int num, array(string) args) {
   write("\nRuntime options\n");
   mapping(string:string|int) rt = Pike.get_runtime_info();
   item(sprintf("%d-bit ABI", rt->abi), 1);
-  item("Machine code", !(<"default", "computed_goto">)[rt->bytecode_method]);
+  item("Machine code", !(<"default">)[rt->bytecode_method]);
 
   test_ipv6();
 

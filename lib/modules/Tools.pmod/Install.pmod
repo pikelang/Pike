@@ -20,7 +20,7 @@ array(string) features()
   if (runtime_info->auto_bignum)
     a += ({"auto_bignum"});
 
-  if (!(<"default", "computed_goto">)[runtime_info->bytecode_method])
+  if (!(<"default">)[runtime_info->bytecode_method])
     a += ({"machine_code"});
 
 #if constant(load_module)
