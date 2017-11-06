@@ -27,6 +27,7 @@
 #include "builtin_functions.h"
 #include "fsort.h"
 #include "stuff.h"
+#include "pike_cpulib.h"
 #include "gc.h"
 #include "block_allocator.h"
 #include "pikecode.h"

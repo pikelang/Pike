@@ -21,7 +21,7 @@
 #include "stralloc.h"
 #include "block_allocator.h"
 #include "opcodes.h"
-#include "stuff.h"
+#include "pike_cpulib.h"
 
 /* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4

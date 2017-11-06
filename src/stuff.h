@@ -10,7 +10,6 @@
 #include "global.h"
 
 /* Prototypes begin here */
-PMOD_EXPORT int my_log2(UINT64 x) ATTRIBUTE((const));
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
 /* Prototypes end here */
 

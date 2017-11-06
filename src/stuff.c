@@ -60,26 +60,6 @@ const unsigned char hexdecode[256] =
   16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 };
 
-
-/* Same thing as (int)floor(log((double)x) / log(2.0)), except a bit
-   quicker. Number of log2 per second:
-
-   log(x)/log(2.0)             50,000,000
-   log2(x)                     75,000,000
-   Table lookup             3,000,000,000
-   Intrinsic       30,000,000,000,000,000
-*/
-
-PMOD_EXPORT int my_log2(UINT64 x)
-{
-    if( x == 0 ) return 0;
-    if(x & ~((UINT64)0xffffffffUL)) {
-      return 32 + log2_u32((unsigned INT32)(x>>32));
-    }
-    return log2_u32((unsigned INT32)x);
-}
-
-
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
 {
   double tmp=strtod(nptr,endptr);
