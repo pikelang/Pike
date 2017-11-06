@@ -15,6 +15,4 @@ PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
 /* Prototypes end here */
 
 extern const unsigned char hexdecode[256];
-extern const INT32 hashprimes[32];
-
 #endif
