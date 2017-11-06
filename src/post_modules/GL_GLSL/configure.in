@@ -1,4 +1,4 @@
-AC_INIT()
+AC_INIT(GLSL.cmod)
 AC_MODULE_INIT()
 
 AC_CONFIG_HEADER(config.h)
@@ -9,13 +9,23 @@ if test "x$GCC" = xyes ; then
    WARN="-Wall -W"
 fi
 
-AC_CHECK_HEADER([GL/gl.h], [], [echo "No GL.";exit 1])
+PIKE_FEATURE_NODEP(GL.GLSL)
+
+AC_CHECK_HEADER([GL/gl.h])
 AC_CHECK_HEADER([GL/glext.h], [], [], [#include <GL/gl.h>])
 
-AC_CHECK_LIB(GL, glCompileShader, [], [echo "Failed to find glCompileShader in libgl"; exit 1])
+AC_CHECK_LIB(GL, glCompileShader)
 # GL_GLEXT_PROTOTYPES needed to get the prototypes tested below.
-AC_DEFINE(GL_GLEXT_PROTOTYPES, [], [Needed to get prototypes])
+AC_DEFINE(GL_GLEXT_PROTOTYPES, [1], [Needed to get prototypes])
 AC_CHECK_FUNCS([glGenFramebuffersEXT glGenRenderbuffersEXT glGenerateMipmapEXT glGenBuffers])
-AC_CHECK_PROGS(PIKE, pike)
+
+AC_MSG_CHECKING(whether to enable GL.GLSL)
+if test "x$ac_cv_header_GL_gl_h$ac_cv_header_GL_glext_h$ac_cv_lib_GL_glCompileShader" = "xyesyesyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_GLSL, [1], [Define to enable GL.GLSL.])
+    PIKE_FEATURE(GL.GLSL, yes)
+else
+    AC_MSG_RESULT(no)
+fi
 
 AC_OUTPUT(Makefile)

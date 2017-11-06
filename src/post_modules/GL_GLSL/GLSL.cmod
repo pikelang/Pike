@@ -14,6 +14,8 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
+#ifdef HAVE_GLSL
+
 #include <GL/gl.h>
 #include <GL/glext.h>
 
@@ -799,3 +801,5 @@ EXTRA
 #endif
 }
 /*! @endmodule */
+
+#endif /* HAVE_GLSL */
