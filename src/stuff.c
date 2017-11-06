@@ -126,13 +126,3 @@ PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
   }
   return tmp;
 }
-
-/*
- * This rounds an integer up to the next power of two. For x a power
- * of two, this will just return the same again.
- */
-unsigned INT32 find_next_power(unsigned INT32 x)
-{
-    if( x == 0 ) return 1;
-    return 1<<(my_log2(x-1)+1);
-}

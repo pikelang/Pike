@@ -179,6 +179,16 @@ static struct mapping_data weak_both_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
+/*
+ * This rounds an integer up to the next power of two. For x a power
+ * of two, this will just return the same again.
+ */
+static unsigned INT32 find_next_power(unsigned INT32 x)
+{
+    if( x == 0 ) return 1;
+    return 1<<(my_log2(x-1)+1);
+}
+
 /** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
  * allocated space.
