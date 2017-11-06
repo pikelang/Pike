@@ -8,15 +8,73 @@ New Features
 Bug fixes
 ---------
 
+o Crypto.CCM
+
+  Fixed initialization of the iv.
+
+o Filesystem.Monitor
+
+  - Fixed issue with next_poll being set to zero causing polling
+    every second.
+
+  - Fixed indexing the NULL value error when InotifyMonitor was used in
+    combination with a filter_file() that doesn't accept everything.
+
+o HTTPLoop:
+
+  Fixed some potential race conditions.
+
+o Image.Image
+
+  - Improved argument checking in apply_curve().
+
+    Non-integer array values lead to use of uninitialized curve values.
+
+o Image.PVR
+
+  Fixed size check for twiddled images.
+
 o Protocols.HTTP
 
   Fixed incoming chunked transfers (timed async works now, chunk
   options are properly 'parsed').
 
+o Protocols.LDAP
+
+  Fixed race condition on initializing LDAPS.
+
+o Search.Utils
+
+  Updated debug string format.
+
 o Sql.pgsql
 
   Suppress spurious 'File not open' blurts on stderr when the
   connection is still pending and we inspect the connection object.
+
+o Standards.IIM
+
+  Disabled debug output for unknown segment markers.
+
+Building & Tools
+----------------
+
+o Image.SVG
+
+  Fall back to using the unprefixed pkg-config if the arch-prefixed
+  doesn't exist.
+
+o precompile
+
+  Support precompilation with Pike 8.1 again.
+
+o smartlink
+
+  Fixed multiple issues on Darwin & NetBSD.
+
+o Whitefish
+
+  Use the standard VPATH.
 
 
 Changes since Pike 8.0.466 (release 10)
@@ -529,7 +587,7 @@ Building
 o Configure
 
   Fixed issues with the LDSHARED test on some BSD-derivatives.
- 
+
   Detect systems that provide bswap16,32,64 in their libc.
 
 o Stdio
