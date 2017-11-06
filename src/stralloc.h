@@ -94,6 +94,9 @@ struct substring_pike_string {
 #define STR2(X) ((p_wchar2 *)(X)->str)
 #endif
 
+PMOD_EXPORT extern const char Pike_isidchar_vector[];
+#define isidchar(X)	(Pike_isidchar_vector[((unsigned)(X))&0xff] == '1')
+
 #ifndef PIKE_DEBUG
 static p_wchar2 generic_extract (const void *str, enum size_shift size,
 				 ptrdiff_t pos) ATTRIBUTE((pure));
