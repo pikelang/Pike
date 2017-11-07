@@ -40,14 +40,3 @@ const unsigned char hexdecode[256] =
   16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
   16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 };
-
-PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
-{
-  double tmp=strtod(nptr,endptr);
-  if(*endptr>nptr)
-  {
-    if(endptr[0][-1]=='.')
-      endptr[0]--;
-  }
-  return tmp;
-}
