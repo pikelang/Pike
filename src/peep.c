@@ -15,7 +15,6 @@
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "opcodes.h"
 #include "builtin_functions.h"

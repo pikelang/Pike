@@ -9,7 +9,6 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "pike_types.h"
-#include "stuff.h"
 #include "array.h"
 #include "program.h"
 #include "constants.h"

@@ -26,7 +26,6 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
-#include "stuff.h"
 #include "pike_cpulib.h"
 #include "gc.h"
 #include "block_allocator.h"
@@ -963,6 +962,8 @@ PMOD_EXPORT
 
   RETURN end_shared_string(hex);
 }
+
+extern const unsigned char hexdecode[256];
 
 /*! @decl string(8bit) hex2string(string(8bit) hex)
  *! @appears String.hex2string

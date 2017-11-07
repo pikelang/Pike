@@ -20,7 +20,6 @@
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
-#include "stuff.h"
 
 #include <errno.h>
 

@@ -7,7 +7,6 @@
 /* New memory searcher functions */
 
 #include "global.h"
-#include "stuff.h"
 #include "mapping.h"
 #include "object.h"
 #include "pike_memory.h"

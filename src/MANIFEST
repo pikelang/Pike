@@ -138,10 +138,6 @@ Tools
     sh-script used to convert interpret_functions.h into
     interpret_protos.h_src.
 
-  stuff.c
-  stuff.h
-    Miscellaneous smaller utility functions, primarily numerical.
-
   time_stuff.h
     Some tools to handle timeval structs.
 

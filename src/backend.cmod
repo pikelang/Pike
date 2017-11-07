@@ -26,7 +26,6 @@
 #include "array.h"
 #include <math.h>
 #include "interpret.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "mapping.h"

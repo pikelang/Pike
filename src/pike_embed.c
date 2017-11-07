@@ -43,7 +43,6 @@
 #include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "pike_embed.h"
-#include "stuff.h"
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
