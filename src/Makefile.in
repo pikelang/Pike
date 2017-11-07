@@ -182,7 +182,6 @@ CORE_OBJ= \
  sscanf.o \
  stralloc.o \
  string_builder.o \
- stuff.o \
  threads.o \
  version.o \
  queue.o \
@@ -1388,7 +1387,6 @@ HFILES=						\
   stralloc.protos					\
   mapping.protos					\
   block_allocator.protos					\
-  stuff.protos					\
   dynamic_buffer.protos				\
   buffer.protos				\
   svalue.protos					\
