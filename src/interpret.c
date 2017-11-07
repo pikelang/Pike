@@ -1780,13 +1780,9 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #endif /* SET_PROG_COUNTER */
 
 
-/* NOTE: Due to the implementation of computed goto,
- *       interpreter.h may only be included once.
- */
 #if defined(PIKE_DEBUG)
 #define eval_instruction eval_instruction_with_debug
-#include "interpreter_debug.h"
-
+#include "interpreter.h"
 #undef eval_instruction
 #define eval_instruction eval_instruction_without_debug
 

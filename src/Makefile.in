@@ -1059,13 +1059,7 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 
 las.o: $(SRCDIR)/treeopt.h
 
-
-# unbug needs interpreter_nd.h to be able to
-# set separate breakpoints in eval_instruction_with/without_debug
-interpreter_debug.h: interpreter.h
-	cp "$(SRCDIR)/interpreter.h" "$@"
-
-interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
+interpret.o: $(SRCDIR)/interpret_functions_fixed.h
 
 # make dependencies
 depend: $(SRC_TARGETS)
