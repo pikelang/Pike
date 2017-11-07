@@ -1669,8 +1669,9 @@ AC_DEFUN(PIKE_SELECT_ABI,
       AC_MSG_RESULT(no)
     else
       AC_MSG_RESULT($pike_cv_tool_prefix)
-      ac_tool_prefix="$pike_cv_tool_prefix"
     fi
+  else
+    pike_cv_tool_prefix="$ac_tool_prefix"
   fi
 
   # Compat
@@ -1977,7 +1978,7 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
   # NB: pkg-config does not have native support for multiple ABIs.
-  MY_AC_PATH_PROGS(PKG_CONFIG, ${ac_tool_prefix}pkg-config pkg-config, no)
+  MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
 ])
 
 dnl package, variable, options
