@@ -41,7 +41,6 @@
 #include "docode.h"
 #include "lex.h"
 #include "pike_float.h"
-#include "stuff.h"
 #include "pike_compiler.h"
 #include "port.h"
 #include "siphash24.h"

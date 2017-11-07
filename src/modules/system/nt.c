@@ -63,7 +63,6 @@
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "operators.h"
-#include "stuff.h"
 #include "fdlib.h"
 
 #define sp Pike_sp
