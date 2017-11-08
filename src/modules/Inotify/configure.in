@@ -22,4 +22,4 @@ AC_CHECK_HEADERS(sys/inotify.h)
   else
     AC_MSG_RESULT(no)
   fi
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
