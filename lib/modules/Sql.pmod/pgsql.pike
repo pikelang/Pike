@@ -2050,7 +2050,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result]
-/*semi*/final .pgsql_util.sql_result streaming_query(string q,
+/*semi*/final inline .pgsql_util.sql_result streaming_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings);
 }
@@ -2060,7 +2060,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
-/*semi*/final .pgsql_util.sql_result big_typed_query(string q,
+/*semi*/final inline .pgsql_util.sql_result big_typed_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings,1);
 }
