@@ -1206,11 +1206,11 @@ class sql_result {
     if(statusccomplete && !statuscmdcomplete)
       statuscmdcomplete=statusccomplete;
     inflight=0;
-    datarows->write(1);				// Signal EOF
     conxsess plugbuffer;
     if (!catch(plugbuffer = c->start()))
       plugbuffer->sendcmd(_closeportal(plugbuffer));
     _state=CLOSED;
+    datarows->write(1);				// Signal EOF
     releaseconditions();
   }
 
