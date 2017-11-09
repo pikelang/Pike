@@ -24,7 +24,7 @@
 //!       works well. That means at least that SQL integer fields are
 //!       returned as pike integers, floats as floats, SQL NULL as
 //!       @[Val.null], and of course strings still as strings. The
-//!       representation of other SQL types depend on the capabilities of
+//!       representation of other SQL types depends on the capabilities of
 //!       the server specific backends. It's also possible that floats in
 //!       some cases are represented in other ways if too much precision is
 //!       lost in the conversion to pike floats.
