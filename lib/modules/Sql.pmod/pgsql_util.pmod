@@ -172,6 +172,7 @@ private inline mixed callout(function(mixed ...:void) f,
 
 class bufcon {
   inherit Stdio.Buffer;
+  private int dirty;
 
 #ifdef PG_DEBUGRACE
   final bufcon `chain() {
@@ -190,7 +191,9 @@ class bufcon {
   }
 
   final bufcon start(void|int waitforreal) {
+    dirty = 1;
     realbuffer->stashcount++;
+    dirty = 2;
 #ifdef PG_DEBUG
     if(waitforreal)
       error("pgsql.bufcon not allowed here\n");
@@ -212,8 +215,11 @@ class bufcon {
      realbuffer->socket->query_fd(), mode, realbuffer->stashflushmode);
     if (mode > realbuffer->stashflushmode)
       realbuffer->stashflushmode = mode;
+    dirty = 1;
     if(!--realbuffer->stashcount)
-      realbuffer->stashavail.signal();
+      dirty = 0, realbuffer->stashavail.signal();
+    else
+      dirty = 0;
     lock=0;
     this->clear();
     if(lock=realbuffer->nostash->trylock(1)) {
@@ -227,6 +233,21 @@ class bufcon {
       lock = 0;
       realbuffer->sendcmd(SENDOUT);
 #endif
+    }
+  }
+
+  protected void _destruct() {
+    switch (dirty) {
+      case 1:
+        werror("FIXME: Race condition detected %s\n",
+         describe_backtrace(({"", backtrace()[..<1]})));
+        if (!realbuffer->stashcount)
+          break;
+      case 2:
+        Thread.MutexKey lock = realbuffer->shortmux->lock(2);
+        if (!--realbuffer->stashcount)
+          realbuffer->stashavail.signal();
+        lock = 0;
     }
   }
 };
@@ -340,8 +361,7 @@ class conxion {
       return this;
 #endif
     }
-    stashcount++;
-    return bufcon(this);
+    return bufcon(this)->start();
   }
 
   private int write_cb() {
@@ -518,10 +538,10 @@ outer:
           catch(fd=socket->query_fd());
         res=predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n"
-                    "started: %d\n",
+                    "started: %d  stashcount: %d\n",
                     fd,sizeof(i),i->_size_object(),
                     qportals && qportals->size(), sizeof(this), _size_object(),
-                    !!started);
+                    !!started, stashcount);
         break;
     }
     return res;
