@@ -52,8 +52,9 @@ o Sql.pgsql
   - Suppress spurious 'File not open' blurts on stderr when the
     connection is still pending and we inspect the connection object.
 
-  - Signal EOF early before closing the SQL result portal to prevent
-    occasional deadlocks on (heavy) object destructions.
+  - Signal EOF early before closing the SQL result portal and thoroughly
+    cleanup bufcon/stashcount to prevent occasional deadlocks
+    on asynchronous object destructions.
 
 o Standards.IIM
 
