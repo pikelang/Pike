@@ -665,17 +665,23 @@ struct program
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 
+#ifdef PIKE_DEBUG
 PIKE_UNUSED_ATTRIBUTE
 static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x, const struct program *p) {
-#ifdef PIKE_DEBUG
   if (x >= p->num_identifier_references) {
     dump_program_tables(p, 4);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
   }
-#endif
   return x;
 }
+#else /* !PIKE_DEBUG */
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x,
+					       const struct program *PIKE_UNUSED(p)) {
+  return x;
+}
+#endif
 
 static inline struct reference *PTR_FROM_INT(const struct program *p, unsigned INT16 x) {
   x = CHECK_IDREF_RANGE(x, p);
