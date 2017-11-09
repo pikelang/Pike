@@ -547,7 +547,7 @@ outer:
 class conxsess {
   final conxion chain;
 
-  void create(conxion parent) {
+  protected void create(conxion parent) {
     if (parent->started)
       werror("Overwriting conxsess %s %s\n",
         describe_backtrace(({"new ", backtrace()[..<1]})),
@@ -561,7 +561,7 @@ class conxsess {
     chain = 0;
   }
 
-  void destroy() {
+  protected void _destruct() {
     if (chain)
       werror("Untransmitted conxsess %s\n",
        describe_backtrace(({"", backtrace()[..<1]})));

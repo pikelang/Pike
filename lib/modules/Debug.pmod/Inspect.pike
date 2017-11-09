@@ -23,8 +23,8 @@
 //!  return 0;
 //!}
 //!
-//!void destroy() {
-//!  werror("destroy() runs just as often as create()\n");
+//!void _destruct() {
+//!  werror("_destruct() runs just as often as create()\n");
 //!}
 //!@endcode
 //!  Whenever you edit /tmp/test.pike, it will automatically reload
