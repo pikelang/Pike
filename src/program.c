@@ -7219,7 +7219,10 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 							       p),
 						 SEE_PROTECTED);
     if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
-      yywarning("Compat: Substituting destroy() for _destruct().");
+      struct compilation *c = MAYBE_THIS_COMPILATION;
+      if (c && !(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
+	yywarning("Compat: Substituting destroy() for _destruct().");
+      }
     }
   }
 
