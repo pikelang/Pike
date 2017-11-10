@@ -68,8 +68,8 @@ final int _fetchlimit=FETCHLIMIT;
 final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;
 private Thread.MutexKey termlock;
-final int _portalsinflight;
-final int _statementsinflight;
+private Thread.ResourceCountKey backendreg;
+final Thread.ResourceCount  _portalsinflight, _statementsinflight;
 final int _wasparallelisable;
 final int _intransaction;
 
@@ -112,10 +112,9 @@ final int _port;
 private string database, user, pass;
 private Thread.Condition waitforauthready;
 final Thread.Mutex _shortmux;
-final Thread.Condition _readyforcommit;
-final int _waittocommit, _readyforquerycount;
+final int _readyforquerycount;
 
-private string _sprintf(int type) {
+protected string _sprintf(int type) {
   string res=UNDEFINED;
   switch(type) {
     case 'O':
@@ -223,7 +222,7 @@ protected void create(void|string host, void|string database,
 
   if(!_port)
     _port = PGSQL_DEFAULT_PORT;
-  .pgsql_util.register_backend();
+  backendreg = .pgsql_util.register_backend();
   _shortmux=Thread.Mutex();
   reconnect();
 }
@@ -446,8 +445,6 @@ protected void create(void|string host, void|string database,
     "messages_received":_msgsreceived,
     "bytes_received":_bytesreceived,
     "reconnect_count":reconnected,
-    "portals_in_flight":_portalsinflight,
-    "statements_in_flight":_statementsinflight,
    ]);
   return stats;
 }
@@ -1070,7 +1067,7 @@ private void procmessage() {
 #ifdef PG_DEBUGMORE
           showportalstack("ERRORRESPONSE");
 #endif
-          if (!_portalsinflight && !_readyforquerycount)
+          if (_portalsinflight->drained() && !_readyforquerycount)
             sendsync();
           PD("%O ErrorResponse %O\n",
            objectp(portal)&&(portal._portalname||portal._preparedname),
@@ -1269,7 +1266,7 @@ private void procmessage() {
 protected void _destruct() {
   string errstring;
   mixed err = catch(close());
-  .pgsql_util.unregister_backend();
+  backendreg = 0;
   /*
    * Flush out any asynchronously reported errors to stderr; because we are
    * inside a destructor, throwing an error will not work anymore.
@@ -1341,9 +1338,7 @@ private int reconnect() {
   }
   PD("Actually start to connect\n");
   qportals=Thread.Queue();
-  _readyforcommit=Thread.Condition();
   _readyforquerycount=1;
-  _waittocommit=0;
   qportals->write(1);
   if (!(c = .pgsql_util.conxion(this, qportals, 0)))
     ERROR("Couldn't connect to database on %s:%d\n",_host,_port);
@@ -1351,8 +1346,8 @@ private int reconnect() {
   _unnamedportalmux=Thread.Mutex();
   unnamedstatement=Thread.Mutex();
   readyforquery_cb=recon?reconnect_cb:connect_cb;
-  _portalsinflight=0;
-  _statementsinflight = 0;
+  _portalsinflight = Thread.ResourceCount();
+  _statementsinflight = Thread.ResourceCount();
   _wasparallelisable = 0;
   return 1;
 }
