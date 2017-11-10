@@ -804,6 +804,79 @@ optional class Farm
   }
 }
 
+//! When this key is destroyed, the corresponding resource counter
+//! will be decremented.
+//!
+//! @seealso
+//!   @[ResourceCount], @[MutexKey]
+//!
+optional class ResourceCountKey {
+  /*semi*/private ResourceCount parent;
+
+  /*semi*/private void create(ResourceCount _parent) {
+    parent = _parent;
+  }
+
+  /*semi*/private void destroy() {
+    --parent->_count;
+    parent->_cond->signal();
+  }
+}
+
+//! Implements an inverted-semaphore-like resource
+//! counter.  A thread can poll or perform a blocking wait for the
+//! resource-count to drop below a certain @ref{level@}.
+//!
+//! @seealso
+//!   @[ResourceCountKey], @[Condition], @[Mutex]
+optional class ResourceCount {
+  /*semi*/final int _count;
+  /*semi*/final Condition _cond = Condition();
+
+  //! @param level
+  //!   The maximum level that is considered drained.
+  //!
+  //! @returns
+  //!   True if the resource counter drops to equal or below @ref{level@}.
+  /*semi*/final int(0..1) drained(void|int level) {
+    return level >= _count;
+  }
+
+  //! Blocks until the resource-counter dips to max @ref{level@}.
+  //!
+  //! @param lock
+  //!   A previously acquired @[MutexKey].
+  //!
+  //! @param level
+  //!   The maximum level that is considered drained.
+  /*semi*/final void wait_till_drained(MutexKey lock, void|int level) {
+    while (_count > level)		// Recheck before allowing further
+      _cond->wait(lock);
+    lock = 0;				// Eliminate references
+  }
+
+  //! Increments the resource-counter.
+  //! @returns
+  //!   A @[ResourceCountKey] to decrement the resource-counter again.
+  /*semi*/final ResourceCountKey acquire() {
+    _count++;
+    return ResourceCountKey(this);
+  }
+
+  /*semi*/private string _sprintf(int type) {
+    string res = UNDEFINED;
+    switch(type) {
+      case 'O':
+        res = sprintf("Count: %d", _count);
+        break;
+      case 'd':
+        res = sprintf("%d", _count);
+        break;
+    }
+    return res;
+  }
+}
+
 #else /* !constant(thread_create) */
 
 // Simulations of some of the classes for nonthreaded use.
