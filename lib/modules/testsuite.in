@@ -1809,6 +1809,22 @@ test_false([[ TestQueue->size() ]])
 test_true([[ zero_type(TestQueue->try_read()) ]])
 test_do([[ add_constant("TestQueue"); ]])
 
+// Thread.ResourceCount
+test_do([[ add_constant("TestResourceCount", Thread.ResourceCount()); ]])
+test_any_equal([[
+  int i;
+  array a = allocate(10);
+  for(i = 0; i < 10; i++) {
+    a[i] = TestResourceCount->acquire();
+  }
+  for(i = 0; i < 10; i++) {
+    a[i] = 0;
+    a[i] = TestResourceCount->drained();
+  }
+  return a;
+]], ({ 0,0,0,0,0,0,0,0,0,1 }))
+test_do([[ add_constant("TestResourceCount"); ]])
+
 test_false(!Val.true)
 test_true(!Val.false)
 test_eq((int) Val.true, 1)
