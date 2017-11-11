@@ -93,18 +93,24 @@ private Regexp iregexp(string expr) {
   return Regexp(ret->read());
 }
 
+private Thread.Mutex cachemutex = Thread.Mutex();
 private string cached_pass, cached_salt, cached_SaltedPassword;
 private int cached_iters;
 
 final string get_salted_password(string pass, string salt, int iters) {
-  return cached_pass == pass && cached_salt == salt && cached_iters == iters
-   && cached_SaltedPassword;
+  Thread.MutexKey lock = cachemutex->lock();
+  string ret = cached_pass == pass && cached_salt == salt
+   && cached_iters == iters && cached_SaltedPassword;
+  lock = 0;
+  return ret;
 }
 
 final void set_salted_password(string pass, string salt, int iters,
  string SaltedPassword) {
+  Thread.MutexKey lock = cachemutex->lock();
   cached_pass = pass; cached_salt = salt; cached_iters = iters;
   cached_SaltedPassword = SaltedPassword;
+  lock = 0;
 }
 
 final void closestatement(bufcon|conxsess plugbuffer,string oldprep) {
