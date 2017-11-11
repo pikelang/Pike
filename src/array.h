@@ -24,8 +24,8 @@
 struct array
 {
   INT32 refs;
-  struct marker m;
   INT32 size;		/**< number of svalues in this array */
+  struct marker m;
   INT32 malloced_size;	/**< number of svalues that can fit in this array */
   TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
          	* data in this array.

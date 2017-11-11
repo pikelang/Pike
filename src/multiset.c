@@ -196,7 +196,8 @@ struct multiset *gc_internal_multiset = NULL;
 static struct multiset *gc_mark_multiset_pos = NULL;
 
 static struct multiset_data empty_ind_msd = {
-  1, GC_HEADER_INIT(), 0, NULL, NULL,
+  1, 0,
+  GC_HEADER_INIT(), NULL, NULL,
   SVALUE_INIT_INT (0),
   0, 0, 0,
   BIT_INT,

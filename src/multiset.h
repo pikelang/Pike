@@ -42,8 +42,8 @@ union msnode
 struct multiset_data
 {
   INT32 refs;
-  struct marker m;
   INT32 noval_refs;
+  struct marker m;
   union msnode *root, *free_list;
   struct svalue cmp_less;
   INT32 size, allocsize;

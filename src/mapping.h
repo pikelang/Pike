@@ -28,8 +28,8 @@ struct keypair
 struct mapping_data
 {
   INT32 refs;
-  struct marker m;
   INT32 valrefs; /* lock values too */
+  struct marker m;
   INT32 hardlinks;
   INT32 size, hashsize;
   INT32 num_keypairs;

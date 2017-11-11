@@ -624,9 +624,9 @@ struct identifier_lookup_cache
 struct program
 {
   INT32 refs;
+  INT32 id;             /* used to identify program in caches */
   struct marker m;
 
-  INT32 id;             /* used to identify program in caches */
   /* storage_needed - storage needed in object struct
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.

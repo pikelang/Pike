@@ -19,8 +19,8 @@
 struct object
 {
   INT32 refs;
-  struct marker m;
   unsigned INT32 flags;
+  struct marker m;
   struct program *prog;
   struct object *next;
   struct object *prev;

@@ -63,11 +63,11 @@ struct Pike_interpreter_struct {
 struct pike_frame
 {
   INT32 refs;/* must be first */
+  unsigned INT16 fun;		/** Function number. */
+  INT16 ident;                  /** Function identifier offset */
   struct marker m;
 
   /* The folloing fields are only used during setup and teardown */
-  unsigned INT16 fun;		/** Function number. */
-  INT16 ident;                  /** Function identifier offset */
 
   struct pike_frame *next;      /** parent frame */
   struct pike_frame *scope;     /** scope */
