@@ -723,7 +723,7 @@ private void procmessage() {
             object cs = ci->start();
             CHAIN(cs)->add_int8('p')->add_hstring(msg, 4, 4);
             cs->sendcmd(SENDOUT); // No flushing, PostgreSQL 9.4 disapproves
-          }
+          };
           PD("Authentication ");
           msglen-=4+4;
           int authtype, k;
@@ -802,7 +802,7 @@ private void procmessage() {
 #endif
               }
               if (k) {
-                cnonce = MIME.encode_base64(Random.System().random_string(18));
+                cnonce = MIME.encode_base64(random_string(18));
                 word = "n,,n=,r=" + cnonce;
                 authresponse(({
                   "SCRAM-SHA-256", 0, sprintf("%4c", sizeof(word)), word
