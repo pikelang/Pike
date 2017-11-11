@@ -2,6 +2,7 @@
 //! working with GLSL and some other extensions such as vertex buffers
 //! and render buffers.
 
+#if constant(GL.GLSL)
 import GL;
 import GLSL;
 
@@ -1015,3 +1016,6 @@ class vec2
 	    v = Math.Matrix( ({ x, y }) );
     }
 }
+#else
+constant this_program_does_not_exist = 1;
+#endif

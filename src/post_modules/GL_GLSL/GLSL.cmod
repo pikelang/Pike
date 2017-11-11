@@ -801,5 +801,17 @@ EXTRA
 #endif
 }
 /*! @endmodule */
-
 #endif /* HAVE_GLSL */
+
+PIKE_MODULE_INIT
+{
+    INIT;
+#ifndef HAVE_GLSL
+    HIDE_MODULE();
+#endif /* HAVE_GLSL */
+}
+
+PIKE_MODULE_EXIT
+{
+    EXIT;
+}
