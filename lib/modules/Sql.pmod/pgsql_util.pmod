@@ -93,6 +93,20 @@ private Regexp iregexp(string expr) {
   return Regexp(ret->read());
 }
 
+private string cached_pass, cached_salt, cached_SaltedPassword;
+private int cached_iters;
+
+final string get_salted_password(string pass, string salt, int iters) {
+  return cached_pass == pass && cached_salt == salt && cached_iters == iters
+   && cached_SaltedPassword;
+}
+
+final void set_salted_password(string pass, string salt, int iters,
+ string SaltedPassword) {
+  cached_pass = pass; cached_salt = salt; cached_iters = iters;
+  cached_SaltedPassword = SaltedPassword;
+}
+
 final void closestatement(bufcon|conxsess plugbuffer,string oldprep) {
   if(oldprep) {
     PD("Close statement %s\n",oldprep);
