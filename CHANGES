@@ -4,6 +4,10 @@ Changes since Pike 8.0.498 (release 11)
 New Features
 ------------
 
+o Sql.pgsql
+
+  Added support for PostgreSQL 10's stronger password authentication
+  (SCRAM-SHA-256).
 
 Bug fixes
 ---------
