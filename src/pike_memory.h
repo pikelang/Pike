@@ -8,7 +8,6 @@
 #define MEMORY_H
 
 #include "global.h"
-#include "stralloc.h"
 
 #ifdef USE_VALGRIND
 

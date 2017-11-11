@@ -9,6 +9,7 @@
 
 #include "global.h"
 #include "svalue.h"
+#include "gc_header.h"
 
 /* a destructed object has no program */
 
@@ -18,6 +19,7 @@
 struct object
 {
   INT32 refs;
+  struct marker m;
   unsigned INT32 flags;
   struct program *prog;
   struct object *next;

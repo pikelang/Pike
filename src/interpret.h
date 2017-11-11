@@ -63,6 +63,7 @@ struct Pike_interpreter_struct {
 struct pike_frame
 {
   INT32 refs;/* must be first */
+  struct marker m;
 
   /* The folloing fields are only used during setup and teardown */
   unsigned INT16 fun;		/** Function number. */

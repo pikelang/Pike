@@ -13,6 +13,7 @@
 #include "threads.h"
 #include "interpret.h"
 #include "pike_rusage.h"
+#include "gc_header.h"
 
 /* 1: Normal operation. 0: Disable automatic gc runs. -1: Disable
  * completely. */
@@ -79,7 +80,6 @@ extern struct svalue gc_done_cb;
 extern int num_objects, got_unlinked_things;
 extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold, saved_alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
-extern int gc_generation;
 extern int gc_trace, gc_debug;
 #ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 extern cpu_time_t auto_gc_time;
@@ -103,6 +103,7 @@ extern int gc_keep_markers;
 #define LOW_GC_ALLOC(OBJ) do {						\
  num_objects++;								\
  num_allocs++;								\
+ gc_init_marker(&(OBJ)->m);                                             \
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
@@ -173,32 +174,6 @@ extern int gc_keep_markers;
 
 struct gc_rec_frame;
 
-struct marker
-{
-  struct marker *next;
-  struct gc_rec_frame *frame;	/* Pointer to the cycle check rec frame. */
-  void *data;
-  INT32 refs;
-  /* Internal references (both weak and nonweak). Increased during
-   * check pass. */
-  INT32 weak_refs;
-  /* Weak (implying internal) references. Increased during check pass.
-   * Set to -1 during check pass if it reaches the total number of
-   * references. Set to 0 during mark pass if a nonweak reference is
-   * found. Decreased during zap weak pass as gc_do_weak_free() is
-   * called. */
-#ifdef PIKE_DEBUG
-  INT32 xrefs;
-  /* Known external references. Increased by gc_mark_external(). */
-  INT32 saved_refs;
-  /* References at beginning of gc. Set by pretouch and check passes.
-   * Decreased by gc_do_weak_free() as weak references are removed. */
-  unsigned INT32 flags;
-#else
-  unsigned INT16 flags;
-#endif
-};
-
 #define GC_MARKED		0x0001
 /* The thing has less internal references than references, or has been
  * visited by reference from such a thing. Set in the mark pass. */
@@ -264,25 +239,33 @@ struct marker
  * might still take place so the thing runs out of refs too early. */
 #endif
 
-PMOD_EXPORT struct marker *pmod_get_marker (void *p);
-PMOD_EXPORT struct marker *pmod_find_marker (void *p);
+extern unsigned INT32 gc_generation;
 
-#define get_marker debug_get_marker
-#define find_marker debug_find_marker
+static inline struct marker *find_marker(void *ptr) {
+    struct marker *m = (struct marker *)((char*)ptr + 8);
 
-#include "block_alloc_h.h"
-PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker, n/a);
+    if (m->gc_generation != gc_generation) return NULL;
+    return m;
+}
 
-#undef get_marker
-#undef find_marker
+static inline struct marker *get_marker(void *ptr) {
+    struct marker *m = (struct marker *)((char*)ptr + 8);
 
-#ifdef DYNAMIC_MODULE
-#define get_marker(X) ((struct marker *) debug_malloc_pass(pmod_get_marker(X)))
-#define find_marker(X) ((struct marker *) debug_malloc_pass(pmod_find_marker(X)))
-#else
-#define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
-#define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
-#endif
+    if (m->gc_generation != gc_generation) {
+        gc_init_marker(m);
+        m->gc_generation = gc_generation;
+    }
+
+    return m;
+}
+
+static inline void remove_marker(void *ptr) {
+    ptr = ptr;
+}
+
+static inline void move_marker(struct marker *m, void *ptr) {
+    *get_marker(ptr) = *m;
+}
 
 extern size_t gc_ext_weak_refs;
 

@@ -9,6 +9,7 @@
 #include "global.h"
 
 #include "pike_macros.h"
+#include "gc_header.h"
 
 #define STRINGS_ARE_SHARED
 
@@ -32,6 +33,9 @@ enum struct_type {
 struct pike_string
 {
   INT32 refs;
+#ifdef PIKE_DEBUG
+  struct marker m;
+#endif
   unsigned char flags;
 #ifdef __GCC__
   enum size_shift   size_shift:2;

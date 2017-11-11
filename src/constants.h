@@ -8,6 +8,7 @@
 #define ADD_EFUN_H
 
 #include "svalue.h"
+#include "gc_header.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
 
 typedef int (*docode_fun)(node *n);
@@ -18,6 +19,7 @@ typedef node *(*optimize_fun)(node *n);
 struct callable
 {
   INT32 refs;
+  struct marker m;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;

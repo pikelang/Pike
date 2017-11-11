@@ -28,6 +28,7 @@
 PMOD_EXPORT struct array empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
+  GC_HEADER_INIT(),
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
@@ -42,6 +43,7 @@ PMOD_EXPORT struct array empty_array=
 PMOD_EXPORT struct array weak_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
+  GC_HEADER_INIT(),
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */

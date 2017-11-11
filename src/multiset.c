@@ -196,7 +196,7 @@ struct multiset *gc_internal_multiset = NULL;
 static struct multiset *gc_mark_multiset_pos = NULL;
 
 static struct multiset_data empty_ind_msd = {
-  1, 0, NULL, NULL,
+  1, GC_HEADER_INIT(), 0, NULL, NULL,
   SVALUE_INIT_INT (0),
   0, 0, 0,
   BIT_INT,
@@ -273,6 +273,7 @@ static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
 #endif
 
   msd = xalloc ( NODE_OFFSET (msnode_ind, allocsize) );
+  gc_init_marker(&msd->m);
   msd->refs = msd->noval_refs = 0;
   msd->root = NULL;
   msd->allocsize = allocsize;
