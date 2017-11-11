@@ -3055,6 +3055,8 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  old_pragmas = c->lex.pragmas;
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
+	  /* We also don't want to generate deprecation warnings. */
+	  c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
 
 	  /* Start the new program. */
 	  low_start_new_program(p, 1, NULL, 0, NULL);
