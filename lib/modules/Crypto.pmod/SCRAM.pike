@@ -23,7 +23,7 @@ protected void create(.Hash h) {
 }
 
 private Crypto.MAC.State HMAC(string(8bit) key) {
-  return H->HMAC(key, H->digest_size());
+  return H->HMAC(key);
 }
 
 //! Step 1 in the SCRAM handshake.
