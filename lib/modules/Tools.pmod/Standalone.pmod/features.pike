@@ -178,6 +178,7 @@ int main(int num, array(string) args) {
 
   write("\nGL\n");
   M(GL.glGet);
+  M(GL.GLSL.glCreateShader);
 
   write("\nGLUT\n");
   M(GLUT.glutGet);
