@@ -107,7 +107,7 @@ private function (:void) readyforquery_cb;
 final string _host;
 final int _port;
 private string database, user, pass;
-private string cnonce, ServerSignature;
+private string cnonce;
 private Thread.Condition waitforauthready;
 final Thread.Mutex _shortmux;
 final Thread.Condition _readyforcommit;
@@ -834,29 +834,25 @@ private void procmessage() {
                 errtype = PROTOCOLERROR;
               else {
                 string SaltedPassword;
+                string biws = sprintf("c=biws,r=%s", r);
+                r = sprintf("n=,r=%s,r=%s,s=%s,i=%d,%s",
+                            cnonce, r, salt, iters, biws);
                 if (!(SaltedPassword
                   = .pgsql_util.get_salted_password(pass, salt, iters))) {
-                  SaltedPassword = ServerSignature =
+                  SaltedPassword = cnonce =
                    HMAC256(pass, MIME.decode_base64(salt) + "\0\0\0\1");
                   int i = iters;
                   while (--i)
-                    SaltedPassword ^= ServerSignature
-                     = HMAC256(pass, ServerSignature);
+                    SaltedPassword ^= cnonce = HMAC256(pass, cnonce);
                   .pgsql_util.set_salted_password(pass, salt, iters,
                    SaltedPassword);
                 }
-                salt = sprintf("n=,r=%s,r=%s,s=%s,i=%d,c=biws,r=%s",
-                               cnonce, r, salt, iters, r);
-                ServerSignature = HMAC256(SaltedPassword, "Client Key");
+                salt = HMAC256(SaltedPassword, "Client Key");
                 authresponse(({
-                  sprintf("c=biws,r=%s,p=%s",
-                   r, MIME.encode_base64(
-                        ServerSignature
-                        ^ HMAC256(HASH256(ServerSignature), salt)
-                       ))
+                  sprintf("%s,p=%s", biws,
+                   MIME.encode_base64(salt ^ HMAC256(HASH256(salt), r)))
                  }));
-                ServerSignature = HMAC256(HMAC256(SaltedPassword, "Server Key"),
-                  salt);
+                cnonce = HMAC256(HMAC256(SaltedPassword, "Server Key"), r);
               }
               break;
             }
@@ -865,8 +861,7 @@ private void procmessage() {
               PD("AuthenticationSASLFinal\n");
               Stdio.Buffer tb = cr->read_buffer(msglen);
               [v] = tb->sscanf("v=%s");
-              v = MIME.decode_base64(v);
-              if (v != ServerSignature)
+              if (MIME.decode_base64(v) != cnonce)
                 errtype = PROTOCOLERROR;
               else
                 cnonce = 0;		// Clears cnonce and approves server
