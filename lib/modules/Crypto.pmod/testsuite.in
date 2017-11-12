@@ -554,6 +554,30 @@ test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338
 test_equal(Web.decode_jwk(Web.encode_jwk(RSA, 1)), RSA)
 test_do( add_constant("RSA") )
 
+define(test_SCRAM, [[
+  cond_resolv($1, [[
+    test_any([[
+      Crypto.SCRAM client = Crypto.SCRAM($1);
+      Crypto.SCRAM server = Crypto.SCRAM($1);
+      return $2 == server->server_1(client->client_1($2)) &&
+        client->client_3(server->server_3(
+          client->client_2(server->server_2(MIME.decode_base64($5), $6), $4),
+          MIME.decode_base64($3))
+         || "v=")
+    ]], $7)
+  ]])
+]])
+
+test_SCRAM(Crypto.SHA256, "anyuser",
+     "5EP5GZspS3GlBRRj+FOIwYuLeVMtdcbOeU1n8Sy1uQk=",
+    "scramhard",   "4y5+72rGdDvI77fWm1AHqQ==", 4096, 1)
+test_SCRAM(Crypto.SHA256, "",
+     "5EP5GZspS3GlBRRj+FOIwYuLeVMtdcbOeU1n8Sy1uQk=",
+    "scramhard",   "4y5+72rGdDvI77fWm1AHqQ==", 4096, 1)
+test_SCRAM(Crypto.SHA256, "anyuser",
+     "5EP5GZspS3GlBRRj+FOIwYuLeVMtdcbOeU1n8Sy1uQk=",
+    "scramharder", "4y5+72rGdDvI77fWm1AHqQ==", 4096, 0)
+
 // Hash, JWA
 define(test_jwk_hmac, [[
   cond_resolv($1, [[

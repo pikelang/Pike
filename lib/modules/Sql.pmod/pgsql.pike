@@ -105,7 +105,7 @@ private function (:void) readyforquery_cb;
 final string _host;
 final int _port;
 private string database, user, pass;
-private string cnonce;
+private Crypto.SCRAM SASLcontext;
 private Thread.Condition waitforauthready;
 final Thread.Mutex _shortmux;
 final int _readyforquerycount;
@@ -707,7 +707,7 @@ private void procmessage() {
           return msgresponse;
         };
         case 'R': {
-          void authresponse(array msg) {
+          void authresponse(string|array msg) {
             object cs = ci->start();
             CHAIN(cs)->add_int8('p')->add_hstring(msg, 4, 4);
             cs->sendcmd(SENDOUT); // No flushing, PostgreSQL 9.4 disapproves
@@ -718,7 +718,7 @@ private void procmessage() {
           switch(authtype = cr->read_int32()) {
             case 0:
               PD("Ok\n");
-              if (cnonce) {
+              if (SASLcontext) {
                 PD("Authentication validation still in progress\n");
                 errtype = PROTOCOLUNSUPPORTED;
               } else
@@ -787,8 +787,8 @@ private void procmessage() {
 #endif
               }
               if (k) {
-                cnonce = MIME.encode_base64(random_string(18));
-                word = "n,,n=,r=" + cnonce;
+                SASLcontext = Crypto.SCRAM(Crypto.SHA256);
+                word = SASLcontext.client_1();
                 authresponse(({
                   "SCRAM-SHA-256", 0, sprintf("%4c", sizeof(word)), word
                  }));
@@ -802,61 +802,28 @@ private void procmessage() {
               break;
             }
             case 11: {
-              string r, salt;
-              int iters;
-#define HMAC256(key, data)	(Crypto.SHA256.HMAC(key)(data))
-#define HASH256(data)		(Crypto.SHA256.hash(data))
               PD("AuthenticationSASLContinue\n");
-              { Stdio.Buffer tb = cr->read_buffer(msglen);
-                [r, salt, iters] = tb->sscanf("r=%s,s=%s,i=%d");
-#ifdef PG_DEBUG
-                if (sizeof(tb))
-                  errtype = PROTOCOLERROR;
-                msglen = 0;
-#endif
-              }
-              if (!has_prefix(r, cnonce) || iters <= 0)
+              string response;
+              if (response
+               = SASLcontext.client_2(cr->read(msglen), pass))
+                authresponse(response);
+              else
                 errtype = PROTOCOLERROR;
-              else {
-                string SaltedPassword;
-                string biws = sprintf("c=biws,r=%s", r);
-                r = sprintf("n=,r=%s,r=%s,s=%s,i=%d,%s",
-                            cnonce, r, salt, iters, biws);
-                if (!(SaltedPassword
-                  = .pgsql_util.get_salted_password(pass, salt, iters))) {
-                  SaltedPassword = cnonce =
-                   HMAC256(pass, MIME.decode_base64(salt) + "\0\0\0\1");
-                  int i = iters;
-                  while (--i)
-                    SaltedPassword ^= cnonce = HMAC256(pass, cnonce);
-                  .pgsql_util.set_salted_password(pass, salt, iters,
-                   SaltedPassword);
-                }
-                salt = HMAC256(SaltedPassword, "Client Key");
-                authresponse(({
-                  sprintf("%s,p=%s", biws,
-                   MIME.encode_base64(salt ^ HMAC256(HASH256(salt), r)))
-                 }));
-                cnonce = HMAC256(HMAC256(SaltedPassword, "Server Key"), r);
-              }
+#ifdef PG_DEBUG
+              msglen = 0;
+#endif
               break;
             }
-            case 12: {
-              string v;
+            case 12:
               PD("AuthenticationSASLFinal\n");
-              Stdio.Buffer tb = cr->read_buffer(msglen);
-              [v] = tb->sscanf("v=%s");
-              if (MIME.decode_base64(v) != cnonce)
-                errtype = PROTOCOLERROR;
+              if (SASLcontext.client_3(cr->read(msglen)))
+                SASLcontext = 0;	// Clears context and approves server
               else
-                cnonce = 0;		// Clears cnonce and approves server
+                errtype = PROTOCOLERROR;
 #ifdef PG_DEBUG
-              if (sizeof(tb))
-                errtype=PROTOCOLERROR;
               msglen=0;
 #endif
               break;
-            }
             default:
               PD("Unknown Authentication Method %c\n",authtype);
               errtype=PROTOCOLUNSUPPORTED;
