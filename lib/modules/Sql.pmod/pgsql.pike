@@ -207,12 +207,12 @@ protected string _sprintf(int type) {
 protected void create(void|string host, void|string database,
                       void|string user, void|string pass,
                       void|mapping(string:mixed) options) {
-  this::pass = Standards.IDNA.to_ascii(pass);
+  this::pass = pass && pass != "" ? Standards.IDNA.to_ascii(pass) : pass;
   if(pass) {
     String.secure(pass);
     pass = "CENSORED";
   }
-  this::user = Standards.IDNA.to_ascii(user, 1);
+  this::user = user && user != "" ? Standards.IDNA.to_ascii(user, 1) : user;
   this::database = database;
   _options = options || ([]);
 
