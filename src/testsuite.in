@@ -944,6 +944,31 @@ test_compile_warning([[
 ]])
 //
 
+test_compile_warning([[
+  // Warning: Compat: Substituting destroy() for _destruct().
+  class A {
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+#pragma no_deprecation_warnings
+  class A {
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+  class A {
+    protected void _destruct() {}
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+  class A {
+    protected void destroy() {}
+    protected void _destruct() {}
+  }
+]])
+
 test_any([[
   class Foo {
     constant zero = 0;
