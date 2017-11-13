@@ -85,7 +85,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
   constant format = "n,,n=%s,r=%s";
   string username, r;
   catch {
-    first = line[3..];
+    first = [string(8bit)]line[3..];
     [username, r] = stringp(line)
       ? array_sscanf([string]line, format)
       : [array(string)](line->sscanf(format));
@@ -144,7 +144,7 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
     if (pass != "")
       pass = Standards.IDNA.to_ascii(pass);
     salt = MIME.decode_base64(salt);
-    nonce = sprintf("%s,%s,%d", pass, salt, iters);
+    nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
     if (!(first = .SCRAM_get_salted_password(H, nonce))) {
       first = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
       .SCRAM_set_salted_password(first, H, nonce);
@@ -153,7 +153,7 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
     first = 0;                         // Free memory
     salt = hmacfirst([string(8bit)]ClientKey);
     salt = sprintf("%s,p=%s", line,
-      encode64(salt
+      encode64([string(8bit)]salt
         ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r)));
     nonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
   } else
@@ -177,7 +177,8 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
 string(7bit) server_3(Stdio.Buffer|string(8bit) line,
  string(8bit) salted_password) {
   constant format = "c=biws,r=%s,p=%s";
-  string r, p, response;
+  string r, p;
+  string(7bit) response;
   if (!catch([r, p] = stringp(line)
              ? array_sscanf([string]line, format)
              : [array(string)](line->sscanf(format)))
@@ -187,7 +188,7 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
     r = hmacfirst([string(8bit)]ClientKey);
     if (MIME.decode_base64(p)
      == [string(8bit)](r ^ HMAC(H->hash([string(8bit)]r))(first)))
-      response = sprintf("v=%s", encode64(HMAC(
+      response = [string(7bit)]sprintf("v=%s", encode64(HMAC(
          hmacfirst([string(8bit)]ServerKey))(first)));
   }
   return response;
@@ -205,9 +206,9 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
 //!   True if the server is valid, false if the server is invalid.
 int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
   constant format = "v=%s";
-  string(8bit) v;
+  string v;
   return !catch([v] = stringp(line)
-                ? array_sscanf(line, format)
+                ? array_sscanf([string]line, format)
                 : line->sscanf(format))
          && MIME.decode_base64(v) == nonce;
 }
