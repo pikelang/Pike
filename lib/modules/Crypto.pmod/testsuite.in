@@ -608,7 +608,6 @@ test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338
 test_equal(Web.decode_jwk(Web.encode_jwk(RSA, 1)), RSA)
 test_do( add_constant("RSA") )
 
-// Hash, JWA
 define(test_SCRAM, [[
   cond_resolv($1, [[
     test_any([[
