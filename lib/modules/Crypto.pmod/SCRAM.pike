@@ -19,7 +19,7 @@
 
 private .Hash H;  // hash object
 
-private string(8bit) first, cnonce;
+private string(8bit) first, nonce;
 
 constant ClientKey = "Client Key";
 constant ServerKey = "Server Key";
@@ -64,10 +64,10 @@ private Crypto.MAC.State HMAC(string(8bit) key) {
 //! @seealso
 //!   @[client_2]
 string(7bit) client_1(void|string username) {
-  cnonce = encode64(random_string(18));
+  nonce = encode64(random_string(18));
   return [string(7bit)](first = [string(8bit)]sprintf("n,,n=%s,r=%s",
     username && username != "" ? Standards.IDNA.to_ascii(username, 1) : "",
-    cnonce));
+    nonce));
 }
 
 //! Server-side step 1 in the SCRAM handshake.
@@ -89,7 +89,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
     [username, r] = stringp(line)
       ? array_sscanf([string]line, format)
       : [array(string)](line->sscanf(format));
-    cnonce = [string(8bit)]r;
+    nonce = [string(8bit)]r;
     r = Standards.IDNA.to_unicode(username);
   };
   return r;
@@ -111,7 +111,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
 //!   @[server_3]
 string(7bit) server_2(string(8bit) salt, int iters) {
   string response = sprintf("r=%s,s=%s,i=%d",
-    cnonce += encode64(random_string(18)), encode64(salt), iters);
+    nonce += encode64(random_string(18)), encode64(salt), iters);
   first += "," + response + ",";
   return [string(7bit)]response;
 }
@@ -138,16 +138,16 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
                                 ? array_sscanf([string]line, format)
                                 : [array(string)](line->sscanf(format)))
       && iters > 0
-      && has_prefix(r, cnonce)) {
+      && has_prefix(r, nonce)) {
     line = [string(8bit)]sprintf("c=biws,r=%s", r);
     r = sprintf("%s,r=%s,s=%s,i=%d,%s", first[3..], r, salt, iters, line);
     if (pass != "")
       pass = Standards.IDNA.to_ascii(pass);
     salt = MIME.decode_base64(salt);
-    cnonce = sprintf("%s,%s,%d", pass, salt, iters);
-    if (!(first = .SCRAM_get_salted_password(H, cnonce))) {
+    nonce = sprintf("%s,%s,%d", pass, salt, iters);
+    if (!(first = .SCRAM_get_salted_password(H, nonce))) {
       first = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
-      .SCRAM_set_salted_password(first, H, cnonce);
+      .SCRAM_set_salted_password(first, H, nonce);
     }
     Crypto.MAC.State hmacfirst = HMAC(first);
     first = 0;                         // Free memory
@@ -155,7 +155,7 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
     salt = sprintf("%s,p=%s", line,
       encode64(salt
         ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r)));
-    cnonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
+    nonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
   } else
     salt = 0;
   return [string(7bit)]salt;
@@ -181,7 +181,7 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
   if (!catch([r, p] = stringp(line)
              ? array_sscanf([string]line, format)
              : [array(string)](line->sscanf(format)))
-      && r == cnonce) {
+      && r == nonce) {
     first += sprintf("c=biws,r=%s", r);
     Crypto.MAC.State hmacfirst = HMAC(salted_password);
     r = hmacfirst([string(8bit)]ClientKey);
@@ -209,5 +209,5 @@ int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
   return !catch([v] = stringp(line)
                 ? array_sscanf(line, format)
                 : line->sscanf(format))
-         && MIME.decode_base64(v) == cnonce;
+         && MIME.decode_base64(v) == nonce;
 }
