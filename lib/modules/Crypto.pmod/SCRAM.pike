@@ -8,6 +8,10 @@
 //!
 //! @[client_1] -> @[server_1] -> @[server_2] -> @[client_2] ->
 //! @[server_3] -> @[client_3]
+//!
+//! @note
+//!   This implementation does not pretend to support the full protocol.
+//!   Most notably optional extension arguments are not supported (yet).
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -19,6 +23,10 @@ private string(8bit) first, cnonce;
 
 constant ClientKey = "Client Key";
 constant ServerKey = "Server Key";
+
+private string(7bit) encode64(string(8bit) raw) {
+  return MIME.encode_base64(raw, 1);
+}
 
 //! Step 0 in the SCRAM handshake, prior to creating the object,
 //! you need to have agreed with your peer on the hashfunction to be used.
@@ -56,7 +64,7 @@ private Crypto.MAC.State HMAC(string(8bit) key) {
 //! @seealso
 //!   @[client_2]
 string(7bit) client_1(void|string username) {
-  cnonce = MIME.encode_base64(random_string(18));
+  cnonce = encode64(random_string(18));
   return [string(7bit)](first = [string(8bit)]sprintf("n,,n=%s,r=%s",
     username && username != "" ? Standards.IDNA.to_ascii(username, 1) : "",
     cnonce));
@@ -68,19 +76,23 @@ string(7bit) client_1(void|string username) {
 //!   The received client-first request from the client.
 //!
 //! @returns
-//!   The username specified by the client.
+//!   The username specified by the client.  Returns null
+//!   if the response could not be parsed.
 //!
 //! @seealso
 //!   @[server_2]
 string server_1(Stdio.Buffer|string(8bit) line) {
   constant format = "n,,n=%s,r=%s";
   string username, r;
-  first = line[3..];
-  [username, r] = stringp(line)
-    ? array_sscanf([string]line, format)
-    : [array(string)](line->sscanf(format));
-  cnonce = [string(8bit)]r;
-  return Standards.IDNA.to_unicode(username);
+  catch {
+    first = line[3..];
+    [username, r] = stringp(line)
+      ? array_sscanf([string]line, format)
+      : [array(string)](line->sscanf(format));
+    cnonce = [string(8bit)]r;
+    r = Standards.IDNA.to_unicode(username);
+  };
+  return r;
 }
 
 //! Server-side step 2 in the SCRAM handshake.
@@ -99,9 +111,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
 //!   @[server_3]
 string(7bit) server_2(string(8bit) salt, int iters) {
   string response = sprintf("r=%s,s=%s,i=%d",
-    cnonce += MIME.encode_base64(random_string(18)),
-    MIME.encode_base64(salt),
-    iters);
+    cnonce += encode64(random_string(18)), encode64(salt), iters);
   first += "," + response + ",";
   return [string(7bit)]response;
 }
@@ -116,7 +126,7 @@ string(7bit) server_2(string(8bit) salt, int iters) {
 //!
 //! @returns
 //!   The client-final response to send to the server.  If the response is
-//!   null, the server messed up the handshake.
+//!   null, the server sent something unacceptable or unparseable.
 //!
 //! @seealso
 //!   @[client_3]
@@ -124,24 +134,26 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
   constant format = "r=%s,s=%s,i=%d";
   string r, salt;
   int iters;
-  [r, salt, iters] = stringp(line)
-    ? array_sscanf([string]line, format)
-    : [array(string)](line->sscanf(format));
-  if (iters > 0 && has_prefix(r, cnonce)) {
+  if (!catch([r, salt, iters] = stringp(line)
+                                ? array_sscanf([string]line, format)
+                                : [array(string)](line->sscanf(format)))
+      && iters > 0
+      && has_prefix(r, cnonce)) {
     line = [string(8bit)]sprintf("c=biws,r=%s", r);
     r = sprintf("%s,r=%s,s=%s,i=%d,%s", first[3..], r, salt, iters, line);
     if (pass != "")
       pass = Standards.IDNA.to_ascii(pass);
     salt = MIME.decode_base64(salt);
-    if (!(first = .SCRAM_get_salted_password(H, pass, salt, iters))) {
+    cnonce = sprintf("%s,%s,%d", pass, salt, iters);
+    if (!(first = .SCRAM_get_salted_password(H, cnonce))) {
       first = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
-      .SCRAM_set_salted_password(first, H, pass, salt, iters);
+      .SCRAM_set_salted_password(first, H, cnonce);
     }
     Crypto.MAC.State hmacfirst = HMAC(first);
     first = 0;                         // Free memory
     salt = hmacfirst([string(8bit)]ClientKey);
     salt = sprintf("%s,p=%s", line,
-      MIME.encode_base64(salt
+      encode64(salt
         ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r)));
     cnonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
   } else
@@ -160,21 +172,22 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
 //!
 //! @returns
 //!   The server-final response to send to the client.  If the response
-//!   is null, the client did not supply the correct credentials.
+//!   is null, the client did not supply the correct credentials or
+//!   the response was unparseable.
 string(7bit) server_3(Stdio.Buffer|string(8bit) line,
  string(8bit) salted_password) {
   constant format = "c=biws,r=%s,p=%s";
   string r, p, response;
-  [r, p] = stringp(line)
-    ? array_sscanf([string]line, format)
-    : [array(string)](line->sscanf(format));
-  if (r == cnonce) {
+  if (!catch([r, p] = stringp(line)
+             ? array_sscanf([string]line, format)
+             : [array(string)](line->sscanf(format)))
+      && r == cnonce) {
     first += sprintf("c=biws,r=%s", r);
     Crypto.MAC.State hmacfirst = HMAC(salted_password);
     r = hmacfirst([string(8bit)]ClientKey);
     if (MIME.decode_base64(p)
      == [string(8bit)](r ^ HMAC(H->hash([string(8bit)]r))(first)))
-      response = sprintf("v=%s", MIME.encode_base64(HMAC(
+      response = sprintf("v=%s", encode64(HMAC(
          hmacfirst([string(8bit)]ServerKey))(first)));
   }
   return response;
@@ -193,7 +206,8 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
 int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
   constant format = "v=%s";
   string(8bit) v;
-  [v] = stringp(line)
-    ? array_sscanf(line, format) : line->sscanf(format);
-  return MIME.decode_base64(v) == cnonce;
+  return !catch([v] = stringp(line)
+                ? array_sscanf(line, format)
+                : line->sscanf(format))
+         && MIME.decode_base64(v) == cnonce;
 }
