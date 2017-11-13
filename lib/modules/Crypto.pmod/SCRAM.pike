@@ -3,10 +3,11 @@
 //!
 //! This implements both the client and the serverside.
 //! You normally run either the server or the client, but if you would
-//! run both, the sequence would be:
+//! run both (use a separate client and a separate server object!),
+//! the sequence would be:
 //!
 //! @[client_1] -> @[server_1] -> @[server_2] -> @[client_2] ->
-//! @[server_3] -> @[client_3()
+//! @[server_3] -> @[client_3]
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -20,14 +21,19 @@ constant ClientKey = "Client Key";
 constant ServerKey = "Server Key";
 
 //! Step 0 in the SCRAM handshake, prior to creating the object,
-//! you need to have agreed with the server on the hashfunction to be used.
+//! you need to have agreed with your peer on the hashfunction to be used.
+//!
+//! @note
+//! If you are a client, you must use the @ref{client_*@} methods; if you are
+//! a server, you must use the @ref{server_*@} methods.
+//! You cannot mix both client and server methods in a single object.
 //!
 //! @param h
 //!   The hash object on which the SCRAM object should base its
 //!   operations. Typical input is @[Crypto.SHA256].
 //!
 //! @seealso
-//!   @[client_1]
+//!   @[client_1], @[server_1]
 protected void create(.Hash h) {
   H = h;
 }
@@ -84,7 +90,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
 //!   to compute the authentication hash.
 //!
 //! @returns
-//!   The first response to be sent to the client.
+//!   The first response to send to the client.
 //!
 //! @seealso
 //!   @[server_3]
@@ -106,7 +112,8 @@ string(7bit) server_2(string(8bit) salt, int iters) {
 //!   The challenge received from the server to our @[client_first].
 //!
 //! @returns
-//!   The final response to send to the server.
+//!   The final response to send to the server.  If the response is
+//!   null, the server messed up the handshake.
 //!
 //! @seealso
 //!   @[client_3]
@@ -139,14 +146,15 @@ string(7bit) client_2(string pass, Stdio.Buffer|string(8bit) line) {
   return [string(7bit)]salt;
 }
 
-//! Server-side step 3 in the SCRAM handshake.
+//! Final server-side step in the SCRAM handshake.
 //!
 //! @param salted_password
 //!   The salted (using the salt provided earlier) password belonging
 //!   to the specified username.
 //!
 //! @returns
-//!   The final response to send to the client.
+//!   The final response to send to the client.  If the response
+//!   is null, the client did not supply the correct credentials.
 string(7bit) server_3(string(8bit) salted_password,
  Stdio.Buffer|string(8bit) line) {
   constant format = "c=biws,r=%s,p=%s";
@@ -166,10 +174,10 @@ string(7bit) server_3(string(8bit) salted_password,
   return response;
 }
 
-//! Final step 3 in the SCRAM handshake.  If we get this far, the
+//! Final client-side step in the SCRAM handshake.  If we get this far, the
 //! server has already verified that we supplied the correct credentials.
 //! If this step fails, it means the server does not have our
-//! credentials at all.
+//! credentials at all and is an imposter.
 //!
 //! @param line
 //!   The verification received from the server to our @[client_final].
