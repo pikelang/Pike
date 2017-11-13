@@ -803,7 +803,7 @@ private void procmessage() {
               }
               if (k) {
                 SASLcontext = Crypto.SCRAM(Crypto.SHA256);
-                word = SASLcontext.client_first("");
+                word = SASLcontext.client_1();
                 authresponse(({
                   "SCRAM-SHA-256", 0, sprintf("%4c", sizeof(word)), word
                  }));
@@ -820,7 +820,7 @@ private void procmessage() {
               PD("AuthenticationSASLContinue\n");
               string response;
               if (response
-               = SASLcontext.client_final(pass, cr->read_buffer(msglen)))
+               = SASLcontext.client_2(pass, cr->read_buffer(msglen)))
                 authresponse(response);
               else
                 errtype = PROTOCOLERROR;
@@ -831,7 +831,7 @@ private void procmessage() {
             }
             case 12:
               PD("AuthenticationSASLFinal\n");
-              if (SASLcontext.server_final(cr->read_buffer(msglen)))
+              if (SASLcontext.client_3(cr->read_buffer(msglen)))
                 SASLcontext = 0;	// Clears context and approves server
               else
                 errtype = PROTOCOLERROR;
