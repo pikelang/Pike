@@ -6407,22 +6407,24 @@ INT32 define_function(struct pike_string *name,
       Pike_fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
-    /* Inhibit deprecation warnings during the comparison. */
-    c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
-    if (!pike_types_le(type, lfun_type->u.type)) {
-      int level = REPORT_NOTICE;
-      if (!match_types(type, lfun_type->u.type)) {
-	level = REPORT_ERROR;
-      } else if (c->lex.pragmas & ID_STRICT_TYPES) {
-	level = REPORT_WARNING;
+    if (Pike_compiler->compiler_pass == 2) {
+      /* Inhibit deprecation warnings during the comparison. */
+      c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
+      if (!pike_types_le(type, lfun_type->u.type)) {
+	int level = REPORT_NOTICE;
+	if (!match_types(type, lfun_type->u.type)) {
+	  level = REPORT_ERROR;
+	} else if (c->lex.pragmas & ID_STRICT_TYPES) {
+	  level = REPORT_WARNING;
+	}
+	if (level != REPORT_NOTICE) {
+	  yytype_report(level, NULL, 0, lfun_type->u.type,
+			NULL, 0, type, 0,
+			"Type mismatch for callback function %S:", name);
+	}
       }
-      if (level != REPORT_NOTICE) {
-	yytype_report(level, NULL, 0, lfun_type->u.type,
-		      NULL, 0, type, 0,
-		      "Type mismatch for callback function %S:", name);
-      }
+      c->lex.pragmas = orig_pragmas;
     }
-    c->lex.pragmas = orig_pragmas;
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
 	      (index_shared_string(name, 1) == '-') &&
