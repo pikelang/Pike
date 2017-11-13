@@ -820,7 +820,7 @@ private void procmessage() {
               PD("AuthenticationSASLContinue\n");
               string response;
               if (response
-               = SASLcontext.client_2(pass, cr->read_buffer(msglen)))
+               = SASLcontext.client_2(cr->read_buffer(msglen), pass))
                 authresponse(response);
               else
                 errtype = PROTOCOLERROR;
