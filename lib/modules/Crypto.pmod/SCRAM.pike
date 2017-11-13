@@ -153,8 +153,8 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
     first = 0;                         // Free memory
     salt = hmacfirst([string(8bit)]ClientKey);
     salt = sprintf("%s,p=%s", line,
-      encode64([string(8bit)]salt
-        ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r)));
+      encode64([string(8bit)](salt
+        ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r))));
     nonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
   } else
     salt = 0;
@@ -209,6 +209,6 @@ int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
   string v;
   return !catch([v] = stringp(line)
                 ? array_sscanf([string]line, format)
-                : line->sscanf(format))
+                : [array(string)](line->sscanf(format)))
          && MIME.decode_base64(v) == nonce;
 }
