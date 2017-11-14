@@ -36,13 +36,12 @@ private .MAC.State HMAC(string(8bit) key) {
   return H->HMAC(key);
 }
 
-private array proofsignature(string(8bit) salted_password) {
+private string(7bit) clientproof(string(8bit) salted_password) {
   .MAC.State hmacsaltedpw = HMAC(salted_password);
   salted_password = hmacsaltedpw([string(8bit)]ClientKey);
-  return ({
-    salted_password ^ HMAC(H->hash(salted_password))(first),
-    HMAC(hmacsaltedpw([string(8bit)]ServerKey))(first)
-   });
+  // Returns ServerSignature through nonce
+  nonce = encode64(HMAC(hmacsaltedpw([string(8bit)]ServerKey))(first));
+  return encode64(salted_password ^ HMAC(H->hash(salted_password))(first));
 }
 
 //! Step 0 in the SCRAM handshake, prior to creating the object,
@@ -162,9 +161,8 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
       r = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
       .SCRAM_set_salted_password(r, H, nonce);
     }
-    [salt, nonce] = proofsignature(r);
+    salt = sprintf("%s,p=%s", line, clientproof(r));
     first = 0;                         // Free memory
-    salt = sprintf("%s,p=%s", line, encode64(salt));
   } else
     salt = 0;
   return [string(7bit)]salt;
@@ -192,8 +190,7 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
              : [array(string)](line->sscanf(format)))
       && r == nonce) {
     first += sprintf("c=biws,r=%s", r);
-    [r, nonce] = proofsignature(salted_password);
-    p = MIME.decode_base64(p) == r && sprintf("v=%s", encode64(nonce));
+    p = p == clientproof(salted_password) && sprintf("v=%s", nonce);
   }
   return [string(7bit)]p;
 }
@@ -214,5 +211,5 @@ int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
   return !catch([v] = stringp(line)
                 ? array_sscanf([string]line, format)
                 : [array(string)](line->sscanf(format)))
-         && MIME.decode_base64(v) == nonce;
+         && v == nonce;
 }
