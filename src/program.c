@@ -7059,7 +7059,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
     /* if(fun->func.offset == -1) continue; * Prototype */
     if(!is_same_string(fun->name,name)) continue;
     if(type && (fun->type != type)) {
-      if ((Pike_compiler->pass == 2) &&
+      if ((Pike_compiler->compiler_pass == 2) &&
 	  !(funp->id_flags & ID_INHERITED) &&
 	  match_types(fun->type, type)) {
 	tentative = i;
