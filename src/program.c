@@ -6696,6 +6696,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
   struct reference *funp;
   struct identifier *fun;
   int id, i, depth, last_inh;
+  int tentative = -1;
 
 #if 1
 #ifdef COMPILER_DEBUG
@@ -6737,7 +6738,14 @@ int really_low_find_variant_identifier(struct pike_string *name,
     fun = ID_FROM_PTR(prog, funp);
     /* if(fun->func.offset == -1) continue; * Prototype */
     if(!is_same_string(fun->name,name)) continue;
-    if(type && (fun->type != type)) continue;
+    if(type && (fun->type != type)) {
+      if ((Pike_compiler->compiler_pass == 2) &&
+	  !(funp->id_flags & ID_INHERITED) &&
+	  match_types(fun->type, type)) {
+	tentative = i;
+      }
+      continue;
+    }
     if(funp->id_flags & ID_INHERITED)
     {
       struct inherit *inh = INHERIT_FROM_PTR(prog, funp);
@@ -6770,6 +6778,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
       return i;
     }
   }
+  if (id < 0) id = tentative;
   CDFPRINTF((stderr, "Found %d\n", id));
   return id;
 }
