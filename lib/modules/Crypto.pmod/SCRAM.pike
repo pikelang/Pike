@@ -28,6 +28,23 @@ private string(7bit) encode64(string(8bit) raw) {
   return MIME.encode_base64(raw, 1);
 }
 
+private string(7bit) randomstring() {
+  return encode64(random_string(18));
+}
+
+private .MAC.State HMAC(string(8bit) key) {
+  return H->HMAC(key);
+}
+
+private array proofsignature(string(8bit) salted_password) {
+  .MAC.State hmacsaltedpw = HMAC(salted_password);
+  salted_password = hmacsaltedpw([string(8bit)]ClientKey);
+  return ({
+    salted_password ^ HMAC(H->hash(salted_password))(first),
+    HMAC(hmacsaltedpw([string(8bit)]ServerKey))(first)
+   });
+}
+
 //! Step 0 in the SCRAM handshake, prior to creating the object,
 //! you need to have agreed with your peer on the hashfunction to be used.
 //!
@@ -46,10 +63,6 @@ protected void create(.Hash h) {
   H = h;
 }
 
-private Crypto.MAC.State HMAC(string(8bit) key) {
-  return H->HMAC(key);
-}
-
 //! Client-side step 1 in the SCRAM handshake.
 //!
 //! @param username
@@ -64,7 +77,7 @@ private Crypto.MAC.State HMAC(string(8bit) key) {
 //! @seealso
 //!   @[client_2]
 string(7bit) client_1(void|string username) {
-  nonce = encode64(random_string(18));
+  nonce = randomstring();
   return [string(7bit)](first = [string(8bit)]sprintf("n,,n=%s,r=%s",
     username && username != "" ? Standards.IDNA.to_ascii(username, 1) : "",
     nonce));
@@ -111,7 +124,7 @@ string server_1(Stdio.Buffer|string(8bit) line) {
 //!   @[server_3]
 string(7bit) server_2(string(8bit) salt, int iters) {
   string response = sprintf("r=%s,s=%s,i=%d",
-    nonce += encode64(random_string(18)), encode64(salt), iters);
+    nonce += randomstring(), encode64(salt), iters);
   first += "," + response + ",";
   return [string(7bit)]response;
 }
@@ -140,22 +153,18 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
       && iters > 0
       && has_prefix(r, nonce)) {
     line = [string(8bit)]sprintf("c=biws,r=%s", r);
-    r = sprintf("%s,r=%s,s=%s,i=%d,%s", first[3..], r, salt, iters, line);
+    first = sprintf("%s,r=%s,s=%s,i=%d,%s", first[3..], r, salt, iters, line);
     if (pass != "")
       pass = Standards.IDNA.to_ascii(pass);
     salt = MIME.decode_base64(salt);
     nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
-    if (!(first = .SCRAM_get_salted_password(H, nonce))) {
-      first = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
-      .SCRAM_set_salted_password(first, H, nonce);
+    if (!(r = .SCRAM_get_salted_password(H, nonce))) {
+      r = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
+      .SCRAM_set_salted_password(r, H, nonce);
     }
-    Crypto.MAC.State hmacfirst = HMAC(first);
+    [salt, nonce] = proofsignature(r);
     first = 0;                         // Free memory
-    salt = hmacfirst([string(8bit)]ClientKey);
-    salt = sprintf("%s,p=%s", line,
-      encode64([string(8bit)](salt
-        ^ HMAC(H->hash([string(8bit)]salt))([string(8bit)]r))));
-    nonce = HMAC(hmacfirst([string(8bit)]ServerKey))([string(8bit)]r);
+    salt = sprintf("%s,p=%s", line, encode64(salt));
   } else
     salt = 0;
   return [string(7bit)]salt;
@@ -178,20 +187,15 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
  string(8bit) salted_password) {
   constant format = "c=biws,r=%s,p=%s";
   string r, p;
-  string(7bit) response;
   if (!catch([r, p] = stringp(line)
              ? array_sscanf([string]line, format)
              : [array(string)](line->sscanf(format)))
       && r == nonce) {
     first += sprintf("c=biws,r=%s", r);
-    Crypto.MAC.State hmacfirst = HMAC(salted_password);
-    r = hmacfirst([string(8bit)]ClientKey);
-    if (MIME.decode_base64(p)
-     == [string(8bit)](r ^ HMAC(H->hash([string(8bit)]r))(first)))
-      response = [string(7bit)]sprintf("v=%s", encode64(HMAC(
-         hmacfirst([string(8bit)]ServerKey))(first)));
+    [r, nonce] = proofsignature(salted_password);
+    p = MIME.decode_base64(p) == r && sprintf("v=%s", encode64(nonce));
   }
-  return response;
+  return [string(7bit)]p;
 }
 
 //! Final client-side step in the SCRAM handshake.  If we get this far, the
