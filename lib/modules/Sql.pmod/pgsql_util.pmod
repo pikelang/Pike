@@ -450,7 +450,7 @@ outer:
         socket->close();
       };
     }
-    connectfail=0;
+    catch(connectfail = 0);
   }
 
   final void connectloop(object pgsqlsess, int nossl) {
