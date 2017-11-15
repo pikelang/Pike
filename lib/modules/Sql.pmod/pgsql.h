@@ -94,6 +94,7 @@
 #define COPYINPROGRESS	4
 #define CLOSING		5
 #define CLOSED		6
+#define PURGED		7
 
 #define KEEP		0		// Sendcmd subcommands
 #define SENDOUT		1
