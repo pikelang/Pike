@@ -1283,12 +1283,14 @@ private void procmessage() {
   if(err && !stringp(err))
     throw(err);
   };
-  unnamedstatement=0;
-  termlock = 0;
+  catch {
+   unnamedstatement = 0;
+   termlock = 0;
+  };
   if (err) {
     PD("Terminating processloop due to %s\n", describe_backtrace(err));
   }
-  _connectfail(err);
+  catch(_connectfail(err));
 }
 
 //! Closes the connection to the database, any running queries are
