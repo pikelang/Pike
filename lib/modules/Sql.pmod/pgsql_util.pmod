@@ -108,7 +108,8 @@ private void run_local_backend() {
     looponce=0;
     if(lock=backendmux->trylock()) {
       PD("Starting local backend\n");
-      while (!clientsregistered->drained()) {	// Autoterminate when not needed
+      while (!clientsregistered->drained()	// Autoterminate when not needed
+       || sizeof(local_backend->call_out_info())) {
         mixed err;
         if (err = catch(local_backend(4096.0)))
           werror(describe_backtrace(err));
@@ -632,7 +633,8 @@ class sql_result {
    int _portalbuffersize,int alltyped,array params,int forcetext,
    int _timeout, int _syncparse, int _transtype) {
     pgsqlsess = _pgsqlsess;
-    cr = (c = _c)->i;
+    if (catch(cr = (c = _c)->i))
+      losterror();
     _query = query;
     datarows = Thread.Queue();
     _ddescribe=Thread.Condition();
@@ -714,9 +716,18 @@ class sql_result {
     return rowsreceived;
   }
 
-  private inline void trydelayederror() {
+  private void losterror() {
+    string err;
+    if (pgsqlsess)
+      err = pgsqlsess->error(1);
+    error("%s\n", err || "Database connection lost");
+  }
+
+  private void trydelayederror() {
     if(_delayederror)
       throwdelayederror(this);
+    else if (_state == PURGED)
+      losterror();
   }
 
   //! @seealso
@@ -1072,7 +1083,7 @@ class sql_result {
       case PARSING:
         stmtifkey = 0;
     }
-    _state=CLOSED;
+    _state = PURGED;
     lock=0;
     releaseconditions();
   }
@@ -1151,8 +1162,7 @@ class sql_result {
     pgsqlsess=0;
     if(!datarowtypes) {
       Thread.MutexKey lock=_ddescribemux->lock();
-      datarowtypes=emptyarray;
-      datarowdesc=emptyarray;
+      datarowdesc = datarowtypes = emptyarray;
       _ddescribe->broadcast();
       lock=0;
     }
@@ -1166,7 +1176,8 @@ class sql_result {
     conxsess plugbuffer;
     if (!catch(plugbuffer = c->start()))
       plugbuffer->sendcmd(_closeportal(plugbuffer));
-    _state=CLOSED;
+    if (_state < CLOSED)
+      _state = CLOSED;
     datarows->write(1);				// Signal EOF
     releaseconditions();
   }
