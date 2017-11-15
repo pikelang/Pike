@@ -6,8 +6,9 @@ New Features
 
 o Sql.pgsql
 
-  Added support for PostgreSQL 10's stronger password authentication
-  (SCRAM-SHA-256).
+  - Added support for PostgreSQL 10's stronger password authentication
+    (SCRAM-SHA-256).
+  - Rip out fundamentally flawed reconnect logic, made failures consistent.
 
 Bug fixes
 ---------
