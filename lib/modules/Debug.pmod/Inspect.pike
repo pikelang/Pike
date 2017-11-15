@@ -102,7 +102,8 @@ private void loop(int sig) {
 }
 
 //! The internal function which does all the work each pollinterval.
-private void inspect() {
+//! Run it directly to force a thread-dump.
+void inspect() {
   Thread.MutexKey lock;
   if (lock = running->trylock(1)) {
     Thread.Thread thisthread = Thread.this_thread();
