@@ -734,11 +734,12 @@ int main(int ac,array(string) am)
       files = get_dir(combine_path(__DIR__, "tzdata"));
       files = map(sort(files),
 		  lambda(string fname) {
-		    if ((< ".gitignore", "Makefile", "Theory",
+		    if ((< ".gitignore", "Makefile", "Theory", "calendars",
 			   "leapseconds", "version", >)[fname] ||
 			(upper_case(fname) == fname) ||
 			has_prefix(fname, "solar") ||
 			has_suffix(fname, ".awk") ||
+			has_suffix(fname, ".html") ||
 			has_suffix(fname, ".list") ||
 			has_suffix(fname, ".pl") ||
 			has_suffix(fname, ".sh") ||
