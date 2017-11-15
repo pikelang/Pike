@@ -41,7 +41,8 @@ private string(7bit) clientproof(string(8bit) salted_password) {
   salted_password = hmacsaltedpw([string(8bit)]ClientKey);
   // Returns ServerSignature through nonce
   nonce = encode64(HMAC(hmacsaltedpw([string(8bit)]ServerKey))(first));
-  return encode64(salted_password ^ HMAC(H->hash(salted_password))(first));
+  return encode64([string(8bit)]
+                  (salted_password ^ HMAC(H->hash(salted_password))(first)));
 }
 
 //! Step 0 in the SCRAM handshake, prior to creating the object,
@@ -152,16 +153,17 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
       && iters > 0
       && has_prefix(r, nonce)) {
     line = [string(8bit)]sprintf("c=biws,r=%s", r);
-    first = sprintf("%s,r=%s,s=%s,i=%d,%s", first[3..], r, salt, iters, line);
+    first = [string(8bit)]sprintf("%s,r=%s,s=%s,i=%d,%s",
+                                  first[3..], r, salt, iters, line);
     if (pass != "")
       pass = Standards.IDNA.to_ascii(pass);
     salt = MIME.decode_base64(salt);
     nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
     if (!(r = .SCRAM_get_salted_password(H, nonce))) {
       r = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
-      .SCRAM_set_salted_password(r, H, nonce);
+      .SCRAM_set_salted_password([string(8bit)]r, H, nonce);
     }
-    salt = sprintf("%s,p=%s", line, clientproof(r));
+    salt = sprintf("%s,p=%s", line, clientproof([string(8bit)]r));
     first = 0;                         // Free memory
   } else
     salt = 0;
