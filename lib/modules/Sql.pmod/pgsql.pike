@@ -815,7 +815,7 @@ private void procmessage() {
               PD("AuthenticationSASLContinue\n");
               string response;
               if (response
-               = SASLcontext.client_2(cr->read_buffer(msglen), pass))
+               = SASLcontext.client_2(cr->read(msglen), pass))
                 authresponse(response);
               else
                 errtype = PROTOCOLERROR;
@@ -826,7 +826,7 @@ private void procmessage() {
             }
             case 12:
               PD("AuthenticationSASLFinal\n");
-              if (SASLcontext.client_3(cr->read_buffer(msglen)))
+              if (SASLcontext.client_3(cr->read(msglen)))
                 SASLcontext = 0;	// Clears context and approves server
               else
                 errtype = PROTOCOLERROR;

@@ -94,14 +94,12 @@ string(7bit) client_1(void|string username) {
 //!
 //! @seealso
 //!   @[server_2]
-string server_1(Stdio.Buffer|string(8bit) line) {
+string server_1(string(8bit) line) {
   constant format = "n,,n=%s,r=%s";
   string username, r;
   catch {
     first = [string(8bit)]line[3..];
-    [username, r] = stringp(line)
-      ? array_sscanf([string]line, format)
-      : [array(string)](line->sscanf(format));
+    [username, r] = array_sscanf(line, format);
     nonce = [string(8bit)]r;
     r = Standards.IDNA.to_unicode(username);
   };
@@ -143,13 +141,11 @@ string(7bit) server_2(string(8bit) salt, int iters) {
 //!
 //! @seealso
 //!   @[client_3]
-string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
+string(7bit) client_2(string(8bit) line, string pass) {
   constant format = "r=%s,s=%s,i=%d";
   string r, salt;
   int iters;
-  if (!catch([r, salt, iters] = stringp(line)
-                                ? array_sscanf([string]line, format)
-                                : [array(string)](line->sscanf(format)))
+  if (!catch([r, salt, iters] = array_sscanf(line, format))
       && iters > 0
       && has_prefix(r, nonce)) {
     line = [string(8bit)]sprintf("c=biws,r=%s", r);
@@ -183,13 +179,11 @@ string(7bit) client_2(Stdio.Buffer|string(8bit) line, string pass) {
 //!   The server-final response to send to the client.  If the response
 //!   is null, the client did not supply the correct credentials or
 //!   the response was unparseable.
-string(7bit) server_3(Stdio.Buffer|string(8bit) line,
+string(7bit) server_3(string(8bit) line,
  string(8bit) salted_password) {
   constant format = "c=biws,r=%s,p=%s";
   string r, p;
-  if (!catch([r, p] = stringp(line)
-             ? array_sscanf([string]line, format)
-             : [array(string)](line->sscanf(format)))
+  if (!catch([r, p] = array_sscanf(line, format))
       && r == nonce) {
     first += sprintf("c=biws,r=%s", r);
     p = p == clientproof(salted_password) && sprintf("v=%s", nonce);
@@ -207,11 +201,9 @@ string(7bit) server_3(Stdio.Buffer|string(8bit) line,
 //!
 //! @returns
 //!   True if the server is valid, false if the server is invalid.
-int(0..1) client_3(Stdio.Buffer|string(8bit) line) {
+int(0..1) client_3(string(8bit) line) {
   constant format = "v=%s";
   string v;
-  return !catch([v] = stringp(line)
-                ? array_sscanf([string]line, format)
-                : [array(string)](line->sscanf(format)))
+  return !catch([v] = array_sscanf(line, format))
          && v == nonce;
 }
