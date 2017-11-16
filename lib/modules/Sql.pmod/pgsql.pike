@@ -15,7 +15,7 @@
 //! @ul
 //! @item
 //!  PostgreSQL network protocol version 3, authentication methods
-//!   currently supported are: cleartext and MD5 (recommended).
+//!   currently supported are: cleartext, md5 and scram (recommended).
 //! @item
 //!  Streaming queries which do not buffer the whole resultset in memory.
 //! @item
@@ -314,8 +314,7 @@ protected void create(void|string host, void|string database,
 //!   @[reload()], @[resync()]
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final void cancelquery() {
   PD("CancelRequest\n");
   .pgsql_util.conxion lcon = .pgsql_util.conxion(this, 0, 2);
@@ -389,8 +388,7 @@ protected void create(void|string host, void|string database,
 //!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+search_path@}
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final mapping(string:string) getruntimeparameters() {
   waitauthready();
   return _runtimeparameter+([]);
@@ -431,8 +429,7 @@ protected void create(void|string host, void|string database,
 //! @endmapping
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final mapping(string:mixed) getstatistics() {
   mapping(string:mixed) stats=([
     "warnings_dropped":warningsdropcount,
@@ -457,8 +454,7 @@ protected void create(void|string host, void|string database,
 //! The previous cachedepth.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final int setcachedepth(void|int newdepth) {
   int olddepth=cachedepth;
   if(!undefinedp(newdepth) && newdepth>=0)
@@ -473,8 +469,7 @@ protected void create(void|string host, void|string database,
 //! The previous timeout.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final int settimeout(void|int newtimeout) {
   int oldtimeout=timeout;
   if(!undefinedp(newtimeout) && newtimeout>0)
@@ -489,8 +484,7 @@ protected void create(void|string host, void|string database,
 //!  The previous portalbuffersize.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final int setportalbuffersize(void|int newportalbuffersize) {
   int oldportalbuffersize=portalbuffersize;
   if(!undefinedp(newportalbuffersize) && newportalbuffersize>0)
@@ -505,8 +499,7 @@ protected void create(void|string host, void|string database,
 //!  The previous fetchlimit.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final int setfetchlimit(void|int newfetchlimit) {
   int oldfetchlimit=_fetchlimit;
   if(!undefinedp(newfetchlimit) && newfetchlimit>=0)
@@ -1297,8 +1290,7 @@ private void procmessage() {
 //! terminated instantly.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final void close() {
   throwdelayederror(this);
   Thread.MutexKey lock;
@@ -1392,8 +1384,7 @@ private void sendsync() {
 //!   @[cancelquery()], @[reload()]
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final void resync() {
   mixed err;
   if(is_open()) {
@@ -1459,8 +1450,7 @@ private void sendsync() {
 //!    Extra arguments to pass to @ref{notify_cb@}.
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final void set_notify_callback(string condition,
  void|function(int,string,string,mixed ...:void) notify_cb,void|int selfnotify,
   mixed ... args) {
@@ -1514,8 +1504,7 @@ private void runcallback(int pid,string condition,string extrainfo) {
 //!   @[big_query()], @[quote()]
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 /*semi*/final string quotebinary(string s) {
   return replace(s, ({ "'", "\\", "\0" }), ({ "''", "\\\\", "\\000" }) );
 }
@@ -1746,8 +1735,7 @@ private string trbackendst(int c) {
 //! @endstring
 //!
 //! @note
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
+//! This function is PostgreSQL-specific.
 final string status_commit() {
   return trbackendst(backendstatus);
 }
