@@ -139,11 +139,11 @@ void request_ok(Protocols.HTTP.Query q)
     }
   }
 
-  if (q->status > 399)
+  if ((q->status > 499) || (q->status < 100))
     exit(RET_CRITICAL, "Bad status code: %s(%d). | %s\n",
          q->status_desc, q->status, data);
 
-  if (q->status > 299)
+  if (q->status > 399)
     exit(RET_WARNING, "Bad status code: %s(%d). | %s\n",
          q->status_desc, q->status, data);
 
