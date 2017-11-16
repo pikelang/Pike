@@ -119,12 +119,12 @@ void request_ok(Protocols.HTTP.Query q)
     }
   }
 
-  if (q->status > 399) {
+  if ((q->status > 499) || (q->status < 100)) {
     Stdio.stdout.write("FAIL: Bad status code: %s(%d). | %s\n",
 		       q->status_desc, q->status, data);
     exit(RET_CRITICAL);
   }
-  if (q->status > 299) {
+  if (q->status > 399) {
     Stdio.stdout.write("WARNING: Bad status code: %s(%d). | %s\n",
 		       q->status_desc, q->status, data);
     exit(RET_WARNING);
