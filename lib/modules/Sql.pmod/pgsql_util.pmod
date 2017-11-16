@@ -699,8 +699,7 @@ class sql_result {
   //!  @[affected_rows()]
   //!
   //! @note
-  //! This function is PostgreSQL-specific, and thus it is not available
-  //! through the generic SQL-interface.
+  //! This function is PostgreSQL-specific.
   /*semi*/final string status_command_complete() {
     return statuscmdcomplete;
   }
@@ -711,8 +710,7 @@ class sql_result {
   //!  @[status_command_complete()]
   //!
   //! @note
-  //! This function is PostgreSQL-specific, and thus it is not available
-  //! through the generic SQL-interface.
+  //! This function is PostgreSQL-specific.
   /*semi*/final int affected_rows() {
     int rows;
     if(statuscmdcomplete)
