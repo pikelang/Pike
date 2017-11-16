@@ -1244,6 +1244,7 @@ private void procmessage() {
             lastmessage+=({
              sprintf("Connection lost to database %s@%s:%d/%s %d\n",
                   user,_host,_port,database,backendpid)});
+            runcallback(backendpid, "_lost", "");
             if(!waitforauthready)
               throw(0);
             USERERROR(a2nls(lastmessage));
