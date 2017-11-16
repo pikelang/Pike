@@ -14,6 +14,7 @@ constant description = "Check HTTP/HTTPS connectivity to a host.";
 constant options = ({
   ({ "help", Getopt.NO_ARG, ({ "-h", "--help" }) }),
   ({ "version", Getopt.NO_ARG, ({ "-V", "--version" }) }),
+  ({ "expect", Getopt.HAS_ARG, ({ "-e", "--expect" }) }),
   ({ "min_ssl", Getopt.HAS_ARG, ({ "-S", "--ssl" }) }),
   ({ "min_ttl", Getopt.HAS_ARG, ({ "-C", "--certificate" }) }),
   ({ "method", Getopt.HAS_ARG, ({ "-j", "--method" }) }),
@@ -31,6 +32,8 @@ enum RetCode {
 int start_time;
 
 int cert_min_ttl = -1;	// Disabled by default.
+
+array(string) expect = ({});
 
 void display_version()
 {
@@ -119,6 +122,28 @@ void request_ok(Protocols.HTTP.Query q)
     }
   }
 
+  if (sizeof(expect)) {
+    // Re-create the status line, and match against it.
+    string status_line =
+      sprintf("%s %03d %s", q->protocol, q->status, q->status_desc);
+    foreach(expect, string match) {
+      if (has_value(status_line, match)) {
+	Stdio.stdout.write("OK: Success. | %s\n", data);
+	exit(RET_OK);
+      }
+    }
+
+    if ((q->status > 399) && (q->status < 500)) {
+      Stdio.stdout.write("WARNING: Bad status code: %s(%d). | %s\n",
+			 q->status_desc, q->status, data);
+      exit(RET_WARNING);
+    }
+
+    Stdio.stdout.write("FAIL: Bad status code: %s(%d). | %s\n",
+		       q->status_desc, q->status, data);
+    exit(RET_CRITICAL);
+  }
+
   if ((q->status > 499) || (q->status < 100)) {
     Stdio.stdout.write("FAIL: Bad status code: %s(%d). | %s\n",
 		       q->status_desc, q->status, data);
@@ -151,6 +176,9 @@ int main(int argc, array(string) argv)
     case "version":
       display_version();
       exit(0);
+    case "expect":
+      expect += opt[1]/",";
+      break;
     case "min_ssl":
       url->scheme = "https";
       switch(lower_case(opt[1])) {
