@@ -334,7 +334,6 @@ class conxion {
   private int closenext;
 
   final sfile socket;
-  private function(void|mixed:void) connectfail;
   private int towrite;
   final multiset(function(void|mixed:void)) closecallbacks=(<>);
 
@@ -458,7 +457,7 @@ outer:
       return;
     };
     lock=0;
-    catch(connectfail());
+    destruct(this);
   }
 
   final int close() {
@@ -495,7 +494,6 @@ outer:
         socket->close();
       };
     }
-    catch(connectfail = 0);
   }
 
   final void connectloop(object pgsqlsess, int nossl) {
@@ -534,19 +532,16 @@ outer:
 #endif
         break;
       }
-      connectfail=pgsqlsess->_connectfail;
       if(!socket->is_open())
         error(strerror(socket->errno())+".\n");
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i,0);
       socket->set_nonblocking(i->read_cb,write_cb,close);
-      if (nossl != 2) {
-        connectfail=pgsqlsess->_connectfail;
+      if (nossl != 2)
         Thread.Thread(pgsqlsess->_processloop,this);
-      }
       return;
     };
-    catch(connectfail(err));
+    destruct(this);
   }
 
   private string _sprintf(int type, void|mapping flags) {
