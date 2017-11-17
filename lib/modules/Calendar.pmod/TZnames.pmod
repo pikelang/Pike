@@ -234,9 +234,6 @@ mapping abbr2zones =
    "+0020": ({
      "Europe/Amsterdam",
    }),
-   "+005204": ({
-     "Africa/Luanda",
-   }),
    "+01": ({
      "Africa/Freetown",
      "Atlantic/Madeira",
@@ -2197,6 +2194,7 @@ mapping abbr2zones =
      "America/Managua",
      "America/Montevideo",
      "Asia/Colombo",
+     "Asia/Kolkata",
      "Asia/Makassar",
      "Europe/Minsk",
      "Europe/Moscow",
