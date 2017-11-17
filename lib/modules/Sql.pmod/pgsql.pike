@@ -1283,8 +1283,10 @@ private void procmessage() {
   };
   if (err) {
     PD("Terminating processloop due to %s\n", describe_backtrace(err));
+    _delayederror = err;
   }
-  catch(_connectfail(err));
+  destruct(waitforauthready);
+  destruct(c);
 }
 
 //! Closes the connection to the database, any running queries are
@@ -1324,15 +1326,6 @@ protected void _destruct() {
     werror(describe_backtrace(err));
   else if (errstring && sizeof(errstring))
     werror("%s\n", errstring);		// Add missing terminating newline
-}
-
-final void _connectfail(void|mixed err) {
-  if (err) {
-    PD("Connect failed %O\n", err);
-    _delayederror = err;
-  }
-  destruct(waitforauthready);
-  destruct(c);
 }
 
 //! For PostgreSQL this function performs the same function as @[resync()].
