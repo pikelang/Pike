@@ -72,6 +72,10 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
  */
 PIKEFUN int refs(string|array|mapping|multiset|function|object|program o)
 {
+  if(!REFCOUNTED_TYPE(TYPEOF(*o)))
+    SIMPLE_ARG_TYPE_ERROR("refs", 1,
+                          "array|mapping|multiset|object|"
+                          "function|program|string|type");
   RETURN o->u.refs[0];
 }
 
@@ -499,6 +503,10 @@ PIKEFUN void list_open_fds()
  */
 PIKEFUN void dump_dmalloc_locations(string|array|mapping|multiset|function|object|program|type o)
 {
+  if(!REFCOUNTED_TYPE(TYPEOF(*o)))
+    SIMPLE_ARG_TYPE_ERROR("refs", 1,
+                          "array|mapping|multiset|object|"
+                          "function|program|string|type");
   debug_malloc_dump_references (o->u.refs, 2, 1, 0);
 }
 #endif /* DEBUG_MALLOC */
