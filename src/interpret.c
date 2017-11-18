@@ -2201,9 +2201,8 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
   /* We can reuse the current frame, so we set it into C here
    * to allow callsite_resolve_* to pick it up
    */
-  if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
+  if (frame_can_reuse(frame))
       C.frame = frame;
-  }
 
   switch (type) {
   case APPLY_STACK:
@@ -2246,9 +2245,8 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
 
   callsite_init(&C, args);
 
-  if (!(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1) {
+  if (frame_can_reuse(frame))
       C.frame = frame;
-  }
 
   callsite_resolve_identifier(&C, o, fun);
 
@@ -3403,6 +3401,10 @@ PMOD_EXPORT void callsite_resolve_identifier(struct pike_callsite *c, struct obj
       frame->current_object = o;
       frame->current_program = p;
   } else {
+#ifdef PIKE_DEBUG
+      if (!frame_can_reuse(frame))
+        Pike_error("Invalid frame reused in tailcall.\n");
+#endif
       if (o != frame->current_object) {
           free_object(frame->current_object);
           add_ref(frame->current_object = o);

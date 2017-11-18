@@ -279,6 +279,18 @@ static inline void frame_set_expendible(struct pike_frame *frame, struct svalue 
 #define PIKE_FRAME_RETURN_MASK	(PIKE_FRAME_RETURN_INTERNAL|PIKE_FRAME_RETURN_POP)
 #define PIKE_FRAME_LOCALS_MASK	(PIKE_FRAME_SAVE_LOCALS|PIKE_FRAME_MALLOCED_LOCALS)
 
+/* This is true if the frame can be reused by the _tailcall variants. Some cases where
+ * the stack frame cannot be reused is when
+ *
+ * 1) a trampoline has a reference to the frame
+ * 2) map() or similar are going to reuse the same frame
+ *    for further iterations
+ *
+ */
+static inline int frame_can_reuse(const struct pike_frame *frame) {
+  return !(frame->flags & PIKE_FRAME_NO_REUSE) && frame->refs == 1;
+}
+
 struct external_variable_context
 {
   struct object *o;
