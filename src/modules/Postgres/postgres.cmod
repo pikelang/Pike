@@ -667,13 +667,18 @@ yupbegin:       res=PQexec(conn,"BEGIN");
  *!   big_query
  */
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
+	int clearit = clear && clear->u.integer;
         pop_n_elems(args);
 
-	if (THIS->last_error)
+	if (THIS->last_error) {
 		ref_push_string(THIS->last_error);
-	else
+        	if (clearit) {
+			free_string(THIS->last_error);
+			THIS->last_error = 0;
+		}
+	} else
 		push_int(0);
 	return;
 }

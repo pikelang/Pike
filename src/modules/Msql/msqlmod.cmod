@@ -658,7 +658,7 @@ PIKEFUN string host_info()
 	push_text(msqlGetHostInfo());
 }
 
-/*! @decl string error()
+/*! @decl string error(void|int clear)
  *!
  *! This function returns the textual description of the last server-related
  *! error. Returns 0 if no error has occurred yet. It is not cleared upon
@@ -669,11 +669,19 @@ PIKEFUN string host_info()
  *!   @[query]
  */
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
-        if (THIS->error_msg)
+	int clearit = clear && clear->u.integer;
+
+	pop_n_elems(args);
+
+        if (THIS->error_msg) {
 		ref_push_string(THIS->error_msg);
-	else
+		if (clearit) {
+			free_string(THIS->error_msg);
+        		THIS->error_msg = 0;
+		}
+	} else
 	        push_int(0);
 }
 

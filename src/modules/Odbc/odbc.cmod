@@ -463,12 +463,18 @@ EXTRA
  * Pike functions
  */
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
+  int clearit = clear && clear->u.integer;
+
   pop_n_elems(args);
 
   if (PIKE_ODBC->last_error) {
     ref_push_string(PIKE_ODBC->last_error);
+    if (clearit) {
+      free_string(odbc->last_error);
+      odbc->last_error = 0;
+    }
   } else {
     push_int(0);
   }

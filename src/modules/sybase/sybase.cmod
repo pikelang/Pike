@@ -409,15 +409,18 @@ EXIT
 /* exported functions */
 /**********************/
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
+  int clearit = clear && clear->u.integer;
   pike_sybase_connection *this=THIS;
 
   pop_n_elems(args);
 
-  if (this->had_error)
+  if (this->had_error) {
     push_text(this->error);
-  else
+    if (clearit)
+      this->had_error = 0;
+  } else
     push_int(0);
 }
 

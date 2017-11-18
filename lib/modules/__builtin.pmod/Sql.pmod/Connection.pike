@@ -411,10 +411,19 @@ protected array(mapping(string:mixed)) res_obj_to_array(.Result res_obj)
   return res;
 }
 
-//! Return last error message.
-int|string error()
+//! The textual description of the last
+//! server-related error. Returns @expr{0@} if no error has occurred
+//! yet. It is not cleared upon reading (can be invoked multiple
+//! times, will return the same result until a new error occurs).
+//!
+//! @note
+//! The string returned is not newline-terminated.
+//!
+//! @param clear
+//! To clear the error, set it to @expr{1@}.
+int|string error(void|int clear)
 {
-  return "Unknown error";
+  return 0;
 }
 
 //! Return last SQLSTATE.

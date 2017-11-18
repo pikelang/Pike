@@ -979,10 +979,16 @@ PIKEFUN int insert_id()
  *!
  *! Returns @expr{0@} (zero) if there was no error.
  */
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
   const char *error_msg;
   error_msg = mysql_error(PIKE_MYSQL->mysql);
+
+  if (clear && clear->u.integer) {
+    MYSQL_ALLOW();
+    err = mysql_ping(mysql);
+    MYSQL_DISALLOW();
+  }
 
   pop_n_elems(args);
 

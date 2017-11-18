@@ -804,17 +804,20 @@ PIKECLASS Result
     push_int64 (sqlite3_last_insert_rowid(THIS->db));
   }
 
-  /*! @decl string error()
+  /*! @decl string error(void|int clear)
    *!
    *! Get the latest error message.
    *!
    *! @seealso
    *!   @[Sql.Sql()->error()]
    */
-  PIKEFUN string error()
+  PIKEFUN string error(void|int clear)
     optflags OPT_EXTERNAL_DEPEND;
   {
+    int clearit = clear && clear->u.integer;
+    pop_n_elems(args);
     push_text(sqlite3_errmsg(THIS->db));
+    /* FIXME: any way to support clearit? */
     f_utf8_to_string(1);
   }
 
