@@ -2193,7 +2193,7 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
   struct pike_frame *frame = Pike_fp;
   struct pike_callsite C;
 
-  if(Pike_sp != frame->locals + args)
+  if(frame->refs == 1 && Pike_sp != frame->locals + args)
     pike_pop_locals(frame->locals, args);
 
   callsite_init(&C, args);
@@ -2240,7 +2240,7 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
   struct pike_frame *frame = Pike_fp;
   struct pike_callsite C;
 
-  if(Pike_sp != frame->locals + args)
+  if(frame->refs == 1 && Pike_sp != frame->locals + args)
     pike_pop_locals(frame->locals, args);
 
   callsite_init(&C, args);
