@@ -3569,6 +3569,7 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
   n->num_args = 0;
   n->return_addr = NULL;
 #endif
+  n->save_locals_bitmask = NULL;
   if (n->scope) add_ref(n->scope);
   add_ref(n->current_object);
   add_ref(n->current_program);
