@@ -147,6 +147,10 @@ protected class _HMAC
 
     //! @param passwd
     //!   The secret password (K).
+    //!
+    //! @param b
+    //!   Block size. Must be larger than or equal to the @[digest_size()].
+    //!   Defaults to the @[block_size()].
     protected void create (string passwd, void|int b)
     {
       if (!b)
@@ -254,7 +258,14 @@ protected class _HMAC
   //! function block size.
   State `()(string password, void|int b)
   {
-    return State(password, b);
+    if (!b || (b == block_size())) {
+      return State(password);
+    }
+    // Unusual block size.
+    // NB: Nettle's implementation of HMAC doesn't support
+    //     non-standard block sizes, so always use the
+    //     generic implementation in this case.
+    return local::State(password, b);
   }
 
 //! @ignore
