@@ -341,7 +341,6 @@
 #include "operators.h"
 #include "opcodes.h"
 #include "cyclic.h"
-#include "module.h"
 #include "pike_float.h"
 #include "stack_allocator.h"
 #include <ctype.h>

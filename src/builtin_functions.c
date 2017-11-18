@@ -31,7 +31,6 @@
 #include "encode.h"
 #include <ctype.h>
 #include "module_support.h"
-#include "module.h"
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
