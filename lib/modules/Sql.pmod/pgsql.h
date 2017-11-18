@@ -30,8 +30,6 @@
 #define PREPSTMTPREFIX	     "pike_prep_"
 #define PTSTMTPREFIX	     "pike_tprep_"
 #define PORTALPREFIX	     "pike_portal_"
-#define RECONNECTDELAY	     1	    // Initial delay for reconnects
-#define RECONNECTBACKOFF     4	    // Secondary delay for reconnect
 #define FACTORPLAN	     8	    // Determines criterium when caching plan
 				    // -> if parsingtime*FACTORPLAN >= runtime
 				    // cache the statement
@@ -87,24 +85,11 @@
 #define conxsess	conxion
 #endif
 
-#define PORTALINIT	0		// Portal states
-#define PARSING	  	1
-#define BOUND		2
-#define COMMITTED	3
-#define COPYINPROGRESS	4
-#define CLOSING		5
-#define CLOSED		6
-#define PURGED		7
-
 #define KEEP		0		// Sendcmd subcommands
 #define SENDOUT		1
 #define FLUSHSEND	2
 #define FLUSHLOGSEND	3
 #define SYNCSEND	4
-
-#define NOERROR			0	// Error states networkparser
-#define PROTOCOLERROR		1
-#define PROTOCOLUNSUPPORTED	2
 
 #define NOTRANS         0
 #define TRANSBEGIN      1
