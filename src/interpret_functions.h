@@ -2340,7 +2340,7 @@ OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
 OPCODE2_RETURN(F_CALL_LFUN_N_AND_RETURN , "call lfun <n> & return", I_UPDATE_ALL, {
         PIKE_OPCODE_T *addr;
         if((addr = lower_mega_apply_tailcall(arg2, Pike_fp->current_object,
-                                    (arg1+Pike_fp->context->identifier_level))))
+                                    (arg1+Pike_fp->context->identifier_level), arg2)))
         {
             DO_JUMP_TO(addr);
         }else{
@@ -2367,9 +2367,10 @@ OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
 
 OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
         PIKE_OPCODE_T *addr;
-        if((addr = lower_mega_apply_tailcall((INT32)(Pike_sp - *--Pike_mark_sp),
+        INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
+        if((addr = lower_mega_apply_tailcall(args,
                             Pike_fp->current_object,
-                                    (arg1+Pike_fp->context->identifier_level))))
+                                    (arg1+Pike_fp->context->identifier_level), args)))
         {
             DO_JUMP_TO(addr);
         }else{
@@ -2408,7 +2409,7 @@ OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop", I_UPDATE_ALL, 
 OPCODE1_RETURN(F_MARK_CALL_LFUN_AND_RETURN , "mark, call lfun & return", I_UPDATE_ALL, {
     PIKE_OPCODE_T *addr;
     if((addr = lower_mega_apply_tailcall(0, Pike_fp->current_object,
-                                (arg1+Pike_fp->context->identifier_level))))
+                                (arg1+Pike_fp->context->identifier_level), 0)))
     {
       DO_JUMP_TO(addr);
     }
@@ -2547,12 +2548,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   struct svalue *s;
   s = Pike_sp - args;
-  /*
-   * this optimization is broken since *_tailcall was introduced.
-   * I have no idea why... Disable it for now.
-   *
-   */
-  if(0 && TYPEOF(*s) == T_OBJECT)
+
+  if(TYPEOF(*s) == T_OBJECT)
   {
     struct object *o;
     struct program *p;
@@ -2568,13 +2565,12 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
+          PIKE_OPCODE_T *addr;
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
-	  if((addr = lower_mega_apply_tailcall(args-1, o, fun)))
+	  if((addr = lower_mega_apply_tailcall(args-1, o, fun, args)))
 	  {
-	    Pike_fp->save_sp_offset--;
 	    DO_JUMP_TO(addr);
 	  }
-	  stack_pop_keep_top();
 	  DO_DUMB_RETURN;
 	}
       }

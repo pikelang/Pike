@@ -2233,11 +2233,12 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
 }
 
 /* NOTE: see comments in low_mega_apply_tailcall() */
-void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun) {
+void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun, INT32 xargs) {
   struct pike_frame *frame = Pike_fp;
   struct pike_callsite C;
 
-  callsite_init(&C, args);
+  callsite_init(&C, xargs);
+  C.args = args;
 
   if (frame_can_reuse(frame))
       C.frame = frame;
