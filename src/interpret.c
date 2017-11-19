@@ -3509,6 +3509,12 @@ static void pike_pop_locals(struct svalue *save_sp, ptrdiff_t n) {
 
   if (!pop) return;
 
+#ifdef PIKE_DEBUG
+  if (pop < 0) {
+    Pike_fatal("Trying to pop negative number of locals: %ld.\n", pop);
+  }
+#endif
+
   free_svalues(save_sp, pop, T_MIXED);
   Pike_sp -= pop;
 
