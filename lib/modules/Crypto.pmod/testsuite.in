@@ -1285,15 +1285,27 @@ cond_resolv(Crypto.MD5.name, [[
 test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("")(""))]],
         "74e6f7298a9c2d168935f58c001bad88")
+test_eq([[
+S(Crypto.MD5.HMAC("")("")]],
+        "74e6f7298a9c2d168935f58c001bad88")
 // Test vectors for md5 from RFC-2104
 test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("\013" * 16)("Hi There"))]],
 	"9294727a3638bb1c13f48ef8158bfc9d")
 test_eq([[
+S(Crypto.MD5.HMAC("\013" * 16)("Hi There")]],
+	"9294727a3638bb1c13f48ef8158bfc9d")
+test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("Jefe")("what do ya want for nothing?"))]],
 	"750c783e6ab0b503eaa86e310a5db738")
 test_eq([[
+S(Crypto.MD5.HMAC("Jefe")("what do ya want for nothing?")]],
+	"750c783e6ab0b503eaa86e310a5db738")
+test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("\252" * 16)("\335" * 50))]],
+	"56be34521d144c88dbb8c733f0e8b3f6")
+test_eq([[
+S(Crypto.MD5.HMAC("\252" * 16)("\335" * 50)]],
 	"56be34521d144c88dbb8c733f0e8b3f6")
 ]])
 
@@ -1303,13 +1315,25 @@ test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("")(""))]],
         "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
 test_eq([[
+S(Crypto.SHA1.HMAC("")("")]],
+        "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
+test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("\013" * 16)("Hi There"))]],
+	"675b0b3a1b4ddf4e124872da6c2f632bfed957e9")
+test_eq([[
+S(Crypto.SHA1.HMAC("\013" * 16)("Hi There")]],
 	"675b0b3a1b4ddf4e124872da6c2f632bfed957e9")
 test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("Jefe")("what do ya want for nothing?"))]],
 	"effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")
 test_eq([[
+S(Crypto.SHA1.HMAC("Jefe")("what do ya want for nothing?")]],
+	"effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")
+test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("\252" * 16)("\335" * 50))]],
+	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
+test_eq([[
+S(Crypto.SHA1.HMAC("\252" * 16)("\335" * 50)]],
 	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
 ]])
 
