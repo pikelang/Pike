@@ -2007,6 +2007,93 @@ static void do_trace_return (struct byte_buffer *b, int got_retval)
   buffer_free(b);
 }
 
+/* PROFILING */
+
+#ifdef PROFILING
+/* Initialize profiling information in the frame. This happens before a function call.
+ * This only applies to calls to pike and cmod functions.
+ */
+ATTRIBUTE((noinline))
+static void pike_prof_init(struct pike_frame *frame) {
+    struct identifier *function;
+
+    frame->children_base = Pike_interpreter.accounted_time;
+    frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+    function = frame->context->prog->identifiers + frame->ident;
+    function->num_calls++;
+    function->recur_depth++;
+
+    W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+                      " %" PRINT_CPU_TIME "\n",
+                      Pike_interpreter.thread_state,
+                      frame->start_time,
+                      frame->children_base);
+}
+
+/* Calculate the time spent in the current function call. This
+ * usually happens on return.
+ */
+ATTRIBUTE((noinline))
+static void pike_prof_account(struct pike_frame *frame) {
+    /* Time spent in this frame + children. */
+    cpu_time_t time_passed =
+      get_cpu_time() - Pike_interpreter.unlocked_time;
+    /* Time spent in children to this frame. */
+    cpu_time_t time_in_children;
+    /* Time spent in just this frame. */
+    cpu_time_t self_time;
+    struct identifier *function;
+    W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
+                      " (%" PRINT_CPU_TIME ")"
+                      " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
+                      Pike_interpreter.thread_state, time_passed,
+                      frame->start_time,
+                      Pike_interpreter.accounted_time,
+                      frame->children_base);
+    time_passed -= frame->start_time;
+#ifdef PIKE_DEBUG
+    if (time_passed < 0) {
+      Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME
+                 " now: %" PRINT_CPU_TIME
+                 " unlocked_time: %" PRINT_CPU_TIME
+                 " start_time: %" PRINT_CPU_TIME
+                 "n", time_passed, get_cpu_time(),
+                 Pike_interpreter.unlocked_time,
+                 frame->start_time);
+    }
+#endif
+    time_in_children =
+      Pike_interpreter.accounted_time - frame->children_base;
+#ifdef PIKE_DEBUG
+    if (time_in_children < 0) {
+      Pike_fatal("Negative time_in_children: %"
+                 PRINT_CPU_TIME
+                 " accounted_time: %" PRINT_CPU_TIME
+                 " children_base: %" PRINT_CPU_TIME
+                 "n", time_in_children,
+                 Pike_interpreter.accounted_time,
+                 frame->children_base);
+    }
+#endif
+    self_time = time_passed - time_in_children;
+#ifdef PIKE_DEBUG
+    if (self_time < 0) {
+      Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
+                 " time_passed: %" PRINT_CPU_TIME
+                 " time_in_children: %" PRINT_CPU_TIME
+                 "n", self_time, time_passed,
+                 time_in_children);
+    }
+#endif
+    Pike_interpreter.accounted_time += self_time;
+    /* FIXME: Can context->prog be NULL? */
+    function = frame->context->prog->identifiers + frame->ident;
+    if (!--function->recur_depth)
+      function->total_time += time_passed;
+    function->self_time += self_time;
+}
+#endif
+
 static struct pike_frame_chunk {
   struct pike_frame_chunk *next;
 } *pike_frame_chunks;
@@ -2198,8 +2285,14 @@ void* low_mega_apply_tailcall(enum apply_type type, INT32 args, void *arg1, void
   /* We can reuse the current frame, so we set it into C here
    * to allow callsite_resolve_* to pick it up
    */
-  if (frame_can_reuse(frame))
+  if (frame_can_reuse(frame)) {
       C.frame = frame;
+#ifdef PROFILING
+      /* We are reusing a frame in a tailcall. We need
+       * to make sure that we account for the previous call */
+      pike_prof_account(frame);
+#endif
+  }
 
   switch (type) {
   case APPLY_STACK:
@@ -2240,8 +2333,14 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun, INT
   callsite_init(&C, xargs);
   C.args = args;
 
-  if (frame_can_reuse(frame))
+  if (frame_can_reuse(frame)) {
       C.frame = frame;
+#ifdef PROFILING
+      /* We are reusing a frame in a tailcall. We need
+       * to make sure that we account for the previous call */
+      pike_prof_account(frame);
+#endif
+  }
 
   callsite_resolve_identifier(&C, o, fun);
 
@@ -3431,6 +3530,17 @@ PMOD_EXPORT void callsite_resolve_identifier(struct pike_callsite *c, struct obj
   frame->current_storage = o->storage + context->storage_offset;
   frame->args = args;
   frame->scope = NULL;
+#ifdef PROFILING
+  /* This is mostly for profiling, but
+   * could also be used to find out the name of a function
+   * in a destructed object. -hubbe
+   *
+   * Since it not used for anything but profiling yet, I will
+   * put it here until someone needs it. -Hubbe
+   */
+  frame->ident = ref->identifier_offset;
+  pike_prof_init(frame);
+#endif
 
   FAST_CHECK_THREADS_ON_CALL();
 
@@ -3575,6 +3685,10 @@ PMOD_EXPORT void callsite_reset_pikecall(struct pike_callsite *c) {
   add_ref(n->current_object);
   add_ref(n->current_program);
 
+#ifdef PROFILING
+  pike_prof_init(n);
+  pike_prof_account(frame);
+#endif /* PROFILING */
   LOW_POP_PIKE_FRAME(frame);
 
   c->frame = n;
@@ -3668,6 +3782,9 @@ PMOD_EXPORT void callsite_free_frame(const struct pike_callsite *c) {
 
   refs = frame->refs;
 
+#ifdef PROFILING
+  pike_prof_account(frame);
+#endif
   LOW_POP_PIKE_FRAME(frame);
 
   /* If the frame had more than 1 reference, no
@@ -3920,62 +4037,7 @@ void LOW_POP_PIKE_FRAME(struct pike_frame *frame) {
 void POP_PIKE_FRAME(void) {
   struct pike_frame *frame = Pike_fp;
 #ifdef PROFILING
-    /* Time spent in this frame + children. */
-    cpu_time_t time_passed =
-      get_cpu_time() - Pike_interpreter.unlocked_time;
-    /* Time spent in children to this frame. */
-    cpu_time_t time_in_children;
-    /* Time spent in just this frame. */
-    cpu_time_t self_time;
-    struct identifier *function;
-    W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
-                      " (%" PRINT_CPU_TIME ")"
-                      " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
-                      Pike_interpreter.thread_state, time_passed,
-                      frame->start_time,
-                      Pike_interpreter.accounted_time,
-                      frame->children_base);
-    time_passed -= frame->start_time;
-#ifdef PIKE_DEBUG
-    if (time_passed < 0) {
-      Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME
-                 " now: %" PRINT_CPU_TIME
-                 " unlocked_time: %" PRINT_CPU_TIME
-                 " start_time: %" PRINT_CPU_TIME
-                 "n", time_passed, get_cpu_time(),
-                 Pike_interpreter.unlocked_time,
-                 frame->start_time);
-    }
-#endif
-    time_in_children =
-      Pike_interpreter.accounted_time - frame->children_base;
-#ifdef PIKE_DEBUG
-    if (time_in_children < 0) {
-      Pike_fatal("Negative time_in_children: %"
-                 PRINT_CPU_TIME
-                 " accounted_time: %" PRINT_CPU_TIME
-                 " children_base: %" PRINT_CPU_TIME
-                 "n", time_in_children,
-                 Pike_interpreter.accounted_time,
-                 frame->children_base);
-    }
-#endif
-    self_time = time_passed - time_in_children;
-#ifdef PIKE_DEBUG
-    if (self_time < 0) {
-      Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
-                 " time_passed: %" PRINT_CPU_TIME
-                 " time_in_children: %" PRINT_CPU_TIME
-                 "n", self_time, time_passed,
-                 time_in_children);
-    }
-#endif
-    Pike_interpreter.accounted_time += self_time;
-    /* FIXME: Can context->prog be NULL? */
-    function = frame->context->prog->identifiers + frame->ident;
-    if (!--function->recur_depth)
-      function->total_time += time_passed;
-    function->self_time += self_time;
+  pike_prof_account(frame);
 #endif /* PROFILING */
   LOW_POP_PIKE_FRAME (frame);
 }
