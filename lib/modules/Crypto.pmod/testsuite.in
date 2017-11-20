@@ -1309,7 +1309,7 @@ S(Crypto.MD5.HMAC("\252" * 16)("\335" * 50))]],
 	"56be34521d144c88dbb8c733f0e8b3f6")
 ]])
 
-// Similar test vectors for sha; not verified with other implementations
+// Similar test vectors for sha1
 cond_resolv(Crypto.SHA1.name, [[
 test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("")(""))]],
@@ -1337,7 +1337,7 @@ S(Crypto.SHA1.HMAC("\252" * 16)("\335" * 50))]],
 	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
 ]])
 
-// Similar test vectors for SHA256; not verified with other implementations
+// Similar test vectors for SHA256
 cond_resolv(Crypto.SHA256.name, [[
 test_eq([[
 S(Crypto.HMAC(Crypto.SHA256)("")(""))]],
