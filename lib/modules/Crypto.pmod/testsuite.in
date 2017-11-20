@@ -1337,6 +1337,34 @@ S(Crypto.SHA1.HMAC("\252" * 16)("\335" * 50))]],
 	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
 ]])
 
+// Similar test vectors for SHA256; not verified with other implementations
+cond_resolv(Crypto.SHA256.name, [[
+test_eq([[
+S(Crypto.HMAC(Crypto.SHA256)("")(""))]],
+        "b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad")
+test_eq([[
+S(Crypto.SHA256.HMAC("")(""))]],
+        "b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad")
+test_eq([[
+S(Crypto.HMAC(Crypto.SHA256)("\013" * 16)("Hi There"))]],
+	"492ce020fe2534a5789dc3848806c78f4f6711397f08e7e7a12ca5a4483c8aa6")
+test_eq([[
+S(Crypto.SHA256.HMAC("\013" * 16)("Hi There"))]],
+	"492ce020fe2534a5789dc3848806c78f4f6711397f08e7e7a12ca5a4483c8aa6")
+test_eq([[
+S(Crypto.HMAC(Crypto.SHA256)("Jefe")("what do ya want for nothing?"))]],
+	"5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")
+test_eq([[
+S(Crypto.SHA256.HMAC("Jefe")("what do ya want for nothing?"))]],
+	"5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")
+test_eq([[
+S(Crypto.HMAC(Crypto.SHA256)("\252" * 16)("\335" * 50))]],
+	"7dda3cc169743a6484649f94f0eda0f9f2ff496a9733fb796ed5adb40a44c3c1")
+test_eq([[
+S(Crypto.SHA256.HMAC("\252" * 16)("\335" * 50))]],
+	"7dda3cc169743a6484649f94f0eda0f9f2ff496a9733fb796ed5adb40a44c3c1")
+]])
+
 // CRYPT_MD5
 cond_resolv(Nettle.crypt_md5, [[
 test_true([[stringp(Crypto.make_crypt_md5(""))]])
