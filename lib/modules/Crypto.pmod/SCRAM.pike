@@ -21,9 +21,6 @@ private .Hash H;  // hash object
 
 private string(8bit) first, nonce;
 
-constant ClientKey = "Client Key";
-constant ServerKey = "Server Key";
-
 private string(7bit) encode64(string(8bit) raw) {
   return MIME.encode_base64(raw, 1);
 }
@@ -38,9 +35,9 @@ private .MAC.State HMAC(string(8bit) key) {
 
 private string(7bit) clientproof(string(8bit) salted_password) {
   .MAC.State hmacsaltedpw = HMAC(salted_password);
-  salted_password = hmacsaltedpw([string(8bit)]ClientKey);
+  salted_password = hmacsaltedpw("Client Key");
   // Returns ServerSignature through nonce
-  nonce = encode64(HMAC(hmacsaltedpw([string(8bit)]ServerKey))(first));
+  nonce = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
   return encode64([string(8bit)]
                   (salted_password ^ HMAC(H->hash(salted_password))(first)));
 }
