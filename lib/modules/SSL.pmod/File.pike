@@ -490,7 +490,7 @@ int(1bit) accept(string|void pending_data)
 //!   will be sent after any data already queued for sending.
 //!
 //! @seealso
-//!  @[get_buffer_mode()]
+//!   @[query_buffer_mode()]
 void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
 {
   if (!in) {
