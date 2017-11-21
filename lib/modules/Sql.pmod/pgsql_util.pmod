@@ -707,9 +707,6 @@ class sql_result {
   //!
   //! @seealso
   //!  @[affected_rows()]
-  //!
-  //! @note
-  //! This function is PostgreSQL-specific.
   /*semi*/final string status_command_complete() {
     return statuscmdcomplete;
   }
@@ -718,9 +715,6 @@ class sql_result {
   //!
   //! @seealso
   //!  @[status_command_complete()]
-  //!
-  //! @note
-  //! This function is PostgreSQL-specific.
   /*semi*/final int affected_rows() {
     int rows;
     if (statuscmdcomplete)
