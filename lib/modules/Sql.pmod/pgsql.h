@@ -5,8 +5,8 @@
  * any precompiled pgsql.o or pgsql_utils.o
  */
 
-//#define PG_DEBUG  1
-//#define PG_DEBUGMORE  1
+//#define PG_DEBUG	1
+//#define PG_DEBUGMORE	1
 //#define PG_DEBUGRACE	1
 
 //#define PG_STATS	1	    // Collect extra usage statistics

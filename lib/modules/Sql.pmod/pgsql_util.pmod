@@ -494,7 +494,10 @@ outer:
   }
 
   final void connectloop(proxy pgsqlsess, int nossl) {
-    mixed err = catch {
+#ifdef PG_DEBUG
+    mixed err =
+#endif
+    catch {
       for (; ; clear()) {
         socket->connect(pgsqlsess. host, pgsqlsess. port);
 #if constant(SSL.File)
@@ -540,6 +543,7 @@ outer:
         Thread.Thread(pgsqlsess->processloop, this);
       return;
     };
+    PD("Connect error %s\n", describe_backtrace(err));
     catch(destruct(pgsqlsess->waitforauthready));
     destruct(this);
   }
