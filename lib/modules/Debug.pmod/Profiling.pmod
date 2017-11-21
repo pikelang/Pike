@@ -21,8 +21,8 @@ private multiset(program) object_programs()
         }
     };
 
-    add_traverse( _next(prog), _next );
-    add_traverse( prog, _prev );
+    add_traverse( .next(prog), .next );
+    add_traverse( prog, .prev );
     Pike.gc_parameters( (["enabled":orig_enabled]) );
 
     return x;
