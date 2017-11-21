@@ -506,9 +506,10 @@ outer:
           PD("SSLRequest\n");
           start()->add_int32(8)->add_int32(PG_PROTOCOL(1234,5679))
            ->sendcmd(SENDOUT);
-          switch(read_int8()) {
+          string s = socket.read(1);
+          switch (sizeof(s) && s[0]) {
             case 'S':
-              object fcon=SSL.File(socket,SSL.Context());
+              SSL.File fcon = SSL.File(socket, SSL.Context());
               if(fcon->connect()) {
                 socket=fcon;
                 break;
