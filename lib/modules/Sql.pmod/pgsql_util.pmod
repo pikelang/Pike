@@ -27,6 +27,7 @@
 #define CLOSING			5
 #define CLOSED			6
 #define PURGED			7
+// If this is extended, change the type of _state
 
 #define NOERROR			0	// Error states networkparser
 #define PROTOCOLERROR		1
@@ -320,7 +321,11 @@ class conxion {
   final Thread.Queue stashqueue;
   final Thread.Condition stashavail;
   final Stdio.Buffer stash;
-  final int(KEEP..SYNCSEND) stashflushmode;
+   /* FIXME actually: int(KEEP..SYNCSEND) stashflushmode
+    * but the PikeParser does not approve, and refdoc
+    * generation aborts
+    */
+  final int(0..4) stashflushmode;
   final Thread.ResourceCount stashcount;
   final int synctransact;
 #ifdef PG_DEBUGRACE
@@ -624,7 +629,7 @@ class sql_result {
   private conxion c;
   private conxiin cr;
   final mixed delayederror;
-  final int(PORTALINIT..PURGED) _state;
+  final int(0..7) _state;	// FIXME actually: int(PORTALINIT..PURGED)
   final int _fetchlimit;
   private int(0..1) alltext;
   final int(0..1) _forcetext;

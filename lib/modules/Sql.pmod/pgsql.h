@@ -90,6 +90,7 @@
 #define FLUSHSEND	2
 #define FLUSHLOGSEND	3
 #define SYNCSEND	4
+// If this is extended, change the type of stashflushmode
 
 #define NOTRANS         0
 #define TRANSBEGIN      1
