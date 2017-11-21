@@ -19,7 +19,7 @@ o Thread.ResourceCount
 
 o SSL.File
 
-  Support query_fd() method.
+  Support query_fd() and set_buffer_mode() methods.
 
 Bug fixes
 ---------
