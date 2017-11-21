@@ -986,7 +986,7 @@ PIKEFUN string error(void|int clear)
 
   if (clear && clear->u.integer) {
     MYSQL_ALLOW();
-    err = mysql_ping(mysql);
+    mysql_ping(mysql);
     MYSQL_DISALLOW();
   }
 
