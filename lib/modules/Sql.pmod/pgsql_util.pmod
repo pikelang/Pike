@@ -1512,15 +1512,6 @@ class proxy {
       catch(lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234, 5678))
         ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND));
 #ifdef PG_DEBUG
-  int close() {
-    werror("SRB fd close %d %s\n", query_fd(),
-     query_fd() == 13 && describe_backtrace(backtrace()) || "");
-    return ::close();
-  }
-  void _destruct() {
-    werror("SRB fd destruct %d\n", query_fd());
-    ::_destruct();
-  }
       if (err)
         PD("CancelRequest failed to connect %O\n", describe_backtrace(err));
 #endif
