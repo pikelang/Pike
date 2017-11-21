@@ -83,7 +83,7 @@ protected int _maxtime;
 //! @[set_maxtime()] sets the timeout for the entire operation. If this is set
 //! to @tt{30@} seconds for instance, the request will be aborted after
 //! @tt{30@} seconds event if data is still being received. By default this is
-//! indefinitley.
+//! indefinitely.
 //!
 //! @[t] is the timeout in seconds.
 //!
@@ -247,7 +247,7 @@ class Result
   //! Internal result mapping
   protected mapping result;
 
-  //! Return @tt{true@} if scuccess, @tt{false@} otherwise
+  //! Return @tt{true@} on success, @tt{false@} otherwise
   public bool `ok();
 
   //! The HTTP response headers
