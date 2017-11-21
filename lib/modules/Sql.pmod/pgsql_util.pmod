@@ -1349,7 +1349,6 @@ class sql_result {
         break;
       callout(callback, 0, this, datarow, @args);
     }
-    trydelayederror();
     eoffound = 1;
     callout(callback, 0, this, 0, @args);
   }
@@ -1379,7 +1378,6 @@ class sql_result {
         break;
       callout(callback, 0, this, datarow, @args);
     }
-    trydelayederror();
     eoffound = 1;
     if (sizeof(datarow)>1)
       callout(callback, 0, this, datarow = datarow[..<1], @args);
