@@ -17,6 +17,8 @@
 //!  PostgreSQL network protocol version 3, authentication methods
 //!   currently supported are: cleartext, md5 and scram (recommended).
 //! @item
+//!  Optional asynchronous query interface through callbacks.
+//! @item
 //!  Streaming queries which do not buffer the whole resultset in memory.
 //! @item
 //!  Automatic binary transfers to and from the database for most common
@@ -52,7 +54,8 @@
 //!   difficult.
 //!
 //! @seealso
-//!  @[Sql.Sql], @[Sql.postgres], @url{http://www.postgresql.org/docs/@}
+//!  @[Sql.Sql], @[Sql.postgres],
+//!  @url{https://www.postgresql.org/docs/current/static/@}
 
 #pike __REAL_VERSION__
 #pragma dynamic_dot
@@ -91,8 +94,7 @@ protected string _sprintf(int type) {
   return res;
 }
 
-//! With no arguments, this function initialises (reinitialises if a
-//! connection has been set up previously) a connection to the
+//! With no arguments, this function initialises a connection to the
 //! PostgreSQL backend. Since PostgreSQL requires a database to be
 //! selected, it will try to connect to the default database. The
 //! connection may fail however, for a variety of reasons; in this case
@@ -126,7 +128,7 @@ protected string _sprintf(int type) {
 //!	Send queries to and retrieve results from the database using text
 //!     instead of the, generally more efficient, default native binary method.
 //!     Turning this on will allow multiple statements per query separated
-//!     by semicolons.
+//!     by semicolons (not recommended).
 //!   @member int "sync_parse"
 //!     Set it to zero to turn synchronous parsing off for statements.
 //!     Setting this to off can cause surprises because statements could
@@ -154,15 +156,21 @@ protected string _sprintf(int type) {
 //! For the numerous other options please check the PostgreSQL manual.
 //!
 //! @note
-//! You need to have a database selected before using the sql-object,
+//! You need to have a database selected before using the SQL-object,
 //! otherwise you'll get exceptions when you try to query it. Also
 //! notice that this function @b{can@} raise exceptions if the db
 //! server doesn't respond, if the database doesn't exist or is not
 //! accessible to you.
 //!
+//! @note
+//! It is possible that the exception from a failed connect
+//! will not be triggered on this call (because the connect
+//! proceeds asynchronously in the background), but on the first
+//! attempt to actually use the database instead.
+//!
 //! @seealso
 //!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+search_path@}
+//!   @url{https://www.postgresql.org/docs/current/static/runtime-config-client.html@}
 protected void create(void|string host, void|string database,
                       void|string user, void|string pass,
                       void|mapping(string:mixed) options) {
@@ -201,7 +209,7 @@ protected void create(void|string host, void|string database,
 }
 
 //! This function returns a string describing what host are we talking to,
-//! and how (TCP/IP or UNIX sockets).
+//! and how (TCP/IP or UNIX socket).
 //!
 //! @seealso
 //!   @[server_info()]
@@ -217,7 +225,7 @@ protected void create(void|string host, void|string database,
 //!   sent over the connection.
 //!
 //!   For a more reliable check of whether the connection
-//!   is alive, please use @[ping()].
+//!   is alive, please use @[ping()] instead.
 //!
 //! @seealso
 //!   @[ping()]
@@ -262,7 +270,7 @@ protected void create(void|string host, void|string database,
 //!
 //! @seealso
 //!   @[get_charset()], @[create()],
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
+//!   @url{https://www.postgresql.org/docs/current/static/multibyte.html@}
 /*semi*/final void set_charset(string charset) {
   if(charset)
     big_query(sprintf("SET CLIENT_ENCODING TO '%s'", quote(charset)));
@@ -273,7 +281,7 @@ protected void create(void|string host, void|string database,
 //!
 //! @seealso
 //!   @[set_charset()], @[getruntimeparameters()],
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
+//!   @url{https://www.postgresql.org/docs/current/static/multibyte.html@}
 /*semi*/final string get_charset() {
   return getruntimeparameters()[CLIENT_ENCODING];
 }
@@ -312,7 +320,7 @@ protected void create(void|string host, void|string database,
 //! For other runtimeparameters check the PostgreSQL documentation.
 //!
 //! @seealso
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+search_path@}
+//!   @url{https://www.postgresql.org/docs/current/static/runtime-config-client.html@}
 //!
 //! @note
 //! This function is PostgreSQL-specific.
@@ -874,9 +882,8 @@ private inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
-//! This is the only provided interface which allows you to query the
-//! database. If you wish to use the simpler @[Sql.Sql()->query()] function,
-//! you need to use the @[Sql.Sql] generic SQL-object.
+//! This is the only provided direct interface which allows you to query the
+//! database.  A simpler synchronous interface can be used through @[query()].
 //!
 //! Bindings are supported natively straight across the network.
 //! Special bindings supported are:
@@ -908,9 +915,9 @@ private inline void throwdelayederror(object parent) {
 //! @returns
 //! A @[Sql.pgsql_util.sql_result] object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). It is
-//! recommended to use @[Sql.Sql()->query()] for simpler queries (because
+//! recommended to use @[query()] for simpler queries (because
 //! it is easier to handle, but stores all the result in memory), and
-//! @[Sql.Sql()->big_query()] for queries you expect to return huge amounts of
+//! @[big_query()] for queries you expect to return huge amounts of
 //! data (it's harder to handle, but fetches results on demand).
 //!
 //! @note
@@ -928,11 +935,11 @@ private inline void throwdelayederror(object parent) {
 //! simply ignores any commands after the first unquoted semicolon.  This can
 //! be viewed as a limited protection against SQL-injection attacks.
 //! To make it support multiple queries in one querystring, use the
-//! @ref{:_text@} option.
+//! @ref{:_text@} option (not recommended).
 //!
 //! @seealso
 //!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
-//!   @[Sql.Sql()->query()], @[Sql.pgsql_util.sql_result]
+//!   @[query()], @[Sql.pgsql_util.sql_result]
 /*semi*/final .pgsql_util.sql_result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {

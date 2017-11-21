@@ -483,7 +483,7 @@ outer:
         destruct(nostash);
         socket->set_non_blocking();			// Drop all callbacks
         PD("%d>Close socket\n", socket->query_fd());
-        socket->close();
+        socket->close();		// This will be an asynchronous close
       }
       destruct(this);
     }
