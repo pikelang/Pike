@@ -466,11 +466,12 @@ EXTRA
 PIKEFUN string error(void|int clear)
 {
   int clearit = clear && clear->u.integer;
+  struct Odbc_odbc_struct *odbc = PIKE_ODBC;
 
   pop_n_elems(args);
 
-  if (PIKE_ODBC->last_error) {
-    ref_push_string(PIKE_ODBC->last_error);
+  if (odbc->last_error) {
+    ref_push_string(odbc->last_error);
     if (clearit) {
       free_string(odbc->last_error);
       odbc->last_error = 0;
