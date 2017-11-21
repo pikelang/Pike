@@ -982,7 +982,9 @@ PIKEFUN int insert_id()
 PIKEFUN string error(void|int clear)
 {
   const char *error_msg;
-  error_msg = mysql_error(PIKE_MYSQL->mysql);
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  error_msg = mysql_error(mysql);
 
   if (clear && clear->u.integer) {
     MYSQL_ALLOW();
