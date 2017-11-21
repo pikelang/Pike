@@ -509,8 +509,9 @@ outer:
           string s = socket.read(1);
           switch (sizeof(s) && s[0]) {
             case 'S':
-              SSL.File fcon = SSL.File(socket, SSL.Context());
+              object fcon = SSL.File(socket, SSL.Context());
               if(fcon->connect()) {
+                socket->set_backend(local_backend);
                 socket=fcon;
                 break;
               }
