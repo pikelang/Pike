@@ -48,7 +48,7 @@
 //! Check the PostgreSQL documentation for further details.
 //!
 //! @note
-//!   Multiple simultaneous queries on the same database connection is a
+//!   Multiple simultaneous queries on the same database connection are a
 //!   feature that none of the other database drivers for Pike support.
 //!   So, although it's efficient, its use will make switching database drivers
 //!   difficult.

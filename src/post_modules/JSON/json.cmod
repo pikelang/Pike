@@ -613,8 +613,8 @@ PIKEFUN int validate(string data) {
  *! Decodes a JSON string.
  *!
  *! @param flags
- *!   The flag @[NO_OBJECTS] can be used to output @exp{1@}, @expr{0@}
- *!   and @expr[UNDEFINED@} instead of @[Val.true], @[Val.false] and
+ *!   The flag @[NO_OBJECTS] can be used to output @expr{1@}, @expr{0@}
+ *!   and @expr{UNDEFINED@} instead of @[Val.true], @[Val.false] and
  *!   @[Val.null].
  *!
  *! @throws

@@ -2218,7 +2218,7 @@ class Evaluator {
       if (sizeof(hch_warnings))
         safe_write(hch_warnings);
     }
-  };
+  }
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
   //! If a new variable is compiled to be tested, its name
