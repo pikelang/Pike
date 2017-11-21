@@ -2360,9 +2360,10 @@ void* lower_mega_apply_tailcall(INT32 args, struct object *o, ptrdiff_t fun, INT
 void low_return(void)
 {
   struct svalue *save_sp = frame_get_save_sp(Pike_fp);
-  struct object *o = Pike_fp->current_object;
-  int fun = Pike_fp->fun;
-  int pop = Pike_fp->flags & PIKE_FRAME_RETURN_POP;
+  struct pike_frame *frame = Pike_fp;
+  struct object *o = frame->current_object;
+  int fun = frame->fun;
+  int pop = frame->flags & PIKE_FRAME_RETURN_POP;
 
   if (PIKE_FN_DONE_ENABLED()) {
     /* DTrace leave probe
@@ -2388,13 +2389,16 @@ void low_return(void)
 #endif
 
 #ifdef PIKE_DEBUG
-  if(Pike_mark_sp < Pike_fp->save_mark_sp)
+  if(Pike_mark_sp < frame->save_mark_sp)
     Pike_fatal("Popped below save_mark_sp!\n");
   if(Pike_sp<Pike_interpreter.evaluator_stack)
     Pike_fatal("Stack error (also simple).\n");
 #endif
-  Pike_mark_sp=Pike_fp->save_mark_sp;
-  POP_PIKE_FRAME();
+  Pike_mark_sp=frame->save_mark_sp;
+#ifdef PROFILING
+  pike_prof_account(frame);
+#endif /* PROFILING */
+  LOW_POP_PIKE_FRAME(frame);
 
   pike_pop_locals(save_sp, !pop);
 
