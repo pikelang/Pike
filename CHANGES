@@ -8,7 +8,18 @@ o Sql.pgsql
 
   - Added support for PostgreSQL 10's stronger password authentication
     (SCRAM-SHA-256).
-  - Rip out fundamentally flawed reconnect logic, made failures consistent.
+
+o Crypto.SCRAM
+
+  New module to support SCRAM authentication.
+
+o Thread.ResourceCount
+
+  New module to allow threadsafe race-condition-free counting of resources.
+
+o SSL.File
+
+  Support query_fd() method.
 
 Bug fixes
 ---------
@@ -60,6 +71,14 @@ o Sql.pgsql
   - Signal EOF early before closing the SQL result portal and thoroughly
     cleanup bufcon/stashcount to prevent occasional deadlocks
     on asynchronous object destructions.
+
+  - Suppress rare "access in destructed object" messages.
+
+  - Rip out fundamentally flawed reconnect logic, made failures consistent.
+
+  - Repair SSL connect logic.
+
+  - Update documentation.
 
 o Standards.IIM
 
