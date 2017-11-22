@@ -369,7 +369,8 @@ string get_charset()
 
 // FIXME: _sprintf().
 
-protected array(mapping(string:mixed)) res_obj_to_array(.Result res_obj)
+array(mapping(string:mixed))
+ res_obj_to_array(array(mixed)|.Result res_obj, void|array(mapping) fields)
 {
   if (!res_obj)
     return 0;
@@ -379,10 +380,13 @@ protected array(mapping(string:mixed)) res_obj_to_array(.Result res_obj)
   {
     // Not very efficient, but sufficient
     array(string) fieldnames;
+    array(array(mixed)) rows;
     array(mixed) row;
+    int i;
 
-    array(mapping) fields = res_obj->fetch_fields();
-    if(!sizeof(fields)) return ({});
+    if (!fields)
+      fields = res_obj->fetch_fields();
+    if(!sizeof(fields)) return res;
 
     int has_table = fields[0]->table && fields[0]->table!="";
 
@@ -398,15 +402,26 @@ protected array(mapping(string:mixed)) res_obj_to_array(.Result res_obj)
     if (case_convert)
       fieldnames = map(fieldnames, lower_case);
 
-    if(has_table)
-      while (row = res_obj->fetch_row())
-	res += ({ mkmapping(fieldnames, row + row) });
-    else
-      while (row = res_obj->fetch_row())
-	res += ({ mkmapping(fieldnames, row) });
+    if (arrayp(res_obj))
+      rows = res_obj;
+    else {
+      fields = 0;
+      rows = ({});
+      while (row = res_obj->fetch_row_array())
+        rows += row;
+    }
 
+    if(has_table)
+      foreach (rows; i; row)
+        rows[i] = mkmapping(fieldnames, row + row);
+    else
+      foreach (rows; i; row)
+        rows[i] = mkmapping(fieldnames, row);
+
+    res += rows;
     // Try the next result.
-    res_obj = res_obj->next_result && res_obj->next_result();
+    res_obj = objectp(res_obj)
+     && res_obj->next_result && res_obj->next_result();
   }
   return res;
 }
@@ -550,7 +565,7 @@ protected array(string|mapping(string|int:mixed))
 //!   query, or a previously compiled query (see @[compile_query()]).
 //!
 //! @returns
-//!   The result is returned as an @[Sql.sql_result] object in untyped
+//!   The result is returned as an @[Sql.Result] object in untyped
 //!   mode. This allows for having some more info about the result as
 //!   well as processing the result in a streaming fashion, although the
 //!   result itself wasn't obtained streamingly from the server.
@@ -598,7 +613,7 @@ int|.Result big_query(object|string q);
 //!   Binary values (BLOBs) may need to be placed in multisets.
 //!
 //! @returns
-//!   The result is returned as an @[Sql.sql_result] object in untyped
+//!   The result is returned as an @[Sql.Result] object in untyped
 //!   mode. This allows for having some more info about the result as
 //!   well as processing the result in a streaming fashion, although the
 //!   result itself wasn't obtained streamingly from the server.
@@ -644,7 +659,7 @@ variant int|.Result big_query(object|string q,
 //! res = query("select foo from bar where gazonk=%s","value");
 //! @endcode
 //!
-//! The result is returned as an @[Sql.sql_result] object in untyped
+//! The result is returned as an @[Sql.Result] object in untyped
 //! mode. This allows for having some more info about the result as
 //! well as processing the result in a streaming fashion, although the
 //! result itself wasn't obtained streamingly from the server. Returns
@@ -706,7 +721,7 @@ array(mapping(string:string)) query(object|string q,
 //!
 //! For the argument, please see the @[big_query()] function.
 //!
-//! The result is returned as an @[Sql.sql_result] object in typed
+//! The result is returned as an @[Sql.Result] object in typed
 //! mode. This allows for having some more info about the result as
 //! well as processing the result in a streaming fashion, although the
 //! result itself wasn't obtained streamingly from the server. Returns
@@ -735,7 +750,7 @@ int|.Result big_typed_query(object|string q);
 //!
 //! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as an @[Sql.sql_result] object in typed
+//! The result is returned as an @[Sql.Result] object in typed
 //! mode. This allows for having some more info about the result as
 //! well as processing the result in a streaming fashion, although the
 //! result itself wasn't obtained streamingly from the server. Returns
@@ -766,7 +781,7 @@ variant int|.Result big_typed_query(object|string q,
 //!
 //! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as an @[Sql.sql_result] object in typed
+//! The result is returned as an @[Sql.Result] object in typed
 //! mode. This allows for having some more info about the result as
 //! well as processing the result in a streaming fashion, although the
 //! result itself wasn't obtained streamingly from the server. Returns
@@ -829,7 +844,7 @@ array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 //!
 //! For the arguments, please see the @[low_big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -856,7 +871,7 @@ int|.Result streaming_query(object|string q)
 //!
 //! For the arguments, please see the @[low_big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -885,7 +900,7 @@ variant int|.Result streaming_query(object|string q,
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -911,7 +926,7 @@ variant int|.Result streaming_query(object|string q,
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -939,7 +954,7 @@ int|.Result streaming_typed_query(object|string q)
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -968,7 +983,7 @@ variant int|.Result streaming_typed_query(object|string q,
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The result is returned as a streaming @[Sql.sql_result] object in
+//! The result is returned as a streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //! Returns @expr{0@} if the query didn't return any result (e.g.
@@ -1207,4 +1222,107 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   }
 
   return res;
+}
+
+//! Sends a query to the database asynchronously, discards all query result
+//! records.
+//!
+//! @returns
+//!   A @[Concurrent.Future] object which on failure/success passes
+//!   a @[Sql.FutureResult] object to evaluate the query.
+//!
+//! @seealso
+//!   @[promise_query()], @[promise_query_first_result()],
+//!   @[promise_query_result()], @[big_typed_query()]
+public Concurrent.Future promise_query_discard(string q,
+                               void|mapping(string|int:mixed) bindings) {
+  Concurrent.Promise p = Concurrent.Promise();
+  .FutureResult(this, p, q, bindings, 0);
+  return p->future();
+}
+
+//! Sends a query to the database asynchronously, expects at least
+//! a single record from the database; will discard any further
+//! records.
+//!
+//! @returns
+//!   A @[Concurrent.Future] object which on failure/success passes
+//!   a @[Sql.FutureResult] object to evaluate the query.
+//!
+//! @seealso
+//!   @[promise_query()], @[promise_query_result()],
+//!   @[promise_query_discard()], @[big_typed_query()]
+public Concurrent.Future promise_query_first_result(string q,
+                               void|mapping(string|int:mixed) bindings) {
+  Concurrent.Promise p = Concurrent.Promise();
+  .FutureResult(this, p, q, bindings, 1);
+  return p->future();
+}
+
+//! Sends a query to the database asynchronously, expects at least
+//! a single record from the database.
+//!
+//! @returns
+//!   A @[Concurrent.Future] object which on failure/success passes
+//!   a @[Sql.FutureResult] object to evaluate the query.
+//!
+//! @seealso
+//!   @[promise_query()], @[promise_query_first_result()],
+//!   @[promise_query_discard()], @[big_typed_query()]
+public Concurrent.Future promise_query_result(string q,
+                               void|mapping(string|int:mixed) bindings) {
+  Concurrent.Promise p = Concurrent.Promise();
+  .FutureResult(this, p, q, bindings, 2);
+  return p->future();
+}
+
+//! Sends a query to the database asynchronously.
+//!
+//! @returns
+//!   A @[Concurrent.Future] object which on failure/success passes
+//!   a @[Sql.FutureResult] object to evaluate the query.
+//!
+//! @seealso
+//!   @[promise_query_first_result()], @[promise_query_result()],
+//!   @[promise_query_discard()], @[big_typed_query()]
+//!
+//! @example
+//! @code
+//!
+//! Sql.Connection db = Sql.Connection("...");
+//! Concurrent.Future q1 = db->promise_query("SELECT :bar::INT", (["bar":1]));
+//! Concurrent.Future q2 = db->promise_query("SELECT :foo::INT", (["foo":2]));
+//!
+//! array(Concurrent.Future) all = ({ q1, q2 });
+//!
+//! /*
+//!   To get a callback for each of the requests
+//! */
+//!
+//! all->on_success(lambda (Sql.FutureResult resp) {
+//!   werror("Got result %O from %O\n", resp->data, resp->query);
+//! });
+//! all->on_failure(lambda (Sql.FutureResult resp) {
+//!   werror("Request %O failed: %O\n", resp->query, resp->exception);
+//! });
+//!
+//! /*
+//!   To get a callback when all of the requests are done. In this case
+//!   on_failure will be called if any of the request fails.
+//! */
+//!
+//! Concurrent.Future all2 = Concurrent.results(all);
+//!
+//! all2->on_success(lambda (array(Sql.FutureResult) resp) {
+//!   werror("All requests were successful: %O\n", resp);
+//! });
+//! all->on_failure(lambda (Sql.FutureResult resp) {
+//!   werror("Requests %O failed with %O.\n", resp->query, resp->exception);
+//! });
+//! @endcode
+public Concurrent.Future promise_query(string q,
+                                 void|mapping(string|int:mixed) bindings) {
+  Concurrent.Promise p = Concurrent.Promise();
+  .FutureResult(this, p, q, bindings, 3);
+  return p->future();
 }

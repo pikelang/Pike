@@ -146,7 +146,7 @@ final Thread.ResourceCountKey register_backend() {
   return key;
 }
 
-final void throwdelayederror(sql_result|proxy parent) {
+final void throwdelayederror(Result|proxy parent) {
   if (mixed err = parent->delayederror) {
     if (!objectp(parent->pgsqlsess))
       parent->untolderror = 0;
@@ -216,7 +216,7 @@ class bufcon {
     return this;
   }
 
-  final void sendcmd(int mode, void|sql_result portal) {
+  final void sendcmd(int mode, void|Result portal) {
     Thread.MutexKey lock = realbuffer->shortmux->lock();
     if (portal)
       realbuffer->stashqueue->write(portal);
@@ -314,7 +314,7 @@ class conxion {
 #endif
                        socket;
   private int towrite;
-  final multiset(sql_result) runningportals = (<>);
+  final multiset(Result) runningportals = (<>);
 
   final Thread.Mutex nostash;
   final Thread.MutexKey started;
@@ -336,7 +336,7 @@ class conxion {
   final int queueinidx = -1;
 #endif
 
-  private inline void queueup(sql_result portal) {
+  private inline void queueup(Result portal) {
     qportals->write(portal); portal->_synctransact = synctransact;
     PD("%d>%O %d %d Queue portal %d bytes\n", socket->query_fd(),
      portal._portalname, ++queueoutidx, synctransact, sizeof(this));
@@ -379,7 +379,7 @@ class conxion {
   private int getstash(int mode) {
     if (sizeof(stash)) {
       add(stash); stash->clear();
-      foreach (stashqueue->try_read_array(); ; int|sql_result portal)
+      foreach (stashqueue->try_read_array(); ; int|Result portal)
         if (intp(portal))
           qportals->write(synctransact++);
         else
@@ -393,7 +393,7 @@ class conxion {
     return mode;
   }
 
-  final void sendcmd(void|int mode, void|sql_result portal) {
+  final void sendcmd(void|int mode, void|Result portal) {
     Thread.MutexKey lock;
     if (portal)
       queueup(portal);
@@ -467,7 +467,7 @@ outer:
     if (stashcount) {
       stashcount = 0;
       PD("%d>Purge conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
-      int|sql_result portal;
+      int|Result portal;
       if (qportals)			// CancelRequest does not use qportals
         while (portal = qportals->try_read())
           if (objectp(portal))
@@ -475,7 +475,7 @@ outer:
       if (nostash) {
         while (sizeof(runningportals))
           catch {
-            foreach (runningportals; sql_result result; )
+            foreach (runningportals; Result result; )
               if (!result.datarowtypes) {
                 result.datarowtypes = emptyarray;
                 if (result._state != PURGED && !result.delayederror)
@@ -602,7 +602,7 @@ class conxsess {
     chain = parent;
   }
 
-  final void sendcmd(int mode, void|sql_result portal) {
+  final void sendcmd(int mode, void|Result portal) {
     chain->sendcmd(mode, portal);
     chain = 0;
   }
@@ -616,11 +616,11 @@ class conxsess {
 #endif
 
 //! The result object returned by @[Sql.pgsql()->big_query()], except for
-//! the noted differences it behaves the same as @[Sql.sql_result].
+//! the noted differences it behaves the same as @[Sql.Result].
 //!
 //! @seealso
-//!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
-class sql_result {
+//!   @[Sql.Result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
+class Result {
 
   inherit __builtin.Sql.Result;
 
@@ -666,7 +666,7 @@ class sql_result {
         int fd = -1;
         if (c && c->socket)
           catch(fd = c->socket->query_fd());
-        res = sprintf("sql_result state: %d numrows: %d eof: %d inflight: %d\n"
+        res = sprintf("Result state: %d numrows: %d eof: %d inflight: %d\n"
                     "query: %O\n"
                     "fd: %O portalname: %O  datarows: %d"
                     "  synctransact: %d laststatus: %s\n",
@@ -742,7 +742,7 @@ class sql_result {
   }
 
   //! @seealso
-  //!  @[Sql.sql_result()->num_fields()]
+  //!  @[Sql.Result()->num_fields()]
   /*semi*/final int num_fields() {
     if (!datarowtypes)
       waitfordescribe();
@@ -756,7 +756,7 @@ class sql_result {
   //!  the query are not complete yet.  This function is only guaranteed to
   //!  return the correct count after EOF has been reached.
   //! @seealso
-  //!  @[Sql.sql_result()->num_rows()]
+  //!  @[Sql.Result()->num_rows()]
   /*semi*/final int num_rows() {
     trydelayederror();
     return rowsreceived;
@@ -777,14 +777,14 @@ class sql_result {
   }
 
   //! @seealso
-  //!  @[Sql.sql_result()->eof()]
+  //!  @[Sql.Result()->eof()]
   /*semi*/final int eof() {
     trydelayederror();
     return eoffound;
   }
 
   //! @seealso
-  //!  @[Sql.sql_result()->fetch_fields()]
+  //!  @[Sql.Result()->fetch_fields()]
   /*semi*/final array(mapping(string:mixed)) fetch_fields() {
     if (!datarowtypes)
       waitfordescribe();
@@ -1332,7 +1332,7 @@ class sql_result {
   }
 
   private void run_result_cb(
-   function(sql_result, array(mixed), mixed ...:void) callback,
+   function(Result, array(mixed), mixed ...:void) callback,
    array(mixed) args) {
     int|array datarow;
     for (;;) {
@@ -1354,14 +1354,14 @@ class sql_result {
   //! @seealso
   //!  @[fetch_row()]
   /*semi*/final void set_result_callback(
-   function(sql_result, array(mixed), mixed ...:void) callback,
+   function(Result, array(mixed), mixed ...:void) callback,
    mixed ... args) {
     if (callback)
       Thread.Thread(run_result_cb, callback, args);
   }
 
   private void run_result_array_cb(
-   function(sql_result, array(array(mixed)), mixed ...:void) callback,
+   function(Result, array(array(mixed)), mixed ...:void) callback,
    array(mixed) args) {
     array(array|int) datarow;
     for (;;) {
@@ -1385,7 +1385,7 @@ class sql_result {
   //! @seealso
   //!  @[fetch_row()]
   /*semi*/final void set_result_array_callback(
-   function(sql_result, array(array(mixed)), mixed ...:void) callback,
+   function(Result, array(array(mixed)), mixed ...:void) callback,
    mixed ... args) {
     if (callback)
       Thread.Thread(run_result_array_cb, callback, args);
@@ -1427,7 +1427,7 @@ class proxy {
 
   final string host;
   final int(0..65535) port;
-  private string database, user, pass;
+  final string database, user, pass;
   private Crypto.SCRAM SASLcontext;
   final Thread.Condition waitforauthready;
   final Thread.Mutex shortmux;
@@ -1542,7 +1542,7 @@ class proxy {
     PD("%O\n", runtimeparameter);
   }
 
-  private array(string) showbindings(sql_result portal) {
+  private array(string) showbindings(Result portal) {
     array(string) msgs = emptyarray;
     array from;
     if (portal && (from = portal._params)) {
@@ -1567,7 +1567,7 @@ class proxy {
               msgresponse.L||"")});
   }
 
-  private int|sql_result portal;  // state information procmessage
+  private int|Result portal;  // state information procmessage
   #ifdef PG_DEBUG
   private string datarowdebug;
   private int datarowdebugcount;
@@ -1613,7 +1613,7 @@ class proxy {
   #ifdef PG_DEBUGMORE
     void showportalstack(string label) {
       PD(sprintf(">>>>>>>>>>> Portalstack %s: %O\n", label, portal));
-      foreach (qportals->peek_array(); ; int|sql_result qp)
+      foreach (qportals->peek_array(); ; int|Result qp)
         PD(" =========== Portal: %O\n", qp);
       PD("<<<<<<<<<<<<<< Portalstack end\n");
     };
@@ -1891,7 +1891,7 @@ class proxy {
             while (keeplooking && (portal = qportals->read()));
             if (backendstatus == 'I')
               intransaction = 0;
-            foreach (qportals->peek_array(); ; sql_result qp) {
+            foreach (qportals->peek_array(); ; Result qp) {
               if (objectp(qp) && qp._synctransact
                && qp._synctransact <= portal) {
                 PD("Checking portal %O %d<=%d\n",
@@ -2248,7 +2248,7 @@ class proxy {
         terminating = 1;
         err = 0;
       } else if (stringp(err)) {
-        sql_result or;
+        Result or;
         if (!objectp(or = portal))
           or = this;
         if (!or.delayederror)
@@ -2300,7 +2300,8 @@ class proxy {
       c->close();
     if (unnamedstatement)
       lock = unnamedstatement->lock(1);
-    c->purge();
+    if (c)
+      c->purge();
     lock = 0;
     destruct(waitforauthready);
   }
@@ -2341,3 +2342,13 @@ class proxy {
     closestatement(plugbuffer, oldprep);
   }
 };
+
+#pragma deprecation_warnings
+
+//! @class sql_result
+//! @deprecated Result
+
+//! @endclass
+
+__deprecated__(program(Result)) sql_result =
+  (__deprecated__(program(Result)))Result;

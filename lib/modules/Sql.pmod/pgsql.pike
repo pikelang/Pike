@@ -54,7 +54,7 @@
 //!   difficult.
 //!
 //! @seealso
-//!  @[Sql.Sql], @[Sql.postgres],
+//!  @[Sql.Connection], @[Sql.postgres],
 //!  @url{https://www.postgresql.org/docs/current/static/@}
 
 #pike __REAL_VERSION__
@@ -169,7 +169,7 @@ protected string _sprintf(int type) {
 //! attempt to actually use the database instead.
 //!
 //! @seealso
-//!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
+//!   @[Postgres.postgres], @[Sql.Connection], @[select_db()],
 //!   @url{https://www.postgresql.org/docs/current/static/runtime-config-client.html@}
 protected void create(void|string host, void|string database,
                       void|string user, void|string pass,
@@ -683,7 +683,7 @@ private void resync_cb() {
 //! If specified, list only those databases matching it.
 /*semi*/final array(string) list_dbs (void|string glob) {
   array row, ret = .pgsql_util.emptyarray;
-  .pgsql_util.sql_result res=big_query("SELECT d.datname "
+  .pgsql_util.Result res=big_query("SELECT d.datname "
                                          "FROM pg_database d "
                                          "WHERE d.datname ILIKE :glob "
                                          "ORDER BY d.datname",
@@ -701,7 +701,7 @@ private void resync_cb() {
 //! If specified, list only the tables with matching names.
 /*semi*/final array(string) list_tables (void|string glob) {
   array row, ret = .pgsql_util.emptyarray;
-  .pgsql_util.sql_result res = big_query(     // due to missing schemasupport
+  .pgsql_util.Result res = big_query(     // due to missing schemasupport
    // This query might not work on PostgreSQL 7.4
    "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
    "  ||c.relname AS name "
@@ -764,7 +764,7 @@ private void resync_cb() {
 
   sscanf(table||"*", "%s.%s", schema, table);
 
-  .pgsql_util.sql_result res = big_typed_query(
+  .pgsql_util.Result res = big_typed_query(
   "SELECT a.attname, a.atttypid, t.typname, a.attlen, "
   " c.relhasindex, c.relhaspkey, CAST(c.reltuples AS BIGINT) AS reltuples, "
   " (c.relpages "
@@ -913,8 +913,8 @@ private inline void throwdelayederror(object parent) {
 //!  has been fetched (or EOF is reached, in case of no resultrows).
 //!
 //! @returns
-//! A @[Sql.pgsql_util.sql_result] object (which conforms to the
-//! @[Sql.sql_result] standard interface for accessing data). It is
+//! A @[Sql.pgsql_util.Result] object (which conforms to the
+//! @[Sql.Result] standard interface for accessing data). It is
 //! recommended to use @[query()] for simpler queries (because
 //! it is easier to handle, but stores all the result in memory), and
 //! @[big_query()] for queries you expect to return huge amounts of
@@ -938,9 +938,9 @@ private inline void throwdelayederror(object parent) {
 //! @ref{:_text@} option (not recommended).
 //!
 //! @seealso
-//!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
-//!   @[query()], @[Sql.pgsql_util.sql_result]
-/*semi*/final .pgsql_util.sql_result big_query(string q,
+//!   @[big_typed_query()], @[Sql.Connection], @[Sql.Result],
+//!   @[query()], @[Sql.pgsql_util.Result]
+/*semi*/final .pgsql_util.Result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
   throwdelayederror(this);
@@ -1070,10 +1070,10 @@ private inline void throwdelayederror(object parent) {
     } else
       plugbuffer->sendcmd(KEEP);			       // close start()
     tstart = gethrtime();
-  } else				  // sql_result autoassigns to portal
+  } else				  // Result autoassigns to portal
     tp = 0;
-  .pgsql_util.sql_result portal;
-  portal = .pgsql_util.sql_result(proxy, c, q, portalbuffersize, _alltyped,
+  .pgsql_util.Result portal;
+  portal = .pgsql_util.Result(proxy, c, q, portalbuffersize, _alltyped,
    from, forcetext, timeout, syncparse, transtype);
   portal._tprepared = tp;
 #ifdef PG_STATS
@@ -1150,8 +1150,8 @@ private inline void throwdelayederror(object parent) {
 //! streaming of multiple simultaneous queries through the same connection.
 //!
 //! @seealso
-//!   @[big_query()], @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result]
-/*semi*/final inline .pgsql_util.sql_result streaming_query(string q,
+//!   @[big_query()], @[big_typed_query()], @[Sql.Connection], @[Sql.Result]
+/*semi*/final inline .pgsql_util.Result streaming_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q, bindings);
 }
@@ -1160,8 +1160,8 @@ private inline void throwdelayederror(object parent) {
 //! results.
 //!
 //! @seealso
-//!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
-/*semi*/final inline .pgsql_util.sql_result big_typed_query(string q,
+//!   @[big_query()], @[Sql.Connection], @[Sql.Result]
+/*semi*/final inline .pgsql_util.Result big_typed_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q, bindings, 1);
 }
