@@ -546,6 +546,109 @@ class Promise
     unlocked_failure(value);
   }
 
+  private array _astate;
+
+  //! FIXME
+  void depend(array(Future) futures)
+  {
+    if (!sizeof(futures))
+      return;
+
+    if (!_astate)
+      _astate = ({(<>), ({})});
+
+    int base = sizeof(_astate[1]);
+    _astate[1] += allocate(sizeof(futures), UNDEFINED);
+
+    futures->on_failure(failure);
+
+    foreach(futures; int i; Future f) {
+      int x = base + i;
+      _astate[0][x] = 1;
+      f->on_success(depend_success, x, _astate);
+    }
+  }
+  inline variant void depend(Future ... futures)
+  {
+    return depend(futures);
+  }
+
+  private void depend_success(mixed value, int i, array _astate)
+  {
+    multiset pending = _astate[0];
+    if (state || !pending[i]) return;
+    object key = mux->lock();
+    if (state || !pending[i]) return;
+    _astate[1][i] = value;
+    pending[i] = 0;
+    if (sizeof(pending)) {
+      key = 0;
+      return;
+    }
+    key = 0;
+    success(_astate[1]);
+  }
+
+  //! FIXME
+  void fold(array(Future) futures)
+  {
+    if (!_astate)
+      _astate = ({});
+
+    _astate += futures;
+  }
+  inline variant void fold(Future ... futures)
+  {
+    return fold(futures);
+  }
+
+  //! FIXME
+  void fold_finish(mixed initial,
+	           function(mixed, mixed, mixed ... : mixed) fun,
+	           mixed ... extra)
+  {
+    if (!_astate || !sizeof(_astate)) {
+      success(initial);
+      return;
+    }
+
+    array(Future) futures = _astate;
+    _astate = 0;
+    multiset pending = (<>);
+    array astate = ({pending, initial});
+
+    futures->on_failure(failure);
+
+    foreach(futures; int i; Future f) {
+      pending[i] = 1;
+      f->on_success(fold_success, i, astate, fun, @extra);
+    }
+  }
+
+  private void fold_success(mixed val, int i, array astate,
+			    function(mixed, mixed, mixed ... : mixed) fun,
+			    mixed ... extra)
+  {
+    multiset pending = astate[0];
+    if (state || !pending[i]) return;
+    object key = mux->lock();
+    if (state || !pending[i]) return;
+    pending[i] = 0;
+    mixed err = catch {
+	// FIXME: What if fun triggers a recursive call?
+	astate[1] = fun(val, astate[1], @extra);
+        if (sizeof(pending)) {
+          key = 0;
+          return;
+        }
+        key = 0;
+	success(astate[1]);
+	return;
+      };
+    key = 0;
+    failure(err);
+  }
+
   protected void _destruct()
   {
     if (!state) {
@@ -599,43 +702,6 @@ variant inline Future race(Future ... futures)
   return first_completed(futures);
 }
 
-protected class Results
-{
-  inherit Promise;
-
-  protected void create(array(Future) futures)
-  {
-    if (!sizeof(futures)) {
-      success(({}));
-      return;
-    }
-
-    array(mixed) results = allocate(sizeof(futures), UNDEFINED);
-    array(State) states  = allocate(sizeof(futures), STATE_PENDING);
-
-    futures->on_failure(failure);
-
-    foreach(futures; int i; Future f) {
-      f->on_success(got_success, i, results, states);
-    }
-  }
-
-  protected void got_success(mixed value, int i,
-			     array(mixed) results, array(State) states)
-  {
-    if (state || states[i]) return;
-    object key = mux->lock();
-    if (state || states[i]) return;
-    results[i] = value;
-    states[i] = STATE_FULFILLED;
-    if (has_value(states, STATE_PENDING)) {
-      return;
-    }
-    key = 0;
-    success(results);
-  }
-}
-
 //! @returns
 //! A @[Future] that represents the array of all the completed @expr{futures@}.
 //!
@@ -643,7 +709,8 @@ protected class Results
 //!   @[all()]
 variant Future results(array(Future) futures)
 {
-  Promise p = Results(futures);
+  Promise p = Promise();
+  p->depend(futures);
   return p->future();
 }
 inline variant Future results(Future ... futures)
@@ -707,49 +774,6 @@ Future traverse(array(Future) futures,
   return results(futures->map(fun, @extra));
 }
 
-protected class Fold
-{
-  inherit Promise;
-
-  protected mixed accumulated;
-
-  protected void create(array(Future) futures,
-			mixed initial,
-			function(mixed, mixed, mixed ... : mixed) fun,
-			array(mixed) ctx)
-  {
-    if (!sizeof(futures)) {
-      success(initial);
-      return;
-    }
-    accumulated = initial;
-    futures->on_failure(failure);
-    foreach(futures; int i; Future f) {
-      f->on_success(got_success, i, fun, ctx,
-		    allocate(sizeof(futures), STATE_PENDING));
-    }
-  }
-
-  protected void got_success(mixed val, int i,
-			     function(mixed, mixed, mixed ... : mixed) fun,
-			     array(mixed) ctx,
-			     array(State) states)
-  {
-    if (state || states[i]) return;
-    object key = mux->lock();
-    if (state || states[i]) return;
-    states[i] = STATE_FULFILLED;
-    mixed err = catch {
-	// FIXME: What if fun triggers a recursive call?
-	accumulated = fun(val, accumulated, @ctx);
-	if (has_value(states, STATE_PENDING)) return;
-	success(accumulated);
-	return;
-      };
-    failure(err);
-  }
-}
-
 //! Return a @[Future] that represents the accumulated results of
 //! applying @[fun] to the results of the @[futures] in turn.
 //!
@@ -774,6 +798,8 @@ Future fold(array(Future) futures,
 	    function(mixed, mixed, mixed ... : mixed) fun,
 	    mixed ... extra)
 {
-  Promise p = Fold(futures, initial, fun, extra);
+  Promise p = Promise();
+  p->fold(futures);
+  p->fold_finish(initial, fun, extra);
   return p->future();
 }
