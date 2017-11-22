@@ -1947,11 +1947,41 @@ static void f_client_info(INT32 args)
 {
   pop_n_elems(args);
 
-#ifndef MYSQL_COMPILATION_COMMENT
-#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#if defined(HAVE_MARIADB_GET_INFO) && defined(HAVE_MARIADB_CLIENT_VERSION)
+  /* MariaDB 10.2 and later (and probably some earlier versions as well). */
+  push_text("MariaDB/");
+  {
+    char *vers = NULL;
+    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers) < 0) {
+      vers = "unknown";
+    }
+    push_text(vers);
+  }
+  f_add(2);
+#else
+#ifndef MYSQL_SERVER_VERSION
+  /* NB: MariaDB 10.2 <mysql/mysql.h> doesn't include this file,
+   *     and also doesn't define MYSQL_SERVER_VERSION.
+   */
+#include <mysql/mysql_version.h>
 #endif
 
+#ifndef MYSQL_COMPILATION_COMMENT
+#ifdef LIBMARIADB
+#define MYSQL_COMPILATION_COMMENT "MariaDB"
+#else
+#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#endif
+#endif
+
+#ifdef LIBMYSQL_VERSION
+  /* MariaDB 10.2 and later (and probably some earlier versions as well). */
+  push_text(MYSQL_COMPILATION_COMMENT "/" LIBMYSQL_VERSION);
+#else
+  /* Older MySQL and MariaDB. */
   push_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+#endif
+#endif
 }
 
 /*! @endmodule
