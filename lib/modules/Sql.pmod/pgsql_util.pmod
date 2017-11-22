@@ -628,6 +628,7 @@ class Result {
   private int(0..1) eoffound;
   private conxion c;
   private conxiin cr;
+  final int(0..1) untolderror;
   final mixed delayederror;
   final int(0..7) _state;	// FIXME actually: int(PORTALINIT..PURGED)
   final int _fetchlimit;
