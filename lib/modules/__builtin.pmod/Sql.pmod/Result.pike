@@ -49,11 +49,15 @@ __deprecated__ array|this_program `master_res()
 
 //! @returns
 //!  The number of affected rows by this query.
-int affected_rows();
+int affected_rows() {
+  return 0;
+}
 
 //! @returns
 //!  The command-complete status for this query.
-string status_command_complete();
+string status_command_complete() {
+  return eof() ? "" : 0;
+}
 
 //! @returns
 //!  The number of rows in the result.
@@ -124,7 +128,15 @@ array(array(mixed)) fetch_row_array() {
 //!  @[fetch_row()], @[set_result_array_callback()]
 void set_result_callback(
  function(this_program, array(mixed), mixed ... :void) callback,
- mixed ... args);
+ mixed ... args) {
+  if (callback) {
+    array row;
+    do {
+      row = fetch_row();
+      callback(this, row, @args);
+    } while (row);
+  }
+}
 
 //! Sets up a callback for sets of rows returned from the database.
 //! First argument passed is the resultobject itself, second argument
@@ -134,7 +146,15 @@ void set_result_callback(
 //!  @[fetch_row_array()], @[set_result_callback()]
 void set_result_array_callback(
  function(this_program, array(array(mixed)), mixed ... :void) callback,
- mixed ... args);
+ mixed ... args) {
+  if (callback) {
+    array rows;
+    do {
+      rows = fetch_row_array();
+      callback(this, rows, @args);
+    } while (rows);
+  }
+}
 
 //! Switch to the next set of results.
 //!
