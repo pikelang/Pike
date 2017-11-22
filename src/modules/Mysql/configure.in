@@ -251,6 +251,8 @@ fi
   AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
   AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
 
+  AC_CHECK_MYSQL_OPTIONS(MARIADB_CLIENT_VERSION)
+
   # Mysql libs
 
 dnl   if test x"$pike_cv_sys_os" = xWindows_NT ; then
@@ -525,6 +527,9 @@ int main(int argc, char *argv[])
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)
     PIKE_CHECK_MYSQL_FUNC(mysql_unix_port)
+
+    # MariaDB API functions:
+    PIKE_CHECK_MYSQL_FUNC(mariadb_get_info)
 
     if test "$pike_cv_mysql_mysql_fetch_lengths" = "yes"; then
       #
