@@ -57,10 +57,8 @@ array(mapping(string:mixed)) fetch_fields();
 void seek(int skip) {
   if(skip<0)
     error("Cannot seek to negative result indices\n");
-  while(skip--) {
-    index++;
+  while(skip--)
     master_res->fetch_row();
-  }
 }
 
 //! Fetch the next row from the result.

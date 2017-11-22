@@ -635,7 +635,6 @@ class sql_result {
 
   final string _portalname;
 
-  private int rowsreceived;
   private int inflight;
   int portalbuffersize;
   private Thread.Mutex closemux;
@@ -667,7 +666,7 @@ class sql_result {
                     "query: %O\n"
                     "fd: %O portalname: %O  datarows: %d"
                     "  synctransact: %d laststatus: %s\n",
-                    _state, rowsreceived, eoffound, inflight,
+                    _state, index, eoffound, inflight,
                     _query, fd, _portalname,
                     datarowtypes && sizeof(datarowtypes), _synctransact,
                     statuscmdcomplete
@@ -762,7 +761,7 @@ class sql_result {
   //!  @[Sql.sql_result()->num_rows()]
   /*semi*/final int num_rows() {
     trydelayederror();
-    return rowsreceived;
+    return index;
   }
 
   private void losterror() {
@@ -1191,13 +1190,13 @@ class sql_result {
     inflight--;
     if (_state<CLOSED)
       datarows->write(datarow);
-    if (++rowsreceived == 1)
+    if (++index == 1)
       PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n", _portalname,
-       _fetchlimit, (portalbuffersize >> 1) * rowsreceived / bytesreceived,
+       _fetchlimit, (portalbuffersize >> 1) * index / bytesreceived,
        pgsqlsess._fetchlimit, inflight);
     if (_fetchlimit) {
       _fetchlimit =
-       min((portalbuffersize >> 1) * rowsreceived / bytesreceived || 1,
+       min((portalbuffersize >> 1) * index / bytesreceived || 1,
         pgsqlsess._fetchlimit);
       Thread.MutexKey lock = closemux->lock();
       if (_fetchlimit && inflight <= (_fetchlimit - 1) >> 1)
