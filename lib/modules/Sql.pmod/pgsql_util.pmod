@@ -1301,7 +1301,7 @@ class sql_result {
     if (eoffound)
       return 0;
     array(array|int) datarow = datarows->try_read_array();
-    if (!datarow) {
+    if (!sizeof(datarow)) {
       array cid = callout(gottimeout, timeout);
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
