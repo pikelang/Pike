@@ -411,6 +411,8 @@ class Promise
 {
   inherit Future;
 
+  protected array astate;
+
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(resolve, reject, extra ... )@}.
   //!
@@ -546,40 +548,50 @@ class Promise
     unlocked_failure(value);
   }
 
-  private array astate;
-
-  //! Add dependencies the current promise depends on.
+  //! Add futures which the current object depends on.
+  //!
+  //! If called without arguments it will produce a new @[Future]
+  //! from a new @[Promise] which is implictly added to the dependency list.
   //!
   //! @param futures
   //!   The list of all the @expr{futures@} we depend on.
   //!
+  //! @returns
+  //! The new @[Promise].
+  //!
   //! @seealso
   //!   @[Concurrent.results()]
-  void depend(array(Future) futures)
+  this_program depend(array(Future) futures)
   {
-    if (!sizeof(futures))
-      return;
+    if (sizeof(futures)) {
+      if (!astate)
+        astate = ({(<>), ({})});
 
-    if (!astate)
-      astate = ({(<>), ({})});
+      int base = sizeof(astate[1]);
+      astate[1] += allocate(sizeof(futures), UNDEFINED);
 
-    int base = sizeof(astate[1]);
-    astate[1] += allocate(sizeof(futures), UNDEFINED);
+      futures->on_failure(try_failure);
 
-    futures->on_failure(failure);
-
-    foreach(futures; int i; Future f) {
-      int x = base + i;
-      astate[0][x] = 1;
-      f->on_success(depend_success, x, astate);
+      foreach(futures; int i; Future f) {
+        int x = base + i;
+        astate[0][x] = 1;
+        f->on_success(depend_success, x, astate);
+      }
     }
+    return this;
   }
-  inline variant void depend(Future ... futures)
+  inline variant this_program depend(Future ... futures)
   {
     return depend(futures);
   }
+  variant this_program depend()
+  {
+    Promise p = Promise();
+    depend(p->future());
+    return p;
+  }
 
-  private void depend_success(mixed value, int i, array astate)
+  protected void depend_success(mixed value, int i, array astate)
   {
     multiset pending = astate[0];
     if (state || !pending[i]) return;
@@ -595,23 +607,36 @@ class Promise
     success(astate[1]);
   }
 
-  //! Add futures the current promise must accumulate.
+  //! Add futures which the current object must accumulate.
+  //!
+  //! If called without arguments it will produce a new @[Future]
+  //! from a new @[Promise] which is implictly added to the accumulation list.
   //!
   //! @param futures
   //!   The list of all the @expr{futures@} we must accumulate.
   //!
+  //! @returns
+  //! The new @[Promise].
+  //!
   //! @seealso
   //!   @[Concurrent.fold()], @[apply_fold()]
-  void fold(array(Future) futures)
+  this_program fold(array(Future) futures)
   {
     if (!astate)
       astate = ({});
 
     astate += futures;
+    return this;
   }
-  inline variant void fold(Future ... futures)
+  inline variant this_program fold(Future ... futures)
   {
     return fold(futures);
+  }
+  variant this_program fold()
+  {
+    Promise p = Promise();
+    fold(p->future());
+    return p;
   }
 
   //! @param initial
@@ -619,8 +644,15 @@ class Promise
   //!
   //! @param fun
   //!   Function to apply. The first argument is the result of
-  //!   one of the @[futures], the second the current accumulated
-  //!   value, and any further from @[extra].
+  //!   one of the @[futures].  The second argument is the current value
+  //!   of the accumulator.
+  //!
+  //! @param extra
+  //!   Any extra context needed for @[fun]. They will be provided
+  //!   as arguments three and onwards when @[fun] is called.
+  //!
+  //! @returns
+  //! The new @[Promise].
   //!
   //! @note
   //!   If @[fun] throws an error it will fail the @[Future].
@@ -633,13 +665,13 @@ class Promise
   //!
   //! @seealso
   //!   @[Concurrent.fold()], @[fold()]
-  void apply_fold(mixed initial,
-	          function(mixed, mixed, mixed ... : mixed) fun,
-	          mixed ... extra)
+  this_program apply_fold(mixed initial,
+	                  function(mixed, mixed, mixed ... : mixed) fun,
+	                  mixed ... extra)
   {
     if (!astate || !sizeof(astate)) {
       success(initial);
-      return;
+      return this;
     }
 
     array(Future) futures = astate;
@@ -647,17 +679,18 @@ class Promise
     multiset pending = (<>);
     array astate = ({pending, initial});
 
-    futures->on_failure(failure);
+    futures->on_failure(try_failure);
 
     foreach(futures; int i; Future f) {
       pending[i] = 1;
       f->on_success(fold_success, i, astate, fun, @extra);
     }
+    return this;
   }
 
-  private void fold_success(mixed val, int i, array astate,
-			    function(mixed, mixed, mixed ... : mixed) fun,
-			    mixed ... extra)
+  protected void fold_success(mixed val, int i, array astate,
+			      function(mixed, mixed, mixed ... : mixed) fun,
+			      mixed ... extra)
   {
     multiset pending = astate[0];
     if (state || !pending[i]) return;
@@ -671,12 +704,12 @@ class Promise
           key = 0;
           return;
         }
-        key = 0;
-	success(astate[1]);
-	return;
       };
     key = 0;
-    failure(err);
+    if (err)
+      failure(err);
+    else
+      success(astate[1]);
   }
 
   protected void _destruct()
