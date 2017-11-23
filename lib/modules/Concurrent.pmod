@@ -601,7 +601,7 @@ class Promise
   //!   The list of all the @expr{futures@} we must accumulate.
   //!
   //! @seealso
-  //!   @[Concurrent.fold()], @[fold_finish()]
+  //!   @[Concurrent.fold()], @[apply_fold()]
   void fold(array(Future) futures)
   {
     if (!astate)
@@ -633,9 +633,9 @@ class Promise
   //!
   //! @seealso
   //!   @[Concurrent.fold()], @[fold()]
-  void fold_finish(mixed initial,
-	           function(mixed, mixed, mixed ... : mixed) fun,
-	           mixed ... extra)
+  void apply_fold(mixed initial,
+	          function(mixed, mixed, mixed ... : mixed) fun,
+	          mixed ... extra)
   {
     if (!astate || !sizeof(astate)) {
       success(initial);
@@ -830,6 +830,6 @@ Future fold(array(Future) futures,
 {
   Promise p = Promise();
   p->fold(futures);
-  p->fold_finish(initial, fun, extra);
+  p->apply_fold(initial, fun, extra);
   return p->future();
 }
