@@ -3448,13 +3448,6 @@ protected class nb_sendfile
 	}
 	tr = 0;
       }
-
-      if (!hd || !sizeof(hd - ({ "" }))) {
-	// NOOP!
-	SF_WERR("NOOP!");
-	backend->call_out(cb, 0, 0, @a);
-	return;
-      }
     }
 
     if (hd)
@@ -3519,12 +3512,8 @@ protected class nb_sendfile
       if (blocking_from) {
 	SF_WERR("Reading some data.");
 	do_read();
-	if (!sizeof(to_write)) {
-	  SF_WERR("NOOP!");
-	  backend->call_out(cb, 0, 0, @args);
-	}
       }
-      if (sizeof(to_write)) {
+      if (!from || sizeof(to_write)) {
 	SF_WERR("Starting the writer.");
 	start_writer();
       }
