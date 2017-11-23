@@ -546,26 +546,32 @@ class Promise
     unlocked_failure(value);
   }
 
-  private array _astate;
+  private array astate;
 
-  //! FIXME
+  //! Add dependencies the current promise depends on.
+  //!
+  //! @param futures
+  //!   The list of all the @expr{futures@} we depend on.
+  //!
+  //! @seealso
+  //!   @[Concurrent.results()]
   void depend(array(Future) futures)
   {
     if (!sizeof(futures))
       return;
 
-    if (!_astate)
-      _astate = ({(<>), ({})});
+    if (!astate)
+      astate = ({(<>), ({})});
 
-    int base = sizeof(_astate[1]);
-    _astate[1] += allocate(sizeof(futures), UNDEFINED);
+    int base = sizeof(astate[1]);
+    astate[1] += allocate(sizeof(futures), UNDEFINED);
 
     futures->on_failure(failure);
 
     foreach(futures; int i; Future f) {
       int x = base + i;
-      _astate[0][x] = 1;
-      f->on_success(depend_success, x, _astate);
+      astate[0][x] = 1;
+      f->on_success(depend_success, x, astate);
     }
   }
   inline variant void depend(Future ... futures)
@@ -573,47 +579,71 @@ class Promise
     return depend(futures);
   }
 
-  private void depend_success(mixed value, int i, array _astate)
+  private void depend_success(mixed value, int i, array astate)
   {
-    multiset pending = _astate[0];
+    multiset pending = astate[0];
     if (state || !pending[i]) return;
     object key = mux->lock();
     if (state || !pending[i]) return;
-    _astate[1][i] = value;
+    astate[1][i] = value;
     pending[i] = 0;
     if (sizeof(pending)) {
       key = 0;
       return;
     }
     key = 0;
-    success(_astate[1]);
+    success(astate[1]);
   }
 
-  //! FIXME
+  //! Add futures the current promise must accumulate.
+  //!
+  //! @param futures
+  //!   The list of all the @expr{futures@} we must accumulate.
+  //!
+  //! @seealso
+  //!   @[Concurrent.fold()], @[fold_finish()]
   void fold(array(Future) futures)
   {
-    if (!_astate)
-      _astate = ({});
+    if (!astate)
+      astate = ({});
 
-    _astate += futures;
+    astate += futures;
   }
   inline variant void fold(Future ... futures)
   {
     return fold(futures);
   }
 
-  //! FIXME
+  //! @param initial
+  //!   Initial value of the accumulator.
+  //!
+  //! @param fun
+  //!   Function to apply. The first argument is the result of
+  //!   one of the @[futures], the second the current accumulated
+  //!   value, and any further from @[extra].
+  //!
+  //! @note
+  //!   If @[fun] throws an error it will fail the @[Future].
+  //!
+  //! @note
+  //!   @[fun] may be called in any order, and will be called
+  //!   once for every @[Future] in @[futures], unless one of
+  //!   calls fails in which case no further calls will be
+  //!   performed.
+  //!
+  //! @seealso
+  //!   @[Concurrent.fold()], @[fold()]
   void fold_finish(mixed initial,
 	           function(mixed, mixed, mixed ... : mixed) fun,
 	           mixed ... extra)
   {
-    if (!_astate || !sizeof(_astate)) {
+    if (!astate || !sizeof(astate)) {
       success(initial);
       return;
     }
 
-    array(Future) futures = _astate;
-    _astate = 0;
+    array(Future) futures = astate;
+    astate = 0;
     multiset pending = (<>);
     array astate = ({pending, initial});
 
