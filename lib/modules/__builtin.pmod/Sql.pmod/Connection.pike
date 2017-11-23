@@ -1224,8 +1224,8 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   return res;
 }
 
-//! Sends a query to the database asynchronously, discards all query result
-//! records.
+//! Sends a typed query to the database asynchronously, discards all query
+//! result records.
 //!
 //! @returns
 //!   A @[Concurrent.Future] object which on failure/success passes
@@ -1241,9 +1241,9 @@ public Concurrent.Future promise_query_discard(string q,
   return p->future();
 }
 
-//! Sends a query to the database asynchronously, expects at least
-//! a single record from the database; will discard any further
-//! records.
+//! Sends a typed query to the database asynchronously, expects at least
+//! a single record from the database (will fail otherwise);
+//! will discard any further records.
 //!
 //! @returns
 //!   A @[Concurrent.Future] object which on failure/success passes
@@ -1259,8 +1259,8 @@ public Concurrent.Future promise_query_first_result(string q,
   return p->future();
 }
 
-//! Sends a query to the database asynchronously, expects at least
-//! a single record from the database.
+//! Sends a typed query to the database asynchronously, expects at least
+//! a single record from the database (will fail otherwise).
 //!
 //! @returns
 //!   A @[Concurrent.Future] object which on failure/success passes
@@ -1276,7 +1276,7 @@ public Concurrent.Future promise_query_result(string q,
   return p->future();
 }
 
-//! Sends a query to the database asynchronously.
+//! Sends a typed query to the database asynchronously.
 //!
 //! @returns
 //!   A @[Concurrent.Future] object which on failure/success passes
@@ -1290,26 +1290,23 @@ public Concurrent.Future promise_query_result(string q,
 //! @code
 //!
 //! Sql.Connection db = Sql.Connection("...");
-//! Concurrent.Future q1 = db->promise_query("SELECT :bar::INT", (["bar":1]));
+//! Concurrent.Future q1 = db->promise_query("SELECT 42");
 //! Concurrent.Future q2 = db->promise_query("SELECT :foo::INT", (["foo":2]));
 //!
 //! array(Concurrent.Future) all = ({ q1, q2 });
 //!
-//! /*
-//!   To get a callback for each of the requests
-//! */
+//! // To get a callback for each of the requests
 //!
 //! all->on_success(lambda (Sql.FutureResult resp) {
 //!   werror("Got result %O from %O\n", resp->data, resp->query);
 //! });
 //! all->on_failure(lambda (Sql.FutureResult resp) {
-//!   werror("Request %O failed: %O\n", resp->query, resp->exception);
+//!   werror("Request %O failed: %O\n", resp->query,
+//!    resp->status_command_complete);
 //! });
 //!
-//! /*
-//!   To get a callback when all of the requests are done. In this case
-//!   on_failure will be called if any of the request fails.
-//! */
+//! // To get a callback when all of the requests are done. In this case
+//! // on_failure will be called if any of the requests fails.
 //!
 //! Concurrent.Future all2 = Concurrent.results(all);
 //!
@@ -1317,7 +1314,8 @@ public Concurrent.Future promise_query_result(string q,
 //!   werror("All requests were successful: %O\n", resp);
 //! });
 //! all->on_failure(lambda (Sql.FutureResult resp) {
-//!   werror("Requests %O failed with %O.\n", resp->query, resp->exception);
+//!   werror("Requests %O failed with %O.\n", resp->query,
+//!    resp->status_command_complete);
 //! });
 //! @endcode
 public Concurrent.Future promise_query(string q,

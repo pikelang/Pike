@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
 
 //#define SP_DEBUG	1
+//#define SP_DEBUGMORE	1
 
 #ifdef SP_DEBUG
 #define PD(X ...)            werror(X)
@@ -40,17 +41,16 @@ final string query;
 //! The parameter bindings belonging to the query.
 final mapping(string:mixed) bindings;
 
-//! The status of the completed command
-final string status_command_complete;
+//! The status of the completed command.
+//! If the command is still in progress, the value is @expr{null@}.
+//! If an error has occurred, it contains the backtrace of that error.
+final string|mixed status_command_complete;
 
 //! The number of affected rows.
 final int affected_rows;
 
 //! The description of the fields in a record.
 final array(mapping(string:mixed)) fields;
-
-//! The backtrace of the error that occurred.
-final mixed exception;
 
 private .Connection dblink;
 private int minresults;
@@ -68,11 +68,10 @@ protected string _sprintf(int type) {
   return res;
 }
 
-private void failed() {
+private void failed(mixed msg) {
   dblink = 0;				// Release reference
-  if (!exception)
-    exception = ({0, backtrace()});
-  PD("Future failed %O %s\n", query, describe_backtrace(exception));
+  status_command_complete = arrayp(msg) ? msg : ({msg, backtrace()});
+  PD("Future failed %O %s\n", query, describe_backtrace(status_command_complete));
   if (intp(promise))
     error("Future already determined\n");
   else {
@@ -84,14 +83,14 @@ private void failed() {
 
 private void succeeded(.Result result) {
   PD("Future succeeded %O\n", query);
-  exception =
+  mixed err =
     catch {
       fields = result->fetch_fields();
       affected_rows = result->affected_rows();
       status_command_complete = result->status_command_complete();
     };
-  if (exception)
-    failed();
+  if (err)
+    failed(err);
   else if (intp(promise))
     error("Future already determined\n");
   else {
@@ -127,7 +126,7 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
         if (sizeof(raw_data))
           succeeded(result);
       case 1:
-        failed();
+        failed("Insufficient number of records returned\n");
         break;
       case 3:
         succeeded(result);
@@ -144,13 +143,13 @@ protected void create(.Connection db, Concurrent.Promise p,
   minresults = results;
   promise = p;
   dblink = db;
-  if (exception = catch(db->big_typed_query(q, bindings)
-                      ->set_result_array_callback(result_cb)))
-    failed();
+  if (status_command_complete = catch(db->big_typed_query(q, bindings)
+                                    ->set_result_array_callback(result_cb)))
+    failed(status_command_complete);
 }
 
 protected void _destruct() {
   PD("Destroy future %O %O\n", query, bindings);
   if (objectp(promise))
-    failed();
+    failed("Promise broken\n");
 }
