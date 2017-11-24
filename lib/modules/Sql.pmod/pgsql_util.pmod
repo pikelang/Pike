@@ -636,6 +636,7 @@ class sql_result {
 
   final string _portalname;
 
+  private int index;
   private int inflight;
   int portalbuffersize;
   private Thread.Mutex closemux;
