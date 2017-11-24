@@ -461,18 +461,6 @@ low_program_ref: string_constant
   }
   ;
 
-/* NOTE: Pushes the resolved program on the stack. */
-program_ref: low_program_ref
-  {
-    STACK_LEVEL_START(0);
-
-    resolv_program($1);
-    free_node($1);
-
-    STACK_LEVEL_DONE(1);
-  }
-  ;
-
 inherit_ref:
   {
     SET_FORCE_RESOLVE($<number>$);
@@ -1332,7 +1320,7 @@ basic_type:
   | TOK_INT_ID      opt_int_range     {}
   | TOK_MAPPING_ID  opt_mapping_type  {}
   | TOK_FUNCTION_ID opt_function_type {}
-  | TOK_OBJECT_ID   opt_object_type   {}
+  | TOK_OBJECT_ID   opt_program_type  {}
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
@@ -1569,41 +1557,6 @@ opt_int_range: /* Empty */
 opt_string_width: opt_int_range
   {
     push_type(T_STRING);
-  }
-  ;
-
-opt_object_type:  /* Empty */ { push_object_type(0, 0); }
-  | {
-#ifdef PIKE_DEBUG
-      $<ptr>$ = Pike_sp;
-#endif /* PIKE_DEBUG */
-    }
-    '(' program_ref ')'
-  {
-    /* NOTE: On entry, there are two items on the stack:
-     *   Pike_sp-2:	Name of the program reference (string).
-     *   Pike_sp-1:	The resolved program (program|function|zero).
-     */
-    struct program *p=program_from_svalue(Pike_sp-1);
-
-#ifdef PIKE_DEBUG
-    if ($<ptr>1 != (Pike_sp - 2)) {
-      Pike_fatal("Unexpected stack depth: %p != %p\n",
-		 $<n>1, Pike_sp-2);
-    }
-#endif /* PIKE_DEBUG */
-
-    if(!p) {
-      if (Pike_compiler->compiler_pass!=1) {
-	my_yyerror("Not a valid program specifier: %S", Pike_sp[-2].u.string);
-      }
-    }
-    push_object_type(0, p?(p->id):0);
-    /* Attempt to name the type. */
-    if (TYPEOF(Pike_sp[-2]) == T_STRING) {
-      push_type_name(Pike_sp[-2].u.string);
-    }
-    pop_n_elems(2);
   }
   ;
 
