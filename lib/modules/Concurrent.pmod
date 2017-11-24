@@ -204,7 +204,7 @@ class Future
   //!   @b{not@} a @[Future]).
   //!
   //! @seealso
-  //!  @[flat_map()], @[transform()]
+  //!  @[flat_map()], @[transform()], @[recover()]
   this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
   {
     Promise p = Promise();
@@ -221,7 +221,7 @@ class Future
   //!  This method is used if your @[fun] returns a @[Future] again.
   //!
   //! @seealso
-  //!  @[map()], @[transform_with()]
+  //!  @[map()], @[transform_with()], @[recover_with()]
   this_program flat_map(function(mixed, mixed ... : this_program) fun,
 			mixed ... extra)
   {
@@ -235,6 +235,13 @@ class Future
   //! the fulfilled result of this @[Future], or the result
   //! of applying @[fun] with the failed result followed
   //! by @[extra].
+  //!
+  //! @note
+  //!  This method is used if your callbacks returns a regular value (i.e.
+  //!   @b{not@} a @[Future]).
+  //!
+  //! @seealso
+  //!   @[recover_with()], @[map()], @[transform()]
   this_program recover(function(mixed, mixed ... : mixed) fun,
 		       mixed ... extra)
   {
@@ -248,6 +255,12 @@ class Future
   //! the fulfilled result of this @[Future], or the fulfilled result
   //! of applying @[fun] with the failed result followed
   //! by @[extra].
+  //!
+  //! @note
+  //!  This method is used if your callbacks returns a @[Future] again.
+  //!
+  //! @seealso
+  //!   @[recover()], @[flat_map()], @[transform_with()]
   this_program recover_with(function(mixed, mixed ... : this_program) fun,
 			    mixed ... extra)
   {
@@ -282,7 +295,7 @@ class Future
   //!   @b{not@} a @[Future]).
   //!
   //! @seealso
-  //!   @[map()], @[transform_with()]
+  //!   @[transform_with()], @[map()], @[recover()]
   this_program transform(function(mixed, mixed ... : mixed) success,
 			 function(mixed, mixed ... : mixed)|void failure,
 			 mixed ... extra)
@@ -304,7 +317,7 @@ class Future
   //!  This method is used if your callbacks returns a @[Future] again.
   //!
   //! @seealso
-  //!   @[flat_map()], @[transform()]
+  //!   @[transform()], @[flat_map()], @[recover_with]
   this_program transform_with(function(mixed, mixed ... : this_program) success,
 		         function(mixed, mixed ... : this_program)|void failure,
 			      mixed ... extra)
