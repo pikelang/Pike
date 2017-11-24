@@ -671,9 +671,9 @@ string encode_datetime (int time)
   }									\
   return res;
 
-Result big_query (string query,
-		  mapping(string|int:mixed)|void bindings,
-		  void|string charset)
+variant Result big_query (string query,
+			  mapping(string|int:mixed)|void bindings,
+			  void|string charset)
 //! Sends a query to the server.
 //!
 //! @param query
@@ -710,9 +710,9 @@ Result big_query (string query,
   QUERY_BODY (big_query);
 }
 
-Result streaming_query (string query,
-			mapping(string|int:mixed)|void bindings,
-			void|string charset)
+variant Result streaming_query (string query,
+				mapping(string|int:mixed)|void bindings,
+				void|string charset)
 //! Makes a streaming SQL query.
 //!
 //! This function sends the SQL query @[query] to the Mysql-server.
@@ -728,9 +728,9 @@ Result streaming_query (string query,
   QUERY_BODY (streaming_query);
 }
 
-Result big_typed_query (string query,
-			mapping(string|int:mixed)|void bindings,
-			void|string charset)
+variant Result big_typed_query (string query,
+				mapping(string|int:mixed)|void bindings,
+				void|string charset)
 //! Makes a typed SQL query.
 //!
 //! This function sends the SQL query @[query] to the MySQL server and
@@ -746,9 +746,9 @@ Result big_typed_query (string query,
   QUERY_BODY (big_typed_query);
 }
 
-Result streaming_typed_query (string query,
-			      mapping(string|int:mixed)|void bindings,
-			      void|string charset)
+variant Result streaming_typed_query (string query,
+				      mapping(string|int:mixed)|void bindings,
+				      void|string charset)
 //! Makes a streaming typed SQL query.
 //!
 //! This function acts as the combination of @[streaming_query()]
