@@ -1224,76 +1224,23 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   return res;
 }
 
-//! Sends a typed query to the database asynchronously, discards all query
-//! result records.
-//!
-//! @returns
-//!   A @[Concurrent.Future] object which on failure/success passes
-//!   a @[Sql.FutureResult] object to evaluate the query.
-//!
-//! @seealso
-//!   @[promise_query()], @[promise_query_first_result()],
-//!   @[promise_query_result()], @[big_typed_query()]
-public Concurrent.Future promise_query_discard(string q,
-                               void|mapping(string|int:mixed) bindings) {
-  Concurrent.Promise p = Concurrent.Promise();
-  .FutureResult(this, p, q, bindings, 0);
-  return p->future();
-}
-
-//! Sends a typed query to the database asynchronously, expects at least
-//! a single record from the database (will fail otherwise);
-//! will discard any further records.
-//!
-//! @returns
-//!   A @[Concurrent.Future] object which on failure/success passes
-//!   a @[Sql.FutureResult] object to evaluate the query.
-//!
-//! @seealso
-//!   @[promise_query()], @[promise_query_result()],
-//!   @[promise_query_discard()], @[big_typed_query()]
-public Concurrent.Future promise_query_first_result(string q,
-                               void|mapping(string|int:mixed) bindings) {
-  Concurrent.Promise p = Concurrent.Promise();
-  .FutureResult(this, p, q, bindings, 1);
-  return p->future();
-}
-
-//! Sends a typed query to the database asynchronously, expects at least
-//! a single record from the database (will fail otherwise).
-//!
-//! @returns
-//!   A @[Concurrent.Future] object which on failure/success passes
-//!   a @[Sql.FutureResult] object to evaluate the query.
-//!
-//! @seealso
-//!   @[promise_query()], @[promise_query_first_result()],
-//!   @[promise_query_discard()], @[big_typed_query()]
-public Concurrent.Future promise_query_result(string q,
-                               void|mapping(string|int:mixed) bindings) {
-  Concurrent.Promise p = Concurrent.Promise();
-  .FutureResult(this, p, q, bindings, 2);
-  return p->future();
-}
-
 //! Sends a typed query to the database asynchronously.
 //!
 //! @returns
-//!   A @[Concurrent.Future] object which on failure/success passes
-//!   a @[Sql.FutureResult] object to evaluate the query.
+//!   An @[Sql.Promise] object which can be used to obtain
+//!   an @[Sql.FutureResult] object to evaluate the query.
 //!
 //! @seealso
-//!   @[promise_query_first_result()], @[promise_query_result()],
-//!   @[promise_query_discard()], @[big_typed_query()]
+//!   @[big_typed_query()], @[Sql.Promise], @[Sql.FutureResult]
 //!
 //! @example
 //! @code
 //!
 //! Sql.Connection db = Sql.Connection("...");
-//! Concurrent.Future q1 = db->promise_query("SELECT 42");
-//! Concurrent.Future q2 = db->promise_query("SELECT :foo::INT", (["foo":2]));
+//! Sql.Promise q1 = db->promise_query("SELECT 42")->max_records(10);
+//! Sql.Promise q2 = db->promise_query("SELECT :foo::INT", (["foo":2]));
 //!
-//! array(Concurrent.Future) all = ({ q1, q2 });
+//! array(Concurrent.Future) all = ({ q1, q2 })->future();
 //!
 //! // To get a callback for each of the requests
 //!
@@ -1318,9 +1265,7 @@ public Concurrent.Future promise_query_result(string q,
 //!    resp->status_command_complete);
 //! });
 //! @endcode
-public Concurrent.Future promise_query(string q,
+public .Promise promise_query(string q,
                                  void|mapping(string|int:mixed) bindings) {
-  Concurrent.Promise p = Concurrent.Promise();
-  .FutureResult(this, p, q, bindings, 3);
-  return p->future();
+  return __builtin.Sql.Promise(this, q, bindings);
 }

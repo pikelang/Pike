@@ -35,4 +35,3 @@ protected class NullArg
     {return fmt == 'O' ? "NullArg()" : "NULL";}
 }
 NullArg null_arg = NullArg();
-

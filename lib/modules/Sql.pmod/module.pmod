@@ -77,11 +77,18 @@ class Result
   inherit __builtin.Sql.Result;
 }
 
-//! Base class for the result from @[Connection()->promise_query()] et al.
+//! Base class for the result from @[Promise].
 class FutureResult
 {
   //!
   inherit __builtin.Sql.FutureResult;
+}
+
+//! Base class for the result from @[Connection()->promise_query()].
+class Promise
+{
+  //!
+  inherit __builtin.Sql.Promise;
 }
 
 protected program(Connection) find_dbm(string program_name)
