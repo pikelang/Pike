@@ -198,6 +198,13 @@ class Future
   //! Return a @[Future] that will be fulfilled with the result
   //! of applying @[fun] with the fulfilled result of this @[Future]
   //! followed by @[extra].
+  //!
+  //! @note
+  //!  This method is used if your @[fun] returns a regular value (i.e.
+  //!   @b{not@} a @[Future]).
+  //!
+  //! @seealso
+  //!  @[flat_map()], @[transform()]
   this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
   {
     Promise p = Promise();
@@ -209,6 +216,12 @@ class Future
   //! Return a @[Future] that will be fulfilled with the fulfilled result
   //! of applying @[fun] with the fulfilled result of this @[Future]
   //! followed by @[extra].
+  //!
+  //! @note
+  //!  This method is used if your @[fun] returns a @[Future] again.
+  //!
+  //! @seealso
+  //!  @[map()], @[transform_with()]
   this_program flat_map(function(mixed, mixed ... : this_program) fun,
 			mixed ... extra)
   {
@@ -264,8 +277,12 @@ class Future
   //!
   //! @[failure] defaults to @[success].
   //!
+  //! @note
+  //!  This method is used if your callbacks returns a regular value (i.e.
+  //!   @b{not@} a @[Future]).
+  //!
   //! @seealso
-  //!   @[map]
+  //!   @[map()], @[transform_with()]
   this_program transform(function(mixed, mixed ... : mixed) success,
 			 function(mixed, mixed ... : mixed)|void failure,
 			 mixed ... extra)
@@ -283,10 +300,13 @@ class Future
   //!
   //! @[failure] defaults to @[success].
   //!
+  //! @note
+  //!  This method is used if your callbacks returns a @[Future] again.
+  //!
   //! @seealso
-  //!   @[flat_map]
-  this_program transform_with(function(mixed, mixed ... : Future) success,
-			      function(mixed, mixed ... : Future)|void failure,
+  //!   @[flat_map()], @[transform()]
+  this_program transform_with(function(mixed, mixed ... : this_program) success,
+		         function(mixed, mixed ... : this_program)|void failure,
 			      mixed ... extra)
   {
     Promise p = Promise();
