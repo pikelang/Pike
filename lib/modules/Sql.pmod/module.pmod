@@ -70,7 +70,7 @@ class Connection
   inherit __builtin.Sql.Connection;
 }
 
-//! Base class for the result from @[Connection()->big_query()] et al.
+//! Base class for the result from @[Connection.big_query()] et al.
 class Result
 {
   //!
@@ -84,7 +84,7 @@ class FutureResult
   inherit __builtin.Sql.FutureResult;
 }
 
-//! Base class for the result from @[Connection()->promise_query()].
+//! Base class for the result from @[Connection.promise_query()].
 class Promise
 {
   //!

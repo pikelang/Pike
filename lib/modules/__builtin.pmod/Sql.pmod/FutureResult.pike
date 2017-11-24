@@ -13,7 +13,10 @@
 #define PT(X ...)            (X)
 #endif
 
-//! Sql.FutureResult promise result class.
+//! The promise result class; it will contain the results of a query.
+//!
+//! @seealso
+//!   @[Promise], @[Connection.promise_query()]
 
 //! The returned raw unadorned records, all typed data.
 //! Once @[data] has been accessed, @[raw_data]

@@ -13,6 +13,13 @@
 #define PT(X ...)            (X)
 #endif
 
+//! This class is the base class for promise based SQL queries.
+//! @[future()] will return a future which carries @[FutureResult]
+//! objects to contain the result of the query.
+//!
+//! @seealso
+//!  @[FutureResult], @[Connection.promise_query()]
+
 inherit Concurrent.Promise;
 
 private .FutureResult res;
@@ -62,23 +69,24 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
 
 //! @param min
 //!   If the query returns less than this number of records, fail the
-//!   future.
-final this_program min_records(int min) {
+//!   future.  Defaults to @expr{0@}.
+final this_program min_records(int(0..) min) {
   minresults = min;
   return this;
 }
 
 //! @param max
 //!   If the query returns more than this number of records, fail the
-//!   future.
-final this_program max_records(int max) {
+//!   future. @expr{-1@} means no maximum (default).
+final this_program max_records(int(-1..) max) {
   maxresults = max;
   return this;
 }
 
 //! @param over
-//!   Discard any records over this number.
-final this_program discard_records(int over) {
+//!   Discard any records over this number.  @expr{-1@} means do not discard
+//!   any records (default).
+final this_program discard_records(int(-1..) over) {
   discardover = over;
   return this;
 }
