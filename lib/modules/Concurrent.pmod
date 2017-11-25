@@ -85,13 +85,13 @@ class Future
     if (state == STATE_FULFILLED) {
       call_out(cb, 0, result, @extra);
       key = 0;
-      return this;
+      return this_program::this;
     }
 
     success_cbs += ({ ({ cb, extra }) });
     key = 0;
 
-    return this;
+    return this_program::this;
   }
 
   //! Register a callback that is to be called on failure.
@@ -116,13 +116,13 @@ class Future
     if (state == STATE_REJECTED) {
       call_out(cb, 0, result, @extra);
       key = 0;
-      return this;
+      return this_program::this;
     }
 
     failure_cbs += ({ ({ cb, extra }) });
     key = 0;
 
-    return this;
+    return this_program::this;
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
@@ -204,7 +204,7 @@ class Future
   //!   @b{not@} a @[Future]).
   //!
   //! @seealso
-  //!  @[flat_map()], @[transform()], @[recover()]
+  //!  @[map_with()], @[transform()], @[recover()]
   this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
   {
     Promise p = Promise();
@@ -221,14 +221,24 @@ class Future
   //!  This method is used if your @[fun] returns a @[Future] again.
   //!
   //! @seealso
-  //!  @[map()], @[transform_with()], @[recover_with()]
-  this_program flat_map(function(mixed, mixed ... : this_program) fun,
+  //!  @[map()], @[transform_with()], @[recover_with()], @[flat_map]
+  this_program map_with(function(mixed, mixed ... : this_program) fun,
 			mixed ... extra)
   {
     Promise p = Promise();
     on_failure(p->failure);
     on_success(apply_flat, p, fun, extra);
     return p->future();
+  }
+
+  //! This is an alias for @[map_with()].
+  //!
+  //! @seealso
+  //!   @[map_with()]
+  inline this_program flat_map(function(mixed, mixed ... : this_program) fun,
+			       mixed ... extra)
+  {
+    return map_with(fun, @extra);
   }
 
   //! Return a @[Future] that will be fulfilled with either
@@ -260,7 +270,7 @@ class Future
   //!  This method is used if your callbacks returns a @[Future] again.
   //!
   //! @seealso
-  //!   @[recover()], @[flat_map()], @[transform_with()]
+  //!   @[recover()], @[map_with()], @[transform_with()]
   this_program recover_with(function(mixed, mixed ... : this_program) fun,
 			    mixed ... extra)
   {
@@ -317,7 +327,7 @@ class Future
   //!  This method is used if your callbacks returns a @[Future] again.
   //!
   //! @seealso
-  //!   @[transform()], @[flat_map()], @[recover_with]
+  //!   @[transform()], @[map_with()], @[recover_with]
   this_program transform_with(function(mixed, mixed ... : this_program) success,
 		         function(mixed, mixed ... : this_program)|void failure,
 			      mixed ... extra)
@@ -611,7 +621,7 @@ class Promise
         f->on_success(depend_success, x, astate);
       }
     }
-    return this;
+    return this_program::this;
   }
   inline variant this_program depend(Future ... futures)
   {
@@ -659,7 +669,7 @@ class Promise
       astate = ({});
 
     astate += futures;
-    return this;
+    return this_program::this;
   }
   inline variant this_program fold(Future ... futures)
   {
@@ -704,7 +714,7 @@ class Promise
   {
     if (!astate || !sizeof(astate)) {
       success(initial);
-      return this;
+      return this_program::this;
     }
 
     array(Future) futures = astate;
@@ -718,7 +728,7 @@ class Promise
       pending[i] = 1;
       f->on_success(fold_success, i, astate, fun, @extra);
     }
-    return this;
+    return this_program::this;
   }
 
   protected void fold_success(mixed val, int i, array astate,
