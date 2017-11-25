@@ -552,10 +552,10 @@ PIKEFUN void glBufferData(int target, array(float) data, int usage )
 }
 
 
-PIKEFUN void glBufferSubData( int type, int dest, object data, int mem_start, int mem_len )
+PIKEFUN void glBufferSubData( int type, int dest, object data, int(0..) mem_start, int(0..) mem_len )
 {
     struct memory mem = get_memptr( data );
-    if(mem.size < mem_start+mem_len || mem_start < 0)
+    if(mem.size < (size_t)(mem_start+mem_len) || mem_start < 0)
         Pike_error("Invalid memory object or offset\n");
     glBufferSubData( type, dest, mem_len, mem.p+mem_start );
 }
