@@ -1369,81 +1369,8 @@ identifier_type: idents
       }
     }
 
-    resolv_constant($1);
+    resolv_type($1);
 
-    if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
-      /* "typedef" */
-      push_finished_type(Pike_sp[-1].u.type);
-    } else {
-      /* object type */
-      struct program *p = NULL;
-
-      if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	if(!(p = Pike_sp[-1].u.object->prog))
-	{
-	  pop_stack();
-	  push_int(0);
-	  yyerror("Destructed object used as program identifier.");
-	}else{
-	  int f = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
-			    LFUN_CALL);
-	  if(f!=-1)
-	  {
-	    SET_SVAL_SUBTYPE(Pike_sp[-1],
-			     f + p->inherits[SUBTYPEOF(Pike_sp[-1])].
-			     identifier_level);
-	    SET_SVAL_TYPE(Pike_sp[-1], T_FUNCTION);
-	  }else{
-	    extern void f_object_program(INT32);
-	    if (Pike_compiler->compiler_pass == 2)
-	      yywarning("Using object as program identifier.");
-	    f_object_program(1);
-	  }
-	}
-      }
-
-      switch(TYPEOF(Pike_sp[-1])) {
-	case T_FUNCTION:
-	if((p = program_from_function(Pike_sp-1))) {
-	  push_object_type(0, p?(p->id):0);
-	  break;
-	} else {
-	  /* Attempt to get the return type for the function. */
-	  struct pike_type *a, *b;
-	  a = get_type_of_svalue(Pike_sp-1);
-	  /* Note: check_splice_call() below eats a reference from a.
-	   * Note: CALL_INHIBIT_WARNINGS is needed since we don't
-	   *       provide a function name (and we don't want
-	   *       warnings here anyway).
-	   */
-	  a = check_splice_call(NULL, a, 0, mixed_type_string, NULL,
-				CALL_INHIBIT_WARNINGS);
-	  if (a) {
-	    b = new_get_return_type(a, 0);
-	    free_type(a);
-	    if (b) {
-	      push_finished_type(b);
-	      free_type(b);
-	      break;
-	    }
-	  }
-	}
-	/* FALL_THROUGH */
-
-      default:
-	if (Pike_compiler->compiler_pass!=1)
-	  my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
-	pop_stack();
-	push_int(0);
-	push_object_type(0, 0);
-	break;
-
-      case T_PROGRAM:
-	p = Pike_sp[-1].u.program;
-	push_object_type(0, p?(p->id):0);
-	break;
-      }
-    }
     /* Attempt to name the type. */
     if (Pike_compiler->last_identifier) {
       push_type_name(Pike_compiler->last_identifier);
