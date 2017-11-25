@@ -377,10 +377,10 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 string(7bit) to_ascii(string s, int(0..1)|void allow_unassigned,
 		      int(0..1)|void use_std3_ascii_rules)
 {
-  int is_ascii = max(@values(s)) < 128;
+  int is_ascii = String.range(s)[1] < 128;
   if(!is_ascii) {
     s = nameprep(s, allow_unassigned);
-    is_ascii = max(@values(s)) < 128;
+    is_ascii = String.range(s)[1] < 128;
   }
   if(use_std3_ascii_rules) {
     if(array_sscanf(s, "%*[^\0-,./:-@[-`{-\x7f]%n")[0] != sizeof(s))
@@ -410,7 +410,7 @@ string(7bit) to_ascii(string s, int(0..1)|void allow_unassigned,
 string to_unicode(string s)
 {
   string s0 = s;
-  if(max(@values(s)) >= 128 &&
+  if(String.range(s)[1] >= 128 &&
      catch(s = nameprep(s, 1)))
     return s0;
   if(lower_case(s[..3]) != "xn--")
