@@ -374,8 +374,8 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 //!   Set this flag to enforce the restrictions on ASCII characters in
 //!   host names imposed by STD3.
 //!
-string to_ascii(string s, int(0..1)|void allow_unassigned,
-		int(0..1)|void use_std3_ascii_rules)
+string(7bit) to_ascii(string s, int(0..1)|void allow_unassigned,
+		      int(0..1)|void use_std3_ascii_rules)
 {
   int is_ascii = max(@values(s)) < 128;
   if(!is_ascii) {
@@ -427,8 +427,8 @@ string to_unicode(string s)
 
 //! Takes a sequence of labels separated by '.' and applies
 //! @[to_ascii] on each.
-string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
-		     int(0..1)|void use_std3_ascii_rules)
+string(7bit) zone_to_ascii(string s, int(0..1)|void allow_unassigned,
+			   int(0..1)|void use_std3_ascii_rules)
 {
   if(has_suffix(s, ".") && !has_suffix(s, ".."))
     return sizeof(s)>1?
