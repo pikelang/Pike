@@ -20,6 +20,7 @@
 #include "nettle.h"
 
 #include <nettle/yarrow.h>
+#include <nettle/memxor.h>
 
 #ifdef HAVE_NETTLE_VERSION_H
 #include <nettle/version.h>
@@ -372,6 +373,137 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     free(THIS->ctr);
     free(THIS->key);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class AES128_CTR_DRBG
+ *!
+ *! Minimal implementation of NIST SP800-90Ar1 pseudo random number
+ *! generator CTR_DRBG using AES-128. No personalization, nounces or
+ *! additional data are supported.
+ *!
+ *! @seealso
+ *!  @[Random.AES128_CTR_DRBG]
+ */
+PIKECLASS AES128_CTR_DRBG
+program_flags PROGRAM_CLEAR_STORAGE;
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+  CVAR uint8_t *temp;
+  CVAR INT64 counter;
+
+  DECLARE_STORAGE;
+
+  /*
+   * blocklen = 128
+   * ctr_len = 128
+   * keylen = 128
+   * seedlen = 256
+   * reseed_interval = 2**48
+   */
+
+#ifndef AES128_KEY_SIZE
+#define AES128_KEY_SIZE	(128>>3)
+#endif
+
+  static void ctr_debug_update(char *data)
+  {
+    uint8_t tmp_key[16];
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, tmp_key, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, THIS->ctr, THIS->ctr);
+    memcpy(THIS->key, tmp_key, 16);
+    if( data )
+    {
+      memxor(THIS->key, (uint8_t*)data, 16);
+      memxor(THIS->ctr, (uint8_t*)data+16, 16);
+    }
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+  }
+
+  PIKEFUN string get_key()
+  {
+    RETURN make_shared_binary_string(THIS->key, 16);
+  }
+
+  PIKEFUN string get_ctr()
+  {
+    RETURN make_shared_binary_string(THIS->ctr, 16);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Updated the internal key with the provided additional entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    if( data->len!=32 )
+      Pike_error("Illegal entropy size.\n");
+    NO_WIDE_STRING(data);
+    ctr_debug_update(data->str);
+    THIS->counter = 1;
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. Does not allow
+   *! for additional input data in the call.
+   */
+  PIKEFUN string(8bit) random_string(int len)
+  {
+    int stored = 0;
+    struct pike_string *s;
+    uint8_t *str;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
+    if(THIS->counter>(1L<<48)) Pike_error("Requires reseed\n");
+
+    s = begin_shared_string(len);
+    str = (uint8_t *)s->str;
+
+    while( (len-stored) >= 16 )
+    {
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, str, THIS->ctr);
+      stored += 16;
+      str += 16;
+
+      if( !(stored % (1<<19)) )
+        ctr_debug_update(NULL);
+    }
+
+    if( len>stored )
+    {
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, THIS->temp, THIS->ctr);
+      memcpy(str, THIS->temp, len-stored);
+    }
+
+    ctr_debug_update(NULL);
+    THIS->counter++;
+
+    RETURN end_shared_string(s);
+  }
+
+  INIT
+  {
+    THIS->temp = xcalloc(1,16);
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,16);
+    THIS->counter = 1;
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+    free(THIS->temp);
   }
 }
 
