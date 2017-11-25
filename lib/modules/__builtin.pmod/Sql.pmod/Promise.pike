@@ -36,7 +36,7 @@ private void failed(mixed msg) {
 private void succeeded(.Result result) {
   PD("Future succeeded %O\n", res->query);
   if (discardover >= 0)
-    res->raw_data = res->raw_data[.. discardover];
+    res->data = res->data[.. discardover];
   mixed err =
     catch {
       res->fields = result->fetch_fields();
@@ -56,12 +56,12 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
       failed(sprintf("Too many records returned: %d > %d",
                           result->num_rows(), maxresults));
     if (discardover >= 0) {
-      int room = discardover - sizeof(res->raw_data);
+      int room = discardover - sizeof(res->data);
       if (room >= 0)
-        res->raw_data += rows[.. room - 1];
+        res->data += rows[.. room - 1];
     } else
-      res->raw_data += rows;
-  } else if (sizeof(res->raw_data) >= minresults)
+      res->data += rows;
+  } else if (sizeof(res->data) >= minresults)
     succeeded(result);
   else
     failed("Insufficient number of records returned");

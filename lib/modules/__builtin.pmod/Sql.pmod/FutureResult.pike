@@ -19,23 +19,24 @@
 //!   @[Promise], @[Connection.promise_query()]
 
 //! The returned raw unadorned records, all typed data.
-//! Once @[data] has been accessed, @[raw_data]
+//! Once @[get()] has been accessed, @[data]
 //! will point to the same adorned records.
 //!
 //! @seealso
 //!   @[Sql.Connection->big_typed_query()]
-final array(mixed) raw_data;
+final array(mixed) data;
 
+//! @returns
 //! The returned labeled records, all typed data.
 //!
 //! @seealso
-//!   @[Sql.Connection->query()], @[raw_data]
-final array(mapping(string:mixed)) `data() {
+//!   @[Sql.Connection->query()], @[data]
+final array(mapping(string:mixed)) get() {
   if (_dblink) {
-    raw_data = _dblink->res_obj_to_array(raw_data, fields);
+    data = _dblink->res_obj_to_array(data, fields);
     _dblink = 0;
   }
-  return raw_data;
+  return data;
 }
 
 //! The SQL query.
@@ -63,7 +64,7 @@ protected string _sprintf(int type) {
     case 'O':
       res = sprintf("FutureResult from query: %O, bindings: %O\n"
                     "recordcount: %d",
-       query, bindings, sizeof(raw_data));
+       query, bindings, sizeof(data));
       break;
   }
   return res;
@@ -74,7 +75,7 @@ protected
   PD("Create future result %O %O %O\n", db, q, bindings);
   query = q;
   this::bindings = bindings;
-  raw_data = ({});
+  data = ({});
   _dblink = db;
 }
 

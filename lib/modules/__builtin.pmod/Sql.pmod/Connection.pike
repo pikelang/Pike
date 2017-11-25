@@ -1245,7 +1245,7 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
 //! // To get a callback for each of the requests
 //!
 //! all->on_success(lambda (Sql.FutureResult resp) {
-//!   werror("Got result %O from %O\n", resp->data, resp->query);
+//!   werror("Got result %O from %O\n", resp->get(), resp->query);
 //! });
 //! all->on_failure(lambda (Sql.FutureResult resp) {
 //!   werror("Request %O failed: %O\n", resp->query,
