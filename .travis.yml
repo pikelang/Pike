@@ -4,4 +4,5 @@ before_install:
 - sudo apt-get install -qq build-essential pike7.8
 - sudo apt-get build-dep -qq pike7.8
 sudo: false
+cache: ccache
 script: (cd src && ./run_autoconfig .) && make && make verify
