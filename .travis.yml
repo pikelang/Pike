@@ -9,7 +9,4 @@ env:
   global:
       - USE_CCACHE=1
       - CCACHE_COMPRESS=1
-before_script:
-- echo $PATH
-- cache -s
-script: (cd src && ./run_autoconfig .) && make && (make verify || true)
+script: echo $PATH; cache -s; (cd src && ./run_autoconfig .) && make && (make verify || true)
