@@ -393,7 +393,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
   CVAR struct aes_ctx aes_ctx;
   CVAR uint8_t *key;
   CVAR uint8_t *ctr;
-  CVAR uint8_t *temp;
   CVAR INT64 counter;
 
   DECLARE_STORAGE;
@@ -424,16 +423,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
       memxor(THIS->ctr, (uint8_t*)data+16, 16);
     }
     aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
-  }
-
-  PIKEFUN string get_key()
-  {
-    RETURN make_shared_binary_string(THIS->key, 16);
-  }
-
-  PIKEFUN string get_ctr()
-  {
-    RETURN make_shared_binary_string(THIS->ctr, 16);
   }
 
   /*! @decl void reseed(string(8bit) data)
@@ -478,9 +467,10 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
     if( len>stored )
     {
+      uint8_t buf[16];
       INCREMENT(16, THIS->ctr);
-      aes_encrypt(&THIS->aes_ctx, 16, THIS->temp, THIS->ctr);
-      memcpy(str, THIS->temp, len-stored);
+      aes_encrypt(&THIS->aes_ctx, 16, buf, THIS->ctr);
+      memcpy(str, buf, len-stored);
     }
 
     ctr_debug_update(NULL);
@@ -491,7 +481,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
   INIT
   {
-    THIS->temp = xcalloc(1,16);
     THIS->ctr = xcalloc(1,16);
     THIS->key = xcalloc(1,16);
     THIS->counter = 1;
@@ -503,7 +492,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     free(THIS->ctr);
     free(THIS->key);
-    free(THIS->temp);
   }
 }
 
