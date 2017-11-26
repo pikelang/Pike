@@ -494,7 +494,12 @@ program_flags PROGRAM_CLEAR_STORAGE;
       str += 16;
 
       if( !(stored % (1<<19)) )
+      {
         ctr_debug_update(NULL);
+        THIS->reseed_counter++;
+        if(THIS->reseed_counter>THIS->reseed_interval)
+          apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
+      }
     }
 
     if( len>stored )
