@@ -213,4 +213,12 @@ mapping(string:int) states = ([]);
 #pragma deprecation_warnings
 ]])
 
+test_do([[
+  Random.Interface r = Random.AES128_CTR_DRBG(String.hex2string("ce50f33da5d4c1d3d4004eb35244b7f2cd7f2e5076fbf6780a7ff634b249a5fc"));
+  r->random_string(64); // FIXME: Why are we lagging 64 bytes from test vector?
+  if( String.string2hex(r->random_string(64)) !=
+      "6545c0529d372443b392ceb3ae3a99a30f963eaf313280f1d1a1e87f9db373d361e75d18018266499cccd64d9bbb8de0185f213383080faddec46bae1f784e5a" )
+    error("Wrong\n");
+]])
+
 END_MARKER

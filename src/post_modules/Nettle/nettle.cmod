@@ -393,7 +393,8 @@ program_flags PROGRAM_CLEAR_STORAGE;
   CVAR struct aes_ctx aes_ctx;
   CVAR uint8_t *key;
   CVAR uint8_t *ctr;
-  CVAR INT64 counter;
+  CVAR INT64 reseed_counter;
+  CVAR INT64 reseed_interval;
 
   DECLARE_STORAGE;
 
@@ -434,7 +435,37 @@ program_flags PROGRAM_CLEAR_STORAGE;
       Pike_error("Illegal entropy size.\n");
     NO_WIDE_STRING(data);
     ctr_debug_update(data->str);
-    THIS->counter = 1;
+    THIS->reseed_counter = 1;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(int(1..281474976710656) interval)
+  {
+    if( interval < 1 || interval > (1L<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval;
+  }
+
+  PIKEFUN int `reseed_interval()
+  {
+    RETURN THIS->reseed_interval;
+  }
+
+  /*! @decl void entropy_underflow()
+   *! Called when @[random_string] has been called more than
+   *! @[reseed_interval] times.
+   */
+  PIKEFUN void entropy_underflow()
+    flags ID_PROTECTED;
+  {
+    Pike_error("Requires reseed.\n");
   }
 
   /*! @decl string(8bit) random_string(int(0..) len)
@@ -449,7 +480,8 @@ program_flags PROGRAM_CLEAR_STORAGE;
     uint8_t *str;
 
     if(len<0) Pike_error("Length has to be positive.\n");
-    if(THIS->counter>(1L<<48)) Pike_error("Requires reseed\n");
+    if(THIS->reseed_counter>THIS->reseed_interval)
+      apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
 
     s = begin_shared_string(len);
     str = (uint8_t *)s->str;
@@ -474,7 +506,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     }
 
     ctr_debug_update(NULL);
-    THIS->counter++;
+    THIS->reseed_counter++;
 
     RETURN end_shared_string(s);
   }
@@ -483,7 +515,8 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     THIS->ctr = xcalloc(1,16);
     THIS->key = xcalloc(1,16);
-    THIS->counter = 1;
+    THIS->reseed_counter = 1;
+    THIS->reseed_interval = 1L<<48;
     aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
   }
 

@@ -9,7 +9,7 @@
 inherit Builtin.RandomInterface;
 inherit Nettle.AES128_CTR_DRBG;
 
-#define SEEDLEN 32/* keylen + ctrlen */
+#define SEEDLEN 32 /* keylen + ctrlen */
 
 //! Instantiate a random generator without derivation function, with
 //! the given initial entropy and personalization.
@@ -22,5 +22,16 @@ protected void create(string(8bit) entropy, void|string(8bit) personalization)
     personalization = sprintf("%-*'\0's", SEEDLEN, personalization);
     entropy ^= personalization;
   }
-  ::reseed(entropy);
+  reseed(entropy);
+}
+
+protected .Interface rnd;
+
+//! This method is called when a reseed is forced. By default new
+//! entropy is gethered from Random.System. Overload to change the
+//! default behaviour.
+protected void entropy_underflow()
+{
+  if(!rnd) rnd = .System();
+  reseed(rnd->random_string(32));
 }
