@@ -1657,17 +1657,17 @@ void resolv_type(node *n)
     default:
       if (Pike_compiler->compiler_pass!=1)
 	my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
-      pop_stack();
-      push_int(0);
       push_object_type(0, 0);
       break;
 
     case T_PROGRAM:
       p = Pike_sp[-1].u.program;
-      push_object_type(0, p?(p->id):0);
+      push_object_type(0, p->id);
       break;
     }
   }
+
+  pop_stack();
 }
 
 node *index_node(node * const n, char *node_name, struct pike_string *id)

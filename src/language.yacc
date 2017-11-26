@@ -1375,7 +1375,7 @@ identifier_type: idents
     if (Pike_compiler->last_identifier) {
       push_type_name(Pike_compiler->last_identifier);
     }
-    pop_stack();
+
     free_node($1);
   }
   | typeof
