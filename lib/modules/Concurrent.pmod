@@ -441,6 +441,119 @@ class Future
   }
 }
 
+class aggregate_state {
+  private Promise promise;
+  final int(0..) promises;
+  final array(mixed) results;
+  private int(0..) succeeded, failed;
+  final int(0..) min_failed;
+  final int(-1..) max_failed;
+  final mixed accumulator;
+  final function(mixed, mixed, mixed ... : mixed) fold_fun;
+  final array(mixed) extra;
+
+  private void create(Promise p) {
+    if (p->_materialised || p->_materialised++)
+      error("Cannot materialise a Promise more than once.\n");
+    promise = p;
+  }
+
+  final void materialise() {
+    Thread.MutexKey key = mux->lock();
+    if (promise->_astate) {
+      promise->_astate = 0;
+      key = 0;
+      if (results) {
+        promises = sizeof(results);
+        array(Future) futures = results;
+        if (fold_fun)
+          results = 0;
+        foreach(futures; int idx; Future f) {
+          f->on_failure(cb_failure, idx);
+          f->on_success(cb_success, idx);
+        }
+      }
+    }
+    key = 0;
+  }
+
+  private void fold_one(mixed val) {
+    mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
+    if (err) {
+      Promise p = promise;		// Cache it, to cover a failure race
+      p && p->failure(err);
+    }
+  }
+
+  private void fold(function(mixed:void) failsucc) {
+    if (fold_fun)
+      failsucc(accumulator);
+    else
+      failsucc(results);
+    results = 0;
+  }
+
+  private void cb_failure(mixed value, int idx) {
+    Promise p;				// Cache it, to cover a failure race
+    if (p = promise) {
+      object key = mux->lock();
+      do {
+        if (!p->state) {
+          ++failed;
+          if (max_failed < failed && max_failed >= 0) {
+            key = 0;
+            p->try_failure(value);
+            break;
+          }
+          int success = succeeded + failed == promises;
+          key = 0;
+          if (results)
+            results[idx] = value;
+          else
+            fold_one(value);
+          if (success) {
+            fold(failed >= min_failed ? p->success : p->failure);
+            break;
+          }
+        } else
+          key = 0;
+        return;
+      } while (0);
+      promise = 0;					// Free backreference
+    }
+  }
+
+  private void cb_success(mixed value, int idx) {
+    Promise p;				// Cache it, to cover a failure race
+    if (p = promise) {
+      object key = mux->lock();
+      do {
+        if (!p->state) {
+          ++succeeded;
+          if (promises - min_failed < succeeded) {
+            key = 0;
+            p->try_failure(value);
+            break;
+          }
+          int success = succeeded + failed == promises;
+          key = 0;
+          if (results)
+            results[idx] = value;
+          else
+            fold_one(value);
+          if (success) {
+            fold(p->success);
+            break;
+          }
+        } else
+          key = 0;
+        return;
+      } while (0);
+      promise = 0;					// Free backreference
+    }
+  }
+}
+
 //! Promise to provide a @[Future] value.
 //!
 //! Objects of this class are typically kept internal to the
@@ -454,7 +567,8 @@ class Promise
 {
   inherit Future;
 
-  protected array astate;
+  final int _materialised;
+  final aggregate_state _astate;
 
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(resolve, reject, extra ... )@}.
@@ -466,6 +580,21 @@ class Promise
             function(mixed:void), mixed ...:void) executor, mixed ... extra) {
     if (executor)
       executor(success, failure, @extra);
+  }
+
+  Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra) {
+    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+    return ::on_success(cb, @extra);
+  }
+
+  Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra) {
+    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+    return ::on_failure(cb, @extra);
+  }
+
+  mixed get() {
+    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+    return ::get();
   }
 
   //! The future value that we promise.
@@ -506,9 +635,9 @@ class Promise
   //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
   void success(mixed value)
   {
-    if (state) error("Promise has already been finalized.\n");
+    if (state) error("Promise has already been finalised.\n");
     object key = mux->lock();
-    if (state) error("Promise has already been finalized.\n");
+    if (state) error("Promise has already been finalised.\n");
     unlocked_success(value);
     key = 0;
   }
@@ -565,9 +694,9 @@ class Promise
   //!   @[try_failure()], @[success()], @[on_failure()]
   void failure(mixed value)
   {
-    if (state) error("Promise has already been finalized.\n");
+    if (state) error("Promise has already been finalised.\n");
     object key = mux->lock();
-    if (state) error("Promise has already been finalized.\n");
+    if (state) error("Promise has already been finalised.\n");
     unlocked_failure(value);
     key = 0;
   }
@@ -591,6 +720,11 @@ class Promise
     unlocked_failure(value);
   }
 
+  inline private void fill_astate() {
+    if (!_astate)
+      _astate = aggregate_state(this);
+  }
+
   //! Add futures which the current object depends on.
   //!
   //! If called without arguments it will produce a new @[Future]
@@ -603,23 +737,13 @@ class Promise
   //! The new @[Promise].
   //!
   //! @seealso
-  //!   @[Concurrent.results()]
+  //!   @[fold()], @[first_completed()], @[max_failures()], @[min_failures()],
+  //!   @[any_results()], @[Concurrent.results()], @[Concurrent.all()]
   this_program depend(array(Future) futures)
   {
     if (sizeof(futures)) {
-      if (!astate)
-        astate = ({(<>), ({})});
-
-      int base = sizeof(astate[1]);
-      astate[1] += allocate(sizeof(futures), UNDEFINED);
-
-      futures->on_failure(try_failure);
-
-      foreach(futures; int i; Future f) {
-        int x = base + i;
-        astate[0][x] = 1;
-        f->on_success(depend_success, x, astate);
-      }
+      fill_astate();
+      _astate->results += futures;
     }
     return this_program::this;
   }
@@ -631,54 +755,6 @@ class Promise
   {
     Promise p = Promise();
     depend(p->future());
-    return p;
-  }
-
-  protected void depend_success(mixed value, int i, array astate)
-  {
-    multiset pending = astate[0];
-    if (state || !pending[i]) return;
-    object key = mux->lock();
-    if (state || !pending[i]) return;
-    astate[1][i] = value;
-    pending[i] = 0;
-    if (sizeof(pending)) {
-      key = 0;
-      return;
-    }
-    key = 0;
-    success(astate[1]);
-  }
-
-  //! Add futures which the current object must accumulate.
-  //!
-  //! If called without arguments it will produce a new @[Future]
-  //! from a new @[Promise] which is implictly added to the accumulation list.
-  //!
-  //! @param futures
-  //!   The list of all the @expr{futures@} we must accumulate.
-  //!
-  //! @returns
-  //! The new @[Promise].
-  //!
-  //! @seealso
-  //!   @[Concurrent.fold()], @[apply_fold()]
-  this_program fold(array(Future) futures)
-  {
-    if (!astate)
-      astate = ({});
-
-    astate += futures;
-    return this_program::this;
-  }
-  inline variant this_program fold(Future ... futures)
-  {
-    return fold(futures);
-  }
-  variant this_program fold()
-  {
-    Promise p = Promise();
-    fold(p->future());
     return p;
   }
 
@@ -702,57 +778,91 @@ class Promise
   //!
   //! @note
   //!   @[fun] may be called in any order, and will be called
-  //!   once for every @[Future] in @[futures], unless one of
+  //!   once for every @[Future] it depends on, unless one of the
   //!   calls fails in which case no further calls will be
   //!   performed.
   //!
   //! @seealso
-  //!   @[Concurrent.fold()], @[fold()]
-  this_program apply_fold(mixed initial,
-	                  function(mixed, mixed, mixed ... : mixed) fun,
-	                  mixed ... extra)
+  //!   @[depend()], @[Concurrent.fold()]
+  this_program fold(mixed initial,
+	            function(mixed, mixed, mixed ... : mixed) fun,
+	            mixed ... extra)
   {
-    if (!astate || !sizeof(astate)) {
+    if (_astate) {
+      _astate->accumulator = initial;
+      _astate->fold_fun = fun;
+      _astate->extra = extra;
+      _astate->materialise();
+    } else
       success(initial);
-      return this_program::this;
-    }
-
-    array(Future) futures = astate;
-    astate = 0;
-    multiset pending = (<>);
-    array astate = ({pending, initial});
-
-    futures->on_failure(try_failure);
-
-    foreach(futures; int i; Future f) {
-      pending[i] = 1;
-      f->on_success(fold_success, i, astate, fun, @extra);
-    }
     return this_program::this;
   }
 
-  protected void fold_success(mixed val, int i, array astate,
-			      function(mixed, mixed, mixed ... : mixed) fun,
-			      mixed ... extra)
+  //! It evaluates to the first future that completes of the list
+  //! of futures it depends on.
+  //!
+  //! @returns
+  //! The new @[Promise].
+  //!
+  //! @seealso
+  //!   @[depend()], @[Concurrent.first_completed()]
+  this_program first_completed()
   {
-    multiset pending = astate[0];
-    if (state || !pending[i]) return;
-    object key = mux->lock();
-    if (state || !pending[i]) return;
-    pending[i] = 0;
-    mixed err = catch {
-	// FIXME: What if fun triggers a recursive call?
-	astate[1] = fun(val, astate[1], @extra);
-        if (sizeof(pending)) {
-          key = 0;
-          return;
-        }
-      };
-    key = 0;
-    if (err)
-      failure(err);
-    else
-      success(astate[1]);
+    if (_astate) {
+      _astate->results->on_failure(try_failure);
+      _astate->results->on_success(try_success);
+      _astate = 0;
+    } else
+      success(0);
+    return this_program::this;
+  }
+
+  //! @param max
+  //!   Specifies the maximum number of failures to be accepted in
+  //!   the list of futures this promise depends upon.  Defaults
+  //!   to @expr{0@}.  @expr{-1@} means unlimited.
+  //!
+  //! @returns
+  //! The new @[Promise].
+  //!
+  //! @seealso
+  //!   @[depend()], @[min_failed()], @[any_results()]
+  this_program max_failed(int(-1..) max)
+  {
+    fill_astate();
+    _astate->max_failed = max;
+    return this_program::this;
+  }
+
+  //! @param min
+  //!   Specifies the minimum number of failures to be required in
+  //!   the list of futures this promise depends upon.  Defaults
+  //!   to @expr{0@}.
+  //!
+  //! @returns
+  //! The new @[Promise].
+  //!
+  //! @seealso
+  //!   @[depend()], @[max_failed()]
+  this_program min_failed(int(0..) min)
+  {
+    fill_astate();
+    _astate->min_failed = min;
+    return this_program::this;
+  }
+
+  //! Sets the number of failures to be accepted in the list of futures
+  //! this promise
+  //! depends upon to unlimited.  It is equivalent to @expr{max_failed(-1)@}.
+  //!
+  //! @returns
+  //! The new @[Promise].
+  //!
+  //! @seealso
+  //!   @[depend()], @[max_failed()]
+  this_program any_results()
+  {
+    return max_failed(-1);
   }
 
   protected void _destruct()
@@ -763,31 +873,15 @@ class Promise
   }
 }
 
-protected class FirstCompleted
-{
-  inherit Promise;
-
-  protected void create(array(Future) futures)
-  {
-    if (!sizeof(futures)) {
-      state = STATE_FULFILLED;
-      return;
-    }
-    futures->on_failure(try_failure);
-    futures->on_success(try_success);
-  }
-}
-
 //! @returns
 //! A @[Future] that represents the first
 //! of the @expr{futures@} that completes.
 //!
 //! @seealso
-//!   @[race()]
+//!   @[race()], @[Promise.first_completed()]
 variant Future first_completed(array(Future) futures)
 {
-  Promise p = FirstCompleted(futures);
-  return p->future();
+  return Promise()->depend(futures)->first_completed()->future();
 }
 variant inline Future first_completed(Future ... futures)
 {
@@ -797,7 +891,7 @@ variant inline Future first_completed(Future ... futures)
 //! JavaScript Promise API equivalent of @[first_completed()].
 //!
 //! @seealso
-//!   @[first_completed()]
+//!   @[first_completed()], @[Promise.first_completed()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 variant inline Future race(array(Future) futures)
 {
@@ -812,7 +906,7 @@ variant inline Future race(Future ... futures)
 //! A @[Future] that represents the array of all the completed @expr{futures@}.
 //!
 //! @seealso
-//!   @[all()]
+//!   @[all()], @[Promise.depend()]
 variant Future results(array(Future) futures)
 {
   Promise p = Promise();
@@ -827,7 +921,7 @@ inline variant Future results(Future ... futures)
 //! JavaScript Promise API equivalent of @[results()].
 //!
 //! @seealso
-//!   @[results()]
+//!   @[results()], @[Promise.depend()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 inline variant Future all(array(Future) futures)
 {
@@ -905,7 +999,7 @@ Future fold(array(Future) futures,
 	    mixed ... extra)
 {
   Promise p = Promise();
-  p->fold(futures);
-  p->apply_fold(initial, fun, extra);
+  p->depend(futures);
+  p->fold(initial, fun, extra);
   return p->future();
 }
