@@ -1629,7 +1629,7 @@ void resolv_type(node *n)
     switch(TYPEOF(Pike_sp[-1])) {
     case T_FUNCTION:
       if((p = program_from_function(Pike_sp-1))) {
-	push_object_type(0, p?(p->id):0);
+        push_object_type(0, p->id);
 	break;
       } else {
 	/* Attempt to get the return type for the function. */
