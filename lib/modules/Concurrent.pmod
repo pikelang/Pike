@@ -345,9 +345,9 @@ class Future
   //!   @[results()]
   this_program zip(this_program ... others)
   {
-    return sizeof(others)
-         ? results(({ this_program::this }) + others)
-         : this_program::this;
+    if (sizeof(others))
+      return results(({ this_program::this }) + others);
+    return this_program::this;
   }
 
   //! JavaScript Promise API close but not identical equivalent
@@ -972,9 +972,9 @@ Future reject(mixed reason)
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 Future resolve(mixed value)
 {
-  return objectp(value) && value->on_failure && value->on_success
-       ? value
-       : Promise()->success(value)->future();
+  if (objectp(value) && value->on_failure && value->on_success)
+    return value;
+  return Promise()->success(value)->future();
 }
 
 //! Return a @[Future] that represents the array of mapping @[fun]
