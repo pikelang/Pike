@@ -33,9 +33,9 @@ class Future
   mixed result = UNDEFINED;
   State state;
 
-  protected array(array(function(mixed, mixed ...: void)|array(mixed)))
+  protected array(array(function(mixed, mixed ...: void)|mixed))
     success_cbs = ({});
-  protected array(array(function(mixed, mixed ...: void)|array(mixed)))
+  protected array(array(function(mixed, mixed ...: void)|mixed))
     failure_cbs = ({});
 
   //! Wait for fulfillment and return the value.
@@ -83,13 +83,12 @@ class Future
     Thread.MutexKey key = mux->lock();
 
     if (state == STATE_FULFILLED) {
-      call_out(cb, 0, result, @extra);
       key = 0;
-      return this_program::this;
+      call_out(cb, 0, result, @extra);
+    } else {
+      success_cbs += ({ ({ cb, @extra }) });
+      key = 0;
     }
-
-    success_cbs += ({ ({ cb, extra }) });
-    key = 0;
 
     return this_program::this;
   }
@@ -114,13 +113,12 @@ class Future
     Thread.MutexKey key = mux->lock();
 
     if (state == STATE_REJECTED) {
-      call_out(cb, 0, result, @extra);
       key = 0;
-      return this_program::this;
+      call_out(cb, 0, result, @extra);
+    } else {
+      failure_cbs += ({ ({ cb, @extra }) });
+      key = 0;
     }
-
-    failure_cbs += ({ ({ cb, extra }) });
-    key = 0;
 
     return this_program::this;
   }
@@ -601,22 +599,31 @@ class Promise
     return Future::this;
   }
 
-  protected void unlocked_success(mixed value)
-  {
-    if (state < STATE_REJECTED) {
+  protected this_program finalise(State newstate, mixed value, int try,
+    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs,
+    void|function(mixed : void) globalfailure) {
+    Thread.MutexKey key = mux->lock();
+    if (!state) {
+      state = newstate;
       result = value;
-      state = STATE_FULFILLED;
+      key = 0;
       cond->broadcast();
-      foreach(success_cbs,
-	      [function(mixed, mixed ...: void) cb,
-	       array(mixed) extra]) {
-	if (cb) {
-	  call_out(cb, 0, value, @extra);
-	}
-      }
+      if (sizeof(cbs)) {
+        foreach(cbs; ; array cb)
+          if (cb)
+            call_out(cb[0], 0, value, @cb[1..]);
+      } else if (globalfailure)
+        call_out(globalfailure, 0, value);
+    } else {
+      key = 0;
+      if (!try)
+        error("Promise has already been finalised.\n");
     }
+    return this_program::this;
   }
 
+  //! @decl this_program success(mixed value)
+  //!
   //! Fulfill the @[Future].
   //!
   //! @param value
@@ -631,13 +638,9 @@ class Promise
   //!
   //! @seealso
   //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
-  void success(mixed value)
+  this_program success(mixed value, void|int try)
   {
-    if (state) error("Promise has already been finalised.\n");
-    Thread.MutexKey key = mux->lock();
-    if (state) error("Promise has already been finalised.\n");
-    unlocked_success(value);
-    key = 0;
+    return finalise(STATE_FULFILLED, value, try, success_cbs);
   }
 
   //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
@@ -651,31 +654,13 @@ class Promise
   //!
   //! @seealso
   //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
-  void try_success(mixed value)
+  inline this_program try_success(mixed value)
   {
-    if (state) return;
-    Thread.MutexKey key = mux->lock();
-    if (state) return;
-    unlocked_success(value);
-    key = 0;
+    return state ? this_program::this : success(value, 1);
   }
 
-  protected void unlocked_failure(mixed value)
-  {
-    state = STATE_REJECTED;
-    result = value;
-    cond->broadcast();
-    if( !sizeof(failure_cbs) && global_on_failure )
-      call_out(global_on_failure, 0, value);
-    foreach(failure_cbs,
-	    [function(mixed, mixed ...: void) cb,
-	     array(mixed) extra]) {
-      if (cb) {
-	call_out(cb, 0, value, @extra);
-      }
-    }
-  }
-
+  //! @decl this_program failure(mixed value)
+  //!
   //! Reject the @[Future] value.
   //!
   //! @param value
@@ -690,13 +675,10 @@ class Promise
   //!
   //! @seealso
   //!   @[try_failure()], @[success()], @[on_failure()]
-  void failure(mixed value)
+  this_program failure(mixed value, void|int try)
   {
-    if (state) error("Promise has already been finalised.\n");
-    Thread.MutexKey key = mux->lock();
-    if (state) error("Promise has already been finalised.\n");
-    unlocked_failure(value);
-    key = 0;
+    return
+     finalise(STATE_REJECTED, value, try, failure_cbs, global_on_failure);
   }
 
   //! Maybe reject the @[Future] value.
@@ -710,12 +692,9 @@ class Promise
   //!
   //! @seealso
   //!   @[failure()], @[success()], @[on_failure()]
-  void try_failure(mixed value)
+  inline this_program try_failure(mixed value)
   {
-    if (state) return;
-    Thread.MutexKey key = mux->lock();
-    if (state) return;
-    unlocked_failure(value);
+    return state ? this_program::this : failure(value, 1);
   }
 
   inline private void fill_astate() {
@@ -873,9 +852,8 @@ class Promise
 
   protected void _destruct()
   {
-    if (!state) {
-      unlocked_failure(({ "Promise broken.\n", backtrace() }));
-    }
+    if (!state)
+      try_failure(({ "Promise broken.\n", backtrace() }));
   }
 }
 
