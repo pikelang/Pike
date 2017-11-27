@@ -1489,6 +1489,12 @@ opt_string_width: opt_int_range
 
 opt_program_type:  /* Empty */ { push_object_type(0, 0); }
   | '(' full_type ')'
+  | '(' string_constant ')'
+  {
+    resolv_type($2);
+    push_type_name($2->u.sval->u.string);
+    free_node($2);
+  }
   | '(' error ')'
   {
     push_object_type(0, 0);

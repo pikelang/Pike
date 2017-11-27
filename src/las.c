@@ -1595,6 +1595,14 @@ void resolv_type(node *n)
 {
   resolv_constant(n);
 
+  if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+    /* Program name, etc */
+    if (call_handle_inherit(n->u.sval.u.string)) {
+      stack_swap();
+      pop_stack();
+    }
+  }
+
   if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
     /* "typedef" */
     push_finished_type(Pike_sp[-1].u.type);
