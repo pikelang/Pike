@@ -1,0 +1,82 @@
+subject: Pike 8.0: Sendfile, SSL.File, pgsql, Crypto.SCRAM, Thread.ResourceCount, Time zone data, MIME, Protocols.HTTP, check_http.
+from: 08eda6ba48c38b9bb59e4ccec727a6cb262c5799
+to: a6cb0637fe6ca1db6cc7d9bae63ceb02a2ba7151
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2017-10-30T132126
+restart: true
+
+Multiple fixes:
+
+• Concurrent: Improve docs.
+
+• Sendfile: Improved support for TLS/SSL.
+
+Wait for write callback (ie TLS handshake completion) before
+calling the sendfile done callback when sending an empty string
+(ie the NOOP case).
+
+Fixes issue where the connection got closed by our side before
+TLS handshaking was completed, confusing the other side.
+
+Potential fix for [WS-94].
+
+• Sql.sql_result: index variable (un)used consistently in prototype.
+
+• pgsql: Do not throw errors inside the callback-backend, they get lost.
+
+• SSL.File: Added support for set_buffer_mode().
+
+Adds support for user provided buffers in both directions.
+
+Updates the {read,write,close}_callbacks to the current conventions of
+Stdio.File (this includes defaulting the callback_id to this_object()).
+
+Also adds some corresponding tests to the testsuite.
+
+• pgsql: Add diagnostics.
+
+• pgsql: Create proxy object to avoid circular references.
+
+• Crypto.SCRAM: New module.
+
+• pgsql: Simplify and bolster the code by using Thread.ResourceCount.
+
+• Thread.ResourceCount: New module to implement resource counters.
+
+• pgsql: Fix SSL method in combination with Stdio.Buffer.
+
+• SSL.File: Implement query_fd().
+
+• pgsql: Eliminate connectfail() backreferences.
+
+• Time zone data: Updated to 2017c.
+
+• Tools.Standalone.check_http: Add support for option --expect.
+
+Support matching against the response status line.
+
+• Tools.Standalone.check_http: Allow redirect responses.
+
+Some HTTP-servers only ever return redirects...
+
+Fixes [PIKE-44].
+
+• pgsql: Run _lost callbacks on TCP-resets.
+
+• Debug.Inspect: Allow forced dumps.
+
+• Calendar: Updated mkrules filter to latest set of tzdata files.
+
+• pgsql: Still allow empty or unspecified credentials.
+
+• pgsql: Slightly reduce memory footprint of the SCRAM-algorithm.
+
+• pgsql: Postgresql 10 scram-SHA256 authentication support.
+
+• MIME: Support trailing \n epilogues on MIME parts.
+
+• HTTP.Query: timed_async_fetch() failed to skip the header.
+
+• HTTP.Query: Support skipping chunked options.
+
+• pgsql: Suppress 'File not open' output on stderr for query_fd().
