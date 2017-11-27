@@ -47,7 +47,7 @@ class Future
     State s = state;
     mixed res = result;
     if (!s) {
-      object key = mux->lock();
+      Thread.MutexKey key = mux->lock();
       while (!state) {
 	cond->wait(key);
       }
@@ -80,7 +80,7 @@ class Future
   //!   @[on_failure()]
   this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
 
     if (state == STATE_FULFILLED) {
       call_out(cb, 0, result, @extra);
@@ -111,7 +111,7 @@ class Future
   //!   @[on_success()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
 
     if (state == STATE_REJECTED) {
       call_out(cb, 0, result, @extra);
@@ -347,8 +347,9 @@ class Future
   //!   @[results()]
   this_program zip(this_program ... others)
   {
-    if (!sizeof(others)) return this_program::this;
-    return results(({ this_program::this }) + others);
+    return sizeof(others)
+         ? results(({ this_program::this }) + others)
+         : this_program::this;
   }
 
   //! JavaScript Promise API close but not identical equivalent
@@ -493,7 +494,7 @@ class aggregate_state {
   private void cb_failure(mixed value, int idx) {
     Promise p;				// Cache it, to cover a failure race
     if (p = promise) {
-      object key = mux->lock();
+      Thread.MutexKey key = mux->lock();
       do {
         if (!p->state) {
           ++failed;
@@ -523,7 +524,7 @@ class aggregate_state {
   private void cb_success(mixed value, int idx) {
     Promise p;				// Cache it, to cover a failure race
     if (p = promise) {
-      object key = mux->lock();
+      Thread.MutexKey key = mux->lock();
       do {
         if (!p->state) {
           ++succeeded;
@@ -633,7 +634,7 @@ class Promise
   void success(mixed value)
   {
     if (state) error("Promise has already been finalised.\n");
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
     if (state) error("Promise has already been finalised.\n");
     unlocked_success(value);
     key = 0;
@@ -653,7 +654,7 @@ class Promise
   void try_success(mixed value)
   {
     if (state) return;
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
     if (state) return;
     unlocked_success(value);
     key = 0;
@@ -692,7 +693,7 @@ class Promise
   void failure(mixed value)
   {
     if (state) error("Promise has already been finalised.\n");
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
     if (state) error("Promise has already been finalised.\n");
     unlocked_failure(value);
     key = 0;
@@ -712,7 +713,7 @@ class Promise
   void try_failure(mixed value)
   {
     if (state) return;
-    object key = mux->lock();
+    Thread.MutexKey key = mux->lock();
     if (state) return;
     unlocked_failure(value);
   }
@@ -728,7 +729,7 @@ class Promise
   //! from a new @[Promise] which is implictly added to the dependency list.
   //!
   //! @param futures
-  //!   The list of @expr{futures@} we want to add to the list we depend on.
+  //!   The list of @expr{futures@} we want to add to the list we depend upon.
   //!
   //! @returns
   //! The new @[Promise].
@@ -914,9 +915,7 @@ variant inline Future race(Future ... futures)
 //!   @[all()], @[Promise.depend()]
 variant Future results(array(Future) futures)
 {
-  Promise p = Promise();
-  p->depend(futures);
-  return p->future();
+  return Promise()->depend(futures)->future();
 }
 inline variant Future results(Future ... futures)
 {
@@ -945,9 +944,7 @@ inline variant Future all(Future ... futures)
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 Future reject(mixed reason)
 {
-  object p = Promise();
-  p->failure(reason);
-  return p->future();
+  return Promise()->failure(reason)->future();
 }
 
 //! @returns
@@ -963,11 +960,9 @@ Future reject(mixed reason)
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 Future resolve(mixed value)
 {
-  if (objectp(value) && value->on_failure && value->on_success)
-    return value;
-  object p = Promise();
-  p->success(value);
-  return p->future();
+  return objectp(value) && value->on_failure && value->on_success
+       ? value
+       : Promise()->success(value)->future();
 }
 
 //! Return a @[Future] that represents the array of mapping @[fun]
@@ -1003,8 +998,5 @@ Future fold(array(Future) futures,
 	    function(mixed, mixed, mixed ... : mixed) fun,
 	    mixed ... extra)
 {
-  Promise p = Promise();
-  p->depend(futures);
-  p->fold(initial, fun, extra);
-  return p->future();
+  return Promise()->depend(futures)->fold(initial, fun, extra)->future();
 }
