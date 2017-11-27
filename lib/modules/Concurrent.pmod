@@ -728,13 +728,21 @@ class Promise
   //! from a new @[Promise] which is implictly added to the dependency list.
   //!
   //! @param futures
-  //!   The list of all the @expr{futures@} we depend on.
+  //!   The list of @expr{futures@} we want to add to the list we depend on.
   //!
   //! @returns
   //! The new @[Promise].
   //!
+  //! @note
+  //!  Can be called multiple times to add more.
+  //!
+  //! @note
+  //!  Once the promise has been materialised (when either @[on_success()],
+  //!  @[on_failure()] or @[get()] has been called on this object), it is
+  //!  not possible to call @[depend()] anymore.
+  //!
   //! @seealso
-  //!   @[fold()], @[first_completed()], @[max_failures()], @[min_failures()],
+  //!   @[fold()], @[first_completed()], @[max_failed()], @[min_failed()],
   //!   @[any_results()], @[Concurrent.results()], @[Concurrent.all()]
   this_program depend(array(Future) futures)
   {
