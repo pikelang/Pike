@@ -446,8 +446,8 @@ class aggregate_state {
   private int(0..) promises;
   private int(0..) succeeded, failed;
   final array(mixed) results;
-  final int(0..) min_failed;
-  final int(-1..) max_failed;
+  final int(0..) min_failures;
+  final int(-1..) max_failures;
   final mixed accumulator;
   final function(mixed, mixed, mixed ... : mixed) fold_fun;
   final array(mixed) extra;
@@ -497,7 +497,7 @@ class aggregate_state {
       do {
         if (!p->state) {
           ++failed;
-          if (max_failed < failed && max_failed >= 0) {
+          if (max_failures < failed && max_failures >= 0) {
             key = 0;
             p->try_failure(value);
             break;
@@ -509,7 +509,7 @@ class aggregate_state {
           else
             fold_one(value);
           if (success) {
-            fold(failed >= min_failed ? p->success : p->failure);
+            fold(failed >= min_failures ? p->success : p->failure);
             break;
           }
         } else
@@ -527,7 +527,7 @@ class aggregate_state {
       do {
         if (!p->state) {
           ++succeeded;
-          if (promises - min_failed < succeeded) {
+          if (promises - min_failures < succeeded) {
             key = 0;
             p->try_failure(value);
             break;
@@ -722,7 +722,7 @@ class Promise
       _astate = aggregate_state(this);
   }
 
-  //! Add futures which the current object depends on.
+  //! Add futures to the list of futures which the current object depends upon.
   //!
   //! If called without arguments it will produce a new @[Future]
   //! from a new @[Promise] which is implictly added to the dependency list.
@@ -742,7 +742,7 @@ class Promise
   //!  not possible to call @[depend()] anymore.
   //!
   //! @seealso
-  //!   @[fold()], @[first_completed()], @[max_failed()], @[min_failed()],
+  //!   @[fold()], @[first_completed()], @[max_failures()], @[min_failures()],
   //!   @[any_results()], @[Concurrent.results()], @[Concurrent.all()]
   this_program depend(array(Future) futures)
   {
@@ -783,7 +783,7 @@ class Promise
   //!
   //! @note
   //!   @[fun] may be called in any order, and will be called
-  //!   once for every @[Future] it depends on, unless one of the
+  //!   once for every @[Future] it depends upon, unless one of the
   //!   calls fails in which case no further calls will be
   //!   performed.
   //!
@@ -804,7 +804,7 @@ class Promise
   }
 
   //! It evaluates to the first future that completes of the list
-  //! of futures it depends on.
+  //! of futures it depends upon.
   //!
   //! @returns
   //! The new @[Promise].
@@ -831,11 +831,11 @@ class Promise
   //! The new @[Promise].
   //!
   //! @seealso
-  //!   @[depend()], @[min_failed()], @[any_results()]
-  this_program max_failed(int(-1..) max)
+  //!   @[depend()], @[min_failures()], @[any_results()]
+  this_program max_failures(int(-1..) max)
   {
     fill_astate();
-    _astate->max_failed = max;
+    _astate->max_failures = max;
     return this_program::this;
   }
 
@@ -848,26 +848,26 @@ class Promise
   //! The new @[Promise].
   //!
   //! @seealso
-  //!   @[depend()], @[max_failed()]
-  this_program min_failed(int(0..) min)
+  //!   @[depend()], @[max_failures()]
+  this_program min_failures(int(0..) min)
   {
     fill_astate();
-    _astate->min_failed = min;
+    _astate->min_failures = min;
     return this_program::this;
   }
 
   //! Sets the number of failures to be accepted in the list of futures
   //! this promise
-  //! depends upon to unlimited.  It is equivalent to @expr{max_failed(-1)@}.
+  //! depends upon to unlimited.  It is equivalent to @expr{max_failures(-1)@}.
   //!
   //! @returns
   //! The new @[Promise].
   //!
   //! @seealso
-  //!   @[depend()], @[max_failed()]
+  //!   @[depend()], @[max_failures()]
   this_program any_results()
   {
-    return max_failed(-1);
+    return max_failures(-1);
   }
 
   protected void _destruct()
