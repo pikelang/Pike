@@ -487,7 +487,7 @@ class aggregate_state {
 
   private void fold(function(mixed:void) failsucc) {
     failsucc(fold_fun ? accumulator : results);
-    results = 0;
+    results = 0;			// Free memory
   }
 
   private void cb_failure(mixed value, int idx) {
@@ -516,7 +516,7 @@ class aggregate_state {
           key = 0;
         return;
       } while (0);
-      promise = 0;					// Free backreference
+      promise = 0;			// Free backreference
     }
   }
 
@@ -546,7 +546,7 @@ class aggregate_state {
           key = 0;
         return;
       } while (0);
-      promise = 0;					// Free backreference
+      promise = 0;			// Free backreference
     }
   }
 }
