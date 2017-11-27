@@ -443,9 +443,9 @@ class Future
 
 class aggregate_state {
   private Promise promise;
-  final int(0..) promises;
-  final array(mixed) results;
+  private int(0..) promises;
   private int(0..) succeeded, failed;
+  final array(mixed) results;
   final int(0..) min_failed;
   final int(-1..) max_failed;
   final mixed accumulator;
@@ -481,15 +481,12 @@ class aggregate_state {
     mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
     if (err) {
       Promise p = promise;		// Cache it, to cover a failure race
-      p && p->failure(err);
+      if (p) p->failure(err);
     }
   }
 
   private void fold(function(mixed:void) failsucc) {
-    if (fold_fun)
-      failsucc(accumulator);
-    else
-      failsucc(results);
+    failsucc(fold_fun ? accumulator : results);
     results = 0;
   }
 
