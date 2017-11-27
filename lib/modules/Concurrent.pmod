@@ -478,10 +478,8 @@ class aggregate_state {
 
   private void fold_one(mixed val) {
     mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
-    if (err) {
-      Promise p = promise;		// Cache it, to cover a failure race
-      if (p) p->failure(err);
-    }
+    if (err && promise)
+      promise->failure(err);
   }
 
   private void fold(function(mixed:void) failsucc) {
