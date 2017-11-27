@@ -440,7 +440,8 @@ class Future
   }
 }
 
-class aggregate_state {
+class AggregateState
+{
   private Promise promise;
   private int(0..) promises;
   private int(0..) succeeded, failed;
@@ -451,23 +452,28 @@ class aggregate_state {
   final function(mixed, mixed, mixed ... : mixed) fold_fun;
   final array(mixed) extra;
 
-  private void create(Promise p) {
+  private void create(Promise p)
+  {
     if (p->_materialised || p->_materialised++)
       error("Cannot materialise a Promise more than once.\n");
     promise = p;
   }
 
-  final void materialise() {
+  final void materialise()
+  {
     Thread.MutexKey key = mux->lock();
-    if (promise->_astate) {
+    if (promise->_astate)
+    {
       promise->_astate = 0;
       key = 0;
-      if (results) {
+      if (results)
+      {
         promises = sizeof(results);
         array(Future) futures = results;
         if (fold_fun)
           results = 0;
-        foreach(futures; int idx; Future f) {
+        foreach(futures; int idx; Future f)
+        {
           f->on_failure(cb_failure, idx);
           f->on_success(cb_success, idx);
         }
@@ -476,25 +482,32 @@ class aggregate_state {
     key = 0;
   }
 
-  private void fold_one(mixed val) {
+  private void fold_one(mixed val)
+  {
     mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
     if (err && promise)
       promise->failure(err);
   }
 
-  private void fold(function(mixed:void) failsucc) {
+  private void fold(function(mixed:void) failsucc)
+  {
     failsucc(fold_fun ? accumulator : results);
     results = 0;			// Free memory
   }
 
-  private void cb_failure(mixed value, int idx) {
+  private void cb_failure(mixed value, int idx)
+  {
     Promise p;				// Cache it, to cover a failure race
-    if (p = promise) {
+    if (p = promise)
+    {
       Thread.MutexKey key = mux->lock();
-      do {
-        if (!p->state) {
+      do
+      {
+        if (!p->state)
+        {
           ++failed;
-          if (max_failures < failed && max_failures >= 0) {
+          if (max_failures < failed && max_failures >= 0)
+          {
             key = 0;
             p->try_failure(value);
             break;
@@ -505,11 +518,13 @@ class aggregate_state {
             results[idx] = value;
           else
             fold_one(value);
-          if (success) {
+          if (success)
+          {
             fold(failed >= min_failures ? p->success : p->failure);
             break;
           }
-        } else
+        }
+        else
           key = 0;
         return;
       } while (0);
@@ -517,14 +532,19 @@ class aggregate_state {
     }
   }
 
-  private void cb_success(mixed value, int idx) {
+  private void cb_success(mixed value, int idx)
+  {
     Promise p;				// Cache it, to cover a failure race
-    if (p = promise) {
+    if (p = promise)
+    {
       Thread.MutexKey key = mux->lock();
-      do {
-        if (!p->state) {
+      do
+      {
+        if (!p->state)
+        {
           ++succeeded;
-          if (promises - min_failures < succeeded) {
+          if (promises - min_failures < succeeded)
+          {
             key = 0;
             p->try_failure(value);
             break;
@@ -535,11 +555,13 @@ class aggregate_state {
             results[idx] = value;
           else
             fold_one(value);
-          if (success) {
+          if (success)
+          {
             fold(p->success);
             break;
           }
-        } else
+        }
+        else
           key = 0;
         return;
       } while (0);
@@ -562,7 +584,7 @@ class Promise
   inherit Future;
 
   final int _materialised;
-  final aggregate_state _astate;
+  final AggregateState _astate;
 
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(resolve, reject, extra ... )@}.
@@ -571,23 +593,30 @@ class Promise
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
   protected void create(void|
    function(function(mixed:void),
-            function(mixed:void), mixed ...:void) executor, mixed ... extra) {
+            function(mixed:void), mixed ...:void) executor, mixed ... extra)
+  {
     if (executor)
       executor(success, failure, @extra);
   }
 
-  Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra) {
-    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+  Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
+  {
+    if (_astate)
+      catch(_astate->materialise());	// catches race for _astate == 0
     return ::on_success(cb, @extra);
   }
 
-  Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra) {
-    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+  Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
+  {
+    if (_astate)
+      catch(_astate->materialise());	// catches race for _astate == 0
     return ::on_failure(cb, @extra);
   }
 
-  mixed get() {
-    if (_astate) catch(_astate->materialise());	// catches race for _astate == 0
+  mixed get()
+  {
+    if (_astate)
+      catch(_astate->materialise());	// catches race for _astate == 0
     return ::get();
   }
 
@@ -599,20 +628,26 @@ class Promise
 
   protected this_program finalise(State newstate, mixed value, int try,
     array(array(function(mixed, mixed ...: void)|array(mixed))) cbs,
-    void|function(mixed : void) globalfailure) {
+    void|function(mixed : void) globalfailure)
+  {
     Thread.MutexKey key = mux->lock();
-    if (!state) {
+    if (!state)
+    {
       state = newstate;
       result = value;
       key = 0;
       cond->broadcast();
-      if (sizeof(cbs)) {
+      if (sizeof(cbs))
+      {
         foreach(cbs; ; array cb)
           if (cb)
             call_out(cb[0], 0, value, @cb[1..]);
-      } else if (globalfailure)
+      }
+      else if (globalfailure)
         call_out(globalfailure, 0, value);
-    } else {
+    }
+    else
+    {
       key = 0;
       if (!try)
         error("Promise has already been finalised.\n");
@@ -695,9 +730,10 @@ class Promise
     return state ? this_program::this : failure(value, 1);
   }
 
-  inline private void fill_astate() {
+  inline private void fill_astate()
+  {
     if (!_astate)
-      _astate = aggregate_state(this);
+      _astate = AggregateState(this);
   }
 
   //! Add futures to the list of futures which the current object depends upon.
