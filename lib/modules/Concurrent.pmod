@@ -23,6 +23,24 @@ void on_failure(function(mixed : void) f)
 }
 protected function(mixed : void) global_on_failure;
 
+//! @param enable
+//!   Setting this to @expr{false@} causes all @[Concurrent] callbacks
+//!   to be called directly, without using a backend (except for timeouts).
+final void use_backend(int enable)
+{
+  callout = enable ? call_out : callnow;
+}
+
+private mixed
+ callnow(function(mixed ...:void) f, int|float delay, mixed ... args)
+{
+  f(@args);
+  return 0;
+}
+
+protected function(function(mixed ...:void), int|float, mixed ...:mixed)
+ callout = call_out;
+
 //! Value that will be provided asynchronously
 //! sometime in the future.
 //!
@@ -84,7 +102,7 @@ class Future
 
     if (state == STATE_FULFILLED) {
       key = 0;
-      call_out(cb, 0, result, @extra);
+      callout(cb, 0, result, @extra);
     } else {
       success_cbs += ({ ({ cb, @extra }) });
       key = 0;
@@ -114,7 +132,7 @@ class Future
 
     if (state == STATE_REJECTED) {
       key = 0;
-      call_out(cb, 0, result, @extra);
+      callout(cb, 0, result, @extra);
     } else {
       failure_cbs += ({ ({ cb, @extra }) });
       key = 0;
@@ -641,10 +659,10 @@ class Promise
       {
         foreach(cbs; ; array cb)
           if (cb)
-            call_out(cb[0], 0, value, @cb[1..]);
+            callout(cb[0], 0, value, @cb[1..]);
       }
       else if (globalfailure)
-        call_out(globalfailure, 0, value);
+        callout(globalfailure, 0, value);
     }
     else
     {
