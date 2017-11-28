@@ -265,7 +265,6 @@ class conxiin {
       if (!didreadcb)
         fillread.wait(lock);
       didreadcb = 0;
-      lock = 0;
     } else
       throw(MAGICTERMINATE);
     return true;
@@ -282,7 +281,6 @@ class conxiin {
       procmsg = 0, lock = 0, Thread.Thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
-    lock = 0;
     return 0;
   }
 
@@ -439,7 +437,7 @@ outer:
           towrite -= output_to(socket, towrite);
         }
       } while (0);
-      lock = started = 0;
+      started = 0;
       return;
     };
     lock = 0;
@@ -450,12 +448,13 @@ outer:
   final int close() {
     if (!closenext && nostash) {
       closenext = 1;
-      Thread.MutexKey lock = i->fillreadmux->lock();
-      if (i->fillread) {    // Delayed close() after flushing the output buffer
-        i->fillread.signal();
-        i->fillread = 0;
+      {
+        Thread.MutexKey lock = i->fillreadmux->lock();
+        if (i->fillread) {  // Delayed close() after flushing the output buffer
+          i->fillread.signal();
+          i->fillread = 0;
+        }
       }
-      lock = 0;
       PD("%d>Delayed close, flush write\n", socket->query_fd());
       i->read_cb(socket->query_id(), 0);
       return 0;
@@ -684,7 +683,9 @@ class Result {
    int _portalbuffersize, int alltyped, array params, int forcetext,
    int _timeout, int _syncparse, int _transtype) {
     pgsqlsess = _pgsqlsess;
-    if (catch(cr = (c = _c)->i))
+    if (c = _c)
+      cr = c->i;
+    else
       losterror();
     _query = query;
     datarows = Thread.Queue();
@@ -731,10 +732,11 @@ class Result {
   }
 
   private void waitfordescribe() {
-    Thread.MutexKey lock = _ddescribemux->lock();
-    if (!datarowtypes)
-      PT(_ddescribe->wait(lock));
-    lock = 0;
+    {
+      Thread.MutexKey lock = _ddescribemux->lock();
+      if (!datarowtypes)
+        PT(_ddescribe->wait(lock));
+    }
     if (this)		// If object already destructed, skip the next call
       trydelayederror();	// since you cannot call functions anymore
     else
@@ -883,7 +885,6 @@ class Result {
     datarowdesc = drowdesc;
     datarowtypes = drowtypes;
     _ddescribe->broadcast();
-    lock = 0;
   }
 
   final void _preparebind(array dtoid) {
@@ -1069,8 +1070,7 @@ class Result {
                                   execfetchlimit->match(_query))
                              && _fetchlimit, bindbuffer);
       }
-    } else
-      lock = 0;
+    }
   }
 
   final void _processrowdesc(array(mapping(string:mixed)) datarowdesc,
@@ -1083,16 +1083,18 @@ class Result {
   }
 
   final void _parseportal() {
-    Thread.MutexKey lock = closemux->lock();
-    _state = PARSING;
-    Thread.MutexKey lockc = pgsqlsess->shortmux->lock();
-    if (syncparse || syncparse < 0 && pgsqlsess->wasparallelisable) {
-      PD("Commit waiting for statements to finish\n");
-      catch(PT(pgsqlsess->statementsinflight->wait_till_drained(lockc)));
+    {
+      Thread.MutexKey lock = closemux->lock();
+      _state = PARSING;
+      {
+        Thread.MutexKey lockc = pgsqlsess->shortmux->lock();
+        if (syncparse || syncparse < 0 && pgsqlsess->wasparallelisable) {
+          PD("Commit waiting for statements to finish\n");
+          catch(PT(pgsqlsess->statementsinflight->wait_till_drained(lockc)));
+        }
+        stmtifkey = pgsqlsess->statementsinflight->acquire();
+      }
     }
-    stmtifkey = pgsqlsess->statementsinflight->acquire();
-    lockc = 0;
-    lock = 0;
     statuscmdcomplete = 0;
     pgsqlsess->wasparallelisable = paralleliseprefix->match(_query);
   }
@@ -1105,34 +1107,33 @@ class Result {
       _state = COMMITTED;
       stmtifkey = 0;
     }
-    lock = 0;
   }
 
   final void _bindportal() {
     Thread.MutexKey lock = closemux->lock();
     _state = BOUND;
     portalsifkey = pgsqlsess->portalsinflight->acquire();
-    lock = 0;
   }
 
   final void _purgeportal() {
     PD("Purge portal\n");
     datarows->write(1);				   // Signal EOF
-    Thread.MutexKey lock = closemux->lock();
-    _fetchlimit = 0;				   // disables further Executes
-    switch (_state) {
-      case COPYINPROGRESS:
-      case COMMITTED:
-      case BOUND:
-        portalsifkey = 0;
+    {
+      Thread.MutexKey lock = closemux->lock();
+      _fetchlimit = 0;				   // disables further Executes
+      switch (_state) {
+        case COPYINPROGRESS:
+        case COMMITTED:
+        case BOUND:
+          portalsifkey = 0;
+      }
+      switch (_state) {
+        case BOUND:
+        case PARSING:
+          stmtifkey = 0;
+      }
+      _state = PURGED;
     }
-    switch (_state) {
-      case BOUND:
-      case PARSING:
-        stmtifkey = 0;
-    }
-    _state = PURGED;
-    lock = 0;
     releaseconditions();
   }
 
@@ -1179,7 +1180,6 @@ class Result {
           pgsqlsess->pportalcount = 0;
         }
     }
-    lock = 0;
     return retval;
   }
 
@@ -1202,7 +1202,6 @@ class Result {
       else if (!_fetchlimit)
         PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
          _portalname, _fetchlimit, inflight);
-      lock = 0;
     }
   }
 
@@ -1438,7 +1437,7 @@ class proxy {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME".proxy(%s@%s:%d/%s,%d,%d)",
-          user, host, port, database, c?->socket && c->socket->query_fd(),
+          user, host, port, database, c && c->socket && c->socket->query_fd(),
           backendpid);
         break;
     }
@@ -1482,10 +1481,7 @@ class proxy {
   }
 
   final int is_open() {
-    catch {
-      return c->socket->is_open();
-    };
-    return 0;
+    return c && c->socket && c->socket->is_open();
   }
 
   final string geterror(void|int clear) {
@@ -1653,10 +1649,8 @@ class proxy {
               throw(MAGICTERMINATE);	// Force proper termination
             }
             cr->procmsg = 1;
-            lock = 0;
             return;			// Terminate thread, wait for callback
           }
-          lock = 0;
         }
         int msgtype = cr->read_int8();
         if (!portal) {
@@ -2291,18 +2285,19 @@ class proxy {
 
   final void close() {
     throwdelayederror(this);
-    Thread.MutexKey lock;
-    if (qportals && qportals->size())
-      catch(cancelquery());
-    if (unnamedstatement)
-      termlock = unnamedstatement->lock(1);
-    if (c)				// Prevent trivial backtraces
-      c->close();
-    if (unnamedstatement)
-      lock = unnamedstatement->lock(1);
-    if (c)
-      c->purge();
-    lock = 0;
+    {
+      Thread.MutexKey lock;
+      if (qportals && qportals->size())
+        catch(cancelquery());
+      if (unnamedstatement)
+        termlock = unnamedstatement->lock(1);
+      if (c)				// Prevent trivial backtraces
+        c->close();
+      if (unnamedstatement)
+        lock = unnamedstatement->lock(1);
+      if (c)
+        c->purge();
+    }
     destruct(waitforauthready);
   }
 

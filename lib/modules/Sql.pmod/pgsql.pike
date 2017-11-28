@@ -455,7 +455,6 @@ private void waitauthready() {
      proxy.c?->socket && proxy.c->socket->query_fd(), backtrace()[-2]);
     Thread.MutexKey lock = proxy.shortmux->lock();
     catch(PT(proxy.waitforauthready->wait(lock)));
-    lock = 0;
     PD("%d Wait for auth ready released.\n",
      proxy.c?->socket && proxy.c->socket->query_fd());
   }
@@ -1085,11 +1084,12 @@ private inline void throwdelayederror(object parent) {
     portal._portalname = "";
     portal->_parseportal(); portal->_bindportal();
     proxy.readyforquerycount++;
-    Thread.MutexKey lock = proxy.unnamedstatement->lock(1);
-    .pgsql_util.conxsess cs = c->start(1);
-    CHAIN(cs)->add_int8('Q')->add_hstring(({q, 0}), 4, 4);
-    cs->sendcmd(FLUSHLOGSEND, portal);
-    lock = 0;
+    {
+      Thread.MutexKey lock = proxy.unnamedstatement->lock(1);
+      .pgsql_util.conxsess cs = c->start(1);
+      CHAIN(cs)->add_int8('Q')->add_hstring(({q, 0}), 4, 4);
+      cs->sendcmd(FLUSHLOGSEND, portal);
+    }
     PD("Simple query: %O\n", q);
   } else {
     object plugbuffer;
