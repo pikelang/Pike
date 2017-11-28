@@ -609,7 +609,6 @@ testfont binary
 /src/modules/SANE/sane.c foreign_ident
 /src/modules/Yp/Makefile.in foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident
-/src/modules/Yp/configure.in foreign_ident
 /src/modules/Yp/module.pmod.in foreign_ident
 /src/modules/Yp/yp.c foreign_ident
 /src/modules/_Charset/Makefile.in foreign_ident

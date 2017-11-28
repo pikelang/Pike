@@ -1,10 +1,13 @@
-# $Id: configure.in,v 1.13 2005/06/16 20:51:56 grubba Exp $
+# $$
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
 AC_CHECK_LIB(nsl, gethostbyname)
+
+# Glibc 2.26 and later don't include the Sun RPC implementation anymore.
+PIKE_PKG_CONFIG(libtirpc)
 
 AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h \
 		rpcsvc/ypclnt.h rpcsvc/yp_prot.h,,,[
