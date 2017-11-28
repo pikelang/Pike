@@ -25,7 +25,12 @@ protected function(mixed : void) global_on_failure;
 
 //! @param enable
 //!   Setting this to @expr{false@} causes all @[Concurrent] callbacks
-//!   to be called directly, without using a backend (except for timeouts).
+//!   (except for timeouts)
+//!   to be called directly, without using a backend.
+//!
+//! @note
+//!   (Un)setting this typically alters the order in which some callbacks
+//!   are called (depending on what happens in a callback).
 final void use_backend(int enable)
 {
   callout = enable ? call_out : callnow;
@@ -846,8 +851,11 @@ class Promise
 
   //! @param max
   //!   Specifies the maximum number of failures to be accepted in
-  //!   the list of futures this promise depends upon.  Defaults
-  //!   to @expr{0@}.  @expr{-1@} means unlimited.
+  //!   the list of futures this promise depends upon.
+  //!
+  //!   @expr{-1@} means unlimited.
+  //!
+  //!   Defaults to @expr{0@}.
   //!
   //! @returns
   //! The new @[Promise].
