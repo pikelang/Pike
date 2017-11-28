@@ -5,6 +5,9 @@ AC_MODULE_INIT()
 
 AC_CHECK_LIB(nsl, gethostbyname)
 
+# Glibc 2.26 and later don't include the Sun RPC implementation anymore.
+PIKE_PKG_CONFIG(libtirpc)
+
 AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h \
 		rpcsvc/ypclnt.h rpcsvc/yp_prot.h,,,[
 #ifdef HAVE_RPC_TYPES_H
