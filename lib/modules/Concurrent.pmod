@@ -72,7 +72,6 @@ class Future
 
       s = state;
       res = result;
-      key = 0;
     }
 
     if (s == STATE_REJECTED) {
@@ -98,16 +97,15 @@ class Future
   //!   @[on_failure()]
   this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    Thread.MutexKey key = mux->lock();
-
-    if (state == STATE_FULFILLED) {
-      key = 0;
-      callout(cb, 0, result, @extra);
-    } else {
-      success_cbs += ({ ({ cb, @extra }) });
-      key = 0;
+    switch (state) {
+      case STATE_FULFILLED:
+        callout(cb, 0, result, @extra);
+        break;
+      case STATE_PENDING:
+        // Rely on interpreter lock to add to success_cbs before state changes
+        // again
+        success_cbs += ({ ({ cb, @extra }) });
     }
-
     return this_program::this;
   }
 
@@ -128,16 +126,15 @@ class Future
   //!   @[on_success()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    Thread.MutexKey key = mux->lock();
-
-    if (state == STATE_REJECTED) {
-      key = 0;
-      callout(cb, 0, result, @extra);
-    } else {
-      failure_cbs += ({ ({ cb, @extra }) });
-      key = 0;
+    switch (state) {
+      case STATE_REJECTED:
+        callout(cb, 0, result, @extra);
+        break;
+      case STATE_PENDING:
+        // Rely on interpreter lock to add to failure_cbs before state changes
+        // again
+        failure_cbs += ({ ({ cb, @extra }) });
     }
-
     return this_program::this;
   }
 
@@ -479,11 +476,9 @@ class AggregateState
 
   final void materialise()
   {
-    Thread.MutexKey key = mux->lock();
     if (promise->_astate)
     {
       promise->_astate = 0;
-      key = 0;
       if (results)
       {
         promises = sizeof(results);
@@ -497,7 +492,6 @@ class AggregateState
         }
       }
     }
-    key = 0;
   }
 
   private void fold_one(mixed val)
@@ -542,8 +536,6 @@ class AggregateState
             break;
           }
         }
-        else
-          key = 0;
         return;
       } while (0);
       promise = 0;			// Free backreference
@@ -579,8 +571,6 @@ class AggregateState
             break;
           }
         }
-        else
-          key = 0;
         return;
       } while (0);
       promise = 0;			// Free backreference
@@ -620,21 +610,21 @@ class Promise
   Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     if (_astate)
-      catch(_astate->materialise());	// catches race for _astate == 0
+      _astate->materialise();
     return ::on_success(cb, @extra);
   }
 
   Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     if (_astate)
-      catch(_astate->materialise());	// catches race for _astate == 0
+      _astate->materialise();
     return ::on_failure(cb, @extra);
   }
 
   mixed get()
   {
     if (_astate)
-      catch(_astate->materialise());	// catches race for _astate == 0
+      _astate->materialise();
     return ::get();
   }
 
