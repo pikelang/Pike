@@ -126,7 +126,7 @@ private void run_local_backend() {
        || sizeof(local_backend->call_out_info())) {
         mixed err;
         if (err = catch(local_backend(4096.0)))
-          werror(describe_backtrace(err));
+          master()->handle_error(err);
       }
       PD("Terminating local backend\n");
       lock = 0;
@@ -1065,6 +1065,7 @@ class sql_result {
         _bindportal();
         conxsess bindbuffer = c->start();
         _unnamedstatementkey = 0;
+        stmtifkey = 0;
         CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
         if (!_tprepared && sizeof(_preparedname))
           closestatement(CHAIN(bindbuffer), _preparedname);

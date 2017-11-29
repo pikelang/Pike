@@ -878,6 +878,74 @@ private inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
+private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
+ mapping(string:mixed) tp, string preparedname) {
+  .pgsql_util.conxion c = proxy.c;
+  if (forcetext) {	// FIXME What happens if portals are still open?
+    portal._unnamedportalkey = proxy.unnamedportalmux->lock(1);
+    portal._portalname = "";
+    portal->_parseportal(); portal->_bindportal();
+    proxy.readyforquerycount++;
+    {
+      Thread.MutexKey lock = proxy.unnamedstatement->lock(1);
+      .pgsql_util.conxsess cs = c->start(1);
+      CHAIN(cs)->add_int8('Q')->add_hstring(({q, 0}), 4, 4);
+      cs->sendcmd(FLUSHLOGSEND, portal);
+    }
+    PD("Simple query: %O\n", q);
+  } else {
+    object plugbuffer;
+    portal->_parseportal();
+    if (!sizeof(preparedname) || !tp || !tp.preparedname) {
+      if (!sizeof(preparedname))
+        preparedname =
+          (portal._unnamedstatementkey = proxy.unnamedstatement->trylock(1))
+           ? "" : PTSTMTPREFIX + int2hex(ptstmtcount++);
+      PD("Parse statement %O=%O\n", preparedname, q);
+      plugbuffer = c->start();
+      CHAIN(plugbuffer)->add_int8('P')
+       ->add_hstring(({preparedname, 0, q, "\0\0\0"}), 4, 4)
+#if 0
+      // Even though the protocol doesn't require the Parse command to be
+      // followed by a flush, it makes a VERY noticeable difference in
+      // performance if it is omitted; seems like a flaw in the PostgreSQL
+      // server v8.3.3
+      // In v8.4 and later, things speed up slightly when it is omitted.
+      ->add(PGFLUSH)
+#endif
+      ;
+    } else {				// Use the name from the cache
+      preparedname = tp.preparedname;	// to shortcut a potential race
+      PD("Using prepared statement %s for %O\n", preparedname, q);
+    }
+    portal._preparedname = preparedname;
+    if (!tp || !tp.datatypeoid) {
+      PD("Describe statement %O\n", preparedname);
+      if (!plugbuffer)
+        plugbuffer = c->start();
+      CHAIN(plugbuffer)->add_int8('D')
+       ->add_hstring(({'S', preparedname, 0}), 4, 4);
+      plugbuffer->sendcmd(FLUSHSEND, portal);
+    } else {
+      if (plugbuffer)
+        plugbuffer->sendcmd(KEEP);
+#ifdef PG_STATS
+      skippeddescribe++;
+#endif
+      portal->_setrowdesc(tp.datarowdesc, tp.datarowtypes);
+    }
+    if ((portal._tprepared=tp) && tp.datatypeoid) {
+      mixed e = catch(portal->_preparebind(tp.datatypeoid));
+      if (e && !portal.delayederror) {
+        portal._unnamedstatementkey = 0;	// Release early, release often
+        throw(e);
+      }
+    }
+    if (!proxy.unnamedstatement)
+      portal._unnamedstatementkey = 0;		// Cover for a destruct race
+  }
+}
+
 //! This is the only provided direct interface which allows you to query the
 //! database.  A simpler synchronous interface can be used through @[query()].
 //!
@@ -1011,7 +1079,6 @@ private inline void throwdelayederror(object parent) {
   if (has_value(q, "\0"))
     ERROR("Querystring %O contains invalid literal nul-characters\n", q);
   mapping(string:mixed) tp;
-  int tstart;
   /*
    * FIXME What happens with regards to this detection when presented with
    *       multistatement text-queries?
@@ -1031,8 +1098,7 @@ private inline void throwdelayederror(object parent) {
         prepstmtused++;
 #endif
         preparedname = tp.preparedname;
-      } else if((tstart = tp.trun)
-              && tp.tparse*FACTORPLAN >= tstart
+      } else if(tp.trun && tp.tparse*FACTORPLAN >= tp.trun
               && (undefinedp(options.cache_autoprepared_statements)
              || options.cache_autoprepared_statements))
         preparedname = PREPSTMTPREFIX + int2hex(pstmtcount++);
@@ -1061,11 +1127,10 @@ private inline void throwdelayederror(object parent) {
       }
     }
     if (sizeof(CHAIN(plugbuffer))) {
-      PD("%O\n",(string)CHAIN(plugbuffer));
+      PD("%O\n", (string)CHAIN(plugbuffer));
       plugbuffer->sendcmd(FLUSHSEND);			      // close expireds
     } else
       plugbuffer->sendcmd(KEEP);			       // close start()
-    tstart = gethrtime();
   } else				  // sql_result autoassigns to portal
     tp = 0;
   .pgsql_util.sql_result portal;
@@ -1076,69 +1141,11 @@ private inline void throwdelayederror(object parent) {
   portalsopened++;
 #endif
   proxy.clearmessage = 1;
-  if (forcetext) {	// FIXME What happens if portals are still open?
-    portal._unnamedportalkey = proxy.unnamedportalmux->lock(1);
-    portal._portalname = "";
-    portal->_parseportal(); portal->_bindportal();
-    proxy.readyforquerycount++;
-    {
-      Thread.MutexKey lock = proxy.unnamedstatement->lock(1);
-      .pgsql_util.conxsess cs = c->start(1);
-      CHAIN(cs)->add_int8('Q')->add_hstring(({q, 0}), 4, 4);
-      cs->sendcmd(FLUSHLOGSEND, portal);
-    }
-    PD("Simple query: %O\n", q);
-  } else {
-    object plugbuffer;
-    portal->_parseportal();
-    if (!sizeof(preparedname) || !tp || !tp.preparedname) {
-      if (!sizeof(preparedname))
-        preparedname=
-          (portal._unnamedstatementkey = proxy.unnamedstatement->trylock(1))
-           ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
-      PD("Parse statement %O=%O\n", preparedname, q);
-      plugbuffer = c->start();
-      CHAIN(plugbuffer)->add_int8('P')
-       ->add_hstring(({preparedname, 0, q, "\0\0\0"}), 4, 4)
-#if 0
-      // Even though the protocol doesn't require the Parse command to be
-      // followed by a flush, it makes a VERY noticeable difference in
-      // performance if it is omitted; seems like a flaw in the PostgreSQL
-      // server v8.3.3
-      // In v8.4 and later, things speed up slightly when it is omitted.
-      ->add(PGFLUSH)
-#endif
-      ;
-    } else {				// Use the name from the cache
-      preparedname = tp.preparedname;	// to shortcut a potential race
-      PD("Using prepared statement %s for %O\n", preparedname, q);
-    }
-    portal._preparedname = preparedname;
-    if (!tp || !tp.datatypeoid) {
-      PD("Describe statement %O\n", preparedname);
-      if (!plugbuffer)
-        plugbuffer = c->start();
-      CHAIN(plugbuffer)->add_int8('D')
-       ->add_hstring(({'S', preparedname, 0}), 4, 4);
-      plugbuffer->sendcmd(FLUSHSEND, portal);
-    } else {
-      if (plugbuffer)
-        plugbuffer->sendcmd(KEEP);
-#ifdef PG_STATS
-      skippeddescribe++;
-#endif
-      portal->_setrowdesc(tp.datarowdesc, tp.datarowtypes);
-    }
-    if ((portal._tprepared=tp) && tp.datatypeoid) {
-      mixed e = catch(portal->_preparebind(tp.datatypeoid));
-      if (e && !portal.delayederror) {
-        portal._unnamedstatementkey = 0;	// Release early, release often
-        throw(e);
-      }
-    }
-    if (!proxy.unnamedstatement)
-      portal._unnamedstatementkey = 0;		// Cover for a destruct race
-  }
+  // Do not run a query in the local_backend to prevent deadlocks
+  if (Thread.this_thread() == .pgsql_util.local_backend.executing_thread())
+    call_out(startquery, 0, forcetext, portal, q, tp, preparedname);
+  else
+    startquery(forcetext, portal, q, tp, preparedname);
   throwdelayederror(portal);
   return portal;
 }
