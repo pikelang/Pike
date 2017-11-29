@@ -109,14 +109,14 @@ private class _HMAC
   {
     inherit ::this_program;
 
-    protected string ikey; /* ipad XOR:ed with the key */
-    protected string okey; /* opad XOR:ed with the key */
+    protected string(8bit) ikey; /* ipad XOR:ed with the key */
+    protected string(8bit) okey; /* opad XOR:ed with the key */
 
     protected global::State h;
 
     //! @param passwd
     //!   The secret password (K).
-    protected void create (string passwd, void|int b)
+    protected void create (string(8bit) passwd, void|int b)
     {
       if (!b)
 	b = block_size();
@@ -127,8 +127,8 @@ private class _HMAC
       if (sizeof(passwd) < b)
 	passwd = passwd + "\0" * (b - sizeof(passwd));
 
-      ikey = passwd ^ ("6" * b);
-      okey = passwd ^ ("\\" * b);
+      ikey = [string(8bit)](passwd ^ ("6" * b));
+      okey = [string(8bit)](passwd ^ ("\\" * b));
     }
 
     string(8bit) name()
@@ -146,12 +146,12 @@ private class _HMAC
     //! the hash value.
     //!
     //! This works as a combined @[update()] and @[digest()].
-    string `()(string text)
+    string(8bit) `()(string(8bit) text)
     {
       return hash(okey + hash(ikey + text));
     }
 
-    this_program update(string data)
+    this_program update(string(8bit) data)
     {
       if( !h )
       {
@@ -162,7 +162,7 @@ private class _HMAC
       return this;
     }
 
-    this_program init(string|void data)
+    this_program init(string(8bit)|void data)
     {
       h = 0;
       if (data) update(data);
@@ -190,7 +190,7 @@ private class _HMAC
 
     //! Hashes the @[text] according to the HMAC algorithm and returns
     //! the hash value as a PKCS-1 digestinfo block.
-    string digest_info(string text)
+    string(8bit) digest_info(string(8bit) text)
     {
       return pkcs_digest(okey + hash(ikey + text));
     }
@@ -219,7 +219,7 @@ private class _HMAC
   }
 
   //! Returns a new @[State] object initialized with a @[password].
-  State `()(string password, void|int b)
+  State `()(string(8bit) password, void|int b)
   {
     return State(password, b);
   }
@@ -435,7 +435,8 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf2(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
@@ -443,12 +444,12 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   object(_HMAC.State) hmac = HMAC(password);
   password = "CENSORED";
 
-  string res = "";
+  string(8bit) res = "";
   int dsz = digest_size();
   int fragno;
   while (sizeof(res) < bytes) {
-    string frag = "\0" * dsz;
-    string buf = salt + sprintf("%4c", ++fragno);
+    string(8bit) frag = "\0" * dsz;
+    string(8bit) buf = salt + sprintf("%4c", ++fragno);
     for (int j = 0; j < rounds; j++) {
       buf = hmac(buf);
       frag ^= buf;
@@ -472,11 +473,12 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
-string openssl_pbkdf(string password, string salt, int rounds, int bytes)
+string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
+			   int rounds, int bytes)
 {
-  string out = "";
-  string h = "";
-  string seed = password + salt;
+  string(8bit) out = "";
+  string(8bit) h = "";
+  string(8bit) seed = password + salt;
 
   password = "CENSORED";
 
@@ -497,7 +499,7 @@ protected function(string, this_program:string) build_digestinfo;
 //!
 //! @seealso
 //!   @[Standards.PKCS.build_digestinfo()]
-string pkcs_digest(string s)
+string(8bit) pkcs_digest(object|string(8bit) s)
 {
   if (!build_digestinfo) {
     // NB: We MUST NOT use other modules at compile-time,
@@ -521,11 +523,12 @@ string pkcs_digest(string s)
 //!
 //! @param bytes
 //!   The number of bytes to generate.
-string P_hash(string password, string salt, int rounds, int bytes)
+string(8bit) P_hash(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   _HMAC.State hmac = HMAC(password);
-  string temp = salt;
-  string res="";
+  string(8bit) temp = salt;
+  string(8bit) res="";
 
   while (sizeof(res) < bytes) {
     temp = hmac(temp);
