@@ -140,8 +140,8 @@ protected class _HMAC
   {
     inherit ::this_program;
 
-    protected string ikey; /* ipad XOR:ed with the key */
-    protected string okey; /* opad XOR:ed with the key */
+    protected string(8bit) ikey; /* ipad XOR:ed with the key */
+    protected string(8bit) okey; /* opad XOR:ed with the key */
 
     protected global::State h;
 
@@ -151,7 +151,7 @@ protected class _HMAC
     //! @param b
     //!   Block size. Must be larger than or equal to the @[digest_size()].
     //!   Defaults to the @[block_size()].
-    protected void create (string passwd, void|int b)
+    protected void create (string(8bit) passwd, void|int b)
     {
       if (!b)
 	b = block_size();
@@ -162,8 +162,8 @@ protected class _HMAC
       if (sizeof(passwd) < b)
 	passwd = passwd + "\0" * (b - sizeof(passwd));
 
-      ikey = passwd ^ ("6" * b);
-      okey = passwd ^ ("\\" * b);
+      ikey = [string(8bit)](passwd ^ ("6" * b));
+      okey = [string(8bit)](passwd ^ ("\\" * b));
     }
 
     string(8bit) name()
@@ -181,12 +181,12 @@ protected class _HMAC
     //! the hash value.
     //!
     //! This works as a combined @[update()] and @[digest()].
-    string `()(string text)
+    string(8bit) `()(string(8bit) text)
     {
       return hash(okey + hash(ikey + text));
     }
 
-    this_program update(string data)
+    this_program update(string(8bit) data)
     {
       if( !h )
       {
@@ -197,7 +197,7 @@ protected class _HMAC
       return this;
     }
 
-    this_program init(string|void data)
+    this_program init(string(8bit)|void data)
     {
       h = 0;
       if (data) update(data);
@@ -225,7 +225,7 @@ protected class _HMAC
 
     //! Hashes the @[text] according to the HMAC algorithm and returns
     //! the hash value as a PKCS-1 digestinfo block.
-    string digest_info(string text)
+    string(8bit) digest_info(string(8bit) text)
     {
       return pkcs_digest(okey + hash(ikey + text));
     }
@@ -256,7 +256,7 @@ protected class _HMAC
   //! Returns a new @[State] object initialized with a @[password],
   //! and optionally block size @[b]. Block size defaults to the hash
   //! function block size.
-  State `()(string password, void|int b)
+  State `()(string(8bit) password, void|int b)
   {
     if (!b || (b == block_size())) {
       return State(password);
@@ -490,7 +490,8 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[hkdf()], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf2(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
@@ -498,12 +499,12 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   object(_HMAC.State) hmac = HMAC(password);
   password = "CENSORED";
 
-  string res = "";
+  string(8bit) res = "";
   int dsz = digest_size();
   int fragno;
   while (sizeof(res) < bytes) {
-    string frag = "\0" * dsz;
-    string buf = salt + sprintf("%4c", ++fragno);
+    string(8bit) frag = "\0" * dsz;
+    string(8bit) buf = salt + sprintf("%4c", ++fragno);
     for (int j = 0; j < rounds; j++) {
       buf = hmac(buf);
       frag ^= buf;
@@ -538,17 +539,18 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[pbkdf2()]
-string hkdf(string password, string salt, string info, int bytes)
+string(8bit) hkdf(string(8bit) password, string(8bit) salt,
+		  string(8bit) info, int bytes)
 {
   // RFC 5869 2.2 Extract
   if(!salt) salt = "\0"*digest_size();
   object(_HMAC.State) hmac = HMAC(HMAC(salt)(password));
 
   // RFC 5869 2.3 Expand
-  string t = "";
-  string res = "";
+  string(8bit) t = "";
+  string(8bit) res = "";
   if(!info) info = "";
-  int i;
+  int(8bit) i;
   while (sizeof(res) < bytes )
   {
     i++;
@@ -572,11 +574,12 @@ string hkdf(string password, string salt, string info, int bytes)
 //!
 //! @seealso
 //!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
-string openssl_pbkdf(string password, string salt, int rounds, int bytes)
+string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
+			   int rounds, int bytes)
 {
-  string out = "";
-  string h = "";
-  string seed = password + salt;
+  string(8bit) out = "";
+  string(8bit) h = "";
+  string(8bit) seed = password + salt;
 
   password = "CENSORED";
 
@@ -595,9 +598,10 @@ string openssl_pbkdf(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[Standards.PKCS.build_digestinfo()]
-string pkcs_digest(object|string s)
+string(8bit) pkcs_digest(object|string(8bit) s)
 {
-  return [string]Pike.Lazy.Standards.PKCS.Signature.build_digestinfo(s, this);
+  return [string(8bit)]
+    Pike.Lazy.Standards.PKCS.Signature.build_digestinfo(s, this);
 }
 
 //! This is the Password-Based Key Derivation Function used in TLS.
@@ -613,11 +617,12 @@ string pkcs_digest(object|string s)
 //!
 //! @param bytes
 //!   The number of bytes to generate.
-string P_hash(string password, string salt, int rounds, int bytes)
+string(8bit) P_hash(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   _HMAC.State hmac = HMAC(password);
-  string temp = salt;
-  string res="";
+  string(8bit) temp = salt;
+  string(8bit) res="";
 
   while (sizeof(res) < bytes) {
     temp = hmac(temp);
@@ -1023,10 +1028,10 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!   The maximum number of digits of the one-time password. Defaults
 //!   to 6. Note that the result is usually 0-padded to this length
 //!   for user display purposes.
-int hotp(string secret, int factor, void|int length)
+int hotp(string(8bit) secret, int factor, void|int length)
 {
   // 1
-  string hs = HMAC(secret)(sprintf("%8c",factor));
+  string(8bit) hs = HMAC(secret)(sprintf("%8c",factor));
 
   // 2
   int offset = hs[-1] & 0xf;
