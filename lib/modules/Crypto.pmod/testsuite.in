@@ -611,8 +611,8 @@ test_do( add_constant("RSA") )
 define(test_SCRAM, [[
   cond_resolv($1, [[
     test_any([[
-      Crypto.SCRAM client = Crypto.SCRAM($1);
-      Crypto.SCRAM server = Crypto.SCRAM($1);
+      Crypto.Hash.SCRAM client = $1.SCRAM();
+      Crypto.Hash.SCRAM server = $1.SCRAM();
       return $2 == server->server_1(client->client_1($2)) &&
         client->client_3(server->server_3(
           client->client_2(server->server_2(MIME.decode_base64($5), $6), $4),

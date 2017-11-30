@@ -1428,7 +1428,7 @@ class proxy {
   final string host;
   final int(0..65535) port;
   final string database, user, pass;
-  private Crypto.SCRAM SASLcontext;
+  private Crypto.Hash.SCRAM SASLcontext;
   final Thread.Condition waitforauthready;
   final Thread.Mutex shortmux;
   final int readyforquerycount;
@@ -1781,7 +1781,7 @@ class proxy {
   #endif
                 }
                 if (k) {
-                  SASLcontext = Crypto.SCRAM(Crypto.SHA256);
+                  SASLcontext = Crypto.SHA256.SCRAM();
                   word = SASLcontext.client_1();
                   authresponse(({
                     "SCRAM-SHA-256", 0, sprintf("%4c", sizeof(word)), word

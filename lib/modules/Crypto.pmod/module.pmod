@@ -87,24 +87,6 @@ class Sign {
   protected State `()() { return State(); }
 }
 
-// Salted password cache for SCRAM
-
-private mapping (Hash:mapping(string:string(8bit)))
- SCRAM_salted_password_cache = ([]);
-
-final string(8bit) SCRAM_get_salted_password(Hash h, string key) {
-  mapping(string:string(8bit)) m = SCRAM_salted_password_cache[h];
-  return m && m[key];
-}
-
-final void SCRAM_set_salted_password(string(8bit) SaltedPassword,
- Hash h, string key) {
-  mapping(string:string(8bit)) m = SCRAM_salted_password_cache[h];
-  if (!m || sizeof(m) > 16)
-    SCRAM_salted_password_cache[h] = m = ([]);
-  m[key] = SaltedPassword;
-}
-
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
 //!
