@@ -39,8 +39,8 @@ final void use_backend(int enable)
 private mixed
  callnow(function(mixed ...:void) f, int|float delay, mixed ... args)
 {
-  f(@args);
-  return 0;
+  // This cast allows tail call optimisation
+  return [function(mixed ...:mixed)]f(@args);
 }
 
 protected function(function(mixed ...:void), int|float, mixed ...:mixed)
