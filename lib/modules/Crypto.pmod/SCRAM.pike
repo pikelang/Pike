@@ -153,7 +153,8 @@ string(7bit) client_2(string(8bit) line, string pass) {
     salt = MIME.decode_base64(salt);
     nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
     if (!(r = .SCRAM_get_salted_password(H, nonce))) {
-      r = [string(8bit)]H->pbkdf2(pass, salt, iters, H->digest_size());
+      r = [string(8bit)]H->pbkdf2([string(8bit)]pass, [string(8bit)]salt,
+                                  iters, H->digest_size());
       .SCRAM_set_salted_password([string(8bit)]r, H, nonce);
     }
     salt = sprintf("%s,p=%s", line, clientproof([string(8bit)]r));
