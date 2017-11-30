@@ -1143,7 +1143,7 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
   proxy.clearmessage = 1;
   // Do not run a query in the local_backend to prevent deadlocks
   if (Thread.this_thread() == .pgsql_util.local_backend.executing_thread())
-    call_out(startquery, 0, forcetext, portal, q, tp, preparedname);
+    Thread.Thread(startquery, forcetext, portal, q, tp, preparedname);
   else
     startquery(forcetext, portal, q, tp, preparedname);
   throwdelayederror(portal);
