@@ -15,8 +15,8 @@ inherit .__Hash;
 //! Calling `() will return a @[State] object.
 State `()() { return State(); }
 
-//! @decl string hash(string data)
-//! @decl string hash(Stdio.File file, void|int bytes)
+//! @decl string(8bit) hash(string(8bit) data)
+//! @decl string(8bit) hash(Stdio.File file, void|int bytes)
 //!
 //! Shortcut for hashing some data.
 //!
@@ -37,7 +37,7 @@ State `()() { return State(); }
 //!
 //! @seealso
 //!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string hash(string|Stdio.File in, int|void bytes)
+string(8bit) hash(string(8bit)|Stdio.File in, int|void bytes)
 {
   if (objectp(in)) {
     if (bytes) {
@@ -251,7 +251,7 @@ protected constant base64tab =
 //!
 //! @seealso
 //!   @[crypt_md5()]
-string crypt_hash(string password, string salt, int rounds)
+string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 {
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;
@@ -260,13 +260,13 @@ string crypt_hash(string password, string salt, int rounds)
   // FIXME: Send the first param directly to create()?
   State hash_obj = State();
 
-  function(string:State) update = hash_obj->update;
-  function(:string) digest = hash_obj->digest;
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
 
   salt = salt[..15];
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
-  string b = update(password + salt + password)->digest();	/* 5-8 */
+  string(8bit) b = update(password + salt + password)->digest(); /* 5-8 */
 
   update(password + salt);					/* 2-3 */
 
@@ -288,12 +288,12 @@ string crypt_hash(string password, string salt, int rounds)
     }
   }
 
-  string a = digest();						/* 12 */
+  string(8bit) a = digest();					/* 12 */
 
   for (int i = 0; i < sizeof(password); i++) {			/* 14 */
     update(password);
   }
-  string dp = digest();						/* 15 */
+  string(8bit) dp = digest();					/* 15 */
 
   if (sizeof(dp) && (sizeof(dp) != sizeof(password))) {
     dp *= 1 + (sizeof(password)-1)/sizeof(dp);			/* 16 */
@@ -303,7 +303,7 @@ string crypt_hash(string password, string salt, int rounds)
   for(int i = 0; i < 16 + (a[0] & 0xff); i++) {			/* 18 */
     update(salt);
   }
-  string ds = digest();						/* 19 */
+  string(8bit) ds = digest();					/* 19 */
 
   if (sizeof(ds) && (sizeof(ds) != sizeof(salt))) {
     ds *= 1 + (sizeof(salt)-1)/sizeof(ds);			/* 20 */
@@ -370,8 +370,9 @@ string crypt_hash(string password, string salt, int rounds)
     }
   }
 
-  return replace(MIME.encode_base64((string)shuffled, 1),
-		 base64tab/"", b64tab/"");
+  return [string(7bit)]
+    replace(MIME.encode_base64((string)shuffled, 1),
+	    base64tab/"", b64tab/"");
 }
 
 //! Password Based Key Derivation Function #1 from RFC 2898. This
@@ -398,7 +399,8 @@ string crypt_hash(string password, string salt, int rounds)
 //!
 //! @seealso
 //!   @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf1(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf1(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   if( bytes>digest_size() )
     error("Requested bytes %d exceeds hash digest size %d.\n",
@@ -406,7 +408,7 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
 
-  string res = password + salt;
+  string(8bit) res = password + salt;
 
   password = "CENSORED";
 
@@ -493,7 +495,7 @@ string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
   return out[..bytes-1];
 }
 
-protected function(string, this_program:string) build_digestinfo;
+protected function(object|string(8bit), this_program:string(8bit)) build_digestinfo;
 
 //! Make a PKCS-1 digest info block with the message @[s].
 //!
@@ -505,7 +507,8 @@ string(8bit) pkcs_digest(object|string(8bit) s)
     // NB: We MUST NOT use other modules at compile-time,
     //     so we load Standards.PKCS.Signature on demand.
     object pkcs = [object]master()->resolve("Standards.PKCS.Signature");
-    build_digestinfo = [function(string,this_program:string)]pkcs->build_digestinfo;
+    build_digestinfo = [function(object|string(8bit),this_program:string(8bit))]
+      pkcs->build_digestinfo;
   }
   return build_digestinfo(s, this);
 }
