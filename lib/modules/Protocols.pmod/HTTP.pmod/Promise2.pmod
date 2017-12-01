@@ -270,29 +270,29 @@ class Result
   //! Raw data body of the request
   //!
   //! @seealso
-  //!   @[data]
-  string raw_data;
+  //!   @[get()]
+  string data;
 
   protected void create(Standards.URI requrl, object result, array ctx,
-   void|string data) {
+   void|string _data) {
     TRACE("this_program(%O)\n", result->headers);
     headers = copy_value(result->headers);
     host = result->host;
     status = result->status;
     status_description = result->status_desc;
     extra_args = ctx;
-    raw_data = data;
+    data = _data;
     url = requrl;
   }
 
   //! The response body, i.e the content of the requested URL
-  public string `data() {
-    string data = raw_data;
+  public string get() {
+    string decdata = data;
 
     if (content_encoding == "gzip")
-      data = Gz.uncompress(data[10..<8], true);
+      decdata = Gz.uncompress(decdata[10..<8], true);
 
-    return data;
+    return decdata;
   }
 
   //! Returns the value of the @tt{content-length@} header.
