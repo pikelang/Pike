@@ -660,6 +660,7 @@ class Promise
       }
       else if (globalfailure)
         callout(globalfailure, 0, value);
+      failure_cbs = success_cbs = 0;		// Free memory and references
     }
     else
     {
