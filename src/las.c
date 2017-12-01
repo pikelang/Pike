@@ -4601,11 +4601,16 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
      (a_flag > 1) ||
 #endif
-     (c->lex.pragmas & ID_DISASSEMBLE))
+     ((c->lex.pragmas & ID_DISASSEMBLE) && (Pike_compiler->compiler_pass==2)))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
             (unsigned long)PIKE_PC);
 
   args=count_arguments(type);
+#ifdef PIKE_DEBUG
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
+    fprintf(stderr, "args: %d\n", args);
+#endif
+
   if(args < 0)
   {
     args=~args;
@@ -4621,7 +4626,7 @@ int dooptcode(struct pike_string *name,
     vargs|=IDENTIFIER_SCOPE_USED;
 
 #ifdef PIKE_DEBUG
-  if(a_flag > 5)
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Extra identifier flags:0x%02x\n", vargs);
 #endif
 
@@ -4702,6 +4707,12 @@ int dooptcode(struct pike_string *name,
       remove_clear_locals=0x7fffffff;
       Pike_compiler->compiler_frame->current_function_number = saved_fun_num;
     }
+#ifdef PIKE_DEBUG
+    if(a_flag > 2)
+    {
+      fputs("Coded\n", stderr);
+    }
+#endif
   }
 
   ret=define_function(name,
