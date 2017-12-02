@@ -36,8 +36,9 @@
 #define LOSTERROR	"Database connection lost"
 
 //! The instance of the pgsql dedicated backend.
-final Pike.Backend local_backend = Pike.SmallBackend();
+final Pike.Backend local_backend;
 
+private Pike.Backend cb_backend;
 private Thread.Mutex backendmux = Thread.Mutex();
 private Thread.ResourceCount clientsregistered = Thread.ResourceCount();
 
@@ -96,6 +97,16 @@ final Regexp transendprefix
   */
 private Regexp execfetchlimit
  = iregexp("^\a*((UPDA|DELE)TE|INSERT)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
+
+private void default_backend_runs() {		// Runs as soon as the
+  cb_backend = Pike.DefaultBackend;		// DefaultBackend has started
+}
+
+private void create() {
+  // Run callbacks from our local_backend until DefaultBackend has started
+  cb_backend = local_backend = Pike.SmallBackend();
+  call_out(default_backend_runs, 0);
+}
 
 private Regexp iregexp(string expr) {
   Stdio.Buffer ret = Stdio.Buffer();
@@ -182,7 +193,7 @@ private int oidformat(int oid) {
 
 private inline mixed callout(function(mixed ...:void) f,
  float|int delay, mixed ... args) {
-  return local_backend->call_out(f, delay, @args);
+  return cb_backend->call_out(f, delay, @args);
 }
 
 // Some pgsql utility functions
@@ -1255,6 +1266,10 @@ class Result {
     plugbuffer->sendcmd(flushmode, this);
   }
 
+  inline private array setuptimeout() {
+    return local_backend->call_out(gottimeout, timeout);
+  }
+
   //! @returns
   //!  One result row at a time.
   //!
@@ -1270,7 +1285,7 @@ class Result {
     if (!eoffound) {
       if (!datarow) {
         PD("%O Block for datarow\n", _portalname);
-        array cid = callout(gottimeout, timeout);
+        array cid = setuptimeout();
         PT(datarow = datarows->read());
         local_backend->remove_call_out(cid);
         if (arrayp(datarow))
@@ -1296,7 +1311,7 @@ class Result {
       return 0;
     array(array|int) datarow = datarows->try_read_array();
     if (!sizeof(datarow)) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
     }
@@ -1336,7 +1351,7 @@ class Result {
    array(mixed) args) {
     int|array datarow;
     for (;;) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read());
       local_backend->remove_call_out(cid);
       if (!arrayp(datarow))
@@ -1365,7 +1380,7 @@ class Result {
    array(mixed) args) {
     array(array|int) datarow;
     for (;;) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
       if (!datarow || !arrayp(datarow[-1]))
