@@ -170,8 +170,7 @@ class Future
 	  error("Expected %O to return a Future. Got: %O.\n",
 		fun, f);
 	}
-	f->on_failure(p->failure);
-	f->on_success(p->success);
+	f->on_failure(p->failure)->on_success(p->success);
 	return;
       };
     p->failure(err);
@@ -190,8 +189,7 @@ class Future
 	  p->success(f);
 	  return;
 	}
-	f->on_failure(p->failure);
-	f->on_success(p->success);
+	f->on_failure(p->failure)->on_success(p->success);
 	return;
       };
     p->failure(err);
@@ -354,9 +352,9 @@ class Future
   //! @param fun
   //!   Function to be called. The first argument will be the
   //!   @b{success@} result of @b{this@} @[Future].
-  //!   If the return value is @expr{true}, the future succeeds with
+  //!   If the return value is @expr{true@}, the future succeeds with
   //!   the original success result.
-  //!   If the return value is @expr{false}, the future fails with
+  //!   If the return value is @expr{false@}, the future fails with
   //!   an @[UNDEFINED] result.
   //!
   //! @param extra
@@ -597,10 +595,7 @@ class AggregateState
         if (fold_fun)
           results = 0;
         foreach(futures; int idx; Future f)
-        {
-          f->on_failure(cb_failure, idx);
-          f->on_success(cb_success, idx);
-        }
+          f->on_failure(cb_failure, idx)->on_success(cb_success, idx);
       }
     }
   }
@@ -948,8 +943,7 @@ class Promise
   this_program first_completed()
   {
     if (_astate) {
-      _astate->results->on_failure(try_failure);
-      _astate->results->on_success(try_success);
+      _astate->results->on_failure(try_failure)->on_success(try_success);
       _astate = 0;
     } else
       success(0);
