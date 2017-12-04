@@ -303,7 +303,7 @@ class Future
   //!   The new @[Future].
   //!
   //! @note
-  //!  This method is used if your callbacks returns a regular value (i.e.
+  //!  This method is used if your callbacks return a regular value (i.e.
   //!   @b{not@} a @[Future]).
   //!
   //! @seealso
@@ -335,7 +335,7 @@ class Future
   //!   The new @[Future].
   //!
   //! @note
-  //!  This method is used if your callbacks returns a @[Future] again.
+  //!  This method is used if your callbacks return a @[Future] again.
   //!
   //! @seealso
   //!   @[recover()], @[map_with()], @[transform_with()]
@@ -361,15 +361,30 @@ class Future
     return p->future();
   }
 
-  //! Return a @[Future] that will be fulfilled with either
-  //! the result of applying @[success] with the fulfilled result
-  //! followed by @[extra], or the result of applying @[failure]
-  //! with the failed result followed by @[extra].
+  //! This specifies callbacks that allows you to alter the future.
   //!
-  //! @[failure] defaults to @[success].
+  //! @param success
+  //!   Function to be called. The first argument will be the
+  //!   @b{success@} result of @b{this@} @[Future].
+  //!   The return value will be the success result of the new @[Future].
+  //!
+  //! @param failure
+  //!   Function to be called. The first argument will be the
+  //!   @b{failure@} result of @b{this@} @[Future].
+  //!   The return value will be the success result of the new @[Future].
+  //!   If this callback is omitted, it will default to the same callback as
+  //!   @expr{success@}.
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{success@} and @expr{failure@}. They will be provided
+  //!   as arguments two and onwards when the callbacks are called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
-  //!  This method is used if your callbacks returns a regular value (i.e.
+  //!  This method is used if your callbacks return a regular value (i.e.
   //!   @b{not@} a @[Future]).
   //!
   //! @seealso
@@ -384,15 +399,32 @@ class Future
     return p->future();
   }
 
-  //! Return a @[Future] that will be fulfilled with either
-  //! the fulfilled result of applying @[success] with the fulfilled result
-  //! followed by @[extra], or the fulfilled result of applying @[failure]
-  //! with the failed result followed by @[extra].
+  //! This specifies callbacks that allows you to alter the future.
   //!
-  //! @[failure] defaults to @[success].
+  //! @param success
+  //!   Function to be called. The first argument will be the
+  //!   @b{success@} result of @b{this@} @[Future].
+  //!   The return value must be a @[Future] that promises
+  //!   the new result.
+  //!
+  //! @param failure
+  //!   Function to be called. The first argument will be the
+  //!   @b{failure@} result of @b{this@} @[Future].
+  //!   The return value must be a @[Future] that promises
+  //!   the new success result.
+  //!   If this callback is omitted, it will default to the same callback as
+  //!   @expr{success@}.
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{success@} and @expr{failure@}. They will be provided
+  //!   as arguments two and onwards when the callbacks are called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
-  //!  This method is used if your callbacks returns a @[Future] again.
+  //!  This method is used if your callbacks return a @[Future] again.
   //!
   //! @seealso
   //!   @[transform()], @[map_with()], @[recover_with]
