@@ -55,7 +55,7 @@ protected function(function(mixed ...:void), int|float, mixed ...:mixed)
 //!   @[Promise]
 class Future
 {
-  mixed result = UNDEFINED;
+  mixed result;
   State state;
 
   protected array(array(function(mixed, mixed ...: void)|mixed))
@@ -151,11 +151,11 @@ class Future
 		       function(mixed, mixed ... : mixed) fun,
 		       array(mixed) ctx)
   {
-    mixed err = catch {
-	p->success(fun(val, @ctx));
-	return;
-      };
-    p->failure(err);
+    mixed f;
+    if (mixed err = catch (f = fun(val, @ctx)))
+      p->failure(err);
+    else
+      p->success(f);
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
@@ -164,16 +164,16 @@ class Future
 			    function(mixed, mixed ... : Future) fun,
 			    array(mixed) ctx)
   {
-    mixed err = catch {
-	Future f = fun(val, @ctx);
-	if (!objectp(f) || !f->on_failure || !f->on_success) {
-	  error("Expected %O to return a Future. Got: %O.\n",
-		fun, f);
-	}
-	f->on_failure(p->failure)->on_success(p->success);
-	return;
-      };
-    p->failure(err);
+    Future f;
+    {
+      if (mixed err = catch (f = fun(val, @ctx))) {
+        p->failure(err);
+        return;
+      }
+    }
+    if (!objectp(f) || !f->on_failure || !f->on_success)
+      error("Expected %O to return a Future. Got: %O.\n", fun, f);
+    f->on_failure(p->failure)->on_success(p->success);
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
@@ -182,35 +182,33 @@ class Future
 			    function(mixed, mixed ... : mixed|Future) fun,
 			    array(mixed) ctx)
   {
-    mixed err = catch {
-	mixed|Future f = fun(val, @ctx);
-	if (!objectp(f)
-         || !functionp(f->on_failure) || !functionp(f->on_success)) {
-	  p->success(f);
-	  return;
-	}
-	f->on_failure(p->failure)->on_success(p->success);
-	return;
-      };
-    p->failure(err);
+    mixed|Future f;
+    {
+      if (mixed err = catch (f = fun(val, @ctx))) {
+        p->failure(err);
+        return;
+      }
+    }
+    if (!objectp(f)
+     || !functionp(f->on_failure) || !functionp(f->on_success))
+      p->success(f);
+    else
+      f->on_failure(p->failure)->on_success(p->success);
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with @[val] if @[fun] didn't return false.
-  //! If @[fun] returned false fail @[p] with @[UNDEFINED].
+  //! If @[fun] returned false, fail @[p] with @expr{0@} as result.
   protected void apply_filter(mixed val, Promise p,
 			      function(mixed, mixed ... : int(0..1)) fun,
 			      array(mixed) ctx)
   {
-    mixed err = catch {
-	if (fun(val, @ctx)) {
-	  p->success(val);
-	} else {
-	  p->failure(UNDEFINED);
-	}
-	return;
-      };
-    p->failure(err);
+    int bool;
+    mixed err;
+    if (!(err = catch (bool = fun(val, @ctx))) && bool)
+      p->success(val);
+    else
+      p->failure(err);
   }
 
   //! This specifies a callback that is only called on success, and
