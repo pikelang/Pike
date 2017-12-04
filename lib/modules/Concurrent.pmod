@@ -348,10 +348,27 @@ class Future
     return p->future();
   }
 
-  //! Return a @[Future] that either will by fulfilled by the
-  //! fulfilled result of this @[Future] if applying @[fun]
-  //! with the result followed by @[extra] returns true,
-  //! or will fail with @[UNDEFINED] if it returns false.
+  //! This specifies a callback that is only called on success, and
+  //! allows you to selectively alter the future into a failure.
+  //!
+  //! @param fun
+  //!   Function to be called. The first argument will be the
+  //!   @b{success@} result of @b{this@} @[Future].
+  //!   If the return value is @expr{true}, the future succeeds with
+  //!   the original success result.
+  //!   If the return value is @expr{false}, the future fails with
+  //!   an @[UNDEFINED] result.
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{fun@}. They will be provided
+  //!   as arguments two and onwards when the callback is called.
+  //!
+  //! @returns
+  //!   The new @[Future].
+  //!
+  //! @seealso
+  //!   @[transform()]
   this_program filter(function(mixed, mixed ... : int(0..1)) fun,
 		      mixed ... extra)
   {
@@ -361,7 +378,7 @@ class Future
     return p->future();
   }
 
-  //! This specifies callbacks that allows you to alter the future.
+  //! This specifies callbacks that allow you to alter the future.
   //!
   //! @param success
   //!   Function to be called. The first argument will be the
@@ -399,7 +416,7 @@ class Future
     return p->future();
   }
 
-  //! This specifies callbacks that allows you to alter the future.
+  //! This specifies callbacks that allow you to alter the future.
   //!
   //! @param success
   //!   Function to be called. The first argument will be the
