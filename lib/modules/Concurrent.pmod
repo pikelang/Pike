@@ -215,9 +215,21 @@ class Future
     p->failure(err);
   }
 
-  //! Return a @[Future] that will be fulfilled with the result
-  //! of applying @[fun] with the fulfilled result of this @[Future]
-  //! followed by @[extra].
+  //! This specifies a callback that is only called on success, and
+  //! allows you to alter the future.
+  //!
+  //! @param fun
+  //!   Function to be called. The first argument will be the
+  //!   @b{success@} result of @b{this@} @[Future].
+  //!   The return value will be the success result of the new @[Future].
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{fun@}. They will be provided
+  //!   as arguments two and onwards when the callback is called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
   //!  This method is used if your @[fun] returns a regular value (i.e.
@@ -233,9 +245,22 @@ class Future
     return p->future();
   }
 
-  //! Return a @[Future] that will be fulfilled with the fulfilled result
-  //! of applying @[fun] with the fulfilled result of this @[Future]
-  //! followed by @[extra].
+  //! This specifies a callback that is only called on success, and
+  //! allows you to alter the future.
+  //!
+  //! @param fun
+  //!   Function to be called. The first argument will be the
+  //!   @b{success@} result of @b{this@} @[Future].
+  //!   The return value must be a @[Future] that promises
+  //!   the new result.
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{fun@}. They will be provided
+  //!   as arguments two and onwards when the callback is called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
   //!  This method is used if your @[fun] returns a @[Future] again.
@@ -261,10 +286,21 @@ class Future
     return map_with(fun, @extra);
   }
 
-  //! Return a @[Future] that will be fulfilled with either
-  //! the fulfilled result of this @[Future], or the result
-  //! of applying @[fun] with the failed result followed
-  //! by @[extra].
+  //! This specifies a callback that is only called on failure, and
+  //! allows you to alter the future into a success.
+  //!
+  //! @param fun
+  //!   Function to be called. The first argument will be the
+  //!   @b{failure@} result of @b{this@} @[Future].
+  //!   The return value will be the success result of the new @[Future].
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{fun@}. They will be provided
+  //!   as arguments two and onwards when the callback is called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
   //!  This method is used if your callbacks returns a regular value (i.e.
@@ -281,10 +317,22 @@ class Future
     return p->future();
   }
 
-  //! Return a @[Future] that will be fulfilled with either
-  //! the fulfilled result of this @[Future], or the fulfilled result
-  //! of applying @[fun] with the failed result followed
-  //! by @[extra].
+  //! This specifies a callback that is only called on failure, and
+  //! allows you to alter the future into a success.
+  //!
+  //! @param fun
+  //!   Function to be called. The first argument will be the
+  //!   @b{failure@} result of @b{this@} @[Future].
+  //!   The return value must be a @[Future] that promises
+  //!   the new success result.
+  //!
+  //! @param extra
+  //!   Any extra context needed for
+  //!   @expr{fun@}. They will be provided
+  //!   as arguments two and onwards when the callback is called.
+  //!
+  //! @returns
+  //!   The new @[Future].
   //!
   //! @note
   //!  This method is used if your callbacks returns a @[Future] again.
