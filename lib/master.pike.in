@@ -76,13 +76,26 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //! If not zero compilation warnings will be written out on stderr.
 int want_warnings = PIKE_WARNINGS;
 
+//! Major pike version to emulate.
 //!
+//! This is typically set via the option @expr{"-V"@}.
+//!
+//! @seealso
+//!   @[compat_minor]
 int compat_major=-1;
 
+//! Minor pike version to emulate.
 //!
+//! This is typically set via the option @expr{"-V"@}.
+//!
+//! @seealso
+//!   @[compat_major]
 int compat_minor=-1;
 
+//! Show compilation warnings from compilation of @[cpp()]
+//! @expr{#if constant()@} expressions.
 //!
+//! This is typically set via the option @expr{"--picky-cpp"@}.
 int show_if_constant_errors = 0;
 
 int is_pike_master = 0;
