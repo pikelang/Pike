@@ -358,18 +358,25 @@ class Future
     return p->future();
   }
 
+  //! @param others
+  //!  The other futures (results) you want to append.
+  //!
   //! @returns
-  //! A @[Future] that will be fulfilled with an
+  //! A new @[Future] that will be fulfilled with an
   //! array of the fulfilled result of this object followed
-  //! by the fulfilled results of @[others].
+  //! by the fulfilled results of other futures.
   //!
   //! @seealso
   //!   @[results()]
-  this_program zip(this_program ... others)
+  this_program zip(array(this_program) others)
   {
     if (sizeof(others))
       return results(({ this_program::this }) + others);
     return this_program::this;
+  }
+  inline variant this_program zip(this_program ... others)
+  {
+    return zip(others);
   }
 
   //! JavaScript Promise API close but not identical equivalent
