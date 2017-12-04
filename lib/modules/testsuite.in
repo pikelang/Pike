@@ -118,7 +118,23 @@ init_future()
 test_do([[ promise->success(17); ]])
 exit_promise(1, 117)
 
-dnl - flat_map()
+dnl - map_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->success(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 21)
 
 dnl - recover()
 init_promise()
@@ -128,6 +144,22 @@ test_do([[ promise->failure(10); ]])
 exit_promise(1, 22)
 
 dnl - recover_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->failure(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 22)
 
 dnl - filter() - true
 init_promise()
