@@ -697,7 +697,18 @@ program compile_string(string source, void|string filename,
 
 //! @endnamespace
 
+//! Read a file from the master filesystem.
 //!
+//! The master filesystem defaults to the system filesystem,
+//! but additional mountpoints may be added via
+//! @[add_filesystem_handler()].
+//!
+//! All file I/O performed by the @[MasterObject] is performed
+//! via this function and its related functions.
+//!
+//! @seealso
+//!   @[add_filesystem_handler()], @[find_handler_for_path()],
+//!   @[master_get_dir()], @[master_file_stat()]
 string master_read_file(string file)
 {
   string x = find_handler_for_path(file);
@@ -850,6 +861,8 @@ array master_get_dir(string file)
 //!  master()->add_filesystem_handler("/foo/bar.zip", Filesystem.Zip("/foo/bar.zip"));
 //!  master()->add_module_path("/foo/bar.zip/lib");
 //!
+//! @seealso
+//!  @[find_handler_for_path()]
 mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ filesystem)
 {
   mixed rv = fs_map[mountpoint];
@@ -857,6 +870,11 @@ mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ files
   return rv;
 }
 
+//! Return the mountpoint for the filesystem handler handling the
+//! @[file] (if any).
+//!
+//! @seealso
+//!   @[add_filesystem_handler()]
 string find_handler_for_path(string file)
 {
 // TODO: maybe some caching would be worthwhile here. maybe.
