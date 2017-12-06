@@ -992,17 +992,6 @@ class Result {
       }
       string cenc = pgsqlsess.runtimeparameter[CLIENT_ENCODING];
       foreach (paramValues; int i; mixed value) {
-        int processtime(object dtype, int tsize, int firstval, int width) {
-          if (stringp(value)) {
-            plugbuffer->add_hstring(value, 4);
-            return 0;
-          } else {
-            if (!objectp(value))
-              value = dtype(value);
-            plugbuffer->add_int32(tsize)->add_int(firstval, width);
-            return 1;
-          }
-        };
         if (undefinedp(value) || objectp(value) && value->is_val_null)
           plugbuffer->add_int32(-1);				// NULL
         else if (stringp(value) && !sizeof(value)) {
