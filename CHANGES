@@ -8,6 +8,13 @@ o Crypto.Hash.SCRAM
 
   New class to support SCRAM authentication.
 
+o Concurrent
+
+  - Add map_with() as an alias to flat_map().
+  - Add a convenience variant to zip().
+  - depend() can be used to collect multiple dependencies before finalising
+    the Promise.
+
 o Debug.find_all_clones()
 
   New convenience function to find all objects that are clones
@@ -51,11 +58,17 @@ o Compiler
 
 o Calendar
 
-  - Updated tzdata to 2017c.
+  - Updated tzdata to 2018c.
 
   - Calendar.TimeRanges.NullTimeRange now has a working __hash().
     The expression ([ Calendar.TimeRanges.nulltimerange : 17 ])
     no longer gives a backtrace.
+
+o Concurrent
+
+  - Less filling, deadlock-free, faster, available without running backend.
+
+  - Readable/understandable documentation.
 
 o Crypto.CCM
 
@@ -113,23 +126,14 @@ o Sql.pgsql
 
   - Suppress spurious 'File not open' blurts on stderr when the
     connection is still pending and we inspect the connection object.
-
   - Signal EOF early before closing the SQL result portal and thoroughly
     cleanup bufcon/stashcount to prevent occasional deadlocks
     on asynchronous object destructions.
-
   - Suppress rare "access in destructed object" messages.
-
-  - Rip out fundamentally flawed reconnect logic, made failures consistent.
-
+  - Simplified fundamentally flawed reconnect logic, made failures consistent.
   - Repair SSL connect logic.
-
   - Update documentation.
-
   - Repair fetch_row_array().
-
-  - Reinstate simple reconnect logic.
-
   - Ensure that all database errors result in exceptions (eventually).
 
 o mktime/System.TM

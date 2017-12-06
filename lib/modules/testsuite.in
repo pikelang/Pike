@@ -55,7 +55,7 @@ define(std_init_promise, [[
 
 dnl expected_result_state, expected_result_value
 define(exit_promise, [[
-  test_any([[
+  test_any_equal([[
     while(Pike.DefaultBackend(0.0))
       ;
     return AsyncResult->get_result($1);
@@ -118,7 +118,23 @@ init_future()
 test_do([[ promise->success(17); ]])
 exit_promise(1, 117)
 
-dnl - flat_map()
+dnl - map_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->success(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 21)
 
 dnl - recover()
 init_promise()
@@ -128,6 +144,22 @@ test_do([[ promise->failure(10); ]])
 exit_promise(1, 22)
 
 dnl - recover_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->failure(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 22)
 
 dnl - filter() - true
 init_promise()
@@ -167,19 +199,225 @@ exit_promise(-1, 1)
 dnl - transform_with()
 
 dnl - zip()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ add_constant("future",
+            promise->future()->zip(p11, p12, p13)); ]])
+init_future()
+test_do([[ p13->success(13); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({14, 11, 12, 13}))
+
+dnl - Promise.depend() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
+
+dnl - Promise.depend() no backend - true
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]]);
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.depend() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p13->failure(13); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 13)
+
+dnl - Promise.depend() no backend - false
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]]);
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p13->failure(13); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 13)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.fold() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+test_do([[ promise->fold(10,
+                     lambda(int val, int acc) { return val+acc; }); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 10 + 11 + 12 + 13 + 13 + 11 + 12 + 14 + 15)
+
+dnl - Promise.fold() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+test_do([[ promise->fold(10,
+                     lambda(int val, int acc) { return val+acc; }); ]])
+init_future()
+test_do([[ p11->failure(11); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 11)
 
 dnl - Concurrent.first_completed()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.first_completed(({p11, promise, p12, p13})
+             ->future())); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 12)
 
 dnl - Concurrent.results()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.results(({p11, promise, p12, p13})
+             ->future())); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 14, 12, 13}))
 
 dnl - Concurrent.traverse()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.traverse(({p11, promise, p12, p13})
+             ->future(), lambda(int val) { return val+val;})); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11+11, 14+14, 12+12, 13+13}))
 
 dnl - Concurrent.fold()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.fold(({p11, promise, p12, p13})
+             ->future(), 10, lambda(int val, int acc) { return val+acc;})); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 10+11+14+12+13)
 
 test_do([[ add_constant("future"); ]])
 test_do([[ add_constant("promise"); ]])
 test_do([[ add_constant("AsyncResult"); ]])
-
 
 dnl - NetUtils
 
@@ -1477,7 +1715,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
-  
+
   test_any([[
     object o=Process.create_process(({"/bin/cat","/dev/null"}));
     if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return 99;
