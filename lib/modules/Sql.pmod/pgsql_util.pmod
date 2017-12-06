@@ -170,7 +170,36 @@ final void throwdelayederror(Result|proxy parent) {
   }
 }
 
-private int oidformat(int oid) {
+private int readoidformat(int oid) {
+  switch (oid) {
+    case BOOLOID:
+    case BYTEAOID:
+    case CHAROID:
+    case INT8OID:
+    case INT2OID:
+    case INT4OID:
+    case TEXTOID:
+    case OIDOID:
+    case XMLOID:
+    case DATEOID:
+    case TIMEOID:
+    case TIMETZOID:
+    case TIMESTAMPOID:
+    case TIMESTAMPTZOID:
+    case INTERVALOID:
+    case MACADDROID:
+    case BPCHAROID:
+    case VARCHAROID:
+    case CTIDOID:
+    case UUIDOID:
+      return 1; //binary
+  }
+  return 0;	// text
+}
+
+private int writeoidformat(int oid, array(string|int) paramValues,
+ array(int) ai) {
+  mixed value = paramValues[ai[0]++];
   switch (oid) {
     case BOOLOID:
     case BYTEAOID:
@@ -187,9 +216,29 @@ private int oidformat(int oid) {
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
+    case DATEOID:
+    case TIMEOID:
+    case TIMETZOID:
+    case TIMESTAMPOID:
+    case TIMESTAMPTZOID:
+    case INTERVALOID:
+      if (!stringp(value))
+        return 1;
   }
   return 0;	// text
 }
+
+private array timestamptotype = ({__builtin.Sql.Timestamp, 8, "usecs", 8});
+
+private mapping(int:array) oidtotype = ([
+   DATEOID:     ({__builtin.Sql.Date, 4, "days", 4}),
+   TIMEOID:     ({__builtin.Sql.Time, 8, "usecs", 8}),
+   TIMETZOID:   ({__builtin.Sql.TimeTZ, 12, "usecs", 8, "timezone", 4}),
+   INTERVALOID:
+            ({__builtin.Sql.Interval, 16, "usecs", 8, "days", 4, "months", 4}),
+   TIMESTAMPOID:timestamptotype,
+   TIMESTAMPTZOID:timestamptotype,
+ ]);
 
 private inline mixed callout(function(mixed ...:void) f,
  float|int delay, mixed ... args) {
@@ -859,6 +908,25 @@ class Result {
               serror = SERROR("%O contains non-%s characters\n",
                                                      value, UTF8CHARSET);
             break;
+          case TIMESTAMPOID:
+          case TIMESTAMPTZOID:
+          case INTERVALOID:
+          case TIMETZOID:
+          case TIMEOID:
+          case DATEOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              array totype = oidtotype[typ];
+              value = totype[0]();
+              int i = 2;
+              do
+                value[totype[i]] = cr->read_sint(totype[i+1]);
+              while ((i += 2) < sizeof(totype));
+              if (alltext)
+                value = (string)value;
+            }
+            break;
           case INT8OID:case INT2OID:
           case OIDOID:case INT4OID:
             if (_forcetext) {
@@ -919,10 +987,22 @@ class Result {
       Stdio.Buffer plugbuffer = Stdio.Buffer();
       { array dta = ({sizeof(dtoid)});
         plugbuffer->add(_portalname, 0, _preparedname, 0)
-         ->add_ints(dta + map(dtoid, oidformat) + dta, 2);
+         ->add_ints(dta
+           + map(dtoid, writeoidformat, paramValues, ({0})) + dta, 2);
       }
       string cenc = pgsqlsess.runtimeparameter[CLIENT_ENCODING];
       foreach (paramValues; int i; mixed value) {
+        int processtime(object dtype, int tsize, int firstval, int width) {
+          if (stringp(value)) {
+            plugbuffer->add_hstring(value, 4);
+            return 0;
+          } else {
+            if (!objectp(value))
+              value = dtype(value);
+            plugbuffer->add_int32(tsize)->add_int(firstval, width);
+            return 1;
+          }
+        };
         if (undefinedp(value) || objectp(value) && value->is_val_null)
           plugbuffer->add_int32(-1);				// NULL
         else if (stringp(value) && !sizeof(value)) {
@@ -1037,6 +1117,25 @@ class Result {
                 }
               }
               break;
+            case DATEOID:
+            case TIMEOID:
+            case TIMETZOID:
+            case INTERVALOID:
+            case TIMESTAMPOID:
+            case TIMESTAMPTZOID:
+              if (stringp(value)) {
+                plugbuffer->add_hstring(value, 4);
+              } else {
+                array totype = oidtotype[dtoid[i]];
+                if (!objectp(value))
+                  value = totype[0](value);
+                plugbuffer->add_int32(totype[1]);
+                int i = 2;
+                do
+                  plugbuffer->add_int(value[totype[i]], totype[i+1]);
+                while ((i += 2) < sizeof(totype));
+              }
+              break;
             case INT8OID:
               plugbuffer->add_int32(8)->add_int((int)value, 8);
               break;
@@ -1059,7 +1158,7 @@ class Result {
       else {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if (sizeof(datarowtypes))
-          plugbuffer->add_ints(map(datarowtypes, oidformat), 2);
+          plugbuffer->add_ints(map(datarowtypes, readoidformat), 2);
         else if (syncparse < 0 && !pgsqlsess->wasparallelisable
          && !pgsqlsess->statementsinflight->drained(1)) {
           lock = pgsqlsess->shortmux->lock();

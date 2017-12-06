@@ -57,6 +57,12 @@
 #define INETOID		869	    /* Force textmode */
 #define BPCHAROID	1042
 #define VARCHAROID	1043
+#define DATEOID		1082
+#define TIMEOID		1083
+#define TIMESTAMPOID	1114
+#define TIMESTAMPTZOID	1184
+#define INTERVALOID	1186
+#define TIMETZOID	1266
 #define CTIDOID		1247
 #define UUIDOID		2950
 
