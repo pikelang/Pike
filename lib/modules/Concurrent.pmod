@@ -29,11 +29,17 @@ protected function(mixed : void) global_on_failure;
 //!   to be called directly, without using a backend.
 //!
 //! @note
+//!   As long as the backend hasn't started, it will default to @expr{false@}.
+//!   Upon startup of the backend, it will change to @expr{true@} unless you
+//!   explicitly called @[use_backend()] before that.
+//!
+//! @note
 //!   (Un)setting this typically alters the order in which some callbacks
 //!   are called (depending on what happens in a callback).
 final void use_backend(int enable)
 {
   callout = enable ? call_out : callnow;
+  remove_call_out(auto_use_backend);
 }
 
 private mixed
@@ -45,8 +51,19 @@ private mixed
   return 0;
 }
 
+private void auto_use_backend()
+{
+  callout = call_out;
+}
+
 protected function(function(mixed ...:void), int|float, mixed ...:mixed)
- callout = call_out;
+ callout;
+
+private void create()
+{
+  callout = callnow;
+  call_out(auto_use_backend, 0);
+}
 
 //! Value that will be provided asynchronously
 //! sometime in the future.
