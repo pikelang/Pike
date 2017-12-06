@@ -3024,7 +3024,11 @@ class CompatResolver
     return res;
   }
 
+  //! Return the default module for the @[CompatResolver].
   //!
+  //! This is the mapping that corresponds to the @[predef::]
+  //! name space for the compatibility level, and is the
+  //! value returned by @[all_constants()] for the same.
   mapping get_default_module()
   {
     resolv_debug ("%O->get_default_module()\n", this);
@@ -3091,7 +3095,7 @@ class CompatResolver
     return node;
   }
 
-  //!
+  //! Look up @[identifier] in the root module.
   mixed resolv_base(string identifier, string|void current_file,
 		    object|void current_handler)
   {
@@ -3109,7 +3113,11 @@ class CompatResolver
     return res;
   }
 
+  //! Resolve the @[identifier] expression.
   //!
+  //! @returns
+  //!   Returns the value of the @[identifier] if it exists,
+  //!   and @[UNDEFINED] otherwise.
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
   {
