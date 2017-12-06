@@ -47,8 +47,11 @@ private string isotimezone(int timezone) {
     else
       res = "-";
     res += sprintf("%02d", timezone / 3600);
-    if (timezone = timezone / 60 % 60)
-      res += sprintf("%02d", timezone);
+    if (timezone %= 3600) {
+      res += sprintf(":%02d", timezone / 60);
+      if (timezone %= 60)
+        res += sprintf(":%02d", timezone);
+    }
     return res;
   }
   return "";
