@@ -5727,6 +5727,10 @@ PMOD_EXPORT void f_mktime (INT32 args)
   if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
   {
     normalised_time -= ((date.tm_hour * 60) + date.tm_min) * 60 + date.tm_sec;
+    if (normalised_time < -12*60*60)
+      normalised_time += 24*60*60;
+    else if (normalised_time > 12*60*60)
+      normalised_time -= 24*60*60;
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
 #define tm_gmtoff __tm_gmtoff
 #endif
