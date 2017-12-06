@@ -414,7 +414,7 @@ PIKECLASS TM
         {
 #define STRFTIME_MAXSIZE 26
           char s[STRFTIME_MAXSIZE];
-          if( !strftime(s, STRFTIME_MAXSIZE, "%c", &THIS->t) )
+          if( !strftime(s, STRFTIME_MAXSIZE, "%c\n", &THIS->t) )
             push_undefined();
           else
             push_text(s);
@@ -423,7 +423,7 @@ PIKECLASS TM
 
     PIKEFUN string _sprintf( int flag, mapping options )
     {
-        int post_sum = 1;
+        int post_sum = 0;
         switch( flag )
         {
           case 'O':
@@ -521,10 +521,6 @@ PIKECLASS TM
         if( !res )
             RETURN 0;
 
-        /* These are supposedly correctly by localtime_zone. */
-        SET_GMTOFF(res, GET_GMTOFF(&(THIS->t)));
-        SET_ZONE(res, GET_ZONE(&(THIS->t)));
-
         THIS->t = *res;
         THIS->modified = 1;
         RETURN 1;
@@ -544,6 +540,7 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
+	SET_ZONE(&THIS->t, "UTC");	/* Override timezone */
         THIS->modified = 1;
         RETURN 1;
     }
@@ -582,26 +579,27 @@ PIKECLASS TM
                          string|void timezone )
     {
         struct tm *t = &THIS->t;
-        t->tm_isdst = -1;
+        int use_utc = !timezone || !strcmp(timezone->str, "UTC");
+        t->tm_isdst = use_utc ? 0 : -1;
         t->tm_year = year - 1900;
         t->tm_mon = mon;
         t->tm_mday = mday;
         t->tm_hour = hour;
         t->tm_min = min;
         t->tm_sec = sec;
+        t->tm_wday = -1;		/* Conversion valid flag */
 	if (THIS->set_zone) {
 	    free_string(THIS->set_zone);
 	    THIS->set_zone = NULL;
 	}
-        if( !timezone ) /* gmtime. */
-	    SET_ZONE(t, "UTC");
-        else
-        {
-	    add_ref(timezone);
-            THIS->set_zone = timezone;
-            SET_ZONE(t, timezone->str);
-        }
         THIS->unix_time = mktime_zone( t );
+        if (t->tm_wday < 0)
+	  Pike_error("Invalid time conversion\n");
+        /* Setting it to other timezones than UTC is not supported (yet) */
+        if (use_utc) {
+          SET_ZONE(t, "UTC");
+          THIS->unix_time += GET_GMTOFF(t);
+        }
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
