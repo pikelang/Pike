@@ -5672,6 +5672,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   INT_TYPE isdst = -1, tz = 0;
   struct tm date;
   time_t retval;
+  int normalised_time;
 
   if (args<1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
@@ -5710,15 +5711,26 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_isdst=isdst;
   date.tm_wday = -1;		/* flag to determine failure */
 
+  min += sec / 60;
+  if ((sec %= 60) < 0)
+    min--, sec += 60;
+  hour += min / 60;
+  if ((min %= 60) < 0)
+    hour--, min += 60;
+  if ((hour %= 24) < 0)
+    hour += 24;
+  normalised_time = ((hour * 60) + min) * 60 + sec;
+
   /* date.tm_zone = NULL; */
   retval = mktime(&date);
 
   if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
   {
+    normalised_time -= ((date.tm_hour * 60) + date.tm_min) * 60 + date.tm_sec;
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
 #define tm_gmtoff __tm_gmtoff
 #endif
-    retval += tz + date.tm_gmtoff;
+    retval += tz + date.tm_gmtoff + normalised_time;
   }
   if (date.tm_wday < 0)
     PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
