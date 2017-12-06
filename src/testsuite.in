@@ -11298,6 +11298,19 @@ test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 // - localtime
 cond([[all_constants()->localtime]],[[
   test_true(mappingp(localtime(0)))
+  test_eq(localtime((1<<31)-1)->year, 138)
+  test_equal(sort(indices(localtime(0))),({
+     "hour",
+     "isdst",
+     "mday",
+     "min",
+     "mon",
+     "sec",
+     "timezone",
+     "wday",
+     "yday",
+     "year"
+  }))
   test_do([[int t = -1; catch(localtime(t));]])
 ]])
 cond([[all_constants()->localtime && all_constants()->mktime]],
@@ -11492,7 +11505,8 @@ cond([[all_constants()->mktime]],
   test_any([[foreach(({1075550400,94691300,220921700,347152100,473382500,
 		       599612900,725843300,852073700,978304100,1104534500,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
-		       1861916900,1988147300,2114377700,1500033813
+                       1861916900,1988147300,2114377700,1500033813,
+                       0,1,1<<31-1
 		      }),int t) {
 	       int res = mktime (gmtime (t));
 	       if(res!=t) return ({t, res});
@@ -11506,7 +11520,7 @@ cond([[all_constants()->mktime]],
   test_eq(mktime (-200, -200, -200, 200, 1, 107, 0, 0), 1186749400);
   test_eq(mktime (33, 3, 12, 14, 6, 117, 0, 0), 1500033813);
   test_eq(mktime ((["sec":33, "min":3, "hour":12,
-        "mday":14, "mon":6, "year":117, "timezone":0])), 1500033813);
+   "mday":14, "mon":6, "year":117, "isdst":0, "timezone":0])), 1500033813);
 
   test_any( [[
   // bug [2861] ------------------------------------------------------------

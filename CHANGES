@@ -24,6 +24,10 @@ o SSL.File
 
   Support query_fd() and set_buffer_mode() methods.
 
+o mktime/System.TM
+
+  Considerable speedup and a reduction in codesize.
+
 Bug fixes
 ---------
 
@@ -84,6 +88,10 @@ o Sql.pgsql
   - Update documentation.
 
   - Repair fetch_row_array().
+
+o mktime/System.TM
+
+  Make timezone management consistent (especially UTC handling).
 
 o Standards.IIM
 
