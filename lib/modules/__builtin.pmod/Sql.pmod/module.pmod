@@ -57,8 +57,78 @@ private string isotimezone(int timezone) {
   return "";
 }
 
+private string timetext(mapping(string:int) tm) {
+  string res = sprintf("%02d:%02d", tm->hour, tm->min);
+  int usec = tm->nsec;
+  if (tm->sec || usec) {
+    res += sprintf(":%02d", tm->sec);
+    if (usec) {
+      int msec;
+      res += (usec /= 1000) * 1000 != tm->nsec
+        ? sprintf(".%09d", tm->nsec)
+        : (msec = usec / 1000) * 1000 != usec
+          ? sprintf(".%06d", usec)
+          : sprintf(".%03d", msec);
+    }
+  }
+  return res;
+}
+
+//!
+private class Timebase {
+
+  //!
+  int nsecs;	// Since 2000/01/01 00:00:00 UTC
+
+  //!
+  variant protected void create() {
+  }
+  variant protected void create(this_program copy) {
+    nsecs = copy->nsecs;
+  }
+
+  //!
+  int|float `usecs() {
+    return nsecs % 1000 ? nsecs / 1000.0 : nsecs / 1000;
+  }
+
+  //!
+  int `usecs=(int usec) {
+    nsecs = 1000 * usec;
+    return usec;
+  }
+
+  //!
+  public mapping(string:int) tm() {
+    return (["nsec": nsecs % 1000000000]);
+  }
+
+  //!
+  protected mixed cast(string to) {
+    switch (to) {
+      case "string":
+        return timetext(tm());
+      case "float":
+        return nsecs / 1000000000.0;
+      case "int":
+        return nsecs / 1000000000;
+      default:
+        return UNDEFINED;
+    }
+  }
+
+  protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    switch (fmt) {
+      case 's': return (string)this;
+      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
+    }
+  }
+}
+
 //! Object to be returned and passed for date values to and from the database
 class Date {
+
+  //!
   int days;	// Since 2000/01/01
 
   //!
@@ -109,30 +179,25 @@ class Date {
 
 //! Object to be returned and passed for timestamp values to and from the database
 class Timestamp {
-  int usecs;	// Since 2000/01/01 00:00:00 UTC
+  inherit Timebase;
 
   //! Init using local time
-  protected void create(int year, int month, int day,
-   void|int hour, void|int min, void|int sec, void|int usec) {
+  variant protected void create(int year, int month, int day,
+   void|int hour, void|int min, void|int sec, void|int nsec) {
     create((["year":year - 1900, "mon":month - 1, "mday":day, "hour":hour,
-             "min":min, "sec":sec, "usec":usec
+             "min":min, "sec":sec, "nsec":nsec
            ]));
   }
-  variant protected void create(this_program copy) {
-    usecs = copy->usecs;
+  variant protected void create(mapping(string:int) tm) {
+    create(mktime(tm), tm->nsec);
   }
-  variant protected void create(void|mapping(string:int) tm) {
-    create(mktime(tm), tm->usec);
-  }
-  variant protected void create(int unix_time, void|int usec) {
-    usecs = (unix_time - year2000utc) * 1000000 + usec;
-  }
-  variant protected void create() {
+  variant protected void create(int unix_time, void|int nsec) {
+    nsecs = (unix_time - year2000utc) * 1000000000 + nsec;
   }
 
   //!
   public mapping(string:int) tm() {
-    return localtime((int)this) + (["usec": usecs % 1000000]);
+    return localtime((int)this) + ::tm();
   }
 
   //!
@@ -142,92 +207,49 @@ class Timestamp {
         mapping(string:int) t = tm();
         string res = sprintf("%04d/%02d/%02d",
          t->year + 1900, t->mon+1, t->mday);
-        if (t->hour || t->min || t->sec || t->usec) {
-          res += sprintf(" %02d:%02d", t->hour, t->min);
-          if (t->sec || t->usec) {
-            res += sprintf(":%02d", t->sec);
-            if (t->usec)
-              res += sprintf(".%06d", t->usec);
-          }
-        }
+        if (t->hour || t->min || t->sec || t->nsec)
+          res += " " + timetext(t);
         return res + isotimezone(t->timezone);
       }
       case "float":
-        return (usecs / 1000000.0) + year2000utc;
       case "int":
-        return (usecs / 1000000) + year2000utc;
-      default:
-        return UNDEFINED;
+        return ::cast(to) + year2000utc;
     }
+    return ::cast(to);
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
-    switch (fmt) {
-      case 'O': return sprintf("Sql.Timestamp(%s)", (string)this);
-        break;
-      case 's': return (string)this;
-        break;
-      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
-    }
+    if (fmt == 'O')
+      return sprintf("Sql.TimeStamp(%s)", (string)this);
+    return ::_sprintf(fmt, params);
   }
 }
 
 //! Object to be returned and passed for time values to and from the database
 class Time {
-  int usecs;
+  inherit Timebase;
 
   //!
-  protected void create(int hour, int min, void|int sec, void|int usec) {
-    usecs = ((((hour * 60) + min) * 60 + sec) * 1000000) + usec;
-  }
-  variant protected void create(this_program copy) {
-    usecs = copy->usecs;
+  variant protected void create(int hour, int min, void|int sec, void|int nsec) {
+    nsecs = ((((hour * 60) + min) * 60 + sec) * 1000000000) + nsec;
   }
   variant protected void create(int sec) {
-    usecs = sec * 1000000;
-  }
-  variant protected void create() {
+    nsecs = sec * 1000000000;
   }
 
   //!
   public mapping(string:int) tm() {
-    int hourleft, usecleft = usecs % 1000000;
-    int secleft = (hourleft = usecs / 1000000) % 60;
+    int hourleft;
+    int secleft = (hourleft = nsecs / 1000000000) % 60;
     int minleft = (hourleft /= 60) % 60;
     hourleft /= 60;
-    return (["hour":hourleft, "min":minleft, "sec":secleft, "usec":usecleft]);
-  }
-
-  //!
-  protected mixed cast(string to) {
-    switch (to) {
-      case "string": {
-        mapping(string:int) t = tm();
-        string res = sprintf("%02d:%02d", t->hour, t->min);
-        if (t->sec || t->usec) {
-          res += sprintf(":%02d", t->sec);
-          if (t->usec)
-            res += sprintf(".%06d", t->usec);
-        }
-        return res;
-      }
-      case "float":
-        return usecs / 1000000.0;
-      case "int":
-        return usecs / 1000000;
-      default:
-        return UNDEFINED;
-    }
+    return ::tm() + (["hour":hourleft, "min":minleft, "sec":secleft]);
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
-    switch (fmt) {
-      case 'O': return sprintf("Sql.Time(%s)", (string)this);
-        break;
-      case 's': return (string)this;
-        break;
-      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
-    }
+    if (fmt == 'O')
+      return sprintf("Sql.Time(%s)", (string)this);
+    return ::_sprintf(fmt, params);
   }
 }
 
@@ -235,6 +257,7 @@ class Time {
 class TimeTZ {
   inherit Time;
 
+  //!
   int timezone;
 
   //!
@@ -244,22 +267,15 @@ class TimeTZ {
 
   //!
   protected mixed cast(string to) {
-    switch (to) {
-      case "string":
-        return ::cast(to) + isotimezone(timezone);
-      default:
-        return ::cast(to);
-    }
+    if (to == "string")
+      return ::cast(to) + isotimezone(timezone);
+    return ::cast(to);
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
-    switch (fmt) {
-      case 'O': return sprintf("Sql.TimeTZ(%s)", (string)this);
-        break;
-      case 's': return (string)this;
-        break;
-      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
-    }
+    if (fmt == 'O')
+      return sprintf("Sql.TimeTZ(%s)", (string)this);
+    return ::_sprintf(fmt, params);
   }
 }
 
@@ -267,7 +283,10 @@ class TimeTZ {
 class Interval {
   inherit Time;
 
+  //!
   int days;
+
+  //!
   int months;
 
   //!
@@ -288,26 +307,27 @@ class Interval {
       case "int":
         if (months || days)
           error("Interval contains variable units and cannot be casted\n");
-      default:
-        return ::cast(to);
     }
+    return ::cast(to);
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
-    switch (fmt) {
-      case 'O': return sprintf("Sql.Interval(%s)", (string)this);
-        break;
-      case 's': return (string)this;
-        break;
-      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
-    }
+    if (fmt == 'O')
+      return sprintf("Sql.Interval(%s)", (string)this);
+    return ::_sprintf(fmt, params);
   }
 }
 
+//!
 class Inet {
+
+  //!
   string|Stdio.Buffer address;
+
+  //!
   int masklen;
 
+  //!
   protected void create(string ip) {
     int ip0, ip1, ip2, ip3, m1, m2, m3;
     string mask;
