@@ -303,3 +303,70 @@ class Interval {
     }
   }
 }
+
+class Inet {
+  string|Stdio.Buffer address;
+  int masklen;
+
+  protected void create(string ip) {
+    int ip0, ip1, ip2, ip3, m1, m2, m3;
+    string mask;
+    masklen = 32;
+    switch (sscanf(ip, "%d.%d.%d.%d/%s", ip0, ip1, ip2, ip3, mask)) {
+      default:
+        masklen = 16*8;
+        sscanf(ip, "%s/%d", ip, masklen);
+        address = sprintf("%{%2c%}", Protocols.IPv6.parse_addr(ip));
+        break;
+      case 5:
+        switch (sscanf(mask, "%d.%d.%d.%d", masklen, m1, m2, m3)) {
+          default:
+            error("Unparseable IP %O\n", ip);
+          case 4:
+            m1 = ((masklen << 8 | m1) << 8 | m2) << 8 | m3;
+            masklen = 32;
+            while (!(m1 & 1) && --masklen)
+              m1 >>= 1;
+          case 1:
+            break;
+        }
+      case 4:
+        address = sprintf("%c%c%c%c", ip0, ip1, ip2, ip3);
+    }
+  }
+  variant protected void create() {
+  }
+
+  //!
+  protected mixed cast(string to) {
+    switch (to) {
+      case "string": {
+        string res;
+        switch (sizeof(address)) {
+          case 4:
+            res = sprintf("%d.%d.%d.%d",
+              address[0], address[1], address[2], address[3]);
+            break;
+          case 16:
+            res = Protocols.IPv6.format_addr_short(
+              map(array_sscanf(address, "%{%2c%}")[0],
+              lambda(array v) { return v[0]; }));
+            break;
+        }
+        return res + sprintf("/%d", masklen);
+      }
+      default:
+        return UNDEFINED;
+    }
+  }
+
+  protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    switch (fmt) {
+      case 'O': return sprintf("Inet(%s)", (string)this);
+        break;
+      case 's': return (string)this;
+        break;
+      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
+    }
+  }
+}

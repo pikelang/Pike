@@ -90,6 +90,9 @@ constant TimeTZ = __builtin.Sql.TimeTZ;
 //!
 constant Interval = __builtin.Sql.Interval;
 
+//!
+constant Inet = __builtin.Sql.Inet;
+
 protected program(Connection) find_dbm(string program_name)
 {
   program(Connection) p;
