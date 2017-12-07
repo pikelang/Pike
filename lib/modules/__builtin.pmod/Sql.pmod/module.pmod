@@ -36,6 +36,7 @@ protected class NullArg
 }
 NullArg null_arg = NullArg();
 
+#define NANOSECONDS	1000000000
   // 2000/01/01 00:00:00 UTC
 protected int year2000utc = mktime((["year":100, "mday":1, "timezone":0]));
 
@@ -86,6 +87,9 @@ private class Timebase {
   variant protected void create(this_program copy) {
     nsecs = copy->nsecs;
   }
+  variant protected void create(int|float sec, void|int nsec) {
+    nsecs = (int)(sec * NANOSECONDS + nsec);
+  }
 
   //!
   int|float `usecs() {
@@ -98,9 +102,62 @@ private class Timebase {
     return usec;
   }
 
+  variant protected this_program `+(Interval what) {
+    if (what->days || what->months)
+      error("Adding days or months not supported yet\n");
+    this_program n = this_program(this);
+    n->nsecs += what->nsecs;
+    return n;
+  }
+  variant protected this_program `+(int|float what) {
+    this_program n = this_program();
+    n->nsecs = (int)(nsecs + what * NANOSECONDS);
+    return n;
+  }
+
+  variant protected this_program `-(Interval what) {
+    if (what->days || what->months)
+      error("Adding days or months not supported yet\n");
+    this_program n = this_program(this);
+    n->nsecs -= what->nsecs;
+    return n;
+  }
+  variant protected this_program `-(int|float what) {
+    this_program n = this_program();
+    n->nsecs = (int)(nsecs - what * NANOSECONDS);
+    return n;
+  }
+
+  variant protected int(0..1) `<(this_program what) {
+    return nsecs < what->nsecs;
+  }
+  variant protected int(0..1) `<(int what) {
+    return nsecs < what * NANOSECONDS;
+  }
+  variant protected int(0..1) `<(float what) {
+    return nsecs < (int)(what * NANOSECONDS);
+  }
+
+  variant protected int(0..1) `>(int what) {
+    return nsecs > what * NANOSECONDS;
+  }
+  variant protected int(0..1) `>(float what) {
+    return nsecs > (int)(what * NANOSECONDS);
+  }
+
+  variant protected int(0..1) `==(this_program what) {
+    return nsecs == what->nsecs;
+  }
+  variant protected int(0..1) `==(int what) {
+    return nsecs == what * NANOSECONDS;
+  }
+  variant protected int(0..1) `==(float what) {
+    return nsecs == (int)(what * NANOSECONDS);
+  }
+
   //!
   public mapping(string:int) tm() {
-    return (["nsec": nsecs % 1000000000]);
+    return (["nsec": nsecs % NANOSECONDS]);
   }
 
   //!
@@ -109,9 +166,9 @@ private class Timebase {
       case "string":
         return timetext(tm());
       case "float":
-        return nsecs / 1000000000.0;
+        return nsecs / NANOSECONDS.0;
       case "int":
-        return nsecs / 1000000000;
+        return nsecs / NANOSECONDS;
       default:
         return UNDEFINED;
     }
@@ -142,9 +199,41 @@ class Date {
     create(mktime(tm + (["timezone":0])));
   }
   variant protected void create(int unix_time) {
-    days = (unix_time - year2000utc) * (24 * 3600);
+    days = (unix_time - year2000utc) / (24 * 3600);
   }
   variant protected void create() {
+  }
+
+  variant protected this_program `+(Interval what) {
+    if (what->nsecs % (24 * 3600 * NANOSECONDS) || what->months)
+      error("Adding anything other than days not supported\n");
+    this_program n = this_program(this);
+    n->days += what->days + what->nsecs / (24 * 3600 * NANOSECONDS);
+    return n;
+  }
+  variant protected this_program `+(int what) {
+    this_program n = this_program(this);
+    n->days += what;
+    return n;
+  }
+
+  variant protected this_program `-(Interval what) {
+    if (what->nsecs % (24 * 3600 * NANOSECONDS) || what->months)
+      error("Adding anything other than days not supported\n");
+    this_program n = this_program(this);
+    n->days -= what->days + what->nsecs / (24 * 3600 * NANOSECONDS);
+    return n;
+  }
+  variant protected this_program `-(int what) {
+    return this + -what;
+  }
+
+  variant protected int(0..1) `<(this_program what) {
+    return days < what->days;
+  }
+
+  variant protected int(0..1) `==(this_program what) {
+    return days == what->days;
   }
 
   //!
@@ -169,11 +258,9 @@ class Date {
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     switch (fmt) {
       case 'O': return sprintf("Sql.Date(%s)", (string)this);
-        break;
       case 's': return (string)this;
-        break;
-      default: return sprintf(sprintf("%%*%c", fmt), params, 0);
     }
+    return sprintf(sprintf("%%*%c", fmt), params, 0);
   }
 }
 
@@ -192,7 +279,7 @@ class Timestamp {
     create(mktime(tm), tm->nsec);
   }
   variant protected void create(int unix_time, void|int nsec) {
-    nsecs = (unix_time - year2000utc) * 1000000000 + nsec;
+    ::create(unix_time - year2000utc, nsec);
   }
 
   //!
@@ -230,17 +317,18 @@ class Time {
   inherit Timebase;
 
   //!
-  variant protected void create(int hour, int min, void|int sec, void|int nsec) {
-    nsecs = ((((hour * 60) + min) * 60 + sec) * 1000000000) + nsec;
+  variant
+   protected void create(int hour, int min, void|int sec, void|int nsec) {
+    nsecs = ((((hour * 60) + min) * 60 + sec) * NANOSECONDS) + nsec;
   }
   variant protected void create(int sec) {
-    nsecs = sec * 1000000000;
+    nsecs = sec * NANOSECONDS;
   }
 
   //!
   public mapping(string:int) tm() {
     int hourleft;
-    int secleft = (hourleft = nsecs / 1000000000) % 60;
+    int secleft = (hourleft = nsecs / NANOSECONDS) % 60;
     int minleft = (hourleft /= 60) % 60;
     hourleft /= 60;
     return ::tm() + (["hour":hourleft, "min":minleft, "sec":secleft]);
@@ -259,6 +347,11 @@ class TimeTZ {
 
   //!
   int timezone;
+
+  variant protected void create(this_program copy) {
+    ::create(copy);
+    timezone = copy->timezone;
+  }
 
   //!
   public mapping(string:int) tm() {
@@ -288,6 +381,66 @@ class Interval {
 
   //!
   int months;
+
+  variant protected void create(this_program copy) {
+    ::create(copy);
+    days = copy->days;
+    months = copy->months;
+  }
+
+  variant protected this_program `*(int what) {
+    this_program n = this_program(this);
+    n->nsecs *= what;
+    n->days *= what;
+    n->months *= what;
+    return n;
+  }
+  variant protected this_program `*(float what) {
+    this_program n = this_program();
+    n->nsecs = (int)(nsecs * what);
+    n->days = (int)(days * what);
+    n->months = (int)(months * what);
+    if (days && n->days % days || months && n->months % months)
+      error("Cannot create fractional days or months\n");
+    return n;
+  }
+
+  variant protected this_program `/(int|float what) {
+    this_program n = this_program(this);
+    n->nsecs = (int)(nsecs / what);
+    n->days = (int)(days / what);
+    n->months = (int)(months / what);
+    if (days && n->days % days || months && n->months % months)
+      error("Cannot create fractional days or months\n");
+    return n;
+  }
+
+  variant protected this_program `+(this_program what) {
+    this_program n = this_program(this);
+    n->nsecs += what->nsecs;
+    n->days += what->days;
+    n->months += what->months;
+    return n;
+  }
+
+  variant protected this_program `-(this_program what) {
+    this_program n = this_program(this);
+    n->nsecs -= what->nsecs;
+    n->days -= what->days;
+    n->months -= what->months;
+    return n;
+  }
+
+  variant protected int(0..1) `<(this_program what) {
+    return
+        months <= what->months && days <= what->days && nsecs  < what->nsecs
+     || months <= what->months && days  < what->days && nsecs <= what->nsecs
+     || months  < what->months && days <= what->days && nsecs <= what->nsecs;
+  }
+
+  variant protected int(0..1) `==(this_program what) {
+    return months == what->months && days == what->days && nsecs == what->nsecs;
+  }
 
   //!
   public mapping(string:int) tm() {
@@ -322,7 +475,7 @@ class Interval {
 class Inet {
 
   //!
-  string|Stdio.Buffer address;
+  int address;
 
   //!
   int masklen;
@@ -336,7 +489,9 @@ class Inet {
       default:
         masklen = 16*8;
         sscanf(ip, "%s/%d", ip, masklen);
-        address = sprintf("%{%2c%}", Protocols.IPv6.parse_addr(ip));
+        address = 0;
+        foreach (Protocols.IPv6.parse_addr(ip); ; int val)
+          address = address << 16 | val;
         break;
       case 5:
         switch (sscanf(mask, "%d.%d.%d.%d", masklen, m1, m2, m3)) {
@@ -351,30 +506,92 @@ class Inet {
             break;
         }
       case 4:
-        address = sprintf("%c%c%c%c", ip0, ip1, ip2, ip3);
+        masklen += 12*8;
+        address = ((ip0 << 8 | ip1) << 8 | ip2) << 8 | ip3;
     }
+  }
+  variant protected void create(int ip, void|int masklen) {
+    address = ip;
+    this::masklen = zero_type(masklen) ? 16*8 : 12*8 + masklen;
   }
   variant protected void create() {
   }
+
+  variant protected this_program `+(int what) {
+    this_program n = this_program();
+    n->masklen = masklen;
+    n->address = address + what;
+    return n;
+  }
+
+  variant protected this_program `-(int what) {
+    return this + -what;
+  }
+
+  variant protected this_program `~() {
+    this_program n = this_program();
+    n->masklen = masklen;
+    n->address = ~address;
+    return n;
+  }
+
+  variant protected this_program `|(this_program what) {
+    this_program n = this_program();
+    n->masklen = max(masklen, what->masklen);
+    n->address = address | what->address;
+    return n;
+  }
+
+  variant protected this_program `&(this_program what) {
+    this_program n = this_program();
+    n->masklen = min(masklen, what->masklen);
+    n->address = address & what->address;
+    return n;
+  }
+
+  variant protected int(0..1) `<(this_program what) {
+    return address < what->address;
+  }
+  variant protected int(0..1) `<(int what) {
+    return address < what;
+  }
+
+  variant protected int(0..1) `>(int what) {
+    return address > what;
+  }
+
+  variant protected int(0..1) `==(this_program what) {
+    return address == what->address && masklen == what->masklen;
+  }
+  variant protected int(0..1) `==(int what) {
+    return address == what;
+  }
+
 
   //!
   protected mixed cast(string to) {
     switch (to) {
       case "string": {
-        string res;
-        switch (sizeof(address)) {
-          case 4:
-            res = sprintf("%d.%d.%d.%d",
-              address[0], address[1], address[2], address[3]);
-            break;
-          case 16:
-            res = Protocols.IPv6.format_addr_short(
-              map(array_sscanf(address, "%{%2c%}")[0],
-              lambda(array v) { return v[0]; }));
-            break;
+        array split = ({});
+        int addr = address;
+        do
+          split += ({ addr & 0xffff });
+        while ((addr >>= 16) && sizeof(split) < 16);
+        if (sizeof(split) <= 2) {
+          if (sizeof(split) == 1)
+            split += ({0});
+          return sprintf("%d.%d.%d.%d/%d", split[1] >> 8, split[1] & 255,
+           split[0] >> 8, split[0] & 255, masklen - 12*8);
+        } else {
+          while (sizeof(split) < 8)
+            split += ({0});
+          split = reverse(split);
+          return Protocols.IPv6.format_addr_short(split)
+           + sprintf("/%d", masklen);
         }
-        return res + sprintf("/%d", masklen);
       }
+      case "int":
+        return address;
       default:
         return UNDEFINED;
     }

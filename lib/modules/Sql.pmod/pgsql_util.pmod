@@ -918,10 +918,10 @@ class Result {
               value = cr->read(collen);
             else {
               value = __builtin.Sql.Inet();
-              cr->read_int8();	// 2 == IPv4, 3 == IPv6
-              value->masklen = cr->read_int8();
+              int iptype = cr->read_int8();	// 2 == IPv4, 3 == IPv6
+              value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
               cr->read_int8();	// 0 == INET, 1 == CIDR
-              value->address = cr->read_hstring(1);
+              value->address = cr->read_hint(1);
             }
             break;
           case TIMESTAMPOID:
@@ -1126,12 +1126,20 @@ class Result {
             case INETOID:
               if (stringp(value))
                 plugbuffer->add_hstring(value, 4);
-              else
-                plugbuffer->add_int32(4 + sizeof(value->address))
-                 ->add_int8(sizeof(value->address) == 4 ? 2 : 3)
+              else if (value->address <= 0xffffffff)	// IPv4
+                plugbuffer->add_int32(4 + 4)
+                 ->add_int8(2)
+                 ->add_int8(value->masklen - 12*8)
+                 ->add_int8(dtoid[i] == CIDROID)
+                 ->add_int8(4)
+                 ->add_int(value->address, 4);
+              else					// IPv6
+                plugbuffer->add_int32(4 + 16)
+                 ->add_int8(3)
                  ->add_int8(value->masklen)
                  ->add_int8(dtoid[i] == CIDROID)
-                 ->add_hstring(value->address, 1);
+                 ->add_int8(16)
+                 ->add_int(value->address, 16);
               break;
             break;
             case DATEOID:
