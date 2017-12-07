@@ -7098,7 +7098,17 @@ int really_low_find_variant_identifier(struct pike_string *name,
       return i;
     }
   }
-  if (id < 0) id = tentative;
+  if ((id < 0) && (tentative >= 0)) {
+    // Usually due to forward-referring types. The tentative match
+    // is often correct, but may in some cases be wrong eg due to
+    // having fall back implementations that use the mixed type.
+    yytype_report(REPORT_WARNING,
+		  NULL, 0, ID_FROM_INT(prog, tentative)->type,
+		  NULL, 0, type,
+		  0, "Variant type mismatch in second pass for %S.",
+		  name);
+    id = tentative;
+  }
   CDFPRINTF("Found %d\n", id);
   return id;
 }
