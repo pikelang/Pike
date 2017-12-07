@@ -5731,10 +5731,15 @@ PMOD_EXPORT void f_mktime (INT32 args)
       normalised_time += 24*60*60;
     else if (normalised_time > 12*60*60)
       normalised_time -= 24*60*60;
+    retval += normalised_time;
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
-#define tm_gmtoff __tm_gmtoff
+    retval += date.__tm_gmtoff;
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+    retval += date.tm_gmtoff;
+#else
+    retval = mktime(gmtime(&retval));
 #endif
-    retval += tz + date.tm_gmtoff + normalised_time;
+    retval += tz;
   }
   if (date.tm_wday < 0)
     PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
