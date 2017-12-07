@@ -190,6 +190,8 @@ private int readoidformat(int oid) {
     case MACADDROID:
     case BPCHAROID:
     case VARCHAROID:
+    case CIDROID:
+    case INETOID:
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
@@ -216,6 +218,8 @@ private int writeoidformat(int oid, array(string|int) paramValues,
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
+    case CIDROID:
+    case INETOID:
     case DATEOID:
     case TIMEOID:
     case TIMETZOID:
@@ -908,6 +912,18 @@ class Result {
               serror = SERROR("%O contains non-%s characters\n",
                                                      value, UTF8CHARSET);
             break;
+          case CIDROID:
+          case INETOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              value = __builtin.Sql.Inet();
+              cr->read_int8();	// 2 == IPv4, 3 == IPv6
+              value->masklen = cr->read_int8();
+              cr->read_int8();	// 0 == INET, 1 == CIDR
+              value->address = cr->read_hstring(1);
+            }
+            break;
           case TIMESTAMPOID:
           case TIMESTAMPTZOID:
           case INTERVALOID:
@@ -1106,15 +1122,27 @@ class Result {
                 }
               }
               break;
+            case CIDROID:
+            case INETOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else
+                plugbuffer->add_int32(4 + sizeof(value->address))
+                 ->add_int8(sizeof(value->address) == 4 ? 2 : 3)
+                 ->add_int8(value->masklen)
+                 ->add_int8(dtoid[i] == CIDROID)
+                 ->add_hstring(value->address, 1);
+              break;
+            break;
             case DATEOID:
             case TIMEOID:
             case TIMETZOID:
             case INTERVALOID:
             case TIMESTAMPOID:
             case TIMESTAMPTZOID:
-              if (stringp(value)) {
+              if (stringp(value))
                 plugbuffer->add_hstring(value, 4);
-              } else {
+              else {
                 array totype = oidtotype[dtoid[i]];
                 if (!objectp(value))
                   value = totype[0](value);

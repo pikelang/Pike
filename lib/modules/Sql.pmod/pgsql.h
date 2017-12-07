@@ -51,10 +51,11 @@
 #define TEXTOID		25
 #define OIDOID		26
 #define XMLOID		142
+#define CIDROID		650
 #define FLOAT4OID	700
 #define FLOAT8OID	701
 #define MACADDROID	829
-#define INETOID		869	    /* Force textmode */
+#define INETOID		869
 #define BPCHAROID	1042
 #define VARCHAROID	1043
 #define DATEOID		1082
