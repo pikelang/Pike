@@ -4445,7 +4445,8 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   return res + (describe_program(parent_fun)||"unknown_program") + "()->";
 }
 
-//!
+//! Function called by @expr{sprintf("%O")@} for objects that don't
+//! have an @[lfun::_sprintf()], or have one that returns @expr{UNDEFINED}.
 string describe_object(object o)
 {
   string s;
@@ -4488,7 +4489,7 @@ string describe_object(object o)
   return 0;
 }
 
-//!
+//! Function called by @expr{sprintf("%O")@} for programs.
 string describe_program(program|function p)
 {
   string s;
@@ -4515,7 +4516,8 @@ string describe_program(program|function p)
   return search(all_constants(), p);
 }
 
-//!
+//! Function called by @[describe_backtrace()] to describe
+//! functions in the backtrace.
 string describe_function (function f)
 {
   if (!f) return 0;
