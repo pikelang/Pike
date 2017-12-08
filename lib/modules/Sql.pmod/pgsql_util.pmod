@@ -1103,7 +1103,7 @@ class Result {
                       break;
                 }
               } while (0);
-              plugbuffer->add_int32(1)->add_int8(value);
+              plugbuffer->add("\0\0\0\1", value);
               break;
             case CHAROID:
               if (intp(value))
@@ -1127,18 +1127,12 @@ class Result {
               if (stringp(value))
                 plugbuffer->add_hstring(value, 4);
               else if (value->address <= 0xffffffff)	// IPv4
-                plugbuffer->add_int32(4 + 4)
-                 ->add_int8(2)
-                 ->add_int8(value->masklen - 12*8)
-                 ->add_int8(dtoid[i] == CIDROID)
-                 ->add_int8(4)
-                 ->add_int(value->address, 4);
+                plugbuffer->add("\0\0\0\10\2",
+                  value->masklen - 12 * 8, dtoid[i] == CIDROID, 4)
+                 ->add_int32(value->address);
               else					// IPv6
-                plugbuffer->add_int32(4 + 16)
-                 ->add_int8(3)
-                 ->add_int8(value->masklen)
-                 ->add_int8(dtoid[i] == CIDROID)
-                 ->add_int8(16)
+                plugbuffer->add("\0\0\0\24\3",
+                  value->masklen, dtoid[i] == CIDROID, 16)
                  ->add_int(value->address, 16);
               break;
             break;
