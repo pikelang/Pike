@@ -43,7 +43,6 @@ constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
 /* Handshake states */
 constant STATE_wait_for_hello		= 0;
-constant STATE_wait_for_key_share	= 1;
 constant STATE_wait_for_peer		= 2;
 constant STATE_wait_for_verify		= 3;
 constant STATE_wait_for_ticket		= 4;
@@ -1237,9 +1236,8 @@ constant HANDSHAKE_client_hello		= 1;  // RFC 5246
 constant HANDSHAKE_server_hello		= 2;  // RFC 5246
 constant HANDSHAKE_hello_verify_request = 3;  // RFC 6347
 constant HANDSHAKE_new_session_ticket	= 4;  // RFC 4507 / RFC 5077
-constant HANDSHAKE_client_key_share	= 5;  // TLS 1.3 draft.
+constant HANDSHAKE_end_of_early_data	= 5;  // TLS 1.3 draft.
 constant HANDSHAKE_hello_retry_request	= 6;  // TLS 1.3 draft.
-constant HANDSHAKE_server_key_share	= 7;  // TLS 1.3 draft.
 constant HANDSHAKE_certificate		= 11; // RFC 5246
 constant HANDSHAKE_server_key_exchange	= 12; // RFC 5246
 constant HANDSHAKE_certificate_request	= 13; // RFC 5246

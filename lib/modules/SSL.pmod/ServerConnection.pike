@@ -130,26 +130,6 @@ protected Packet server_hello_packet()
   return handshake_packet(HANDSHAKE_server_hello, struct);
 }
 
-protected Packet server_hello_retry_request_packet(int suite, int group)
-{
-  Buffer struct = Buffer();
-  struct->add_int(version, 2);
-  struct->add_int(suite, 2);
-  struct->add_int(group, 2);
-
-  // TLS 1.3 draft 3 7.4.2.4:
-  //   The server SHOULD send only the extensions necessary for the
-  //   client to generate a correct ClientHello/ClientKeyShare pair.
-  struct->add_hstring("", 2);	// extensions.
-
-  return handshake_packet(HANDSHAKE_hello_retry_request, struct);
-}
-
-protected Packet server_key_share_packet(Stdio.Buffer offer)
-{
-  return handshake_packet(HANDSHAKE_server_key_share, offer);
-}
-
 //! Initialize the KeyExchange @[ke], and generate a
 //! @[HANDSHAKE_server_key_exchange] packet if the
 //! key exchange needs one.
@@ -799,118 +779,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       COND_FATAL(!sizeof(cipher_suites),
                  ALERT_handshake_failure, "No common suites!\n");
 
-      // FIXME: Support TLS 1.3 fallback to TLS 1.2 or earlier
-      //        for clients that don't use early_data?
-      if( version >= PROTOCOL_TLS_1_3 ) {
-
-	// TLS 1.3 or later.
-
-        // TLS 1.3 draft 3 7.4.1:
-        //
-        // If a TLS 1.3 ClientHello is received with any other value
-        // in this field, the server MUST generate a fatal
-        // "illegal_parameter" alert.
-        COND_FATAL(!equal(compression_methods, ({ COMPRESSION_null })),
-                   ALERT_illegal_parameter,
-                   "Illegal with compression in TLS 1.3 and later.\n");
-
-	Session old_session;
-	if (tickets_enabled) {
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
-			 session->ticket);
-	  old_session = sizeof(session->ticket) &&
-	    context->decode_ticket(session->ticket);
-
-	  // RFC 4507 3.4:
-	  //   If a server is planning on issuing a SessionTicket to a
-	  //   client that does not present one, it SHOULD include an
-	  //   empty Session ID in the ServerHello. If the server
-	  //   includes a non-empty session ID, then it is indicating
-	  //   intent to use stateful session resume.
-	  //[...]
-	  //   If the server accepts the ticket and the Session ID is
-	  //   not empty, then it MUST respond with the same Session
-	  //   ID present in the ClientHello.
-
-	  session->identity = "";
-	  if (old_session) {
-	    old_session->identity = session_id;
-	  }
-	} else {
-	  old_session = sizeof(session_id) &&
-	    context->lookup_session(session_id);
-	}
-	if (old_session && old_session->reusable_as(session))
-	{
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
-			 session_id);
-
-	  /* Reuse session */
-	  session = old_session;
-	  reuse = 1;
-	}
-
-        /* TLS 1.3 or later.
-         *
-         * We must read the ClientKeyShare packet.
-         */
-        handshake_state = STATE_wait_for_key_share;
-
-        string(8bit) handshake_buffer = "";
-        while(sizeof(early_data)) {
-          SSL3_DEBUG_MSG("Handling early data packet...\n");
-          Packet p = Packet(version);
-          int res = p->recv(early_data);
-          switch(res)
-          {
-          case 0:
-            send_packet(alert(ALERT_fatal, ALERT_record_overflow,
-                              "Early data extension contains a "
-                              "partial packet.\n"));
-            return -1;
-          case -1:
-            send_packet(alert(ALERT_fatal, ALERT_unexpected_message));
-            return -1;
-          }
-          if (p->content_type != PACKET_handshake) {
-            // FIXME: This should probably be a fatal.
-            SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
-            continue;
-          }
-          handshake_buffer += p->fragment;
-        }
-
-        while(sizeof(handshake_buffer) >= 4) {
-          int handshake_type;
-          int len;
-          sscanf(handshake_buffer, "%1c%3c", handshake_type, len);
-          if (sizeof(handshake_buffer) < (len + 4))
-            break;
-          // NB: Empty string as last argument to avoid hashing the
-          //     early data packets twice.
-          int(-1..1) ret =
-            handle_handshake(handshake_type,
-                             Buffer(handshake_buffer[4..len + 3]),
-                             Buffer(""));
-          handshake_buffer = handshake_buffer[len + 4..];
-          if (ret) {
-            if (ret < 0) return ret;
-            COND_FATAL(sizeof(handshake_buffer),
-                       ALERT_record_overflow,
-                       "Early data extension contains extraneous "
-                       "handshake packets.\n");
-
-            return 1;
-          }
-        }
-        COND_FATAL(sizeof(handshake_buffer),
-                   ALERT_record_overflow,
-                   "Early data extension contains incomplete "
-                   "handshake packets.\n");
-
-        return 0;
-      }
-
       // TLS 1.2 or earlier.
 
       compression_methods =
@@ -997,229 +865,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
    }
    break;
-  case STATE_wait_for_key_share:
-    {
-      if (client_version < PROTOCOL_TLS_1_3)
-        error("Waiting for key share in %s.\n", fmt_version(version));
-
-      add_handshake_message(raw);
-      if (type != HANDSHAKE_client_key_share)
-      {
-        SSL3_DEBUG_MSG("Got %s packet.\n", fmt_constant(type, "HANDSHAKE"));
-        COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
-      }
-
-      int wanted_group;
-      if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
-        // These limits are taken from RFC 3526 8 "Strength Estimate 1".
-        //
-        // See also RFC 3766 5.
-        switch(session->cipher_spec->key_bits) {
-        case ..110:
-          wanted_group = GROUP_ffdhe2048;
-          break;
-        case 111..130:
-          wanted_group = GROUP_ffdhe3072;
-          break;
-        case 131..150:
-          wanted_group = GROUP_ffdhe4096;
-          break;
-        case 151..170:
-          wanted_group = GROUP_ffdhe6144;
-          break;
-        case 171..190:
-          wanted_group = GROUP_ffdhe8192;
-          break;
-        case 191..:
-          wanted_group = /* GROUP_ffdhe15424; */ GROUP_ffdhe8192;
-          break;
-        }
-
-        if (!has_value(session->ffdhe_groups, wanted_group)) {
-          int a = 0;
-          int b = 0x10000;
-          // Preferred group not available.
-          // Select the the closest in strength available.
-          foreach(session->ffdhe_groups, int g) {
-            if (g > wanted_group) {
-              if (g < b) b = g;
-            } else if (g > a) {
-              a = g;
-            }
-          }
-          if (b != 0x10000) {
-            // There's a stronger group available.
-            wanted_group = b;
-          } else {
-            // Select the strongest available.
-            wanted_group = a;
-          }
-        }
-#if constant(Crypto.ECC.Curve)
-      } else if (session->cipher_spec->ke_factory == .Cipher.KeyShareECDHE) {
-        switch(session->cipher_spec->key_bits) {
-        case 257..:
-          wanted_group = GROUP_secp521r1;
-          break;
-        case 129..256:
-          // Suite B requires SECP384r1
-          wanted_group = GROUP_secp384r1;
-          break;
-        case ..128:
-          wanted_group = GROUP_secp256r1;
-          break;
-        }
-
-        if (!has_value(session->ecc_curves, wanted_group)) {
-          int a = 0;
-          int b = 0x10000;
-          // Preferred curve not available.
-          // Select the the closest in strength available.
-          foreach(session->ecc_curves, int c) {
-            if (c > wanted_group) {
-              if (c < b) b = c;
-            } else if (c > a) {
-              a = c;
-            }
-          }
-          if (b != 0x10000) {
-            // There's a stronger curve available.
-            wanted_group = b;
-          } else {
-            // Select the strongest available.
-            wanted_group = a;
-          }
-        }
-#endif
-      } else {
-        error("Unsupported KeyExchange factory for KeyShare: %O.\n",
-              session->cipher_spec->ke_factory);
-      }
-      SSL3_DEBUG_MSG("Wanted group: %s\n",
-                     fmt_constant(wanted_group, "GROUP"));
-      Stdio.Buffer offers = input->read_hbuffer(2);
-
-      mapping(int:string(8bit)) kes = ([]);
-      string(8bit) premaster_secret;
-      int best_group = 0x10000;
-      ke = UNDEFINED;
-      while (sizeof(offers)) {
-        int group = offers->read_int(2);
-        string(8bit) key_offer = offers->read_hstring(2);
-        SSL3_DEBUG_MSG("Offer: %s: %O\n",
-                       fmt_constant(group, "GROUP"),
-                       key_offer);
-
-        // Clients MUST NOT offer multiple ClientKeyShareOffers for
-        // the same parameters.
-        COND_FATAL(kes[group], ALERT_handshake_failure,
-                   "Duplicate key share offers.\n");
-
-        kes[group] = key_offer;
-        if (((group & 0xff00) == (wanted_group & 0xff00)) &&
-            (group >= wanted_group) && (group < best_group)) {
-          // Select the smallest offered group that is at least as
-          // large as the wanted group.
-          best_group = group;
-        }
-      }
-
-      if (reuse) {
-        SSL3_DEBUG_MSG("Reuse the existing session.\n");
-
-        send_packet(server_hello_packet());
-        derive_master_secret(session->master_secret);
-        send_packet(change_cipher_packet());
-        handle_change_cipher(1);
-
-        handshake_state = STATE_wait_for_finish;
-      } else if (!kes[best_group]) {
-        // Send HelloRetryRequest.
-        send_packet(server_hello_retry_request_packet(session->cipher_suite,
-                                                      wanted_group));
-        // Reset the state to accept a new ClientHello.
-        secure_renegotiation = 0;
-        remote_extensions = (<>);
-        previous_handshake = 0;
-        handshake_state = STATE_wait_for_hello;
-        break;
-      } else {
-        SSL3_DEBUG_MSG("Got an acceptable key share offer for %s.\n",
-                       fmt_constant(best_group, "GROUP"));
-        ke = session->cipher_spec->ke_factory(context, session, this,
-                                              client_version);
-        // ke->init_server();
-        ke->set_group(best_group);
-#if constant(Crypto.ECC.Curve)
-        session->curve = [object(Crypto.ECC.Curve)]ke->curve;
-#endif
-        Stdio.Buffer sks = Stdio.Buffer();
-        ke->make_key_share_offer(sks);
-        premaster_secret = ke->receive_key_share_offer(kes[best_group]);
-        COND_FATAL(!premaster_secret, ALERT_decode_error,
-                   "Unable to decode key share offer.\n");
-
-        send_packet(server_hello_packet());
-        send_packet(server_key_share_packet(sks));
-        ke = UNDEFINED;
-
-        derive_master_secret(premaster_secret);
-        send_packet(change_cipher_packet());
-        handle_change_cipher(1);
-
-        handshake_state = STATE_wait_for_finish;
-
-        // NB: From this point encryption is enabled on our side.
-
-        // FIXME: Encrypted extensions here.
-
-        // Don't send any certificate in anonymous mode.
-        if (session->cipher_spec->signature_alg != SIGNATURE_anonymous) {
-          // NB: session->certificate_chain is set by
-          // session->select_cipher_suite() above.
-
-          SSL3_DEBUG_MSG("Checking for Certificate.\n");
-
-          if (session->certificate_chain)
-          {
-            SSL3_DEBUG_MSG("Sending Certificate.\n");
-            send_packet(certificate_packet(session->certificate_chain));
-          } else {
-            // Otherwise the server will just silently send an invalid
-            // ServerHello sequence.
-            error ("Certificate(s) missing.\n");
-          }
-
-          // NB: Client certificates are only supported in
-          // non-anonymous mode.
-          if (context->auth_level >= AUTHLEVEL_ask)
-          {
-            // we can send a certificate request packet, even if we
-            // don't have any authorized issuers.
-            SSL3_DEBUG_MSG("Sending CertificateRequest.\n");
-            send_packet(certificate_request_packet(context));
-            certificate_state = CERT_requested;
-            handshake_state = STATE_wait_for_peer;
-          }
-
-          send_packet(certificate_verify_packet(SIGN_server_certificate_verify));
-        }
-      }
-
-      send_packet(finished_packet("server finished"));
-
-      if (handshake_state == STATE_wait_for_finish) {
-        // No need to wait for the client's certificate, etc.
-
-        derive_master_secret(session->master_secret);
-        send_packet(change_cipher_packet());
-        // Note: Don't switch to the new keys for the client
-        //       before we've received it's finished packet.
-
-        // NB: From this point on we can send application data.
-      }
-    }
-    break;
   case STATE_wait_for_finish:
     {
       if (type != HANDSHAKE_finished)
@@ -1252,11 +897,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       /* Handshake complete */
       client_verify_data = digest;
-
-      if (version >= PROTOCOL_TLS_1_3) {
-        // The client will use the main keys from this point on.
-        handle_change_cipher(1);
-      }
 
       if (!reuse)
       {
@@ -1303,19 +943,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     //     is handled directly by connection:handle_alert().
     switch(type)
     {
-    case HANDSHAKE_client_key_share:
-      // We can come here with TLS 1.3 clients that:
-      //
-      //  * Have no TLS 1.3 suites that we support.
-      //
-      //  * Have suites valid for TLS 1.2 or earlier that we support.
-      //
-      //  * Don't use the early data extension for this packet.
-      //
-      // Note that such clients aren't compatible with TLS 1.2
-      // and earlier servers anyway...
-      SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_SHARE\n");
-      // FALL_THROUGH.
     default:
       COND_FATAL(1, ALERT_unexpected_message,
                  "Expected client KEX or cert.\n");
@@ -1364,15 +991,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
        else
          certificate_state = CERT_no_certificate;
 
-       if (version >= PROTOCOL_TLS_1_3) {
-	 if (certificate_state == CERT_received) {
-	   handshake_state = STATE_wait_for_verify;
-	 } else {
-	   handshake_state = STATE_wait_for_finish;
-	   derive_master_secret(session->master_secret);
-	   send_packet(change_cipher_packet());
-	 }
-       }
        break;
      }
     }
@@ -1394,10 +1012,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       add_handshake_message(raw);
       handshake_state = STATE_wait_for_finish;
-
-      if (version >= PROTOCOL_TLS_1_3) {
-	derive_master_secret(session->master_secret);
-      }
 
       // We expect a CCS next.
       expect_change_cipher++;

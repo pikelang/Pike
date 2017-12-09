@@ -392,23 +392,7 @@ void derive_master_secret(string(8bit) premaster_secret)
 		 this, fmt_constant(handshake_state, "STATE"),
 		 fmt_version(version));
 
-  if (version >= PROTOCOL_TLS_1_3) {
-    switch(handshake_state) {
-    case STATE_wait_for_hello:	// Resume
-    case STATE_wait_for_key_share:	// Full hello
-      session->master_secret = premaster_secret;
-      session->master_secret = hash_messages("handshake master secret", 48);
-      break;
-    case STATE_wait_for_finish:
-      session->master_secret = premaster_secret;
-      session->master_secret = hash_messages("extended master secret", 48);
-      break;
-    default:
-      error("Unexpected handshake state: %s\n",
-	    fmt_constant(handshake_state, "STATE"));
-      break;
-    }
-  } else if (!sizeof(premaster_secret)) {
+  if (!sizeof(premaster_secret)) {
     // Clear text mode.
     session->master_secret = "";
   } else if (session->extended_master_secret) {
@@ -422,13 +406,6 @@ void derive_master_secret(string(8bit) premaster_secret)
   }
 
   new_cipher_states();
-
-  if ((version >= PROTOCOL_TLS_1_3) &&
-      (handshake_state == STATE_wait_for_finish)) {
-    // Generate the resumption premaster secret.
-    session->master_secret = premaster_secret;
-    session->master_secret = hash_messages("resumption premaster secret", 48);
-  }
 }
 
 
@@ -683,10 +660,6 @@ int(-1..2) to_write(Stdio.Buffer output)
       pending_write_state = pending_write_state[1..];
     } else {
       error("Invalid Change Cipher Spec.\n");
-    }
-    if (version >= PROTOCOL_TLS_1_3) {
-      // The change cipher state packet is not sent on the wire in TLS 1.3.
-      return 2;
     }
   }
 
