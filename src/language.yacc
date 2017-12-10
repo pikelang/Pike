@@ -356,8 +356,10 @@ int yylex(YYSTYPE *yylval);
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
+%type <n> unqualified_idents
+%type <n> qualified_ident
+%type <n> qualified_idents
 %type <n> idents
-%type <n> idents2
 %type <n> labeled_statement
 %type <n> lambda
 %type <n> literal_expr
@@ -1355,7 +1357,7 @@ basic_type:
   ;
 
 /* Identifier type. Value on type stack. */
-identifier_type: idents
+identifier_type: unqualified_idents
   {
     if ($1) {
       fix_type_field($1);
@@ -3656,7 +3658,7 @@ implicit_modifiers:
   }
   ;
 
-expr4: idents2 | expr5
+expr4: idents | expr5
   | expr5 '.' line_number_info TOK_IDENTIFIER
   {
     $$=index_node($1,".",$4->u.sval.u.string);
@@ -3664,6 +3666,10 @@ expr4: idents2 | expr5
     free_node ($1);
     free_node ($3);
     free_node ($4);
+  }
+  | bad_expr_ident
+  {
+    $$ = mknewintnode(0);
   }
   ;
 
@@ -3833,33 +3839,6 @@ expr5: literal_expr
   | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
 
-idents2: idents
-  | TOK_LOCAL_ID TOK_COLON_COLON TOK_IDENTIFIER
-  {
-    if(Pike_compiler->last_identifier) {
-      free_string(Pike_compiler->last_identifier);
-    }
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-
-    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_LOCAL,
-				   Pike_compiler->last_identifier);
-    if (!$$) {
-      if (Pike_compiler->compiler_pass == 2) {
-	my_yyerror("%S not defined in local scope.", $3->u.sval.u.string);
-	$$ = 0;
-      } else {
-	$$ = mknode(F_UNDEFINED, 0, 0);
-      }
-    }
-
-    free_node($3);
-  }
-  | TOK_LOCAL_ID TOK_COLON_COLON bad_identifier
-  {
-    $$=0;
-  }
-  ;
-
 literal_expr: string
   | TOK_NUMBER
   | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
@@ -3908,8 +3887,8 @@ literal_expr: string
   | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
   ;
 
-idents: low_idents
-  | idents '.' TOK_IDENTIFIER
+unqualified_idents: low_idents
+  | unqualified_idents '.' TOK_IDENTIFIER
   {
     $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
 		  $3->u.sval.u.string);
@@ -3918,8 +3897,24 @@ idents: low_idents
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
-  | idents '.' bad_identifier {}
-  | idents '.' error {}
+  | unqualified_idents '.' bad_identifier {}
+  ;
+
+qualified_idents: qualified_ident
+  | qualified_idents '.' TOK_IDENTIFIER
+  {
+    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
+		  $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
+  | qualified_idents '.' bad_identifier {}
+  ;
+
+idents: unqualified_idents
+  | qualified_idents
   ;
 
 string_or_identifier: TOK_IDENTIFIER
@@ -4010,6 +4005,12 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     free_node($1);
     $$ = e;
   }
+  | TOK_LOCAL_ID TOK_COLON_COLON
+  {
+    inherit_state = Pike_compiler;
+    inherit_depth = 0;
+    $$ = INHERIT_LOCAL;
+  }
   | TOK_GLOBAL TOK_COLON_COLON
   {
     struct compilation *c = THIS_COMPILATION;
@@ -4017,6 +4018,15 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     for (inherit_depth = 0; inherit_depth < c->compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {}
     $$ = INHERIT_GLOBAL;
+  }
+  | inherit_specifier TOK_LOCAL_ID TOK_COLON_COLON
+  {
+    if ($1 > 0) {
+      yywarning("local:: references to inherited symbols is a noop.");
+      $$ = $1;
+    } else {
+      $$ = INHERIT_LOCAL;
+    }
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
@@ -4048,7 +4058,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     }
     free_node($2);
   }
-  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = INHERIT_ALL; }
+  | inherit_specifier bad_inherit TOK_COLON_COLON { $$ = INHERIT_ALL; }
   ;
 
 low_idents: TOK_IDENTIFIER
@@ -4108,7 +4118,10 @@ low_idents: TOK_IDENTIFIER
     free_node($1);
     $$ = 0;
   }
-  | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
+  ;
+
+qualified_ident:
+  TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
     struct compilation *c = THIS_COMPILATION;
     node *tmp2;
@@ -4367,8 +4380,6 @@ lvalue: expr4
     free_node($2);
   }
   /* FIXME: Add production for type2 ==> constant type svalue here? */
-  | bad_expr_ident
-  { $$=mknewintnode(0); }
   ;
 
 low_lvalue_list: lvalue lvalue_list
@@ -4476,25 +4487,52 @@ real_string_constant: TOK_STRING
  */
 
 /* FIXME: Should probably set Pike_compiler->last_identifier. */
-bad_identifier: bad_expr_ident
+bad_identifier: bad_inherit
+  | TOK_LOCAL_ID
+  { yyerror_reserved("local"); }
+  ;
+
+bad_inherit: bad_expr_ident
   | TOK_ARRAY_ID
   { yyerror_reserved("array"); }
   | TOK_ATTRIBUTE_ID
   { yyerror_reserved("__attribute__"); }
+  | TOK_BREAK
+  { yyerror_reserved("break"); }
+  | TOK_CASE
+  { yyerror_reserved("case"); }
+  | TOK_CATCH
+  { yyerror_reserved("catch"); }
   | TOK_CLASS
   { yyerror_reserved("class"); }
+  | TOK_CONTINUE
+  { yyerror_reserved("continue"); }
+  | TOK_DEFAULT
+  { yyerror_reserved("default"); }
   | TOK_DEPRECATED_ID
   { yyerror_reserved("__deprecated__"); }
+  | TOK_DO
+  { yyerror_reserved("do"); }
   | TOK_ENUM
   { yyerror_reserved("enum"); }
   | TOK_FLOAT_ID
   { yyerror_reserved("float");}
+  | TOK_FOR
+  { yyerror_reserved("for"); }
+  | TOK_FOREACH
+  { yyerror_reserved("foreach"); }
   | TOK_FUNCTION_ID
   { yyerror_reserved("function");}
   | TOK_FUNCTION_NAME
   { yyerror_reserved("__FUNCTION__");}
+  | TOK_GAUGE
+  { yyerror_reserved("gauge"); }
+  | TOK_IF
+  { yyerror_reserved("if"); }
   | TOK_INT_ID
   { yyerror_reserved("int"); }
+  | TOK_LAMBDA
+  { yyerror_reserved("lambda"); }
   | TOK_MAPPING_ID
   { yyerror_reserved("mapping"); }
   | TOK_MIXED_ID
@@ -4505,10 +4543,18 @@ bad_identifier: bad_expr_ident
   { yyerror_reserved("object"); }
   | TOK_PROGRAM_ID
   { yyerror_reserved("program"); }
+  | TOK_RETURN
+  { yyerror_reserved("return"); }
+  | TOK_SSCANF
+  { yyerror_reserved("sscanf"); }
   | TOK_STRING_ID
   { yyerror_reserved("string"); }
+  | TOK_SWITCH
+  { yyerror_reserved("switch"); }
   | TOK_TYPEDEF
   { yyerror_reserved("typedef"); }
+  | TOK_TYPEOF
+  { yyerror_reserved("typeof"); }
   | TOK_VOID_ID
   { yyerror_reserved("void"); }
   | TOK_RESERVED
@@ -4523,8 +4569,6 @@ bad_identifier: bad_expr_ident
 bad_expr_ident:
     TOK_INLINE
   { yyerror_reserved("inline"); }
-  | TOK_LOCAL_ID
-  { yyerror_reserved("local"); }
   | TOK_PREDEF
   { yyerror_reserved("predef"); }
   | TOK_PRIVATE
@@ -4545,42 +4589,12 @@ bad_expr_ident:
   { yyerror_reserved("extern"); }
   | TOK_FINAL_ID
   { yyerror_reserved("final");}
-  | TOK_DO
-  { yyerror_reserved("do"); }
   | TOK_ELSE
   { yyerror("else without if."); }
-  | TOK_RETURN
-  { yyerror_reserved("return"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
-  | TOK_CATCH
-  { yyerror_reserved("catch"); }
-  | TOK_GAUGE
-  { yyerror_reserved("gauge"); }
-  | TOK_LAMBDA
-  { yyerror_reserved("lambda"); }
-  | TOK_SSCANF
-  { yyerror_reserved("sscanf"); }
-  | TOK_SWITCH
-  { yyerror_reserved("switch"); }
-  | TOK_TYPEOF
-  { yyerror_reserved("typeof"); }
-  | TOK_BREAK
-  { yyerror_reserved("break"); }
-  | TOK_CASE
-  { yyerror_reserved("case"); }
-  | TOK_CONTINUE
-  { yyerror_reserved("continue"); }
-  | TOK_DEFAULT
-  { yyerror_reserved("default"); }
-  | TOK_FOR
-  { yyerror_reserved("for"); }
-  | TOK_FOREACH
-  { yyerror_reserved("foreach"); }
-  | TOK_IF
-  { yyerror_reserved("if"); }
   ;
 
 /*
