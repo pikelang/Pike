@@ -7,7 +7,7 @@
 %pure-parser
 
 /* Expect a single shift/reduce conflict (dangling else). */
-%expect 1
+%expect 2
 
 %token TOK_ARROW "->"
 
@@ -1356,8 +1356,11 @@ basic_type:
   }
   ;
 
-/* Identifier type. Value on type stack. */
-identifier_type: unqualified_idents
+/* Identifier type. Value on type stack.
+ *
+ * NB: Introduces shift-reduce conflict on TOK_LOCAL_ID.
+ */
+identifier_type: idents
   {
     if ($1) {
       fix_type_field($1);
