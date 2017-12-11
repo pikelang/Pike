@@ -427,17 +427,6 @@ protected void create(Context ctx)
   current_read_state = State(this);
   current_write_state = State(this);
 
-  if ((ctx->max_version < PROTOCOL_SSL_3_0) ||
-      (ctx->max_version > PROTOCOL_TLS_MAX)) {
-    ctx->max_version = PROTOCOL_TLS_MAX;
-  }
-
-  if (ctx->min_version < PROTOCOL_SSL_3_0) {
-    ctx->min_version = PROTOCOL_SSL_3_0;
-  } else if (ctx->min_version > ctx->max_version) {
-    ctx->min_version = ctx->max_version;
-  }
-
   version = ctx->max_version;
   context = ctx;
 }

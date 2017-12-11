@@ -314,13 +314,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       int cipher_len;
       array(int) cipher_suites;
       array(int) compression_methods;
+      array(int(16bit)) versions;
 
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
       client_version =
         [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
       COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
-                 (client_version < context->min_version),
+                 (client_version < context->min_version) ||
+                 client_version > PROTOCOL_TLS_1_2,
                  ALERT_protocol_version,
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
@@ -333,8 +335,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
                        fmt_version(version),
                        fmt_version(client_version));
+        // Note that if version is e.g. TLS 1.3 it will be clamped
+        // down to TLS 1.2 here even if the client supportes TLS
+        // 1.3. This will be adjusted up again if the correct
+        // supported versions extension is sent.
         version = client_version;
       }
+      // Let's assume the client support the range from our
+      // min_version to min(max_version, client_version).
+      versions = [array(int(16bit))]reverse(enumerate([int(0..)](version-context->min_version+1), 1,
+                                                      context->min_version));
 
       client_random = input->read(32);
       session_id = input->read_hstring(1);
@@ -371,6 +381,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           int extension_type = extensions->read_int(2);
           string(8bit) raw = extensions->read_hstring(2);
           Buffer extension_data = Buffer(raw);
+          int size = sizeof(extension_data);
           SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
                          "Got extension %s.\n",
                          fmt_constant(extension_type, "EXTENSION"));
@@ -413,7 +424,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           if( !context->extensions[extension_type] )
           {
             SSL3_DEBUG_MSG("Ignored extension %O (%d bytes)\n",
-                           extension_type, sizeof(extension_data));
+                           extension_type, size);
             continue;
           }
 
@@ -475,7 +486,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           case EXTENSION_server_name:
             // RFC 6066 3.1 "Server Name Indication"
             session->server_name = 0;
-            while (sizeof(extension_data)) {
+            while (size) {
               Stdio.Buffer server_name = extension_data->read_hbuffer(2);
               switch(server_name->read_int(1)) {	// name_type
               case 0:	// host_name
@@ -500,7 +511,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           case EXTENSION_max_fragment_length:
             // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
             int mfsz = extension_data->read_int(1);
-            if (sizeof(extension_data)) mfsz = 0;
+            if (size) mfsz = 0;
             switch(mfsz) {
             case FRAGMENT_512:  session->max_packet_size = 512; break;
             case FRAGMENT_1024: session->max_packet_size = 1024; break;
@@ -515,7 +526,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           case EXTENSION_truncated_hmac:
             // RFC 3546 3.5 "Truncated HMAC"
-            COND_FATAL(sizeof(extension_data),
+            COND_FATAL(size,
                        ALERT_illegal_parameter,
                        "Invalid trusted HMAC extension.\n");
 
@@ -549,7 +560,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
 
           case EXTENSION_next_protocol_negotiation:
-            COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
+            COND_FATAL(size, ALERT_handshake_failure,
                        "Invalid NPN extension.\n");
             break;
 
@@ -563,7 +574,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    break;
 
           case EXTENSION_signed_certificate_timestamp:
-            COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
+            COND_FATAL(size, ALERT_handshake_failure,
                        "Invalid signed certificate timestamp extension.\n");
             break;
 
@@ -615,7 +626,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               // Upon reception of an unknown mode, an error Alert
               // message using illegal_parameter as its
               // AlertDescription MUST be sent in response.
-              COND_FATAL(!sizeof(extension_data) ||
+              COND_FATAL(!size ||
                          !(hb_mode = extension_data->read_int(1)) ||
                          sizeof(extension_data) ||
                          ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
@@ -631,7 +642,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           case EXTENSION_encrypt_then_mac:
             {
-              COND_FATAL(sizeof(extension_data),
+              COND_FATAL(size,
                          ALERT_illegal_parameter,
                          "Encrypt-then-MAC: Invalid extension.\n");
 
@@ -642,7 +653,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           case EXTENSION_extended_master_secret:
             {
-              COND_FATAL(sizeof(extension_data),
+              COND_FATAL(size,
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
@@ -656,10 +667,27 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
 
           case EXTENSION_padding:
-            COND_FATAL(sizeof(extension_data) &&
+            COND_FATAL(size &&
                        !equal(String.range((string)extension_data),({0,0})),
                        ALERT_illegal_parameter,
                        "Possible covert side channel in padding.\n");
+            break;
+
+          case EXTENSION_supported_versions:
+            COND_FATAL(size<2 || size&1 || size>254,
+                       ALERT_illegal_parameter,
+                       "Illegal payload size in supported versions.\n");
+            versions = [array(int(16bit))]extension_data->read_ints(size/2, 2);
+            versions = filter(versions, lambda(int version)
+              {
+                if( version>=context->min_version &&
+                    version<=context->max_version)
+                  return 1;
+                return 0;
+              });
+            COND_FATAL(!sizeof(versions),
+                 ALERT_handshake_failure, "No supported version!\n");
+            version = versions[0];
             break;
 
           default:
@@ -746,9 +774,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
         while (!session->select_cipher_suite(certs, cipher_suites, version))
         {
-          if (version > context->min_version) {
+          if (sizeof(versions)>1) {
             // Try falling back to an older version of SSL/TLS.
-            version--;
+            versions = versions[1..];
+            version = versions[0];
           } else {
 #if 0
             werror("FAIL: %s (%s, client: %s)\n"

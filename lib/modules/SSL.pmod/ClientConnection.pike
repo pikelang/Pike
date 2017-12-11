@@ -30,7 +30,11 @@ protected Packet client_hello(string(8bit)|void server_name,
   Buffer struct = Buffer();
   /* Build client_hello message */
   client_version = version;
-  struct->add_int(client_version, 2); /* version */
+  // Clamp version to TLS 1.2. 1.3 and later are negotiated using
+  // supported versions extension.
+  // FIXME: Remove draft version when TLS 1.3 is released.
+  struct->add_int(context->draft_version ||
+                  min(client_version, PROTOCOL_TLS_1_2), 2);
 
   // The first four bytes of the client_random is specified to be the
   // timestamp on the client side. This is to guard against bad random
@@ -88,6 +92,13 @@ protected Packet client_hello(string(8bit)|void server_name,
       extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
     }
+  };
+
+  ext (EXTENSION_supported_versions, client_version >= PROTOCOL_TLS_1_3) {
+    Buffer versions = Buffer();
+    for(int v=context->min_version; v>=context->max_version; v++)
+      v->add_int(v, 2);
+    return versions;
   };
 
   ext (EXTENSION_renegotiation_info, secure_renegotiation) {
@@ -601,8 +612,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  (version > client_version)) {
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested %s).\n",
 		       fmt_version(version), fmt_version(client_version));
-	version = client_version;
-	COND_FATAL(1, ALERT_protocol_version, "Unsupported version.\n");
+        version = client_version;
+        COND_FATAL(1, ALERT_protocol_version, sprintf("Unsupported version %s %s.\n",
+                                                      fmt_version(version), fmt_version(client_version)));
       }
       if (client_version > version) {
 	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
@@ -754,7 +766,20 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	      SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
 	      session->extended_master_secret = 1;
 	    }
-	    break;
+            break;
+
+          case EXTENSION_supported_versions:
+            {
+              COND_FATAL(sizeof(extension_data)!=2,
+                         ALERT_illegal_parameter,
+                         "Illegal size of supported version extension.\n");
+              version = extension_data->read_int16();
+              COND_FATAL(version < context->min_version ||
+                         version > context->max_version,
+                         ALERT_illegal_parameter,
+                         "Received version not offered.\n");
+            }
+            break;
 
 	  case EXTENSION_encrypt_then_mac:
 	    {

@@ -38,6 +38,9 @@
 import ".";
 import Constants;
 
+// FIXME: Remove when TLS 1.3 is released.
+int draft_version;
+
 protected void create()
 {
   SSL3_DEBUG_MSG("SSL.Context->create\n");
@@ -45,6 +48,10 @@ protected void create()
   /* Backwards compatibility */
   multiset(int) blocked = (< CIPHER_rc4 >);
   preferred_suites = get_suites(128, 1, blocked);
+
+  // FIXME: Remove when TLS 1.3 is released.
+  if( max_version >= PROTOCOL_TLS_1_3 && !draft_version )
+    error("No draft version declared.\n");
 }
 
 //! The minimum supported protocol version.
