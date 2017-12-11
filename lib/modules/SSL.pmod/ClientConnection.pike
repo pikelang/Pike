@@ -613,8 +613,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested %s).\n",
 		       fmt_version(version), fmt_version(client_version));
         version = client_version;
-        COND_FATAL(1, ALERT_protocol_version, sprintf("Unsupported version %s %s.\n",
-                                                      fmt_version(version), fmt_version(client_version)));
+        COND_FATAL(1, ALERT_protocol_version, "Unsupported version %s %s.\n");
       }
       if (client_version > version) {
 	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
