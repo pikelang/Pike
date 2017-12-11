@@ -9,6 +9,8 @@ o Sql.pgsql
   - Added support for PostgreSQL 10's stronger password authentication
     (SCRAM-SHA-256).
   - Slightly reduced overhead.
+  - Support IEEE binary float database-wireformat.
+  - Prevent new queries from starting in the local_backend.
 
 o Crypto.SCRAM
 
