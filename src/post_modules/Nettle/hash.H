@@ -26,8 +26,8 @@ PIKECLASS PIKE_NAME
     }
 
 #ifdef SPECIAL_PBKDF2
-  PIKEFUN string pbkdf2(string(8bit) password, string(8bit) salt,
-                        int rounds, int bytes)
+  PIKEFUN string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
+                              int rounds, int bytes)
   {
     struct pike_string *dst = begin_shared_string(bytes);
     NO_WIDE_STRING(password);
