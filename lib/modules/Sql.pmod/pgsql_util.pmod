@@ -169,7 +169,34 @@ final void throwdelayederror(sql_result|proxy parent) {
   }
 }
 
-private int oidformat(int oid) {
+private int readoidformat(int oid) {
+  switch (oid) {
+    case BOOLOID:
+    case BYTEAOID:
+    case CHAROID:
+    case INT8OID:
+    case INT2OID:
+    case INT4OID:
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
+    case TEXTOID:
+    case OIDOID:
+    case XMLOID:
+    case MACADDROID:
+    case BPCHAROID:
+    case VARCHAROID:
+    case CTIDOID:
+    case UUIDOID:
+      return 1; //binary
+  }
+  return 0;	// text
+}
+
+private int writeoidformat(int oid, array(string|int) paramValues,
+ array(int) ai) {
+  mixed value = paramValues[ai[0]++];
   switch (oid) {
     case BOOLOID:
     case BYTEAOID:
@@ -186,6 +213,12 @@ private int oidformat(int oid) {
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
+      if (!stringp(value))
+        return 1;
   }
   return 0;	// text
 }
@@ -833,11 +866,18 @@ class sql_result {
         mixed value;
         switch (typ) {
           case FLOAT4OID:
-#if SIZEOF_FLOAT>=8
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
           case FLOAT8OID:
 #endif
-            if (!alltext) {
-              value = (float)cr->read(collen);
+            if (_forcetext) {
+              if (!alltext) {
+                value = (float)cr->read(collen);
+                break;
+              }
+            } else {
+              [ value ] = cr->sscanf(collen == 4 ? "%4F" : "%8F");
+              if (alltext)
+                value = (string)value;
               break;
             }
           default:value = cr->read(collen);
@@ -923,7 +963,8 @@ class sql_result {
       Stdio.Buffer plugbuffer = Stdio.Buffer();
       { array dta = ({sizeof(dtoid)});
         plugbuffer->add(_portalname, 0, _preparedname, 0)
-         ->add_ints(dta + map(dtoid, oidformat) + dta, 2);
+         ->add_ints(dta
+           + map(dtoid, writeoidformat, paramValues, ({0})) + dta, 2);
       }
       string cenc = pgsqlsess.runtimeparameter[CLIENT_ENCODING];
       foreach (paramValues; int i; mixed value) {
@@ -1041,6 +1082,18 @@ class sql_result {
                 }
               }
               break;
+            case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+            case FLOAT8OID:
+#endif
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else {
+                int w = dtoid[i] == FLOAT4OID ? 4 : 8;
+                plugbuffer->add_int32(w)
+                 ->sprintf(w == 4 ? "%4F" : "%8F", value);
+              }
+              break;
             case INT8OID:
               plugbuffer->add_int32(8)->add_int((int)value, 8);
               break;
@@ -1063,7 +1116,7 @@ class sql_result {
       else {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if (sizeof(datarowtypes))
-          plugbuffer->add_ints(map(datarowtypes, oidformat), 2);
+          plugbuffer->add_ints(map(datarowtypes, readoidformat), 2);
         else if (syncparse < 0 && !pgsqlsess->wasparallelisable
          && !pgsqlsess->statementsinflight->drained(1)) {
           lock = pgsqlsess->shortmux->lock();
