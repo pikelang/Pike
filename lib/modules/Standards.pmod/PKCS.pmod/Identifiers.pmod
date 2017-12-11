@@ -91,6 +91,10 @@ Identifier rsa_sha384_id = pkcs_1_id->append(12);
 Identifier rsa_sha512_id = pkcs_1_id->append(13);
 Identifier rsa_sha224_id = pkcs_1_id->append(14);
 
+// RFC 8017 a.2.4
+Identifier rsa_sha512_224_id = pkcs_1_id->append(15);
+Identifier rsa_sha512_256_id = pkcs_1_id->append(16);
+
 // RFC 4055 2.2:
 Identifier mgf1_id = pkcs_1_id->append(8);
 
@@ -205,6 +209,10 @@ Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
 Identifier sha384_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 2);
 Identifier sha512_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 3);
 Identifier sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 4);
+
+// RFC 8017 B.1:
+Identifier sha512_224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 5);
+Identifier sha512_256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 6);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
