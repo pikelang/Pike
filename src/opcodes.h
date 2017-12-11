@@ -174,6 +174,10 @@ enum Pike_opcodes
   F_SPACE = ' ',
   F_COLON = ':',
   F_COND = '?',
+
+#ifdef PIKE_DEBUG
+  OPCODES_END = USHRT_MAX
+#endif
 };
 
 #undef OPCODE0
