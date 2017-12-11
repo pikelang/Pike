@@ -64,8 +64,8 @@ class Timebase {
   //!
   variant protected void create() {
   }
-  variant protected void create(this_program copy) {
-    nsecs = copy->nsecs;
+  variant protected void create(object/*this_program*/ copy) {
+    nsecs = [int]copy->nsecs;
   }
   variant protected void create(int|float sec, void|int nsec) {
     nsecs = (int)(sec * NANOSECONDS + nsec);
@@ -165,7 +165,7 @@ class Time {
    protected void create(int hour, int min, void|int sec, void|int nsec) {
     nsecs = ((((hour * 60) + min) * 60 + sec) * NANOSECONDS) + nsec;
   }
-  variant protected void create(this_program copy) {
+  variant protected void create(object/*this_program*/ copy) {
     ::create(copy);
   }
   variant protected void create(int sec) {
@@ -195,9 +195,9 @@ class TimeTZ {
   //!
   int timezone;
 
-  variant protected void create(this_program copy) {
+  variant protected void create(object/*this_program*/ copy) {
     ::create(copy);
-    timezone = copy->timezone;
+    timezone = [int]copy->timezone;
   }
 
   //!
@@ -398,8 +398,8 @@ class Date {
   variant protected void create(int year, int month, int day) {
     create((["year":year - 1900, "mon":month - 1, "mday":day, "timezone":0]));
   }
-  variant protected void create(this_program copy) {
-    days = copy->days;
+  variant protected void create(object/*this_program*/ copy) {
+    days = [int]copy->days;
   }
   variant protected void create(Timestamp copy) {
     days = copy->nsecs / (24 * 3600 * NANOSECONDS) - (copy->nsecs < 0);
