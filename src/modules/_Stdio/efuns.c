@@ -1208,7 +1208,7 @@ void f_get_dir(INT32 args)
 #else /* !__NT__ */
 
 /* Note: Also used from file_get_dir(). */
-void low_get_dir(DIR *dir, ptrdiff_t name_max)
+void low_get_dir(DIR *dir, ptrdiff_t UNUSED(name_max))
 {
   if(dir) {
     struct dirent *d;

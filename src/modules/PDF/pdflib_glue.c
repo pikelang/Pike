@@ -46,7 +46,7 @@
 
 /*** PDF callabcks ******************************************************/
 
-static void pdf_error_handler(PDF *p, int type, const char* shortmsg)
+static void pdf_error_handler(PDF *UNUSED(p), int UNUSED(type), const char* shortmsg)
 {
    Pike_error("PDF.PDFgen: %s\n",shortmsg);
 }
@@ -61,12 +61,12 @@ struct pdf_storage
    PDF *pdf;
 };
 
-static void init_pdf(struct object *o)
+static void init_pdf(struct object *UNUSED(o))
 {
    THIS->pdf=NULL;
 }
 
-static void exit_pdf(struct object *o)
+static void exit_pdf(struct object *UNUSED(o))
 {
    if (THIS->pdf)
    {
@@ -82,7 +82,7 @@ static void exit_pdf(struct object *o)
  *
  * Create a new PDF generation context.
  */
-static void pdf_create(INT32 args)
+static void pdf_create(INT32 UNUSED(args))
 {
    PDF *pdf;
 

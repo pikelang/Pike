@@ -195,7 +195,7 @@ PIKECLASS Hash
     if( get_memory_object_memory(in, (void **)&read_buffer, &len, NULL) )
     {
       if( bytes )
-        len = MINIMUM(len, MAXIMUM(bytes->u.integer,0) );
+        len = MINIMUM(len, (size_t)MAXIMUM(bytes->u.integer,0) );
       meta->update( ctx, len, (const uint8_t*)read_buffer);
       goto ret_meta;
     }
