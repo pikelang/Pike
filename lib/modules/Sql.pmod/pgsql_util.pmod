@@ -242,14 +242,14 @@ private int writeoidformat(int oid, array(string|int) paramValues,
   return 0;	// text
 }
 
-private array timestamptotype = ({Timestamp, 8, "usecs", 8});
-private array datetotype = ({Date, 4, "days", 4});
+private array timestamptotype = ({__builtin.Timestamp, 8, "usecs", 8});
+private array datetotype = ({__builtin.Date, 4, "days", 4});
 
 private mapping(int:array) oidtotype = ([
    DATEOID:        datetotype,
-   TIMEOID:        ({Time, 8, "usecs", 8}),
-   TIMETZOID:      ({TimeTZ, 12, "usecs", 8, "timezone", 4}),
-   INTERVALOID:    ({Interval, 16, "usecs", 8, "days", 4, "months", 4}),
+   TIMEOID:        ({__builtin.Time, 8, "usecs", 8}),
+   TIMETZOID:      ({__builtin.TimeTZ, 12, "usecs", 8, "timezone", 4}),
+   INTERVALOID:  ({__builtin.Interval, 16, "usecs", 8, "days", 4, "months", 4}),
    TIMESTAMPOID:   timestamptotype,
    TIMESTAMPTZOID: timestamptotype,
    INT4RANGEOID:   ({0, 4}),
@@ -957,7 +957,7 @@ class Result {
                   till = value;
                 }
               }
-              value = Range(from, till);
+              value = __builtin.Range(from, till);
             }
             break;
           case CIDROID:
@@ -965,7 +965,7 @@ class Result {
             if (_forcetext)
               value = cr->read(collen);
             else {
-              value = Inet();
+              value = __builtin.Inet();
               int iptype = cr->read_int8();	// 2 == IPv4, 3 == IPv6
               value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
               cr->read_int8();	// 0 == INET, 1 == CIDR
