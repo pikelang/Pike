@@ -212,45 +212,46 @@ test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
 dnl hash, empty-digest, foo1000-digest, block-size
 define(test_hash, [[
 cond_resolv( Crypto.$1, [[
+  test_do(add_constant("h",Crypto.$1.hash))
   test_eq(decode_value(encode_value(Crypto.$1)),Crypto.$1)
   test_eq(S(Crypto.$1()->update("")->digest()), "$2")
-  test_eq(S(Crypto.$1.hash("")), "$2")
-  test_eq(S(Crypto.$1.hash(Stdio.Buffer())), "$2")
-  test_eq(S(Crypto.$1.hash(Stdio.Buffer(),5)), "$2")
-  test_eq(S(Crypto.$1.hash(String.Buffer())), "$2")
-  test_eval_error(Crypto.$1.hash("\x2ff"))
-  test_eq(S(Crypto.$1.hash("foo"*1000)), "$3")
-  test_eq(S(Crypto.$1.hash(Stdio.Buffer("foo"*1000))), "$3")
-  test_eq(S(Crypto.$1.hash(Stdio.Buffer("foo"*1001),3000)), "$3")
+  test_eq(S(h("")), "$2")
+  test_eq(S(h(Stdio.Buffer())), "$2")
+  test_eq(S(h(Stdio.Buffer(),5)), "$2")
+  test_eq(S(h(String.Buffer())), "$2")
+  test_eval_error(h("\x2ff"))
+  test_eq(S(h("foo"*1000)), "$3")
+  test_eq(S(h(Stdio.Buffer("foo"*1000))), "$3")
+  test_eq(S(h(Stdio.Buffer("foo"*1001),3000)), "$3")
   test_any([[
     String.Buffer b=String.Buffer();
     b->add("foo"*1000);
-    return S(Crypto.$1.hash(b));
+    return S(h(b));
   ]], "$3")
   test_any([[
     String.Buffer b=String.Buffer();
     b->add("foo"*1001);
-    return S(Crypto.$1.hash(b,3000));
+    return S(h(b,3000));
   ]], "$3")
   test_eval_error([[
     String.Buffer b=String.Buffer();
     b->add("\x2ff");
-    return S(Crypto.$1.hash(b));
+    return S(h(b));
   ]], "$3")
   test_any([[
     System.Memory b=System.Memory(3000);
     b->pwrite(0, "foo"*1000);
-    return S(Crypto.$1.hash(b));
+    return S(h(b));
   ]], "$3")
   test_any([[
     System.Memory b=System.Memory(3003);
     b->pwrite(0, "foo"*1001);
-    return S(Crypto.$1.hash(b,3000));
+    return S(h(b,3000));
   ]], "$3")
-  test_eval_error(Crypto.$1.hash(ADT.Queue()))
+  test_eval_error(h(ADT.Queue()))
   test_eq(S(Crypto.$1()->update("foo"*501)->update("foo"*499)->digest()), "$3")
-  test_eq(S(Crypto.$1.hash(Stdio.File("hash_me"))), "$3")
-  test_eq(Crypto.$1.name(),lower_case("$1"))
+  test_eq(S(h(Stdio.File("hash_me"))), "$3")
+  test_eq(Crypto.$1.name(),sizeof("$5")?"$5":lower_case("$1"))
   test_eq(Crypto.$1.block_size(),$4)
   dnl crypt_hash
   dnl openssl_pbkdf
@@ -258,9 +259,10 @@ cond_resolv( Crypto.$1, [[
   test_eq(Crypto.$1.pbkdf2("password","salt",1,Crypto.$1.digest_size()),
           Crypto.HMAC(Crypto.$1)("password")("salt\0\0\0\1"))
   dnl pkcs_hash_id
-  test_eq(sizeof(Crypto.$1.hash("foo")),Crypto.$1.digest_size())
+  test_eq(sizeof(h("foo")),Crypto.$1.digest_size())
   test_eq(Crypto.$1.HMAC("x")->block_size(),Crypto.$1.block_size())
   test_eq(Crypto.$1.HMAC("x")->digest_size(),Crypto.$1.digest_size())
+  test_do(add_constant("h"))
 ]])
 cond_resolv( Crypto.$1.pkcs_hash_id, [[
   test_any([[
