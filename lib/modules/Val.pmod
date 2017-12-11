@@ -188,20 +188,138 @@ Null null = Null();
 //! The Oracle glue currently uses static null objects which won't be
 //! affected if this object is replaced.
 
-//!
-constant NaN = __builtin.NaN;
+//! The type for @[Val.nan].
+class NaN {
+  constant is_val_nan = 1;
+
+  inline private int(0..1) `>(mixed that) {
+    return 0;
+  }
+
+  inline private int(0..1) `<(mixed that) {
+    return 0;
+  }
+
+  inline private mixed `+(mixed that) {
+    return this;
+  }
+
+  inline private mixed `-(mixed that) {
+    return this;
+  }
+
+  inline private mixed `*(mixed that) {
+    return this;
+  }
+
+  inline private mixed `/(mixed that) {
+    return this;
+  }
+
+  inline private int(0..1) `==(mixed that) {
+    return 0;
+  }
+
+  private mixed cast(string to) {
+    switch (to) {
+      case "string":
+        return "";
+    }
+    return UNDEFINED;
+  }
+
+  private string _sprintf(int fmt) {
+    return "NaN";
+  }
+}
+
+//! The type for @[Val.posinfty].
+class PositiveInfinity {
+  constant is_val_positiveinfinity = 1;
+
+  inline private int(0..1) `<(mixed that) {
+    return 0;
+  }
+
+  inline private mixed `+(mixed that) {
+    return objectp(that)
+      && (([object]that)->is_val_negativeinfinity || ([object]that)->is_val_nan)
+     ? Val.nan : this;
+  }
+
+  inline private mixed `*(mixed that) {
+    return !that ? Val.nan : that > 0 ? this : Val.neginfty;
+  }
+
+  inline private mixed `/(mixed that) {
+    return !that || objectp(that) && (([object]that)->is_val_positiveinfinity
+                                   || ([object]that)->is_val_negativeinfinity)
+     ? Val.nan : that > 0 ? this : Val.neginfty;
+  }
+
+  private int(0..1) `==(mixed that) {
+    return objectp(that) && [int(0..1)]([object]that)->is_val_positiveinfinity;
+  }
+
+  private mixed cast(string to) {
+    switch (to) {
+      case "string":
+        return "";
+    }
+    return UNDEFINED;
+  }
+
+  private string _sprintf(int fmt) {
+    return "+Infinity";
+  }
+}
+
+//! The type for @[Val.neginfty].
+class NegativeInfinity {
+  constant is_val_negativeinfinity = 1;
+
+  variant inline private int(0..1) `>(mixed that) {
+    return 0;
+  }
+
+  inline private mixed `+(mixed that) {
+    return objectp(that)
+      && (([object]that)->is_val_positiveinfinity || ([object]that)->is_val_nan)
+     ? Val.nan : this;
+  }
+
+  inline private mixed `*(mixed that) {
+    return !that ? Val.nan : that > 0 ? this : Val.posinfty;
+  }
+
+  inline private mixed `/(mixed that) {
+    return !that || objectp(that) && (([object]that)->is_val_positiveinfinity
+                                   || ([object]that)->is_val_negativeinfinity)
+     ? Val.nan : that > 0 ? this : Val.posinfty;
+  }
+
+  private int(0..1) `==(mixed that) {
+    return objectp(that) && [int(0..1)]([object]that)->is_val_negativeinfinity;
+  }
+
+  private mixed cast(string to) {
+    switch (to) {
+      case "string":
+        return "";
+    }
+    return UNDEFINED;
+  }
+
+  private string _sprintf(int fmt) {
+    return "-Infinity";
+  }
+}
 
 //!
 NaN nan = NaN();
 
 //!
-constant PositiveInfinity = __builtin.PositiveInfinity;
-
-//!
 PositiveInfinity posinfty = PositiveInfinity();
-
-//!
-constant NegativeInfinity = __builtin.NegativeInfinity;
 
 //!
 NegativeInfinity neginfty = NegativeInfinity();
