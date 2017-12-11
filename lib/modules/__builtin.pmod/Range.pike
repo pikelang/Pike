@@ -11,7 +11,14 @@ mixed from;
 //!
 mixed till;
 
-//!
+//! @param from
+//!   Lower inclusive limit for the interval.  Specify no lower-limit
+//!   by filling in @expr{-Math.inf@}.
+//! @param till
+//!   Upper exclusive limit for the interval.  Specify no upper-limit
+//!   by filling in @expr{Math.inf@}.
+//! @seealso
+//!   [Math.inf]
 protected variant void create(mixed from, mixed till) {
   this::from = from;
   this::till = till;
@@ -76,7 +83,8 @@ protected int(0..1) `==(mixed that) {
 protected mixed cast(string to) {
   if (to == "string")
     return from >= till ? "empty" : sprintf("%c%s,%s)",
-      from == Val.neginfty ? '(' : '[', (string)from, (string)till);
+      from == -Math.inf ? '(' : '[', from == -Math.inf ? "" : (string)from,
+      till == Math.inf ? "" : (string)till);
   return UNDEFINED;
 }
 

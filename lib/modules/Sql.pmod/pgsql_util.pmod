@@ -936,7 +936,7 @@ class Result {
               value = cr->read(collen);
             else {
               array totype = oidtotype[typ];
-              mixed from = Val.neginfty, till = Val.posinfty;
+              mixed from = -Math.inf, till = Math.inf;
               switch (cr->read_int8()) {
                 case 1: from = till = 0;
                   break;
@@ -1187,14 +1187,14 @@ class Result {
                   from = value->from, till = value->till;
                 else
                   from = value->from[totype[2]], till = value->till[totype[2]];
-                if (value->till == Val.posinfty)
-                  if (value->from == Val.neginfty)
+                if (value->till == Math.inf)
+                  if (value->from == -Math.inf)
                     plugbuffer->add("\0\0\0\1\30");
                   else
                     plugbuffer->add("\0\0\0", 1 + 4 + w, "\22\0\0\0", w)
                      ->add_int(from, w);
                 else {
-                  if (value->from == Val.neginfty)
+                  if (value->from == -Math.inf)
                     plugbuffer->add("\0\0\0", 1 + 4 + w, 8);
                   else
                     plugbuffer->add("\0\0\0", 1 + 4 * 2 + w * 2, "\2\0\0\0", w)

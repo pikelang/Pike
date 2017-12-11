@@ -3,6 +3,8 @@
 
 //! Lightweight IPv4 and IPv6 address type.
 
+#define IPV4MAX	0xffffffff
+
 constant is_inet = 1;
 
 //!
@@ -13,33 +15,11 @@ int masklen;
 
 //!
 protected void create(string ip) {
-  int ip0, ip1, ip2, ip3, m1, m2, m3;
-  string mask;
   masklen = 32;
-  switch (sscanf(ip, "%d.%d.%d.%d/%s", ip0, ip1, ip2, ip3, mask)) {
-    default:
-      masklen = 16*8;
-      sscanf(ip, "%s/%d", ip, masklen);
-      address = 0;
-      foreach (Protocols.IPv6.parse_addr(ip); ; int val)
-        address = address << 16 | val;
-      break;
-    case 5:
-      switch (sscanf(mask, "%d.%d.%d.%d", masklen, m1, m2, m3)) {
-        default:
-          error("Unparseable IP %O\n", ip);
-        case 4:
-          m1 = ((masklen << 8 | m1) << 8 | m2) << 8 | m3;
-          masklen = 32;
-          while (!(m1 & 1) && --masklen)
-            m1 >>= 1;
-        case 1:
-          break;
-      }
-    case 4:
-      masklen += 12*8;
-      address = ((ip0 << 8 | ip1) << 8 | ip2) << 8 | ip3;
-  }
+  sscanf(ip, "%s/%d", ip, masklen);
+  address = NetUtils.string_to_ip(ip);
+  if (address <= IPV4MAX && masklen <= 32)
+    masklen += 12 * 8;
 }
 variant protected void create(int ip, void|int masklen) {
   address = ip;
@@ -106,25 +86,10 @@ protected int(0..1) `==(mixed that) {
 //!
 protected mixed cast(string to) {
   switch (to) {
-    case "string": {
-      array(int(16bit)) split = ({});
-      int addr = address;
-      do
-        split += ({ addr & 0xffff });
-      while ((addr >>= 16) && sizeof(split) < 16);
-      if (sizeof(split) <= 2) {
-        if (sizeof(split) == 1)
-          split += ({0});
-        return sprintf("%d.%d.%d.%d/%d", split[1] >> 8, split[1] & 255,
-         split[0] >> 8, split[0] & 255, masklen - 12*8);
-      } else {
-        while (sizeof(split) < 8)
-          split += ({0});
-        split = reverse(split);
-        return Protocols.IPv6.format_addr_short(split)
-         + sprintf("/%d", masklen);
-      }
-    }
+    case "string":
+      return NetUtils.ip_to_string(address)
+       + (masklen == 128 ? "" :
+                    sprintf("/%d", masklen - (address << IPV4MAX && 12*8)));
     case "int":
       return address;
     default:
