@@ -1022,7 +1022,7 @@ class sql_result {
                       break;
                 }
               } while (0);
-              plugbuffer->add_int32(1)->add_int8(value);
+              plugbuffer->add("\0\0\0\1", value);
               break;
             case CHAROID:
               if (intp(value))
