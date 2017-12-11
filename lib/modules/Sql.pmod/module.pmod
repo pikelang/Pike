@@ -75,24 +75,6 @@ constant FutureResult = __builtin.Sql.FutureResult;
 //! Base class for the result from @[Connection.promise_query()].
 constant Promise = __builtin.Sql.Promise;
 
-//!
-constant Date = __builtin.Sql.Date;
-
-//!
-constant Timestamp = __builtin.Sql.Timestamp;
-
-//!
-constant Time = __builtin.Sql.Time;
-
-//!
-constant TimeTZ = __builtin.Sql.TimeTZ;
-
-//!
-constant Interval = __builtin.Sql.Interval;
-
-//!
-constant Inet = __builtin.Sql.Inet;
-
 protected program(Connection) find_dbm(string program_name)
 {
   program(Connection) p;

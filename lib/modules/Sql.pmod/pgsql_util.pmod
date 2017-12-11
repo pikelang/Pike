@@ -187,6 +187,11 @@ private int readoidformat(int oid) {
     case TIMESTAMPOID:
     case TIMESTAMPTZOID:
     case INTERVALOID:
+    case INT4RANGEOID:
+    case INT8RANGEOID:
+    case DATERANGEOID:
+    case TSRANGEOID:
+    case TSTZRANGEOID:
     case MACADDROID:
     case BPCHAROID:
     case VARCHAROID:
@@ -226,22 +231,32 @@ private int writeoidformat(int oid, array(string|int) paramValues,
     case TIMESTAMPOID:
     case TIMESTAMPTZOID:
     case INTERVALOID:
+    case INT4RANGEOID:
+    case INT8RANGEOID:
+    case DATERANGEOID:
+    case TSRANGEOID:
+    case TSTZRANGEOID:
       if (!stringp(value))
         return 1;
   }
   return 0;	// text
 }
 
-private array timestamptotype = ({__builtin.Sql.Timestamp, 8, "usecs", 8});
+private array timestamptotype = ({Timestamp, 8, "usecs", 8});
+private array datetotype = ({Date, 4, "days", 4});
 
 private mapping(int:array) oidtotype = ([
-   DATEOID:     ({__builtin.Sql.Date, 4, "days", 4}),
-   TIMEOID:     ({__builtin.Sql.Time, 8, "usecs", 8}),
-   TIMETZOID:   ({__builtin.Sql.TimeTZ, 12, "usecs", 8, "timezone", 4}),
-   INTERVALOID:
-            ({__builtin.Sql.Interval, 16, "usecs", 8, "days", 4, "months", 4}),
-   TIMESTAMPOID:timestamptotype,
-   TIMESTAMPTZOID:timestamptotype,
+   DATEOID:        datetotype,
+   TIMEOID:        ({Time, 8, "usecs", 8}),
+   TIMETZOID:      ({TimeTZ, 12, "usecs", 8, "timezone", 4}),
+   INTERVALOID:    ({Interval, 16, "usecs", 8, "days", 4, "months", 4}),
+   TIMESTAMPOID:   timestamptotype,
+   TIMESTAMPTZOID: timestamptotype,
+   INT4RANGEOID:   ({0, 4}),
+   INT8RANGEOID:   ({0, 8}),
+   DATERANGEOID:   datetotype,
+   TSRANGEOID:     timestamptotype,
+   TSTZRANGEOID:   timestamptotype,
  ]);
 
 private inline mixed callout(function(mixed ...:void) f,
@@ -912,12 +927,45 @@ class Result {
               serror = SERROR("%O contains non-%s characters\n",
                                                      value, UTF8CHARSET);
             break;
+          case INT4RANGEOID:
+          case INT8RANGEOID:
+          case DATERANGEOID:
+          case TSRANGEOID:
+          case TSTZRANGEOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              array totype = oidtotype[typ];
+              mixed from = Val.neginfty, till = Val.posinfty;
+              switch (cr->read_int8()) {
+                case 1: from = till = 0;
+                  break;
+                case 0x12: from = cr->read_hint(4);
+                  break;
+                case 2: from = cr->read_hint(4);
+                case 8: till = cr->read_hint(4);
+              }
+              if (totype[0]) {
+                if (intp(from)) {
+                  value = totype[0]();
+                  value[totype[2]] = from;
+                  from = value;
+                }
+                if (intp(till)) {
+                  value = totype[0]();
+                  value[totype[2]] = till;
+                  till = value;
+                }
+              }
+              value = Range(from, till);
+            }
+            break;
           case CIDROID:
           case INETOID:
             if (_forcetext)
               value = cr->read(collen);
             else {
-              value = __builtin.Sql.Inet();
+              value = Inet();
               int iptype = cr->read_int8();	// 2 == IPv4, 3 == IPv6
               value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
               cr->read_int8();	// 0 == INET, 1 == CIDR
@@ -1122,6 +1170,39 @@ class Result {
                 }
               }
               break;
+            case INT4RANGEOID:
+            case INT8RANGEOID:
+            case DATERANGEOID:
+            case TSRANGEOID:
+            case TSTZRANGEOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else if (value->from >= value->till)
+                plugbuffer->add("\0\0\0\1\1");
+              else {
+                array totype = oidtotype[dtoid[i]];
+                int w = totype[1];
+                int from, till;
+                if (totype[0])
+                  from = value->from, till = value->till;
+                else
+                  from = value->from[totype[2]], till = value->till[totype[2]];
+                if (value->till == Val.posinfty)
+                  if (value->from == Val.neginfty)
+                    plugbuffer->add("\0\0\0\1\30");
+                  else
+                    plugbuffer->add("\0\0\0", 1 + 4 + w, "\22\0\0\0", w)
+                     ->add_int(from, w);
+                else {
+                  if (value->from == Val.neginfty)
+                    plugbuffer->add("\0\0\0", 1 + 4 + w, 8);
+                  else
+                    plugbuffer->add("\0\0\0", 1 + 4 * 2 + w * 2, "\2\0\0\0", w)
+                     ->add_int(from, w);
+                  plugbuffer->add_int32(w)->add_int(till, w);
+                }
+              }
+              break;
             case CIDROID:
             case INETOID:
               if (stringp(value))
@@ -1135,7 +1216,6 @@ class Result {
                   value->masklen, dtoid[i] == CIDROID, 16)
                  ->add_int(value->address, 16);
               break;
-            break;
             case DATEOID:
             case TIMEOID:
             case TIMETZOID:
