@@ -159,7 +159,7 @@
   ZMEMBER(int,num_parse_error,0)
   ZMEMBER(struct compiler_frame *,compiler_frame,0)
   ZMEMBER(INT32,num_used_modules,0)
-  IMEMBER(int,compiler_pass,0)
+  IMEMBER(int, compiler_pass, COMPILER_PASS_NONE)
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)

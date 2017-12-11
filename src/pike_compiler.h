@@ -91,6 +91,11 @@ struct compilation
 #define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
 #define MAYBE_THIS_COMPILATION  ((Pike_fp && compilation_program && (Pike_fp->context->prog == compilation_program))?THIS_COMPILATION:NULL)
 
+/* Complier passes */
+#define COMPILER_PASS_NONE	0
+#define COMPILER_PASS_FIRST	1
+#define COMPILER_PASS_LAST	2
+
 /* Flags. */
 #define COMPILER_BUSY	1	/* The compiler is busy compiling. */
 #define COMPILER_DONE	2	/* The compiler is finished compiling. */

@@ -1876,7 +1876,7 @@ static void f_compilation_pop_type_attribute(INT32 args)
 
   get_all_args("pop_type_attribute", args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
@@ -1918,7 +1918,7 @@ static void f_compilation_push_type_attribute(INT32 args)
 
   get_all_args("push_type_attribute", args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -1974,7 +1974,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
 
   get_all_args("apply_type_attribute", args, "%W%*.%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -2742,7 +2742,7 @@ node *low_pop_local_variables(int level, node *block)
 				   mkintnode(0)),
 			    NULL));
     }
-    if ((Pike_compiler->compiler_pass == 2) &&
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
       ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
@@ -2773,7 +2773,7 @@ node *pop_local_variables(int level, node *block)
      *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
-      if ((Pike_compiler->compiler_pass == 2) &&
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
