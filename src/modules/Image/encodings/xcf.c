@@ -63,6 +63,7 @@ struct substring
 };
 
 static struct program *substring_program;
+#undef SS
 #define SS(X) ((struct substring*)X->storage)
 
 static void f_substring_cast( INT32 args )
