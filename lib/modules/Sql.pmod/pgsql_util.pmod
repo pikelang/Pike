@@ -178,6 +178,10 @@ private int readoidformat(int oid) {
     case INT8OID:
     case INT2OID:
     case INT4OID:
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
     case TEXTOID:
     case OIDOID:
     case XMLOID:
@@ -236,6 +240,10 @@ private int writeoidformat(int oid, array(string|int) paramValues,
     case DATERANGEOID:
     case TSRANGEOID:
     case TSTZRANGEOID:
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
       if (!stringp(value))
         return 1;
   }
@@ -897,11 +905,18 @@ class Result {
         mixed value;
         switch (typ) {
           case FLOAT4OID:
-#if SIZEOF_FLOAT>=8
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
           case FLOAT8OID:
 #endif
-            if (!alltext) {
-              value = (float)cr->read(collen);
+            if (_forcetext) {
+              if (!alltext) {
+                value = (float)cr->read(collen);
+                break;
+              }
+            } else {
+              [ value ] = cr->sscanf(collen == 4 ? "%4F" : "%8F");
+              if (alltext)
+                value = (string)value;
               break;
             }
           default:value = cr->read(collen);
@@ -958,6 +973,8 @@ class Result {
                 }
               }
               value = __builtin.Range(from, till);
+              if (alltext)
+                value = (string)value;
             }
             break;
           case CIDROID:
@@ -970,6 +987,8 @@ class Result {
               value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
               cr->read_int8();	// 0 == INET, 1 == CIDR
               value->address = cr->read_hint(1);
+              if (alltext)
+                value = (string)value;
             }
             break;
           case TIMESTAMPOID:
@@ -1233,6 +1252,18 @@ class Result {
                 do
                   plugbuffer->add_int(value[totype[i]], totype[i+1]);
                 while ((i += 2) < sizeof(totype));
+              }
+              break;
+            case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+            case FLOAT8OID:
+#endif
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else {
+                int w = dtoid[i] == FLOAT4OID ? 4 : 8;
+                plugbuffer->add_int32(w)
+                 ->sprintf(w == 4 ? "%4F" : "%8F", value);
               }
               break;
             case INT8OID:
