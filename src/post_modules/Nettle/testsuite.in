@@ -61,10 +61,16 @@ cf83e1357eefb8bd f1542850d66d8007 d620e4050b5715dc 83f4a921d36ce9ce 47d0d13c5d85
 edb9bed721aa6a5f6fbc6619d3a3c2be3d043043f05a9aebc7b1197a2aa9c49a57d5ddd4674c1785785088d9f1ff42c797a02adc9b817a139a50970da6c99524,
 ddaf35a193617aba cc417349ae204131 12e6fa4e89a97ea2 0a9eeee64b55d39a 2192992a274fc1a8 36ba3c23a3feebbd 454d4423643ce80e 2a9ac94fa54ca49f)
 
+dnl "abc" is documented in NIST test vector at
+dnl https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA512_224.pdf
+
 test_hash(SHA512_224,
 6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4,
 250a468d45f55953784ab1f037e0522d981808b992e1d5148bd7ed9c,
 4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa)
+
+dnl "abc" is documented in NIST test vector at
+dnl https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA512_256.pdf
 
 test_hash(SHA512_256,
 c672b8d1ef56ed28ab87c3622c5114069bdd3ad7b8f9737498d0c01ecef0967a,
