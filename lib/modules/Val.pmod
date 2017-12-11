@@ -187,3 +187,21 @@ Null null = Null();
 //! @fixme
 //! The Oracle glue currently uses static null objects which won't be
 //! affected if this object is replaced.
+
+//!
+constant NaN = __builtin.NaN;
+
+//!
+NaN nan = NaN();
+
+//!
+constant PositiveInfinity = __builtin.PositiveInfinity;
+
+//!
+PositiveInfinity posinfty = PositiveInfinity();
+
+//!
+constant NegativeInfinity = __builtin.NegativeInfinity;
+
+//!
+NegativeInfinity neginfty = NegativeInfinity();
