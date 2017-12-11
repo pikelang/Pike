@@ -188,7 +188,7 @@ Null null = Null();
 //! The Oracle glue currently uses static null objects which won't be
 //! affected if this object is replaced.
 
-//! The type for @[Val.nan].
+//! The type for @[nan].
 class NaN {
   constant is_val_nan = 1;
 
@@ -233,7 +233,7 @@ class NaN {
   }
 }
 
-//! The type for @[Val.posinfty].
+//! The type for @[posinfty].
 class PositiveInfinity {
   constant is_val_positiveinfinity = 1;
 
@@ -244,17 +244,17 @@ class PositiveInfinity {
   inline private mixed `+(mixed that) {
     return objectp(that)
       && (([object]that)->is_val_negativeinfinity || ([object]that)->is_val_nan)
-     ? Val.nan : this;
+     ? nan : this;
   }
 
   inline private mixed `*(mixed that) {
-    return !that ? Val.nan : that > 0 ? this : Val.neginfty;
+    return !that ? nan : that > 0 ? this : neginfty;
   }
 
   inline private mixed `/(mixed that) {
     return !that || objectp(that) && (([object]that)->is_val_positiveinfinity
                                    || ([object]that)->is_val_negativeinfinity)
-     ? Val.nan : that > 0 ? this : Val.neginfty;
+     ? nan : that > 0 ? this : neginfty;
   }
 
   private int(0..1) `==(mixed that) {
@@ -274,7 +274,7 @@ class PositiveInfinity {
   }
 }
 
-//! The type for @[Val.neginfty].
+//! The type for @[neginfty].
 class NegativeInfinity {
   constant is_val_negativeinfinity = 1;
 
@@ -285,17 +285,17 @@ class NegativeInfinity {
   inline private mixed `+(mixed that) {
     return objectp(that)
       && (([object]that)->is_val_positiveinfinity || ([object]that)->is_val_nan)
-     ? Val.nan : this;
+     ? nan : this;
   }
 
   inline private mixed `*(mixed that) {
-    return !that ? Val.nan : that > 0 ? this : Val.posinfty;
+    return !that ? nan : that > 0 ? this : posinfty;
   }
 
   inline private mixed `/(mixed that) {
     return !that || objectp(that) && (([object]that)->is_val_positiveinfinity
                                    || ([object]that)->is_val_negativeinfinity)
-     ? Val.nan : that > 0 ? this : Val.posinfty;
+     ? nan : that > 0 ? this : posinfty;
   }
 
   private int(0..1) `==(mixed that) {
