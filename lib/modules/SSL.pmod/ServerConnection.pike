@@ -320,31 +320,20 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       client_version =
         [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
-      COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
-                 (client_version < context->min_version) ||
-                 client_version > PROTOCOL_TLS_1_2,
-                 ALERT_protocol_version,
+
+      // TLS 1.3: Servers MAY abort the handshake upon receiving a
+      // ClientHello with legacy_version 0x0304 or later.
+      COND_FATAL(client_version > PROTOCOL_TLS_1_2, ALERT_protocol_version,
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
 
-      if (client_version > version) {
-        SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
-                       fmt_version(client_version),
-                       fmt_version(version));
-      } else if (version > client_version) {
-        SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
-                       fmt_version(version),
-                       fmt_version(client_version));
-        // Note that if version is e.g. TLS 1.3 it will be clamped
-        // down to TLS 1.2 here even if the client supportes TLS
-        // 1.3. This will be adjusted up again if the correct
-        // supported versions extension is sent.
-        version = client_version;
-      }
-      // Let's assume the client support the range from our
-      // min_version to min(max_version, client_version).
-      versions = [array(int(16bit))]reverse(enumerate([int(0..)](version-context->min_version+1), 1,
-                                                      context->min_version));
+      versions = context->get_versions(client_version);
+      COND_FATAL(!sizeof(versions), ALERT_protocol_version,
+                 sprintf("Unsupported version %s.\n",
+                         fmt_version(client_version)));
+      version = versions[0];
+      SSL3_DEBUG_MSG("Got client version %s in ClientHello. Use %s.\n",
+                     fmt_version(client_version), fmt_version(version));
 
       client_random = input->read(32);
       session_id = input->read_hstring(1);
@@ -678,13 +667,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                        ALERT_illegal_parameter,
                        "Illegal payload size in supported versions.\n");
             versions = [array(int(16bit))]extension_data->read_ints(size/2, 2);
-            versions = filter(versions, lambda(int version)
-              {
-                if( version>=context->min_version &&
-                    version<=context->max_version)
-                  return 1;
-                return 0;
-              });
+            versions = context->supported_versions & versions;
             COND_FATAL(!sizeof(versions),
                  ALERT_handshake_failure, "No supported version!\n");
             version = versions[0];
@@ -713,6 +696,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          fmt_cipher_suites(cipher_suites));
         }
       }
+
+      COND_FATAL(version==PROTOCOL_IN_EXTENSION,
+                 ALERT_handshake_failure,
+                 "Missing supported versions extension.\n");
 
       // RFC 5746 3.7: (secure_renegotiation)
       // The server MUST verify that the "renegotiation_info"
@@ -754,7 +741,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	// fatal inappropriate_fallback alert (unless it responds with
 	// a fatal protocol_version alert because the version
 	// indicated in ClientHello.client_version is unsupported).
-        COND_FATAL(client_version < context->max_version,
+        COND_FATAL(client_version < max(@context->supported_versions),
                    ALERT_inappropriate_fallback,
                    "Too low client version.\n");
       }

@@ -152,21 +152,27 @@ Packet change_cipher_packet()
 
 string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
-  if(version == PROTOCOL_SSL_3_0) {
-    string(8bit) data = (string(8bit))handshake_messages + sender;
-    return .Cipher.MACmd5(session->master_secret)->hash(data) +
-      .Cipher.MACsha(session->master_secret)->hash(data);
-  }
-  else if(version <= PROTOCOL_TLS_1_1) {
+  switch( version )
+  {
+  case PROTOCOL_SSL_3_0:
+    {
+      string(8bit) data = (string(8bit))handshake_messages + sender;
+      return .Cipher.MACmd5(session->master_secret)->hash(data) +
+        .Cipher.MACsha(session->master_secret)->hash(data);
+    }
+  case PROTOCOL_TLS_1_0:
+  case PROTOCOL_TLS_1_1:
     return session->cipher_spec->prf(session->master_secret, sender,
 				     Crypto.MD5.hash(handshake_messages)+
 				     Crypto.SHA1.hash(handshake_messages),
-				     len || 12);
+                                     len || 12);
+  case PROTOCOL_TLS_1_2:
+  default:
+    return session->cipher_spec->prf(session->master_secret, sender,
+                                     session->cipher_spec->hash
+                                     ->hash(handshake_messages),
+                                     len || 12);
   }
-  return session->cipher_spec->prf(session->master_secret, sender,
-                                   session->cipher_spec->hash
-                                   ->hash(handshake_messages),
-                                   len || 12);
 }
 
 Packet certificate_packet(array(string(8bit)) certificates)
@@ -427,7 +433,7 @@ protected void create(Context ctx)
   current_read_state = State(this);
   current_write_state = State(this);
 
-  version = ctx->max_version;
+  version = min([int]max(@ctx->supported_versions), PROTOCOL_TLS_1_2);
   context = ctx;
 }
 

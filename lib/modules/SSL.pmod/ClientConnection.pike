@@ -14,11 +14,6 @@ inherit Connection;
 array(int) client_cert_types;
 array(string(8bit)) client_cert_distinguished_names;
 
-//! Active key share offers.
-//!
-//! NB: Only used with TLS 1.3 and later.
-mapping(int:Cipher.KeyExchange) keyshares = ([]);
-
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
@@ -32,9 +27,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   client_version = version;
   // Clamp version to TLS 1.2. 1.3 and later are negotiated using
   // supported versions extension.
-  // FIXME: Remove draft version when TLS 1.3 is released.
-  struct->add_int(context->draft_version ||
-                  min(client_version, PROTOCOL_TLS_1_2), 2);
+  struct->add_int(min(client_version, PROTOCOL_TLS_1_2), 2);
 
   // The first four bytes of the client_random is specified to be the
   // timestamp on the client side. This is to guard against bad random
@@ -56,7 +49,7 @@ protected Packet client_hello(string(8bit)|void server_name,
    // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
 
-    if (client_version < context->max_version) {
+    if (client_version < max(@context->supported_versions)) {
       // Negotiating a version lower than the max supported version.
       //
       // RFC 7507 4:
@@ -96,7 +89,7 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   ext (EXTENSION_supported_versions, client_version >= PROTOCOL_TLS_1_3) {
     Buffer versions = Buffer();
-    for(int v=context->min_version; v>=context->max_version; v++)
+    foreach(context->supported_versions;; ProtocolVersion v)
       v->add_int(v, 2);
     return versions;
   };
@@ -167,9 +160,11 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   ext (EXTENSION_extended_master_secret,
        context->extended_master_secret &&
-       context->min_version < PROTOCOL_TLS_1_3) {
+       ( has_value(context->supported_versions, PROTOCOL_TLS_1_0) ||
+         has_value(context->supported_versions, PROTOCOL_TLS_1_1) ||
+         has_value(context->supported_versions, PROTOCOL_TLS_1_2) )) {
     // draft-ietf-tls-session-hash
-    // NB: This extension is implicit in TLS 1.3.
+    // NB: This extension is implicit in TLS 1.3 and N/A in SSL.
     return Buffer();
   };
 
@@ -596,6 +591,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       cipher_suite = input->read_int(2);
       compression_method = input->read_int(1);
 
+      if( !has_value(context->supported_versions, version) )
+      {
+        SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested {%s}).\n",
+                       fmt_version(version),
+                       fmt_version(context->supported_versions[*])*",");
+        version = client_version;
+        COND_FATAL(1, ALERT_protocol_version, "Unsupported version.\n");
+      }
+      SSL3_DEBUG_MSG("Selecting version %s.\n", fmt_version(version));
+
       if( !has_value(context->preferred_suites, cipher_suite) ||
 	  !has_value(context->preferred_compressors, compression_method) ||
 	  !session->is_supported_suite(cipher_suite, ~0, version))
@@ -605,20 +610,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	version = client_version; // FIXME: Do we need this?
         COND_FATAL(1, ALERT_handshake_failure,
                    "Server selected bad suite.\n");
-      }
-
-      if (((version & ~0xff) != PROTOCOL_SSL_3_0) ||
-	  (version < context->min_version) ||
-	  (version > client_version)) {
-	SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested %s).\n",
-		       fmt_version(version), fmt_version(client_version));
-        version = client_version;
-        COND_FATAL(1, ALERT_protocol_version, "Unsupported version %s %s.\n");
-      }
-      if (client_version > version) {
-	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
-		       fmt_version(client_version),
-		       fmt_version(version));
       }
 
       COND_FATAL(!session->set_cipher_suite(cipher_suite, version,
@@ -758,7 +749,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  case EXTENSION_extended_master_secret:
 	    {
 	      COND_FATAL(sizeof(extension_data) ||
-                         (context->min_version >= PROTOCOL_TLS_1_3),
+                         (min(@context->supported_versions) >= PROTOCOL_TLS_1_3),
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
@@ -773,8 +764,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          ALERT_illegal_parameter,
                          "Illegal size of supported version extension.\n");
               version = extension_data->read_int16();
-              COND_FATAL(version < context->min_version ||
-                         version > context->max_version,
+              COND_FATAL( !has_value(context->supported_versions, version),
                          ALERT_illegal_parameter,
                          "Received version not offered.\n");
             }
