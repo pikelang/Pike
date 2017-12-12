@@ -238,7 +238,7 @@ static void init_blobs_struct(struct object *UNUSED(o))
   THIS->size = sizeof( struct blobs ) + 128;
 }
 
-static void exit_blobs_struct(struct object *o)
+static void exit_blobs_struct(struct object *UNUSED(o))
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
