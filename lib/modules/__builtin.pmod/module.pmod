@@ -114,7 +114,7 @@ class Timebase {
     return
        intp(that) ? nsecs < [int]that * NANOSECONDS
      : floatp(that) ? nsecs < [float]that * NANOSECONDS
-     : objectp(that) && nsecs < ([object]that)->nsecs
+     : objectp(that) && nsecs < [int]([object]that)->nsecs
         && !zero_type(([object]that)->nsecs);
   }
 
@@ -122,7 +122,7 @@ class Timebase {
     return objectp(that)
      ? nsecs == [int]([object]that)->nsecs && !zero_type(([object]that)->nsecs)
      : intp(that) ? nsecs == [int]that * NANOSECONDS
-     : floatp(that) && nsecs == (int)([float]that * NANOSECONDS);
+     : floatp(that) && (float)nsecs == [float]that * NANOSECONDS;
   }
 
   //!
@@ -449,22 +449,22 @@ class Date {
 
   inline protected int(0..1) `<(mixed that) {
     return
-       intp(that) ? (int)this < [int]that
-     : floatp(that) ? (float)this < [float]that
+       intp(that) ? (int)this < that
+     : floatp(that) ? (float)this < that
      : objectp(that)
-      && (([object]that)->is_date ? days < [int]([object]that)->days
+      && (([object]that)->is_date ? days < ([object]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS < [int]([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS < ([object]that)->nsecs);
   }
 
   inline protected int(0..1) `>(mixed that) {
     return
-       intp(that) ? (int)this > [int]that
-     : floatp(that) ? (float)this > [float]that
+       intp(that) ? (int)this > that
+     : floatp(that) ? (float)this > that
      : objectp(that)
-      && (([object]that)->is_date ? days > [int]([object]that)->days
+      && (([object]that)->is_date ? days > ([object]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS > [int]([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS > ([object]that)->nsecs);
   }
 
   protected int(0..1) `==(mixed that) {
