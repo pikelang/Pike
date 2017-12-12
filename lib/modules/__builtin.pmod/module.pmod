@@ -127,14 +127,14 @@ class Timebase {
 
   //!
   public mapping(string:int) tm() {
-    return (["nsec": nsecs % NANOSECONDS]);
+    return (["nsec": abs(nsecs) % NANOSECONDS ]);
   }
 
   //!
   protected mixed cast(string to) {
     switch (to) {
       case "string":
-        return iso_time(tm());
+        return (nsecs < 0 ? "-" : "") + iso_time(tm());
       case "float":
         return nsecs / NANOSECONDS.0;
       case "int":
@@ -171,7 +171,7 @@ class Time {
   //!
   public mapping(string:int) tm() {
     int hourleft;
-    int secleft = (hourleft = nsecs / NANOSECONDS) % 60;
+    int secleft = (hourleft = abs(nsecs) / NANOSECONDS) % 60;
     int minleft = (hourleft /= 60) % 60;
     hourleft /= 60;
     return ::tm() + (["hour":hourleft, "min":minleft, "sec":secleft]);
@@ -179,7 +179,7 @@ class Time {
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     if (fmt == 'O')
-      return sprintf("Sql.Time(%s)", (string)this);
+      return sprintf("Time(%s)", (string)this);
     return ::_sprintf(fmt, params);
   }
 }
@@ -210,7 +210,7 @@ class TimeTZ {
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     if (fmt == 'O')
-      return sprintf("Sql.TimeTZ(%s)", (string)this);
+      return sprintf("TimeTZ(%s)", (string)this);
     return ::_sprintf(fmt, params);
   }
 }
@@ -302,7 +302,8 @@ class Interval {
 
   //!
   public mapping(string:int) tm() {
-    return ::tm() + (["mon":months, "mday":days]);
+    return ::tm() + (["mon":months, "mday":days])
+     + (nsecs < 0 ? (["isnegative":1]) : ([]));
   }
 
   //!
@@ -324,7 +325,7 @@ class Interval {
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     if (fmt == 'O')
-      return sprintf("Sql.Interval(%s)", (string)this);
+      return sprintf("Interval(%s)", (string)this);
     return ::_sprintf(fmt, params);
   }
 }
@@ -355,7 +356,7 @@ class Timestamp {
 
   //!
   public mapping(string:int) tm() {
-    return localtime((int)this) + ::tm();
+    return localtime((int)this) + (["nsec": nsecs % NANOSECONDS ]);
   }
 
   //!
@@ -378,7 +379,7 @@ class Timestamp {
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     if (fmt == 'O')
-      return sprintf("Sql.TimeStamp(%s)", (string)this);
+      return sprintf("Timestamp(%s)", (string)this);
     return ::_sprintf(fmt, params);
   }
 }
@@ -501,7 +502,7 @@ class Date {
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
     switch (fmt) {
-      case 'O': return sprintf("Sql.Date(%s)", (string)this);
+      case 'O': return sprintf("Date(%s)", (string)this);
       case 's': return (string)this;
     }
     return sprintf(sprintf("%%*%c", fmt), params, 0);

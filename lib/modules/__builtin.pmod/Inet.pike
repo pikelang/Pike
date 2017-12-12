@@ -15,10 +15,12 @@ int masklen;
 
 //!
 protected void create(string ip) {
-  masklen = 32;
+  masklen = -1;
   sscanf(ip, "%s/%d", ip, masklen);
   address = NetUtils.string_to_ip(ip);
-  if (address <= IPV4MAX && masklen <= 32)
+  if (masklen < 0)
+    masklen = 128;
+  else if (!has_value(ip, ":"))
     masklen += 12 * 8;
 }
 variant protected void create(int ip, void|int masklen) {
@@ -89,7 +91,7 @@ protected mixed cast(string to) {
     case "string":
       return NetUtils.ip_to_string(address)
        + (masklen == 128 ? "" :
-                    sprintf("/%d", masklen - (address << IPV4MAX && 12*8)));
+                    sprintf("/%d", masklen - (address <= IPV4MAX && 12*8)));
     case "int":
       return address;
     default:
