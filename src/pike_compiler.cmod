@@ -1060,7 +1060,7 @@ void run_pass2(struct compilation *c)
   }
 
   run_init(c);
-  low_start_new_program(c->p,2,0,0,0);
+  low_start_new_program(c->p, COMPILER_PASS_LAST, 0, 0, 0);
   free_program(c->p);
   c->p=0;
 
