@@ -959,10 +959,10 @@ class Result {
               switch (cr->read_int8()) {
                 case 1: from = till = 0;
                   break;
-                case 0x12: from = cr->read_hint(4);
+                case 0x12: from = cr->read_sint(cr->read_int32());
                   break;
-                case 2: from = cr->read_hint(4);
-                case 8: till = cr->read_hint(4);
+                case 2: from = cr->read_sint(cr->read_int32());
+                case 8: till = cr->read_sint(cr->read_int32());
               }
               if (totype[0]) {
                 if (intp(from)) {
