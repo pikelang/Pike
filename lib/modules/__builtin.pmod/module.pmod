@@ -3,9 +3,7 @@
 
 inherit _static_modules.Builtin;
 
-#define NANOSECONDS	1000000000
-  // 2000/01/01 00:00:00 UTC
-protected int year2000utc = mktime((["year":100, "mday":1, "timezone":0]));
+#define NANOSECONDS		1000000000
 
 //! @param timezone
 //!  Timezone in seconds relative to UTC.
@@ -370,9 +368,6 @@ class Timestamp {
           res += " " + iso_time(t);
         return res + iso_timezone(t->timezone);
       }
-      case "float":
-      case "int":
-        return ::cast(to) + year2000utc;
     }
     return ::cast(to);
   }
@@ -405,7 +400,7 @@ class Date {
     create(mktime(tm + (["timezone":0])));
   }
   variant protected void create(int unix_time) {
-    days = (unix_time - year2000utc) / (24 * 3600);
+    days = unix_time / (24 * 3600);
   }
   variant protected void create(float unix_time) {
     create((int)unix_time);
@@ -494,7 +489,7 @@ class Date {
       case "float":
         return (float)(int)this;
       case "int":
-        return days * (24 * 3600) + year2000utc;
+        return days * 24 * 3600;
       default:
         return UNDEFINED;
     }

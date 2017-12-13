@@ -250,14 +250,18 @@ private int writeoidformat(int oid, array(string|int) paramValues,
   return 0;	// text
 }
 
-private array timestamptotype = ({__builtin.Timestamp, 8, "usecs", 8});
-private array datetotype = ({__builtin.Date, 4, "days", 4});
+#define DAYSEPOCHTO2000		10957		// 2000/01/01 00:00:00 UTC
+#define USEPOCHTO2000		(DAYSEPOCHTO2000*24*3600*1000000)
+
+private array timestamptotype
+                    = ({__builtin.Timestamp, 8, USEPOCHTO2000,  "usecs", 8});
+private array datetotype = ({__builtin.Date, 4, DAYSEPOCHTO2000, "days", 4});
 
 private mapping(int:array) oidtotype = ([
    DATEOID:        datetotype,
-   TIMEOID:        ({__builtin.Time, 8, "usecs", 8}),
-   TIMETZOID:      ({__builtin.TimeTZ, 12, "usecs", 8, "timezone", 4}),
-   INTERVALOID:  ({__builtin.Interval, 16, "usecs", 8, "days", 4, "months", 4}),
+   TIMEOID:        ({__builtin.Time,    8, 0, "usecs", 8}),
+   TIMETZOID:      ({__builtin.TimeTZ, 12, 0, "usecs", 8, "timezone", 4}),
+   INTERVALOID:({__builtin.Interval, 16, 0, "usecs", 8, "days", 4, "months",4}),
    TIMESTAMPOID:   timestamptotype,
    TIMESTAMPTZOID: timestamptotype,
    INT4RANGEOID:   ({0, 4}),
@@ -963,12 +967,12 @@ class Result {
               if (totype[0]) {
                 if (intp(from)) {
                   value = totype[0]();
-                  value[totype[2]] = from;
+                  value[totype[3]] = from + totype[2];
                   from = value;
                 }
                 if (intp(till)) {
                   value = totype[0]();
-                  value[totype[2]] = till;
+                  value[totype[3]] = till + totype[2];
                   till = value;
                 }
               }
@@ -1002,10 +1006,12 @@ class Result {
             else {
               array totype = oidtotype[typ];
               value = totype[0]();
-              int i = 2;
-              do
+              value[totype[3]] = cr->read_sint(totype[4]) + totype[2];
+              int i = 5;
+              while (i < sizeof(totype)) {
                 value[totype[i]] = cr->read_sint(totype[i+1]);
-              while ((i += 2) < sizeof(totype));
+                i += 2;
+              }
               if (alltext)
                 value = (string)value;
             }
@@ -1204,8 +1210,10 @@ class Result {
                 int from, till;
                 if (totype[0])
                   from = value->from, till = value->till;
-                else
-                  from = value->from[totype[2]], till = value->till[totype[2]];
+                else {
+                  from = value->from[totype[3]] - totype[2];
+                  till = value->till[totype[3]] - totype[2];
+                }
                 if (value->till == Math.inf)
                   if (value->from == -Math.inf)
                     plugbuffer->add("\0\0\0\1\30");
@@ -1247,11 +1255,13 @@ class Result {
                 array totype = oidtotype[dtoid[i]];
                 if (!objectp(value))
                   value = totype[0](value);
-                plugbuffer->add_int32(totype[1]);
-                int i = 2;
-                do
+                plugbuffer->add_int32(totype[1])
+                 ->add_int(value[totype[3]] - totype[2], totype[4]);
+                int i = 5;
+                while (i < sizeof(totype)) {
                   plugbuffer->add_int(value[totype[i]], totype[i+1]);
-                while ((i += 2) < sizeof(totype));
+                  i += 2;
+                }
               }
               break;
             case FLOAT4OID:
