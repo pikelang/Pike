@@ -1,19 +1,30 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-//! Lightweight IPv4 and IPv6 address type.
+//!   Lightweight IPv4 and IPv6 address type that stores the netmask
+//!   and allows simple arithmetic and comparison operators.
 
 #define IPV4MAX	0xffffffff
 
 constant is_inet = 1;
 
-//!
+//! IP address converted to an integer.
+//! IPv4 addresses will be 32-bit or less.
 int address;
 
-//!
+//! Defines the netmask.  For both IPv4 and IPv6 addresses,
+//! @[masklen] will be 128 in case of full addresses.
 int masklen;
 
-//!
+//! @param ip
+//!   A string defining an IPv4 or IPv6 address
+//!   with an optional @expr{masklen@} attached.
+//!   If the address is in IPv6 notation, the range
+//!   of the @expr{masklen@} is expected to be
+//!   between @expr{0@} and @expr{128@}.
+//!   If the address is in IPv4 notation, the range
+//!   of the @expr{masklen@} is expected to be
+//!   between @expr{0@} and @expr{32@}.
 protected void create(string ip) {
   masklen = -1;
   sscanf(ip, "%s/%d", ip, masklen);
@@ -23,9 +34,15 @@ protected void create(string ip) {
   else if (!has_value(ip, ":"))
     masklen += 12 * 8;
 }
+//! @param ip
+//!   An IPv4 or IPv6 ip address.
+//! @param masklen
+//!   Defines the netmask, always in the range between @expr{0@}
+//!   and @expr{128@}; i.e. for IPv4 addresses you should
+//!   add @expr{12 * 8@} to the actual IPv4-masklen.
 variant protected void create(int ip, void|int masklen) {
   address = ip;
-  this::masklen = zero_type(masklen) ? 16*8 : 12*8 + masklen;
+  this::masklen = zero_type(masklen) ? 16*8 : masklen;
 }
 variant protected void create() {
 }
@@ -85,7 +102,6 @@ protected int(0..1) `==(mixed that) {
    : address == [int]that;
 }
 
-//!
 protected mixed cast(string to) {
   switch (to) {
     case "string":

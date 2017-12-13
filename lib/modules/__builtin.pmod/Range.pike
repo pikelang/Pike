@@ -1,21 +1,22 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-//! Generic lightweight range type.
+//!   Generic lightweight range type.  Supports any values for lower
+//!   and upper boundaries that implement the @expr{`<@} lfun.
 //! @note
 //!   Can only contain a single contiguous range.
 
-//!
+//!  The lower inclusive boundary.
 mixed from;
 
-//!
+//!  The upper exclusive boundary.
 mixed till;
 
 //! @param from
-//!   Lower inclusive limit for the interval.  Specify no lower-limit
+//!   Lower inclusive boundary for the range.  Specify no lower-boundary
 //!   by filling in @expr{-Math.inf@}.
 //! @param till
-//!   Upper exclusive limit for the interval.  Specify no upper-limit
+//!   Upper exclusive boundary for the range.  Specify no upper-boundary
 //!   by filling in @expr{Math.inf@}.
 //! @seealso
 //!   [Math.inf]
@@ -79,7 +80,7 @@ protected int(0..1) `==(mixed that) {
    && from == ([object]that)->from && till == ([object]that)->till;
 }
 
-//!
+//! Casting a range to string delivers an SQL-compliant value.
 protected mixed cast(string to) {
   if (to == "string")
     return from >= till ? "empty" : sprintf("%c%s,%s)",

@@ -6,9 +6,12 @@ inherit _static_modules.Builtin;
 #define NANOSECONDS		1000000000
 
 //! @param timezone
-//!  Timezone in seconds relative to UTC.
+//!  Timezone in seconds @b{west@} from UTC
+//!   (must include daylight-saving time adjustment).
 //! @returns
-//!   ISO formatted timezone.
+//!   ISO formatted timezone @b{east@} from UTC.
+//! @seealso
+//!  @[localtime()]
 final string iso_timezone(int timezone) {
   if (timezone) {
     string res;
@@ -51,15 +54,19 @@ string iso_time(mapping(string:int) tm) {
   return res;
 }
 
-//! Base class for the time related types.
+//!  Base class for the time related types.
 //! @seealso
-//!  [Timestamp]
+//!  @[Timestamp], @[Time]
 class Timebase {
 
-  //!
-  int nsecs;	// Since 2000/01/01 00:00:00 UTC
+  //!  Nanoseconds since epoch (for absolute time classes,
+  //!  epoch equals @expr{1970/01/01 00:00:00 UTC@}).
+  int nsecs;
 
-  //!
+  //! @param sec
+  //!   Seconds since epoch.
+  //! @param nsec
+  //!   Nanoseconds since epoch.
   variant protected void create() {
   }
   variant protected void create(object/*this_program*/ copy) {
@@ -69,12 +76,14 @@ class Timebase {
     nsecs = (int)(sec * NANOSECONDS + nsec);
   }
 
-  //!
+  //! Microseconds since epoch; reflects the equivalent value as the basic
+  //! member @[nsecs].
   int|float `usecs() {
     return nsecs % 1000 ? nsecs / 1000.0 : nsecs / 1000;
   }
 
-  //!
+  //! Microseconds since epoch; actually modifies the basic
+  //! member @[nsecs].
   int `usecs=(int usec) {
     nsecs = 1000 * usec;
     return usec;
@@ -123,12 +132,14 @@ class Timebase {
      : floatp(that) && (float)nsecs == [float]that * NANOSECONDS;
   }
 
-  //!
   public mapping(string:int) tm() {
     return (["nsec": abs(nsecs) % NANOSECONDS ]);
   }
 
-  //!
+  //! Can be casted to string, float and int.
+  //! Casting it to float and int return unix-time values.
+  //!  @seealso
+  //!    @[mktime()], @[gmtime()]
   protected mixed cast(string to) {
     switch (to) {
       case "string":
@@ -150,11 +161,24 @@ class Timebase {
   }
 }
 
-//! Lightweight time type.
+//! Lightweight time type.  Stores absolute times in a day
+//! with nanosecond resolution.  Normalised value range is between
+//! @expr{00:00:00.000000000@} and @expr{23:59:59.999999999@}.
+//! Values outside this range are accepted, and have arithmetically
+//! sound results.
+//! @seealso
+//!  @[Interval], @[Date], @[TimeTZ], @[Range]
 class Time {
   inherit Timebase;
 
-  //!
+  //! @param hour
+  //!   Hours since epoch.
+  //! @param min
+  //!   Minutes since epoch.
+  //! @param sec
+  //!   Seconds since epoch.
+  //! @param nsec
+  //!   Nanoseconds since epoch.
   variant
    protected void create(int hour, int min, void|int sec, void|int nsec) {
     nsecs = ((((hour * 60) + min) * 60 + sec) * NANOSECONDS) + nsec;
@@ -166,7 +190,11 @@ class Time {
     nsecs = sec * NANOSECONDS;
   }
 
-  //!
+  //! @returns
+  //!   A tm-like mapping which describes the time.  The mapping will
+  //!   include an extra @expr{nsec@} component.
+  //! @seealso
+  //!  @[mktime()], @[gmtime()]
   public mapping(string:int) tm() {
     int hourleft;
     int secleft = (hourleft = abs(nsecs) / NANOSECONDS) % 60;
@@ -182,11 +210,19 @@ class Time {
   }
 }
 
-//! Lightweight time type with timezone.
+//!  Lightweight time type with timezone.  Equivalent to @[Time], but
+//!  stores a timezone offset as well.
+//! @seealso
+//!  @[Time], @[Date], @[Interval], @[Range]
 class TimeTZ {
   inherit Time;
 
-  //!
+  //!   Timezone offset in seconds @b{west@} from UTC
+  //!   (includes daylight-saving time adjustment).
+  //! @note
+  //!   ISO time format displays the timezone in seconds @b{east@} from UTC.
+  //! @seealso
+  //!  @[localtime()]
   int timezone;
 
   variant protected void create(object/*this_program*/ copy) {
@@ -194,12 +230,10 @@ class TimeTZ {
     timezone = [int]copy->timezone;
   }
 
-  //!
   public mapping(string:int) tm() {
     return ::tm() + (["timezone":timezone]);
   }
 
-  //!
   protected mixed cast(string to) {
     if (to == "string")
       return ::cast(to) + iso_timezone(timezone);
@@ -214,15 +248,23 @@ class TimeTZ {
 }
 
 //! Lightweight time and date interval type.
+//! It stores the interval in integers of nanoseconds, days and months.
+//! @note
+//!  Depending on daylight-saving time, a day may not equal 24 hours.
+//! @note
+//!  The number of days in a month depends on the the time of the year.
+//! @seealso
+//!  @[Timestamp], @[Date]
 class Interval {
   inherit Time;
 
   constant is_interval = 1;
 
-  //!
+  //!  Number of days; may not be equal to 24 hours per day, depending
+  //!  on daylight-saving time.
   int days;
 
-  //!
+  //!  Number of months; the number of days per month varies accordingly.
   int months;
 
   variant protected void create(Interval copy) {
@@ -298,13 +340,21 @@ class Interval {
      && nsecs == [int]([object]that)->nsecs;
   }
 
-  //!
+  //! @returns
+  //!   A tm-like mapping which describes the interval.  The mapping will
+  //!   include an extra @expr{nsec@} component, and optionally
+  //!   @expr{isnegative = 1@} if the interval is a negative time interval.
+  //! @seealso
+  //!  @[mktime()], @[gmtime()]
   public mapping(string:int) tm() {
     return ::tm() + (["mon":months, "mday":days])
      + (nsecs < 0 ? (["isnegative":1]) : ([]));
   }
 
-  //!
+  //! Casting intervals with @expr{days@} or @expr{months@} to @expr{int@}
+  //! or @expr{float@} is not possible since the units are not constant.
+  //! Casting an interval to @expr{string@} will return a value which
+  //! is SQL-compliant.
   protected mixed cast(string to) {
     switch (to) {
       case "string": {
@@ -328,13 +378,36 @@ class Interval {
   }
 }
 
-//! Lightweight time and date type.  The values are stored internally
-//! relative to UTC.
+//! Lightweight time and date type.  The values point at absolute points
+//! in time.  The values are stored internally with nanosecond resolution
+//! since epoch (@expr{1970/01/01 00:00:00 UTC@}).
+//! @seealso
+//!  @[Interval], @[Date], @[Range], @[localtime()], @[mktime()]
 class Timestamp {
   inherit Timebase;
   constant is_timestamp = 1;
 
-  //! Init using local time
+  //! @param year
+  //!   Absolute year (e.g. 1900 == 1900, 2000 = 2000, 2017 == 2017).
+  //! @param month
+  //!   Month of the year (January == 1 ... December == 12).
+  //! @param day
+  //!   Day of the month (typically between 1 and 31).
+  //! @param hour
+  //!   Hour of the day (typically between 0 and 23).
+  //! @param min
+  //!   Minutes (typically between 0 and 59).
+  //! @param sec
+  //!   Seconds (typically between 0 and 59).
+  //! @param nsec
+  //!   Nanoseconds (typically between 0 and 999999999).
+  //! @note
+  //!   If any of these values are offered in a denormalised range,
+  //!   they will be normalised relative to the startdate offered.
+  //!   I.e. it allows you to do year/month/day/hour/minute/second/nanosecond
+  //!   arithmetic in a sane way.
+  //! @seealso
+  //!  @[localtime()], @[mktime()]
   variant protected void create(int year, int month, int day,
    void|int hour, void|int min, void|int sec, void|int nsec) {
     create((["year":year - 1900, "mon":month - 1, "mday":day, "hour":hour,
@@ -345,19 +418,24 @@ class Timestamp {
     create(mktime(tm), tm->nsec);
   }
   variant protected void create(int unix_time, void|int nsec) {
-    ::create(unix_time - year2000utc, nsec);
+    ::create(unix_time, nsec);
   }
 
   inline protected int(0..1) `<(mixed that) {
     return intp(that) ? (int)this < that : ::`<(that);
   }
 
-  //!
+  //! @returns
+  //!  The same as @[localtime()], but augmented
+  //!  by an extra member called @expr{nsec@}.
+  //! @seealso
+  //!  @[localtime()]
   public mapping(string:int) tm() {
     return localtime((int)this) + (["nsec": nsecs % NANOSECONDS ]);
   }
 
-  //!
+  //! When cast to string it returns an ISO formatted timestamp
+  //! that includes daylight-saving and timezone corrections.
   protected mixed cast(string to) {
     switch (to) {
       case "string": {
@@ -379,12 +457,14 @@ class Timestamp {
   }
 }
 
-//! Lightweight date type.
+//!  Lightweight date type.  Stores internally in days since epoch.
+//! @seealso
+//!  @[Interval], @[Timestamp], @[Time], @[TimeTZ], @[Range]
 class Date {
   constant is_date = 1;
 
-  //!
-  int days;	// Since 2000/01/01
+  //! Since 1970/01/01 (epoch).
+  int days;
 
   //!
   variant protected void create(int year, int month, int day) {
@@ -474,12 +554,10 @@ class Date {
      || floatp(that) && (float)this == [float]that;
   }
 
-  //!
   public mapping(string:int) tm() {
     return gmtime((int)this);
   }
 
-  //!
   protected mixed cast(string to) {
     switch (to) {
       case "string": {
