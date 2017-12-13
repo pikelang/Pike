@@ -80,6 +80,12 @@ protected int(0..1) `==(mixed that) {
    && from == ([object]that)->from && till == ([object]that)->till;
 }
 
+//! @returns
+//!   Calculates the value of the interval: @expr{till - from@}.
+mixed interval() {
+  return till - from;
+}
+
 //! Casting a range to string delivers an SQL-compliant value.
 protected mixed cast(string to) {
   if (to == "string")

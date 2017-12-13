@@ -376,10 +376,10 @@ class Interval {
   protected mixed cast(string to) {
     switch (to) {
       case "string": {
-        string res = months ? sprintf("%d MONTH ", months) : "";
+        string res = months ? sprintf("%d MONTH", months) : "";
         if (days)
-          res += sprintf("%d DAY ", days);
-        return res + ::cast(to);
+          res += (res > "" ? " " : "") + sprintf("%d DAY", days);
+        return res + (nsecs ? (res > "" ? " " : "") + ::cast(to) : "");
       }
       case "float":
       case "int":
@@ -445,6 +445,23 @@ class Timestamp {
   variant protected void create(object/*Date*/ copy) {
     // Force the date to be regarded in the localised timezone.
     create([mapping(string:int)]copy->tm() - (<"timezone">));
+  }
+
+  protected mixed `-(void|mixed that) {
+    if (zero_type(that))
+      error("Cannot negate %O\n", this);
+    if (objectp(that)) {
+      if (([object]that)->is_date)
+        that = Timestamp([object]that);
+      if (([object]that)->is_timestamp) {
+        Interval n = Interval();
+        n->nsecs = nsecs - [int]([object]that)->nsecs;
+        return n;
+      }
+      if (!([object]that)->is_interval)
+        error("Cannot substract %O\n", that);
+    }
+    return this+-that;
   }
 
   inline protected int(0..1) `<(mixed that) {
@@ -517,6 +534,8 @@ class Date {
   protected mixed `+(mixed that) {
     this_program n = this_program(this);
     if (objectp(that)) {
+      if (!([object]that)->is_interval)
+        error("Cannot add %O\n", that);
       if (([object]that)->nsecs % (24 * 3600 * NANOSECONDS)
        || ([object]that)->months)
         error("Adding anything other than days not supported\n");
@@ -529,7 +548,21 @@ class Date {
     return n;
   }
 
-  protected mixed `-(mixed that) {
+  protected mixed `-(void|mixed that) {
+    if (zero_type(that))
+      error("Cannot negate %O\n", this);
+    if (objectp(that)) {
+      Interval n = Interval();
+      if (([object]that)->is_date) {
+        n->days = days - [int]([object]that)->days;
+        return n;
+      }
+      if (([object]that)->is_timestamp) {
+        n->nsecs = Timestamp(this)->nsecs - [int]([object]that)->nsecs;
+        return n;
+      }
+      error("Cannot substract %O\n", that);
+    }
     return this+-that;
   }
 

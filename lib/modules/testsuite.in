@@ -990,6 +990,12 @@ test_equal(  Regexp("([^-+]*)")
      ->split((string)(Timestamp(2001,2,3)+Interval(24,4,5)*2))[0],
      "2001/02/05 00:08:10")
 
+test_equal( (string)(Date(2017,12,2) - Date(2017,12,5)), "-3 DAY")
+test_equal( (string)(Date(2017,12,5) - Date(2017,12,2)), "3 DAY")
+test_equal( (string)(Timestamp(2017,12,5) - Timestamp(2017,12,2)), "72:00")
+test_equal( (string)(Timestamp(2017,12,5) - Date(2017,12,2)), "72:00")
+test_equal( (string)(Date(2017,12,5) - Timestamp(2017,12,2)), "72:00")
+
 dnl - Range
 
 test_equal( (string)Range(2,5), "[2\54""5\51" )
@@ -1015,6 +1021,9 @@ test_equal( (string)Range(Inet("1.2.3.2"), Inet("1.2.3.4")),
 test_equal( (string)Range(Inet("1.2.3.7"), Inet("1.2.3.4")), "empty" )
 test_equal( (string)Range(-Math.inf, Inet("1.2.3.4")), "(,1.2.3.4)" )
 
+test_equal( (string)Range(Date(2017,12,2), Date(2017,12,5))->interval(),
+            "3 DAY")
+
 dnl - Inet
 
 test_equal( (string)Inet("255.255.255.255"), "255.255.255.255")
@@ -1026,6 +1035,7 @@ test_equal( (string)Inet("fffe::/24"), "fffe::/24")
 test_equal( (string)Inet("::1.2.3.4/100"), "1.2.3.4/4")
 test_equal( (string)Inet("1.2.3.4/4"), "1.2.3.4/4")
 test_equal( (int)Inet("1.2.3.4/4"), 0x01020304)
+test_equal( (string)Inet(0x01020304, 128 - 8), "1.2.3.4/24")
 test_equal( (int)Inet("fffe::"), 0xfffe0000000000000000000000000000)
 
 dnl - Array
