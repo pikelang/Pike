@@ -172,7 +172,7 @@ PIKECLASS PIKE_NAME
           Pike_error("Apply on parent of destructed object.\n");
       }
     }
-    DOCSTART() @endclass State
+    DOCSTART() @endclass PIKE_NAME
     DOCEND()
   }
 #endif
