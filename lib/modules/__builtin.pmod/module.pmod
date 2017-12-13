@@ -54,9 +54,10 @@ string iso_time(mapping(string:int) tm) {
   return res;
 }
 
-//!  Base class for the time related types.
+//!  Base class for the time related types.  Supports arithmetic with
+//!  @[Interval] objects.
 //! @seealso
-//!  @[Timestamp], @[Time]
+//!  @[Timestamp], @[Time], @[Interval]
 class Timebase {
 
   //!  Nanoseconds since epoch (for absolute time classes,
@@ -67,9 +68,9 @@ class Timebase {
   //!   Seconds since epoch.
   //! @param nsec
   //!   Nanoseconds since epoch.
-  variant protected void create() {
+  variant protected void create(void|mapping(string:int) tm) {
   }
-  variant protected void create(object/*this_program*/ copy) {
+  variant protected void create(Timebase copy) {
     nsecs = [int]copy->nsecs;
   }
   variant protected void create(int|float sec, void|int nsec) {
@@ -91,9 +92,28 @@ class Timebase {
 
   protected mixed `+(mixed that) {
     if (objectp(that) && ([object]that)->is_interval) {
-      if (([object]that)->days || ([object]that)->months)
-        error("Adding days or months not supported yet\n");
-      this_program n = this_program(this);
+      this_program n;
+      if (([object]that)->days || ([object]that)->months) {
+        mapping(string:int) t = tm();
+        if (([object]that)->days)
+          if (t->mday)
+            t->mday += [int]([object]that)->days;
+          else
+            error("Adding days is not supported\n");
+        if (([object]that)->months)
+          if (zero_type(t->mon))
+            error("Adding months is not supported\n");
+          else
+            t->mon += [int]([object]that)->months;
+        /*
+         *  Perform a manual daylight-saving correction, because mktime() gets
+         *  it wrong for days/months across a daylight-saving switch.
+         */
+        int oldtimezone = t->timezone;
+        t = (n = this_program(t))->tm();
+        n->nsecs += (t->timezone - oldtimezone) * NANOSECONDS;
+      } else
+        n = this_program(this);
       n->nsecs += [int]([object]that)->nsecs;
       return n;
     } else if (!intp(that) && !floatp(that))
@@ -104,17 +124,7 @@ class Timebase {
   }
 
   protected mixed `-(mixed that) {
-    if (objectp(that) && ([object]that)->is_interval) {
-      if (([object]that)->days || ([object]that)->months)
-        error("Adding days or months not supported yet\n");
-      this_program n = this_program(this);
-      n->nsecs -= [int]([object]that)->nsecs;
-      return n;
-    } else if (!intp(that) && !floatp(that))
-      error("Cannot substract %O\n", that);
-    this_program n = this_program();
-    n->nsecs = (int)(nsecs - [float|int]that * NANOSECONDS);
-    return n;
+    return this+-that;
   }
 
   protected int(0..1) `<(mixed that) {
@@ -165,7 +175,7 @@ class Timebase {
 //! with nanosecond resolution.  Normalised value range is between
 //! @expr{00:00:00.000000000@} and @expr{23:59:59.999999999@}.
 //! Values outside this range are accepted, and have arithmetically
-//! sound results.
+//! sound results.  Supports arithmetic with @[Interval] objects.
 //! @seealso
 //!  @[Interval], @[Date], @[TimeTZ], @[Range]
 class Time {
@@ -183,7 +193,7 @@ class Time {
    protected void create(int hour, int min, void|int sec, void|int nsec) {
     nsecs = ((((hour * 60) + min) * 60 + sec) * NANOSECONDS) + nsec;
   }
-  variant protected void create(object/*this_program*/ copy) {
+  variant protected void create(Time copy) {
     ::create(copy);
   }
   variant protected void create(int sec) {
@@ -225,7 +235,7 @@ class TimeTZ {
   //!  @[localtime()]
   int timezone;
 
-  variant protected void create(object/*this_program*/ copy) {
+  variant protected void create(TimeTZ copy) {
     ::create(copy);
     timezone = [int]copy->timezone;
   }
@@ -249,12 +259,14 @@ class TimeTZ {
 
 //! Lightweight time and date interval type.
 //! It stores the interval in integers of nanoseconds, days and months.
+//! Can be used in arithmetic with @[Time], @[TimeTZ], @[Timestamp]
+//! and @[Date] types.
 //! @note
 //!  Depending on daylight-saving time, a day may not equal 24 hours.
 //! @note
 //!  The number of days in a month depends on the the time of the year.
 //! @seealso
-//!  @[Timestamp], @[Date]
+//!  @[Timestamp], @[Date], @[Time]
 class Interval {
   inherit Time;
 
@@ -312,13 +324,19 @@ class Interval {
     return n;
   }
 
-  protected mixed `-(mixed that) {
-    if (!objectp(that) || !([object]that)->is_interval)
-      error("Cannot substract %O\n", that);
+  protected mixed `-(void|mixed that) {
     Interval n = Interval(this);
-    n->nsecs -= ([object]that)->nsecs;
-    n->days -= ([object]that)->days;
-    n->months -= ([object]that)->months;
+    if (zero_type(that)) {
+      n->nsecs  = -n->nsecs;
+      n->days   = -n->days;
+      n->months = -n->months;
+    } else if (!objectp(that) || !([object]that)->is_interval)
+      error("Cannot substract %O\n", that);
+    else {
+      n->nsecs  -= ([object]that)->nsecs;
+      n->days   -= ([object]that)->days;
+      n->months -= ([object]that)->months;
+    }
     return n;
   }
 
@@ -402,10 +420,14 @@ class Timestamp {
   //! @param nsec
   //!   Nanoseconds (typically between 0 and 999999999).
   //! @note
+  //!   Specified values are expected in the localised time (i.e. relative
+  //!   to the current timezone locale, including daylight-saving correction).
+  //! @note
   //!   If any of these values are offered in a denormalised range,
   //!   they will be normalised relative to the startdate offered.
-  //!   I.e. it allows you to do year/month/day/hour/minute/second/nanosecond
-  //!   arithmetic in a sane way.
+  //!   I.e. it allows primitive year/month/day/hour/minute/second/nanosecond
+  //!   arithmetic.  For more advanced arithmetic you must use @[Interval]
+  //!   objects.
   //! @seealso
   //!  @[localtime()], @[mktime()]
   variant protected void create(int year, int month, int day,
@@ -419,6 +441,10 @@ class Timestamp {
   }
   variant protected void create(int unix_time, void|int nsec) {
     ::create(unix_time, nsec);
+  }
+  variant protected void create(object/*Date*/ copy) {
+    // Force the date to be regarded in the localised timezone.
+    create([mapping(string:int)]copy->tm() - (<"timezone">));
   }
 
   inline protected int(0..1) `<(mixed that) {
@@ -470,7 +496,7 @@ class Date {
   variant protected void create(int year, int month, int day) {
     create((["year":year - 1900, "mon":month - 1, "mday":day, "timezone":0]));
   }
-  variant protected void create(object/*this_program*/ copy) {
+  variant protected void create(Date copy) {
     days = [int]copy->days;
   }
   variant protected void create(Timestamp copy) {
@@ -504,23 +530,7 @@ class Date {
   }
 
   protected mixed `-(mixed that) {
-    if (objectp(that)) {
-      if (([object]that)->is_date) {
-        Interval n = Interval();
-        n->days = days - [int]([object]that)->days;
-        return n;
-      } else if (([object]that)->is_interval) {
-        if (([object]that)->nsecs % (24 * 3600 * NANOSECONDS)
-         || ([object]that)->months)
-          error("Adding anything other than days not supported\n");
-        this_program n = this_program(this);
-        n->days -= ([object]that)->days
-         + [int]([object]that)->nsecs / (24 * 3600 * NANOSECONDS);
-        return n;
-      }
-    } else if (intp(that))
-      return this + -that;
-    error("Cannot substract %O\n", that);
+    return this+-that;
   }
 
   inline protected int(0..1) `<(mixed that) {

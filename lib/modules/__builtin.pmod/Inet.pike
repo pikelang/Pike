@@ -25,7 +25,7 @@ int masklen;
 //!   If the address is in IPv4 notation, the range
 //!   of the @expr{masklen@} is expected to be
 //!   between @expr{0@} and @expr{32@}.
-protected void create(string ip) {
+variant protected void create(string ip) {
   masklen = -1;
   sscanf(ip, "%s/%d", ip, masklen);
   address = NetUtils.string_to_ip(ip);
@@ -34,6 +34,7 @@ protected void create(string ip) {
   else if (!has_value(ip, ":"))
     masklen += 12 * 8;
 }
+
 //! @param ip
 //!   An IPv4 or IPv6 ip address.
 //! @param masklen
