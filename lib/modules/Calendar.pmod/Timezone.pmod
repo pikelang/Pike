@@ -1412,7 +1412,7 @@ class Runtime_timezone_compiler
    }
 
 // ----------------------------------------------------------------
-// Base class for daylight savings and war time rules
+// Base class for daylight-saving and war time rules
 // ----------------------------------------------------------------
 
 // ----------------------------------------------------------------

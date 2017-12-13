@@ -5682,9 +5682,9 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   	@member int(0..365) "yday"
  *!   	  Day of the year.
  *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	  Is daylight-saving time active.
  *!   	@member int "timezone"
- *!   	  Offset from UTC, including daylight savings time adjustment.
+ *!   	  Offset from UTC, including daylight-saving time adjustment.
  *!   @endmapping
  *!
  *! An error is thrown if the localtime(2) call failed on the system.
@@ -5693,7 +5693,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!
  *! @note
  *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
- *!   present, and was sometimes not adjusted for daylight savings time.
+ *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
@@ -5976,7 +5976,7 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
  *!   	@member int(0..) "year"
  *!   	  Year since 1900.
  *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	  Is daylight-saving time active.
  *!   	@member int "timezone"
  *!   	  The timezone offset from UTC in seconds. If left out, the time
  *!       will be calculated in the local timezone.

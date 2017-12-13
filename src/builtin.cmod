@@ -372,7 +372,7 @@ PIKECLASS TM
 
     /*! @decl int isdst
      *!
-     *! True if daylight savings are in effect.  If this field is -1
+     *! True if daylight-saving is in effect.  If this field is -1
      *! (the default) it (and the timezone info) will be updated
      *! automatically using the timezone rules.
      */
