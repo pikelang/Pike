@@ -914,8 +914,8 @@ test_do(add_constant("o"))
 dnl - Val.Timestamp
 
 test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(1850,6,19,2,3,4,12000))[0],
-  "1850/06/19 02:03:04.000012")
+  ->split((string)Val.Timestamp(1920,6,19,2,3,4,12000))[0],
+  "1920/06/19 02:03:04.000012")
 test_equal( Regexp("([^-+]*)")
   ->split((string)Val.Timestamp(1970,1,1,2,3,4,12000))[0],
   "1970/01/01 02:03:04.000012")
@@ -967,11 +967,11 @@ test_equal( (string)Val.Date(2000,6,18),  "2000/06/18")
 test_equal( (string)Val.Date(1970,1,1),   "1970/01/01")
 test_equal( (string)Val.Date(1970,1,2),   "1970/01/02")
 test_equal( (string)Val.Date(1969,12,31), "1969/12/31")
-test_equal( (string)Val.Date(1850,12,31), "1850/12/31")
-test_equal( (string)Val.Date(1850,12,32), "1851/01/01")
-test_equal( (string)Val.Date(1850,13,27), "1851/01/27")
-test_equal( (string)Val.Date(1850,14,27), "1851/02/27")
-test_equal( (string)(Val.Date(1850,14,27) + 1), "1851/02/28")
+test_equal( (string)Val.Date(1920,12,31), "1920/12/31")
+test_equal( (string)Val.Date(1920,12,32), "1921/01/01")
+test_equal( (string)Val.Date(1920,13,27), "1921/01/27")
+test_equal( (string)Val.Date(1920,14,27), "1921/02/27")
+test_equal( (string)(Val.Date(1920,14,27) + 1), "1921/02/28")
 test_equal( (string)Val.Date(1234567890), "2009/02/13")
 
 test_equal( (int)(Val.Date(2017,7,14)+Val.Time(12,03,33,12000)),
