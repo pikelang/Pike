@@ -28,7 +28,7 @@ void _decode(array(mixed) x) {
 //!   Upper exclusive boundary for the range.  Specify no upper-boundary
 //!   by filling in @expr{Math.inf@}.
 //! @seealso
-//!   [Math.inf]
+//!   @[Math.inf]
 protected variant void create(mixed from, mixed till) {
   this::from = from;
   this::till = till;

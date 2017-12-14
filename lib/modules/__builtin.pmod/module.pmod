@@ -132,7 +132,7 @@ class Timebase {
   }
 
   protected mixed `-(mixed that) {
-    return this+-that;
+    return this + -that;
   }
 
   protected int(0..1) `<(mixed that) {
@@ -188,6 +188,7 @@ class Timebase {
 //!  @[Interval], @[Date], @[TimeTZ], @[Range]
 class Time {
   inherit Timebase;
+  constant is_time = 1;
 
   //! @param hour
   //!   Hours since epoch.
@@ -203,6 +204,12 @@ class Time {
   }
   variant protected void create(int sec) {
     nsecs = sec * NANOSECONDS;
+  }
+
+  protected mixed `+(mixed that) {
+    if (objectp(that) && ([object]that)->is_date)
+      return that + this;
+    return ::`+(that);
   }
 
   //! @returns
@@ -231,6 +238,7 @@ class Time {
 //!  @[Time], @[Date], @[Interval], @[Range]
 class TimeTZ {
   inherit Time;
+  constant is_timetz = 1;
 
   //!   Timezone offset in seconds @b{west@} from UTC
   //!   (includes daylight-saving time adjustment).
@@ -283,7 +291,6 @@ class TimeTZ {
 //!  @[Timestamp], @[Date], @[Time]
 class Interval {
   inherit Time;
-
   constant is_interval = 1;
 
   //!  Number of days; may not be equal to 24 hours per day, depending
@@ -485,7 +492,7 @@ class Timestamp {
       if (!([object]that)->is_interval)
         error("Cannot substract %O\n", that);
     }
-    return this+-that;
+    return this + -that;
   }
 
   inline protected int(0..1) `<(mixed that) {
@@ -564,15 +571,25 @@ class Date {
   }
 
   protected mixed `+(mixed that) {
-    this_program n = this_program(this);
+    object n = this_program(this);
     if (objectp(that)) {
-      if (!([object]that)->is_interval)
+      if (([object]that)->is_interval) {
+        n->days += ([object]that)->days;
+        if(([object]that)->months) {
+          mapping(string:int) t = [mapping(string:int)]n->tm();
+          t->mon += ([object]that)->months;
+          n = this_program(t);
+        }
+        if (([object]that)->nsecs)
+          (n = Timestamp(n))->nsecs += ([object]that)->nsecs;
+      } else if (([object]that)->is_time) {
+          mapping(string:int) t = [mapping(string:int)]n->tm()
+           + [mapping(string:int)]([object]that)->tm();
+          if (([object]that)->is_timetz)
+            m_delete(t, "timezone");
+          n = Timestamp(t);
+      } else
         error("Cannot add %O\n", that);
-      if (([object]that)->nsecs % (24 * 3600 * NANOSECONDS)
-       || ([object]that)->months)
-        error("Adding anything other than days not supported\n");
-      n->days += ([object]that)->days
-       + [int]([object]that)->nsecs / (24 * 3600 * NANOSECONDS);
     } else if (intp(that))
       n->days += that;
     else
@@ -595,7 +612,7 @@ class Date {
       }
       error("Cannot substract %O\n", that);
     }
-    return this+-that;
+    return this + -that;
   }
 
   inline protected int(0..1) `<(mixed that) {
