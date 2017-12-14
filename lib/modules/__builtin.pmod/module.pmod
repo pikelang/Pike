@@ -5,6 +5,19 @@ inherit _static_modules.Builtin;
 
 #define NANOSECONDS		1000000000
 
+//! The local timezone without daylight-saving correction.
+//! @note
+//!  This value is determined once at process start, and cached for
+//!  the lifetime of the process.
+int local_timezone = lambda() {
+    int tprobe = time(1);
+    for(;; tprobe -= 4 * 30 * 24 * 3600) {		// Go back 1/3 of a year
+      mapping(string:int) tm = localtime(tprobe);
+      if (!tm->isdst)			// Find a spot without daylight-saving
+        return tm->timezone;
+    }
+  }();
+
 //! @param timezone
 //!  Timezone in seconds @b{west@} from UTC
 //!   (must include daylight-saving time adjustment).
@@ -238,7 +251,6 @@ class Time {
 //!  @[Time], @[Date], @[Interval], @[Range]
 class TimeTZ {
   inherit Time;
-  constant is_timetz = 1;
 
   //!   Timezone offset in seconds @b{west@} from UTC
   //!   (includes daylight-saving time adjustment).
@@ -257,6 +269,45 @@ class TimeTZ {
     timezone = x[1];
   }
 
+  variant
+   protected void create(int hour, int min, void|int sec, void|int nsec) {
+    ::create(hour, min, sec, nsec);
+    timezone = local_timezone;
+  }
+
+  //! Stores just the time of the day components, but including
+  //! the correct timezone offset with any daylight-saving correction
+  //! active on the date specified.
+  //! @param year
+  //!   Absolute year (e.g. 1900 == 1900, 2000 = 2000, 2017 == 2017).
+  //! @param month
+  //!   Month of the year (January == 1 ... December == 12).
+  //! @param day
+  //!   Day of the month (typically between 1 and 31).
+  //! @param hour
+  //!   Hour of the day (typically between 0 and 23).
+  //! @param min
+  //!   Minutes (typically between 0 and 59).
+  //! @param sec
+  //!   Seconds (typically between 0 and 59).
+  //! @param nsec
+  //!   Nanoseconds (typically between 0 and 999999999).
+  //! @note
+  //!   Specified values are expected in the localised time (i.e. relative
+  //!   to the current timezone locale, including daylight-saving correction).
+  //! @note
+  //!   If any of these values are offered in a denormalised range,
+  //!   they will be normalised relative to the startdate offered.
+  //! @seealso
+  //!  @[Timestamp], @[Date], @[Interval], @[Time]
+  variant protected void create(int year, int month, int day,
+   int hour, int min, void|int sec, void|int nsec) {
+    mapping(string:int) t
+     = localtime(mktime((["year":year - 1900, "mon":month - 1,
+        "mday":day, "hour":hour, "min":min, "sec":sec])));
+    ::create(t->hour, t->min, t->sec, nsec);
+    timezone = t->timezone;
+  }
   variant protected void create(TimeTZ copy) {
     ::create(copy);
     timezone = [int]copy->timezone;
@@ -585,8 +636,6 @@ class Date {
       } else if (([object]that)->is_time) {
           mapping(string:int) t = [mapping(string:int)]n->tm()
            + [mapping(string:int)]([object]that)->tm();
-          if (([object]that)->is_timetz)
-            m_delete(t, "timezone");
           n = Timestamp(t);
       } else
         error("Cannot add %O\n", that);

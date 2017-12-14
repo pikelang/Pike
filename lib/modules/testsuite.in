@@ -945,14 +945,20 @@ test_equal( (string)Val.Time(23,44), "23:44")
 test_equal( (string)Val.Time(23,44,12), "23:44:12")
 test_equal( (string)Val.Time(23), "00:00:23")
 test_equal( (string)Val.Time(23,44,12, 12000), "23:44:12.000012")
+test_equal( (string)(Val.Time(14,03,33,12000)+Val.Interval(123)),
+            "14:05:36.000012")
 
 dnl - Val.TimeTZ
 
-test_equal( (string)Val.TimeTZ(23,44,12, 12000), "23:44:12.000012")
+test_equal( Regexp("([^-+]*)")
+ ->split((string)Val.TimeTZ(23,44,12, 12000))[0], "23:44:12.000012")
 test_equal( lambda() { Val.TimeTZ ttz = Val.TimeTZ(23,44);
                        ttz->timezone = 3600;
                        return (string)ttz;}(),
       "23:44-01")
+test_equal( Regexp("([^-+]*)")
+  ->split((string)(Val.TimeTZ(14,03,33,12000)+Val.Interval(123)))[0],
+            "14:05:36.000012")
 
 dnl - Val.Date
 
@@ -967,6 +973,13 @@ test_equal( (string)Val.Date(1850,13,27), "1851/01/27")
 test_equal( (string)Val.Date(1850,14,27), "1851/02/27")
 test_equal( (string)(Val.Date(1850,14,27) + 1), "1851/02/28")
 test_equal( (string)Val.Date(1234567890), "2009/02/13")
+
+test_equal( (int)(Val.Date(2017,7,14)+Val.Time(12,03,33,12000)),
+            1500033813)
+test_equal( Regexp("([^-+]*)")
+  ->split((string)(Val.Date(2017,7,14)
+                 + Val.TimeTZ(2017,7,14,12,03,33,12000)))[0],
+            "2017/07/14 12:03:33.000012")
 
 dnl - Val.Interval
 
