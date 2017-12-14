@@ -975,7 +975,7 @@ static int run_pass1(struct compilation *c)
     return 0;
   }
 
-  low_start_new_program(c->target,1,0,0,0);
+  low_start_new_program(c->target, COMPILER_PASS_FIRST, 0, 0, 0);
   c->supporter.prog = Pike_compiler->new_program;
 
   CDFPRINTF("th(%ld) %p run_pass1() start: "
@@ -1539,7 +1539,7 @@ static void f_compilation_compile(INT32 args)
 
   if (!c->prog) {
     /* No program text. */
-    low_start_new_program(c->target, 1, NULL, 0, NULL);
+    low_start_new_program(c->target, COMPILER_PASS_FIRST, NULL, 0, NULL);
     c->p = end_program();
     c->flags |= COMPILER_DONE;
     pop_n_elems(args);
@@ -2526,7 +2526,7 @@ static void compile_compiler(void)
 
   low_enter_compiler(co, 0);
 
-  low_start_new_program(p, 1, NULL, 0, NULL);
+  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
   free_program(p);	/* Remove the extra ref we just got... */
 
   /* NOTE: The order of these identifiers is hard-coded in
@@ -2547,7 +2547,7 @@ static void compile_compiler(void)
   ADD_FUNCTION("resolv", f_compilation_env_resolv,
 	       tFunc(tStr tStr tObj, tMix), 0);
 
-  low_start_new_program(p2, 1, NULL, 0, NULL);
+  low_start_new_program(p2, COMPILER_PASS_FIRST, NULL, 0, NULL);
 
   /* low_start_new_program() has zapped the inherit we created
    * for p2 above, so we need to repair the frame pointer.

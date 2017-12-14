@@ -3059,7 +3059,7 @@ static void decode_value2(struct decode_data *data)
 	  c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
 
 	  /* Start the new program. */
-	  low_start_new_program(p, 1, NULL, 0, NULL);
+	  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
 	  p->flags = p_flags;
 

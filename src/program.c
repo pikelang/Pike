@@ -3173,7 +3173,7 @@ void low_start_new_program(struct program *p,
   }else{
     tmp.u.program=p;
     add_ref(p);
-    if((pass == 2) && name)
+    if((pass != COMPILER_PASS_FIRST) && name)
     {
       struct identifier *i;
       id=isidentifier(name);
@@ -3184,7 +3184,7 @@ void low_start_new_program(struct program *p,
       i->type=get_type_of_svalue(&tmp);
     }
   }
-  if (pass == 1) {
+  if (pass == COMPILER_PASS_FIRST) {
     if(c->compilation_depth >= 1) {
       add_ref(p->parent = Pike_compiler->new_program);
       debug_malloc_touch (p);
@@ -3426,7 +3426,7 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
             (long)th_self(), (long)line, file,
             lock_depth, c->compilation_depth);
 
-  low_start_new_program(0,1,0,0,0);
+  low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
