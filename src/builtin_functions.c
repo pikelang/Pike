@@ -6006,8 +6006,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if(args == 1)
   {
-    memset(&date, 0, sizeof(date));
-
     push_text("sec");
     push_text("min");
     push_text("hour");
