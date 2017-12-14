@@ -607,7 +607,7 @@ class Date {
 
   //!
   variant protected void create(int year, int month, int day) {
-    create((["year":year - 1900, "mon":month - 1, "mday":day, "timezone":0]));
+    create((["year":year - 1900, "mon":month - 1, "mday":day]));
   }
   variant protected void create(Date copy) {
     days = [int]copy->days;
