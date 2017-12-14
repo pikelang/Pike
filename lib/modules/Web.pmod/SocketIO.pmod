@@ -201,12 +201,12 @@ class Universe {
   //! Having a default worker per namespace in addition zero or more
   //! event specific ones, is supported.
   variant void register(string namespace, string event,
-   void|function(Client, function(mixed ...:void),
+   void|function(object/*Client*/, function(mixed ...:void),
      string, string, mixed ...:void) fn) {
     low_register(namespace, event, fn);
   }
   variant void register(string namespace,
-   void|function(Client, function(mixed ...:void),
+   void|function(object/*Client*/, function(mixed ...:void),
      string, mixed ...:void) fn) {
     low_register(namespace, 0, fn);
   }
