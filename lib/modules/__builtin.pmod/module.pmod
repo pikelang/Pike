@@ -67,8 +67,10 @@ string iso_time(mapping(string:int) tm) {
   return res;
 }
 
-//!  Base class for the time related types.  Supports arithmetic with
+//!  Base class for time related objects.  Supports arithmetic with
 //!  @[Interval] objects.
+//! @note
+//!   Should not be used by itself.
 //! @seealso
 //!  @[Timestamp], @[Time], @[Interval]
 class Timebase {
@@ -196,7 +198,7 @@ class Timebase {
 //! with nanosecond resolution.  Normalised value range is between
 //! @expr{00:00:00.000000000@} and @expr{23:59:59.999999999@}.
 //! Values outside this range are accepted, and have arithmetically
-//! sound results.  Supports arithmetic with @[Interval] objects.
+//! sound results.  Supports arithmetic with @[Interval] and @[Date] objects.
 //! @seealso
 //!  @[Interval], @[Date], @[TimeTZ], @[Range]
 class Time {
@@ -269,12 +271,6 @@ class TimeTZ {
     timezone = x[1];
   }
 
-  variant
-   protected void create(int hour, int min, void|int sec, void|int nsec) {
-    ::create(hour, min, sec, nsec);
-    timezone = local_timezone;
-  }
-
   //! Stores just the time of the day components, but including
   //! the correct timezone offset with any daylight-saving correction
   //! active on the date specified.
@@ -308,6 +304,12 @@ class TimeTZ {
     ::create(t->hour, t->min, t->sec, nsec);
     timezone = t->timezone;
   }
+
+  variant
+   protected void create(int hour, int min, void|int sec, void|int nsec) {
+    ::create(hour, min, sec, nsec);
+    timezone = local_timezone;
+  }
   variant protected void create(TimeTZ copy) {
     ::create(copy);
     timezone = [int]copy->timezone;
@@ -332,8 +334,8 @@ class TimeTZ {
 
 //! Lightweight time and date interval type.
 //! It stores the interval in integers of nanoseconds, days and months.
-//! Can be used in arithmetic with @[Time], @[TimeTZ], @[Timestamp]
-//! and @[Date] types.
+//! Supports arithmetic with @[Time], @[TimeTZ], @[Timestamp]
+//! and @[Date] objects.
 //! @note
 //!  Depending on daylight-saving time, a day may not equal 24 hours.
 //! @note
@@ -480,7 +482,8 @@ class Interval {
 
 //! Lightweight time and date type.  The values point at absolute points
 //! in time.  The values are stored internally with nanosecond resolution
-//! since epoch (@expr{1970/01/01 00:00:00 UTC@}).
+//! since epoch (@expr{1970/01/01 00:00:00 UTC@}).  Supports arithmetic
+//! with @[Interval] objects.
 //! @seealso
 //!  @[Interval], @[Date], @[Range], @[localtime()], @[mktime()]
 class Timestamp {
@@ -518,15 +521,16 @@ class Timestamp {
              "min":min, "sec":sec, "nsec":nsec
            ]));
   }
-  variant protected void create(mapping(string:int) tm) {
-    create(mktime(tm), tm->nsec);
-  }
   variant protected void create(int unix_time, void|int nsec) {
     ::create(unix_time, nsec);
   }
+
   variant protected void create(object/*Date*/ copy) {
     // Force the date to be regarded in the localised timezone.
     create([mapping(string:int)]copy->tm() - (<"timezone">));
+  }
+  variant protected void create(mapping(string:int) tm) {
+    create(mktime(tm), tm->nsec);
   }
 
   protected mixed `-(void|mixed that) {
@@ -583,6 +587,8 @@ class Timestamp {
 }
 
 //!  Lightweight date type.  Stores internally in days since epoch.
+//!  Supports arithmetic with @[Interval], @[Timestamp], @[Time]
+//!  and @[TimeTZ] objects.
 //! @seealso
 //!  @[Interval], @[Timestamp], @[Time], @[TimeTZ], @[Range]
 class Date {
