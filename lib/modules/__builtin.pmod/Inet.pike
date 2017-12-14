@@ -16,6 +16,15 @@ int address;
 //! @[masklen] will be 128 in case of full addresses.
 int masklen;
 
+array(int) _encode() {
+  return ({address, masklen});
+}
+
+void _decode(array(int) x) {
+  address = x[0];
+  masklen = x[1];
+}
+
 //! @param ip
 //!   A string defining an IPv4 or IPv6 address
 //!   with an optional @expr{masklen@} attached.

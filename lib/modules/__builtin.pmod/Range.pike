@@ -12,6 +12,15 @@ mixed from;
 //!  The upper exclusive boundary.
 mixed till;
 
+array(mixed) _encode() {
+  return ({from, till});
+}
+
+void _decode(array(mixed) x) {
+  from = x[0];
+  till = x[1];
+}
+
 //! @param from
 //!   Lower inclusive boundary for the range.  Specify no lower-boundary
 //!   by filling in @expr{-Math.inf@}.

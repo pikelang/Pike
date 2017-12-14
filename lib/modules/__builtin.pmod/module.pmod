@@ -64,6 +64,14 @@ class Timebase {
   //!  epoch equals @expr{1970/01/01 00:00:00 UTC@}).
   int nsecs;
 
+  array(int) _encode() {
+    return ({nsecs});
+  }
+
+  void _decode(array(int) x) {
+    nsecs = x[0];
+  }
+
   //! @param sec
   //!   Seconds since epoch.
   //! @param nsec
@@ -193,9 +201,6 @@ class Time {
    protected void create(int hour, int min, void|int sec, void|int nsec) {
     nsecs = ((((hour * 60) + min) * 60 + sec) * NANOSECONDS) + nsec;
   }
-  variant protected void create(Time copy) {
-    ::create(copy);
-  }
   variant protected void create(int sec) {
     nsecs = sec * NANOSECONDS;
   }
@@ -234,6 +239,15 @@ class TimeTZ {
   //! @seealso
   //!  @[localtime()]
   int timezone;
+
+  array(int) _encode() {
+    return ({nsecs, timezone});
+  }
+
+  void _decode(array(int) x) {
+    nsecs = x[0];
+    timezone = x[1];
+  }
 
   variant protected void create(TimeTZ copy) {
     ::create(copy);
@@ -278,6 +292,16 @@ class Interval {
 
   //!  Number of months; the number of days per month varies accordingly.
   int months;
+
+  array(int) _encode() {
+    return ({nsecs, days, months});
+  }
+
+  void _decode(array(int) x) {
+    nsecs = x[0];
+    days = x[1];
+    months = x[2];
+  }
 
   variant protected void create(Interval copy) {
     ::create(copy);
@@ -508,6 +532,14 @@ class Date {
 
   //! Since 1970/01/01 (epoch).
   int days;
+
+  array(int) _encode() {
+    return ({days});
+  }
+
+  void _decode(array(int) x) {
+    days = x[0];
+  }
 
   //!
   variant protected void create(int year, int month, int day) {
