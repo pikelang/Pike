@@ -98,7 +98,7 @@ class False
 
 Boolean true = True();
 Boolean false = False();
-//! Objects that represents the boolean values true and false. In a
+//! Objects that represent the boolean values true and false. In a
 //! boolean context these evaluate to true and false, respectively.
 //!
 //! They produce @expr{1@} and @expr{0@}, respectively, when cast to
@@ -117,13 +117,13 @@ Boolean false = False();
 //! something like
 //!
 //! @code
-//!   if (objectp(something) && something->is_val_true) ...
+//!   if (objectp(something) && ([object]something)->is_val_true) ...
 //! @endcode
 //!
 //! and
 //!
 //! @code
-//!   if (objectp(something) && something->is_val_false) ...
+//!   if (objectp(something) && ([object]something)->is_val_false) ...
 //! @endcode
 //!
 //! respectively. See @[Val.null] for rationale.
@@ -178,7 +178,7 @@ Null null = Null();
 //! something like
 //!
 //! @code
-//!   if (objectp(something) && something->is_val_null) ...
+//!   if (objectp(something) && ([object]something)->is_val_null) ...
 //! @endcode
 //!
 //! That way it's possible for other code to replace it with an
