@@ -64,16 +64,16 @@ string censor_sql_url(string sql_url)
 }
 
 //! Base class for a connection to an SQL database.
-constant Connection = __builtin.Sql.Connection;
+class Connection { inherit __builtin.Sql.Connection; }
 
 //! Base class for the result from @[Connection.big_query()] et al.
-constant Result = __builtin.Sql.Result;
+class Result { inherit __builtin.Sql.Result; }
 
-//! Base class for the result from @[Promise].
-constant FutureResult = __builtin.Sql.FutureResult;
+//! The result from @[Promise].
+class FutureResult { inherit __builtin.Sql.FutureResult; }
 
-//! Base class for the result from @[Connection.promise_query()].
-constant Promise = __builtin.Sql.Promise;
+//! The result from @[Connection.promise_query()].
+class Promise { inherit __builtin.Sql.Promise; }
 
 protected program(Connection) find_dbm(string program_name)
 {

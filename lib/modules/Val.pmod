@@ -190,22 +190,22 @@ Null null = Null();
 //! affected if this object is replaced.
 
 //!
-constant Timestamp = __builtin.Timestamp;
+class Timestamp { inherit __builtin.Timestamp; }
 
 //!
-constant Time = __builtin.Time;
+class Time { inherit __builtin.Time; }
 
 //!
-constant TimeTZ = __builtin.TimeTZ;
+class TimeTZ { inherit __builtin.TimeTZ; }
 
 //!
-constant Date = __builtin.Date;
+class Date { inherit __builtin.Date; }
 
 //!
-constant Interval = __builtin.Interval;
+class Interval { inherit __builtin.Interval; }
 
 //!
-constant Range = __builtin.Range;
+class Range { inherit __builtin.Range; }
 
 //!
-constant Inet = __builtin.Inet;
+class Inet { inherit __builtin.Inet; }
