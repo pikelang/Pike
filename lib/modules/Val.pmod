@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 //! This module contains special values used by various modules, e.g.
 //! a null value used both by @[Sql] and @[Standards.JSON].
@@ -45,7 +46,7 @@ class True
   protected int __hash()
     {return 34123;}
   protected int `== (mixed other)
-    {return objectp (other) && other->is_val_true;}
+    {return objectp (other) && [int]([object]other)->is_val_true;}
 
   protected mixed cast (string type)
   {
@@ -78,7 +79,7 @@ class False
   protected int __hash()
     {return 54634;}
   protected int `== (mixed other)
-    {return objectp (other) && other->is_val_false;}
+    {return objectp (other) && [int]([object]other)->is_val_false;}
 
   protected mixed cast (string type)
   {
@@ -187,3 +188,24 @@ Null null = Null();
 //! @fixme
 //! The Oracle glue currently uses static null objects which won't be
 //! affected if this object is replaced.
+
+//!
+constant Timestamp = __builtin.Timestamp;
+
+//!
+constant Time = __builtin.Time;
+
+//!
+constant TimeTZ = __builtin.TimeTZ;
+
+//!
+constant Date = __builtin.Date;
+
+//!
+constant Interval = __builtin.Interval;
+
+//!
+constant Range = __builtin.Range;
+
+//!
+constant Inet = __builtin.Inet;
