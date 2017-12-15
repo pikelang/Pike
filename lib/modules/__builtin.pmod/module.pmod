@@ -106,6 +106,8 @@ class Timebase {
     return nsecs % 1000 ? nsecs / 1000.0 : nsecs / 1000;
   }
 
+  // FIXME This refdoc below gets lost
+
   //! Microseconds since epoch; actually modifies the basic
   //! member @[nsecs].
   int `usecs=(int usec) {
@@ -199,6 +201,8 @@ class Timebase {
 //! @expr{00:00:00.000000000@} and @expr{23:59:59.999999999@}.
 //! Values outside this range are accepted, and have arithmetically
 //! sound results.  Supports arithmetic with @[Interval] and @[Date] objects.
+//! Cast it to @expr{int@} or @expr{float@} to obtain seconds since
+//!  @expr{00:00@}.
 //! @seealso
 //!  @[Interval], @[Date], @[TimeTZ], @[Range]
 class Time {
@@ -219,6 +223,17 @@ class Time {
   }
   variant protected void create(int sec) {
     nsecs = sec * NANOSECONDS;
+  }
+
+  // FIXME This refdoc below gets lost
+
+  //! @param tm
+  //!   Standard tm mapping, optionally extended with @expr{nsec@} for
+  //!   nanoseconds.
+  //!   Passed values will not be normalised.
+  //!   Days/months/years are ignored.
+  variant protected void create(mapping(string:int) tm) {
+    create(tm->hour, tm->min, tm->sec, tm->nsec);
   }
 
   protected mixed `+(mixed that) {
@@ -249,6 +264,8 @@ class Time {
 
 //!  Lightweight time type with timezone.  Equivalent to @[Time], but
 //!  stores a timezone offset as well.
+//! Cast it to @expr{int@} or @expr{float@} to obtain seconds since
+//!  @expr{00:00@}.
 //! @seealso
 //!  @[Time], @[Date], @[Interval], @[Range]
 class TimeTZ {
@@ -301,18 +318,30 @@ class TimeTZ {
     mapping(string:int) t
      = localtime(mktime((["year":year - 1900, "mon":month - 1,
         "mday":day, "hour":hour, "min":min, "sec":sec])));
-    ::create(t->hour, t->min, t->sec, nsec);
-    timezone = t->timezone;
+    t->nsec = nsec;
+    create(t);
+  }
+
+  // FIXME This refdoc below gets lost
+
+  //! @param tm
+  //!   Standard tm mapping, optionally extended with @expr{nsec@} for
+  //!   nanoseconds.  Any specified @expr{timezone@} is used as is.
+  //!   Passed values will not be normalised.
+  //!   Days/months/years are ignored.
+  variant protected void create(mapping(string:int) tm) {
+    timezone = zero_type(tm->timezone) ? local_timezone : tm->timezone;
+    ::create(tm);
   }
 
   variant
    protected void create(int hour, int min, void|int sec, void|int nsec) {
-    ::create(hour, min, sec, nsec);
     timezone = local_timezone;
+    ::create(hour, min, sec, nsec);
   }
   variant protected void create(TimeTZ copy) {
-    ::create(copy);
     timezone = [int]copy->timezone;
+    ::create(copy);
   }
 
   public mapping(string:int) tm() {
@@ -336,6 +365,7 @@ class TimeTZ {
 //! It stores the interval in integers of nanoseconds, days and months.
 //! Supports arithmetic with @[Time], @[TimeTZ], @[Timestamp]
 //! and @[Date] objects.
+//! Cast it to @expr{int@} or @expr{float@} to obtain seconds.
 //! @note
 //!  Depending on daylight-saving time, a day may not equal 24 hours.
 //! @note
@@ -484,6 +514,7 @@ class Interval {
 //! in time.  The values are stored internally with nanosecond resolution
 //! since epoch (@expr{1970/01/01 00:00:00 UTC@}).  Supports arithmetic
 //! with @[Interval] objects.
+//! Cast it to @expr{int@} or @expr{float@} to obtain unix_time.
 //! @seealso
 //!  @[Interval], @[Date], @[Range], @[localtime()], @[mktime()]
 class Timestamp {
@@ -589,6 +620,7 @@ class Timestamp {
 //!  Lightweight date type.  Stores internally in days since epoch.
 //!  Supports arithmetic with @[Interval], @[Timestamp], @[Time]
 //!  and @[TimeTZ] objects.
+//! Cast it to @expr{int@} or @expr{float@} to obtain unix_time.
 //! @seealso
 //!  @[Interval], @[Timestamp], @[Time], @[TimeTZ], @[Range]
 class Date {
