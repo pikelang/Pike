@@ -331,7 +331,7 @@ class TimeTZ {
   //!   Days/months/years are ignored.
   variant protected void create(mapping(string:int) tm) {
     timezone = zero_type(tm->timezone) ? local_timezone : tm->timezone;
-    ::create(tm);
+    ::create(tm->hour, tm->min, tm->sec, tm->nsec);
   }
 
   variant
