@@ -5885,7 +5885,7 @@ int define_variable(struct pike_string *name,
 		   "variable/functions %S", name);
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) ||
-	 Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
+	 Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
       {
 	int n2;
 
