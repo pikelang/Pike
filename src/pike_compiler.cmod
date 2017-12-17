@@ -1048,6 +1048,44 @@ static int run_pass1(struct compilation *c)
   return ret;
 }
 
+void run_pass_extra(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  debug_malloc_touch(c->placeholder);
+
+  if (!c->p) {
+    c->flags &= ~(COMPILER_BUSY);
+    c->flags |= COMPILER_DONE;
+    return;
+  }
+
+  run_init(c);
+  low_start_new_program(c->p, COMPILER_PASS_EXTRA, 0, 0, 0);
+  free_program(c->p);
+  c->p=0;
+
+  run_init2(c);
+
+  CDFPRINTF("th(%ld) %p run_pass_extra() start: "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), Pike_compiler->new_program,
+            lock_depth, c->compilation_depth);
+
+  verify_supporters();
+
+  do_yyparse();  /* Parse da program */
+
+  CDFPRINTF("th(%ld) %p run_pass2() done for %s\n",
+            (long)th_self(), Pike_compiler->new_program,
+            c->lex.current_file->str);
+
+  verify_supporters();
+
+  c->p=debug_malloc_pass(end_first_pass(0));
+
+  run_exit(c);
+}
+
 void run_pass2(struct compilation *c)
 {
   debug_malloc_touch(c);
