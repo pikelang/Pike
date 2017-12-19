@@ -1665,8 +1665,13 @@ void resolv_type(node *n)
       /* FALL_THROUGH */
 
     default:
-      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	/* The type isn't fully known yet, so do an extra pass. */
+	struct compilation *c = THIS_COMPILATION;
+	c->flags |= COMPILER_NEED_EXTRA_PASS;
+      } else {
 	my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
+      }
       push_object_type(0, 0);
       break;
 

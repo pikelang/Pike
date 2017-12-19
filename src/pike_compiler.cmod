@@ -1253,7 +1253,13 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   add_ref(cc->supporter.self);
   low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
 
-  if(finish && cc->p) run_pass2(cc);
+  if (finish && cc->p) {
+    if (cc->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running delayed EXTRA PASS\n");
+      run_pass_extra(cc);
+    }
+    run_pass2(cc);
+  }
   run_cleanup(cc,1);
 
   exit_compiler();
@@ -1619,6 +1625,10 @@ static void f_compilation_compile(INT32 args)
   }else{
     CDFPRINTF("th(%ld) %p f_compilation_compile() finish now.\n",
               (long) th_self(), c->target);
+    if (c->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running EXTRA PASS\n");
+      run_pass_extra(c);
+    }
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
