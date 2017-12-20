@@ -7063,7 +7063,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
     /* if(fun->func.offset == -1) continue; * Prototype */
     if(!is_same_string(fun->name,name)) continue;
     if(type && (fun->type != type)) {
-      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+      if ((Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) &&
 	  !(funp->id_flags & ID_INHERITED) &&
 	  match_types(fun->type, type)) {
 	tentative = i;
@@ -7103,14 +7103,16 @@ int really_low_find_variant_identifier(struct pike_string *name,
     }
   }
   if ((id < 0) && (tentative >= 0)) {
-    // Usually due to forward-referring types. The tentative match
-    // is often correct, but may in some cases be wrong eg due to
-    // having fall back implementations that use the mixed type.
-    yytype_report(REPORT_WARNING,
-		  NULL, 0, ID_FROM_INT(prog, tentative)->type,
-		  NULL, 0, type,
-		  0, "Variant type mismatch in second pass for %S.",
-		  name);
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      // Usually due to forward-referring types. The tentative match
+      // is often correct, but may in some cases be wrong eg due to
+      // having fall back implementations that use the mixed type.
+      yytype_report(REPORT_WARNING,
+		    NULL, 0, ID_FROM_INT(prog, tentative)->type,
+		    NULL, 0, type,
+		    0, "Variant type mismatch in second pass for %S.",
+		    name);
+    }
     id = tentative;
   }
   CDFPRINTF("Found %d\n", id);
