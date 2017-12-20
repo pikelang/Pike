@@ -5053,9 +5053,22 @@ void lower_inherit(struct program *p,
     return;
   }
 
-  if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
     struct program *old_p =
-      Pike_compiler->new_program->inherits[Pike_compiler->num_inherits+1].prog;
+      Pike_compiler->new_program->
+      inherits[Pike_compiler->num_inherits+1].prog;
+    Pike_compiler->num_inherits += old_p->num_inherits;
+
+    if (old_p != p) {
+      yyerror("Got different program for inherit in second pass "
+	      "(resolver problem).");
+    }
+    return;
+  }
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+    struct program *old_p =
+      Pike_compiler->new_program->
+      inherits[Pike_compiler->num_inherits+1].prog;
     Pike_compiler->num_inherits += old_p->num_inherits;
 
     if (old_p != p) {
