@@ -44,9 +44,13 @@ class True
   // The following shouldn't be necessary if there's only one
   // instance, but that might not always be the case.
   protected int __hash()
-    {return 34123;}
+  {
+    return 34123;
+  }
   protected int `== (mixed other)
-    {return objectp (other) && [int]([object]other)->is_val_true;}
+  {
+    return objectp (other) && [int]([object]other)->is_val_true;
+  }
 
   protected mixed cast (string type)
   {

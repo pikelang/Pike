@@ -640,11 +640,17 @@ class AbstractNode {
   //! @[fix_tree] has to be called on the root node when the building
   //! is done.
   AbstractNode tmp_add_child(AbstractNode c)
-    {::add_child (c); return c;}
+  {
+    ::add_child (c); return c;
+  }
   AbstractNode tmp_add_child_before (AbstractNode c, AbstractNode old)
-    {return ::add_child_before (c, old);}
+  {
+    return ::add_child_before (c, old);
+  }
   AbstractNode tmp_add_child_after (AbstractNode c, AbstractNode old)
-    {return ::add_child_after (c, old);}
+  {
+    return ::add_child_after (c, old);
+  }
 
   //! Fix all parent pointers recursively in a tree that has been
   //! built with @[tmp_add_child].
