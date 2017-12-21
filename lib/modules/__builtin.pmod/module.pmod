@@ -93,7 +93,7 @@ class Timebase {
   //!   Nanoseconds since epoch.
   variant protected void create(void|mapping(string:int) tm) {
   }
-  variant protected void create(Timebase copy) {
+  variant protected void create(this_program copy) {
     nsecs = [int]copy->nsecs;
   }
   variant protected void create(int|float sec, void|int nsec) {
@@ -339,7 +339,7 @@ class TimeTZ {
     timezone = local_timezone;
     ::create(hour, min, sec, nsec);
   }
-  variant protected void create(TimeTZ copy) {
+  variant protected void create(this_program copy) {
     timezone = [int]copy->timezone;
     ::create(copy);
   }
@@ -393,14 +393,14 @@ class Interval {
     months = x[2];
   }
 
-  variant protected void create(Interval copy) {
+  variant protected void create(this_program copy) {
     ::create(copy);
     days = copy->days;
     months = copy->months;
   }
 
   protected mixed `*(mixed that) {
-    Interval n = Interval(this);
+    this_program n = this_program(this);
     if (intp(that)) {
       n->nsecs *= that;
       n->days *= that;
@@ -419,7 +419,7 @@ class Interval {
   protected mixed `/(mixed that) {
     if (!intp(that) && !floatp(that))
       error("Cannot divide by %O\n", that);
-    Interval n = Interval(this);
+    this_program n = this_program(this);
     n->nsecs = (int)(nsecs / that);
     n->days = (int)(days / that);
     n->months = (int)(months / that);
@@ -431,7 +431,7 @@ class Interval {
   protected mixed `+(mixed that) {
     if (!objectp(that) || !([object]that)->is_interval)
       error("Cannot add %O\n", that);
-    Interval n = Interval(this);
+    this_program n = this_program(this);
     n->nsecs += ([object]that)->nsecs;
     n->days += ([object]that)->days;
     n->months += ([object]that)->months;
@@ -439,7 +439,7 @@ class Interval {
   }
 
   protected mixed `-(void|mixed that) {
-    Interval n = Interval(this);
+    this_program n = this_program(this);
     if (zero_type(that)) {
       n->nsecs  = -n->nsecs;
       n->days   = -n->days;
@@ -569,7 +569,7 @@ class Timestamp {
       error("Cannot negate %O\n", this);
     if (objectp(that)) {
       if (([object]that)->is_date)
-        that = Timestamp([object]that);
+        that = this_program([object]that);
       if (([object]that)->is_timestamp) {
         Interval n = Interval();
         n->nsecs = nsecs - [int]([object]that)->nsecs;
@@ -641,7 +641,7 @@ class Date {
   variant protected void create(int year, int month, int day) {
     create((["year":year - 1900, "mon":month - 1, "mday":day]));
   }
-  variant protected void create(Date copy) {
+  variant protected void create(this_program copy) {
     days = [int]copy->days;
   }
   variant protected void create(Timestamp copy) {

@@ -33,7 +33,7 @@ protected variant void create(mixed from, mixed till) {
   this::from = from;
   this::till = till;
 }
-protected variant void create(object/*this_program*/ copy) {
+protected variant void create(this_program copy) {
   from = copy->from;
   till = copy->till;
 }
