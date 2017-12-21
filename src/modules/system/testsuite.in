@@ -278,4 +278,8 @@ cond_begin([[ System["__MMAP__"] ]])
 
 cond_end // System["__MMAP__"]
 
+test_equal(sort(indices(System.Time())), ({ "sec","usec","usec_full" }))
+test_eq(abs(time()-System.Time()->sec)<2, 1)
+test_eq(System.Time()->usec-System.Time()->usec<=0, 1)
+
 END_MARKER

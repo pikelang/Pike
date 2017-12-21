@@ -254,14 +254,14 @@ private int writeoidformat(int oid, array(string|int) paramValues,
 #define USEPOCHTO2000		(DAYSEPOCHTO2000*24*3600*1000000)
 
 private array timestamptotype
-                    = ({__builtin.Timestamp, 8, USEPOCHTO2000,  "usecs", 8});
-private array datetotype = ({__builtin.Date, 4, DAYSEPOCHTO2000, "days", 4});
+                    = ({Val.Timestamp, 8, USEPOCHTO2000,  "usecs", 8});
+private array datetotype = ({Val.Date, 4, DAYSEPOCHTO2000, "days", 4});
 
 private mapping(int:array) oidtotype = ([
    DATEOID:        datetotype,
-   TIMEOID:        ({__builtin.Time,    8, 0, "usecs", 8}),
-   TIMETZOID:      ({__builtin.TimeTZ, 12, 0, "usecs", 8, "timezone", 4}),
-   INTERVALOID:({__builtin.Interval, 16, 0, "usecs", 8, "days", 4, "months",4}),
+   TIMEOID:        ({Val.Time,    8, 0, "usecs", 8}),
+   TIMETZOID:      ({Val.TimeTZ, 12, 0, "usecs", 8, "timezone", 4}),
+   INTERVALOID:    ({Val.Interval, 16, 0, "usecs", 8, "days", 4, "months",4}),
    TIMESTAMPOID:   timestamptotype,
    TIMESTAMPTZOID: timestamptotype,
    INT4RANGEOID:   ({0, 4}),
