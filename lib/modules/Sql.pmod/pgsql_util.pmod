@@ -976,7 +976,7 @@ class Result {
                   till = value;
                 }
               }
-              value = __builtin.Range(from, till);
+              value = Val.Range(from, till);
               if (alltext)
                 value = (string)value;
             }
@@ -986,7 +986,7 @@ class Result {
             if (_forcetext)
               value = cr->read(collen);
             else {
-              value = __builtin.Inet();
+              value = Val.Inet();
               int iptype = cr->read_int8();	// 2 == IPv4, 3 == IPv6
               value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
               cr->read_int8();	// 0 == INET, 1 == CIDR
