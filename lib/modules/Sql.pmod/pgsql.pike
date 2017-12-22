@@ -973,7 +973,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 //! @endmapping
 //!
 //! @note
-//!  The bindings-parameter passed to this function must remain unaltered
+//!  The parameters referenced via the @expr{bindings@}-parameter-mapping
+//!  passed to this function must remain unaltered
 //!  until the parameters have been sent to the database.  The driver
 //!  currently does not expose this moment, but to avoid a race condition
 //!  it is sufficient to keep them unaltered until the first resultrow
