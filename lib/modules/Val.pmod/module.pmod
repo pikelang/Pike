@@ -951,9 +951,3 @@ class Date {
     return sprintf(sprintf("%%*%c", fmt), params, 0);
   }
 }
-
-//!
-class Range { inherit __builtin.Range; }
-
-//!
-class Inet { inherit __builtin.Inet; }
