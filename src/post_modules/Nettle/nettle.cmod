@@ -448,14 +448,33 @@ program_flags PROGRAM_CLEAR_STORAGE;
    */
   PIKEFUN void `reseed_interval=(int(1..281474976710656) interval)
   {
-    if( interval < 1 || interval > (1L<<48) )
+    INT64 interval_int64 = interval;
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
       Pike_error("Interval out of range.\n");
-    THIS->reseed_interval = interval;
+    THIS->reseed_interval = interval_int64;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(object(Gmp.mpz) interval)
+  {
+    INT64 interval_int64 = 0;
+    if (!low_int64_from_bignum(&interval_int64, interval))
+      Pike_error("Invalid interval.\n");
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval_int64;
   }
 
   PIKEFUN int `reseed_interval()
   {
-    RETURN THIS->reseed_interval;
+    push_int64(THIS->reseed_interval);
   }
 
   /*! @decl void entropy_underflow()
@@ -521,7 +540,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     THIS->ctr = xcalloc(1,16);
     THIS->key = xcalloc(1,16);
     THIS->reseed_counter = 1;
-    THIS->reseed_interval = 1L<<48;
+    THIS->reseed_interval = ((INT64)1)<<48;
     aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
   }
 
