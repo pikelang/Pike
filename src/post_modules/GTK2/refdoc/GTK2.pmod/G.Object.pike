@@ -7,7 +7,8 @@
 //!
 
 protected G.Object _destruct( );
-//! Destroy this object. This is the normal way to (eg) close a window.
+//! Destroy this object. This is the normal way to (eg) close a
+//! window - simply call destruct(obj) and it will be destroyed.
 //!
 //!
 
