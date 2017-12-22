@@ -31,7 +31,7 @@
 #define DBG(X ...)
 #endif
 
-#define RUNTIME_RESOLVE(X) master().resolv(#X)
+#define RUNTIME_RESOLVE(X) master()->resolv(#X)
 /****** variables **************************************************/
 
 // open
