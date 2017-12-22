@@ -2,7 +2,7 @@
 //!
 //!
 
-GTK2.RecentInfo destroy( );
+protected GTK2.RecentInfo _destruct( );
 //! Destructor.
 //!
 //!

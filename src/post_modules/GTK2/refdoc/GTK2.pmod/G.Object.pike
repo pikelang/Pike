@@ -6,14 +6,14 @@
 //! @b{notify@}
 //!
 
-G.Object accel_groups_activate( int accel_key, int accel_mods );
-//! Finds the first accelerator in an GTK.AccelGroup attached to this object
-//! that matches accel_key and accel_mods, and activates that accelerator.
+protected G.Object _destruct( );
+//! Destroy this object. This is the normal way to (eg) close a window.
 //!
 //!
 
-G.Object destroy( );
-//! Destroy this object. This is the normal way to (eg) close a window.
+G.Object accel_groups_activate( int accel_key, int accel_mods );
+//! Finds the first accelerator in an GTK.AccelGroup attached to this object
+//! that matches accel_key and accel_mods, and activates that accelerator.
 //!
 //!
 
