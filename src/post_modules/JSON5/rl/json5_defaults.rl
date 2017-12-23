@@ -11,9 +11,7 @@
     value_start = number_start | array_start | mapping_start | string_start | 'n' | 't' | 'f';
     identifier = [a-zA-Z_][a-zA-Z_0-9]*;
 
-    action slcs { printf("slc start\n"); }
-    action slce { printf("slc end\n"); }
-    action c_comment { printf("ccomment\n"); fgoto c_comment;}
+    action c_comment { fgoto c_comment;}
 
     single_line_comment = ('//' . [^\n]*  . '\n');
 

@@ -81,7 +81,6 @@
     }
 
     action add_unquote {
-printf("add_unquote");
 	if (validate) switch(fc) {
             case '\n':
 	    case '\'':
@@ -97,14 +96,12 @@ printf("add_unquote");
     }
 
     action mark {
-printf("mark");
 	mark = fpc;
     }
 
-    action mark_next { printf("mark_next"); mark = fpc + 1; }
+    action mark_next { mark = fpc + 1; }
 
     action string_append {
-printf("string_append");
 	if (fpc - mark > 0) {
 	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), fpc - mark);
@@ -112,7 +109,6 @@ printf("string_append");
     }
 
     action new_line {
-      printf("new_line");
       if(validate)
         string_builder_append(&s, MKPCHARP("\n", 0), 1);
       fpc++;
@@ -158,7 +154,6 @@ static ptrdiff_t _parse_JSON5_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     int cs;
     ONERROR handle;
     const int validate = !(state->flags&JSON5_VALIDATE);
-printf("parse string\n");
     %% write data;
 
     if (validate) {

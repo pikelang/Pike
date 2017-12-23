@@ -34,20 +34,16 @@ static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     %% write init;
     %% write exec;
     if (cs >= JSON5_number_first_final) {
-printf("got to a final state: d: %d, s: %d, h: %d.\n", d, s, h);
 	if (!(state->flags&JSON5_VALIDATE)) {
-printf("here we go s: %d!\n", s);
             if (s == 1) {
-               printf("xsymbol!\n");
                push_string(make_shared_binary_pcharp(ADD_PCHARP(str, i), p-i));
-printf("pushed.\n");
             } else if (h == 1) {
               // TODO handle errors better, handle possible bignums and possible better approach.
               push_string(make_shared_binary_pcharp(ADD_PCHARP(str, i), p-i));
               push_text("%x");
               f_sscanf(2);
 	      if(PIKE_TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
-                 printf("not an array!\n");
+                printf("not an array\n");
 	      else if(Pike_sp[-1].u.array->size != 1)
                  printf("not the right number of elements!\n");
               else {
@@ -64,7 +60,6 @@ printf("pushed.\n");
 
 	return p;
     }
-printf("number flags set to error\n");
     state->flags |= JSON5_ERROR;
     return p;
 }
