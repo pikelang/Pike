@@ -5724,19 +5724,24 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
   {
+    int gmtoff = 0;
     normalised_time -= ((date.tm_hour * 60) + date.tm_min) * 60 + date.tm_sec;
     if (normalised_time < -12*60*60)
       normalised_time += 24*60*60;
     else if (normalised_time > 12*60*60)
       normalised_time -= 24*60*60;
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
-    retval += date.__tm_gmtoff;
+    gmtoff = date.__tm_gmtoff;
 #elif defined(STRUCT_TM_HAS_GMTOFF)
-    retval += date.tm_gmtoff;
+    gmtoff = date.tm_gmtoff;
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+    /* Assume dst is one hour. */
+    gmtoff = 3600*localtime(&retval)->tm_isdst - timezone;
 #else
-    normalised_time = retval - mktime(gmtime(&retval));
+    /* Assume dst is one hour. */
+    gmtoff = 3600*localtime(&retval)->tm_isdst;
 #endif
-    retval += normalised_time + tz;
+    retval += gmtoff + normalised_time + tz;
   }
   if (date.tm_wday < 0)
     PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
