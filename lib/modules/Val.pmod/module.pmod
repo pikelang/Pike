@@ -839,7 +839,7 @@ class Date {
     days = copy->nsecs / (24 * 3600 * NANOSECONDS) - (copy->nsecs < 0);
   }
   variant protected void create(mapping(string:int) tm) {
-    create(mktime(tm + (["timezone":0])));
+    create(mktime(tm + (["isdst":0, "timezone":0])));
   }
   variant protected void create(int unix_time) {
     days = unix_time / (24 * 3600);
