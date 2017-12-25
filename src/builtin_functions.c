@@ -5625,6 +5625,54 @@ PMOD_EXPORT void f_localtime(INT32 args)
   f_aggregate_mapping(20);
 }
 
+time_t mktime_zone(const char*fname, int args,
+                   struct tm*date, int other_timezone, int tz)
+{
+  time_t retval;
+  int normalised_time;
+
+  date->tm_wday = -1;		/* flag to determine failure */
+
+  {
+    int sec, min, hour;
+    sec = date->tm_sec;
+    min = date->tm_min;
+    hour = date->tm_hour;
+
+    min += sec / 60;
+    if ((sec %= 60) < 0)
+      min--, sec += 60;
+    hour += min / 60;
+    if ((min %= 60) < 0)
+      hour--, min += 60;
+    if ((hour %= 24) < 0)
+      hour += 24;
+    normalised_time = ((hour * 60) + min) * 60 + sec;
+  }
+
+  retval = mktime(date);
+  if (date->tm_wday < 0)
+    PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
+
+  if(other_timezone)
+  {
+    normalised_time -= ((date->tm_hour * 60) + date->tm_min) * 60 + date->tm_sec;
+    if (normalised_time < -12*60*60)
+      normalised_time += 24*60*60;
+    else if (normalised_time > 12*60*60)
+      normalised_time -= 24*60*60;
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    retval += date->__tm_gmtoff;
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+    retval += date->tm_gmtoff;
+#else
+    normalised_time = retval - mktime(gmtime(&retval));
+#endif
+    retval += normalised_time + tz;
+  }
+  return retval;
+}
+
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int|void isdst, int|void tz)
@@ -5707,39 +5755,11 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_mon=mon;
   date.tm_year=year;
   date.tm_isdst=isdst;
-  date.tm_wday = -1;		/* flag to determine failure */
-
-  min += sec / 60;
-  if ((sec %= 60) < 0)
-    min--, sec += 60;
-  hour += min / 60;
-  if ((min %= 60) < 0)
-    hour--, min += 60;
-  if ((hour %= 24) < 0)
-    hour += 24;
-  normalised_time = ((hour * 60) + min) * 60 + sec;
-
   /* date.tm_zone = NULL; */
-  retval = mktime(&date);
 
-  if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-  {
-    normalised_time -= ((date.tm_hour * 60) + date.tm_min) * 60 + date.tm_sec;
-    if (normalised_time < -12*60*60)
-      normalised_time += 24*60*60;
-    else if (normalised_time > 12*60*60)
-      normalised_time -= 24*60*60;
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-    retval += date.__tm_gmtoff;
-#elif defined(STRUCT_TM_HAS_GMTOFF)
-    retval += date.tm_gmtoff;
-#else
-    normalised_time = retval - mktime(gmtime(&retval));
-#endif
-    retval += normalised_time + tz;
-  }
-  if (date.tm_wday < 0)
-    PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
+  retval = mktime_zone("mktime", args, &date,
+                       args > 7 && SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER,
+	               tz);
 
   pop_n_elems(args);
 #if SIZEOF_TIME_T > SIZEOF_INT_TYPE
