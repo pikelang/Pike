@@ -341,12 +341,24 @@ static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
     case PIKE_T_OBJECT: {
       struct object *o = val->u.object;
       if (o->prog) {
+	/* FIXME: Consider always using encode_json(), and signalling
+	 *        JSON5 via a flag?
+	 */
 	int fun = find_identifier ("encode_json5", o->prog);
+	const char *enc_name = "encode_json5";
+	if (fun < 0) {
+	  /* Fall back to the generic JSON encoder.
+	   *
+	   * All valid JSON should be valid JSON5.
+	   */
+	  fun = find_identifier ("encode_json", o->prog);
+	  enc_name = "encode_json";
+	}
 	if (fun < 0) {
 	  int args = 2;
 	  if (!ctx->callback)
-	    Pike_error ("Cannot json5 encode object %O "
-			"without encode_json5 function.\n", val);
+	    Pike_error ("Cannot json5 encode object %O without "
+			"encode_json5 or encode_json function.\n", val);
 	  if (TYPEOF(*ctx->callback) == PIKE_T_STRING) {
 	    string_builder_shared_strcat (&ctx->buf, ctx->callback->u.string);
 	    break;
@@ -368,8 +380,8 @@ static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
 	  apply_low (o, fun, args);
 	}
 	if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-	  Pike_error ("Expected string from %O->encode_json5(), got %s.\n",
-		      val, get_name_of_type (TYPEOF(Pike_sp[-1])));
+	  Pike_error ("Expected string from %O->%s(), got %s.\n",
+		      val, enc_name, get_name_of_type (TYPEOF(Pike_sp[-1])));
 	string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	free_string ((--Pike_sp)->u.string);
 	break;
