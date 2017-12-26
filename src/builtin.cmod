@@ -80,7 +80,6 @@ PIKECLASS TM
     CVAR struct tm t;
     CVAR time_t unix_time;
     CVAR int modified;
-    CVAR struct pike_string *set_zone;
     CVAR struct tm_extra extra;
 
 #define strftime_zone strftime
@@ -510,16 +509,6 @@ PIKECLASS TM
         push_int( GET_GMTOFF(&(THIS->t)) );
     }
 
-    /* Setting the zone does not work, so.. */
-
-    /* PIKEFUN string `zone=(string x) { */
-    /*     if( THIS->set_zone ) */
-    /*         free_string( THIS->set_zone ); */
-    /*     THIS->set_zone = x; */
-    /*     MODIFY( tm_zone = x->str ); */
-    /*     x->refs++; */
-    /* } */
-
     /*! @decl int(0..1) localtime( int time )
      *! Initialize the struct tm to the local time for the specified
      *! unix time_t.
@@ -602,10 +591,6 @@ PIKECLASS TM
             Pike_error("Timezone must either be UTC or omitted.\n");
           use_utc = 1;
         }
-	if (THIS->set_zone) {
-	    free_string(THIS->set_zone);
-	    THIS->set_zone = NULL;
-	}
         if (use_utc)
           t->tm_isdst = 0;
         THIS->unix_time = mktime_zone("TM", &THIS->t, use_utc, 0);
@@ -616,17 +601,9 @@ PIKECLASS TM
 
 #ifdef PIKE_NULL_IS_SPECIAL
     INIT {
-        THIS->set_zone = 0;
         THIS->modified = 0;
     }
 #endif
-
-    EXIT
-      gc_trivial;
-    {
-        if( THIS->set_zone )
-            free_string( THIS->set_zone );
-    }
 }
 /*! @endclass
  */
