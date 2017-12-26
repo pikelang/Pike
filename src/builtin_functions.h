@@ -7,6 +7,8 @@
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
 
+#include "time_stuff.h"
+
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
