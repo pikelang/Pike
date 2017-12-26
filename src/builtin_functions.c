@@ -5625,8 +5625,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
   f_aggregate_mapping(20);
 }
 
-time_t mktime_zone(const char *fname, struct tm *date,
-                   int other_timezone, int tz)
+time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
   time_t retval;
   int normalised_time;
@@ -5757,7 +5756,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_isdst=isdst;
   /* date.tm_zone = NULL; */
 
-  retval = mktime_zone("mktime", &date,
+  retval = mktime_zone(&date,
                        args > 7 && SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER,
 	               tz);
 

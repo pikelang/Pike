@@ -90,18 +90,18 @@ PIKECLASS TM
 #endif
 
 #define MODIFY(X) do{ THIS->modified = 1;THIS->t.X; }while(0)
-#define FIX_THIS(fname) do {                                          \
+#define FIX_THIS() do {                                               \
         if(THIS->modified)                                            \
-          fix_tm(fname, THIS);                                        \
+          fix_tm(THIS);                                               \
     }  while(0)
 
-    static void fix_tm(const char *fname, struct TM_struct *this)
+    static void fix_tm(struct TM_struct *this)
     {
       const char *tm_zone = GET_ZONE(this);
       int is_utc_zone = tm_zone && !strcmp(tm_zone, "UTC");
       if (is_utc_zone)
         this->t.tm_isdst = 0;
-      this->unix_time = mktime_zone(fname, &this->t, is_utc_zone, 0);
+      this->unix_time = mktime_zone(&this->t, is_utc_zone, 0);
       this->modified = 0;
     }
 
@@ -365,13 +365,13 @@ PIKECLASS TM
      *! Unlike the system struct tm the 'year' field is not year-1900,
      *! instead it is the actual year.
      */
-    PIKEFUN int(0..60) `sec()       { FIX_THIS("sec");RETURN THIS->t.tm_sec;  }
-    PIKEFUN int(0..59) `min()       { FIX_THIS("min");RETURN THIS->t.tm_min;  }
-    PIKEFUN int(0..23) `hour()      { FIX_THIS("hour");RETURN THIS->t.tm_hour; }
-    PIKEFUN int(1..31) `mday()      { FIX_THIS("mday");RETURN THIS->t.tm_mday; }
-    PIKEFUN int(0..11) `mon()       { FIX_THIS("mon");RETURN THIS->t.tm_mon; }
+    PIKEFUN int(0..60) `sec()       { FIX_THIS();RETURN THIS->t.tm_sec;  }
+    PIKEFUN int(0..59) `min()       { FIX_THIS();RETURN THIS->t.tm_min;  }
+    PIKEFUN int(0..23) `hour()      { FIX_THIS();RETURN THIS->t.tm_hour; }
+    PIKEFUN int(1..31) `mday()      { FIX_THIS();RETURN THIS->t.tm_mday; }
+    PIKEFUN int(0..11) `mon()       { FIX_THIS();RETURN THIS->t.tm_mon; }
 
-    PIKEFUN int `year()      { FIX_THIS("year");RETURN THIS->t.tm_year+1900; }
+    PIKEFUN int `year()      { FIX_THIS();RETURN THIS->t.tm_year+1900; }
     PIKEFUN int `sec=(int a) { MODIFY(tm_sec=a); }
     PIKEFUN int `min=(int a) { MODIFY(tm_min=a); }
     PIKEFUN int `hour=(int a){ MODIFY(tm_hour=a); }
@@ -386,7 +386,7 @@ PIKECLASS TM
      *! automatically using the timezone rules.
      */
     PIKEFUN int(-1..1) `isdst()  {
-        FIX_THIS("isdst");
+        FIX_THIS();
         RETURN THIS->t.tm_isdst;
     }
 
@@ -394,13 +394,13 @@ PIKECLASS TM
      *! The day of the week, sunday is 0, saturday is 6.
      *! This is calculated from the other fields and can not be changed directly.
      */
-    PIKEFUN int(0..6) `wday()      { FIX_THIS("wday"); RETURN THIS->t.tm_wday; }
+    PIKEFUN int(0..6) `wday()      { FIX_THIS(); RETURN THIS->t.tm_wday; }
 
     /*! @decl int yday
      *! The day of the year, from 0 (the first day) to 365
      *! This is calculated from the other fields and can not be changed directly.
      */
-    PIKEFUN int(0..365) `yday()    { FIX_THIS("yday"); RETURN THIS->t.tm_yday; }
+    PIKEFUN int(0..365) `yday()    { FIX_THIS(); RETURN THIS->t.tm_yday; }
 
     /*! @decl int unix_time()
      *! Return the unix time corresponding to this time_t. If no time
@@ -408,7 +408,7 @@ PIKECLASS TM
      */
     PIKEFUN int unix_time()
     {
-        FIX_THIS("unix_time");
+        FIX_THIS();
         RETURN THIS->unix_time;
     }
 
@@ -419,7 +419,7 @@ PIKECLASS TM
      */
     PIKEFUN string asctime()
     {
-        FIX_THIS("asctime");
+        FIX_THIS();
         {
 #define STRFTIME_MAXSIZE 26
           char s[STRFTIME_MAXSIZE];
@@ -494,7 +494,7 @@ PIKECLASS TM
      *! The timezone of this structure
      */
     PIKEFUN string `zone() {
-        FIX_THIS("zone");
+        FIX_THIS();
         if( GET_ZONE(THIS) )
             push_text( GET_ZONE(THIS) );
         else
@@ -505,7 +505,7 @@ PIKECLASS TM
      *! The offset from GMT for the time in this tm-struct
      */
     PIKEFUN int `gmtoff() {
-        FIX_THIS("gmtoff");
+        FIX_THIS();
         push_int( GET_GMTOFF(&(THIS->t)) );
     }
 
@@ -618,7 +618,7 @@ PIKECLASS TM
         }
         if (use_utc)
           t->tm_isdst = 0;
-        THIS->unix_time = mktime_zone("TM", &THIS->t, use_utc, 0);
+        THIS->unix_time = mktime_zone(&THIS->t, use_utc, 0);
         /* Setting it to other timezones than UTC is not supported (yet) */
         if (use_utc)
           SET_ZONE(THIS, "UTC");
