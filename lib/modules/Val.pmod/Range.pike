@@ -5,6 +5,11 @@
 //!   and upper boundaries that implement the @expr{`<@} lfun.
 //! @note
 //!   Can only contain a single contiguous range.
+//! @note
+//!   The empty range must be stored as @expr{(Math.inf, -Math.inf)@}
+//!   if assigned directly to @[from] and @[till].
+
+constant is_range = 1;
 
 //!  The lower inclusive boundary.
 mixed from;
@@ -30,6 +35,10 @@ void _decode(array(mixed) x) {
 //! @seealso
 //!   @[Math.inf]
 protected variant void create(mixed from, mixed till) {
+  if (from >= till) {
+    from = Math.inf;
+    till = -Math.inf;
+  }
   this::from = from;
   this::till = till;
 }
@@ -44,7 +53,7 @@ protected variant void create() {
 protected mixed `-(mixed that) {
   this_program n = this_program(max(from, ([object]that)->from),
                                 min(till, ([object]that)->till));
-  if (n->from >= n->till)
+  if (!n)
     return this;
   if (till == n->till) {
     n->till = n->from;
@@ -79,26 +88,71 @@ protected int(0..1) `&(mixed that) {
   return till > ([object]that)->from && ([object]that)->till > from;
 }
 
+//! Is adjacent to
+protected int(0..1) `|(mixed that) {
+  return till == ([object]that)->from || from == ([object]that)->till;
+}
+
+//! Strictly left of
+protected int(0..1) `<<(mixed that) {
+  return till <= ([object]that)->from;
+}
+
+//! Strictly right of
+protected int(0..1) `>>(mixed that) {
+  return from >= ([object]that)->till;
+}
+
 protected int(0..1) `<(mixed that) {
   return from < ([object]that)->from
     || from == ([object]that)->from && till < ([object]that)->till;
 }
 
 protected int(0..1) `==(mixed that) {
-  return objectp(that)
+  return objectp(that) && ([object]that)->is_range
    && from == ([object]that)->from && till == ([object]that)->till;
 }
 
 //! @returns
+//!   True if range is empty.
+protected inline int(0..1) `!() {
+  return from >= till;
+}
+
+//! @returns
+//!   True if range is empty.
+inline int(0..1) isempty() {
+  return !this;
+}
+
+//! @param other
+//!  Extends the current range to the smallest range which encompasses
+//!  itself and all other given ranges.
+this_program merge(this_program ... other) {
+  from = min(from, @other->from);
+  till = max(till, @other->till);
+  return this;
+}
+
+//! @returns
+//!  True if this range fully contains another range or element.
+int(0..1) contains(mixed other) {
+  return objectp(other) && ([object]other)->is_range
+    ? from <= ([object]other)->from && ([object]other)->till <= till
+    : from <= other && other < till;
+}
+
+//! @returns
 //!   Calculates the value of the interval: @expr{till - from@}.
+//!   Returns @expr{0@} if the range is empty.
 mixed interval() {
-  return till - from;
+  return !this ? 0 : till - from;
 }
 
 //! Casting a range to string delivers an SQL-compliant value.
 protected mixed cast(string to) {
   if (to == "string")
-    return from >= till ? "empty" : sprintf("%c%s,%s)",
+    return !this ? "empty" : sprintf("%c%s,%s)",
       from == -Math.inf ? '(' : '[', from == -Math.inf ? "" : (string)from,
       till == Math.inf ? "" : (string)till);
   return UNDEFINED;
