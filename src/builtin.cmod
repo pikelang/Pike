@@ -96,15 +96,15 @@ PIKECLASS TM
           fix_tm(fname, THIS);                                        \
     }  while(0)
 
-static void fix_tm(const char *fname, struct TM_struct *this)
-{
-  const char*tm_zone = GET_ZONE(this);
-  int is_utc_zone = tm_zone && !strcmp(tm_zone, "UTC");
-  if (is_utc_zone)
-    this->t.tm_isdst = 0;
-  this->unix_time = mktime_zone(fname, &this->t, is_utc_zone, 0);
-  this->modified = 0;
-}
+    static void fix_tm(const char *fname, struct TM_struct *this)
+    {
+      const char *tm_zone = GET_ZONE(this);
+      int is_utc_zone = tm_zone && !strcmp(tm_zone, "UTC");
+      if (is_utc_zone)
+        this->t.tm_isdst = 0;
+      this->unix_time = mktime_zone(fname, &this->t, is_utc_zone, 0);
+      this->modified = 0;
+    }
 
 #ifdef HAVE_STRPTIME
     /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
