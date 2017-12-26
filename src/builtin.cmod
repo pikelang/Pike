@@ -431,7 +431,7 @@ static void fix_tm(const char*fname, int args, struct TM_struct*this)
         }
     }
 
-    PIKEFUN void _sprintf( int flag, mapping options )
+    PIKEFUN string _sprintf( int flag, mapping options )
     {
         int post_sum = 0;
         switch( flag )
