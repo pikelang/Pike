@@ -537,11 +537,36 @@ PIKECLASS TM
         RETURN 1;
     }
 
-    /*! @decl void create(int t)
+    /*! @decl int(0..1) gmtime( Gmp.mpz time )
+     *! Initialize the struct tm to the UTC time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) gmtime( object(Gmp.mpz)|object(Gmp.bignum) _t )
+    {
+      INT64 t_int64 = 0;
+      time_t t;
+      struct tm *res;
+
+      if (!int64_from_bignum(&t_int64, _t))
+	RETURN 0;
+
+      t = t_int64;
+      res = gmtime( &t );
+
+      if( !res )
+	RETURN 0;
+
+      THIS->t = *res;
+      SET_ZONE(THIS, "UTC");	/* Override timezone */
+      THIS->modified = 1;
+      RETURN 1;
+    }
+
+    /*! @decl void create(int|Gmp.mpz t)
      *! Create a new @[TM] initialized from a unix time_t.
      *! The timezone will always be UTC when using this function.
      */
-    PIKEFUN void create( int _t )
+    PIKEFUN void create( int|object(Gmp.mpz)|object(Gmp.bignum) _t )
     {
         f_TM_gmtime( 1 );
         if( Pike_sp[-1].u.integer == 0 )
