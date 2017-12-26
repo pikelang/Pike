@@ -5694,21 +5694,32 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
  *!   	  Month of the year.
  *!   	@member int(0..) "year"
  *!   	  Year since 1900.
- *!   	@member int(0..1) "isdst"
- *!   	  Is daylight-saving time active.
+ *!   	@member int(-1..1) "isdst"
+ *!   	  Is daylight-saving time active.  If omitted or set to @expr{-1@},
+ *!       it means that the information is not available.
  *!   	@member int "timezone"
- *!   	  The timezone offset from UTC in seconds. If left out, the time
+ *!   	  The timezone offset from UTC in seconds. If omitted, the time
  *!       will be calculated in the local timezone.
  *!   @endmapping
  *!
  *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @note
+ *!   For proper UTC calculations ensure that @expr{isdst = 0@} @b{and@}
+ *!   @expr{timezone = 0@}; omitting either one of these parameters
+ *!   @b{will@} mess up the UTC calculation.
+ *!
+ *! @note
  *!   On some operating systems (notably AIX and Win32), dates before
  *!   00:00:00 UTC, Jan 1, 1970 are not supported.
  *!
- *!   On most systems, the supported range of dates are Dec 13, 1901
- *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!   On most 32-bit systems, the supported range of dates is from Dec 13, 1901
+ *!   20:45:52 UTC through to Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!
+ *!   On most 64-bit systems, the supported range of dates is expressed
+ *!   in 56 bits and is thus practically
+ *!   unlimited (at least up to 1141 milion years in the past
+ *!   and into the future).
  *!
  *! @seealso
  *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
