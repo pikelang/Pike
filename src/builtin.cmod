@@ -59,7 +59,7 @@
 #define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
 #define SET_ZONE(this, VAL)	((this)->t.tm_zone = (VAL))
 #else
-    struct tm_extra { const char*tm_zone; };
+    struct tm_extra { const char *tm_zone; };
 #define GET_GMTOFF(TM)		0
 #define GET_ZONE(this)		((this)->extra.tm_zone)
 #define SET_GMTOFF(TM, VAL)	(VAL)
@@ -93,16 +93,16 @@ PIKECLASS TM
 #define MODIFY(X) do{ THIS->modified = 1;THIS->t.X; }while(0)
 #define FIX_THIS(fname) do {                                          \
         if(THIS->modified)                                            \
-          fix_tm(fname, args, THIS);				      \
+          fix_tm(fname, THIS);                                        \
     }  while(0)
 
-static void fix_tm(const char*fname, int args, struct TM_struct*this)
+static void fix_tm(const char *fname, struct TM_struct *this)
 {
   const char*tm_zone = GET_ZONE(this);
   int is_utc_zone = tm_zone && !strcmp(tm_zone, "UTC");
   if (is_utc_zone)
     this->t.tm_isdst = 0;
-  this->unix_time = mktime_zone(fname, args, &this->t, is_utc_zone, 0);
+  this->unix_time = mktime_zone(fname, &this->t, is_utc_zone, 0);
   this->modified = 0;
 }
 
@@ -589,15 +589,14 @@ static void fix_tm(const char*fname, int args, struct TM_struct*this)
                          string|void timezone )
     {
         struct tm *t = &THIS->t;
-        int use_utc;
-        t->tm_isdst = use_utc ? 0 : -1;
+        int use_utc = 0;
+        t->tm_isdst = -1;
         t->tm_year = year - 1900;
         t->tm_mon = mon;
         t->tm_mday = mday;
         t->tm_hour = hour;
         t->tm_min = min;
         t->tm_sec = sec;
-        use_utc = 0;
         if (timezone) {
           if (strcmp(timezone->str, "UTC"))
             Pike_error("Timezone must either be UTC or omitted.\n");
@@ -609,7 +608,7 @@ static void fix_tm(const char*fname, int args, struct TM_struct*this)
 	}
         if (use_utc)
           t->tm_isdst = 0;
-        THIS->unix_time = mktime_zone("TM", args, &THIS->t, use_utc, 0);
+        THIS->unix_time = mktime_zone("TM", &THIS->t, use_utc, 0);
         /* Setting it to other timezones than UTC is not supported (yet) */
         if (use_utc)
           SET_ZONE(THIS, "UTC");
