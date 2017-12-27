@@ -803,7 +803,7 @@ EXTRA
 /*! @endmodule */
 #endif /* HAVE_GLSL */
 
-PIKE_MODULE_INIT
+init_pike_GLSL(void)
 {
     INIT;
 #ifndef HAVE_GLSL
@@ -811,7 +811,7 @@ PIKE_MODULE_INIT
 #endif /* HAVE_GLSL */
 }
 
-PIKE_MODULE_EXIT
+exit_pike_GLSL(void)
 {
     EXIT;
 }

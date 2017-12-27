@@ -2,6 +2,7 @@ AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
 PIKE_FEATURE_WITHOUT(GL)
+PIKE_FEATURE_WITHOUT(GL.GLSL)
 
 AC_MODULE_INIT()
 
@@ -17,6 +18,9 @@ else
 
   AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
   AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
+
+  PIKE_FEATURE_NODEP(GL)
+  PIKE_FEATURE_NODEP(GL.GLSL)
 
   old_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$X_CFLAGS $CPPFLAGS"
@@ -92,7 +96,6 @@ else
     ])
     if test x"$pike_cv_framework_OpenGL" = xyes; then
       AC_DEFINE(HAVE_GL)
-      PIKE_FEATURE_OK(GL)
       AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no)
@@ -120,7 +123,6 @@ else
       LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     else
       AC_MSG_WARN([No GL or MesaGL libraries, disabling GL support.])
-      PIKE_FEATURE_NODEP(GL)
       tmp_gl_fail=yes
     fi
 
@@ -128,6 +130,27 @@ else
       AC_DEFINE(HAVE_GL)
       PIKE_FEATURE_OK(GL)
       AUTO_OBJS="auto.o"
+
+      if test "x$ac_cv_header_GL_gl_h"; then
+	  AC_CHECK_HEADER([GL/glext.h], [], [], [#include <GL/gl.h>])
+      else
+	  AC_CHECK_HEADER([OpenGL/glext.h], [], [], [#include <OpenGL/gl.h])
+      fi
+
+      AC_CHECK_LIB(GL, glCompileShader)
+      # GL_GLEXT_PROTOTYPES needed to get the prototypes tested below.
+      AC_DEFINE(GL_GLEXT_PROTOTYPES, [1], [Needed to get prototypes])
+      AC_CHECK_FUNCS([glGenFramebuffersEXT glGenRenderbuffersEXT glGenerateMipmapEXT glGenBuffers])
+
+      AC_MSG_CHECKING(whether to enable GLSL)
+      if test "x$ac_cv_header_GL_glext_h$ac_cv_lib_GL_glCompileShader" = "xyesyes"; then
+	  AC_MSG_RESULT(yes)
+	  AC_DEFINE(HAVE_GLSL, [1], [Define to enable GLSL,])
+	  PIKE_FEATURE_OK(GL.GLSL)
+	  AUTO_OBJS="$AUTO_OBJS GLSL.o"
+      else
+	  AC_MSG_RESULT(no)
+      fi
     fi
 
   fi

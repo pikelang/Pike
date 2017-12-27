@@ -18,3 +18,6 @@
 
 /* Define if you have GL */
 #undef HAVE_GL
+
+void init_pike_GLSL(void);
+void exit_pike_GLSL(void);

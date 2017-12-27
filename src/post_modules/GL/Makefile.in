@@ -21,4 +21,6 @@ auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(
 # Compatibility with stupid makes..
 auto.o: auto.c
 
+GLSL.o: $(SRCDIR)/GLSL.c
+
 @dependencies@

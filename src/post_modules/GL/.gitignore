@@ -1,4 +1,5 @@
 /.pure
+/GLSL.c
 /auto.c
 /auto.c.tmp
 /config.cache
