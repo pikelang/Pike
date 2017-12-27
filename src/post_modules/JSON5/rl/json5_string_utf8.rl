@@ -53,8 +53,35 @@
 	}
     }
 
+    action hex2beg {
+        hexchr0 = HEX2DEC(fc);
+    }
+
+    action hex2mid {
+        hexchr0 *= 16;
+        hexchr0 += HEX2DEC(fc);
+    }
+
+    action hex2end {
+        if (IS_HIGH_SURROGATE (hexchr0)) {
+            /* Chars outside the BMP can be expressed as two hex 
+             * escapes that codes a surrogate pair, so see if we can
+             * read a second one. */
+            fnext hex3;
+        }
+        else { 
+            if (IS_NUNICODE(hexchr0)) {
+                goto failure;
+            }
+            if (validate) {
+                string_builder_putchar(&s, hexchr0);
+            }
+        }
+    }
+
     action add_unquote {
 	if (validate) switch(fc) {
+	    case '\n':
 	    case '\'':
 	    case '"':
 	    case '/':
@@ -103,13 +130,19 @@
 	}
     }
 
+    action new_line {
+      if(validate)
+        string_builder_append(&s, MKPCHARP("\n", 0), 1);
+      fpc++;
+    }
+
     action finish {
 	if (validate) { 
 	    string_builder_putchar(&s, unicode); 
 	}
     }
 
-    main := '"' . (
+    main := ('"' . (
 		   start: (
 		       '"' >string_append -> final |
 		       '\\' >string_append -> unquote |
@@ -125,7 +158,25 @@
 		   hex1: (
 		       '\\u' . xdigit >hex1beg . (xdigit{3} $hex1mid) @hex1end -> start
 		   ) @mark_next
-		  ) >mark %*{ fpc--; fbreak; };
+		  ) >mark %*{ fpc--; fbreak; })
+                |
+                  ('\'' . (start: (
+                       '\'' >string_append -> final |
+                       '\\' >string_append -> unquote |
+                       '\\\n' > string_append %new_line -> start |
+                        (0x20..0x7f - (0x00..0x1f | '"' | '\\')) -> start |
+                       0xc2..0xdf >string_append >utf_2_1 . 0x80..0xbf >utf_2_2 >finish @mark_next -> start |
+                       0xe0..0xef >string_append >utf_3_1 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_3_3 >finish @mark_next -> start |
+                       0xf0..0xf4 >string_append >utf_4_1 . 0x80..0xbf >utf_4_2 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_4_4 >finish @mark_next -> start
+                   ),
+                   unquote: (
+                       ['"\\/bfnrt] >add_unquote -> start |
+                       'u' . xdigit >hex2beg . (xdigit{3} $hex2mid) @hex2end -> start
+                   ) @mark_next,
+                   hex3: (
+                       '\\u' . xdigit >hex1beg . (xdigit{3} $hex1mid) @hex1end -> start
+                   ) @mark_next
+                  ) >mark %*{ fpc--; fbreak; });
 }%%
 
 static ptrdiff_t _parse_JSON5_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
