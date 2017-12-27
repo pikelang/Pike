@@ -1,10 +1,11 @@
+
 #line 1 "rl/json5_string_utf8.rl"
 /* vim:syntax=ragel
  */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 180 "rl/json5_string_utf8.rl"
+#line 179 "rl/json5_string_utf8.rl"
 
 
 static ptrdiff_t _parse_JSON5_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
@@ -30,7 +31,7 @@ static const int JSON5_string_en_main_hex1 = 28;
 static const int JSON5_string_en_main_hex3 = 34;
 
 
-#line 195 "rl/json5_string_utf8.rl"
+#line 194 "rl/json5_string_utf8.rl"
 
     if (validate) {
 	init_string_builder(&s, 0);
@@ -43,7 +44,7 @@ static const int JSON5_string_en_main_hex3 = 34;
 	cs = JSON5_string_start;
 	}
 
-#line 202 "rl/json5_string_utf8.rl"
+#line 201 "rl/json5_string_utf8.rl"
     
 #line 50 "json5_string_utf8.c"
 	{
@@ -332,6 +333,7 @@ st4:
 case 4:
 #line 335 "json5_string_utf8.c"
 	switch( (*p) ) {
+		case 10u: goto tr15;
 		case 34u: goto tr15;
 		case 39u: goto tr15;
 		case 47u: goto tr15;
@@ -367,7 +369,7 @@ st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 372 "json5_string_utf8.c"
+#line 373 "json5_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr18;
@@ -388,7 +390,7 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 393 "json5_string_utf8.c"
+#line 394 "json5_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr19;
@@ -409,7 +411,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 414 "json5_string_utf8.c"
+#line 415 "json5_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr20;
@@ -449,7 +451,7 @@ st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 454 "json5_string_utf8.c"
+#line 455 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr21;
 	goto st0;
@@ -483,7 +485,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 488 "json5_string_utf8.c"
+#line 489 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr22;
 	goto st0;
@@ -495,7 +497,7 @@ st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-#line 500 "json5_string_utf8.c"
+#line 501 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr23;
 	goto st0;
@@ -529,7 +531,7 @@ st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 534 "json5_string_utf8.c"
+#line 535 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr24;
 	goto st0;
@@ -541,7 +543,7 @@ st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-#line 546 "json5_string_utf8.c"
+#line 547 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr25;
 	goto st0;
@@ -553,7 +555,7 @@ st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-#line 558 "json5_string_utf8.c"
+#line 559 "json5_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr26;
 	goto st0;
@@ -671,7 +673,7 @@ tr44:
                 goto failure;
             }
             if (validate) {
-                string_builder_putchar(&s, hexchr0);
+               string_builder_putchar(&s, hexchr0);
             }
         }
     }
@@ -702,7 +704,7 @@ st16:
 	if ( ++p == pe )
 		goto _test_eof16;
 case 16:
-#line 707 "json5_string_utf8.c"
+#line 708 "json5_string_utf8.c"
 	switch( (*p) ) {
 		case 39u: goto tr34;
 		case 92u: goto tr35;
@@ -748,9 +750,9 @@ st41:
 	if ( ++p == pe )
 		goto _test_eof41;
 case 41:
-#line 179 "rl/json5_string_utf8.rl"
+#line 178 "rl/json5_string_utf8.rl"
 	{ p--; {p++; cs = 41; goto _out;} }
-#line 755 "json5_string_utf8.c"
+#line 756 "json5_string_utf8.c"
 	switch( (*p) ) {
 		case 39u: goto tr34;
 		case 92u: goto tr35;
@@ -796,10 +798,9 @@ st17:
 	if ( ++p == pe )
 		goto _test_eof17;
 case 17:
-#line 801 "json5_string_utf8.c"
+#line 802 "json5_string_utf8.c"
 	switch( (*p) ) {
-		case 10u: goto st16;
-		case 34u: goto tr39;
+		case 10u: goto tr39;
 		case 39u: goto tr39;
 		case 47u: goto tr39;
 		case 92u: goto tr39;
@@ -1249,7 +1250,7 @@ case 39:
 	_out: {}
 	}
 
-#line 203 "rl/json5_string_utf8.rl"
+#line 202 "rl/json5_string_utf8.rl"
 
     if (cs >= JSON5_string_first_final) {
 	if (validate) {

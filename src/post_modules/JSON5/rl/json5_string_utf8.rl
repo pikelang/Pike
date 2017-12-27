@@ -74,7 +74,7 @@
                 goto failure;
             }
             if (validate) {
-                string_builder_putchar(&s, hexchr0);
+               string_builder_putchar(&s, hexchr0);
             }
         }
     }
@@ -152,7 +152,7 @@
 		       0xf0..0xf4 >string_append >utf_4_1 . 0x80..0xbf >utf_4_2 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_4_4 >finish @mark_next -> start
 		   ),
 		   unquote: (
-		       ['"\\/bfnrt] >add_unquote -> start |
+		       ['"\\/bfnrt\n] >add_unquote -> start |
 		       'u' . xdigit >hex0beg . (xdigit{3} $hex0mid) @hex0end -> start
 		   ) @mark_next,
 		   hex1: (
@@ -163,14 +163,13 @@
                   ('\'' . (start: (
                        '\'' >string_append -> final |
                        '\\' >string_append -> unquote |
-                       '\\\n' > string_append %new_line -> start |
-                        (0x20..0x7f - (0x00..0x1f | '"' | '\\')) -> start |
+                       (0x20..0x7f - (0x00..0x1f | '"' | '\\')) -> start |
                        0xc2..0xdf >string_append >utf_2_1 . 0x80..0xbf >utf_2_2 >finish @mark_next -> start |
                        0xe0..0xef >string_append >utf_3_1 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_3_3 >finish @mark_next -> start |
                        0xf0..0xf4 >string_append >utf_4_1 . 0x80..0xbf >utf_4_2 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_4_4 >finish @mark_next -> start
                    ),
                    unquote: (
-                       ['"\\/bfnrt] >add_unquote -> start |
+                       ['\'\\/bfnrt\n] >add_unquote -> start |
                        'u' . xdigit >hex2beg . (xdigit{3} $hex2mid) @hex2end -> start
                    ) @mark_next,
                    hex3: (

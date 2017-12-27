@@ -132,12 +132,11 @@
             ('\'' . (
                    start: (
                        '\'' >string_append -> final |
-		       '\\\n' > string_append %new_line -> start |
                        '\\' >string_append -> unquote |
-                       (unicode - [\\']) -> start
+                       (unicode - [\\\']) -> start
                    ),
                    unquote: (
-                       ['"\\/bfnrt] >add_unquote -> start |
+                       ['\'\\/bfnrt\n] >add_unquote -> start |
                        'u' . xdigit >hex2beg . (xdigit{3} $hex2mid) @hex2end -> start
                    ) @mark_next,
                    hex3: (
