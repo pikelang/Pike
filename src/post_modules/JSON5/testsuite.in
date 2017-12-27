@@ -307,7 +307,7 @@ dnl 001
 test_equal(parse("{ \"test\": [1,2,3],  \"test2\": \"value\", \"test3\": 5 }"),
   ([ "test": ({ 1, 2, 3 }), "test2": "value", "test3": 5 ]) )
 dnl 003
-test_eval_error(parse("{\"test\": 011}"))
+test_equal(parse("{\"test\": 011}"), (["test": 11]))
 dnl 004
 test_equal(parse("{\"test\": [0,1,2,3]}"), ([ "test": ({ 0,1,2,3 }) ]) )
 dnl 005
@@ -344,9 +344,9 @@ test_equal(parse("[]"),({}))
 test_eval_error(parse("{3:3}"))
 test_eval_error(parse("{{}:3}"))
 test_eval_error(parse("{[]:3}"))
-test_eval_error(parse("{true:3}"))
-test_eval_error(parse("{false:3}"))
-test_eval_error(parse("{null:3}"))
+test_equal(parse("{true:3}"), (["true": 3]))
+test_equal(parse("{false:3}"), (["false": 3]))
+test_equal(parse("{null:3}"), (["null": 3]))
 test_equal(parse("{\"x\":\"x\"}"),(["x":"x"]))
 test_equal(parse("{\"x\":3}"),(["x":3]))
 test_equal(parse("{\"x\":{}}"),(["x":([])]))
