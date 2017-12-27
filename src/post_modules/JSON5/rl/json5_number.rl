@@ -36,16 +36,43 @@ static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     if (cs >= JSON5_number_first_final) {
 	if (!(state->flags&JSON5_VALIDATE)) {
             if (s == 1) {
-               push_string(make_shared_binary_pcharp(ADD_PCHARP(str, i), p-i));
+               s = (int)INDEX_PCHARP(str, i);
+               if(s == '+') s = 0, i++; 
+               else if(s == '-') s = -1, i++;
+               // -symbol
+               if(s == -1) {
+                  s = (int)INDEX_PCHARP(str, i);
+                  if(s == 'I') {
+                    push_float(-MAKE_INF());
+                  } else if(s == 'N') {
+                    push_float(MAKE_NAN()); /* note sign on -NaN has no meaning */
+                  } else { /* should never get here */
+                    state->flags |= JSON5_ERROR; 
+                    return p;
+                  }
+               } else {
+                 /* if we had a + sign, look at the next digit, otherwise use the value. */
+		 if(s == 0) 
+                   s = (int)INDEX_PCHARP(str, i);
+                   
+                 if(s == 'I') {
+                    push_float(MAKE_INF());
+                 } else if(s == 'N') {
+                   push_float(MAKE_NAN()); /* note sign on -NaN has no meaning */
+                 } else { /* should never get here */
+                   state->flags |= JSON5_ERROR; 
+                   return p;
+                 }
+              }
             } else if (h == 1) {
               // TODO handle errors better, handle possible bignums and possible better approach.
               push_string(make_shared_binary_pcharp(ADD_PCHARP(str, i), p-i));
               push_text("%x");
               f_sscanf(2);
-	      if(PIKE_TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
-                printf("not an array\n");
-	      else if(Pike_sp[-1].u.array->size != 1)
-                 printf("not the right number of elements!\n");
+	      if((PIKE_TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY) || (Pike_sp[-1].u.array->size != 1)) {
+                state->flags |= JSON5_ERROR;
+                return p;
+              }
               else {
                  push_int(ITEM(Pike_sp[-1].u.array)[0].u.integer);
 	         stack_swap();
