@@ -14,7 +14,7 @@
     }
     getkey ((int)INDEX_PCHARP(str, fpc));
 
-    end = [\]},:]|myspace;
+    end = [\]},:/]|myspace;
     exp = [eE] >{d = 1;}. [+\-]? . digit+ . (end >break)?;
     hex = ('0' . [xX]  >{h = 1;}) . xdigit+ . (end > break)?;
     float = '.' >{d = 1;} . digit* . (end >break | exp)?;
