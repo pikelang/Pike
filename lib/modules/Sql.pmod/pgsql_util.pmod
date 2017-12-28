@@ -978,7 +978,7 @@ class Result {
               }
               value = Val.Range(from, till);
               if (alltext)
-                value = (string)value;
+                value = value->sql();
             }
             break;
           case CIDROID:

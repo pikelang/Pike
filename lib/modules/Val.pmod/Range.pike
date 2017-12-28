@@ -149,7 +149,14 @@ mixed interval() {
   return !this ? 0 : till - from;
 }
 
-//! Casting a range to string delivers an SQL-compliant value.
+//! @returns
+//!  A string representing the range using SQL-compliant syntax.
+final string sql() {
+  return !this ? "empty" : sprintf("%c%s,%s)",
+    from == -Math.inf ? '(' : '[', from == -Math.inf ? "" : (string)from,
+    till == Math.inf ? "" : (string)till);
+}
+
 protected mixed cast(string to) {
   if (to!="string") return UNDEFINED;
   if (!this) return "[]";
