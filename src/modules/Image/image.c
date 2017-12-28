@@ -572,7 +572,7 @@ static int image_size_check(INT_TYPE xsize,INT_TYPE ysize)
 {
    INT_TYPE a,b,c,d;
 
-   if (xsize<=0 || ysize<=0) return 1;
+   if (xsize<0 || ysize<0) return 1;
 
    if (xsize<0x20000000) xsize*=sizeof(rgb_group);
    else if (ysize<0x20000000) ysize*=sizeof(rgb_group);
@@ -858,6 +858,9 @@ static void image_create_method(INT32 args)
    MAKE_CONST_STRING(s_randomgrey,"randomgrey");
    MAKE_CONST_STRING(s_tuned_box,"tuned_box");
    MAKE_CONST_STRING(s_raw,"raw");
+
+   if (THIS->xsize<=0 || THIS->ysize<=0)
+     Pike_error("create: image size is too small\n");
 
    if (sp[-args].u.string==s_grey)
    {
