@@ -504,13 +504,14 @@ test_do( Image.Image(100,100, "tuned_box",
 test_eval_error( Image.Image(100,100, "bacon") )
 test_do( Image.Image(100,100, 255,255,0) )
 dnl test_do( Image.Image(100,100, 255,255,0,40) )
+test_do( Image.Image(Image.Image(100,100,"test")) )
 
 test_do( img()->dct(100,100) )
 
 test_do( img()->distancesq() )
 test_do( img()->distancesq(0,255,255) )
 
-// find_autocrp above
+// find_autocrop above
 
 // MISSING TEST: find_max
 // MISSING TEST: find_min
