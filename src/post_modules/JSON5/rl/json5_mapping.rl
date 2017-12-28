@@ -63,7 +63,7 @@
 			start: (
 			    '}' -> final |
 			    identifier >identifier_start %identifier_end . myspace* . ':' -> value |
-			    '"' >parse_key . myspace* . ':' -> value
+			    ('"'|'\'') >parse_key . myspace* . ':' -> value
 			),
 			value: (
 			    myspace* . value_start >parse_value . myspace* -> repeat

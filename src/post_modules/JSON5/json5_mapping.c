@@ -69,6 +69,7 @@ case 2:
 		case 13: goto st2;
 		case 32: goto st2;
 		case 34: goto tr2;
+		case 39: goto tr2;
 		case 47: goto st18;
 		case 95: goto tr4;
 		case 125: goto st23;
@@ -119,7 +120,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 123 "json5_mapping.c"
+#line 124 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -145,7 +146,7 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 149 "json5_mapping.c"
+#line 150 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 42: goto st5;
 		case 47: goto st7;
@@ -190,7 +191,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 194 "json5_mapping.c"
+#line 195 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st8;
 		case 32: goto st8;
@@ -237,7 +238,7 @@ st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 241 "json5_mapping.c"
+#line 242 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st9;
 		case 32: goto st9;
@@ -286,7 +287,7 @@ st23:
 case 23:
 #line 75 "rl/json5_mapping.rl"
 	{ p--; {p++; cs = 23; goto _out;} }
-#line 290 "json5_mapping.c"
+#line 291 "json5_mapping.c"
 	goto st0;
 st14:
 	if ( ++p == pe )
@@ -362,7 +363,7 @@ st22:
 	if ( ++p == pe )
 		goto _test_eof22;
 case 22:
-#line 366 "json5_mapping.c"
+#line 367 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto tr25;
 		case 32: goto tr25;
