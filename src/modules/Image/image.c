@@ -967,6 +967,7 @@ void image_create(INT32 args)
       apply(o, "ysize", 0);
       image_create(2);
       image_paste(1);
+      pop_stack();
       return;
    }
    if (args<2) return;
@@ -986,11 +987,16 @@ void image_create(INT32 args)
        !image_color_svalue(sp+2-args,&(THIS->rgb)))
       /* don't try method "lightblue", etc */
    {
-      image_create_method(args-2);
-      return ;
+     struct svalue *stack = Pike_sp;
+     image_create_method(args-2);
+     pop_n_elems(args+Pike_sp-stack);
+     return;
    }
    else
+   {
       getrgb(THIS,2,args,args,"Image.Image->create()");
+      pop_n_elems(args);
+   }
 
    THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
