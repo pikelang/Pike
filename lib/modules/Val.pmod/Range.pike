@@ -151,11 +151,11 @@ mixed interval() {
 
 //! Casting a range to string delivers an SQL-compliant value.
 protected mixed cast(string to) {
-  if (to == "string")
-    return !this ? "empty" : sprintf("%c%s,%s)",
-      from == -Math.inf ? '(' : '[', from == -Math.inf ? "" : (string)from,
-      till == Math.inf ? "" : (string)till);
-  return UNDEFINED;
+  if (to!="string") return UNDEFINED;
+  if (!this) return "[]";
+  return sprintf("[%s..%s]",
+                 from != -Math.inf ? (string)from : "",
+                 till != Math.inf ? (string)till : "");
 }
 
 protected string _sprintf(int fmt, mapping(string:mixed) params) {
