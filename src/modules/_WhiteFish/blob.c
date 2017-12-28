@@ -315,6 +315,7 @@ static void f_blob_create( INT32 args )
     if( TYPEOF(sp[-1]) != PIKE_T_STRING )
       Pike_error("Expected a string\n");
     _append_blob( THIS, s );
+    pop_n_elems(args);
   }
 }
 

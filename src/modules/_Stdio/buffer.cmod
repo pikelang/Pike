@@ -2791,9 +2791,13 @@ fail: CALL_AND_UNSET_ONERROR(e);
         this->buffer = xalloc(len);
       this->allocated = MAXIMUM(len,1);
       this->malloced = 1;
+      pop_stack();
     }
     else
+    {
       io_append_svalue( THIS, x );
+      pop_stack();
+    }
   }
 
   INIT {

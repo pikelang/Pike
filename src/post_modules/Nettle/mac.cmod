@@ -199,6 +199,7 @@ PIKECLASS MAC
       NO_WIDE_STRING(key);
 
       meta->set_key(ctx, key->len, STR0(key));
+      pop_stack();
     }
 
     /*! @decl State set_iv(string(0..255) iv)

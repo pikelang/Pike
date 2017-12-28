@@ -1493,6 +1493,7 @@ PIKEFUN void create(string enc, string|void replace,
 
   if(repcb && TYPEOF(*repcb) == T_FUNCTION)
     assign_svalue(&s->_repcb, repcb);
+  pop_n_elems(args);
 }
 
 PIKEFUN void set_replacement_callback(function(string: string)|void repcb)

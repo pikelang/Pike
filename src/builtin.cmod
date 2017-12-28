@@ -578,6 +578,7 @@ PIKECLASS TM
         f_TM_gmtime( 1 );
         if( Pike_sp[-1].u.integer == 0 )
             Pike_error("time out of range\n");
+        pop_stack();
     }
 
     /*! @decl void create()
@@ -622,6 +623,7 @@ PIKECLASS TM
         /* Setting it to other timezones than UTC is not supported (yet) */
         if (use_utc)
           SET_ZONE(THIS, "UTC");
+        pop_n_elems(args);
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
