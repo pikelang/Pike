@@ -846,7 +846,6 @@ static void image_create_method(INT32 args)
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("create",1,"string");
 
-   MAKE_CONST_STRING(s_grey,"grey");
    MAKE_CONST_STRING(s_rgb,"rgb");
    MAKE_CONST_STRING(s_cmyk,"cmyk");
    MAKE_CONST_STRING(s_adjusted_cmyk,"adjusted_cmyk");
@@ -980,8 +979,10 @@ void image_create(INT32 args)
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
 
+   MAKE_CONST_STRING(s_grey,"grey");
    if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
-       !image_color_svalue(sp+2-args,&(THIS->rgb)))
+       (!image_color_svalue(sp+2-args,&(THIS->rgb)) ||
+        sp[2-args].u.string==s_grey))
       /* don't try method "lightblue", etc */
    {
      struct svalue *stack = Pike_sp;
