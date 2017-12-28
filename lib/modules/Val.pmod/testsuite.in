@@ -6,9 +6,8 @@ dnl - Val.Timestamp
 test_do([[
 string detimezone(object o)
 {
-  string ret = (string)o;
-  sscanf(reverse(ret), "%*d%*[+-]%s", ret);
-  return reverse(ret);
+  return Regexp("^((-|)([^ ]+ |)[0-9][^-+]+)([-+][0-9:]+|)$")
+   ->split((string)o)[0];
 };
 add_constant("dtz",detimezone);
 ]])
