@@ -12,6 +12,10 @@ test_eq(Standards.JSON5.ASCII_ONLY, 1)
 test_eq(Standards.JSON5.HUMAN_READABLE, 2)
 test_eq(Standards.JSON5.PIKE_CANONICAL, 4)
 
+define(test_dec,[[
+  test_eq(Standards.JSON5.decode([[$1]]), [[$2]])
+  ]])
+
 define(test_enc,[[
   test_eq(Standards.JSON5.encode([[$1]],
 				Standards.JSON5.PIKE_CANONICAL|([[$3]]-0)),
@@ -52,16 +56,57 @@ define(test_dec_error,[[
 
 test_dec_enc_canon("-1", -1)
 test_dec_enc_canon("0", 0)
-test_dec_enc_canon("1", 1)
+test_dec("00", 0)
+test_dec("+0", 0)
+test_dec("-0", 0)
+test_dec("1", 1)
+test_dec("+1", 1)
+test_dec("-1", -1)
 test_dec_enc_canon((string) (Int.NATIVE_MAX + 1), Int.NATIVE_MAX+1)
 test_dec_enc_canon((string) (Int.NATIVE_MIN - 1), Int.NATIVE_MIN-1)
 test_enc(UNDEFINED, "null")
 
 test_dec_enc_canon("-1.0", -1.0)
 test_dec_enc_canon("0.0", 0.0)
+test_dec("-0.0", 0.0)
+test_dec("+0.0", 0.0)
 test_dec_enc_canon("1.0", 1.0)
+test_dec_enc_canon("-1.0", -1.0)
+test_dec("+1.0", 1.0)
+test_dec("01.0", 1.0)
+test_dec("01.", 1.0)
+test_dec("1.", 1.0)
+test_dec(".0", 0.0)
+test_dec(".1", 0.1)
+test_dec("+.1", 0.1)
+test_dec("-.1", -0.1)
+
 test_eq(Standards.JSON5.encode(Math.inf),"null")
 test_eq(Standards.JSON5.encode(Math.nan),"null")
+
+test_true(Float.isnan(Standards.JSON5.decode("NaN")));
+test_true(Float.isnan(Standards.JSON5.decode("+NaN")));
+test_true(Float.isnan(Standards.JSON5.decode("-NaN")));
+
+test_dec("Infinity", Math.inf);
+test_dec("+Infinity", Math.inf);
+test_dec("-Infinity", -Math.inf);
+
+test_dec("0x0", 0);
+test_dec("+0x0", 0);
+test_dec("-0x0", 0);
+
+test_dec("0x1", 1);
+test_dec("+0x1", 1);
+test_dec("-0x1", -1);
+
+test_dec("0x10", 16);
+test_dec("+0x10", 16);
+test_dec("-0x10", -16);
+
+test_dec("''", "");
+test_dec("\"a \\\nb\"", "a \nb")
+test_dec("'a \\\nb'", "a \nb")
 
 test_dec_enc_canon("\"\"", "")
 test_dec_enc_string(\\\"\\\\\\b\\f\\n\\r\\t, \"\\\b\f\n\r\t)
@@ -133,7 +178,11 @@ test_eq(-1, Standards.JSON5.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 test_dec_enc_string(\\\\/\\\"\\\"\\\\, \\/\"\"\\)
 test_dec_enc_string(\\\\/skjdhf\\\"sdf\\\"d\\\\, \\/skjdhf\"sdf\"d\\)
 
-// test examples from json5.org
+test_equal(Standards.JSON5.decode("{a:1}"), (["a": 1]))
+test_equal(Standards.JSON5.decode("{'a':1}"), (["a": 1]))
+
+
+// test examples from json.org
 test_dec_enc([[
 "{\
     \"glossary\": {\
@@ -338,9 +387,22 @@ dnl foreach(ranges/2, [int from, int to])
 dnl   parse("\""+(string)enumerate(to+1-from,1,from)+"\"");
 dnl ]])
 
-
+test_dec("//\n0", 0);
+test_dec("/* */0", 0);
+test_dec("/**/0/**/", 0);
+test_equal(parse("/* */{a: 1/* */}"), (["a":1]))
+test_equal(parse("/* */[0, /* */1]"), ({0,1}))
+test_eval_error(parse("//\n"));
+test_eval_error(parse("/**/\n"));
+test_eval_error(parse("/**//**/\n"));
+test_eval_error(parse("//"))
+test_dec("//\n1//\n", 1);
+test_dec("/*2*/1", 1);
+test_dec("//\n/**/1", 1);
 test_equal(parse("{}"),([]))
 test_equal(parse("[]"),({}))
+test_equal(parse("[0,]"),({0}))
+test_equal(parse("{a:1,}"), (["a": 1]))
 test_eval_error(parse("{3:3}"))
 test_eval_error(parse("{{}:3}"))
 test_eval_error(parse("{[]:3}"))
