@@ -791,7 +791,7 @@ class Timestamp {
     switch (to) {
       case "string": {
         mapping(string:int) t = tm();
-        string res = sprintf("%04d/%02d/%02d",
+        string res = sprintf("%04d-%02d-%02d",
          t->year + 1900, t->mon+1, t->mday);
         if (t->hour || t->min || t->sec || t->nsec)
           res += " " + iso_time(t);
@@ -817,7 +817,7 @@ class Timestamp {
 class Date {
   constant is_date = 1;
 
-  //! Since 1970/01/01 (epoch).
+  //! Since 1970-01-01 (epoch).
   int days;
 
   array(int) _encode() {
@@ -932,7 +932,7 @@ class Date {
     switch (to) {
       case "string": {
         mapping(string:int) t = tm();
-        return sprintf("%04d/%02d/%02d", t->year + 1900, t->mon+1, t->mday);
+        return sprintf("%04d-%02d-%02d", t->year + 1900, t->mon+1, t->mday);
       }
       case "float":
         return (float)(int)this;

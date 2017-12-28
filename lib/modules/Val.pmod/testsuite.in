@@ -3,24 +3,28 @@ START_MARKER
 
 dnl - Val.Timestamp
 
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(1920,6,19,2,3,4,12000))[0],
-  "1920/06/19 02:03:04.000012")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(1970,1,1,2,3,4,12000))[0],
-  "1970/01/01 02:03:04.000012")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(2000,1,1,2,3,4,12000))[0],
-  "2000/01/01 02:03:04.000012")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(2000,2,29,2,3,4,12000))[0],
-  "2000/02/29 02:03:04.000012")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(2000,6,17,2,3,4,12000))[0],
-  "2000/06/17 02:03:04.000012")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)Val.Timestamp(2000,11,17,2,3,4,12000))[0],
-  "2000/11/17 02:03:04.000012")
+test_do([[
+string detimezone(object o)
+{
+  string ret = (string)o;
+  sscanf(reverse(ret), "%*d%*[+-]%s", ret);
+  return reverse(ret);
+};
+add_constant("dtz",detimezone);
+]])
+
+test_equal( dtz(Val.Timestamp(1920,6,19,2,3,4,12000)),
+  "1920-06-19 02:03:04.000012")
+test_equal( dtz(Val.Timestamp(1970,1,1,2,3,4,12000)),
+  "1970-01-01 02:03:04.000012")
+test_equal( dtz(Val.Timestamp(2000,1,1,2,3,4,12000)),
+  "2000-01-01 02:03:04.000012")
+test_equal( dtz(Val.Timestamp(2000,2,29,2,3,4,12000)),
+  "2000-02-29 02:03:04.000012")
+test_equal( dtz(Val.Timestamp(2000,6,17,2,3,4,12000)),
+  "2000-06-17 02:03:04.000012")
+test_equal( dtz(Val.Timestamp(2000,11,17,2,3,4,12000)),
+  "2000-11-17 02:03:04.000012")
 test_equal( (int)Val.Timestamp(-2), -2)
 test_equal( (int)Val.Timestamp(-1), -1)
 test_equal( (int)Val.Timestamp(0), 0)
@@ -40,36 +44,33 @@ test_equal( (string)(Val.Time(14,03,33,12000)+Val.Interval(123)),
 
 dnl - Val.TimeTZ
 
-test_equal( Regexp("([^-+]*)")
- ->split((string)Val.TimeTZ(23,44,12, 12000))[0], "23:44:12.000012")
+test_equal( dtz(Val.TimeTZ(23,44,12, 12000)), "23:44:12.000012")
 test_equal( lambda() { Val.TimeTZ ttz = Val.TimeTZ(23,44);
                        ttz->timezone = 3600;
                        return (string)ttz;}(),
       "23:44-01")
-test_equal( Regexp("([^-+]*)")
-  ->split((string)(Val.TimeTZ(14,03,33,12000)+Val.Interval(123)))[0],
+test_equal( dtz(Val.TimeTZ(14,03,33,12000)+Val.Interval(123)),
             "14:05:36.000012")
 
 dnl - Val.Date
 
-test_equal( (string)Val.Date(2000,1,18),  "2000/01/18")
-test_equal( (string)Val.Date(2000,6,18),  "2000/06/18")
-test_equal( (string)Val.Date(1970,1,1),   "1970/01/01")
-test_equal( (string)Val.Date(1970,1,2),   "1970/01/02")
-test_equal( (string)Val.Date(1969,12,31), "1969/12/31")
-test_equal( (string)Val.Date(1920,12,31), "1920/12/31")
-test_equal( (string)Val.Date(1920,12,32), "1921/01/01")
-test_equal( (string)Val.Date(1920,13,27), "1921/01/27")
-test_equal( (string)Val.Date(1920,14,27), "1921/02/27")
-test_equal( (string)(Val.Date(1920,14,27) + 1), "1921/02/28")
-test_equal( (string)Val.Date(1234567890), "2009/02/13")
+test_equal( (string)Val.Date(2000,1,18),  "2000-01-18")
+test_equal( (string)Val.Date(2000,6,18),  "2000-06-18")
+test_equal( (string)Val.Date(1970,1,1),   "1970-01-01")
+test_equal( (string)Val.Date(1970,1,2),   "1970-01-02")
+test_equal( (string)Val.Date(1969,12,31), "1969-12-31")
+test_equal( (string)Val.Date(1920,12,31), "1920-12-31")
+test_equal( (string)Val.Date(1920,12,32), "1921-01-01")
+test_equal( (string)Val.Date(1920,13,27), "1921-01-27")
+test_equal( (string)Val.Date(1920,14,27), "1921-02-27")
+test_equal( (string)(Val.Date(1920,14,27) + 1), "1921-02-28")
+test_equal( (string)Val.Date(1234567890), "2009-02-13")
 
 test_equal( (int)(Val.Date(2017,7,14)+Val.Time(12,03,33,12000)),
             1500033813)
-test_equal( Regexp("([^-+]*)")
-  ->split((string)(Val.Date(2017,7,14)
-                 + Val.TimeTZ(2017,7,14,12,03,33,12000)))[0],
-            "2017/07/14 12:03:33.000012")
+test_equal( dtz(Val.Date(2017,7,14)
+                 + Val.TimeTZ(2017,7,14,12,03,33,12000)),
+            "2017-07-14 12:03:33.000012")
 
 dnl - Val.Interval
 
@@ -83,15 +84,12 @@ test_equal( (string)Val.Interval(-133,-1), "-133:01")
 test_equal( (string)Val.Interval(100),   "00:01:40")
 test_equal( (string)Val.Interval(-100), "-00:01:40")
 
-test_equal(  Regexp("([^-+]*)")
-     ->split((string)(Val.Timestamp(2001,2,3)+Val.Interval(24,4,5)))[0],
-     "2001/02/04 00:04:05")
-test_equal(  Regexp("([^-+]*)")
-     ->split((string)(Val.Timestamp(2001,2,3)-Val.Interval(24,4,5)))[0],
-     "2001/02/01 23:55:55")
-test_equal(  Regexp("([^-+]*)")
-     ->split((string)(Val.Timestamp(2001,2,3)+Val.Interval(24,4,5)*2))[0],
-     "2001/02/05 00:08:10")
+test_equal(dtz(Val.Timestamp(2001,2,3)+Val.Interval(24,4,5)),
+     "2001-02-04 00:04:05")
+test_equal(dtz(Val.Timestamp(2001,2,3)-Val.Interval(24,4,5)),
+     "2001-02-01 23:55:55")
+test_equal(dtz(Val.Timestamp(2001,2,3)+Val.Interval(24,4,5)*2),
+     "2001-02-05 00:08:10")
 
 test_equal( (string)(Val.Date(2017,12,2) - Val.Date(2017,12,5)), "-3 DAY")
 test_equal( (string)(Val.Date(2017,12,5) - Val.Date(2017,12,2)), "3 DAY")
@@ -146,9 +144,9 @@ test_equal( (string)(Val.Range(2,7) - Val.Range(4,10)), "[2..4]" )
 test_equal( (string)(Val.Range(2,7) * Val.Range(4,10)), "[4..7]" )
 
 test_equal( (string)Val.Range(Val.Date(2017,1,1), Val.Date(2017,1,2)),
-            "[2017/01/01..2017/01/02]" )
+            "[2017-01-01..2017-01-02]" )
 test_equal( (string)Val.Range(Val.Date(2017,1,3), Val.Date(2017,1,2)), "[]" )
-test_equal( (string)Val.Range(-Math.inf, Val.Date(2017,1,2)), "[..2017/01/02]" )
+test_equal( (string)Val.Range(-Math.inf, Val.Date(2017,1,2)), "[..2017-01-02]" )
 
 test_equal( (string)Val.Range(Val.Inet("1.2.3.2"), Val.Inet("1.2.3.4")),
             "[1.2.3.2..1.2.3.4]" )
@@ -210,5 +208,7 @@ test_true(([Val.true: 1])[Val.true])
 test_false(([Val.true: 1])[Val.false])
 test_true(([Val.false: 1])[Val.false])
 test_false(([Val.true: 1])[Val.false])
+
+test_do(add_constant("dtz"))
 
 END_MARKER
