@@ -2366,7 +2366,10 @@ static void image_colortable_add(INT32 args)
 void image_colortable_create(INT32 args)
 {
    if (args)  /* optimize */
+   {
       image_colortable_add(args);
+      pop_stack();
+   }
    else
       push_undefined();
 }

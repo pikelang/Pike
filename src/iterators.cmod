@@ -468,6 +468,7 @@ PIKECLASS mapping_iterator
       THIS->bucket=-1;
       step_bucket(THIS);
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+      pop_stack();
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -612,6 +613,7 @@ PIKECLASS array_iterator
 	Pike_error("Array iterators cannot be reused.\n");
 
       add_ref(THIS->a=a);
+      pop_stack();
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -821,6 +823,7 @@ PIKECLASS multiset_iterator
       add_ref (THIS->l = l);
       THIS->lock_index = 0;
       THIS->nodepos = multiset_first (THIS->l);
+      pop_stack();
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -984,6 +987,7 @@ PIKECLASS string_iterator
 	Pike_error("String iterators cannot be reused.\n");
 
       add_ref(THIS->s=s);
+      pop_stack();
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -1160,6 +1164,7 @@ PIKECLASS file_line_iterator
       THIS->current = NULL;
       THIS->index = -1;
       fl_find_next(THIS);
+      pop_stack();
     }
 
   INIT
@@ -1644,6 +1649,7 @@ PIKECLASS string_split_iterator
       THIS->current = NULL;
       THIS->index = -1;
       find_next(THIS);
+      pop_n_elems(args);
     }
 
   INIT

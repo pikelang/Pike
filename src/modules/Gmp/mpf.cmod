@@ -203,6 +203,7 @@ PIKECLASS mpf
 
       case 0: break;
     }
+    pop_n_elems(args);
   }
 
   /*! @decl protected int __hash()

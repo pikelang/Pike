@@ -3667,10 +3667,10 @@ PIKECLASS multi_string_replace
 	f_allocate(2);
 	to_arg = Pike_sp - 1;
       }
-      if (TYPEOF(*to_arg) != T_ARRAY) {
+      else if (TYPEOF(*to_arg) != T_ARRAY) {
 	SIMPLE_ARG_TYPE_ERROR("replace", 2, "array(string)|string");
       }
-      if (from_arg->u.array->size != to_arg->u.array->size) {
+      else if (from_arg->u.array->size != to_arg->u.array->size) {
 	Pike_error("Replace must have equal-sized from and to arrays.\n");
       }
       add_ref(THIS->from = from_arg->u.array);
@@ -3681,11 +3681,13 @@ PIKECLASS multi_string_replace
       THIS->from = mapping_indices(from_arg->u.mapping);
       THIS->to = mapping_values(from_arg->u.mapping);
     } else {
+      pop_n_elems(args);
       return;
     }
 
     if (!THIS->from->size) {
       /* Enter no-op mode. */
+      pop_n_elems(args);
       return;
     }
 
@@ -3699,6 +3701,7 @@ PIKECLASS multi_string_replace
       SIMPLE_ARG_TYPE_ERROR("replace", 2, "array(string)|string");
 
     compile_replace_many(&THIS->ctx, THIS->from, THIS->to, 1);
+    pop_n_elems(args);
   }
 
   /*! @decl string `()(string str)
@@ -3798,7 +3801,10 @@ PIKECLASS single_string_replace
       THIS->to = NULL;
     }
 
-    if (!del) return;
+    if (!del) {
+      pop_n_elems(args);
+      return;
+    }
 
     if (!to) {
       SIMPLE_ARG_TYPE_ERROR("replace", 2, "string");
@@ -3806,6 +3812,7 @@ PIKECLASS single_string_replace
 
     if (del == to) {
       /* No-op... */
+      pop_n_elems(args);
       return;
     }
 
@@ -3815,6 +3822,7 @@ PIKECLASS single_string_replace
     if (del->len) {
       THIS->mojt = simple_compile_memsearcher(del);
     }
+    pop_n_elems(args);
   }
 
   /*** replace function ***/
