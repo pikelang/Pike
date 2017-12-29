@@ -411,6 +411,8 @@ PIKE_MODULE_INIT
     free_program(glsl);
   }
 #endif /* HAVE_GLSL */
+#else /* !HAVE_GL */
+  HIDE_MODULE();
 #endif /* HAVE_GL */
 }
 

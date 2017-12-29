@@ -806,9 +806,6 @@ EXTRA
 void init_pike_GLSL(void)
 {
     INIT;
-#ifndef HAVE_GLSL
-    HIDE_MODULE();
-#endif /* HAVE_GLSL */
 }
 
 void exit_pike_GLSL(void)
