@@ -11483,7 +11483,6 @@ cond([[all_constants()->mktime]],
 [[
   test_true([[mktime( ([
   "sec":58,
-  "isdst":1,
   "year":98,
   "mon":3,
   "mday":26,
@@ -11491,9 +11490,9 @@ cond([[all_constants()->mktime]],
   "min":51
 ]))]])
 
-  test_eq([[mktime(58,51,1,26,3,98,1,0)]],[[mktime( ([
+  test_eq([[mktime(58,51,1,26,3,98,0,0)]],[[mktime( ([
   "sec":58,
-  "isdst":1,
+  "isdst":0,
   "year":98,
   "mon":3,
   "mday":26,
