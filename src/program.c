@@ -9649,18 +9649,26 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
     int skip_params = 0;
     int skip_comment = 0;
 
-    if (start < end) {
+    if (end) {
       /* Address */
       string_builder_sprintf(s, "0x%016lx  ", start);
 
-      /* Memory dump */
-      for (i = 0; i < 8; i += field_width) {
-	if (start < end) {
-	  string_builder_sprintf(s, "%0*x ", field_width, start[0]);
-	  start++;
-	} else {
-	  string_builder_sprintf(s, "%*s ", field_width, "");
+      if (start < end) {
+	/* Memory dump */
+	for (i = 0; i < 8; i += field_width) {
+	  if (start < end) {
+	    string_builder_sprintf(s, "%0*x ", field_width, start[0]);
+	    start++;
+	    if (start == end) {
+	      end = NULL;
+	    }
+	  } else {
+	    string_builder_sprintf(s, "%*s ", field_width, "");
+	  }
 	}
+      } else {
+	end = NULL;
+	string_builder_sprintf(s, "%*s  ", 8 + 8/field_width, "");
       }
     } else {
       string_builder_sprintf(s, "%*s  ", 18 + 8 + 8/field_width, "");
