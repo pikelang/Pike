@@ -168,7 +168,8 @@ static void memory_create(INT32 args)
 	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
-	 SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
+         SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
+      pop_n_elems(args);
    }
    else
    {

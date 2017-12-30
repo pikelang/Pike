@@ -3171,6 +3171,7 @@ PIKECLASS Buffer
       str->initial = MAXIMUM( size->u.integer, 512 );
     else
       str->initial = 256;
+    pop_n_elems(args);
   }
 
   /*! @decl string _sprintf( int flag, mapping flags )
@@ -4399,6 +4400,7 @@ PIKECLASS automap_marker
       if(THIS->arg) free_array(THIS->arg);
       add_ref(THIS->arg=a);
       THIS->depth=d;
+      pop_n_elems(2);
     }
 
   PIKEFUN string _sprintf(int mode, mapping flags)

@@ -1334,7 +1334,7 @@ static inline void try_parameter_pair(char *a,char *b,void (*f)(INT32))
 
 static void image_layer_create(INT32 args)
 {
-   if (!args)
+  if (!args)
       return;
    if (TYPEOF(Pike_sp[-args]) == T_MAPPING)
    {
@@ -1362,7 +1362,8 @@ static void image_layer_create(INT32 args)
 
       if (args>3)
 	 if (!image_color_arg(3-args,&alpha))
-	    SIMPLE_ARG_TYPE_ERROR("create",4,"Image.Color");
+            SIMPLE_ARG_TYPE_ERROR("create",4,"Image.Color");
+      pop_n_elems(args);
 
       push_int(THIS->xsize);
       push_int(THIS->ysize);
@@ -1379,7 +1380,7 @@ static void image_layer_create(INT32 args)
       push_object(clone_object(image_program,5));
 
       image_layer_set_image(2);
-      pop_n_elems(args);
+      pop_stack();
    }
    else if (TYPEOF(Pike_sp[-args]) == T_OBJECT || args>1)
    {
