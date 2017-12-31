@@ -12,9 +12,9 @@ o Sql.pgsql
   - Support IEEE binary float database-wireformat.
   - Prevent new queries from starting in the local_backend.
 
-o Crypto.SCRAM
+o Crypto.Hash.SCRAM
 
-  New module to support SCRAM authentication.
+  New class to support SCRAM authentication.
 
 o Thread.ResourceCount
 
@@ -24,12 +24,26 @@ o SSL.File
 
   Support query_fd() and set_buffer_mode() methods.
 
+o Toole.Standalone.check_http
+
+  - Allow redirect responses.
+
+  - Support --expect option.
+
 o mktime/System.TM
 
   Considerable speedup and a reduction in codesize.
 
 Bug fixes
 ---------
+
+o Compiler
+
+  Improved variant robustness.
+
+o Calendar
+
+  Updated tzdata to 2017c.
 
 o Crypto.CCM
 
@@ -56,6 +70,10 @@ o Image.Image
 o Image.PVR
 
   Fixed size check for twiddled images.
+
+o MIME
+
+  Support trailing newline in MIME part epilogues.
 
 o Protocols.HTTP
 
@@ -97,6 +115,14 @@ o Standards.IIM
 
   Disabled debug output for unknown segment markers.
 
+o Stdio.send_file
+
+  Improved support for TLS/SSL; wait for TLS handshake to complete
+  before calling the sendfile done callback when sending an empty
+  string. This fixes the issue where the connection got closed
+  before TLS handshaking was completed, confusing the other side.
+
+
 Building & Tools
 ----------------
 
@@ -104,6 +130,10 @@ o Image.SVG
 
   Fall back to using the unprefixed pkg-config if the arch-prefixed
   doesn't exist.
+
+o Mysql
+
+  Support MariaDB 10.2 headerfiles.
 
 o precompile
 
@@ -116,6 +146,10 @@ o smartlink
 o Whitefish
 
   Use the standard VPATH.
+
+o Yp
+
+  Support using libtirpc. Glibc 2.26 has removed the Sun RPC implementation...
 
 
 Changes since Pike 8.0.466 (release 10)
