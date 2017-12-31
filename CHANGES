@@ -42,6 +42,12 @@ o ** operator added. It's exponentiation and works with most
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
 
+o Three pass compiler.
+
+  An extra pass of the compiler has been added. It is used to properly
+  resolve types in forward referring expressions, and is only run when
+  needed.
+
 o #pragma disassemble
 
   This directive is now available even in pikes compiled --without-debug.
