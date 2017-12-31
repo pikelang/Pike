@@ -645,7 +645,15 @@ static void img_read_grey(INT32 args)
    unsigned char *s1;
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
-   img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+   if(args==0)
+   {
+     push_int(190);
+     img_read_get_channel(1,"grey",1,&m1,&s1,&c1);
+     pop_stack();
+   }
+   else
+     img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+
    d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
