@@ -644,7 +644,14 @@ void img_read_grey(INT32 args)
    unsigned char *s1;
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
-   img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+   if(args==0)
+   {
+     push_int(190);
+     img_read_get_channel(1,"grey",1,&m1,&s1,&c1);
+     pop_stack();
+   }
+   else
+     img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
    d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
@@ -845,7 +852,6 @@ void image_create_method(INT32 args)
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
 
-   MAKE_CONST_STRING(s_grey,"grey");
    MAKE_CONST_STRING(s_rgb,"rgb");
    MAKE_CONST_STRING(s_cmyk,"cmyk");
    MAKE_CONST_STRING(s_adjusted_cmyk,"adjusted_cmyk");
@@ -976,8 +982,10 @@ void image_create(INT32 args)
    if (image_too_big(THIS->xsize,THIS->ysize))
       Pike_error("Image.Image->create(): image too large (>2Gpixels)\n");
 
+   MAKE_CONST_STRING(s_grey,"grey");
    if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
-       !image_color_svalue(sp+2-args,&(THIS->rgb)))
+       (!image_color_svalue(sp+2-args,&(THIS->rgb)) ||
+        sp[2-args].u.string==s_grey))
       /* don't try method "lightblue", etc */
    {
       image_create_method(args-2);
