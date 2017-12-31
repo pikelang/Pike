@@ -2,6 +2,11 @@
 //!
 //!
 
+protected GTK2.PaperSize _destruct( );
+//! Destructor.
+//!
+//!
+
 GTK2.PaperSize copy( );
 //! Copy this GTK2.PaperSize.
 //!
@@ -10,11 +15,6 @@ GTK2.PaperSize copy( );
 protected GTK2.PaperSize create( string|void name, string|void ppd_display_name, float|void width, float|void height, int|void unit );
 //! Create a new GTK2.PaperSize object by parsing a PWG 5101.1-2002 PWG paper
 //! name.
-//!
-//!
-
-GTK2.PaperSize destroy( );
-//! Destructor.
 //!
 //!
 

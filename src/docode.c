@@ -2821,6 +2821,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   INT32 entry_point;
   int aggregate_cnum = -1;
   int save_stack_depth = current_stack_depth;
+  int save_label_no = label_no;
   current_stack_depth = 0;
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
@@ -2925,6 +2926,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   entry_point = assemble(1);
 
   current_stack_depth = save_stack_depth;
+  label_no = save_label_no;
   return entry_point;
 }
 

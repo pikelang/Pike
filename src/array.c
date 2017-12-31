@@ -2676,7 +2676,7 @@ ptrdiff_t do_gc_weak_array(struct array *a)
   INT32 e;
   ptrdiff_t res = 0;
 
-  if (!a->flags & ARRAY_WEAK_FLAG) {
+  if (!(a->flags & ARRAY_WEAK_FLAG)) {
     return 0;
   }
 

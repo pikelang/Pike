@@ -20,6 +20,7 @@
 #include "nettle.h"
 
 #include <nettle/yarrow.h>
+#include <nettle/memxor.h>
 
 #ifdef HAVE_NETTLE_VERSION_H
 #include <nettle/version.h>
@@ -365,6 +366,182 @@ program_flags PROGRAM_CLEAR_STORAGE;
     THIS->key = xcalloc(1,32);
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
     sha256_init(&THIS->sha_ctx);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class AES128_CTR_DRBG
+ *!
+ *! Minimal implementation of NIST SP800-90Ar1 pseudo random number
+ *! generator CTR_DRBG using AES-128. No personalization, nounces or
+ *! additional data are supported.
+ *!
+ *! @seealso
+ *!  @[Random.AES128_CTR_DRBG]
+ */
+PIKECLASS AES128_CTR_DRBG
+program_flags PROGRAM_CLEAR_STORAGE;
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+  CVAR INT64 reseed_counter;
+  CVAR INT64 reseed_interval;
+
+  DECLARE_STORAGE;
+
+  /*
+   * blocklen = 128
+   * ctr_len = 128
+   * keylen = 128
+   * seedlen = 256
+   * reseed_interval = 2**48
+   */
+
+#ifndef AES128_KEY_SIZE
+#define AES128_KEY_SIZE	(128>>3)
+#endif
+
+  static void ctr_debug_update(char *data)
+  {
+    uint8_t tmp_key[16];
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, tmp_key, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, THIS->ctr, THIS->ctr);
+    memcpy(THIS->key, tmp_key, 16);
+    if( data )
+    {
+      memxor(THIS->key, (uint8_t*)data, 16);
+      memxor(THIS->ctr, (uint8_t*)data+16, 16);
+    }
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Updated the internal key with the provided additional entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    if( data->len!=32 )
+      Pike_error("Illegal entropy size.\n");
+    NO_WIDE_STRING(data);
+    ctr_debug_update(data->str);
+    THIS->reseed_counter = 1;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(int(1..281474976710656) interval)
+  {
+    INT64 interval_int64 = interval;
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval_int64;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(object(Gmp.mpz) interval)
+  {
+    INT64 interval_int64 = 0;
+    if (!low_int64_from_bignum(&interval_int64, interval))
+      Pike_error("Invalid interval.\n");
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval_int64;
+  }
+
+  PIKEFUN int `reseed_interval()
+  {
+    push_int64(THIS->reseed_interval);
+  }
+
+  /*! @decl void entropy_underflow()
+   *! Called when @[random_string] has been called more than
+   *! @[reseed_interval] times.
+   */
+  PIKEFUN void entropy_underflow()
+    flags ID_PROTECTED;
+  {
+    Pike_error("Requires reseed.\n");
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. Does not allow
+   *! for additional input data in the call.
+   */
+  PIKEFUN string(8bit) random_string(int len)
+  {
+    int stored = 0;
+    struct pike_string *s;
+    uint8_t *str;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
+    if(THIS->reseed_counter>THIS->reseed_interval)
+      apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
+
+    s = begin_shared_string(len);
+    str = (uint8_t *)s->str;
+
+    while( (len-stored) >= 16 )
+    {
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, str, THIS->ctr);
+      stored += 16;
+      str += 16;
+
+      if( !(stored % (1<<19)) )
+      {
+        ctr_debug_update(NULL);
+        THIS->reseed_counter++;
+        if(THIS->reseed_counter>THIS->reseed_interval)
+          apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
+      }
+    }
+
+    if( len>stored )
+    {
+      uint8_t buf[16];
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, buf, THIS->ctr);
+      memcpy(str, buf, len-stored);
+    }
+
+    ctr_debug_update(NULL);
+    THIS->reseed_counter++;
+
+    RETURN end_shared_string(s);
+  }
+
+  INIT
+  {
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,16);
+    THIS->reseed_counter = 1;
+    THIS->reseed_interval = ((INT64)1)<<48;
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
   }
 
   EXIT

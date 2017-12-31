@@ -32,6 +32,8 @@ ZeroWrapper zero = ZeroWrapper();
 protected class NullArg
 {
   protected string _sprintf (int fmt)
-    {return fmt == 'O' ? "NullArg()" : "NULL";}
+  {
+    return fmt == 'O' ? "NullArg()" : "NULL";
+  }
 }
 NullArg null_arg = NullArg();

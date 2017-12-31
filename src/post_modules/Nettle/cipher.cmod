@@ -681,7 +681,8 @@ PIKECLASS BufferedCipher
 	THIS->backlog = xcalloc(1, block_size);
 	THIS->backlog_len = 0;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1265,7 +1266,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1748,7 +1750,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2128,7 +2131,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2525,7 +2529,8 @@ PIKECLASS BlockCipher
 	THIS->block_size = block_size;
 	THIS->mode = 0;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()

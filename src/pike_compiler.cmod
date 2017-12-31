@@ -975,7 +975,7 @@ static int run_pass1(struct compilation *c)
     return 0;
   }
 
-  low_start_new_program(c->target,1,0,0,0);
+  low_start_new_program(c->target, COMPILER_PASS_FIRST, 0, 0, 0);
   c->supporter.prog = Pike_compiler->new_program;
 
   CDFPRINTF("th(%ld) %p run_pass1() start: "
@@ -1048,6 +1048,44 @@ static int run_pass1(struct compilation *c)
   return ret;
 }
 
+void run_pass_extra(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  debug_malloc_touch(c->placeholder);
+
+  if (!c->p) {
+    c->flags &= ~(COMPILER_BUSY);
+    c->flags |= COMPILER_DONE;
+    return;
+  }
+
+  run_init(c);
+  low_start_new_program(c->p, COMPILER_PASS_EXTRA, 0, 0, 0);
+  free_program(c->p);
+  c->p=0;
+
+  run_init2(c);
+
+  CDFPRINTF("th(%ld) %p run_pass_extra() start: "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), Pike_compiler->new_program,
+            lock_depth, c->compilation_depth);
+
+  verify_supporters();
+
+  do_yyparse();  /* Parse da program */
+
+  CDFPRINTF("th(%ld) %p run_pass2() done for %s\n",
+            (long)th_self(), Pike_compiler->new_program,
+            c->lex.current_file->str);
+
+  verify_supporters();
+
+  c->p=debug_malloc_pass(end_first_pass(0));
+
+  run_exit(c);
+}
+
 void run_pass2(struct compilation *c)
 {
   debug_malloc_touch(c);
@@ -1060,7 +1098,7 @@ void run_pass2(struct compilation *c)
   }
 
   run_init(c);
-  low_start_new_program(c->p,2,0,0,0);
+  low_start_new_program(c->p, COMPILER_PASS_LAST, 0, 0, 0);
   free_program(c->p);
   c->p=0;
 
@@ -1215,7 +1253,13 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   add_ref(cc->supporter.self);
   low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
 
-  if(finish && cc->p) run_pass2(cc);
+  if (finish && cc->p) {
+    if (cc->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running delayed EXTRA PASS\n");
+      run_pass_extra(cc);
+    }
+    run_pass2(cc);
+  }
   run_cleanup(cc,1);
 
   exit_compiler();
@@ -1539,7 +1583,7 @@ static void f_compilation_compile(INT32 args)
 
   if (!c->prog) {
     /* No program text. */
-    low_start_new_program(c->target, 1, NULL, 0, NULL);
+    low_start_new_program(c->target, COMPILER_PASS_FIRST, NULL, 0, NULL);
     c->p = end_program();
     c->flags |= COMPILER_DONE;
     pop_n_elems(args);
@@ -1581,6 +1625,10 @@ static void f_compilation_compile(INT32 args)
   }else{
     CDFPRINTF("th(%ld) %p f_compilation_compile() finish now.\n",
               (long) th_self(), c->target);
+    if (c->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running EXTRA PASS\n");
+      run_pass_extra(c);
+    }
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
@@ -1876,7 +1924,7 @@ static void f_compilation_pop_type_attribute(INT32 args)
 
   get_all_args("pop_type_attribute", args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
@@ -1918,7 +1966,7 @@ static void f_compilation_push_type_attribute(INT32 args)
 
   get_all_args("push_type_attribute", args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -1974,7 +2022,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
 
   get_all_args("apply_type_attribute", args, "%W%*.%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -2526,7 +2574,7 @@ static void compile_compiler(void)
 
   low_enter_compiler(co, 0);
 
-  low_start_new_program(p, 1, NULL, 0, NULL);
+  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
   free_program(p);	/* Remove the extra ref we just got... */
 
   /* NOTE: The order of these identifiers is hard-coded in
@@ -2547,7 +2595,7 @@ static void compile_compiler(void)
   ADD_FUNCTION("resolv", f_compilation_env_resolv,
 	       tFunc(tStr tStr tObj, tMix), 0);
 
-  low_start_new_program(p2, 1, NULL, 0, NULL);
+  low_start_new_program(p2, COMPILER_PASS_FIRST, NULL, 0, NULL);
 
   /* low_start_new_program() has zapped the inherit we created
    * for p2 above, so we need to repair the frame pointer.
@@ -2742,7 +2790,7 @@ node *low_pop_local_variables(int level, node *block)
 				   mkintnode(0)),
 			    NULL));
     }
-    if ((Pike_compiler->compiler_pass == 2) &&
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
       ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
@@ -2773,7 +2821,7 @@ node *pop_local_variables(int level, node *block)
      *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
-      if ((Pike_compiler->compiler_pass == 2) &&
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);

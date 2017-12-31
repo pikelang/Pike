@@ -270,13 +270,13 @@ static void image_ttf_make(INT32 args)
 #define THISf ((struct image_ttf_face_struct *)get_storage(THISOBJ,image_ttf_face_program))
 #define THISi ((struct image_ttf_faceinstance_struct *)get_storage(THISOBJ,image_ttf_faceinstance_program))
 
-static void image_ttf_face_exit(struct object *o)
+static void image_ttf_face_exit(struct object *UNUSED(o))
 {
   if(THISf)
     TT_Close_Face(THISf->face);
 }
 
-static void image_ttf_faceinstance_exit(struct object *o)
+static void image_ttf_faceinstance_exit(struct object *UNUSED(o))
 {
   if (THISi) {
     if(THISi->faceobj->prog)

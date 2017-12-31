@@ -246,6 +246,8 @@ LVL_CHECK:
     }
   }
 
+  pop_n_elems(args);
+
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -781,7 +783,7 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
+  if(args && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
   {
     struct mapping *m = Pike_sp[-1].u.mapping;
     struct svalue *tmp;
@@ -809,6 +811,7 @@ static void gz_inflate_create(INT32 args)
       tmp=inflateInit( &THIS->gz );
     }
   }
+  pop_n_elems(args);
 
 /*    mt_lock(& THIS->lock);  */
 /*    mt_unlock(& THIS->lock); */

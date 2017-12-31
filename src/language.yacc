@@ -7,7 +7,7 @@
 %pure-parser
 
 /* Expect a single shift/reduce conflict (dangling else). */
-%expect 1
+%expect 2
 
 %token TOK_ARROW "->"
 
@@ -356,8 +356,10 @@ int yylex(YYSTYPE *yylval);
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
+%type <n> unqualified_idents
+%type <n> qualified_ident
+%type <n> qualified_idents
 %type <n> idents
-%type <n> idents2
 %type <n> labeled_statement
 %type <n> lambda
 %type <n> literal_expr
@@ -474,7 +476,8 @@ inherit_ref:
 
 inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
   {
-    if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
+    if (($1 & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared inherit.");
     }
     if($3)
@@ -572,14 +575,14 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	define_alias($1->u.sval.u.string, n->type,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN,
 		     depth, id);
-      } else if (Pike_compiler->compiler_pass == 1) {
+      } else if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	yyerror("Invalid extern declared constant.");
 	add_constant($1->u.sval.u.string, &svalue_undefined,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       }
     } else {
       if(!is_const($3)) {
-	if (Pike_compiler->compiler_pass == 2) {
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  yyerror("Constant definition is not constant.");
 	}
 	add_constant($1->u.sval.u.string, 0,
@@ -804,7 +807,7 @@ def: modifiers optional_attributes simple_type optional_constant
       struct pike_type *s=compiler_pop_type();
       int i = isidentifier($5->u.sval.u.string);
 
-      if (Pike_compiler->compiler_pass != 1) {
+      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
 	if (i < 0) {
 	  my_yyerror("Identifier %S lost after first pass.",
 		     $5->u.sval.u.string);
@@ -816,7 +819,7 @@ def: modifiers optional_attributes simple_type optional_constant
     }
 
 
-/*    if(Pike_compiler->compiler_pass==1) */
+/*    if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) */
     {
       /* FIXME:
        * set current_function_number for local functions as well
@@ -848,7 +851,8 @@ def: modifiers optional_attributes simple_type optional_constant
       c->lex.current_file = $5->current_file;
       c->lex.current_line = $5->line_number;
 
-      if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
+      if (($1 & ID_EXTERN) &&
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
 	yywarning("Extern declared function definition.");
       }
 
@@ -860,7 +864,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	{
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
-	  if (Pike_compiler->compiler_pass == 2) {
+	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
@@ -911,7 +915,7 @@ def: modifiers optional_attributes simple_type optional_constant
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
-      if (Pike_compiler->compiler_pass == 2 &&
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
           Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO)
       {
         /* Change "auto" return type to actual return type. */
@@ -953,7 +957,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	  Pike_interpreter.recoveries->stack_pointer))
 	Pike_fatal("Stack error (underflow)\n");
 
-      if((Pike_compiler->compiler_pass == 1) &&
+      if((Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
 	 (f != Pike_compiler->compiler_frame->current_function_number)) {
 	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
 		$5->u.sval.u.string->str);
@@ -1116,7 +1120,8 @@ modifier:
   | TOK_STATIC     {
     $$ = ID_PROTECTED;
     if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
-        !TEST_COMPAT(7, 8) && Pike_compiler->compiler_pass==1 )
+        !TEST_COMPAT(7, 8) &&
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) )
       yywarning("Keyword static is deprecated in favour of 'protected'.");
     }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
@@ -1354,7 +1359,10 @@ basic_type:
   }
   ;
 
-/* Identifier type. Value on type stack. */
+/* Identifier type. Value on type stack.
+ *
+ * NB: Introduces shift-reduce conflict on TOK_LOCAL_ID.
+ */
 identifier_type: idents
   {
     if ($1) {
@@ -1375,7 +1383,7 @@ identifier_type: idents
     if (Pike_compiler->last_identifier) {
       push_type_name(Pike_compiler->last_identifier);
     }
-    pop_stack();
+
     free_node($1);
   }
   | typeof
@@ -1489,6 +1497,12 @@ opt_string_width: opt_int_range
 
 opt_program_type:  /* Empty */ { push_object_type(0, 0); }
   | '(' full_type ')'
+  | '(' string_constant ')'
+  {
+    resolv_type($2);
+    push_type_name($2->u.sval.u.string);
+    free_node($2);
+  }
   | '(' error ')'
   {
     push_object_type(0, 0);
@@ -1509,7 +1523,7 @@ opt_function_type: '('
 	/* function_type_list ends with a comma, or is empty.
 	 * FIXME: Should this be a syntax error or not?
 	 */
-	if (Pike_compiler->compiler_pass == 1) {
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	  yyerror("Missing type before ... .");
 	}
 	push_type(T_MIXED);
@@ -1609,7 +1623,7 @@ new_name: TOK_IDENTIFIER
     }
     type=compiler_pop_type();
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
-	(Pike_compiler->compiler_pass == 1)) {
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared variable has initializer.");
     }
     $<number>$=define_variable($1->u.sval.u.string, type,
@@ -1618,7 +1632,7 @@ new_name: TOK_IDENTIFIER
   }
   expr0
   {
-    if ((Pike_compiler->compiler_pass == 2) &&
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!TEST_COMPAT(7, 8) && ($4) && ($4->token == F_CONSTANT) &&
 	!Pike_compiler->num_parse_error) {
       /* Check if it is zero, in which case we can throw it away.
@@ -1718,7 +1732,8 @@ new_local_name: TOK_IDENTIFIER
     pop_stack_mark();
     update_current_type();
     copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
-    if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
+    if( type->type == PIKE_T_AUTO &&
+	Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
     {
         free_type( type );
         fix_type_field( $4 );
@@ -1807,7 +1822,7 @@ block:'{'
     while (Pike_compiler != $<ptr>5) {
       struct program *p;
       /* fprintf(stderr, "Compiler context out of sync. Attempting to recover...\n"); */
-      if(Pike_compiler->compiler_pass == 1)
+      if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
 	p = end_first_pass(0);
       else
 	p=end_first_pass(1);
@@ -1864,7 +1879,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
 
     if(!is_const($3))
     {
-      if(Pike_compiler->compiler_pass==2)
+      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	yyerror("Constant definition is not constant.");
     }else{
       ptrdiff_t tmp=eval_low($3,1);
@@ -2023,7 +2038,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     $<number>$ = Pike_compiler->varargs;
     Pike_compiler->varargs = 0;
 
-    if (Pike_compiler->compiler_pass == 1) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Define a tentative prototype for the lambda. */
       push_finished_type(mixed_type_string);
       e=$5-1;
@@ -2068,7 +2083,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 
     debug_malloc_touch($7);
     $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
       type=find_return_type($7);
@@ -2207,7 +2222,7 @@ local_function: TOK_IDENTIFIER start_function func_args
 	    Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
 
-    if(Pike_compiler->compiler_pass > 1)
+    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST)
     {
       id=isidentifier(name);
     }else{
@@ -2223,7 +2238,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     Pike_compiler->compiler_frame->current_function_number=id;
 
     n=0;
-    if(Pike_compiler->compiler_pass > 1 &&
+    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
     {
       if(i->identifier_flags & IDENTIFIER_SCOPED)
@@ -2398,18 +2413,18 @@ anon_class: TOK_CLASS line_number_info
     $<number>0 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
   }
   {
-    /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
-    if(Pike_compiler->compiler_pass==1)
+    /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS start\n"); */
+    if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
       if ($<number>0 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, 1, $<n>3->u.sval.u.string,
+      low_start_new_program(0, COMPILER_PASS_FIRST, $<n>3->u.sval.u.string,
 			    $<number>0,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
-	 $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	 $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
       store_linenumber($2->line_number, $2->current_file);
       debug_malloc_name(Pike_compiler->new_program,
@@ -2424,7 +2439,7 @@ anon_class: TOK_CLASS line_number_info
       {
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
-	low_start_new_program(0, 2, 0,
+	low_start_new_program(0, COMPILER_PASS_LAST, 0,
 			      $<number>0,
 			      &$<number>$);
       }else{
@@ -2437,23 +2452,23 @@ anon_class: TOK_CLASS line_number_info
 			constants[id->func.const_info.offset].sval)) ==
 	       T_PROGRAM))
 	  {
-	    low_start_new_program(s->u.program, 2,
+	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $<n>3->u.sval.u.string,
 				  $<number>0,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
-	       $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	       $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(0, 2, 0,
+	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
 				  $<number>0,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(0, 2, 0,
+	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
 				$<number>0,
 				&$<number>$);
 	}
@@ -2537,7 +2552,7 @@ anon_class: TOK_CLASS line_number_info
 			  0,
 			  OPT_SIDE_EFFECT);
 
-	if (Pike_compiler->compiler_pass == 2) {
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  node *create_code = NULL;
 	  int f;
 
@@ -2558,7 +2573,7 @@ anon_class: TOK_CLASS line_number_info
 
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_pass == 2) &&
+		  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
 		   mixed_type_string)) {
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
@@ -2593,7 +2608,7 @@ anon_class: TOK_CLASS line_number_info
 	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
 	    Pike_fatal("Stack error (underflow)\n");
 
-	  if(Pike_compiler->compiler_pass == 1 &&
+	  if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
 	     f!=Pike_compiler->compiler_frame->current_function_number)
 	    Pike_fatal("define_function screwed up! %d != %d\n",
 		       f, Pike_compiler->compiler_frame->current_function_number);
@@ -2607,12 +2622,12 @@ anon_class: TOK_CLASS line_number_info
       }
     }
 
-    if(Pike_compiler->compiler_pass == 1)
+    if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
       p=end_first_pass(0);
     else
       p=end_first_pass(1);
 
-    /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
+    /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS end\n"); */
 
     if(p) {
       /* Update the type for the program constant,
@@ -2654,18 +2669,19 @@ named_class: TOK_CLASS line_number_info simple_identifier
       free_string(s);
       $<number>0|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
     }
+
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
-    if(Pike_compiler->compiler_pass==1)
+    if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
       if ($<number>0 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, 1, $3->u.sval.u.string,
+      low_start_new_program(0, COMPILER_PASS_FIRST, $3->u.sval.u.string,
 			    $<number>0,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
-	 $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	 $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
       store_linenumber($2->line_number, $2->current_file);
       debug_malloc_name(Pike_compiler->new_program,
@@ -2680,7 +2696,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
       {
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
-	low_start_new_program(0, 2, 0,
+	low_start_new_program(0, COMPILER_PASS_LAST, 0,
 			      $<number>0,
 			      &$<number>$);
       }else{
@@ -2693,23 +2709,23 @@ named_class: TOK_CLASS line_number_info simple_identifier
 			constants[id->func.const_info.offset].sval)) ==
 	       T_PROGRAM))
 	  {
-	    low_start_new_program(s->u.program, 2,
+	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $3->u.sval.u.string,
 				  $<number>0,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
-	       $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
+	       $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(0, 2, 0,
+	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
 				  $<number>0,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(0, 2, 0,
+	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
 				$<number>0,
 				&$<number>$);
 	}
@@ -2793,7 +2809,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 			  0,
 			  OPT_SIDE_EFFECT);
 
-	if (Pike_compiler->compiler_pass == 2) {
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  node *create_code = NULL;
 	  int f;
 
@@ -2814,7 +2830,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_pass == 2) &&
+		  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
 		   mixed_type_string)) {
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
@@ -2849,7 +2865,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
 	    Pike_fatal("Stack error (underflow)\n");
 
-	  if(Pike_compiler->compiler_pass == 1 &&
+	  if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
 	     f!=Pike_compiler->compiler_frame->current_function_number)
 	    Pike_fatal("define_function screwed up! %d != %d\n",
 		       f, Pike_compiler->compiler_frame->current_function_number);
@@ -2863,7 +2879,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
       }
     }
 
-    if(Pike_compiler->compiler_pass == 1)
+    if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
       p=end_first_pass(0);
     else
       p=end_first_pass(1);
@@ -2921,7 +2937,7 @@ enum_def: /* EMPTY */
 
 	if(!is_const($2))
 	{
-	  if(Pike_compiler->compiler_pass==2)
+	  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	    yyerror("Enum definition is not constant.");
 	  push_int(0);
 	} else {
@@ -2985,7 +3001,7 @@ enum_list: enum_def
 enum: TOK_ENUM
   {
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
-	(Pike_compiler->compiler_pass == 1)) {
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared enum.");
     }
 
@@ -3019,7 +3035,7 @@ typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
     struct pike_type *t = compiler_pop_type();
 
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
-	(Pike_compiler->compiler_pass == 1)) {
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared typedef.");
     }
 
@@ -3111,7 +3127,7 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
   {
     /* Fix AUTO type. */
     struct pike_type *ind=NULL, *val=NULL;
-    if(Pike_compiler->compiler_pass == 2)
+    if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
     {
       fix_type_field( $6 );
       fix_type_field( $7 );
@@ -3545,7 +3561,7 @@ optional_block: /* EMPTY */ { $$=0; }
     debug_malloc_touch($5);
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
       type=find_return_type($5);
@@ -3650,7 +3666,7 @@ implicit_modifiers:
   }
   ;
 
-expr4: idents2 | expr5
+expr4: idents | expr5
   | expr5 '.' line_number_info TOK_IDENTIFIER
   {
     $$=index_node($1,".",$4->u.sval.u.string);
@@ -3658,6 +3674,10 @@ expr4: idents2 | expr5
     free_node ($1);
     free_node ($3);
     free_node ($4);
+  }
+  | bad_expr_ident
+  {
+    $$ = mknewintnode(0);
   }
   ;
 
@@ -3827,33 +3847,6 @@ expr5: literal_expr
   | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
 
-idents2: idents
-  | TOK_LOCAL_ID TOK_COLON_COLON TOK_IDENTIFIER
-  {
-    if(Pike_compiler->last_identifier) {
-      free_string(Pike_compiler->last_identifier);
-    }
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-
-    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_LOCAL,
-				   Pike_compiler->last_identifier);
-    if (!$$) {
-      if (Pike_compiler->compiler_pass == 2) {
-	my_yyerror("%S not defined in local scope.", $3->u.sval.u.string);
-	$$ = 0;
-      } else {
-	$$ = mknode(F_UNDEFINED, 0, 0);
-      }
-    }
-
-    free_node($3);
-  }
-  | TOK_LOCAL_ID TOK_COLON_COLON bad_identifier
-  {
-    $$=0;
-  }
-  ;
-
 literal_expr: string
   | TOK_NUMBER
   | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
@@ -3902,8 +3895,8 @@ literal_expr: string
   | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
   ;
 
-idents: low_idents
-  | idents '.' TOK_IDENTIFIER
+unqualified_idents: low_idents
+  | unqualified_idents '.' TOK_IDENTIFIER
   {
     $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
 		  $3->u.sval.u.string);
@@ -3912,8 +3905,24 @@ idents: low_idents
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
-  | idents '.' bad_identifier {}
-  | idents '.' error {}
+  | unqualified_idents '.' bad_identifier {}
+  ;
+
+qualified_idents: qualified_ident
+  | qualified_idents '.' TOK_IDENTIFIER
+  {
+    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
+		  $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
+  | qualified_idents '.' bad_identifier {}
+  ;
+
+idents: unqualified_idents
+  | qualified_idents
   ;
 
 string_or_identifier: TOK_IDENTIFIER
@@ -4004,6 +4013,12 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     free_node($1);
     $$ = e;
   }
+  | TOK_LOCAL_ID TOK_COLON_COLON
+  {
+    inherit_state = Pike_compiler;
+    inherit_depth = 0;
+    $$ = INHERIT_LOCAL;
+  }
   | TOK_GLOBAL TOK_COLON_COLON
   {
     struct compilation *c = THIS_COMPILATION;
@@ -4011,6 +4026,15 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     for (inherit_depth = 0; inherit_depth < c->compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {}
     $$ = INHERIT_GLOBAL;
+  }
+  | inherit_specifier TOK_LOCAL_ID TOK_COLON_COLON
+  {
+    if ($1 > 0) {
+      yywarning("local:: references to inherited symbols is a noop.");
+      $$ = $1;
+    } else {
+      $$ = INHERIT_LOCAL;
+    }
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
@@ -4042,7 +4066,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     }
     free_node($2);
   }
-  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = INHERIT_ALL; }
+  | inherit_specifier bad_inherit TOK_COLON_COLON { $$ = INHERIT_ALL; }
   ;
 
 low_idents: TOK_IDENTIFIER
@@ -4057,7 +4081,7 @@ low_idents: TOK_IDENTIFIER
 	     !($$ = program_magic_identifier (Pike_compiler, 0, -1,
 					      Pike_compiler->last_identifier, 0))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	 (Pike_compiler->compiler_pass==2)) {
+	 (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
 	my_yyerror("Undefined identifier %S.",
 		   Pike_compiler->last_identifier);
 	/* FIXME: Add this identifier as a constant in the current program to
@@ -4102,7 +4126,10 @@ low_idents: TOK_IDENTIFIER
     free_node($1);
     $$ = 0;
   }
-  | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
+  ;
+
+qualified_ident:
+  TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
     struct compilation *c = THIS_COMPILATION;
     node *tmp2;
@@ -4145,7 +4172,7 @@ low_idents: TOK_IDENTIFIER
 				   Pike_compiler->last_identifier);
     if (!$$) {
       if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	  (Pike_compiler->compiler_pass == 2)) {
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
 	if (($1 >= 0) && inherit_state->new_program->inherits[$1].name) {
 	  my_yyerror("Undefined identifier %S::%S.",
 		     inherit_state->new_program->inherits[$1].name,
@@ -4175,7 +4202,7 @@ low_idents: TOK_IDENTIFIER
 				   Pike_compiler->last_identifier);
     if(!$$)
     {
-      if (Pike_compiler->compiler_pass == 2) {
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
       }
       $$=mkintnode(0);
@@ -4361,8 +4388,6 @@ lvalue: expr4
     free_node($2);
   }
   /* FIXME: Add production for type2 ==> constant type svalue here? */
-  | bad_expr_ident
-  { $$=mknewintnode(0); }
   ;
 
 low_lvalue_list: lvalue lvalue_list
@@ -4470,25 +4495,52 @@ real_string_constant: TOK_STRING
  */
 
 /* FIXME: Should probably set Pike_compiler->last_identifier. */
-bad_identifier: bad_expr_ident
+bad_identifier: bad_inherit
+  | TOK_LOCAL_ID
+  { yyerror_reserved("local"); }
+  ;
+
+bad_inherit: bad_expr_ident
   | TOK_ARRAY_ID
   { yyerror_reserved("array"); }
   | TOK_ATTRIBUTE_ID
   { yyerror_reserved("__attribute__"); }
+  | TOK_BREAK
+  { yyerror_reserved("break"); }
+  | TOK_CASE
+  { yyerror_reserved("case"); }
+  | TOK_CATCH
+  { yyerror_reserved("catch"); }
   | TOK_CLASS
   { yyerror_reserved("class"); }
+  | TOK_CONTINUE
+  { yyerror_reserved("continue"); }
+  | TOK_DEFAULT
+  { yyerror_reserved("default"); }
   | TOK_DEPRECATED_ID
   { yyerror_reserved("__deprecated__"); }
+  | TOK_DO
+  { yyerror_reserved("do"); }
   | TOK_ENUM
   { yyerror_reserved("enum"); }
   | TOK_FLOAT_ID
   { yyerror_reserved("float");}
+  | TOK_FOR
+  { yyerror_reserved("for"); }
+  | TOK_FOREACH
+  { yyerror_reserved("foreach"); }
   | TOK_FUNCTION_ID
   { yyerror_reserved("function");}
   | TOK_FUNCTION_NAME
   { yyerror_reserved("__FUNCTION__");}
+  | TOK_GAUGE
+  { yyerror_reserved("gauge"); }
+  | TOK_IF
+  { yyerror_reserved("if"); }
   | TOK_INT_ID
   { yyerror_reserved("int"); }
+  | TOK_LAMBDA
+  { yyerror_reserved("lambda"); }
   | TOK_MAPPING_ID
   { yyerror_reserved("mapping"); }
   | TOK_MIXED_ID
@@ -4499,10 +4551,18 @@ bad_identifier: bad_expr_ident
   { yyerror_reserved("object"); }
   | TOK_PROGRAM_ID
   { yyerror_reserved("program"); }
+  | TOK_RETURN
+  { yyerror_reserved("return"); }
+  | TOK_SSCANF
+  { yyerror_reserved("sscanf"); }
   | TOK_STRING_ID
   { yyerror_reserved("string"); }
+  | TOK_SWITCH
+  { yyerror_reserved("switch"); }
   | TOK_TYPEDEF
   { yyerror_reserved("typedef"); }
+  | TOK_TYPEOF
+  { yyerror_reserved("typeof"); }
   | TOK_VOID_ID
   { yyerror_reserved("void"); }
   | TOK_RESERVED
@@ -4517,8 +4577,6 @@ bad_identifier: bad_expr_ident
 bad_expr_ident:
     TOK_INLINE
   { yyerror_reserved("inline"); }
-  | TOK_LOCAL_ID
-  { yyerror_reserved("local"); }
   | TOK_PREDEF
   { yyerror_reserved("predef"); }
   | TOK_PRIVATE
@@ -4539,42 +4597,12 @@ bad_expr_ident:
   { yyerror_reserved("extern"); }
   | TOK_FINAL_ID
   { yyerror_reserved("final");}
-  | TOK_DO
-  { yyerror_reserved("do"); }
   | TOK_ELSE
   { yyerror("else without if."); }
-  | TOK_RETURN
-  { yyerror_reserved("return"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
-  | TOK_CATCH
-  { yyerror_reserved("catch"); }
-  | TOK_GAUGE
-  { yyerror_reserved("gauge"); }
-  | TOK_LAMBDA
-  { yyerror_reserved("lambda"); }
-  | TOK_SSCANF
-  { yyerror_reserved("sscanf"); }
-  | TOK_SWITCH
-  { yyerror_reserved("switch"); }
-  | TOK_TYPEOF
-  { yyerror_reserved("typeof"); }
-  | TOK_BREAK
-  { yyerror_reserved("break"); }
-  | TOK_CASE
-  { yyerror_reserved("case"); }
-  | TOK_CONTINUE
-  { yyerror_reserved("continue"); }
-  | TOK_DEFAULT
-  { yyerror_reserved("default"); }
-  | TOK_FOR
-  { yyerror_reserved("for"); }
-  | TOK_FOREACH
-  { yyerror_reserved("foreach"); }
-  | TOK_IF
-  { yyerror_reserved("if"); }
   ;
 
 /*
@@ -4669,7 +4697,7 @@ int low_add_local_name(struct compiler_frame *frame,
     int var = frame->current_number_of_locals;
 
     if (pike_types_le(type, void_type_string)) {
-      if (Pike_compiler->compiler_pass != 1) {
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	yywarning("Declaring local variable %S with type void "
 		  "(converted to type zero).", str);
       }
@@ -4929,7 +4957,7 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 
   if (!res && !(res = resolve_identifier(identifier))) {
     if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-       (Pike_compiler->compiler_pass==2)) {
+       (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       my_yyerror("Undefined identifier %d.%d::%S.",
 		 major, minor, identifier);
     }else{

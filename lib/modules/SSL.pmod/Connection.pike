@@ -152,21 +152,27 @@ Packet change_cipher_packet()
 
 string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
-  if(version == PROTOCOL_SSL_3_0) {
-    string(8bit) data = (string(8bit))handshake_messages + sender;
-    return .Cipher.MACmd5(session->master_secret)->hash(data) +
-      .Cipher.MACsha(session->master_secret)->hash(data);
-  }
-  else if(version <= PROTOCOL_TLS_1_1) {
+  switch( version )
+  {
+  case PROTOCOL_SSL_3_0:
+    {
+      string(8bit) data = (string(8bit))handshake_messages + sender;
+      return .Cipher.MACmd5(session->master_secret)->hash(data) +
+        .Cipher.MACsha(session->master_secret)->hash(data);
+    }
+  case PROTOCOL_TLS_1_0:
+  case PROTOCOL_TLS_1_1:
     return session->cipher_spec->prf(session->master_secret, sender,
 				     Crypto.MD5.hash(handshake_messages)+
 				     Crypto.SHA1.hash(handshake_messages),
-				     len || 12);
+                                     len || 12);
+  case PROTOCOL_TLS_1_2:
+  default:
+    return session->cipher_spec->prf(session->master_secret, sender,
+                                     session->cipher_spec->hash
+                                     ->hash(handshake_messages),
+                                     len || 12);
   }
-  return session->cipher_spec->prf(session->master_secret, sender,
-                                   session->cipher_spec->hash
-                                   ->hash(handshake_messages),
-                                   len || 12);
 }
 
 Packet certificate_packet(array(string(8bit)) certificates)
@@ -392,23 +398,7 @@ void derive_master_secret(string(8bit) premaster_secret)
 		 this, fmt_constant(handshake_state, "STATE"),
 		 fmt_version(version));
 
-  if (version >= PROTOCOL_TLS_1_3) {
-    switch(handshake_state) {
-    case STATE_wait_for_hello:	// Resume
-    case STATE_wait_for_key_share:	// Full hello
-      session->master_secret = premaster_secret;
-      session->master_secret = hash_messages("handshake master secret", 48);
-      break;
-    case STATE_wait_for_finish:
-      session->master_secret = premaster_secret;
-      session->master_secret = hash_messages("extended master secret", 48);
-      break;
-    default:
-      error("Unexpected handshake state: %s\n",
-	    fmt_constant(handshake_state, "STATE"));
-      break;
-    }
-  } else if (!sizeof(premaster_secret)) {
+  if (!sizeof(premaster_secret)) {
     // Clear text mode.
     session->master_secret = "";
   } else if (session->extended_master_secret) {
@@ -422,13 +412,6 @@ void derive_master_secret(string(8bit) premaster_secret)
   }
 
   new_cipher_states();
-
-  if ((version >= PROTOCOL_TLS_1_3) &&
-      (handshake_state == STATE_wait_for_finish)) {
-    // Generate the resumption premaster secret.
-    session->master_secret = premaster_secret;
-    session->master_secret = hash_messages("resumption premaster secret", 48);
-  }
 }
 
 
@@ -450,18 +433,7 @@ protected void create(Context ctx)
   current_read_state = State(this);
   current_write_state = State(this);
 
-  if ((ctx->max_version < PROTOCOL_SSL_3_0) ||
-      (ctx->max_version > PROTOCOL_TLS_MAX)) {
-    ctx->max_version = PROTOCOL_TLS_MAX;
-  }
-
-  if (ctx->min_version < PROTOCOL_SSL_3_0) {
-    ctx->min_version = PROTOCOL_SSL_3_0;
-  } else if (ctx->min_version > ctx->max_version) {
-    ctx->min_version = ctx->max_version;
-  }
-
-  version = ctx->max_version;
+  version = min([int]max(@ctx->supported_versions), PROTOCOL_TLS_1_2);
   context = ctx;
 }
 
@@ -683,10 +655,6 @@ int(-1..2) to_write(Stdio.Buffer output)
       pending_write_state = pending_write_state[1..];
     } else {
       error("Invalid Change Cipher Spec.\n");
-    }
-    if (version >= PROTOCOL_TLS_1_3) {
-      // The change cipher state packet is not sent on the wire in TLS 1.3.
-      return 2;
     }
   }
 

@@ -26,8 +26,8 @@ PIKECLASS PIKE_NAME
     }
 
 #ifdef SPECIAL_PBKDF2
-  PIKEFUN string pbkdf2(string(8bit) password, string(8bit) salt,
-                        int rounds, int bytes)
+  PIKEFUN string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
+                              int rounds, int bytes)
   {
     struct pike_string *dst = begin_shared_string(bytes);
     NO_WIDE_STRING(password);
@@ -44,6 +44,14 @@ PIKECLASS PIKE_NAME
 #endif
 
 #ifdef HAVE_NETTLE_HMAC_H
+  DOCSTART() @module HMAC
+    *!
+    *! Accellerated implementation of HMAC (Hashing for Message Authenticity
+    *! Control) with the PIKE_NAME hash algorithm.
+    *!
+    *! @seealso
+    *!   @[Crypto.HMAC]
+  DOCEND()
   PIKECLASS _HMAC
     flags ID_PROTECTED;
   {
@@ -52,6 +60,9 @@ PIKECLASS PIKE_NAME
       lexical_inherit(1, MK_STRING("_HMAC"), 0, REPORT_ERROR);
     }
 
+    DOCSTART() @class PIKE_NAME
+      *! The HMAC hash state.
+    DOCEND()
     PIKECLASS State
     {
       CVAR struct HMAC_CTX(struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx)) ctx;
@@ -71,6 +82,13 @@ PIKECLASS PIKE_NAME
 	}
       }
 
+      DOCSTART() @decl void create(string(8bit) passwd, void|int b)
+	*! @param passwd
+	*!   The secret password (K).
+	*!
+	*! @param b
+	*!   Block size. Must @expr{0@} (zero) or equal to the @[block_size()].
+      DOCEND()
       PIKEFUN void create(string(8bit) passwd, void|int b)
       {
         const struct nettle_hash *meta = THIS->meta = ((struct Nettle_Hash_struct *)parent_storage(2, Nettle_Hash_program))->meta;
@@ -154,8 +172,12 @@ PIKECLASS PIKE_NAME
           Pike_error("Apply on parent of destructed object.\n");
       }
     }
+    DOCSTART() @endclass PIKE_NAME
+    DOCEND()
   }
 #endif
+  DOCSTART() @endmodule HMAC
+  DOCEND()
 
   DOCSTART() @class State
     *!

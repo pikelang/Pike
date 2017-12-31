@@ -761,7 +761,8 @@ node *debug_mknode(int token, node *a, node *b)
     case F_ASSIGN:
     case F_MULTI_ASSIGN:
     case F_ASSIGN_SELF:
-      if ((!a || a->token == F_CONSTANT) && (Pike_compiler->compiler_pass == 2)) {
+      if ((!a || a->token == F_CONSTANT) &&
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
 	yyerror("Illegal lvalue.");
       }
       break;
@@ -1381,7 +1382,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (Pike_compiler->compiler_pass == 2 && type->type != PIKE_T_AUTO ) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+      type->type != PIKE_T_AUTO ) {
     if (type == void_type_string) {
       yywarning("Soft cast to void.");
       return mknode(F_POP_VALUE, n, 0);
@@ -1486,7 +1488,7 @@ void resolv_constant(node *n)
       return;
 
     case F_UNDEFINED:
-      if(Pike_compiler->compiler_pass==2) {
+      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Ought to have the name of the identifier in the message. */
 	yyerror("Expected constant, got undefined identifier.");
       }
@@ -1550,7 +1552,7 @@ void resolv_constant(node *n)
 	push_svalue(&PROG_FROM_INT(p, numid)->
 		    constants[i->func.const_info.offset].sval);
       }else{
-	if(Pike_compiler->compiler_pass!=1)
+	if(Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
 	  yyerror("Constant is not defined yet.");
 	push_int(0);
       }
@@ -1580,7 +1582,7 @@ void resolv_class(node *n)
       break;
 
     default:
-      if (Pike_compiler->compiler_pass!=1)
+      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
@@ -1594,6 +1596,14 @@ void resolv_class(node *n)
 void resolv_type(node *n)
 {
   resolv_constant(n);
+
+  if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+    /* Program name, etc */
+    if (call_handle_inherit(n->u.sval.u.string)) {
+      stack_swap();
+      pop_stack();
+    }
+  }
 
   if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
     /* "typedef" */
@@ -1619,7 +1629,7 @@ void resolv_type(node *n)
 	  SET_SVAL_TYPE(Pike_sp[-1], T_FUNCTION);
 	}else{
 	  extern void f_object_program(INT32);
-	  if (Pike_compiler->compiler_pass == 2)
+	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	    yywarning("Using object as program identifier.");
 	  f_object_program(1);
 	}
@@ -1629,7 +1639,7 @@ void resolv_type(node *n)
     switch(TYPEOF(Pike_sp[-1])) {
     case T_FUNCTION:
       if((p = program_from_function(Pike_sp-1))) {
-	push_object_type(0, p?(p->id):0);
+        push_object_type(0, p->id);
 	break;
       } else {
 	/* Attempt to get the return type for the function. */
@@ -1655,19 +1665,24 @@ void resolv_type(node *n)
       /* FALL_THROUGH */
 
     default:
-      if (Pike_compiler->compiler_pass!=1)
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	/* The type isn't fully known yet, so do an extra pass. */
+	struct compilation *c = THIS_COMPILATION;
+	c->flags |= COMPILER_NEED_EXTRA_PASS;
+      } else {
 	my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
-      pop_stack();
-      push_int(0);
+      }
       push_object_type(0, 0);
       break;
 
     case T_PROGRAM:
       p = Pike_sp[-1].u.program;
-      push_object_type(0, p?(p->id):0);
+      push_object_type(0, p->id);
       break;
     }
   }
+
+  pop_stack();
 }
 
 node *index_node(node * const n, char *node_name, struct pike_string *id)
@@ -1679,8 +1694,8 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 
   if (!is_const(n)) {
     /* Index dynamically. */
-    if (Pike_compiler->compiler_pass == 2 && !(THIS_COMPILATION->lex.pragmas
-                                               & ID_DYNAMIC_DOT))
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+	!(THIS_COMPILATION->lex.pragmas & ID_DYNAMIC_DOT))
     {
       yywarning("Using . to index dynamically.");
     }
@@ -1970,7 +1985,7 @@ node *debug_mksvaluenode(struct svalue *s)
   case T_OBJECT:
 #ifdef PIKE_DEBUG
     if (s->u.object->prog == placeholder_program &&
-	Pike_compiler->compiler_pass == 2)
+	Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
       Pike_fatal("Got placeholder object in second pass.\n");
 #endif
     if(s->u.object == Pike_compiler->fake_object)
@@ -3871,7 +3886,7 @@ void fix_type_field(node *n)
 	}
       }
     }
-    if (CDR(n) && (Pike_compiler->compiler_pass == 2)) {
+    if (CDR(n) && (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       fix_type_field(CDR(n));
       if (!match_types(CDR(n)->type, enumerable_type_string)) {
 	yytype_report(REPORT_WARNING,
@@ -3882,7 +3897,7 @@ void fix_type_field(node *n)
     }
     /* FALL_THROUGH */
   case F_CASE:
-    if (CAR(n) && (Pike_compiler->compiler_pass == 2)) {
+    if (CAR(n) && (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       fix_type_field(CAR(n));
       if (!match_types(CAR(n)->type, enumerable_type_string)) {
 	yytype_report(REPORT_WARNING,
@@ -4261,7 +4276,7 @@ static void optimize(node *n)
 void optimize_node(node *n)
 {
   if(n &&
-     Pike_compiler->compiler_pass==2 &&
+     Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
      (n->node_info & OPT_TRY_OPTIMIZE))
   {
     optimize(n);
@@ -4593,11 +4608,17 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
      (a_flag > 1) ||
 #endif
-     (c->lex.pragmas & ID_DISASSEMBLE))
+     ((c->lex.pragmas & ID_DISASSEMBLE) &&
+      (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
             (unsigned long)PIKE_PC);
 
   args=count_arguments(type);
+#ifdef PIKE_DEBUG
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
+    fprintf(stderr, "args: %d\n", args);
+#endif
+
   if(args < 0)
   {
     args=~args;
@@ -4613,11 +4634,11 @@ int dooptcode(struct pike_string *name,
     vargs|=IDENTIFIER_SCOPE_USED;
 
 #ifdef PIKE_DEBUG
-  if(a_flag > 5)
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Extra identifier flags:0x%02x\n", vargs);
 #endif
 
-  if(Pike_compiler->compiler_pass==1)
+  if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
   {
     tmp.offset=-1;
 #ifdef PIKE_DEBUG
@@ -4694,6 +4715,12 @@ int dooptcode(struct pike_string *name,
       remove_clear_locals=0x7fffffff;
       Pike_compiler->compiler_frame->current_function_number = saved_fun_num;
     }
+#ifdef PIKE_DEBUG
+    if(a_flag > 2)
+    {
+      fputs("Coded\n", stderr);
+    }
+#endif
   }
 
   ret=define_function(name,

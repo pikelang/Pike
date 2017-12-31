@@ -26,10 +26,10 @@
 //!   To get a callback for each of the requests
 //! */
 //!
-//! all->on_success(lambda (Protocols.HTTP.Promise.Success ok_resp) {
+//! all->on_success(lambda (Protocols.HTTP.Promise.Result ok_resp) {
 //!   werror("Got successful response for %O\n", ok_resp->host);
 //! });
-//! all->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
+//! all->on_failure(lambda (Protocols.HTTP.Promise.Result failed_resp) {
 //!   werror("Request for %O failed!\n", failed_resp->host);
 //! });
 //!
@@ -41,10 +41,10 @@
 //!
 //! Concurrent.Future all2 = Concurrent.results(all);
 //!
-//! all2->on_success(lambda (array(Protocols.HTTP.Promise.Success) ok_resp) {
+//! all2->on_success(lambda (array(Protocols.HTTP.Promise.Result) ok_resp) {
 //!   werror("All request were successful: %O\n", ok_resp);
 //! });
-//! all->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
+//! all->on_failure(lambda (Protocols.HTTP.Promise.Result failed_resp) {
 //!   werror("The request to %O failed.\n", failed_resp->host);
 //! });
 //! @endcode
@@ -113,8 +113,8 @@ public void set_maxtime(int t)
 //! Sends a @tt{GET@}, @tt{POST@}, @tt{PUT@} or @tt{DELETE@} request to @[url]
 //! asynchronously. A @[Concurrent.Future] object is returned on which you
 //! can register callbacks via @[Concurrent.Future->on_success()] and
-//! @[Concurrent.Future.on_failure()] which will get a @[Success] or @[Failure]
-//! object as argument respectively.
+//! @[Concurrent.Future.on_failure()] which will get a @[Result]
+//! object as argument.
 //!
 //! For an example of usage see @[Protocols.HTTP.Promise]
 
@@ -238,143 +238,94 @@ class Arguments
 }
 
 
-//! HTTP result class. Consider internal.
+//! HTTP result class.
 //!
-//! @seealso
-//!  @[Success], @[Failure]
+//! A class representing a request and its response. An instance of
+//! this class will be given as argument to the
+//! @[Concurrent.Future()->on_success()] and
+//! @[Concurrent.Future()->on_failure()] callbacks registered on the returned
+//! @[Concurrent.Future] object from @[get_url()], @[post_url()],
+//! @[delete_url()], @[put_url()] or @[do_method()].
 class Result
 {
-  //! Internal result mapping
-  protected mapping result;
-
-  //! Return @tt{true@} on success, @tt{false@} otherwise
-  public bool `ok();
-
   //! The HTTP response headers
-  public mapping `headers()
-  {
-    return result->headers;
-  }
+  public mapping headers;
 
   //! The host that was called in the request
-  public string `host()
-  {
-    return result->host;
-  }
+  public string host;
 
   //! Returns the requested URL
-  public string `url()
-  {
-    return result->url;
-  }
+  public Standards.URI url;
 
   //! The HTTP status of the response, e.g @tt{200@}, @tt{201@}, @tt{404@}
   //! and so on.
-  public int `status()
-  {
-    return result->status;
-  }
+  public int status;
 
   //! The textual representation of @[status].
-  public string `status_description()
-  {
-    return result->status_desc;
-  }
+  public string status_description;
 
   //! Extra arguments set in the @[Arguments] object.
-  public array(mixed) `extra_args()
-  {
-    return result->extra_args;
+  public array(mixed) extra_args;
+
+  //! Raw data body of the request
+  //!
+  //! @seealso
+  //!   @[get()]
+  string data;
+
+  protected void create(Standards.URI requrl, object result, array ctx,
+   void|string _data) {
+    TRACE("this_program(%O)\n", result->headers);
+    headers = copy_value(result->headers);
+    host = result->host;
+    status = result->status;
+    status_description = result->status_desc;
+    extra_args = ctx;
+    data = _data;
+    url = requrl;
   }
-
-  //! @ignore
-  protected void create(mapping _result)
-  {
-    TRACE("this_program(%O)\n", _result->headers);
-    result = _result;
-  }
-
-  PROMISE_DESTRUCTOR
-  //! @endignore
-}
-
-
-//! A class representing a successful request and its response. An instance of
-//! this class will be given as argument to the
-//! @[Concurrent.Future()->on_success()] callback registered on the returned
-//! @[Concurrent.Future] object from @[get_url()], @[post_url()],
-//! @[delete_url()], @[put_url()] or @[do_method()].
-class Success
-{
-  inherit Result;
-
-  public bool `ok() { return true; }
 
   //! The response body, i.e the content of the requested URL
-  public string `data()
-  {
-    string data = result->data;
+  public string get() {
+    string decdata = data;
 
-    if (content_encoding && content_encoding == "gzip") {
-      data = Gz.uncompress(data[10..<8], true);
-    }
+    if (content_encoding == "gzip")
+      decdata = Gz.uncompress(decdata[10..<8], true);
 
-    return data;
+    return decdata;
   }
 
   //! Returns the value of the @tt{content-length@} header.
-  public int `length()
-  {
-    return headers && (int)headers["content-length"];
+  public int `length() {
+    return (int)headers["content-length"];
   }
 
   //! Returns the content type of the requested document
-  public string `content_type()
-  {
-    if (string ct = (headers && headers["content-type"])) {
-      if (sscanf (ct, "%s;", string c) == 1) {
-        return c;
-      }
-
-      return ct;
-    }
+  public string `content_type() {
+    string ct = headers["content-type"];
+    if (ct)
+      sscanf (ct, "%s;", ct);
+    return ct;
   }
 
   //! Returns the charset of the requested document, if given by the
   //! response headers.
-  public string `charset()
-  {
-    if (string ce = (headers && headers["content-type"])) {
-      if (sscanf (ce, "%*s;%*scharset=%s", ce) == 3) {
-        if (ce[0] == '"' || ce[0] == '\'') {
-          ce = ce[1..<1];
-        }
-        return ce;
-      }
-    }
+  public string `charset() {
+    string ce = headers["content-type"];
+    if (ce && sscanf (ce, "%*s;%*scharset=%*1['\"]%[^'\"]%*1['\"]", ce) == 5)
+      return ce;
+    return 0;
   }
 
   //! Returns the content encoding of the response if set by the remote server.
-  public string `content_encoding()
-  {
-    if (string ce = (headers && headers["content-encoding"])) {
-      return ce;
-    }
+  inline string `content_encoding() {
+    return headers["content-encoding"];
   }
+
+  //! @ignore
+  PROMISE_DESTRUCTOR
+  //! @endignore
 }
-
-
-//! A class representing a failed request. An instance of
-//! this class will be given as argument to the
-//! @[Concurrent.Future()->on_failure()] callback registered on the returned
-//! @[Concurrent.Future] object from @[get_url()], @[post_url()],
-//! @[delete_url()], @[put_url()] or @[do_method()].
-class Failure
-{
-  inherit Result;
-  public bool `ok() { return false; }
-}
-
 
 //! Internal class for the actual HTTP requests
 protected class Session
@@ -383,58 +334,26 @@ protected class Session
 
   public int(0..) maxtime, timeout;
 
-  Request async_do_method_url(string method,
-                              URL url,
-                              void|mapping query_variables,
-                              void|string|mapping data,
-                              void|mapping extra_headers,
-                              function callback_headers_ok,
-                              function callback_data_ok,
-                              function callback_fail,
-                              array callback_arguments)
-  {
-    return ::async_do_method_url(method, url, query_variables, data,
-                                 extra_headers, callback_headers_ok,
-                                 callback_data_ok, callback_fail,
-                                 callback_arguments);
-  }
-
-
   class Request
   {
     inherit parent::Request;
 
-    protected void set_extra_args_in_result(mapping(string:mixed) r)
-    {
-      if (extra_callback_arguments && sizeof(extra_callback_arguments) > 1) {
-        r->extra_args = extra_callback_arguments[1..];
-      }
-    }
-
     protected void async_fail(object q)
     {
-      mapping ret = ([
-        "status"      : q->status,
-        "status_desc" : q->status_desc,
-        "host"        : q->host,
-        "headers"     : copy_value(q->headers),
-        "url"         : url_requested
-      ]);
-
-      set_extra_args_in_result(ret);
-
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
       function fc = fail_callback;
       set_callbacks(0, 0, 0); // drop all references
-      extra_callback_arguments = 0;
 
       if (fc) {
-        fc(Failure(ret));
-      }
+        Result ret = Result(url_requested, q,
+                    extra_callback_arguments && extra_callback_arguments[1..]);
+        extra_callback_arguments = 0;
+        fc(ret);
+      } else
+        extra_callback_arguments = 0;
     }
-
 
     protected void async_ok(object q)
     {
@@ -459,41 +378,31 @@ protected class Session
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
-      if (data_callback) {
+      if (data_callback)
         con->timed_async_fetch(async_data, async_fail); // start data downloading
-      }
-      else {
+      else
         extra_callback_arguments = 0; // to allow garb
-      }
     }
 
-
-    protected void async_data()
-    {
+    protected void async_data() {
       string s = con->data();
 
       if (!s)		// data incomplete, try again later
         return;
 
-      mapping ret = ([
-        "host"        : con->host,
-        "status"      : con->status,
-        "status_desc" : con->status_desc,
-        "headers"     : copy_value(con->headers),
-        "data"        : s,
-        "url"         : url_requested
-      ]);
-
-      set_extra_args_in_result(ret);
-
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
-      if (data_callback) {
-        data_callback(Success(ret));
-      }
+      function dc = data_callback;
+      set_callbacks(0, 0, 0); // drop all references
 
-      extra_callback_arguments = 0;
+      if (dc) {
+        Result ret = Result(url_requested, con, 
+                  extra_callback_arguments && extra_callback_arguments[1..], s);
+        extra_callback_arguments = 0;
+        dc(ret);
+      } else
+        extra_callback_arguments = 0;
     }
 
     //! @ignore

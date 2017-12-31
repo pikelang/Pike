@@ -1664,7 +1664,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
   NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
   CHECK_FOO(NUMTYPE,TYPE,NAME);						\
-  DO_IF_DEBUG(if (state->compiler_pass != 1) {				\
+  DO_IF_DEBUG(if (state->compiler_pass != COMPILER_PASS_FIRST) {	\
 		Pike_fatal("Adding " TOSTR(NAME) " in pass %d.\n",	\
 			   state->compiler_pass);			\
 	      });							\
@@ -1896,7 +1896,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 	  struct node_s *ret;
 	  UNSETJMP(tmp);
 
-	  if (Pike_compiler->compiler_pass == 2 &&
+	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
 	      ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 		Pike_sp[-1].u.object == placeholder_object) ||
 	       (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
@@ -1949,7 +1949,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	if(i!=-1)
 	{
 	  if ((p->flags & COMPILATION_FORCE_RESOLVE) &&
-	      (p->compiler_pass == 2) &&
+	      (p->compiler_pass == COMPILER_PASS_LAST) &&
 	      ((p->num_inherits + 1) < p->new_program->num_inherits) &&
 	      (PTR_FROM_INT(p->new_program, i)->inherit_offset >
 	       p->num_inherits)) {
@@ -2033,7 +2033,7 @@ int low_resolve_identifier(struct pike_string *ident)
   if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL))
     handle_compile_exception ("Error resolving '%S'.", ident);
 
-  if (Pike_compiler->compiler_pass != 2) {
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) {
     /* If we get a program that hasn't gone through pass 1 yet then we
      * have to register a dependency now in our pass 1 so that our
      * pass 2 gets delayed. Otherwise the other program might still be
@@ -2049,7 +2049,7 @@ int low_resolve_identifier(struct pike_string *ident)
       report_compiler_dependency (p);
   }
 
-  if (Pike_compiler->compiler_pass == 2 &&
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
       ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 	Pike_sp[-1].u.object == placeholder_object) ||
        (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
@@ -2434,7 +2434,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
       } else if ((id != -1) && (prog != state->new_program)) {
 	id = really_low_reference_inherited_identifier(state, i, id);
       }
-      if ((id != -1) && (state->compiler_pass == 2)) {
+      if ((id != -1) && (state->compiler_pass == COMPILER_PASS_LAST)) {
 	if (inherit_num < 0) {
 	  /* Find the closest inherit containing the lfun::`->()
 	   * that is about to be called.
@@ -2784,7 +2784,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 	  (sub_ref->id_flags & ID_USED)) {
 	struct identifier *sub_id = ID_FROM_PTR(inh->prog, sub_ref);
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
-	  if ((Pike_compiler->compiler_pass == 2) &&
+	  if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	      !pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type, sub_id->type)) {
 	    yytype_report(REPORT_WARNING,
@@ -3173,7 +3173,7 @@ void low_start_new_program(struct program *p,
   }else{
     tmp.u.program=p;
     add_ref(p);
-    if((pass == 2) && name)
+    if((pass != COMPILER_PASS_FIRST) && name)
     {
       struct identifier *i;
       id=isidentifier(name);
@@ -3184,7 +3184,7 @@ void low_start_new_program(struct program *p,
       i->type=get_type_of_svalue(&tmp);
     }
   }
-  if (pass == 1) {
+  if (pass == COMPILER_PASS_FIRST) {
     if(c->compilation_depth >= 1) {
       add_ref(p->parent = Pike_compiler->new_program);
       debug_malloc_touch (p);
@@ -3426,7 +3426,7 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
             (long)th_self(), (long)line, file,
             lock_depth, c->compilation_depth);
 
-  low_start_new_program(0,1,0,0,0);
+  low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
@@ -4266,7 +4266,8 @@ struct program *end_first_pass(int finish)
       if (type)
       {
 	struct pike_type * temp = type;
-	if ((Pike_compiler->compiler_pass == 2) && !ref->inherit_offset &&
+	if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	    !ref->inherit_offset &&
 	    !check_variant_overload(id->type, type)) {
 	  /* This symbol is shadowed by later variants. */
 	  yytype_report(REPORT_WARNING,
@@ -4332,7 +4333,7 @@ struct program *end_first_pass(int finish)
   }
 
   if (finish == 1) {
-    if (Pike_compiler->compiler_pass == 1) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Called from end_program(). */
       if (Pike_compiler->init_node) {
 	/* Make sure that the __INIT symbol exists, so that
@@ -4347,7 +4348,7 @@ struct program *end_first_pass(int finish)
 			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
     }
-    Pike_compiler->compiler_pass = 2;
+    Pike_compiler->compiler_pass = COMPILER_PASS_LAST;
   }
 
   /*
@@ -4458,7 +4459,9 @@ struct program *end_first_pass(int finish)
             c->compilation_depth, Pike_compiler->compiler_pass);
 #endif
 
-  if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && c->resolve_cache)
+  if(!Pike_compiler->compiler_frame &&
+     (Pike_compiler->compiler_pass == COMPILER_PASS_LAST || !prog) &&
+     c->resolve_cache)
   {
     free_mapping(dmalloc_touch(struct mapping *, c->resolve_cache));
     c->resolve_cache=0;
@@ -4800,7 +4803,7 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 
   p = np->inherits[i].prog;
 
-  if ((q?q:Pike_compiler)->compiler_pass == 2) {
+  if ((q?q:Pike_compiler)->compiler_pass == COMPILER_PASS_LAST) {
     struct identifier *id = ID_FROM_INT(p, f);
     if (((id->identifier_flags & IDENTIFIER_TYPE_MASK) ==
 	 IDENTIFIER_PIKE_FUNCTION) && (id->func.offset == -1)) {
@@ -5050,9 +5053,22 @@ void lower_inherit(struct program *p,
     return;
   }
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
     struct program *old_p =
-      Pike_compiler->new_program->inherits[Pike_compiler->num_inherits+1].prog;
+      Pike_compiler->new_program->
+      inherits[Pike_compiler->num_inherits+1].prog;
+    Pike_compiler->num_inherits += old_p->num_inherits;
+
+    if (old_p != p) {
+      yyerror("Got different program for inherit in second pass "
+	      "(resolver problem).");
+    }
+    return;
+  }
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+    struct program *old_p =
+      Pike_compiler->new_program->
+      inherits[Pike_compiler->num_inherits+1].prog;
     Pike_compiler->num_inherits += old_p->num_inherits;
 
     if (old_p != p) {
@@ -5616,7 +5632,7 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     Pike_fatal("Attempting to add variable to fixed program\n");
 
-  if(Pike_compiler->compiler_pass==2)
+  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
     Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
@@ -5740,7 +5756,7 @@ int low_define_variable(struct pike_string *name,
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     Pike_fatal("Attempting to add variable to fixed program\n");
 
-  if(Pike_compiler->compiler_pass==2)
+  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
     Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
@@ -5882,7 +5898,7 @@ int define_variable(struct pike_string *name,
 		   "variable/functions %S", name);
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) ||
-	 Pike_compiler->compiler_pass!=1)
+	 Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
       {
 	int n2;
 
@@ -6133,7 +6149,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     Pike_fatal("Attempting to add constant to fixed program\n");
 
-  if(Pike_compiler->compiler_pass==2) {
+  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     dump_program_tables(Pike_compiler->new_program, 2);
     Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	       "                Attempted to add the identifier \"%s\"\n",
@@ -6407,7 +6423,7 @@ INT32 define_function(struct pike_string *name,
       Pike_fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
       if (!pike_types_le(type, lfun_type->u.type)) {
@@ -6487,7 +6503,7 @@ INT32 define_function(struct pike_string *name,
 	  my_yyerror("Illegal to redefine a current variable with a getter/setter: %S.", symbol);
 	} else {
 	  if ((ref->id_flags | ID_USED) != (flags | ID_USED)) {
-	    if (Pike_compiler->compiler_pass == 1) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	      yywarning("Modifier mismatch for variable %S.", symbol);
 	    }
 	    ref->id_flags &= flags | ID_USED;
@@ -6522,7 +6538,7 @@ INT32 define_function(struct pike_string *name,
   if(IDENTIFIER_IS_C_FUNCTION(function_flags))
     prog->flags |= PROGRAM_HAS_C_METHODS;
 
-  if (Pike_compiler->compiler_pass == 1) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
     /* Mark the type as tentative by setting the runtime-type
      * to T_MIXED.
      *
@@ -6532,7 +6548,7 @@ INT32 define_function(struct pike_string *name,
   }
 
   i = isidentifier(name);
-  if (Pike_compiler->compiler_pass == 1) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
     if (flags & ID_VARIANT) {
       if (i >= 0) {
 	if (!is_variant_dispatcher(prog, i)) {
@@ -6637,7 +6653,7 @@ INT32 define_function(struct pike_string *name,
        *       pass 2. Only do this in pass 2, and only if the previous
        *       type isn't from pass 1.
        */
-      if ((Pike_compiler->compiler_pass == 2) &&
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  (funp->run_time_type == T_FUNCTION)) {
 	/* match types against earlier prototype or vice versa */
 	if(!match_types(type, funp->type))
@@ -6678,7 +6694,8 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Illegal to redefine 'final' function %S.", name);
       }
 
-      if (!(flags & ID_VARIANT) && (Pike_compiler->compiler_pass == 1) &&
+      if (!(flags & ID_VARIANT) &&
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
 	  (funp->func.c_fun == f_dispatch_variant) &&
 	  (!func || (func->c_fun != f_dispatch_variant) ||
 	   !IDENTIFIER_IS_C_FUNCTION(function_flags)) &&
@@ -6777,7 +6794,7 @@ INT32 define_function(struct pike_string *name,
   make_a_new_def:
 
 #ifdef PIKE_DEBUG
-    if(Pike_compiler->compiler_pass==2)
+    if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
       Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 		 "Added identifier: \"%s\"\n", name->str);
 #endif
@@ -7059,7 +7076,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
     /* if(fun->func.offset == -1) continue; * Prototype */
     if(!is_same_string(fun->name,name)) continue;
     if(type && (fun->type != type)) {
-      if ((Pike_compiler->compiler_pass == 2) &&
+      if ((Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) &&
 	  !(funp->id_flags & ID_INHERITED) &&
 	  match_types(fun->type, type)) {
 	tentative = i;
@@ -7098,7 +7115,19 @@ int really_low_find_variant_identifier(struct pike_string *name,
       return i;
     }
   }
-  if (id < 0) id = tentative;
+  if ((id < 0) && (tentative >= 0)) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      // Usually due to forward-referring types. The tentative match
+      // is often correct, but may in some cases be wrong eg due to
+      // having fall back implementations that use the mixed type.
+      yytype_report(REPORT_WARNING,
+		    NULL, 0, ID_FROM_INT(prog, tentative)->type,
+		    NULL, 0, type,
+		    0, "Variant type mismatch in second pass for %S.",
+		    name);
+    }
+    id = tentative;
+  }
   CDFPRINTF("Found %d\n", id);
   return id;
 }
@@ -9620,18 +9649,26 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
     int skip_params = 0;
     int skip_comment = 0;
 
-    if (start < end) {
+    if (end) {
       /* Address */
       string_builder_sprintf(s, "0x%016lx  ", start);
 
-      /* Memory dump */
-      for (i = 0; i < 8; i += field_width) {
-	if (start < end) {
-	  string_builder_sprintf(s, "%0*x ", field_width, start[0]);
-	  start++;
-	} else {
-	  string_builder_sprintf(s, "%*s ", field_width, "");
+      if (start < end) {
+	/* Memory dump */
+	for (i = 0; i < 8; i += field_width) {
+	  if (start < end) {
+	    string_builder_sprintf(s, "%0*x ", field_width, start[0]);
+	    start++;
+	    if (start == end) {
+	      end = NULL;
+	    }
+	  } else {
+	    string_builder_sprintf(s, "%*s ", field_width, "");
+	  }
 	}
+      } else {
+	end = NULL;
+	string_builder_sprintf(s, "%*s  ", 8 + 8/field_width, "");
       }
     } else {
       string_builder_sprintf(s, "%*s  ", 18 + 8 + 8/field_width, "");

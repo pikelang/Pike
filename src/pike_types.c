@@ -6727,7 +6727,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     res = pop_unfinished_type();
     if (tmp) free_type(tmp);
 
-    if ((Pike_compiler->compiler_pass == 2) && sval) {
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && sval) {
       while (tmp2->type == PIKE_T_NAME) {
 	tmp2 = tmp2->cdr;
       }

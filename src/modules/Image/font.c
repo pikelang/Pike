@@ -489,6 +489,7 @@ void font_load(INT32 args)
 void font_create(INT32 args)
 {
    font_load(args);
+   pop_stack();
 }
 
 /*! @decl Image.Image write(string text, string ... more_text_lines)

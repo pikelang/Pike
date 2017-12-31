@@ -645,7 +645,15 @@ static void img_read_grey(INT32 args)
    unsigned char *s1;
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
-   img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+   if(args==0)
+   {
+     push_int(190);
+     img_read_get_channel(1,"grey",1,&m1,&s1,&c1);
+     pop_stack();
+   }
+   else
+     img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+
    d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
@@ -846,7 +854,6 @@ static void image_create_method(INT32 args)
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("create",1,"string");
 
-   MAKE_CONST_STRING(s_grey,"grey");
    MAKE_CONST_STRING(s_rgb,"rgb");
    MAKE_CONST_STRING(s_cmyk,"cmyk");
    MAKE_CONST_STRING(s_adjusted_cmyk,"adjusted_cmyk");
@@ -861,7 +868,7 @@ static void image_create_method(INT32 args)
    MAKE_CONST_STRING(s_raw,"raw");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
-      Pike_error("create: image size is too small\n");
+     Pike_error("create: image size is too small\n");
 
    if (sp[-args].u.string==s_grey)
    {
@@ -967,6 +974,7 @@ void image_create(INT32 args)
       apply(o, "ysize", 0);
       image_create(2);
       image_paste(1);
+      pop_stack();
       return;
    }
    if (args<2) return;
@@ -982,15 +990,22 @@ void image_create(INT32 args)
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
 
+   MAKE_CONST_STRING(s_grey,"grey");
    if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
-       !image_color_svalue(sp+2-args,&(THIS->rgb)))
+       (!image_color_svalue(sp+2-args,&(THIS->rgb)) ||
+        sp[2-args].u.string==s_grey))
       /* don't try method "lightblue", etc */
    {
-      image_create_method(args-2);
-      return ;
+     struct svalue *stack = Pike_sp;
+     image_create_method(args-2);
+     pop_n_elems(args+Pike_sp-stack);
+     return;
    }
    else
+   {
       getrgb(THIS,2,args,args,"Image.Image->create()");
+      pop_n_elems(args);
+   }
 
    THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);

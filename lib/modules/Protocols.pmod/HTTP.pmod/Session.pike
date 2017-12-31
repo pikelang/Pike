@@ -19,7 +19,7 @@ typedef string|Standards.URI|SessionURL URL;
 //!	@[Request.follow_redirects]
 int follow_redirects=20;
 
-#define RUNTIME_RESOLV(X) master().resolv(#X)
+#define RUNTIME_RESOLV(X) master()->resolv(#X)
 
 //! Default HTTP headers.
 mapping default_headers = ([

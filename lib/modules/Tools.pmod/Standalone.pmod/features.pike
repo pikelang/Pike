@@ -244,9 +244,6 @@ int main(int num, array(string) args) {
   write("\nMIME\n");
   M(MIME.Message);
 
-  write("\nMird\n");
-  M(Mird.Mird);
-
   write("\nMsql\n");
   M(Msql.version);
 #if 0 // if Msql version is >2

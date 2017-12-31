@@ -268,6 +268,7 @@ done_made:
    }
    else
       SIMPLE_ARG_TYPE_ERROR(PNAME,1,"array|int");
+   pop_n_elems(args);
 }
 
 

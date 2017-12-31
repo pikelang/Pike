@@ -226,7 +226,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     }
 
     case '8': case '9':
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
 	yywarning("%c is not a valid octal digit.", c);
       break;
 
@@ -335,7 +335,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     /* Warn about this as it is commonly due to broken escaping,
      * and to be forward compatible with adding future new escapes.
      */
-    if (Pike_compiler->compiler_pass == 1) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       yywarning("Redundant backslash-escape: \'\\%c\'.", c);
     }
     break;
@@ -365,16 +365,16 @@ static p_wchar2 char_const(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       return 0;
     case 4: case 5: case 6:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too large character value in escape.");
       c = -1;
       break;
     case 7:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\U escape.");
       return '\\';
   }
@@ -512,7 +512,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("constant")) return TOK_CONSTANT;
 	  if(ISWORD("continue")) return TOK_CONTINUE;
 	  if(ISWORD("const")) {
-	    if (Pike_compiler->compiler_pass == 1) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	      yywarning("const will soon be a reserved keyword.");
 	    }
 	    break;
@@ -755,7 +755,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  free_string(lex->current_file);
 	  lex->current_file = dmalloc_touch(struct pike_string *, tmp);
 	}
-	if (Pike_compiler->compiler_pass == 1 &&
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
 	    !Pike_compiler->new_program->num_linenumbers) {
 	  /* A nested program will always get an entry right away in
 	   * language.yacc. */
@@ -818,7 +818,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
           }
           else
           {
-            if( Pike_compiler->compiler_pass == 1 )
+            if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
               yywarning("Unknown #pragma directive.");
           }
 	  break;

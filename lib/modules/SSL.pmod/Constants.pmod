@@ -13,6 +13,7 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The @rfc{4346@} version of TLS.
   PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The @rfc{5246@} version of TLS.
   PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
+  PROTOCOL_TLS_1_3_DRAFT= 0x7f16, //! TLS 1.3 draft 22
 
   PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The @rfc{4347@}
 				  //! version of DTLS.  This is
@@ -20,7 +21,8 @@ enum ProtocolVersion {
 
   PROTOCOL_DTLS_1_2	= 0xfefd, //! DTLS 1.2 - The @rfc{6347@}
 				  //! version of DTLS.  This is
-				  //! essentially TLS 1.2 over UDP.
+                                  //! essentially TLS 1.2 over UDP.
+  PROTOCOL_IN_EXTENSION = 0xffff, //! Pike internal marker
 }
 
 //! Max supported TLS version.
@@ -43,7 +45,6 @@ constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
 /* Handshake states */
 constant STATE_wait_for_hello		= 0;
-constant STATE_wait_for_key_share	= 1;
 constant STATE_wait_for_peer		= 2;
 constant STATE_wait_for_verify		= 3;
 constant STATE_wait_for_ticket		= 4;
@@ -169,6 +170,34 @@ enum SignatureAlgorithm {
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
 }
 
+//! Signature algorithms from TLS 1.3
+enum SignatureScheme {
+  // RSASSA-PKCS1-v1_5 algorithms
+  SIGNATURE_rsa_pkcs1_sha256 = 0x0401,
+  SIGNATURE_rsa_pkcs1_sha384 = 0x0501,
+  SIGNATURE_rsa_pkcs1_sha512 = 0x0601,
+
+  // ECDSA algorithms
+  SIGNATURE_ecdsa_secp256r1_sha256 = 0x0403,
+  SIGNATURE_ecdsa_secp384r1_sha384 = 0x0503,
+  SIGNATURE_ecdsa_secp521r1_sha512 = 0x0603,
+
+  // RSASSA-PSS algorithms
+  SIGNATURE_rsa_pss_sha256 = 0x0804,
+  SIGNATURE_rsa_pss_sha384 = 0x0805,
+  SIGNATURE_rsa_pss_sha512 = 0x0806,
+
+  // EdDSA algorithms
+  SIGNATURE_ed25519 = 0x0807,
+  SIGNATURE_ed448 = 0x0808,
+
+  // Legacy algorithms
+  SIGNATURE_rsa_pkcs1_sha1 = 0x0201,
+  SIGNATURE_ecdsa_sha1 = 0x0203,
+
+  // Reserved: 0xfe00..0xffff
+}
+
 //! Key exchange methods.
 enum KeyExchangeType {
   KE_null	= 0,	//! None.
@@ -257,6 +286,7 @@ constant ALERT_internal_error			= 80;	// TLS 1.0
 constant ALERT_inappropriate_fallback		= 86;	// RFC 7507
 constant ALERT_user_canceled			= 90;	// TLS 1.0
 constant ALERT_no_renegotiation			= 100;	// TLS 1.0
+constant ALERT_missing_extension                = 109;  // TLS 1.3 draft.
 constant ALERT_unsupported_extension		= 110;	// RFC 3546
 constant ALERT_certificate_unobtainable		= 111;	// RFC 3546
 constant ALERT_unrecognized_name		= 112;	// RFC 3546
@@ -290,6 +320,7 @@ constant ALERT_descriptions = ([
   ALERT_inappropriate_fallback: "Inappropriate fallback.",
   ALERT_user_canceled: "User canceled.",
   ALERT_no_renegotiation: "Renegotiation not allowed.",
+  ALERT_missing_extension: "Missing extension.",
   ALERT_unsupported_extension: "Unsolicitaded extension.",
   ALERT_certificate_unobtainable: "Failed to obtain certificate.",
   ALERT_unrecognized_name: "Unrecognized host name.",
@@ -1237,9 +1268,9 @@ constant HANDSHAKE_client_hello		= 1;  // RFC 5246
 constant HANDSHAKE_server_hello		= 2;  // RFC 5246
 constant HANDSHAKE_hello_verify_request = 3;  // RFC 6347
 constant HANDSHAKE_new_session_ticket	= 4;  // RFC 4507 / RFC 5077
-constant HANDSHAKE_client_key_share	= 5;  // TLS 1.3 draft.
+constant HANDSHAKE_end_of_early_data	= 5;  // TLS 1.3 draft.
 constant HANDSHAKE_hello_retry_request	= 6;  // TLS 1.3 draft.
-constant HANDSHAKE_server_key_share	= 7;  // TLS 1.3 draft.
+constant HANDSHAKE_encrypted_extensions = 8;  // TLS 1.3 draft.
 constant HANDSHAKE_certificate		= 11; // RFC 5246
 constant HANDSHAKE_server_key_exchange	= 12; // RFC 5246
 constant HANDSHAKE_certificate_request	= 13; // RFC 5246
@@ -1250,7 +1281,9 @@ constant HANDSHAKE_finished		= 20; // RFC 5246
 constant HANDSHAKE_certificate_url	= 21; // RFC 6066
 constant HANDSHAKE_certificate_status   = 22; // RFC 6066
 constant HANDSHAKE_supplemental_data    = 23; // RFC 4680
+constant HANDSHAKE_key_update           = 24; // TLS 1.3 draft.
 constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
+constant HANDSHAKE_message_hash         = 254; // TLS 1.3 draft.
 
 
 //! Don't request nor check any certificate.
@@ -1414,8 +1447,15 @@ enum Extension {
   EXTENSION_encrypt_then_mac			= 22,	// RFC 7366
   EXTENSION_extended_master_secret		= 23,	// RFC 7627
   EXTENSION_session_ticket			= 35,	// RFC 4507 / RFC 5077
-  EXTENSION_extended_random			= 40,	// draft-rescorla-tls-extended-random
-  EXTENSION_early_data				= 128,	// TBD TLS 1.3 draft
+  EXTENSION_key_share			        = 40,	// TLS 1.3 draft.
+  EXTENSION_pre_shared_key                      = 41,   // TLS 1.3 draft.
+  EXTENSION_early_data				= 42,	// TLS 1.3 draft.
+  EXTENSION_supported_versions                  = 43,   // TLS 1.3 draft.
+  EXTENSION_cookie                              = 44,   // TLS 1.3 draft.
+  EXTENSION_psk_key_exchange_modes              = 45,   // TLS 1.3 draft.
+  EXTENSION_certificate_authorities             = 47,   // TLS 1.3 draft.
+  EXTENSION_oid_filters                         = 48,   // TLS 1.3 draft.
+  EXTENSION_post_handshake_auth                 = 49,   // TLS 1.3 draft.
   EXTENSION_next_protocol_negotiation		= 13172,// draft-agl-tls-nextprotoneg
   EXTENSION_origin_bound_certificates		= 13175,
   EXTENSION_encrypted_client_certificates	= 13180,

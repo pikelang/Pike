@@ -1268,6 +1268,22 @@ PIKECLASS Buffer
     ref_push_object(Pike_fp->current_object);
   }
 
+  /*! @decl Buffer add_int8( Gmp.mpz )
+   *! Adds a single byte to the buffer.
+   */
+  PIKEFUN Buffer add_int8( object mpz )
+  {
+    INT64 i = 0;
+    Buffer *io = THIS;
+    unsigned char *p = io_add_space(io,1,0);
+    if (!low_int64_from_bignum(&i, mpz)) {
+      SIMPLE_ARG_TYPE_ERROR("add_int8", 1, "int|Gmp.mpz");
+    }
+    *p = i;
+    io->len++;
+    ref_push_object(Pike_fp->current_object);
+  }
+
   /*! @decl Buffer add_int16( int(16bit) )
    *!
    *! Add a 16-bit network byte order value to the buffer
@@ -1280,6 +1296,24 @@ PIKECLASS Buffer
     p[1] = i;
     io->len += 2;
     io_trigger_output( io );
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_int16( Gmp.mpz )
+   *!
+   *! Add a 16-bit network byte order value to the buffer
+   */
+  PIKEFUN Buffer add_int16( object mpz )
+  {
+    INT64 i = 0;
+    Buffer *io = THIS;
+    unsigned char *p = io_add_space(io,2,0);
+    if (!low_int64_from_bignum(&i, mpz)) {
+      SIMPLE_ARG_TYPE_ERROR("add_int16", 1, "int|Gmp.mpz");
+    }
+    p[0] = i>>8;
+    p[1] = i;
+    io->len += 2;
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1307,7 +1341,7 @@ PIKECLASS Buffer
     INT64 i = 0;
     Buffer *io = THIS;
     unsigned char *p = io_add_space(io,4,0);
-    if (!int64_from_bignum(&i, mpz)) {
+    if (!low_int64_from_bignum(&i, mpz)) {
       SIMPLE_ARG_TYPE_ERROR("add_int32", 1, "int|Gmp.mpz");
     }
     p[0] = i>>24;
@@ -2757,9 +2791,13 @@ fail: CALL_AND_UNSET_ONERROR(e);
         this->buffer = xalloc(len);
       this->allocated = MAXIMUM(len,1);
       this->malloced = 1;
+      pop_stack();
     }
     else
+    {
       io_append_svalue( THIS, x );
+      pop_stack();
+    }
   }
 
   INIT {

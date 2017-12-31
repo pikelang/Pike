@@ -39,6 +39,7 @@ private void succeeded(.Result result) {
     res->data = res->data[.. discardover];
   mixed err =
     catch {
+      result->eof();				// Collect any SQL errors
       res->fields = result->fetch_fields();
       res->affected_rows = result->affected_rows();
       res->status_command_complete = result->status_command_complete();
@@ -63,8 +64,8 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
       res->data += rows;
   } else if (sizeof(res->data) >= minresults)
     succeeded(result);
-  else
-    failed("Insufficient number of records returned");
+  else					// Collect any SQL errors first
+    failed(catch(result->eof()) || "Insufficient number of records returned");
 }
 
 //! @param min

@@ -3155,7 +3155,6 @@ static int low_parse_xml(struct pike_string *end)
 	push_static_text("previous");
 	ref_push_mapping(i->next->callbackinfo);
 	mapping_insert(i->callbackinfo, sp-2, sp-1);
-	pop_n_elems(2);
       } else {
 	THIS->input->callbackinfo = allocate_mapping(0);
       }
@@ -3164,6 +3163,7 @@ static int low_parse_xml(struct pike_string *end)
 				     MK_STRING("context"), context);
       }
       CHECK_INPUT(THIS->input);
+      pop_n_elems(args);
     }
 
     /*! @decl void create(string s, string context, int flags, @

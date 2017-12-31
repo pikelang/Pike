@@ -7,6 +7,8 @@
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
 
+#include "time_stuff.h"
+
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
@@ -117,6 +119,7 @@ PMOD_EXPORT void f_rows(INT32 args);
 PMOD_EXPORT void f__verify_internals(INT32 args);
 PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
+time_t mktime_zone(struct tm *date, int other_timezone, int tz);
 PMOD_EXPORT void f_mktime (INT32 args);
 PMOD_EXPORT void f_glob(INT32 args);
 PMOD_EXPORT void f_permute(INT32 args);

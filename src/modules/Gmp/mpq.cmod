@@ -488,6 +488,7 @@ float_fallback:
       default:
 	SIMPLE_WRONG_NUM_ARGS_ERROR ("create", 2);
     }
+    pop_n_elems(args);
   }
 
   /*! @decl int get_int()

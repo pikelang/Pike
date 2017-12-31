@@ -59,27 +59,27 @@ void resultset_tests()
   ENSURE( r0->size() == 0 );  ENSURE( r1->size() == 3 );
   ENSURE( r2->size() == 3 );  ENSURE( r3->size() == 6 );
 
-  log_status("r0->memsize(): %d\n", r0->memsize());
+  log_status("r0->memsize(): %d\r", r0->memsize());
   ENSURE( r0->memsize() );
-  log_status("r1->memsize(): %d\n", r1->memsize());
+  log_status("r1->memsize(): %d\r", r1->memsize());
   ENSURE( r0->memsize() <= r1->memsize() );
-  log_status("r2->memsize(): %d\n", r2->memsize());
+  log_status("r2->memsize(): %d\r", r2->memsize());
   ENSURE( r1->memsize() == r2->memsize() );
-  log_status("r3->memsize(): %d\n", r3->memsize());
+  log_status("r3->memsize(): %d\r", r3->memsize());
   ENSURE( r2->memsize() <= r3->memsize() );
 
-  log_status("r0->overhead(): %d\n", r0->overhead());
+  log_status("r0->overhead(): %d\r", r0->overhead());
   ENSURE( r0->overhead() );
-  log_status("r1->overhead(): %d\n", r1->overhead());
-  log_status("r2->overhead(): %d\n", r2->overhead());
+  log_status("r1->overhead(): %d\r", r1->overhead());
+  log_status("r2->overhead(): %d\r", r2->overhead());
   ENSURE( r1->overhead() == r2->overhead() );
-  log_status("r3->overhead(): %d\n", r3->overhead());
+  log_status("r3->overhead(): %d\r", r3->overhead());
   ENSURE( r2->overhead() > r3->overhead() );
 
 
-  log_status("r1->dup()->overhead: %d\n", r1->dup()->overhead());
+  log_status("r1->dup()->overhead: %d\r", r1->dup()->overhead());
   ENSURE( r1->overhead() >= r1->dup()->overhead() );
-  log_status("r3->dup()->overhead: %d\n", r3->dup()->overhead());
+  log_status("r3->dup()->overhead: %d\r", r3->dup()->overhead());
   ENSURE( r2->overhead() >= r3->dup()->overhead() );
   ENSURE( r3->overhead() >= r3->dup()->overhead() );
   ENSURE( r0->overhead() >= r3->dup()->overhead() );
@@ -166,7 +166,7 @@ void blob_tests()
   object bs1 = _WhiteFish.Blobs();
   object bs2 = _WhiteFish.Blobs();
 
-  log_status("Adding words to blobs...\n");
+  log_status("Adding words to blobs...\r");
   test++;
   for(int i=0; i < 1024; i++) {
     // Six binary words per document...
@@ -179,7 +179,7 @@ void blob_tests()
     bs2->add_words(i, sprintf("%09b", i & 511)/3, 1);
   }
 
-  log_status("Reading blobs [1]...\n");
+  log_status("Reading blobs [1]...\r");
   test++;
   mapping(string:_WhiteFish.Blob) blobs1 = ([]);
   int btest = test;
@@ -192,7 +192,7 @@ void blob_tests()
       }
       break;
     }
-    log_status("Blobs #1, Word: %O\n", word_hits[0]);
+    log_status("Blobs #1, Word: %O\r", word_hits[0]);
     test++;
     if (blobs1[word_hits[0]]) {
       log_msg("Test %d: Blob for word %O already existed!\n",
@@ -210,7 +210,7 @@ void blob_tests()
     blobs1[word_hits[0]]->merge(probe);
   }
 
-  log_status("Reading blobs [2]...\n");
+  log_status("Reading blobs [2]...\r");
   test++;
   mapping(string:_WhiteFish.Blob) blobs2 = ([]);
   btest = test;
@@ -223,7 +223,7 @@ void blob_tests()
       }
       break;
     }
-    log_status("Blobs #2, Word: %O\n", word_hits[0]);
+    log_status("Blobs #2, Word: %O\r", word_hits[0]);
     test++;
     if (blobs2[word_hits[0]]) {
       log_msg("Test %d: Blob for word %O already existed!\n",
@@ -242,7 +242,7 @@ void blob_tests()
     blobs2[word_hits[0]]->merge(probe);
   }
 
-  log_status("Merging blob 1 and 2...\n");
+  log_status("Merging blob 1 and 2...\r");
   foreach(blobs1; string word; _WhiteFish.Blob b1) {
     test++;
     _WhiteFish.Blob b2 = m_delete(blobs2, word);
@@ -252,7 +252,7 @@ void blob_tests()
       b2 = _WhiteFish.Blob();
     }
     test++;
-    log_status("Merging blobs for word %O...", word);
+    log_status("Merging blobs for word %O...\r", word);
     b1->merge(b2->data());
   }
 

@@ -36,8 +36,9 @@
 #define LOSTERROR	"Database connection lost"
 
 //! The instance of the pgsql dedicated backend.
-final Pike.Backend local_backend = Pike.SmallBackend();
+final Pike.Backend local_backend;
 
+private Pike.Backend cb_backend;
 private Thread.Mutex backendmux = Thread.Mutex();
 private Thread.ResourceCount clientsregistered = Thread.ResourceCount();
 
@@ -97,6 +98,16 @@ final Regexp transendprefix
 private Regexp execfetchlimit
  = iregexp("^\a*((UPDA|DELE)TE|INSERT)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
 
+private void default_backend_runs() {		// Runs as soon as the
+  cb_backend = Pike.DefaultBackend;		// DefaultBackend has started
+}
+
+private void create() {
+  // Run callbacks from our local_backend until DefaultBackend has started
+  cb_backend = local_backend = Pike.SmallBackend();
+  call_out(default_backend_runs, 0);
+}
+
 private Regexp iregexp(string expr) {
   Stdio.Buffer ret = Stdio.Buffer();
   foreach (expr; ; int c)
@@ -127,7 +138,7 @@ private void run_local_backend() {
        || sizeof(local_backend->call_out_info())) {
         mixed err;
         if (err = catch(local_backend(4096.0)))
-          werror(describe_backtrace(err));
+          master()->handle_error(err);
       }
       PD("Terminating local backend\n");
       lock = 0;
@@ -159,7 +170,47 @@ final void throwdelayederror(Result|proxy parent) {
   }
 }
 
-private int oidformat(int oid) {
+private int readoidformat(int oid) {
+  switch (oid) {
+    case BOOLOID:
+    case BYTEAOID:
+    case CHAROID:
+    case INT8OID:
+    case INT2OID:
+    case INT4OID:
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
+    case TEXTOID:
+    case OIDOID:
+    case XMLOID:
+    case DATEOID:
+    case TIMEOID:
+    case TIMETZOID:
+    case TIMESTAMPOID:
+    case TIMESTAMPTZOID:
+    case INTERVALOID:
+    case INT4RANGEOID:
+    case INT8RANGEOID:
+    case DATERANGEOID:
+    case TSRANGEOID:
+    case TSTZRANGEOID:
+    case MACADDROID:
+    case BPCHAROID:
+    case VARCHAROID:
+    case CIDROID:
+    case INETOID:
+    case CTIDOID:
+    case UUIDOID:
+      return 1; //binary
+  }
+  return 0;	// text
+}
+
+private int writeoidformat(int oid, array(string|int) paramValues,
+ array(int) ai) {
+  mixed value = paramValues[ai[0]++];
   switch (oid) {
     case BOOLOID:
     case BYTEAOID:
@@ -176,13 +227,53 @@ private int oidformat(int oid) {
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
+    case CIDROID:
+    case INETOID:
+    case DATEOID:
+    case TIMEOID:
+    case TIMETZOID:
+    case TIMESTAMPOID:
+    case TIMESTAMPTZOID:
+    case INTERVALOID:
+    case INT4RANGEOID:
+    case INT8RANGEOID:
+    case DATERANGEOID:
+    case TSRANGEOID:
+    case TSTZRANGEOID:
+    case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+    case FLOAT8OID:
+#endif
+      if (!stringp(value))
+        return 1;
   }
   return 0;	// text
 }
 
+#define DAYSEPOCHTO2000		10957		// 2000/01/01 00:00:00 UTC
+#define USEPOCHTO2000		(DAYSEPOCHTO2000*24*3600*1000000)
+
+private array timestamptotype
+                    = ({Val.Timestamp, 8, USEPOCHTO2000,  "usecs", 8});
+private array datetotype = ({Val.Date, 4, DAYSEPOCHTO2000, "days", 4});
+
+private mapping(int:array) oidtotype = ([
+   DATEOID:        datetotype,
+   TIMEOID:        ({Val.Time,    8, 0, "usecs", 8}),
+   TIMETZOID:      ({Val.TimeTZ, 12, 0, "usecs", 8, "timezone", 4}),
+   INTERVALOID:    ({Val.Interval, 16, 0, "usecs", 8, "days", 4, "months",4}),
+   TIMESTAMPOID:   timestamptotype,
+   TIMESTAMPTZOID: timestamptotype,
+   INT4RANGEOID:   ({0, 4}),
+   INT8RANGEOID:   ({0, 8}),
+   DATERANGEOID:   datetotype,
+   TSRANGEOID:     timestamptotype,
+   TSTZRANGEOID:   timestamptotype,
+ ]);
+
 private inline mixed callout(function(mixed ...:void) f,
  float|int delay, mixed ... args) {
-  return local_backend->call_out(f, delay, @args);
+  return cb_backend->call_out(f, delay, @args);
 }
 
 // Some pgsql utility functions
@@ -265,7 +356,6 @@ class conxiin {
       if (!didreadcb)
         fillread.wait(lock);
       didreadcb = 0;
-      lock = 0;
     } else
       throw(MAGICTERMINATE);
     return true;
@@ -282,7 +372,6 @@ class conxiin {
       procmsg = 0, lock = 0, Thread.Thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
-    lock = 0;
     return 0;
   }
 
@@ -439,7 +528,7 @@ outer:
           towrite -= output_to(socket, towrite);
         }
       } while (0);
-      lock = started = 0;
+      started = 0;
       return;
     };
     lock = 0;
@@ -450,12 +539,13 @@ outer:
   final int close() {
     if (!closenext && nostash) {
       closenext = 1;
-      Thread.MutexKey lock = i->fillreadmux->lock();
-      if (i->fillread) {    // Delayed close() after flushing the output buffer
-        i->fillread.signal();
-        i->fillread = 0;
+      {
+        Thread.MutexKey lock = i->fillreadmux->lock();
+        if (i->fillread) {  // Delayed close() after flushing the output buffer
+          i->fillread.signal();
+          i->fillread = 0;
+        }
       }
-      lock = 0;
       PD("%d>Delayed close, flush write\n", socket->query_fd());
       i->read_cb(socket->query_id(), 0);
       return 0;
@@ -684,7 +774,9 @@ class Result {
    int _portalbuffersize, int alltyped, array params, int forcetext,
    int _timeout, int _syncparse, int _transtype) {
     pgsqlsess = _pgsqlsess;
-    if (catch(cr = (c = _c)->i))
+    if (c = _c)
+      cr = c->i;
+    else
       losterror();
     _query = query;
     datarows = Thread.Queue();
@@ -731,10 +823,11 @@ class Result {
   }
 
   private void waitfordescribe() {
-    Thread.MutexKey lock = _ddescribemux->lock();
-    if (!datarowtypes)
-      PT(_ddescribe->wait(lock));
-    lock = 0;
+    {
+      Thread.MutexKey lock = _ddescribemux->lock();
+      if (!datarowtypes)
+        PT(_ddescribe->wait(lock));
+    }
     if (this)		// If object already destructed, skip the next call
       trydelayederror();	// since you cannot call functions anymore
     else
@@ -816,11 +909,18 @@ class Result {
         mixed value;
         switch (typ) {
           case FLOAT4OID:
-#if SIZEOF_FLOAT>=8
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
           case FLOAT8OID:
 #endif
-            if (!alltext) {
-              value = (float)cr->read(collen);
+            if (_forcetext) {
+              if (!alltext) {
+                value = (float)cr->read(collen);
+                break;
+              }
+            } else {
+              [ value ] = cr->sscanf(collen == 4 ? "%4F" : "%8F");
+              if (alltext)
+                value = (string)value;
               break;
             }
           default:value = cr->read(collen);
@@ -845,6 +945,76 @@ class Result {
              && !serror)
               serror = SERROR("%O contains non-%s characters\n",
                                                      value, UTF8CHARSET);
+            break;
+          case INT4RANGEOID:
+          case INT8RANGEOID:
+          case DATERANGEOID:
+          case TSRANGEOID:
+          case TSTZRANGEOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              array totype = oidtotype[typ];
+              mixed from = -Math.inf, till = Math.inf;
+              switch (cr->read_int8()) {
+                case 1: from = till = 0;
+                  break;
+                case 0x12: from = cr->read_sint(cr->read_int32());
+                  break;
+                case 2: from = cr->read_sint(cr->read_int32());
+                case 8: till = cr->read_sint(cr->read_int32());
+              }
+              if (totype[0]) {
+                if (intp(from)) {
+                  value = totype[0]();
+                  value[totype[3]] = from + totype[2];
+                  from = value;
+                }
+                if (intp(till)) {
+                  value = totype[0]();
+                  value[totype[3]] = till + totype[2];
+                  till = value;
+                }
+              }
+              value = Val.Range(from, till);
+              if (alltext)
+                value = value->sql();
+            }
+            break;
+          case CIDROID:
+          case INETOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              value = Val.Inet();
+              int iptype = cr->read_int8();	// 2 == IPv4, 3 == IPv6
+              value->masklen = cr->read_int8() + (iptype == 2 && 12*8);
+              cr->read_int8();	// 0 == INET, 1 == CIDR
+              value->address = cr->read_hint(1);
+              if (alltext)
+                value = (string)value;
+            }
+            break;
+          case TIMESTAMPOID:
+          case TIMESTAMPTZOID:
+          case INTERVALOID:
+          case TIMETZOID:
+          case TIMEOID:
+          case DATEOID:
+            if (_forcetext)
+              value = cr->read(collen);
+            else {
+              array totype = oidtotype[typ];
+              value = totype[0]();
+              value[totype[3]] = cr->read_sint(totype[4]) + totype[2];
+              int i = 5;
+              while (i < sizeof(totype)) {
+                value[totype[i]] = cr->read_sint(totype[i+1]);
+                i += 2;
+              }
+              if (alltext)
+                value = (string)value;
+            }
             break;
           case INT8OID:case INT2OID:
           case OIDOID:case INT4OID:
@@ -883,7 +1053,6 @@ class Result {
     datarowdesc = drowdesc;
     datarowtypes = drowtypes;
     _ddescribe->broadcast();
-    lock = 0;
   }
 
   final void _preparebind(array dtoid) {
@@ -907,7 +1076,8 @@ class Result {
       Stdio.Buffer plugbuffer = Stdio.Buffer();
       { array dta = ({sizeof(dtoid)});
         plugbuffer->add(_portalname, 0, _preparedname, 0)
-         ->add_ints(dta + map(dtoid, oidformat) + dta, 2);
+         ->add_ints(dta
+           + map(dtoid, writeoidformat, paramValues, ({0})) + dta, 2);
       }
       string cenc = pgsqlsess.runtimeparameter[CLIENT_ENCODING];
       foreach (paramValues; int i; mixed value) {
@@ -1006,7 +1176,7 @@ class Result {
                       break;
                 }
               } while (0);
-              plugbuffer->add_int32(1)->add_int8(value);
+              plugbuffer->add("\0\0\0\1", value);
               break;
             case CHAROID:
               if (intp(value))
@@ -1023,6 +1193,87 @@ class Result {
                   case 1:
                     plugbuffer->add_hstring(value[0], 4);
                 }
+              }
+              break;
+            case INT4RANGEOID:
+            case INT8RANGEOID:
+            case DATERANGEOID:
+            case TSRANGEOID:
+            case TSTZRANGEOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else if (value->from >= value->till)
+                plugbuffer->add("\0\0\0\1\1");
+              else {
+                array totype = oidtotype[dtoid[i]];
+                int w = totype[1];
+                int from, till;
+                if (totype[0])
+                  from = value->from, till = value->till;
+                else {
+                  from = value->from[totype[3]] - totype[2];
+                  till = value->till[totype[3]] - totype[2];
+                }
+                if (value->till == Math.inf)
+                  if (value->from == -Math.inf)
+                    plugbuffer->add("\0\0\0\1\30");
+                  else
+                    plugbuffer->add("\0\0\0", 1 + 4 + w, "\22\0\0\0", w)
+                     ->add_int(from, w);
+                else {
+                  if (value->from == -Math.inf)
+                    plugbuffer->add("\0\0\0", 1 + 4 + w, 8);
+                  else
+                    plugbuffer->add("\0\0\0", 1 + 4 * 2 + w * 2, "\2\0\0\0", w)
+                     ->add_int(from, w);
+                  plugbuffer->add_int32(w)->add_int(till, w);
+                }
+              }
+              break;
+            case CIDROID:
+            case INETOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else if (value->address <= 0xffffffff)	// IPv4
+                plugbuffer->add("\0\0\0\10\2",
+                  value->masklen - 12 * 8, dtoid[i] == CIDROID, 4)
+                 ->add_int32(value->address);
+              else					// IPv6
+                plugbuffer->add("\0\0\0\24\3",
+                  value->masklen, dtoid[i] == CIDROID, 16)
+                 ->add_int(value->address, 16);
+              break;
+            case DATEOID:
+            case TIMEOID:
+            case TIMETZOID:
+            case INTERVALOID:
+            case TIMESTAMPOID:
+            case TIMESTAMPTZOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else {
+                array totype = oidtotype[dtoid[i]];
+                if (!objectp(value))
+                  value = totype[0](value);
+                plugbuffer->add_int32(totype[1])
+                 ->add_int(value[totype[3]] - totype[2], totype[4]);
+                int i = 5;
+                while (i < sizeof(totype)) {
+                  plugbuffer->add_int(value[totype[i]], totype[i+1]);
+                  i += 2;
+                }
+              }
+              break;
+            case FLOAT4OID:
+#if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+            case FLOAT8OID:
+#endif
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else {
+                int w = dtoid[i] == FLOAT4OID ? 4 : 8;
+                plugbuffer->add_int32(w)
+                 ->sprintf(w == 4 ? "%4F" : "%8F", value);
               }
               break;
             case INT8OID:
@@ -1047,7 +1298,7 @@ class Result {
       else {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if (sizeof(datarowtypes))
-          plugbuffer->add_ints(map(datarowtypes, oidformat), 2);
+          plugbuffer->add_ints(map(datarowtypes, readoidformat), 2);
         else if (syncparse < 0 && !pgsqlsess->wasparallelisable
          && !pgsqlsess->statementsinflight->drained(1)) {
           lock = pgsqlsess->shortmux->lock();
@@ -1060,6 +1311,7 @@ class Result {
         _bindportal();
         conxsess bindbuffer = c->start();
         _unnamedstatementkey = 0;
+        stmtifkey = 0;
         CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
         if (!_tprepared && sizeof(_preparedname))
           closestatement(CHAIN(bindbuffer), _preparedname);
@@ -1069,8 +1321,7 @@ class Result {
                                   execfetchlimit->match(_query))
                              && _fetchlimit, bindbuffer);
       }
-    } else
-      lock = 0;
+    }
   }
 
   final void _processrowdesc(array(mapping(string:mixed)) datarowdesc,
@@ -1083,16 +1334,18 @@ class Result {
   }
 
   final void _parseportal() {
-    Thread.MutexKey lock = closemux->lock();
-    _state = PARSING;
-    Thread.MutexKey lockc = pgsqlsess->shortmux->lock();
-    if (syncparse || syncparse < 0 && pgsqlsess->wasparallelisable) {
-      PD("Commit waiting for statements to finish\n");
-      catch(PT(pgsqlsess->statementsinflight->wait_till_drained(lockc)));
+    {
+      Thread.MutexKey lock = closemux->lock();
+      _state = PARSING;
+      {
+        Thread.MutexKey lockc = pgsqlsess->shortmux->lock();
+        if (syncparse || syncparse < 0 && pgsqlsess->wasparallelisable) {
+          PD("Commit waiting for statements to finish\n");
+          catch(PT(pgsqlsess->statementsinflight->wait_till_drained(lockc)));
+        }
+        stmtifkey = pgsqlsess->statementsinflight->acquire();
+      }
     }
-    stmtifkey = pgsqlsess->statementsinflight->acquire();
-    lockc = 0;
-    lock = 0;
     statuscmdcomplete = 0;
     pgsqlsess->wasparallelisable = paralleliseprefix->match(_query);
   }
@@ -1105,34 +1358,33 @@ class Result {
       _state = COMMITTED;
       stmtifkey = 0;
     }
-    lock = 0;
   }
 
   final void _bindportal() {
     Thread.MutexKey lock = closemux->lock();
     _state = BOUND;
     portalsifkey = pgsqlsess->portalsinflight->acquire();
-    lock = 0;
   }
 
   final void _purgeportal() {
     PD("Purge portal\n");
     datarows->write(1);				   // Signal EOF
-    Thread.MutexKey lock = closemux->lock();
-    _fetchlimit = 0;				   // disables further Executes
-    switch (_state) {
-      case COPYINPROGRESS:
-      case COMMITTED:
-      case BOUND:
-        portalsifkey = 0;
+    {
+      Thread.MutexKey lock = closemux->lock();
+      _fetchlimit = 0;				   // disables further Executes
+      switch (_state) {
+        case COPYINPROGRESS:
+        case COMMITTED:
+        case BOUND:
+          portalsifkey = 0;
+      }
+      switch (_state) {
+        case BOUND:
+        case PARSING:
+          stmtifkey = 0;
+      }
+      _state = PURGED;
     }
-    switch (_state) {
-      case BOUND:
-      case PARSING:
-        stmtifkey = 0;
-    }
-    _state = PURGED;
-    lock = 0;
     releaseconditions();
   }
 
@@ -1179,7 +1431,6 @@ class Result {
           pgsqlsess->pportalcount = 0;
         }
     }
-    lock = 0;
     return retval;
   }
 
@@ -1202,7 +1453,6 @@ class Result {
       else if (!_fetchlimit)
         PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
          _portalname, _fetchlimit, inflight);
-      lock = 0;
     }
   }
 
@@ -1255,6 +1505,10 @@ class Result {
     plugbuffer->sendcmd(flushmode, this);
   }
 
+  inline private array setuptimeout() {
+    return local_backend->call_out(gottimeout, timeout);
+  }
+
   //! @returns
   //!  One result row at a time.
   //!
@@ -1270,7 +1524,7 @@ class Result {
     if (!eoffound) {
       if (!datarow) {
         PD("%O Block for datarow\n", _portalname);
-        array cid = callout(gottimeout, timeout);
+        array cid = setuptimeout();
         PT(datarow = datarows->read());
         local_backend->remove_call_out(cid);
         if (arrayp(datarow))
@@ -1296,7 +1550,7 @@ class Result {
       return 0;
     array(array|int) datarow = datarows->try_read_array();
     if (!sizeof(datarow)) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
     }
@@ -1336,7 +1590,7 @@ class Result {
    array(mixed) args) {
     int|array datarow;
     for (;;) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read());
       local_backend->remove_call_out(cid);
       if (!arrayp(datarow))
@@ -1365,7 +1619,7 @@ class Result {
    array(mixed) args) {
     array(array|int) datarow;
     for (;;) {
-      array cid = callout(gottimeout, timeout);
+      array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
       if (!datarow || !arrayp(datarow[-1]))
@@ -1428,7 +1682,7 @@ class proxy {
   final string host;
   final int(0..65535) port;
   final string database, user, pass;
-  private Crypto.SCRAM SASLcontext;
+  private Crypto.Hash.SCRAM SASLcontext;
   final Thread.Condition waitforauthready;
   final Thread.Mutex shortmux;
   final int readyforquerycount;
@@ -1438,7 +1692,7 @@ class proxy {
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME".proxy(%s@%s:%d/%s,%d,%d)",
-          user, host, port, database, c?->socket && c->socket->query_fd(),
+          user, host, port, database, c && c->socket && c->socket->query_fd(),
           backendpid);
         break;
     }
@@ -1482,10 +1736,7 @@ class proxy {
   }
 
   final int is_open() {
-    catch {
-      return c->socket->is_open();
-    };
-    return 0;
+    return c && c->socket && c->socket->is_open();
   }
 
   final string geterror(void|int clear) {
@@ -1653,10 +1904,8 @@ class proxy {
               throw(MAGICTERMINATE);	// Force proper termination
             }
             cr->procmsg = 1;
-            lock = 0;
             return;			// Terminate thread, wait for callback
           }
-          lock = 0;
         }
         int msgtype = cr->read_int8();
         if (!portal) {
@@ -1786,7 +2035,7 @@ class proxy {
   #endif
                 }
                 if (k) {
-                  SASLcontext = Crypto.SCRAM(Crypto.SHA256);
+                  SASLcontext = Crypto.SHA256.SCRAM();
                   word = SASLcontext.client_1();
                   authresponse(({
                     "SCRAM-SHA-256", 0, sprintf("%4c", sizeof(word)), word
@@ -2291,18 +2540,19 @@ class proxy {
 
   final void close() {
     throwdelayederror(this);
-    Thread.MutexKey lock;
-    if (qportals && qportals->size())
-      catch(cancelquery());
-    if (unnamedstatement)
-      termlock = unnamedstatement->lock(1);
-    if (c)				// Prevent trivial backtraces
-      c->close();
-    if (unnamedstatement)
-      lock = unnamedstatement->lock(1);
-    if (c)
-      c->purge();
-    lock = 0;
+    {
+      Thread.MutexKey lock;
+      if (qportals && qportals->size())
+        catch(cancelquery());
+      if (unnamedstatement)
+        termlock = unnamedstatement->lock(1);
+      if (c)				// Prevent trivial backtraces
+        c->close();
+      if (unnamedstatement)
+        lock = unnamedstatement->lock(1);
+      if (c)
+        c->purge();
+    }
     destruct(waitforauthready);
   }
 

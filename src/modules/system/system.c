@@ -38,6 +38,7 @@
 #include "pike_rusage.h"
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
+#include "sprintf.h"
 
 #include <errno.h>
 
@@ -1901,12 +1902,14 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
   }
 
-  if( (err=getaddrinfo(name, service, &hints, &res)) && AI_NUMERICHOST )
+#if AI_NUMERICHOST != 0
+  if( (err=getaddrinfo(name, service, &hints, &res)) )
   {
     /* Try again without AI_NUMERICHOST. */
     hints.ai_flags &= ~AI_NUMERICHOST;
     err=getaddrinfo(name, service, &hints, &res);
   }
+#endif
   if(!err)
   {
     struct addrinfo *p, *found = NULL;

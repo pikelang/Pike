@@ -144,6 +144,12 @@ Sequence signature_algorithm_id(Crypto.Hash hash)
   case "sha512":
     return Sequence( ({ .Identifiers.rsa_sha512_id, Null() }) );
     break;
+  case "sha512-224":
+    return Sequence( ({ .Identifiers.rsa_sha512_224_id, Null() }) );
+    break;
+  case "sha512-256":
+    return Sequence( ({ .Identifiers.rsa_sha512_256_id, Null() }) );
+    break;
   }
   return 0;
 }

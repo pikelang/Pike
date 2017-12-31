@@ -514,6 +514,7 @@ PIKECLASS Sequence
       free_array(THIS->a);
       add_ref(THIS->a=arg->u.array);
     }
+    pop_stack();
   }
 
 
@@ -599,11 +600,13 @@ PIKECLASS Sequence
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
 			 THIS->pos,
 			 THIS->sequence->a->size);
-	  }
+          }
+          pop_n_elems(2);
 	}
 	else
 	{
-	  THIS->pos = 0;
+          THIS->pos = 0;
+          pop_stack();
 	}
       }
 

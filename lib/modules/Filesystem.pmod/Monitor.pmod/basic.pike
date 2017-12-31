@@ -137,7 +137,7 @@ void attr_changed(string path, Stdio.Stat st);
 //! for the monitor.
 //!
 //! @note
-//!   For directories, @[file_created()] will be called for the subpaths
+//!   For directories, @[file_exists()] will be called for the subpaths
 //!   before the call for the directory itself. This can be used to detect
 //!   when the initialization for a directory is finished.
 //!
@@ -145,6 +145,13 @@ void attr_changed(string path, Stdio.Stat st);
 //! path is checked (and only if it exists).
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback has similar semantics to @[file_created()], but
+//!   is called at initialization time.
+//!
+//! @seealso
+//!   @[file_created()], @[file_deleted()], @[stable_data_change()]
 void file_exists(string path, Stdio.Stat st);
 
 //! File creation callback.
@@ -162,6 +169,13 @@ void file_exists(string path, Stdio.Stat st);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback has similar semantics to @[file_exists()], but
+//!   is called at run time.
+//!
+//! @seealso
+//!   @[file_exists()], @[file_deleted()], @[stable_data_change()]
 void file_created(string path, Stdio.Stat st);
 
 //! File deletion callback.
@@ -176,6 +190,9 @@ void file_created(string path, Stdio.Stat st);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @seealso
+//!   @[file_created()], @[file_exists()], @[stable_data_change()]
 void file_deleted(string path);
 
 //! Stable change callback.
@@ -195,6 +212,15 @@ void file_deleted(string path);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback being called does not mean that the contents
+//!   or inode has changed, just that they don't seem to change any
+//!   more. In particular it is called for paths found during
+//!   initialization after @[stable_time] seconds have passed.
+//!
+//! @seealso
+//!   @[file_created()], @[file_exists()], @[file_deleted()]
 void stable_data_change(string path, Stdio.Stat st);
 
 //! Flags for @[Monitor]s.
@@ -321,6 +347,9 @@ protected class Monitor(string path,
   //!
   //! Called by @[check()] and @[check_monitor()].
   //!
+  //! The default implementation calls @[global::attr_changed()] or
+  //! @[global::data_changed()] depending on the state.
+  //!
   //! @note
   //!   If there is a @[data_changed()] callback, it may supersede this
   //!   callback if the file content also has changed.
@@ -351,6 +380,16 @@ protected class Monitor(string path,
   //!
   //! Called by @[check()] and @[check_monitor()] the first time a monitored
   //! path is checked (and only if it exists).
+  //!
+  //! The default implementation registers the path, and
+  //! calls @[global::file_exists()].
+  //!
+  //! @note
+  //!   This callback has similar semantics to @[file_created()], but
+  //!   is called at initialization time.
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_deleted()], @[stable_data_change()]
   protected void file_exists(string path, Stdio.Stat st)
   {
     MON_WERR("file_exists(%O, %O)\n", path, st);
@@ -375,6 +414,16 @@ protected class Monitor(string path,
   //! monitored directory.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation registers the path, and
+  //! calls @[global::file_deleted()].
+  //!
+  //! @note
+  //!   This callback has similar semantics to @[file_exists()], but
+  //!   is called at run time.
+  //!
+  //! @seealso
+  //!   @[file_exists()], @[file_deleted()], @[stable_data_change()]
   protected void file_created(string path, Stdio.Stat st)
   {
     MON_WERR("file_created(%O, %O)\n", path, st);
@@ -396,6 +445,12 @@ protected class Monitor(string path,
   //! monitored directory.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation unregisters the path, and
+  //! calls @[global::file_deleted()].
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_exists()], @[stable_data_change()]
   protected void file_deleted(string path, Stdio.Stat|void old_st)
   {
     MON_WERR("file_deleted(%O, %O)\n", path, st);
@@ -416,6 +471,17 @@ protected class Monitor(string path,
   //! changes for at lease @[stable_time] seconds.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation calls @[global::stable_data_change()].
+  //!
+  //! @note
+  //!   This callback being called does not mean that the contents
+  //!   or inode has changed, just that they don't seem to change any
+  //!   more. In particular it is called for paths found during
+  //!   initialization after @[stable_time] seconds have passed.
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_exists()], @[file_deleted()]
   protected void stable_data_change(string path, Stdio.Stat st)
   {
     MON_WERR("stable_data_change(%O, %O)\n", path, st);

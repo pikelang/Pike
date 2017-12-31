@@ -65,7 +65,7 @@
 //! @note
 //! The handling of TIMESTAMP columns in MySQL (as of 5.1 at least)
 //! through UNIX_TIMESTAMP and FROM_UNIXTIME has one problem if the
-//! active time zone uses daylight savings time:
+//! active time zone uses daylight-saving time:
 //!
 //! Apparently FROM_UNIXTIME internally formats the integer to a MySQL
 //! date/time string, which is then parsed again to set the unix

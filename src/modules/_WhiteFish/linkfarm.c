@@ -197,7 +197,7 @@ static void f_linkfarm_read( INT32 args )
 /*! @endmodule
  */
 
-static void exit_linkfarm_struct(struct object *o)
+static void exit_linkfarm_struct(struct object *UNUSED(o))
 {
   int i;
 

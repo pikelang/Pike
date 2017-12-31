@@ -327,7 +327,7 @@ class IpRangeLookup
         return range_to_info + ([]);
     }
 
-    protected string _sprintf()
+    protected string _sprintf(int c)
     {
         return sprintf("IpRangeLookup( %{%O %})",Array.flatten(values(range_to_info)));
     }

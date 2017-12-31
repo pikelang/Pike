@@ -30,7 +30,7 @@ program Alert = master()->resolv("SSL")["Alert"];
 protected void create(ProtocolVersion version, void|int extra)
 {
   if (version >= PROTOCOL_TLS_1_3)
-    version = PROTOCOL_TLS_1_0; // TLS 1.3 record_version
+    version = PROTOCOL_TLS_1_2; // TLS 1.3 record_version
   protocol_version = version;
   marginal_size = extra;
 }
@@ -39,7 +39,7 @@ protected variant void create(ProtocolVersion version,
                               int content_type, string(8bit) fragment)
 {
   if (version >= PROTOCOL_TLS_1_3)
-    version = PROTOCOL_TLS_1_0; // TLS 1.3 record_version
+    version = PROTOCOL_TLS_1_2; // TLS 1.3 record_version
   protocol_version = version;
   this::content_type = content_type;
   this::fragment = fragment;
@@ -89,17 +89,10 @@ int(-1..1) recv(Stdio.Buffer data)
   if( !PACKET_types[content_type] )
     return -1;
 
-  // FIXME: Protocol version packet header appears to be ignored in
-  // TLS 1.3.
   protocol_version = data->read_int16();
-  if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
+  if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0 ||
+      protocol_version > PROTOCOL_TLS_1_2)
     return -1;
-
-#ifdef SSL3_DEBUG
-  if (protocol_version > PROTOCOL_TLS_MAX)
-    werror("SSL.Packet->recv: received version %d.%d packet\n",
-           protocol_version>>8, protocol_version & 0xff);
-#endif
 
   int length = data->read_int16();
   if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))

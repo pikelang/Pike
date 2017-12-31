@@ -207,8 +207,8 @@ class Client {
      Protocols.HTTP.Promise.Arguments(([
       "headers":h,
       "data":body,
-     ]))).map(lambda(Protocols.HTTP.Promise.Success resp) {
-      string res = resp->data;
+     ]))).map(lambda(Protocols.HTTP.Promise.Result resp) {
+      string res = resp->get();
       PD("\nGot: %O\n", res);
       Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(res);
       mapping m = Parser.XML.node_to_struct(root)->Envelope->Body;
@@ -222,10 +222,10 @@ class Client {
   //!
   //! @seealso
   //!   @[Promise()]
-  protected void create(Protocols.HTTP.Promise.Success resp) {
+  protected void create(Protocols.HTTP.Promise.Result resp) {
     if (resp->content_type != "text/xml")
-      DERROR("Invalid wsdl response %O: %O\n", resp->content_type, resp->data);
-    Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(resp->data);
+      DERROR("Invalid wsdl response %O: %O\n", resp->content_type, resp->get());
+    Parser.XML.NSTree.NSNode root = Parser.XML.NSTree.parse_input(resp->get());
     mapping m = Parser.XML.node_to_struct(root)->definitions;
     root->zap_tree();
     PD("wsdl: %O\n", m);

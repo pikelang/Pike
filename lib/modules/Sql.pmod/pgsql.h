@@ -51,14 +51,26 @@
 #define TEXTOID		25
 #define OIDOID		26
 #define XMLOID		142
+#define CIDROID		650
 #define FLOAT4OID	700
 #define FLOAT8OID	701
 #define MACADDROID	829
-#define INETOID		869	    /* Force textmode */
+#define INETOID		869
 #define BPCHAROID	1042
 #define VARCHAROID	1043
+#define DATEOID		1082
+#define TIMEOID		1083
+#define TIMESTAMPOID	1114
+#define TIMESTAMPTZOID	1184
+#define INTERVALOID	1186
+#define TIMETZOID	1266
 #define CTIDOID		1247
 #define UUIDOID		2950
+#define INT4RANGEOID	3904
+#define TSRANGEOID	3908
+#define TSTZRANGEOID	3910
+#define DATERANGEOID	3912
+#define INT8RANGEOID	3926
 
 #define UTF8CHARSET	"UTF8"
 #define CLIENT_ENCODING	"client_encoding"
