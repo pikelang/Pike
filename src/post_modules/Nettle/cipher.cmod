@@ -2985,7 +2985,8 @@ PIKECLASS BlockCipher
 
 	THIS->block_size = block_size;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -3355,7 +3356,8 @@ PIKECLASS BlockCipher
 
 	THIS->block_size = block_size;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -3807,7 +3809,9 @@ PIKECLASS BlockCipher16
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -4763,7 +4767,8 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	THIS->mode = 0;
+        THIS->mode = 0;
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -5113,7 +5118,7 @@ PIKECLASS BlockCipher16
      *!
      *! The state for a GCM instance.
      */
-    PIKECLASS State
+   PIKECLASS State
       program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       DOCSTART() @decl inherit AEAD::State
@@ -5207,7 +5212,8 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	THIS->mode = -1;
+        THIS->mode = -1;
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
