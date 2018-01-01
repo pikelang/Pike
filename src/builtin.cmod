@@ -346,6 +346,7 @@ PIKECLASS TM
         buffer[0] = 0;
         strftime_zone( buffer, 8192, format->str, &THIS->t );
         push_text( buffer );
+        free(buffer);
     }
 
     /*! @decl int(0..60) sec;
