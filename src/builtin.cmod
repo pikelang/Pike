@@ -2994,12 +2994,19 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 
     bf = OBJ2_BACKTRACE_FRAME(o);
 
+    SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
+
+    if (!f->context) {
+      if (f->pc == (void *)do_gc) {
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, make_shared_string("gc"));
+      }
+      continue;
+    }
+
     if ((bf->prog = f->context->prog)) {
       add_ref(bf->prog);
       bf->pc = f->pc;
     }
-
-    SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
     if (f->current_object && f->current_object->prog) {
       if (f->fun == FUNCTION_BUILTIN) {
