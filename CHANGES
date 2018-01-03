@@ -103,7 +103,9 @@ o Sql.pgsql
 
 o mktime/System.TM
 
-  Make timezone management consistent (especially UTC handling).
+  - Make timezone management consistent (especially UTC handling).
+
+  - Fix memory leak in strftime().
 
 o Standards.IIM
 
