@@ -3688,7 +3688,6 @@ void f__take_over_initial_predefines (INT32 args)
     while((tmp=first_predef))
     {
       free(tmp->name);
-      free(tmp->value);
       first_predef=tmp->next;
       free(tmp);
     }
@@ -3734,23 +3733,25 @@ void init_cpp()
 void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
-  char * pos=strchr(s,'=');
+  size_t len = strlen(s);
+  char *pos=strchr(s,'=');
+
   if(pos)
   {
-    tmp->name=xalloc(pos-s+1);
-    memcpy(tmp->name,s,pos-s);
+    tmp->name = xalloc(len+1);
+    memcpy(tmp->name, s, len+1);
     tmp->name[pos-s]=0;
 
-    tmp->value=xalloc(s+strlen(s)-pos);
-    memcpy(tmp->value,pos+1,s+strlen(s)-pos);
+    tmp->value = tmp->name + (pos-s) + 1;
   }else{
-    tmp->name=xalloc(strlen(s)+1);
-    memcpy(tmp->name,s,strlen(s)+1);
+    tmp->name = xalloc(len + 1 + 4);
+    memcpy(tmp->name,s,len + 1);
 
-    tmp->value=xalloc(4);
+    tmp->value = tmp->name + len + 1;
     memcpy(tmp->value," 1 ",4);
   }
   tmp->next = NULL;
+
   if (first_predef) {
     last_predef->next = tmp;
     last_predef = tmp;
@@ -3768,7 +3769,6 @@ void exit_cpp(void)
   while((tmp=first_predef))
   {
     free(tmp->name);
-    free(tmp->value);
     first_predef=tmp->next;
     free(tmp);
   }
