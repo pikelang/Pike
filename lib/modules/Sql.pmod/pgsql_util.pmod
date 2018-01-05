@@ -1374,10 +1374,12 @@ class sql_result {
     }
     if (arrayp(datarow[-1]))
       return datarow;
+    do datarow = datarow[..<1];			// Swallow EOF mark(s)
+    while (sizeof(datarow) && !arrayp(datarow[-1]));
     trydelayederror();
     eoffound = 1;
     datarows->write(1);				// Signal EOF for other threads
-    return (datarow = datarow[..<1]);
+    return datarow;
   }
 
   //! @param copydata
