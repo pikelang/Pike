@@ -10,7 +10,7 @@
  */
 
 
-static ptrdiff_t low_cpp(struct cpp *this,
+static ptrdiff_t low_cpp(struct CPP_struct *this,
                            PCHARP data,
 			   ptrdiff_t len,
 			   int flags,
