@@ -16,7 +16,7 @@
       error("Invalid counter.\n");
     }
     this::counter = counter;
-    if (timestamp < 0) {
+    if (timestamp < 0 || timestamp > (1<<32)-1 ) {
       error("Invalid timestamp.\n");
     }
     this::timestamp = timestamp;

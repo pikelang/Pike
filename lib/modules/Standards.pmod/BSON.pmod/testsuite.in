@@ -41,6 +41,14 @@ test_codec( ([ "a": Val.null ]), "\b\0\0\0\na\0\0" )
 test_codec( ([ "a": Val.true ]), "\t\0\0\0\ba\0\1\0" )
 test_codec( ([ "a": Val.false ]),"\t\0\0\0\ba\0\0\0" )
 
+test_any([[
+  object t = Standards.BSON.Timestamp(1,(1<<32)-1);
+  object t2 = Standards.BSON.decode(E( ([ "a": t ]) ))->a;
+  return t2->get_timestamp();
+]], (((1<<32)-1)<<32 | 1) )
+
+test_eval_error( E( (["a":Standards.BSON.Timestamp(1,1<<32)]) ) )
+
 test_do( add_constant("E") )
 
 END_MARKER
