@@ -14,7 +14,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                            PCHARP data,
 			   ptrdiff_t len,
 			   int flags,
-			   int auto_convert,
 			   struct pike_string *charset)
 {
   ptrdiff_t pos, tmp, e;
@@ -274,7 +273,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 	     *     remain (partially) uninitialized.
 	     */
 	    if (!this->compile_errors) {
-	      apply_define(this, d, arguments, flags, auto_convert, charset);
+	      apply_define(this, d, arguments, flags, charset);
 	    }
           }else{
             if (OUTP())
@@ -541,7 +540,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                         pos--;
                         pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
                                        CPP_END_AT_NEWLINE,
-                                       auto_convert, charset);
+                                       charset);
 
                         string_builder_putchar(&this->buf, '\n');
 
@@ -555,7 +554,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                         /* We're processing the line twice. */
                         this->current_line = save_line;
                         low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
-                                flags, auto_convert, charset);
+                                flags, charset);
                         free_string_builder(&tmp);
 
                         this->current_line = save_line;
@@ -624,7 +623,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                                           &this->buf);
                       }else{
                         /* #include */
-                        if (auto_convert) {
+                        if (this->auto_convert) {
                           struct pike_string *new_str =
                             recode_string(this, Pike_sp[-1].u.string);
                           free_string(Pike_sp[-1].u.string);
@@ -650,7 +649,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                                 MKPCHARP_STR(Pike_sp[-1].u.string),
                                 Pike_sp[-1].u.string->len,
                                 flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-                                auto_convert, charset);
+                                charset);
                       }
 
                       free_string(this->current_file);
@@ -694,7 +693,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 init_string_builder(&this->buf, 0);
                 pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                nflags | CPP_END_AT_NEWLINE | CPP_DO_IF,
-                               auto_convert, charset);
+                               charset);
                 tmp=this->buf;
                 this->buf=save;
 
@@ -709,7 +708,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 free_string_builder(&tmp);
                 pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                nflags | CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF,
-                               auto_convert, charset);
+                               charset);
                 break;
               }
 
@@ -733,7 +732,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 }
 
                 pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos, nflags,
-                               auto_convert, charset);
+                               charset);
                 break;
               }
 
@@ -757,7 +756,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 }
 
                 pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos, nflags,
-                               auto_convert, charset);
+                               charset);
                 break;
               }
 
@@ -803,7 +802,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   init_string_builder(&this->buf, 0);
                   pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                  CPP_END_AT_NEWLINE | CPP_DO_IF,
-                                 auto_convert, charset);
+                                 charset);
                   tmp=this->buf;
                   this->buf=save;
 
@@ -1158,7 +1157,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                     cpp_handle_exception (this, NULL);
                   } else {
                     low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string),Pike_sp[-1].u.string->len,
-                            flags,auto_convert, charset);
+                            flags, charset);
                     pop_stack();
                   }
                   /* FIXME: Is this the correct thing to return? */
@@ -1193,7 +1192,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   tmp= this->buf.s->len;
                   pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                  CPP_END_AT_NEWLINE | CPP_DO_IF,
-                                 auto_convert, charset);
+                                 charset);
 
                   ptr=MKPCHARP_STR(this->buf.s);
                   INC_PCHARP(ptr, tmp);
@@ -1229,7 +1228,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 init_string_builder(&this->buf, 0);
                 pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                CPP_END_AT_NEWLINE | CPP_DO_IF,
-                               auto_convert, charset);
+                               charset);
                 tmp = this->buf;
                 this->buf = save;
                 string_builder_putchar(&tmp, 0);

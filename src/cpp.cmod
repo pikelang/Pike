@@ -140,6 +140,7 @@ PIKECLASS CPP
   PIKEVAR int picky_cpp;
   PIKEVAR int keep_comments;
   PIKEVAR int dependencies_fail;
+  PIKEVAR int auto_convert;
 
   INIT
   {
@@ -2132,7 +2133,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                          PCHARP data,
                          ptrdiff_t len,
                          int flags,
-                         int auto_convert,
                          struct pike_string *charset);
 static void insert_callback_define(struct CPP_struct *this,
                                    struct define_struct *def,
@@ -2824,7 +2824,7 @@ static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
 static void apply_define(struct CPP_struct *this,
 			 struct define_struct *d,
 			 struct define_argument *arguments,
-			 short flags, short auto_convert,
+			 short flags,
 			 struct pike_string *charset)
 {
   struct string_builder tmp;
@@ -2899,7 +2899,7 @@ static void apply_define(struct CPP_struct *this,
 	      d->flags = CPP_MACRO_IN_USE;
 	      low_cpp(this, a, l,
 		      flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-		      auto_convert, charset);
+		      charset);
 	      d->flags = flags;
 	      tmp=this->buf;
 	      this->buf=save;
@@ -2936,7 +2936,7 @@ static void apply_define(struct CPP_struct *this,
   tmp.s->len--;
   low_cpp(this, MKPCHARP_STR(tmp.s),tmp.s->len,
 	  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-	  auto_convert, charset);
+	  charset);
 
   d->flags = flags;
   /* FIXME: Ought to free the ref to d here. */
@@ -3363,7 +3363,6 @@ PIKEFUN string cpp(string data,
 
   struct pike_string *current_file = 0;
 
-  int auto_convert = 0;
   struct pike_string *charset = NULL;
 
   int compat_major = compat_major_sv?compat_major_sv->u.integer:0;
@@ -3382,6 +3381,7 @@ PIKEFUN string cpp(string data,
   this->defines = allocate_mapping(32);
   this->keep_comments = 0;
   this->dependencies_fail = 0;
+  this->auto_convert = 0;
 
   if (opts_or_file) {
     if (TYPEOF(*opts_or_file) == PIKE_T_MAPPING) {
@@ -3454,7 +3454,7 @@ PIKEFUN string cpp(string data,
       dmalloc_touch_svalue(Pike_sp);
     }
     else if(TYPEOF(*charset_sv) == T_INT)
-      auto_convert = charset_sv->u.integer;
+      this->auto_convert = charset_sv->u.integer;
     else {
       SIMPLE_ARG_TYPE_ERROR("cpp", 3, "string|int");
     }
@@ -3513,7 +3513,7 @@ PIKEFUN string cpp(string data,
     pop_stack();
   }
 
-  if (auto_convert && (!data->size_shift) && (data->len > 1)) {
+  if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
     struct pike_string *new_data = recode_string(this, data);
     free_string(data);
@@ -3634,7 +3634,7 @@ PIKEFUN string cpp(string data,
 
 
   low_cpp(this, MKPCHARP_STR(data), data->len,
-	  0, auto_convert, charset);
+	  0, charset);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
