@@ -180,7 +180,13 @@ test_dec_enc_string(\\\\/skjdhf\\\"sdf\\\"d\\\\, \\/skjdhf\"sdf\"d\\)
 
 test_equal(Standards.JSON5.decode("{a:1}"), (["a": 1]))
 test_equal(Standards.JSON5.decode("{'a':1}"), (["a": 1]))
-
+test_equal(Standards.JSON5.encode((["a":"b"]), Standards.JSON5.UNQUOTED_IDENTIFIERS), "{a:\"b\"}") 
+test_equal(Standards.JSON5.encode((["0a":"b"]), Standards.JSON5.UNQUOTED_IDENTIFIERS), "{\"0a\":\"b\"}") 
+test_equal(Standards.JSON5.encode((["0a":"b"]), Standards.JSON5.SINGLE_QUOTED_STRINGS), "{'0a':'b'}")
+test_equal(Standards.JSON5.encode((["0a":"b'"]), Standards.JSON5.SINGLE_QUOTED_STRINGS), "{'0a':'b\\''}")
+test_equal(Standards.JSON5.encode((["0a":"b\""]), Standards.JSON5.SINGLE_QUOTED_STRINGS), "{'0a':'b\"'}")
+test_equal(Standards.JSON5.encode((["0a":"b\""])), "{\"0a\":\"b\\\"\"}")
+test_equal(Standards.JSON5.encode((["0a":"b'"])), "{\"0a\":\"b'\"}")
 
 // test examples from json.org
 test_dec_enc([[
