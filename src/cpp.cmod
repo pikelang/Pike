@@ -127,6 +127,7 @@ PIKECLASS CPP
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
   PIKEVAR string current_file;
+  PIKEVAR string charset;
   CVAR struct string_builder buf;
   PIKEVAR object handler;
   PIKEVAR object compat_handler;
@@ -155,7 +156,6 @@ PIKECLASS CPP
       free_string_builder(&THIS->buf);
     }
   }
-};
 
 #define FIND_DEFINE(N) find_define(this, (N))
 
@@ -3301,6 +3301,105 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 
 /*! @endnamespace */
 
+  PIKEFUN void create(mapping|string|void opts_or_file,
+		      int|string|void charset_sv,
+		      object|void handler,
+		      int|void compat_major_sv,
+		      int|void compat_minor_sv,
+		      int|void picky_cpp_sv)
+    flags ID_PROTECTED;
+  {
+    struct CPP_struct *this = THIS;
+
+    struct pike_string *prefix = NULL;
+
+    struct pike_string *current_file = 0;
+
+    struct pike_string *charset = NULL;
+
+    int compat_major = compat_major_sv?compat_major_sv->u.integer:0;
+    int compat_minor = compat_minor_sv?compat_minor_sv->u.integer:0;
+    int picky_cpp = picky_cpp_sv?picky_cpp_sv->u.integer:0;
+
+    this->prefix = NULL;
+    this->current_line=1;
+    this->compile_errors=0;
+    this->defines = allocate_mapping(32);
+    this->keep_comments = 0;
+    this->dependencies_fail = 0;
+    this->auto_convert = 0;
+
+    if (opts_or_file) {
+      if (TYPEOF(*opts_or_file) == PIKE_T_MAPPING) {
+	struct svalue *tmp;
+	struct mapping *m = opts_or_file->u.mapping;
+
+#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
+   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
+       "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
+
+	if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
+	if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
+	if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
+	if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
+	if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
+	if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
+	if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
+	if (GET_TYPE(INT, "keep_comments")) this->keep_comments = tmp->u.integer;
+#undef GET_TYPE
+      } else if (TYPEOF(*opts_or_file) == PIKE_T_STRING) {
+	current_file = opts_or_file->u.string;
+      }
+    }
+
+    if(current_file)
+      add_ref(current_file);
+    else
+      current_file = make_shared_string("-");
+    this->current_file = current_file;
+
+    this->compat_major=PIKE_MAJOR_VERSION;
+    this->compat_minor=PIKE_MINOR_VERSION;
+    this->compat_handler = 0;
+    this->handler = handler;
+    if(handler)
+      add_ref(handler);
+
+    if (prefix) {
+      int i;
+      if (prefix->size_shift) {
+	Pike_error("No widechars allowed in cpp prefix.\n");
+      }
+      for (i = 0; i < prefix->len; i++) {
+	if (!wide_isidchar(prefix->str[i])) {
+	  Pike_error("Invalid char in prefix.\n");
+	}
+      }
+      this->prefix = prefix;
+      add_ref(prefix);
+    }
+
+
+    if(charset_sv) {
+      if(TYPEOF(*charset_sv) == T_STRING) {
+	this->charset = charset_sv->u.string;
+	add_ref(this->charset);
+      }
+      else if(TYPEOF(*charset_sv) == T_INT)
+	this->auto_convert = charset_sv->u.integer;
+      else {
+	SIMPLE_ARG_TYPE_ERROR("cpp", 3, "string|int");
+      }
+    }
+
+    if(compat_major)
+      cpp_change_compat(this, compat_major, compat_minor);
+
+    this->picky_cpp = picky_cpp;
+  }
+
+}
+
 /*! @decl string cpp(string data, mapping|string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
@@ -3353,117 +3452,17 @@ PIKEFUN string cpp(string data,
 		   int|void picky_cpp_sv)
      efun;
 {
-  struct object *cpp_obj = fast_clone_object(CPP_program);
+  struct svalue *save_sp = Pike_sp - args;
+  struct object *cpp_obj = clone_object(CPP_program, args-1);
   struct CPP_struct *this =
     (struct CPP_struct *)get_storage(cpp_obj, CPP_program);
-  struct svalue *save_sp = Pike_sp - args;
   struct mapping *predefs = NULL;
-
-  struct pike_string *prefix = NULL;
-
-  struct pike_string *current_file = 0;
-
-  struct pike_string *charset = NULL;
-
-  int compat_major = compat_major_sv?compat_major_sv->u.integer:0;
-  int compat_minor = compat_minor_sv?compat_minor_sv->u.integer:0;
-  int picky_cpp = picky_cpp_sv?picky_cpp_sv->u.integer:0;
 
 #ifdef PIKE_DEBUG
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
 
   push_object(cpp_obj);
-
-  this->prefix = NULL;
-  this->current_line=1;
-  this->compile_errors=0;
-  this->defines = allocate_mapping(32);
-  this->keep_comments = 0;
-  this->dependencies_fail = 0;
-  this->auto_convert = 0;
-
-  if (opts_or_file) {
-    if (TYPEOF(*opts_or_file) == PIKE_T_MAPPING) {
-      struct svalue *tmp;
-      struct mapping *m = opts_or_file->u.mapping;
-
-#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
-   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
-       "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
-
-      if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
-      if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
-      if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
-      if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
-      if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
-      if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
-      if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
-      if (GET_TYPE(INT, "keep_comments")) this->keep_comments = tmp->u.integer;
-#undef GET_TYPE
-    } else if (TYPEOF(*opts_or_file) == PIKE_T_STRING) {
-      current_file = opts_or_file->u.string;
-    }
-  }
-
-  this->data = data;
-  add_ref(data);
-
-  if(current_file)
-    add_ref(current_file);
-  else
-    current_file = make_shared_string("-");
-  this->current_file = current_file;
-
-  this->compat_major=PIKE_MAJOR_VERSION;
-  this->compat_minor=PIKE_MINOR_VERSION;
-  this->compat_handler = 0;
-  this->handler = handler;
-  if(handler)
-    add_ref(handler);
-
-  if (prefix) {
-      int i;
-      if (prefix->size_shift) {
-	  Pike_error("No widechars allowed in cpp prefix.\n");
-      }
-      for (i = 0; i < prefix->len; i++) {
-          if (!wide_isidchar(prefix->str[i])) {
-	      Pike_error("Invalid char in prefix.\n");
-	  }
-      }
-      this->prefix = prefix;
-      add_ref(prefix);
-  }
-
-
-  if(charset_sv) {
-    if(TYPEOF(*charset_sv) == T_STRING) {
-      charset = charset_sv->u.string;
-      push_string(data);
-      this->data = data = NULL;
-      ref_push_string(charset);
-      if (!safe_apply_handler ("decode_charset", this->handler,
-			       this->compat_handler, 2, BIT_STRING)) {
-	cpp_handle_exception (this, "Error decoding with charset %S",
-			      charset);
-	Pike_error("Unknown charset.\n");
-      }
-      this->data = data = Pike_sp[-1].u.string;
-      Pike_sp--;
-      dmalloc_touch_svalue(Pike_sp);
-    }
-    else if(TYPEOF(*charset_sv) == T_INT)
-      this->auto_convert = charset_sv->u.integer;
-    else {
-      SIMPLE_ARG_TYPE_ERROR("cpp", 3, "string|int");
-    }
-  }
-
-  if(compat_major)
-    cpp_change_compat(this, compat_major, compat_minor);
-
-  this->picky_cpp = picky_cpp;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
@@ -3511,19 +3510,6 @@ PIKEFUN string cpp(string data,
       }
     }
     pop_stack();
-  }
-
-  if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
-    /* Try to determine if we need to recode the string */
-    struct pike_string *new_data = recode_string(this, data);
-    free_string(data);
-    this->data = data = new_data;
-  }
-  if (data->size_shift) {
-    /* Get rid of any byte order marks (0xfeff) */
-    struct pike_string *new_data = filter_bom(data);
-    free_string(data);
-    this->data = data = new_data;
   }
 
   /* These attempt to be compatible with the C standard. */
@@ -3623,6 +3609,37 @@ PIKEFUN string cpp(string data,
     free_mapping (predefs);
   }
 
+  this->data = data;
+  add_ref(data);
+
+  if (this->charset) {
+    push_string(data);
+    this->data = data = NULL;
+    ref_push_string(this->charset);
+    if (!safe_apply_handler ("decode_charset", this->handler,
+			     this->compat_handler, 2, BIT_STRING)) {
+      cpp_handle_exception (this, "Error decoding with charset %S",
+			    THIS->charset);
+      Pike_error("Unknown charset.\n");
+    }
+    this->data = data = Pike_sp[-1].u.string;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+  }
+
+  if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
+    /* Try to determine if we need to recode the string */
+    struct pike_string *new_data = recode_string(this, data);
+    free_string(data);
+    this->data = data = new_data;
+  }
+  if (data->size_shift) {
+    /* Get rid of any byte order marks (0xfeff) */
+    struct pike_string *new_data = filter_bom(data);
+    free_string(data);
+    this->data = data = new_data;
+  }
+
   string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
   PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
 		    this->current_file->size_shift, &this->buf);
@@ -3634,7 +3651,7 @@ PIKEFUN string cpp(string data,
 
 
   low_cpp(this, MKPCHARP_STR(data), data->len,
-	  0, charset);
+	  0, this->charset);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
