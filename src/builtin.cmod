@@ -340,7 +340,7 @@ PIKECLASS TM
      *!     See also @expr{%u@}.
      *! @enddl
      */
-    PIKEFUN string strftime(string(1..255) format)
+    PIKEFUN string(1..255) strftime(string(1..255) format)
     {
         char *buffer = xalloc( 8192 );
         buffer[0] = 0;
