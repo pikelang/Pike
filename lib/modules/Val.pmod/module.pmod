@@ -373,7 +373,7 @@ class Timebase {
       case "float":
         return nsecs / NANOSECONDS.0;
       case "int":
-        return nsecs / NANOSECONDS;
+        return (nsecs - (nsecs < 0 ? NANOSECONDS - 1 : 0)) / NANOSECONDS;
       default:
         return UNDEFINED;
     }
@@ -785,6 +785,22 @@ class Timestamp {
     return localtime((int)this) + (["nsec": nsecs % NANOSECONDS ]);
   }
 
+  //! @seealso
+  //!   @[System.TM()->strftime()]
+  public string(1..255) strftime(string(1..255) format) {
+    return System.TM((int)this)->strftime(format);
+  }
+
+  //! @seealso
+  //!   @[System.TM()->strptime()]
+  public bool strptime(string(1..255) format, string(1..255) data) {
+    System.TM t = System.TM();
+    bool ret = t->strptime(format, data);
+    if (ret)
+      ::create(t->unix_time());
+    return ret;
+  }
+
   //! When cast to string it returns an ISO formatted timestamp
   //! that includes daylight-saving and timezone corrections.
   protected mixed cast(string to) {
@@ -842,7 +858,7 @@ class Date {
     create(mktime(tm + (["isdst":0, "timezone":0])));
   }
   variant protected void create(int unix_time) {
-    days = unix_time / (24 * 3600);
+    days = (unix_time - (unix_time < 0 ? 24 * 3600 -1 : 0)) / (24 * 3600);
   }
   variant protected void create(float unix_time) {
     create((int)unix_time);
@@ -926,6 +942,22 @@ class Date {
 
   public mapping(string:int) tm() {
     return gmtime((int)this);
+  }
+
+  //! @seealso
+  //!   @[System.TM()->strftime()]
+  public string(1..255) strftime(string(1..255) format) {
+    return System.TM((int)this)->strftime(format);
+  }
+
+  //! @seealso
+  //!   @[System.TM()->strptime()]
+  public bool strptime(string(1..255) format, string(1..255) data) {
+    System.TM t = System.TM();
+    bool ret = t->strptime(format, data);
+    if (ret)
+      create(t->unix_time());
+    return ret;
   }
 
   protected mixed cast(string to) {
