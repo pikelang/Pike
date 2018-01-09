@@ -3398,6 +3398,78 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
     this->picky_cpp = picky_cpp;
   }
 
+  PIKEFUN void define_ansi_macros()
+  {
+    struct CPP_struct *this = THIS;
+
+    /* These attempt to be compatible with the C standard. */
+    do_magic_define(this,"__LINE__",insert_current_line);
+    do_magic_define(this,"__FILE__",insert_current_file_as_string);
+    do_magic_define(this,"__DATE__",insert_current_date_as_string);
+    do_magic_define(this,"__TIME__",insert_current_time_as_string);
+
+    /* These are from the 201x C standard. */
+    do_magic_define(this,"_Pragma",insert_pragma)->args = 1;
+    simple_add_define(this, "static_assert", "_Static_assert");
+  }
+
+  PIKEFUN void define_pike_macros()
+  {
+    struct CPP_struct *this = THIS;
+
+    /* These are Pike extensions. */
+    do_magic_define(this,"__DIR__",insert_current_dir_as_string);
+    do_magic_define(this,"__VERSION__",insert_current_version);
+    do_magic_define(this,"__MAJOR__",insert_current_major);
+    do_magic_define(this,"__MINOR__",insert_current_minor);
+
+    simple_add_define(this, "__ARGS__", "__args__");
+
+    do_magic_define(this,"__COUNTER__",insert_current_counter);
+
+#if 0
+    /* Left in place for documentation reference purposes. */
+    struct define_struct *def =
+      alloc_empty_define(make_shared_string("__deprecated__"), 1);
+    def->args = 1;
+    REF_MAKE_CONST_STRING(def->first, "__attribute__(\"deprecated\", ");
+    def->parts[0].argument = 0;
+    REF_MAKE_CONST_STRING(def->parts[0].postfix, ")");
+    mapping_string_insert(this->defines, def->name, Pike_sp-1);
+    pop_stack();
+#endif /* 0 */
+
+    simple_add_define(this, "__PIKE__", " 1 ");
+
+    simple_add_define(this, "__REAL_VERSION__",
+		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) "."
+		      DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+    simple_add_define(this, "__REAL_MAJOR__",
+		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) " ");
+    simple_add_define(this, "__REAL_MINOR__",
+		      " " DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+    simple_add_define(this, "__BUILD__",
+		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
+    simple_add_define(this, "__REAL_BUILD__",
+		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
+    simple_add_define(this, "__AUTO_BIGNUM__", " 1 ");
+#ifdef __NT__
+    simple_add_define(this, "__NT__", " 1 ");
+#endif
+#ifdef __amigaos__
+    simple_add_define(this, "__amigaos__", " 1 ");
+#endif
+#ifdef __OS2__
+    simple_add_define(this, "__OS2__", " 1 ");
+#endif
+#ifdef __APPLE__
+    simple_add_define(this, "__APPLE__", " 1 ");
+#endif
+    simple_add_define(this, "SIZEOF_INT",
+		      " " DEFINETOSTR(SIZEOF_INT) " ");
+    simple_add_define(this, "SIZEOF_FLOAT",
+		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
+  }
 }
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
@@ -3512,70 +3584,9 @@ PIKEFUN string cpp(string data,
     pop_stack();
   }
 
-  /* These attempt to be compatible with the C standard. */
-  do_magic_define(this,"__LINE__",insert_current_line);
-  do_magic_define(this,"__FILE__",insert_current_file_as_string);
-  do_magic_define(this,"__DATE__",insert_current_date_as_string);
-  do_magic_define(this,"__TIME__",insert_current_time_as_string);
+  apply(cpp_obj, "define_ansi_macros", 0);
 
-  /* These are from the 201x C standard. */
-  do_magic_define(this,"_Pragma",insert_pragma)->args = 1;
-  simple_add_define(this, "static_assert", "_Static_assert");
-
-  simple_add_define(this, "__ARGS__", "__args__");
-
-  do_magic_define(this,"__COUNTER__",insert_current_counter);
-
-  /* These are Pike extensions. */
-  do_magic_define(this,"__DIR__",insert_current_dir_as_string);
-  do_magic_define(this,"__VERSION__",insert_current_version);
-  do_magic_define(this,"__MAJOR__",insert_current_major);
-  do_magic_define(this,"__MINOR__",insert_current_minor);
-
-  {
-#if 0
-    /* Left in place for documentation reference purposes. */
-    struct define_struct *def =
-      alloc_empty_define(make_shared_string("__deprecated__"), 1);
-    def->args = 1;
-    REF_MAKE_CONST_STRING(def->first, "__attribute__(\"deprecated\", ");
-    def->parts[0].argument = 0;
-    REF_MAKE_CONST_STRING(def->parts[0].postfix, ")");
-    mapping_string_insert(this->defines, def->name, Pike_sp-1);
-    pop_stack();
-#endif /* 0 */
-
-    simple_add_define(this, "__PIKE__", " 1 ");
-
-    simple_add_define(this, "__REAL_VERSION__",
-		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) "."
-		      DEFINETOSTR(PIKE_MINOR_VERSION) " ");
-    simple_add_define(this, "__REAL_MAJOR__",
-		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) " ");
-    simple_add_define(this, "__REAL_MINOR__",
-		      " " DEFINETOSTR(PIKE_MINOR_VERSION) " ");
-    simple_add_define(this, "__BUILD__",
-		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
-    simple_add_define(this, "__REAL_BUILD__",
-		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
-    simple_add_define(this, "__AUTO_BIGNUM__", " 1 ");
-#ifdef __NT__
-    simple_add_define(this, "__NT__", " 1 ");
-#endif
-#ifdef __amigaos__
-    simple_add_define(this, "__amigaos__", " 1 ");
-#endif
-#ifdef __OS2__
-    simple_add_define(this, "__OS2__", " 1 ");
-#endif
-#ifdef __APPLE__
-    simple_add_define(this, "__APPLE__", " 1 ");
-#endif
-    simple_add_define(this, "SIZEOF_INT",
-		      " " DEFINETOSTR(SIZEOF_INT) " ");
-    simple_add_define(this, "SIZEOF_FLOAT",
-		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
-  }
+  apply(cpp_obj, "define_pike_macros", 0);
 
   if (predefs) {
     struct keypair *k;
