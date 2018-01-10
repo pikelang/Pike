@@ -1,0 +1,13 @@
+Modified files:
+  pike/lib/modules/Calendar.pmod/TimeRanges.pmod
+  pike/lib/modules/Calendar.pmod/Timezone.pmod
+  pike/lib/modules/Calendar.pmod/mkrules.pike
+  pike/lib/modules/Crypto.pmod/module.pmod
+  pike/lib/modules/Mysql.pmod/SqlTable.pike
+  pike/lib/modules/Sql.pmod/pgsql.pike
+  pike/lib/modules/Sql.pmod/pgsql_util.pmod
+  pike/lib/modules/Val.pmod
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/Hash.pike
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/__Hash.pike
+Deleted files:
+  pike/lib/modules/Crypto.pmod/SCRAM.pike
