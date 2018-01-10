@@ -3690,6 +3690,18 @@ PIKEFUN string cpp(string data,
  */
 
 /*! @decl mapping(string:mixed) _take_over_initial_predefines()
+ *!
+ *! Returns a mapping containing the set of predefined macros.
+ *! These are typically the macros defined via the @tt{-D@} option
+ *! when starting Pike.
+ *!
+ *! This function is typically called by the @[MasterObject] at
+ *! initialization, and may only be called once. After it has been called,
+ *! @[cpp()] will start calling @[CompilationHandler->get_predefines()] to
+ *! retrieve the set of predefined macros.
+ *!
+ *! @seealso
+ *!   [cpp()], @[CompilationHandler->get_predefines()]
  */
 void f__take_over_initial_predefines (INT32 args)
 {
