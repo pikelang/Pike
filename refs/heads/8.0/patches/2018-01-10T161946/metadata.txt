@@ -1,0 +1,36 @@
+subject: Pike 8.0: pgsql, Crypto.Hash.SCRAM, Calendar.TimeRanges.NullTimeRange
+from: a6cb0637fe6ca1db6cc7d9bae63ceb02a2ba7151
+to: 58077bda68a8806ce662143751b4ae48792a472b
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2017-11-27T105325
+restart: true
+
+• Calendar.TimeRanges.NullTimeRange: Added lfun::__hash().
+
+Fixes issue with prototype lfun getting called in Pike 8.0.
+
+• pgsql: Swallow multiple EOF marks in final data rows in fetch_row_array().
+
+Depending on timing when the query finishes, there can be
+multiple internal EOF rows.
+
+• pgsql: Support binary transfer IEEE float formats.
+
+• pgsql: Migrate user callbacks to the DefaultBackend as soon as it has started.
+
+• Crypto.Hash: Stricter string types.
+
+• Crypto.Hash.SCRAM: Moved class.
+
+Move Crypto.SCRAM to __builtin.Nettle.Hash()->SCRAM analogous to
+other similar APIs.
+
+Crypto.SCRAM(Crypto.SHA256) is now Crypto.SHA256.SCRAM().
+
+Also updates the testsuite and Sql.pgsql_util accordingly.
+
+• pgsql: Use a minithread to start up the query instead of call_out().
+
+• pgsql: Prohibit running queries in the local_backend again.
+
+• pgsql: Rely on block boundaries to release locks.
