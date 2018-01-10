@@ -688,7 +688,7 @@ class TimeRange
        what->ruleset()==ruleset() && equals(what); 
    }
 
-   int __hash();
+   protected int __hash();
 
 //     int(0..1) _equal(TimeRange what) 
 //     { 
@@ -1257,6 +1257,11 @@ protected class cNullTimeRange
    int(1..1) `!()
    {
       return 1;
+   }
+
+   protected int __hash()
+   {
+      return 0;
    }
 
    protected string _sprintf(int t,mapping m)
