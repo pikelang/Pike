@@ -29,6 +29,7 @@ o Toole.Standalone.check_http
   - Allow redirect responses.
   - Support --expect option.
 
+
 Bug fixes
 ---------
 
@@ -41,7 +42,7 @@ o Calendar
   - Updated tzdata to 2017c.
 
   - Calendar.TimeRanges.NullTimeRange now has a working __hash().
-    The expression ([ Calendar.TimeRandes.nulltimerange : 17 ])
+    The expression ([ Calendar.TimeRanges.nulltimerange : 17 ])
     no longer gives a backtrace.
 
 o Crypto.CCM
@@ -127,13 +128,14 @@ o Image
   Creating images with mode "grey" now works as documented,
   e.g. Image.Image(10,10,"grey",123);
 
-=======
+
 Optimizations
 -------------
 
 o mktime/System.TM
 
   Considerable speedup and a reduction in codesize.
+
 
 Building & Tools
 ----------------
