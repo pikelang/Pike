@@ -4681,6 +4681,7 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
       cpp_change_compat(this, compat_major, compat_minor);
 
     this->picky_cpp = picky_cpp;
+    pop_n_elems(args);
   }
 
   PIKEFUN void define_ansi_macros()

@@ -5231,6 +5231,7 @@ static void file_create(INT32 args)
 
   close_fd(0);
   file_open(args);
+  pop_stack();
 }
 
 #ifdef _REENTRANT

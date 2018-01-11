@@ -94,6 +94,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 	Pike_error("Invalid number of sources.\n");
       free (THIS->sources);
       THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      pop_stack();
     }
     else
     {
