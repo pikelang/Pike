@@ -3620,9 +3620,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               {
                 struct string_builder save, tmp;
                 INT32 nflags = 0;
-#ifdef PIKE_DEBUG
-                ptrdiff_t skip;
-#endif /* PIKE_DEBUG */
 
                 if(!OUTP())
                   nflags = CPP_REALLY_NO_OUTPUT;
