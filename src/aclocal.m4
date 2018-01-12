@@ -696,7 +696,6 @@ AC_DEFUN(PIKE_AC_CHECK_OS, [
   AC_CACHE_VAL(pike_cv_sys_os, [
     if test "$cross_compiling" = "yes"; then
       case "$host_alias" in
-	*amigaos*)	pike_cv_sys_os="AmigaOS";;
 	*linux*)	pike_cv_sys_os="Linux";;
 	*solaris*)	pike_cv_sys_os="Solaris";;
 	*sunos*)	pike_cv_sys_os="SunOS";;

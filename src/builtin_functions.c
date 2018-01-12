@@ -1609,7 +1609,6 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 /*! @decl string combine_path(string path, string ... paths)
  *! @decl string combine_path_unix(string path, string ... paths)
  *! @decl string combine_path_nt(string path, string ... paths)
- *! @decl string combine_path_amigaos(string path, string ... paths)
  *!
  *!   Concatenate a number of paths to a straightforward path without
  *!   any @expr{"//"@}, @expr{"/.."@} or @expr{"/."@}. If any path
@@ -1626,13 +1625,11 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  *!   absolute paths start with "/"). @[combine_path_nt()]
  *!   concatenates according to NT filesystem conventions ("/" and "\"
  *!   separates path components and there might be a drive letter in
- *!   front of absolute paths). @[combine_path_amigaos()] concatenates
- *!   according to AmigaOS filesystem conventions.
+ *!   front of absolute paths).
  *!
  *!   @[combine_path()] is equivalent to @[combine_path_unix()] on UNIX-like
  *!   operating systems, and equivalent to @[combine_path_nt()] on NT-like
- *!   operating systems, and equivalent to @[combine_path_amigaos()] on
- *!   AmigaOS-like operating systems.
+ *!   operating systems.
  *!
  *! @seealso
  *!   @[getcwd()], @[Stdio.append_path()]
@@ -1643,11 +1640,6 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 
 #define UNIX_COMBINE_PATH
 #include "combine_path.h"
-
-#define AMIGAOS_COMBINE_PATH
-#include "combine_path.h"
-
-
 
 /*! @decl int zero_type(mixed a)
  *!
@@ -9274,15 +9266,10 @@ void init_builtin_efuns(void)
   /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
-  ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
 #if defined(__NT__)
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
-#ifdef __amigaos__
-  ADD_EFUN("combine_path",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#else
   ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
-#endif
 #endif
 
   ADD_EFUN("compile", f_compile,

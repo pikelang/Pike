@@ -56,17 +56,13 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //        or at least some functions that use them should be.
 //        cf Tools.Shoot.runpike.
 //	/grubba 2004-04-11
-#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
+#if defined(__NT__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
 #endif
 
-#ifdef __amigaos__
-#define UPDIR "/"
-#else
 #define UPDIR "../"
-#endif
 
 //! @decl constant out_of_date_warning = 1
 //! Should Pike complain about out of date compiled files.
@@ -520,11 +516,7 @@ string unrelocate_module(string s)
 //! Returns 1 if the path is absolute, 0 otherwise.
 int is_absolute_path(string p)
 {
-#ifdef __amigaos__
-#define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
-  return IS_ABSOLUTE_PATH(p);
-#else
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
@@ -533,10 +525,9 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) has_prefix((X),"/")
 #endif
   return has_prefix(p,"/");
-#endif
 }
 
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
 #define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
 #else
 #define EXPLODE_PATH(X) ((X)/"/")
@@ -551,18 +542,10 @@ int is_absolute_path(string p)
 //!
 array(string) explode_path(string p)
 {
-#ifdef __amigaos__
-  int colon = search(reverse(p), ":");
-  if(colon >= 0)
-    return ({ p[..<colon] }) + explode_path(p[<colon+1..]);
-  array(string) r = p/"/";
-  return replace(r[..<1], "", "/")+r[<0..];
-#else
   array(string) r = EXPLODE_PATH(p);
   if(r[0] == "" && sizeof(p))
     r[0] = "/";
   return r;
-#endif
 }
 
 //! Returns all but the last segment of a path. Some example inputs and
@@ -582,17 +565,11 @@ array(string) explode_path(string p)
 string dirname(string x)
 {
   if(x=="") return "";
-#ifdef __amigaos__
   array(string) tmp=x/":";
   array(string) tmp2=tmp[-1]/"/";
   tmp[-1]=tmp2[..<1]*"/";
   if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
   return tmp*":";
-#else
-  array(string) tmp=EXPLODE_PATH(x);
-  if(x[0]=='/' && sizeof(tmp)<3) return "/";
-  return tmp[..<1]*"/";
-#endif
 }
 
 //! Returns the last segment of a path.
@@ -601,14 +578,9 @@ string dirname(string x)
 //! @[dirname()], @[explode_path()]
 string basename(string x)
 {
-#ifdef __amigaos__
-  return ((x/":")[-1]/"/")[-1];
-#define BASENAME(X) ((((X)/":")[-1]/"/")[-1])
-#else
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
-#endif
 }
 
 #ifdef PIKE_AUTORELOAD
@@ -2627,10 +2599,6 @@ class joinnode (array(object|mapping) joined_modules,
 joinnode handle_import(string path, string|void current_file,
 		       object|void current_handler)
 {
-#ifdef __amigaos__
-  if(path == ".")
-    path = "";
-#endif
   if(current_file)
   {
     path = combine_path_with_cwd(dirname(current_file), path);

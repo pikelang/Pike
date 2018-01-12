@@ -126,11 +126,6 @@
 #define INUSE_BUSYWAIT_DELAY	0.01
 #define INUSE_TIMEOUT		0.1
 
-/* Don't try to use socketpair() on AmigaOS, socketpair_ultra works better */
-#ifdef __amigaos__
-#undef HAVE_SOCKETPAIR
-#endif
-
 #ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)

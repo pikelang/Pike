@@ -4568,11 +4568,6 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
  *! not just Microsoft Windows NT, as the name implies.
  */
 
-/*! @decl constant __amigaos__
- *!
- *! This define is defined when the Pike is running on Amiga OS.
- */
-
 /*! @endnamespace */
 
   PIKEFUN void create(mapping|string|void opts_or_file,
@@ -4730,9 +4725,6 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
     simple_add_define(this, "__AUTO_BIGNUM__", " 1 ");
 #ifdef __NT__
     simple_add_define(this, "__NT__", " 1 ");
-#endif
-#ifdef __amigaos__
-    simple_add_define(this, "__amigaos__", " 1 ");
 #endif
 #ifdef __APPLE__
     simple_add_define(this, "__APPLE__", " 1 ");

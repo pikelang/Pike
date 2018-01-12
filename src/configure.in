@@ -2863,9 +2863,6 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #define NTDDI_VERSION 0x05000000
 #endif
 #endif /* __NT__ */
-#ifdef __amigaos__
-#define __USE_NETINET_IN_H
-#endif
 #ifndef __BUILTIN_VA_ARG_INCR
 #define __BUILTIN_VA_ARG_INCR   1
 #endif /* !__BUILTIN_VA_ARG_INCR */
@@ -3812,7 +3809,7 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
-if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
+if test "x$pike_cv_sys_os" = "xWindows_NT"; then :; else
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
     old_core_limit=`ulimit -c`
@@ -6087,10 +6084,6 @@ fi
 AC_MSG_CHECKING(how to set things nonblocking)
 AC_CACHE_VAL(pike_cv_sys_nonblock,
 [
-  # Kludge needed for AmigaOS
-  if test "$pike_cv_sys_os" = "AmigaOS" ; then
-    pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
-  else
     OCPPFLAGS="$CPPFLAGS"
     pike_cv_sys_bad_signal_handling=""
     pike_cv_sys_nonblock=UNKNOWN
@@ -6143,7 +6136,6 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
     else :; fi
     # Restore CPPFLAGS
     CPPFLAGS="$OCPPFLAGS"
-  fi
 ])
 
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
@@ -7384,10 +7376,6 @@ fi
 case "x$pike_cv_sys_os" in
   xWindows_NT)
     signal_handler="custom NT"
-  ;;
-
-  xAmigaOS)
-    signal_handler="custom AmigaOS"
   ;;
 
   xLinux | *kFreeBSD*)

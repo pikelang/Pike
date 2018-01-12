@@ -218,9 +218,7 @@ hash character and the rest of the directive to create indentation in code.</p>
   <insert-move entity="cpp::.__COUNTER__"/>
   <insert-move entity="cpp::.__AUTO_BIGNUM__"/>
   <insert-move entity="cpp::.__NT__"/>
-  <insert-move entity="cpp::.__OS2__"/>
   <insert-move entity="cpp::.__PIKE__"/>
-  <insert-move entity="cpp::.__amigaos__"/>
   <insert-move entity="cpp::._Pragma"/>
   <insert-move entity="cpp::.static_assert"/>
 </section>

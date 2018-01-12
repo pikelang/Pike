@@ -115,22 +115,6 @@
 #include <sys/user.h>
 #endif
 
-#ifdef __amigaos__
-#define timeval amigaos_timeval
-#include <exec/types.h>
-#include <dos/dos.h>
-#include <dos/dostags.h>
-#include <dos/exall.h>
-#ifdef __amigaos4__
-#include <interfaces/dos.h>
-#include <inline4/dos.h>
-#else
-#include <clib/dos_protos.h>
-#include <inline/dos.h>
-#endif
-#undef timeval
-#endif
-
 #define fp Pike_fp
 
 
@@ -257,7 +241,7 @@
 #define PROC_FPRINTF(...)
 #endif /* PROC_DEBUG */
 
-#if !defined(__NT__) && !defined(__amigaos__)
+#if !defined(__NT__)
 #define USE_PID_MAPPING
 #else
 #undef USE_WAIT_THREAD
@@ -2035,69 +2019,6 @@ static void f_proc_reg_index(INT32 args)
 /*! @endmodule
  */
 
-#ifdef __amigaos__
-
-extern struct DosLibrary *DOSBase;
-#ifdef __amigaos4__
-extern struct DOSIFace *IDOS;
-#endif
-
-static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
-{
-  char buf[32];
-  long ext;
-  struct svalue *tmp;
-  BPTR b;
-
-  if(optional && (tmp=simple_mapping_string_lookup(optional, name)))
-  {
-    if(TYPEOF(*tmp) == T_OBJECT)
-    {
-      fd = fd_from_object(tmp->u.object);
-
-      if(fd == -1)
-	Pike_error("File for %s is not open.\n",name);
-    }
-  }
-
-#ifdef __ixemul__
-  if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
-    Pike_error("File for %s can not be externalized.\n", name);
-
-  sprintf(buf, "IXPIPE:%lx", ext);
-
-  /* It's a kind of magic... */
-  if((b = Open(buf, 0x4242)) == 0)
-    Pike_error("File for %s can not be internalized.\n", name);
-
-  return b;
-#else
-  /* FIXME! */
-  return MKBADDR(NULL);
-#endif
-}
-
-struct perishables
-{
-  BPTR stdin_b;
-  BPTR stdout_b;
-  BPTR stderr_b;
-  BPTR cwd_lock;
-  struct byte_buffer cmd_buf;
-};
-
-static void free_perishables(struct perishables *storage)
-{
-  if(storage->stdin_b!=0) Close(storage->stdin_b);
-  if(storage->stdout_b!=0) Close(storage->stdout_b);
-  if(storage->stderr_b!=0) Close(storage->stderr_b);
-  if(storage->cwd_lock!=0)
-    UnLock(storage->cwd_lock);
-  buffer_free(&storage->cmd_buf);
-}
-
-#else /* !__amigaos__ */
-
 #ifdef __NT__
 
 static HANDLE get_inheritable_handle(struct mapping *optional,
@@ -2201,9 +2122,7 @@ static void free_perishables(struct perishables *storage)
 
 #endif
 
-#endif
-
-#if !defined(__NT__) && !defined(__amigaos__)
+#if !defined(__NT__)
 
 extern int pike_make_pipe(int *);
 
@@ -2241,7 +2160,7 @@ extern int pike_make_pipe(int *);
     exit(99); \
   } while(0)
 
-#endif /* !__NT__ && !__amigaos__ */
+#endif /* !__NT__ */
 
 #ifdef HAVE___PRIOCNTL
 # include <sys/priocntl.h>
@@ -2464,7 +2383,6 @@ void f_set_priority( INT32 args )
 }
 
 
-#ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage,
                                 int limit_resource,
@@ -2530,7 +2448,6 @@ static void internal_add_limit( struct perishables *storage,
   }
 }
 #endif
-#endif /* __amigaos__ */
 
 
 /*! @module Process */
@@ -3025,80 +2942,6 @@ void f_create_process(INT32 args)
     }
   }
 #else /* !__NT__ */
-#ifdef __amigaos__
-  {
-    ONERROR err;
-    struct perishables storage;
-    int d, e;
-
-    storage.stdin_b = storage.stdout_b = storage.stderr_b = 0;
-    storage.cwd_lock = 0;
-    buffer_init(&storage.cmd_buf);
-
-    SET_ONERROR(err, free_perishables, &storage);
-
-    for(e=0;e<cmd->size;e++)
-    {
-      if(e)
-        buffer_add_char( &storage.cmd_buf, ' ');
-      if(strchr(STR0(ITEM(cmd)[e].u.string),'"') || strchr(STR0(ITEM(cmd)[e].u.string),' ')) {
-        buffer_add_char( &storage.cmd_buf, '"');
-	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
-	{
-	  switch(STR0(ITEM(cmd)[e].u.string)[d])
-	  {
-	    case '*':
-	    case '"':
-	      buffer_add_char( &storage.cmd_buf, '*');
-            default:
-	      buffer_add_char( &storage.cmd_buf, STR0(ITEM(cmd)[e].u.string)[d]);
-	  }
-	}
-        buffer_add_char( &storage.cmd_buf, '"');
-      } else
-        buffer_memcpy(&storage.cmd_buf, STR0(ITEM(cmd)[e].u.string), ITEM(cmd)[e].u.string->len);
-    }
-    buffer_add_char( &storage.cmd_buf, '\0');
-
-    if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
-      if(TYPEOF(*tmp) == T_STRING)
-        if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
-	  Pike_error("Failed to lock cwd \"%S\".\n", tmp->u.string);
-
-    storage.stdin_b = get_amigados_handle(optional, "stdin", 0);
-    storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
-    storage.stderr_b = get_amigados_handle(optional, "stderr", 2);
-
-    PROC_FPRINTF("[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
-                 "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
-                 getpid(),
-                 storage.cmd_buf.s.str, storage.stdin_b,
-                 storage.stdout_b, storage.stderr_b,
-                 (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
-                 storage.cwd_lock);
-
-    if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
-		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
-		  NP_Error, storage.stderr_b,
-	          (storage.cwd_lock!=0? NP_CurrentDir:TAG_IGNORE),
-		  storage.cwd_lock, TAG_END))
-      Pike_error("Failed to start process (%ld).\n", IoErr());
-
-    UNSET_ONERROR(err);
-
-    /*
-
-     * Ideally, these resources should be freed here.
-     * But that would cause dos.library to go nutzoid, so
-     * we better not...
-
-      if(storage.cwd_lock!=0)
-        UnLock(storage.cwd_lock);
-      buffer_free(&storage.cmd_buf);
-
-    */
-  }
-#else /* !__amigaos__ */
   {
     struct svalue *stack_save=Pike_sp;
     ONERROR err;
@@ -4189,7 +4032,6 @@ void f_create_process(INT32 args)
       exit(99);
     }
   }
-#endif /* __amigaos__ */
 #endif /* __NT__ */
   pop_n_elems(args);
 }
