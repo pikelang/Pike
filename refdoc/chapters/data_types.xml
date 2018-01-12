@@ -274,7 +274,7 @@ construction too much.</p>
 
 <dt><tt>int <ref>String.count</ref>(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
 <dd>Returns the number of occurances of <i>needle</i> in <i>haystack</i>.
-    Equvivalent to <tt><ref>sizeof</ref>(<i>haystack</i>/<i>needle</i>)-1</tt>.</dd>
+    Equivalent to <tt><ref>sizeof</ref>(<i>haystack</i>/<i>needle</i>)-1</tt>.</dd>
 
 <dt><tt>int <ref>String.width</ref>(string <i>s</i>)</tt></dt>
 <dd>Returns the width <i>s</i> in bits (8, 16 or 32).</dd>
