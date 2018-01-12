@@ -2002,7 +2002,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #ifdef AF_INET6
   if (inet_flags & 2) {
     SOCKADDR_FAMILY(*addr) = AF_INET6;
-    /* Note: This is equvivalent to :: (aka IPv6 ANY). */
+    /* Note: This is equivalent to :: (aka IPv6 ANY). */
     memset(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
   }
 #endif

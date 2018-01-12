@@ -1513,7 +1513,7 @@ struct native_method_context;
  *   data	Value to prepend in the argument list.
  *   statc	dispatch is a static method.
  *   dispatch	Function to call.
- *   args	Number of integer equvivalents to pass along.
+ *   args	Number of integer equivalents to pass along.
  *   flt_args	bitfield: There are float arguments at these positions.
  *   dbl_args	bitfield: There are double arguments at these positions.
  */

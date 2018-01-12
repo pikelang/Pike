@@ -252,7 +252,7 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
 
 //! Get multiple columns from an array.
 //!
-//! This function is equvivalent to
+//! This function is equivalent to
 //! @pre{
 //!   map(ind, lambda(mixed i) { return column(x, i); })
 //! @}

@@ -392,7 +392,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! }
  *! @endcode
  *!   In the above case an implicit @[lfun::create()] is created, and
- *!   it's equvivalent to:
+ *!   it's equivalent to:
  *! @code
  *! class Foo {
  *!   int foo;
@@ -863,7 +863,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   Hashing callback.
  *!
  *!   The main caller of this function is @[predef::hash_value()]
- *!   or the low-level equvivalent, which get called by various
+ *!   or the low-level equivalent, which get called by various
  *!   mapping operations when the object is used as index in a mapping.
  *!
  *! @returns

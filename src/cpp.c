@@ -569,7 +569,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!
  *!     @tt{#ifdef @i{<identifier>@}@}
  *!
- *!   is equvivalent to
+ *!   is equivalent to
  *!
  *!     @tt{#if @[defined](@i{<identifier>@})@}
  *!
@@ -587,7 +587,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!
  *!     @tt{#ifndef @i{<identifier>@}@}
  *!
- *!   is equvivalent to
+ *!   is equivalent to
  *!
  *!     @tt{#if !@[defined](@i{<identifier>@})@}
  *!
@@ -644,7 +644,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!
  *! @example
  *!
- *!   The following two are equvivalent:
+ *!   The following two are equivalent:
  *!
  *!   @code
  *!   #ifdef A
@@ -852,7 +852,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!   is defined.
  *!
  *! @note
- *!   @tt{#if defined(MY_DEF)@} is equvivalent to
+ *!   @tt{#if defined(MY_DEF)@} is equivalent to
  *!   @tt{#ifdef MY_DEF@}.
  *!
  *! @seealso
