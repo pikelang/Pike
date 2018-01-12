@@ -1600,13 +1600,12 @@ static struct pike_string *make_define_name(struct CPP_struct *this,
 {
   if (this->prefix) {
     struct string_builder s;
-    int len = strlen(name);
 
     init_string_builder(&s, 0);
     string_builder_append(&s, MKPCHARP_STR(this->prefix),
 			  this->prefix->len);
     string_builder_putchar(&s, '_');
-    string_builder_binary_strcat(&s, name, len);
+    string_builder_strcat(&s, name);
     return finish_string_builder(&s);
   }
   return make_shared_string(name);
@@ -3540,7 +3539,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                     }
 
                     {
-                      char buffer[47];
                       struct pike_string *save_current_file;
                       INT_TYPE save_current_line;
 
@@ -3594,8 +3592,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       this->current_file=save_current_file;
                       this->current_line=save_current_line;
 
-                      sprintf(buffer,"\n#line %ld ", (long)this->current_line);
-                      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
+                      string_builder_sprintf(&this->buf, "\n#line %ld ", (long)this->current_line);
                       PUSH_STRING_SHIFT(this->current_file->str,
                                         this->current_file->len,
                                         this->current_file->size_shift,
