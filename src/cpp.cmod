@@ -143,9 +143,40 @@ PIKECLASS CPP
   PIKEVAR int dependencies_fail;
   PIKEVAR int auto_convert;
 
+  PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
+
   INIT
   {
+    struct svalue *save_sp = Pike_sp;
+    struct pike_string *directive_prefix = MK_STRING("directive_");
+    struct object *obj = Pike_fp->current_object;
+    int e;
+
     init_string_builder(&THIS->buf, 0);
+
+    /* Add all directive_* functions to the directives mapping. */
+    for(e = 0; e < obj->prog->num_identifier_index; e++) {
+      struct pike_string *sym_name =
+	ID_FROM_INT(obj->prog, obj->prog->identifier_index[e])->name;
+      if (sym_name->len <= directive_prefix->len) continue;
+      ref_push_string(sym_name);
+      ref_push_string(directive_prefix);
+      f_has_prefix(2);
+      if (!Pike_sp[-1].u.integer) {
+	pop_stack();
+	continue;
+      }
+      pop_stack();
+
+      /* Strip the "directive_" prefix from the symbol name. */
+      push_string(string_slice(sym_name, directive_prefix->len,
+			       sym_name->len - directive_prefix->len));
+      low_object_index_no_free(Pike_sp, obj, obj->prog->identifier_index[e]);
+      Pike_sp++;
+    }
+    f_aggregate_mapping(Pike_sp - save_sp);
+    THIS->directives = Pike_sp[-1].u.mapping;
+    Pike_sp--;
   }
 
   EXIT
@@ -4194,19 +4225,44 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               goto unknown_preprocessor_directive;
             }
           default:
-            if(!OUTP() && !this->picky_cpp) break;
-          unknown_preprocessor_directive:
-            {
-              struct pike_string *unknown = GOBBLE_IDENTIFIER();
-              if (unknown) {
-                cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
-                                  unknown);
-                free_string(unknown);
-              } else {
-                cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
-                                  pos, DATA(pos));
-              }
-            }
+	  unknown_preprocessor_directive:
+	    {
+              struct pike_string *directive = GOBBLE_IDENTIFIER();
+	      if (directive && this->directives) {
+		struct svalue *fun =
+		  low_mapping_string_lookup(this->directives, directive);
+		if (fun) {
+		  ptrdiff_t foo;
+		  free_string(directive);
+
+		  SKIPSPACE();
+		  foo = pos;
+		  FIND_EOL();
+		  push_int(flags);
+		  push_string(make_shared_binary_pcharp(ADD_PCHARP(data,foo), pos-foo));
+		  safe_apply_svalue(fun, 2, 1);
+		  if ((TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) &&
+		      Pike_sp[-1].u.string->len) {
+		    /* We need to recurse. */
+		    low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string),
+			    Pike_sp[-1].u.string->len, flags, charset);
+		  }
+		  pop_stack();
+		  break;
+		}
+	      }
+	      if(!OUTP() && !this->picky_cpp) break;
+	      {
+		if (directive) {
+		  cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
+				    directive);
+		  free_string(directive);
+		} else {
+		  cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
+				    pos, DATA(pos));
+		}
+	      }
+	    }
         }
     }
     continue;
