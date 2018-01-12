@@ -68,6 +68,32 @@ static int find_absolute(PCHARP s, ptrdiff_t len)
 
 #endif /* NT_COMBINE_PATH */
 
+
+#ifdef AMIGAOS_COMBINE_PATH
+#define IS_SEP(X) ( (X)=='/' )
+#define IS_ANY_SEP(X) ( (X) == '/' || (X) == ':' )
+#define IS_ABS(X, L) find_absolute2((X), (L))
+#define IS_ROOT(X, L) ( ((L) > 0) && ( INDEX_PCHARP((X),0) == CHAR_ROOT)?1:0)
+#define APPEND_PATH append_path_amigaos
+#define COMBINE_PATH combine_path_amigaos
+#define CHAR_ROOT ':'
+
+static int find_absolute2(PCHARP s, ptrdiff_t len)
+{
+  int r=0, p=0;
+  int c;
+  while((c=INDEX_PCHARP(s,p)) && (len > 0)) {
+    ++p;
+    --len;
+    if(c == CHAR_ROOT)
+      r = p;
+  }
+  return r>1? r:0;
+}
+
+#endif /* AMIGAOS_COMBINE_PATH */
+
+
 #ifndef IS_ANY_SEP
 #define IS_ANY_SEP(X) IS_SEP(X)
 #endif
@@ -141,6 +167,19 @@ static void APPEND_PATH(struct string_builder *s,
 #endif
     if(IS_SEP(LAST_PUSHED()))
     {
+#ifdef AMIGAOS_COMBINE_PATH
+      if(from<len && INDEX_PCHARP(path, from) == '/' &&
+	 s->s->len>1 && !IS_ANY_SEP(index_shared_string(s->s,s->s->len-2))) {
+	/* Handle "//" */
+	int tmp=s->s->len-2;
+	while(tmp>0 && !IS_ANY_SEP(index_shared_string(s->s,tmp-1)))
+	  --tmp;
+	s->s->len=tmp;
+	s->known_shift=0;
+	from++;
+	continue;
+      }
+#else /* !AMIGAOS_COMBINE_PATH */
       while(s->s->len && IS_SEP(LAST_PUSHED()))
 	s->s->len--;
       PUSH('/');
@@ -207,6 +246,7 @@ static void APPEND_PATH(struct string_builder *s,
 	    continue;
 	}
       }
+#endif /* !AMIGAOS_COMBINE_PATH */
     }
 
     if(from>=len) break;
@@ -319,3 +359,4 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
 #undef COMBINE_PATH_DEBUG
 #undef UNIX_COMBINE_PATH
 #undef NT_COMBINE_PATH
+#undef AMIGAOS_COMBINE_PATH

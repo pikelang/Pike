@@ -3809,7 +3809,7 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
-if test "x$pike_cv_sys_os" = "xWindows_NT"; then :; else
+if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
     old_core_limit=`ulimit -c`
@@ -7376,6 +7376,10 @@ fi
 case "x$pike_cv_sys_os" in
   xWindows_NT)
     signal_handler="custom NT"
+  ;;
+
+  xAmigaOS)
+    signal_handler="custom AmigaOS"
   ;;
 
   xLinux | *kFreeBSD*)
