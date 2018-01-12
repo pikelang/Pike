@@ -4510,7 +4510,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
  *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equvivalent to @expr{@[mkmapping](@[from], @[to])@} can be
+ *!   a mapping equivalent to @expr{@[mkmapping](@[from], @[to])@} can be
  *!   used.
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which

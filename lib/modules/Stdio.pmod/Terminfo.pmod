@@ -895,7 +895,7 @@ Termcap getTerm(string|void term)
 }
 
 //! Returns an object describing the fallback terminal for the terminal
-//! @[term]. This is usually equvivalent to @[Stdio.Terminfo.getTerm("dumb")].
+//! @[term]. This is usually equivalent to @[Stdio.Terminfo.getTerm("dumb")].
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm

@@ -131,7 +131,7 @@ int query_blocksize() {
 }
 
 //! Pads the @[message] to the current block size with method @[type]
-//! and returns the result as an integer. This is equvivalent to
+//! and returns the result as an integer. This is equivalent to
 //! OS2IP(EME-PKCS1-V1_5-ENCODE(message)) in PKCS-1.
 //! @param type
 //!   @int

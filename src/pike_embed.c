@@ -183,10 +183,10 @@ void init_pike_runtime(void (*exit_cb)(int))
    * too unsafe (consider 64-bit systems).
    */
 #if STACK_DIRECTION < 0
-  /* Equvivalent with |= 0xffff */
+  /* Equivalent with |= 0xffff */
   Pike_interpreter.stack_top += ~(PTR_TO_INT(Pike_interpreter.stack_top)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
-  /* Equvivalent with &= ~0xffff */
+  /* Equivalent with &= ~0xffff */
   Pike_interpreter.stack_top -= PTR_TO_INT(Pike_interpreter.stack_top) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
