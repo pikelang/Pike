@@ -377,7 +377,7 @@ class Timebase {
       case "float":
         return nsecs / NANOSECONDS.0;
       case "int":
-        return (nsecs - (nsecs < 0 ? NANOSECONDS - 1 : 0)) / NANOSECONDS;
+        return nsecs / NANOSECONDS;
       default:
         return UNDEFINED;
     }
@@ -866,7 +866,7 @@ class Date {
     create(mktime(tm + (["isdst":0, "timezone":0])));
   }
   variant protected void create(int unix_time) {
-    days = (unix_time - (unix_time < 0 ? 24 * 3600 -1 : 0)) / (24 * 3600);
+    days = unix_time / (24 * 3600);
   }
   variant protected void create(float unix_time) {
     create((int)unix_time);
