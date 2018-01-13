@@ -357,7 +357,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	      request_headers[hk]+=({hv});
 	    }
 	    else
-	      request_headers[hk] = hk;
+              request_headers[hk] = hv;
 	  }
 	}
 
