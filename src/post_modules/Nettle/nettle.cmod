@@ -210,10 +210,10 @@ program_flags PROGRAM_CLEAR_STORAGE;
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string(0..255) random_string(int length)
+  /*! @decl string(0..255) random_string(int(0..) length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string(0..255) random_string(int length)
+  PIKEFUN string(0..255) random_string(int(0..) length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -329,7 +329,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *! bytes of random data per call, the necessary rekey operations
    *! are here performed internally, so no such restrictions apply.
    */
-  PIKEFUN string(8bit) random_string(int len)
+  PIKEFUN string(8bit) random_string(int(0..) len)
   {
     int stored = 0;
     struct pike_string *s;
@@ -494,7 +494,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *! Generates @[len] amount of pseudo random data. Does not allow
    *! for additional input data in the call.
    */
-  PIKEFUN string(8bit) random_string(int len)
+  PIKEFUN string(8bit) random_string(int(0..) len)
   {
     int stored = 0;
     struct pike_string *s;
@@ -570,7 +570,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
  *!   Returns the position in the string where the first non-padding
  *!   character is, or 0.
  */
-PIKEFUN int(0..) rsa_unpad(string(0..255) data, int type)
+PIKEFUN int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
 {
   int i, pad=0, nonpad=0, pos=0;
   unsigned char *str;
@@ -743,11 +743,9 @@ static const INT32 crc[256] = {
 PIKEFUN int(0..) crc32c(string(8bit) data, void|int(0..) seed)
 {
   unsigned int h = 0;
-  if(seed) {
-    if (TYPEOF(*seed) != PIKE_T_INT)
-      Pike_error("Bad argument type.\n");
+  if(seed)
     h = seed->u.integer;
-  }
+
 #ifdef HAVE_CRC32_INTRINSICS
   if(supports_sse42)
   {
