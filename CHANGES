@@ -77,7 +77,8 @@ o MIME
 o Protocols.HTTP
 
   Fixed incoming chunked transfers (timed async works now, chunk
-  options are properly 'parsed').
+  options are properly 'parsed'). Trailer headers are now correctly
+  parsed.
 
 o Protocols.LDAP
 
