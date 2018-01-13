@@ -81,19 +81,20 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *! @seealso
    *!   @[update]
    */
-  PIKEFUN void create(void|int arg)
+  PIKEFUN void create(void|int(1..) arg)
     flags ID_PROTECTED;
   {
     INT32 num = 0;
 
     if(arg) {
-      if (TYPEOF(*arg) != PIKE_T_INT)
-	Pike_error("Bad argument type.\n");
       num = arg->u.integer;
       if(num < 0)
 	Pike_error("Invalid number of sources.\n");
       free (THIS->sources);
-      THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      if( num > 0 )
+        THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      else
+        THIS->sources = NULL;
       pop_stack();
     }
     else
