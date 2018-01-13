@@ -338,6 +338,14 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,args);
+
+#ifdef PIKE_DEBUG
+    if( TYPEOF(Pike_sp[-1])!=T_INT || Pike_sp[-1].u.integer )
+    {
+      Pike_error("Illegal create() return type.\n");
+    }
+#endif
+
     pop_stack();
   } else {
     pop_n_elems(args);
