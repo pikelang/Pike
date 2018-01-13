@@ -4281,6 +4281,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
+  PIKEFUN void cpp(string data, int flags)
+  {
+    low_cpp(THIS, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+  }
+
 /*** Magic defines ***/
 
 /*! @decl constant __LINE__
@@ -4988,9 +4993,9 @@ PIKEFUN string cpp(string data,
   SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
 #endif /* PIKE_DEBUG */
 
-
-  low_cpp(this, MKPCHARP_STR(data), data->len,
-	  0, this->charset);
+  ref_push_string(data);	/* data */
+  push_int(0);			/* flags */
+  apply(cpp_obj, "cpp", 2);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
