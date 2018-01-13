@@ -157,7 +157,7 @@ PIKECLASS Hash
     return 0;
   }
 
-  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int bytes)
+  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int(0..) bytes)
    *!
    *!  Works as a (faster) shortcut for e.g.
    *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
@@ -173,7 +173,7 @@ PIKECLASS Hash
    *!   @[Stdio.File], @[State()->update()] and
    *!   @[State()->digest()].
    */
-  PIKEFUN string(0..255) hash(object in, void|int bytes)
+  PIKEFUN string(0..255) hash(object in, void|int(0..) bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
@@ -265,6 +265,9 @@ PIKECLASS Hash
    *!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
    *!
    *!   The @[password] memory will be cleared before released.
+   *!
+   *!   Rounds will never be set to less than 1000. If @[rounds] is 0
+   *!   it will be set to 5000.
    *!
    *! @seealso
    *!   @[crypt_md5()]
@@ -519,7 +522,7 @@ PIKECLASS Hash
       push_object(this_object());
     }
 
-    /*! @decl string(0..255) digest(int|void length)
+    /*! @decl string(0..255) digest(int(0..)|void length)
      *!
      *! Generates a digest, and resets the hashing contents.
      *!
@@ -530,7 +533,7 @@ PIKECLASS Hash
      *! @returns
      *!   The digest.
      */
-    PIKEFUN string(0..255) digest(int|void arg)
+    PIKEFUN string(0..255) digest(int(0..)|void arg)
     {
       const struct nettle_hash *meta;
       struct pike_string *digest;
@@ -545,9 +548,7 @@ PIKECLASS Hash
 	length = meta->digest_size;
       else
 	{
-	  if (TYPEOF(*arg) != PIKE_T_INT)
-	    Pike_error("Bad argument type.\n");
-	  if (arg->u.integer < 0)
+          if (arg->u.integer < 0)
 	    Pike_error("Invalid length, must be positive.\n");
 	  if ((unsigned)arg->u.integer > meta->digest_size)
 	    Pike_error("Unsupported digest length.\n");
