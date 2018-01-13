@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! This module contains various utilities that greatly simplifies
 //! working with GLSL and some other extensions such as vertex buffers
 //! and render buffers.
