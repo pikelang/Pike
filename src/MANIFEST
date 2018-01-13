@@ -134,7 +134,7 @@ Tools
     Fast, secure hash function used to prevent hash table DoS
     collision attacks.
 
-  strip-opcodes
+  strip_opcodes
     sh-script used to convert interpret_functions.h into
     interpret_protos.h_src.
 
@@ -197,10 +197,6 @@ Compiler
     The core of the peephole optimizer. peep_engine.c is generated
     from transformation rules for opcode sequences in peep.in.
     peep_engine.c is included by peep.c.
-
-  preprocessor.h
-    The bulk of the preprocessor. Included by cpp.cmod once for each
-    string width.
 
   pike_compiler.h
     Definition of the compilator context.
