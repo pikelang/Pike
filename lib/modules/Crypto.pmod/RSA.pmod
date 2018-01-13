@@ -1029,7 +1029,7 @@ class PKCS1_5State
     // Content independent size information. Not timing sensitive.
     if( sizeof(s)!=(n->size(256)-1) ) return 0;
 
-    int i = Nettle.rsa_unpad(s, type);
+    int i = Nettle.rsa_unpad(s, [int(1..2)]type);
     if( !i ) return 0;
 
     return s[i..];
