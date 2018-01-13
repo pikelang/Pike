@@ -609,6 +609,7 @@ PIKECLASS Shuffle
       change_fd_for_box(&THIS->box, -1);
     else {
       safe_apply( fd, "release_fd", 0 );
+      args++;
       if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
         be = get_storage(backend->u.object, Backend_program);
 	if (!be) {
@@ -635,7 +636,9 @@ PIKECLASS Shuffle
       push_int( 0 ); /* write */
       push_int( 0 ); /* close */
       safe_apply( THIS->file_obj, "set_nonblocking", 3 );
+      args++;
     }
+    pop_n_elems(args);
   }
 
   PIKEFUN void start()
