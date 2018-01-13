@@ -130,6 +130,7 @@ Tools
   rbtree_low.h
     Red/black tree implementation. Used to implement the multisets.
 
+  siphash24.h
   siphash24.c
     Fast, secure hash function used to prevent hash table DoS
     collision attacks.
@@ -407,6 +408,7 @@ Core runtime support
   signal_handler.h
     Signal and process support.
 
+  sprintf.h
   sprintf.c
     Implement the sprintf function.
 
