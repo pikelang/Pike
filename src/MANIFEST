@@ -308,8 +308,8 @@ Module system
     Implement the loading of dynamic modules (the load_module
     function).
 
-  module.c
-  module.h
+  pike_modules.c
+  pike_modules.h
     Maintain the entry and exit hooks for the statically compiled
     modules.
 

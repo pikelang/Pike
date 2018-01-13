@@ -8,4 +8,4 @@
  * building tpike (which only is done when modules are static). It
  * doesn't link in any post-modules. */
 #define PRE_PIKE
-#include "module.c"
+#include "pike_modules.c"
