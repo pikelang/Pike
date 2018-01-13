@@ -256,29 +256,29 @@ void test_manifest()
 
       section = line;
       if( entries[section] )
-        write("Two %O sections (%d)\n", section, no);
+        write("Section %O repeated in MANIFEST line %d.\n", section, no);
       entries[section] = ([]);
       break;
     case 2:
       string file = line;
       if( !section ) {
-        write("File without section (%d)\n", no);
+        write("File without section in MANIFEST line %d.\n", no);
         break;
       }
       if( entries[section][file] || has_value(files, file) )
-        write("Two %O files (%d)\n", file, no);
+        write("File %O repeated in MANIFEST line %d.\n", file, no);
       record();
       files += ({ file });
       break;
     case 4:
       if( !section || !file ) {
-        write("Description without file/section (%d)\n", no);
+        write("Description without file/section in MANIFEST line %d.\n", no);
         break;
       }
       description += line + "\n";
       break;
     default:
-      write("Wrong indentation (%d)\n", no);
+      write("Wrong indentation in MANIFEST line %d.\n", no);
       break;
     }
   }
@@ -306,7 +306,7 @@ void test_manifest()
     if( file[-1]=='~' ) continue;
     if( !all[file] )
     {
-      write("Not described in MANIFEST %O.\n", file);
+      write("File %O described in MANIFEST.\n", file);
     }
   }
 }
