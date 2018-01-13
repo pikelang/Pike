@@ -74,14 +74,14 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
   DECLARE_STORAGE;
 
-  /*! @decl void create(void|int sources)
+  /*! @decl void create(void|int(0..) sources)
    *! The number of entropy sources that will feed entropy to the
    *! random number generator is given as an argument to Yarrow
    *! during instantiation.
    *! @seealso
    *!   @[update]
    */
-  PIKEFUN void create(void|int(1..) arg)
+  PIKEFUN void create(void|int(0..) arg)
     flags ID_PROTECTED;
   {
     INT32 num = 0;
