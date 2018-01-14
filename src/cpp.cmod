@@ -147,36 +147,7 @@ PIKECLASS CPP
 
   INIT
   {
-    struct svalue *save_sp = Pike_sp;
-    struct pike_string *directive_prefix = MK_STRING("directive_");
-    struct object *obj = Pike_fp->current_object;
-    int e;
-
     init_string_builder(&THIS->buf, 0);
-
-    /* Add all directive_* functions to the directives mapping. */
-    for(e = 0; e < obj->prog->num_identifier_index; e++) {
-      struct pike_string *sym_name =
-	ID_FROM_INT(obj->prog, obj->prog->identifier_index[e])->name;
-      if (sym_name->len <= directive_prefix->len) continue;
-      ref_push_string(sym_name);
-      ref_push_string(directive_prefix);
-      f_has_prefix(2);
-      if (!Pike_sp[-1].u.integer) {
-	pop_stack();
-	continue;
-      }
-      pop_stack();
-
-      /* Strip the "directive_" prefix from the symbol name. */
-      push_string(string_slice(sym_name, directive_prefix->len,
-			       sym_name->len - directive_prefix->len));
-      low_object_index_no_free(Pike_sp, obj, obj->prog->identifier_index[e]);
-      Pike_sp++;
-    }
-    f_aggregate_mapping(Pike_sp - save_sp);
-    THIS->directives = Pike_sp[-1].u.mapping;
-    Pike_sp--;
   }
 
   EXIT
@@ -4228,9 +4199,26 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 	  unknown_preprocessor_directive:
 	    {
               struct pike_string *directive = GOBBLE_IDENTIFIER();
-	      if (directive && this->directives) {
-		struct svalue *fun =
-		  low_mapping_string_lookup(this->directives, directive);
+	      if (directive) {
+		struct svalue *fun = NULL;
+		struct svalue sv;
+		struct pike_string *directive_string =
+		  add_shared_strings(MK_STRING("directive_"), directive);
+		int id = find_shared_string_identifier(directive_string,
+						       Pike_fp->current_object->prog);
+
+		free_string(directive_string);
+		if (id >= 0) {
+		  /* NB: This svalue holds no reference! */
+		  SET_SVAL(sv, PIKE_T_FUNCTION, id, object, Pike_fp->current_object);
+		  fun = &sv;
+		}
+
+		if(!fun && this->directives) {
+		  /* Try a mapping lookup instead. */
+		  fun = low_mapping_string_lookup(this->directives, directive);
+		}
+
 		if (fun) {
 		  ptrdiff_t foo;
 		  free_string(directive);
