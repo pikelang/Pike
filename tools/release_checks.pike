@@ -261,6 +261,8 @@ void test_manifest()
       break;
     case 2:
       string file = line;
+      sscanf(file, "%s/", file);
+
       if( !section ) {
         write("File without section in MANIFEST line %d.\n", no);
         break;
@@ -286,9 +288,6 @@ void test_manifest()
 
   mapping all = ([
     ".gitignore" : "ignored",
-    "code" : "dir",
-    "modules" : "dir",
-    "post_modules" : "dir",
   ]);
   foreach(Stdio.File("src/.gitignore")->line_iterator();; string line)
     all[line[1..]] = "ignored";
