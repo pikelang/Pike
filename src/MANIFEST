@@ -420,6 +420,10 @@ Core runtime support
   stack_allocator.h
     Stack-based memory handling for sprintf.
 
+  string_builder.h
+  string_builder.c
+    Dynamically build strings.
+
   svalue.c
   svalue.h
     Handling of normal and short svalues, e.g. functions to free,
