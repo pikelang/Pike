@@ -160,6 +160,7 @@ class UnicodeWrapper (
 		      protected object master_result
 		      )
 {
+  inherit Sql.Result;
   //! Returns the number of rows in the result.
   int num_rows()
   {
@@ -231,18 +232,6 @@ class UnicodeWrapper (
       }
     }
     return row;
-  }
-
-  //! @returns
-  //!   Multiple result rows at a time (at least one).
-  //!
-  //!   On EOF it returns @expr{0@}.
-  array(array(string)) fetch_row_array()
-  {
-    array row, ret = ({});
-    while (row = fetch_row())
-      ret += ({row});
-    return sizeof(ret) && ret;
   }
 
   //! JSON is always utf8 default, do nothing.
