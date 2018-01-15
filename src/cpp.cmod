@@ -736,6 +736,15 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
  *! @seealso
  *!   @[#warning]
  */
+  PIKEFUN string(0..0) directive_error(int flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (OUTP()) {
+      cpp_error_sprintf(this, "%O", Pike_sp - 1);
+    }
+    push_empty_string();
+  }
 
 /*! @directive #warning
  *!
@@ -754,6 +763,15 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
  *! @seealso
  *!   @[#error]
  */
+  PIKEFUN string(0..0) directive_warning(int flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (OUTP()) {
+      cpp_warning(this, "%O", Pike_sp - 1);
+    }
+    push_empty_string();
+  }
 
 /*! @directive #include
  *!
@@ -2102,7 +2120,6 @@ static const char endif_[] = { 'e', 'n', 'd', 'i', 'f' };
 static const char else_[] = { 'e', 'l', 's', 'e' };
 static const char elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
 static const char elif_[] = { 'e', 'l', 'i', 'f' };
-static const char error_[] = { 'e', 'r', 'r', 'o', 'r' };
 static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
@@ -2110,7 +2127,6 @@ static const char charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 static const char pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
 static const char pike_[] = { 'p', 'i', 'k', 'e' };
 static const char require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
-static const char warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
 static const char lsh_[] = { '<', '<' };
 static const char rsh_[] = { '>', '>' };
 
@@ -3753,21 +3769,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 }
                 break;
               }
-
-              if(GOBBLE_WORD(error_))
-              {
-                ptrdiff_t foo;
-
-                SKIPSPACE();
-                foo=pos;
-                FIND_EOL();
-                if(OUTP())
-                {
-                  push_string(make_shared_binary_pcharp(ADD_PCHARP(data,foo), pos-foo));
-                  cpp_error_sprintf(this, "%O", Pike_sp-1);
-                }
-                break;
-              }
             }
             goto unknown_preprocessor_directive;
 
@@ -4173,24 +4174,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 pop_stack();
                 free_string_builder(&tmp);
                 if(this->dependencies_fail) return pos;
-                break;
-              }
-              goto unknown_preprocessor_directive;
-            }
-          case 'w': /* warning */
-            {
-              if(GOBBLE_WORD(warning_))
-              {
-                ptrdiff_t foo;
-
-                SKIPSPACE();
-                foo=pos;
-                FIND_EOL();
-                if(OUTP())
-                {
-                  push_string(make_shared_binary_pcharp(ADD_PCHARP(data,foo), pos-foo));
-                  cpp_warning(this, "%O", Pike_sp-1);
-                }
                 break;
               }
               goto unknown_preprocessor_directive;
