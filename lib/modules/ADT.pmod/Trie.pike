@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Trie.pike,v 1.6 2008/06/28 16:36:53 nilsson Exp $
+ * $Id$
  *
  * An implementation of a trie.
  *
@@ -237,6 +237,7 @@ protected string render_path()
 
 protected string _sprintf(int c, mapping|void attrs)
 {
+#ifdef ADT_TRIE_DEBUG
   if (c == 'O') {
     string res = sprintf("ADT.Trie(%s, ([", render_path());
     if (trie) {
@@ -250,7 +251,7 @@ protected string _sprintf(int c, mapping|void attrs)
     } else {
       return res + sprintf("]): %O)", value);
     }
-  } else {
-    return sprintf("ADT.Trie(%s)", render_path());
   }
+#endif
+  return sprintf("ADT.Trie(%s)", render_path());
 }
