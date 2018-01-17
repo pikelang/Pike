@@ -1077,7 +1077,7 @@ protected void store_to_db( void|string mergedfilename )
 
       if (new_used_len > max_blob_size) {
 	//  Need to split blobs
-	array new_blobs = split_blobs(used_len, blob, max_blob_size);
+	new_blobs = split_blobs(used_len, blob, max_blob_size);
 	CONSISTENCY_LOG("Splitting old %d byte blob into %d bytes.\n",
 			sizeof(blob), sizeof(new_blobs[0][1]));
 	blob = new_blobs[0][1];
