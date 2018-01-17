@@ -3730,11 +3730,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 flags&=~CPP_EXPECT_ELSE;
                 flags|=CPP_EXPECT_ENDIF;
 
-                if(flags & CPP_NO_OUTPUT)
-                  flags&=~CPP_NO_OUTPUT;
-                else
-                  flags|=CPP_NO_OUTPUT;
-
+		flags ^= CPP_NO_OUTPUT;
                 break;
               }
 
