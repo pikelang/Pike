@@ -2795,7 +2795,7 @@ static void gc_check_array(struct array *a)
   } GC_LEAVE;
 }
 
-void gc_mark_array_as_referenced(struct array *a)
+PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a)
 {
   if(gc_mark(a, T_ARRAY))
     GC_ENTER (a, T_ARRAY) {
@@ -2840,7 +2840,7 @@ void gc_mark_array_as_referenced(struct array *a)
     } GC_LEAVE;
 }
 
-void real_gc_cycle_check_array(struct array *a, int weak)
+PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak)
 {
   GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG
