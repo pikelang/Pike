@@ -84,6 +84,11 @@ o Protocols.LDAP
 
   Fixed race condition on initializing LDAPS.
 
+o Search.Database.MySQL
+
+  Fixed issue where blobs didn't get updated after the initial blobs
+  got full.
+
 o Search.Utils
 
   Updated debug string format.
