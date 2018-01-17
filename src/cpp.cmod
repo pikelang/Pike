@@ -1301,16 +1301,27 @@ static ptrdiff_t find_end_of_comment( struct CPP_struct *this, const PCHARP data
                                       ptrdiff_t pos, int emit)
 {
   pos++;
+  int nested = 0;
 
-  while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
+  while(1)
   {
     if(pos+2>=len)
     {
       cpp_error(this,"End of file in comment.");
       break;
     }
-
-    if(INDEX_PCHARP(data,pos)=='\n')
+    int ch_p = INDEX_PCHARP(data,pos);
+    int ch_p1 = INDEX_PCHARP(data,pos+1);
+    if(ch_p=='*' && ch_p1=='/')
+    {
+      if(nested) --nested;
+      else break;
+    }
+    else if(ch_p=='/' && ch_p1=='*')
+    {
+      ++nested;
+    }
+    else if(ch_p=='\n')
     {
       this->current_line++;
       if( emit )PUTNL();
