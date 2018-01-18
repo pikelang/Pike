@@ -2499,6 +2499,11 @@ PIKE_MODULE_INIT
   pike_init_mpq_module();
   pike_init_mpf_module();
   pike_init_smpz_module();
+
+  /* @decl constant version
+   * The version of the current GMP library, e.g. "6.1.0".
+   */
+  add_string_constant("version", gmp_version, 0);
 }
 
 PIKE_MODULE_EXIT
