@@ -1,0 +1,9 @@
+Modified files:
+  pike/lib/7.8/modules/Crypto.pmod/RSA.pike
+  pike/lib/master.pike.in
+  pike/lib/modules/ADT.pmod/Trie.pike
+  pike/lib/modules/Array.pmod
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Server.pmod/Request.pike
+  pike/lib/modules/Search.pmod/Database.pmod/MySQL.pike
+  pike/lib/modules/Stdio.pmod/Terminfo.pmod
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/Sign.pike
