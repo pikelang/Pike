@@ -277,7 +277,6 @@ mixed call(string api_method, void|ParamsArg params,
     params = (mapping) p;
   }
 
-#if constant (Protocols.HTTP.Promise)
   // If running in a handler thread (like in Roxen) we do an async call
   // but wait for the request to finish before returning. In this way we
   // can abort the request if it takes to long so that the handler thread
@@ -328,9 +327,7 @@ mixed call(string api_method, void|ParamsArg params,
     return 0;
   }
 
-  TRACE("Have promises but no async call or running on backend thread\n");
-
-#endif /* Protocols.HTTP.Promise */
+  TRACE("Have no async call or running on backend thread\n");
 
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
 
