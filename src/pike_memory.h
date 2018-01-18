@@ -218,7 +218,6 @@ static inline void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT1
 }
 #endif
 
-#include "block_alloc_h.h"
 extern int page_size;
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
@@ -244,6 +243,7 @@ size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
+
 #define MALLOC_FUNCTION  ATTRIBUTE((malloc)) PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 
 PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
@@ -265,8 +265,6 @@ void exit_pike_memory (void);
 PMOD_EXPORT void * system_malloc(size_t) MALLOC_FUNCTION;
 PMOD_EXPORT void system_free(void *);
 #endif
-
-#undef BLOCK_ALLOC
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	IF
