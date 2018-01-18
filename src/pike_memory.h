@@ -244,13 +244,6 @@ size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
-/*
-PMOD_EXPORT void memfill(char *to,
-	     INT32 tolen,
-	     char *from,
-	     INT32 fromlen,
-	     INT32 offset);
-*/
 #define MALLOC_FUNCTION  ATTRIBUTE((malloc)) PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 
 PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
