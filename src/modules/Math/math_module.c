@@ -4,10 +4,9 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "config.h"
 #include "program.h"
-#include "module.h"
 #include "pike_float.h"
 
 #include "math_module.h"

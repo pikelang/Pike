@@ -10,11 +10,9 @@
 /*! @module FSEvents
  */
 
-#include "global.h"
-#include "interpret.h"
 #include "module.h"
+#include "interpret.h"
 #include "program.h"
-#include "stralloc.h"
 #include "svalue.h"
 #include "threads.h"
 #include "object.h"

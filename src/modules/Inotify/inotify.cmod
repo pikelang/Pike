@@ -10,14 +10,11 @@
  *
  */
 
+#include "module.h"
 #include "inotify_config.h"
 
-#include "global.h"
 #include "interpret.h"
-#include "module.h"
 #include "program.h"
-#include "stralloc.h"
-#include "svalue.h"
 #include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"

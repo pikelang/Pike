@@ -4,15 +4,12 @@
 || for more information.
 */
 
-#include "global.h"
 #include "module.h"
 #include "pike_error.h"
 #include "interpret.h"
 #include "pike_embed.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "mapping.h"
-#include "multiset.h"
 #include "gc.h"
 
 DECLARATIONS

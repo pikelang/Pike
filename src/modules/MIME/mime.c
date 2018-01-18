@@ -10,12 +10,9 @@
  * Marcus Comstedt 1996-1999
  */
 
-#include "global.h"
-
+#include "module.h"
 #include "config.h"
 
-#include "module.h"
-#include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"

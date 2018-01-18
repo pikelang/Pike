@@ -4,17 +4,13 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gdbm_machine.h"
 #include "threads.h"
 
 /* Todo: make sure only one thread accesses the same gdbmmod */
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "module.h"
-#include "array.h"
 #include "program.h"
 #include "module_support.h"
 

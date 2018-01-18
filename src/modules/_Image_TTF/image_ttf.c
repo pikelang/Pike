@@ -4,10 +4,8 @@
 || for more information.
 */
 
-#include "config.h"
-
-#include "global.h"
 #include "module.h"
+#include "config.h"
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -27,12 +25,8 @@
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
-#include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
 

@@ -65,11 +65,7 @@
 #endif
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "object.h"
-#include "mapping.h"
 #include "pike_macros.h"
 #include "threads.h"
 #include "fd_control.h"

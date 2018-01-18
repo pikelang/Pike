@@ -4,11 +4,9 @@
 || for more information.
 */
 
-#include "global.h"
-#include "zlib_machine.h"
 #include "module.h"
+#include "zlib_machine.h"
 #include "program.h"
-#include "mapping.h"
 #include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
@@ -18,11 +16,7 @@
 #ifdef HAVE_ZLIB_H
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
-#include "stralloc.h"
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"

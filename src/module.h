@@ -7,6 +7,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
+/* global.h includes machine.h, <errno.h> and <alloca.h> */
 #include "global.h"
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__)
@@ -19,5 +20,38 @@
 
 PIKE_MODULE_INIT;
 PIKE_MODULE_EXIT;
+
+/*
+   pike_memory.h -> block_alloc_h.h
+*/
+#include "pike_memory.h"
+
+/*
+   svalue.h  -> buffer.h -> bitvector.h
+*/
+#include "svalue.h"
+
+/*
+    array.h -> dmalloc.h
+ */
+#include "array.h"
+
+/*
+    mapping.h -> dmalloc.h
+              -> svalue.h
+ */
+#include "mapping.h"
+
+/*
+   multiset.h -> dmalloc.h
+              -> svalue.h
+              -> rbtree.h -> array.h
+*/
+#include "multiset.h"
+
+/*
+    stralloc.h -> pike_macros.h -> pike_memory.h
+ */
+#include "stralloc.h"
 
 #endif

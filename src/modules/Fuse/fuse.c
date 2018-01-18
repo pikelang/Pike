@@ -4,16 +4,11 @@
 || for more information.
 */
 
-#include "global.h"
-#include "config.h"
 #include "module.h"
+#include "config.h"
 #include "operators.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "array.h"
-#include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
