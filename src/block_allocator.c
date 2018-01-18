@@ -7,6 +7,7 @@
 #include "global.h"
 #include "pike_error.h"
 #include "pike_memory.h"
+#include "pike_macros.h"
 
 #include "block_allocator.h"
 #include "bitvector.h"
