@@ -11,6 +11,9 @@ constant gc_status = _gc_status;
 constant describe_program = _describe_program;
 constant size_object = _size_object;
 constant map_all_objects = _map_all_objects;
+#if constant(_find_all_clones)
+constant find_all_clones = _find_all_clones;
+#endif
 constant refs = _refs;
 constant next = _next;
 constant prev = _prev;

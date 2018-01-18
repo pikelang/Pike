@@ -5406,7 +5406,7 @@ PMOD_EXPORT void f_rows(INT32 args)
  *!   The total number of objects
  *!
  *! @seealso
- *!   @[next_object()]
+ *!   @[next_object()], @[find_all_clones()]
  */
 static void f_map_all_objects( INT32 UNUSED(args) )
 {
@@ -5427,6 +5427,60 @@ static void f_map_all_objects( INT32 UNUSED(args) )
     }
     pop_stack();
     push_int(total);
+}
+
+/*! @decl array(object) find_all_clones(program p, @
+ *!                                     int(0..1)|void include_subclasses)
+ *!
+ *!   Return an array with all objects that are clones of @[p].
+ *!
+ *! @param p
+ *!   Program that the objects should be a clone of.
+ *!
+ *! @param include_subclasses
+ *!   If true, include also objects that are clones of programs
+ *!   that have inherited @[p]. Note that this adds significant
+ *!   overhead.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @seealso
+ *!   @[map_all_objects()]
+ */
+static void f_find_all_clones(INT32 args)
+{
+  INT_TYPE include_subclasses = 0;
+  struct object *o = first_object;
+  struct program *p = NULL;
+
+  get_all_args("Debug.find_all_clones", args, "%p.%i",
+	       &p, &include_subclasses);
+
+  BEGIN_AGGREGATE_ARRAY(10) {
+
+    for (o = first_object; o; o = o->next) {
+      if (o->prog == p) {
+	ref_push_object(o);
+	DO_AGGREGATE_ARRAY(120);
+	continue;
+      }
+      if (include_subclasses && o->prog &&
+	  (o->prog->num_inherits > p->num_inherits)) {
+	int e;
+	/* Check if o->prog has inherited p. */
+	if (o->prog->storage_needed < p->storage_needed) continue;
+	for (e = o->prog->num_inherits - p->num_inherits; e-- > 1;) {
+	  if (o->prog->inherits[e].prog == p) {
+	    /* Found. */
+	    ref_push_object(o);
+	    DO_AGGREGATE_ARRAY(120);
+	    break;
+	  }
+	}
+      }
+    }
+
+  } END_AGGREGATE_ARRAY;
 }
 
 /*! @decl void verify_internals()
@@ -9748,6 +9802,9 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("_map_all_objects",f_map_all_objects,
            tFunc(tFunction,tIntPos),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("_find_all_clones", f_find_all_clones,
+	   tFunc(tPrg(tObj) tOr(tInt01,tVoid),tArr(tObj)), OPT_EXTERNAL_DEPEND);
   
 /* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
   ADD_EFUN("_next",f__next,
