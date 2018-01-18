@@ -1,0 +1,20 @@
+subject: Pike 8.0: Trailer headers, ADT.Trie, Search.MySQL
+from: 58077bda68a8806ce662143751b4ae48792a472b
+to: 0707d5f2f0bc30922b21c735dfd802862b59fbf0
+originator: Marcus Wellhardh
+depends: 2018-01-10T161946
+restart: true
+
+• Search.MySQL: Fix splitting of blobs.
+
+When an existing blob reached its size limit, the overflow blob(s)
+got lost.
+
+Potential fix for [PIKE-52].
+
+• ADT.Trie: Reduce verbosity of lfun::_sprintf().
+
+Hide the verbose output behind ADT_TRIE_DEBUG.
+
+• Set chunked encoding trailer header value to the actual value.
+
