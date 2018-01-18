@@ -12,11 +12,9 @@
  * FIXME: Currently only minimal support, and only for Kerberos 5 (not 4).
  */
 
-#include "global.h"
+#include "module.h"
 #include "config.h"
 
-#include "svalue.h"
-#include "module.h"
 #include "interpret.h"
 
 DECLARATIONS

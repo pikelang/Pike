@@ -32,15 +32,12 @@
 /* #define GSSAPI_DEBUG_MORE */
 
 
-#include "global.h"
+#include "module.h"
 #include "gssapi_config.h"
 
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "multiset.h"
 #include "object.h"
 #include "operators.h"
 #include "pike_error.h"

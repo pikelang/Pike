@@ -4,18 +4,15 @@
 || for more information.
 */
 
-#include "global.h"
-
+#include "module.h"
 #include "config.h"
 
-#include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
-#include "module.h"
 
 #define GLUT_API_VERSION 4
 

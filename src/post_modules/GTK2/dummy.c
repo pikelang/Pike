@@ -4,9 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-#include "pgtk_config.h"
 #include "module.h"
+#include "pgtk_config.h"
 
 /* Well... Sort of basic, right? :-) */
 
