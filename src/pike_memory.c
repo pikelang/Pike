@@ -3277,7 +3277,7 @@ PMOD_EXPORT void secure_zero(void *p, size_t n)
     }
 
     /* Clear memory without evicting CPU cache. */
-    for( ; ptr < (end-64); ptr += 64 )
+    for( ; ptr <= (end-64); ptr += 64 )
     {
       __m128i i = _mm_set_epi8(0, 0, 0, 0,
                                0, 0, 0, 0,
