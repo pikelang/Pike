@@ -3,12 +3,9 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
-#include "global.h"
 #include "object.h"
-#include "svalue.h"
 #include "interpret.h"
 #include "program.h"
-#include "array.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "threads.h"
