@@ -15,8 +15,6 @@
 
 #include <mpi.h>
 
-#include <stdio.h>
-
 #include "module_support.h"
 
 /*
