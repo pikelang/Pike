@@ -218,8 +218,6 @@ static inline void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT1
 }
 #endif
 
-#include "pike_search.h"
-
 #include "block_alloc_h.h"
 extern int page_size;
 

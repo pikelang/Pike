@@ -33,6 +33,7 @@
 #include "opcodes.h"
 #include "whitespace.h"
 #include "sprintf.h"
+#include "pike_search.h"
 
 #include <errno.h>
 #include <math.h>

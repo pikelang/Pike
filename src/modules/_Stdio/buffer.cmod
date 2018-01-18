@@ -25,6 +25,7 @@
 #include "buffer.h"
 #include "module_support.h"
 #include "bitvector.h"
+#include "pike_search.h"
 
 /* Includes <gmp.h> */
 #include "bignum.h"

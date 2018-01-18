@@ -48,6 +48,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "builtin_functions.h"
+#include "pike_search.h"
 
 #ifdef _REENTRANT
 #include <errno.h>

@@ -19,6 +19,7 @@
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
+#include "pike_search.h"
 
 #include <errno.h>
 

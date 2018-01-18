@@ -23,6 +23,7 @@
 #include "multiset.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "pike_search.h"
 
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
