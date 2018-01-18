@@ -612,7 +612,7 @@ PIKECLASS BufferedCipher
 	gc_trivial;
       {
 	if(THIS->backlog) {
-	  guaranteed_memset(THIS->backlog, 0, THIS->block_size);
+          secure_zero(THIS->backlog, THIS->block_size);
 	  free(THIS->backlog);
         }
         if(THIS->object)

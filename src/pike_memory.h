@@ -151,15 +151,7 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
-/*
- * The purpose of this function is to avoid dead store elimination in cases when
- * sensitive data has to be cleared from memory.
- */
-static inline void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size_t n) {
-    volatile char * _p = (char *)p;
-    while (n--) *_p++ = c;
-    return (void *)p;
-}
+PMOD_EXPORT void secure_zero(void *p, size_t n);
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
 /* it is faster to just do the unaligned operation. */

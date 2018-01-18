@@ -113,7 +113,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
   *p = '\0';
 
   /* Clear some memory */
-  guaranteed_memset(final, 0, sizeof(final) );
+  secure_zero(final, sizeof(final) );
 
   return passwd;
 }

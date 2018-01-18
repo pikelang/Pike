@@ -3250,6 +3250,53 @@ static void cleanup_debug_malloc(void)
 
 #endif	/* DEBUG_MALLOC */
 
+#if defined(__GNUC__) && defined(__SSE__)
+#include <emmintrin.h>
+#define SSE2
+#endif
+
+static inline void low_zero(void *p, size_t n)
+{
+    volatile char * _p = (char *)p;
+    while (n--) *_p++ = 0;
+}
+
+PMOD_EXPORT void secure_zero(void *p, size_t n)
+{
+#ifdef SSE2
+  if( n > 256 )
+  {
+    char *ptr = (char *)p;
+    char *end = ptr + n;
+    int left = ((long)ptr) & 63;
+
+    if( left )
+    {
+      low_zero(ptr, left);
+      ptr += left;
+    }
+
+    /* Clear memory without evicting CPU cache. */
+    for( ; ptr < (end-64); ptr += 64 )
+    {
+      __m128i i = _mm_set_epi8(0, 0, 0, 0,
+                               0, 0, 0, 0,
+                               0, 0, 0, 0,
+                               0, 0, 0, 0);
+      _mm_stream_si128((__m128i *)&ptr[0], i);
+      _mm_stream_si128((__m128i *)&ptr[16], i);
+      _mm_stream_si128((__m128i *)&ptr[32], i);
+      _mm_stream_si128((__m128i *)&ptr[48], i);
+    }
+
+    if( end-ptr )
+      low_zero(ptr, end-ptr);
+  }
+  else
+#endif
+    low_zero(p, n);
+}
+
 void init_pike_memory (void)
 {
   init_hashmem();
