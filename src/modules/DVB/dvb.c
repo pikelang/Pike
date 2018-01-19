@@ -65,7 +65,6 @@
 #endif
 
 #include "interpret.h"
-#include "object.h"
 #include "pike_macros.h"
 #include "threads.h"
 #include "fd_control.h"

@@ -9,7 +9,6 @@
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
-#include "object.h"
 #include "operators.h"
 
 #include "parser.h"

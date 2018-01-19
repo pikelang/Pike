@@ -8,7 +8,6 @@
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
-#include "object.h"
 #include "operators.h"
 
 #include "pdf_machine.h"

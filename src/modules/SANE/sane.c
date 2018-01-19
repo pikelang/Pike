@@ -15,7 +15,6 @@
 #endif
 
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "threads.h"

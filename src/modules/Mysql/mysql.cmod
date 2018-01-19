@@ -61,7 +61,6 @@
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
-#include "object.h"
 #include "interpret.h"
 #include "pike_compiler.h"
 #include "pike_error.h"

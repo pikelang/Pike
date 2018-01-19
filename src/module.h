@@ -54,4 +54,6 @@ PIKE_MODULE_EXIT;
  */
 #include "stralloc.h"
 
+#include "object.h"
+
 #endif

@@ -17,7 +17,6 @@
 
 #include "interpret.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "pike_types.h"
 #include "threads.h"
 #include "buffer.h"

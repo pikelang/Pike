@@ -38,7 +38,6 @@
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "interpret.h"
-#include "object.h"
 #include "operators.h"
 #include "pike_error.h"
 #include "pike_threadlib.h"

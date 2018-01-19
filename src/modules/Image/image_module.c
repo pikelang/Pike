@@ -10,7 +10,6 @@
 #include "program.h"
 #include "pike_compiler.h"
 #include "program_id.h"
-#include "object.h"
 #include "operators.h"
 #include "module_support.h"
 

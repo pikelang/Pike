@@ -14,7 +14,6 @@
 #include "config.h"
 
 #include "pike_macros.h"
-#include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"

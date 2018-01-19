@@ -21,7 +21,6 @@
 /* Pike includes */
 #include "las.h"
 #include "threads.h"
-#include "object.h"
 #include "module_support.h"
 #include "operators.h"
 

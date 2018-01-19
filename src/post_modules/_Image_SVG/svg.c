@@ -10,7 +10,6 @@
 #ifdef HAVE_SVG
 
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "pike_error.h"
