@@ -5481,6 +5481,8 @@ static void f_find_all_clones(INT32 args)
     }
 
   } END_AGGREGATE_ARRAY;
+
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl void verify_internals()
