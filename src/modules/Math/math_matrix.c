@@ -22,7 +22,9 @@
 
 #include "bignum.h"
 
+#ifdef HAVE_MPI_H
 #include <mpi.h>
+#endif
 
 /*! @module Math
  */
