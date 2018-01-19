@@ -55,7 +55,6 @@
        init_string_builder(&s, 0);
        string_builder_append(&s, ADD_PCHARP(str, identifier_start), len);
         push_string(finish_string_builder(&s));
-        UNSET_ONERROR(handle);
       }
     }
 
@@ -85,7 +84,6 @@ static ptrdiff_t _parse_JSON5_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, str
     ptrdiff_t eof = pe;
     ptrdiff_t identifier_start;
 
-    ONERROR handle;
     const int validate = !(state->flags&JSON5_VALIDATE);
 
     %% write data;
