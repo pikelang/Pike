@@ -36,7 +36,7 @@ struct linkfarm
 
 static struct hash *new_hash( struct pike_string *id )
 {
-  struct hash *res = xalloc( sizeof( struct hash ) );
+  struct hash *res = ALLOC_STRUCT( hash );
   copy_shared_string(res->s, id);
   res->next = 0;
   return res;

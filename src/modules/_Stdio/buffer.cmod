@@ -349,7 +349,7 @@ PIKECLASS Buffer
 
   static void io_rewind_on_error( Buffer *io, ONERROR *x )
   {
-    struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
+    struct rewind_to *rew = ALLOC_STRUCT( rewind_to );
     io->locked_move++;
 #if defined(PIKE_DEBUG)
     rew->old_locked_move = io->locked_move;
@@ -379,7 +379,7 @@ PIKECLASS Buffer
 
   static void io_unwrite_on_error( Buffer *io, ONERROR *x )
   {
-    struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
+    struct rewind_to *rew = ALLOC_STRUCT( rewind_to );
     rew->io = io;
     rew->rewind_to = io->len;
     SET_ONERROR( (*x), io_do_unwrite_on_error, rew );

@@ -330,7 +330,7 @@ static void gla(struct gla_state *st, int max_iter)
 
 static struct gla_state *alloc_gla(int K, int M, INT32 N)
 {
-  struct gla_state *st = xalloc(sizeof(struct gla_state));
+  struct gla_state *st = ALLOC_STRUCT(gla_state);
   st->K = K;
   st->M = M;
   st->N = N;

@@ -2525,7 +2525,7 @@ static void compile_compiler(void)
   /* Add the initial inherit, this is needed for clone_object()
    * to actually call the event handler, and for low_enter_compiler()
    * to find the storage and context. */
-  p->inherits = inh = xalloc(sizeof(struct inherit));
+  p->inherits = inh = ALLOC_STRUCT(inherit);
   inh->prog = p;
   inh->inherit_level = 0;
   inh->identifier_level = 0;
@@ -2555,7 +2555,7 @@ static void compile_compiler(void)
   p2->alignment_needed = ALIGNOF(struct compilation);
   p2->storage_needed = p2->xstorage + sizeof(struct compilation);
 
-  p2->inherits = inh = xalloc(sizeof(struct inherit));
+  p2->inherits = inh = ALLOC_STRUCT(inherit);
   inh->prog = p2;
   inh->inherit_level = 0;
   inh->identifier_level = 0;

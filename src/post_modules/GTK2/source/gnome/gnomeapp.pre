@@ -156,7 +156,7 @@ void question(string question,
               mixed cb_arg2 )
 //! Ask a yes or no question, and call the callback when it's answered.
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
   if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question");
   message=PGTK_GETSTR(Pike_sp-args);
@@ -174,7 +174,7 @@ void question_modal(string question,
 //! Ask a yes or no question, block the application while it is asked,
 //! and call the callback when it's answered.
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
   if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
   message=PGTK_GETSTR(Pike_sp-args);
@@ -192,7 +192,7 @@ void ok_cancel(string question,
 //! Ask a ok or cancel question
 //! and call the callback when it's answered.
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
   if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
   message=PGTK_GETSTR(Pike_sp-args);
@@ -210,7 +210,7 @@ void ok_cancel_modal(string question,
 //! Ask a ok or cancel question, block the application while it is asked,
 //! and call the callback when it's answered.
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
   get_all_args( "ok_cancel_modal", args, "%s%*%*", &message,&d->cb, &d->args );
   gnome_app_ok_cancel_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
@@ -223,7 +223,7 @@ void request_string(string question,
                     mixed cb_arg2 )
 //! Request a string, and call the callback when it's answered.
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
   get_all_args( "request_string", args, "%s%*%*", &message,&d->cb, &d->args );
   gnome_app_request_string(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
@@ -236,7 +236,7 @@ void request_password(string question,
                       mixed cb_arg2 )
 //! As request string, but do not show the string
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
   get_all_args( "request_password", args, "%s%*%*", &message,&d->cb, &d->args );
   gnome_app_request_password(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
@@ -249,7 +249,7 @@ Gnome.AppProgressKey progress_timeout(string prompt,
                                       function(mixed:float) cb,
                                       mixed cb_arg1)
 {
-  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
   INT_TYPE interval;
   GnomeAppProgressKey k;

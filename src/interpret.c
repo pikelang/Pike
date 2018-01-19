@@ -1118,7 +1118,7 @@ struct catch_context *alloc_catch_context(void)
     else
     {
         num_catch_ctx++;
-        res = xalloc( sizeof( struct catch_context ) );
+        res = ALLOC_STRUCT( catch_context );
     }
     return res;
 }

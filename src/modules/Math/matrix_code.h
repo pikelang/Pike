@@ -770,7 +770,7 @@ static struct op_info matrixX(_obj_create)(void *sinfo)
 /* ufun, commute, x, y */
 void matrixX(_op_create)(INT32 args)
 {
-    struct size_info *sinfo = xalloc(sizeof(struct size_info*));
+    struct size_info *sinfo = ALLOC_STRUCT(size_info);
     struct object *o;
 
     if (args < 4) {

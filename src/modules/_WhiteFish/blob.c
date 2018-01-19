@@ -196,7 +196,7 @@ struct blob_data
 struct program *blob_program;
 static struct hash *low_new_hash( int doc_id )
 {
-  struct hash *res =  xalloc( sizeof( struct hash ) );
+  struct hash *res = ALLOC_STRUCT( hash );
   res->doc_id = doc_id;
   res->next = 0;
   res->data = wf_buffer_new();

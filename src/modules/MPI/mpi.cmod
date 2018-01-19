@@ -363,7 +363,7 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
     ONERROR err;
     struct program *p;
     struct mpi_user_function_errstruct *v
-	    = xalloc(sizeof(struct mpi_user_function_errstruct));
+            = ALLOC_STRUCT(mpi_user_function_errstruct);
     struct svalue *old_sp = Pike_sp;
 
 

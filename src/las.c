@@ -2537,7 +2537,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
   struct used_vars *ret;
   struct scope_info *src;
   struct scope_info **dst;
-  ret=xalloc(sizeof(struct used_vars));
+  ret=ALLOC_STRUCT(used_vars);
   src = a->locals;
   dst = &(ret->locals);
   *dst = NULL;
