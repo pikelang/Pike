@@ -1128,7 +1128,6 @@ PIKECLASS Comm
 		FAIL_SENTINEL_OR_PTR("Bcast", 1);
 
 	    mpi_string_Bcast(&ps, root, THIS->comm, &THIS->bm);
-	    //stack_pop_keep_top();
 	    pop_n_elems(args-1);
 	    push_string(ps);
 	    f_call_function(2);

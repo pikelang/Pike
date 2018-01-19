@@ -102,7 +102,6 @@ PIKE_MODULE_INIT
    add_float_constant("e", 2.7182818284590452354   ,0);
    add_float_constant("inf", MAKE_INF(), 0);
    add_float_constant("nan", MAKE_NAN(), 0);
-   //ADD_FUNCTION("op_create", fmatrixOp_create_, tFunc(tFunction tInt tInt, tObj), 0);
 #ifdef HAS_MPI
    add_function_constant("Matrix_op_create", matrix_op_create, "function(function,int,int,int:object)", 0);
    add_function_constant("IMatrix_op_create", imatrix_op_create, "function(function,int,int,int:object)", 0);

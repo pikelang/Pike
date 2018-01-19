@@ -774,7 +774,6 @@ void matrixX(_op_create)(INT32 args)
     struct object *o;
 
     if (args < 4) {
-	//SIMPLE_TOO_FEW_ARGS_ERROR(#xmatrixX(Op_create_), 4);
 	SIMPLE_TOO_FEW_ARGS_ERROR("Op_create_", 4);
 	/* TODO: typecheck */
     }
