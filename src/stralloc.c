@@ -397,7 +397,6 @@ static struct pike_string *internal_findstring(const char *s,
                                                size_t hval)
 {
   struct pike_string *curr;
-//,**prev, **base;
   unsigned int depth=0;
   unsigned int prefix_depth=0;
 
