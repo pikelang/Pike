@@ -1,14 +1,10 @@
 /* nettle.cmod -*- c -*- */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
-/* For this_object() */
-#include "object.h"
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
-#include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "bignum.h"
 #include "sprintf.h"
