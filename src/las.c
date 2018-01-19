@@ -2483,8 +2483,8 @@ struct used_vars
   struct scope_info *externals;	/* External scopes. scope_id == program_id */
 };
 
-#define VAR_BLOCKED   0
-#define VAR_UNUSED    1
+#define VAR_UNUSED    0 /* Rely on unused being 0 for calloc call. */
+#define VAR_BLOCKED   1
 #define VAR_USED      3
 
 /* FIXME: Shouldn't the following two functions be named "*_or_vars"? */
@@ -2621,8 +2621,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
     fputs("Creating new scope.\n", stderr);
   }
 #endif /* PIKE_DEBUG */
-  new = (struct scope_info *)xalloc(sizeof(struct scope_info));
-  memset(new, VAR_UNUSED, sizeof(struct scope_info));
+  new = (struct scope_info *)xcalloc(1, sizeof(struct scope_info));
   new->next = *a;
   new->scope_id = scope_id;
   *a = new;
