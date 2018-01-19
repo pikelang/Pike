@@ -15,14 +15,14 @@ object|function|program request_program=.Request;
 void create(function(.Request:void) callback,
             void|int portno,
             void|string interface,
-            void|int share)
+            void|int reuse_port)
 {
   this::portno=portno || 80;
 
   this::callback=callback;
   this::interface=interface;
   port=Stdio.Port();
-  if (!port->bind(portno,new_connection,interface,share))
+  if (!port->bind(portno,new_connection,interface,reuse_port))
     error("HTTP.Server.Port: failed to bind port %s%d: %s.\n",
           interface?interface+":":"",
           portno,strerror(port->errno()));
