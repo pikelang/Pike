@@ -181,6 +181,9 @@ Compiler
   lexer.h
     The actual lexer. Included by lex.c for different string widths.
 
+  opcode_list.h
+    List of stack machine opcodes.
+
   opcodes.c
   opcodes.h
     Opcode lookup tables and primitives for them. The opcode enums
@@ -309,6 +312,9 @@ Module system
   pike_modules.h
     Maintain the entry and exit hooks for the statically compiled
     modules.
+
+  module.h
+    Include file for most of what a Pike module needs.
 
   module_support.c
   module_support.h
@@ -525,6 +531,9 @@ Testsuite
     Testsuite for the core.
 
 Miscellaneous
+
+  coverity_model.c
+    Workaroound for issues in Coverity Prevent static code analysis.
 
   program_id.h
     Statically allocated program id numbers.

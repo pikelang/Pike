@@ -305,7 +305,7 @@ void test_manifest()
     if( file[-1]=='~' ) continue;
     if( !all[file] )
     {
-      write("File %O described in MANIFEST.\n", file);
+      write("File %O not described in MANIFEST.\n", file);
     }
   }
 }
