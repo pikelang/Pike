@@ -4,6 +4,15 @@ Changes since Pike 8.0.498 (release 11)
 New Features
 ------------
 
+o Crypto.Hash.SCRAM
+
+  New class to support SCRAM authentication.
+
+o Debug.find_all_clones()
+
+  New convenience function to find all objects that are clones
+  of a program.
+
 o Sql.pgsql
 
   - Added support for PostgreSQL 10's stronger password authentication
@@ -12,17 +21,13 @@ o Sql.pgsql
   - Support IEEE binary float database-wireformat.
   - Prevent new queries from starting in the local_backend.
 
-o Crypto.Hash.SCRAM
+o SSL.File
 
-  New class to support SCRAM authentication.
+  Support query_fd() and set_buffer_mode() methods.
 
 o Thread.ResourceCount
 
   New module to allow threadsafe race-condition-free counting of resources.
-
-o SSL.File
-
-  Support query_fd() and set_buffer_mode() methods.
 
 o Toole.Standalone.check_http
 
