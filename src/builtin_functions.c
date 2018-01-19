@@ -5469,7 +5469,7 @@ static void f_find_all_clones(INT32 args)
 	int e;
 	/* Check if o->prog has inherited p. */
 	if (o->prog->storage_needed < p->storage_needed) continue;
-	for (e = o->prog->num_inherits - p->num_inherits; e-- > 1;) {
+	for (e = o->prog->num_inherits + 1 - p->num_inherits; e-- > 1;) {
 	  if (o->prog->inherits[e].prog == p) {
 	    /* Found. */
 	    ref_push_object(o);
