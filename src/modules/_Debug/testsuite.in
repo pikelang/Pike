@@ -1,1 +1,75 @@
+START_MARKER
 
+dnl Debug.find_all_clones().
+test_any_equal([[
+  class A {
+    constant sym = "A";
+  }
+
+  array(A) a = (({ A }) * 3)();
+
+  return Debug.find_all_clones(A)->sym;
+]], ({ "A", "A", "A" }))
+test_any_equal([[
+  class A {
+    constant sym = "A";
+  }
+  class B {
+    inherit A;
+    constant sym = "B";
+  }
+  class C {
+    inherit B;
+    constant sym = "C";
+  }
+
+  array(A) a = (({ A, B, C }) * 3)();
+
+  return sort(Debug.find_all_clones(A)->sym);
+]], ({ "A", "A", "A" }))
+test_any_equal([[
+  class A {
+    constant sym = "A";
+  }
+  class B {
+    inherit A;
+    constant sym = "B";
+  }
+  class C {
+    inherit B;
+    constant sym = "C";
+  }
+
+  array(A) a = (({ A, B, C }) * 3)();
+
+  return sort(Debug.find_all_clones(A, 1)->sym);
+]], ({ "A", "A", "A", "B", "B", "B", "C", "C", "C" }))
+test_any_equal([[
+  class A {
+    constant sym = "A";
+  }
+  class B {
+    inherit A;
+    constant sym = "B";
+  }
+  class C {
+    inherit B;
+    constant sym = "C";
+  }
+  class D {
+    inherit A;
+    inherit B;
+    constant sym = "D";
+  }
+  class E {
+    inherit B;
+    inherit A;
+    constant sym = "E";
+  }
+
+  array(A) a = (({ A, B, C, D, E }) * 3)();
+
+  return sort(Debug.find_all_clones(B, 1)->sym);
+]], ({ "B", "B", "B", "C", "C", "C", "D", "D", "D", "E", "E", "E" }))
+
+END_MARKER
