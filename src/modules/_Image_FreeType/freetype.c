@@ -8,6 +8,9 @@
 #include "config.h"
 
 #ifdef HAVE_LIBFT2
+/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+#undef TYPEOF
+
 #ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
 #include <freetype/ftsnames.h>
@@ -19,8 +22,9 @@
 #include FT_TRUETYPE_IDS_H
 #endif
 
-/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+/* Restore the Pike TYPEOF() macro. */
 #undef TYPEOF
+#define TYPEOF(SVAL)	PIKE_TYPEOF(SVAL)
 #endif /* HAVE_LIBFT2 */
 
 #include "pike_compiler.h"
