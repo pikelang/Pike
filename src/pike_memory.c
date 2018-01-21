@@ -3250,7 +3250,7 @@ static void cleanup_debug_malloc(void)
 
 #endif	/* DEBUG_MALLOC */
 
-#if defined(__GNUC__) && defined(__SSE__)
+#if defined(__GNUC__) && defined(__SSE__) && defined(HAVE_EMMINTRIN_H)
 #include <emmintrin.h>
 #define SSE2
 #endif
