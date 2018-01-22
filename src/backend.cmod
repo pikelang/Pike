@@ -150,25 +150,15 @@ static void check_set_timer(struct timeval when);
 #endif
 /* CALL OUT STUFF */
 
-#ifdef PIKE_DEBUG
-#define MESS_UP_BLOCK(X) do {\
- (X)->next_arr=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
- (X)->next_fun=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
- (X)->prev_arr=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
- (X)->prev_fun=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
- (X)->pos=-1; \
- } while(0)
-#else
-#define MESS_UP_BLOCK(X)
-#endif
-
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do { \
-  *(X->prev_arr)=X->next_arr; \
-  if(X->next_arr) X->next_arr->prev_arr=X->prev_arr; \
-  *(X->prev_fun)=X->next_fun; \
-  if(X->next_fun) X->next_fun->prev_fun=X->prev_fun; \
-  MESS_UP_BLOCK(X); \
+#define EXIT_CO(X) do {						\
+    *(X->prev_arr) = X->next_arr;				\
+    if(X->next_arr) X->next_arr->prev_arr = X->prev_arr;	\
+    *(X->prev_fun) = X->next_fun;				\
+    if(X->next_fun) X->next_fun->prev_fun = X->prev_fun;	\
+    (X)->next_arr = NULL;					\
+    (X)->next_fun = NULL;					\
+    (X)->prev_arr = NULL;					\
+    (X)->prev_fun = NULL;					\
   } while(0)
 
 struct hash_ent
@@ -706,7 +696,7 @@ PIKECLASS Backend
 	free_object(this->this);
 	this->this = NULL;
       }
-      EXIT_BLOCK(this);
+      EXIT_CO(this);
     }
 
     /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
@@ -1033,6 +1023,17 @@ PIKECLASS Backend
 	   free_array(cc->args);
 	 }
 	 cc->args = NULL;
+	 /* Unlink the call_out from the call_hash hash table directly.
+	  *
+	  * NB: Don't wait for the EXIT callback to run, as this
+	  *     would cause a race-condition with respect to
+	  *     - Growing the call_hash hash table (which would
+	  *       leave live pointers to the old hash table).
+	  *     - backend_find_call_out() (which would dereference
+	  *       cc->args (ie NULL)).
+	  *     until destruct_objects_to_destruct() is run.
+	  */
+	 EXIT_CO(cc);
 	 free_object(cc->this);
 
 	 check_destructed(Pike_sp - args);
