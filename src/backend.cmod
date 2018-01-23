@@ -150,9 +150,9 @@ static void check_set_timer(struct timeval when);
 /* CALL OUT STUFF */
 
 #define EXIT_CO(X) do {						\
-    *(X->prev_arr) = X->next_arr;				\
+    if(X->prev_arr) *(X->prev_arr) = X->next_arr;		\
     if(X->next_arr) X->next_arr->prev_arr = X->prev_arr;	\
-    *(X->prev_fun) = X->next_fun;				\
+    if(X->prev_fun) *(X->prev_fun) = X->next_fun;		\
     if(X->next_fun) X->next_fun->prev_fun = X->prev_fun;	\
     (X)->next_arr = NULL;					\
     (X)->next_fun = NULL;					\
