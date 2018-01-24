@@ -24,6 +24,7 @@ inherit Concurrent.Promise;
 
 private .FutureResult res;
 private int minresults, maxresults, discardover;
+private function(array, .Result, array :array) map_cb;
 
 private void failed(mixed msg) {
   res->_dblink = 0;				// Release reference
@@ -53,6 +54,13 @@ private void succeeded(.Result result) {
 private void result_cb(.Result result, array(array(mixed)) rows) {
   PD("Callback got %O\n", rows);
   if (rows) {
+    if (map_cb) {
+      mixed err = catch(rows
+       = predef::filter(predef::map(rows, map_cb, result, res->data),
+          arrayp));
+      if (err)
+        failed(err);
+    }
     if (maxresults >= 0 && result->num_rows() > maxresults)
       failed(sprintf("Too many records returned: %d > %d",
                           result->num_rows(), maxresults));
@@ -93,11 +101,13 @@ final this_program discard_records(int(-1..) over) {
 }
 
 protected
- void create(.Connection db, string q, mapping(string:mixed) bindings) {
+ void create(.Connection db, string q, mapping(string:mixed) bindings,
+             function(array, .Result, array :array) map_cb) {
   PD("Create future %O %O %O\n", db, q, bindings);
+  this::map_cb = map_cb;
   res = .FutureResult(db, q, bindings);
   discardover = maxresults = -1;
-  if (res->status_command_complete = catch(db->big_typed_query(q, bindings)
+  if (res->status_command_complete = catch(db->streaming_typed_query(q, bindings)
                                     ->set_result_array_callback(result_cb)))
     failed(res->status_command_complete);
   ::create();
