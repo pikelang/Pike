@@ -293,11 +293,22 @@ PIKECLASS Yarrow
  *!
  *! The @[password] memory will be cleared before released.
  */
-PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
-				 void|string(0..255) magic)
-     optflags OPT_TRY_OPTIMIZE;
+PIKEFUN string(0..127) crypt_md5(string pw, string salt,
+				 void|string magic)
+  optflags OPT_TRY_OPTIMIZE;
+  /* NB: We use a weaker type above to allow us to delay
+   *     throwing errors on wide strings until we've had
+   *     time to censor the password string.
+   */
+  rawtype tFunc(tStr8 tStr8 tOr(tStr8, tVoid), tStr7);
 {
   char *hash;
+
+  /* Censor the password. */
+  push_string(pw);
+  args++;
+  add_ref(Pike_sp[-args].u.string = MK_STRING("censored"));
+
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
 

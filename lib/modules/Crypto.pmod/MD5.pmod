@@ -27,7 +27,9 @@ Standards.ASN1.Types.Identifier asn1_id()
 string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
                         int|void rounds)
 {
-  return Nettle.crypt_md5(password, salt);
+  string(8bit) orig_password = password;
+  password = "censored";
+  return Nettle.crypt_md5(orig_password, salt);
 }
 
 #else
