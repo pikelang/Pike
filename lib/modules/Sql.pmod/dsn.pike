@@ -43,11 +43,7 @@ void create(string|void host, string|void db, string|void user,
   ::create_dsn(connectstring);
 }
 
-int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
+variant Sql.Result big_query(object|string q);
 {
-  if (!bindings)
-    return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q, bindings, this));
+  return ::big_query(q);
 }
-
-constant list_dbs = Odbc.list_dbs;
