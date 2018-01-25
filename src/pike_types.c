@@ -5640,14 +5640,18 @@ struct pike_type *check_call(struct pike_type *args,
  */
 struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
 {
-  struct pike_type *tmp;
+  struct pike_type *tmp, *tmp2;
 
  loop:
   switch(fun->type) {
   case T_OR:
-    return or_pike_types(get_argument_type(fun->car, arg_no),
-			 get_argument_type(fun->cdr, arg_no),
-			 1);
+    fun = or_pike_types(tmp = get_argument_type(fun->car, arg_no),
+			tmp2 = get_argument_type(fun->cdr, arg_no),
+			1);
+    free_type(tmp);
+    free_type(tmp2);
+    return fun;
+
   case T_FUNCTION:
     if (arg_no > 0) {
       arg_no--;
