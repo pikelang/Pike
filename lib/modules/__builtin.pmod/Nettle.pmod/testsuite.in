@@ -74,7 +74,7 @@ test_eq(S(SHA256->pbkdf1("aaaa","bbbb",64,16)),
         "d879716a511f8e1cf23d6974802a6e6e")
 test_eq(S(SHA256->pbkdf2("aaaa","bbbb",64,16)),
         "458592c0b81415bd3d752d5bd2a894b0")
-test_eq(S(SHA256->hkdf("aaaa","bbbb","cccc",16)),
+test_eq(S(SHA256->HKDF("aaaa","bbbb")->expand("cccc",16)),
         "57ccec229e98b315ab330a97d7fcfedf")
 test_eq(S(SHA256->openssl_pbkdf("aaaa","bbbb",64,16)),
         "098c455f22f5a62b1047982b4dd2481c")
