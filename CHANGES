@@ -40,7 +40,10 @@ Bug fixes
 
 o Compiler
 
-  Improved variant robustness.
+  - Improved variant robustness.
+
+  - Fixed type leak for getters/setters implemented with
+    variant functions.
 
 o Calendar
 
@@ -53,6 +56,10 @@ o Calendar
 o Crypto.CCM
 
   Fixed initialization of the iv.
+
+o Crypto.Hash
+
+  Censor the password argument from backtraces in crypt_hash().
 
 o Filesystem.Monitor
 
