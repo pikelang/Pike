@@ -24,6 +24,7 @@
 #define QUERYTIMEOUT	     4095   // Queries running longer than this number
 				    // of seconds are canceled automatically
 #define PORTALBUFFERSIZE     (32*1024) // Approximate buffer per portal
+#define BACKOFFDELAY	     1
 
 #define PGSQL_DEFAULT_PORT   5432
 #define PGSQL_DEFAULT_HOST   "localhost"
