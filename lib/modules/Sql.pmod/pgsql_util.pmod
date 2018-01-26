@@ -1678,7 +1678,7 @@ class proxy {
   final int(0..1) invalidatecache;
   private Thread.Queue qportals;
   final mixed delayederror;
-  private function (:void) readyforquery_cb;
+  final function (:void) readyforquery_cb;
 
   final string host;
   final int(0..65535) port;
@@ -1880,11 +1880,12 @@ class proxy {
     };
 #endif
     int msgisfatal(mapping(string:string) msgresponse) {
-      if (!terminating)		// Run the callback once per lost connection
-        runcallback(backendpid,"_lost","");
-      return (has_prefix(msgresponse.C, "53")
-           || has_prefix(msgresponse.C, "3D")
-           || has_prefix(msgresponse.C, "57P")) && MAGICTERMINATE;
+      int isfatal = (has_prefix(msgresponse.C, "53")
+                  || has_prefix(msgresponse.C, "3D")
+                  || has_prefix(msgresponse.C, "57P")) && MAGICTERMINATE;
+      if (isfatal && !terminating) // Run the callback once per lost connection
+        runcallback(backendpid, "_lost", "");
+      return isfatal;
     };
     for (;;) {
       err = catch {
@@ -2576,13 +2577,15 @@ class proxy {
     }
   }
 
-  private void sendsync() {
+  final void sendsync() {
     readyforquerycount++;
     c->start()->sendcmd(SYNCSEND);
   }
 
   private void runcallback(int pid, string condition, string extrainfo) {
     array cb;
+    if (condition == "_lost")
+      destruct(c);
     if ((cb = notifylist[condition] || notifylist[""])
        && (pid != backendpid || sizeof(cb) > 1 && cb[1]))
       callout(cb[0], 0, pid, condition, extrainfo, @cb[2..]);

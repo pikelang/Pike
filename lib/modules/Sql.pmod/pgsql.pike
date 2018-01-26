@@ -81,6 +81,8 @@ private int prepstmtused;	// Number of times we used prepared statements
 private int cachedepth = STATEMENTCACHEDEPTH;
 private int portalbuffersize = PORTALBUFFERSIZE;
 private int timeout = QUERYTIMEOUT;
+private array connparmcache;
+private int reconnected;
 
 protected string _sprintf(int type) {
   string res;
@@ -117,6 +119,12 @@ protected string _sprintf(int type) {
 //! @param options
 //! Currently supports at least the following:
 //! @mapping
+//!   @member int "reconnect"
+//!    Set it to zero to disable automatic reconnects upon losing
+//!     the connection to the database.  Not setting it, or setting
+//!     it to one, will cause one timed reconnect to take place.
+//!     Setting it to -1 will cause the system to try and reconnect
+//!     indefinitely.
 //!   @member int "use_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will fallback
@@ -179,9 +187,10 @@ protected void create(void|string host, void|string database,
     String.secure(pass);
     pass = "CENSORED";
   }
-  proxy = .pgsql_util.proxy(host, database,
+  connparmcache = ({ host, database,
    user && user != "" ? Standards.IDNA.to_ascii(user, 1) : user,
-   spass, options || ([]));
+   spass, options || ([])});
+  proxy = .pgsql_util.proxy(@connparmcache);
 }
 
 //! @returns
@@ -248,7 +257,8 @@ protected void create(void|string host, void|string database,
 //!   @[is_open()]
 /*semi*/final int ping() {
   waitauthready();
-  return is_open() && !catch(proxy.c->start()->sendcmd(FLUSHSEND)) ? 0 : -1;
+  return is_open()
+   && !catch(proxy.c->start()->sendcmd(FLUSHSEND)) ? !!reconnected : -1;
 }
 
 //! Cancels all currently running queries in this session.
@@ -884,6 +894,15 @@ private inline void throwdelayederror(object parent) {
 private void startquery(int forcetext, .pgsql_util.Result portal, string q,
  mapping(string:mixed) tp, string preparedname) {
   .pgsql_util.conxion c = proxy.c;
+  if (!c && (proxy.options["reconnect"]
+             || zero_type(proxy.options["reconnect"]))) {
+    sleep(BACKOFFDELAY);	// Force a backoff delay
+    if (!proxy.c) {
+      reconnected++;
+      proxy = .pgsql_util.proxy(@connparmcache);
+    }
+    c = proxy.c;
+  }
   if (forcetext) {	// FIXME What happens if portals are still open?
     portal._unnamedportalkey = proxy.unnamedportalmux->lock(1);
     portal._portalname = "";
