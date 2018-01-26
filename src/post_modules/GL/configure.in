@@ -4,7 +4,9 @@ AC_CONFIG_HEADER(config.h)
 PIKE_FEATURE_WITHOUT(GL)
 PIKE_FEATURE_WITHOUT(GL.GLSL)
 
-AC_MODULE_INIT()
+# Rename the dynamic module from GL.so to GL.pmod/module.so
+# to avoid shadowing stuff in GL.pmod/.
+AC_MODULE_INIT(GL.module)
 
 AC_ARG_WITH(GL,  [  --without-GL       no support for GL],[],[with_GL=yes])
 
