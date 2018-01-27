@@ -26,7 +26,8 @@ inherit .Cipher;
 //! Message Authentication Code (MAC).
 //!
 //! @seealso
-//!   @[CBC], @[CCM], @[GCM], @[MAC]
+//!   @[predef::Nettle.BlockCipher.CBC], @[predef::Nettle.BlockCipher.CCM],
+//!   @[predef::Nettle.BlockCipher.GCM], @[MAC]
 
 //! @ignore
 protected class _CTR
