@@ -14,6 +14,16 @@
 #error Dont know how to inline assembler with this compiler
 #endif
 
+/** Query the x86 CPU for features using the CPUID opcode.
+ *
+ * @param oper
+ *   The main category selected, now named CPUID leaf.
+ *
+ * @param cpuid_ptr
+ *   Pointer to INT32[4] where the response is written from registers
+ *   eax, ebx, edx, and ecx, in that order.
+ *
+ */
 PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
 /* eax -> cpuid_ptr[0]
  * ebx -> cpuid_ptr[1]
@@ -60,8 +70,7 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
 
 #endif	/* HAVE_IA32_ASM */
 
-/* Same thing as (int)floor(log((double)x) / log(2.0)), except a bit
-   quicker. Number of log2 per second:
+/* Number of log2 per second:
 
    log(x)/log(2.0)             50,000,000
    log2(x)                     75,000,000
@@ -69,6 +78,9 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
    Intrinsic       30,000,000,000,000,000
 */
 
+/** Same thing as (int)floor(log((double)x) / log(2.0)), except a bit
+ *  quicker.
+ */
 PMOD_EXPORT int my_log2(UINT64 x)
 {
     if( x == 0 ) return 0;
