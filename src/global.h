@@ -520,6 +520,8 @@ typedef struct p_wchar_p
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
 #define DWERR(...) WERR(__VA_ARGS__)
 
+#undef NDEBUG
+
 /* Set of macros to simplify passing __FILE__ and __LINE__ to
  * functions only in debug mode. */
 #define DLOC			__FILE__, __LINE__
@@ -537,6 +539,7 @@ typedef struct p_wchar_p
 #define DO_IF_DEBUG(X)
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) NO_DEBUG
 #define DWERR(...)
+#define NDEBUG
 
 #define DLOC
 #define COMMA_DLOC

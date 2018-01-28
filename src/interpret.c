@@ -1787,12 +1787,14 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #define eval_instruction eval_instruction_without_debug
 
 #undef PIKE_DEBUG
+#undef NDEBUG
 #undef DO_IF_DEBUG
 #define DO_IF_DEBUG(X)
 #define print_return_value()
 #include "interpreter.h"
 
 #define PIKE_DEBUG
+#define NDEBUG
 #undef DO_IF_DEBUG
 #define DO_IF_DEBUG(X) X
 #undef print_return_value
