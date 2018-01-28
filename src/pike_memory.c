@@ -98,7 +98,7 @@ void reverse(char *memory, size_t nitems, size_t size)
 #ifdef B4_T
     DOSIZE(4,B4_T)
 #endif
-#ifdef B16_T
+#ifdef B8_T
     DOSIZE(8,B8_T)
 #endif
 #ifdef B16_T
