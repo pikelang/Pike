@@ -520,6 +520,7 @@ typedef struct p_wchar_p
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
 #define DWERR(...) WERR(__VA_ARGS__)
 
+/* Control assert() definition in <assert.h> */
 #undef NDEBUG
 
 /* Set of macros to simplify passing __FILE__ and __LINE__ to
