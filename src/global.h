@@ -278,13 +278,6 @@ struct timeval;
  */
 #define MAX_LOCAL	256
 
-/*
- * define NO_GC to get rid of garbage collection
- */
-#ifndef NO_GC
-#define GC2
-#endif
-
 #if defined(i386) || defined(__powerpc__) || defined(__x86_64__) || (defined(__aarch64__) && defined(__ARM_FEATURE_UNALIGNED))
 #ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define HANDLES_UNALIGNED_MEMORY_ACCESS
@@ -392,7 +385,9 @@ struct b8_t_s { B4_T x,y; };
 #define B8_T struct b8_t_s
 #endif
 
-#ifdef B8_T
+#if (SIZEOF___INT128 - 0) == 16
+#define B16_T __int128
+#elif defined(B8_T)
 struct b16_t_s { B8_T x,y; };
 #define B16_T struct b16_t_s
 #endif
