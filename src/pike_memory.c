@@ -56,79 +56,15 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
   return (p_wchar2 *)NULL;
 }
 
-static void swap(char *a, char *b, size_t size)
-{
-  size_t tmp;
-  char tmpbuf[1024];
-  while(size)
-  {
-    tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
-    memcpy(tmpbuf,a,tmp);
-    memcpy(a,b,tmp);
-    memcpy(b,tmpbuf,tmp);
-    size-=tmp;
-    a+=tmp;
-    b+=tmp;
-  }
-}
-
-void reverse(char *memory, size_t nitems, size_t size)
-{
-
-#define DOSIZE(X,Y)						\
- case X:							\
- {								\
-  Y tmp;							\
-  Y *start=(Y *) memory;					\
-  Y *end=start+nitems-1;					\
-  while(start<end){tmp=*start;*(start++)=*end;*(end--)=tmp;}	\
-  break;							\
- }
-
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  switch(size)
-#else
-  switch( (((size_t)memory) % size) ? 0 : size)
-#endif
-  {
-    DOSIZE(1,B1_T)
-#ifdef B2_T
-    DOSIZE(2,B2_T)
-#endif
-#ifdef B4_T
-    DOSIZE(4,B4_T)
-#endif
-#ifdef B8_T
-    DOSIZE(8,B8_T)
-#endif
-#ifdef B16_T
-    DOSIZE(16,B16_T)
-#endif
-  default:
-  {
-    char *start = (char *) memory;
-    char *end=start+(nitems-1)*size;
-    while(start<end)
-    {
-      swap(start,end,size);
-      start+=size;
-      end-=size;
-    }
-  }
-  }
-}
-
 /*
  * This function may NOT change 'order'
  * This function is hopefully fast enough...
  */
-void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
+void reorder(char *memory, INT32 nitems, INT32 size, INT32 *order)
 {
   INT32 e;
   char *tmp;
   if(nitems<2) return;
-
-
   tmp=xalloc(size * nitems);
 
 #undef DOSIZE
@@ -140,7 +76,6 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
   break;					\
  }
-
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)

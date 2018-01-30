@@ -220,8 +220,6 @@ PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
 p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 
-/* PMOD_EXPORT void swap(char *a, char *b, size_t size); */
-PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 
 size_t hashmem_siphash24( const void *s, size_t len );
