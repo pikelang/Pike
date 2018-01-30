@@ -1429,7 +1429,7 @@ PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order)
 /**
  * Copy and reorganize an array.
  */
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order)
 {
   INT32 e;
   struct array *ret;

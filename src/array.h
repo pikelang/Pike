@@ -146,7 +146,7 @@ PMOD_EXPORT INT32 *get_alpha_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
 INT32 switch_lookup(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order);
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order);
 PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void array_check_type_field(struct array *v);
