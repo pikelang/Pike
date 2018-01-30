@@ -60,7 +60,7 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
  * This function may NOT change 'order'
  * This function is hopefully fast enough...
  */
-void reorder(char *memory, INT32 nitems, INT32 size, INT32 *order)
+void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
   INT32 e;
   char *tmp;
@@ -94,7 +94,7 @@ void reorder(char *memory, INT32 nitems, INT32 size, INT32 *order)
      DOSIZE(8,B8_T)
 #endif
 #ifdef B16_T
-    DOSIZE(16,B16_T)
+     DOSIZE(16,B16_T)
 #endif
 
   default:

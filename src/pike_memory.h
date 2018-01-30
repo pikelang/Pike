@@ -220,7 +220,7 @@ PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
 p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 
-PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
+PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order);
 
 size_t hashmem_siphash24( const void *s, size_t len );
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)

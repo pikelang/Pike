@@ -1419,7 +1419,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 /**
  * Reorganize an array in the order specified by 'order'.
  */
-PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order)
 {
   reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
   return v;
