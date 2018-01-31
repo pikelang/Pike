@@ -650,15 +650,16 @@ array(mapping(string:string)) query(object|string q,
 //!   @endmixed
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @seealso
 //!   @[query], @[big_typed_query]
 array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 {
   if (!master_sql->big_typed_query)
-    ERROR ("Typed mode not supported by the backend %O.\n", master_sql);
+    return query(q, @extraargs);
 
   if (sizeof(extraargs)) {
     mapping(string|int:mixed) bindings;
@@ -746,8 +747,9 @@ int|object big_query(object|string q, mixed ... extraargs)
 //! or similar).
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
@@ -759,7 +761,7 @@ int|object big_query(object|string q, mixed ... extraargs)
 int|object big_typed_query(object|string q, mixed ... extraargs)
 {
   if (!master_sql->big_typed_query)
-    ERROR ("Typed mode not supported by the backend %O.\n", master_sql);
+    return big_query(q, @extraargs);
 
   mapping(string|int:mixed) bindings;
 
