@@ -565,16 +565,15 @@ protected array(string|mapping(string|int:mixed))
 //!   query, or a previously compiled query (see @[compile_query()]).
 //!
 //! @returns
-//!   The result is returned as an @[Sql.Result] object in untyped
+//!   An @[Sql.Result] object in untyped
 //!   mode. This allows for having some more info about the result as
 //!   well as processing the result in a streaming fashion, although the
 //!   result itself wasn't obtained streamingly from the server.
 //!
 //! @throws
-//!   Throws an exception if the query fails.
-//!
-//! Called by other variants of @[big_query()] after they have processed
-//! their extra arguments.
+//!   Might throw an exception if the query fails.  In some cases, the
+//!   exception is delayed, because the database reports the error
+//!   a (little) while after the query has already been started.
 //!
 //! This prototype function is the base variant and is intended to be
 //! overloaded by actual drivers.
@@ -585,7 +584,7 @@ protected array(string|mapping(string|int:mixed))
 //! ones that return only a few rows.
 //!
 //! @seealso
-//!   @[query], @[streaming_query]
+//!   @[query], @[streaming_query], @[big_typed_query], @[streaming_typed_query]
 variant .Result big_query(object|string q);
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -610,13 +609,15 @@ variant .Result big_query(object|string q);
 //!   Binary values (BLOBs) may need to be placed in multisets.
 //!
 //! @returns
-//!   The result is returned as an @[Sql.Result] object in untyped
+//!   An @[Sql.Result] object in untyped
 //!   mode. This allows for having some more info about the result as
 //!   well as processing the result in a streaming fashion, although the
 //!   result itself wasn't obtained streamingly from the server.
 //!
 //! @throws
-//!   Throws an exception if the query fails.
+//!   Might throw an exception if the query fails.  In some cases, the
+//!   exception is delayed, because the database reports the error
+//!   a (little) while after the query has already been started.
 //!
 //! Calls the base variant of @[big_query()] after having inserted
 //! the bindings into the query (using @[emulate_bindings()]).
@@ -630,7 +631,8 @@ variant .Result big_query(object|string q);
 //! ones that return only a few rows.
 //!
 //! @seealso
-//!   @[query], @[emulate_bindings], @[streaming_query]
+//!   @[query], @[emulate_bindings], @[streaming_query], @[big_typed_query],
+//!   @[streaming_typed_query]
 variant .Result big_query(object|string q,
 			      mapping(string|int:mixed) bindings)
 {
@@ -653,10 +655,11 @@ variant .Result big_query(object|string q,
 //! res = query("select foo from bar where gazonk=%s","value");
 //! @endcode
 //!
-//! The result is returned as an @[Sql.Result] object in untyped
-//! mode. This allows for having some more info about the result as
-//! well as processing the result in a streaming fashion, although the
-//! result itself wasn't obtained streamingly from the server.
+//! @returns
+//!   An @[Sql.Result] object in untyped
+//!   mode. This allows for having some more info about the result as
+//!   well as processing the result in a streaming fashion, although the
+//!   result itself wasn't obtained streamingly from the server.
 //!
 //! The default implementation normalizes @[q] and @[extraargs] to
 //! use the bindings mapping (via @[handle_extraargs()]), and calls
@@ -713,27 +716,30 @@ array(mapping(string:string)) query(object|string q,
 //!
 //! For the argument, please see the @[big_query()] function.
 //!
-//! The result is returned as an @[Sql.Result] object in typed
+//! @returns
+//! An @[Sql.Result] object in typed
 //! mode. This allows for having some more info about the result as
 //! well as processing the result in a streaming fashion, although the
 //! result itself wasn't obtained streamingly from the server.
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
 //! queries. It typically has less overhead than @[typed_query] also
 //! for ones that return only a few rows.
 //!
-//! Called by @[big_typed_query()] after it has processed any bindings.
-//!
 //! Drivers should override this prototype function.
 //!
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
-variant .Result big_typed_query(object|string q);
+variant .Result big_typed_query(object|string q)
+{
+  return big_query(q);		// Fall back to untyped, if no native support
+}
 
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in typed mode.
@@ -746,15 +752,17 @@ variant .Result big_typed_query(object|string q);
 //! result itself wasn't obtained streamingly from the server.
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
 //! queries. It typically has less overhead than @[typed_query] also
 //! for ones that return only a few rows.
 //!
-//! Called by @[big_typed_query()] after it has processed any bindings.
+//! Drivers that actually support bindings should overload this
+//! variant in addition to the base variant.
 //!
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
@@ -775,8 +783,9 @@ variant .Result big_typed_query(object|string q,
 //! result itself wasn't obtained streamingly from the server.
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
@@ -811,8 +820,9 @@ variant .Result big_typed_query(object|string q,
 //!   @endmixed
 //!
 //! @note
-//!   Typed mode is not supported by all sql databases. If not
-//!   supported, an error is thrown.
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @note
 //!   The default implementation calls @[big_typed_query()]
@@ -828,21 +838,19 @@ array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results streaming in untyped mode.
 //!
-//! For the arguments, please see the @[low_big_query()] function.
+//! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
-//! For the other arguments, they are the same as
-//! for the @[query()] function.
-//!
-//! Called by @[streaming_query()] after it has processed any bindings.
 //!
 //! Drivers should override this prototype function.
 //!
 //! @note
-//!   Streaming operation is not supported by all sql databases.
-//!   The default implementation falls back to calling @[big_query()].
+//!   Typed mode support varies per database and per datatype.
+//!   SQL datatypes which the current database cannot return as a native Pike
+//!   type, will be returned as (untyped) strings.
 //!
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
@@ -854,21 +862,14 @@ variant .Result streaming_query(object|string q)
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results streaming in untyped mode.
 //!
-//! For the arguments, please see the @[low_big_query()] function.
+//! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
-//! For the other arguments, they are the same as
-//! for the @[query()] function.
-//!
-//! Called by @[streaming_query()] after it has processed any bindings.
 //!
 //! Drivers that implement bindings should override this prototype function.
-//!
-//! @note
-//!   Streaming operation is not supported by all sql databases.
-//!   The default implementation falls back to calling @[big_query()].
 //!
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
@@ -881,18 +882,12 @@ variant .Result streaming_query(object|string q,
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results streaming in untyped mode.
 //!
-//! For the arguments, please see the @[query()] function.
+//! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! untyped mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
-//! For the other arguments, they are the same as
-//! for the @[query()] function.
-//!
-//! @note
-//!   Streaming operation is not supported by all sql databases.
-//!   If not supported, this function will fall back to calling
-//!   @[big_query()].
 //!
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
@@ -906,23 +901,17 @@ variant .Result streaming_query(object|string q,
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results streaming in typed mode.
 //!
-//! For the arguments, please see the @[query()] function.
+//! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //!
-//! Called by @[streaming_query()] after it has processed any bindings.
-//!
 //! Drivers should override this prototype function.
 //!
-//! @note
-//!   Neither streaming operation nor typed results are supported
-//!   by all sql databases. The default implentation falls back to
-//!   calling @[big_typed_query()].
-//!
 //! @seealso
-//!   @[streaming_query], @[big_typed_query]
+//!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q)
 {
   return big_typed_query(q);
@@ -931,24 +920,17 @@ variant .Result streaming_typed_query(object|string q)
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results streaming in typed mode.
 //!
-//! For the arguments, please see the @[query()] function.
+//! For the arguments, please see the @[big_query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //!
-//!
-//! Called by @[streaming_query()] after it has processed any bindings.
-//!
 //! Drivers should override this prototype function.
 //!
-//! @note
-//!   Neither streaming operation nor typed results are supported
-//!   by all sql databases. The default implentation falls back to
-//!   calling @[low_big_typed_query()].
-//!
 //! @seealso
-//!   @[streaming_query], @[big_typed_query]
+//!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
 					  mapping(string|int:mixed) bindings)
 {
@@ -960,17 +942,13 @@ variant .Result streaming_typed_query(object|string q,
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The result is returned as a streaming @[Sql.Result] object in
+//! @returns
+//! A streaming @[Sql.Result] object in
 //! typed mode. This allows for having results larger than the
 //! available memory, and returning some more info about the result.
 //!
-//! @note
-//!   Neither streaming operation nor typed results are supported
-//!   by all sql databases. If not supported, this function will
-//!   fall back to calling @[big_typed_query()].
-//!
 //! @seealso
-//!   @[streaming_query], @[big_typed_query]
+//!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
 					  string|multiset|int|float|object extraarg,
 					  string|multiset|int|float|object ... extraargs)
