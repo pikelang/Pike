@@ -210,7 +210,7 @@ protected void create(void|string host, void|string database,
 //! @seealso
 //!   @[big_query()]
 /*semi*/final string error(void|int clear) {
-  throwdelayederror(this);
+  throwdelayederror(proxy);
   return proxy.geterror(clear);
 }
 
@@ -1027,7 +1027,7 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
 /*semi*/final .pgsql_util.sql_result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
-  throwdelayederror(this);
+  throwdelayederror(proxy);
   string preparedname = "";
   mapping(string:mixed) options = proxy.options;
   .pgsql_util.conxion c = proxy.c;

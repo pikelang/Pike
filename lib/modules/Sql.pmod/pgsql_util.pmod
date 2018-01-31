@@ -1281,6 +1281,8 @@ class sql_result {
       datarowtypes = emptyarray;
       _ddescribe->broadcast();
     }
+    if (delayederror && !pgsqlsess.delayederror)
+      pgsqlsess.delayederror = delayederror;	// Preserve error upstream
     pgsqlsess = 0;
   }
 
