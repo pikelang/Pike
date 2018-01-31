@@ -416,11 +416,10 @@ static size_t strftime_zone(char *buf, size_t bufsiz, const char *fmt,
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
-        char *buffer = xalloc( 8192 );
+        char buffer[8192];
         buffer[0] = 0;
-        strftime_zone( buffer, 8192, format->str, &THIS->t );
-        push_text( buffer );
-        free(buffer);
+        strftime_zone(buffer, sizeof(buffer), format->str, &THIS->t);
+        push_text(buffer);
     }
 
     /*! @decl int(0..60) sec;
