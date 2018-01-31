@@ -43,7 +43,7 @@ void create(string|void host, string|void db, string|void user,
   ::create_dsn(connectstring);
 }
 
-variant Sql.Result big_query(object|string q);
+variant Sql.Result big_query(object|string q)
 {
   return ::big_query(q);
 }
