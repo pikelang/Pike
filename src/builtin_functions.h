@@ -121,6 +121,10 @@ PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
 time_t mktime_zone(struct tm *date, int other_timezone, int tz);
 PMOD_EXPORT void f_mktime (INT32 args);
+#ifdef HAVE_STRPTIME
+PMOD_EXPORT void f_strptime (INT32 args);
+#endif
+PMOD_EXPORT void f_strftime (INT32 args);
 PMOD_EXPORT void f_glob(INT32 args);
 PMOD_EXPORT void f_permute(INT32 args);
 struct diff_magic_link;

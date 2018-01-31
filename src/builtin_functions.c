@@ -5482,7 +5482,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-static void encode_struct_tm(struct tm *tm)
+static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 {
   push_static_text("sec");
   push_int(tm->tm_sec);
@@ -5504,6 +5504,28 @@ static void encode_struct_tm(struct tm *tm)
   push_int(tm->tm_yday);
   push_static_text("isdst");
   push_int(tm->tm_isdst);
+
+  push_static_text("timezone");
+  push_int(gmtoffset);
+
+  f_aggregate_mapping(20);
+}
+
+static void encode_tm_tz(const struct tm*tm)
+{
+  encode_struct_tm(tm,
+#ifdef STRUCT_TM_HAS_GMTOFF
+   -tm->tm_gmtoff
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+   -tm->__tm_gmtoff
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+   /* Assume dst is one hour. */
+   timezone - 3600*tm->tm_isdst
+#else
+   /* Assume dst is one hour. */
+   -3600*tm->tm_isdst
+#endif
+                                 );
 }
 
 /*! @decl mapping(string:int) gmtime(int timestamp)
@@ -5543,11 +5565,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
                        "the timestamp %"PRINTINT64"d.\n", (INT64) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
-
-  push_static_text("timezone");
-  push_int(0);
-  f_aggregate_mapping(20);
+  encode_struct_tm(tm, 0);
 }
 
 /*! @decl mapping(string:int) localtime(int timestamp)
@@ -5608,21 +5626,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
   if (!tm) Pike_error ("localtime() on this system cannot handle "
 		       "the timestamp %ld.\n", (long) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
-
-  push_static_text("timezone");
-#ifdef STRUCT_TM_HAS_GMTOFF
-  push_int(-tm->tm_gmtoff);
-#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
-  push_int(-tm->__tm_gmtoff);
-#elif defined(HAVE_EXTERNAL_TIMEZONE)
-  /* Assume dst is one hour. */
-  push_int(timezone - 3600*tm->tm_isdst);
-#else
-  /* Assume dst is one hour. */
-  push_int(-3600*tm->tm_isdst);
-#endif
-  f_aggregate_mapping(20);
+  encode_tm_tz(tm);
 }
 
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
@@ -5670,6 +5674,43 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     retval += normalised_time + tz;
   }
   return retval;
+}
+
+static void unwind_tm()
+{
+  push_static_text("sec");
+  push_static_text("min");
+  push_static_text("hour");
+  push_static_text("mday");
+  push_static_text("mon");
+  push_static_text("year");
+  push_static_text("isdst");
+  push_static_text("timezone");
+  f_aggregate(8);
+  f_rows(2);
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
+  push_array_items(Pike_sp->u.array);
+}
+
+static int get_tm(const char*fname, int args, struct tm*date)
+{
+  INT_TYPE sec, min, hour, mday, mon, year;
+  INT_TYPE isdst = -1, tz = 0;
+
+  get_all_args(fname, args, "%i%i%i%i%i%i.%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+
+  memset(date, 0, sizeof(*date));
+  date->tm_sec = sec;
+  date->tm_min = min;
+  date->tm_hour = hour;
+  date->tm_mday = mday;
+  date->tm_mon = mon;
+  date->tm_year = year;
+  date->tm_isdst = isdst;
+  /* date->tm_zone = NULL; */
+  return tz;
 }
 
 /*! @decl int mktime(mapping(string:int) tm)
@@ -5726,46 +5767,20 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
-  INT_TYPE sec, min, hour, mday, mon, year;
-  INT_TYPE isdst = -1, tz = 0;
   struct tm date;
   time_t retval;
-  int normalised_time;
+  int normalised_time, tz;
 
   if (args<1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
-    push_static_text("sec");
-    push_static_text("min");
-    push_static_text("hour");
-    push_static_text("mday");
-    push_static_text("mon");
-    push_static_text("year");
-    push_static_text("isdst");
-    push_static_text("timezone");
-    f_aggregate(8);
-    f_rows(2);
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
-    push_array_items(Pike_sp->u.array);
-
-    args=8;
+    unwind_tm();
+    args += 7;
   }
 
-  get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
-	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
-
-  memset(&date, 0, sizeof(date));
-  date.tm_sec=sec;
-  date.tm_min=min;
-  date.tm_hour=hour;
-  date.tm_mday=mday;
-  date.tm_mon=mon;
-  date.tm_year=year;
-  date.tm_isdst=isdst;
-  /* date.tm_zone = NULL; */
+  tz = get_tm("mktime", args, &date);
 
   retval = mktime_zone(&date,
                        args > 7 && SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER,
@@ -5777,6 +5792,263 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #else
   push_int(retval);
 #endif
+}
+
+#ifdef HAVE_STRPTIME
+/*! @decl mapping(string:int) strptime(string(1..255) data, string(1..255) format)
+ *!
+ *! Parse the given @[data] using the format in @[format] as a date.
+ *!
+ *! @dl
+ *!   @item %%
+ *!     The % character.
+ *!
+ *!   @item %a or %A
+ *!     The weekday name according to the C locale, in abbreviated
+ *!     form or the full name.
+ *!
+ *!   @item %b or %B or %h
+ *!     The month name according to the C locale, in abbreviated form
+ *!     or the full name.
+ *!
+ *!   @item %c
+ *!     The date and time representation for the C locale.
+ *!
+ *!   @item %C
+ *!     The century number (0-99).
+ *!
+ *!   @item %d or %e
+ *!     The day of month (1-31).
+ *!
+ *!   @item %D
+ *!     Equivalent to %m/%d/%y.
+ *!
+ *!   @item %H
+ *!     The hour (0-23).
+ *!
+ *!   @item %I
+ *!     The hour on a 12-hour clock (1-12).
+ *!
+ *!   @item %j
+ *!     The day number in the year (1-366).
+ *!
+ *!   @item %m
+ *!     The month number (1-12).
+ *!
+ *!   @item %M
+ *!     The minute (0-59).
+ *!
+ *!   @item %n
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %p
+ *!     The C locale's equivalent of AM or PM.
+ *!
+ *!   @item %R
+ *!     Equivalent to %H:%M.
+ *!
+ *!   @item %S
+ *!     The second (0-60; 60 may occur for leap seconds;
+ *!     earlier also 61 was allowed).
+ *!
+ *!   @item %t
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %T
+ *!     Equivalent to %H:%M:%S.
+ *!
+ *!   @item %U
+ *!     The week number with Sunday the first day of the week (0-53).
+ *!
+ *!   @item %w
+ *!     The weekday number (0-6) with Sunday = 0.
+ *!
+ *!   @item %W
+ *!     The week number with Monday the first day of the week (0-53).
+ *!
+ *!   @item %x
+ *!     The date, using the C locale's date format.
+ *!
+ *!   @item %X
+ *!     The time, using the C locale's time format.
+ *!
+ *!   @item %y
+ *!     The year within century (0-99).  When a century is not
+ *!     otherwise specified, values in the range 69-99 refer to years
+ *!     in the twentieth century (1969-1999); values in the range
+ *!     00-68 refer to years in the twenty-first century (2000-2068).
+ *!
+ *!   @item %Y
+ *!     The year, including century (for example, 1991).
+ *! @enddl
+ *!
+ */
+PMOD_EXPORT void f_strptime (INT32 args)
+{
+    struct tm tm;
+    const char* ret;
+    if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+    ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
+    pop_n_elems(args);
+    if (ret)
+      encode_tm_tz(&tm);
+    else
+      push_int(0);
+}
+#endif /* HAVE_STRPTIME */
+/*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
+ *! See also @[Gettext.setlocale]
+ *!
+ *! Convert the structure to a string.
+ *!
+ *! @dl
+ *!   @item %a
+ *!     The abbreviated weekday name according to the current locale
+ *!
+ *!   @item %A
+ *!     The full weekday name according to the current locale.
+ *!
+ *!   @item %b
+ *!     The abbreviated month name according to the current locale.
+ *!
+ *!   @item %B
+ *!     The full month name according to the current locale.
+ *!
+ *!   @item %c
+ *!     The preferred date and time representation for the current locale.
+ *!
+ *!   @item %C
+ *!     The century number (year/100) as a 2-digit integer.
+ *!
+ *!   @item %d
+ *!     The day of the month as a decimal number (range 01 to 31).
+ *!
+ *!   @item %D
+ *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+ *!     Americans should note that in other countries @expr{%d/%m/%y@}
+ *!     is rather common. This means that in international context
+ *!     this format is ambiguous and should not be used.)
+ *!
+ *!   @item %e
+ *!     Like @expr{%d@}, the day of the month as a decimal number,
+ *!     but a leading zero is replaced by a space.
+ *!
+ *!   @item %E
+ *!     Modifier: use alternative format, see below.
+ *!
+ *!   @item %F
+ *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!
+ *!   @item %G
+ *!     The ISO 8601 week-based year (see NOTES) with century as a
+ *!     decimal number. The 4-digit year corresponding to the ISO
+ *!     week number (see @expr{%V@}). This has the same format and
+ *!     value as @expr{%Y@}, except that if the ISO week number
+ *!     belongs to the previous or next year, that year is used instead.
+ *!
+ *!   @item %g
+ *!     Like @expr{%G@}, but without century, that is,
+ *!     with a 2-digit year (00-99). (TZ)
+ *!
+ *!   @item %h
+ *!     Equivalent to %b.
+ *!
+ *!   @item %H
+ *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!
+ *!   @item %I
+ *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!
+ *!   @item %j
+ *!     The day of the year as a decimal number (range 001 to 366).
+ *!
+ *!   @item %k
+ *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
+ *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
+ *!
+ *!   @item %l
+ *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
+ *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
+ *!
+ *!   @item %m
+ *!     The month as a decimal number (range 01 to 12).
+ *!
+ *!   @item %M
+ *!     The minute as a decimal number (range 00 to 59).
+ *!
+ *!   @item %n
+ *!     A newline character. (SU)
+ *!
+ *!   @item %O
+ *!     Modifier: use alternative format, see below. (SU)
+ *!
+ *!   @item %p
+ *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+ *!     value, or the corresponding strings for the current locale.
+ *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+ *!
+ *!   @item %P
+ *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+ *!     or a corresponding string for the current locale.
+ *!
+ *!   @item %r
+ *!     The time in a.m. or p.m. notation. In the POSIX locale this is
+ *!     equivalent to @expr{%I:%M:%S %p@}.
+ *!
+ *!   @item %R
+ *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
+ *!     For a version including the seconds, see @expr{%T@} below.
+ *!
+ *!   @item %s
+ *!     The number of seconds since the Epoch,
+ *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!
+ *!   @item %S
+ *!     The second as a decimal number (range 00 to 60).
+ *!     (The range is up to 60 to allow for occasional leap seconds.)
+ *!
+ *!   @item %t
+ *!     A tab character. (SU)
+ *!
+ *!   @item %T
+ *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!
+ *!   @item %u
+ *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
+ *!     See also @expr{%w@}. (SU)
+ *!
+ *!   @item %U
+ *!     The week number of the current year as a decimal number,
+ *!     range 00 to 53, starting with the first Sunday as the first
+ *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!
+ *!   @item %V
+ *!     The ISO 8601 week number of the current year as a decimal number,
+ *!     range 01 to 53, where week 1 is the first week that has at least
+ *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!
+ *!   @item %w
+ *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
+ *!     See also @expr{%u@}.
+ *! @enddl
+ */
+PMOD_EXPORT void f_strftime (INT32 args)
+{
+    char buffer[8192];
+    struct tm date;
+    buffer[0] = 0;
+
+    unwind_tm();
+    get_tm("strftime", 8, &date);
+    pop_n_elems(8);
+    if (Pike_sp[-1].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+
+    strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
+
+    pop_stack();
+    push_text( buffer );
 }
 
 #define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
@@ -9588,11 +9860,21 @@ void init_builtin_efuns(void)
   /* function(int:mapping(string:int)) */
   ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
 
-  /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
+  /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping(string:int):int) */
   ADD_EFUN("mktime",f_mktime,
 	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
-	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
+	       tFunc(tOr(tObj, tMap(tStr, tInt)),tInt)),OPT_TRY_OPTIMIZE);
+
+#ifdef HAVE_STRPTIME
+  /* function(string, string:mapping(string:int)) */
+  ADD_EFUN("strptime", f_strptime,
+           tFunc(tStr tStr, tMap(tStr, tInt)), OPT_TRY_OPTIMIZE);
+#endif
+
+  /* function(string,mapping(string:int):string) */
+  ADD_EFUN("strftime", f_strftime,
+           tFunc(tStr tMap(tStr,tInt), tStr), OPT_TRY_OPTIMIZE);
 
   /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,

@@ -12154,6 +12154,10 @@ ifefun(mktime,
   test_eq(mktime ((["sec":33, "min":3, "hour":12,
    "mday":14, "mon":6, "year":117, "isdst":0, "timezone":0])), 1500033813);
 
+  test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(0)), "1970/01/01 00:00:00");
+  test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "2009/02/13 23:31:30");
+  test_eq(mktime(strptime(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "%Y/%m/%d %H:%M:%S")), 1234567890);
+
   test_any( [[
   // bug [2861] ------------------------------------------------------------
   // http://community/crunch/show_bug.cgi?id=2861

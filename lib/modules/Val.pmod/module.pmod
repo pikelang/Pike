@@ -789,22 +789,6 @@ class Timestamp {
     return localtime((int)this) + (["nsec": nsecs % NANOSECONDS ]);
   }
 
-  //! @seealso
-  //!   @[System.TM()->strftime()]
-  public string(1..255) strftime(string(1..255) format) {
-    return System.TM((int)this)->strftime(format);
-  }
-
-  //! @seealso
-  //!   @[System.TM()->strptime()]
-  public bool strptime(string(1..255) format, string(1..255) data) {
-    System.TM t = System.TM();
-    bool ret = t->strptime(format, data);
-    if (ret)
-      ::create(t->unix_time());
-    return ret;
-  }
-
   //! When cast to string it returns an ISO formatted timestamp
   //! that includes daylight-saving and timezone corrections.
   protected mixed cast(string to) {
@@ -950,22 +934,6 @@ class Date {
 
   public mapping(string:int) tm() {
     return gmtime((int)this);
-  }
-
-  //! @seealso
-  //!   @[System.TM()->strftime()]
-  public string(1..255) strftime(string(1..255) format) {
-    return System.TM((int)this)->strftime(format);
-  }
-
-  //! @seealso
-  //!   @[System.TM()->strptime()]
-  public bool strptime(string(1..255) format, string(1..255) data) {
-    System.TM t = System.TM();
-    bool ret = t->strptime(format, data);
-    if (ret)
-      create(t->unix_time());
-    return ret;
   }
 
   protected mixed cast(string to) {
