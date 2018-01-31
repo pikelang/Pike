@@ -21,6 +21,10 @@ o Sql.pgsql
   - Support IEEE binary float database-wireformat.
   - Prevent new queries from starting in the local_backend.
 
+o Sql.Sql
+
+  Make big_typed_query() gracefully fallback to big_query().
+
 o SSL.File
 
   Support query_fd() and set_buffer_mode() methods.
@@ -123,6 +127,10 @@ o Sql.pgsql
   - Update documentation.
 
   - Repair fetch_row_array().
+
+  - Reinstate simple reconnect logic.
+
+  - Ensure that all database errors result in exceptions (eventually).
 
 o mktime/System.TM
 
