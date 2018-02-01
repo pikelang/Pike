@@ -5693,7 +5693,7 @@ static void unwind_tm()
   push_array_items(Pike_sp->u.array);
 }
 
-static int get_tm(const char*fname, int args, struct tm*date)
+static int get_tm(const char *fname, int args, struct tm *date)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
   INT_TYPE isdst = -1, tz = 0;
@@ -5709,7 +5709,9 @@ static int get_tm(const char*fname, int args, struct tm*date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
-  /* date->tm_zone = NULL; */
+#ifdef NULL_IS_SPECIAL
+  date->tm_zone = NULL;
+#endif
   return tz;
 }
 
