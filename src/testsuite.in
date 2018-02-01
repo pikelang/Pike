@@ -12156,18 +12156,6 @@ ifefun(mktime,
 
   test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(0)), "1970/01/01 00:00:00");
   test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "2009/02/13 23:31:30");
-  test_equal(strptime(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "%Y/%m/%d %H:%M:%S"), ([ /* 10 elements */
-              "hour": 23,
-              "isdst": 0,
-              "mday": 13,
-              "min": 31,
-              "mon": 1,
-              "sec": 30,
-              "timezone": 0,
-              "wday": 5,
-              "yday": 43,
-              "year": 109
-            ]));
   test_eq(mktime(strptime(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "%Y/%m/%d %H:%M:%S")), 1234567890);
 
   test_any( [[
