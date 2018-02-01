@@ -7,14 +7,15 @@
 #pike __REAL_VERSION__
 #require constant(Odbc.odbc)
 
-// Cannot dump this since the #require check below depend on the
+// Cannot dump this since the #require check above depends on the
 // presence of system libs at runtime.
 optional constant dont_dump_program = 1;
 
-inherit Odbc.odbc;
+inherit .odbc;
 
-void create(string|void host, string|void db, string|void user,
-	    string|void password, mapping(string:int|string)|void options)
+protected void create(string|void host, string|void db, string|void user,
+		      string|void password,
+		      mapping(string:int|string)|void options)
 {
   // FIXME: Quoting?
   string connectstring="";
@@ -41,9 +42,4 @@ void create(string|void host, string|void db, string|void user,
     }
   }
   ::create_dsn(connectstring);
-}
-
-variant Sql.Result big_query(object|string q)
-{
-  return ::big_query(q);
 }
