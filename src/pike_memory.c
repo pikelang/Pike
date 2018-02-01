@@ -54,7 +54,7 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
  * This function may NOT change 'order'
  * This function is hopefully fast enough...
  */
-void reorder(const char *memory, INT32 nitems, INT32 size, const INT32 *order)
+void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
   INT32 e;
   char *tmp;
@@ -62,8 +62,18 @@ void reorder(const char *memory, INT32 nitems, INT32 size, const INT32 *order)
   tmp=xalloc(size * nitems);
 
 #undef DOSIZE
+#undef CHECK_ALIGNED
+
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define CHECK_ALIGNED(X)	0
+#else
+#define CHECK_ALIGNED(X)			\
+ if ((ptrdiff_t)memory & (X)-1) goto unaligned
+#endif
+
 #define DOSIZE(X,Y)				\
- case X:					\
+ case (X):					\
+ CHECK_ALIGNED(X);				\
  {						\
   Y *from=(Y *) memory;				\
   Y *to=(Y *) tmp;				\
@@ -71,11 +81,7 @@ void reorder(const char *memory, INT32 nitems, INT32 size, const INT32 *order)
   break;					\
  }
 
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
-#else
-  switch( (((size_t)memory) % size) ? 0 : size )
-#endif
  {
    DOSIZE(1,B1_T)
 #ifdef B2_T
@@ -87,11 +93,17 @@ void reorder(const char *memory, INT32 nitems, INT32 size, const INT32 *order)
 #ifdef B8_T
      DOSIZE(8,B8_T)
 #endif
+#undef CHECK_ALIGNED
+     // Force aligned check for 128 bit values
+     // GCC-7.2 messes up otherwise
+#define CHECK_ALIGNED(X)			\
+ if ((ptrdiff_t)memory & (X)-1) goto unaligned
 #ifdef B16_T
      DOSIZE(16,B16_T)
 #endif
 
   default:
+unaligned:
     for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
   }
 
