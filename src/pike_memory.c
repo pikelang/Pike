@@ -30,13 +30,7 @@
 
 int page_size;
 
-ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz)
-{
-  return generic_quick_binary_strcmp((char *)a.ptr, sz, a.shift,
-				     (char *)b.ptr, sz, b.shift);
-}
-
-long pcharp_strlen(PCHARP a)
+long pcharp_strlen(const PCHARP a)
 {
   long len;
   for(len=0;INDEX_PCHARP(a,len);len++);
@@ -60,7 +54,7 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
  * This function may NOT change 'order'
  * This function is hopefully fast enough...
  */
-void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
+void reorder(const char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
   INT32 e;
   char *tmp;
