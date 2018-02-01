@@ -876,7 +876,7 @@ class sql_result {
             } else {
               [ value ] = cr->sscanf(collen == 4 ? "%4F" : "%8F");
               if (alltext)
-                value = (string)value;
+                value = sprintf("%.*g", collen == 4 ? 10 : 20, value);
               break;
             }
           default:value = cr->read(collen);
