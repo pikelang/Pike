@@ -5889,6 +5889,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
     const char* ret;
     if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
       Pike_error("Only 8bit strings are supported\n");
+    memset(&tm, 0, sizeof(tm));
     ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
     pop_n_elems(args);
     if (ret)
