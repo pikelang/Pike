@@ -58,22 +58,19 @@ void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
   INT32 e;
   char *tmp;
-  if(nitems<2) return;
+  if(UNLIKELY(nitems<2)) return;
   e = 0;
-  {
-    const INT32* porder = order;
-    /*
-     * Prime the cache for the order array, and check the array for
-     * correct ordering.  At the first order mismatch, bail out and
-     * start the actual reordering.
-     * If the order turns out to be correct already, perform an early return.
-     */
-    do
-      if (UNLIKELY(*porder++ != e++))
-        goto unordered;
-    while (LIKELY(e < nitems));
-    return;
-  }
+  /*
+   * Prime the cache for the order array, and check the array for
+   * correct ordering.  At the first order mismatch, bail out and
+   * start the actual reordering.
+   * If the order turns out to be correct already, perform an early return.
+   */
+  do
+    if (UNLIKELY(order[e] != e))
+      goto unordered;
+  while (LIKELY(++e < nitems));
+  return;
 unordered:
   tmp=xalloc(size * nitems);
 
