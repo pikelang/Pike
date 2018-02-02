@@ -59,6 +59,22 @@ void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
   INT32 e;
   char *tmp;
   if(nitems<2) return;
+  e = 0;
+  {
+    const INT32* porder = order;
+    /*
+     * Prime the cache for the order array, and check the array for
+     * correct ordering.  At the first order mismatch, bail out and
+     * start the actual reordering.
+     * If the order turns out to be correct already, perform an early return.
+     */
+    do
+      if (UNLIKELY(*porder++ != e++))
+        goto unordered;
+    while (LIKELY(e < nitems));
+    return;
+  }
+unordered:
   tmp=xalloc(size * nitems);
 
 #undef DOSIZE
@@ -77,7 +93,10 @@ void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
  {						\
   Y *from=(Y *) memory;				\
   Y *to=(Y *) tmp;				\
-  for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
+  e=0;						\
+  do						\
+     to[e] = from[order[e]];			\
+  while (LIKELY(++e < nitems));			\
   break;					\
  }
 
@@ -104,7 +123,10 @@ void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 
   default:
 unaligned:
-    for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
+    e = 0;
+    do
+      memcpy(tmp+e*size, memory+order[e]*size, size);
+    while (LIKELY(++e < nitems));
   }
 
   memcpy(memory, tmp, size * nitems);
