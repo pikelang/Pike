@@ -56,23 +56,25 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
  */
 void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
-  INT32 e;
+  INT32 e, aok;
   char *tmp;
   if(UNLIKELY(nitems<2)) return;
-  e = 0;
+  aok = 0;
   /*
    * Prime the cache for the order array, and check the array for
    * correct ordering.  At the first order mismatch, bail out and
-   * start the actual reordering.
+   * start the actual reordering beyond the ordered prefix.
    * If the order turns out to be correct already, perform an early return.
    */
   do
-    if (UNLIKELY(order[e] != e))
+    if (UNLIKELY(*order != aok))
       goto unordered;
-  while (LIKELY(++e < nitems));
+  while (order++, LIKELY(++aok < nitems));
   return;
 unordered:
+  nitems -= aok;
   tmp=xalloc(size * nitems);
+  e = 0;
 
 #undef DOSIZE
 #undef CHECK_ALIGNED
@@ -90,7 +92,6 @@ unordered:
  {						\
   Y *from=(Y *) memory;				\
   Y *to=(Y *) tmp;				\
-  e=0;						\
   do						\
      to[e] = from[order[e]];			\
   while (LIKELY(++e < nitems));			\
@@ -120,13 +121,12 @@ unordered:
 
   default:
 unaligned:
-    e = 0;
     do
       memcpy(tmp+e*size, memory+order[e]*size, size);
     while (LIKELY(++e < nitems));
   }
 
-  memcpy(memory, tmp, size * nitems);
+  memcpy(memory + aok * size, tmp, size * nitems);
   free(tmp);
 }
 
