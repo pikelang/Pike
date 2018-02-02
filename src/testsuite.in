@@ -559,6 +559,54 @@ test_any([[
   return B("foo")->s;
 ]], "foo")
 
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return indices(B);
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return indices(B);
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return values(B);
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return values(B);
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return indices(B());
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return indices(B());
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return values(B());
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return values(B());
+]], ({ 2 }))
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
