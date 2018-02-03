@@ -39,11 +39,9 @@ array(string) RegGetKeyNames_76(int hkey, string key)
   return ret;
 }
 
-/*! @decl
+/*!   Get multiple values from the register (COMPAT).
  *!
- *!   Get multiple values from the register (COMPAT).
- *!
- *!   Pike 7.6 compatibility implementation of @[RegGetValues()].
+ *!   Pike 7.6 compatibility implementation of @[System.RegGetValues()].
  *!   The difference being that this function throws errors when
  *!   keys are missing.
  *!
@@ -51,7 +49,7 @@ array(string) RegGetKeyNames_76(int hkey, string key)
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValue_76()], @[RegGetKeyNames_76()], @[RegGetValues()]
+ *!   @[RegGetValue_76()], @[RegGetKeyNames_76()], @[System.RegGetValues()]
  */
 mapping(string:string|int|array(string)) RegGetValues_76(int hkey, string key)
 {
