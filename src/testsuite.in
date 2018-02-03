@@ -14553,6 +14553,7 @@ test_tests([[
     }
 
     foreach(get_dir(combine_path(srcdir, dir)), string f) {
+      if (has_prefix(f, ".#")) continue;	// Auto-save file.
       if (has_suffix(f, ".cmod")) {
 	// Ensure that there's an explicit rule to precompile the file.
 	string fbase = f[..<sizeof(".cmod")];
