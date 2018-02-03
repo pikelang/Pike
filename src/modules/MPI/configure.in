@@ -1,4 +1,6 @@
 AC_INIT(mpi.cmod)
+AC_ARG_WITH(mpi, MY_DESCR([--with-mpi],[enable MPI suppport]),
+            [], [with_mpi=no])
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(mpi_config.h)
 define(TEST_BUILTIN, [
@@ -22,7 +24,7 @@ int main(int argc, char **argv)
 
 TEST_BUILTIN(__builtin_expect, [argc,0])
 
-if test "x$with_MPI" == "xyes"
+if test "x$with_mpi" == "xyes"
 then
     AC_MSG_CHECKING(whether MPI is present)
     AC_TRY_RUN([
