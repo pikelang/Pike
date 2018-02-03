@@ -380,16 +380,10 @@ void *alloca();
 #define B8_T __int64
 #elif SIZEOF_CHAR_P == 8
 #define B8_T char *
-#elif defined(B4_T)
-struct b8_t_s { B4_T x,y; };
-#define B8_T struct b8_t_s
 #endif
 
 #if (SIZEOF___INT128 - 0) == 16
 #define B16_T __int128
-#elif defined(B8_T)
-struct b16_t_s { B8_T x,y; };
-#define B16_T struct b16_t_s
 #endif
 
 /* INT_TYPE stuff */
