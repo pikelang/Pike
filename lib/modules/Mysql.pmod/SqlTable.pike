@@ -717,7 +717,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("INSERT `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
@@ -739,7 +739,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("INSERT IGNORE `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
   if (!id_col) return 0;
   int last_insert_id = conn->insert_id();
@@ -764,7 +764,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("REPLACE `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
@@ -798,7 +798,7 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 					     clear_other_fields == 2) + " "
 		   "WHERE " + pk_where + " "
 		   "LIMIT 1",	// The limit is just extra paranoia.
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
 }
 
@@ -870,7 +870,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 		   make_insert_clause (({real_cols})) + " " +
 		   (sizeof (update_set) ?
 		    "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
 
   invalidate_cache();
 
@@ -931,7 +931,7 @@ void conn_remove (Sql.Sql db_conn, mixed id)
   Sql.mysql conn = db_conn;
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + simple_make_pk_where (id),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
 }
 
@@ -944,7 +944,7 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
   // FIXME: Split into several queries if the list is very long.
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + make_multi_pk_where (ids),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
   invalidate_cache();
 }
 
@@ -986,7 +986,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     select_expr = handle_argspec (select_expr, bindings);
   if (arrayp (where)) where = handle_argspec (where, bindings);
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
-  if (!sizeof (bindings)) bindings = 0;
+  if (!sizeof (bindings)) bindings = UNDEFINED;
 
   string property;
   string col_type = col_types[select_expr];
@@ -1689,7 +1689,7 @@ protected string get_and_merge_props (Sql.mysql conn, string pk_where,
       conn->big_query ("SELECT `" + prop_col + "` "
 		       "FROM `" + table + "` "
 		       "WHERE " + pk_where,
-		       0, query_charset)->fetch_row())
+		       UNDEFINED, query_charset)->fetch_row())
     old_props = decode_props (ent[0], pk_where);
   else
     old_props = ([]);
@@ -1726,7 +1726,7 @@ protected void update_props (Sql.mysql conn, string pk_where,
 		   "_binary\"" + quote (encoded_props) + "\" "
 		   "WHERE " + pk_where + " "
 		   "LIMIT 1",	// In case the WHERE condition is bad.
-		   0, query_charset);
+		   UNDEFINED, query_charset);
 }
 
 protected mapping(string:mixed) update_pack_fields (

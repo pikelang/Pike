@@ -671,6 +671,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args)
 {
+  STACK_LEVEL_START(0);
   while (*fmt) {
     if (*fmt == '%') {
       int flags = 0;
@@ -921,6 +922,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
       string_builder_binary_strcat(s, start, fmt-start);
     }
   }
+  STACK_LEVEL_DONE(0);
 }
 
 

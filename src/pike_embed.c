@@ -43,6 +43,7 @@
 #include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "pike_embed.h"
+#include "pike_modules.h"
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -183,10 +184,10 @@ void init_pike_runtime(void (*exit_cb)(int))
    * too unsafe (consider 64-bit systems).
    */
 #if STACK_DIRECTION < 0
-  /* Equvivalent with |= 0xffff */
+  /* Equivalent with |= 0xffff */
   Pike_interpreter.stack_top += ~(PTR_TO_INT(Pike_interpreter.stack_top)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
-  /* Equvivalent with &= ~0xffff */
+  /* Equivalent with &= ~0xffff */
   Pike_interpreter.stack_top -= PTR_TO_INT(Pike_interpreter.stack_top) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
@@ -492,67 +493,3 @@ void pike_push_argv(int argc, char **argv)
   a->type_field = BIT_STRING;
   push_array(a);
 }
-
-#ifdef __amigaos4__
-#define timeval timeval_amigaos
-#include <exec/types.h>
-#include <utility/hooks.h>
-#include <dos/dosextens.h>
-#include <proto/dos.h>
-
-static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
-						 APTR REG(a2,userdata),
-						 struct ScanVarsMsg *REG(a1,msg))
-{
-  if(msg->sv_GDir[0] == '\0' ||
-     !strcmp(msg->sv_GDir, "ENV:")) {
-    push_text(msg->sv_Name);
-    push_static_text("=");
-    push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
-    f_add(3);
-  }
-
-  return 0;
-}
-
-static struct Hook scan_amigaos_environment_hook = {
-  { NULL, NULL },
-  (ULONG (*)())scan_amigaos_environment_func,
-  NULL, NULL
-};
-#endif /* __amigsos4__ */
-
-#if 0
-/* This is now handled by PIKEFUN _getenv in builtin.cmod. */
-void pike_push_env(void)
-{
-#ifdef __amigaos__
-#ifdef __amigaos4__
-  if(DOSBase->lib_Version >= 50) {
-    struct svalue *mark = Pike_sp;
-    IDOS->ScanVars(&scan_amigaos_environment_hook,
-		   GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
-		   NULL);
-    f_aggregate(Pike_sp-mark);
-  } else
-#endif
-    push_array(allocate_array_no_init(0,0));
-#else
-#ifdef DECLARE_ENVIRON
-  extern char **environ;
-#endif
-  struct array *a;
-  int num;
-
-  for(num=0;environ[num];num++);
-  a=allocate_array_no_init(num,0);
-  for(num=0;environ[num];num++)
-  {
-    SET_SVAL(ITEM(a)[num], T_STRING, 0,
-	     string, make_shared_string(environ[num]));
-  }
-  a->type_field = BIT_STRING;
-  push_array(a);
-#endif
-}
-#endif	/* 0 */

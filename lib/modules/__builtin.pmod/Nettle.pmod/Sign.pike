@@ -26,7 +26,7 @@ int(0..) key_size();
 //!   @[_equal()]
 int(0..1) public_key_equal(this_program other);
 
-//! Check whether two objects are equvivalent.
+//! Check whether two objects are equivalent.
 //!
 //! This includes checking both the public and private keys.
 //!

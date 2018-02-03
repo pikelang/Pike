@@ -27,20 +27,16 @@
  */
 
 #include "sybase_config.h"
-#include "global.h"
+#include "module.h"
 
 #ifdef HAVE_SYBASE
 
-
-#include "stralloc.h"
 #include "pike_error.h"
 #include "program.h"
 #include "las.h"
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "multiset.h"
-#include "mapping.h"
 
 #include "sybase.h"
 
@@ -184,8 +180,11 @@ PIKECLASS sybase
 
   DECLARE_STORAGE;
 
-  typedef struct sybase_sybase_struct pike_sybase_connection;
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
 
+  typedef struct sybase_sybase_struct pike_sybase_connection;
 
 /*
  * Must be called in a MT-safe fashion
@@ -623,6 +622,7 @@ PIKEFUN void create(string|void host_, string|void db_,
    is *function_result */
 
 PIKEFUN object|string big_query(string query_)
+  flags ID_VARIANT;
 {
   pike_sybase_connection *this=THIS;
   char *query, *err=NULL, *function_result=NULL;

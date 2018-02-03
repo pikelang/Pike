@@ -522,43 +522,45 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
 //! number or cipher suite). It does not however support multiple
 //! rounds of hashing to add computational cost to brute force
 //! attacks.
-//!
-//! @param password
-//!   Password for the keygenerator.
-//!
-//! @param salt
-//! @param info
-//!   Both the salt and info arguments are optional for the function
-//!   and can either be 0.
-//!
-//! @param bytes
-//!   The number of bytes of output.
-//!
-//! @returns
-//!   Returns the derived key.
-//!
-//! @seealso
-//!   @[pbkdf2()]
-string(8bit) hkdf(string(8bit) password, string(8bit) salt,
-		  string(8bit) info, int bytes)
+class HKDF
 {
-  // RFC 5869 2.2 Extract
-  if(!salt) salt = "\0"*digest_size();
-  object(_HMAC.State) hmac = HMAC(HMAC(salt)(password));
+  protected string(8bit) prk;
+  protected object(_HMAC.State) hmac;
 
-  // RFC 5869 2.3 Expand
-  string(8bit) t = "";
-  string(8bit) res = "";
-  if(!info) info = "";
-  int(8bit) i;
-  while (sizeof(res) < bytes )
+  //! Initializes the HKDF object with a RFC 5869 2.2
+  //! HKDF-Extract(salt, IKM) call.
+  protected void create(string(8bit) password, void|string(8bit) salt)
   {
-    i++;
-    t = hmac(sprintf("%s%s%c", t, info, i));
-    res += t;
+    if(!salt) salt = "\0"*digest_size();
+    prk = salt;
+    extract(password);
   }
 
-  return res[..bytes-1];
+  //! This is similar to the RFC 5869 2.2 HKDF-Extract(salt, IKM)
+  //! function, but the salt is the previously generated PRK.
+  string(8bit) extract(string(8bit) password)
+  {
+    prk = HMAC(prk)(password);
+    hmac = HMAC(prk);
+  }
+
+  //! This is similar to the RFC 5869 2.3 HKDF-Expand(PRK, info, L)
+  //! function, but PRK is taken from the object.
+  string(8bit) expand(string(8bit) info, int bytes)
+  {
+    string(8bit) t = "";
+    string(8bit) res = "";
+    if(!info) info = "";
+    int(8bit) i;
+    while (sizeof(res) < bytes )
+    {
+      i++;
+      t = hmac(sprintf("%s%s%c", t, info, i));
+      res += t;
+    }
+
+    return res[..bytes-1];
+  }
 }
 
 //! Password Based Key Derivation Function from OpenSSL.

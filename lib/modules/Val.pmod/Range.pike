@@ -26,6 +26,13 @@ void _decode(array(mixed) x) {
   till = x[1];
 }
 
+protected int __hash() {
+  catch {
+    return (int)from ^ (int)till;
+  };
+  return 0;
+}
+
 //! @param from
 //!   Lower inclusive boundary for the range.  Specify no lower-boundary
 //!   by filling in @expr{-Math.inf@}.

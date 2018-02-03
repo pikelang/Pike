@@ -1067,15 +1067,13 @@ mapping abbr2zones =
      "Europe/Tiraspol",
      "Europe/Zurich",
    }),
-   "BOST": ({
-     "America/La_Paz",
-   }),
    "BPT": ({
      "America/Adak",
      "America/Nome",
    }),
    "BST": ({
      "America/Adak",
+     "America/La_Paz",
      "America/Nome",
      "Europe/Belfast",
      "Europe/Dublin",
@@ -2507,6 +2505,7 @@ mapping abbr2zones =
      "Africa/Ndjamena",
      "Africa/Niamey",
      "Africa/Porto-Novo",
+     "Africa/Sao_Tome",
      "Africa/Windhoek",
    }),
    "WEMT": ({

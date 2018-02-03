@@ -5,16 +5,12 @@
 || This module has been deprecated.
 */
 
-#include "global.h"
-#include "config.h"
 #include "module.h"
+#include "config.h"
 #include "threads.h"
-#include "stralloc.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "fdlib.h"

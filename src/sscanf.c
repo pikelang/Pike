@@ -21,6 +21,7 @@
 #include "pike_types.h"
 #include "sscanf.h"
 #include "bitvector.h"
+#include "pike_search.h"
 
 /*
  * helper functions for sscanf %O

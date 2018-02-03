@@ -4,15 +4,10 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "array.h"
 #include "operators.h"
 #include "threads.h"
-
-/* For this_object() */
-#include "object.h"
 #include "pike_compiler.h"
 #include "module_support.h"
 

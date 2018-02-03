@@ -21,7 +21,6 @@
 
 #endif /*HAVE_MSQL*/
 
-#include "global.h"
 #include "module.h"
 #include "program.h"
 #include "pike_compiler.h"
@@ -30,15 +29,9 @@
 #ifdef HAVE_MSQL
 
 #include "threads.h"
-#include "machine.h"
 #include "interpret.h"
 #include "builtin_functions.h"
-#include "svalue.h"
-#include "array.h"
-#include "mapping.h"
-#include "stralloc.h"
 #include "operators.h"
-#include "multiset.h"
 #include "pike_types.h"
 #include "interpret.h"
 

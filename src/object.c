@@ -338,6 +338,14 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,args);
+
+#ifdef PIKE_DEBUG
+    if( TYPEOF(Pike_sp[-1])!=T_INT || Pike_sp[-1].u.integer )
+    {
+      Pike_error("Illegal create() return type.\n");
+    }
+#endif
+
     pop_stack();
   } else {
     pop_n_elems(args);
@@ -1014,7 +1022,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 
   if (o->storage) {
     if (o->flags & OBJECT_CLEAR_ON_EXIT)
-      guaranteed_memset(o->storage, 0, p->storage_needed);
+      secure_zero(o->storage, p->storage_needed);
     /* NB: The storage is still valid until all refs are gone from o. */
     if (o->refs == 1) {
       PIKE_MEM_WO_RANGE(o->storage, p->storage_needed);

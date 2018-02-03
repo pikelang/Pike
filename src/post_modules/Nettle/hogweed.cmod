@@ -4,14 +4,11 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "pike_compiler.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "interpret.h"
-#include "module.h"
-#include "mapping.h"
-#include "stralloc.h"
 #include "constants.h"
 
 #include "nettle_config.h"
@@ -395,6 +392,7 @@ PIKECLASS ECC_Curve
     if (THIS->curve) {
       Pike_error("The curve has already been initialized!\n");
     }
+    pop_stack();
 
     switch(curve) {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1

@@ -337,7 +337,19 @@ private void read_cb_chunked( mixed dummy, string data )
 	  if( sscanf( header, "%s:%s", hk, hv ) == 2 )
 	  {
 	    hk = String.trim_whites(lower_case(hk));
-	    hv = String.trim_whites(hv);
+            hv = String.trim_whites(hv);
+
+            // RFC 7230 4.1.2: Ignore framing, routing, modifiers,
+            // authentication and response control headers.
+            if( (< "transfer-encoding", "content-length",
+                   "host", "cache-control", "expect",
+                   "max-forwards", "pragma", "range", "te",
+                   "age", "expires", "date", "location",
+                   "retry-after", "vary", "warning",
+                   "authentication", "proxy-authenticate",
+                   "proxy-authorization", "www-authenticate" >)[ hk ] )
+              continue;
+
 	    if( request_headers[hk] )
 	    {
 	      if( !arrayp( request_headers[hk] ) )
@@ -345,7 +357,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	      request_headers[hk]+=({hv});
 	    }
 	    else
-	      request_headers[hk] = hk;
+              request_headers[hk] = hv;
 	  }
 	}
 

@@ -11,11 +11,8 @@
  *! This is the header packing system that is used in HTTP/2 (@rfc{7540@}).
  */
 
-#include "global.h"
-
-#include "svalue.h"
-#include "interpret.h"
 #include "module.h"
+#include "interpret.h"
 
 #include "huffman-tab.h"
 

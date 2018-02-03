@@ -1,14 +1,10 @@
 /* nettle.cmod -*- c -*- */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
-/* For this_object() */
-#include "object.h"
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
-#include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "bignum.h"
 #include "sprintf.h"
@@ -74,26 +70,28 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
   DECLARE_STORAGE;
 
-  /*! @decl void create(void|int sources)
+  /*! @decl void create(void|int(0..) sources)
    *! The number of entropy sources that will feed entropy to the
    *! random number generator is given as an argument to Yarrow
    *! during instantiation.
    *! @seealso
    *!   @[update]
    */
-  PIKEFUN void create(void|int arg)
+  PIKEFUN void create(void|int(0..) arg)
     flags ID_PROTECTED;
   {
     INT32 num = 0;
 
     if(arg) {
-      if (TYPEOF(*arg) != PIKE_T_INT)
-	Pike_error("Bad argument type.\n");
       num = arg->u.integer;
       if(num < 0)
 	Pike_error("Invalid number of sources.\n");
       free (THIS->sources);
-      THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      if( num > 0 )
+        THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      else
+        THIS->sources = NULL;
+      pop_stack();
     }
     else
     {
@@ -208,10 +206,10 @@ program_flags PROGRAM_CLEAR_STORAGE;
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string(0..255) random_string(int length)
+  /*! @decl string(0..255) random_string(int(0..) length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string(0..255) random_string(int length)
+  PIKEFUN string(0..255) random_string(int(0..) length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -327,7 +325,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *! bytes of random data per call, the necessary rekey operations
    *! are here performed internally, so no such restrictions apply.
    */
-  PIKEFUN string(8bit) random_string(int len)
+  PIKEFUN string(8bit) random_string(int(0..) len)
   {
     int stored = 0;
     struct pike_string *s;
@@ -492,7 +490,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *! Generates @[len] amount of pseudo random data. Does not allow
    *! for additional input data in the call.
    */
-  PIKEFUN string(8bit) random_string(int len)
+  PIKEFUN string(8bit) random_string(int(0..) len)
   {
     int stored = 0;
     struct pike_string *s;
@@ -568,7 +566,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
  *!   Returns the position in the string where the first non-padding
  *!   character is, or 0.
  */
-PIKEFUN int(0..) rsa_unpad(string(0..255) data, int type)
+PIKEFUN int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
 {
   int i, pad=0, nonpad=0, pos=0;
   unsigned char *str;
@@ -611,11 +609,22 @@ PIKEFUN int(0..) rsa_unpad(string(0..255) data, int type)
  *!
  *! The @[password] memory will be cleared before released.
  */
-PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
-				 void|string(0..255) magic)
-     optflags OPT_TRY_OPTIMIZE;
+PIKEFUN string(0..127) crypt_md5(string pw, string salt,
+				 void|string magic)
+  optflags OPT_TRY_OPTIMIZE;
+  /* NB: We use a weaker type above to allow us to delay
+   *     throwing errors on wide strings until we've had
+   *     time to censor the password string.
+   */
+  rawtype tFunc(tStr8 tStr8 tOr(tStr8, tVoid), tStr7);
 {
   char *hash;
+
+  /* Censor the password. */
+  push_string(pw);
+  args++;
+  add_ref(Pike_sp[-args].u.string = MK_STRING("censored"));
+
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
 
@@ -741,11 +750,9 @@ static const INT32 crc[256] = {
 PIKEFUN int(0..) crc32c(string(8bit) data, void|int(0..) seed)
 {
   unsigned int h = 0;
-  if(seed) {
-    if (TYPEOF(*seed) != PIKE_T_INT)
-      Pike_error("Bad argument type.\n");
+  if(seed)
     h = seed->u.integer;
-  }
+
 #ifdef HAVE_CRC32_INTRINSICS
   if(supports_sse42)
   {

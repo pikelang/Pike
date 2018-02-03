@@ -160,6 +160,8 @@ class UnicodeWrapper (
 		      protected object master_result
 		      )
 {
+  inherit Sql.Result;
+
   //! Returns the number of rows in the result.
   int num_rows()
   {

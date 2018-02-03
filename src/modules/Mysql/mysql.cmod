@@ -11,7 +11,7 @@
  */
 
 /* Master Pike headerfile */
-#include "global.h"
+#include "module.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -61,10 +61,6 @@
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
-#include "module.h"
-#include "svalue.h"
-#include "object.h"
-#include "stralloc.h"
 #include "interpret.h"
 #include "pike_compiler.h"
 #include "pike_error.h"
@@ -73,7 +69,6 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fd_control.h"
-#include "mapping.h"
 #include "bignum.h"
 #include "signal_handler.h"
 #include "module_support.h"

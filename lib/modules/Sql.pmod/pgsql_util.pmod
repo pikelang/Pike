@@ -27,7 +27,6 @@
 #define CLOSING			5
 #define CLOSED			6
 #define PURGED			7
-// If this is extended, change the type of _state
 
 #define NOERROR			0	// Error states networkparser
 #define PROTOCOLERROR		1
@@ -410,11 +409,9 @@ class conxion {
   final Thread.Queue stashqueue;
   final Thread.Condition stashavail;
   final Stdio.Buffer stash;
-   /* FIXME actually: int(KEEP..SYNCSEND) stashflushmode
-    * but the PikeParser does not approve, and refdoc
-    * generation aborts
-    */
-  final int(0..4) stashflushmode;
+  //! @ignore
+  final int(KEEP..SYNCSEND) stashflushmode;
+  //! @endignore
   final Thread.ResourceCount stashcount;
   final int synctransact;
 #ifdef PG_DEBUGRACE
@@ -720,7 +717,9 @@ class Result {
   private conxiin cr;
   final int(0..1) untolderror;
   final mixed delayederror;
-  final int(0..7) _state;	// FIXME actually: int(PORTALINIT..PURGED)
+  //! @ignore
+  final int(PORTALINIT..PURGED) _state;
+  //! @endignore
   final int _fetchlimit;
   private int(0..1) alltext;
   final int(0..1) _forcetext;
@@ -920,7 +919,7 @@ class Result {
             } else {
               [ value ] = cr->sscanf(collen == 4 ? "%4F" : "%8F");
               if (alltext)
-                value = (string)value;
+                value = sprintf("%.*g", collen == 4 ? 9 : 17, value);
               break;
             }
           default:value = cr->read(collen);
@@ -1464,6 +1463,8 @@ class Result {
       datarowtypes = emptyarray;
       _ddescribe->broadcast();
     }
+    if (delayederror && !pgsqlsess.delayederror)
+      pgsqlsess.delayederror = delayederror;	// Preserve error upstream
     pgsqlsess = 0;
   }
 
@@ -1556,10 +1557,12 @@ class Result {
     }
     if (arrayp(datarow[-1]))
       return datarow;
+    do datarow = datarow[..<1];			// Swallow EOF mark(s)
+    while (sizeof(datarow) && !arrayp(datarow[-1]));
     trydelayederror();
     eoffound = 1;
     datarows->write(1);				// Signal EOF for other threads
-    return (datarow = datarow[..<1]);
+    return datarow;
   }
 
   //! @param copydata
@@ -1677,7 +1680,7 @@ class proxy {
   final int(0..1) invalidatecache;
   private Thread.Queue qportals;
   final mixed delayederror;
-  private function (:void) readyforquery_cb;
+  final function (:void) readyforquery_cb;
 
   final string host;
   final int(0..65535) port;
@@ -1819,10 +1822,10 @@ class proxy {
   }
 
   private int|Result portal;  // state information procmessage
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
   private string datarowdebug;
   private int datarowdebugcount;
-  #endif
+#endif
 
   final void processloop(conxion ci) {
     (c = ci)->socket->set_id(procmessage);
@@ -1858,17 +1861,17 @@ class proxy {
     err = catch {
     conxion ci = c;		// cache value FIXME sensible?
     conxiin cr = ci->i;		// cache value FIXME sensible?
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
     PD("Processloop\n");
 
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUGMORE
     void showportalstack(string label) {
       PD(sprintf(">>>>>>>>>>> Portalstack %s: %O\n", label, portal));
       foreach (qportals->peek_array(); ; int|Result qp)
         PD(" =========== Portal: %O\n", qp);
       PD("<<<<<<<<<<<<<< Portalstack end\n");
     };
-  #endif
+#endif
     void showportal(int msgtype) {
       if (objectp(portal))
         PD("%d<%O %d %c switch portal\n",
@@ -1877,25 +1880,26 @@ class proxy {
         PD("%d<Sync %d %d %c portal\n",
          ci->socket->query_fd(), ++ci->queueinidx, portal, msgtype);
     };
-  #endif
+#endif
     int msgisfatal(mapping(string:string) msgresponse) {
-      if (!terminating)		// Run the callback once per lost connection
-        runcallback(backendpid,"_lost","");
-      return (has_prefix(msgresponse.C, "53")
-           || has_prefix(msgresponse.C, "3D")
-           || has_prefix(msgresponse.C, "57P")) && MAGICTERMINATE;
+      int isfatal = (has_prefix(msgresponse.C, "53")
+                  || has_prefix(msgresponse.C, "3D")
+                  || has_prefix(msgresponse.C, "57P")) && MAGICTERMINATE;
+      if (isfatal && !terminating) // Run the callback once per lost connection
+        runcallback(backendpid, "_lost", "");
+      return isfatal;
     };
     for (;;) {
       err = catch {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
         if (!portal && datarowdebug) {
           PD("%s rows %d\n", datarowdebug, datarowdebugcount);
           datarowdebug = 0; datarowdebugcount = 0;
         }
-  #endif
-  #ifdef PG_DEBUGMORE
+#endif
+#ifdef PG_DEBUGMORE
         showportalstack("LOOPTOP");
-  #endif
+#endif
         if (!sizeof(cr)) {			// Preliminary check, fast path
           Thread.MutexKey lock = cr->fillreadmux->lock();
           if (!sizeof(cr)) {			// Check for real
@@ -1910,9 +1914,9 @@ class proxy {
         int msgtype = cr->read_int8();
         if (!portal) {
           portal = qportals->try_read();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
           showportal(msgtype);
-  #endif
+#endif
         }
         int msglen = cr->read_int32();
         msgsreceived++;
@@ -1923,21 +1927,21 @@ class proxy {
           array getcols() {
             int bintext = cr->read_int8();
             int cols = cr->read_int16();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             array a;
             msglen -= 4 + 1 + 2 + 2 * cols;
             foreach (a = allocate(cols, ([])); ; mapping m)
               m.type = cr->read_int16();
-  #else
+#else
             cr->consume(cols << 1);
-  #endif		      // Discard column info, and make it line oriented
+#endif		      // Discard column info, and make it line oriented
             return ({ ({(["name":"line"])}), ({bintext?BYTEAOID:TEXTOID}) });
           };
           array(string) reads() {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             if (msglen < 1)
               errtype = PROTOCOLERROR;
-  #endif
+#endif
             array ret = emptyarray, aw = ({0});
             do {
               string w = cr->read_cstring();
@@ -1986,16 +1990,16 @@ class proxy {
                 break;
               case 5:
                 PD("MD5Password\n");
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 if (msglen < 4)
                   errtype = PROTOCOLERROR;
-  #endif
-  #define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
+#endif
+#define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
                 authresponse(({"md5",
                  md5hex(md5hex(pass + user) + cr->read(msglen)), 0}));
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 msglen = 0;
-  #endif
+#endif
                 break;
               case 6:
                 PD("SCMCredential\n");
@@ -2013,11 +2017,11 @@ class proxy {
                 PD("GSSContinue\n");
                 errtype = PROTOCOLUNSUPPORTED;
                 cr->read(msglen);				// SSauthdata
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 if (msglen<1)
                   errtype = PROTOCOLERROR;
                 msglen = 0;
-  #endif
+#endif
                 break;
               case 10: {
                 string word;
@@ -2028,11 +2032,11 @@ class proxy {
                     case "SCRAM-SHA-256":
                       k = 1;
                   }
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                   msglen -= sizeof(word) + 1;
                   if (msglen < 1)
                     break;
-  #endif
+#endif
                 }
                 if (k) {
                   SASLcontext = Crypto.SHA256.SCRAM();
@@ -2042,11 +2046,11 @@ class proxy {
                    }));
                 } else
                   errtype = PROTOCOLUNSUPPORTED;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 if (msglen != 1)
                   errtype = PROTOCOLERROR;
                 msglen = 0;
-  #endif
+#endif
                 break;
               }
               case 11: {
@@ -2057,9 +2061,9 @@ class proxy {
                   authresponse(response);
                 else
                   errtype = PROTOCOLERROR;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 msglen = 0;
-  #endif
+#endif
                 break;
               }
               case 12:
@@ -2068,9 +2072,9 @@ class proxy {
                   SASLcontext = 0;	// Clears context and approves server
                 else
                   errtype = PROTOCOLERROR;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 msglen = 0;
-  #endif
+#endif
                 break;
               default:
                 PD("Unknown Authentication Method %c\n", authtype);
@@ -2089,49 +2093,49 @@ class proxy {
           case 'K':
             msglen -= 4 + 4; backendpid = cr->read_int32();
             cancelsecret = cr->read(msglen);
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("BackendKeyData %O\n", cancelsecret);
             msglen = 0;
-  #endif
+#endif
             break;
           case 'S': {
             PD("ParameterStatus ");
             msglen -= 4;
             array(string) ts = reads();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             if (sizeof(ts) == 2) {
-  #endif
+#endif
               runtimeparameter[ts[0]] = ts[1];
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
               PD("%O=%O\n", ts[0], ts[1]);
             } else
               errtype = PROTOCOLERROR;
-  #endif
+#endif
             break;
           }
           case '3':
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("CloseComplete\n");
             msglen -= 4;
-  #endif
+#endif
             break;
           case 'Z': {
             backendstatus = cr->read_int8();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             msglen -= 4 + 1;
             PD("ReadyForQuery %c\n", backendstatus);
-  #endif
-  #ifdef PG_DEBUGMORE
+#endif
+#ifdef PG_DEBUGMORE
             showportalstack("READYFORQUERY");
-  #endif
+#endif
             int keeplooking;
             do
               for (keeplooking = 0;
                    objectp(portal);
                    portal = qportals->read()) {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
                 showportal(msgtype);
-  #endif
+#endif
                 if (backendstatus == 'I' && intransaction
                  && portal->transtype != TRANSEND)
                   keeplooking = 1;
@@ -2149,9 +2153,9 @@ class proxy {
               }
             }
             portal = 0;
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUGMORE
             showportalstack("AFTER READYFORQUERY");
-  #endif
+#endif
             readyforquerycount--;
             if (readyforquery_cb)
               readyforquery_cb(), readyforquery_cb = 0;
@@ -2159,24 +2163,24 @@ class proxy {
             break;
           }
           case '1':
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("ParseComplete portal %O\n", portal);
             msglen -= 4;
-  #endif
+#endif
             break;
           case 't': {
             array a;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             int cols = cr->read_int16();
             PD("%O ParameterDescription %d values\n", portal._query, cols);
             msglen -= 4 + 2 + 4 * cols;
             a = cr->read_ints(cols, 4);
-  #else
+#else
             a = cr->read_ints(cr->read_int16(), 4);
-  #endif
-  #ifdef PG_DEBUGMORE
+#endif
+#ifdef PG_DEBUGMORE
             PD("%O\n", a);
-  #endif
+#endif
             if (portal._tprepared)
               portal._tprepared.datatypeoid = a;
             Thread.Thread(portal->_preparebind, a);
@@ -2185,23 +2189,23 @@ class proxy {
           case 'T': {
             array a, at;
             int cols = cr->read_int16();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("RowDescription %d columns %O\n", cols, portal._query);
             msglen -= 4 + 2;
-  #endif
+#endif
             at = allocate(cols);
             foreach (a = allocate(cols); int i; ) {
               string s = cr->read_cstring();
               mapping(string:mixed) res = (["name":s]);
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
               msglen -= sizeof(s) + 1 + 4 + 2 + 4 + 2 + 4 + 2;
               res.tableoid = cr->read_int32() || UNDEFINED;
               res.tablecolattr = cr->read_int16() || UNDEFINED;
-  #else
+#else
               cr->consume(6);
-  #endif
+#endif
               at[i] = cr->read_int32();
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
               res.type = at[i];
               {
                 int len = cr->read_sint(2);
@@ -2213,14 +2217,14 @@ class proxy {
                * at query time
                */
               res.formatcode = cr->read_int16();
-  #else
+#else
               cr->consume(8);
-  #endif
+#endif
               a[i] = res;
             }
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUGMORE
             PD("%O\n", a);
-  #endif
+#endif
             if (portal._forcetext)
               portal->_setrowdesc(a, at);	// Do not consume queued portal
             else {
@@ -2230,10 +2234,10 @@ class proxy {
             break;
           }
           case 'n': {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             msglen -= 4;
             PD("NoData %O\n", portal._query);
-  #endif
+#endif
             portal._fetchlimit = 0;		// disables subsequent Executes
             portal->_processrowdesc(emptyarray, emptyarray);
             portal = 0;
@@ -2245,10 +2249,10 @@ class proxy {
             break;
           case '2': {
             mapping tp;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             msglen -= 4;
             PD("%O BindComplete\n", portal._portalname);
-  #endif
+#endif
             if (tp = portal._tprepared) {
               int tend = gethrtime();
               int tstart = tp.trun;
@@ -2274,58 +2278,58 @@ class proxy {
           }
           case 'D':
             msglen -= 4;
-  #ifdef PG_DEBUG
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUG
+#ifdef PG_DEBUGMORE
             PD("%O DataRow %d bytes\n", portal._portalname, msglen);
-  #endif
+#endif
             datarowdebugcount++;
             if (!datarowdebug)
               datarowdebug = sprintf(
                "%O DataRow %d bytes", portal._portalname, msglen);
-  #endif
-  #ifdef PG_DEBUG
+#endif
+#ifdef PG_DEBUG
             msglen=
-  #endif
+#endif
             portal->_decodedata(msglen, runtimeparameter[CLIENT_ENCODING]);
             break;
           case 's':
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("%O PortalSuspended\n", portal._portalname);
             msglen -= 4;
-  #endif
+#endif
             portal = 0;
             break;
           case 'C': {
             msglen -= 4;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             if (msglen < 1)
               errtype = PROTOCOLERROR;
-  #endif
+#endif
             string s = cr->read(msglen - 1);
             portal->_storetiming();
             PD("%O CommandComplete %O\n", portal._portalname, s);
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             if (cr->read_int8())
               errtype = PROTOCOLERROR;
             msglen = 0;
-  #else
+#else
             cr->consume(1);
-  #endif
-  #ifdef PG_DEBUGMORE
+#endif
+#ifdef PG_DEBUGMORE
             showportalstack("COMMANDCOMPLETE");
-  #endif
+#endif
             portal->_releasesession(s);
             portal = 0;
             break;
           }
           case 'I':
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("EmptyQueryResponse %O\n", portal._portalname);
             msglen -= 4;
-  #endif
-  #ifdef PG_DEBUGMORE
+#endif
+#ifdef PG_DEBUGMORE
             showportalstack("EMPTYQUERYRESPONSE");
-  #endif
+#endif
             portal->_releasesession();
             portal = 0;
             break;
@@ -2333,14 +2337,14 @@ class proxy {
             PD("%O CopyData\n", portal._portalname);
             portal->_storetiming();
             msglen -= 4;
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             if (msglen < 0)
               errtype = PROTOCOLERROR;
-  #endif
+#endif
             portal->_processdataready(({cr->read(msglen)}), msglen);
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             msglen = 0;
-  #endif
+#endif
             break;
           case 'G':
             portal->_releasestatement();
@@ -2349,16 +2353,16 @@ class proxy {
             portal._state = COPYINPROGRESS;
             break;
           case 'c':
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
             PD("%O CopyDone\n", portal._portalname);
             msglen -= 4;
-  #endif
+#endif
             portal = 0;
             break;
           case 'E': {
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUGMORE
             showportalstack("ERRORRESPONSE");
-  #endif
+#endif
             if (portalsinflight->drained() && !readyforquerycount)
               sendsync();
             PD("%O ErrorResponse %O\n",
@@ -2431,13 +2435,13 @@ class proxy {
             {
               array(string) ts = reads();
               switch (sizeof(ts)) {
-  #if PG_DEBUG
+#if PG_DEBUG
                 case 0:
                   errtype = PROTOCOLERROR;
                   break;
                 default:
                   errtype = PROTOCOLERROR;
-  #endif
+#endif
                 case 2:
                   extrainfo = ts[1];
                 case 1:
@@ -2453,9 +2457,9 @@ class proxy {
               string s;
               PD("Unknown message received %c\n", msgtype);
               s = cr->read(msglen -= 4); PD("%O\n", s);
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
               msglen = 0;
-  #endif
+#endif
               errtype = PROTOCOLUNSUPPORTED;
             } else {
               lastmessage += ({
@@ -2468,10 +2472,10 @@ class proxy {
             }
             break;
         }
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
         if (msglen)
           errtype = PROTOCOLERROR;
-  #endif
+#endif
         {
           string msg;
           switch (errtype) {
@@ -2502,9 +2506,9 @@ class proxy {
           or = this;
         if (!or.delayederror)
           or.delayederror = err;
-  #ifdef PG_DEBUGMORE
+#ifdef PG_DEBUGMORE
         showportalstack("THROWN");
-  #endif
+#endif
         if (objectp(portal))
           portal->_releasesession();
         portal = 0;
@@ -2516,9 +2520,9 @@ class proxy {
     PD("Closing database processloop %s\n", err ? describe_backtrace(err) : "");
     delayederror = err;
     if (objectp(portal)) {
-  #ifdef PG_DEBUG
+#ifdef PG_DEBUG
       showportal(0);
-  #endif
+#endif
       portal->_purgeportal();
     }
     destruct(waitforauthready);
@@ -2575,13 +2579,15 @@ class proxy {
     }
   }
 
-  private void sendsync() {
+  final void sendsync() {
     readyforquerycount++;
     c->start()->sendcmd(SYNCSEND);
   }
 
   private void runcallback(int pid, string condition, string extrainfo) {
     array cb;
+    if (condition == "_lost")
+      destruct(c);
     if ((cb = notifylist[condition] || notifylist[""])
        && (pid != backendpid || sizeof(cb) > 1 && cb[1]))
       callout(cb[0], 0, pid, condition, extrainfo, @cb[2..]);

@@ -4,6 +4,7 @@
 || for more information.
 */
 
+#include "module.h"
 #include "config.h"
 
 #if (defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)) && defined(HAVE_LIBSANE)
@@ -13,18 +14,11 @@
 #include <sane.h>
 #endif
 
-#include "global.h"
-#include "stralloc.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
-#include "mapping.h"
-#include "multiset.h"
 #include "backend.h"
 #include "operators.h"
 #include "pike_types.h"

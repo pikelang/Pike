@@ -4,7 +4,7 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "config.h"
 
 #ifdef HAVE_GETTEXT
@@ -15,13 +15,10 @@
 
 #include <locale.h>
 
-#include "stralloc.h"
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "mapping.h"
 #include "module_support.h"
 
 

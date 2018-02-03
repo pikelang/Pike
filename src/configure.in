@@ -1127,6 +1127,9 @@ AC_ARG_WITH(devpoll, MY_DESCR([--without-devpoll],
 			      [disable support for /dev/poll]),
 	    [],[with_devpoll=yes])
 AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
+AC_ARG_WITH(mpi, MY_DESCR([--with-mpi],[enable MPI suppport]),
+	    [export with_MPI=$withval],
+	    [export with_MPI=no])
 AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 AC_ARG_WITH(zlib, MY_DESCR([--without-zlib],[disable gz compression support]),
 	    [],[with_zlib=yes])
@@ -2826,7 +2829,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
 		 mach/mach.h mach/thread_act.h mach/clock.h \
-		 machine/bswap.h sys/endian.h,,,[
+		 machine/bswap.h sys/endian.h emmintrin.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -2863,9 +2866,6 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #define NTDDI_VERSION 0x05000000
 #endif
 #endif /* __NT__ */
-#ifdef __amigaos__
-#define __USE_NETINET_IN_H
-#endif
 #ifndef __BUILTIN_VA_ARG_INCR
 #define __BUILTIN_VA_ARG_INCR   1
 #endif /* !__BUILTIN_VA_ARG_INCR */
@@ -6087,10 +6087,6 @@ fi
 AC_MSG_CHECKING(how to set things nonblocking)
 AC_CACHE_VAL(pike_cv_sys_nonblock,
 [
-  # Kludge needed for AmigaOS
-  if test "$pike_cv_sys_os" = "AmigaOS" ; then
-    pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
-  else
     OCPPFLAGS="$CPPFLAGS"
     pike_cv_sys_bad_signal_handling=""
     pike_cv_sys_nonblock=UNKNOWN
@@ -6143,7 +6139,6 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
     else :; fi
     # Restore CPPFLAGS
     CPPFLAGS="$OCPPFLAGS"
-  fi
 ])
 
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then

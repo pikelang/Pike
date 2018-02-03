@@ -30,15 +30,15 @@ object|function|program request_program=Request;
 //! @param certificate
 //!   An optional SSL certificate or chain of certificates with the host
 //!   certificate first, provided in binary format.
-//! @param share
-//!   If true, the connection will be shared if possible. See
+//! @param reuse_port
+//!   If true, enable SO_REUSEPORT if the OS supports it. See
 //!   @[Stdio.Port.bind] for more information
 protected void create(function(Request:void) callback,
                       void|int port,
                       void|string interface,
                       void|string|Crypto.Sign.State key,
                       void|string|array(string) certificate,
-                      void|int share)
+                      void|int reuse_port)
 {
   ::create();
 
@@ -55,7 +55,7 @@ protected void create(function(Request:void) callback,
   else
     set_default_keycert();
 
-  if (!bind(portno, new_connection, this::interface, share))
+  if (!bind(portno, new_connection, this::interface, reuse_port))
     error("Failed to bind port %s%d: %s\n",
           interface?interface+":":"", portno, strerror(errno()));
 }

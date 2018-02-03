@@ -130,11 +130,12 @@ Tools
   rbtree_low.h
     Red/black tree implementation. Used to implement the multisets.
 
+  siphash24.h
   siphash24.c
     Fast, secure hash function used to prevent hash table DoS
     collision attacks.
 
-  strip-opcodes
+  strip_opcodes
     sh-script used to convert interpret_functions.h into
     interpret_protos.h_src.
 
@@ -180,6 +181,9 @@ Compiler
   lexer.h
     The actual lexer. Included by lex.c for different string widths.
 
+  opcode_list.h
+    List of stack machine opcodes.
+
   opcodes.c
   opcodes.h
     Opcode lookup tables and primitives for them. The opcode enums
@@ -197,10 +201,6 @@ Compiler
     The core of the peephole optimizer. peep_engine.c is generated
     from transformation rules for opcode sequences in peep.in.
     peep_engine.c is included by peep.c.
-
-  preprocessor.h
-    The bulk of the preprocessor. Included by cpp.cmod once for each
-    string width.
 
   pike_compiler.h
     Definition of the compilator context.
@@ -308,10 +308,13 @@ Module system
     Implement the loading of dynamic modules (the load_module
     function).
 
-  module.c
-  module.h
+  pike_modules.c
+  pike_modules.h
     Maintain the entry and exit hooks for the statically compiled
     modules.
+
+  module.h
+    Include file for most of what a Pike module needs.
 
   module_support.c
   module_support.h
@@ -411,6 +414,7 @@ Core runtime support
   signal_handler.h
     Signal and process support.
 
+  sprintf.h
   sprintf.c
     Implement the sprintf function.
 
@@ -421,6 +425,10 @@ Core runtime support
   stack_allocator.c
   stack_allocator.h
     Stack-based memory handling for sprintf.
+
+  string_builder.h
+  string_builder.c
+    Dynamically build strings.
 
   svalue.c
   svalue.h
@@ -523,6 +531,9 @@ Testsuite
     Testsuite for the core.
 
 Miscellaneous
+
+  coverity_model.c
+    Workaroound for issues in Coverity Prevent static code analysis.
 
   program_id.h
     Statically allocated program id numbers.

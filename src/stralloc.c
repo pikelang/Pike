@@ -19,6 +19,7 @@
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
+#include "pike_search.h"
 
 #include <errno.h>
 
@@ -396,7 +397,6 @@ static struct pike_string *internal_findstring(const char *s,
                                                size_t hval)
 {
   struct pike_string *curr;
-//,**prev, **base;
   unsigned int depth=0;
   unsigned int prefix_depth=0;
 
@@ -1070,7 +1070,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
   if (!(s->flags & STRING_NOT_SHARED))
     unlink_pike_string(s);
   if (s->flags & STRING_CLEAR_ON_EXIT)
-    guaranteed_memset(s->str, 0, s->len<<s->size_shift);
+    secure_zero(s->str, s->len<<s->size_shift);
   free_unlinked_pike_string(s);
   GC_FREE_SIMPLE_BLOCK(s);
 }

@@ -6,6 +6,8 @@ AC_MODULE_INIT()
 
 AC_C_CHAR_UNSIGNED
 
+AC_CHECK_HEADERS(mpi.h)
+
 if test x$with_fftw = xyes ; then
   dnl Checks for header files.
 
@@ -27,6 +29,11 @@ if test x$with_fftw = xyes ; then
         PIKE_FEATURE(Math.Transforms.FFT,[yes])
     fi
   fi
+fi
+
+if test "x$with_MPI:$ac_cv_header_mpi_h" == "xyes:yes"
+then
+  AC_DEFINE(HAS_MPI, 1, [Whether MPI is available]),
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

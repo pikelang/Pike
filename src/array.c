@@ -23,6 +23,7 @@
 #include "multiset.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "pike_search.h"
 
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
@@ -1418,7 +1419,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 /**
  * Reorganize an array in the order specified by 'order'.
  */
-PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order)
 {
   reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
   return v;
@@ -1428,7 +1429,7 @@ PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 /**
  * Copy and reorganize an array.
  */
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order)
 {
   INT32 e;
   struct array *ret;
@@ -2795,7 +2796,7 @@ static void gc_check_array(struct array *a)
   } GC_LEAVE;
 }
 
-void gc_mark_array_as_referenced(struct array *a)
+PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a)
 {
   if(gc_mark(a, T_ARRAY))
     GC_ENTER (a, T_ARRAY) {
@@ -2840,7 +2841,7 @@ void gc_mark_array_as_referenced(struct array *a)
     } GC_LEAVE;
 }
 
-void real_gc_cycle_check_array(struct array *a, int weak)
+PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak)
 {
   GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG

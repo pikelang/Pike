@@ -4,7 +4,7 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "config.h"
 
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
@@ -20,14 +20,10 @@
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
 
-#include "stralloc.h"
 #include "pike_error.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "mapping.h"
 #include "module_support.h"
 
 

@@ -4,15 +4,12 @@
 || for more information.
 */
 
-#include "global.h"
 #include "module.h"
 #include "pike_error.h"
 #include "interpret.h"
 #include "pike_embed.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "mapping.h"
-#include "multiset.h"
 #include "gc.h"
 
 DECLARATIONS
@@ -34,7 +31,7 @@ DECLARATIONS
  *!   The total number of objects
  *!
  *! @seealso
- *!   @[next_object()]
+ *!   @[next_object()], @[find_all_clones()]
  */
 PIKEFUN int(0..) map_all_objects(function(object:void) cb)
 {
@@ -54,6 +51,65 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
         o = next;
     }
     RETURN total;
+}
+
+/*! @decl array(object) find_all_clones(program p, @
+ *!                                     int(0..1)|void include_subclasses)
+ *!
+ *!   Return an array with all objects that are clones of @[p].
+ *!
+ *! @param p
+ *!   Program that the objects should be a clone of.
+ *!
+ *! @param include_subclasses
+ *!   If true, include also objects that are clones of programs
+ *!   that have inherited @[p]. Note that this adds significant
+ *!   overhead.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @seealso
+ *!   @[map_all_objects()]
+ */
+PIKEFUN array(object) find_all_clones(program|function prog,
+				      int(0..1)|void include_subclasses)
+{
+  struct object *o = first_object;
+  struct program *p = program_from_svalue(prog);
+
+  if (!p) {
+    SIMPLE_BAD_ARG_ERROR("Debug.find_all_clones", 1, "program");
+  }
+
+  if (include_subclasses && !include_subclasses->u.integer) {
+    include_subclasses = NULL;
+  }
+
+  BEGIN_AGGREGATE_ARRAY(10) {
+
+    for (o = first_object; o; o = o->next) {
+      if (o->prog == p) {
+	ref_push_object(o);
+	DO_AGGREGATE_ARRAY(120);
+	continue;
+      }
+      if (include_subclasses && o->prog &&
+	  (o->prog->num_inherits > p->num_inherits)) {
+	int e;
+	/* Check if o->prog has inherited p. */
+	if (o->prog->storage_needed < p->storage_needed) continue;
+	for (e = o->prog->num_inherits + 1 - p->num_inherits; e-- > 1;) {
+	  if (o->prog->inherits[e].prog == p) {
+	    /* Found. */
+	    ref_push_object(o);
+	    DO_AGGREGATE_ARRAY(120);
+	    break;
+	  }
+	}
+      }
+    }
+
+  } END_AGGREGATE_ARRAY;
 }
 
 /*! @decl int refs(string|array|mapping|multiset|function|object|program o)

@@ -25,6 +25,10 @@ void _decode(array(int) x) {
   masklen = x[1];
 }
 
+protected int __hash() {
+  return address;
+}
+
 //! @param ip
 //!   A string defining an IPv4 or IPv6 address
 //!   with an optional @expr{masklen@} attached.

@@ -16,7 +16,6 @@
 #  include "constants.h"
 #  include "pike_error.h"
 #  include "pike_compiler.h"
-#  include "module.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
 #  include "main.h"

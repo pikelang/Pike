@@ -278,6 +278,10 @@ class Timebase {
     nsecs = x[0];
   }
 
+  protected int __hash() {
+    return nsecs;
+  }
+
   //! @param sec
   //!   Seconds since epoch.
   //! @param nsec
@@ -826,6 +830,10 @@ class Date {
 
   void _decode(array(int) x) {
     days = x[0];
+  }
+
+  protected int __hash() {
+    return days;
   }
 
   //!

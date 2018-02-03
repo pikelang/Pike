@@ -22,6 +22,10 @@
 
 #include "bignum.h"
 
+#ifdef HAVE_MPI_H
+#include <mpi.h>
+#endif
+
 /*! @module Math
  */
 
@@ -39,6 +43,22 @@ extern struct program *math_imatrix_program;
 extern struct program *math_fmatrix_program;
 extern struct program *math_lmatrix_program;
 
+#ifdef HAS_MPI
+struct size_info {
+    int x, y;
+};
+
+struct op_info {
+    struct object *o;
+    void **data;
+};
+
+extern PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *),
+					    struct svalue *ufun, int commute,
+					    void *info, int shift, int len);
+
+#endif
+
 #define PNAME "Matrix"
 #define FTYPE double
 #define PTYPE tFloat
@@ -46,7 +66,11 @@ extern struct program *math_lmatrix_program;
 #define Xmatrix(X) PIKE_CONCAT(X,matrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,matrix,Y)
 #define PUSH_ELEM( X )  push_float( (FLOAT_TYPE)(X) )
+#define MATRIX_MPI_TYPE MPI_DOUBLE
+#define MATRIX_MPI_SHIFT (17<<3)
 #include <matrix_code.h>
+#undef MATRIX_MPI_SHIFT
+#undef MATRIX_MPI_TYPE
 #undef PUSH_ELEM
 #undef matrixX
 #undef Xmatrix
@@ -62,7 +86,11 @@ extern struct program *math_lmatrix_program;
 #define Xmatrix(X) PIKE_CONCAT(X,imatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,imatrix,Y)
 #define PUSH_ELEM( X )  push_int( (INT_TYPE)(X) )
+#define MATRIX_MPI_TYPE MPI_INT
+#define MATRIX_MPI_SHIFT (18<<3)
 #include <matrix_code.h>
+#undef MATRIX_MPI_SHIFT
+#undef MATRIX_MPI_TYPE
 #undef PUSH_ELEM
 #undef Xmatrix
 #undef matrixX
@@ -78,7 +106,11 @@ extern struct program *math_lmatrix_program;
 #define Xmatrix(X) PIKE_CONCAT(X,lmatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,lmatrix,Y)
 #define PUSH_ELEM( X )  push_int64( (INT64)(X) )
+#define MATRIX_MPI_TYPE MPI_LONG_LONG_INT
+#define MATRIX_MPI_SHIFT (19<<3)
 #include <matrix_code.h>
+#undef MATRIX_MPI_SHIFT
+#undef MATRIX_MPI_TYPE
 #undef PUSH_ELEM
 #undef Xmatrix
 #undef matrixX
@@ -94,7 +126,11 @@ extern struct program *math_lmatrix_program;
 #define Xmatrix(X) PIKE_CONCAT(X,fmatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,fmatrix,Y)
 #define PUSH_ELEM( X )  push_float( (FLOAT_TYPE)(X) )
+#define MATRIX_MPI_TYPE MPI_FLOAT
+#define MATRIX_MPI_SHIFT (20<<3)
 #include <matrix_code.h>
+#undef MATRIX_MPI_SHIFT
+#undef MATRIX_MPI_TYPE
 #undef PUSH_ELEM
 #undef Xmatrix
 #undef matrixX
@@ -110,7 +146,11 @@ extern struct program *math_lmatrix_program;
 #define Xmatrix(X) PIKE_CONCAT(X,smatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,smatrix,Y)
 #define PUSH_ELEM( X )  push_int( (INT_TYPE)(X) )
+#define MATRIX_MPI_TYPE MPI_SHORT_INT
+#define MATRIX_MPI_SHIFT (21<<3)
 #include <matrix_code.h>
+#undef MATRIX_MPI_SHIFT
+#undef MATRIX_MPI_TYPE
 #undef PUSH_ELEM
 #undef Xmatrix
 #undef matrixX

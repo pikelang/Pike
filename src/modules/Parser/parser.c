@@ -4,16 +4,12 @@
 || for more information.
 */
 
-#include "global.h"
-#include "stralloc.h"
-#include "global.h"
+#include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
-#include "object.h"
 #include "operators.h"
-#include "module.h"
 
 #include "parser.h"
 

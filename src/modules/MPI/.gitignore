@@ -1,0 +1,5 @@
+/configure
+/dependencies
+/mpi.c
+/mpi_config.h.in
+/stamp-h.in

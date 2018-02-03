@@ -4,7 +4,7 @@
  */
 
 
-#line 76 "rl/json5_mapping.rl"
+#line 75 "rl/json5_mapping.rl"
 
 
 static ptrdiff_t _parse_JSON5_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
@@ -17,11 +17,10 @@ static ptrdiff_t _parse_JSON5_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, str
     ptrdiff_t eof = pe;
     ptrdiff_t identifier_start;
 
-    ONERROR handle;
     const int validate = !(state->flags&JSON5_VALIDATE);
 
     
-#line 25 "json5_mapping.c"
+#line 24 "json5_mapping.c"
 static const int JSON5_mapping_start = 1;
 static const int JSON5_mapping_first_final = 23;
 static const int JSON5_mapping_error = 0;
@@ -29,7 +28,7 @@ static const int JSON5_mapping_error = 0;
 static const int JSON5_mapping_en_main = 1;
 
 
-#line 92 "rl/json5_mapping.rl"
+#line 90 "rl/json5_mapping.rl"
 
     /* Check stacks since we have uncontrolled recursion here. */
     check_stack (10);
@@ -41,14 +40,14 @@ static const int JSON5_mapping_en_main = 1;
     }
 
     
-#line 45 "json5_mapping.c"
+#line 44 "json5_mapping.c"
 	{
 	cs = JSON5_mapping_start;
 	}
 
-#line 103 "rl/json5_mapping.rl"
+#line 101 "rl/json5_mapping.rl"
     
-#line 52 "json5_mapping.c"
+#line 51 "json5_mapping.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -112,7 +111,6 @@ tr25:
        init_string_builder(&s, 0);
        string_builder_append(&s, ADD_PCHARP(str, identifier_start), len);
         push_string(finish_string_builder(&s));
-        UNSET_ONERROR(handle);
       }
     }
 	goto st3;
@@ -120,7 +118,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 124 "json5_mapping.c"
+#line 122 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -138,7 +136,6 @@ tr26:
        init_string_builder(&s, 0);
        string_builder_append(&s, ADD_PCHARP(str, identifier_start), len);
         push_string(finish_string_builder(&s));
-        UNSET_ONERROR(handle);
       }
     }
 	goto st4;
@@ -146,7 +143,7 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 150 "json5_mapping.c"
+#line 147 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 42: goto st5;
 		case 47: goto st7;
@@ -183,7 +180,6 @@ tr28:
        init_string_builder(&s, 0);
        string_builder_append(&s, ADD_PCHARP(str, identifier_start), len);
         push_string(finish_string_builder(&s));
-        UNSET_ONERROR(handle);
       }
     }
 	goto st8;
@@ -191,7 +187,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 195 "json5_mapping.c"
+#line 191 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st8;
 		case 32: goto st8;
@@ -238,7 +234,7 @@ st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 242 "json5_mapping.c"
+#line 238 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st9;
 		case 32: goto st9;
@@ -285,9 +281,9 @@ st23:
 	if ( ++p == pe )
 		goto _test_eof23;
 case 23:
-#line 75 "rl/json5_mapping.rl"
+#line 74 "rl/json5_mapping.rl"
 	{ p--; {p++; cs = 23; goto _out;} }
-#line 291 "json5_mapping.c"
+#line 287 "json5_mapping.c"
 	goto st0;
 st14:
 	if ( ++p == pe )
@@ -363,7 +359,7 @@ st22:
 	if ( ++p == pe )
 		goto _test_eof22;
 case 22:
-#line 367 "json5_mapping.c"
+#line 363 "json5_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto tr25;
 		case 32: goto tr25;
@@ -411,7 +407,7 @@ case 22:
 	_out: {}
 	}
 
-#line 104 "rl/json5_mapping.rl"
+#line 102 "rl/json5_mapping.rl"
     if (cs >= JSON5_mapping_first_final) {
 	return p;
     }

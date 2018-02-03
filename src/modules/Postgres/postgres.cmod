@@ -8,7 +8,7 @@
  * Postgres95 and PostgreSQL support for Pike 0.5 and up.
  */
 
-#include "global.h"
+#include "module.h"
 #include "pgres_config.h"
 
 /* Some versions of Postgres define this, and it conflicts with pike_error.h */
@@ -19,14 +19,8 @@
 /* #define PGDEBUG */
 
 /* Pike includes */
-#include "svalue.h"
 #include "las.h"
-#include "machine.h"
-#include "pike_memory.h"
-#include "svalue.h"
 #include "threads.h"
-#include "stralloc.h"
-#include "object.h"
 #include "module_support.h"
 #include "operators.h"
 

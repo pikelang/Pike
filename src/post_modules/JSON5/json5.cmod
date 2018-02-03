@@ -12,18 +12,13 @@
  * Encoder created May 2010 by Martin Stjernholm.
  */
 
-#include "array.h"
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
 #include "module.h"
+#include "cyclic.h"
+#include "interpret.h"
 #include "pike_error.h"
 #include "pike_float.h"
 #include "pike_types.h"
 #include "sscanf.h"
-#include "stralloc.h"
-#include "svalue.h"
 #include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static
@@ -37,6 +32,8 @@ DECLARATIONS
 #define ASCII_ONLY 1
 #define HUMAN_READABLE 2
 #define PIKE_CANONICAL 4
+#define UNQUOTED_IDENTIFIERS 8
+#define SINGLE_QUOTED_STRINGS 16
 
 #define JSON5_UTF8	1
 #define JSON5_ERROR	2
@@ -77,6 +74,24 @@ static char *err_msg;
 #define IS_LOW_SURROGATE(x) ((x) >= 0xdc00 && (x) < 0xe000)
 #define IS_NUNICODE(x)	((x) < 0 || IS_SURROGATE (x) || (x) > 0x10ffff)
 #define IS_NUNICODE1(x)	((x) < 0 || IS_SURROGATE (x))
+#define IS_ESCAPABLE_QUOTE(x, f) ((x == '"' && !(flags & SINGLE_QUOTED_STRINGS)) || (x == '\'' && (flags & SINGLE_QUOTED_STRINGS)))
+#define IS_NUMBER(x) (x >= '0' && x <= '9')
+#define IS_ALPHA(x) ((x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z'))
+
+static int json5_is_identifier(struct pike_string * str) {
+  ptrdiff_t i;
+  for(i = 0; i < str->len; i++)
+  {
+    char c = str->str[i];
+    if(i && !(c == '_' || IS_ALPHA(c) || IS_NUMBER(c))) { 
+      return 0;
+    }
+    else if(!i && !(c == '_' || IS_ALPHA(c))) {
+      return 0;
+    }
+  }
+  return 1;
+}
 
 static void json5_escape_string (struct string_builder *buf, int flags,
 				struct pike_string *val)
@@ -88,7 +103,7 @@ static void json5_escape_string (struct string_builder *buf, int flags,
     if (c < 0 || c > 0x10ffff)
       Pike_error ("Cannot json5 encode non-unicode char "
 		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
-    if (c == '"' || c == '\\' || c <= 0x1f ||
+    if (IS_ESCAPABLE_QUOTE(c, flags) || c == '\\' || c <= 0x1f ||
 	(c >= 0x7f && flags & ASCII_ONLY) ||
 	/* Let's escape U+2028 and U+2029 as well for compat with
 	 * parsers built in javascript - see
@@ -101,6 +116,7 @@ static void json5_escape_string (struct string_builder *buf, int flags,
       string_builder_putchar (buf, '\\');
       switch (c) {
 	case '"': string_builder_putchar (buf, '"'); break;
+	case '\'': string_builder_putchar (buf, '\''); break;
 	case '\\': string_builder_putchar (buf, '\\'); break;
 	case '\b': string_builder_putchar (buf, 'b'); break;
 	case '\f': string_builder_putchar (buf, 'f'); break;
@@ -144,7 +160,9 @@ struct encode_context {
   struct svalue *callback;
 };
 
+static void json5_encode_key (struct encode_context *ctx, struct svalue *val);
 static void json5_encode_recur (struct encode_context *ctx, struct svalue *val);
+static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *val, int is_object_key);
 
 static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
 /* Assumes there's at least one element. */
@@ -175,7 +193,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
     if (TYPEOF(k->ind) != T_STRING)
       Pike_error ("Cannot json5 encode mapping with non-string index %O.\n",
 		  &k->ind);
-    json5_encode_recur (ctx, &k->ind);
+    json5_encode_key (ctx, &k->ind);
 
     string_builder_putchar (buf, ':');
     if (ctx->indent >= 0) string_builder_putchar (buf, ' ');
@@ -234,7 +252,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
     if (TYPEOF(*ind) != T_STRING)
       Pike_error ("Cannot json5 encode mapping with non-string index %O.\n",
 		  ind);
-    json5_encode_recur (ctx, ind);
+    json5_encode_key (ctx, ind);
 
     string_builder_putchar (buf, ':');
     if (ctx->indent >= 0) string_builder_putchar (buf, ' ');
@@ -247,8 +265,22 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
   free_array (inds);
 }
 
-static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
+static void json5_encode_key(struct encode_context *ctx, struct svalue *val) {
+  json5_encode_low_recur(ctx, val, 1);
+}
+
+static void json5_encode_recur (struct encode_context *ctx, struct svalue *val) {
+  json5_encode_low_recur(ctx, val, 0);
+}
+
+static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *val, int is_object_key)
 {
+  int flags = ctx->flags;
+  char string_quote_char = '"';
+
+  if(flags & SINGLE_QUOTED_STRINGS)
+    string_quote_char = '\''; 
+
   DECLARE_CYCLIC();
 
   check_c_stack (1024);
@@ -259,9 +291,13 @@ static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
   switch (TYPEOF(*val)) {
     case PIKE_T_STRING: {
       struct string_builder *buf = &ctx->buf;
-      string_builder_putchar (buf, '"');
+      int use_quote = !(is_object_key && (flags & UNQUOTED_IDENTIFIERS) && 
+		json5_is_identifier(val->u.string)); 
+      if(use_quote)
+        string_builder_putchar (buf, string_quote_char);
       json5_escape_string (buf, ctx->flags, val->u.string);
-      string_builder_putchar (buf, '"');
+      if(use_quote) 
+        string_builder_putchar (buf, string_quote_char);
       break;
     }
 
@@ -399,6 +435,8 @@ static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
 /*! @decl constant ASCII_ONLY
  *! @decl constant HUMAN_READABLE
  *! @decl constant PIKE_CANONICAL
+ *! @decl constant UNQUOTED_IDENTIFIERS
+ *! @decl constant SINGLE_QUOTED_STRINGS
  *!
  *! Bit field flags for use with @[encode]:
  *!
@@ -431,6 +469,14 @@ static void json5_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   will be different from this one. In that case a separate flag
  *!   has to be added so this one doesn't change - hence the name
  *!   @[PIKE_CANONICAL].
+ *!
+ *! @item Standards.JSON5.UNQUOTED_IDENTIFIERS
+ *!   When producing mapping keys, permit keys which are identifiers
+ *!   to be expressed without surrounding quotation marks.
+ *!
+ *! @item Standards.JSON5.SINGLE_QUOTED_STRINGS
+ *!   Use single quotation marks rather than double quotation marks
+ *!   when encoding string values.
  *! @enddl
  */
 
@@ -665,6 +711,8 @@ PIKE_MODULE_INIT
   add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
   add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
   add_integer_constant ("PIKE_CANONICAL", PIKE_CANONICAL, 0);
+  add_integer_constant ("UNQUOTED_IDENTIFIERS", UNQUOTED_IDENTIFIERS, 0);
+  add_integer_constant ("SINGLE_QUOTED_STRINGS", SINGLE_QUOTED_STRINGS, 0);
 
   INIT;
 

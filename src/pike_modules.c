@@ -31,6 +31,7 @@
 #include "bignum.h"
 #include "module_support.h"
 #include "sprintf.h"
+#include "pike_search.h"
 
 #include "modules/modlist_headers.h"
 #ifndef PRE_PIKE

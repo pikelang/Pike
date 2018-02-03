@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#include "global.h"
 #include "module.h"
 #include "config.h"
 
@@ -16,21 +15,14 @@
 
 #ifdef HAVE_WORKING_LIBTIFF
 
-#include "global.h"
-#include "machine.h"
 #include "pike_compiler.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "builtin_functions.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
-#include "mapping.h"
 #include "module_support.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "operators.h"
 #include "../Image/image.h"
 

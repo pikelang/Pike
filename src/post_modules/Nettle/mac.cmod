@@ -4,16 +4,11 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-
-/* For this_object() */
-#include "object.h"
 #include "module_support.h"
 #include "pike_compiler.h"
-#include "pike_memory.h"
 
 #include "nettle_config.h"
 

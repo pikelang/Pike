@@ -223,6 +223,17 @@ test_any([[
   return s->get_der();
 ]], "0\6\2\1\b\2\1\a")
 
+test_decode("170d3338303131393033313430385a", "UTCTime(380119031408Z)")
+test_eq(Types.UTC()->set_posix(1<<31)->get_der(), "\27\r380119031408Z")
+test_eval_error(Types.UTC()->set_posix(1<<32))
+
+test_decode("180f32303338303131393033313430385a", "GeneralizedTime(20380119031408Z)")
+test_eq(Types.GeneralizedTime()->set_posix(1<<31)->get_der(), "\30\17""20380119031408Z")
+test_decode("180f32313036303230373036323831365a", "GeneralizedTime(21060207062816Z)")
+test_eq(Types.GeneralizedTime()->set_posix(1<<32)->get_der(), "\30\17""21060207062816Z")
+test_decode("180f32323432303331363132353633325a", "GeneralizedTime(22420316125632Z)")
+test_eq(Types.GeneralizedTime()->set_posix(1<<33)->get_der(), "\30\17""22420316125632Z")
+
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )
 

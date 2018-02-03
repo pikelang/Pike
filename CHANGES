@@ -468,6 +468,11 @@ o The gdb_backtraces() function is now available also --without-debug.
 o There's now support to block mapping hashtables from being shrunk
   on map_delete().
 
+o guaranteed_memset() is replaced with secure_zero() which fills a
+  buffer with zero. On x86 SSE2 is used to zero the memory without
+  loading it into the CPU cache, as this function is typically used
+  before calling free() on memory with cryptographic key data.
+
 
 Documentation
 -------------

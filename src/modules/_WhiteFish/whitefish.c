@@ -1,15 +1,16 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include <math.h>
 
-#include "global.h"
-#include "stralloc.h"
-#include "global.h"
+#include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
-#include "object.h"
-#include "array.h"
 #include "module_support.h"
-#include "module.h"
 
 #include "config.h"
 

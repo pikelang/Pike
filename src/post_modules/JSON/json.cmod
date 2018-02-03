@@ -12,17 +12,12 @@
  * Encoder created May 2010 by Martin Stjernholm.
  */
 
-#include "array.h"
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
 #include "module.h"
+#include "cyclic.h"
+#include "interpret.h"
 #include "pike_error.h"
 #include "pike_float.h"
 #include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
 #include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static

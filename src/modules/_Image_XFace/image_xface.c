@@ -9,7 +9,6 @@
 #include "config.h"
 
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
