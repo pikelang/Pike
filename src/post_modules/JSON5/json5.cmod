@@ -50,7 +50,7 @@ static char *err_msg;
     state->level++;							\
     i = _parse_JSON5_##X(str, FPC, pe, state);				\
     state->level--;							\
-    if (state->flags&JSON5_ERROR) {printf("got error during parse\n");					\
+    if (state->flags&JSON5_ERROR) {					\
 	    return i;							\
     } else if (state->level > 0) return i;				\
     c++;								\
