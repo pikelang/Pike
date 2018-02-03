@@ -67,11 +67,12 @@ void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
    * If the order turns out to be correct already, perform an early return.
    */
   do
-    if (UNLIKELY(*order != aok))
+    if (UNLIKELY(order[aok] != aok))
       goto unordered;
-  while (order++, LIKELY(++aok < nitems));
+  while (LIKELY(++aok < nitems));
   return;
 unordered:
+  order += aok;
   nitems -= aok;
   tmp=xalloc(size * nitems);
   e = 0;
