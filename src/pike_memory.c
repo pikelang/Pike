@@ -83,7 +83,7 @@ unordered:
 #define CHECK_ALIGNED(X)	0
 #else
 #define CHECK_ALIGNED(X)			\
- if ((ptrdiff_t)memory & (X)-1) goto unaligned
+ if ((ptrdiff_t)memory & ((X)-1)) goto unaligned
 #endif
 
 #define DOSIZE(X,Y)				\
@@ -114,7 +114,7 @@ unordered:
      // Force aligned check for 128 bit values
      // GCC-7.2 messes up otherwise
 #define CHECK_ALIGNED(X)			\
- if ((ptrdiff_t)memory & (X)-1) goto unaligned
+ if ((ptrdiff_t)memory & ((X)-1)) goto unaligned
 #ifdef B16_T
      DOSIZE(16,B16_T)
 #endif
