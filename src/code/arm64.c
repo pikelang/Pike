@@ -2927,7 +2927,11 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
 	  if (arg1 || arg2) {
 	      tmp = ra_alloc_any();
+#if PIKE_BYTEORDER == 1234
 	      arm64_mov_int(tmp, arg2|(arg1<<16));
+#else
+	      arm64_mov_int(tmp, arg1|(arg2<<16));
+#endif
 
 	      store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
 	      ra_free(tmp);
