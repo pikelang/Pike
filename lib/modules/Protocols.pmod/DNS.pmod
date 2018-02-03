@@ -1391,30 +1391,30 @@ class client
     }),string key)
     {
       catch {
-	res += ({ RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
+	res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
       };
     }
 
-#if constant(RegGetKeyNames)
-    /* Catch if RegGetKeyNames() doesn't find the directory. */
+#if constant(System.RegGetKeyNames)
+    /* Catch if System.RegGetKeyNames() doesn't find the directory. */
     catch {
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
 				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
-				"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
+                                "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }

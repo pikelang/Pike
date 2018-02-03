@@ -99,6 +99,11 @@ protected Mapping.ShadowedMapping compat_all_constants =
 			    "all_constants": all_constants,
                             "master": master,
                             "glob" : glob,
+#ifdef constant(System.RegGetValue)
+                            "RegGetValue" : System.RegGetValue,
+                            "RegGetKeyNames" : System.RegGetKeyNames,
+                            "RegGetValues" : System.RegGetValues,
+#endif
 			  ]), 1);
 
 mapping(string:mixed) all_constants()

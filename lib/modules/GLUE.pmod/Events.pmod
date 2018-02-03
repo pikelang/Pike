@@ -194,11 +194,11 @@ constant key_names =
 
 #ifdef __NT__
 string get_nt_keymap() {
-  string keymap = RegGetValue(HKEY_CURRENT_USER,
-			      "Keyboard Layout\\Preload", "1");
-  keymap = RegGetValue(HKEY_LOCAL_MACHINE,
-		       "SYSTEM\\CurrentControlSet\\Control\\"
-		       "Keyboard Layout\\DosKeybCodes", keymap);
+  string keymap = System.RegGetValue(HKEY_CURRENT_USER,
+                                     "Keyboard Layout\\Preload", "1");
+  keymap = System.RegGetValue(HKEY_LOCAL_MACHINE,
+                              "SYSTEM\\CurrentControlSet\\Control\\"
+                              "Keyboard Layout\\DosKeybCodes", keymap);
   return keymap;
 }
 #endif
