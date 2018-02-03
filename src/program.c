@@ -7491,11 +7491,12 @@ not_present:
 
 struct array *program_indices(struct program *p)
 {
-  int e;
+  int i;
   int n = 0;
   struct array *res;
-  for (e = p->num_identifier_references; e--; ) {
+  for (i = p->num_identifier_index; i--; ) {
     struct identifier *id;
+    int e = p->identifier_index[i];
     if (p->identifier_references[e].id_flags &
 	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
@@ -7530,11 +7531,12 @@ struct array *program_indices(struct program *p)
 
 struct array *program_values(struct program *p)
 {
-  int e;
+  int i;
   int n = 0;
   struct array *res;
-  for(e = p->num_identifier_references; e--; ) {
+  for(i = p->num_identifier_index; i--; ) {
     struct identifier *id;
+    int e = p->identifier_index[i];
     if (p->identifier_references[e].id_flags &
 	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
@@ -7569,11 +7571,12 @@ struct array *program_values(struct program *p)
 
 struct array *program_types(struct program *p)
 {
-  int e;
+  int i;
   int n = 0;
   struct array *res;
-  for (e = p->num_identifier_references; e--; ) {
+  for (i = p->num_identifier_index; i--; ) {
     struct identifier *id;
+    int e = p->identifier_index[i];
     if (p->identifier_references[e].id_flags &
 	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
