@@ -94,6 +94,8 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
+void init_string_buffer(void);
+void exit_string_buffer(void);
 /* Prototypes end here */
 
 static inline void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,

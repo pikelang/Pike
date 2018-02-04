@@ -1239,6 +1239,8 @@ libpike.o: $(SRCDIR)/libpike.c
 
 pike_compiler.o: $(SRCDIR)/pike_compiler.c
 
+string_builder.o: $(SRCDIR)/string_builder.c
+
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
