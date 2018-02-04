@@ -1,3 +1,4 @@
+#require constant(System.RegGetValue)
 #pike 8.1
 
 /*!   Get a single value from the register (COMPAT).
