@@ -325,12 +325,14 @@ void *alloca();
 #include <limits.h>
 #include <float.h>
 
-#ifdef HAVE_MALLOC_H
+#if defined(USE_JEMALLOC)
+#include <jemalloc/jemalloc.h>
+#elif defined(HAVE_MALLOC_H)
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 /* FreeBSD and OpenBSD has <malloc.h>, but it just contains a warning... */
 #include <malloc.h>
 #endif /* !__FreeBSD__ && !__OpenBSD */
-#endif
+#endif /* if defined(USE_JEMALLOC) */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
