@@ -59,10 +59,12 @@
 #define BPCHAROID	1042
 #define VARCHAROID	1043
 #define CTIDOID		1247
+#define NUMERICOID	1700
 #define UUIDOID		2950
 
 #define UTF8CHARSET	"UTF8"
 #define CLIENT_ENCODING	"client_encoding"
+#define NUMERIC_MAGSTEP 10000
 
 #define DERROR(msg ...)		({sprintf(msg),backtrace()})
 #define SERROR(msg ...)		(sprintf(msg))
