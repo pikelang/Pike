@@ -181,6 +181,7 @@ private int readoidformat(int oid) {
 #if !constant(__builtin.__SINGLE_PRECISION_FLOAT__)
     case FLOAT8OID:
 #endif
+    case NUMERICOID:
     case TEXTOID:
     case OIDOID:
     case XMLOID:
@@ -226,6 +227,7 @@ private int writeoidformat(int oid, array(string|int) paramValues,
     case CTIDOID:
     case UUIDOID:
       return 1; //binary
+    case NUMERICOID:
     case CIDROID:
     case INETOID:
     case DATEOID:
@@ -945,6 +947,59 @@ class Result {
               serror = SERROR("%O contains non-%s characters\n",
                                                      value, UTF8CHARSET);
             break;
+          case NUMERICOID:
+            if (_forcetext) {
+              value = cr->read(collen);
+              if (!alltext) {
+                value = value/".";
+                if (sizeof(value) == 1)
+                  value = (int)value[0];
+                else {
+                  int i = sizeof(value[1]);
+                  int denom = 1;
+                  do
+                     denom *= 10;
+                  while (--i >= 0);
+                  value = Gmp.mpq((int)value[0] * denom + (int)value[1],
+                   denom);
+                }
+              }
+            } else {
+              int nwords = cr->read_int16();
+              int magnitude = cr->read_sint(2);
+              int sign = cr->read_int16();
+              cr->consume(2);
+              switch (nwords) {
+                default:
+                  for (value = cr->read_int16();
+                       --nwords;
+                       magnitude--)
+                    value = value * NUMERIC_MAGSTEP + cr->read_int16();
+                  if (sign)
+                    value = -value;
+                  if (magnitude > 0)
+                    do
+                      value *= NUMERIC_MAGSTEP;
+                    while (--magnitude);
+                  else if (magnitude < 0) {
+                    for (sign = NUMERIC_MAGSTEP;
+                         ++magnitude;
+                         sign *= NUMERIC_MAGSTEP);
+                    value = Gmp.mpq(value, sign);
+                  }
+                  break;
+                case 1:
+                  for (value = cr->read_int16();
+                       magnitude--;
+                       value *= NUMERIC_MAGSTEP);
+                  if (sign)
+                    value = -value;
+                  break;
+                case 0:;
+                  value = 0;
+              }
+            }
+            break;
           case INT4RANGEOID:
           case INT8RANGEOID:
           case DATERANGEOID:
@@ -1192,6 +1247,42 @@ class Result {
                   case 1:
                     plugbuffer->add_hstring(value[0], 4);
                 }
+              }
+              break;
+            case NUMERICOID:
+              if (stringp(value))
+                plugbuffer->add_hstring(value, 4);
+              else {
+                int num, den, sign, magnitude = 0;
+                value = Gmp.mpq(value);
+                num = value->num();
+                den = value->den();
+                for (value = den;
+                     value > NUMERIC_MAGSTEP;
+                     value /= NUMERIC_MAGSTEP);
+                if (value > 1) {
+                  value = NUMERIC_MAGSTEP / value;
+                  num *= value;
+                  den *= value;
+                }
+                if (num < 0)
+                  sign = 0x4000, num = -num;
+                else
+                  sign = 0;
+                array stor = ({});
+                if (num) {
+                  while (!(num % NUMERIC_MAGSTEP))
+                    num /= NUMERIC_MAGSTEP, magnitude++;
+                  do
+                    stor = ({num % NUMERIC_MAGSTEP}) + stor, magnitude++;
+                  while (num /= NUMERIC_MAGSTEP);
+                  num = --magnitude << 2;
+                  while (den > 1)
+                    magnitude--, den /= NUMERIC_MAGSTEP;
+                }
+                plugbuffer->add_int32(4 * 2 + (sizeof(stor) << 1))
+                 ->add_int16(sizeof(stor))->add_int16(magnitude)
+                 ->add_int16(sign)->add_int16(num)->add_ints(stor, 2);
               }
               break;
             case INT4RANGEOID:

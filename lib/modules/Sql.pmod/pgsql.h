@@ -66,6 +66,7 @@
 #define INTERVALOID	1186
 #define TIMETZOID	1266
 #define CTIDOID		1247
+#define NUMERICOID	1700
 #define UUIDOID		2950
 #define INT4RANGEOID	3904
 #define TSRANGEOID	3908
@@ -75,6 +76,7 @@
 
 #define UTF8CHARSET	"UTF8"
 #define CLIENT_ENCODING	"client_encoding"
+#define NUMERIC_MAGSTEP 10000
 
 #define DERROR(msg ...)		({sprintf(msg),backtrace()})
 #define SERROR(msg ...)		(sprintf(msg))
