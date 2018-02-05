@@ -550,19 +550,18 @@
 #define PIKE_OOB_WORKS -1
 
 /* dlmalloc has mallinfo. */
-#if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
-#define HAVE_MALLINFO
+#if !defined(USE_JEMALLOC)
+#    if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
+#        define HAVE_MALLINFO
 
-#if defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
-#include <malloc.h>
-#else /* HAVE_MALLOC_H && HAVE_STRUCT_MALLINFO */
-
-#ifndef MALLINFO_FIELD_TYPE
-#define MALLINFO_FIELD_TYPE size_t
-#endif  /* MALLINFO_FIELD_TYPE */
+#        if defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
+#            include <malloc.h>
+#        elif !defined(MALLINFO_FIELD_TYPE)
+#            define MALLINFO_FIELD_TYPE size_t
+#        endif  /* defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO) */
 
 /* Needed for size_t. */
-#include <stddef.h>
+#        include <stddef.h>
 
 /* dlmalloc definition of struct mallinfo. */
 struct mallinfo {
@@ -578,8 +577,8 @@ struct mallinfo {
   MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
 };
 
-#endif /* HAVE_USR_INCLUDE_MALLOC_H */
+#    endif /* defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO) */
 
-#endif
+#endif /* !defined(USE_JEMALLOC) */
 
 #endif /* MACHINE_H */
