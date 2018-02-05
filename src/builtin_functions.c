@@ -7538,7 +7538,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   size_t num,size;
   struct svalue *ss;
-#ifdef USE_DL_MALLOC
+#ifdef USE_JEMALLOC
+  /* No mallinfo. */
+#elif USE_DL_MALLOC
   struct mallinfo mi = dlmallinfo();
 #elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
@@ -7551,7 +7553,20 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    * statistics from our bundled Doug Lea malloc, and not the
    * underlying system malloc. Ideally we should include both. */
 
-#if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
+#if defined(USE_JEMALLOC)
+  size_t sz, allocated, active, resident, mapped;
+
+  sz = sizeof(size_t);
+  mallctl("stats.allocated", (void *)&allocated, &sz, NULL, 0);
+  mallctl("stats.active", (void *)&active, &sz, NULL, 0);
+  mallctl("stats.resident", (void *)&resident, &sz, NULL, 0);
+  mallctl("stats.mapped", (void *)&mapped, &sz, NULL, 0);
+
+  push_text("allocated");push_ulongest(allocated);
+  push_text("active");push_ulongest(active);
+  push_text("resident");push_ulongest(resident);
+  push_text("mapped");push_ulongest(mapped);
+#elif defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
   push_static_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
@@ -7617,7 +7632,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
   count_string_types();
 
-#endif
+#endif /* if defined(USE_JEMALLOC) */
 
 #define COUNT(TYPE) do {					\
     PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
