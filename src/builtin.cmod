@@ -5962,15 +5962,15 @@ static void get_val_module(void)
 /* Always do the lookup in the Val module dynamically to allow the
  * values to be replaced. */
 #define GET_VAL(NAME)							\
-  PMOD_EXPORT struct object *PIKE_CONCAT (get_val_, NAME) (void)	\
+  PMOD_EXPORT struct object *get_val_ ## NAME (void)			\
   {									\
     struct svalue index, res;						\
     if (!val_module) get_val_module();					\
     SET_SVAL(index, T_STRING, 0, string, NULL);				\
-    MAKE_CONST_STRING (index.u.string, TOSTR (NAME));			\
+    MAKE_CONST_STRING (index.u.string, #NAME);				\
     object_index_no_free (&res, val_module, 0, &index);			\
     if (TYPEOF(res) != T_OBJECT)					\
-      Pike_error ("\"Val." TOSTR (NAME) "\" didn't resolve to an object.\n"); \
+      Pike_error ("\"Val." #NAME "\" didn't resolve to an object.\n");	\
     return res.u.object;						\
   }
 
