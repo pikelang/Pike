@@ -912,12 +912,11 @@ class sql_result {
                 if (sizeof(value) == 1)
                   value = (int)value[0];
                 else {
-                  int i = sizeof(value[1]);
-                  int denom = 1;
-                  do
-                     denom *= 10;
-                  while (--i >= 0);
-                  value = Gmp.mpq((int)value[0] * denom + (int)value[1],
+                  int i, denom;
+                  for (i = sizeof(value[1]), denom = 1; --i >= 0; denom *= 10);
+                  i = (int)value[0];
+                  value = (int)value[1];
+                  value = Gmp.mpq(i * denom + (i >= 0 ? value : -value),
                    denom);
                 }
               }
@@ -955,6 +954,8 @@ class sql_result {
                 case 0:;
                   value = 0;
               }
+              if (alltext)
+                value = (string)value;
             }
             break;
           case INT8OID:case INT2OID:
