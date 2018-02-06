@@ -573,7 +573,7 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("max_label calculation failed!\n");
 
       if(labels[c->arg] != -1)
-	Pike_fatal("Duplicate label!\n");
+	Pike_fatal("Duplicate label %d!\n", c->arg);
 #endif
       FLUSH_CODE_GENERATOR_STATE();
       labels[c->arg] = (INT32)PIKE_PC;
