@@ -325,7 +325,7 @@ void *alloca();
 #include <limits.h>
 #include <float.h>
 
-#if defined(USE_JEMALLOC)
+#if defined(USE_JEMALLOC) && defined(HAVE_JEMALLOC_JEMALLOC_H)
 #include <jemalloc/jemalloc.h>
 #elif defined(HAVE_MALLOC_H)
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
