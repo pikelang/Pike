@@ -26,6 +26,7 @@ o Sql.pgsql
     (SCRAM-SHA-256).
   - Slightly reduced overhead.
   - Support IEEE binary float database-wireformat.
+  - Support NUMERIC database-wireformat.
   - Prevent new queries from starting in the local_backend.
 
 o Sql.Sql
