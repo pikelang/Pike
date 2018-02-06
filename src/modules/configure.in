@@ -16,7 +16,7 @@ for a in `(cd $srcdir ; echo *)`
 do
   if test -d "$srcdir/$a" ; then
     if test -f "$srcdir/$a/configure.in"; then
-	yesno=`echo $a | tr '[A-Z]' '[a-z]'`
+	yesno=`echo $a | tr ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz`
 	yesno=`eval echo \\$with_$yesno`
 	if test "x${yesno-}" != xno ; then
 	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
