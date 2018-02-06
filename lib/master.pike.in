@@ -1262,14 +1262,14 @@ array(string) module_defined(object|program mod)
     return ({ Builtin.program_defined([program]mod) });
 
   array mods;
-  if (mod->is_resolv_joinnode)
+  if (objectp(mod) && object_program(mod)->is_resolv_joinnode)
     mods = mod->joined_modules; 
   else
     mods = ({ mod });
 
   foreach (mods;; object mod)
   {
-    if (mod->is_resolv_dirnode)
+    if (objectp(mod) && object_program(mod)->is_resolv_dirnode)
       files += ({ Builtin.program_defined(object_program(mod->module)) });
     else
       files += ({ Builtin.program_defined(object_program(mod)) });
@@ -1306,9 +1306,9 @@ object show_doc(program|object|function obj)
   }
   if (objectp(obj))
   {
-    if (obj->is_resolv_joinnode)
+    if (object_program(obj)->is_resolv_joinnode)
       obj = obj->joined_modules[0]; // FIXME: check for multiples
-    if (obj->is_resolv_dirnode)
+    if (object_program(obj)->is_resolv_dirnode)
       prog = object_program(obj->module);
     else
       prog = object_program(obj);
@@ -1585,12 +1585,13 @@ void unregister(program p)
     mixed n = has_value (name, ".") ?
       resolv ((name / ".")[..<1] * ".") :
       get_root_module();
-    if (objectp (n) && (n->is_resolv_dirnode || n->is_resolv_joinnode))
+    if (objectp (n) && (object_program(n)->is_resolv_dirnode ||
+			object_program(n)->is_resolv_joinnode))
       n->delete_value (p);
 
     fname = dirname (fname);
     if ( fname!="" && objectp (n = fc[fname]) )
-      if (n->is_resolv_dirnode) // Won't find joinnodes in fc.
+      if (object_program(n)->is_resolv_dirnode) // Won't find joinnodes in fc.
 	n->delete_value (p);
   }
 
@@ -2405,7 +2406,7 @@ class joinnode (array(object|mapping) joined_modules,
     joined_modules = filter(joined_modules,
 			    lambda(dirnode node) {
 			      return !objectp(node) ||
-				!node->is_resolv_dirnode ||
+				!object_program(node)->is_resolv_dirnode ||
 				(node->dirname != path);
 			    });
     cache = ([]);
@@ -2423,7 +2424,8 @@ class joinnode (array(object|mapping) joined_modules,
       if (!undefinedp(ret = o[index])) 
       {
 	if (objectp(ret) &&
-	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
+	    (object_program(ret)->is_resolv_dirnode ||
+	     object_program(ret)->is_resolv_joinnode))
         {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
@@ -2524,7 +2526,8 @@ class joinnode (array(object|mapping) joined_modules,
 	joined_modules = joined_modules[..i - 1] + joined_modules[i + 1..];
 	i--;
       }
-      else if (objectp (o) && (o->is_resolv_dirnode || o->is_resolv_joinnode))
+      else if (objectp (o) && (object_program(o)->is_resolv_dirnode ||
+			       object_program(o)->is_resolv_joinnode))
 	o->delete_value (val);
       else if (string name = mappingp (o) && search (o, val))
 	m_delete (o, name);
@@ -2533,7 +2536,11 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected int `== (mixed other)
   {
-    return objectp (other) && (other->is_resolv_joinnode == 1) &&
+    // NB: Index the program instead of the object to avoid issues
+    //     with modules overloading lfun::`->() with stuff that has
+    //     side-effects (here's looking at you Calendar.Events).
+    return objectp (other) &&
+      (object_program(other)->is_resolv_joinnode == 1) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
   }
 
@@ -2970,7 +2977,8 @@ class CompatResolver
 		       // Copy relevant stuff from the root module.
 		       @filter(root_module->joined_modules,
 			       lambda(mixed x) {
-				 return objectp(x) && x->is_resolv_dirnode;
+				 return objectp(x) &&
+				   object_program(x)->is_resolv_dirnode;
 			       }) }),
 		    current_handler,
 		    root_module->fallback_module,
@@ -4850,13 +4858,13 @@ class Encoder
 	  break compare;
 	}
 
-	if ((resolved->is_resolv_joinnode) &&
+	if ((object_program(resolved)->is_resolv_joinnode) &&
 	    (sizeof(resolved->joined_modules) == 1)) {
 	  ENC_MSG("  compare_resolved: %O is a single element joinnode.\n",
 		  resolved);
 	  resolved = resolved->joined_modules[0];
 	}
-	if (resolved->is_resolv_dirnode) {
+	if (object_program(resolved)->is_resolv_dirnode) {
 	  if (resolved->module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
@@ -4876,7 +4884,7 @@ class Encoder
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
 	// and we don't know that.
-	if (resolved->is_resolv_joinnode) {
+	if (object_program(resolved)->is_resolv_joinnode) {
 	  ENC_MSG ("  compare_resolved: searching for %O in joinnode %O\n",
 		   what, resolved);
 	  foreach (resolved->joined_modules, mixed part)
@@ -4930,7 +4938,7 @@ class Encoder
 
     if (objectp (what)) {
 
-      if (what->is_resolv_dirnode) {
+      if (object_program(what)->is_resolv_dirnode) {
 	ENC_MSG ("  is a dirnode\n");
 	string name = program_path_to_name (what->dirname);
 	if (string|array ref = compare_resolved (name, what, resolv (name),
@@ -4938,17 +4946,17 @@ class Encoder
 	  ENC_RETURN (ref);
       }
 
-      else if (what->is_resolv_joinnode) {
+      else if (object_program(what)->is_resolv_joinnode) {
 	ENC_MSG ("  is a joinnode\n");
 	object modules = Builtin.array_iterator (what->joined_modules);
 	object|mapping value;
       check_dirnode:
 	if (modules && objectp (value = modules->value()) &&
-	    value->is_resolv_dirnode) {
+	    object_program(value)->is_resolv_dirnode) {
 	  string name = program_path_to_name (value->dirname);
 	  modules += 1;
 	  foreach (modules;; value)
-	    if (!objectp (value) || !value->is_resolv_dirnode ||
+	    if (!objectp (value) || !object_program(value)->is_resolv_dirnode ||
 		program_path_to_name (value->dirname) != name)
 	      break check_dirnode;
 	  ENC_MSG ("  joinnode has consistent name %O\n", name);
@@ -5268,11 +5276,13 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	}
 	else switch (op) {
 	  case 'm':
-	    if (objectp (subres) && ([object]subres)->is_resolv_joinnode) {
+	    if (objectp (subres) &&
+		object_program([object]subres)->is_resolv_joinnode) {
 	      dirnode found;
 	      foreach (([object(joinnode)]subres)->joined_modules,
 		       object|mapping part)
-		if (objectp (part) && part->is_resolv_dirnode && part->module) {
+		if (objectp (part) &&
+		    object_program(part)->is_resolv_dirnode && part->module) {
 		  if (found)
 		    error ("There are ambiguous module objects in %O.\n",
 			   subres);
@@ -5282,7 +5292,8 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	      if (found) subres = found;
 	    }
 
-	    if (objectp (subres) && ([object]subres)->is_resolv_dirnode) {
+	    if (objectp (subres) &&
+		object_program([object]subres)->is_resolv_dirnode) {
 	      if (([object]subres)->module) {
 		subres = ([object]subres)->module;
 		DEC_MSG ("  got dirnode module %O\n", subres);
