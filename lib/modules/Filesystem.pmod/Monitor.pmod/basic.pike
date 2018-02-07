@@ -1323,25 +1323,15 @@ protected void adjust_monitor(Monitor m)
   mixed key = monitor_mutex->lock();
   if (m->pos < 0) return;	// Not on the monitor_queue any more (race).
 
-  Monitor next_monitor = monitor_queue->peek();
-  if (!next_monitor) {
-    error("%O: Monitor queue is empty!\n", this_function);
-  }
-
-  int old_min = next_monitor->next_poll;
   monitor_queue->adjust(m);
-  if (m->next_poll >= old_min) {
+  if (monitor_queue->peek() != m) {
     return;
   }
 
   if (co_id) {
     // Nonblocking mode and we need to poll earlier,
     // so reschedule the call_out.
-    MON_WERR("Rescheduling call_out.\n");
-    if (backend) backend->remove_call_out(co_id);
-    else remove_call_out(co_id);
-    co_id = 0;
-    set_nonblocking();
+    reschedule_backend_check();
   }
 }
 
