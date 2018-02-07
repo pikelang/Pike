@@ -1334,7 +1334,7 @@ protected void adjust_monitor(Monitor m)
     return;
   }
 
-  if (co_id && (co_id != 1)) {
+  if (co_id) {
     // Nonblocking mode and we need to poll earlier,
     // so reschedule the call_out.
     MON_WERR("Rescheduling call_out.\n");
@@ -1678,9 +1678,6 @@ protected Pike.Backend backend;
 //! Call-out identifier for @[backend_check()] if in
 //! nonblocking mode.
 //!
-//! Set to @expr{1@} when non_blocking mode without call_outs
-//! is in use.
-//!
 //! @seealso
 //!   @[set_nonblocking()], @[set_blocking()]
 protected mixed co_id;
@@ -1733,7 +1730,8 @@ void set_blocking()
 //!   @[check()], @[set_nonblocking()]
 protected void backend_check()
 {
-  if (co_id != 1) co_id = 0;
+  co_id = 0;
+
   int t;
   mixed err = catch {
       t = check(0);
