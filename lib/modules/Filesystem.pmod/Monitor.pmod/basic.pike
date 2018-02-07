@@ -290,6 +290,11 @@ protected class Monitor(string path,
       MON_WERR("Registering %O for polling.\n", path);
       mixed key = monitor_mutex->lock();
       monitor_queue->push(this);
+      if (monitor_queue->peek() == this) {
+	if (co_id) {
+	  reschedule_backend_check();
+	}
+      }
     }
   }
 
