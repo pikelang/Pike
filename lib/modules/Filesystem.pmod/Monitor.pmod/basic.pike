@@ -1671,9 +1671,49 @@ protected void backend_check()
   if (err) throw(err);
 }
 
+//! Reschedule beckend check.
+//!
+//! @param suggested_t
+//!   Suggested time in seconds until next call of @[check()].
+//!
+//! Register suitable callbacks with the backend to automatically
+//! call @[check()].
+//!
+//! @[check()] and thus all the callbacks will be called from the
+//! backend thread.
+protected void reschedule_backend_check(int|void suggested_t)
+{
+  // NB: Other stuff than plain files may be used with the monitoring
+  //     system, so the call_out may be needed even with accelerators.
+  //
+  // NB: Also note that Inotify doesn't support monitoring of non-existing
+  //     paths, so it still needs the call_out-loop.
+  MON_WERR("Rescheduling call_out.\n");
+
+  int t = max_dir_check_interval;
+  if (sizeof(monitor_queue)) {
+    Monitor m = monitor_queue->peek();
+    if (m) {
+      t = m->next_poll - time(1);
+    }
+    if (t > max_dir_check_interval) t = max_dir_check_interval;
+  }
+  if (!undefinedp(suggested_t) && (suggested_t < t)) {
+    t = suggested_t;
+  }
+  if (t < 0) t = 0;
+
+  if (co_id) {
+    if (backend) backend->remove_call_out(co_id);
+    else remove_call_out(co_id);
+  }
+  if (backend) co_id = backend->call_out(backend_check, t);
+  else co_id = call_out(backend_check, t);
+}
+
 //! Turn on nonblocking mode.
 //!
-//! @param t
+//! @param suggested_t
 //!   Suggested time in seconds until next call of @[check()].
 //!
 //! Register suitable callbacks with the backend to automatically
@@ -1688,7 +1728,7 @@ protected void backend_check()
 //!
 //! @seealso
 //!   @[set_blocking()], @[check()].
-void set_nonblocking(int|void t)
+void set_nonblocking(int|void suggested_t)
 {
 #if HAVE_INOTIFY
   if (instance) {
@@ -1696,23 +1736,7 @@ void set_nonblocking(int|void t)
   }
 #endif
   if (co_id) return;
-  // NB: Other stuff than plain files may be used with the monitoring
-  //     system, so the call_out may be needed even with accelerators.
-  //
-  // NB: Also note that Inotify doesn't support monitoring of non-existing
-  //     paths, so it still needs the call_out-loop.
-  if (undefinedp(t)) {
-    if (sizeof(monitor_queue)) {
-      Monitor m = monitor_queue->peek();
-      t = (m && m->next_poll - time(1)) || max_dir_check_interval;
-    } else {
-      t = max_dir_check_interval;
-    }
-    if (t > max_dir_check_interval) t = max_dir_check_interval;
-    if (t < 0) t = 0;
-  }
-  if (backend) co_id = backend->call_out(backend_check, t);
-  else co_id = call_out(backend_check, t);
+  reschedule_backend_check(suggested_t);
 }
 
 //! Set the @[default_max_dir_check_interval].
