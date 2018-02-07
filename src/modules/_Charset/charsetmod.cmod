@@ -129,7 +129,7 @@ PIKECLASS Std_CS
 
 PIKEFUN void create(string|void replace, function(string:string)|void repcb)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   if(replace) {
     if(s->replace != NULL)
@@ -145,7 +145,7 @@ PIKEFUN void create(string|void replace, function(string:string)|void repcb)
 
 PIKEFUN void set_replacement_callback(function(string:string) repcb)
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   if(repcb)
     assign_svalue(&s->_repcb, repcb);
@@ -155,7 +155,7 @@ PIKEFUN void set_replacement_callback(function(string:string) repcb)
 
 PIKEFUN string drain()
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   pop_n_elems(args);
   push_string(finish_string_builder(&s->strbuild));
@@ -164,7 +164,7 @@ PIKEFUN string drain()
 
 PIKEFUN object clear()
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   pop_n_elems(args);
 
@@ -180,7 +180,7 @@ PIKEFUN object clear()
 
 INIT
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   s->retain = NULL;
   s->replace = NULL;
@@ -190,7 +190,7 @@ INIT
 
 EXIT
 {
-  struct std_cs_stor *s = (struct std_cs_stor *)Pike_fp->current_storage;
+  struct std_cs_stor *s = THIS;
 
   if(s->retain != NULL)
     free_string(s->retain);
