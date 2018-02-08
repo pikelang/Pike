@@ -88,11 +88,23 @@ o Crypto.Hash
 
 o Filesystem.Monitor
 
+  - Fixed some backend_check rescheduling isusues.
+
+    adjust_monitor() didn't reschedule the backend_check() call_out
+    if the adjusted monitor already was at the head of monitor_queue.
+    This caused polls to be delayed in some common cases.
+
+    register_path() didn't reschedule the backend_check() call_out.
+    If the newly registered monitor ends up at the head of the monitor_queue,
+    the backend_check() call_out likely needs to be rescheduled.
+
   - Fixed issue with next_poll being set to zero causing polling
     every second.
 
   - Fixed indexing the NULL value error when InotifyMonitor was used in
     combination with a filter_file() that doesn't accept everything.
+
+  - Removed obsolete special case for co_id == 1.
 
 o HTTPLoop:
 
