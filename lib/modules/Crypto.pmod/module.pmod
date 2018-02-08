@@ -34,7 +34,7 @@
 //!
 //! As the cryptographic services offered from this module aren't
 //! necessarily used for security applications, none of the strings
-//! inputted or outputted are marked as secure. That is up to the
+//! input or output are marked as secure. That is up to the
 //! caller.
 //!
 //! @note

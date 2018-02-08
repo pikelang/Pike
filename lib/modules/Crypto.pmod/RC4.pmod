@@ -4,7 +4,7 @@
 
 //! RC4 is a stream cipher, sometimes refered to as Arcfour, and while
 //! very fast isn't considered secure anymore.
-
+//!
 //! @note
 //! The key setup of RC4 is quite weak, so you should never use keys
 //! with structure, such as ordinary passwords. If you have keys that

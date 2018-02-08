@@ -439,8 +439,6 @@ protected class Pike_8_0_master
 //!   @[get_compat_master()]
 protected inherit Pike_8_0_master;
 
-//! @namespace predef::
-
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(sprintf_format f, sprintf_args ... args) {
@@ -667,8 +665,6 @@ program compile_string(string source, void|string filename,
   return ret;
 }
 
-//! @endnamespace
-
 //! Read a file from the master filesystem.
 //!
 //! The master filesystem defaults to the system filesystem,
@@ -874,8 +870,6 @@ protected void set_lc_env (mapping(string:string) env)
 }
 #endif
 
-//! @namespace predef::
-
 //! @decl mapping(string:string) getenv (void|int force_update)
 //!
 //! Queries the environment variables.
@@ -1043,8 +1037,6 @@ string normalize_path( string path )
   return replace(path,"\\","/");
 #endif
 }
-
-//! @endnamespace
 
 //! Mapping containing the cache of currently compiled files.
 //!
@@ -1786,10 +1778,6 @@ string cflags;
 //! Flags suitable for use when linking Pike C modules
 string ldflags; // Not yet used
 
-//! @namespace predef::
-//!
-//! This is the default namespace and contains lots of global symbols.
-
 //! Boolean datatype.
 enum bool { false=0, true=1 };
 
@@ -1900,8 +1888,6 @@ protected void create()
 #endif
   system_module_path=pike_module_path;
 }
-
-//! @endnamespace
 
 //! This function is called whenever a inherit is called for.
 //! It is supposed to return the program to inherit.
@@ -3213,8 +3199,6 @@ class CompatResolver
 
 inherit CompatResolver;
 
-//! @namespace predef::
-
 //! @class __dirnode
 
 //! @decl inherit MasterObject.dirnode
@@ -3294,8 +3278,6 @@ inherit CompatResolver;
 //! @seealso
 //! @[add_program_path()]
 //!
-
-//! @endnamespace
 
 //! These are useful if you want to start other Pike processes
 //! with the same options as this one was started with.
@@ -4424,7 +4406,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 }
 
 //! Function called by @expr{sprintf("%O")@} for objects that don't
-//! have an @[lfun::_sprintf()], or have one that returns @expr{UNDEFINED}.
+//! have an @[lfun::_sprintf()], or have one that returns @expr{UNDEFINED@}.
 string describe_object(object o)
 {
   string s;
@@ -4533,8 +4515,6 @@ string describe_function (function f)
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
  */
-
-//! @namespace predef::
 
 //! Return a readable message that describes where the backtrace
 //! @[trace] was made (by @[backtrace]).
@@ -4861,8 +4841,6 @@ array get_backtrace (object|array err)
 
   return bt;
 }
-
-//! @endnamespace
 
 void thread_quanta_exceeded(object thread, int ns)
 {

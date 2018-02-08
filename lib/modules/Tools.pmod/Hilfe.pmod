@@ -19,12 +19,12 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 // The Big To Do:
 // The parser part of Hilfe should really be redesigned once again.
-// The user input is first run through Parser.Pike.split and outputted
-// as a token stream. This stream is fed into a streming parser which
+// The user input is first run through Parser.Pike.split and output
+// as a token stream. This stream is fed into a streaming parser which
 // then relocates the variables and outputs expression objects with
 // evaluation destinations already assigned. Note that the streaming
 // parser can not start on the next expression before the previous
-// expression has been evaulated, because the variable table might not
+// expression has been evaluated, because the variable table might not
 // be up to date.
 
 //! Abstract class for Hilfe commands.
@@ -1160,7 +1160,7 @@ class Expression {
 
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
 //! that manages the current state of the parser. Essentially tokens are
-//! entered in one end and complete expressions are outputted in the other.
+//! entered in one end and complete expressions are output in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 protected class ParserState {
   protected ADT.Stack pstack = ADT.Stack();
@@ -2147,7 +2147,7 @@ class Evaluator {
   //! Gets as arguments in order: The safe_write function
   //! (function(string, mixed ...:int), the result as a string (string),
   //! the history entry number (int), the result (mixed), the compilation
-  //! time (int) and the evaulation time (int). If the evaluated expression
+  //! time (int) and the evaluation time (int). If the evaluated expression
   //! didn't return anything (e.g. a for loop) then 0 will be given as the
   //! result string.
   function reswrite = std_reswrite;

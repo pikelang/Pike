@@ -780,7 +780,7 @@ static int call_object_sprintf(int mode, struct object * o, ptrdiff_t fun, struc
   return 0;
 }
 
-/* This is called once for every '%' on every outputted line
+/* This is called once for every '%' on every output line
  * it takes care of linebreak and column mode. It returns 1
  * if there is more for next line.
  */

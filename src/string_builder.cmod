@@ -1461,6 +1461,9 @@ PIKECLASS Buffer
 /*! @endclass
  */
 
+/*! @endmodule String
+ */
+
 void init_string_buffer(void)
 {
   INIT;
