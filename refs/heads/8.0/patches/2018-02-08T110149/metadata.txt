@@ -1,0 +1,63 @@
+subject: Pike 8.0: Filesystem.Monitor, Master, Sql.pgsql, tzdata 2018c
+from: 0707d5f2f0bc30922b21c735dfd802862b59fbf0
+to: 2a762e3d3aa1ef276769e64635309597d58f378b
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-01-18T144109
+restart: true
+
+• Filesystem.Monitor: Reschedule backend_check after register_path.
+
+If the newly registered monitor ends up at the head of the monitor_queue,
+the backend_check() call_out likely needs to be rescheduled.
+
+Fixes [PIKE-65].
+
+• Filesystem.Monitor: Fix rescheduling by adjust_monitor().
+
+adjust_monitor() didn't reschedule the backend_check() call_out
+if the adjusted monitor already was at the head of monitor_queue.
+This caused polls to be delayed in some common cases.
+
+Fixes [PIKE-64].
+
+• Filesystem.Monitor: Clean up rescheduling of backend_check().
+
+• Master: Increased paranoia when indexing modules.
+
+Some modules (like eg Calendar.Events) have overloaded lfun::`->()
+operators that have side-effects (like eg compiling other modules).
+This is usually not a good idea in many places that attempt to look
+at symbols like is_resolv_dirnode and is_resolv_joinnode.
+
+Switch to instead indexing the corresponding program for the object
+in an attempt to avoid surprises.
+
+Fixes [PIKE-61], where lfun::`==() in joinnodes triggered compilation
+of Geography.Countries when they were compared with Calendar.Events.
+
+• pgsql: Support binary transport of the NUMERIC type.
+
+• Concurrent: Various improvements, bugfixes, backported from 8.1.
+
+Add map_with() as an alias for flat_map().
+Reduce lock contention and cleanup superfluous catches.
+Clarify docs.
+Free callbacks after use, frees memory and references.
+Add convenience variant to zip() and extend testsuite.
+Transparent automatic backend enable/disable.
+
+• pgsql: Make sure natural float numbers have no .0 attached.
+
+• Sql: Make big_typed_query fallback to big_query.
+
+• pgsql: Make sure all database errors end up as exceptions.
+
+• Updated tzdata to 2018c.
+
+• pgsql: Readding primitive auto-reconnect logic.
+
+• Crypto.Hash: Censor the password argument in crypt_hash().
+
+Attempt to hide passwords from backtraces.
+
+Fixes [PIKE-58].
