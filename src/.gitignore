@@ -59,6 +59,7 @@ autom4te.cache
 /specs
 /stamp-h
 /stamp-h.in
+/string_builder.c
 /test-install
 /testsuite
 /treeopt.h
