@@ -98,10 +98,10 @@ PIKE_MODULE_INIT
       else free_program(p);
    }
 
-   add_float_constant("pi",3.14159265358979323846  ,0);
-   add_float_constant("e", 2.7182818284590452354   ,0);
-   add_float_constant("inf", MAKE_INF(), 0);
-   add_float_constant("nan", MAKE_NAN(), 0);
+   add_float_constant("pi",3.14159265358979323846  ,ID_LOCAL);
+   add_float_constant("e", 2.7182818284590452354   ,ID_LOCAL);
+   add_float_constant("inf", MAKE_INF(), ID_LOCAL);
+   add_float_constant("nan", MAKE_NAN(), ID_LOCAL);
 #ifdef HAS_MPI
    add_function_constant("Matrix_op_create", matrix_op_create, "function(function,int,int,int:object)", 0);
    add_function_constant("IMatrix_op_create", imatrix_op_create, "function(function,int,int,int:object)", 0);

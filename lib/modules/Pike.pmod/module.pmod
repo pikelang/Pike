@@ -4,6 +4,9 @@
 // Pike core things that don't belong anywhere else.
 //
 
+// These symbols won't be overloaded.
+local {
+
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
 constant WEAK = WEAK_INDICES|WEAK_VALUES;
@@ -130,3 +133,5 @@ TYPE check_call(TYPE fun_type, TYPE ... arg_types)
   return ret;
 }
 #endif /* 0 */
+
+}

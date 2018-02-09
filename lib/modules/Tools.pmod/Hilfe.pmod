@@ -430,19 +430,19 @@ protected class CommandDot {
   inherit Command;
   string help(string what) { return 0; }
 
-  protected constant usr_vector_a = ({
+  local protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
     32, 72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108,
     115, 32, 103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111,
     117, 32, 115, 101, 101, 32 });
-  protected constant usr_vector_b = ({
+  local protected constant usr_vector_b = ({
     32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97,
     110, 121, 32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114,
     111, 109, 32, 104, 101, 114, 101, 46 });
-  protected constant usr_vector_c = ({
+  local protected constant usr_vector_c = ({
     32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110,
     103, 32 });
-  protected constant usr_vector_d = usr_vector_c[..8] + ({
+  local protected constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
   protected array(string) thing(array|mapping|object thing, string what,
@@ -865,6 +865,8 @@ protected class SubSystems {
   }
 }
 
+local {
+
 protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
@@ -907,6 +909,8 @@ protected constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)",
 // All of the above except ".", "|", "&" and "~".
 protected constant notype = (infix+prefix+postfix+prepostfix+seperator) -
   (< ".", "|", "&", "~" >);
+
+}
 
 string typeof_token(string|array token)
 {
