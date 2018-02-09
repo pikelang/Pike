@@ -3218,7 +3218,7 @@ void f__exit(INT32 args)
  *!
  *! @seealso
  *!   @[ctime()], @[localtime()], @[mktime()], @[gmtime()],
- *!   @[System.gettimeofday], @[gethrtime]
+ *!   @[System.gettimeofday()], @[gethrtime()]
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
@@ -5536,7 +5536,8 @@ static void encode_tm_tz(const struct tm*tm)
  *!   not adjusted for the local time zone.
  *!
  *! @seealso
- *!   @[localtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -5606,7 +5607,8 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
  *! @seealso
- *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
@@ -5765,7 +5767,7 @@ static int get_tm(const char *fname, int args, struct tm *date)
  *!   and into the future).
  *!
  *! @seealso
- *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
+ *!   @[time()], @[ctime()], @[localtime()], @[gmtime()], @[strftime()]
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
@@ -5884,6 +5886,8 @@ PMOD_EXPORT void f_mktime (INT32 args)
  *!     The year, including century (for example, 1991).
  *! @enddl
  *!
+ *! @seealso
+ *!  @[localtime()], @[gmtime()], @[strftime()]
  */
 PMOD_EXPORT void f_strptime (INT32 args)
 {
@@ -5901,7 +5905,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
 }
 #endif /* HAVE_STRPTIME */
 /*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
- *! See also @[Gettext.setlocale]
  *!
  *! Convert the structure to a string.
  *!
@@ -6035,6 +6038,9 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
  *!     See also @expr{%u@}.
  *! @enddl
+ *!
+ *! @seealso
+ *!  @[mktime()], @[strptime()], @[Gettext.setlocale]
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {

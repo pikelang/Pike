@@ -126,10 +126,9 @@ PIKECLASS TM
     }
 #endif /* HAVE_STRPTIME */
     /*! @decl string(1..255) strftime( string(1..255) format )
-     *! See also @[Gettext.setlocale]
      *!
      *! @seealso
-     *!  @[strftime]
+     *!  @[strftime], @[Gettext.setlocale]
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
