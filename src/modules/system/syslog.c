@@ -107,7 +107,7 @@
 /*! @module System
  */
 
-/*! @decl void openlog(string ident, int options, facility)
+/*! @decl void openlog(string ident, int options, int facility)
  *!
  *! Initializes the connection to syslogd.
  *!
