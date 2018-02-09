@@ -6040,7 +6040,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *! @enddl
  *!
  *! @seealso
- *!  @[mktime()], @[strptime()], @[Gettext.setlocale]
+ *!  @[ctime()], @[mktime()], @[strptime()], @[Gettext.setlocale]
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
