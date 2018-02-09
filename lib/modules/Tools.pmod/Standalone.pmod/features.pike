@@ -118,7 +118,6 @@ int main(int num, array(string) args) {
   F(setsid);
   F(setuid);
   F(symlink);
-  F(syslog);
   F(thread_set_concurrency); // UNIX_THREADS
   F(ualarm);
   F(uname);
@@ -390,6 +389,7 @@ int main(int num, array(string) args) {
 #endif
   F(System.setpwent);
   F(System.setrlimit);
+  F(System.syslog);
   F(System.usleep);
   F(System.FSEvents.EventStream);
   F(System.Inotify);

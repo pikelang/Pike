@@ -104,6 +104,11 @@ protected Mapping.ShadowedMapping compat_all_constants =
                             "RegGetKeyNames" : System.RegGetKeyNames,
                             "RegGetValues" : System.RegGetValues,
 #endif
+#ifdef constant(System.openlog)
+                            "openlog" : System.openlog,
+                            "syslog" : System.syslog,
+                            "closelog" : System.closelog,
+#endif
 			  ]), 1);
 
 mapping(string:mixed) all_constants()
