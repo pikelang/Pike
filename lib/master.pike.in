@@ -1820,6 +1820,11 @@ enum bool { false=0, true=1 };
 //! @seealso
 //!   @[RandomSystem()->random_string()], @[random()]
 
+//! @decl int cp(string from, string to)
+//!
+//!   Copies the file @[from] to the new position @[to]. This is an
+//!   alias for @[Stdio.cp].
+
 /* Note that create is called before add_precompiled_program
  */
 protected void create()
@@ -1860,6 +1865,13 @@ protected void create()
   CO(find_call_out);
   CO(remove_call_out);
   CO(call_out_info);
+
+  add_constant("cp", lambda(string from, string to)
+    {
+      function(string,string:int) f = resolv("Stdio.cp");
+      add_constant("cp",f);
+      return f(from, to);
+    });
 
 #if "#share_prefix#"[0]!='#'
   // add path for architecture-independant files
