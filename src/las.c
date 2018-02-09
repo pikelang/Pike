@@ -1617,7 +1617,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   check_tree(n,0);
 
-  if (!is_const(n) && !TEST_COMPAT(7, 6)) {
+  if ((!is_const(n) || (n->tree_info & OPT_EXTERNAL_DEPEND)) &&
+      !TEST_COMPAT(7, 6))
+  {
     /* Index dynamically. */
     return mknode(F_INDEX, copy_node(n), mkstrnode(id));
   }
