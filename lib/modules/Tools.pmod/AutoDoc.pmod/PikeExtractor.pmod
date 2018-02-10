@@ -234,7 +234,8 @@ private class Extractor {
   }
 
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
-  protected array(array(PikeObject)|int(0..1)) parseAdjacentDecls(Class|Module c)
+  protected array(array(PikeObject)|int(0..1)) parseAdjacentDecls(AutoDoc root,
+								  Class|Module c)
   {
     array(PikeObject) res = ({ });
     for (;;) {
@@ -269,14 +270,14 @@ private class Extractor {
 	}
 	if (parser->peekToken() == "{") {
 	  parser->eat("{");
-	  parseClassBody([object(Class)] p, 0);
+	  parseClassBody(root, [object(Class)] p, 0);
 	  parser->eat("}");
 	}
       }
       else if (objectp(p) && p->objtype == "modifier" &&
 	       parser->peekToken() == "{") {
 	parser->eat("{");
-        parseClassBody(c, p->modifiers);
+        parseClassBody(root, c, p->modifiers);
 	parser->eat("}");
       }
       else if (objectp(p) && p->objtype == "enum") {
@@ -311,6 +312,7 @@ private class Extractor {
         return ({ res, terminating_nl });
     }
   }
+
   // parseClassBody does the main work and scans the stream looking for:
   // 1.   doclines + decls, no blank line in between
   // 2.   decls + doclines,    -----  "  " -----
@@ -320,10 +322,11 @@ private class Extractor {
   // If 'filename' is supplied, it will look for standalone doc comments
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
-  Documentation parseClassBody(Class|Module c,
+  Documentation parseClassBody(AutoDoc root, Class|Module c,
                                array(string) defModifiers,
                                void|string filename,
-                               void|string inAt) {
+			       void|string inAt)
+  {
     Documentation filedoc = 0;
   mainloop:
     for (;;) {
@@ -346,14 +349,14 @@ private class Extractor {
         doc = readAdjacentDocLines();    // read the doc comment lines
         s = parser->peekToken(WITH_NL);
         if (!isDelimiter(s)) {           // and decls that may follow
-          [decls, got_nl] = parseAdjacentDecls(c);
+          [decls, got_nl] = parseAdjacentDecls(root, c);
           s = parser->peekToken(WITH_NL);
           if (isDocComment(s))
             extractorError("doc + decl + doc is forbidden!");
         }
       }
       else {
-        [decls, got_nl] = parseAdjacentDecls(c);
+        [decls, got_nl] = parseAdjacentDecls(root, c);
         s = parser->peekToken(WITH_NL);
         if (isDocComment(s))
           doc = readAdjacentDocLines();
@@ -426,8 +429,9 @@ private class Extractor {
                                  m->objtype, m->name);
               if (!alreadyChild)
                 c->addChild(m);
-              parseClassBody(m, 0, 0, what);
+              parseClassBody(root, m, 0, 0, what);
               continue mainloop;
+
             case "endclass":
             case "endmodule":
               if (sizeof(decls))
@@ -439,6 +443,7 @@ private class Extractor {
                 extractorError("'@%s %s' doesn't match '@%s %s'",
                                meta->type, meta->name, c->objtype, c->name || "");
               return 0;  // no filedoc possible
+
             default:
               extractorError("@%s is not allowed in Pike files", meta->type);
           }
@@ -605,59 +610,54 @@ private class Extractor {
 //!
 //! @seealso
 //!   @[extractModule()], @[extractClass()]
-NameSpace extractNamespace(string s, void|string filename,
-			   void|string namespaceName, void|.Flags flags) {
+void extractNamespace(AutoDoc root, string s, void|string filename,
+		      void|string namespaceName, void|.Flags flags)
+{
   if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
   ns->name = namespaceName || filename;
-  Documentation doc = e->parseClassBody(ns, 0, filename);
+  root->addChild(ns);
+  Documentation doc = e->parseClassBody(root, ns, 0, filename);
   ns->documentation = doc;
-  // if there was no documentation in the file whatsoever
-  if (!doc && !sizeof(ns->docGroups) && !sizeof(ns->children))
-    return 0;
-  return ns;
 }
 
 //! Extract documentation for a Pike module.
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractClass()]
-Module extractModule(string s, void|string filename, void|string moduleName,
-		     void|.Flags flags) {
+void extractModule(AutoDoc root, Module parent, string s, void|string filename,
+		   void|string moduleName, void|.Flags flags)
+{
   if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Module m = Module();
   m->name = moduleName || filename;
-  Documentation doc = e->parseClassBody(m, 0, filename);
+  parent->addChild(m);
+  Documentation doc = e->parseClassBody(root, m, 0, filename);
   m->documentation = doc;
-  // if there was no documentation in the file whatsoever
-  if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
-    return 0;
 
   // If there's a _module_value it replaces the module itself.
   PikeObject module_value = m->findChild("_module_value");
   if (module_value) {
     module_value->name = m->name;
-    m = module_value;
+    parent->children -= ({ m });
+    parent->addChild(module_value);
   }
-  return m;
 }
 
 //! Extract documentation for a Pike class (aka program).
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractModule()]
-Class extractClass(string s, void|string filename, void|string className,
-		   void|.Flags flags) {
+void extractClass(AutoDoc root, Module parent, string s, void|string filename,
+		  void|string className, void|.Flags flags)
+{
   if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Class c = Class();
   c->name = className || filename;
-  Documentation doc = e->parseClassBody(c, 0, filename);
+  parent->addChild(c);
+  Documentation doc = e->parseClassBody(root, c, 0, filename);
   c->documentation = doc;
-  // if there was no documentation in the file...
-  if (!doc && !sizeof(c->docGroups) && !sizeof(c->children))
-    return 0;
-  return c;
 }

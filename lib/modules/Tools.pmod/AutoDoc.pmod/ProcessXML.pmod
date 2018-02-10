@@ -117,37 +117,6 @@ protected private void processWarning(string message, mixed ... args) {
 // From source file to XML
 //========================================================================
 
-// Wrap child in the proper modules and namespace.
-protected object makeWrapper(array(string) modules, object|void child)
-{
-  object m;
-  if (child->objtype != "autodoc") {
-    if (child->objtype != "namespace") {
-      string namespace = "predef";	// Default namespace.
-      if (sizeof(modules) && has_suffix(modules[0], "::")) {
-	// The parent module list starts with a namespace.
-	namespace = modules[0][..<2];
-	modules = modules[1..];
-      }
-      foreach(reverse(modules), string n) {
-	m = .PikeObjects.Module();
-	m->name = n;
-	if (child)
-	  m->addChild(child);
-	child = m;
-      }
-      m = .PikeObjects.NameSpace();
-      m->name = namespace;
-      m->addChild(child);
-      child = m;
-    }
-    m = .PikeObjects.AutoDoc();
-    m->addChild(child);
-    child = m;
-  }
-  return child;
-}
-
 //! This function extracts documentation from a file. The parameters
 //! @[type], @[name], and @[parentModules] are used only when
 //! @[pikeMode] != 0 and no C-style doc comments are present.
@@ -216,21 +185,57 @@ string extractXML(string filename, int|void pikeMode, string|void type,
       contents = replace(contents, "@module@",
 			 "\"___" + (parentModules[1..] + ({ name }))*"." +"\"");
     }
-    object m;
+
+    // Generate empty nodes for the parentModules.
+    object root = .PikeObjects.AutoDoc();
+    object m = root;
+    if (type != "namespace") {
+      object child = .PikeObjects.NameSpace();
+      m->addChild(child);
+      m = child;
+      m->name = "predef";
+      foreach(parentModules||({}); int i; string n) {
+	if (!i && has_suffix(n, "::")) {
+	  // The parent module list starts with a namespace.
+	  m->name = n[..<2];
+	  continue;
+	}
+	child = .PikeObjects.Module();
+	child->name = n;
+	m->addChild(child);
+	m = child;
+      }
+    }
+
     switch(type) {
     case "module":
-      m = .PikeExtractor.extractModule(contents, filename, name, flags);
+      .PikeExtractor.extractModule(root, m, contents, filename, name, flags);
       break;
     default:
     case "class":
-      m = .PikeExtractor.extractClass(contents, filename, name, flags);
+      .PikeExtractor.extractClass(root, m, contents, filename, name, flags);
       break;
     case "namespace":
-      m = .PikeExtractor.extractNamespace(contents, filename, name, flags);
+      .PikeExtractor.extractNamespace(root, contents, filename, name, flags);
       break;
     }
-    if (m)
-      return makeWrapper(parentModules, m)->xml(flags);
+
+    object child, prev, next;
+    for (child = root; prev != m; prev = child, child = next) {
+      if (child->documentation || sizeof(child->docGroups) ||
+	  (sizeof(child->children) > 1)) {
+	return root->xml(flags);
+      }
+      if (!sizeof(child->children)) break;
+      next = child->children[0];
+    }
+
+    // child here is either an undocumented, empty m,
+    // or the (only) child to m.
+    if (child->documentation || sizeof(child->docGroups) ||
+	sizeof(child->children)) {
+      return root->xml(flags);
+    }
   }
   return "";
 }
