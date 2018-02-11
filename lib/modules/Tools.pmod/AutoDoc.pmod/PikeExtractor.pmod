@@ -426,11 +426,15 @@ private class Extractor {
                 m->name = meta->name;
               }
               doc->xml = parse->doc("_" + what);
-              m->documentation = doc;
-              if (alreadyChild)
-                if (doc->xml && doc->xml != "")
+	      if (doc->xml && doc->xml != "") {
+		if (alreadyChild && alreadyChild->documentation &&
+		    alreadyChild->documentation->xml &&
+		    alreadyChild->documentation->xml != "") {
                   extractorError("doc not allowed on reentrance into '%s %s'",
                                  m->objtype, m->name);
+		}
+		m->documentation = doc;
+	      }
               if (!alreadyChild)
                 parent->addChild(m);
               parseClassBody(root, m, 0, 0, what);
