@@ -395,9 +395,13 @@ private class Extractor {
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();
+	object(Class)|Module parent = c;
         if (meta->type && meta->type != "decl") {
           string what = meta->type;
           switch(what) {
+	    case "namespace":
+	      parent = root;
+	      // FALL_THROUGH
             case "module":
               // if (c->objtype == "class" && what == "module")
               //   extractorError("@module not allowed in class files");
@@ -405,8 +409,8 @@ private class Extractor {
             case "class":
               if (sizeof(decls))
                 extractorError("@module doc comment must stand alone");
-              object(Class)|object(Module) alreadyChild =
-                c->findChild(meta->name);
+	      object(Class)|object(Module) alreadyChild =
+		parent->findChild(meta->name);
               object(Class)|object(Module) m;
               if (alreadyChild) {
                 m = alreadyChild;
@@ -428,12 +432,13 @@ private class Extractor {
                   extractorError("doc not allowed on reentrance into '%s %s'",
                                  m->objtype, m->name);
               if (!alreadyChild)
-                c->addChild(m);
+                parent->addChild(m);
               parseClassBody(root, m, 0, 0, what);
               continue mainloop;
 
             case "endclass":
             case "endmodule":
+            case "endnamespace":
               if (sizeof(decls))
                 extractorError("@%s doc comment must stand alone", meta->type);
               if (inAt != what - "end")
