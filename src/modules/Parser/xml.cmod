@@ -1935,7 +1935,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	{
 	  case 0:
 	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  default:
 	    XMLERROR("Expected | or ,");
@@ -2383,7 +2383,7 @@ static int really_low_parse_dtd(void)
 			      goto comefrom_fixed;
 			    }
 
-			    /* FALL_THROUGH */
+			    /* FALLTHRU */
 
 			  default:
 			bad_defaultdecl:
@@ -2495,7 +2495,7 @@ static int really_low_parse_dtd(void)
 
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
-		      /* FALL_THROUGH */
+		      /* FALLTHRU */
 
 		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
@@ -3249,7 +3249,7 @@ PIKEFUN string autoconvert(string s)
 	  pop_stack();
 	  push_string(end_shared_string(t));
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
@@ -3272,7 +3272,7 @@ PIKEFUN string autoconvert(string s)
     {
       case 0x0000feff:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x0000003c: /* UCS4 1234 byte order (big endian) */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(1234) detected.\n"));
 	init_string_builder(&b,4);
@@ -3285,7 +3285,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0xfffe0000:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x3c000000: /* UCS4 4321 byte order (little endian)*/
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(4321) detected.\n"));
 	init_string_builder(&b,4);
@@ -3298,7 +3298,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0x0000fffe:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x00003c00: /* UCS4 2143 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(2143) detected.\n"));
 	init_string_builder(&b,4);
@@ -3311,7 +3311,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0xfeff0000:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x003c0000: /* UCS4 3412 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(3412) detected.\n"));
 	init_string_builder(&b,4);

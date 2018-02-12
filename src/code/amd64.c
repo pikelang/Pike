@@ -3339,7 +3339,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if( b < 0 )
       break;
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case F_DIVIDE_INT:
     {
@@ -3517,7 +3517,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_ADD_NEG_INT:
     b = -b;
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case F_ADD_INT:
     {
@@ -3898,7 +3898,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     shr_reg_imm( ARG1_REG, 4 );
     /* arg1 = (sp_reg - *--mark_sp)/16 (sizeof(svalue)) */
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case F_MARK_CALL_BUILTIN:
     if(a == F_MARK_CALL_BUILTIN )
@@ -3907,7 +3907,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_imm_reg( 0, ARG1_REG );
     }
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case F_CALL_BUILTIN1:
     if(a == F_CALL_BUILTIN1 )

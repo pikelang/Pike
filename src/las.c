@@ -906,7 +906,7 @@ node *debug_mknode(int token, node *a, node *b)
 
   case F_MAGIC_SET_INDEX:
     res->node_info |= OPT_ASSIGNMENT;
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_MAGIC_INDEX:
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
@@ -1667,7 +1667,7 @@ void resolv_type(node *n)
 	  }
 	}
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     default:
       if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
@@ -3452,7 +3452,7 @@ void fix_type_field(node *n)
 		      "Soft cast with non-type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CAST:
     /* Type-field is correct by definition. */
     if (old_type) {
@@ -3913,7 +3913,7 @@ void fix_type_field(node *n)
 		      0, "Case value is not an enumerable type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CASE:
     if (CAR(n) && (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       fix_type_field(CAR(n));
@@ -3924,7 +3924,7 @@ void fix_type_field(node *n)
 		      0, "Case value is not an enumerable type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -4030,7 +4030,7 @@ void fix_type_field(node *n)
       /* Propagate the changed type all the way up to the apply node. */
       n->parent->node_info |= OPT_TYPE_NOT_FIXED;
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_COMMA_EXPR:
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
@@ -4077,7 +4077,7 @@ void fix_type_field(node *n)
     break;
 
   case F_CATCH:
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   default:
     copy_pike_type(n->type, mixed_type_string);
   }

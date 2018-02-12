@@ -839,7 +839,7 @@ void udp_read(INT32 args)
 	 if (!(flags & MSG_OOB)) {
 	   Pike_error("Socket read failed with EINVAL.\n");
 	 }
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
        case EWOULDBLOCK:
 	  push_int( 0 );
 	  return;

@@ -2784,7 +2784,7 @@ void f_create_process(INT32 args)
       if(m_ind_types(optional) & ~BIT_STRING)
 	Pike_error("Bad index type in argument 2 to Process->create()\n");
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case 1: cmd=Pike_sp[-args].u.array;
       if(cmd->size < 1)

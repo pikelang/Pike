@@ -214,8 +214,8 @@
 	  push_object(tmp);
 	  break;
 	}
-	/* Fall through */
       }
+      /* FALLTHRU */
 
       case IDENTIFIER_VARIABLE:
       {

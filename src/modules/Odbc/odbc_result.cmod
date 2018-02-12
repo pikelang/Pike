@@ -505,7 +505,7 @@ static void odbc_fix_fields(void)
        *
        * FIXME: We just convert it to SQL_C_TYPE_TIME for now.
        */
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case SQL_TIME:
       push_static_text("time");
       field_info[i].type = SQL_C_WCHAR;
@@ -523,7 +523,7 @@ static void odbc_fix_fields(void)
        *
        * FIXME: We just convert it to SQL_C_TIMESTAMP for now.
        */
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case SQL_TIMESTAMP:
       push_static_text("timestamp");
       field_info[i].type = SQL_C_WCHAR;

@@ -227,10 +227,10 @@ static void decode_base64( INT32 args, const char *name, const SIGNED char *tab)
   case 0:
     /* NOT_REACHED, but here for symmetry. */
     string_builder_putchar( &buf, (d>>16)&0xff );
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case 1:
     string_builder_putchar( &buf, (d>>8)&0xff );
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case 2:
     string_builder_putchar( &buf, d&0xff );
   }
@@ -362,7 +362,7 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     switch (last) {
     case 1:
       *--dest = '=';
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case 2:
       *--dest = '=';
     }
@@ -757,7 +757,7 @@ static void f_encode_uue( INT32 args )
       switch (last) {
       case 1:
 	dest[-2] = '`';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 2:
 	dest[-1] = '`';
       }
@@ -826,7 +826,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	cnt -= l;
 	break;
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case CT_SPECIAL:
     case CT_RBRACK:
     case CT_RPAR:

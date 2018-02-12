@@ -743,8 +743,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if (LOOK() < '0' || LOOK() > '9') goto unknown_directive;
 
 	  READBUF(C!='\n' && C!=' ' && C!='\t');
-	  /* fallthrough */
 	} else goto unknown_directive;
+	/* FALLTHRU */
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	lex->current_line = lex_strtol(buf, NULL, 10)-1;
@@ -846,7 +846,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       default:
 unknown_directive:
@@ -987,7 +987,7 @@ unknown_directive:
 	return TOK_NUMBER;
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':

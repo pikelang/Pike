@@ -813,7 +813,7 @@ static int do_one(struct format_stack *fs,
 	    lastspace=e;
 	    rest=ADD_PCHARP(f->b,e+1);
 	  }
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
 
 	default:
 	  continue;
@@ -1161,7 +1161,7 @@ cont_1:
             }
           }
         }
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       default:
         goto cont_2;
@@ -1190,7 +1190,7 @@ cont_2:
 	    fsp->flags|=ZERO_PAD;
 	    continue;
 	 }
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -2062,7 +2062,7 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case '0':
 	if (setwhat<2) continue;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -2081,7 +2081,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	    if (' ' < min_char) min_char = ' ';
 	    if (' ' > max_char) max_char = ' ';
 	  }
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 	case 2: case 3: case 4: break;
 	}
 	setwhat++;
@@ -2116,11 +2116,11 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case '#': case '$': case '>':
 	if ('\n' < min_char) min_char = '\n';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '|': case ' ': case '+':
 	if (' ' > max_char) max_char = ' ';
 	if (' ' < min_char) min_char = ' ';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '!': case '^': case '_':
 	continue;
 
@@ -2283,7 +2283,7 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 'x':
 	if ('f' > max_char) max_char = 'f';
-        /* FALL_THROUGH */
+        /* FALLTHRU */
       case 'X':
         if ('F' > max_char) max_char = 'F';
         if ('+' < min_char) min_char = '+';
@@ -2298,10 +2298,10 @@ static int push_sprintf_argument_types(PCHARP format,
       case 'd':
       case 'u':
 	if ('9' > max_char) max_char = '9';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 'o':
 	if ('7' > max_char) max_char = '7';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 'b':
 	if ('1' > max_char) max_char = '1';
         if ('+' < min_char) min_char = '+';
@@ -2564,7 +2564,7 @@ void f___handle_sprintf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;
@@ -2697,7 +2697,7 @@ void f___handle_sprintf_format(INT32 args)
 	  push_type_value(res);
 	  return;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PSAT_INVALID:
       case PSAT_INVALID|PSAT_MARKER:
 	/* There was a position argument or a parse error in strict mode. */

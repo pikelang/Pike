@@ -128,7 +128,7 @@ static void matrixX(_create)(INT32 args)
 		    break;
 		  }
 		}
-		/* FALL_THROUGH */
+		/* FALLTHRU */
 	      default:
 		SIMPLE_ARG_TYPE_ERROR(PNAME,1,
                                       "array(array(int|float))");

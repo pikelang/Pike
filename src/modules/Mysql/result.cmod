@@ -639,7 +639,7 @@ PIKEFUN int|array(string) fetch_row()
 	      break;
 	    }
 
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 	  case FIELD_TYPE_TINY:
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
@@ -716,7 +716,7 @@ PIKEFUN int|array(string) fetch_row()
 	      apply_svalue (&mpq_program, 1);
 	      break;
 	    }
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
@@ -816,7 +816,7 @@ static void json_escape(struct string_builder *res,
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       default:
 	string_builder_putchar(res, str[i]);
 	break;

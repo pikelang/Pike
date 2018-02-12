@@ -1498,7 +1498,7 @@ void f_exece(INT32 args)
     if(m_val_types(en) & ~BIT_STRING)
       SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case 2:
     if(TYPEOF(sp[1-args]) != T_ARRAY)
@@ -1508,7 +1508,7 @@ void f_exece(INT32 args)
     if(array_fix_type_field(sp[1-args].u.array) & ~BIT_STRING)
       SIMPLE_ARG_TYPE_ERROR("exece", 2, "array(string)");
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case 1:
     if(TYPEOF(sp[0-args]) != T_STRING)

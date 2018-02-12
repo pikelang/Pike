@@ -121,7 +121,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       break;
     }
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   default:
   index_error:
@@ -927,7 +927,7 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
       return !s->u.integer;
     case PIKE_T_FUNCTION:
       if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case PIKE_T_OBJECT:
       return !s->u.object->prog;
     }
@@ -3114,7 +3114,7 @@ PMOD_EXPORT void o_xor(void)
     pop_stack();
     push_type_value(pop_unfinished_type());
   }
-  /* FALL_THROUGH */
+  /* FALLTHRU */
   case T_TYPE:
   {
     /* a ^ b  ==  (a&~b)|(~a&b) */
@@ -3259,7 +3259,7 @@ PMOD_EXPORT void o_lsh(void)
       break;
     convert_stack_top_to_bignum();
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case T_OBJECT:
   call_lfun:
@@ -3647,7 +3647,7 @@ PMOD_EXPORT void f_exponent(INT32 args)
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
-      /* fallthrough again (this is the slow path).. */
+      /* FALLTHRU *//* again (this is the slow path).. */
 
     case TWO_TYPES(T_OBJECT,T_INT):
     case TWO_TYPES(T_OBJECT,T_FLOAT):

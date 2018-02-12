@@ -907,7 +907,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 	}
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_EXTERNAL:
     /* Check that it is in this context */
     if(Pike_compiler ->new_program->id == var->u.integer.a)
@@ -1367,7 +1367,7 @@ static int do_docode2(node *n, int flags)
         /*  a  = `oper(a,*) */
         if (is_apply_constant_function_arg0( CDR(n), CAR(n) ))
             return 1;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     default:
       do_not_suboptimize_assign:
       switch(CAR(n)->token)
@@ -1452,7 +1452,7 @@ static int do_docode2(node *n, int flags)
           }
         }
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
       case F_EXTERNAL:
         /* Check that it is in this context */
         if(Pike_compiler ->new_program->id == CAR(n)->u.integer.a)
@@ -2657,7 +2657,7 @@ static int do_docode2(node *n, int flags)
 	  return 1;
 	}
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     default:
 #ifdef PIKE_DEBUG
       if((TYPEOF(n->u.sval) == T_OBJECT) &&

@@ -703,7 +703,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  if (!state) {
 	    flags |= APPEND_ZERO_PAD;
 	  }
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
 	case '1': case '2': case '3':
 	case '4': case '5': case '6':
 	case '7': case '8': case '9':

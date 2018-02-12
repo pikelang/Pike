@@ -5973,7 +5973,7 @@ int define_variable(struct pike_string *name,
     case T_MIXED:
     case T_FUNCTION:
       no_this = 1;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case T_PROGRAM:
       run_time_type = T_MIXED;
       break;
@@ -8955,7 +8955,7 @@ PMOD_EXPORT struct program *program_from_type(const struct pike_type *t)
       res = program_from_type(t->car);
       if (res) return res;
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_ATTRIBUTE:

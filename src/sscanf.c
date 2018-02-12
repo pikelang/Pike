@@ -1854,7 +1854,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '*':
 	no_assign=1;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case '-':
       case '+':
@@ -1980,7 +1980,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      ch = INDEX_PCHARP(format, cnt);
 	    }
 	  }
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
       case 's':
       case 'H':
 	if (!no_assign)
@@ -2072,7 +2072,7 @@ void f___handle_sscanf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;
@@ -2165,7 +2165,7 @@ void f___handle_sscanf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;

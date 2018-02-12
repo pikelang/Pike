@@ -983,7 +983,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     break;
   case 1:
     s1++;
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case 2:
     {
       char *p = str->str;

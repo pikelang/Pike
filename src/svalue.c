@@ -469,7 +469,7 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	break;
     }
 #endif
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case T_INT:
     q=(size_t)s->u.integer;
     break;
@@ -708,7 +708,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if(TYPEOF(*b) != T_OBJECT) return 0;
       }
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
     case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):

@@ -344,7 +344,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	t = t->cdr;
       }
       addchar(T_MANY);
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case T_MANY:
       encode_type(t->car, data);
       t = t->cdr;

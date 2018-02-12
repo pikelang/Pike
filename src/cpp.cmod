@@ -1190,7 +1190,7 @@ static ptrdiff_t readstring( struct CPP_struct *this, const PCHARP data, ptrdiff
 	PUTNL();
       else
 	cpp_error(this,"Newline in string.");
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     default:
       string_builder_putchar(nf, INDEX_PCHARP(data,pos));
       continue;
@@ -2307,7 +2307,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 	      free_string (func_name);
 	      return pos-1;
 	    }
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 	  default:
 	    if (wide_isspace(DATA(pos-1))) {
 	      SKIPWHITE();
@@ -3039,7 +3039,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 	  } while (DATA(++pos) == c);
 	  continue;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case '!': case '@': case '$': case '%': case '^': case '&':
       case '*': case '(': case ')': case '-': case '+':
@@ -3204,7 +3204,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                     case ',':
                       if(d->varargs && arg+1 == d->args) continue;
-                      /* FALL_THROUGH */
+                      /* FALLTHRU */
 
                     case ')':
                       pos--;
@@ -3334,8 +3334,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               }else{
                 goto unknown_preprocessor_directive;
               }
-              /* Fall through */
             }
+	    /* FALLTHRU */
           case '0': case '1': case '2': case '3': case '4':
           case '5': case '6': case '7': case '8': case '9':
             {
@@ -4434,7 +4434,7 @@ static void insert_pragma(struct CPP_struct *this,
     switch(ch) {
     case '\n': case '\r':
       ch = ' ';
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case ' ': case '\t':
       if (in_string) {
 	string_builder_putchar(tmp, ch);
@@ -4451,7 +4451,7 @@ static void insert_pragma(struct CPP_struct *this,
 	  break;
 	}
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     default:
       if (in_string) {
 	string_builder_putchar(tmp, ch);

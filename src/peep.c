@@ -377,14 +377,14 @@ INT32 assemble(int store_linenumbers)
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
 
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;
@@ -648,8 +648,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_TWO_ARGS */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */
@@ -679,8 +679,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_ARG */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */

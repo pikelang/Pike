@@ -1213,7 +1213,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	}
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   default:
     SIMPLE_ARG_TYPE_ERROR("search", 1, "string|array|mapping|object");
   }
@@ -1545,7 +1545,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
 	 /Noring */
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_MULTISET:
       /* FIXME: This behavior for multisets isn't clean. It should be
@@ -1554,7 +1554,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
       f_values(1);
       stack_swap();
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_STRING:   /* Strings are odd. /Noring */
     case T_ARRAY:
@@ -5233,7 +5233,7 @@ PMOD_EXPORT void f_programp(INT32 args)
       push_int(1);
       return;
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   default:
     pop_n_elems(args);
@@ -6137,7 +6137,7 @@ static int does_match_8_8( const unsigned char *s, int j, int sl,
 
      case '\\':
        if (++i==ml) return 0;
-       /* falthrough */
+       /* FALLTHRU */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -6184,7 +6184,7 @@ static int does_match_16_8( const unsigned short *s, int j, int sl,
 
      case '\\':
        if (++i==ml) return 0;
-       /* falthrough */
+       /* FALLTHRU */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -6224,7 +6224,7 @@ static int does_match_x_x(struct pike_string *s,int j,
 
      case '\\':
        if (++i==m->len) return 0;
-       /* falthrough */
+       /* FALLTHRU */
      default:
        if(j>=s->len ||
 	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;

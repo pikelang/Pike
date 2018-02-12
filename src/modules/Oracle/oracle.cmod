@@ -1497,7 +1497,7 @@ OCIError *get_global_error_handle(void)
 	    case SQLT_TIMESTAMP_LTZ:
 	      /* Assume a reasonable expansion. */
 	      size *= 10;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case SQLT_STR: /* string */
 	    case SQLT_AFC: /* char */
 	    case SQLT_AVC: /* charz */
@@ -1784,7 +1784,7 @@ OCIError *get_global_error_handle(void)
 	  memmove(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
 	  inout->u.shortstr[0]=inout->xlen;
 
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
 	case SQLT_VNU:
 	  {
 	    INT64 integer;

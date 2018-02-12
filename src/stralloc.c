@@ -2338,7 +2338,7 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     {
     case '-':
       neg++;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case '+':
       INC_PCHARP(str,1);
       c=EXTRACT_PCHARP(str);

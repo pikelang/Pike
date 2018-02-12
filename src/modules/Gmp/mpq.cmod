@@ -455,7 +455,7 @@ float_fallback:
 	       x->u.object->prog != mpzmod_program)
 	      SIMPLE_ARG_TYPE_ERROR ("create", 1, "int|string");
 
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  case T_INT:
 	    if (TYPEOF(*base) != T_INT &&
@@ -470,7 +470,7 @@ float_fallback:
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 1:
 	if (x) {
@@ -480,7 +480,7 @@ float_fallback:
 	    get_new_mpq(THISMPQ, x, 1, "create", 1, args);
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 0:
 	break;

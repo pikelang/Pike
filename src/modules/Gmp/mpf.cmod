@@ -173,7 +173,7 @@ PIKECLASS mpf
 	  Pike_error("Bad argument 3 to Gmp.mpf, must be 2 <= base <= 36, not %d.\n",base);
 	if(TYPEOF(sp[-args]) != T_STRING)
 	  Pike_error("First argument to Gmp.mpf must be a string when specifying a base.\n");
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 2:
 	if(TYPEOF(sp[1-args]) == T_INT)
@@ -189,7 +189,7 @@ PIKECLASS mpf
 	    mpf_set_prec(THISMPF, sp[1-args].u.integer);
 	  }
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 1:
 	if(x && (TYPEOF(*x) == T_STRING))

@@ -244,7 +244,7 @@ void img_bmp_encode(INT32 args)
 			  sp+2-1-args,
 			  "run-length encoding can only be done on a "
 			  "palette-based image with 4 or 8 bits per pixel");
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
       case 4:
       case 8:
 	 if (!nct)
@@ -266,7 +266,7 @@ void img_bmp_encode(INT32 args)
 			  "(has %ld colors)\n",
 			  1<<bpp,
                           (long)image_colortable_size(nct));
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
       case 24:
 	 break;
       default:

@@ -480,7 +480,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   {
    case TGA_TYPE_MAPPED_RLE:
      rle = 1;
-     /* FALL_THROUGH */
+     /* FALLTHRU */
 
    case TGA_TYPE_MAPPED:
      itype = INDEXED;
@@ -499,7 +499,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
    case TGA_TYPE_GRAY_RLE:
      rle = 1;
-     /* FALL_THROUGH */
+     /* FALLTHRU */
 
    case TGA_TYPE_GRAY:
      itype = GRAY;
@@ -507,7 +507,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
    case TGA_TYPE_COLOR_RLE:
      rle = 1;
-     /* FALL_THROUGH */
+     /* FALLTHRU */
 
    case TGA_TYPE_COLOR:
      itype = RGB;
