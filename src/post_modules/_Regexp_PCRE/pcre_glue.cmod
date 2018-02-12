@@ -99,6 +99,7 @@ PIKECLASS _pcre
 			       &(THIS->pattern),&options,&table);
 		  break;
 	       }
+	       /* FALLTHRU */
 	    case 2:
 	       get_all_args("create",args,"%S%d",
 			    &(THIS->pattern),&options);

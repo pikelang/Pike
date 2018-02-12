@@ -145,6 +145,7 @@ static rgba_group parse_color_line( struct pike_string *cn, int sl )
 	 toggle=2;
 	 break;
        }
+       /* FALLTHRU */
      default:
        if(toggle == 3)
        {

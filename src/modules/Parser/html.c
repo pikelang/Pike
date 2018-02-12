@@ -2702,6 +2702,7 @@ static newstate data_callback (struct parser_html_storage *this,
 	    push_svalue(v->u.array->item);				\
 	    break;							\
 	 }								\
+	 /* FALLTHRU */							\
       default:								\
 	 Pike_error("Parser.HTML: illegal type found "			\
 		    "when trying to call " TYPESTR " callback\n");	\

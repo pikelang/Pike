@@ -448,6 +448,7 @@ static int va_get_args_2(struct svalue *s,
 	case T_FUNCTION:
 	  if((*cast_arg(ptr, struct program **)=program_from_svalue(s)))
 	    break;
+	  /* FALLTHRU */
 
 	default:
 	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s))

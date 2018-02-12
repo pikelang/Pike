@@ -86,17 +86,17 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbyt
 
   switch( left )
   {
-  case 7: b |= ( ( UINT64 )in[ 6] )  << 48;
+  case 7: b |= ( ( UINT64 )in[ 6] )  << 48; /* FALLTHRU */
 
-  case 6: b |= ( ( UINT64 )in[ 5] )  << 40;
+  case 6: b |= ( ( UINT64 )in[ 5] )  << 40; /* FALLTHRU */
 
-  case 5: b |= ( ( UINT64 )in[ 4] )  << 32;
+  case 5: b |= ( ( UINT64 )in[ 4] )  << 32; /* FALLTHRU */
 
-  case 4: b |= ( ( UINT64 )in[ 3] )  << 24;
+  case 4: b |= ( ( UINT64 )in[ 3] )  << 24; /* FALLTHRU */
 
-  case 3: b |= ( ( UINT64 )in[ 2] )  << 16;
+  case 3: b |= ( ( UINT64 )in[ 2] )  << 16; /* FALLTHRU */
 
-  case 2: b |= ( ( UINT64 )in[ 1] )  <<  8;
+  case 2: b |= ( ( UINT64 )in[ 1] )  <<  8; /* FALLTHRU */
 
   case 1: b |= ( ( UINT64 )in[ 0] ); break;
 
@@ -158,9 +158,9 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24_uint16( const unsigned INT16 *in, size_
 
   switch( left )
   {
-  case 3: b |= ( ( UINT64 )in[ 2] )  << 32;
+  case 3: b |= ( ( UINT64 )in[ 2] )  << 32; /* FALLTHRU */
 
-  case 2: b |= ( ( UINT64 )in[ 1] )  << 16;
+  case 2: b |= ( ( UINT64 )in[ 1] )  << 16; /* FALLTHRU */
 
   case 1: b |= ( ( UINT64 )in[ 0] ); break;
 

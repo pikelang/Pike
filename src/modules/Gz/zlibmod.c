@@ -545,8 +545,8 @@ static void gz_compress(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       SIMPLE_ARG_TYPE_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
@@ -631,8 +631,8 @@ static void gz_deflate(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
   }
@@ -992,8 +992,8 @@ static void gz_uncompress(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       SIMPLE_ARG_TYPE_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
@@ -1070,8 +1070,8 @@ static void gz_inflate(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
   }
