@@ -1630,6 +1630,7 @@ static void read_attvalue(struct string_builder *X,
 
       case 0x0d:
 	if (!keepspace && PEEK(1)==0x0a) READ(1);	/* cr/lf */
+	/* FALLTHRU */
       case 0x20:
       case 0x0a:
       case 0x09:
@@ -1663,7 +1664,7 @@ static void read_pubid(struct string_builder *X,
     }
     switch(PEEK(0))
     {
-      case 0x0d: if(PEEK(1)==0x0a) READ(1);
+      case 0x0d: if(PEEK(1)==0x0a) READ(1); /* FALLTHRU */
       case 0x20:
       case 0x0a:
       case 0x09:
@@ -1723,6 +1724,7 @@ static void read_entityvalue(struct string_builder *X,
 	  break;
 	}
 #endif
+	/* FALLTHRU */
 
       default:
 	POKE(*X, PEEK(0));
@@ -2177,6 +2179,7 @@ static int really_low_parse_dtd(void)
 			SYS();
 			break;
 		      }
+		      /* FALLTHRU */
 
 		    default:
 		  not_system:
@@ -2492,6 +2495,7 @@ static int really_low_parse_dtd(void)
 			break;
 
 		      }
+		      /* FALLTHRU */
 
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
@@ -2820,6 +2824,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		  SYS();
 		  break;
 		}
+		/* FALLTHRU */
 
 	      default:
 		XMLERROR("Invalid entry.");

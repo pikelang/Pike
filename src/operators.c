@@ -2638,8 +2638,8 @@ static void r_speedup(INT32 args, void (*func)(void))
 
   switch(args)
   {
-    case 3: func();
-    case 2: func();
+    case 3: func(); /* FALLTHRU */
+    case 2: func(); /* FALLTHRU */
     case 1: return;
 
     default:

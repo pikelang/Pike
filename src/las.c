@@ -1774,6 +1774,7 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 	  }
 	}
       }
+      /* FALLTHRU */
 
     default:
     {

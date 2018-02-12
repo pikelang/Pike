@@ -2031,6 +2031,7 @@ static ptrdiff_t find_eos( struct CPP_struct *this, const PCHARP data, ptrdiff_t
 	    continue;
 	}
         this->current_line++;
+	/* FALLTHRU */
       default:
 	continue;
       }
@@ -2194,6 +2195,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
       pos = SUBTRACT_PCHARP(p,data);
       break;
     }
+    /* FALLTHRU */
 
   case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
@@ -3159,6 +3161,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                     case '\n':
                       this->current_line++;
                       PUTNL();
+		      /* FALLTHRU */
                     default: continue;
 
                     case '"':
@@ -4150,6 +4153,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 break;
               }
             }
+	    /* FALLTHRU */
           case 'r': /* require */
             {
               if(GOBBLE_WORD(require_))

@@ -423,6 +423,7 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
 	break;
       }
     }
+    /* FALLTHRU */
 
     default:
       Pike_error ("Cannot json5 encode %s.\n", get_name_of_type (TYPEOF(*val)));

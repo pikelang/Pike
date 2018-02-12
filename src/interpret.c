@@ -2148,6 +2148,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           constant = &context->prog->constants[function->func.const_info.offset].sval;
           if( TYPEOF(*constant) != PIKE_T_PROGRAM )
             break;
+	  /* FALLTHRU */
         case IDENTIFIER_C_FUNCTION:
         case IDENTIFIER_PIKE_FUNCTION:
           if( !new_frame )

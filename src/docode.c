@@ -373,6 +373,7 @@ static void do_cond_jump(node *n, int label, int iftrue, int flags)
 
   case F_APPLY:
     if(!is_efun(CAR(n), f_not)) break;
+    /* FALLTHRU */
 
   case F_NOT:
     if(!(flags & DO_POP)) break;

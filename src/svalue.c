@@ -614,6 +614,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	}
       }
     }
+    /* FALLTHRU */
 
   default:
     return 1;
@@ -2148,7 +2149,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 #define GC_CHECK_SWITCH(U, T, ZAP, GC_DO, PRE, DO_FUNC, DO_OBJ)		\
   switch (T) {								\
     case T_FUNCTION:							\
-      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+      PRE DO_FUNC(U, T, ZAP, GC_DO) /* FALLTHRU */			\
     case T_OBJECT:							\
       PRE DO_OBJ(U, T, ZAP, GC_DO) break;				\
     case T_STRING:							\
@@ -2282,7 +2283,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 			  DO_FUNC, DO_OBJ, DO_STR, DO_TYPE, DO_SKIP)	\
   switch (T) {								\
     case T_FUNCTION:							\
-      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+      PRE DO_FUNC(U, T, ZAP, GC_DO) /* FALLTHRU */			\
     case T_OBJECT:							\
       PRE								\
       if (!U.object->prog) {						\

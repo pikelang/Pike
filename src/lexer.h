@@ -1176,6 +1176,8 @@ unknown_directive:
       /* if( GOBBLE('.' ) ) */
       /*   return TOK_SAFE_INDEX; */
 
+      /* FALLTHRU */
+
     case ']':
     case ',':
     case '~':

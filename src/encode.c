@@ -273,9 +273,9 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
-  case 3: addchar_unsafe((char)((num >> 24)&0xff));
-  case 2: addchar_unsafe((char)((num >> 16)&0xff));
-  case 1: addchar_unsafe((char)((num >> 8)&0xff));
+  case 3: addchar_unsafe((char)((num >> 24)&0xff)); /* FALLTHRU */
+  case 2: addchar_unsafe((char)((num >> 16)&0xff)); /* FALLTHRU */
+  case 1: addchar_unsafe((char)((num >> 8)&0xff));  /* FALLTHRU */
   case 0: addchar_unsafe((char)(num&0xff));
   }
 }

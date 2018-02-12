@@ -1778,6 +1778,7 @@ static void internal_parse_typeA(const char **_s)
 	}
 	break;
       }
+      /* FALLTHRU */
 
     default:
   bad_type:
@@ -7121,6 +7122,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       /* Still too few arguments. */
       break;
     }
+    /* FALLTHRU */
   case T_MANY:
     copy_pike_type(res, fun_type->cdr);
     break;

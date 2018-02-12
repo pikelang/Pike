@@ -1224,6 +1224,7 @@ cont_2:
 	  if(tmp < 0) sprintf_error(fs, "Illegal width %d.\n", tmp);
 	  fsp->width=tmp;
 	  if (!setwhat) break;
+	  /* FALLTHRU */
 	case 2: fsp->precision=tmp; break;
 	case 3: fsp->column_width=tmp; break;
 	case 4: fsp->precision=-tmp; break;
@@ -1535,6 +1536,7 @@ cont_2:
           break;
         }
       }
+      /* FALLTHRU */
       case 'b':
       case 'o':
       case 'd':

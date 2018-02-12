@@ -241,6 +241,7 @@ static void low_image_f_wbf_decode( int args, int mode )
         push_static_text( "image" );
         low_image_f_wbf_decode_type0( &wh, &buff );
         map_num_elems++;
+	/* FALLTHRU */
 
       case 0: /* Header only */
         push_static_text( "format" );
