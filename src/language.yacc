@@ -586,8 +586,10 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  int save_l_flag = l_flag;
 	  l_flag = 10;
-	  fputs("expr: ", stderr);
-	  print_tree($3);
+          fputs("expr: ", stderr);
+#ifdef PIKE_DEBUG
+          print_tree($3);
+#endif
 	  fputs("\n\n", stderr);
 	  l_flag = save_l_flag;
 	  my_yyerror("Constant definition is not constant: 0x%08x.",
