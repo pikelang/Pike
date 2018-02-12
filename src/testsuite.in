@@ -5554,6 +5554,16 @@ cond_begin([[all_constants()->thread_create]])
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
 
+  test_any_equal([[
+    // Check the compiler for too aggressive constant folding.
+#pragma dynamic_dot
+    int test_thread() {
+      return Thread.this_thread()->id_number() ==
+	     Thread.this_thread().id_number();
+    }
+    return ({ Thread.Thread, Thread.Thread })(test_thread)->wait();
+  ]], ({ 1, 1 }))
+
 cond_end // thread_create
 cond(0, [[
   test_any([[

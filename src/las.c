@@ -2069,6 +2069,7 @@ int is_const(node *n)
 {
   if(!n) return 1;
   return !(n->tree_info & (OPT_SIDE_EFFECT |
+			   OPT_EXTERNAL_DEPEND |
 			   OPT_NOT_CONST |
 			   OPT_ASSIGNMENT |
 			   OPT_CASE |
