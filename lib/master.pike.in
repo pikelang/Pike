@@ -1866,13 +1866,6 @@ protected void create()
   CO(remove_call_out);
   CO(call_out_info);
 
-  add_constant("cp", lambda(string from, string to)
-    {
-      function(string,string:int) f = resolv("Stdio.cp");
-      add_constant("cp",f);
-      return f(from, to);
-    });
-
 #if "#share_prefix#"[0]!='#'
   // add path for architecture-independant files
   add_include_path("#share_prefix#/include");
