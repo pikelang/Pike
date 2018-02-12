@@ -205,6 +205,7 @@ node *copy_node(node *n);
 node *defrost_node(node *n);
 void optimize_node(node *);
 int is_const(node *n);
+int is_const_80(node *n);
 int node_is_tossable(node *n);
 int node_is_true(node *n);
 int node_is_false(node *n);

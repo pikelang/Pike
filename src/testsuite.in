@@ -1017,6 +1017,30 @@ test_compile_any([[
   }
 ]])
 
+test_compile_any([[
+  class C {
+    local constant A = 1;
+    constant B = A + 1;
+  }
+]])
+
+test_compile_error([[
+  class C {
+    constant A = 1;
+    // Error: Constant definition is not constant.
+    constant B = A + 1;
+  }
+]])
+
+test_compile_warning([[
+#pike 8.0
+  class C {
+    constant A = 1;
+    // Warning: Constant expression has external dependencies.
+    constant B = A + 1;
+  }
+]])
+
 test_any([[
   class Foo {
     constant zero = 0;
