@@ -21,8 +21,13 @@ RAGEL_TARGETS=json_parser.c json_string.c json_mapping.c json_array.c json_numbe
 
 $(SRCDIR)/%.c: rl/%.rl rl/json_defaults.rl
 	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
-	  echo "cd $(SRCDIR) && $(RAGEL) -o $*.c rl/$*.rl"; \
-	  cd "$(SRCDIR)" && $(RAGEL) -o $*.c rl/$*.rl; \
+	  if ragel --version | head -1 | grep -q 'version [7-9].' ; then \
+	    echo "cd $(SRCDIR) && $(RAGEL) -o $*.c rl/$*.rl"; \
+	    cd "$(SRCDIR)" && $(RAGEL) -o $*.c rl/$*.rl; \
+	  else \
+	    echo "Too old ragel version"; \
+	    false; \
+	  fi \
 	elif [ -f $@ ]; then \
 	  echo "touch $@"; \
 	  touch $@; \

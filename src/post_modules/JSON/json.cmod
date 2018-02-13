@@ -371,6 +371,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	break;
       }
     }
+    /* FALLTHRU */
 
     default:
       Pike_error ("Cannot json encode %s.\n", get_name_of_type (TYPEOF(*val)));
