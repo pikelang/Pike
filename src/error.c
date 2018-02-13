@@ -1086,6 +1086,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   ERROR_DONE(generic);
 }
 
+PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
+  const char *func,
+  struct svalue *base_sp,  int args,
+  size_t amount)
+{
+  resource_error (func, base_sp, args, "memory", amount,
+		  amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
+}
+
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   const char *func,
