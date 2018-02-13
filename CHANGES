@@ -64,9 +64,6 @@ o Compiler
   - Fixed type leak for getters/setters implemented with
     variant functions.
 
-  - Indexing of OPT_EXTERNAL_DEPEND expressions with the '.'-operator
-    are no longer constant folded, but is instead a run-time operation.
-
 o Calendar
 
   - Updated tzdata to 2018c.
