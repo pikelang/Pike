@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.231 2001/01/12 02:28:06 mast Exp $");
+RCSID("$Id$");
 
 #include "language.h"
 #include "interpret.h"
@@ -909,6 +909,12 @@ node *debug_mknode(short token, node *a, node *b)
       }
       res->node_info |= OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
+      if (res->node_info & OPT_EXTERNAL_DEPEND) {
+	/* Applying something that has external dependencies
+	 * renders a result that isn't constant.
+	 */
+	res->tree_info |= OPT_NOT_CONST;
+      }
     }
     break;
 
