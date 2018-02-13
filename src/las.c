@@ -871,6 +871,12 @@ node *debug_mknode(int token, node *a, node *b)
       }
       res->node_info |= OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
+      if (res->node_info & OPT_EXTERNAL_DEPEND) {
+	/* Applying something that has external dependencies
+	 * renders a result that isn't constant.
+	 */
+	res->tree_info |= OPT_NOT_CONST;
+      }
     }
     break;
 
