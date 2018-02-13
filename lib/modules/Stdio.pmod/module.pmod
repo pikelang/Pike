@@ -1037,7 +1037,7 @@ class File
 
 #else /* !STDIO_CALLBACK_TEST_MODE */
 
-  int write(sprintf_format|array(string) data_or_format,
+  int write(sprintf_format|array(string)|object data_or_format,
 	    sprintf_args ... args)
   {
     if (outbuffer) {

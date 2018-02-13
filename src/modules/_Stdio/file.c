@@ -1764,205 +1764,144 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *! @seealso
  *!   @[read()], @[write_oob()], @[send_fd()]
  */
-static void file_write(INT32 args)
+#ifdef HAVE_WRITEV
+static ptrdiff_t file_write_array(struct array *a)
 {
   ptrdiff_t written, i;
-  struct pike_string *str;
 
-  if(args<1 || ((TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) &&
-		(TYPEOF(Pike_sp[-args]) != PIKE_T_ARRAY)))
-    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
+  i = a->size;
+  while(i--)
+    if (a->item[i].u.string->size_shift)
+      Pike_error("Bad argument 1 to file->write().\n"
+                 "Element %ld is a wide string.\n",
+                 (long)i);
 
-  if(FD < 0)
-    Pike_error("File not open for write.\n");
+  struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
+  struct iovec *iov = iovbase;
+  int iovcnt = a->size;
 
-  if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY) {
-    struct array *a = Pike_sp[-args].u.array;
-
-    if( (a->type_field & ~BIT_STRING) &&
-	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
-
-    i = a->size;
-    while(i--)
-      if (a->item[i].u.string->size_shift)
-	Pike_error("Bad argument 1 to file->write().\n"
-		   "Element %ld is a wide string.\n",
-                   (long)i);
-
-#ifdef HAVE_WRITEV
-    if (args > 1) {
-#endif /* HAVE_WRITEV */
-      ref_push_array(a);
-      push_empty_string();
-      o_multiply();
-      Pike_sp--;
-      dmalloc_touch_svalue(Pike_sp);
-      Pike_sp[-args] = *Pike_sp;
-      free_array(a);
-
-#ifdef PIKE_DEBUG
-      if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) {
-	Pike_error("Bad return value from string multiplication.\n");
-      }
-#endif /* PIKE_DEBUG */
-#ifdef HAVE_WRITEV
-    } else if (!a->size) {
-      /* Special case for empty array */
-      ERRNO = 0;
-      pop_stack();
-      push_int(0);
-      return;
+  i = a->size;
+  while(i--) {
+    if (a->item[i].u.string->len) {
+      iov[i].iov_base = a->item[i].u.string->str;
+      iov[i].iov_len = a->item[i].u.string->len;
     } else {
-      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
-      struct iovec *iov = iovbase;
-      int iovcnt = a->size;
+      iov++;
+      iovcnt--;
+    }
+  }
 
-      if (!(THIS->open_mode & FILE_NONBLOCKING))
-	INVALIDATE_CURRENT_TIME();
-
-      i = a->size;
-      while(i--) {
-	if (a->item[i].u.string->len) {
-	  iov[i].iov_base = a->item[i].u.string->str;
-	  iov[i].iov_len = a->item[i].u.string->len;
-	} else {
-	  iov++;
-	  iovcnt--;
-	}
-      }
-
-      for(written = 0; iovcnt; check_signals(0,0,0)) {
-	int fd = FD;
-	int e;
-	int cnt = iovcnt;
+  for(written = 0; iovcnt; check_signals(0,0,0)) {
+    int fd = FD;
+    int e;
+    int cnt = iovcnt;
 #ifdef HAVE_PIKE_SEND_FD
-	int *fd_info = NULL;
-	int num_fds = 0;
-	if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-	  fd_info = THIS->fd_info;
-	  THIS->fd_info = NULL;
-	}
+    int *fd_info = NULL;
+    int num_fds = 0;
+    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
+      fd_info = THIS->fd_info;
+      THIS->fd_info = NULL;
+    }
 #endif
-	THREADS_ALLOW();
+    THREADS_ALLOW();
 
 #ifdef IOV_MAX
-	if (cnt > IOV_MAX) cnt = IOV_MAX;
+    if (cnt > IOV_MAX) cnt = IOV_MAX;
 #endif
 
 #ifdef MAX_IOVEC
-	if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
+    if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
 #endif
 #ifdef HAVE_PIKE_SEND_FD
-	if (fd_info) {
-	  i = writev_fds(fd, iov, cnt, fd_info + 2, num_fds);
-	} else
+    if (fd_info) {
+      i = writev_fds(fd, iov, cnt, fd_info + 2, num_fds);
+    } else
 #endif
-	  i = writev(fd, iov, cnt);
-	THREADS_DISALLOW();
+      i = writev(fd, iov, cnt);
+    THREADS_DISALLOW();
 
-	/* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
-	   fd, (unsigned int)iov, cnt, i); */
+    /* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
+       fd, (unsigned int)iov, cnt, i); */
 
-	e=errno; /* check_threads_etc may effect errno */
-	check_threads_etc();
+    e=errno; /* check_threads_etc may effect errno */
+    check_threads_etc();
 
-	if(i<0)
-	{
+    if(i<0)
+    {
 #ifdef HAVE_PIKE_SEND_FD
-	  if (fd_info) {
-	    restore_fd_info(fd_info);
-	  }
-#endif
-	  switch(e)
-	  {
-	  default:
-	    free(iovbase);
-	    ERRNO=errno=e;
-	    pop_n_elems(args);
-	    if (!written) {
-	      push_int(-1);
-	    } else {
-	      push_int(written);
-	    }
-	    /* Minor race - see below. */
-	    THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-	    return;
-
-	  case EINTR: continue;
-	  case EWOULDBLOCK: break;
-	    /* FIXME: Special case for ENOTSOCK? */
-	  }
-	  break;
-	}else{
-	  written += i;
-
-#ifdef HAVE_PIKE_SEND_FD
-	  if (fd_info) {
-	    THIS->fd_info = fd_info;
-	    if (i) {
-	      do_close_fd_info(THIS->fd_info = fd_info);
-	    }
-	  }
-#endif
-
-	  /* Avoid extra writev() */
-	  if(THIS->open_mode & FILE_NONBLOCKING)
-	    break;
-
-	  while(i) {
-	    if ((ptrdiff_t)iov->iov_len <= i) {
-	      i -= iov->iov_len;
-	      iov++;
-	      iovcnt--;
-	    } else {
-	      /* Use cast since iov_base might be a void pointer */
-	      iov->iov_base = ((char *) iov->iov_base) + i;
-	      iov->iov_len -= i;
-	      i = 0;
-	    }
-	  }
-	}
-#ifdef _REENTRANT
-	if (FD<0) {
-	  free(iovbase);
-	  Pike_error("File closed while in file->write.\n");
-	}
-#endif
+      if (fd_info) {
+        restore_fd_info(fd_info);
       }
+#endif
+      switch(e)
+      {
+      default:
+        free(iovbase);
+        ERRNO=errno=e;
+        return written ? written : -1;
 
-      free(iovbase);
+      case EINTR: continue;
+      case EWOULDBLOCK: break;
+        /* FIXME: Special case for ENOTSOCK? */
+      }
+      break;
+    }else{
+      written += i;
 
-      /* Minor race - see below. */
-      THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+        THIS->fd_info = fd_info;
+        if (i) {
+          do_close_fd_info(THIS->fd_info = fd_info);
+        }
+      }
+#endif
 
-      if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-      ERRNO=0;
+      /* Avoid extra writev() */
+      if(THIS->open_mode & FILE_NONBLOCKING)
+        break;
 
-      pop_stack();
-      push_int(written);
-      return;
+      while(i) {
+        if ((ptrdiff_t)iov->iov_len <= i) {
+          i -= iov->iov_len;
+          iov++;
+          iovcnt--;
+        } else {
+          /* Use cast since iov_base might be a void pointer */
+          iov->iov_base = ((char *) iov->iov_base) + i;
+          iov->iov_len -= i;
+          i = 0;
+        }
+      }
     }
+#ifdef _REENTRANT
+    if (FD<0) {
+      free(iovbase);
+      Pike_error("File closed while in file->write.\n");
+    }
+#endif
+  }
+
+  free(iovbase);
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
+  ERRNO=0;
+
+  return written;
+}
 #endif /* HAVE_WRITEV */
-  }
 
-  /* At this point TYPEOF(Pike_sp[-args]) is PIKE_T_STRING */
+static ptrdiff_t file_write_buffer(void *ptr, size_t len)
+{
+  ptrdiff_t written;
 
-  if(args > 1)
-  {
-    f_sprintf(args);
-    args=1;
-  }
-
-  str=Pike_sp[-args].u.string;
-  if(str->size_shift)
-    Pike_error("Stdio.File->write(): cannot output wide strings.\n");
-
-  for(written=0;written < str->len;check_signals(0,0,0))
+  for(written=0;(size_t)written < len;check_signals(0,0,0))
   {
     int fd=FD;
     int e;
+    int i;
+    void *start = (char*)ptr + written;
 #ifdef HAVE_PIKE_SEND_FD
     int *fd_info = NULL;
     int num_fds = 0;
@@ -1972,23 +1911,16 @@ static void file_write(INT32 args)
       THIS->fd_info = NULL;
     }
 #endif
-    THREADS_ALLOW();
 #ifdef HAVE_PIKE_SEND_FD
     if (fd_info) {
       struct iovec iov;
-      iov.iov_base = str->str + written;
-      iov.iov_len = str->len - written;
+      iov.iov_base = start;
+      iov.iov_len = len - written;
       i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
     } else
 #endif
-      i=fd_write(fd, str->str + written, str->len - written);
+      i=fd_write(fd, start, len - written);
     e=errno;
-    THREADS_DISALLOW();
-
-    check_threads_etc();
-
-    if (!(THIS->open_mode & FILE_NONBLOCKING))
-      INVALIDATE_CURRENT_TIME();
 
     if(i<0)
     {
@@ -2001,15 +1933,8 @@ static void file_write(INT32 args)
       {
       default:
 	ERRNO=errno=e;
-	pop_n_elems(args);
-	if (!written) {
-	  push_int(-1);
-	} else {
-	  push_int64(written);
-	}
-	/* Minor race - see below. */
-	THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-	return;
+
+        return written ? written : -1;
 
       case EINTR: continue;
       case EWOULDBLOCK: break;
@@ -2037,14 +1962,189 @@ static void file_write(INT32 args)
   /* check_signals() may have done something... */
   if(FD<0) Pike_error("File closed while in file->write.\n");
 #endif
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
+  ERRNO=0;
+
+  return written;
+}
+
+static ptrdiff_t file_write_string(struct pike_string *str)
+{
+  ptrdiff_t written;
+
+  if(str->size_shift)
+    Pike_error("Stdio.File->write(): cannot output wide strings.\n");
+
+  for(written=0;written < str->len;check_signals(0,0,0))
+  {
+    int fd=FD;
+    int e;
+    int i;
+#ifdef HAVE_PIKE_SEND_FD
+    int *fd_info = NULL;
+    int num_fds = 0;
+/*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
+    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
+      fd_info = THIS->fd_info;
+      THIS->fd_info = NULL;
+    }
+#endif
+    THREADS_ALLOW();
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) {
+      struct iovec iov;
+      iov.iov_base = str->str + written;
+      iov.iov_len = str->len - written;
+      i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
+    } else
+#endif
+      i=fd_write(fd, str->str + written, str->len - written);
+    e=errno;
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if(i<0)
+    {
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+	restore_fd_info(fd_info);
+      }
+#endif
+      switch(e)
+      {
+      default:
+	ERRNO=errno=e;
+
+        return written ? written : -1;
+
+      case EINTR: continue;
+      case EWOULDBLOCK: break;
+	/* FIXME: Special case for ENOTSOCK? */
+      }
+      break;
+    }else{
+      written+=i;
+
+#ifdef HAVE_PIKE_SEND_FD
+      if (i && fd_info) {
+	do_close_fd_info(THIS->fd_info = fd_info);
+      }
+#endif
+      /* Avoid extra write() */
+      if(THIS->open_mode & FILE_NONBLOCKING)
+	break;
+    }
+#ifdef _REENTRANT
+    if(FD<0) Pike_error("File closed while in file->write.\n");
+#endif
+  }
+
+#ifdef _REENTRANT
+  /* check_signals() may have done something... */
+  if(FD<0) Pike_error("File closed while in file->write.\n");
+#endif
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
+  ERRNO=0;
+
+  return written;
+}
+
+static void file_write(INT32 args)
+{
+  enum PIKE_TYPE first_arg = args > 0 ? TYPEOF(Pike_sp[-args]) : T_VOID;
+  ptrdiff_t written;
+
+  if(FD < 0)
+    Pike_error("File not open for write.\n");
+
+  if (!(THIS->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
+
+  switch (first_arg) {
+  case PIKE_T_ARRAY:
+    {
+      struct array *a = Pike_sp[-args].u.array;
+
+      if (!a->size) {
+        ERRNO = 0;
+        written = 0;
+        break;
+      }
+
+#ifdef HAVE_WRITEV
+      if (args == 1)
+      {
+        if( (a->type_field & ~BIT_STRING) &&
+            (array_fix_type_field(a) & ~BIT_STRING) )
+          SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
+
+        written = file_write_array(a);
+        break;
+      }
+#endif /* HAVE_WRITEV */
+      ref_push_array(a);
+      push_empty_string();
+      o_multiply();
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
+      Pike_sp[-args] = *Pike_sp;
+      free_array(a);
+
+#ifdef PIKE_DEBUG
+      if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) {
+        Pike_error("Bad return value from string multiplication.\n");
+      }
+#endif /* PIKE_DEBUG */
+    }
+    /* FALL THROUGH */
+  case PIKE_T_STRING:
+    if (args > 1)
+    {
+      f_sprintf(args);
+      args=1;
+    }
+    written = file_write_string(Pike_sp[-args].u.string);
+    break;
+  case PIKE_T_OBJECT:
+    {
+      struct object *o = Pike_sp[-args].u.object;
+      size_t len;
+      int shift;
+      void *src;
+
+      enum memobj_type type = get_memory_object_memory(o, &src, &len, &shift);
+
+      if (type != MEMOBJ_NONE) {
+        INT_TYPE offset = 0;
+
+        if (shift)
+          Pike_error("Stdio.File->write(): cannot output wide strings.\n");
+
+        if (args > 1 && TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT)
+        {
+          offset = Pike_sp[-args+1].u.integer;
+
+          if (offset < 0 || (size_t)offset > len) {
+            Pike_error("Bad offset.\n");
+          }
+        }
+
+        written = file_write_buffer((char*)src + offset, len - offset);
+        break;
+      }
+    }
+    /* FALL THROUGH */
+  default:
+    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)|Stdio.Buffer|System.Memory");
+  }
+
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
   THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-
-  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-  ERRNO=0;
 
   pop_n_elems(args);
   push_int64(written);

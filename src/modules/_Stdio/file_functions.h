@@ -20,7 +20,8 @@ FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt01,tVoid),tStr8))
 FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid) tOr(tInt,tVoid), tInt))
 /* function(string|array(string),mixed...:int) */
 FILE_FUNC("write",file_write,
-	  tOr3(tFunc(tStr, tInt),
+	  tOr4(tFunc(tStr, tInt),
+               tFuncV(tObj, tOr(tInt, tVoid), tInt),
 	       tFuncV(tArr(tStr), tMixed, tInt),
 	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
