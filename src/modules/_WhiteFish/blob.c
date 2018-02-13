@@ -274,6 +274,9 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
     int remaining = b->size - b->rpos;
+    int orig_rpos = b->rpos;
+    int i;
+    int prev;
     struct hash *h;
     if (nhits > (remaining>>1)) {
       fprintf(stderr, "Invalid blob entry for doc 0x%08x: %d hits of %d missing.\n",
@@ -286,13 +289,36 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
 	      (unsigned INT32)docid);
       break;
     }
-    h = find_hash( d, docid );
-    /* Make use of the fact that this dochash should be empty, and
-     * assume that the incoming data is valid
-     */
-    wf_buffer_rewind_w( h->data, 1 );
-    wf_buffer_wbyte(h->data, nhits);
-    wf_buffer_memcpy( h->data, b, nhits*2 );
+
+    /* Perform some minimal validation of the entry. */
+    prev = -1;
+    for (i = 0; i < nhits; i++) {
+      int val = wf_buffer_rshort(b);
+      if (prev == val) {
+	fprintf(stderr,
+		"Duplicate hits in blob entry for document 0x%08x: 0x%04x.\n",
+		(unsigned INT32)docid, val);
+	/* Probably some junk like 2020202020202020202020... */
+	/* Skip this entry and remainder of blob. */
+	remaining = -1;
+	nhits = 0;
+	break;
+      }
+      prev = val;
+    }
+
+    /* Restore read position. */
+    b->rpos = orig_rpos;
+
+    if (nhits) {
+      h = find_hash( d, docid );
+      /* Make use of the fact that this dochash should be empty, and
+       * assume that the incoming data is valid
+       */
+      wf_buffer_rewind_w( h->data, 1 );
+      wf_buffer_wbyte(h->data, nhits);
+      wf_buffer_memcpy( h->data, b, nhits*2 );
+    }
     if (remaining < 0) break;
   }
   wf_buffer_free( b );
