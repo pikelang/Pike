@@ -105,10 +105,10 @@ int wf_buffer_rbyte( struct buffer *b )
 
 unsigned int wf_buffer_rint( struct buffer *b )
 {
-  return (((((wf_buffer_rbyte( b )<<8) |
-	     wf_buffer_rbyte( b ))<<8) |
-	   wf_buffer_rbyte( b ))<<8)   |
-         wf_buffer_rbyte( b );
+  unsigned int res = wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_memcpy( struct buffer *d,
@@ -133,7 +133,8 @@ int wf_buffer_memcpy( struct buffer *d,
 
 int wf_buffer_rshort( struct buffer *b )
 {
-  return (wf_buffer_rbyte( b ) << 8) | wf_buffer_rbyte( b );
+  int res = wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_eof( struct buffer *b )
