@@ -537,7 +537,7 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
 // handles time in this local timezone. They map the special zero
 // time/date spec to 0.
 
-private constant timezone = localtime (0)->timezone;
+private int timezone = localtime (0)->timezone;
 
 //! Converts a system time value to an appropriately formatted time
 //! spec for the database.
