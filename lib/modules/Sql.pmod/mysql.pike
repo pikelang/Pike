@@ -1,12 +1,12 @@
 /*
- * $Id: mysql.pike,v 1.12 2000/09/28 03:39:08 hubbe Exp $
+ * $Id$
  *
  * Glue for the Mysql-module
  */
 
 //.
 //. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.12 2000/09/28 03:39:08 hubbe Exp $
+//. RCSID:	$Id$
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the glue to the Mysql-module.
@@ -37,7 +37,7 @@ string quote(string s)
 // handles time in this local timezone. They map the special zero
 // time/date spec to 0.
 
-private constant timezone = localtime (0)->timezone;
+private int timezone = localtime (0)->timezone;
 
 //. - encode_time
 //.   Converts a system time value to an appropriately formatted time
