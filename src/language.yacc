@@ -581,8 +581,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       }
     } else {
-      int warn = 0;
-      if(!is_const($3) && !(warn = (TEST_COMPAT(8, 0) && is_const_80($3)))) {
+      if(!is_const($3)) {
 	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  yyerror("Constant definition is not constant.");
 	}
@@ -591,11 +590,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
       } else {
 	if(!Pike_compiler->num_parse_error)
 	{
-	  ptrdiff_t tmp;
-	  if (warn) {
-	    yywarning("Constant expression has external dependencies.");
-	  }
-	  tmp = eval_low($3,1);
+	  ptrdiff_t tmp=eval_low($3,1);
 	  if(tmp < 1)
 	  {
 	    yyerror("Error in constant definition.");
@@ -1872,7 +1867,6 @@ local_name_list: new_local_name
 local_constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
     struct pike_type *type;
-    int warn = 0;
 
     /* Ugly hack to make sure that $3 is optimized */
     {
@@ -1883,17 +1877,12 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
       type=$3->u.node.a->type;
     }
 
-    if(!is_const($3) && !(warn = (TEST_COMPAT(8, 0) && is_const_80($3))))
+    if(!is_const($3))
     {
       if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
-	my_yyerror("Constant definition is not constant: 0x%08x.",
-		   $3?$3->tree_info:0);
+	yyerror("Constant definition is not constant.");
     }else{
-      ptrdiff_t tmp;
-      if (warn) {
-	yywarning("Constant expression has external dependencies.");
-      }
-      tmp = eval_low($3,1);
+      ptrdiff_t tmp=eval_low($3,1);
       if(tmp < 1)
       {
 	yyerror("Error in constant definition.");
@@ -2935,7 +2924,6 @@ enum_def: /* EMPTY */
   {
     if ($1) {
       if ($2) {
-	int warn = 0;
 	/* Explicit enum value. */
 
 	/* This can be made more lenient in the future */
@@ -2947,7 +2935,7 @@ enum_def: /* EMPTY */
 	  Pike_compiler->compiler_pass=tmp;
 	}
 
-	if(!is_const($2) && !(warn = (TEST_COMPAT(8, 0) && is_const_80($2))))
+	if(!is_const($2))
 	{
 	  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	    yyerror("Enum definition is not constant.");
@@ -2955,11 +2943,7 @@ enum_def: /* EMPTY */
 	} else {
 	  if(!Pike_compiler->num_parse_error)
 	  {
-	    ptrdiff_t tmp;
-	    if (warn) {
-	      yywarning("Constant expression has external dependencies.");
-	    }
-	    tmp = eval_low($2,1);
+	    ptrdiff_t tmp=eval_low($2,1);
 	    if(tmp < 1)
 	    {
 	      yyerror("Error in enum definition.");

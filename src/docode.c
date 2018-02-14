@@ -2252,13 +2252,8 @@ static int do_docode2(node *n, int flags)
 	node *case_val = i == 0 ? CAR(n) : CDR(n);
 
 	if (case_val) {
-	  int warn = 0;
-	  if(!is_const(case_val) &&
-	     !(warn = (TEST_COMPAT(8, 0) && is_const_80(case_val))))
+	  if(!is_const(case_val))
 	    yyerror("Case label isn't constant.");
-	  if (warn) {
-	    yywarning("Case label has external dependencies.");
-	  }
 
 	  if (case_val->type) {
 	    if (!pike_types_le(case_val->type, current_switch.type)) {

@@ -1503,14 +1503,9 @@ void resolv_constant(node *n)
 
     default:
     {
-      int warn = 0;
-      if(is_const(n) || (warn = (TEST_COMPAT(8, 0) && is_const_80(n))))
+      if(is_const(n))
       {
-	ptrdiff_t args;
-	if (warn) {
-	  yywarning("Constant expression has external dependencies.");
-	}
-	args = eval_low(n,1);
+	ptrdiff_t args=eval_low(n,1);
 	if(args==1) return;
 
 	if(args!=-1)
@@ -2082,19 +2077,6 @@ int is_const(node *n)
   if(!n) return 1;
   return !(n->tree_info & (OPT_SIDE_EFFECT |
 			   OPT_EXTERNAL_DEPEND |
-			   OPT_NOT_CONST |
-			   OPT_ASSIGNMENT |
-			   OPT_CASE |
-			   OPT_CONTINUE |
-			   OPT_BREAK |
-			   OPT_RETURN
-			   ));
-}
-
-int is_const_80(node *n)
-{
-  if(!n) return 1;
-  return !(n->tree_info & (OPT_SIDE_EFFECT |
 			   OPT_NOT_CONST |
 			   OPT_ASSIGNMENT |
 			   OPT_CASE |
