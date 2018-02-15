@@ -3475,7 +3475,7 @@ PMOD_EXPORT void f_indices(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("indices", 1,
@@ -3778,7 +3778,7 @@ PMOD_EXPORT void f_values(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("values", 1,
@@ -3874,7 +3874,7 @@ PMOD_EXPORT void f_types(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("types", 1,

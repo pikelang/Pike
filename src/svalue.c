@@ -441,7 +441,7 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	return q;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
   default:
     q = hash_ptr(s->u.ptr);
     break;

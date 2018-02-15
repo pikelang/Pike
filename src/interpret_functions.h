@@ -2908,7 +2908,7 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
     DO_JUMP_TO(addr);
   }
 
-  /* FALL THROUGH */
+  /* FALLTHRU */
 
   /* Assume that the number of arguments is correct */
 

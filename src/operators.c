@@ -345,13 +345,13 @@ PMOD_EXPORT void o_cast_to_string(void)
 	    if ((unsigned INT32) val <= 0xff)
 	      break;
 	    shift = 1;
-	    /* FALL THROUGH */
+	    /* FALLTHRU */
 
 	  case 1:
 	    if ((unsigned INT32) val <= 0xffff)
 	      break;
 	    shift = 2;
-	    /* FALL THROUGH */
+	    /* FALLTHRU */
 
 	  case 2:
 #if SIZEOF_INT_TYPE > 4

@@ -2795,7 +2795,7 @@ static void f_magic_index(INT32 args)
       if (TYPEOF(Pike_sp[2-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 3, "void|int");
       type = Pike_sp[2-args].u.integer & 1;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 2:
       if (TYPEOF(Pike_sp[1-args]) == T_INT) {
 	/* Compat with old-style args. */
@@ -2817,7 +2817,7 @@ static void f_magic_index(INT32 args)
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 2, "void|object|int");
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 1:
       if (TYPEOF(Pike_sp[-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("::`->", 1, "string");
@@ -2909,7 +2909,7 @@ static void f_magic_set_index(INT32 args)
       if (TYPEOF(Pike_sp[3-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::`->=", 4, "void|int");
       type = Pike_sp[3-args].u.integer & 1;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 3:
       if (TYPEOF(Pike_sp[2-args]) == T_INT) {
 	/* Compat with old-style args. */
@@ -2931,7 +2931,7 @@ static void f_magic_set_index(INT32 args)
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::`->=", 3, "void|object|int");
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 2:
       val = Pike_sp-args+1;
       if (TYPEOF(Pike_sp[-args]) != T_STRING)
@@ -3013,7 +3013,7 @@ static void f_magic_indices (INT32 args)
       if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
       type = Pike_sp[1-args].u.integer;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 1:
       if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
@@ -3035,7 +3035,7 @@ static void f_magic_indices (INT32 args)
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 1, "void|object|int");
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 0:
       break;
   }
@@ -3123,7 +3123,7 @@ static void f_magic_values (INT32 args)
       if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
       type = Pike_sp[1-args].u.integer;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 1:
       if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
@@ -3145,7 +3145,7 @@ static void f_magic_values (INT32 args)
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_values", 1, "void|object|int");
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 0:
       break;
   }
@@ -3236,7 +3236,7 @@ static void f_magic_types (INT32 args)
       if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 2, "void|int");
       type = Pike_sp[1-args].u.integer;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 1:
       if (TYPEOF(Pike_sp[-args]) == T_INT) {
 	/* Compat with old-style args. */
@@ -3258,7 +3258,7 @@ static void f_magic_types (INT32 args)
       } else {
 	SIMPLE_ARG_TYPE_ERROR ("::_types", 1, "void|object|int");
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 0:
       break;
   }

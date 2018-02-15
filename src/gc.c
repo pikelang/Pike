@@ -941,7 +941,7 @@ void describe_location(void *real_memblock,
 
     case T_MULTISET:
       descblock = ((struct multiset *) memblock)->msd;
-      /* FALL THROUGH */
+      /* FALLTHRU */
 
     case T_MULTISET_DATA: {
       struct multiset_data *msd = (struct multiset_data *) descblock;
@@ -977,7 +977,7 @@ void describe_location(void *real_memblock,
 
     case T_MAPPING:
       descblock = ((struct mapping *) memblock)->data;
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case T_MAPPING_DATA: {
       INT32 e;
       struct keypair *k;
@@ -1194,7 +1194,7 @@ again:
 	fprintf(stderr,"%*s**Builtin function!\n",indent,"");
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
 
     case T_OBJECT:
       p=((struct object *)a)->prog;

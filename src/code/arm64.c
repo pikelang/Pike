@@ -2126,7 +2126,7 @@ static void low_ins_f_byte(unsigned int opcode)
           switch (opcode) {
           case F_NE:
               negate = 1;
-              /* FALL THROUGH */
+              /* FALLTHRU */
           case F_EQ: {
                   enum arm64_register tmp1, tmp2;
 

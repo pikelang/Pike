@@ -1743,7 +1743,7 @@ static int scan_forward(struct piece *feed,
 	    }
 	    break;
 	 }
-	 /* FALL THROUGH */
+         /* FALLTHRU */
 
       default:  /* num_look_for > 1 */
 	 while (feed)
@@ -3610,7 +3610,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	ctx = this->out_ctx = CTX_TAG_QUOTED_ARG + quote;
       }
 
-        /* FALL THROUGH */
+        /* FALLTHRU */
     parse_entity: {
 	p_wchar2 end_found;
 
@@ -3828,7 +3828,7 @@ static void try_feed(int finished)
 	      }
 	    }
 
-	    /* FALL THROUGH */
+            /* FALLTHRU */
 	 case STATE_DONE: /* done, pop stack */
 	    if (!THIS->top.local_feed) THIS->feed_end=NULL;
 
@@ -3854,7 +3854,7 @@ static void try_feed(int finished)
 
 	 case STATE_REPARSE: /* user requested another go at the current data */
 	    if (st == THIS->stack) ignore_tag_cb = 1;
-	    /* FALL THROUGH */
+            /* FALLTHRU */
 
 	 state_reread:
 	 case STATE_REREAD: /* reread stack head */

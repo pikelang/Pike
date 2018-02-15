@@ -746,7 +746,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                     break;
                 }
             }
-            /* FALL THROUGH */
+            /* FALLTHRU */
         default:
             /* we pass anything else to the handler */
             ref_push_object(ctx->buffer);

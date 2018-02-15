@@ -330,7 +330,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, char **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'c':
     case 's':
       if(TYPEOF(*s) != T_STRING) goto type_err;
@@ -349,7 +349,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'n':
     case 'S':
       if(TYPEOF(*s) != T_STRING) goto type_err;
@@ -362,7 +362,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 't':
     case 'W':
       if(TYPEOF(*s) != T_STRING) goto type_err;
@@ -374,7 +374,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct array **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'a':
       if(TYPEOF(*s) != T_ARRAY) goto type_err;
       *cast_arg(ptr, struct array **)=s->u.array;
@@ -404,7 +404,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct mapping **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'm':
       if(TYPEOF(*s) != T_MAPPING) goto type_err;
       *cast_arg(ptr, struct mapping **)=s->u.mapping;
@@ -415,7 +415,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct multiset **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'u':
     case 'M':
       if(TYPEOF(*s) != T_MULTISET) goto type_err;
@@ -427,7 +427,7 @@ static int va_get_args_2(struct svalue *s,
 	*cast_arg(ptr, struct object **) = NULL;
 	break;
       }
-      /* FALL THROUGH */
+      /* FALLTHRU */
     case 'o':
       if(TYPEOF(*s) != T_OBJECT) goto type_err;
       if (SUBTYPEOF(*s)) {

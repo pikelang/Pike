@@ -450,7 +450,7 @@ static struct multiset_data *copy_multiset_data (struct multiset_data *old)
     switch (TYPEOF(onode->ind)) {					\
       case T_DELETED:							\
 	COPY_DELETED_PTRS_EXTRA (onode, old, nnode, new);		\
-	/* FALL THROUGH */						\
+	/* FALLTHRU */						\
       case PIKE_T_UNKNOWN:						\
 	SET_SVAL_TYPE(nnode->ind, TYPEOF(onode->ind));			\
 	break;								\
@@ -530,7 +530,7 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
       switch (TYPEOF(onode->ind)) {					\
 	case T_DELETED:							\
 	  COPY_DELETED_PTRS_EXTRA (onode, old, nnode, new);		\
-	  /* FALL THROUGH */						\
+	  /* FALLTHRU */						\
 	  case PIKE_T_UNKNOWN:						\
 	    SET_SVAL_TYPE(nnode->ind, TYPEOF(onode->ind));		\
 	  break;							\

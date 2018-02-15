@@ -878,7 +878,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    break;
 	  }
-	  /* FALL THROUGH */
+          /* FALLTHRU */
 
 	default:
 	  code_entry(TAG_OBJECT, 0,data);
