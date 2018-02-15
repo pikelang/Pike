@@ -239,7 +239,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
 }
 
-PMOD_EXPORT void push_error(const char *description)
+static void push_error(const char *description)
 {
   push_text(description);
   f_backtrace(0);

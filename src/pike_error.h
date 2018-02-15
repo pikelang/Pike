@@ -239,7 +239,6 @@ PMOD_EXPORT void check_recovery_context(void);
 PMOD_EXPORT void pike_gdb_breakpoint(INT32 args);
 PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INIT_REC_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
-PMOD_EXPORT void push_error(const char *description);
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
 PMOD_EXPORT void va_make_error (const char *fmt, va_list args);
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
