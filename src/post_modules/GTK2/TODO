@@ -1,0 +1,38 @@
+
+ - Rewrite configure test to use gtk_major/minor/micro_version
+   directly from the lib instead of looking at gtk+-2.0.pc
+
+ - Remove all fprintfs from the code and instead figure out other
+   ways to signal the warnings to the application developer.
+   (gladexml)
+
+ - Reduce init code by putting programs in a mapping and use loops more.
+
+ - Some set-from-mapping functions leaves values undefined if not all
+   mapping avalues are present. Accepting color objects might be good.
+
+ - Fix gdkevent destructor -> EXIT
+   INIT / EXIT (set_init_callback / set_exit_callback)
+
+ - Fix _STR expansion in %{ %} blocks / .c files.
+
+ - Make real iterator objects of the iterator objects.
+
+ - Verify that all get_all_args calls uses best integer type, or at
+   least big enough integers.
+
+ - Add multiple pike prototype support where the types are simply
+   or:ed. E.g.
+
+   void set_color(object color)
+   void set_color(int r, int g, int b)
+
+   instead of
+
+   void set_color(object|int color_or_r, int|void g, int|void b)
+
+ - Ensure all arguments are pop:ed from create methods. (?)
+
+ - gnomecanvas.pre / get_scroll_region, gtkcolorselection PRGB.
+
+ - fix warnings in gtkrecentinfo.pre

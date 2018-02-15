@@ -1,0 +1,72 @@
+/* -*- C -*- */
+require gtk210;
+class GTK2.RecentChooserDialog;
+inherit GTK2.Dialog;
+inherit GTK2.RecentChooser;
+
+void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
+	    array(mapping(string:int)) buttons,
+	    GTK2.RecentManager|void manager)
+//! Creates a new RecentChooserDialog.  Analogous to
+//! GTK2.Dialog->create().
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
+      INIT_WITH_PROPS(GTK_TYPE_RECENT_CHOOSER_DIALOG);
+    } else {
+      struct pike_string *title;
+      struct object *o1,*o2=NULL;
+      struct array *a;
+      GtkWidget *gr;
+      int i;
+
+      get_all_args("create",args,"%t%O%A.%O",&title,&o1,&a,&o2);
+      if (a==NULL)
+	Pike_error("Invalid number of buttons");
+      ref_push_string(title);
+      f_string_to_utf8(1);
+      if (o2)
+	gr=gtk_recent_chooser_dialog_new_for_manager(CGSTR0(Pike_sp[-1].u.string),
+			GTK_WINDOW(get_gobject(o1)),
+			GTK_RECENT_MANAGER(get_gobject(o2)),NULL,NULL);
+      else
+	gr=gtk_recent_chooser_dialog_new(CGSTR0(Pike_sp[-1].u.string),
+			GTK_WINDOW(get_gobject(o1)),NULL,NULL);
+      pop_stack();
+      THIS->obj=G_OBJECT(gr);
+      if (a) {
+	for (i=0; i<a->size; i++) {
+	  struct pike_string *text;
+	  int response_id = 0;
+	  struct svalue *sv;
+	  struct mapping *m;
+
+	  if (TYPEOF(ITEM(a)[i]) != PIKE_T_MAPPING)
+	    continue;
+	  m=ITEM(a)[i].u.mapping;
+	  sv=low_mapping_string_lookup(m,_STR("text"));
+	  if (sv==NULL)
+	    continue;
+	  ref_push_string(sv->u.string);
+	  f_string_to_utf8(1);
+	  sv=low_mapping_string_lookup(m,_STR("id"));
+	  if (sv)
+	    response_id=PGTK_GETINT(sv);
+	  gtk_dialog_add_button(GTK_DIALOG(THIS->obj),CGSTR0(Pike_sp[-1].u.string),response_id);
+	  pop_stack();
+	}
+      }
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gw;
+
+    gw=gtk_recent_chooser_dialog_new(NULL,NULL,NULL,NULL);
+    THIS->obj=G_OBJECT(gw);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;

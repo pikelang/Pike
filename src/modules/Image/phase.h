@@ -1,6 +1,11 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /* This file is incuded in search.c with the following defines set:
-NEIG                is 1, zx, zx+1 or zx-1
+NEIG                is 1, xz, xz+1 or xz-1
 IMAGE_PHASE image_phase(h|v|hv|vh)    Name of the function 
  */
 
@@ -42,7 +47,7 @@ THREADS_ALLOW();
 	 {\
 	   int i;\
 	   int V,H;\
-	   i=y*xs+x;\
+	   i=y*xz+x;\
 	   V=thisi[i-(NEIG)].R-thisi[i].R;\
 	   H=thisi[i+(NEIG)].R-thisi[i].R;\
 	   if ((V==0)&&(H==0))\
@@ -85,7 +90,5 @@ THREADS_ALLOW();
 
 THREADS_DISALLOW();
 
-  o->refs++;
   push_object(o);
 }
-

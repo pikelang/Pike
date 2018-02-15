@@ -1,0 +1,16 @@
+@make_variables@
+VPATH=@srcdir@
+
+MODDIR=System.pmod/
+MODNAME=Wnotify
+AUTODOC_SRC_IN=
+MODULE_PMOD_IN=
+MODULE_WRAPPER_PREFIX=_
+
+OBJS=wnotify.o
+
+@dynamic_module_makefile@
+
+wnotify.o : $(SRCDIR)/wnotify.c
+
+@dependencies@

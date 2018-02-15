@@ -15,7 +15,7 @@ export LD_PXDB
 if test "x$SGI_ABI" = "x"; then
   SGI_ABI=-n32
 fi
-export SGI_API
+export SGI_ABI
 
 #set -x
 
@@ -29,6 +29,9 @@ case "/$LINKER " in
     LINKER_IS_LD=no
   ;;
 esac
+
+DEBUG_FLAGS=""
+COMPILING="yes"
 
 while test "$#" != 0; do
   case $1 in
@@ -77,11 +80,23 @@ while test "$#" != 0; do
         LDOPTS="$LDOPTS $1"
       fi
     ;;
+    -g|-ggdb3)
+      DEBUG_FLAGS="$DEBUG_FLAGS $1"
+    ;;
+    *.s|*.S|*.asm)
+      COMPILING="no";
+      LDOPTS="$LDOPTS $1"
+    ;;
     *)
-    LDOPTS="$LDOPTS $1"
+      LDOPTS="$LDOPTS $1"
+    ;;
   esac
   shift
 done
+
+if test "x$COMPILING" = "xyes"; then
+  LDOPTS="$LDOPTS $DEBUG_FLAGS"
+fi
 
 LDOPTS="$SET_N32 $LDOPTS"
 
@@ -176,6 +191,15 @@ fi
 #    fi
 #  ;;
 #esac
+
+case "$UNAME" in
+  Darwin\ [7-9]*|Darwin\ [1-9][0-9]*)
+    # Needs to be 10.3 or better for ld to accept "-undefined dynamic_lookup"
+    export MACOSX_DEPLOYMENT_TARGET=10.3
+  ;;
+  *)
+  ;;
+esac
 
 #echo $LINKER $LDOPTS
 

@@ -1,34 +1,33 @@
-#include "global.h"
-RCSID("$Id: xcf.c,v 1.35 2000/12/05 21:08:28 per Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
 #include "image_machine.h"
 
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
-#include "operators.h"
-#include "dynamic_buffer.h"
-#include "signal_handler.h"
 #include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -50,10 +49,8 @@ extern struct program *image_program;
 struct buffer
 {
   struct pike_string *s;
-  ptrdiff_t base_offset;
-  ptrdiff_t base_len;
-  size_t len;
   unsigned char *str;
+  size_t len;
 };
 
 struct substring
@@ -77,13 +74,13 @@ static void f_substring_cast( INT32 args )
 
 static void f_substring_index( INT32 args )
 {
-  int i = sp[-1].u.integer;
+  ptrdiff_t i = sp[-1].u.integer;
   struct substring *s = SS(fp->current_object);
   pop_n_elems( args );
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    Pike_error("Index out of bounds, %d > %ld\n", i,
+    Pike_error("Index out of bounds, %ld > %ld\n", i,
 	  DO_NOT_WARN((long)s->len-1) );
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
@@ -96,9 +93,9 @@ static void f_substring__sprintf( INT32 args )
 
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if (sp[-2].type!=T_INT)
+  if (TYPEOF(sp[-2]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-  if (sp[-1].type!=T_MAPPING)
+  if (TYPEOF(sp[-1]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
   x = sp[-2].u.integer;
   pop_n_elems( args );
@@ -112,8 +109,8 @@ static void f_substring__sprintf( INT32 args )
      push_constant_text("SubString( %O /* [+%d .. %d] */ )" );
      push_text("string"); f_substring_cast( 1 );
 
-     push_int( s->len );
-     push_int( s->offset );
+     push_int64( s->len );
+     push_int64( s->offset );
      f_sprintf( 4 );
      return;
    default: 
@@ -122,59 +119,59 @@ static void f_substring__sprintf( INT32 args )
   }
 }
 
-static void f_substring_get_int( INT32 args )
+static void f_substring_get_int( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   int res;
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
-  p = s->s->str + s->offset + x*4;
+  p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
   push_int( res );
 }
 
 
-static void f_substring_get_uint( INT32 args )
+static void f_substring_get_uint( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned int res;
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
-  p = s->s->str + s->offset + x*4;
+  p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
   push_int64( res );
 }
 
-static void f_substring_get_ushort( INT32 args )
+static void f_substring_get_ushort( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned short res;
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
-  p = s->s->str + s->offset + x*2;
+  p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];
   push_int( res );
 }
 
-static void f_substring_get_short( INT32 args )
+static void f_substring_get_short( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   short res;
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
-  p = s->s->str + s->offset + x*2;
+  p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];
   push_int( res );
 }
@@ -192,7 +189,7 @@ static void push_substring( struct pike_string *s,
   push_object( o );
 }
 
-static void free_substring(struct object *o)
+static void free_substring(struct object *UNUSED(o))
 {
   if( SS(fp->current_object)->s )
   {
@@ -329,10 +326,8 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res = *data;
   res.len = xcf_read_int( data );
-  res.base_offset = (data->base_offset+(data->base_len-data->len));
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0)  res.len--;  /* len includes ending \0 */
-  res.base_len = res.len;
   if(!res.str)
     Pike_error("String read failed\n");
   return res;
@@ -340,7 +335,6 @@ static struct buffer read_string( struct buffer *data )
 
 static struct property read_property( struct buffer * data )
 {
-  int i;
   struct property res;
   res.type = read_uint( data );
   if(res.type == PROP_COLORMAP)
@@ -349,14 +343,10 @@ static struct property read_property( struct buffer * data )
     read_uint(data); /* bogus 'len'... */
     foo = read_uint( data );
     res.data.len = foo*3;
-    res.data.base_offset = data->base_offset+(data->base_len-data->len);
-    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,foo*3 );
     res.data.s   = data->s;
   } else {
     res.data.len = read_uint( data );
-    res.data.base_offset = data->base_offset+(data->base_len-data->len);
-    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,res.data.len );
     res.data.s   = data->s;
   }
@@ -566,7 +556,6 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   ONERROR err;
   int offset;
   struct property tmp;
-  struct buffer ob;
 
   MEMSET(&res, 0, sizeof(res));
   res.width = read_uint( buff );
@@ -604,7 +593,6 @@ static struct channel read_channel( struct buffer *buff,
   ONERROR err;
   int offset;
   struct property tmp;
-  struct buffer ob;
 
   MEMSET(&res, 0, sizeof(res));
   res.width = read_uint( buff );
@@ -766,7 +754,7 @@ static struct gimp_image read_image( struct buffer * data )
 
 static void push_buffer( struct buffer *b )
 {
-  push_substring( b->s, b->base_offset+(b->base_len-b->len), b->len );
+  push_substring( b->s, b->str - (unsigned char *)b->s->str, b->len );
 /* push_string( make_shared_binary_string( (char *)b->str, b->len ) );*/
 }
 
@@ -780,7 +768,7 @@ static void push_properties( struct property *p )
     f_aggregate_mapping( 4 );
     p = p->next;
   }
-  f_aggregate(DO_NOT_WARN(sp - osp));
+  f_aggregate(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 static void push_tile( struct tile *t )
@@ -807,8 +795,8 @@ static void push_hierarchy( struct hierarchy * h )
     push_tile( t );
     t=t->next;
   }
-  f_aggregate(DO_NOT_WARN(sp - tsp));
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 static void push_layer_mask(struct layer_mask *i)
@@ -821,7 +809,7 @@ static void push_layer_mask(struct layer_mask *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 static void push_channel(struct channel *i)
@@ -834,7 +822,7 @@ static void push_channel(struct channel *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 static void push_layer(struct layer *i)
@@ -853,7 +841,7 @@ static void push_layer(struct layer *i)
     ref_push_string( s_mask );
     push_layer_mask( i->mask );
   }
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 
@@ -888,7 +876,7 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 
@@ -903,8 +891,6 @@ static void image_xcf____decode( INT32 args )
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
   b.s = s;
-  b.base_offset = 0;
-  b.base_len = s->len;
   b.len = s->len;
   b.str = (unsigned char *)s->str;
 
@@ -932,6 +918,7 @@ static unsigned char read_char( struct buffer *from )
 
 /*
 **! method array(object) decode_layers( string data )
+**! method array(object) decode_layers( string data, mapping options )
 **!     Decodes a XCF image to an array of Image.Layer objects
 **!
 **!     The layer object have the following extra variables (to be queried
@@ -939,6 +926,9 @@ static unsigned char read_char( struct buffer *from )
 **!
 **!      image_xres, image_yres, image_colormap, image_guides, image_parasites,
 **!      name, parasites, visible, active
+**!
+**!	Takes the same argument mapping as <ref>_decode</ref>,
+**!	note especially "draw_all_layers":1.
 */
 
 /*
@@ -1182,14 +1172,15 @@ void image_xcf_f__decode_tiles( INT32 args )
   struct array *tiles;
   struct image *i=NULL, *a=NULL;
   struct neo_colortable *cmap = NULL;
-  int rxs, rys;
+  INT32 rxs, rys;
   rgb_group *colortable=NULL;
   rgb_group pix = {0,0,0};
   rgb_group apix= {255,255,255}; /* avoid may use uninitialized warnings */
 
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
-  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%d%d%d",
+  ONERROR err;
+  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%i%d%d",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 
@@ -1205,7 +1196,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     Pike_error("Wrong type object argument 4 (colortable)\n");
 
   for(l=0; l<(unsigned int)tiles->size; l++)
-    if(tiles->item[l].type != T_OBJECT)
+    if(TYPEOF(tiles->item[l]) != T_OBJECT)
       Pike_error("Wrong type array argument 3 (tiles)\n");
 
   if(a && ((i->xsize != a->xsize) || (i->ysize != a->ysize)))
@@ -1213,7 +1204,8 @@ void image_xcf_f__decode_tiles( INT32 args )
 
   if(cmap)
   {
-    colortable = malloc(sizeof(rgb_group)*image_colortable_size( cmap ));
+    colortable = xalloc(sizeof(rgb_group)*image_colortable_size( cmap ) + RGB_VEC_PAD);
+    SET_ONERROR(err, free, colortable);
     image_colortable_write_rgb( cmap, (unsigned char *)colortable );
   }
 
@@ -1232,18 +1224,22 @@ void image_xcf_f__decode_tiles( INT32 args )
     if(!tile_ss)
       continue;
 
-    tile.str = (tile_ss->s->str + tile_ss->offset);
+    tile.s = NULL;
+    tile.str = (unsigned char *)(tile_ss->s->str + tile_ss->offset);
     tile.len = tile_ss->len;
 
     ewidth = MINIMUM(TILE_WIDTH, (rxs-x));
     eheight = MINIMUM(TILE_HEIGHT, (rys-y));
 
+    if( (double)ewidth * eheight * bpp > INT_MAX )
+      Pike_error("Insanely large tiles not supported\n");
     if(rle)
     {
       struct buffer s = tile, od, d;
       int i;
+      od.s = NULL;
       od.len = eheight*ewidth*bpp;  /* Max and only size, really */
-      df = od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 );
+      df = (char *)(od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 ));
       d = od;
 
       for(i=0; i<bpp; i++)
@@ -1400,8 +1396,10 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
   }
   THREADS_DISALLOW();
-  if(colortable) 
+  if(colortable) {
+    UNSET_ONERROR(err);
     free( colortable );
+  }
 
   pop_n_elems(args);
   push_int(0);
@@ -1411,10 +1409,9 @@ void image_xcf_f__decode_tiles( INT32 args )
 static struct program *image_encoding_xcf_program=NULL;
 void init_image_xcf()
 {
-  add_function( "___decode", image_xcf____decode,
-                "function(string:mapping)", 0);
+  ADD_FUNCTION( "___decode", image_xcf____decode, tFunc(tStr,tMapping), 0);
 
-  add_function( "_decode_tiles", image_xcf_f__decode_tiles, "mixed", 0);
+  ADD_FUNCTION( "_decode_tiles", image_xcf_f__decode_tiles, tFunction, 0);
 
   add_integer_constant( "PROP_END", PROP_END,0 );
   add_integer_constant( "PROP_COLORMAP", PROP_COLORMAP, 0 );
@@ -1493,14 +1490,14 @@ void init_image_xcf()
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  add_function("cast", f_substring_cast, "function(string:mixed)",0);
-  add_function("`[]", f_substring_index, "function(int:int)",0);
-  add_function("get_short", f_substring_get_short, "function(int:int)", 0 );
-  add_function("get_ushort", f_substring_get_ushort, "function(int:int)", 0 );
-  add_function("get_int", f_substring_get_int, "function(int:int)", 0 );
-  add_function("get_uint", f_substring_get_uint, "function(int:int)", 0 );
-  add_function("_sprintf",f_substring__sprintf,
-               "function(int,mapping:mixed)", 0);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
+  ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_int", f_substring_get_int, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_uint", f_substring_get_uint, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("_sprintf",f_substring__sprintf, tFunc(tInt tMapping,tMix), 0);
+
 /*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
   substring_program = end_program();  

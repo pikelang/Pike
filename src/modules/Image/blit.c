@@ -1,36 +1,30 @@
-/* $Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 
 /*
 **! module Image
-**! note
-**!	$Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $
 **! class Image
 */
 
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "pike_error.h"
 #include "threads.h"
 
 #include "image.h"
 #include "image_machine.h"
 
-#ifdef ASSEMBLY_OK
-#include "assembly.h"
-#endif
-
-/* This must be included last! */
-#include "module_magic.h"
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -100,14 +94,14 @@ static INLINE int getrgb(struct image *img,
    if (max<3 || args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (max > 3 && args-args_start>=4) {
-      if (sp[3-args+args_start].type!=T_INT) {
+      if (TYPEOF(sp[3-args+args_start]) != T_INT) {
          Pike_error("Illegal alpha argument to %s\n",name);
       }
       img->alpha=sp[3-args+args_start].u.integer;
@@ -156,28 +150,33 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    foo=this->img+x1+y1*this->xsize;
    end=this->img+x2+y2*this->xsize+1;
 
-   THREADS_ALLOW();
-   do {
-     if(!this->alpha)
-     {
-       if(!mod)
-	 img_clear(foo,rgb,end-foo);
-       else {
+   if(!this->alpha)
+   {
+     if(!mod)
+       img_clear(foo,rgb,end-foo);
+     else {
+       THREADS_ALLOW();
+       do {
 	 int length = x2-x1+1, xs=this->xsize, y=y2-y1+1;
 	 rgb_group *from = foo;
 	 if(!length)
 	   break;	/* Break to the while(0). */
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
 	 while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
-       }
-     } 
-     else 
-     {
-       for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
-	 set_rgb_group_alpha(*foo,rgb,this->alpha);
+       } while(0);
+       THREADS_DISALLOW();
      }
-   } while(0);
-   THREADS_DISALLOW();
+   } 
+   else 
+   {
+     THREADS_ALLOW();
+     do {
+       for (; foo<end; foo+=mod)
+         for (x=x1; x<=x2; x++,foo++)
+           set_rgb_group_alpha(*foo,rgb,this->alpha);
+     } while(0);
+     THREADS_DISALLOW();
+   }
 }
 
 
@@ -209,30 +208,25 @@ void img_crop(struct image *dest,
 	      INT32 x2,INT32 y2)
 {
    rgb_group *new;
-   INT32 xp,yp,xs,ys;
+   INT32 xp,yp,xs,ys,tmp;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
 
-   if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
-   if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
+   if (x1>x2) tmp=x1, x1=x2, x2=tmp;
+   if (y1>y2) tmp=y1, y1=y2, y2=tmp;
+
+   new=xalloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group)+RGB_VEC_PAD );
 
    if (x1==0 && y1==0 &&
        img->xsize-1==x2 && img->ysize-1==y2)
    {
       *dest=*img;
-      new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
-      if (!new) 
-	resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       THREADS_ALLOW();
       MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       THREADS_DISALLOW();
       dest->img=new;
       return;
    }
-
-   new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
-   if (!new)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    img_clear(new,THIS->rgb,(x2-x1+1)*(y2-y1+1));
 
@@ -244,26 +238,28 @@ void img_crop(struct image *dest,
    xs=MAXIMUM(0,x1);
    ys=MAXIMUM(0,y1);
 
-   if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
-   if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
-   if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
-   if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
-
-   img_blit(new+xp+yp*dest->xsize,
-	    img->img+xs+(img->xsize)*ys,
-	    x2-x1+1,
-	    y2-y1+1,
-	    dest->xsize,
-	    img->xsize);
-
+   if( ! (( x2 < 0) || (y2 < 0) || (x1>=img->xsize) || (y1>=img->ysize))) {
+     
+     if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
+     if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
+     if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
+     if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
+     
+     img_blit(new+xp+yp*dest->xsize,
+	      img->img+xs+(img->xsize)*ys,
+	      x2-x1+1,
+	      y2-y1+1,
+	      dest->xsize,
+	      img->xsize);
+     
+   }     
    dest->img=new;
 }
 
 void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
-   newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
-   if (!newimg->img) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    THREADS_ALLOW();
    MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();
@@ -294,7 +290,7 @@ void image_paste(INT32 args)
    INT32 x1,y1,x2,y2,blitwidth,blitheight;
 
    if (args<1
-       || sp[-args].type!=T_OBJECT
+       || TYPEOF(sp[-args]) != T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste()\n");
@@ -305,8 +301,8 @@ void image_paste(INT32 args)
    if (args>1)
    {
       if (args<3 
-	  || sp[1-args].type!=T_INT
-	  || sp[2-args].type!=T_INT)
+	  || TYPEOF(sp[1-args]) != T_INT
+	  || TYPEOF(sp[2-args]) != T_INT)
          bad_arg_error("image->paste",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste()\n");
       x1=sp[1-args].u.integer;
@@ -372,10 +368,10 @@ void image_paste_alpha(INT32 args)
    INT32 x1,y1;
 
    if (args<2
-       || sp[-args].type!=T_OBJECT
+       || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
-       || sp[1-args].type!=T_INT)
+       || TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste_alpha()\n");
    if (!THIS->img) return;
@@ -384,8 +380,8 @@ void image_paste_alpha(INT32 args)
    
    if (args>=4)
    {
-      if (sp[2-args].type!=T_INT
-	  || sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[2-args]) != T_INT
+	  || TYPEOF(sp[3-args]) != T_INT)
          bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste_alpha()\n");
       x1=sp[2-args].u.integer;
@@ -462,11 +458,11 @@ CHRONO("image_paste_mask init");
 
    if (args<2)
       Pike_error("illegal number of arguments to image->paste_mask()\n");
-   if (sp[-args].type!=T_OBJECT
+   if (TYPEOF(sp[-args]) != T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste_mask()\n");
-   if (sp[1-args].type!=T_OBJECT
+   if (TYPEOF(sp[1-args]) != T_OBJECT
        || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->paste_mask()\n");
@@ -477,8 +473,8 @@ CHRONO("image_paste_mask init");
    
    if (args>=4)
    {
-      if (sp[2-args].type!=T_INT
-	  || sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[2-args]) != T_INT
+	  || TYPEOF(sp[3-args]) != T_INT)
          Pike_error("illegal coordinate arguments to image->paste_mask()\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
@@ -567,7 +563,7 @@ void image_paste_alpha_color(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
-   if (sp[-args].type!=T_OBJECT
+   if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
@@ -579,8 +575,8 @@ void image_paste_alpha_color(INT32 args)
       arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
    if (args>arg+1) 
    {
-      if (sp[arg-args].type!=T_INT
-	  || sp[1+arg-args].type!=T_INT)
+      if (TYPEOF(sp[arg-args]) != T_INT
+	  || TYPEOF(sp[1+arg-args]) != T_INT)
          Pike_error("illegal coordinate arguments to image->paste_alpha_color()\n");
       x1=sp[arg-args].u.integer;
       y1=sp[1+arg-args].u.integer;
@@ -638,5 +634,3 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    if (y1<0) y1 = 0;
    img_box_nocheck(MAXIMUM(x1,0),MAXIMUM(y1,0),MINIMUM(x2,THIS->xsize-1),MINIMUM(y2,THIS->ysize-1));
 }
-
-

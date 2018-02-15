@@ -1,0 +1,41 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=unicode_module.o normalize.o split.o buffer.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+SRC_TARGETS=$(SRCDIR)/wordbits.h \
+	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h $(SRCDIR)/uversion.h
+@dynamic_module_makefile@
+
+UNICODEDATA=../../UnicodeData.txt
+UNICODEDATARM=../../UnicodeData-ReadMe.txt
+
+# UnixWare make needs help to find the source file...
+unicode_module.o: $(SRCDIR)/unicode_module.c
+
+$(SRCDIR)/decompositions.h: $(SRCDIR)/make_decompose.pike $(SRCDIR)/$(UNICODEDATA)
+	 $(RUNPIKE) $(SRCDIR)/make_decompose.pike 		\
+                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+
+$(SRCDIR)/canonicals.h: $(SRCDIR)/make_canonicals.pike $(SRCDIR)/$(UNICODEDATA)
+	 $(RUNPIKE) $(SRCDIR)/make_canonicals.pike 		\
+                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+
+$(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike $(SRCDIR)/$(UNICODEDATA)
+	 $(RUNPIKE) $(SRCDIR)/make_wordbits.pike 		\
+                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+
+$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATA)
+	 $(RUNPIKE) $(SRCDIR)/make_uversion.pike		\
+                    $(SRCDIR)/$(UNICODEDATARM) > "$@" || { rm "$@"; exit 1; }
+
+unicode_module.o: $(SRCDIR)/unicode_module.c $(SRCDIR)/wordbits.h         \
+		  $(SRCDIR)/canonicals.h     			\
+		  $(SRCDIR)/decompositions.h			\
+		  $(SRCDIR)/uversion.h
+
+split.o: $(SRCDIR)/wordbits.h
+
+normalize.o: $(SRCDIR)/canonicals.h $(SRCDIR)/decompositions.h
+
+@dependencies@

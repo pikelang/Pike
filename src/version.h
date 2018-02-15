@@ -1,15 +1,14 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
-/* $Id: version.h,v 1.224 2001/01/10 19:52:24 distmaker Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #define PIKE_MAJOR_VERSION 7
-#define PIKE_MINOR_VERSION 1
-#define PIKE_BUILD_VERSION 33
+#define PIKE_MINOR_VERSION 9
+#define PIKE_BUILD_VERSION 11
 
 /* Prototypes begin here */
-void f_version(INT32 args);
+PMOD_EXPORT void f_version(INT32 args);
+void push_compact_version();
 /* Prototypes end here */

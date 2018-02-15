@@ -1,0 +1,25 @@
+/* -*- C -*- */
+require gtk212;
+
+class GTK2.VolumeButton;
+inherit GTK2.ScaleButton;
+
+//! Volume Button
+void create(?mapping(string:mixed) props)
+//! Create a new W(VolumeButton).
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_VOLUME_BUTTON);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gd;
+    gd=gtk_volume_button_new();
+    THIS->obj=G_OBJECT(gd);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;
+

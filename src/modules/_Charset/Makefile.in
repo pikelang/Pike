@@ -1,15 +1,27 @@
-#
-# $Id: Makefile.in,v 1.4 1999/11/18 08:01:39 hubbe Exp $
-#
-
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+VPATH=@srcdir@
 OBJS=charsetmod.o iso2022.o tables.o misc.o
+SRC_TARGETS=$(SRCDIR)/gb18030.h $(SRCDIR)/gbk_tables.h $(SRCDIR)/jisx0213_tables.h
 MODULE_LDFLAGS=@LDFLAGS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+charsetmod.o: $(SRCDIR)/gb18030.h
+
+tables.o: $(SRCDIR)/gbk_tables.h $(SRCDIR)/jisx0213_tables.h
+
+$(SRCDIR)/gb18030.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gb18030_h.pike
+	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_gb18030_h.pike \
+	  $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/gb18030.h
+
+$(SRCDIR)/gbk_tables.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gbk_tables_h.pike
+	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_gbk_tables_h.pike \
+	  $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/gbk_tables.h
+
+$(SRCDIR)/jisx0213_tables.h : $(SRCDIR)/jisx0213-2004-std.txt $(SRCDIR)/make_jisx0213_tables_h.pike
+	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_jisx0213_tables_h.pike \
+	  $(SRCDIR)/jisx0213-2004-std.txt $(SRCDIR)/jisx0213_tables.h
 
 @dependencies@

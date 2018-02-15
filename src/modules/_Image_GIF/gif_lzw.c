@@ -1,7 +1,11 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
 **! module Image
-**! note
-**!	$Id: gif_lzw.c,v 1.1 2000/09/11 16:05:03 grubba Exp $
 */
 
 #include "global.h"
@@ -12,8 +16,6 @@
 #include "../Image/image_machine.h"
 #include "gif_lzw.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define DEFAULT_OUTBYTES 16384
 #define STDLZWCODES 8192
@@ -62,13 +64,13 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
    else
    {
 #ifdef GIF_DEBUG
-      fprintf(stderr,"codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       lzw->lastout=(lzw->lastout<<lzw->codebits)|codeno;
       lzw->outbit+=lzw->codebits;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"-> codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"-> codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       while (lzw->outbit>8)
@@ -77,7 +79,8 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 	    (unsigned char)(lzw->lastout>>(lzw->outbit-8));
 	 lzw->outbit-=8;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"(shiftout) codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,
+              "(shiftout) codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       }
@@ -98,28 +101,21 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       return;
    }
 
-#ifdef GIF_LZW_RLE
-   if (c==lzw->code[lzw->current].c)
+#ifdef GIF_LZW_LZ
+   if (!lzw->skipone)
    {
 #endif
-#ifdef GIF_LZW_LZ
-      if (!lzw->skipone)
-      {
-#endif
-	 /* check if we have this sequence */
-	 lno=lzw->code[lzw->current].firstchild; 
-	 while (lno!=LZWCNULL)
-	 {
-	    if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
-	    {
-	       lzw->current=lno;
-	       return;
-	    }
-	    lno=lzw->code[lno].next;
-	 }
-#ifdef GIF_LZW_RLE
-      }
-#endif
+     /* check if we have this sequence */
+     lno=lzw->code[lzw->current].firstchild;
+     while (lno!=LZWCNULL)
+     {
+       if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+       {
+	 lzw->current=lno;
+	 return;
+       }
+       lno=lzw->code[lno].next;
+     }
 #ifdef GIF_LZW_LZ
    }
 #endif
@@ -150,7 +146,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw_output(lzw,lzw->current);
 
    lno=lzw->code[lzw->current].firstchild;
-   lno2=lzw->codes;
+   lno2 = DO_NOT_WARN((lzwcode_t)lzw->codes);
    l=lzw->code+lno2;
    l->next=lno;
    l->firstchild=LZWCNULL;
@@ -206,9 +202,10 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->outbit)
    {
       if (lzw->reversebits)
-	 lzw->out[lzw->outpos++]=lzw->lastout<<(8-lzw->outbit);
+	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)(lzw->lastout<<
+							   (8-lzw->outbit)));
       else
-	 lzw->out[lzw->outpos++]=lzw->lastout;
+	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)lzw->lastout);
    }
 }
 

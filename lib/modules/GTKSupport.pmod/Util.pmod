@@ -10,7 +10,8 @@
 //
 mapping low_decode_image(string data, mixed|void tocolor)
 {
-  return Image._decode( data, tocolor );
+  // NOTE: tocolor is ignored!
+  return Image._decode( data );
 }
 
 
@@ -18,28 +19,49 @@ mapping low_decode_image(string data, mixed|void tocolor)
 // Returns Image.image objects
 mapping low_load_image( string filename, mapping|array|void bgcol )
 {
-  return Image._load( filename, bgcol );
+  // NOTE: bgcol is ignored!
+  return Image._load( filename );
 }
 
-// returns GDK image objects.
+//! Loads and decodes an image as a @[GDK1.Pixmap].
+//!
+//! @returns
+//! @mapping
+//!   @member string "format"
+//!     The MIME content type of the image.
+//!   @member GDK1.Bitmap "alpha"
+//!     The alpha channel of the image, if any. Otherwise @expr{0@}.
+//!   @member GDK1.Bitmap "img"
+//!     The decoded image.
+//! @endmapping
 mapping load_image( string filename, array|void bgcol )
 {
   if(mapping a = low_load_image( filename, bgcol ) )
   return ([
     "format":a->format,
-    "alpha": a->alpha && GDK.Bitmap( a->alpha ),
-    "img":  GDK.Pixmap( a->img ),
+    "alpha": a->alpha && GDK1.Bitmap( a->alpha ),
+    "img":  GDK1.Pixmap( a->img ),
   ]);
 }
 
-// returns GDK image objects.
+//! Decodes an image as a @[GDK1.Pixmap].
+//!
+//! @returns
+//! @mapping
+//!   @member string "format"
+//!     The MIME content type of the image.
+//!   @member GDK1.Bitmap "alpha"
+//!     The alpha channel of the image, if any. Otherwise @expr{0@}.
+//!   @member GDK1.Bitmap "img"
+//!     The decoded image.
+//! @endmapping
 mapping decode_image( string data, mapping|array|void tocolor )
 {
   if(mapping a = low_decode_image( data,tocolor ) )
   return ([
     "format":a->format,
-    "alpha": a->alpha && GDK.Bitmap( a->alpha ),
-    "img":   GDK.Pixmap( a->img ),
+    "alpha": a->alpha && GDK1.Bitmap( a->alpha ),
+    "img":   GDK1.Pixmap( a->img ),
   ]);
 }
 
@@ -146,9 +168,8 @@ class signal_handling
     if(signals[signal]) 
     {
       signals[signal]-=({ 0 });
-      signals[signal]( this_object(), @args );
+      signals[signal]( this, @args );
       signals[signal]-=({ 0 });
     }
   }
 }
-

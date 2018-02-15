@@ -1,0 +1,226 @@
+/* -*- C -*- */
+require gtksourceview;
+
+class GTK2.SourceLanguage;
+inherit G.Object;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+signal tag_style_changed;
+
+string get_name();
+//! Returns the localized name of the language.
+
+string get_section();
+//! Returns the localized section of the language.  Each language belongs to a
+//! section (ex. HTML belongs to the Markup section).
+
+not gtksourceview20;
+array(GTK2.SourceTag) get_tags()
+//! Returns a list of tags for this language.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_source_language_get_tags(GTK_SOURCE_LANGUAGE(THIS->obj));
+    while (gs2) {
+      push_gobjectclass(gs2->data,pgtk2_source_tag_program);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+int get_escape_char();
+//! Gets the value of the ESC character in the given language.
+
+array(string) get_mime_types()
+//! Returns a list of mime types for this language.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_source_language_get_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj));
+    while (gs2) {
+      PGTK_PUSH_GCHAR(gs2->data);
+      g_free(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+void set_mime_types(?array(string) types)
+//! Sets a list of mime types for this language.  If omitted, this function
+//! will use the default mime types from the language file.
+{
+  pgtk2_verify_inited();
+  if (args) {
+    struct array *a;
+    GSList *gsl=NULL;
+    get_all_args("set_mime_types",args,"%A",&a);
+    if (a==NULL || a->size<1) {
+      gtk_source_language_set_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj),NULL);
+    } else {
+      int i;
+      for (i=0; i<a->size; i++) {
+	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
+	  continue;
+	gsl=g_slist_prepend(gsl,STR0((ITEM(a)+i)->u.string));
+      }
+      gtk_source_language_set_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj),gsl);
+      g_slist_free(gsl);
+    }
+  } else {
+    gtk_source_language_set_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj),NULL);
+  }
+  RETURN_THIS();
+}
+
+GTK2.SourceStyleScheme get_style_scheme()
+//! Gets the style scheme associated with this language.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkSourceStyleScheme *gss;
+    gss=gtk_source_language_get_style_scheme(GTK_SOURCE_LANGUAGE(THIS->obj));
+    push_gobjectclass(gss,pgtk2_source_style_scheme_program);
+  }
+}
+
+mapping(string:mixed) get_tag_style(string id)
+//! Gets the style of the tag id.  If the style is not defined, then returns
+//! the default style.
+{
+  pgtk2_verify_inited();
+  {
+    GtkSourceTagStyle *gs;
+    GdkColor *fg,*bg;
+    char *id;
+    get_all_args("get_tag_style",args,"%s",&id);
+    gs=gtk_source_language_get_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id);
+    pgtk2_pop_n_elems(args);
+    if (gs) {
+      ref_push_string(_STR("default")); push_int(gs->is_default);
+      ref_push_string(_STR("mask")); push_int(gs->mask);
+      fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
+      bg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (bg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
+      *fg=gs->foreground;
+      *bg=gs->background;
+      ref_push_string(_STR("foreground")); push_gdkobject(fg,color,1);
+      ref_push_string(_STR("background")); push_gdkobject(bg,color,1);
+      ref_push_string(_STR("italic")); push_int(gs->italic);
+      ref_push_string(_STR("bold")); push_int(gs->bold);
+      ref_push_string(_STR("underline")); push_int(gs->underline);
+      ref_push_string(_STR("strikethrough")); push_int(gs->strikethrough);
+      f_aggregate_mapping(16);
+    } else
+      push_int(0);
+  }
+}
+
+void set_tag_style(string id, ?mapping(string:mixed) style)
+//! Sets the style of the tag id.  If style is omitted, this function will
+//! restore the default style.
+{
+  char *id;
+  struct mapping *m=NULL;
+  GtkSourceTagStyle *sts = NULL;
+
+  pgtk2_verify_inited();
+  get_all_args("set_tag_style",args,"%s.%m",&id,&m);
+
+  if (m) {
+    struct svalue *sv;
+    sts=gtk_source_tag_style_new();
+    if (sts==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_bracket_match_style",sizeof(GtkSourceTagStyle));
+    sv=low_mapping_string_lookup(m,_STR("default"));
+    if (sv)
+      sts->is_default=PGTK_GETINT(sv);
+    sv=low_mapping_string_lookup(m,_STR("mask"));
+    if (sv)
+      sts->mask=PGTK_GETINT(sv);
+    sv=low_mapping_string_lookup(m,_STR("foreground"));
+    if (sv) {
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+        sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=low_mapping_string_lookup(m,_STR("background"));
+    if (sv) {
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+        sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=low_mapping_string_lookup(m,_STR("italic"));
+    if (sv)
+      sts->italic=PGTK_GETINT(sv);
+    sv=low_mapping_string_lookup(m,_STR("bold"));
+    if (sv)
+      sts->bold=PGTK_GETINT(sv);
+    sv=low_mapping_string_lookup(m,_STR("underline"));
+    if (sv)
+      sts->underline=PGTK_GETINT(sv);
+    sv=low_mapping_string_lookup(m,_STR("strikethrough"));
+    if (sv)
+      sts->strikethrough=PGTK_GETINT(sv);
+  }
+
+  gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj), id, sts);
+
+  if(sts)
+    gtk_source_tag_style_free(sts);
+
+  RETURN_THIS();
+}
+
+mapping(string:mixed) get_tag_default_style(string id)
+//! Gets the default style of the tag id.
+{
+  pgtk2_verify_inited();
+  {
+    GtkSourceTagStyle *gs;
+    GdkColor *fg,*bg;
+    char *id;
+    get_all_args("get_tag_default_style",args,"%s",&id);
+    gs=gtk_source_language_get_tag_default_style(GTK_SOURCE_LANGUAGE(THIS->obj),
+			id);
+    pgtk2_pop_n_elems(args);
+    if (gs) {
+      ref_push_string(_STR("default")); push_int(gs->is_default);
+      ref_push_string(_STR("mask")); push_int(gs->mask);
+      fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_default_style",sizeof(GdkColor));
+      bg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (bg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_default_style",sizeof(GdkColor));
+      *fg=gs->foreground;
+      *bg=gs->background;
+      ref_push_string(_STR("foreground")); push_gdkobject(fg,color,1);
+      ref_push_string(_STR("background")); push_gdkobject(bg,color,1);
+      ref_push_string(_STR("italic")); push_int(gs->italic);
+      ref_push_string(_STR("bold")); push_int(gs->bold);
+      ref_push_string(_STR("underline")); push_int(gs->underline);
+      ref_push_string(_STR("strikethrough")); push_int(gs->strikethrough);
+      f_aggregate_mapping(16);
+    } else
+      push_int(0);
+  }
+}
+
+endrequire;

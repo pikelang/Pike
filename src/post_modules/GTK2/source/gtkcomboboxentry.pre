@@ -1,0 +1,63 @@
+/* -*- C -*- */
+require gtk24;
+
+class GTK2.ComboBoxEntry;
+inherit GTK2.ComboBox;
+inherit GTK2.CellLayout;
+inherit GTK2.CellEditable;
+
+//! Properties:
+//! int text-column
+
+
+void create(string|GTK2.TreeModel|mapping(string:mixed)|void model,
+	    ?int text_column)
+//! Create a new ComboBoxEntry, either empty or with a model.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    GtkWidget *gcb;
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      char *text;
+      get_all_args("create",args,"%s",&text);
+      gcb=gtk_combo_box_entry_new_text();
+      THIS->obj=G_OBJECT(gcb);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct object *o1;
+      INT_TYPE text_column;
+      get_all_args("create",args,"%o%i",&o1,&text_column);
+      gcb=gtk_combo_box_entry_new_with_model(
+		GTK_TREE_MODEL(get_gobject(o1)),text_column);
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_COMBO_BOX_ENTRY);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gcb;
+    gcb=gtk_combo_box_entry_new();
+    THIS->obj=G_OBJECT(gcb);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_text_column(int text_column);
+//! Sets the model column which this widget should use to get strings
+//! from.
+
+int get_text_column();
+//! Returns the column which this widget is using to get the strings
+//! from.
+
+GTK2.Widget entry()
+//! Returns the GTK2.Entry widget
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkEntry *w;
+    w=GTK_ENTRY(GTK_BIN(THIS->obj)->child);
+    push_gobject(w);
+  }
+}

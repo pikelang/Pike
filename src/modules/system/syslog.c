@@ -1,6 +1,10 @@
 /*
- * $Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Access to syslog from Pike.
  *
  * Henrik Grubbström 1997-01-28
@@ -17,14 +21,13 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $");
-
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "pike_security.h"
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
@@ -102,12 +105,86 @@ RCSID("$Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $");
 #define LOG_PERROR 0
 #endif
 
-/* openlog(string ident, int option, int facility) */
+/*! @module System
+ */
+
+/*! @decl void openlog(string ident, int options, facility)
+ *!
+ *! Initializes the connection to syslogd.
+ *!
+ *! @param ident.
+ *! The @[ident] argument specifies an identifier to tag all logentries
+ *! with.
+ *!
+ *! @param options
+ *! A bitfield specifying the behaviour of the message
+ *! logging. Valid options are:
+ *!
+ *! @int
+ *!   @value LOG_PID
+ *!     Log the process ID with each message.
+ *!   @value LOG_CONS
+ *!     Write messages to the console if they can't be sent to syslogd.
+ *!   @value LOG_NDELAY
+ *!     Open the connection to syslogd now and not later.
+ *!   @value LOG_NOWAIT
+ *!     Do not wait for subprocesses talking to syslogd.
+ *! @endint
+ *!
+ *! @param facility
+ *! Specifies what subsystem you want to log as. Valid
+ *! facilities are:
+ *!
+ *! @int
+ *!   @value LOG_AUTH
+ *!     Authorization subsystem
+ *!   @value LOG_AUTHPRIV
+ *!
+ *!   @value LOG_CRON
+ *!     Crontab subsystem
+ *!   @value LOG_DAEMON
+ *!     System daemons
+ *!   @value LOG_KERN
+ *!     Kernel subsystem (NOT USABLE)
+ *!   @value LOG_LOCAL
+ *!   @value LOG_LOCAL1
+ *!   @value LOG_LOCAL2
+ *!   @value LOG_LOCAL3
+ *!   @value LOG_LOCAL4
+ *!   @value LOG_LOCAL5
+ *!   @value LOG_LOCAL6
+ *!   @value LOG_LOCAL7
+ *!     For local use
+ *!   @value LOG_LPR
+ *!     Line printer spooling system
+ *!   @value LOG_MAIL
+ *!     Mail subsystem
+ *!   @value LOG_NEWS
+ *!     Network news subsystem
+ *!   @value LOG_SYSLOG
+ *!
+ *!   @value LOG_USER
+ *!
+ *!   @value LOG_UUCP
+ *!     UUCP subsystem
+ *! @endint
+ *!
+ *! @note
+ *! Only available on systems with syslog(3).
+ *!
+ *! @bugs
+ *! LOG_NOWAIT should probably always be specified.
+ *!
+ *! @seealso
+ *!   @[syslog], @[closelog]
+ */
 void f_openlog(INT32 args)
 {
   char *ident;
   INT_TYPE p_option, p_facility;
   INT_TYPE option=0, facility=0;
+
+  ASSERT_SECURITY_ROOT("System.openlog");
 
   get_all_args("openlog", args, "%s%i%i", &ident, &p_option, &p_facility);
 
@@ -150,19 +227,45 @@ void f_openlog(INT32 args)
   pop_n_elems(args);
 }
  
+/*! @decl void syslog(int priority, string msg)
+ *!
+ *! Writes the message @[msg] to the log with the priorities in
+ *! @[priority].
+ *!
+ *! @param priority
+ *!   Priority is a bit vector with the wanted priorities or:ed
+ *!   together.
+ *!   @int
+ *!     @value 0
+ *!       LOG_EMERG, system is unusable.
+ *!     @value 1
+ *!       LOG_ALERT, action must be taken immediately.
+ *!     @value 2
+ *!       LOG_CRIT, critical conditions.
+ *!     @value 3
+ *!       LOG_ERR, error conditions.
+ *!     @value 4
+ *!       LOG_WARNING, warnind conditions.
+ *!     @value 5
+ *!       LOG_NOTICE, normal, but significant, condition.
+ *!     @value 6
+ *!       LOG_INFO, informational message.
+ *!     @value 7
+ *!       LOG_DEBUG, debug-level message.
+ *!   @endint
+ */
 void f_syslog(INT32 args)
 {
   struct pike_string *s;
   INT_TYPE pri=0, i;
-  char *message;
+
+#ifdef PIKE_SECURITY
+  int errno;
+#define EPERM 0
+#endif
+  VALID_FILE_IO("System.syslog","write");
 
   get_all_args("syslog", args, "%i%S", &i, &s);
- 
-  if(args < 2)
-    Pike_error("Wrong number of arguments to syslog(int, string)\n");
-  if(sp[-args].type != T_INT ||
-     sp[-args+1].type != T_STRING)
-    Pike_error("Wrong type of arguments to syslog(int, string)\n");
  
   if(i & (1<<0)) pri |= LOG_EMERG;
   if(i & (1<<1)) pri |= LOG_ALERT;
@@ -171,22 +274,44 @@ void f_syslog(INT32 args)
   if(i & (1<<4)) pri |= LOG_WARNING;
   if(i & (1<<5)) pri |= LOG_NOTICE;
   if(i & (1<<6)) pri |= LOG_INFO;
-  if(i & (1<<6)) pri |= LOG_DEBUG;
-  
+  if(i & (1<<7)) pri |= LOG_DEBUG;
+
+#ifndef MIGHT_HAVE_SYSLOG_RACES
+  /* glibc/linuxthreads has a race in syslog(2) that can make write,
+   * writev etc crash with the instruction pointer set to 0x1 when
+   * signals are delivered. Not releasing the interpreter lock here
+   * avoids that race most of the time but it's still not a 100%
+   * solution.
+   *
+   * C.f. the report "bug in thread support" filed by Balazs Scheidler
+   * in Oct 22, 2001 (http://sources.redhat.com/ml/libc-hacker/
+   * 2001-10/msg00020.html). It's verified to still exist in glibc
+   * 2.2.93 (RedHat 8.0) and 2.3.2 (RedHat 9). */
   THREADS_ALLOW();
- 
+#endif
+
   syslog(pri, "%s", s->str);
 
+#ifndef MIGHT_HAVE_SYSLOG_RACES
   THREADS_DISALLOW();
+#endif
 
   pop_n_elems(args);
 }
- 
+
+/*! @decl void closelog()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_closelog(INT32 args)
 {
+  ASSERT_SECURITY_ROOT("System.closelog");
   closelog();
   pop_n_elems(args);
 }
 
+/*! @endmodule
+ */
 
 #endif /* HAVE_SYSLOG */

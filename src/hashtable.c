@@ -1,16 +1,14 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
 #include "stuff.h"
 #include "pike_error.h"
-
-RCSID("$Id: hashtable.c,v 1.8 2000/12/01 08:09:47 hubbe Exp $");
 
 static size_t gobble(struct pike_string *s)
 {
@@ -84,8 +82,8 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
   int e;
 
 #ifdef PIKE_DEBUG
-  if( 1 << my_log2(size) != size)
-    fatal("Size is not a power of two!\n");
+  if (size & (size-1))
+    Pike_fatal("Size is not a power of two! Size: 0x%08x\n", size);
 #endif
 
   new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
@@ -142,7 +140,7 @@ struct hash_table *hash_unlink(struct hash_table *h, struct hash_entry *s)
     }
   }
 #ifdef PIKE_DEBUG
-  fatal("hash_entry not in hashtable\n");
+  Pike_fatal("hash_entry not in hashtable\n");
 #endif
   return h;
 }

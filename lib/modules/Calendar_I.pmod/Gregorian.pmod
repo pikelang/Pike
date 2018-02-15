@@ -1,11 +1,10 @@
+#pike __REAL_VERSION__
+
 // by Mirar 
 
-//! module Calendar_I
-//! submodule Gregorian
 //!	time units:
-//!	<ref>Year</ref>, <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
+//!	@[Year], @[Month], @[Week], @[Day]
 //!
-//! class 
 
 array(string) month_names=
    ({"January","February","March","April","May","June","July","August",
@@ -22,26 +21,25 @@ class _TimeUnit
 {
    inherit Calendar_I._TimeUnit;
 
-   program vYear=function_object(object_program(this_object()))->Year;
-   program vDay=function_object(object_program(this_object()))->Day;
-   program vMonth=function_object(object_program(this_object()))->Month;
-   program vWeek=function_object(object_program(this_object()))->Week;
-   program vHour=function_object(object_program(this_object()))->Hour;
-   program vMinute=function_object(object_program(this_object()))->Minute;
-   program vSecond=function_object(object_program(this_object()))->Second;
+   program vYear=global::Year;
+   program vDay=global::Day;
+   program vMonth=global::Month;
+   program vWeek=global::Week;
+   program vHour=global::Hour;
+   program vMinute=global::Minute;
+   program vSecond=global::Second;
 }
 
 //== Year ====================================================================
 
-class Year
-{
-//! class Year
-//! 	A <ref>Calendar_I.time_unit</ref>.
+//! 	A @[Calendar_I.time_unit]
 //!
-//!	Lesser units: <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
+//!	Lesser units: @[Month], @[Week], @[Day]
 //!	Greater units: none
 //!
 //!     
+class Year
+{
    inherit _TimeUnit;
 
 //-- variables ------------------------------------------------------
@@ -184,7 +182,7 @@ class Year
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -394,7 +392,7 @@ class Month
 	 case "int": return this->number(); 
 	 case "string":  return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -560,7 +558,7 @@ class Week
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -679,12 +677,13 @@ class Day
 	 (julian_day()<x->julian_day());
    }
 
-   int `==(object x)
+   int `==(mixed x)
    {
       return 
-	 (object_program(x)==object_program(this) &&
+	objectp(x) &&
+	((object_program(x)==object_program(this) &&
 	  x->y==y && x->d==d) ||
-	 (x->julian_day() == julian_day());
+	 (x->julian_day && (x->julian_day() == julian_day())));
    }
 
    int hash() { return y*3203+d; }
@@ -865,8 +864,7 @@ class Hour
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Day(): illegal argument 1\n",
-		     backtrace()}) );
+	   error( "Calendar...Day(): illegal argument 1\n" );
 	 d=arg[0];
 	 h=arg[1];
       } 
@@ -968,7 +966,7 @@ class Hour
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -1048,8 +1046,7 @@ class Minute
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Minute(): illegal argument 1\n",
-		     backtrace()}) );
+	   throw( "Calendar...Minute(): illegal argument 1\n" );
 	 h=arg[0];
 	 m=arg[1];
       } 
@@ -1158,7 +1155,7 @@ class Minute
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	   error("Can't cast to %O.\n", what);
       }
    }
 
@@ -1169,12 +1166,12 @@ class Minute
 
    string timeofday()
    {
-      return sprintf("%s:%02s",h->name(),name());
+      return sprintf("%02s:%02s",h->name(),name());
    }
 
    string timeofyear()
    {
-      return sprintf("%s %s:%02s",h->day()->dateofyear(),h->name(),name());
+      return sprintf("%s %02s:%02s",h->day()->dateofyear(),h->name(),name());
    }
 
 //-- less -----------------------------------------------------------
@@ -1255,8 +1252,7 @@ class Second
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Second(): illegal argument 1\n",
-		     backtrace()}) );
+	   error( "Calendar...Second(): illegal argument 1\n" );
 	 m=arg[0];
 	 s=arg[1];
       } 
@@ -1365,7 +1361,7 @@ class Second
 	 case "int": return this->number(); 
 	 case "string": return this->nase();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	   error("Can't cast to %O.\n", what);
       }
    }
 
@@ -1410,8 +1406,8 @@ class Second
 
 //-- parse functions -----------------------------------------------
 
-//! method object parse(string fmt,string arg)
-//!	parse a date, create relevant object
+//! @decl object parse(string fmt, string arg)
+//!	Parse a date, create relevant object
 //!	fmt is in the format "abc%xdef..."
 //!	where abc and def is matched, and %x is
 //!	one of those time units:
@@ -1425,7 +1421,6 @@ class Second
 //!	%h hour (needs %d, %D or %W)
 //!	%m minute (needs %h)
 //!	%s second (needs %s)
-
 object parse(string fmt,string arg)
 {
    string nfmt;
@@ -1487,19 +1482,9 @@ object parse(string fmt,string arg)
 
 //-- auxillary functions------------------------------------------------
 
-//!
-//! function datetime(int|void unix_time)
-//!          Replacement for localtime.
-//!
-//! function datetime_name(int|void unix_time)
-//!          Replacement for ctime.
-//!
-//! function datetime_short_name(int|void unix_time)
-//!          Replacement for ctime.
-//!
-
 
 // Sane replacement for localtime().
+//!          Replacement for localtime.
 mapping(string:int) datetime(int|void unix_time,int|void skip_extra)
 {
    mapping t = localtime(unix_time || time());
@@ -1522,6 +1507,7 @@ mapping(string:int) datetime(int|void unix_time,int|void skip_extra)
 }
 
 // Sane replacement for ctime().
+//!          Replacement for ctime.
 string datetime_name(int|void unix_time)
 {
   mapping t = datetime(unix_time);
@@ -1534,6 +1520,7 @@ string datetime_name(int|void unix_time)
 }
 
 // Sane replacement for ctime().
+//!          Replacement for ctime.
 string datetime_short_name(int|void unix_time)
 {
   mapping t = datetime(unix_time,1);

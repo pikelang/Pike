@@ -1,11 +1,6 @@
-/* PLIS.pmod
- *
- * PLIS (Permuted Lisp). A Lisp language somewhat similar to scheme.
- */
+//! PLIS, Permuted Lisp. A Lisp language somewhat similar to scheme.
 
 #pike __REAL_VERSION__
-
-#define error(X) throw( ({ (X), backtrace() }) )
 
 #ifdef LISP_DEBUG
 #define WERROR werror
@@ -34,7 +29,7 @@ class SelfEvaluating (string name)
 
   SelfEvaluating eval(Environment env, Environment globals)
     {
-      return this_object();
+      return this;
     }
 
   string print(int display) { return name; }
@@ -73,7 +68,7 @@ class Cons
       object new_cdr = (cdr != Lempty) ? cdr->mapcar(fun, @extra)
 	: cdr;
       if (new_cdr) 
-	return object_program(this_object())(new_car, new_cdr);
+	return this_program(new_car, new_cdr);
       else
       {
 	werror("No cdr\n");
@@ -104,7 +99,7 @@ class Cons
   string print(int display)
     {
       string s = "(";
-      object p = this_object();
+      object p = this;
       while (p != Lempty)
       {
 	if (!p->car)
@@ -168,8 +163,8 @@ class Symbol
 	}
       }
 #endif
-      object binding =  env->query_binding(this_object())
-	|| globals->query_binding(this_object());
+      object binding =  env->query_binding(this)
+	|| globals->query_binding(this);
       if (!binding)
       {
 	werror("No binding for this symbol ["+name+"].\n");
@@ -190,7 +185,7 @@ class Symbol
       //     werror(sprintf("Creating symbol '%s'\n", n));
       name = n;
       if (table)
-	table[name] = this_object();
+	table[name] = this;
     }
 
   string to_string() { return name; }
@@ -212,12 +207,12 @@ class Nil
 
   void create()
     {
-      Cons :: create(this_object(), this_object());
+      Cons :: create(this, this);
       SelfEvaluating :: create("()");
     }
 
-  object mapcar(mixed ...ignored) { return this_object(); }
-  object map(mixed ...ignored) { return this_object(); }
+  object mapcar(mixed ...ignored) { return this; }
+  object map(mixed ...ignored) { return this; }
 }
 
 class String (string value)
@@ -271,7 +266,7 @@ class Environment
       env = bindings || ([ ]);
     }
 
-  object copy() { return object_program(this_object())(copy_value(env)); };
+  object copy() { return this_program(copy_value(env)); };
 
   void extend(Symbol symbol, object value)
     {
@@ -290,7 +285,7 @@ class Environment
 			       } ),
 	      object s)
       {
-	if(env[s]->value != this_object())
+	if(env[s]->value != this)
 	  res += s->print(display)+": "+env[s]->value->print(display)+"\n";
 	else
 	  res += "global-environment: ...\n";
@@ -410,7 +405,7 @@ Symbol make_symbol(string name)
 
 Cons make_list(object ...args)
 {
-  Cons res = Lempty;
+  object(Cons)|Nil res = Lempty;
   for (int i = sizeof(args) - 1; i >= 0; i--)
     res = Cons(args[i], res);
   return res;
@@ -427,11 +422,9 @@ class Parser (string buffer)
   object comment_re = Regexp("^(;[^\n]*\n)");
   object string_re = Regexp("^(\"([^\\\\\"]|\\\\.)*\")");
 
-  object read_list();
-
   mixed _read()
     {
-      if (!strlen(buffer))
+      if (!sizeof(buffer))
       {
 	return 0;
       }
@@ -439,27 +432,27 @@ class Parser (string buffer)
       if (a = space_re->split(buffer) || comment_re->split(buffer))
       {
 	//	werror(sprintf("Ignoring space and comments: '%s'\n", a[0]));
-	buffer = buffer[strlen(a[0])..];
+	buffer = buffer[sizeof(a[0])..];
 	return _read();
       }
       if (a = number_re->split(buffer))
       {
 	//	werror("Scanning number\n");
 	string s = `+(@ a);
-	buffer = buffer[ strlen(s) ..];
+	buffer = buffer[ sizeof(s) ..];
 	return Number( (int)s );
       }
       if (a = symbol_re->split(buffer))
       {
 	// 	werror("Scanning symbol\n");
-	buffer = buffer[strlen(a[0])..];
+	buffer = buffer[sizeof(a[0])..];
 	return make_symbol(a[0]);
       }
       if (a = string_re->split(buffer))
       {
 	//	werror("Scanning string\n");
-	buffer = buffer[strlen(a[0])..];
-	return String(replace(a[0][1 .. strlen(a[0]) - 2],
+	buffer = buffer[sizeof(a[0])..];
+	return String(replace(a[0][1 .. sizeof(a[0]) - 2],
 			      ({ "\\\\", "\\\"", "\\n" }),
 			      ({ "\\", "\"", "\n"}) ) );
       }
@@ -476,7 +469,7 @@ class Parser (string buffer)
 	buffer = buffer[1..];
 	return c;
       case '#':
-	if (strlen(buffer) < 2)
+	if (sizeof(buffer) < 2)
 	  return 0;
 	c = buffer[1];
 	buffer = buffer[2..];
@@ -524,8 +517,7 @@ class Parser (string buffer)
 	  }
 	  return fin;
 	default:
-	  throw( ({ "lisp->parser: internal error\n",
-		    backtrace() }) );
+	  error( "lisp->parser: internal error\n" );
 	}
       object rest = read_list();
       return rest && Cons(item , rest);
@@ -636,7 +628,7 @@ object s_lambda(object arglist, Environment env, Environment globals)
  * fatal.
  *
  * The catch special form catches errors, returning Lfalse
- * if an error occured. */
+ * if an error occurred. */
 object s_catch(object arglist, Environment env, Environment globals)
 {
   return s_begin(arglist, env, globals) || Lfalse;
@@ -826,6 +818,9 @@ object f_global_environment(object arglist, Environment env, Environment globals
   return globals;
 }
 
+//! Adds the special functions quote, set!, setq,
+//! while, define, defmacro, lambda, if, and, or,
+//! begin and catch to the @[environment].
 void init_specials(Environment environment)
 {
   environment->extend(make_symbol("quote"), Special(s_quote));
@@ -842,6 +837,11 @@ void init_specials(Environment environment)
   environment->extend(make_symbol("catch"), Special(s_catch));
 }
 
+//! Adds the functions +, *, -, =, <, >,
+//! concat, read-string, eval,
+//! apply, global-environment, var, cdr, null?,
+//! setcar!, setcdr!, cons and list to the
+//! @[environment].
 void init_functions(Environment environment)
 {
   environment->extend(make_symbol("+"), Builtin(f_add));
@@ -883,7 +883,7 @@ Parser(
   "\n"
   //"  (defmacro (defun name arguments . body)\n"
   //"    (cons (quote define) (cons (cons name arguments) body)))\n"
-  "\n"
+  //"\n"
   "  (defmacro (when cond . body)\n"
   "    (list (quote if) cond\n"
   "	  (cons (quote begin) body)))\n"
@@ -898,6 +898,34 @@ Parser(
   "		(cons (map car decl) body))\n"
   "	  (map cadr decl))))")->read();
 
+//! Creates a new environment on which
+//! it runs init_functions, init_specials
+//! and the following boot code.
+//! @code
+//! (begin
+//!   (defmacro (cddr x)
+//!     (list (quote cdr) (list (quote cdr) x)))
+//!   (defmacro (cadr x)
+//!     (list (quote car) (list (quote cdr) x)))
+//!   (defmacro (cdar x)
+//!     (list (quote cdr) (list (quote car) x)))
+//!   (defmacro (caar x)
+//!     (list (quote car) (list (quote car) x)))
+//!
+//!   (defmacro (when cond . body)
+//!     (list (quote if) cond
+//! 	  (cons (quote begin) body)))
+//!
+//!   (define (map fun list)
+//!     (if (null? list) (quote ())
+//!       (cons (fun (car list))
+//! 	         (map fun (cdr list)))))
+//!
+//!   (defmacro (let decl . body)
+//!     (cons (cons (quote lambda)
+//! 		(cons (map car decl) body))
+//! 	  (map cadr decl))))
+//! @endcode
 Environment default_environment()
 {
   Environment env = Environment();
@@ -907,6 +935,20 @@ Environment default_environment()
   return env;
 }
 
+//! Instantiates a copy of the default environment and
+//! starts an interactive main loop that connects to
+//! standard I/O. The main loop is as follows:
+//! @code
+//! (begin
+//!    (define (loop)
+//!      (let ((line (read-line \"PLIS: \")))
+//!          (if line
+//!              (let ((res (catch (eval (read-string line)
+//!                                     (global-environment)))))
+//!                 (display res)
+//!                (loop)))))
+//!    (loop))
+//! @endcode
 void main()
 {
   Environment e = default_environment();

@@ -1,0 +1,258 @@
+/* -*- C -*- */
+class GTK2.Entry;
+inherit GTK2.Widget;
+inherit GTK2.CellEditable;
+inherit GTK2.Editable;
+
+//! Use this widget when you want the user to input a single line of text.
+//! IMG: GTK2.Entry()->set_text("Hello world")->set_editable(1)
+
+//! Properties:
+//! int activates-default
+//! int cursor-position
+//! int editable
+//! int has-frame
+require gtk210;
+//! int inner-border
+endrequire;
+//! int invisible-char
+//! int max-length
+//! int scroll-offset
+//! int selection-bound
+require gtk212;
+//! int shadow-type
+endrequire;
+//! string text
+require gtk210;
+//! int truncate-multiline
+endrequire;
+//! int visibility
+//! int width-chars
+//! float xalign
+//! <p>
+//! Style properties:
+
+signal activate;
+signal backspace;
+signal copy_clipboard;
+signal cut_clipboard;
+signal delete_from_cursor;
+signal insert_at_cursor;
+signal move_cursor;
+signal paste_clipboard;
+signal populate_popup;
+signal toggle_overwrite;
+
+void create(int|mapping(string:mixed)|void maxlen_or_props)
+//! Create a new W(Entry) widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+      INT_TYPE max;
+      GtkWidget *ge;
+      get_all_args("create",args,"%i",&max);
+      ge=gtk_entry_new();
+      gtk_entry_set_max_length(GTK_ENTRY(ge),max);
+      THIS->obj=G_OBJECT(ge);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ENTRY);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *ge;
+    ge=gtk_entry_new();
+    THIS->obj=G_OBJECT(ge);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_text(sprintf_format text, sprintf_args ... fmt)
+//! Set the text to the specified string, replacing the current contents.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_entry_set_text(GTK_ENTRY(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
+
+string get_text();
+//! Returns the contents of the entry widget.
+
+void set_visibility(int visiblep);
+//! 0 indicates invisible text (password boxes, as an example)
+
+void set_invisible_char(int ch);
+//! Sets the character to use in place of the actual text when 
+//! set_invisibility() has been called to set text visibility to false.  i.e.
+//! this is the character used in "password" mode to show the user how many
+//! characters have been type.  The default invisible char is an asterisk
+//! ('*').  If you set the invisible char to 0, then the user will get no
+//! feedback at all; there will be no text on the screen as they type.
+
+void set_max_length(int maxlen);
+//! Sets the maximum allowed length of the contents.  If the current contents
+//! are longer than the given length, then they will be truncated to fit.
+//! Range is 0-65536.  0 means no maximum.
+
+int get_activates_default();
+//! Retrieves the value set by set_activates_default().
+
+int get_has_frame();
+//! Gets the value set by set_has_frame().
+
+require gtk216;
+void set_icon_from_pixbuf(int icon_pos,GDK2.Pixbuf b);
+void set_icon_from_stock(int icon_pos,string id);
+endrequire;
+
+require gtk210;
+array get_inner_border()
+//! This function returns the entry's inner-border property.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const GtkBorder *gb;
+
+    gb=gtk_entry_get_inner_border(GTK_ENTRY(THIS->obj));
+    push_int(gb->left);
+    push_int(gb->right);
+    push_int(gb->top);
+    push_int(gb->bottom);
+    f_aggregate(4);
+  }
+}
+endrequire;
+
+int get_width_chars();
+//! Gets the value set by set_width_chars().
+
+void set_activates_default(int setting);
+//! If setting is true, pressing Enter will activate the default widget for
+//! the window containing the entry.  This usually means that the dialog box
+//! containing the entry will be closed, since the default widget is usually
+//! one of the dialog buttons.
+
+void set_has_frame(int setting);
+//! Sets whether the entry has a beveled frame around it.
+
+require gtk210;
+void set_inner_border(int left, int right, int top, int bottom)
+//! Sets the inner-border property to border, or clears it if 0 is passed.
+//! The inner-border is the area around the entry's text, but inside its
+//! frame.
+//! <p>
+//! If set, this property overrides the inner-border style property.
+//! Overriding the style-provided border is useful when you want to do
+//! in-place editing of some text in a canvas or list widget, where
+//! pixel-exact positioning of the entry is important.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE l,r,t,b;
+    GtkBorder gb;
+
+    get_all_args("set_inner_border",args,"%i%i%i%i",&l,&r,&t,&b);
+    gb.left=l;
+    gb.right=r;
+    gb.top=t;
+    gb.bottom=b;
+    gtk_entry_set_inner_border(GTK_ENTRY(THIS->obj),&gb);
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+void set_width_chars(int n_chars);
+//! changes the size request of the entry to be about the right size for
+//! n_chars characters.  Note that it changes the size request, the size can
+//! still be affected by how you pack the widget into containers.  If n_chars
+//! is -1, the size reverts to the default entry size.
+
+int get_invisible_char();
+//! Retrieves the character displayed in place of the real characters for
+//! entries with visibility set to false.
+
+require gtk24;
+void set_alignment(float align);
+//! Sets the alignment for the ocntents of the entry.  This controls the
+//! horizontal positioning of the contents when the displayed text is shorter
+//! than the width of the entry.
+
+float get_alignment();
+//! Gets the value set by set_alignment().
+endrequire;
+
+require pango;
++Pango.Layout get_layout();
+//! Gets the Pango.Layout used to display the entry.  The layout is useful to
+//! e.g. convert text positions to pixel positions, in combination with
+//! get_layout_offsets().
+//! <p>
+//! Keep in mind that the layout text may contain a preedit string, so 
+//! layout_index_to_text_index() and text_index_to_layout_index() are needed
+//! to convert byte indices in the layout to byte indices in the entry
+//! contents.
+
+mapping get_layout_offsets()
+//! Obtains the position of the Pango.Layout used to render text in the
+//! entry, in widget coordinates.  Useful if you want to line up the text
+//! in an entry with some other text, e.g. when using the entry to implement
+//! editable cells in a sheet widget.
+//! <p>
+//! Also useful to convert mouse events into coordinates inside the
+//! Pango.Layout, e.g. to take some action if some part of the entry text
+//! is clicked.
+//! <p>
+//! Keep in mind that the layout text may contain a preedit string, so 
+//! layout_index_to_text_index() and text_index_to_layout_index() are needed
+//! to convert byte indices in the layout to byte indices in the entry
+//! contents.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    gint x,y;
+
+    gtk_entry_get_layout_offsets(GTK_ENTRY(THIS->obj),&x,&y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
+
+int layout_index_to_text_index(int layout_index);
+//! Converts from a position in the entry contents (returned by get_text())
+//! to a position in the entry's Pango.Layout (returned by get_layout()),
+//! with text retrieved via Pango.Layout->get_text().
+
+int text_index_to_layout_index(int text_index);
+//! Opposite of layout_index_to_text_index().
+endrequire;
+
+int get_max_length();
+//! Retrieves the maximum allowed length of the text.
+
+int get_visibility();
+//! Retrieves whether the text is visible.
+
+require gtk24;
+void set_completion(GTK2.EntryCompletion completion);
+//! Sets completion to be the auxiliary completion object to use.  All further
+//! configuration of the completion mechanism is done on completion using
+//! the GTK2.EntryCompletion API.
+
++GTK2.EntryCompletion get_completion();
+//! Returns the completion object.
+endrequire;
+
+require gtk212;
+void set_cursor_hadjustment(GTK2.Adjustment adj);
+//! Hooks up an adjustment to the cursor position in an entry, so that when 
+//! the cursor is moved, the adjustment is scrolled to show that position.
+
+GTK2.Adjustment get_cursor_hadjustment();
+//! Retrieves the horizontal cursor adjustment
+endrequire;

@@ -1,6 +1,4 @@
 /* IMAP.requests
- *
- * $Id: requests.pmod,v 1.89 2000/09/28 03:38:58 hubbe Exp $
  */
 
 #pike __REAL_VERSION__
@@ -103,8 +101,7 @@ class request
 				   0, 0, append_arg);
 
       default:
-	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
-			  arg_info[argc]), backtrace() }) );
+	error( "IMAP.requests: Unknown argument type %O\n", arg_info[argc] );
       }
     }
 }
@@ -116,7 +113,7 @@ class unimplemented
   mapping easy_process()
   {
     // FIXME: Log.
-    return(bad("Not implemented"));
+    return bad("Not implemented");
   }
 }
 
@@ -338,7 +335,7 @@ class status
       send(tag, "NO", "STATUS failed");
       server->log(session, "STATUS", mailbox, 400);
     }
-    return([ "action" : "finished" ]);
+    return ([ "action" : "finished" ]);
   }
 }
 
@@ -408,7 +405,7 @@ class copy
       server->log(session, "COPY", mailbox_name, 200);
       break;
     default:
-      throw(({ "Bad returncode from copy().\n", backtrace() }));
+      error( "Bad returncode from copy().\n" );
       break;
     }
     return ([ "action" : "finished" ]);
@@ -581,14 +578,14 @@ class fetch
       }
       break;
     default:
-      throw( ({ "Internal error!\n", backtrace() }) );
+      error( "Internal error!\n" );
     }
 
     if (state) {
       // RFC 2060, Section 6.4.8:
       //   However, server implementations MUST implicitly include the UID
       //   message data item as part of any FETCH response caused by a UID
-      //   command, regardless of wether a UID was specified as a message
+      //   command, regardless of whether a UID was specified as a message
       //   data item to the FETCH.
       int add_uid = 1;
       foreach(fetch_attrs, mapping(string:mixed) attr) {
@@ -804,7 +801,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
+	  error( "IMAP.requests: Internal error!\n" );
 	case 1:
 	  return criteria[0];
 	default:
@@ -822,7 +819,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
+	  error( "IMAP.requests: Internal error!\n" );
 	case 1:
 	  return criteria[0];
 	default:
@@ -1029,7 +1026,7 @@ class find
   mapping easy_process(string type, string glob)
   {
     if (lower_case(type) != "mailboxes") {
-      return(bad("Not supported."));
+      return bad("Not supported.");
     }
     /* Each element of the array should be an array with three elements,
      * attributes, hierarchy delimiter, and the name. */
@@ -1052,4 +1049,3 @@ class find
     return ([ "action" : "finished" ]);
   }
 }
-

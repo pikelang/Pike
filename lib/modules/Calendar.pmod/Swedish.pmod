@@ -1,20 +1,12 @@
-//!
-//! module Calendar
-//! submodule Swedish
-//!
-//!	Same as the ISO calendar,
-//!	but with swedish as the default language.
-//!
-//!	This calendar exist only for backwards compatible 
-//!	purposes. 
-//!
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit ISO:ISO;
+//! Same as the @[ISO] calendar, but with Swedish as the default language.
+//!
+//! This calendar exist only for backwards compatible purposes. 
 
-private static mixed __initstuff=lambda()
+inherit Calendar.ISO:ISO;
+
+private protected mixed __initstuff=lambda()
 {
    default_rules=default_rules->set_language("SE_sv");
 }();

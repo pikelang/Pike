@@ -1,0 +1,33 @@
+/* -*- C -*- */
+require gtk24;
+
+class GTK2.FileChooserWidget;
+inherit GTK2.Vbox;
+inherit GTK2.FileChooser;
+
+//! File chooser widget that can be embedded in other widgets.
+//! IMG: GTK2.FileChooserWidget(GTK2.FILE_CHOOSER_ACTION_OPEN);
+
+void create(int|mapping(string:mixed) action_or_props)
+//! Create a new file chooser widget.
+//! action is one of CONST(GTK_FILE_CHOOSER_ACTION)
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+      INT_TYPE action;
+      GtkWidget *gf;
+      get_all_args("create",args,"%i",&action);
+      gf=gtk_file_chooser_widget_new(action);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FILE_CHOOSER_WIDGET);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;
+

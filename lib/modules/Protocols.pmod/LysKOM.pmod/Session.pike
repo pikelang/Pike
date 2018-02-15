@@ -1,19 +1,12 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.24 2000/11/26 17:31:45 nilsson Exp $
-//! module Protocols
-//! submodule LysKOM
-//! class Session
-
 import ".";
 
 Connection con;
 
-//! variable user
-//!	This variable contains the
-//!	<link to=Protocols.LysKOM.Session.Person>person</link>
-//!	that are logged in.
-
+//! This variable contains the
+//! @[Protocols.LysKOM.Session.Person]
+//! that is logged in.
 object user; // logged in as this Person
 
 string server;
@@ -24,24 +17,29 @@ mapping(int:object) _text=([]);
 mapping(int:object) _person=([]);
 mapping(int:object) _conference=([]);
 
-//! method void create(string server)
-//! method void create(string server,mapping options)
+//! @decl void create(string server)
+//! @decl void create(string server, mapping options)
 //!	Initializes the session object, and opens
 //!	a connection to that server.
 //!
-//!	options is a mapping of options,
-//!	<data_description type=mapping>
-//!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
-//!	<elem name=create type="string"><br>create a new person and login with it</elem>
-//!	<elem name=password type=string>send this login password</elem>
-//!	<elem name=invisible type="int(0..1)">if set, login invisible</elem>
-//!	<elem>advanced</elem>
-//!	<elem name=port type=int(0..65535)>server port (default is 4894)</elem>
-//!	<elem name=whoami type=string>present as this user<br>(default is from uid/getpwent and hostname)</elem>
-//!	</data_description>
+//!	@[options] is a mapping of options:
+//!	@mapping
+//!	  @member int|string "login"
+//!	    login as this person number (get number from name).
+//!	  @member string "create"
+//!	    create a new person and login with it.
+//!	  @member string "password"
+//!	    send this login password.
+//!	  @member int(0..1) "invisible"
+//!	    if set, login invisible.
+//!	  @member int(0..65535) "port"
+//!	    server port (default is 4894).
+//!	  @member string "whoami"
+//!	    present as this user (default is from uid/getpwent and hostname).
+//!	@endmapping
 //!
-//! see also: Connection
-
+//! @seealso
+//!   @[Connection]
 void create(object|string _server,void|mapping options)
 {
    if (objectp(_server)) // clone
@@ -128,8 +126,9 @@ void async_new_text_old()
 
 class MiscInfo
 {
-  string _sprintf()
+  string _sprintf(int t)
   {
+    if(t!='O') return 0;
     array(string) to = ({});
     if(sizeof(recpt))
       to += ({ "To: " + String.implode_nicely(recpt->conf->no) });
@@ -138,8 +137,8 @@ class MiscInfo
     if(sizeof(bccrecpt))
       to += ({ "Bcc: " + String.implode_nicely(bccrecpt->conf->no) });
 
-    return sprintf("MiscInfo(%s)", sizeof(to) ? to * "; "
-					      : "No recipients");
+    return sprintf("%O(%s)", this_program,
+		   sizeof(to) ? to * "; " : "No recipients");
   }
 
   class Recpt
@@ -149,10 +148,10 @@ class MiscInfo
     object received_at;
     object sent_by;
     object sent_at;
-    string _sprintf()
+    string _sprintf(int t)
     {
-      return sprintf("Recpt(conf %d: text %d)",
-		     conf && conf->no, local_no);
+      return t=='O' && sprintf("%O(conf %d: text %d)", this_program,
+			       conf && conf->no, local_no);
     }
   }
 
@@ -254,7 +253,7 @@ class MiscInfo
    {									\
       if (VAR) 								\
       {									\
-	 if (callback) callback(this_object());				\
+	 if (callback) callback(this);					\
 	 return;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
@@ -269,7 +268,7 @@ class MiscInfo
 				    fetch_##WHAT=0;			\
 				    array m=fetch_##WHAT##_callbacks;	\
 				    fetch_##WHAT##_callbacks=0;		\
-				    m(this_object());			\
+				    m(this);				\
 				 },ARGS);				\
    }									\
 									\
@@ -305,7 +304,7 @@ class MiscInfo
 	 VAR1=res;							\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
    private void _got_##WHAT##2(mixed res)				\
@@ -313,15 +312,15 @@ class MiscInfo
       if (objectp(res) && res->iserror) err=res; else VAR2=res;		\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
-   object prefetch_##WHAT##(void|function callback)			\
+   this_program prefetch_##WHAT##(void|function callback)		\
    {									\
       if (VAR1 || VAR2)                                                 \
       {									\
-	 if (callback) callback(this_object());				\
-	 return this_object();						\
+	 if (callback) callback(this);					\
+	 return this;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
@@ -329,7 +328,7 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL2(_got_##WHAT##2,ARGS);	\
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL1(_got_##WHAT##1,ARGS);	\
-      return this_object();                                             \
+      return this;	                                             \
    }									\
 									\
    inline void need_##WHAT()						\
@@ -371,7 +370,7 @@ class MiscInfo
 	 VAR=CONV;							\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
    private void _got_##WHAT##2(mixed res)				\
@@ -380,15 +379,15 @@ class MiscInfo
    	else VAR=CONV;		                                        \
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
-   object prefetch_##WHAT##(void|function callback)			\
+   this_program prefetch_##WHAT##(void|function callback)		\
    {									\
       if (VAR)                                                          \
       {									\
-	 if (callback) callback(this_object());				\
-	 return this_object();						\
+	 if (callback) callback(this);					\
+	 return this;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
@@ -396,7 +395,7 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL##_old(_got_##WHAT##2,ARGS); \
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL(_got_##WHAT##1,ARGS);	\
-      return this_object();                                             \
+      return this;							\
    }									\
 									\
    inline void need_##WHAT()						\
@@ -453,6 +452,8 @@ constant itemname_to_tag = ([ "content-type":		1,
 			      "mx-envelope-sender":	10103,
 			      "mx-mime-file-name":	10104, ]);
 
+//! @fixme
+//!   Undocumented
 class AuxItemInput
 {
   inherit ProtocolTypes.AuxItemInput;
@@ -469,21 +470,26 @@ class AuxItemInput
     data = _data;
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("AuxItemInput(%s)", search(itemname_to_tag, tag));
+    return t=='O' && sprintf("%O(%s)", this_program,
+			     search(itemname_to_tag, tag));
   }
 }
 
+//! @fixme
+//!   Undocumented
 class AuxItems
 {
-  string _sprintf()
+  string _sprintf(int t)
   {
+    if(t!='O') return 0;
     array desc = ({});
     foreach((array)tag_to_items, [int tag, mixed item])
       desc += ({ search(itemname_to_tag, tag) });
-    return sprintf("AuxItems(%s)", sizeof(desc) ? String.implode_nicely(desc)
-						: "none present");
+    return sprintf("%O(%s)", this_program,
+		   sizeof(desc) ? String.implode_nicely(desc)
+		   : "none present");
   }
 
   mapping(int:array(ProtocolTypes.AuxItem)) tag_to_items = ([]);
@@ -522,32 +528,46 @@ class AuxItems
   mixed `->(string what) { return `[](what); }
 }
 
+//! All variables in this class is read only.
+//! @fixme
+//!   Undocumented
 class Text
 {
-   int no;
 
-   MiscInfo _misc;
+  //! The text number, as spicified to @[create].
+  int no;
+
+  MiscInfo _misc;
   AuxItems _aux_items;
 
-   object err;
+  //! Undocumented
+  object err;
 
    object _author;
 
+  //! @decl void create(string textnumber)
+  //!	Initializes a Text object.
    void create(int _no)
    {
       no=_no;
    }
 
+   //! @ignore
+
    FETCHERC(text,array(string),_text,get_text,@({no,0,0x7fffffff}),
-	    array_sscanf(res,"%s\n%s"))
+	    array_sscanf(res,"%s\n%s"));
    FETCHERC2b(stat,object,_stat,get_text_stat,@({no}),
-	      (_misc=MiscInfo(res->misc_info),res))
+	      (_misc=MiscInfo(res->misc_info),res));
+
+   //! @endignore
 
    void update_misc(MiscInfo m)
    {
       _misc=m;
    }
 
+  //! @fixme
+  //!   Undocumented.
   void mark_as_read()
   {
     waitfor_stat();
@@ -560,10 +580,39 @@ class Text
        error */
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Text(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
+
+  //! @decl mixed prefetch_text
+  //! @decl mixed prefetch_stat
+  //! @decl mixed lines
+  //! @decl mixed characters
+  //! @decl mixed clear_stat
+  //! @decl mixed aux_items
+  //! @fixme
+  //!   Undocumented
+
+  //! @decl string text
+  //!   The actual text (or body if you wish).
+
+  //! @decl string subject
+  //!   The message subject.
+
+  //! @decl string author
+  //!   The author of the text.
+
+  //! @decl mixed misc
+  //!   Misc info, including what conferences the message is posted to.
+  //! @fixme
+  //!   Needs a more complete description.
+
+  //! @decl int marks
+  //!   The number of marks on this text.
+
+  //! @decl mixed creation_time
+  //!   The time the text was created on the server.
 
    mixed `[](string what)
    {
@@ -640,25 +689,47 @@ class Text
   }
 }
 
-
-object text(int no)
+//! Returns the text @[no].
+Text text(int no)
 {
-   return _text[no] || (_text[no]=Text(no));
+  if(_text[no])
+    return _text[no];
+  if(sizeof(_text)>1000)
+    _text = ([]);
+  
+  return (_text[no]=Text(no));
 }
 
+//! All variables in this class is read only.
 class Membership
 {
   int              person;
   int              newtype;
+
+  //!
   object           last_time_read;
+
+  //!
   int(0..255)      priority;
+
+  //!
   int              last_text_read;
+
+  //!
   array(int)       read_texts;
+
   int(0..65535)    added_by;   // new
+
+  //!
   object           added_at;   // new
+
+  //!
   multiset(string) type;       // new
+
+  //!
   int              position;   // new
 
+  //!
   object conf;
 
   object err;
@@ -689,12 +760,14 @@ class Membership
 
   //  FETCHER(unread,ProtocolTypes.TextMapping,_unread,local_to_global,@({conf->no,1,255}))
 
+  //!
   int number_unread()
   {
     return (conf->no_of_texts+conf->first_local_no-1)
       -last_text_read -sizeof(read_texts);
   }
 
+  //!
   void query_read_texts()
   {
 //     werror("query_read_texts()\n");
@@ -702,6 +775,8 @@ class Membership
     setup(con->query_read_texts(person,conf->no));
 //     werror("read_texts: %O\n",read_texts);
   }
+
+  //! @decl array(object) unread_texts()
 
   array(object) get_unread_texts_blocking()
   {
@@ -728,8 +803,8 @@ class Membership
 	ProtocolTypes.TextList textlist=block->dense;
 	int j=textmapping->range_begin;
 
-	foreach(textlist->texts, int global)
-	  local_to_global[j++]=global;
+	foreach(textlist->texts, int global_text)
+	  local_to_global[j++]=global_text;
       }
       else                         /* Use array(TextNumberPair) */
       {
@@ -748,7 +823,6 @@ class Membership
 
     return map( sort(values(unread_numbers)), text );
   }
-
 
   mixed `[](string what)
   {
@@ -773,9 +847,9 @@ class Membership
 
   mixed `->(string what) { return `[](what); }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Membership(%d)", conf->no);
+    return t=='O' && sprintf("%O(%d)", this_program, conf->no);
   }
 
   array(string) _indices()
@@ -790,13 +864,17 @@ class Membership
 }
 
 
+//!
 class Person
 {
-   int no;
+  //!
+  int no;
 
    object conf;
 
    object err;
+
+   //! @ignore
 
    FETCHER(stat,ProtocolTypes.Person,_person,get_person_stat,no);
    FETCHERC(unread,array(object),_unread,get_unread_confs,no,
@@ -805,11 +883,44 @@ class Person
 	      @({no,0,65535,1}),
 	      Array.map(res,Membership,no));
 
+   //! @endignore
+
+  //! @decl void create(int no)
    void create(int _no)
    {
       no=_no;
       conf=conference(no);
    }
+
+  //! @decl mixed prefetch_stat
+  //! @decl mixed prefetch_conf
+  //! @decl mixed prefetch_membership
+  //! @fixme
+  //!   Undocumented
+
+  //! @decl object error
+  //! @decl Text user_area
+  //! @decl mixed username
+  //! @decl mixed privileges
+  //! @decl mixed flags
+  //! @decl mixed last_login
+  //! @decl mixed total_time_present
+  //! @decl mixed sessions
+  //! @decl mixed created_lines
+  //! @decl mixed created_bytes
+  //! @decl mixed read_texts
+  //! @decl mixed no_of_text_fetches
+  //! @decl mixed created_persons
+  //! @decl mixed created_confs
+  //! @decl mixed first_created_local_no
+  //! @decl mixed no_of_created_texts
+  //! @decl mixed no_of_marks
+  //! @decl mixed no_of_confs
+  //! @decl mixed unread
+  //! @decl int(0..0) clear_membership
+  //! @decl mixed membership
+  //! @fixme
+  //!   Undocumented
 
    mixed `[](string what)
    {
@@ -831,7 +942,7 @@ class Person
 	 case "user_area":
 	    waitfor_stat();
 	    return text(_person->user_area);
-         case "username":
+	 case "username":
 	 case "privileges":
 	 case "flags":
 	 case "last_login":
@@ -865,9 +976,9 @@ class Person
 
    mixed `->(string what) { return `[](what); }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Person(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 
   array(string) _indices()
@@ -889,11 +1000,13 @@ class Person
   }
 }
 
-object person(int no)
+//! Returns the @[Person] @[no].
+Person person(int no)
 {
    return _person[no] || (_person[no]=Person(no));
 }
 
+//!
 class Conference
 {
   int no;
@@ -901,14 +1014,41 @@ class Conference
 
   private object err;
 
+
+  //! @ignore
+
   FETCHER2(stat,ProtocolTypes.Conference,_conf,
 	   ProtocolTypes.ConferenceOld,_confold,
 	   get_conf_stat,get_conf_stat_old,no)
 
+  //! @endignore
+
+  //! @decl void create(int no)
   void create(int _no)
   {
     no=_no;
   }
+
+  //! @decl mixed prefetch_stat
+  //! @decl int no
+  //! @decl object error
+  //! @decl Text msg_of_day
+  //! @decl Conference supervisor
+  //! @decl Conference permitted_submitters
+  //! @decl Conference super_conf
+  //! @decl Person creator
+  //! @decl mixed aux_items
+  //! @decl mixed name
+  //! @decl mixed type
+  //! @decl mixed creation_time
+  //! @decl mixed last_written
+  //! @decl mixed nice
+  //! @decl mixed no_of_members
+  //! @decl mixed first_local_no
+  //! @decl mixed no_of_texts
+  //! @decl mixed presentation
+  //! @fixme
+  //!   Undocumented
 
   mixed `[](string what)
   {
@@ -967,44 +1107,40 @@ class Conference
 	      "permitted_submitters", });
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Conference(%d)", no);
+    return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 }
 
-object conference(int no)
+//! Returns conference number @[no].
+Conference conference(int no)
 {
    return _conference[no] || (_conference[no]=Conference(no));
 }
 
-//!
-//! method array(object) try_complete_person(string orig)
-//!	Runs a LysKOM completion on the given string,
-//!	returning an array of confzinfos of the match.
-
+//! Runs a LysKOM completion on the given string,
+//! returning an array of confzinfos of the match.
 array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
 {
    return con->lookup_z_name(orig,1,0);
 }
 
-//! method object login(int user_no,string password)
-//! method object login(int user_no,string password,int invisible)
-//!	Performs a login. Returns 1 on success or throws a lyskom error.
-//! returns the called object
-
-object login(int user_no,string password,
-	     void|int invisible)
+//! @decl object login(int user_no,string password)
+//! @decl object login(int user_no,string password,int invisible)
+//!   Performs a login. Throws a lyskom error if unsuccessful.
+//! @returns
+//!   The session object logged in.
+this_program login(int user_no,string password,
+		   void|int invisible)
 {
    con->login(user_no,password,invisible);
    user=person(user_no);
-   return this_object();
+   return this;
 }
 
-//! method object create_person(string name,string password)
-//!	Create a person, which will be logged in.
+//! Create a person, which will be logged in.
 //! returns the new person object
-
 object create_person(string name,string password)
 {
    if (!stringp(name)||!stringp(password))
@@ -1012,45 +1148,48 @@ object create_person(string name,string password)
    return user=person(con->create_person_old(name,password));
 }
 
-//! method object logout()
-//!	Logouts from the server.
+//! Logouts from the server.
 //! returns the called object
-
-object logout()
+this_program logout()
 {
    if (con)
       con->logout();
-   return this_object();
+   return this;
 }
 
-//! method object create_text(string subject,string body,mapping options)
-//! method object create_text(string subject,string body,mapping options,function callback,mixed ...extra)
+//! @decl object create_text(string subject, string body, mapping options)
+//! @decl object create_text(string subject, string body, mapping options, @
+//!                          function callback, mixed ...extra)
 //! 	Creates a new text.
 //!
-//! 	if "callback" are given, this function will be called when the text
-//! 	is created, with the text as first argument.
+//! 	if @[callback] is given, the function will be called when the text
+//! 	has been created, with the text as first argument.
 //!	Otherwise, the new text is returned.
 //!
-//!	options is a mapping that may contain:
-//!	<data_description type=mapping>
-//!	<elem name=recpt type="Conference|array(Conference)">recipient conferences</elem>
-//!	<elem name=cc type="Conference|array(Conference)">cc-recipient conferences</elem>
-//!	<elem name=bcc type="Conference|array(Conference)">bcc-recipient conferences *</elem>
-//!	<elem></elem>
-//!	<elem name=comm_to type="Text|array(Text)">what text(s) is commented</elem>
-//!	<elem name=foot_to type="Text|array(Text)">what text(s) is footnoted</elem>
-//!	<elem></elem>
-//!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
-//!	<elem></elem>
-//!	<elem name=aux_items type="array(AuxItemInput)">AuxItems you want to set for the text *</elem>
-//!	</data_description>
+//!	@[options] is a mapping that may contain:
+//!	@mapping
+//!	  @member Conference|array(Conference) "recpt"
+//!	    recipient conferences.
+//!	  @member Conference|array(Conference) "cc"
+//!	    cc-recipient conferences.
+//!	  @member Conference|array(Conference) "bcc"
+//!	    bcc-recipient conferences*.
+//!	  @member Text|array(Text) "comm_to"
+//!	    The text(s) to be commented.
+//!	  @member Text|array(Text) "foot_to"
+//!	    The text(s) to be footnoted.
+//!	  @member int(0..1) "anonymous"
+//!	    send text anonymously.
+//!	  @member array(AuxItemInput) "aux_items"
+//!	    AuxItems you want to set for the text*.
+//!	@endmapping
 //!
-//! note:
-//!	The above marked with a '*' is only available on a protocol 10
-//!	server. A LysKOM error will be thrown if the call fails.
+//! @note
+//!	The items above marked with '*' are only available on protocol 10
+//!	servers. A LysKOM error will be thrown if the call fails.
 //!
-//! see also: Conference.create_text, Text.comment, Text.footnote
-
+//! @seealso
+//!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
 object|void create_text(string subject,string body,
 			void|mapping options,
 			void|function callback,
@@ -1104,18 +1243,16 @@ object|void _create_text(string textstring,
    return text(res);
 }
 
-//! method object send_message(string message, mapping options)
 //! 	Sends a message.
 //!
-//!	options is a mapping that may contain:
-//!	<data_description type=mapping>
-//!	<elem name=recpt type="Conference">recipient conference</elem>
-//!	</data_description>
-
+//!	@[options] is a mapping that may contain:
+//!	@mapping
+//!	  @member Conference "recpt"
+//!	    recipient conference.
+//!	@endmapping
 object|void send_message(string textstring, mapping options)
 {
   int|object res;
-  string call;
 
   if(!options) options = ([]);
 
@@ -1128,12 +1265,13 @@ object|void send_message(string textstring, mapping options)
   return text(res);
 }
 
+//!
 void register_async_message_callback(function(int,int,string:void) cb)
 {
   con->con->add_async_callback("async-send-message", cb);
 }
 
-string _sprintf()
+string _sprintf(int t)
 {
-  return sprintf("Session(%s)", server);
+  return t=='O' && sprintf("%O(%s)", this_program, server||"");
 }

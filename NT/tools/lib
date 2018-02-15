@@ -1,51 +1,0 @@
-CLEANUP=yes
-NT_DEBUG=no
-
-if [ $NT_DEBUG = yes ]; then
-  set -x
-fi
-
-fixpath() {
-  echo "$*" | sed -e "${MNTREPLACE}s@/@\\\\@g"
-}
-
-fixabspath() {
-  fixpath "$*"
-}
-
-getntenv() {
-  if [ $USE_SPRSH = yes ]; then
-     sprsh getenv $1
-   else
-     rsh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
-s///g'
-   fi
-}
-
-silent_do_cmd() {
-  if [ $USE_SPRSH = yes ]; then
-    sprsh "$@"
-  else
-    BATFILE=TMP$$.bat
-    PWD=`pwd`
-    RPWD=`fixabspath $PWD`
-    if [ x$NT_DEBUG != xyes ]; then
-      echo >$BATFILE "@echo off"
-    else
-      echo >$BATFILE 
-    fi
-    echo >>$BATFILE "$NTDRIVE"
-    echo >>$BATFILE "cd $RPWD"
-    echo >>$BATFILE "$@"
-    rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
-    if [ x$CLEANUP = xyes ]; then
-      rm $BATFILE || :
-    fi
-  fi
-}
-
-do_cmd() {
-  echo "DOING $*" >&2
-  silent_do_cmd "$@"
-}
-

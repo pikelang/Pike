@@ -1,13 +1,17 @@
-/* $Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $
- *
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * since xor isn't implemented by gmp (for some odd reason)
  */
 
 #include "global.h"
-
-RCSID("$Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $");
-
 #include "gmp_machine.h"
+
+#ifndef HAVE_MPZ_XOR
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
 #define USE_GMP2
@@ -21,8 +25,6 @@ RCSID("$Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $");
 
 #include "my_gmp.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 void my_mpz_xor (mpz_ptr res, mpz_srcptr a, mpz_srcptr b)
 {
@@ -54,4 +56,6 @@ void my_mpz_xor (mpz_ptr res, mpz_srcptr a, mpz_srcptr b)
 }
 
 
-#endif
+#endif	/* defined(USE_GMP) || defined(USE_GMP2) */
+
+#endif	/* !HAVE_MPZ_XOR */

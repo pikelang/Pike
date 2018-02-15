@@ -1,5 +1,7 @@
 // by Mirar 
 
+#pike 7.0
+
 inherit Calendar.ISO:ISO;
 
 void create()

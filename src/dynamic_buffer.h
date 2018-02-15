@@ -1,52 +1,55 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
 /*
- * $Id: dynamic_buffer.h,v 1.11 2000/12/16 04:58:18 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
 
 #define BUFFER_BEGIN_SIZE 4080
 
-struct string_s
+struct dynbuf_string_s
 {
   char *str;
   SIZE_T len;
 };
 
-typedef struct string_s string;
+typedef struct dynbuf_string_s dynbuf_string;
 
 struct dynamic_buffer_s
 {
-  string s;
+  dynbuf_string s;
   SIZE_T bufsize;
 };
 
 typedef struct dynamic_buffer_s dynamic_buffer;
 
+PMOD_EXPORT extern dynamic_buffer pike_global_buffer;
+
 /* Prototypes begin here */
-PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf);
-PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf);
+PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf);
+PMOD_EXPORT void low_my_putchar(int b,dynamic_buffer *buf);
 PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *buf);
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf);
 PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf);
-PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf);
-PMOD_EXPORT string complex_free_buf(void);
+PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf);
 PMOD_EXPORT void toss_buffer(dynamic_buffer *buf);
-PMOD_EXPORT char *simple_free_buf(void);
 PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
-PMOD_EXPORT struct pike_string *debug_free_buf(void);
+
+PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT char *simple_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT struct pike_string *debug_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT void abandon_buf(dynamic_buffer *old_buf);
 PMOD_EXPORT char *make_buf_space(INT32 space);
-PMOD_EXPORT void my_putchar(char b);
+PMOD_EXPORT void my_putchar(int b);
 PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
 PMOD_EXPORT void my_strcat(const char *b);
-PMOD_EXPORT void init_buf(void);
-PMOD_EXPORT void init_buf_with_string(string s);
-PMOD_EXPORT char *debug_return_buf(void);
+PMOD_EXPORT void init_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT void init_buf_with_string(dynamic_buffer *old_buf, dynbuf_string s);
+PMOD_EXPORT void save_buffer (dynamic_buffer *save_buf);
+PMOD_EXPORT void restore_buffer (dynamic_buffer *save_buf);
+/* PMOD_EXPORT char *debug_return_buf(void); */
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC
@@ -56,8 +59,8 @@ PMOD_EXPORT char *debug_return_buf(void);
 #define low_free_buf(X) \
   ((struct pike_string *)debug_malloc_pass(debug_low_free_buf(X)))
 
-#define free_buf() \
-  ((struct pike_string *)debug_malloc_pass(debug_free_buf()))
+#define free_buf(OLD_BUF) \
+  ((struct pike_string *)debug_malloc_pass(debug_free_buf(OLD_BUF)))
 
 #define return_buf() \
   ((char *)debug_malloc_pass(debug_return_buf()))

@@ -1,0 +1,92 @@
+// -*- pike -*-
+#pike __REAL_VERSION__
+
+#if constant(@module@.Marker)
+
+inherit @module@;
+
+protected Image.Image exif_flip_jpeg(Image.Image img, mapping exif)
+{
+    // FIXME: Can we use jpegtransform for any of this?
+    switch (exif->Orientation)
+    {
+    case "1": /* default orientation */
+	break;
+
+    case "2": /* flipped left-right */
+	img = img->mirrorx();
+	break;
+
+    case "3": /* rotated 180 */
+	img = img->rotate_cw()->rotate_cw();
+	break;
+
+    case "4": /* flipped up-down */
+	img = img->mirrory();
+	break;
+
+    case "5": /* rotated 90 clockwise, flipped left-right */
+	img = img->mirrorx()->rotate_ccw();
+	break;
+
+    case "6": /* rotated 270 clockwise */
+	img = img->rotate_cw();
+	break;
+
+    case "7": /* rotated 270 clockwise, flipped left-right */
+	img = img->mirrorx()->rotate_cw();
+	break;
+
+    case "8": /* rotated 90 clockwise */
+	img = img->rotate_ccw();
+	break;
+
+    default:
+	break;
+    }
+
+    return img;
+}
+
+//! @belongs Image.JPEG
+//! Decodes the image as @[_decode] would and then proceeds to decode
+//! any EXIF information in the image. If it contain any Orientation
+//! information the image will be flipped/rotated according to it. The
+//! EXIF data will be returned as a mapping under the key
+//! @expr{"exif"@}. If an error is encountered during the processing
+//! of EXIF information, the backtrace will be returned under the key
+//! @expr{"error"@}.
+mapping exif_decode(string data, mapping|void options)
+{
+    mapping m = ::_decode(data, options || ([ ]) );
+
+    if (!m) // early exit if error
+	return m;
+
+    mapping exif = ([]);
+    mixed err = catch {
+        exif = Standards.EXIF.get_properties(Stdio.FakeFile(data)) || ([]);
+
+        m->image = exif_flip_jpeg(m->image, exif);
+        if ((< "5", "6", "7", "8" >)[exif->Orientation])
+        {
+          /* If the image was flipped 90 or 270 degrees, we need to
+           * exchange the x/y metadata information.
+           */
+          m->xsize = m->image->xsize;
+          m->ysize = m->image->ysize;
+          int tmp = m->x_density;
+          m->x_density = m->y_density;
+          m->y_density = tmp;
+        }
+      };
+    if(err)
+      exif->error = err;
+    m->exif = exif;
+
+    return m;
+
+}
+#else
+constant this_program_does_not_exist = 1;
+#endif // constant(@module@)

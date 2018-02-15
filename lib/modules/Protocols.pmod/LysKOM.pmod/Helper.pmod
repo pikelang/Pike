@@ -9,7 +9,7 @@ string encode(mixed ... z) // encode arguments
 
 string H(string what) // encode hollerith
 {
-   return strlen(what)+"H"+what;
+   return sizeof(what)+"H"+what;
 }
 
 string B(int(0..1) ... z) // encode bitfield
@@ -42,10 +42,10 @@ class LysKOMError
       desc=_desc;
       status=_status;
       __backtrace=backtrace();
-      __backtrace=__backtrace[..sizeof(__backtrace)-3];
+      __backtrace=__backtrace[..<2];
    }
 
-   object clone(int status)
+   LysKOMError clone(int status)
    {
       return LysKOMError(no,name,desc,status);
    }
@@ -61,7 +61,7 @@ class LysKOMError
    }
 }
 
-object lyskom_error(int no,void|int status)
+LysKOMError lyskom_error(int no,void|int status)
 {
    return LysKOMError(@_lyskomerror[no],status);
 }

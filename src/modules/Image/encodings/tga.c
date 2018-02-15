@@ -1,14 +1,15 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
- * $Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $
- *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
  *  The information below is from the original TGA module.
  *
  *
- *
- * Id: tga.c,v 1.6 1999/01/15 17:34:47 unammx Exp
  * TrueVision Targa loading and saving file filter for the Gimp.
  * Targa code Copyright (C) 1997 Raphael FRANCOIS and Gordon Matzigkeit
  *
@@ -23,8 +24,6 @@
  * Not even the RLE handling. ;)
  *
  */
-
-
 
 
 /*
@@ -47,45 +46,18 @@
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
-#include "array.h"
 #include "pike_error.h"
-#include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
-#include "multiset.h"
-#include "pike_types.h"
-#include "rusage.h"
 #include "operators.h"
-#include "fsort.h"
-#include "callback.h"
-#include "backend.h"
-#include "main.h"
 #include "pike_memory.h"
 #include "threads.h"
-#include "time_stuff.h"
-#include "version.h"
-#include "encode.h"
 #include "module_support.h"
-#include "module.h"
-#include "opcodes.h"
-#include "cyclic.h"
-#include "signal_handler.h"
-#include "security.h"
 #include "builtin_functions.h"
 
 
 #include "image.h"
 #include "colortable.h"
-
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
-
-
-RCSID("$Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $");
-
-#ifndef MIN
-# define MIN(X,Y) ((X)<(Y)?(X):(Y))
-#endif
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 
@@ -176,10 +148,8 @@ static struct image_alpha ReadImage (struct buffer *, struct tga_header *);
 static struct image_alpha load_image(struct pike_string *str)
 {
   struct tga_header hdr;
-  struct tga_footer footer;
+  /* struct tga_footer footer; */
   struct buffer buffer;
-  char *data_pointer;
-  int left_in_buffer;
   INT32 image_ID = -1;
 
   buffer.str = str->str;
@@ -214,7 +184,7 @@ static struct image_alpha load_image(struct pike_string *str)
 static ptrdiff_t std_fread (unsigned char *buf,
 			    size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize), fp->len);
+  size_t amnt = MINIMUM((nelems*datasize), fp->len);
   MEMCPY(buf, fp->str, amnt);
   fp->len -= amnt;
   fp->str += amnt;
@@ -224,7 +194,7 @@ static ptrdiff_t std_fread (unsigned char *buf,
 static ptrdiff_t std_fwrite (unsigned char *buf,
 			     size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize), fp->len);
+  size_t amnt = MINIMUM((nelems*datasize), fp->len);
   MEMCPY(fp->str, buf, amnt);
   fp->len -= amnt;
   fp->str += amnt;
@@ -279,7 +249,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     if (laststate < statelen)
     {
       /* Copy bytes from our previously decoded buffer. */
-      bytes = MIN (buflen - j, statelen - laststate);
+      bytes = MINIMUM (buflen - j, statelen - laststate);
       MEMCPY (buf + j, statebuf + laststate, bytes);
       j += bytes;
       laststate += bytes;
@@ -300,6 +270,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     count = std_fgetc (fp);
     if (count == EOF)
     {
+      if (statebuf)
+	free(statebuf);
       return j / datasize;
     }
 
@@ -324,6 +296,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
       /* Fill the buffer with the next value. */
       if (std_fread (p, datasize, 1, fp) != 1)
       {
+	if (statebuf)
+	  free(statebuf);
         return j / datasize;
       }
 
@@ -337,8 +311,10 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     else
     {
       /* Read in the buffer. */
-      if (std_fread (p, bytes, 1, fp) != 1)
+      if (std_fread (p, bytes, 1, fp) != 1) {
+	free(statebuf);
         return j / datasize;
+      }
     }
 
     /* We may need to copy bytes from the state buffer. */
@@ -347,6 +323,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     else
       j += bytes;
   }
+  if (statebuf)
+    free(statebuf);
   return nelems;
 }
 
@@ -486,12 +464,11 @@ static unsigned char c5to8bit( unsigned char v )
 static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 {
   int width, height, bpp, abpp, pbpp, bypp;
-  int i, j, k;
-  int pelbytes=0, npels, read_so_far=0, rle=0;
+  int pelbytes=0, rle=0;
   unsigned char *cmap=NULL, *data;
   int itype=0;
   int really_no_alpha = 0;
-  ptrdiff_t pels;
+  ptrdiff_t pels, npels, read_so_far = 0;
   ptrdiff_t (*myfread)(unsigned char *, size_t, size_t, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
@@ -508,7 +485,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   abpp = hdr->descriptor & TGA_DESC_ABITS;
   if (hdr->imageType == TGA_TYPE_COLOR ||
       hdr->imageType == TGA_TYPE_COLOR_RLE)
-    pbpp = MIN (bpp / 3, 8) * 3;
+    pbpp = MINIMUM (bpp / 3, 8) * 3;
   else if (abpp < bpp)
     pbpp = bpp - abpp;
   else
@@ -526,15 +503,22 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     really_no_alpha = 1;
   }
 
+
+  if((double)width * (double)height * bpp  > (double)INT_MAX )
+    Pike_error("Too large image (width * height * bpp overflows)\n");
+
+
   switch (hdr->imageType)
   {
    case TGA_TYPE_MAPPED_RLE:
      rle = 1;
+     /* FALL_THROUGH */
+
    case TGA_TYPE_MAPPED:
      itype = INDEXED;
 
      /* Find the size of palette elements. */
-     pbpp = MIN (hdr->colorMapSize / 3, 8) * 3;
+     pbpp = MINIMUM (hdr->colorMapSize / 3, 8) * 3;
      if (pbpp < hdr->colorMapSize)
        abpp = hdr->colorMapSize - pbpp;
      else
@@ -547,12 +531,16 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
    case TGA_TYPE_GRAY_RLE:
      rle = 1;
+     /* FALL_THROUGH */
+
    case TGA_TYPE_GRAY:
      itype = GRAY;
      break;
 
    case TGA_TYPE_COLOR_RLE:
      rle = 1;
+     /* FALL_THROUGH */
+
    case TGA_TYPE_COLOR:
      itype = RGB;
      break;
@@ -577,7 +565,6 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   {
     /* We need to read in the colormap. */
     int index, length, colors;
-    int tmp;
 
     index = (hdr->colorMapIndexHi << 8) | hdr->colorMapIndexLo;
     length = (hdr->colorMapLengthHi << 8) | hdr->colorMapLengthLo;
@@ -587,10 +574,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
     pelbytes = ROUNDUP_DIVIDE (hdr->colorMapSize, 8);
     colors = length + index;
-    cmap = malloc (colors * pelbytes);
-
-    /* Zero the entries up to the beginning of the map. */
-    MEMSET (cmap, 0, index * pelbytes);
+    cmap = xcalloc (colors * pelbytes, 1);
 
     /* Read in the rest of the colormap. */
     if (std_fread (cmap + (index * pelbytes), pelbytes, length, fp) != length)
@@ -747,14 +731,11 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   struct buffer buf;
   struct buffer obuf;
   struct buffer *fp = &buf;
-  int i, j, k;
-  int pelbytes, bsize;
-  int transparent, status;
   struct tga_header hdr;
+  ONERROR err;
   ptrdiff_t (*myfwrite)(unsigned char *, size_t, size_t,
 			struct buffer *);
 
-  unsigned char *data;
 
   if(alpha &&
      (alpha->xsize != img->xsize ||
@@ -769,7 +750,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   /* We like our images top-to-bottom, thank you! */
   hdr.descriptor |= TGA_DESC_VERTICAL;
 
-  /* Choose the imageType based on alpha precense and compression options. */
+  /* Choose the imageType based on alpha presence and compression options. */
 
   hdr.bpp = 24;
   hdr.imageType = TGA_TYPE_COLOR;
@@ -797,24 +778,19 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   hdr.heightHi = (height >> 8);
 
   /* Mark our save ID. */
-  hdr.idLength = DO_NOT_WARN(strlen(SAVE_ID_STRING));
+  hdr.idLength = DO_NOT_WARN((unsigned INT32)strlen(SAVE_ID_STRING));
 
   buf.len = width*height*(alpha?4:3)+strlen(SAVE_ID_STRING)+sizeof(hdr)+65535;
   buf.str = xalloc(buf.len);
-  obuf.len = buf.len;
-  obuf.str = buf.str;
+  obuf = buf;
+  SET_ONERROR(err, free, obuf.str);
 
   /* Just write the header. */
   if (std_fwrite((void *)&hdr, sizeof (hdr), 1, fp) != 1)
-  {
-    free(obuf.str);
-    Pike_error("Internal error: Out of space in buffer.\n");
-  }
+    Pike_error(msg_out_of_mem);
+
   if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
-  {
-    free(obuf.str);
-    Pike_error("Internal error: Out of space in buffer.\n");
-  }
+    Pike_error(msg_out_of_mem);
 
   /* Allocate a new set of pixels. */
 
@@ -829,13 +805,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     {
       rgb_group *as = alpha->img;
       pixsize++;
-      p = data = malloc( width*height*4 );
+      p = data = xalloc( width*height*4 );
       datalen = width*height*4;
-      if(!data)
-      {
-        free(obuf.str);
-        Pike_error("Out of memory while encoding image\n");
-      }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
         {
@@ -846,13 +817,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 	  as++;
         }
     } else {
-      p = data = malloc( width*height*3 );
+      p = data = xalloc( width*height*3 );
       datalen = width*height*3;
-      if(!data)
-      {
-        free(obuf.str);
-        Pike_error("Out of memory while encoding image\n");
-      }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
         {
@@ -865,12 +831,13 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 	datalen/pixsize)
     {
       free(data);
-      free(obuf.str);
-      Pike_error("Internal error: Out of space in buffer.\n");
+      Pike_error(msg_out_of_mem);
     }
     free(data);
   }
-  obuf.len -= buf.len;
+  UNSET_ONERROR(err);
+
+  obuf.len -= fp->len;
   return obuf;
 }
 
@@ -966,7 +933,7 @@ void image_tga_encode( INT32 args )
   if (!args)
     Pike_error("Image.TGA.encode: too few arguments\n");
 
-  if (Pike_sp[-args].type!=PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       !(img=(struct image*)
         get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.TGA.encode: illegal argument 1\n");
@@ -976,15 +943,15 @@ void image_tga_encode( INT32 args )
 
   if (args>1)
   {
-    if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.TGA.encode: illegal argument 2\n");
 
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_alpha);
     f_index(2);
-    if (!(Pike_sp[-1].type==PIKE_T_INT
-          && Pike_sp[-1].subtype==NUMBER_UNDEFINED))
-      if (Pike_sp[-1].type!=PIKE_T_OBJECT ||
+    if (!(TYPEOF(Pike_sp[-1]) == PIKE_T_INT
+          && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED))
+      if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
           !(alpha=(struct image*)
             get_storage(Pike_sp[-1].u.object,image_program)))
         Pike_error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");
@@ -1014,12 +981,10 @@ void image_tga_encode( INT32 args )
 static struct program *image_encoding_tga_program=NULL;
 void init_image_tga( )
 {
-   pike_add_function( "_decode", image_tga__decode,
-                 "function(string:mapping(string:object))", 0);
-   pike_add_function( "decode", image_tga_decode,
-                 "function(string:object)", 0);
-   pike_add_function( "encode", image_tga_encode,
-                 "function(object,mapping|void:string)", 0);
+   ADD_FUNCTION( "_decode", image_tga__decode, tFunc(tStr,tMap(tStr,tObj)), 0);
+   ADD_FUNCTION( "decode", image_tga_decode, tFunc(tStr,tObj), 0);
+   ADD_FUNCTION( "encode", image_tga_encode,
+		 tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
 
    param_alpha=make_shared_string("alpha");
    param_raw=make_shared_string("raw");

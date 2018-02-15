@@ -1,0 +1,21 @@
+START_MARKER
+
+define(graph_test, [[test_do([[
+constant data = ([ "data":
+		   ({ ({1.0}), ({2.0}), ({1.0}), ({2.0}) }),
+                ]);
+mapping verify = copy_value(data);
+Image.Image img = Graphics.Graph.$1(data);
+if(!img)
+  error("No image.\n");
+if(!equal(data,verify))
+  error("Destructive change of argument data.\n");
+]])]])
+
+graph_test(bars)
+graph_test(pie)
+graph_test(sumbars)
+graph_test(line)
+graph_test(norm)
+graph_test(graph)
+END_MARKER

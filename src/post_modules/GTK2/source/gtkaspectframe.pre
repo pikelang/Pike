@@ -1,0 +1,50 @@
+/* -*- C -*- */
+class GTK2.AspectFrame;
+inherit GTK2.Frame;
+
+//! A W(Frame) widget  that always maintain a specified ratio
+//! between width and height. width/height == ratio
+//!
+//! IMG: GTK2.AspectFrame("Title",0.5,0.5,0.4,0)->add( GTK2.Label("Wrong aspect"))->set_size_request(200,200)
+
+//! Properties:
+//! int obey-child
+//! float ratio
+//! float xalign
+//! float yalign
+
+void set(float xalign, float yalign, float ratio, int obey_child);
+//! Set the aspec values. Arguments are xalign, yalign, ratio, obey_child
+//! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
+//! lower (or rightmost). If 'obey_child' is true, the frame will use the
+//! aspect ratio of it's (one and only) child widget instead of 'ratio'.
+
+void create(mapping|string label, ?float xalign, ?float yalign,
+	    ?float ratio, ?int obey_child)
+//! Create a new frame. Arguments are label, xalign, yalign, ratio, obey_child
+//! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
+//! lower (or rightmost). If 'obey_child' is true, the frame will use the
+//! aspect ratio of it's (one and only) child widget instead of 'ratio'.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+    struct pike_string *label;
+    FLOAT_TYPE xalign=0.5,yalign=0.5,ratio=1.0;
+    INT_TYPE obey_child=1;
+    GtkWidget *gaf;
+    get_all_args("create",args,"%t.%f%f%f%i",&label,&xalign,&yalign,
+			&ratio,&obey_child);
+    ref_push_string(label);
+    f_string_to_utf8(1);
+    gaf=gtk_aspect_frame_new(CGSTR0(Pike_sp[-1].u.string),
+                             xalign,yalign,ratio,obey_child);
+    pop_stack();
+    THIS->obj=G_OBJECT(gaf);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_ASPECT_FRAME);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+

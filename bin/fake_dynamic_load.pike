@@ -1,11 +1,13 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
-#define PC Parser.C
+string srcdir;
+int errors = 0;
 
-#ifdef OLD
-import ".";
-#define PC .C
-#endif
+void report_error (string msg, mixed... args)
+{
+  werror (msg, @args);
+  errors++;
+}
 
 #if 0
 string strip(string s)
@@ -42,16 +44,13 @@ string my_dirname(string s)
 
 string low_strip_other_files(string data, string s)
 {
-#if 0
-  return data;
-#endif
 #if 1
   /* Filter out data from system include files, this should
    * speed up operation significantly
    */
   if(!data)
   {
-    werror("File %s missing?\n",s);
+    report_error("File %s missing?\n",s);
     return 0;
   }
 
@@ -59,7 +58,7 @@ string low_strip_other_files(string data, string s)
   array tmp=data/"\n#";
   string ret=tmp[0];
   string current_dir=getcwd();
-  string source_dir=fixdir(getenv("SRCDIR"));
+  string source_dir=fixdir(srcdir);
   string target_dir=my_dirname(s);
   int on=1;
 
@@ -98,7 +97,7 @@ string low_strip_other_files(string data, string s)
 #if 0
   if(!data)
   {
-    werror("File %s missing?\n",s);
+    werror_error("File %s missing?\n",s);
     return 0;
   }
 
@@ -125,20 +124,12 @@ string low_strip_other_files(string data, string s)
 
 string my_read_file(string s)
 {
-  if(getenv("SRCDIR"))
+  if(srcdir)
   {
-    string tmp=combine_path(getenv("SRCDIR"),s);
+    string tmp=combine_path(srcdir, s);
     if(Stdio.file_size(tmp) != -1)  s=tmp;
   }
   return Stdio.read_file(s);
-}
-
-
-array flatten(array a)
-{
-  array ret=({});
-  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
-  return ret;
 }
 
 string arg(array x, int num)
@@ -149,7 +140,6 @@ string arg(array x, int num)
 
 array(string) fixarg(array s)
 {
-//  werror("%O\n",s);
   if(sizeof(s)>1)
   {
     switch(arg(s,-1))
@@ -183,13 +173,13 @@ array(string) fixarg(array s)
     }
   }
 
-  return flatten(s);
+  return Array.flatten(s);
 }
 
 string implode(array(string) s)
 {
   string ret=" ";
-  foreach(flatten(s), mixed s)
+  foreach(Array.flatten(s), mixed s)
     {
       switch(ret[-1])
       {
@@ -211,14 +201,24 @@ string implode(array(string) s)
   return ret[1..];
 }
 
+array(string|int) parse_declarator (array|Parser.C.Token decl)
+{
+  if (!arrayp (decl))
+    return ({decl->file + ":" + decl->line, (string) decl, 0});
+  int i, ptrs = 0;
+  for (i = 1; i < sizeof (decl); i++)
+    if (decl[i] == "*") ptrs++;
+    else break;
+  if (i != sizeof (decl) - 2) return 0;
+  array(string|int) res = parse_declarator (decl[i]);
+  if (arrayp (res)) res[2] += ptrs;
+  return res;
+}
 
 array classify(array s)
 {
-//  werror("%O\n",s);
-//  werror("Classifying..");
   array data=({});
   s=s/({"PMOD_PROTO"}) * ({ "PMOD_EXPORT","PPROTO" });
-//  werror("CLASSIFY %d\n",sizeof(s/ ({"PMOD_EXPORT"})));
   foreach((s/ ({"PMOD_EXPORT"}))[1..], array expr)
     {
       int a;
@@ -258,10 +258,8 @@ array classify(array s)
       }
       expr=expr[..a-1];
       if(!sizeof(expr)) continue;
-//      werror("Considering %O\n",expr[0..4]);
       while(1)
       {
-//	werror("FN: %O\n",expr);
 	switch((string)expr[0])
 	{
 	  case "extern":
@@ -277,30 +275,37 @@ array classify(array s)
 	  case "struct":
 	  case "union":
 	  case "enum":
-//	    werror("%O\n",expr);
 	    if(sizeof(expr) <= 2) break; /* Forward decl */
 	  default:
-//	    werror("  %O\n",expr);
 	    int ptr=sizeof(expr)-1;
 	    while(arrayp(expr[ptr]) && expr[ptr][0]=='[') ptr--;
 
 	    if(arrayp(expr[ptr]))
 	    {
-	      if("(" != (string) (expr[ptr][0]) ) break; /* Ignore structs and unions */
+	      // Ignore structs and unions
+	      if("(" != (string) (expr[ptr][0]) ) break;
 
-//	      werror("GURKA!\n");
+	      if (sizeof (expr) < 3) {
+		report_error ("%s:%d: Don't know how to parse declaration %s\n",
+			      expr[0]->file, expr[0]->line,
+			      Parser.C.simple_reconstitute(expr));
+		break;
+	      }
 	      array args=map(expr[ptr][1..sizeof(expr[ptr])-2]/({","}),fixarg);
 	      string rettype=implode(expr[..sizeof(expr)-3]);
-//	      werror("%O\n",expr);
-	      mixed name=expr[-2];
-	      string location;
-	      if(arrayp(name))
-	      {
-		location=name[0]->file+":"+name[0]->line;
-		name=PC.simple_reconstitute(name);
-	      }else{
-		location=name->file+":"+name->line;
-		name=(string)name;
+	      int ptrs;
+	      mixed declarator=expr[-2];
+	      string location, name;
+	      if (array(string|int) res = parse_declarator (declarator))
+		[location, name, ptrs] = res;
+	      else {
+		if (arrayp (declarator))
+		  location=declarator[0]->file+":"+declarator[0]->line;
+		else
+		  location=declarator->file+":"+declarator->line;
+		report_error ("%s: Don't know how to parse declarator %s\n",
+			      location, implode(declarator));
+		break;
 	      }
 	      data+=({ ([
 		"class": "function",
@@ -309,11 +314,16 @@ array classify(array s)
 		"name": name,
 		"args": args,
 		"post_type":implode(expr[ptr+1..]),
-		"ptrtype":sprintf("%s(*)(%s)",rettype,implode(args*({","}))),
-		"proto":sprintf("%s %s(%s)",rettype,name,implode(args*({","}))),
+		"ptrtype":sprintf("%s(*%s)(%s)",
+				  rettype,
+				  "*" * ptrs,
+				  implode(args*({","}))),
+		"proto":sprintf("%s %s(%s)",
+				rettype,
+				arrayp (declarator) ? implode (declarator) : declarator,
+				implode(args*({","}))),
 		]) });
 	    }else{
-//	      werror("FNORD\n");
 	      string type=implode(expr[..sizeof(expr)-2]);
 	      data+=({ ([
 		"arg_type":"",
@@ -339,48 +349,60 @@ array prototypes=({});
 
 void low_process_file(mixed data, string file)
 {
-  if(mixed err=catch {
-    data=low_strip_other_files(data,file);
-    if(!data || !sizeof(data)) return;
-    data=PC.split(data);
-    data=PC.tokenize(data,file);
-    if(!data || !sizeof(data)) return;
-    data=PC.hide_whitespaces(data);
-    data=PC.strip_line_statements(data);
-    data=PC.group(data);
-    if(sizeof(data) && strlen( (string) (data[0]) ))
+  data=low_strip_other_files(data,file);
+  if(!data || !sizeof(data)) return;
+  data=Parser.C.split(data);
+  data=Parser.C.tokenize(data,file);
+  if(!data || !sizeof(data)) return;
+  data=Parser.C.hide_whitespaces(data);
+  data=Parser.C.strip_line_statements(data);
+  data=Parser.C.group(data);
+  if(sizeof(data) && sizeof( (string) (data[0]) ))
+  {
+    switch(((string)data[0])[0] )
     {
-      switch(((string)data[0])[0] )
-      {
-	case ' ': case '\n': case '\t': case '\14': case '\r':
-	  data=data[1..];
-      }
+    case ' ': case '\n': case '\t': case '\14': case '\r':
+      data=data[1..];
     }
-    data=classify(data);
-    prototypes+=data;
-  }) throw(err);
-//  werror("%s Done\n",file);
+  }
+  data=classify(data);
+  prototypes+=data;
 }
 
 void process_file(string file)
 {
-//  werror("Processing %s\n",file);
   low_process_file(my_read_file(file), file);
 }
 
-int main(int argc, string *argv)
+constant doc = #"
+  Generates prototype header files needed to get dynamic loading on
+  Microsoft Windows. This tool is used by the build system.
+  Syntax: fake_dynamic_load.pike --cpp [arguments] command
+          fake_dynamic_load.pike [arguments] files
+  When \"command\" is executed it is expected to return preprocessed
+  source code, e.g. \"gcc -E -I. -DFOO=BAR gazonk.c\".
+
+  Arguments: --protos       Only generate prototypes
+             --cpp          Execute the input.
+             --threads=num  Number of threads. Defaults to 1.
+             --srcdir=dir   Source dir. Defaults to $SRCDIR
+             --help         Shows this message.
+";
+
+int main(int argc, array(string) argv)
 {
   int protos_only;
   int run_cpp;
   int num_threads=1;
-  /* Hmm, threaded operation doesn't seem to work, maybe
-   * my windoze machine needs more memory?
-   */
+  // Hmm, threaded operation doesn't seem to work, maybe
+  // my windoze machine needs more memory?
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"protos",Getopt.NO_ARG,({"--protos"})}),
     ({"run_cpp",Getopt.NO_ARG,({"--cpp"})}),
     ({"threads",Getopt.HAS_ARG,({"--threads"})}),
+    ({"srcdir",Getopt.HAS_ARG,({"--srcdir"})}),
+    ({"help",Getopt.NO_ARG,({"--help"})}),
     ),1),array opt)
   {
     switch(opt[0])
@@ -388,15 +410,19 @@ int main(int argc, string *argv)
       case "protos": protos_only++; break;
       case "run_cpp": run_cpp++; break;
       case "threads": num_threads=(int)opt[1]; break;
+      case "srcdir": srcdir=opt[1]; break;
+      case "help": write(doc); return 0;
     }
   }
 
   argv=Getopt.get_args(argv,1);
 
-  if (!getenv("SRCDIR")) {
+  if (!srcdir && !getenv("SRCDIR")) {
     werror("$SRCDIR has not been set!\n");
-    exit(1);
+    return 1;
   }
+  else
+    srcdir = getenv("SRCDIR");
 
   if(run_cpp)
   {
@@ -441,8 +467,8 @@ int main(int argc, string *argv)
   {
     foreach(prototypes, mixed expr)
       write("PMOD_PROTO %s;\n",expr->proto);
-    werror("[ %d symbol%s exported ]\n", sizeof(prototypes),sizeof(prototypes)==1?"":"s");
-    exit(0);
+    werror("[ %d symbol%s exported ]\n",
+	   sizeof(prototypes),sizeof(prototypes)==1?"":"s");
   }else{
     string ret="/* Fake prototypes */\n";
     foreach(prototypes, mixed expr)
@@ -469,12 +495,14 @@ int main(int argc, string *argv)
 		     num++);
 	
 	if(expr->post_type!="")
-	  werror("NOSUPP: %s %s %s\n",expr->type,expr->name,expr->post_type);
+	  report_error("NOSUPP: %s %s %s\n",expr->type,expr->name,expr->post_type);
       }
     
     Stdio.stdout->write(ret);
     
-    werror("[ %d symbol%s exported ]\n", sizeof(prototypes),sizeof(prototypes)==1?"":"s");
-    if(!sizeof(prototypes)) exit(1);
+    werror("[ %d symbol%s exported ]\n",
+	   sizeof(prototypes),sizeof(prototypes)==1?"":"s");
   }
+
+  return errors;
 }

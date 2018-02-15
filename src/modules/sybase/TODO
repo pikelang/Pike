@@ -1,6 +1,5 @@
 # TODO file for the sybase pike driver
-# by Francesco Chemolli, (C) Roxen IS
-# $Id: TODO,v 1.1 2000/03/26 20:43:08 kinkie Exp $
+# by Francesco Chemolli
 
 Improve the checks for the sybase-libraries, and use a lock to serialize
 all accesses unless the reentrant (thread-hot) libraries are found. This

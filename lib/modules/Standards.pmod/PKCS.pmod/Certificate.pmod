@@ -1,12 +1,9 @@
-/* certificate.pmod
- *
- * Handle pkcs-6 and pkcs-10 certificates and certificate requests.
- *
- */
 
-/* ASN.1 structures:
+//! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
 #pike __REAL_VERSION__
+
+/* ASN.1 structures:
 
 CertificationRequestInfo ::= SEQUENCE {
   version Version,
@@ -18,11 +15,11 @@ Version ::= INTEGER
 
 Attributes ::= SET OF Attribute
 
--- From the last section of PKCS-9. 
+-- From the last section of PKCS-9.
 Attribute ::= SEQUENCE {
   attribyteType ::= OBJECT IDENTIFIER,
   attributeValue ::= SET OF ANY }
-  
+
 CertificationRequest ::= SEQUENCE {
   certificationRequestInfo CertificationRequestInfo,
   signatureAlgorithm SignatureAlgorithmIdentifier,
@@ -126,27 +123,20 @@ Version ::= INTEGER
 
 */
 
-#if __VERSION__ >= 0.6
-import ".";
-#endif /* __VERSION__ >= 0.6 */
-
-#if constant(Standards.ASN1.Types.asn1_sequence)
+#if constant(Standards.ASN1.Types)
 
 import Standards.ASN1.Types;
-import Identifiers;
+import .Identifiers;
 
 class AttributeValueAssertion
 {
-  import Standards.ASN1.Types;
-  inherit asn1_sequence;
+  inherit Sequence;
   void create(mapping(string:object) types,
 	      string type,
 	      object value)
     {
-      if (!types[type])
-	throw( ({ sprintf("AttributeValueAssertion: "
-			  "Unknown attribute type '%s'\n",
-			  type), backtrace() }) );
+      if (!objectp(types[type]))
+	error("Unknown attribute type '%s':%O\n", type, types[type]);
       ::create( ({ types[type], value }) );
     }
 }
@@ -154,58 +144,140 @@ class AttributeValueAssertion
 /* RelativeDistinguishedName */
 class attribute_set
 {
-  import Standards.ASN1.Types;
-  inherit asn1_set;
+  inherit Set;
 
   void create(mapping(string:object) types, mapping(string:object) pairs)
-    {
-      ::create(Array.map(indices(pairs),
-			 lambda(string s, mapping m, mapping t)
-			 {
-			   return AttributeValueAssertion(t, s, m[s]);
-			 },
-			   pairs, types));
-    }
+  {
+    ::create(map(indices(pairs),
+		 lambda(string s, mapping m, mapping t) {
+		   return AttributeValueAssertion(t, s, m[s]);
+		 },
+		 pairs, types));
+  }
 }
 
-object build_distinguished_name(mapping(string:object) ... args)
+//!
+Sequence build_distinguished_name(mapping(string:object) ... args)
 {
-  return asn1_sequence(Array.map(args, lambda(mapping rdn)
-				 {
-				   return attribute_set(
-				     Identifiers.at_ids, rdn);
-				 } ));
+  return Sequence(map(args, lambda(mapping rdn) {
+			      return attribute_set(
+				.Identifiers.at_ids, rdn);
+			    } ));
+}
+
+Sequence decode_pem_certificate(string cert)
+{
+
+}
+
+//! Return the certificate issuer RDN from a certificate string.
+//!
+//! @param cert
+//! A string containing an X509 certificate.
+//!
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
+//!
+//! @returns
+//!  An Standards.ASN1.Sequence object containing the certificate issuer
+//!  Distinguished Name (DN).
+Sequence get_certificate_issuer(string cert)
+{
+  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
+}
+
+//! Converts an RDN (relative distinguished name) Seqeunce object to a
+//! human readable string in X500 format.
+//!
+//! @param cert
+//! A string containing an X509 certificate.
+//!
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
+//!
+//! @returns
+//!  A string containing the certificate issuer
+//!  Distinguished Name (DN) in human readable X500 format.
+//!
+//! @note
+//!  We don't currently handle attributes with multiple values, not
+//!  all attribute types are understood.
+string get_dn_string(Sequence dnsequence)
+{
+  string dn="";
+  array rdns=({});
+
+  foreach(reverse(dnsequence->elements), Set att)
+  {
+    foreach(att->elements, Sequence val)
+    {
+      array value = ({});
+      string t = short_name_ids[val->elements[0]];
+      string v = val->elements[1]->value;
+
+      // we must escape characters now.
+      v = replace(v, 
+          ({",", "+", "\"", "\\", "<", ">", ";"}), 
+          ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}) );
+
+      if(v[0..0] == " ")
+         v="\\" + v;
+      else if(v[0..0] == "#")
+         v="\\" + v;
+
+      if(v[(sizeof(v)-1)..(sizeof(v)-1)] == " ")
+         v=v[0..(sizeof(v)-2)] + "\\ ";
+
+      rdns += ({ (t + "=" + v) });
+    }        
+  }
+  
+  dn = rdns * ",";
+  return dn;  
+}
+
+//! Return the certificate subject RDN from a certificate string.
+//!
+//! @param cert
+//! A string containing an X509 certificate.
+//!
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
+//!
+//! @returns
+//!  An Standards.ASN1.Sequence object containing the certificate subject
+//!  Distinguished Name (DN).
+Sequence get_certificate_subject(string cert)
+{
+  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[5];
 }
 
 class Attribute
 {
-  import Standards.ASN1.Types;
-  inherit asn1_sequence;
+  inherit Sequence;
 
   void create(mapping(string:object) types, string type,
 	      array(object) v)
-    {
-      if (!types[type])
-	throw( ({ sprintf("Attribute: "
-			  "Unknown attribute type '%s'\n",
-			  type), backtrace() }) );
-      ::create( ({ types[type], asn1_set(v) }) );
-    }
+  {
+    if (!types[type])
+      error( "Unknown attribute type '%s'\n", type);
+    ::create( ({ types[type], Set(v) }) );
+  }
 }
 
 class Attributes
 {
-  import Standards.ASN1.Types;
-  inherit asn1_set;
+  inherit Set;
 
   void create(mapping(string:object) types, mapping(string:array(object)) m)
-    {
-      ::create(Array.map(indices(m),
-			 lambda(string field, mapping m, mapping t)
-			 {
-			   return Attribute(t, field, m[field]);
-			 }, m, types));
-    }
+  {
+    ::create(map(indices(m),
+		 lambda(string field, mapping m, mapping t) {
+		   return Attribute(t, field, m[field]);
+		 }, m, types));
+  }
 }
-      
+
+#else
+constant this_program_does_not_exist=1;
 #endif

@@ -3,10 +3,12 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-/* @(#) $Id: gz_test.c,v 1.5 2000/12/05 21:08:23 per Exp $ */
-
 #include <stdio.h>
 #include <zlib.h>
+
+#ifndef OF
+# define OF _Z_OF /* weird gentoo(?) zlib change */
+#endif
 
 #ifdef STDC
 #  include <string.h>

@@ -1,13 +1,13 @@
 /*
- * $Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $
- *
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -15,21 +15,25 @@ RCSID("$Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
+#include "module.h"
 
-#include "module_magic.h"
+#define GLUT_API_VERSION 4
 
 #ifdef HAVE_LIBGLUT
 #ifdef HAVE_GL_GLUT_H
-#define GLUT_API_VERSION 4
 #include <GL/glut.h>
+#else
+#ifdef HAVE_GLUT_GLUT_H
+#include <GLUT/glut.h>
+#endif
 #endif
 #endif
 
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBGLUT
-#ifdef HAVE_GL_GLUT_H
+#if defined(HAVE_GL_GLUT_H) || defined(HAVE_GLUT_GLUT_H)
   extern void add_auto_funcs_glut(void);
   add_auto_funcs_glut();
 #endif
@@ -37,7 +41,6 @@ void pike_module_init( void )
 }
 
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
-

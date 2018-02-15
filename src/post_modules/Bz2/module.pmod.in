@@ -1,0 +1,35 @@
+#pike __REAL_VERSION__
+
+inherit @module@ : Bz2;
+
+#if constant(@module@.File)
+
+#define DATA_CHUNK_SIZE 64*1024
+
+class File
+{
+  inherit Bz2::File;
+
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
+  {
+    return lambda(){ return read(nbytes); };
+  }
+
+  String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
+  //! Returns an iterator that will loop over the lines in this file. 
+  //! If trim is true, all @tt{'\r'@} characters will be removed from
+  //! the input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
+    // This one is about twice as fast, but it's way less flexible.
+    return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
+  }
+}
+
+#endif

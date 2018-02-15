@@ -1,0 +1,231 @@
+AC_INIT(com.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+OLD_LIBS=$LIBS
+OLD_LDFLAGS=$LDFLAGS
+OLD_CPPFLAGS=$CPPFLAGS
+OLD_LIBPATH=$LIBPATH
+COM_LIBS=""
+COM_LIBPATH=""
+COM_AVAILABLE=0
+
+PIKE_FEATURE_WITHOUT(COM)
+AC_ARG_WITH(com,  [  --without-com       no support for COM],[],[with_com=yes])
+AC_ARG_WITH(com-include-dir, 
+	[  --with-com-include-dir=dir    look for header-files in dir],
+	[pike_com_user_include_directory=$withval])
+AC_ARG_WITH(com-lib-dir, 
+	[  --with-com-lib-dir=dir    look for COM libs in dir],
+	[pike_com_user_lib_directory=$withval])
+
+if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
+
+  PIKE_FEATURE_NODEP(COM)
+  AC_MSG_CHECKING(which operating system we are using)
+  AC_CACHE_VAL(pike_cv_com_sysos, [
+    pike_cv_com_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
+    case "$pike_cv_com_sysos" in
+      sunos)
+        case "`uname -r`" in
+          5.*|6.*|7.*) pike_cv_com_sysos="solaris";
+        esac
+      ;;
+    esac
+  ])
+  AC_MSG_RESULT($pike_cv_com_sysos)
+
+  AC_MSG_CHECKING(which architecture we are using)
+  AC_CACHE_VAL(pike_cv_com_arch, [
+    if test "x$pike_cv_com_sysos" = xwindows_nt; then
+      uname=uname
+    else
+      uname=/usr/bin/uname
+    fi
+    if test aix = "$pike_cv_com_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
+      case "$aix_cputype" in
+	PowerPC*) pike_cv_com_arch=powerpc;;
+	POWER*) pike_cv_com_arch=rs6000;;
+	*) pike_cv_com_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
+      esac
+    else
+      if pike_cv_com_arch="`$uname -p || uname -p`"; then :; else pike_cv_com_arch=no; fi
+    fi
+
+    dnl Linux kluge
+
+    if test x"$pike_cv_com_arch" = xunknown; then
+      [pike_cv_com_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_com_arch)
+
+  AC_MSG_CHECKING(for working ls)
+  AC_CACHE_VAL(pike_cv_ls, [
+    pike_cv_ls=no
+    IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+    for ac_dir in $PATH; do
+      if test -x "$ac_dir"/ls && "$ac_dir"/ls . >/dev/null 2>&1; then
+        if "$ac_dir"/ls ./fnord/fnord/fnord/fnurkelfoo 2>/dev/null; then
+	  :
+	else
+	  pike_cv_ls="$ac_dir"/ls
+	fi
+      else
+	:
+      fi
+    done
+    IFS="$ac_save_ifs"
+    if test no = "$pike_cv_ls"; then
+      AC_MSG_ERROR([no working ls found!  Use --without-com])
+      exit 1
+    else
+      :
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_ls)
+  LS="$pike_cv_ls"
+
+  AC_MSG_CHECKING(for COM_HOME)
+
+  AC_CACHE_VAL(pike_cv_com_com_home, [[
+    if test "x$COM_HOME" = x; then
+      pike_cv_com_com_home=no
+    else
+      pike_cv_com_com_home="$COM_HOME"
+    fi
+  ]])
+  AC_MSG_RESULT($pike_cv_com_com_home)
+
+  AC_MSG_CHECKING(for COM libraries)
+  AC_CACHE_VAL(pike_cv_com_lib_dir, [
+    pike_cv_com_lib_dir=""
+    if test -z "$pike_com_user_lib_directory"; then
+      tmp_com_lib_dir="$pike_cv_com_com_home/lib"
+    else
+      tmp_com_lib_dir="$pike_com_user_lib_directory"
+    fi
+    for i in "$pike_cv_com_arch" \
+	     "." "../bin"; do
+      if test -d "$tmp_com_lib_dir/$i/." && "$LS" $tmp_com_lib_dir/$i/lib* >/dev/null 2>&1; then
+        pike_cv_com_lib_dir="$pike_cv_com_lib_dir$tmp_com_lib_dir/$i "
+      else
+	:
+      fi
+    done
+    if test -z "$pike_cv_com_lib_dir" ; then pike_cv_com_lib_dir=no; else
+      :
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_com_lib_dir)
+
+  if test "x$pike_cv_com_lib_dir" = xno; then :; else
+    echo Adding $pike_cv_com_lib_dir to the library search path.
+    for i in $pike_cv_com_lib_dir; do
+      LDFLAGS="-L$i -R$i ${LDFLAGS}"
+      COM_LIBPATH="${COM_LIBPATH}${COM_LIBPATH:+:}$i"
+#     LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
+    done
+    export LIBPATH
+  fi
+
+  AC_MSG_CHECKING(for the COM include directory)
+  AC_CACHE_VAL(pike_cv_com_include_dir, [
+    pike_cv_com_include_dir=no
+    for tmp_com_incdir in /usr/com* /usr/local/com* "$pike_cv_com_com_home" "$pike_com_user_include_directory"; do
+      if test -d $tmp_com_incdir/. && "$LS" "$tmp_com_incdir/include/objbase.h" >/dev/null 2>&1 ; then
+	 pike_cv_com_include_dir="$tmp_com_incdir/include"
+      else
+        if test -d $tmp_com_incdir/. -a -d $tmp_com_incdir/Headers/. &&\
+        	  "$LS" "$tmp_com_incdir/Headers/objbase.h" >/dev/null 2>&1 ; then
+	  pike_cv_com_include_dir="$tmp_com_incdir/Headers"
+	else
+	  :
+	fi
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_com_include_dir)
+
+  if test "x$pike_cv_com_include_dir" = xno; then :; else
+    echo "Adding $pike_cv_com_include_dir to the include search path."
+    CPPFLAGS="-I$pike_cv_com_include_dir ${CPPFLAGS}"
+    if test -d "$pike_cv_com_include_dir/$pike_cv_com_sysos/."; then
+      echo "Adding $pike_cv_com_include_dir/$pike_cv_com_sysos to the include search path."
+      CPPFLAGS="-I$pike_cv_com_include_dir/$pike_cv_com_sysos ${CPPFLAGS}"
+    else
+      :
+    fi
+    if test -d "$pike_cv_com_include_dir/$pike_cv_com_arch/."; then
+      echo "Adding $pike_cv_com_include_dir/$pike_cv_com_arch to the include search path."
+      CPPFLAGS="-I$pike_cv_com_include_dir/$pike_cv_com_arch ${CPPFLAGS}"
+    else
+      :
+    fi
+  fi
+
+  AC_CHECK_HEADERS(objbase.h winbase.h setjmp.h ole2.h)
+
+  pike_cv_com=no
+
+  if test "$ac_cv_header_objbase_h" = yes; then
+
+    AC_MSG_CHECKING([for CoCreateInstance])
+    AC_CACHE_VAL(ac_cv_lib_com_CoCreateInstance, [
+      ac_save_LIBS="$LIBS"
+      LIBS="-lole32 -loleaut32 $LIBS"
+      AC_TRY_LINK([#include <objbase.h>], dnl
+        [CoCreateInstance((REFCLSID)0,(LPUNKNOWN)0,(DWORD)0,(REFIID)0,(LPVOID*)0);], dnl
+        [ac_cv_lib_com_CoCreateInstance=yes], dnl
+        [ac_cv_lib_com_CoCreateInstance=no])
+      LIBS="$ac_save_LIBS"
+    ])
+    if test x"$ac_cv_lib_com_CoCreateInstance" = xyes; then
+      LIBS="-lole32 -loleaut32 $LIBS"
+      COM_LIBS="-lole32 -loleaut32 ${COM_LIBS}"
+      pike_cv_com=yes;
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+
+  else
+    :
+  fi
+
+  if test "x$pike_cv_com" = xno; then
+    LIBS="$OLD_LIBS"
+    CPPFLAGS="$OLD_CPPFLAGS"
+    LDFLAGS="$OLD_LDFLAGS"
+    COM_LIBS=""
+  else
+    PIKE_FEATURE_OK(COM)
+    AC_DEFINE(HAVE_COM)
+    COM_AVAILABLE=1
+    if test "x$pike_cv_com_com_home" = xno; then :; else
+      AC_DEFINE_UNQUOTED(COM_HOME, "${pike_cv_com_com_home}")
+    fi
+  fi
+
+  if test "x$COM_LIBPATH" = x; then :; else
+    AC_DEFINE_UNQUOTED(COM_LIBPATH, "${COM_LIBPATH}")
+  fi
+
+  true
+else
+  :
+fi
+
+# if test x"$pike_cv_sys_os" = xWindows_NT ; then
+#   COM_LIBS="-lole32 $COM_LIBS"
+# fi
+
+
+LIBPATH="$OLD_LIBPATH"
+
+AC_SUBST(LINKER_OPTIONS)
+AC_SUBST(COM_LIBS)
+AC_SUBST(COM_AVAILABLE)
+
+AC_OUTPUT(Makefile, echo FOO >stamp-h )

@@ -1,21 +1,13 @@
-#
-# $Id: Makefile.in,v 1.4 1999/11/18 07:59:37 hubbe Exp $
-#
-
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+VPATH=@srcdir@
 OBJS=jvm.o
 MODULE_LDFLAGS=@LDFLAGS@ @JAVA_LIBS@
 LINKER_OPTIONS=@LINKER_OPTIONS@
-
-DUMMY=module.pmod.in
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
-	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
-
 @dependencies@
+
+jvm.o: ntdl.c

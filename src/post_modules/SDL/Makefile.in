@@ -1,0 +1,13 @@
+@make_variables@
+VPATH=@srcdir@
+MODNAME=SDL
+OBJS=SDL.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+# Compatibility with stupid makes..
+SDL.o:$(SRCDIR)/SDL.c
+
+@dependencies@

@@ -1,0 +1,23 @@
+/* -*- C -*- */
+class GTK2.Hseparator;
+inherit GTK2.Separator;
+
+//! Simply creates a horizontal separator. No bells or whistles.
+//! IMG: GTK2.Hseparator()->set_size_request(300,3)
+
+void create(?mapping(string:mixed) props)
+//! Used to create a new hseparator widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_HSEPARATOR);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gh;
+    gh=gtk_hseparator_new();
+    THIS->obj=G_OBJECT(gh);
+  }
+  pgtk2__init_this_object();
+}
+

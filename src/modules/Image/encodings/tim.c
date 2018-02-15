@@ -1,21 +1,20 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "image_machine.h"
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-RCSID("$Id: tim.c,v 1.11 2000/12/01 08:10:06 hubbe Exp $");
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 
@@ -24,8 +23,6 @@ RCSID("$Id: tim.c,v 1.11 2000/12/01 08:10:06 hubbe Exp $");
 
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 
 extern struct program *image_program;
@@ -106,7 +103,7 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
      break;
    case MODE_CLUT8:
      while(cnt--) {
-       int i, cluti = (src[0])*2;
+       int cluti = (src[0])*2;
        unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
 
        dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
@@ -174,7 +171,7 @@ void img_tim_decode(INT32 args, int header_only)
   int n=0, hasalpha=0, bitpp=0, bsize=0;
   ptrdiff_t len;
   INT32 attr;
-  unsigned int h=0, w=0, i;
+  unsigned int h=0, w=0;
   
   get_all_args("Image.TIM._decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;
@@ -317,14 +314,14 @@ void img_tim_decode(INT32 args, int header_only)
 static void image_tim_f_decode(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("image"));
+   push_constant_text("image");
    f_index(2);
 }
 
 static void image_tim_f_decode_alpha(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("alpha"));
+   push_constant_text("alpha");
    f_index(2);
 }
 

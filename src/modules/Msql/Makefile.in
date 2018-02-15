@@ -1,16 +1,11 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 08:00:04 hubbe Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=msqlmod.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-MODULE_CPPFLAGS=@CPPFLAGS@
 MSQL_SUPPORTED=@MSQL_SUPPORTED@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
-
-spotless: clean
-	-rm config.*
 
 @dependencies@

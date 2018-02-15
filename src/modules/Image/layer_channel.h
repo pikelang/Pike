@@ -1,16 +1,23 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* template for operator layer row function */
 
 static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
 		    int len,double alpha)
 {
-#ifdef LAYER_DUAL
-   MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
-#endif
+  if (da != sa)
+    MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
+#define da da da /* protect */
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
+     if (d != s)
+       MEMCPY(d,s,sizeof(rgb_group)*len);
 #endif
       return; 
    }
@@ -25,22 +32,11 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
-	       L_CHANNEL_DO(*s,*l,*d,*la);
-	    else if (la->r==0 && la->g==0 && la->b==0)
-	    {
-	       *d=*s;
-	       *da=*sa;
-	    }
-	    else
-	    {
-	       L_CHANNEL_DO(*s,*l,*d,*la);
-	       ALPHA_ADD(s,d,d,sa,la,da,r);
-	       ALPHA_ADD(s,d,d,sa,la,da,g);
-	       ALPHA_ADD(s,d,d,sa,la,da,b);
-	    }
-
-	    l++; s++; la++; d++; sa++; da++;
+	   if (la->r==0 && la->g==0 && la->b==0)
+	     *d=*s;
+	   else
+	     L_CHANNEL_DO(*s,*l,*d,*la);
+	   l++; s++; la++; d++; sa++; 
 	 }
    }
    else
@@ -49,19 +45,14 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD(s,d,d,sa,la,da,r);
-	    ALPHA_ADD(s,d,d,sa,la,da,g);
-	    ALPHA_ADD(s,d,d,sa,la,da,b);
-	    l++; s++; d++; sa++; da++;
+	    l++; s++; d++; sa++; 
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD(s,d,d,sa,la,da,r);
-	    ALPHA_ADD(s,d,d,sa,la,da,g);
-	    ALPHA_ADD(s,d,d,sa,la,da,b);
-	    l++; s++; la++; d++; sa++; da++;
+	    l++; s++; la++; d++; sa++; 
 	 }
    }
 }
+#undef da

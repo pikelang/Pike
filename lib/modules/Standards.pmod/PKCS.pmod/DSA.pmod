@@ -1,58 +1,59 @@
-/* DSA.pmod
- *
- * DSA operations as defined in RFC-2459.
- *
- */
+//! DSA operations as defined in RFC-2459.
 
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
 
 #pike __REAL_VERSION__
+// #pragma strict_types
 
+#if constant(Crypto.DSA) && constant(Standards.ASN1.Types)
 
-#if constant(Gmp.mpz)
+import Standards.ASN1.Types;
 
-constant asn1_sequence = Standards.ASN1.Types.asn1_sequence;
-constant asn1_integer = Standards.ASN1.Types.asn1_integer;
-
-object algorithm_identifier(object|void dsa)
+//!
+Sequence algorithm_identifier(Crypto.DSA|void dsa)
 {
   return
-    dsa ? asn1_sequence( ({ .Identifiers.dsa_id,
-			    asn1_sequence( ({ asn1_integer(dsa->p),
-					      asn1_integer(dsa->q),
-					      asn1_integer(dsa->g) }) ) }) )
-    : asn1_sequence( ({ .Identifiers.dsa_id }) );
+    dsa ? Sequence( ({ .Identifiers.dsa_id,
+		       Sequence( ({ Integer(dsa->get_p()),
+				    Integer(dsa->get_q()),
+				    Integer(dsa->get_g()) }) ) }) )
+    : Sequence( ({ .Identifiers.dsa_id }) );
 }
 
-string public_key(object dsa)
+//!
+string public_key(Crypto.DSA dsa)
 {
-  return asn1_integer(dsa->y)->get_der();
+  return Integer(dsa->get_y())->get_der();
 }
 
 /* I don't know if this format interoperates with anything else */
-string private_key(object dsa)
+//!
+string private_key(Crypto.DSA dsa)
 {
-  return asn1_sequence(Array.map(
-    ({ dsa->p, dsa->q, dsa->g, dsa->y, dsa->x }),
-    asn1_integer))->get_der();
+  return Sequence(map( ({ dsa->get_p(), dsa->get_q(), dsa->get_g(),
+			  dsa->get_y(), dsa->get_x() }),
+		       Integer))->get_der();
 }
 
-object parse_private_key(string key)
+//!
+Crypto.DSA parse_private_key(string key)
 {
-    object a = Standards.ASN1.Decode.simple_der_decode(key);
+  Object a = Standards.ASN1.Decode.simple_der_decode(key);
 
-    if (!a
-	|| (a->type_name != "SEQUENCE")
-	|| (sizeof(a->elements) != 5)
-	|| (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
-      return 0;
+  if (!a
+      || (a->type_name != "SEQUENCE")
+      || (sizeof(a->elements) != 5)
+      || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
+    return 0;
 
-    object dsa = Crypto.dsa();
-    dsa->set_public_key(@ a->elements[..3]->value);
-    dsa->set_private_key(a->elements[4]->value);
+  Crypto.DSA dsa = Crypto.DSA();
+  dsa->set_public_key(@ a->elements[..3]->value);
+  dsa->set_private_key(a->elements[4]->value);
 
-    return dsa;
+  return dsa;
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

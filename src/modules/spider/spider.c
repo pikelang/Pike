@@ -1,8 +1,12 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "config.h"
 
-
-#include "machine.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -27,10 +31,19 @@
 #include <unistd.h>
 #endif
 
+/* Some <sys/mman.h>'s (eg AIX 5L/ia64) contain a #define of MAP_VARIABLE
+ * for use as the opposite of MAP_FIXED.
+ *
+ * "program.h" included indirectly below has a conflicting definition of
+ * MAP_VARIABLE.
+ */
+#ifdef MAP_VARIABLE
+#undef MAP_VARIABLE
+#endif /* MAP_VARIABLE */
+
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "machine.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
@@ -42,8 +55,7 @@
 #include "backend.h"
 #include "threads.h"
 #include "operators.h"
-
-RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
+#include "pike_security.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -51,10 +63,6 @@ RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
 #endif
 
 #include "defs.h"
-
-#ifdef HAVE_SYS_CONF_H
-#include <sys/conf.h>
-#endif
 
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
@@ -87,8 +95,7 @@ RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
 #include "dmalloc.h"
 
 
-/* This must be included last! */
-#include "module_magic.h"
+#define sp Pike_sp
 
 #define MAX_PARSE_RECURSE 102
 
@@ -103,28 +110,32 @@ void do_html_parse_lines(struct pike_string *ss,
 			 struct array *extra_args,
 			 int line);
 
+/*! @module spider
+ */
+
+/*! @decl array(mapping(string:int)|int) @
+ *!                     parse_accessed_database(string database)
+ */
 void f_parse_accessed_database(INT32 args)
 {
   ptrdiff_t cnum = 0, i;
-  int num = 0;
   struct array *arg;
   struct mapping *m;
 
-  if(!args) {
-    Pike_error("Wrong number of arguments to parse_accessed_database(string).\n");
-  }
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("parse_accessed_database",1);
 
-  if ((sp[-args].type != T_STRING) || (sp[-args].u.string->size_shift)) {
-    Pike_error("Bad argument 1 to parse_accessed_database(string(8)).\n");
+  if ((TYPEOF(sp[-args]) != T_STRING) || (sp[-args].u.string->size_shift)) {
+    Pike_error("Bad argument 1 to parse_accessed_database(string(0..255)).\n");
   }
 
   /* Pop all but the first argument */
   pop_n_elems(args-1);
 
-  push_string(make_shared_string("\n"));
+  push_constant_text("\n");
   f_divide(2);
 
-  if (sp[-1].type != T_ARRAY) {
+  if (TYPEOF(sp[-1]) != T_ARRAY) {
     Pike_error("Expected array as result of string-division.\n");
   }
 
@@ -135,8 +146,8 @@ void f_parse_accessed_database(INT32 args)
 
   for(i = 0; i < arg->size; i++)
   {
-    ptrdiff_t j=0,k=0;
-    char *s=0;
+    ptrdiff_t j,k;
+    char *s;
     s=(char *)(ITEM(arg)[i].u.string->str);
     k=(ITEM(arg)[i].u.string->len);
     for(j=k; j>0 && s[j-1]!=':'; j--);
@@ -157,37 +168,47 @@ void f_parse_accessed_database(INT32 args)
   f_aggregate(2);
 }
 
+/*! @decl string parse_html(string html, @
+ *!                         mapping(string:function(string, mapping(string:string), mixed ...:string|array)) tag_callbacks, @
+ *!                         mapping(string:function(string, mapping(string:string), string, mixed ...:string|array)) container_callbacks, @
+ *!                         mixed ... extras)
+ */
 void f_parse_html(INT32 args)
 {
   struct pike_string *ss;
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
+  ONERROR serr, cerr, eerr, sserr;
 
   if (args<3||
-      sp[-args].type!=T_STRING||
-      sp[1-args].type!=T_MAPPING||
-      sp[2-args].type!=T_MAPPING)
+      TYPEOF(sp[-args]) != T_STRING||
+      TYPEOF(sp[1-args]) != T_MAPPING||
+      TYPEOF(sp[2-args]) != T_MAPPING)
     Pike_error("Bad argument(s) to parse_html.\n");
 
   ss=sp[-args].u.string;
   if(!ss->len)
   {
     pop_n_elems(args);
-    push_text("");
+    push_empty_string();
     return;
   }
 
   add_ref(ss);
-
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);
+
+  SET_ONERROR(serr, do_free_mapping, single);
+  SET_ONERROR(cerr, do_free_mapping, cont);
+  SET_ONERROR(sserr, do_free_string, ss);
 
   if (args>3)
   {
     f_aggregate(args-3);
     add_ref(extra_args=sp[-1].u.array);
     pop_stack();
+    SET_ONERROR(eerr, do_free_array, extra_args);
   }
   else extra_args=NULL;
 
@@ -196,82 +217,110 @@ void f_parse_html(INT32 args)
   strings=0;
   do_html_parse(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args);
 
-  if (extra_args) free_array(extra_args);
+  if (extra_args) {
+    UNSET_ONERROR(eerr);
+    free_array(extra_args);
+  }
+
+
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
 
   free_mapping(cont);
   free_mapping(single);
   if(strings > 1)
     f_add(strings);
   else if(!strings)
-    push_text("");
+    push_empty_string();
 }
 
 
+/*! @decl string parse_html_lines(string html, @
+ *!                         mapping(string:function(string, mapping(string:string), int, mixed ...:string|array)) tag_callbacks, @
+ *!                         mapping(string:function(string, mapping(string:string), string, int, mixed ...:string|array)) container_callbacks, @
+ *!                         mixed ... extras)
+ */
 void f_parse_html_lines(INT32 args)
 {
   struct pike_string *ss;
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
-
+  ONERROR serr, cerr, eerr, sserr;
   if (args<3||
-      sp[-args].type!=T_STRING||
-      sp[1-args].type!=T_MAPPING||
-      sp[2-args].type!=T_MAPPING)
+      TYPEOF(sp[-args]) != T_STRING||
+      TYPEOF(sp[1-args]) != T_MAPPING||
+      TYPEOF(sp[2-args]) != T_MAPPING)
     Pike_error("Bad argument(s) to parse_html_lines.\n");
 
   ss=sp[-args].u.string;
   if(!ss->len)
   {
     pop_n_elems(args);
-    push_text("");
+    push_empty_string();
     return;
   }
 
-  sp[-args].type=T_INT;
+  mark_free_svalue (sp - args);
 
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);
-
+  
   if (args>3)
   {
     f_aggregate(args-3);
     add_ref(extra_args=sp[-1].u.array);
     pop_stack();
+    SET_ONERROR(eerr, do_free_array, extra_args);
   }
   else extra_args=NULL;
 
   pop_n_elems(3);
 /*   fprintf(stderr, "sp=%p\n", sp); */
-
+  SET_ONERROR(serr, do_free_mapping, single);
+  SET_ONERROR(cerr, do_free_mapping, cont);
+  SET_ONERROR(sserr, do_free_string, ss);
   strings=0;
   do_html_parse_lines(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args,1);
 
-  if (extra_args) free_array(extra_args);
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
+
+  if(extra_args) {
+    UNSET_ONERROR(eerr);
+    free_array(extra_args);
+  }
+
   free_mapping(cont);
   free_mapping(single);
   if(strings > 1)
     f_add(strings);
   else if(!strings)
-    push_text("");
+    push_empty_string();
 /*   fprintf(stderr, "sp=%p (strings=%d)\n", sp, strings); */
 }
 
-char start_quote_character = '\000';
-char end_quote_character = '\000';
+static char start_quote_character = '\000';
+static char end_quote_character = '\000';
 
+/*! @decl void set_end_quote(int quote)
+ */
 void f_set_end_quote(INT32 args)
 {
-  if(args < 1 || sp[-1].type != T_INT)
+  if(args < 1 || TYPEOF(sp[-1]) != T_INT)
     Pike_error("Wrong argument to set_end_quote(int CHAR)\n");
-  end_quote_character = sp[-1].u.integer;
+  end_quote_character = (char) sp[-1].u.integer;
 }
 
+/*! @decl void set_start_quote(int quote)
+ */
 void f_set_start_quote(INT32 args)
 {
-  if(args < 1 || sp[-1].type != T_INT)
+  if(args < 1 || TYPEOF(sp[-1]) != T_INT)
     Pike_error("Wrong argument to set_start_quote(int CHAR)\n");
-  start_quote_character = sp[-1].u.integer;
+  start_quote_character = (char) sp[-1].u.integer;
 }
 
 
@@ -350,7 +399,7 @@ done:
   if(strs > 1)
     f_add(strs);
   else if(!strs)
-    push_text("");
+    push_empty_string();
 
   SKIP_SPACE();
   return i;
@@ -366,7 +415,7 @@ ptrdiff_t push_parsed_tag(char *s, ptrdiff_t len)
   int is_SSI_tag;
 
   /* NOTE: At entry sp[-1] is the tagname */
-  is_SSI_tag = (sp[-1].type == T_STRING) &&
+  is_SSI_tag = (TYPEOF(sp[-1]) == T_STRING) &&
     (!strncmp(sp[-1].u.string->str, "!--", 3));
 
   /* Find X=Y pairs. */
@@ -500,14 +549,14 @@ void do_html_parse(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+n, j-n));
       f_lower_case(1);
-      add_ref(sval2.u.string = sp[-1].u.string);
-      sval2.type=T_STRING;
+      add_ref(sp[-1].u.string);
+      SET_SVAL(sval2, T_STRING, 0, string, sp[-1].u.string);
       pop_stack();
 
       /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
 
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	int quote = 0;
 	/* A simple string ... */
@@ -540,8 +589,9 @@ void do_html_parse(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type!=T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
+	ONERROR sv1, sv2;
 	/* Hopefully something callable ... */
 	assign_svalue_no_free(sp++,&sval2);
 	k = push_parsed_tag(s+j,len-j);
@@ -550,12 +600,16 @@ void do_html_parse(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
-
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	SET_ONERROR(sv2, do_free_svalue, &sval2);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv2);
+	UNSET_ONERROR(sv1);
 	free_svalue(&sval2);
 	free_svalue(&sval1);
 
-	if (sp[-1].type==T_STRING)
+	if (TYPEOF(sp[-1]) == T_STRING)
 	{
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -567,8 +621,8 @@ void do_html_parse(struct pike_string *ss,
 	  i=last=j+k;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
-	} else if (sp[-1].type==T_ARRAY) {
-	  push_text("");
+	} else if (TYPEOF(sp[-1]) == T_ARRAY) {
+	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -591,7 +645,7 @@ void do_html_parse(struct pike_string *ss,
       /* Is it a container then? */
       free_svalue(&sval1);
       mapping_index_no_free(&sval1,cont,&sval2);
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	if (last < i-1)
 	{
@@ -609,8 +663,9 @@ void do_html_parse(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type != T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
+	ONERROR sv1, sv2;
 	assign_svalue_no_free(sp++, &sval2);
 	m = push_parsed_tag(s+j, len-j) + j;
 	k = find_endtag(sval2.u.string, s+m, len-m, &l);
@@ -624,11 +679,16 @@ void do_html_parse(struct pike_string *ss,
 	  push_array_items(extra_args);
 	}
 
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	SET_ONERROR(sv2, do_free_svalue, &sval2);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv2);
+	UNSET_ONERROR(sv1);
 	free_svalue(&sval1);
 	free_svalue(&sval2);
 
-	if (sp[-1].type==T_STRING)
+	if (TYPEOF(sp[-1]) == T_STRING)
 	{
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -644,8 +704,8 @@ void do_html_parse(struct pike_string *ss,
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
 
-	} else if (sp[-1].type==T_ARRAY) {
-	  push_text("");
+	} else if (TYPEOF(sp[-1]) == T_ARRAY) {
+	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -705,7 +765,7 @@ void do_html_parse(struct pike_string *ss,
 
 
 #define PARSE_RETURN(END) do{					\
-  push_text("");						\
+  push_empty_string();						\
   f_multiply(2);						\
   (*strings)++;							\
   if (last!=i-1)						\
@@ -722,18 +782,18 @@ void do_html_parse(struct pike_string *ss,
 
 #define HANDLE_RETURN_VALUE(END) do {		\
   free_svalue(&sval1);                          \
-  if (sp[-1].type==T_STRING)			\
+  if (TYPEOF(sp[-1]) == T_STRING)		\
   {						\
     PARSE_RECURSE(END);				\
     continue;					\
-  } else if (sp[-1].type==T_ARRAY) {		\
+  } else if (TYPEOF(sp[-1]) == T_ARRAY) {	\
     PARSE_RETURN(END);				\
     continue;					\
   }						\
   pop_stack();					\
 } while(0)
 
-static struct svalue empty_string;
+static struct svalue empty_string_svalue;
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -781,16 +841,16 @@ void do_html_parse_lines(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+i, j-i));
       f_lower_case(1);
-      add_ref(sval2.u.string = sp[-1].u.string);
-      sval2.type=T_STRING;
+      add_ref(sp[-1].u.string);
+      SET_SVAL(sval2, T_STRING, 0, string, sp[-1].u.string);
       pop_stack();
 
       /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
-/*       if(sval1.type == T_INT) */
-/* 	mapping_index_no_free(&sval1,single,&empty_string); */
+/*       if(TYPEOF(sval1) == T_INT) */
+/* 	mapping_index_no_free(&sval1,single,&empty_string_svalue); */
 
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	int quote = 0;
 	/* A simple string ... */
@@ -802,7 +862,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	INVALIDATE_SVAL(sval1);
 #endif
 	(*strings)++;
 	free_svalue(&sval2);
@@ -825,11 +885,12 @@ void do_html_parse_lines(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type!=T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
+	ONERROR sv1;
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	INVALIDATE_SVAL(sval2);
 #endif
 	k=push_parsed_tag(s+j,len-j);
 	push_int(line);
@@ -838,7 +899,11 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	dmalloc_touch_svalue(&sval1);
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
@@ -847,9 +912,9 @@ void do_html_parse_lines(struct pike_string *ss,
       /* Is it a container then? */
 
       mapping_index_no_free(&sval1,cont,&sval2);
-      if(sval1.type == T_INT)
-	mapping_index_no_free(&sval1,cont,&empty_string);
-      if (sval1.type==T_STRING)
+      if(TYPEOF(sval1) == T_INT)
+	mapping_index_no_free(&sval1,cont,&empty_string_svalue);
+      if (TYPEOF(sval1) == T_STRING)
       {
 	if (last < i-1)
 	{
@@ -859,7 +924,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	INVALIDATE_SVAL(sval1);
 #endif
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
@@ -869,11 +934,13 @@ void do_html_parse_lines(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type != T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
+	ONERROR sv1;
+
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	INVALIDATE_SVAL(sval2);
 #endif
 	m = push_parsed_tag(s+j, len-j) + j;
 	k = find_endtag(sval2.u.string, s+m, len-m, &l);
@@ -886,7 +953,11 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(m);
 	continue;
       } else {
@@ -915,14 +986,14 @@ void do_html_parse_lines(struct pike_string *ss,
   }
 }
 
+/*! @decl array(int) get_all_active_fds()
+ */
 void f_get_all_active_fd(INT32 args)
 {
-  int i,fds,q, ne;
-  struct stat foo;
+  int i,fds,ne;
+  PIKE_STAT_T foo;
 
-  ne = fds_size;
-  if( MAX_OPEN_FILEDESCRIPTORS > ne )
-    ne = MAX_OPEN_FILEDESCRIPTORS;
+  ne = MAX_OPEN_FILEDESCRIPTORS;
 
   pop_n_elems(args);
   for (i=fds=0; i<ne; i++)
@@ -940,20 +1011,24 @@ void f_get_all_active_fd(INT32 args)
   f_aggregate(fds);
 }
 
+/*! @decl string fd_info(int fd)
+ */
 void f_fd_info(INT32 args)
 {
   static char buf[256];
   int i;
-  struct stat foo;
+  PIKE_STAT_T foo;
+
+  VALID_FILE_IO("spider.fd_info","status");
 
   if (args<1||
-      sp[-args].type!=T_INT)
+      TYPEOF(sp[-args]) != T_INT)
     Pike_error("Illegal argument to fd_info\n");
   i=sp[-args].u.integer;
   pop_n_elems(args);
   if (fd_fstat(i,&foo))
   {
-    push_string(make_shared_string("non-open filedescriptor"));
+    push_text("non-open filedescriptor");
     return;
   }
   sprintf(buf,"%o,%ld,%d,%ld",
@@ -961,16 +1036,16 @@ void f_fd_info(INT32 args)
 	  (long)foo.st_size,
 	  (int)foo.st_dev,
 	  (long)foo.st_ino);
-  push_string(make_shared_string(buf));
+  push_text(buf);
 }
 
 static void program_name(struct program *p)
 {
   char *f;
-  int n=0;
+  INT_TYPE n=0;
   ref_push_program(p);
   APPLY_MASTER("program_name", 1);
-  if(sp[-1].type == T_STRING)
+  if(TYPEOF(sp[-1]) == T_STRING)
     return;
   pop_stack();
   f=(char *)(p->linenumbers+1);
@@ -978,12 +1053,14 @@ static void program_name(struct program *p)
   if(!p->linenumbers || !strlen(f))
     push_text("Unknown program");
 
-  push_text( get_line( p->program, p, &n ) );
+  push_string( get_program_line( p, &n ) );
   push_text( ":" );
   push_int( n );
   f_add( 3 );
 }
 
+/*! @decl string _low_program_name(program prog)
+ */
 void f__low_program_name( INT32 args )
 {
   struct program *p;
@@ -993,10 +1070,15 @@ void f__low_program_name( INT32 args )
   pop_stack();
 }
 
+/*! @decl array(array(string|int)) _dump_obj_table()
+ */
 void f__dump_obj_table(INT32 args)
 {
   struct object *o;
   int n=0;
+
+  ASSERT_SECURITY_ROOT("spider._dump_obj_table");
+
   pop_n_elems(args);
   o=first_object;
   while(o)
@@ -1004,7 +1086,7 @@ void f__dump_obj_table(INT32 args)
     if(o->prog)
       program_name(o->prog);
     else
-      push_string(make_shared_binary_string("No program (Destructed?)",24));
+      push_text("No program (Destructed?)");
     push_int(o->refs);
     f_aggregate(2);
     ++n;
@@ -1013,36 +1095,36 @@ void f__dump_obj_table(INT32 args)
   f_aggregate(n);
 }
 
-#ifndef MIN
-#define MIN(A,B) ((A)<(B)?(A):(B))
-#endif
+/*! @endmodule
+ */
 
-
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
-  ref_push_string(make_shared_string(""));
-  empty_string = sp[-1];
+  push_empty_string();
+  empty_string_svalue = sp[-1];
   pop_stack();
 
-  ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tProgram,tStr),0);
+  ADD_FUNCTION("_low_program_name",f__low_program_name,
+	       tFunc(tPrg(tObj),tStr),0);
+
+  /* function(int:int) */
+  ADD_FUNCTION("set_start_quote",f_set_start_quote,
+	       tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+
+  /* function(int:int) */
+  ADD_FUNCTION("set_end_quote",f_set_end_quote,
+	   tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+
+  /* function(string:array) */
+  ADD_FUNCTION("parse_accessed_database", f_parse_accessed_database,
+	       tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
+
+  /* function(:array(array)) */
+  ADD_FUNCTION("_dump_obj_table", f__dump_obj_table,
+	       tFunc(tNone,tArr(tArray)), OPT_EXTERNAL_DEPEND);
 
 
-/* function(int:int) */
-  ADD_EFUN("set_start_quote",f_set_start_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("set_end_quote",f_set_end_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
-
-/* function(string:array) */
-  ADD_EFUN("parse_accessed_database", f_parse_accessed_database,tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
-
-
-/* function(:array(array)) */
-  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(tNone,tArr(tArray)),
-	   OPT_EXTERNAL_DEPEND);
-
-
-  ADD_EFUN("parse_html",f_parse_html,
+  ADD_FUNCTION("parse_html",f_parse_html,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
@@ -1060,7 +1142,7 @@ void pike_module_init(void)
 	   OPT_SIDE_EFFECT);
 
 
-  ADD_EFUN("parse_html_lines",f_parse_html_lines,
+  ADD_FUNCTION("parse_html_lines",f_parse_html_lines,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
@@ -1079,31 +1161,21 @@ void pike_module_init(void)
 		  tStr),
 	   0);
 
-/* function(int:array) */
-  ADD_EFUN("discdate", f_discdate,tFunc(tInt,tArray), 0);
+  /* function(int:array) */
+  ADD_FUNCTION("discdate", f_discdate,tFunc(tInt,tArray), 0);
 
-/* function(int,void|int:int) */
-  ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
+  /* function(int,void|int:int) */
+  ADD_FUNCTION("stardate", f_stardate,tFunc(tInt tInt,tInt), 0);
 
-/* function(:array(int)) */
-  ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(tNone,tArr(tInt)),
-	   OPT_EXTERNAL_DEPEND);
+  /* function(:array(int)) */
+  ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
+	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 
-/* function(int:string) */
-  ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
-  {
-    extern void init_xml();
-    init_xml();
-  }
+  /* function(int:string) */
+  ADD_FUNCTION("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
 }
 
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
-  int i;
-  free_string(empty_string.u.string);
-  {
-    extern void exit_xml();
-    exit_xml();
-  }
 }

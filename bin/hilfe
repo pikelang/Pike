@@ -1,7 +1,0 @@
-#!/usr/local/bin/pike
-
-void main(int argc,string *argv)
-{
-  Tools.Hilfe.StdinHilfe();
-}
-

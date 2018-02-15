@@ -1,14 +1,17 @@
+#pike __REAL_VERSION__
+
 //! This class implements URI parsing and resolving of relative references to
-//! absolute form, as defined in RFC 2396
+//! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.2 2001/01/11 22:17:42 js Exp $
+
+#pragma strict_types
 
 //! Scheme component of URI
 string scheme;
 
-//! Authority component of URI (formerly called net_loc, from RFC 2396 known as authority)
+//! Authority component of URI (formerly called net_loc, from RFC 2396
+//! known as authority)
 string authority;
 
 //! Path component of URI. May be empty, but not undefined.
@@ -23,43 +26,59 @@ string fragment;
 //! Certain classes of URI (e.g. URL) may have these defined
 string host, user, password;
 
-//! If no port number is present in URI, but the scheme used has a default port number,
-//! this number is put here.
+//! If no port number is present in URI, but the scheme used has a
+//! default port number, this number is put here.
 int port;
 
 //! The base URI object, if present
-object|int(0..0) base_uri; 
+this_program base_uri;
 
+// URI hacker docs:
+// This string is the raw uri the object was instantiated from in the
+// first place. We save it here for the sole purpose of being able to
+// replace the base URI, hence also needing to reresolve all of our
+// properties with respect to that change.
 string raw_uri;
 
-#define error(S) throw( ({ (S), backtrace() }) )
 #ifdef STANDARDS_URI_DEBUG
-#define debug(X, Y) werror("Standards.URI: "+X+"\n", Y)
-#define debug_n(X, Y) werror("Standards.URI: "+X+"\n", @Y)
+#define DEBUG(X, Y ...) werror("Standards.URI: "+X+"\n", Y)
 #else
-#define debug(X, Y)
-#define debug_n(X, Y)
+#define DEBUG(X, Y ...)
 #endif
 
+// FIXME: What about decoding of Percent-Encoding (RFC3986 2.1)?
+//        cf pct-encoded in the functions below.
+
 // Parse authority component (according to RFC 1738, § 3.1)
-static void parse_authority()
-{ 
-  if(sscanf(authority, "%[^@]@%s", string auth, authority) == 2)
+// Updated to RFC 3986 $ 3.2.
+// NOTE: Censors the userinfo from the @[authority] variable.
+protected void parse_authority()
+{
+  // authority   = [ userinfo "@" ] host [ ":" port ]
+  if(sscanf(authority, "%[^@]@%s", string userinfo, authority) == 2)
   {
-    sscanf(auth, "%[^:]:%s", user, password); // auth info present
-    debug_n("parse_authority(): user=%O, password=%O",
-	      ({ user, password }));
+    // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
+    sscanf(userinfo, "%[^:]:%s", user, password); // user info present
+    DEBUG("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
     port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
-  sscanf(authority, "%[^:]%*[:]%d", host, port);
-  debug_n("parse_authority(): host=%O, port=%O", ({ host, port }));
+  // host        = IP-literal / IPv4address / reg-name
+  if (has_prefix(authority, "[")) {
+    // IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+    // IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+    sscanf(authority, "[%s]%*[:]%d", host, port);
+  } else {
+    // IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+    // reg-name    = *( unreserved / pct-encoded / sub-delims )
+    sscanf(authority, "%[^:]%*[:]%d", host, port);
+  }
+  DEBUG("parse_authority(): host=%O, port=%O", host, port);
 }
 
-
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
-static void inherit_properties(object uri)
-{ 
+protected void inherit_properties(this_program uri)
+{
   authority = uri->authority;
   scheme = uri->scheme;
   user = uri->user; password = uri->password;
@@ -75,39 +94,39 @@ int `==(mixed something)
 {
   return
     _sprintf('t') == sprintf("%t", something) &&
-    _sprintf('x') == sprintf("%x", something);
+    _sprintf('x') == sprintf("%x", [object]something);
 }
 
 string combine_uri_path(string base, string rel)
 {
   string buf;
-  
+
   // RFC 2396, §5.2.6:
   // a) All but the last segment of the base URI's path component is
   //    copied to the buffer.  In other words, any characters after the
   //    last (right-most) slash character, if any, are excluded.
   array segments=base/"/";
   if(has_value(base, "/"))
-    buf=segments[..sizeof(segments)-2]*"/"+"/";
+    buf=segments[..<1]*"/"+"/";
   else
     buf=base;
-  
+
   // b) The reference's path component is appended to the buffer string.
   buf+=rel;
   segments = buf / "/";
-  
+
   // c) All occurrences of "./", where "." is a complete path segment,
   //    are removed from the buffer string.
   for(int i=0; i<sizeof(segments)-1; i++)
     if(segments[i]==".")
       segments[i]=0;
-	  
-  segments -= ({0}); 
-  
+
+  segments -= ({ 0 });
+
   // d) If the buffer string ends with "." as a complete path segment,
   //    that "." is removed.
   if(segments[-1]==".")
-    segments=segments[..sizeof(segments)-2]+({""});
+    segments=segments[..<1]+({""});
 
   // e) All occurrences of "<segment>/../", where <segment> is a
   //    complete path segment not equal to "..", are removed from the
@@ -137,7 +156,7 @@ string combine_uri_path(string base, string rel)
   //    "<segment>/.." is removed.
   if(sizeof(segments)>=2)
     if(segments[-2]!=".." && segments[-1]=="..")
-      segments=segments[..sizeof(segments)-3]+({""});
+      segments=segments[..<2]+({""});
 
   // g) If the resulting buffer string still begins with one or more
   //    complete path segments of "..", then the reference is
@@ -146,6 +165,7 @@ string combine_uri_path(string base, string rel)
   //    treating them as part of the final URI), by removing them from
   //    the resolved path (i.e., discarding relative levels above the
   //    root), or by avoiding traversal of the reference.
+  segments -= ({ ".." });
   return segments * "/";
 }
 
@@ -158,23 +178,26 @@ string combine_uri_path(string base, string rel)
 //! The resolving is performed according to the guidelines
 //! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
-//!   Set the new base URI to this.  
-void reparse_uri(object|string|void _base_uri)
+//!   Set the new base URI to this.
+//! @throws
+//!   An exception is thrown if the @[uri] is a relative URI or only a
+//!   fragment, and missing a @[base_uri].
+void reparse_uri(this_program|string|void base_uri)
 {
   string uri = raw_uri;
-  
-  if(stringp(_base_uri))
+
+  if(stringp(base_uri))
   {
-    debug("cloning base URI %O", _base_uri);
-    base_uri = object_program(this_object())(_base_uri); // create a new URI object
+    DEBUG("cloning base URI %O", base_uri);
+    this_program::base_uri = this_program(base_uri); // create a new URI object
   }
   else
-    base_uri = _base_uri;
+    this_program::base_uri = [object(this_program)]base_uri;
 
   // RFC 2396, §5.2:
   // 1) The URI reference is parsed into the potential four components and
   //    fragment identifier, as described in Section 4.3.
-
+  // URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
 
   // 2) If the path component is empty and the scheme, authority, and
   //    query components are undefined, then it is a reference to the
@@ -182,80 +205,121 @@ void reparse_uri(object|string|void _base_uri)
   //    query and fragment components are defined as found (or not found)
   //    within the URI reference and not inherited from the base URI.
   //    (Doing this at once saves us some useless parsing efforts.)
-  if(!raw_uri || raw_uri == "")
-  { 
-    debug("Path is empty -- Inherit entire base URI as per RFC 2396, §5.2 step 2. Done!", 0);
-    inherit_properties(base_uri);
+  if((!uri || uri == "") && this_program::base_uri)
+  {
+    DEBUG("Path is empty -- Inherit entire base URI "
+	  "as per RFC 2396, §5.2 step 2. Done!");
+    inherit_properties(this_program::base_uri);
     return;
   }
 
-  if(raw_uri[0] == '#')
-  { 
-    debug("Fragment only. Using entire base URI, except fragment.", 0);
-    inherit_properties(base_uri);
-    fragment=raw_uri[1..];
-    return;
-  }
-  
   // Parse fragment identifier
-  sscanf(uri, "%s#%s", uri, fragment);     
-  debug("Found fragment %O", fragment);
+  // fragment    = *( pchar / "/" / "?" )
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
+  if( sscanf(uri, "%s#%s", uri, fragment)==2 )
+  {
+    DEBUG("Found fragment %O", fragment);
+    if( !sizeof(uri) )
+    {
+      DEBUG("Fragment only. Using entire base URI, except fragment.");
+      if( !this_program::base_uri )
+        error("fragment only URI lacking base URI.\n");
+      string f = fragment;
+      inherit_properties(this_program::base_uri);
+      fragment = f;
+      return;
+    }
+  }
 
   // Parse scheme
+  // scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
   if(sscanf(uri, "%[A-Za-z0-9+.-]:%s", scheme, uri) < 2)
   {
     scheme = 0;
-    if(!base_uri)
+    if(!this_program::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
+  } else {
+    /* RFC 3986 §3.1
+     *
+     * An implementation should accept uppercase letters as equivalent
+     * to lowercase in scheme names (e.g., allow "HTTP" as well as
+     * "http") for the sake of robustness but should only produce
+     * lowercase scheme names for consistency.
+     */
+    scheme = lower_case(scheme);
   }
-  debug("Found scheme %O", scheme);
+  DEBUG("Found scheme %O", scheme);
 
   // Parse authority/login
-  if(sscanf(uri, "//%[^/]%s", authority, uri))		
+  //
+  // hier-part    = "//" authority path-abempty / path-absolute
+  //                / path-rootless / path-empty
+  if(sscanf(uri, "//%[^/]%s", authority, uri))
   {
-    debug("Found authority %O", authority);
+    DEBUG("Found authority %O", authority);
+    int q = search(authority, "?", search(authority, "@")+1);
+    if (q >= 0) {
+      // There's a question mark in the host and port section
+      // of the authority. This happens when the path is empty
+      // and there's a query part afterwards.
+      // Example: http://foo?bar
+      uri = authority[q..] + uri;
+      authority = authority[..q-1];
+      DEBUG("Adjusted authority %O", authority);
+    }
   }
 
   // Parse query information
+  // query       = *( pchar / "/" / "?" )
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   sscanf(uri, "%s?%s", uri, query);
-  if(query && !sizeof(query)) query = 0;
-  debug("Found query %O", query);
- 
-  // Parse path:
-  path = uri;						
-  debug("Found path %O", path);
+  DEBUG("Found query %O", query);
 
+  // Parse path:
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
+  if ((uri == "") && !scheme && !authority && (this_program::base_uri)) {
+    // Empty path.
+    path = this_program::base_uri->path;
+  } else {
+    path = uri;
+  }
+  DEBUG("Found path %O", path);
 
   // 3) If the scheme component is defined, indicating that the reference
   //    starts with a scheme name, then the reference is interpreted as an
   //    absolute URI and we are done.  Otherwise, the reference URI's
   //    scheme is inherited from the base URI's scheme component.
   if(scheme)
-  {					
-    debug("Scheme found! RFC 2396, §5.2, step 3 says we're absolute. Done!", 0);
-    return;		
+  {
+    if(authority)
+      parse_authority();
+
+    DEBUG("Scheme found! RFC 2396, §5.2, step 3 "
+	  "says we're absolute. Done!");
+    return;
   }
-  scheme = base_uri->scheme;			
-  debug("Inherited scheme %O from base URI", scheme);
+  scheme = this_program::base_uri->scheme;
+  DEBUG("Inherited scheme %O from base URI", scheme);
 
   if(authority)
     parse_authority();
 
-  
+
   // 4) If the authority component is defined, then the reference is a
   //	network-path and we skip to step 7.  Otherwise, the reference
   //	URI's authority is inherited from the base URI's authority
   //	component, which will also be undefined if the URI scheme does not
   //	use an authority component.
-  if(!authority || !sizeof(authority))			
+  if(!authority || !sizeof(authority))
   {
-    authority = base_uri->authority;
-    debug("Inherited authority %O from base URI", authority);
-    parse_authority();
+    authority = this_program::base_uri->authority;
+    DEBUG("Inherited authority %O from base URI", authority);
+    if (authority)
+      parse_authority();
 
     // 5) If the path component begins with a slash character ("/"), then
     //    the reference is an absolute-path and we skip to step 7.
-    if(!sscanf(path, "/%*s"))
+    if(!has_prefix(path, "/"))
     {
 
       // 6) If this step is reached, then we are resolving a relative-path
@@ -263,10 +327,11 @@ void reparse_uri(object|string|void _base_uri)
       //    URI's path.  Although there are many ways to do this, we will
       //    describe a simple method using a separate string buffer.
 
-      debug_n("Combining base path %O with path %O => %O",
-	      ({ base_uri->path, path, combine_uri_path(base_uri->path, path) }));
-      path = combine_uri_path(base_uri->path, path); 
-      
+      DEBUG("Combining base path %O with path %O => %O",
+	    this_program::base_uri->path, path,
+	    combine_uri_path(this_program::base_uri->path, path));
+      path = combine_uri_path(this_program::base_uri->path, path);
+
     }
   }
 
@@ -290,20 +355,23 @@ void reparse_uri(object|string|void _base_uri)
 //!   When uri is another URI object, the created
 //!   URI will inherit all properties of the supplied uri
 //!   except, of course, for its base_uri.
-void create(object|string uri, object|string|void _base_uri)
+//! @throws
+//!   An exception is thrown if the @[uri] is a relative URI or only a
+//!   fragment, and missing a @[base_uri].
+void create(this_program|string uri,
+	    this_program|string|void base_uri)
 {
-  debug_n("Create(%O, %O) called!", ({ uri, _base_uri }));
+  DEBUG("create(%O, %O) called!", uri, base_uri);
   if(stringp(uri))
-    raw_uri = uri; // Keep for future runs of reparse_uri after a base_uri change
-  else // if(objectp(uri)) (implied)
+    raw_uri = [string]uri; // Keep for future runs of reparse_uri after a base_uri change
+  else if(objectp(uri)) // If uri is 0, we want to inherit from the base_uri.
   {
     raw_uri = uri->raw_uri;
-    inherit_properties(uri);
+    inherit_properties([object(this_program)]uri);
   }
-  
-  reparse_uri(_base_uri);
-}
 
+  reparse_uri(base_uri);
+}
 
 //! Assign a new value to a property of URI
 //! @param property
@@ -311,44 +379,63 @@ void create(object|string uri, object|string|void _base_uri)
 //!   depend on them are recalculated: user, password, host, port, authority, base_uri.
 //! @param value
 //!   The value to assign to @[property]
+mixed `->=(string property, mixed value) { return `[]=(property, value); }
 mixed `[]=(string property, mixed value)
 {
-  debug_n("`[]=(%O, %O)", ({ property, value }));
+  DEBUG("`[]=(%O, %O)", property, value);
   switch(property)
   {
     case "user":
     case "password":
     case "host":
+      if(!stringp(value) && value!=0)
+	error("%s value not string.\n", property);
     case "port":
       ::`[]=(property, value);
-      authority = (user ? user + (password ? ":" + password : "") + "@"
-		   : "") +
-		  (host || "") +
-		  (port != Protocols.Ports.tcp[scheme] ? ":" + port
-						       : "");
+      authority = (user ? user + (password ? ":" + password : "") + "@" : "") +
+	(host?(has_value(host, ":")?("["+host+"]"):host):"") +
+	(port != Protocols.Ports.tcp[scheme] ? ":" + port : "");
 	return value;
 
     case "authority":
-      authority = value;
+      if(!stringp(value) && value!=0)
+	error("authority value not string.\n");
+      authority = [string]value;
       parse_authority(); // Set user, password, host and port accordingly
       return value;
 
     case "base_uri":
-      reparse_uri(value);
+      if(!stringp(value) && value!=0 && !objectp(value))
+	error("base_uri value neither object nor string.\n");
+      reparse_uri([object(this_program)|string]value);
       return base_uri;
 
+    case "query":
+      variables = 0;
+      return ::`[]=(property, value);
+
+    case "scheme":
+      /* RFC 3986 §3.1
+       *
+       * An implementation should accept uppercase letters as equivalent
+       * to lowercase in scheme names (e.g., allow "HTTP" as well as
+       * "http") for the sake of robustness but should only produce
+       * lowercase scheme names for consistency.
+       */
+      if(!stringp(value) && value!=0)
+	error("scheme value not string.\n");
+      value = lower_case([string]value);
+
+      // FALL_THROUGH
     default:
       return ::`[]=(property, value); // Set and return the new value
   }
 }
 
-//! Works similar to @[`[]=(string property, mixed value)]
-mixed `->=(string property, mixed value) { return `[]=(property, value); }
-
-
 //! When cast to string, return the URI (in a canonicalized form).
-//! When cast to mapping, return a mapping with scheme, authority, user, password, host,
-//! port, path, query, fragment, raw_uri, base_uri as documented above.
+//! When cast to mapping, return a mapping with scheme, authority,
+//! user, password, host, port, path, query, fragment, raw_uri,
+//! base_uri as documented above.
 string|mapping cast(string to)
 {
   switch(to)
@@ -356,16 +443,110 @@ string|mapping cast(string to)
     case "string":
       return _sprintf('s');
     case "mapping":
-      array(string) i = ({ "scheme", "authority", "user", "password", "host", "port",
+      array(string) i = ({ "scheme", "authority", "user", "password",
+			   "host", "port",
 			   "path", "query", "fragment",
 			   "raw_uri", "base_uri",  });
-      return mkmapping(i, rows(this_object(), i));
+      return mkmapping(i, rows(this, i));
   }
 }
 
+//! Returns path and query part of the URI if present.
+string get_path_query()
+{
+  return (path||"") + (query ? "?" + query : "");
+}
+
+protected mapping(string:string) variables;
+
+//! Returns the query variables as a @expr{mapping(string:string)@}.
+mapping(string:string) get_query_variables() {
+  if( variables ) return variables;
+  if(!query) return ([]);
+
+  variables = ([]);
+  foreach( query/"&";; string pair )
+  {
+    if( sscanf( pair, "%s=%s", string var, string val )==2 )
+      variables[var] = val;
+    else
+      variables[pair] = 0;
+  }
+
+  return variables;
+}
+
+//! Sets the query variables from the provided mapping.
+void set_query_variables(mapping(string:string) vars) {
+  variables = vars;
+  if(!sizeof(vars))
+    query = 0;
+  else
+  {
+    query = "";
+    foreach( vars; string var; string val )
+    {
+      if( sizeof(query) )
+        query += "&";
+      query += var;
+      if( val )
+        query += "=" + val;
+    }
+  }
+}
+
+//! Adds the provided query variable to the already existing ones.
+//! Will overwrite an existing variable with the same name.
+void add_query_variable(string name, string value) {
+  set_query_variables(get_query_variables()+([name:value]));
+}
+
+//! Appends the provided set of query variables with the already
+//! existing ones. Will overwrite all existing variables with the same
+//! names.
+void add_query_variables(mapping(string:string) vars) {
+  set_query_variables(get_query_variables()|vars);
+}
+
+
+// HTTP stuff
+
+// RFC 1738, 2.2. URL Character Encoding Issues
+protected constant url_non_corresponding = enumerate(0x21) +
+  enumerate(0x81,1,0x7f);
+protected constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
+				'|', '\\', '^', '~', '[', ']', '`' });
+protected constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+
+// Encode these chars
+protected constant url_chars = url_non_corresponding + url_unsafe +
+  url_reserved + ({ '+', '\'' });
+protected constant url_from = sprintf("%c", url_chars[*]);
+protected constant url_to   = sprintf("%%%02x", url_chars[*]);
+
+string http_encode(string in)
+{
+  // We shouldn't really have to soft case here. Bug(ish) in constant
+  // type generation...
+  return replace(in, [array(string)]url_from, [array(string)]url_to);
+}
+
+//! Return the query part, coded according to RFC 1738, or zero.
+string get_http_query() {
+  return query;
+}
+
+//! Return the path and query part of the URI, coded according to RFC
+//! 1738.
+string get_http_path_query() {
+  string q = get_http_query();
+  return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
+}
+
+
 string _sprintf(int how, mapping|void args)
 {
-  string look, _scheme = scheme, _host = host, getstring;
+  string look, _host = host, getstring;
   switch(how)
   {
     case 't':
@@ -373,23 +554,20 @@ string _sprintf(int how, mapping|void args)
 
     case 'x': // A case-mangling version, especially suited for readable hash values
       if(_host) _host = lower_case(_host);
-      if(_scheme) _scheme = lower_case(_scheme);
+    default:
     case 's':
     case 'O':
-      getstring = (path||"") + 
+      getstring = (path||"") +
 	          (query ? "?" + query : "");
-      look = _scheme + ":" + (authority
-			      ? "//" + (user
-					? user + (password
-						  ? ":" + password
-						  : "") + "@"
-					: "") +
-			      (_host || "") +
-			      (port != Protocols.Ports.tcp[scheme]
-			       ? ":" + port
-			       : "")
-			      : ("")) +
-	getstring + (fragment ? "#" + fragment : "");
+      look =
+	(scheme?(scheme + ":"):"") +
+	(authority ?
+	 "//" +
+	 (user ? user + (password ? ":" + password : "") + "@" : "") +
+	 (_host?(has_value(_host, ":")?("["+_host+"]"):_host):"") +
+	 (port != Protocols.Ports.tcp[scheme] ? ":" + port : "") : ("")) +
+	getstring +
+	(fragment ? "#" + fragment : "");
       break;
   }
 
@@ -402,6 +580,37 @@ string _sprintf(int how, mapping|void args)
       return look;
 }
 
+// Master codec API function. Allows for serialization with
+// encode_value.
+mapping(string:string|int|this_program) _encode()
+{
+#define P(X) #X:X
+    return ([
+        P(scheme),
+        P(authority),
+        P(path),
+        P(query),
+        P(fragment),
+        P(host),
+        P(user),
+        P(password),
+        P(port),
+        P(base_uri),
+        P(raw_uri),
+        // variables is only a cache
+    ]);
+#undef P
+}
+
+// Master codec API function. Allows for deserialization with
+// decode_value.
+void _decode(mapping m)
+{
+    foreach(m; mixed index; mixed value)
+        this[index] = value;
+}
+
+#if 0
 // Not used yet.
 string quote(string s)
 {
@@ -426,4 +635,4 @@ string quote(string s)
 		    "%98", "%99", "%9A", "%9B", "%9C", "%9D", "%9E", "%9F",
 		    "%20", "%25", "%27", "%22"}));
 }
-
+#endif

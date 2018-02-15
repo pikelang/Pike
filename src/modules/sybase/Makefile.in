@@ -1,11 +1,8 @@
-# $Id: Makefile.in,v 1.1 2000/03/26 20:43:08 kinkie Exp $
 # by Francesco Chemolli <kinkie@roxen.com>
-# (C) Roxen IS
 
 @make_variables@
-SRCDIR=@srcdir@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+
+VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=sybase.o
 
@@ -13,7 +10,3 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 @dependencies@
-
-spotless: clean
-	-rm config.* pgres_config.h
-

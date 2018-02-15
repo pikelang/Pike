@@ -1,0 +1,154 @@
+<!-- This file contains information telling the final joiner how to -->
+<!-- put everything together, as well as information about how to -->
+<!-- split it up into smaller files. -->
+
+<!-- The description in this file will compile a reference manual -->
+<!-- similar to the old "Pike Tutorial". -->
+
+
+<manual>
+  <dir name="traditional_manual">
+  <file name="index.html">
+    <chapter title="Table of Contents" unnumbered="1">
+      <contents/>
+    </chapter>
+  </file>
+  <file>
+    <chapter-ref file="chapters/introduction.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/control_structures.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/data_types.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/operators.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/preprocessor.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/special_functions.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/hilfe.xml"/>
+  </file>
+  <file>
+    <chapter title="LFUN">
+      <insert-move entity="lfun::"/>
+      <insert-move entity="::"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="I/O">
+      <insert-move entity="Stdio.File"/>
+      <insert-move entity="Stdio.FILE"/>
+<!--      <insert-move entity="Stdio.stdin"/> -->
+<!--      <insert-move entity="Stdio.stdout"/> -->
+<!--      <insert-move entity="Stdio.stderr"/> -->
+      <insert-move entity="Stdio.Port"/>
+      <insert-move entity="Stdio.UDP"/>
+      <insert-move entity="Stdio.Terminfo"/>
+      <insert-move entity="Stdio.Readline"/>
+      <insert-move entity="Stdio"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Specific Datatype Modules">
+      <insert-move entity="String"/>
+      <insert-move entity="Array"/>
+<!--      <insert-move entity="Mapping"/> -->
+<!--      <insert-move entity="Multiset"/> -->
+<!--      <insert-move entity="Int"/> -->
+<!--      <insert-move entity="Float"/> -->
+      <insert-move entity="Function"/>
+      <insert-move entity="Program"/>
+      <insert-move entity="ADT"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Parsers">
+      <insert-move entity="Parser.XML"/>
+      <insert-move entity="Parser.HTML"/>
+      <insert-move entity="Parser"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Image Module">
+      <insert-move entity="Image.Image"/>
+      <insert-move entity="Image.Layer"/>
+      <insert-move entity="Image.Font"/>
+      <insert-move entity="Image.Colortable"/>
+<!--      <insert-move entity="Image.Colortable"/> -->
+      <insert-move entity="Image.Color"/>
+      <insert-move entity="Image.ANY"/>
+      <insert-move entity="Image"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Protocols">
+      <insert-move entity="Protocols.HTTP"/>
+      <insert-move entity="SSL"/>
+      <insert-move entity="Protocols.LysKOM"/>
+      <insert-move entity="Protocols.DNS"/>
+      <insert-move entity="Protocols"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Database Access">
+      <insert-move entity="Sql"/>
+      <insert-move entity="Mysql"/>
+      <insert-move entity="Postgres"/>
+<!--      <insert-move entity="Oracle"/> -->
+      <insert-move entity="Gdbm"/>
+<!--      <insert-move entity="Yabu"/> -->
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Graphic User Interface">
+      <insert-move entity="GTK"/>
+      <insert-move entity="GDK"/>
+      <insert-move entity="Gnome"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="3D Vector Graphics">
+      <insert-move entity="GL"/>
+      <insert-move entity="GLU"/>
+<!--      <insert-move entity="GLUT"/> -->
+    </chapter>
+  </file>
+  <file>
+    <chapter title="The rest">
+      <insert-move entity=""/>
+    </chapter>
+  </file>
+  <file>
+    <chapter-ref file="chapters/compatibility.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/modules.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/testsuite.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/autodoc.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/pike_bnf.xml"/>
+  </file>
+  </dir>
+
+  <void>
+    <!-- The 7.0 and 7.2 module should perhaps be added to a
+         compatible chapter, but it needs a modifying
+         wrapper first. -->
+    <insert-move entity="7-0::"/>
+    <insert-move entity="7-2::"/>
+    <insert-move entity="7-4::"/>
+    <insert-move entity="_Roxen"/>
+    <!-- insert-move entity="__builtin"/ -->
+  </void>
+</manual>

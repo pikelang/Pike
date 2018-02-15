@@ -1,6 +1,10 @@
 /*
- * $Id: precompiled_mysql.h,v 1.11 2000/12/05 21:08:29 per Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * SQL database connectivity for Pike
  *
  * Henrik Grubbström 1996-12-21
@@ -47,16 +51,21 @@
  */
 
 struct precompiled_mysql {
+#ifdef PIKE_THREADS
   DEFINE_MUTEX(lock);
+#endif /* PIKE_THREADS */
 
-  MYSQL		*mysql, *socket;
-  MYSQL_RES	*last_result;	/* UGLY way to pass arguments to create() */
+  MYSQL		*mysql;
   struct pike_string	*host, *database, *user, *password;	/* Reconnect */
+  struct mapping   *options;
+  struct pike_string *conn_charset;
 };
 
 struct precompiled_mysql_result {
   struct object *connection;
   MYSQL_RES	*result;
+  int eof;
+  int typed_mode;
 };
 
 /*

@@ -1,10 +1,10 @@
-//! submodule Stardate
+
 //!	time unit: TNGDate
 
-//! class TNGDate
-//!	implements ST:TNG stardates
-//!	can be used as create argument to Day 
+#pike 7.0
 
+//!	Implements ST:TNG stardates.
+//!	Can be used as create argument to Day.
 class TNGDate
 {
    inherit Calendar._TimeUnit;
@@ -75,13 +75,13 @@ class TNGDate
       from_julian_day(jd);
    }
 
-   static void from_stardate(float f)
+   protected void from_stardate(float f)
    {
       tics=f;
       jd=f/TNGSTARPERJULIAN+2569518.5;
    }
 
-   static void from_julian_day(float f)
+   protected void from_julian_day(float f)
    {
       jd=f;
       tics=(f-2569518.5)*TNGSTARPERJULIAN;

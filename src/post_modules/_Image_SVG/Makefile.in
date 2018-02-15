@@ -1,0 +1,12 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=svg.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @SVG_LIBS@
+MODULE_CFLAGS=@SVG_CFLAGS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+MODNAME=_Image_SVG
+DEST=@prefix@/lib/pike/modules/
+
+@dynamic_module_makefile@
+@dependencies@
+

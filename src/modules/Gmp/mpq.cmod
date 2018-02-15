@@ -1,0 +1,1127 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "gmp_machine.h"
+
+#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
+#define USE_GMP2
+#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
+#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#define USE_GMP
+#endif /* HAVE_GMP_H && HAVE_LIBGMP */
+#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
+
+#if defined(USE_GMP) || defined(USE_GMP2)
+
+#include "interpret.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "stralloc.h"
+#include "object.h"
+#include "pike_types.h"
+#include "pike_error.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "bignum.h"
+#include "operators.h"
+#include "mapping.h"
+#include "gc.h"
+
+#include "my_gmp.h"
+
+#include <limits.h>
+#include <math.h>
+
+
+#define sp Pike_sp
+#define fp Pike_fp
+
+DECLARATIONS
+
+#define THISMPQ (&(THIS->n))
+
+#define PUSH_REDUCED(o) push_object(o)
+
+/*! @module Gmp
+ */
+
+/*! @class mpq
+ *! Rational number stored in canonical form. The canonical from means
+ *! that the denominator and the numerator have no common factors, and
+ *! that the denominator is positive. Zero has the unique
+ *! representation 0/1. All functions canonicalize their result.
+ */
+
+/*  id PROG_GMP_MPQ_ID; */
+PIKECLASS mpq
+{
+  CVAR MP_RAT n;
+
+  static void get_mpq_from_digits(MP_RAT *tmp,
+				  struct pike_string *digits,
+				  int base)
+    {
+      p_wchar0 *str;
+  
+      if(digits->size_shift)
+	Pike_error("Illegal characters, cannot convert to mpq.\n");
+      str=STR0(digits);
+
+      /* Huh, wot? /mast
+      get_mpz_from_digits(mpq_numref(tmp), digits, base);
+      */
+      
+      if(!base || ((base >= 2) && (base <= 36)))
+      {
+	int offset = 0;
+	int neg = 0;
+	int dotfound = 0;
+	
+	if(digits->len > 1)
+	{
+	  if(str[0] == '+')
+	    offset ++;
+	  else if(str[0] == '-')
+	  {
+	    offset ++;
+	    neg = 1;
+	  }
+	  
+	  /* We need to fix the case with binary
+	     0b101... and -0b101... numbers. */
+	  if(!base && digits->len > 2)
+	  {
+	    if(str[offset] == '0')
+	    {
+	      switch(str[offset+1])
+	      {
+		case 'b':
+		case 'B':
+		  offset+=2;
+		  base=2;
+		  break;
+		  
+		case '0':
+		  offset+=2;
+		  base=8;
+		  break;
+		  
+		case 'x':
+		  offset+=2;
+		  base=16;
+		  break;
+	      }
+	    }
+	  }
+	}
+
+	if(!base) base=10;
+	
+	mpq_set_ui(tmp, 0, 1);
+	while(str[offset])
+	{
+	  int x=255;
+	  if(str[offset] == '.')
+	  {
+	    offset++;
+	    if(dotfound)
+	      Pike_error("Invalid digits, cannot convert to mpq.\n");
+	    dotfound++;
+	    continue;
+	  }
+	  
+	  if(str[offset] >= '0' && str[offset] <= '9')
+	    x=str[offset]-'0';
+	  else if(str[offset] >='a' && str[offset] <= 'z')
+	    x=str[offset]-'a';
+	  else if(str[offset] >='A' && str[offset] <= 'Z')
+	    x=str[offset]-'A';
+	  
+	  if(x > base)
+	    Pike_error("Invalid digits, cannot convert to mpq.\n");
+	  
+	  mpz_mul_ui(mpq_numref(tmp),
+		     mpq_numref(tmp),
+		     base);
+	  if(dotfound)
+	  {
+	    mpz_mul_ui(mpq_denref(tmp),
+		       mpq_denref(tmp),
+		       base);
+	  }
+	  mpz_add_ui(mpq_numref(tmp),
+		     mpq_numref(tmp),
+		     x);
+	  offset++;
+	}
+
+	if(dotfound)
+	  mpq_canonicalize(tmp);
+
+	if(neg)
+	  mpz_neg(mpq_numref(tmp), mpq_numref(tmp));
+      }
+      else if(base == 256)
+      {
+	mpq_set_ui(tmp, 1, 1);
+	get_mpz_from_digits(mpq_numref(tmp), digits, base);
+      }
+      else
+      {
+	Pike_error("invalid base.\n");
+      }
+    }
+
+  int get_new_mpq(MP_RAT *tmp, struct svalue *s,
+		  int throw_error, const char *arg_func, int arg, int args)
+    {
+      switch(TYPEOF(*s))
+      {
+	case T_FLOAT:
+	{
+	  double t;
+	  int y;
+	  t=FREXP((double) s->u.float_number, &y);
+
+	  t*=pow(2.0,48.0);
+	  y-=48;
+
+	  mpz_set_d(mpq_numref(tmp), t);
+	  mpz_set_ui(mpq_denref(tmp), 1);
+	  if(y>0)
+	    mpz_mul_2exp(mpq_numref(tmp),mpq_numref(tmp),y);
+	  else if(y<0)
+	    mpz_mul_2exp(mpq_denref(tmp),mpq_denref(tmp),-y);
+
+	  mpq_canonicalize(tmp);
+	  break;
+	}
+	  
+	case T_INT:
+	  get_new_mpz(mpq_numref(tmp), s, 1, arg_func, arg, args);
+	  mpz_set_si(mpq_denref(tmp),1);
+	  break;
+	  
+	case T_OBJECT:
+	  if(IS_MPZ_OBJ (s->u.object))
+	  {
+	    mpq_set_z(tmp, OBTOMPZ(s->u.object));
+	    break;
+	  }
+	  
+	  if(s->u.object->prog == mpq_program)
+	  {
+	    mpq_set(tmp, OBTOMPQ(s->u.object));
+	    break;
+	  }
+	  
+	  if (s->u.object->prog) {
+	    if (throw_error)
+	      SIMPLE_ARG_TYPE_ERROR (arg_func, arg, "int|float|Gmp.mpq|Gmp.mpz");
+	    else
+	      return 0;
+	  } else {
+	    /* Destructed object. Use as zero. */
+	    mpq_set_si(tmp, 0, 1);
+	  }
+	  break;
+	  
+	default:
+	  if (throw_error)
+	    SIMPLE_ARG_TYPE_ERROR (arg_func, arg, "int|float|Gmp.mpq|Gmp.mpz");
+	  else
+	    return 0;
+      }
+
+      return 1;
+    }
+
+/* Converts an svalue, located on the stack, to an mpq object */
+  static MP_RAT *debug_get_mpq(struct svalue *s,
+			       int throw_error, const char *arg_func, int arg, int args)
+  {
+    struct object *o = fast_clone_object (mpq_program);
+    ONERROR uwp;
+    SET_ONERROR (uwp, do_free_object, o);
+    if (get_new_mpq (OBTOMPQ (o), s, throw_error, arg_func, arg, args)) {
+      UNSET_ONERROR (uwp);
+      free_svalue(s);
+      SET_SVAL(*s, T_OBJECT, 0, object, o);
+      return OBTOMPQ (o);
+    }
+    else {
+      UNSET_ONERROR (uwp);
+      free_object (o);
+      return NULL;
+    }
+  }
+
+#ifdef DEBUG_MALLOC
+#define get_mpq(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
+  (REFCOUNTED_TYPE(TYPEOF(*(S))) ? debug_malloc_touch((S)->u.object) : 0, \
+   debug_get_mpq((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
+#else
+#define get_mpq debug_get_mpq
+#endif
+
+  /*! @decl static void create(void|string|int|float|Gmp.mpz|Gmp.mpq x)
+   *! @decl static void create(int numerator, int denominator)
+   *! @decl static void create(string x, int base)
+   */
+  PIKEFUN void create(void|string|int|float|object x, void|int base)
+    type function(void|string|int|float|object:void)|function(string,int:void)|function(int,int:void);
+    flags ID_PROTECTED;
+  {
+    switch(args)
+    {
+      case 1:
+	if(TYPEOF(sp[-args]) == T_STRING)
+	  get_mpq_from_digits(THISMPQ, sp[-args].u.string, 0);
+	else
+	  get_new_mpq(THISMPQ, sp-args, 1, "Gmp.mpq", 1, args);
+	break;
+	
+      case 2:
+	/* Args are string of digits and integer base */
+	/* or int num / den */
+	
+	if (TYPEOF(sp[1-args]) != T_INT)
+	  if(TYPEOF(sp[1-args]) != T_OBJECT ||
+	     sp[1-args].u.object->prog != bignum_program ||
+	     TYPEOF(sp[-args]) == T_STRING)
+            SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
+
+	switch(TYPEOF(sp[-args]))
+	{
+	  case T_STRING:
+	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
+	    break;
+
+	  case T_OBJECT:
+	    if(sp[-args].u.object->prog != bignum_program)
+
+	  default:
+	      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
+
+	  case T_INT:
+	    mpq_set_num(THISMPQ,get_mpz(sp-args, 1, "Gmp.mpq", 1, args));
+	    mpq_set_den(THISMPQ,get_mpz(sp-args+1, 1, "Gmp.mpq", 2, args));
+	    mpq_canonicalize(THISMPQ);
+	    break;
+	}
+	break;
+	
+      default:
+	SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpq", 2);
+
+      case 0:
+	break;	/* Needed by AIX cc */
+    }
+  }
+  
+  /*! @decl int get_int()
+   */
+  PIKEFUN int get_int()
+    {
+      struct object *res = fast_clone_object(mpzmod_program);
+      mpz_tdiv_q(OBTOMPZ(res), mpq_numref(THISMPQ), mpq_denref(THISMPQ));
+      /* FIXME */
+      mpzmod_reduce(res);
+    }
+
+  /*! @decl static int __hash()
+   */
+  PIKEFUN int __hash()
+    flags ID_PROTECTED;
+    {
+      RETURN 
+	mpz_get_si(mpq_numref(THISMPQ)) * 1000003 +
+	mpz_get_si(mpq_denref(THISMPQ));
+    }
+
+  /*! @decl float get_float()
+   */
+  PIKEFUN float get_float()
+    {
+      RETURN (FLOAT_TYPE) mpq_get_d(THISMPQ);
+    }
+
+  static void format_dec_frac (mpz_t num, int prec)
+  {
+    struct pike_string *s;
+    ptrdiff_t len = mpz_sizeinbase (num, 10);
+
+    assert (prec);
+
+    if (len > prec) {
+      /* one for the dot... */
+      prec++;
+      /* present 'num' and insert dot */
+      len += 3;
+      s = begin_shared_string(len);
+      if(len/2 > prec)
+      {
+	/* Shift the integer part forward to make room for the dot. */
+	mpz_get_str(s->str+1, 10, num);
+	/* Find NULL character */
+	len-=4;
+	if (len < 1) len = 1;
+	while(s->str[len]) len++;
+	MEMMOVE(s->str, s->str+1, len-prec);
+      }else{
+	/* Shift the fractional part backward to make room for the dot. */
+	mpz_get_str(s->str, 10, num);
+	/* Find NULL character */
+	len-=5;
+	if (len < 0) len = 0;
+	while(s->str[len]) len++;
+	MEMMOVE(s->str+len-prec+1,
+		s->str+len-prec,
+		prec+1);
+	len++;
+      }
+      s->str[len-prec]='.';
+      push_string (end_and_resize_shared_string (s, len));
+    }
+
+    else {
+      /* The precision is greater than the length, so start out
+       * with a string of zeroes. */
+      char *p;
+      s = begin_shared_string (prec + 4);
+      p = s->str;
+      if (mpz_sgn (num) < 0) {
+	*p++ = '-';
+	mpz_neg (num, num);
+      }
+      *p++ = '0';
+      *p++ = '.';
+      for (; prec > len; prec--) *p++ = '0';
+      mpz_get_str (p, 10, num);
+      if (!p[len - 1]) {
+	MEMMOVE (p + 1, p, len - 1);
+	*p = '0';
+      }
+      push_string (end_and_resize_shared_string (s, p - s->str + len));
+    }
+  }
+
+  static void format_string (mpq_t mpq, int dec_fract)
+  {
+    if (dec_fract >= 1) {
+      mpz_t den, f;
+      size_t strings = 0, twos, fives, prec;
+
+      /* Remove from the denominator all factors 2 and 5, which are
+       * the only ones we can compensate for with a decimal
+       * fraction. */
+      mpz_init_set (den, mpq_denref (mpq));
+      mpz_init_set_ui (f, 2u);
+      twos = mpz_remove (den, den, f);
+      mpz_set_ui (f, 5u);
+      fives = mpz_remove (den, den, f);
+
+      /* The necessary number of decimals is the same as the number of
+       * times we have to multiply by 10 to get an integer (if the
+       * denominator only contains factors 2 and 5). Since we
+       * "consume" one factor 2 and one factor 5 every time, that
+       * means we need the same number of 10's as the max of the 2's
+       * and 5's. */
+      prec = MAXIMUM (twos, fives);
+
+      if (prec) {
+	mpz_t num;
+	mpz_init (num);
+	mpz_ui_pow_ui (num, 10, prec);
+	mpz_mul (num, num, mpq_numref (mpq));
+	if (twos)
+	  mpz_tdiv_q_2exp (num, num, twos);
+	if (fives) {
+	  mpz_pow_ui (f, f, fives);
+	  assert (mpz_divisible_p (num, f));
+	  mpz_tdiv_q (num, num, f);
+	}
+	format_dec_frac (num, prec);
+	strings++;
+	mpz_clear (num);
+      }
+      else {
+	push_string (low_get_mpz_digits (mpq_numref (mpq), 10));
+	strings++;
+	if (dec_fract >= 2) {
+	  push_constant_text (".0");
+	  strings++;
+	}
+      }
+
+      /* If the denominator contains other factors we still need to
+       * display it. */
+      if (mpz_cmp_ui (den, 1u)) {
+	push_constant_text ("/");
+	push_string (low_get_mpz_digits (den, 10));
+	strings += 2;
+      }
+
+      mpz_clear (den);
+      mpz_clear (f);
+      if (strings > 1) f_add (strings);
+    }
+
+    else {
+      push_string(low_get_mpz_digits(mpq_numref(mpq),10));
+      push_constant_text("/");
+      push_string(low_get_mpz_digits(mpq_denref(mpq),10));
+      f_add(3);
+    }
+  }
+
+  /*! @decl string get_string (void|int decimal_fraction)
+   *!
+   *! If @[decimal_fraction] is zero or left out, the number is
+   *! returned as a string on the form @expr{"numerator/denominator"@},
+   *! where both parts are decimal integers. The numerator may be
+   *! negative, but the denominator is always positive.
+   *!
+   *! If @[decimal_fraction] is set, then the number is returned as a
+   *! (possibly negative) decimal fraction, i.e. a decimal number with
+   *! a decimal point somewhere inside. There is always at least one
+   *! digit before and after the decimal point.
+   *!
+   *! If the number can be accurately described that way, i.e. without
+   *! an infinite number of decimals, then no denominator is included.
+   *! Otherwise the remaining denominator is added to the decimal
+   *! fraction after a "/". For example, 4711/100 is returned as
+   *! @expr{"47.11"@}, 4711/200 as @expr{"23.555"@}, and 4711/300 as
+   *! @expr{"47.11/3"@}.
+   *!
+   *! If @[decimal_fraction] is 1 then the decimal fraction contains a
+   *! '.' only if there are decimals in it. If it is 2 or higher then
+   *! the decimal fraction always contains a '.' with at least one
+   *! digit before and after it.
+   *!
+   *! @note
+   *! In any case, there are no unnecessary padding zeroes at the
+   *! beginning or end of any decimal number.
+   */
+  PIKEFUN string get_string (void|zero|int decimal_fraction)
+  {
+    format_string (THISMPQ, decimal_fraction);
+  }
+
+  /*! @decl int num()
+   *!
+   *! Returns the numerator.
+   */
+  PIKEFUN int num()
+  {
+    push_object (fast_clone_object (bignum_program));
+    mpz_set (OBTOMPZ (sp[-1].u.object), mpq_numref (THISMPQ));
+    reduce_stack_top_bignum();
+  }
+
+  /*! @decl int den()
+   *!
+   *! Returns the denominator. It is always positive.
+   */
+  PIKEFUN int den()
+  {
+    push_object (fast_clone_object (bignum_program));
+    mpz_set (OBTOMPZ (sp[-1].u.object), mpq_denref (THISMPQ));
+    reduce_stack_top_bignum();
+  }
+
+  static int lookup(const char *name,
+		    struct mapping *m,
+		    char *ind,
+		    int def,
+		    int arg, int args)
+    {
+      struct svalue *sv;
+      if((sv=simple_mapping_string_lookup(m,ind)))
+      {
+	if(TYPEOF(*sv) == T_INT)
+	{
+	  return sv->u.integer;
+	}else{
+	  bad_arg_error (name, Pike_sp - args, args, arg, NULL, Pike_sp + arg - 1 - args,
+			 "Bad argument %d to %s(). "
+			 "The field \"%s\" doesn't hold an integer.\n",
+			 arg, name, ind);
+	}
+      }
+      return def;
+    }
+		    
+  /*! @decl static string _sprintf(int c, mapping flags)
+   */
+  PIKEFUN string _sprintf(int c, mapping flags)
+    flags ID_PROTECTED;
+    {
+      INT_TYPE precision, width, base = 0, mask_shift = 0;
+      struct pike_string *s = 0;
+      INT_TYPE flag_left;
+
+      precision=lookup("Gmp.Mpq->_sprintf",flags,"precision",7, 2, args);
+      width=lookup("Gmp.Mpq->_sprintf",flags,"width",-1, 2, args);
+      flag_left=lookup("Gmp.Mpq->_sprintf",flags,"flag_left",0, 2, args);
+      pop_n_elems(args);
+      if(precision<0) precision=0;
+      
+      switch(c)
+      {
+	default:
+	  push_undefined();
+	  return;
+
+	case 'O':
+	  push_constant_text ("Gmp.mpq(");
+	  format_string (THISMPQ, 1);
+	  push_constant_text (")");
+	  f_add (3);
+	  return;
+
+	  /* Fixme: Support g/e/E */
+	case 'g':
+	case 'e':
+	case 'E':
+	case 'f':
+	{
+	  mpz_t tmp;
+	  ptrdiff_t len;
+
+	  mpz_init(tmp);
+	  mpz_ui_pow_ui(tmp, 10, precision);
+	  mpz_mul(tmp, tmp, mpq_numref(THISMPQ));
+	  mpz_tdiv_q(tmp, tmp, mpq_denref(THISMPQ));
+
+	  if (!precision)
+	    /* No dot if the precision is zero. This is consistent
+	     * with normal printf behavior. */
+	    push_string (low_get_mpz_digits (tmp, 10));
+	  else
+	    format_dec_frac (tmp, precision);
+
+	  mpz_clear(tmp);
+	}
+      }
+    }
+  
+  /*! @decl static int(0..1) _is_type(string arg)
+   */
+  PIKEFUN int(0..1) _is_type(string arg)
+    flags ID_PROTECTED;
+    {
+      push_constant_text("float");
+      f_eq(2);
+    }
+
+  /*! @decl static int|string|float|object cast(string s)
+   *!
+   *! Casting to a string returns the number in the decimal fraction
+   *! format, where both decimal point and quotient is included only
+   *! if required. I.e. it is the same as calling @[get_string] with 1
+   *! as argument.
+   */
+  PIKEFUN int|string|float|object cast(string s)
+    flags ID_PROTECTED;
+    {
+      add_ref(s);
+      
+      pop_n_elems(args);
+      
+      switch(s->str[0])
+      {
+	case 'i':
+	  if(!strncmp(s->str, "int", 3))
+	  {
+	    free_string(s);
+	    f_mpq_get_int(0);
+	    return;
+	  }
+	  break;
+	  
+	case 's':
+	  if(!strcmp(s->str, "string"))
+	  {
+	    free_string(s);
+	    format_string (THISMPQ, 1);
+	    return;
+	  }
+	  break;
+
+	case 'f':
+	  if(!strcmp(s->str, "float"))
+	  {
+	    free_string(s);
+	    f_mpq_get_float(0);
+	    return;
+	  }
+	  break;
+	  
+	case 'o':
+	  if(!strcmp(s->str, "object"))
+	  {
+	    push_object(this_object());
+	  }
+	  break;
+	  
+	case 'm':
+	  if(!strcmp(s->str, "mixed"))
+	  {
+	    push_object(this_object());
+	  }
+	  break;
+	  
+      }
+      
+      free_string(s);
+
+      SIMPLE_ARG_ERROR ("Gmp.mpq->cast", 1,
+			"Cannot cast to other type than sitrng, int or float.\n");
+    }
+
+  /*! @decl static Gmp.mpq `+(int|float|object ... a)
+   */
+  PIKEFUN object `+(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      INT32 e;
+      struct object *res;
+      for(e=0; e<args; e++)
+	get_mpq(sp+e-args, 1, "Gmp.mpq->`+", e + 1, args);
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      for(e=0;e<args;e++)
+	mpq_add(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq ``+(int|float|object ... a)
+   */
+  PIKEFUN object ``+(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      INT32 e;
+      struct object *res;
+      for(e=0; e<args; e++)
+	get_mpq(sp+e-args, 1, "Gmp.mpq->``+", e + 1, args);
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      for(e=0;e<args;e++)
+	mpq_add(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq `+=(int|float|object ... a)
+   */
+  PIKEFUN object `+=(int|float|object ... a)
+    flags ID_PROTECTED;
+  {
+    INT32 e;
+    for(e=0; e<args; e++)
+      get_mpq(sp+e-args, 1, "Gmp.mpq->`+=", e + 1, args);
+    for(e=0;e<args;e++)
+      mpq_add(THISMPQ, THISMPQ, OBTOMPQ(sp[e-args].u.object));
+    
+    REF_RETURN fp->current_object;
+  }
+  
+
+#ifdef BIG_PIKE_INT
+#define TOOBIGTEST || sp[e-args].u.integer>MAX_INT32
+#else
+#define TOOBIGTEST 
+#endif
+
+  static void mult_convert_args(INT32 args, const char *arg_func)
+    {
+      INT32 e;
+      for(e=0; e<args; e++)
+      {
+	if(TYPEOF(sp[e-args]) == T_OBJECT)
+	{
+	  if(sp[e-args].u.object->prog == mpzmod_program)
+	    continue;
+
+	  if(sp[e-args].u.object->prog == bignum_program)
+	    continue;
+	}
+	
+	if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)
+	  get_mpq(sp+e-args, 1, arg_func, e + 1, args);
+      }
+    }
+  
+  static void mult_args(MP_RAT *res,
+			INT32 e,
+			INT32 args)
+    {
+      int norm=0;
+      for(;e<args;e++)
+      {
+	if(TYPEOF(sp[e-args]) == T_INT)
+	{
+	  mpz_mul_ui(mpq_numref(res),
+		      mpq_numref(res),
+		      sp[e-args].u.integer);
+	  norm++;
+	}
+	else if(sp[e-args].u.object->prog == mpq_program)
+	{
+	  mpq_mul(res, res, OBTOMPQ(sp[e-args].u.object));
+	}else{
+	  norm++;
+	  mpz_mul(mpq_numref(res),
+		   mpq_numref(res),
+		   OBTOMPZ(sp[e-args].u.object));
+	}
+      }
+      
+      if(norm) mpq_canonicalize(res);
+    }
+  
+  /*! @decl static Gmp.mpq `*(int|float|object ... a)
+   */
+  PIKEFUN object `*(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      struct object *res;
+      mult_convert_args(args, "Gmp.mpq->`*");
+      
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      mult_args(OBTOMPQ(res), 0,args);
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq ``*(int|float|object ... a)
+   */
+  PIKEFUN object ``*(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      struct object *res;
+      mult_convert_args(args, "Gmp.mpq->``*");
+      
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      mult_args(OBTOMPQ(res), 0,args);
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq `*=(int|float|object ... a)
+   */
+  PIKEFUN object `*=(int|float|object ... a)
+    flags ID_PROTECTED;
+  {
+    mult_convert_args(args, "Gmp.mpq->`*=");
+    mult_args(THISMPQ, 0,args);
+    REF_RETURN fp->current_object;
+  }
+  
+  /*! @decl static Gmp.mpq `-(int|float|object ... a)
+   */
+  PIKEFUN object `-(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      INT32 e;
+      struct object *res;
+      
+      if (args)
+	for (e = 0; e<args; e++)
+	  get_mpq(sp + e - args, 1, "Gmp.mpq->`-", e + 1, args);
+      
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      
+      if(args)
+      {
+	for(e=0;e<args;e++)
+	  mpq_sub(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
+      }else{
+	mpq_neg(OBTOMPQ(res), OBTOMPQ(res));
+      }
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq ``-(int|float|object sv)
+   */
+  PIKEFUN object ``-(int|float|object sv)
+    flags ID_PROTECTED;
+    {
+      struct object *res;
+      MP_RAT *a=get_mpq(sv, 1, "Gmp.mpq->``-", 1, args);
+      res = fast_clone_object(mpq_program);
+      mpq_sub(OBTOMPQ(res), a, THISMPQ);
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq `/(int|float|object ... a)
+   */
+  PIKEFUN object `/(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      INT32 e;
+      struct object *res;
+      
+      for(e=0;e<args;e++)
+	if (!mpq_sgn(get_mpq(sp+e-args, 1, "Gmp.mpq->`/", e + 1, args)))
+	  SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->`/");
+      
+      res = fast_clone_object(mpq_program);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      for(e=0;e<args;e++)	
+	mpq_div(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
+      
+      RETURN res;
+    }
+  
+  /*! @decl static Gmp.mpq ``/(int|float|object sv)
+   */
+  PIKEFUN object ``/(int|float|object sv)
+    flags ID_PROTECTED;
+    {
+      MP_RAT *a;
+      struct object *res = NULL;
+      if(!mpq_sgn(THISMPQ))
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->``/");
+
+      a=get_mpq(sv, 1, "Gmp.mpq->``/", 1, args);
+      
+      res=fast_clone_object(mpq_program);
+      mpq_div(OBTOMPQ(res), a, THISMPQ);
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq `%(int|float|object ... a)
+   *! @expr{a%b =  a -  floor(a/b)*b @}
+   */
+  PIKEFUN object `%(int|float|object ... a)
+    flags ID_PROTECTED;
+    {
+      INT32 e;
+      struct object *res;
+      mpq_t tmp;
+      
+      for(e=0;e<args;e++)
+	if (!mpq_sgn(get_mpq(sp+e-args, 1, "Gmp.mpq->`%", e, args)))
+	  SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->`%");
+
+      res = fast_clone_object(mpq_program);
+      
+      mpq_init(tmp);
+      mpq_set(OBTOMPQ(res), THISMPQ);
+      
+      for(e=0;e<args;e++)
+      {
+	mpz_mul(mpq_numref(tmp),
+		mpq_numref(OBTOMPQ(res)),
+		mpq_denref(OBTOMPQ(sp[e-args].u.object)));
+	
+	mpz_tdiv_q(mpq_numref(tmp),
+		   mpq_numref(tmp),
+		   mpq_denref(tmp));
+	
+	mpz_tdiv_q(mpq_numref(tmp),
+		   mpq_numref(tmp),
+		   mpq_numref(OBTOMPQ(sp[e-args].u.object)));
+	
+	mpz_set_si(mpq_denref(tmp),1);
+	
+	mpq_mul(tmp, tmp, OBTOMPQ(sp[e-args].u.object));
+	mpq_sub(OBTOMPQ(res), OBTOMPQ(res), tmp);
+      }
+      mpq_clear(tmp);
+      
+      RETURN res;
+    }
+
+  /*! @decl static Gmp.mpq ``%(int|float|object a)
+   */
+  PIKEFUN object ``%(int|float|object a)
+    flags ID_PROTECTED;
+    {
+      MP_RAT *a;
+      
+      struct object *res;
+      if(!mpq_sgn(THISMPQ))
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->``%");
+
+      a=get_mpq(sp-1, 1, "Gmp.mpq->``%", 1, 1);
+      
+      res=fast_clone_object(mpq_program);
+      
+      mpz_mul(mpq_numref(OBTOMPQ(res)), mpq_numref(a), mpq_denref(THISMPQ));
+      
+      mpz_tdiv_q(mpq_numref(OBTOMPQ(res)),
+		 mpq_numref(OBTOMPQ(res)),
+		 mpq_denref(OBTOMPQ(res)));
+		 
+      mpz_tdiv_q(mpq_numref(OBTOMPQ(res)),
+		 mpq_numref(OBTOMPQ(res)),
+		 mpq_numref(a));
+      
+      mpz_set_si(mpq_denref(OBTOMPQ(res)),1);
+      
+      mpq_mul(OBTOMPQ(res), OBTOMPQ(res), THISMPQ);
+      mpq_sub(OBTOMPQ(res), a, OBTOMPQ(res));
+      
+      RETURN res;
+    }
+
+  /*! @decl Gmp.mpq invert()
+   */
+  PIKEFUN object invert()
+    {
+      struct object *res;
+      if (!mpq_sgn(THISMPQ))
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->invert");
+      res = fast_clone_object(mpq_program);
+      mpq_inv(OBTOMPQ(res), THISMPQ);
+      RETURN res;
+    }
+  
+  /*! @decl static Gmp.mpq `~()
+   *! Defined as @expr{-1-x@}.
+   */
+  PIKEFUN object `~()
+    flags ID_PROTECTED;
+    {
+      struct object *o;
+      o=fast_clone_object(mpq_program);
+      mpq_set_si(OBTOMPQ(o), -1, 1);
+      mpq_sub(OBTOMPQ(o),OBTOMPQ(o), THISMPQ);
+      
+      RETURN o;
+    }
+
+  /*! @decl static int(0..1) `>(mixed q)
+   */
+  PIKEFUN int(0..1) `>(mixed q)
+    flags ID_PROTECTED;
+    {
+      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>", 1, args)) > 0;
+    }
+
+  /*! @decl static int(0..1) `<(mixed q)
+   */
+  PIKEFUN int(0..1) `<(mixed q)
+    flags ID_PROTECTED;
+    {
+      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<", 1, args)) < 0;
+    }
+
+  /*! @decl static int(0..1) `>=(mixed q)
+   */
+  PIKEFUN int(0..1) `>=(mixed q)
+    flags ID_PROTECTED;
+  {
+    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>=", 1, args)) >= 0;
+  }
+
+  /*! @decl static int(0..1) `<=(mixed q)
+   */
+  PIKEFUN int(0..1) `<=(mixed q)
+    flags ID_PROTECTED;
+  {
+    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<=", 1, args)) <= 0;
+  }
+
+
+  /*! @decl static int(0..1) `==(mixed q)
+   */
+  PIKEFUN int(0..1) `==(mixed q)
+    flags ID_PROTECTED;
+  {
+    MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
+    RETURN arg && !mpq_cmp(THISMPQ, arg);
+  }
+
+  /*! @decl static int(0..1) `!=(mixed q)
+   */
+  PIKEFUN int(0..1) `!=(mixed q)
+    flags ID_PROTECTED;
+  {
+    MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
+    RETURN !(arg && !mpq_cmp(THISMPQ, arg));
+  }
+
+  /*! @decl int(-1..1) sgn()
+   */
+  PIKEFUN int(-1..1) sgn()
+    {
+      RETURN mpq_sgn(THISMPQ);
+    }
+
+  /*! @decl static int(0..1) `!(mixed q)
+   */
+  PIKEFUN int(0..1) `!()
+    flags ID_PROTECTED;
+    {
+      RETURN !mpq_sgn(THISMPQ);
+    }
+
+  INIT
+    {
+#ifdef PIKE_DEBUG
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
+#endif
+      mpq_init(THISMPQ);
+    }
+  
+  EXIT
+    gc_trivial;
+    {
+#ifdef PIKE_DEBUG
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
+#endif
+      mpq_clear(THISMPQ);
+    }
+
+  GC_RECURSE
+  {
+    if (mc_count_bytes (Pike_fp->current_object))
+      mc_counted_bytes +=
+#ifdef MPZ_T_HAS__MP_ALLOC
+	mpq_numref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
+	mpq_denref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
+#else
+	mpz_size (mpq_numref (THISMPQ)) * sizeof (mp_limb_t) +
+	mpz_size (mpq_denref (THISMPQ)) * sizeof (mp_limb_t) +
+#endif
+	sizeof (mpq_t);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+#endif /* USE_GMP */
+
+
+void pike_init_mpq_module(void)
+{
+  INIT
+}
+
+void pike_exit_mpq_module(void)
+{
+  EXIT
+}

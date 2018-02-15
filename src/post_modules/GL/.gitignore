@@ -1,6 +1,6 @@
 /.pure
-/Makefile
 /auto.c
+/auto.c.tmp
 /config.cache
 /config.h
 /config.h.in
@@ -12,6 +12,7 @@
 /make_variables
 /modlist_headers
 /modlist_segment
-/module_testsuite
+/testsuite
+/release
 /stamp-h
 /stamp-h.in

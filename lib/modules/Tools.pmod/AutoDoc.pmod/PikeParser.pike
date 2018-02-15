@@ -1,37 +1,47 @@
-// A very special purpose Pike parser that can parse some selected
-// elements of the Pike language...
+#pike __REAL_VERSION__
 
-static inherit .PikeObjects;
-static inherit "module.pmod";
+//! A very special purpose Pike parser that can parse some selected
+//! elements of the Pike language...
 
+#include "./debug.h"
+#define TOKEN_DEBUG 0
+
+protected inherit .PikeObjects;
+
+protected .Flags flags = .FLAG_NORMAL;
+
+//! The end of file marker.
 constant EOF = "";
 
-static mapping(string : string) quote =
+protected mapping(string : string) quote =
   (["\n" : "\\n", "\\" : "\\\\" ]);
-static string quoteString(string s) {
+protected string quoteString(string s) {
   return "\"" + (quote[s] || s) + "\"";
 }
 
-static void parseError(string message, mixed ... args) {
-  message = sprintf(message, @args);
-  werror("parseError! \n");
-  // werror(sprintf("%s\n", describe_backtrace(backtrace())));
-  message = "PikeParser error: " + message;
-  throw ( ({ message, currentline }) );
-}
-
-static mapping(string : string) matchTokens =
+protected mapping(string : string) matchTokens =
 ([ "(":")", "{":"}", "[":"]",
    "({" : "})", "([" : "])", "(<":">)" ]);
 
-static mapping(string : string) reverseMatchTokens =
+protected mapping(string : string) reverseMatchTokens =
   mkmapping(values(matchTokens), indices(matchTokens));
 
-static multiset(string) modifiers =
+protected multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
    "inline", "optional", "variant"  >);
 
+protected multiset(string) scopeModules =
+(< "predef", "top", "lfun", "efun" >);
+
+//! Skip the next token if it is a member of the @[tokens] set.
+//!
+//! @note
+//!   The newline token (@expr{"\n"@}) is not skipped implicitly
+//!   by this function.
+//!
+//! @seealso
+//!   @[readToken()], @[peekToken()], @[eat()], @[skipUntil()]
 void skip(multiset(string)|string tokens) {
   if (multisetp(tokens))
     while (tokens[peekToken(WITH_NL)]) readToken(WITH_NL);
@@ -39,6 +49,7 @@ void skip(multiset(string)|string tokens) {
     while (peekToken(WITH_NL) == tokens) readToken(WITH_NL);
 }
 
+//! Skip passed a matched pair of parenthesis, brackets or braces.
 void skipBlock() {
   string left = peekToken();
   string right = matchTokens[left];
@@ -60,6 +71,14 @@ void skipBlock() {
   parseError("expected " + quoteString(right));
 }
 
+//! Skip tokens until one of @[tokens] is the next to read.
+//!
+//! @note
+//!   The newline token (@expr{"\n"@}) is not skipped implicitly
+//!   by this function.
+//!
+//! @seealso
+//!   @[skip()]
 void skipUntil(multiset(string)|string tokens) {
   string s = peekToken(WITH_NL);
   if (stringp(tokens)) {
@@ -87,57 +106,143 @@ void skipUntil(multiset(string)|string tokens) {
   }
 }
 
+//! Skip past any newlines.
+void skipNewlines() {
+  while (peekToken(WITH_NL) == "\n")
+    readToken(WITH_NL);
+}
+
 //========================================================================
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
 
-int currentline = 0;
-string currentfile = "";
+//! The current position in the source.
+SourcePosition currentPosition = 0;
 
-static private int tokenPtr = 0;
-static private array(string) tokens;
-constant WITH_NL = 1;
+class ParseError
+{
+  inherit Error.Generic;
+  constant error_type = "pike_parse_error";
+  constant is_pike_parse_error = 1;
 
-string peekToken(int | void with_newlines) {
-  if (tokenPtr >= sizeof(tokens))
-    return EOF;
-  string s;
-  if (with_newlines)
-    return tokens[tokenPtr];
-  else {
-    int i = tokenPtr;
-    while (tokens[i] == "\n")
-      ++i;
-    s = tokens[i];
+  string filename;
+  int pos;
+
+  string parse_message;
+  // The bare message, without filename and pos etc. Also without
+  // trailing newline.
+
+  protected void create (string filename, int pos, string message,
+			 void|array bt)
+  {
+    this_program::filename = filename;
+    this_program::pos = pos;
+    parse_message = message;
+    ::create (sprintf ("PikeParser: %s:%d: %s\n", filename, pos, message), bt);
   }
-  //  werror("    peek: %O  %s\n", s, with_newlines ? "(WNL)" : "");
-  return s;
 }
 
-static int nReadDocComments = 0;
+protected int parseError(string message, mixed ... args) {
+  if (sizeof (args))
+    message = sprintf(message, @args);
+  // werror("parseError! \n");
+  // werror("%s\n", describe_backtrace(backtrace()));
+  throw (ParseError (filename, positions[tokenPtr], message,
+		     backtrace()[..<1]));
+}
+
+private int tokenPtr = 0;
+private array(string) tokens;
+private array(int) positions;
+private string filename;
+
+//! Newline indicator flag value.
+constant WITH_NL = 1;
+
+//! Peek @[offset] tokens ahead, skipping newlines,
+//! unless @[with_newlines] is set.
+//!
+//! @seealso
+//!   @[peekToken()]
+string lookAhead(int offset, int | void with_newlines) {
+  if (with_newlines)
+    return tokens[min(tokenPtr + offset, sizeof(tokens) - 1)];
+  int i = tokenPtr;
+  for (;;) {
+    while (tokens[i] == "\n")
+      ++i;
+    if (offset <= 0)
+      return tokens[i];
+    --offset;
+    ++i;
+    if (i >= sizeof(tokens))
+      return EOF;
+  }
+}
+
+//! Peek at the next token in the stream without advancing.
+//!
+//! @param with_newlines
+//!   If set will return @expr{"\n"@} tokens, these will
+//!   otherwise silently be skipped.
+//!
+//! @returns
+//!   Returns the next token.
+//!
+//! @seealso
+//!   @[readToken()], @[lookAhead()]
+string peekToken(int | void with_newlines) {
+  int at = tokenPtr;
+
+  if (tokenPtr >= sizeof(tokens))
+    return EOF;
+
+  if (!with_newlines)
+    while (tokens[at] == "\n")
+      ++at;
+
+  currentPosition = SourcePosition( filename, positions[at] );
+  return tokens[at];
+}
+
+protected int nReadDocComments = 0;
+
+//! @returns
+//!   Returns the number of documentation comments
+//!   that have been returned by @[readToken()].
 int getReadDocComments() { return nReadDocComments; }
+
+//! Read the next token from the stream and advance.
+//!
+//! @param with_newlines
+//!   If set will return @expr{"\n"@} tokens, these will
+//!   otherwise silently be skipped.
+//!
+//! @returns
+//!   Returns the next token.
+//!
+//! @seealso
+//!   @[peekToken()]
 string readToken(int | void with_newlines) {
   if (tokenPtr >= sizeof(tokens))
     return EOF;
-  string s;
-  if (with_newlines) {
-    if ( (s = tokens[tokenPtr++]) == "\n")
-      ++currentline;
-  }
+
+  int pos;
+  if (with_newlines)
+    pos = tokenPtr++;
   else {
-    while (tokens[tokenPtr] == "\n") {
+    while (tokens[tokenPtr] == "\n")
       ++tokenPtr;
-      ++currentline;
-    }
-    s = tokens[tokenPtr++];
+    pos = tokenPtr++;
   }
-  if (isDocComment(s))
+  if (isDocComment(tokens[pos]))
     ++nReadDocComments;
-  // werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
-  return s;
+
+  currentPosition = SourcePosition( filename, positions[pos] );
+  return tokens[pos];
 }
 
-// consume one token, error if not (one of) the expected
+//! Consume one token, error if not (one of) the expected in @[token].
 string eat(multiset(string) | string token) {
   string s = peekToken();
   if (multisetp(token)) {
@@ -155,27 +260,72 @@ string eat(multiset(string) | string token) {
   return readToken();
 }
 
-string eatIdentifier() {
+//! Expect an identifier.
+//!
+//! @note
+//!   Also @expr{::ident@}, @expr{scope::ident@}.
+//!
+//! @note
+//!   This function also converts old-style getters and setters
+//!   into new-style.
+string eatIdentifier(void|int allowScopePrefix) {
+  //  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
+  string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
+    ? readToken()
+    : "";
+  string colons = peekToken() == "::" ? readToken() : "";
+  //  werror("scope == %O ,colons == %O\n", scope, colons);
+
+  if (sizeof(scope + colons) && !allowScopePrefix)
+    parseError("scope prefix not allowed");
   string s = peekToken();
   if (!isIdent(s))
     parseError("expected identifier, got %O", s);
   readToken();
-  return s;
+
+  // Special hax for `->symbol and `->symbol=, and `symbol and `symbol=
+  if( (s=="`->" || s=="`") && isIdent(peekToken()) )
+  {
+    if (s == "`->") s = "`"; // Convert old to new syntax.
+    s += readToken();
+    if( peekToken()=="=" )
+      s += readToken();
+  }
+
+  return scope + colons + s;
 }
 
-Type|void parseOrType() {
+//! Parse a union type.
+Type parseOrType() {
   array(Type) a = ({ parseType() });
   while (peekToken() == "|") {
     readToken();
     a += ({ parseType() });
   }
-  if (sizeof(a) == 1)
-    return a[0];
-  OrType or = OrType();
-  or->types = a;
-  return or;
+  Type base;
+  if (sizeof(a) == 1) {
+    base = a[0];
+  } else {
+    base = OrType();
+    base->types = a;
+  }
+  int level = 0;
+  while (peekToken() == "*") {
+    readToken();
+    level++;
+  }
+  if (!level) {
+    return base;
+  }
+  while(level--) {
+    Type a = ArrayType();
+    a->valuetype = base;
+    base = a;
+  }
+  return base;
 }
 
+//! Parse a mapping type.
 MappingType parseMapping() {
   eat("mapping");
   MappingType m = MappingType();
@@ -189,6 +339,7 @@ MappingType parseMapping() {
   return m;
 }
 
+//! Parse an array type.
 ArrayType parseArray() {
   eat("array");
   ArrayType a = ArrayType();
@@ -200,6 +351,7 @@ ArrayType parseArray() {
   return a;
 }
 
+//! Parse a multiset type.
 MultisetType parseMultiset() {
   eat("multiset");
   MultisetType m = MultisetType();
@@ -211,48 +363,80 @@ MultisetType parseMultiset() {
   return m;
 }
 
+//! Parse a function type.
 FunctionType parseFunction() {
   eat("function");
   FunctionType f = FunctionType();
   if (peekToken() == "(") {
-    readToken();
-    f->argtypes = ({ parseOrType() });
-    while (peekToken() == ",") {
+    f->argtypes = ({ });
+    do {
       readToken();
-      f->argtypes += ({ parseOrType() });
+      Type t = parseOrType();
+      if (!t)
+        if (peekToken() == ")" || peekToken() == ":")
+          break;
+        else
+          parseError("expected type, got %O", peekToken());
+      f->argtypes += ({ t });
+    } while(peekToken() == ",");
+    if (peekToken() == "...") {
+      if (!sizeof(f->argtypes))
+        parseError("expected type, got ...");
+      readToken();
+      f->argtypes[-1] = VarargsType(f->argtypes[-1]);
     }
     if (peekToken() == ":") {
       readToken();
-      f->returntype = parseOrType();
+      f->returntype = parseOrType() || parseError("expected return type");
     }
     eat(")");
   }
   return f;
 }
 
+//! Parse an integer type.
 IntType parseInt() {
   eat("int");
   IntType i = IntType();
   if (peekToken() == "(") {
     readToken();
     if (peekToken() != "..")
-      i->min = readToken();
+      i->min = eatLiteral();
     eat("..");
     if (peekToken() != ")")
-      i->max = readToken();
+      i->max = eatLiteral();
     eat(")");
   }
   return i;
 }
 
-// also parses stuff preceded by "predef::"
+//! Parse a string type.
+StringType parseString() {
+  eat("string");
+  StringType s = StringType();
+  if (peekToken() == "(") {
+    readToken();
+    if (peekToken() != "..")
+      s->min = eatLiteral();
+    eat("..");
+    if (peekToken() != ")")
+      s->max = eatLiteral();
+    eat(")");
+  }
+  return s;
+}
+
+//! Parse a '.'-separated identitifer string.
+//!
+//! @note
+//!   Also parses stuff preceded by @expr{"scope::"@} or @expr{"::"@}
 string|void parseIdents() {
   string result = "";
-  if (peekToken() == ".")
+  if (peekToken() == "." || peekToken() == "::")
     result = readToken();
-  else if (peekToken() == "predef") {
+  else if (isIdent(peekToken()) || isFloat(peekToken())) {
     result = readToken();
-    if (peekToken() != "::")
+    if (peekToken() != "::" && peekToken() != ".") // might be "top.ident" ...
       return result;
     result += readToken();
   }
@@ -272,7 +456,7 @@ string|void parseIdents() {
 
 string parseProgramName() {
   string s = peekToken();
-  if (strlen(s) && s[0] == '"')
+  if (sizeof(s) && s[0] == '"')
     return (readToken(), s);
   s = parseIdents();
   if (!s)
@@ -301,6 +485,75 @@ ObjectType parseObject() {
   return obj;
 }
 
+ProgramType parseProgram() {
+  ProgramType prg = ProgramType();
+  eat("program");
+  if( peekToken() == "(" ) {
+    readToken();
+    prg->classname = "";
+    while( peekToken() != ")" )
+      prg->classname += readToken();
+    eat(")");
+  }
+  return prg;
+}
+
+TypeType parseTypeType()
+{
+  eat("type");
+  TypeType t = TypeType();
+  if (peekToken() == "(") {
+    readToken();
+    t->subtype = parseType();
+    eat(")");
+  }
+  return t;
+}
+
+AttributeType parseAttributeType()
+{
+  eat("__attribute__");
+  AttributeType t = AttributeType();
+  eat("(");
+  string s = peekToken();
+  if (sizeof(s) >= 2 && s[0] == '"') {
+    t->attribute = s;
+    eat(s);
+  } else parseError("expected attribute name");
+  if (peekToken() == ",") {
+    readToken();
+    if (peekToken() != ")") {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  eat(")");
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
+AttributeType parseDeprecated()
+{
+  eat("__deprecated__");
+  AttributeType t = AttributeType();
+  t->attribute = "\"deprecated\"";
+  if (peekToken() == "(") {
+    readToken();
+    if (peekToken() == ")") {
+      readToken();
+    } else {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
 Type parseType() {
   string s = peekToken();
   switch(s) {
@@ -310,15 +563,14 @@ Type parseType() {
     case "mixed":
       eat("mixed");
       return MixedType();
-    case "program":
-      eat("program");
-      return ProgramType();
     case "string":
-      eat("string");
-      return StringType();
+      return parseString();
     case "void":
       eat("void");
       return VoidType();
+    case "zero":
+      eat("zero");
+      return ZeroType();
 
     case "array":
       return parseArray();
@@ -332,6 +584,14 @@ Type parseType() {
       return parseMultiset();
     case "object":
       return parseObject();
+    case "program":
+      return parseProgram();
+    case "type":
+      return parseTypeType();
+    case "__attribute__":
+      return parseAttributeType();
+    case "__deprecated__":
+      return parseDeprecated();
     case ".":
       return parseObject();
     default:
@@ -342,13 +602,20 @@ Type parseType() {
   }
 }
 
-// If allowLiterals != 0 then you can write a literal or Pike idents
-// as an argument, like:
-//    void convert("jpeg", Image image, float quality)
-//
-// For a literal arg, the argname[] string contains the literal and
-// the corresponding argtypes element is 0
-// NOTE: expects that the arglist is followed by a ")".
+//! Parse the list of arguments in a function declaration.
+//!
+//! @param allowLiterals
+//!   If allowLiterals != 0 then you can write a literal or Pike idents
+//!   as an argument, like:
+//!   @code
+//!      void convert("jpeg", Image image, float quality)
+//!   @endcode
+//!
+//!   For a literal arg, the argname[] string contains the literal and
+//!   the corresponding argtypes element is 0
+//!
+//! @note
+//!   Expects that the arglist is followed by a ")".
 array parseArgList(int|void allowLiterals) {
   array(string) argnames = ({ });
   array(Type) argtypes = ({ });
@@ -359,34 +626,31 @@ array parseArgList(int|void allowLiterals) {
     if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
     string literal = 0;
+    string identifier = 0;
     if (!typ)
       literal = parseLiteral();
-    else if (peekToken() == "...") {
-      typ = VarargsType(typ);
-      eat("...");
+    else {
+      if (peekToken() == "...") {
+	typ = VarargsType(typ);
+	eat("...");
+      }
+      if (isIdent(peekToken()))
+	identifier = readToken();
     }
-    string identifier = 0;
-    if (isIdent(peekToken()))
-      identifier = readToken();
 
-    if (typ && identifier) {
+    if (typ && (identifier || !allowLiterals || (typ->name != "object"))) {
+      // Note: identifier may be zero for unnamed arguments in prototypes.
       argnames += ({ identifier });
       argtypes += ({ typ });
     }
     else {
       if (typ) {
-        // it's an identifier 'Foo.Bar.gazonk' designating a constant that
-        // has been mistaken for an object type ...
-        if (typ->name != "object")
-          parseError("Expected type, idents or literal constant");
-        literal = typ->classname;
+	// it's an identifier 'Foo.Bar.gazonk' designating a constant that
+	// has been mistaken for an object type ...
+	literal = typ->classname;
       }
-      if (literal && !identifier) {
-        argnames += ({ literal });
-        argtypes += ({ 0 });
-      }
-      else
-        parseError("Expected type, idents or literal constant");
+      argnames += ({ literal });
+      argtypes += ({ 0 });
     }
     if (peekToken() == ")")
       return ({ argnames, argtypes });
@@ -394,103 +658,190 @@ array parseArgList(int|void allowLiterals) {
   }
 }
 
-array parseCreateArgList() {
-  array(string) argnames = ({});
-  array(Type) argtypes = ({});
-  array(array(string)) argmodifiers = ({});
-  for (;;) {
-    array(string) m = parseModifiers();
-    Type t = parseOrType();
-    if (!t)
-      return ({ argnames, argtypes, argmodifiers });
-    if (peekToken() == "...") {
-      t = VarargsType(t);
-      eat("...");
-    }
-    argnames += ({ eatIdentifier() });
-    argtypes += ({ t });
-    argmodifiers += ({ m });
-    if (peekToken() != ",")
-      return ({ argnames, argtypes, argmodifiers });
-    eat(",");
-  }
-}
-
+//! Parse a set of modifiers from the token stream.
 array(string) parseModifiers() {
   string s = peekToken();
   array(string) mods = ({ });
   while (modifiers[s]) {
-    mods += ({ s });
+    // Canonicalize some aliases.
+    s = ([ "nomask":"final",
+	   "static":"protected",
+	   "inline":"local",
+    ])[s] || s;
+    if (!has_value(mods, s)) {
+      mods += ({ s });
+    }
     readToken();
     s = peekToken();
+  }
+  if (sizeof(mods) > 1) {
+    // Clean up implied modifiers.
+    if (has_value(mods, "private")) {
+      // private implies protected.
+      mods -= ({ "protected", });
+    }
+    if (has_value(mods, "final")) {
+      // final implies local.
+      mods -= ({ "local" });
+    }
   }
   return mods;
 }
 
+//! Parse the next literal constant (if any) from the token stream.
 void|string parseLiteral() {
+  string sign = peekToken() == "-" ? readToken() : "";
   string s = peekToken();
   if (s && s != "" &&
       (s[0] == '"' || s[0] == '\'' || isDigit(s[0])))
   {
     readToken();
-    return s;
+    return sign + s;
   }
   return 0;
 }
 
-// parseDecl() reads ONLY THE HEAD, NOT the ";" or "{" .. "}" !!!
+Type literalType (string literal)
+//! Returns the type of a literal. Currently only recognizes the top
+//! level type. Currently does not thoroughly check that the literal
+//! is syntactically valid.
+{
+  if (sizeof (literal))
+    switch (literal[0]) {
+      case '\'': return IntType(); // Character constant.
+      case '"': return StringType();
+      case '(':
+	if (sizeof (literal) > 1)
+	  switch (literal[1]) {
+	    case '{': return ArrayType();
+	    case '[': return MappingType();
+	    case '<': return MultisetType();
+	  }
+	break;
+      default:
+	if (sscanf (literal, "%*D%*c") == 1)
+	  return IntType();
+	if (sscanf (literal, "%*f%*c") == 1)
+	  return FloatType();
+    }
+  // Unrecognized format. Add an option to trig a parse error instead?
+  return 0;
+}
 
+//! Expect a literal constant.
+//!
+//! @seealso
+//!   @[parseLiteral()]
+string eatLiteral() {
+  return parseLiteral() || parseError("expected literal");
+}
+
+//! Parse the next Pike declaration from the token stream.
+//!
+//! @note
+//!   @[parseDecl()] reads ONLY THE HEAD, NOT the @expr{";"@}
+//!   or @expr{"{" .. "}"@} !!!
 PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   args = args || ([]);
   skip("\n");
-  int firstline = currentline;
+  peekToken();
+  SourcePosition position = currentPosition;
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
   while (s == "\n") {
     readToken(WITH_NL);
     s = peekToken(WITH_NL);
   }
+
   if (s == "class") {
     Class c = Class();
+    c->position = position;
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
-    if (peekToken() == "(") {
-      eat("(");
-      [c->createArgNames, c->createArgTypes, c->createArgModifiers] =
-        parseCreateArgList();
-      eat(")");
-    }
     return c;
+  }
+  else if (s == "{") {
+    Modifier m = Modifier();
+    m->position = position;
+    m->modifiers = modifiers;
+    return m;
   }
   else if (s == "constant") {
     Constant c = Constant();
+    c->position = position;
     c->modifiers = modifiers;
     readToken();
+    int save_pos = tokenPtr;
+    mixed err = catch (c->type = parseOrType());
+    if (err && (!objectp (err) || !err->is_pike_parse_error))
+      throw (err);
+    if (err || (<"=", ";", EOF>)[peekToken()]) {
+      c->type = 0;
+      tokenPtr = save_pos;
+    }
     c->name = eatIdentifier();
-    eat("=");
-    // TODO: parse the expression ???
-    //   added parsing only of types...
-    //   a constant value will just be ignored.
-    c->typedefType = parseOrType();
-
+    if (peekToken() == "=") {
+      eat("=");
+    }
+    // FIXME: Warn if literal and no '='.
+    if (string l = parseLiteral()) {
+      // It's intentional that literalType doesn't return too
+      // specific types for integers, i.e. it's int instead of e.g.
+      // int(4711..4711).
+      c->type = literalType (l);
+      // TODO: parse the expression ???
+      //   added parsing only of types...
+      //   a constant value will just be ignored.
+      //c->typedefType = parseOrType();      // Disabled 2003-11-20 /grubba
+    }
+    // FIXME: What about multiple constants (constant_list)?
+    //        Not that anyone uses the syntax, but...
     skipUntil( (< ";", EOF >) );
     return c;
   }
-  else if (s == "inherit") {
-    Inherit i = Inherit();
+  else if ((s == "inherit") || (s == "import")) {
+    object(Inherit)|Import i;
+    i = (s == "inherit")?Inherit():Import();
+    i->position = position;
     i->modifiers = modifiers;
     readToken();
-    i->classname = parseProgramName();
-    if (peekToken() == ":") {
+    i->name = i->classname = parseProgramName();
+    if ((s == "inherit") && (peekToken() == ":")) {
       readToken();
       i->name = eatIdentifier();
+    } else {
+      if (i->classname[0] != '"') {
+	// Keep just the last part.
+	i->name = (replace(i->classname,
+			   ({ "::", "->", "()" }),
+			   ({ ".", ".", "" }))/".")[-1];
+      }
     }
     return i;
   }
+  else if (s == "typedef") {
+    Typedef t = Typedef();
+    t->position = position;
+    t->modifiers = modifiers;
+    readToken();
+    t->type = parseOrType();
+    t->name = eatIdentifier();
+    return t;
+  }
+  else if (s == "enum") {
+    Enum e = Enum();
+    e->position = position;
+    e->modifiers = modifiers;
+    readToken();
+    if (peekToken() != "{")
+      e->name = eatIdentifier();
+    return e;
+  }
   else {
     Type t = parseOrType();
-    string name = eatIdentifier();
+    // only allow lfun::, predef::, :: in front of methods/variables
+    string name = eatIdentifier(args["allowScopePrefix"]);
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
       m->modifiers = modifiers;
@@ -521,42 +872,98 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
 }
 
-// special() removes all whitespaces except for \n, which it
-// puts in separate "\n" strings in the array
-// It also removes all comments that are not doc comments,
-// and removes all preprocessor stuff.
-// FIXME: how do we handle multiline strings: #" ... " ???
-static private array(string) special(array(string) in) {
-  array(string) ret = ({ });
-  foreach (in, string s) {
+//! Tokenize a string of Pike code.
+array(array(string)|array(int)) tokenize(string s, int line) {
+    if(strlen(s) && s[-1] != '\n') s+="\n";
+  array(string) a = Parser.Pike.split(s) + ({ EOF });
+
+  array(string) t = ({ });
+  array(int) p = ({ });
+
+  for(int i = 0; i < sizeof(a); ++i) {
+    string s = a[i];
+    int pos = line;
+
+    line += String.count(s, "\n");
+
     // remove preprocessor directives:
-    if (strlen(s) > 1 && s[0..0] == "#")
+    if (sizeof(s) > 1 && s[0..0] == "#") {
+      // But convert #pike directives to corresponding imports,
+      // so that the resolver can find the correct symbols later.
+      if (has_prefix(s, "#pike ") || has_prefix(s, "#pike\t")) {
+	string version = String.trim_all_whites(s[sizeof("#pike ")..]);
+	if (version == "__REAL_VERSION__") {
+	  version = "predef";
+	}
+	// NB: Surround the comment with whitespace, to keep
+	//     it from being associated with surrounding code.
+	t += ({ "\n", "//! @decl import " + version + "::\n", "\n" });
+	p += ({ pos + 2, pos, pos + 2 });
+      }
+      t += ({ "\n" });
+      p += ({ pos });
       continue;
+    }
     // remove non-doc comments
-    if (strlen(s) >= 2 &&
+    if (sizeof(s) >= 2 &&
         (s[0..1] == "/*" || s[0..1] == "//") &&
-       !isDocComment(s))
+	(sizeof(s)==2 || s[2]!='!'))
       continue;
-    // remove blanks that are not "\n"
-    // separate multiple adjacent "\n"
-    int c = String.count(s, "\n");
-    if (c)
-      ret += ({ "\n" }) * c;
-    else if (strlen(replace(s, ({" ", "\t", "\r" }), ({ "","","" }) )))
-      ret += ({ s });
+    if(sizeof(s) >= 2 && s[0..1]=="/*") {
+      werror("Illegal comment %O in %O.\n", s, filename);
+      continue;
+    }
+    if( sizeof(s) && (< ' ', '\t', '\r', '\n' >)[s[0]] ) {
+      string clean = s-" "-"\t"-"\r";
+      if(!sizeof(clean)) continue;
+      if(clean=="\n"*sizeof(clean)) {
+	int i = sizeof(clean);
+	while(i--) {
+	  t += ({ "\n" });
+	  p += ({ pos++ });
+	}
+	continue;
+      }
+    }
+
+    t += ({ s });
+    p += ({ pos });
   }
-  return ret;
+  return ({ t, p });
 }
 
-static private array(string) tokenize(string s) {
-  return special(Parser.Pike.split(s)) + ({ EOF });
+//!
+void setTokens(array(string) t, array(int) p) {
+  tokens = t;
+  positions = p;
+  tokenPtr = 0;
+#if TOKEN_DEBUG
+  werror("PikeParser::setTokens(), tokens = \n%O\n", tokens);
+#endif
 }
 
-// create(string, filename)
+//!
+protected void create(string|void s,
+		      string|SourcePosition|void _filename,
+		      int|void line, .Flags|void flags)
+{
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (s) {
+    if (objectp(_filename)) {
+      line = _filename->firstline;
+      filename = _filename->filename;
+    }
+    if (!line)
+      error("PikeParser::create() called without line arg.\n");
 
-static void create(string s, void|string filename) {
-  currentfile = filename || "";
-  currentline = 1;
-  tokens = tokenize(s);
+    [tokens, positions] = tokenize(s, line);
+  }
+  else {
+    tokens = ({});
+    filename = _filename;
+  }
+#if TOKEN_DEBUG
+  werror("PikeParser::create(), tokens = \n%O\n", tokens);
+#endif
   tokenPtr = 0;
 }

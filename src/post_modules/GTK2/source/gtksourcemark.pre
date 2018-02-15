@@ -1,0 +1,24 @@
+/* -*- C -*- */
+require gtksourceview;
+
+class GTK2.SourceMark;
+not gtksourceview20;
+/* Backward compat. */
+inherit GTK2.SourceMarker;
+endnot;
+require gtksourceview20;
+inherit GTK2.TextMark;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourcemark.h"
+%}
+
+string get_category();
+//! Gets the category type of this marker.
+
+GTK2.SourceMark next(string category);
+//! Gets the next marker of the specified category after this.
+
+GTK2.SourceMark prev(string category);
+//! Gets the previous marker of the specified category before this.

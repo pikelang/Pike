@@ -1,7 +1,5 @@
-/* $Id: Queue.pike,v 1.3 2000/09/28 03:38:28 hubbe Exp $
- *
- * A simple FIFO queue. 
- */
+
+//! A simple FIFO queue.
 
 #pike __REAL_VERSION__
 #define QUEUE_SIZE 100
@@ -10,28 +8,44 @@ array l;
 int head;
 int tail;
 
-void create(mixed ...args)
+//! Creates a queue with the initial items @[args] in it.
+protected void create(mixed ...args)
 {
   l = args + allocate(QUEUE_SIZE);
   head = sizeof(args);
   tail = 0;
 }
 
-void write(mixed item)
+protected int _sizeof()
 {
-  put(item);
+  return head - tail;
 }
 
-void put(mixed item)
+protected array _values()
 {
-  if (head == sizeof(l))
-  {
+  return l[tail..head-1];
+}
+
+void write(mixed ... items)
+{
+  put(@items);
+}
+
+//! @decl void write(mixed ... items)
+//! @decl void put(mixed ... items)
+//! Adds @[items] to the queue.
+//
+void put(mixed ... items)
+{
+  if (sizeof(items) + head > sizeof(l)) {
     l = l[tail ..];
     head -= tail;
     tail = 0;
-    l += allocate(sizeof(l) + QUEUE_SIZE);
+    l += allocate(sizeof(l) + max(QUEUE_SIZE, sizeof(items)));
   }
-  l[head++] = item;
+  foreach (items; int n; mixed item) {
+      l[head++] = item;
+  }
 //  werror(sprintf("Queue->put: %O\n", l[tail..head-1]));
 }
 
@@ -40,28 +54,50 @@ mixed read()
   return get();
 }
 
+//! @decl mixed read()
+//! @decl mixed get()
+//! Returns the next element from the queue.
+//
 mixed get()
 {
 //  werror(sprintf("Queue->get: %O\n", l[tail..head-1]));
   mixed res;
   if (tail == head)
-    return ([])[0];
+    return UNDEFINED;
   res = l[tail];
   l[tail++] = 0;
   return res;
 }
 
+//! Returns the next element from the queue
+//! without removing it from the queue.
 mixed peek()
 {
   return (tail < head) && l[tail];
 }
 
-int is_empty()
+//! Returns true if the queue is empty,
+//! otherwise zero.
+int(0..1) is_empty()
 {
   return (tail == head);
 }
 
+//! Empties the queue.
 void flush()
 {
   create();
+}
+
+//! It is possible to cast ADT.Queue to an array.
+protected mixed cast(string to) {
+  switch(to) {
+  case "object": return this;
+  case "array": return l[tail..head-1];
+  }
+  error("Can not cast ADT.Queue to %s.\n", to);
+}
+
+protected string _sprintf(int t) {
+  return t=='O' && l && sprintf("%O%O", this_program, cast("array"));
 }

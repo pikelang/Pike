@@ -2,7 +2,7 @@
 import Stdio;
 import Readline;
 
-static private object(History) readline_history = History(512);
+protected private object(History) readline_history = History(512);
 
 string _module_value(string prompt, function|void complete_callback)
 {

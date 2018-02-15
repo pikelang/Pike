@@ -1,11 +1,11 @@
 #pike __REAL_VERSION__
 
-static private int stage=0;
-static private int booted=0;
-static private object defcal;
-static private object iso_utc;
-static private object default_rules;
-constant magic= // magic + indices(Calendar.ISO) without YMD
+protected private int stage=0;
+protected private int booted=0;
+protected private object defcal;
+protected private object iso_utc;
+protected private object default_rules;
+protected constant magic= // magic + indices(Calendar.ISO) without YMD
 (<
    "ISO_UTC","II", "default_rules",
    "_sprintf", "set_timezone", "language", "Day", "Year", "Week",
@@ -16,32 +16,31 @@ constant magic= // magic + indices(Calendar.ISO) without YMD
    "calendar_name", "calendar_object", "TimeRange", 
    "nulltimerange", "ruleset", "set_ruleset", "inano", "timezone",
    "set_language", "default_rules", "TimeofDay",
-   "Second", "Fraction", "now" >);
+   "Second", "Fraction", "now", "Bahai" >);
+
+array _indices()
+{
+  return (array)magic;
+}
 
 #include "localization.h"
 
 #if 1
-mixed `[](string what)
+protected mixed `[](string what)
 {
    if (!booted)
    {
+      if (what == "_module_value") return UNDEFINED;
       booted++;
       stage++;
-// bootstrap in the right order
-      master()->resolv("Calendar")["Ruleset"];
-      master()->resolv("Calendar")["Timezone"];
-      master()->resolv("Calendar")["Language"];
-      master()->resolv("Calendar")["TimeRanges"];
-      master()->resolv("Calendar")["Calendar"];
-      master()->resolv("Calendar")["Time"];
-      master()->resolv("Calendar")["YMD"];
-      master()->resolv("Calendar")["Gregorian"];
 
 // load ISO
 // it can crash here if you're loading from compiled modules
 // that is updated without all of the calendar module is updated
       iso_utc=master()->resolv("Calendar")["ISO"];
       iso_utc=iso_utc->set_timezone("UTC");
+      object Time = master()->resolv("Calendar")["Time"];
+      Time->Day = iso_utc->cDay;
       stage--;
       object tz=
 	 master()->resolv("Calendar")["Timezone"][default_timezone];
@@ -50,9 +49,11 @@ mixed `[](string what)
       else
 	 default_rules->timezone=tz; // destructive!
    }
-   if ( !magic[what] || (stage && what!="default_rules")) return ([])[0];
+   if ( !magic[what] || (stage && what!="default_rules")) return UNDEFINED;
    switch (what)
    {
+      case "Bahai":
+         return master()->resolv("Calendar")["Badi"];
       case "ISO_UTC":
 	 if (!iso_utc)
 	    error("ERROR\n");
@@ -79,5 +80,10 @@ mixed `[](string what)
    }
    return defcal[what];
 }
-mixed `-> = `[];
+
+protected mixed `-> (string what)
+{
+  // This becomes an alias.
+  return `[] (what);
+}
 #endif

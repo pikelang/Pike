@@ -1,10 +1,17 @@
-#include "global.h"
-RCSID("$Id: polyfill.c,v 1.36 2000/12/01 08:10:02 hubbe Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
+
+#if 0
 /* Prototypes are needed for these */
+/* Should really exist in math.h. This prototype might conflict with
+ * dllimport stuff on Windows. /mast */
 extern double floor(double);
-
-#include "global.h"
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -14,20 +21,14 @@ extern double floor(double);
 
 #include "image_machine.h"
 
-#include "stralloc.h"
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "threads.h"
-#include "builtin_functions.h"
 
 #include "image.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef THIS
 #undef THIS
@@ -39,8 +40,6 @@ extern double floor(double);
 
 /*
 **! module Image
-**! note
-**!	$Id: polyfill.c,v 1.36 2000/12/01 08:10:02 hubbe Exp $
 **! class Image
 */
 
@@ -55,6 +54,16 @@ extern double floor(double);
 **!
 **!	If any given curve is inside another, it
 **!	will make a hole.
+**!
+**! <pre>
+**! Image.Image(100,100)->setcolor(255,0,0,128)->
+**!   polyfill( ({ 20,20, 80,20, 80,80 }) );
+**! </pre>
+**! <illustration>
+**! return Image.Image(100,100)->setcolor(255,0,0,128)->
+**!   polyfill( ({ 20,20, 80,20, 80,80 }) );
+**! </illustration>
+**!
 **!
 **! note
 **!	Lines in the polygon may <i>not</i> be crossed without
@@ -78,7 +87,7 @@ struct vertex
 {
    double x, y;
    struct vertex *next;    /* total list, sorted downwards */
-   struct line_list *below,*above; /* childs */
+   struct line_list *below,*above; /* children */
    int done;
 };
 
@@ -129,6 +138,7 @@ static void vertex_connect(struct vertex *above,
    above->below = c;
 
    d = malloc(sizeof(struct line_list));
+   if(!d) { free(c); return; }
    d->above = above; d->below = below;
    d->next = below->above;
    d->dx = c->dx;
@@ -283,6 +293,7 @@ static void add_vertices(struct line_list **first,
 
 
       c=malloc(sizeof(struct line_list));
+      if(!c) return;
       *c=*what;
       c->next=*ins;
       *ins=c;
@@ -293,7 +304,7 @@ static void add_vertices(struct line_list **first,
 
 static void sub_vertices(struct line_list **first,
 			 struct vertex *below,
-			 double yp)
+			 double UNUSED(yp))
 {
    struct line_list **ins,*c;
 
@@ -390,10 +401,10 @@ static INLINE void polyfill_slant_add(double *buf,
 
 static int polyfill_event(double xmin,
 			  double xmax,
-			  struct line_list **pll,
-			  int tog,
 			  double yp,
-			  double *buf)
+			  double *buf,
+			  struct line_list **pll,
+			  int tog)
 {
    struct line_list *c;
    struct line_list *ll=*pll;
@@ -520,9 +531,9 @@ static void polyfill_some(struct image *img,
       double yp = y;
       struct line_list *c;
       double xmin, xmax;
+      rgb_group *d;
       int tog=0;
       int i;
-      rgb_group *d;
 
 #ifdef POLYDEBUG      
       fprintf(stderr,"\nline %d..%d\n",y,y+1);
@@ -579,7 +590,6 @@ static void polyfill_some(struct image *img,
 	       VY(c,c->xmin)>VY(c->next,c->xmin)))
 	 {
 	    struct line_list *l1;
-	    struct line_list *pll;
 	    /* resort */
 #ifdef POLYDEBUG
 	    fprintf(stderr,"  !!! resort !!!\n");
@@ -624,7 +634,7 @@ static void polyfill_some(struct image *img,
 	 if (xmax==1e10) break; /* no more events */
 
 	 if (xmax>ixmax) xmax=ixmax;
-	 tog=polyfill_event(xmin,xmax,&ll,tog,yp,buf);
+	 tog=polyfill_event(xmin,xmax,yp,buf,&ll,tog);
 	 
 	 /* shift to get next event */
 	 xmin = xmax;
@@ -642,19 +652,50 @@ static void polyfill_some(struct image *img,
 
       /* write this row */
       d=img->img+img->xsize*y;
-      for (i=0; i<img->xsize; i++)
+      if(THIS->alpha)
       {
+	for (i=0; i<img->xsize; i++)
+        {
 #ifdef POLYDEBUG
-	 fprintf(stderr,"%3.2f ",buf[i]);
+	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
-	 d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
-	 d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
-	 d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
-	 d++;
+
+#define apply_alpha(x,y,alpha) \
+   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
+
+	  d->r = apply_alpha( d->r,
+			      DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+
+						  (img->rgb.r*buf[i])),
+			      THIS->alpha );
+	  d->g = apply_alpha( d->g,
+			      DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+
+						  (img->rgb.g*buf[i])),
+			      THIS->alpha );
+	  d->b = apply_alpha( d->b,
+			      DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+
+						  (img->rgb.b*buf[i])),
+			      THIS->alpha );
+	  d++;
+	}
+#ifdef POLYDEBUG
+	fprintf(stderr,"\n");
+#endif
       }
+      else {
+	for (i=0; i<img->xsize; i++)
+        {
 #ifdef POLYDEBUG
-      fprintf(stderr,"\n");
+	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
+	  d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
+	  d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
+	  d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
+	  d++;
+	}
+#ifdef POLYDEBUG
+	fprintf(stderr,"\n");
+#endif
+      }
 
       y++;
    }
@@ -688,7 +729,7 @@ static INLINE struct vertex *polyfill_begin(void)
    return NULL;
 }
 
-static INLINE struct vertex *polyfill_add(struct vertex *top,
+static INLINE struct vertex *polyfill_add(struct vertex **top,
 					  struct array *a,
 					  int arg,
 					  char* what)
@@ -696,39 +737,41 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
    struct vertex *first,*last,*cur = NULL;
    int n;
 
-   for (n=0; n<a->size; n++)
-      if (a->item[n].type!=T_FLOAT &&
-	  a->item[n].type!=T_INT)
-      {
-	 polyfill_free(top);
-	 Pike_error("Illegal argument %d to %s, array index %d is not int nor float\n",arg,what,n);
-	 return NULL;
-      }
+   if( (a->type_field & ~(BIT_INT|BIT_FLOAT)) &&
+       (array_fix_type_field(a) & ~(BIT_INT|BIT_FLOAT)) ) {
+     polyfill_free(*top);
+     Pike_error("Illegal argument %d to %s. %d Expected array(float|int).\n",arg,what, a->type_field);
+     return NULL;
+   }
 
    if (a->size<6) 
    {
-      return top; 
+      return *top; 
 #if 0
-      polyfill_free(top);
+      polyfill_free(*top);
       Pike_error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
       return NULL; /* no polygon with less then tree corners */
 #endif
    }
 
-#define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
+#define POINT(A,N) ((TYPEOF((A)->item[N]) == T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
 
    last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
 			     DO_NOT_WARN(POINT(a,1)),
-			     &top);
+			     top);
 
-   if (!last) return NULL;
+   if (!last) {
+      return NULL;
+   }
 
    for (n=2; n+1<a->size; n+=2)
    {
       cur = vertex_new(DO_NOT_WARN(POINT(a,n)),
 		       DO_NOT_WARN(POINT(a,n+1)),
-		       &top);
-      if (!cur) return NULL;
+		       top);
+      if (!cur) {
+	 return NULL;
+      }
       if (cur->y<last->y)
 	 vertex_connect(cur,last);
       else if (cur->y>last->y)
@@ -750,20 +793,20 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
    else
       vertex_connect(first,cur);
 
-   return top;
+   return *top;
 }
 
 void image_polyfill(INT32 args)
 {
    struct vertex *v;
    double *buf;
+   ONERROR err;
 
    if (!THIS->img)
       Pike_error("Image.Image->polyfill: no image\n");
 
-   buf=malloc(sizeof(double)*(THIS->xsize+1));
-   if (!buf)
-      Pike_error("Image.Image->polyfill: out of memory\n");
+   buf=xalloc(sizeof(double)*(THIS->xsize+1));
+   SET_ONERROR(err, free, buf);
 
    v=polyfill_begin();
 
@@ -771,13 +814,14 @@ void image_polyfill(INT32 args)
    {
       struct vertex *v_tmp;
 
-      if (sp[-1].type!=T_ARRAY)
+      if (TYPEOF(sp[-1]) != T_ARRAY)
       {
 	 polyfill_free(v);
-	 Pike_error("Image.Image->polyfill: Illegal argument %d, expected array\n",
-	       args);
+	 SIMPLE_BAD_ARG_ERROR("Image.Image->polyfill", args,
+			      "array(int|float)");
       }
-      if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.Image->polyfill()"))) {
+      if ((v_tmp=polyfill_add(&v, sp[-1].u.array, args,
+			      "Image.Image->polyfill()"))) {
 	 v = v_tmp;
       } else {
 	 polyfill_free(v);
@@ -787,14 +831,17 @@ void image_polyfill(INT32 args)
       pop_stack();
    }
 
-   if (!v) return; /* no vertices */
+   if (!v) {
+     free(buf);
+     return; /* no vertices */
+   }
 
    polyfill_some(THIS,v,buf);
    
    polyfill_free(v);
-   
+
+   UNSET_ONERROR(err);
    free(buf);
 
    ref_push_object(THISOBJ);
 }
-

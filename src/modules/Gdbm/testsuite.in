@@ -1,16 +1,15 @@
-// $Id: testsuite.in,v 1.4 1998/03/28 14:55:06 grubba Exp $
+START_MARKER
 
 // gdbm
-cond( [[ master()->resolv("Gdbm")->gdbm ]],
-[[
-  define([[GDBM]],[[ Gdbm.gdbm ]])
-  test_true(programp(GDBM))
-  test_do(destruct(clone(GDBM)))
+cond_begin([[ master()->resolv("Gdbm") ]])
+
+  test_true(programp(Gdbm.gdbm))
+  test_do(destruct(Gdbm.gdbm()))
 
   define([[GDBMTESTS]],
   [[
     test_do(rm("test.gdbm"))
-    test_do(add_constant("GDBMBASE",clone(GDBM,"test.gdbm")))
+    test_do(add_constant("GDBMBASE",Gdbm.gdbm("test.gdbm")))
     test_true(file_stat("test.gdbm"))
 
     GDBMNULLTEST
@@ -51,4 +50,8 @@ cond( [[ master()->resolv("Gdbm")->gdbm ]],
   GDBMTESTS
 
   test_do(rm("test.gdbm"))
-]])
+  test_do(add_constant("GDBMBASE"))
+
+cond_end // Gdbm
+
+END_MARKER

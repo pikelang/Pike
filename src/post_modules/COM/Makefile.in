@@ -1,0 +1,16 @@
+@make_variables@
+VPATH=@srcdir@@PATH_SEPARATOR@@srcdir@/../..@PATH_SEPARATOR@../..
+MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+OBJS=com.o
+MODULE_LDFLAGS=@LDFLAGS@ @COM_LIBS@
+
+# DUMMY=module.pmod.in
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+# module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
+# 	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
+
+@dependencies@

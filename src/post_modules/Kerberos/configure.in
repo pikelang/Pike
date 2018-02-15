@@ -1,0 +1,41 @@
+#
+# Support for Kerberos
+#
+# 2004-05-12 Henrik Grubbström
+#
+# FIXME: Currently only minimal support, and only for Kerberos 5 (not 4).
+
+AC_INIT(kerberos.cmod)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(krb5,     [  --with(out)-krb5       Support for Kerberos 5],[],[with_krb5=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(Kerberos)
+
+AC_C_CHAR_UNSIGNED
+
+if test x$with_krb5 = xyes ; then
+  dnl Checks for header files.
+
+  PIKE_FEATURE(Kerberos,[no (krb5.h not found)])
+
+  AC_CHECK_HEADERS(krb5.h kerberosv5/krb5.h)
+
+  if test "$ac_cv_header_krb5_h" = "yes" -o "$ac_cv_header_kerberosv5_krb5_h" = "yes"; then
+    dnl Checks for libraries.
+
+    PIKE_FEATURE(Kerberos,[no (krb5 libraries not found)])
+
+    # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
+    # (KfW) uses __stdcall.
+    PIKE_SEARCH_LIBS(krb5_init_context, [
+      krb5_init_context (NULL);
+    ], krb5 krb5_32, [
+      AC_DEFINE(HAVE_KRB5,, [Defined if Kerberos 5 works.])
+      PIKE_FEATURE(Kerberos,[yes ($pike_cv_search_krb5_init_context)])
+    ])
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -1,0 +1,179 @@
+/* -*- C -*- */
+class GTK2.TextAttributes;
+
+//! Holds text attributes.
+
+void create()
+//! Create a W(TextAttributes) widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    GtkTextAttributes *gta;
+    gta=gtk_text_attributes_new();
+    THIS->obj=(void *)gta;
+    THIS->owned = 1;
+  }
+  pgtk2_pop_n_elems(args);
+}
+
+GTK2.TextAttributes copy()
+//! Copies src and returns it.
+{
+  pgtk2_verify_inited();
+  {
+    GtkTextAttributes *a1;
+    a1=gtk_text_attributes_copy((GtkTextAttributes *)(THIS->obj));
+    pgtk2_pop_n_elems(args);
+    push_pgdk2object(a1,pgtk2_text_attributes_program,1);
+  }
+}
+
+GTK2.TextAttributes copy_values(GTK2.TextAttributes dest)
+//! Copies src onto dest
+{
+  pgtk2_verify_inited();
+  {
+    struct object *a1;
+    get_all_args("copy_values",args,"%o",&a1);
+    gtk_text_attributes_copy_values((GtkTextAttributes *)(THIS->obj),
+		(GtkTextAttributes *)get_gobject(a1));
+    pgtk2_return_this(args);
+  }
+}
+
+void destroy()
+{
+  if (THIS->obj && THIS->owned)
+    gtk_text_attributes_unref((GtkTextAttributes *)(THIS->obj));
+  THIS->obj=0;
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+
+/*
+int get_justification()
+//! Get justification.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->justification);
+}
+
+int get_direction()
+//! Get direction.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->direction);
+}
+
+float get_font_scale()
+//! Get font scale.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_float(((GtkTextAttributes *)THIS->obj)->font_scale);
+}
+
+int get_left_margin()
+//! Get left margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->left_margin);
+}
+
+int get_indent()
+//! Get indent.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->indent);
+}
+
+int get_right_margin()
+//! Get right margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->right_margin);
+}
+
+int get_pixels_above_lines()
+//! Get pixels above lines.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->pixels_above_lines);
+}
+
+int get_pixels_below_lines()
+//! Get pixels below lines.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->pixels_below_lines);
+}
+
+int get_pixels_inside_wrap()
+//! Get pixels inside wrap.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->pixels_inside_wrap);
+}
+
+require pango;
+Pango.TabArray get_tabs()
+//! Get tabs.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    PangoTabArray *pta=pango_tab_array_copy(((GtkTextAttributes *)THIS->obj)->tabs);
+    push_gobjectclass(pta,ppango2_tab_array_program);
+  }
+}
+endrequire;
+
+int get_wrap_mode()
+//! Get wrap mode.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->wrap_mode);
+}
+
+int get_invisible()
+//! Get invisible.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->invisible);
+}
+
+int get_bg_full_height()
+//! Get bg_full_height.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->bg_full_height);
+}
+
+int get_editable()
+//! Get editable.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->editable);
+}
+
+int get_realized()
+//! Get realized.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(((GtkTextAttributes *)THIS->obj)->realized);
+}
+*/

@@ -1,0 +1,7 @@
+START_MARKER
+
+cond_resolv( Image.WebP.decode, [[
+   test_true( stringp(Image.WebP.encode(Image.Image(100,100)->test())) )
+   test_true( Image.WebP.decode(Image.WebP.encode(Image.Image(100,100)->test()))->xsize() == 100 )
+]])
+END_MARKER

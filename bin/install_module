@@ -2,6 +2,18 @@
 
 # install_module <from> <to>
 
+if [ "$1" = "--help" ] ; then
+cat <<EOF
+  Installs a module (.pmod file or directory, or a .so file)
+  in a destination directory. Called by "make install".
+
+  Usage:
+
+    install_module source destination_directory
+EOF
+exit 0
+fi
+
 
 FROM="$1"
 TO="$2"
@@ -11,16 +23,13 @@ DIRS_TO_MAKE=
 DIR="$TO"
 while :
 do
-  DIR=`echo $DIR | sed -e 's@/[^/]*$@@'`
+  DIR=`echo $DIR | sed -e 's@/[^/]*$@@' -e 's@/$@@'`
 
   case "$DIR" in
     *.pmod)
       if [ -d "$DIR" ]; then
          break
-      else
-         :
       fi
-
 
       if [ -f "$DIR" ]; then
         mv "$DIR" "$DIR-foo"
@@ -53,10 +62,22 @@ else
   :
 fi
 
-if [ -d "$BASE.pmod" ]; then
-  EXT=`echo $TO | sed -e 's@(\.[^.]$)@\1@/'`
-  TO="$BASE.pmod/module.$EXT"
+if [ -d "$BASE.pmod" -a -d "$FROM" ]; then
+# we are copying a dir module into a dir module.
+  FROM="$FROM/."
+elif [ -d "$BASE.pmod" ]; then
+  EXT=`echo $TO | sed -e 's@^.*\.\(.[^\.]*\)$@\1@'`
+	  TO="$BASE.pmod/module.$EXT"
 fi
 
+# Add proper flag to copy recursively if FROM is a directory module
 
-exec cp "$FROM" "$TO"
+CPFLAGS=""
+
+if [ -d "$FROM" ]; then
+  CPFLAGS="-r"
+fi
+
+cp $CPFLAGS "$FROM" "$TO"
+
+exit $?

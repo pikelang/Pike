@@ -1,0 +1,14 @@
+/Makefile
+/build_type
+/config.log
+/config.status
+/configure
+/dependencies
+/make_variables
+/propagated_variables
+/stamp-h
+/stamp-h.in
+/testsuite
+
+/inotify.c
+/inotify.cmod.compiled

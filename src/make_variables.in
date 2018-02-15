@@ -1,22 +1,58 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.4 1999/12/11 16:21:47 mast Exp $
+# Start of make_variables.in
 #
+# Note: This template is actually used only for make_variables in the
+# subdirectories; the one created in the build base dir is just an
+# unwanted by-product.
+
+# There's magic to propagate variables to subdir configure scripts and
+# to retain those variables when a subdir is reconfigured
+# individually:
+#
+# Lines beginning with "#propagated_variables:" list such variables.
+# They are available both as make variables and in the configure
+# script environment. The PIKE_RETAIN_VARIABLES macro (called through
+# AC_MODULE_INIT) reads them from the propagated_variables file if it
+# exists, and assigns them in the environment only if they don't have
+# any value already.
+#
+# Note: The easiest way to force full repropagation is to rerun the
+# core configure script (e.g. through "make force_configure" in the
+# top directory).
+@propagated_variables@
+#propagated_variables: CC CXX CPP MOD_LDSHARED AR INSTALL
+#propagated_variables: BASE_CFLAGS BASE_CPPFLAGS CCSHARED BASE_LDFLAGS
+#propagated_variables: OPTIMIZE WARN PROFIL
+#propagated_variables: LDSHARED_MODULE_REQS
+#propagated_variables: TMP_BUILDDIR TMP_BINDIR PIKE_SRC_DIR BUILD_BASE
+#propagated_variables: BUILD_PIKE POST_MODULE_BUILD_TYPE
+#propagated_variables: MT_FIX_MODULE_SO PKG_CONFIG_PATH
 
 @SET_MAKE@
 prefix=@prefix@
 exec_prefix=$(prefix)/bin
-CC=@CC@
-TMP_BUILDDIR=@BUILDDIR@
-TMP_BINDIR=@BINDIR@
-DEFINES=@CPPFLAGS@
 TMP_LIBDIR=$(TMP_BUILDDIR)/lib
-RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-RUNTPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-OPTIMIZE=@OPTIMIZE@
-INSTALL=@INSTALL@
-WARN=@WARN@
-OTHERFLAGS=@CFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
-NOOPTFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
-AR=@AR@
 SRCDIR=@srcdir@
+
+DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/$(BUILD_PIKE) -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+FINAL_PIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+USE_PIKE=pike $(PIKEOPTS)
+RUNPIKE=$(@RUNPIKE@)
+
+DEFINES=@CPPFLAGS@ @DEFS@
+OTHERFLAGS=@CFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
+NOOPTFLAGS=@CFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
+
+PMOD_TARGETS=@PMOD_TARGETS@
+make_variables_in=@make_variables_in@
+MODULE_PMOD_IN=@MODULE_PMOD_IN@
+MODULE_WRAPPER_PREFIX=@MODULE_WRAPPER_PREFIX@
+
+MODNAME=@MODULE_NAME@
+MODPATH=@MODULE_PATH@
+MODDIR=@MODULE_DIR@
+
+LIBGCC=@LIBGCC@
+
+# End of make_variables.in

@@ -1,7 +1,11 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
 **! module Image
-**! note
-**!	$Id: colortable.h,v 1.24 2000/12/05 21:08:25 per Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -19,13 +23,13 @@
 
 #define COLORLOOKUPCACHEHASHSIZE 207
 
-typedef size_t nct_weight_t;
+typedef unsigned INT32 nct_weight_t;
 
 struct nct_flat_entry /* flat colorentry */
 {
    rgb_group color;
    nct_weight_t weight;
-   ptrdiff_t no;
+   INT32 no;
 };
 
 struct nct_scale
@@ -258,5 +262,3 @@ int image_colortable_map_image(struct neo_colortable *nct,
 			       int rowlen);
 
 void image_colortable_cast_to_array(struct neo_colortable *nct);
-
-

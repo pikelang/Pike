@@ -1,9 +1,10 @@
-# $Id: configure.in,v 1.19 2000/10/02 16:22:20 jonasw Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(Gz)
 
 define([AC_CHECK_GZ],
 [
@@ -11,9 +12,7 @@ define([AC_CHECK_GZ],
   AC_MSG_CHECKING(working lib$1)
   AC_CACHE_VAL(pike_cv_working_$1,[
     OLDLIBS="${LIBS-}"
-    if test "$pike_cv_sys_os" != "Darwin"; then
-      LIBS="${LIBS-} -l$1"
-    fi
+    LIBS="${LIBS-} -l$1"
     AC_TRY_RUN([
 `cat $srcdir/gz_test.c`
     ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
@@ -26,11 +25,10 @@ define([AC_CHECK_GZ],
   LIBS="$OLDLIBS"
 
   if test "x$pike_cv_working_$1" = xyes; then
+    PIKE_FEATURE(Gz,[yes (lib$1)])
     AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_LIBZ)
-    if test "$pike_cv_sys_os" != "Darwin"; then
-      LIBS="${LIBS-} -l$1"
-    fi
+    LIBS="${LIBS-} -l$1"
     done=yes
   else
     AC_MSG_RESULT(no)
@@ -42,21 +40,18 @@ define([AC_CHECK_GZ],
   fi
 ])
 
-if test "$pike_cv_sys_os" = "Darwin"; then
-  CPPFLAGS="-I/System/Library/Frameworks/Zip.framework/Headers $CPPFLAGS"
-  LDFLAGS="-framework Zip"
-fi
-
 if test x$with_zlib = xyes ; then
+  PIKE_FEATURE_NODEP(Gz)
   AC_CHECK_HEADERS(zlib.h)
   if test $ac_cv_header_zlib_h = yes ; then
-    AC_MSG_CHECKING([if libz.h is new enough])
+    AC_MSG_CHECKING([if zlib.h is new enough])
     AC_TRY_LINK([
 #include <zlib.h>
     ],[
 int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
     ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
 
+    PIKE_FEATURE(Gz,[no (zlib is too old)])
     if test $ac_cv_header_zlib_h = yes ; then
       if test x$pike_cv_sys_os = xIRIX ; then
         # The libz.so supplied with IRIX 6.3 needs these obscure symbols
@@ -70,7 +65,10 @@ int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
 	AC_HAVE_FUNCS(__T_9__nothrow)
       fi
 
-      AC_CHECK_GZ(z,[AC_CHECK_GZ(gz,[AC_CHECK_GZ(Zip, [ ac_cv_lib_z_main=no ] ) ]) ])
+      AC_CHECK_GZ(z,[
+	AC_CHECK_GZ(gz,[
+	  # The lib is called zlib.lib in GnuWin32.
+	  AC_CHECK_GZ(zlib, [ ac_cv_lib_z_main=no ] ) ])])
     fi
   fi
 fi

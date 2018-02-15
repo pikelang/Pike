@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* methods */
 
 STRING(s_http_09,"HTTP/0.9");
@@ -39,4 +45,3 @@ STRING(s_cookies,"cookies");
 STRING(s_rawauth,"rawauth");
 STRING(s_realauth,"realauth");
 STRING(s_supports, "supports");
-

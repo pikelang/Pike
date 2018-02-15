@@ -1,12 +1,17 @@
 /*
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
- *
- * $Id: Timed.pike,v 1.4 2001/01/01 22:49:35 kinkie Exp $
  */
 
+//! An access-time-based expiration policy manager.
+
 #pike __REAL_VERSION__
+
+#if defined(CACHE_DEBUG)||defined(CACHE_POLICY_DEBUG)||defined(CACHE_POLICY_TIMED_DEBUG)
+#define CACHE_WERR(X...) werror("Cache.Policy.Timed: "+X)
+#else
+#define CACHE_WERR(X...)
+#endif /* CACHE_DEBUG || CACHE_POLICY_DEBUG || CACHE_POLICY_TIMED_DEBUG */
 
 //TODO: use the preciousness somehow.
 // idea: expire if (now-atime)*cost < ktime
@@ -16,8 +21,8 @@ private int ktime;
 
 inherit Cache.Policy.Base;
 
-void expire(Cache.Storage storage) {
-  werror("Expiring cache\n");
+void expire(Cache.Storage.Base storage) {
+  CACHE_WERR("Expiring cache\n");
   int now=time(1);
   int limit=now-ktime;
   string key=storage->first();
@@ -31,9 +36,9 @@ void expire(Cache.Storage storage) {
     }
     if (got->atime < limit ||
         (got->etime && got->etime < now) ) {
-      werror("deleting %s (age: %d, now: %d, etime: %d)\n",
-             key, now - got->atime, 
-             now, got->etime);
+      CACHE_WERR("deleting %s (age: %d, now: %d, etime: %d)\n",
+		 key, now - got->atime, 
+		 now, got->etime);
       storage->delete(key);
     }
     key=storage->next();

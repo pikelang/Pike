@@ -11,10 +11,9 @@
 array parse_shortcut(string what)
 {
   int flags;
-  int key;
-  
+
   if(!what)
-    return ({0,0 });
+    return ({0,0});
 
   string a, b;
   if(sscanf(what, "%s-%s", a, b) != 2)
@@ -53,10 +52,11 @@ string shortcut_to_string( int key, int mod )
   if(mod & FLAG_META) m += "M";
   if(mod & FLAG_HYPER) m += "H";
   if(mod & FLAG_SUPER) m += "U";
-  if(strlen(m)) m+= "-";
+  if(sizeof(m)) m+= "-";
   return sprintf("%s%c",m, key);
 }
 
+//! Definition of a menu item.
 class MenuDef
 {
   string menu_path;
@@ -65,6 +65,35 @@ class MenuDef
   mixed arg;
   function callback;
 
+  //! Sets a new shortcut as the current one.
+  //!
+  //! The shortcut syntax is: m[m[..]]-key, where m is one or more
+  //! modifier character, and key is the desired key (@b{NOTE@}: Key
+  //! must be in the range 0-255 currently, this will hopefully be
+  //! fixed by the GTK people in the future)
+  //!
+  //! The modifiers are:
+  //! @string
+  //!   @value "s"
+  //!      Shift
+  //!   @value "c"
+  //!      Control
+  //!   @value "a"
+  //!   @value "1"
+  //!      Modifier 1 (called alt by the GTK people, that's not true, though)
+  //!   @value "g"
+  //!   @value "2"
+  //!      Modifier 2 (called altgr by the GTK people, that's not true, though)
+  //!   @value "m"
+  //!   @value "3"
+  //!      Modifier 3 (not mapped by the GTK people, meta on _my_ keyboard)
+  //!   @value "h"
+  //!   @value "4"
+  //!      Modifier 4 (not mapped by the GTK people, hyper on _my_ keyboard)
+  //!   @value "u"
+  //!   @value "5"
+  //!      Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
+  //! @endstring
   void assign_shortcut(string sc)
   {
     [modifiers,shortcut] = parse_shortcut(sc);
@@ -81,7 +110,61 @@ class MenuDef
     }
   }
 
-  void create(string path, function|void cb, 
+  //! @param path
+  //! Path is the menupath. A submenu will be created for each
+  //! "Directory" in the path, and menuitems will be created for the
+  //! "files". There are two special cases: The "file"
+  //! @expr{"<separator>"@} will create a thin line. The "file"-prefix
+  //! @expr{"<check>"@} will make the menuitem a checkmenuitem instead
+  //! of a normal menuitem.
+  //!
+  //! @param cb
+  //! @param cbarg
+  //! The second and third arguments are the callback function and the
+  //! first callback function argument. If the callback function
+  //! argument is an array, the indices of the array will be pushed as
+  //! arguments. To call the function with an array as the only
+  //! argument, make an array with the array in. The callback function
+  //! will be called like @expr{callback( arg, widget )@}, or if arg
+  //! is an array, @expr{callback( arg[0], arg[1], ..., widget )@}.
+  //!
+  //! @param shortcut
+  //! The fourth argument, shortcut, is the shortcut to bind to this
+  //! menu item. The shortcut can be changed later on by calling
+  //! @[assign_shortcut], or by the user by pressing the desired
+  //! keycombination over the menu item.
+  //!
+  //! The shortcut syntax is: m[m[..]]-key, where m is one or more
+  //! modifier character, and key is the desired key (@b{NOTE@}: Key
+  //! must be in the range 0-255 currently, this will hopefully be
+  //! fixed by the GTK people in the future)
+  //!
+  //! The modifiers are:
+  //! @string
+  //!   @value "s"
+  //!      Shift
+  //!   @value "c"
+  //!      Control
+  //!   @value "a"
+  //!   @value "1"
+  //!      Modifier 1 (called alt by the GTK people, that's not true, though)
+  //!   @value "g"
+  //!   @value "2"
+  //!      Modifier 2 (called altgr by the GTK people, that's not true, though)
+  //!   @value "m"
+  //!   @value "3"
+  //!      Modifier 3 (not mapped by the GTK people, meta on _my_ keyboard)
+  //!   @value "h"
+  //!   @value "4"
+  //!      Modifier 4 (not mapped by the GTK people, hyper on _my_ keyboard)
+  //!   @value "u"
+  //!   @value "5"
+  //!      Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
+  //! @endstring
+  //!
+  //! @param right
+  //!   Currently ignored.
+  void create(string path, function|void cb,
 	      mixed|void cbarg,
 	      string|void binding,
 	      int|void right)
@@ -133,42 +216,157 @@ class MenuDef
 
 
 function mbar_mc;
+
+//! The function passed as the argument to this function will be
+//! called each time the accelerator key mapping is changed by the
+//! user with the new mapping as the argument.
+//!
+//! @note
+//! This function is only used when the menubar is created, once you
+//! are done with the menubar creation, the callbacks for that menubar
+//! will be fixed.
 void set_menubar_modify_callback( function to )
 {
   mbar_mc = to;
 }
 
 mapping menubar_objects = ([]);
+
+//! Returns a (flat) mapping @expr{([ path:GTK1.MenuItem ])@}.
+//!
+//! @note
+//! This function can only be called @i{after@} the menubar is
+//! created.
 mapping get_menubar_mapping(  )
 {
   return copy_value(menubar_objects);
 }
 
-mapping(string:GTK.Menu) submenues;
+mapping(string:GTK1.Menu|GTK1.MenuBar) submenues;
 mapping get_submenu_mapping(  )
 {
   return copy_value(submenues);
 }
 
-array(object) MenuFactory( MenuDef ... definition )
+//! Identical to @[MenuFactory], but creates popup menus instead.
+//!
+//! @returns
+//! @array
+//!   @elem GTK1.Menu 0
+//!     GTK1.Menu
+//!   @elem GTK1.AccelGroup 1
+//!     GTK1.AccelGroup
+//! @endarray
+array(object) PopupMenuFactory( MenuDef ... definition )
 {
-  GTK.MenuBar bar = GTK.MenuBar();
-  GTK.AccelGroup table= GTK.AccelGroup();
+  GTK1.Menu bar = GTK1.Menu();
+  GTK1.AccelGroup table= GTK1.AccelGroup();
   menubar_objects = ([]);
   submenues = (["":bar]);
-  mapping(string:GTK.RadioMenuItem) radiogroups = ([]);
+  mapping(string:GTK1.RadioMenuItem) radiogroups = ([]);
   foreach(definition, object d)
   {
     string path="";
     object parent = bar;
     array p = d->menu_path/"/";
-    foreach(p[..sizeof(p)-2], string segment)
+    foreach(p[..<1], string segment)
     {
       path += segment+"/";
       if(!submenues[path])
       {
-	GTK.MenuItem i = GTK.MenuItem( segment );
-	submenues[path] = GTK.Menu();
+     GTK1.MenuItem i = GTK1.MenuItem( segment );
+     submenues[path] = GTK1.Menu();
+     submenues[path]->set_accel_group( table );
+//         d->menu_obj = submenues[path];
+     parent->append( i );
+     i->set_submenu( submenues[path] );
+     i->show();
+     menubar_objects[ path ] = i;
+      }
+      parent = submenues[path];
+    }
+    GTK1.Item i;
+    string q,g;
+    sscanf(p[-1], "<%s>%s", q, p[-1]);
+    if(q) sscanf(q, "%s:%s", q, g);
+    switch( q )
+    {
+     default:
+       i = GTK1.MenuItem( p[-1] );
+       break;
+     case "check":
+       i = GTK1.CheckMenuItem( p[-1] );
+       break;
+     case "separator":
+       i = GTK1.MenuItem();
+       i->set_state( GTK1.StateInsensitive );
+       break;
+     case "tearoff":
+       i = GTK1.TearoffMenuItem();
+       break;
+    case "radio":
+      if (!radiogroups[path+":"+g]) {
+     i = GTK1.RadioMenuItem( p[-1] );
+     radiogroups[path+":"+g] = i;
+      } else {
+     i = GTK1.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
+      }
+      break;
+    }
+    menubar_objects[ d->menu_path ] = i;
+    i->show();
+    if(d->shortcut)
+      i->add_accelerator( "activate", table, d->shortcut, d->modifiers,
+                          GTK1.AccelVisible);
+    i->signal_connect( "activate", d->selected, 0 );
+    i->signal_connect("add_accelerator", d->install_accelerator,  0);
+    i->signal_connect("remove_accelerator",  d->remove_accelerator,   0);
+    parent->add( i );
+    d->mbc = mbar_mc;
+    d->siblings = definition;
+  }
+  return ({bar,table});
+}
+
+//! This is the function that actually builds the menubar.
+//!
+//! @example
+//! import GTK1.MenuFactory;
+//! [GTK1.MenuBar bar, GTK1.AcceleratorTable map] = 
+//!  MenuFactory( 
+//!    MenuDef( "File/New", new_file, 0, "A-N" ), 
+//!    MenuDef( "File/Open", new_file, 1, "A-O" ), 
+//!    MenuDef( "File/Save", save_file, 0, "A-S" ), 
+//!    MenuDef( "File/<separator>", 0, 0 ),
+//!    MenuDef( "File/Quit", _exit, 0, "A-Q" ), 
+//!  );
+//!
+//! @returns
+//! @array
+//!   @elem GTK1.MenuBar 0
+//!     GTK1.MenuBar
+//!   @elem GTK1.AcceleratorTable 1
+//!     GTK1.AcceleratorTable
+//! @endarray
+array(object) MenuFactory( MenuDef ... definition )
+{
+  GTK1.MenuBar bar = GTK1.MenuBar();
+  GTK1.AccelGroup table= GTK1.AccelGroup();
+  menubar_objects = ([]);
+  submenues = (["":bar]);
+  mapping(string:GTK1.RadioMenuItem) radiogroups = ([]);
+  foreach(definition, object d)
+  {
+    string path="";
+    object parent = bar;
+    array p = d->menu_path/"/";
+    foreach(p[..<1], string segment)
+    {
+      path += segment+"/";
+      if(!submenues[path])
+      {
+	GTK1.MenuItem i = GTK1.MenuItem( segment );
+	submenues[path] = GTK1.Menu();
 	submenues[path]->set_accel_group( table );
 //         d->menu_obj = submenues[path];
 	parent->append( i );
@@ -178,31 +376,31 @@ array(object) MenuFactory( MenuDef ... definition )
       }
       parent = submenues[path];
     }
-    GTK.Item i;
+    GTK1.Item i;
     string q,g;
     sscanf(p[-1], "<%s>%s", q, p[-1]);
     if(q) sscanf(q, "%s:%s", q, g);
     switch( q )
     {
      default:
-       i = GTK.MenuItem( p[-1] );
+       i = GTK1.MenuItem( p[-1] );
        break;
      case "check":
-       i = GTK.CheckMenuItem( p[-1] );
+       i = GTK1.CheckMenuItem( p[-1] );
        break;
      case "separator":
-       i = GTK.MenuItem();
-       i->set_state( GTK.StateInsensitive );
+       i = GTK1.MenuItem();
+       i->set_state( GTK1.StateInsensitive );
        break;
      case "tearoff":
-       i = GTK.TearoffMenuItem();
+       i = GTK1.TearoffMenuItem();
        break;
     case "radio":
       if (!radiogroups[path+":"+g]) {
-	i = GTK.RadioMenuItem( p[-1] );
+	i = GTK1.RadioMenuItem( p[-1] );
 	radiogroups[path+":"+g] = i;
       } else {
-	i = GTK.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
+	i = GTK1.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
       }
       break;
     }
@@ -211,7 +409,7 @@ array(object) MenuFactory( MenuDef ... definition )
     parent->add( i );
     if(d->shortcut)
       i->add_accelerator( "activate", table, d->shortcut, d->modifiers,
-                          GTK.AccelVisible);
+                          GTK1.AccelVisible);
     i->signal_connect( "activate", d->selected, 0 );
     i->signal_connect("add_accelerator", d->install_accelerator,  0);
     i->signal_connect("remove_accelerator",  d->remove_accelerator,   0);

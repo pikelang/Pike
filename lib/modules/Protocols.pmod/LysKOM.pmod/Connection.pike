@@ -1,24 +1,15 @@
-//  $Id: Connection.pike,v 1.7 2000/09/28 03:39:03 hubbe Exp $
-//! module Protocols
-//! submodule LysKOM
-//! class Session
-//  ^^^ this is just to get the classes sorted right. Session first,
-//      then Connection, then it doesn't matter
-//! module Protocols
-//! submodule LysKOM
-//! class Connection
 //!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>",
-//!	"<tt>async_</tt><i>call</i>" or
-//!	"<tt>async_cb_</tt><i>call</i>", depending on
+//!	server. They are named "@tt{@i{call@}@}",
+//!	"@tt{async_@i{call@}@}" or
+//!	"@tt{async_cb_@i{call@}@}", depending on
 //!	how you want the call to be done.
-//!
-//! method mixed /call/(mixed ...args)
-//! method object async_/call/(mixed ...args)
-//! method object async_cb_/call/(function callback,mixed ...args)
+
+//! @decl mixed XXX(mixed ...args)
+//! @decl object async_XXX(mixed ...args)
+//! @decl object async_cb_XXX(function callback,mixed ...args)
 //!	Do a call to the server. This really
-//!	clones a <link to=Protocols.LysKOM.Request>request</link> object,
-//!	and initialises it. /call/ is to be read as
+//!	clones a @[Protocols.LysKOM.Request] object,
+//!	and initialises it. @tt{XXX@} is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
 //!
@@ -26,38 +17,37 @@
 //!	send the command, wait for the server to execute it,
 //!	and then return the result.
 //!
-//!	The last two is asynchronous calls, returning the
-//!	initialised <link to=Protocols.LysKOM.Request>request</link> object.
+//!	The last two are asynchronous calls, returning an
+//!	initialised @[Protocols.LysKOM.Request] object.
 //!
 
 #pike __REAL_VERSION__
 
 import ".";
 
-object this=this_object();
 object con; // LysKOM.Raw
 
-//! variable int protocol_level
-//! variable string session_software
-//! variable string software_version
 //!	Description of the connected server.
-
 int protocol_level;
 string session_software;
 string software_version;
 
+//! @decl void create(string server)
+//! @decl void create(string server, mapping options)
 //!
-//! method void create(string server)
-//! method void create(string server,mapping options)
-//!	<data_description type=mapping>
-//!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
-//!	<elem name=password type=string>send this login password</elem>
-//!	<elem name=invisible type="int(0..1)">if set, login invisible</elem>
-//!	<elem>advanced</elem>
-//!	<elem name=port type=int(0..65535)>server port (default is 4894)</elem>
-//!	<elem name=whoami type=string>present as this user<br>(default is from uid/getpwent and hostname)</elem>
-//!	</data_description>
-
+//! The @[options] argument is a mapping with the following members:
+//! @mapping
+//!   @member int|string "login"
+//!     login as this person number (get number from name).
+//!   @member string "password"
+//!	send this login password.
+//!   @member int(0..1) "invisible"
+//!	if set, login invisible.
+//!   @member int(0..65535) "port"
+//!	server port (default is 4894).
+//!   @member string "whoami"
+//!	present as this user (default is from uid/getpwent and hostname).
+//! @endmapping
 void create(string server,void|mapping options)
 {
    if (!options) options=([]);
@@ -130,8 +120,6 @@ class SyncRequest
       if (!m) return ret;
       else return m;
    }
-
-  string _sprintf(){ return "SyncRequest()"; }
 }
 
 class AsyncRequest
@@ -149,8 +137,6 @@ class AsyncRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncRequest()"; }
 }
 
 class AsyncCBRequest
@@ -169,15 +155,13 @@ class AsyncCBRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncCBRequest()"; }
 }
 
 mixed `->(string request)
 {
    program p;
    if ( (p=Request[String.capitalize(request)]) )
-      return SyncRequest(p,this_object());
+      return SyncRequest(p,this);
    else if ( request[..5]=="async_" &&
 	     (p=Request[String.capitalize(request[6..])]) )
       return AsyncRequest(p);
@@ -189,5 +173,3 @@ mixed `->(string request)
 }
 
 mixed `[](string request) { return `->(request); }
-
-string _sprintf(){ return "Connection()"; }

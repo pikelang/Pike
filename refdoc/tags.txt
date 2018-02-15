@@ -1,0 +1,147 @@
+                        +-------------------+
+                        | Pike autodoc tags |
+                        +-------------------+
+
+We have defined some different categories of markup, each with its own
+semantics. Seen from the parser, there are two main construct levels:
+
+* The "what-are-we-documenting level" constructs; @decl for Pike files
+  and @module, @endmodule, @class and @endclass on top of that for C
+  files. These are the meta level tags covered in section a).
+
+* Inside-of-comment level constructs for documentation markup,
+  covered in sections b), c) and d).
+
+
+All markup can also be divided into categories based on their look
+and semantics; there are three categories here (with examples):
+
+* Grouping constructs that mark the opening/closing of a section of
+  some sort (@mapping/@endmapping, @dl/@enddl, @module/@endmodule).
+  Most of these not already covered by secion a) appear in b).
+
+* subdividers that break up an outer grouping construct into
+  subsections (@member, @item, @param)
+
+* short text markup constructs that basically map to XML containers
+  (@i{...@}, @ref{...@})
+
+
+======================================================================
+a) Meta level tags - used for targeting the documentation string
+----------------------------------------------------------------------
+
+These tags all serve the purpose of denoting what pike entities your
+comments should be tied to. This is particularly needed in (and in
+part only applies to) C files, where the autodoc extractor does not
+try to interpret and parse class and method definitions.
+
+Keyword:   @module
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the module name (ie no "." allowed)
+
+Example: To document the module Parser.XML module, you need two
+consecutive module tags:
+
+  /*! @module Parser */
+  /*! @module XML */
+
+A @module keyword sets the scope of documentation comments following
+it. @module tags nest, as shown in the example above, and must be
+ended with a matching number of @endmodule tags, as in:
+
+  /*! @endmodule XML */
+  /*! @endmodule Parser */
+
+A @module keyword may also have a text child documenting the module
+itself:
+
+  /*! @module Parser
+   *!
+   *! The common roof under which parsers of various kinds, such as
+   *! @[Parser.XML], @[Parser.Pike] and @[Parser.C] are housed.
+   */
+
+There are two special @module targets available; the "predef::" module
+and the "lfun::" module. The predef:: module, although more of a scope
+than a module, contains the definitions for all methods in Pike's
+predef:: scope, as in:
+
+/*! @module predef::
+ *!   @decl int equal(mixed a, mixed b)
+ *!   	This function checks if the values @[a] and @[b] are equal.
+ *! @endmodule
+ */
+
+The "lfun::" module scope does not legally exist in Pike, but it
+houses the docs for all lfuns (the virtual methods for fulfilling the
+Pike object API). An example:
+
+/*! @module lfun::
+ *!   @decl int(0..1) `!=(mixed arg1, mixed arg2, mixed ... extras)
+ *!     The inequality operator.
+ *! @endmodule
+ */
+
+This also means that referencing (via @ref{...@} or @[...]) the lfun
+documentation strings can be done using @[lfun::`!=] and the like, as
+can predefs via @[predef::sort()] et cetera.
+
+
+Keyword:   @endmodule
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the module name (optional)
+
+When the optional argument to @endmodule is given (for code clarity),
+the extractor will verify that the module scope you close was indeed
+the one you opened, as in the @module example above. The following
+would trigger an error:
+
+  /*! @module Parser
+   *! @module XML */
+
+  /*! ... some autodoc comments ... */
+
+  /*! @endmodule Parser
+   *! @endmodule XML */
+
+while the same example, ending in
+
+  /*! @endmodule
+   *! @endmodule */
+
+would be considered legal.
+
+
+Keyword:   @class
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the class name (ie no "." allowed)
+
+Example: to document the Process.create_process class, you would use:
+
+  /*! @module Process
+   *! @class create_process */
+
+And end the scope similar to @module:
+
+  /*! @endclass create_process
+   *! @endmodule Process */
+
+Like @module tags, @class tags may be nested any number of levels
+(when documenting subclasses to subclasses to subclasses to ...).
+
+
+Keyword:   @endclass
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the class name (optional)
+
+When the optional argument to @endclass is given (for code clarity),
+the extractor will verify that the class scope you close was indeed
+the one you opened, just as with @endmodule above.
+
+
+Keyword:   @decl
+Legal for: All source code (C and Pike files)
+Arguments: (the last segment of) the identifier name (ie "." illegal)
+
+The @decl keyword is used to target a specific (...more to come! :-)

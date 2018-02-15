@@ -1,6 +1,9 @@
 /*
- * $Id: acconfig.h,v 1.3 1998/08/08 12:17:51 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef YP_MACHINE_H
 #define YP_MACHINE_H
 
@@ -9,5 +12,8 @@
 
 /* The last argument to yp_order() is a YP_ORDER_TYPE * */
 #define YP_ORDER_TYPE	unsigned
+
+/* Define if the prototype for yperr_string() is missing. */
+#undef YPERR_STRING_PROTOTYPE_MISSING
 
 #endif

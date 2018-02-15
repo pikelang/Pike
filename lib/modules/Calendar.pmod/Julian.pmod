@@ -1,34 +1,28 @@
-//!
-//! module Calendar
-//! submodule Julian
-//! inherits YMD
-//!
-//! 	This is the Julian calendar, conjured up by
-//!	the old Romans when their calendar were just too
-//!	wierd. It was used by the christians as so far
-//!	as the 18th century in some parts of the world.
-//!	(Especially the protestantic and orthodox parts.)
-//!
-//! note:
-//!	Don't confuse the <i>julian day</i> with the Julian
-//!	calendar. The former is just a linear numbering of days,
-//!	used in the Calendar module as a common unit for
-//!	absolute time.
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit Gregorian:Gregorian;
+//! This is the Julian calendar, conjured up by
+//! the old Romans when their calendar were just too
+//! weird. It was used by the christians as so far
+//! as the 18th century in some parts of the world.
+//! (Especially the protestantic and orthodox parts.)
+//!
+//! @note
+//! Don't confuse the @i{julian day@} with the Julian
+//! calendar. The former is just a linear numbering of days,
+//! used in the Calendar module as a common unit for
+//! absolute time.
+
+inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "Julian"; }
 
-static int year_leap_year(int y) 
+protected int year_leap_year(int y) 
 { 
    return !((y)%4);
 }
 
 // [y,yjd]
-static array year_from_julian_day(int jd)
+protected array year_from_julian_day(int jd)
 {
    int d=jd-1721058;
 
@@ -42,7 +36,7 @@ static array year_from_julian_day(int jd)
    });
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    y--;
    return 1721424+y*365+y/4;

@@ -1,0 +1,41 @@
+/* -*- C -*- */
+class GTK2.FontSelection;
+inherit GTK2.Vbox;
+
+//! The W(FontSelection) widget lists the available fonts, styles and sizes,
+//! allowing the user to select a font.  It is used in W(FontSelectionDialog).
+//! IMG: GTK2.FontSelection();
+
+//! Properties:
+//! string font-name
+//! string preview-text
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.FontSelection widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_FONT_SELECTION);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gf;
+    gf=gtk_font_selection_new();
+    THIS->obj=G_OBJECT(gf);
+  }
+  pgtk2__init_this_object();
+}
+
+
+string get_font_name();
+//! Gets the currently-selected font name.
+
+void set_font_name(string fontname);
+//! This sets the currently displayed font. 
+
+string get_preview_text();
+//! Gets the text displayed in the preview area.
+
+void set_preview_text(string text);
+//! Sets the text displayed in the preview area.
+

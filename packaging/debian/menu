@@ -1,0 +1,4 @@
+?package(pike7.9-core):needs=text section=Apps/Programming\
+  title="Pike 7.9 HILFE" \
+  command="/usr/bin/pike7.9" \
+  icon="/usr/share/pixmaps/pike/pike7.9.xpm"

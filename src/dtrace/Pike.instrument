@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="com.apple.dtrace.instrument.BC636541_B2D9_4287_B708_CC687C991D19" name="BC636541-B2D9-4287-B708-CC687C991D19" version="1.0">
+    <activation>
+        <rule kind="extension" id="com.apple.powertrace.dtrace-instrument-plugin.main"/>
+    </activation>
+    <extension id="BC636541-B2D9-4287-B708-CC687C991D19" category="Custom Instruments" deletable="true" version="1.0" helpURL="" iconURL="" defaultBrushName="default" pluginIdentifier="com.apple.powertrace.dtrace-instrument-plugin.main" data_silent="self int indent; /* thread-local */\nnchar *indentstr;" instrumentClass="PFTDTraceInstrument" end_silent="" point="com.apple.xray.dtrace-instrument-type" runClass="PFTDTraceRun" deckUnits="1" instrumentDescription="Log function calls in Pike programs" begin_silent="self->indent = 0;\nnindentstr = \'.                                                                                                                                                                 \';" name="Pike Function Call">
+        <targetType launched="true" existing="true" all="true"/>
+        <brush name="Default"/>
+        <stack ustack="true" kstack="false" jstack="false"/>
+        <probe_definition index="0" event_name="Function End" probe="pike*:::fn-done" silent_script="self->indent = (self->indent > 0) ? (self->indent - 1) : 0;" predicate="" attach_debugger="">
+            <variable index="0" name="probename"/>
+            <field index="0" name="Function" code="strjoin(substr(indentstr, 0, 2 * (self->indent + 1)), strjoin(&quot;&lt; &quot;, copyinstr(arg0)))" type="%s" width="8" truncation=""/>
+            <field index="1" name="ThreadID" code="tid" type="%d" width="8" truncation=""/>
+            <field index="2" name="Indent" code="self->indent + 1" type="%d" width="8" truncation=""/>
+        </probe_definition>
+        <probe_definition index="1" event_name="Function Enter" probe="pike*:::fn-start" silent_script="self->indent++;" predicate="" attach_debugger="">
+            <variable index="0" name="probename"/>
+            <field index="0" name="Object" code="arg1" type="%s" width="" truncation=""/>
+            <field index="1" name="Function" code="strjoin(substr(indentstr, 0, 2 * self->indent), strjoin(&quot;> &quot;, copyinstr(arg0)))" type="%s" width="8" truncation=""/>
+            <field index="2" name="Indent" code="self->indent" type="%d" width="8" truncation=""/>
+            <field index="3" name="ThreadID" code="tid" type="%d" width="8" truncation=""/>
+        </probe_definition>
+        <probe_definition index="2" event_name="Function Popframe" probe="pike*:::fn-popframe" silent_script="self->indent--;" predicate="" attach_debugger=""/>
+    </extension>
+</plugin>

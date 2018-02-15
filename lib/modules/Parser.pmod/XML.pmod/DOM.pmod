@@ -17,9 +17,9 @@ class DOMException(int code) {
   constant is_generic_error = 1;
   constant is_dom_exception = 1;
 
-  static array backtrace = predef::backtrace()[..sizeof(predef::backtrace())-3];
+  protected array backtrace = predef::backtrace()[..<2];
 
-  static constant symbolic = ([
+  protected constant symbolic = ([
     INDEX_SIZE_ERR: "INDEX_SIZE_ERR",
     DOMSTRING_SIZE_ERR: "DOMSTRING_SIZE_ERR",
     HIERARCHY_REQUEST_ERR: "HIERARCHY_REQUEST_ERR",
@@ -32,7 +32,7 @@ class DOMException(int code) {
     INUSE_ATTRIBUTE_ERR: "INUSE_ATTRIBUTE_ERR",
   ]);
 
-  static constant human_readable = ([
+  protected constant human_readable = ([
     INDEX_SIZE_ERR: "index out of range",
     DOMSTRING_SIZE_ERR: "specified range of text does not fit into DOMString",
     HIERARCHY_REQUEST_ERR: "node inserted somewhere it doesn't belong",
@@ -45,7 +45,7 @@ class DOMException(int code) {
     INUSE_ATTRIBUTE_ERR: "attempted to add an attribute that is already in use",
   ]);
 
-  string|array `[] (int i)
+  protected string|array `[] (int i)
   {
     switch (i) {
       case 0:
@@ -56,9 +56,10 @@ class DOMException(int code) {
     }
   }
 
-  string _sprintf(int mode, mapping options)
+  protected string _sprintf(int mode, mapping options)
   {
-    return mode == 'O' && "DOMException(" + (symbolic[code]||code) + ")";
+    return mode == 'O' && sprintf("%O(%s)", this_program,
+				  (string)(symbolic[code]||code) );
   }
 
 };
@@ -69,19 +70,32 @@ class DOMImplementation
   {
     return lower_case(feature)=="xml" && (version == "1.0" || !version);
   }
+
+  Document create_document(string namespace_uri, string qualified_name,
+			   DocumentType|void doctype)
+  {
+    return Document(this, namespace_uri, qualified_name, doctype);
+  }
+
+  DocumentType create_document_type(string qualified_name,
+				    string|void public_id,
+				    string|void system_id)
+  {
+    return DocumentType(this, qualified_name, public_id, system_id);
+  }
 }
 
 class NodeList
 {
-  static array(Node) nodes;
+  protected array(Node) nodes;
 
-  NodeList `+(NodeList nl) {
-    return NodeList(values(this_object())+values(nl));
+  protected NodeList `+(NodeList nl) {
+    return NodeList(values(this)+values(nl));
   }
-  Node `[](int index) { return item(index); }
-  int _sizeof() { return get_length(); }
-  array(Node) cast(string to) {
-    return to[..4] == "array" && values(this_object());
+  protected Node `[](int index) { return item(index); }
+  protected int _sizeof() { return get_length(); }
+  protected array(Node) cast(string to) {
+    return to[..4] == "array" && values(this);
   }
 
   Node item(int index)
@@ -94,20 +108,21 @@ class NodeList
     return sizeof(nodes);
   }
 
-  array(int) _indices() { return indices(nodes); }
-  array(Node) _values() { return copy_value(nodes); }
-  
-  static void create(array(Node)|void elts) { nodes = elts || ({}); }
+  protected array(int) _indices() { return indices(nodes); }
+  protected array(Node) _values() { return copy_value(nodes); }
+  protected Array.Iterator _get_iterator() { return Array.Iterator(nodes); }
+
+  protected void create(array(Node)|void elts) { nodes = elts || ({}); }
 }
 
 class NamedNodeMap
 {
-  static Document owner_document;
-  static mapping(string:Node) map = ([]);
+  protected Document owner_document;
+  protected mapping(string:Node) map = ([]);
 
-  static int is_readonly() { return 0; }
-  static void bind(Node n) { }
-  static void unbind(Node n) { }
+  protected int is_readonly() { return 0; }
+  protected void bind(Node n) { }
+  protected void unbind(Node n) { }
 
   Node get_named_item(string name) { return map[name]; }
 
@@ -118,6 +133,8 @@ class NamedNodeMap
     if(is_readonly())
       throw(DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR));
     Node old = map[arg->get_node_name()];
+    if(old == arg)
+      return 0;
     bind(arg);
     map[arg->get_node_name()] = arg;
     if(old)
@@ -137,15 +154,19 @@ class NamedNodeMap
     return old;
   }
 
-  Node `[](int index) { return item(index); }
-  int _sizeof() { return get_length(); }
-  mapping(string:Node) cast(string to) {
+  protected Node `[](int|string index)
+  {
+    return stringp(index)? get_named_item(index) : item(index);
+  }
+
+  protected int _sizeof() { return get_length(); }
+  protected mapping(string:Node) cast(string to) {
     return to[..6] == "mapping" && copy_value(map);
   }
 
   Node item(int index)
   {
-    return values(this_object())[index];
+    return values(this)[index];
   }
 
   int get_length()
@@ -153,10 +174,11 @@ class NamedNodeMap
     return sizeof(map);
   }
 
-  array(string) _indices() { return indices(map); }
-  array(Node) _values() { return values(map); }
+  protected array(string) _indices() { return indices(map); }
+  protected array(Node) _values() { return values(map); }
+  protected Mapping.Iterator _get_iterator() { return Mapping.Iterator(map); }
 
-  static void create(Document owner)
+  protected void create(Document owner)
   {
     owner_document = owner;
   }
@@ -178,7 +200,7 @@ class Node
   constant DOCUMENT_FRAGMENT_NODE       = 11;
   constant NOTATION_NODE                = 12;
 
-  static class NodeNodeList {
+  protected class NodeNodeList {
     inherit NodeList;
 
     protected int search(Node n) { return predef::search(nodes, n); }
@@ -190,9 +212,9 @@ class Node
     }
   }
 
-  static Node parent_node;
-  static NodeNodeList child_nodes;
-  static Document owner_document;
+  protected Node parent_node;
+  protected NodeNodeList child_nodes;
+  protected Document owner_document;
 
   protected int is_readonly() {
     return parent_node && parent_node->is_readonly();
@@ -222,7 +244,7 @@ class Node
 
   Node get_previous_sibling(Node|void node) {
     if(!node)
-      return parent_node && parent_node->get_previous_sibling(this_object());
+      return parent_node && parent_node->get_previous_sibling(this);
     if(!child_nodes)
       return 0;
     int pos = child_nodes->search(node);
@@ -231,7 +253,7 @@ class Node
 
   Node get_next_sibling(Node|void node) {
     if(!node)
-      return parent_node && parent_node->get_next_sibling(this_object());
+      return parent_node && parent_node->get_next_sibling(this);
     if(!child_nodes)
       return 0;
     int pos = child_nodes->search(node);
@@ -241,11 +263,11 @@ class Node
   NamedNodeMap get_attributes() { return 0; }
   Document get_owner_document() { return owner_document; }
 
-  static int child_is_allowed(Node child) { return 0; }
+  protected int child_is_allowed(Node child) { return 0; }
 
-  static int is_ancestor(Node node)
+  protected int is_ancestor(Node node)
   {
-    Node loc = this_object();
+    Node loc = this;
     while(loc) {
       if(node == loc)
 	return 1;
@@ -257,7 +279,7 @@ class Node
   protected void _set_parent(Node new_parent)
   {
     if(new_parent && parent_node)
-	parent_node->remove_child(this_object());
+	parent_node->remove_child(this);
     parent_node = new_parent;
   }
 
@@ -270,22 +292,29 @@ class Node
       throw(DOMException(DOMException.NOT_FOUND_ERR));
     if(is_ancestor(new_child))
       throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
-    if(new_child->get_owner_document() != owner_document)
-      throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
     if(is_readonly())
       throw(DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR));
+    if(new_child->get_owner_document() != owner_document)
+      if(get_node_type() == DOCUMENT_NODE &&
+	 new_child->get_node_type() == DOCUMENT_TYPE_NODE &&
+	 !new_child->get_owner_document() &&
+	 functionp(new_child->_set_owner_document))
+	new_child->_set_owner_document(this);
+      else
+	throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
+    
     if(new_child->get_node_type() == DOCUMENT_FRAGMENT_NODE) {
       array(Node) new_children = values(new_child->get_child_nodes());
       foreach(new_children, Node nc)
 	if(!child_is_allowed(nc))
 	  throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
       foreach(new_children, Node nc)
-	nc->_set_parent(this_object());
+	nc->_set_parent(this);
       get_child_nodes()->insert_at(pos, new_children);
     } else {
       if(!child_is_allowed(new_child))
 	throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
-      new_child->_set_parent(this_object());
+      new_child->_set_parent(this);
       get_child_nodes()->insert_at(pos, ({new_child}));
     }
     return new_child;
@@ -317,6 +346,11 @@ class Node
     throw(DOMException(DOMException.NOT_SUPPORTED_ERR));
   }
 
+  protected string _sprintf(int mode, mapping options)
+  {
+    return mode == 'O' &&
+      sprintf("%O(%s)", this_program, get_node_name());
+  }
 }
 
 class DocumentFragment
@@ -335,14 +369,14 @@ class DocumentFragment
     return new;
   }
 
-  static int child_is_allowed(Node child)
+  protected int child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
 	     ENTITY_REFERENCE_NODE>)[child->get_node_type()];
   }
 
-  static void create(Document owner)
+  protected void create(Document owner)
   {
     owner_document = owner;
   }
@@ -352,19 +386,22 @@ class Document
 {
   inherit Node;
   
-  static program ElementImpl = Element;
-  static program DocumentFragmentImpl = DocumentFragment;
-  static program TextImpl = Text;
-  static program CommentImpl = Comment;
-  static program CDATASectionImpl = CDATASection;
-  static program ProcessingInstructionImpl = ProcessingInstruction;
-  static program AttrImpl = Attr;
-  static program EntityReferenceImpl = EntityReference;
+  protected program ElementImpl = Element;
+  protected program DocumentFragmentImpl = DocumentFragment;
+  protected program TextImpl = Text;
+  protected program CommentImpl = Comment;
+  protected program CDATASectionImpl = CDATASection;
+  protected program ProcessingInstructionImpl = ProcessingInstruction;
+  protected program AttrImpl = Attr;
+  protected program EntityReferenceImpl = EntityReference;
+
+  protected DOMImplementation implementation;
+  protected string namespace_uri, qualified_name;
 
   int get_node_type() { return DOCUMENT_NODE; }
   string get_node_name() { return "#document"; }
   Document get_owner_document() { return 0; }
-  DOMImplementation get_implementation() { return DOMImplementation(); }
+  DOMImplementation get_implementation() { return implementation; }
 
   DocumentType get_doctype()
   {
@@ -384,42 +421,42 @@ class Document
 
   Element create_element(string tag_name)
   {
-    return ElementImpl(this_object(), tag_name);
+    return ElementImpl(this, tag_name);
   }
 
   DocumentFragment create_document_fragment()
   {
-    return DocumentFragmentImpl(this_object());
+    return DocumentFragmentImpl(this);
   }
 
   Text create_text_node(string data)
   {
-    return TextImpl(this_object(), data);
+    return TextImpl(this, data);
   }
 
   Comment create_comment(string data)
   {
-    return CommentImpl(this_object(), data);
+    return CommentImpl(this, data);
   }
 
   CDATASection create_cdata_section(string data)
   {
-    return CDATASectionImpl(this_object(), data);
+    return CDATASectionImpl(this, data);
   }
 
   ProcessingInstruction create_processing_instruction(string target, string data)
   {
-    return ProcessingInstructionImpl(this_object(), target, data);
+    return ProcessingInstructionImpl(this, target, data);
   }
 
   Attr create_attribute(string name, string|void default_value)
   {
-    return AttrImpl(this_object(), name, default_value);
+    return AttrImpl(this, name, default_value);
   }
 
   EntityReference create_entity_reference(string name)
   {
-    return EntityReferenceImpl(this_object(), name);
+    return EntityReferenceImpl(this, name);
   }
 
   NodeList get_elements_by_tag_name(string tagname)
@@ -427,7 +464,7 @@ class Document
     return get_document_element()->get_elements_by_tag_name(tagname);
   }
 
-  static int child_is_allowed(Node child)
+  protected int child_is_allowed(Node child)
   {
     if(child->get_node_type() == ELEMENT_NODE)
       return !get_document_element();
@@ -436,9 +473,15 @@ class Document
 	       DOCUMENT_TYPE_NODE>)[child->get_node_type()];
   }
 
-  static void create()
+  protected void create(DOMImplementation i, string ns, string qn,
+		     DocumentType|void doctype)
   {
-    owner_document = this_object();
+    implementation = i;
+    namespace_uri = ns;
+    qualified_name = qn;
+    owner_document = this;
+    if(doctype)
+      append_child(doctype);
   }
 }
 
@@ -446,7 +489,7 @@ class CharacterData
 {
   inherit Node;
 
-  static string node_value;
+  protected string node_value;
 
   string get_node_value() { return node_value; }
   void set_node_value(string data)
@@ -457,7 +500,7 @@ class CharacterData
   }
   string get_data() { return get_node_value(); }
   void set_data(string data) { set_node_value(data); }
-  int get_length() { return strlen(get_data()); }
+  int get_length() { return sizeof(get_data()); }
 
   string substring_data(int offset, int count)
   {
@@ -506,8 +549,9 @@ class Attr
 {
   inherit Node;
 
-  static string name;
-  static int specified = 1;
+  protected string name;
+  protected int specified = 1;
+  protected Element bound_to;
 
   int get_node_type() { return ATTRIBUTE_NODE; }
   string get_node_name() { return get_name(); }
@@ -541,13 +585,20 @@ class Attr
 
   protected void _set_parent(Node new_parent) { }
 
-  static int child_is_allowed(Node child)
+  protected void _bind(Element new_element)
+  {
+    if(new_element && bound_to)
+      throw(DOMException(DOMException.INUSE_ATTRIBUTE_ERR));
+    bound_to = new_element;
+  }
+
+  protected int child_is_allowed(Node child)
   {
     return child->get_node_type() == TEXT_NODE ||
       child->get_node_type() == ENTITY_REFERENCE_NODE;
   }
 
-  static void create(Document owner, string _name, string|void default_value)
+  protected void create(Document owner, string _name, string|void default_value)
   {
     owner_document = owner;
     name = _name;
@@ -561,22 +612,25 @@ class Attr
 
 class Element
 {
-  inherit Node;
+  inherit Node : node;
 
-  static string tag_name;
-  static NamedNodeMap attributes;
+  protected string tag_name;
+  protected NamedNodeMap attributes;
 
-  static protected int _is_readonly() { return is_readonly(); } /* kluge! */
-
-  static NamedNodeMap create_attributes()
+  protected NamedNodeMap create_attributes()
   {
     return class {
 
       inherit NamedNodeMap;
 
-      static int is_readonly() { return _is_readonly(); }
-      static void bind(Node n) { } /**/
-      static void unbind(Node n) { } /**/
+      protected int is_readonly() { return node::is_readonly(); }
+      protected void bind(Node n)
+      {
+	n->_bind(function_object(this_program));
+      }
+      protected void unbind(Node n) {
+	n->_bind(0);
+      }
 
     }(owner_document);
   }
@@ -633,14 +687,14 @@ class Element
   NodeList get_elements_by_tag_name(string name)
   {
     NodeList res = NodeList((name == "*" || name == get_tag_name()) &&
-			    ({ this_object() }));
+			    ({ this }));
     foreach((array(Node))get_child_nodes(), Node n)
       if(n->get_node_type() == ELEMENT_NODE)
 	res += values(n->get_elements_by_tag_name(name));
     return res;
   }
 
-  static void low_normalize(Node n)
+  protected void low_normalize(Node n)
   {
     while(n) {
       Node s = n->get_next_sibling();
@@ -669,14 +723,14 @@ class Element
     return new;
   }
 
-  static int child_is_allowed(Node child)
+  protected int child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
 	     ENTITY_REFERENCE_NODE>)[child->get_node_type()];
   }
 
-  static void create(Document owner, string name)
+  protected void create(Document owner, string name)
   {
     owner_document = owner;
     tag_name = name;
@@ -704,7 +758,7 @@ class Text
     return owner_document->create_text_node(get_data());
   }
 
-  static void create(Document owner, string data)
+  protected void create(Document owner, string data)
   {
     owner_document = owner;
     set_data(data);
@@ -722,7 +776,7 @@ class Comment
     return owner_document->create_comment(get_data());
   }
 
-  static void create(Document owner, string data)
+  protected void create(Document owner, string data)
   {
     owner_document = owner;
     set_data(data);
@@ -740,7 +794,7 @@ class CDATASection
     return owner_document->create_cdata_section(get_data());
   }
 
-  static void create(Document owner, string data)
+  protected void create(Document owner, string data)
   {
     owner_document = owner;
     set_data(data);
@@ -751,31 +805,37 @@ class DocumentType
 {
   inherit Node;
 
-  static string name;
-  static NamedNodeMap entities, notations;
+  protected string name, public_id, system_id;
+  protected NamedNodeMap entities, notations;
+  protected DOMImplementation implementation;
 
   int get_node_type() { return DOCUMENT_TYPE_NODE; }
   string get_node_name() { return get_name(); }
   string get_name() { return name; }
-  NamedNodeMap get_entities() { return entities; }
-  NamedNodeMap get_notations() { return notations; }
+  string get_public_id() { return public_id; }
+  string get_system_id() { return system_id; }
+  NamedNodeMap get_entities() { return entities || create_entities(); }
+  NamedNodeMap get_notations() { return notations || create_notations(); }
 
-  static void create_entities()
+  protected void _set_owner_document(Document d) { owner_document = d; }
+
+  protected NamedNodeMap create_entities()
   {
-    entities = NamedNodeMap(owner_document);
+    return entities = NamedNodeMap(owner_document);
   }
 
-  static void create_notations()
+  protected NamedNodeMap create_notations()
   {
-    notations = NamedNodeMap(owner_document);    
+    return notations = NamedNodeMap(owner_document);
   }
 
-  static void create(Document owner, string _name)
+  protected void create(DOMImplementation i, string qn,
+		     string|void pubid, string|void sysid)
   {
-    owner_document = owner;
-    name = _name;
-    create_entities();
-    create_notations();
+    implementation = i;
+    name = qn;
+    public_id = pubid;
+    system_id = sysid;
   }
 }
 
@@ -783,15 +843,15 @@ class Notation
 {
   inherit Node;
 
-  static string name, public_id, system_id;
+  protected string name, public_id, system_id;
 
-  int get_node_type() { return ENTITY_REFERENCE_NODE; }
+  int get_node_type() { return NOTATION_NODE; }
   string get_node_name() { return name; }
   string get_public_id() { return public_id; }
   string get_system_id() { return system_id; }
   protected int is_readonly() { return 1; }
 
-  static void create(Document owner, string _name, string p_id, string s_id)
+  protected void create(Document owner, string _name, string p_id, string s_id)
   {
     owner_document = owner;
     name = _name;
@@ -804,7 +864,7 @@ class Entity
 {
   inherit Node;
 
-  static string name, public_id, system_id, notation_name;
+  protected string name, public_id, system_id, notation_name;
 
   int get_node_type() { return ENTITY_NODE; }
   string get_node_name() { return name; }
@@ -818,14 +878,14 @@ class Entity
     return to == "string" && ((array(string))get_child_nodes())*"";
   }
 
-  static int child_is_allowed(Node child)
+  protected int child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
 	     ENTITY_REFERENCE_NODE>)[child->get_node_type()];
   }
 
-  static void create(Document owner, string _name, string p_id, string s_id,
+  protected void create(Document owner, string _name, string p_id, string s_id,
 		     string n_name, DocumentFragment|void value)
   {
     owner_document = owner;
@@ -842,8 +902,8 @@ class EntityReference
 {
   inherit Node;
 
-  static string name;
-  static Entity entity;
+  protected string name;
+  protected Entity entity;
 
   int get_node_type() { return ENTITY_REFERENCE_NODE; }
   string get_node_name() { return name; }
@@ -876,7 +936,7 @@ class EntityReference
 
   int has_child_nodes() { return entity && entity->has_child_nodes(); }
 
-  static void create(Document owner, string _name, Entity|void _entity)
+  protected void create(Document owner, string _name, Entity|void _entity)
   {
     owner_document = owner;
     name = _name;
@@ -888,7 +948,7 @@ class ProcessingInstruction
 {
   inherit Node;
 
-  static string target, node_value;
+  protected string target, node_value;
 
   int get_node_type() { return PROCESSING_INSTRUCTION_NODE; }
   string get_node_name() { return get_target(); }
@@ -907,7 +967,7 @@ class ProcessingInstruction
     return owner_document->create_processing_instruction(target, get_data());
   }
 
-  static void create(Document owner, string _target, string data)
+  protected void create(Document owner, string _target, string data)
   {
     owner_document = owner;
     target = _target;
@@ -919,19 +979,19 @@ class ProcessingInstruction
 
 class ParseException
 {
-  static string message, pubid, sysid;
-  static int loc;
+  protected string message, pubid, sysid;
+  protected int loc;
 
   constant is_generic_error = 1;
 
-  static array backtrace = predef::backtrace()[..sizeof(predef::backtrace())-3];
+  protected array backtrace = predef::backtrace()[..<2];
 
   int get_location() { return loc; }
   string get_public_id() { return pubid; }
   string get_system_id() { return sysid; }
   string get_message() { return message; }
 
-  string|array `[] (int i)
+  protected string|array `[] (int i)
   {
     switch (i) {
       case 0:
@@ -941,14 +1001,14 @@ class ParseException
     }
   }
 
-  string _sprintf(int mode, mapping options)
+  protected string _sprintf(int mode, mapping options)
   {
     return mode == 'O' &&
-      sprintf("DOM.ParseException(%O /* %O char %d */)",
-	      message, sysid, loc);
+      sprintf("%O(%O /* %O char %d */)",
+	      this_program, message, sysid, loc);
   }
 
-  static void create(string _message, string|void _sysid, string|void _pubid,
+  protected void create(string _message, string|void _sysid, string|void _pubid,
 		     int|void _loc)
   {
     message = _message;
@@ -960,8 +1020,8 @@ class ParseException
 
 class InputSource {
   
-  static string sysid, pubid, encoding;
-  static Stdio.File file;
+  protected string sysid, pubid, encoding;
+  protected Stdio.File file;
   
   string get_public_id() { return pubid; }
   string get_system_id() { return sysid; }
@@ -979,7 +1039,7 @@ class InputSource {
     return data;
   }
   
-  static Stdio.File get_external_file(string sysid, string|void pubid)
+  protected Stdio.File get_external_file(string sysid, string|void pubid)
   {
     Stdio.File f = Stdio.File();
     if(!f->open(sysid, "r"))
@@ -987,7 +1047,7 @@ class InputSource {
     return f;
   }
   
-  static void create(Stdio.File|string|void input)
+  protected void create(Stdio.File|string|void input)
   {
     if(input)
       if(stringp(input)) {
@@ -1000,13 +1060,13 @@ class InputSource {
 
 class AbstractDOMParser
 {
-  static class ErrorHandler {
+  protected class ErrorHandler {
     void error(ParseException exception);
     void fatal_error(ParseException exception);
     void warning(ParseException exception);
   };
 
-  static ErrorHandler error_handler = this_object();
+  protected ErrorHandler error_handler = this;
 
   void error(ParseException exception) { throw(exception); }
   void fatal_error(ParseException exception) { throw(exception); }
@@ -1014,20 +1074,25 @@ class AbstractDOMParser
 
   void set_error_handler(ErrorHandler handler) { error_handler = handler; }
 
-  static Document document;
-  static Node current_node;
-  static array(Node) node_stack;
+  protected Document document;
+  protected Node current_node;
+  protected array(Node) node_stack;
 
   Document get_document() { return document; }
 
-  static Document create_document(InputSource s)
+  protected DOMImplementation get_dom_implementation()
   {
-    return Document();
+    return DOMImplementation();
   }
 
-  static void parse_callback(string ty, string name, mapping attributes,
-			     array|string contents, mapping info,
-			     InputSource input)
+  protected Document create_document(InputSource s)
+  {
+    return get_dom_implementation()->create_document(0, 0, 0);
+  }
+
+  protected object|void parse_callback(string ty, string name, mapping attributes,
+				    array|string contents, mapping info,
+				    InputSource input)
   {
     switch(ty) {
      case "<!--":
@@ -1039,12 +1104,13 @@ class AbstractDOMParser
        foreach(indices(attributes), string att_name)
 	 e->set_attribute(att_name, attributes[att_name]);
        current_node->append_child(e);
-       node_stack += ({ current_node = e });
+       node_stack += ({ current_node });
+       current_node = e ;
        if(ty == "<")
 	 break;
      case ">":
        current_node = node_stack[-1];
-       node_stack = node_stack[..sizeof(node_stack)-2];
+       node_stack = node_stack[..<1];
        break;
      case "":
        current_node->append_child(document->create_text_node(contents));
@@ -1060,12 +1126,41 @@ class AbstractDOMParser
      case "<?xml":
        break;
      case "<!DOCTYPE":
-       current_node->append_child(DocumentType(document, name));
+       {
+         DocumentType doctype = document->get_implementation()->
+	   create_document_type(name, attributes->PUBLIC,
+				attributes->SYSTEM);
+	 
+	 current_node->append_child(doctype);
+
+	 if(contents)
+	   foreach(contents, object elt)
+	     if(elt)
+	       switch(elt->get_node_type()) {
+		case Node.NOTATION_NODE:
+		  doctype->get_notations()->set_named_item(elt);
+		  break;
+		case Node.ENTITY_NODE:
+		  doctype->get_entities()->set_named_item(elt);
+		  break;
+	       }
+	 break;
+       }
+     case "<!NOTATION":
+       return Notation(document, name, attributes->PUBLIC, attributes->SYSTEM);
        break;
      case "<!ENTITY":
+       if(name[0] != '%')
+	 if(contents) {
+	   DocumentFragment frag = document->create_document_fragment();
+	   frag->append_child(document->create_text_node(contents));
+	   return Entity(document, name, 0, 0, 0, frag);
+	 } else
+	   return Entity(document, name, attributes->PUBLIC,
+			 attributes->SYSTEM, attributes->NDATA);
+       break;
      case "<!ELEMENT":
      case "<!ATTLIST":
-     case "<!NOTATION":
        break;
      case "error":
        throw(ParseException(contents, input->get_system_id(),
@@ -1073,7 +1168,7 @@ class AbstractDOMParser
     }
   }
 
-  static void _parse(string data, function cb, InputSource input);
+  protected void _parse(string data, function cb, InputSource input);
 
   void parse(InputSource|string source)
   {
@@ -1088,29 +1183,44 @@ class AbstractDOMParser
 class NonValidatingDOMParser
 {
   inherit AbstractDOMParser;
-  static inherit Parser.XML.Simple : xml;
-  static void _parse(string data, function cb, InputSource input)
+  protected inherit .Simple : xml;
+
+  protected string autoconvert(string data, InputSource input)
   {
-    xml::parse(data, cb, input);
+    mixed err = catch{ return xml::autoconvert(data); };
+    throw(ParseException(err[0], input->get_system_id(),
+			 input->get_public_id(), 0));
+  }
+
+  protected void _parse(string data, function cb, InputSource input)
+  {
+    xml::parse(autoconvert(data, input), cb, input);
   }
 }
 
-#if constant(Parser.XML.Validating)
 class DOMParser
 {
   inherit AbstractDOMParser;
-  static inherit Parser.XML.Validating : xml;
+  protected inherit Parser.XML.Validating : xml;
+
+  protected string autoconvert(string data, InputSource input)
+  {
+    mixed err = catch{ return xml::autoconvert(data); };
+    throw(ParseException(err[0]-"\n", input->get_system_id(),
+			 input->get_public_id(), 0));
+  }
 
   string get_external_entity(string sysid, string|void pubid,
-			     InputSource input)
+			     int|void unparsed, InputSource input)
   {
-    return InputSource(combine_path(combine_path(input->get_system_id(), ".."),
-				    sysid))->get_data();
+    InputSource is =
+      InputSource(combine_path(combine_path(input->get_system_id(), ".."),
+			       sysid));
+    return (unparsed? is->get_data() : autoconvert(is->get_data(), is));
   }
 
-  static void _parse(string data, function cb, InputSource input)
+  protected void _parse(string data, function cb, InputSource input)
   {
-    xml::parse(data, cb, input);
+    xml::parse(autoconvert(data, input), cb, input);
   }
 }
-#endif

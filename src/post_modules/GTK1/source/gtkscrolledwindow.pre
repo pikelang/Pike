@@ -1,0 +1,73 @@
+/* -*- C -*- */
+class GTK1.ScrolledWindow;
+inherit GTK1.Window;
+//! Scrolled windows are used to create a scrollable area with another
+//! widget inside it. You may insert any type of widget into a scrolled
+//! window, and it will be accessible regardless of the size by using
+//! the scrollbars.
+//! <p>
+//! IMG: GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(100,80)->set_policy(GTK1.POLICY_AUTOMATIC,GTK1.POLICY_AUTOMATIC)
+//! IMG: GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(70,80)->set_policy(GTK1.POLICY_AUTOMATIC,GTK1.POLICY_AUTOMATIC)
+//! IMG: GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(80,80)
+//! IMG: GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)
+//! </p>
+void create( ?GTK1.Adjustment hadjustment, ?GTK1.Adjustment vadjustments );
+//! The two adjustments are most commonly set to 0.
+void set_hadjustment( GTK1.Adjustment hadjustment );
+//! Set the horizontal adjustment object
+void set_vadjustment( GTK1.Adjustment vadjustment );
+//! Set the vertical adjustment object
+member GTK1.Hscrollbar hscrollbar;
+//! The horizontal scrollbar
+member GTK1.Vscrollbar vscrollbar;
+//! The vertical scrollbar
+void set_policy( int xpolicy, int ypolicy );
+//! vertical and horiz policy. Both are one of CONST(GTK_POLICY)
+void add(GTK1.Widget victim)
+//! Add a widget to this container.
+//! This is equivalent to the
+//! C-GTK function gtk_scrolled_window_add_with_viewport or
+//! gtk_container_add, depeneding on whether or not the child supports
+//! the set_scroll_adjustments signal.
+//! <p>
+//! What this means in practice is that you do not have to care about
+//! this at all, it's all handled automatically.
+//! </p>
+{
+  GtkWidget *victim;
+  struct object *o;
+
+  get_all_args( "add", args, "%o", &o );
+  victim = GTK_WIDGET( get_gtkobject( o ) );
+#ifdef HAVE_GTK_20
+  if (!(GTK_WIDGET_GET_CLASS(victim)->set_scroll_adjustments_signal))
+#else
+  if(!(GTK_WIDGET_CLASS(GTK_OBJECT(victim)->klass)->set_scroll_adjustments_signal))
+#endif
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(THIS->obj),
+                                          victim);
+  else
+    gtk_container_add( GTK_CONTAINER( THIS->obj ), victim );
+  RETURN_THIS();
+}
+
+void set_placement( int window_corner_placement );
+//! The location of the window relative to the scrollbars.
+//! One of CONST(GTK_CORNER_)
+GTK1.Adjustment get_hadjustment();
+//! Return the horizontal adjustment used to scroll the window
+GTK1.Adjustment get_vadjustment();
+//! Return the vertical adjustment used to scroll the window
+member int hscrollbar_policy;
+//! One of CONST(GTK_POLICY_)
+member int vscrollbar_policy;
+//! One of CONST(GTK_POLICY_)
+member int hscrollbar_visible;
+//! 1 if the horizontal scrollbar is currently visible
+member int vscrollbar_visible;
+//! 1 if the vertical scrollbar is currently visible
+member int window_placement;
+//! The location of the window relative to the scrollbars.
+//! One of CONST(GTK_CORNER_)
+
+

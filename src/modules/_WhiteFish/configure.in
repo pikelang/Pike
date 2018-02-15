@@ -1,0 +1,8 @@
+AC_INIT(whitefish.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_CHECK_HEADERS(sys/types.h netinet/in.h inttypes.h)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

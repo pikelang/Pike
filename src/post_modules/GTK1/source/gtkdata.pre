@@ -1,0 +1,8 @@
+/* -*- C -*- */
+class GTK1.Data;
+//! A class inherited by all objects used to store data (they are not widgets)
+inherit GTK1.Object;
+signal disconnect;
+
+
+

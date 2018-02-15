@@ -1,13 +1,24 @@
-/* $Id: https.pike,v 1.9 2000/03/28 13:03:43 grubba Exp $
- *
+#pike __REAL_VERSION__
+
+/*
  * dummy https server
  */
 
+//! Dummy HTTPS server
+
 #define PORT 25678
+
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
+
+#if constant(SSL.Cipher.CipherAlgorithm)
 
 import Stdio;
 
-inherit "sslport";
+inherit SSL.sslport;
 
 string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
@@ -42,7 +53,7 @@ class conn {
 
   void write_callback()
   {
-    if (index < strlen(message))
+    if (index < sizeof(message))
     {
       int written = sslfile->write(message[index..]);
       if (written > 0)
@@ -50,19 +61,17 @@ class conn {
       else
 	sslfile->close();
     }
-    if (index == strlen(message))
+    if (index == sizeof(message))
       sslfile->close();
   }
   
   void read_callback(mixed id, string data)
   {
-#ifdef SSL3_DEBUG
-    werror("Received: '" + data + "'\n");
-#endif
+    SSL3_DEBUG_MSG("Received: '" + data + "'\n");
     sslfile->set_write_callback(write_callback);
   }
 
-  void create(object f)
+  protected void create(object f)
   {
     sslfile = f;
     sslfile->set_nonblocking(read_callback, 0, 0);
@@ -70,15 +79,13 @@ class conn {
 }
 
 class no_random {
-  object arcfour = Crypto.arcfour();
+  object arcfour = Crypto.Arcfour();
   
-  void create(string|void secret)
+  protected void create(string|void secret)
   {
     if (!secret)
       secret = sprintf("Foo!%4c", time());
-    object sha = Crypto.sha();
-    sha->update(secret);
-    arcfour->set_encrypt_key(sha->digest());
+    arcfour->set_encrypt_key(Crypto.SHA1->hash(secret));
   }
 
   string read(int size)
@@ -112,26 +119,21 @@ void my_accept_callback(object f)
 
 int main()
 {
-#ifdef SSL3_DEBUG
-  werror(sprintf("Cert: '%s'\n", Crypto.string_to_hex(my_certificate)));
-  werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
-//  werror(sprintf("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1()));
-#endif
+  SSL3_DEBUG_MSG("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", Crypto.string_to_hex(my_key));
 #if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-#ifdef SSL3_DEBUG
-  werror(sprintf("Decoded key: %O\n", key));
-#endif
+  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
   object n = key[1][1];
   object e = key[2][1];
   object d = key[3][1];
   object p = key[4][1];
   object q = key[5][1];
 
-  werror(sprintf("n =  %s\np =  %s\nq =  %s\npq = %s\n",
-		 n->digits(), p->digits(), q->digits(), (p*q)->digits()));
+  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
+	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
 
-  rsa = Crypto.rsa();
+  rsa = Crypto.RSA();
   rsa->set_public_key(n, e);
   rsa->set_private_key(d);
 #else /* !0 */
@@ -150,10 +152,12 @@ int main()
     return -17;
 }
 
-void create()
+protected void create()
 {
-#ifdef SSL3_DEBUG
-  werror("https->create\n");
-#endif
+  SSL3_DEBUG_MSG("https->create\n");
   sslport::create();
 }
+
+#else // constant(SSL.Cipher.CipherAlgorithm)
+constant this_program_does_not_exist = 1;
+#endif

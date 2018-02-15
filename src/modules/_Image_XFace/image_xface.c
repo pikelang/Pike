@@ -1,6 +1,11 @@
-#include "global.h"
-RCSID("$Id: image_xface.c,v 1.14 2000/12/01 08:10:33 hubbe Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
+#include "module.h"
 #include "config.h"
 
 
@@ -51,8 +56,7 @@ RCSID("$Id: image_xface.c,v 1.14 2000/12/01 08:10:33 hubbe Exp $");
 #endif /* USE_GMP || USE_GMP2 */
 
 
-/* This must be included last! */
-#include "module_magic.h"
+#define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
@@ -73,7 +77,7 @@ extern struct program *image_program;
 */
 
 
-static unsigned char tab[] = {
+static const unsigned char tab[] = {
   0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0xc7, 0xfb, 0xa0, 0xe8, 0xa0, 0xf0,
   0x00, 0xd8, 0xf0, 0xfb, 0x00, 0x20, 0x00, 0x00, 0xb0, 0xf0, 0xc0, 0xfe,
   0x00, 0x00, 0x00, 0x80, 0x00, 0xb8, 0xa2, 0xf4, 0x00, 0x00, 0x00, 0xb0,
@@ -146,8 +150,8 @@ static unsigned char tab[] = {
 0000 4096 4224 4228 4740 4804 5060 6084 6116 6124 6156 6220 6222 6223 6227
 */
 
-static int taboffs[] = { 0, 4740, 4228, 5060, 4224, 6222, 6220, 6227,
-			 4096, 6116, 6084, 6156 };
+static const int taboffs[] = { 0, 4740, 4228, 5060, 4224, 6222, 6220, 6227,
+			       4096, 6116, 6084, 6156 };
 
 static void xform(unsigned char *i, unsigned char *o)
 {
@@ -174,21 +178,21 @@ static void xform(unsigned char *i, unsigned char *o)
     }
 }
 
-static unsigned int topprob[4][6] = {
+static const unsigned int topprob[4][6] = {
   {1, 255, 251, 0, 4, 251},
   {1, 255, 200, 0, 55, 200},
   {33, 223, 159, 0, 64, 159},
   {131, 0, 0, 0, 125, 131}
 };
 
-static unsigned int botprob[32] = {
+static const unsigned int botprob[32] = {
   0, 0, 38, 0, 38, 38, 13, 152,
   38, 76, 13, 165, 13, 178, 6, 230,
   38, 114, 13, 191, 13, 204, 6, 236,
   13, 217, 6, 242, 5, 248, 3, 253
 };
 
-static int pop(mpz_t val, unsigned int *p)
+static int pop(mpz_t val, const unsigned int *p)
 {
   unsigned long int n;
   int r = 0;
@@ -206,7 +210,7 @@ static int pop(mpz_t val, unsigned int *p)
   return r;
 }
 
-static void push(mpz_t val, unsigned int *p, int r)
+static void push(mpz_t val, const unsigned int *p, int r)
 {
   unsigned long int n;
   mpz_t dum;
@@ -393,7 +397,7 @@ static void image_xface_decode(INT32 args)
   struct object *o;
   struct image *img;
 
-  if(args<1 || sp[-args].type!=T_STRING)
+  if(args<1 || TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   o=clone_object(image_program,0);
@@ -427,14 +431,14 @@ static void image_xface_decode(INT32 args)
 
 static void image_xface_encode(INT32 args)
 {
-  struct image *img = NULL;
+  struct image *img=NULL;
   struct pike_string *res;
 
   if (args<1 
-      || sp[-args].type!=T_OBJECT
+      || TYPEOF(sp[-args]) != T_OBJECT
       || !(img=(struct image*)
 	   get_storage(sp[-args].u.object,image_program))
-      || (args>1 && sp[1-args].type!=T_MAPPING))
+      || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
     Pike_error("Image.XFace.encode: Illegal arguments\n");
   
   if (!img->img)
@@ -478,7 +482,7 @@ static void image_xface_encode(INT32 args)
 
 static void image_xface_decode_header(INT32 args)
 {
-  if(args<1 || sp[-args].type!=T_STRING)
+  if(args<1 || TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   pop_n_elems(args);
@@ -501,24 +505,19 @@ static void image_xface_decode_header(INT32 args)
 
 /*** module init & exit & stuff *****************************************/
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
 #ifdef DYNAMIC_MODULE
-   push_string(make_shared_string("Image"));
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT) 
-   {
-      push_string(make_shared_string("image"));
-      f_index(2);
+   push_text("Image.Image");
+   SAFE_APPLY_MASTER("resolv",1);
+   if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
-   }
-   pop_n_elems(1);
+   pop_stack();
 #endif /* DYNAMIC_MODULE */
 
    if (image_program)
@@ -534,4 +533,3 @@ void pike_module_init(void)
 #endif /* USE_GMP || USE_GMP2 */
 
 }
-

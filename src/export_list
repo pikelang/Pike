@@ -1,0 +1,28 @@
+# This file lists the files and directories that should be
+# added to source dists. Used by bin/export.pike.
+
+/README
+/README-GIT
+/ANNOUNCE
+/CHANGES
+/COMMITTERS
+/COPYING
+/COPYRIGHT
+/Makefile
+/src
+/lib
+/bin
+/man
+/packaging
+/refdoc/chapters
+/refdoc/presentation
+/refdoc/src_images
+/refdoc/structure
+/refdoc/Makefile
+/refdoc/inlining.txt
+/refdoc/keywords.txt
+/refdoc/syntax.txt
+/refdoc/tags.txt
+/refdoc/template.xsl
+/refdoc/xml.txt
+/tools

@@ -1,6 +1,8 @@
 /*
- * $Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 
@@ -17,16 +19,12 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $");
-
-#ifdef HAVE_SYS_TIME_H 
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <time.h>
 #define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
 
-/* This must be included last! */
-#include "module_magic.h"
 
 
 #define MAXPRECISION       7
@@ -107,6 +105,11 @@ double sidereal (double gmt, double jd, int gyear)
   return lst;
 }
 
+/*! @module spider
+ */
+
+/*! @decl string stardate(int time, int precision)
+ */
 void f_stardate (INT32 args)
 {
   int jd, precis=0;
@@ -118,12 +121,14 @@ void f_stardate (INT32 args)
 
   if (args < 2) 
     Pike_error("Wrong number of arguments to stardate(int, int)\n");
-  precis=sp[-args+1].u.integer;
-  t=sp[-args].u.integer;
+  precis=Pike_sp[-args+1].u.integer;
+  t=Pike_sp[-args].u.integer;
 
   if (precis < 1) precis = 1;
   if (precis > MAXPRECISION) precis = MAXPRECISION;
   tm = gmtime (&t);
+  if(!tm)
+    Pike_error("gmtime failed\n");
   jd = DO_NOT_WARN((int)julian_day(tm->tm_mon + 1, tm->tm_mday,
 				   tm->tm_year + 1900));
 
@@ -134,5 +139,8 @@ void f_stardate (INT32 args)
   sprintf (fmt, OUTPUTFORMAT, precis + 6, precis);
   sprintf (buf, fmt, (double) jd + gmst / 24.0);
   pop_n_elems(args);
-  push_string(make_shared_string(buf));
+  push_text(buf);
 }
+
+/*! @endmodule
+ */

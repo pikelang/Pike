@@ -1,0 +1,351 @@
+#!/usr/bin/make -f
+# Sample debian/rules that uses debhelper. 
+# GNU copyright 1997 by Joey Hess.
+#
+# This version is for a hypothetical package that builds an
+# architecture-dependant package, as well as an architecture-independent
+# package.
+#
+#
+
+# Uncomment this to turn on verbose mode. 
+#export DH_VERBOSE=1
+
+PIKEV=7.9
+PIKE=pike$(PIKEV)
+
+ifdef CCVER
+CC=gcc-$(CCVER)
+else
+CC=gcc
+endif
+
+ifeq (,$(DEB_BUILD_ARCH))
+DEB_BUILD_ARCH=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
+endif
+
+CPPFLAGS_EXTRA = -DDEBIAN
+
+ifdef SSP
+SSP_FLAGS=-fstack-protector
+endif
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug --without-copt
+else
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug
+endif
+
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS_EXTRA += -ffunction-sections
+endif
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+CFARGSEXTRA += --with-rtldebug --with-cdebug --with-debug
+endif
+
+CFLAGS_EXTRA += $(SSP_FLAGS)
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS_EXTRA += -ffunction-sections
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+EXTRA_ARGS=--with-security
+
+DO_MACHINE_CODE=no
+ifeq ($(DEB_BUILD_ARCH),i386)
+DO_MACHINE_CODE=yes
+endif
+ifeq ($(DEB_BUILD_ARCH),powerpc)
+DO_MACHINE_CODE=yes
+endif
+ifeq ($(DEB_BUILD_ARCH),sparc)
+DO_MACHINE_CODE=no
+endif
+
+ifeq ($(DO_MACHINE_CODE),yes)
+MACHINE_OPTS=--with-machine-code
+else
+MACHINE_OPTS=--without-machine-code
+endif
+
+VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[^-]*$$//')
+OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
+BUILDDIR=build/$(OS)
+CFARGS=$(CFARGSEXTRA) \
+       $(EXPERIMENTAL_CFARGS) \
+       --disable-rpath \
+       --disable-smartlink_binary \
+       --with-relocatable-dumped-modules \
+       --with-cflags="$(CFLAGS_EXTRA)" \
+       --with-cppflags="$(CPPFLAGS_EXTRA)" \
+       --with-bignums \
+       --with-gmp \
+       --with-poll \
+       --with-zlib \
+       --with-freetype \
+       --with-ttflib \
+       --with-libnettle \
+       --without-libpdf \
+       --without-libpanda \
+       --without-sybase \
+       --with-odbc \
+       --with-sane \
+       --with-postgres \
+       --with-postgres-include-dir=/usr/include/postgresql \
+       --with-libpq-dir=/usr/lib \
+       --with-perl \
+       --without-ffmpeg \
+       --without-libpdf \
+       --with-sqlite \
+       --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
+
+RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
+RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike
+PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
+PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
+
+export CFLAGS CC PIKE VERSION
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	install -d -m 755 $(BUILDDIR)
+
+#	for f in $(CURDIR)/debian/patches/*.diff; do \
+#	    patch -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
+#	done
+	touch patched-stamp
+
+	# Add here commands to configure the package.
+	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
+	touch configure-stamp
+
+
+build-arch: configure-stamp  build-arch-stamp
+build-arch-stamp:
+	dh_testdir
+
+	# Add here command to compile/build the package.
+	$(MAKE) -C$(BUILDDIR)
+
+	touch build-arch-stamp
+
+build-indep:  configure-stamp build-indep-stamp
+build-indep-stamp:
+	dh_testdir
+
+	# Add here command to compile/build the arch indep package.
+	# It's ok not to do anything here, if you don't need to build
+	#  anything for this package.
+	#/usr/bin/docbook-to-man debian/$(PIKE).sgml > $(PIKE).1
+
+	touch build-indep-stamp
+
+build: build-arch
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp build-arch-stamp build-indep-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	- if [ -f src/Makefile ]; then \
+	    mkdir -p src/lib/modules; \
+	    $(MAKE) -Csrc/ spotless; \
+	fi
+	- rm -rf refdoc/build/
+	- $(MAKE) cvsclean
+	- rm -f `find src -name "*.o" -print`
+	- rm -f `find src -name "*.a" -print`
+	- rm -f `find src -name "*.so" -print`
+	- mv src/modules/Image/Makefile src/modules/Image/Makefile.old
+	- rm -f `find src -name "Makefile" -print`
+	- mv src/modules/Image/Makefile.old src/modules/Image/Makefile
+	- rm -f `find src -name "make_variables" -print`
+	- rm -f `find src -name "*_machine.h" -print`
+	- rm -rf `find -name "CVS" -type d -print`
+	- rm -f `find -name ".cvsignore" -type f -print`
+	- rm -f src/post_modules/GL/auto.c src/post_modules/GLUT/auto.c
+	- rm -f src/config.cache src/precompile.sh src/y.tab.c src/y.tab.h src/pike src/tpike src/hilfe src/C.pmod
+	- rm -f `find src -name "config.status" -print`
+	- rm -f `find src -name "config.log" -print`
+	- rm -f `find src -name "config.h" -print`
+	- rm -f `find src -name "modlist_segment" -print`
+	- rm -f `find src -name "modlist_segment" -print`
+	- rm -f `find src -name "modlist_headers" -print`
+	- rm -f `find src -name "linker_options" -print`
+	- rm -f `find src -name "stamp-h" -print`
+	- rm -f `find src -name "*_config.h" -print`
+	- rm -f `find . -name "*.feature" -print`
+	- rm -f `cat debian/toclean.txt`
+
+	- rm src/modules/Gmp/prime_table src/modules/Gmp/prime_table_no 
+	- rm src/share src/pike-module src/dumpmodule.log
+	- rm src/modules/Perl/perlxsi.c src/modules/Java/module.pmod.in
+	- rm src/smartlink src/post_modules/GTK/prototypes.h src/post_modules/GTK/time_stamp
+	- rm src/pike.tmp src/post_modules/GTK/files_to_compile
+	- rm src/post_modules/GTK/sources
+	- rm src/post_modules/GTK/options
+	- rm src/post_modules/static_module_makefile
+	- rm src/post_modules/dynamic_module_makefile
+	- rm -rf build/
+	- rm $(CURDIR)/debian/links
+
+#	-if [ -f patched-stamp ]; then \
+#	    for f in $(CURDIR)/debian/patches/*.diff; do \
+#		patch -R -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
+#	    done ; \
+#	    rm -f patched-stamp ; \
+#	fi
+
+	dh_clean
+
+install: DH_OPTIONS=
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/$(PIKE).
+	$(MAKE) -C$(BUILDDIR)/ \
+	        buildroot=$(CURDIR)/debian/$(PIKE)-core \
+	        prefix=/usr/lib \
+		pike_name=/usr/bin/$(PIKE) \
+		include_prefix="/usr/include/pike/$(VERSION)/" \
+		install
+
+	# Some cleaning
+	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/ -name ".autodoc" -type f -print`
+	-@for f in `cat $(CURDIR)/debian/toremove.txt | sed -e 's/@PIKE@/$(PIKE)/g;s/@VERSION@/$(VERSION)/g'`; do \
+	    echo Removing $(CURDIR)/debian/$(PIKE)-core/$$f ; \
+	    rm $(CURDIR)/debian/$(PIKE)-core/$$f &> /dev/null || echo "  FAILED"; \
+	done
+
+	# an eye-candy
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike
+	install -m 644 -o root -g root $(CURDIR)/debian/pike.xpm $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike/$(PIKE).xpm 
+
+	# install the docs
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual refdoc/traditional_manual/* usr/share/doc/$(PIKE)-doc/html/manual
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
+
+	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-reference refdoc/modref/* usr/share/doc/$(PIKE)-doc/html/reference
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
+
+	ln -sf ../lib/pike/$(VERSION)/bin/pike $(CURDIR)/debian/$(PIKE)-core/usr/bin/$(PIKE)
+	install -m 644 -o root -g root  $(CURDIR)/man/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
+	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/man/
+
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include/pike \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION) ; \
+	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include
+	chmod 644 `find $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/ -type f -print`
+
+	# move all the *.pmod and *.pike files to /usr/share recreating the structure
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)
+	for f in `(cd $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/ && find -name "*.pmod" -print -o -name "*.pike" -print)`; do \
+	    install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/`dirname $$f`/; \
+	    if [ -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/$$f ]; then \
+		mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/$$f $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/$$f; \
+		(echo /usr/share/pike/$(VERSION)/lib/$$f /usr/lib/pike/$(VERSION)/lib/$$f | sed -e 's#/./#/#g') >> $(CURDIR)/debian/links; \
+	    fi; \
+	done
+	dh_link && rm -f $(CURDIR)/debian/links
+
+	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I/usr/include/pike/$(VERSION)/", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
+		$(CURDIR)/debian/pike-config.in > $(CURDIR)/debian/$(PIKE)-dev/usr/bin/$(PIKE)-config
+
+	# Fix permissions
+	find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION) -type f -exec chmod -x '{}' ';'
+	chmod 755 $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/bin/pike
+
+	for f in `find $(CURDIR)/debian/$(PIKE)-core/usr/bin -type f` \
+                 `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION) -type f` \
+		 `find $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION) -type f`; \
+	do \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*NOMODULE@#\!/usr/bin/$(PIKE)@' $$f \
+	    && chmod a+x $$f; \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*/usr/bin/env.*pike@#\!/usr/bin/$(PIKE)@' $$f; \
+	done; exit 0
+
+	# Some more permission changes
+	for f in run_autoconf precompile.sh smartlink fixdepends.sh install_module mktestsuite; do \
+	    chmod 755 $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/$$f ; \
+	done
+
+	# pike -x module fix
+	echo 's;\$$\(MODULE_BASE\)/dynamic_module_makefile;\$$\(PIKE_SRC_DIR\)/dynamic_module_makefile;g' > \
+	  $(CURDIR)/debian/sed-script.tmp
+	sed -r -f $(CURDIR)/debian/sed-script.tmp < \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile > \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
+	rm -f $(CURDIR)/debian/sed-script.tmp
+
+	# Create the documentation links to save space
+	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
+		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
+	done
+
+	# install the specs file
+	sed -e 's/@PIKEVERSION@/$(VERSION)/g' \
+	    -e 's;@CONFIGURE_ARGS@;$(CFARGS);g' \
+	    < $(CURDIR)/debian/specs.in > $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs
+
+	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
+	dh_movefiles --sourcedir=debian/$(PIKE)-core
+
+	# Need to move dynamic_module_makefile back to -core, since it contains platform-specific stuff
+	mv $(CURDIR)/debian/$(PIKE)-dev/usr/include/pike/$(VERSION)/dynamic_module_makefile \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
+
+# Build architecture-independent files here.
+# Pass -i to all debhelper commands in this target to reduce clutter.
+binary-indep: install
+	dh_testdir -i
+	dh_testroot -i
+	dh_installdocs -i
+	dh_installchangelogs  -i
+	dh_undocumented -p$(PIKE)-dev $(PIKE)-config.1
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+#	dh_installdebconf -a
+	dh_installdocs -a
+	dh_installmenu -a -p$(PIKE)-core
+	dh_installman -p$(PIKE)-core debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
+	dh_installchangelogs -a
+	dh_strip -a
+	dh_link -a
+	dh_compress -a
+	dh_fixperms -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure

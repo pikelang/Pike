@@ -1,0 +1,31 @@
+/* -*- C -*- */
+class GTK2.Hpaned;
+inherit GTK2.Paned;
+
+//! The paned window widgets are useful when you want to divide an area
+//! into two parts, with the relative size of the two parts controlled
+//! by the user. A groove is drawn between the two portions with a
+//! handle that the user can drag to change the ratio. This widgets
+//! makes a horizontal division
+//! <p>
+//! See W(Paned) for details.
+//! </p><p>
+//! IMG: GTK2.Hpaned()->add1(GTK2.Label("Left\nSide\nOf\nPane"))->add2(GTK2.Label("Right\nSide\nOf\nPane"))->set_size_request(100,100)
+//!</p>
+
+void create(?mapping(string:mixed) props)
+//! Create a new W(Hpaned) widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_HPANED);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gh;
+    gh=gtk_hpaned_new();
+    THIS->obj=G_OBJECT(gh);
+  }
+  pgtk2__init_this_object();
+}
+

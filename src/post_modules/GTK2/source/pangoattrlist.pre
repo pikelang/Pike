@@ -1,0 +1,22 @@
+/* -*- C -*- */
+require pango;
+
+class Pango.AttrList;
+
+//! A PangoAttrList.
+
+void create();
+//! Create a new empty attribute list.
+
+Pango.AttrList copy()
+//! Copy the list.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    PangoAttrList *pal=pango_attr_list_copy((PangoAttrList *)THIS->obj);
+    push_gobjectclass(pal,ppango2_attr_list_program);
+  }
+}
+
+endrequire;

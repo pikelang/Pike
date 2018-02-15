@@ -1,0 +1,771 @@
+This document describes the keywords recognized by the AutoDoc parser,
+and their intended use.
+
+===============================================================================
+
+  META KEYWORDS
+
+===============================================================================
+
+Keyword:      @appears
+Description:  Tell where the documentation for an item should be shown.
+              Gives the full new name of the item. Must be placed
+              first in the block, or immediately after any @module,
+              @class, or @decl's.
+Arguments:    <name> [, type]
+              Where:
+                <name> is an "absolute" name with identifiers
+                  separated by dots. It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
+                [type] is either "class" or "module" depending on
+                  whether the target item should appear as a class or
+                  a module. When not present, the choice will be
+                  governed by the item's type, as detected by the
+                  extractor. Overriding this is only needed for odd
+                  special cases such as a module.pmod containing e g:
+                    static class _Foo {...};
+                    _Foo Foo = _Foo();
+Children:     -
+Groups with:  -
+Examples:     //! @appears predef::stat
+              //!   This function is globally visible.
+              array stat() {
+                // function body
+              }
+
+_______________________________________________________________________________
+
+Keyword:      @belongs
+Description:  Tell where the documentation for an item should be
+              shown. Gives the name of the new parent module or parent
+              class.
+Arguments:    <name>
+              Where:
+                <name> is an "absolute" name with identifiers
+                  separated by dots.  It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
+Children:     -
+Groups with:  -
+Examples:
+              //! @decl int func()
+              //! @belongs AnotherModule
+
+_______________________________________________________________________________
+
+Keyword:      @class
+Description:  Declare and enter a new scope for a class. Only in C
+              mode. Until an @endclass is found, all declarations will
+              be regarded as children of the class.
+
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
+
+Children:     Documentation for the class, or empty.
+Groups with:  -
+Examples:
+              /*! @class Arne
+               *!  A class with a Swedish name. */
+
+_______________________________________________________________________________
+
+Keyword:      @decl
+
+Description:  Declare a Pike entity and state that the current
+              documentation block "is about" that entity. If the
+              documentation block is bound to a Pike entity by
+              adjacency (if it is a Pike file being extracted), then
+              @decl is allowed iff:
+                1. The Pike entity in the adjacent code is one method.
+                2. All @decl's in the block are methods with the same
+                   name as that method. (look at the last example
+                   below)
+
+	      The rest of the line after @decl should follow real pike
+	      syntax, but the ending semicolon is optional. There are
+	      some differences though, notably it allows a type to be
+	      specified for constants.
+
+Arguments:    <declaration>
+              Where:
+                <declaration> is a valid Pike declaration. A trailing
+                  ";" is optional.
+Children:     Documentation for the entity. After all @decl's may follow
+              one of @appears or @belongs.
+Groups with:  @decl
+Examples:
+              //! @decl void explode(string victim);
+              //! @decl float root(float x)
+              //! @decl mapping(string:string) arguments;
+              //!  Doc for these three disparate things.
+
+              //! @decl float cube(float f)
+              //! @decl int cube(int i)
+              //!  This is how to document a "polymorph" function.
+              float|int cube(float|int x) { /* body */ }
+
+	      //! @decl constant int bitmask
+	      //!  A constant which has a public type but private value.
+
+_______________________________________________________________________________
+
+Keyword:      @directive
+
+Description:  Document a Pike cpp directive.
+
+	      The rest of the line should be the cpp directive to document.
+
+Arguments:    [name]
+              Where:
+                [name] is a cpp directive.
+Children:     Documentation for the directive.
+Groups with:  @directive
+Note:         Typically only used in the cpp:: namespace.
+Examples:
+              //! @directive #include
+              //!
+              //! The @tt{#include@} directive is used
+              //! to include source code from a different file.
+
+              //! @directive #if
+              //! @directive #endif
+	      //!
+              //!  This is how to document multiple related directives
+	      //!  with one documentation string.
+
+_______________________________________________________________________________
+
+Keyword:      @endclass
+Description:  Leave the class scope entered by @class.
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to
+                  @class.
+Children:
+Groups with:  -
+Examples:
+              /*! @endclass Reinhold */
+
+_______________________________________________________________________________
+
+Keyword:      @endmodule
+Description:  Leave the module scope entered by @module
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to
+                  @module.
+Children:     -
+Groups with:  -
+Examples:
+              /*! @endmodule Roine */
+
+_______________________________________________________________________________
+
+Keyword:      @endnamespace
+Description:  Leave the namespace entered by @namespace.  Symbols
+	      defined outside a namespace will be defined in the
+	      default namespace "predef::".
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to
+		  @namespace.
+Children:     -
+Groups with:  -
+Examples:
+              /*! @endnamespace lfun:: */
+
+_______________________________________________________________________________
+
+Keyword:      @inherit
+Description:  Tell which classes are inherited into this class.
+Arguments:    <name>
+              Where:
+                <name> is an "absolute" name with identifiers
+                  separated by dots.  It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
+Children:     -
+Groups with:  -
+Examples:
+              //! @class XHTML
+              //! @inherit XML
+
+_______________________________________________________________________________
+
+Keyword:      @module
+Description:  Declare and enter a new scope for a module. Only in C
+              mode. Until an @endmodule is found, all declarations
+              will be regarded as children of the module.
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
+Children:     Documentation for the module, or empty.
+Groups with:  -
+Examples:
+              /*! @module Kenny
+               *!  A module with a Norwegian name. */
+
+_______________________________________________________________________________
+
+Keyword:      @namespace
+Description:  Declare and enter a new namespace. Only in C mode. Until
+              an @endnamespace is found, all declarations will be
+              regarded as living in this namespace.
+Arguments:    <name>[::]
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
+Children:     Documentation for symbols in the namespace, or empty.
+Groups with:  -
+Examples:
+              /*! @namespace lfun::
+               *!   The operator callback API.
+	       */
+
+_______________________________________________________________________________
+===============================================================================
+
+  DELIMITER KEYWORDS AT THE TOP LEVEL
+
+===============================================================================
+
+Keyword:      @bugs
+Description:  Document shortcomings of the current block
+              module/class/function
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @bugs
+                Converted images with bigger size than 512x512 pixels
+                will be distorted in the corners.
+
+XML:          <bugs/>
+_______________________________________________________________________________
+
+Keyword:      @copyright
+Description:  Inform about implementor(s) and/or license.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @copyright
+              //!  Licenced under single-clause BSD.
+
+XML:          <copyright/>
+_______________________________________________________________________________
+
+Keyword:      @deprecated
+Description:  Documents the fact that the entity is deprecated by one
+              or several other classes/modules/methods/variables.
+Arguments:    [item_1 [, item_2 [, item_3 ... ]]]
+                Where:
+                  [item_n] is an "absolute" name pointing to a Pike
+                    entity. It may use the 'scope::' prefix.
+Children:     -
+Groups with:  @deprecated
+Examples:
+              //! @deprecated IO.initPrinter, IO.sendPrinterCommand
+              //! @deprecated predef::search
+
+XML:          `@deprecated Foo, Bar' => 
+              <deprecated>
+                <name>Foo</name>
+                <name>Bar</name>
+              </deprecated>
+_______________________________________________________________________________
+
+Keyword:      @example
+Description:  Example code for the documented item.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @example
+                array a = func();
+                if (sizeof(a) > MAX)      // security check
+                  exit(1);
+
+XML:          <example/>
+_______________________________________________________________________________
+
+Keyword:      @fixme
+Description:  Note about something that needs fixing in the manual.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @fixme
+                The return values of this function is not correctly
+                documented.
+XML:          <fixme/>
+_______________________________________________________________________________
+
+Keyword:      @note
+Description:  Important information about the documented item.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @note
+                Do not call this function unless you know what you are
+                doing.  No bounds/sanity checking on arguments is
+                performed!
+
+XML:          <note/>
+_______________________________________________________________________________
+
+Keyword:      @param
+Description:  Documentation for a method parameter. Only allowed when
+              documenting functions.
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike parameter name.
+Children:     The documentation for the parameter.
+Groups with:  @param
+Examples:
+              @param x
+              @param y
+                The coordinates of the thing.
+              @param name
+                The name of the thing.
+
+XML:          `@param Foo' => 
+              <param name="Foo"/>
+_______________________________________________________________________________
+
+Keyword:      @returns
+Description:  Documentation for the return value of a method. The type
+              of the return value is deduced from the declaration.
+Arguments:    -
+Children:     The doc.
+Groups with:  -
+Examples:
+              @returns
+                The square root of the sum of the cubes of the inverse
+                numbers.
+
+XML:          <returns/>
+_______________________________________________________________________________
+
+Keyword:      @seealso
+Description:  Refer to other stuff that is related to the entity in
+              question.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @seealso
+              //!  @[calc_checksum_w()] is used for wide strings.
+
+XML:          <seealso/>
+_______________________________________________________________________________
+
+Keyword:      @thanks
+Description:  Inform about people and/or organisations that have helped
+	      with the implementation.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @thanks
+              //!  Thanks to Lysator Academic Computer Society for
+	      //!  providing computer resources for testing this.
+
+XML:          <thanks/>
+_______________________________________________________________________________
+
+Keyword:      @throws
+Description:  Describes the conditions for an exception to be thrown
+              from the function.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @throws
+              //!   Throws an exception if the file could not be created.
+
+XML:          <throws/>
+_______________________________________________________________________________
+===============================================================================
+
+  TEXT MARKUP KEYWORDS
+
+===============================================================================
+
+Keyword:      @array - @endarray
+Description:  Documentation of the layout of an array.
+Arguments:    [name]
+Children:     @elem
+Groups with:  -
+Examples:     @array
+                @elem mixed 0..
+                  All elements are of type mixed.
+              @endarray
+
+XML:          `@array Foo' =>
+              <array name="Foo">
+_______________________________________________________________________________
+
+Keyword:      @b{ ... @}
+Description:  Bold.
+Children:     Text that will be rendered in bold.
+Examples:     You really look @b{bold@}! - You mean @b{bald@}, don't you?
+
+XML:          <b>...</b>
+_______________________________________________________________________________
+
+Keyword:      @code ... @endcode
+Description:  Encapsulates a code block.
+Children:     Text that will be rendered as program code.
+Examples:     @code
+              int fac(int i) {
+                if(i<2) return i;
+                return i*fac(i-1);
+              }
+              @endcode
+
+XML:          <code>...</code>
+_______________________________________________________________________________
+
+Keyword:      @dl - @enddl
+Description:  Render a definition list.
+Arguments:    -
+Children:     @item
+Groups with:  -
+Examples:     @dl
+                @item Britta
+                  My first teacher. She was very nice.
+                @item Boris
+                  One of the best tennis players in the universe.
+              @enddl
+
+XML:          <dl>
+_______________________________________________________________________________
+
+Keyword:      @elem
+Description:  Documentation for an array element or a range of array
+              elements. Only inside @array - @endarray.
+Arguments:    <type> <index range>
+              Where:
+                <type> is the Pike type of the element at the index.
+                <index range> is one of the following:
+                  number             (at index number only)
+                  number..           (from number to end of array)
+                  number1..number2   (from number1 to inclusive number2)
+                  ..number           (from beginning to inclusive number)
+                And number can be an integer literal or an identifier:
+                  4711   -42    MAX
+Children:     Documentation for the array elements at the given index or
+              indices.
+Groups with:  @elem
+Examples:     @elem int 0
+                The first element is an integer.
+              @elem string 1..
+                The rest of the elements are strings.
+              @elem array(string) MIN..MAX
+                The elements at these positions are themselves arrays.
+
+XML:          `@elem string 1..2' => 
+              <elem>
+                <type><string/></type>
+                <minindex>1</minindex>
+                <maxindex>2</maxindex>
+              </elem>
+_______________________________________________________________________________
+
+Keyword:      @expr{ ... @}
+Description:  Mark up a code expression.
+Children:     Text that will be rendered in a fixed font.
+Examples:
+              The expression @{i=i++@} is a noop.
+
+XML:          <expr>...</expr>
+_______________________________________________________________________________
+
+Keyword:      @i{ ... @}
+Description:  Italics.
+Children:     Text that will be rendered in italics.
+Examples:     You really look @i{italic@}! - You mean @i{Italian@},
+              don't you?
+
+XML:          <i>...</i>
+_______________________________________________________________________________
+
+Keyword:      @image{ ... @}
+Description:  Insert the specified image.
+Children:     The filename of the image file.
+Examples:     @image{chart2.png@}
+
+XML:          <image>...</image>
+_______________________________________________________________________________
+
+Keyword:      @int - @endint
+Description:  Documentation of the different values an integer may
+              have.
+Arguments:    [name]
+Children:     @value
+Examples:     @int
+                @value 0
+                  Ignore all zonks.
+                @value 1
+                  Transform zonks into flutter.
+                @value -1
+                  Remove all zonks.
+                @value 5..10
+                  Do something.
+                @value 17..
+                  Do something else.
+              @endint
+
+_______________________________________________________________________________
+
+Keyword:      @item
+Description:  A definition term inside @dl
+Arguments:    <name>
+              Where:
+                <name> is any string that will be the name of the term.
+Children:     Text (with markup)
+Groups with:  @item
+Examples:
+
+XML:          <item name="..."/>
+_______________________________________________________________________________
+
+Keyword:      @mapping - @endmapping
+Description:  Documentation of the layout of a mapping.
+Arguments:    [name]
+Children:     @member
+Examples:     @mapping
+                @member int "ip"
+                  The IP# of the host.
+                @member string "address"
+                  The name of the host.
+              @endmapping
+
+XML:          <mapping name="..."/>
+_______________________________________________________________________________
+
+Keyword:      @member
+Description:  Documentation for a member of a mapping.
+              Only inside @mapping - @endmapping.
+Arguments:    <type> <index_value>
+              Where:
+                <type> is the Pike type of the value stored at the index.
+                <index_value> is the index value. Can be a string or integer
+                  literal, or an identifier.
+Children:     -
+Groups with:  -
+Examples:     @member string "name"
+              @member int "age"
+                These two entries in the mapping provide personal data.
+
+XML:          `@member float "foo"' => 
+              <member>
+                <type><float/></type>
+                <index>"foo"</index>
+              </member>
+_______________________________________________________________________________
+
+Keyword:      @mixed - @endmixed
+Description:  Documentation of a mixed variable
+Arguments:    [name]
+Children:     @type
+Examples:     @mixed
+                @type int
+                  Integers will be treated as the Unicode character number.
+                @type string
+                  Strings are the name of the Unicdoe character.
+              @endmixed
+
+XML:          <mixed name="..."/>
+_______________________________________________________________________________
+
+Keyword:      @multiset - @endmultiset
+Description:  Documentation of the layout of a multiset.
+Arguments:    [name]
+Children:     @index
+Examples:     @multiset
+                @index "cat"
+                  It's raining cats.
+                @index "dog"
+                  It's raining dogs
+              @endmultiset
+
+XML:          <multiset name="..."/>
+_______________________________________________________________________________
+
+Keyword:      @index
+Description:  Documentation for a index in a multiset.
+              Only inside @multiset - @endmultiset.
+Arguments:    <index_value>
+              Where:
+                <index_value> is the index value. Can be a string or
+                  integer literal, or an identifier.
+Children:     -
+Groups with:  -
+Examples:     @index "cat"
+              @index "dog"
+                If present, these symbols signifies that it is raining
+                animals.
+
+XML:          `@index "foo"' =>
+                <index>"foo"</index>
+_______________________________________________________________________________
+
+Keyword:      @ol - @endol
+Description:  Creates an ordered list.
+Children:     @item
+Groups with:  -
+Examples:     @ol
+                @item
+                  Open the door
+                @item
+                  Walk through
+                @item
+                  Close the door
+              @endol
+
+XML:          <ol>...</ol>
+_______________________________________________________________________________
+
+Keyword:      @pre{ ... @}
+Description:  Preformatted text.
+Children:     Text that will be rendered as is, e.g. whitespaces kept.
+Examples:     @pre{
+               +----------+------+--------+
+               | startbit | data | endbit |
+               +----------+------+--------+
+              @}
+
+XML:          <pre>...</pre>
+_______________________________________________________________________________
+
+Keyword:      @ref{ ... @}
+Description:  A reference to a Pike entity. There is also a shortcut
+              for this keyword, since it is expected to be so common:
+              @[ ... ]
+Children:     Text that will be interpreted as a Pike name.
+Groups with:  -
+
+Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it
+              tastes much better than @[Nougat.Glass] or @[`+].
+
+XML:          <ref>...</ref>
+_______________________________________________________________________________
+
+Keyword:      @section - @endsection
+Description:  Begin a new section in the text. Sections cannot be nested.
+Arguments:    <title>
+              Where:
+		<title> is any text that is the title of the section.
+Children:     Text (with markup)
+Groups with:  -
+Examples:
+              @section One - Introduction
+                ...
+              @endsection
+              @section Two - Intrinsics & Details about the Interface
+                ...
+              @endsection
+
+XML:          <section title=" ... ">
+	      The attribute "name" can be used instead of "title", for
+	      compatibility.
+_______________________________________________________________________________
+
+Keyword:      @string - @endstring
+Description:  Documentation of the layout of a mapping.
+Arguments:    [name]
+Children:     @value
+Examples:     @string
+                @value "GMT"
+                  Greenwich Mean Time
+                @value "CET"
+                  Central European Time
+              @endstring
+
+XML:          <string name=" ... "/>
+_______________________________________________________________________________
+
+Keyword:      @sub{ ... @}
+Description:  Subscript
+Children:     Text that will be rendered in subscript.
+Examples:     The variable n@sub{0@} looks mathematical and serious.
+
+XML:          <sub> ... </sub>
+_______________________________________________________________________________
+
+Keyword:      @sup{ ... @}
+Description:  Superscript
+Children:     Text that will be rendered in superscript.
+Examples:     This is an O(n@sup{2@}) operation.
+
+XML:          <sup> ... </sup>
+_______________________________________________________________________________
+
+Keyword:      @tt{ ... @}
+Description:  Teletype.
+Children:     Text that will be rendered in teletype.
+Examples:     Type @tt{rm -rf *@} to erase several days of work.
+
+XML:          <tt> ... </tt>
+_______________________________________________________________________________
+
+Keyword:      @type
+Description:  Documentation for a type alternative to mixed.
+              Only inside @mixed - @endmixed.
+Arguments:    <type>
+Children:     -
+Groups with:  -
+Examples:     @type int
+              @type float
+                If the argument is int or float the function will wait
+                that many seconds.
+
+XML:          `@type int' =>
+                <type><int/></type>
+_______________________________________________________________________________
+
+Keyword:      @ul - @endul
+Description:  Creates an unordered list.
+Children:     @item
+Groups with:  -
+Examples:     @ul
+                @item
+                  2 oz light rum
+                @item
+                  Juice of ½ lime
+                @item
+                  Coca Cola
+              @endul
+
+XML:          <ul>...</ul>
+_______________________________________________________________________________
+
+Keyword:      @url{ ... @}
+Children:     Text with markup.
+Note:         Might be deprecated, since it isn't used...
+_______________________________________________________________________________
+
+Keyword:      @xml{ ... @}
+Description:  XML escape. Inside this tag the characters <>& are not
+              quoted and this makes it possible to insert raw
+              XML. Note that the usual rules apply to @ and that
+              @i{...@}-style tags can be used inside.
+Children:     Text with markup.
+Examples:     @xml{<b>Bold</b> and @i{italic@}@}
+
+XML:          No representation.
+_______________________________________________________________________________
+
+Keyword:      @ignore - @endignore
+Description:  Ignores the block of code enclosed between the two
+              keywords. Useful for code that the AutoDoc parser cannot
+              understand.
+Children:     -
+Examples:     @ignore
+                array PROXY(_indices, ::_indices());
+                array PROXY(_values, ::_values());
+              @endignore
+_______________________________________________________________________________

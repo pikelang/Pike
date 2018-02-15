@@ -1,0 +1,124 @@
+/* -*- C -*- */
+class GTK2.RadioButton;
+inherit GTK2.CheckButton;
+
+//! Radio buttons are similar to check buttons except they are grouped
+//! so that only one may be selected/depressed at a time. This is good
+//! for places in your application where you need to select from a
+//! short list of options.
+
+//! <p> To connect the buttons, use another button in the desired group
+//! as the second argument to GTK2.RadioButton().
+//! </p>
+//! IMG: GTK2.RadioButton("Button");
+
+//! Properties:
+//! GTK2.RadioButton group
+
+signal group_changed;
+
+void create(string|mapping|void title, ?GTK2.RadioButton groupmember, ?int mnemonic)
+//!  Normal creation:<p>
+//! object GTK2.RadioButton(string title) - First button (with label)<br />
+//! object GTK2.RadioButton()->add(widget) - First button (with widget)<br />
+//! object GTK2.RadioButton(title, another_radio_button) - Second to n:th button (with title)<br />
+//! object GTK2.RadioButton(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
+//! </p>
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      GtkWidget *gr;
+      struct pike_string *t;
+      struct object *o1=NULL;
+/*      GSList *mylist=NULL; */
+      GtkRadioButton *gb=NULL;
+      INT_TYPE nem=0;
+
+      get_all_args("create",args,"%T.%o%i",&t,&o1,&nem);
+/*
+      if (o1)
+	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
+*/
+      if (o1)
+	gb=GTK_RADIO_BUTTON(get_gobject(o1));
+      if (t) {
+	ref_push_string(t);
+	f_string_to_utf8(1);
+/*
+	if (nem)
+	  gr=gtk_radio_button_new_with_mnemonic(mylist,CGSTR0(Pike_sp[-1].u.string));
+	else
+	  gr=gtk_radio_button_new_with_label(mylist,CGSTR0(Pike_sp[-1].u.string));
+*/
+	if (o1) {
+	  if (nem)
+	    gr=gtk_radio_button_new_with_mnemonic_from_widget(gb,CGSTR0(Pike_sp[-1].u.string));
+	  else
+	    gr=gtk_radio_button_new_with_label_from_widget(gb,CGSTR0(Pike_sp[-1].u.string));
+	} else {
+	  if (nem)
+	    gr=gtk_radio_button_new_with_mnemonic(NULL,CGSTR0(Pike_sp[-1].u.string));
+	  else
+	    gr=gtk_radio_button_new_with_label(NULL,CGSTR0(Pike_sp[-1].u.string));
+	}
+	pop_stack();
+      } else {
+	if (o1)
+	  gr=gtk_radio_button_new_from_widget(gb);
+	else
+	  gr=gtk_radio_button_new(NULL);
+      }
+/*	gr=gtk_radio_button_new(mylist); */
+      THIS->obj=G_OBJECT(gr);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_RADIO_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gr;
+    gr=gtk_radio_button_new(NULL);
+    THIS->obj=G_OBJECT(gr);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_group(GTK2.RadioButton groupmember)
+//! the argument is another radio button to whose group this button
+//! should be added to. It is prefereable to use the second argument to
+//! the constructor instead, but if you for some reason want to move
+//! the button to another group, use this function.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o=NULL;
+    GSList *mylist;
+    get_all_args("set_group", args, "%o", &o );
+
+    mylist=gtk_radio_button_get_group(GTK_RADIO_BUTTON(get_gobject(o)));
+    gtk_radio_button_set_group(GTK_RADIO_BUTTON(THIS->obj),mylist);
+  }
+  RETURN_THIS();
+}
+
+array(GTK2.RadioButton) get_group()
+//! Returns an array of members in this group.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_radio_button_get_group(GTK_RADIO_BUTTON(THIS->obj));
+    while (gs2) {
+      push_gobject(gs2->data);
+      g_object_ref(G_OBJECT(gs2->data));
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+

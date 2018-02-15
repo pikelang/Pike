@@ -1,8 +1,12 @@
-/* $Id: alert.pike,v 1.3 2000/08/04 19:07:11 sigge Exp $
- *
- */
+#pike __REAL_VERSION__
+#pragma strict_types
 
-inherit "packet" : packet;
+//! Alert packet.
+
+import .Constants;
+
+//! Based on the base @[packet].
+inherit .packet : packet;
 
 int level;
 int description;
@@ -12,12 +16,24 @@ mixed trace;
 
 constant is_alert = 1;
 
-object create(int l, int d, string|void m, mixed|void t)
+//! @decl void create(int level, int description,@
+//!                   int version, string|void message, mixed|void trace)
+void create(int l, int d, int version, string|void m, mixed|void t)
 {
+  if (!version && (d == ALERT_no_renegotiation)) {
+    // RFC 5746 4.5:
+    // SSLv3 does not define the "no_renegotiation" alert (and does not
+    // offer a way to indicate a refusal to renegotiate at a "warning"
+    // level). SSLv3 clients that refuse renegotiation SHOULD use a
+    // fatal handshake_failure alert.
+    d = ALERT_handshake_failure;
+    l = ALERT_fatal;
+  }
+
   if (! ALERT_levels[l])
-    throw( ({ "SSL.alert->create: Invalid level\n", backtrace() }));
+    error( "Invalid level\n" );
   if (! ALERT_descriptions[d])
-    throw( ({ "SSL.alert->create: Invalid description\n", backtrace() }));    
+    error( "Invalid description\n" );
 
   level = l;
   description = d;
@@ -33,7 +49,6 @@ object create(int l, int d, string|void m, mixed|void t)
 
   packet::create();
   packet::content_type = PACKET_alert;
-  packet::protocol_version = ({ 3, 0 });
+  packet::protocol_version = ({ PROTOCOL_major, version });
   packet::fragment = sprintf("%c%c", level, description);
 }
-    

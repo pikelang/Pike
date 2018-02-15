@@ -1,0 +1,19 @@
+/* -*- C -*- */
+class GTK1.Layout;
+inherit GTK1.Container;
+void create( GTK1.Adjustment hadjustment, GTK1.Adjustment vadjustment );
+void put( GTK1.Widget widget, int x, int y );
+void move( GTK1.Widget widget, int x, int y );
+void set_size( int xsize, int ysize );
+void freeze();
+void thaw();
+GTK1.Adjustment get_hadjustment();
+GTK1.Adjustment get_vadjustment();
+void set_hadjustment( GTK1.Adjustment adj );
+void set_vadjustment( GTK1.Adjustment adj );
+member int width;
+member int height;
+member int xoffset;
+member int yoffset;
+
+

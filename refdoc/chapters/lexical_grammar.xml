@@ -1,0 +1,105 @@
+<chapter title="Lexical Grammar">
+
+<p>This chapter provides a formal definition of the lexical grammar
+for Pike. A lexical grammar describes the different categories of
+word-like units, known as tokens, that a program is built of. During
+the compilation of a Pike program the source code is processed in
+several, sequential steps, where one of the first steps is called
+"tokenizing". In this step the source code is broken up into a
+sequence of distinct tokens as described in this chapter.</p>
+
+<p>It should be noted that by default all Pike programs are
+preprocessed in much the same way as C and C++ code is preprocessed
+before tokenization.</p>
+
+<section title="Whitespace">
+
+<p>Whitespaces is the collective name of characters than can be placed
+between tokens without altering the meaning of the program. This
+includes space characters, horizontal and vertical tabs,
+newlines. Give the above definition even comments can be considered to
+be a kind of whitespace, but generally we only refer to single
+characters as whitespace. Many times whitespace characters is needed
+as indicator of where a token starts and ends, to separate it from
+other tokens, but it also serves an important role in keeping the
+source easy to read. As an example the folloring two sequences</p>
+
+<example>   int   i; float f;</example>
+
+<p>and</p>
+
+<example>
+  int i ;
+      float    f;
+</example>
+
+<p>are lexically equivalent and the whitespaces are discarded in both
+examples so they both are parsed to the same list of tokens:</p>
+
+<p>
+<ol>
+<li>int</li>
+<li>i</li>
+<li>;</li>
+<li>float</li>
+<li>f</li>
+<li>;</li>
+</ol>
+</p>
+
+<p>If however the white space occurs wihtin a literal string they are
+kept as is and remain part of the string. E.g.</p>
+
+<example>string text="hello world";</example>
+
+<p>parses to five tokens, where the string literal "hello world" is
+one of them.</p>
+
+</section>
+
+<section title="Comments">
+
+<p>Comments are pieces of text used to annotate a program and are only
+written in the source code for the programmers use, i.e. they are
+discarded from the program during the compilation. You typically use
+comments to describe non-obvious parts of your code or to add
+information that can not be deduced from the code, like design goals,
+performance results etc. Comments can also be used to temporarily
+disable some code, but generally it is better to use preprocessor
+directives, as they support nesting.</p>
+
+<p>In Pike there are two different types of comments available; C type
+comments and C++ type comments. A C comment is any sequence of
+characters placed after the symbol pair /*.  The comment terminats at
+the first occurence of the pair */ following the initial /*. The
+entire sequence, including the four comment delimiter symbols, is
+replaced by one space character.</p>
+
+<p>In Pike the code</p>
+
+<example>  int /* declaration */ i /* counter */;</example>
+
+<p>is parsed as</p>
+
+<example>  int   i  ;</example>
+
+<p>Pike does however not support nested C comments. Attempting to
+comment out the above example with</p>
+
+<example>/*  int /* declaration */ i /* counter */; */</example>
+
+<p>will result in the following code</p>
+
+<example> i  ; */</example>
+
+<p>which will fail and generate a syntax error.</p>
+
+<p>The other type of comments supported by Pike is C++ type of
+comments. These comments are started with two adjacent slashes, //,
+and extends until the end of the line.</p>
+
+<example>int i; // This is a comment</example>
+
+</section>
+
+</chapter>

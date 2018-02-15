@@ -1,7 +1,7 @@
 /*
-**! module Image
-**! note
-**!	$Id: image.h,v 1.46 2000/12/05 21:08:25 per Exp $
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -32,7 +32,7 @@ extern int image_cpuid;
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
-#define COLORL_TO_FLOAT(X) ((((float)(X))/(float)(COLORLMAX>>8))/256.0)
+#define COLORL_TO_FLOAT(X) ((float)((((float)(X))/(float)(COLORLMAX>>8))/256.0))
 
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
@@ -70,6 +70,15 @@ static inline INT32 FLOAT_TO_COLORL(double X)
 	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
 
+#ifdef USE_VALGRIND
+/* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
+ * that reads a full native integer from memory when we retrieve an
+ * rgb_group. This makes valgrind complain if it's done past the end
+ * of an alloc'ed block, so pad some extra. */
+#define RGB_VEC_PAD (SIZEOF_CHAR_P - sizeof (rgb_group))
+#else
+#define RGB_VEC_PAD 1
+#endif
 
 #define FS_SCALE 1024
 
@@ -247,7 +256,7 @@ void image_make_ascii(INT32 args);
 /* image.c */
 
 void img_find_autocrop(struct image *this,
-		       int *px1,int *py1,int *px2,int *py2,
+		       INT32 *px1,INT32 *py1,INT32 *px2,INT32 *py2,
 		       int border,
 		       int left,int right,
 		       int top,int bottom,

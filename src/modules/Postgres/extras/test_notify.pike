@@ -1,6 +1,5 @@
 #include <postgres.h>
-/* $Id: test_notify.pike,v 1.2 1998/03/28 14:39:10 grubba Exp $
- *
+/*
  * This simple program connects to the template1 database "template1"
  * (it comes default with postgres95) and sits there waiting for
  * someone to issue a notify sql command on a table named "prova".

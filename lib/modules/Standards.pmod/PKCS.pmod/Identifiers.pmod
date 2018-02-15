@@ -1,8 +1,10 @@
-#pike __REAL_VERSION__
+//
+// Object identifiers
 
-/* identifiers.pmod
- *
- * Object identifiers */
+#pike __REAL_VERSION__
+#pragma strict_types
+
+//! Various ASN.1 identifiers used by PKCS.
 
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
    (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
@@ -64,63 +66,71 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-#if constant(Standards.ASN1.Types.asn1_identifier)
+#if constant(Standards.ASN1.Types)
 
 import Standards.ASN1.Types;
 
-object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
-object pkcs_1_id = pkcs_id->append(1);
-object pkcs_9_id = pkcs_id->append(9);
+Identifier pkcs_id = Identifier(1, 2, 840, 113549, 1);
+Identifier pkcs_1_id = pkcs_id->append(1);
+Identifier pkcs_9_id = pkcs_id->append(9);
 
 /* For public key */
-object rsa_id = pkcs_1_id->append(1);
+Identifier rsa_id = pkcs_1_id->append(1);
 
 /* Signature algorithms */
-object rsa_md2_id = pkcs_1_id->append(2);
-object rsa_md5_id = pkcs_1_id->append(4);
-object rsa_sha1_id = pkcs_1_id->append(5);
+Identifier rsa_md2_id = pkcs_1_id->append(2);
+Identifier rsa_md5_id = pkcs_1_id->append(4);
+Identifier rsa_sha1_id = pkcs_1_id->append(5);
 
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
 */
-object dsa_id = asn1_identifier(1, 2, 840, 10040, 4, 1);
+Identifier dsa_id = Identifier(1, 2, 840, 10040, 4, 1);
 
 /* Signature algorithm 
            id-dsa-with-sha1 ID  ::=  {
                    iso(1) member-body(2) us(840) x9-57 (10040)
                    x9cm(4) 3 }
 */
-object dsa_sha_id = asn1_identifier(1, 2, 840, 10040, 4, 3);
+Identifier dsa_sha_id = Identifier(1, 2, 840, 10040, 4, 3);
 
-object md2_id = asn1_identifier(1, 2, 840, 113549, 2, 2);
-object md5_id = asn1_identifier(1, 2, 840, 113549, 2, 5);
-object sha1_id = asn1_identifier(1, 3, 14, 3, 2, 26);
+Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
+Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
+Identifier sha1_id = Identifier(1, 3, 14, 3, 2, 26);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
 
-object dh_id = asn1_identifier(1, 2, 840, 10046, 2, 1);
+Identifier dh_id = Identifier(1, 2, 840, 10046, 2, 1);
 
 /* Object Identifiers used in X509 distinguished names */
 
-object at_id = asn1_identifier(2, 5, 4);
+Identifier at_id = Identifier(2, 5, 4);
 
-/* Kept for compatibility with older versions of this file. */
-object attributeType_id = at_id;
+mapping(Identifier:string) short_name_ids = 
+([
+  at_id->append(3) : "CN",       /* printable string */
+  at_id->append(6) : "C",       /* printable string */
+  at_id->append(7) : "L",      /* printable string */
+  at_id->append(8) : "ST", /* printable string */
+  at_id->append(10) : "O", /* printable string */
+  at_id->append(11) : "OU",  /* printable string */
+  Identifier(1, 2, 840, 113549, 1, 9, 1) : "E" /* printable string */
+]);
 
-mapping name_ids =
+mapping(string:Identifier) name_ids =
 ([  
   /* layman.asc says "commonUnitName". Typo? */
-  "commonName" : attributeType_id->append(3),        /* printable string */
-  "countryName" : attributeType_id->append(6),       /* printable string */
-  "localityName" : attributeType_id->append(7),      /* printable string */
-  "stateOrProvinceName" : attributeType_id->append(8), /* printable string */
-  "organizationName" : attributeType_id->append(10), /* printable string */
-  "organizationUnitName" : attributeType_id->append(11)  /* printable string */
+  "commonName" : at_id->append(3),        /* printable string */
+  "countryName" : at_id->append(6),       /* printable string */
+  "localityName" : at_id->append(7),      /* printable string */
+  "stateOrProvinceName" : at_id->append(8), /* printable string */
+  "organizationName" : at_id->append(10), /* printable string */
+  "organizationUnitName" : at_id->append(11)  /* printable string */
   ]);
 
-mapping attribute_ids =
+mapping(string:Identifier) attribute_ids =
 ([
   "emailAddress" : pkcs_9_id->append(1),            /* IA5String */
   "unstructuredName" : pkcs_9_id->append(2),        /* IA5String */
@@ -138,7 +148,7 @@ mapping attribute_ids =
 
 /* From RFC 2459 */
 
-mapping at_ids =
+mapping(string:Identifier) at_ids =
 ([ /* All attribute values are a CHOICE of most string types,
     * including PrintableString, TeletexString (which in practice
     * means latin1) and UTF8String. */
@@ -160,11 +170,11 @@ mapping at_ids =
   "emailAddress" : pkcs_9_id->append(1)            /* IA5String */  
 ]);
 
-object ce_id = asn1_identifier(2, 5, 29);
-object pkix_id = asn1_identifier(1, 3, 6, 1, 5, 5, 7);
+Identifier ce_id = Identifier(2, 5, 29);
+Identifier pkix_id = Identifier(1, 3, 6, 1, 5, 5, 7);
 
 
-mapping ce_ids =
+mapping(string:Identifier) ce_ids =
 ([
    "subjectDirectoryAttributes"	: ce_id->append(9),
    "subjectKeyIdentifier"	: ce_id->append(14),
@@ -183,17 +193,17 @@ mapping ce_ids =
  ]);
 
 /* Policy qualifiers */
-object qt_id = pkix_id->append(2);
+Identifier qt_id = pkix_id->append(2);
 
-mapping qt_ids =
+mapping(string:Identifier) qt_ids =
 ([ "cps" : qt_id->append(1),
    "unotice" : qt_id->append(2) ]);
   
 /* Key purposes */
 
-object kp_id = pkix_id->append(3);
+Identifier kp_id = pkix_id->append(3);
 
-mapping kp_ids =
+mapping(string:Identifier) kp_ids =
 ([ "serverAuth" : kp_id->append(1),
    "clientAuth" : kp_id->append(2),
    "codeSigning" : kp_id->append(3),
@@ -201,13 +211,15 @@ mapping kp_ids =
    "timeStamping" : kp_id->append(8) ]);
 
 /* Private extensions */
-object pe_id = pkix_id->append(1);
+Identifier pe_id = pkix_id->append(1);
 
 /* Access descriptions */
 
-object ad_id = pkix_id->append(48);
+Identifier ad_id = pkix_id->append(48);
 
-mapping ad_ids =
+mapping(string:Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
 
+#else
+constant this_program_does_not_exist=1;
 #endif

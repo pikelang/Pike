@@ -1,6 +1,10 @@
 /*
- * $Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * System-call module for Pike
  *
  * Henrik Grubbström 1997-01-20
@@ -15,13 +19,12 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
-
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
+#endif
+
+#ifdef HAVE_IO_H
+#include <io.h>
 #endif
 
 #include "module_support.h"
@@ -33,14 +36,13 @@ RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "time_stuff.h"
 #include "pike_memory.h"
-#include "security.h"
-
-/* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
-#ifdef sp
-#undef sp
-#define STACKPOINTER_WAS_DEFINED
-#endif /* sp */
+#include "pike_security.h"
+#include "bignum.h"
+#include "pike_rusage.h"
+#include "pike_netlib.h"
+#include "pike_cpulib.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -54,9 +56,6 @@ RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif /* HAVE_PWD_H */
-#ifdef HAVE_SYS_CONF_H
-#include <sys/conf.h>
-#endif /* HAVE_SYS_CONF_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -88,9 +87,17 @@ RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
 #include <sys/resource.h>
 #endif
 
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
 #endif /* HAVE_SYS_ID_H */
+
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif /* HAVE_SYS_PRCTL_H */
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
@@ -100,13 +107,18 @@ RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
 #include <sys/utime.h>
 #endif
 
-/* Restore the sp macro */
-#ifdef STACKPOINTER_WAS_DEFINED
-#define sp Pike_sp
-#undef STACK_POINTER_WAS_DEFINED
-#endif /* STACKPOINTER_WAS_DEFINED */
+#ifdef HAVE_NETINFO_NI_H
+#include <netinfo/ni.h>
+#endif
+
+#ifdef HAVE_SYS_LOADAVG_H
+#include <sys/loadavg.h>
+#endif
 
 #include "dmalloc.h"
+
+
+#define sp Pike_sp
 
 #ifndef NGROUPS_MAX
 #ifdef NGROUPS
@@ -215,8 +227,23 @@ static void report_error(const char *function_name)
  * efuns
  */
 
+/*! @module System
+ *!
+ *! This module embodies common operating system calls, making them
+ *! available to the Pike programmer.
+ */
+
 #ifdef HAVE_LINK
-/* void hardlink(string from, string to) */
+/*! @decl void hardlink(string from, string to)
+ *!
+ *! Create a hardlink named @[to] from the file @[from].
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[symlink()], @[mv()], @[rm()]
+ */
 void f_hardlink(INT32 args)
 {
   char *from;
@@ -227,11 +254,13 @@ void f_hardlink(INT32 args)
 
   get_all_args("hardlink",args, "%s%s", &from, &to);
 
-  THREADS_ALLOW_UID();
   do {
+    THREADS_ALLOW_UID();
     err = link(from, to);
-  } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW_UID();
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
 
   if (err < 0) {
     report_error("hardlink");
@@ -241,7 +270,16 @@ void f_hardlink(INT32 args)
 #endif /* HAVE_LINK */
 
 #ifdef HAVE_SYMLINK
-/* void symlink(string from, string to) */
+/*! @decl void symlink(string from, string to)
+ *!
+ *! Create a symbolic link named @[to] that points to @[from].
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[hardlink()], @[readlink()], @[mv()], @[rm()]
+ */
 void f_symlink(INT32 args)
 {
   char *from;
@@ -252,11 +290,13 @@ void f_symlink(INT32 args)
 
   get_all_args("symlink",args, "%s%s", &from, &to);
 
-  THREADS_ALLOW_UID();
   do {
+    THREADS_ALLOW_UID();
     err = symlink(from, to);
-  } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW_UID();
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
 
   if (err < 0) {
     report_error("symlink");
@@ -266,7 +306,16 @@ void f_symlink(INT32 args)
 #endif /* HAVE_SYMLINK */
 
 #ifdef HAVE_READLINK
-/* string readlink(string path) */
+/*! @decl string readlink(string path)
+ *!
+ *! Returns what the symbolic link @[path] points to.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[symlink()]
+ */
 void f_readlink(INT32 args)
 {
   char *path;
@@ -286,11 +335,13 @@ void f_readlink(INT32 args)
       Pike_error("readlink(): Out of memory\n");
     }
 
-    THREADS_ALLOW_UID();
     do {
+      THREADS_ALLOW_UID();
       err = readlink(path, buf, buflen);
-    } while ((err < 0) && (errno == EINTR));
-    THREADS_DISALLOW_UID();
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
   } while(
 #ifdef ENAMETOOLONG
 	  ((err < 0) && (errno == ENAMETOOLONG)) ||
@@ -305,27 +356,41 @@ void f_readlink(INT32 args)
 }
 #endif /* HAVE_READLINK */
 
-#ifndef HAVE_RESOLVEPATH
+#if !defined(HAVE_RESOLVEPATH) && !defined(HAVE_REALPATH)
 #ifdef HAVE_READLINK
-/* FIXME: Write code that simulates resolvepath() here
+/* FIXME: Write code that simulates resolvepath() here.
  */
 /* #define HAVE_RESOLVEPATH */
 #endif /* HAVE_READLINK */
-#endif /* !HAVE_RESOLVEPATH */
+#endif /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
 
-#ifdef HAVE_RESOLVEPATH
-/* string resolvepath(string path) */
+#if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
+/*! @decl string resolvepath(string path)
+ *!
+ *!   Resolve all symbolic links of a pathname.
+ *!
+ *!   This function resolves all symbolic links, extra ``/'' characters and
+ *!   references to /./ and /../ in @[pathname], and returns the resulting
+ *!   absolute path, or @tt{0@} (zero) if an error occurs.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[readlink()], @[symlink()]
+ */
 void f_resolvepath(INT32 args)
 {
   char *path;
   int buflen;
   char *buf;
-  int err;
+  int len = -1;
 
   VALID_FILE_IO("resolvepath","read");
 
   get_all_args("resolvepath", args, "%s", &path);
 
+#ifdef HAVE_RESOLVEPATH
   buflen = 100;
 
   do {
@@ -334,26 +399,49 @@ void f_resolvepath(INT32 args)
       Pike_error("resolvepath(): Out of memory\n");
     }
 
-    THREADS_ALLOW_UID();
     do {
-      err = resolvepath(path, buf, buflen);
-    } while ((err < 0) && (errno == EINTR));
-    THREADS_DISALLOW_UID();
+      THREADS_ALLOW_UID();
+      len = resolvepath(path, buf, buflen);
+      THREADS_DISALLOW_UID();
+      if (len >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
   } while(
 #ifdef ENAMETOOLONG
-	  ((err < 0) && (errno == ENAMETOOLONG)) ||
+	  ((len < 0) && (errno == ENAMETOOLONG)) ||
 #endif /* ENAMETOOLONG */
-	  (err >= buflen - 1));
+	  (len >= buflen - 1));
+#elif defined(HAVE_REALPATH)
+  buflen = PATH_MAX+1;
 
-  if (err < 0) {
+  if (!(buf = alloca(buflen))) {
+    Pike_error("resolvepath(): Out of memory\n");
+  }
+  
+  if ((buf = realpath(path, buf))) {
+    len = strlen(buf);
+  }
+#else /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
+#error "f_resolvepath with neither resolvepath nor realpath."
+#endif /* HAVE_RESOLVEPATH */
+
+  if (len < 0) {
     report_error("resolvepath");
   }
   pop_n_elems(args);
-  push_string(make_shared_binary_string(buf, err));
+  push_string(make_shared_binary_string(buf, len));
 }
-#endif /* HAVE_RESOLVEPATH */
+#endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
-/* int umask(void|int mask) */
+/*! @decl int umask(void|int mask)
+ *!
+ *! Set the current umask to @[mask].
+ *!
+ *! If @[mask] is not specified the current umask will not be changed.
+ *!
+ *! @returns
+ *!   Returns the old umask setting.
+ */
 void f_umask(INT32 args)
 {
   int oldmask;
@@ -362,7 +450,7 @@ void f_umask(INT32 args)
 
   if (args) {
     INT_TYPE setmask;
-    get_all_args("umask", args, "%d", &setmask);
+    get_all_args("umask", args, "%i", &setmask);
     oldmask = umask(setmask);
   }
   else {
@@ -374,7 +462,16 @@ void f_umask(INT32 args)
   push_int(oldmask);
 }
 
-/* void chmod(string path, int mode) */
+/*! @decl void chmod(string path, int mode)
+ *!
+ *! Sets the protection mode of the specified path.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *! @seealso
+ *!   @[Stdio.File->open()], @[errno()]
+ */
 void f_chmod(INT32 args)
 {
   char *path;
@@ -384,11 +481,13 @@ void f_chmod(INT32 args)
   VALID_FILE_IO("chmod","chmod");
 
   get_all_args("chmod", args, "%s%i", &path, &mode);
-  THREADS_ALLOW_UID();
   do {
+    THREADS_ALLOW_UID();
     err = chmod(path, mode);
-  } while ((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW_UID();
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
   if (err < 0) {
     report_error("chmod");
   }
@@ -396,11 +495,27 @@ void f_chmod(INT32 args)
 }
 
 #ifdef HAVE_CHOWN
+/*! @decl void chown(string path, int uid, int gid, void|int symlink)
+ *!
+ *! Sets the owner and group of the specified path.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! owner and group for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
+ */
 void f_chown(INT32 args)
 {
   char *path;
   INT_TYPE uid;
   INT_TYPE gid;
+  int symlink = 0;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -408,12 +523,53 @@ void f_chown(INT32 args)
     Pike_error("chown: permission denied.\n");
 #endif
 
-  get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
-  THREADS_ALLOW_UID();
+  get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
+
+#ifndef HAVE_LCHOWN
+#ifdef HAVE_LSTAT
+  {
+    PIKE_STAT_T st;
+    int orig_errno = errno;
+    do {
+      THREADS_ALLOW_UID();
+      err = fd_lstat (path, &st);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+    } while (1);
+    errno = orig_errno;
+
+    if (!err && ((st.st_mode & S_IFMT) == S_IFLNK)) {
+      pop_n_elems (args);
+      return;
+    }
+  }
+
+#else
+  /* Awkward situation if there's no lstat. Best we can do is just to
+   * go ahead, except we don't complain for ENOENT, to avoid throwing
+   * errors on dangling symlinks. */
+#define CHOWN_IGNORE_ENOENT
+#endif
+#endif	/* !HAVE_LCHOWN */
+
   do {
-    err = chown(path, uid, gid);
-  } while((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW_UID();
+    THREADS_ALLOW_UID();
+#ifdef HAVE_LCHOWN
+    if (symlink)
+      err = lchown (path, uid, gid);
+    else
+#endif
+      err = chown(path, uid, gid);
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
+
+#ifdef CHOWN_IGNORE_ENOENT
+  if (err < 0 && symlink && errno == ENOENT)
+    err = 0;
+#endif
+
   if (err < 0) {
     report_error("chown");
   }
@@ -421,32 +577,112 @@ void f_chown(INT32 args)
 }
 #endif
 
-#ifdef HAVE_UTIME
+#if defined (HAVE_UTIME) || defined (HAVE__UTIME)
+/*! @decl void utime(string path, int atime, int mtime, void|int symlink)
+ *!
+ *! Set the last access time and last modification time for the path
+ *! @[path] to @[atime] and @[mtime] repectively. They are specified
+ *! as unix timestamps with 1 second resolution.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! timestamps for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
+ *!
+ *! @seealso
+ *! @[System.set_file_atime], @[System.set_file_mtime]
+ */
 void f_utime(INT32 args)
 {
   char *path;
   INT_TYPE atime, mtime;
+  int symlink = 0;
   int err;
-  /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
-#ifdef _UTIMBUF_DEFINED
-  struct _utimbuf b;
-#else
-  struct utimbuf b;
-#endif
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
     Pike_error("utime: permission denied.\n");
 #endif
 
-  get_all_args("utime", args, "%s%i%i", &path, &atime, &mtime);
-  b.actime=atime;
-  b.modtime=mtime;
-  THREADS_ALLOW_UID();
-  do {
-    err = utime(path, &b);
-  } while((err < 0) && (errno == EINTR));
-  THREADS_DISALLOW_UID();
+  get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
+
+  if (symlink) {
+#ifdef HAVE_LUTIMES
+    struct timeval tv[2];
+    tv[0].tv_sec = atime;
+    tv[0].tv_usec = 0;
+    tv[1].tv_sec = mtime;
+    tv[1].tv_usec = 0;
+    do {
+      THREADS_ALLOW_UID();
+      err = lutimes (path, tv);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+    if (err < 0)
+      report_error("utime");
+    pop_n_elems(args);
+    return;
+
+#elif defined (HAVE_LSTAT)
+    PIKE_STAT_T st;
+    int orig_errno = errno;
+    do {
+      THREADS_ALLOW_UID();
+      err = fd_lstat (path, &st);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+    } while (1);
+    errno = orig_errno;
+
+    if (!err && ((st.st_mode & S_IFMT) == S_IFLNK)) {
+      pop_n_elems (args);
+      return;
+    }
+
+#else
+    /* Awkward situation if there's no lstat. Best we can do is just
+     * to go ahead, except we don't complain for ENOENT, to avoid
+     * throwing errors on dangling symlinks. */
+#define UTIME_IGNORE_ENOENT
+#endif
+  }
+
+  {
+    /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
+#ifdef _UTIMBUF_DEFINED
+    struct _utimbuf b;
+#else
+    struct utimbuf b;
+#endif
+
+    b.actime=atime;
+    b.modtime=mtime;
+    do {
+      THREADS_ALLOW_UID();
+#ifdef HAVE__UTIME
+      err = _utime (path, &b);
+#else
+      err = utime(path, &b);
+#endif
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+  }
+
+#ifdef UTIME_IGNORE_ENOENT
+  if (err < 0 && symlink && errno == ENOENT)
+    err = 0;
+#endif
+
   if (err < 0) {
     report_error("utime");
   }
@@ -454,8 +690,80 @@ void f_utime(INT32 args)
 }
 #endif
 
+#if !defined(HAVE_SYNC) && defined(__NT__)
+static void sync(void)
+{
+  /* NB: For some stupid reason FindFirstVolume()/FindNextVolume()
+   *     will only list local filesystems. So we have to fall
+   *     back to using GetLogicalDrives().
+   */
+  /* NB: \\.\ is the DOS device namespace prefix. */
+  char drive[8] = "\\\\.\\A:";
+  char *driveletter = drive + 4;
+  DWORD drives = GetLogicalDrives();
+  DWORD mask = 1;
+  /* Loop over all mounted volumes. */
+  while (mask) {
+    if (mask & drives) {
+      char device[MAX_PATH*2];
+      HANDLE volfile;
+
+      if (QueryDosDeviceA(driveletter, device, MAX_PATH*2)) {
+	volfile = CreateFileA(device, FILE_READ_DATA, FILE_SHARE_READ,
+			      NULL, OPEN_EXISTING, 0, NULL);
+	if (volfile != INVALID_HANDLE_VALUE) {
+	  CloseHandle(volfile);
+	}
+      }
+
+      /* Flush the drive. */
+      volfile = CreateFileA(drive, FILE_READ_DATA, FILE_SHARE_READ,
+			    NULL, OPEN_EXISTING, 0, NULL);
+      if (volfile != INVALID_HANDLE_VALUE) {
+	CloseHandle(volfile);
+      }
+    }
+    *driveletter++;
+    mask = mask << 1;
+  }
+}
+#define HAVE_SYNC
+#endif
+
+#ifdef HAVE_SYNC
+/*! @decl void sync()
+ *!
+ *! Flush operating system disk buffers to permanent storage.
+ *!
+ *! @note
+ *!   On some operating systems this may require
+ *!   administrative privileges.
+ */
+void f_sync(INT32 args)
+{
+  pop_n_elems(args);
+  THREADS_ALLOW_UID()
+  sync();
+  THREADS_DISALLOW_UID();
+}
+#endif
+
 #ifdef HAVE_INITGROUPS
-/* void initgroups(string name, int gid) */
+/*! @decl void initgroups(string name, int base_gid)
+ *!
+ *! Initializes the supplemental group access list according to the system
+ *! group database. @[base_gid] is also added to the group access
+ *! list.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setuid()], @[getuid()], @[setgid()], @[getgid()], @[seteuid()],
+ *!   @[geteuid()], @[setegid()], @[getegid()], @[getgroups()], @[setgroups()]
+ */
 void f_initgroups(INT32 args)
 {
   char *user;
@@ -466,8 +774,7 @@ void f_initgroups(INT32 args)
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
     Pike_error("initgroups: permission denied.\n");
 #endif
-  
-  VALID_FILE_IO("initgroups","status");
+
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
@@ -478,10 +785,21 @@ void f_initgroups(INT32 args)
 #endif /* HAVE_INITGROUPS */
 
 #ifdef HAVE_SETGROUPS
-/* void cleargroups() */
+/*! @decl void cleargroups()
+ *!
+ *! Clear the supplemental group access list.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setgroups()], @[initgroups()], @[getgroups()]
+ */
 void f_cleargroups(INT32 args)
 {
-  static gid_t gids[1] = { 65534 };	/* To safeguard against stupid OS's */
+  static const gid_t gids[1]={ 65534 }; /* To safeguard against stupid OS's */
   int err;
 
 #ifdef PIKE_SECURITY
@@ -490,17 +808,28 @@ void f_cleargroups(INT32 args)
 #endif
 
   pop_n_elems(args);
-  err = setgroups(0, gids);
+  err = setgroups(0, (gid_t *)gids);
   if (err < 0) {
     report_error("cleargroups");
   }
 }
 
-/* void setgroup(array(int) gids) */
-/* NOT Implemented in Pike 0.5 */
+/*! @decl void setgroups(array(int) gids)
+ *!
+ *! Set the supplemental group access list for this process.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[initgroups()], @[cleargroups()], @[getgroups()],
+ *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
+ */
 void f_setgroups(INT32 args)
 {
-  static gid_t safeguard[1] = { 65534 };
+  static const gid_t safeguard[1] = { 65534 };
   struct array *arr = NULL;
   gid_t *gids = NULL;
   INT32 i;
@@ -514,17 +843,14 @@ void f_setgroups(INT32 args)
 
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
-    gids = (gid_t *)xalloc(arr->size * sizeof(gid_t));
+    gids = (gid_t *)alloca(arr->size * sizeof(gid_t));
+    if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
   } else {
-    gids = safeguard;
+    gids = (gid_t *)safeguard;
   }
 
   for (i=0; i < size; i++) {
-    if (arr->item[i].type != T_INT) {
-      /* Only reached if arr->size > 0
-       * so we always have an allocated gids here.
-       */
-      free(gids);
+    if (TYPEOF(arr->item[i]) != T_INT) {
       Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
     }
     gids[i] = arr->item[i].u.integer;
@@ -534,16 +860,25 @@ void f_setgroups(INT32 args)
 
   err = setgroups(size, gids);
   if (err < 0) {
-    if (size) {
-      free(gids);
-    }
     report_error("setgroups");
   }
 }
 #endif /* HAVE_SETGROUPS */
 
 #ifdef HAVE_GETGROUPS
-/* array(int) getgroups() */
+/*! @decl array(int) getgroups()
+ *!
+ *! Get the current supplemental group access list for this process.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setgroups()], @[cleargroups()], @[initgroups()],
+ *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
+ */
 void f_getgroups(INT32 args)
 {
   gid_t *gids = NULL;
@@ -575,8 +910,17 @@ void f_getgroups(INT32 args)
 #endif /* HAVE_GETGROUPS */
 
 #ifdef HAVE_INNETGR
-/* int innetgr(string netgroup, string|void machine,
- *             string|void user, string|void domain) */
+/*! @decl int(0..1) innetgr(string netgroup, string|void machine, @
+ *!                   string|void user, string|void domain)
+ *!
+ *! Searches for matching entries in the netgroup database (usually
+ *! @tt{/etc/netgroup@}). If any of the @[machine], @[user] or @[domain]
+ *! arguments are zero or missing, those fields will match any
+ *! value in the selected @[netgroup].
+ *!
+ *! @note
+ *!  This function isn't available on all platforms.
+ */
 void f_innetgr(INT32 args)
 {
   char *strs[4] = { NULL, NULL, NULL, NULL };
@@ -587,7 +931,7 @@ void f_innetgr(INT32 args)
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID, 0);
 
   for(i = 0; i < args; i++) {
-    if (sp[i-args].type == T_STRING) {
+    if (TYPEOF(sp[i-args]) == T_STRING) {
       if (sp[i-args].u.string->size_shift) {
 	SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string (8bit)");
       }
@@ -607,6 +951,20 @@ void f_innetgr(INT32 args)
 #endif /* HAVE_INNETGR */
 
 #ifdef HAVE_SETUID 
+/*! @decl int setuid(int uid)
+ *!
+ *! Sets the real user ID, effective user ID and saved user ID to @[uid].
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function isn't available on all platforms.
+ *!
+ *! @seealso
+ *!   @[getuid()], @[setgid()], @[getgid()], @[seteuid()], @[geteuid()],
+ *!   @[setegid()], @[getegid()]
+ */
 void f_setuid(INT32 args)
 {
   int err;
@@ -621,6 +979,8 @@ void f_setuid(INT32 args)
  
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_uid;
   } else {
     id = sp[-args].u.integer;
@@ -633,6 +993,24 @@ void f_setuid(INT32 args)
 #endif
 
 #ifdef HAVE_SETGID
+/*! @decl int setgid(int gid)
+ *!
+ *! Sets the real group ID, effective group ID and saved group ID to @[gid].
+ *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @throws
+ *! Throws an error if no "nobody" user when @[gid] is @expr{-1@}.
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[getuid()], @[setuid()], @[getgid()], @[seteuid()], @[geteuid()],
+ *!   @[setegid()], @[getegid()]
+ */
 void f_setgid(INT32 args)
 {
   int err;
@@ -646,6 +1024,8 @@ void f_setgid(INT32 args)
  
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_gid;
   } else {
     id = sp[-args].u.integer;
@@ -658,7 +1038,21 @@ void f_setgid(INT32 args)
 #endif
 
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
-/* int seteuid(int euid) */
+/*! @decl int seteuid(int euid)
+ *!
+ *! Set the effective user ID to @[euid]. If @[euid] is
+ *! @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @returns
+ *! Returns the current errno.
+ *!
+ *! @throws
+ *! Throws an error if there is no
+ *! "nobody" user when @[euid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
+ */
 void f_seteuid(INT32 args)
 {
   INT_TYPE id;
@@ -672,6 +1066,8 @@ void f_seteuid(INT32 args)
  
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_uid;
   } else {
     id = sp[-args].u.integer;
@@ -690,7 +1086,21 @@ void f_seteuid(INT32 args)
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
  
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
-/* int setegid(int egid) */
+/*! @decl int setegid(int egid)
+ *!
+ *! Set the effective group ID to @[egid]. If @[egid] is
+ *! @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @returns
+ *! Returns the current errno.
+ *!
+ *! @throws
+ *! Throws an error if there is no "nobody" user when
+ *! @[egid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
+ */
 void f_setegid(INT32 args)
 {
   INT_TYPE id;
@@ -706,6 +1116,8 @@ void f_setegid(INT32 args)
   if(id == -1)
   {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_gid;
   } else {
     id = sp[-args].u.integer;
@@ -724,14 +1136,28 @@ void f_setegid(INT32 args)
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
 #if defined(HAVE_GETPGID) || defined(HAVE_GETPGRP)
+/*! @decl int getpgrp(int|void pid)
+ *!
+ *! Get the process group id for the process @[pid].
+ *! With no argguments or with 'pid' equal to zero,
+ *! returns the process group ID of this process.
+ *!
+ *! @note
+ *!   Not all platforms support getting the process group for other processes.
+ *!
+ *!   Not supported on all platforms.
+ *!
+ *! @seealso
+ *!   @[getpid], @[getppid]
+ */
 void f_getpgrp(INT32 args)
 {
   int pid = 0;
   int pgid = 0;
 
   if (args) {
-    if (sp[-args].type != T_INT) {
-      Pike_error("Bad argument 1 to getpgrp()\n");
+    if (TYPEOF(sp[-args]) != T_INT) {
+      SIMPLE_BAD_ARG_ERROR("getpgrp", 1, "int");
     }
     pid = sp[-args].u.integer;
   }
@@ -752,6 +1178,13 @@ void f_getpgrp(INT32 args)
 #endif /* HAVE_GETPGID || HAVE_GETPGRP */
 
 #if defined(HAVE_SETPGID) || defined(HAVE_SETPGRP)
+/*! @decl int setpgrp()
+ *!
+ *! Make this process a process group leader.
+ *!
+ *! @note
+ *!   Not supported on all platforms.
+ */
 void f_setpgrp(INT32 args)
 {
   int pid;
@@ -773,11 +1206,22 @@ void f_setpgrp(INT32 args)
 #endif
 
 #if defined(HAVE_GETSID)
+/*! @decl int getsid(int|void pid)
+ *!   Get the process session ID for the given process. If pid is
+ *!   not specified, the session ID for the current process will
+ *!   be returned.
+ *! @note
+ *!   This function is not available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
+ *! @seealso
+ *!   @[getpid], @[getpgrp], @[setsid]
+ */
 void f_getsid(INT32 args)
 {
   int pid = 0;
-  if (args >= 1 && sp[-args].type != T_INT)
-       Pike_error("Bad argument for getsid().\n");
+  if (args >= 1 && TYPEOF(sp[-args]) != T_INT)
+    SIMPLE_BAD_ARG_ERROR("getsid", 1, "int");
   if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
@@ -789,11 +1233,18 @@ void f_getsid(INT32 args)
 #endif
 
 #if defined(HAVE_SETSID)
+/*! @decl int setsid()
+ *!   Set a new process session ID for the current process, and return it.
+ *! @note
+ *!   This function isn't available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
+ *! @seealso
+ *!   @[getpid], @[setpgrp], @[getsid]
+ */
 void f_setsid(INT32 args)
 {
   int pid;
-  if (args > 0)
-       Pike_error("setsid() takes no arguments.\n");
   pop_n_elems(args);
   pid = setsid();
   if (pid < 0)
@@ -802,7 +1253,61 @@ void f_setsid(INT32 args)
 }
 #endif
 
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+/*! @decl int(0..1) dumpable(int(0..1)|void val)
+ *!   Get and/or set whether this process should be able to
+ *!   dump core.
+ *!
+ *! @param val
+ *!   Optional argument to set the core dumping state.
+ *!   @int
+ *!     @value 0
+ *!       Disable core dumping for this process.
+ *!     @value 1
+ *!       Enable core dumping for this process.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if this process currently is capable of dumping core,
+ *!   and @expr{0@} (zero) if not.
+ *!
+ *! @note
+ *!   This function is currently only available on some versions of Linux.
+ */ 
+void f_dumpable(INT32 args)
+{
+  int current = prctl(PR_GET_DUMPABLE);
+
+  if (current == -1) {
+    int err = errno;
+    Pike_error("Failed to get dumpable state. errno:%d\n", err);
+  }
+  if (args) {
+    INT_TYPE val;
+    get_all_args("dumpable", args, "%i", &val);
+    if (val & ~1) {
+      SIMPLE_BAD_ARG_ERROR("dumpable", 1, "int(0..1)");
+    }
+    if (prctl(PR_SET_DUMPABLE, val) == -1) {
+      int err = errno;
+      Pike_error("Failed to set dumpable state to %"PRINTPIKEINT"d. "
+		 "errno:%d\n", val, err);
+    }
+  }
+  pop_n_elems(args);
+  push_int(current);
+}
+#endif
+
 #ifdef HAVE_SETRESUID
+/*! @decl int setresuid(int ruid, int euid, int suid)
+ *!
+ *! Sets the real, effective and saved set-user-ID to @[ruid],
+ *! @[euid] and @[suid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
+ */
 void f_setresuid(INT32 args)
 {
   INT_TYPE ruid, euid,suid;
@@ -822,6 +1327,14 @@ void f_setresuid(INT32 args)
 #endif /* HAVE_SETRESUID */
 
 #ifdef HAVE_SETRESGID
+/*! @decl int setresgid(int rgid, int egid, int sgid)
+ *!
+ *! Sets the real, effective and saved group ID to @[rgid],
+ *! @[egid] and @[sgid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
+ */
 void f_setresgid(INT32 args)
 {
   INT_TYPE rgid, egid,sgid;
@@ -844,27 +1357,90 @@ void f_setresgid(INT32 args)
 #define f_get(X,Y) void X(INT32 args){ pop_n_elems(args); push_int((INT32)Y()); }
 
 #ifdef HAVE_GETUID
+/*! @decl int getuid()
+ *!   Get the real user ID.
+ *! @seealso
+ *!   @[setuid], @[setgid], @[getgid], @[seteuid],
+ *!   @[geteuid], @[setegid], @[getegid]
+ */
 f_get(f_getuid, getuid)
 #endif
 
 #ifdef HAVE_GETGID
+/*! @decl int getgid()
+ *!   Get the real group ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid],
+ *!   @[seteuid], @[geteuid], @[getegid], @[setegid]
+ */
 f_get(f_getgid, getgid)
 #endif
  
 #ifdef HAVE_GETEUID
+/*! @decl int geteuid()
+ *!   Get the effective user ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid], @[getgid],
+ *!   @[seteuid], @[getegid], @[setegid]
+ */
 f_get(f_geteuid, geteuid)
+
+/*! @decl int getegid()
+ *!   Get the effective group ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid], @[getgid],
+ *!   @[seteuid], @[geteuid], @[setegid]
+ */
 f_get(f_getegid, getegid)
 #endif
+
+/*! @decl int getpid()
+ *!   Returns the process ID of this process.
+ *! @seealso
+ *!   @[getppid], @[getpgrp]
+ */
 f_get(f_getpid, getpid)
 
 #ifdef HAVE_GETPPID
+/*! @decl int getppid()
+ *!  Returns the process ID of the parent process.
+ *! @seealso
+ *!   @[getpid], @[getpgrp]
+ */
 f_get(f_getppid, getppid)
 #endif
  
 #undef f_get
 
 #ifdef HAVE_CHROOT
-/* int chroot(string|object newroot) */
+/*! @decl int chroot(string newroot)
+ *! @decl int chroot(Stdio.File newroot)
+ *!
+ *! Changes the root directory for this process to the indicated directory.
+ *!
+ *! @returns
+ *!   A nonzero value is returned if the call is successful. If
+ *!   there's an error then zero is returned and @[errno] is set
+ *!   appropriately.
+ *!
+ *! @note
+ *!   Since this function modifies the directory structure as seen from
+ *!   Pike, you have to modify the environment variables PIKE_MODULE_PATH
+ *!   and PIKE_INCLUDE_PATH to compensate for the new root-directory.
+ *!
+ *!   This function only exists on systems that have the chroot(2)
+ *!   system call.
+ *!
+ *!   The second variant only works on systems that also have
+ *!   the fchroot(2) system call.
+ *!
+ *! @note
+ *!   On success the current working directory will be changed to
+ *!   the new @expr{"/"@}. This behavior was added in Pike 7.9.
+ *!
+ *! @note
+ *!   This function could be interrupted by signals prior to Pike 7.9.
+ */
 void f_chroot(INT32 args)
 {
   int res;
@@ -882,35 +1458,42 @@ void f_chroot(INT32 args)
 
 
 #ifdef HAVE_FCHROOT
-  if(sp[-args].type == T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
 #endif /* HAVE_FCHROOT */
-    res = chroot((char *)sp[-args].u.string->str);
+    while (((res = chroot((char *)sp[-args].u.string->str)) == -1) &&
+	   (errno == EINTR))
+      ;
+    if (!res) {
+      while ((chdir("/") == -1) && (errno == EINTR))
+	;
+    }
     pop_n_elems(args);
     push_int(!res);
     return;
 #ifdef HAVE_FCHROOT
-  } else
-#if 0 
-    if(sp[-args].type == T_OBJECT)
-#endif /* 0 */
-      {
-	int fd;
+  } else {
+    int fd;
 
-	apply(sp[-args].u.object, "query_fd", 0);
-	fd=sp[-1].u.integer;
-	pop_stack();
-	res=fchroot(fd);
-	pop_n_elems(args);
-	push_int(!res);
-	return;
-      }
+    apply(sp[-args].u.object, "query_fd", 0);
+    fd=sp[-1].u.integer;
+    pop_stack();
+    while (((res = fchroot(fd)) == -1) && (errno == EINTR))
+      ;
+    if (!res) {
+      while ((fchdir(fd) == -1) && (errno == EINTR))
+	;
+    }
+    pop_n_elems(args);
+    push_int(!res);
+    return;
+  }
 #endif /* HAVE_FCHROOT */
 }
 #endif /* HAVE_CHROOT */
  
 #ifdef HAVE_SYSINFO
-#  ifdef SI_NODENAME
+#  ifdef SI_HOSTNAME
 #    define USE_SYSINFO
 #  else
 #    ifndef HAVE_UNAME
@@ -921,7 +1504,7 @@ void f_chroot(INT32 args)
 
 #ifdef USE_SYSINFO
 
-static struct {
+static const struct {
   char *name;
   int command;
 } si_fields[] = {
@@ -964,6 +1547,44 @@ static struct {
 /* Recomended is >257 */
 #define PIKE_SI_BUFLEN	512
 
+/*! @decl mapping(string:string) uname()
+ *!
+ *! Get operating system information.
+ *!
+ *! @returns
+ *!   The resulting mapping contains the following fields:
+ *!   @mapping
+ *!     @member string "sysname"
+ *!       Operating system name.
+ *!     @member string "nodename"
+ *!       Hostname.
+ *!     @member string "release"
+ *!       Operating system release.
+ *!     @member string "version"
+ *!       Operating system version.
+ *!     @member string "machine"
+ *!       Hardware architecture.
+ *!     @member string "architecture"
+ *!       Basic instruction set architecture.
+ *!     @member string "isalist"
+ *!       List of upported instruction set architectures.
+ *!       Usually space-separated.
+ *!     @member string "platform"
+ *!       Specific model of hardware.
+ *!     @member string "hw provider"
+ *!       Manufacturer of the hardware.
+ *!     @member string "hw serial"
+ *!       Serial number of the hardware.
+ *!     @member string "srpc domain"
+ *!       Secure RPC domain.
+ *!   @endmapping
+ *!
+ *! @note
+ *!   This function only exists on systems that have the uname(2) or
+ *!   sysinfo(2) system calls.
+ *!
+ *!   Only the first five elements are always available.
+ */
 void f_uname(INT32 args)
 {
   char buffer[PIKE_SI_BUFLEN];
@@ -1022,6 +1643,14 @@ void f_uname(INT32 args)
 #endif /* HAVE_UNAME */
 #endif /* HAVE_SYSINFO */
 
+/*! @decl string gethostname()
+ *!
+ *! Returns a string with the name of the host.
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostname(2)
+ *!   or uname(2) system calls.
+ */
 #if defined(HAVE_UNAME) && (defined(SOLARIS) || !defined(HAVE_GETHOSTNAME))
 void f_gethostname(INT32 args)
 {
@@ -1121,7 +1750,7 @@ int my_isipnr(char *s)
 
 int my_isipv6nr(char *s)
 {
-  int i = 0;
+  int i;
   int field = 0;
   int compressed = 0;
   int is_hex = 0;
@@ -1232,61 +1861,164 @@ int my_isipv6nr(char *s)
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETHOSTBYNAME_R */
-static MUTEX_T gethostbyname_mutex;
-#define GETHOSTBYNAME_MUTEX_EXISTS
-
-#define GETHOST_DECLARE struct hostent *ret
-
-#define CALL_GETHOSTBYNAME(X) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyname(X); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
-
-#define CALL_GETHOSTBYADDR(X,Y,Z) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyaddr((X),(Y),(Z)); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
 #endif /* HAVE_OSF1_GETHOSTBYNAME_R */
 #endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
-#else /* _REENTRANT */
 
+#ifdef HAVE_SOLARIS_GETSERVBYNAME_R
+
+#define GETSERV_DECLARE \
+    struct servent *ret; \
+    struct servent result; \
+    char data[2048]
+
+#define CALL_GETSERVBYNAME(X,Y) \
+    THREADS_ALLOW(); \
+    ret=getservbyname_r((X), (Y), &result, data, sizeof(data)); \
+    THREADS_DISALLOW()
+
+#else /* HAVE_SOLARIS_GETSERVBYNAME_R */
+#ifdef HAVE_OSF1_GETSERVBYNAME_R
+
+#define GETSERV_DECLARE \
+    struct servent *ret; \
+    struct servent result; \
+    struct servent_data data
+
+#define CALL_GETSERVBYNAME(X,Y) \
+    THREADS_ALLOW(); \
+    MEMSET((char *)&data,0,sizeof(data)); \
+    if(getservbyname_r((X), (Y), &result, &data) < 0) { \
+      ret=0; \
+    }else{ \
+      ret=&result; \
+    } \
+    THREADS_DISALLOW()
+
+#endif /* HAVE_OSF1_GETSERVBYNAME_R */
+#endif /* HAVE_SOLARIS_GETSERVBYNAME_R */
+
+#endif /* REENTRANT */
+
+#ifndef GETHOST_DECLARE
 #ifdef HAVE_GETHOSTBYNAME
-
 #define GETHOST_DECLARE struct hostent *ret
 #define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
+#endif /* !GETHOST_DECLARE */
 
-#endif /* REENTRANT */
+#ifndef GETSERV_DECLARE
+#ifdef HAVE_GETSERVBYNAME
+#define GETSERV_DECLARE struct servent *ret
+#define CALL_GETSERVBYNAME(X,Y) ret=getservbyname(X,Y)
+#endif
+#endif /* !GETSERV_DECLARE */
 
 /* this is used from modules/file, and modules/spider! */
-void get_inet_addr(struct sockaddr_in *addr,char *name)
+int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
+		  int inet_flags)
 {
-  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
+#ifdef HAVE_GETADDRINFO
+  struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
+  char servnum_buf[200];
+#endif /* HAVE_GETADDRINFO */
 
-  addr->sin_family = AF_INET;
-  if(!strcmp(name,"*"))
-  {
-    addr->sin_addr.s_addr=htonl(INADDR_ANY);
+  int udp = inet_flags & 1;
+
+  MEMSET((char *)addr,0,sizeof(PIKE_SOCKADDR));
+  if(name && !strcmp(name,"*"))
+    name = NULL;
+
+#ifdef HAVE_GETADDRINFO
+/*   fprintf(stderr, "get_inet_addr(): Trying getaddrinfo\n"); */
+  if(!name) {
+    hints.ai_flags = AI_PASSIVE;
+    /* Avoid creating an IPv6 address for "*". */
+    /* For IN6ADDR_ANY, use "::". */
+    hints.ai_family = PF_INET;
+#ifdef PF_INET6
+  } else if (inet_flags & 2) {
+    /* Force IPv6. */
+    /* Map all addresses to the IPv6 namespace,
+     * to avoid address conflicts when once end
+     * of the socket is IPv4 and one end is IPv6.
+     * This is needed on eg Linux where a socket
+     * bound to ::FFFF:127.0.0.1 can't connect
+     * to the IPv4 address 127.0.0.1.
+     */
+    hints.ai_family = PF_INET6;
+#ifdef AI_V4MAPPED
+    hints.ai_flags = AI_V4MAPPED;
+#endif
+#endif
   }
+  hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
+  if(!service)
+    sprintf(servnum_buf, "%"PRINTPIKEINT"d", (port<0? 0:port));
+  if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
+    struct addrinfo *p, *found = NULL;
+    size_t addr_len=0;
+    for(p=res; p; p=p->ai_next) {
+      if(p->ai_addrlen > addr_len &&
+	 p->ai_addrlen <= sizeof(*addr) &&
+	 p->ai_addr)
+	addr_len = (found = p)->ai_addrlen;
+    }
+    if(found) {
+/*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
+/* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
+      MEMCPY((char *)addr, (char *)found->ai_addr, addr_len);
+    }
+    freeaddrinfo(res);
+    if(addr_len) {
+/*       fprintf(stderr, "family: %d\n", SOCKADDR_FAMILY(*addr)); */
+      return addr_len;
+    }
+  }
+#endif /* HAVE_GETADDRINFO */
+  
+  SOCKADDR_FAMILY(*addr) = AF_INET;
+#ifdef AF_INET6
+  if (inet_flags & 2) {
+    SOCKADDR_FAMILY(*addr) = AF_INET6;
+    /* Note: This is equvivalent to :: (aka IPv6 ANY). */
+    MEMSET(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
+  }
+#endif
+
+  if(!name)
+  {
+/*     fprintf(stderr, "get_inet_addr(): ANY\n"); */
+#ifdef AF_INET6
+    if (!(inet_flags & 2))
+#endif
+      addr->ipv4.sin_addr.s_addr=htonl(INADDR_ANY);
+  }
+  /* FIXME: Ought to check for IPv6 literal address here, but
+   *        it will typically be handled by getaddrinfo() above.
+   */
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
+/*     fprintf(stderr, "get_inet_addr(): IP\n"); */
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
-
-    addr->sin_addr.s_addr = inet_addr(name);
+#ifdef AF_INET6
+    if (inet_flags & 2) {
+      /* Convert to IPv4 compat address: ::FFFF:a.b.c.d */
+      struct sockaddr_in ipv4;
+      ipv4.sin_addr.s_addr = inet_addr(name);
+      addr->ipv6.sin6_addr.s6_addr[10] = 0xff;
+      addr->ipv6.sin6_addr.s6_addr[11] = 0xff;
+      MEMCPY(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
+    } else
+#endif
+      addr->ipv4.sin_addr.s_addr = inet_addr(name);
   }
   else
   {
 #ifdef GETHOST_DECLARE
     GETHOST_DECLARE;
+/*     fprintf(stderr, "get_inet_addr(): Trying gethostbyname()\n"); */
     CALL_GETHOSTBYNAME(name);
 
     if(!ret) {
@@ -1297,12 +2029,14 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
       }
     }
 
+    SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
+
 #ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)&(addr->sin_addr),
+    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
 	   (char *)ret->h_addr_list[0],
 	   ret->h_length);
 #else
-    MEMCPY((char *)&(addr->sin_addr),
+    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
 	   (char *)ret->h_addr,
 	   ret->h_length);
 #endif
@@ -1314,41 +2048,101 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
     }
 #endif
   }
+
+  if(service) {
+#ifdef GETSERV_DECLARE
+    GETSERV_DECLARE;
+/*     fprintf(stderr, "get_inet_addr(): Trying getserv()\n"); */
+    CALL_GETSERVBYNAME(service, (udp? "udp":"tcp"));
+
+    if(!ret) {
+      if (strlen(service) < 1024) {
+	Pike_error("Invalid service '%s'\n",service);
+      } else {
+	Pike_error("Invalid service\n");
+      }
+    }
+
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = ret->s_port;
+    } else
+#endif
+      addr->ipv4.sin_port = ret->s_port;
+#else
+    if (strlen(service) < 1024) {
+      Pike_error("Invalid service '%s'\n",service);
+    } else {
+      Pike_error("Invalid service\n");
+    }
+#endif
+  } else if(port >= 0) {
+/*     fprintf(stderr, "get_inet_addr(): port()\n"); */
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = htons((unsigned INT16)port);
+    } else
+#endif
+      addr->ipv4.sin_port = htons((unsigned INT16)port);
+  } else {
+/*     fprintf(stderr, "get_inet_addr(): ANY port()\n"); */
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = 0;
+    } else
+#endif
+      addr->ipv4.sin_port = 0;
+  }
+
+  return (SOCKADDR_FAMILY(*addr) == AF_INET? sizeof(addr->ipv4):sizeof(*addr));
 }
 
 
 #ifdef GETHOST_DECLARE
-/* array(string|array(string)) gethostbyaddr(string addr) */
 
 static void describe_hostent(struct hostent *hp)
 {
-  char **p;
-  INT32 nelem;
-
   push_text(hp->h_name);
   
 #ifdef HAVE_H_ADDR_LIST
-  nelem=0;
-  for (p = hp->h_addr_list; *p != 0; p++) {
-    struct in_addr in;
+  {
+    char **p;
+    INT32 nelem = 0;
+
+    for (p = hp->h_addr_list; *p != 0; p++) {
+#ifdef fd_inet_ntop
+      char buffer[64];
+
+      push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
+#else
+      struct in_addr in;
  
-    MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
-    push_text(inet_ntoa(in));
-    nelem++;
-  }
-  f_aggregate(nelem);
+      MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
+      push_text(inet_ntoa(in));
+#endif
+      nelem++;
+    }
+
+    f_aggregate(nelem);
  
-  nelem=0;
-  for (p = hp->h_aliases; *p != 0; p++) {
-    push_text(*p);
-    nelem++;
+    nelem=0;
+    for (p = hp->h_aliases; *p != 0; p++) {
+      push_text(*p);
+      nelem++;
+    }
+    f_aggregate(nelem);
   }
-  f_aggregate(nelem);
 #else
   {
+#ifdef fd_inet_ntop
+    char buffer[64];
+
+    push_text(fd_inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
+#else
     struct in_addr in;
     MEMCPY(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
     push_text(inet_ntoa(in));
+#endif
   }
 
   f_aggregate(1);
@@ -1357,9 +2151,24 @@ static void describe_hostent(struct hostent *hp)
   f_aggregate(3);
 }
 
+/*! @decl array(string|array(string)) gethostbyaddr(string addr)
+ *!
+ *! Returns an array with information about the specified IP address.
+ *!
+ *! @returns
+ *!   The returned array contains the same information as that returned
+ *!   by @[gethostbyname()].
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostbyaddr(2)
+ *!   or similar system call.
+ *!
+ *! @seealso
+ *!   @[gethostbyname()]
+ */
 void f_gethostbyaddr(INT32 args)
 {
-  u_long addr;
+  IN_ADDR_T addr;
   char *name;
   GETHOST_DECLARE;
 
@@ -1372,6 +2181,7 @@ void f_gethostbyaddr(INT32 args)
   pop_n_elems(args);
 
   CALL_GETHOSTBYADDR((char *)&addr, sizeof (addr), AF_INET);
+  INVALIDATE_CURRENT_TIME();
 
   if(!ret) {
     push_int(0);
@@ -1381,7 +2191,28 @@ void f_gethostbyaddr(INT32 args)
   describe_hostent(ret);
 }  
 
-/* array(array(string)) gethostbyname(string hostname) */ 
+/*! @decl array(string|array(string)) gethostbyname(string hostname)
+ *!
+ *! Returns an array with information about the specified host.
+ *!
+ *! @returns
+ *!   The returned array contains the following:
+ *!   @array
+ *!     @elem string hostname
+ *!       Name of the host.
+ *!     @elem array(string) ips
+ *!       Array of IP numbers for the host.
+ *!     @elem array(string) aliases
+ *!       Array of alternative names for the host.
+ *!   @endarray
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostbyname(2)
+ *!   or similar system call.
+ *!
+ *! @seealso
+ *!   @[gethostbyaddr()]
+ */
 void f_gethostbyname(INT32 args)
 {
   char *name;
@@ -1390,6 +2221,7 @@ void f_gethostbyname(INT32 args)
   get_all_args("gethostbyname", args, "%s", &name);
 
   CALL_GETHOSTBYNAME(name);
+  INVALIDATE_CURRENT_TIME();
  
   pop_n_elems(args);
   
@@ -1401,23 +2233,50 @@ void f_gethostbyname(INT32 args)
 }  
 #endif /* HAVE_GETHOSTBYNAME */
 
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
 static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
 {
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_init(&gethostbyname_mutex);
+#endif
+#ifdef GETSERVBYNAME_MUTEX_EXISTS
+  mt_init(&getservbyname_mutex);
+#endif
 }
 #endif
 
 extern void init_passwd(void);
+extern void init_system_memory(void);
 
 
 #ifdef HAVE_SLEEP
-/* int sleep(int seconds) */
 
+/*! @decl int sleep(int seconds)
+ *!
+ *! Call the system sleep() function.
+ *!
+ *! This is not to be confused with the global function @[predef::sleep()]
+ *! that does more elaborate things and can sleep with better precision
+ *! (although dependant on a normal functioning system clock).
+ *!
+ *! @note
+ *!   The system's sleep function often utilizes the alarm(2) call and might
+ *!   not be perfectly thread safe in combination with simultaneous
+ *!   sleep()'s or alarm()'s. It might also be interrupted by other signals.
+ *!
+ *!   If you don't need it to be independant of the system clock, use
+ *!   @[predef::sleep()] instead.
+ *!
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ *!
+ *! @seealso
+ *!   @[predef::sleep()] @[usleep()] @[nanosleep()]
+ */
 static void f_system_sleep(INT32 args)
 {
    INT_TYPE seconds;
-   get_all_args("setegid", args, "%i", &seconds);
+   get_all_args("sleep", args, "%i", &seconds);
    if (seconds<0) seconds=0; /* sleep takes unsinged */
    pop_n_elems(args);
    THREADS_ALLOW();
@@ -1426,6 +2285,85 @@ static void f_system_sleep(INT32 args)
    push_int(seconds);
 }
 #endif /* HAVE_SLEEP */
+
+#ifdef HAVE_USLEEP
+
+/*! @decl void usleep(int usec)
+ *!
+ *! Call the system usleep() function. 
+ *!
+ *! This is not to be confused with the global function @[predef::sleep()]
+ *! that does more elaborate things and can sleep with better precision
+ *! (although dependant on a normal functioning system clock).
+ *!
+ *! @note
+ *!   The system's usleep function often utilizes the alarm(2) call and might
+ *!   not be perfectly thread safe in combination with simultaneous
+ *!   sleep()'s or alarm()'s. It might also be interrupted by other signals.
+ *!
+ *!   If you don't need it to be independant of the system clock, use
+ *!   @[predef::sleep()] instead.
+ *!
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ *!
+ *! @seealso
+ *!   @[predef::sleep()] @[sleep()] @[nanosleep()]
+ */
+static void f_system_usleep(INT32 args)
+{
+   INT_TYPE usec;
+   get_all_args("usleep", args, "%i", &usec);
+   if (usec<0) usec=0; /* sleep takes unsinged */
+   pop_n_elems(args);
+   THREADS_ALLOW();
+   usleep( (unsigned int)usec );
+   THREADS_DISALLOW();
+   push_int(0);
+}
+#endif /* HAVE_USLEEP */
+
+#ifdef HAVE_NANOSLEEP
+
+/*! @decl float nanosleep(int|float seconds)
+ *!
+ *! Call the system nanosleep() function. 
+ *!
+ *! This is not to be confused with the global function @[predef::sleep()]
+ *! that does more elaborate things and can sleep with better precision
+ *! (although dependant on a normal functioning system clock).
+ *!
+ *! Returns the remaining time to sleep (as the system function does).
+ *!
+ *! @seealso
+ *!   @[predef::sleep()] @[sleep()] @[usleep()]
+ *!
+ *! @note
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ */
+static void f_system_nanosleep(INT32 args)
+{
+   struct timespec req,rem;
+   FLOAT_TYPE sec;
+
+   get_all_args("nanosleep", args, "%F", &sec);
+   if (sec<0.0) sec=0.0; /* unsigned */
+   pop_n_elems(args);
+   THREADS_ALLOW();
+
+   req.tv_sec=(time_t)sec;
+   req.tv_nsec=(long)((sec-req.tv_sec)*1e9);
+   rem.tv_sec=0;
+   rem.tv_nsec=0;
+
+   nanosleep(&req,&rem);
+   THREADS_DISALLOW();
+
+   push_float(rem.tv_sec+rem.tv_nsec*1e-9);
+}
+#endif /* HAVE_NANOSLEEP */
+
 
 /* can't do this if we don't know the syntax */
 #ifdef SETRLIMIT_SYNTAX_UNKNOWN
@@ -1445,7 +2383,7 @@ static void f_system_sleep(INT32 args)
 #define PIKE_RLIM_T rlim_t
 #endif
 
-#if HAVE_GETRLIMIT || HAVE_SETRLIMIT
+#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
 static struct pike_string *s_cpu=NULL;
 static struct pike_string *s_fsize=NULL;
 static struct pike_string *s_data=NULL;
@@ -1458,7 +2396,7 @@ static struct pike_string *s_memlock=NULL;
 static struct pike_string *s_as=NULL;
 static struct pike_string *s_vmem=NULL;
 
-static void make_rlimit_strings()
+static void make_rlimit_strings(void)
 {
    MAKE_CONSTANT_SHARED_STRING(s_cpu,"cpu");
    MAKE_CONSTANT_SHARED_STRING(s_fsize,"fsize");
@@ -1472,12 +2410,55 @@ static void make_rlimit_strings()
    MAKE_CONSTANT_SHARED_STRING(s_as,"as");
    MAKE_CONSTANT_SHARED_STRING(s_vmem,"vmem");
 }
-#endif
+#endif /* HAVE_GETRLIMIT || HAVE_SETRLIMIT */
 
 #ifdef HAVE_GETRLIMIT
-/* array(int) getrlimit(string resource) */
-/* mapping(string:array(int)) getrlimits() */
-
+/*! @decl array(int) getrlimit(string resource)
+ *! Returns the current process limitation for the selected @[resource].
+ *!
+ *! @param resource
+ *! @string
+ *!   @value cpu
+ *!     The CPU time limit in seconds.
+ *!   @value fsize
+ *!     The maximum size of files the process may create.
+ *!   @value data
+ *!     The maximum size of the process's data segment.
+ *!   @value stack
+ *!     The maximum size of process stack, in bytes.
+ *!   @value core
+ *!
+ *!   @value rss
+ *!     Specifies the limit of pages the process's resident set.
+ *!   @value nproc
+ *!     The maximum number of processes that can be created for
+ *!     the real user ID of the calling process.
+ *!   @value nofile
+ *!     The maximum number of file descriptors the process can
+ *!     open, +1.
+ *!   @value memlock
+ *!     The maximum number of bytes of virtual memory that
+ *!     may be locked into RAM.
+ *!   @value as
+ *!   @value vmem
+ *! @endstring
+ *!
+ *! @returns
+ *! @array
+ *!   @elem int 0
+ *!     The soft limit for the resource.
+ *!     @expr{-1@} means no limit.
+ *!   @elem int 1
+ *!     The hard limit for the resource.
+ *!     @expr{-1@} means no limit.
+ *! @endarray
+ *!
+ *! @note
+ *!   This function nor all the resources are available on all systems.
+ *!
+ *! @seealso
+ *!   @[getrlimits], @[setrlimit]
+ */
 static void f_getrlimit(INT32 args)
 {
    struct rlimit rl;
@@ -1485,7 +2466,7 @@ static void f_getrlimit(INT32 args)
    if (!s_cpu) make_rlimit_strings();
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
-   if (sp[-args].type!=T_STRING) 
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("getrlimit",1,"string");
 
 #ifdef RLIMIT_CPU
@@ -1581,6 +2562,12 @@ static void f_getrlimit(INT32 args)
    f_aggregate(2);
 }
 
+/*! @decl mapping(string:array(int)) getrlimits()
+ *! Returns all process limits in a mapping.
+ *!
+ *! @seealso
+ *!   @[getrlimit], @[setrlimit]
+ */
 static void f_getrlimits(INT32 args)
 {
    int n=0;
@@ -1681,8 +2668,11 @@ static void f_getrlimits(INT32 args)
 #endif
 
 #ifdef HAVE_SETRLIMIT
-/* int(0..1) setrlimit(string resource, int cur, int max) */
-
+/*! @decl int(0..1) setrlimit(string resource, int soft, int hard)
+ *! Sets the @[soft] and the @[hard] process limit on a @[resource].
+ *! @seealso
+ *!   @[getrlimit], @[getrlimits]
+ */
 static void f_setrlimit(INT32 args)
 {
    struct rlimit rl;
@@ -1690,13 +2680,13 @@ static void f_setrlimit(INT32 args)
    if (!s_cpu) make_rlimit_strings();
    if (args<3)
       SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
-   if (sp[-args].type!=T_STRING) 
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("setrlimit",1,"string");
-   if (sp[1-args].type!=T_INT ||
+   if (TYPEOF(sp[1-args]) != T_INT ||
        sp[1-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
-   if (sp[2-args].type!=T_INT ||
-       sp[1-args].u.integer<-1) 
+   if (TYPEOF(sp[2-args]) != T_INT ||
+       sp[2-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
 
 #ifdef RLIM_INFINITY
@@ -1787,12 +2777,524 @@ static void f_setrlimit(INT32 args)
 }
 #endif
 
+#ifdef HAVE_SETPROCTITLE
+/*! @decl void setproctitle(string title, mixed ... extra)
+ *! Sets the processes title.
+ */
+void f_setproctitle(INT32 args)
+{
+  char *title;
+
+  if (args > 1) f_sprintf(args);
+  get_all_args("setproctitle", args, "%s", &title);
+  setproctitle("%s", title);
+  pop_stack();
+}
+#endif
+
+/*! @decl constant ITIMER_REAL
+ *!  Identifier for a timer that decrements in real time.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
+
+/*! @decl constant ITIMER_VIRTUAL
+ *!  Identifier for a timer that decrements only when the
+ *!  process is executing.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
+
+/*! @decl constant ITIMER_PROF
+ *!  Identifier for a timer that decrements both when the process
+ *!  is executing and when the system is executing on behalf of the
+ *!  process.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
+
+#ifdef HAVE_SETITIMER
+/*! @decl float setitimer(int timer, int|float value)
+ *! Sets the @[timer] to the supplied @[value]. Returns the
+ *! current timer interval.
+ *! @param timer
+ *!   One of @[ITIMER_REAL], @[ITIMER_VIRTUAL] and @[ITIMER_PROF].
+ */
+void f_system_setitimer(INT32 args)
+{
+   FLOAT_TYPE interval;
+   INT_TYPE what;
+   int res = 0;
+   struct itimerval itimer,otimer;
+
+   otimer.it_value.tv_usec=0;
+   otimer.it_value.tv_sec=0;
+
+   get_all_args("setitimer",args,"%+%F",&what,&interval);
+
+   if (interval<0.0)
+      SIMPLE_BAD_ARG_ERROR("setitimer",2,"positive or zero int or float");
+   else if (interval==0.0)
+      res=setitimer( (int)what,NULL,&otimer );
+   else
+   {
+      itimer.it_value.tv_usec=(int)((interval-(int)interval)*1000000);
+      itimer.it_value.tv_sec=(int)interval;
+      itimer.it_interval=itimer.it_value;
+
+      res=setitimer((int)what,&itimer,&otimer);
+   }
+
+   if (res==-1)
+   {
+      switch (errno)
+      {
+	 case EINVAL:
+	    Pike_error("setitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+	    break;
+	 default:
+	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+	    break;
+      }
+   }
+
+   pop_n_elems(args);
+   push_float(otimer.it_interval.tv_sec+otimer.it_interval.tv_usec*0.000001);
+}
+#endif
+
+#ifdef HAVE_GETITIMER
+/*! @decl array(float) getitimer(int timer)
+ *! Shows the state of the selected @[timer].
+ *!
+ *! @returns
+ *! @array
+ *!   @elem float 0
+ *!     The interval of the timer.
+ *!   @elem float 1
+ *!     The value of the timer.
+ *! @endarray
+ *!
+ *! @param timer
+ *!   One of @[ITIMER_REAL], @[ITIMER_VIRTUAL] and @[ITIMER_PROF].
+ */
+void f_system_getitimer(INT32 args)
+{
+   INT_TYPE what;
+   struct itimerval otimer;
+
+   otimer.it_value.tv_usec=0;
+   otimer.it_value.tv_sec=0;
+   otimer.it_interval.tv_usec=0;
+   otimer.it_interval.tv_sec=0;
+
+   get_all_args("getitimer",args,"%+",&what);
+
+   if (getitimer((int)what,&otimer)==-1)
+   {
+      switch (errno)
+      {
+	 case EINVAL:
+	    Pike_error("getitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+	    break;
+	 default:
+	    Pike_error("getitimer: unknown error (errno=%d)\n",errno);
+	    break;
+      }
+   }
+
+   pop_n_elems(args);
+   push_float(otimer.it_interval.tv_sec+otimer.it_interval.tv_usec*0.000001);
+   push_float(otimer.it_value.tv_sec+otimer.it_value.tv_usec*0.000001);
+   f_aggregate(2);
+}
+#endif
+
+#ifdef HAVE_NETINFO_NI_H
+/*! @decl array(string) get_netinfo_property(string domain, string path, @
+ *!                                          string property)
+ *!
+ *! Queries a NetInfo server for property values at the given path.
+ *!
+ *! @param domain
+ *!  NetInfo domain. Use "." for the local domain.
+ *! @param path
+ *!  NetInfo path for the property.
+ *! @param property
+ *!  Name of the property to return.
+ *! @returns
+ *!  An array holding all property values. If the @[path] or @[property]
+ *!  cannot be not found 0 is returned instead. If the NetInfo @[domain]
+ *!  is not found or cannot be queried an exception is thrown.
+ *!
+ *! @example
+ *!   system.get_netinfo_property(".", "/locations/resolver", "domain");
+ *!   ({ 
+ *!      "idonex.se"
+ *!   })
+ *!
+ *! @note
+ *!  Only available on operating systems which have NetInfo libraries
+ *!  installed.
+ */
+static void f_get_netinfo_property(INT32 args)
+{
+  char         *domain_str, *path_str, *prop_str;
+  void         *dom;
+  ni_id        dir;
+  ni_namelist  prop_list;
+  ni_status    res;
+  unsigned int i, num_replies;
+  
+  get_all_args("get_netinfo_property", args, "%s%s%s",
+	       &domain_str, &path_str, &prop_str);
+
+  /* open domain */
+  num_replies = 0;
+  res = ni_open(NULL, domain_str, &dom);
+  if (res == NI_OK) {
+    res = ni_pathsearch(dom, &dir, path_str);
+    if (res == NI_OK) {
+      res = ni_lookupprop(dom, &dir, prop_str, &prop_list);
+      if (res == NI_OK) {
+	for (i = 0; i < prop_list.ni_namelist_len; i++) {
+	  push_text(prop_list.ni_namelist_val[i]);
+	  num_replies++;
+	}
+	ni_namelist_free(&prop_list);
+      }
+    }
+    ni_free(dom);
+  } else {
+    Pike_error("get_netinfo_property: error: %s\n", ni_error(res));
+  }
+  
+  /* make array of all replies; missing properties or invalid directory
+     are simply returned as integer 0 */
+  if (res == NI_OK)
+    f_aggregate(num_replies);
+  else
+    push_int(0);
+  stack_pop_n_elems_keep_top (args);
+}
+#endif
+
+#ifdef HAVE_GETLOADAVG
+/*! @decl array(float) getloadavg()
+ *! Get system load averages.
+ *!
+ *! @returns
+ *! @array
+ *!   @elem float 0
+ *!     Load average over the last minute.
+ *!   @elem float 1
+ *!     Load average over the last 5 minutes.
+ *!   @elem float 2
+ *!     Load average over the last 15 minutes.
+ *! @endarray
+ */
+void f_system_getloadavg(INT32 args)
+{
+  double load[3] = { 0.0, 0.0, 0.0 };
+  int i;
+
+  pop_n_elems(args); // No args.
+
+  /* May return less than requested number of values */
+  if (getloadavg(load, 3) == -1) {
+    Pike_error("getloadavg failed.\n");
+  }
+  
+  for (i = 0; i <= 2; i++) {
+    push_float((FLOAT_TYPE)load[i]);
+  }
+  f_aggregate(3);
+}
+#endif // HAVE_GETLOADAVG
+
+#ifdef RDTSC
+
+/*! @decl int rdtsc()
+ *! Executes the rdtsc (clock pulse counter) instruction
+ *! and returns the result.
+ */
+
+static void f_rdtsc(INT32 args)
+{
+   INT64 tsc;
+   pop_n_elems(args);
+   RDTSC (tsc);
+   push_int64(tsc);
+}
+
+#endif
+
+
+#ifdef HAVE_GETTIMEOFDAY
+
+#ifndef HAVE_STRUCT_TIMEVAL
+struct timeval
+{
+  long tv_sec;
+  long tv_usec;
+};
+#endif
+
+/*! @decl array(int) gettimeofday()
+ *! Calls gettimeofday(); the result is an array of
+ *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
+ *! as given by the gettimeofday(2) system call 
+ *! (read the man page).
+ *!
+ *! @seealso
+ *!   @[time()], @[gethrtime()]
+ */
+
+static void f_gettimeofday(INT32 args)
+{
+   struct timeval tv;
+#ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+   struct timezone tz;
+#endif
+   pop_n_elems(args);
+   if (gettimeofday(&tv,&tz))
+      Pike_error("gettimeofday: gettimeofday failed, errno=%d\n",errno);
+   push_int(tv.tv_sec);
+   push_int(tv.tv_usec);
+#ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+   push_int(tz.tz_minuteswest);
+   push_int(tz.tz_dsttime);
+   f_aggregate(4);
+#else
+   f_aggregate(2);
+#endif
+}
+
+#endif
+
+/*! @decl constant string CPU_TIME_IS_THREAD_LOCAL
+ *!
+ *! This string constant tells whether or not the CPU time, returned
+ *! by e.g. @[gethrvtime], is thread local or not. The value is "yes"
+ *! if it is and "no" if it isn't. The value is also "no" if there is
+ *! no thread support.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant int CPU_TIME_RESOLUTION
+ *!
+ *! The resolution of the CPU time, returned by e.g. @[gethrvtime], in
+ *! nanoseconds. It is @expr{-1@} if the resolution isn't known.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant string CPU_TIME_IMPLEMENTATION
+ *!
+ *! This string constant identifies the internal interface used to get
+ *! the CPU time. It is an implementation detail - see rusage.c for
+ *! possible values and their meanings.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant string REAL_TIME_IS_MONOTONIC
+ *!
+ *! This string constant tells whether or not the high resolution real
+ *! time returned by @[gethrtime], is monotonic or not. The value is
+ *! "yes" if it is and "no" if it isn't.
+ *!
+ *! Monotonic time is not affected by clock adjustments that might
+ *! happen to keep the calendaric clock in synch. It's therefore more
+ *! suited to measure time intervals in programs.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
+ */
+
+/*! @decl constant int REAL_TIME_RESOLUTION
+ *!
+ *! The resolution of the real time returned by @[gethrtime], in
+ *! nanoseconds. It is @expr{-1@} if the resolution isn't known.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
+ */
+
+/*! @decl constant string REAL_TIME_IMPLEMENTATION
+ *!
+ *! This string constant identifies the internal interface used to get
+ *! the high resolution real time. It is an implementation detail -
+ *! see rusage.c for possible values and their meanings.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
+ */
+
+/*! @decl mapping(string:int) getrusage()
+ *!
+ *!   Return resource usage about the current process. An error is
+ *!   thrown if it isn't supported or if the system fails to return
+ *!   any information.
+ *!
+ *! @returns
+ *!   Returns a mapping describing the current resource usage:
+ *!   @mapping
+ *!     @member int "utime"
+ *!       Time in milliseconds spent in user code.
+ *!     @member int "stime"
+ *!       Time in milliseconds spent in system calls.
+ *!     @member int "maxrss"
+ *!       Maximum used resident size in kilobytes. [1]
+ *!     @member int "ixrss"
+ *!       Quote from GNU libc: An integral value expressed in
+ *!       kilobytes times ticks of execution, which indicates the
+ *!       amount of memory used by text that was shared with other
+ *!       processes. [1]
+ *!     @member int "idrss"
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for data.
+ *!       [1]
+ *!     @member int "isrss"
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for stack
+ *!       space. [1]
+ *!     @member int "minflt"
+ *!       Minor page faults, i.e. TLB misses which required no disk I/O.
+ *!     @member int "majflt"
+ *!       Major page faults, i.e. paging with disk I/O required.
+ *!     @member int "nswap"
+ *!       Number of times the process has been swapped out entirely.
+ *!     @member int "inblock"
+ *!       Number of block input operations.
+ *!     @member int "oublock"
+ *!       Number of block output operations.
+ *!     @member int "msgsnd"
+ *!       Number of IPC messsages sent.
+ *!     @member int "msgrcv"
+ *!       Number of IPC messsages received.
+ *!     @member int "nsignals"
+ *!       Number of signals received.
+ *!     @member int "nvcsw"
+ *!       Number of voluntary context switches (usually to wait for
+ *!       some service).
+ *!     @member int "nivcsw"
+ *!       Number of preemptions, i.e. context switches due to expired
+ *!       time slices, or when processes with higher priority were
+ *!       scheduled.
+ *!     @member int "sysc"
+ *!       Number of system calls. [2]
+ *!     @member int "ioch"
+ *!       Number of characters read and written. [2]
+ *!     @member int "rtime"
+ *!       Elapsed real time (ms). [2]
+ *!     @member int "ttime"
+ *!       Elapsed system trap (system call) time (ms). [2]
+ *!     @member int "tftime"
+ *!       Text page fault sleep time (ms). [2]
+ *!     @member int "dftime"
+ *!       Data page fault sleep time (ms). [2]
+ *!     @member int "kftime"
+ *!       Kernel page fault sleep time (ms). [2]
+ *!     @member int "ltime"
+ *!       User lock wait sleep time (ms). [2]
+ *!     @member int "slptime"
+ *!       Other sleep time (ms). [2]
+ *!     @member int "wtime"
+ *!       Wait CPU (latency) time (ms). [2]
+ *!     @member int "stoptime"
+ *!       Time spent in stopped (suspended) state. [2]
+ *!     @member int "brksize"
+ *!       Heap size. [3]
+ *!     @member int "stksize"
+ *!       Stack size. [3]
+ *!   @endmapping
+ *!
+ *! @note
+ *!   [1] Not if /proc rusage is used.
+ *!
+ *!   [2] Only from (Solaris?) /proc rusage.
+ *!
+ *!   [3] Only from /proc PRS usage.
+ *!
+ *!   On some systems, only utime will be filled in.
+ *!
+ *! @seealso
+ *!   @[gethrvtime()]
+ */
+
+static void f_getrusage(INT32 args)
+{
+   pike_rusage_t rusage_values;
+   int n=0;
+
+   if (!pike_get_rusage(rusage_values))
+     PIKE_ERROR("System.getrusage",
+		"System usage information not available.\n", Pike_sp, args);
+
+   pop_n_elems(args);
+   
+   push_text("utime");      push_int(rusage_values[n++]);
+   push_text("stime");      push_int(rusage_values[n++]);
+   push_text("maxrss");     push_int(rusage_values[n++]);
+   push_text("ixrss");      push_int(rusage_values[n++]);
+   push_text("idrss");      push_int(rusage_values[n++]);
+   push_text("isrss");      push_int(rusage_values[n++]);
+   push_text("minflt");     push_int(rusage_values[n++]);
+   push_text("majflt");     push_int(rusage_values[n++]);
+   push_text("nswap");      push_int(rusage_values[n++]);
+   push_text("inblock");    push_int(rusage_values[n++]);
+   push_text("oublock");    push_int(rusage_values[n++]);
+   push_text("msgsnd");     push_int(rusage_values[n++]);
+   push_text("msgrcv");     push_int(rusage_values[n++]);
+   push_text("nsignals");   push_int(rusage_values[n++]);
+   push_text("nvcsw");      push_int(rusage_values[n++]);
+   push_text("nivcsw");     push_int(rusage_values[n++]);
+   push_text("sysc");       push_int(rusage_values[n++]);
+   push_text("ioch");       push_int(rusage_values[n++]);
+   push_text("rtime");      push_int(rusage_values[n++]);
+   push_text("ttime");      push_int(rusage_values[n++]);
+   push_text("tftime");     push_int(rusage_values[n++]);
+   push_text("dftime");     push_int(rusage_values[n++]);
+   push_text("kftime");     push_int(rusage_values[n++]);
+   push_text("ltime");      push_int(rusage_values[n++]);
+   push_text("slptime");    push_int(rusage_values[n++]);
+   push_text("wtime");      push_int(rusage_values[n++]);
+   push_text("stoptime");   push_int(rusage_values[n++]);
+   push_text("brksize");    push_int(rusage_values[n++]);
+   push_text("stksize");    push_int(rusage_values[n++]);
+
+   f_aggregate_mapping(n*2);
+}
+
+#ifdef HAVE_DAEMON
+/*! @decl int daemon(int nochdir, int noclose)
+ *! Low level system daemon() function, see also @[Process.daemon()]
+ */
+void f_daemon(INT32 args)
+{
+   INT_TYPE a, b;
+   get_all_args("daemon", args, "%i%i", &a, &b);
+   push_int( daemon( a, b) );
+}
+#endif /* HAVE_DAEMON */
+
+/*! @endmodule
+ */
+
 /*
  * Module linkage
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_init(&gethostbyname_mutex);
+#endif
   /*
    * From this file:
    */
@@ -1814,12 +3316,12 @@ void pike_module_init(void)
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
-#ifdef HAVE_RESOLVEPATH
+#if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
   
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
-#endif /* HAVE_RESOLVEPATH */
+#endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
   /* function(int|void:int) */
   ADD_EFUN("umask", f_umask, tFunc(tOr(tInt,tVoid),tInt), OPT_SIDE_EFFECT);
@@ -1828,18 +3330,23 @@ void pike_module_init(void)
 /* function(string, int:void) */
   ADD_EFUN("chmod", f_chmod,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chmod", f_chmod,tFunc(tStr tInt,tVoid), 0, OPT_SIDE_EFFECT);
+
 #ifdef HAVE_CHOWN
-  
-/* function(string, int, int:void) */
-  ADD_EFUN("chown", f_chown,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("chown", f_chown,tFunc(tStr tInt tInt,tVoid), 0, OPT_SIDE_EFFECT);
+  ADD_EFUN("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+		0, OPT_SIDE_EFFECT);
 #endif
 
-#ifdef HAVE_UTIME
-  
-/* function(string, int, int:void) */
-  ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt,tVoid), 0, OPT_SIDE_EFFECT);
+#if defined (HAVE_UTIME) || defined (HAVE__UTIME)
+  ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+		0, OPT_SIDE_EFFECT);
+#endif
+
+#ifdef HAVE_SYNC
+  ADD_FUNCTION2("sync", f_sync, tFunc(tNone, tVoid), 0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_INITGROUPS
@@ -1868,7 +3375,7 @@ void pike_module_init(void)
 #ifdef HAVE_INNETGR
 /* function(string, string|void, string|void, string|void:int) */
   ADD_EFUN("innetgr", f_innetgr,
-	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
+	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
 	   OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("innetgr", f_innetgr,
 	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
@@ -1876,13 +3383,13 @@ void pike_module_init(void)
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
   
-/* function(int:void) */
+/* function(int:int) */
   ADD_EFUN("setuid", f_setuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setuid", f_setuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETGID
   
-/* function(int:void) */
+/* function(int:int) */
   ADD_EFUN("setgid", f_setgid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgid", f_setgid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
@@ -1936,7 +3443,7 @@ void pike_module_init(void)
  
   
 /* function(:int) */
-  ADD_EFUN("getpid", f_getpid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
+/* Also available as efun */
   ADD_FUNCTION2("getpid", f_getpid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
   
@@ -1954,8 +3461,10 @@ void pike_module_init(void)
 #endif /* HAVE_GETPGRP */
 
 #ifdef HAVE_SETPGRP
-  ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt), OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("setpgrp", f_setpgrp, tFunc(tNone, tInt), 0, OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("setpgrp", f_setpgrp, tFunc(tNone, tInt), 0,
+		OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_GETSID
@@ -1966,8 +3475,15 @@ void pike_module_init(void)
 #endif
 
 #ifdef HAVE_SETSID
-  ADD_EFUN("setsid", f_setsid, tFunc(tNone, tInt),  OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("setsid", f_setsid, tFunc(tNone, tInt), 0, OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("setsid", f_setsid, tFunc(tNone, tInt),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("setsid", f_setsid, tFunc(tNone, tInt), 0,
+		OPT_SIDE_EFFECT);
+#endif
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+  ADD_FUNCTION2("dumpable", f_dumpable, tFunc(tOr(tInt01, tVoid), tInt01),
+		0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_GETRLIMIT
@@ -1979,16 +3495,19 @@ void pike_module_init(void)
 #endif
 #ifdef HAVE_SETRLIMIT
   ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01), 
-		0, OPT_EXTERNAL_DEPEND);
+		0, OPT_SIDE_EFFECT);
 #endif
-
+#ifdef HAVE_SETPROCTITLE
+  ADD_FUNCTION2("setproctitle", f_setproctitle, tFuncV(tString, tMix, tVoid),
+                0, OPT_SIDE_EFFECT);
+#endif
 #ifdef HAVE_CHROOT 
   
 /* function(string|object:int) */
   ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 
-           OPT_EXTERNAL_DEPEND);
+           OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 0,
-           OPT_EXTERNAL_DEPEND);
+           OPT_SIDE_EFFECT);
 #endif /* HAVE_CHROOT */
  
 #if defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
@@ -2009,15 +3528,15 @@ void pike_module_init(void)
   
 /* function(string:array) */
   ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tArray), 0,
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   
 /* function(string:array) */
   ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray), 0,
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
 #endif /* GETHOST_DECLARE */
 
   /*
@@ -2026,28 +3545,100 @@ void pike_module_init(void)
 #ifdef HAVE_SYSLOG
   
 /* function(string,int,int:void) */
-  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
+  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
   
 /* function(int,string:void) */
-  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
+  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
   
 /* function(:void) */
-  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), 0);
+  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);
 #endif /* HAVE_SYSLOG */
 
 #ifdef HAVE_SLEEP
   ADD_FUNCTION("sleep",f_system_sleep,tFunc(tInt,tInt), 0);
 #endif /* HAVE_SLEEP */
+#ifdef HAVE_USLEEP
+  ADD_FUNCTION("usleep",f_system_usleep,tFunc(tInt,tVoid), 0);
+#endif /* HAVE_SLEEP */
+#ifdef HAVE_NANOSLEEP
+  ADD_FUNCTION("nanosleep",f_system_nanosleep,
+	       tFunc(tOr(tInt,tFloat),tFloat), 0);
+#endif /* HAVE_SLEEP */
+
+/* there is always a pike_get_rusage */
+  ADD_FUNCTION("getrusage", f_getrusage,
+	       tFunc(tNone, tMap(tStr,tInt)), 0);
+
+#ifdef ITIMER_TYPE_IS_02
+#define tITimer tInt02
+#else
+#define tITimer tInt
+#endif
+
+#ifdef HAVE_SETITIMER
+  ADD_FUNCTION("setitimer",f_system_setitimer,
+	       tFunc(tITimer tOr(tIntPos,tFloat),tFloat),0);
+#ifdef ITIMER_REAL
+   ADD_INT_CONSTANT("ITIMER_REAL",ITIMER_REAL,0);
+#endif
+#ifdef ITIMER_VIRTUAL
+   ADD_INT_CONSTANT("ITIMER_VIRTUAL",ITIMER_VIRTUAL,0);
+#endif
+#ifdef ITIMER_PROF
+   ADD_INT_CONSTANT("ITIMER_PROF",ITIMER_PROF,0);
+#endif
+
+#ifdef HAVE_GETITIMER
+  ADD_FUNCTION("getitimer",f_system_getitimer,
+	       tFunc(tITimer,tArr(tFloat)),0);
+#endif
+#endif
+
+#ifdef RDTSC
+  ADD_FUNCTION("rdtsc",f_rdtsc,
+	       tFunc(tNone,tInt),0);
+#endif
+#ifdef HAVE_GETTIMEOFDAY
+  ADD_FUNCTION("gettimeofday",f_gettimeofday,
+	       tFunc(tNone,tArr(tInt)),0);
+#endif
+
+  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL",
+		       cpu_time_is_thread_local ? "yes" : "no", 0);
+  add_string_constant ("CPU_TIME_IMPLEMENTATION", get_cpu_time_impl, 0);
+  add_integer_constant ("CPU_TIME_RESOLUTION", get_cpu_time_res(), 0);
+
+  add_string_constant ("REAL_TIME_IS_MONOTONIC",
+		       real_time_is_monotonic ? "yes" : "no", 0);
+  add_string_constant ("REAL_TIME_IMPLEMENTATION", get_real_time_impl, 0);
+  add_integer_constant ("REAL_TIME_RESOLUTION", get_real_time_res(), 0);
+
+#ifdef HAVE_NETINFO_NI_H
+  /* array(string) get_netinfo_property(string domain, string path,
+                                        string property) */
+  ADD_FUNCTION("get_netinfo_property", f_get_netinfo_property,
+	       tFunc(tStr tStr tStr, tArray), 0);
+#endif /* NETINFO */
+
+#ifdef HAVE_GETLOADAVG
+  ADD_FUNCTION("getloadavg", f_system_getloadavg, tFunc(tNone,tArr(tFloat)), 0);
+#endif
 
   init_passwd();
+  init_system_memory();
 
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
   dmalloc_accept_leak(add_to_callback(& fork_child_callback,
 				      cleanup_after_fork, 0, 0));
 #endif
+
+#ifdef HAVE_DAEMON
+  ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
+                0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_DAEMON */
 
 #ifdef __NT__
   {
@@ -2060,7 +3651,7 @@ void pike_module_init(void)
 #include "add-errnos.h"
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef __NT__
   {
@@ -2068,4 +3659,53 @@ void pike_module_exit(void)
     exit_nt_system_calls();
   }
 #endif
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_destroy(&gethostbyname_mutex);
+#endif
+#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
+  if (s_cpu) {
+    free_string(s_cpu);
+    s_cpu=NULL;
+  }
+  if (s_fsize) {
+    free_string(s_fsize);
+    s_fsize=NULL;
+  }
+  if (s_data) {
+    free_string(s_data);
+    s_data=NULL;
+  }
+  if (s_stack) {
+    free_string(s_stack);
+    s_stack=NULL;
+  }
+  if (s_core) {
+    free_string(s_core);
+    s_core=NULL;
+  }
+  if (s_rss) {
+    free_string(s_rss);
+    s_rss=NULL;
+  }
+  if (s_nproc) {
+    free_string(s_nproc);
+    s_nproc=NULL;
+  }
+  if (s_nofile) {
+    free_string(s_nofile);
+    s_nofile=NULL;
+  }
+  if (s_memlock) {
+    free_string(s_memlock);
+    s_memlock=NULL;
+  }
+  if (s_as) {
+    free_string(s_as);
+    s_as=NULL;
+  }
+  if (s_vmem) {
+    free_string(s_vmem);
+    s_vmem=NULL;
+  }
+#endif /* HAVE_GETRLIMIT || HAVE_SETRLIMIT */
 }

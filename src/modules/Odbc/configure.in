@@ -1,6 +1,4 @@
 #
-# $Id: configure.in,v 1.23 2000/09/14 17:43:52 grubba Exp $
-#
 # Configure script for the odbc-module
 #
 # Henrik Grubbström
@@ -18,8 +16,19 @@ OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
 
 AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[with_odbc=yes])
+AC_ARG_WITH(odbc_implicit_commit,
+		   [  --with-odbc-implicit-commit    implicitly commit statements (discouraged)])
+
+if test "x$with_odbc_implicit_commit" = xyes; then
+  AC_MSG_WARN([Enabling implicit commit])
+  AC_DEFINE(ENABLE_IMPLICIT_COMMIT)
+fi
+
+PIKE_FEATURE_WITHOUT(Odbc)
 
 if test x$with_odbc = xyes; then
+  PIKE_FEATURE_NODEP(Odbc)
+
   if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
     AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
 
@@ -27,6 +36,7 @@ if test x$with_odbc = xyes; then
       AC_DEFINE(HAVE_ODBC)
       LIBS="-lodbc32 $LIBS"
       pike_cv_odbc=yes
+
       cat <<EOF
 
 ODBC support enabled.
@@ -50,12 +60,14 @@ EOF
   
       # MIMER doesn't include the odbc header files.
   
-      for bardir in $foodir /opt/*odbc/*/include \
-  	  /usr/opt/*odbc/*/include /opt/*odbc/include /usr/opt/*odbc/include \
-  	  /usr/local/include /usr/local/odbc/include /usr/local/include/odbc \
-  	  /usr/local/mysql/include /usr/local/mysql/include/mysql \
-  	  /usr/odbc/include /usr/include/odbc /usr/include \
-  	  /include/odbc /include; do
+      for bardir in $foodir $with_root/opt/*odbc/*/include \
+  	  $with_root/usr/opt/*odbc/*/include $with_root/opt/*odbc/include \
+	  $with_root/usr/opt/*odbc/include $with_root/usr/local/include \
+	  $with_root/usr/local/odbc/include $with_root/usr/local/include/odbc \
+  	  $with_root/usr/local/mysql/include \
+	  $with_root/usr/local/mysql/include/mysql \
+  	  $with_root/usr/odbc/include $with_root/usr/include/odbc \
+          $with_root/usr/include $with_root/include/odbc $with_root/include; do
   	if test -d $bardir/.; then
   	  if ls $bardir/qeodbc.h >/dev/null 2>&1; then
   	    pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
@@ -96,10 +108,12 @@ EOF
   	foodir=$INFORMIXDIR/cli/dlls
       fi
   
-      for bardir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
-  	  /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib \
-          /usr/local/odbc/lib /usr/local/lib/odbc /usr/odbc/lib \
-          /usr/lib/odbc /usr/lib /lib/odbc /lib; do
+      for bardir in $foodir $with_root/opt/*odbc/*/lib \
+	  $with_root/usr/opt/*odbc/*/lib $with_root/opt/*odbc/lib \
+	  $with_root/usr/opt/*odbc/lib $with_root/usr/local/lib \
+          $with_root/usr/local/odbc/lib $with_root/usr/local/lib/odbc \
+	  $with_root/usr/odbc/lib $with_root/usr/lib/odbc $with_root/usr/lib \
+	  $with_root/lib/odbc $with_root/lib; do
   	if test -d $bardir/.; then
   	  if ls $bardir/*odbc* >/dev/null 2>&1 ; then
   	    pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
@@ -126,6 +140,8 @@ EOF
     pike_cv_odbc=no;
   
     if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
+  
+      AC_CHECK_LIB(iodbcinst, SQLGetConfigMode)
   
       AC_CHECK_LIB(iodbc, SQLConnect, [
   	LIBS="-liodbc $LIBS"
@@ -207,8 +223,10 @@ EOF
 
   if test "x$pike_cv_odbc" = "xyes"; then
 
+    PIKE_FEATURE_OK(Odbc)
+
     define(PIKE_CHECK_ODBC_TYPEDEF, [
-      AC_CHECKING(if the typedef $1 exists.)
+      AC_MSG_CHECKING([if the typedef $1 exists])
       AC_CACHE_VAL(pike_cv_have_$1, [
         AC_TRY_COMPILE([
 #ifdef HAVE_ISQL_H
@@ -258,6 +276,9 @@ EOF
     PIKE_CHECK_ODBC_TYPEDEF(SQLUINTEGER)
     PIKE_CHECK_ODBC_TYPEDEF(SQLLEN)
     PIKE_CHECK_ODBC_TYPEDEF(SQLULEN)
+    PIKE_CHECK_ODBC_TYPEDEF(SQLHENV)
+    PIKE_CHECK_ODBC_TYPEDEF(SQLHDBC)
+    PIKE_CHECK_ODBC_TYPEDEF(SQLHSTMT)
   else :; fi
 else
   :

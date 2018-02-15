@@ -1,19 +1,17 @@
 #pike __REAL_VERSION__
 
-import ".";
-
-static string flat(string s)
+protected string flat(string s)
 {
    return replace(lower_case(s),
 		  "àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ'- "/1,
 		  "aaaaaaeceeeeiiiidnoooooouuuuyty"/1+({""})*3);
 }
 
-static class _language_base
+protected class _language_base
 {
-   inherit Ruleset.Language;
+   inherit Calendar.Rule.Language;
 
-   static mapping events_translate=0;
+   protected mapping events_translate=0;
 
    string translate_event(string name)
    {
@@ -22,38 +20,34 @@ static class _language_base
    }
 }
 
-static string roman_number(int m)
+protected string roman_number(int m)
 {
-  string res="";
-  if (m<0) return "["+m+"]";
-  if (m==0) return "O";
-  if (m>100000) return "["+m+"]";
-  while (m>999) { res+="M"; m-=1000; }
-  if (m>899) { res+="CM"; m-=900; }
-  else if (m>499) { res+="D"; m-=500; }
-  else if (m>399) { res+="CD"; m-=400; }
-  while (m>99) { res+="C"; m-=100; }
-  if (m>89) { res+="XC"; m-=90; }
-  else if (m>49) { res+="L"; m-=50; }
-  else if (m>39) { res+="XL"; m-=40; }
-  while (m>9) { res+="X"; m-=10; }
-  if (m>8) return res+"IX";
-  else if (m>4) { res+="V"; m-=5; }
-  else if (m>3) return res+"IV";
-  while (m) { res+="I"; m--; }
-  return res;
+  if      (m<0)      return "["+m+"]";
+  if      (m==0)     return "O";
+  if      (m>100000) return "["+m+"]";
+  return String.int2roman(m);
 }
 
-static class _ymd_base
+protected class _ymd_base
 {
    inherit _language_base;
 
-   static mapping(int:string) month_n2s;
-   static mapping(int:string) month_n2ss;
-   static mapping(string:int) month_s2n;
-   static mapping(int:string) week_day_n2s;
-   static mapping(int:string) week_day_n2ss;
-   static mapping(string:int) week_day_s2n;
+   protected mapping(int:string) month_n2s;
+   protected mapping(int:string) month_n2ss;
+   protected mapping(string:int) month_s2n;
+   protected mapping(int:string) week_day_n2s;
+   protected mapping(int:string) week_day_n2ss;
+   protected mapping(string:int) week_day_s2n;
+
+   string name()
+   {
+     //  Perform the inverse operation to the `[] method below. We don't
+     //  care about normalizing the name among several aliases.
+     string cls = function_name(object_program(this));
+     if (has_prefix(cls, "c"))
+       return lower_case(cls[1..]);
+     return 0;
+   }
 
    string month_name_from_number(int n)
    {
@@ -323,6 +317,144 @@ static class _ymd_base
       if (y<1) return sprintf("%d BH",1-y);
       return sprintf("%d AH",y);
    }
+
+//badi defaults (baha'i calendar)
+
+   string badi_month_name_from_number(int n)
+   {
+     // Ayyám-i-Há is not a month but the period of 4-5 days before the last
+     // month. it is here at 0 to distinguish it from regular months. 
+     return ({ "Ayyám-i-Há", "Bahá", "Jalál", "Jamál", "'Azamat", "Núr",
+               "Rahmat", "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat",
+               "'Ilm", "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
+               "'Alá" })[n];
+   }
+
+   string badi_month_shortname_from_number(int n)
+   {
+     // i have no idea how to abbreviate these, am just guessing here
+     return ({ "Ah", "Bh", "Jl", "Jm", "Az", "Nr", "Rh", "Kl", "Km", "Am", "Iz",
+                  "Msh", "Ilm", "Qd", "Qw", "Ms", "Shr", "Sl", "Ml", "Al"})[n];
+   }
+
+   int badi_month_number_from_name(string n)
+   {
+     return ([ "Bahá":1,       "Baha":1,       "Bh":1,      "Bh":1,      
+               "Jalál":2,      "Jalal":2,      "Jll":2,     "Jl":2, 
+               "Jamál":3,      "Jamal":3,      "Jml":3,     "Jm":3, 
+               "'Azamat":4,    "Azamat":4,     "Azmt":4,    "Az":4, 
+               "Núr":5,        "Nur":5,        "Nr":5,      "Nr":5,
+               "Rahmat":6,     "Rahmat":6,     "Rhmt":6,    "Rh":6, 
+               "Kalimát":7,    "Kalimat":7,    "Klmt":7,    "Kl":7, 
+               "Kamál":8,      "Kamal":8,      "Kml":8,     "Km":8, 
+               "Asmá":9,       "Asma":9,       "Am":9,      "Am":9, 
+               "'Izzat":10,    "Izzat":10,     "Izzt":10,   "Iz":10, 
+               "Mashíyyat":11, "Mashiyyat":11, "Mshyyt":11, "Msh":11,
+               "'Ilm":12,      "Ilm":12,       "Ilm":12,    "Ilm":12, 
+               "Qudrat":13,    "Qudrat":13,    "Qdrt":13,   "Qd":13, 
+               "Qawl":14,      "Qawl":14,      "Qwl":14,    "Qw":14, 
+               "Masá'il":15,   "Masail":15,    "Msl":15,    "Ms":15, 
+               "Sharaf":16,    "Sharaf":16,    "Shrf":16,   "Shr":16, 
+               "Sultán":17,    "Sultan":17,    "Sltn":17,   "Sl":17, 
+               "Mulk":18,      "Mulk":18,      "Mlk":18,    "Ml":18,
+               "'Alá":19,      "Ala":19,       "Al":19,     "Al":19,    
+             ])[n];
+   }
+
+   string badi_month_day_name_from_number(int n)
+   {
+     return sprintf("%d", (n>19?n-19:n));
+   }
+
+   string badi_month_day_longname_from_number(int n)
+   {
+     // month day names are the same as month names
+     array names= ({ "Bahá", "Jalál", "Jamál", "'Azamat", "Núr", "Rahmat",
+                     "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat", "'Ilm",
+                     "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
+                     "'Alá", "", "", "", "", "" });
+     // not sure if the number should be included here
+     return sprintf("%d (%s)", (n>19?n-19:n), names[n-1]);
+   }
+
+   string badi_week_day_shortname_from_number(int n)
+   {
+     // i have no idea how to abbreviate these, am just guessing here
+     // see badi_week_day_number_from_name for more guesses
+     return ({ 0,  "Jl", "Jm", "Km", "Fd", "Id", 
+                   "Ij", "Iq" })[n];
+   }
+
+   int badi_week_day_number_from_name(string n)
+   {
+     return([ "Jalál":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,   
+              "Jamál":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,   
+              "Kamál":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,   
+              "Fidál":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,   
+              "'Idál":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,    
+              "Istijlál":6, "Istijlal":6, "Itj":6, "Ij":6, "Istjll":6,
+              "Istiqlál":7, "Istiqlal":7, "Itq":7, "Iq":7, "Istqll":7,
+            ])[n];
+   }
+
+   string badi_week_day_name_from_number(int n)
+   {
+     return({ 0,  "Jalál", "Jamál", "Kamál", "Fidál", "'Idál", 
+                  "Istijlál", "Istiqlál" })[n];
+   }
+
+   string badi_year_name_from_number(int y)
+   {
+     array vahid=({ "Alif", "Bá", "Ab", "Dál", "Báb", "Váv", "Abad", "Jád",
+                    "Bahá", "Hubb", "Bahháj", "Javáb", "Ahad", "Vahháb",
+                    "Vidád", "Badí", "Bahí", "Abhá", "Váhid" });
+     if (y<1) 
+       return sprintf("%d BB",1-y);                // ? before Baha'i?
+     return sprintf("%d BE (%s)", y, vahid[y%19-1]); // Baha'i Era
+     // Váhid is a cycle of 19years with each year having a name.
+     // there is also the period of Kull-i-Shay which is 19 cycles of Váhid
+   }
+
+   int badi_year_number_from_name(string name)
+   {
+      mapping vahid=([ "Alif":1,    "Alif":1,   
+                       "Bá":2,      "Ba":2, 
+                       "Ab":3,      "Ab":3, 
+                       "Dál":4,     "Dal":4, 
+                       "Báb":5,     "Bab":5, 
+                       "Váv":6,     "Vav":6,
+                       "Abad":7,    "Abad":7, 
+                       "Jád":8,     "Jad":8, 
+                       "Bahá":9,    "Baha":9, 
+                       "Hubb":10,   "Hubb":10, 
+                       "Bahháj":11, "Bahhaj":11,
+                       "Javáb":12,  "Javab":12, 
+                       "Ahad":13,   "Ahad":13, 
+                       "Vahháb":14, "Vahhab":14,
+                       "Vidád":15,  "Vidad":15, 
+                       "Badí":16,   "Badi":16, 
+                       "Bahí":17,   "Bahi":17, 
+                       "Abhá":18,   "Abha":18, 
+                       "Váhid":19,  "Vahid":19,    
+                    ]);
+
+      if(vahid[name])
+        return vahid[name];
+
+      int y;
+      string x;
+      if (sscanf(name,"%*s%d%*[ ]B%[BE]%*s",y,x)==1 || x=="") 
+	 return y>=0?y:y+1; // "-1" == integer year 0
+      if(stringp(x))
+        x-=" ";
+      switch (x)
+      {
+	 case "E": return y; 
+	 case "B": return -y+1;
+	 default:
+	    error("Can't understand year.\n");
+      }
+   }
 }
 
 // ----------------------------------------------------------------
@@ -345,12 +477,33 @@ static class _ymd_base
 		   enumerate(7,1,1))					\
 	 | mkmapping(map(week_day_names,flat),enumerate(7,1,1))
 
-// ----------------------------------------------------------------
+#define SETUPSTUFF2							\
+      month_n2s=mkmapping(enumerate(12,1,1),month_names);		\
+      month_n2ss= 							\
+	 mkmapping(enumerate(12,1,1),short_month_names);	\
+      month_s2n=							\
+	 mkmapping(map(short_month_names,flat),	\
+		   enumerate(12,1,1))					\
+	 | mkmapping(map(month_names,flat),enumerate(12,1,1));	\
+      week_day_n2s= mkmapping(enumerate(7,1,1),week_day_names);		\
+      week_day_n2ss= mkmapping(enumerate(7,1,1),			\
+			       short_week_day_names);	\
+      week_day_s2n= 							\
+	 mkmapping(map(short_week_day_names,flat),	\
+		   enumerate(7,1,1))					\
+	 | mkmapping(map(week_day_names,flat),enumerate(7,1,1))
+
+
+
+
+// ========================================================================
+
+
+
 // now the real classes:
 
 // this should probably be called UK_en or something:
 
-constant cENGLISH=cISO;
 class cISO
 {
    inherit _ymd_base;
@@ -362,7 +515,7 @@ class cISO
    constant week_day_names=
    ({"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -386,23 +539,25 @@ class cISO
       return (string)y;
    }
 };
+constant cENGLISH=cISO;
+constant cENG=cISO;
+constant cEN=cISO;
 
 // swedish (note: all name as cLANG where LANG is in caps)
 
-constant cSE_SV=cSWEDISH;
 class cSWEDISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"januari","februari","mars","april","maj","juni","juli","augusti",
      "september","oktober","november","december"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"måndag","tisdag","onsdag","torsdag",
      "fredag","lördag","söndag"});
 
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":		"Nyårsdagen",
       "Epiphany":		"Trettondag jul",
@@ -415,6 +570,7 @@ class cSWEDISH
       "Annunciation":		"Marie bebådelsedag",
       "Labor Day":		"Första maj",
       "Sweden's Flag Day":	"Svenska flaggans dag",
+      "National Day":		"Nationaldagen",
       "St. John the Baptist":	"Johannes Döpares dag",
       "Crown Princess' Birthday":"H K M Kronprinsessans födelsedag",
       "Queen's Nameday":	"H K M Drottningens namnsdag",
@@ -460,7 +616,7 @@ class cSWEDISH
 //	"Valborgsmässoafton"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -482,39 +638,44 @@ class cSWEDISH
       return (string)y;
    }
 }
+constant cSE_SV=cSWEDISH;
+constant cSV=cSWEDISH;
+constant cSWE=cSWEDISH;
 
 // austrian
-// Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
+// source: Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
 class cAUSTRIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
       ({"jänner","feber","märz","april","mai","juni","juli","august",
         "september","oktober","november","dezember"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
       ({"montag","dienstag","mittwoch","donnerstag",
         "freitag","samstag","sonntag"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
+constant cDE_AT=cAUSTRIAN; // this is a german dialect, appearantly
 
 // Welsh
+// source: book
 
 class cWELSH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"ionawr","chwefror","mawrth","ebrill","mai","mehefin",
      "gorffenaf","awst","medi","hydref","tachwedd","rhagfyr"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"Llun","Mawrth","Mercher","Iau","Gwener","Sadwrn","Sul"});
 
    string week_day_name_from_number(int n)
@@ -528,11 +689,13 @@ class cWELSH
       return week_day_number_from_name(name);
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
+constant cCY=cWELSH;
+constant cCYM=cWELSH;
 
 // Spanish
 // Julio César Gázquez <jgazquez@dld.net>
@@ -541,16 +704,16 @@ class cSPANISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"enero","febrero","marzo","abril","mayo","junio",
      "julio","agosto","setiembre","octubre","noviembre","diciembre"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"lunes","martes","miércoles","jueves",
      "viernes","sábado","domingo"});
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "Epiphany":"Día de Reyes", // Epifania
       "Malvinas Day":"Día de las Malvinas",
@@ -573,11 +736,13 @@ class cSPANISH
       "Corpus Christi":"Corpus Christi"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
+constant cES=cSPANISH;
+constant cSPA=cSPANISH;
 
 // portugese
 // source: Sérgio Araújo <sergio@projecto-oasis.cx>
@@ -586,7 +751,7 @@ class cPORTUGESE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Janeiro",
       "Fevereiro",
@@ -602,7 +767,7 @@ class cPORTUGESE
       "Dezembro",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Segunda-feira", // -feira is removed for the short version
       "Terça-feira",   // don't know how it's used
@@ -614,7 +779,7 @@ class cPORTUGESE
    });
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":"Ano Novo",
       "Good Friday":"Sexta-Feira Santa",
@@ -630,28 +795,32 @@ class cPORTUGESE
       "Christmas":"Natal"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
+constant cPT=cPORTUGESE; // Portugese (Brasil)
+constant cPOR=cPORTUGESE;
 
 // Hungarian
 // Csongor Fagyal <concept@conceptonline.hu>
 
+constant cHU=cHUNGARIAN;
+constant cHUN=cHUNGARIAN;
 class cHUNGARIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"Január","Február","Március","Április","Május","Június",
      "Július","August","September","October","November","December"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"Hétfo","Kedd","Szerda","Csütörtkök","Péntek","Szombat","Vasárnap"});
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":"Úb év ünnepe",
       "1848 Revolution Day":"Az 'Az 1848-as Forradalom Napja",
@@ -665,23 +834,26 @@ class cHUNGARIAN
       "Christmas":"Christmas",
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
 
 // Modern Latin
+// source: book
 
+constant cLA=cLATIN;
+constant cLAT=cLATIN;
 class cLATIN
 {
    inherit _ymd_base;
 
-   static array(string) month_names=
+   protected array(string) month_names=
    ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius", 
      "Iulius", "Augustus", "September", "October", "November", "December" });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"lunae","Martis","Mercurii","Jovis","Veneris","Saturni","solis"});
 
    string week_day_name_from_number(int n)
@@ -706,19 +878,20 @@ class cLATIN
       return sprintf("anno ab Incarnatione Domini %s",roman_number(y));
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
 }
 
 // Roman latin
+// source: calendar FAQ + book
 
 class cROMAN
 {
    inherit cLATIN;
 
-   static array(string) month_names=
+   protected array(string) month_names=
    ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
      "Quintilis", // Iulius
      "Sextilis",  // Augustus
@@ -747,22 +920,1308 @@ class cROMAN
 }
 
 
+// source: anonymous unix locale file
+
+constant cKL=cGREENLANDIC; // Greenlandic 
+constant cKAL=cGREENLANDIC;
+class cGREENLANDIC
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "januari",
+      "februari",
+      "martsi",
+      "aprili",
+      "maji",
+      "juni",
+      "juli",
+      "augustusi",
+      "septemberi",
+      "oktoberi",
+      "novemberi",
+      "decemberi",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "ataasinngorneq",
+      "marlunngorneq",
+      "pingasunngorneq",
+      "sisamanngorneq",
+      "tallimanngorneq",
+      "arfininngorneq",
+      "sabaat",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cIS=cICELANDIC; // Icelandic 
+constant cISL=cICELANDIC;
+class cICELANDIC
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Januar",
+      "Februar",
+      "Mars",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "Agust",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Manudagur",
+      "Tridjudagur",
+      "Midvikudagur",
+      "Fimmtudagur",
+      "Föstudagur",
+      "Laugardagur",
+      "Sunnudagur",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cFA=cPERSIAN; // Persian (Iran)
+constant cFAS=cPERSIAN;
+class cPERSIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "zanwyh",            // <zj><a+><n+><w+><yf><h+>
+      "fwrwyh",            // <f+><w+><r+><w+><yf><h+>
+      "mars",
+      "awryl",
+      "mh",
+      "zwyn",              // <zj><w+><yH><n+>
+      "zwyyh",
+      "awt",
+      "sptambr",
+      "aktbr",
+      "nwambr",
+      "dsambr",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "dwsnbh",
+      "shzsnbh",
+      "tharsnbh",
+      "pngzsnbh",
+      "gmeh",
+      "snbh",
+      "ykzsnbh",           // <yf><kf><zwnj><sn><n+><b+><h+>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cAF=cAFRIKAANS; // Afrikaans (South Africa)
+constant cAFR=cAFRIKAANS;
+class cAFRIKAANS
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Januarie",
+      "Februarie",
+      "Maart",
+      "April",
+      "Mei",
+      "Junie",
+      "Julie",
+      "Augustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Maandag",
+      "Dinsdag",
+      "Woensdag",
+      "Donderdag",
+      "Vrydag",
+      "Saterdag",
+      "Sondag",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cGA=cIRISH; // Irish Gaelic 
+constant cGLE=cIRISH;
+class cIRISH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Eanáir",
+      "Feabhra",
+      "Márta",
+      "Aibreán",
+      "Mí na Bealtaine",
+      "Meith",
+      "Iúil",
+      "Lúnasa",
+      "Meán Fómhair",
+      "Deireadh Fómhair",
+      "Mí na Samhna",
+      "Mí na Nollag",
+   });
+
+   protected private constant short_month_names=
+   ({
+      "Ean","Fea","Már","Aib","Bea","Mei","Iúi","Lún","MFó","DFó","Sam","Nol"
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Dé Luain",
+      "Dé Máirt",
+      "Dé Céadaoin",
+      "Déardaoin",
+      "Dé hAoine",
+      "Dé Sathairn",
+      "Dé Domhnaigh",
+   });
+
+   protected private constant short_week_day_names=
+   ({
+      "Lua","Mai","Céa","Déa","Aoi","Sat", "Dom",
+   });
+
+   protected void create() { SETUPSTUFF2; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cEU=cBASQUE; // Basque (Spain)
+constant cEUS=cBASQUE;
+class cBASQUE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "urtarrila",
+      "otsaila",
+      "martxoa",
+      "apirila",
+      "maiatza",
+      "ekaina",
+      "uztaila",
+      "abuztua",
+      "iraila",
+      "urria",
+      "azaroa",
+      "abendua",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "astelehena",
+      "asteartea",
+      "asteazkena",
+      "osteguna",
+      "ostirala",
+      "larunbata",
+      "igandea",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cNO=cNORWEGIAN; // Norwegian 
+constant cNOR=cNORWEGIAN;
+class cNORWEGIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "januar",
+      "februar",
+      "mars",
+      "april",
+      "mai",
+      "juni",
+      "juli",
+      "august",
+      "september",
+      "oktober",
+      "november",
+      "desember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "mandag",
+      "tirsdag",
+      "onsdag",
+      "torsdag",
+      "fredag",
+      "lørdag",
+      "søndag",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+
+
+constant cNL=cDUTCH; // Dutch
+constant cNLD=cDUTCH;
+class cDUTCH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "januari",
+      "februari",
+      "maart",
+      "april",
+      "mei",
+      "juni",
+      "juli",
+      "augustus",
+      "september",
+      "oktober",
+      "november",
+      "december",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "maandag",
+      "dinsdag",
+      "woensdag",
+      "donderdag",
+      "vrijdag",
+      "zaterdag",
+      "zondag",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cPL=cPOLISH; // Polish 
+constant cPOL=cPOLISH;
+class cPOLISH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "styczen",           // <s><t><y><c><z><e><n'>
+      "luty",
+      "marzec",
+      "kwiecien",
+      "maj",
+      "czerwiec",
+      "lipiec",
+      "sierpien",
+      "wrzesien",
+      "pazdziernik",
+      "listopad",
+      "grudzien",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "poniedzialek",      // <p><o><n><i><e><d><z><i><a><l/><e><k>
+      "wtorek",
+      "sroda",
+      "czwartek",
+      "piatek",
+      "sobota",
+      "niedziela",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+class cPOLISH_UNICODE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "stycze\x0143",           // <s><t><y><c><z><e><n'>
+      "luty",
+      "marzec",
+      "kwiecien",
+      "maj",
+      "czerwiec",
+      "lipiec",
+      "sierpien",
+      "wrzesien",
+      "pazdziernik",
+      "listopad",
+      "grudzien",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "poniedzia\x0142""ek",      // <p><o><n><i><e><d><z><i><a><l/><e><k>
+      "wtorek",
+      "sroda",
+      "czwartek",
+      "piatek",
+      "sobota",
+      "niedziela",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: Cile Ekici (@ Roxen IS)
+
+constant cTR=cTURKISH; // Turkish
+constant cTUR=cTURKISH; // Turkish
+class cTURKISH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Ocak",
+      "Subat",
+      "Mart",
+      "Nisan",
+      "Mayis",
+      "Haziran",
+      "Temmuz",
+      "Agustos",
+      "Eylül",
+      "Ekim",
+      "Kasim",
+      "Aralik",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Pazartesi",
+      "Sali",              // <S><a><l><i.>
+      "Çarsamba",
+      "Persembe",
+      "Cuma",
+      "Cumartesi",
+      "Pazar",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cTR_UNICODE=cTURKISH_UNICODE; // Turkish
+constant cTUR_UNICODE=cTURKISH_UNICODE; // Turkish
+class cTURKISH_UNICODE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Ocak",
+      "\015e""ubat",    // S-cedilla
+      "Mart",
+      "Nisan",
+      "May\x0131""s",   // i-no-dot
+      "Haziran",
+      "Temmuz",
+      "A\x01e5""ustos", // line over g
+      "Eylül",
+      "Ekim",
+      "Kas\x0131""m",   // i-no-dot
+      "Aral\x0131""k",  // i-no-dot
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Pazartesi",
+      "Sal\x0131",      // <S><a><l><i.> i without dot
+      "Çarsamba",
+      "Per\x015f""embe",// s-cedilla
+      "Cuma",
+      "Cumartesi",
+      "Pazar",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+// source: anonymous unix locale file
+
+
+
+constant cDE=cGERMAN; // German 
+constant cDEU=cGERMAN;
+class cGERMAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Montag",
+      "Dienstag",
+      "Mittwoch",
+      "Donnerstag",
+      "Freitag",
+      "Samstag",
+      "Sonntag",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cLV=cLATVIAN; // Latvian 
+constant cLAV=cLATVIAN;
+class cLATVIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "janvaris",          // <j><a><n><v><a-><r><i><s>
+      "februaris",
+      "marts",
+      "aprilis",           // <a><p><r><i-><l><i><s>
+      "maijs",
+      "junijs",
+      "julijs",
+      "augusts",
+      "septembris",
+      "oktobris",
+      "novembris",
+      "decembris",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "pirmdiena",
+      "otrdiena",
+      "tresdiena",
+      "ceturtdiena",
+      "piektdiena",
+      "sestdiena",
+      "svetdiena",         // <s><v><e-><t><d><i><e><n><a>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cLV_UNICODE=cLATVIAN_UNICODE;
+constant cLAV_UNICODE=cLATVIAN_UNICODE;
+class cLATVIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "janv\x0101""ris",          // <j><a><n><v><a-><r><i><s>
+      "februaris",
+      "marts",
+      "apr\x012b""lis",           // <a><p><r><i-><l><i><s>
+      "maijs",
+      "junijs",
+      "julijs",
+      "augusts",
+      "septembris",
+      "oktobris",
+      "novembris",
+      "decembris",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "pirmdiena",
+      "otrdiena",
+      "tresdiena",
+      "ceturtdiena",
+      "piektdiena",
+      "sestdiena",
+      "sv\x0113""tdiena",         // <s><v><e-><t><d><i><e><n><a>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cFI=cFINNISH; // Finnish 
+constant cFIN=cFINNISH;
+class cFINNISH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "tammikuu",
+      "helmikuu",
+      "maaliskuu",
+      "huhtikuu",
+      "toukokuu",
+      "kesäkuu",
+      "heinäkuu",
+      "elokuu",
+      "syyskuu",
+      "lokakuu",
+      "marraskuu",
+      "joulukuu",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "maanantai",
+      "tiistai",
+      "keskiviikko",
+      "torstai",
+      "perjantai",
+      "lauantai",
+      "sunnuntai",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cLT=cLITHUANIAN; // Lithuanian
+constant cLIT=cLITHUANIAN;
+class cLITHUANIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "sausio",
+      "vasario",
+      "kovo",
+      "balandzio",
+      "geguzes",           // <g><e><g><u><z<><e.><s>
+      "birzelio",
+      "liepos",
+      "rugpjucio",         // <r><u><g><p><j><u-><c<><i><o>
+      "rugsejo",
+      "spalio",
+      "lapkricio",
+      "gruodzio",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Pirmadienis",
+      "Antradienis",
+      "Treciadienis",
+      "Ketvirtadienis",
+      "Penktadienis",
+      "Sestadienis",       // <S<><e><s<><t><a><d><i><e><n><i><s>
+      "Sekmadienis",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+class cLITHUANIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "sausio",
+      "vasario",
+      "kovo",
+      "balandzio",
+      "geguz\x0117""s",           // <g><e><g><u><z<><e.><s>
+      "birzelio",
+      "liepos",
+      "rugpj\x016b\x010d""io",         // <r><u><g><p><j><u-><c<><i><o>
+      "rugsejo",
+      "spalio",
+      "lapkricio",
+      "gruodzio",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Pirmadienis",
+      "Antradienis",
+      "Treciadienis",
+      "Ketvirtadienis",
+      "Penktadienis",
+      "\x0160""estadienis",       // <S<><e><s<><t><a><d><i><e><n><i><s>
+      "Sekmadienis",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+// source: anonymous unix locale file
+
+constant cET=cESTONIAN; // Estonian 
+constant cEST=cESTONIAN;
+class cESTONIAN
+{
+   inherit _ymd_base;
+
+   protected constant month_names=
+   ({
+      "jaanuar",
+      "veebruar",
+      "märts",
+      "aprill",
+      "mai",
+      "juuni",
+      "juuli",
+      "august",
+      "september",
+      "oktoober",
+      "november",
+      "detsember",
+   });
+
+   protected constant week_day_names=
+   ({
+      "esmaspäev",
+      "teisipäev",
+      "kolmapäev",
+      "neljapäev",
+      "reede",
+      "laupäev",
+      "pühapäev",          // <p><u:><h><a><p><a:><e><v>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cGL=cGALICIAN; // Galician (Spain)
+constant cGLG=cGALICIAN;
+class cGALICIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Xaneiro",
+      "Febreiro",
+      "Marzo",
+      "Abril",
+      "Maio",
+      "Xuño",
+      "Xullo",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Decembro",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Luns",
+      "Martes",
+      "Mércores",
+      "Xoves",
+      "Venres",
+      "Sabado",
+      "Domingo",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cID=cINDONESIAN; 
+class cINDONESIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Januari",
+      "Pebruari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+      "Minggu",   
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cFR=cFRENCH; // French
+constant cFRA=cFRENCH;
+class cFRENCH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "janvier",
+      "février",
+      "mars",
+      "avril",
+      "mai",
+      "juin",
+      "juillet",
+      "aoû",
+      "septembre",
+      "octobre",
+      "novembre",
+      "décembre",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "lundi",
+      "mardi",
+      "mercredi",
+      "jeudi",
+      "vendredi",
+      "samedi",
+      "dimanche",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cIT=cITALIAN; // Italian
+constant cITA=cITALIAN;
+class cITALIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "gennaio",
+      "febbraio",
+      "marzo",
+      "aprile",
+      "maggio",
+      "giugno",
+      "luglio",
+      "agosto",
+      "settembre",
+      "ottobre",
+      "novembre",
+      "dicembre",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "lunedi",    // swizz italian: "lunedì" - should I care?
+      "martedi",
+      "mercoledi",
+      "giovedi",
+      "venerdi",
+      "sabato",
+      "domenica",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cCA=cCATALAN; // Catalan (Catalonia)
+constant cCAT=cCATALAN;
+class cCATALAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "gener",
+      "febrer",
+      "març",
+      "abril",
+      "maig",
+      "juny",
+      "juliol",
+      "agost",
+      "setembre",
+      "octubre",
+      "novembre",
+      "decembre",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "dilluns",
+      "dimarts",
+      "dimecres",
+      "dijous",
+      "divendres",
+      "dissabte",
+      "diumenge",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cSL=cSLOVENIAN; // Slovenian
+constant cSLV=cSLOVENIAN;
+class cSLOVENIAN
+{
+   inherit _ymd_base;
+
+   protected constant month_names=
+   ({
+      "januar",
+      "februar",
+      "marec",
+      "april",
+      "maj",
+      "juni",
+      "juli",
+      "avgust",
+      "september",
+      "oktober",
+      "november",
+      "december",
+   });
+
+   protected constant week_day_names=
+   ({
+      "ponedeljek",
+      "torek",
+      "sreda",
+      "cetrtek",    // <c<><e><t><r><t><e><k>
+      "petek",
+      "sobota",
+      "nedelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+class cSLOVENIAN_UNICODE
+{
+   inherit cSLOVENIAN;
+
+   protected constant week_day_names=
+   ({
+      "ponedeljek",
+      "torek",
+      "sreda",
+      "\x010d""etrtek",    // <c<><e><t><r><t><e><k>
+      "petek",
+      "sobota",
+      "nedelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cFO=cFAROESE; // Faroese 
+constant cFAO=cFAROESE;
+class cFAROESE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "januar",
+      "februar",
+      "mars",
+      "april",
+      "mai",
+      "juni",
+      "juli",
+      "august",
+      "september",
+      "oktober",
+      "november",
+      "desember",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "manadagur",
+      "týsdagur",
+      "mikudagur",
+      "hosdagur",
+      "friggjadagur",
+      "leygardagur",
+      "sunnudagur",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cRO=cROMANIAN; // Romanian
+constant cRON=cROMANIAN;
+class cROMANIAN
+{
+   inherit _ymd_base;
+
+   protected constant month_names=
+   ({
+      "Ianuarie",
+      "Februarie",
+      "Martie",
+      "Aprilie",
+      "Mai",
+      "Iunie",
+      "Iulie",
+      "August",
+      "Septembrie",
+      "Octombrie",
+      "Noiembrie",
+      "Decembrie",
+   });
+
+   protected constant week_day_names=
+   ({
+      "Luni",
+      "Marti",             // <M><A><R><T,><I>
+      "Miercuri",
+      "Joi",
+      "Vineri",
+      "Simbata",                // <S><I/>><M><B><A(><T><A(>
+      "Duminica",          // <D><U><M><I><N><I><C><A(>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+class cROMANIAN_UNICODE
+{
+   inherit cROMANIAN;
+
+   protected constant week_day_names=
+   ({
+      "Luni",
+      "Mar\x0163""i",             // <M><A><R><T,><I>
+      "Miercuri",
+      "Joi",
+      "Vineri",
+      "Sîmb\x0103""t\x0103",                // <S><I/>><M><B><A(><T><A(>
+      "Duminic\x0103",          // <D><U><M><I><N><I><C><A(>
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cHR=cCROATIAN; // Croatian
+constant cHRV=cCROATIAN; // Croatian
+class cCROATIAN
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Sijecanj",          // <S><i><j><e><c<><a><n><j>
+      "Veljaca",           // <V><e><l><j><a><c<><a>
+      "Ozujak",            // <O><z<><u><j><a><k>
+      "Travanj",
+      "Svibanj",
+      "Lipanj",
+      "Srpanj",
+      "Kolovoz",
+      "Rujan",
+      "Listopad",
+      "Studeni",
+      "Prosinac",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Ponedjeljak",
+      "Utorak",
+      "Srijeda",
+      "Cetvrtak",          // <C<><e><t><v><r><t><a><k>
+      "Petak",
+      "Subota",
+      "Nedjelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+class cCROATIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "Sije\415anj",
+      "Velja\415a",
+      "O\576ujak",
+      "Travanj",
+      "Svibanj",
+      "Lipanj",
+      "Srpanj",
+      "Kolovoz",
+      "Rujan",
+      "Listopad",
+      "Studeni",
+      "Prosinac",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "Ponedjeljak",
+      "Utorak",
+      "Srijeda",
+      "\414etvrtak",
+      "Petak",
+      "Subota",
+      "Nedjelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cDA=cDANISH; // Danish 
+constant cDAN=cDANISH;
+class cDANISH
+{
+   inherit _ymd_base;
+
+   protected private constant month_names=
+   ({
+      "januar",
+      "februar",
+      "marts",
+      "april",
+      "maj",
+      "juni",
+      "juli",
+      "august",
+      "september",
+      "oktober",
+      "november",
+      "december",
+   });
+
+   protected private constant week_day_names=
+   ({
+      "mandag",
+      "tirsdag",
+      "onsdag",
+      "torsdag",
+      "fredag",
+      "lørdag",
+      "søndag",
+   });
+
+   protected mapping events_translate=
+   ([
+      "2nd day of Christmas"		    :"2. juledag",			      
+      "Ascension"			    :"Kristi himmelfart",		      
+      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes fødselsdag",   
+      "Carnival"			    :"Fastelavn",			      
+      "Christmas Day"			    :"1. juledag",			      
+      "Christmas Eve"			    :"Juleaften",			      
+      "Constitution Day"		    :"Grundlovsdag",		      
+      "Easter Monday"			    :"2. påskedag",			      
+      "Easter"                              :"Påske",			      
+      "Good Friday"			    :"Langfredag",
+      "Great Prayer Day"		    :"Store bededag",		      
+      "Holy Thursday"			    :"Skærtorsdag",		      
+      "Labor Day"			    :"1. Maj",			      
+      "New Year's Day"			    :"Nytårsdag",			      
+      "New Year's Eve"			    :"Nytårsaften",			      
+      "Palm Sunday"			    :"Palme søndag",		      
+      "Pentecost Monday"		    :"2. Pinsedag",			      
+      "Pentecost"			    :"Pinsedag",			      
+      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks fødselsdag",    
+      "Epiphany"			    :"Hellig trekongers dag",
+      "Epiphany Eve" 			    :"Hellig trekongers aften",
+   ]);
+
+   protected void create() { SETUPSTUFF; }
+}
+
+constant cSR=cSERBIAN; // Serbian (Yugoslavia)
+constant cSRP=cSERBIAN;
+class cSERBIAN
+{
+   inherit _ymd_base;
+
+   protected constant month_names=
+   ({
+      "januar",
+      "februar",
+      "mart",
+      "april",
+      "maj",
+      "jun",
+      "jul",
+      "avgust",
+      "septembar",
+      "oktobar",
+      "novembar",
+      "decembar",
+   });
+
+   protected constant week_day_names=
+   ({
+      "ponedeljak",
+      "utorak",
+      "sreda",
+      "cetvrtak",
+      "petak",
+      "subota",
+      "nedelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+class cSERBIAN_UNICODE
+{
+   inherit cSERBIAN;
+
+   protected constant week_day_names=
+   ({
+      "ponedeljak",
+      "utorak",
+      "sreda",
+      "\415etvrtak",
+      "petak",
+      "subota",
+      "nedelja",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
+
+
+constant cEL=cGREEK_UNICODE; //Greek Ellinika
+constant cGR=cGREEK_UNICODE;
+class cGREEK_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+     "\u0399\u03b1\u03bd\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
+     "\u03a6\u03b5\u03b2\u03c1\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
+     "\u039c\u03ac\u03c1\u03c4\u03b9\u03bf\u03c2",
+     "\u0391\u03c0\u03c1\u03af\u03bb\u03b9\u03bf\u03c2",
+     "\u039c\u03ac\u03b9\u03bf\u03c2",
+     "\u0399\u03bf\u03cd\u03bd\u03b9\u03bf\u03c2",
+     "\u0399\u03bf\u03cd\u03bb\u03b9\u03bf\u03c2",
+     "\u0391\u03cd\u03b3\u03bf\u03c5\u03c3\u03c4\u03bf\u03c2",
+     "\u03a3\u03b5\u03c0\u03c4\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u039f\u03ba\u03c4\u03ce\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u039d\u03bf\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u0394\u03b5\u03ba\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+   });
+
+   static private constant week_day_names=
+   ({
+     "\u0394\u03b5\u03c5\u03c4\u03ad\u03c1\u03b1",
+     "\u03a4\u03c1\u03af\u03c4\u03b7",
+     "\u03a4\u03b5\u03c4\u03ac\u03c1\u03c4\u03b7",
+     "\u03a0\u03ad\u03bc\u03c0\u03c4\u03b7",
+     "\u03a0\u03b1\u03c1\u03b1\u03c3\u03ba\u03b5\u03c5\u03ae",
+     "\u03a3\u03ac\u03b2\u03b2\u03b1\u03c4\u03bf",
+     "\u039a\u03c5\u03c1\u03b9\u03b1\u03ba\u03ae",
+   });
+
+   protected void create() { SETUPSTUFF; }
+}
 
 
 // ----------------------------------------------------------------
 
 // find & compile language
 
-static mapping _cache=([]);
+protected mapping _cache=([]);
 
-Ruleset.Language `[](string lang)
+Calendar.Rule.Language `[](string lang)
 {
    lang=upper_case(lang);
-   Ruleset.Language l=_cache[lang];
+   Calendar.Rule.Language l=_cache[lang];
    if (l) return l;
    program cl=::`[]("c"+lang);
+   
+// if unicode doesn't exist, try without
+   if (!cl && sscanf(lang,"%s_UNICODE",lang))
+       cl=::`[]("c"+lang);
 
-   if (!cl) { return ([])[0]; }
+   if (!cl) { return UNDEFINED; }
 
    l=_cache[lang]=cl();
    

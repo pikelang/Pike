@@ -1,0 +1,300 @@
+/* -*- C -*- */
+class GTK2.Image;
+inherit GTK2.Misc;
+
+//! An image is a image object stored in client, not X server, memory.
+//! A pixmap, on the other hand, is a image object stored in the X-server.
+//! See GDK2.Image and GDK2.Pixmap.
+//!<p>
+//! IMG: GTK2.Image("tornado_nguyen_big.jpg");
+//!</p>
+
+//! Properties:
+//! string file
+//! string icon-name
+//! icon-set
+//! int icon-size
+//! GDK2.Image image
+//! GDK2.Pixmap mask
+//! GDK2.Pixbuf pixbuf
+//! GDK2.PixbufAnimation pixbuf-animation
+//! int pixel-size
+//! GDK2.Pixmap pixmap
+//! string stock
+//! int storage-type CONST(GTK_IMAGE_)
+
+void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mapping(string:mixed)|void file_or_props,
+	    GDK2.Bitmap|int|void mask_or_size)
+//! Create a new W(Image) from either a file or a GDK2.Pixbuf.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args==1) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
+      INIT_WITH_PROPS(GTK_TYPE_IMAGE);
+    } else {
+      GtkWidget *gi;
+
+      if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+	char *filename;
+	get_all_args("create",args,"%s",&filename);
+	gi=gtk_image_new_from_file(filename);
+      } else {
+	struct object *o1;
+	GObject *go;
+
+	get_all_args("create",args,"%o",&o1);
+	go=get_gobject(o1);
+	if (GDK_TYPE_IMAGE==G_TYPE_FROM_INSTANCE(go)) {
+	  gi=gtk_image_new_from_image(GDK_IMAGE(go),NULL);
+	} else if (GDK_TYPE_PIXBUF==G_TYPE_FROM_INSTANCE(go)) {
+	  gi=gtk_image_new_from_pixbuf(GDK_PIXBUF(go));
+	} else {
+	  gi=gtk_image_new_from_animation(GDK_PIXBUF_ANIMATION(go));
+	}
+      }
+      THIS->obj=G_OBJECT(gi);
+    }
+  } else if (args==2) {
+    if (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT) {
+      struct pike_string *s1;
+      GtkWidget *gi;
+      GtkStockItem item;
+      int size;
+      int t=0;
+
+      get_all_args("create",args,"%t%d",&s1,&size);
+      if (s1->size_shift==0)
+	t=gtk_stock_lookup(CGSTR0(s1),&item);
+      if (t)
+	gi=gtk_image_new_from_stock(CGSTR0(s1),size);
+      else
+	gi=gtk_image_new();
+      THIS->obj=G_OBJECT(gi);
+    } else {
+      GdkImage *image;
+      GdkPixmap *pixmap;
+      GdkBitmap *bitmap;
+      GtkWidget *gi;
+      struct object *o1,*o2;
+
+      get_all_args("create",args,"%o%o",&o1,&o2);
+      image=GDK_IMAGE(get_gobject(o1));
+/*      bitmap=(GdkBitmap *)get_gdkobject(o2,bitmap); */
+      bitmap=GDK_PIXMAP(get_gobject(o2));
+      if (image) {
+	gi=gtk_image_new_from_image(image,bitmap);
+      } else {
+	pixmap=GDK_PIXMAP(get_gobject(o1));
+	gi=gtk_image_new_from_pixmap(pixmap,bitmap);
+      } 
+      THIS->obj=G_OBJECT(gi);
+    }
+  } else {
+    GtkWidget *gi;
+    gi=gtk_image_new();
+    THIS->obj=G_OBJECT(gi);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+mapping(string:object) get_image()
+//! Returns ([ "image":GDK2.Image img, "mask":GDK2.Bitmap mask ])
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkImage *v;
+    GdkBitmap *m;
+    gtk_image_get_image(GTK_IMAGE(THIS->obj),&v,&m);
+    ref_push_string(_STR("image"));
+    if (v) {
+      push_gobject(v);
+      g_object_ref(v);
+    } else
+      push_int(0);
+    ref_push_string(_STR("mask"));
+    if(m) {
+      push_gobject(m);
+      g_object_ref(m);
+    } else
+      push_int(0);
+    f_aggregate_mapping(4);
+  }
+}
+
+
++GDK2.Pixbuf get_pixbuf();
+//! Gets the GDK2.Pixbuf being displayed.  The storage type of the image must
+//! be GTK2.IMAGE_EMPTY or GTK2.IMAGE_PIXBUF).
+
+mapping(string:object) get_pixmap()
+//! Gets the pixmap and mask.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkPixmap *v;
+    GdkBitmap *m;
+    gtk_image_get_pixmap(GTK_IMAGE(THIS->obj),&v,&m);
+    ref_push_string(_STR("pixmap"));
+    if (v) {
+      push_gobject(v);
+      g_object_ref(v);
+    } else
+      push_int(0);
+    ref_push_string(_STR("mask"));
+    if (m) {
+      push_gobject(m);
+      g_object_ref(m);
+    } else
+      push_int(0);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping(string:mixed) get_stock()
+//! Gets the stock icon name and size.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    gchar *stock_id;
+    GtkIconSize size;
+    gtk_image_get_stock(GTK_IMAGE(THIS->obj),&stock_id,&size);
+    ref_push_string(_STR("stock_id"));
+    PGTK_PUSH_GCHAR(stock_id);
+    ref_push_string(_STR("size"));
+    push_int(size);
+    f_aggregate_mapping(4);
+  }
+}
+
++GDK2.PixbufAnimation get_animation()
+//! Gets the GDK2.PixbufAnimation being displayed.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkPixbufAnimation *gpa=gtk_image_get_animation(GTK_IMAGE(THIS->obj));
+    push_gobject(gpa);
+    g_object_ref(gpa);
+  }
+}
+
+require gtk26;
+mapping(string:mixed) get_icon_name()
+//! Gets the icon name and size.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar *icon_name;
+    GtkIconSize size;
+    gtk_image_get_icon_name(GTK_IMAGE(THIS->obj),&icon_name,&size);
+    ref_push_string(_STR("icon_name"));
+    PGTK_PUSH_GCHAR(icon_name);
+    ref_push_string(_STR("size"));
+    push_int(size);
+    f_aggregate_mapping(4);
+  }
+}
+endrequire;
+
+int get_storage_type();
+//! Gets the type of representation being used to store data.  If it has no
+//! image data, the return value will be GTK2.IMAGE_EMPTY.
+//! One of CONST(GTK_IMAGE_)
+
+void set_from_file(string filename);
+//! Set the image from a file.
+
+%{
+#define GTK_GDKPIXBUF(X) GDK_PIXBUF(X)
+%}
+
+void set_from_icon_set(GTK2.IconSet icon_set, int size)
+//! Set this image from an icon set.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE size;
+    GtkIconSet *is;
+
+    get_all_args("set_from_icon_set",args,"%o%i",&o1,&size);
+    is=(GtkIconSet *)get_gobject(o1);
+    if (!is)
+      SIMPLE_ARG_ERROR("set_from_icon_set",args,"Invalid GTK2.IconSet");
+    gtk_image_set_from_icon_set(GTK_IMAGE(THIS->obj),is,size);
+  }
+  RETURN_THIS();
+}
+
+void set_from_image(GDK2.Image gdk_image, ?GDK2.Bitmap mask)
+//! Set this image from a GDK2.Image plus optional mask.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    get_all_args("set_from_image",args,"%o.%o",&o1,&o2);
+    gtk_image_set_from_image(GTK_IMAGE(THIS->obj),(GdkImage *)get_gobject(o1),
+		o2?(GdkBitmap *)get_gobject(o2):NULL);
+  }
+  RETURN_THIS();
+}
+
+void set_from_pixbuf(GDK2.Pixbuf pixbuf);
+//! Set image from a pixbuf
+
+void set_from_pixmap(GDK2.Pixmap pixmap, ?GDK2.Bitmap mask)
+//! Set this image from a GDK2.Pixmap plus optional mask.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    get_all_args("set_from_pixmap",args,"%o.%o",&o1,&o2);
+    gtk_image_set_from_pixmap(GTK_IMAGE(THIS->obj),(GdkPixmap *)get_gobject(o1),
+		o2?(GdkBitmap *)get_gobject(o2):NULL);
+  }
+  RETURN_THIS();
+}
+
+void set_from_stock(string stock_id, int size);
+//! Sets from a stock icon.  Sample icon names are GTK2.STOCK_OPEN,
+//! GTK2.STOCK_EXIT.  Sample stock sizes are GTK2.ICON_SIZE_MENU, 
+//! GTK2.ICON_SIZE_SMALL_TOOLBAR.  If the stock name isn't known, the image
+//! will be empty.
+
+void set_from_animation(GDK2.PixbufAnimation anim)
+//! Causes the W(Image) to display the given animation.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_from_animation",args,"%o",&o1);
+    gtk_image_set_from_animation(GTK_IMAGE(THIS->obj),
+		GDK_PIXBUF_ANIMATION(get_gobject(o1)));
+  }
+  RETURN_THIS();
+}
+
+require gtk26;
+void set_from_icon_name(string icon_name, int size);
+//! Sets from an icon name.
+
+require gtk28;
+void clear();
+//! Resets the image to be empty.
+endrequire;
+
+void set_pixel_size(int pixel_size);
+//! Sets the pixel size to use for named icons.  If the pixel size is set to
+//! a value != -1, it is used instead of the icon size set by
+//! set_from_icon_name().
+
+int get_pixel_size();
+//! Gets the pixel size used for named icons.
+endrequire;
+

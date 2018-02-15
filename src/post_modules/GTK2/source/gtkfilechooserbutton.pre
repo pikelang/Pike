@@ -1,0 +1,64 @@
+/* -*- C -*- */
+require gtk26;
+
+class GTK2.FileChooserButton;
+inherit GTK2.Hbox;
+inherit GTK2.FileChooser;
+
+//! Properties:
+//! GTK2.FileChooserDialog dialog
+require gtk210;
+//! int focus-on-click
+endrequire;
+//! string title
+//! int width-chars
+
+void create(string|mapping(string:mixed) title_or_props, ?int action)
+//! Create a new file-selecting button widget.
+//! action is one of CONST(GTK_FILE_CHOOSER_ACTION_)
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      struct pike_string *title;
+      INT_TYPE action;
+      GtkWidget *gf;
+      get_all_args("create",args,"%t%i",&title,&action);
+      ref_push_string(title);
+      f_string_to_utf8(1);
+      gf=gtk_file_chooser_button_new(CGSTR0(Pike_sp[-1].u.string),action);
+      pop_stack();
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FILE_CHOOSER_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+string get_title();
+//! Retrieves the title of the browse dialog.
+
+void set_title(string title);
+//! Modifies the title of the browse dialog.
+
+int get_width_chars();
+//! Retrieves the width in characters of the button widget's
+//! entry and/or label.
+
+void set_width_chars(int n_chars);
+//! Sets the width (in characters) that the button will use.
+endrequire;
+
+require gtk210;
+int get_focus_on_click();
+//! Returns whether the button grabs focus when it is clicked.
+
+void set_focus_on_click(int focus);
+//! Sets whether the button will grab focus when it is clicked with the mouse.
+//! Making mouse clicks not grab focus is useful in places like toolbars where
+//! you don't want the keyboard focus removed from the main area of the
+//! application.
+endrequire;

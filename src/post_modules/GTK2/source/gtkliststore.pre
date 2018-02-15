@@ -1,0 +1,303 @@
+/* -*- C -*- */
+class GTK2.ListStore;
+inherit G.Object;
+inherit GTK2.TreeModel;
+inherit GTK2.TreeSortable;
+inherit GTK2.TreeDragSource;
+inherit GTK2.TreeDragDest;
+
+//! A list-like data structure that can be used with W(TreeView).
+
+void create(array(mixed) types)
+//! Create a new list store with as many columns as there are items in the
+//! array. A type is either a string representing a type name, such as "int" or
+//! "float", or an actual widget.  If it is a widget, the column in question
+//! should be a widget of the same type that you would like this column to
+//! represent.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+/*    GType *types; */
+    struct array *a;
+    struct store_data *sd;
+    int i,cols;
+    get_all_args("create",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid argument.\n");
+    if (!a->size)
+      Pike_error("No elements in array.\n");
+    sd=(struct store_data *)g_malloc(sizeof(struct store_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
+    sd->types=g_malloc(sizeof(GType)*a->size);
+    if (sd->types==NULL) {
+      g_free(sd);
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
+    }
+    for (i=sd->n_cols=0; i<a->size; i++) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
+	const struct pike_string *str = (ITEM(a)+i)->u.string;
+	if (is_same_string(_STR("int"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_INT;
+	else if (is_same_string(_STR("uint"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_UINT;
+	else if (is_same_string(_STR("float"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_FLOAT;
+	else if (is_same_string(_STR("double"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_DOUBLE;
+	else if (is_same_string(_STR("boolean"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_BOOLEAN;
+	else if (is_same_string(_STR("long"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_LONG;
+	else if (is_same_string(_STR("ulong"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_ULONG;
+	else if (is_same_string(_STR("string"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_STRING;
+	else if (is_same_string(_STR("char"),str))
+	  sd->types[sd->n_cols++]=G_TYPE_CHAR;
+	else if (is_same_string(_STR("uchar"),str))
+	    sd->types[sd->n_cols++]=G_TYPE_UCHAR;
+	else if (is_same_string(_STR("object"),str)) {
+	  sd->types[sd->n_cols++]=G_TYPE_POINTER;
+	} else {
+	  sd->types[sd->n_cols]=g_type_from_name(CGSTR0((ITEM(a)+i)->u.string));
+	  if (sd->types[sd->n_cols]==0)
+	    break;
+	  sd->n_cols++;
+	}
+      } else if (TYPEOF(ITEM(a)[i]) == PIKE_T_OBJECT) {
+	struct object *o1=(ITEM(a)+i)->u.object;
+	sd->types[sd->n_cols++]=G_OBJECT_TYPE(get_gobject(o1));
+      }
+    }
+    if (sd->n_cols) {
+      GtkListStore *gl;
+      gl=gtk_list_store_newv(sd->n_cols,sd->types);
+      THIS->obj=G_OBJECT(gl);
+      g_object_set_data_full(THIS->obj,"store-data",sd,
+			     (GDestroyNotify)pgtk2_destroy_store_data);
+    } else {
+      g_free(sd);
+      Pike_error("No valid types\n");
+    }
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+void set_row(GTK2.TreeIter iter, array(mixed) values)
+//! Set the data in an entire row.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    struct array *a;
+    struct store_data *sd;
+    GValue gv={0};
+    struct svalue *sv;
+    int i;
+    get_all_args("set_row",args,"%o%A",&o1,&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    sd=g_object_get_data(G_OBJECT(THIS->obj),"store-data");
+    if (!sd)
+      Pike_error("store-data not found.\n");
+    for (i=0; i<(a->size>sd->n_cols?sd->n_cols:a->size); i++) {
+      pgtk2_set_gvalue(&gv,sd->types[i],ITEM(a)+i);
+      gtk_list_store_set_value(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),i,&gv);
+      g_value_unset(&gv);
+    }
+  }
+  RETURN_THIS();
+}
+
+void set_value(GTK2.TreeIter iter, int column, mixed value)
+//! Set the data in the cell specified by iter and column.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE col;
+    struct svalue *sv;
+    struct store_data *sd;
+    GValue gv={0};
+    get_all_args("set_value",args,"%o%i%*",&o1,&col,&sv);
+    sd=g_object_get_data(G_OBJECT(THIS->obj),"store-data");
+    if (!sd)
+      Pike_error("store-data not found.\n");
+
+    pgtk2_set_gvalue(&gv,sd->types[col],sv);
+
+    gtk_list_store_set_value(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
+	col,&gv);
+    g_value_unset(&gv);
+  }
+  RETURN_THIS();
+}
+
+void remove(GTK2.TreeIter iter)
+//! Remove iter.
+//! iter is set to the next valid row at that level,
+//! or invalidated if it was the last one.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("remove",args,"%o",&o1);
+    gtk_list_store_remove(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+  }
+  RETURN_THIS();
+}
+
++GTK2.TreeIter insert(int position)
+//! Insert a row at position.  If parent is valid, will create as child,
+//! otherwise at top level.  If position is larger than then number
+//! of rows at that level, it will be added to the end of the list.
+//! iter will be changed to point to the new row.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE pos;
+    GtkTreeIter *gt;
+    get_all_args("insert",args,"%o%i",&o1,&pos);
+    gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (gt==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("insert",sizeof(GtkTreeIter));
+    gtk_list_store_insert(GTK_LIST_STORE(THIS->obj),gt,pos);
+    pgtk2_pop_n_elems(args);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
+  }
+}
+
++GTK2.TreeIter insert_before(?GTK2.TreeIter sibling)
+//! Insert a row before sibling.  If sibling is 0, then the
+//! row will be appended to parent's children.  If parent and
+//! sibling are 0, then the row will be appended to the toplevel.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1=NULL;
+    GtkTreeIter *gt;
+    get_all_args("insert_before",args,".%o",&o1);
+    gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (gt==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("insert_before",sizeof(GtkTreeIter));
+    gtk_list_store_insert_before(GTK_LIST_STORE(THIS->obj),
+	gt,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    pgtk2_pop_n_elems(args);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
+  }
+}
+
++GTK2.TreeIter insert_after(?GTK2.TreeIter sibling)
+//! Insert a new row after sibling.  If sibling is 0, then the row
+//! will be prepended to parent's children.  If parent and sibling
+//! are both 0, then the row will be prepended to the toplevel.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1=NULL;
+    GtkTreeIter *gt;
+    get_all_args("insert_after",args,".%o",&o1);
+    gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (gt==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("insert_after",sizeof(GtkTreeIter));
+    gtk_list_store_insert_before(GTK_LIST_STORE(THIS->obj),
+	gt,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    pgtk2_pop_n_elems(args);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
+  }
+}
+
++GTK2.TreeIter prepend()
+//! Prepend a new row. 
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkTreeIter *gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (gt==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("prepend",sizeof(GtkTreeIter));
+    gtk_list_store_prepend(GTK_LIST_STORE(THIS->obj),gt);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
+  }
+}
+
++GTK2.TreeIter append()
+//! Append a new row.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkTreeIter *gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (gt==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("append",sizeof(GtkTreeIter));
+    gtk_list_store_append(GTK_LIST_STORE(THIS->obj),gt);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
+  }
+}
+
+void clear()
+//! Removes all rows.
+{
+  pgtk2_verify_inited();
+  gtk_list_store_clear(GTK_LIST_STORE(THIS->obj));
+  RETURN_THIS();
+}
+
+require gtk22;
+void swap(GTK2.TreeIter a, GTK2.TreeIter b)
+//! Swap 2 rows.  Only works if this store is unsorted.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("swap",args,"%o%o",&o1,&o2);
+    gtk_list_store_swap(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
+	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void move_before(GTK2.TreeIter iter, ?GTK2.TreeIter position)
+//! Moves iter to before position.  These should be at the
+//! same level.  This only works if the store is unsorted.
+//! If position is omitted, iter will be moved to the end
+//! of the level.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+    o2=NULL;
+    get_all_args("move_before",args,"%o.%o",&o1,&o2);
+    gtk_list_store_move_before(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
+	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void move_after(GTK2.TreeIter iter, ?GTK2.TreeIter position)
+//! Moves iter to after position.  These should be at the
+//! same level.  This only works if the store is unsorted.
+//! If position is omitted, iter will be moved to the start
+//! of the level.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+    o2=NULL;
+    get_all_args("move_after",args,"%o.%o",&o1,&o2);
+    gtk_list_store_move_after(GTK_LIST_STORE(THIS->obj),
+	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
+	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
+  }
+  RETURN_THIS();
+}
+endrequire;

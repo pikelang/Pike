@@ -1,0 +1,20 @@
+/* -*- C -*- */
+class GTK1.TipsQuery;
+inherit GTK1.Label;
+signal start_query;
+signal stop_query;
+signal widget_entered;
+signal widget_selected;
+void create();
+void start_query();
+void stop_query();
+void set_caller( GTK1.Widget caller_widget );
+void set_labels( string label_inactive, string label_no_tip );
+
+member int in_query;
+member string label_inactive;
+member string label_no_tip;
+member GTK1.Widget caller;
+member GTK1.Widget last_crossed;
+
+

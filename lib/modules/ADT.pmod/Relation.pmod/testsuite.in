@@ -1,0 +1,15 @@
+START_MARKER
+
+dnl - ADT.Relation.Binary
+
+test_any_equal([[
+  ADT.Relation.Binary rel = ADT.Relation.Binary();
+  ADT.Relation.Binary adds = ADT.Relation.Binary();
+  adds->add("A","B");
+  ADT.Relation.Binary newrel = rel + adds;
+  adds =  newrel - rel;
+  return (mapping)adds;
+]],[[ ([ "A" : (< "B" >) ]) ]])
+
+
+END_MARKER

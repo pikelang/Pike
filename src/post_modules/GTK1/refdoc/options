@@ -1,0 +1,13 @@
+gtk_120
+sheet
+glarea
+libglade
+gnome
+docklets
+gtkextra
+gtkdatabox
+defined HAVE_SAVE_SESSION_SIGNAL
+defined HAVE_PANEL_PIXEL_SIZE
+defined HAVE_PANEL_DRAW_SIGNAL
+defined HAVE_APPLET_QUEUE_RESIZE
+

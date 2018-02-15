@@ -1,0 +1,278 @@
+START_MARKER
+// Nettle
+test_true([[objectp(Nettle)]])
+
+// MD2
+cond_resolv( Nettle.MD2_State, [[
+
+  test_true([[objectp(Nettle.MD2_State())]])
+  test_eq([[Nettle.MD2_State()->update("")->digest()]],
+  	  [[String.hex2string("8350e5a3e24c153df2275c9f80692773")]])
+  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy dog")->digest()]],
+  	  [[String.hex2string("03d85a0d629d2c442e987525319fc471")]])
+  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy cog")->digest()]],
+  	  [[String.hex2string("6b890c9292668cdbbfda00a4ebf31f05")]])
+]])
+
+// MD4
+cond_resolv( Nettle.MD4_State, [[
+
+  test_true([[objectp(Nettle.MD4_State())]])
+  test_eq([[Nettle.MD4_State()->update("")->digest()]],
+  	  [[String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
+  test_eq([[Nettle.MD4_State()->update("a")->digest()]],
+  	  [[String.hex2string("bde52cb31de33e46245e05fbdbd6fb24")]])
+  test_eq([[Nettle.MD4_State()->update("abc")->digest()]],
+  	  [[String.hex2string("a448017aaf21d8525fc10ae87aa6729d")]])
+  test_eq([[Nettle.MD4_State()->update("message digest")->digest()]],
+  	  [[String.hex2string("d9130a8164549fe818874806e1c7014b")]])
+  test_eq([[Nettle.MD4_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+  	  [[String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9")]])
+  test_eq([[Nettle.MD4_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+	[[String.hex2string("043f8582f241db351ce627e153e7f0e4")]])
+  test_eq([[Nettle.MD4_State()->update("1234567890123456789012345678901234567890"
+		"1234567890123456789012345678901234567890")->digest()]],
+	  [[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
+]])
+
+// MD5
+cond_resolv( Nettle.MD5_State, [[
+
+  test_true([[objectp(Nettle.MD5_State())]])
+  test_eq([[Nettle.MD5_State()->update("")->digest()]],
+  	  [[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
+  test_eq([[Nettle.MD5_State()->update("a")->digest()]],
+  	  [[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
+  test_eq([[Nettle.MD5_State()->update("abc")->digest()]],
+  	  [[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
+  test_eq([[Nettle.MD5_State()->update("message digest")->digest()]],
+  	  [[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
+  test_eq([[Nettle.MD5_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+  	  [[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
+  test_eq([[Nettle.MD5_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
+  test_eq([[Nettle.MD5_State()->update("1234567890123456789012345678901234567890"
+		"1234567890123456789012345678901234567890")->digest()]],
+	  [[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
+]])
+
+// SHA1
+cond_resolv( Nettle.SHA1_State, [[
+
+  test_true([[objectp(Nettle.SHA1_State())]])
+  test_eq([[Nettle.SHA1_State()->update("")->digest()]],
+   	[[String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
+  test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
+   	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
+]])
+
+cond_resolv( Nettle.SHA1_State, [[
+test_tests(
+  array(int) a() {
+    return Tools.Testsuite.run_script ("]]SRCDIR[[/sha1test.pike");
+  }
+)
+]])
+
+// AES
+cond_resolv( Nettle.AES_State, [[
+  test_true([[objectp(Nettle.AES_State())]])
+  test_eq([[Nettle.AES_State()
+  	    ->set_encrypt_key(String.hex2string(
+  		  "00010203050607080A0B0C0D0F101112"))
+  	    ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
+  	  [[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
+  
+  test_eq([[Nettle.AES_State()
+  	    ->set_decrypt_key(String.hex2string(
+  		  "14151617191A1B1C1E1F202123242526"))
+  	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
+  	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
+]])
+
+cond_resolv( Nettle.CBC, [[
+  test_eval_error( Nettle.CBC( class{} ) )
+  test_eval_error( object o=class{}(); Nettle.CBC(o); )
+  test_eval_error([[
+    class A {
+      int block_size() { return 0; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.CBC(A);
+  ]])
+  test_eval_error([[
+    class A {
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.CBC(A);
+  ]])
+  test_do([[
+    class A {
+      int block_size() { return 512; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      int `()() { return 0; }
+      string crypt(string data) {}
+    };
+    Nettle.CBC(A);
+  ]])
+  test_eq( Nettle.CBC(Crypto.AES())->block_size(), 16)
+  test_eq( Nettle.CBC(Crypto.AES)->block_size(), 16)
+  test_eq( Nettle.CBC(Crypto.AES())->key_size(), 0)
+  test_eq( Nettle.CBC(Crypto.AES)->key_size(), 0)
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return cbc->key_size();]], 32)
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES);
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return cbc->key_size();]], 32)
+  test_eval_error([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    cbc->crypt("123");
+  ]])
+  test_eval_error([[
+    object cbc=Nettle.CBC(Crypto.AES);
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    cbc->crypt("123");
+  ]])
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return String.string2hex(cbc->crypt("0123456789abcdef"));
+  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES);
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return String.string2hex(cbc->crypt("0123456789abcdef"));
+  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
+  
+]])
+
+cond_resolv( Nettle.Proxy, [[
+  test_eval_error( Nettle.Proxy( class{} ) )
+  test_eval_error( object o=class{}(); Nettle.Proxy(o); )
+  test_eval_error([[
+    class A {
+      int block_size() { return 0; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.Proxy(A);
+  ]])
+  test_eval_error([[
+    class A {
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      string crypt(string data) {}
+    };
+    Nettle.Proxy(A);
+  ]])
+  test_do([[
+    class A {
+      int block_size() { return 512; }
+      int key_size() { return 0; }
+      void set_encrypt_key(string key) { }
+      void set_decrypt_key(string key) { }
+      int `()() { return 0; }
+      string crypt(string data) {}
+    };
+    Nettle.Proxy(A);
+  ]])
+  test_eq( Nettle.Proxy(Crypto.AES())->block_size(), 16)
+  test_eq( Nettle.Proxy(Crypto.AES)->block_size(), 16)
+  test_eq( Nettle.Proxy(Crypto.AES())->key_size(), 0)
+  test_eq( Nettle.Proxy(Crypto.AES)->key_size(), 0)
+  test_any([[
+    object proxy=Nettle.Proxy(Crypto.AES());
+    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return proxy->key_size();]], 32)
+  test_any([[
+    object proxy=Nettle.Proxy(Crypto.AES);
+    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return proxy->key_size();]], 32)
+  test_any([[
+    object proxy=Nettle.Proxy(Crypto.AES());
+    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    string r = "";
+    foreach( "0123456789abcdefg"/1, string str )
+      r += proxy->crypt(str);
+    return r;
+  ]], String.hex2string("b71a7f6d29d66bd468294ed9cfda2af1"))
+  test_any([[
+    object proxy=Nettle.Proxy(Crypto.AES);
+    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return proxy->crypt("123");
+  ]], "")
+  
+]])
+	  
+cond_resolv( Nettle.CBC, [[
+test_tests(
+  array(int) a() {
+    return Tools.Testsuite.run_script (({"]]SRCDIR[[/rijndaeltest.pike",
+				         "--quick"}));
+  }
+)
+
+test_do([[
+  object x = Nettle.CBC (Crypto.AES);
+  x->set_encrypt_key ("\0" * 16);
+  x->set_iv ("\0" * 16);
+  x->crypt ("x" * 10000000);
+]])
+]])
+
+cond_resolv(Nettle.Proxy, [[
+  test_do([[
+    object x = Crypto.Buffer (Crypto.AES);
+    x->set_encrypt_key ("0" * 32);
+    x->crypt ("x" * 10000000);
+  ]])
+]])
+
+cond_resolv( Nettle.Yarrow, [[
+  test_any_equal([[
+    object y = Nettle.Yarrow()->seed("What happen? Somebody set up us the bomb.");
+    return ({ y->get_seed(), y->random_string(20), y->get_seed(), y->random_string(20) });
+  ]], [[({String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
+	  String.hex2string("7847458e32fb789ff6b6cd6e1c8cc3712ba532a8"),
+	  String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
+	  String.hex2string("49a090656a6d93782e169994f41005a3616d3cd7")})]])
+]])
+
+// crypt_md5
+
+test_eq(Nettle.crypt_md5("",""), "qRPK7m23GJusamGpoGLby/")
+test_eq(Nettle.crypt_md5("","",""), "oF5jz0K0HEfDANLadsTNI.")
+test_eq(Nettle.crypt_md5("","","$1$"), "qRPK7m23GJusamGpoGLby/")
+
+dnl From openssl passwd examples for option -1 (BSD)
+test_eq(Nettle.crypt_md5("password","xxxxxxxx"), "UYCIxa628.9qXjpQCjM4a.")
+dnl From openssl passwd examples for option -apr1
+test_eq(Nettle.crypt_md5("password","xxxxxxxx","$apr1$"), "dxHfLAsjHkDRmG83UXe8K0")
+dnl From John's sample hashes on http://openwall.info/wiki/
+test_eq(Nettle.crypt_md5("password","O3JMY.Tw"), "AdLnLjQ/5jXF9.MTp3gHv/")
+dnl GNU test vector
+test_eq(Nettle.crypt_md5("GNU libc manual","/iSaq7rB"), "EoUw5jJPPvAPECNaaWzMK/")
+dnl From cpan.org MD5Crypt.pm
+test_eq(Nettle.crypt_md5("passphrase","Vd3f8aG6"), "GcsdF4YCXb0PM2UmXjIoI1")
+dnl From PHP CRYPT_MD5 crypt() example
+test_eq(Nettle.crypt_md5("rasmuslerdorf","rasmusle"), "rISCgZzpwk3UhDidwXvin0")
+dnl From Python passlib.hash.md5_crypt
+test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
+END_MARKER

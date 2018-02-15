@@ -1,9 +1,6 @@
 /*
  * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
- *
- * $Id: Gdbm.pike,v 1.7 2001/01/02 17:53:09 grubba Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -55,8 +52,8 @@ class Data {
     sync();
   }
   
-  void create(string key, Gdbm.gdbm data_db, 
-              Gdbm.gdbm metadata_db, string dumped_metadata) {
+  protected void create(string key, Gdbm.gdbm data_db, 
+		     Gdbm.gdbm metadata_db, string dumped_metadata) {
     mapping m=decode_value(dumped_metadata);
     _key=key;
     db=data_db;
@@ -179,6 +176,8 @@ void create(string path) {
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/

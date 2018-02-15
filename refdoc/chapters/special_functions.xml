@@ -1,0 +1,80 @@
+<chapter title="Special Functions">
+
+<p>There are some 'functions' in Pike that are not really functions at all but
+builtin items that can do things that no other functions can do. Some of them
+can not be re-defined or overloaded.
+In this chapter I will describe these functions and why they are implemented
+as special functions.</p>
+
+<section title="sscanf">
+
+<p>Sscanf may look exactly like a normal function, but normal functions
+can not set the variables you send to it. The purpose of sscanf is to
+match one string against a format string and place the matching results
+into a list of variables. See <ref>sscanf</ref> for full documentation.</p>
+
+</section>
+
+
+<section title="catch">
+
+<p>Catch is used to trap errors and other exceptions in Pike.
+It works by making a block of code into an expression, like this:</p>
+
+<example>
+catch { statements }
+</example>
+
+<p>If an error occurs, catch will return a description of the error.
+The description of the error has the following format:</p>
+
+<example>
+({
+   "error description",
+   backtrace()
+})
+</example>
+
+<p>If no error occurs, or if the <ref>break</ref> statement is
+encountered, catch will return zero. You may emulate your own errors
+using the function throw or error.</p>
+
+<example>
+int x,y;
+// This might generate "division by zero"
+array error = catch { x/=y; };
+</example>
+
+</section>
+
+<section title="gauge">
+
+<p>The syntax for gauge is the same as the syntax for catch:</p>
+
+<example>
+gauge { statements }
+</example>
+
+<p>However, gauge simply returns how many seconds the code took to execute.
+This can be used to find out how fast your code actually is.. :)
+Only CPU time used by the Pike process is measured. This means that if it takes
+two seconds to execute but only uses 50 % CPU, this function will return 1.0.</p>
+
+</section>
+
+<section title="typeof">
+
+<p>This function returns the type of an expression as a string. It does not
+evaluate the expression at all, which might be somewhat confusing.</p>
+
+<example>
+typeof( exit(1) )
+</example>
+
+<p>This will return the string <tt>"void"</tt> since exit is a function that
+returns void. It will not execute the function <tt>exit</tt> and exit the process as you
+might expect. If you want to know the type after evaluation, use
+<expr>sprintf("%t", expr)</expr>.</p>
+</section>
+
+</chapter>

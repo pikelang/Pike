@@ -1,0 +1,1027 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+
+#include "object.h"
+#include "svalue.h"
+#include "array.h"
+#include "pike_error.h"
+#include "interpret.h"
+#include "stralloc.h"
+#include "program.h"
+#include "operators.h"
+
+#include "program_id.h"
+
+#include "module_support.h"
+#include "sequence.h"
+
+
+/*! @module ADT
+ */
+
+
+DECLARATIONS
+
+/*! @class Sequence
+ *! The sequence work similar to an array but has the possibilities to 
+ *! insert and remove elements. It also has a more powerful iterator.
+ */
+
+PIKECLASS Sequence
+{
+
+  CVAR int pos;
+  CVAR struct array *a;
+ 
+  
+  //if there is more than one reference to this array copy it.
+
+  static inline void should_copy()
+  {
+    if (THIS->a->refs > 1)
+    {
+      struct array *b = copy_array(THIS->a);
+      free_array(THIS->a);
+      THIS->a = b;
+    }
+  }    
+
+
+/*! @decl mixed `[](int index)
+ *! Index operator.
+ *! 
+ *! @param index
+ *!   The index to get the value for, could be negative to index from the end.
+ *!
+ *! @returns
+ *!   The value at the index @[index].
+ *!
+ *! @throws 
+ *!   An error if the index is out of range.
+ */
+
+  PIKEFUN mixed `[](mixed index) {
+      
+    simple_array_index_no_free(Pike_sp, THIS->a, index);
+    Pike_sp++;
+  }
+  
+
+/*! @decl mixed `[]=(int index, mixed value)
+ *! Index assign operator.
+ *! Set the value at the index @[index] to be @[value].
+ *! 
+ *! @param index 
+ *!   The index to set.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ *! @returns
+ *!   The new value at the index @[index].
+ *!
+ */
+  
+  PIKEFUN mixed `[]=(mixed index, mixed value) {
+    should_copy();  	
+    simple_set_index(THIS->a, index, value);
+  } 
+
+
+/*! @decl Sequence `+(Sequence ... coll)
+ *! Addition operator
+ *!
+ *! Append the content of @@@[coll] to this sequence and return the results 
+ *! as a new @[Sequence].
+ *! 
+ *! @param coll 
+ *!   The sequences to append to this sequence.
+ *!
+ *! @returns
+ *!   The result of the append as a new @[Sequence]. 
+ */
+
+  PIKEFUN object `+(object ... coll)
+  {
+    int i;
+
+    ref_push_array(THIS->a);
+
+    for(i=0; i < args; i++) {
+      //FIXME: Ought to work on collection classes too
+      if (coll[i].u.object->prog == Sequence_program)
+      {
+	ref_push_array(OBJ2_SEQUENCE(coll[i].u.object)->a);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`+",i+1,"ADT.Sequence");
+      }
+    }
+    f_add(args+1);
+    push_object(clone_object(Sequence_program, 1));
+    stack_pop_n_elems_keep_top(args);
+  }
+
+  
+/*! @decl Sequence `-(Sequence ... coll)
+ *! Subtraction operator
+ *!
+ *! Removes those values in this sequence that also are present in @@@[coll] 
+ *! and return the results as a new @[Sequence].
+ *! 
+ *! @param coll 
+ *!   The sequence to subtract from this sequence.
+ *!
+ *! @returns
+ *!   The result of the subtraction as a new @[Sequence]. 
+ */
+
+  PIKEFUN object `-(object ... coll)
+  {
+    int i;
+
+    ref_push_array(THIS->a);
+
+    for (i = 0; i < args; i++) {
+      //FIXME: Ought to work on collection classes too
+      if (coll[i].u.object->prog == Sequence_program)
+      {
+	ref_push_array(OBJ2_SEQUENCE(coll[i].u.object)->a);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`-",i+1,"ADT.Sequence");
+      }
+    }
+    f_minus(args+1);
+    push_object(clone_object(Sequence_program, 1));
+    stack_pop_n_elems_keep_top(args);
+  }
+    
+  
+/*! @decl Sequence `&(Sequence coll)
+ *! And operator
+ *! Perform an and on this sequence and the @[coll] sequence by only returning 
+ *! those values that is present in both sequences as a new @[Sequence].
+ *! The remaining values is in the same order as they are in this sequence and
+ *! the values are compared using `==.
+ *!
+ *! @param coll 
+ *!   The sequence to and to this sequence.
+ *!
+ *! @returns
+ *!   The result of the and as a new @[Sequence]. 
+ */
+
+  PIKEFUN object `&(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == Sequence_program)
+    {
+      push_array(and_arrays(THIS->a,
+			    OBJ2_SEQUENCE(coll)->a));
+  
+      push_object(clone_object(Sequence_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`&",1,"ADT.Sequence");
+    }
+  }
+
+  
+/*! @decl Sequence `|(Sequence coll)
+ *! Or operator
+ *! Perform an or on this sequence and the @[coll] sequence by returning 
+ *! those values that is present in both sequences as a new @[Sequence].
+ *! The values are compared using `==.
+ *!
+ *! @param coll 
+ *!   The sequence to or with this sequence.
+ *!
+ *! @returns
+ *!   The result of the or as a new @[Sequence]. 
+ */
+
+  PIKEFUN object `|(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == Sequence_program)
+    {
+      push_array(merge_array_with_order(THIS->a, 
+					OBJ2_SEQUENCE(coll)->a,
+					PIKE_ARRAY_OP_OR));
+  
+      push_object(clone_object(Sequence_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`|",1,"ADT.Sequence");
+    }
+  }
+
+
+/*! @decl Sequence `^(Sequence coll)
+ *! Xor operator
+ *! Perform a xor on this sequence and the @[coll] sequence by returning 
+ *! those values that is present in one of the sequences but not in both 
+ *! adapters as a new @[Sequence].
+ *! The values are compared using `==.
+ *!
+ *! @param coll 
+ *!   The sequence to xor with this sequence.
+ *!
+ *! @returns
+ *!   The result of the xor as a new @[Sequence]. 
+ */
+
+  PIKEFUN object `^(object coll)
+  {
+    //Should work on collection classes too
+    if (coll->prog == Sequence_program)
+    {
+      push_array(merge_array_with_order(THIS->a, 
+					OBJ2_SEQUENCE(coll)->a,
+					PIKE_ARRAY_OP_XOR));
+  
+      push_object(clone_object(Sequence_program, 1));
+    }
+    else
+    {
+      SIMPLE_BAD_ARG_ERROR("`^",1,"ADT.Sequence");
+    }
+  }
+
+
+  /*! @decl int(0..1) _equal(mixed coll)
+   *!
+   *! @returns
+   *!   Returns @tt{true@} if the object @[coll] is a @[Sequence]
+   *!   and contains the same values in the same order.
+   */
+
+  PIKEFUN int(0..1) _equal(mixed coll)
+  {
+    if (TYPEOF(*coll) == T_OBJECT &&
+	coll->u.object->prog == Sequence_program)
+    {
+      struct Sequence_struct *adapter = OBJ2_SEQUENCE(coll->u.object);
+      RETURN  (array_equal_p(THIS->a, adapter->a, 0));
+    }
+    RETURN 0;
+  }
+
+  /*! @decl array _indices()
+   *!
+   *! @returns
+   *!   The indices in this adapter as an array.
+   */
+
+  PIKEFUN array _indices()
+  {
+    ptrdiff_t size = THIS->a->size;
+    struct array *a;
+    
+    a=allocate_array_no_init(size,0);
+    while(--size>=0)
+    {
+      ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
+    }
+    a->type_field = BIT_INT;
+    RETURN a;
+  }
+
+/*! @decl void _insert_element(int index, mixed value)
+ *! Insert an element in the sequence at the position @[index], the value
+ *! at the position @[index] and all above will have their index increased 
+ *! by one.
+ *! 
+ *! @param index 
+ *!   The index to insert the value at.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ */
+
+  PIKEFUN void _insert_element(int index, mixed value)
+  {
+    FIX_AND_CHECK_INDEX(index, THIS->a->size, 1);
+    should_copy();
+    THIS->a = array_insert(THIS->a, value, index);
+   
+  }
+
+/*! @decl mixed _remove_element(int index)
+ *!  Remove the values at index @[index] from the sequence.
+ *! 
+ *! @param index 
+ *!   The index to remove.
+ *!
+ *! @returns
+ *!   The removed value.
+ */
+
+  PIKEFUN mixed _remove_element(int index)
+  {
+    struct svalue s;
+
+    FIX_AND_CHECK_INDEX(index, THIS->a->size, 0);
+
+    s = *(THIS->a->item + index);    
+    should_copy();
+    THIS->a = array_remove(THIS->a, index);
+    push_svalue(&s);
+  }
+
+
+/*! @decl int _search(mixed value, void|int start)
+ *!   Search the sequence for a specific value. Return the index of the first 
+ *!   value that is equal to @[value]. If no value was found @expr{UNDEFINED@} 
+ *!   is returned instead.
+ *! 
+ *! @param value
+ *!   The value to find.
+ *!
+ *! @param start
+ *!   If a start value is supplied it will start searching at the index 
+ *!   @[start].
+ *!
+ *! @returns
+ *!   Returns the index of the found value or @expr{UNDEFINED@}.
+ */
+
+  PIKEFUN int _search(mixed value, void|int start)
+  {
+    if(start)
+    { 
+      if (TYPEOF(*start) != PIKE_T_INT)
+      { 
+	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
+      }
+      RETURN array_search(THIS->a, value, start->u.integer);
+    }
+    else 
+    {
+      RETURN array_search(THIS->a,value,0);
+    }
+  }
+  
+/*! @decl int _sizeof()
+ *!
+ *! @returns
+ *!   The number of elements in this adapter.
+ */
+
+  PIKEFUN int _sizeof()
+  {
+    RETURN THIS->a->size;
+  }
+
+  /*! @decl array _values()
+   *!
+   *! @returns
+   *!   The values in this adapter as an array.
+   */
+  
+  PIKEFUN array _values()
+  {
+    struct array *a;
+     a=copy_array(THIS->a);
+    RETURN a;
+  }
+
+  
+/*! @decl void add(mixed value)
+ *!   Add a value at the end of the sequence.
+ *!
+ *! @param value
+ *!   The value to add.
+ */
+
+  PIKEFUN void add(mixed value)
+  {
+    should_copy();
+    THIS->a=append_array(THIS->a, value);
+  }
+
+
+/*! @decl mixed cast(string type)
+ *! Cast operator.
+ *!
+ *! @param type
+ *!   Casts to this type.
+ *!
+ *!   Casts to the following types are supported:
+ *!   @string
+ *!     @value "array"
+ *!       Cast the content of this sequence to an array.
+ *!   @endstring
+ *!
+ *! @returns
+ *!   An array with the contents of this sequence.
+ */
+
+  PIKEFUN mixed cast(string type)
+  {
+    struct pike_string *array_t;
+    MAKE_CONST_STRING( array_t, "array" );
+    
+    if (type == array_t)
+    {
+           push_array(copy_array(THIS->a));
+      
+    }
+    else
+    {
+      Pike_error("Cannot cast to %S\n", type);
+    }
+  }
+
+  /*! @decl void clear()
+   *!   Clear the contents of the sequence.
+   *!
+   */
+
+  PIKEFUN void clear()
+  {
+    should_copy();
+    THIS->a=resize_array(THIS->a, 0);
+  }   
+
+  /*! @decl int delete_value(mixed value)
+   *!   Remove the first occurrence of the value @[value] from the sequence.
+   *!
+   *! @param value
+   *!   The value to remove from the sequence.
+   *!
+   *! @returns
+   *!   The index of the removed element or -1 if there was no value to 
+   *!   remove.
+   */
+  
+  PIKEFUN int delete_value(mixed value)
+  {
+    INT32 index = array_search(THIS->a, value, 0);
+    if (index > -1)
+    {
+      should_copy();
+      THIS->a = array_remove(THIS->a, index);
+    }
+    RETURN index;
+  }
+
+  /*! @decl int(0..1) is_empty()
+   *!
+   *! @returns
+   *!   Returns @expr{1@} if the sequence is empty otherwise @expr{0@}. 
+   */
+
+  PIKEFUN int(0..1) is_empty()
+  {
+    RETURN !(THIS->a->size);
+  }
+
+  /*! @decl int max_size()
+   *!
+   *! @returns
+   *!   Returns -1.
+   */
+
+  PIKEFUN int max_size()
+  {
+    RETURN -1;
+  }
+
+  
+  /*! @decl void create(array|int arg)
+   *!   Creates a new @[Sequence] around the array arg or a new
+   *!   @[Sequence] with the size of arg.
+   */
+
+  PIKEFUN void create(array|int arg) 
+  {
+    if (TYPEOF(*arg) == T_INT)
+    {
+      struct array *b = allocate_array_no_init(arg->u.integer, 0);
+      free_array(THIS->a);
+      THIS->a = b;
+      THIS->a->type_field = BIT_INT;
+    }
+    else if (TYPEOF(*arg) == T_ARRAY)
+    {
+      free_array(THIS->a);
+      add_ref(THIS->a=arg->u.array);
+    } 
+    pop_n_elems(args);
+  }
+
+
+  
+  /*! @decl SequenceIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @param ind
+   *!   If an @[ind] value is supplied the iterator will be positioned at
+   *!   that index.
+   *!
+   *! @returns
+   *!   An iterator.
+   */
+
+
+  
+  /*! @decl SequenceIterator first()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @returns
+   *!   An iterator positioned at the first element in the sequence.
+   */
+
+  
+  /*! @decl SequenceIterator last()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @returns
+   *!   An iterator positioned after the last element in the sequence.
+   */
+
+
+  INIT 
+  {
+    add_ref(THIS->a = &empty_array);
+    THIS->pos=0;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free_array(THIS->a);
+  }
+
+  /*! @class SequenceIterator
+   *!    This is the iterator for the Sequence. It implements the 
+   *!    IndexIterator and the OutputIterator
+   */  
+  
+  PIKECLASS SequenceIterator
+  {
+    CVAR int pos;
+    CVAR struct Sequence_struct *sequence;
+    CVAR struct object *obj; 
+
+    
+  /*! @decl void create(object sequence, void|int start)
+   *!   Creates a new iterator for the sequence @[sequence]. If start is
+   *!   supplied it will try to position the iterator at @[start].
+   *! 
+   */
+
+    PIKEFUN void create(object sequence, void|int start) 
+    {
+      
+      if (sequence->prog != Sequence_program)
+      {
+	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.Sequence");
+      
+      }
+      else
+      {
+	THIS->sequence = OBJ2_SEQUENCE(sequence);
+	add_ref(THIS->obj = sequence);
+	if (start) // if there was an start index supplied
+	{
+	  THIS->pos=start->u.integer;
+	  if (THIS->sequence->a && ((THIS->pos > THIS->sequence->a->size) 
+				   || (THIS->pos < 0)))
+	  {
+	      Pike_error("Index %d is out of array range 0 - %d.\n", 
+			 THIS->pos, 
+			 THIS->sequence->a->size);
+	  }
+	}
+	else
+	{
+	  THIS->pos = 0;
+	}
+      }
+      
+    }
+    
+    /*! @decl int index()
+     *!   
+     *! @returns
+     *!    The index at the current position.
+     */
+
+    PIKEFUN int index()
+    {
+      if(!THIS->sequence || 
+	 !THIS->sequence->a || 
+	 THIS->pos >= THIS->sequence->a->size) 
+      {
+	push_undefined();
+      }
+      else
+      {
+      	RETURN THIS->pos;
+      }
+    }
+    
+    
+    /*! @decl mixed value()
+     *!   
+     *! @returns
+     *!    The value at the current position.
+     */
+
+    PIKEFUN mixed value()
+    {
+      if(!THIS->sequence || 
+	 !THIS->sequence->a || 
+	 THIS->pos >= THIS->sequence->a->size) 
+      {
+	push_undefined();
+      }
+      else
+      {
+	push_svalue(THIS->sequence->a->item + THIS->pos);
+      }
+    }
+
+
+    /*! @decl SequenceIterator `+(int steps)
+     *!   Move the iterator @[steps] steps forward (negative value on @[steps]
+     *!   will cause the iterator to move backwards) and return the result
+     *!   as a new iterator.
+     *! @returns
+     *!    A new iterator positioned @[steps] steps forward.
+     */    
+
+    PIKEFUN object `+(int steps)
+    {
+      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct Sequence_SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
+      new[0]=*THIS;
+      add_ref(THIS->obj);
+      new->pos+=steps;
+      if (new->pos < 0) 
+      { 
+	new->pos = 0;
+      }
+      else if (new->pos > new->sequence->a->size) 
+      { 
+	new->pos = new->sequence->a->size; 
+      }
+      RETURN o;
+    }    
+
+    /*! @decl SequenceIterator `+=(int steps)
+     *!   Move this iterator @[steps] steps forward (negative value on @[steps]
+     *!   will cause the iterator to move backwards) and return the result.
+     *!
+     *! @returns
+     *!    This iterator positioned @[steps] steps forward.
+     */    
+
+
+    PIKEFUN object `+=(int steps)
+    {
+      THIS->pos+=steps;
+      if (THIS->pos < 0) 
+      { 
+	THIS->pos = 0;
+      }
+      else if (THIS->pos > THIS->sequence->a->size) 
+      { 
+	THIS->pos = THIS->sequence->a->size; 
+      }
+      
+      REF_RETURN Pike_fp->current_object;
+    }
+
+
+    /*! @decl SequenceIterator `-(int steps)
+     *!   Move the iterator @[steps] steps backwards (negative value on 
+     *!   @[steps] will cause the iterator to move forwards) and return 
+     *!   the result as a new iterator.
+     *! @returns
+     *!    A new iterator positioned @[steps] steps backwards.
+     */    
+
+    PIKEFUN object `-(int steps)
+    {
+      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct Sequence_SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
+      new[0]=*THIS;
+      add_ref(THIS->obj);
+      new->pos-=steps;
+      if (new->pos < 0) 
+      { 
+	new->pos = 0;
+      }
+      else if (new->pos > new->sequence->a->size) 
+      { 
+	new->pos = new->sequence->a->size; 
+      }
+      RETURN o;
+    }
+
+    
+    /*! @decl int(0..1) has_next(void|int steps)
+     *! @returns
+     *!    Returns @tt{true@} if it is possible to move @[steps] steps
+     *!    forwards, if @[steps] weren't supplied it check if it is
+     *!    possible to move one step forward.
+     */    
+
+    PIKEFUN int(0..1) has_next(void|int steps)
+    {
+      if (!steps)
+      {
+	RETURN (THIS->sequence && THIS->sequence->a && 
+		(THIS->pos + 1) <= THIS->sequence->a->size);
+      }
+      else
+      {	
+	RETURN (THIS->sequence && THIS->sequence->a && 
+		(THIS->pos + steps->u.integer) >= 0 &&
+		(THIS->pos + steps->u.integer) <= THIS->sequence->a->size);
+      }
+    }
+    
+    
+    /*! @decl int(0..1) has_previous(void|int steps)
+     *! @returns
+     *!    Returns @tt{true@} if it is possible to move @[steps] steps
+     *!    backwards, if @[steps] weren't supplied it check if it is
+     *!    possible to move one step backward.
+     */  
+
+    PIKEFUN int(0..1) has_previous(void|int steps)
+    {
+      if (!steps)
+      {
+	RETURN (THIS->sequence && THIS->sequence->a &&
+		(THIS->pos) > 0);
+      }
+      else
+      {
+	RETURN (THIS->sequence && THIS->sequence->a &&
+		(THIS->pos - steps->u.integer) >= 0 &&
+		(THIS->pos - steps->u.integer) <= THIS->sequence->a->size);
+      }
+    }
+
+    
+    /*! @decl int(0..1) `!()
+     *! @returns
+     *!    Returns @tt{false@} if the iterator has reached the end.
+     */  
+
+    PIKEFUN int(0..1) `!()
+    {
+      RETURN (THIS->sequence && THIS->sequence->a &&
+	      THIS->pos  == THIS->sequence->a->size);
+    }
+
+    
+    /*! @decl int(0..1) _equal(mixed iter)
+     *!    Compare this iterator with another iterator.
+     *! 
+     *! @param iter
+     *!    The iterator to compare with.
+     *! @returns
+     *!    Returns @tt{true@} if both iterators iterates over the same
+     *!    objects and are positioned at the same spot.
+     */  
+
+    PIKEFUN int(0..1) _equal(mixed iter)
+    {
+      if (TYPEOF(*iter) == T_OBJECT &&
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
+      {
+	//to do: Check so that it is an SequenceIterator
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
+	RETURN (THIS->sequence == i->sequence && THIS->pos == i->pos);
+      }
+      else
+      {
+	RETURN 0;
+      }
+    }
+	
+    
+    /*! @decl int(0..1) `<(mixed iter)
+     *!    Less then operator.
+     *!
+     *! @returns
+     *!    Returns @tt{true@} if this iterator has a lower index
+     *!    then @[iter].
+     */  
+
+    PIKEFUN int(0..1) `<(mixed iter)
+    {
+      if (TYPEOF(*iter) == T_OBJECT &&
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
+      {
+	//to do: Check so that it is an SequenceIterator
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
+	RETURN (THIS->pos < i->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.Sequence.SequenceIterator");
+      }
+    }
+
+
+    /*! @decl int(0..1) `>(mixed iter)
+     *!    Greater then operator.
+     *!
+     *! @returns
+     *!    Returns @tt{true@} if this iterator has a higher index
+     *!    then @[iter].
+     */
+
+
+    PIKEFUN int(0..1) `>(mixed iter)
+    {
+      if (TYPEOF(*iter) == T_OBJECT &&
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
+      {
+	//to do: Check so that it is an SequenceIterator
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
+	RETURN (THIS->pos > i->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`>",1,"ADT.Sequence.SequenceIterator");
+      }
+    }
+
+    
+    /*! @decl int distance(object iter)
+     *!
+     *! @param iter
+     *!    The iterator to measure the distance to.
+     *! @returns
+     *!    Returns distance between this iterator and @[iter].
+     *! @throws
+     *!    An error if the two iterator could not be compared.
+     */  
+
+    PIKEFUN int distance(object iter)
+    {
+      if (iter->prog == Sequence_SequenceIterator_program)
+      {
+	
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter);
+	RETURN (i->pos - THIS->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("distance",1,"ADT.Sequence.SequenceIterator");
+      }
+    }
+    
+    /*! @decl Sequence get_collection()
+     *!
+     *! @returns
+     *!    Returns the Sequence this iterator currently iterates over.
+     */  
+
+
+    PIKEFUN object get_collection()
+    {
+      REF_RETURN THIS->obj;
+    }
+
+    
+    /*! @decl mixed set_value(mixed val)
+     *!    Set the value at the current position.
+     *!
+     *! @param val
+     *!    The new value.
+     *! @returns
+     *!    Returns the old value.
+     */  
+
+
+    PIKEFUN mixed set_value(mixed val)
+    {
+      if (THIS->sequence && THIS->sequence->a &&
+	  THIS->pos < THIS->sequence->a->size)
+      {
+	struct svalue ind;
+	struct svalue retval;
+
+	//if there is someone else using the array but the adapter
+	if (THIS->sequence->a->refs > 1)
+	{
+	  //copy it
+	  free_array(THIS->sequence->a);
+	  THIS->sequence->a = copy_array(THIS->sequence->a);
+	}
+
+	SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
+	simple_array_index_no_free(&retval, THIS->sequence->a, &ind);
+	simple_set_index(THIS->sequence->a, &ind, val);
+	push_svalue(&retval);
+      }
+      else
+      {
+	push_undefined();
+      }
+    }
+    
+    INIT 
+    {
+      THIS->sequence=0;
+      THIS->pos=0;
+      THIS->obj = NULL;
+    }
+
+    EXIT
+      gc_trivial;
+    {
+      if( THIS->obj )
+      {
+        free_object(THIS->obj);
+        THIS->obj = NULL;
+      }
+    }
+    
+  }
+
+  //End SequenceIterator
+  /*! @endclass
+  */
+  
+  PIKEFUN object _get_iterator(void|int ind)
+  {
+    ref_push_object(Pike_fp->current_object);
+    if (ind)
+    {
+      push_svalue(ind);
+    }
+    push_object(clone_object(Sequence_SequenceIterator_program, args+1));
+  }
+
+  
+
+  PIKEFUN object first()
+  {
+    ref_push_object(Pike_fp->current_object);
+    push_object(clone_object(Sequence_SequenceIterator_program, 1));
+  }
+
+
+
+  PIKEFUN object last()
+  {
+    struct svalue ind;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_SEQUENCE->a->size);
+    ref_push_object(Pike_fp->current_object);
+    push_svalue(&ind);
+    push_object(clone_object(Sequence_SequenceIterator_program, 2));
+  }
+
+  
+}	
+
+
+//End of Sequence
+/*! @endclass    
+  */
+
+/*! @endmodule
+ */
+
+
+void pike_init_Sequence_module(void)
+{
+  INIT;
+}
+
+void pike_exit_Sequence_module(void)
+{
+  EXIT
+} 
+
+    

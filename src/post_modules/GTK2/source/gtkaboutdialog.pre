@@ -1,0 +1,334 @@
+/* -*- C -*- */
+require gtk26;
+
+class GTK2.AboutDialog;
+inherit GTK2.Dialog;
+
+//! Properties:
+//! array(string) artists
+//! array(string) authors
+//! string comments
+//! string copyright
+//! array(string) documenters
+//! string license
+//! GDK2.Pixbuf logo
+//! string logo-icon-name
+//! string name
+//! string translator-credits
+//! string version
+//! string website
+//! string website-label
+//! <p>
+//! Style properties:
+//! GDK2.Color link-color
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.AboutDialog.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_ABOUT_DIALOG);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *ga;
+    ga=gtk_about_dialog_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
+not gtk212;
+string get_name();
+//! Returns the program name.
+
+void set_name(string name);
+//! Sets the name to display.
+endnot;
+
+require gtk212;
+string get_program_name();
+//! Returns the program name.
+
+void set_program_name(string name);
+//! Sets the name to display in the dialog.
+endrequire;
+
+string get_version();
+//! Returns the version string.
+
+void set_version(string version);
+//! Sets the version string.
+
+string get_copyright();
+//! Returns the copyright string.
+
+void set_copyright(string copyright);
+//! Sets the copyright string.
+
+string get_comments();
+//! Returns the comments string.
+
+void set_comments(string comments);
+//! Sets the comment string.
+
+string get_license();
+//! Returns the license information.
+
+void set_license(string license);
+//! Sets the license information.
+
+require gtk28;
+int get_wrap_license();
+//! Returns whether the license text is automatically wrapped.
+
+void set_wrap_license(int setting);
+//! Sets whether the license text is automatically wrapped.
+endrequire;
+
+string get_website();
+//! Returns the website URL.
+
+void set_website(string website);
+//! Sets the URL to use for the website link.
+
+string get_website_label();
+//! Returns the label used for the website link.
+
+void set_website_label(string label);
+//! Sets the label used for the website link.  Defaults to the website URL.
+
+array(string) get_authors()
+//! Returns the strings which are displayed in the authors tab of the
+//! secondary credits dialog.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar * const *auth;
+    int i=0;
+    auth=gtk_about_dialog_get_authors(GTK_ABOUT_DIALOG(THIS->obj));
+    while (auth[i]) {
+      PGTK_PUSH_GCHAR(auth[i++]);
+      f_utf8_to_string(1);
+    }
+    f_aggregate(i);
+  }
+}
+
+void set_authors(array(string) auth)
+//! Sets the strings which are displayed in the authors tab of the secondary
+//! credits dialog.
+{
+  pgtk2_verify_inited();
+  {
+    ONERROR err;
+    struct array *a;
+    int i,j;
+    const gchar **auth;
+    get_all_args("set_authors",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    auth=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, auth);
+
+    for (i=j=0; i<a->size; i++) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
+	}
+#endif /* PIKE_DEBUG */
+	auth[j++] = Pike_sp[-1].u.string->str;
+      }
+    }
+    auth[j]=NULL;
+
+    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(THIS->obj),auth);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
+  }
+  RETURN_THIS();
+}
+
+array(string) get_artists()
+//! Returns the strings which are displayed in the artists tab of the
+//! secondary credits dialog.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar * const *art;
+    int i=0;
+    art=gtk_about_dialog_get_artists(GTK_ABOUT_DIALOG(THIS->obj));
+    while (art[i]) {
+      PGTK_PUSH_GCHAR(art[i++]);
+      f_utf8_to_string(1);
+    }
+    f_aggregate(i);
+  }
+}
+
+void set_artists(array(string) art)
+//! Sets the strings which are displayed in the artists tab of the secondary
+//! credits dialog.
+{
+  pgtk2_verify_inited();
+  {
+    ONERROR err;
+    struct array *a;
+    int i,j;
+    const gchar **art;
+    get_all_args("set_artists",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    art=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, art);
+
+    for (i=j=0; i<a->size; i++) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
+	}
+#endif /* PIKE_DEBUG */
+	art[j++] = Pike_sp[-1].u.string->str;
+      }
+    }
+    art[j]=NULL;
+
+    gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),art);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
+  }
+  RETURN_THIS();
+}
+
+array(string) get_documenters()
+//! Returns the strings which are displayed in the documenters tab of the
+//! secondary credits dialog.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar * const *doc;
+    int i=0;
+    doc=gtk_about_dialog_get_documenters(GTK_ABOUT_DIALOG(THIS->obj));
+    while (doc[i]) {
+      PGTK_PUSH_GCHAR(doc[i++]);
+      f_utf8_to_string(1);
+    }
+    f_aggregate(i);
+  }
+}
+
+void set_documenters(array(string) doc)
+//! Sets the strings which are displayed in the documenters tab of the
+//! secondary credits dialog.
+{
+  pgtk2_verify_inited();
+  {
+    ONERROR err;
+    struct array *a;
+    int i,j;
+    const gchar **doc;
+    get_all_args("set_documenters",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    doc=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, doc);
+
+    for (i=j=0; i<a->size; i++) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
+	}
+#endif /* PIKE_DEBUG */
+	doc[j++] = Pike_sp[-1].u.string->str;
+      }
+    }
+    doc[j]=NULL;
+
+    gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),doc);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
+  }
+  RETURN_THIS();
+}
+
+string get_translator_credits();
+//! Returns the translator credis.
+
+void set_translator_credits(string credits);
+//! Sets the translator credits.
+
++GDK2.Pixbuf get_logo();
+//! Returns the pixbuf displayed as logo.
+
+void set_logo(GDK2.Pixbuf logo);
+//! Sets the pixbuf to be displayed as the logo.
+
+string get_logo_icon_name();
+//! Returns the icon name.
+
+void set_logo_icon_name(string name);
+//! Sets the icon name.
+
+mixed get_property(string property)
+//! Get property.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *prop;
+    get_all_args("get_property",args,"%n",&prop);
+    if (is_same_string(prop,_STR("artists")) ||
+        is_same_string(prop,_STR("authors")) ||
+	is_same_string(prop,_STR("documenters"))) {
+      gchar **a;
+      int i=0;
+      g_object_get(G_OBJECT(THIS->obj),prop->str,&a,NULL);
+      while (a[i])
+	PGTK_PUSH_GCHAR(a[i]);
+      f_aggregate(i);
+      g_strfreev(a);
+    } else {
+      char *s=g_strdup(prop->str);
+      pgtk2_pop_n_elems(args);
+      pgtk2_get_property(G_OBJECT(THIS->obj),s);
+      g_free(s);
+    }
+  }
+}
+
+endrequire;

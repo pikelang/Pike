@@ -1,0 +1,62 @@
+AC_INIT(pdflib_glue.c)
+AC_CONFIG_HEADER(pdf_machine.h)
+AC_ARG_WITH(libpdf,     [  --with(out)-libpdf       Support PDF through PDFlib],[],[with_libpdf=yes])
+AC_ARG_WITH(libpanda,     [  --with(out)-libpanda   Support PDF through libpanda],[],[with_libpanda=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(PDF.PDFlib)
+
+if test x$with_libpdf = xyes ; then
+  PIKE_FEATURE_NODEP(PDF.PDFlib)
+
+  AC_CHECK_HEADERS(pdflib.h)
+  if test x$ac_cv_header_pdflib_h = xyes ; then
+
+# PDFlib might need these
+    AC_SEARCH_LIBS(deflate, z zlib)
+    AC_SEARCH_LIBS(jpeg_CreateCompress, jpeg)
+    AC_SEARCH_LIBS(png_read_image, png libpng)
+    AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
+
+# now check
+    AC_SEARCH_LIBS(PDF_boot, pdf pdflib, [
+      AC_DEFINE(HAVE_LIBPDF) 
+      PIKE_FEATURE_OK(PDF.PDFlib)
+    ])
+
+  fi
+fi
+
+PIKE_FEATURE_WITHOUT(PDF.Panda)
+
+if test x$with_libpanda = xyes ; then
+
+  PIKE_FEATURE_NODEP(PDF.Panda)
+
+  AC_CHECK_HEADERS(panda/functions.h)
+  if test x$ac_cv_header_panda_functions_h = xyes ; then
+
+# libpanda might need these
+    AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
+
+# now check
+    AC_CHECK_LIB(panda, settitle, [
+      AC_DEFINE(HAVE_LIBPANDA) 
+      LIBS="${LIBS-} -lpanda"
+
+      PIKE_FEATURE(PDF.Panda,[yes (but not implemented)])
+      ])
+    AC_CHECK_LIB(panda, panda_settitle, [
+      AC_DEFINE(HAVE_LIBPANDA)
+      LIBS="${LIBS-} -lpanda"
+
+      PIKE_FEATURE(PDF.Panda,[yes (but not implemented)])
+      ])
+
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

@@ -1,0 +1,640 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "interpret.h"
+#include "backend.h"
+#include "module_support.h"
+#include "config.h"
+#include "object.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "threads.h"
+#include "bignum.h"
+
+#if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+
+#include <sqlite3.h>
+#include <time.h>
+
+#define SLEEP() sysleep(0.0001)
+
+DECLARATIONS
+
+#define ERR(X, db)				\
+if((X)!=SQLITE_OK) {				\
+  SQLite_handle_error((db));			\
+}
+
+static void SQLite_handle_error(sqlite3 *db)
+{
+  if (db) {
+    push_text(sqlite3_errmsg(db));
+    f_utf8_to_string(1);
+    Pike_error("Sql.SQLite: %S\n", Pike_sp[-1].u.string);
+  } else {
+    Pike_error("Sql.SQLite: Internal module error\n");
+  }
+}
+
+static int step(sqlite3_stmt *stmt) {
+  int ret;
+  /* FIXME: This is not always a good way to handle SQLITE_BUSY:
+   *
+   *   SQLITE_BUSY means that the database engine was unable to
+   *   acquire the database locks it needs to do its job. If the
+   *   statement is a COMMIT or occurs outside of an explicit
+   *   transaction, then you can retry the statement. If the statement
+   *   is not a COMMIT and occurs within a explicit transaction then
+   *   you should rollback the transaction before continuing.
+   */
+  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY ) {
+    THREADS_ALLOW();
+    SLEEP();
+    THREADS_DISALLOW();
+  }
+  return ret;
+}
+
+static void bind_arguments(sqlite3 *db,
+			   sqlite3_stmt *stmt,
+			   struct mapping *bindings) {
+  struct mapping_data *md = bindings->data;
+  INT32 e;
+  struct keypair *k;
+  NEW_MAPPING_LOOP(md) {
+    int idx;
+    switch(TYPEOF(k->ind)) {
+    case T_INT:
+      idx = k->ind.u.integer;
+      break;
+    case T_STRING:
+      ref_push_string(k->ind.u.string);
+      f_string_to_utf8(1);
+      idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
+      pop_stack();
+      if(!idx)
+	Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
+      break;
+    default:
+      Pike_error("Bind index is not int|string.\n");
+    }
+    switch(TYPEOF(k->val)) {
+    case T_INT:
+      ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer),
+	   db );
+      break;
+    case T_STRING:
+      {
+	struct pike_string *s = k->val.u.string;
+	switch(s->size_shift) {
+	case 0:
+	  ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
+				 SQLITE_STATIC),
+	       db);
+	  break;
+	case 1:
+	case 2:
+	  ref_push_string(s);
+	  f_string_to_utf8(1);
+	  s = Pike_sp[-1].u.string;
+	  ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
+				 SQLITE_TRANSIENT),
+	       db);
+	  pop_stack();
+	  break;
+#ifdef PIKE_DEBUG
+	default:
+	  Pike_error("Unknown size_shift.\n");
+#endif
+	}
+      }
+      break;
+    case T_FLOAT:
+      ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
+	   db);
+      break;
+    default:
+      Pike_error("Can only bind string|int|float.\n");
+    }
+  }
+}
+
+/*! @class SQLite
+ *! @appears predef::Sql.sqlite
+ *!
+ *! Low-level interface to SQLite3 databases.
+ *!
+ *! This class should typically not be accessed directly, but instead
+ *! via @[Sql.Sql()] with the scheme @expr{"sqlite://"@}.
+ */
+
+PIKECLASS SQLite
+{
+  CVAR sqlite3 *db;
+
+/*! @class ResObj
+ *!
+ *! Result object from @[big_query()].
+ */
+
+PIKECLASS ResObj
+  flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
+{
+  CVAR struct object *dbobj;
+  CVAR struct mapping *bindings;
+  CVAR sqlite3_stmt *stmt;
+  CVAR int eof;
+  CVAR int columns;
+
+  static void ResObj_handle_error(void) {
+    Pike_error("Sql.SQLite: %s\n",
+	       sqlite3_errmsg(OBJ2_SQLITE(THIS->dbobj)->db));
+  }
+
+  PIKEFUN void create()
+    flags ID_PROTECTED;
+  {
+    THIS->columns = sqlite3_column_count(THIS->stmt);
+  }
+
+  /*! @decl int num_rows()
+   *!
+   *! @note
+   *!   This API is not supported for @[Sql.sqlite].
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->num_rows()]
+   */
+  PIKEFUN int num_rows() {
+    Pike_error("Sql.SQLite: Number of rows not known in advance.\n");
+  }
+
+  /*! @decl int num_fields()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->num_fields()]
+   */
+  PIKEFUN int num_fields() {
+    RETURN THIS->columns;
+  }
+
+  /*! @decl int eof()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->eof()]
+   */
+  PIKEFUN int eof() {
+    RETURN THIS->eof;
+  }
+
+  /*! @decl array(mapping(string:mixed)) fetch_fields()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_fields()]
+   */
+  PIKEFUN array(mapping(string:mixed)) fetch_fields() {
+    int i,t;
+    for(i=0; i<THIS->columns; i++) {
+      push_constant_text("name");
+      push_text(sqlite3_column_name(THIS->stmt, i));
+      f_utf8_to_string(1);
+      push_constant_text("type");
+      t = sqlite3_column_type(THIS->stmt, i);
+      switch(t)
+      {
+      case SQLITE_INTEGER:
+        push_constant_text("integer");
+        break;
+      case SQLITE_FLOAT:
+        push_constant_text("float");
+        break;
+      case SQLITE_BLOB:
+        push_constant_text("blob");
+        break;
+      case SQLITE_NULL:
+        push_constant_text("null");
+        break;
+      case SQLITE_TEXT:
+        push_constant_text("text");
+        break;
+      default:
+        push_constant_text("unknown");
+        break;
+      }
+      f_aggregate_mapping(4);
+    }
+    f_aggregate(THIS->columns);
+  }
+
+  /*! @decl void seek(int skip)
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->seek()]
+   */
+  PIKEFUN void seek(int skip) {
+    int i;
+    for(i=0; i<skip; i++)
+      if( step(THIS->stmt)==SQLITE_DONE ) {
+	THIS->eof = 1;
+	return;
+      }
+  }
+
+  /*! @decl array fetch_row()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_row()]
+   */
+  PIKEFUN array fetch_row() {
+    int i;
+    sqlite3_stmt *stmt = THIS->stmt;
+
+    if(THIS->eof) {
+      push_int(0);
+      return;
+    }
+
+    switch( step(stmt) ) {
+    case SQLITE_DONE:
+      THIS->eof = 1;
+      sqlite3_finalize(stmt);
+      THIS->stmt = 0;
+      push_int(0);
+      return;
+    case SQLITE_ROW:
+      break;
+    default:
+      ResObj_handle_error();
+    }
+
+    for(i=0; i<THIS->columns; i++) {
+      push_string( make_shared_binary_string
+		   ( sqlite3_column_blob(stmt, i),
+		     sqlite3_column_bytes(stmt, i) ) );
+      if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
+	f_utf8_to_string(1);
+    }
+    f_aggregate(THIS->columns);
+  }
+
+  INIT {
+    THIS->eof = 0;
+    THIS->columns = -1;
+    THIS->dbobj = NULL;
+    THIS->stmt = NULL;
+    THIS->bindings = NULL;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if(THIS->stmt)
+    {
+      sqlite3_finalize(THIS->stmt);
+      THIS->stmt = NULL;
+    }
+    if(THIS->dbobj)
+    {
+      free_object(THIS->dbobj);
+      THIS->dbobj = NULL;
+    }
+    if(THIS->bindings)
+    {
+      free_mapping(THIS->bindings);
+      THIS->bindings = NULL;
+    }
+  }
+}
+
+/*! @endclass
+ */
+
+#undef THIS
+#define THIS THIS_SQLITE
+
+  /*! @decl void create(string path, mixed ... ignored)
+   *!
+   *! Open the SQLite database stored at @[path].
+   */
+ PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c,
+		     mapping|void options)
+    flags ID_PROTECTED;
+  {
+    pop_n_elems(args-1);
+    f_string_to_utf8(1);
+    /* FIXME: Does the following work if THIS->db is already open? */
+    ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
+    pop_stack();
+  }
+
+  /*! @decl array|int query(string query, @
+   *!			    mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a query against a SQLite database.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->query()]
+   */
+  PIKEFUN array|int query(string query,
+			  mapping(string|int:mixed)|void bindings) {
+
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct pike_string *q;
+    INT32 res_count = 0;
+    INT32 columns;
+    INT32 i;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+    }
+
+    columns = sqlite3_column_count(stmt);
+
+    check_stack(128);
+
+    BEGIN_AGGREGATE_ARRAY(100) {
+      while(stmt) {
+
+	int sr=step(stmt);
+
+	switch(sr) {
+	case SQLITE_OK:		/* Fallthrough */
+	case SQLITE_DONE:
+	  sqlite3_finalize(stmt);
+	  stmt = 0;
+	  break;
+
+	case SQLITE_ROW:
+	  for(i=0; i<columns; i++) {
+		push_text(sqlite3_column_name(stmt, i));
+		f_utf8_to_string(1);
+	    push_string( make_shared_binary_string
+			 ( sqlite3_column_blob(stmt, i),
+			   sqlite3_column_bytes(stmt, i) ) );
+	    if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
+	      f_utf8_to_string(1);
+	  }
+	  f_aggregate_mapping(columns*2);
+	  DO_AGGREGATE_ARRAY(100);
+	  break;
+
+	case SQLITE_MISUSE:
+	  Pike_error("Sql.SQLite: Library misuse.");
+
+	default:
+	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));
+	}
+      }
+    } END_AGGREGATE_ARRAY;
+
+    if (!Pike_sp[-1].u.array->size && !columns) {
+      /* No rows and no columns. */
+      pop_stack();
+      push_int(0);
+    }
+  }
+
+  /*! @decl ResObj big_query(string query, @
+   *!			     mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming query against a SQLite database.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_query()]
+   */
+  PIKEFUN object big_query(string query,
+			   mapping(string|int:mixed)|void bindings) {
+
+    struct object *res;
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct SQLite_ResObj_struct *store;
+    struct pike_string *q;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+    res=fast_clone_object(SQLite_ResObj_program);
+    store = OBJ2_SQLITE_RESOBJ(res);
+    store->stmt = stmt;
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+    store->dbobj = this_object();
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+
+      /* Add a reference so that the bound strings are kept, which in
+	 turn allows us to use SQLITE_STATIC. */
+      add_ref(bindings);
+      store->bindings = bindings;
+    }
+
+    apply_low(res, f_SQLite_ResObj_create_fun_num, 0);
+    push_object(res);
+  }
+
+  /*! @decl int changes()
+   *!
+   *! Get the number of changes.
+   *!
+   *! @fixme
+   *!   Document this function properly.
+   */
+  PIKEFUN int changes()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    RETURN sqlite3_changes(THIS->db);
+  }
+
+  /*! @decl int total_changes()
+   *!
+   *! Get the total number of changes for this session.
+   *!
+   *! @fixme
+   *!   Document this function properly.
+   */
+  PIKEFUN int total_changes()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    RETURN sqlite3_total_changes(THIS->db);
+  }
+
+  /*! @decl void interrupt()
+   *!
+   *! @fixme
+   *!   Document this function.
+   */
+  PIKEFUN void interrupt()
+    optflags OPT_SIDE_EFFECT;
+  {
+    sqlite3_interrupt(THIS->db);
+  }
+
+  /*! @decl string server_info()
+   *!
+   *! Get information about the SQLite library version.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->server_info()]
+   */
+  PIKEFUN string server_info()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text(sqlite3_libversion());
+  }
+
+  /*! @decl int insert_id()
+   *!
+   *! Returns the value of the @tt{ROWID@} (aka @tt{OID@}, aka @tt{_ROWID_@},
+   *! or declared @tt{INTEGER PRIMARY KEY@}) column for the most recent
+   *! successful @tt{INSERT@} operation, or @expr{0@} (zero) if no @tt{INSERT@}
+   *! operations have been performed on the connection yet.
+   */
+  PIKEFUN int insert_id()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    push_longest (sqlite3_last_insert_rowid(THIS->db));
+  }
+
+  /*! @decl string error()
+   *!
+   *! Get the latest error message.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->error()]
+   */
+  PIKEFUN string error()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    push_text(sqlite3_errmsg(THIS->db));
+    f_utf8_to_string(1);
+  }
+
+  /*! @decl void select_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->select_db()]
+   */
+  PIKEFUN void select_db(string db) {
+    /* FIXME: This should be possible to support. */
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  /*! @decl void create_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->create_db()]
+   */
+  PIKEFUN void create_db(string db) {
+    /* FIXME: This should be possible to support. */
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  /*! @decl void drop_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->drop_db()]
+   */
+  PIKEFUN void drop_db(string db) {
+    /* FIXME: This should be possible to support. */
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  /*! @decl array(string) list_dbs()
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->list_dbs()]
+   */
+  PIKEFUN array(string) list_dbs() {
+    /* FIXME: This should be possible to support. */
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  INIT {
+    THIS->db = NULL;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if(THIS->db) {
+      int i;
+      /* FIXME: sqlite3_close can fail. What do we do then? */
+      for(i=0; i<5; i++) {
+	if( sqlite3_close(THIS->db)!=SQLITE_OK ) {
+	  THREADS_ALLOW();
+	  SLEEP();
+	  THREADS_DISALLOW();
+	} else break;
+      }
+    }
+  }
+
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_SQLITE3_H && HAVE_LIBSQLITE3 */
+
+PIKE_MODULE_INIT {
+  INIT;
+}
+
+PIKE_MODULE_EXIT {
+  EXIT;
+}

@@ -1,6 +1,10 @@
 /*
- * $Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * RFC1521 functionality for Pike
  *
  * Marcus Comstedt 1996-1999
@@ -10,13 +14,14 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $");
+#include "module.h"
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 #include "pike_error.h"
 
 #ifdef __CHAR_UNSIGNED__
@@ -25,8 +30,8 @@ RCSID("$Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $");
 #define SIGNED
 #endif
 
-/* must be included last */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 /** Forward declarations of functions implementing Pike functions **/
 
@@ -45,9 +50,9 @@ static void f_quote_labled( INT32 args );
 
 /** Global tables **/
 
-static char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
-static char qptab[16] = "0123456789ABCDEF";
+static const char qptab[16] = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
 #define CT_CTL     0
@@ -62,6 +67,15 @@ static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 #define CT_QUOTE   9
 unsigned char rfc822ctype[1<<CHAR_BIT];
 
+/*! @decl constant TOKENIZE_KEEP_ESCAPES
+ *!
+ *! Don't unquote backslash-sequences in quoted strings during tokenizing.
+ *! This is used for bug-compatibility with Microsoft...
+ *!
+ *! @seealso
+ *!   @[tokenize()], @[tokenize_labled()]
+ */
+#define TOKENIZE_KEEP_ESCAPES	1
 
 /** Externally available functions **/
 
@@ -70,9 +84,11 @@ unsigned char rfc822ctype[1<<CHAR_BIT];
 
 /* Initialize and start module */
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
   int i;
+
+  Pike_compiler->new_program->id = PROG_MODULE_MIME_ID;
 
   /* Init reverse base64 mapping */
   memset( base64rtab, -1, sizeof(base64rtab) );
@@ -106,23 +122,29 @@ void pike_module_init( void )
   /* Add global functions */
   add_function_constant( "decode_base64", f_decode_base64,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_base64", f_encode_base64,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_base64", f_encode_base64,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_qp", f_encode_qp,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_qp", f_encode_qp,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_uue", f_encode_uue,
-			 "function(string,void|string:string)",
-			 OPT_TRY_OPTIMIZE);
+
+  ADD_FUNCTION2( "encode_uue", f_encode_uue,
+                 tFunc(tStr tOr(tVoid,tStr),tStr7), 0, OPT_TRY_OPTIMIZE );
+
+  add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
 
   add_function_constant( "tokenize", f_tokenize,
-			 "function(string:array(string|int))",
+			 "function(string, int|void:array(string|int))",
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "tokenize_labled", f_tokenize_labled,
-			 "function(string:array(array(string|int)))",
+			 "function(string, int|void:array(array(string|int)))",
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "quote", f_quote,
 			 "function(array(string|int):string)",
@@ -134,7 +156,7 @@ void pike_module_init( void )
 
 /* Restore and exit module */
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
 
@@ -153,7 +175,7 @@ static void f_decode_base64( INT32 args )
 {
   if(args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_base64()\n" );
-  else if (sp[-1].type != T_STRING)
+  else if (TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_base64()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_base64()\n" );
@@ -168,7 +190,7 @@ static void f_decode_base64( INT32 args )
     SIGNED char *src;
     ptrdiff_t cnt;
     INT32 d = 1;
-    int pads = 0;
+    int pads = 3;
 
     init_string_builder( &buf, 0 );
 
@@ -184,14 +206,26 @@ static void f_decode_base64( INT32 args )
 	  d=1;
 	}
       } else if (*src=='=') {
-	/* A pad character has been encountered.
-	   Increase pad count, and remove unused bits from d. */
-	pads++;
-	d>>=2;
+	/* A pad character has been encountered. */
       }
 
     /* If data size not an even multiple of 3 bytes, output remaining data */
+    if (d & 0x3f000000) {
+      /* NOT_REACHED, but here for symmetry. */
+      pads = 0;
+    } else if (d & 0xfc0000) {
+      pads = 1;
+      /* Remove unused bits from d. */
+      d >>= 2;
+    } else if (d & 0x3f000) {
+      pads = 2;
+      /* Remove unused bits from d. */
+      d >>= 4;
+    }
     switch(pads) {
+    case 0:
+      /* NOT_REACHED, but here for symmetry. */
+      string_builder_putchar( &buf, (d>>16)&0xff );
     case 1:
       string_builder_putchar( &buf, (d>>8)&0xff );
     case 2:
@@ -252,7 +286,7 @@ static void f_encode_base64( INT32 args )
 {
   if(args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_base64()\n" );
-  else if(sp[-args].type != T_STRING)
+  else if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.encode_base64()\n" );
   else if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.encode_base64()\n" );
@@ -265,7 +299,7 @@ static void f_encode_base64( INT32 args )
     ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
     ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
 
-    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+    int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
 			sp[-1].u.integer != 0);
 
     /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
@@ -318,7 +352,7 @@ static void f_decode_qp( INT32 args )
 {
   if(args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_qp()\n" );
-  else if(sp[-1].type != T_STRING)
+  else if(TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_qp()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_qp()\n" );
@@ -384,7 +418,7 @@ static void f_encode_qp( INT32 args )
 {
   if (args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_qp()\n" );
-  else if (sp[-args].type != T_STRING)
+  else if (TYPEOF(sp[-args]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.encode_qp()\n" );
   else if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.encode_qp()\n" );
@@ -398,7 +432,7 @@ static void f_encode_qp( INT32 args )
     unsigned char *src = (unsigned char *)sp[-args].u.string->str;
     ptrdiff_t cnt;
     int col = 0;
-    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+    int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
 			sp[-1].u.integer != 0);
 
     init_string_builder( &buf, 0 );
@@ -444,7 +478,7 @@ static void f_decode_uue( INT32 args )
 {
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_uue()\n" );
-  else if(sp[-1].type != T_STRING)
+  else if(TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_uue()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_uue()\n" );
@@ -592,12 +626,12 @@ static void f_encode_uue( INT32 args )
 {
   if (args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_uue()\n" );
-  else if (sp[-args].type != T_STRING ||
-	   (args == 2 && sp[-1].type != T_VOID && sp[-1].type != T_STRING &&
-	    sp[-1].type != T_INT))
+  else if (TYPEOF(sp[-args]) != T_STRING ||
+	   (args == 2 && TYPEOF(sp[-1]) != T_VOID &&
+	    TYPEOF(sp[-1]) != T_STRING && TYPEOF(sp[-1]) != T_INT))
     Pike_error( "Wrong type of argument to MIME.encode_uue()\n" );
   else if (sp[-args].u.string->size_shift != 0 ||
-	   (args == 2 && sp[-1].type == T_STRING &&
+	   (args == 2 && TYPEOF(sp[-1]) == T_STRING &&
 	    sp[-1].u.string->size_shift != 0))
     Pike_error( "Char out of range for MIME.encode_uue()\n" );
   else {
@@ -614,7 +648,7 @@ static void f_encode_uue( INT32 args )
     ptrdiff_t last= (sp[-args].u.string->len - 1)%3 + 1;
 
     /* Get the filename if provided */
-    if (args == 2 && sp[-1].type == T_STRING)
+    if (args == 2 && TYPEOF(sp[-1]) == T_STRING)
       filename = sp[-1].u.string->str;
 
     /* Allocate the space we need.  This included space for the actual
@@ -675,57 +709,25 @@ static void f_encode_uue( INT32 args )
 }
 
 
-/*! @decl array(string|int) tokenize(string header)
- *!
- *! A structured header field, as specified by RFC822, is constructed from
- *! a sequence of lexical elements.
- *!
- *! These are:
- *! @list
- *!   @element individual special characters
- *!   @element quoted-strings
- *!   @element domain-literals
- *!   @element comments
- *!   @element atoms
- *! @endlist
- *!
- *! This function will analyze a string containing the header value,
- *! and produce an array containing the lexical elements.
- *!
- *! Individual special characters will be returned as characters (i.e.
- *! @tt{int@}s).
- *!
- *! Quoted-strings, domain-literals and atoms will be decoded and returned
- *! as strings.
- *!
- *! Comments are not returned in the array at all.
- *!
- *! @note
- *! As domain-literals are returned as strings, there is no way to tell the
- *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
- *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
- *! Domain-literals are used seldom, if at all, anyway...
- *! 
- *! The set of special-characters is the one specified in RFC1521
- *! (i.e. @tt{"<", ">", "@", ",", ";", ":", "\", "/", "?", "="@}),
- *! and not the set specified in RFC822.
- *!
- *! @seealso
- *! @[MIME.quote()]
- */
-static void low_tokenize( INT32 args, int mode )
+static void low_tokenize( const char *funname, INT32 args, int mode )
 {
 
   /* Tokenize string in sp[-args].u.string.  We'll just push the
      tokens on the stack, and then do an aggregate_array just
      before exiting. */
-  
-  unsigned char *src = (unsigned char *)sp[-args].u.string->str;
+
+  unsigned char *src;
+  int flags = 0;
   struct array *arr;
   struct pike_string *str;
-  ptrdiff_t cnt = sp[-args].u.string->len;
+  ptrdiff_t cnt;
   INT32 n = 0, l, e, d;
   char *p;
+
+  get_all_args(funname, args, "%S.%d", &str, &flags);
+
+  src = STR0(str);
+  cnt = str->len;
 
   while (cnt>0)
     switch (rfc822ctype[*src]) {
@@ -792,23 +794,29 @@ static void low_tokenize( INT32 args, int mode )
 	if (src[l] == '"')
 	  break;
 	else
-	  if (src[l] == '\\') {
+	  if ((src[l] == '\\') && !(flags & TOKENIZE_KEEP_ESCAPES)) {
 	    e++;
 	    l++;
 	  }
 
-      /* l is the distance to the ending ", and e is the number of \
-	 escapes encountered on the way */
-      str = begin_shared_string( l-e-1 );
-
-      /* Copy the string and remove \ escapes */
-      for (p = str->str, e = 1; e < l; e++)
-	*p++ = (src[e] == '\\'? src[++e] : src[e]);
-
       /* Push the resulting string */
       if(mode)
 	push_constant_text("word");
-      push_string( end_shared_string( str ) );
+
+      if (e) {
+	/* l is the distance to the ending ", and e is the number of	\
+	   escapes encountered on the way */
+	str = begin_shared_string( l-e-1 );
+
+	/* Copy the string and remove \ escapes */
+	for (p = str->str, e = 1; e < l; e++)
+	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+	push_string( end_shared_string( str ) );
+      } else {
+	/* No escapes. */
+	push_string(make_shared_binary_string( (char *)src+1, l-1));
+      }
       if(mode)
 	f_aggregate(2);
       n++;
@@ -913,36 +921,108 @@ static void low_tokenize( INT32 args, int mode )
 
   /* Create the resulting array and push it */
   arr = aggregate_array( n );
-  pop_n_elems( 1 );
+  pop_n_elems( args );
   push_array( arr );
 }
 
+/*! @decl array(string|int) tokenize(string header, int|void flags)
+ *!
+ *! A structured header field, as specified by RFC822, is constructed from
+ *! a sequence of lexical elements.
+ *!
+ *! @param header
+ *!   The header value to parse.
+ *!
+ *! @param flags
+ *!   An optional set of flags. Currently only one flag is defined:
+ *!   @int
+ *!     @value TOKENIZE_KEEP_ESCAPES
+ *!       Keep backslash-escapes in quoted-strings.
+ *!   @endint
+ *!
+ *! The lexical elements parsed are:
+ *! @dl
+ *!   @item
+ *!     individual special characters
+ *!   @item
+ *!     quoted-strings
+ *!   @item
+ *!     domain-literals
+ *!   @item
+ *!     comments
+ *!   @item
+ *!     atoms
+ *! @enddl
+ *!
+ *! This function will analyze a string containing the header value,
+ *! and produce an array containing the lexical elements.
+ *!
+ *! Individual special characters will be returned as characters (i.e.
+ *! @expr{int@}s).
+ *!
+ *! Quoted-strings, domain-literals and atoms will be decoded and returned
+ *! as strings.
+ *!
+ *! Comments are not returned in the array at all.
+ *!
+ *! @note
+ *! As domain-literals are returned as strings, there is no way to tell the
+ *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
+ *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
+ *! Domain-literals are used seldom, if at all, anyway...
+ *! 
+ *! The set of special-characters is the one specified in RFC1521
+ *! (i.e. @expr{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
+ *! and not the set specified in RFC822.
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[tokenize_labled()],
+ *!   @[decode_words_tokenized_remapped()].
+ */
 static void f_tokenize( INT32 args )
 {
-  if (args != 1)
-    Pike_error( "Wrong number of arguments to MIME.tokenize()\n" );
-
-  if (sp[-1].type != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.tokenize()\n" );
-
-  if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.tokenize()\n" );
-
-  low_tokenize( args, 0 );
+  low_tokenize("MIME.tokenize", args, 0 );
 }
 
+/*! @decl array(array(string|int)) tokenize_labled(string header, @
+ *!						   int|void flags)
+ *!
+ *! Similar to @[tokenize()], but labels the contents, by making
+ *! arrays with two elements; the first a label, and the second
+ *! the value that @[tokenize()] would have put there, except
+ *! for that comments are kept.
+ *!
+ *! @param header
+ *!   The header value to parse.
+ *!
+ *! @param flags
+ *!   An optional set of flags. Currently only one flag is defined:
+ *!   @int
+ *!     @value TOKENIZE_KEEP_ESCAPES
+ *!       Keep backslash-escapes in quoted-strings.
+ *!   @endint
+ *!
+ *! The following labels exist:
+ *! @string
+ *!   @value "encoded-word"
+ *!     Word encoded according to =?...
+ *!   @value "special"
+ *!     Special character.
+ *!   @value "word"
+ *!     Word.
+ *!   @value "domain-literal"
+ *!     Domain literal.
+ *!   @value "comment"
+ *!     Comment.
+ *! @endstring
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[tokenize()],
+ *!   @[decode_words_tokenized_labled_remapped()]
+ */
 static void f_tokenize_labled( INT32 args )
 {
-  if (args != 1)
-    Pike_error( "Wrong number of arguments to MIME.tokenize_labled()\n" );
-
-  if (sp[-1].type != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.tokenize_labled()\n" );
-
-  if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.tokenize_labled()\n" );
-
-  low_tokenize( args, 1 );
+  low_tokenize("MIME.tokenize_labled", args, 1);
 }
 
 
@@ -998,16 +1078,16 @@ static int check_encword( unsigned char *str, ptrdiff_t len )
  *! This function is the inverse of the @[MIME.tokenize] function.
  *!
  *! A header field value is constructed from a sequence of lexical elements.
- *! Characters (@tt{int@}s) are taken to be special-characters, whereas
+ *! Characters (@expr{int@}s) are taken to be special-characters, whereas
  *! strings are encoded as atoms or quoted-strings, depending on whether
  *! they contain any special characters.
  *!
  *! @note
- *! There is no way to construct a domain-literal using this function.
- *! Neither can it be used to produce comments.
+ *!   There is no way to construct a domain-literal using this function.
+ *!   Neither can it be used to produce comments.
  *!
  *! @seealso
- *! @[MIME.tokenize()]
+ *!   @[MIME.tokenize()]
  */
 static void f_quote( INT32 args )
 {
@@ -1018,7 +1098,7 @@ static void f_quote( INT32 args )
 
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.quote()\n" );
-  else if (sp[-1].type != T_ARRAY)
+  else if (TYPEOF(sp[-1]) != T_ARRAY)
     Pike_error( "Wrong type of argument to MIME.quote()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
@@ -1028,13 +1108,13 @@ static void f_quote( INT32 args )
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
-    if (item->type == T_INT) {
+    if (TYPEOF(*item) == T_INT) {
 
       /* Single special character */
       string_builder_putchar( &buf, item->u.integer );
       prev_atom = 0;
 
-    } else if (item->type != T_STRING) {
+    } else if (TYPEOF(*item) != T_STRING) {
 
       /* Neither int or string.  Too bad... */
       free_string_builder( &buf );
@@ -1089,6 +1169,13 @@ static void f_quote( INT32 args )
   push_string( finish_string_builder( &buf ) );
 }
 
+/*! @decl string quote_labled(array(array(string|int)) tokens)
+ *!
+ *! This function performs the reverse operation of @[tokenize_labled()].
+ *!
+ *! @seealso
+ *!   @[MIME.quote()], @[MIME.tokenize_labled()]
+ */
 static void f_quote_labled( INT32 args )
 {
   struct svalue *item;
@@ -1098,7 +1185,7 @@ static void f_quote_labled( INT32 args )
 
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.quote_labled()\n" );
-  else if (sp[-1].type != T_ARRAY)
+  else if (TYPEOF(sp[-1]) != T_ARRAY)
     Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
@@ -1108,15 +1195,15 @@ static void f_quote_labled( INT32 args )
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
-    if (item->type != T_ARRAY || item->u.array->size<2 ||
-	item->u.array->item[0].type != T_STRING) {
+    if (TYPEOF(*item) != T_ARRAY || item->u.array->size<2 ||
+	TYPEOF(item->u.array->item[0]) != T_STRING) {
       free_string_builder( &buf );
       Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
     }
 
     if (c_compare_string( item->u.array->item[0].u.string, "special", 7 )) {
 
-      if(item->u.array->item[1].type != T_INT) {
+      if(TYPEOF(item->u.array->item[1]) != T_INT) {
 	free_string_builder( &buf );
 	Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
       }
@@ -1125,7 +1212,7 @@ static void f_quote_labled( INT32 args )
       string_builder_putchar( &buf, item->u.array->item[1].u.integer );
       prev_atom = 0;
 
-    } else if(item->u.array->item[1].type != T_STRING) {
+    } else if(TYPEOF(item->u.array->item[1]) != T_STRING) {
 
       /* All the remaining lexical items require item[1] to be a string */
       free_string_builder( &buf );

@@ -1,11 +1,378 @@
 # ----------------------------------------------------------------
 # Sweden
-# source: 1900-1985 local almanack
-#         1986-     Keng Engström <kent@lysator.liu.se>
+# source:     -1900 Michael Cronsten <micro@m.nu>, http://m.nu/namn/
+#         1900-1985 local almanack
+#         1986-     Kent Engström <kent@lysator.liu.se>
 # ----------------------------------------------------------------
 
 Region "se"
  Leapdayshift 2000 # 29 feb 2000 is the leap day, 24 feb before that
+ Period -1900
+   Jan  1 
+   Jan  2 Abel, Set
+   Jan  3 Enoch
+   Jan  4 Titus
+   Jan  5 Simeon
+   Jan  6 
+   Jan  7 
+   Jan  8 Erhard
+   Jan  9 Julianus
+   Jan 10 Nikanor
+   Jan 11 Hyginus
+   Jan 12 Arcadius
+   Jan 13 Knut
+   Jan 14 Felix
+   Jan 15 Maurus
+   Jan 16 Hjalmar
+   Jan 17 Anton
+   Jan 18 Prisca
+   Jan 19 Henrik
+   Jan 20 Fabianus
+   Jan 21 Agneta
+   Jan 22 Vincentius
+   Jan 23 Emerentia
+   Jan 24 Ericus Translatus
+   Jan 25 Paulus
+   Jan 26 Polykarpus
+   Jan 27 Göte
+   Jan 28 Karl
+   Jan 29 Valerius
+   Jan 30 Adelgunda
+   Jan 31 Vigilius
+   Feb  1 Maximiliana
+   Feb  2 
+   Feb  3 Blasius
+   Feb  4 Ansgar
+   Feb  5 Agatha
+   Feb  6 Dorothea
+   Feb  7 Rikard
+   Feb  8 Malakias
+   Feb  9 Apollonia
+   Feb 10 Eugenia
+   Feb 11 Eufrosyne
+   Feb 12 Eulalia
+   Feb 13 Agabus
+   Feb 14 Valentin 
+   Feb 15 Sigfrid
+   Feb 16 Juliana
+   Feb 17 Alexandra
+   Feb 18 Concordia
+   Feb 19 Gabinus
+   Feb 20 Eukarius, Hulda
+   Feb 21 Hilarius
+   Feb 22 Petter Katt
+   Feb 23 Tertullianus
+   Feb 24 Mattias
+   Feb 25 Victorinus
+   Feb 26 Nestor
+   Feb 27 Leander
+   Feb 28 Makarius
+   Mar  1 Albin
+   Mar  2 Ernst
+   Mar  3 Kunigunda
+   Mar  4 Adrian
+   Mar  5 Conon
+   Mar  6 Fulgentius
+   Mar  7 Felicitas
+   Mar  8 Philemon
+   Mar  9 
+   Mar 10 Apollonius
+   Mar 11 Vindicianus
+   Mar 12 Victoria
+   Mar 13 Gregorius
+   Mar 14 Matilda
+   Mar 15 Kristofer
+   Mar 16 Herbert
+   Mar 17 Gertrud
+   Mar 18 Edvard
+   Mar 19 Josef
+   Mar 20 Joakim
+   Mar 21 Bengt
+   Mar 22 Viktor
+   Mar 23 Axel
+   Mar 24 Gabriel
+   Mar 25 
+   Mar 26 Emanuel
+   Mar 27 Rupert
+   Mar 28 Malchus
+   Mar 29 Jonas
+   Mar 30 Qvirinus
+   Mar 31 Amos
+   Apr  1 Hugo
+   Apr  2 Teodosius
+   Apr  3 Ferdinand
+   Apr  4 Ambrosius
+   Apr  5 Irene
+   Apr  6 Vilhelm
+   Apr  7 Hegesippus
+   Apr  8 Perpetuus
+   Apr  9 Otto
+   Apr 10 Hezekiel
+   Apr 11 Antipas
+   Apr 12 Julius
+   Apr 13 Artur
+   Apr 14 Tiburtius
+   Apr 15 Olympias
+   Apr 16 Patrik
+   Apr 17 Elias
+   Apr 18 Valerianus
+   Apr 19 Bernhard
+   Apr 20 Amalia
+   Apr 21 Anselm
+   Apr 22 Bernhardina
+   Apr 23 Georg
+   Apr 24 Vega
+   Apr 25 Markus
+   Apr 26 Kletus
+   Apr 27 Teresia
+   Apr 28 Theodora
+   Apr 29 Tycho
+   Apr 30 Mariana
+   May  1 Valborg
+   May  2 Athanasius
+   May  3 
+   May  4 Monika
+   May  5 Gotthard
+   May  6 Sigismund
+   May  7 Stanislaus
+   May  8 Achatius
+   May  9 Timotheus
+   May 10 Epimachus
+   May 11 Mamertus
+   May 12 Charlotta
+   May 13 Linnea
+   May 14 Corona
+   May 15 Sophia
+   May 16 Peregrinus
+   May 17 Rebecka
+   May 18 Erik
+   May 19 Potentiana, Potentia
+   May 20 Karolina
+   May 21 Konstantin
+   May 22 Hemming
+   May 23 Desideria, Deriree
+   May 24 Rogatius
+   May 25 Urban
+   May 26 Vilhelmina
+   May 27 Beda
+   May 28 Germanus
+   May 29 Maximinus
+   May 30 Basilius
+   May 31 Petronella
+   Jun  1 Nikodemus
+   Jun  2 Marcellinus
+   Jun  3 Erasmus
+   Jun  4 Optatus
+   Jun  5 Bonifacius
+   Jun  6 Gustaf
+   Jun  7 Robert
+   Jun  8 Salomon
+   Jun  9 Primus
+   Jun 10 Svante
+   Jun 11 Barnabas
+   Jun 12 Eskil
+   Jun 13 Akvilina
+   Jun 14 Elisa
+   Jun 15 Vitus
+   Jun 16 Justina
+   Jun 17 Botolf
+   Jun 18 Leontius
+   Jun 19 Gervasius
+   Jun 20 Florentin
+   Jun 21 Albanus
+   Jun 22 Paulinus
+   Jun 23 Adold
+   Jun 24 
+   Jun 25 David
+   Jun 26 Jeremias
+   Jun 27 Crescens
+   Jun 28 Leo
+   Jun 29 Petrus, Paulus
+   Jun 30 Martialis
+   Jul  1 Aron
+   Jul  2 
+   Jul  3 Anatolius
+   Jul  4 Ulrika
+   Jul  5 Melker
+   Jul  6 Esaias
+   Jul  7 Klas
+   Jul  8 Kilian
+   Jul  9 Cyrillus
+   Jul 10 Knut
+   Jul 11 Eleonora
+   Jul 12 Herman
+   Jul 13 Joel
+   Jul 14 Fokas
+   Jul 15 
+   Jul 16 Reinhold
+   Jul 17 Alexius
+   Jul 18 Fredrik
+   Jul 19 Sara
+   Jul 20 Margareta
+   Jul 21 Johanna
+   Jul 22 Maria Magdalena
+   Jul 23 Emma
+   Jul 24 Kristina
+   Jul 25 Jakob
+   Jul 26 Martha
+   Jul 27 
+   Jul 28 Botvid
+   Jul 29 Olof
+   Jul 30 Abdon
+   Jul 31 Helena
+   Aug  1 
+   Aug  2 Karin
+   Aug  3 Stefanus
+   Aug  4 Aristarchus
+   Aug  5 Dominikus
+   Aug  6 Sixtus
+   Aug  7 Donatus
+   Aug  8 Cyriacus
+   Aug  9 Romanus
+   Aug 10 Lars
+   Aug 11 Susanna
+   Aug 12 Klara
+   Aug 13 Hippolytus
+   Aug 14 Eusebius
+   Aug 15 
+   Aug 16 Brynolf
+   Aug 17 Verner
+   Aug 18 Agapetus
+   Aug 19 Magnus
+   Aug 20 Samuel
+   Aug 21 Josefina
+   Aug 22 Henrietta
+   Aug 23 Zacheus
+   Aug 24 Bartolomeus
+   Aug 25 Lovisa
+   Aug 26 Zefyrinus
+   Aug 27 Rufus
+   Aug 28 Augustinus
+   Aug 29 
+   Aug 30 Albert
+   Aug 31 Arvid
+   Sep  1 Egidius
+   Sep  2 Justus
+   Sep  3 Seraphia
+   Sep  4 Moses
+   Sep  5 Eudoxus
+   Sep  6 Zacharias, Sakarias
+   Sep  7 Regina
+   Sep  8 
+   Sep  9 Augusta
+   Sep 10 Teodard
+   Sep 11 Protus
+   Sep 12 Cyrus
+   Sep 13 Amatus
+   Sep 14 
+   Sep 15 Nicetas
+   Sep 16 Eufemia
+   Sep 17 Lambertus
+   Sep 18 Methodius
+   Sep 19 Fredrika
+   Sep 20 Fausta
+   Sep 21 Matteus
+   Sep 22 Mauritz
+   Sep 23 Tekla
+   Sep 24 Gerhard
+   Sep 25 Kleofas
+   Sep 26 Cyprianus
+   Sep 27 Damianus
+   Sep 28 Leonard
+   Sep 29 Mikael
+   Sep 30 Hieronymus
+   Oct  1 Remigius
+   Oct  2 Ludvig
+   Oct  3 Evald
+   Oct  4 Frans
+   Oct  5 Placidus
+   Oct  6 Bruno
+   Oct  7 Birgitta
+   Oct  8 Demetrius
+   Oct  9 Dionysius
+   Oct 10 Gereon
+   Oct 11 Probus
+   Oct 12 Valfrid
+   Oct 13 Theophilus
+   Oct 14 Calixtus
+   Oct 15 Hedvig
+   Oct 16 Gallus
+   Oct 17 Antoinetta
+   Oct 18 Lukas
+   Oct 19 Ptolemeus
+   Oct 20 Kasper
+   Oct 21 Ursula, Ursila
+   Oct 22 Severus
+   Oct 23 Severin
+   Oct 24 Evergistus
+   Oct 25 Crispinus
+   Oct 26 Amandus
+   Oct 27 Sabina
+   Oct 28 Simon, Judas
+   Oct 29 Narcissus
+   Oct 30 Zenobia
+   Oct 31 Quintinus
+   Nov  1 
+   Nov  2 Tobias
+   Nov  3 Eustachius
+   Nov  4 Amatius
+   Nov  5 Eugen
+   Nov  6 Gustaf Adolf
+   Nov  7 Engelbert
+   Nov  8 Willehad
+   Nov  9 Teodor
+   Nov 10 Martin Luther
+   Nov 11 Mårten
+   Nov 12 Konrad
+   Nov 13 Kristian
+   Nov 14 Hypatius
+   Nov 15 Leopold
+   Nov 16 Edmund
+   Nov 17 Napoleon
+   Nov 18 Maximus
+   Nov 19 Elisabet
+   Nov 20 Pontus
+   Nov 21 Heliodorus
+   Nov 22 Cecilia
+   Nov 23 Klemens
+   Nov 24 Kristogonus
+   Nov 25 Katarina
+   Nov 26 Linus
+   Nov 27 Vitalis
+   Nov 28 Sten
+   Nov 29 Saturninus
+   Nov 30 Anders
+   Dec  1 Oscar
+   Dec  2 Beata
+   Dec  3 Zephanias
+   Dec  4 Barbro
+   Dec  5 Crispina
+   Dec  6 Nikolaus
+   Dec  7 Agaton
+   Dec  8 
+   Dec  9 Anna
+   Dec 10 Judit
+   Dec 11 Daniel
+   Dec 12 Alexander
+   Dec 13 Lucia
+   Dec 14 Isidor
+   Dec 15 Ireneus
+   Dec 16 Lazarus
+   Dec 17 Ignatius
+   Dec 18 Abraham
+   Dec 19 Isak
+   Dec 20 Jakob
+   Dec 21 Tomas
+   Dec 22 Josef
+   Dec 23 Israel
+   Dec 24 Adam, Eva
+   Dec 25 
+   Dec 26 Stefan
+   Dec 27 Johannes
+   Dec 28 
+   Dec 29 
+   Dec 30 David
+   Dec 31 Sylvester
  Period 1900-1985
    Jan  2 Svea
    Jan  3 Alfred
@@ -1092,369 +1459,741 @@ Region "se"
 Period 2001-
    Jan  1   
    Jan  2 Svea
-   Jan  3 Alfred Alfrida
+   Jan  3 Alfred, Alfrida
    Jan  4 Rut
-   Jan  5 Hanna Hannele
-   Jan  6 Kasper Melker Baltsar
-   Jan  7 August Augusta
+   Jan  5 Hanna, Hannele
+   Jan  6 Kasper, Melker, Baltsar
+   Jan  7 August, Augusta
    Jan  8 Erland
-   Jan  9 Gunnar Gunder
-   Jan 10 Sigurd Sigbritt
-   Jan 11 Jan Jannike
-   Jan 12 Frideborg Fridolf
+   Jan  9 Gunnar, Gunder
+   Jan 10 Sigurd, Sigbritt
+   Jan 11 Jan, Jannike
+   Jan 12 Frideborg, Fridolf
    Jan 13 Knut
-   Jan 14 Felix Felicia
-   Jan 15 Laura Lorentz
-   Jan 16 Hjalmar Helmer
-   Jan 17 Anton Tony
-   Jan 18 Hilda Hildur
+   Jan 14 Felix, Felicia
+   Jan 15 Laura, Lorentz
+   Jan 16 Hjalmar, Helmer
+   Jan 17 Anton, Tony
+   Jan 18 Hilda, Hildur
    Jan 19 Henrik
-   Jan 20 Fabian Sebastian
-   Jan 21 Agnes Agneta
-   Jan 22 Vincent Viktor
-   Jan 23 Frej Freja
+   Jan 20 Fabian, Sebastian
+   Jan 21 Agnes, Agneta
+   Jan 22 Vincent, Viktor
+   Jan 23 Frej, Freja
    Jan 24 Erika
-   Jan 25 Paul Pål
-   Jan 26 Bodil Boel
-   Jan 27 Göte Göta
-   Jan 28 Karl Karla
+   Jan 25 Paul, Pål
+   Jan 26 Bodil, Boel
+   Jan 27 Göte, Göta
+   Jan 28 Karl, Karla
    Jan 29 Diana
-   Jan 30 Gunilla Gunhild
-   Jan 31 Ivar Joar
-   Feb  1 Max Maximilian
+   Jan 30 Gunilla, Gunhild
+   Jan 31 Ivar, Joar
+   Feb  1 Max, Maximilian
    Feb  2 
-   Feb  3 Disa Hjördis
-   Feb  4 Ansgar Anselm
-   Feb  5 Agata Agda
-   Feb  6 Dorotea Doris
-   Feb  7 Rikard Dick
-   Feb  8 Berta Bert
-   Feb  9 Fanny Franciska
+   Feb  3 Disa, Hjördis
+   Feb  4 Ansgar, Anselm
+   Feb  5 Agata, Agda
+   Feb  6 Dorotea, Doris
+   Feb  7 Rikard, Dick
+   Feb  8 Berta, Bert
+   Feb  9 Fanny, Franciska
    Feb 10 Iris
-   Feb 11 Yngve Inge
-   Feb 12 Evelina Evy
-   Feb 13 Agne Ove
+   Feb 11 Yngve, Inge
+   Feb 12 Evelina, Evy
+   Feb 13 Agne, Ove
    Feb 14 Valentin
    Feb 15 Sigfrid
-   Feb 16 Julia Julius
-   Feb 17 Alexandra Sandra
-   Feb 18 Frida Fritiof
-   Feb 19 Gabriella Ella
+   Feb 16 Julia, Julius
+   Feb 17 Alexandra, Sandra
+   Feb 18 Frida, Fritiof
+   Feb 19 Gabriella, Ella
    Feb 20 Vivianne
    Feb 21 Hilding
    Feb 22 Pia
-   Feb 23 Torsten Torun
-   Feb 24 Mattias Mats
-   Feb 25 Sigvard Sivert
-   Feb 26 Torgny Torkel
+   Feb 23 Torsten, Torun
+   Feb 24 Mattias, Mats
+   Feb 25 Sigvard, Sivert
+   Feb 26 Torgny, Torkel
    Feb 27 Lage
    Feb 28 Maria
-   Mar  1 Albin Elvira
-   Mar  2 Ernst Erna
-   Mar  3 Gunborg Gunvor
-   Mar  4 Adrian Adriana
-   Mar  5 Tora Tove
-   Mar  6 Ebba Ebbe
+   Mar  1 Albin, Elvira
+   Mar  2 Ernst, Erna
+   Mar  3 Gunborg, Gunvor
+   Mar  4 Adrian, Adriana
+   Mar  5 Tora, Tove
+   Mar  6 Ebba, Ebbe
    Mar  7 Camilla
    Mar  8 Siv
-   Mar  9 Torbjörn Torleif
-   Mar 10 Edla Ada
-   Mar 11 Edvin Egon
+   Mar  9 Torbjörn, Torleif
+   Mar 10 Edla, Ada
+   Mar 11 Edvin, Egon
    Mar 12 Viktoria
    Mar 13 Greger
-   Mar 14 Matilda Maud
-   Mar 15 Kristoffer Christel
-   Mar 16 Herbert Gilbert
+   Mar 14 Matilda, Maud
+   Mar 15 Kristoffer, Christel
+   Mar 16 Herbert, Gilbert
    Mar 17 Gertrud
-   Mar 18 Edvard Edmund
-   Mar 19 Josef Josefina
-   Mar 20 Joakim Kim
+   Mar 18 Edvard, Edmund
+   Mar 19 Josef, Josefina
+   Mar 20 Joakim, Kim
    Mar 21 Bengt
-   Mar 22 Kennet Kent
-   Mar 23 Gerda Gerd
-   Mar 24 Gabriel Rafael
+   Mar 22 Kennet, Kent
+   Mar 23 Gerda, Gerd
+   Mar 24 Gabriel, Rafael
    Mar 25 
    Mar 26 Emanuel
-   Mar 27 Rudolf Ralf
-   Mar 28 Malkolm Morgan
-   Mar 29 Jonas Jens
-   Mar 30 Holger Holmfrid
+   Mar 27 Rudolf, Ralf
+   Mar 28 Malkolm, Morgan
+   Mar 29 Jonas, Jens
+   Mar 30 Holger, Holmfrid
    Mar 31 Ester
-   Apr  1 Harald Hervor
-   Apr  2 Gudmund Ingemund
-   Apr  3 Ferdinand Nanna
-   Apr  4 Marianne Marlene
-   Apr  5 Irene Irja
-   Apr  6 Vilhelm Helmi
-   Apr  7 Irma Irmelin
-   Apr  8 Nadja Tanja
-   Apr  9 Otto Ottilia
-   Apr 10 Ingvar Ingvor
-   Apr 11 Ulf Ylva
+   Apr  1 Harald, Hervor
+   Apr  2 Gudmund, Ingemund
+   Apr  3 Ferdinand, Nanna
+   Apr  4 Marianne, Marlene
+   Apr  5 Irene, Irja
+   Apr  6 Vilhelm, Helmi
+   Apr  7 Irma, Irmelin
+   Apr  8 Nadja, Tanja
+   Apr  9 Otto, Ottilia
+   Apr 10 Ingvar, Ingvor
+   Apr 11 Ulf, Ylva
    Apr 12 Liv
-   Apr 13 Artur Douglas
+   Apr 13 Artur, Douglas
    Apr 14 Tiburtius
-   Apr 15 Olivia Oliver
-   Apr 16 Patrik Patricia
-   Apr 17 Elias Elis
-   Apr 18 Valdemar Volmar
-   Apr 19 Olaus Ola
-   Apr 20 Amalia Amelie
-   Apr 21 Anneli Annika
-   Apr 22 Allan Glenn
-   Apr 23 Georg Göran
+   Apr 15 Olivia, Oliver
+   Apr 16 Patrik, Patricia
+   Apr 17 Elias, Elis
+   Apr 18 Valdemar, Volmar
+   Apr 19 Olaus, Ola
+   Apr 20 Amalia, Amelie
+   Apr 21 Anneli, Annika
+   Apr 22 Allan, Glenn
+   Apr 23 Georg, Göran
    Apr 24 Vega
    Apr 25 Markus
-   Apr 26 Teresia Terese
+   Apr 26 Teresia, Terese
    Apr 27 Engelbrekt
-   Apr 28 Ture Tyra
+   Apr 28 Ture, Tyra
    Apr 29 Tyko
    Apr 30 Mariana
    May  1 Valborg
-   May  2 Filip Filippa
-   May  3 John Jane
-   May  4 Monika Mona
-   May  5 Gotthard Erhard
-   May  6 Marit Rita
-   May  7 Carina Carita
+   May  2 Filip, Filippa
+   May  3 John, Jane
+   May  4 Monika, Mona
+   May  5 Gotthard, Erhard
+   May  6 Marit, Rita
+   May  7 Carina, Carita
    May  8 Åke
-   May  9 Reidar Reidun
-   May 10 Esbjörn Styrbjörn
-   May 11 Märta Märit
-   May 12 Charlotta Lotta
-   May 13 Linnea Linn
-   May 14 Halvard Halvar
-   May 15 Sofia Sonja
-   May 16 Ronald Ronny
-   May 17 Rebecka Ruben
+   May  9 Reidar, Reidun
+   May 10 Esbjörn, Styrbjörn
+   May 11 Märta, Märit
+   May 12 Charlotta, Lotta
+   May 13 Linnea, Linn
+   May 14 Halvard, Halvar
+   May 15 Sofia, Sonja
+   May 16 Ronald, Ronny
+   May 17 Rebecka, Ruben
    May 18 Erik
-   May 19 Maj Majken
-   May 20 Karolina Carola
-   May 21 Konstantin Conny
-   May 22 Hemming Henning
-   May 23 Desideria Desirée
-   May 24 Ivan Vanja
+   May 19 Maj, Majken
+   May 20 Karolina, Carola
+   May 21 Konstantin, Conny
+   May 22 Hemming, Henning
+   May 23 Desideria, Desirée
+   May 24 Ivan, Vanja
    May 25 Urban
-   May 26 Vilhelmina Vilma
-   May 27 Beda Blenda
-   May 28 Ingeborg Borghild
-   May 29 Yvonne Jeanette
-   May 30 Vera Veronika
-   May 31 Petronella Pernilla
-   Jun  1 Gun Gunnel
-   Jun  2 Rutger Roger
-   Jun  3 Ingemar Gudmar
-   Jun  4 Solbritt Solveig
+   May 26 Vilhelmina, Vilma
+   May 27 Beda, Blenda
+   May 28 Ingeborg, Borghild
+   May 29 Yvonne, Jeanette
+   May 30 Vera, Veronika
+   May 31 Petronella, Pernilla
+   Jun  1 Gun, Gunnel
+   Jun  2 Rutger, Roger
+   Jun  3 Ingemar, Gudmar
+   Jun  4 Solbritt, Solveig
    Jun  5 Bo
-   Jun  6 Gustav Gösta
-   Jun  7 Robert Robin
-   Jun  8 Eivor Majvor
-   Jun  9 Börje Birger
-   Jun 10 Svante Boris
-   Jun 11 Bertil Berthold
+   Jun  6 Gustav, Gösta
+   Jun  7 Robert, Robin
+   Jun  8 Eivor, Majvor
+   Jun  9 Börje, Birger
+   Jun 10 Svante, Boris
+   Jun 11 Bertil, Berthold
    Jun 12 Eskil
-   Jun 13 Aina Aino
-   Jun 14 Håkan Hakon
-   Jun 15 Margit Margot
-   Jun 16 Axel Axelina
-   Jun 17 Torborg Torvald
-   Jun 18 Björn Bjarne
-   Jun 19 Germund Görel
+   Jun 13 Aina, Aino
+   Jun 14 Håkan, Hakon
+   Jun 15 Margit, Margot
+   Jun 16 Axel, Axelina
+   Jun 17 Torborg, Torvald
+   Jun 18 Björn, Bjarne
+   Jun 19 Germund, Görel
    Jun 20 Linda
-   Jun 21 Alf Alvar
-   Jun 22 Paulina Paula
-   Jun 23 Adolf Alice
+   Jun 21 Alf, Alvar
+   Jun 22 Paulina, Paula
+   Jun 23 Adolf, Alice
    Jun 24 
-   Jun 25 David Salomon
-   Jun 26 Rakel Lea
-   Jun 27 Selma Fingal
+   Jun 25 David, Salomon
+   Jun 26 Rakel, Lea
+   Jun 27 Selma, Fingal
    Jun 28 Leo
-   Jun 29 Peter Petra
-   Jun 30 Elof Leif
-   Jul  1 Aron Mirjam
-   Jul  2 Rosa Rosita
+   Jun 29 Peter, Petra
+   Jun 30 Elof, Leif
+   Jul  1 Aron, Mirjam
+   Jul  2 Rosa, Rosita
    Jul  3 Aurora
-   Jul  4 Ulrika Ulla
-   Jul  5 Laila Ritva
-   Jul  6 Esaias Jessika
+   Jul  4 Ulrika, Ulla
+   Jul  5 Laila, Ritva
+   Jul  6 Esaias, Jessika
    Jul  7 Klas
    Jul  8 Kjell
-   Jul  9 Jörgen Örjan
-   Jul 10 André Andrea
-   Jul 11 Eleonora Ellinor
-   Jul 12 Herman Hermine
-   Jul 13 Joel Judit
+   Jul  9 Jörgen, Örjan
+   Jul 10 André, Andrea
+   Jul 11 Eleonora, Ellinor
+   Jul 12 Herman, Hermine
+   Jul 13 Joel, Judit
    Jul 14 Folke
-   Jul 15 Ragnhild Ragnvald
-   Jul 16 Reinhold Reine
+   Jul 15 Ragnhild, Ragnvald
+   Jul 16 Reinhold, Reine
    Jul 17 Bruno
-   Jul 18 Fredrik Fritz
+   Jul 18 Fredrik, Fritz
    Jul 19 Sara
-   Jul 20 Margareta Greta
+   Jul 20 Margareta, Greta
    Jul 21 Johanna
-   Jul 22 Magdalena Madeleine
+   Jul 22 Magdalena, Madeleine
    Jul 23 Emma
-   Jul 24 Kristina Kerstin
+   Jul 24 Kristina, Kerstin
    Jul 25 Jakob
    Jul 26 Jesper
    Jul 27 Marta
-   Jul 28 Botvid Seved
+   Jul 28 Botvid, Seved
    Jul 29 Olof
    Jul 30 Algot
-   Jul 31 Helena Elin
+   Jul 31 Helena, Elin
    Aug  1 Per
-   Aug  2 Karin Kajsa
+   Aug  2 Karin, Kajsa
    Aug  3 Tage
-   Aug  4 Arne Arnold
-   Aug  5 Ulrik Alrik
-   Aug  6 Alfons Inez
-   Aug  7 Dennis Denise
-   Aug  8 Silvia Sylvia
+   Aug  4 Arne, Arnold
+   Aug  5 Ulrik, Alrik
+   Aug  6 Alfons, Inez
+   Aug  7 Dennis, Denise
+   Aug  8 Silvia, Sylvia
    Aug  9 Roland
    Aug 10 Lars
    Aug 11 Susanna
    Aug 12 Klara
    Aug 13 Kaj
    Aug 14 Uno
-   Aug 15 Stella Estelle
+   Aug 15 Stella, Estelle
    Aug 16 Brynolf
-   Aug 17 Verner Valter
-   Aug 18 Ellen Lena
-   Aug 19 Magnus Måns
-   Aug 20 Bernhard Bernt
-   Aug 21 Jon Jonna
-   Aug 22 Henrietta Henrika
-   Aug 23 Signe Signhild
+   Aug 17 Verner, Valter
+   Aug 18 Ellen, Lena
+   Aug 19 Magnus, Måns
+   Aug 20 Bernhard, Bernt
+   Aug 21 Jon, Jonna
+   Aug 22 Henrietta, Henrika
+   Aug 23 Signe, Signhild
    Aug 24 Bartolomeus
-   Aug 25 Lovisa Louise
+   Aug 25 Lovisa, Louise
    Aug 26 Östen
-   Aug 27 Rolf Raoul
-   Aug 28 Gurli Leila
-   Aug 29 Hans Hampus
-   Aug 30 Albert Albertina
-   Aug 31 Arvid Vidar
+   Aug 27 Rolf, Raoul
+   Aug 28 Gurli, Leila
+   Aug 29 Hans, Hampus
+   Aug 30 Albert, Albertina
+   Aug 31 Arvid, Vidar
    Sep  1 Samuel
-   Sep  2 Justus Justina
-   Sep  3 Alfhild Alva
+   Sep  2 Justus, Justina
+   Sep  3 Alfhild, Alva
    Sep  4 Gisela
-   Sep  5 Adela Heidi
-   Sep  6 Lilian Lilly
-   Sep  7 Regina Roy
-   Sep  8 Alma Hulda
-   Sep  9 Anita Annette
-   Sep 10 Tord Turid
-   Sep 11 Dagny Helny
-   Sep 12 Åsa Åslög
+   Sep  5 Adela, Heidi
+   Sep  6 Lilian, Lilly
+   Sep  7 Regina, Roy
+   Sep  8 Alma, Hulda
+   Sep  9 Anita, Annette
+   Sep 10 Tord, Turid
+   Sep 11 Dagny, Helny
+   Sep 12 Åsa, Åslög
    Sep 13 Sture
    Sep 14 Ida
-   Sep 15 Sigrid Siri
-   Sep 16 Dag Daga
-   Sep 17 Hildegard Magnhild
+   Sep 15 Sigrid, Siri
+   Sep 16 Dag, Daga
+   Sep 17 Hildegard, Magnhild
    Sep 18 Orvar
    Sep 19 Fredrika
-   Sep 20 Elise Lisa
+   Sep 20 Elise, Lisa
    Sep 21 Matteus
-   Sep 22 Maurits Moritz
-   Sep 23 Tekla Tea
-   Sep 24 Gerhard Gert
+   Sep 22 Maurits, Moritz
+   Sep 23 Tekla, Tea
+   Sep 24 Gerhard, Gert
    Sep 25 Tryggve
-   Sep 26 Enar Einar
-   Sep 27 Dagmar Rigmor
-   Sep 28 Lennart Leonard
-   Sep 29 Mikael Mikaela
+   Sep 26 Enar, Einar
+   Sep 27 Dagmar, Rigmor
+   Sep 28 Lennart, Leonard
+   Sep 29 Mikael, Mikaela
    Sep 30 Helge
-   Oct  1 Ragnar Ragna
-   Oct  2 Ludvig Love
-   Oct  3 Evald Osvald
-   Oct  4 Frans Frank
+   Oct  1 Ragnar, Ragna
+   Oct  2 Ludvig, Love
+   Oct  3 Evald, Osvald
+   Oct  4 Frans, Frank
    Oct  5 Bror
-   Oct  6 Jenny Jennifer
-   Oct  7 Birgitta Britta
+   Oct  6 Jenny, Jennifer
+   Oct  7 Birgitta, Britta
    Oct  8 Nils
-   Oct  9 Ingrid Inger
-   Oct 10 Harry Harriet
-   Oct 11 Erling Jarl
-   Oct 12 Valfrid Manfred
-   Oct 13 Berit Birgit
+   Oct  9 Ingrid, Inger
+   Oct 10 Harry, Harriet
+   Oct 11 Erling, Jarl
+   Oct 12 Valfrid, Manfred
+   Oct 13 Berit, Birgit
    Oct 14 Stellan
-   Oct 15 Hedvig Hillevi
+   Oct 15 Hedvig, Hillevi
    Oct 16 Finn
-   Oct 17 Antonia Toini
+   Oct 17 Antonia, Toini
    Oct 18 Lukas
-   Oct 19 Tore Tor
+   Oct 19 Tore, Tor
    Oct 20 Sibylla
-   Oct 21 Ursula Yrsa
-   Oct 22 Marika Marita
-   Oct 23 Severin Sören
-   Oct 24 Evert Eilert
-   Oct 25 Inga Ingalill
-   Oct 26 Amanda Rasmus
+   Oct 21 Ursula, Yrsa
+   Oct 22 Marika, Marita
+   Oct 23 Severin, Sören
+   Oct 24 Evert, Eilert
+   Oct 25 Inga, Ingalill
+   Oct 26 Amanda, Rasmus
    Oct 27 Sabina
-   Oct 28 Simon Simone
+   Oct 28 Simon, Simone
    Oct 29 Viola
-   Oct 30 Elsa Isabella
-   Oct 31 Edit Edgar
+   Oct 30 Elsa, Isabella
+   Oct 31 Edit, Edgar
    Nov  1 
    Nov  2 Tobias
-   Nov  3 Hubert Hugo
+   Nov  3 Hubert, Hugo
    Nov  4 Sverker
-   Nov  5 Eugen Eugenia
+   Nov  5 Eugen, Eugenia
    Nov  6 Gustav Adolf
-   Nov  7 Ingegerd Ingela
+   Nov  7 Ingegerd, Ingela
    Nov  8 Vendela
-   Nov  9 Teodor Teodora
-   Nov 10 Martin Martina
+   Nov  9 Teodor, Teodora
+   Nov 10 Martin, Martina
    Nov 11 Mårten
-   Nov 12 Konrad Kurt
-   Nov 13 Kristian Krister
-   Nov 14 Emil Emilia
+   Nov 12 Konrad, Kurt
+   Nov 13 Kristian, Krister
+   Nov 14 Emil, Emilia
    Nov 15 Leopold
-   Nov 16 Vibeke Viveka
-   Nov 17 Naemi Naima
-   Nov 18 Lillemor Moa
-   Nov 19 Elisabet Lisbet
-   Nov 20 Pontus Marina
-   Nov 21 Helga Olga
-   Nov 22 Cecilia Sissela
+   Nov 16 Vibeke, Viveka
+   Nov 17 Naemi, Naima
+   Nov 18 Lillemor, Moa
+   Nov 19 Elisabet, Lisbet
+   Nov 20 Pontus, Marina
+   Nov 21 Helga, Olga
+   Nov 22 Cecilia, Sissela
    Nov 23 Klemens
-   Nov 24 Gudrun Rune
-   Nov 25 Katarina Katja
+   Nov 24 Gudrun, Rune
+   Nov 25 Katarina, Katja
    Nov 26 Linus
-   Nov 27 Astrid Asta
+   Nov 27 Astrid, Asta
    Nov 28 Malte
    Nov 29 Sune
-   Nov 30 Andreas Anders
-   Dec  1 Oskar Ossian
-   Dec  2 Beata Beatrice
+   Nov 30 Andreas, Anders
+   Dec  1 Oskar, Ossian
+   Dec  2 Beata, Beatrice
    Dec  3 Lydia
-   Dec  4 Barbara Barbro
+   Dec  4 Barbara, Barbro
    Dec  5 Sven
-   Dec  6 Nikolaus Niklas
-   Dec  7 Angela Angelika
+   Dec  6 Nikolaus, Niklas
+   Dec  7 Angela, Angelika
    Dec  8 Virginia
    Dec  9 Anna
-   Dec 10 Malin Malena
-   Dec 11 Daniel Daniela
-   Dec 12 Alexander Alexis
+   Dec 10 Malin, Malena
+   Dec 11 Daniel, Daniela
+   Dec 12 Alexander, Alexis
    Dec 13 Lucia
-   Dec 14 Sten Sixten
+   Dec 14 Sten, Sixten
    Dec 15 Gottfrid
    Dec 16 Assar
    Dec 17 Stig
    Dec 18 Abraham
    Dec 19 Isak
-   Dec 20 Israel Moses
+   Dec 20 Israel, Moses
    Dec 21 Tomas
-   Dec 22 Natanael Jonatan
+   Dec 22 Natanael, Jonatan
    Dec 23 Adam
    Dec 24 Eva
    Dec 25 
-   Dec 26 Stefan Staffan
-   Dec 27 Johannes Johan
+   Dec 26 Stefan, Staffan
+   Dec 27 Johannes, Johan
    Dec 28 Benjamin
-   Dec 29 Natalia Natalie
-   Dec 30 Abel Set
+   Dec 29 Natalia, Natalie
+   Dec 30 Abel, Set
    Dec 31 Sylvester
+
+# ----------------------------------------------------------------
+# Finland
+# source: Linus Sjöberg <lsjoberg@aland.net>
+# ----------------------------------------------------------------
+
+Region "fi"
+   Jan  1 
+   Jan  2 Aapeli
+   Jan  3 Elmeri, Elmer, Elmo
+   Jan  4 Ruut
+   Jan  5 Lea, Leea
+   Jan  6 Harri
+   Jan  7 Aukusti, Aku, August
+   Jan  8 Hilppa, Titta
+   Jan  9 Veikko, Veli, Veijo
+   Jan 10 Nyyrikki
+   Jan 11 Kari, Karri
+   Jan 12 Toini
+   Jan 13 Nuutti
+   Jan 14 Sakari, Saku
+   Jan 15 Solja
+   Jan 16 Ilmari, Ilmo
+   Jan 17 Toni, Anttoni, Antto, Anton
+   Jan 18 Laura
+   Jan 19 Heikki, Henrik, Henrikki, Henri
+   Jan 20 Henna, Henni, Henriikka
+   Jan 21 Aune, Oona, Auni
+   Jan 22 Visa
+   Jan 23 Eine, Eini, Enni
+   Jan 24 Senja
+   Jan 25 Paavo, Pauli, Paavali, Paul
+   Jan 26 Joonatan
+   Jan 27 Viljo
+   Jan 28 Kaarlo, Kalle, Kaarle, Mies
+   Jan 29 Valtteri
+   Jan 30 Irja
+   Jan 31 Alli
+   Feb  1 Riitta
+   Feb  2 Aamu, Jemina
+   Feb  3 Valo
+   Feb  4 Armi, Ronja
+   Feb  5 asser
+   Feb  6 Terhi, Teija, Tiia, Tea, Terhikki
+   Feb  7 Riku, Rikhard
+   Feb  8 Laina
+   Feb  9 Raija, Raisa
+   Feb 10 Elina, Elna, Ella, Ellen
+   Feb 11 Talvikki
+   Feb 12 Elma, Elmi
+   Feb 13 Sulo, Sulho
+   Feb 14 Voitto, Valentin, Tino
+   Feb 15 Sipi, Sippo
+   Feb 16 Kai
+   Feb 17 Väinö, Väonämö
+   Feb 18 Kaino
+   Feb 19 Eija
+   Feb 20 Heli, Helinä, Heljä, Hely
+   Feb 21 Keijo
+   Feb 22 Tuulikki, Tuuli, Tuulia
+   Feb 23 Aslak
+   Feb 24 Matti, Matias
+   Feb 25 Tuija, Tuire
+   Feb 26 Nestori
+   Feb 27 Torsti
+   Feb 28 Onni
+   Mar  1 Alpo, alvi, Alpi
+   Mar  2 Virve, Virva
+   Mar  3 Kauko
+   Mar  4 Ari, arsi, Atro
+   Mar  5 Laila, Leila
+   Mar  6 Tarmo
+   Mar  7 Tarja, Taru
+   Mar  8 Vilppu
+   Mar  9 Auvo
+   Mar 10 Aurora, Aura, Auri
+   Mar 11 Kalervo
+   Mar 12 Reijo, Reko
+   Mar 13 Erno, Tarvo, Ernesti
+   Mar 14 Matilda, Tilda
+   Mar 15 Risto
+   Mar 16 Ilkka
+   Mar 17 Kerttu, Kerttuli
+   Mar 18 Eetu, Edvard
+   Mar 19 Jooseppi, Juuso, Joosef, Josefiina
+   Mar 20 Aki, Joakim, Kim, Jaakkima
+   Mar 21 Pentti
+   Mar 22 Vihtori
+   Mar 23 Akseli
+   Mar 24 Kaapo, Gabriel, Kaapro, Kaappo
+   Mar 25 Aija
+   Mar 26 Manu, Immanuel, Manne, Immo
+   Mar 27 Sauli, Saul
+   Mar 28 Armas
+   Mar 29 Joonas, Jouni, Joni, Joonas, Jonne, Jonni
+   Mar 30 Usko
+   Mar 31 Irma, Irmeli
+   Apr  1 Raita, Pulmu
+   Apr  2 Pellervo
+   Apr  3 Sampo
+   Apr  4 Ukko
+   Apr  5 Irene, Irina, Ira, Iro
+   Apr  6 Vilho, Ville, Viljami, Vilhelm, Vili, Jami
+   Apr  7 Allan, Ahvo
+   Apr  8 Suoma, Suometar
+   Apr  9 Elias, Eelis, Eljas
+   Apr 10 Tero
+   Apr 11 Verna
+   Apr 12 Julius, Julia, Juliaana
+   Apr 13 Tellervo
+   Apr 14 Taito
+   Apr 15 Lina, Tuomi
+   Apr 16 Jalo, Patrik
+   Apr 17 Otto
+   Apr 18 Valto, Valdemar
+   Apr 19 Pälvi, Pilvi
+   Apr 20 Lauha
+   Apr 21 Anssi, Anselmi
+   Apr 22 Alina
+   Apr 23 Yrjö, Jyrki, Jyri, Yrjänä, Jori
+   Apr 24 Pertti, Albert, Altti
+   Apr 25 Markku, Markus, Marko
+   Apr 26 Terttu, Teresa
+   Apr 27 Merja
+   Apr 28 Ilpo, Ilppo, Tuure
+   Apr 29 Teijo
+   Apr 30 Mirja, Mirva, Mira, Miia, Mirjami, Mirka, Mirkka
+   May  1 Vappu, Valpuri
+   May  2 Vuokko, Viivi
+   May  3 Outi
+   May  4 Ruusu, Roosa
+   May  5 Maini
+   May  6 Ylermi
+   May  7 Helmi, Kastehelmi
+   May  8 Heino
+   May  9 Timo
+   May 10 aino, Aina, ainikki
+   May 11 Osmo
+   May 12 Liotta
+   May 13 Kukka, Floora
+   May 14 Tuula
+   May 15 Sofia, Sinja, Sohvi
+   May 16 Esteri, Essi, Ester
+   May 17 Maila, Maili, Mailis, Rebekka
+   May 18 Erkki, Eero, Eerikki, Eerika
+   May 19 Emilia, emma, emmi, Milla, Milja, Milka, Amalia
+   May 20 Lilja, Karoliina, Lilli
+   May 21 Kosti, Konsta, Konstantin
+   May 22 Hemmikki, Hemmo
+   May 23 Lyydia, Lyyli
+   May 24 Tuukka, Tuoko
+   May 25 Urpo
+   May 26 Vilhelmiina, Minna, Vilma, Miina, Mimmi
+   May 27 Ritva
+   May 28 Alma
+   May 29 Oiva, Oivi, Olivia
+   May 30 Pasi
+   May 31 Helka, Helga
+   Jun  1 Teemu, Nikodemus
+   Jun  2 Venla
+   Jun  3 Orvokki, Viola
+   Jun  4 Toivo
+   Jun  5 Sulevi
+   Jun  6 Kustaa, Kyösti, Kustavi
+   Jun  7 Suvi, Robert, Roope
+   Jun  8 Salomo, Salomon
+   Jun  9 Ensio
+   Jun 10 Seppo
+   Jun 11 Impi, Immi
+   Jun 12 Esko
+   Jun 13 Raili, Raila
+   Jun 14 Kielo
+   Jun 15 Vieno, Viena
+   Jun 16 Päivi, Päivikki, Päivä
+   Jun 17 Urho
+   Jun 18 Tapio
+   Jun 19 Siiri
+   Jun 20 Into
+   Jun 21 Ahti, Ahto
+   Jun 22 PaulaLiina, Pauliina
+   Jun 23 Aatto, Aatu, Aadolf
+   Jun 24 Johannes, Juhani, Juha, Juho, Jukka, Jussi, Janne, Jani, Juhana
+   Jun 25 Uuno
+   Jun 26 Jorm, Jarmo, Jarkko, Jarno, Jere, Jeremias
+   Jun 27 Elviira, Elvi
+   Jun 28 Leo
+   Jun 29 Pietari, Pekka, Petri, Petra, Petteri, Pekko
+   Jun 30 Päiviö, Päivö
+   Jul  1 Aaro, Aaron
+   Jul  2 Maria, Mari, Maija, Meeri, Maaria, Marika, Maiju, Maikki, Kukka-Maaria
+   Jul  3 Arvo
+   Jul  4 Ulla, Ulpu
+   Jul  5 Unto, Untamo
+   Jul  6 Esa, Esaias
+   Jul  7 Klaus, Launo
+   Jul  8 Turo, Turkka
+   Jul  9 Ilta, Jasmin
+   Jul 10 Saima, Saimi
+   Jul 11 Elli, Noora, Nelli, Eleonoora
+   Jul 12 Hermanni, Herkko, Herman
+   Jul 13 Ilari, Lari, Joel
+   Jul 14 Aliisa
+   Jul 15 Rauni, Rauna
+   Jul 16 Reino
+   Jul 17 Ossi, Ossian
+   Jul 18 Riikka
+   Jul 19 Saara, Sari, Salli, Salla, Sara
+   Jul 20 Marketta, Maarit, Reeta, Maaret, Reetta, Margareeta
+   Jul 21 Johanna, Hanna, Hanne, Jenni, Jonna, Jenna, Hannele, Joanna
+   Jul 22 Leena, Leeni, Lenita, Matleena
+   Jul 23 Oili, Olga
+   Jul 24 Kristiina, Kirsti, Tiina, Kirsi, Kiia
+   Jul 25 Jaakko, Jaakoppi, Jaakob
+   Jul 26 Martta
+   Jul 27 Heidi
+   Jul 28 Atso
+   Jul 29 Olavi, Olli, Uolevi, Uoti
+   Jul 30 Asta
+   Jul 31 Helena, Elena
+   Aug  1 Maire
+   Aug  2 Kimmo
+   Aug  3 Linnea, Nea, Vanamo
+   Aug  4 Veera
+   Aug  5 Salme, Sanelma
+   Aug  6 Toimi, Keimo
+   Aug  7 Lahja
+   Aug  8 Sylvi, Sylvia, Silva
+   Aug  9 Erja, Eira
+   Aug 10 Lauri, Lasse, Lassi
+   Aug 11 Sanna, Sanni, Susanna, Susanne
+   Aug 12 Klaara
+   Aug 13 Jesse
+   Aug 14 Onerva, Kanerva
+   Aug 15 Marjatta, Marja, Jaana, Marjo, Marjut, Marjaana, Marjukka, Marita, Maritta, Marianne, Marianna
+   Aug 16 Aulis
+   Aug 17 Verneri
+   Aug 18 Leevi
+   Aug 19 Mauno, Maunu
+   Aug 20 Samuli, Sami, Samuel, Samu
+   Aug 21 Soini, Veini
+   Aug 22 Iivari, Iivo
+   Aug 23 Varma, Signe
+   Aug 24 Perttu
+   Aug 25 Loviisa
+   Aug 26 Ilma, Ilmi, Ilmatar
+   Aug 27 Rauli
+   Aug 28 Tauno
+   Aug 29 Iines, Iina, Iinari
+   Aug 30 Eemil, Eemeli
+   Aug 31 Arvi
+   Sep  1 Pirkka
+   Sep  2 Sinikka, Sini
+   Sep  3 Soili, Soile, Soila
+   Sep  4 Ansa
+   Sep  5 Roni, Mainio
+   Sep  6 Asko
+   Sep  7 Miro, Arho, Arhippa
+   Sep  8 Taimi
+   Sep  9 Eevert, Isto
+   Sep 10 Kalevi, Kaleva
+   Sep 11 Aleksanteri, Ali, Ale, Aleksandra
+   Sep 12 Valma, Vilja
+   Sep 13 Orvo
+   Sep 14 Iida
+   Sep 15 Sirpa
+   Sep 16 Hellevi, Hillevi, Hille, Hilla
+   Sep 17 Aili, Aila
+   Sep 18 Tyyne, Tytti, Tyyni
+   Sep 19 Reija
+   Sep 20 Varpu, Vaula
+   Sep 21 Mervi
+   Sep 22 Mauri
+   Sep 23 Mielikki
+   Sep 24 Alvar, Auno
+   Sep 25 Kullervo
+   Sep 26 Kuisma
+   Sep 27 Vesa
+   Sep 28 Arja
+   Sep 29 Mikael, Mikko, Miika, Miikka, Miska, Mikaela
+   Sep 30 Sorja, Sirja
+   Oct  1 Rauno, Rainer, Raine, Raino
+   Oct  2 Valio
+   Oct  3 Raimo
+   Oct  4 Saila, Saija
+   Oct  5 Inkeri, Inka
+   Oct  6 Minttu, Pinja
+   Oct  7 Pirkko, Pirjo, Piritta, Pirita, Birgitta
+   Oct  8 Hilja
+   Oct  9 Ilona
+   Oct 10 Aleksi, Aleksis
+   Oct 11 Otso, Ohto
+   Oct 12 Aarre, Aarto
+   Oct 13 Taina, Tanja, Taija
+   Oct 14 Elsa, Else, Elsi
+   Oct 15 Helvi, Heta
+   Oct 16 Sirkka, Sirkku
+   Oct 17 Saini, Saana
+   Oct 18 Satu, Säde
+   Oct 19 Uljas
+   Oct 20 Kauno, Kasperi
+   Oct 21 Ursula
+   Oct 22 Anja, Anita, Anniina, Anitta
+   Oct 23 Severi
+   Oct 24 Asmo, Rasmus
+   Oct 25 Sointu
+   Oct 26 Amanda, Niina, Manta
+   Oct 27 Helli, Hellä, Hellin, Helle
+   Oct 28 Simo
+   Oct 29 Alfred, Urmas
+   Oct 30 Eila
+   Oct 31 Artturi, Arto, Arttu
+   Nov  1 Pyry, Lyly
+   Nov  2 Topi, Topias
+   Nov  3 Terho
+   Nov  4 Hertta
+   Nov  5 Reima
+   Nov  6 Kustaa Aadolf
+   Nov  7 Taisto
+   Nov  8 Aatos
+   Nov  9 Teuvo
+   Nov 10 Martti
+   Nov 11 Panu
+   Nov 12 Virpi
+   Nov 13 Ano, Kristian
+   Nov 14 Iiris
+   Nov 15 Janika, Janita, Janina, Janette
+   Nov 16 Aarne, Aarno, Aarni
+   Nov 17 Eino, Einari
+   Nov 18 Tenho, Jousia
+   Nov 19 Elisabet, Liisa, Eliisa, Elisa, Elise, Liisi
+   Nov 20 Jalmari, Jari
+   Nov 21 Hilma
+   Nov 22 Silja, Selja
+   Nov 23 Ismo
+   Nov 24 Lempi, Lemmikki, Sivi
+   Nov 25 Katri, Kaisa, Kaija, Katja, Kaarina, Katariina, Katriina, Kati, Kaisu, Riina
+   Nov 26 Sisko
+   Nov 27 Hilkka
+   Nov 28 Heini
+   Nov 29 Aimo
+   Nov 30 Antti, Antero, Atte
+   Dec  1 Oskari
+   Dec  2 Anelma, Unelma
+   Dec  3 Vellamo, Meri
+   Dec  4 Airi, Aira
+   Dec  5 Selma
+   Dec  6 Niilo, Nikolai, Niko, Niklas
+   Dec  7 Sampsa
+   Dec  8 Kyllikki, Kylli
+   Dec  9 Anna, Anne, Anni, Anu, Annikki, Anneli, Annukka, Annika</font>
+   Dec 10 Jutta
+   Dec 11 Taneli, Tatu, Daniel
+   Dec 12 Tuovi
+   Dec 13 Seija
+   Dec 14 Jouko
+   Dec 15 Heimo
+   Dec 16 Auli, Aulikki, Aada
+   Dec 17 Raakel
+   Dec 18 Aapo, Aappo, Rami
+   Dec 19 Iikka, Iiro, Iisakki, Isko
+   Dec 20 Benjamin, Kerkko
+   Dec 21 Tuomas, Tuomo, Tommi, Tomi
+   Dec 22 Raafael
+   Dec 23 Senni
+   Dec 24 Aatami, Eeva, Eevi, Eveliina
+   Dec 25 
+   Dec 26 Tapani, Teppo, Tahvo
+   Dec 27 Hannu, Hannes
+   Dec 28 Piia
+   Dec 29 Rauha
+   Dec 30 Daavid, Taavetti, Taavi
+   Dec 31 Sylvester, Silvo
 
 # ----------------------------------------------------------------
 # Hungary
@@ -2195,3 +2934,377 @@ Region "saints"
    Dec 29 St. Thomas Becket
    Dec 30 St. Anysius
    Dec 31 St. Sylvester I
+
+# ----------------------------------------------------------------
+# Czechia
+# source: some union of info from web
+# ----------------------------------------------------------------
+
+Region "cs"
+  Charset iso-8859-2
+  Leapdayshift 2000
+   Jan  1 Nový rok
+   Jan  2 Karina
+   Jan  3 Radmila
+   Jan  4 Diana
+   Jan  5 Dalimil
+   Jan  6 Tøi králové
+   Jan  7 Vilma
+   Jan  8 Èestmír
+   Jan  9 Vladan
+   Jan 10 Bøetislav
+   Jan 11 Bohdana
+   Jan 12 Pravoslav
+   Jan 13 Edita
+   Jan 14 Radovan
+   Jan 15 Alice
+   Jan 16 Ctirad
+   Jan 17 Drahoslav
+   Jan 18 Vladislav
+   Jan 19 Doubravka
+   Jan 20 Ilona
+   Jan 21 Bìla
+   Jan 22 Slavomír
+   Jan 23 Zdenìk
+   Jan 24 Milena
+   Jan 25 Milo¹
+   Jan 26 Zora
+   Jan 27 Ingrid
+   Jan 28 Otýlie
+   Jan 29 Zdislava
+   Jan 30 Robin
+   Jan 31 Marika
+   Feb  1 Hynek
+   Feb  2 Nela
+   Feb  3 Bla¾ej
+   Feb  4 Jarmila
+   Feb  5 Dobromila
+   Feb  6 Vanda
+   Feb  7 Veronika
+   Feb  8 Milada
+   Feb  9 Apolena
+   Feb 10 Mojmír
+   Feb 11 Bo¾ena
+   Feb 12 Slavìna
+   Feb 13 Vìnceslav
+   Feb 14 Valentýn
+   Feb 15 Jiøina
+   Feb 16 Ljuba
+   Feb 17 Miloslava
+   Feb 18 Gizela
+   Feb 19 Patrik
+   Feb 20 Oldøich
+   Feb 21 Lenka
+   Feb 22 Petr
+   Feb 23 Svatopluk
+   Feb 24 Matìj
+   Feb 25 Liliana
+   Feb 26 Dora
+   Feb 27 Alexandr
+   Feb 28 Lumír
+   Mar  1 Albín
+   Mar  2 Ane¾ka
+   Mar  3 Kamil
+   Mar  4 Stela
+   Mar  5 Kazimír
+   Mar  6 Miroslav
+   Mar  7 Tomá¹
+   Mar  8 Gabriela
+   Mar  9 Franti¹ka
+   Mar 10 Viktorie
+   Mar 11 Andìla
+   Mar 12 Øehoø
+   Mar 13 Rù¾ena
+   Mar 14 Matylda, Rút
+   Mar 15 Ida
+   Mar 16 Amos
+   Mar 17 Vlastimil
+   Mar 18 Eduard
+   Mar 19 Josef
+   Mar 20 Svìtlana
+   Mar 21 Radek
+   Mar 22 Leona
+   Mar 23 Ivona
+   Mar 24 Gabriel
+   Mar 25 Marián
+   Mar 26 Emanuel
+   Mar 27 Dita
+   Mar 28 Soòa
+   Mar 29 Ta»ána
+   Mar 30 Arno¹t
+   Mar 31 Kvido
+   Apr  1 Hugo
+   Apr  2 Erika
+   Apr  3 Richard
+   Apr  4 Ivana
+   Apr  5 Miroslava
+   Apr  6 Vendula
+   Apr  7 Heøman, Hermína
+   Apr  8 Ema
+   Apr  9 Du¹an
+   Apr 10 Darja
+   Apr 11 Izabela
+   Apr 12 Julius
+   Apr 13 Ale¹
+   Apr 14 Vincenc
+   Apr 15 Anastázie
+   Apr 16 Irena
+   Apr 17 Rudolf
+   Apr 18 Valérie
+   Apr 19 Rostislav
+   Apr 20 Marcela
+   Apr 21 Alexandra
+   Apr 22 Ev¾enie
+   Apr 23 Vojtìch
+   Apr 24 Jiøí
+   Apr 25 Marek
+   Apr 26 Oto
+   Apr 27 Jaroslav
+   Apr 28 Vlastislav
+   Apr 29 Robert
+   Apr 30 Blahoslav
+   May  1 Svátek práce
+   May  2 Zikmund
+   May  3 Alexej
+   May  4 Kvìtoslav
+   May  5 Klaudie
+   May  6 Radoslav
+   May  7 Stanislav
+   May  8 Den osvobození od fa¹ismu
+   May  9 Ctibor
+   May 10 Bla¾ena
+   May 11 Svatava
+   May 12 Pankrác
+   May 13 Servác
+   May 14 Bonifác
+   May 15 ®ofie
+   May 16 Pøemysl
+   May 17 Aneta
+   May 18 Nata¹a
+   May 19 Ivo
+   May 20 Zby¹ek
+   May 21 Monika
+   May 22 Emil
+   May 23 Vladimír
+   May 24 Jana
+   May 25 Viola
+   May 26 Filip
+   May 27 Valdemar
+   May 28 Vilém
+   May 29 Maximilián, Maxim
+   May 30 Ferdinand
+   May 31 Kamila
+   Jun  1 Laura
+   Jun  2 Jarmil
+   Jun  3 Tamara
+   Jun  4 Dalibor
+   Jun  5 Dobroslav
+   Jun  6 Norbert
+   Jun  7 Iveta
+   Jun  8 Medard
+   Jun  9 Stanislava
+   Jun 10 Gita
+   Jun 11 Flóra
+   Jun 12 Antonie
+   Jun 13 Antonín
+   Jun 14 Vasil
+   Jun 15 Vít
+   Jun 16 Zbynìk
+   Jun 17 Adolf
+   Jun 18 Milan
+   Jun 19 Leo¹
+   Jun 20 Kvìta
+   Jun 21 Alois
+   Jun 22 Pavla
+   Jun 23 Zdeòka
+   Jun 24 Jan
+   Jun 25 Ivan
+   Jun 26 Adriana
+   Jun 27 Ladislav
+   Jun 28 Lubomír
+   Jun 29 Petr a Pav
+   Jun 30 ©árka
+   Jul  1 Jaroslava
+   Jul  2 Patricie
+   Jul  3 Radomír
+   Jul  4 Prokop
+   Jul  5 Cyril
+   Jul  6 Jan Hus
+   Jul  7 Bohuslava
+   Jul  8 Nora
+   Jul  9 Drahoslava
+   Jul 10 Libu¹e
+   Jul 11 Olga
+   Jul 12 Boøek
+   Jul 13 Markéta
+   Jul 14 Karolína
+   Jul 15 Jindøich
+   Jul 16 Lubo¹
+   Jul 17 Martina
+   Jul 18 Drahomíra
+   Jul 19 Èenìk
+   Jul 20 Ilja
+   Jul 21 Vítìzslav
+   Jul 22 Magdaléna
+   Jul 23 Libor
+   Jul 24 Kristýna
+   Jul 25 Jakub
+   Jul 26 Anna
+   Jul 27 Vìroslav
+   Jul 28 Viktor
+   Jul 29 Marta
+   Jul 30 Boøivoj
+   Jul 31 Ignác
+   Aug  1 Oskar
+   Aug  2 Gustav
+   Aug  3 Milu¹e
+   Aug  4 Dominik
+   Aug  5 Milivoj
+   Aug  6 Oldøi¹ka
+   Aug  7 Lada
+   Aug  8 Sobìslav
+   Aug  9 Roman
+   Aug 10 Vavøinec
+   Aug 11 Zuzana
+   Aug 12 Klára
+   Aug 13 Alena
+   Aug 14 Alan
+   Aug 15 Hana
+   Aug 16 Jáchym
+   Aug 17 Petra
+   Aug 18 Helena
+   Aug 19 Ludvík
+   Aug 20 Bernard
+   Aug 21 Johana
+   Aug 22 Bohuslav
+   Aug 23 Sandra
+   Aug 24 Bartolomìj
+   Aug 25 Radim
+   Aug 26 Ludìk
+   Aug 27 Otakar
+   Aug 28 Augustýn
+   Aug 29 SNP
+   Aug 30 ©tìpán
+   Aug 31 Pavlína
+   Sep  1 Linda, Samuel
+   Sep  2 Adéla
+   Sep  3 Bronislav
+   Sep  4 Jindøi¹ka
+   Sep  5 Boris
+   Sep  6 Boleslav
+   Sep  7 Regina
+   Sep  8 Mariana
+   Sep  9 Daniela
+   Sep 10 Irma
+   Sep 11 Denisa
+   Sep 12 Marie
+   Sep 13 Lubor
+   Sep 14 Radka
+   Sep 15 Jolana
+   Sep 16 Ludmil
+   Sep 17 Nadì¾da
+   Sep 18 Kry¹tof
+   Sep 19 Zita
+   Sep 20 Oleg
+   Sep 21 Matou¹
+   Sep 22 Darina
+   Sep 23 Berta
+   Sep 24 Jaromír
+   Sep 25 Zlata
+   Sep 26 Andrea
+   Sep 27 Joná¹
+   Sep 28 Václav
+   Sep 29 Michal
+   Sep 30 Jeroným
+   Oct  1 Igor
+   Oct  2 Olívie, Galina, Oliver
+   Oct  3 Bohumil
+   Oct  4 Franti¹ek
+   Oct  5 Eli¹ka
+   Oct  6 Hanu¹
+   Oct  7 Sergej
+   Oct  8 Vìra
+   Oct  9 ©tefan, Sára
+   Oct 10 Marina
+   Oct 11 Andrej
+   Oct 12 Marcel
+   Oct 13 Renáta
+   Oct 14 Agáta
+   Oct 15 Tereza
+   Oct 16 Havel
+   Oct 17 Hedvika
+   Oct 18 Luká¹
+   Oct 19 Michaela
+   Oct 20 Vendelín
+   Oct 21 Brigita
+   Oct 22 Sabina
+   Oct 23 Teodor
+   Oct 24 Nina
+   Oct 25 Beáta
+   Oct 26 Erik
+   Oct 27 ©arlota, Zoja, Zoe
+   Oct 28 Den vzniku samostatného Èeskoslovenska
+   Oct 29 Silvie
+   Oct 30 Tadeá¹
+   Oct 31 ©tìpánka
+   Nov  1 Felix
+   Nov  2 Du¹ièky
+   Nov  3 Hubert
+   Nov  4 Karel
+   Nov  5 Miriam
+   Nov  6 Libìna
+   Nov  7 Saskie
+   Nov  8 Bohumír
+   Nov  9 Bohdan
+   Nov 10 Ev¾en
+   Nov 11 MArtin
+   Nov 12 Benedikt
+   Nov 13 Tibor
+   Nov 14 Sáva
+   Nov 15 Leopold
+   Nov 16 Otmar
+   Nov 17 Mahulena
+   Nov 18 Romana
+   Nov 19 Al¾bìta
+   Nov 20 Nikola
+   Nov 21 Albert
+   Nov 22 Cecílie
+   Nov 23 Klement
+   Nov 24 Emílie
+   Nov 25 Kateøina
+   Nov 26 Artur
+   Nov 27 Xenie
+   Nov 28 René
+   Nov 29 Zina
+   Nov 30 Ondøej
+   Dec  1 Iva
+   Dec  2 Blanka
+   Dec  3 Svatoslav
+   Dec  4 Barbora
+   Dec  5 Jitka
+   Dec  6 Mikulá¹
+   Dec  7 Ambro¾, Benjamín
+   Dec  8 Kvìtoslava
+   Dec  9 Vratislav
+   Dec 10 Julie
+   Dec 11 Dana
+   Dec 12 Simona
+   Dec 13 Lucie
+   Dec 14 Lýdie
+   Dec 15 Radan, Radana
+   Dec 16 Albína
+   Dec 17 Daniel
+   Dec 18 Miloslav
+   Dec 19 Ester
+   Dec 20 Dagmar
+   Dec 21 Natálie
+   Dec 22 ©imon
+   Dec 23 Vlasta
+   Dec 24 Adam a Eva
+   Dec 25 Bo¾í hod
+   Dec 26 ©tìpán
+   Dec 27 ®aneta
+   Dec 28 Bohumila
+   Dec 29 Judita
+   Dec 30 David
+   Dec 31 Silvestr

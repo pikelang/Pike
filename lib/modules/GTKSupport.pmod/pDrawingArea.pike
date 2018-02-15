@@ -1,8 +1,20 @@
 #pike __REAL_VERSION__
 
-inherit GTK.DrawingArea;
-static object backing_store, bgc;
-static int _xsize, _ysize, is_realized;
+//! A Drawing area with backing store. Basically, the only difference
+//! from a drawing area widget is that this one never loose it's
+//! contents unless you do paint over them.
+//!
+//! It also use quite a significant amount of memory if the backing
+//! pixmap has many bitplanes, and the drawing area is large.
+//!
+//! @seealso
+//!   @[GTK1.DrawingArea]
+
+inherit GTK1.DrawingArea;
+protected object backing_store, bgc;
+protected int _xsize, _ysize, is_realized;
+
+//! @ignore
 
 #define WRAP(X) object X(mixed ... args) \
    {                           \
@@ -11,17 +23,17 @@ static int _xsize, _ysize, is_realized;
        size(xsize(),ysize());                \
      backing_store->X(@args);            \
      refresh();                              \
-     return this_object();                   \
+     return this;                   \
    }
 
-object size(int x, int y)
+this_program size(int x, int y)
 {
-  if(!is_realized) return this_object();
+  if(!is_realized) return this;
   ::size(x,y);
-  if(!bgc) bgc = GDK.GC( background_pix||backing_store||this_object() );
+  if(!bgc) bgc = GDK1.GC( background_pix||backing_store||this );
   object nb;
   if((x>_xsize || y>_ysize) && x && y)
-    nb = GDK.Pixmap( Image.image(max(x,_xsize),max(y,_ysize)) );
+    nb = GDK1.Pixmap( Image.Image(max(x,_xsize),max(y,_ysize)) );
   if(nb && backing_store)
   {
     nb->draw_pixmap( bgc, backing_store, 0,0,0,0, _xsize, _ysize );
@@ -51,7 +63,7 @@ object size(int x, int y)
   }
 
   refresh();
-  return this_object();
+  return this;
 }
 
 //object set_usize(int x, int y)
@@ -59,7 +71,7 @@ object size(int x, int y)
 //  call_out(size,0.01, x,y);
 //}
 
-static void rrefresh()
+protected void rrefresh()
 {
   if(!is_realized) return;
   if(xsize() != _xsize || ysize() != _ysize)
@@ -67,11 +79,11 @@ static void rrefresh()
   if(backing_store)
   {
     ::draw_pixmap( bgc, backing_store, 0, 0, 0, 0, _xsize, _ysize);
-    GTK.flush();
+    GTK1.flush();
   }
 }
 
-static void refresh()
+protected void refresh()
 {
   remove_call_out(rrefresh);
   call_out(rrefresh,0.01);
@@ -90,9 +102,9 @@ void create()
 //   ::set_usize( 100,100 );
 }
 
-GDK.Pixmap background_pix;
-GDK.Pixmap background_color;
-void set_background( GDK.Pixmap to )
+GDK1.Pixmap background_pix;
+GDK1.Pixmap background_color;
+void set_background( GDK1.Pixmap to )
 {
   if(to->red)
     background_color = to;
@@ -101,7 +113,7 @@ void set_background( GDK.Pixmap to )
   refresh();
 }
 
-object clear(int|void x, int|void y, int|void w, int|void h)
+this_program clear(int|void x, int|void y, int|void w, int|void h)
 {
 //   werror("%d,%d->%d,%d <%d,%d>\n", x, y, x+w, y+h, w, h);
   if(xsize() != _xsize ||
@@ -141,7 +153,7 @@ object clear(int|void x, int|void y, int|void w, int|void h)
 //       backing_store->clear(x,y,h,w);
   }
   refresh();
-  return this_object();
+  return this;
 }
 
 WRAP(draw_arc);
@@ -152,3 +164,5 @@ WRAP(draw_pixmap);
 WRAP(draw_point);
 WRAP(draw_rectangle);
 WRAP(draw_text);
+
+//! @endignore

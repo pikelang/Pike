@@ -1,5 +1,10 @@
-/* $Id: next_prime.c,v 1.10 1999/08/06 22:13:48 hubbe Exp $
- *
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Prime number test using trial division for small primes and then
  * Miller-Rabin, as suggested in Schneier's Applied Cryptography.
  *
@@ -8,9 +13,6 @@
  */
 
 #include "global.h"
-
-RCSID("$Id: next_prime.c,v 1.10 1999/08/06 22:13:48 hubbe Exp $");
-
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)

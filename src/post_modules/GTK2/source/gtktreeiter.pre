@@ -1,0 +1,40 @@
+/* -*- C -*- */
+class GTK2.TreeIter;
+
+//! TreeIter.
+
+/*
+void create()
+//! Create a new TreeIter.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  THIS->obj=g_malloc(sizeof(GtkTreeIter));
+  if (THIS->obj==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkTreeIter));
+  pgtk2__init_this_object();
+}
+*/
+   
+GTK2.TreeIter copy()
+//! Creates a copy of this tree iter.
+{
+  if (THIS->obj) {
+    GtkTreeIter *a1 = g_malloc( sizeof( GtkTreeIter ) );
+    if (a1==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter",sizeof(GtkTreeIter));
+    *a1 = *(GtkTreeIter *)THIS->obj;
+    pgtk2_pop_n_elems(args);
+    push_pgdk2object(a1,pgtk2_tree_iter_program,1);
+  }
+}
+
+void destroy()
+{
+  if (THIS->obj && THIS->owned)
+    g_free((GtkTreeIter *)THIS->obj);
+  THIS->obj=0;
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+

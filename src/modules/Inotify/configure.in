@@ -1,0 +1,6 @@
+AC_INIT(inotify.cmod)
+AC_MODULE_INIT()
+AC_HAVE_HEADERS(sys/inotify.h)
+AC_CHECK_HEADERS(sys/inotify.h)
+
+AC_OUTPUT(Makefile)

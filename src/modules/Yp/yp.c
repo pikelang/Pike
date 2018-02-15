@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "config.h"
 
@@ -25,20 +31,19 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
-#include "builtin_functions.h"
 #include "module_support.h"
 
-/* must be included last */
-#include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.22 2001/01/05 13:50:56 grubba Exp $");
+#define sp Pike_sp
 
 #ifdef HAVE_YPERR_STRING
-#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
-                                           yperr_string(err)); }while(0)
+#ifdef YPERR_STRING_PROTOTYPE_MISSING
+char *yperr_string(int incode);
+#endif /* YPERR_STRING_PROTOTYPE_MISSING */
+
+#define YPERROR(e) do{ if(err) Pike_error("%s\n", yperr_string(e)); }while(0)
 #else /* !HAVE_YPERR_STRING */
-#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): YP error %d.\n", (fun), \
-                                           (err)); }while(0)
+#define YPERROR(e) do{ if(e) Pike_error("YP error %d.\n", (e)); }while(0)
 #endif /* HAVE_YPERR_STRING */
 
 struct my_yp_domain
@@ -47,7 +52,7 @@ struct my_yp_domain
   int last_size; /* Optimize some allocations */
 };
 
-#define this ((struct my_yp_domain *)fp->current_storage)
+#define this ((struct my_yp_domain *)Pike_fp->current_storage)
 
 /*! @module Yp
  *!
@@ -56,18 +61,18 @@ struct my_yp_domain
  *! distribute passwords and similar information within a network.
  */
 
-/*! @decl string default_yp_domain()
+/*! @decl string default_domain()
  *!
  *! Returns the default yp-domain.
  */
-static void f_default_yp_domain(INT32 args)
+static void f_default_domain(INT32 args)
 {
   int err;
   char *ret;
 
   err = yp_get_default_domain(&ret);
 
-  YPERROR( "default_yp_domain", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_text( ret );
@@ -85,20 +90,22 @@ static void f_default_yp_domain(INT32 args)
 static void f_server(INT32 args)
 {
   int err;
-  char *ret;
+  char *ret, *map;
 
-  err = yp_master(this->domain, sp[-1].u.string->str, &ret);
+  get_all_args("server", args, "%s", &map);
+  err = yp_master(this->domain, map, &ret);
 
-  YPERROR( "server", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_text( ret );
 }
 
 /*! @decl void create(string|void domain)
+ *! @decl void bind(string domain)
  *!
  *! If @[domain] is not specified , the default domain will be used.
- *! (As returned by @[Yp.default_yp_domain()]).
+ *! (As returned by @[Yp.default_domain()]).
  *!
  *! If there is no YP server available for the domain, this
  *! function call will block until there is one. If no server appears
@@ -106,17 +113,17 @@ static void f_server(INT32 args)
  *! is not configurable.
  *!
  *! @seealso
- *! @[Yp.default_yp_domain()]
+ *! @[Yp.default_domain()]
  */
 static void f_create(INT32 args)
 {
   int err;
   if(!args)
   {
-    f_default_yp_domain(0);
+    f_default_domain(0);
     args = 1;
   }
-  check_all_args("yp->create", args, BIT_STRING,0);
+  check_all_args("create", args, BIT_STRING,0);
 
   if(this->domain)
   {
@@ -126,7 +133,7 @@ static void f_create(INT32 args)
   this->domain = strdup( sp[-args].u.string->str );
   err = yp_bind( this->domain );
 
-  YPERROR("create", err);
+  YPERROR( err );
 
   pop_n_elems(args);
 }
@@ -145,7 +152,7 @@ static void f_all(INT32 args)
   int retlen, retkeylen;
   char *map;
   struct mapping *res_map;
-  check_all_args("yp->all", args, BIT_STRING, 0);
+  check_all_args("all", args, BIT_STRING, 0);
 
   map = sp[-1].u.string->str;
   res_map = allocate_mapping( (this->last_size?this->last_size+2:40) );
@@ -165,7 +172,7 @@ static void f_all(INT32 args)
   if(err != YPERR_NOMORE)
   {
     free_mapping( res_map );
-    YPERROR( "all", err );
+    YPERROR( err );
   }
 
   this->last_size = num;
@@ -177,7 +184,7 @@ static void f_all(INT32 args)
  *!
  *! For each entry in @[map], call the function specified by @[fun].
  *!
- *! @[fun()] will get two arguments, the first being the key, and the
+ *! @[fun] will get two arguments, the first being the key, and the
  *! second the value.
  *!
  *! @[map] is the YP-map to search in. This must be the full map name.
@@ -207,7 +214,7 @@ static void f_map(INT32 args)
     } while(!err);
 
   if(err != YPERR_NOMORE)
-    YPERROR( "all", err );
+    YPERROR( err );
 
   pop_n_elems(args);
 }
@@ -227,11 +234,11 @@ static void f_order(INT32 args)
   int err;
   YP_ORDER_TYPE ret;
 
-  check_all_args("yp->order", args, BIT_STRING, 0);
+  check_all_args("order", args, BIT_STRING, 0);
   
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);
 
-  YPERROR("order", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_int( (INT32) ret );
@@ -254,7 +261,7 @@ static void f_match(INT32 args)
   char *retval;
   int retlen;
   
-  check_all_args("yp->match", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args("match", args, BIT_STRING, BIT_STRING, 0);
 
   err = yp_match( this->domain, sp[-args].u.string->str,
 		  sp[-args+1].u.string->str, sp[-args+1].u.string->len,
@@ -263,24 +270,23 @@ static void f_match(INT32 args)
   if(err == YPERR_KEY)
   {
     pop_n_elems( args );
-    push_int(0);
-    sp[-1].subtype = NUMBER_UNDEFINED;
+    push_undefined();
     return;
   }
 
-  YPERROR( "match", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_string(make_shared_binary_string( retval, retlen ));
 }
 
-static void init_yp_struct( struct object *o )
+static void init_yp_struct( struct object *UNUSED(o) )
 {
   this->domain = 0;
   this->last_size = 0;
 }
 
-static void exit_yp_struct( struct object *o )
+static void exit_yp_struct( struct object *UNUSED(o) )
 {
   if(this->domain)
   {
@@ -298,11 +304,10 @@ static void exit_yp_struct( struct object *o )
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
 
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
-  
-/* function(void:string) */
-  ADD_EFUN("default_yp_domain", f_default_yp_domain,tFunc(tVoid,tStr),
+  /* function(void:string) */
+  ADD_FUNCTION("default_domain", f_default_domain,tFunc(tVoid,tStr),
 	   OPT_EXTERNAL_DEPEND);
 
   start_new_program();
@@ -331,14 +336,14 @@ void pike_module_init(void)
   end_class("Domain", 0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   
 }
 #else
 
-#include "module_magic.h"
-void pike_module_init(void) {}
-void pike_module_exit(void) {}
+#include "module.h"
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 
 #endif

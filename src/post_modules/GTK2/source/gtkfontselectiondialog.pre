@@ -1,0 +1,58 @@
+/* -*- C -*- */
+class GTK2.FontSelectionDialog;
+inherit GTK2.Dialog;
+
+//! The GtkFontSelectionDialog widget is a dialog box for selecting a font.
+//! <p>
+//! To set the font which is initially selected, use set_font_name().
+//! </p><p>
+//! To get the selected font use get_font_name().
+//! </p><p>
+//! To change the text which is shown in the preview area, use
+//! set_preview_text().
+//! </p>
+//! TIMG: GTK2.FontSelectionDialog("Select a font")
+
+member GTK2.Button ok_button;
+//! The ok button
+member GTK2.Button apply_button;
+//! The apply button
+member GTK2.Button cancel_button;
+//! The cancel button
+
+void create(string title)
+//! Create a new font selection dialog with the specified window title
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    struct pike_string *title;
+
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      GtkWidget *gf;
+      get_all_args("create",args,"%t",&title);
+      ref_push_string(title);
+      f_string_to_utf8(1);
+      gf=gtk_font_selection_dialog_new(CGSTR0(Pike_sp[-1].u.string));
+      pop_stack();
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FONT_SELECTION_DIALOG);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+string get_font_name();
+//! Gets the currently-selected font name.
+
+int set_font_name(string font);
+//! Sets the currently-selected font.
+
+string get_preview_text();
+//! Gets the text displayed in the preview area.
+
+void set_preview_text(string text);
+//! Sets the text displayed in the preview area.
+

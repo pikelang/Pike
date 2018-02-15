@@ -1,13 +1,9 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.8 2000/11/11 03:07:54 jhs Exp $
-//! module Protocols
-//! submodule LysKOM
-//! submodule Request
-//!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>", 
-//!	"<tt>async_</tt><i>call</i>" or 
-//!	"<tt>async_cb_</tt><i>call</i>", depending on 
+//!	This module contains nice abstraction for calls into the
+//!	server. They are named "@tt{@i{call@}@}",
+//!	"@tt{async_@i{call@}@}" or 
+//!	"@tt{async_cb_@i{call@}@}", depending on 
 //!	how you want the call to be done. 
 
 import .Helper;
@@ -15,38 +11,9 @@ import .ProtocolTypes;
 
 int _no=1;
 
-//! class _Request
 //!	This is the main request class. All lyskom request
-//!	classes inherits this class.
+//!	classes inherit this class.
 //!
-//! method void async(mixed ...args)
-//! method mixed sync(mixed ...args)
-//!	initialise an asynchronous or a synchronous call,
-//!	the latter is also evaluating the result. This calls
-//!	'indata' in itself, to get the correct arguments to 
-//!	the lyskom protocol call.
-//!
-//! method void _async(int call, mixed_data)
-//! method mixed _sync(int call, mixed_data)
-//!	initialise an asynchronous or a synchronous call,
-//!	the latter is also evaluating the result. These
-//!	are called by async and sync respectively.
-//!
-//! method mixed _reply(object|array what)
-//! method mixed reply(object|array what)
-//!	_reply is called as callback to evaluate the result, 
-//!	and calls reply in itself to do the real work.
-//!
-//! method mixed `()()
-//!	wait for the call to finish.
-//!
-//! variable int ok
-//!	tells if the call is executed ok
-//! variable object error
-//!	how the call failed
-//!	The call is completed if (ok||error).
-//!
-
 class _Request
 {
    private Stdio.File raw;
@@ -55,11 +22,24 @@ class _Request
    private mixed res;
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-   private object wait_lock;
-   private object wait_mutex;
+  private object wait_cond = Thread.Condition();
+  private object wait_mutex = Thread.Mutex();
 #endif
 
    function callback;
+
+   //! @decl void async(mixed ...args)
+   //! @decl mixed sync(mixed ...args)
+   //!	Initialise an asynchronous or a synchronous call,
+   //!	the latter is also evaluating the result. This calls
+   //!	@tt{indata()@} in itself, to get the correct arguments to 
+   //!	the lyskom protocol call.
+
+   //! @decl void _async(int call, mixed_data)
+   //! @decl mixed _sync(int call, mixed_data)
+   //!	Initialise an asynchronous or a synchronous call,
+   //!	the latter is also evaluating the result. These
+   //!	are called by async and sync respectively.
 
    void _async(int call,mixed ... data)
    {
@@ -77,8 +57,16 @@ class _Request
 #endif
    }
 
+   //! @decl mixed _reply(object|array what)
+   //! @decl mixed reply(object|array what)
+   //!	@[_reply()] is called as callback to evaluate the result, 
+   //!	and calls @[reply()] in itself to do the real work.
+
    mixed _reply(object|array what)
    {
+#if constant(thread_create) && !LYSKOM_UNTHREADED
+      object key = wait_mutex->lock();
+#endif
       if (objectp(what))
       {
 	 error=what;
@@ -90,8 +78,8 @@ class _Request
 	 res=reply(what);
       }
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-      if (wait_lock)
-	 destruct(wait_lock);
+      wait_cond->signal();
+      destruct(key);
 #endif
       if (callback) callback(error||res);
 
@@ -100,16 +88,20 @@ class _Request
 
    mixed reply(array what); // virtual
    void failure(object err); // virtual
-   array indata(mixed ...); // virtual
+   array indata(mixed ... args); // virtual
+
+   //! @decl mixed `()()
+   //!	Wait for the call to finish.
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    mixed `()() // wait
    {
-      if (ok || error) return res;
-      wait_mutex=Thread.Mutex();
-      wait_lock=wait_mutex->lock(); // lock it
-      wait_lock=wait_mutex->lock(1); // lock it again, ie wait
-      return res;
+      object key = wait_mutex->lock();
+      do {
+	if (ok || error)
+	  return res;
+	wait_cond->wait(key);
+      } while (1);
    }
 #else
    mixed `()() // wait
@@ -122,7 +114,12 @@ class _Request
 
    // public
 
+   //!	Tells if the call has executed ok
    int(0..1) ok;
+
+   //!	How the call failed.
+   //!	The call has completed if @expr{(ok||error)@}.
+   //!
    object error;
 
    void create(Stdio.File _raw)
@@ -310,7 +307,7 @@ class Set_priv_bits
    {
       return ({7,
                person,
-               @B(@rows(privileges,privbitsnames))});
+               B(@rows(privileges,privbitsnames))});
    }
 
    void reply(array what)
@@ -383,7 +380,7 @@ class Create_conf_old
    {
       return ({10,
                H(name),
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    int(0..65535) reply(array what)
@@ -636,7 +633,7 @@ class Set_conf_type
    {
       return ({21,
                conf_no,
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    void reply(array what)
@@ -2105,7 +2102,7 @@ class Create_conf
    {
       return ({88,
                H(name),
-               @B(@rows(type,extendedconftypenames)),
+               B(@rows(type,extendedconftypenames)),
                @A(aux_items->encode())});
    }
 
@@ -2405,7 +2402,7 @@ class Add_member
                pers_no,
                priority,
                where,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
@@ -2459,7 +2456,7 @@ class Set_membership_type
       return ({102,
                pers,
                conf,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
@@ -2550,4 +2547,3 @@ class Set_keep_commented
    {
    }
 }
-

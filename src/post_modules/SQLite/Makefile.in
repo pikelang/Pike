@@ -1,0 +1,12 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=sqlite.o
+
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+sqlite.o: $(SRCDIR)/sqlite.c
+
+@dependencies@

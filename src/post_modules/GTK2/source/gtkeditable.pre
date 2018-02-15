@@ -1,0 +1,93 @@
+/* -*- C -*- */
+class GTK2.Editable;
+mixin_for G.Object;
+
+//! Interface for text-editing widgets.
+
+signal changed;
+signal delete_text;
+signal insert_text;
+
+void select_region(int start, int end);
+//! Selects a region of text.
+
+array get_selection_bounds()
+//! Returns the selection bounds.
+{
+  pgtk2_verify_inited();
+  {
+    int start,end;
+    gtk_editable_get_selection_bounds(GTK_EDITABLE(THIS->obj),&start,&end);
+    pgtk2_pop_n_elems(args);
+    PGTK_PUSH_INT(start);
+    PGTK_PUSH_INT(end);
+    f_aggregate(2);
+  }
+}
+
+int insert_text(string text, int length, int pos)
+//! Inserts text at a given position.  Returns the position after the new text.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *text;
+    INT_TYPE len,pos;
+    int pos2;
+    get_all_args("insert_text",args,"%t%i%i",&text,&len,&pos);
+    pos2 = pos;
+    ref_push_string(text);
+    f_string_to_utf8(1);
+    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),
+			     CGSTR0(Pike_sp[-1].u.string),len,&pos2);
+    pop_stack();
+    pgtk2_pop_n_elems(args);
+    PGTK_PUSH_INT(pos2);
+  }
+}
+
+void delete_text(int start, int end);
+//! Deletes a sequence of characters.
+
+string get_chars(int start, int end);
+//! Retrieves a sequence of characters.
+/*
+{
+  pgtk2_verify_inited();
+  {
+    gchar *s;
+    INT_TYPE start,end;
+    get_all_args("get_chars",args,"%i%i",&start,&end);
+    pgtk2_pop_n_elems(args);
+    s=gtk_editable_get_chars(GTK_EDITABLE(THIS->obj),start,end);
+    PGTK_PUSH_GCHAR(s);
+    g_free(s);
+  }
+}
+*/
+
+void cut_clipboard();
+//! Causes the characters in the current selection to be copied to the
+//! clipboard and then deleted.
+
+void copy_clipboard();
+//! Causes the characters in the current selection to be copied to the
+//! clipboard.
+
+void paste_clipboard();
+//! Causes the contents of the clipboard to be pasted into the given widget at
+//! the current cursor position.
+
+void delete_selection();
+//! Deletes the current contents of the selection.
+
+void set_position(int pos);
+//! Sets the cursor position.
+
+int get_position();
+//! Retrieves the current cursor position.
+
+void set_editable(int setting);
+//! Determines if the user can edit the text or not.
+
+int get_editable();
+//! Retrieves whether this widget is editable.

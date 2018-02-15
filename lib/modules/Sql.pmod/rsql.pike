@@ -5,68 +5,87 @@
 #define RSQL_PORT 3994
 #define RSQL_VERSION 1
 
-
 #if constant(thread_create)
 #define LOCK object key=mutex->lock()
 #define UNLOCK destruct(key)
-static private object(Thread.Mutex) mutex = Thread.Mutex();
+protected private object(Thread.Mutex) mutex = Thread.Mutex();
 #else
 #define LOCK
 #define UNLOCK
 #endif
 
+#define ERROR(X ...) predef::error(X)
 
-static object(Stdio.File) sock;
-static int seqno = 0;
+protected object(Stdio.File) sock;
+protected int seqno = 0;
 
-static private string host, user, pw;
-static private int port;
+protected private string host, user, pw;
+protected private int port;
+protected private mapping options;
 
-static void low_reconnect()
+protected private string db;
+
+protected void low_reconnect()
 {
   object losock = Stdio.File();
   if(sock)
     destruct(sock);
-  if(!losock->connect(host, port|RSQL_PORT))
-    throw(({"Can't connect to "+host+(port? ":"+port:"")+": "+
-	    strerror(losock->errno())+"\n", backtrace()}));
-  if(8!=losock->write(sprintf("RSQL%4c", RSQL_VERSION)) ||
+  if (host == "") {
+#ifdef ENABLE_SPAWN_RSQLD
+    Process.spawn_pike(({ "-x", "rsqld", "--stdin" }), ([
+			 "stdin":losock->pipe(),
+		       ]));
+#else /* !ENABLE_SPAWN_RSQLD */
+    ERROR("Automatic spawning of rsqld not enabled.\n");
+#endif /* ENABLE_SPAWN_RSQLD */
+  } else {
+    if(!losock->connect(host, port||RSQL_PORT))
+      ERROR("Can't connect to "+host+(port? ":"+port:"")+": "+
+	    strerror(losock->errno())+"\n");
+  }
+  if(8!=losock->write("RSQL%4c", RSQL_VERSION) ||
      losock->read(4) != "SQL!") {
     destruct(losock);
-    throw(({"Initial handshake error on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));    
+    ERROR("Initial handshake error on "+host+(port? ":"+port:"")+"\n");
   }
   sock = losock;
+  // FIXME: Propagate options?
   if(!do_request('L', ({user,pw}), 1)) {
     sock = 0;
     if(losock)
       destruct(losock);
-    throw(({"Login refused on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));        
+    ERROR("Login refused on "+host+(port? ":"+port:"")+"\n");
   }
 }
 
-static void low_connect(string the_host, int the_port, string the_user,
-			string the_pw)
+protected void low_connect(string the_host, int the_port, string the_user,
+			   string the_pw, mapping the_options)
 {
   host = the_host;
   port = the_port;
   user = the_user;
   pw = the_pw;
+  options = the_options;
   low_reconnect();
 }
 
-static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
+protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
 {
   LOCK;
+  noreconnect = noreconnect || !options || !options->reconnect;
   if(!sock)
     if(noreconnect) {
       UNLOCK;
-      throw(({"No connection\n", backtrace()}));
-    } else
+      ERROR("No connection\n");
+    } else {
+      UNLOCK;
       low_reconnect();
+      select_db(db);
+      LOCK;
+      noreconnect = 1;
+    }
   arg = (arg? encode_value(arg) : "");
-  sock->write(sprintf("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg));
+  sock->write("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg);
   string res;
   int rlen;
   if((res = sock->read(12)) && sizeof(res)==12 &&
@@ -77,28 +96,34 @@ static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
       destruct(sock);
       UNLOCK;
       if(noreconnect)
-	throw(({"RSQL Phase error, disconnected\n", backtrace()}));
-      else return do_request(cmd, arg, 1);
+	ERROR("RSQL Phase error, disconnected\n");
+      else return do_request(cmd, arg);
     }
     UNLOCK;
     rdat = (sizeof(rdat)? decode_value(rdat):0);
     switch(res[0]) {
     case '.': return rdat;
-    case '!': throw(rdat);
+    case '!': ERROR(rdat);
     }
-    throw(({"Internal error\n", backtrace()}));    
+    ERROR("Internal error\n");
   } else {
     destruct(sock);
     UNLOCK;
     if(noreconnect)
-      throw(({"RSQL Phase error, disconnected\n", backtrace()}));
-    else return do_request(cmd, arg, 1);
+      ERROR("RSQL connection closed\n");
+    else return do_request(cmd, arg);
   }
 }
 
-void select_db(string db)
+protected mixed do_proxy(string cmd, array(mixed) args)
 {
-  do_request('D', db);
+  return do_request('P', ({ cmd, args }));
+}
+
+void select_db(string the_db)
+{
+  do_request('D', the_db);
+  db = the_db;
 }
 
 int|string error()
@@ -131,6 +156,17 @@ void shutdown()
   do_request('s');
 }
 
+int ping()
+{
+  catch {
+    return do_request('p', UNDEFINED, 1);
+  };
+  catch {
+    if (do_request('p') >= 0) return 1;
+  };
+  return -1;
+}
+
 void reload()
 {
   do_request('r');
@@ -156,59 +192,82 @@ string quote(string s)
   return do_request('q');
 }
 
+protected class RemoteResult(protected function(int,mixed:mixed) do_request,
+			     protected mixed qid)
+{
+  void destroy()
+  {
+    do_request('Z', qid);
+  }
+
+  int|array(string|int) fetch_row()
+  {
+    return do_request('R', qid);
+  }
+
+  array(mapping(string:mixed)) fetch_fields()
+  {
+    return do_request('F', qid);
+  }
+
+  int num_rows()
+  {
+    return do_request('N', qid);
+  }
+
+  int num_fields()
+  {
+    return do_request('n', qid);
+  }
+
+  int eof()
+  {
+    return do_request('e', qid);
+  }
+
+  void seek(int skip)
+  {
+    do_request('S', ({qid,skip}));
+  }
+}
+
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this_object());
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
   mixed qid = do_request('Q', q);
-  return qid && class {
+  return qid && RemoteResult(do_request, qid);
+}
 
-    static function(int,mixed:mixed) do_request;
-    static mixed qid;
+int|object big_typed_query(object|string q,
+			   mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    void destroy()
-    {
-      do_request('Z', qid);
-    }
+  mixed qid = do_request('Q', ({ "big_typed_query", q }));
+  return qid && RemoteResult(do_request, qid);
+}
 
-    int|array(string|int) fetch_row()
-    {
-      return do_request('R', qid);
-    }
+int|object streaming_query(object|string q,
+			   mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    array(mapping(string:mixed)) fetch_fields()
-    {
-      return do_request('F', qid);
-    }
+  mixed qid = do_request('Q', ({ "streaming_query", q }));
+  return qid && RemoteResult(do_request, qid);
+}
 
-    int num_rows()
-    {
-      return do_request('N', qid);
-    }
+int|object streaming_typed_query(object|string q,
+				 mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    int num_fields()
-    {
-      return do_request('n', qid);
-    }
-
-    int eof()
-    {
-      return do_request('e', qid);
-    }
-
-    void seek(int skip)
-    {
-      do_request('S', ({qid,skip}));
-    }
-
-    void create(function(int,mixed:mixed) d_r, mixed i)
-    {
-      do_request = d_r;
-      qid = i;
-    }
-
-  }(do_request, qid);
+  mixed qid = do_request('Q', ({ "streaming_typed_query", q }));
+  return qid && RemoteResult(do_request, qid);
 }
 
 array(mapping(string:mixed)) query(mixed ... args)
@@ -216,12 +275,39 @@ array(mapping(string:mixed)) query(mixed ... args)
   return do_request('@', args);
 }
 
-void create(string|void host, string|void db, string|void user, string|void pw)
+int insert_id()
 {
+  return do_request('#');
+}
+
+string get_charset()
+{
+  return do_request('h');
+}
+
+void set_charset(string charset)
+{
+  do_request('H', charset);
+}
+
+protected function|mixed `->(string cmd)
+{
+  return ::`->(cmd) ||
+    lambda(mixed ... args) {
+      return do_proxy(cmd, args);
+    };
+}
+
+void create(string|void host, string|void db, string|void user,
+	    string|void _pw, mapping|void options)
+{
+  string pw = _pw;
+  _pw = "CENSORED";
+
   // Reconstruct the original URL (minus rsql://)
 
   if(!host) {
-    destruct(this_object());
+    destruct(this);
     return;
   }
   if(db)
@@ -233,7 +319,7 @@ void create(string|void host, string|void db, string|void user, string|void pw)
 
   array(string) arr = host/"/";
   if(sizeof(arr)<2) {
-    destruct(this_object());
+    destruct(this);
     return;
   }
 
@@ -243,7 +329,7 @@ void create(string|void host, string|void db, string|void user, string|void pw)
 
   arr = host/"@";
   if(sizeof(arr)>1) {
-    user = arr[..sizeof(arr)-2]*"@";
+    user = arr[..<1]*"@";
     host = arr[-1];
     arr = user/":";
     if(sizeof(arr)>1) {
@@ -253,6 +339,6 @@ void create(string|void host, string|void db, string|void user, string|void pw)
   }
   int port = 0;
   sscanf(host, "%s:%d", host, port);
-  low_connect(host, port, user, pw);
+  low_connect(host, port, user, pw, options);
   select_db(db);
 }

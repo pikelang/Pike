@@ -1,11 +1,9 @@
 // by Mirar 
 
-//! module Calendar
-//! submodule Gregorian
 //!	time units:
 //!	<ref>Year</ref>, <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
-//!
-//! class 
+
+#pike 7.0
 
 array(string) month_names=
    ({"January","February","March","April","May","June","July","August",
@@ -33,15 +31,14 @@ class _TimeUnit
 
 //== Year ====================================================================
 
-class Year
-{
-//! class Year
-//! 	A <ref>Calendar.time_unit</ref>. 
+//! 	A @[Calendar._TimeUnit]. 
 //!
 //!	Lesser units: <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
 //!	Greater units: none
 //!
 //!     
+class Year
+{
    inherit _TimeUnit;
 
 //-- variables ------------------------------------------------------
@@ -1410,9 +1407,8 @@ class Second
 
 //-- parse functions -----------------------------------------------
 
-//! method object parse(string fmt,string arg)
 //!	parse a date, create relevant object
-//!	fmt is in the format "abc%xdef..."
+//!	@[fmt] is in the format "abc%xdef..."
 //!	where abc and def is matched, and %x is
 //!	one of those time units:
 //!	%Y absolute year 
@@ -1425,8 +1421,7 @@ class Second
 //!	%h hour (needs %d, %D or %W)
 //!	%m minute (needs %h)
 //!	%s second (needs %s)
-
-object parse(string fmt,string arg)
+object parse(string fmt, string arg)
 {
    string nfmt;
    nfmt=replace(fmt,
@@ -1487,19 +1482,9 @@ object parse(string fmt,string arg)
 
 //-- auxillary functions------------------------------------------------
 
-//!
-//! function datetime(int|void unix_time)
-//!          Replacement for localtime.
-//!
-//! function datetime_name(int|void unix_time)
-//!          Replacement for ctime.
-//!
-//! function datetime_short_name(int|void unix_time)
-//!          Replacement for ctime.
-//!
 
 
-// Sane replacement for localtime().
+//! Replacement for @[localtime()].
 mapping(string:int) datetime(int|void unix_time,int|void skip_extra)
 {
    mapping t = localtime(unix_time || time());
@@ -1521,7 +1506,7 @@ mapping(string:int) datetime(int|void unix_time,int|void skip_extra)
 	  "weekday":Day()->week_day()]));
 }
 
-// Sane replacement for ctime().
+//! Replacement for @[ctime()].
 string datetime_name(int|void unix_time)
 {
   mapping t = datetime(unix_time);
@@ -1533,7 +1518,7 @@ string datetime_name(int|void unix_time)
 		 t->hour, t->minute, t->second);
 }
 
-// Sane replacement for ctime().
+//! Replacement for ctime.
 string datetime_short_name(int|void unix_time)
 {
   mapping t = datetime(unix_time,1);

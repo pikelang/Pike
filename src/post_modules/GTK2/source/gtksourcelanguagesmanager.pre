@@ -1,0 +1,87 @@
+/* -*- C -*- */
+require gtksourceview;
+not gtksourceview20;
+
+class GTK2.SourceLanguagesManager;
+inherit G.Object;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourcelanguagesmanager.h"
+%}
+
+void create();
+//! Create a new language manager.
+
+array(GTK2.SourceLanguage) get_available_languages()
+//! Gets a list of available languages.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const GSList *gsl;
+    int i=0;
+    gsl=gtk_source_languages_manager_get_available_languages(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(gsl->data);
+      i++;
+      gsl=g_slist_next(gsl);
+    }
+    f_aggregate(i);
+  }
+}
+
+GTK2.SourceLanguage get_language_from_mime_type(string type);
+//! Gets the GTK2.SourceLanguage which is associated with the given type in the
+//! language manager.
+
+GTK2.SourceLanguage get_language_from_name(string name)
+//! Gets the GTK2.SourceLanguage which has this name.
+{
+  pgtk2_verify_inited();
+  {
+    char *name;
+    const GSList *gsl;
+    int sel=0;
+    get_all_args("get_language_from_name", args, "%s", &name);
+    gsl=gtk_source_languages_manager_get_available_languages(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gsl) {
+      if (!strcmp(gtk_source_language_get_name(
+		GTK_SOURCE_LANGUAGE(gsl->data)),name)) {
+        pgtk2_pop_n_elems(args);
+	push_gobject(gsl->data);
+	g_object_ref(gsl->data);
+	sel=1;
+	break;
+      }
+      gsl=g_slist_next(gsl);
+    }
+    if (!sel) {
+      pgtk2_pop_n_elems(args);
+      push_int(0);
+    }
+  }
+}
+
+array(string) get_lang_files_dirs()
+//! Gets a list of language files directories.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const GSList *gsl;
+    int i=0;
+    gsl=gtk_source_languages_manager_get_lang_files_dirs(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gsl) {
+      PGTK_PUSH_GCHAR(gsl->data);
+      i++;
+      gsl=g_slist_next(gsl);
+    }
+    f_aggregate(i);
+  }
+}
+

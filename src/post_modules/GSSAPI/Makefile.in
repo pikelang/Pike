@@ -1,0 +1,13 @@
+
+@make_variables@
+VPATH=@srcdir@
+
+OBJS=gssapi.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+gssapi.o: $(SRCDIR)/gssapi.c
+
+@dependencies@

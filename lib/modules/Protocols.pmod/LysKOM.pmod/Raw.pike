@@ -25,24 +25,13 @@ import .Helper;
 /* connection object */
 object con;
 
-/* recieve buffer */
+/* receive buffer */
 string buf="";
 
 /* outstanding calls */
 // static private
 mapping(int:function(string:void)) async=([]);
 int ref=1;
-
-int raw_serial=lambda()
-{
-#if constant(LYSKOM_RAW)
-  add_constant("LysKOM_RAW",LysKOM_RAW+1);
-  return LysKOM_RAW+1;
-#else
-  add_constant("LysKOM_RAW",1);
-  return 0;
-#endif
-}();
 
 /* asynchronous messages callback list */
 mapping(int:array(function(string:void))) async_callbacks=([]);
@@ -59,17 +48,15 @@ int out_req;
 
 /*--- send/recv ------------------------ */
 
-static inline int conwrite(string what)
+protected inline int conwrite(string what)
 {
 #ifdef LYSKOM_DEBUG
    werror("-> %O\n",what);
 #endif
-   int i=con->write(what)==strlen(what);
+   int i=con->write(what)==sizeof(what);
    if (!i) { werror("write failed!!!\n"); _exit(1); }
    return i;
 }
-
-array komihåg=({});
 
 class Send
 {
@@ -90,10 +77,9 @@ class Send
       async[ref]=callback;
       conwrite(ref+" "+request+"\r\n");
 #ifdef LYSKOM_DEBUG
-//       werror("LYSKOM "+raw_serial+" inserting callback %O for call %d\n",callback,ref);
+//       werror("LYSKOM inserting callback %O for call %d\n",callback,ref);
 //       werror("async: %O\n",async);
 #endif
-      komihåg+=({function_object(callback)});
    }
 }
 
@@ -152,7 +138,7 @@ mixed sync_do(int ref,string|void request)
 	 if (!async[ref])
 	    error("request ref %d not in queue, but no callback\n",ref);
 #ifdef LYSKOM_DEBUG
-// 	 werror("LYSKOM "+raw_serial+" removing callback %O for call %d (handling ref %d in sync mode)\n",
+// 	 werror("LYSKOM removing callback %O for call %d (handling ref %d in sync mode)\n",
 // 		async[ref],ref);
 #endif
 	 m_delete(async,ref);
@@ -199,7 +185,7 @@ void|array|object recv(mixed x,string what,void|int syn)
    array|object ires=0;
    buf+=what;
    // wait for newline before we do anything at all
-   while (search(buf,"\n")!=-1)
+   while (has_value(buf,"\n"))
    {
       mixed res;
       int len;
@@ -266,7 +252,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 	    }
 	    else
 	    {
-	       werror("LysKOM.Raw: generic error recieved: %O\n",res);
+	       werror("LysKOM.Raw: generic error received: %O\n",res);
 	    }
 	    break;
 
@@ -322,29 +308,16 @@ void connection_lost()
 
 void create(string server,void|int port,void|string whoami)
 {
-   mixed err;
-
    if (!port) port=4894;
    con=Stdio.File();
-   err=catch {
-      if (!con->connect(server,port))
-      {
-	 object err=LysKOMError(-1,strerror(con->errno())-"\n",
-				"Failed to connect to server "
-				+server+".\n");
-	 throw(err);
-	 return;
-      }
-   };
-   if (err)
+   if (!con->connect(server,port))
    {
-      if (objectp(err) && err->iserror) throw(err);
-      err=LysKOMError(-1,err[0]-"\n",
-		      "Failed to connect to server "
-		      +server+".\n");
-      throw(err);
+     object err=LysKOMError(-1,strerror(con->errno())-"\n",
+			    "Failed to connect to server "
+			    +server+".\n");
+     throw(err);
+     return;
    }
-   
 
    conwrite("A"+H(whoami||
 #if constant(getpwuid) && constant(getuid)
@@ -391,7 +364,7 @@ array(array(mixed)|int) try_parse(string what)
    
    array stack=({});
 
-   while (strlen(what)>1)
+   while (sizeof(what)>1)
    {
       string a,b;
 
@@ -406,16 +379,16 @@ array(array(mixed)|int) try_parse(string what)
 
 	    if (b[0]=='H') // hollerith
 	    {
-	       if (strlen(b)<=(int)a)
+	       if (sizeof(b)<=(int)a)
 		  return ({0,0}); // incomplete
 	       res+=({b[1..(int)a]});
-	       len+=strlen(a)+strlen(res[-1])+2;
+	       len+=sizeof(a)+sizeof(res[-1])+2;
 	       b=b[(int)a+1..];
 	    }
 	    else // bitfield or int
 	    {
 	       res+=({a});
-	       len+=strlen(a)+1;
+	       len+=sizeof(a)+1;
 	    }
 
 	    if (b=="") return ({0,0}); // incomplete
@@ -472,7 +445,7 @@ array(array(mixed)|int) try_parse(string what)
 
 	    if (stack==({}))
 	    {
-	       werror("protocol error: stack underflow\n",what);
+	       werror("protocol error: stack underflow: %O\n",what);
 	       connection_lost();
 	       return ({0,0});
 	    }
@@ -511,14 +484,13 @@ void got_reply(int ref,object|array what)
 //   werror("got_reply(): async: %O\n",async);
    function call=async[ref];
 #ifdef LYSKOM_DEBUG
-//    werror("LYSKOM "+raw_serial+" removing callback %O for call %d\n",call,ref);
+//    werror("LYSKOM removing callback %O for call %d\n",call,ref);
 #endif
    m_delete(async,ref);
    if (!call)
    {
       werror("LysKOM.Raw: lost callback for call %d %s\n",ref,
 	     zero_type(call)?"(lost from mapping??!)":"(zero value in mapping)");
-      //      werror("komihåg: %O\n",komihåg);
       werror(master()->describe_backtrace(backtrace()));
       return;
    }
@@ -569,8 +541,12 @@ array active_asyncs()
 void got_async_message(array what)
 {
 #ifdef LYSKOM_DEBUG
-  werror("got_async_message: %O\n", what);
-#endif  
+  werror("got_async_message: :%s %s %O\n",
+	 what[0], mkmapping( values(.ASync.name2no),
+			    indices(.ASync.name2no))[(int)what[1]],
+	 @what[2..]);
+  //werror("got_async_message: %O\n", what);
+#endif
   catch {
    if (async_callbacks[(int)what[1]])
       async_callbacks[(int)what[1]](@.ASync["decode_"+what[1]](what[2..]));

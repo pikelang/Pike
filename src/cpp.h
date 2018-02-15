@@ -1,6 +1,9 @@
 /*
- * $Id: cpp.h,v 1.4 1998/03/28 15:00:07 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef CPP_H
 #define CPP_H
 
@@ -10,12 +13,17 @@ struct hash_entry;
 #endif
 
 /* Prototypes begin here */
-struct pike_predef_s;
 struct define_part;
 struct define_argument;
 struct define;
 struct cpp;
-void cpp_error(struct cpp *this,char *err);
+static void cpp_error(struct cpp *this, const char *err);
+static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
+				va_list args);
+static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...);
+static void cpp_handle_exception(struct cpp *this,
+				 const char *cpp_error_fmt, ...);
+static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...);
 void PUSH_STRING(char *str,
 		 INT32 len,
 		 dynamic_buffer *buf);
@@ -25,5 +33,11 @@ void init_cpp(void);
 void add_predefine(char *s);
 void exit_cpp(void);
 /* Prototypes end here */
+
+/* Return true if compat version is equal or less than MAJOR.MINOR */
+#define CPP_TEST_COMPAT(THIS,MAJOR,MINOR)      \
+  (THIS->compat_major < (MAJOR) ||	       \
+   (THIS->compat_major == (MAJOR) &&	       \
+    THIS->compat_minor <= (MINOR)))
 
 #endif

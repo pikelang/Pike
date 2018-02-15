@@ -1,0 +1,16 @@
+@make_variables@
+VPATH=@srcdir@
+
+MODDIR=System.pmod/
+MODNAME=FSEvents
+AUTODOC_SRC_IN=
+MODULE_PMOD_IN=
+MODULE_WRAPPER_PREFIX=_
+
+OBJS=fsevents.o
+
+@dynamic_module_makefile@
+
+fsevents.o : $(SRCDIR)/fsevents.c
+
+@dependencies@

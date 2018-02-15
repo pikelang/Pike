@@ -1,8 +1,0 @@
-#!/usr/local/bin/pike
-
-// $Id: feature_list,v 1.9 2000/09/08 13:31:36 noring Exp $
-
-int main(int argc, string *argv)
-{
-  write("Features: "+Tools.Install.features()*" "+"\n");
-}

@@ -1,0 +1,3 @@
+usr/lib/pike/*/lib/modules/*SQLite.*
+usr/lib/pike/*/lib/modules/Sql.pmod/sqlite*
+usr/share/pike/*/lib/modules/Sql.pmod/sqlite*

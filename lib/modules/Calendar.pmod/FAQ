@@ -148,6 +148,7 @@ A:  ->format_xxx();
     This is all the formats:
 
     format_ext_time       "Wednesday, 10 January 2001 10:49:57"
+    format_ext_time_short "Wed, 10 Jan 2001 10:49:57 CET"
     format_ext_ymd        "Wednesday, 10 January 2001"
     format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
     format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
@@ -268,6 +269,10 @@ A:  Yes.
     Julian
 	This is the Julian calendar, with the small changes
 	to the Gregorian calendar (leap years).
+    Badi (Baha'i)
+        The Badi calendar used by the Baha'i religion is based on the
+        solar year. For the time being it is in sync with the Gregorian
+        calendar.
 
     Islamic
 	This is the Islamic calendar, using the 'Calendrical 
@@ -303,32 +308,60 @@ A:  <your country> uses the ISO calendar, with just different
 
     You set the language by using ->set_language(yourlanguage).
 
-      > t->set_language("portugese")->format_ext_ymd();
+      > t->set_language("pt")->format_ext_ymd();
       Result: "Quarta-feira, 10 Janeiro 2001"
       > t->set_language("roman")->format_ext_ymd();    
       Result: "Mercurii dies, X Ianuarius MMDCCLIII ab urbe condita"
       
-    Note that all languages aren't supported. If you miss
-    your favourite language (or have some time over to help
-    me out), look in the Language.pmod file and send me an
-    update. 
+    Note that all languages aren't supported. If you miss your
+    favourite language or I got it all wrong (or have some time over
+    to help me out), look in the Language.pmod file and send me an
+    update.
+
     Or send me a list of the weekdays and month names
     (please start with Monday and January).
 
     Currently, these languages are supported:
+ 
+      name        code    
+      -------------------------------
+      ISO                 (default, aka English)
+     
+      Afrikaans   af afr   (South Africa),
+      Austrian    de_AT
+      Basque      eu eus   (Spain)
+      Catalan     ca cat   (Catalonia)
+      Croatian    hr hrv
+      Danish      da dan
+      Dutch       nl nld
+      English     en eng
+      Estonian    et est
+      Faroese     fo fao
+      Finnish     fi fin
+      French      fr fra
+      Galician    gl glg   (Spain)
+      German      de deu
+      Greenlandic kl kal
+      Hungarian   hu hun
+      Icelandic   is isl
+      Irish       ga gle   (Gaelic)
+      Italian     it ita
+      Latvian     lv lav
+      Lithuanian  lt lit
+      Norwegian   no nor
+      Persian     fa fas   (Iran)
+      Polish      pl pol
+      Portugese   pt por
+      Romanian    ro ron
+      Serbian     sr srp   (Yugoslavia)
+      Slovenian   sl slv
+      Spanish     es spa
+      Swedish     sv swe
+      Turkish     tr 
+      Welsh       cy cym
 
-      iso         (aka english)
-
-      austrian
-      english
-      hungarian
-      portugese
-      spanish
-      swedish
-      welsh
-
-      latin
-      roman
+      Latin       la lat
+      Roman              (Roman Latin)
 
 -------------------------------------------------------------------------  
 
@@ -401,7 +434,7 @@ A:  For some regions, very. For most region, not very.
     research, which is a rather tedious job.
 
     If you want to help, the check your region in the
-    events/regions file and send me <mirar@mirar.org> a patch.
+    events/regions file and send me <mirar+pike@mirar.org> a patch.
 
     Don't send me "the x region is all wrong!" mails without
     telling me how it should look.
@@ -434,7 +467,7 @@ A:  No it isn't.  But:
 Q:  The regional events and nameday files are awesome. May I use
     them for a project separate from Pike?
 
-A:  Yes. But send me <mirar@mirar.org> updates!
+A:  Yes. But send me <mirar+pike@mirar.org> updates!
 
 -------------------------------------------------------------------------  
 

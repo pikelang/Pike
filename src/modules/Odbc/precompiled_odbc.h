@@ -1,6 +1,10 @@
 /*
- * $Id: precompiled_odbc.h,v 1.15 2000/09/14 17:44:14 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Pike interface to ODBC compliant databases.
  *
  * Henrik Grubbström
@@ -21,15 +25,17 @@
 #ifdef HAVE_ISQL_H
 #include <isql.h>
 #else /* !HAVE_ISQL_H */
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#else /* !HAVE_WINDOWS_H */
 #ifdef HAVE_QEODBC_H
 #include <qeodbc.h>
 #else
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#else /* !HAVE_WINDOWS_H */
+#ifndef HAVE_SQL_H
 #undef HAVE_ODBC
-#endif /* HAVE_QEODBC_H */
+#endif /* !HAVE_SQL_H */
 #endif /* HAVE_WINDOWS_H */
+#endif /* HAVE_QEODBC_H */
 #endif /* HAVE_ISQL_H */
 #endif /* HAVE_ODBC */
 
@@ -40,6 +46,7 @@
 #include <sql.h>
 #endif /* HAVE_SQL_H */
 #endif /* !HAVE_ISQL_H */
+
 #ifdef HAVE_ISQLEXT_H
 #include <isqlext.h>
 #else /* !HAVE_ISQLEXT_H */
@@ -83,16 +90,29 @@ typedef SQLINTEGER	SQLLEN;
 typedef SQLUINTEGER	SQLULEN;
 #endif /* !HAVE_SQLLEN */
 
+#ifndef HAVE_SQLHENV
+typedef HENV	SQLHENV;
+#endif /* !HAVE_SQLENV */
+
+#ifndef HAVE_SQLHDBC
+typedef HDBC	SQLHDBC;
+#endif /* !HAVE_SQLHDBC */
+
+#ifndef HAVE_SQLHSTMT
+typedef HSTMT	SQLHSTMT;
+#endif /* !HAVE_SQLSTMT */
+
 /*
  * Structures
  */
 
 struct field_info {
   SWORD type;
+  SQLULEN size;
 };
 
 struct precompiled_odbc {
-  HDBC hdbc;
+  SQLHDBC hdbc;
   SQLLEN affected_rows;
   unsigned int flags;
   struct pike_string *last_error;
@@ -101,7 +121,7 @@ struct precompiled_odbc {
 struct precompiled_odbc_result {
   struct object *obj;
   struct precompiled_odbc *odbc;
-  HSTMT hstmt;
+  SQLHSTMT hstmt;
   SWORD num_fields;
   SQLLEN num_rows;
   struct array *fields;
@@ -112,18 +132,35 @@ struct precompiled_odbc_result {
  * Defines
  */
 
-#define PIKE_ODBC	((struct precompiled_odbc *)(fp->current_storage))
-#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(fp->current_storage))
+#define PIKE_ODBC	((struct precompiled_odbc *)(Pike_fp->current_storage))
+#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(Pike_fp->current_storage))
 
 /* Flags */
-#define PIKE_ODBC_CONNECTED	1
+#define PIKE_ODBC_CONNECTED      1
+#define PIKE_ODBC_OLD_TDS_KLUDGE 2
+
+/* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
+ *
+ *   On multithread operating systems, drivers must be thread-safe.
+ *   That is, it must be possible for applications to use the same
+ *   handle on more than one thread.
+ *
+ * This means we don't need a lock at all on the connection when we
+ * release the interpreter lock. If this really is true remains to be
+ * seen..
+ */
+#define ODBC_ALLOW() THREADS_ALLOW()
+#define ODBC_DISALLOW() THREADS_DISALLOW()
 
 /*
  * Prototypes
  */
+#ifdef SQL_WCHAR
+void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
+#endif /* SQL_WCHAR */
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, HSTMT hstmt,
-		RETCODE code, void (*clean)(void));
+		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
+		RETCODE code, void (*clean)(void *), void *clean_arg);
 
 void init_odbc_res_programs(void);
 void exit_odbc_res(void);

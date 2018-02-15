@@ -1,0 +1,50 @@
+/* -*- C -*- */
+class GTK2.MenuBar;
+inherit GTK2.MenuShell;
+
+//! Basically a horizontal W(Menu).
+//! <p>The menu image cannot be
+//! grabbed automatically, but this is how you would create a menu all
+//! in one line. This is not the recommended coding style.</p><p>
+//! IMG: GTK2.MenuBar()->add(GTK2.MenuItem("Menu")->set_submenu(GTK2.Menu()->add(GTK2.MenuItem("Sub")))->select()->activate())->add(GTK2.MenuItem("Bar"))
+//! </p>
+
+//! Properties:
+//! int child-pack-direction
+//! int pack-direction
+//! <p>
+//! Style properties:
+//! int internal-padding
+//! int shadow-type
+
+
+void create(?mapping(string:mixed) props)
+//! Create a new menu bar.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_MENU_BAR);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gm;
+    gm=gtk_menu_bar_new();
+    THIS->obj=G_OBJECT(gm);
+  }
+  pgtk2__init_this_object();
+}
+
+require gtk28;
+void set_pack_direction(int setting);
+//! Sets how items should be packed inside a menubar.  One of
+//! CONST(GTK_PACK_DIRECTION).
+
+int get_pack_direction();
+//! Retrieves the current pack direction of the menubar.
+
+void set_child_pack_direction(int setting);
+//! Sets how widgets should be packed inside the children of a menubar.
+
+int get_child_pack_direction();
+//! Retrieves the current child pack direction.
+endrequire;

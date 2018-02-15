@@ -1,0 +1,54 @@
+
+START_MARKER
+
+test_do( add_constant("P",Protocols.DNS.protocol()); )
+
+test_equal( P.mklabel("hej"), "\3hej" )
+test_equal( P.mklabel(""), "\0" )
+test_eval_error( P.mklabel("x"*64) )
+
+test_equal( P.low_low_mkquery(([])), "\0"*12 )
+test_equal( P.low_low_mkquery((["an":([])])),
+ "\0\0\0\0\0\0\0\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" )
+test_equal( P.low_low_mkquery((["an":(["type":Protocols.DNS.T_HINFO,"cpu":"a","os":"b"])])),
+ "\0\0\0\0\0\0\0\1\0\0\0\0\0\0\r\0\0\0\0\0\0\0\4\1a\1b" )
+test_equal( P.low_low_mkquery((["an":(["type":Protocols.DNS.T_NAPTR,"flags":"a","service":"bb","regexp":"ccc"])])),
+ "\0\0\0\0\0\0\0\1\0\0\0\0\0\0#\0\0\0\0\0\0\0\16\0\0\0\0\1a\2bb\3ccc\0" )
+test_equal( P.low_low_mkquery((["an":(["type":Protocols.DNS.T_TXT,"txt":"hej"])])),
+ "\0\0\0\0\0\0\0\1\0\0\0\0\0\0\20\0\0\0\0\0\0\0\4\3hej" )
+test_equal( P.low_low_mkquery((["an":(["type":Protocols.DNS.T_SPF,"spf":"hej"])])),
+ "\0\0\0\0\0\0\0\1\0\0\0\0\0\0c\0\0\0\0\0\0\0\4\3hej" )
+test_equal( P.low_mkquery(2,"a",3,4), "\0\2\1\0\0\1\0\0\0\0\0\0\1a\0\0\4\0\3" )
+
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_string("\0\3hej\0",a), a[0]);
+]], "\"hej\" 5" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_byte("\0\3hej\0",a), a[0]);
+]], "3 2" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_short("\0\3hej\0",a), a[0]);
+]], "872 3" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_int("\0\3hej\0",a), a[0]);
+]], "57173354 5" )
+test_any_equal([[
+  array a = ({0});
+  array ret = P.decode_entries("\3hej\0\0\1\0\2\0\0\0\3\0\4ABCD",1,a);
+  return ret + a;
+]], ({ ([ "a":"65.66.67.68", "cl":2, "len":4, "name":"hej", "ttl":3,
+  "type":1 ]), 19 }))
+test_any_equal([[
+  array a = ({0});
+  array ret = P.decode_entries("\3hej\0\0\34\0\2\0\0\0\3\0\20ABCDEFGHIJKLMNOP",1,a);
+  return ret + a;
+]], ({ ([ "aaaa":"4142:4344:4546:4748:494A:4B4C:4D4E:4F50", "cl":2,
+  "len":16, "name":"hej", "ttl":3, "type":28 ]), 31 }))
+
+test_do( add_constant("P"); )
+
+END_MARKER

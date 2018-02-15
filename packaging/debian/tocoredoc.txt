@@ -1,0 +1,10 @@
+pike7.9-gdbm
+pike7.9-gl
+pike7.9-gtk
+pike7.9-image
+pike7.9-mysql
+pike7.9-odbc
+pike7.9-perl
+pike7.9-pg
+pike7.9-sane
+pike7.9-sdl

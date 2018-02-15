@@ -1,86 +1,80 @@
+#pike __REAL_VERSION__
 
-//! module Calendar_I
-//!    
-//!   This module exist only for backwards compatible issues with
+
+//!   This module exist only for backwards compatibility issues with
 //!   earlier Pike releases. Use the Calendar module instead.
 //!
 //!   This code can be used to simulate the old calendar
 //!   for now (it might be removed in later Pike's):
 //!
-//    This module is totally rewritten in Pike 7.1+. 
-//    To be forward compatible the lazy way, you can do
-//    something like this, though:
+//!    This module has been totally rewritten in Pike 7.1+. 
+//!    To be forward compatible the lazy way, you can do
+//!    something like this, though:
 //!
-//!   <pre>
+//!   @code
 //!   #if constant(Calendar.II)
 //!   #define Calendar Calendar_I
 //!   #endif
-//!   <i>...</i> import Calendar <i>or whatever ...</i>
-//!   </pre>
+//!   @i{...@} import Calendar @i{or whatever ...@}
+//!   @endcode
 //!
 //!   This module implements calendar calculations, and base classes
 //!   for time units. 
 //!
-//!	
-//! class time_unit
-//!
-//! method array(string) lesser()
-//!	Gives a list of methods to get lesser (shorter) time units.
-//!	ie, for a month, this gives back <tt>({"day"})</tt>
-//!	and the method <tt>day(mixed n)</tt> gives back that 
-//!	day object. The method <tt>days()</tt> gives back a
-//!	list of possible argument values to the method <tt>day</tt>.
-//!	Concurrently, <tt>Array.map(o->days(),o->day)</tt> gives
-//!	a list of day objects in the object <tt>o</tt>.
-//!
-//!	
-//!	Ie:<pre>
-//!	array(string) lesser()    - gives back a list of possible xxx's.
-//!	object xxxs()     	  - gives back a list of possible n's.
-//!	object xxx(mixed n)       - gives back xxx n
-//!	object xxx(object(Xxx) o) - gives back the corresponing xxx 
-//!	</pre>
-//!
-//!	The list of n's (as returned from xxxs) are always in order.
-//!
-//!	There are two n's with special meaning, 0 and -1.
-//!	0 always gives the first xxx, equal to 
-//!	my_obj->xxx(my_obj->xxxs()[0]), and -1 gives the last,
-//!	equal to my_obj->xxx(my_obj->xxxs()[-1]).
-//!
-//!	To get all xxxs in the object, do something like
-//!	<tt>Array.map(my_obj->xxxs(),my_obj->xxx)</tt>.
-//!
-//!	xxx(object) may return zero, if there was no correspondning xxx.
-//!
-//! method array(string) greater()
-//!	Gives a list of methods to get greater (longer) time units 
-//!	from this object. For a month, this gives back <tt>({"year"})</tt>,
-//!	thus the method <tt>month->year()</tt> gives the year object.
-//!
-//! method object next()
-//! method object prev()
-//! method object `+(int n)
-//! method object `-(int n)
-//! method object `-(object x)
-//!	next and prev gives the logical next and previous object.
-//!	The <tt>+</tt> operator gives that logical relative object,
-//!	ie <tt>my_day+14</tt> gives 14 days ahead.
-//!     <tt>-</tt> works the same way, but can also take an object
-//!	of the same type and give the difference as an integer.
 
-#define error(X) throw(({(X),backtrace()}))
-
+//! Base class for units of time.
 class _TimeUnit
 {
-   object this=this_object();
-
-   array(string) greater() { return ({}); }
+   //!	Gives a list of methods to get lesser (shorter) time units.
+   //!	ie, for a month, this gives back @expr{({"day"})@}
+   //!	and the method @expr{day(mixed n)@} gives back that 
+   //!	day object. The method @expr{days()@} gives back a
+   //!	list of possible argument values to the method @expr{day@}.
+   //!	Concurrently, @expr{Array.map(o->days(),o->day)@} gives
+   //!	a list of day objects in the object @expr{o@}.
+   //!
+   //!	
+   //!	Ie:@pre{
+   //!	  array(string) lesser()    - gives back a list of possible xxx's.
+   //!	  object xxxs()             - gives back a list of possible n's.
+   //!	  object xxx(mixed n)       - gives back xxx n
+   //!	  object xxx(object(Xxx) o) - gives back the corresponing xxx 
+   //!	@}
+   //!
+   //!	The list of n's (as returned from xxxs) are always in order.
+   //!
+   //!	There are two n's with special meaning, 0 and -1.
+   //!	0 always gives the first xxx, equal to 
+   //!	@expr{my_obj->xxx(my_obj->xxxs()[0])@}, and -1 gives the last,
+   //!	equal to @expr{my_obj->xxx(my_obj->xxxs()[-1])@}.
+   //!
+   //!	To get all xxxs in the object, do something like
+   //!	@expr{Array.map(my_obj->xxxs(),my_obj->xxx)@}.
+   //!
+   //!	xxx(object) may return zero, if there was no correspondning xxx.
+   //!
    array(string) lesser() { return ({}); }
+
+   //!	Gives a list of methods to get greater (longer) time units 
+   //!	from this object. For a month, this gives back @expr{({"year"})@},
+   //!	thus the method @expr{month->year()@} gives the year object.
+   //!
+   array(string) greater() { return ({}); }
 
    int `<(object x) { error("'< undefined\n"); }
    int `>(object x) { error("'> undefined\n"); }
    int `==(object x) { error("'== undefined\n"); }
+
+   //! @decl object next()
+   //! @decl object prev()
+   //! @decl object `+(int n)
+   //! @decl object `-(int n)
+   //! @decl object `-(object x)
+   //!	@[next()] and @[prev()] give the logical next and previous object.
+   //!	The @[`+()] operator gives that logical relative object,
+   //!	ie @expr{my_day+14@} gives 14 days ahead.
+   //!     @[`-()] works the same way, but can also take an object
+   //!	of the same type and give the difference as an integer.
 
    object `+(int n) { error("`+ undefined\n"); }
    object|int `-(int n) { error("`- undefined\n"); }
@@ -90,15 +84,8 @@ class _TimeUnit
 }
 
 
-
-
-
 string print_month(void|object month,void|mapping options)
 {
-   object w;
-   object today;
-   string res="";
-
    if (!month)  // resolv thing here is to avoid compile-time resolve
       month=master()->resolv("Calendar_I")["Gregorian"]["Month"]();
 
@@ -111,11 +98,11 @@ string print_month(void|object month,void|mapping options)
    options=(["date_space":(options->mark_today?3:2)])|options;
 
 
-   today=function_object(object_program(month))->Day();
+   object today=function_object(object_program(month))->Day();
 
-   w=month->day(1)->week();
+   object w=month->day(1)->week();
 
-   res="";
+   string res="";
    if (options->weeks) res+=" "+" "*options->week_space;
    if (options->title)
       res+=sprintf("%|*s\n",
@@ -133,27 +120,19 @@ string print_month(void|object month,void|mapping options)
       res+="\n";
    }
 
-   string daynotes="";
-
-   if (sizeof(Array.filter(
-      Array.map(month->days(),month->day),
-      lambda(object d) { return !!options->notes[d]; })))
-      daynotes="\n%-|"+options->date_space+"s";
-
    do
    {
-      array a;
-      array b;
-      object d;
-      string format="";
-
-      a=Array.map(Array.map(w->days(),w->day),
-		  lambda(object d) 
-		  { if (d->month()!=month) return 0; else return d; });
+      array a = map(map(w->days(),w->day),
+                    lambda(object d)
+                    {
+                      if (d->month()!=month)
+                        return 0;
+                      else
+                        return d; });
 
       if (options->weeks)
 	 res+=sprintf("%*s ",options->week_space,w->name());
-      foreach (a,d)
+      foreach (a, object d)
 	 if (d)
 	    if (!options->mark_today || d!=today) 
 	       res+=sprintf("%* |d ",
@@ -171,11 +150,6 @@ string print_month(void|object month,void|mapping options)
 		      options->notes[w]);
 
       res+="\n";
-
-      if (daynotes)
-      {
-	 
-      }
 
       w++;
    }

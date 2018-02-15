@@ -1,6 +1,10 @@
 /*
- * $Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Password handling for Pike.
  *
  * Henrik Grubbström 1997-01-28
@@ -21,9 +25,6 @@
 
 #include "system_machine.h"
 #include "system.h"
-
-RCSID("$Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $");
-
 #include "module_support.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -48,6 +49,8 @@ RCSID("$Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $");
 #ifdef HAVE_SHADOW_H
 # include <shadow.h>
 #endif /* HAVE_SHADOW_H */
+
+#define sp Pike_sp
 
 /*
  * Emulation
@@ -101,14 +104,19 @@ struct group *getgrnam(char *name)
 #endif
 #endif
 
- 
+
+#define SAFE_PUSH_TEXT(X) do {						\
+    char *text_ = (X);							\
+    if(text_) push_text(text_);						\
+    else push_empty_string();						\
+  } while(0)
+
 /*
  * Functions
  */
 
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
 
-#define SAFE_PUSH_TEXT(X) do { char *text_ = (X); if(text_) push_text(text_); else push_constant_text(""); }while(0);
 void push_pwent(struct passwd *ent)
 {
   /* NOTE: password_protection_mutex is always locked
@@ -123,7 +131,7 @@ void push_pwent(struct passwd *ent)
   SAFE_PUSH_TEXT(ent->pw_name);
 
 #if defined(HAVE_GETSPNAM) || defined(HAVE_GETSPNAM_R)
-  if(!strcmp(ent->pw_passwd, "x"))
+  if(!strcmp(ent->pw_passwd, "x") || !strcmp(ent->pw_passwd, "*NP*"))
   {
     /* 64-bit Solaris 7 SIGSEGV's with an access to address 0xffffffff
      * if the user is not root:
@@ -178,7 +186,7 @@ void push_pwent(struct passwd *ent)
       push_text(foo->sp_pwdp);
     else
       push_text("x");
-  } else 
+  } else
 #endif /* Shadow password support */
   SAFE_PUSH_TEXT(ent->pw_passwd);
 
@@ -210,7 +218,7 @@ void push_grent(struct group *ent)
   {
     char **cp = ent->gr_mem;
     int i=0;
-    while(cp[i]) push_text(cp[i++]);
+    while(cp && cp[i]) push_text(cp[i++]);
     f_aggregate(i);
   }
   f_aggregate(4);
@@ -218,12 +226,36 @@ void push_grent(struct group *ent)
 #endif
 
 #ifdef HAVE_GETGRGID
-/* array getgrgid(int gid) */
+/*! @decl array(int|string|array(string)) getgrgid(int gid)
+ *!
+ *!   Get the group entry for the group with the id @[gid] using the systemfunction
+ *!   @tt{getgrid(3)@}.
+ *!
+ *! @param gid
+ *!   The id of the group
+ *!
+ *! @returns
+ *!   An array with the information about the group
+ *!   @array
+ *!     @elem string 0
+ *!       Group name
+ *!     @elem string 1
+ *!       Group password (encrypted)
+ *!     @elem int 2
+ *!       ID of the group
+ *!     @elem array 3..
+ *!       Array with UIDs of group members
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[getgrent()]
+ *!   @[getgrnam()]
+ */
 void f_getgrgid(INT32 args)
 {
   INT_TYPE gid;
   struct group *foo;
-  get_all_args("getgrgid", args, "%d", &gid);
+  get_all_args("getgrgid", args, "%i", &gid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -238,7 +270,30 @@ void f_getgrgid(INT32 args)
 #endif /* HAVE_GETGRGID */
 
 #ifdef HAVE_GETGRNAM
-/* array getgrnam(string str) */
+/*! @decl array(int|string|array(string)) getgrnam(string str)
+ *!   Get the group entry for the group with the name @[str] using the
+ *!   systemfunction @tt{getgrnam(3)@}.
+ *!
+ *! @param str
+ *!   The name of the group
+ *!
+ *! @returns
+ *!   An array with the information about the group
+ *!   @array
+ *!     @elem string 0
+ *!       Group name
+ *!     @elem string 1
+ *!       Group password (encrypted)
+ *!     @elem int 2
+ *!       ID of the group
+ *!     @elem array 3..
+ *!       Array with UIDs of group members
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[getgrent()]
+ *!   @[getgrgid()]
+ */
 void f_getgrnam(INT32 args)
 {
   char *str;
@@ -258,7 +313,36 @@ void f_getgrnam(INT32 args)
 #endif /* HAVE_GETGRNAM */
 
 #ifdef HAVE_GETPWNAM
-/* array getpwnam(string str) */
+/*! @decl array(int|string) getpwnam(string str)
+ *!
+ *!   Get the user entry for login @[str] using the systemfunction @tt{getpwnam(3)@}.
+ *!
+ *! @param str
+ *!   The login name of the user whos userrecord is requested.
+ *!
+ *! @returns
+ *!   An array with the information about the user
+ *!   @array
+ *!     @elem string 0
+ *!       Users username (loginname)
+ *!     @elem string 1
+ *!       User password (encrypted)
+ *!     @elem int 2
+ *!       Users ID
+ *!     @elem int 3
+ *!       Users primary group ID
+ *!     @elem string 4
+ *!       Users real name an possibly some other info
+ *!     @elem string 5
+ *!       Users home directory
+ *!     @elem string 6
+ *!       Users shell
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[getpwuid()]
+ *!   @[getpwent()]
+ */
 void f_getpwnam(INT32 args)
 {
   char *str;
@@ -280,12 +364,41 @@ void f_getpwnam(INT32 args)
 #endif /* HAVE_GETPWNAM */
 
 #ifdef HAVE_GETPWUID
-/* array getpwuid(int uid) */
+/*! @decl array(int|string) getpwuid(int uid)
+ *!
+ *!   Get the user entry for UID @[uid] using the systemfunction @tt{getpwuid(3)@}.
+ *!
+ *! @param uid
+ *!   The uid of the user whos userrecord is requested.
+ *!
+ *! @returns
+ *!   An array with the information about the user
+ *!   @array
+ *!     @elem string 0
+ *!       Users username (loginname)
+ *!     @elem string 1
+ *!       User password (encrypted)
+ *!     @elem int 2
+ *!       Users ID
+ *!     @elem int 3
+ *!       Users primary group ID
+ *!     @elem string 4
+ *!       Users real name an possibly some other info
+ *!     @elem string 5
+ *!       Users home directory
+ *!     @elem string 6
+ *!       Users shell
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[getpwnam()]
+ *!   @[getpwent()]
+ */
 void f_getpwuid(INT32 args)
 {
   INT_TYPE uid;
   struct passwd *foo;
-  
+
   get_all_args("getpwuid", args, "%i", &uid);
 
   LOCK_IMUTEX(&password_protection_mutex);
@@ -301,8 +414,22 @@ void f_getpwuid(INT32 args)
 }
 #endif /* HAVE_GETPWUID */
 
+/*! @module System */
+
 #ifdef HAVE_SETPWENT
-/* int setpwent() */
+/*! @decl int setpwent()
+ *!
+ *!   Resets the @[getpwent] function to the first entry in the passwd source
+ *!   using the systemfunction @tt{setpwent(3)@}.
+ *!
+ *! @returns
+ *!   Always @expr{0@} (zero)
+ *!
+ *! @seealso
+ *!   @[get_all_users()]
+ *!   @[getpwent()]
+ *!   @[endpwent()]
+ */
 void f_setpwent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -316,9 +443,21 @@ void f_setpwent(INT32 args)
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_SETPWENT */
- 
+
 #ifdef HAVE_ENDPWENT
-/* int endpwent() */
+/*! @decl int endpwent()
+ *!
+ *!   Closes the passwd source opened by @[getpwent] function using the
+ *!   systemfunction @tt{endpwent(3)@}.
+ *!
+ *! @returns
+ *!   Always @expr{0@} (zero)
+ *!
+ *! @seealso
+ *!   @[get_all_users()]
+ *!   @[getpwent()]
+ *!   @[setpwent()]
+ */
 void f_endpwent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -334,7 +473,42 @@ void f_endpwent(INT32 args)
 #endif /* HAVE_ENDPWENT */
 
 #ifdef HAVE_GETPWENT
-/* int|array getpwent() */ 
+/*! @decl array(int|string) getpwent()
+ *!
+ *!   When first called, the @[getpwent] function opens the passwd source
+ *!   and returns the first record using the systemfunction @tt{getpwent(3)@}.
+ *!   For each following call, it returns the next record until EOF.
+ *!
+ *!   Call @[endpwent] when done using @[getpwent].
+ *!
+ *! @returns
+ *!   An array with the information about the user
+ *!   @array
+ *!     @elem string 0
+ *!       Users username (loginname)
+ *!     @elem string 1
+ *!       User password (encrypted)
+ *!     @elem int 2
+ *!       Users ID
+ *!     @elem int 3
+ *!       Users primary group ID
+ *!     @elem string 4
+ *!       Users real name an possibly some other info
+ *!     @elem string 5
+ *!       Users home directory
+ *!     @elem string 6
+ *!       Users shell
+ *!   @endarray
+ *!
+ *!   0 if EOF.
+ *!
+ *! @seealso
+ *!   @[get_all_users()]
+ *!   @[getpwnam()]
+ *!   @[getpwent()]
+ *!   @[setpwent()]
+ *!   @[endpwent()]
+ */
 void f_getpwent(INT32 args)
 {
   struct passwd *foo;
@@ -357,6 +531,20 @@ void f_getpwent(INT32 args)
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
+/*! @endmodule */
+
+/*! @decl array(array(int|string)) get_all_users()
+ *!
+ *! Returns an array with all users in the system.
+ *!
+ *! @returns
+ *!   An array with arrays of userinfo as in @[getpwent].
+ *!
+ *! @seealso
+ *!   @[getpwent()]
+ *!   @[getpwnam()]
+ *!   @[getpwuid()]
+ */
 void f_get_all_users(INT32 args)
 {
   struct array *a;
@@ -370,7 +558,6 @@ void f_get_all_users(INT32 args)
   while(1)
   {
     struct passwd *pw;
-    struct pike_pwent *nppwent;
 
     THREADS_ALLOW_UID();
     pw=getpwent();
@@ -391,8 +578,18 @@ void f_get_all_users(INT32 args)
 
 #endif /* HAVE_GETPWENT */
 
+/*! @module System */
+
 #ifdef HAVE_SETGRENT
-/* int setgrent() */
+/*! @decl int setgrent()
+ *!
+ *!   Rewinds the @[getgrent] pointer to the first entry
+ *!
+ *! @seealso
+ *!   @[get_all_groups()]
+ *!   @[getgrent()]
+ *!   @[endgrent()]
+ */
 void f_setgrent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -409,7 +606,15 @@ void f_setgrent(INT32 args)
 #endif /* HAVE_SETGRENT */
 
 #ifdef HAVE_ENDGRENT
-/* int endgrent() */
+/*! @decl int endgrent()
+ *!
+ *!   Closes the /etc/groups file after using the @[getgrent] function.
+ *!
+ *! @seealso
+ *!   @[get_all_groups()]
+ *!   @[getgrent()]
+ *!   @[setgrent()]
+ */
 void f_endgrent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -426,7 +631,32 @@ void f_endgrent(INT32 args)
 #endif /* HAVE_ENDGRENT */
 
 #ifdef HAVE_GETGRENT
-/* int|array getgrent() */
+/*! @decl array(int|string|array(string)) getgrent()
+ *!
+ *!   Get a group entry from /etc/groups file.
+ *!   @[getgrent] interates thru the groups source and returns
+ *!   one entry per call using the systemfunction @tt{getgrent(3)@}.
+ *!
+ *!   Always call @[endgrent] when done using @[getgrent]!
+ *!
+ *! @returns
+ *!   An array with the information about the group
+ *!   @array
+ *!     @elem string 0
+ *!       Group name
+ *!     @elem string 1
+ *!       Group password (encrypted)
+ *!     @elem int 2
+ *!       ID of the group
+ *!     @elem array 3..
+ *!       Array with UIDs of group members
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[get_all_groups()]
+ *!   @[getgrnam()]
+ *!   @[getgrgid()]
+ */
 void f_getgrent(INT32 args)
 {
   struct group *foo;
@@ -449,6 +679,27 @@ void f_getgrent(INT32 args)
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
+/*! @endmodule */
+
+/*! @decl array(array(int|string|array(string))) get_all_groups()
+ *!
+ *!   Returns an array of arrays with all groups in the system groups source.
+ *!   Each element in the returned array has the same structure as in
+ *!   @[getgrent] function.
+ *!
+ *! @note
+ *!   The groups source is system dependant. Refer to your system manuals for information
+ *!   about how to set the source.
+ *!
+ *! @returns
+ *!   @array
+ *!     @elem array(int|string|array(string)) 0..
+ *!       Array with info about the group
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[getgrent()]
+ */
 void f_get_all_groups(INT32 args)
 {
   struct array *a;
@@ -482,6 +733,26 @@ void f_get_all_groups(INT32 args)
 }
 
 #ifdef HAVE_GETPWNAM
+/*! @decl array(int) get_groups_for_user(int|string user)
+ *!
+ *!   Gets all groups which a given user is a member of.
+ *!
+ *! @param user
+ *!   UID or loginname of the user
+ *!
+ *! @returns
+ *!   @array
+ *!     @elem array 0..
+ *!       Information about all the users groups
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[get_all_groups()]
+ *!   @[getgrgid()]
+ *!   @[getgrnam()]
+ *!   @[getpwuid()]
+ *!   @[getpwnam()]
+ */
 void f_get_groups_for_user(INT32 arg)
 {
   struct group *gr = NULL;
@@ -494,7 +765,7 @@ void f_get_groups_for_user(INT32 arg)
   check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
-  if(sp[-1].type == T_INT)
+  if(TYPEOF(sp[-1]) == T_INT)
   {
     int uid=sp[-1].u.integer;
 
@@ -506,8 +777,7 @@ void f_get_groups_for_user(INT32 arg)
 
     if(pw)
     {
-      sp[-1].u.string=make_shared_string(pw->pw_name);
-      sp[-1].type=T_STRING;
+      SET_SVAL(sp[-1], T_STRING, 0, string, make_shared_string(pw->pw_name));
       user=sp[-1].u.string->str;
     }
   }else{
@@ -559,7 +829,7 @@ void f_get_groups_for_user(INT32 arg)
   endgrent();
 
   UNLOCK_IMUTEX(&password_protection_mutex);
- 
+
   pop_stack();
   push_array(a);
 }
@@ -574,72 +844,77 @@ void init_passwd(void)
    * From passwords.c
    */
 #ifdef HAVE_GETPWNAM
-  
+
 /* function(string:array(int|string)) */
-  ADD_EFUN("getpwnam", f_getpwnam,tFunc(tStr,tArr(tOr(tInt,tStr))), 
+  ADD_EFUN("getpwnam", f_getpwnam,tFunc(tStr,tArr(tOr(tInt,tStr))),
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWUID
-  
+
 /* function(int:array(int|string)) */
   ADD_EFUN("getpwuid", f_getpwuid,tFunc(tInt,tArr(tOr(tInt,tStr))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRNAM
-  
+
 /* function(string:array(int|string|array(string))) */
   ADD_EFUN("getgrnam", f_getgrnam,tFunc(tStr,tArr(tOr3(tInt,tStr,tArr(tStr)))),
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRGID
-  
+
 /* function(int:array(int|string|array(string))) */
   ADD_EFUN("getgrgid", f_getgrgid,tFunc(tInt,tArr(tOr3(tInt,tStr,tArr(tStr)))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWENT
-  
-/* function(void:array(int|string)) */
-  ADD_EFUN("getpwent", f_getpwent,tFunc(tVoid,tArr(tOr(tInt,tStr))),
-           OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
-  
-/* function(void:array(array(int|string))) */
+
+  /* function(void:array(int|string)) */
+  ADD_FUNCTION("getpwent", f_getpwent,tFunc(tVoid,tArr(tOr(tInt,tStr))),
+	       OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+
+  /* function(void:array(array(int|string))) */
   ADD_EFUN("get_all_users", f_get_all_users,tFunc(tVoid,tArr(tArr(tOr(tInt,tStr)))),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_ENDPWENT
-  
-/* function(void:int) */
-  ADD_EFUN("endpwent", f_endpwent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  /* function(void:int) */
+  ADD_FUNCTION("endpwent", f_endpwent,tFunc(tVoid,tInt),
+	       OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETPWENT
-  
-/* function(void:int) */
-  ADD_EFUN("setpwent", f_setpwent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  /* function(void:int) */
+  ADD_FUNCTION("setpwent", f_setpwent,tFunc(tVoid,tInt),
+	       OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRENT
-  
-/* function(void:array(int|string|array(string))) */
-  ADD_EFUN("getgrent", f_getgrent,tFunc(tVoid,tArr(tOr3(tInt,tStr,tArr(tStr)))),
-           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
-  
-/* function(void:array(array(int|string|array(string)))) */
+
+  /* function(void:array(int|string|array(string))) */
+  ADD_FUNCTION("getgrent", f_getgrent,
+	       tFunc(tVoid,tArr(tOr3(tInt,tStr,tArr(tStr)))),
+	       OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  /* function(void:array(array(int|string|array(string)))) */
   ADD_EFUN("get_all_groups", f_get_all_groups,tFunc(tVoid,tArr(tArr(tOr3(tInt,tStr,tArr(tStr))))),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETPWENT
-  
+
 /* function(int|string:array(int)) */
   ADD_EFUN("get_groups_for_user", f_get_groups_for_user,tFunc(tOr(tInt,tStr),tArr(tInt)),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPWENT */
 #endif
 #ifdef HAVE_ENDGRENT
-  
-/* function(void:int) */
-  ADD_EFUN("endgrent", f_endgrent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  /* function(void:int) */
+  ADD_FUNCTION("endgrent", f_endgrent,tFunc(tVoid,tInt),
+	       OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETGRENT
-  
-/* function(void:int) */
-  ADD_EFUN("setgrent", f_setgrent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+
+  /* function(void:int) */
+  ADD_FUNCTION("setgrent", f_setgrent,tFunc(tVoid,tInt),
+	       OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 }

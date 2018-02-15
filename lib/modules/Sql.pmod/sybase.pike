@@ -1,13 +1,14 @@
 /*
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
- * (C) Roxen IS
- * 
- * $Id: sybase.pike,v 1.5 2000/09/28 03:39:10 hubbe Exp $
  *
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(sybase.sybase)
 
@@ -92,8 +93,10 @@ void seek(int skipthismany) {
 }
 
 void create(void|string host, void|string db, void|string user,
-            void|string pass) {
-  mo::create(host||"",db||"",user||"",pass||"");
+	    void|string _pass, void|mapping options) {
+  string pass = _pass;
+  _pass = "CENSORED";
+  mo::create(host||"",db||"",user||"",pass||"",options);
   if (db && stringp(db) && sizeof(db)) {
     mo::big_query("use "+db);
   }
@@ -102,9 +105,9 @@ void create(void|string host, void|string db, void|string user,
 int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings,this_object()));
+  return ::big_query(.sql_util.emulate_bindings(q,bindings,this));
 }
 
 #else
-#error "Sybase driver not available.\n"
+constant this_program_does_not_exist=1;
 #endif

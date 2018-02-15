@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.9 1999/11/18 08:03:26 hubbe Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..:.
-OBJS=system.o syslog.o passwords.o nt.o
+VPATH=@srcdir@
+OBJS=system.o syslog.o passwords.o nt.o memory.o
 MODULE_LDFLAGS=@LIBS@
+SRC_TARGETS=$(SRCDIR)/add-errnos.h
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

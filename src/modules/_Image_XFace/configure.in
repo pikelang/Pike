@@ -1,14 +1,8 @@
-# $Id: configure.in,v 1.4 2000/11/14 19:26:43 marcus Exp $
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 
 AC_MODULE_INIT()
-
-# Check if we're cross-compiling.
-
-CROSS="$ac_cv_prog_cc_cross"
-AC_SUBST(CROSS)
 
 #############################################################################
 # Copied from ../../configure.in
@@ -46,7 +40,7 @@ esac
 define([AC_CHECK_GMP],
 [
   done=no
-  AC_CHECK_HEADERS($2,[
+  ORIG_CHECK_HEADERS($2,[
 
     # This test is needed since the __MPN macro
     # is broken on many versions of gmp, since
@@ -79,7 +73,13 @@ __MPN(PiKe)
       AC_MSG_RESULT($PIKE_PREFIX_NAME)
       AC_DEFINE_UNQUOTED(PIKE_MPN_PREFIX, $PIKE_PREFIX_NAME)
     fi
-    undefine(PIKE_PREFIX_NAME)
+
+dnl 
+dnl  Autoconf 2.52 seems to barf on this undefine for
+dnl  some unknown reason. This file should work just
+dnl  as well without it.
+dnl
+dnl    undefine(PIKE_PREFIX_NAME)
 
     AC_MSG_CHECKING(working <$2>)
     AC_CACHE_VAL(pike_cv_working_$1,[
@@ -145,6 +145,7 @@ int main(int argc, char **argv)
       AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
       LIBS="${LIBS-} -l$1"
       done=yes
+      PIKE_FEATURE_OK(Image.XFace)
     else
       AC_MSG_RESULT(no)
     fi
@@ -156,7 +157,10 @@ int main(int argc, char **argv)
   fi
 ])
 
+PIKE_FEATURE_WITHOUT(Image.XFace)
+
 if test x$with_gmp = xyes ; then
+  PIKE_FEATURE_NODEP(Image.XFace)
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[AC_CHECK_GMP(gmp,gmp.h,[])])
 fi
 

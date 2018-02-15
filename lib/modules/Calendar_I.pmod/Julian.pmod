@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 inherit Calendar_I.Gregorian;
 
 class Year
