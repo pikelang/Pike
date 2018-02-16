@@ -942,19 +942,13 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
     init_string_builder(&s, 0);
     string_builder_vsprintf(&s, fmt, *fmt_args);
 
-#if 0
-    if (!master_program) {
-      fprintf(stderr, "ERROR: %s\n", s.s->str);
-    }
-#endif
-
     if (err->error_message) free_string(err->error_message);
     err->error_message = finish_string_builder(&s);
   }
 
   f_backtrace(0);
 
-  if(func)
+  if(func && base_sp)
   {
     int i;
     push_int(0);
