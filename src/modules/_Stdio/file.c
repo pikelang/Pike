@@ -2352,7 +2352,7 @@ static void file_nodelay(INT32 args)
   get_all_args("set_nodelay", args, ".%d", &state);
 
   if (state && state != 1) {
-    SIMPLE_BAD_ARG_ERROR("set_nodelay()", 1, "int(0..1)");
+    SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
   }
 
   errno = 0;

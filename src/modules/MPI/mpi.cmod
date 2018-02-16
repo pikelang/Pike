@@ -77,19 +77,19 @@ static inline void using_mpi(const char *name) {
 						  MPI_Pointer_program))
 
 #define ENSURE_SENTINEL(x, fun, argnum) do { if (!IS_SENTINEL(x))	\
-    SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
+      SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"      \
 			 "inherits(MPI.FloatArray)|"			\
 			 "inherits(MPI.Sentinel)");			\
 } while (0)
 #define ENSURE_SENTINEL_OR_NULL(x, fun, argnum) do {			\
     if ((x) && !IS_SENTINEL(x))						\
-	SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"	\
+	SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"	\
 			     "inherits(MPI.FloatArray)|"		\
 			     "inherits(MPI.Sentinel)|void");		\
 } while (0)
 
 #define FAIL_SENTINEL_OR_PTR(fun, argnum) do {				\
-    SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
+    SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"        \
 			 "inherits(MPI.FloatArray)|"			\
 			 "inherits(MPI.Sentinel)|string");		\
 } while (0)
@@ -1080,7 +1080,7 @@ PIKECLASS Comm
 	using_mpi("Recv");
 
 	if (status && -1 == low_get_storage(status->prog, MPI_Status_program)) {
-	    SIMPLE_BAD_ARG_ERROR("Recv", 4, "inherits(MPI.Status)");
+	    SIMPLE_ARG_TYPE_ERROR("Recv", 4, "inherits(MPI.Status)");
 	}
 
 	if (IS_SENTINEL(buf)) {
@@ -1141,7 +1141,7 @@ PIKECLASS Comm
 	using_mpi("Reduce");
 
 	if (-1 == low_get_storage(op->prog, MPI_Op_program))
-	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
+	    SIMPLE_ARG_TYPE_ERROR("Reduce", 3, "inherits(MPI.Op)");
 	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
 	ENSURE_SENTINEL(recvbuf, "Reduce", 2);
 
@@ -1180,7 +1180,7 @@ PIKECLASS Comm
     {									\
 	using_mpi(#_name_);						\
 	if (-1 == low_get_storage(op->prog, MPI_Op_program))		\
-	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
+	    SIMPLE_ARG_TYPE_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
 	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
 									\
@@ -1246,9 +1246,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
 	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
 	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
+	    SIMPLE_ARG_TYPE_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
 	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Scatterv", 3, "inherits(MPI.IntArray)");
+	    SIMPLE_ARG_TYPE_ERROR("Scatterv", 3, "inherits(MPI.IntArray)");
 	ENSURE_SENTINEL(recvbuf, "Scatterv", 4);
 
 	mpi_Scatterv(sendbuf, counts, displ, recvbuf, root, THIS->comm);
@@ -1263,9 +1263,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
 	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
 	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Gatherv", 3, "inherits(MPI.IntArray)|void");
+	    SIMPLE_ARG_TYPE_ERROR("Gatherv", 3, "inherits(MPI.IntArray)|void");
 	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Gatherv", 4, "inherits(MPI.IntArray)|void");
+	    SIMPLE_ARG_TYPE_ERROR("Gatherv", 4, "inherits(MPI.IntArray)|void");
 
 	mpi_Gatherv(sendbuf, recvbuf, counts, displ, root, THIS->comm);
 	pop_n_elems(args);

@@ -78,7 +78,7 @@ PIKEFUN array(object) find_all_clones(program|function prog,
   struct program *p = program_from_svalue(prog);
 
   if (!p) {
-    SIMPLE_BAD_ARG_ERROR("Debug.find_all_clones", 1, "program");
+    SIMPLE_ARG_TYPE_ERROR("Debug.find_all_clones", 1, "program");
   }
 
   if (include_subclasses && !include_subclasses->u.integer) {
