@@ -572,7 +572,7 @@ void image_paste_alpha_color(INT32 args)
    if (!mask->img) return;
 
    if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
-      arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
+      arg=1+getrgb(THIS,1,args,3,"paste_alpha_color");
    if (args>arg+1)
    {
       if (TYPEOF(sp[arg-args]) != T_INT

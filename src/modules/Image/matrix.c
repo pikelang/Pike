@@ -58,6 +58,9 @@ static void chrono(char *x)
 #define CHRONO(X)
 #endif
 
+#define CHECK_INIT() if(!THIS->img) \
+    Pike_error("Image object not initialized.\n");
+
 /***************** internals ***********************************/
 
 #define apply_alpha(x,y,alpha) \
@@ -440,8 +443,7 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -549,8 +551,7 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -603,8 +604,7 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -654,8 +654,7 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -914,11 +913,11 @@ void image_skewx(INT32 args)
       bad_arg_error("skewx",sp-args,args,0,"",sp-args,
                     "Bad arguments to skewx.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewx"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewx(THIS,(struct image*)(o->storage),diff,0);
@@ -978,11 +977,11 @@ void image_skewy(INT32 args)
       bad_arg_error("skewy",sp-args,args,0,"",sp-args,
                     "Bad arguments to skewy.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewy"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewy(THIS,(struct image*)(o->storage),diff,0);
@@ -1006,11 +1005,11 @@ void image_skewx_expand(INT32 args)
       bad_arg_error("skewx_expand",sp-args,args,0,"",sp-args,
                     "Bad arguments to skewx_expand.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx_expand()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewx_expand"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewx(THIS,(struct image*)(o->storage),diff,1);
@@ -1034,11 +1033,11 @@ void image_skewy_expand(INT32 args)
       bad_arg_error("skewx_expand",sp-args,args,0,"",sp-args,
                     "Bad arguments to skewy_expand.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy_expand()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewy_expand"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewy(THIS,(struct image*)(o->storage),diff,1);
@@ -1065,8 +1064,7 @@ void img_rotate(INT32 args,int xpn)
       bad_arg_error("rotate",sp-args,args,0,"",sp-args,
                     "Bad arguments to rotate.\n");
 
-   if (!THIS->img)
-      Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    dest2.img=d0.img=NULL;
 
@@ -1095,7 +1093,7 @@ void img_rotate(INT32 args,int xpn)
    o=clone_object(image_program,0);
 
    dest=(struct image*)(o->storage);
-   if (!getrgb(dest,1,args,"image->rotate()"))
+   if (!getrgb(dest,1,args,"rotate"))
       (dest)->rgb=THIS->rgb;
    d0.rgb=dest2.rgb=dest->rgb;
 
@@ -1173,7 +1171,7 @@ void img_translate(INT32 args,int expand)
    else bad_arg_error("translate",sp-args,args,2,"",sp+2-1-args,
                       "Bad argument 2 to translate.\n");
 
-   getrgb(THIS,2,args,"image->translate()\n");
+   getrgb(THIS,2,args,"translate");
 
    xt-=floor(xt);
    yt-=floor(yt);

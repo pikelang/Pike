@@ -1003,7 +1003,7 @@ void image_create(INT32 args)
    }
    else
    {
-      getrgb(THIS,2,args,args,"Image.Image->create()");
+      getrgb(THIS,2,args,args,"create");
       pop_n_elems(args);
    }
 
@@ -1072,12 +1072,12 @@ void image_clone(INT32 args)
    {
       if(sp[-args].u.integer < 0 ||
 	 sp[1-args].u.integer < 0)
-	 Pike_error("Illegal size to Image.Image->clone()\n");
+         Pike_error("Illegal size to clone.\n");
       img->xsize=sp[-args].u.integer;
       img->ysize=sp[1-args].u.integer;
    }
 
-   getrgb(img,2,args,args,"Image.Image->clone()");
+   getrgb(img,2,args,args,"clone");
 
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
@@ -1134,7 +1134,7 @@ void image_clear(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   getrgb(img,0,args,args,"Image.Image->clear()");
+   getrgb(img,0,args,args,"clear");
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (!img->img)
@@ -1212,7 +1212,7 @@ void image_copy(INT32 args)
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
-   getrgb(THIS,4,args,args,"Image.Image->copy()");
+   getrgb(THIS,4,args,args,"copy");
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -1256,10 +1256,10 @@ static void image_change_color(INT32 args)
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    to=THIS->rgb;
-   if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
+   if (!(arg=getrgb(THIS,0,args,3,"change_color")))
       SIMPLE_WRONG_NUM_ARGS_ERROR("Image",1);
    from=THIS->rgb;
-   if (getrgb(THIS,arg,args,args,"Image.Image->change_color()"))
+   if (getrgb(THIS,arg,args,args,"change_color"))
       to=THIS->rgb;
 
    o=clone_object(image_program,0);
@@ -1433,9 +1433,9 @@ void image_autocrop(INT32 args)
    int left=1,right=1,top=1,bottom=1;
 
    if (args>=5)
-      getrgb(THIS,5,args,args,"Image.Image->autocrop()");
+      getrgb(THIS,5,args,args,"autocrop");
    else
-      getrgb(THIS,1,args,args,"Image.Image->autocrop()");
+      getrgb(THIS,1,args,args,"autocrop");
 
    image_find_autocrop(args);
    args++;
@@ -1474,7 +1474,7 @@ void image_setcolor(INT32 args)
    if (args<3)
       bad_arg_error("setcolor",sp-args,args,0,"",sp-args,
                     "Bad arguments to setcolor.\n");
-   getrgb(THIS,0,args,args,"Image.Image->setcolor()");
+   getrgb(THIS,0,args,args,"setcolor");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1513,7 +1513,7 @@ void image_setpixel(INT32 args)
        TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
                     "Bad arguments to setpixel.\n");
-   getrgb(THIS,2,args,args,"Image.Image->setpixel()");
+   getrgb(THIS,2,args,args,"setpixel");
    if (!THIS->img) return;
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -1597,7 +1597,7 @@ void image_line(INT32 args)
        TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("line",sp-args,args,0,"",sp-args,
                     "Bad arguments to line.\n");
-   getrgb(THIS,4,args,args,"Image.Image->line()");
+   getrgb(THIS,4,args,args,"line");
    if (!THIS->img) return;
 
    img_line(sp[-args].u.integer,
@@ -1647,7 +1647,7 @@ void image_box(INT32 args)
        TYPEOF(sp[3-args]) != T_INT)
      bad_arg_error("box",sp-args,args,0,"",sp-args,
                    "Bad arguments to box.\n");
-   getrgb(THIS,4,args,args,"Image.Image->box()");
+   getrgb(THIS,4,args,args,"box");
    if (!THIS->img) return;
 
    img_box(sp[-args].u.integer,
@@ -1699,7 +1699,7 @@ void image_circle(INT32 args)
        TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("circle",sp-args,args,0,"",sp-args,
                     "Bad arguments to circle.\n");
-   getrgb(THIS,4,args,args,"Image.Image->circle()");
+   getrgb(THIS,4,args,args,"circle");
    if (!THIS->img) return;
 
    x=sp[-args].u.integer;
@@ -2137,7 +2137,7 @@ static void image_gradients(INT32 args)
    }
 
    if (!first)
-      SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->gradients",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("gradients",1);
 
    THREADS_ALLOW();
 
@@ -2356,7 +2356,7 @@ void image_grey(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"Image.Image->grey()");
+      getrgbl(&rgb,0,args,"grey");
    div=rgb.r+rgb.g+rgb.b;
 
    o=clone_object(image_program,0);
@@ -2448,7 +2448,7 @@ void image_color(INT32 args)
 	 rgb.b=THIS->rgb.b;
    }
    else
-      getrgbl(&rgb,0,args,"Image.Image->color()");
+      getrgbl(&rgb,0,args,"color");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2604,7 +2604,7 @@ void image_threshold(INT32 args)
       level*=3;
       rgb.r=rgb.g=rgb.b=0;
    }
-   else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
+   else if (!getrgb(THIS,0,args,args,"threshold"))
       rgb.r=rgb.g=rgb.b=0;
    else
      rgb=THIS->rgb;
@@ -3090,7 +3090,7 @@ void image_distancesq(INT32 args)
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
 
-   getrgb(THIS,0,args,args,"Image.Image->distancesq()");
+   getrgb(THIS,0,args,args,"distancesq");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -3617,12 +3617,12 @@ CHRONO("apply_matrix");
    {
       struct svalue *s = sp[-args].u.array->item + i;
       if (TYPEOF(*s) != T_ARRAY)
-	 Pike_error("Illegal contents of (root) array (Image.Image->apply_matrix)\n");
+         Pike_error("Illegal contents of (root) array.\n");
       if (width==-1)
 	 width = s->u.array->size;
       else
 	 if (width != s->u.array->size)
-	    Pike_error("Arrays has different size (Image.Image->apply_matrix)\n");
+            Pike_error("Arrays has different size.\n");
    }
    if (width==-1) width=0;
 
@@ -3757,12 +3757,12 @@ static void _image_outline(INT32 args,int mask)
       {
 	 struct svalue *s = sp[-args].u.array->item + i;
 	 if (TYPEOF(*s) != T_ARRAY)
-	    Pike_error("Image.Image->outline: Illegal contents of (root) array\n");
+            Pike_error("Illegal contents of (root) array.\n");
 	 if (width==-1)
 	    width=s->u.array->size;
 	 else
 	    if (width!=s->u.array->size)
-	       Pike_error("Image.Image->outline: Arrays has different size\n");
+               Pike_error("Arrays have different size.\n");
       }
       if (width==-1) width=0;
 
@@ -3803,13 +3803,13 @@ static void _image_outline(INT32 args,int mask)
    {
       if (args-ai==6)
       {
-	 getrgbl(&bkgl,ai+3,args,"Image.Image->outline");
+         getrgbl(&bkgl,ai+3,args,"outline");
 	 pop_n_elems(args-(ai+3));
 	 args=ai+3;
       }
       else if (args-ai==7)
       {
-	 getrgbl(&bkgl,ai+4,args,"Image.Image->outline");
+         getrgbl(&bkgl,ai+4,args,"outline");
 	 pop_n_elems(args-(ai+4));
 	 args=ai+4;
       }
@@ -3819,13 +3819,13 @@ static void _image_outline(INT32 args,int mask)
 	 bkgl.g=s->g;
 	 bkgl.b=s->b;
       }
-      getrgb(img,ai,args,args,"Image.Image->outline");
+      getrgb(img,ai,args,args,"outline");
    }
    else
    {
       if (args-ai==4)
       {
-	 getrgbl(&bkgl,ai,args,"Image.Image->outline_mask");
+         getrgbl(&bkgl,ai,args,"outline_mask");
 	 pop_n_elems(args-(ai+3));
 	 args=ai+3;
       }
@@ -3961,9 +3961,9 @@ void image_modify_by_intensity(INT32 args)
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
    if (args<5)
-      SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("modify_by_intensity",5);
 
-   getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
+   getrgbl(&rgb,0,args,"modify_by_intensity");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
@@ -4363,7 +4363,7 @@ void image_gamma(INT32 args)
       else SIMPLE_ARG_TYPE_ERROR("gamma",3,"int|float");
    }
    else
-      Pike_error("Image.Image->gamma(): illegal number of arguments\n");
+      Pike_error("Illegal number of arguments.\n");
 
    if (gammar==gammab && gammab==gammag)
    {
@@ -4589,7 +4589,7 @@ void image_cast(INT32 args)
   struct pike_string *type;
 
   if (!args)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->cast",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("cast",1);
   if (!THIS->img)
     Pike_error("Called Image.Image object is not initialized\n");
 
