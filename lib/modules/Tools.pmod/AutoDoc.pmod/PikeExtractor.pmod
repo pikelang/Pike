@@ -408,7 +408,7 @@ private class Extractor {
               // fall through
             case "class":
               if (sizeof(decls))
-                extractorError("@module doc comment must stand alone");
+                extractorError("@%s doc comment must stand alone", what);
 	      object(Class)|object(Module) alreadyChild =
 		parent->findChild(meta->name);
               object(Class)|object(Module) m;
