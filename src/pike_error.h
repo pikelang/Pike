@@ -367,48 +367,6 @@ PMOD_EXPORT extern const char msg_div_by_zero[];
 #define check_recovery_context() ((void)0)
 #endif
 
-/* Experimental convenience exception macros. */
-
-#define exception_try \
-        do \
-        { \
-            int __exception_rethrow, __is_exception; \
-            JMP_BUF exception; \
-            __is_exception = SETJMP(exception); \
-            __exception_rethrow = 0; \
-            if(__is_exception) /* rethrow needs this */ \
-                UNSETJMP(exception); \
-            if(!__is_exception)
-
-#define exception_catch_if \
-            else if
-
-#define exception_catch(e) \
-            exception_catch_if(exception->severity = (e))
-
-#define exception_catch_all \
-            exception_catch_if(1)
-
-#define exception_semicatch_all \
-            exception_catch_if((__exception_rethrow = 1))
-
-#define rethrow \
-            pike_throw()
-
-#define exception_endtry \
-            else \
-                __exception_rethrow = 1; \
-            if(__is_exception) { \
-		free_svalue(&throw_value); \
-		mark_free_svalue (&throw_value); \
-	    } \
-	    else \
-                UNSETJMP(exception); \
-            if(__exception_rethrow) \
-                rethrow; \
-        } \
-        while(0)
-
 /* Generic error stuff */
 #define ERR_EXT_DECLARE
 #include "errors.h"
