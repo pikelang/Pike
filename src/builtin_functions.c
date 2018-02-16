@@ -8332,8 +8332,8 @@ PMOD_EXPORT void f_splice(INT32 args)
   return;
 }
 
-/*! @decl array(mixed) everynth(array(mixed) a, void|int n, @
- *!                             void|int start)
+/*! @decl array(mixed) everynth(array(mixed) a, void|int(1..) n, @
+ *!                             void|int(0..) start)
  *!
  *!   Return an array with every @[n]:th element of the array @[a].
  *!
@@ -9587,7 +9587,7 @@ void init_builtin_efuns(void)
 
   /* function(array(0=mixed),int|void,int|void:array(0)) */
   ADD_FUNCTION2("everynth",f_everynth,
-		tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
+                tFunc(tArr(tSetvar(0,tMix)) tOr(tInt1Plus,tVoid) tOr(tIntPos,tVoid),
 		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
 
   /* function(int:void) */
