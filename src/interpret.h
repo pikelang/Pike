@@ -717,30 +717,34 @@ enum apply_type
 
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
-  static int fun_, master_cnt=0; \
+  const char* _fun_ = (FUN); \
+  int _args_ = (ARGS); \
+  static int id_, master_cnt=0; \
   struct object *master_ob=master(); \
   if(master_cnt != master_ob->prog->id) \
   { \
-    fun_=find_identifier(FUN,master_ob->prog); \
+    id_=find_identifier(_fun_,master_ob->prog); \
     master_cnt = master_ob->prog->id; \
   } \
-  if (fun_ >= 0) { \
-    apply_low(master_ob, fun_, ARGS); \
+  if (id_ >= 0) { \
+    apply_low(master_ob, id_, _args_); \
   } else { \
-    Pike_error("Cannot call undefined function \"%s\" in master.\n", FUN); \
+    Pike_error("Cannot call undefined function \"%s\" in master.\n", _fun_); \
   } \
 }while(0)
 
 #define SAFE_APPLY_MASTER(FUN,ARGS) \
 do{ \
-  static int fun_, master_cnt=0; \
+  const char* _fun_ = (FUN); \
+  int _args_ = (ARGS); \
+  static int id_, master_cnt=0; \
   struct object *master_ob=master(); \
   if(master_cnt != master_ob->prog->id) \
   { \
-    fun_=find_identifier(FUN,master_ob->prog); \
+    id_=find_identifier(_fun_,master_ob->prog); \
     master_cnt = master_ob->prog->id; \
   } \
-  safe_apply_low2(master_ob, fun_, ARGS, FUN); \
+  safe_apply_low2(master_ob, id_, _args_, _fun_); \
 }while(0)
 
 #define SAFE_APPLY_HANDLER(FUN, HANDLER, COMPAT, ARGS) do {	\
