@@ -86,7 +86,7 @@
 //!
 //!   @value "$3$$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 //!     This is interpreted as the NT LANMANAGER (NTLM) password
-//!     hash. It is a hax representation of MD4 of the password.
+//!     hash. It is a hex representation of MD4 of the password.
 //!
 //!   @value "$1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
 //!     The string is interpreted according to the GNU libc2 extension
