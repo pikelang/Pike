@@ -183,6 +183,13 @@ protected void read_cb(mixed dummy,string s)
 {
    if( !sizeof( raw ) )
    {
+     // Opportunistic TLS.
+     if( has_prefix(s, "\x16\x03\x01") )
+     {
+       close_cb();
+       return;
+     }
+
       sscanf(s,"%*[ \t\n\r]%s", s );
       if( !strlen( s ) )
          return;
