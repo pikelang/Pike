@@ -9735,6 +9735,27 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
   }
 }
 
+PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
+						   const PIKE_OPCODE_T *addr,
+						   enum Pike_opcodes op,
+						   int arg1,
+						   int arg2)
+{
+  char buf[3][32];
+  const char *params[3] = { NULL, NULL, NULL };
+  const struct instr *instr = &instrs[op - F_OFFSET];
+  sprintf(buf[0], "%d", arg1);
+  sprintf(buf[1], "%d", arg2);
+  if (instr->flags & I_HASARG) {
+    params[0] = buf[0];
+  }
+  if (instr->flags & I_HASARG2) {
+    params[1] = buf[1];
+  }
+  sprintf(buf[3], "# %s", instr->name);
+  string_builder_append_disassembly(s, addr, addr, buf[3], params, NULL);
+}
+
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr)
 {
   struct svalue key;
