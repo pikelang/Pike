@@ -174,6 +174,14 @@ protected void flatten_headers()
       request_headers[x] = request_headers[x]*";";
 }
 
+//! Called when the client is attempting opportunistic TLS on this
+//! HTTP port. Overload to handle, i.e. send the data to a TLS
+//! port. By default the connection is simply closed.
+void opportunistic_tls(string s)
+{
+  close_cb();
+}
+
 // Appends data to raw and feeds the header parse with data. Once the
 // header parser has enough data parse_request() and parse_variables()
 // are called. If parse_variables() deems the request to be finished
@@ -186,7 +194,7 @@ protected void read_cb(mixed dummy,string s)
      // Opportunistic TLS.
      if( has_prefix(s, "\x16\x03\x01") )
      {
-       close_cb();
+       opportunistic_tls(s);
        return;
      }
 
