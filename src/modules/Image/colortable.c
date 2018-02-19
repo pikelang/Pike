@@ -926,9 +926,6 @@ rerun_mask:
 
 static struct nct_flat _img_get_flat_from_array(struct array *arr)
 {
-#if 0
-   struct svalue s,s2;
-#endif
    struct nct_flat flat;
    int i,n=0;
 
@@ -936,10 +933,6 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
 
-#if 0
-   SET_SVAL_TYPE(s, T_INT);
-   SET_SVAL_TYPE(s2, T_INT);
-#endif
    for (i=0; i<arr->size; i++)
    {
       if (TYPEOF(arr->item[i]) == T_INT && !arr->item[i].u.integer)
@@ -2105,11 +2098,13 @@ void image_colortable_free_dither(struct nct_dither *dith)
 /*
 **! method void create()
 **! method void create(array(array(int)) colors)
+**! method void create(object(Image.Colortable)) colortable)
 **! method void create(object(Image.Image) image,int number)
 **! method void create(object(Image.Image) image,int number,array(array(int)) needed)
 **! method void create(int r,int g,int b)
 **! method void create(int r,int g,int b, array(int) from1,array(int) to1,int steps1, ..., array(int) fromn,array(int) ton,int stepsn)
 **! method object add(array(array(int)) colors)
+**! method object add(object(Image.Colortable)) colortable)
 **! method object add(object(Image.Image) image,int number)
 **! method object add(object(Image.Image) image,int number,array(array(int)) needed)
 **! method object add(int r,int g,int b)
@@ -2145,6 +2140,8 @@ void image_colortable_free_dither(struct nct_dither *dith)
 **!
 **! arg array(array(int)) colors
 **!	list of colors
+**! arg object(Image.Colortable) colortable
+**!     colortable to copy colors from.
 **! arg object(Image.Image) image
 **!	source image
 **!
@@ -2300,8 +2297,8 @@ static void image_colortable_add(INT32 args)
 						  THIS->spacefactor);
 	       }
 	    }
-	    else
-	       bad_arg_error("add",sp-args,args,2,"",sp+2-1-args,
+            else
+               bad_arg_error("add",sp-args,args,2,"",sp+2-1-args,
                              "Bad argument 2 to add.\n");
 	 else
 	 {
