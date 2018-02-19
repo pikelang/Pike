@@ -39,10 +39,6 @@ extern struct program *image_program;
 #define CHECK_INIT() if(!THIS->img) \
     Pike_error("Image object not initialized.\n");
 
-#define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
-
-#define testrange(x) (MAXIMUM(MINIMUM((int)(x),255),0))
-
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
    struct image *img,*oper;					        \

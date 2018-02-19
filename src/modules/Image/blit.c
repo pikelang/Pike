@@ -33,8 +33,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
-
 #if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
@@ -60,27 +58,6 @@ static void chrono(char *x)
 #endif
 
 /***************** internals ***********************************/
-
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
-
-#define apply_alpha(x,y,alpha) \
-   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
-
-#define set_rgb_group_alpha(dest,src,alpha) \
-   (((dest).r=apply_alpha((dest).r,(src).r,alpha)), \
-    ((dest).g=apply_alpha((dest).g,(src).g,alpha)), \
-    ((dest).b=apply_alpha((dest).b,(src).b,alpha)))
-
-#define pixel(_img,x,y) ((_img)->img[(x)+(y)*(_img)->xsize])
-
-#define setpixel(x,y) \
-   (THIS->alpha? \
-    set_rgb_group_alpha(THIS->img[(x)+(y)*THIS->xsize],THIS->rgb,THIS->alpha): \
-    ((pixel(THIS,x,y)=THIS->rgb),0))
-
-#define setpixel_test(x,y) \
-   (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
-    0:(setpixel(x,y),0))
 
 static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,INT32 max,char *name)

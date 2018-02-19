@@ -63,25 +63,6 @@ static void chrono(char *x)
 
 /***************** internals ***********************************/
 
-#define apply_alpha(x,y,alpha) \
-   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
-
-#define set_rgb_group_alpha(dest,src,alpha) \
-   ((dest).r=apply_alpha((dest).r,(src).r,alpha), \
-    (dest).g=apply_alpha((dest).g,(src).g,alpha), \
-    (dest).b=apply_alpha((dest).b,(src).b,alpha))
-
-#define pixel(_img,x,y) ((_img)->img[(x)+(y)*(_img)->xsize])
-
-#define setpixel(x,y) \
-   (THIS->alpha? \
-    set_rgb_group_alpha(THIS->img[(x)+(y)*THIS->xsize],THIS->rgb,THIS->alpha): \
-    ((pixel(THIS,x,y)=THIS->rgb),0))
-
-#define setpixel_test(x,y) \
-   (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
-    0:(setpixel(x,y),0))
-
 static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,char *name)
 {
@@ -113,12 +94,10 @@ static inline int getrgb(struct image *img,
    return 3;
 }
 
-
 /** end internals **/
 
 
 #define decimals(x) ((x)-(int)(x))
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r += (float)((src)->r*(factor)), \
     (dest)->g += (float)((src)->g*(factor)), \

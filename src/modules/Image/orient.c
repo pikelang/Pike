@@ -35,8 +35,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
-
 static const double c0=0.70710678118654752440;
 static const double my_PI=3.14159265358979323846;
 
