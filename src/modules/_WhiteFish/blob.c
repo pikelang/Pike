@@ -24,6 +24,15 @@ static void exit_blob_struct(struct object *o);
   +-----------+----------+---------+---------+---------+
   | docid: 32 | nhits: 8 | hit: 16 | hit: 16 | hit: 16 |...
   +-----------+----------+---------+---------+---------+
+
+  For hit < 0xc000, hit in body (HIT_BODY).
+  Note: Old wf_buf_low_add() had a bug where the max was 0x3fff.
+
+             +----+---------------+--------+
+  Otherwise: | 11 | field_type: 6 | hit: 8 | (HIT_FIELD).
+             +----+---------------+--------+
+
+  cf wf_blob_hit() and wf_buf_low_add().
 */
 
 int wf_blob_next( Blob *b )
@@ -444,9 +453,11 @@ void wf_blob_low_add( struct object *o,
   switch( field )
   {
     case 0:
-      s = off>((1<<14)-1)?((1<<14)-1):off;
+      /* Body. 0 <= hits <= 0xbfff */
+      s = off>((3<<14)-1)?((3<<14)-1):off;
       break;
     default:
+      /* Field. 0b11 | (field-1):6 | off:8 */
       s = (3<<14) | ((field-1)<<8) | (off>255?255:off);
       break;
   }
