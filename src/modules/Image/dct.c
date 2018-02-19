@@ -92,7 +92,7 @@ void image_dct(INT32 args)
    if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
    {
       free(area);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    o=clone_object(image_program,0);
@@ -120,7 +120,7 @@ void image_dct(INT32 args)
       free(area);
       free(costbl);
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    xsz2=THIS->xsize*2.0;

@@ -2740,8 +2740,7 @@ void img_lay(struct layer **layer,
       if (aline1) free(aline1);
       if (line2) free(line2);
       if (aline2) free(aline2);
-      resource_error(NULL,0,0,"memory",4*(sizeof(rgb_group)*width + RGB_VEC_PAD),
-		     "Out of memory.\n");
+      out_of_memory_error(NULL, -1, 4*(sizeof(rgb_group)*width + RGB_VEC_PAD));
    }
 #endif
 

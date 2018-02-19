@@ -655,7 +655,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
    flat.numentries=i;
    if (!flat.entries) {
      free(newe);
-     resource_error(NULL, 0, 0, "memory", 0, "Out of memory.\n");
+     out_of_memory_error(NULL, -1, 0);
    }
 
    for (j=0; j<i; j++)
@@ -812,7 +812,7 @@ rerun_rehash:
 	 if (!hash)
 	 {
 	    free(oldhash);
-	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+            out_of_memory_error(NULL, -1, 0);
 	 }
 	 k=hashsize;
 	 while (k--) hash[k].pixels=0;
@@ -858,7 +858,7 @@ rerun_mask:
       if (!hash)
       {
 	 free(oldhash);
-	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+         out_of_memory_error(NULL, -1, 0);
       }
 
       k=hashsize;
@@ -904,7 +904,7 @@ rerun_mask:
    if (!flat.entries)
    {
       free(hash);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
    j=0;
    i=hashsize;
@@ -1378,7 +1378,7 @@ rerun_rehash_add_1:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+            out_of_memory_error(NULL, -1, 0);
 	 }
 	 k=hashsize;
 	 while (k--) hash[k].pixels=0;
@@ -1428,7 +1428,7 @@ rerun_rehash_add_2:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+            out_of_memory_error(NULL, -1, 0);
 	 }
 	 i=hashsize;
 	 while (i--) hash[i].pixels=0;
@@ -1474,7 +1474,7 @@ rerun_rehash_add_2:
    if (!flat.entries)
    {
       free(hash);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
    j=0;
    i=hashsize;
@@ -1568,7 +1568,7 @@ rerun_rehash_add_1:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+            out_of_memory_error(NULL, -1, 0);
 	 }
 
 	 while (j--)
@@ -1616,7 +1616,7 @@ rerun_rehash_add_2:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+            out_of_memory_error(NULL, -1, 0);
 	 }
 
 	 while (j--)
@@ -1654,7 +1654,7 @@ rerun_rehash_add_2:
    if (!flat.entries)
    {
       free(hash);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
    j=0;
    i=hashsize;
@@ -3226,7 +3226,7 @@ void build_rigid(struct neo_colortable *nct)
    {
       if (index) free(index);
       if (dist) free(dist);
-      resource_error(NULL,0,0,"memory",r*g*b*sizeof(int),"Out of memory.\n");
+      out_of_memory_error(NULL, -1, r*g*b*sizeof(int));
    }
 
    for (i=0; i<nct->u.flat.numentries; i++)
@@ -3617,7 +3617,7 @@ void image_colortable_map(INT32 args)
    if (!dest->img)
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    if (!image_colortable_map_image(THIS,src->img,dest->img,
@@ -4258,7 +4258,7 @@ void image_colortable_ordered(INT32 args)
    errors=ordered_calculate_errors(xsize,ysize);
    if (!errors)
    {
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
       return;
    }
 
@@ -4283,7 +4283,7 @@ void image_colortable_ordered(INT32 args)
       if (THIS->du.ordered.rdiff) free(THIS->du.ordered.rdiff);
       if (THIS->du.ordered.gdiff) free(THIS->du.ordered.gdiff);
       if (THIS->du.ordered.bdiff) free(THIS->du.ordered.bdiff);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
       return;
    }
 

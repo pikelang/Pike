@@ -230,7 +230,7 @@ CHRONO("scale end");
 
    THREADS_DISALLOW();
    if (!d)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+     out_of_memory_error(NULL, -1, 0);
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -481,8 +481,7 @@ static void img_cw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   id->img=xalloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD);
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;
@@ -507,8 +506,7 @@ void img_ccw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   id->img=xalloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD);
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;

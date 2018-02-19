@@ -1159,8 +1159,7 @@ static void sf_create(INT32 args)
 	sf.from->flags &= ~FILE_LOCK_FD;
       }
       free_object(THIS->self);
-      resource_error("Stdio.sendfile", sp, 0, "threads", 1,
-		     "Failed to create thread.\n");
+      Pike_error("Failed to create thread.\n");
     }
 #endif /* 0 */
   }
