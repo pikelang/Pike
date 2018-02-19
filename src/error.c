@@ -1066,27 +1066,27 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
 }
 
 /* coverity[+kill] */
-PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
-  const char *resource_type,
+static DECLSPEC(noreturn) void resource_error(
+  const char *func, int args,
   size_t howmuch_,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INT_TYPE howmuch = (INT_TYPE)howmuch_;
+  const struct svalue *base_sp = NULL;
   INIT_ERROR(resource);
+  if(args>=0) base_sp = Pike_sp-args;
   ERROR_COPY(resource, howmuch);
-  ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
+  ERROR_STRUCT(resource,o)->resource_type=make_shared_string("memory");
   ERROR_DONE(generic);
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   size_t amount)
 {
-  resource_error (func, base_sp, args, "memory", amount,
-		  amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
+  resource_error (func, args, amount,
+                  amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
+  UNREACHABLE();
 }
 
 /* coverity[+kill] */

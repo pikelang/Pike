@@ -278,12 +278,9 @@ PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func, int args,
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn));
-PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
-  const char *resource_type,
-  size_t howmuch,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
+  const char *func, int args,
+  size_t amount) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
   const char *func,
   const struct svalue *base_sp, int args,
@@ -350,13 +347,8 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
 PMOD_EXPORT extern const char msg_out_of_mem[];
 PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
-PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
-  const char *func,
-  const struct svalue *base_sp,  int args,
-  size_t amount) ATTRIBUTE((noreturn));
-
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
-   out_of_memory_error(FUNC, Pike_sp-args, args, AMOUNT)
+   out_of_memory_error(FUNC, args, AMOUNT)
 
 PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
