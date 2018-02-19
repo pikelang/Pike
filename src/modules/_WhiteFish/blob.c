@@ -304,14 +304,23 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
     for (i = 0; i < nhits; i++) {
       int val = wf_buffer_rshort(b);
       if (prev == val) {
-	fprintf(stderr,
-		"Duplicate hits in blob entry for document 0x%08x: 0x%04x.\n",
-		(unsigned INT32)docid, val);
-	/* Probably some junk like 2020202020202020202020... */
-	/* Skip this entry and remainder of blob. */
-	remaining = -1;
-	nhits = 0;
-	break;
+	/* Check if we're at max hit for the field. */
+	if ((val < 0xbfff) || ((val & 0xff) != 0xff)) {
+	  /* Probably some junk like 2020202020202020202020... */
+	  /* Skip this entry and remainder of blob. */
+	  if (val == 0x3fff) {
+	    /* Special case for common broken max due to broken
+	     * wf_buf_low_add().
+	     */
+	    continue;
+	  }
+	  fprintf(stderr,
+		  "Duplicate hits in blob entry for document 0x%08x: 0x%04x.\n",
+		  (unsigned INT32)docid, val);
+	  remaining = -1;
+	  nhits = 0;
+	  break;
+	}
       }
       prev = val;
     }
