@@ -991,7 +991,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
   va_list foo;
@@ -1004,7 +1004,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(generic);
@@ -1014,7 +1014,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   struct svalue *value,
   struct svalue *index,
   const char *desc, ...) ATTRIBUTE((noreturn))
@@ -1028,7 +1028,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   int which_argument,
   const char *expected_type,
   struct svalue *got_value,
@@ -1050,7 +1050,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
@@ -1068,7 +1068,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *resource_type,
   size_t howmuch_,
   const char *desc, ...) ATTRIBUTE((noreturn))
@@ -1082,7 +1082,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
 
 PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   size_t amount)
 {
   resource_error (func, base_sp, args, "memory", amount,
@@ -1092,7 +1092,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   const char *func,
-  struct svalue *base_sp, int args,
+  const struct svalue *base_sp, int args,
   const char *permission_type,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {

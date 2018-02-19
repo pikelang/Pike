@@ -255,39 +255,39 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   int which_arg,
   const char *expected_type,
   struct svalue *got,
   const char *desc, ...)  ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   const char *resource_type,
   size_t howmuch,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
   const char *func,
-  struct svalue *base_sp, int args,
+  const struct svalue *base_sp, int args,
   const char *permission_type,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
@@ -353,7 +353,7 @@ PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
 PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
   const char *func,
-  struct svalue *base_sp,  int args,
+  const struct svalue *base_sp,  int args,
   size_t amount) ATTRIBUTE((noreturn));
 
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
