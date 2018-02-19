@@ -508,6 +508,7 @@ dnl test_do( Image.Image(100,100, 255,255,0,40) )
 test_eq( (string)Image.Image(Image.Image(1,1,"red")), "\377\0\0" )
 
 test_do( img()->dct(100,100) )
+test_do( img()->dct(0,0) )
 
 test_do( img()->distancesq() )
 test_do( img()->distancesq(0,255,255) )

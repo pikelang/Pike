@@ -20,6 +20,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_error.h"
+#include "module_support.h"
 
 #include "image.h"
 
@@ -31,7 +32,6 @@ extern struct program *image_program;
 #undef THIS /* Needed for NT */
 #endif
 #define THIS ((struct image *)(Pike_fp->current_storage))
-#define THISOBJ (Pike_fp->current_object)
 
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
@@ -81,6 +81,10 @@ void image_dct(INT32 args)
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
 
+   get_all_args("dct", args, "%d%d", &x, &y);
+   x = MAXIMUM(1, x);
+   y = MAXIMUM(1, y);
+
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
            (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
@@ -98,21 +102,8 @@ void image_dct(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
-
-   if (args>=2
-       && TYPEOF(sp[-args]) == T_INT
-       && TYPEOF(sp[1-args]) == T_INT)
-   {
-      img->xsize=MAXIMUM(1,sp[-args].u.integer);
-      img->ysize=MAXIMUM(1,sp[1-args].u.integer);
-   }
-   else {
-     free(area);
-     free(costbl);
-     free_object(o);
-     bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
-		   "Bad arguments to image->dct()\n");
-   }
+   img->xsize = x;
+   img->ysize = y;
 
    if (!(img->img=malloc(sizeof(rgb_group)*
                          img->xsize*img->ysize+RGB_VEC_PAD)))
