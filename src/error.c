@@ -1049,12 +1049,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
 
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(math);
+  const struct svalue *base_sp = Pike_sp - args;
   if(number)
   {
     ERROR_COPY_SVALUE(math, number);

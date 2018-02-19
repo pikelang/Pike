@@ -31,9 +31,9 @@
 #include "pike_compiler.h"
 
 #define OP_DIVISION_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, Pike_sp-2, 2, 0, "Division by zero.\n")
+     math_error(FUNC, 2, 0, "Division by zero.\n")
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, Pike_sp-2, 2, 0, "Modulo by zero.\n")
+     math_error(FUNC, 2, 0, "Modulo by zero.\n")
 
     /* This calculation should always give some margin based on the size. */
     /* It utilizes that log10(256) ~= 2.4 < 5/2. */

@@ -275,8 +275,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   struct svalue *got,
   const char *desc, ...)  ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
@@ -361,7 +360,7 @@ PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
 
 PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, Pike_sp-args, args, 0, msg_div_by_zero)
+     math_error(FUNC, args, 0, msg_div_by_zero)
 
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)
