@@ -65,6 +65,14 @@ cond_resolv(Crypto.ECC.Curve, [[
 
 test_do(add_constant("JOSE_KEYS"))
 
+dnl Test character decoding.
+test_any_eq([[
+  // [PIKE-76].
+  object hmac = Crypto.SHA256.HMAC("foobar");
+  return Web.decode_jwt(hmac,
+	 Web.encode_jwt(hmac, ([ "sub":"\302\230ystein" ])))->sub;
+]], "\302\230ystein")
+
 // - Web.RDF
 test_any_equal([[
   object r = Web.RDF();

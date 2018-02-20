@@ -72,7 +72,7 @@ array decode_jws(array(Crypto.Sign.State|Crypto.MAC.State)|
   }
   if (!decoded_jws) return 0;
   catch {
-    decoded_jws[1] = Standards.JSON.decode(decoded_jws[1]);
+    decoded_jws[1] = Standards.JSON.decode_utf8(decoded_jws[1]);
     return decoded_jws;
   };
   return 0;
@@ -221,14 +221,14 @@ Crypto.Sign.State|Crypto.MAC.State decode_jwk(mapping(string(7bit):string(7bit))
 //!   on success and @[UNDEFINED] on failure.
 variant Crypto.Sign.State|Crypto.MAC.State decode_jwk(string(/*7bit*/8bit) jwk)
 {
-  return decode_jwk(Standards.JSON.decode(MIME.decode_base64url(jwk)));
+  return decode_jwk(Standards.JSON.decode_utf8(MIME.decode_base64url(jwk)));
 }
 
 //! Encode a JSON Web Key (JWK).
 string(7bit) encode_jwk(mapping(string(7bit):string(7bit)) jwk)
 {
   if (!mappingp(jwk)) return UNDEFINED;
-  return MIME.encode_base64url(Standards.JSON.encode(jwk));
+  return MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(jwk)));
 }
 
 //! Encode a JSON Web Key (JWK).
@@ -269,5 +269,5 @@ array(Crypto.Sign.State|Crypto.MAC.State)
 variant array(Crypto.Sign.State|Crypto.MAC.State)
   decode_jwk_set(string(7bit) jwk_set)
 {
-  return decode_jwk_set(Standards.JSON.decode(jwk_set));
+  return decode_jwk_set(Standards.JSON.decode_utf8(jwk_set));
 }
