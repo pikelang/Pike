@@ -27,6 +27,9 @@ extern int image_cpuid;
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
 #define COLORL_TO_FLOAT(X) ((float)((((float)(X))/(float)(COLORLMAX>>8))/256.0))
 
+#define CHECK_INIT() if(!THIS->img) \
+    Pike_error("Image object not initialized.\n");
+
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
 

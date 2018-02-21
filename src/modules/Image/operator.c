@@ -36,9 +36,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define CHECK_INIT() if(!THIS->img) \
-    Pike_error("Image object not initialized.\n");
-
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
    struct image *img,*oper;					        \

@@ -1182,7 +1182,7 @@ void image_copy(INT32 args)
 
    get_all_args("copy", args, "%d%d%d%d", &x1,&y1,&x2,&y2);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    getrgb(THIS,4,args,args,"copy");
 
@@ -1223,7 +1223,7 @@ static void image_change_color(INT32 args)
    struct image *img;
    int arg;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    to=THIS->rgb;
    if (!(arg=getrgb(THIS,0,args,3,"change_color")))
@@ -1367,8 +1367,7 @@ static void image_find_autocrop(INT32 args)
      get_all_args("find_autocrop", args, "%d.%d%d%d%d",
                   &border, &left, &right, &top, &bottom);
 
-   if (!THIS->img)
-      Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    img_find_autocrop(THIS,&x1,&y1,&x2,&y2,
 		     border,left,right,top,bottom,0,rgb);
@@ -1836,8 +1835,7 @@ static void image_tuned_box(INT32 args)
       TYPEOF(sp[3-args]) != T_INT)
      SIMPLE_WRONG_NUM_ARGS_ERROR("tuned_box",5);
 
-  if (!THIS->img)
-    Pike_error("Called Image.Image object is not initialized\n");;
+  CHECK_INIT();
 
   x1=sp[-args].u.integer;
   y1=sp[1-args].u.integer;
@@ -2363,7 +2361,7 @@ void image_color(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
    if (args<3)
    {
       struct color_struct *cs;
@@ -2446,8 +2444,7 @@ void image_invert(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2529,7 +2526,7 @@ void image_threshold(INT32 args)
    struct image *img;
    INT_TYPE level=-1;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    if (args==1 && TYPEOF(sp[-args]) == T_INT) {
       get_all_args("threshold",args,"%i",&level);
@@ -2662,7 +2659,8 @@ void image_hsv_to_rgb(INT32 args)
    struct object *o;
    struct image *img;
    char *err = NULL;
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2748,8 +2746,8 @@ void image_rgb_to_hsv(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2876,7 +2874,8 @@ void image_yuv_to_rgb(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2926,9 +2925,8 @@ void image_rgb_to_yuv(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
 
+   CHECK_INIT();
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
@@ -3019,8 +3017,7 @@ void image_distancesq(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    getrgb(THIS,0,args,args,"distancesq");
 
@@ -3218,8 +3215,7 @@ void image_select_from(INT32 args)
    struct image *img;
    INT32 low_limit=0;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    if (args<2
        || TYPEOF(sp[-args]) != T_INT
@@ -3677,8 +3673,7 @@ static void _image_outline(INT32 args,int mask)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img || !THIS->xsize || !THIS->ysize)
-      Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    if (args && TYPEOF(sp[-args]) == T_ARRAY)
    {
@@ -3890,8 +3885,7 @@ void image_modify_by_intensity(INT32 args)
    struct image *img;
    unsigned int div;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
    if (args<5)
       SIMPLE_WRONG_NUM_ARGS_ERROR("modify_by_intensity",5);
 
@@ -4270,8 +4264,7 @@ void image_gamma(INT32 args)
    double gammar=0.0, gammab=0.0, gammag=0.0;
    COLORTYPE newr[256];
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
    if (args==1) {
       if (TYPEOF(sp[-args]) == T_INT)
 	 gammar=gammab=gammag=(double)sp[-args].u.integer;
@@ -4522,8 +4515,7 @@ void image_cast(INT32 args)
 
   if (!args)
     SIMPLE_WRONG_NUM_ARGS_ERROR("cast",1);
-  if (!THIS->img)
-    Pike_error("Called Image.Image object is not initialized\n");
+  CHECK_INIT();
 
   type = sp[-args].u.string;
   pop_n_elems(args); /* type have at least one more reference. */
@@ -4792,9 +4784,8 @@ void image_tobitmap(INT32 args)
    unsigned char *d;
    rgb_group *s;
 
+   CHECK_INIT();
    pop_n_elems(args);
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
 
    xs=(THIS->xsize+7)>>3;
 

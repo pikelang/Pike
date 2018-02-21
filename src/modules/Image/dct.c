@@ -76,8 +76,7 @@ void image_dct(INT32 args)
    double *costbl;
    rgb_group *pix;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    get_all_args("dct", args, "%d%d", &x, &y);
    x = MAXIMUM(1, x);

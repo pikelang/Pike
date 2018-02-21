@@ -58,9 +58,6 @@ static void chrono(char *x)
 #define CHRONO(X)
 #endif
 
-#define CHECK_INIT() if(!THIS->img) \
-    Pike_error("Image object not initialized.\n");
-
 /***************** internals ***********************************/
 
 static inline int getrgb(struct image *img,

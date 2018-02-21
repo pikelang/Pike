@@ -152,7 +152,7 @@ void image_orient(INT32 args)
   double mag;
   int i, w, h;
 
-  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
+  CHECK_INIT();
 
   this=THIS;
 
@@ -271,7 +271,7 @@ void image_orient4(INT32 args)
   struct object *o[5];
   struct image *img[5];
 
-  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
+  CHECK_INIT();
 
   pop_n_elems(args);
   _image_orient(THIS,o,img);
