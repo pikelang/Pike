@@ -966,17 +966,12 @@ void image_create(INT32 args)
       return;
    }
    if (args<2) return;
-   if (TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT)
-     bad_arg_error("create",sp-args,args,0,"",sp-args,
-                   "Bad arguments to create.\n");
 
-   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
-
-   THIS->xsize=sp[-args].u.integer;
-   THIS->ysize=sp[1-args].u.integer;
+   get_all_args("create", args, "%d%d", &THIS->xsize, &THIS->ysize);
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
+
+   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 
    MAKE_CONST_STRING(s_grey,"grey");
    if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
@@ -1043,46 +1038,39 @@ void image_clone(INT32 args)
    struct object *o;
    struct image *img;
    ONERROR err;
+   INT_TYPE x,y;
 
-   if (args)
-      if (args<2||
-	  TYPEOF(sp[-args]) != T_INT||
-	  TYPEOF(sp[1-args]) != T_INT)
-	 bad_arg_error("clone",sp-args,args,0,"",sp-args,
-                       "Bad arguments to clone.\n");
+   if( args )
+     get_all_args("clone", args, "%+%+", &x, &y);
+   else
+   {
+     x = THIS->xsize;
+     y = THIS->ysize;
+   }
+   if( x<0 ) x = 1;
+   if( y<0 ) y = 1;
 
    o=clone_object(image_program,0);
    SET_ONERROR(err, my_free_object, o);
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   if (args)
-   {
-      if(sp[-args].u.integer < 0 ||
-	 sp[1-args].u.integer < 0)
-         Pike_error("Illegal size to clone.\n");
-      img->xsize=sp[-args].u.integer;
-      img->ysize=sp[1-args].u.integer;
-   }
-
    getrgb(img,2,args,args,"clone");
 
-   if (img->xsize<0) img->xsize=1;
-   if (img->ysize<0) img->ysize=1;
-
-   img->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
+   img->xsize = x;
+   img->ysize = y;
+   img->img=xalloc(sizeof(rgb_group)*x*y+RGB_VEC_PAD);
    if (THIS->img)
    {
-      if (img->xsize==THIS->xsize
-	  && img->ysize==THIS->ysize)
-	 memcpy(img->img,THIS->img,sizeof(rgb_group)*img->xsize*img->ysize);
+      if (x==THIS->xsize
+          && y==THIS->ysize)
+         memcpy(img->img,THIS->img,sizeof(rgb_group)*x*y);
       else
-	 img_crop(img,THIS,
-		  0,0,img->xsize-1,img->ysize-1);
+         img_crop(img,THIS,0,0,x-1,y-1);
 
    }
    else
-      img_clear(img->img,img->rgb,img->xsize*img->ysize);
+      img_clear(img->img,img->rgb,x*y);
 
    UNSET_ONERROR(err);
    pop_n_elems(args);
@@ -1181,6 +1169,7 @@ void image_copy(INT32 args)
 {
    struct object *o;
    struct image *img;
+   int x1,y1,x2,y2;
 
    if (!args)
    {
@@ -1190,13 +1179,8 @@ void image_copy(INT32 args)
       push_object(o);
       return;
    }
-   if (args<4||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT||
-       TYPEOF(sp[2-args]) != T_INT||
-       TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("copy",sp-args,args,0,"",sp-args,
-                    "Bad arguments to copy.\n");
+
+   get_all_args("copy", args, "%d%d%d%d", &x1,&y1,&x2,&y2);
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
@@ -1205,9 +1189,7 @@ void image_copy(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
 
-   img_crop(img,THIS,
-	    sp[-args].u.integer,sp[1-args].u.integer,
-	    sp[2-args].u.integer,sp[3-args].u.integer);
+   img_crop(img,THIS, x1,y1,x2,y2);
 
    pop_n_elems(args);
    push_object(o);
@@ -1377,32 +1359,19 @@ void img_find_autocrop(struct image *this,
 
 static void image_find_autocrop(INT32 args)
 {
-   INT32 border=0,x1,y1,x2,y2;
+   int border=0,x1,y1,x2,y2;
    rgb_group rgb={0,0,0};
    int left=1,right=1,top=1,bottom=1;
 
-   if (args) {
-      if (TYPEOF(sp[-args]) != T_INT)
-         bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
-                       "Bad arguments to find_autocrop.\n");
-      else
-         border=sp[-args].u.integer;
-   }
-
-   if (args>=5)
-   {
-      left=!(TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer==0);
-      right=!(TYPEOF(sp[2-args]) == T_INT && sp[2-args].u.integer==0);
-      top=!(TYPEOF(sp[3-args]) == T_INT && sp[3-args].u.integer==0);
-      bottom=!(TYPEOF(sp[4-args]) == T_INT && sp[4-args].u.integer==0);
-   }
+   if (args)
+     get_all_args("find_autocrop", args, "%d.%d%d%d%d",
+                  &border, &left, &right, &top, &bottom);
 
    if (!THIS->img)
       Pike_error("Called Image.Image object is not initialized\n");;
 
    img_find_autocrop(THIS,&x1,&y1,&x2,&y2,
 		     border,left,right,top,bottom,0,rgb);
-
 
    pop_n_elems(args);
    push_int(x1);
@@ -1460,8 +1429,7 @@ void image_autocrop(INT32 args)
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      bad_arg_error("setcolor",sp-args,args,0,"",sp-args,
-                    "Bad arguments to setcolor.\n");
+     SIMPLE_WRONG_NUM_ARGS_ERROR("setcolor", 3);
    getrgb(THIS,0,args,args,"setcolor");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1495,16 +1463,9 @@ void image_setcolor(INT32 args)
 */
 void image_setpixel(INT32 args)
 {
-   INT32 x,y;
-   if (args<2||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
-                    "Bad arguments to setpixel.\n");
+   int x,y;
+   get_all_args("setpixel", args, "%d%d", &x, &y);
    getrgb(THIS,2,args,args,"setpixel");
-   if (!THIS->img) return;
-   x=sp[-args].u.integer;
-   y=sp[1-args].u.integer;
    if (!THIS->img) return;
    setpixel_test(x,y);
    pop_n_elems(args);
@@ -1522,19 +1483,10 @@ void image_setpixel(INT32 args)
 */
 void image_getpixel(INT32 args)
 {
-   INT32 x,y;
+   int x,y;
    rgb_group rgb;
 
-   if (args<2||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("getpixel",sp-args,args,0,"",sp-args,
-                    "Bad arguments to getpixel.\n");
-
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
-
-   x=sp[-args].u.integer;
-   y=sp[1-args].u.integer;
+   get_all_args("setpixel", args, "%d%d", &x, &y);
    if (!THIS->img) return;
    if(x<0||y<0||x>=THIS->xsize||y>=THIS->ysize)
       rgb=THIS->rgb;
@@ -1578,20 +1530,12 @@ void image_getpixel(INT32 args)
 */
 void image_line(INT32 args)
 {
-   if (args<4||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT||
-       TYPEOF(sp[2-args]) != T_INT||
-       TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("line",sp-args,args,0,"",sp-args,
-                    "Bad arguments to line.\n");
+  int x1,y1,x2,y2;
+  get_all_args("line", args, "%d%d%d%d", &x1,&y1,&x2,&y2);
    getrgb(THIS,4,args,args,"line");
    if (!THIS->img) return;
 
-   img_line(sp[-args].u.integer,
-	    sp[1-args].u.integer,
-	    sp[2-args].u.integer,
-	    sp[3-args].u.integer);
+   img_line(x1, y1, x2, y2);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
