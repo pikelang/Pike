@@ -1,0 +1,7 @@
+Modified files:
+  pike/lib/modules/Crypto.pmod/module.pmod
+  pike/lib/modules/Sql.pmod/mysql.pike
+  pike/lib/modules/Tools.pmod/Hilfe.pmod
+  pike/lib/modules/Tools.pmod/Shoot.pmod/CallOut.pike
+  pike/lib/modules/Tools.pmod/Shoot.pmod/CallOutId.pike
+  pike/lib/modules/Web.pmod/module.pmod
