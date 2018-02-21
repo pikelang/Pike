@@ -1,0 +1,16 @@
+subject: Pike 8.0: JOSE, constant expressions.
+from: 2a762e3d3aa1ef276769e64635309597d58f378b
+to: b72cea9593316773225ad6036322c18944b9d8d8
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-02-08T110149
+restart: true
+
+• Web [JOSE]: Fixed UTF-8 round trip.
+
+Fixes [PIKE-76].
+
+• Tools.Shoot.CallOut: Fixed fallout from OPT_EXTERNAL_DEPEND.
+
+master()->compile_error is not a constant...
+
+• Sql.mysql: localtime(0)->timezone is not a constant expression.
