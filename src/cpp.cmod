@@ -2966,6 +2966,14 @@ static void apply_define(struct CPP_struct *this,
 /*
  * Preprocessor template.
  *
+ * NB: There are two basic cases where this function is called:
+ *
+ *   * Either when switching to a new input data string
+ *     (eg macro expansion or #include). The result of
+ *     this is added to the current buffer.
+ *
+ *   * Or parsing to the end of the line after a directive.
+ *     The result of this is added to a temporary buffer.
  */
 static ptrdiff_t low_cpp(struct CPP_struct *this,
                            PCHARP data,
@@ -4252,9 +4260,29 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
-  PIKEFUN void cpp(string data, int flags)
+  PIKEFUN void low_cpp(string data, int flags)
   {
     low_cpp(THIS, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+  }
+
+  PIKEFUN string cpp(string data, int flags)
+  {
+    struct CPP_struct *this = THIS;
+    struct string_builder save_buf = this->buf;
+    struct pike_string *save_file = this->current_file;
+    INT_TYPE save_line = this->current_line;
+
+    if (save_file) add_ref(save_file);
+    init_string_builder(&this->buf, 0);
+
+    low_cpp(this, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+
+    push_string(finish_string_builder(&this->buf));
+
+    this->buf = save_buf;
+    if (this->current_file) free_string(this->current_file);
+    this->current_file = save_file;
+    this->current_line = save_line;
   }
 
 /*** Magic defines ***/
@@ -4966,7 +4994,7 @@ PIKEFUN string cpp(string data,
 
   ref_push_string(data);	/* data */
   push_int(0);			/* flags */
-  apply(cpp_obj, "cpp", 2);
+  apply(cpp_obj, "low_cpp", 2);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
