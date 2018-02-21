@@ -946,6 +946,8 @@ void low_init_threads_disable(void)
       /* Keep this the entire session. */
       mt_lock(&interleave_lock);
 
+      lock_pike_compiler();
+
       im = (IMUTEX_T *)interleave_list;
 
       while(im) {
@@ -962,6 +964,8 @@ void low_init_threads_disable(void)
 
       /* Keep this the entire session. */
       mt_lock(&interleave_lock);
+
+      lock_pike_compiler();
 
       im = (IMUTEX_T *)interleave_list;
 
@@ -1046,6 +1050,8 @@ void exit_threads_disable(struct object *UNUSED(o))
 	mt_unlock(&(im->lock));
 	im = im->next;
       }
+
+      unlock_pike_compiler();
 
       mt_unlock(&interleave_lock);
 
