@@ -941,7 +941,7 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
       if (!image_color_svalue(arr->item+i,
 			      &(flat.entries[n].color)))
 	 bad_arg_error("create",
-		       0,0, 1, "array of colors or 0", 0,
+                       NULL,0, 1, "array of colors or 0", 0,
 		       "Bad element %d of colorlist.\n",i);
 
 #if DEBUG
@@ -2298,7 +2298,7 @@ static void image_colortable_add(INT32 args)
 	       }
 	    }
             else
-               bad_arg_error("add",sp-args,args,2,"",sp+2-1-args,
+               bad_arg_error("add",NULL,args,2,"",sp+2-1-args,
                              "Bad argument 2 to add.\n");
 	 else
 	 {
@@ -2309,7 +2309,7 @@ static void image_colortable_add(INT32 args)
 	    THIS->type=NCT_FLAT;
 	 }
       }
-      else bad_arg_error("add",sp-args,args,1,"",sp+1-1-args,
+      else bad_arg_error("add",NULL,args,1,"",sp+1-1-args,
                          "Bad argument 1 to add.\n");
    }
    else if (TYPEOF(sp[-args]) == T_ARRAY)
@@ -2348,7 +2348,7 @@ static void image_colortable_add(INT32 args)
       THIS->u.cube=_img_get_cube_from_args(args);
       THIS->type=NCT_CUBE;
    }
-   else bad_arg_error("add",sp-args,args,0,"",sp-args,
+   else bad_arg_error("add",NULL,args,0,"",sp-args,
                       "Bad arguments to add.\n");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -2514,7 +2514,7 @@ void image_colortable_operator_plus(INT32 args)
 	 if (!src) abort();
       }
       else {
-	bad_arg_error("`+",sp-args,args,0,"",sp-args,
+        bad_arg_error("`+",NULL,args,0,"",sp-args,
                       "Bad arguments to `+.\n");
         UNREACHABLE(src = NULL);
       }
@@ -2554,7 +2554,7 @@ void image_colortable_operator_minus(INT32 args)
 	 if (!src)
 	 {
 	    free_object(o);
-	    bad_arg_error("`-",sp-args,args,i+2,"",sp+i+2-1-args,
+            bad_arg_error("`-",NULL,args,i+2,"",sp+i+2-1-args,
                           "Bad argument %d to `-\n",i+2);
 	 }
 	 _img_sub_colortable(dest,src);
@@ -2562,7 +2562,7 @@ void image_colortable_operator_minus(INT32 args)
       else
       {
 	 free_object(o);
-	 bad_arg_error("`-",sp-args,args,i+2,"",sp+i+2-1-args,
+         bad_arg_error("`-",NULL,args,i+2,"",sp+i+2-1-args,
                        "Bad argument %d to `-.\n",i+2);
       }
    pop_n_elems(args);
@@ -2970,7 +2970,7 @@ void image_colortable_cubicles(INT32 args)
 	    THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
       }
       else
-	 bad_arg_error("cubicles",sp-args,args,0,"",sp-args,
+         bad_arg_error("cubicles",NULL,args,0,"",sp-args,
                        "Bad arguments to cubicles.\n");
    else
    {
@@ -3600,7 +3600,7 @@ void image_colortable_map(INT32 args)
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("map",sp-args,args,1,"",sp+1-1-args,
+      bad_arg_error("map",NULL,args,1,"",sp+1-1-args,
                     "Bad argument 1 to map.\n");
 
    if (!src->img)
@@ -3692,7 +3692,7 @@ void image_colortable_spacefactors(INT32 args)
    if (TYPEOF(sp[0-args]) != T_INT ||
        TYPEOF(sp[1-args]) != T_INT ||
        TYPEOF(sp[2-args]) != T_INT)
-      bad_arg_error("spacefactors",sp-args,args,0,"",sp-args,
+      bad_arg_error("spacefactors",NULL,args,0,"",sp-args,
                     "Bad arguments to spacefactors.\n");
 
    THIS->spacefactor.r=sp[0-args].u.integer;
@@ -3747,7 +3747,7 @@ void image_colortable_floyd_steinberg(INT32 args)
 
    if (args>=1)
       if (TYPEOF(sp[-args]) != T_INT)
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+         bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
       else
 	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
@@ -3759,7 +3759,7 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (TYPEOF(sp[5-args]) == T_INT)
 	 factor = (double)sp[5-args].u.integer;
       else
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+         bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
    }
    if (args>=5)
@@ -3769,28 +3769,28 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (TYPEOF(sp[1-args]) == T_INT)
 	 forward = (double)sp[1-args].u.integer;
       else
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+	 bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[2-args]) == T_FLOAT)
 	 downforward = sp[2-args].u.float_number;
       else if (TYPEOF(sp[2-args]) == T_INT)
 	 downforward = (double)sp[2-args].u.integer;
       else
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+	 bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[3-args]) == T_FLOAT)
 	 down = sp[3-args].u.float_number;
       else if (TYPEOF(sp[3-args]) == T_INT)
 	 down = (double)sp[3-args].u.integer;
       else
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+	 bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[4-args]) == T_FLOAT)
 	 downback = sp[4-args].u.float_number;
       else if (TYPEOF(sp[4-args]) == T_INT)
 	 downback = (double)sp[4-args].u.integer;
       else
-	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+	 bad_arg_error("floyd_steinberg",NULL,args,0,"",sp-args,
                        "Bad arguments to floyd_steinberg.\n");
    }
 
@@ -3904,7 +3904,7 @@ void image_colortable_randomcube(INT32 args)
       if (TYPEOF(sp[-args]) != T_INT||
 	  TYPEOF(sp[1-args]) != T_INT||
 	  TYPEOF(sp[2-args]) != T_INT)
-        bad_arg_error("randomcube",sp-args,args,0,"",sp-args,
+        bad_arg_error("randomcube",NULL,args,0,"",sp-args,
                       "Bad arguments to randomcube.\n");
       else
       {
@@ -3938,7 +3938,7 @@ void image_colortable_randomgrey(INT32 args)
 
    if (args)
       if (TYPEOF(sp[-args]) != T_INT)
-        bad_arg_error("randomgrey",sp-args,args,0,"",sp-args,
+        bad_arg_error("randomgrey",NULL,args,0,"",sp-args,
                       "Bad arguments to randomgrey.\n");
       else
 	 THIS->du.randomcube.r=sp[-args].u.integer;
@@ -4169,7 +4169,7 @@ void image_colortable_ordered(INT32 args)
 	  TYPEOF(sp[1-args]) != T_INT ||
 	  TYPEOF(sp[2-args]) != T_INT)
       {
-	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+	 bad_arg_error("ordered",NULL,args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
          UNREACHABLE(r=g=b=0);
       }
@@ -4206,7 +4206,7 @@ void image_colortable_ordered(INT32 args)
    {
       if (TYPEOF(sp[3-args]) != T_INT ||
 	  TYPEOF(sp[4-args]) != T_INT)
-	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+	 bad_arg_error("ordered",NULL,args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
       else
       {
@@ -4223,7 +4223,7 @@ void image_colortable_ordered(INT32 args)
 	  TYPEOF(sp[8-args]) != T_INT ||
           TYPEOF(sp[9-args]) != T_INT ||
 	  TYPEOF(sp[10-args]) != T_INT)
-	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+	 bad_arg_error("ordered",NULL,args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
       else
       {
@@ -4239,7 +4239,7 @@ void image_colortable_ordered(INT32 args)
    {
       if (TYPEOF(sp[5-args]) != T_INT||
 	  TYPEOF(sp[6-args]) != T_INT)
-	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+	 bad_arg_error("ordered",NULL,args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
       else
       {

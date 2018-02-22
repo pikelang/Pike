@@ -240,7 +240,7 @@ void img_bmp_encode(INT32 args)
    {
       case 1:
 	 if (rle)
-	    bad_arg_error("encode", sp-args, args, 2, "mapping",
+            bad_arg_error("encode", NULL, args, 2, "mapping",
 			  sp+2-1-args,
 			  "run-length encoding can only be done on a "
 			  "palette-based image with 4 or 8 bits per pixel");
@@ -260,7 +260,7 @@ void img_bmp_encode(INT32 args)
 	    }
 	 }
 	 else if (image_colortable_size(nct)>(1<<bpp))
-	    bad_arg_error("encode", sp-args, args, 2, "mapping",
+            bad_arg_error("encode", NULL, args, 2, "mapping",
 			  sp+2-1-args,
 			  "colortable must have at most %d colors "
 			  "(has %ld colors)\n",
@@ -270,7 +270,7 @@ void img_bmp_encode(INT32 args)
       case 24:
 	 break;
       default:
-	 bad_arg_error("encode", sp-args, args, 2, "mapping",
+         bad_arg_error("encode", NULL, args, 2, "mapping",
 		       sp+2-1-args,
 		       "illegal bits per pixel: %d "
 		       "(1, 4, 8 and 24 are valid)\n",

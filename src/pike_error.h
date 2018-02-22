@@ -306,11 +306,11 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */
 #define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
+   bad_arg_error(FUNC, NULL, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 /* Less descriptive macro name kept for compatibility. */
 #define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
+   bad_arg_error(FUNC, NULL, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 
 PMOD_EXPORT extern const char msg_bad_arg_2[];
@@ -327,7 +327,7 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
  * number of bytes has to be even."
  */
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
-  bad_arg_error (FUNC, Pike_sp-args, args, ARG, NULL, Pike_sp+ARG-1-args, \
+  bad_arg_error (FUNC, NULL, args, ARG, NULL, Pike_sp+ARG-1-args, \
 		 msg_bad_arg_2, ARG, FUNC, PROBLEM)
 
 /**

@@ -60,8 +60,7 @@ static void matrixX(_create)(INT32 args)
       SIMPLE_WRONG_NUM_ARGS_ERROR(PNAME,1);
 
    if (THIS->m)
-      bad_arg_error(PNAME, Pike_sp-args, args, 1, "", Pike_sp-args,
-		    "Has already been called.\n");
+     Pike_error("create called twice.\n");
 
    if (TYPEOF(Pike_sp[-args]) == T_ARRAY)
    {

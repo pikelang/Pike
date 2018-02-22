@@ -1035,6 +1035,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *desc, ...)  ATTRIBUTE((noreturn))
 {
   INIT_ERROR(bad_argument);
+  if(!base_sp) base_sp = Pike_sp-args;
   ERROR_COPY(bad_argument, which_argument);
   if (expected_type)
     ERROR_STRUCT(bad_argument,o)->expected_type =
@@ -1107,11 +1108,11 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
 {
   if(expected>args)
   {
-    bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
+    bad_arg_error (name, NULL, args, expected, NULL, NULL,
 		   "Too few arguments to %s(). Expected at least %d (got %d).\n",
 		   name, expected, args);
   }else {
-    bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
+    bad_arg_error (name, NULL, args, expected, NULL, NULL,
 		   "Too many arguments to %s(). Expected at most %d (got %d).\n",
 		   name, expected, args);
   }

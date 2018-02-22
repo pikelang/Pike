@@ -269,7 +269,7 @@ void image_paste(INT32 args)
    if (args<1
        || TYPEOF(sp[-args]) != T_OBJECT
        || !(img=get_storage(sp[-args].u.object,image_program)))
-     bad_arg_error("paste",sp-args,args,1,"",sp+1-1-args,
+     bad_arg_error("paste",NULL,args,1,"",sp+1-1-args,
                    "Bad argument 1 to paste.\n");
    if (!THIS->img) return;
 
@@ -280,7 +280,7 @@ void image_paste(INT32 args)
       if (args<3
 	  || TYPEOF(sp[1-args]) != T_INT
 	  || TYPEOF(sp[2-args]) != T_INT)
-        bad_arg_error("paste",sp-args,args,0,"",sp-args,
+        bad_arg_error("paste",NULL,args,0,"",sp-args,
                       "Bad arguments to paste.\n");
       x1=sp[1-args].u.integer;
       y1=sp[2-args].u.integer;
@@ -349,7 +349,7 @@ void image_paste_alpha(INT32 args)
        || !sp[-args].u.object
        || !(img=get_storage(sp[-args].u.object,image_program))
        || TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("paste_alpha",sp-args,args,0,"",sp-args,
+      bad_arg_error("paste_alpha",NULL,args,0,"",sp-args,
                     "Bad arguments to paste_alpha.\n");
    if (!THIS->img) return;
    if (!img->img) return;
@@ -359,7 +359,7 @@ void image_paste_alpha(INT32 args)
    {
       if (TYPEOF(sp[2-args]) != T_INT
 	  || TYPEOF(sp[3-args]) != T_INT)
-        bad_arg_error("paste_alpha",sp-args,args,0,"",sp-args,
+        bad_arg_error("paste_alpha",NULL,args,0,"",sp-args,
                       "Bad arguments to paste_alpha.\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
@@ -437,11 +437,11 @@ CHRONO("image_paste_mask init");
       Pike_error("illegal number of arguments to image->paste_mask()\n");
    if (TYPEOF(sp[-args]) != T_OBJECT
        || !(img=get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("paste_mask",sp-args,args,1,"",sp+1-1-args,
+      bad_arg_error("paste_mask",NULL,args,1,"",sp+1-1-args,
                     "Bad argument 1 to paste_mask.\n");
    if (TYPEOF(sp[1-args]) != T_OBJECT
        || !(mask=get_storage(sp[1-args].u.object,image_program)))
-      bad_arg_error("paste_mask",sp-args,args,2,"",sp+2-1-args,
+      bad_arg_error("paste_mask",NULL,args,2,"",sp+2-1-args,
                     "Bad argument 2 to paste_mask.\n");
    if (!THIS->img) return;
 
@@ -543,7 +543,7 @@ void image_paste_alpha_color(INT32 args)
    if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(mask=get_storage(sp[-args].u.object,image_program)))
-     bad_arg_error("paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
+     bad_arg_error("paste_alpha_color",NULL,args,1,"",sp+1-1-args,
                    "Bad argument 1 to paste_alpha_color.\n");
    if (!THIS->img) return;
    if (!mask->img) return;

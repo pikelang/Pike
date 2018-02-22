@@ -2175,7 +2175,7 @@ void f_mutex_lock(INT32 args)
   switch(type)
   {
     default:
-      bad_arg_error("lock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
+      bad_arg_error("lock", NULL, args, 2, "int(0..2)", Pike_sp+1-args,
                     "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
 
@@ -2278,7 +2278,7 @@ void f_mutex_trylock(INT32 args)
   switch(type)
   {
     default:
-      bad_arg_error("trylock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
+      bad_arg_error("trylock", NULL, args, 2, "int(0..2)", Pike_sp+1-args,
                     "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:

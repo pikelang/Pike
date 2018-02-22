@@ -524,7 +524,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       break;
     case ARGS_NUL_IN_STRING:
       bad_arg_error(
-	fname, Pike_sp-args, args,
+        fname, NULL, args,
 	ret+1,
 	"string(1..255)",
 	Pike_sp+ret-args,
@@ -533,7 +533,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       UNREACHABLE();
 
     case ARGS_SUBTYPED_OBJECT:
-      bad_arg_error(fname, Pike_sp-args, args, ret+1, "object",
+      bad_arg_error(fname, NULL, args, ret+1, "object",
 		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
       UNREACHABLE();
@@ -581,7 +581,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 
       if (info != ARGS_SHORT) {
 	bad_arg_error(
-	  fname, Pike_sp-args, args,
+          fname, NULL, args,
 	  ret+1,
 	  expected_type,
 	  Pike_sp+ret-args,
@@ -591,7 +591,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	const char *req_args_end = strchr (format, '.');
 	if (!req_args_end) req_args_end = strchr (format, 0);
 	bad_arg_error(
-	  fname, Pike_sp-args, args,
+          fname, NULL, args,
 	  ret+1,
 	  expected_type,
 	  0,

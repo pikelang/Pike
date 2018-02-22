@@ -556,7 +556,7 @@ static void stat_index(INT32 args)
 
 static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val, INT64 int_val )
 {
-#define BAD_ARG_2(X) bad_arg_error("`[]=", Pike_sp-2,2,2,X,val,msg_bad_arg,2,"`[]=",X)
+#define BAD_ARG_2(X) bad_arg_error("`[]=", NULL,2,2,X,val,msg_bad_arg,2,"`[]=",X)
 
   if( got_int_val == -1 )
   {
