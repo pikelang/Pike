@@ -967,7 +967,7 @@ void image_create(INT32 args)
    }
    if (args<2) return;
 
-   get_all_args("create", args, "%d%d", &THIS->xsize, &THIS->ysize);
+   get_all_args("create", args, "%i%i", &THIS->xsize, &THIS->ysize);
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
 
