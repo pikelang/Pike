@@ -694,7 +694,7 @@ static void f_error_index(INT32 args)
       apply_current (generic_err_backtrace_fun, 0);
       break;
     default:
-      index_error("`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+      index_error("`[]", args, NULL, Pike_sp-args,
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }
@@ -1013,12 +1013,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
 
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   struct svalue *value,
   struct svalue *index,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
+  const struct svalue *base_sp = Pike_sp - args;
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, value);
   ERROR_COPY_SVALUE(index, index);

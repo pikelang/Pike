@@ -392,9 +392,9 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
 
     default:
       if(SAFE_IS_ZERO(lval))
-	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
-	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
   }
   return run_time_type;
 }
@@ -451,9 +451,9 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 
   default:
    if(SAFE_IS_ZERO(lval))
-     index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+     index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
    else
-     index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+     index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
   }
 }
 
@@ -489,9 +489,9 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 
     default:
       if(SAFE_IS_ZERO(lval))
-	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
-	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
       return 0;
   }
 }

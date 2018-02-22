@@ -262,8 +262,7 @@ PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const struct svalue *base_sp,  int args,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   struct svalue *val,
   struct svalue *ind,
   const char *desc, ...) ATTRIBUTE((noreturn));
