@@ -1571,20 +1571,12 @@ void image_line(INT32 args)
 */
 void image_box(INT32 args)
 {
-   if (args<4||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT||
-       TYPEOF(sp[2-args]) != T_INT||
-       TYPEOF(sp[3-args]) != T_INT)
-     bad_arg_error("box",sp-args,args,0,"",sp-args,
-                   "Bad arguments to box.\n");
+  int x1,y1,x2,y2;
+  get_all_args("box", args, "%d%d%d%d", &x1, &y1, &x2, &y2);
    getrgb(THIS,4,args,args,"box");
    if (!THIS->img) return;
 
-   img_box(sp[-args].u.integer,
-	   sp[1-args].u.integer,
-	   sp[2-args].u.integer,
-	   sp[3-args].u.integer);
+   img_box(x1, y1, x2, y2);
    ref_push_object(THISOBJ);
    stack_pop_n_elems_keep_top(args);
 }
@@ -1620,23 +1612,12 @@ void image_box(INT32 args)
 */
 void image_circle(INT32 args)
 {
-   INT32 x,y,rx,ry;
+   int x,y,rx,ry;
    INT32 i;
 
-   if (args<4||
-       TYPEOF(sp[-args]) != T_INT||
-       TYPEOF(sp[1-args]) != T_INT||
-       TYPEOF(sp[2-args]) != T_INT||
-       TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("circle",sp-args,args,0,"",sp-args,
-                    "Bad arguments to circle.\n");
+   get_all_args("circle", args, "%d%d%d%d", &x,&y,&rx,&ry);
    getrgb(THIS,4,args,args,"circle");
    if (!THIS->img) return;
-
-   x=sp[-args].u.integer;
-   y=sp[1-args].u.integer;
-   rx=sp[2-args].u.integer;
-   ry=sp[3-args].u.integer;
 
    for (i=0; i<CIRCLE_STEPS; i++)
       img_line(x+circle_sin_mul(i,rx),
@@ -3213,23 +3194,11 @@ void image_select_from(INT32 args)
 {
    struct object *o;
    struct image *img;
-   INT32 low_limit=0;
+   int x,y,low_limit=30;
 
    CHECK_INIT();
-
-   if (args<2
-       || TYPEOF(sp[-args]) != T_INT
-       || TYPEOF(sp[1-args]) != T_INT)
-     bad_arg_error("select_from",sp-args,args,0,"",sp-args,
-                   "Bad arguments to select_from.\n");
-
-   if (args>=3)
-      if (TYPEOF(sp[2-args]) != T_INT)
-        SIMPLE_ARG_TYPE_ERROR("select_from",3,"int");
-      else
-	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
-   else
-      low_limit=30;
+   get_all_args("select_from", args, "%d%d.%d", &x, &y, &low_limit);
+   if( low_limit<0 ) low_limit=0;
    low_limit=low_limit*low_limit;
 
    o=clone_object(image_program,0);
@@ -3243,21 +3212,16 @@ void image_select_from(INT32 args)
    }
    memset(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
-   if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize
-       && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)
+   if (x>=0 && x<img->xsize && y>=0 && y<img->ysize)
    {
-      isf_seek(ISF_LEFT|ISF_RIGHT,1,low_limit,
-	       sp[-args].u.integer,sp[-args].u.integer,
-	       sp[1-args].u.integer,
+      isf_seek(ISF_LEFT|ISF_RIGHT,1,low_limit,x,x,y,
 	       THIS->img,img->img,img->xsize,img->ysize,
-	       pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
-      isf_seek(ISF_LEFT|ISF_RIGHT,-1,low_limit,
-	       sp[-args].u.integer,sp[-args].u.integer,
-	       sp[1-args].u.integer,
+               pixel(THIS,x,y),0);
+      isf_seek(ISF_LEFT|ISF_RIGHT,-1,low_limit,x,x,y,
 	       THIS->img,img->img,img->xsize,img->ysize,
-	       pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
+               pixel(THIS,x,y),0);
 
-      MARK_DISTANCE(pixel(img,sp[-args].u.integer,sp[1-args].u.integer),0);
+      MARK_DISTANCE(pixel(img,x,y),0);
    }
 
    pop_n_elems(args);
@@ -3504,20 +3468,14 @@ CHRONO("apply_matrix");
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-      bad_arg_error("apply_matrix",sp-args,args,0,"",sp-args,
-                    "Bad arguments to apply_matrix.\n");
+     SIMPLE_ARG_TYPE_ERROR("apply_matrix", 1, "array");
 
    if (args>3)
-      if (TYPEOF(sp[1-args]) != T_INT ||
-	  TYPEOF(sp[2-args]) != T_INT ||
-	  TYPEOF(sp[3-args]) != T_INT)
-        Pike_error("Illegal argument(s) (2,3,4) to apply_matrix.\n");
-      else
-      {
-	 default_rgb.r=sp[1-args].u.integer;
-	 default_rgb.g=sp[1-args].u.integer;
-	 default_rgb.b=sp[1-args].u.integer;
-      }
+   {
+     struct array *a;
+     get_all_args("apply_matrix", args, "%a%d%d%d", &a,
+                  &default_rgb.r, &default_rgb.g, &default_rgb.b);
+   }
    else
    {
       default_rgb.r=0;
@@ -4361,12 +4319,7 @@ void image_write_lsb_rgb(INT32 args)
    rgb_group *d;
    char *s;
 
-   if (args<1
-       || TYPEOF(sp[-args]) != T_STRING)
-      bad_arg_error("write_lsb_rgb",sp-args,args,0,"",sp-args,
-                    "Bad arguments to write_lsb_rgb.\n");
-
-   s=sp[-args].u.string->str;
+   get_all_args("write_lsb_rgb", args, "%c", &s);
    l=sp[-args].u.string->len;
 
    n=THIS->xsize * THIS->ysize;
@@ -4432,12 +4385,7 @@ void image_write_lsb_grey(INT32 args)
    rgb_group *d;
    char *s;
 
-   if (args<1
-       || TYPEOF(sp[-args]) != T_STRING)
-     bad_arg_error("write_lsb_grey",sp-args,args,0,"",sp-args,
-                   "Bad arguments to write_lsb_grey.\n");
-
-   s=sp[-args].u.string->str;
+   get_all_args("write_lsb_grey", args, "%c", &s);
    l=sp[-args].u.string->len;
 
    n=THIS->xsize * THIS->ysize;
@@ -4513,12 +4461,8 @@ void image_cast(INT32 args)
 {
   struct pike_string *type;
 
-  if (!args)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("cast",1);
+  get_all_args("cast", args, "%n", &type);
   CHECK_INIT();
-
-  type = sp[-args].u.string;
-  pop_n_elems(args); /* type have at least one more reference. */
 
   if (type == literal_array_string)
   {
@@ -4549,14 +4493,7 @@ void image_cast(INT32 args)
 static void image__sprintf( INT32 args )
 {
   int x;
-  if (args != 2 )
-    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
-  if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
-  if (TYPEOF(sp[1-args]) != T_MAPPING)
-    SIMPLE_ARG_TYPE_ERROR("_sprintf",1,"mapping");
-
-  x = sp[-2].u.integer;
+  get_all_args("_sprintf", args, "%d", &x);
 
   pop_n_elems( 2 );
   switch( x )
@@ -4605,16 +4542,9 @@ static void image_grey_blur( INT32 args )
   int xe = THIS->xsize;
   int ye = THIS->ysize;
   rgb_group *rgb = THIS->img;
-  if( args != 1 )
-    SIMPLE_WRONG_NUM_ARGS_ERROR("grey_blur",1);
 
-  if( !rgb )
-    Pike_error("This object is not initialized\n");
-
-  if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR("grey_blur", 0, "int");
-
-  t = sp[-args].u.integer;  /* times */
+  get_all_args("grey_blur", args, "%I", &t);
+  CHECK_INIT();
 
   for( cnt=0; cnt<t; cnt++ )
   {

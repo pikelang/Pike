@@ -753,22 +753,20 @@ static void image_color_name(INT32 args)
 
 static void image_color_cast(INT32 args)
 {
-   if (args!=1 ||
-       TYPEOF(sp[-1]) != T_STRING)
-     bad_arg_error("cast",sp-args,args,0,"",sp-args,
-                   "Bad arguments to cast.\n");
+  struct pike_string *str;
+  get_all_args("cast", args, "%n", &str);
 
-   if (sp[-1].u.string==literal_array_string)
+   if (str==literal_array_string)
    {
       image_color_rgb(args);
       return;
    }
-   if (sp[-1].u.string==literal_string_string)
+   if (str==literal_string_string)
    {
       image_color_name(args);
       return;
    }
-   if (sp[-1].u.string==literal_int_string)
+   if (str==literal_int_string)
    {
      pop_stack();
      push_int( (THIS->rgb.r << 8 | THIS->rgb.g)  << 8 | THIS->rgb.b );
@@ -1409,9 +1407,7 @@ static void image_get_color(INT32 args)
 
 static void image_guess_color(INT32 args)
 {
-   if (args!=1 && TYPEOF(sp[-args]) != T_STRING)
-     bad_arg_error("guess",sp-args,args,0,"",sp-args,
-                   "Bad arguments to guess.\n");
+  check_all_args("guess", args, BIT_STRING, 0);
 
    f_lower_case(1);
    push_static_text(" ");
@@ -1656,14 +1652,7 @@ static void image_make_greylevel_color(INT32 args)
 static void image_make_html_color(INT32 args)
 {
    int i;
-
-   if (args!=1 ||
-       TYPEOF(sp[-1]) != T_STRING)
-   {
-     bad_arg_error("html",sp-args,args,0,"",sp-args,
-                   "Bad arguments to html.\n");
-      return;
-   }
+   check_all_args("html", args, BIT_STRING, 0);
 
    f_lower_case(1);
    for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)

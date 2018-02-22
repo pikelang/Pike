@@ -615,20 +615,14 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-     bad_arg_error("apply_max",sp-args,args,0,"",sp-args,
-                   "Bad arguments to apply_max.\n");
+     SIMPLE_ARG_TYPE_ERROR("apply_max", 1, "array");
 
    if (args>3)
-      if (TYPEOF(sp[1-args]) != T_INT ||
-	  TYPEOF(sp[2-args]) != T_INT ||
-	  TYPEOF(sp[3-args]) != T_INT)
-	 Pike_error("Illegal argument(s) (2,3,4) to apply_max.\n");
-      else
-      {
-	 default_rgb.r=sp[1-args].u.integer;
-	 default_rgb.g=sp[1-args].u.integer;
-	 default_rgb.b=sp[1-args].u.integer;
-      }
+   {
+     struct array *a;
+     get_all_args("apply_max", args, "%a%d%d%d", &a,
+                  &default_rgb.r, &default_rgb.g, &default_rgb.b);
+   }
    else
    {
       default_rgb.r=0;
