@@ -674,8 +674,7 @@ static void exit_sid(struct object *o)
 
 static void f_sid_eq(INT32 args)
 {
-  check_all_args("system.SID->`==",args,BIT_MIXED,0);
-  if(TYPEOF(sp[-1]) == T_OBJECT)
+  if(args && TYPEOF(sp[-1]) == T_OBJECT)
   {
     PSID *tmp=(PSID *)get_storage(sp[-1].u.object,sid_program);
     if(tmp)
@@ -788,7 +787,7 @@ void f_LogonUser(INT32 args)
   HANDLE x;
   BOOL ret;
 
-  check_all_args("System.LogonUser",args,
+  check_all_args("LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
 
@@ -2438,7 +2437,7 @@ static void f_NetSessionEnum(INT32 args)
   DWORD resume = 0;
   struct array *a=0;
 
-  check_all_args("System.NetSessionEnum",args,
+  check_all_args("NetSessionEnum",args,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT|BIT_STRING,
@@ -2529,7 +2528,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   DWORD resume = 0;
   struct array *a=0;
 
-  check_all_args("System.NetWkstaUserEnum",args,
+  check_all_args("NetWkstaUserEnum",args,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT,
 		 0);
@@ -3588,12 +3587,12 @@ static void f_sctx_gencontext(INT32 args)
   struct pike_string *in;
   BOOL new_conversation = 0;
 
-  check_all_args("system.SecurityContext->gen_context()", args,
+  check_all_args("gen_context", args,
                  BIT_STRING,0);
 
   in = Pike_sp[-1].u.string;
   if (in->size_shift != 0)
-    Pike_error("system.SecurityContext->gen_context(): wide strings is not allowed.\n");
+    Pike_error("Wide strings is not allowed.\n");
   sctx->cBuf = sctx->cbMaxMessage;
   if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf,
                          &sctx->done, !sctx->hctxt_alloced))
@@ -3614,8 +3613,6 @@ static void f_sctx_gencontext(INT32 args)
 static void f_sctx_getlastcontext(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
-  check_all_args("system.SecurityContext->get_last_context", args, 0);
-
   pop_n_elems(args);
 
   if (sctx->lastError)
@@ -3632,10 +3629,7 @@ static void f_sctx_getlastcontext(INT32 args)
 static void f_sctx_isdone(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
-  check_all_args("system.SecurityContext->is_done", args, 0);
-
   pop_n_elems(args);
-
   push_int(sctx->done?1:0);
 }
 
@@ -3643,10 +3637,7 @@ static void f_sctx_isdone(INT32 args)
 static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
-  check_all_args("system.SecurityContext->type", args, 0);
-
   pop_n_elems(args);
-
   push_string(make_shared_string(sctx->lpPackageName));
 }
 
@@ -3656,8 +3647,6 @@ static void f_sctx_getusername(INT32 args)
   struct sctx_storage *sctx = THIS_SCTX;
   SECURITY_STATUS   ss;
   SecPkgContext_Names name;
-
-  check_all_args("system.SecurityContext->get_username", args, 0);
 
   pop_n_elems(args);
 
@@ -3685,7 +3674,6 @@ static void f_sctx_getlasterror(INT32 args)
   struct sctx_storage *sctx = THIS_SCTX;
   LPVOID lpMsgBuf;
   char buf[100];
-  check_all_args("system.SecurityContext->last_error", args, 0);
 
   pop_n_elems(args);
 
@@ -3719,8 +3707,6 @@ static void f_GetComputerName(INT32 args)
   char  name[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = sizeof(name);
 
-  check_all_args("system.GetComputerName", args, 0);
-
   pop_n_elems(args);
 
   if (!GetComputerName(name, &len))
@@ -3744,8 +3730,6 @@ static void f_GetUserName(INT32 args)
 {
   char  name[UNLEN + 1];
   DWORD len = sizeof(name);
-
-  check_all_args("system.GetUserName", args, 0);
 
   pop_n_elems(args);
 

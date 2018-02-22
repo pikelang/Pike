@@ -437,12 +437,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   int usernamelen=0, passlen=0, hostnamelen=CS_UNUSED;
   pike_sybase_connection *this=THIS;
 
-
   sybdebug("sybase::connect(args=%d)\n",args);
-  check_all_args("sybase->connect",args,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_VOID,0);
 
   /* fetch arguments, so that we can enable threads */
   if (TYPEOF(sp[2-args]) == T_STRING && sp[2-args].u.string->len) { /*username*/
@@ -557,11 +552,6 @@ PIKEFUN void create(string|void host_, string|void db_,
 
   sybdebug("sybase::create(args=%d)\n",args);
 
-  check_all_args("sybase->create",args,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_MAPPING|BIT_VOID, 0);
-
   /* if connected, disconnect */
   if (this->context)
     sybase_destroy(Pike_fp->current_object);
@@ -635,8 +625,6 @@ PIKEFUN object|string big_query(string query_)
   CS_INT *results_lengths;
   CS_SMALLINT *nulls;
   int toreturn=PS_NORESULT; /* one of the #defines here above */
-
-
 
   /* check, get and pop args */
   check_all_args("sybase->big_query",args,BIT_STRING,0);

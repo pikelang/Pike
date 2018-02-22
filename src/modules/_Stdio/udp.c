@@ -251,7 +251,7 @@ static void udp_bind(INT32 args)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->bind: failed to create socket (%d, %d, %d)\n",
+    Pike_error("Failed to create socket (%d, %d, %d)\n",
 	       SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   }
 
@@ -268,7 +268,7 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
+    Pike_error("setsockopt SO_REUSEADDR failed\n");
   }
 
 #if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
@@ -303,7 +303,7 @@ static void udp_bind(INT32 args)
       out packets with protocol type RAW to the network. */
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&one, sizeof(int)))
-	Pike_error("Stdio.UDP->bind: setsockopt IP_HDRINCL failed\n");
+        Pike_error("setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
   THREADS_ALLOW_UID();
@@ -317,7 +317,7 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Stdio.UDP->bind: failed to bind to port %d\n", port);
+    Pike_error("Failed to bind to port %d\n", port);
     return;
   }
 
@@ -325,7 +325,7 @@ static void udp_bind(INT32 args)
   {
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Object destructed in Stdio.UDP->bind()\n");
+    Pike_error("Object destructed.\n");
   }
 
   change_fd_for_box (&THIS->box, fd);
@@ -681,7 +681,7 @@ void udp_wait(INT32 args)
   }
 
   if (fd < 0) {
-    Pike_error("udp->wait(): Port not bound!\n");
+    Pike_error("Port not bound!\n");
   }
 
 #ifdef HAVE_POLL
@@ -702,7 +702,7 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    Pike_error("udp->wait(): poll() failed with errno %d\n", e);
+    Pike_error("poll() failed with errno %d\n", e);
   } else {
     /* Success? */
     if (pollfds->revents) {
@@ -726,7 +726,7 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    Pike_error("udp->wait(): select() failed with errno %d\n", e);
+    Pike_error("select() failed with errno %d\n", e);
   } else {
     /* Success? */
     if (FD_ISSET(fd, &rset)) {
@@ -789,13 +789,13 @@ void udp_read(INT32 args)
 #endif /* MSG_PEEK */
     }
     if(Pike_sp[-args].u.integer & ~3) {
-      Pike_error("Illegal 'flags' value passed to udp->read([int flags])\n");
+      Pike_error("Illegal flags argument.\n");
     }
   }
   pop_n_elems(args);
   fd = FD;
   if (FD < 0)
-    Pike_error("Stdio.UDP->read: not open\n");
+    Pike_error("Not open\n");
   do {
     THREADS_ALLOW();
     res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
@@ -946,8 +946,7 @@ void udp_sendto(INT32 args)
 #endif /* MSG_DONTROUTE */
     }
     if(Pike_sp[3-args].u.integer & ~3) {
-      Pike_error("Illegal 'flags' value passed to "
-		 "Stdio.UDP->send(string to, int|string port, string message, int flags)\n");
+      Pike_error("Illegal flags argument.\n");
     }
   }
 
@@ -1154,7 +1153,7 @@ static void udp_connect(INT32 args)
      if(FD < 0)
      {
 	THIS->my_errno=errno;
-	Pike_error("Stdio.UDP->connect: failed to create socket\n");
+        Pike_error("Failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
 
@@ -1181,7 +1180,7 @@ static void udp_connect(INT32 args)
   if(tmp < 0)
   {
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->connect: failed to connect\n");
+    Pike_error("Failed to connect\n");
   }else{
     THIS->my_errno=0;
     pop_n_elems(args);
@@ -1204,7 +1203,7 @@ static void udp_query_address(INT32 args)
   ACCEPT_SIZE_T len;
 
   if(fd <0)
-    Pike_error("Stdio.UDP->query_address(): Port not bound yet.\n");
+    Pike_error("Port not bound yet.\n");
 
   THREADS_ALLOW();
 
@@ -1354,7 +1353,7 @@ static void udp_set_buffer(INT32 args)
   char *c = NULL;
 
   if(FD==-1)
-    Pike_error("Stdio.UDP->set_buffer() on closed file.\n");
+    Pike_error("Port is closed.\n");
 
   get_all_args("set_buffer", args, "%+.%s", &bufsize, &c);
 
