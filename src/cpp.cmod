@@ -929,7 +929,7 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
       string_builder_strcat(&this->buf, "#pragma ");
 
       ref_push_string(line);
-      push_int(flags);
+      push_int(flags & ~CPP_EXPECT_ENDIF);
       apply_current(f_CPP_low_cpp_fun_num, 2);
       pop_stack();
     }

@@ -10690,6 +10690,18 @@ test_compile_warning([[
 #pragma whatever
 return 1;
 ]])
+test_any([[
+#if 0
+#pragma whatever
+#endif
+return 1;
+]], 1)
+test_compile_warning([[
+#if 1
+#pragma whatever
+#endif
+return 1;
+]])
 
 // #error
 test_compile_error([[
