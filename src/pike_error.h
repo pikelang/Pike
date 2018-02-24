@@ -198,16 +198,6 @@ PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
     }								\
     Pike_interpreter.recoveries->onerror=(X).previous;		\
   } while(0)
-
-PMOD_EXPORT extern const char msg_assert_onerr[];
-#define ASSERT_ONERROR(X) \
-  do{ \
-    if (!Pike_interpreter.recoveries) break; \
-    if (Pike_interpreter.recoveries->onerror != &X) { \
-      Pike_fatal(msg_assert_onerr, \
-                 __FILE__, __LINE__, &(X)); \
-    } \
-  }while(0)
 #else /* !PIKE_DEBUG */
 #define SET_ONERROR(X,Y,Z) \
   do{ \
@@ -224,7 +214,6 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 
 #define UNSET_ONERROR(X) Pike_interpreter.recoveries && (Pike_interpreter.recoveries->onerror=X.previous)
 
-#define ASSERT_ONERROR(X)
 #endif /* PIKE_DEBUG */
 
 #define CALL_AND_UNSET_ONERROR(X) do {		\
@@ -279,11 +268,6 @@ PMOD_EXPORT void DECLSPEC(noreturn) math_error(
 PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
   const char *func, int args,
   size_t amount) ATTRIBUTE((noreturn));
-PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
-  const char *func,
-  const struct svalue *base_sp, int args,
-  const char *permission_type,
-  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
   ATTRIBUTE((noreturn));
 void init_error(void);

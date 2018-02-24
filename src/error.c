@@ -46,8 +46,6 @@ PMOD_EXPORT const char msg_unset_onerr_nosync_1[] =
   "Last SET_ONERROR is from %s\n";
 PMOD_EXPORT const char msg_unset_onerr_nosync_2[] =
   "UNSET_ONERROR out of sync. No Pike_interpreter.recoveries left.\n";
-PMOD_EXPORT const char msg_assert_onerr[] =
-  "%s ASSERT_ONERROR(%p) failed\n";
 #endif
 PMOD_EXPORT const char msg_bad_arg[] =
   "Bad argument %d to %s(). Expected %s.\n";
@@ -1088,19 +1086,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
   resource_error (func, args, amount,
                   amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
   UNREACHABLE();
-}
-
-/* coverity[+kill] */
-PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
-  const char *func,
-  const struct svalue *base_sp, int args,
-  const char *permission_type,
-  const char *desc, ...) ATTRIBUTE((noreturn))
-{
-  INIT_ERROR(permission);
-  ERROR_STRUCT(permission,o)->permission_type=
-    make_shared_string(permission_type);
-  ERROR_DONE(generic);
 }
 
 /* coverity[+kill] */
