@@ -486,6 +486,7 @@ void f_load_module(INT32 args)
     ((struct module_load_error_struct *) (err_obj->storage + module_load_error_offset))
 
     const char *err = dlerror();
+    struct pike_string *str;
     if (err) {
       if (err[strlen (err) - 1] == '\n')
 	push_string (make_shared_binary_string (err, strlen (err) - 1));
@@ -496,16 +497,17 @@ void f_load_module(INT32 args)
       push_static_text ("Unknown reason");
 
     add_ref (LOADERR_STRUCT (err_obj)->path = Pike_sp[-args - 1].u.string);
-    add_ref (LOADERR_STRUCT (err_obj)->reason = Pike_sp[-1].u.string);
+    add_ref (LOADERR_STRUCT (err_obj)->reason = str = Pike_sp[-1].u.string);
+    pop_stack();
 
-    if (Pike_sp[-args].u.string->len < 1024) {
-      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
+    if (str->len < 1024) {
+      throw_error_object (err_obj, "load_module", args,
 			  "load_module(\"%s\") failed: %s\n",
-			  module_name->str, Pike_sp[-1].u.string->str);
+                          module_name->str, str->str);
     } else {
-      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
-			  "load_module() failed: %s\n",
-			  Pike_sp[-1].u.string->str);
+      throw_error_object (err_obj, "load_module", args,
+                          "load_module(\"%s\") failed.\n",
+                          module_name->str);
     }
   }
 

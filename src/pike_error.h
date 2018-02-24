@@ -254,8 +254,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const char *func,

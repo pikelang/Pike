@@ -1642,13 +1642,13 @@ static void f_compilation_compile(INT32 args)
       CDFPRINTF("th(%ld) %p f_compilation_compile() reporting failure "
                 "since a dependant failed.\n",
                 (long) th_self(), c->target);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
       CDFPRINTF("th(%ld) %p f_compilation_compile() failed.\n",
                 (long) th_self(), c->target);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
 			 "Compilation failed.\n");
     }
     debug_malloc_touch(ret);

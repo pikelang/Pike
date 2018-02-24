@@ -5009,7 +5009,7 @@ PIKEFUN string cpp(string data,
 
   if(this->compile_errors)
   {
-    throw_error_object(fast_clone_object(cpp_error_program), 0, 0, 0,
+    throw_error_object(fast_clone_object(cpp_error_program), 0, 0,
 		       "Cpp() failed\n");
   }
   else if(this->dependencies_fail)

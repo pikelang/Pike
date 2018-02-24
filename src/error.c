@@ -990,10 +990,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
+  const struct svalue *base_sp = Pike_sp - args;
   va_list foo;
   va_start(foo,desc);
   ASSERT_THREAD_SWAPPED_IN();
