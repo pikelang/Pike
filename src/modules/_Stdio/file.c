@@ -1698,6 +1698,7 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *! @decl int write(string format, mixed ... extras)
  *! @decl int write(array(string) data)
  *! @decl int write(array(string) format, mixed ... extras)
+ *! @decl int write(Stdio.Buffer|String.Buffer|System.Memory data, void|int(0..) offset)
  *!
  *! Write data to a file or a stream.
  *!
@@ -1714,6 +1715,9 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *!   If more than one argument is given, @[sprintf()] is used to format
  *!   them using @[format]. If @[format] is an array, the strings in it
  *!   are concatenated and the result is used as format string.
+ *!
+ *! @param offset
+ *!   The offset in data to start writing from.
  *!
  *! @returns
  *!   Writes @[data] and returns the number of bytes that were
@@ -1760,6 +1764,10 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *!   Writing of wide strings is not supported. You have to encode the
  *!   data somehow, e.g. with @[string_to_utf8] or with one of the
  *!   charsets supported by @[Charset.encoder].
+ *!
+ *! @note
+ *!   The variant of this function using a buffer object does not release
+ *!   the interpreter lock.
  *!
  *! @seealso
  *!   @[read()], @[write_oob()], @[send_fd()]
