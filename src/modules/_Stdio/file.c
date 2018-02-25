@@ -1773,26 +1773,28 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *!   @[read()], @[write_oob()], @[send_fd()]
  */
 #ifdef HAVE_WRITEV
-static ptrdiff_t file_write_array(struct array *a)
+static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 {
   ptrdiff_t written, i;
-
-  i = a->size;
-  while(i--)
-    if (a->item[i].u.string->size_shift)
-      Pike_error("Bad argument 1 to file->write().\n"
-                 "Element %ld is a wide string.\n",
-                 (long)i);
-
   struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
   struct iovec *iov = iovbase;
   int iovcnt = a->size;
+  int e = 0;
 
   i = a->size;
   while(i--) {
-    if (a->item[i].u.string->len) {
-      iov[i].iov_base = a->item[i].u.string->str;
-      iov[i].iov_len = a->item[i].u.string->len;
+    struct pike_string *s = a->item[i].u.string;
+
+    if (s->size_shift) {
+      free(iovbase);
+      Pike_error("Bad argument 1 to file->write().\n"
+                 "Element %ld is a wide string.\n",
+                 (long)i);
+    }
+
+    if (s->len) {
+      iov[i].iov_base = s->str;
+      iov[i].iov_len = s->len;
     } else {
       iov++;
       iovcnt--;
@@ -1800,15 +1802,22 @@ static ptrdiff_t file_write_array(struct array *a)
   }
 
   for(written = 0; iovcnt; check_signals(0,0,0)) {
-    int fd = FD;
-    int e;
+    int fd = file->box.fd;
     int cnt = iovcnt;
 #ifdef HAVE_PIKE_SEND_FD
     int *fd_info = NULL;
     int num_fds = 0;
-    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-      fd_info = THIS->fd_info;
-      THIS->fd_info = NULL;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
     }
 #endif
     THREADS_ALLOW();
@@ -1826,12 +1835,14 @@ static ptrdiff_t file_write_array(struct array *a)
     } else
 #endif
       i = writev(fd, iov, cnt);
+
+    e=errno;
+
     THREADS_DISALLOW();
 
     /* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
        fd, (unsigned int)iov, cnt, i); */
 
-    e=errno; /* check_threads_etc may effect errno */
     check_threads_etc();
 
     if(i<0)
@@ -1843,13 +1854,11 @@ static ptrdiff_t file_write_array(struct array *a)
 #endif
       switch(e)
       {
-      default:
-        free(iovbase);
-        ERRNO=errno=e;
-        return written ? written : -1;
-
+      default: break;
       case EINTR: continue;
-      case EWOULDBLOCK: break;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
         /* FIXME: Special case for ENOTSOCK? */
       }
       break;
@@ -1858,9 +1867,9 @@ static ptrdiff_t file_write_array(struct array *a)
 
 #ifdef HAVE_PIKE_SEND_FD
       if (fd_info) {
-        THIS->fd_info = fd_info;
+        file->fd_info = fd_info;
         if (i) {
-          do_close_fd_info(THIS->fd_info = fd_info);
+          do_close_fd_info(file->fd_info = fd_info);
         }
       }
 #endif
@@ -1882,41 +1891,41 @@ static ptrdiff_t file_write_array(struct array *a)
         }
       }
     }
-#ifdef _REENTRANT
-    if (FD<0) {
-      free(iovbase);
-      Pike_error("File closed while in file->write.\n");
-    }
-#endif
   }
 
   free(iovbase);
 
-  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-  ERRNO=0;
+  file->my_errno = errno = e;
 
   return written;
 }
 #endif /* HAVE_WRITEV */
 
-static ptrdiff_t file_write_buffer(void *ptr, size_t len)
+static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
 {
   ptrdiff_t written;
+  int e = 0;
 
   for(written=0;(size_t)written < len;check_signals(0,0,0))
   {
-    int fd=FD;
-    int e;
+    int fd=file->box.fd;
     int i;
     void *start = (char*)ptr + written;
 #ifdef HAVE_PIKE_SEND_FD
     int *fd_info = NULL;
     int num_fds = 0;
-/*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
-    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-      fd_info = THIS->fd_info;
-      THIS->fd_info = NULL;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+/*  fprintf(stderr, "fd_info: %p\n", file->fd_info); */
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
     }
 #endif
 #ifdef HAVE_PIKE_SEND_FD
@@ -1939,13 +1948,11 @@ static ptrdiff_t file_write_buffer(void *ptr, size_t len)
 #endif
       switch(e)
       {
-      default:
-	ERRNO=errno=e;
-
-        return written ? written : -1;
-
+      default: break;
       case EINTR: continue;
-      case EWOULDBLOCK: break;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
 	/* FIXME: Special case for ENOTSOCK? */
       }
       break;
@@ -1954,51 +1961,52 @@ static ptrdiff_t file_write_buffer(void *ptr, size_t len)
 
 #ifdef HAVE_PIKE_SEND_FD
       if (i && fd_info) {
-	do_close_fd_info(THIS->fd_info = fd_info);
+	do_close_fd_info(file->fd_info = fd_info);
       }
 #endif
       /* Avoid extra write() */
-      if(THIS->open_mode & FILE_NONBLOCKING)
+      if(file->open_mode & FILE_NONBLOCKING)
 	break;
     }
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
   }
 
-#ifdef _REENTRANT
-  /* check_signals() may have done something... */
-  if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
-  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-  ERRNO=0;
+  file->my_errno=errno=e;
 
   return written;
 }
 
-static ptrdiff_t file_write_string(struct pike_string *str)
+static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str)
 {
-  ptrdiff_t written;
+  ptrdiff_t written = 0;
+  int e = 0;
 
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
   for(written=0;written < str->len;check_signals(0,0,0))
   {
-    int fd=FD;
-    int e;
+    int fd=file->box.fd;
     int i;
 #ifdef HAVE_PIKE_SEND_FD
     int *fd_info = NULL;
     int num_fds = 0;
-/*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
-    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-      fd_info = THIS->fd_info;
-      THIS->fd_info = NULL;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+/*  fprintf(stderr, "fd_info: %p\n", file->fd_info); */
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
     }
 #endif
+
     THREADS_ALLOW();
+
 #ifdef HAVE_PIKE_SEND_FD
     if (fd_info) {
       struct iovec iov;
@@ -2022,13 +2030,11 @@ static ptrdiff_t file_write_string(struct pike_string *str)
 #endif
       switch(e)
       {
-      default:
-	ERRNO=errno=e;
-
-        return written ? written : -1;
-
+      default: break;
       case EINTR: continue;
-      case EWOULDBLOCK: break;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
 	/* FIXME: Special case for ENOTSOCK? */
       }
       break;
@@ -2037,25 +2043,17 @@ static ptrdiff_t file_write_string(struct pike_string *str)
 
 #ifdef HAVE_PIKE_SEND_FD
       if (i && fd_info) {
-	do_close_fd_info(THIS->fd_info = fd_info);
+	do_close_fd_info(file->fd_info = fd_info);
       }
 #endif
       /* Avoid extra write() */
-      if(THIS->open_mode & FILE_NONBLOCKING)
+      if(file->open_mode & FILE_NONBLOCKING)
 	break;
     }
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
   }
 
-#ifdef _REENTRANT
-  /* check_signals() may have done something... */
-  if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
-  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-  ERRNO=0;
+  /* Why do we reset errno ? */
+  file->my_errno = errno = e;
 
   return written;
 }
@@ -2065,10 +2063,12 @@ static void file_write(INT32 args)
   enum PIKE_TYPE first_arg = args > 0 ? TYPEOF(Pike_sp[-args]) : T_VOID;
   ptrdiff_t written;
 
-  if(FD < 0)
+  struct my_file *file = THIS;
+
+  if(file->box.fd < 0)
     Pike_error("File not open for write.\n");
 
-  if (!(THIS->open_mode & FILE_NONBLOCKING))
+  if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
 
   switch (first_arg) {
@@ -2077,7 +2077,7 @@ static void file_write(INT32 args)
       struct array *a = Pike_sp[-args].u.array;
 
       if (!a->size) {
-        ERRNO = 0;
+        file->my_errno = 0;
         written = 0;
         break;
       }
@@ -2089,7 +2089,7 @@ static void file_write(INT32 args)
             (array_fix_type_field(a) & ~BIT_STRING) )
           SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
 
-        written = file_write_array(a);
+        written = file_write_array(file, a);
         break;
       }
 #endif /* HAVE_WRITEV */
@@ -2114,7 +2114,7 @@ static void file_write(INT32 args)
       f_sprintf(args);
       args=1;
     }
-    written = file_write_string(Pike_sp[-args].u.string);
+    written = file_write_string(file, Pike_sp[-args].u.string);
     break;
   case PIKE_T_OBJECT:
     {
@@ -2135,24 +2135,36 @@ static void file_write(INT32 args)
         {
           offset = Pike_sp[-args+1].u.integer;
 
-          if (offset < 0 || (size_t)offset > len) {
-            Pike_error("Bad offset.\n");
+          if (UNLIKELY(offset < 0 || (size_t)offset > len)) {
+            Pike_error("Offset out of bounds.\n");
           }
         }
 
-        written = file_write_buffer((char*)src + offset, len - offset);
+        written = file_write_buffer(file, (char*)src + offset, len - offset);
         break;
       }
     }
     /* FALL THROUGH */
   default:
-    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)|Stdio.Buffer|System.Memory");
+    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)|Stdio.Buffer|String.Buffer|System.Memory");
+  }
+
+#ifdef _REENTRANT
+  if (file->box.fd < 0)
+    Pike_error("File closed while in file->write.\n");
+#endif
+
+  if (!file->my_errno) {
+    if(!SAFE_IS_ZERO(& file->event_cbs[PIKE_FD_WRITE]))
+      ADD_FD_EVENTS (file, PIKE_BIT_FD_WRITE);
+  } else {
+    if (!written) written = -1;
   }
 
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+  file->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
   pop_n_elems(args);
   push_int64(written);
