@@ -1000,7 +1000,7 @@ PMOD_EXPORT void f_search(INT32 args)
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
 
@@ -1011,7 +1011,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	if (Pike_sp[3-args].u.integer < end) {
 	  end = Pike_sp[3-args].u.integer;
 	  if(start<0) {
-	    bad_arg_error("search", Pike_sp-args, args, 4, "int(0..)",
+            bad_arg_error("search", args, 4, "int(0..)",
 			  Pike_sp+3-args,
 			  "End must be greater or equal to zero.\n");
 	  }
@@ -1020,7 +1020,7 @@ PMOD_EXPORT void f_search(INT32 args)
     }
 
     if(haystack->len < start)
-      bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp-args,
+      bad_arg_error("search", args, 3, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
 
@@ -1112,7 +1112,7 @@ PMOD_EXPORT void f_search(INT32 args)
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
 
@@ -1123,7 +1123,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	if (Pike_sp[3-args].u.integer < end) {
 	  end = Pike_sp[3-args].u.integer;
 	  if(end<0) {
-	    bad_arg_error("search", Pike_sp-args, args, 4, "int(0..)",
+            bad_arg_error("search", args, 4, "int(0..)",
 			  Pike_sp+3-args,
 			  "End must be greater or equal to zero.\n");
 	  }
@@ -1927,7 +1927,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
 
   if (in->len & 1) {
-    bad_arg_error("unicode_to_string", Pike_sp-args, args, 1, "string", Pike_sp-args,
+    bad_arg_error("unicode_to_string", args, 1, "string", Pike_sp-args,
 		  "String length is odd.\n");
   }
 
@@ -2197,7 +2197,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	  /* 17bit or more. */
 	  len++;
 	  if (!extended && c > 0x10ffff)
-	    bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+            bad_arg_error ("string_to_utf8", args, 1,
 			   NULL, Pike_sp - args,
 			   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
 			   "outside the allowed range.\n",
@@ -2217,7 +2217,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	  }
 	}
 	else if (!extended && c >= 0xd800 && c <= 0xdfff)
-	  bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+          bad_arg_error ("string_to_utf8", args, 1,
 			 NULL, Pike_sp - args,
 			 "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
 			 "in the surrogate range and therefore invalid.\n",
@@ -2361,7 +2361,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
        */
 
       if ((c & 0xc0) == 0x80) {
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+        bad_arg_error ("utf8_to_string", args, 1,
 		       NULL, Pike_sp - args,
 		       "Invalid continuation character 0x%02x "
 		       "at index %"PRINTPTRDIFFT"d.\n",
@@ -2371,7 +2371,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #define GET_CHAR(in, i, c) do {						\
 	i++;								\
 	if (i >= in->len)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+          bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
 			 "Truncated UTF-8 sequence at end of string.\n"); \
 	c = STR0 (in)[i];						\
@@ -2379,7 +2379,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #define GET_CONT_CHAR(in, i, c) do {					\
 	GET_CHAR(in, i, c);						\
 	if ((c & 0xc0) != 0x80)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+          bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
 			 "Expected continuation character at index %d, " \
 			 "got 0x%02x.\n",				\
@@ -2387,7 +2387,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       } while (0)
 
 #define UTF8_SEQ_ERROR(prefix, c, i, problem) do {			\
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+        bad_arg_error ("utf8_to_string", args, 1,                       \
 		       NULL, Pike_sp - args,				\
 		       "UTF-8 sequence beginning with %s0x%02x "	\
 		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
@@ -2477,7 +2477,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	}
 
 	else if (c == 0xff)
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+          bad_arg_error ("utf8_to_string", args, 1,
 			 NULL, Pike_sp - args,
 			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
 			 i);
@@ -5372,7 +5372,7 @@ PMOD_EXPORT void f_sort(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("sort", e+1, "array");
 
     if(Pike_sp[e-args].u.array->size != a->size)
-      bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
+      bad_arg_error("sort", args, e+1, "array", Pike_sp+e-args,
 		    "Argument %d has wrong size.\n", (e+1));
   }
 
@@ -7897,11 +7897,11 @@ PMOD_EXPORT void f_replace_master(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("replace_master", 1, "object");
   new_master = Pike_sp[-args].u.object;
   if(!new_master->prog)
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
 
   if (SUBTYPEOF(Pike_sp[-args]))
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
 
   push_static_text ("is_pike_master");
@@ -8217,7 +8217,7 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   get_all_args("variablep",args,"%o%S",&o, &s);
 
   if(!o->prog)
-    bad_arg_error("variablep", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("variablep", args, 1, "object", Pike_sp-args,
 		  "Called on destructed object.\n");
 
   /* FIXME: Ought to be overloadable, since `[]=() is... */
@@ -8360,13 +8360,13 @@ PMOD_EXPORT void f_everynth(INT32 args)
     case 3:
      start=Pike_sp[2-args].u.integer;
      if(start<0)
-       bad_arg_error("everynth", Pike_sp-args, args, 3, "int", Pike_sp+2-args,
+       bad_arg_error("everynth", args, 3, "int", Pike_sp+2-args,
 		     "Argument negative.\n");
      /* FALLTHRU */
     case 2:
       n=Pike_sp[1-args].u.integer;
       if(n<1)
-	bad_arg_error("everynth", Pike_sp-args, args, 2, "int", Pike_sp+1-args,
+        bad_arg_error("everynth", args, 2, "int", Pike_sp+1-args,
 		      "Argument negative.\n");
      /* FALLTHRU */
     case 1:

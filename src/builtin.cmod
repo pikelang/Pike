@@ -940,7 +940,7 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
       gc_trace = level;
     }
     else {
-      bad_arg_error("trace", Pike_sp-args, args, 2,
+      bad_arg_error("trace", args, 2,
 		   "trace facility identifier", Pike_sp-args+1,
                    "Bad argument 2 to trace(). Unknown trace facility.");
     }
@@ -1178,7 +1178,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
   if(ind->size != val->size)
-    bad_arg_error("mkmapping", Pike_sp-args, args, 2, "array", Pike_sp+1-args,
+    bad_arg_error("mkmapping", args, 2, "array", Pike_sp+1-args,
 		  "mkmapping called on arrays of different sizes (%d != %d)\n",
 		  ind->size, val->size);
 
@@ -1768,7 +1768,7 @@ PIKEFUN string function_name(program|function func)
     case PIKE_T_FUNCTION:
       if((f = SUBTYPEOF(*func)) == FUNCTION_BUILTIN) break;
       if(!(p = func->u.object->prog))
-	bad_arg_error("function_name", Pike_sp-args, args, 1,
+        bad_arg_error("function_name", args, 1,
 		      "function", Pike_sp-args,
 		      "Destructed object.\n");
       if(p == pike_trampoline_program)
@@ -2630,7 +2630,7 @@ PIKECLASS backtrace_frame
 	    push_svalue(THIS->args->item + (i - 3));
 	    break;
 	  }
-	  bad_arg_error("`[]", Pike_sp-args, args, 1,
+          bad_arg_error("`[]", args, 1,
 			"int(0..)", Pike_sp-args,
 			"Bad argument 1 to backtrace_frame->`[](): "
 			"Expected int(0..%d)\n",

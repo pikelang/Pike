@@ -255,8 +255,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   struct svalue *ind,
   const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
-  const char *func,
-  const struct svalue *base_sp,  int args,
+  const char *func, int args,
   int which_arg,
   const char *expected_type,
   struct svalue *got,
@@ -288,11 +287,11 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */
 #define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, NULL, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
+   bad_arg_error(FUNC, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 /* Less descriptive macro name kept for compatibility. */
 #define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, NULL, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
+   bad_arg_error(FUNC, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 
 PMOD_EXPORT extern const char msg_bad_arg_2[];
@@ -309,7 +308,7 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
  * number of bytes has to be even."
  */
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
-  bad_arg_error (FUNC, NULL, args, ARG, NULL, Pike_sp+ARG-1-args, \
+  bad_arg_error (FUNC, args, ARG, NULL, Pike_sp+ARG-1-args, \
 		 msg_bad_arg_2, ARG, FUNC, PROBLEM)
 
 /**

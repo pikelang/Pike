@@ -523,17 +523,14 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
     case ARGS_LONG:
       break;
     case ARGS_NUL_IN_STRING:
-      bad_arg_error(
-        fname, NULL, args,
-	ret+1,
-	"string(1..255)",
+      bad_arg_error(fname, args, ret+1,	"string(1..255)",
 	Pike_sp+ret-args,
 	"Bad argument %d to %s(). NUL in string.\n",
         ret+1, fname);
       UNREACHABLE();
 
     case ARGS_SUBTYPED_OBJECT:
-      bad_arg_error(fname, NULL, args, ret+1, "object",
+      bad_arg_error(fname, args, ret+1, "object",
 		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
       UNREACHABLE();
@@ -580,20 +577,14 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       }
 
       if (info != ARGS_SHORT) {
-	bad_arg_error(
-          fname, NULL, args,
-	  ret+1,
-	  expected_type,
+        bad_arg_error(fname, args, ret+1, expected_type,
 	  Pike_sp+ret-args,
 	  "Bad argument %d to %s(). Expected %s.\n",
 	  ret+1, fname, expected_type);
       } else {
 	const char *req_args_end = strchr (format, '.');
 	if (!req_args_end) req_args_end = strchr (format, 0);
-	bad_arg_error(
-          fname, NULL, args,
-	  ret+1,
-	  expected_type,
+        bad_arg_error(fname, args, ret+1, expected_type,
 	  0,
 	  "Too few arguments to %s(). Expected %"PRINTPTRDIFFT"d arguments, got %d.\n"
 	  "The type of the next argument is expected to be %s.\n",

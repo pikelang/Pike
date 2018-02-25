@@ -717,7 +717,7 @@ float_fallback:
       {
         return sv->u.integer;
       }else{
-        bad_arg_error (name, NULL, args, arg, NULL, Pike_sp + arg - 1 - args,
+        bad_arg_error (name, args, arg, NULL, Pike_sp + arg - 1 - args,
                        "Bad argument %d to %s(). "
                        "The field \"%s\" doesn't hold an integer.\n",
                        arg, name, ind);
