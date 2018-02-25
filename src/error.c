@@ -878,10 +878,8 @@ static void f_error_create(INT32 args)
   DWERROR("%s(): Throwing a " #FEL " error\n", func); \
   o=fast_clone_object(PIKE_CONCAT(FEL,_error_program))
 
-#define ERROR_DONE(FOO) \
-  PIKE_CONCAT(FOO,_error_va(o,func, \
-			      base_sp, args, \
-			      desc, &foo)); \
+#define ERROR_DONE() \
+  generic_error_va(o,func, base_sp, args, desc, &foo); \
   va_end(foo)
 
 #define ERROR_STRUCT(STRUCT,O) \
@@ -994,7 +992,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   va_start(foo,desc);
   ASSERT_THREAD_SWAPPED_IN();
   DWERROR("%s(): Throwing an error object\n", func);
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 /* coverity[+kill] */
@@ -1004,7 +1002,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(generic);
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 /* coverity[+kill] */
@@ -1018,7 +1016,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, value);
   ERROR_COPY_SVALUE(index, index);
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 /* coverity[+kill] */
@@ -1041,7 +1039,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   ERROR_COPY_SVALUE(bad_argument, got_value);
   DWERROR("%s():Bad arg %d (expected %s)\n",
           func, which_argument, expected_type);
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 /* coverity[+kill] */
@@ -1059,7 +1057,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
     SET_SVAL(ERROR_STRUCT(math,o)->number, PIKE_T_INT, NUMBER_UNDEFINED,
 	     integer, 0);
   }
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 /* coverity[+kill] */
@@ -1074,7 +1072,7 @@ static DECLSPEC(noreturn) void resource_error(
   if(args>=0) base_sp = Pike_sp-args;
   ERROR_COPY(resource, howmuch);
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string("memory");
-  ERROR_DONE(generic);
+  ERROR_DONE();
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
