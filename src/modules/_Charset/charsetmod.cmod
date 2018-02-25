@@ -1779,11 +1779,24 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 		       struct svalue *repcb)
 {
   ptrdiff_t l = str->len;
+  ptrdiff_t new_len = str->len;
+
+  if (!new_len) return;
 
   switch(str->size_shift) {
   case 0:
     {
       p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((*p++)>0x7f)
+	  new_len++;
+      if (new_len == str->len) {
+	string_builder_shared_strcat(sb, str);
+	return;
+      }
+      l = str->len;
+      p = STR0(str);
+      string_build_mkspace(sb, new_len, 0);
       while(l--)
 	if((c=*p++)<=0x7f)
 	  string_builder_putchar(sb, c);
