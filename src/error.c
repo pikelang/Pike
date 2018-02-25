@@ -569,8 +569,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   va_end (args);
 }
 
-#if 1
-
 /*! @class MasterObject
  */
 
@@ -1130,4 +1128,3 @@ void cleanup_error(void)
 #define ERR_CLEANUP
 #include "errors.h"
 }
-#endif
