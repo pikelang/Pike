@@ -3419,8 +3419,8 @@ static Buffer *io_buffer(struct object *o)
   return get_storage( o, iobuf_program );
 }
 
-PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr,
-						       size_t *len, int *shift )
+PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pike_memory_object *m,
+                                                     int writeable )
 {
   union {
     struct string_builder *b;
@@ -3430,34 +3430,77 @@ PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **
 
   if( (src.b = string_buffer(o)) )
   {
+    /* Whats the difference between src.b->known_shift and s->size_shift ?
+     * If they are always the same, why does the first one exist?
+     *  /arne
+     */
     struct pike_string *s = src.b->s;
-    if( !s )
+    if( !s ) {
+      if (writeable)
+        return MEMOBJ_NONE;
       s = empty_pike_string;
-    if( shift )
-      *shift = s->size_shift;
-    else if( s->size_shift )
-      return MEMOBJ_NONE;
-    if( len ) *len = s->len;
-    if( ptr ) *ptr = s->str;
+    }
+    m->shift = s->size_shift;
+    if (writeable)
+    {
+      m->len = src.b->malloced - s->len;
+      m->ptr = s->str + s->len;
+    }
+    else
+    {
+      m->len = s->len;
+      m->ptr = s->str;
+    }
     return MEMOBJ_STRING_BUFFER;
   }
 
   if( (src.io = io_buffer( o )) )
   {
-    if( shift ) *shift=0;
-    if( len ) *len = src.io->len-src.io->offset;
-    if( ptr ) *ptr=src.io->buffer+src.io->offset;
+    m->shift = 0;
+    if (writeable)
+    {
+      m->len = src.io->allocated-src.io->len;
+      m->ptr = src.io->buffer+src.io->len;
+    }
+    else
+    {
+      m->len = src.io->len-src.io->offset;
+      m->ptr = src.io->buffer+src.io->offset;
+    }
     return MEMOBJ_STDIO_IOBUFFER;
   }
 
   if( (src.s = system_memory(o)) )
   {
-    if( shift ) *shift=0;
-    if( len ) *len = src.s->size;
-    if( ptr ) *ptr= src.s->p;
+    m->shift = 0;
+    m->len = src.s->size;
+    m->ptr = src.s->p;
     return MEMOBJ_SYSTEM_MEMORY;
   }
   return MEMOBJ_NONE;
+}
+
+PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr,
+						       size_t *len, int *shift )
+{
+  struct pike_memory_object m;
+
+  enum memobj_type type = pike_get_memory_object(o, &m, 0);
+
+  if (type != MEMOBJ_NONE)
+  {
+    if (shift) *shift = m.shift;
+    else if (m.shift != 0) {
+      /* 
+       * If no shift was requested, we cannot return this buffer object
+       */
+      return MEMOBJ_NONE;
+    }
+    if (ptr) *ptr = m.ptr;
+    if (len) *len = m.len;
+  }
+
+  return type;
 }
 
 void exit_object(void)
