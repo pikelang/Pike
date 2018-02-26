@@ -4236,19 +4236,20 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		  pop_stack();
 		  break;
 		}
-	      }
-	      if(!OUTP() && !this->picky_cpp) break;
-	      {
-		if (directive) {
-		  cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
-				    directive);
-		  free_string(directive);
-		} else {
-		  cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
-				    pos, DATA(pos));
-		}
-	      }
-	    }
+              }
+
+              if(!OUTP() && !this->picky_cpp)
+                break;
+
+              if (directive) {
+                cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
+                                  directive);
+                free_string(directive);
+              } else {
+                cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
+                                  pos, DATA(pos));
+              }
+            }
         }
     }
     continue;
