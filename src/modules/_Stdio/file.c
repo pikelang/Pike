@@ -793,6 +793,35 @@ static struct pike_string *do_read(int fd,
   return buffer_finish_pike_string(&buf);
 }
 
+static ptrdiff_t do_read_into_buffer(int fd,
+                                     void * ptr,
+                                     size_t len,
+                                     INT_TYPE *err)
+{
+  int e = 0;
+  ptrdiff_t bytes_read;
+  
+  do {
+    bytes_read = fd_read(fd, ptr, len);
+
+    if (LIKELY(bytes_read >= 0)) {
+      e = 0;
+    } else {
+      e=errno;
+    }
+
+    check_threads_etc();
+  } while (e == EINTR);
+
+  if (e)
+    *err = e;
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  return bytes_read;
+}
+
 /* This function is used to analyse anonymous fds, so that
  * my_file->open_mode can be set properly. */
 static int low_fd_query_properties(int fd)
@@ -1275,8 +1304,11 @@ static void file_read(INT32 args)
   struct pike_string *tmp;
   unsigned INT32 mode = 0;
   size_t count = DIRECT_BUFSIZE;
+  struct my_file *file = THIS;
 
-  if(FD < 0)
+  int fd = file->box.fd;
+
+  if(fd < 0)
     Pike_error("File not open.\n");
 
   if(!args)
@@ -1307,30 +1339,30 @@ static void file_read(INT32 args)
 
 #ifdef HAVE_PIKE_SEND_FD
   /* Check if there's any need to use recvmsg(2). */
-  if ((THIS->open_mode & fd_SEND_FD) &&
-      (THIS->flags & FILE_HAVE_RECV_FD)) {
-    if ((tmp = do_recvmsg(FD, count, mode, & ERRNO)))
+  if ((file->open_mode & fd_SEND_FD) &&
+      (file->flags & FILE_HAVE_RECV_FD)) {
+    if ((tmp = do_recvmsg(fd, count, mode, & file->my_errno)))
       push_string(tmp);
     else {
-      errno = ERRNO;
+      errno = file->my_errno;
       push_int(0);
     }
   } else
 #endif /* HAVE_PIKE_SEND_FD */
-    if((tmp=do_read(FD, count, mode, & ERRNO)))
+    if((tmp=do_read(fd, count, mode, & file->my_errno)))
       push_string(tmp);
     else {
-      errno = ERRNO;
+      errno = file->my_errno;
       push_int(0);
     }
 
-  if (!(THIS->open_mode & FILE_NONBLOCKING))
+  if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
 
   /* Race: A backend in another thread might have managed to set these
    * again for something that arrived after the read above. Not that
    * bad - it will get through in a later backend round. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+  file->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
 #ifdef HAVE_AND_USE_POLL
