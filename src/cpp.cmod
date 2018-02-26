@@ -4219,7 +4219,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
 		if (fun) {
 		  ptrdiff_t foo;
-		  free_string(directive);
+                  free_string(directive);
+                  directive = NULL;
 
 		  SKIPSPACE();
 		  foo = pos;
@@ -4239,7 +4240,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               }
 
               if(!OUTP() && !this->picky_cpp)
+              {
+                if(directive) free_string(directive);
                 break;
+              }
 
               if (directive) {
                 cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
