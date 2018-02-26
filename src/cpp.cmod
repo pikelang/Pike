@@ -4220,9 +4220,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		if (fun) {
 		  ptrdiff_t foo;
                   free_string(directive);
-                  directive = NULL;
 
-		  SKIPSPACE();
+                  SKIPSPACE();
 		  foo = pos;
 		  FIND_EOL();
 		  push_int(flags);
