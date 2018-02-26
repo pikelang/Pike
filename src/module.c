@@ -144,11 +144,11 @@ static void exit_builtin_modules(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
+  exit_mc();
   cleanup_program();
   cleanup_compiler();
   cleanup_error();
   exit_backend();
-  exit_mc();
   cleanup_gc();
   cleanup_pike_types();
 
