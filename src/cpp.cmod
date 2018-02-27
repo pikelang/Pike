@@ -170,6 +170,9 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
   return (struct define_struct *)get_storage(s->u.object, define_program);
 }
 
+static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
+		      ptrdiff_t tmp, int flags);
+
 static void cpp_error(struct CPP_struct *this, const char *err) ATTRIBUTE((noinline));
 static void cpp_error_vsprintf (struct CPP_struct *this, const char *fmt,
 				va_list args) ATTRIBUTE((noinline));
@@ -639,6 +642,27 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
  *! @seealso
  *!   @[#if]
  */
+  PIKEFUN string(0..0) directive_require(int flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (OUTP()) {
+      ref_push_string(line);
+      push_int(CPP_DO_IF);
+      apply_current(f_CPP_cpp_fun_num, 2);
+
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+	calc(this, MKPCHARP_STR(Pike_sp[-1].u.string),
+	     Pike_sp[-1].u.string->len, 0, 0);
+	if(SAFE_IS_ZERO(Pike_sp-1)) this->dependencies_fail=1;
+      } else {
+	this->dependencies_fail=1;
+      }
+      pop_stack();
+    }
+
+    push_empty_string();
+  }
 
 /*! @directive #endif
  *!
@@ -4165,30 +4189,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 }
                 else
                   FIND_EOL();
-                break;
-              }
-            }
-	    /* FALLTHRU */
-          case 'r': /* require */
-            {
-              if(GOBBLE_WORD(require_))
-              {
-                struct string_builder save, tmp;
-                save = this->buf;
-                init_string_builder(&this->buf, 0);
-                pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
-                               CPP_END_AT_NEWLINE | CPP_DO_IF,
-                               charset);
-                tmp = this->buf;
-                this->buf = save;
-                string_builder_putchar(&tmp, 0);
-                tmp.s->len--;
-
-                calc(this,MKPCHARP_STR(tmp.s),tmp.s->len,0,0);
-                if(SAFE_IS_ZERO(Pike_sp-1)) this->dependencies_fail=1;
-                pop_stack();
-                free_string_builder(&tmp);
-                if(this->dependencies_fail) return pos;
                 break;
               }
               goto unknown_preprocessor_directive;
