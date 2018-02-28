@@ -862,6 +862,46 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
  *!   #pike __REAL_VERSION__
  *!   @endcode
  */
+  PIKEFUN string(0..0) directive_pike(int flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (OUTP()) {
+      int major, minor;
+      ptrdiff_t tmp;
+      PCHARP ptr;
+
+      string_builder_strcat(&this->buf, "#pike ");
+
+      ref_push_string(line);
+      push_int(CPP_DO_IF);
+      apply_current(f_CPP_cpp_fun_num, 2);
+
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+	line = Pike_sp[-1].u.string;
+
+	ptr = MKPCHARP_STR(line);
+
+	major = STRTOL_PCHARP(ptr, &ptr, 10);
+	if(INDEX_PCHARP(ptr,0) == '.')
+	{
+	  INC_PCHARP(ptr, 1);
+	  minor=STRTOL_PCHARP(ptr, &ptr, 10);
+	  cpp_change_compat(this, major, minor);
+	}else{
+	  cpp_error(this, "Missing '.' in #pike.");
+	  this->compat_minor=0;
+	}
+
+	/* NB: The parsed line is already in place on the stack. */
+	return;
+      } else {
+	cpp_error(this, "Invalid #pike directive.");
+      }
+    }
+
+    push_empty_string();
+  }
 
 /*! @directive #""
  *!   If a string literal is opened with @tt{#"@} newlines in the
@@ -4147,48 +4187,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 } else {
                   cpp_error(this, "What charset?");
                 }
-                break;
-              }
-              goto unknown_preprocessor_directive;
-            }
-          case 'p': /* pragma */
-            {
-              if(GOBBLE_WORD(pike_))
-              {
-                if(OUTP())
-                {
-                  int major, minor;
-                  ptrdiff_t tmp;
-                  PCHARP ptr;
-
-                  string_builder_strcat(&this->buf, "#pike");
-                  tmp= this->buf.s->len;
-                  pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
-                                 CPP_END_AT_NEWLINE | CPP_DO_IF,
-                                 charset);
-
-                  ptr=MKPCHARP_STR(this->buf.s);
-                  INC_PCHARP(ptr, tmp);
-
-                  /* Zero terminate the buffer contents here to make sure
-                   * that STRTOL_PCHARP does not read beyond the end of the
-                   * buffer */
-                  string_builder_putchar(&this->buf, 0);
-                  this->buf.s->len--;
-
-                  major=STRTOL_PCHARP(ptr, &ptr, 10);
-                  if(INDEX_PCHARP(ptr,0) == '.')
-                  {
-                    INC_PCHARP(ptr, 1);
-                    minor=STRTOL_PCHARP(ptr, &ptr, 10);
-                    cpp_change_compat(this, major, minor);
-                  }else{
-                    cpp_error(this, "Missing '.' in #pike.");
-                    this->compat_minor=0;
-                  }
-                }
-                else
-                  FIND_EOL();
                 break;
               }
               goto unknown_preprocessor_directive;
