@@ -545,6 +545,8 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
     this->compat_handler=Pike_sp[-1].u.object;
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
+  } else {
+    pop_stack();
   }
   this->compat_major=major;
   this->compat_minor=minor;
@@ -4229,7 +4231,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		      Pike_sp[-1].u.string->len) {
 		    /* We need to recurse. */
 		    low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string),
-			    Pike_sp[-1].u.string->len, flags, charset);
+			    Pike_sp[-1].u.string->len,
+			    flags & ~CPP_EXPECT_ENDIF, charset);
 		  }
 		  pop_stack();
 		  break;
