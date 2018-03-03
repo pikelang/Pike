@@ -1320,6 +1320,13 @@ S(Crypto.HMAC(Crypto.MD5)("\252" * 16)("\335" * 50))]],
 test_eq([[
 S(Crypto.MD5.HMAC("\252" * 16)("\335" * 50))]],
 	"56be34521d144c88dbb8c733f0e8b3f6")
+// Non-default block size test:
+test_eq([[
+S(Crypto.MD5.HMAC("a")("b"))]],
+	"e630e7ba6e333361d5c626a542d0a1c6")
+test_eq([[
+S(Crypto.MD5.HMAC("a",32)("b"))]],
+	"e31e3d08878df3d60d4b0b2aff5f0d29")
 ]])
 
 // Similar test vectors for sha1
@@ -1348,6 +1355,12 @@ S(Crypto.HMAC(Crypto.SHA1)("\252" * 16)("\335" * 50))]],
 test_eq([[
 S(Crypto.SHA1.HMAC("\252" * 16)("\335" * 50))]],
 	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
+test_eq([[
+S(Crypto.SHA1.HMAC("a")("b"))]],
+	"6657855686823986c874362731139752014cb60b")
+test_eq([[
+S(Crypto.SHA1.HMAC("a",32)("b"))]],
+	"da3ae3a95053423384f32680eb9c3e2c8eb1494f")
 ]])
 
 // Similar test vectors for SHA256
@@ -1376,7 +1389,14 @@ S(Crypto.HMAC(Crypto.SHA256)("\252" * 16)("\335" * 50))]],
 test_eq([[
 S(Crypto.SHA256.HMAC("\252" * 16)("\335" * 50))]],
 	"7dda3cc169743a6484649f94f0eda0f9f2ff496a9733fb796ed5adb40a44c3c1")
+test_eq([[
+S(Crypto.SHA256.HMAC("a")("b"))]],
+	"08de329931e295683776aa9a43529bd0b275286df3160300c49ba4e841833013")
+test_eq([[
+S(Crypto.SHA256.HMAC("a",32)("b"))]],
+	"0776a29ef88d4b404e982f68e99e9eac76d0f8b8320f995b8278622b69920320")
 ]])
+
 
 // CRYPT_MD5
 cond_resolv(Nettle.crypt_md5, [[
