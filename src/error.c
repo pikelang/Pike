@@ -63,7 +63,6 @@ PMOD_EXPORT const char msg_div_by_zero[] =
  */
 
 #ifdef PIKE_DEBUG
-/* struct mapping *recovery_lookup = NULL; */
 
 PMOD_EXPORT void check_recovery_context(void)
 {
@@ -78,14 +77,9 @@ PMOD_EXPORT void check_recovery_context(void)
     fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
-    push_int((ptrdiff_t)Pike_interpreter.recoveries);
-/*     if ((s = low_mapping_lookup(recovery_lookup, Pike_sp-1))) { */
-/*       fprintf(stderr, "Try also looking at %s.\n", (char*)s->u.integer); */
-/*     } */
-    pop_stack();
     Pike_fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, C sp=%p, %ld)!\n",
-	  Pike_interpreter.recoveries, &foo,
-          (long)TESTILITEST);
+               Pike_interpreter.recoveries, &foo,
+               (long)TESTILITEST);
   }
 
   /* Add more stuff here when required */
@@ -118,14 +112,6 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
   r->severity=THROW_ERROR;
   Pike_interpreter.recoveries=r;
   check_recovery_context();
-#ifdef PIKE_DEBUG
-/*   if (recovery_lookup && Pike_sp) { */
-/*     push_int((ptrdiff_t)r); */
-/*     push_int((ptrdiff_t)location); */
-/*     mapping_insert(recovery_lookup, Pike_sp-2, Pike_sp-1); */
-/*     pop_n_elems(2); */
-/*   } */
-#endif
   return r;
 }
 
@@ -1112,16 +1098,11 @@ void init_error(void)
 
 #ifdef PIKE_DEBUG
   dmalloc_accept_leak(add_gc_callback(gc_check_throw_value,0,0));
-
-/*   recovery_lookup = allocate_mapping(100); */
 #endif
 }
 
 void cleanup_error(void)
 {
-#ifdef PIKE_DEBUG
-/*   free_mapping(recovery_lookup); */
-#endif
 #define ERR_CLEANUP
 #include "errors.h"
 }
