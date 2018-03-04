@@ -131,9 +131,10 @@ protected int _search(mixed item)
   return -1;
 }
 
-//! A stack added with another stack yields a third
-//! a third stack will all the stack elements from
-//! the two first stacks.
+//! A stack added with another stack yields a new
+//! stack with all the elements from both stacks,
+//! and the elements from the second stack at the
+//! top of the new stack.
 this_program `+(this_program s) {
   array elem = arr[..ptr-1]+values(s);
   this_program ns = this_program(1);
