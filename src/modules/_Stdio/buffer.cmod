@@ -2315,6 +2315,38 @@ fail: CALL_AND_UNSET_ONERROR(e);
     io_trim(io);
   }
 
+  /*! @decl void advance( int(0..) n )
+   *!
+   *! Discard the first @[n] bytes from the buffer
+   *!
+   *! Throws an error if not enough space has been allocated.
+   */
+  PIKEFUN void advance( int n )
+  {
+    Buffer *io = THIS;
+    Pike_sp--;
+    if (!n) return;
+    if (n < 0)
+      SIMPLE_BAD_ARG_ERROR("advance()", 1, "int(0..1)");
+    if (n > io->allocated - io->len)
+      Pike_error("Not enough buffer space.\n");
+    io->len += n;
+  }
+
+  /*! @decl void allocate( int(0..) n )
+   *!
+   *! Make sure that at least @[n] bytes of space are available in this buffer.
+   */
+  PIKEFUN void allocate( int n )
+  {
+    Buffer *io = THIS;
+    Pike_sp--;
+    if (!n) return;
+    if (n < 0)
+      SIMPLE_BAD_ARG_ERROR("advance()", 1, "int(0..1)");
+    io_add_space(io, n, 0);
+  }
+
   /*! @decl int(0..)|int(-1..-1) consume( int(0..) n )
    *!
    *! Discard the first @[n] bytes from the buffer
