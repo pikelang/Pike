@@ -798,23 +798,24 @@ static ptrdiff_t do_read_into_buffer(int fd,
                                      size_t len,
                                      INT_TYPE *err)
 {
-  int e = 0;
+  int e;
   ptrdiff_t bytes_read;
   
   do {
+    e = 0;
     bytes_read = fd_read(fd, ptr, len);
 
-    if (LIKELY(bytes_read >= 0)) {
-      e = 0;
-    } else {
+    if (UNLIKELY(bytes_read == 0)) {
       e=errno;
     }
 
     check_threads_etc();
   } while (e == EINTR);
 
-  if (e)
+  if (e && !bytes_read) {
     *err = e;
+    return -1;
+  }
 
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
@@ -1301,9 +1302,6 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  */
 static void file_read(INT32 args)
 {
-  struct pike_string *tmp;
-  unsigned INT32 mode = 0;
-  size_t count = DIRECT_BUFSIZE;
   struct my_file *file = THIS;
 
   int fd = file->box.fd;
@@ -1311,50 +1309,77 @@ static void file_read(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  if(!args)
-  {
-    mode |= PIKE_READ_NO_LENGTH;
-  }
-  else
-  {
-    INT_TYPE len;
-    if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
-    len=Pike_sp[-args].u.integer;
-    if(len<0)
-      Pike_error("Cannot read negative number of characters.\n");
-    if (!len && SUBTYPEOF(Pike_sp[-args])) {
+  if (args && TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+    struct pike_memory_object m;
+    struct object *o = Pike_sp[-args].u.object;
+    enum memobj_type type = pike_get_memory_object(o, &m, 1);
+    ptrdiff_t bytes_read;
+
+    if (type == MEMOBJ_NONE)
+      SIMPLE_BAD_ARG_ERROR("read()", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
+
+    if (m.shift)
+      Pike_error("Cannot read into wide-string buffer.\n");
+
+    if (!m.len)
+      Pike_error("No buffer space.\n");
+
+    bytes_read = do_read_into_buffer(fd, m.ptr, (size_t)m.len, &file->my_errno);
+    
+    pop_n_elems(args);
+    push_int(bytes_read);
+  } else {
+    struct pike_string *tmp;
+    unsigned INT32 mode = 0;
+    size_t count = DIRECT_BUFSIZE;
+
+    if(!args)
+    {
       mode |= PIKE_READ_NO_LENGTH;
-    } else {
-      count = len;
     }
-  }
+    else
+    {
+      INT_TYPE len;
+      if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
+        SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
+      len=Pike_sp[-args].u.integer;
+      if(len<0)
+        Pike_error("Cannot read negative number of characters.\n");
+      if (!len && SUBTYPEOF(Pike_sp[-args])) {
+        mode |= PIKE_READ_NO_LENGTH;
+      } else {
+        count = len;
+      }
+    }
 
-  if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
-  {
-    mode |= PIKE_READ_ONCE;
-  }
+    if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
+    {
+      mode |= PIKE_READ_ONCE;
+    }
 
-  pop_n_elems(args);
+    pop_n_elems(args);
 
 #ifdef HAVE_PIKE_SEND_FD
-  /* Check if there's any need to use recvmsg(2). */
-  if ((file->open_mode & fd_SEND_FD) &&
-      (file->flags & FILE_HAVE_RECV_FD)) {
-    if ((tmp = do_recvmsg(fd, count, mode, & file->my_errno)))
-      push_string(tmp);
-    else {
-      errno = file->my_errno;
-      push_int(0);
-    }
-  } else
+    /* Check if there's any need to use recvmsg(2). */
+    if ((file->open_mode & fd_SEND_FD) &&
+        (file->flags & FILE_HAVE_RECV_FD)) {
+      if ((tmp = do_recvmsg(fd, count, mode, & file->my_errno)))
+        push_string(tmp);
+      else {
+        errno = file->my_errno;
+        push_int(0);
+      }
+    } else
 #endif /* HAVE_PIKE_SEND_FD */
-    if((tmp=do_read(fd, count, mode, & file->my_errno)))
-      push_string(tmp);
-    else {
-      errno = file->my_errno;
-      push_int(0);
+    {
+      if((tmp=do_read(fd, count, mode, & file->my_errno)))
+        push_string(tmp);
+      else {
+        errno = file->my_errno;
+        push_int(0);
+      }
     }
+  }
 
   if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
