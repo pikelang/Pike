@@ -97,12 +97,6 @@
 
 #endif /* __MINGW32__ */
 
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
-struct timeval;
-#endif
-
 #ifndef HAVE_GETTIMEOFDAY
 PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #else
