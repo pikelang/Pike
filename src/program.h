@@ -1163,4 +1163,8 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 				    * isn't counted as side effect). Only used
 				    * in tree_info. */
 
+/* This is a statement which got custom break/continue label handling.
+ * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
+#define OPT_CUSTOM_LABELS   0x10000
+
 #endif /* PROGRAM_H */

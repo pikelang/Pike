@@ -131,10 +131,6 @@ struct node_s
   union node_data u;
 };
 
-/* This is a statement which got custom break/continue label handling.
- * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
-#define OPT_CUSTOM_LABELS   0x10000
-
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
