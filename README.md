@@ -11,6 +11,8 @@ In Ubuntu/Debian you can get it via `sudo apt install libsass`.
 
 * `cd pike-libsass`
 
+* You might have to run `autoheader`
+
 * `pike -x module` to compile the module. If all goes well...
 
 * `pike -x module install`
@@ -27,7 +29,7 @@ import Tools.Sass;
 Compiler compiler = Compiler();
 
 // Allow imports over HTTP. HTTP_IMPORT_GREEDY will raise an error if the
-// content type of the imported file isn't text/scss.
+// content type of the imported file isn't text/scss or text/sass.
 compiler->http_import = HTTP_IMPORT_GREEDY;
 
 compiler->set_options(([
