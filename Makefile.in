@@ -18,8 +18,9 @@ sass.o : $(SRCDIR)/sass.c
 
 LOCAL_GENERATED_FILES=configure config.cache config.h config.log \
 	config.status config.warnings config.h.in~ make_variables modlist_segment \
-	propageted_variables Makefile
+	propagated_variables remake sass.o module.so module.pmod Makefile \
+  dependencies linker_options sass.c
 
 localdevclean: $(DUMMY)
 	-rm -f $(LOCAL_GENERATED_FILES)
-	-rm -rf autom4te.cache
+	-rm -rf autom4te.cache plib refdoc
