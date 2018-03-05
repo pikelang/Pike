@@ -42,13 +42,20 @@ class Compiler
 
   //! If a Sass file is importing an external URI this flag determines if
   //! thats allowed at all, or if the content type of the imported file has
-  //! to be text/scss or if anything goes. Default is @[HTTP_IMPORT_NONE].
+  //! to be in @[http_import_allow_ct], or if anything goes.
+  //! Default is @[HTTP_IMPORT_NONE].
   //!
   //! @seealso
   //!  @[HTTP_IMPORT_NONE], @[HTTP_IMPORT_GREEDY] and
   //!  @[HTTP_IMPORT_ANY].
   public int(0..2) http_import = HTTP_IMPORT_NONE;
 
+
+  //! List of allowed content types if @[http_import] is set to
+  //! @[HTTP_IMPORT_GREEDY]. The default is to allow @tt{text/scss@} and
+  //! @tt{text/sass@}.
+  public multiset(string) http_import_allow_ct =
+    (< "text/scss", "text/sass" >);
 
   //! Should file access be tested right away when paths are set or should that
   //! be left to Sass to handle? The default value is @tt{true@}.
@@ -82,7 +89,7 @@ class Compiler
 
     Protocols.HTTP.Query q = Protocols.HTTP.get_url(uri);
 
-    if (q->status != 200) {
+    if (q->status / 100 != 2) {
       error("Bad HTTP status (%d) for @import %q!\n",
             q->status, (string) uri);
     }
@@ -91,10 +98,10 @@ class Compiler
                                  String.trim_all_whites);
 
     if (http_import == HTTP_IMPORT_GREEDY) {
-      if (ct_parts[0] != "text/scss") {
+      if (!http_import_allow_ct[ct_parts[0]]) {
         error("Returned content type from import (%s) was %q. "
-              "Expected \"text/scss\"!\n",
-              uri, ct_parts[0]);
+              "Expected %s!\n", uri, ct_parts[0],
+              String.implode_nicely((array)http_import_allow_ct, "or"));
       }
     }
 
