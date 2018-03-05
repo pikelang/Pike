@@ -1144,12 +1144,28 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
     (Pike_compiler->compat_major == (MAJOR) && \
      Pike_compiler->compat_minor <= (MINOR)))
 
-#endif /* PROGRAM_H */
 
-/* Kludge... */
-#ifndef LAS_H
-/* FIXME: Needed for the OPT_??? macros.
- * Maybe they should be moved here, since las.h includes this file anyway?
- */
-#include "las.h"
-#endif /* !LAS_H */
+#define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
+				    * only used in node_info
+				    */
+#define OPT_NOT_CONST       0x2    /* isn't constant */
+#define OPT_SIDE_EFFECT     0x4    /* has side effects */
+#define OPT_ASSIGNMENT      0x8    /* does assignments */
+#define OPT_TRY_OPTIMIZE    0x10   /* might be worth optimizing */
+#define OPT_EXTERNAL_DEPEND 0x20   /* the value depends on external
+				    * influences (such as read_file or so)
+				    */
+#define OPT_CASE            0x40   /* contains case(s) */
+#define OPT_CONTINUE        0x80   /* contains continue(s) */
+#define OPT_BREAK           0x100  /* contains break(s) */
+#define OPT_RETURN          0x200  /* contains return(s) */
+#define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
+#define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
+#define OPT_APPLY           0x1000 /* contains apply */
+#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
+				    * parent also is optimized away */
+#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
+				    * isn't counted as side effect). Only used
+				    * in tree_info. */
+
+#endif /* PROGRAM_H */

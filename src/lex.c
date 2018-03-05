@@ -5,6 +5,7 @@
 */
 
 #include "global.h"
+#include "las.h"
 #include "lex.h"
 #include "bignum.h"
 #include "pike_compiler.h"

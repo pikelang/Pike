@@ -21,6 +21,7 @@
 #include "pike_error.h"
 #include "rbtree_low.h"
 #include "svalue.h"
+#include "las.h"
 
 #ifdef TEST_MULTISET
 #include "builtin_functions.h"

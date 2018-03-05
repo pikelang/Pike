@@ -11,6 +11,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "gc.h"
+#include "opcodes.h"
 
 DECLARATIONS
 
