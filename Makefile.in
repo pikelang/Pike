@@ -19,7 +19,7 @@ sass.o : $(SRCDIR)/sass.c
 LOCAL_GENERATED_FILES=configure config.cache config.h config.log \
 	config.status config.warnings config.h.in~ make_variables modlist_segment \
 	propagated_variables remake sass.o module.so module.pmod Makefile \
-  dependencies linker_options sass.c
+  dependencies linker_options sass.c testsuite
 
 localdevclean: $(DUMMY)
 	-rm -f $(LOCAL_GENERATED_FILES)
