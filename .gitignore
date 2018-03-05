@@ -12,6 +12,8 @@ modlist_segment
 module.pmod
 module.so
 propagated_variables
+linker_options
+dependencies
 sass.c
 *.o
 plib/
