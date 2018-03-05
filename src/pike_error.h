@@ -47,15 +47,9 @@ static inline void Pike_fatal (const char *fmt, ...)
 #define LOW_LONGJMP(X, Y)	longjmp(X, Y)
 #endif
 
-#if 1
 PMOD_EXPORT extern const char msg_fatal_error[];
 #define Pike_fatal \
  (fprintf(stderr,msg_fatal_error,__FILE__,(long)__LINE__),debug_fatal)
-#else
-/* This is useful when debugging assembler code sometimes... -Hubbe */
-#define Pike_fatal \
- (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
-#endif
 
 #define pike_fatal_dloc							\
  (fprintf (stderr, msg_fatal_error, DLOC_ARGS), debug_fatal)
