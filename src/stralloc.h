@@ -12,10 +12,6 @@
 
 #define STRINGS_ARE_SHARED
 
-#ifndef STRUCT_PIKE_STRING_DECLARED
-#define STRUCT_PIKE_STRING_DECLARED
-#endif
-
 enum string_type {
     STRING_ALLOC_STATIC   =0,
     STRING_ALLOC_MALLOC   =1,

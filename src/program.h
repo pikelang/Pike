@@ -129,11 +129,6 @@ struct node_s;
 typedef struct node_s node;
 #endif
 
-#ifndef STRUCT_OBJECT_DECLARED
-#define STRUCT_OBJECT_DECLARED
-struct object;
-#endif
-
 #undef EXTERN
 #undef STRUCT
 #undef PUSH

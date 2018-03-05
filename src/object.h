@@ -12,9 +12,6 @@
 
 /* a destructed object has no program */
 
-#ifndef STRUCT_OBJECT_DECLARED
-#define STRUCT_OBJECT_DECLARED
-#endif
 struct object
 {
   INT32 refs;

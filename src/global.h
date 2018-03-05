@@ -104,25 +104,17 @@
 #define NO_FIX_MALLOC
 #endif
 
-#ifndef STRUCT_PROGRAM_DECLARED
-#define STRUCT_PROGRAM_DECLARED
-struct program;
-#endif
-
-struct function;
-#ifndef STRUCT_SVALUE_DECLARED
-#define STRUCT_SVALUE_DECLARED
-struct svalue;
-#endif
-struct sockaddr;
-struct object;
 struct array;
+struct function;
+struct mapping;
+struct multiset;
+struct object;
+struct pike_string;
+struct program;
+struct sockaddr;
 struct svalue;
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
 struct timeval;
-#endif
+
 
 #ifndef CONFIGURE_TEST
 /* machine.h doesn't exist if we're included from a configure test

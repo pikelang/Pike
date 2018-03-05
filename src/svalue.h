@@ -10,36 +10,6 @@
 #include "global.h"
 #include "buffer.h"
 
-#ifndef STRUCT_ARRAY_DECLARED
-#define STRUCT_ARRAY_DECLARED
-struct array;
-#endif
-
-#ifndef STRUCT_MAPPING_DECLARED
-#define STRUCT_MAPPING_DECLARED
-struct mapping;
-#endif
-
-#ifndef STRUCT_MULTISET_DECLARED
-#define STRUCT_MULTISET_DECLARED
-struct multiset;
-#endif
-
-#ifndef STRUCT_OBJECT_DECLARED
-#define STRUCT_OBJECT_DECLARED
-struct object;
-#endif
-
-#ifndef STRUCT_PROGRAM_DECLARED
-#define STRUCT_PROGRAM_DECLARED
-struct program;
-#endif
-
-#ifndef STRUCT_PIKE_STRING_DECLARED
-#define STRUCT_PIKE_STRING_DECLARED
-struct pike_string;
-#endif
-
 #ifndef STRUCT_CALLABLE_DECLARED
 #define STRUCT_CALLABLE_DECLARED
 struct callable;
@@ -82,11 +52,6 @@ union anything
   char *loc;			/* Only used for free svalue debugging. */
 #endif
 };
-
-#ifndef STRUCT_SVALUE_DECLARED
-#define STRUCT_SVALUE_DECLARED
-#endif
-
 
 /* The native types.
  *
