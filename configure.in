@@ -22,7 +22,7 @@ AC_SEARCH_LIBS(sass_language_version, sass,
   [ AC_DEFINE([HAVE_LIBSASS_LANGUAGE_VERSION], [1]) ])
 
 AC_SEARCH_LIBS(sass_delete_options, sass,
-  [ AC_DEFINE([HAVE_LIBSASS_LANGUAGE_VERSION], [1]) ])
+  [ AC_DEFINE([HAVE_LIBSASS_DELETE_VERSION], [1]) ])
 
 
 AC_SUBST(CMOD_CFLAGS)
