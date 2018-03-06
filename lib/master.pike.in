@@ -3173,7 +3173,10 @@ class CompatResolver
 
   //! This function is called whenever an #include directive is
   //! encountered. It receives the argument for #include and should
-  //! return the file name of the file to include
+  //! return the file name of the file to include.
+  //!
+  //! @seealso
+  //!   @[read_include()]
   string handle_include(string f,
 			string current_file,
 			int local_include)
@@ -3200,7 +3203,10 @@ class CompatResolver
     return 0;
   }
 
+  //! Read the file specified by @[handle_include()].
   //!
+  //! @seealso
+  //!   @[handle_include()]
   string read_include(string f)
   {
     AUTORELOAD_CHECK_FILE(f);
@@ -4039,6 +4045,7 @@ string decode_charset(string data, string charset)
 }
 
 
+//! Class used by @[describe_backtrace() to describe values in backtraces.
 class Describer
 {
   int clipped=0;
