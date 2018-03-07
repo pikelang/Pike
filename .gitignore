@@ -6,7 +6,6 @@ config.log
 config.status
 config.h
 config.warnings
-config.h.in
 make_variables
 modlist_segment
 module.pmod
@@ -15,7 +14,10 @@ propagated_variables
 linker_options
 dependencies
 testsuite
+stamp-h
 sass.c
+remake
+*.feature
 *.o
 plib/
 refdoc/
