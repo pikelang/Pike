@@ -388,7 +388,7 @@ class Curve {
     }
 
     //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
-    //! See @rfc{5280:4.1.2.7@}.
+    //! See @rfc{5280:4.1.2.7@} and @rfc{5480:2.2@}.
     Sequence pkcs_public_key()
     {
       return Sequence(({
