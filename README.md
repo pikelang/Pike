@@ -3,9 +3,6 @@ A Pike module wrapper for libsass.
 
 ## How to install
 
-First off you'll need [`libsass`](http://sass-lang.com/libsass) installed.
-In Ubuntu/Debian you can get it via `sudo apt install libsass`.
-
  * `git clone https://github.com/poppa/pike-libsass.git`
 
  * `cd pike-libsass`
