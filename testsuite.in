@@ -4,11 +4,11 @@ START_MARKER
   test_true([[ Tools.Sass.libsass_version() != "" ]])
 
   test_do([[
-    Tools.Sass.Compiler sassc = Tools.Sass.Compiler();
-    sassc->set_options(([ "include_path" : "./",
-                          "output_style" : Tools.Sass.STYLE_COMPRESSED ]));
-    add_constant("sassc", sassc);
-    add_constant("sassopt", sassc->set_options);
+    Tools.Sass.Compiler c = Tools.Sass.Compiler();
+    c->set_options(([ "include_path" : "./",
+                      "output_style" : Tools.Sass.STYLE_COMPRESSED ]));
+    add_constant("sassc", c);
+    add_constant("sassopt", c->set_options);
     add_constant("scss_str", #"
       $color: #0087cc;
 
@@ -28,11 +28,17 @@ START_MARKER
   test_eval_error([[ sassopt(([ "source_map_root"     : 1     ])) ]])
   test_eval_error([[ sassopt(([ "omit_source_map_url" : "y"   ])) ]])
   test_eval_error([[ sassopt(([ "source_comments"     : "y"   ])) ]])
+  test_eval_error([[ sassopt(([ "precision"           : "y"   ])) ]])
   test_eval_error([[ sassopt(([ "unknown_opt"         : "y"   ])) ]])
 
   dnl *** End: Should raise errors
 
-  test_eq([[ sassc->include_path ]], "./")
+  test_do([[
+    sassopt(([ "include_path" : "./",
+               "output_style" : Tools.Sass.STYLE_COMPRESSED ]));
+  ]])
+
+  test_eq(sassc->include_path, "./")
 
   dnl *** Simple compile_string tests
 
@@ -120,7 +126,7 @@ START_MARKER
   test_eq([[ scss_comp_map->file ]], "teststyle.css")
   test_equal([[ scss_comp_map->sources ]], ({ "teststyle.scss","_testvars.scss" }))
   test_eq([[ scss_comp_map->mappings ]],
-          [[ "AAIM,AAAA,IAAI,CAAC;EACH,WAAW,ECHL,KAAK;CDQZ;;AAND,AAGE,IAHE,"
+          [[ "AAIM,AAAA,IAAI,CAAC;EACH,WAAW,ECHL,KAAK;CDQZ;;AAND,ACCE,IDDE,"
              "CAGF,IAAI,ACFH,QAAQ,CAAC;EACR,KAAK,EALD,IAAI;CAMT" ]])
 
 
