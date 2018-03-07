@@ -12,15 +12,28 @@ OBJS=sass.o
 
 @dynamic_module_makefile@
 
-sass.o : $(SRCDIR)/sass.c
+libsass: libsass-install libsass-symlink
+
+libsass-install:
+	cd $(SRCDIR)/vendor/libsass && make shared && sudo make install-shared
+
+libsass-symlink:
+	sudo ln -s /usr/local/lib/libsass.so /usr/lib/libsass.so
+
+libsass-clean:
+	cd $(SRCDIR)/vendor/libsass && make clean
+
+sass.o: $(SRCDIR)/sass.c
 
 @dependencies@
 
 LOCAL_GENERATED_FILES=configure config.cache config.h config.log \
 	config.status config.warnings config.h.in~ make_variables modlist_segment \
 	propagated_variables remake sass.o module.so module.pmod Makefile \
-  dependencies linker_options sass.c testsuite
+  dependencies linker_options sass.c testsuite pike_Sass.feature
 
-localdevclean: $(DUMMY)
+clean-as-shit: libsass-clean localdevclean
+
+localdevclean: clean
 	-rm -f $(LOCAL_GENERATED_FILES)
 	-rm -rf autom4te.cache plib refdoc

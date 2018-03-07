@@ -1,31 +1,44 @@
 AC_INIT(sass.cmod)
-AC_CONFIG_HEADERS(config.h)
-# AC_ARG_WITH(sass,     [  --with(out)-sass       Support for SASS],[],[with_sass=yes])
+AC_ARG_WITH(sass,     [  --with(out)-sass       Support for SASS],[],[with_sass=yes])
 AC_MODULE_INIT()
 
-AH_TEMPLATE([HAVE_LIBSASS_LANGUAGE_VERSION],
-            [Define to 1 if libsass has sass_language_version()])
+AC_CONFIG_HEADERS(config.h)
 
-AH_TEMPLATE([HAVE_LIBSASS_DELETE_OPTIONS],
-            [Define to 1 if libsass has sass_delete_options()])
-
-CMOD_LIBS="-lsass"
-CMOD_CFLAGS=""
-
+PIKE_FEATURE_NODEP(Sass)
+PIKE_FEATURE_WITHOUT(Sass)
 AC_HAVE_HEADERS(inttypes.h)
 AC_CHECK_HEADERS([sass.h])
+AC_DEFINE(HAVE_LIBSASS, [], [True if LIBSASS is available])
 
-#
-# Check for features in libsass
-#
-AC_SEARCH_LIBS(sass_language_version, sass,
-  [ AC_DEFINE([HAVE_LIBSASS_LANGUAGE_VERSION], [1]) ])
+if test x"$ac_cv_header_sass_h" != "xyes"; then
+  with_sass="no"
+fi
 
-AC_SEARCH_LIBS(sass_delete_options, sass,
-  [ AC_DEFINE([HAVE_LIBSASS_DELETE_VERSION], [1]) ])
+if test x$with_sass = xyes; then
+  AC_DEFINE(HAVE_LIBSASS)
+
+  CMOD_LIBS=" -lsass"
+  CMOD_CFLAGS=""
+
+  AC_SUBST(CMOD_CFLAGS)
+  AC_SUBST(CMOD_LIBS)
+
+  #
+  # Check for features in libsass
+  #
+  AC_CHECK_LIB(sass, sass_delete_options, [
+    LIBS="${LIBS-} -lsass"
+    AC_DEFINE(HAVE_LIBSASS_DELETE_OPTIONS, [1], [Defined if sass_delete_options is available ])
+  ])
+
+  AC_CHECK_LIB(sass, libsass_language_version, [
+    LIBS="${LIBS-} -lsass"
+    AC_DEFINE(HAVE_LIBSASS_LANGUAGE_VERSION, [1], [True if libsass_language_version() is available])
+  ])
 
 
-AC_SUBST(CMOD_CFLAGS)
-AC_SUBST(CMOD_LIBS)
+  PIKE_FEATURE_OK(Sass)
 
-AC_OUTPUT(Makefile)
+fi
+
+AC_OUTPUT(Makefile, echo FOO >stamp-h)
