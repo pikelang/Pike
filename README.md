@@ -1,8 +1,7 @@
 # pike-libsass
 A Pike module wrapper for libsass.
 
-How to install
-_______________
+## How to install
 
 First off you'll need [`libsass`](http://sass-lang.com/libsass) installed.
 In Ubuntu/Debian you can get it via `sudo apt install libsass`.
@@ -26,10 +25,9 @@ There are some helper scripts here that are useful:
  * `./mi` will run `pike -x module && sudo pike -x module install`
 
 **NOTE!** This make/install stuff is just an interim solution to be able to build `libsass` from source. The final solution will be fully integrated with the Pike build steps.
- 
 
-How to use
-__________
+
+## How to use
 
 It's pretty straight forward to use:
 
