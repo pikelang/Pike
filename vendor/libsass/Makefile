@@ -257,16 +257,24 @@ static: $(STATICLIB)
 shared: $(SHAREDLIB)
 
 $(DESTDIR)$(PREFIX):
-	$(MKDIR) $(DESTDIR)$(PREFIX)
+	if [ ! -d "$(DESTDIR)$(PREFIX)" ]; then \
+		$(MKDIR) $(DESTDIR)$(PREFIX); \
+	fi
 
 $(DESTDIR)$(PREFIX)/lib: $(DESTDIR)$(PREFIX)
-	$(MKDIR) $(DESTDIR)$(PREFIX)/lib
+	if [ ! -d "$(DESTDIR)$(PREFIX)/lib" ]; then \
+		$(MKDIR) $(DESTDIR)$(PREFIX)/lib; \
+	fi
 
 $(DESTDIR)$(PREFIX)/include: $(DESTDIR)$(PREFIX)
-	$(MKDIR) $(DESTDIR)$(PREFIX)/include
+	if [ ! -d "$(DESTDIR)$(PREFIX)/include" ]; then \
+		$(MKDIR) $(DESTDIR)$(PREFIX)/include; \
+	fi
 
 $(DESTDIR)$(PREFIX)/include/sass: $(DESTDIR)$(PREFIX)/include
-	$(MKDIR) $(DESTDIR)$(PREFIX)/include/sass
+	if [ ! -d "$(DESTDIR)$(PREFIX)/include/sass" ]; then \
+		$(MKDIR) $(DESTDIR)$(PREFIX)/include/sass; \
+	fi
 
 $(DESTDIR)$(PREFIX)/include/%.h: include/%.h \
                                  $(DESTDIR)$(PREFIX)/include \
@@ -297,6 +305,22 @@ install-static: $(DESTDIR)$(PREFIX)/lib/libsass.a
 
 install-shared: $(DESTDIR)$(PREFIX)/lib/libsass.so \
                 install-headers
+
+uninstall: uninstall-$(BUILD)
+
+uninstall-static:
+	$(RM) $(DESTDIR)$(PREFIX)/lib/libsass.a
+
+uninstall-shared:
+	$(RM) $(DESTDIR)$(PREFIX)/lib/libsass.so \
+				$(DESTDIR)$(PREFIX)/include/sass.h \
+				$(DESTDIR)$(PREFIX)/include/sass2scss.h \
+				$(DESTDIR)$(PREFIX)/include/sass/base.h \
+				$(DESTDIR)$(PREFIX)/include/sass/version.h \
+				$(DESTDIR)$(PREFIX)/include/sass/values.h \
+				$(DESTDIR)$(PREFIX)/include/sass/context.h \
+				$(DESTDIR)$(PREFIX)/include/sass/functions.h
+
 
 $(SASSC_BIN): $(BUILD)
 	$(MAKE) -C $(SASS_SASSC_PATH) build-$(BUILD)-dev
