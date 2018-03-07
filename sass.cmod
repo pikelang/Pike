@@ -4,9 +4,6 @@
 || for more information.
 */
 
-//#define SASS_DEBUG
-
-#include "config.h"
 #include "global.h"
 #include "interpret.h"
 #include "module.h"
@@ -17,9 +14,7 @@
 #include "svalue.h"
 #include "pike_types.h"
 
-#include <sass.h>
-#include "pike_sass.h"
-
+#include "config.h"
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -27,7 +22,13 @@
 #undef PACKAGE_URL
 #undef PACKAGE_VERSION
 
+
 DECLARATIONS
+
+#ifdef HAVE_LIBSASS
+
+#include "pike_sass.h"
+#include <sass.h>
 
 /*! @module Tools
  */
@@ -131,14 +132,14 @@ PIKECLASS Api
     sass_option_set_output_style (s_opts, THIS->output_style);
 
     if (THIS->include_path) {
-      sass_option_set_include_path (s_opts, THIS->include_path->str);
+      sass_option_set_include_path (s_opts, strdup (THIS->include_path->str));
     }
 
     sass_option_set_omit_source_map_url (s_opts, THIS->omit_source_map_url);
     sass_option_set_source_comments (s_opts, THIS->source_comments);
 
     if (THIS->source_map_file != NULL) {
-      sass_option_set_source_map_file (s_opts, THIS->source_map_file->str);
+      sass_option_set_source_map_file (s_opts, strdup (THIS->source_map_file->str));
       sass_option_set_omit_source_map_url (s_opts, false);
       sass_option_set_source_map_contents (s_opts, true);
     }
@@ -147,7 +148,7 @@ PIKECLASS Api
     }
 
     if (THIS->source_map_root != NULL) {
-      sass_option_set_source_map_root (s_opts, THIS->source_map_root->str);
+      sass_option_set_source_map_root (s_opts, strdup (THIS->source_map_root->str));
     }
   }
 
@@ -165,18 +166,8 @@ PIKECLASS Api
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
     if (&THIS->__importer_cb != NULL) {
-      // JMP_BUF recovery;
-      // if (SETJMP (recovery)) {
-      //   UNSETJMP (recovery);
-      //   THIS->thrown_err = throw_value;
-      //   SASS_TRACE ("Got error, perhaps find out how to set a SASS error?\n");
-      //   return NULL;
-      // }
-
       push_text (path);
       apply_svalue (&THIS->__importer_cb, 1);
-
-      // UNSETJMP (recovery);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         SASS_TRACE ("Got return value from import: %s\n",
@@ -359,7 +350,7 @@ PIKEFUN string sass2scss_version ()
 
 
 #if HAVE_LIBSASS_LANGUAGE_VERSION
-/* Returns the @tt{language@} version of Sass this module was compiled against
+/*! Returns the @tt{language@} version of Sass this module was compiled against
 */
 PIKEFUN string libsass_language_version ()
 {
@@ -467,3 +458,18 @@ PIKE_MODULE_EXIT
  */
 /*! @endmodule
  */
+
+#else  /* HAVE_LIBSASS */
+
+PIKE_MODULE_INIT
+{
+  printf ("libsass not available\n");
+  INIT
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+
+#endif /* HAVE_LIBSASS */

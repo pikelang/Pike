@@ -26,7 +26,7 @@ inherit Tools@module@;
 //!
 //! // Minify the output and create a source map file.
 //! compiler->set_options(([
-//!   "output_style" : Tools.Sass.STYLE_COMPRESSED
+//!   "output_style" : Tools.Sass.STYLE_COMPRESSED,
 //!   "source_map_file" : "path/to/write/source.map"
 //! ]));
 //!
@@ -123,7 +123,7 @@ class Compiler
   // Documented in the CMOD
   void `include_path=(string(8bit) path)
   {
-    if (check_file_access && !Stdio.exist(path)) {
+    if (check_file_access && stringp(path) && !Stdio.exist(path)) {
       error("Include path %q does not exist!\n", path);
     }
 
@@ -132,11 +132,10 @@ class Compiler
 
 
   // Documented in the CMOD
-  string `include_path()
+  string(8bit) `include_path()
   {
     return ::include_path;
   }
-
 
   //! Compile the file @[input_file] and return the result
   //!
@@ -242,9 +241,6 @@ class Compiler
       switch (opt)
       {
         case "output_style":
-          if (!intp(val)) {
-            error("Value to `output_style` must be an integer!\n");
-          }
           if (!(< STYLE_NESTED, STYLE_COMPRESSED, STYLE_COMPACT,
                   STYLE_EXPANDED >)[val])
           {
@@ -254,45 +250,31 @@ class Compiler
           break;
 
         case "include_path":
-          if (!stringp(val)) {
-            error("Value to `include_path` must be a string!\n");
-          }
           include_path = val;
           break;
 
         case "source_map_file":
-          if (!stringp(val)) {
-            error("Value to `source_map_file` must be a string!\n");
-          }
           source_map_file = val;
           break;
 
         case "source_map_embed":
-          if (!intp(val)) {
-            error("Value to  `source_map_embed` must be an int(0..1)!\n");
-          }
           source_map_embed = val;
           break;
 
         case "source_map_root":
-          if (!stringp(val)) {
-            error("Value to `source_map_root` must be a string!\n");
-          }
           source_map_root = val;
           break;
 
         case "omit_source_map_url":
-          if (!intp(val)) {
-            error("Value to `omit_source_map_url` must be an integer!\n");
-          }
           omit_source_map_url = val;
           break;
 
         case "source_comments":
-          if (!intp(val)) {
-            error("Value to `source_comments` must be an integer!\n");
-          }
           source_comments = val;
+          break;
+
+        case "precision":
+          precision = val;
           break;
 
         default:
