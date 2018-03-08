@@ -2,7 +2,7 @@
 #define PIKE_SASS_H
 
 
-#ifdef SASS_DEBUG
+#ifdef PIKE_SASS_DEBUG
 # define SASS_TRACE(X...) printf ("# " X)
 #else
 # define SASS_TRACE(X...)

@@ -3,9 +3,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* True if LIBSASS is available */
-#undef HAVE_LIBSASS
-
 /* Defined if sass_delete_options is available */
 #undef HAVE_LIBSASS_DELETE_OPTIONS
 
@@ -56,6 +53,9 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
+
+/* Defined if --with-sass-debug */
+#undef PIKE_SASS_DEBUG
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

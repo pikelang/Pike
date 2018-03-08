@@ -32,6 +32,10 @@ LOCAL_GENERATED_FILES=configure config.cache config.h config.log \
 	propagated_variables remake sass.o module.so module.pmod Makefile \
   dependencies linker_options sass.c testsuite pike_Sass.feature
 
+clean-conf: localdevclean
+	-rm -f config.h.in
+	autoheader
+
 clean-as-shit: libsass-clean localdevclean
 
 localdevclean: clean
