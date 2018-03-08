@@ -15,17 +15,10 @@
 #include "pike_types.h"
 
 #include "config.h"
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_URL
-#undef PACKAGE_VERSION
-
 
 DECLARATIONS
 
-#ifdef HAVE_LIBSASS
+#ifdef HAVE_SASS_H
 
 #include "pike_sass.h"
 #include <sass.h>
@@ -52,8 +45,6 @@ DECLARATIONS
  */
 PIKECLASS Api
 {
-  // CVAR struct svalue thrown_err;
-
   /*! @decl int(0..3) output_style = 0
    *! @appears Tools.Sass.Compiler.output_style
    *!
@@ -120,8 +111,8 @@ PIKECLASS Api
 
   // Used to resolve external imports. Set by default from the constructor
   // in Compiler in module.pmod.
-  PIKEVAR function(string:string) __importer_cb
-    flags ID_PRIVATE;
+  PIKEVAR function(string(8bit):string(8bit)) __importer_cb
+    flags ID_PROTECTED;
 
 
   void set_options (struct Sass_Context *ctx)
@@ -132,14 +123,16 @@ PIKECLASS Api
     sass_option_set_output_style (s_opts, THIS->output_style);
 
     if (THIS->include_path) {
-      sass_option_set_include_path (s_opts, strdup (THIS->include_path->str));
+      sass_option_set_include_path (
+        s_opts, sass_copy_c_string (THIS->include_path->str));
     }
 
     sass_option_set_omit_source_map_url (s_opts, THIS->omit_source_map_url);
     sass_option_set_source_comments (s_opts, THIS->source_comments);
 
     if (THIS->source_map_file != NULL) {
-      sass_option_set_source_map_file (s_opts, strdup (THIS->source_map_file->str));
+      sass_option_set_source_map_file (
+        s_opts, sass_copy_c_string (THIS->source_map_file->str));
       sass_option_set_omit_source_map_url (s_opts, false);
       sass_option_set_source_map_contents (s_opts, true);
     }
@@ -148,7 +141,8 @@ PIKECLASS Api
     }
 
     if (THIS->source_map_root != NULL) {
-      sass_option_set_source_map_root (s_opts, strdup (THIS->source_map_root->str));
+      sass_option_set_source_map_root (
+        s_opts, sass_copy_c_string (THIS->source_map_root->str));
     }
   }
 
@@ -174,9 +168,10 @@ PIKECLASS Api
                     Pike_sp[-1].u.string->str);
 
         Sass_Import_List list = sass_make_import_list (1);
-        list[0] = sass_make_import_entry (path,
-                                          strdup (Pike_sp[-1].u.string->str),
-                                          0);
+        list[0] = sass_make_import_entry (
+            sass_copy_c_string (path),
+            sass_copy_c_string (Pike_sp[-1].u.string->str),
+            0);
         return list;
       }
     }
@@ -185,20 +180,12 @@ PIKECLASS Api
   }
 
 
-  /* This is a strictly internal method that's called from the constructor of
-   * the implementing class inheriting this one. The callback @fn should
-   * only resolve external URI:s.
-   */
-  PIKEFUN void __set_importer_callback (function(string:string) fn)
-  flags ID_PROTECTED;
-  {
-    if (fn && TYPEOF (*fn) == T_FUNCTION) {
-      assign_svalue (&THIS->__importer_cb, fn);
-    }
-    else {
-      SIMPLE_ARG_TYPE_ERROR ("fn", 1, "function");
-    }
-  }
+#define SAFE_FREE_IMPORTER_CB()           \
+  do {                                    \
+    if (&THIS->__importer_cb != NULL) {   \
+      free_svalue (&THIS->__importer_cb); \
+    }                                     \
+  } while (0)
 
 
 #define SASS_COMPILE_FILE_ERR(X...)    \
@@ -217,7 +204,7 @@ PIKECLASS Api
     struct Sass_File_Context *ctx;
     struct Sass_Context      *ctx_out;
 
-    ctx = sass_make_file_context (strdup (input_file->str));
+    ctx = sass_make_file_context (sass_copy_c_string (input_file->str));
     ctx_out = sass_file_context_get_context (ctx);
 
     set_options (ctx_out);
@@ -225,11 +212,6 @@ PIKECLASS Api
     REGISTER_IMPORTER (ctx_out);
 
     int err = sass_compile_file_context (ctx);
-
-    // if (&THIS->thrown_err != NULL) {
-    //   sass_delete_file_context (ctx);
-    //   Pike_error ("%s", THIS->thrown_err.u.string->str);
-    // }
 
     if (err) {
       const char *errstr = strdup (sass_context_get_error_message (ctx_out));
@@ -282,12 +264,25 @@ PIKECLASS Api
 
   // Compile the string source and return a string.
   // This method is over ridden in the pmod
+
+  /*! @decl string(8bit) compile_string(string(8bit) source)
+   *! @appears Tools.Sass.Compiler.compile_string()
+   *!
+   *! Compiles the string @[source] and returns the generated CSS.
+   *!
+   *! @note
+   *!  If the @[source] contain @tt{@@import@} directives you have to
+   *!  explicitly set the include path via @[include_path].
+   *!
+   *! @param source
+   *!  The string to compile
+   */
   PIKEFUN string(8bit) compile_string (string(8bit) source)
   {
     struct Sass_Data_Context *ctx;
     struct Sass_Context      *ctx_out;
 
-    ctx = sass_make_data_context (strdup (source->str));
+    ctx = sass_make_data_context (sass_copy_c_string (source->str));
     ctx_out = sass_data_context_get_context (ctx);
 
     set_options (ctx_out);
@@ -295,11 +290,6 @@ PIKECLASS Api
     REGISTER_IMPORTER (ctx_out);
 
     sass_compile_data_context (ctx);
-
-    // if (&THIS->thrown_err != NULL) {
-    //   sass_delete_data_context (ctx);
-    //   Pike_error ("%s", THIS->thrown_err.u.string->str);
-    // }
 
     int err = sass_context_get_error_status (ctx_out);
 
@@ -319,10 +309,10 @@ PIKECLASS Api
     SASS_TRACE ("INIT __Sass.Api\n");
     THIS->precision = 5;
     THIS->output_style = SASS_STYLE_NESTED;
-    // THIS->thrown_err;
   }
 
   EXIT {
+    SAFE_FREE_IMPORTER_CB ();
     SASS_TRACE ("EXIT __Sass.Api\n");
   }
 }
@@ -350,8 +340,10 @@ PIKEFUN string sass2scss_version ()
 
 
 #if HAVE_LIBSASS_LANGUAGE_VERSION
-/*! Returns the @tt{language@} version of Sass this module was compiled against
-*/
+/*! @decl string libsass_language_version()
+ *!
+ *! Returns the @tt{language@} version of Sass this module was compiled against
+ */
 PIKEFUN string libsass_language_version ()
 {
   push_text (libsass_language_version ());
@@ -459,17 +451,9 @@ PIKE_MODULE_EXIT
 /*! @endmodule
  */
 
-#else  /* HAVE_LIBSASS */
+#else  /* HAVE_SASS_H */
 
-PIKE_MODULE_INIT
-{
-  printf ("libsass not available\n");
-  INIT
-}
-
-PIKE_MODULE_EXIT
-{
-  EXIT
-}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 
 #endif /* HAVE_LIBSASS */
