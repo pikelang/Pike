@@ -147,7 +147,6 @@ START_MARKER
     add_constant("scss_comp_map");
     add_constant("scss_str");
     add_constant("sassopt");
-    destruct(sassc);
     add_constant("sassc");
   ]])
 
