@@ -36,10 +36,80 @@ inherit Tools@module@;
 //! @endcode
 class Compiler
 {
+  // NOTE: The only reason for this wrapper class is to be able to explicily
+  //       destruct the real compiler. There's a cyclic reference between
+  //       the compiler and the import callback in the real compiler so it
+  //       won't be destructed when it runs out of scope. If it can be solved
+  //       internally in the Low_Compiler this class no longer has a purpose
+
+  //! @ignore
+  protected Low_Compiler compiler;
+
+  protected void create()
+  {
+    compiler = Low_Compiler();
+  }
+
+#define SETTER(T,P) \
+  public void ` ## P ## =(T value) { compiler-> ## P = value; }
+
+#define GETTER(T,P) \
+  public T ` ## P ## () { return compiler-> ## P; }
+
+#define GETTER_SETTER(T,P) \
+  GETTER(T,P) \
+  SETTER(T,P)
+
+  GETTER_SETTER(int(0..2),              http_import)
+  GETTER_SETTER(multiset(string(8bit)), http_import_allow_ct)
+  GETTER_SETTER(bool,                   check_file_access)
+  GETTER_SETTER(string(8bit),           include_path)
+  GETTER_SETTER(int(0..3),              output_style)
+  GETTER_SETTER(string(8bit),           source_map_file)
+  GETTER_SETTER(string(8bit),           source_map_root)
+  GETTER_SETTER(int(0..),               precision)
+  GETTER_SETTER(int(0..1),              source_comments)
+  GETTER_SETTER(int(0..1),              source_map_embed)
+  GETTER_SETTER(int(0..1),              omit_source_map_url)
+
+  mapping(string(8bit):string(8bit)) compile_file(string(8bit) input_file)
+  {
+    return compiler->compile_file(input_file);
+  }
+
+  variant void compile_file(string(8bit) input_file, string(8bit) output_file)
+  {
+    compiler->compile_file(input_file, output_file);
+  }
+
+  string(8bit) compile_string(string(8bit) source)
+  {
+    return compiler->compile_string(source);
+  }
+
+  void set_options(mapping(string(8bit):string(8bit)|int) opts)
+  {
+    compiler->set_options(opts);
+  }
+
+  protected void _destruct()
+  {
+    if (compiler) {
+      destruct(compiler);
+    }
+  }
+  //! @endignore
+}
+
+
+class Low_Compiler
+{
   //! @ignore
   inherit Tools@module@.Api;
   //! @endignore
 
+  //! @appears Tools.Sass.Compiler.http_import
+  //!
   //! If a Sass file is importing an external URI this flag determines if
   //! thats allowed at all, or if the content type of the imported file has
   //! to be in @[http_import_allow_ct], or if anything goes.
@@ -50,13 +120,16 @@ class Compiler
   //!  @[HTTP_IMPORT_ANY].
   public int(0..2) http_import = HTTP_IMPORT_NONE;
 
-
+  //! @appears Tools.Sass.Compiler.http_import_allow_ct
+  //!
   //! List of allowed content types if @[http_import] is set to
   //! @[HTTP_IMPORT_GREEDY]. The default is to allow @tt{text/scss@} and
   //! @tt{text/sass@}.
-  public multiset(string) http_import_allow_ct =
+  public multiset(string(8bit)) http_import_allow_ct =
     (< "text/scss", "text/sass" >);
 
+  //! @appears Tools.Sass.Compiler.check_file_access
+  //!
   //! Should file access be tested right away when paths are set or should that
   //! be left to Sass to handle? The default value is @tt{true@}.
   public bool check_file_access = true;
@@ -65,7 +138,8 @@ class Compiler
   //! @ignore
   protected void create()
   {
-    ::__set_importer_callback(__resolve_import);
+    // __set_importer_callback(__resolve_import);
+    this::__importer_cb = __resolve_import;
   }
   //! @endignore
 
@@ -137,6 +211,8 @@ class Compiler
     return ::include_path;
   }
 
+  //! @appears Tools.Sass.Compiler.compile_file
+  //!
   //! Compile the file @[input_file] and return the result
   //!
   //! @param input_file
@@ -162,6 +238,8 @@ class Compiler
     return ::compile_file(input_file);
   }
 
+  //! @appears Tools.Sass.Compiler.compile_file
+  //!
   //! Compile the file @[input_file] and write the result to @[output_file].
   //! If a source mapping file is set to be generated either via
   //! @[set_options()] or @[source_map_file] it will be written as per
@@ -186,22 +264,8 @@ class Compiler
     }
   }
 
-
-  //! Compile the string @[source]
+  //! @appears Tools.Sass.Compiler.set_options
   //!
-  //! @note
-  //!  If the @[source] contain @tt{@@import@} directives you have to
-  //!  explicitly set the include path via @[include_path].
-  //!
-  //! @param source
-  //!  The string to compile
-  string(8bit) compile_string(string(8bit) source)
-  {
-    string(8bit) out = ::compile_string(source);
-    return out;
-  }
-
-
   //! Set options to the SASS compiler.
   //!
   //! @param opts
@@ -234,6 +298,9 @@ class Compiler
   //!   @member bool "omit_source_map_url"
   //!    Omit the #sourceMappingURL or not.
   //!    See also @[omit_source_map_url]
+  //!
+  //!   @member int "precision"
+  //!    Floating point precision. See also @[precision].
   //!  @endmapping
   void set_options(mapping(string(8bit):string(8bit)|int) opts)
   {
