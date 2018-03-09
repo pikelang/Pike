@@ -213,7 +213,7 @@ array(Token|array) group(array(string|Token) tokens,
       case 0: ret+=({token}); break;
       case 1: stack->push(ret); ret=({token}); break;
       case 2:
-	if (!sizeof(ret) || !stack->ptr ||
+	if (!sizeof(ret) || !sizeof(stack) ||
             (groupings[(string)ret[0]] != (string)token)) {
 #if 0
 	  // Mismatch
