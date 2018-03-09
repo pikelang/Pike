@@ -7,8 +7,8 @@
 //! current size, i.e. pushing an element on an full 32 slot stack will
 //! result in a 64 slot stack with 33 elements.
 
-int ptr;
-array arr;
+protected int ptr;
+protected array arr;
 
 //! Push an element on the top of the stack.
 void push(mixed val)
