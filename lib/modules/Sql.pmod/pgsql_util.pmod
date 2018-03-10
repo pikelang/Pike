@@ -968,35 +968,23 @@ class Result {
               int magnitude = cr->read_sint(2);
               int sign = cr->read_int16();
               cr->consume(2);
-              switch (nwords) {
-                default:
-                  for (value = cr->read_int16();
-                       --nwords;
-                       magnitude--)
-                    value = value * NUMERIC_MAGSTEP + cr->read_int16();
-                  if (sign)
-                    value = -value;
-                  if (magnitude > 0)
-                    do
-                      value *= NUMERIC_MAGSTEP;
-                    while (--magnitude);
-                  else if (magnitude < 0) {
-                    for (sign = NUMERIC_MAGSTEP;
-                         ++magnitude;
-                         sign *= NUMERIC_MAGSTEP);
-                    value = Gmp.mpq(value, sign);
-                  }
-                  break;
-                case 1:
-                  for (value = cr->read_int16();
-                       magnitude--;
-                       value *= NUMERIC_MAGSTEP);
-                  if (sign)
-                    value = -value;
-                  break;
-                case 0:;
-                  value = 0;
-              }
+              if (nwords) {
+                for (value = cr->read_int16(); --nwords; magnitude--)
+                  value = value * NUMERIC_MAGSTEP + cr->read_int16();
+                if (sign)
+                  value = -value;
+                if (magnitude > 0)
+                  do
+                    value *= NUMERIC_MAGSTEP;
+                  while (--magnitude);
+                else if (magnitude < 0) {
+                  for (sign = NUMERIC_MAGSTEP;
+                       ++magnitude;
+                       sign *= NUMERIC_MAGSTEP);
+                  value = Gmp.mpq(value, sign);
+                }
+              } else
+                value = 0;
               if (alltext)
                 value = (string)value;
             }
