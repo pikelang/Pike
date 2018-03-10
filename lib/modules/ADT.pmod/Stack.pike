@@ -7,8 +7,16 @@
 //! current size, i.e. pushing an element on an full 32 slot stack will
 //! result in a 64 slot stack with 33 elements.
 
-protected int ptr;
-protected array arr;
+// NB: There's apparently quite a bit of code that accesses these
+//     directly, so they can't be made protected directly.
+//     Any accesses to ptr should be replaced with sizeof(),
+//     and any to arr with values().
+//
+//     The pragma is to be removed when ptr and arr are declared protected.
+#pragma no_deprecation_warnings
+
+__deprecated__(int) ptr;
+__deprecated__(array) arr;
 
 //! Push an element on the top of the stack.
 void push(mixed val)
