@@ -278,6 +278,9 @@ class Terminfo {
 
   inherit TermMachine;
 
+  protected local constant MAGIC = 0432;	// SysV
+  protected local constant MAGIC2 = 01036;	// Ncurses 6
+
   //!
   array(string) aliases;
 
@@ -342,7 +345,7 @@ class Terminfo {
 
     if (6!=sscanf(swab(f->read(12)), "%2c%2c%2c%2c%2c%2c",
 		  magic, sname, nbool, nnum, nstr, sstr) ||
-	magic != 0432)
+	(magic != MAGIC && magic != MAGIC2))
       return 0;
     aliases = (f->read(sname)-"\0")/"|";
     {
@@ -355,14 +358,23 @@ class Terminfo {
       map = mkmapping(boolnames[..sizeof(bools)-1], bools);
     }
     {
-      array(int) nums = [array(int)]
-	array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
+      array(int) nums;
+      if (magic == MAGIC2) {
+	// 32-bit little-endian integers.
+	nums = array_sscanf(f->read(nnum*4), "%-4c"*nnum);
+      } else {
+	nums = [array(int)]
+	  array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
+      }
       if (sizeof(nums)>sizeof(numnames))
 	nums = nums[..sizeof(numnames)-1];
       mapping(string:int) tmp = mkmapping(numnames[..sizeof(nums)-1], nums);
-      foreach (numnames[..sizeof(nums)-1], string name)
-	if (tmp[name]>=0xfffe)
-	  m_delete(tmp, name);
+      foreach (numnames[..sizeof(nums)-1], string name) {
+	if (tmp[name]>=0xfffe) {
+	  if ((magic == MAGIC) || (tmp[name] >= 0xfffffffe))
+	    m_delete(tmp, name);
+	}
+      }
       map += tmp;
     }
     {
