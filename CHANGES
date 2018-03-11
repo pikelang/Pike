@@ -43,6 +43,10 @@ o SSL.File
 
   Support query_fd() and set_buffer_mode() methods.
 
+o Stdio.Terminfo
+
+  Support the new terminfo format from ncurses 6.
+
 o Thread.ResourceCount
 
   New module to allow threadsafe race-condition-free counting of resources.
