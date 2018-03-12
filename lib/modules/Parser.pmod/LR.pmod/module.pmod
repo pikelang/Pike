@@ -744,7 +744,7 @@ class Parser
 	/* This rule was nullable */
 	new_nullables->push(r->nonterminal);
 
-	while (new_nullables->ptr) {
+	while (sizeof(new_nullables)) {
 	  symbol = [int]new_nullables->pop();
 	  report(NOTICE, "add_rule", "Nulling symbol %s",
 		 symbol_to_string(symbol));
@@ -875,7 +875,7 @@ class Parser
 
     item_stack->push(i);
 
-    i->counter = depth = item_stack->ptr;
+    i->counter = depth = sizeof(item_stack);
 
     foreach (indices(i->relation), Item i2) {
       if (!i2->counter) {
@@ -1684,8 +1684,8 @@ class Parser
 	    /* At end of file */
 	    lr_error |= ERROR_EOF;
 
-	    if (value_stack->ptr != 1) {
-	      if (value_stack->ptr) {
+	    if (sizeof(value_stack) != 1) {
+	      if (sizeof(value_stack)) {
 		report(ERROR, "parse", "Bad state at EOF -- Throwing \"%O\"",
 		       value_stack->pop());
 		state = [object(Kernel)]state_stack->pop();
