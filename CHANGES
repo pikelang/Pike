@@ -197,6 +197,11 @@ o mktime/System.TM
 
   Considerable speedup and a reduction in codesize.
 
+o Unicode
+
+  Avoid scanning the string in NFC mode if the string is 8-bit,
+  as NFC normalization of 8-bit strings is the identity function.
+
 
 Building & Tools
 ----------------
