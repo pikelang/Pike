@@ -43,6 +43,10 @@ class Compiler
   //       internally in the Low_Compiler this class no longer has a purpose
 
   //! @ignore
+  //!
+  //! Ignore the rest of this class. The methods and members are documented in
+  //! @[Low_Compiler]
+
   protected Low_Compiler compiler;
 
   protected void create()
@@ -50,9 +54,13 @@ class Compiler
     compiler = Low_Compiler();
   }
 
+// SETTER(bool, prop) ->
+//    public void `prop=(bool value) { compiler->prop = value; }
 #define SETTER(T,P) \
   public void ` ## P ## =(T value) { compiler-> ## P = value; }
 
+// GETTER(bool, prop) ->
+//    public bool `prop() { return compiler->prop; }
 #define GETTER(T,P) \
   public T ` ## P ## () { return compiler-> ## P; }
 
