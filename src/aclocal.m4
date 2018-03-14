@@ -1809,7 +1809,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 		*ELFCLASS32*)
 		  abi_32=yes
 		  ;;
-		*ELF4*)
+		*ELF64*)
 		  abi_64=yes
 		  ;;
 		*ELF32*)
