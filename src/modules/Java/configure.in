@@ -441,6 +441,21 @@ if test "x$with_java" = xyes; then
           JAVA_LIBS="-lgcj ${JAVA_LIBS}"
           pike_cv_java=yes;
           AC_MSG_RESULT(yes)
+
+	  # Boem-gc used in some versions of gcj (eg 3.3.2) complains
+	  # if it fails to read the page table into a 4096 byte buffer.
+	  # This happens on Solaris/sun4u:
+	  #   GC Warning: Insufficient space for /proc read
+          AC_MSG_CHECKING([for GC_proc_buf_size in -lgcj])
+	  AC_TRY_LINK([#include <stddef.h>],[extern size_t GC_proc_buf_size;
+	    GC_proc_buf_size = 16384;
+	  ],[
+	    AC_DEFINE(HAVE_GC_PROC_BUF_SIZE, [1],
+	      [gcj uses boem-gc, and has GC_proc_buf_size])
+	    AC_MSG_RESULT(yes)
+	  ],[
+	    AC_MSG_RESULT(no)
+	  ])
         else
           AC_MSG_RESULT(no)
         fi

@@ -3821,6 +3821,9 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_JAVA
   struct svalue prog;
+#ifdef HAVE_GC_PROC_BUF_SIZE
+  extern size_t GC_proc_buf_size;
+#endif
 
 #ifdef __NT__
   switch(open_nt_dll()) {
@@ -3845,6 +3848,13 @@ PIKE_MODULE_INIT
     /* Debug... */
     extern char *ibmFindDLL(void);
     fprintf(stderr, "ibmFindDLL(): \"%s\"\n", ibmFindDLL());
+  }
+#endif
+
+#ifdef HAVE_GC_PROC_BUF_SIZE
+  if (GC_proc_buf_size < 16384) {
+    /* Attempt to make Boem-gc in gcj happy. */
+    GC_proc_buf_size = 16384;
   }
 #endif
 
