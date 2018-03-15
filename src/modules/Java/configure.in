@@ -105,10 +105,6 @@ if test "x$with_java" = xyes; then
       # as arch specifier in dirs etc even though uname -m returns "x86_64".
       java_arch_dirs="x86_64 amd64"
     ;;
-    xsparcv9)
-      # FIXME: Is this needed?
-      java_arch_dirs="sparcv9 sparc"
-    ;;
   esac
 
   AC_MSG_CHECKING(what kind of threads to use)
@@ -248,62 +244,9 @@ if test "x$with_java" = xyes; then
     export LIBPATH
   fi
 
-  # FIXME: If several jvm's are installed then we can find the include
-  # files for a different one from the JAVA_HOME search above. This is
-  # not only a matter of having paths in the same order; e.g.
-  # /usr/lib/jvm/* can match more than one viable jvm's.
-
-  AC_MSG_CHECKING(for the Java include directory)
-  AC_CACHE_VAL(pike_cv_java_include_dir, [
-    pike_cv_java_include_dir=no
-    # NB: Reverse priority order (highest priority last).
-    for tmp_java_incdir in /usr/java* \
-			       /usr/local/java* \
-			       /usr/local/jdk* \
-			       /usr/local/jre* \
-			       /usr/java/j2sdk* \
-			       /usr/local/j2sdk* \
-			       /usr/lib/jvm/* \
-			       /usr/jdk/instances/* \
-			       /usr/jdk/latest \
-			       "$pike_cv_java_java_home"/../.. \
-			       "$pike_cv_java_java_home"/.. \
-			       "$pike_cv_java_java_home" \
-			       "$pike_java_user_include_directory"; do
-      if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
-	 pike_cv_java_include_dir="$tmp_java_incdir/include"
-      else
-        if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/Headers/. &&\
-        	  "$LS" "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
-	  pike_cv_java_include_dir="$tmp_java_incdir/Headers"
-	else
-	  :
-	fi
-      fi
-    done
-  ])
-  AC_MSG_RESULT($pike_cv_java_include_dir)
-
-  if test "x$pike_cv_java_include_dir" = xno; then :; else
-    echo "Adding $pike_cv_java_include_dir to the include search path."
-    CPPFLAGS="-I$pike_cv_java_include_dir ${CPPFLAGS}"
-    if test -d "$pike_cv_java_include_dir/$pike_cv_java_sysos/."; then
-      echo "Adding $pike_cv_java_include_dir/$pike_cv_java_sysos to the include search path."
-      CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
-    else
-      :
-    fi
-    for d in "$pike_cv_java_include_dir/$java_arch_dir/."; do
-      if test -d "$d"; then
-	echo "Adding $d to the include search path."
-	CPPFLAGS="-I$d ${CPPFLAGS}"
-      fi
-    done
-  fi
-
   if test x"$pike_cv_java_java_home" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-framework JavaVM, framework_JavaVM, JAVA_FRAMEWORKS)
- 
+
     AC_MSG_CHECKING([for JavaVM (MacOS X)])
     AC_CACHE_VAL(pike_cv_java_javavm, [
       pike_cv_java_javavm=no;
@@ -316,6 +259,65 @@ if test "x$with_java" = xyes; then
       done
     ])
     AC_MSG_RESULT($pike_cv_java_javavm)
+
+    if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
+      AC_CHECK_HEADERS(JavaVM/jni.h)
+    fi
+
+  else
+
+    # FIXME: If several jvm's are installed then we can find the include
+    # files for a different one from the JAVA_HOME search above. This is
+    # not only a matter of having paths in the same order; e.g.
+    # /usr/lib/jvm/* can match more than one viable jvm's.
+
+    AC_MSG_CHECKING(for the Java include directory)
+    AC_CACHE_VAL(pike_cv_java_include_dir, [
+      pike_cv_java_include_dir=no
+      # NB: Reverse priority order (highest priority last).
+      for tmp_java_incdir in /usr/java* \
+			       /usr/local/java* \
+			       /usr/local/jdk* \
+			       /usr/local/jre* \
+			       /usr/java/j2sdk* \
+			       /usr/local/j2sdk* \
+			       /usr/lib/jvm/* \
+			       /usr/jdk/instances/* \
+			       /usr/jdk/latest \
+			       "$pike_cv_java_java_home"/../.. \
+			       "$pike_cv_java_java_home"/.. \
+			       "$pike_cv_java_java_home" \
+			       "$pike_java_user_include_directory"; do
+	if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
+	  pike_cv_java_include_dir="$tmp_java_incdir/include"
+	else
+	  if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/Headers/. &&\
+		  "$LS" "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
+	    pike_cv_java_include_dir="$tmp_java_incdir/Headers"
+	  else
+	    :
+	  fi
+	fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_java_include_dir)
+
+    if test "x$pike_cv_java_include_dir" = xno; then :; else
+      echo "Adding $pike_cv_java_include_dir to the include search path."
+      CPPFLAGS="-I$pike_cv_java_include_dir ${CPPFLAGS}"
+      if test -d "$pike_cv_java_include_dir/$pike_cv_java_sysos/."; then
+	echo "Adding $pike_cv_java_include_dir/$pike_cv_java_sysos to the include search path."
+	CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
+      else
+	:
+      fi
+      for d in "$pike_cv_java_include_dir/$java_arch_dir/."; do
+	if test -d "$d"; then
+	  echo "Adding $d to the include search path."
+	  CPPFLAGS="-I$d ${CPPFLAGS}"
+	fi
+      done
+    fi
   fi
 
   if test osf1 = "$pike_cv_java_sysos"; then
@@ -337,10 +339,6 @@ if test "x$with_java" = xyes; then
   ])
 
   AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h setjmp.h)
-
-  if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
-  AC_CHECK_HEADERS(JavaVM/jni.h)
-  fi
 
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
