@@ -3473,8 +3473,11 @@ CHRONO("apply_matrix");
    if (args>3)
    {
      struct array *a;
-     get_all_args("apply_matrix", args, "%a%d%d%d", &a,
-                  &default_rgb.r, &default_rgb.g, &default_rgb.b);
+     int r, g, b;
+     get_all_args("apply_matrix", args, "%a%d%d%d", &a, &r, &g, &b);
+     default_rgb.r = r;
+     default_rgb.g = g;
+     default_rgb.b = b;
    }
    else
    {
