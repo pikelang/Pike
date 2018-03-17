@@ -477,6 +477,7 @@ PIKECLASS Result
    */
   PIKEFUN array|int typed_query(string query,
 				mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
   {
     sqlite3_stmt *stmt;
     const char *tail;
@@ -559,6 +560,7 @@ PIKECLASS Result
    */
   PIKEFUN array|int query(string query,
 			  mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
   {
     sqlite3_stmt *stmt;
     const char *tail;
