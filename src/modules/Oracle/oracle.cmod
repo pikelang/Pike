@@ -20,25 +20,15 @@
  * Includes
  */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "module.h"
 
-#include "svalue.h"
-#include "object.h"
-#include "array.h"
-#include "stralloc.h"
 #include "interpret.h"
 #include "operators.h"
 #include "pike_compiler.h"
 #include "pike_types.h"
-#include "pike_memory.h"
 #include "threads.h"
 #include "module_support.h"
-#include "mapping.h"
-#include "multiset.h"
 #include "builtin_functions.h"
 #include "pike_macros.h"
 #include "version.h"
