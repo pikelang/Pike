@@ -20,13 +20,12 @@ PIKE_FEATURE_WITHOUT(Sass)
 
 AC_CHECK_HEADERS([sass.h])
 
-if test "x$ac_cv_header_sass_h" != "xyes"; then
-  with_sass="no"
-fi
+AS_IF([ test "x$ac_cv_header_sass_h" != "xyes" ],
+      [ with_sass="no" ])
 
-AS_IF([test "x$with_sass_debug" != xno ], [
-	AC_DEFINE(PIKE_SASS_DEBUG, [1], [Defined if --with-sass-debug])
-	])
+AS_IF(
+  [ test "x$with_sass_debug" != xno ],
+  [ AC_DEFINE(PIKE_SASS_DEBUG, [1], [Defined if --with-sass-debug]) ])
 
 if test "x$with_sass" = "xyes"; then
   PIKE_FEATURE_NODEP(Sass)
@@ -41,13 +40,13 @@ if test "x$with_sass" = "xyes"; then
   # Check for features in libsass
   #
   AC_CHECK_LIB(sass, sass_delete_options, [
-    LIBS="${LIBS-} -lsass"
+    #LIBS="${LIBS-} -lsass"
     AC_DEFINE(HAVE_LIBSASS_DELETE_OPTIONS, [1],
     	        [Defined if sass_delete_options is available ])
   ])
 
   AC_CHECK_LIB(sass, libsass_language_version, [
-    LIBS="${LIBS-} -lsass"
+    #LIBS="${LIBS-} -lsass"
     AC_DEFINE(HAVE_LIBSASS_LANGUAGE_VERSION, [1],
     	        [True if libsass_language_version() is available])
   ])

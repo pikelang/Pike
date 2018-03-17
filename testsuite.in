@@ -43,14 +43,14 @@ START_MARKER
   dnl *** Simple compile_string tests
 
   test_eq([[ sassc->output_style ]], Tools.Sass.STYLE_COMPRESSED)
-  test_eq([[ sassc->compile_string(scss_str) ]], "a{color:#0087cc}\n")
+  test_eq([[ sassc->compile_string(scss_str)->css ]], "a{color:#0087cc}\n")
   test_eq([[ sassc->output_style = Tools.Sass.STYLE_COMPACT,
-             sassc->compile_string(scss_str) ]], "a { color: #0087cc; }\n")
+             sassc->compile_string(scss_str)->css ]], "a { color: #0087cc; }\n")
   test_eq([[ sassc->output_style = Tools.Sass.STYLE_NESTED,
-             sassc->compile_string(scss_str) ]], "a {\n"
+             sassc->compile_string(scss_str)->css ]], "a {\n"
                                                  "  color: #0087cc; }\n")
   test_eq([[ sassc->output_style = Tools.Sass.STYLE_EXPANDED,
-             sassc->compile_string(scss_str) ]], "a {\n"
+             sassc->compile_string(scss_str)->css ]], "a {\n"
                                                  "  color: #0087cc;\n"
                                                  "}\n")
 

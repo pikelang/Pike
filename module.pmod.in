@@ -90,7 +90,7 @@ class Compiler
     compiler->compile_file(input_file, output_file);
   }
 
-  string(8bit) compile_string(string(8bit) source)
+  mapping(string(8bit):string(8bit)) compile_string(string(8bit) source)
   {
     return compiler->compile_string(source);
   }

@@ -11,8 +11,8 @@ int run()
 
   mixed err = catch {
     string filec = Stdio.read_file(combine_path(BASE, "input.scss"));
-    string data = compiler->compile_string(filec);
-    Stdio.write_file(combine_path(BASE, "output.css"), data);
+    mapping data = compiler->compile_string(filec);
+    Stdio.write_file(combine_path(BASE, "output.css"), data->css);
   };
 
   handle_err(err);

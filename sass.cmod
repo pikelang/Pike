@@ -159,7 +159,7 @@ PIKECLASS Api
   {
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
-    if (&THIS->__importer_cb != NULL) {
+    if (!IS_UNDEFINED(&THIS->__importer_cb)) {
       push_text (path);
       apply_svalue (&THIS->__importer_cb, 1);
 
@@ -189,7 +189,7 @@ PIKECLASS Api
 
   // Compile the file input_file and return the result.
   // This method is over ridden in the the pmod.
-  PIKEFUN mapping(string:string) compile_file (string input_file)
+  PIKEFUN mapping(string(8bit):string(8bit)) compile_file (string input_file)
   {
     SASS_TRACE ("compile_file(%s)\n", input_file->str);
 
@@ -269,7 +269,8 @@ PIKECLASS Api
    *! @param source
    *!  The string to compile
    */
-  PIKEFUN string(8bit) compile_string (string(8bit) source)
+  PIKEFUN mapping(string(8bit):string(8bit))
+  compile_string (string(8bit) source)
   {
     struct Sass_Data_Context *ctx;
     struct Sass_Context      *ctx_out;
@@ -292,7 +293,38 @@ PIKECLASS Api
     }
 
     const char *out = sass_context_get_output_string (ctx_out);
-    push_text (out);
+
+    if (out) {
+      const char *smap = NULL;
+      struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
+
+      if (sass_option_get_source_map_file (s_opts)) {
+        smap = sass_context_get_source_map_string (ctx_out);
+
+        if ((err = sass_context_get_error_status (ctx_out))) {
+          const char *errstr = strdup (sass_context_get_error_message (ctx_out));
+          SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s",
+                                   err, errstr);
+        }
+      }
+
+      push_constant_text ("css"); push_text (out);
+      push_constant_text ("map");
+
+      if (smap != NULL) {
+        push_text (smap);
+      }
+      else {
+        push_undefined ();
+      }
+
+      f_aggregate_mapping (4);
+    }
+    else {
+      push_undefined ();
+    }
+
+    // push_text (out);
 
     sass_delete_data_context (ctx);
   }
