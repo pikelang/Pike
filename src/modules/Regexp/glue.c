@@ -4,11 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #include "interpret.h"
 #include "svalue.h"

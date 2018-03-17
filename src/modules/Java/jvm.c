@@ -14,11 +14,9 @@
  * Includes
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include "global.h"
+
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

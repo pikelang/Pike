@@ -10,12 +10,8 @@
  * Henrik Grubbström 1996-12-21
  */
 
-/* Pike master headerfile */
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #ifdef HAVE_MYSQL
 /*
