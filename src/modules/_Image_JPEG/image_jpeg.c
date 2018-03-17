@@ -22,7 +22,6 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
-#include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"

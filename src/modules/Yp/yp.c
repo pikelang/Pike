@@ -331,7 +331,6 @@ PIKE_MODULE_EXIT
 }
 #else
 
-#include "module.h"
 PIKE_MODULE_INIT {}
 PIKE_MODULE_EXIT {}
 

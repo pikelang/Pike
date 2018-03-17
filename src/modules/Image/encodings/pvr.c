@@ -17,7 +17,6 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_types.h"

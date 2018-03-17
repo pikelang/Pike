@@ -24,9 +24,7 @@
 #include "las.h"
 
 #ifdef TEST_MULTISET
-#include "builtin_functions.h"
 #include "constants.h"
-#include "mapping.h"
 #endif
 
 #include "block_allocator.h"

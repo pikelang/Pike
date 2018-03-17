@@ -19,7 +19,6 @@
 #include "gc.h"
 #include "stralloc.h"
 #include "opcodes.h"
-#include "pike_error.h"
 #include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"

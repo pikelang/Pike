@@ -41,7 +41,6 @@
 #include "interpret.h"
 #include "threads.h"
 #include "pike_error.h"
-#include "threads.h"
 #include "pike_types.h"
 
 #include "../Image/image.h"

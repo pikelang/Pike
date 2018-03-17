@@ -14,7 +14,6 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"

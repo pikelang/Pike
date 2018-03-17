@@ -816,8 +816,6 @@ PIKE_MODULE_EXIT
 
 #else
 #include "program.h"
-#include "module.h"
-#include "module_support.h"
 PIKE_MODULE_INIT {
   HIDE_MODULE();
 }

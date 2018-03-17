@@ -14,7 +14,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"

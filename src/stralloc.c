@@ -8,7 +8,6 @@
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "buffer.h"
-#include "pike_macros.h"
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "gc.h"

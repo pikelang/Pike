@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "module.h"
+#include "module_support.h"
 
 #ifdef HAVE_DVB
 
@@ -68,7 +69,6 @@
 #include "pike_macros.h"
 #include "threads.h"
 #include "fd_control.h"
-#include "module_support.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "pike_types.h"
@@ -1825,7 +1825,6 @@ PIKE_MODULE_EXIT {
 #else
 
 #include "program.h"
-#include "module_support.h"
 
 PIKE_MODULE_INIT {
   HIDE_MODULE();

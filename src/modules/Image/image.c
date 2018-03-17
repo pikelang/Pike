@@ -108,7 +108,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -121,7 +120,6 @@
 #include "operators.h"
 #include "mapping.h"
 #include "constants.h"
-#include "operators.h"
 #include "sprintf.h"
 
 #include "image.h"

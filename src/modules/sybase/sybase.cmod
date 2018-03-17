@@ -1219,9 +1219,6 @@ PIKE_MODULE_INIT {
 
 
 #else /* HAVE_SYBASE */
-/* This must be included last! */
-#include "module.h"
-
 PIKE_MODULE_INIT {}
 PIKE_MODULE_EXIT {}
 #endif /* HAVE_SYBASE */

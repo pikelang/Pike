@@ -33,7 +33,6 @@
 #include "builtin_functions.h"
 #include "operators.h"
 #include "pike_types.h"
-#include "interpret.h"
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;

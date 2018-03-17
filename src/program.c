@@ -26,7 +26,6 @@
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "cyclic.h"
-#include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
 #include "block_allocator.h"

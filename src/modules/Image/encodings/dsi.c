@@ -25,9 +25,6 @@
 
 #include "object.h"
 #include "interpret.h"
-#include "object.h"
-#include "svalue.h"
-#include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"

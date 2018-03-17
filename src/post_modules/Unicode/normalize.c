@@ -6,7 +6,6 @@
 
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

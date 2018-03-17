@@ -17,7 +17,6 @@
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "machine.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

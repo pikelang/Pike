@@ -13,7 +13,6 @@
 #include "bignum.h"
 #include "sscanf.h"
 #include "builtin_functions.h"
-#include "interpret.h"
 #include "cyclic.h"
 #include "backend.h"
 #include "fd_control.h"
@@ -26,9 +25,6 @@
 #include "module_support.h"
 #include "bitvector.h"
 #include "pike_search.h"
-
-/* Includes <gmp.h> */
-#include "bignum.h"
 #include "sprintf.h"
 
 #ifdef HAVE_ARPA_INET_H

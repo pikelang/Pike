@@ -6,6 +6,7 @@
 
 #include "module.h"
 #include "config.h"
+#include "module_support.h"
 
 #ifdef HAVE_GETTEXT
 
@@ -19,7 +20,6 @@
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
-#include "module_support.h"
 
 
 #define sp Pike_sp
@@ -494,8 +494,6 @@ PIKE_MODULE_EXIT
 }
 #else
 
-#include "module.h"
-#include "module_support.h"
 #include "program.h"
 
 PIKE_MODULE_INIT {

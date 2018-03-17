@@ -34,7 +34,6 @@
 #include "multiset.h"
 #include "pike_compiler.h"
 #include "program.h"
-#include "array.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "pike_memory.h"

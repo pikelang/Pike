@@ -15,7 +15,6 @@
 #include "mapping.h"
 #include "object.h"
 #include "main.h"
-#include "builtin_functions.h"
 #include "backend.h"
 #include "operators.h"
 #include "module_support.h"

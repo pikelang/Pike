@@ -15,7 +15,6 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
-#include "operators.h"
 #include "pike_types.h"
 
 #include "math_module.h"

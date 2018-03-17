@@ -10,6 +10,7 @@
 
 #include "module.h"
 #include "pgres_config.h"
+#include "module_support.h"
 
 /* Some versions of Postgres define this, and it conflicts with pike_error.h */
 #undef JMP_BUF
@@ -21,7 +22,6 @@
 /* Pike includes */
 #include "las.h"
 #include "threads.h"
-#include "module_support.h"
 #include "operators.h"
 
 #include "pgresult.h"
@@ -868,8 +868,6 @@ PIKE_MODULE_EXIT
 
 #else /* HAVE_POSTGRES */
 #include "program.h"
-#include "module.h"
-#include "module_support.h"
 PIKE_MODULE_INIT {
   HIDE_MODULE();
 }
