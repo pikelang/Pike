@@ -15,16 +15,10 @@
  */
 
 #include "config.h"
-#include "global.h"
+#include "module.h"
 
 #include "interpret.h"
-#include "object.h"
 #include "threads.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "mapping.h"
-#include "array.h"
-#include "multiset.h"
 #include "pike_compiler.h"
 #include "program.h"
 #include "module_support.h"
