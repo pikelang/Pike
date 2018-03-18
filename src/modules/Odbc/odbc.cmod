@@ -27,10 +27,6 @@
 
 #include "precompiled_odbc.h"
 
-
-#define sp Pike_sp
-#define fp Pike_fp
-
 #ifdef HAVE_ODBC
 
 /* #define ODBC_DEBUG */
@@ -512,7 +508,7 @@ PIKEFUN void create(string|void server, string|void database,
   if (!database || !database->len) {
     if (!server || !server->len) {
       push_static_text("default");
-      database = sp[-1].u.string;
+      database = Pike_sp[-1].u.string;
     } else {
       database = server;
     }
@@ -615,7 +611,7 @@ PIKEFUN object big_query(string q)
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG
-  struct svalue *save_sp = sp + 1 - args;
+  struct svalue *save_sp = Pike_sp + 1 - args;
 #endif /* PIKE_DEBUG */
 
   add_ref(q);
@@ -640,13 +636,13 @@ PIKEFUN object big_query(string q)
 
   /* Do the actual query */
   push_string(q);
-  apply(sp[-2].u.object, "execute", 1);
+  apply(Pike_sp[-2].u.object, "execute", 1);
 
-  if (TYPEOF(sp[-1]) != T_INT) {
+  if (TYPEOF(Pike_sp[-1]) != T_INT) {
     Pike_error("big_query(): Unexpected return value from execute().\n");
   }
 
-  if (!sp[-1].u.integer) {
+  if (!Pike_sp[-1].u.integer) {
     pop_n_elems(2);	/* Zap the result object too */
 
 #ifdef ENABLE_IMPLICIT_COMMIT
@@ -667,7 +663,7 @@ PIKEFUN object big_query(string q)
     pop_stack();	/* Keep the result object */
   }
 #ifdef PIKE_DEBUG
-  if (sp != save_sp) {
+  if (Pike_sp != save_sp) {
     Pike_fatal("Stack error in odbc->big_query().\n");
   }
 #endif /* PIKE_DEBUG */
@@ -678,7 +674,7 @@ PIKEFUN object big_typed_query(string q)
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG
-  struct svalue *save_sp = sp + 1 - args;
+  struct svalue *save_sp = Pike_sp + 1 - args;
 #endif /* PIKE_DEBUG */
 
   add_ref(q);
@@ -704,13 +700,13 @@ PIKEFUN object big_typed_query(string q)
 
   /* Do the actual query */
   push_string(q);
-  apply(sp[-2].u.object, "execute", 1);
+  apply(Pike_sp[-2].u.object, "execute", 1);
 
-  if (TYPEOF(sp[-1]) != T_INT) {
+  if (TYPEOF(Pike_sp[-1]) != T_INT) {
     Pike_error("big_typed_query(): Unexpected return value from execute().\n");
   }
 
-  if (!sp[-1].u.integer) {
+  if (!Pike_sp[-1].u.integer) {
     pop_n_elems(2);	/* Zap the result object too */
 
 #ifdef ENABLE_IMPLICIT_COMMIT
@@ -731,7 +727,7 @@ PIKEFUN object big_typed_query(string q)
     pop_stack();	/* Keep the result object */
   }
 #ifdef PIKE_DEBUG
-  if (sp != save_sp) {
+  if (Pike_sp != save_sp) {
     Pike_fatal("Stack error in odbc->big_typed_query().\n");
   }
 #endif /* PIKE_DEBUG */
@@ -740,7 +736,7 @@ PIKEFUN object big_typed_query(string q)
 PIKEFUN object list_tables(string|void pattern)
 {
 #ifdef PIKE_DEBUG
-  struct svalue *save_sp = sp + 1 - args;
+  struct svalue *save_sp = Pike_sp + 1 - args;
 #endif /* PIKE_DEBUG */
   ONERROR ebuf;
 
@@ -770,17 +766,17 @@ PIKEFUN object list_tables(string|void pattern)
   /* Do the actual query */
   if (pattern) {
     push_string(pattern);
-    apply(sp[-1].u.object, "list_tables", 1);
+    apply(Pike_sp[-1].u.object, "list_tables", 1);
   } else {
-    apply(sp[-1].u.object, "list_tables", 0);
+    apply(Pike_sp[-1].u.object, "list_tables", 0);
   }
 
-  if (TYPEOF(sp[-1]) != T_INT) {
+  if (TYPEOF(Pike_sp[-1]) != T_INT) {
     Pike_error("list_tables(): Unexpected return value from "
 	       "Result()->list_tables().\n");
   }
 
-  if (!sp[-1].u.integer) {
+  if (!Pike_sp[-1].u.integer) {
     pop_n_elems(2);	/* Zap the result object too */
 
     push_int(0);
@@ -788,7 +784,7 @@ PIKEFUN object list_tables(string|void pattern)
     pop_stack();	/* Keep the result object */
   }
 #ifdef PIKE_DEBUG
-  if (sp != save_sp) {
+  if (Pike_sp != save_sp) {
     Pike_fatal("Stack error in odbc->list_tables().\n");
   }
 #endif /* PIKE_DEBUG */
