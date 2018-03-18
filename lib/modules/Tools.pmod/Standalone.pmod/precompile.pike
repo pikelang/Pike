@@ -2272,7 +2272,7 @@ sprintf("        } else {\n"
 	 * variable definition
 	 */
 	string structname = base+"_struct";
-	string this=sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage))",structname);
+	string this = sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage + %s_storage_offset))", structname, base);
 
 	/* FIXME:
 	 * Add runtime debug to these defines...
