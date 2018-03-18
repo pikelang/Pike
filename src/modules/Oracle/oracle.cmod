@@ -182,11 +182,6 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define Pike_thread_id thread_id
 #endif
 
-#ifndef Pike_sp
-#define Pike_sp sp
-#define Pike_fp fp
-#endif
-
 #ifndef CHECK_INTERPRETER_LOCK
 #define CHECK_INTERPRETER_LOCK()
 #endif
