@@ -3021,6 +3021,22 @@ AC_MY_CHECK_TYPE(time_t,INT32)
 AC_MY_CHECK_TYPE(pri_t, short)
 
 AC_CHECK_SIZEOF(off_t, 4)
+AC_CHECK_SIZEOF(off64_t, 0)
+
+if test "x$ac_cv_sizeof_off64_t" = "x0"; then :; else
+  AC_MSG_CHECKING(if off64_t is a scalar integer)
+  AC_TRY_COMPILE([
+#include <stdio.h>
+
+off64_t var = 17;
+],[],[
+    AC_MSG_RESULT(yes)
+  ],[
+    AC_MSG_RESULT(no)
+    AC_DEFINE(HAVE_NON_SCALAR_OFF64_T, 1,
+              [Define if off64_t is a union or similar.])
+  ])
+fi
 
 AC_MSG_CHECKING(for sizeof anything)
 if test "$ac_cv_sizeof_long_double" != 0 -a \
@@ -4055,7 +4071,7 @@ AC_CHECK_FUNCS( \
  alarm \
  fork1 \
  flock \
- lockf \
+ lockf lockf64 \
  setuid getuid seteuid geteuid \
  setgid getgid getegid \
  getpwent getpwnam getpwuid \
