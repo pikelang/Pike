@@ -384,6 +384,15 @@ array(mapping(string:mixed))
     array(mixed) row;
     int i;
 
+    if (arrayp(res_obj))
+      rows = res_obj;
+    else {
+      fields = 0;
+      rows = ({});
+      while (row = res_obj->fetch_row_array())
+        rows += row;
+    }
+
     if (!fields)
       fields = res_obj->fetch_fields();
     if(!sizeof(fields)) return res;
@@ -401,15 +410,6 @@ array(mapping(string:mixed))
 
     if (case_convert)
       fieldnames = map(fieldnames, lower_case);
-
-    if (arrayp(res_obj))
-      rows = res_obj;
-    else {
-      fields = 0;
-      rows = ({});
-      while (row = res_obj->fetch_row_array())
-        rows += row;
-    }
 
     if(has_table)
       foreach (rows; i; row)
@@ -552,7 +552,6 @@ protected array(string|mapping(string|int:mixed))
   }
 
   query = sprintf(query, @args);
-
   if (sizeof(bindings)) return ({ query, bindings });
   return ({ query });
 }
