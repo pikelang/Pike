@@ -357,6 +357,7 @@ PMOD_EXPORT int compare_bignums(struct object *a, struct object *b);
 
 PMOD_EXPORT void push_int64(INT64 i);
 PMOD_EXPORT void push_ulongest(UINT64 i);
+PMOD_EXPORT void ulongest_to_svalue_no_free(struct svalue *sv, UINT64 i);
 
 /* Returns low 64 bits and nonzero if bignum. */
 PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum);

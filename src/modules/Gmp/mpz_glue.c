@@ -304,6 +304,24 @@ PMOD_EXPORT void push_ulongest (UINT64 i)
   }
 }
 
+PMOD_EXPORT void ulongest_to_svalue_no_free(struct svalue *sv, UINT64 i)
+{
+  if (i <= MAX_INT_TYPE) {
+    SET_SVAL(*sv, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)i);
+  }
+  else {
+    MP_INT *mpz;
+
+    SET_SVAL(*sv, PIKE_T_OBJECT, 0, object, fast_clone_object(bignum_program));
+    mpz = OBTOMPZ(sv->u.object);
+#if SIZEOF_LONG >= SIZEOF_INT64
+    mpz_set_ui (mpz, i);
+#else
+    mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
+  }
+}
+
 /*! @module Gmp
  *! GMP is a free library for arbitrary precision arithmetic,
  *! operating on signed integers, rational numbers, and floating point

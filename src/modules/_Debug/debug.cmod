@@ -12,6 +12,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 #include "opcodes.h"
+#include "bignum.h"
 
 DECLARATIONS
 
@@ -589,8 +590,11 @@ PIKEFUN mapping get_program_layout(program p) {
           && !ref->inherit_offset) {
         PIKE_OPCODE_T *pc = p->program + id->func.offset;
         struct svalue sv;
-        SET_SVAL(sv, PIKE_T_INT, NUMBER_NUMBER, integer, PTR_TO_INT(pc));
+
+        ulongest_to_svalue_no_free(&sv, (UINT64)PTR_TO_INT(pc));
+
         mapping_string_insert(m, id->name, &sv);
+        free_svalue(&sv);
       }
     }
 
