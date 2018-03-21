@@ -376,10 +376,6 @@ PIKECLASS CPP
   PIKEVAR object compat_handler;
   PIKEVAR int compat_major;
   PIKEVAR int compat_minor;
-  /* NB: data is marked private to ensure that pike level code can't
-   *     remove its references while we hold pointers into it.
-   */
-  PIKEVAR string data flags ID_PRIVATE|ID_PROTECTED;
   PIKEVAR string prefix;
   PIKEVAR int picky_cpp;
   PIKEVAR int keep_comments;
@@ -5207,12 +5203,8 @@ PIKEFUN string cpp(string data,
     free_mapping (predefs);
   }
 
-  this->data = data;
-  add_ref(data);
-
   if (this->charset) {
-    push_string(data);
-    this->data = data = NULL;
+    ref_push_string(data);
     ref_push_string(this->charset);
     if (!safe_apply_handler ("decode_charset", this->handler,
 			     this->compat_handler, 2, BIT_STRING)) {
@@ -5220,22 +5212,30 @@ PIKEFUN string cpp(string data,
 			    THIS->charset);
       Pike_error("Unknown charset.\n");
     }
-    this->data = data = Pike_sp[-1].u.string;
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
+    data = Pike_sp[-1].u.string;
+    /* NB: We let the stack hold the references to data.
+     *     We don't need to keep track of the number of elements
+     *     on the stack as we have the save_sp marker.
+     */
   }
 
   if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
-    struct pike_string *new_data = recode_string(this, data);
-    free_string(data);
-    this->data = data = new_data;
+    data = recode_string(this, data);
+    push_string(data);
+    /* NB: We let the stack hold the references to data.
+     *     We don't need to keep track of the number of elements
+     *     on the stack as we have the save_sp marker.
+     */
   }
   if (data->size_shift) {
     /* Get rid of any byte order marks (0xfeff) */
-    struct pike_string *new_data = filter_bom(data);
-    free_string(data);
-    this->data = data = new_data;
+    data = filter_bom(data);
+    push_string(data);
+    /* NB: We let the stack hold the references to data.
+     *     We don't need to keep track of the number of elements
+     *     on the stack as we have the save_sp marker.
+     */
   }
 
   string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
