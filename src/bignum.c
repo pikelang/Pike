@@ -133,6 +133,7 @@ PMOD_EXPORT void (*push_bignum)(MP_INT *) = NULL;
 PMOD_EXPORT void hook_in_gmp_funcs (
 #ifdef INT64
   void (*push_int64_val)(INT64),
+  void (*ulongest_to_svalue_no_free_val)(struct svalue *, UINT64),
   int (*int64_from_bignum_val) (INT64 *, struct object *),
   void (*reduce_stack_top_bignum_val) (void),
 #endif
@@ -145,6 +146,7 @@ PMOD_EXPORT void hook_in_gmp_funcs (
    * work in some cases, e.g. NT. */
 #ifdef INT64
   push_int64 = push_int64_val ? push_int64_val : bootstrap_push_int64;
+  ulongest_to_svalue_no_free = ulongest_to_svalue_no_free_val;
   int64_from_bignum = int64_from_bignum_val;
   reduce_stack_top_bignum = reduce_stack_top_bignum_val;
 #endif

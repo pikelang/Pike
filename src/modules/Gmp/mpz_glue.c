@@ -361,6 +361,24 @@ static int gmp_ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum)
   return 0;
 }
 
+PMOD_EXPORT void gmp_ulongest_to_svalue_no_free(struct svalue *sv, UINT64 i)
+{
+  if (i <= MAX_INT_TYPE) {
+    SET_SVAL(*sv, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)i);
+  }
+  else {
+    MP_INT *mpz;
+
+    SET_SVAL(*sv, PIKE_T_OBJECT, 0, object, fast_clone_object(bignum_program));
+    mpz = OBTOMPZ(sv->u.object);
+#if SIZEOF_LONG >= SIZEOF_INT64
+    mpz_set_ui (mpz, i);
+#else
+    mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
+  }
+}
+
 /*! @module Gmp
  *! GMP is a free library for arbitrary precision arithmetic,
  *! operating on signed integers, rational numbers, and floating point
@@ -2237,7 +2255,7 @@ PIKE_MODULE_EXIT
 #endif
   hook_in_gmp_funcs (
 #ifdef INT64
-      NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL,
 #endif
       NULL, NULL, NULL, NULL);
 #endif
@@ -2450,8 +2468,8 @@ PIKE_MODULE_INIT
 #endif
   hook_in_gmp_funcs (
 #ifdef INT64
-      gmp_push_int64, gmp_int64_from_bignum,
-      gmp_reduce_stack_top_bignum,
+      gmp_push_int64, gmp_ulongest_to_svalue_no_free,
+      gmp_int64_from_bignum, gmp_reduce_stack_top_bignum,
 #endif
       gmp_push_ulongest, gmp_ulongest_from_bignum,
       gmp_mpz_from_svalue, gmp_push_bignum);
