@@ -115,13 +115,13 @@ class Message
     else
       lines = [array(string)]data;
 
-    if( sscanf(lines[0], "-----BEGIN %s-----", pre)!=1 )
+    if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
+
     lines = lines[1..];
-    if( sscanf(lines[-1], "-----END %s-----", post)==1 )
+    if( sscanf(lines[-1], "%*[ \t]-----END %s-----", post)==2 )
     {
       lines = lines[..<1];
-      // if(pre!=post) error("Encapsulation boundary mismatch.\n");
     }
 
     if( sizeof(lines[-1]) && lines[-1][0]=='=' )
