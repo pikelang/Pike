@@ -52,6 +52,11 @@ return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
   "recipient-id-symmetric": "linn@zendia.enet.dec.com,ptf-kmc,3\0pem-dev@tis.com,ptf-kmc,4"
 ]) ]])
 
+test_any([[
+return (mapping)Standards.PEM.Message(#"-----BEGIN FOO-----
+  QkFS
+  -----END FOO-----");
+]], "BAR")
 
 // - Standards.URI
 // RFC 3986 5.4.1 Normal Examples
