@@ -53,9 +53,9 @@ return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
 ]) ]])
 
 test_any([[
-return (mapping)Standards.PEM.Message(#"-----BEGIN FOO-----
+return Standards.PEM.Message(#"-----BEGIN FOO-----
   QkFS
-  -----END FOO-----");
+  -----END FOO-----")->body;
 ]], "BAR")
 
 // - Standards.URI
