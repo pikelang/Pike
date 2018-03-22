@@ -293,12 +293,6 @@ protected class Monitor(string path,
 
   void create()
   {
-    if(flags & MF_AUTO || flags & MF_HARD) {
-      Stdio.Stat fstat = file_stat(path);
-      if(!fstat) throw(Error.Generic("Cannot create Monitor for non-existent path " + path + 
-                                       " when flags MF_AUTO or MF_HARD are present.\n"));
-    }
-
     MON_WERR("Creating monitor for %O.\n", path);
     Element::create(this);
     register_path(1);
@@ -1007,12 +1001,10 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
 	//
 	// Create the submonitor.
 	MON_WARN("Monitor lost for path %O.\n", full_path);
-        mixed err = catch(m = monitor(full_path, m->flags | MF_AUTO | MF_HARD,
+        m = monitor(full_path, m->flags | MF_AUTO | MF_HARD,
             m->max_dir_check_interval,
             m->file_interval_factor,
-            m->stable_time));
-        if(err)
-          MON_WARN("Monitor for %O failed. Message: %s\n", full_path, Error.mkerror(err)->message());
+            m->stable_time);
         // monitor() will not register monitor for path if filter_file()
         // returns 0.
         if (m) {
