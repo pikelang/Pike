@@ -227,9 +227,9 @@ extern PMOD_EXPORT
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
 #else
-PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
+PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, UINT64 key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
 

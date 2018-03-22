@@ -188,7 +188,7 @@ ATTRIBUTE((target("sse4")))
 #endif
 ATTRIBUTE((hot))
 static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
-					     size_t nbytes, size_t key )
+					     size_t nbytes, UINT64 key )
 {
   unsigned int h = len;
   const unsigned int *p = s;
@@ -284,7 +284,7 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+  size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
 
 static void init_hashmem()
 {
@@ -297,7 +297,7 @@ static void init_hashmem()
 static void init_hashmem(){}
 
 ATTRIBUTE((hot))
-  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
+  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, UINT64 key_)
 {
     return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
