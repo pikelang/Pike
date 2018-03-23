@@ -498,62 +498,6 @@ typedef struct p_wchar_p
   enum size_shift shift;
 } PCHARP;
 
-#ifdef HAVE_NON_SCALAR_OFF64_T
-/* Old Solaris uses unions instead of long long for 64bit values when __STDC__.
- *
- * Add some conversion functions for convenience.
- *
- * The types longlong_t and u_longlong_t are both from <sys/types.h>.
- *
- * Common types that are compatible with longlong_t:
- *   off64_t, blckcnt64_t, offset_t, diskaddr_t
- *
- * Common types that are compatible with u_longlong_t:
- *   ino64_t, fsblkcnt64_t, fsfilcnt64_t, u_offset_t, len_t
- */
-static inline INT64 PIKE_UNUSED_ATTRIBUTE pike_longlong_to_int64(longlong_t val)
-{
-  union {
-    INT64	scalar;
-    longlong_t	longlong;
-  } tmp;
-  tmp.longlong = val;
-  return tmp.scalar;
-}
-static inline unsigned INT64 PIKE_UNUSED_ATTRIBUTE pike_ulonglong_to_uint64(u_longlong_t val)
-{
-  union {
-    unsigned INT64	uscalar;
-    u_longlong_t	ulonglong;
-  } tmp;
-  tmp.ulonglong = val;
-  return tmp.uscalar;
-}
-static inline longlong_t PIKE_UNUSED_ATTRIBUTE pike_int64_to_longlong(INT64 val)
-{
-  union {
-    INT64	scalar;
-    longlong_t	longlong;
-  } tmp;
-  tmp.scalar = val;
-  return tmp.longlong;
-}
-static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsigned INT64 val)
-{
-  union {
-    unsigned INT64	uscalar;
-    u_longlong_t	ulonglong;
-  } tmp;
-  tmp.uscalar = val;
-  return tmp.ulonglong;
-}
-#else /* !HAVE_NON_SCALAR_OFF64_T */
-#define pike_longlong_to_int64(VAL)	((INT64)(VAL))
-#define pike_ulonglong_to_uint64(VAL)	((unsigned INT64)(VAL))
-#define pike_int64_to_longlong(VAL)	((INT64)(VAL))
-#define pike_uint64_to_ulonglong(VAL)	((unsigned INT64)(VAL))
-#endif /* HAVE_NON_SCALAR_OFF64_T */
-
 #define WERR(...) fprintf(stderr,__VA_ARGS__)
 
 #ifdef PIKE_DEBUG
@@ -686,6 +630,62 @@ struct iovec {
   size_t iov_len;
 };
 #endif /* !HAVE_STRUCT_IOVEC */
+
+#ifdef HAVE_NON_SCALAR_OFF64_T
+/* Old Solaris uses unions instead of long long for 64bit values when __STDC__.
+ *
+ * Add some conversion functions for convenience.
+ *
+ * The types longlong_t and u_longlong_t are both from <sys/types.h>.
+ *
+ * Common types that are compatible with longlong_t:
+ *   off64_t, blckcnt64_t, offset_t, diskaddr_t
+ *
+ * Common types that are compatible with u_longlong_t:
+ *   ino64_t, fsblkcnt64_t, fsfilcnt64_t, u_offset_t, len_t
+ */
+static inline INT64 PIKE_UNUSED_ATTRIBUTE pike_longlong_to_int64(longlong_t val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.longlong = val;
+  return tmp.scalar;
+}
+static inline unsigned INT64 PIKE_UNUSED_ATTRIBUTE pike_ulonglong_to_uint64(u_longlong_t val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.ulonglong = val;
+  return tmp.uscalar;
+}
+static inline longlong_t PIKE_UNUSED_ATTRIBUTE pike_int64_to_longlong(INT64 val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.scalar = val;
+  return tmp.longlong;
+}
+static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsigned INT64 val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.uscalar = val;
+  return tmp.ulonglong;
+}
+#else /* !HAVE_NON_SCALAR_OFF64_T */
+#define pike_longlong_to_int64(VAL)	((INT64)(VAL))
+#define pike_ulonglong_to_uint64(VAL)	((unsigned INT64)(VAL))
+#define pike_int64_to_longlong(VAL)	((INT64)(VAL))
+#define pike_uint64_to_ulonglong(VAL)	((unsigned INT64)(VAL))
+#endif /* HAVE_NON_SCALAR_OFF64_T */
 
 #include "port.h"
 #include "dmalloc.h"
