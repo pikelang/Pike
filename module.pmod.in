@@ -15,6 +15,8 @@
 inherit Tools@module@;
 //! @endignore
 
+protected typedef string(8bit) s8;
+
 //! Sass/SCSS compiler.
 //!
 //! @example
@@ -68,34 +70,34 @@ class Compiler
   GETTER(T,P) \
   SETTER(T,P)
 
-  GETTER_SETTER(int(0..2),              http_import)
-  GETTER_SETTER(multiset(string(8bit)), http_import_allow_ct)
-  GETTER_SETTER(bool,                   check_file_access)
-  GETTER_SETTER(string(8bit),           include_path)
-  GETTER_SETTER(int(0..3),              output_style)
-  GETTER_SETTER(string(8bit),           source_map_file)
-  GETTER_SETTER(string(8bit),           source_map_root)
-  GETTER_SETTER(int(0..),               precision)
-  GETTER_SETTER(int(0..1),              source_comments)
-  GETTER_SETTER(int(0..1),              source_map_embed)
-  GETTER_SETTER(int(0..1),              omit_source_map_url)
+  GETTER_SETTER(int(0..2),    http_import)
+  GETTER_SETTER(multiset(s8), http_import_allow_ct)
+  GETTER_SETTER(bool,         check_file_access)
+  GETTER_SETTER(s8,           include_path)
+  GETTER_SETTER(int(0..3),    output_style)
+  GETTER_SETTER(s8,           source_map_file)
+  GETTER_SETTER(s8,           source_map_root)
+  GETTER_SETTER(int(0..),     precision)
+  GETTER_SETTER(int(0..1),    source_comments)
+  GETTER_SETTER(int(0..1),    source_map_embed)
+  GETTER_SETTER(int(0..1),    omit_source_map_url)
 
-  mapping(string(8bit):string(8bit)) compile_file(string(8bit) input_file)
+  mapping(s8:s8) compile_file(s8 input_file)
   {
     return compiler->compile_file(input_file);
   }
 
-  variant void compile_file(string(8bit) input_file, string(8bit) output_file)
+  variant void compile_file(s8 input_file, s8 output_file)
   {
     compiler->compile_file(input_file, output_file);
   }
 
-  mapping(string(8bit):string(8bit)) compile_string(string(8bit) source)
+  mapping(s8:s8) compile_string(s8 source)
   {
     return compiler->compile_string(source);
   }
 
-  void set_options(mapping(string(8bit):string(8bit)|int) opts)
+  void set_options(mapping(s8:s8|int) opts)
   {
     compiler->set_options(opts);
   }
@@ -133,7 +135,7 @@ class Low_Compiler
   //! List of allowed content types if @[http_import] is set to
   //! @[HTTP_IMPORT_GREEDY]. The default is to allow @tt{text/scss@} and
   //! @tt{text/sass@}.
-  public multiset(string(8bit)) http_import_allow_ct =
+  public multiset(s8) http_import_allow_ct =
     (< "text/scss", "text/sass" >);
 
   //! @appears Tools.Sass.Compiler.check_file_access
@@ -154,7 +156,7 @@ class Low_Compiler
 
   //! @ignore
   //! Resolve external imports in sass/scss files.
-  protected string(8bit) __resolve_import(string(8bit) path)
+  protected s8 __resolve_import(s8 path, s8 abs_path, s8 prev_path)
   {
     Standards.URI uri;
 
@@ -187,7 +189,7 @@ class Low_Compiler
       }
     }
 
-    string(8bit) data = q->data();
+    s8 data = q->data();
 
     if (sizeof(ct_parts) > 1) {
       sscanf(ct_parts[1], "%*s=%s", string charset);
@@ -203,7 +205,7 @@ class Low_Compiler
 
 
   // Documented in the CMOD
-  void `include_path=(string(8bit) path)
+  void `include_path=(s8 path)
   {
     if (check_file_access && stringp(path) && !Stdio.exist(path)) {
       error("Include path %q does not exist!\n", path);
@@ -214,7 +216,7 @@ class Low_Compiler
 
 
   // Documented in the CMOD
-  string(8bit) `include_path()
+  s8 `include_path()
   {
     return ::include_path;
   }
@@ -231,12 +233,12 @@ class Low_Compiler
   //!  set to be generated
   //!
   //!  @mapping
-  //!   @member string(8bit) "css"
+  //!   @member s8 "css"
   //!    The generated CSS
-  //!   @member string(8bit) "map"
+  //!   @member s8 "map"
   //!    The generated source mapping data
   //!  @endmapping
-  mapping(string(8bit):string(8bit)) compile_file(string(8bit) input_file)
+  mapping(s8:s8) compile_file(s8 input_file)
   {
     if (check_file_access && !Stdio.exist(input_file)) {
       error("Input file %q does not exist or isn't accessible!\n",
@@ -257,14 +259,14 @@ class Low_Compiler
   //!  The SCSS file to compile
   //! @param output_file
   //!  The name of the CSS file to save the result in.
-  variant void compile_file(string(8bit) input_file, string(8bit) output_file)
+  variant void compile_file(s8 input_file, s8 output_file)
   {
     if (check_file_access && !Stdio.exist(input_file)) {
       error("Input file %q does not exist or isn't accessible!\n",
             input_file);
     }
 
-    mapping(string(8bit):string(8bit)) val = ::compile_file(input_file);
+    mapping(s8:s8) val = ::compile_file(input_file);
     Stdio.write_file(output_file, val->css);
 
     if (val->map && source_map_file) {
@@ -282,10 +284,10 @@ class Low_Compiler
   //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
   //!    or @[STYLE_COMPRESSED] constants. See also @[output_style].
   //!
-  //!   @member string(8bit) "include_path"
+  //!   @member s8 "include_path"
   //!    Path to root of incude files. See also @[include_path].
   //!
-  //!   @member string(8bit) "source_map_file"
+  //!   @member s8 "source_map_file"
   //!    File to write source map file to.
   //!    See also @[source_map_file].
   //!
@@ -298,7 +300,7 @@ class Low_Compiler
   //!    Turn on/off if a source map should be embedded in the output or not.
   //!    Default is @tt{false@}. See also @[source_map_embed].
   //!
-  //!   @member string(8bit) "source_map_root"
+  //!   @member s8 "source_map_root"
   //!    Set the root path of the source files, relative to where the
   //!    source.map file is written.
   //!    See also @[source_map_root]
@@ -310,7 +312,7 @@ class Low_Compiler
   //!   @member int "precision"
   //!    Floating point precision. See also @[precision].
   //!  @endmapping
-  void set_options(mapping(string(8bit):string(8bit)|int) opts)
+  void set_options(mapping(s8:s8|int) opts)
   {
     foreach (opts; string opt; string|int val) {
       switch (opt)

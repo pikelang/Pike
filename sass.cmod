@@ -111,7 +111,11 @@ PIKECLASS Api
 
   // Used to resolve external imports. Set by default from the constructor
   // in Compiler in module.pmod.
-  PIKEVAR function(string(8bit):string(8bit)) __importer_cb
+
+  PIKEVAR function(string(8bit),
+                   void|string(8bit),
+                   void|string(8bit)
+                   : string(8bit)) __importer_cb
     flags ID_PROTECTED;
 
 
@@ -160,8 +164,25 @@ PIKECLASS Api
     SASS_TRACE ("pike_sass_importer(%s)\n", path);
 
     if (!IS_UNDEFINED(&THIS->__importer_cb)) {
+      Sass_Import_Entry last_imp;
+      last_imp = sass_compiler_get_last_import (comp);
+
       push_text (path);
-      apply_svalue (&THIS->__importer_cb, 1);
+
+      if (last_imp) {
+        const char* abs_path = sass_import_get_abs_path (last_imp);
+        const char* imp_path = sass_import_get_imp_path (last_imp);
+
+        push_text (abs_path);
+        push_text (imp_path);
+      }
+      else {
+        SASS_TRACE ("No import entry\n");
+        push_undefined ();
+        push_undefined ();
+      }
+
+      apply_svalue (&THIS->__importer_cb, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         SASS_TRACE ("Got return value from import: %s\n",
@@ -323,8 +344,6 @@ PIKECLASS Api
     else {
       push_undefined ();
     }
-
-    // push_text (out);
 
     sass_delete_data_context (ctx);
   }
