@@ -15,7 +15,8 @@
 inherit Tools@module@;
 //! @endignore
 
-protected typedef string(8bit) s8;
+//! Shorthand for @tt{string(8bit)@}
+typedef string(8bit) s8;
 
 //! Sass/SCSS compiler.
 //!
@@ -70,6 +71,9 @@ class Compiler
   GETTER(T,P) \
   SETTER(T,P)
 
+  // The methods/properties below are documented in either @[Low_Compiler] or
+  // in sass.cmod.
+
   GETTER_SETTER(int(0..2),    http_import)
   GETTER_SETTER(multiset(s8), http_import_allow_ct)
   GETTER_SETTER(bool,         check_file_access)
@@ -113,6 +117,7 @@ class Compiler
 
 
 class Low_Compiler
+//! @appears Tools.Sass.Compiler
 {
   //! @ignore
   inherit Tools@module@.Api;
@@ -156,7 +161,19 @@ class Low_Compiler
 
   //! @ignore
   //! Resolve external imports in sass/scss files.
-  protected s8 __resolve_import(s8 path, s8 abs_path, s8 prev_path)
+  //!
+  //! @note
+  //!  If overloaded @[abs_path] and @[rel_path] is the absolute and relaive
+  //!  paths of the file containing the import statement @[path].
+  //!  If the Sass/SCSS files are located in a normal filesystem this method
+  //!  can return the contents of @[path] as a string and @tt{libsass@} will
+  //!  resolve the paths to the imports by itself.
+  //!
+  //!  However, if the files are not located in a normal filesystem this
+  //!  function should return an array of two indices, where the first index
+  //!  should be the contents of @[path] and the second the calculated absolute
+  //!  path of @[path].
+  protected s8|array(s8) __resolve_import(s8 path, s8 abs_path, s8 rel_path)
   {
     Standards.URI uri;
 

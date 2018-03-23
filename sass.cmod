@@ -112,11 +112,11 @@ PIKECLASS Api
   // Used to resolve external imports. Set by default from the constructor
   // in Compiler in module.pmod.
 
-  PIKEVAR function(string(8bit),
-                   void|string(8bit),
-                   void|string(8bit)
-                   : string(8bit)) __importer_cb
-    flags ID_PROTECTED;
+  PIKEVAR function(
+    string(8bit), void|string(8bit), void|string(8bit)
+    : string(8bit)|array(string(8bit))
+  ) __importer_cb
+  flags ID_PROTECTED;
 
 
   void set_options (struct Sass_Context *ctx)
@@ -185,15 +185,39 @@ PIKECLASS Api
       apply_svalue (&THIS->__importer_cb, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
-        SASS_TRACE ("Got return value from import: %s\n",
-                    Pike_sp[-1].u.string->str);
-
         Sass_Import_List list = sass_make_import_list (1);
-        list[0] = sass_make_import_entry (
-            sass_copy_c_string (path),
-            sass_copy_c_string (Pike_sp[-1].u.string->str),
-            0);
+        list[0] = sass_make_import_entry (path, Pike_sp[-1].u.string->str, 0);
+
         return list;
+      }
+      // I so don't know for real what I'm doing below, there might be some
+      // memory leakage here, so someone with a black belt in C and the
+      // inetrnals of Pike should check this code.
+      else if (TYPEOF (Pike_sp[-1]) == T_ARRAY) {
+        struct array *v = Pike_sp[-1].u.array;
+
+        if (v->size != 2) {
+          Pike_error ("If returning an array from __resolve_import it must "
+                      "contain two indices: source and absolute path.\n");
+        }
+
+        if (TYPEOF (ITEM(v)[0]) == T_STRING &&
+            TYPEOF (ITEM(v)[1]) == T_STRING)
+        {
+          // Contents of the imported file.
+          char* _data = (char *) ITEM(v)[0].u.string->str;
+          // Absolute path of the imported file.
+          const char* _abs = ITEM(v)[1].u.string->str;
+
+          Sass_Import_List list = sass_make_import_list (1);
+          list[0] = sass_make_import (path, _abs,
+                                      // libsass takes ownership of _data and
+                                      // and will free it when the context
+                                      // is destroyd.
+                                      sass_copy_c_string(_data),
+                                      0);
+          return list;
+        }
       }
     }
 
