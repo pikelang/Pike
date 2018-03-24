@@ -28,18 +28,6 @@ DECLARATIONS
 /*! @module __Sass
  *! @appears Tools.Sass
  */
-
-#define REGISTER_IMPORTER(CTX)                                    \
-  do {                                                            \
-    struct Sass_Options *s_opts = sass_context_get_options (CTX); \
-    Sass_Importer_Entry c_imp;                                    \
-    c_imp = sass_make_importer (pike_sass_importer, 0, 0);        \
-    Sass_Importer_List imp_list = sass_make_importer_list (1);    \
-    sass_importer_set_list_entry (imp_list, 0, c_imp);            \
-    sass_option_set_c_importers (s_opts, imp_list);               \
-  } while (0)
-
-
 /*! @class Api
  *! @appears Tools.Sass.Compiler
  */
@@ -112,11 +100,45 @@ PIKECLASS Api
   // Used to resolve external imports. Set by default from the constructor
   // in Compiler in module.pmod.
 
+  /*! @decl protected string|array(string(8bit)) __importer_cb(@
+   *!                          string(8bit) path, @
+   *!                          void|string(8bit) absolute_path, @
+   *!                          void|string(8bit) relative_path)
+   *! @appears Tools.Sass.Compiler.__importer_cb
+   *!
+   *! Importer callback function.
+   *!
+   *! @param path
+   *!  This is the value of `path` in @tt{@@import 'path'@}.
+   *! @param absolute_path
+   *!  This is the absolute path of the file containing the @tt{@@import@}
+   *!  statement.
+   *! @param relative_path
+   *!  The relative path of @[absolute_path] in relation to the prevoius
+   *!  @[absolute_path]
+   *!
+   *! @returns
+   *!  @mixed
+   *!   @type int(0..0)
+   *!    If undefined is returned the import resolution is given back to
+   *!    @tt{libsass@}.
+   *!   @type string(8bit)
+   *!    The contents of @[path]
+   *!   @type array(string(8bit))
+   *!    if an array is returned it should contain two indices, where the first
+   *!    if the contents of @[path] and the second should be the absolute path
+   *!    @[path]. This is only useful (needed) if the Sass files doesn't
+   *!    reside in a normal filesystem that @tt{libsass@} can read.
+   *!  @endmixed
+   */
+
   PIKEVAR function(
-    string(8bit), void|string(8bit), void|string(8bit)
-    : string(8bit)|array(string(8bit))
-  ) __importer_cb
-  flags ID_PROTECTED;
+    string(8bit),
+    string(8bit) | void,
+    string(8bit) | void
+    :
+    string(8bit) | array(string(8bit))
+  ) __importer_cb     flags ID_PROTECTED;
 
 
   void set_options (struct Sass_Context *ctx)
@@ -152,12 +174,7 @@ PIKECLASS Api
 
 
   // Libsass import callback. This will be called for every @import directive
-  // in the Sass files. The callback __importer_cb will be called with
-  // @path as argument and if @path is an URI __importer_cb will fetch
-  // it and return the data as a string. If it's not a string that's returned,
-  // e.g. @path was not an URI, NULL is returned from here and libsass will
-  // try to resolve @path. If it was an URI a Sass_Import_List will be
-  // returned so that the contents of @path will replace the @import directive.
+  // in the Sass files. See the doc comment for __iomporter_cb.
   Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
                                        struct Sass_Compiler *comp)
   {
@@ -225,6 +242,19 @@ PIKECLASS Api
   }
 
 
+  void register_importer (struct Sass_Context *ctx)
+  {
+    struct Sass_Options *s_opts = sass_context_get_options (ctx);
+
+    Sass_Importer_Entry c_imp;
+    c_imp = sass_make_importer (pike_sass_importer, 0, 0);
+
+    Sass_Importer_List imp_list = sass_make_importer_list (1);
+    sass_importer_set_list_entry (imp_list, 0, c_imp);
+    sass_option_set_c_importers (s_opts, imp_list);
+  }
+
+
 #define SASS_COMPILE_FILE_ERR(X...)    \
   do {                                 \
     sass_delete_file_context (ctx);    \
@@ -245,13 +275,12 @@ PIKECLASS Api
     ctx_out = sass_file_context_get_context (ctx);
 
     set_options (ctx_out);
-
-    REGISTER_IMPORTER (ctx_out);
+    register_importer (ctx_out);
 
     int err = sass_compile_file_context (ctx);
 
     if (err) {
-      const char *errstr = strdup (sass_context_get_error_message (ctx_out));
+      const char *errstr = sass_context_get_error_message (ctx_out);
       SASS_COMPILE_FILE_ERR ("Sass compile error (code: %d):\n%s\n",
                              err, errstr);
     }
@@ -266,7 +295,7 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr = strdup (sass_context_get_error_message (ctx_out));
+          const char *errstr = sass_context_get_error_message (ctx_out);
           SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
                                  err, errstr);
         }
@@ -324,15 +353,14 @@ PIKECLASS Api
     ctx_out = sass_data_context_get_context (ctx);
 
     set_options (ctx_out);
-
-    REGISTER_IMPORTER (ctx_out);
+    register_importer (ctx_out);
 
     sass_compile_data_context (ctx);
 
     int err = sass_context_get_error_status (ctx_out);
 
     if (err) {
-      const char *errstr = strdup (sass_context_get_error_message (ctx_out));
+      const char *errstr = sass_context_get_error_message (ctx_out);
       SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s",
                                err, errstr);
     }
@@ -347,7 +375,7 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr = strdup (sass_context_get_error_message (ctx_out));
+          const char *errstr = sass_context_get_error_message (ctx_out);
           SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s",
                                    err, errstr);
         }

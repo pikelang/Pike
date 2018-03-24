@@ -153,7 +153,6 @@ class Low_Compiler
   //! @ignore
   protected void create()
   {
-    // __set_importer_callback(__resolve_import);
     this::__importer_cb = __resolve_import;
   }
   //! @endignore
@@ -250,9 +249,9 @@ class Low_Compiler
   //!  set to be generated
   //!
   //!  @mapping
-  //!   @member s8 "css"
+  //!   @member string(8bit) "css"
   //!    The generated CSS
-  //!   @member s8 "map"
+  //!   @member string(8bit) "map"
   //!    The generated source mapping data
   //!  @endmapping
   mapping(s8:s8) compile_file(s8 input_file)
@@ -301,10 +300,10 @@ class Low_Compiler
   //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
   //!    or @[STYLE_COMPRESSED] constants. See also @[output_style].
   //!
-  //!   @member s8 "include_path"
+  //!   @member string(8bit) "include_path"
   //!    Path to root of incude files. See also @[include_path].
   //!
-  //!   @member s8 "source_map_file"
+  //!   @member string(8bit) "source_map_file"
   //!    File to write source map file to.
   //!    See also @[source_map_file].
   //!
@@ -317,7 +316,7 @@ class Low_Compiler
   //!    Turn on/off if a source map should be embedded in the output or not.
   //!    Default is @tt{false@}. See also @[source_map_embed].
   //!
-  //!   @member s8 "source_map_root"
+  //!   @member string(8bit) "source_map_root"
   //!    Set the root path of the source files, relative to where the
   //!    source.map file is written.
   //!    See also @[source_map_root]
