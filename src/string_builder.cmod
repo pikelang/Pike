@@ -377,7 +377,10 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  int flags)
 {
   ptrdiff_t old_len = buf->s->len;
+
+  // NB: Requires QUOTE_NORMALIZE_WS to be != 1.
   int inhibit_whitespace = (flags & QUOTE_NORMALIZE_WS);
+  int escaped = 0;
 
   for (; i < str->len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
@@ -385,12 +388,10 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       /* Huge character. */
       string_builder_binary_strcat(buf, "\\U", 2);
       string_builder_append_integer(buf, (unsigned INT32)ch, 16, APPEND_ZERO_PAD, 8, 8);
-      inhibit_whitespace = 0;
     } else if (ch > 0xff) {
       /* Unicode character. */
       string_builder_binary_strcat(buf, "\\u", 2);
       string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 4, 4);
-      inhibit_whitespace = 0;
     } else if (ch & 0x60) {
       /* Printable character or DEL. */
       if (ch == '\177' || ch == ' ') {
@@ -398,10 +399,44 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 	goto ctrl_char;
       }
 
-      inhibit_whitespace = 0;
-
-      if ((ch == '"') || (ch == '\\')) {
+      if (ch == '"') {
 	string_builder_putchar(buf, '\\');
+	string_builder_putchar(buf, '"');
+	if (!escaped) {
+	  if (flags & QUOTE_BREAK_AT_DQUOTE) {
+	    i++;
+	    break;
+	  }
+	  if (flags & QUOTE_TOKENIZE) {
+	    i = string_builder_quote_string(buf, str, i+1, max_len,
+					    (flags & ~QUOTE_NORMALIZE_WS) |
+					    QUOTE_BREAK_AT_DQUOTE);
+	  }
+	  inhibit_whitespace = 0;
+	  goto next_ws;
+	}
+      } else if (ch == '\'') {
+	string_builder_putchar(buf, '\\');
+	string_builder_putchar(buf, '\'');
+	if (!escaped) {
+	  if (flags & QUOTE_BREAK_AT_SQUOTE) {
+	    i++;
+	    break;
+	  }
+	  if (flags & QUOTE_TOKENIZE) {
+	    i = string_builder_quote_string(buf, str, i+1, max_len,
+					    (flags & ~QUOTE_NORMALIZE_WS) |
+					    QUOTE_BREAK_AT_SQUOTE);
+	  }
+	  inhibit_whitespace = 0;
+	  goto next_ws;
+	}
+      } else if (ch == '\\') {
+	string_builder_putchar(buf, '\\');
+	string_builder_putchar(buf, '\\');
+	escaped = !escaped;
+	inhibit_whitespace = 0;
+	goto next_ws;
       }
       string_builder_putchar(buf, ch);
     } else {
@@ -414,6 +449,10 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 	  string_builder_putchar(buf, ' ');
 	  inhibit_whitespace = 1;
 	}
+	goto next_ws;
+      }
+      if (ch == ' ') {
+	string_builder_putchar(buf, ' ');
 	goto next;
       }
       string_builder_putchar(buf, '\\');
@@ -450,6 +489,10 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       string_builder_append_integer(buf, ch, 8, 0, 1, 1);
     }
   next:
+    inhibit_whitespace = 0;
+    escaped = 0;
+
+  next_ws:
     if (buf->s->len > max_len) {
       buf->s->len = old_len;
       inhibit_whitespace = 0;

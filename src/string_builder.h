@@ -44,6 +44,10 @@ struct string_builder
 #define QUOTE_NO_STRING_CONCAT	1	/* Don't use string concat in output */
 #define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
 #define QUOTE_NORMALIZE_WS	4	/* Normalize whitespace */
+#define QUOTE_TOKENIZE		8	/* Recognize strings */
+#define QUOTE_BREAK_AT_SQUOTE	16	/* Break after single quote */
+#define QUOTE_BREAK_AT_DQUOTE	32	/* Break after double quote */
+
 
 /* Prototypes begin here */
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
