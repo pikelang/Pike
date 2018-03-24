@@ -174,7 +174,10 @@ PIKECLASS Api
 
 
   // Libsass import callback. This will be called for every @import directive
-  // in the Sass files. See the doc comment for __iomporter_cb.
+  // in the Sass files. See the doc comment for __importer_cb.
+  //
+  // FIXME: We probably ought to catch thrown errors from the Pike layer here
+  //        and clean up the libsass stuff before really throwing?
   Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
                                        struct Sass_Compiler *comp)
   {
@@ -186,30 +189,26 @@ PIKECLASS Api
 
       push_text (path);
 
-      if (last_imp) {
-        const char* abs_path = sass_import_get_abs_path (last_imp);
-        const char* imp_path = sass_import_get_imp_path (last_imp);
+      const char* abs_path = sass_import_get_abs_path (last_imp);
+      const char* imp_path = sass_import_get_imp_path (last_imp);
 
-        push_text (abs_path);
-        push_text (imp_path);
-      }
-      else {
-        SASS_TRACE ("No import entry\n");
-        push_undefined ();
-        push_undefined ();
-      }
+      push_text (abs_path);
+      push_text (imp_path);
 
       apply_svalue (&THIS->__importer_cb, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         Sass_Import_List list = sass_make_import_list (1);
-        list[0] = sass_make_import_entry (path, Pike_sp[-1].u.string->str, 0);
+        list[0] = sass_make_import_entry (
+                    path,
+                    sass_copy_c_string (Pike_sp[-1].u.string->str),
+                    0);
 
         return list;
       }
-      // I so don't know for real what I'm doing below, there might be some
-      // memory leakage here, so someone with a black belt in C and the
-      // inetrnals of Pike should check this code.
+      // FIXME: I so don't know for real what I'm doing below, there might be
+      //        some memory leakage here, so someone with a black belt in C and
+      //        the inetrnals of Pike should check this code.
       else if (TYPEOF (Pike_sp[-1]) == T_ARRAY) {
         struct array *v = Pike_sp[-1].u.array;
 
@@ -406,7 +405,9 @@ PIKECLASS Api
     THIS->output_style = SASS_STYLE_NESTED;
   }
 
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     SASS_TRACE ("EXIT __Sass.Api\n");
   }
 }
