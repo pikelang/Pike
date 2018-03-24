@@ -16,11 +16,11 @@ int main(int argc, array(string) argv)
     "output_style" : Tools.Sass.STYLE_EXPANDED
   ]));
 
-  run();
+  int rv = run();
 
   compiler && destruct(compiler);
 
-  return 0;
+  return rv;
 }
 
 protected int run()
