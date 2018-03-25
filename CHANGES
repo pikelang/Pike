@@ -51,7 +51,7 @@ o Thread.ResourceCount
 
   New module to allow threadsafe race-condition-free counting of resources.
 
-o Toole.Standalone.check_http
+o Tools.Standalone.check_http
 
   - Allow redirect responses.
 
