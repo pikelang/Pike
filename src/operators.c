@@ -608,6 +608,15 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
         }
 
       case T_OBJECT:
+	{
+	  struct program *p = program_from_type(type);
+	  if (p) {
+	    struct svalue s;
+	    SET_SVAL(s, T_PROGRAM, 0, program, p);
+	    apply_svalue(&s, 1);
+	    return;
+	  }
+	}
 	switch(TYPEOF(Pike_sp[-1]))
 	{
         case T_STRING: {

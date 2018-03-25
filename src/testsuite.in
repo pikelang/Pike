@@ -9190,6 +9190,14 @@ test_eval_error([[(int)class { mixed cast() { return UNDEFINED; } }();]])
 test_eval_error([[(string)class { mixed cast() { return UNDEFINED; } }();]])
 test_eval_error([[(mapping)class { mixed cast() { return UNDEFINED; } }();]])
 
+test_any([[
+  // Cast to subtyped object.
+  class A(int val) {
+    int next() { return ++val; }
+  }
+  return ((object(A))17)->next();
+]], 18)
+
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
 test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
