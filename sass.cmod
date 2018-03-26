@@ -140,6 +140,17 @@ PIKECLASS Api
     string(8bit) | array(string(8bit))
   ) __importer_cb     flags ID_PROTECTED;
 
+  // The plan is to refactor this to see if "handle_import" is defined in the
+  // object and call it if so, instead of setting a function pointer to a
+  // variable as is done now.
+
+  // PIKEFUN string(8bit)|array(string(8bit))
+  // handle_import (string(8bit) path,
+  //                void|string(8bit) absolute_path,
+  //                void|string(8bit) relative_path)
+  // {
+  //   return;
+  // }
 
   void set_options (struct Sass_Context *ctx)
   {
@@ -181,7 +192,19 @@ PIKECLASS Api
   Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
                                        struct Sass_Compiler *comp)
   {
-    SASS_TRACE ("pike_sass_importer(%s)\n", path);
+    // struct object *o;
+    // int f;
+    // SASS_TRACE ("pike_sass_importer(%s)\n", path);
+
+    // if (Pike_fp->current_object->prog) {
+    //   SASS_TRACE ("Pike_fp is object\n");
+    //   f = find_identifier("handle_import", Pike_fp->current_object->prog);
+    // }
+    // else {
+    //   f = -1;
+    // }
+
+    // SASS_TRACE ("Handle import? %d\n", f);
 
     if (!IS_UNDEFINED(&THIS->__importer_cb)) {
       Sass_Import_Entry last_imp;
@@ -189,15 +212,20 @@ PIKECLASS Api
 
       push_text (path);
 
-      const char* abs_path = sass_import_get_abs_path (last_imp);
-      const char* imp_path = sass_import_get_imp_path (last_imp);
+      const char *abs_path = sass_import_get_abs_path (last_imp);
+      const char *imp_path = sass_import_get_imp_path (last_imp);
 
       push_text (abs_path);
       push_text (imp_path);
 
       apply_svalue (&THIS->__importer_cb, 3);
+      // apply (Pike_fp->current_object, "handle_import", 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
+        if (Pike_sp[-1].u.string->size_shift != eightbit) {
+          Pike_error ("Widestring returned from sass importer. ");
+        }
+
         Sass_Import_List list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
                     path,
@@ -221,16 +249,26 @@ PIKECLASS Api
             TYPEOF (ITEM(v)[1]) == T_STRING)
         {
           // Contents of the imported file.
-          char* _data = (char *) ITEM(v)[0].u.string->str;
+          struct pike_string *_data = ITEM(v)[0].u.string;
           // Absolute path of the imported file.
-          const char* _abs = ITEM(v)[1].u.string->str;
+          struct pike_string *_absp = ITEM(v)[1].u.string;
+
+          if (_data->size_shift != eightbit) {
+            Pike_error ("Widestring returned in array index one from "
+                        "importer function. ");
+          }
+
+          if (_absp->size_shift != eightbit) {
+            Pike_error ("Widestring returned in array index two from "
+                        "importer function. ");
+          }
 
           Sass_Import_List list = sass_make_import_list (1);
-          list[0] = sass_make_import (path, _abs,
+          list[0] = sass_make_import (path, (const char*) _absp->str,
                                       // libsass takes ownership of _data and
                                       // and will free it when the context
                                       // is destroyd.
-                                      sass_copy_c_string(_data),
+                                      sass_copy_c_string(_data->str),
                                       0);
           return list;
         }
@@ -403,6 +441,8 @@ PIKECLASS Api
     SASS_TRACE ("INIT __Sass.Api\n");
     THIS->precision = 5;
     THIS->output_style = SASS_STYLE_NESTED;
+    // int hi = find_identifier ("handle_import", Pike_fp->current_object->prog);
+    // SASS_TRACE ("handle_import: %d\n", hi);
   }
 
   EXIT
