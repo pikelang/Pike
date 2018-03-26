@@ -1326,6 +1326,8 @@ AC_ARG_ENABLE(pedantic, MY_DESCR([--enable-pedantic],
 AC_ARG_ENABLE(werror, MY_DESCR([--enable-werror],
    [enable -Werror compilation]))
 
+AC_SYS_COMPILER_FLAG_REQUIREMENTS
+
 if test "$cflags_is_set" = "no"; then
   if test "x$with_cdebug" = "xno" ; then
     CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`

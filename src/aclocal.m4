@@ -1274,9 +1274,19 @@ EOF
 
 #############################################################################
 
+AC_DEFUN(AC_SYS_COMPILER_FLAG_REQUIREMENTS,
+[
+  # The following are needed to detect broken handling of __STDC__ == 1
+  # on Solaris with old header files.
+  AC_CHECK_HEADER(sys/types.h)
+  AC_CHECK_SIZEOF(off64_t, 0)
+])
+
 # option, cache_name, variable, do_if_failed, do_if_ok, paranoia_test
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
+  dnl AC_REQUIRE(AC_SYS_COMPILER_FLAG_REQUIREMENTS)
+
   AC_MSG_CHECKING($1)
   if test "x[$]pike_disabled_option_$2" = "xyes"; then
     AC_MSG_RESULT(disabled)
@@ -1289,6 +1299,15 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       old_ac_link="[$]ac_link"
       ac_link="[$]old_ac_link 2>conftezt.out.2"
       AC_TRY_RUN([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#if SIZEOF_OFF64_T != 0
+        /* Make sure that __STDC__ doesn't get set to 1
+	 * on Solaris with old headers.
+	 */
+        off64_t off64_value = (off64_t)17;
+#endif
+#endif
         int foo;
         int main(int argc, char **argv)
         {
