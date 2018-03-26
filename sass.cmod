@@ -96,61 +96,15 @@ PIKECLASS Api
    */
   PIKEVAR int(0..1)    omit_source_map_url;
 
+  // Documented in the pmod
+  PIKEFUN string(8bit)|array(string(8bit))
+  handle_sass_import (string(8bit) path,
+                      void|string(8bit) absolute_path,
+                      void|string(8bit) relative_path)
+  flags ID_PROTECTED; {}
 
-  // Used to resolve external imports. Set by default from the constructor
-  // in Compiler in module.pmod.
-
-  /*! @decl protected string|array(string(8bit)) __importer_cb(@
-   *!                          string(8bit) path, @
-   *!                          void|string(8bit) absolute_path, @
-   *!                          void|string(8bit) relative_path)
-   *! @appears Tools.Sass.Compiler.__importer_cb
-   *!
-   *! Importer callback function.
-   *!
-   *! @param path
-   *!  This is the value of `path` in @tt{@@import 'path'@}.
-   *! @param absolute_path
-   *!  This is the absolute path of the file containing the @tt{@@import@}
-   *!  statement.
-   *! @param relative_path
-   *!  The relative path of @[absolute_path] in relation to the prevoius
-   *!  @[absolute_path]
-   *!
-   *! @returns
-   *!  @mixed
-   *!   @type int(0..0)
-   *!    If undefined is returned the import resolution is given back to
-   *!    @tt{libsass@}.
-   *!   @type string(8bit)
-   *!    The contents of @[path]
-   *!   @type array(string(8bit))
-   *!    if an array is returned it should contain two indices, where the first
-   *!    if the contents of @[path] and the second should be the absolute path
-   *!    @[path]. This is only useful (needed) if the Sass files doesn't
-   *!    reside in a normal filesystem that @tt{libsass@} can read.
-   *!  @endmixed
-   */
-
-  PIKEVAR function(
-    string(8bit),
-    string(8bit) | void,
-    string(8bit) | void
-    :
-    string(8bit) | array(string(8bit))
-  ) __importer_cb     flags ID_PROTECTED;
-
-  // The plan is to refactor this to see if "handle_import" is defined in the
-  // object and call it if so, instead of setting a function pointer to a
-  // variable as is done now.
-
-  // PIKEFUN string(8bit)|array(string(8bit))
-  // handle_import (string(8bit) path,
-  //                void|string(8bit) absolute_path,
-  //                void|string(8bit) relative_path)
-  // {
-  //   return;
-  // }
+  // Identifier ID of handle_sass_import
+  CVAR int id_handle_import;
 
   void set_options (struct Sass_Context *ctx)
   {
@@ -192,21 +146,7 @@ PIKECLASS Api
   Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
                                        struct Sass_Compiler *comp)
   {
-    // struct object *o;
-    // int f;
-    // SASS_TRACE ("pike_sass_importer(%s)\n", path);
-
-    // if (Pike_fp->current_object->prog) {
-    //   SASS_TRACE ("Pike_fp is object\n");
-    //   f = find_identifier("handle_import", Pike_fp->current_object->prog);
-    // }
-    // else {
-    //   f = -1;
-    // }
-
-    // SASS_TRACE ("Handle import? %d\n", f);
-
-    if (!IS_UNDEFINED(&THIS->__importer_cb)) {
+    if (THIS->id_handle_import > -1) {
       Sass_Import_Entry last_imp;
       last_imp = sass_compiler_get_last_import (comp);
 
@@ -218,8 +158,7 @@ PIKECLASS Api
       push_text (abs_path);
       push_text (imp_path);
 
-      apply_svalue (&THIS->__importer_cb, 3);
-      // apply (Pike_fp->current_object, "handle_import", 3);
+      apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
@@ -365,9 +304,6 @@ PIKECLASS Api
   } while (0)
 
 
-  // Compile the string source and return a string.
-  // This method is over ridden in the pmod
-
   /*! @decl string(8bit) compile_string(string(8bit) source)
    *! @appears Tools.Sass.Compiler.compile_string()
    *!
@@ -441,8 +377,12 @@ PIKECLASS Api
     SASS_TRACE ("INIT __Sass.Api\n");
     THIS->precision = 5;
     THIS->output_style = SASS_STYLE_NESTED;
-    // int hi = find_identifier ("handle_import", Pike_fp->current_object->prog);
-    // SASS_TRACE ("handle_import: %d\n", hi);
+    THIS->id_handle_import =
+      really_low_find_shared_string_identifier (MK_STRING ("handle_sass_import"),
+                                                Pike_fp->current_object->prog,
+                                                SEE_PROTECTED|SEE_PRIVATE);
+
+    SASS_TRACE ("Handle Import ID: %O\n", THIS->id_handle_import);
   }
 
   EXIT

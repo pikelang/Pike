@@ -18,6 +18,7 @@ inherit Tools@module@;
 //! Shorthand for @tt{string(8bit)@}
 typedef string(8bit) s8;
 
+class Compiler
 //! Sass/SCSS compiler.
 //!
 //! @example
@@ -37,94 +38,12 @@ typedef string(8bit) s8;
 //!   werror("Failed compiling input.scss to output.css\n");
 //! }
 //! @endcode
-class Compiler
-{
-  // NOTE: The only reason for this wrapper class is to be able to explicily
-  //       destruct the real compiler. There's a cyclic reference between
-  //       the compiler and the import callback in the real compiler so it
-  //       won't be destructed when it runs out of scope. If it can be solved
-  //       internally in the Low_Compiler this class no longer has a purpose
-
-  //! @ignore
-  //!
-  //! Ignore the rest of this class. The methods and members are documented in
-  //! @[Low_Compiler]
-
-  protected Low_Compiler compiler;
-
-  protected void create()
-  {
-    compiler = Low_Compiler();
-  }
-
-// SETTER(bool, prop) ->
-//    public void `prop=(bool value) { compiler->prop = value; }
-#define SETTER(T,P) \
-  public void ` ## P ## =(T value) { compiler-> ## P = value; }
-
-// GETTER(bool, prop) ->
-//    public bool `prop() { return compiler->prop; }
-#define GETTER(T,P) \
-  public T ` ## P ## () { return compiler-> ## P; }
-
-#define GETTER_SETTER(T,P) \
-  GETTER(T,P) \
-  SETTER(T,P)
-
-  // The methods/properties below are documented in either @[Low_Compiler] or
-  // in sass.cmod.
-
-  GETTER_SETTER(int(0..2),    http_import)
-  GETTER_SETTER(multiset(s8), http_import_allow_ct)
-  GETTER_SETTER(bool,         check_file_access)
-  GETTER_SETTER(s8,           include_path)
-  GETTER_SETTER(int(0..3),    output_style)
-  GETTER_SETTER(s8,           source_map_file)
-  GETTER_SETTER(s8,           source_map_root)
-  GETTER_SETTER(int(0..),     precision)
-  GETTER_SETTER(int(0..1),    source_comments)
-  GETTER_SETTER(int(0..1),    source_map_embed)
-  GETTER_SETTER(int(0..1),    omit_source_map_url)
-
-  mapping(s8:s8) compile_file(s8 input_file)
-  {
-    return compiler->compile_file(input_file);
-  }
-
-  variant void compile_file(s8 input_file, s8 output_file)
-  {
-    compiler->compile_file(input_file, output_file);
-  }
-
-  mapping(s8:s8) compile_string(s8 source)
-  {
-    return compiler->compile_string(source);
-  }
-
-  void set_options(mapping(s8:s8|int) opts)
-  {
-    compiler->set_options(opts);
-  }
-
-  protected void _destruct()
-  {
-    if (compiler) {
-      destruct(compiler);
-    }
-  }
-  //! @endignore
-}
-
-
-class Low_Compiler
-//! @appears Tools.Sass.Compiler
 {
   //! @ignore
   inherit Tools@module@.Api;
   //! @endignore
 
-  //! @appears Tools.Sass.Compiler.http_import
-  //!
+
   //! If a Sass file is importing an external URI this flag determines if
   //! thats allowed at all, or if the content type of the imported file has
   //! to be in @[http_import_allow_ct], or if anything goes.
@@ -135,31 +54,29 @@ class Low_Compiler
   //!  @[HTTP_IMPORT_ANY].
   public int(0..2) http_import = HTTP_IMPORT_NONE;
 
-  //! @appears Tools.Sass.Compiler.http_import_allow_ct
-  //!
+
   //! List of allowed content types if @[http_import] is set to
   //! @[HTTP_IMPORT_GREEDY]. The default is to allow @tt{text/scss@} and
   //! @tt{text/sass@}.
   public multiset(s8) http_import_allow_ct =
     (< "text/scss", "text/sass" >);
 
-  //! @appears Tools.Sass.Compiler.check_file_access
-  //!
+
   //! Should file access be tested right away when paths are set or should that
   //! be left to Sass to handle? The default value is @tt{true@}.
   public bool check_file_access = true;
 
 
-  //! @ignore
-  protected void create()
-  {
-    this::__importer_cb = __resolve_import;
-  }
-  //! @endignore
-
-
-  //! @ignore
-  //! Resolve external imports in sass/scss files.
+  //! @decl protected string|array(string(8bit)) handle_sass_import(@
+  //!                          string(8bit) path, @
+  //!                          void|string(8bit) absolute_path, @
+  //!                          void|string(8bit) relative_path)
+  //!
+  //! Resolve imports in sass/scss files.
+  //!
+  //! @note
+  //!  In general this method doesn't need to overloaded. In principle it's
+  //!  only necessary if the Sass files reside in a non-standard filesystem.
   //!
   //! @note
   //!  If overloaded @[abs_path] and @[rel_path] is the absolute and relaive
@@ -172,7 +89,30 @@ class Low_Compiler
   //!  function should return an array of two indices, where the first index
   //!  should be the contents of @[path] and the second the calculated absolute
   //!  path of @[path].
-  protected s8|array(s8) __resolve_import(s8 path, s8 abs_path, s8 rel_path)
+  //!
+  //! @param path
+  //!  This is the value of `path` in @tt{@@import 'path'@}.
+  //! @param absolute_path
+  //!  This is the absolute path of the file containing the @tt{@@import@}
+  //!  statement.
+  //! @param relative_path
+  //!  The relative path of @[absolute_path] in relation to the prevoius
+  //!  @[absolute_path]
+  //!
+  //! @returns
+  //!  @mixed
+  //!   @type int(0..0)
+  //!    If undefined is returned the import resolution is given back to
+  //!    @tt{libsass@}.
+  //!   @type string(8bit)
+  //!    The contents of @[path]
+  //!   @type array(string(8bit))
+  //!    if an array is returned it should contain two indices, where the first
+  //!    if the contents of @[path] and the second should be the absolute path
+  //!    @[path]. This is only useful (needed) if the Sass files doesn't
+  //!    reside in a normal filesystem that @tt{libsass@} can read.
+  //!  @endmixed
+  protected s8|array(s8) handle_sass_import(s8 path, s8 abs_path, s8 rel_path)
   {
     Standards.URI uri;
 
@@ -207,6 +147,8 @@ class Low_Compiler
 
     s8 data = q->data();
 
+#if 0
+    // FIXME: Decode/encode properly to UTF-8
     if (sizeof(ct_parts) > 1) {
       sscanf(ct_parts[1], "%*s=%s", string charset);
       // In case of charset="utf-8" or charset='utf-8', remove the "fnutts"
@@ -214,10 +156,10 @@ class Low_Compiler
         charset = charset[1..<1];
       }
     }
+#endif
 
     return data;
   }
-  //! @endignore
 
 
   // Documented in the CMOD
@@ -232,13 +174,13 @@ class Low_Compiler
 
 
   // Documented in the CMOD
-  s8 `include_path()
-  {
-    return ::include_path;
-  }
+  //
+  // s8 `include_path()
+  // {
+  //   return ::include_path;
+  // }
 
-  //! @appears Tools.Sass.Compiler.compile_file
-  //!
+
   //! Compile the file @[input_file] and return the result
   //!
   //! @param input_file
@@ -264,8 +206,7 @@ class Low_Compiler
     return ::compile_file(input_file);
   }
 
-  //! @appears Tools.Sass.Compiler.compile_file
-  //!
+
   //! Compile the file @[input_file] and write the result to @[output_file].
   //! If a source mapping file is set to be generated either via
   //! @[set_options()] or @[source_map_file] it will be written as per
@@ -290,8 +231,7 @@ class Low_Compiler
     }
   }
 
-  //! @appears Tools.Sass.Compiler.set_options
-  //!
+
   //! Set options to the SASS compiler.
   //!
   //! @param opts

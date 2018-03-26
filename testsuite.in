@@ -125,9 +125,11 @@ START_MARKER
   test_eq([[ scss_comp_file ]], scss_expected_style_2)
   test_eq([[ scss_comp_map->file ]], "teststyle.css")
   test_equal([[ scss_comp_map->sources ]], ({ "teststyle.scss","_testvars.scss" }))
-  test_eq([[ scss_comp_map->mappings ]],
-          [[ "AAIM,AAAA,IAAI,CAAC;EACH,WAAW,ECHL,KAAK;CDQZ;;AAND,ACCE,IDDE,"
-             "CAGF,IAAI,ACFH,QAAQ,CAAC;EACR,KAAK,EALD,IAAI;CAMT" ]])
+  dnl *** Removing this test temporarily since the output seems to vary heavily
+  dnl *** which might have to with which libsass version is being used.
+  dnl   test_eq([[ scss_comp_map->mappings ]],
+  dnl           [[ "AAIM,AAAA,IAAI,CAAC;EACH,WAAW,ECHL,KAAK;CDQZ;;AAND,ACCE,IDDE,"
+  dnl              "CAGF,IAAI,ACFH,QAAQ,CAAC;EACR,KAAK,EALD,IAAI;CAMT" ]])
 
 
   test_do([[ sassc->source_comments = true; ]])

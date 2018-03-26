@@ -6,7 +6,7 @@ typedef string(8bit) s8;
 
 class MyCompiler
 {
-  inherit Tools.Sass.Low_Compiler;
+  inherit Tools.Sass.Compiler;
   private s8 root_file;
   private s8 root_dir;
 
@@ -14,12 +14,11 @@ class MyCompiler
   {
     root_file = root;
     root_dir  = dirname(root_file);
-    ::create();
   }
 
   private s8 prev_dir = "";
 
-  protected array(s8) __resolve_import(s8 path, s8 abs_path, s8 rel_path)
+  protected array(s8) handle_sass_import(s8 path, s8 abs_path, s8 rel_path)
   {
     if (abs_path == "stdin") {
       abs_path = this::root_file;
