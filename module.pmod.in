@@ -174,11 +174,12 @@ class Compiler
 
 
   // Documented in the CMOD
-  //
-  // s8 `include_path()
-  // {
-  //   return ::include_path;
-  // }
+  // In Pike 8.1 this is needed or else the compiler will bitch about
+  // "No getter for variable" when the setter above is defined!
+  s8 `include_path()
+  {
+    return ::include_path;
+  }
 
 
   //! Compile the file @[input_file] and return the result

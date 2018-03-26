@@ -382,7 +382,7 @@ PIKECLASS Api
                                                 Pike_fp->current_object->prog,
                                                 SEE_PROTECTED|SEE_PRIVATE);
 
-    SASS_TRACE ("Handle Import ID: %O\n", THIS->id_handle_import);
+    SASS_TRACE ("Handle Import ID: %d\n", THIS->id_handle_import);
   }
 
   EXIT
