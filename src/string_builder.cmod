@@ -412,9 +412,8 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 					    (flags & ~QUOTE_NORMALIZE_WS) |
 					    QUOTE_BREAK_AT_DQUOTE);
 	  }
-	  inhibit_whitespace = 0;
-	  goto next_ws;
 	}
+	goto next;
       } else if (ch == '\'') {
 	string_builder_putchar(buf, '\\');
 	string_builder_putchar(buf, '\'');
@@ -428,9 +427,8 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 					    (flags & ~QUOTE_NORMALIZE_WS) |
 					    QUOTE_BREAK_AT_SQUOTE);
 	  }
-	  inhibit_whitespace = 0;
-	  goto next_ws;
 	}
+	goto next;
       } else if (ch == '\\') {
 	string_builder_putchar(buf, '\\');
 	string_builder_putchar(buf, '\\');
