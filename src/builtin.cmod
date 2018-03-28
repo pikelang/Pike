@@ -1930,8 +1930,11 @@ PIKECLASS RandomInterface
     THIS->int_buffer = ((INT64 *)Pike_sp[-1].u.string->str)[0];
 #else
     /* Big endian. */
-    for (int i = 0; i < 8; i++) {
-      ((p_wchar0 *)&THIS->int_buffer)[i] = STR0(Pike_sp[-1].u.string)[7-i];
+    {
+      int i;
+      for (i = 0; i < 8; i++) {
+	((p_wchar0 *)&THIS->int_buffer)[i] = STR0(Pike_sp[-1].u.string)[7-i];
+      }
     }
 #endif
     THIS->buffer_bits = 64;
