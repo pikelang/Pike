@@ -479,7 +479,7 @@ protected class Monitor(string path,
     int delta = max_dir_check_interval || global::max_dir_check_interval;
     this::st = st;
 
-    if (!st || !st->isdir) {
+    if (st && !st->isdir) {
       delta *= file_interval_factor || global::file_interval_factor;
     }
 
