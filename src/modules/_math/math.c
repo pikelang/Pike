@@ -28,7 +28,7 @@
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
 #define FL(FN) PIKE_CONCAT(FN,l)
-#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
+#elif defined (WITH_DOUBLE_PRECISION_SVALUE) || !defined(HAVE_COSF)
 #define FL(FN) FN
 #else
 #define FL(FN) PIKE_CONCAT(FN,f)
