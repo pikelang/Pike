@@ -364,6 +364,13 @@ PIKECLASS define
   }
 }
 
+/*! @class CPP
+ *!
+ *! The state for an instance of the preprocessor.
+ *!
+ *! @seealso
+ *!   @[predef::cpp()]
+ */
 PIKECLASS CPP
 {
   PIKEVAR mapping(string:object(define)) defines flags ID_PRIVATE|ID_PROTECTED;
@@ -5054,6 +5061,8 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
   }
 }
+/* ! @endclass CPP
+ */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
