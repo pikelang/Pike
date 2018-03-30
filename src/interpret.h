@@ -880,15 +880,16 @@ static inline void LOW_POP_PIKE_FRAME(struct pike_frame *_fp_) {
             num_bitmask_entries = offset + 1;
         }
       } else {
-        DO_IF_DEBUG(
-          if( (locals + _fp_->num_locals > Pike_sp) ||
-              (Pike_sp < locals + exp_offset) ||
-              (exp_offset < 0) || (exp_offset > _fp_->num_locals))
-            Pike_fatal("Stack failure in POP_PIKE_FRAME "
-                       "%p+%d=%p %p %hd!n",
-                       locals, _fp_->num_locals,
-                       locals + _fp_->num_locals,
-                       Pike_sp, exp_offset));
+#ifdef PIKE_DEBUG
+        if( (locals + _fp_->num_locals > Pike_sp) ||
+            (Pike_sp < locals + exp_offset) ||
+            (exp_offset < 0) || (exp_offset > _fp_->num_locals))
+          Pike_fatal("Stack failure in POP_PIKE_FRAME "
+                     "%p+%d=%p %p %hd!n",
+                     locals, _fp_->num_locals,
+                     locals + _fp_->num_locals,
+                     Pike_sp, exp_offset);
+#endif
       }
 
       num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4);
@@ -934,58 +935,63 @@ static inline void LOW_POP_PIKE_FRAME(struct pike_frame *_fp_) {
 PIKE_UNUSED_ATTRIBUTE
 static inline void POP_PIKE_FRAME(void) {
   struct pike_frame *_fp_ = Pike_fp;
-  DO_IF_PROFILING({
-      /* Time spent in this frame + children. */
-      cpu_time_t time_passed =
-	get_cpu_time() - Pike_interpreter.unlocked_time;
-      /* Time spent in children to this frame. */
-      cpu_time_t time_in_children;
-      /* Time spent in just this frame. */
-      cpu_time_t self_time;
-      struct identifier *function;
-      W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
-                        " (%" PRINT_CPU_TIME ")"
-                        " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
-                        Pike_interpreter.thread_state, time_passed,
-                        _fp_->start_time,
-                        Pike_interpreter.accounted_time,
-                        _fp_->children_base);
-      time_passed -= _fp_->start_time;
-      DO_IF_DEBUG(if (time_passed < 0) {
-		    Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME
-			       " now: %" PRINT_CPU_TIME
-			       " unlocked_time: %" PRINT_CPU_TIME
-			       " start_time: %" PRINT_CPU_TIME
-			       "n", time_passed, get_cpu_time(),
-			       Pike_interpreter.unlocked_time,
-			       _fp_->start_time);
-		  });
-      time_in_children =
-	Pike_interpreter.accounted_time - _fp_->children_base;
-      DO_IF_DEBUG(if (time_in_children < 0) {
-		    Pike_fatal("Negative time_in_children: %"
-			       PRINT_CPU_TIME
-			       " accounted_time: %" PRINT_CPU_TIME
-			       " children_base: %" PRINT_CPU_TIME
-			       "n", time_in_children,
-			       Pike_interpreter.accounted_time,
-			       _fp_->children_base);
-		  });
-      self_time = time_passed - time_in_children;
-      DO_IF_DEBUG(if (self_time < 0) {
-		    Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
-			       " time_passed: %" PRINT_CPU_TIME
-			       " time_in_children: %" PRINT_CPU_TIME
-			       "n", self_time, time_passed,
-			       time_in_children);
-		  });
-      Pike_interpreter.accounted_time += self_time;
-      /* FIXME: Can context->prog be NULL? */
-      function = _fp_->context->prog->identifiers + _fp_->ident;
-      if (!--function->recur_depth)
-	function->total_time += time_passed;
-      function->self_time += self_time;
-    });
+#ifdef PROFILING
+  /* Time spent in this frame + children. */
+  cpu_time_t time_passed = get_cpu_time() - Pike_interpreter.unlocked_time;
+  /* Time spent in children to this frame. */
+  cpu_time_t time_in_children;
+  /* Time spent in just this frame. */
+  cpu_time_t self_time;
+  struct identifier *function;
+  W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
+                    " (%" PRINT_CPU_TIME ")"
+                    " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
+                    Pike_interpreter.thread_state, time_passed,
+                    _fp_->start_time,
+                    Pike_interpreter.accounted_time,
+                    _fp_->children_base);
+  time_passed -= _fp_->start_time;
+# ifdef PIKE_DEBUG
+  if (time_passed < 0) {
+    Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME
+               " now: %" PRINT_CPU_TIME
+               " unlocked_time: %" PRINT_CPU_TIME
+               " start_time: %" PRINT_CPU_TIME
+               "n", time_passed, get_cpu_time(),
+               Pike_interpreter.unlocked_time,
+               _fp_->start_time);
+  }
+# endif /* PIKE_DEBUG */
+  time_in_children = Pike_interpreter.accounted_time - _fp_->children_base;
+# ifdef PIKE_DEBUG
+  if (time_in_children < 0) {
+    Pike_fatal("Negative time_in_children: %"
+               PRINT_CPU_TIME
+               " accounted_time: %" PRINT_CPU_TIME
+               " children_base: %" PRINT_CPU_TIME
+               "n", time_in_children,
+               Pike_interpreter.accounted_time,
+               _fp_->children_base);
+  }
+# endif /* PIKE_DEBUG */
+  self_time = time_passed - time_in_children;
+# ifdef PIKE_DEBUG
+  if (self_time < 0) {
+    Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
+               " time_passed: %" PRINT_CPU_TIME
+               " time_in_children: %" PRINT_CPU_TIME
+               "n", self_time, time_passed,
+               time_in_children);
+  }
+# endif /* PIKE_DEBUG */
+  Pike_interpreter.accounted_time += self_time;
+  /* FIXME: Can context->prog be NULL? */
+  function = _fp_->context->prog->identifiers + _fp_->ident;
+  if (!--function->recur_depth)
+    function->total_time += time_passed;
+  function->self_time += self_time;
+#endif /* PROFILING */
+
   LOW_POP_PIKE_FRAME (_fp_);
 }
 
