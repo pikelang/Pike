@@ -200,6 +200,6 @@ test_tree(ADT.CritBit.IPv4Tree, [[mkmapping(map(enumerate(100)+enumerate(1000, -
 }), enumerate(2100))]], ADT.CritBit.sort_ipv4)
 test_tree(ADT.CritBit.FloatTree, [[mkmapping((array(float))(enumerate(100)+enumerate(1000, -19, 666)+enumerate(1000, Int.NATIVE_MAX/600, Int.NATIVE_MIN)), enumerate(2100))]], sort)
 test_tree(ADT.CritBit.DateTree, [[mkmapping(map(enumerate(2000, time()/3000, 1), Function.curry(Calendar.Second)("unix")), enumerate(2000))]], sort)
-
+test_tree(ADT.CritBit.BigNumTree, [[mkmapping(enumerate(10000, 2*Int.NATIVE_MAX, Int.NATIVE_MAX+1), enumerate(10000))]], sort)
 
 END_MARKER

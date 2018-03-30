@@ -96,6 +96,12 @@ o Web.Sass
 Bug fixes
 ---------
 
+o ADT.CritBit
+
+  - Due to an off-by-one error the last limb of bignums was never compared.
+    This resulted (sometimes) in unequal bignums comparing equal inside of
+    the tree.
+
 o Compiler
 
   - Improved variant robustness.
