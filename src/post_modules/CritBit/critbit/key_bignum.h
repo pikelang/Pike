@@ -18,11 +18,13 @@ typedef mp_limb_t CB_NAME(char);
 #define cb_char CB_NAME(char)
 
 static inline unsigned INT32 gclz(mp_limb_t a) {
-    if (sizeof(mp_limb_t) == 8) {
-        return clz64((UINT64)a);
-    } else {
-	return clz32((unsigned INT32)a);
-    }
+#if GMP_NUMB_BITS == 64
+    return clz64((UINT64)a);
+#elif GMP_NUMB_BITS == 32
+    return clz32((unsigned INT32)a);
+#else
+#error Only supports limb sizes of 32 or 64 bits.
+#endif
 }
 
 #define O2G(o) ((MP_INT*)(o->storage))
@@ -45,8 +47,8 @@ static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
     MP_INT * i = O2G(s);
 
     n += abs(i->_mp_size);
-    if (n > 0) {
-        return i->_mp_d[abs(i->_mp_size)-n];
+    if (n >= 0) {
+        return i->_mp_d[abs(i->_mp_size) - 1 - n];
     } else {
         return 0;
     }
