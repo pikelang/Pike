@@ -162,11 +162,40 @@ protected int ponder_answer( int|void start_position )
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
       switch(n=lower_case(n))
       {
-	 case "set-cookie":
-	    headers[n]=(headers[n]||({}))+({d});
-	    break;
-	 default:
-	   headers[n]=d;
+      case "set-cookie":
+        headers[n]=(headers[n]||({}))+({d});
+        break;
+
+      case "accept-ranges":
+      case "age":
+      case "connection":
+      case "content-type":
+      case "content-encoding":
+      case "date":
+      case "etag":
+      case "keep-alive":
+      case "last-modified":
+      case "location":
+      case "retry-after":
+      case "transfer-encoding":
+        headers[n]=d;
+        break;
+
+      case "allow":
+      case "cache-control":
+      case "vary":
+        if( headers[n] )
+          headers[n] += ", " +d;
+        else
+          headers[n] = d;
+        break;
+
+      default:
+        if( headers[n] )
+          headers[n] += "; " +d;
+        else
+          headers[n] = d;
+        break;
       }
    }
 
