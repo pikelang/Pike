@@ -2086,6 +2086,74 @@ struct pike_frame *alloc_pike_frame(void)
     return alloc_pike_frame();
 }
 
+void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
+{
+  ptrdiff_t exp_offset = frame->expendible_offset;
+  debug_malloc_touch(frame);
+  if (exp_offset || (frame->flags & PIKE_FRAME_SAVE_LOCALS)) {
+    struct svalue *locals = frame->locals;
+    struct svalue *s;
+    INT16 num_new_locals = 0;
+    unsigned int num_bitmask_entries = 0;
+    if(frame->flags & PIKE_FRAME_SAVE_LOCALS) {
+      ptrdiff_t offset;
+      for (offset = 0;
+           offset < (ptrdiff_t)((frame->num_locals >> 4) + 1);
+           offset++) {
+        if (*(frame->save_locals_bitmask + offset))
+          num_bitmask_entries = offset + 1;
+      }
+    } else {
+#ifdef PIKE_DEBUG
+      if( (locals + frame->num_locals > Pike_sp) ||
+          (Pike_sp < locals + exp_offset) ||
+          (exp_offset < 0) || (exp_offset > frame->num_locals))
+        Pike_fatal("Stack failure in POP_PIKE_FRAME "
+                   "%p+%d=%p %p %hd!n",
+                   locals, frame->num_locals,
+                   locals + frame->num_locals,
+                   Pike_sp, exp_offset);
+#endif
+    }
+
+    num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4);
+
+    s=(struct svalue *)xalloc(sizeof(struct svalue)*
+                              num_new_locals);
+    memset(s, 0, sizeof(struct svalue) * num_new_locals);
+
+    {
+      int idx;
+      unsigned INT16 bitmask=0;
+
+      for (idx = 0; idx < num_new_locals; idx++) {
+        if (!(idx % 16)) {
+          ptrdiff_t offset = (ptrdiff_t)(idx >> 4);
+          if (offset < num_bitmask_entries) {
+            bitmask = *(frame->save_locals_bitmask + offset);
+          } else {
+            bitmask = 0;
+          }
+        }
+        if (bitmask & (1 << (idx % 16)) || idx < exp_offset) {
+          assign_svalue_no_free(s + (ptrdiff_t)idx,
+                                locals + (ptrdiff_t)idx);
+        }
+      }
+    }
+    if(frame->flags & PIKE_FRAME_SAVE_LOCALS) {
+      frame->flags &= ~PIKE_FRAME_SAVE_LOCALS;
+      free(frame->save_locals_bitmask);
+    }
+    frame->num_locals = num_new_locals;
+    frame->locals=s;
+    frame->flags|=PIKE_FRAME_MALLOCED_LOCALS;
+  } else {
+    frame->locals=0;
+  }
+  frame->next=0;
+}
+
 void count_memory_in_pike_frames(size_t *num, size_t *size )
 {
   *num = num_pike_frames;

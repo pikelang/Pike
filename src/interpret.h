@@ -740,6 +740,7 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
+void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame);
 void really_free_pike_scope(struct pike_frame *scope);
 void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
 void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
@@ -854,87 +855,27 @@ struct Pike_stack
   Pike_interpreter.current_stack=Pike_interpreter.current_stack->previous; \
 }while(0)
 
+
+
 /* Without fancy accounting stuff. This one can't assume there is an
  * identifier corresponding to the frame (i.e. _fp_->ident might be
  * bogus). */
 PIKE_UNUSED_ATTRIBUTE
-static inline void LOW_POP_PIKE_FRAME(struct pike_frame *_fp_) {
-  struct pike_frame *tmp_=_fp_->next;
-  if(!sub_ref(_fp_))
-  {
-    really_free_pike_frame(_fp_);
-  }else{
-    ptrdiff_t exp_offset = _fp_->expendible_offset;
-    debug_malloc_touch(_fp_);
-    if (exp_offset || (_fp_->flags & PIKE_FRAME_SAVE_LOCALS)) {
-      struct svalue *locals = _fp_->locals;
-      struct svalue *s;
-      INT16 num_new_locals = 0;
-      unsigned int num_bitmask_entries = 0;
-      if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {
-        ptrdiff_t offset;
-        for (offset = 0;
-             offset < (ptrdiff_t)((_fp_->num_locals >> 4) + 1);
-             offset++) {
-          if (*(_fp_->save_locals_bitmask + offset))
-            num_bitmask_entries = offset + 1;
-        }
-      } else {
-#ifdef PIKE_DEBUG
-        if( (locals + _fp_->num_locals > Pike_sp) ||
-            (Pike_sp < locals + exp_offset) ||
-            (exp_offset < 0) || (exp_offset > _fp_->num_locals))
-          Pike_fatal("Stack failure in POP_PIKE_FRAME "
-                     "%p+%d=%p %p %hd!n",
-                     locals, _fp_->num_locals,
-                     locals + _fp_->num_locals,
-                     Pike_sp, exp_offset);
-#endif
-      }
+static inline void LOW_POP_PIKE_FRAME(struct pike_frame *frame)
+{
+  struct pike_frame *tmp = frame->next;
 
-      num_new_locals = MAXIMUM(exp_offset, num_bitmask_entries << 4);
+  if (LIKELY(!sub_ref(frame)))
+    really_free_pike_frame(frame);
+  else
+    LOW_POP_PIKE_FRAME_slow_path(frame);
 
-      s=(struct svalue *)xalloc(sizeof(struct svalue)*
-                                num_new_locals);
-      memset(s, 0, sizeof(struct svalue) * num_new_locals);
-
-      {
-        int idx;
-        unsigned INT16 bitmask=0;
-
-        for (idx = 0; idx < num_new_locals; idx++) {
-          if (!(idx % 16)) {
-            ptrdiff_t offset = (ptrdiff_t)(idx >> 4);
-            if (offset < num_bitmask_entries) {
-              bitmask = *(_fp_->save_locals_bitmask + offset);
-            } else {
-              bitmask = 0;
-            }
-          }
-          if (bitmask & (1 << (idx % 16)) || idx < exp_offset) {
-            assign_svalue_no_free(s + (ptrdiff_t)idx,
-                                  locals + (ptrdiff_t)idx);
-          }
-        }
-      }
-      if(_fp_->flags & PIKE_FRAME_SAVE_LOCALS) {
-        _fp_->flags &= ~PIKE_FRAME_SAVE_LOCALS;
-        free(_fp_->save_locals_bitmask);
-      }
-      _fp_->num_locals = num_new_locals;
-      _fp_->locals=s;
-      _fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;
-    } else {
-      _fp_->locals=0;
-    }
-    _fp_->next=0;
-  }
-  Pike_fp=tmp_;
+  Pike_fp = tmp;
 }
 
 PIKE_UNUSED_ATTRIBUTE
 static inline void POP_PIKE_FRAME(void) {
-  struct pike_frame *_fp_ = Pike_fp;
+  struct pike_frame *frame = Pike_fp;
 #ifdef PROFILING
   /* Time spent in this frame + children. */
   cpu_time_t time_passed = get_cpu_time() - Pike_interpreter.unlocked_time;
@@ -947,10 +888,10 @@ static inline void POP_PIKE_FRAME(void) {
                     " (%" PRINT_CPU_TIME ")"
                     " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
                     Pike_interpreter.thread_state, time_passed,
-                    _fp_->start_time,
+                    frame->start_time,
                     Pike_interpreter.accounted_time,
-                    _fp_->children_base);
-  time_passed -= _fp_->start_time;
+                    frame->children_base);
+  time_passed -= frame->start_time;
 # ifdef PIKE_DEBUG
   if (time_passed < 0) {
     Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME
@@ -959,10 +900,10 @@ static inline void POP_PIKE_FRAME(void) {
                " start_time: %" PRINT_CPU_TIME
                "n", time_passed, get_cpu_time(),
                Pike_interpreter.unlocked_time,
-               _fp_->start_time);
+               frame->start_time);
   }
 # endif /* PIKE_DEBUG */
-  time_in_children = Pike_interpreter.accounted_time - _fp_->children_base;
+  time_in_children = Pike_interpreter.accounted_time - frame->children_base;
 # ifdef PIKE_DEBUG
   if (time_in_children < 0) {
     Pike_fatal("Negative time_in_children: %"
@@ -971,7 +912,7 @@ static inline void POP_PIKE_FRAME(void) {
                " children_base: %" PRINT_CPU_TIME
                "n", time_in_children,
                Pike_interpreter.accounted_time,
-               _fp_->children_base);
+               frame->children_base);
   }
 # endif /* PIKE_DEBUG */
   self_time = time_passed - time_in_children;
@@ -986,13 +927,13 @@ static inline void POP_PIKE_FRAME(void) {
 # endif /* PIKE_DEBUG */
   Pike_interpreter.accounted_time += self_time;
   /* FIXME: Can context->prog be NULL? */
-  function = _fp_->context->prog->identifiers + _fp_->ident;
+  function = frame->context->prog->identifiers + frame->ident;
   if (!--function->recur_depth)
     function->total_time += time_passed;
   function->self_time += self_time;
 #endif /* PROFILING */
 
-  LOW_POP_PIKE_FRAME (_fp_);
+  LOW_POP_PIKE_FRAME (frame);
 }
 
 #endif
