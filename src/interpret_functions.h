@@ -1507,7 +1507,6 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
     DO_IF_NOT_REAL_DEBUG (
       init_recovery (&new_catch_ctx->recovery, 0);
     );
-    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
     JUMP_SET_TO_PC_AT_NEXT (addr);
     new_catch_ctx->continue_reladdr = GET_JUMP()
       /* We need to run the entry prologue... */
@@ -1520,8 +1519,6 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
 	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
       });
   }
-
-  Pike_fp->expendible_offset = Pike_fp->num_locals;
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1588,7 +1585,6 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
-	frame_set_expendible(Pike_fp, cc->save_expendible);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
@@ -1784,11 +1780,9 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
     if(d_flag>3) do_gc(NULL, 0);
     if(d_flag>4) do_debug();
     );
-  if(Pike_fp->expendible_offset <= arg1)
-  {
+  if (!(Pike_fp->flags & PIKE_FRAME_SAVE_LOCALS)) {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
-    DO_IF_DEBUG(Pike_fp->num_locals = arg1);
-  }else{
+  } else {
     push_svalue(Pike_fp->locals + arg1);
   }
   DO_DUMB_RETURN;
@@ -2824,7 +2818,6 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->args = args;                                                  \
   new_frame->locals=Pike_sp-args;                                          \
   new_frame->save_sp_offset = 0;                                           \
-  new_frame->expendible_offset = 0;                                        \
   new_frame->save_mark_sp = Pike_mark_sp;	                           \
   DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \
@@ -3055,10 +3048,6 @@ OPCODE2(F_MAGIC_TYPES, "::_types", I_UPDATE_SP, {
 OPCODE2(F_INIT_FRAME, "init_frame", 0, {
     Pike_fp->num_args = arg1;
     Pike_fp->num_locals = arg2;
-  });
-
-OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
-    Pike_fp->expendible_offset = arg1;
   });
 
 /* Save local variables according to bitmask. The high 16 bits of arg1

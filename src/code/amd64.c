@@ -3997,11 +3997,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_add_sp( 2 );
     return;
 
-  case F_PROTECT_STACK:
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
-    amd64_load_fp_reg();
-    mov_imm_mem16(b, fp_reg, OFFSETOF(pike_frame, expendible_offset));
-    return;
   case F_MARK_AT:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();

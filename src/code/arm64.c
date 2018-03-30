@@ -2683,23 +2683,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ra_free(tmp);
           return;
       }
-  case F_PROTECT_STACK:
-      {
-	  enum arm64_register reg;
-
-          arm64_debug_instr_prologue_1(opcode, arg1);
-
-          arm64_load_fp_reg();
-	  if (arg1) {
-	      reg = ra_alloc_any();
-	      arm64_mov_int(reg, arg1);
-	      store16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
-	      ra_free(reg);
-	  } else {
-	      store16_reg_imm(ARM_REG_ZERO, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
-	  }
-          return;
-      }
   case F_THIS_OBJECT:
       /* NOTE: we only implement this trivial case and let the others be handled by the opcode fun */
       if (arg1) break;

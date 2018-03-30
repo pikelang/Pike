@@ -18,7 +18,6 @@ struct catch_context
 {
   struct catch_context *prev;
   JMP_BUF recovery;
-  struct svalue *save_expendible;
   PIKE_OPCODE_T *next_addr;
   ptrdiff_t continue_reladdr;
 #ifdef PIKE_DEBUG
@@ -97,7 +96,6 @@ struct pike_frame
    * be discarded once the current function is done with them. It is an offset
    * from locals and is always positive.
    */
-  INT16 expendible_offset;
   INT16 num_locals;		/** Number of local variables. */
   INT16 num_args;		/** Number of argument variables. */
 
@@ -129,19 +127,6 @@ static inline void frame_set_save_sp(struct pike_frame *frame, struct svalue *sv
         Pike_error("Save SP offset too large.\n");
 #endif
     frame->save_sp_offset = n;
-}
-
-static inline struct svalue *frame_get_expendible(const struct pike_frame *frame) {
-    return frame->locals + frame->expendible_offset;
-}
-
-static inline void frame_set_expendible(struct pike_frame *frame, struct svalue *sv) {
-    ptrdiff_t n = sv - frame->locals;
-#ifdef PIKE_DEBUG
-    if (n < MIN_INT16 || n > MAX_INT16)
-        Pike_error("Expendible offset too large.\n");
-#endif
-    frame->expendible_offset = n;
 }
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
