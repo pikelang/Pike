@@ -405,6 +405,20 @@ PIKECLASS CPP
     }
   }
 
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    struct CPP_struct *this = THIS;
+    ref_push_string(MK_STRING("CPP(%s:%d)"));
+    if (this->current_file) {
+      ref_push_string(this->current_file);
+    } else {
+      ref_push_string(MK_STRING("-"));
+    }
+    push_int(this->current_line);
+    f_sprintf(2);
+  }
+
 #define FIND_DEFINE(N) find_define(this, (N))
 
 static struct define_struct *find_define(struct CPP_struct *this, struct pike_string *n)
