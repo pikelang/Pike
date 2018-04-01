@@ -280,7 +280,10 @@ static void f_hp_feed( INT32 args )
     {
       if( THP->mode & FLAG_THROW_ERROR )
       {
-        /* FIXME: Reset stack so that backtrace shows faulty header. */
+        /* Reset stack so that backtrace shows faulty header. */
+        pop_n_elems(3);
+        push_string(make_shared_binary_string((const char*)(hp->pnt - str_len),
+                                              str_len));
         Pike_error("Malformed HTTP header.\n");
       }
       else
