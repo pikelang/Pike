@@ -214,7 +214,7 @@ static void f_hp_feed( INT32 args )
   push_mapping(headers);
 
   /* Parse headers. */
-  for(i = 0; i < l; i++)
+  for(i = 0; i < l-2; i++)
   {
     if(!keep_case && (in[i] > 64 && in[i] < 91))
     {
