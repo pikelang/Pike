@@ -3138,6 +3138,9 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
         {
           if( CAR($7)->token == F_LOCAL && !CAR($7)->u.integer.b)
           {
+	    if (Pike_compiler->compiler_frame->variable[CAR($7)->u.integer.a].type) {
+	      free_type(Pike_compiler->compiler_frame->variable[CAR($7)->u.integer.a].type);
+	    }
             copy_pike_type(Pike_compiler->compiler_frame->variable[CAR($7)->u.integer.a].type,
                            ind);
           }
@@ -3150,6 +3153,9 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
         {
           if( CDR($7)->token == F_LOCAL && !CDR($7)->u.integer.b)
           {
+	    if (Pike_compiler->compiler_frame->variable[CDR($7)->u.integer.a].type) {
+	      free_type(Pike_compiler->compiler_frame->variable[CDR($7)->u.integer.a].type);
+	    }
             copy_pike_type(Pike_compiler->compiler_frame->variable[CDR($7)->u.integer.a].type,
                            val);
           }
@@ -3166,6 +3172,9 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
         {
           if( $7->token == F_LOCAL && !$7->u.integer.b)
           {
+	    if (Pike_compiler->compiler_frame->variable[$7->u.integer.a].type) {
+	      free_type(Pike_compiler->compiler_frame->variable[$7->u.integer.a].type);
+	    }
             copy_pike_type(Pike_compiler->compiler_frame->variable[$7->u.integer.a].type,
                            val);
           }
