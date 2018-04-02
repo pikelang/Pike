@@ -631,7 +631,8 @@ static void mov_reg_mem16( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdi
 }
 #endif
 
-static void mov_imm_mem16( short imm, enum amd64_reg to_reg, ptrdiff_t offset )
+static void PIKE_UNUSED_ATTRIBUTE mov_imm_mem16( short imm, enum amd64_reg to_reg,
+						 ptrdiff_t offset )
 {
     opcode( 0x66 ); /* switch 32/16 */
 
