@@ -64,6 +64,24 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
 }
 
+//! Decrypt a PEM Message.
+//!
+//! @param body
+//!   Fragment with encypted PEM body.
+//!
+//! @param password
+//!   Decryption password.
+//!
+//! @returns
+//!   Returns the decrypted body text.
+string decrypt_fragment(Message m, string(8bit) pwd)
+{
+  // FIXME: Check proc-type = "4,ENCRYPTED"?
+  string(8bit) dek = m->headers["dek-info"];
+  if(!dek) return 0;;
+  return decrypt_body(dek, m->body, pwd);
+}
+
 //! Represents a PEM-style message.
 class Message
 {
@@ -79,10 +97,10 @@ class Message
 
   //! Encapsulated headers. If headers occur multiple times, they
   //! will be concatenated separated by delimiting NUL characters.
-  mapping(string:string) headers;
+  mapping(string(8bit):string(8bit)) headers;
 
   //! The decode message body.
-  string body;
+  string(8bit) body;
 
   //! Message trailer, like @rfc{4880@} checksum.
   string trailer;
@@ -115,8 +133,8 @@ class Message
     }
 
     array res = MIME.parse_headers(lines*"\n");
-    headers = [mapping(string:string)]res[0];
-    body = MIME.decode_base64([string]res[1]);
+    headers = [mapping(string(8bit):string(8bit))]res[0];
+    body = MIME.decode_base64([string(8bit)]res[1]);
   }
 }
 
@@ -173,17 +191,24 @@ class Messages
     return ({ Message(lines) });
   }
 
+  //! Returns an array of all fragments with any of the given
+  //! @[labels] in the boundy preamble.
+  array(Message) get_fragments(multiset labels)
+  {
+    array(Message) ret = ({});
+    foreach(fragments, string|Message m)
+    {
+      if(objectp(m) && labels[m->pre])
+        ret += ({ m });
+    }
+    return ret;
+  }
+
   //! Returns an array of the string bodies of all fragments with any
   //! of the given @[labels] in the boundy preamble.
   array(string) get_fragment_bodies(multiset labels)
   {
-    array(string) ret = ({});
-    foreach(fragments, string|Message m)
-    {
-      if(objectp(m) && labels[m->pre])
-        ret += ({ m->body });
-    }
-    return ret;
+    return get_fragments(labels)->body;
   }
 
   //! Returns an array of all the bodies of @expr{"CERTIFICATE"@} and
@@ -202,13 +227,18 @@ class Messages
     return get_certificates()[?0];
   }
 
+  protected array(Message) low_get_private_keys()
+  {
+    return get_fragments( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
+                             "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+  }
+
   //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
   //! @expr{"DSA PRIVATE KEY"@}, @expr{"EC PRIVATE KEY"@} and
   //! @expr{"ANY PRIVATE KEY"@} fragments.
   array(string) get_private_keys()
   {
-    return get_fragment_bodies( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
-                                   "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+    return low_get_private_keys()->body;
   }
 
   //! Convenience wrapper for @[get_private_key] that returns the
@@ -216,6 +246,14 @@ class Messages
   string get_private_key()
   {
     return get_private_keys()[?0];
+  }
+
+  //! Returns the first key, decoded by the @[pwd] password.
+  string get_encrypted_private_key(string(8bit) pwd)
+  {
+    Message m = low_get_private_keys()[?0];
+    if(!m) return 0;
+    return decrypt_fragment(m, pwd);
   }
 
   protected string _sprintf(int t)
