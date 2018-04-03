@@ -5855,12 +5855,29 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       normalised_time += 24*60*60;
     else if (normalised_time > 12*60*60)
       normalised_time -= 24*60*60;
+
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
     retval += date->__tm_gmtoff;
 #elif defined(STRUCT_TM_HAS_GMTOFF)
     retval += date->tm_gmtoff;
+#elif defined(HAVE_EXTERNAL_TIMEZONE) && defined(HAVE_EXTERNAL_ALTZONE)
+    if (date->tm_isdst) {
+      retval -= altzone;
+    } else {
+      retval -= timezone;
+    }
 #else
-    normalised_time = retval - mktime(gmtime(&retval));
+    {
+      /* NB: The tm from gmtime(3F) will always have tm_isdst == 0,
+       *     but mktime() is always in the local time zone, and will
+       *     adjust it and tm_hour if the local time zone is in dst.
+       *     This causes an error of typically one hour in dst when
+       *     used without preadjustment.
+       */
+      struct tm gmt_tm = *gmtime(&retval);
+      gmt_tm.tm_isdst = date->tm_isdst;
+      normalised_time += retval - mktime(&gmt_tm);
+    }
 #endif
     retval += normalised_time + tz;
   }

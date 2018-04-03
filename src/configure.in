@@ -5017,6 +5017,24 @@ fi
 
 AC_MSG_RESULT($pike_cv_has_external_timezone)
 
+AC_MSG_CHECKING(extern int altzone)
+
+AC_CACHE_VAL(pike_cv_has_external_altzone,[
+AC_TRY_LINK([
+#include <time.h>
+],[
+  int _tz;
+  _tz=altzone;
+  altzone=_tz;
+],pike_cv_has_external_altzone=yes,pike_cv_has_external_altzone=no)
+])
+
+if test "$pike_cv_has_external_altzone" = "yes"; then
+  AC_DEFINE(HAVE_EXTERNAL_ALTZONE)
+fi
+
+AC_MSG_RESULT($pike_cv_has_external_altzone)
+
 #############################################################################
 
 # No test for this yet...

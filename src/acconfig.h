@@ -407,6 +407,9 @@
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE
 
+/* define this if #include <time.h> provides an external int altzone */
+#undef HAVE_EXTERNAL_ALTZONE
+
 /* define this if your struct tm has a tm_gmtoff */
 #undef STRUCT_TM_HAS_GMTOFF
 
