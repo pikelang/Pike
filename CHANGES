@@ -133,6 +133,11 @@ o Protocols.HTTP
   options are properly 'parsed'). Trailer headers are now correctly
   parsed.
 
+o Protocols.HTTP.Server.HeaderParser
+
+  The header parser exception mode now doesn't immediately throw an
+  exception.
+
 o Protocols.LDAP
 
   Fixed race condition on initializing LDAPS.
