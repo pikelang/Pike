@@ -1420,6 +1420,7 @@ test_do([[
   add_constant("threaded_low_test_ssl_connection");
   add_constant("test_ssl_connection");
   add_constant("low_test_ssl_connection");
+  add_constant("low_test_buffered_ssl_connection");
   add_constant("TestContext");
 ]])
 
