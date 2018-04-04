@@ -350,11 +350,17 @@ PIKECLASS define
   CVAR short flags;         /* CPP_MACRO_* */
   CVAR short varargs;
 
+  CVAR struct svalue self;
+
   DECLARE_STORAGE;
 
   INIT
   {
     struct define_struct *def = (struct define_struct *)CURRENT_STORAGE;
+    /* NB: NO reference for def->self! */
+    SET_SVAL(def->self, T_OBJECT,
+	     Pike_fp->context - Pike_fp->current_program->inherits,
+	     object, Pike_fp->current_object);
     def->args=-1;
 #ifdef PIKE_NULL_IS_SPECIAL
     def->magic=0;
