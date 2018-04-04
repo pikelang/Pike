@@ -758,8 +758,11 @@ New features
 
 o Thread
 
-  _sprintf() improvements: Thread.Mutex now prints the ID of the thread
-  holding the lock, and thread IDs are shown as hexadecimal numbers.
+  - _sprintf() improvements: Thread.Mutex now prints the ID of the thread
+    holding the lock, and thread IDs are shown as hexadecimal numbers.
+
+  - Thread.Farm now supports a callback for thread creation and termination
+    for the purpose of tracking thread names.
 
 Bug fixes
 ---------
