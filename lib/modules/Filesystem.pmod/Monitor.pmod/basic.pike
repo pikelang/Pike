@@ -324,6 +324,24 @@ protected class Monitor(string path,
     register_path(1);
   }
 
+  //! Returns the parent monitor, or UNDEFINED if no such monitor exists.
+  this_program parent()
+  {
+    string parent_path = canonic_path (dirname (path));
+    return monitors[parent_path];
+  }
+
+  //! To be called when a (direct) submonitor is released.
+  void submonitor_released (this_program submon)
+  {
+    if (files) {
+      string filename = basename (submon->path);
+      MON_WERR("%O->submonitor_released(%O): Removing list state for %O.\n",
+	       this, filename);
+      files -= ({ filename });
+    }
+  }
+
   //! Call a notification callback.
   //!
   //! @param cb
@@ -585,8 +603,15 @@ protected class Monitor(string path,
   void check_for_release(int mask, int flags)
   {
     if ((this::flags & mask) == flags) {
+      MON_WERR("Releasing in %O->check_for_release(%O, %O)\n",
+	       this, mask, flags);
       m_delete(monitors, path);
       release_monitor(this);
+      if (this_program par = parent()) {
+	par->submonitor_released (this);
+      } else {
+	MON_WERR("%O has no parent monitor.\n", this);
+      }
     }
   }
 
