@@ -989,27 +989,23 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
       string full_path = canonic_path(Stdio.append_path(m->path, path));
       // We're interested in the sub monitor, if it exists.
       if (Monitor submon = monitors[full_path]) {
+	MON_WERR ("inotify_event: Got submonitor %O.\n", submon);
+
 	m = submon;
-      } else if ((m->flags & MF_RECURSE) && !(event & System.Inotify.IN_DELETE)) {
-	// We've missed creation of the submonitor.
-	//
-	// This can happen in the
-	//
-	//   Exist ==> Deleted ==> Exists
-	//
-	// with no update of the directory inbetween race-condition.
-	//
-	// Create the submonitor.
-	MON_WARN("Monitor lost for path %O.\n", full_path);
-        m = monitor(full_path, m->flags | MF_AUTO | MF_HARD,
-            m->max_dir_check_interval,
-            m->file_interval_factor,
-            m->stable_time);
-        // monitor() will not register monitor for path if filter_file()
-        // returns 0.
-        if (m) {
-          m->check(0);    // Init monitor.
-        }
+      } else {
+	MON_WERR ("inotify_event: Forcing check of %O.\n", m);
+	// No monitor exists for the path yet (typically happens for
+	// IN_CREATE events). Force a check on the directory monitor.
+	m->check(m->flags);
+
+	// Try again after directory check.
+	if (Monitor submon2 = monitors[full_path]) {
+	  MON_WERR ("inotify_event: Got submonitor %O on retry.\n", submon2);
+	  m = submon2;
+	} else {
+	  MON_WERR ("inotify_event: Failed to get monitor for file %s "
+		    "in %O.\n", path, m);
+	}
       }
     }
   }
