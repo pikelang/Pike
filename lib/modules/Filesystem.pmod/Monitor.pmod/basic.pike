@@ -337,7 +337,7 @@ protected class Monitor(string path,
     if (files) {
       string filename = basename (submon->path);
       MON_WERR("%O->submonitor_released(%O): Removing list state for %O.\n",
-	       this, filename);
+	       this, submon, filename);
       files -= ({ filename });
     }
   }
