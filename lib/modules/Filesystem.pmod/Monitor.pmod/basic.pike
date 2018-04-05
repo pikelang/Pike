@@ -1755,7 +1755,7 @@ void set_nonblocking(int|void suggested_t)
   reschedule_backend_check(suggested_t);
 }
 
-//! Set the @[default_max_dir_check_interval].
+//! Set the @[max_dir_check_interval].
 void set_max_dir_check_interval(int max_dir_check_interval)
 {
   if (max_dir_check_interval > 0) {
@@ -1765,7 +1765,7 @@ void set_max_dir_check_interval(int max_dir_check_interval)
   }
 }
 
-//! Set the @[default_file_interval_factor].
+//! Set the @[file_interval_factor].
 void set_file_interval_factor(int file_interval_factor)
 {
   if (file_interval_factor > 0) {
@@ -1775,3 +1775,12 @@ void set_file_interval_factor(int file_interval_factor)
   }
 }
 
+//! Set the @[stable_time].
+void set_stable_time (int stable_time)
+{
+  if (stable_time > 0) {
+    this::stable_time = stable_time;
+  } else {
+    this::stable_time = default_stable_time;
+  }
+}
