@@ -341,6 +341,56 @@ PIKECLASS Stack
 /*! @endclass
  */
 
+/* Consider
+ *
+ * class Preprocessor
+ * {
+ *   class Macro
+ *   {
+ *   }
+ *
+ *   mapping(string:Macro) macros;
+ *
+ *   class Context
+ *   {
+ *     inherit String.Buffer;
+ *
+ *     string current_file;
+ *     int current_line;
+ *
+ *     string directive_*(...);
+ *
+ *     void cpp(string data);
+ *
+ *     Context clone();
+ *   }
+ * }
+ *
+ * string cpp(...)
+ * {
+ *   Preprocessor p = Preprocessor();
+ *   p->init();
+ *   Preprocessor.Context ctx = p->Context();
+ *   ctx->cpp(data);
+ *   return ctx->get();
+ * }
+ */
+
+static void insert_callback_define(struct CPP_struct *this,
+                                   struct define_struct *def,
+                                   struct pike_string *arg,
+                                   struct string_builder *tmp);
+static void insert_callback_define_no_args(struct CPP_struct *this,
+                                           struct define_struct *def,
+                                           struct pike_string *arg,
+                                           struct string_builder *tmp);
+static void insert_pragma(struct CPP_struct *this,
+			  struct define_struct *def,
+                          struct pike_string *arg,
+			  struct string_builder *tmp);
+
+/*! @class define
+ */
 PIKECLASS define
 {
   PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
@@ -368,7 +418,155 @@ PIKECLASS define
     def->varargs=0;
 #endif
   }
+
+  PIKEFUN void create(string name, int num_args,
+		      array(string|int|function(mixed|void...:string)) parts)
+    flags ID_PROTECTED;
+  {
+    if (THIS->name) free_string(THIS->name);
+    add_ref(THIS->name = name);
+
+    /* FIXME: Validate the arguments. */
+    THIS->args = num_args;
+    THIS->flags = 0;
+    if (THIS->parts) {
+      free_array(THIS->parts);
+    }
+    add_ref(THIS->parts = parts);
+  }
+
+#ifndef tObjImpl_CPP
+#define tObjImpl_CPP	tObj
+#endif
+
+  /*! @decl string `()(array(string)|void arguments, CPP|void context)
+   *!
+   *! @param arguments
+   *!   Array of arguments to the macro. Zero if no parenthesis.
+   *!
+   *! @param context
+   *!   CPP context we are evaluating in.
+   *!
+   *! @returns
+   *!   Returns the expansion of the macro.
+   */
+  PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj)
+    flags ID_PROTECTED;
+  {
+    struct define_struct *d = THIS;
+    struct string_builder s;
+    struct array *parts = THIS->parts;
+    INT32 i;
+
+    init_string_builder(&s, 0);
+    if(d->magic)
+    {
+      struct pike_string *a = NULL;
+      struct CPP_struct *this = get_storage(context_obj, CPP_program);
+
+      if (d->args > 0) {
+	a = ITEM(arguments)[0].u.string;
+      }
+      d->magic(this, d, a, &s);
+
+      /* NB: The variable 'a' does not holdany refs. */
+
+      if (d->magic == insert_callback_define ||
+	  d->magic == insert_callback_define_no_args ||
+	  d->magic == insert_pragma) {
+	goto keep_new_lines;
+      }
+      goto remove_new_lines;
+    }
+
+    for (i = 0; i < parts->size; i++) {
+      struct svalue *sval = &parts->item[i];
+      switch (TYPEOF(*sval)) {
+      case PIKE_T_STRING:
+	string_builder_shared_strcat(&s, sval->u.string);
+	break;
+      case PIKE_T_INT:
+	{
+	  int raw_arg = sval->u.integer;
+	  int arg = raw_arg & DEF_ARG_MASK;
+	  struct pike_string *str;
+	  if (!arguments || (arg >= arguments->size)) {
+	    yyerror("Too few arguments to macro.");
+	    break;
+	  }
+	  str = arguments->item[arg].u.string;
+	  if (raw_arg & DEF_ARG_NEED_COMMA) {
+	    if (!(d->varargs) ||
+		(arg != d->args-1) ||
+		str->len) {
+	      /* Don't add the comma if the varargs argument and empty. */
+	      string_builder_putchar(&s, ',');
+	      string_builder_putchar(&s, ' ');
+	    }
+	  }
+	  if (!(raw_arg & DEF_ARG_NOPRESPACE)) {
+	    string_builder_putchar(&s, ' ');
+	  }
+	  if (raw_arg & DEF_ARG_STRINGIFY) {
+	    string_builder_putchar(&s, '\"');
+	    string_builder_quote_string(&s, str, 0, 0x7fffffff,
+					QUOTE_NO_STRING_CONCAT);
+	    string_builder_putchar(&s, '\"');
+	  } else {
+	    if (raw_arg & (DEF_ARG_NOPRESPACE|DEF_ARG_NOPOSTSPACE)) {
+	      PCHARP a = MKPCHARP_STR(str);
+	      ptrdiff_t len = str->len;
+	      if (raw_arg & DEF_ARG_NOPRESPACE) {
+		while(len && wide_isspace(EXTRACT_PCHARP(a))) {
+		  INC_PCHARP(a, 1);
+		  len--;
+		}
+	      }
+	      if (raw_arg & DEF_ARG_NOPOSTSPACE) {
+		while(len && wide_isspace(INDEX_PCHARP(a, len-1))) {
+		  len--;
+		}
+	      }
+	      string_builder_append(&s, a, len);
+	    } else {
+	      string_builder_shared_strcat(&s, str);
+	    }
+	  }
+	}
+	break;
+      default:
+	/* FIXME: Check that we have a callable. */
+	if (arguments) {
+	  push_array_items(arguments);
+	  apply_svalue(sval, arguments->size);
+	} else {
+	  apply_svalue(sval, 0);
+	}
+	if (TYPEOF(Pike_sp[-1]) != T_STRING) {
+	  my_yyerror("Invalid return value from macro: %s (expected string).",
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
+	  pop_stack();
+	  break;
+	}
+	string_builder_shared_strcat(&s, Pike_sp[-1].u.string);
+	pop_stack();
+	break;
+      }
+    }
+
+  remove_new_lines:
+    /* Remove any newlines from the completed expression. */
+    for(i=0; i< (ptrdiff_t)s.s->len; i++)
+      if(index_shared_string(s.s, i) == '\n')
+	SET_INDEX_CHARP(s.s->str, i, s.s->size_shift, ' ');
+
+  keep_new_lines:
+    pop_n_elems(args);
+    push_string(finish_string_builder(&s));
+  }
 }
+/*! @endclass define
+ */
 
 /*! @class CPP
  *!
@@ -1891,7 +2089,7 @@ static struct define_struct *alloc_empty_define(struct pike_string *name)
   struct define_struct *def;
   struct object *o;
 
-  push_object(o = clone_object(define_program, 0));
+  push_object(o = fast_clone_object(define_program));
   def = (struct define_struct *)get_storage(o, define_program);
   add_ref(def->name = name);
   return def;
@@ -2500,18 +2698,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                          ptrdiff_t len,
                          int flags,
                          struct pike_string *charset);
-static void insert_callback_define(struct CPP_struct *this,
-                                   struct define_struct *def,
-                                   struct pike_string *arg,
-                                   struct string_builder *tmp);
-static void insert_callback_define_no_args(struct CPP_struct *this,
-                                           struct define_struct *def,
-                                           struct pike_string *arg,
-                                           struct string_builder *tmp);
-static void insert_pragma(struct CPP_struct *this,
-			  struct define_struct *def,
-                          struct pike_string *arg,
-			  struct string_builder *tmp);
 
 static ptrdiff_t calc1(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags);
@@ -3188,12 +3374,47 @@ static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
   }
 }
 
+/* NB: This function is only called from low_cpp(), which
+ *     means that Pike_fp->current_object is an object(CPP).
+ */
 static void apply_define(struct CPP_struct *this,
 			 struct define_struct *d,
 			 struct define_argument *arguments,
 			 short flags,
 			 struct pike_string *charset)
 {
+#if 0
+  struct svalue *save_sp = Pike_sp;
+
+  /* Keep d around... */
+  push_svalue(&d->self);
+
+  if (d->args < 0) {
+    push_undefined();
+  } else {
+    int i;
+    BEGIN_AGGREGATE_ARRAY(d->args) {
+      for (i = 0; i < d->args; i++) {
+	push_string(make_shared_binary_pcharp(arguments[i].arg,
+					      arguments[i].len));
+	DO_AGGREGATE_ARRAY(120);
+      }
+    } END_AGGREGATE_ARRAY;
+  }
+  ref_push_object(Pike_fp->current_object);
+  apply_lfun(d->self.u.object, LFUN_CALL, 2);
+
+  d->flags = CPP_MACRO_DISABLED;
+
+  /* NB: We're executing in the CPP context object. */
+  low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
+	  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+	  charset);
+
+  d->flags = flags;
+
+  pop_n_elems(Pike_sp - save_sp);
+#else /* !0 */
   struct string_builder tmp;
 
   init_string_builder(&tmp, 0);
@@ -3309,6 +3530,7 @@ static void apply_define(struct CPP_struct *this,
   /* FIXME: Ought to free the ref to d here. */
 
   free_string_builder(&tmp);
+#endif /* 0 */
 }
 
 /*
