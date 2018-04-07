@@ -439,7 +439,7 @@ PIKECLASS define
 #define tObjImpl_CPP	tObj
 #endif
 
-  /*! @decl string `()(array(string)|void arguments, CPP|void context)
+  /*! @decl string `()(array(string)|void arguments, CPP|void context, int|void flags)
    *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
@@ -450,13 +450,15 @@ PIKECLASS define
    *! @returns
    *!   Returns the expansion of the macro.
    */
-  PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj)
+  PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
+		     int|void flags_sval)
     flags ID_PROTECTED;
   {
     struct define_struct *d = THIS;
     struct string_builder s;
     struct array *parts = THIS->parts;
     INT32 i;
+    INT_TYPE flags = flags_sval?flags_sval->u.integer:0;
 
     init_string_builder(&s, 0);
     if(d->magic)
@@ -529,8 +531,22 @@ PIKECLASS define
 	      }
 	      string_builder_append(&s, a, len);
 	    } else {
-	      string_builder_shared_strcat(&s, str);
+	      /* NB: Evaluate the argument before insertion. */
+	      int save_flags = d->flags;
+	      d->flags = CPP_MACRO_IN_USE;
+
+	      ref_push_string(str);
+	      push_int(flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+	      safe_apply(context_obj, "cpp", 2);
+	      string_builder_shared_strcat(&s, Pike_sp[-1].u.string);
+	      pop_stack();
+
+	      d->flags = save_flags;
+
 	    }
+	  }
+	  if (!(raw_arg & DEF_ARG_NOPOSTSPACE)) {
+	    string_builder_putchar(&s, ' ');
 	  }
 	}
 	break;
@@ -3402,7 +3418,8 @@ static void apply_define(struct CPP_struct *this,
     } END_AGGREGATE_ARRAY;
   }
   ref_push_object(Pike_fp->current_object);
-  apply_lfun(d->self.u.object, LFUN_CALL, 2);
+  push_int(flags);
+  apply_lfun(d->self.u.object, LFUN_CALL, 3);
 
   d->flags = CPP_MACRO_DISABLED;
 
