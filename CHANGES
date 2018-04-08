@@ -121,6 +121,11 @@ o Operator functions
   operator LFUNs, so this change should address many potential hidden
   errors.
 
+o Protocols.HTTP.Server
+
+  The server module will now read payloads for HTTP PUT requests, just
+  as any other method. Previously it would stop reading the body.
+
 
 Incompatible changes
 --------------------

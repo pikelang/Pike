@@ -417,11 +417,6 @@ protected int parse_variables()
     buf = buf[l..];
     return 1;
   }
-  else if (request_type == "PUT" )
-  {
-    body_raw = buf;
-    return 1; // do not read body when method is PUT
-  }
 
   my_fd->set_read_callback(read_cb_post);
   return 0; // delay
