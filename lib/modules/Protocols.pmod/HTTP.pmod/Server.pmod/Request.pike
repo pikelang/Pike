@@ -886,8 +886,19 @@ void send_write()
 
    int n = send_buf->output_to(my_fd);
 
-   if ( n <= 0 || (send_stop==(sent+=n)) )
-      finish(sent==send_stop);
+   // SSL.File->write() does not guarantee that all data has been
+   // written upon return; this can cause premature disconnects.
+   // By waiting for any buffers to empty before calling finish, we 
+   // help ensure the full result has been transmitted.
+   if(my_fd->query_version) {
+     if( n == 0 && send_stop == sent)
+        finish(1);
+     else if(n < 0)
+        finish(0);
+   } else {
+     if ( n <= 0 || (send_stop==(sent+=n)) )
+        finish(sent==send_stop);
+   }
 }
 
 void send_timeout()
