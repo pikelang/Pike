@@ -819,6 +819,36 @@ static void stat_cast(INT32 args)
     push_undefined();
 }
 
+/*! @decl int(0..1) _equal(mixed other)
+ *!
+ *! Compare this object with another @[Stat] object.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if @[other] is a @[Stat] object with the
+ *!   same content, and @expr{0@} (zero) otherwise.
+ */
+static void stat__equal(INT32 args)
+{
+  struct stat_storage *this_st = THIS_STAT;
+  struct stat_storage *other_st;
+
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_equal", 1);
+
+  if ((TYPEOF(Pike_sp[-args]) != T_OBJECT) ||
+      !(other_st = get_storage(Pike_sp[-1].u.object, stat_program))) {
+    push_int(0);
+    return;
+  }
+
+  if (this_st == other_st) {
+    push_int(1);
+    return;
+  }
+
+  push_int(!memcmp(this_st, other_st, sizeof(struct stat_storage)));
+}
+
 static void stat__sprintf(INT32 args)
 {
    int x;
@@ -1038,6 +1068,7 @@ void init_stdio_stat(void)
 		     tFunc(tString tSetvar(1,tOr(tInt,tString)),tVar(1))), 0);
 
    ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tOr(tMapping,tArray)),ID_PROTECTED);
+   ADD_FUNCTION("_equal", stat__equal, tFunc(tMix,tInt01), ID_PROTECTED);
    ADD_FUNCTION("_sprintf",stat__sprintf,
 		tFunc(tInt tOr(tVoid,tMapping),tString),0);
    ADD_FUNCTION("_indices",stat_indices,
