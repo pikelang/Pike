@@ -101,7 +101,13 @@ PIKECLASS Api
   handle_sass_import (string(8bit) path,
                       void|string(8bit) absolute_path,
                       void|string(8bit) relative_path)
-  flags ID_PROTECTED; {}
+  flags ID_PROTECTED; {
+    // This method is overridden in module.pmod, but if someone would inherit
+    // this base class directly (it really isn't exposed though) and don't
+    // implement this method we by returning UNDEFINED leave the import
+    // resolution back to libsass.
+    push_undefined ();
+  }
 
   // Identifier ID of handle_sass_import
   CVAR int id_handle_import;
@@ -173,9 +179,8 @@ PIKECLASS Api
 
         return list;
       }
-      // FIXME: I so don't know for real what I'm doing below, there might be
-      //        some memory leakage here, so someone with a black belt in C and
-      //        the inetrnals of Pike should check this code.
+      // FIXME: I'm not 100% sure about the code below since it took me some
+      //        Pike source code browsing to come up with it.
       else if (TYPEOF (Pike_sp[-1]) == T_ARRAY) {
         struct array *v = Pike_sp[-1].u.array;
 
@@ -204,9 +209,9 @@ PIKECLASS Api
 
           Sass_Import_List list = sass_make_import_list (1);
           list[0] = sass_make_import (path, (const char*) _absp->str,
-                                      // libsass takes ownership of _data and
+                                      // libsass takes ownership of _data->str
                                       // and will free it when the context
-                                      // is destroyd.
+                                      // is destroyd, hence the copy.
                                       sass_copy_c_string(_data->str),
                                       0);
           return list;
@@ -252,6 +257,9 @@ PIKECLASS Api
 
     set_options (ctx_out);
     register_importer (ctx_out);
+
+    // TODO: Since the Pike layer can throw below we should probably catch
+    //       that here so we can free the context properly.
 
     int err = sass_compile_file_context (ctx);
 
@@ -327,6 +335,9 @@ PIKECLASS Api
 
     set_options (ctx_out);
     register_importer (ctx_out);
+
+    // TODO: Since the Pike layer can throw below we should probably catch
+    //       that here so we can free the context properly.
 
     sass_compile_data_context (ctx);
 
