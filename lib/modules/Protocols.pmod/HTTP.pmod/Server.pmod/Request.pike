@@ -593,46 +593,65 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
          break;
    }
 
-   if (!m->type)
-      m->type = .filename_to_type(not_query);
+   array extra = ({});
+   if (m->extra_heads)
+   {
+      foreach (m->extra_heads;string name;array|string arr)
+      {
+        extra += ({ lower_case(name) });
+        if( name=="connection" && has_value(arr, "keep-alive") )
+          keep_alive=1;
+        foreach (Array.arrayify(arr);;string value)
+          radd(name, ": ", value);
+      }
+   }
 
-   if( m->error == 206 )
+   if( !has_value(extra, "content-type") )
+   {
+     if (!m->type)
+       m->type = .filename_to_type(not_query);
+     radd("Content-Type: ", m->type);
+   }
+
+   if( m->error == 206 && !has_value(extra, "content-range") )
       radd("Content-Range: bytes ", m->start,"-",m->stop,"/",
            has_index(m, "instance_size") ? m->instance_size : "*");
 
-   radd("Content-Type: ",m->type);
 
-   if( m->size >= 0 )
+   if( m->size >= 0 && !has_value(extra, "content-length") )
       radd("Content-Length: ",(string)m->size);
 
-   radd("Server: ", m->server || .http_serverid);
+   if( !has_value(extra, "server") )
+     radd("Server: ", m->server || .http_serverid);
 
    string http_now = .http_date(time(1));
-   radd("Date: ",http_now);
-
-   if (m->modified)
-      radd("Last-Modified: ", .http_date(m->modified));
-   else if (m->stat)
-      radd("Last-Modified: ", .http_date(m->stat->mtime));
-   else
-      radd("Last-Modified: ", http_now);
-
-   if (m->extra_heads)
-      foreach (m->extra_heads;string name;array|string arr)
-	 foreach (Array.arrayify(arr);;string value)
-	    radd(String.capitalize(name),": ",value);
-
-// FIXME: insert cookies here?
-   string cc = lower_case(request_headers["connection"]||"");
-
-   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+   if( !has_value(extra, "date") )
    {
+     radd("Date: ",http_now);
+   }
+
+   if( !has_value(extra, "last-modified") )
+   {
+     if (m->modified)
+       radd("Last-Modified: ", .http_date(m->modified));
+     else if (m->stat)
+       radd("Last-Modified: ", .http_date(m->stat->mtime));
+     else
+       radd("Last-Modified: ", http_now);
+   }
+
+   if( !has_value(extra, "connection") )
+   {
+     string cc = lower_case(request_headers["connection"]||"");
+     if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+     {
        radd("Connection: keep-alive");
        keep_alive=1;
-   }
-   else
-   {
+     }
+     else
+     {
        radd("Connection: close");
+     }
    }
 
    res->add("\r\n");

@@ -124,7 +124,20 @@ o Operator functions
 o Protocols.HTTP.Server
 
   The server module will now read payloads for HTTP PUT requests, just
-  as any other method. Previously it would stop reading the body.
+  as any other method. Previously it would stop reading the body and
+  it was up to the caller to read enough data from the socket and
+  combine with already read data.
+
+  Setting "connection" header in the "extra_heads" to Request object
+  method response_and_finish() will now control if keep-alive should be
+  used or not. Otherwise it will be decided by the clients request
+  headers, as previously.
+
+  The headers "content-type", "content-range", "content-length",
+  "server", "date" and "last-modified" will not be added or
+  overwritten if provided in the "extra_heads".
+
+  Header names in "extra_heads" will not have their case modified.
 
 
 Incompatible changes
