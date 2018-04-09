@@ -1059,6 +1059,9 @@ variant inline Future race(Future ... futures)
 //!   @[all()], @[Promise.depend()]
 variant Future results(array(Future) futures)
 {
+  if(!sizeof(futures))
+    return resolve(({}));
+
   return Promise()->depend(futures)->future();
 }
 inline variant Future results(Future ... futures)
