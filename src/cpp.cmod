@@ -512,7 +512,9 @@ PIKECLASS define
 	  if (raw_arg & DEF_ARG_STRINGIFY) {
 	    string_builder_putchar(&s, '\"');
 	    string_builder_quote_string(&s, str, 0, 0x7fffffff,
-					QUOTE_NO_STRING_CONCAT);
+					QUOTE_NO_STRING_CONCAT|
+					QUOTE_NORMALIZE_WS|
+					QUOTE_TOKENIZE);
 	    string_builder_putchar(&s, '\"');
 	  } else {
 	    if (raw_arg & (DEF_ARG_NOPRESPACE|DEF_ARG_NOPOSTSPACE)) {
