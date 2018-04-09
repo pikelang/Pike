@@ -379,6 +379,12 @@ test_do([[ add_constant("p12"); ]])
 test_do([[ add_constant("p13"); ]])
 exit_promise(1, ({11, 14, 12, 13}))
 
+dnl - Concurrent.results() - empty
+init_promise()
+test_do([[ add_constant("future", Concurrent.results(({}))); ]])
+init_future()
+exit_promise(1, ({}))
+
 dnl - Concurrent.traverse()
 init_promise()
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
