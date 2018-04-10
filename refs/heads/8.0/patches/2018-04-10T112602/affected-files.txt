@@ -1,0 +1,8 @@
+Modified files:
+  pike/lib/modules/Concurrent.pmod
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Server.pmod/Request.pike
+  pike/lib/modules/Sql.pmod/pgsql_util.pmod
+  pike/lib/modules/Stdio.pmod/Terminfo.pmod
+  pike/lib/modules/Thread.pmod
