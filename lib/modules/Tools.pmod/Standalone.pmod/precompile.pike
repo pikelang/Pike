@@ -1804,12 +1804,12 @@ array generate_overload_func_for(array(FuncData) d,
 
     mapping m=y[best_method];
     mapping m2=m+([]);
-    foreach(indices(m), string type)
+    foreach(sort(indices(m)), string type)
       {
 	array tmp=m[type];
 	if(tmp && sizeof(tmp))
 	{
-	  foreach(indices(m), string t2)
+	  foreach(sort(indices(m)), string t2)
 	    {
 	      if(equal(tmp, m[t2]) && !sizeof(tmp ^ m[t2]))
 	      {
@@ -1833,7 +1833,7 @@ array generate_overload_func_for(array(FuncData) d,
 			 indent,
 			 attributes->errname || name,
 			 best_method+1,
-			 indices(m2)*"|")),
+			 sort(indices(m2))*"|")),
 	PC.Token(sprintf("%*n}\n",indent)),
 	});
   }
@@ -3081,8 +3081,9 @@ array resolve_obj_defines()
   if( sizeof( need_obj_defines ) )
   {
     res += ({ "{ int i=0;\n"});
-    foreach( need_obj_defines; string key; string id )
+    foreach( sort(indices(need_obj_defines)), string key )
     {
+      string id = need_obj_defines[key];
       int local_id = ++gid;
       res += ({
         sprintf("#ifndef %s\n"
@@ -3387,8 +3388,9 @@ int main(int argc, array(string) argv)
   if( sizeof(map_types) )
   {
     x += ({ "  switch(id) {\n" });
-    foreach( map_types; int i; string how )
+    foreach( sort(indices(map_types)), int i )
     {
+      string how = map_types[i];
       if( how[0] )
         x += ({ "#ifdef "+how[0]+"\n" });
       x += ({  "  case "+i+":\n    "+how[1]+"\n    break;\n" });
@@ -3460,7 +3462,7 @@ int main(int argc, array(string) argv)
   x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
 
   array(string) cond_used = ({});
-  foreach( check_used; string key; )
+  foreach( sort(indices(check_used)), string key)
   {
     if( find_identifier( x, key ) )
       tmp->declarations +=({ "#define "+key+"_used 1\n" });
