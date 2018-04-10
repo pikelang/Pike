@@ -1,0 +1,59 @@
+subject: Pike 8.0: Terminfo, pgsql, Filesystem.Monitor, Protocols.HTTP, Concurrent.
+from: b72cea9593316773225ad6036322c18944b9d8d8
+to: c1cf1e0bdf7106f5d5ebf008a74836eb0c6e59b5
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-02-21T150612
+restart: true
+
+Multiple fixes:
+
+• Concurrent.results: Handle an empty argument array properly.
+
+Previously code such as:
+
+  Concurrent.Future f2 = Concurrent.results(({}));
+
+  f2->on_success(lambda(array(string) a) { werror("success: %O.\n", a); })
+    ->on_failure(lambda(mixed err) { werror (describe_backtrace(err)); });
+
+... would lead to a backtrace because the future was destructed prematurely.
+
+• Protocols.HTTP.Server: help ensure data is sent when using HTTPS
+
+• Filesystem.Monitor: Add set_stable_time() function.
+
+• Filesystem.Monitor: Fix race condition on file deletion.
+
+This fixes a race that could occur on rapid exists => delete => exists
+transitions, where the directory monitor never noticed the change but the
+sub monitor was removed from the monitor lookup mapping. The directory
+monitor is now notified on sub-monitor release.
+
+• Filesystem.Monitor/inotify: Fix incorrect creation of new monitors.
+
+Monitors were created using monitor() on the top level rather than using
+Monitor::monitor(), which prevented the symlinks' overridden DefaultMonitor
+from setting the correct state on newly created monitors.
+
+We now force a check on the directory monitor instead, which will pick up the
+new file instantly and create the sub monitor.
+
+• Thread: Added Thread.Farm()->set_thread_name_cb().
+
+This is to help applications that monitor thread creation and termination for the purpose of tracking thread names.
+
+• Protocols.HTTP: Some sort of handling of multiple header of the same kind.
+
+Does not introduce any new arrays, as to keep it somewhat compatible with existing code.
+
+• Filesystem.Monitor: Only multiply by file_interval_factor when path isn't a dir for sure.
+
+Previously monitors on non-existing paths could get very long poll intervals, which
+led to unexpected effects in Inotify mode, where the scan time typically is high but
+Inotify isn't able to watch the non-existing path.
+
+• Terminfo: Support Ncurses 6 format.
+
+Fixes support for eg xterm-256color.
+
+• pgsql: Fix infinite loop in optimisation of native NUMERIC types.
