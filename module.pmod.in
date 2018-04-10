@@ -1,5 +1,11 @@
 /*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
+  Author: Pontus Östlund <https://github.com/poppa/>
 */
 
 //! Sass is a scripting language that is interpreted into Cascading Style
