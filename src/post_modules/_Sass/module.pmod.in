@@ -22,7 +22,7 @@ inherit Tools@module@;
 //! @endignore
 
 //! Shorthand for @tt{string(8bit)@}
-typedef string(8bit) s8;
+protected typedef string(8bit) s8;
 
 class Compiler
 //! Sass/SCSS compiler.
