@@ -393,7 +393,7 @@ PIKECLASS Api
   }
 
   INIT {
-    SASS_TRACE ("INIT __Sass.Api\n");
+    SASS_TRACE ("INIT ___Sass.Api\n");
     THIS->precision = 5;
     THIS->output_style = SASS_STYLE_NESTED;
     THIS->id_handle_import =
@@ -407,7 +407,7 @@ PIKECLASS Api
   EXIT
     gc_trivial;
   {
-    SASS_TRACE ("EXIT __Sass.Api\n");
+    SASS_TRACE ("EXIT ___Sass.Api\n");
   }
 }
 /*! @endclass */
