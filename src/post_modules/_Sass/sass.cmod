@@ -25,16 +25,20 @@ DECLARATIONS
 
 /*! @module Tools
  */
-/*! @module __Sass
- *! @appears Tools.Sass
+/*! @module Sass
  */
 /*! @class Api
- *! @appears Tools.Sass.Compiler
+ *!
+ *! Low-level Sass/SCSS compiler.
+ *!
+ *! You probably want to use @[Compiler] instead of this class.
+ *!
+ *! @seealso
+ *!   @[Compiler]
  */
 PIKECLASS Api
 {
   /*! @decl int(0..3) output_style = 0
-   *! @appears Tools.Sass.Compiler.output_style
    *!
    *! Determines the level of compression on the generated output.
    *!
@@ -45,14 +49,12 @@ PIKECLASS Api
   PIKEVAR int(0..3)    output_style;
 
   /*! @decl string(8bit) source_map_file = UNDEFINED
-   *! @appears Tools.Sass.Compiler.source_map_file
    *!
    *! Set the path of the source map file.
    */
   PIKEVAR string(8bit) source_map_file;
 
   /*! @decl string(8bit) source_map_root
-   *! @appears Tools.Sass.Compiler.source_map_root
    *!
    *! Set the root path of the source files, relative to where the source.map
    *! file is written.
@@ -60,7 +62,6 @@ PIKECLASS Api
   PIKEVAR string(8bit) source_map_root;
 
   /*! @decl string(8bit) include_path
-   *! @appears Tools.Sass.Compiler.include_path
    *!
    *! The base path of @tt{@@import@}s. Note! This needs to be set when
    *! @[compile_string()] is used.
@@ -68,14 +69,12 @@ PIKECLASS Api
   PIKEVAR string(8bit) include_path;
 
   /*! @decl int precision
-   *! @appears Tools.Sass.Compiler.precision
    *!
    *! Set the precision of fractional numbers. Default is @tt{5@}.
    */
   PIKEVAR int(0..)     precision;
 
   /*! @decl bool source_comments
-   *! @appears Tools.Sass.Compiler.source_comments
    *!
    *! Emit comments in the generated CSS indicating the corresponding source
    *! line. Default is @tt{false@}.
@@ -83,14 +82,12 @@ PIKECLASS Api
   PIKEVAR int(0..1)    source_comments;
 
   /*! @decl bool source_map_embed
-   *! @appears Tools.Sass.Compiler.source_map_embed
    *!
    *! Set whether embedding @tt{sourceMappingUrl=#@} as data uri or not.
    */
   PIKEVAR int(0..1)    source_map_embed;
 
   /*! @decl bool omit_source_map_url
-   *! @appears Tools.Sass.Compiler.omit_source_map_url
    *!
    *! Set whether writing the @tt{sourceMappingUrl=#@} or not.
    */
@@ -313,7 +310,6 @@ PIKECLASS Api
 
 
   /*! @decl string(8bit) compile_string(string(8bit) source)
-   *! @appears Tools.Sass.Compiler.compile_string()
    *!
    *! Compiles the string @[source] and returns the generated CSS.
    *!

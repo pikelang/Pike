@@ -45,10 +45,7 @@ class Compiler
 //! }
 //! @endcode
 {
-  //! @ignore
-  inherit Tools@module@.Api;
-  //! @endignore
-
+  inherit Api;
 
   //! If a Sass file is importing an external URI this flag determines if
   //! thats allowed at all, or if the content type of the imported file has
