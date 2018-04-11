@@ -1,3 +1,0 @@
-#!/bin/bash
-# Shortcut for compiling and installing the module
-pike -x module && sudo pike -x module install
