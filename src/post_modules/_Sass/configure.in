@@ -14,7 +14,7 @@ AC_ARG_WITH([sass-debug],
 
 AC_MODULE_INIT()
 
-AC_CONFIG_HEADERS(config.h)
+AC_CONFIG_HEADER(config.h)
 
 PIKE_FEATURE_WITHOUT(Sass)
 
