@@ -165,7 +165,7 @@ PIKECLASS Api
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
-          Pike_error ("Widestring returned from sass importer. ");
+          Pike_error ("Widestring returned from sass importer.\n");
         }
 
         Sass_Import_List list = sass_make_import_list (1);
@@ -196,12 +196,12 @@ PIKECLASS Api
 
           if (_data->size_shift != eightbit) {
             Pike_error ("Widestring returned in array index one from "
-                        "importer function. ");
+                        "importer function.\n");
           }
 
           if (_absp->size_shift != eightbit) {
             Pike_error ("Widestring returned in array index two from "
-                        "importer function. ");
+                        "importer function.\n");
           }
 
           Sass_Import_List list = sass_make_import_list (1);
@@ -277,7 +277,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s",
+          SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s\n",
                                  err, errstr);
         }
       }
@@ -341,7 +341,7 @@ PIKECLASS Api
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
-      SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s",
+      SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s\n",
                                err, errstr);
     }
 
@@ -356,7 +356,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s",
+          SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s\n",
                                    err, errstr);
         }
       }
