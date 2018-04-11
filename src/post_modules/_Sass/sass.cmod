@@ -143,13 +143,11 @@ PIKECLASS Api
 
   // Libsass import callback. This will be called for every @import directive
   // in the Sass files. See the doc comment for __importer_cb.
-  //
-  // FIXME: We probably ought to catch thrown errors from the Pike layer here
-  //        and clean up the libsass stuff before really throwing?
   Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
                                        struct Sass_Compiler *comp)
   {
     if (THIS->id_handle_import > -1) {
+      JMP_BUF recovery;
       Sass_Import_Entry last_imp;
       last_imp = sass_compiler_get_last_import (comp);
 
@@ -161,12 +159,19 @@ PIKECLASS Api
       push_text (abs_path);
       push_text (imp_path);
 
+      if (SETJMP(recovery)) {
+	call_handle_error();
+	return NULL;
+      }
+
       apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
           Pike_error ("Widestring returned from sass importer.\n");
         }
+
+	UNSETJMP(recovery);
 
         Sass_Import_List list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
@@ -204,6 +209,8 @@ PIKECLASS Api
                         "importer function.\n");
           }
 
+	  UNSETJMP(recovery);
+
           Sass_Import_List list = sass_make_import_list (1);
           list[0] = sass_make_import (path, (const char*) _absp->str,
                                       // libsass takes ownership of _data->str
@@ -214,6 +221,8 @@ PIKECLASS Api
           return list;
         }
       }
+
+      UNSETJMP(recovery);
     }
 
     return NULL;
