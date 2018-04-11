@@ -148,13 +148,11 @@ PIKECLASS Api
   {
     if (THIS->id_handle_import > -1) {
       JMP_BUF recovery;
-      Sass_Import_Entry last_imp;
-      last_imp = sass_compiler_get_last_import (comp);
-
-      push_text (path);
-
+      Sass_Import_Entry last_imp = sass_compiler_get_last_import (comp);
       const char *abs_path = sass_import_get_abs_path (last_imp);
       const char *imp_path = sass_import_get_imp_path (last_imp);
+
+      push_text (path);
 
       push_text (abs_path);
       push_text (imp_path);
@@ -167,13 +165,14 @@ PIKECLASS Api
       apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
+	Sass_Import_List list;
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
 	UNSETJMP(recovery);
 
-        Sass_Import_List list = sass_make_import_list (1);
+        list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
                     path,
                     sass_copy_c_string (Pike_sp[-1].u.string->str),
@@ -198,6 +197,7 @@ PIKECLASS Api
           struct pike_string *_data = ITEM(v)[0].u.string;
           // Absolute path of the imported file.
           struct pike_string *_absp = ITEM(v)[1].u.string;
+	  Sass_Import_List list;
 
           if (_data->size_shift != eightbit) {
             Pike_error ("Widestring returned in array index one from "
@@ -211,7 +211,7 @@ PIKECLASS Api
 
 	  UNSETJMP(recovery);
 
-          Sass_Import_List list = sass_make_import_list (1);
+          list = sass_make_import_list (1);
           list[0] = sass_make_import (path, (const char*) _absp->str,
                                       // libsass takes ownership of _data->str
                                       // and will free it when the context
@@ -233,8 +233,7 @@ PIKECLASS Api
   {
     struct Sass_Options *s_opts = sass_context_get_options (ctx);
 
-    Sass_Importer_Entry c_imp;
-    c_imp = sass_make_importer (pike_sass_importer, 0, 0);
+    Sass_Importer_Entry c_imp = sass_make_importer (pike_sass_importer, 0, 0);
 
     Sass_Importer_List imp_list = sass_make_importer_list (1);
     sass_importer_set_list_entry (imp_list, 0, c_imp);
@@ -253,10 +252,12 @@ PIKECLASS Api
   // This method is over ridden in the the pmod.
   PIKEFUN mapping(string(8bit):string(8bit)) compile_file (string input_file)
   {
-    SASS_TRACE ("compile_file(%s)\n", input_file->str);
-
     struct Sass_File_Context *ctx;
     struct Sass_Context      *ctx_out;
+    int err;
+    const char *scss;
+
+    SASS_TRACE ("compile_file(%s)\n", input_file->str);
 
     ctx = sass_make_file_context (sass_copy_c_string (input_file->str));
     ctx_out = sass_file_context_get_context (ctx);
@@ -267,7 +268,7 @@ PIKECLASS Api
     // TODO: Since the Pike layer can throw below we should probably catch
     //       that here so we can free the context properly.
 
-    int err = sass_compile_file_context (ctx);
+    err = sass_compile_file_context (ctx);
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
@@ -275,7 +276,7 @@ PIKECLASS Api
                              err, errstr);
     }
 
-    const char *scss = sass_context_get_output_string (ctx_out);
+    scss = sass_context_get_output_string (ctx_out);
 
     if (scss) {
       const char *smap = NULL;
@@ -334,6 +335,8 @@ PIKECLASS Api
   {
     struct Sass_Data_Context *ctx;
     struct Sass_Context      *ctx_out;
+    int err;
+    const char *out;
 
     ctx = sass_make_data_context (sass_copy_c_string (source->str));
     ctx_out = sass_data_context_get_context (ctx);
@@ -346,7 +349,7 @@ PIKECLASS Api
 
     sass_compile_data_context (ctx);
 
-    int err = sass_context_get_error_status (ctx_out);
+    err = sass_context_get_error_status (ctx_out);
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
@@ -354,7 +357,7 @@ PIKECLASS Api
                                err, errstr);
     }
 
-    const char *out = sass_context_get_output_string (ctx_out);
+    out = sass_context_get_output_string (ctx_out);
 
     if (out) {
       const char *smap = NULL;
