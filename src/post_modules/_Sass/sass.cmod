@@ -212,7 +212,7 @@ PIKECLASS Api
 	  UNSETJMP(recovery);
 
           list = sass_make_import_list (1);
-          list[0] = sass_make_import (path, (const char*) _absp->str,
+          list[0] = sass_make_import (path, _absp->str,
                                       // libsass takes ownership of _data->str
                                       // and will free it when the context
                                       // is destroyd, hence the copy.
