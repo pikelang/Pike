@@ -3401,7 +3401,7 @@ static void apply_define(struct CPP_struct *this,
 			 short flags,
 			 struct pike_string *charset)
 {
-#if 0
+#if 1
   struct svalue *save_sp = Pike_sp;
 
   /* Keep d around... */
@@ -3433,7 +3433,7 @@ static void apply_define(struct CPP_struct *this,
   d->flags = flags;
 
   pop_n_elems(Pike_sp - save_sp);
-#else /* !0 */
+#else /* !1 */
   struct string_builder tmp;
 
   init_string_builder(&tmp, 0);
@@ -3549,7 +3549,7 @@ static void apply_define(struct CPP_struct *this,
   /* FIXME: Ought to free the ref to d here. */
 
   free_string_builder(&tmp);
-#endif /* 0 */
+#endif /* 1 */
 }
 
 /*
