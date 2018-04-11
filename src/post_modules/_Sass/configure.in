@@ -1,0 +1,59 @@
+AC_INIT(sass.cmod)
+AC_ARG_WITH([sass],
+	          [AS_HELP_STRING(
+	          	[--with(out)-sass],
+	          	[Support for SASS])],
+	          [],
+	          [with_sass=yes])
+AC_ARG_WITH([sass-debug],
+	          [AS_HELP_STRING(
+	          	[--with(out)-sass-debug],
+	          	[Enable module debug. Only for dev purposes])],
+	          [with_sass_debug="$withval"],
+	          [with_sass_debug=no])
+
+AC_MODULE_INIT()
+
+AC_CONFIG_HEADERS(config.h)
+
+PIKE_FEATURE_WITHOUT(Sass)
+
+AC_CHECK_HEADERS([sass.h])
+
+AS_IF([ test "x$ac_cv_header_sass_h" != "xyes" ],
+      [ with_sass="no" ])
+
+AS_IF(
+  [ test "x$with_sass_debug" != xno ],
+  [ AC_DEFINE(PIKE_SASS_DEBUG, [1], [Defined if --with-sass-debug]) ])
+
+if test "x$with_sass" = "xyes"; then
+  PIKE_FEATURE_NODEP(Sass)
+
+  CMOD_LIBS=" -lsass"
+  CMOD_CFLAGS=""
+
+  AC_SUBST(CMOD_CFLAGS)
+  AC_SUBST(CMOD_LIBS)
+
+  #
+  # Check for features in libsass
+  #
+  AC_CHECK_LIB(sass, sass_delete_options, [
+    #LIBS="${LIBS-} -lsass"
+    AC_DEFINE(HAVE_LIBSASS_DELETE_OPTIONS, [1],
+    	        [Defined if sass_delete_options is available ])
+  ])
+
+  AC_CHECK_LIB(sass, libsass_language_version, [
+    #LIBS="${LIBS-} -lsass"
+    AC_DEFINE(HAVE_LIBSASS_LANGUAGE_VERSION, [1],
+    	        [True if libsass_language_version() is available])
+  ])
+
+
+  PIKE_FEATURE_OK(Sass)
+
+fi
+
+AC_OUTPUT(Makefile, echo FOO >stamp-h)

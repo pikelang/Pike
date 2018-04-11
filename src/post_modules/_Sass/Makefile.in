@@ -1,0 +1,43 @@
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=Sass
+MODDIR=Tools.pmod/
+MODULE_PMOD_IN=module.pmod.in
+AUTODOC_SRC_IN=module.pmod.in sass.c
+MODULE_WRAPPER_PREFIX=__
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @CMOD_LIBS@
+MODULE_CFLAGS=@CMOD_CFLAGS@
+OBJS=sass.o
+
+@dynamic_module_makefile@
+
+libsass: libsass-install libsass-symlink
+
+libsass-install:
+	cd $(SRCDIR)/vendor/libsass && make shared && sudo make install-shared
+
+libsass-symlink:
+	sudo ln -s /usr/local/lib/libsass.so /usr/lib/libsass.so
+
+libsass-clean:
+	cd $(SRCDIR)/vendor/libsass && make clean
+
+sass.o: $(SRCDIR)/sass.c
+
+@dependencies@
+
+LOCAL_GENERATED_FILES=configure config.cache config.h config.log \
+	config.status config.warnings config.h.in~ make_variables modlist_segment \
+	propagated_variables remake sass.o module.so module.pmod Makefile \
+  dependencies linker_options sass.c testsuite pike_Sass.feature
+
+clean-conf: localdevclean
+	-rm -f config.h.in
+	autoheader
+
+clean-as-shit: libsass-clean localdevclean
+
+localdevclean: clean
+	-rm -f $(LOCAL_GENERATED_FILES)
+	-rm -rf autom4te.cache plib refdoc
