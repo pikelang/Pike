@@ -3336,6 +3336,7 @@ static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
+#if 0
 static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
 						    PCHARP a,
 						    size_t l)
@@ -3391,6 +3392,7 @@ static void string_builder_append_cpp_quoted_pcharp(struct string_builder *s,
     string_builder_append(s,a,l);
   }
 }
+#endif
 
 /* NB: This function is only called from low_cpp(), which
  *     means that Pike_fp->current_object is an object(CPP).
