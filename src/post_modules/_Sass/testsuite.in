@@ -1,5 +1,7 @@
 START_MARKER
 
+cond_begin(Tools.Sass)
+
   test_true([[ programp(Tools.Sass.Compiler) ]])
   test_true([[ Tools.Sass.libsass_version() != "" ]])
 
@@ -153,5 +155,7 @@ START_MARKER
   ]])
 
   dnl *** End clean up
+
+cond_end
 
 END_MARKER
