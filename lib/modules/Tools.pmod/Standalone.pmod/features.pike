@@ -401,6 +401,9 @@ int main(int num, array(string) args) {
   // System.Memory.PAGE_MASK
   // System.Memory.__MMAP__
 
+  write("\nTools\n");
+  M(Tools.Sass.Compiler);
+
   write("\nVCDiff\n");
   M(VCDiff.Encoder);
 
