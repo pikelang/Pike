@@ -98,7 +98,7 @@ class Request
       if(url->user || url->password)
 	 request_headers->authorization = "Basic "
 	    + MIME.encode_base64((url->user || "") + ":" +
-				 (url->password || ""));
+				 (url->password || ""), 1);
 
       request_headers->connection=
 	 (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive";
