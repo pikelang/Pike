@@ -181,7 +181,7 @@ constant response_codes =
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
     if (has_value(proxy->host, ":")) {
       proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
     } else {
@@ -295,7 +295,8 @@ constant response_codes =
   if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
 
   if(!request_headers)
     request_headers = default_headers;
@@ -432,7 +433,8 @@ void do_async_method(string method,
   if(url->user || url->passwd)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
   request_headers = default_headers | request_headers;
 
   string query=url->query;
@@ -567,7 +569,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
     if (has_value(proxy->host, ":")) {
       proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
     } else {
