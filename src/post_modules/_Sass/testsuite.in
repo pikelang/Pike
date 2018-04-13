@@ -1,6 +1,6 @@
 START_MARKER
 
-cond_begin(Web.Sass)
+cond_begin(Web["Sass"])
 
   test_true([[ programp(Web.Sass.Compiler) ]])
   test_true([[ Web.Sass.libsass_version() != "" ]])
