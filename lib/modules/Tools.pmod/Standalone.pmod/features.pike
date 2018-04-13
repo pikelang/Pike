@@ -401,11 +401,11 @@ int main(int num, array(string) args) {
   // System.Memory.PAGE_MASK
   // System.Memory.__MMAP__
 
-  write("\nTools\n");
-  M(Tools.Sass.Compiler);
-
   write("\nVCDiff\n");
   M(VCDiff.Encoder);
+
+  write("\nWeb\n");
+  M(Web.Sass.Compiler);
 
   write("\nYp\n");
   M(Yp.default_domain);

@@ -24,7 +24,7 @@ DECLARATIONS
 #include "pike_sass.h"
 #include <sass.h>
 
-/*! @module Tools
+/*! @module Web
  */
 /*! @module Sass
  */
