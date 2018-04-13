@@ -383,21 +383,6 @@ static void ppc32_escape_catch(void)
   /* stw r4,recoveries(pike_interpreter) */
   STW(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
       OFFSETOF(Pike_interpreter_struct, recoveries));
-  /* lwz r4,save_expendible(r3) */
-  LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
-      OFFSETOF(catch_context, save_expendible));
-  /* lwz r5,locals(pike_fp) */
-  LWZ(PPC_REG_ARG3, PPC_REG_PIKE_FP,
-     OFFSETOF(pike_frame, locals));
-  /* subf r4,r5,r4 */
-  SUBF(PPC_REG_ARG2, PPC_REG_ARG3, PPC_REG_ARG2);
-  /* addi r5,0,sizeof(struct svalue) */
-  SET_REG32(PPC_REG_ARG3, sizeof(struct svalue));
-  /* divwu r4,r4,r5 */
-  DIVWU(PPC_REG_ARG2, PPC_REG_ARG2, PPC_REG_ARG3);
-  /* sth r4,expendible(pike_fp) */
-  STH(PPC_REG_ARG2, PPC_REG_PIKE_FP,
-      OFFSETOF(pike_frame, expendible_offset));
   /* lwz r4,prev(r3) */
   LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
       OFFSETOF(catch_context, prev));
