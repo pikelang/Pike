@@ -15,10 +15,10 @@
 //!  SASS @url{http://sass-lang.com/@}
 
 #pike __REAL_VERSION__
-#require constant(Tools@module@)
+#require constant(Web@module@)
 
 //! @ignore
-inherit Tools@module@;
+inherit Web@module@;
 //! @endignore
 
 //! Shorthand for @tt{string(8bit)@}
@@ -29,14 +29,14 @@ class Compiler
 //!
 //! @example
 //! @code
-//! Tools.Sass.Compiler compiler = Tools.Sass.Compiler();
+//! Web.Sass.Compiler compiler = Web.Sass.Compiler();
 //!
 //! // Allow for HTTP imports, disallowed by default.
-//! compiler->http_import = Tools.Sass.HTTP_IMPORT_ANY;
+//! compiler->http_import = Web.Sass.HTTP_IMPORT_ANY;
 //!
 //! // Minify the output and create a source map file.
 //! compiler->set_options(([
-//!   "output_style" : Tools.Sass.STYLE_COMPRESSED,
+//!   "output_style" : Web.Sass.STYLE_COMPRESSED,
 //!   "source_map_file" : "path/to/write/source.map"
 //! ]));
 //!

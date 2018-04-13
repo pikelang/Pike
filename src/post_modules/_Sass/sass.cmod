@@ -13,6 +13,7 @@
 #include "builtin_functions.h"
 #include "svalue.h"
 #include "pike_types.h"
+#include "module_support.h"
 
 #include "config.h"
 
@@ -23,7 +24,7 @@ DECLARATIONS
 #include "pike_sass.h"
 #include <sass.h>
 
-/*! @module Tools
+/*! @module Web
  */
 /*! @module Sass
  */
@@ -547,7 +548,9 @@ PIKE_MODULE_EXIT
 
 #else  /* HAVE_LIBSASS */
 
-PIKE_MODULE_INIT {}
+PIKE_MODULE_INIT {
+  HIDE_MODULE();
+}
 PIKE_MODULE_EXIT {}
 
 #endif /* HAVE_LIBSASS */
