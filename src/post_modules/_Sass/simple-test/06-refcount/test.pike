@@ -5,11 +5,11 @@ constant BASE = __DIR__;
 int run()
 {
   werror("Run in test: %s\n", basename(BASE));
-  Tools.Sass.Compiler c;
+  Web.Sass.Compiler c;
 
   mixed err = catch {
     {
-      c = Tools.Sass.Compiler();
+      c = Web.Sass.Compiler();
       c->compile_file(combine_path(BASE, "input.scss"));
     }
 

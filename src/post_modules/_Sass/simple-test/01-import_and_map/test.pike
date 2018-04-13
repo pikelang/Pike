@@ -6,7 +6,7 @@ int run()
 {
   werror("Run in test: %s\n", basename(BASE));
 
-  compiler->http_import = Tools.Sass.HTTP_IMPORT_GREEDY;
+  compiler->http_import = Web.Sass.HTTP_IMPORT_GREEDY;
 
   compiler->set_options(([
     "source_map_file" : combine_path(BASE, "output.source.map"),

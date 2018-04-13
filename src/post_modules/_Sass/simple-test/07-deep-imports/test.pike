@@ -6,7 +6,7 @@ typedef string(8bit) s8;
 
 class MyCompiler
 {
-  inherit Tools.Sass.Compiler;
+  inherit Web.Sass.Compiler;
   private s8 root_file;
   private s8 root_dir;
 
@@ -55,7 +55,7 @@ int run()
   werror("Run in test: %s\n", basename(BASE));
 
   compiler = MyCompiler(combine_path(__DIR__, "input.scss"));
-  compiler->output_style = Tools.Sass.STYLE_EXPANDED;
+  compiler->output_style = Web.Sass.STYLE_EXPANDED;
   // compiler->source_map_file = "output.css.map";
 
   mixed err = catch {
