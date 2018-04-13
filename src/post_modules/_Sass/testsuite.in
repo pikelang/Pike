@@ -1,14 +1,14 @@
 START_MARKER
 
-cond_begin(Tools.Sass)
+cond_begin(Web.Sass)
 
-  test_true([[ programp(Tools.Sass.Compiler) ]])
-  test_true([[ Tools.Sass.libsass_version() != "" ]])
+  test_true([[ programp(Web.Sass.Compiler) ]])
+  test_true([[ Web.Sass.libsass_version() != "" ]])
 
   test_do([[
-    Tools.Sass.Compiler c = Tools.Sass.Compiler();
+    Web.Sass.Compiler c = Web.Sass.Compiler();
     c->set_options(([ "include_path" : "./",
-                      "output_style" : Tools.Sass.STYLE_COMPRESSED ]));
+                      "output_style" : Web.Sass.STYLE_COMPRESSED ]));
     add_constant("sassc", c);
     add_constant("sassopt", c->set_options);
     add_constant("scss_str", #"
@@ -37,21 +37,21 @@ cond_begin(Tools.Sass)
 
   test_do([[
     sassopt(([ "include_path" : "./",
-               "output_style" : Tools.Sass.STYLE_COMPRESSED ]));
+               "output_style" : Web.Sass.STYLE_COMPRESSED ]));
   ]])
 
   test_eq(sassc->include_path, "./")
 
   dnl *** Simple compile_string tests
 
-  test_eq([[ sassc->output_style ]], Tools.Sass.STYLE_COMPRESSED)
+  test_eq([[ sassc->output_style ]], Web.Sass.STYLE_COMPRESSED)
   test_eq([[ sassc->compile_string(scss_str)->css ]], "a{color:#0087cc}\n")
-  test_eq([[ sassc->output_style = Tools.Sass.STYLE_COMPACT,
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_COMPACT,
              sassc->compile_string(scss_str)->css ]], "a { color: #0087cc; }\n")
-  test_eq([[ sassc->output_style = Tools.Sass.STYLE_NESTED,
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_NESTED,
              sassc->compile_string(scss_str)->css ]], "a {\n"
                                                  "  color: #0087cc; }\n")
-  test_eq([[ sassc->output_style = Tools.Sass.STYLE_EXPANDED,
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_EXPANDED,
              sassc->compile_string(scss_str)->css ]], "a {\n"
                                                  "  color: #0087cc;\n"
                                                  "}\n")
