@@ -232,6 +232,7 @@ mapping abbr2zones =
      "Atlantic/Reykjavik",
    }),
    "+0020": ({
+     "Africa/Accra",
      "Europe/Amsterdam",
    }),
    "+01": ({
@@ -676,6 +677,9 @@ mapping abbr2zones =
      "Atlantic/Reykjavik",
      "Etc/GMT+1",
    }),
+   "-0130": ({
+     "America/Montevideo",
+   }),
    "-02": ({
      "America/Araguaina",
      "America/Argentina/Buenos_Aires",
@@ -791,6 +795,7 @@ mapping abbr2zones =
      "America/La_Paz",
      "America/Lima",
      "America/Manaus",
+     "America/Montevideo",
      "America/Porto_Velho",
      "America/Punta_Arenas",
      "America/Rio_Branco",
@@ -1626,6 +1631,7 @@ mapping abbr2zones =
    }),
    "GMT": ({
      "Africa/Abidjan",
+     "Africa/Accra",
      "Africa/Bamako",
      "Africa/Banjul",
      "Africa/Bissau",
