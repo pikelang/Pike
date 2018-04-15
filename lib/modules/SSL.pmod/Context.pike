@@ -712,6 +712,7 @@ void filter_weak_suites(int min_keylength)
 void configure_suite_b(int(128..)|void min_keylength,
 		       int(0..)|void strictness_level)
 {
+  if( !min_keylength ) min_keylength = 256;
   if (min_keylength!=256)
     error("Only keylength 256 supported.\n");
 
