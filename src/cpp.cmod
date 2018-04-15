@@ -535,7 +535,7 @@ PIKECLASS define
 	    } else {
 	      /* NB: Evaluate the argument before insertion. */
 	      int save_flags = d->flags;
-	      d->flags = CPP_MACRO_IN_USE;
+	      d->flags |= CPP_MACRO_IN_USE;
 
 	      ref_push_string(str);
 	      push_int(flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
@@ -3405,6 +3405,7 @@ static void apply_define(struct CPP_struct *this,
 {
 #if 1
   struct svalue *save_sp = Pike_sp;
+  int save_flags;
 
   /* Keep d around... */
   push_svalue(&d->self);
@@ -3425,14 +3426,15 @@ static void apply_define(struct CPP_struct *this,
   push_int(flags);
   apply_lfun(d->self.u.object, LFUN_CALL, 3);
 
-  d->flags = CPP_MACRO_DISABLED;
+  save_flags = d->flags;
+  d->flags |= CPP_MACRO_DISABLED;
 
   /* NB: We're executing in the CPP context object. */
   low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
 	  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 	  charset);
 
-  d->flags = flags;
+  d->flags = save_flags;
 
   pop_n_elems(Pike_sp - save_sp);
 #else /* !1 */
@@ -3500,16 +3502,19 @@ static void apply_define(struct CPP_struct *this,
 	    {
 	      string_builder_append( &tmp, a, l );
 	    }else{
+	      /* NB: Evaluate the argument before insertion. */
 	      struct string_builder save;
 	      INT_TYPE line = this->current_line;
+	      int save_flags;
 	      /* FIXME: Shouldn't we save current_file too? */
 	      save=this->buf;
 	      this->buf=tmp;
-	      d->flags = CPP_MACRO_IN_USE;
+	      save_flags = d->flags;
+	      d->flags |= CPP_MACRO_IN_USE;
 	      low_cpp(this, a, l,
 		      flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 		      charset);
-	      d->flags = flags;
+	      d->flags = save_flags;
 	      tmp=this->buf;
 	      this->buf=save;
 	      this->current_line=line;
