@@ -1721,7 +1721,8 @@ void f_mv(INT32 args)
   }
 
   else {
-    char *s = malloc (str2->len + 2), *p;
+    /* NB: 3 == 2 bytes temporary suffix and 1 byte NUL-terminator. */
+    char *s = malloc (str2->len + 3), *p;
     if (!s) {
       i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
       goto no_nt_rename_kludge;
