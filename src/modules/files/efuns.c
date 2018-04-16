@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.154 2004/11/20 16:19:30 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1312,7 +1312,8 @@ void f_mv(INT32 args)
   }
 
   else {
-    char *s = malloc (str2->len + 2), *p;
+    /* NB: 3 == 2 bytes temporary suffix and 1 byte NUL-terminator. */
+    char *s = malloc (str2->len + 3), *p;
     if (!s) {
       i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
       goto no_nt_rename_kludge;
