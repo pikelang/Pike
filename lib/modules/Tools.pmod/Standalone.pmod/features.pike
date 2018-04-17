@@ -64,7 +64,11 @@ int main(int num, array(string) args) {
   write("\nRuntime options\n");
   mapping(string:string|int) rt = Pike.get_runtime_info();
   item(sprintf("%d-bit ABI", rt->abi), 1);
-  item("Machine code", !(<"default">)[rt->bytecode_method]);
+  if (!(<"default">)[rt->bytecode_method]) {
+    item(sprintf("Machine code: %s", rt->bytecode_method), 1);
+  } else {
+    item("Machine code", 0);
+  }
 
   test_ipv6();
 
@@ -258,7 +262,7 @@ int main(int num, array(string) args) {
   // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
   string license = "Unknown";
   string version = "Unknown";
-  string client_info = mysql_obj?->client_info && mysql_obj->client_info();
+  string client_info = mysql_obj[?"client_info"] && mysql_obj["client_info"]();
   if (client_info) {
     sscanf(client_info, "%*s(%s)%*s/%s", license, version);
   }
@@ -401,7 +405,8 @@ int main(int num, array(string) args) {
   // System.Memory.__MMAP__
 
   write("\nVCDiff\n");
-  M(VCDiff.Encoder);
+  F(VCDiff.Decoder);
+  F(VCDiff.Encoder);
 
   write("\nWeb\n");
   M(Web.Sass.Compiler);
