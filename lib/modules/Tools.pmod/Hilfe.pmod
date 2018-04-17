@@ -1360,7 +1360,7 @@ protected class ParserState {
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(sizeof(pstack)) return 0;
-    if(low_state->in_token) return 0;
+    if(low_state->remains) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -1606,24 +1606,28 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokenize the input
+    int(0..1) finished = state->finishedp();
     array(string) tokens = state->push_string(s+"\n");
     array(string) words = s/" ";
     string command = words[0];
 
-    // See if first token is a command and not a defined entity.
-    if(commands[command] && !has_index(constants, command) &&
-       !has_index(variables, command) && !has_index(functions, command) &&
-       (sizeof(words)==1 || words[1]!=";")) {
-      commands[command]->exec(this, s, words, tokens);
-      return;
-    }
+    if(finished)
+    {
+      // See if first token is a command and not a defined entity.
+      if(commands[command] && !has_index(constants, command) &&
+         !has_index(variables, command) && !has_index(functions, command) &&
+         (sizeof(words)==1 || words[1]!=";")) {
+        commands[command]->exec(this, s, words, tokens);
+        return;
+      }
 
-    // See if the command is executed in overridden mode.
-    if(sizeof(command) && command[0]=='.') {
-      command = command[1..];
-      if(commands[command]) {
-	commands[command]->exec(this, s, words, tokens);
-	return;
+      // See if the command is executed in overridden mode.
+      if(sizeof(command) && command[0]=='.') {
+        command = command[1..];
+        if(commands[command]) {
+          commands[command]->exec(this, s, words, tokens);
+          return;
+        }
       }
     }
 

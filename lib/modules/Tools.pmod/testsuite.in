@@ -202,6 +202,10 @@ test_hilfe("switch(a) { case 2: return 1; case 3: return 2; }", "Ok.\n")
 test_hilfe("String.Buffer b = String.Buffer();", "")
 test_hilfe("String.Buffer b = String.Buffer();", "")
 
+test_hilfe( ({ "#\"", "set fisk\";" }), "\"\\n\"\n\"set fisk\"");
+test_hilfe("set hedda", "");
+test_hilfe("f;", "0.0");
+
 test_do( add_constant("testhilfe") )
 
 test_true([[ Tools.Hilfe.StdinHilfe ]])
