@@ -612,6 +612,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                    "Server selected bad suite.\n");
       }
 
+      SSL3_DEBUG_MSG("Server selected suite %s.\n",
+                     fmt_cipher_suite(cipher_suite));
       COND_FATAL(!session->set_cipher_suite(cipher_suite, version,
                                             context->signature_algorithms,
                                             512),
