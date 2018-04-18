@@ -76,6 +76,31 @@ mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
   return 0;
 }
 
+//! Generate a JOSE JWK Thumbprint of the object.
+//!
+//! @param h
+//!   Hash algorithm to use.
+//!
+//! @returns
+//!   Returns the thumbprint (ie hash of the public fields) on success,
+//!   and @expr{0@} (zero) on failure (typically that the object isn't
+//!   initialized properly, or that it isn't supported by JWK).
+//!
+//! A typical use for this function is to generate a kid (key ID)
+//! value (cf @rfc{7638:1@}.
+//!
+//! @seealso
+//!   @[jwk()], @rfc{7638@}
+string(8bit) jwk_thumbprint(.Hash h)
+{
+  mapping(string(7bit):string(7bit)) public_jwk = jwk();
+  if (!public_jwk) return 0;
+  // NB: For the fields used in JWK, the Standards.JSON.PIKE_CANONICAL
+  //     behavior is the same as the one specified in RFC 7638 3.3.
+  return h->hash(Standards.JSON.encode(public_jwk,
+				       Standards.JSON.PIKE_CANONICAL));
+}
+
 //! Signs the @[message] with a JOSE JWS signature using hash
 //! algorithm @[h] and JOSE headers @[headers].
 //!
