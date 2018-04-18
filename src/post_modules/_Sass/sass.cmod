@@ -159,19 +159,19 @@ PIKECLASS Api
       push_text (imp_path);
 
       if (SETJMP(recovery)) {
-	call_handle_error();
-	return NULL;
+        call_handle_error();
+        return NULL;
       }
 
       apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
-	Sass_Import_List list;
+	      Sass_Import_List list;
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
-	UNSETJMP(recovery);
+	      UNSETJMP(recovery);
 
         list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
@@ -198,7 +198,7 @@ PIKECLASS Api
           struct pike_string *_data = ITEM(v)[0].u.string;
           // Absolute path of the imported file.
           struct pike_string *_absp = ITEM(v)[1].u.string;
-	  Sass_Import_List list;
+	        Sass_Import_List list;
 
           if (_data->size_shift != eightbit) {
             Pike_error ("Widestring returned in array index one from "
@@ -210,7 +210,7 @@ PIKECLASS Api
                         "importer function.\n");
           }
 
-	  UNSETJMP(recovery);
+	        UNSETJMP(recovery);
 
           list = sass_make_import_list (1);
           list[0] = sass_make_import (path, _absp->str,
