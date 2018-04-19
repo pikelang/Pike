@@ -387,14 +387,14 @@ static void nonfat_filetimes_to_stattimes (FILETIME *creation,
  *             backslashes ('\').
  */
 
-static int IsUncRoot(char *path)
+static int IsUncRoot(const p_wchar1 *path)
 {
   /* root UNC names start with 2 slashes */
-  if ( strlen(path) >= 5 &&     /* minimum string is "//x/y" */
+  if ( wcslen(path) >= 5 &&     /* minimum string is "//x/y" */
        ISSEPARATOR(path[0]) &&
        ISSEPARATOR(path[1]) )
   {
-    char * p = path + 2 ;
+    const p_wchar1 *p = path + 2 ;
     
     /* find the slash between the server name and share name */
     while ( *++p )
@@ -571,71 +571,104 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
  * Note 3: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
  * counterpart, but the creation time is admittedly more useful. */
-int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
+PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 {
-  ptrdiff_t l = strlen(file);
-  char fname[MAX_PATH];
+  ptrdiff_t l;
+  p_wchar1 *fname;
   int drive;       		/* current = -1, A: = 0, B: = 1, ... */
   HANDLE hFind;
-  WIN32_FIND_DATA findbuf;
+  WIN32_FIND_DATAW findbuf;
+  int exec_bits = 0;
 
-  if(ISSEPARATOR (file[l-1]))
-  {
-    do l--;
-    while(l && ISSEPARATOR (file[l]));
-    l++;
-    if(l+1 > sizeof(fname))
-    {
-      errno=EINVAL;
-      return -1;
-    }
-    memcpy(fname, file, l);
-    fname[l]=0;
-    file=fname;
-  }
-
-  /* don't allow wildcards */
-  if (strpbrk(file, "?*"))
+  /* Note: On NT the following characters are illegal in filenames:
+   *  \ / : * ? " < > |
+   *
+   * The first three are valid in paths, so check for the remaining 6.
+   */
+  if (strpbrk(file, "*?\"<>|"))
   {
     errno = ENOENT;
     return(-1);
   }
-  
+
+  fname = pike_dwim_utf8_to_utf16(file);
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  l = wcslen(fname);
+  /* Get rid of terminating slashes. */
+  while (l && ISSEPARATOR(fname[l-1])) {
+    fname[--l] = 0;
+  }
+
   /* get disk from file */
-  if (file[1] == ':')
-    drive = toupper(*file) - 'A';
+  if (fname[1] == ':')
+    drive = toupper(*fname) - 'A';
   else
     drive = -1;
+
+
+  /* Look at the extension to see if a file appears to be executable. */
+  if ((l >= 4) && (fname[l-4] == '.')) {
+    char ext[4];
+    int i;
+    for (i = 0; i < 3; i++) {
+      p_wchar1 c = fname[l + i - 4];
+      ext[i] = (c > 128)?0:tolower(c);
+    }
+    ext[3] = 0;
+    if (!strcmp (ext, "exe") ||
+	!strcmp (ext, "cmd") ||
+	!strcmp (ext, "bat") ||
+	!strcmp (ext, "com"))
+      exec_bits = 0111;	/* Execute perm for all. */
+  }
 
   STATDEBUG (fprintf (stderr, "fd_stat %s drive %d\n", file, drive));
 
   /* get info for file */
-  hFind = FindFirstFile(file, &findbuf);
+  hFind = FindFirstFileW(fname, &findbuf);
 
   if ( hFind == INVALID_HANDLE_VALUE )
   {
-    char abspath[_MAX_PATH + 1];
     UINT drive_type;
+    p_wchar1 *abspath;
 
     STATDEBUG (fprintf (stderr, "check root dir\n"));
 
     if (!strpbrk(file, ":./\\")) {
       STATDEBUG (fprintf (stderr, "no path separators\n"));
+      free(fname);
       errno = ENOENT;
       return -1;
     }
 
-    if (!_fullpath( abspath, file, _MAX_PATH ) ||
+    /* NB: One extra byte for the terminating separator. */
+    abspath = malloc((l + _MAX_PATH + 1 + 1) * sizeof(p_wchar1));
+    if (!abspath) {
+      free(fname);
+      errno = ENOMEM;
+      return -1;
+    }
+
+    if (!_wfullpath( abspath, fname, l + _MAX_PATH ) ||
 	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
-	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
-      STATDEBUG (fprintf (stderr, "not a root %s\n", abspath));
+	(wcslen(abspath) > 3 && !IsUncRoot (abspath))) {
+      STATDEBUG (fprintf (stderr, "not a root %S\n", abspath));
+      free(abspath);
+      free(fname);
       errno = ENOENT;
       return -1;
     }
 
-    STATDEBUG (fprintf (stderr, "abspath: %s\n", abspath));
+    free(fname);
+    fname = NULL;
 
-    l = strlen (abspath);
+    STATDEBUG (fprintf (stderr, "abspath: %S\n", abspath));
+
+    l = wcslen(abspath);
     if (!ISSEPARATOR (abspath[l - 1])) {
       /* Ensure there's a slash at the end or else GetDriveType
        * won't like it. */
@@ -643,12 +676,16 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       abspath[l + 1] = 0;
     }
 
-    drive_type = GetDriveType (abspath);
+    drive_type = GetDriveTypeW (abspath);
     if (drive_type == DRIVE_UNKNOWN || drive_type == DRIVE_NO_ROOT_DIR) {
       STATDEBUG (fprintf (stderr, "invalid drive type: %u\n", drive_type));
+      free(abspath);
       errno = ENOENT;
       return -1;
     }
+
+    free(abspath);
+    abspath = NULL;
 
     STATDEBUG (fprintf (stderr, "faking root stat\n"));
 
@@ -677,7 +714,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   }
 
   else {
-    char fstype[50];
+    p_wchar1 fstype[50];
     /* Really only need room in this buffer for "FAT" and anything
      * longer that begins with "FAT", but since GetVolumeInformation
      * has shown to trig unreliable error codes for a too short buffer
@@ -685,19 +722,29 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
     BOOL res;
 
-    if (drive >= 0) {
-      char root[4]; /* Room for "X:\" */
-      root[0] = drive + 'A';
-      root[1] = ':', root[2] = '\\', root[3] = 0;
-      res = GetVolumeInformation (root, NULL, 0, NULL, NULL,NULL,
-				  (LPSTR)&fstype, sizeof (fstype));
-    }
-    else
-      res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
-				  (LPSTR)&fstype, sizeof (fstype));
+    fstype[0] = '-';
+    fstype[1] = 0;
 
-    STATDEBUG (fprintf (stderr, "found, vol info: %d, %s\n",
-			res, res ? fstype : "-"));
+    if (fname[1] == ':') {
+      /* Construct a string "X:\" in fname. */
+      fname[0] = toupper(fname[0]);
+      fname[2] = '\\';
+      fname[3] = 0;
+    } else {
+      free(fname);
+      fname = NULL;
+    }
+
+    res = GetVolumeInformationW (fname, NULL, 0, NULL, NULL,NULL,
+				 fstype, sizeof(fstype)/sizeof(fstype[0]));
+
+    if (fname) {
+      free(fname);
+      fname = NULL;
+    }
+
+    STATDEBUG (fprintf (stderr, "found, vol info: %d, %S\n",
+			res, fstype));
 
     if (!res) {
       unsigned long w32_err = GetLastError();
@@ -713,7 +760,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       }
     }
 
-    if (res && !strcmp (fstype, "FAT")) {
+    if (res && (fstype[0] == 'F') && (fstype[1] == 'A') && (fstype[2] == 'T')) {
       if (!fat_filetimes_to_stattimes (&findbuf.ftCreationTime,
 				       &findbuf.ftLastAccessTime,
 				       &findbuf.ftLastWriteTime,
@@ -739,22 +786,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
      * roots. */
     buf->st_mode = S_IFDIR | 0111;
   else {
-    const char *p;
-    buf->st_mode = S_IFREG;
-
-    /* Look at the extension to see if a file appears to be executable. */
-    if ((p = strrchr (file, '.')) && strlen (p) == 4) {
-      char ext[4];
-      ext[0] = tolower (p[1]);
-      ext[1] = tolower (p[2]);
-      ext[2] = tolower (p[3]);
-      ext[3] = 0;
-      if (!strcmp (ext, "exe") ||
-	  !strcmp (ext, "cmd") ||
-	  !strcmp (ext, "bat") ||
-	  !strcmp (ext, "com"))
-	buf->st_mode |= 0111;	/* Execute perm for all. */
-    }
+    buf->st_mode = S_IFREG | exec_bits;
   }
 
   /* The file is read/write unless the read only flag is set. */
