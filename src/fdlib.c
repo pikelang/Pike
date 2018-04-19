@@ -417,6 +417,151 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
+PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+{
+  /* NB: Maximum expansion factor is 2.
+   *
+   *   UTF8	UTF16	Range			Expansion
+   *   1 byte	2 bytes	U000000 - U00007f	2
+   *   2 bytes	2 bytes	U000080 - U0007ff	1
+   *   3 bytes	2 bytes	U000800 - U00ffff	0.67
+   *   4 bytes	4 bytes	U010000 - U10ffff	1
+   *
+   * NB: Some extra padding at the end for NUL and adding
+   *     of terminating slashes, etc.
+   */
+  size_t len = strlen(str);
+  p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
+  size_t i = 0, j = 0;
+
+  if (!res) {
+    return NULL;
+  }
+
+  while (i < len) {
+    p_wchar0 c = str[i++];
+    p_wchar2 ch, mask = 0x3f;
+    if (!(c & 0x80)) {
+      /* US-ASCII */
+      res[j++] = c;
+      continue;
+    }
+    if (!(c & 0x40)) {
+      /* Continuation character. Invalid. Retry as Latin-1. */
+      goto latin1_to_utf16;
+    }
+    ch = c;
+    while (c & 0x40) {
+      p_wchar0 cc = str[i++];
+      if ((cc & 0xc0) != 0x80) {
+	/* Expected continuation character. */
+	goto latin1_to_utf16;
+      }
+      ch = ch<<6 | (cc & 0x3f);
+      mask |= mask << 5;
+      c <<= 1;
+    }
+    ch &= mask;
+    if (ch < 0) {
+      goto latin1_to_utf16;
+    }
+    if (ch < 0x10000) {
+      res[j++] = ch;
+      continue;
+    }
+    ch -= 0x10000;
+    if (ch >= 0x100000) {
+      goto latin1_to_utf16;
+    }
+    /* Encode with surrogates. */
+    res[j++] = 0xd800 | ch >> 10;
+    res[j++] = 0xdc00 | (ch & 0x3ff);
+  }
+  goto done;
+
+ latin1_to_utf16:
+  /* DWIM: Assume Latin-1. Just widen the string. */
+  for (j = 0; j < len; j++) {
+    res[j] = str[j];
+  }
+
+ done:
+  res[j++] = 0;	/* NUL-termination. */
+  return res;
+}
+
+PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
+{
+  /* NB: Maximum expansion factor is 1.5.
+   *
+   *   UTF16	UTF8	Range			Expansion
+   *   2 bytes	1 byte	U000000 - U00007f	0.5
+   *   2 bytes	2 bytes	U000080 - U0007ff	1
+   *   2 bytes	3 bytes	U000800 - U00d7ff	1.5
+   *   2 bytes	2 bytes	U00d800 - U00dfff	1
+   *   2 bytes	3 bytes	U00e000 - U00ffff	1.5
+   *   4 bytes	4 bytes	U010000 - U10ffff	1
+   *
+   * NB: Some extra padding at the end for NUL and adding
+   *     of terminating slashes, etc.
+   */
+  size_t i = 0, j = 0;
+  size_t sz = 0;
+  p_wchar1 c;
+  p_wchar0 *ret;
+
+  while ((c = str[i++])) {
+    sz++;
+    if (c < 0x80) continue;
+    sz++;
+    if (c < 0x0800) continue;
+    if ((c & 0xf800) == 0xd800) {
+      /* One half of a surrogate pair. */
+      continue;
+    }
+    sz++;
+  }
+  sz++;	/* NUL termination. */
+
+  ret = malloc(sz);
+  if (!ret) return NULL;
+
+  for (i = 0; (c = str[i]); i++) {
+    if (c < 0x80) {
+      ret[j++] = DO_NOT_WARN(c & 0x7f);
+      continue;
+    }
+    if (c < 0x800) {
+      ret[j++] = 0xc0 | (c>>6);
+      ret[j++] = 0x80 | (c & 0x3f);
+      continue;
+    }
+    if ((c & 0xf800) == 0xd800) {
+      /* Surrogate */
+      if ((c & 0xfc00) == 0xd800) {
+	p_wchar2 ch = str[++i];
+	if ((ch & 0xfc00) != 0xdc00) {
+	  free(ret);
+	  return NULL;
+	}
+	ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
+	ret[j++] = 0xf0 | (ch >> 18);
+	ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
+	ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
+	ret[j++] = 0x80 | (ch & 0x3f);
+	continue;
+      }
+      free(ret);
+      return NULL;
+    }
+    ret[j++] = 0xe0 | (c >> 12);
+    ret[j++] = 0x80 | ((c >> 6) & 0x3f);
+    ret[j++] = 0x80 | (c & 0x3f);
+  }
+  ret[j++] = 0;
+  return ret;
+}
+
 /* Note 1: s->st_mtime is the creation time for non-root directories.
  *
  * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
