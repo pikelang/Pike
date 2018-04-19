@@ -1706,55 +1706,79 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
 {
-  ptrdiff_t len=strlen(dir);
-  char *foo;
-  DIR *ret=malloc(sizeof(DIR) + len+5);
+  ptrdiff_t len;
+  p_wchar1 *foo;
+  DIR *ret = malloc(sizeof(DIR));
+
   if(!ret)
   {
     errno=ENOMEM;
     return 0;
   }
-  foo=sizeof(DIR) + (char *)ret;
-  memcpy(foo, dir, len);
 
-  if(len && foo[len-1]!='/') foo[len++]='/';
-  foo[len++]='*';
-  foo[len]=0;
-/*  fprintf(stderr,"opendir(%s)\n",foo); */
+  foo = pike_dwim_utf8_to_utf16(dir);
+  if (!foo) {
+    free(ret);
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  len = wcslen(foo);
 
   /* This may require appending a slash and a star... */
-  ret->h=FindFirstFile( (LPCTSTR) foo, & ret->find_data);
+  if(len && !ISSEPARATOR(foo[len-1])) foo[len++]='/';
+  foo[len++]='*';
+  foo[len]=0;
+
+/*  fprintf(stderr, "opendir(%S)\n", foo); */
+
+  ret->h = FindFirstFileW(foo, &ret->find_data);
+  free(foo);
+
   if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
+    /* FIXME: Handle empty directories. */
     errno=ENOENT;
     free(ret);
-    return 0;
+    return NULL;
   }
+
+  ret->direct.d_name = NULL;
   ret->first=1;
   return ret;
 }
 
-PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
+PMOD_EXPORT struct dirent *readdir(DIR *dir)
 {
-  if(dir->first)
+  if(!dir->first)
   {
-    *d=&dir->find_data;
-    dir->first=0;
-    return 0;
-  }else{
-    if(FindNextFile(dir->h,tmp))
+    if(!FindNextFileW(dir->h, &dir->find_data))
     {
-      *d=tmp;
-      return 0;
+      errno = ENOENT;
+      return NULL;
     }
-    *d=0;
-    return 0;
+  } else {
+    dir->first = 0;
   }
+
+  if (dir->direct.d_name) {
+    free(dir->direct.d_name);
+    dir->direct.d_name = NULL;
+  }
+
+  dir->direct.d_name = pike_utf16_to_utf8(dir->find_data.cFileName);
+
+  if (dir->direct.d_name) return &dir->direct;
+  errno = ENOMEM;
+  return NULL;
 }
 
 PMOD_EXPORT void closedir(DIR *dir)
 {
   FindClose(dir->h);
+  if (dir->direct.d_name) {
+    free(dir->direct.d_name);
+  }
   free(dir);
 }
 #endif

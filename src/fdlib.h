@@ -269,8 +269,9 @@ extern int fd_type[FD_SETSIZE];
 
 #ifdef EMULATE_DIRECT
 
-#define d_name cFileName
-#define direct _WIN32_FIND_DATAA
+struct direct {
+  char *d_name;
+};
 #define dirent direct
 #define MAXPATHLEN MAX_PATH
 #define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -278,8 +279,9 @@ extern int fd_type[FD_SETSIZE];
 typedef struct DIR_s
 {
   int first;
-  WIN32_FIND_DATA find_data;
+  WIN32_FIND_DATAW find_data;
   HANDLE h;
+  struct direct direct;
 } DIR;
 
 PMOD_EXPORT DIR *opendir(char *dir);
