@@ -97,6 +97,7 @@ DECLARATIONS;
 
 #define CPP_MACRO_DISABLED	1	/* Don't expand. */
 #define CPP_MACRO_IN_USE	2	/* In use. */
+#define CPP_MACRO_VARARGS	4	/* Varargs. */
 
 /*! @class Stack
  *! This class implements a simple stack. Instead of adding and removing
@@ -398,7 +399,6 @@ PIKECLASS define
   CVAR magic_define_fun magic;
   CVAR int args;
   CVAR short flags;         /* CPP_MACRO_* */
-  CVAR short varargs;
 
   CVAR struct svalue self;
 
@@ -415,7 +415,6 @@ PIKECLASS define
 #ifdef PIKE_NULL_IS_SPECIAL
     def->magic=0;
     def->flags = 0;
-    def->varargs=0;
 #endif
   }
 
@@ -498,7 +497,7 @@ PIKECLASS define
 	  }
 	  str = arguments->item[arg].u.string;
 	  if (raw_arg & DEF_ARG_NEED_COMMA) {
-	    if (!(d->varargs) ||
+	    if (!(d->flags & CPP_MACRO_VARARGS) ||
 		(arg != d->args-1) ||
 		str->len) {
 	      /* Don't add the comma if the varargs argument and empty. */
@@ -3475,7 +3474,7 @@ static void apply_define(struct CPP_struct *this,
 	  l = arguments[argument & DEF_ARG_MASK].len;
 
 	  if (argument & DEF_ARG_NEED_COMMA
-	      && !(d->varargs && d->args-1
+	      && !(d->flags & CPP_MACRO_VARARGS && d->args-1
 		   == (argument & DEF_ARG_MASK) && l == 0)) {
 	    string_builder_putchar(&tmp, ',');
 	    string_builder_putchar(&tmp, ' ');
@@ -3730,7 +3729,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   SKIPWHITE();
                   if(DATA(pos)==')')
                   {
-                    if((d->varargs && arg + 1 == d->args) ||
+                    if(((d->flags & CPP_MACRO_VARARGS) && (arg + 1 == d->args)) ||
                        (!arg && (d->args == 1))) {
                       /* Allow varargs to be left out.
                        *
@@ -3810,7 +3809,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       continue;
 
                     case ',':
-                      if(d->varargs && arg+1 == d->args) continue;
+                      if((d->flags & CPP_MACRO_VARARGS) && (arg+1 == d->args)) continue;
                       /* FALLTHRU */
 
                     case ')':
@@ -4436,7 +4435,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                     if(DATA(pos)=='.' && DATA(pos+1)=='.' && DATA(pos+2)=='.')
                     {
-                      varargs=1;
+                      varargs = CPP_MACRO_VARARGS;
                       pos+=3;
                       SKIPWHITE();
                     }
@@ -4615,7 +4614,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                   def = alloc_empty_define(def_name);
                   def->args=argno;
-                  def->varargs=varargs;
+                  def->flags |= varargs;
 
 		  add_ref(def->parts = Pike_sp[-2].u.array);
 
@@ -5463,7 +5462,7 @@ PIKEFUN string cpp(string data,
           def = alloc_empty_define(s);
 	  free_string(s);
           def->magic = insert_callback_define;
-          def->varargs=1;
+          def->flags |= CPP_MACRO_VARARGS;
           def->args=1;
         }
         else
