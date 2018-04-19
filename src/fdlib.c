@@ -786,28 +786,44 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   FD fd;
   DWORD omode,cmode = 0,amode;
 
-  ptrdiff_t l = strlen(file);
-  char fname[MAX_PATH];
+  ptrdiff_t l;
+  p_wchar1 *fname;
 
-  if(ISSEPARATOR (file[l-1]))
+
+  /* Note: On NT the following characters are illegal in filenames:
+   *  \ / : * ? " < > |
+   *
+   * The first three are valid in paths, so check for the remaining 6.
+   */
+  if (strpbrk(file, "*?\"<>|"))
   {
-    do l--;
-    while(l && ISSEPARATOR (file[l]));
-    l++;
-    if(l+1 > sizeof(fname))
-    {
-      errno=EINVAL;
-      return -1;
-    }
-    memcpy(fname, file, l);
-    fname[l]=0;
-    file=fname;
+    /* ENXIO:
+     *   "The file is a device special file and no corresponding device
+     *    exists."
+     */
+    errno = ENXIO;
+    return -1;
+  }
+
+  fname = pike_dwim_utf8_to_utf16(file);
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  l = wcslen(fname);
+
+  /* Get rid of terminating slashes. */
+  while (l && ISSEPARATOR(fname[l-1])) {
+    fname[--l] = 0;
   }
 
   omode=0;
-  FDDEBUG(fprintf(stderr,"fd_open(%s,0x%x,%o)\n",file,open_mode,create_mode));
+  FDDEBUG(fprintf(stderr, "fd_open(%S, 0x%x, %o)\n",
+		  fname, open_mode, create_mode));
   if(first_free_handle == FD_NO_MORE_FREE)
   {
+    free(fname);
     errno=EMFILE;
     return -1;
   }
@@ -847,18 +863,19 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
     amode=FILE_ATTRIBUTE_READONLY;
   }
     
-  x=CreateFile(file,
-	       omode,
-	       FILE_SHARE_READ | FILE_SHARE_WRITE,
-	       NULL,
-	       cmode,
-	       amode,
-	       NULL);
+  x=CreateFileW(fname,
+		omode,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL,
+		cmode,
+		amode,
+		NULL);
 
   
   if(x == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
     unsigned long err = GetLastError();
+    free(fname);
     if (err == ERROR_INVALID_NAME)
       /* An invalid name means the file doesn't exist. This is
        * consistent with fd_stat, opendir, and unix. */
@@ -882,7 +899,9 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   if(open_mode & fd_APPEND)
     fd_lseek(fd,0,SEEK_END);
 
-  FDDEBUG(fprintf(stderr,"Opened %s file as %d (%d)\n",file,fd,x));
+  FDDEBUG(fprintf(stderr, "Opened %S file as %d (%d)\n", fname, fd, x));
+
+  free(fname);
 
   return fd;
 }
