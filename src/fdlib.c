@@ -82,6 +82,19 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
   }
 }
 
+/* Dynamic load of functions that don't exist in all Windows versions. */
+
+#undef NTLIB
+#define NTLIB(LIB)					\
+  static HINSTANCE PIKE_CONCAT3(Pike_NT_, LIB, _lib);
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  static PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
+
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
 #ifdef PIKE_DEBUG
@@ -159,6 +172,7 @@ void fd_init(void)
 {
   int e;
   WSADATA wsadata;
+  OSVERSIONINFO osversion;
   
   mt_init(&fd_mutex);
   mt_lock(&fd_mutex);
@@ -180,10 +194,50 @@ void fd_init(void)
     fd_type[e]=e+1;
   fd_type[e]=FD_NO_MORE_FREE;
   mt_unlock(&fd_mutex);
+
+  /* MoveFileEx doesn't exist in W98 and earlier. */
+  /* Correction, it exists but does not work -Hubbe */
+  osversion.dwOSVersionInfoSize = sizeof(osversion);
+  if (GetVersionEx(&osversion) &&
+      (osversion.dwPlatformId != VER_PLATFORM_WIN32s) &&	/* !win32s */
+      (osversion.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS))	/* !win9x */
+  {
+#undef NTLIB
+#define NTLIB(LIBNAME)						\
+    PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib) =			\
+      LoadLibrary(TOSTR(LIBNAME))
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIBNAME, RETTYPE, SYMBOL, ARGLIST) do {	\
+      if (PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+	PIKE_CONCAT(Pike_NT_, SYMBOL) =				\
+	  (PIKE_CONCAT3(Pike_NT_, SYMBOL, _type))		\
+	  GetProcAddress(PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib),	\
+			 TOSTR(SYMBOL));			\
+      }								\
+    } while(0)
+#include "ntlibfuncs.h"
+  }
 }
 
 void fd_exit(void)
 {
+#undef NTLIB
+#define NTLIB(LIBNAME) do {					\
+    if (PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+      if (FreeLibrary(PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib))) {	\
+	PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib) = NULL;		\
+      }								\
+    }								\
+  } while(0)
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIBNAME, RETTYPE, SYMBOL, ARGLIST) do {	\
+    if (!PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+      PIKE_CONCAT(Pike_NT_, SYMBOL) = NULL;			\
+    }								\
+  } while(0)
+#include "ntlibfuncs.h"
+
   WSACleanup();
   mt_destroy(&fd_mutex);
 }
