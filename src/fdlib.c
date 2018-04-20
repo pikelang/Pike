@@ -46,6 +46,14 @@ int first_free_handle;
 #define STATDEBUG(X) do {} while (0)
 #endif
 
+
+#ifdef USE_DL_MALLOC
+/* NB: We use some calls that allocate memory with the libc malloc(). */
+static inline void libc_free(void *ptr);
+#else
+#define libc_free(PTR)	free(PTR)
+#endif
+
 /* _dosmaperr is internal but still exported in the dll interface. */
 __declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
 
@@ -1075,6 +1083,31 @@ PMOD_EXPORT int debug_fd_chdir(const char *dir)
   return ret;
 }
 
+PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
+{
+  /* NB: Windows CRT _wgetcwd() has a special case for buf == NULL,
+   *     where the buffer is instead allocated with malloc(), and
+   *     len is the minimum buffer size to allocate.
+   */
+  p_wchar1 *utf16buffer = _wgetcwd(NULL, 0);
+  p_wchar0 *utf8buffer;
+
+  if (!utf16buffer) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  utf8buffer = pike_utf16_to_utf8(utf16buffer);
+  libc_free(utf16buffer);
+
+  if (!utf8buffer) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  return utf8buffer;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
@@ -2094,5 +2127,14 @@ PMOD_EXPORT void closedir(DIR *dir)
     free(dir->direct.d_name);
   }
   free(dir);
+}
+#endif
+
+#if defined(HAVE_WINSOCK_H) && defined(USE_DL_MALLOC)
+/* NB: We use some calls above that allocate memory with the libc malloc. */
+#undef free
+static inline void libc_free(void *ptr)
+{
+  if (ptr) free(ptr);
 }
 #endif
