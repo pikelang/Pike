@@ -94,6 +94,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
 #define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
 #define fd_rename(O,N)	debug_fd_rename(O,N)
+#define fd_chdir(DIR)	debug_fd_chdir(DIR)
 #define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
@@ -140,6 +141,7 @@ PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
 PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
 PMOD_EXPORT int debug_fd_rename(const char *old, const char *new);
+PMOD_EXPORT int debug_fd_chdir(const char *dir);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -381,6 +383,7 @@ static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
 #define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
 #endif
 #define fd_rename(O,N)	rename(O,N)
+#define fd_chdir(DIR)	chdir(DIR)
 #define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */

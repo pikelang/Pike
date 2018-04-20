@@ -1058,6 +1058,23 @@ PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
   return ret;
 }
 
+PMOD_EXPORT int debug_fd_chdir(const char *dir)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  ret = _wchdir(dname);
+
+  free(dname);
+
+  return ret;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
