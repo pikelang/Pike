@@ -995,6 +995,69 @@ PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode)
   return ret;
 }
 
+PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
+{
+  p_wchar1 *oname = pike_dwim_utf8_to_utf16(old);
+  p_wchar1 *nname;
+  int ret;
+
+  if (!oname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  nname = pike_dwim_utf8_to_utf16(new);
+  if (!nname) {
+    free(oname);
+    errno = ENOMEM;
+    return -1;
+  }
+
+  if (Pike_NT_MoveFileExW) {
+    int retried = 0;
+    PIKE_STAT_T st;
+    ret = 0;
+  retry:
+    if (!Pike_NT_MoveFileExW(oname, nname, MOVEFILE_REPLACE_EXISTING)) {
+      DWORD err = GetLastError();
+      if ((err == ERROR_ACCESS_DENIED) && !retried) {
+	/* This happens when the destination is an already existing
+	 * directory. On POSIX this operation is valid if oname and
+	 * nname are directories, and the nname directory is empty.
+	 */
+	if (!fd_stat(old, &st) && ((st.st_mode & S_IFMT) == S_IFDIR) &&
+	    !fd_stat(new, &st) && ((st.st_mode & S_IFMT) == S_IFDIR) &&
+	    !_wrmdir(nname)) {
+	  /* Succeeded in removing the destination. This implies
+	   * that it was an empty directory.
+	   *
+	   * Retry.
+	   */
+	  retried = 1;
+	  goto retry;
+	}
+      }
+      if (retried) {
+	/* Recreate the destination directory that we deleted above. */
+	_wmkdir(nname);
+	/* NB: st still contains the flags from the original nname dir. */
+	_wchmod(nname, st.st_mode & 0777);
+      }
+      ret = -1;
+      set_errno_from_win32_error(err);
+    }
+  } else {
+    /* Fall back to rename() for W98 and earlier. Unlike MoveFileEx,
+     * it can't move directories between directories. */
+    ret = _wrename(oname, nname);
+  }
+
+  free(oname);
+  free(nname);
+
+  return ret;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
