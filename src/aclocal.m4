@@ -2017,10 +2017,29 @@ AC_DEFUN(PIKE_PKG_CONFIG,
     AC_MSG_CHECKING([if a pkg-config based $1 is installed])
     if "${PKG_CONFIG}" "$1"; then
       AC_MSG_RESULT(yes)
+      PKG_SAVE_CPPFLAGS="$CPPFLAGS"
+      PKG_SAVE_CFLAGS="$CFLAGS"
+      PKG_SAVE_LDFLAGS="$LDFLAGS"
+      PKG_SAVE_LIBS="$LIBS"
       PIKE_LOW_PKG_CONFIG([$1], [CPPFLAGS], [--cflags-only-I])
       PIKE_LOW_PKG_CONFIG([$1], [CFLAGS],   [--cflags-only-other])
       PIKE_LOW_PKG_CONFIG([$1], [LDFLAGS],  [--libs-only-L])
       PIKE_LOW_PKG_CONFIG([$1], [LIBS],     [--libs-only-l --libs-only-other])
+      AC_MSG_CHECKING([if $1 breaks compilation...])
+      AC_TRY_COMPILE([
+#include <stdio.h>
+],[
+        printf("Hello, world\n");
+	exit(0);
+      ],[
+	AC_MSG_RESULT([no, everything seems ok])
+      ],[
+	AC_MSG_RESULT([yes, do not use])
+	CPPFLAGS="$PKG_SAVE_CPPFLAGS"
+	CFLAGS="$PKG_SAVE_CFLAGS"
+	LDFLAGS="$PKG_SAVE_LDFLAGS"
+	LIBS="$PKG_SAVE_LIBS"
+      ])
     else
       AC_MSG_RESULT(no)
     fi
