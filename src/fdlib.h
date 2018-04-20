@@ -90,6 +90,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
+#define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
@@ -132,6 +133,7 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
+PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -351,6 +353,7 @@ typedef off_t PIKE_OFF_T;
 #else
 #define fd_truncate(F,LEN)	truncate(F,LEN)
 #endif
+#define fd_rmdir(DIR)	rmdir(DIR)
 #define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */

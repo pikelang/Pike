@@ -853,6 +853,39 @@ PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
   return 0;
 }
 
+PMOD_EXPORT int debug_fd_rmdir(const char *dir)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  ret = _wrmdir(dname);
+
+  if (ret && (errno == EACCESS)) {
+    PIKE_STAT_T st;
+    if (!fd_stat(dir, &st) && !(st.st_mode & _S_IWRITE) &&
+	!_wchmod(dname, st.st_mode | _S_IWRITE)) {
+      /* Retry with write permission. */
+      ret = _wrmdir(dname);
+
+      if (ret) {
+	/* Failed anyway. Restore original permissions. */
+	int err = errno;
+	_wchmod(dname, st.st_mode);
+	errno = err;
+      }
+    }
+  }
+
+  free(dname);
+
+  return ret;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
