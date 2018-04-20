@@ -812,6 +812,47 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
+PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  HANDLE h;
+  LONG high;
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  h = CreateFileW(fname, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
+		  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  free(fname);
+
+  if (h == INVALID_HANDLE_VALUE) {
+    errno = GetLastError();
+    return -1;
+  }
+
+  high = DO_NOT_WARN((LONG)(len >> 32));
+  len &= (INT64)0xffffffffUL;
+
+  if (SetFilePointer(h, DO_NOT_WARN((long)len), &high, FILE_BEGIN) ==
+      INVALID_SET_FILE_POINTER) {
+    DWORD err = GetLastError();
+    if (err != NO_ERROR) {
+      errno = err;
+      CloseHandle(h);
+      return -1;
+    }
+  }
+  if (!SetEndOfFile(h)) {
+    errno = GetLastError();
+    CloseHandle(h);
+    return -1;
+  }
+  CloseHandle(h);
+  return 0;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
