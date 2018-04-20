@@ -919,6 +919,28 @@ PMOD_EXPORT int debug_fd_unlink(const char *file)
   return ret;
 }
 
+PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+  int mask;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  mask = _umask(~mode & 0777);
+  _umask(~mode & mask & 0777);
+  ret = _wmkdir(dname);
+  _wchmod(dname, mode & ~mask & 0777);
+  _umask(mask);
+
+  free(dname);
+
+  return ret;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;

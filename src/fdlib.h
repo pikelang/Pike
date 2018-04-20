@@ -92,6 +92,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
 #define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
+#define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
 #define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
@@ -136,6 +137,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
 PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
+PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -357,6 +359,25 @@ typedef off_t PIKE_OFF_T;
 #endif
 #define fd_rmdir(DIR)	rmdir(DIR)
 #define fd_unlink(FILE)	unlink(FILE)
+#if MKDIR_ARGS == 2
+#define fd_mkdir(DIR,MODE)	mkdir(DIR,MODE)
+#else
+/* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
+static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
+{
+  /* NB: Attempt to set the mode via the umask. */
+  int mask = umask(~mode & 0777);
+  int ret;
+
+  umask(~mode & mask & 0777);
+  ret = mkdir(dir);
+  umask(mask);
+
+  /* NB: We assume that the umask trick worked. */
+  return ret;
+}
+#define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
+#endif
 #define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
