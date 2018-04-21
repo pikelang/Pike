@@ -334,6 +334,7 @@ struct svalue
 #define tSprintfFormat(X)	tAttr("sprintf_format", X)
 #define tSprintfArgs(X)		tAttr("sprintf_args", X)
 #define tDeprecated(X)		tAttr("deprecated", X)
+#define tUtf8Str		tAttr("utf8", tStr8)
 
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)

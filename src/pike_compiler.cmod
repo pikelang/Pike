@@ -2960,6 +2960,14 @@ void init_pike_compiler(void)
     low_add_constant("__placeholder_object", &s);
   }
 
+  {
+    struct pike_string *attr;
+    struct svalue s;
+    MAKE_CONST_STRING(attr, "utf8_string");
+    SET_SVAL(s, T_TYPE, 0, type, utf8_type_string);
+    low_add_efun(attr, &s);
+  }
+
   exit_compiler();
 }
 
