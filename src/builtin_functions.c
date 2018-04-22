@@ -2144,8 +2144,8 @@ static void f_string_filter_non_unicode( INT32 args )
   }
 }
 
-/*! @decl string(0..255) string_to_utf8(string s)
- *! @decl string(0..255) string_to_utf8(string s, int extended)
+/*! @decl utf8_string string_to_utf8(string s)
+ *! @decl utf8_string string_to_utf8(string s, int extended)
  *!
  *!   Converts a string into an UTF-8 compliant byte-stream.
  *!
@@ -2290,8 +2290,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-/*! @decl string utf8_to_string(string(0..255) s)
- *! @decl string utf8_to_string(string(0..255) s, int extended)
+/*! @decl string utf8_to_string(utf8_string s)
+ *! @decl string utf8_to_string(utf8_string s, int extended)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
@@ -9842,16 +9842,16 @@ void init_builtin_efuns(void)
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
 	   tFunc(tStr8 tOr(tInt02,tVoid),tStr), OPT_TRY_OPTIMIZE);
 
-  /* function(string,int|void:string(0..255)) */
+  /* function(string,int|void:utf8_string) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
-	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tInt,tVoid),tUtf8Str), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("string_filter_non_unicode", f_string_filter_non_unicode,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
 
-  /* function(string(0..255),int|void:string) */
+  /* function(utf8_string,int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
-	   tFunc(tStr8 tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tUtf8Str tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
