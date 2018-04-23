@@ -1,0 +1,14 @@
+subject: Pike 8.0: Protocols.HTTP, Updated to tzdata2018d, hilfe, sync with 6.1.243.
+from: c1cf1e0bdf7106f5d5ebf008a74836eb0c6e59b5
+to: 814d38e60458a0be8059ac399e875ff0e6fe794d
+originator: Marcus Wellhardh
+depends: 2018-04-10T112602
+restart: true
+
+• release number bumped to 8.0.590 by export.pike
+
+• Fix commands having priority over code. LysKOM 22552693.
+
+• Updated to tzdata2018d.
+
+• Protocols.HTTP: Remove line breaks from base64 basic auth tokens
