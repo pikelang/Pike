@@ -159,6 +159,9 @@
 /* Define if the closedir function returns void instead of int.  */
 #undef VOID_CLOSEDIR
 
+/* Number of args to mkdir() */
+#define MKDIR_ARGS 2
+
 /* Define to 'int' if <sys/time.h> doesn't */
 #undef time_t
 

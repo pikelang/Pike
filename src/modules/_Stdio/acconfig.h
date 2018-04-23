@@ -98,9 +98,6 @@
 /* Buffer size to use on open sockets */
 #undef SOCKET_BUFFER_MAX 
 
-/* Number of args to mkdir() */
-#define MKDIR_ARGS 2
-
 /* With termios */
 #undef WITH_TERMIOS 
 

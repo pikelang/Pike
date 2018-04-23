@@ -4699,6 +4699,34 @@ int accept(int, struct sockaddr *, Psocklen_t);
 AC_MSG_RESULT($pike_cv_accept_size_t *)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
 
+AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
+AC_CACHE_VAL(pike_cv_func_mkdir_args,[
+AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
+],[
+  mkdir("conftestdir",0666);
+],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
+])
+
+AC_MSG_RESULT($pike_cv_func_mkdir_args)
+AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
+
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
  AC_DEFINE(HAVE_LOADLIBRARY)
  AC_DEFINE(HAVE_FREELIBRARY)
