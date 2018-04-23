@@ -118,7 +118,7 @@ function(mixed...:function(mixed...:mixed|void)) curry(function f)
 //!   @endcode
 class bind(function f, mixed ... bind_args)
 {
-    protected string _sprintf() {
+    protected string _sprintf(int c) {
         return sprintf("Function.bind(%O%{, %O%})",f,bind_args);
     }
 
@@ -222,7 +222,7 @@ object Placeholder = class
     //! Arg(x) returns the value of argument X
     {
         inherit Base;
-        protected string _sprintf() {
+        protected string _sprintf(int c) {
             return sprintf("arg%d",num);
         }
 
@@ -317,7 +317,7 @@ object Placeholder = class
     //! @endcode
     {
         inherit Base;
-        protected string _sprintf() {
+        protected string _sprintf(int c) {
             return sprintf("Expr(%O)",value);
         }
         mixed value( bind x, array args )
