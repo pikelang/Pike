@@ -822,36 +822,12 @@ void f_rm(INT32 args)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
     {
-      while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_rmdir(str->str) != -1) && (errno == EINTR))
 	;
     }else{
-      while (!(i = unlink(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_unlink(str->str) != -1) && (errno == EINTR))
 	;
     }
-#ifdef __NT__
-    /* NT looks at the permissions on the file itself and refuses to
-     * remove files we don't have write access to. Thus we chmod it
-     * and try again, to make rm() more unix-like. */
-    if (!i && errno == EACCES && !(st.st_mode & _S_IWRITE)) {
-      if (chmod(str->str, st.st_mode | _S_IWRITE) == -1)
-	errno = EACCES;
-      else {
-	if(S_IFDIR == (S_IFMT & st.st_mode))
-	{
-	  while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
-	    ;
-	}else{
-	  while (!(i = unlink(str->str) != -1) && (errno == EINTR))
-	    ;
-	}
-	if (!i) {		/* Failed anyway; try to restore the old mode. */
-	  int olderrno = errno;
-	  chmod(str->str, st.st_mode);
-	  errno = olderrno;
-	}
-      }
-    }
-#endif
   }
   THREADS_DISALLOW_UID();
       
