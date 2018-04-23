@@ -153,6 +153,9 @@
  * __chkstk. */
 #undef HAVE_BROKEN_CHKSTK
 
+/* Define if you have a working getcwd */
+#undef HAVE_WORKING_GETCWD
+
 /* Define for solaris */
 #undef SOLARIS
 

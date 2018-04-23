@@ -86,9 +86,6 @@
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
 
-/* Define if you have a working getcwd */
-#undef HAVE_WORKING_GETCWD
-
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
