@@ -1319,7 +1319,7 @@ void f_cd(INT32 args)
     return;
   }
 
-  i = chdir(str->str) != -1;
+  i = fd_chdir(str->str) != -1;
   pop_n_elems(args);
   push_int(i);
 }
