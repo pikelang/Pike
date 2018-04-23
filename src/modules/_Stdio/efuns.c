@@ -893,67 +893,11 @@ void f_mkdir(INT32 args)
       s[str->len - 1] = '\0';
     }
   }
-  
-#if MKDIR_ARGS == 2
+
   THREADS_ALLOW_UID();
-  i = mkdir(s, mode) != -1;
+  i = fd_mkdir(s, mode) != -1;
   THREADS_DISALLOW_UID();
-#else
 
-#ifdef HAVE_LSTAT
-#define LSTAT lstat
-#else
-#define LSTAT stat
-#endif
-
-  {
-    /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
-    int mask = umask(0);
-    /* The following is basically the normal THREADS_ALLOW_UID/
-     * THREADS_DISALLOW_UID macros expanded. They cannot be used
-     * directly due to the nested disallow/allow block below. */
-    struct thread_state *cur_ts_ext = Pike_interpreter.thread_state;
-    pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-    i = mkdir(s) != -1;
-    umask(mask);
-    if (i) {
-      /* Attempt to set the mode.
-       *
-       * This code needs to be as paranoid as possible.
-       */
-      struct stat statbuf1;
-      struct stat statbuf2;
-      i = LSTAT(s, &statbuf1) != -1;
-      if (i) {
-	i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
-      }
-      if (i) {
-	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
-	do {
-	  i = chmod(s, mode) != -1;
-	  if (i || errno != EINTR) break;
-	  pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-	  check_threads_etc();
-	  pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-	} while (1);
-      }
-      if (i) {
-	i = LSTAT(s, &statbuf2) != -1;
-      }
-      if (i) {
-	i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
-	if (!i) {
-	  errno = EPERM;
-	}
-      }
-      if (!i) {
-	rmdir(s);
-      }
-    }
-    pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-  }
-#endif
-  
   if (s_dup)
     free(s_dup);
   
