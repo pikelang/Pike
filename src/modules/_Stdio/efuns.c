@@ -1333,38 +1333,14 @@ void f_cd(INT32 args)
  */
 void f_getcwd(INT32 args)
 {
-  char *e;
-  char *tmp;
-#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
-  INT32 size;
-
-  size=1000;
-  do {
-    tmp=xalloc(size);
-    e = getcwd(tmp,size);
-    if (e || errno!=ERANGE) break;
-    free(tmp);
-    tmp=0;
-    size*=2;
-  } while (size < 10000);
-#else
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 32768
-#endif
-  tmp=xalloc(MAXPATHLEN+1);
-  THREADS_ALLOW_UID();
-  e = getwd(tmp);
-  THREADS_DISALLOW_UID();
-#endif
-  if(!e) {
-    if (tmp) 
-      free(tmp);
+  char *e = fd_get_current_dir_name();
+  if (!e) {
     Pike_error("Failed to fetch current path.\n");
   }
 
   pop_n_elems(args);
   push_text(e);
-  free(tmp);
+  free(e);
 }
 
 #ifdef HAVE_EXECVE
