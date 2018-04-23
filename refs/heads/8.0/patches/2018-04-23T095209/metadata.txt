@@ -1,0 +1,8 @@
+subject: Pike 8.0 Release number bumped to 8.0.591 by export.pike
+from: 814d38e60458a0be8059ac399e875ff0e6fe794d
+to: 7255b36079d23ef9e6888e5cb55495283a03f21f
+originator: Jonas Lonnberg
+depends: 2018-04-23T094917|pike/8.0.590
+restart: true
+
+• release number bumped to 8.0.591 by export.pike
