@@ -495,45 +495,7 @@ void f_file_truncate(INT32 args)
     return;
   }
 
-#ifdef __NT__
-  {
-    HANDLE h = CreateFile(str->str, GENERIC_WRITE,
-			  FILE_SHARE_READ|FILE_SHARE_WRITE,
-			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(h == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
-      errno = GetLastError();
-      res=-1;
-    } else {
-      LONG high;
-      DWORD err;
-#ifdef INT64
-      high = DO_NOT_WARN ((LONG) (len >> 32));
-      len &= ((INT64) 1 << 32) - 1;
-#else
-      high = 0;
-#endif
-      if (SetFilePointer(h, DO_NOT_WARN ((LONG) len), &high, FILE_BEGIN) ==
-	  INVALID_SET_FILE_POINTER &&
-	  (err = GetLastError()) != NO_ERROR) {
-	errno = err;
-	res = -1;
-      }
-      else if (!SetEndOfFile(h)) {
-	errno = GetLastError();
-	res=-1;
-      }
-      else
-	res = 0;
-      CloseHandle(h);
-    }
-  }
-#else  /* !__NT__ */
-#ifdef HAVE_TRUNCATE64
-  res = truncate64 (str->str, len);
-#else
-  res=truncate(str->str, len);
-#endif
-#endif /* __NT__ */
+  res = fd_truncate(str->str, len);
 
   pop_n_elems(args);
 
