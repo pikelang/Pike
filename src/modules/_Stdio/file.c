@@ -6370,6 +6370,10 @@ PIKE_MODULE_INIT
 #endif
 #endif /* 0 */
 
+#ifdef __NT__
+  add_integer_constant("__HAVE_UTF8_FS__", 1, 0);
+#endif
+
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);
 #endif
