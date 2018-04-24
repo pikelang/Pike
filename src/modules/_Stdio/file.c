@@ -5762,7 +5762,9 @@ static void f_get_all_active_fd(INT32 args)
   pop_n_elems(args);
   sp = Pike_sp;
   {
+#ifndef __NT__
     DIR *tmp;
+#endif
     THREADS_ALLOW();
 #ifndef __NT__
     if( (tmp = opendir(
