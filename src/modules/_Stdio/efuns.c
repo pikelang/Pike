@@ -554,6 +554,7 @@ void f_filesystem_stat( INT32 args )
   DWORD bytes_per_sector = -1;
   DWORD free_clusters = -1;
   DWORD total_clusters = -1;
+  p_wchar1 *root;
   char _p[4];
   char *p = _p;
   unsigned int free_sectors;
@@ -561,27 +562,32 @@ void f_filesystem_stat( INT32 args )
 
   VALID_FILE_IO("filesystem_stat","read");
 
+  f_string_to_utf8(args);
+  args = 1;
+
   get_all_args( "filesystem_stat", args, "%s", &path );
 
-  if(sp[-1].u.string->len < 2 || path[1] != ':')
-  {
-    p = 0;
+  root = pike_dwim_utf8_to_utf16(path);
+  if (root[0] && root[1] == ':') {
+    root[2] = '\\';
+    root[3] = 0;
   } else {
-    p[0] = path[0];
-    p[1] = ':';
-    p[2] = '\\';
-    p[3] = 0;
+    free(root);
+    root = NULL;
   }
-  
-  if(!GetDiskFreeSpace( p, &sectors_per_cluster, 
-			&bytes_per_sector,
-			&free_clusters, 
-			&total_clusters ))
+
+  if(!GetDiskFreeSpaceW( root, &sectors_per_cluster,
+			 &bytes_per_sector,
+			 &free_clusters,
+			 &total_clusters ))
   {
+    if (root) free(root);
     pop_n_elems(args);
     push_int( 0 );
     return;
   }
+
+  if (root) free(root);
 
   free_sectors = sectors_per_cluster  * free_clusters;
   total_sectors = sectors_per_cluster * total_clusters;
