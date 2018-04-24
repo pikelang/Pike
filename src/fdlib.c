@@ -4,6 +4,17 @@
 || for more information.
 */
 
+/*
+ * This file contains wrappers for NT system calls that
+ * implement the corresponding POSIX system calls.
+ * One major difference compared to the native wrappers
+ * in crt.lib is that filenames are assumed to be UTF-8-
+ * encoded, with a fallback to Latin-1.
+ *
+ * The UTF-8 filenames are recoded to UTF16 and used
+ * with the wide versions of the NT system calls.
+ */
+
 #include "global.h"
 #include "fdlib.h"
 #include "pike_error.h"
