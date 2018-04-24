@@ -95,9 +95,6 @@
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
 
-/* Define if you have a working getcwd */
-#undef HAVE_WORKING_GETCWD
-
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
@@ -106,9 +103,6 @@
 
 /* Buffer size to use on open sockets */
 #undef SOCKET_BUFFER_MAX
-
-/* Number of args to mkdir() */
-#define MKDIR_ARGS 2
 
 /* With termios */
 #undef WITH_TERMIOS

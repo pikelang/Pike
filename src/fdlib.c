@@ -4,6 +4,17 @@
 || for more information.
 */
 
+/*
+ * This file contains wrappers for NT system calls that
+ * implement the corresponding POSIX system calls.
+ * One major difference compared to the native wrappers
+ * in crt.lib is that filenames are assumed to be UTF-8-
+ * encoded, with a fallback to Latin-1.
+ *
+ * The UTF-8 filenames are recoded to UTF16 and used
+ * with the wide versions of the NT system calls.
+ */
+
 #include "global.h"
 #include "fdlib.h"
 #include "pike_error.h"
@@ -46,6 +57,14 @@ int first_free_handle;
 #define STATDEBUG(X) do {} while (0)
 #endif
 
+
+#ifdef USE_DL_MALLOC
+/* NB: We use some calls that allocate memory with the libc malloc(). */
+static inline void libc_free(void *ptr);
+#else
+#define libc_free(PTR)	free(PTR)
+#endif
+
 /* _dosmaperr is internal but still exported in the dll interface. */
 /*__declspec(dllimport)*/
  void __cdecl _dosmaperr(unsigned long);
@@ -82,6 +101,19 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
     errno = err;
   }
 }
+
+/* Dynamic load of functions that don't exist in all Windows versions. */
+
+#undef NTLIB
+#define NTLIB(LIB)					\
+  static HINSTANCE PIKE_CONCAT3(Pike_NT_, LIB, _lib);
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  static PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
@@ -161,6 +193,7 @@ void fd_init(void)
 {
   int e;
   WSADATA wsadata;
+  OSVERSIONINFO osversion;
 
   mt_init(&fd_mutex);
   mt_lock(&fd_mutex);
@@ -182,10 +215,50 @@ void fd_init(void)
     fd_type[e]=e+1;
   fd_type[e]=FD_NO_MORE_FREE;
   mt_unlock(&fd_mutex);
+
+  /* MoveFileEx doesn't exist in W98 and earlier. */
+  /* Correction, it exists but does not work -Hubbe */
+  osversion.dwOSVersionInfoSize = sizeof(osversion);
+  if (GetVersionEx(&osversion) &&
+      (osversion.dwPlatformId != VER_PLATFORM_WIN32s) &&	/* !win32s */
+      (osversion.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS))	/* !win9x */
+  {
+#undef NTLIB
+#define NTLIB(LIBNAME)						\
+    PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib) =			\
+      LoadLibrary(TOSTR(LIBNAME))
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIBNAME, RETTYPE, SYMBOL, ARGLIST) do {	\
+      if (PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+	PIKE_CONCAT(Pike_NT_, SYMBOL) =				\
+	  (PIKE_CONCAT3(Pike_NT_, SYMBOL, _type))		\
+	  GetProcAddress(PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib),	\
+			 TOSTR(SYMBOL));			\
+      }								\
+    } while(0)
+#include "ntlibfuncs.h"
+  }
 }
 
 void fd_exit(void)
 {
+#undef NTLIB
+#define NTLIB(LIBNAME) do {					\
+    if (PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+      if (FreeLibrary(PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib))) {	\
+	PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib) = NULL;		\
+      }								\
+    }								\
+  } while(0)
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIBNAME, RETTYPE, SYMBOL, ARGLIST) do {	\
+    if (!PIKE_CONCAT3(Pike_NT_, LIBNAME, _lib)) {		\
+      PIKE_CONCAT(Pike_NT_, SYMBOL) = NULL;			\
+    }								\
+  } while(0)
+#include "ntlibfuncs.h"
+
   WSACleanup();
   mt_destroy(&fd_mutex);
 }
@@ -373,14 +446,14 @@ static void nonfat_filetimes_to_stattimes (FILETIME *creation,
  *             backslashes ('\').
  */
 
-static int IsUncRoot(char *path)
+static int IsUncRoot(const p_wchar1 *path)
 {
   /* root UNC names start with 2 slashes */
-  if ( strlen(path) >= 5 &&     /* minimum string is "//x/y" */
+  if ( wcslen(path) >= 5 &&     /* minimum string is "//x/y" */
        ISSEPARATOR(path[0]) &&
        ISSEPARATOR(path[1]) )
   {
-    char * p = path + 2 ;
+    const p_wchar1 *p = path + 2 ;
 
     /* find the slash between the server name and share name */
     while ( *++p )
@@ -403,6 +476,151 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
+PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+{
+  /* NB: Maximum expansion factor is 2.
+   *
+   *   UTF8	UTF16	Range			Expansion
+   *   1 byte	2 bytes	U000000 - U00007f	2
+   *   2 bytes	2 bytes	U000080 - U0007ff	1
+   *   3 bytes	2 bytes	U000800 - U00ffff	0.67
+   *   4 bytes	4 bytes	U010000 - U10ffff	1
+   *
+   * NB: Some extra padding at the end for NUL and adding
+   *     of terminating slashes, etc.
+   */
+  size_t len = strlen(str);
+  p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
+  size_t i = 0, j = 0;
+
+  if (!res) {
+    return NULL;
+  }
+
+  while (i < len) {
+    p_wchar0 c = str[i++];
+    p_wchar2 ch, mask = 0x3f;
+    if (!(c & 0x80)) {
+      /* US-ASCII */
+      res[j++] = c;
+      continue;
+    }
+    if (!(c & 0x40)) {
+      /* Continuation character. Invalid. Retry as Latin-1. */
+      goto latin1_to_utf16;
+    }
+    ch = c;
+    while (c & 0x40) {
+      p_wchar0 cc = str[i++];
+      if ((cc & 0xc0) != 0x80) {
+	/* Expected continuation character. */
+	goto latin1_to_utf16;
+      }
+      ch = ch<<6 | (cc & 0x3f);
+      mask |= mask << 5;
+      c <<= 1;
+    }
+    ch &= mask;
+    if (ch < 0) {
+      goto latin1_to_utf16;
+    }
+    if (ch < 0x10000) {
+      res[j++] = ch;
+      continue;
+    }
+    ch -= 0x10000;
+    if (ch >= 0x100000) {
+      goto latin1_to_utf16;
+    }
+    /* Encode with surrogates. */
+    res[j++] = 0xd800 | ch >> 10;
+    res[j++] = 0xdc00 | (ch & 0x3ff);
+  }
+  goto done;
+
+ latin1_to_utf16:
+  /* DWIM: Assume Latin-1. Just widen the string. */
+  for (j = 0; j < len; j++) {
+    res[j] = str[j];
+  }
+
+ done:
+  res[j++] = 0;	/* NUL-termination. */
+  return res;
+}
+
+PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
+{
+  /* NB: Maximum expansion factor is 1.5.
+   *
+   *   UTF16	UTF8	Range			Expansion
+   *   2 bytes	1 byte	U000000 - U00007f	0.5
+   *   2 bytes	2 bytes	U000080 - U0007ff	1
+   *   2 bytes	3 bytes	U000800 - U00d7ff	1.5
+   *   2 bytes	2 bytes	U00d800 - U00dfff	1
+   *   2 bytes	3 bytes	U00e000 - U00ffff	1.5
+   *   4 bytes	4 bytes	U010000 - U10ffff	1
+   *
+   * NB: Some extra padding at the end for NUL and adding
+   *     of terminating slashes, etc.
+   */
+  size_t i = 0, j = 0;
+  size_t sz = 0;
+  p_wchar1 c;
+  p_wchar0 *ret;
+
+  while ((c = str[i++])) {
+    sz++;
+    if (c < 0x80) continue;
+    sz++;
+    if (c < 0x0800) continue;
+    if ((c & 0xf800) == 0xd800) {
+      /* One half of a surrogate pair. */
+      continue;
+    }
+    sz++;
+  }
+  sz++;	/* NUL termination. */
+
+  ret = malloc(sz);
+  if (!ret) return NULL;
+
+  for (i = 0; (c = str[i]); i++) {
+    if (c < 0x80) {
+      ret[j++] = DO_NOT_WARN(c & 0x7f);
+      continue;
+    }
+    if (c < 0x800) {
+      ret[j++] = 0xc0 | (c>>6);
+      ret[j++] = 0x80 | (c & 0x3f);
+      continue;
+    }
+    if ((c & 0xf800) == 0xd800) {
+      /* Surrogate */
+      if ((c & 0xfc00) == 0xd800) {
+	p_wchar2 ch = str[++i];
+	if ((ch & 0xfc00) != 0xdc00) {
+	  free(ret);
+	  return NULL;
+	}
+	ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
+	ret[j++] = 0xf0 | (ch >> 18);
+	ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
+	ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
+	ret[j++] = 0x80 | (ch & 0x3f);
+	continue;
+      }
+      free(ret);
+      return NULL;
+    }
+    ret[j++] = 0xe0 | (c >> 12);
+    ret[j++] = 0x80 | ((c >> 6) & 0x3f);
+    ret[j++] = 0x80 | (c & 0x3f);
+  }
+  ret[j++] = 0;
+  return ret;
+}
+
 /* Note 1: s->st_mtime is the creation time for non-root directories.
  *
  * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
@@ -412,71 +630,104 @@ static int IsUncRoot(char *path)
  * Note 3: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
  * counterpart, but the creation time is admittedly more useful. */
-int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
+PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 {
-  ptrdiff_t l = strlen(file);
-  char fname[MAX_PATH];
+  ptrdiff_t l;
+  p_wchar1 *fname;
   int drive;       		/* current = -1, A: = 0, B: = 1, ... */
   HANDLE hFind;
-  WIN32_FIND_DATA findbuf;
+  WIN32_FIND_DATAW findbuf;
+  int exec_bits = 0;
 
-  if(ISSEPARATOR (file[l-1]))
-  {
-    do l--;
-    while(l && ISSEPARATOR (file[l]));
-    l++;
-    if(l+1 > sizeof(fname))
-    {
-      errno=EINVAL;
-      return -1;
-    }
-    memcpy(fname, file, l);
-    fname[l]=0;
-    file=fname;
-  }
-
-  /* don't allow wildcards */
-  if (strpbrk(file, "?*"))
+  /* Note: On NT the following characters are illegal in filenames:
+   *  \ / : * ? " < > |
+   *
+   * The first three are valid in paths, so check for the remaining 6.
+   */
+  if (strpbrk(file, "*?\"<>|"))
   {
     errno = ENOENT;
     return(-1);
   }
 
+  fname = pike_dwim_utf8_to_utf16(file);
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  l = wcslen(fname);
+  /* Get rid of terminating slashes. */
+  while (l && ISSEPARATOR(fname[l-1])) {
+    fname[--l] = 0;
+  }
+
   /* get disk from file */
-  if (file[1] == ':')
-    drive = toupper(*file) - 'A';
+  if (fname[1] == ':')
+    drive = toupper(*fname) - 'A';
   else
     drive = -1;
+
+
+  /* Look at the extension to see if a file appears to be executable. */
+  if ((l >= 4) && (fname[l-4] == '.')) {
+    char ext[4];
+    int i;
+    for (i = 0; i < 3; i++) {
+      p_wchar1 c = fname[l + i - 4];
+      ext[i] = (c > 128)?0:tolower(c);
+    }
+    ext[3] = 0;
+    if (!strcmp (ext, "exe") ||
+	!strcmp (ext, "cmd") ||
+	!strcmp (ext, "bat") ||
+	!strcmp (ext, "com"))
+      exec_bits = 0111;	/* Execute perm for all. */
+  }
 
   STATDEBUG (fprintf (stderr, "fd_stat %s drive %d\n", file, drive));
 
   /* get info for file */
-  hFind = FindFirstFile(file, &findbuf);
+  hFind = FindFirstFileW(fname, &findbuf);
 
   if ( hFind == INVALID_HANDLE_VALUE )
   {
-    char abspath[_MAX_PATH + 1];
     UINT drive_type;
+    p_wchar1 *abspath;
 
     STATDEBUG (fprintf (stderr, "check root dir\n"));
 
     if (!strpbrk(file, ":./\\")) {
       STATDEBUG (fprintf (stderr, "no path separators\n"));
+      free(fname);
       errno = ENOENT;
       return -1;
     }
 
-    if (!_fullpath( abspath, file, _MAX_PATH ) ||
+    /* NB: One extra byte for the terminating separator. */
+    abspath = malloc((l + _MAX_PATH + 1 + 1) * sizeof(p_wchar1));
+    if (!abspath) {
+      free(fname);
+      errno = ENOMEM;
+      return -1;
+    }
+
+    if (!_wfullpath( abspath, fname, l + _MAX_PATH ) ||
 	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
-	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
-      STATDEBUG (fprintf (stderr, "not a root %s\n", abspath));
+	(wcslen(abspath) > 3 && !IsUncRoot (abspath))) {
+      STATDEBUG (fprintf (stderr, "not a root %S\n", abspath));
+      free(abspath);
+      free(fname);
       errno = ENOENT;
       return -1;
     }
 
-    STATDEBUG (fprintf (stderr, "abspath: %s\n", abspath));
+    free(fname);
+    fname = NULL;
 
-    l = strlen (abspath);
+    STATDEBUG (fprintf (stderr, "abspath: %S\n", abspath));
+
+    l = wcslen(abspath);
     if (!ISSEPARATOR (abspath[l - 1])) {
       /* Ensure there's a slash at the end or else GetDriveType
        * won't like it. */
@@ -484,12 +735,16 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       abspath[l + 1] = 0;
     }
 
-    drive_type = GetDriveType (abspath);
+    drive_type = GetDriveTypeW (abspath);
     if (drive_type == DRIVE_UNKNOWN || drive_type == DRIVE_NO_ROOT_DIR) {
       STATDEBUG (fprintf (stderr, "invalid drive type: %u\n", drive_type));
+      free(abspath);
       errno = ENOENT;
       return -1;
     }
+
+    free(abspath);
+    abspath = NULL;
 
     STATDEBUG (fprintf (stderr, "faking root stat\n"));
 
@@ -518,7 +773,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   }
 
   else {
-    char fstype[50];
+    p_wchar1 fstype[50];
     /* Really only need room in this buffer for "FAT" and anything
      * longer that begins with "FAT", but since GetVolumeInformation
      * has shown to trig unreliable error codes for a too short buffer
@@ -526,19 +781,29 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
     BOOL res;
 
-    if (drive >= 0) {
-      char root[4]; /* Room for "X:\" */
-      root[0] = drive + 'A';
-      root[1] = ':', root[2] = '\\', root[3] = 0;
-      res = GetVolumeInformation (root, NULL, 0, NULL, NULL,NULL,
-				  (LPSTR)&fstype, sizeof (fstype));
-    }
-    else
-      res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
-				  (LPSTR)&fstype, sizeof (fstype));
+    fstype[0] = '-';
+    fstype[1] = 0;
 
-    STATDEBUG (fprintf (stderr, "found, vol info: %d, %s\n",
-			res, res ? fstype : "-"));
+    if (fname[1] == ':') {
+      /* Construct a string "X:\" in fname. */
+      fname[0] = toupper(fname[0]);
+      fname[2] = '\\';
+      fname[3] = 0;
+    } else {
+      free(fname);
+      fname = NULL;
+    }
+
+    res = GetVolumeInformationW (fname, NULL, 0, NULL, NULL,NULL,
+				 fstype, sizeof(fstype)/sizeof(fstype[0]));
+
+    if (fname) {
+      free(fname);
+      fname = NULL;
+    }
+
+    STATDEBUG (fprintf (stderr, "found, vol info: %d, %S\n",
+			res, fstype));
 
     if (!res) {
       unsigned long w32_err = GetLastError();
@@ -554,7 +819,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       }
     }
 
-    if (res && !strcmp (fstype, "FAT")) {
+    if (res && (fstype[0] == 'F') && (fstype[1] == 'A') && (fstype[2] == 'T')) {
       if (!fat_filetimes_to_stattimes (&findbuf.ftCreationTime,
 				       &findbuf.ftLastAccessTime,
 				       &findbuf.ftLastWriteTime,
@@ -580,22 +845,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
      * roots. */
     buf->st_mode = S_IFDIR | 0111;
   else {
-    const char *p;
-    buf->st_mode = S_IFREG;
-
-    /* Look at the extension to see if a file appears to be executable. */
-    if ((p = strrchr (file, '.')) && strlen (p) == 4) {
-      char ext[4];
-      ext[0] = tolower (p[1]);
-      ext[1] = tolower (p[2]);
-      ext[2] = tolower (p[3]);
-      ext[3] = 0;
-      if (!strcmp (ext, "exe") ||
-	  !strcmp (ext, "cmd") ||
-	  !strcmp (ext, "bat") ||
-	  !strcmp (ext, "com"))
-	buf->st_mode |= 0111;	/* Execute perm for all. */
-    }
+    buf->st_mode = S_IFREG | exec_bits;
   }
 
   /* The file is read/write unless the read only flag is set. */
@@ -614,34 +864,284 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
+PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  HANDLE h;
+  LONG high;
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  h = CreateFileW(fname, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
+		  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  free(fname);
+
+  if (h == INVALID_HANDLE_VALUE) {
+    errno = GetLastError();
+    return -1;
+  }
+
+  high = DO_NOT_WARN((LONG)(len >> 32));
+  len &= (INT64)0xffffffffUL;
+
+  if (SetFilePointer(h, DO_NOT_WARN((long)len), &high, FILE_BEGIN) ==
+      INVALID_SET_FILE_POINTER) {
+    DWORD err = GetLastError();
+    if (err != NO_ERROR) {
+      errno = err;
+      CloseHandle(h);
+      return -1;
+    }
+  }
+  if (!SetEndOfFile(h)) {
+    errno = GetLastError();
+    CloseHandle(h);
+    return -1;
+  }
+  CloseHandle(h);
+  return 0;
+}
+
+PMOD_EXPORT int debug_fd_rmdir(const char *dir)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  ret = _wrmdir(dname);
+
+  if (ret && (errno == EACCESS)) {
+    PIKE_STAT_T st;
+    if (!fd_stat(dir, &st) && !(st.st_mode & _S_IWRITE) &&
+	!_wchmod(dname, st.st_mode | _S_IWRITE)) {
+      /* Retry with write permission. */
+      ret = _wrmdir(dname);
+
+      if (ret) {
+	/* Failed anyway. Restore original permissions. */
+	int err = errno;
+	_wchmod(dname, st.st_mode);
+	errno = err;
+      }
+    }
+  }
+
+  free(dname);
+
+  return ret;
+}
+
+PMOD_EXPORT int debug_fd_unlink(const char *file)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  int ret;
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  ret = _wunlink(fname);
+
+  if (ret && (errno == EACCESS)) {
+    PIKE_STAT_T st;
+    if (!fd_stat(file, &st) && !(st.st_mode & _S_IWRITE) &&
+	!_wchmod(fname, st.st_mode | _S_IWRITE)) {
+      /* Retry with write permission. */
+      ret = _wunlink(fname);
+
+      if (ret) {
+	/* Failed anyway. Restore original permissions. */
+	int err = errno;
+	_wchmod(fname, st.st_mode);
+	errno = err;
+      }
+    }
+  }
+
+  free(fname);
+
+  return ret;
+}
+
+PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+  int mask;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  mask = _umask(~mode & 0777);
+  _umask(~mode & mask & 0777);
+  ret = _wmkdir(dname);
+  _wchmod(dname, mode & ~mask & 0777);
+  _umask(mask);
+
+  free(dname);
+
+  return ret;
+}
+
+PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
+{
+  p_wchar1 *oname = pike_dwim_utf8_to_utf16(old);
+  p_wchar1 *nname;
+  int ret;
+
+  if (!oname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  nname = pike_dwim_utf8_to_utf16(new);
+  if (!nname) {
+    free(oname);
+    errno = ENOMEM;
+    return -1;
+  }
+
+  if (Pike_NT_MoveFileExW) {
+    int retried = 0;
+    PIKE_STAT_T st;
+    ret = 0;
+  retry:
+    if (!Pike_NT_MoveFileExW(oname, nname, MOVEFILE_REPLACE_EXISTING)) {
+      DWORD err = GetLastError();
+      if ((err == ERROR_ACCESS_DENIED) && !retried) {
+	/* This happens when the destination is an already existing
+	 * directory. On POSIX this operation is valid if oname and
+	 * nname are directories, and the nname directory is empty.
+	 */
+	if (!fd_stat(old, &st) && ((st.st_mode & S_IFMT) == S_IFDIR) &&
+	    !fd_stat(new, &st) && ((st.st_mode & S_IFMT) == S_IFDIR) &&
+	    !_wrmdir(nname)) {
+	  /* Succeeded in removing the destination. This implies
+	   * that it was an empty directory.
+	   *
+	   * Retry.
+	   */
+	  retried = 1;
+	  goto retry;
+	}
+      }
+      if (retried) {
+	/* Recreate the destination directory that we deleted above. */
+	_wmkdir(nname);
+	/* NB: st still contains the flags from the original nname dir. */
+	_wchmod(nname, st.st_mode & 0777);
+      }
+      ret = -1;
+      set_errno_from_win32_error(err);
+    }
+  } else {
+    /* Fall back to rename() for W98 and earlier. Unlike MoveFileEx,
+     * it can't move directories between directories. */
+    ret = _wrename(oname, nname);
+  }
+
+  free(oname);
+  free(nname);
+
+  return ret;
+}
+
+PMOD_EXPORT int debug_fd_chdir(const char *dir)
+{
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  int ret;
+
+  if (!dname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  ret = _wchdir(dname);
+
+  free(dname);
+
+  return ret;
+}
+
+PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
+{
+  /* NB: Windows CRT _wgetcwd() has a special case for buf == NULL,
+   *     where the buffer is instead allocated with malloc(), and
+   *     len is the minimum buffer size to allocate.
+   */
+  p_wchar1 *utf16buffer = _wgetcwd(NULL, 0);
+  p_wchar0 *utf8buffer;
+
+  if (!utf16buffer) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  utf8buffer = pike_utf16_to_utf8(utf16buffer);
+  libc_free(utf16buffer);
+
+  if (!utf8buffer) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  return utf8buffer;
+}
+
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
   DWORD omode,cmode = 0,amode;
 
-  ptrdiff_t l = strlen(file);
-  char fname[MAX_PATH];
+  ptrdiff_t l;
+  p_wchar1 *fname;
 
-  if(ISSEPARATOR (file[l-1]))
+
+  /* Note: On NT the following characters are illegal in filenames:
+   *  \ / : * ? " < > |
+   *
+   * The first three are valid in paths, so check for the remaining 6.
+   */
+  if (strpbrk(file, "*?\"<>|"))
   {
-    do l--;
-    while(l && ISSEPARATOR (file[l]));
-    l++;
-    if(l+1 > sizeof(fname))
-    {
-      errno=EINVAL;
-      return -1;
-    }
-    memcpy(fname, file, l);
-    fname[l]=0;
-    file=fname;
+    /* ENXIO:
+     *   "The file is a device special file and no corresponding device
+     *    exists."
+     */
+    errno = ENXIO;
+    return -1;
+  }
+
+  fname = pike_dwim_utf8_to_utf16(file);
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  l = wcslen(fname);
+
+  /* Get rid of terminating slashes. */
+  while (l && ISSEPARATOR(fname[l-1])) {
+    fname[--l] = 0;
   }
 
   omode=0;
-  FDDEBUG(fprintf(stderr,"fd_open(%s,0x%x,%o)\n",file,open_mode,create_mode));
+  FDDEBUG(fprintf(stderr, "fd_open(%S, 0x%x, %o)\n",
+		  fname, open_mode, create_mode));
   if(first_free_handle == FD_NO_MORE_FREE)
   {
+    free(fname);
     errno=EMFILE;
     return -1;
   }
@@ -681,18 +1181,19 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
     amode=FILE_ATTRIBUTE_READONLY;
   }
 
-  x=CreateFile(file,
-	       omode,
-	       FILE_SHARE_READ | FILE_SHARE_WRITE,
-	       NULL,
-	       cmode,
-	       amode,
-	       NULL);
+  x=CreateFileW(fname,
+		omode,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL,
+		cmode,
+		amode,
+		NULL);
 
 
   if(x == INVALID_HANDLE_VALUE)
   {
     unsigned long err = GetLastError();
+    free(fname);
     if (err == ERROR_INVALID_NAME)
       /* An invalid name means the file doesn't exist. This is
        * consistent with fd_stat, opendir, and unix. */
@@ -716,7 +1217,9 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   if(open_mode & fd_APPEND)
     fd_lseek(fd,0,SEEK_END);
 
-  FDDEBUG(fprintf(stderr,"Opened %s file as %d (%d)\n",file,fd,x));
+  FDDEBUG(fprintf(stderr, "Opened %S file as %d (%d)\n", fname, fd, x));
+
+  free(fname);
 
   return fd;
 }
@@ -1628,55 +2131,88 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
 {
-  ptrdiff_t len=strlen(dir);
-  char *foo;
-  DIR *ret=malloc(sizeof(DIR) + len+5);
+  ptrdiff_t len;
+  p_wchar1 *foo;
+  DIR *ret = malloc(sizeof(DIR));
+
   if(!ret)
   {
     errno=ENOMEM;
     return 0;
   }
-  foo=sizeof(DIR) + (char *)ret;
-  memcpy(foo, dir, len);
 
-  if(len && foo[len-1]!='/') foo[len++]='/';
-  foo[len++]='*';
-  foo[len]=0;
-/*  fprintf(stderr,"opendir(%s)\n",foo); */
+  foo = pike_dwim_utf8_to_utf16(dir);
+  if (!foo) {
+    free(ret);
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  len = wcslen(foo);
 
   /* This may require appending a slash and a star... */
-  ret->h=FindFirstFile( (LPCTSTR) foo, & ret->find_data);
-  if(ret->h == INVALID_HANDLE_VALUE)
+  if(len && !ISSEPARATOR(foo[len-1])) foo[len++]='/';
+  foo[len++]='*';
+  foo[len]=0;
+
+/*  fprintf(stderr, "opendir(%S)\n", foo); */
+
+  ret->h = FindFirstFileW(foo, &ret->find_data);
+  free(foo);
+
+  if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
+    /* FIXME: Handle empty directories. */
     errno=ENOENT;
     free(ret);
-    return 0;
+    return NULL;
   }
+
+  ret->direct.d_name = NULL;
   ret->first=1;
   return ret;
 }
 
-PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
+PMOD_EXPORT struct dirent *readdir(DIR *dir)
 {
-  if(dir->first)
+  if(!dir->first)
   {
-    *d=&dir->find_data;
-    dir->first=0;
-    return 0;
-  }else{
-    if(FindNextFile(dir->h,tmp))
+    if(!FindNextFileW(dir->h, &dir->find_data))
     {
-      *d=tmp;
-      return 0;
+      errno = ENOENT;
+      return NULL;
     }
-    *d=0;
-    return 0;
+  } else {
+    dir->first = 0;
   }
+
+  if (dir->direct.d_name) {
+    free(dir->direct.d_name);
+    dir->direct.d_name = NULL;
+  }
+
+  dir->direct.d_name = pike_utf16_to_utf8(dir->find_data.cFileName);
+
+  if (dir->direct.d_name) return &dir->direct;
+  errno = ENOMEM;
+  return NULL;
 }
 
 PMOD_EXPORT void closedir(DIR *dir)
 {
   FindClose(dir->h);
+  if (dir->direct.d_name) {
+    free(dir->direct.d_name);
+  }
   free(dir);
+}
+#endif
+
+#if defined(HAVE_WINSOCK_H) && defined(USE_DL_MALLOC)
+/* NB: We use some calls above that allocate memory with the libc malloc. */
+#undef free
+static inline void libc_free(void *ptr)
+{
+  if (ptr) free(ptr);
 }
 #endif
