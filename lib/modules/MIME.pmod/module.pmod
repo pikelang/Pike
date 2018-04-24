@@ -176,15 +176,38 @@ protected int(0..1) has_prefix(string|object s, string prefix)
 
 #endif
 
+private string boundary_prefix;
+
+//! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
+//! prefix when creating a boundary string.
+//!
+//! @seealso
+//! @[MIME.generate_boundary()]
+//!
+void set_boundary_prefix(string boundary_prefix)
+{
+  this::boundary_prefix = boundary_prefix;
+}
+
 //! This function will create a string that can be used as a separator string
-//! for multipart messages.  The generated string is guaranteed not to appear
+//! for multipart messages. If a boundary prefix has been set
+//! using @[MIME.set_boundary_prefix()], the generated string will be prefixed
+//! with the boundary prefix.
+//!
+//! The generated string is guaranteed not to appear
 //! in @tt{base64@}, @tt{quoted-printable@}, or @tt{x-uue@} encoded data.
 //! It is also unlikely to appear in normal text.  This function is used by
 //! the cast method of the @tt{Message@} class if no boundary string is
 //! specified.
 //!
+//! @seealso
+//! @[MIME.set_boundary_prefix()]
+//!
 string generate_boundary( )
 {
+  if (boundary_prefix) {
+    return boundary_prefix + random( 1000000000 );
+  }
   return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
 }
 
