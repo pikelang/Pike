@@ -952,55 +952,52 @@ void f_get_dir(INT32 args)
 {
   HANDLE dir;
   WIN32_FIND_DATAW d;
-  struct string_builder sb;
   struct pike_string *str=0;
+  p_wchar1 *pattern;
+  size_t plen;
 
   VALID_FILE_IO("get_dir","read");
 
-  get_all_args("get_dir",args,".%T",&str);
+  get_all_args("get_dir", args, ".%S", &str);
 
   if(!str) {
     push_text(".");
     str = Pike_sp[-1].u.string;
     args++;
-  }
-
-  if (str->size_shift == 2) {
-    /* Filenames that are too wide are not supported. */
-    errno = ENOENT;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
-  init_string_builder_alloc(&sb, str->len+2, 1);
-
-  string_builder_shared_strcat(&sb, str);
-
-  /* Append "/" "*". */
-  if (sb.s->len && (STR1(sb.s)[sb.s->len-1] != '/') &&
-      (STR1(sb.s)[sb.s->len-1] != '\\')) {
-    STR1(sb.s)[sb.s->len++] = '/';
-  }
-  STR1(sb.s)[sb.s->len++] = '*';
-  STR1(sb.s)[sb.s->len] = '\0';
-
-  if (wcslen(STR1(sb.s)) != (size_t)sb.s->len) {
+  } else if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
-    free_string_builder(&sb);
     errno = ENOENT;
     pop_n_elems(args);
     push_int(0);
     return;
   }
+
+  pattern = pike_dwim_utf8_to_utf16(str->str);
+
+  if (!pattern) {
+    SIMPLE_OUT_OF_MEMORY_ERROR("get_dir", (str->len + 4) * sizeof(p_wchar1));
+  }
+
+  plen = wcslen(pattern);
+
+  /* Append "/" "*".
+   *
+   * NB: pike_dwim_utf8_to_utf16() allocates space for at
+   *     least 3 extra characters.
+   */
+  if (plen && (pattern[plen-1] != '/') && (pattern[plen-1] != '\\')) {
+    pattern[plen++] = '/';
+  }
+  pattern[plen++] = '*';
+  pattern[plen] = 0;
 
 #ifdef READDIR_DEBUG
   fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
 #endif /* READDIR_DEBUG */
 
-  dir = FindFirstFileW(STR1(sb.s), &d);
+  dir = FindFirstFileW(pattern, &d);
 
-  free_string_builder(&sb);
+  free(pattern);
 
   if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
     int err = GetLastError();
@@ -1032,6 +1029,9 @@ void f_get_dir(INT32 args)
     BEGIN_AGGREGATE_ARRAY(10);
 
     do {
+      ONERROR uwp;
+      p_wchar0 *utf8_fname;
+
 #ifdef READDIR_DEBUG
       fprintf(stderr, "  \"%S\"\n", d.cFileName);
 #endif /* READDIR_DEBUG */
@@ -1041,7 +1041,17 @@ void f_get_dir(INT32 args)
 	if(!d.cFileName[1]) continue;
 	if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
       }
-      push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
+
+      utf8_fname = pike_utf16_to_utf8(d.cFileName);
+      if (!utf8_fname) {
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_dir",
+				   (wcslen(d.cFileName) + 4) * sizeof(p_wchar1));
+      }
+
+      SET_ONERROR(uwp, free, utf8_fname);
+      push_text(utf8_fname);
+      CALL_AND_UNSET_ONERROR(uwp);
+
       DO_AGGREGATE_ARRAY(120);
     } while(FindNextFileW(dir, &d));
     err = GetLastError();
