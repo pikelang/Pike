@@ -3312,11 +3312,8 @@ static void file_truncate(INT32 args)
     Pike_error("File not open.\n");
 
   ERRNO=0;
-#ifdef HAVE_FTRUNCATE64
-  res = ftruncate64 (FD, len);
-#else
+
   res=fd_ftruncate(FD, len);
-#endif
 
   pop_n_elems(args);
 

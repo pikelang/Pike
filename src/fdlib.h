@@ -447,7 +447,11 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
+#ifdef HAVE_FTRUNCATE64
+#define fd_ftruncate(fd,X) ftruncate64(dmalloc_touch_fd(fd),(X))
+#else
 #define fd_ftruncate(fd,X) ftruncate(dmalloc_touch_fd(fd),(X))
+#endif
 #define fd_fstat(fd,X) fstat(dmalloc_touch_fd(fd),(X))
 #define fd_select select /* fixme */
 #define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
