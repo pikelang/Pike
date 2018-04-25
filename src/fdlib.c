@@ -36,10 +36,33 @@
 
 #include "threads.h"
 
+/* Mutex protecting da_handle, fd_type and first_free_handle. */
 static MUTEX_T fd_mutex;
 
+/* HANDLEs corresponding to the fd of the same index. */
 HANDLE da_handle[FD_SETSIZE];
+
+/* Next free fd when >= 0.
+ *
+ * When < 0:
+ *   FD_NO_MORE_FREE (-1)
+ *     End marker for the free list.
+ *
+ *   FD_FILE (-2)
+ *     Handle from CreateFileW().
+ *
+ *   FD_CONSOLE (-3)
+ *     Handle from GetStdHandle().
+ *
+ *   FD_SOCKET (-4)
+ *     socket_fd from socket().
+ *
+ *   FD_PIPE (-5)
+ *     Handle from CreatePipe().
+ */
 int fd_type[FD_SETSIZE];
+
+/* Next free fd. FD_NO_MORE_FREE (-1) if all fds allocated. */
 int first_free_handle;
 
 /* #define FD_DEBUG */
