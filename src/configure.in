@@ -4039,6 +4039,7 @@ AC_CHECK_FUNCS( \
  closefrom \
  crypt \
  fdwalk \
+ ftruncate64 \
  gethrtime \
  gethrvtime \
  getrlimit \
@@ -4059,6 +4060,7 @@ AC_CHECK_FUNCS( \
  sigvec \
  strcasecmp \
  times \
+ truncate64 \
  tzset \
  _snprintf \
  wait3 \
