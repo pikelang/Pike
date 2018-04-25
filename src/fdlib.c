@@ -34,6 +34,10 @@
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 
+#ifndef ENOTSOCK
+#define ENOTSOCK	WSAENOTSOCK
+#endif
+
 #include "threads.h"
 
 /* Mutex protecting da_handle, fd_type and first_free_handle. */
@@ -172,6 +176,148 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
   return h;
 }
 #endif
+
+static int fd_to_handle(int fd, int *type, HANDLE *handle)
+{
+  int ret = -1;
+
+  if (fd >= FD_NO_MORE_FREE) {
+    mt_lock(&fd_mutex);
+    if (fd_type[fd] < 0) {
+      if (type) *type = fd_type[fd];
+      if (handle) *handle = da_handle[fd];
+      ret = 0;
+    } else {
+      errno = EBADF;
+    }
+    mt_unlock(&fd_mutex);
+  } else {
+    errno = EBADF;
+  }
+
+  return ret;
+}
+
+static int fd_to_socket(int fd, SOCKET *socket)
+{
+  int ret = -1;
+
+  if (fd >= FD_NO_MORE_FREE) {
+    mt_lock(&fd_mutex);
+    if (fd_type[fd] == FD_SOCKET) {
+      if (socket) *socket = (SOCKET)da_handle[fd];
+      ret = 0;
+    } else if (fd_type[fd] < 0) {
+      errno = ENOTSOCK;
+    } else {
+      errno = EBADF;
+    }
+    mt_unlock(&fd_mutex);
+  } else {
+    errno = EBADF;
+  }
+
+  return ret;
+}
+
+static int allocate_fd(int type, HANDLE handle)
+{
+  int fd;
+
+  if (type >= FD_NO_MORE_FREE) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  mt_lock(&fd_mutex);
+
+  fd = first_free_handle;
+
+  if (fd >= 0) {
+    first_free_handle = fd_type[fd];
+    fd_type[fd] = type;
+    da_handle[fd] = handle;
+  } else {
+    errno = EMFILE;
+  }
+
+  mt_unlock(&fd_mutex);
+
+  return fd;
+}
+
+static int reallocate_fd(int fd, int type, HANDLE handle)
+{
+  int prev_fd;
+  if ((fd < 0) || (fd >= FD_SETSIZE) || (type >= FD_NO_MORE_FREE)) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  mt_lock(&fd_mutex);
+
+  if (fd_type[fd] < FD_NO_MORE_FREE) {
+    goto reallocate;
+  }
+
+  prev_fd = first_free_handle;
+
+  if (prev_fd == fd) {
+    first_free_handle = fd_type[fd];
+    goto found;
+  }
+
+  while (prev_fd != FD_NO_MORE_FREE) {
+    if (fd_type[prev_fd] == fd) {
+      /* Found. */
+      fd_type[prev_fd] = fd_type[fd];
+      goto found;
+    }
+    prev_fd = fd_type[prev_fd];
+  }
+
+  errno = EMFILE;
+  mt_unlock(&fd_mutex);
+  return -1;
+
+ reallocate:
+  if (fd_type[fd] == FD_SOCKET) {
+    closesocket((SOCKET)da_handle[fd]);
+  } else {
+    CloseHandle(da_handle[fd]);
+  }
+
+  /* FALLTHRU */
+ found:
+  fd_type[fd] = type;
+  da_handle[fd] = handle;
+  mt_unlock(&fd_mutex);
+  return fd;
+}
+
+static void free_fd(int fd)
+{
+  if ((fd < 0) || (fd >= FD_SETSIZE)) {
+    return;
+  }
+
+  mt_lock(&fd_mutex);
+  if (fd_type[fd] < FD_NO_MORE_FREE) {
+    fd_type[fd] = first_free_handle;
+    first_free_handle = fd;
+  }
+  mt_unlock(&fd_mutex);
+}
+
+static void set_fd_handle(int fd, HANDLE handle)
+{
+  if (fd < 0) {
+    return;
+  }
+  mt_lock(&fd_mutex);
+  da_handle[fd] = handle;
+  mt_unlock(&fd_mutex);
+}
 
 PMOD_EXPORT char *debug_fd_info(int fd)
 {
