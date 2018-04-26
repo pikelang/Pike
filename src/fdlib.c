@@ -184,7 +184,8 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 }
 #endif
 
-static int fd_to_handle(int fd, int *type, HANDLE *handle)
+/* Used by signal_handler.c:get_inheritable_handle(). */
+int fd_to_handle(int fd, int *type, HANDLE *handle)
 {
   int ret = -1;
 
@@ -323,7 +324,8 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   return fd;
 }
 
-static void release_fd(int fd)
+/* Used by signal_handler.c:get_inheritable_handle(). */
+void release_fd(int fd)
 {
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     return;
