@@ -56,13 +56,6 @@
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
-#ifndef FD_SETSIZE
-/*
- * in reality: almost unlimited actually.
- */
-#define FD_SETSIZE 65536
-#endif
-
 #include <winbase.h>
 
 typedef int FD;
