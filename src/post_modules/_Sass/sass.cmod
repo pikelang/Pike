@@ -272,7 +272,8 @@ PIKECLASS Api
     err = sass_compile_file_context (ctx);
 
     if (err) {
-      const char *errstr = sass_context_get_error_message (ctx_out);
+      const char *errstr =
+        sass_copy_c_string (sass_context_get_error_message (ctx_out));
       SASS_COMPILE_FILE_ERR ("Sass compile error (code: %d):\n%s\n",
                              err, errstr);
     }
@@ -287,7 +288,8 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr = sass_context_get_error_message (ctx_out);
+          const char *errstr =
+            sass_copy_c_string (sass_context_get_error_message (ctx_out));
           SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s\n",
                                  err, errstr);
         }
@@ -353,7 +355,8 @@ PIKECLASS Api
     err = sass_context_get_error_status (ctx_out);
 
     if (err) {
-      const char *errstr = sass_context_get_error_message (ctx_out);
+      const char *errstr =
+        sass_copy_c_string (sass_context_get_error_message (ctx_out));
       SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s\n",
                                err, errstr);
     }
@@ -368,7 +371,8 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr = sass_context_get_error_message (ctx_out);
+          const char *errstr =
+            sass_copy_c_string (sass_context_get_error_message (ctx_out));
           SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s\n",
                                    err, errstr);
         }
