@@ -32,6 +32,32 @@ cond_begin(Web["Sass"])
   test_eval_error([[ sassopt(([ "source_comments"     : "y"   ])) ]])
   test_eval_error([[ sassopt(([ "precision"           : "y"   ])) ]])
   test_eval_error([[ sassopt(([ "unknown_opt"         : "y"   ])) ]])
+  test_eval_error([[
+    string input = "@import 'i-do-not-exist';";
+    sassc->compile_string(input);
+  ]])
+  test_eval_error([[
+    string input = #"
+    a {
+      color: #fff  // missing semicolon
+      background: lime
+    }";
+
+    sassc->compile_string(input);
+  ]])
+
+  dnl --- Test error handling propagated from the Pike level to the CMOD level
+  test_eval_error([[
+    object compiler = (class {
+      inherit Web.Sass.Compiler;
+
+      protected string(8bit) handle_sass_import(string(8bit) path) {
+        error("I don't exist! ");
+      }
+    }());
+
+    compiler->compile_string("@import 'no-such-file';");
+  ]])
 
   dnl *** End: Should raise errors
 
