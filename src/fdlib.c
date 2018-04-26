@@ -961,7 +961,7 @@ PMOD_EXPORT int debug_fd_rmdir(const char *dir)
 
   ret = _wrmdir(dname);
 
-  if (ret && (errno == EACCESS)) {
+  if (ret && (errno == EACCES)) {
     PIKE_STAT_T st;
     if (!fd_stat(dir, &st) && !(st.st_mode & _S_IWRITE) &&
 	!_wchmod(dname, st.st_mode | _S_IWRITE)) {
@@ -994,7 +994,7 @@ PMOD_EXPORT int debug_fd_unlink(const char *file)
 
   ret = _wunlink(fname);
 
-  if (ret && (errno == EACCESS)) {
+  if (ret && (errno == EACCES)) {
     PIKE_STAT_T st;
     if (!fd_stat(file, &st) && !(st.st_mode & _S_IWRITE) &&
 	!_wchmod(fname, st.st_mode | _S_IWRITE)) {
