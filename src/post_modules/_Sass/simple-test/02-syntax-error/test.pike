@@ -13,13 +13,15 @@ int run()
                            combine_path(BASE, "output.css"));
   };
 
-  // handle_err(err);
+  werror(">>> Handle compile_file() error\n");
+  handle_err(err);
 
   string cont = Stdio.read_file(combine_path(BASE, "input.scss"));
 
-  // err = catch {
+  err = catch {
     compiler->compile_string(cont);
-  // };
+  };
 
-  // handle_err(err);
+  werror("\n>>> Handle compile_string() error\n");
+  handle_err(err);
 }
