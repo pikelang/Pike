@@ -93,6 +93,14 @@
 #endif /* _MSC_VER <= 1900 */
 #endif /* _MSC_VER */
 
+/* NB: Defaults to 64. */
+#ifndef FD_SETSIZE
+/*
+ * In reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
+#endif /* FD_SETSIZE */
+
 #endif /* __NT__ */
 
 /*

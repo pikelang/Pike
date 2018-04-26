@@ -20,6 +20,7 @@
 #include "pike_error.h"
 #include <math.h>
 #include "port.h"
+#include <assert.h>
 
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
@@ -34,12 +35,45 @@
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 
+#ifndef ENOTSOCK
+#define ENOTSOCK	WSAENOTSOCK
+#endif
+
 #include "threads.h"
 
+/* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */
 static PIKE_MUTEX_T fd_mutex;
 
+/* Condition indicating that some field of fd_busy has been cleared. */
+static COND_T fd_cond;
+
+/* HANDLEs corresponding to the fd of the same index. */
 HANDLE da_handle[FD_SETSIZE];
+
+/* Next free fd when >= 0.
+ *
+ * When < 0:
+ *   FD_NO_MORE_FREE (-1)
+ *     End marker for the free list.
+ *
+ *   FD_FILE (-2)
+ *     Handle from CreateFileW().
+ *
+ *   FD_CONSOLE (-3)
+ *     Handle from GetStdHandle().
+ *
+ *   FD_SOCKET (-4)
+ *     socket_fd from socket().
+ *
+ *   FD_PIPE (-5)
+ *     Handle from CreatePipe().
+ */
 int fd_type[FD_SETSIZE];
+
+/* Indication whether the corresponding fd is in use. */
+int fd_busy[FD_SETSIZE];
+
+/* Next free fd. FD_NO_MORE_FREE (-1) if all fds allocated. */
 int first_free_handle;
 
 /* #define FD_DEBUG */
@@ -151,6 +185,194 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 }
 #endif
 
+/* Used by signal_handler.c:get_inheritable_handle(). */
+int fd_to_handle(int fd, int *type, HANDLE *handle)
+{
+  int ret = -1;
+
+  if (fd >= FD_NO_MORE_FREE) {
+    mt_lock(&fd_mutex);
+    while (fd_busy[fd]) {
+      co_wait(&fd_cond, &fd_mutex);
+    }
+    if (fd_type[fd] < 0) {
+      if (type) *type = fd_type[fd];
+      if (handle) *handle = da_handle[fd];
+      fd_busy[fd] = 1;
+      ret = 0;
+    } else {
+      errno = EBADF;
+    }
+    mt_unlock(&fd_mutex);
+  } else {
+    errno = EBADF;
+  }
+
+  return ret;
+}
+
+static int fd_to_socket(int fd, SOCKET *socket)
+{
+  int ret = -1;
+
+  if (fd >= FD_NO_MORE_FREE) {
+    mt_lock(&fd_mutex);
+    while (fd_busy[fd]) {
+      co_wait(&fd_cond, &fd_mutex);
+    }
+    if (fd_type[fd] == FD_SOCKET) {
+      if (socket) *socket = (SOCKET)da_handle[fd];
+      fd_busy[fd] = 1;
+      ret = 0;
+    } else if (fd_type[fd] < 0) {
+      errno = ENOTSOCK;
+    } else {
+      errno = EBADF;
+    }
+    mt_unlock(&fd_mutex);
+  } else {
+    errno = EBADF;
+  }
+
+  return ret;
+}
+
+static int allocate_fd(int type, HANDLE handle)
+{
+  int fd;
+
+  if (type >= FD_NO_MORE_FREE) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  mt_lock(&fd_mutex);
+
+  fd = first_free_handle;
+
+  if (fd >= 0) {
+    assert(!fd_busy[fd]);
+    assert(fd_type[fd] >= -1);
+
+    first_free_handle = fd_type[fd];
+    fd_type[fd] = type;
+    da_handle[fd] = handle;
+    fd_busy[fd] = 1;
+  } else {
+    errno = EMFILE;
+  }
+
+  mt_unlock(&fd_mutex);
+
+  return fd;
+}
+
+static int reallocate_fd(int fd, int type, HANDLE handle)
+{
+  int prev_fd;
+  if ((fd < 0) || (fd >= FD_SETSIZE) || (type >= FD_NO_MORE_FREE)) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  mt_lock(&fd_mutex);
+
+  while (fd_busy[fd]) {
+    co_wait(&fd_cond, &fd_mutex);
+  }
+
+  if (fd_type[fd] < FD_NO_MORE_FREE) {
+    goto reallocate;
+  }
+
+  prev_fd = first_free_handle;
+
+  if (prev_fd == fd) {
+    assert(!fd_busy[fd]);
+    assert(fd_type[fd] >= -1);
+    first_free_handle = fd_type[fd];
+    goto found;
+  }
+
+  while (prev_fd != FD_NO_MORE_FREE) {
+    if (fd_type[prev_fd] == fd) {
+      /* Found. */
+      assert(!fd_busy[fd]);
+      assert(fd_type[fd] >= -1);
+      fd_type[prev_fd] = fd_type[fd];
+      goto found;
+    }
+    prev_fd = fd_type[prev_fd];
+  }
+
+  errno = EMFILE;
+  mt_unlock(&fd_mutex);
+  return -1;
+
+ reallocate:
+  if (fd_type[fd] == FD_SOCKET) {
+    closesocket((SOCKET)da_handle[fd]);
+  } else {
+    CloseHandle(da_handle[fd]);
+  }
+
+  /* FALLTHRU */
+ found:
+  fd_type[fd] = type;
+  da_handle[fd] = handle;
+  fd_busy[fd] = 1;
+  mt_unlock(&fd_mutex);
+  return fd;
+}
+
+/* Used by signal_handler.c:get_inheritable_handle(). */
+void release_fd(int fd)
+{
+  if ((fd < 0) || (fd >= FD_SETSIZE)) {
+    return;
+  }
+
+  mt_lock(&fd_mutex);
+
+  assert(fd_busy[fd]);
+
+  fd_busy[fd] = 0;
+  co_broadcast(&fd_cond);
+  mt_unlock(&fd_mutex);
+}
+
+static void free_fd(int fd)
+{
+  if ((fd < 0) || (fd >= FD_SETSIZE)) {
+    return;
+  }
+
+  mt_lock(&fd_mutex);
+
+  if (fd_type[fd] < FD_NO_MORE_FREE) {
+    assert(fd_busy[fd]);
+
+    fd_type[fd] = first_free_handle;
+    first_free_handle = fd;
+    fd_busy[fd] = 0;
+    co_broadcast(&fd_cond);
+  }
+  mt_unlock(&fd_mutex);
+}
+
+static void set_fd_handle(int fd, HANDLE handle)
+{
+  if (fd < 0) {
+    return;
+  }
+
+  mt_lock(&fd_mutex);
+  assert(fd_busy[fd]);
+
+  da_handle[fd] = handle;
+  mt_unlock(&fd_mutex);
+}
+
 PMOD_EXPORT char *debug_fd_info(int fd)
 {
   if(fd<0)
@@ -171,8 +393,12 @@ PMOD_EXPORT char *debug_fd_info(int fd)
 
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 {
-  if ((fd < 0) || (fd >= FD_SETSIZE)) return 0;
-  switch(fd_type[fd])
+  int type;
+
+  if (fd_to_handle(fd, &type, NULL) < 0) return 0;
+  release_fd(fd);
+
+  switch(type)
   {
     case FD_SOCKET:
       return fd_BUFFERED | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN;
@@ -196,12 +422,16 @@ void fd_init(void)
   OSVERSIONINFO osversion;
 
   mt_init(&fd_mutex);
+  co_init(&fd_cond);
   mt_lock(&fd_mutex);
+
   if(WSAStartup(MAKEWORD(1,1), &wsadata) != 0)
   {
     Pike_fatal("No winsock available.\n");
   }
   FDDEBUG(fprintf(stderr,"Using %s\n",wsadata.szDescription));
+
+  memset(fd_busy, 0, sizeof(fd_busy));
 
   fd_type[0] = FD_CONSOLE;
   da_handle[0] = GetStdHandle(STD_INPUT_HANDLE);
@@ -917,7 +1147,7 @@ PMOD_EXPORT int debug_fd_rmdir(const char *dir)
 
   ret = _wrmdir(dname);
 
-  if (ret && (errno == EACCESS)) {
+  if (ret && (errno == EACCES)) {
     PIKE_STAT_T st;
     if (!fd_stat(dir, &st) && !(st.st_mode & _S_IWRITE) &&
 	!_wchmod(dname, st.st_mode | _S_IWRITE)) {
@@ -950,7 +1180,7 @@ PMOD_EXPORT int debug_fd_unlink(const char *file)
 
   ret = _wunlink(fname);
 
-  if (ret && (errno == EACCESS)) {
+  if (ret && (errno == EACCES)) {
     PIKE_STAT_T st;
     if (!fd_stat(file, &st) && !(st.st_mode & _S_IWRITE) &&
 	!_wchmod(fname, st.st_mode | _S_IWRITE)) {
@@ -1139,10 +1369,10 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   omode=0;
   FDDEBUG(fprintf(stderr, "fd_open(%S, 0x%x, %o)\n",
 		  fname, open_mode, create_mode));
-  if(first_free_handle == FD_NO_MORE_FREE)
-  {
+
+  fd = allocate_fd(FD_FILE, INVALID_HANDLE_VALUE);
+  if (fd < 0) {
     free(fname);
-    errno=EMFILE;
     return -1;
   }
 
@@ -1205,14 +1435,9 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 
   SetHandleInformation(x,HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
 
-  mt_lock(&fd_mutex);
+  set_fd_handle(fd, x);
 
-  fd=first_free_handle;
-  first_free_handle=fd_type[fd];
-  fd_type[fd]=FD_FILE;
-  da_handle[fd] = x;
-
-  mt_unlock(&fd_mutex);
+  release_fd(fd);
 
   if(open_mode & fd_APPEND)
     fd_lseek(fd,0,SEEK_END);
@@ -1228,31 +1453,26 @@ PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto)
 {
   FD fd;
   SOCKET s;
-  mt_lock(&fd_mutex);
-  if(first_free_handle == FD_NO_MORE_FREE)
-  {
-    mt_unlock(&fd_mutex);
-    errno=EMFILE;
-    return -1;
-  }
-  mt_unlock(&fd_mutex);
+
+  fd = allocate_fd(FD_SOCKET, (HANDLE)INVALID_SOCKET);
+  if (fd < 0) return -1;
 
   s=socket(domain, type, proto);
 
   if(s==INVALID_SOCKET)
   {
-    set_errno_from_win32_error (WSAGetLastError());
+    DWORD err = WSAGetLastError();
+    free_fd(fd);
+    set_errno_from_win32_error (err);
     return -1;
   }
 
   SetHandleInformation((HANDLE)s,
 		       HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE, 0);
-  mt_lock(&fd_mutex);
-  fd=first_free_handle;
-  first_free_handle=fd_type[fd];
-  fd_type[fd] = FD_SOCKET;
-  da_handle[fd] = (HANDLE)s;
-  mt_unlock(&fd_mutex);
+
+  set_fd_handle(fd, (HANDLE)s);
+
+  release_fd(fd);
 
   FDDEBUG(fprintf(stderr,"New socket: %d (%d)\n",fd,s));
 
@@ -1263,34 +1483,23 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
 {
   int tmp_fds[2];
   HANDLE files[2];
-  mt_lock(&fd_mutex);
-  if((first_free_handle == FD_NO_MORE_FREE) ||
-     (fd_type[first_free_handle] == FD_NO_MORE_FREE))
-  {
-    mt_unlock(&fd_mutex);
-    errno=EMFILE;
+
+  tmp_fds[0] = allocate_fd(FD_PIPE, INVALID_HANDLE_VALUE);
+  if (tmp_fds[0] < 0) {
     return -1;
   }
-  /* Allocate the fds. */
-  tmp_fds[0] = first_free_handle;
-  first_free_handle = fd_type[tmp_fds[0]];
-  fd_type[tmp_fds[0]] = FD_PIPE;
-  da_handle[tmp_fds[0]] = INVALID_HANDLE_VALUE;
-  tmp_fds[1] = first_free_handle;
-  first_free_handle = fd_type[tmp_fds[1]];
-  fd_type[tmp_fds[1]] = FD_PIPE;
-  da_handle[tmp_fds[1]] = INVALID_HANDLE_VALUE;
-  mt_unlock(&fd_mutex);
+  tmp_fds[1] = allocate_fd(FD_PIPE, INVALID_HANDLE_VALUE);
+  if (tmp_fds[1] < 0) {
+    free_fd(tmp_fds[0]);
+    return -1;
+  }
 
   if(!CreatePipe(&files[0], &files[1], NULL, 0))
   {
-    set_errno_from_win32_error (GetLastError());
-    mt_lock(&fd_mutex);
-    fd_type[tmp_fds[1]] = first_free_handle;
-    first_free_handle = tmp_fds[1];
-    fd_type[tmp_fds[0]] = first_free_handle;
-    first_free_handle = tmp_fds[0];
-    mt_unlock(&fd_mutex);
+    DWORD err = GetLastError();
+    free_fd(tmp_fds[0]);
+    free_fd(tmp_fds[1]);
+    set_errno_from_win32_error (err);
     return -1;
   }
 
@@ -1302,12 +1511,13 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   SetHandleInformation(files[1],
 		       HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE, 0);
 
-  mt_lock(&fd_mutex);
   fds[0] = tmp_fds[0];
-  da_handle[fds[0]] = files[0];
+  set_fd_handle(fds[0], files[0]);
+  release_fd(fds[0]);
+
   fds[1] = tmp_fds[1];
-  da_handle[fds[1]] = files[1];
-  mt_unlock(&fd_mutex);
+  set_fd_handle(fds[1], files[1]);
+  release_fd(fds[1]);
 
   FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",
 		  fds[0], files[0], fds[1], files[1]));
@@ -1325,49 +1535,34 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 {
   FD new_fd;
   SOCKET s;
-  mt_lock(&fd_mutex);
+
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld)..\n",
                   fd, (long)(ptrdiff_t)da_handle[fd]));
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(first_free_handle == FD_NO_MORE_FREE)
-  {
-    mt_unlock(&fd_mutex);
-    errno=EMFILE;
-    return -1;
-  }
-  if(fd_type[fd]!=FD_SOCKET)
-  {
-    mt_unlock(&fd_mutex);
-    errno=ENOTSUPP;
-    return -1;
-  }
-  s=(SOCKET)da_handle[fd];
-  mt_unlock(&fd_mutex);
-  s=accept(s, addr, addrlen);
+
+  if (fd_to_socket(fd, &s) < 0) return -1;
+
+  new_fd = allocate_fd(FD_SOCKET, (HANDLE)INVALID_SOCKET);
+  if (new_fd < 0) return -1;
+
+  s = accept(s, addr, addrlen);
+
   if(s==INVALID_SOCKET)
   {
-    set_errno_from_win32_error (WSAGetLastError());
+    DWORD err = WSAGetLastError();
+    free_fd(new_fd);
+    set_errno_from_win32_error(err);
     FDDEBUG(fprintf(stderr,"Accept failed with errno %d\n",errno));
     return -1;
   }
 
   SetHandleInformation((HANDLE)s,
 		       HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE, 0);
-  mt_lock(&fd_mutex);
-  new_fd=first_free_handle;
-  first_free_handle=fd_type[new_fd];
-  fd_type[new_fd]=FD_SOCKET;
-  da_handle[new_fd] = (HANDLE)s;
+  set_fd_handle(new_fd, (HANDLE)s);
+  release_fd(new_fd);
 
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld) returned new socket: %d (%ld)\n",
                   fd, (long)(ptrdiff_t)da_handle[fd],
                   new_fd, (long)(ptrdiff_t)s));
-
-  mt_unlock(&fd_mutex);
 
   return new_fd;
 }
@@ -1379,19 +1574,9 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   int ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
                   fd, (long)(ptrdiff_t)da_handle[fd]));        \
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {	\
-    errno = EBADF; \
-    return -1; \
-  } \
-  mt_lock(&fd_mutex); \
-  if(fd_type[fd] != FD_SOCKET) { \
-     mt_unlock(&fd_mutex); \
-     errno = ENOTSUPP; \
-     return -1; \
-   } \
-  s = (SOCKET)da_handle[fd]; \
-  mt_unlock(&fd_mutex); \
+  if (fd_to_socket(fd, &s) < 0) return -1; \
   ret = NAME X2; \
+  release_fd(fd); \
   if(ret == SOCKET_ERROR) { \
     set_errno_from_win32_error (WSAGetLastError()); \
     ret = -1; \
@@ -1431,27 +1616,18 @@ SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 {
   SOCKET ret;
-  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "connect on %d (%ld)\n",
                   fd, (long)(ptrdiff_t)da_handle[fd]);
 	  for(ret=0;ret<len;ret++)
 	  fprintf(stderr," %02x",((unsigned char *)a)[ret]);
 	  fprintf(stderr,"\n");
-  )
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(fd_type[fd] != FD_SOCKET)
-  {
-    mt_unlock(&fd_mutex);
-    errno=ENOTSUPP;
-    return -1;
-  }
-  ret=(SOCKET)da_handle[fd];
-  mt_unlock(&fd_mutex);
+  );
+  if (fd_to_socket(fd, &ret) < 0) return -1;
+
   ret=connect(ret,a,len);
+
+  release_fd(fd);
+
   if(ret == SOCKET_ERROR) set_errno_from_win32_error (WSAGetLastError());
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno));
   return (int)ret;
@@ -1461,17 +1637,14 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 {
   HANDLE h;
   int type;
-  mt_lock(&fd_mutex);
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  h = da_handle[fd];
+
+  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+
   FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
-                  fd, (long)(ptrdiff_t)da_handle[fd]));
-  type=fd_type[fd];
-  mt_unlock(&fd_mutex);
+                  fd, (long)h));
+
+  free_fd(fd);
+
   switch(type)
   {
     case FD_SOCKET:
@@ -1491,14 +1664,8 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 	return -1;
       }
   }
+
   FDDEBUG(fprintf(stderr,"%d (%ld) closed\n", fd, (ptrdiff_t)da_handle[fd]));
-  mt_lock(&fd_mutex);
-  if(fd_type[fd]<FD_NO_MORE_FREE)
-  {
-    fd_type[fd]=first_free_handle;
-    first_free_handle=fd;
-  }
-  mt_unlock(&fd_mutex);
 
   return 0;
 }
@@ -1508,23 +1675,17 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   int kind;
   HANDLE handle;
 
-  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "Writing %d bytes to %d (%d)\n",
 		  len, fd, da_handle[fd]));
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  kind = fd_type[fd];
-  handle = da_handle[fd];
-  mt_unlock(&fd_mutex);
+
+  if (fd_to_handle(fd, &kind, &handle) < 0) return -1;
 
   switch(kind)
   {
     case FD_SOCKET:
       {
         ptrdiff_t ret = send((SOCKET)handle, buf, (int)len, 0);
+	release_fd(fd);
 	if(ret<0)
 	{
 	  set_errno_from_win32_error (WSAGetLastError());
@@ -1548,41 +1709,39 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	{
 	  set_errno_from_win32_error (GetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
+	  release_fd(fd);
 	  return -1;
 	}
 	FDDEBUG(fprintf(stderr, "Wrote %ld bytes to %d)\n", (long)ret, fd));
+	release_fd(fd);
 	return ret;
       }
 
     default:
       errno=ENOTSUPP;
+      release_fd(fd);
       return -1;
   }
 }
 
 PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 {
+  int type;
   DWORD ret;
   ptrdiff_t rret;
   HANDLE handle;
 
-  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
                   len, fd, (long)(ptrdiff_t)da_handle[fd],
                   (long)(ptrdiff_t)to));
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  ret=fd_type[fd];
-  handle=da_handle[fd];
-  mt_unlock(&fd_mutex);
 
-  switch(ret)
+  if (fd_to_handle(fd, &type, &handle) < 0) return -1;
+
+  switch(type)
   {
     case FD_SOCKET:
       rret=recv((SOCKET)handle, to, (int)len, 0);
+      release_fd(fd);
       if(rret<0)
       {
 	set_errno_from_win32_error (WSAGetLastError());
@@ -1599,6 +1758,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       while(len && !ReadFile(handle, to, (DWORD)len, &ret, 0) && ret<=0)
       {
 	unsigned int err = GetLastError();
+	release_fd(fd);
 	set_errno_from_win32_error (err);
 	switch(err)
 	{
@@ -1640,10 +1800,12 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 	return -1;
       }
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
+      release_fd(fd);
       return ret;
 
     default:
       errno=ENOTSUPP;
+      release_fd(fd);
       return -1;
   }
 }
@@ -1651,20 +1813,17 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 {
   PIKE_OFF_T ret;
+  int type;
   HANDLE h;
 
-  mt_lock(&fd_mutex);
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(fd_type[fd]!=FD_FILE)
+  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if(type != FD_FILE)
   {
-    mt_unlock(&fd_mutex);
+    release_fd(fd);
     errno=ENOTSUPP;
     return -1;
   }
+
 #if FILE_BEGIN != SEEK_SET || FILE_CURRENT != SEEK_CUR || FILE_END != SEEK_END
   switch(where)
   {
@@ -1673,8 +1832,6 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     case SEEK_END: where=FILE_END; break;
   }
 #endif
-  h = da_handle[fd];
-  mt_unlock(&fd_mutex);
 
   {
 #ifdef HAVE_SETFILEPOINTEREX
@@ -1685,6 +1842,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     li_ret.QuadPart = 0;
     if(!SetFilePointerEx(h, li_pos, &li_ret, where)) {
       set_errno_from_win32_error (GetLastError());
+      release_fd(fd);
       return -1;
     }
     ret = li_ret.QuadPart;
@@ -1697,41 +1855,39 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     if (ret == INVALID_SET_FILE_POINTER &&
 	(err = GetLastError()) != NO_ERROR) {
       set_errno_from_win32_error (err);
+      release_fd(fd);
       return -1;
     }
     ret += (INT64) high << 32;
 #endif /* HAVE_SETFILEPOINTEREX */
   }
 
+  release_fd(fd);
+
   return ret;
 }
 
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 {
+  int type;
   HANDLE h;
   LONG oldfp_lo, oldfp_hi, len_hi;
   DWORD err;
 
-  mt_lock(&fd_mutex);
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(fd_type[fd]!=FD_FILE)
+  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if(type != FD_FILE)
   {
-    mt_unlock(&fd_mutex);
+    release_fd(fd);
     errno=ENOTSUPP;
     return -1;
   }
-  h = da_handle[fd];
-  mt_unlock(&fd_mutex);
 
   oldfp_hi = 0;
   oldfp_lo = SetFilePointer(h, 0, &oldfp_hi, FILE_CURRENT);
   if(!~oldfp_lo) {
     err = GetLastError();
     if(err != NO_ERROR) {
+      release_fd(fd);
       set_errno_from_win32_error (err);
       return -1;
     }
@@ -1744,6 +1900,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
       INVALID_SET_FILE_POINTER &&
       (err = GetLastError()) != NO_ERROR) {
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
+    release_fd(fd);
     set_errno_from_win32_error (err);
     return -1;
   }
@@ -1751,6 +1908,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
   if(!SetEndOfFile(h)) {
     set_errno_from_win32_error (GetLastError());
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
+    release_fd(fd);
     return -1;
   }
 
@@ -1758,31 +1916,29 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
     if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
       err = GetLastError();
       if(err != NO_ERROR) {
+	release_fd(fd);
 	set_errno_from_win32_error (err);
 	return -1;
       }
     }
 
+  release_fd(fd);
   return 0;
 }
 
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 {
   long ret;
+  int type;
   HANDLE h;
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    errno = EBADF;
-    return -1;
-  }
-  mt_lock(&fd_mutex);
-  if(fd_type[fd]!=FD_FILE)
+
+  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if(type != FD_FILE)
   {
-    mt_unlock(&fd_mutex);
+    release_fd(fd);
     errno=ENOTSUPP;
     return -1;
   }
-  h = da_handle[fd];
-  mt_unlock(&fd_mutex);
 
   if(oper & fd_LOCK_UN)
   {
@@ -1811,6 +1967,9 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 		   0xffffffff,
 		   &tmp);
   }
+
+  release_fd(fd);
+
   if(ret<0)
   {
     set_errno_from_win32_error (GetLastError());
@@ -1826,34 +1985,31 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
  * counterpart, but the creation time is admittedly more useful. */
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
+  int type;
+  HANDLE h;
   FILETIME c,a,m;
 
-  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
                   fd, (long)(ptrdiff_t)da_handle[fd]));
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(fd_type[fd]!=FD_FILE)
+  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (type != FD_FILE)
   {
+    release_fd(fd);
     errno=ENOTSUPP;
-    mt_unlock(&fd_mutex);
     return -1;
   }
 
   memset(s, 0, sizeof(PIKE_STAT_T));
   s->st_nlink=1;
 
-  switch(fd_type[fd])
+  switch(type)
   {
     case FD_SOCKET:
       s->st_mode=S_IFSOCK;
       break;
 
     default:
-      switch(GetFileType(da_handle[fd]))
+      switch(GetFileType(h))
       {
 	default:
 	case FILE_TYPE_UNKNOWN: s->st_mode=0;        break;
@@ -1862,19 +2018,19 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	  s->st_mode=S_IFREG;
 	  {
 	    DWORD high, err;
-	    s->st_size=GetFileSize(da_handle[fd],&high);
+	    s->st_size=GetFileSize(h, &high);
 	    if (s->st_size == INVALID_FILE_SIZE &&
 		(err = GetLastError()) != NO_ERROR) {
+	      release_fd(fd);
 	      set_errno_from_win32_error (err);
-	      mt_unlock(&fd_mutex);
 	      return -1;
 	    }
             s->st_size += (INT64) high << 32;
           }
-	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
+	  if(!GetFileTime(h, &c, &a, &m))
 	  {
 	    set_errno_from_win32_error (GetLastError());
-	    mt_unlock(&fd_mutex);
+	    release_fd(fd);
 	    return -1;
 	  }
 
@@ -1888,8 +2044,8 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	case FILE_TYPE_PIPE:    s->st_mode=S_IFIFO; break;
       }
   }
+  release_fd(fd);
   s->st_mode |= 0666;
-  mt_unlock(&fd_mutex);
   return 0;
 }
 
@@ -1901,7 +2057,7 @@ static void dump_FDSET(FD_SET *x, int fds)
   {
     int e, first=1;
     fprintf(stderr,"[");
-    for(e=0;e<fds;e++)
+    for(e = 0; e < FD_SET_SIZE; e++)
     {
       if(FD_ISSET(da_handle[e],x))
       {
@@ -1958,59 +2114,55 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
+  SOCKET s;
+
   FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
                   fd, (long)(ptrdiff_t)da_handle[fd], cmd, data));
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    errno = EBADF;
+
+  if (fd_to_socket(fd, &s) < 0) return -1;
+
+  ret = ioctlsocket(s, cmd, data);
+
+  FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
+
+  release_fd(fd);
+
+  if(ret==SOCKET_ERROR)
+  {
+    set_errno_from_win32_error (WSAGetLastError());
     return -1;
   }
-  switch(fd_type[fd])
-  {
-    case FD_SOCKET:
-      ret=ioctlsocket((SOCKET)da_handle[fd], cmd, data);
-      FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
-      if(ret==SOCKET_ERROR)
-      {
-	set_errno_from_win32_error (WSAGetLastError());
-	return -1;
-      }
-      return ret;
 
-    default:
-      errno=ENOTSUPP;
-      return -1;
-  }
+  return ret;
 }
 
 
 PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
-  HANDLE x,p=GetCurrentProcess();
+  int type;
+  HANDLE h,x,p=GetCurrentProcess();
 
-  mt_lock(&fd_mutex);
-  if ((from < 0) || (from >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(fd_type[from] >= FD_NO_MORE_FREE) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
+  if (fd_to_handle(from, &type, &h) < 0) return -1;
+
+  fd = allocate_fd(type,
+		   (type == FD_SOCKET)?
+		   (HANDLE)INVALID_SOCKET:INVALID_HANDLE_VALUE);
+
+  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
   {
-    set_errno_from_win32_error (GetLastError());
-    mt_unlock(&fd_mutex);
+    DWORD err = GetLastError();
+    free_fd(fd);
+    release_fd(from);
+    set_errno_from_win32_error(err);
     return -1;
   }
 
-  fd=first_free_handle;
-  first_free_handle=fd_type[fd];
-  fd_type[fd]=fd_type[from];
-  da_handle[fd] = x;
-  mt_unlock(&fd_mutex);
+  release_fd(from);
+
+  set_fd_handle(fd, x);
+
+  release_fd(fd);
 
   FDDEBUG(fprintf(stderr,"Dup %d (%ld) to %d (%d)\n",
                   from, (long)(ptrdiff_t)da_handle[from], fd, x));
@@ -2019,47 +2171,41 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
-  HANDLE x,p=GetCurrentProcess();
+  int type;
+  HANDLE h,x,p=GetCurrentProcess();
 
-  if ((from < 0) || (from >= FD_SETSIZE)) {
-    errno = EBADF;
+  if ((from == to) || (to < 0) || (to >= FD_SETSIZE)) {
+    errno = EINVAL;
     return -1;
   }
-  mt_lock(&fd_mutex);
-  if(fd_type[from] >= FD_NO_MORE_FREE) {
-    mt_unlock(&fd_mutex);
-    errno = EBADF;
-    return -1;
-  }
-  if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
+
+  if (fd_to_handle(from, &type, &h) < 0) return -1;
+
+  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
   {
+    release_fd(from);
     set_errno_from_win32_error (GetLastError());
-    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  if(fd_type[to] < FD_NO_MORE_FREE)
-  {
-    if(!CloseHandle(da_handle[to]))
-    {
-      set_errno_from_win32_error (GetLastError());
-      mt_unlock(&fd_mutex);
-      return -1;
+  release_fd(from);
+
+  /* NB: Dead-lock proofed by never holding the busy lock for
+   *     both from and to.
+   */
+
+  if (reallocate_fd(to, type, x) < 0) {
+    release_fd(to);
+
+    if (type == FD_SOCKET) {
+      closesocket((SOCKET)x);
+    } else {
+      CloseHandle(x);
     }
-  }else{
-    int *prev,next;
-    for(prev=&first_free_handle;(next=*prev) != FD_NO_MORE_FREE;prev=fd_type+next)
-    {
-      if(next==to)
-      {
-	*prev=fd_type[next];
-	break;
-      }
-    }
+    return -1;
   }
-  fd_type[to]=fd_type[from];
-  da_handle[to] = x;
-  mt_unlock(&fd_mutex);
+
+  release_fd(to);
 
   FDDEBUG(fprintf(stderr,"Dup2 %d (%d) to %d (%d)\n",
                   from, (long)(ptrdiff_t)da_handle[from], to, x));

@@ -54,13 +54,6 @@
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
-#ifndef FD_SETSIZE
-/*
- * in reality: almost unlimited actually.
- */
-#define FD_SETSIZE 65536
-#endif /* FD_SETSIZE */
-
 #include <winbase.h>
 
 typedef int FD;
@@ -128,6 +121,8 @@ typedef off_t PIKE_OFF_T;
 
 /* Prototypes begin here */
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
+int fd_to_handle(int fd, int *type, HANDLE *handle);
+void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
