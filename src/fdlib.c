@@ -20,6 +20,7 @@
 #include "pike_error.h"
 #include <math.h>
 #include <ctype.h>
+#include <assert.h>
 
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
@@ -248,6 +249,9 @@ static int allocate_fd(int type, HANDLE handle)
   fd = first_free_handle;
 
   if (fd >= 0) {
+    assert(!fd_busy[fd]);
+    assert(fd_type[fd] >= -1);
+
     first_free_handle = fd_type[fd];
     fd_type[fd] = type;
     da_handle[fd] = handle;
@@ -282,6 +286,8 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   prev_fd = first_free_handle;
 
   if (prev_fd == fd) {
+    assert(!fd_busy[fd]);
+    assert(fd_type[fd] >= -1);
     first_free_handle = fd_type[fd];
     goto found;
   }
@@ -289,6 +295,8 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   while (prev_fd != FD_NO_MORE_FREE) {
     if (fd_type[prev_fd] == fd) {
       /* Found. */
+      assert(!fd_busy[fd]);
+      assert(fd_type[fd] >= -1);
       fd_type[prev_fd] = fd_type[fd];
       goto found;
     }
@@ -322,6 +330,9 @@ static void release_fd(int fd)
   }
 
   mt_lock(&fd_mutex);
+
+  assert(fd_busy[fd]);
+
   fd_busy[fd] = 0;
   co_broadcast(&fd_cond);
   mt_unlock(&fd_mutex);
@@ -334,7 +345,10 @@ static void free_fd(int fd)
   }
 
   mt_lock(&fd_mutex);
+
   if (fd_type[fd] < FD_NO_MORE_FREE) {
+    assert(fd_busy[fd]);
+
     fd_type[fd] = first_free_handle;
     first_free_handle = fd;
     fd_busy[fd] = 0;
@@ -348,7 +362,10 @@ static void set_fd_handle(int fd, HANDLE handle)
   if (fd < 0) {
     return;
   }
+
   mt_lock(&fd_mutex);
+  assert(fd_busy[fd]);
+
   da_handle[fd] = handle;
   mt_unlock(&fd_mutex);
 }
