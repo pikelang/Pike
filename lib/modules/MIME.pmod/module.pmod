@@ -181,12 +181,40 @@ private string boundary_prefix;
 //! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
 //! prefix when creating a boundary string.
 //!
-//! @seealso
-//! @[MIME.generate_boundary()]
+//! @throws
+//!  An error is thrown if @[boundary_prefix] doesn't adhere to @rfc{1521@}.
 //!
-void set_boundary_prefix(string boundary_prefix)
+//! @seealso
+//!  @[MIME.generate_boundary()], @[MIME.get_boundary_prefix()]
+//!
+//! @param boundary_prefix
+//!  This must adhere to @rfc{1521@} and can not be longer than 56 characters.
+void set_boundary_prefix(string(8bit) boundary_prefix)
 {
+  // 5 upto 14 chars is randomly added to the boundary so the prefix must not
+  // risking overflowing the max-length of 70 chars
+  if (boundary_prefix && (sizeof(boundary_prefix) + 14) > 70) {
+    error("Too long boundary prefix. The boundary prefix can not be longer "
+          "than 56 characters.\n");
+  }
+
+  sscanf(boundary_prefix, "%*s%[^0-9a-zA-Z'()+_,./:=?-]", string illegal);
+
+  if (illegal && sizeof(illegal)) {
+    error("An illegal character (%q) was found in the boundary prefix.\n",
+          illegal);
+  }
+
   this::boundary_prefix = boundary_prefix;
+}
+
+//! Returns the @tt{boundary_prefix@} set via @[set_boundary_prefix()].
+//!
+//! @seealso
+//!  @[MIME.set_boundary_prefix()], @[MIME.Message.setboundary()]
+string(8bit) get_boundary_prefix()
+{
+  return boundary_prefix;
 }
 
 //! This function will create a string that can be used as a separator string
@@ -206,7 +234,7 @@ void set_boundary_prefix(string boundary_prefix)
 string generate_boundary( )
 {
   if (boundary_prefix) {
-    return boundary_prefix + random( 1000000000 );
+    return boundary_prefix + "=_." + random( 1000000000 ) + ":";
   }
   return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
 }
