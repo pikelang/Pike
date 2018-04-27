@@ -160,6 +160,7 @@ PIKECLASS Api
 
       if (SETJMP(recovery)) {
         call_handle_error();
+	UNSETJMP(recovery);
         return NULL;
       }
 
