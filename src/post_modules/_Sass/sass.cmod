@@ -160,6 +160,7 @@ PIKECLASS Api
 
       if (SETJMP(recovery)) {
         call_handle_error();
+	UNSETJMP(recovery);
         return NULL;
       }
 
@@ -171,7 +172,7 @@ PIKECLASS Api
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
-	      UNSETJMP(recovery);
+	UNSETJMP(recovery);
 
         list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
@@ -210,7 +211,7 @@ PIKECLASS Api
                         "importer function.\n");
           }
 
-	        UNSETJMP(recovery);
+	  UNSETJMP(recovery);
 
           list = sass_make_import_list (1);
           list[0] = sass_make_import (path, _absp->str,
@@ -242,13 +243,6 @@ PIKECLASS Api
   }
 
 
-#define SASS_COMPILE_FILE_ERR(X...)    \
-  do {                                 \
-    sass_delete_file_context (ctx);    \
-    Pike_error (X);                    \
-  } while (0)
-
-
   // Compile the file input_file and return the result.
   // This method is over ridden in the the pmod.
   PIKEFUN mapping(string(8bit):string(8bit)) compile_file (string input_file)
@@ -257,6 +251,7 @@ PIKECLASS Api
     struct Sass_Context      *ctx_out;
     int err;
     const char *scss;
+    ONERROR uwp;
 
     SASS_TRACE ("compile_file(%s)\n", input_file->str);
 
@@ -266,16 +261,16 @@ PIKECLASS Api
     set_options (ctx_out);
     register_importer (ctx_out);
 
-    // TODO: Since the Pike layer can throw below we should probably catch
-    //       that here so we can free the context properly.
+    // Since the Pike layer can throw below we register a cleanup
+    // callback here so that we can free the context properly.
+
+    SET_ONERROR(uwp, sass_delete_file_context, ctx);
 
     err = sass_compile_file_context (ctx);
 
     if (err) {
-      const char *errstr =
-        sass_copy_c_string (sass_context_get_error_message (ctx_out));
-      SASS_COMPILE_FILE_ERR ("Sass compile error (code: %d):\n%s\n",
-                             err, errstr);
+      const char *errstr = sass_context_get_error_message (ctx_out);
+      Pike_error("Sass compile error (code: %d):\n%s\n", err, errstr);
     }
 
     scss = sass_context_get_output_string (ctx_out);
@@ -288,10 +283,9 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr =
-            sass_copy_c_string (sass_context_get_error_message (ctx_out));
-          SASS_COMPILE_FILE_ERR ("Failed generating source map (code: %ld): %s\n",
-                                 err, errstr);
+          const char *errstr = sass_context_get_error_message (ctx_out);
+          Pike_error("Failed generating source map (code: %ld): %s\n",
+		     err, errstr);
         }
       }
 
@@ -311,15 +305,8 @@ PIKECLASS Api
       push_undefined ();
     }
 
-    sass_delete_file_context (ctx);
+    CALL_AND_UNSET_ONERROR(uwp);
   }
-
-
-#define SASS_COMPILE_STRING_ERR(X...)  \
-  do {                                 \
-    sass_delete_data_context (ctx);    \
-    Pike_error (X);                    \
-  } while (0)
 
 
   /*! @decl string(8bit) compile_string(string(8bit) source)
@@ -340,6 +327,7 @@ PIKECLASS Api
     struct Sass_Context      *ctx_out;
     int err;
     const char *out;
+    ONERROR uwp;
 
     ctx = sass_make_data_context (sass_copy_c_string (source->str));
     ctx_out = sass_data_context_get_context (ctx);
@@ -347,18 +335,18 @@ PIKECLASS Api
     set_options (ctx_out);
     register_importer (ctx_out);
 
-    // TODO: Since the Pike layer can throw below we should probably catch
-    //       that here so we can free the context properly.
+    // Since the Pike layer can throw below we register a cleanup
+    // callback here so that we can free the context properly.
+
+    SET_ONERROR(uwp, sass_delete_data_context, ctx);
 
     sass_compile_data_context (ctx);
 
     err = sass_context_get_error_status (ctx_out);
 
     if (err) {
-      const char *errstr =
-        sass_copy_c_string (sass_context_get_error_message (ctx_out));
-      SASS_COMPILE_STRING_ERR ("Sass compile error (code: %ld):\n%s\n",
-                               err, errstr);
+      const char *errstr = sass_context_get_error_message (ctx_out);
+      Pike_error("Sass compile error (code: %ld):\n%s\n", err, errstr);
     }
 
     out = sass_context_get_output_string (ctx_out);
@@ -371,10 +359,9 @@ PIKECLASS Api
         smap = sass_context_get_source_map_string (ctx_out);
 
         if ((err = sass_context_get_error_status (ctx_out))) {
-          const char *errstr =
-            sass_copy_c_string (sass_context_get_error_message (ctx_out));
-          SASS_COMPILE_STRING_ERR ("Failed generating source map (code: %ld): %s\n",
-                                   err, errstr);
+          const char *errstr = sass_context_get_error_message (ctx_out);
+          Pike_error("Failed generating source map (code: %ld): %s\n",
+		     err, errstr);
         }
       }
 
@@ -394,7 +381,7 @@ PIKECLASS Api
       push_undefined ();
     }
 
-    sass_delete_data_context (ctx);
+    CALL_AND_UNSET_ONERROR(uwp);
   }
 
   INIT {
