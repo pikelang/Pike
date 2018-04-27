@@ -762,6 +762,9 @@ PMOD_EXPORT TYPE_FIELD assign_svalues(struct svalue *to,
 				      const struct svalue *from,
 				      size_t num,
 				      TYPE_FIELD type_hint);
+PMOD_EXPORT void assign_no_ref_svalue(struct svalue *to,
+				      const struct svalue *val,
+				      const struct object *owner);
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    const struct svalue *s);

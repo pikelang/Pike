@@ -282,6 +282,28 @@ PMOD_EXPORT TYPE_FIELD assign_svalues(struct svalue *to,
   return assign_svalues_no_free(to,from,num,type_hint);
 }
 
+PMOD_EXPORT void assign_no_ref_svalue(struct svalue *to,
+				      const struct svalue *val,
+				      const struct object *owner)
+{
+  if (((TYPEOF(*to) != PIKE_T_OBJECT) &&
+       (TYPEOF(*to) != PIKE_T_FUNCTION)) ||
+      (to->u.object != owner)) {
+    free_svalue(to);
+  }
+  if (val) {
+    if (((TYPEOF(*val) != PIKE_T_OBJECT) &&
+	 (TYPEOF(*val) != PIKE_T_FUNCTION)) ||
+	(val->u.object != owner)) {
+      assign_svalue_no_free(to, val);
+    } else {
+      *to = *val;
+    }
+  } else {
+    SET_SVAL(*to, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+  }
+}
+
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    const struct svalue *s)
