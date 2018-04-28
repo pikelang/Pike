@@ -550,8 +550,7 @@ static void free_fd_stuff(void)
 #endif
 
   for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
-    free_svalue(& THIS->event_cbs[ev]);
-    SET_SVAL(THIS->event_cbs[ev], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    assign_no_ref_svalue(&THIS->event_cbs[ev], NULL, Pike_fp->current_object);
   }
 }
 
@@ -1601,9 +1600,11 @@ static short get_fd_event_flags(struct my_file *f)
 
 static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, int flags)
 {
+  /* NB: f is always THIS for the caller, so it is safe to
+   *     use Pike_fp->current_object.
+   */
+  assign_no_ref_svalue(&f->event_cbs[event], cb, Pike_fp->current_object);
   if (UNSAFE_IS_ZERO (cb)) {
-    free_svalue (&f->event_cbs[event]);
-    SET_SVAL(f->event_cbs[event], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     SUB_FD_EVENTS2 (f, 1 << event, flags);
   }
   else {
@@ -1612,7 +1613,6 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
       Pike_error("Setting backend callback on a non-socket!\n");
     }
 #endif /* __NT__ */
-    assign_svalue (&f->event_cbs[event], cb);
     ADD_FD_EVENTS2 (f, 1 << event, flags);
   }
 }
@@ -4433,7 +4433,7 @@ static void file_handle_events(int event)
 }
 
 
-static void low_dup(struct object *UNUSED(toob),
+static void low_dup(struct object *toob,
 		    struct my_file *to,
 		    struct my_file *from)
 {
@@ -4467,7 +4467,7 @@ static void low_dup(struct object *UNUSED(toob),
 			  to->box.fd, from->box.events, got_fd_event, from->box.flags);
 
   for (ev = 0; ev < NELEM (to->event_cbs); ev++)
-    assign_svalue (&to->event_cbs[ev], &from->event_cbs[ev]);
+    assign_no_ref_svalue (&to->event_cbs[ev], &from->event_cbs[ev], toob);
 
   debug_check_internals (to);
 }
@@ -6027,19 +6027,19 @@ PIKE_MODULE_INIT
                     tIntPos, PIKE_T_INT, ID_PROTECTED);
   PIKE_MAP_VARIABLE("_read_callback",
                     OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),
-                    tMix, PIKE_T_MIXED, 0);
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
   PIKE_MAP_VARIABLE("_write_callback",
                     OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),
-                    tMix, PIKE_T_MIXED, 0);
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
   PIKE_MAP_VARIABLE("_read_oob_callback",
                     OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),
-                    tMix, PIKE_T_MIXED, 0);
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
   PIKE_MAP_VARIABLE("_write_oob_callback",
                     OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
-                    tMix, PIKE_T_MIXED, 0);
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
   PIKE_MAP_VARIABLE("_fs_event_callback",
                     OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
-                    tMix, PIKE_T_MIXED, 0);
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
 
   fd_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", fd_fd_factory,
