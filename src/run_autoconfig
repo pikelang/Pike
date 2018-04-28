@@ -25,14 +25,14 @@ if test "x$1" = "x" ; then
 
   localdir=`pwd`
 else
-  cd "$1"
-
   localdir=`echo $0 | sed 's@[^/]*$@@g'`
   if test "x$localdir" = "x"; then
     localdir=`pwd`
   else
     localdir=`cd $localdir;pwd`
   fi
+
+  cd "$1"
 fi
 
 findprog() {
