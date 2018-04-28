@@ -1,4 +1,3 @@
-
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
 ifdef([substr], ,[m4_copy([m4_substr],[substr])])
