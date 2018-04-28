@@ -475,7 +475,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           case EXTENSION_server_name:
             // RFC 6066 3.1 "Server Name Indication"
             session->server_name = 0;
-            while (size) {
+            while (sizeof(extension_data)) {
               Stdio.Buffer server_name = extension_data->read_hbuffer(2);
               switch(server_name->read_int(1)) {	// name_type
               case 0:	// host_name
