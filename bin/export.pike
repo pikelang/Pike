@@ -56,18 +56,18 @@ array(string) get_files(string path)
   return ret;
 }
 
-void fix_configure(string dir)
+void fix_configure(string dir, Stdio.Stat aclocal)
 {
   Stdio.Stat config=file_stat(dir+"/configure");
   Stdio.Stat config_in=file_stat(dir+"/configure.in");
 
   if(config_in)
   {
-    if(!config || config_in->mtime > config->mtime)
+    if(!config || config_in->mtime > config->mtime ||
+       (aclocal && aclocal->mtime > config->mtime))
     {
       werror("Fixing configure in "+dir+".\n");
-      Process.create_process( ({"autoconf"}),
-			      (["cwd":dir]) )->wait();
+      Process.create_process( ({ pike_base_name+"/src/run_autoconfig", "--no-recursion", dir }) )->wait();
     }
   }
 }
@@ -473,11 +473,18 @@ int main(int argc, array(string) argv)
     vpath = filename;
   }
 
-  fix_configure(pike_base_name+"/src");
+  Stdio.Stat aclocal=file_stat(pike_base_name+"/src/aclocal.m4");
+
+  fix_configure(pike_base_name+"/src", aclocal);
+  fix_configure(pike_base_name+"/src/modules", aclocal);
+  fix_configure(pike_base_name+"/src/post_modules", aclocal);
 
   foreach(get_dir(pike_base_name+"/src/modules") - ({"CVS","RCS"}), string fn)
     if(Stdio.file_size(pike_base_name+"/src/modules/"+fn) == -2)
-      fix_configure("modules/"+fn);
+      fix_configure(pike_base_name+"/src/modules/"+fn, aclocal);
+  foreach(get_dir(pike_base_name+"/src/post_modules") - ({"CVS","RCS"}), string fn)
+    if(Stdio.file_size(pike_base_name+"/src/post_modules/"+fn) == -2)
+      fix_configure(pike_base_name+"/src/post_modules/"+fn, aclocal);
 
   rm(vpath);
   symlink(".", vpath);
