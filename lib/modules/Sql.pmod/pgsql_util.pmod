@@ -798,20 +798,29 @@ class Result {
 
   //! Returns the command-complete status for this query.
   //!
+  //! @note
+  //!  This method should normally be called after EOF has been reached.
+  //!  If it is called before, all unfetched result rows will be discarded.
+  //!
   //! @seealso
-  //!  @[affected_rows()]
+  //!  @[affected_rows()], @[eof()]
   /*semi*/final string status_command_complete() {
+    if (!statuscmdcomplete)
+      while (fetch_row_array());
     return statuscmdcomplete;
   }
 
   //! Returns the number of affected rows by this query.
   //!
+  //! @note
+  //!  This method should normally be called after EOF has been reached.
+  //!  If it is called before, all unfetched result rows will be discarded.
+  //!
   //! @seealso
-  //!  @[status_command_complete()]
+  //!  @[status_command_complete()], @[eof()]
   /*semi*/final int affected_rows() {
     int rows;
-    if (statuscmdcomplete)
-      sscanf(statuscmdcomplete, "%*s %d %d", rows, rows);
+    sscanf(status_command_complete(), "%*s %d %d", rows, rows);
     return rows;
   }
 
