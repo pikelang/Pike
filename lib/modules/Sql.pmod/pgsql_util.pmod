@@ -2444,8 +2444,8 @@ class proxy {
     throwdelayederror(this);
     {
       Thread.MutexKey lock;
-      if (qportals && qportals->size())
-        catch(cancelquery());
+      while (qportals && qportals->size())
+        sleep(0.1, 1);			// Drain portal queue to completion
       if (unnamedstatement)
         termlock = unnamedstatement->lock(1);
       if (c)				// Prevent trivial backtraces
