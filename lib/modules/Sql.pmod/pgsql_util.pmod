@@ -768,7 +768,7 @@ class sql_result {
   /*semi*/final int affected_rows() {
     int rows;
     if (statuscmdcomplete)
-      sscanf(statuscmdcomplete, "%*s %d", rows);
+      sscanf(statuscmdcomplete, "%*s %d %d", rows, rows);
     return rows;
   }
 
