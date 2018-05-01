@@ -49,18 +49,41 @@ __deprecated__ array|this_program `master_res()
 
 //! @returns
 //!  The number of affected rows by this query.
+//!
+//! @note
+//!  This method should normally be called after EOF has been reached.
+//!  If it is called before, all unfetched result rows might be discarded.
+//!
+//! @seealso
+//!  @[status_command_complete()], @[eof()]
 int affected_rows() {
   return 0;
 }
 
 //! @returns
 //!  The command-complete status for this query.
+//!
+//! @note
+//!  This method should normally be called after EOF has been reached.
+//!  If it is called before, all unfetched result rows might be discarded.
+//!
+//! @seealso
+//!  @[affected_rows()], @[eof()]
 string status_command_complete() {
-  return eof() ? "" : 0;
+  return "";
 }
 
 //! @returns
 //!  The number of rows in the result.
+//!
+//! @note
+//!  Depending on the database implementation, this number
+//!  can still increase between subsequent calls if the results from
+//!  the query are not complete yet.  This function is only guaranteed to
+//!  return the correct count after EOF has been reached.
+//!
+//! @seealso
+//!  @[affected_rows()], @[eof()]
 int num_rows();
 
 //! @returns
