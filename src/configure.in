@@ -4777,7 +4777,7 @@ int main()
   }
   exit(1);
 }
-],pike_cv_func_working_getcwd=yes,
+],pike_cv_func_working_getcwd=yes,[
 # The getcwd(NULL, 0) case failed.
 # Retry with getcwd(NULL, 10000).
 # This is the working == some case, and is true on Solaris.
@@ -4854,7 +4854,8 @@ int main()
 ],pike_cv_func_working_getcwd=some,
   pike_cv_func_working_getcwd=no,
   # NB: This should be unreachable.
-  pike_cv_func_working_getcwd=no),
+  pike_cv_func_working_getcwd=no)
+],
   # Assume that getcwd(NULL, val) works.
   pike_cv_func_working_getcwd=some)
 ])
