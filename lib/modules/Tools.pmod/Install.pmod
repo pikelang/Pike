@@ -69,7 +69,7 @@ array(string) features()
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
 	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
-	     "VCDiff", "ZXID", "System.FSEvents.EventStream",
+	     "Web.Sass", "VCDiff", "ZXID", "System.FSEvents.EventStream",
 	     "System.Inotify" }),
 	  string modname)
   {

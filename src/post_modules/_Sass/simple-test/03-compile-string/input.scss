@@ -1,0 +1,15 @@
+
+@import 'partial';
+
+$my-color: #234567;
+$my-size: 3rem;
+
+a {
+  @extend .a-base;
+  color: $my-color;
+  font: {
+    family: arial, sans-serif;
+    size: $my-size / 2;
+    weight: bold;
+  }
+}
