@@ -168,12 +168,28 @@ protected int ponder_answer( int|void start_position )
    return 1;
 }
 
-protected void close_connection()
+protected void close_connection(int|void terminate_now)
 {
-  Stdio.File con = this::con;
+  object(Stdio.File)|SSL.File con = this::con;
   if (!con) return;
   this::con = 0;
   con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
+
+  if (terminate_now) {
+    // We don't want to wait for the close() to complete...
+    con->set_nonblocking();
+    con->close();
+
+    if (!con->shutdown) return;
+
+    // Probably SSL.
+    //
+    // Force the connection to shutdown.
+    con = con->shutdown();
+
+    if (!con) return;
+  }
+
   con->close();
 }
 
@@ -1199,8 +1215,12 @@ protected void destroy()
      remove_call_out(async_id);
    }
    async_id = 0;
+   if(async_dns) {
+     async_dns->close();
+     async_dns = 0;
+   }
 
-   catch(close());
+   catch(close_connection(1));
 }
 
 //! Close all associated file descriptors.
