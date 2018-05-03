@@ -153,4 +153,16 @@ test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->getencoded()]], "foo
 test_equal([[MIME.Message((string)MIME.Message("foo\r\n",
 		(["mImE-veRsion":"1.0"])))->headers]],
 	(["mime-version":"1.0","content-length":"5"]))
+
+test_any([[
+  string pf_in = "My-Pr3f1x(.0/9)";
+  MIME.set_boundary_prefix(pf_in);
+  string pf_out = MIME.get_boundary_prefix();
+  string boundary = MIME.generate_boundary();
+  int nm = sscanf(boundary, pf_out + "=_.%d:", int n);
+  return pf_in == pf_out &&
+         boundary[0..sizeof(pf_out)-1] == pf_out &&
+         nm == 1 && n <= 1000000000;
+]], 1)
+
 END_MARKER
