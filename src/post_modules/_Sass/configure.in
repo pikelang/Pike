@@ -34,6 +34,10 @@ AS_IF(
 	AC_CHECK_HEADER(
 	    [sass.h],
 	    [
+		# NB: When linking to the static library,
+		#     -lstdc++ must be listed explicitly.
+		AC_CHECK_LIB(stdc++, __dynamic_cast)
+
 		AC_CHECK_LIB(
 		    sass, libsass_version,
 		    [
