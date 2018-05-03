@@ -234,7 +234,7 @@ string(8bit) get_boundary_prefix()
 string generate_boundary( )
 {
   if (boundary_prefix) {
-    return boundary_prefix + "=_." + random( 1000000000 ) + ":";
+    return boundary_prefix + random( 1000000000 );
   }
   return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
 }
