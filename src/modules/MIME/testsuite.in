@@ -145,10 +145,10 @@ test_any([[
   MIME.set_boundary_prefix(pf_in);
   string pf_out = MIME.get_boundary_prefix();
   string boundary = MIME.generate_boundary();
-  int nm = sscanf(boundary, pf_out + "=_.%d:", int n);
+  int nm = sscanf(boundary, pf_out + "%d%s", int n, string suffix);
   return pf_in == pf_out &&
          boundary[0..sizeof(pf_out)-1] == pf_out &&
-         nm == 1 && n <= 1000000000;
+         nm == 2 && n <= 1000000000 && suffix == "";
 ]], 1)
 
 END_MARKER
