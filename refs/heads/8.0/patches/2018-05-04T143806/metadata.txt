@@ -1,0 +1,25 @@
+subject: Pike 8.0: MIME, Protocols.HTTP.Query, pgsql.
+from: 7255b36079d23ef9e6888e5cb55495283a03f21f
+to: e02353e2ef6252051caa9695db4cdd5101648a3c
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-04-23T095209
+restart: true
+
+Multiple fixes:
+
+• MIME: Setter for message boundary prefix.
+
+• Protocols.HTTP.Query: Do not wait for close() to complete.
+
+Do not wait for SSL.File()->close() to complete when called
+from the destruct() callback.
+
+Potential fix for [PIKE-84].
+
+• pgsql: Make affected_rows() and status_command_complete() wait for a meaningful result.
+
+• pgsql: Drain portal queue to completion.
+
+• pgsql: Report correct affected_rows() for INSERTs.
+
+• Install: Added Web.Sass to the feature list.
