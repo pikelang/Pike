@@ -808,6 +808,9 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
    *
    * NB: Some extra padding at the end for NUL and adding
    *     of terminating slashes, etc.
+   *
+   * NB: According to Wikipedia, win32 doesn't enforce correct
+   *     pairing of surrogates. Encode such code units as-is.
    */
   size_t i = 0, j = 0;
   size_t sz = 0;
@@ -819,10 +822,13 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
     if (c < 0x80) continue;
     sz++;
     if (c < 0x0800) continue;
+#if 0
+    /* NB: The following is only correct if all surrogates are paired correctly. */
     if ((c & 0xf800) == 0xd800) {
       /* One half of a surrogate pair. */
       continue;
     }
+#endif /* 0 */
     sz++;
   }
   sz++;	/* NUL termination. */
@@ -844,19 +850,22 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
       /* Surrogate */
       if ((c & 0xfc00) == 0xd800) {
 	p_wchar2 ch = str[++i];
-	if ((ch & 0xfc00) != 0xdc00) {
-	  free(ret);
-	  return NULL;
+	if ((ch & 0xfc00) == 0xdc00) {
+	  ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
+	  ret[j++] = 0xf0 | (ch >> 18);
+	  ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
+	  ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
+	  ret[j++] = 0x80 | (ch & 0x3f);
+	  continue;
 	}
-	ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
-	ret[j++] = 0xf0 | (ch >> 18);
-	ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
-	ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
-	ret[j++] = 0x80 | (ch & 0x3f);
-	continue;
+	/* Invalid surrogate pair.
+	 * Unget the second code unit.
+	 */
+	i--;
       }
-      free(ret);
-      return NULL;
+      /* Invalid or lone surrogate.
+       * Encode as-is.
+       */
     }
     ret[j++] = 0xe0 | (c >> 12);
     ret[j++] = 0x80 | ((c >> 6) & 0x3f);
