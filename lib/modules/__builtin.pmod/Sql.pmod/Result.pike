@@ -67,12 +67,8 @@ __deprecated__ array|this_program `master_res()
 //! @returns
 //!  The number of affected rows by this query.
 //!
-//! @note
-//!  This method should normally be called after EOF has been reached.
-//!  If it is called before, all unfetched result rows might be discarded.
-//!
 //! @seealso
-//!  @[status_command_complete()], @[eof()]
+//!  @[status_command_complete()], @[num_rows()]
 int affected_rows() {
   return 0;
 }
@@ -80,12 +76,8 @@ int affected_rows() {
 //! @returns
 //!  The command-complete status for this query.
 //!
-//! @note
-//!  This method should normally be called after EOF has been reached.
-//!  If it is called before, all unfetched result rows might be discarded.
-//!
 //! @seealso
-//!  @[affected_rows()], @[eof()]
+//!  @[affected_rows()]
 string status_command_complete() {
   return "";
 }
