@@ -2650,11 +2650,11 @@ class proxy {
   final void close() {
     throwdelayederror(this);
     {
-      Thread.MutexKey lock = shortmux->lock();
-      portalsinflight->wait_till_drained(lock);	// Drain portal queue to completion
-      lock = 0;
+      Thread.MutexKey lock;
       if (unnamedstatement)
         termlock = unnamedstatement->lock(1);
+      foreach (c->runningportals; Result result; )
+        catch(result->status_command_complete());
       if (c)				// Prevent trivial backtraces
         c->close();
       if (unnamedstatement)
