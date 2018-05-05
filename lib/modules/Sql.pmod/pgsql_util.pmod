@@ -1339,16 +1339,8 @@ class sql_result {
     return retval;
   }
 
-  final void _processdataready(array datarow, void|int msglen) {
-    bytesreceived += msglen;
-    inflight--;
-    if (_state<CLOSED)
-      datarows->write(datarow);
-    if (++index == 1)
-      PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n", _portalname,
-       _fetchlimit, (portalbuffersize >> 1) * index / bytesreceived,
-       pgsqlsess._fetchlimit, inflight);
-    if (_fetchlimit) {
+  private void replenishrows() {
+    if (_fetchlimit && sizeof(datarows) <= _fetchlimit >> 1) {
       _fetchlimit =
        min((portalbuffersize >> 1) * index / bytesreceived || 1,
         pgsqlsess._fetchlimit);
@@ -1359,6 +1351,18 @@ class sql_result {
         PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
          _portalname, _fetchlimit, inflight);
     }
+  }
+
+  final void _processdataready(array datarow, void|int msglen) {
+    bytesreceived += msglen;
+    inflight--;
+    if (_state<CLOSED)
+      datarows->write(datarow);
+    if (++index == 1)
+      PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n", _portalname,
+       _fetchlimit, (portalbuffersize >> 1) * index / bytesreceived,
+       pgsqlsess._fetchlimit, inflight);
+    replenishrows();
   }
 
   private void releaseconditions() {
@@ -1426,6 +1430,7 @@ class sql_result {
   //!  @[eof()], @[send_row()]
   /*semi*/final array(mixed) fetch_row() {
     int|array datarow;
+    replenishrows();
     if (arrayp(datarow = datarows->try_read()))
       return datarow;
     if (!eoffound) {
@@ -1455,12 +1460,14 @@ class sql_result {
   /*semi*/final array(array(mixed)) fetch_row_array() {
     if (eoffound)
       return 0;
+    replenishrows();
     array(array|int) datarow = datarows->try_read_array();
     if (!sizeof(datarow)) {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       local_backend->remove_call_out(cid);
     }
+    replenishrows();
     if (arrayp(datarow[-1]))
       return datarow;
     do datarow = datarow[..<1];			// Swallow EOF mark(s)
