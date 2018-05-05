@@ -750,33 +750,40 @@ class sql_result {
   //! Returns the command-complete status for this query.
   //!
   //! @note
-  //!  This method should normally be called after EOF has been reached.
-  //!  If it is called before, all unfetched result rows will be discarded.
-  //!
-  //! @note
   //! This function is PostgreSQL-specific.
   //!
-  //!  @[affected_rows()], @[eof()]
+  //! @seealso
+  //!  @[affected_rows()]
   /*semi*/final string status_command_complete() {
-    if (!statuscmdcomplete)
-      while (fetch_row_array());
+    if (!statuscmdcomplete) {
+      if (!datarowtypes)
+        waitfordescribe();
+      {
+        Thread.MutexKey lock = closemux->lock();
+        if (_fetchlimit)
+          _sendexecute(_fetchlimit = 0);
+        lock = _ddescribemux->lock();
+        if (!statuscmdcomplete)
+          PT(_ddescribe->wait(lock));
+      }
+      if (this)		// If object already destructed, skip the next call
+        trydelayederror();	// since you cannot call functions anymore
+      else
+        error(LOSTERROR);
+    }
     return statuscmdcomplete;
   }
 
   //! Returns the number of affected rows by this query.
   //!
   //! @note
-  //!  This method should normally be called after EOF has been reached.
-  //!  If it is called before, all unfetched result rows will be discarded.
-  //!
-  //! @note
   //! This function is PostgreSQL-specific.
   //!
   //! @seealso
-  //!  @[status_command_complete()], @[eof()]
+  //!  @[num_rows()], @[status_command_complete()]
   /*semi*/final int affected_rows() {
     int rows;
-    sscanf(status_command_complete(), "%*s %d %d", rows, rows);
+    sscanf(status_command_complete() || "", "%*s %d %d", rows, rows);
     return rows;
   }
 
@@ -1380,8 +1387,11 @@ class sql_result {
 
   final void _releasesession(void|string statusccomplete) {
     c->runningportals[this] = 0;
-    if (statusccomplete && !statuscmdcomplete)
+    if (statusccomplete && !statuscmdcomplete) {
+      Thread.MutexKey lock = _ddescribemux->lock();
       statuscmdcomplete = statusccomplete;
+      _ddescribe->broadcast();
+    }
     inflight = 0;
     conxsess plugbuffer;
     if (!catch(plugbuffer = c->start()))
@@ -2458,9 +2468,9 @@ class proxy {
   final void close() {
     throwdelayederror(this);
     {
-      Thread.MutexKey lock;
-      while (qportals && qportals->size())
-        sleep(0.1, 1);			// Drain portal queue to completion
+      Thread.MutexKey lock = shortmux->lock();
+      portalsinflight->wait_till_drained(lock);	// Drain portal queue to completion
+      lock = 0;
       if (unnamedstatement)
         termlock = unnamedstatement->lock(1);
       if (c)				// Prevent trivial backtraces
