@@ -14,6 +14,23 @@
 //! differs between different databases.
 int index;
 
+//! Increment the @[index].
+//!
+//! @param val
+//!   Value to increment the @[index] with. Defaults to @expr{1@}.
+//!
+//! @returns
+//!   Returns the new value of the @[index].
+//!
+//! This is a helper function for implementations to update the @[index].
+//!
+//! It is typically called from @[fetch_row()].
+protected int increment_index(int|void val)
+{
+  index += val || zero_type(val);
+  return index;
+}
+
 //! Create a new Sql.Result object
 //!
 //! @param res
