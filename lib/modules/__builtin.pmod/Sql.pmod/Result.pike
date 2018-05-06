@@ -27,7 +27,7 @@ int index;
 //! It is typically called from @[fetch_row()].
 protected int increment_index(int|void val)
 {
-  index += val || zero_type(val);
+  index += val || undefinedp(val);
   return index;
 }
 
