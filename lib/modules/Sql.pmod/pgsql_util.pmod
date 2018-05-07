@@ -2472,7 +2472,7 @@ class proxy {
       Thread.MutexKey lock;
       if (unnamedstatement)
         termlock = unnamedstatement->lock(1);
-      foreach (c->runningportals; Result result; )
+      foreach (c->runningportals; sql_result result; )
         catch(result->status_command_complete());
       if (c)				// Prevent trivial backtraces
         c->close();
