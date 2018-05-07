@@ -1348,9 +1348,10 @@ class sql_result {
 
   private void replenishrows() {
     if (_fetchlimit && sizeof(datarows) <= _fetchlimit >> 1) {
-      _fetchlimit =
-       min((portalbuffersize >> 1) * index / bytesreceived || 1,
-        pgsqlsess._fetchlimit);
+      _fetchlimit = pgsqlsess._fetchlimit;
+      if (bytesreceived)
+        _fetchlimit =
+         min((portalbuffersize >> 1) * index / bytesreceived || 1, _fetchlimit);
       Thread.MutexKey lock = closemux->lock();
       if (_fetchlimit && inflight <= (_fetchlimit - 1) >> 1)
         _sendexecute(_fetchlimit);
