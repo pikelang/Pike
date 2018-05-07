@@ -87,6 +87,17 @@ o Concurrent
 
   - Less filling, deadlock-free, faster, available without running backend.
 
+  - Handle an empty argument array properly in results().
+
+    Previously code such as:
+
+      Concurrent.Future f2 = Concurrent.results(({}));
+
+      f2->on_success(lambda(array(string) a) { werror("success: %O.\n", a); })
+        ->on_failure(lambda(mixed err) { werror (describe_backtrace(err)); });
+
+    would lead to a backtrace because the future was destructed prematurely.
+
   - Readable/understandable documentation.
 
 o Crypto.CCM
