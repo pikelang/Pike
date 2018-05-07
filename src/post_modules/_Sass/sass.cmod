@@ -24,6 +24,17 @@ DECLARATIONS
 #include "pike_sass.h"
 #include <sass.h>
 
+#ifndef HAVE_LIBSASS_COPY_C_STRING
+static char *sass_copy_c_string(const char *str)
+{
+  size_t len = strlen(str);
+  char *res = malloc(len+1);
+  if (!res) return NULL;
+  memcpy(res, str, len+1);
+  return res;
+}
+#endif /* !HAVE_LIBSASS_COPY_C_STRING */
+
 /*! @module Web
  */
 /*! @module Sass

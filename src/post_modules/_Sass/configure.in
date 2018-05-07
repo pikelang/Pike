@@ -62,6 +62,16 @@ AS_IF(
 	#
 	# Check for features in libsass
 	#
+
+	# NB: Not available in the libsass in Ubuntu 16.04 (3.3.4-1).
+	AC_CHECK_LIB(
+	    sass, sass_copy_c_string,
+	    [
+		#LIBS="${LIBS-} -lsass"
+		AC_DEFINE(HAVE_LIBSASS_COPY_C_STRING, [1],
+			  [Defined if sass_copy_c_string is available ])
+	    ])
+
 	AC_CHECK_LIB(
 	    sass, sass_delete_options,
 	    [
