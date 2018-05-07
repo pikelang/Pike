@@ -129,11 +129,15 @@ o MIME
 
   Support trailing newline in MIME part epilogues.
 
-o Protocols.HTTP
+o Protocols.HTTP.Query
 
-  Fixed incoming chunked transfers (timed async works now, chunk
-  options are properly 'parsed'). Trailer headers are now correctly
-  parsed.
+  - Fixed incoming chunked transfers (timed async works now, chunk
+    options are properly 'parsed'). Trailer headers are now correctly
+    parsed.
+
+  - Fixed a bug where base64 encoded HTTP basic auth tokens were encoded in a
+    pretty-printed format including line breaks, which lead to malformed HTTP
+    requests on long username and password combinations.
 
 o Protocols.HTTP.Server.HeaderParser
 
@@ -286,10 +290,6 @@ o Protocols.HTTP
 
   Fixed a memory leak in the HTTP header parser upon receiving
   malformed HTTP headers.
-
-  Fixed a bug where base64 encoded HTTP basic auth tokens were encoded in a
-  pretty-printed format including line breaks, which lead to malformed HTTP
-  requests on long username and password combinations.
 
 o Protocols.WebSocket
 
