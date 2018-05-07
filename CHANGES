@@ -220,6 +220,9 @@ o Sql.pgsql
 
   - Report correct number of affected_rows() for INSERTs.
 
+  - Eliminate a rare deadlock when running many simultaneous queries
+    on a single filedescriptor.
+
 o mktime/System.TM
 
   - Make timezone management consistent (especially UTC handling).
