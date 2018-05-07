@@ -384,6 +384,11 @@ class conxion {
 
   final bufcon|conxsess start(void|int waitforreal) {
     Thread.MutexKey lock;
+#ifdef PG_DEBUGRACE
+    if (nostash->current_locking_thread())
+      PD("Nostash locked by %s\n",
+       describe_backtrace(nostash->current_locking_thread()->backtrace()));
+#endif
     if (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
       int mode;
 #ifdef PG_DEBUGRACE
@@ -1304,7 +1309,7 @@ class sql_result {
     void|bufcon|conxsess plugbuffer = CHAIN(cs);
     int retval = KEEP;
     PD("%O Try Closeportal %d\n", _portalname, _state);
-    Thread.MutexKey lock = closemux->lock();
+    Thread.MutexKey lock = closemux->lock(2);	   // When called from _sendexecute(), it is already locked
     _fetchlimit = 0;				   // disables further Executes
     switch (_state) {
       case PARSING:
@@ -1348,16 +1353,19 @@ class sql_result {
 
   private void replenishrows() {
     if (_fetchlimit && sizeof(datarows) <= _fetchlimit >> 1) {
-      _fetchlimit = pgsqlsess._fetchlimit;
-      if (bytesreceived)
-        _fetchlimit =
-         min((portalbuffersize >> 1) * index / bytesreceived || 1, _fetchlimit);
       Thread.MutexKey lock = closemux->lock();
-      if (_fetchlimit && inflight <= (_fetchlimit - 1) >> 1)
-        _sendexecute(_fetchlimit);
-      else if (!_fetchlimit)
-        PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
-         _portalname, _fetchlimit, inflight);
+      if (_fetchlimit) {
+        _fetchlimit = pgsqlsess._fetchlimit;
+        if (bytesreceived)
+          _fetchlimit =
+           min((portalbuffersize >> 1) * index / bytesreceived || 1, _fetchlimit);
+        if (_fetchlimit)
+          if (inflight <= (_fetchlimit - 1) >> 1)
+            _sendexecute(_fetchlimit);
+          else
+            PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
+             _portalname, _fetchlimit, inflight);
+      }
     }
   }
 
