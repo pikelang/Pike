@@ -35,6 +35,8 @@ o Sql.pgsql
 
   - Prevent new queries from starting in the local_backend.
 
+  - Make sure huge queries are not fully loaded into memory.
+
 o Sql.Sql
 
   Make big_typed_query() gracefully fallback to big_query().
@@ -171,6 +173,12 @@ o Sql.pgsql
   - Repair fetch_row_array().
 
   - Ensure that all database errors result in exceptions (eventually).
+
+  - affected_rows() and status_command_complete() now wait until they
+    have a meaningful result to report.
+
+  - Closing the database will wait until all running queries have been
+    committed.
 
 o mktime/System.TM
 
