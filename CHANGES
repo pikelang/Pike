@@ -59,6 +59,11 @@ o Tools.Standalone.check_http
 
   - Support --expect option.
 
+o Web.Sass
+
+  This is a module that interfaces to the SASS compilation
+  library "LibSass" (https://github.com/sass/libsass).
+
 
 Bug fixes
 ---------
