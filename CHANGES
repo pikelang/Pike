@@ -115,6 +115,24 @@ o Filesystem.Monitor
   - Fixed indexing the NULL value error when InotifyMonitor was used in
     combination with a filter_file() that doesn't accept everything.
 
+  - Fixed incorrect creation of new monitors.
+
+    Monitors were created using monitor() on the top level rather than
+    using Monitor::monitor(), which prevented the symlinks' overridden
+    DefaultMonitor from setting the correct state on newly created monitors.
+
+    We now force a check on the directory monitor instead, which will
+    pick up the new file instantly and create the sub monitor.
+
+  - Fixed race condition on deletion.
+
+    This fixes a race that could occur on rapid exists => delete => exists
+    transitions, where the directory monitor never noticed the change but
+    the sub monitor was removed from the monitor lookup mapping. The
+    directory monitor is now notified on sub-monitor release.
+
+  - Added set_stable_time() function.
+
   - Removed obsolete special case for co_id == 1.
 
 o HTTPLoop:
