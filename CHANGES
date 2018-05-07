@@ -180,6 +180,8 @@ o Sql.pgsql
   - Closing the database will wait until all running queries have been
     committed.
 
+  - Report correct number of affected_rows() for INSERTs.
+
 o mktime/System.TM
 
   - Make timezone management consistent (especially UTC handling).
