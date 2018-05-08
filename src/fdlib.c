@@ -1623,6 +1623,8 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 
   s = accept(s, addr, addrlen);
 
+  release_fd(fd);
+
   if(s==INVALID_SOCKET)
   {
     DWORD err = WSAGetLastError();
