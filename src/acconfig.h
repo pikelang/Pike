@@ -156,11 +156,17 @@
  * __chkstk. */
 #undef HAVE_BROKEN_CHKSTK
 
+/* Define if you have a working getcwd */
+#undef HAVE_WORKING_GETCWD
+
 /* Define for solaris */
 #undef SOLARIS
 
 /* Define if the closedir function returns void instead of int.  */
 #undef VOID_CLOSEDIR
+
+/* Number of args to mkdir() */
+#define MKDIR_ARGS 2
 
 /* Define to 'int' if <sys/time.h> doesn't */
 #undef time_t
