@@ -22,6 +22,10 @@ o Debug.find_all_clones()
   New convenience function to find all objects that are clones
   of a program.
 
+o MIME
+
+  Added a setter for the message boundary prefix.
+
 o Sql.pgsql
 
   - Added support for PostgreSQL 10's stronger password authentication
@@ -67,6 +71,12 @@ o Stdio.Terminfo
 
   Support the new terminfo format from ncurses 6.
 
+o Thread.Farm
+
+  Added Thread.Farm()->set_thread_name_cb() to help applications
+  that monitor thread creation and termination for the purpose
+  of tracking thread names.
+
 o Thread.ResourceCount
 
   New module to allow threadsafe race-condition-free counting of resources.
@@ -95,7 +105,7 @@ o Compiler
 
 o Calendar
 
-  - Updated tzdata to 2018c.
+  - Updated tzdata to 2018d.
 
   - Calendar.TimeRanges.NullTimeRange now has a working __hash().
     The expression ([ Calendar.TimeRanges.nulltimerange : 17 ])
@@ -187,14 +197,22 @@ o Protocols.HTTP.Query
     options are properly 'parsed'). Trailer headers are now correctly
     parsed.
 
+  - Improved handling of multiple headers of the same kind.
+
   - Fixed a bug where base64 encoded HTTP basic auth tokens were encoded in a
     pretty-printed format including line breaks, which lead to malformed HTTP
     requests on long username and password combinations.
 
-o Protocols.HTTP.Server.HeaderParser
+  - Do not wait for SSL.File()->close() to complete when called
+    from the destruct() callback.
 
-  The header parser exception mode now doesn't immediately throw an
-  exception.
+o Protocols.HTTP.Server
+
+  - The header parser exception mode now doesn't immediately throw an
+    exception.
+
+  - Attempt to ensure that data is sent before terminating an
+    HTTPS connection.
 
 o Protocols.LDAP
 
@@ -297,6 +315,10 @@ o Unicode
 Building & Tools
 ----------------
 
+o Hilfe
+
+  Fix commands having priority over code. [LysLysKOM 22552693].
+
 o Image.SVG
 
   Fall back to using the unprefixed pkg-config if the arch-prefixed
@@ -306,9 +328,29 @@ o Mysql
 
   Support MariaDB 10.2 headerfiles.
 
+o export
+
+  - Fixed fix_configure.
+
+    This was broken in multiple ways:
+
+    * Did not consider timestamp on aclocal.m4
+    * Did not consider post_modules
+    * Did not check configure scripts directly under modules or post_modules
+    * When fixing modules, it looked for the configure scripts in the build
+      directory rather than the source directory
+    * Did not use the run_autoconfig wrapper
+
+    This has caused xenofarm to export snapshots with out of date
+    configure scripts.
+
 o precompile
 
   Support precompilation with Pike 8.1 again.
+
+o run_autoconfig
+
+  Fix localdir when relative and not "./"
 
 o smartlink
 
