@@ -45,6 +45,24 @@ o SSL.File
 
   Support query_fd() and set_buffer_mode() methods.
 
+o Stdio.File [NT]
+
+  A major clean-up and consistency improvment of the I/O layer on NT.
+
+  - All filesystem paths are now encoded in UTF-8 from Pike-code's
+    point of view. Previously this was a mix of Latin-1 and UTF-16,
+    with some stuff affected by the filesystem default character set.
+
+    This makes the entire filesystem accessible from Pike-code.
+
+    This new behavior can be detected by the presence of the constant
+    Stdio.__HAVE_UTF8_FS__.
+
+  - Added new low-level fd handling functions.
+
+    This should fix several potential race-conditions in the
+    I/O layer on NT.
+
 o Stdio.Terminfo
 
   Support the new terminfo format from ncurses 6.
@@ -233,12 +251,29 @@ o Standards.IIM
 
   Disabled debug output for unknown segment markers.
 
-o Stdio.send_file
+o Stdio
 
-  Improved support for TLS/SSL; wait for TLS handshake to complete
-  before calling the sendfile done callback when sending an empty
-  string. This fixes the issue where the connection got closed
-  before TLS handshaking was completed, confusing the other side.
+  - Restore the FD_SETSIZE on NT to 65536.
+
+    Due to #include file restructuring, the FD_SETSIZE value on
+    NT had fallen back to the default (64). This issue has probably
+    affected all releases of Pike since 7.9.2.
+
+  - mv() [NT]
+
+    Fixed single byte buffer overrun in mv() on NT.
+
+    A NUL-terminator was written outside a malloced buffer. This
+    caused intermittent crashes after unusual use of mv().
+
+    Fixes the crash in [PIKE-90].
+
+  - send_file()
+
+    Improved support for TLS/SSL; wait for TLS handshake to complete
+    before calling the sendfile done callback when sending an empty
+    string. This fixes the issue where the connection got closed
+    before TLS handshaking was completed, confusing the other side.
 
 o Image
 
