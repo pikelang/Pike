@@ -168,11 +168,93 @@ long long gethrtime(void);
 #define hrtime_t long long
 #endif
 
-#ifdef __MINGW32__
-#ifndef HAVE__DOSMAPERR
-void _dosmaperr(int x);
+#ifdef HAVE_UNION_INIT
+#define INFNAN_INDEX 0
+#define INFNAN_DATATYPE union
+#define INFNAN_INIT 
+#else
+#define INFNAN_INDEX -1
+#define INFNAN_DATATYPE struct
+#define INFNAN_INIT , {0.0}
 #endif
+
+#ifdef DOUBLE_IS_IEEE_BIG
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
+#else
+#ifdef DOUBLE_IS_IEEE_LITTLE
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
+#else
+#ifdef FLOAT_IS_IEEE_BIG
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0x7f, 0x80, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0x7f, 0xc0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
+#else
+#ifdef FLOAT_IS_IEEE_LITTLE
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0, 0, 0x80, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0, 0, 0xc0, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
+#else
+
+#undef INFNAN_INDEX
+#undef INFNAN_DATATYPE
+#undef INFNAN_INIT 
+
+#define DECLARE_INF
+#define DECLARE_NAN
+
+#ifdef HAVE_INFNAN
+#define MAKE_INF(s) (infnan((s)*ERANGE))
+#else
+#ifdef HUGE_VAL
+#define MAKE_INF(s) ((s)*HUGE_VAL)
+#else
+#ifdef PORT_DO_WARN
+/* Only warn when compiling port.c; might get here when using
+ * --disable-binary. */
+#warning Don´t know how to create Inf on the system!
 #endif
+#define MAKE_INF(s) ((s)*LDEXP(1.0, 1024))
+#endif /* HUGE_VAL */
+#endif /* HAVE_INFNAN */
+
+#ifdef HAVE_INFNAN
+#define MAKE_NAN() (infnan(EDOM))
+#else
+#ifdef HAVE_NAN
+/* C99 provides a portable way of generating NaN */
+#define MAKE_NAN() (nan(""))
+#else
+#ifdef NAN
+#define MAKE_NAN() (NAN)
+#else
+#ifdef PORT_DO_WARN
+#warning Don´t know how to create NaN on this system!
+#endif
+#define MAKE_NAN() (0.0)
+#endif /* NAN */
+#endif /* HAVE_NAN */
+#endif /* HAVE_INFNAN */
+
+#endif /* FLOAT_IS_IEEE_LITTLE */
+#endif /* FLOAT_IS_IEEE_BIG */
+#endif /* DOUBLE_IS_IEEE_LITTLE */
+#endif /* DOUBLE_IS_IEEE_BIG */
 
 #ifdef __clang__
 #define PIKE_CLANG_FEATURE(x)   __has_feature(x)
