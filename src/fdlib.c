@@ -316,6 +316,8 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
       if (handle) *handle = da_handle[fd];
       fd_busy[fd] = 1;
       ret = 0;
+      FDDEBUG(fprintf(stderr, "fd %d ==> handle: %ld (%d)\n",
+		      fd, (long)da_handle[fd], fd_type[fd]));
     } else {
       FDDEBUG(fprintf(stderr, "fd %d is invalid.\n", fd));
       errno = EBADF;
