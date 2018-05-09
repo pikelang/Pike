@@ -2268,7 +2268,7 @@ static void dump_FDSET(FD_SET *x, int fds)
   {
     int e, first=1;
     fprintf(stderr,"[");
-    for(e = 0; e < FD_SET_SIZE; e++)
+    for(e = 0; e < FD_SETSIZE; e++)
     {
       if(FD_ISSET(da_handle[e],x))
       {
