@@ -1,0 +1,16 @@
+subject: Pike 8.0: Sync with 6.1.246-r5, pgsql
+from: e02353e2ef6252051caa9695db4cdd5101648a3c
+to: 20d87739fec8f65c9312670b35a47a8df9d675f3
+originator: Marcus Wellhardh
+depends: 2018-05-04T143806
+restart: true
+
+• release number bumped to 8.0.604 by export.pike
+
+• pgsql: Cater for empty start conditions.
+
+• pgsql: Drain portal queue deterministically.
+
+• pgsql: affected_rows() now preserves as of yet unfetched rows.
+
+• pgsql: Stall fetching rows if they are not being consumed yet.
