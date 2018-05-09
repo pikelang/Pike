@@ -983,7 +983,7 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
 
   for (i = 0; (c = str[i]); i++) {
     if (c < 0x80) {
-      ret[j++] = DO_NOT_WARN(c & 0x7f);
+      ret[j++] = c & 0x7f;
       continue;
     }
     if (c < 0x800) {
@@ -1283,10 +1283,10 @@ PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
     return -1;
   }
 
-  high = DO_NOT_WARN((LONG)(len >> 32));
+  high = (LONG)(len >> 32);
   len &= (INT64)0xffffffffUL;
 
-  if (SetFilePointer(h, DO_NOT_WARN((long)len), &high, FILE_BEGIN) ==
+  if (SetFilePointer(h, (long)len, &high, FILE_BEGIN) ==
       INVALID_SET_FILE_POINTER) {
     DWORD err = GetLastError();
     if (err != NO_ERROR) {
@@ -2508,7 +2508,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
   ret->h = FindFirstFileW(foo, &ret->find_data);
   free(foo);
 
-  if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
+  if(ret->h == INVALID_HANDLE_VALUE)
   {
     /* FIXME: Handle empty directories. */
     errno=ENOENT;
