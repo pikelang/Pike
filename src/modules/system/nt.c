@@ -2695,7 +2695,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   }
 }
 
-/*! @decl string normalize_path(string path)
+/*! @decl string(8bit) normalize_path(string(8bit) path)
  *!
  *!   Normalize an existing Windows file system path.
  *!
@@ -2748,66 +2748,42 @@ static void f_normalize_path(INT32 args)
 {
   struct pike_string *str;
   struct string_builder res;
-  char *file;
+  size_t file_len;
+  p_wchar1 *pname, *file;
+  char *utf8;
   ONERROR res_uwp, file_uwp;
   DWORD ret;
 
   get_all_args("normalize_path", args, "%S", &str);
 
-  init_string_builder(&res, 0);
-  SET_ONERROR (res_uwp, free_string_builder, &res);
+  pname = pike_dwim_utf8_to_utf16(str->str);
+  if (!pname) SIMPLE_OUT_OF_MEMORY_ERROR("normalize_path", str->len * 2);
+  SET_ONERROR(file_uwp, free, pname);
 
-#ifdef WANT_GETLONGPATHNAME_WRAPPER
-
-  file = str->str;
-  if (file[str->len - 1] == '/' || file[str->len - 1] == '\\') {
-    /* Add a '.' if the path ends with slash(es). This works just as
-     * well as removing all trailing slashes (even for files), but it
-     * has the benefit that we don't get the cwd when the input is
-     * e.g. "c:\\". */
-    file = xalloc(str->len + 2);
-    SET_ONERROR (file_uwp, free, file);
-    memcpy(file, str->str, str->len);
-    file[str->len] = '.';
-    file[str->len + 1] = 0;
-  }
-
-  ret = str->len;    /* Guess that the result will have the same length... */
-  do{
-    string_builder_allocate(&res, ret, 0);
-    /* NOTE: Use the emulated GetLongPathName(), since it normalizes all
-     * components of the path.
-     */
-    ret = Emulate_GetLongPathName(file, res.s->str, res.malloced);
-    if (!ret) {
-      unsigned long err = GetLastError();
-      set_errno_from_win32_error (err);
-      throw_nt_error("normalize_path", err);
-    }
-  } while (ret > (size_t) res.malloced);
-
-  if (file != str->str) {
-    free (file);
-    UNSET_ONERROR (file_uwp);
-  }
-
-#else  /* !WANT_GETLONGPATHNAME_WRAPPER */
-
-  /* Haven't got Emulate_GetLongPathName. We essentially do what it
+  /* Haven't got Emulate_GetLongPathNameW(). We essentially do what it
    * does. This appears to be the only reliable way to normalize a
-   * path. (GetLongPathName doesn't always correct upper/lower case
+   * path. (GetLongPathNameW() doesn't always correct upper/lower case
    * differences, and opening the file to use e.g.
-   * GetFinalPathNameByHandle on it might not work if it's already
-   * opened for exclusive access.) */
+   * GetFinalPathNameByHandle() on it might not work if it's already
+   * opened for exclusive access.)
+   */
 
   /* First convert to an absolute path. */
-  file = xalloc (MAX_PATH);
+  file_len = MAX_PATH;
+  do {
+    file = xalloc (file_len * sizeof(p_wchar1));
+    ret = GetFullPathNameW (pname, file_len, file, NULL);
+    if (ret >= file_len) {
+      /* Buffer to small. Reallocate. */
+      free(file);
+      file_len = ret+1;
+      continue;
+    }
+    break;
+  } while(1);
+  CALL_AND_UNSET_ONERROR(file_uwp);
   SET_ONERROR (file_uwp, free, file);
-  ret = GetFullPathName (str->str, MAX_PATH, file, NULL);
-  if (ret > MAX_PATH) {
-    errno = ENAMETOOLONG;
-    throw_nt_error ("normalize_path", ERROR_BUFFER_OVERFLOW);
-  }
+
   if (!ret) {
     unsigned int err = GetLastError();
     set_errno_from_win32_error (err);
@@ -2816,9 +2792,6 @@ static void f_normalize_path(INT32 args)
 
   {
     LPSHELLFOLDER isf;
-    LPWSTR wfile;
-    ONERROR wfile_uwp;
-    size_t l;
     PIDLIST_ABSOLUTE idl;
     HRESULT hres;
 
@@ -2826,14 +2799,7 @@ static void f_normalize_path(INT32 args)
       /* Use a nondescript error code. */
       throw_nt_error ("normalize_path", errno = ERROR_INVALID_DATA);
 
-    l = strlen (file);
-    wfile = malloc ((l + 1) * 2);
-    if (!wfile) SIMPLE_OUT_OF_MEMORY_ERROR ("normalize_path", (l + 1) * 2);
-    SET_ONERROR (wfile_uwp, free, wfile);
-    wfile[l] = 0;
-    while (l--) wfile[l] = (unsigned char) file[l];
-
-    hres = isf->lpVtbl->ParseDisplayName (isf, NULL, NULL, wfile,
+    hres = isf->lpVtbl->ParseDisplayName (isf, NULL, NULL, file,
 					  NULL, &idl, NULL);
     if (hres != S_OK) {
       errno = (HRESULT_FACILITY (hres) == FACILITY_WIN32 ?
@@ -2843,29 +2809,36 @@ static void f_normalize_path(INT32 args)
       throw_nt_error ("normalize_path", errno);
     }
 
-    /* FIXME: Detect and handle windows unicode mode. */
-    if (!SHGetPathFromIDList (idl, file)) {
+    /* NB: Ensure that the buffer isn't likely to be overrun
+     *     by the call to SHGetPathFromIDListW() below.
+     */
+    file_len = (wcslen(file) + 1) * 2;
+    if (file_len < MAX_PATH) file_len = MAX_PATH;
+    init_string_builder_alloc(&res, file_len, 1);
+    SET_ONERROR (res_uwp, free_string_builder, &res);
+
+    if (!SHGetPathFromIDListW(idl, STR1(res.s))) {
+      /* FIXME: Use SHGetPathFromIDListExW() (Vista/2008 and later),
+       *        to ensure that we don't overrun the buffer.
+       *        It however doesn't seem to be documented how
+       *        to detect whether it fails due to a too small
+       *        buffer or for some other reason, so we couldn't
+       *        use it to grow the res buffer and retry.
+       */
       CoTaskMemFree (idl);
       throw_nt_error ("normalize_path", errno = ERROR_INVALID_DATA);
     }
-    ret = strlen (file);
+    res.s->len = wcslen(STR1(res.s));
 
     CoTaskMemFree (idl);
-    free (wfile);
-    UNSET_ONERROR (wfile_uwp);
   }
 
-  string_builder_strcat (&res, file);
-
-  free (file);
-  UNSET_ONERROR (file_uwp);
-
-#endif	/* !WANT_GETLONGPATHNAME_WRAPPER */
+  file = STR1(res.s);
 
   /* Remove trailing slashes, except after a drive letter. */
   {
-    ptrdiff_t l = (ptrdiff_t) ret - 1;
-    file = res.s->str;
+    ptrdiff_t l = (ptrdiff_t) res.s->len-1;
+
     if(l >= 0 && file[l]=='\\')
     {
       do l--;
@@ -2877,19 +2850,28 @@ static void f_normalize_path(INT32 args)
   }
 
   /* Convert host and share in an UNC path to lowercase since Windows
-   * Shell doesn't do that consistently. */
+   * Shell doesn't do that consistently.
+   */
   if (file[0] == '\\' && file[1] == '\\') {
     size_t i;
     for (i = 2; file[i] && file[i] != '\\'; i++)
-      file[i] = tolower (file[i]);
+      if (file[i] < 256)
+	file[i] = tolower (file[i]);
     if (file[i] == '\\')
       for (i++; file[i] && file[i] != '\\'; i++)
-	file[i] = tolower (file[i]);
+	if (file[i] < 256)
+	  file[i] = tolower (file[i]);
   }
 
   pop_n_elems(args);
-  push_string(finish_string_builder(&res));
-  UNSET_ONERROR (res_uwp);
+
+  utf8 = pike_utf16_to_utf8(file);
+  if (!utf8) SIMPLE_OUT_OF_MEMORY_ERROR("normalize_path", res.s->len * 2);
+  CALL_AND_UNSET_ONERROR (res_uwp);
+  CALL_AND_UNSET_ONERROR (file_uwp);
+
+  push_text(utf8);
+  free(utf8);
 }
 
 /*! @decl int GetFileAttributes(string filename)
