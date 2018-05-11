@@ -174,6 +174,9 @@
  *!       how the result looks can vary depending on locale, phase of
  *!       the moon or anything else the @[lfun::_sprintf()] method
  *!       implementor wanted for debugging.
+ *!     @value 'p'
+ *!       Hexadecimal presentation of the memory address of the object.
+ *!       Integers have no address, and are printed as themselves.
  *!     @value 'H'
  *!       Binary Hollerith string. Equivalent to @expr{sprintf("%c%s",
  *!       strlen(str), str)@}. Arguments (such as width etc) adjust the
@@ -1085,7 +1088,7 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'G':
       case 'F':
       case 'O':
-      /* case 'p': */
+      case 'p':
       case 's':
       case 'q':
         if(UNLIKELY(fsp->flags & SNURKEL))
@@ -1758,22 +1761,22 @@ cont_2:
 	}
       }
 
-#if 0
-      /* This can be useful when doing low level debugging. */
       case 'p':
       {
 	struct byte_buffer b = BUFFER_INIT();
 	char buf[50];
 	struct svalue *t;
 	GET_SVALUE(t);
-	sprintf (buf, "%p", t->u.refs);
+	if (TYPEOF(*t) == T_INT)
+	  sprintf (buf, "%ld", (long)t->u.integer);
+	else
+	  sprintf (buf, "%p", t->u.refs);
 	buffer_add_str (&b, buf);
 	fsp->b=MKPCHARP(buffer_ptr(&b),0);
 	fsp->len=buffer_content_length(&b);
 	fsp->fi_free_string=buffer_ptr(&b);
 	break;
       }
-#endif
 
       case 's':
       {
@@ -2337,14 +2340,11 @@ static int push_sprintf_argument_types(PCHARP format,
 	break;
       }
 
-#if 0
-      /* This can be useful when doing low level debugging. */
       case 'p':
       {
 	push_type(T_MIXED);
 	break;
       }
-#endif
       case 'H':
       {
 	push_object_type(0, 0);
