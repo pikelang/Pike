@@ -898,11 +898,6 @@ optional class ResourceCount {
       _cond->wait(_mutex->lock());
   }
 
-  // FIXME deprecated
-  variant final /*__deprecated__*/ void wait_till_drained(MutexKey lock, void|int level) {
-    wait_till_drained(level);
-  }
-
   //! Increments the resource-counter.
   //! @returns
   //!   A @[ResourceCountKey] to decrement the resource-counter again.
