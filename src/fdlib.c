@@ -28,6 +28,12 @@
 
 #if defined(HAVE_WINSOCK_H)
 
+#include <shlobj.h>
+#include <objbase.h>
+
+#include <wchar.h>
+#include <io.h>
+
 #include <time.h>
 
 /* Old versions of the headerfiles don't have this constant... */
@@ -75,6 +81,9 @@ int fd_busy[FD_SETSIZE];
 
 /* Next free fd. FD_NO_MORE_FREE (-1) if all fds allocated. */
 int first_free_handle;
+
+/* The root desktop folder. */
+static LPSHELLFOLDER isf = NULL;
 
 /* #define FD_DEBUG */
 /* #define FD_STAT_DEBUG */
@@ -193,11 +202,10 @@ static const unsigned long pike_doserrtab[][2] = {
 
 static inline void _dosmaperr(unsigned long err)
 {
-  int l = 0, h = NELEM(pike_doserrtab);
-  int m;
+  unsigned int l = 0, h = NELEM(pike_doserrtab);
   while (l < h) {
-    int m = (l+h)>>1;
-    int e = pike_doserrtab[m][0];
+    unsigned int m = (l+h)>>1;
+    unsigned long e = pike_doserrtab[m][0];
 
     if (e == err) {
       errno = pike_doserrtab[m][1];
@@ -628,6 +636,10 @@ void fd_init(void)
       }								\
     } while(0)
 #include "ntlibfuncs.h"
+  }
+
+  if (SHGetDesktopFolder(&isf) != S_OK) {
+    Pike_fatal("fdlib: No desktop folder!\n");
   }
 }
 
@@ -1518,6 +1530,106 @@ PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
   }
 
   return utf8buffer;
+}
+
+PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
+{
+  p_wchar1 *pname = pike_dwim_utf8_to_utf16(path);
+  p_wchar1 *buffer;
+  char *res;
+  size_t len;
+  PIDLIST_ABSOLUTE idl;
+  HRESULT hres;
+
+  if (!pname) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  /* First convert to an absolute path. */
+  len = MAX_PATH;
+  do {
+    size_t ret;
+
+    buffer = malloc(len * sizeof(p_wchar1));
+    if (!buffer) {
+      errno = ENOMEM;
+      return NULL;
+    }
+
+    ret = GetFullPathNameW(pname, len, buffer, NULL);
+
+    if (!ret) {
+      set_errno_from_win32_error(GetLastError());
+      return NULL;
+    }
+    if (ret*2 < len) break;
+
+    /* Buffer too small. Reallocate.
+     * NB: We over allocate 100% to be able to reuse the
+     *     buffer safely with SHGetPathFromIDListW() below.
+     */
+    free(buffer);
+    len = (ret+1)*2;
+  } while(1);
+  free(pname);
+
+  if ((hres = isf->lpVtbl->ParseDisplayName(isf, NULL, NULL, buffer,
+					    NULL, &idl, NULL)) != S_OK) {
+    free(buffer);
+    set_errno_from_win32_error(hres);
+    return NULL;
+  }
+
+  if (!SHGetPathFromIDListW(idl, buffer)) {
+    /* FIXME: Use SHGetPathFromIDListExW() (Vista/2008 and later),
+     *        to ensure that we don't overrun the buffer.
+     *        It however doesn't seem to be documented how
+     *        to detect whether it fails due to a too small
+     *        buffer or for some other reason, so we couldn't
+     *        use it to grow the res buffer and retry.
+     */
+    free(buffer);
+    CoTaskMemFree (idl);
+    errno = EINVAL;
+    return NULL;
+  }
+  CoTaskMemFree (idl);
+
+  /* Remove trailing slashes, except after a drive letter. */
+  len = wcslen(buffer);
+  while(len && buffer[len]=='\\') {
+    len--;
+  }
+  if (!len || (len == 1 && buffer[len] == ':')) len++;
+  buffer[len] = '\\';	/* Paranoia. */
+  buffer[len + 1] = 0;
+
+  /* Convert host and share in an UNC path to lowercase since Windows
+   * Shell doesn't do that consistently.
+   */
+  if (buffer[0] == '\\' && buffer[1] == '\\') {
+    size_t i;
+    int segments;
+    p_wchar1 c;
+
+    for (i = segments = 2; (c = buffer[i]) && segments; i++) {
+      if (c >= 256) continue;
+      buffer[i] = tolower(buffer[i]);
+      if (c == '\\') {
+	segments--;
+      }
+    }
+  }
+
+  res = pike_utf16_to_utf8(buffer);
+  free(buffer);
+  if (!res) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  return res;
 }
 
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
