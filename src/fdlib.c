@@ -31,6 +31,9 @@
 #include <shlobj.h>
 #include <objbase.h>
 
+#include <wchar.h>
+#include <io.h>
+
 #include <time.h>
 
 /* Old versions of the headerfiles don't have this constant... */
@@ -199,11 +202,10 @@ static const unsigned long pike_doserrtab[][2] = {
 
 static inline void _dosmaperr(unsigned long err)
 {
-  int l = 0, h = NELEM(pike_doserrtab);
-  int m;
+  unsigned int l = 0, h = NELEM(pike_doserrtab);
   while (l < h) {
-    int m = (l+h)>>1;
-    int e = pike_doserrtab[m][0];
+    unsigned int m = (l+h)>>1;
+    unsigned long e = pike_doserrtab[m][0];
 
     if (e == err) {
       errno = pike_doserrtab[m][1];
