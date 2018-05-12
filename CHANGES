@@ -14,13 +14,13 @@ o Concurrent
 
   - Add a convenience variant to zip().
 
-  - depend() can be used to collect multiple dependencies before finalising
-    the Promise.
+  - depend() can be used to collect multiple dependencies before
+    finalising the Promise.
 
 o Debug.find_all_clones()
 
-  New convenience function to find all objects that are clones
-  of a program.
+  New convenience function to find all objects that are clones of a
+  program.
 
 o MIME
 
@@ -79,7 +79,8 @@ o Thread.Farm
 
 o Thread.ResourceCount
 
-  New module to allow threadsafe race-condition-free counting of resources.
+  New module to allow threadsafe race-condition-free counting of
+  resources.
 
 o Tools.Standalone.check_http
 
@@ -98,9 +99,9 @@ Bug fixes
 
 o ADT.CritBit
 
-  - Due to an off-by-one error the last limb of bignums was never compared.
-    This resulted (sometimes) in unequal bignums comparing equal inside of
-    the tree.
+  - Due to an off-by-one error the last limb of bignums was never
+    compared.  This resulted (sometimes) in unequal bignums comparing
+    equal inside of the tree.
 
 o Compiler
 
@@ -119,7 +120,8 @@ o Calendar
 
 o Concurrent
 
-  - Less filling, deadlock-free, faster, available without running backend.
+  - Less filling, deadlock-free, faster, available without running
+    backend.
 
   - Handle an empty argument array properly in results().
 
@@ -127,10 +129,15 @@ o Concurrent
 
       Concurrent.Future f2 = Concurrent.results(({}));
 
-      f2->on_success(lambda(array(string) a) { werror("success: %O.\n", a); })
-        ->on_failure(lambda(mixed err) { werror (describe_backtrace(err)); });
+      f2->on_success(lambda(array(string) a) {
+          werror("success: %O.\n", a);
+        })
+        ->on_failure(lambda(mixed err) {
+            werror (describe_backtrace(err));
+          });
 
-    would lead to a backtrace because the future was destructed prematurely.
+    would lead to a backtrace because the future was destructed
+    prematurely.
 
   - Readable/understandable documentation.
 
@@ -146,35 +153,39 @@ o Filesystem.Monitor
 
   - Fixed some backend_check rescheduling isusues.
 
-    adjust_monitor() didn't reschedule the backend_check() call_out
-    if the adjusted monitor already was at the head of monitor_queue.
+    adjust_monitor() didn't reschedule the backend_check() call_out if
+    the adjusted monitor already was at the head of monitor_queue.
     This caused polls to be delayed in some common cases.
 
     register_path() didn't reschedule the backend_check() call_out.
-    If the newly registered monitor ends up at the head of the monitor_queue,
-    the backend_check() call_out likely needs to be rescheduled.
+    If the newly registered monitor ends up at the head of the
+    monitor_queue, the backend_check() call_out likely needs to be
+    rescheduled.
 
-  - Fixed issue with next_poll being set to zero causing polling
-    every second.
+  - Fixed issue with next_poll being set to zero causing polling every
+    second.
 
-  - Fixed indexing the NULL value error when InotifyMonitor was used in
-    combination with a filter_file() that doesn't accept everything.
+  - Fixed indexing the NULL value error when InotifyMonitor was used
+    in combination with a filter_file() that doesn't accept
+    everything.
 
   - Fixed incorrect creation of new monitors.
 
     Monitors were created using monitor() on the top level rather than
     using Monitor::monitor(), which prevented the symlinks' overridden
-    DefaultMonitor from setting the correct state on newly created monitors.
+    DefaultMonitor from setting the correct state on newly created
+    monitors.
 
     We now force a check on the directory monitor instead, which will
     pick up the new file instantly and create the sub monitor.
 
   - Fixed race condition on deletion.
 
-    This fixes a race that could occur on rapid exists => delete => exists
-    transitions, where the directory monitor never noticed the change but
-    the sub monitor was removed from the monitor lookup mapping. The
-    directory monitor is now notified on sub-monitor release.
+    This fixes a race that could occur on rapid exists => delete =>
+    exists transitions, where the directory monitor never noticed the
+    change but the sub monitor was removed from the monitor lookup
+    mapping. The directory monitor is now notified on sub-monitor
+    release.
 
   - Added set_stable_time() function.
 
@@ -186,8 +197,8 @@ o HTTPLoop:
 
 o Image.Image
 
-  - Improved argument checking in apply_curve().
-    Non-integer array values lead to use of uninitialized curve values.
+  - Improved argument checking in apply_curve().  Non-integer array
+    values lead to use of uninitialized curve values.
 
 o Image.PVR
 
@@ -205,9 +216,10 @@ o Protocols.HTTP.Query
 
   - Improved handling of multiple headers of the same kind.
 
-  - Fixed a bug where base64 encoded HTTP basic auth tokens were encoded in a
-    pretty-printed format including line breaks, which lead to malformed HTTP
-    requests on long username and password combinations.
+  - Fixed a bug where base64 encoded HTTP basic auth tokens were
+    encoded in a pretty-printed format including line breaks, which
+    lead to malformed HTTP requests on long username and password
+    combinations.
 
   - Do not wait for SSL.File()->close() to complete when called
     from the destruct() callback.
@@ -238,13 +250,14 @@ o Sql.pgsql
   - Suppress spurious 'File not open' blurts on stderr when the
     connection is still pending and we inspect the connection object.
 
-  - Signal EOF early before closing the SQL result portal and thoroughly
-    cleanup bufcon/stashcount to prevent occasional deadlocks
-    on asynchronous object destructions.
+  - Signal EOF early before closing the SQL result portal and
+    thoroughly cleanup bufcon/stashcount to prevent occasional
+    deadlocks on asynchronous object destructions.
 
   - Suppress rare "access in destructed object" messages.
 
-  - Simplified fundamentally flawed reconnect logic, made failures consistent.
+  - Simplified fundamentally flawed reconnect logic, made failures
+    consistent.
 
   - Repair SSL connect logic.
 
@@ -279,9 +292,9 @@ o Stdio
 
   - Restore the FD_SETSIZE on NT to 65536.
 
-    Due to #include file restructuring, the FD_SETSIZE value on
-    NT had fallen back to the default (64). This issue has probably
-    affected all releases of Pike since 7.9.2.
+    Due to #include file restructuring, the FD_SETSIZE value on NT had
+    fallen back to the default (64). This issue has probably affected
+    all releases of Pike since 7.9.2.
 
   - mv() [NT]
 
@@ -342,9 +355,10 @@ o export
 
     * Did not consider timestamp on aclocal.m4
     * Did not consider post_modules
-    * Did not check configure scripts directly under modules or post_modules
-    * When fixing modules, it looked for the configure scripts in the build
-      directory rather than the source directory
+    * Did not check configure scripts directly under modules or
+      post_modules
+    * When fixing modules, it looked for the configure scripts in the
+      build directory rather than the source directory
     * Did not use the run_autoconfig wrapper
 
     This has caused xenofarm to export snapshots with out of date
@@ -368,7 +382,8 @@ o Whitefish
 
 o Yp
 
-  Support using libtirpc. Glibc 2.26 has removed the Sun RPC implementation...
+  Support using libtirpc. Glibc 2.26 has removed the Sun RPC
+  implementation.
 
 
 Changes since Pike 8.0.466 (release 10)
