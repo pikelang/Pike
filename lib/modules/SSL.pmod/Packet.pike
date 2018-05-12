@@ -87,7 +87,10 @@ int(-1..1) recv(Stdio.Buffer data)
   Stdio.Buffer.RewindKey key = data->rewind_key();
   content_type = data->read_int8();
   if( !PACKET_types[content_type] )
+  {
+    key->rewind();
     return -1;
+  }
 
   protocol_version = data->read_int16();
   if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0 ||
@@ -120,4 +123,12 @@ void send(Stdio.Buffer output)
   output->add_int8(content_type);
   output->add_int16(protocol_version);
   output->add_hstring(fragment, 2);
+}
+
+protected string _sprintf(int t)
+{
+  if(t!='O') return UNDEFINED;
+  if(!fragment) return sprintf("SSL.Packet(unfinished)");
+  string type = fmt_constant(content_type, "PACKET")[7..];
+  return sprintf("SSL.Packet(%s)", type);
 }

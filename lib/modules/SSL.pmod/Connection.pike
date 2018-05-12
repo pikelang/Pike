@@ -532,6 +532,16 @@ protected Packet recv_packet()
     SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
     return 0;
   case -1:
+    if( state & CONNECTION_handshaking )
+    {
+      // This is likely HTTP request on the TLS port. We could parse
+      // the path and host header, and create a request with https://
+      // schema. Would need to go through context for several
+      // reasons. This could be a non-HTTP port or we would want to
+      // use HSTS.
+      SSL3_DEBUG_MSG("Initial incorrect data %O\n",
+                     ((string)read_buffer[..25]));
+    }
     return alert(ALERT_fatal, ALERT_unexpected_message);
   default:
     error("Internal error.\n");
@@ -940,7 +950,8 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       // generated on our side, as opposed to an alert that is
       // received. These are always fatal (wrong packet type, packet
       // version, packet size).
-      SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
+      SSL3_DEBUG_MSG("SSL.Connection: Bad received packet (%s)\n",
+                     fmt_constant([int]packet->description, "ALERT"));
       if (alert_callback)
       {
         Stdio.Buffer.RewindKey here = read_buffer->rewind_key();
