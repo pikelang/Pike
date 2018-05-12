@@ -201,6 +201,7 @@ int main()
 
   // Make sure all cipher suites are available.
   ctx->preferred_suites = ctx->get_suites(CIPHER_BITS, KE_MODE);
+  ctx->min_version = SSL.Constants.PROTOCOL_SSL_3_0;
   SSL3_DEBUG_MSG("Cipher suites:\n%s",
                  .Constants.fmt_cipher_suites(ctx->preferred_suites));
 
