@@ -387,13 +387,35 @@ static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
 /* Glibc extension... */
 #define fd_get_current_dir_name()	get_current_dir_name()
 #elif defined(HAVE_WORKING_GETCWD)
-/* getcwd(NULL, 0) gives malloced buffer. */
+#if HAVE_WORKING_GETCWD
+/* Glibc and win32 (HAVE_WORKING_GETCWD == 1).
+ *
+ * getcwd(NULL, 0) gives malloced buffer.
+ */
 #define fd_get_current_dir_name()	getcwd(NULL, 0)
+#else
+/* Solaris-style (HAVE_WORKING_GETCWD == 0).
+ *
+ * getcwd(NULL, x) gives malloced buffer as long as x > 0, and the path fits.
+ */
+static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
+{
+  char *buf;
+  size_t buf_size = 128;
+  do {
+    buf = getcwd(NULL, buf_size);
+    if (buf) return buf;
+    buf_size <<= 1;
+  } while (errno == ERANGE);
+  return NULL;
+}
+#define fd_get_current_dir_name()	debug_get_current_dir_name()
+#endif
 #else
 static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 {
   char *buf;
-  size_t buf_size = 1000;
+  size_t buf_size = 128;
   do {
     buf = malloc(buf_size);
 
@@ -406,7 +428,7 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
       free(buf);
 
       if (errno == ERANGE) {
-	bufsize <<= 1;
+	buf_size <<= 1;
 	continue;
       }
 

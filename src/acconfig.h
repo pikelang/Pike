@@ -156,7 +156,14 @@
  * __chkstk. */
 #undef HAVE_BROKEN_CHKSTK
 
-/* Define if you have a working getcwd */
+/* Define if you have a working getcwd(3) (ie one that returns a malloc()ed
+ * buffer if the first argument is NULL).
+ *
+ * Define to 1 if the second argument being 0 causes getcwd(3) to allocate
+ * a buffer of suitable size (ie never fail with ERANGE).
+ *
+ * Define to 0 if the second argument MUST be > 0.
+ */
 #undef HAVE_WORKING_GETCWD
 
 /* Define for solaris */
