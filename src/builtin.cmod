@@ -709,13 +709,20 @@ PIKEFUN string int2hex(int|object x)
 }
 
 
-/*! @decl string string2hex(string data, void|int uppercase)
+/*! @decl string string2hex(string data, void|int(0..) flags)
  *! @appears String.string2hex
  *!
  *! Convert a string of binary data to a hexadecimal string.
  *!
- *! @param uppercase
- *!   If set, the string will use upper cased characters.
+ *! @param flags
+ *!   The binary or of the following flags:
+ *!   @int
+ *!     @value 1
+ *!       Use upper case characters.
+ *!
+ *!     @value 2
+ *!       The input is in little-endian byte order.
+ *!   @endint
  *!
  *! @seealso
  *!   @[hex2string()]
@@ -732,36 +739,35 @@ static const char HEXCHAR[] = {
 };
 
 PMOD_EXPORT
-  PIKEFUN string(48..102) string2hex(string s, void|int uppercase)
+  PIKEFUN string(48..102) string2hex(string s, void|int flags)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *hex;
   unsigned char *p,*st = (unsigned char *)s->str;
-  int i, l;
+  const char *hextab = hexchar;
+  int i, l, d = 1;
 
   if (s->size_shift)
     Pike_error("Bad argument 1 to string2hex(), expected 8-bit string.\n");
+
+  if (flags && (flags->u.integer & 1)) {
+    hextab = HEXCHAR;
+  }
 
   hex = begin_shared_string(2 * s->len);
   p = (unsigned char *)hex->str;
   l = s->len;
 
-  if( uppercase && uppercase->u.integer > 0)
-  {
-    for (i=0; i<l; i++) {
-      *p++   = HEXCHAR[*st>>4];
-      *p++   = HEXCHAR[*st&15];
-      st++;
-    }
+  if (flags && (flags->u.integer & 2)) {
+    d = -1;
+    st += l-1;
   }
-  else
-  {
-    for (i=0; i<l; i++) {
-      *p++   = hexchar[*st>>4];
-      *p++   = hexchar[*st&15];
-      st++;
-    }
+
+  for (i=0; i<l; i++) {
+    *p++   = hextab[*st>>4];
+    *p++   = hextab[*st&15];
+    st += d;
   }
 
   RETURN end_shared_string(hex);
