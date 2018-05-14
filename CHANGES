@@ -232,6 +232,11 @@ o Crypto.Checksum
 
   NB: In the future these may be amended to support the Crypto.Hash API.
 
+o Parser.ECMAScript
+
+  This module simply provides a token splitter for
+  ECMAScript/JavaScript.
+
 o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
 o Bittorrent.DHT
