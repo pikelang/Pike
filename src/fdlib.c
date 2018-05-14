@@ -1601,8 +1601,9 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
   while(len && buffer[len-1]=='\\') {
     len--;
   }
-  if (!len || (len == 1 && buffer[len] == ':')) len++;
-  buffer[len] = '\\';	/* Paranoia. */
+  if (!len || (len == 2 && buffer[len-1] == ':')) {
+    buffer[len++] = '\\';
+  }
   buffer[len + 1] = 0;
 
   /* Convert host and share in an UNC path to lowercase since Windows
