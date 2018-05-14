@@ -1575,7 +1575,7 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
 
   /* Remove trailing slashes, except after a drive letter. */
   len = wcslen(buffer);
-  while(len && buffer[len]=='\\') {
+  while(len && buffer[len-1]=='\\') {
     len--;
   }
   if (!len || (len == 1 && buffer[len] == ':')) len++;
