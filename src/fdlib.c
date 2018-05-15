@@ -1072,6 +1072,11 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   while (l && ISSEPARATOR(fname[l-1])) {
     fname[--l] = 0;
   }
+  if( l==0 )
+  {
+    errno = ENOENT;
+    return -1;
+  }
 
   /* get disk from file */
   if (fname[1] == ':')
@@ -1195,7 +1200,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     fstype[0] = '-';
     fstype[1] = 0;
 
-    if (fname[1] == ':') {
+    if (l>=3 && fname[1] == ':') {
       /* Construct a string "X:\" in fname. */
       fname[0] = toupper(fname[0]);
       fname[2] = '\\';
@@ -1586,21 +1591,24 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
   /* Convert host and share in an UNC path to lowercase since Windows
    * Shell doesn't do that consistently.
    */
-  if (buffer[0] == '\\' && buffer[1] == '\\') {
-    size_t i;
-    int segments;
-    p_wchar1 c;
+  if (len>1)
+  {
+    if (buffer[0] == '\\' && buffer[1] == '\\') {
+      size_t i;
+      int segments;
+      p_wchar1 c;
 
-    for (i = segments = 2; (c = buffer[i]) && segments; i++) {
-      if (c >= 256) continue;
-      buffer[i] = tolower(buffer[i]);
-      if (c == '\\') {
-	segments--;
+      for (i = segments = 2; (c = buffer[i]) && segments; i++) {
+        if (c >= 256) continue;
+        buffer[i] = tolower(buffer[i]);
+        if (c == '\\') {
+          segments--;
+        }
       }
+    } else if ((buffer[1] == ':') && (buffer[0] < 256)) {
+      /* Normalize the drive letter to upper-case. */
+      buffer[0] = toupper(buffer[0]);
     }
-  } else if ((buffer[1] == ':') && (buffer[0] < 256)) {
-    /* Normalize the drive letter to upper-case. */
-    buffer[0] = toupper(buffer[0]);
   }
 
   res = pike_utf16_to_utf8(buffer);
