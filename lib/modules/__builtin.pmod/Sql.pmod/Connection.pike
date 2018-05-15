@@ -768,7 +768,7 @@ variant .Result big_typed_query(object|string q)
 variant .Result big_typed_query(object|string q,
 				    mapping(string|int:mixed) bindings)
 {
-  return big_query(q, bindings);
+  return big_typed_query(emulate_bindings(q, bindings));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -875,7 +875,7 @@ variant .Result streaming_query(object|string q)
 variant .Result streaming_query(object|string q,
 				    mapping(string:mixed) bindings)
 {
-  return big_query(q, bindings);
+  return streaming_query(emulate_bindings(q, bindings));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -933,7 +933,7 @@ variant .Result streaming_typed_query(object|string q)
 variant .Result streaming_typed_query(object|string q,
 					  mapping(string|int:mixed) bindings)
 {
-  return big_typed_query(q, bindings);
+  return streaming_typed_query(emulate_bindings(q, bindings));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
