@@ -155,11 +155,15 @@ string attribute_quote(string data, void|string ignore)
   case "\"":
     return replace(data, ([ "'":"&apos;",
                             "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
   case "'":
     return replace(data, ([ "\"":"&quot;",
                             "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
 
@@ -167,6 +171,8 @@ string attribute_quote(string data, void|string ignore)
     return replace(data, ([ "\"":"&quot;",
                             "'":"&apos;",
                             "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
   }
