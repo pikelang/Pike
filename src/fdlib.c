@@ -1621,6 +1621,9 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
 	segments--;
       }
     }
+  } else if ((buffer[1] == ':') && (buffer[0] < 256)) {
+    /* Normalize the drive letter to upper-case. */
+    buffer[0] = toupper(buffer[0]);
   }
 
   res = pike_utf16_to_utf8(buffer);
