@@ -32,7 +32,7 @@ private int idle = 0, options = (Thread.Thread(loop), 0);
 //!  @[werror_options()]
 void werror(string format, mixed ... args) {
   idle = 0;
-  fifo += ({sprintf(format, @args)});
+  fifo += ({sizeof(args) ? sprintf(format, @args) : format});
 }
 
 //! @param options
