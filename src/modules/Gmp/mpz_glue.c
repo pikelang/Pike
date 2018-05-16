@@ -2520,7 +2520,26 @@ PIKE_MODULE_INIT
   /* @decl constant version
    * The version of the current GMP library, e.g. "6.1.0".
    */
+#ifdef __NT__
+  /* NB: <gmp.h> lacks sufficient export declarations to export
+   *     and import variables like gmp_version to gmp.lib.
+   *     We thus need to look up the symbol by hand.
+   */
+  {
+    HINSTANCE gmp_dll = LoadLibrary("gmp");
+    if (gmp_dll) {
+      const char **gmp_version_var =
+	GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
+      if (gmp_version_var) {
+	const char *gmp_version = *gmp_version_var;
+	add_string_constant("version", gmp_version, 0);
+      }
+      FreeLibrary(gmp_dll);
+    }
+  }
+#else
   add_string_constant("version", gmp_version, 0);
+#endif
 }
 
 PIKE_MODULE_EXIT
