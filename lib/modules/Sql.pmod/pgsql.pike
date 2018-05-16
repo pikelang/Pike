@@ -1177,7 +1177,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 //! streaming of multiple simultaneous queries through the same connection.
 //!
 //! @seealso
-//!   @[big_query()], @[big_typed_query()], @[Sql.Connection], @[Sql.Result]
+//!   @[big_query()], @[big_typed_query()], @[streaming_typed_query()],
+//!   @[Sql.Connection], @[Sql.Result]
 /*semi*/final variant inline .pgsql_util.Result streaming_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q, bindings);
@@ -1189,6 +1190,16 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 //! @seealso
 //!   @[big_query()], @[Sql.Connection], @[Sql.Result]
 /*semi*/final variant inline .pgsql_util.Result big_typed_query(string q,
+                                     void|mapping(string|int:mixed) bindings) {
+  return big_query(q, bindings, 1);
+}
+
+//! This function returns an object that allows streaming and typed
+//! results.
+//!
+//! @seealso
+//!   @[big_query()], @[Sql.Connection], @[Sql.Result]
+/*semi*/final variant inline .pgsql_util.Result streaming_typed_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q, bindings, 1);
 }
