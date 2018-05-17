@@ -33,6 +33,9 @@
 #undef MP_INT
 #include <gmp.h>
 
+#define READ_CHUNKSIZE		4096
+#define WRITE_CHUNKSIZE		4096
+
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
 
@@ -962,10 +965,10 @@ PIKECLASS Buffer
     {
       while( 1 )
       {
-        unsigned char *ptr = io_add_space( io, 4096, 0 );
+        unsigned char *ptr = io_add_space( io, READ_CHUNKSIZE, 0 );
         int res;
 
-        res = fd_read( fd->box.fd, ptr, MINIMUM(4096,nbytes) );
+        res = fd_read( fd->box.fd, ptr, MINIMUM(READ_CHUNKSIZE, nbytes) );
 
         if( res == -1 && errno == EINTR )
           continue;
@@ -976,7 +979,7 @@ PIKECLASS Buffer
         nbytes -= res;
         io->len += res;
         bread += res;
-        if( res != 4096 || once || !nbytes )
+        if( res != READ_CHUNKSIZE || once || !nbytes )
             break;
       }
       io_set_events( io, fd, PIKE_BIT_FD_READ_OOB, PIKE_FD_READ );
@@ -986,7 +989,7 @@ PIKECLASS Buffer
       /* some other object. Just call read */
       while( nbytes )
       {
-        push_int( MINIMUM(4096,nbytes) );
+        push_int( MINIMUM(READ_CHUNKSIZE, nbytes) );
         safe_apply( f, "read", 1 );
         if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
           break;
@@ -1109,7 +1112,7 @@ PIKECLASS Buffer
 	  get_inherit_storage( f->u.object, ref->inherit_offset );
 	while( sz > written )
 	{
-	  ptrdiff_t rd = MINIMUM(sz-written,4096);
+	  ptrdiff_t rd = MINIMUM(sz-written, WRITE_CHUNKSIZE);
 	  unsigned char *ptr = io_read_pointer( io );
 	  ptrdiff_t res;
 	  res = fd_write( fd->box.fd, ptr, rd );
@@ -1131,7 +1134,7 @@ PIKECLASS Buffer
     /* Some other object or function. Just call it. */
     while( sz > written )
     {
-      size_t rd = MINIMUM(sz-written,4096);
+      size_t rd = MINIMUM(sz-written, WRITE_CHUNKSIZE);
       ptrdiff_t wr = io_call_write( io, f, rd );
       if( wr <= 0 )
       {
@@ -1139,7 +1142,7 @@ PIKECLASS Buffer
 	break;
       }
       written += wr;
-      if( wr < 4096 )
+      if( wr < WRITE_CHUNKSIZE )
 	break;
     }
     RETURN written;
