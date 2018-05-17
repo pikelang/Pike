@@ -161,17 +161,24 @@ PIKECLASS Buffer
     return 0;
   }
 
+  static void io_discard_bufstart( Buffer *io )
+  {
+      if ( LIKELY(!io->locked_move) )
+      {
+          memmove( io->buffer, io_read_pointer(io), io_len(io) );
+          io->len -= io->offset;
+          io->num_move++;
+          io->offset = 0;
+      }
+  }
+
   static void io_trim( Buffer *io )
   {
       if( !io->locked && io->malloced && (io->offset > 64 || io->len > 64) )
       {
-          if( !io->locked_move && io->offset > 64 && io->offset > io_len(io))
-          {
-              memmove( io->buffer, io_read_pointer(io), io_len(io) );
-              io->len -= io->offset;
-              io->num_move++;
-              io->offset = 0;
-          }
+          if( io->offset > 64 && io->offset > io_len(io) )
+              io_discard_bufstart(io);
+
           if( io->len > 64 && ((io->allocated > (io->len)*(1.0+io->max_waste))))
           {
               void *new_ptr = xrealloc( io->buffer, io->len );
@@ -245,19 +252,14 @@ PIKECLASS Buffer
      * as much.
      *
      */
-    if( LIKELY(!io->locked_move) )
+    if( UNLIKELY(force && io->offset
+              || io_len(io) && io->offset > io->allocated / 2) )
     {
-      if( UNLIKELY((force && io->offset) || (io_len(io) && io->offset > io->allocated / 2)) )
-      {
-        /* more than 50% of the buffer is available before the read pointer,
-         * and we can discard that data. Move the data to the beginning, making
-         * room for more data.
-         */
-        memmove( io->buffer, io_read_pointer(io), io_len(io) );
-        io->num_move++;
-        io->len -= io->offset;
-        io->offset = 0;
-      }
+      /* more than 50% of the buffer is available before the read pointer,
+       * and we can discard that data. Move the data to the beginning, making
+       * room for more data.
+       */
+      io_discard_bufstart(io);
     }
 
     if( UNLIKELY(io->len + bytes > io->allocated) )
