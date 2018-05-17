@@ -1497,6 +1497,11 @@ class sql_result {
     return local_backend->call_out(gottimeout, timeout);
   }
 
+  inline void scuttletimeout(array cid) {
+    if (local_backend)
+      local_backend->remove_call_out(cid);
+  }
+
   //! @returns
   //!  One result row at a time.
   //!
@@ -1515,7 +1520,7 @@ class sql_result {
         PD("%O Block for datarow\n", _portalname);
         array cid = setuptimeout();
         PT(datarow = datarows->read());
-        local_backend->remove_call_out(cid);
+        scuttletimeout(cid);
         if (arrayp(datarow))
           return datarow;
       }
@@ -1542,7 +1547,7 @@ class sql_result {
     if (!sizeof(datarow)) {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
-      local_backend->remove_call_out(cid);
+      scuttletimeout(cid);
     }
     replenishrows();
     if (arrayp(datarow[-1]))
@@ -1585,7 +1590,7 @@ class sql_result {
     for (;;) {
       array cid = setuptimeout();
       PT(datarow = datarows->read());
-      local_backend->remove_call_out(cid);
+      scuttletimeout(cid);
       if (!arrayp(datarow))
         break;
       callout(callback, 0, this, datarow, @args);
@@ -1614,7 +1619,7 @@ class sql_result {
     for (;;) {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
-      local_backend->remove_call_out(cid);
+      scuttletimeout(cid);
       if (!datarow || !arrayp(datarow[-1]))
         break;
       callout(callback, 0, this, datarow, @args);
