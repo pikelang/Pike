@@ -1832,40 +1832,24 @@ PIKECLASS Buffer
    */
   PIKEFUN string(8bit) read_cstring(void|int sentinel)
   {
-    INT64 len;
     Buffer *io = THIS;
-    struct pike_string *s;
-    ONERROR e;
-    int end = 0;
-    if( sentinel )
-      end = sentinel->u.integer;
+    int csentinel = sentinel ? sentinel->u.integer : 0;
 
-    io_rewind_on_error( io, &e );
-    len = 0;
-    do {
-      /* search the amount of data we know we have for each call to io_avail */
-      while( io_len(io) )
+    do
+      if ( LIKELY(io_len(THIS)) )
       {
-        if( io_read_byte_uc(io)==end )
-          goto found_end;
-        len++;
+        const char * start = io_read_pointer(io);
+        const char * end = memchr(start, csentinel, io_len(io));
+        if ( LIKELY(end) )
+        {
+          push_string(io_read_string(io, end - start));
+          io_read_byte_uc(io);	     /* consume the terminating sentinel byte */
+          return;
+        }
       }
-    }
-    while( io_avail( io, 1 ) );
-    goto fail;
+    while ( UNLIKELY(io_range_error(THIS, 0)) );
 
-  found_end:
-    io_rewind( io, len+1 );
-    s = io_read_string( io, len );
-
-    if( LIKELY(s) ) {
-      io_read_byte_uc(io);		  /* consume the terminating byte */
-      io_unset_rewind_on_error( io, &e );
-      push_string(s);
-    } else {
-fail: CALL_AND_UNSET_ONERROR(e);
-      push_undefined();
-    }
+    push_undefined();
   }
 
   /*! @decl protected int(-1..) _search(int(8bit) character, int|void start, @
