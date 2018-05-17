@@ -5485,7 +5485,7 @@ static void exit_file_lock_key(struct object *DEBUGUSED(o))
     int fd=THIS_KEY->f->box.fd;
     int err;
 #ifdef PIKE_DEBUG
-    if(THIS_KEY->f->key != o)
+    if(THIS_KEY->f->key != 0)
       Pike_fatal("File lock key is wrong!\n");
 #endif
 
