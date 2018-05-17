@@ -1324,7 +1324,7 @@ class sql_result {
   }
 
   final void _releasestatement() {
-    Thread.MutexKey lock = closemux->lock(2);
+    Thread.MutexKey lock = closemux->lock();
     if (_state <= BOUND) {
       _state = COMMITTED;
       stmtifkey = 0;
@@ -1367,7 +1367,8 @@ class sql_result {
     switch (_state) {
       case PARSING:
       case BOUND:
-        _releasestatement();
+        _state = COMMITTED;	// Avoid _releasestatement() to prevent
+        stmtifkey = 0;		// lock recursion and lock inversion deadlock
     }
     switch (_state) {
       case PORTALINIT:
