@@ -31,8 +31,8 @@
 #include <arpa/inet.h>
 #endif /* HAVE_ARPA_INET_H */
 
-#define READ_CHUNKSIZE		4096
-#define WRITE_CHUNKSIZE		4096
+#define READ_CHUNKSIZE		32768
+#define WRITE_CHUNKSIZE		32768
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
