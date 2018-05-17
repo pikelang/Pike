@@ -347,8 +347,12 @@ class conxiin {
 
   protected final bool range_error(int howmuch) {
 #ifdef PG_DEBUG
-    if (howmuch <= 0)
-      error("Out of range %d\n", howmuch);
+    if (howmuch < 0) {
+      int available = unread(0);
+      unread(available);
+      error("Out of range %d %O %O\n", howmuch,
+       ((string)this)[.. available-1], ((string)this)[available ..]);
+    }
 #endif
     if (fillread) {
       Thread.MutexKey lock = fillreadmux->lock();
