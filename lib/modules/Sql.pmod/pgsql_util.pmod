@@ -1502,7 +1502,7 @@ class sql_result {
     return local_backend->call_out(gottimeout, timeout);
   }
 
-  inline void scuttletimeout(array cid) {
+  inline private void scuttletimeout(array cid) {
     if (local_backend)
       local_backend->remove_call_out(cid);
   }
@@ -1525,6 +1525,8 @@ class sql_result {
         PD("%O Block for datarow\n", _portalname);
         array cid = setuptimeout();
         PT(datarow = datarows->read());
+        if (!this)		// If object already destructed, return fast
+          return 0;
         scuttletimeout(cid);
         if (arrayp(datarow))
           return datarow;
@@ -1552,6 +1554,8 @@ class sql_result {
     if (!sizeof(datarow)) {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
+      if (!this)		// If object already destructed, return fast
+        return 0;
       scuttletimeout(cid);
     }
     replenishrows();
@@ -1595,6 +1599,8 @@ class sql_result {
     for (;;) {
       array cid = setuptimeout();
       PT(datarow = datarows->read());
+      if (!this)		// If object already destructed, return fast
+        return 0;
       scuttletimeout(cid);
       if (!arrayp(datarow))
         break;
@@ -1624,6 +1630,8 @@ class sql_result {
     for (;;) {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
+      if (!this)		// If object already destructed, return fast
+        return 0;
       scuttletimeout(cid);
       if (!datarow || !arrayp(datarow[-1]))
         break;
