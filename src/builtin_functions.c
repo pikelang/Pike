@@ -2317,7 +2317,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
- *!   @[unicode_to_string()]
+ *!   @[unicode_to_string()], @[validate_utf8()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
@@ -2641,6 +2641,253 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #endif
   pop_n_elems(args);
   push_string(out);
+}
+
+/*! @decl string validate_utf8(utf8_string s)
+ *! @decl string validate_utf8(utf8_string s, int extended)
+ *!
+ *!   Checks whether a string is a valid UTF-8 byte-stream.
+ *!
+ *! @param s
+ *!   String of UTF-8 encoded data to validate.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept the extension used by @[string_to_utf8()].
+ *!     @value 2
+ *!       Accept UTF-8 encoded UTF-16 (ie accept valid surrogate-pairs).
+ *!     @value 4
+ *!       Accept UTF-8 encoded invalid UTF-16 (ie accept lone surrogates).
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the stream is not a legal
+ *!   UTF-8 byte-stream, and @expr{1@} if it is.
+ *!
+ *! @note
+ *!   In conformance with @rfc{3629@} and Unicode 3.1 and later,
+ *!   non-shortest forms are considered invalid.
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[unicode_to_string()], @[utf8_to_string()]
+ */
+PMOD_EXPORT void f_validate_utf8(INT32 args)
+{
+  struct pike_string *in;
+  ptrdiff_t i;
+  INT_TYPE extended = 0;
+  INT32 min, max;
+  int ret = 1;
+
+  get_all_args("validate_utf8", args, "%T.%i", &in, &extended);
+
+  if (in->size_shift) {
+    /* Wide string -- not UTF-8. */
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+
+  for(i=0; ret && (i < in->len); i++) {
+    unsigned int c = STR0(in)[i];
+    if (c & 0x80) {
+      int cont = 0;
+
+      /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+       * Byte Sequences
+       *
+       *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+       * 000000-00007f   00-7f
+       * 000080-0007ff   c2-df     80-bf
+       * 000800-000fff    e0       a0-bf     80-bf
+       * 001000-00cfff   e1-ec     80-bf     80-bf
+       * 00d000-00d7ff    ed       80-9f     80-bf
+       * 00e000-00ffff   ee-ef     80-bf     80-bf
+       * 010000-03ffff    f0       90-bf     80-bf     80-bf
+       * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+       * 100000-10ffff    f4       80-8f     80-bf     80-bf
+       */
+
+      if ((c & 0xc0) == 0x80) {
+	ret = 0;
+	break;
+      }
+
+#define GET_CHAR(in, i, c) do {						\
+	i++;								\
+	if (i >= in->len) {						\
+	  ret = 0;							\
+	  break;							\
+	}								\
+	c = STR0 (in)[i];						\
+      } while(0)
+#define GET_CONT_CHAR(in, i, c) do {					\
+	GET_CHAR(in, i, c);						\
+	if ((c & 0xc0) != 0x80) {					\
+	  ret = 0;							\
+	  break;							\
+	}								\
+      } while (0)
+
+      if ((c & 0xe0) == 0xc0) {
+	/* 11bit */
+	if (!(c & 0x1e)) {
+	  /* is a non-shortest form */
+	  ret = 0;
+	  break;
+	}
+	cont = 1;
+      }
+
+      else if ((c & 0xf0) == 0xe0) {
+	/* 16bit */
+	if (c == 0xe0) {
+	  GET_CONT_CHAR (in, i, c);
+	  if (!(c & 0x20)) {
+	    /* is a non-shortest form */
+	    ret = 0;
+	    break;
+	  }
+	  cont = 1;
+	}
+	else if (!(extended & 1) && c == 0xed) {
+	  GET_CONT_CHAR (in, i, c);
+	  if (c & 0x20) {
+	    /* Surrogate. */
+	    if (!(extended & 2) || !(c & 0x10)) {
+	      /* Invalid surrogate. */
+	      ret = 0;
+	      break;
+	    }
+	    GET_CONT_CHAR(in, i, c);
+
+	    GET_CHAR (in, i, c);
+	    if ((c != 0xed)) {
+	      /* is not a low surrogate. */
+	      if (!(extended & 4)) {
+		ret = 0;
+		break;
+	      }
+	      i--;
+	      continue;
+	    }
+	    GET_CONT_CHAR (in, i, c);
+	    if ((c & 0xf0) != 0xb0) {
+	      /* is not a low surrogate. */
+	      if (!(extended & 4)) {
+		ret = 0;
+		break;
+	      }
+	      i -= 2;
+	      continue;
+	    }
+	  }
+	  cont = 1;
+	}
+	else
+	  cont = 2;
+      }
+
+      else {
+	if ((c & 0xf8) == 0xf0) {
+	  /* 21bit */
+	  if (c == 0xf0) {
+	    GET_CONT_CHAR (in, i, c);
+	    if (!(c & 0x30)) {
+	      /* is a non-shortest form */
+	      ret = 0;
+	      break;
+	    }
+	    cont = 2;
+	  }
+	  else if (!(extended & 1)) {
+	    if (c > 0xf4) {
+	      /* is out of range. */
+	      ret = 0;
+	      break;
+	    }
+	    else if (c == 0xf4) {
+	      GET_CONT_CHAR (in, i, c);
+	      if (c > 0x8f) {
+		/* is out of range. */
+		ret = 0;
+		break;
+	      }
+	      cont = 2;
+	    }
+	    else
+	      cont = 3;
+	  }
+	  else
+	    cont = 3;
+	}
+
+	else if ((c == 0xff) || !(extended & 1)) {
+	  /* Invalid character or out of range. */
+	  ret = 0;
+	  break;
+	} else {
+	  if ((c & 0xfc) == 0xf8) {
+	    /* 26bit */
+	    if (c == 0xf8) {
+	      GET_CONT_CHAR (in, i, c);
+	      if (!(c & 0x38)) {
+		/* is a non-shortest form */
+		ret = 0;
+		break;
+	      }
+	      cont = 3;
+	    }
+	    else
+	      cont = 4;
+	  } else if ((c & 0xfe) == 0xfc) {
+	    /* 31bit */
+	    if (c == 0xfc) {
+	      GET_CONT_CHAR (in, i, c);
+	      if (!(c & 0x3c)) {
+		/* is a non-shortest form */
+		ret = 0;
+		break;
+	      }
+	      cont = 4;
+	    }
+	    else
+	      cont = 5;
+	  } else if (c == 0xfe) {
+	    /* 36bit */
+	    GET_CONT_CHAR (in, i, c);
+	    if (!(c & 0x3e) || (c & 0x3c)) {
+	      /* is a non-shortest form or out of range. */
+	      ret = 0;
+	      break;
+	    }
+	    cont = 5;
+	  }
+	}
+      }
+
+      while(cont--)
+	GET_CONT_CHAR (in, i, c);
+
+#undef GET_CHAR
+#undef GET_CONT_CHAR
+    }
+  }
+
+  pop_n_elems(args);
+  push_int(ret);
 }
 
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
@@ -9852,6 +10099,10 @@ void init_builtin_efuns(void)
   /* function(utf8_string,int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
 	   tFunc(tUtf8Str tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(string(8bit),int|void:int(0..1)) */
+  ADD_EFUN("validate_utf8", f_validate_utf8,
+	   tFunc(tStr8 tOr(tInt,tVoid),tInt01), OPT_TRY_OPTIMIZE);
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
