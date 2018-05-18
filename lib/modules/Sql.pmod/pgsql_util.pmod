@@ -393,6 +393,22 @@ class conxiin {
   final int procmsg;
   private int didreadcb;
 
+#if PG_DEBUGHISTORY > 0
+  final array history = ({});
+
+  final int(-1..) input_from(Stdio.Stream stm, void|int(0..) nbytes) {
+    int oldsize = sizeof(this);
+    int ret = i::input_from(stm, nbytes);
+    if (ret) {
+      Stdio.Buffer tb = Stdio.Buffer(this);
+      tb->consume(oldsize);
+      history += ({"<<"+tb->read(ret)});
+      history = history[<PG_DEBUGHISTORY - 1 ..];
+    }
+    return ret;
+  }
+#endif
+
   protected final bool range_error(int howmuch) {
 #ifdef PG_DEBUG
     if (howmuch < 0) {
@@ -472,6 +488,18 @@ class conxion {
 #ifdef PG_DEBUG
   final int queueoutidx;
   final int queueinidx = -1;
+#endif
+
+#if PG_DEBUGHISTORY > 0
+  final int(-1..) output_to(Stdio.Stream stm, void|int(0..) nbytes) {
+    Stdio.Buffer tb = Stdio.Buffer(this);
+    int ret = o::output_to(stm, nbytes);
+    if (ret) {
+      i->history += ({">>" + tb->read(ret)});
+      i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
+    }
+    return ret;
+  }
 #endif
 
   private inline void queueup(Result portal) {
@@ -818,10 +846,17 @@ class Result {
           catch(fd = c->socket->query_fd());
         res = sprintf("Result state: %d numrows: %d eof: %d inflight: %d\n"
                     "query: %O\n"
+#if PG_DEBUGHISTORY > 0
+                    "history: %O\n"
+#endif
                     "fd: %O portalname: %O  datarows: %d"
                     "  synctransact: %d laststatus: %s\n",
                     _state, index, eoffound, inflight,
-                    qalreadyprinted == this ? "..." : _query, fd, _portalname,
+                    qalreadyprinted == this ? "..." : _query,
+#if PG_DEBUGHISTORY > 0
+                    qalreadyprinted == this ? 0 : c && c->i->history,
+#endif
+		    fd, _portalname,
                     datarowtypes && sizeof(datarowtypes), _synctransact,
                     statuscmdcomplete
                     || (_unnamedstatementkey ? "*parsing*" : ""));
