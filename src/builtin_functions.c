@@ -2655,11 +2655,10 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
  *!   Bitmask with extension options.
  *!   @int
  *!     @value 1
- *!       Accept the extension used by @[string_to_utf8()].
+ *!       Accept the extension used by @[string_to_utf8()], including
+ *!       lone UTF-16 surrogates.
  *!     @value 2
  *!       Accept UTF-8 encoded UTF-16 (ie accept valid surrogate-pairs).
- *!     @value 4
- *!       Accept UTF-8 encoded invalid UTF-16 (ie accept lone surrogates).
  *!   @endint
  *!
  *! @returns
@@ -2681,6 +2680,7 @@ PMOD_EXPORT void f_validate_utf8(INT32 args)
   INT_TYPE extended = 0;
   INT32 min, max;
   int ret = 1;
+  p_wchar1 expect_low_surrogate = 0;
 
   get_all_args("validate_utf8", args, "%T.%i", &in, &extended);
 
@@ -2701,189 +2701,98 @@ PMOD_EXPORT void f_validate_utf8(INT32 args)
   }
 
   for(i=0; ret && (i < in->len); i++) {
-    unsigned int c = STR0(in)[i];
-    if (c & 0x80) {
-      int cont = 0;
+    p_wchar0 c = STR0(in)[i];
+    /* NB: unsigned INT64 to handle bit 33. */
+    unsigned INT64 ch;
+    unsigned INT64 full_mask = 0x3f;
+    unsigned INT64 hi_mask = 0x3e;
 
-      /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
-       * Byte Sequences
-       *
-       *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
-       * 000000-00007f   00-7f
-       * 000080-0007ff   c2-df     80-bf
-       * 000800-000fff    e0       a0-bf     80-bf
-       * 001000-00cfff   e1-ec     80-bf     80-bf
-       * 00d000-00d7ff    ed       80-9f     80-bf
-       * 00e000-00ffff   ee-ef     80-bf     80-bf
-       * 010000-03ffff    f0       90-bf     80-bf     80-bf
-       * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
-       * 100000-10ffff    f4       80-8f     80-bf     80-bf
-       */
+    /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+     * Byte Sequences
+     *
+     *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+     * 000000-00007f   00-7f
+     * 000080-0007ff   c2-df     80-bf
+     * 000800-000fff    e0       a0-bf     80-bf
+     * 001000-00cfff   e1-ec     80-bf     80-bf
+     * 00d000-00d7ff    ed       80-9f     80-bf
+     * 00e000-00ffff   ee-ef     80-bf     80-bf
+     * 010000-03ffff    f0       90-bf     80-bf     80-bf
+     * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+     * 100000-10ffff    f4       80-8f     80-bf     80-bf
+     */
 
-      if ((c & 0xc0) == 0x80) {
+    if (!(c & 0x80)) {
+      if (expect_low_surrogate) ret = 0;	/* Expected low surrogate. */
+      continue;
+    }
+
+    if (!(c & 0x40)) {
+      /* Invalid continuation char. */
+      ret = 0;
+      break;
+    }
+
+    if (c == 0xff) {
+      /* Invalid UTF-8 code-point. */
+      ret = 0;
+      break;
+    }
+
+    ch = c;
+
+    while (c & 0x40) {
+      /* NB: We rely on the NUL-terminator in pike_strings. */
+      p_wchar0 cc = STR0(in)[++i];
+      if ((cc & 0xc0) != 0x80) {
+	/* Expected continuation char. */
 	ret = 0;
 	break;
       }
-
-#define GET_CHAR(in, i, c) do {						\
-	i++;								\
-	if (i >= in->len) {						\
-	  ret = 0;							\
-	  break;							\
-	}								\
-	c = STR0 (in)[i];						\
-      } while(0)
-#define GET_CONT_CHAR(in, i, c) do {					\
-	GET_CHAR(in, i, c);						\
-	if ((c & 0xc0) != 0x80) {					\
-	  ret = 0;							\
-	  break;							\
-	}								\
-      } while (0)
-
-      if ((c & 0xe0) == 0xc0) {
-	/* 11bit */
-	if (!(c & 0x1e)) {
-	  /* is a non-shortest form */
-	  ret = 0;
-	  break;
-	}
-	cont = 1;
-      }
-
-      else if ((c & 0xf0) == 0xe0) {
-	/* 16bit */
-	if (c == 0xe0) {
-	  GET_CONT_CHAR (in, i, c);
-	  if (!(c & 0x20)) {
-	    /* is a non-shortest form */
-	    ret = 0;
-	    break;
-	  }
-	  cont = 1;
-	}
-	else if (!(extended & 1) && c == 0xed) {
-	  GET_CONT_CHAR (in, i, c);
-	  if (c & 0x20) {
-	    /* Surrogate. */
-	    if (!(extended & 2) || !(c & 0x10)) {
-	      /* Invalid surrogate. */
-	      ret = 0;
-	      break;
-	    }
-	    GET_CONT_CHAR(in, i, c);
-
-	    GET_CHAR (in, i, c);
-	    if ((c != 0xed)) {
-	      /* is not a low surrogate. */
-	      if (!(extended & 4)) {
-		ret = 0;
-		break;
-	      }
-	      i--;
-	      continue;
-	    }
-	    GET_CONT_CHAR (in, i, c);
-	    if ((c & 0xf0) != 0xb0) {
-	      /* is not a low surrogate. */
-	      if (!(extended & 4)) {
-		ret = 0;
-		break;
-	      }
-	      i -= 2;
-	      continue;
-	    }
-	  }
-	  cont = 1;
-	}
-	else
-	  cont = 2;
-      }
-
-      else {
-	if ((c & 0xf8) == 0xf0) {
-	  /* 21bit */
-	  if (c == 0xf0) {
-	    GET_CONT_CHAR (in, i, c);
-	    if (!(c & 0x30)) {
-	      /* is a non-shortest form */
-	      ret = 0;
-	      break;
-	    }
-	    cont = 2;
-	  }
-	  else if (!(extended & 1)) {
-	    if (c > 0xf4) {
-	      /* is out of range. */
-	      ret = 0;
-	      break;
-	    }
-	    else if (c == 0xf4) {
-	      GET_CONT_CHAR (in, i, c);
-	      if (c > 0x8f) {
-		/* is out of range. */
-		ret = 0;
-		break;
-	      }
-	      cont = 2;
-	    }
-	    else
-	      cont = 3;
-	  }
-	  else
-	    cont = 3;
-	}
-
-	else if ((c == 0xff) || !(extended & 1)) {
-	  /* Invalid character or out of range. */
-	  ret = 0;
-	  break;
-	} else {
-	  if ((c & 0xfc) == 0xf8) {
-	    /* 26bit */
-	    if (c == 0xf8) {
-	      GET_CONT_CHAR (in, i, c);
-	      if (!(c & 0x38)) {
-		/* is a non-shortest form */
-		ret = 0;
-		break;
-	      }
-	      cont = 3;
-	    }
-	    else
-	      cont = 4;
-	  } else if ((c & 0xfe) == 0xfc) {
-	    /* 31bit */
-	    if (c == 0xfc) {
-	      GET_CONT_CHAR (in, i, c);
-	      if (!(c & 0x3c)) {
-		/* is a non-shortest form */
-		ret = 0;
-		break;
-	      }
-	      cont = 4;
-	    }
-	    else
-	      cont = 5;
-	  } else if (c == 0xfe) {
-	    /* 36bit */
-	    GET_CONT_CHAR (in, i, c);
-	    if (!(c & 0x3e) || (c & 0x3c)) {
-	      /* is a non-shortest form or out of range. */
-	      ret = 0;
-	      break;
-	    }
-	    cont = 5;
-	  }
-	}
-      }
-
-      while(cont--)
-	GET_CONT_CHAR (in, i, c);
-
-#undef GET_CHAR
-#undef GET_CONT_CHAR
+      ch = ch<<6 | (cc & 0x3f);
+      full_mask |= full_mask << 5;
+      hi_mask <<= 5;
+      c <<= 1;
     }
+
+    ch = ch & full_mask;
+
+    if (!(ch & hi_mask) || (ch < 0x80)) {
+      /* The 5 most significant bits of ch are all zero.
+       * This means that it was a non-minimal form.
+       *
+       * Note that a special case is needed for the range 0x40..0x7f.
+       */
+      ret = 0;
+      break;
+    }
+
+    if ((ch & ~0x7ff) == 0xd800) {
+      /* Surrogate */
+      if (!(extended & 3)) {
+	ret = 0;
+	break;
+      }
+      if (!(extended & 1) && ((ch & 0x400) != expect_low_surrogate)) {
+	/* Bad surrogate pair. */
+	ret = 0;
+	break;
+      }
+      expect_low_surrogate = (ch & 0x400) ^ 0x400;
+    } else if (!(extended & 1) && expect_low_surrogate) {
+      ret = 0;
+      break;
+    } else if (ch >= 0x110000) {
+      /* Character out of range. */
+      if (!(extended & 1) || (ch >= (((unsigned INT64)1) << 32))) {
+	ret = 0;
+	break;
+      }
+    }
+  }
+
+  if (!(extended & 1) && expect_low_surrogate) {
+    ret = 0;
   }
 
   pop_n_elems(args);

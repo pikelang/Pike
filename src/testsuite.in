@@ -12814,6 +12814,83 @@ test_eval_error(return utf8_to_string ("\u00fe\u0080\u0080\u0080\u0080\u0080\u00
 test_eval_error(return utf8_to_string ("\u00fe\u0081\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
 test_eq(utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1), "\U80000000")
 
+// validate_utf8
+test_true(validate_utf8("foo"))
+test_false(validate_utf8("blä"))
+test_true(validate_utf8("bl\303\244"))
+test_false(validate_utf8([string(8bit)](mixed)"\77077"))
+test_true(validate_utf8("\347\270\277"))
+test_false(validate_utf8([string(8bit)](mixed)"\7077077"))
+test_false(validate_utf8("\367\207\270\277"))
+test_true(validate_utf8("\367\207\270\277", 1))
+test_false(validate_utf8("\370\277\207\270\277"))
+test_true(validate_utf8("\370\277\207\270\277", 1))
+test_false(validate_utf8([string(8bit)](mixed)"\7077077077"))
+test_false(validate_utf8("\374\270\277\207\270\277"))
+test_true(validate_utf8("\374\270\277\207\270\277", 1))
+
+test_false(validate_utf8("\376\203\270\277\207\270\277"))
+test_true(validate_utf8("\376\203\270\277\207\270\277", 1))
+
+test_false(validate_utf8("\277"));
+test_false(validate_utf8("\377"));
+test_false(validate_utf8("\376\203\270\277\207\270", 1));
+test_false(validate_utf8("\374\270\277\207\270"));
+test_false(validate_utf8("\370\277\207\270"));
+test_false(validate_utf8("\367\207\270"));
+test_false(validate_utf8("\347\270"));
+test_false(validate_utf8("\303"));
+test_false(validate_utf8("\376\203\270\277\207\270a"));
+test_false(validate_utf8("\374\270\277\207\270a"));
+test_false(validate_utf8("\370\277\207\270a"));
+test_false(validate_utf8("\367\207\270a"));
+test_false(validate_utf8("\347\270a"));
+test_false(validate_utf8("\303a"));
+
+// Invalid ranges
+test_true(validate_utf8("\u00ed\u009f\u00bf"))
+test_false(validate_utf8("\u00ed\u00a0\u0080"))
+test_true(validate_utf8("\u00ed\u00a0\u0080", 1))
+test_false(validate_utf8("\u00ed\u00a0\u0080", 2))
+test_false(validate_utf8("\u00ed\u00bf\u00bf"))
+test_true(validate_utf8("\u00ed\u00bf\u00bf", 1))
+test_false(validate_utf8("\u00ed\u00bf\u00bf", 2))
+test_true(validate_utf8("\u00ed\u00a0\u0080\u00ed\u00bf\u00bf", 2))
+
+test_true(validate_utf8("\u00ee\u0080\u0080"))
+test_true(validate_utf8("\u00f4\u008f\u00bf\u00bf"))
+test_false(validate_utf8("\u00f4\u0090\u0080\u0080"))
+test_true(validate_utf8("\u00f4\u0090\u0080\u0080", 1))
+test_false(validate_utf8("\u00f4\u0090\u0080\u0080", 2))
+
+test_false(validate_utf8("\u00f8\u0088\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00fc\u0084\u0080\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080"))
+test_true(validate_utf8("\u00fe\u0083\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
+test_false(validate_utf8("\u00fe\u0084\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00ff"))
+test_false(validate_utf8("\u00ff", 1))
+
+// Non-shortest forms
+test_false(validate_utf8("\u00c0\u0080"))
+test_false(validate_utf8("\u00c1\u00bf"))
+test_true(validate_utf8("\u00c2\u0080"))
+test_false(validate_utf8("\u00e0\u0080\u0080"))
+test_false(validate_utf8("\u00e0\u009f\u00bf"))
+test_true(validate_utf8("\u00e0\u00a0\u0080"))
+test_false(validate_utf8("\u00f0\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00f0\u008f\u00bf\u00bf"))
+test_true(validate_utf8("\u00f0\u0090\u0080\u0080"))
+test_false(validate_utf8("\u00f8\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00f8\u0087\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00f8\u0088\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fc\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fc\u0083\u00bf\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00fc\u0084\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fe\u0080\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fe\u0081\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1))
+
 // - stringp
 // Tested in foop
 
