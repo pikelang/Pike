@@ -579,7 +579,7 @@ class Future
   }
 }
 
-class AggregateState
+protected class AggregateState
 {
   private Promise promise;
   private int(0..) promises;
