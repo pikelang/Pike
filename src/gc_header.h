@@ -20,13 +20,14 @@
         INT32 gc_refs;                \
         struct gc_rec_frame *frame;   \
         INT32 weak_refs;              \
-        unsigned INT32 gc_generation; \
+        unsigned INT16 gc_generation; \
         DEBUG_GC_MARKER_MEMBERS
 
 /* Note: Keep in sync to GC_MARKER_MEMBERS above */
 struct marker
 {
-  INT32 refs;
+  /* this should not be modified through a struct marker pointer */
+  INT32 refs_do_not_touch;
   INT32 gc_refs;
   struct gc_rec_frame *frame;	/* Pointer to the cycle check rec frame. */
   /* Internal references (both weak and nonweak). Increased during

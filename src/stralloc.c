@@ -691,7 +691,7 @@ static struct pike_string * make_static_string(const char * str, size_t len,
 {
   struct pike_string * t = ba_alloc(&string_allocator);
 #ifdef PIKE_DEBUG
-  gc_init_marker(&t->m);
+  gc_init_marker(t);
 #endif
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->size_shift = shift;
@@ -743,7 +743,7 @@ PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len
   if (!s) {
     s = ba_alloc(&string_allocator);
 #ifdef PIKE_DEBUG
-    gc_init_marker(&s->m);
+    gc_init_marker(s);
 #endif
 
     s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
@@ -1887,7 +1887,7 @@ static struct pike_string *make_shared_substring( struct pike_string *s,
   }
   res = ba_alloc(&substring_allocator);
 #ifdef PIKE_DEBUG
-  gc_init_marker(&res->str.m);
+  gc_init_marker(&res->str);
 #endif
   res->parent = s;
   s->flags |= STRING_IS_LOCKED;	/* Make sure the string data isn't reallocated. */

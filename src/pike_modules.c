@@ -198,15 +198,15 @@ static void exit_builtin_modules(void)
 	      is_static = 1;						\
 	  /* Note: m->xrefs is always zero here since the mark pass	\
 	   * isn't run in gc_destruct_everything mode. */		\
-	  if (x->refs != m->refs + is_static) {				\
+	  if (x->refs != m->gc_refs + is_static) {		        \
 	    if (!leak_found) {						\
 	      fputs ("Leak(s) found at exit:\n", stderr);		\
 	      leak_found = 1;						\
 	    }								\
 	    fprintf (stderr, NAME " at %p got %d unaccounted refs "	\
 		     "(and %d accounted): ",				\
-		     x, x->refs - (m->refs + is_static),		\
-		     m->refs + is_static);				\
+		     x, x->refs - (m->gc_refs + is_static),		\
+		     m->gc_refs + is_static);				\
 	    safe_print_short_svalue (stderr, (union anything *) &x, T_TYPE); \
 	    {PRINT_EXTRA;}						\
 	    fputc ('\n', stderr);					\
@@ -215,7 +215,7 @@ static void exit_builtin_modules(void)
 	      debug_malloc_dump_references (x, 2, 1, 0);		\
 	      fputc ('\n', stderr);					\
 	    );								\
-	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_LEAKED);		\
+	    DO_IF_DEBUG (m->gc_flags |= GC_CLEANUP_LEAKED);		\
 	  }								\
 	}								\
       }									\
@@ -302,7 +302,7 @@ static void exit_builtin_modules(void)
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  refs = x->refs;						\
-	  while (refs > m->refs + is_static) {				\
+	  while (refs > m->gc_refs + is_static) {		        \
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	    refs--;							\
 	  }								\
