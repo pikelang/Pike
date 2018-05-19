@@ -172,7 +172,7 @@ int got_unlinked_things;
 ALLOC_COUNT_TYPE num_allocs =0;
 ALLOC_COUNT_TYPE alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
-unsigned INT32 gc_generation = 1;
+unsigned INT16 gc_generation = 1;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
 #ifdef DO_PIKE_CLEANUP
@@ -1719,8 +1719,8 @@ PMOD_EXPORT void gc_watch(void *a)
 {
   struct marker *m;
   m = get_marker(a);
-  if (!(m->flags & GC_WATCHED)) {
-    m->flags |= GC_WATCHED;
+  if (!(m->gc_flags & GC_WATCHED)) {
+    m->gc_flags |= GC_WATCHED;
     fprintf(stderr, "## Watching thing %p.\n", a);
     gc_is_watching++;
   }
@@ -1808,7 +1808,7 @@ void gc_mark_enqueue (queue_call call, void *data)
     gc_fatal (data, 0, "gc_mark_enqueue() called outside GC_ENTER.\n");
   {
     struct marker *m;
-    if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
+    if (gc_is_watching && (m = find_marker(data)) && m->gc_flags & GC_WATCHED) {
       /* This is useful to set breakpoints on. */
       gc_watched_found (m, "gc_mark_enqueue()");
     }
@@ -1845,7 +1845,7 @@ void debug_gc_touch(void *a)
 
 #ifdef PIKE_DEBUG
   if (!a) Pike_fatal("Got null pointer.\n");
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_touch()");
   }
@@ -1859,11 +1859,11 @@ void debug_gc_touch(void *a)
 #ifdef DO_PIKE_CLEANUP
 	  !gc_keep_markers &&
 #endif
-          m && !(m->flags & (GC_PRETOUCHED|GC_WATCHED )))
+          m && !(m->gc_flags & (GC_PRETOUCHED|GC_WATCHED )))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
 #endif /* PIKE_DEBUG */
       m = get_marker(a);
-      m->flags |= GC_PRETOUCHED;
+      m->gc_flags |= GC_PRETOUCHED;
 #ifdef PIKE_DEBUG
       m->saved_refs = *(INT32 *) a;
 #endif
@@ -1877,13 +1877,13 @@ void debug_gc_touch(void *a)
 #ifdef PIKE_DEBUG
       if (!m)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
-      else if (!(m->flags & GC_PRETOUCHED))
+      else if (!(m->gc_flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
-      if (gc_destruct_everything && (m->flags & GC_MARKED))
+      if (gc_destruct_everything && (m->gc_flags & GC_MARKED))
 	gc_fatal (a, 1, "Thing got marked in gc_destruct_everything mode.\n");
-      extra_ref = (m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF;
+      extra_ref = (m->gc_flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF;
       if (m->saved_refs + extra_ref < *(INT32 *) a)
-	if (m->flags & GC_WEAK_FREED)
+	if (m->gc_flags & GC_WEAK_FREED)
 	  gc_fatal(a, 1, "Something failed to remove weak reference(s) to thing, "
 		   "or it has gotten more references since gc start.\n");
 	else
@@ -1892,7 +1892,7 @@ void debug_gc_touch(void *a)
 	if (m->weak_refs > m->saved_refs)
 	  gc_fatal(a, 0, "A thing got more weak references than references.\n");
 #endif
-      m->flags |= GC_POSTTOUCHED;
+      m->gc_flags |= GC_POSTTOUCHED;
       break;
     }
 
@@ -1955,7 +1955,7 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
 #ifdef PIKE_DEBUG
   if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
     gc_fatal (a, 0, "gc_check() called outside GC_ENTER.\n");
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_check()");
   }
@@ -1966,7 +1966,7 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
 
   ret=m->gc_refs++;
   if (m->gc_refs == *(INT32 *) a)
-    m->flags |= GC_NOT_REFERENCED;
+    m->gc_flags |= GC_NOT_REFERENCED;
   return ret;
 }
 
@@ -1978,7 +1978,7 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
 #ifdef PIKE_DEBUG
   if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
     gc_fatal (a, 0, "gc_check_weak() called outside GC_ENTER.\n");
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_check_weak()");
   }
@@ -2000,7 +2000,7 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
 
   ret=m->gc_refs++;
   if (m->gc_refs == *(INT32 *) a)
-    m->flags |= GC_NOT_REFERENCED;
+    m->gc_flags |= GC_NOT_REFERENCED;
   return ret;
 }
 
@@ -2034,7 +2034,7 @@ void exit_gc(void)
 PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line)
 {
   struct marker *m = find_marker (a);
-  if (m && (m->flags & GC_CLEANUP_LEAKED))
+  if (m && (m->gc_flags & GC_CLEANUP_LEAKED))
     fprintf (stderr, "Free of leaked %s %p from %s:%ld, %d refs remaining\n",
 	     get_name_of_type (type), a, file, (long)line, *(INT32 *)a - 1);
 }
@@ -2100,23 +2100,23 @@ void debug_gc_add_extra_ref(void *a)
 {
   struct marker *m;
 
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_add_extra_ref()");
   }
 
   if (gc_debug) {
     m = find_marker(a);
-    if ((!m || !(m->flags & GC_PRETOUCHED)) &&
+    if ((!m || !(m->gc_flags & GC_PRETOUCHED)) &&
 	!safe_debug_findstring((struct pike_string *) a))
       gc_fatal(a, 0, "Doing gc_add_extra_ref() on invalid object.\n");
     if (!m) m = get_marker(a);
   }
   else m = get_marker(a);
 
-  if (m->flags & GC_GOT_EXTRA_REF)
+  if (m->gc_flags & GC_GOT_EXTRA_REF)
     gc_fatal(a, 0, "Thing already got an extra gc ref.\n");
-  m->flags |= GC_GOT_EXTRA_REF;
+  m->gc_flags |= GC_GOT_EXTRA_REF;
   gc_extra_refs++;
   add_ref( (struct ref_dummy *)a);
 }
@@ -2125,23 +2125,23 @@ void debug_gc_free_extra_ref(void *a)
 {
   struct marker *m;
 
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_free_extra_ref()");
   }
 
   if (gc_debug) {
     m = find_marker(a);
-    if ((!m || !(m->flags & GC_PRETOUCHED)) &&
+    if ((!m || !(m->gc_flags & GC_PRETOUCHED)) &&
 	!safe_debug_findstring((struct pike_string *) a))
       gc_fatal(a, 0, "Doing gc_add_extra_ref() on invalid object.\n");
     if (!m) m = get_marker(a);
   }
   else m = get_marker(a);
 
-  if (!(m->flags & GC_GOT_EXTRA_REF))
+  if (!(m->gc_flags & GC_GOT_EXTRA_REF))
     gc_fatal(a, 0, "Thing haven't got an extra gc ref.\n");
-  m->flags &= ~GC_GOT_EXTRA_REF;
+  m->gc_flags &= ~GC_GOT_EXTRA_REF;
   gc_extra_refs--;
 }
 
@@ -2150,7 +2150,7 @@ int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
 
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_is_referenced()");
   }
@@ -2161,25 +2161,25 @@ int debug_gc_is_referenced(void *a)
 
   if (gc_debug) {
     m = find_marker(a);
-    if ((!m || !(m->flags & GC_PRETOUCHED)) &&
+    if ((!m || !(m->gc_flags & GC_PRETOUCHED)) &&
 	!safe_debug_findstring((struct pike_string *) a))
       gc_fatal(a, 0, "Doing gc_is_referenced() on invalid object.\n");
     if (!m) m = get_marker(a);
   }
   else m = get_marker(a);
 
-  if (m->flags & GC_IS_REFERENCED)
+  if (m->gc_flags & GC_IS_REFERENCED)
     gc_fatal(a, 0, "gc_is_referenced() called twice for thing.\n");
-  m->flags |= GC_IS_REFERENCED;
+  m->gc_flags |= GC_IS_REFERENCED;
 
-  return !(m->flags & GC_NOT_REFERENCED);
+  return !(m->gc_flags & GC_NOT_REFERENCED);
 }
 
 int gc_mark_external (void *a, const char *place)
 {
   struct marker *m;
 
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_mark_external()");
   }
@@ -2211,7 +2211,7 @@ int gc_mark_external (void *a, const char *place)
 
   m=get_marker(a);
   m->xrefs++;
-  m->flags|=GC_XREFERENCED;
+  m->gc_flags|=GC_XREFERENCED;
   if(Pike_in_gc == GC_PASS_CHECK &&
      (m->gc_refs + m->xrefs > *(INT32 *)a ||
       (m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)))
@@ -2385,7 +2385,7 @@ int gc_do_weak_free(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_do_weak_free()");
   }
@@ -2410,7 +2410,7 @@ int gc_do_weak_free(void *a)
       goto should_free;
   }
   else
-    if (!(m->flags & GC_MARKED)) {
+    if (!(m->gc_flags & GC_MARKED)) {
 #ifdef PIKE_DEBUG
       if (m->weak_refs <= 0)
 	gc_fatal(a, 0, "Too many weak refs cleared to thing with external "
@@ -2425,7 +2425,7 @@ should_free:
   gc_ext_weak_refs--;
 #ifdef PIKE_DEBUG
   m->saved_refs--;
-  m->flags |= GC_WEAK_FREED;
+  m->gc_flags |= GC_WEAK_FREED;
 #endif
 
   if (*(INT32 *) a == 1) {
@@ -2433,7 +2433,7 @@ should_free:
      * handle cascading frees now. We'll do it in the free pass
      * instead. */
     gc_add_extra_ref(a);
-    m->flags |= GC_GOT_DEAD_REF;
+    m->gc_flags |= GC_GOT_DEAD_REF;
 #ifdef PIKE_DEBUG
     delayed_freed++;
 #endif
@@ -2447,7 +2447,7 @@ void gc_delayed_free(void *a, int type)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_delayed_free()");
   }
@@ -2467,7 +2467,7 @@ void gc_delayed_free(void *a, int type)
   m = get_marker(a);
 #endif
 
-  if (m->flags & GC_MARKED) {
+  if (m->gc_flags & GC_MARKED) {
     /* Note that we can get marked things here, e.g. if the index in a
      * mapping with weak indices is removed in the zap weak pass, the
      * value will be zapped too, but it will still have a mark from
@@ -2485,7 +2485,7 @@ void gc_delayed_free(void *a, int type)
   }
 
   gc_add_extra_ref(a);
-  m->flags |= GC_GOT_DEAD_REF;
+  m->gc_flags |= GC_GOT_DEAD_REF;
 }
 
 int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
@@ -2504,7 +2504,7 @@ int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
    * gc_free_(short_)svalue works. */
 
 #ifdef PIKE_DEBUG
-  if (gc_is_watching && m && m->flags & GC_WATCHED) {
+  if (gc_is_watching && m && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_mark()");
   }
@@ -2523,22 +2523,22 @@ int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
      * external references. That happens only when a thing also have
      * internal cyclic nonweak refs. */
 #ifdef PIKE_DEBUG
-    if (!(m->flags & GC_MARKED))
+    if (!(m->gc_flags & GC_MARKED))
       gc_fatal_2 (a, type, 0, "gc_mark() called for thing in zap weak pass "
 		  "that wasn't marked before.\n");
 #endif
-    if (m->flags & GC_FREE_VISITED) {
+    if (m->gc_flags & GC_FREE_VISITED) {
       debug_malloc_touch (a);
       return 0;
     }
     else {
       debug_malloc_touch (a);
-      m->flags |= GC_FREE_VISITED;
+      m->gc_flags |= GC_FREE_VISITED;
       return 1;
     }
   }
 
-  else if (m->flags & GC_MARKED) {
+  else if (m->gc_flags & GC_MARKED) {
     debug_malloc_touch (a);
 #ifdef PIKE_DEBUG
     if (m->weak_refs != 0)
@@ -2554,7 +2554,7 @@ int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
       gc_ext_weak_refs -= m->weak_refs;
       m->weak_refs = 0;
     }
-    m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
+    m->gc_flags = (m->gc_flags & ~GC_NOT_REFERENCED) | GC_MARKED;
     DO_IF_DEBUG(marked++);
     return 1;
   }
@@ -2583,7 +2583,7 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 #ifdef PIKE_DEBUG
   {
     struct marker *m;
-    if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
+    if (gc_is_watching && (m = find_marker(data)) && m->gc_flags & GC_WATCHED) {
       /* This is useful to set breakpoints on. */
       gc_watched_found (m, "gc_cycle_enqueue()");
     }
@@ -2767,7 +2767,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
   struct marker *pm;
 
 #ifdef PIKE_DEBUG
-  if (gc_is_watching && m && m->flags & GC_WATCHED) {
+  if (gc_is_watching && m && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_cycle_push()");
   }
@@ -2777,13 +2777,13 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
   if (!data) Pike_fatal ("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
     Pike_fatal("GC cycle push attempted in invalid pass.\n");
-  if (gc_debug && !(m->flags & GC_PRETOUCHED))
+  if (gc_debug && !(m->gc_flags & GC_PRETOUCHED))
     gc_fatal (data, 0, "gc_cycle_push() called for untouched thing.\n");
   if (!gc_destruct_everything) {
-    if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
+    if ((!(m->gc_flags & GC_NOT_REFERENCED) || m->gc_flags & GC_MARKED) &&
 	*(INT32 *) data)
       gc_fatal (data, 1, "Got a referenced marker to gc_cycle_push.\n");
-    if (m->flags & GC_XREFERENCED)
+    if (m->gc_flags & GC_XREFERENCED)
       gc_fatal (data, 1, "Doing cycle check in externally referenced thing "
 		"missed in mark pass.\n");
   }
@@ -2814,7 +2814,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
   if (stack_top->rf_flags & GC_MARK_LIVE) {
     /* Only recurse through things already handled; we'll get to the
      * other later in the normal recursion. */
-    if (m->flags & GC_CYCLE_CHECKED && !(m->flags & GC_LIVE)) {
+    if (m->gc_flags & GC_CYCLE_CHECKED && !(m->gc_flags & GC_LIVE)) {
       CYCLE_DEBUG_MSG (m->frame, "gc_cycle_push, mark live");
       goto mark_live;
     }
@@ -3008,7 +3008,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
   }
 
   else
-    if (!(m->flags & GC_CYCLE_CHECKED)) {
+    if (!(m->gc_flags & GC_CYCLE_CHECKED)) {
       struct gc_rec_frame *r;
 #ifdef PIKE_DEBUG
       cycle_checked++;
@@ -3016,7 +3016,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	gc_fatal (data, 0, "Marker already got a frame.\n");
 #endif
 
-      m->flags |= GC_CYCLE_CHECKED | (pm ? pm->flags & GC_LIVE : 0);
+      m->gc_flags |= GC_CYCLE_CHECKED | (pm ? pm->gc_flags & GC_LIVE : 0);
       m->frame = r = gc_cycle_enqueue_rec (data);
       debug_malloc_touch (data);
       if (weak) {
@@ -3038,7 +3038,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 
   /* Should normally not recurse now, but got to do that anyway if we
    * must propagate GC_LIVE flags. */
-  if (!pm || !(pm->flags & GC_LIVE) || m->flags & GC_LIVE) {
+  if (!pm || !(pm->gc_flags & GC_LIVE) || m->gc_flags & GC_LIVE) {
     CYCLE_DEBUG_MSG (m->frame ? m->frame : NULL, "gc_cycle_push, no recurse");
     return 0;
   }
@@ -3052,13 +3052,13 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 
 mark_live:
 #ifdef PIKE_DEBUG
-  if (m->flags & GC_LIVE)
+  if (m->gc_flags & GC_LIVE)
     Pike_fatal("Shouldn't mark live recurse when there's nothing to do.\n");
 #endif
-  m->flags |= GC_LIVE;
+  m->gc_flags |= GC_LIVE;
   debug_malloc_touch (data);
 
-  if (m->flags & GC_GOT_DEAD_REF) {
+  if (m->gc_flags & GC_GOT_DEAD_REF) {
     /* A thing previously popped as dead is now being marked live.
      * Have to remove the extra ref added by gc_cycle_pop(). */
     gc_free_extra_ref (data);
@@ -3102,17 +3102,17 @@ static void gc_cycle_pop()
     {
       void *data = popped->data;
       struct marker *m = find_marker (data);
-      if (gc_is_watching && m && m->flags & GC_WATCHED) {
+      if (gc_is_watching && m && m->gc_flags & GC_WATCHED) {
 	/* This is useful to set breakpoints on. */
 	gc_watched_found (m, "gc_cycle_pop()");
       }
-      if (!(m->flags & GC_CYCLE_CHECKED))
+      if (!(m->gc_flags & GC_CYCLE_CHECKED))
 	gc_fatal (data, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
       if (!gc_destruct_everything) {
-	if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
+	if ((!(m->gc_flags & GC_NOT_REFERENCED) || m->gc_flags & GC_MARKED) &&
 	    *(INT32 *) data)
 	  gc_fatal (data, 1, "Got a referenced marker to gc_cycle_pop.\n");
-	if (m->flags & GC_XREFERENCED)
+	if (m->gc_flags & GC_XREFERENCED)
 	  gc_fatal (data, 1, "Doing cycle check in externally referenced thing "
 		    "missed in mark pass.\n");
       }
@@ -3190,7 +3190,7 @@ static void gc_cycle_pop()
 	struct marker *m = find_marker (popped->data);
 	struct gc_rec_frame *next = popped->cycle_piece;
 
-	if (m->flags & GC_LIVE_OBJ) {
+	if (m->gc_flags & GC_LIVE_OBJ) {
 	  /* Move to the kill list. */
 #ifdef PIKE_DEBUG
 	  popped->rf_flags &= ~GC_ON_CYCLE_PIECE_LIST;
@@ -3210,7 +3210,7 @@ static void gc_cycle_pop()
 
 	  /* This extra ref is taken away in the kill pass. Don't add one
 	   * if it got an extra ref already due to weak free. */
-	  if (!(m->flags & GC_GOT_DEAD_REF))
+	  if (!(m->gc_flags & GC_GOT_DEAD_REF))
 	    gc_add_extra_ref (popped->data);
 
 	  CHECK_KILL_LIST_FRAME (popped);
@@ -3218,19 +3218,19 @@ static void gc_cycle_pop()
 	}
 
 	else {
-	  if (!(m->flags & GC_LIVE)) {
+	  if (!(m->gc_flags & GC_LIVE)) {
 	    /* Add an extra ref which is taken away in the free pass. This
 	     * is done to not refcount garb the cycles themselves
 	     * recursively, which in bad cases can consume a lot of C
 	     * stack. */
-	    if (!(m->flags & GC_GOT_DEAD_REF)) {
+	    if (!(m->gc_flags & GC_GOT_DEAD_REF)) {
 	      gc_add_extra_ref (popped->data);
-	      m->flags |= GC_GOT_DEAD_REF;
+	      m->gc_flags |= GC_GOT_DEAD_REF;
 	    }
 	  }
 #ifdef PIKE_DEBUG
 	  else
-	    if (m->flags & GC_GOT_DEAD_REF)
+	    if (m->gc_flags & GC_GOT_DEAD_REF)
 	      gc_fatal (popped->data, 0, "Didn't expect a dead extra ref.\n");
 #endif
 
@@ -3263,7 +3263,7 @@ int gc_do_free(void *a)
 {
   struct marker *m;
 #ifdef PIKE_DEBUG
-  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+  if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_do_free()");
   }
@@ -3279,7 +3279,7 @@ int gc_do_free(void *a)
     /* We don't actually free much in this mode, just destruct
      * objects. So when we normally would return nonzero we just
      * remove the extra ref again. */
-    if (!(m->flags & GC_LIVE)) {
+    if (!(m->gc_flags & GC_LIVE)) {
       if (*(INT32 *) a == 1)
 	return 1;
       else {
@@ -3291,23 +3291,23 @@ int gc_do_free(void *a)
   }
 
 #ifdef PIKE_DEBUG
-  if (*(INT32 *) a > !!(m->flags & GC_GOT_EXTRA_REF)) {
+  if (*(INT32 *) a > !!(m->gc_flags & GC_GOT_EXTRA_REF)) {
     if (!gc_destruct_everything &&
-	(!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED))
+	(!(m->gc_flags & GC_NOT_REFERENCED) || m->gc_flags & GC_MARKED))
       gc_fatal(a, 0, "gc_do_free() called for referenced thing.\n");
     if (gc_debug &&
-	(m->flags & (GC_PRETOUCHED|GC_MARKED|GC_IS_REFERENCED)) == GC_PRETOUCHED)
+	(m->gc_flags & (GC_PRETOUCHED|GC_MARKED|GC_IS_REFERENCED)) == GC_PRETOUCHED)
       gc_fatal(a, 0, "gc_do_free() called without prior call to "
 	       "gc_mark() or gc_is_referenced().\n");
   }
   if(!gc_destruct_everything &&
-     (m->flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
+     (m->gc_flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
     gc_fatal(a, 1, "Thing with external reference missed in gc mark pass.\n");
-  if ((m->flags & (GC_DO_FREE|GC_LIVE)) == GC_LIVE) live_ref++;
-  m->flags |= GC_DO_FREE;
+  if ((m->gc_flags & (GC_DO_FREE|GC_LIVE)) == GC_LIVE) live_ref++;
+  m->gc_flags |= GC_DO_FREE;
 #endif
 
-  return !(m->flags & GC_LIVE);
+  return !(m->gc_flags & GC_LIVE);
 }
 
 #if 0
@@ -3674,7 +3674,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 #ifdef PIKE_DEBUG
 #ifdef DEBUG_MALLOC
     PTR_HASH_LOOP(marker, i, m)
-      if (!(m->flags & (GC_POSTTOUCHED|GC_WEAK_FREED)) &&
+      if (!(m->gc_flags & (GC_POSTTOUCHED|GC_WEAK_FREED)) &&
 	  dmalloc_is_invalid_memory_block(m->data)) {
 	fprintf(stderr, "Found a stray marker after posttouch pass: ");
 	describe_marker(m);
@@ -3807,13 +3807,13 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
       struct object *o = (struct object *) kill_list->data;
 
 #ifdef PIKE_DEBUG
-      if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
+      if ((get_marker(kill_list->data)->gc_flags & (GC_LIVE|GC_LIVE_OBJ)) !=
 	  (GC_LIVE|GC_LIVE_OBJ))
 	gc_fatal(o, 0, "Invalid object on kill list.\n");
       if (o->prog && (o->prog->flags & PROGRAM_USES_PARENT) &&
 	  PARENT_INFO(o)->parent &&
 	  !PARENT_INFO(o)->parent->prog &&
-	  get_marker(PARENT_INFO(o)->parent)->flags & GC_LIVE_OBJ)
+	  get_marker(PARENT_INFO(o)->parent)->gc_flags & GC_LIVE_OBJ)
 	gc_fatal(o, 0, "GC destructed parent prematurely.\n");
 #endif
 

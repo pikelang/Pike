@@ -103,7 +103,7 @@ extern int gc_keep_markers;
 #define LOW_GC_ALLOC(OBJ) do {						\
  num_objects++;								\
  num_allocs++;								\
- gc_init_marker(&(OBJ)->m);                                             \
+ gc_init_marker(OBJ);                                                   \
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
@@ -239,17 +239,17 @@ struct gc_rec_frame;
  * might still take place so the thing runs out of refs too early. */
 #endif
 
-extern unsigned INT32 gc_generation;
+extern unsigned INT16 gc_generation;
 
 static inline struct marker *find_marker(void *ptr) {
-    struct marker *m = (struct marker *)((char*)ptr + 8);
+    struct marker *m = (struct marker *)ptr;
 
     if (m->gc_generation != gc_generation) return NULL;
     return m;
 }
 
 static inline struct marker *get_marker(void *ptr) {
-    struct marker *m = (struct marker *)((char*)ptr + 8);
+    struct marker *m = (struct marker *)ptr;
 
     if (m->gc_generation != gc_generation) {
         gc_init_marker(m);
@@ -452,15 +452,15 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char
 #ifdef PIKE_DEBUG
 
 #define gc_checked_as_weak(X) do {					\
-  get_marker(X)->flags |= GC_CHECKED_AS_WEAK;				\
+  get_marker(X)->gc_flags |= GC_CHECKED_AS_WEAK;			\
 } while (0)
 #define gc_assert_checked_as_weak(X) do {				\
-  if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
+  if (!(find_marker(X)->gc_flags & GC_CHECKED_AS_WEAK))			\
     Pike_fatal("A thing was checked as nonweak but "			\
 	       "marked or cycle checked as weak.\n");			\
 } while (0)
 #define gc_assert_checked_as_nonweak(X) do {				\
-  if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
+  if (find_marker(X)->gc_flags & GC_CHECKED_AS_WEAK)			\
     Pike_fatal("A thing was checked as weak but "			\
 	       "marked or cycle checked as nonweak.\n");		\
 } while (0)
@@ -515,7 +515,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char
 #define gc_is_referenced(X) \
   DMALLOC_TOUCH_MARKER(X, debug_gc_is_referenced(debug_malloc_pass(X)))
 #else
-#define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
+#define gc_is_referenced(X) !(get_marker(X)->gc_flags & GC_NOT_REFERENCED)
 #endif
 
 #define add_gc_callback(X,Y,Z) \
@@ -564,7 +564,7 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER(X, TYPE, WEAK) do {				\
   void *_thing_ = (X);							\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_MARKED)) {					\
+  if (!(_m_->gc_flags & GC_MARKED)) {					\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
 	Pike_fatal("Recursing immediately in gc cycle check.\n");	\
@@ -575,9 +575,9 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER_OBJECT(X, WEAK) do {				\
   struct object *_thing_ = (X);						\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_MARKED)) {					\
+  if (!(_m_->gc_flags & GC_MARKED)) {					\
     if (gc_object_is_live (_thing_))					\
-      _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
+      _m_->gc_flags |= GC_LIVE|GC_LIVE_OBJ;				\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
 	Pike_fatal("Recursing immediately in gc cycle check.\n");	\

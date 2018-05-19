@@ -167,16 +167,16 @@ static void check_mapping_type_fields(const struct mapping *m)
 #endif
 
 static struct mapping_data empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, GC_HEADER_INIT(), 0,0,0,0,0,0, 0,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, 0,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&empty_data.hash, 0), {0}};
 static struct mapping_data weak_ind_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, GC_HEADER_INIT(), 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_ind_empty_data.hash, 0), {0}};
 static struct mapping_data weak_val_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, GC_HEADER_INIT(), 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_val_empty_data.hash, 0), {0}};
 static struct mapping_data weak_both_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, GC_HEADER_INIT(), 0,0,0,0,0,0, MAPPING_WEAK,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
 /*
@@ -251,7 +251,7 @@ static void init_mapping(struct mapping *m,
     }
   }
   add_ref(md);
-  gc_init_marker(&md->m);
+  gc_init_marker(md);
   m->data=md;
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = md->size;
@@ -685,7 +685,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
   nmd=(struct mapping_data *)xalloc(size);
   memcpy(nmd, md, size);
-  gc_init_marker(&nmd->m);
+  gc_init_marker(nmd);
   off=((char *)nmd) - ((char *)md);
 
   RELOC(nmd->free_list);

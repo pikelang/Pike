@@ -24,9 +24,8 @@ void TYPE_STACK_DEBUG(const char *fun);
  */
 struct pike_type
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   unsigned INT32 hash;
-  struct marker m;
   struct pike_type *next;
   unsigned INT32 flags;
   unsigned INT16 type;

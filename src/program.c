@@ -3117,7 +3117,7 @@ struct program *low_allocate_program(void)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
-  gc_init_marker(&p->m);
+  gc_init_marker(p);
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
 

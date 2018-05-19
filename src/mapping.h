@@ -27,9 +27,8 @@ struct keypair
 
 struct mapping_data
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   INT32 valrefs; /* lock values too */
-  struct marker m;
   INT32 hardlinks;
   INT32 size, hashsize;
   INT32 num_keypairs;
@@ -45,10 +44,7 @@ struct mapping_data
 
 struct mapping
 {
-  INT32 refs;
-  INT32 ___fill_to_marker; /* Fill 32 bit to marker (32 bit systems do
-                            * not pad as required). */
-  struct marker m;
+  GC_MARKER_MEMBERS;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif

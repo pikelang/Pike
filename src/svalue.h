@@ -899,7 +899,7 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 
 #endif /* !NO_PIKE_SHORTHAND */
 
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) GC_HEADER_INIT(refs)
 
 #define INIT_PIKE_MEMOBJ(X, TYPE) do {                  \
   struct ref_dummy *v_=(struct ref_dummy *)(X);         \

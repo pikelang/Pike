@@ -15,9 +15,8 @@
 
 struct object
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   unsigned INT32 flags;
-  struct marker m;
   struct program *prog;
   struct object *next;
   struct object *prev;

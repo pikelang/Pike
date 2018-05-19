@@ -28,7 +28,11 @@ enum struct_type {
 
 struct pike_string
 {
+#ifdef PIKE_DEBUG
+  GC_MARKER_MEMBERS
+#else
   INT32 refs;
+#endif
   unsigned char flags;
 #ifdef __GCC__
   enum size_shift   size_shift:2;
@@ -45,9 +49,6 @@ struct pike_string
 #endif /* __GCC__ */
   unsigned char  min;
   unsigned char  max;
-#ifdef PIKE_DEBUG
-  struct marker m;
-#endif
   ptrdiff_t len; /* Not counting terminating NUL. */
   size_t hval;
   struct pike_string *next;

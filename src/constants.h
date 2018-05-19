@@ -18,10 +18,9 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   INT16 flags; /* OPT_* */
   INT16 internal_flags;
-  struct marker m;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;

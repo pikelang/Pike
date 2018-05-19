@@ -262,7 +262,7 @@ PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
     struct pike_type *t = ba_alloc(&type_allocator);
-    gc_init_marker(&t->m);
+    gc_init_marker(t);
     return t;
 }
 
@@ -559,7 +559,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   debug_malloc_pass(t = ba_alloc(&type_allocator));
 
   t->refs = 0;
-  gc_init_marker(&t->m);
+  gc_init_marker(t);
   add_ref(t);	/* For DMALLOC... */
   t->type = type;
   t->flags = 0;

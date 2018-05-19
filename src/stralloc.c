@@ -662,7 +662,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
    * allocations fail
    */
 #ifdef PIKE_DEBUG
-  gc_init_marker(&t->m);
+  gc_init_marker(t);
 #endif
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->alloc_type = STRING_ALLOC_STATIC;

@@ -195,8 +195,8 @@ struct multiset *gc_internal_multiset = NULL;
 static struct multiset *gc_mark_multiset_pos = NULL;
 
 static struct multiset_data empty_ind_msd = {
-  1, 0,
-  GC_HEADER_INIT(), NULL, NULL,
+  GC_HEADER_INIT(1), 0,
+  NULL, NULL,
   SVALUE_INIT_INT (0),
   0, 0, 0,
   BIT_INT,
@@ -273,7 +273,7 @@ static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
 #endif
 
   msd = xalloc ( NODE_OFFSET (msnode_ind, allocsize) );
-  gc_init_marker(&msd->m);
+  gc_init_marker(msd);
   msd->refs = msd->noval_refs = 0;
   msd->root = NULL;
   msd->allocsize = allocsize;
@@ -3290,9 +3290,9 @@ void gc_check_all_multisets (void)
     struct multiset_data *msd = l->msd;
     struct marker *m = get_marker (msd);
 
-    if (!(m->flags & GC_MSD_VISITED))
+    if (!(m->gc_flags & GC_MSD_VISITED))
       GC_ENTER (l, T_MULTISET) {
-	if (m->gc_refs < msd->refs) m->flags |= GC_MSD_GOT_EXT_REFS;
+	if (m->gc_refs < msd->refs) m->gc_flags |= GC_MSD_GOT_EXT_REFS;
 
 	if (msd->root) {
 	  union msnode *node = low_multiset_first (msd);
@@ -3300,7 +3300,7 @@ void gc_check_all_multisets (void)
 
 #define WITH_NODES_BLOCK(TYPE, IND)					\
 	  if (!(msd->flags & MULTISET_WEAK) ||				\
-	      (m->flags & GC_MSD_GOT_EXT_REFS))				\
+	      (m->gc_flags & GC_MSD_GOT_EXT_REFS))				\
 	    do {							\
 	      low_use_multiset_index (node, ind);			\
 	      debug_gc_check_svalues (&ind, 1, " as multiset index");	\
@@ -3337,8 +3337,8 @@ void gc_check_all_multisets (void)
 #undef WITH_NODES_BLOCK
 	}
 
-	if (l->node_refs) m->flags |= GC_MSD_GOT_NODE_REFS | GC_MSD_VISITED;
-	else m->flags |= GC_MSD_VISITED;
+	if (l->node_refs) m->gc_flags |= GC_MSD_GOT_NODE_REFS | GC_MSD_VISITED;
+	else m->gc_flags |= GC_MSD_VISITED;
       } GC_LEAVE;
   }
 }
@@ -3486,7 +3486,7 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	struct marker *m = get_marker (msd);
 	TYPE_FIELD ind_types = 0, val_types = 0;
 
-	if (m->flags & GC_MSD_GOT_EXT_REFS) {
+	if (m->gc_flags & GC_MSD_GOT_EXT_REFS) {
 	  /* Must leave the multiset data untouched if there are direct
 	   * external refs to it. */
 	  GC_RECURSE_MSD_IN_USE (msd, gc_mark_svalues, ind_types, val_types);
@@ -3496,26 +3496,26 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	else {
 	  switch (msd->flags & MULTISET_WEAK) {
 	    case 0:
-	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	      GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			  GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_NONE,
 			  gc_mark, ind_types, val_types);
 	      gc_assert_checked_as_nonweak (msd);
 	      break;
 	    case MULTISET_WEAK_INDICES:
-	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	      GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			  GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_IND,
 			  gc_mark, ind_types, val_types);
 	      gc_assert_checked_as_weak (msd);
 	      break;
 #if MULTISET_WEAK_VALUES
 	    case MULTISET_WEAK_VALUES:
-	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	      GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			  GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_VAL,
 			  gc_mark, ind_types, val_types);
 	      gc_assert_checked_as_weak (msd);
 	      break;
 	    default:
-	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	      GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			  GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_BOTH,
 			  gc_mark, ind_types, val_types);
 	      gc_assert_checked_as_weak (msd);
@@ -3558,7 +3558,7 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
       struct marker *m = get_marker (msd);
       TYPE_FIELD ind_types = 0, val_types = 0;
 
-      if (m->flags & GC_MSD_GOT_EXT_REFS) {
+      if (m->gc_flags & GC_MSD_GOT_EXT_REFS) {
 	/* Must leave the multiset data untouched if there are direct
 	 * external refs to it. */
 	GC_RECURSE_MSD_IN_USE (msd, gc_cycle_check_svalues, ind_types, val_types);
@@ -3568,26 +3568,26 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
       else {
 	switch (msd->flags & MULTISET_WEAK) {
 	  case 0:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	    GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_NONE,
 			gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_nonweak (msd);
 	    break;
 	  case MULTISET_WEAK_INDICES:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	    GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_IND,
 			gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak (msd);
 	    break;
 #if MULTISET_WEAK_VALUES
 	  case MULTISET_WEAK_VALUES:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	    GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_VAL,
 			gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak (msd);
 	    break;
 	  default:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+	    GC_RECURSE (msd, m->gc_flags & GC_MSD_GOT_NODE_REFS,
 			GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_BOTH,
 			gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak (msd);
