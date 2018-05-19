@@ -29,7 +29,7 @@ enum struct_type {
 struct pike_string
 {
 #ifdef PIKE_DEBUG
-  GC_MARKER_MEMBERS
+  GC_MARKER_MEMBERS;
 #else
   INT32 refs;
 #endif
