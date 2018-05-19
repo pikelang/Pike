@@ -1003,7 +1003,7 @@ static void describe_marker(struct marker *m)
   if (m) {
     fprintf(stderr, "marker at %p: flags=0x%05lx refs=%d weak=%d "
 	    "xrefs=%d saved=%d frame=%p",
-	    m, (long) m->flags, m->gc_refs, m->weak_refs,
+	    m, (long) m->gc_flags, m->gc_refs, m->weak_refs,
 	    m->xrefs, m->saved_refs, m->frame);
     if (m->frame) {
       fputs(" [", stderr);
