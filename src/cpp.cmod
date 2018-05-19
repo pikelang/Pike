@@ -5328,7 +5328,7 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
   }
 }
-/* ! @endclass CPP
+/*! @endclass CPP
  */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
