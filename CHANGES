@@ -524,3 +524,10 @@ o C99 assumed
 
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
+
+Optimizations
+-------------
+
+o Removed the GC marker hash table. For types which require GC markers,
+  they are now allocated as parf of the data type. This significantly
+  improves GC performance ( up to a factor if 2 in some situations ).
