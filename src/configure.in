@@ -3029,6 +3029,7 @@ if test "x$ac_cv_sizeof_off64_t" = "x0"; then :; else
   AC_MSG_CHECKING(if off64_t is a scalar integer)
   AC_TRY_COMPILE([
 #include <stdio.h>
+#include <sys/types.h>
 
 off64_t var = 17;
 ],[],[
