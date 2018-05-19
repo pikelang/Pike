@@ -1,3 +1,13 @@
+Changes since Pike 8.0.610 (release 12)
+
+Bug fixes
+---------
+
+o Stdio.Buffer
+
+  Eliminates race condition in read_cstring().
+
+
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
 
