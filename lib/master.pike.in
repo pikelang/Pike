@@ -4045,7 +4045,7 @@ string decode_charset(string data, string charset)
 }
 
 
-//! Class used by @[describe_backtrace() to describe values in backtraces.
+//! Class used by @[describe_backtrace()] to describe values in backtraces.
 class Describer
 {
   int clipped=0;
