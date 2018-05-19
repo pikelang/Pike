@@ -1135,7 +1135,7 @@ void low_describe_something(void *a,
 
   if(depth<0) return;
 
-  if (m = find_marker(a)) {
+  if ((m = find_marker(a))) {
     fprintf(stderr,"%*s**Got gc ",indent,"");
     describe_marker(m);
   }
