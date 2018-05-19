@@ -150,7 +150,10 @@ array(string) gnome_init(string app_id, string app_version,
   pgnome2_is_setup = 1;
   pgtk2_is_setup = 1;
 
-  gtk_set_locale();
+  /* NOTE: pike is not able to run with locale other than "C" at
+   * this point. We can remove this call once pike is locale agnostic.
+   */
+  gtk_disable_setlocale();
 
 /*
   if( args == 4 )
@@ -257,7 +260,10 @@ array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
     argc=1;
   }
   pgtk2_is_setup=1;
-  gtk_set_locale();
+  /* NOTE: pike is not able to run with locale other than "C" at
+   * this point. We can remove this call once pike is locale agnostic.
+   */
+  gtk_disable_setlocale();
   gtk_init(&argc,&data);
 #if GLIB_MAJOR_VERISON > 2 || GLIB_MINOR_VERSION < 36
   g_type_init();
