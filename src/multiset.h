@@ -56,6 +56,8 @@ struct multiset_data
 struct multiset
 {
   INT32 refs;
+  INT32 ___fill_to_marker; /* Fill 32 bit to marker (32 bit systems do not
+                            * not pad as required). */
   struct marker m;
   struct multiset_data *msd;
   struct multiset *next, *prev;
