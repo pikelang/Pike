@@ -7,7 +7,7 @@
 struct marker
 {
   struct gc_rec_frame *frame;	/* Pointer to the cycle check rec frame. */
-  INT32 refs;
+  INT32 gc_refs;
   /* Internal references (both weak and nonweak). Increased during
    * check pass. */
   INT32 weak_refs;

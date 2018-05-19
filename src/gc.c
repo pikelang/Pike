@@ -1003,7 +1003,7 @@ static void describe_marker(struct marker *m)
   if (m) {
     fprintf(stderr, "marker at %p: flags=0x%05lx refs=%d weak=%d "
 	    "xrefs=%d saved=%d frame=%p",
-	    m, (long) m->flags, m->refs, m->weak_refs,
+	    m, (long) m->flags, m->gc_refs, m->weak_refs,
 	    m->xrefs, m->saved_refs, m->frame);
     if (m->frame) {
       fputs(" [", stderr);
@@ -1933,13 +1933,13 @@ static inline struct marker *gc_check_debug(void *a, int weak)
   if (m->saved_refs == -1) m->saved_refs = *(INT32 *)a;
   else if (m->saved_refs != *(INT32 *)a)
     gc_fatal(a, 1, "Refs changed in gc check pass.\n");
-  if (m->refs + m->xrefs >= *(INT32 *) a)
-    /* m->refs will be incremented by the caller. */
+  if (m->gc_refs + m->xrefs >= *(INT32 *) a)
+    /* m->gc_refs will be incremented by the caller. */
     gc_fatal (a, 1, "Thing is getting more internal refs (%d + %d) "
 	      "than refs (%d).\n"
 	      "(Could be an extra free somewhere, or "
 	      "a pointer might have been checked more than once.)\n",
-	      m->refs, m->xrefs, *(INT32 *) a);
+	      m->gc_refs, m->xrefs, *(INT32 *) a);
   checked++;
 
   return m;
@@ -1964,9 +1964,8 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   m = get_marker(a);
 #endif
 
-  ret=m->refs;
-  add_ref(m);
-  if (m->refs == *(INT32 *) a)
+  ret=m->gc_refs++;
+  if (m->gc_refs == *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;
 }
@@ -1988,7 +1987,7 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
     gc_fatal(a, 1, "Thing has already reached threshold for weak free.\n");
   if (m->weak_refs >= *(INT32 *) a)
     gc_fatal(a, 1, "Thing has gotten more weak refs than refs.\n");
-  if (m->weak_refs > m->refs + 1)
+  if (m->weak_refs > m->gc_refs + 1)
     gc_fatal(a, 1, "Thing has gotten more weak refs than internal refs.\n");
 #else
   m = get_marker(a);
@@ -1999,9 +1998,8 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
   if (m->weak_refs == *(INT32 *) a)
     m->weak_refs = -1;
 
-  ret=m->refs;
-  add_ref(m);
-  if (m->refs == *(INT32 *) a)
+  ret=m->gc_refs++;
+  if (m->gc_refs == *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;
 }
@@ -2215,7 +2213,7 @@ int gc_mark_external (void *a, const char *place)
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
   if(Pike_in_gc == GC_PASS_CHECK &&
-     (m->refs + m->xrefs > *(INT32 *)a ||
+     (m->gc_refs + m->xrefs > *(INT32 *)a ||
       (m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)))
     gc_fatal(a, 1, "Ref counts are wrong.\n");
   return 0;
@@ -2401,7 +2399,7 @@ int gc_do_weak_free(void *a)
   else m = get_marker(a);
   debug_malloc_touch(a);
 
-  if (m->weak_refs > m->refs)
+  if (m->weak_refs > m->gc_refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
 #else
   m = get_marker(a);
@@ -2502,7 +2500,7 @@ int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
 
   m = get_marker (a);
 
-  /* Note: m->refs and m->xrefs are useless already here due to how
+  /* Note: m->gc_refs and m->xrefs are useless already here due to how
    * gc_free_(short_)svalue works. */
 
 #ifdef PIKE_DEBUG

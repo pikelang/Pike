@@ -3292,7 +3292,7 @@ void gc_check_all_multisets (void)
 
     if (!(m->flags & GC_MSD_VISITED))
       GC_ENTER (l, T_MULTISET) {
-	if (m->refs < msd->refs) m->flags |= GC_MSD_GOT_EXT_REFS;
+	if (m->gc_refs < msd->refs) m->flags |= GC_MSD_GOT_EXT_REFS;
 
 	if (msd->root) {
 	  union msnode *node = low_multiset_first (msd);
