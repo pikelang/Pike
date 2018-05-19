@@ -28,6 +28,20 @@
 #define MAKE_TYPE_WORD(t,st) ((st)|((t)<<16))
 #endif
 
+#if _CALL_ELF == 2
+
+#define ADD_CALL(X) do {			\
+    INT64 func_=(INT64)(void*)(X);		\
+						\
+    SET_REG64(12, func_);			\
+    /* mtlr r12 */				\
+    MTSPR(12, PPC_SPREG_LR);			\
+    /* blrl */					\
+    BCLRL(20, 0);				\
+  } while(0)
+
+#else
+
 #define ADD_CALL(X) do {			\
     INT64 func_=(INT64)(void*)(X);		\
 						\
@@ -43,6 +57,8 @@
     /* blrl */					\
     BCLRL(20, 0);				\
   } while(0)
+
+#endif
 
 int ppc64_codegen_state = 0, ppc64_codegen_last_pc = 0;
 static int last_prog_id=-1;
