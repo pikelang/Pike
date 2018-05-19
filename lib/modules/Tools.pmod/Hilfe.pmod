@@ -2163,6 +2163,7 @@ class Evaluator {
 
   protected string hch_errors = "";
   protected string hch_warnings = "";
+
   protected class HilfeCompileHandler (int stack_level) {
 
     protected void create() {
