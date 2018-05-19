@@ -661,6 +661,9 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   /* we mark the string as static here, to avoid double free if the
    * allocations fail
    */
+#ifdef PIKE_DEBUG
+  gc_init_marker(&t->m);
+#endif
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->alloc_type = STRING_ALLOC_STATIC;
   t->struct_type = STRING_STRUCT_STRING;
@@ -687,7 +690,9 @@ static struct pike_string * make_static_string(const char * str, size_t len,
                                                enum size_shift shift)
 {
   struct pike_string * t = ba_alloc(&string_allocator);
-
+#ifdef PIKE_DEBUG
+  gc_init_marker(&t->m);
+#endif
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->size_shift = shift;
   t->alloc_type = STRING_ALLOC_STATIC; 
@@ -737,6 +742,9 @@ PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len
 
   if (!s) {
     s = ba_alloc(&string_allocator);
+#ifdef PIKE_DEBUG
+    gc_init_marker(&s->m);
+#endif
 
     s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
     s->size_shift = shift;
@@ -1878,6 +1886,9 @@ static struct pike_string *make_shared_substring( struct pike_string *s,
     return existing;
   }
   res = ba_alloc(&substring_allocator);
+#ifdef PIKE_DEBUG
+  gc_init_marker(&res->str.m);
+#endif
   res->parent = s;
   s->flags |= STRING_IS_LOCKED;	/* Make sure the string data isn't reallocated. */
   add_ref(s);

@@ -9,6 +9,7 @@
 #include "global.h"
 
 #include "pike_macros.h"
+#include "gc_header.h"
 
 #define STRINGS_ARE_SHARED
 
@@ -44,6 +45,9 @@ struct pike_string
 #endif /* __GCC__ */
   unsigned char  min;
   unsigned char  max;
+#ifdef PIKE_DEBUG
+  struct marker m;
+#endif
   ptrdiff_t len; /* Not counting terminating NUL. */
   size_t hval;
   struct pike_string *next;

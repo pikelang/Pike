@@ -16,6 +16,7 @@
 #include "pike_rusage.h"
 #include "block_allocator.h"
 #include "string_builder.h"
+#include "gc_header.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
@@ -618,8 +619,9 @@ struct identifier_lookup_cache
 struct program
 {
   INT32 refs;
-
   INT32 id;             /* used to identify program in caches */
+  struct marker m;
+
   /* storage_needed - storage needed in object struct
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.

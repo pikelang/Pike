@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
+#include "gc_header.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MAPPING_WEAK_INDICES	2
@@ -28,6 +29,7 @@ struct mapping_data
 {
   INT32 refs;
   INT32 valrefs; /* lock values too */
+  struct marker m;
   INT32 hardlinks;
   INT32 size, hashsize;
   INT32 num_keypairs;
@@ -44,6 +46,7 @@ struct mapping_data
 struct mapping
 {
   INT32 refs;
+  struct marker m;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif

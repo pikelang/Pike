@@ -2043,6 +2043,7 @@ struct pike_frame *alloc_pike_frame(void)
       PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
       free_pike_frame = res->next;
       PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
+      gc_init_marker(&res->m);
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
       res->flags=0;

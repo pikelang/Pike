@@ -28,6 +28,7 @@
 #include "pike_compiler.h"
 #include "block_allocator.h"
 #include "bitvector.h"
+#include "gc_header.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -260,7 +261,9 @@ PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
 
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
-    return ba_alloc(&type_allocator);
+    struct pike_type *t = ba_alloc(&type_allocator);
+    gc_init_marker(&t->m);
+    return t;
 }
 
 PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s) {
@@ -556,6 +559,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   debug_malloc_pass(t = ba_alloc(&type_allocator));
 
   t->refs = 0;
+  gc_init_marker(&t->m);
   add_ref(t);	/* For DMALLOC... */
   t->type = type;
   t->flags = 0;
@@ -9102,9 +9106,16 @@ void gc_check_type (struct pike_type *t)
       case T_OR:
       case T_AND:
       case PIKE_T_RING:
+	debug_gc_check (t->car, " as car in a type");
+	debug_gc_check (t->cdr, " as cdr in a type");
+	break;
       case PIKE_T_ATTRIBUTE:
       case PIKE_T_NAME:
+#ifdef PIKE_DEBUG
+        /* this is a string and without PIKE_DEBUG
+         * they are not touched by the GC */
 	debug_gc_check (t->car, " as car in a type");
+#endif
 	debug_gc_check (t->cdr, " as cdr in a type");
 	break;
       case T_ARRAY:
@@ -9157,7 +9168,7 @@ void gc_check_all_types (void)
     for(t = pike_type_hash[e]; t; t=t->next) {
       if (gc_keep_markers) {
 	/* Make sure that leaked types also have markers at cleanup... */
-	(void)pmod_get_marker(t);
+	(void)get_marker(t);
       }
       gc_check_type(t);
     }

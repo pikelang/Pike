@@ -172,7 +172,7 @@ int got_unlinked_things;
 ALLOC_COUNT_TYPE num_allocs =0;
 ALLOC_COUNT_TYPE alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
-int gc_generation = 0;
+unsigned INT32 gc_generation = 1;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
 #ifdef DO_PIKE_CLEANUP
@@ -565,47 +565,7 @@ struct callback *debug_add_gc_callback(callback_func call,
   return add_to_callback(&gc_callbacks, call, arg, free_func);
 }
 
-static void init_gc(void);
 static void gc_cycle_pop();
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT next
-
-#undef INIT_BLOCK
-#ifdef PIKE_DEBUG
-#define INIT_BLOCK(X)					\
-  (X)->flags=(X)->refs=(X)->weak_refs=(X)->xrefs=0;	\
-  (X)->saved_refs=-1;					\
-  (X)->frame = 0;
-#else
-#define INIT_BLOCK(X)					\
-  (X)->flags=(X)->refs=(X)->weak_refs=0;		\
-  (X)->frame = 0;
-#endif
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f)
-
-#undef get_marker
-#define get_marker debug_get_marker
-#undef find_marker
-#define find_marker debug_find_marker
-
-PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
-
-#undef get_marker
-#define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
-#undef find_marker
-#define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
-
-PMOD_EXPORT struct marker *pmod_get_marker (void *p)
-{
-  return debug_get_marker (p);
-}
-
-PMOD_EXPORT struct marker *pmod_find_marker (void *p)
-{
-  return debug_find_marker (p);
-}
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
 PMOD_EXPORT void *gc_found_in = NULL;
@@ -1175,7 +1135,7 @@ void low_describe_something(void *a,
 
   if(depth<0) return;
 
-  if (marker_hash_table && (m = find_marker(a))) {
+  if (m = find_marker(a)) {
     fprintf(stderr,"%*s**Got gc ",indent,"");
     describe_marker(m);
   }
@@ -1758,7 +1718,6 @@ PMOD_EXPORT void debug_describe_svalue(struct svalue *s)
 PMOD_EXPORT void gc_watch(void *a)
 {
   struct marker *m;
-  init_gc();
   m = get_marker(a);
   if (!(m->flags & GC_WATCHED)) {
     m->flags |= GC_WATCHED;
@@ -1771,8 +1730,8 @@ PMOD_EXPORT void gc_watch(void *a)
 
 static void gc_watched_found (struct marker *m, const char *found_in)
 {
-  fprintf(stderr, "## Watched thing %p with %d refs found in "
-	  "%s in pass %d.\n", m->data, *(INT32 *) m->data, found_in, Pike_in_gc);
+  fprintf(stderr, "## Watched thing found in "
+	  "%s in pass %d.\n", found_in, Pike_in_gc);
   describe_marker (m);
 }
 
@@ -1885,11 +1844,11 @@ void debug_gc_touch(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_touch()");
   }
-  if (!a) Pike_fatal("Got null pointer.\n");
 #endif
 
   switch (Pike_in_gc) {
@@ -2049,51 +2008,6 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
 
 static void cleanup_markers (void)
 {
-#ifdef DO_PIKE_CLEANUP
-  size_t e=0;
-
-  if (gc_keep_markers) {
-    /* Carry over any GC_CLEANUP_LEAKED flags but reinitialize them
-     * otherwise. */
-    for(e=0;e<marker_hash_table_size;e++) {
-      struct marker *m;
-      for (m = marker_hash_table[e]; m; m = m->next) {
-#ifdef PIKE_DEBUG
-	m->flags &= GC_CLEANUP_LEAKED;
-	m->xrefs = 0;
-	m->saved_refs = -1;
-#else
-	m->flags = 0;
-#endif
-	m->refs = m->weak_refs = 0;
-	m->frame = 0;
-      }
-    }
-    return;
-  }
-
-  for(e=0;e<marker_hash_table_size;e++)
-    while(marker_hash_table[e])
-      remove_marker(marker_hash_table[e]->data);
-#endif
-  exit_marker_hash();
-}
-
-static void init_gc(void)
-{
-#ifdef PIKE_DEBUG
-  if (!gc_is_watching) {
-#endif
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-    /* The marker hash table is left around after a previous gc if
-     * gc_keep_markers is set. */
-    if (marker_hash_table) cleanup_markers();
-    if (!marker_hash_table)
-#endif
-      low_init_marker_hash(num_objects);
-#ifdef PIKE_DEBUG
-  }
-#endif
 }
 
 void exit_gc(void)
@@ -2142,12 +2056,6 @@ PMOD_EXPORT void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
-  int i=0;
-  if(!marker_hash_table)
-  {
-    i=1;
-    init_gc();
-  }
   Pike_in_gc = GC_PASS_LOCATE;
   gc_found_place = NULL;
 
@@ -2187,7 +2095,6 @@ PMOD_EXPORT void locate_references(void *a)
 
   Pike_in_gc = orig_in_gc;
   gc_found_place = orig_gc_found_place;
-  if(i) exit_gc();
   d_flag=tmp;
 }
 
@@ -2870,7 +2777,6 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
   debug_malloc_touch (data);
 
   if (!data) Pike_fatal ("Got null pointer.\n");
-  if (m->data != data) Pike_fatal ("Got wrong marker.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
     Pike_fatal("GC cycle push attempted in invalid pass.\n");
   if (gc_debug && !(m->flags & GC_PRETOUCHED))
@@ -3537,7 +3443,6 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   if(debug_options & GC_RESET_DMALLOC)
     reset_debug_malloc();
 #endif
-  init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
 
@@ -3964,24 +3869,6 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     size_t e;
     fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
 	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
-    for (e = 0; e < marker_hash_table_size; e++) {
-      struct marker *s = marker_hash_table[e], *m;
-      for (m = s; m;) {
-	if (m->flags & GC_GOT_EXTRA_REF) {
-	  fprintf (stderr, "========================================\n"
-		   "Found marker with extra ref: ");
-	  describe_marker (m);
-	  fprintf (stderr, "Describing the thing pointed to:\n");
-	  describe (m->data);
-	}
-	m = m->next;
-	/* The marker might be moved to the head of the chain via
-	 * describe() above, so do this to avoid infinite recursion.
-	 * Some entries in the chain might be missed, but I don't want
-	 * to bother. */
-	if (m == s) break;
-      }
-    }
     fprintf (stderr, "========================================\n"
 	     "Done searching for marker(s) with extra refs.\n");
     Pike_fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
@@ -6126,12 +6013,6 @@ void f_count_memory (INT32 args)
   DL_MAKE_EMPTY (mc_incomplete);
   DL_MAKE_EMPTY (mc_indirect);
 #ifdef DO_PIKE_CLEANUP
-  {
-    size_t e;
-    for (e = 0; e < mc_marker_hash_table_size; e++)
-      while (mc_marker_hash_table[e])
-	remove_mc_marker (mc_marker_hash_table[e]->thing);
-  }
 #endif
 
   assert (mc_wq_used == 1);

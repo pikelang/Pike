@@ -26,6 +26,7 @@ struct pike_type
 {
   INT32 refs;
   unsigned INT32 hash;
+  struct marker m;
   struct pike_type *next;
   unsigned INT32 flags;
   unsigned INT16 type;

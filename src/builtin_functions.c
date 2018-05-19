@@ -7815,7 +7815,6 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(destruct_called_mark);
   COUNT(gc_rec_frame);
   COUNT(mapping);
-  COUNT(marker);
   COUNT(mc_marker);
   COUNT(multiset);
   COUNT(node_s);
