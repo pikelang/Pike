@@ -2509,6 +2509,7 @@ PIKECLASS backtrace_frame
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
   PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
   {
     pop_n_elems(args);
 
@@ -2575,6 +2576,7 @@ PIKECLASS backtrace_frame
   /*! @decl int(3..) _sizeof()
    */
   PIKEFUN int(3..) _sizeof()
+    flags ID_PROTECTED;
   {
     if (THIS->args) {
       push_int(THIS->args->size + 3);
@@ -2587,6 +2589,7 @@ PIKECLASS backtrace_frame
    *! The BacktraceFrame object can be indexed as an array.
    */
   PIKEFUN mixed `[](int index, int|void end_or_none)
+    flags ID_PROTECTED;
   {
     INT_TYPE end = index;
     INT32 numargs = 3;
@@ -2655,6 +2658,7 @@ PIKECLASS backtrace_frame
   /*! @decl mixed `[]=(int index, mixed value)
    */
   PIKEFUN mixed `[]=(int index, mixed value)
+    flags ID_PROTECTED;
   {
     INT32 numargs = 3;
 
