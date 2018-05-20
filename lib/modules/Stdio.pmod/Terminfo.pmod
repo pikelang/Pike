@@ -249,7 +249,7 @@ class Termcap {
   }
 
   //!
-  void create(string cap, TermcapDB|void tcdb, int|void maxrecurse)
+  protected void create(string cap, TermcapDB|void tcdb, int|void maxrecurse)
   {
     int i=0;
     while((i=search(cap, "\\\n", i))>=0) {
@@ -407,7 +407,7 @@ class Terminfo {
   }
 
   //!
-  void create(string filename)
+  protected void create(string filename)
   {
     .File f = .File();
     if (!f->open(filename, "r"))
@@ -430,7 +430,7 @@ class TermcapDB {
   protected private mapping(string:int|Termcap) cache=([]);
   protected private int complete_index=0;
 
-  void create(string|void filename)
+  protected void create(string|void filename)
   {
     if (!filename) {
       string tce = [string]getenv("TERMCAP");
@@ -546,7 +546,7 @@ class TermcapDB {
     return read();
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     LOCK;
     if(!complete_index) {
@@ -558,7 +558,7 @@ class TermcapDB {
     return sort(indices(cache));
   }
 
-  array(Termcap) _values()
+  protected array(Termcap) _values()
   {
     array(object|int) res = ({});
     mapping(int:string) extra = ([]);
@@ -634,7 +634,7 @@ class TermcapDB {
     }
   }
 
-  Termcap load(string term, int|void maxrecurse)
+  protected Termcap load(string term, int|void maxrecurse)
   {
     int|string|Termcap cap;
 
@@ -668,7 +668,7 @@ class TermcapDB {
     return objectp(cap) && [object(Termcap)]cap;
   }
 
-  Termcap `[](string name)
+  protected Termcap `[](string name)
   {
     return load(name);
   }
@@ -719,7 +719,7 @@ class TerminfoDB {
       error("failed to read terminfo dir %O\n", dirname);
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     LOCK;
     if (!complete_index) {
@@ -734,7 +734,7 @@ class TerminfoDB {
     return sort(indices(cache));
   }
 
-  array(object) _values()
+  protected array(object) _values()
   {
     return predef::map(_indices(),
                        [function(string:object(Terminfo))]
@@ -744,7 +744,7 @@ class TerminfoDB {
                        });
   }
 
-  Terminfo load(string term)
+  protected Terminfo load(string term)
   {
     Terminfo ti;
 
@@ -767,7 +767,7 @@ class TerminfoDB {
     return ti;
   }
 
-  Terminfo `[](string name)
+  protected Terminfo `[](string name)
   {
     return load(name);
   }
@@ -820,7 +820,7 @@ class MetaTerminfoDB {
     }
   }
 
-  Terminfo `[](string name)
+  protected Terminfo `[](string name)
   {
     foreach(dbs, TerminfoDB db) {
       Terminfo ti = db[name];
