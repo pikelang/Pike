@@ -1710,3 +1710,19 @@ F_DIV_EQ(0 = +, 1) :
 	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, $0, mksoftcastnode(type,mkopernode( "`/", $0, $1 )));
 };
+
+F_TYPEOF(0 = +, *) :
+{
+  /* NB: Use an intermediate variable for the type
+   *     to avoid adding an extra reference to $0.
+   */
+  struct pike_type *t = $0->type;
+  $$ = mktypenode(t);
+}
+;
+
+F_TYPEOF(-, *) :
+{
+  $$ = mktypenode(mixed_type_string);
+}
+;

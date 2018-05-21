@@ -82,6 +82,7 @@ OPCODE_NOCODE("byte", F_BYTE, I_DATA)
 OPCODE_NOCODE("notreached!", F_NOTREACHED, 0)
 OPCODE_NOCODE("auto_map_marker", F_AUTO_MAP_MARKER, 0)
 OPCODE_NOCODE("auto_map", F_AUTO_MAP, 0)
+OPCODE_NOCODE("typeof", F_TYPEOF, 0)
 
 /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
 OPCODE_NOCODE("volatile_return", F_VOLATILE_RETURN, 0)

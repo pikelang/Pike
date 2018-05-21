@@ -2784,6 +2784,19 @@ static int do_docode2(node *n, int flags)
     }
     return 1;
 
+  case F_TYPEOF:
+    {
+      struct svalue s;
+      /* NB: This should only be reachable via eval_low().
+       *     Typically treeopt will get rid of this node.
+       */
+      SET_SVAL(s, PIKE_T_TYPE, 0, type,
+	       CAR(n)->type?CAR(n)->type:mixed_type_string);
+      tmp1 = store_constant(&s, 0, NULL);
+      emit1(F_CONSTANT, (INT32)tmp1);
+    }
+    return 1;
+
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     UNREACHABLE(return 0);

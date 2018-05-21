@@ -1388,8 +1388,9 @@ identifier_type: idents
   }
   | typeof
   {
-    if ($1) {
-      push_finished_type($1->u.sval.u.type);
+    if ($1 && CAR($1)) {
+      fix_type_field($1);
+      push_finished_type(CAR($1)->type);
       free_node($1);
     } else {
       push_finished_type(mixed_type_string);
@@ -4260,19 +4261,7 @@ gauge: TOK_GAUGE catch_arg
 
 typeof: TOK_TYPEOF '(' expr0 ')'
   {
-    struct pike_type *t;
-    node *tmp;
-
-    /* FIXME: Why build the node at all? */
-    /* Because the optimizer cannot optimize the root node of the
-     * tree properly -Hubbe
-     */
-    tmp=mknode(F_COMMA_EXPR, $3, 0);
-    optimize_node(tmp);
-
-    t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
-    $$ = mktypenode(t);
-    free_node(tmp);
+    $$ = mknode(F_TYPEOF, $3, 0);
   }
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
   | TOK_TYPEOF '(' error '}' { $$=0; yyerror("Missing ')'."); }
