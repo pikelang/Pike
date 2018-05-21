@@ -4009,6 +4009,17 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_TYPEOF:
+    if (CAR(n)) {
+      push_finished_type(CAR(n)->type);
+    } else {
+      push_finished_type(mixed_type_string);
+    }
+    push_type(T_TYPE);
+    if (n->type) free_type(n->type);
+    n->type = pop_type();
+    break;
+
   case F_UNDEFINED:
     copy_pike_type(n->type, zero_type_string);
     break;
