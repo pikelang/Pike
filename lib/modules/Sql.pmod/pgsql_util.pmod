@@ -469,11 +469,7 @@ class conxion {
 #endif
     while (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
       int mode;
-      if (!stashcount->drained()) {
-        lock = 0;			// Force release before acquiring next
-        stashcount->wait_till_drained();
-        continue;
-      }
+      stashcount->wait_till_drained();
 #ifdef PG_DEBUGRACE
       conxsess sess = conxsess(this);
 #endif
@@ -799,6 +795,7 @@ class sql_result {
                     "query: %O\n"
 #if PG_DEBUGHISTORY > 0
                     "history: %O\n"
+                    "stash: %O\n"
 #endif
                     "fd: %O portalname: %O  datarows: %d"
                     "  synctransact: %d laststatus: %s\n",
@@ -806,6 +803,8 @@ class sql_result {
                     qalreadyprinted == this ? "..." : _query,
 #if PG_DEBUGHISTORY > 0
                     qalreadyprinted == this ? 0 : c && c->i->history,
+                    qalreadyprinted == this ? 0
+                                            : c && (string)c->stash,
 #endif
 		    fd, _portalname,
                     datarowtypes && sizeof(datarowtypes), _synctransact,
@@ -1499,8 +1498,10 @@ class sql_result {
     if (!catch(plugbuffer = c->start()))
       plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
     reflock = 0;
-    if (_state < CLOSED)
+    if (_state < CLOSED) {
       _state = CLOSED;
+      stmtifkey = 0;
+    }
     datarows->write(1);				// Signal EOF
     releaseconditions();
   }
