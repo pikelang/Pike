@@ -469,14 +469,14 @@ class conxion {
        describe_backtrace(nostash->current_locking_thread()->backtrace()));
 #endif
     while (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
-      int mode;
       stashcount->wait_till_drained();
 #ifdef PG_DEBUGRACE
       conxsess sess = conxsess(this);
 #endif
       started = lock;
-      lock = 0;				// Force release before acquiring next
-      if (sizeof(stash) && getstash(KEEP) > KEEP)
+      lock = 0;				// Release often, release early
+      int mode;
+      if (sizeof(stash) && (mode = getstash(KEEP)) > KEEP)
         sendcmd(mode);			// Force out stash to the server
 #ifdef PG_DEBUGRACE
       return sess;
