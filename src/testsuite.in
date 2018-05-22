@@ -7615,6 +7615,33 @@ test_program([[
   }
 ]])
 
+// Pike.identify_cycle
+test_any_equal([[
+  class Foo { Foo next; int counter; };
+  array(Foo) foos = allocate(10, Foo)();
+  for (int i = 0; i < 10; i++) {
+    foos[i]->next = foos[(i+1)%10];
+    foos[i]->counter = i;
+  }
+  return Pike.identify_cycle(foos[0])->counter;
+]], ({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }))
+test_any([[
+  // PIKE-106: Mutex not unlocked properly on error in identify_cycle().
+  class Foo {
+    int cnt;
+    int __hash() { return 0; }
+    int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
+  };
+  catch {
+    // This triggered an error.
+    Pike.identify_cycle(allocate(2, Foo)());
+  };
+  catch {
+    // This hanged due to the mc_mutex not having been released.
+    Pike.identify_cycle(allocate(2, Foo)());
+  };
+]], 0)
+
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
 test_true([[Int.NATIVE_MAX >= 2147483647]])

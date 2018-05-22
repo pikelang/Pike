@@ -6049,11 +6049,14 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   ref_to = my_make_mc_marker(dst, visit_dst, extra);
 
   if (type != PIKE_T_UNKNOWN) {
+    /* NB: low_mapping_insert() for object indices may throw errors
+     *     if eg lfun::`==() throws an error. We therefore instead
+     *     use the raw pointers as indices instead.
+     */
     struct svalue s;
-    SET_SVAL(s, type, 0, refs, dst);
-    low_mapping_insert(identify_loop_reverse, &s, Pike_sp-1, 0);
-
+    SET_SVAL(s, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)(ptrdiff_t)dst);
     mc_wq_enqueue(ref_to);
+    low_mapping_insert(identify_loop_reverse, &s, Pike_sp-1, 0);
   } else {
     /* Not a valid svalue type.
      *
@@ -6184,14 +6187,22 @@ void f_identify_cycle(INT32 args)
   }
 #endif
 
+  /* NB: low_mapping_lookup() for object indices may throw errors
+   *     if eg lfun::`==() throws an error. We therefore instead
+   *     use the raw pointers as indices instead.
+   */
+  push_int((INT_TYPE)(ptrdiff_t)s->u.refs);
   while ((k = low_mapping_lookup(identify_loop_reverse, Pike_sp-1))) {
     /* NB: Since we entered this loop, we know that there's a
      *     reference loop involving s, as s otherwise wouldn't
      *     have been in the mapping.
      */
+    pop_stack();
     push_svalue(k);
+    push_int((INT_TYPE)(ptrdiff_t)k->u.refs);
     if (k->u.refs == s->u.refs) {
       /* Found! */
+      pop_stack();
       break;
     }
   }
