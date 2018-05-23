@@ -24,10 +24,13 @@
 		     ((XO)<<1)|(LK))
 #define PPC_INSTR_XFX_FORM(OPCD,S,SPR,XO)			\
       add_to_program(((OPCD)<<26)|((S)<<21)|((SPR)<<11)|((XO)<<1))
+#define PPC_INSTR_XO_FORM(OPCD,D,A,B,OE,XO,Rc)				\
+      add_to_program(((OPCD)<<26)|((D)<<21)|((A)<<16)|((B)<<11)|((OE)<<10)|((XO)<<1)|(Rc))
 
 #define BC(BO,BI,BD) PPC_INSTR_B_FORM(16,BO,BI,BD,0,0)
 
 #define CMPLI(crfD,A,UIMM) PPC_INSTR_D_FORM(10,crfD,A,UIMM)
+#define CMPI(crfD,A,UIMM) PPC_INSTR_D_FORM(11,crfD,A,UIMM)
 #define ADDIC(D,A,SIMM) PPC_INSTR_D_FORM(12,D,A,SIMM)
 #define ADDI(D,A,SIMM) PPC_INSTR_D_FORM(14,D,A,SIMM)
 #define ADDIS(D,A,SIMM) PPC_INSTR_D_FORM(15,D,A,SIMM)
@@ -39,6 +42,7 @@
 #define LD(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,0)
 #define LDU(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,1)
 #define STD(S,A,ds) PPC_INSTR_DS_FORM(62,S,A,ds,0)
+#define STDU(S,A,ds) PPC_INSTR_DS_FORM(62,S,A,ds,1)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
 #define RLDICL(S,A,SH,MB) PPC_INSTR_MD_FORM(30,S,A,SH,MB,0,0)
@@ -52,6 +56,8 @@
 #define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
 #define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
+
+#define SUBF(D,A,B) PPC_INSTR_XO_FORM(31,D,A,B,0,40,0)
 
 #define LOW_GET_JUMP()	((INT32)PROG_COUNTER[JUMP_EPILOGUE_SIZE])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))
@@ -266,7 +272,7 @@ void ppc64_decode_program(struct program *p);
 #define CALL_MACHINE_CODE(pc)						    \
   __asm__ __volatile__( "	mtctr %0\n"				    \
 			"	mr "PPC_REGNAME(29)",%1\n"		    \
-			"	bctr"					    \
+			"	bctrl"					    \
 			:						    \
 			: "r" (pc), "r" (Pike_interpreter_pointer)	    \
 			: "ctr", "lr", "cc", "memory", "r29", "r0", "r2",   \
@@ -275,6 +281,7 @@ void ppc64_decode_program(struct program *p);
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
+#define OPCODE_INLINE_RETURN
 
 #ifdef OPCODE_RETURN_JUMPADDR
 
@@ -298,6 +305,17 @@ void ppc64_decode_program(struct program *p);
 #define JUMP_EPILOGUE_SIZE 0
 
 #endif /* !OPCODE_RETURN_JUMPADDR */
+
+
+#ifdef OPCODE_INLINE_RETURN
+
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	3
+
+void ppc64_ins_entry(void);
+#define INS_ENTRY()	ppc64_ins_entry()
+
+#endif /* OPCODE_INLINE_RETURN */
 
 
 #ifdef PIKE_DEBUG
