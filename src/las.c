@@ -1144,6 +1144,9 @@ node *debug_mklocalnode(int var, int depth)
 
   res->node_info = OPT_NOT_CONST;
   res->tree_info = res->node_info;
+  if (res->type && (res->type->type == PIKE_T_AUTO)) {
+    res->node_info |= OPT_TYPE_NOT_FIXED;
+  }
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
@@ -4054,6 +4057,21 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CDR(n)->type);
     }
     break;
+
+  case F_LOCAL:
+    {
+      struct compiler_frame *f = Pike_compiler->compiler_frame;
+      int e;
+      for (e = 0; f && (e < n->u.integer.b); e++) {
+	f = f->previous;
+      }
+      if (f) {
+	copy_pike_type(n->type, f->variable[n->u.integer.a].type);
+      } else {
+	copy_pike_type(n->type, mixed_type_string);
+      }
+      break;
+    }
 
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
