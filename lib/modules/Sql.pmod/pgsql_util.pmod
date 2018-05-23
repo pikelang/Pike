@@ -537,9 +537,12 @@ unfinalised:
     } while (0);
     if (sizeof(stash))
       mode = getstash(mode);
+#ifdef PG_DEBUG
+    mixed err;
+#endif
     for(;;) {
 #ifdef PG_DEBUG
-      mixed err =
+      err =
 #endif
       catch {
 outer:
@@ -1472,7 +1475,7 @@ class sql_result {
   final void _processdataready(array datarow, void|int msglen) {
     bytesreceived += msglen;
     inflight--;
-    if (_state<CLOSED)
+    if (_state < CLOSED)
       datarows->write(datarow);
     if (++index == 1)
       PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n", _portalname,
@@ -1929,7 +1932,7 @@ class proxy {
       if (objectp(portal))
         PD("%d<%O %d %c switch portal\n",
          ci->socket->query_fd(), portal._portalname, ++ci->queueinidx, msgtype);
-      else if (portal>0)
+      else if (portal > 0)
         PD("%d<Sync %d %d %c portal\n",
          ci->socket->query_fd(), ++ci->queueinidx, portal, msgtype);
     };
