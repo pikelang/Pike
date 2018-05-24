@@ -421,7 +421,9 @@ string latin1_to_utf8 (string s)
   ])));
 }
 
-string utf8_encode_query (string q, function(string:string) encode_fn)
+string utf8_encode_query (string q,
+			  function(string, mixed|void...:string) encode_fn,
+			  mixed ... extras)
 //! Encodes the appropriate sections of the query with @[encode_fn].
 //! Everything except strings prefixed by an introducer (i.e.
 //! @expr{_something@} or @expr{N@}) is encoded.
@@ -430,7 +432,7 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
   string e = "";
   while (1) {
     sscanf(q, "%[^\'\"]%s", string prefix, string suffix);
-    e += encode_fn (prefix);
+    e += encode_fn (prefix, @extras);
 
     if (suffix == "") break;
 
@@ -526,7 +528,7 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
       }
       e += s;
     } else {
-      e += encode_fn (suffix[..end]);
+      e += encode_fn (suffix[..end], @extras);
     }
 
     q = suffix[end+1..];
@@ -685,7 +687,7 @@ int decode_datetime (string timestr)
        */								\
       if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {	\
 	CH_DEBUG ("Converting query to utf8.\n");			\
-	query = utf8_encode_query (query, string_to_utf8);		\
+	query = utf8_encode_query (query, string_to_utf8, 2);		\
 	new_send_charset = "utf8";					\
       }									\
     }									\
