@@ -7,6 +7,11 @@ o Stdio.Buffer
 
   Eliminates race condition in read_cstring().
 
+o The machine code generator for ppc64 now generates correct code
+  under ABI v2 (ppc64le)
+
+o Fixed an incompatibility between the machine code generator on
+  ppc and GCC 7.
 
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
