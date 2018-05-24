@@ -200,12 +200,12 @@ class UnicodeWrapper (
       field_info = master_result->fetch_fields();
       foreach(field_info, int|mapping(string:mixed) field) {
 	if (mappingp(field)) {
-	  field->name = utf8_to_string(field->name);
+	  field->name = utf8_to_string(field->name, 2);
 	  if (field->table) {
-	    field->table = utf8_to_string(field->table);
+	    field->table = utf8_to_string(field->table, 2);
 	  }
 	  if (field->default) {
-	    field->default = utf8_to_string(field->default);
+	    field->default = utf8_to_string(field->default, 2);
 	  }
 	}
       }
@@ -229,7 +229,7 @@ class UnicodeWrapper (
     array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
       if (stringp(val)) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
@@ -260,7 +260,7 @@ class MySQLUnicodeWrapper
     array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
       if (stringp(val) && field_info[i]->charsetnr != 63) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
@@ -294,7 +294,7 @@ class MySQLBrokenUnicodeWrapper
     foreach(row; int i; string|int val) {
       if (stringp(val) && field_info[i]->flags &&
 	  !field_info[i]->flags->binary) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
