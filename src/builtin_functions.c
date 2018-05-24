@@ -2147,16 +2147,27 @@ static void f_string_filter_non_unicode( INT32 args )
 /*! @decl utf8_string string_to_utf8(string s)
  *! @decl utf8_string string_to_utf8(string s, int extended)
  *!
- *!   Converts a string into an UTF-8 compliant byte-stream.
+ *!   Convert a string into a UTF-8 compliant byte-stream.
+ *!
+ *! @param s
+ *!   String to encode into UTF-8.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept and encode the characters outside the valid ranges
+ *!       using the same algorithm. Such encoded characters are
+ *!       however not UTF-8 compliant.
+ *!     @value 2
+ *!       Encode characters outside the BMP with UTF-8 encoded UTF-16
+ *!       (ie split them into surrogate pairs and encode).
+ *!   @endint
  *!
  *! @note
  *!   Throws an error if characters not valid in an UTF-8 stream are
  *!   encountered. Valid characters are in the ranges
  *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}.
- *!
- *!   If @[extended] is 1 then characters outside the valid ranges are
- *!   accepted too and encoded using the same algorithm. Such encoded
- *!   characters are however not UTF-8 compliant.
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()],
@@ -2196,13 +2207,16 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	if (c & ~0xffff) {
 	  /* 17bit or more. */
 	  len++;
-	  if (!extended && c > 0x10ffff)
+	  if (!(extended & 1) && c > 0x10ffff)
             bad_arg_error ("string_to_utf8", args, 1,
 			   NULL, Pike_sp - args,
 			   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
 			   "outside the allowed range.\n",
 			   c, i);
-	  if (c & ~0x1fffff) {
+	  if ((extended & 2) && (c <= 0x10ffff)) {
+	    /* Encode with a surrogate pair. */
+	    len += 2;
+	  } else if (c & ~0x1fffff) {
 	    /* 22bit or more. */
 	    len++;
 	    if (c & ~0x3ffffff) {
@@ -2216,7 +2230,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	    }
 	  }
 	}
-	else if (!extended && c >= 0xd800 && c <= 0xdfff)
+	else if (!(extended & 1) && c >= 0xd800 && c <= 0xdfff)
           bad_arg_error ("string_to_utf8", args, 1,
 			 NULL, Pike_sp - args,
 			 "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
@@ -2246,6 +2260,23 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
       /* 16bit */
       *dst++ = 0xe0 | (c >> 12);
       *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
+    } else if ((extended & 2) && (c <= 0x10ffff)) {
+      /* Encode with surrogates. */
+      c -= 0x10000;
+      /* 0xd800 | (c>>10)
+       * 0b1101 10cccc cccccc
+       * UTF8: 11101101 1010cccc 10cccccc
+       */
+      *dst++ = 0xed;
+      *dst++ = 0xa0 | (c >> 16);
+      *dst++ = 0x80 | ((c >> 10) & 0x3f);
+      /* 0xdc00 | (c & 0x3ff)
+       * 0b1101 11cccc cccccc
+       * UTF8: 11101101 1011cccc 10cccccc
+       */
+      *dst++ = 0xed;
+      *dst++ = 0xb0 | ((c >> 6) & 0x3f);
       *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x1fffff)) {
       /* 21bit */
