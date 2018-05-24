@@ -1453,7 +1453,8 @@ class sql_result {
   }
 
   private void replenishrows() {
-   if (_fetchlimit && datarows->size() <= _fetchlimit >> 1) {
+   if (_fetchlimit && datarows->size() <= _fetchlimit >> 1
+    && _state >= COMMITTED) {
       Thread.MutexKey lock = closemux->lock();
       if (_fetchlimit) {
         _fetchlimit = pgsqlsess._fetchlimit;
