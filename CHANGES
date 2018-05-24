@@ -3,15 +3,35 @@ Changes since Pike 8.0.610 (release 12)
 Bug fixes
 ---------
 
+o Compiler
+
+  - The machine code generator for ppc64 now generates correct code
+    under ABI v2 (ppc64le)
+
+  - Fixed an incompatibility between the machine code generator on
+    ppc and GCC 7.
+
+o Pike.identify_cycle
+
+  Fix various issues with LFUNs throwing errors.
+
+  LFUNs used by mapping operations may throw errors; this caused
+  identify_loop_visit_leave() to also throw errors. The rest of
+  the identify_cycle code was not happy about this and
+
+  - Forgot to unlock the mc_mutex. This caused all following calls
+    to Pike.identify_cycle() and Pike.count_memory() to hang.
+
+  - Leaked memory.
+
+  The above issues are now avoided by instead using the addresses
+  of objects as indices in the affected mapping. It also fixes
+  the issue with hangs if there are objects with lfuns calling
+  Pike.identify_cycle() or Pike.count_memory().
+
 o Stdio.Buffer
 
-  Eliminates race condition in read_cstring().
-
-o The machine code generator for ppc64 now generates correct code
-  under ABI v2 (ppc64le)
-
-o Fixed an incompatibility between the machine code generator on
-  ppc and GCC 7.
+  Eliminate race condition in read_cstring().
 
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
