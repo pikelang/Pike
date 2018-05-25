@@ -1458,7 +1458,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
       // FIXME: If the column holds binary data we should throw an
       // error here instead of sending what is effectively garbled
       // data.
-      buf->add ("_utf8\"", string_to_utf8 (quote (val)), "\"");
+      buf->add ("_utf8\"", string_to_utf8 (quote (val), 2), "\"");
   }
   else if (intp (val)) {
     if (undefinedp (val))

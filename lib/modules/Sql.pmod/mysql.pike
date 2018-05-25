@@ -409,7 +409,7 @@ string quote(string s)
 		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" }));
 }
 
-string latin1_to_utf8 (string s)
+string latin1_to_utf8 (string s, int extended)
 //! Converts a string in MySQL @expr{latin1@} format to UTF-8.
 {
   return string_to_utf8 (replace (s, ([
@@ -421,7 +421,7 @@ string latin1_to_utf8 (string s)
     "\x94": "\u201D", "\x95": "\u2022", "\x96": "\u2013", "\x97": "\u2014",
     "\x98": "\u02DC", "\x99": "\u2122", "\x9a": "\u0161", "\x9b": "\u203A",
     "\x9c": "\u0153", /*"\x9d": "\u009D",*/ "\x9e": "\u017E", "\x9f": "\u0178",
-  ])));
+  ])), extended);
 }
 
 string utf8_encode_query (string q,
@@ -605,7 +605,7 @@ string encode_datetime (int time)
 	new_send_charset = "latin1";					\
       else {								\
 	CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");	\
-	query = utf8_encode_query (query, latin1_to_utf8);		\
+	query = utf8_encode_query (query, latin1_to_utf8, 2);		\
 	new_send_charset = "utf8";					\
       }									\
     }									\
