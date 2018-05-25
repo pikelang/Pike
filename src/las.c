@@ -3418,8 +3418,8 @@ void fix_type_field(node *n)
     These two are needed if we want to extract types
     from nodes while building the tree.
   */
-  if( CAR(n) ) fix_type_field(CAR(n));
-  if( CDR(n) ) fix_type_field(CDR(n));
+  if( car_is_node(n) ) fix_type_field(CAR(n));
+  if( cdr_is_node(n) ) fix_type_field(CDR(n));
 
   switch(n->token)
   {
