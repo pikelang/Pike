@@ -802,25 +802,28 @@ class sql_result {
         int fd = -1;
         if (c && c->socket)
           catch(fd = c->socket->query_fd());
-        res = sprintf("sql_result state: %d numrows: %d eof: %d inflight: %d\n"
-                    "query: %O\n"
+        res = sprintf(
+                      "sql_result state: %d numrows: %d eof: %d inflight: %d\n"
+                      "fd: %O portalname: %O  coltypes: %d"
+                      "  synctransact: %d laststatus: %s\n"
+                      "stash: %O\n"
 #if PG_DEBUGHISTORY > 0
-                    "history: %O\n"
-                    "stash: %O\n"
+                      "history: %O\n"
 #endif
-                    "fd: %O portalname: %O  datarows: %d"
-                    "  synctransact: %d laststatus: %s\n",
-                    _state, index, eoffound, inflight,
-                    qalreadyprinted == this ? "..." : _query,
+                      "query: %O\n%s\n",
+                      _state, index, eoffound, inflight,
+		      fd, _portalname,
+                      datarowtypes && sizeof(datarowtypes), _synctransact,
+                      statuscmdcomplete
+                       || (_unnamedstatementkey ? "*parsing*" : ""),
+                      qalreadyprinted == this ? 0
+                                              : c && (string)c->stash,
 #if PG_DEBUGHISTORY > 0
-                    qalreadyprinted == this ? 0 : c && c->i->history,
-                    qalreadyprinted == this ? 0
-                                            : c && (string)c->stash,
+                      qalreadyprinted == this ? 0 : c && c->i->history,
 #endif
-		    fd, _portalname,
-                    datarowtypes && sizeof(datarowtypes), _synctransact,
-                    statuscmdcomplete
-                    || (_unnamedstatementkey ? "*parsing*" : ""));
+                      qalreadyprinted == this
+                       ? "..." : replace(_query, "xxxx\n", "\\n"),
+                      qalreadyprinted == this ? "..." : _showbindings()*"\n");
         qalreadyprinted = this;
         break;
     }
@@ -850,6 +853,21 @@ class sql_result {
     gottimeout = _pgsqlsess->cancelquery;
     c->runningportals[this] = 1;
     transtype = _transtype;
+  }
+
+  final array(string) _showbindings() {
+    array(string) msgs = emptyarray;
+    if (_params) {
+      array from, to, paramValues;
+      [from, to, paramValues] = _params;
+      if (sizeof(paramValues)) {
+        int i;
+        string val, fmt = sprintf("%%%ds %%3s %%.61s", max(@map(from, sizeof)));
+        foreach (paramValues; i; val)
+          msgs += ({sprintf(fmt, from[i], to[i], sprintf("%O", val))});
+      }
+    }
+    return msgs;
   }
 
   //! Returns the command-complete status for this query.
@@ -1110,7 +1128,7 @@ class sql_result {
   }
 
   final void _preparebind(array dtoid) {
-    array(string|int) paramValues =_params ? _params[2] : emptyarray;
+    array(string|int) paramValues = _params ? _params[2] : emptyarray;
     if (sizeof(dtoid) != sizeof(paramValues))
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
                  sizeof(dtoid), sizeof(paramValues));
@@ -1853,20 +1871,7 @@ class proxy {
   }
 
   private array(string) showbindings(sql_result portal) {
-    array(string) msgs = emptyarray;
-    array from;
-    if (portal && (from = portal._params)) {
-      array to, paramValues;
-      [from, to, paramValues] = from;
-      if (sizeof(paramValues)) {
-        string val;
-        int i;
-        string fmt = sprintf("%%%ds %%3s %%.61s", max(@map(from, sizeof)));
-        foreach (paramValues; i; val)
-          msgs += ({sprintf(fmt, from[i], to[i], sprintf("%O", val))});
-      }
-    }
-    return msgs;
+    return portal ? portal._showbindings() : emptyarray;
   }
 
   private void preplastmessage(mapping(string:string) msgresponse) {
@@ -1915,8 +1920,8 @@ class proxy {
     mixed err;
     int terminating = 0;
     err = catch {
-    conxion ci = c;		// cache value FIXME sensible?
-    conxiin cr = ci->i;		// cache value FIXME sensible?
+    conxion ci = c;		// cache value
+    conxiin cr = ci->i;		// cache value
 #ifdef PG_DEBUG
     PD("Processloop\n");
 

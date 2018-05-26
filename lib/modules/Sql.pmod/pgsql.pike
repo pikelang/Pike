@@ -1052,10 +1052,11 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
       q = .sql_util.emulate_bindings(q, bindings, this),
       paramValues = .pgsql_util.emptyarray;
     else {
-      int pi = 0, rep = 0;
+      int pi = 0;
       paramValues = allocate(sizeof(bindings));
       from = allocate(sizeof(bindings));
-      array(string) to = allocate(sizeof(bindings));
+      array(string) litfrom, litto, to = allocate(sizeof(bindings));
+      litfrom = litto = .pgsql_util.emptyarray;
       foreach (bindings; mixed name; mixed value) {
         if (stringp(name)) {	       // Throws if mapping key is empty string
           if (name[0] != ':')
@@ -1077,19 +1078,23 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
           if (!has_value(q, name))
             continue;
         }
-        from[rep] = name;
-        string rval;
-        if (multisetp(value))		// multisets are taken literally
-          rval = indices(value)*",";	// and bypass the encoding logic
-        else {
-          paramValues[pi++] = value;
-          rval = sprintf("$%d", pi);
+        if (multisetp(value)) {			// multisets are taken literally
+           litto += ({indices(value)*","});	// and bypass the encoding logic
+           litfrom += ({name});
+        } else {
+          paramValues[pi] = value;
+          to[pi] = sprintf("$%d", pi + 1);
+          from[pi++] = name;
         }
-        to[rep++] = rval;
       }
-      if(rep--)
-        q = replace(q, from = from[..rep], to = to[..rep]);
-      paramValues = pi ? paramValues[..pi-1] : .pgsql_util.emptyarray;
+      if (pi--) {
+        paramValues = paramValues[.. pi];
+        q = replace(q, litfrom += from = from[.. pi], litto += to = to[.. pi]);
+      } else {
+        paramValues = .pgsql_util.emptyarray;
+        if (sizeof(litfrom))
+          q = replace(q, litfrom, litto);
+      }
       from = ({from, to, paramValues});
     }
   } else
