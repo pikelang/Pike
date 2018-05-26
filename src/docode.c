@@ -2762,6 +2762,7 @@ static int do_docode2(node *n, int flags)
     }
 
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     ret = do_docode(CAR(n),flags);
     return ret + do_docode(CDR(n), flags | DO_LVALUE);
 

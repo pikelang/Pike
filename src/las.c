@@ -228,6 +228,7 @@ static int low_count_args(node *n)
   {
   case F_COMMA_EXPR:
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
   case F_ARG_LIST:
     a=count_args(CAR(n));
     if(a==-1) return -1;
@@ -312,6 +313,7 @@ INT32 count_args(node *n)
     int val;
     while ((n->token == F_COMMA_EXPR) ||
 	   (n->token == F_VAL_LVAL) ||
+	   (n->token == F_FOREACH_VAL_LVAL) ||
 	   (n->token == F_ARG_LIST)) {
       if (CAR(n)) {
 	CAR(n)->parent = n;
@@ -2392,6 +2394,7 @@ static void low_print_tree(node *foo,int needlval)
   }
 
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     low_print_tree(_CAR(foo),0);
     fputs(",&", stderr);
     low_print_tree(_CDR(foo),0);
@@ -2874,6 +2877,7 @@ static void find_written_vars(node *n,
     break;
 
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
     break;
@@ -3957,7 +3961,7 @@ void fix_type_field(node *n)
     break;
 
   case F_FOREACH:
-    if (!CAR(n) || (CAR(n)->token != F_VAL_LVAL)) {
+    if (!CAR(n) || (CAR(n)->token != F_FOREACH_VAL_LVAL)) {
       yyerror("foreach(): No expression to loop over.");
     } else {
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
@@ -4200,7 +4204,8 @@ static void optimize(node *n)
 				OPT_RETURN|
 				OPT_FLAG_NODE)) &&
 	 (CAR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
-	 CAR(n)->token != F_VAL_LVAL)
+	 CAR(n)->token != F_VAL_LVAL &&
+	 CAR(n)->token != F_FOREACH_VAL_LVAL)
       {
 	_CAR(n) = eval(CAR(n));
 	if(CAR(n)) CAR(n)->parent = n;

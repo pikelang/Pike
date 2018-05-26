@@ -3195,7 +3195,7 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
   {
     if ($7) {
       $$=mknode(F_FOREACH,
-		mknode(F_VAL_LVAL,$6,$7),
+		mknode(F_FOREACH_VAL_LVAL,$6,$7),
 		$10);
     } else {
       /* Error in lvalue */

@@ -1059,7 +1059,7 @@ F_DO(-, 0 = +[node_is_true($$)]):
 
 
 // No body -- No reason to loop...
-F_FOREACH(F_VAL_LVAL(0 = +[!($$->node_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT))],
+F_FOREACH(F_FOREACH_VAL_LVAL(0 = +[!($$->node_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT))],
 		     1 = +[($$->token != ':')]), -):
 {
   // Note: We still need to set the loop variable as if the last
@@ -1078,12 +1078,12 @@ F_LOOP(0, -):
   F_POP_VALUE($0, -);
 
 // foreach(arr ; ; val) body; -> foreach(arr, val) body;
-F_FOREACH(F_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
+F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
 		     ':'(-, 1) ), 2):
-  F_FOREACH(F_VAL_LVAL($0, $1), $2);
+  F_FOREACH(F_FOREACH_VAL_LVAL($0, $1), $2);
 
 // foreach(arr, -) body;  ->  loop(sizeof(arr)) body;
-F_FOREACH(F_VAL_LVAL(0, -), 1):
+F_FOREACH(F_FOREACH_VAL_LVAL(0, -), 1):
   {
     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
   }
@@ -1092,14 +1092,14 @@ F_FOREACH(F_VAL_LVAL(0, -), 1):
 // foreach(X;;)  ->  loop(sizeof(X)) body;
 //
 // FIXME: But only if the index set can't contain destructed values.
-// F_FOREACH(F_VAL_LVAL(0, ':'(-, -)), 1):
+// F_FOREACH(F_FOREACH_VAL_LVAL(0, ':'(-, -)), 1):
 //   {
 //     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
 //   }
 //   ;
 
 // foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
-F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
+F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
@@ -1123,7 +1123,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
   );
 
   $$ = mknode(F_FOREACH,
-	      mknode(F_VAL_LVAL,
+	      mknode(F_FOREACH_VAL_LVAL,
 		     mkapplynode(mkprgnode(string_split_iterator_program),
 				 mknode(F_ARG_LIST, $0,
 					mkintnode(split))),
@@ -1135,7 +1135,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 // foreach(str/"x" - ({""}), ...)
 //   ==>
 // foreach(String.SplitIterator(str, 'x', 1), ...)
-F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
+F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_minus],
@@ -1169,7 +1169,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
   );
 
   $$ = mknode(F_FOREACH,
-	      mknode(F_VAL_LVAL,
+	      mknode(F_FOREACH_VAL_LVAL,
 		     mkapplynode(mkprgnode(string_split_iterator_program),
 				 mknode(F_ARG_LIST, $0,
 					mknode(F_ARG_LIST,
@@ -1180,7 +1180,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 }
 ;
 // Same, but with allocate(1, "") instead of a constant ({""}).
-F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
+F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_minus],
@@ -1219,7 +1219,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
   );
 
   $$ = mknode(F_FOREACH,
-	      mknode(F_VAL_LVAL,
+	      mknode(F_FOREACH_VAL_LVAL,
 		     mkapplynode(mkprgnode(string_split_iterator_program),
 				 mknode(F_ARG_LIST, $0,
 					mknode(F_ARG_LIST,
