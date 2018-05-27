@@ -52,8 +52,8 @@
 ATTRIBUTE((fastcall))
 #endif
 ATTRIBUTE((hot))
-PMOD_EXPORT size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes,
-                                                  UINT64 key )
+PMOD_EXPORT UINT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbytes,
+					  UINT64 key )
 {
   const unsigned char * in = (const unsigned char*)s;
   unsigned long long inlen = MINIMUM(len, nbytes);
