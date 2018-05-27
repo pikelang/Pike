@@ -14,6 +14,7 @@
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
+#  define _TIME_BITS 64
 #  define _LARGEFILE_SOURCE
 /* #  define _LARGEFILE64_SOURCE 1 */	/* This one is for explicit 64bit. */
 #endif
