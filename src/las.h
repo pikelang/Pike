@@ -194,9 +194,7 @@ int dooptcode(struct pike_string *name,
 	      struct pike_type *type,
 	      int modifiers);
 void resolv_type(node *n);
-void check_foreach_type(node *expression, node *lvalues,
-                        struct pike_type **ind_type,
-                        struct pike_type **val_type );
+void fix_foreach_type(node *lval_lval);
 /* Prototypes end here */
 
 /* Handling of nodes */

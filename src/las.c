@@ -3097,11 +3097,28 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
-void check_foreach_type(node *expression, node *lvalues,
-                         struct pike_type **ind_type,
-                         struct pike_type **val_type )
+static void fix_auto_node(node *n, struct pike_type *type)
+{
+  free_type(n->type);
+  copy_pike_type(n->type, type);
+  if ((n->token == F_LOCAL) && !n->u.integer.b) {
+    struct local_variable *var =
+      &Pike_compiler->compiler_frame->variable[n->u.integer.a];
+    if (var->type) free_type(var->type);
+    copy_pike_type(var->type, type);
+  }
+}
+
+void fix_foreach_type(node *val_lval)
 {
   struct compilation *c = THIS_COMPILATION;
+  node *expression, *lvalues;
+
+  if (!val_lval || (val_lval->token != F_FOREACH_VAL_LVAL)) return;
+
+  fix_type_field(val_lval);
+  expression = CAR(val_lval);
+  lvalues = CDR(val_lval);
 
   if (!expression || pike_types_le(expression->type, void_type_string)) {
     yyerror("foreach(): Looping over a void expression.");
@@ -3153,7 +3170,7 @@ void check_foreach_type(node *expression, node *lvalues,
         } else {
           if( CAR(lvalues)->type->type == PIKE_T_AUTO )
           {
-            if(ind_type)copy_pike_type(*ind_type,index_type);
+	    fix_auto_node(CAR(lvalues), index_type);
           }
           else if (!pike_types_le(index_type, CAR(lvalues)->type)) {
             int level = REPORT_NOTICE;
@@ -3193,7 +3210,7 @@ void check_foreach_type(node *expression, node *lvalues,
         } else {
           if( CDR(lvalues)->type->type == PIKE_T_AUTO )
           {
-            if(val_type) copy_pike_type(*val_type,value_type);
+	    fix_auto_node(CDR(lvalues), value_type);
           }
           else if (!pike_types_le(value_type, CDR(lvalues)->type)) {
             int level = REPORT_NOTICE;
@@ -3236,10 +3253,13 @@ void check_foreach_type(node *expression, node *lvalues,
 	  /* No loop variable. Will be converted to a counted loop
 	   * by treeopt. */
         } else if( lvalues->type->type == PIKE_T_AUTO ) {
-          if(val_type)
-            copy_pike_type( *val_type, expression->type->car );
+	  fix_auto_node(lvalues, expression->type->car);
 	} else if (pike_types_le(lvalues->type, void_type_string)) {
-	  yyerror("Bad argument 2 to foreach().");
+	  yytype_report(REPORT_ERROR,
+			NULL, 0, lvalues->type,
+			NULL, 0, expression->type->car,
+			0,
+			"Bad argument 2 to foreach().");
 	} else {
 	  struct pike_type *array_value_type;
 
@@ -3967,7 +3987,7 @@ void fix_type_field(node *n)
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
-        check_foreach_type( CAAR(n), CDAR(n), NULL, NULL);
+        fix_foreach_type(CAR(n));
       }
     }
     copy_pike_type(n->type, void_type_string);

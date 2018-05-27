@@ -1230,6 +1230,12 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 }
 ;
 
+0 = F_FOREACH_VAL_LVAL:
+{
+  fix_foreach_type($0);
+}
+;
+
 F_FOR(-, *):
   -;
 
