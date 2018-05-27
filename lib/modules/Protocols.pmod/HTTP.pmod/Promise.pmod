@@ -343,16 +343,14 @@ protected class Session
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
+      array eca = extra_callback_arguments;
       function fc = fail_callback;
       set_callbacks(0, 0, 0); // drop all references
 
       if (fc) {
-        Result ret = Result(url_requested, q,
-                    extra_callback_arguments && extra_callback_arguments[1..]);
-        extra_callback_arguments = 0;
+        Result ret = Result(url_requested, q, eca && eca[1..]);
         fc(ret);
-      } else
-        extra_callback_arguments = 0;
+      }
     }
 
     protected void async_ok(object q)
@@ -393,16 +391,14 @@ protected class Session
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0, 0);
 
+      array eca = extra_callback_arguments;
       function dc = data_callback;
       set_callbacks(0, 0, 0); // drop all references
 
       if (dc) {
-        Result ret = Result(url_requested, con, 
-                  extra_callback_arguments && extra_callback_arguments[1..], s);
-        extra_callback_arguments = 0;
+        Result ret = Result(url_requested, con, eca && eca[1..], s);
         dc(ret);
-      } else
-        extra_callback_arguments = 0;
+      }
     }
 
     //! @ignore
