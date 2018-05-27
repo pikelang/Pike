@@ -92,6 +92,9 @@ Building & Tools
 o Improved check for stack direction to also report correct results when
   compiling with Clang 11.
 
+o _TIME_BITS is now set to 64, to get a 64-bit time_t on 32-bit systems
+  running glibc 2.34 or newer.
+
 
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------

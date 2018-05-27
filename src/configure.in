@@ -3533,7 +3533,23 @@ AC_CHECK_SIZEOF(long double, 0)
 AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(long long, 0)
 AC_CHECK_SIZEOF(__int64, 0)
-AC_CHECK_SIZEOF(time_t, 4)
+AC_CHECK_SIZEOF(time_t, 4, [
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _TIME_BITS 64
+#  define _LARGEFILE_SOURCE
+#endif
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#   include <time.h>
+# endif
+#endif
+])
 AC_CHECK_SIZEOF(__int128)
 AC_CHECK_SIZEOF(__int128_t)
 AC_CHECK_SIZEOF(unsigned __int128)
