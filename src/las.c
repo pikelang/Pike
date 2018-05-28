@@ -3517,9 +3517,6 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CAR(n)->type);
     } else {
       struct pike_type *tmp;
-      /* Ensure that the type-fields are up to date. */
-      fix_type_field(CAR(n));
-      fix_type_field(CDR(n));
       type_stack_mark();
       push_finished_type(CDR(n)->type);
       push_type(T_ARRAY);
@@ -3536,10 +3533,7 @@ void fix_type_field(node *n)
     } else if (!CAR(n)) {
       copy_pike_type(n->type, CDR(n)->type);
     } else {
-      /* Ensure that the type-fields are up to date. */
       struct pike_type *t;
-      fix_type_field(CDR(n));
-      fix_type_field(CAR(n));
       if( CDR(n)->type->type == PIKE_T_AUTO )
       {
           /* Update to actual type (assign from soft-cast to auto). */
