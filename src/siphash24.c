@@ -31,6 +31,8 @@
 
 #include "bitvector.h"
 #include "pike_macros.h"
+#include "stralloc.h"
+#include "siphash24.h"
 
 #define ROTL(x,b) (UINT64)( ((x) << (b)) | ( (x) >> (64 - (b))) )
 
