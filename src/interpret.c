@@ -3302,6 +3302,33 @@ PMOD_EXPORT void apply_external(int depth, int fun, INT32 args)
   }
 }
 
+/* mode=1 : Exception on lookup and on execution
+ * mode=2 : Exception on lookup but not execution
+ * mode=3 : No exceptions
+ */
+PMOD_EXPORT void apply_master(const char* fun, INT32 args, int mode)
+{
+  static int id_=-1;
+  struct object *master_ob=master();
+  if(master_ob->prog->id != 0)
+    id_=find_identifier(fun, master_ob->prog);
+
+  if (id_ >= 0) {
+    if( mode==1 )
+      apply_low(master_ob, id_, args);
+    else
+      safe_apply_low2(master_ob, id_, args, fun);
+  } else {
+    if( mode==3 )
+    {
+      pop_n_elems(args);
+      push_undefined();
+    }
+    else
+      Pike_error("Cannot call undefined function \"%s\" in master.\n", fun);
+  }
+}
+
 #ifdef PIKE_DEBUG
 void slow_check_stack(void)
 {
