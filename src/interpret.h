@@ -599,6 +599,25 @@ do{ \
   safe_apply_low2(master_ob, id_, _args_, _fun_); \
 }while(0)
 
+#define SAFE_MAYBE_APPLY_MASTER(FUN,ARGS) \
+do{ \
+  const char* _fun_ = (FUN); \
+  int _args_ = (ARGS); \
+  static int id_, master_cnt=0; \
+  struct object *master_ob=master(); \
+  if(master_cnt != master_ob->prog->id) \
+  { \
+    id_=find_identifier(_fun_,master_ob->prog); \
+    master_cnt = master_ob->prog->id; \
+  } \
+  if (id_ >= 0) { \
+    safe_apply_low2(master_ob, id_, _args_, _fun_); \
+  } else { \
+    pop_n_elems(_args_); \
+    push_undefined(); \
+  } \
+}while(0)
+
 #define SAFE_APPLY_HANDLER(FUN, HANDLER, COMPAT, ARGS) do {	\
     static int h_fun_=-1, h_id_=0;				\
     static int c_fun_=-1, c_fun_id_=0;				\
