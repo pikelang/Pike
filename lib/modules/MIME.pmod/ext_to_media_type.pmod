@@ -1500,6 +1500,7 @@ protected mapping ext2type = ([
   "dtd"         : "application/xml-dtd",
   "xop"         : "application/xop+xml",
   "xpl"         : "application/xproc+xml",
+  "xsl"         : "application/xslt+xml",
   "xslt"        : "application/xslt+xml",
   "xspf"        : "application/xspf+xml",
   "mxml"        : "application/xv+xml",
