@@ -372,7 +372,7 @@ PIKECLASS mpq
       prec++;
       /* present 'num' and insert dot */
       len += 3;
-      s = begin_shared_string(len);
+      s = begin_shared_string(len + 1);	  /* +1 to cater for a leading 0 */
       if(len/2 > prec)
       {
 	/* Shift the integer part forward to make room for the dot. */
@@ -393,6 +393,11 @@ PIKECLASS mpq
 		s->str+len-prec,
 		prec+1);
 	len++;
+      }
+      /* Make sure numbers start with a digit */
+      if ((len == prec) || ((unsigned)(s->str[len-prec-1] - '0') > 9)) {
+        memmove(s->str+len-prec+1, s->str+len-prec, prec);
+        s->str[len++ -prec] = '0';
       }
       s->str[len-prec]='.';
       push_string (end_and_resize_shared_string (s, len));
