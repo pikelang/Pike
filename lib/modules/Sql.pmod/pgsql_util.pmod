@@ -1389,8 +1389,8 @@ class sql_result {
   final void _releasestatement() {
     Thread.MutexKey lock = closemux->lock();
     if (_state <= BOUND) {
-      _state = COMMITTED;
       stmtifkey = 0;
+      _state = COMMITTED;
     }
   }
 
@@ -1406,17 +1406,7 @@ class sql_result {
     {
       Thread.MutexKey lock = closemux->lock();
       _fetchlimit = 0;				   // disables further Executes
-      switch (_state) {
-        case COPYINPROGRESS:
-        case COMMITTED:
-        case BOUND:
-          portalsifkey = 0;
-      }
-      switch (_state) {
-        case BOUND:
-        case PARSING:
-          stmtifkey = 0;
-      }
+      stmtifkey = portalsifkey = 0;
       _state = PURGED;
     }
     releaseconditions();
@@ -1427,12 +1417,7 @@ class sql_result {
     int retval = KEEP;
     PD("%O Try Closeportal %d\n", _portalname, _state);
     _fetchlimit = 0;				   // disables further Executes
-    switch (_state) {
-      case PARSING:
-      case BOUND:
-        _state = COMMITTED;	// Avoid _releasestatement() to prevent
-        stmtifkey = 0;		// lock recursion and lock inversion deadlock
-    }
+    stmtifkey = 0;
     switch (_state) {
       case PORTALINIT:
       case PARSING:
@@ -1529,8 +1514,8 @@ class sql_result {
       plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
     reflock = 0;
     if (_state < CLOSED) {
-      _state = CLOSED;
       stmtifkey = 0;
+      _state = CLOSED;
     }
     datarows->write(1);				// Signal EOF
     releaseconditions();
