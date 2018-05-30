@@ -528,7 +528,7 @@ float_fallback:
       prec++;
       /* present 'num' and insert dot */
       len += 3;
-      s = begin_shared_string(len);
+      s = begin_shared_string(len + 1);	  /* +1 to cater for a leading 0 */
       if(len/2 > prec)
       {
 	/* Shift the integer part forward to make room for the dot. */
@@ -551,6 +551,10 @@ float_fallback:
 	len++;
       }
       s->str[len-prec]='.';
+      if (len == prec) {
+        memmove(s->str, s->str+1, len++);
+        *s->str = '0';
+      }
       push_string (end_and_resize_shared_string (s, len));
     }
 
