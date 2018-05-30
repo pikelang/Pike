@@ -33,6 +33,18 @@ o Stdio.Buffer
 
   Eliminate race condition in read_cstring().
 
+o Gmp.mpq
+
+  Fix numbers between -1.0 and 1.0 sometimes missing a leading 0.
+
+o Sql.pgsql
+
+  - Fix regression bug since rel 12 that hangs queries returning over 1024
+    records.
+
+  - Fix all rare-deadlock-causes logged in the last two years.
+
+
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
 
