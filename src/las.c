@@ -446,10 +446,10 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   }
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
-    if (CAR(p) == n) {
+    if (p && (CAR(p) == n)) {
       (_CAR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
 	->parent = p;
-    } else if (CDR(p) == n) {
+    } else if (p && (CDR(p) == n)) {
       (_CDR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
 	->parent = p;
     } else {
