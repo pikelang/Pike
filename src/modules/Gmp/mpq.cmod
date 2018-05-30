@@ -550,11 +550,12 @@ float_fallback:
 		prec+1);
 	len++;
       }
-      s->str[len-prec]='.';
-      if (len == prec) {
-        memmove(s->str, s->str+1, len++);
-        *s->str = '0';
+      /* Make sure numbers start with a digit */
+      if ((len == prec) || ((unsigned)(s->str[len-prec-1] - '0') > 9)) {
+        memmove(s->str+len-prec+1, s->str+len-prec, prec);
+        s->str[len++ -prec] = '0';
       }
+      s->str[len-prec]='.';
       push_string (end_and_resize_shared_string (s, len));
     }
 
