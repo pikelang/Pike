@@ -142,9 +142,13 @@ class Decoder
 
   //! Get the decoded data, and reset buffers.
   //!
+  //! @param finalize
+  //!   If set, indicates that no more input will be fed and that
+  //!   any leftover input from before should be processed now.
+  //!
   //! @returns
   //!   Returns the decoded string.
-  string drain();
+  string drain(int(0..1)|void finalize);
 
   //! Clear buffers, and reset all state.
   //!
@@ -152,6 +156,21 @@ class Decoder
   //!   Returns the current object to allow for chaining
   //!   of calls.
   this_program clear();
+
+  //! Enable or disable the use of surrogate escapes.
+  //!
+  //! Surrogate escapes are used when there is an octet sequence
+  //! in the decoder input which can not be decocded.  The original
+  //! octets are mapped into the surrogate range 0xdc00-0xdcff from
+  //! whence it can be mapped back by the encoder later.
+  //!
+  //! @param use_surrogateescapes
+  //!   1 enables the use if surrogate escapes, 0 disables it.
+  //!
+  //! @returns
+  //!   Returns the current object to allow for chaining
+  //!   of calls.
+  this_program set_surrogateescapes(int(0..1) use_surrogateescapes);
 }
 
 //! Virtual base class for charset encoders.
@@ -184,12 +203,13 @@ class Encoder
 private class ASCIIDec {
   constant charset = "iso88591";
   protected private string s = "";
+  protected int use_surrogateescapes = 0;
   this_program feed(string ss)
   {
     s += ss;
     return this;
   }
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
     string ss = s;
     s = "";
@@ -200,16 +220,23 @@ private class ASCIIDec {
     s = "";
     return this;
   }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    use_surrogateescapes = se;
+    return this;
+  }
 }
 
 private class UTF16dec {
   inherit ASCIIDec;
   constant charset = "utf16";
   protected int check_bom=1, le=0;
-  string drain() {
-    string s = ::drain();
+  string drain(int(0..1)|void finalize) {
+    string s = ::drain(finalize);
+    string trl = "";
     if(sizeof(s)&1) {
-      feed(s[sizeof(s)-1..]);
+      if (!finalize)
+	feed(s[sizeof(s)-1..]);
       s = s[..<1];
     }
     if(check_bom && sizeof(s))
@@ -236,11 +263,12 @@ private class UTF16LEdec {
 private class UTF32dec {
   inherit ASCIIDec;
   constant charset = "utf32";
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    string s = ::drain();
+    string s = ::drain(finalize);
     if (sizeof(s) & 3) {
-      feed(s[<sizeof(s) & 3..]);
+      if (!finalize)
+	feed(s[<sizeof(s) & 3..]);
       s = s[..sizeof(s) & 3];
     }
     return (string)(array_sscanf(s, "%{%4c%}")[0]*({}));
@@ -250,11 +278,12 @@ private class UTF32dec {
 private class UTF32LEdec {
   inherit ASCIIDec;
   constant charset = "utf32le";
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    string s = ::drain();
+    string s = ::drain(finalize);
     if (sizeof(s) & 3) {
-      feed(s[<sizeof(s) & 3..]);
+      if (!finalize)
+	feed(s[<sizeof(s) & 3..]);
       s = s[..sizeof(s) & 3];
     }
     return (string)(array_sscanf(s, "%{%-4c%}")[0]*({}));
@@ -264,14 +293,14 @@ private class UTF32LEdec {
 private class ISO6937dec {
   protected Decoder decoder = rfc1345("iso6937");
   protected string trailer = "";
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    string res = trailer + decoder->drain();
+    string res = trailer + decoder->drain(finalize);
     trailer = "";
     if (String.width(res) <= 8) {
       return res;
     }
-    if ((res[-1] >= 0x0300) && (res[-1] < 0x0370)) {
+    if ((res[-1] >= 0x0300) && (res[-1] < 0x0370) && !finalize) {
       // Ends with a combiner. Keep it for later.
       trailer = res[sizeof(res)-1..];
       res = res[..sizeof(res)-2];
@@ -305,23 +334,28 @@ private class ISO6937dec {
     trailer = "";
     return this;
   }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    decoder->set_surrogateescapes(se);
+    return this;
+  }
 }
 
 // Decode GSM 03.38.
 private class GSM03_38dec {
   protected Decoder decoder = rfc1345("gsm0338");
   protected string trailer = "";
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
     // Escape sequences for GSM 03.38.
     // cf http://en.wikipedia.org/wiki/Short_message_service
     // https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=139
     string res =
-      replace(trailer + decoder->drain(),
+      replace(trailer + decoder->drain(finalize),
 	      "\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2,
 	      "\f^{}\\[~]|\u20ac"/1);
     trailer = "";
-    if (sizeof(res) && res[-1] == '\e') trailer = "\e";
+    if (sizeof(res) && res[-1] == '\e' && !finalize) trailer = "\e";
     return replace(res, "\e", "");
   }
   this_program feed(string s)
@@ -335,6 +369,11 @@ private class GSM03_38dec {
     trailer = "";
     return this;
   }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    decoder->set_surrogateescapes(se);
+    return this;
+  }
 }
 
 // Decode HZ encoding of EUC-CN. @rfc{1843@}.
@@ -346,9 +385,9 @@ private class HZ_dec
 #define HZ_MODE_MARK  1
 #define HZ_MODE_SHIFT 2
 
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    return decoder->drain();
+    return decoder->drain(finalize);
   }
   protected void low_feed(string frag)
   {
@@ -399,6 +438,11 @@ private class HZ_dec
   {
     decoder->clear();
     mode = 0;
+    return this;
+  }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    decoder->set_surrogateescapes(se);
     return this;
   }
 }
@@ -553,6 +597,7 @@ private class ASCIIEnc
   protected string s = "";
   protected string|void replacement;
   protected function(string:string)|void repcb;
+  protected int use_surrogateescapes;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
   {
@@ -568,7 +613,9 @@ private class ASCIIEnc
 	if (l < i)
 	  add (s[l..i - 1]);
 	l = i + 1;
-	if(rc && (rr = rc(s[i..i])))
+	if (use_surrogateescapes && c >= 0xdc7f && c <= 0xdcff)
+	  res->putchar(c&0xff);
+	else if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
 	  add(r);
@@ -585,7 +632,7 @@ private class ASCIIEnc
     s += low_convert(ss, replacement, repcb);
     return this;
   }
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
     string ss = s;
     s = "";
@@ -599,6 +646,11 @@ private class ASCIIEnc
   this_program set_replacement_callback(function(string:string) rc)
   {
     repcb = rc;
+    return this;
+  }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    use_surrogateescapes = se;
     return this;
   }
   protected void create(string|void r, string|void rc)
@@ -625,7 +677,9 @@ private class USASCIIEnc {
 	if (l < i)
 	  add (s[l..i - 1]);
 	l = i + 1;
-	if(rc && (rr = rc(s[i..i])))
+	if (use_surrogateescapes && c >= 0xdc7f && c <= 0xdcff)
+	  res->putchar(c&0xff);
+	else if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
 	  add(r);
@@ -673,7 +727,7 @@ private class UTF16enc {
     s += ss;
     return this;
   }
-  string drain() {
+  string drain(int(0..1)|void finalize) {
     string ss = s;
     s = "";
     catch {
@@ -687,8 +741,8 @@ private class UTF16enc {
 private class UTF16LEenc {
   inherit UTF16enc;
   constant charset = "utf16le";
-  string drain() {
-    return map(::drain()/2, reverse)*"";
+  string drain(int(0..1)|void finalize) {
+    return map(::drain(finalize)/2, reverse)*"";
   }
 }
 
@@ -717,9 +771,9 @@ private class ISO6937enc {
   {
     encoder = rfc1345("iso6937", 1, replacement, repcb);
   }
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    return encoder->drain();
+    return encoder->drain(finalize);
   }
   this_program feed(string s)
   {
@@ -749,6 +803,11 @@ private class ISO6937enc {
     encoder->clear();
     return this;
   }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    encoder->set_surrogateescapes(se);
+    return this;
+  }
 }
 
 // Encode GSM 03.38.
@@ -759,9 +818,9 @@ private class GSM03_38enc {
   {
     encoder = rfc1345("gsm0338", 1, replacement, repcb);
   }
-  string drain()
+  string drain(int(0..1)|void finalize)
   {
-    return encoder->drain();
+    return encoder->drain(finalize);
   }
   this_program feed(string s)
   {
@@ -776,6 +835,11 @@ private class GSM03_38enc {
   this_program clear()
   {
     encoder->clear();
+    return this;
+  }
+  this_program set_surrogateescapes(int(0..1) se)
+  {
+    encoder->set_surrogateescapes(se);
     return this;
   }
 }

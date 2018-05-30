@@ -113,6 +113,10 @@ static SIGNED char rev64t['z'-'+'+1];
 static char fwd64t[64]=
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+#define ADD_SURROGATE_ESCAPE_FOR(byt, sb) do {	\
+  string_builder_putchar((sb), 0xdc00 + (byt));	\
+} while(0)
+
 /* Start std_cs */
 
 PIKECLASS Std_CS
@@ -121,10 +125,11 @@ PIKECLASS Std_CS
   CVAR struct string_builder strbuild;
   CVAR struct pike_string *retain, *replace;
   PIKEVAR mixed _repcb flags ID_PROTECTED;
+  PIKEVAR int use_surrogateescapes;
 
   DECLARE_STORAGE;
 
-PIKEFUN void create(string|void replace, function(string:string)|void repcb)
+  PIKEFUN void create(string|void replace, function(string:string)|void repcb)
 {
   struct std_cs_stor *s = THIS;
 
@@ -150,10 +155,31 @@ PIKEFUN void set_replacement_callback(function(string:string) repcb)
   push_object(this_object());
 }
 
-PIKEFUN string drain()
+PIKEFUN void set_surrogateescapes(int(0..1) use_surrogateescapes)
 {
   struct std_cs_stor *s = THIS;
 
+  s->use_surrogateescapes = use_surrogateescapes;
+
+  push_object(this_object());
+}
+
+PIKEFUN string drain(int(0..1)|void finalize)
+{
+  struct std_cs_stor *s = THIS;
+
+  if (finalize && finalize->u.integer && s->retain) {
+    if (s->use_surrogateescapes) {
+      const p_wchar0 *p = STR0(s->retain);
+      ptrdiff_t l = s->retain->len;
+      for (; l > 0; l--) {
+	unsigned int ch = *p++;
+	ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+      }
+    }
+    free_string(s->retain);
+    s->retain = NULL;
+  }
   pop_n_elems(args);
   push_string(finish_string_builder(&s->strbuild));
   init_string_builder(&s->strbuild, 0);
@@ -292,7 +318,7 @@ void DECLSPEC(noreturn) transcoder_error (
   va_end (args);
 }
 
-#define REPLACE_CHAR(ch, func, ctx, str, pos) do {			\
+#define REPLACE_CHAR0(ch, func, ctx, str, pos) do {			\
     if(repcb != NULL && call_repcb(repcb, ch)) {			\
       func(ctx, sb, Pike_sp[-1].u.string, rep, NULL);			\
       pop_stack();							\
@@ -300,6 +326,13 @@ void DECLSPEC(noreturn) transcoder_error (
       func(ctx, sb, rep, NULL, NULL);					\
     else								\
       transcoder_error (str, pos, 1, "Unsupported character %d.\n",ch);	\
+  } while (0)
+
+#define REPLACE_CHAR(ch, func, ctx, str, pos) do {			\
+    if(cs->use_surrogateescapes && ch >= 0xdc7f && ch <= 0xdcff)	\
+      string_builder_putchar(sb, ch&0xff);				\
+    else								\
+      REPLACE_CHAR0(ch, func, ctx, str, pos);				\
   } while (0)
 
 #define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
@@ -413,6 +446,9 @@ static void f_drain_rfc1345(INT32 args)
     }
   }
 
+  if (args && TYPEOF(Pike_sp[-args]) == T_INT && Pike_sp[-args].u.integer)
+    trailer = 0;
+
   f_cq__Charset_Std_CS_drain(args);
 
   if (trailer) {
@@ -480,19 +516,29 @@ static ptrdiff_t feed_utf8(struct pike_string *str, struct std_cs_stor *s)
 
     if (ch & 0x80) {
       int cl = utf8cont[(ch>>1) - 64], i;
-      if (!cl)
-	transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
+      if (!cl) {
+	if (s->use_surrogateescapes) {
+	  ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+	  continue;
+	} else
+	  transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
+      }
 
       ch &= first_char_mask[cl - 1];
 
       for (i = cl >= l ? l - 1 : cl; i--;) {
 	unsigned int c = *p++;
-	if ((c & 0xc0) != 0x80)
+	if ((c & 0xc0) != 0x80) {
 	  /* Report the start of the invalid sequence to make things
 	   * easier for code that tries to recover from invalid UTF-8. */
-	  transcoder_error (str, p - STR0(str) -
-			    ((cl >= l ? l - 1 : cl) - i) - 1,
-			    0, "Truncated UTF-8 sequence.\n");
+	  p -= (cl >= l ? l : cl + 1) - i;
+	  if (s->use_surrogateescapes) {
+	    ADD_SURROGATE_ESCAPE_FOR(*p++, &s->strbuild);
+	    goto next;
+	  } else
+	    transcoder_error (str, p - STR0(str),
+			      0, "Truncated UTF-8 sequence.\n");
+	}
 	ch = (ch << 6) | (c & 0x3f);
       }
 
@@ -504,16 +550,30 @@ static ptrdiff_t feed_utf8(struct pike_string *str, struct std_cs_stor *s)
 	case 1: if (ch >= (1 << 7)) break;  /* FALLTHRU */
 	case 2: if (ch >= (1 << 11)) break; /* FALLTHRU */
 	case 3: if (ch >= (1 << 16)) break;
-	  transcoder_error (str, p - STR0(str) - cl - 1, 0,
-			    "Non-shortest form of character U+%04X.\n", ch);
+	  l += cl;
+	  p -= cl;
+	  if (s->use_surrogateescapes) {
+	    ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	    continue;
+	  } else
+	    transcoder_error (str, p - STR0(str) - 1, 0,
+			      "Non-shortest form of character U+%04X.\n", ch);
       }
 
-      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff)
-	transcoder_error (str, p - STR0(str) - cl - 1, 0,
-			  "Character U+%04X is outside the valid range.\n", ch);
+      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff) {
+	l += cl;
+	p -= cl;
+	if (s->use_surrogateescapes) {
+	  ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	  continue;
+	} else
+	  transcoder_error (str, p - STR0(str) - 1, 0,
+			    "Character U+%04X is outside the valid range.\n", ch);
+      }
     }
 
     string_builder_putchar(&s->strbuild, ch);
+  next:;
   }
 
   return l;
@@ -581,19 +641,29 @@ static ptrdiff_t feed_utf_ebcdic(struct pike_string *str,
     if ((ch & 0x80) && (ch & 0x60)) {
       int cl = cont[(ch>>1) - 80];
       int i;
-      if (!cl)
-	transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
+      if (!cl) {
+	if (s->use_surrogateescapes) {
+	  ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+	  continue;
+	} else
+	  transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
+      }
 
       ch &= first_char_mask[cl - 1];
 
       for (i = cl >= l ? l - 1 : cl; i--;) {
 	unsigned int c = utf_ebcdic_to_i8_conv[*p++];
-	if ((c & 0xe0) != 0xa0)
+	if ((c & 0xe0) != 0xa0) {
 	  /* Report the start of the invalid sequence to make things
 	   * easier for code that tries to recover from invalid UTF-EBCDIC. */
-	  transcoder_error (str, p - STR0(str) -
-			    ((cl >= l ? l - 1 : cl) - i) - 1,
-			    0, "Truncated UTF-EBCDIC I8-sequence.\n");
+	  p -= (cl >= l ? l : cl + 1) - i;
+	  if (s->use_surrogateescapes) {
+	    ADD_SURROGATE_ESCAPE_FOR(*p++, &s->strbuild);
+	    goto next;
+	  } else
+	    transcoder_error (str, p - STR0(str),
+			      0, "Truncated UTF-EBCDIC I8-sequence.\n");
+	}
 	ch = (ch << 5) | (c & 0x1f);
       }
 
@@ -608,17 +678,31 @@ static ptrdiff_t feed_utf_ebcdic(struct pike_string *str,
 	case 1: if (ch >= (1 << 7)) break;
 	case 2: if (ch >= (1 << 11)) break;
 	case 3: if (ch >= (1 << 16)) break;
-	  transcoder_error (str, p - STR0(str) - cl - 1, 0,
-			    "Non-shortest form of character U+%04X.\n", ch);
+	  l += cl;
+	  p -= cl;
+	  if (s->use_surrogateescapes) {
+	    ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	    continue;
+	  } else
+	    transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			      "Non-shortest form of character U+%04X.\n", ch);
       }
 
-      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff)
-	transcoder_error (str, p - STR0(str) - cl - 1, 0,
-			  "Character U+%04X is outside the valid range.\n", ch);
+      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff) {
+	l += cl;
+	p -= cl;
+	if (s->use_surrogateescapes) {
+	  ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	  continue;
+	} else
+	  transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			    "Character U+%04X is outside the valid range.\n", ch);
+      }
 #endif /* 0 */
     }
 
     string_builder_putchar(&s->strbuild, ch);
+  next:;
   }
 
   return l;
@@ -803,7 +887,10 @@ static ptrdiff_t feed_sjis(struct pike_string *str, struct std_cs_stor *s)
       --l;
     } else if(ch < 0xa1 || ch >= 0xe0) {
       if(ch == 0x80 || ch == 0xa0 || ch >= 0xeb) {
-	string_builder_putchar(&s->strbuild, 0xfffd);
+	if (s->use_surrogateescapes)
+	  ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+	else
+	  string_builder_putchar(&s->strbuild, DEFCHAR);
 	--l;
       } else {
 	int lo;
@@ -820,8 +907,13 @@ static ptrdiff_t feed_sjis(struct pike_string *str, struct std_cs_stor *s)
 	} else if(lo >= 0x9f && lo <= 0xfc)
 	  ch = map_JIS_C6226_1983[(ch-0x81)*188+94+(lo-0x9f)];
 	else
-	  ch = 0xfffd;
-	string_builder_putchar(&s->strbuild, ch);
+	  ch = DEFCHAR;
+	if (ch == DEFCHAR && s->use_surrogateescapes) {
+	  l++;
+	  --p;
+	  ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	} else
+	  string_builder_putchar(&s->strbuild, ch);
       }
     } else {
       string_builder_putchar(&s->strbuild, ch+0xfec0);
@@ -858,7 +950,13 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
       if(lo > 0xa0 && lo < 0xff)
 	ch = map[(ch-0xa1)*94+(lo-0xa1)];
       else
-	ch = 0xfffd;
+	ch = DEFCHAR;
+      if (ch == DEFCHAR && s->use_surrogateescapes) {
+	--p;
+	--l;
+	ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	continue;
+      }
       string_builder_putchar(&s->strbuild, ch);
       l -= 2;
     } else if(ch == 0x8e) {
@@ -868,7 +966,13 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
       if(map2 && (ch > 0xa0 && ch < 0xff))
 	ch = map2[ch-0xa1];
       else
-	ch = 0xfffd;
+	ch = DEFCHAR;
+      if (ch == DEFCHAR && s->use_surrogateescapes) {
+	--p;
+	--l;
+	ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	continue;
+      }
       string_builder_putchar(&s->strbuild, ch);
       l -= 2;
     } else if(ch == 0x8f) {
@@ -880,11 +984,20 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
       if(map3 && (ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff))
 	ch = map3[(ch-0xa1)*94+(lo-0xa1)];
       else
-	ch = 0xfffd;
+	ch = DEFCHAR;
+      if (ch == DEFCHAR && s->use_surrogateescapes) {
+	p-=2;
+	--l;
+	ADD_SURROGATE_ESCAPE_FOR(p[-1], &s->strbuild);
+	continue;
+      }
       string_builder_putchar(&s->strbuild, ch);
       l -= 3;
     } else {
-      string_builder_putchar(&s->strbuild, 0xfffd);
+      if (s->use_surrogateescapes)
+	ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+      else
+	string_builder_putchar(&s->strbuild, DEFCHAR);
       --l;
     }
   }
@@ -998,7 +1111,11 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
   index += p[3] - 0x30;
 
   /* Convert to Unicode. */
-  string_builder_putchar(&s->strbuild, gb18030_to_unicode(index));
+  index = gb18030_to_unicode(index);
+  if (index > 0x10ffff) {
+    return 0;
+  }
+  string_builder_putchar(&s->strbuild, index);
 
   /* We've used 4 bytes of input. */
   return -4;
@@ -1025,10 +1142,15 @@ static ptrdiff_t feed_multichar(struct pike_string *str,
       const struct multichar_table page = table[ ch-0x81 ];
       if(l==1) return 1;
       if(ch==0xff) {
+	if (s->use_surrogateescapes) {
+	  --l;
+	  ADD_SURROGATE_ESCAPE_FOR(ch, &s->strbuild);
+	  continue;
+	}
 	transcoder_error (str, p - STR0(str) - 1, 0, "Illegal character.\n");
       }
       ch = *p++;
-      if( ch<page.lo || ch>page.hi ) {
+      if( ch<page.lo || ch>page.hi || !page.table[ch-page.lo] ) {
 	if (m->is_gb18030) {
 	  int delta = feed_gb18030(p-2, l, s);
 	  if (delta < 0) {
@@ -1040,10 +1162,16 @@ static ptrdiff_t feed_multichar(struct pike_string *str,
 	    return delta;
 	  }
 	}
-	transcoder_error (str, p - STR0(str) - 2,
+	p -= 2;
+	if (s->use_surrogateescapes) {
+	  ADD_SURROGATE_ESCAPE_FOR(*p++, &s->strbuild);
+	  --l;
+	  continue;
+	}
+	transcoder_error (str, p - STR0(str),
 			  0, "Illegal character pair: 0x%02x 0x%02x "
 			  "(expected 0x%02x 0x%02x..0x%02x).\n",
-			  p[-2], ch, p[-2], page.lo, page.hi);
+			  *p, ch, *p, page.lo, page.hi);
       }
       else
 	string_builder_putchar(&s->strbuild, page.table[ch-page.lo]);
@@ -1093,7 +1221,7 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
 	    string_builder_putchar(sb, 0x30 + index);
 	  }
 	} else {
-	  REPLACE_CHAR(c, feed_gb18030e, cs, str, p - STR0(str) - 1);
+	  REPLACE_CHAR0(c, feed_gb18030e, cs, str, p - STR0(str) - 1);
 	}
     }
     break;
@@ -1198,7 +1326,7 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, gb18030e_bytes[off]);
 	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
 	} else {
-	  REPLACE_CHAR(c, feed_gbke, cs, str, p - STR0(str) - 1);
+	  REPLACE_CHAR0(c, feed_gbke, cs, str, p - STR0(str) - 1);
 	}
     }
     break;
@@ -1261,14 +1389,14 @@ static void f_create_sjise(INT32 args)
 
   s->lowtrans = 0x5c;
   s->lo = 0x5c;
-  s->hi = 0xfffd;
+  s->hi = DEFCHAR;
 
   s->revtab = xcalloc(s->hi-s->lo, sizeof(p_wchar1));
 
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
       UNICHAR c;
-      if((c=map_JIS_C6226_1983[z+j-33])!=0xfffd && c>=s->lo) {
+      if((c=map_JIS_C6226_1983[z+j-33])!=DEFCHAR && c>=s->lo) {
 	if(i&1)
 	  s->revtab[c-s->lo]=(((i>>1)+(i<95? 113:177))<<8)|(j+(j<96? 31:32));
 	else
@@ -1334,7 +1462,7 @@ static void f_create_euce(INT32 args)
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
       UNICHAR c;
-      if((c=table[z+j-33])!=0xfffd && c>=s->lo) {
+      if((c=table[z+j-33])!=DEFCHAR && c>=s->lo) {
 	s->revtab[c-s->lo]=(i<<8)|j|0x8080;
 	if(c>=s->hi)
 	  s->hi = c+1;
@@ -1346,7 +1474,7 @@ static void f_create_euce(INT32 args)
     table = iso2022_94[9];
     for(j=33; j<=126; j++) {
       UNICHAR c;
-      if((c=table[j-33])!=0xfffd && c>=s->lo &&
+      if((c=table[j-33])!=DEFCHAR && c>=s->lo &&
 	 !s->revtab[c-s->lo]) {
 	s->revtab[c-s->lo]=j;
 	if(c>=s->hi)
@@ -1357,7 +1485,7 @@ static void f_create_euce(INT32 args)
     for(z=0, i=33; i<=126; i++, z+=94)
       for(j=33; j<=126; j++) {
 	UNICHAR c;
-	if((c=table[z+j-33])!=0xfffd && c>=s->lo &&
+	if((c=table[z+j-33])!=DEFCHAR && c>=s->lo &&
 	   !s->revtab[c-s->lo]) {
 	  s->revtab[c-s->lo]=(i<<8)|j|0x8000;
 	  if(c>=s->hi)
@@ -1479,7 +1607,7 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 
 	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
 	    for(j=lo2; j<=hi2; j++)
-	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
+	      if((c=charset_map[mid].table[z+j-lo2])!=DEFCHAR && c>=s16->lo) {
 		s16->revtab[c-s16->lo]=(i<<8)|j;
 		if(c>=s16->hi)
 		  s16->hi = c+1;
@@ -1493,7 +1621,7 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 	  s8->hi = lowtrans;
 
 	  for(i=lo; i<=hi; i++)
-	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
+	    if((c=charset_map[mid].table[i-lo])!=DEFCHAR && c>=s8->lo) {
 	      s8->revtab[c-s8->lo]=i;
 	      if(c>=s8->hi)
 		s8->hi = c+1;
@@ -1539,15 +1667,15 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
       s8->lowtrans = lo;
       s8->lo = lo;
       s8->hi = lo;
-      s8->zero_char = 0xfffd;
+      s8->zero_char = DEFCHAR;
       for(i=lo; i<=hi; i++) {
-	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
+	if((c=tabl[i-lo])!=DEFCHAR && c>=s8->lo) {
 	  s8->revtab[c-lo]=i;
 	  if(c>=s8->hi)
 	    s8->hi = c+1;
 	}
       }
-      if (!lo && (c=tabl[0])!=0xfffd && c>=s8->lo) {
+      if (!lo && (c=tabl[0])!=DEFCHAR && c>=s8->lo) {
 	/* Character 0x00 is a valid character in the encoding
 	 * for this character set (eg GSM 03.38).
 	 *
@@ -1597,6 +1725,8 @@ static ptrdiff_t feed_94(struct pike_string *str, struct std_cs_stor *s)
 	 * the mapping doesn't fit in a single UNICHAR. */
 	string_builder_utf16_strcat(&s->strbuild,
 				    table + 94 + (uc & 0x07ff));
+      } else if (uc == DEFCHAR && s->use_surrogateescapes) {
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
       } else if (uc != 0xe000)
 	string_builder_putchar(&s->strbuild, uc);
     }
@@ -1627,6 +1757,8 @@ static ptrdiff_t feed_96(struct pike_string *str, struct std_cs_stor *s)
 	 * the mapping doesn't fit in a single UNICHAR. */
 	string_builder_utf16_strcat(&s->strbuild,
 				    table + 96 + (uc & 0x07ff));
+      } else if (uc == DEFCHAR && s->use_surrogateescapes) {
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
       } else if (uc != 0xe000)
 	string_builder_putchar(&s->strbuild, table[x-0xa0]);
     }
@@ -1662,6 +1794,10 @@ static ptrdiff_t feed_9494(struct pike_string *str, struct std_cs_stor *s)
 	 * the mapping doesn't fit in a single UNICHAR. */
 	string_builder_utf16_strcat(&s->strbuild,
 				    table + 94*94 + (uc & 0x07ff));
+      } else if (uc == DEFCHAR && s->use_surrogateescapes) {
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
+	--p;
+	l++;
       } else if (uc != 0xe000) {
 	string_builder_putchar(&s->strbuild, uc);
       }
@@ -1700,6 +1836,10 @@ static ptrdiff_t feed_9696(struct pike_string *str, struct std_cs_stor *s)
 	 * the mapping doesn't fit in a single UNICHAR. */
 	string_builder_utf16_strcat(&s->strbuild,
 				    table + 96*96 + (uc & 0x07ff));
+      } else if (uc == DEFCHAR && s->use_surrogateescapes) {
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
+	--p;
+	l++;
       } else if (uc != 0xe000) {
 	string_builder_putchar(&s->strbuild, table[(x-0x20)*96+(y-0x20)]);
       }
@@ -1730,7 +1870,13 @@ static ptrdiff_t feed_big5(struct pike_string *str, struct std_cs_stor *s)
     else if((y=(*p))>=0x40 && y<=0xfe ) {
       --l;
       p++;
-      string_builder_putchar(&s->strbuild, table[(x-0xa1 )*(0xfe -0x40 +1)+(y-0x40 )]);
+      p_wchar2 ch = table[(x-0xa1 )*(0xfe -0x40 +1)+(y-0x40 )];
+      if (ch == DEFCHAR && s->use_surrogateescapes) {
+	--p;
+	l++;
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
+      } else
+	string_builder_putchar(&s->strbuild, ch);
     } else {
       string_builder_putchar(&s->strbuild, x);
     }
@@ -1757,10 +1903,13 @@ static ptrdiff_t feed_8bit(struct pike_string *str, struct std_cs_stor *s)
     p_wchar0 x = *p++;
     if(x<lo || (x>0x7f && hi<=0x7f))
       string_builder_putchar(&s->strbuild, x);
-    else if(x>hi)
-      string_builder_putchar(&s->strbuild, DEFCHAR);
-    else
-      string_builder_putchar(&s->strbuild, table[x-lo]);
+    else {
+      UNICHAR ch = (x>hi? DEFCHAR : table[x-lo]);
+      if (ch == DEFCHAR && s->use_surrogateescapes)
+	ADD_SURROGATE_ESCAPE_FOR(x, &s->strbuild);
+      else
+	string_builder_putchar(&s->strbuild, ch);
+    }
   }
   return 0;
 }
@@ -2074,6 +2223,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
   ptrdiff_t l = str->len;
   INT32 dat = u7->dat;
   int shift = u7->shift, datbit = u7->datbit;
+  struct std_cs_stor *cs = (struct std_cs_stor *)(((char *)u7)-utf7_stor_offs);
 
   switch(str->size_shift) {
   case 0:
@@ -2251,7 +2401,7 @@ static void std_8bite_init_stor(struct object *UNUSED(o))
   s8->lowtrans = 32;
   s8->lo = 0;
   s8->hi = 0;
-  s8->zero_char = 0xfffd;
+  s8->zero_char = DEFCHAR;
 }
 
 static void std_8bite_exit_stor(struct object *UNUSED(o))
@@ -2272,6 +2422,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
   unsigned lowtrans = s8->lowtrans;
   int lo = s8->lo, hi = s8->hi;
   p_wchar0 ch;
+  struct std_cs_stor *cs = (struct std_cs_stor *)(((char *)s8)-std8e_stor_offs);
 
   switch(str->size_shift) {
   case 0:
@@ -2285,7 +2436,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if (!lo && (c == s8->zero_char))
 	  string_builder_putchar(sb, 0);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR0(str) - 1);
+	  REPLACE_CHAR0(c, feed_std8e, s8, str, p - STR0(str) - 1);
     }
     break;
   case 1:
@@ -2296,7 +2447,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
-	else if (!lo && (c == s8->zero_char) && (c != 0xfffd))
+	else if (!lo && (c == s8->zero_char) && (c != DEFCHAR))
 	  string_builder_putchar(sb, 0);
 	else
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR1(str) - 1);
@@ -2310,7 +2461,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
-	else if (!lo && (c == s8->zero_char) && (c != 0xfffd))
+	else if (!lo && (c == s8->zero_char) && (c != DEFCHAR))
 	  string_builder_putchar(sb, 0);
 	else
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR2(str) - 1);
@@ -2365,6 +2516,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
   int lo = s16->lo, hi = s16->hi;
   int sshift = s16->sshift;
   p_wchar1 ch;
+  struct std_cs_stor *cs = (struct std_cs_stor *)(((char *)s16)-std16e_stor_offs);
 
   switch(str->size_shift) {
   case 0:
@@ -2382,7 +2534,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR0(str) - 1);
+	  REPLACE_CHAR0(c, feed_std16e, s16, str, p - STR0(str) - 1);
     }
     break;
   case 1:
