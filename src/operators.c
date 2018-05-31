@@ -943,9 +943,19 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
     return 0;
   case T_ASSIGN:
   case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     type = type->cdr;
     goto loop;
+  case PIKE_T_ATTRIBUTE:
+    {
+      int ret;
+      if (!low_check_soft_cast(s, type->cdr)) return 0;
+      push_svalue(s);
+      ref_push_string((struct pike_string *)type->car);
+      SAFE_MAYBE_APPLY_MASTER("handle_attribute", 2);
+      ret = !SAFE_IS_ZERO(Pike_sp-1) || IS_UNDEFINED(Pike_sp-1);
+      pop_stack();
+      return ret;
+    }
   case T_AND:
     if (!low_check_soft_cast(s, type->car)) return 0;
     type = type->cdr;
