@@ -1741,6 +1741,39 @@ void handle_error(array|object trace)
   // predef::trace(0);
 }
 
+//! This function is called in runtime check_types mode (@tt{-rt@}),
+//! when encountering a soft cast to an attributed type.
+//!
+//! @param value
+//!   Value that is about to receive the attribute.
+//!
+//! @param attribute
+//!   Type attribute to validate.
+//!
+//! @returns
+//!   Returns one of:
+//!   @int
+//!     @value 1
+//!       If the attribute is valid for the value.
+//!     @value 0
+//!       If the attribute is not valid for the value.
+//!     @value UNDEFINED
+//!       If the attribute is unsupported.
+//!   @endint
+//!
+//! The default master implements validation of the @expr{"utf8"@}
+//! attribute.
+optional int(0..1) handle_attribute(mixed value, string attribute)
+{
+  switch(attribute) {
+#if constant(validate_utf8)
+  case "utf8":
+    return stringp(value) && validate_utf8(value, 3);
+#endif
+  }
+  return UNDEFINED;
+}
+
 /* This array contains the names of the functions
  * that a replacing master-object may want to override.
  */
