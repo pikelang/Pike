@@ -370,6 +370,7 @@ int parse_type(array t, int p)
 	  case "type":
 	  case "string":
 	    if(arrayp(t[p])) p++;
+	  case "utf8_string":
 	  case "bignum":
 	  case "longest":
 	  case "float":
@@ -606,6 +607,9 @@ class PikeType
       case "zero":
 	return ret;
 
+      case "utf8_string":
+	return "string";
+
 	default: return "object";
       }
     }
@@ -687,6 +691,9 @@ class PikeType
       case "zero":
 	return ({ ret });
 
+      case "utf8_string":
+	return ({ "string" });
+
 	case "bignum":
 	case "longest":
 	  return ({"int", "object"});
@@ -747,6 +754,7 @@ class PikeType
 	case "float":
 	  return (may_be_void_or_zero (1, 2) == 1 ?
 		  "struct svalue *" : "FLOAT_TYPE");
+        case "utf8_string":
 	case "string": return "struct pike_string *";
 
 	case "array":
@@ -875,6 +883,7 @@ class PikeType
 	    return sprintf("tNStr(%s)",
 			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
+	case "utf8_string": return "tUtf8Str";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
@@ -978,6 +987,9 @@ class PikeType
 		      args[1]->t ==  "2147483647" ? "" : args[1]->t);
 	  if(has_suffix(ret, "(..)")) return ret[..sizeof(ret)-5];
 	  return ret;
+
+        case "utf8_string":
+	  return "utf8_string";
 
 	case "bignum":
 	case "longest":
@@ -1272,6 +1284,11 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
       if (res[0] > res[1]) return UNDEFINED;
       return res;
     }
+  case "utf8_string":
+    if (ranged_type == "string") {
+      return ({ 0, 255 });
+    }
+    // FALL_THROUGH
   default:
     if (((string)complex_type->t) == ranged_type) {
       array(PikeType) args = complex_type->args;
