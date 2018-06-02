@@ -468,14 +468,18 @@ class conxion {
       PD("Nostash locked by %s\n",
        describe_backtrace(nostash->current_locking_thread()->backtrace()));
 #endif
-    if (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
-      stashcount->wait_till_drained();
-#ifdef PG_DEBUGRACE
-      conxsess sess = conxsess(this);
-#endif
+    while (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
       int mode;
       if (sizeof(stash) && (mode = getstash(KEEP)) > KEEP)
         sendcmd(mode);		// Force out stash to the server
+      if (!stashcount->drained()) {
+        lock = 0;				// Unlock while we wait
+        stashcount->wait_till_drained();
+        continue;				// Try again
+      }
+#ifdef PG_DEBUGRACE
+      conxsess sess = conxsess(this);
+#endif
       started = lock;		// sendcmd() clears started, so delay assignment
 #ifdef PG_DEBUGRACE
       return sess;
