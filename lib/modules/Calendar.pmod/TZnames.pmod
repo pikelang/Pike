@@ -1658,6 +1658,7 @@ mapping abbr2zones =
      "Europe/Isle_of_Man",
      "Europe/Jersey",
      "Europe/London",
+     "Europe/Prague",
    }),
    "GST": ({
      "Pacific/Guam",
@@ -2497,7 +2498,6 @@ mapping abbr2zones =
    }),
    "WAST": ({
      "Africa/Ndjamena",
-     "Africa/Windhoek",
    }),
    "WAT": ({
      "Africa/Bangui",
