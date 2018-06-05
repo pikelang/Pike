@@ -1988,7 +1988,6 @@ class proxy {
   }
 
   final string geterror(void|int clear) {
-    throwdelayederror(this);
     untolderror = 0;
     string s = lastmessage * "\n";
     if (clear)

@@ -492,6 +492,9 @@ protected void _destruct() {
 }
 
 private void reset_dbsession() {
+  proxy.statementsinflight->wait_till_drained();
+  proxy.delayederror = 0;
+  error(1);
   big_query("ROLLBACK");
   big_query("RESET ALL");
   big_query("CLOSE ALL");
