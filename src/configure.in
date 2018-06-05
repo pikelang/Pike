@@ -816,7 +816,7 @@ AS_VAR_POPDEF([ac_Framework])dnl
 m4_define([AH_CHECK_FRAMEWORK],
 [AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
         [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
-
+dnl '`
 
 
 PIKE_AC_DEBUG
