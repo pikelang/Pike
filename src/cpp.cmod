@@ -5307,13 +5307,26 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
     pop_n_elems(args);
   }
 
+  /*! @decl void define_macro(string name, string|void value)
+   *!
+   *! Define a cpp macro.
+   */
+  PIKEFUN void define_macro(string name, string|void value)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (!value) value = empty_pike_string;
+
+    add_define(this, name, value);
+  }
+
   /*! @decl void define_ansi_macros()
    *!
    *!   Adds some cpp macros defined by the ANSI-C standards,
    *!   such as @[__FILE__], @[__LINE__], etc.
    *!
    *! @seealso
-   *!   @[define_pike_macros()]
+   *!   @[define_macro()], @[define_pike_macros()]
    */
   PIKEFUN void define_ansi_macros()
   {
@@ -5336,7 +5349,7 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
    *!   such as @[__DIR__], @[__VERSION__], [__PIKE__], etc.
    *!
    *! @seealso
-   *!   @[define_ansi_macros()]
+   *!   @[define_macro()], @[define_ansi_macros()]
    */
   PIKEFUN void define_pike_macros()
   {
