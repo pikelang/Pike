@@ -3475,6 +3475,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
       f_minus(2);
     } while(Pike_sp[-1].u.string->len<8);
     pwd = Pike_sp[-1].u.string->str;
+    args++;
   }
 
   if(saltp)
