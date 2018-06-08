@@ -2741,6 +2741,9 @@ PIKECLASS backtrace_frame
  *!     @member int "int_size"
  *!       The number of bits in the native integer type.
  *!       Usually @expr{32@} or @expr{64@}.
+ *!     @member int "time_size"
+ *!       The number of bits in the native @tt{time_t@} type.
+ *!       This is typically the same value as @expr{"int_size"@}.
  *!     @member int "float_size"
  *!       The number of bits in the native floating point type.
  *!       Usually @expr{32@} or @expr{64@}.
@@ -2761,11 +2764,13 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(PIKE_BYTEORDER);
   push_static_text("int_size");
   push_int(sizeof(INT_TYPE) * 8);
+  push_static_text("time_size");
+  push_int(sizeof(time_t) * 8);
   push_static_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
   push_static_text("auto_bignum");
   push_int(1);
-  f_aggregate_mapping(6*2);
+  f_aggregate_mapping(7*2);
 }
 
 /*! @endmodule
