@@ -12026,11 +12026,31 @@ test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 // - load_module
 
 // - localtime
-ifefun(localtime,[[
+cond([[all_constants()->localtime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
   test_true(mappingp(localtime(0)))
   test_eq(localtime(1<<31)->year, 138)
   test_eq(localtime(1<<32)->year, 206)
   test_eq(localtime(1<<33)->year, 342)
+  test_equal(sort(indices(localtime(0))),({
+     "hour",
+     "isdst",
+     "mday",
+     "min",
+     "mon",
+     "sec",
+     "timezone",
+     "wday",
+     "yday",
+     "year"
+  }))
+  test_do([[int t = -1; catch(localtime(t));]])
+]])
+cond([[all_constants()->localtime && (Pike.get_runtime_info()->time_size == 32)]],
+[[
+  test_true(mappingp(localtime(0)))
+  test_eval_error([[return localtime(1<<31)->year]])
+  test_eq(localtime((1<<31)-1)->year, 138)
   test_equal(sort(indices(localtime(0))),({
      "hour",
      "isdst",
@@ -12242,14 +12262,32 @@ ifefun(mktime,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
                        1861916900,1988147300,2114377700,1500033813,
                        0,1,2,(1<<31)-1,
-                       -1<<33,-1<<32,(-1<<31)-1,-1<<31,(-1<<31)+1,-2,-1,
-                       1<<31,(1<<31)+1,1<<32,1<<33,
+                       -1<<31,(-1<<31)+1,-2,-1,
+		      }),int t) {
+	       if (mixed err = catch {
+	           int res = mktime (gmtime (t));
+	           if(res!=t) return ({t, res});
+	         }) {
+	         log_msg("Failure for %d (0x%08x).\n", t, t & 0xffffffff);
+	         throw(err);
+	       }
+	     }
+	     return 0;]], 0)
+]])
+
+cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
+  test_any([[foreach(({-1<<33,-1<<32,
+                       1<<31,(1<<31)+1,1<<32,1<<33,(-1<<31)-1,
 		      }),int t) {
 	       int res = mktime (gmtime (t));
 	       if(res!=t) return ({t, res});
 	     }
 	     return 0;]], 0)
+]])
 
+ifefun(mktime,
+[[
   test_eq(mktime (0, 0, 0, -200, -6, 101, 0, 0), 945043200);
   test_eq(mktime (0, 0, 0, -1, 2, 107, 0, 0), 1172534400);
   test_eq(mktime (0, 0, 0, 200, 1, 107, 0, 0), 1187481600);

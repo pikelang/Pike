@@ -284,9 +284,12 @@ test_eq(System.Time()->usec-System.Time()->usec<=0, 1)
 
 test_do(System.TM())
 test_do((int)System.TM(0), 0)
+test_do((int)System.TM((1<<31)-1), (1<<31)-1)
+cond_begin([[ Pike.get_runtime_info()->time_size > 32 ]])
 test_do((int)System.TM(1<<31), 1<<31)
 test_do((int)System.TM(1<<32), 1<<32)
 test_do((int)System.TM(1<<33), 1<<33)
+cond_end // time_size > 32
 test_do(System.TM(2017,11,21,16,15,01,"UTC"))
 test_do(System.TM(2017,6,21,16,15,01,"UTC"))
 test_do(System.TM(2017,6,21,16,15,01))
