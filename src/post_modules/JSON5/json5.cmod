@@ -278,10 +278,10 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
   int flags = ctx->flags;
   char string_quote_char = '"';
 
+  DECLARE_CYCLIC();
+
   if(flags & SINGLE_QUOTED_STRINGS)
     string_quote_char = '\''; 
-
-  DECLARE_CYCLIC();
 
   check_c_stack (1024);
 
