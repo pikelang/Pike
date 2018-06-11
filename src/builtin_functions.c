@@ -5844,8 +5844,10 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   }
 
   retval = mktime(date);
-  if (date->tm_wday < 0)
+  if (date->tm_wday < 0) {
+    /* NB: This happens for times near {MIN,MAX}_TIME_T. */
     Pike_error("Time conversion unsuccessful.\n");
+  }
 
   if(other_timezone)
   {
