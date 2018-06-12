@@ -157,10 +157,45 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING(for JAVA_HOME)
 
   AC_CACHE_VAL(pike_cv_java_java_home, [
+    # For reference; some locations of libjvm on various OSes:
+    #
+    # /usr/java/jdk1.5.0/jre/lib/amd64/server		Fedora Core 4 x86_64
+    # /usr/java/jdk1.5.0_05/jre/lib/amd64/server	Fedora Core 4 x86_64
+    # /usr/java/j2sdk1.4.2_08/jre/lib/i386/server	Fedora Core 4 i386
+    # /usr/java/j2sdk1.4.2_08/jre/lib/i386/client	Fedora Core 4 i386
+    # /usr/lib/jvm/icedtea-bin-8/jre/lib/amd64/server	Gentoo Linux x86_64
+    # /usr/lib/jvm/icedtea-bin-8-x86/jre/lib/i386/
+    #   server						Gentoo Linux i386
+    # /Developer/Applications/Utilities/
+    #   Application Loader.app/Contents/MacOS/itms/
+    #   java/lib/client					MacOS X 10.6 x86_64
+    # /Developer/Applications/Utilities/
+    #   Application Loader.app/Contents/MacOS/itms/
+    #   java/lib/server					MacOS X 10.6 x86_64
+    # /Applications/Xcode.app/Contents/Applications/
+    #   Application Loader.app/Contents/MacOS/itms/
+    #   java/lib/server/				MacOS X 10.9 x86_64
+    # /usr/lib64/gcj-4.1.1				RHEL 5 x86_64
+    # /usr/lib/gcj-4.1.1				RHEL 5 i386
+    # /usr/lib64/gcj-4.4.4				RHEL 6 x86_64
+    # /usr/java/default/jre/lib/amd64/server		RHEL 6 x86_64
+    # /usr/lib/jvm/jre/lib/amd64/server			RHEL 7 x86_64
+    # /usr/java/jre/lib/sparc				Solaris 8 sparc
+    # /usr/j2se/jre/lib/sparc/client			Solaris 8 sparc
+    # /usr/j2se/jre/lib/sparc/server			Solaris 8 sparc
+    # /usr/jdk/latest/jre/lib/i386/client		Solaris 10 i386
+    # /usr/jdk/latest/jre/lib/i386/server		Solaris 10 i386
+    # /usr/jdk/latest/jre/lib/amd64/server		Solaris 10 x86_64
+    # /usr/jdk/latest/jre/lib/i386/client		Solaris 11 i386
+    # /usr/jdk/latest/jre/lib/i386/server		Solaris 11 i386
+    # /usr/jdk/latest/jre/lib/amd64/server		Solaris 11 x86_64
+    # /usr/lib/jvm/default-java/jre/lib/amd64/server	Ubuntu 16.04 x86_64
+    # /usr/lib/jvm/default-java/lib/server		Ubuntu 18.04 x86_64
+
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess=`"$srcdir/find_java_home.sh"`
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/* /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
 	if test -d $tmp_java_home/.; then
 	  tmp_arch_dir=nowhere
 	  for ad in $java_arch_dirs; do
@@ -178,6 +213,7 @@ if test "x$with_java" = xyes; then
 	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_arch_dir"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	      java_arch_dir=$tmp_arch
