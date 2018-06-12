@@ -1,5 +1,17 @@
 Changes since Pike 8.0.610 (release 12)
 
+New Features
+------------
+
+o Sql.mysql
+
+  In unicode decode mode, characters outside the BMP are now
+  encoded as UTF-8 encoded UTF-16. This works around that
+  MySQL/MariaDB don't allow characters outside the BMP in utf8
+  strings (and instead require the character set to be declared
+  as utf8mb4, which has quite a few side effects).
+
+
 Bug fixes
 ---------
 
