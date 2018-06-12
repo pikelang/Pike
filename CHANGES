@@ -49,6 +49,14 @@ o Stdio.Buffer
   Eliminate race condition in read_cstring().
 
 
+Building & Tools
+----------------
+
+o Java
+
+  The location of libjvm is now detected on Ubuntu 18.04.
+
+
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
 
