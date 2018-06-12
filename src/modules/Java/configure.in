@@ -163,7 +163,7 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess=`"$srcdir/find_java_home.sh"`
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/* /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
 	if test -d $tmp_java_home/.; then
 	  tmp_arch_dir=nowhere
 	  for ad in $java_arch_dirs; do
@@ -181,6 +181,7 @@ if test "x$with_java" = xyes; then
 	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_arch_dir"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	      java_arch_dir=$tmp_arch
