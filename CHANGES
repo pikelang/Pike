@@ -56,6 +56,10 @@ o Java
 
   The location of libjvm is now detected on Ubuntu 18.04.
 
+o Postgres
+
+  Support Postgresql 10 and later.
+
 
 Changes since Pike 8.0.498 (release 11)
 ----------------------------------------------------------------------
