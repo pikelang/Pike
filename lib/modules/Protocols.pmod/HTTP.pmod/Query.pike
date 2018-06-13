@@ -1339,15 +1339,18 @@ void close()
   }
 }
 
-private int(0..1) is_empty_response() {
-  // FIXME: a response to a HEAD request also does not have a body
-  return (status >= 100 && status < 200 || status == 204 || status == 304);
+private int(0..1) is_empty_response()
+{
+  return (status >= 100 && status < 200) ||
+    (status == 204) || (status == 304) ||
+    (request && (upper_case(request[..4]) == "HEAD "));
 }
 
-private int(0..1) body_is_fetched() {
+private int(0..1) body_is_fetched()
+{
   // There is no body in these requests
   // and the content-length header must be ignored
-  if (status >= 100 && status < 200 || status == 204 || status == 304 || !con) {
+  if (is_empty_response() || !con) {
     return 1;
   }
 
