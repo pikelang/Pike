@@ -3101,11 +3101,26 @@ static void fix_auto_node(node *n, struct pike_type *type)
 {
   free_type(n->type);
   copy_pike_type(n->type, type);
-  if ((n->token == F_LOCAL) && !n->u.integer.b) {
-    struct local_variable *var =
-      &Pike_compiler->compiler_frame->variable[n->u.integer.a];
-    if (var->type) free_type(var->type);
-    copy_pike_type(var->type, type);
+  switch(n->token) {
+  case F_LOCAL:
+    if (!n->u.integer.b) {
+      struct local_variable *var =
+	&Pike_compiler->compiler_frame->variable[n->u.integer.a];
+      if (var->type) free_type(var->type);
+      copy_pike_type(var->type, type);
+    }
+    break;
+  case F_EXTERNAL:
+    if (n->u.integer.a == Pike_compiler->new_program->id) {
+      struct identifier *id =
+	ID_FROM_INT(Pike_compiler->new_program, n->u.integer.b);
+      if( id )
+      {
+	if (id->type) free_type(id->type);
+	copy_pike_type(id->type, type);
+      }
+    }
+    break;
   }
 }
 
