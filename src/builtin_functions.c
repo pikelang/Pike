@@ -5845,7 +5845,32 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 
   retval = mktime(date);
   if (date->tm_wday < 0) {
-    /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+    if (other_timezone) {
+      /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+      const char *orig_tz = getenv("TZ");
+      char tzbuf[20];
+      ONERROR uwp;
+      char *tzsgn = tz < 0 ? "-" : "+";
+      if (tz < 0) tz = -tz;
+      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+	      tzsgn,
+	      tz/3600,
+	      (tz/60)%60,
+	      tz % 60);
+      putenv(tzbuf);
+      if (!orig_tz) {
+#ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
+	orig_tz = "TZ=";
+#else
+	orig_tz = "TZ";
+#endif
+      }
+      SET_ONERROR(uwp, putenv, orig_tz);
+      /* NB: No need to call tzset(); mktime() will call it. */
+      retval = mktime_zone(date, 0, 0);
+      CALL_AND_UNSET_ONERROR(uwp);
+      return retval;
+    }
     Pike_error("Time conversion unsuccessful.\n");
   }
 
