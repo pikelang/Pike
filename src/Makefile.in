@@ -466,7 +466,7 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
+.SUFFIXES: .c .h .S .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -497,6 +497,16 @@ undump_modules: delete_dumped_modules
 	  exit $$status; \
 	fi
 
+.c.S:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -S $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -S $< -o $@" >&2 ;\
+	  exit $$status; \
+	fi
+
 .m.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
@@ -504,6 +514,16 @@ undump_modules: delete_dumped_modules
 	  status=$$?; \
 	  echo "Compilation command was:" >&2;\
 	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
+	  exit $$status; \
+	fi
+
+.m.S:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -S $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -S $< -o $@" >&2 ;\
 	  exit $$status; \
 	fi
 
