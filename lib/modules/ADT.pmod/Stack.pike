@@ -31,10 +31,30 @@ void push(mixed val)
 //! popping it.
 //! @throws
 //!   Throws an error if called on an empty stack.
+//! @seealso
+//!   @[peek()]
 mixed top()
 {
   if (ptr) {
     return arr[ptr-1];
+  }
+  error("Stack underflow\n");
+}
+
+//! Returns an element from the stack, without popping it.
+//!
+//! @param offset
+//!   The number of elements from the top of the stack to skip.
+//!
+//! @throws
+//!   Throws an error if called on an empty stack.
+//!
+//! @seealso
+//!   @[top()]
+mixed peek(int|void offset)
+{
+  if ((offset >= 0) && ((ptr-offset) > 0)) {
+    return arr[ptr-offset-1];
   }
   error("Stack underflow\n");
 }
