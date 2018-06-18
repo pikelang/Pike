@@ -241,7 +241,11 @@ struct timeval;
 #ifdef HAS___BUILTIN_ASSUME
 # define STATIC_ASSUME(X) __builtin_assume(X)
 #else
-# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# ifdef HAS___BUILTIN_UNREACHABLE
+#  define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# else
+#  define STATIC_ASSUME(X)
+# endif
 #endif
 
 #ifdef HAS___BUILTIN_CONSTANT_P
