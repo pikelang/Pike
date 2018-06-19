@@ -185,12 +185,13 @@ MACRO void* buffer_alloc(struct byte_buffer *b, size_t len) {
     return buffer_alloc_unsafe(b, len);
 }
 
+#define DO_TRANSFORM(VAR, TRANS)		VAR = TRANS(VAR)
 #define GEN_BUFFER_ADD(name, type, transform, transform_back)                   \
 MACRO void buffer_add_ ## name ## _unsafe(struct byte_buffer *b, type a) {      \
     unsigned INT8 * dst = buffer_dst(b);                                        \
     buffer_check_space(b, sizeof(a));                                           \
     ASSUME_UNCHANGED(b, {                                                       \
-        a = transform(a);                                                       \
+        DO_TRANSFORM(a, transform);						\
         memcpy(dst, &a, sizeof(a));                                             \
     });                                                                         \
     b->dst = dst + sizeof(a);                                                   \
@@ -206,7 +207,7 @@ MACRO void buffer_set_ ## name (struct byte_buffer *b, size_t pos, type a) {    
     buffer_check_position(b, pos + sizeof(a));                                  \
     dst += pos;                                                                 \
     ASSUME_UNCHANGED(b, {                                                       \
-        a = transform(a);                                                       \
+        DO_TRANSFORM(a, transform);						\
         memcpy(dst, &a, sizeof(a));                                             \
     });                                                                         \
 }                                                                               \
@@ -218,25 +219,30 @@ MACRO type buffer_get_ ## name (struct byte_buffer *b, size_t pos) {            
     buffer_check_position(b, pos + sizeof(a));                                  \
     src += pos;                                                                 \
     memcpy(&a, src, sizeof(a));                                                 \
-    a = transform_back(a);                                                      \
+    DO_TRANSFORM(a, transform_back);						\
     return a;                                                                   \
 }
 
 GEN_BUFFER_ADD(be16, unsigned INT16, hton16, ntoh16)
 GEN_BUFFER_ADD(le16, unsigned INT16, ntoh16, hton16)
-GEN_BUFFER_ADD(u16, unsigned INT16, , )
 
 GEN_BUFFER_ADD(be32, unsigned INT32, hton32, ntoh32)
 GEN_BUFFER_ADD(le32, unsigned INT32, ntoh32, hton32)
-GEN_BUFFER_ADD(u32, unsigned INT32, , )
 
 GEN_BUFFER_ADD(be64, UINT64, hton64, ntoh64)
 GEN_BUFFER_ADD(le64, UINT64, ntoh64, hton64)
+
+#undef DO_TRANSFORM
+#define DO_TRANSFORM(VAR, TRANS)
+
+GEN_BUFFER_ADD(u16, unsigned INT16, , )
+GEN_BUFFER_ADD(u32, unsigned INT32, , )
 GEN_BUFFER_ADD(u64, UINT64, , )
 
 GEN_BUFFER_ADD(u8, unsigned INT8, , )
 GEN_BUFFER_ADD(char, char, , )
 
+#undef DO_TRANSFORM
 #undef GEN_BUFFER_ADD
 #undef MACRO
 #undef ASSUME_UNCHANGED
