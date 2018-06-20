@@ -205,8 +205,8 @@ PIKECLASS Api
         struct array *v = Pike_sp[-1].u.array;
 
         if (v->size != 2) {
-          Pike_error ("If returning an array from __resolve_import it must "
-                      "contain two indices: source and absolute path.\n");
+          Pike_error("Arrays returned from handle_sass_import() must "
+		     "contain two indices: source and absolute path.\n");
         }
 
         if (TYPEOF (ITEM(v)[0]) == T_STRING &&
