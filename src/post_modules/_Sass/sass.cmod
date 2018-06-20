@@ -163,6 +163,7 @@ PIKECLASS Api
       Sass_Import_Entry last_imp = sass_compiler_get_last_import (comp);
       const char *abs_path = sass_import_get_abs_path (last_imp);
       const char *imp_path = sass_import_get_imp_path (last_imp);
+      Sass_Import_List list = sass_make_import_list(1);
 
       push_text (path);
 
@@ -170,22 +171,25 @@ PIKECLASS Api
       push_text (imp_path);
 
       if (SETJMP(recovery)) {
-        call_handle_error();
+	list[0] = sass_make_import_entry(path, 0, 0);
+	sass_import_set_error(list[0],
+			      sass_copy_c_string("Importer error."), 0, 0);
+	if (!IS_UNDEFINED(&throw_value)) {
+	  push_svalue(&throw_value);
+	}
 	UNSETJMP(recovery);
-        return NULL;
+        return list;
       }
 
       apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
 
       if (TYPEOF (Pike_sp[-1]) == T_STRING) {
-	      Sass_Import_List list;
         if (Pike_sp[-1].u.string->size_shift != eightbit) {
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
 	UNSETJMP(recovery);
 
-        list = sass_make_import_list (1);
         list[0] = sass_make_import_entry (
                     path,
                     sass_copy_c_string (Pike_sp[-1].u.string->str),
@@ -212,7 +216,6 @@ PIKECLASS Api
           struct pike_string *_data = ITEM(v)[0].u.string;
           // Absolute path of the imported file.
           struct pike_string *_absp = ITEM(v)[1].u.string;
-	        Sass_Import_List list;
 
           if (_data->size_shift != eightbit) {
             Pike_error ("Widestring returned in array index one from "
@@ -226,7 +229,6 @@ PIKECLASS Api
 
 	  UNSETJMP(recovery);
 
-          list = sass_make_import_list (1);
           list[0] = sass_make_import (path, _absp->str,
                                       // libsass takes ownership of _data->str
                                       // and will free it when the context
@@ -283,9 +285,21 @@ PIKECLASS Api
     // Since the Pike layer can throw below we register a cleanup
     // callback here so that we can free the context properly.
 
+    /* Sentinel for holding Pike errors.
+     *
+     * Pike errors are caught by the low-level code and pushed
+     * on the stack, so that we can rethrow them here.
+     */
+    push_undefined();
+
     SET_ONERROR(uwp, sass_delete_file_context, ctx);
 
     err = sass_compile_file_context (ctx);
+
+    if (!IS_UNDEFINED(Pike_sp-1)) {
+      /* Sentinel has changed. Rethrow. */
+      f_throw(1);
+    }
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
@@ -357,9 +371,21 @@ PIKECLASS Api
     // Since the Pike layer can throw below we register a cleanup
     // callback here so that we can free the context properly.
 
+    /* Sentinel for holding Pike errors.
+     *
+     * Pike errors are caught by the low-level code and pushed
+     * on the stack, so that we can rethrow them here.
+     */
+    push_undefined();
+
     SET_ONERROR(uwp, sass_delete_data_context, ctx);
 
     sass_compile_data_context (ctx);
+
+    if (!IS_UNDEFINED(Pike_sp-1)) {
+      /* Sentinel has changed. Rethrow. */
+      f_throw(1);
+    }
 
     err = sass_context_get_error_status (ctx_out);
 
