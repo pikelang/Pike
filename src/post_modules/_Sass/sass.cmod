@@ -191,6 +191,8 @@ PIKECLASS Api
                     sass_copy_c_string (Pike_sp[-1].u.string->str),
                     0);
 
+	pop_stack();
+
         return list;
       }
       // FIXME: I'm not 100% sure about the code below since it took me some
@@ -231,9 +233,15 @@ PIKECLASS Api
                                       // is destroyd, hence the copy.
                                       sass_copy_c_string(_data->str),
                                       0);
+
+	  pop_stack();
+
           return list;
         }
       }
+
+      /* FIXME: Complain about unsupported return-value? */
+      pop_stack();
 
       UNSETJMP(recovery);
     }
