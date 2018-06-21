@@ -182,7 +182,7 @@ PIKECLASS Stack
    */
   PIKEFUN void quick_pop(void|int val)
   {
-    apply_current(f_Stack_quick_pop_fun_num, args);
+    apply_current(f_Stack_pop_fun_num, args);
     push_int(0);
   }
 
