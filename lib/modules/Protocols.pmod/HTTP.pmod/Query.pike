@@ -214,6 +214,8 @@ protected int ponder_answer( int|void start_position )
       case "connection":
       case "content-type":
       case "content-encoding":
+      case "content-range":
+      case "content-length":
       case "date":
       case "etag":
       case "keep-alive":
