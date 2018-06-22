@@ -290,7 +290,7 @@ PIKECLASS Stack
       cnt++;
     }
     if (other_st->arr) {
-      ref_push_array(THIS->arr);
+      ref_push_array(other_st->arr);
       cnt++;
     }
     if (cnt == 1) {
