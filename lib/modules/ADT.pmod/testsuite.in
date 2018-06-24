@@ -110,6 +110,93 @@ test_equal(indices(adth),[[ ({9,10}) ]])
 test_equal(values(adth),[[ ({26,27}) ]])
 test_do(add_constant("adth"))
 
+dnl - ADT.LowLevelStack
+cond_begin([[ ADT["LowLevelStack"] ]])
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->push(1);
+  return s->pop();
+]], 1)
+
+test_eval_error(return ADT.LowLevelStack()->pop())
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return s->pop();
+]], 999)
+
+test_equal_any([[
+  object s = ADT.LowLevelStack();
+  s->push(2);
+  s->push(3);
+  s->push(4);
+  s->pop();
+  return s->pop(2);
+]], ({2,3}) )
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->push(5);
+  return s->top();
+]], 5)
+
+test_eval_error(return ADT.LowLevelStack()->top())
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->quick_pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->push(3);
+  s->reset();
+  return sizeof(s);
+]], 0)
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->set_stack( "1234"/1 );
+  s->push("5");
+  return s->pop()+sizeof(s);
+]], "54")
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->push("a");
+  s->push("b");
+  return values(s)*",";
+]], [["a,b"]])
+
+test_any([[
+  object s = ADT.LowLevelStack();
+  s->set_stack( "1234"/1 );
+  object t = ADT.LowLevelStack();
+  t->push("5");
+  return values(s+t)*"";
+]], "12345")
+
+cond_end // ADT.LowLevelStack
+
 
 dnl - ADT.Priority_queue
 
