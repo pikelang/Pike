@@ -171,13 +171,13 @@ PIKECLASS Api
       push_text (imp_path);
 
       if (SETJMP(recovery)) {
-	list[0] = sass_make_import_entry(path, 0, 0);
-	sass_import_set_error(list[0],
-			      sass_copy_c_string("Importer error."), 0, 0);
-	if (!IS_UNDEFINED(&throw_value)) {
-	  push_svalue(&throw_value);
-	}
-	UNSETJMP(recovery);
+        list[0] = sass_make_import_entry(path, 0, 0);
+        sass_import_set_error(list[0],
+                              sass_copy_c_string("Importer error."), 0, 0);
+        if (!IS_UNDEFINED(&throw_value)) {
+          push_svalue(&throw_value);
+        }
+        UNSETJMP(recovery);
         return list;
       }
 
@@ -188,14 +188,14 @@ PIKECLASS Api
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
-	UNSETJMP(recovery);
+        UNSETJMP(recovery);
 
         list[0] = sass_make_import_entry (
                     path,
                     sass_copy_c_string (Pike_sp[-1].u.string->str),
                     0);
 
-	pop_stack();
+        pop_stack();
 
         return list;
       }
@@ -206,7 +206,7 @@ PIKECLASS Api
 
         if (v->size != 2) {
           Pike_error("Arrays returned from handle_sass_import() must "
-		     "contain two indices: source and absolute path.\n");
+                     "contain two indices: source and absolute path.\n");
         }
 
         if (TYPEOF (ITEM(v)[0]) == T_STRING &&
@@ -227,7 +227,7 @@ PIKECLASS Api
                         "importer function.\n");
           }
 
-	  UNSETJMP(recovery);
+          UNSETJMP(recovery);
 
           list[0] = sass_make_import (path, _absp->str,
                                       // libsass takes ownership of _data->str
@@ -236,7 +236,7 @@ PIKECLASS Api
                                       sass_copy_c_string(_data->str),
                                       0);
 
-	  pop_stack();
+          pop_stack();
 
           return list;
         }
@@ -318,7 +318,7 @@ PIKECLASS Api
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
           Pike_error("Failed generating source map (code: %ld): %s\n",
-		     err, errstr);
+                     err, errstr);
         }
       }
 
@@ -406,7 +406,7 @@ PIKECLASS Api
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
           Pike_error("Failed generating source map (code: %ld): %s\n",
-		     err, errstr);
+                     err, errstr);
         }
       }
 
