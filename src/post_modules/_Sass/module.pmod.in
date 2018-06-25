@@ -269,6 +269,10 @@ class Compiler
   //!    Omit the #sourceMappingURL or not.
   //!    See also @[omit_source_map_url]
   //!
+  //!   @member bool "sass_syntax"
+  //!    Turn on/off Sass syntax, i.e. indented syntax. Only necessary when
+  //!    using @[compile_string()]
+  //!
   //!   @member int "precision"
   //!    Floating point precision. See also @[precision].
   //!  @endmapping
@@ -312,6 +316,10 @@ class Compiler
 
         case "precision":
           precision = val;
+          break;
+
+        case "sass_syntax":
+          sass_syntax = val;
           break;
 
         default:
