@@ -91,7 +91,7 @@ static const int lock_depth = 1;
 #define CDFPRINTF(...)
 #endif /* COMPILER_DEBUG */
 
-static struct program *reporter_program = NULL;
+struct program *reporter_program = NULL;
 struct program *compilation_program = 0;
 struct program *compilation_env_program = 0;
 struct object *compilation_environment = NULL;

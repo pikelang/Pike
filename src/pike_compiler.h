@@ -10,6 +10,7 @@
 #include "lex.h"
 #include "program.h"
 
+extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
