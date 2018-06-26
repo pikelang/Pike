@@ -105,6 +105,13 @@ PIKECLASS Api
    */
   PIKEVAR int(0..1)    omit_source_map_url;
 
+  /*! @decl bool sass_syntax
+   *!
+   *! Set whether the code is Sass syntax, i.e. indented syntax or not. Only
+   *! necessary when using @[compile_string()]
+   */
+  PIKEVAR int(0..1)    sass_syntax;
+
   // Documented in the pmod
   PIKEFUN string(8bit)|array(string(8bit))
   handle_sass_import (string(8bit) path,
@@ -133,6 +140,7 @@ PIKECLASS Api
         s_opts, sass_copy_c_string (THIS->include_path->str));
     }
 
+    sass_option_set_is_indented_syntax_src (s_opts, THIS->sass_syntax);
     sass_option_set_omit_source_map_url (s_opts, THIS->omit_source_map_url);
     sass_option_set_source_comments (s_opts, THIS->source_comments);
 
@@ -155,7 +163,8 @@ PIKECLASS Api
 
   // Libsass import callback. This will be called for every @import directive
   // in the Sass files. See the doc comment for __importer_cb.
-  Sass_Import_List pike_sass_importer (const char *path, Sass_Importer_Entry cb,
+  Sass_Import_List pike_sass_importer (const char *path,
+                                       Sass_Importer_Entry UNUSED(cb),
                                        struct Sass_Compiler *comp)
   {
     if (THIS->id_handle_import > -1) {
@@ -171,13 +180,13 @@ PIKECLASS Api
       push_text (imp_path);
 
       if (SETJMP(recovery)) {
-	list[0] = sass_make_import_entry(path, 0, 0);
-	sass_import_set_error(list[0],
-			      sass_copy_c_string("Importer error."), 0, 0);
-	if (!IS_UNDEFINED(&throw_value)) {
-	  push_svalue(&throw_value);
-	}
-	UNSETJMP(recovery);
+        list[0] = sass_make_import_entry(path, 0, 0);
+        sass_import_set_error(list[0],
+                              sass_copy_c_string("Importer error."), 0, 0);
+        if (!IS_UNDEFINED(&throw_value)) {
+          push_svalue(&throw_value);
+        }
+        UNSETJMP(recovery);
         return list;
       }
 
@@ -188,14 +197,14 @@ PIKECLASS Api
           Pike_error ("Widestring returned from sass importer.\n");
         }
 
-	UNSETJMP(recovery);
+        UNSETJMP(recovery);
 
         list[0] = sass_make_import_entry (
                     path,
                     sass_copy_c_string (Pike_sp[-1].u.string->str),
                     0);
 
-	pop_stack();
+        pop_stack();
 
         return list;
       }
@@ -206,7 +215,7 @@ PIKECLASS Api
 
         if (v->size != 2) {
           Pike_error("Arrays returned from handle_sass_import() must "
-		     "contain two indices: source and absolute path.\n");
+                     "contain two indices: source and absolute path.\n");
         }
 
         if (TYPEOF (ITEM(v)[0]) == T_STRING &&
@@ -227,7 +236,7 @@ PIKECLASS Api
                         "importer function.\n");
           }
 
-	  UNSETJMP(recovery);
+          UNSETJMP(recovery);
 
           list[0] = sass_make_import (path, _absp->str,
                                       // libsass takes ownership of _data->str
@@ -236,7 +245,7 @@ PIKECLASS Api
                                       sass_copy_c_string(_data->str),
                                       0);
 
-	  pop_stack();
+          pop_stack();
 
           return list;
         }
@@ -318,7 +327,7 @@ PIKECLASS Api
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
           Pike_error("Failed generating source map (code: %ld): %s\n",
-		     err, errstr);
+                     err, errstr);
         }
       }
 
@@ -406,7 +415,7 @@ PIKECLASS Api
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
           Pike_error("Failed generating source map (code: %ld): %s\n",
-		     err, errstr);
+                     err, errstr);
         }
       }
 

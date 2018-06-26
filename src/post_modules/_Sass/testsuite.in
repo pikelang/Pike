@@ -166,6 +166,25 @@ cond_begin(Web["Sass"])
 
   test_true([[ sscanf(scss_comp_file, "%*s/* line %*d, %*s.scss */") == 3 ]])
 
+  dnl *** Test SASS syntax on compile_string()
+  test_do([[
+    string sass_str = #"
+h1
+  small
+    color: blue
+  font-size: 32
+    ";
+
+    sassc->set_options(([
+      "source_map_file" : UNDEFINED,
+      "source_comments" : false,
+      "sass_syntax"     : true,
+    ]));
+
+    mapping(string:string) res = sassc->compile_string(sass_str);
+    sassc->sass_syntax = false;
+  ]])
+
   dnl *** Clean up
 
   test_do([[
