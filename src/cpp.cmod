@@ -25,6 +25,7 @@
 #include "cpp.h"
 #include "lex.h"
 #include "sprintf.h"
+#include "pike_compiler.h"
 
 #include <ctype.h>
 
@@ -594,6 +595,10 @@ PIKECLASS define
  */
 PIKECLASS CPP
 {
+  /*! @decl inherit Reporter
+   */
+  INHERIT reporter;
+
   PIKEVAR mapping(string:object(define)) defines flags ID_PRIVATE|ID_PROTECTED;
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
@@ -612,6 +617,8 @@ PIKECLASS CPP
 
   PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
 
+  static int f_inherited_Reporter_report_fun_num = -1;
+
   INIT
   {
     init_string_builder(&THIS->buf, 0);
@@ -623,6 +630,17 @@ PIKECLASS CPP
 
     if (THIS->buf.s) {
       free_string_builder(&THIS->buf);
+    }
+  }
+
+  EXTRA
+  {
+    int id = find_identifier("report", reporter_program);
+    if (id < 0) {
+      yyerror("Failed to find Reporter::report().\n");
+    } else {
+      f_inherited_Reporter_report_fun_num =
+	really_low_reference_inherited_identifier(NULL, 1, id);
     }
   }
 
@@ -654,9 +672,117 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
 static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 		      ptrdiff_t tmp, int flags);
 
+
+/*! @decl void report(SeverityLevel severity, @
+ *!                   string filename, int(1..) linenumber, @
+ *!                   string subsystem, @
+ *!                   string message, mixed ... extra_args)
+ *!
+ *!   Report a diagnostic from the preprocessor.
+ *!
+ *! @param severity
+ *!   The severity of the diagnostic.
+ *!
+ *! @param filename
+ *! @param linenumber
+ *!   Location which triggered the diagnostic.
+ *!
+ *! @param subsystem
+ *!   Always @expr{"cpp"@}.
+ *!
+ *! @param message
+ *!   @[sprintf()]-style formatting string with the diagnostic message.
+ *!
+ *! @param extra_args
+ *!   Extra arguments to @[sprintf()].
+ *!
+ *!   The default implementation does the following:
+ *!
+ *!   @ul
+ *!     @item
+ *!       If there's a handler which implements @[Reporter()->report()],
+ *!       call it with the same arguments.
+ *!     @item
+ *!       Otherwise if there's a handler which implements @[compile_warning()]
+ *!       or @[compile_error()] that matches @[severity], call it with
+ *!       suitable arguments.
+ *!     @item
+ *!       Otherwise if there's a compat handler, use it in the same manner
+ *!       as the handler.
+ *!     @item
+ *!       Otherwise fall back to calling @[::report()] with the same arguments.
+ *!   @endul
+ *!
+ *! @note
+ *!   In Pike 8.0 and earlier @[MasterObject()->report()] was not called.
+ *!
+ *! @seealso
+ *!   @[Reporter()->report()]
+ */
+PIKEFUN void report(int(0..3) severity,
+		    string filename, int(1..) linenumber,
+		    string subsystem,
+		    string message, mixed ... extra_args)
+{
+  struct CPP_struct *this = THIS;
+  const char *compat_fun_name = "compile_warning";
+  const char *fun_name;
+  struct object *found = NULL;
+  int i;
+  int fun = -1;
+  if (severity > REPORT_ERROR) {
+    this->compile_errors++;
+    compat_fun_name = "compile_error";
+  }
+  if (this->compile_errors > 10) return;
+  for (i = 0; i < 2; i++) {
+    struct object *handler;
+    int j;
+
+    if (!i) {
+      handler = this->handler;
+    } else {
+      handler = this->compat_handler;
+    }
+    if (!handler || !handler->prog) continue;
+    for(j = 0; j < 2; j++) {
+      if (!j) {
+	fun_name = "report";
+      } else {
+	fun_name = compat_fun_name;
+      }
+      if ((fun = find_identifier(fun_name, handler->prog)) != -1) {
+	found = handler;
+	break;
+      }
+    }
+  }
+  if (found) {
+    if (fun_name[0] == 'r') {
+      safe_apply_low2(found, fun, args, fun_name);
+    } else if (severity >= REPORT_WARNING) {
+      if (args > 5) {
+	f_sprintf(args - 4);
+	args = 5;
+	message = Pike_sp[-1].u.string;
+      }
+      ref_push_string(filename);
+      push_int(linenumber);
+      ref_push_string(message);
+      apply_low(found, fun, 3);
+    }
+    return;
+  }
+  apply_current(f_inherited_Reporter_report_fun_num, args);
+}
+
+static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
+				const char *fmt, va_list args)
+  ATTRIBUTE((noinline));
+static void cpp_report(struct CPP_struct *this, int severity,
+		       const char *fmt, ...)
+  ATTRIBUTE((noinline));
 static void cpp_error(struct CPP_struct *this, const char *err) ATTRIBUTE((noinline));
-static void cpp_error_vsprintf (struct CPP_struct *this, const char *fmt,
-				va_list args) ATTRIBUTE((noinline));
 static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...) ATTRIBUTE((noinline));
 static void cpp_handle_exception(struct CPP_struct *this,
 				 const char *cpp_error_fmt, ...) ATTRIBUTE((noinline));
@@ -664,74 +790,44 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...) 
 struct define_struct *defined_macro = NULL;
 static struct svalue defined_macro_sval;
 
-static void cpp_error(struct CPP_struct *this, const char *err)
-{
-  this->compile_errors++;
-  if(this->compile_errors > 10) return;
-  if((this->handler && this->handler->prog) || get_master())
-  {
-    ref_push_string(this->current_file);
-    push_int(this->current_line);
-    push_text(err);
-    low_safe_apply_handler("compile_error", this->handler,
-			   this->compat_handler, 3);
-    pop_stack();
-  }else{
-    (void)fprintf(stderr, "%s:%ld: %s\n",
-		  this->current_file->str,
-		  (long)this->current_line,
-		  err);
-    fflush(stderr);
-  }
-}
-
-static void cpp_error_vsprintf (struct CPP_struct *this, const char *fmt,
-				va_list args)
+static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
+				const char *fmt, va_list args)
 {
   struct string_builder s;
   struct pike_string *msg;
 
-  this->compile_errors++;
-  if (this->compile_errors > 10) return;
+  push_int(severity);
+  ref_push_string(this->current_file);
+  push_int(this->current_line);
+  push_constant_text("cpp");
 
   init_string_builder(&s, 0);
-
   string_builder_vsprintf(&s, fmt, args);
+  push_string(finish_string_builder(&s));
 
-  msg = finish_string_builder(&s);
+  safe_apply_current(f_CPP_report_fun_num, 5);
+  pop_stack();
+}
 
-  if((this->handler && this->handler->prog) || get_master())
-  {
-    ref_push_string(this->current_file);
-    push_int(this->current_line);
-    push_string(msg);
-    low_safe_apply_handler("compile_error", this->handler,
-			   this->compat_handler, 3);
-    pop_stack();
-    return;
-  }
+static void cpp_report(struct CPP_struct *this, int severity,
+		       const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  cpp_report_vsprintf(this, severity, fmt, args);
+  va_end(args);
+}
 
-  if (this->current_file->size_shift) {
-    fprintf(stderr, "WIDE:%ld: ", (long)this->current_line);
-  } else {
-    fprintf(stderr, "%s:%ld: ",
-	    this->current_file->str, (long)this->current_line);
-  }
-
-  if (!msg->size_shift) {
-    fprintf(stderr, "%s\n", msg->str);
-  } else {
-    fprintf(stderr, "WIDE (fmt: %s)\n", fmt);
-  }
-  free_string(msg);
-  fflush(stderr);
+static void cpp_error(struct CPP_struct *this, const char *err)
+{
+  cpp_report(this, REPORT_ERROR, "%s", err);
 }
 
 static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
 {
   va_list args;
   va_start(args,fmt);
-  cpp_error_vsprintf (this, fmt, args);
+  cpp_report_vsprintf(this, REPORT_ERROR, fmt, args);
   va_end(args);
 }
 
@@ -745,7 +841,7 @@ static void cpp_handle_exception(struct CPP_struct *this,
   if (cpp_error_fmt) {
     va_list args;
     va_start (args, cpp_error_fmt);
-    cpp_error_vsprintf (this, cpp_error_fmt, args);
+    cpp_report_vsprintf(this, REPORT_ERROR, cpp_error_fmt, args);
     va_end (args);
   }
 
@@ -756,7 +852,7 @@ static void cpp_handle_exception(struct CPP_struct *this,
   if (SAFE_IS_ZERO(Pike_sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
-      cpp_error_sprintf(this, "%S", s);
+      cpp_report(this, REPORT_ERROR, "%S", s);
       free_string (s);
     }
   }
@@ -767,30 +863,11 @@ static void cpp_handle_exception(struct CPP_struct *this,
 
 static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 {
-  struct string_builder sb;
   va_list args;
 
-  init_string_builder (&sb, 0);
   va_start(args, cpp_warn_fmt);
-  string_builder_vsprintf (&sb, cpp_warn_fmt, args);
+  cpp_report_vsprintf(this, REPORT_WARNING, cpp_warn_fmt, args);
   va_end(args);
-
-  if((this->handler && this->handler->prog) || get_master())
-  {
-    ref_push_string(this->current_file);
-    push_int(this->current_line);
-    push_string (finish_string_builder (&sb));
-    low_safe_apply_handler("compile_warning", this->handler,
-			   this->compat_handler, 3);
-    pop_stack();
-  }else{
-    (void)fprintf(stderr, "%s:%ld: %s\n",
-		  this->current_file->str,
-		  (long)this->current_line,
-		  sb.s->str);
-    fflush(stderr);
-    free_string_builder (&sb);
-  }
 }
 
 /*! @class MasterObject
