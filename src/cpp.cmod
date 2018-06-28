@@ -730,7 +730,7 @@ PIKEFUN void report(int(0..3) severity,
   struct object *found = NULL;
   int i;
   int fun = -1;
-  if (severity > REPORT_ERROR) {
+  if (severity >= REPORT_ERROR) {
     this->compile_errors++;
     compat_fun_name = "compile_error";
   }
