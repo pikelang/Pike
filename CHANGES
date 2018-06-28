@@ -152,6 +152,11 @@ o Thread.Farm
   that monitor thread creation and termination for the purpose
   of tracking thread names.
 
+  Fixed lost error in provide_error() exception handling.
+
+  Avoid delayed deallocation of jobs by clearing references immediately
+  after execution.
+
 o Thread.ResourceCount
 
   New module to allow threadsafe race-condition-free counting of
