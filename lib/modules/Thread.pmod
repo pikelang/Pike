@@ -556,6 +556,7 @@ optional class Farm
           total_time += st/1000.0;
           handled++;
           job = 0;
+          q = 0;
           if( st > max_time )
             max_time = st;
           ft_cond->broadcast();
@@ -642,8 +643,10 @@ optional class Farm
 
   protected void dispatcher()
   {
-    while( array q = [array]job_queue->read() )
+    while( array q = [array]job_queue->read() ) {
       aquire_thread()->run( q[1], q[0] );
+      q = 0;
+    }
     if (thread_name_cb)
       thread_name_cb(this_thread(), 0);
   }
