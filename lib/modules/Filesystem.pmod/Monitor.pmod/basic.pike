@@ -539,7 +539,7 @@ protected class Monitor(string path,
       next_poll -= (next_poll - now) / 2;
     adjust_monitor(this);
 
-    if ((flags & MF_RECURSE) && st->isdir && files) {
+    if ((flags & MF_RECURSE) && st && st->isdir && files) {
       // Bump the files in the directory as well.
       foreach(files, string file) {
 	file = canonic_path(Stdio.append_path(path, file));
