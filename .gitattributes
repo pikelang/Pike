@@ -7,5 +7,4 @@
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
-/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike foreign_ident
 /lib/modules/Filesystem.pmod/Monitor.pmod/symlinks.pike foreign_ident

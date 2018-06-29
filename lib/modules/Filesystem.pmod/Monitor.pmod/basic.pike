@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.38 2010/04/27 15:00:54 grubba Exp $
+// $Id$
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -310,7 +310,7 @@ protected class Monitor(string path,
     next_poll -= seconds || 30;
     monitor_queue->adjust(this);
 
-    if ((flags & MF_RECURSE) && st->isdir && files) {
+    if ((flags & MF_RECURSE) && st && st->isdir && files) {
       // Bump the files in the directory as well.
       foreach(files, string file) {
 	file = canonic_path(Stdio.append_path(path, file));
