@@ -60,6 +60,13 @@ o Stdio.Buffer
 
   Eliminate race condition in read_cstring().
 
+o Thread.Farm
+
+  Fixed lost error in provide_error() exception handling.
+
+  Avoid delayed deallocation of jobs by clearing references immediately
+  after execution.
+
 
 Building & Tools
 ----------------
@@ -151,11 +158,6 @@ o Thread.Farm
   Added Thread.Farm()->set_thread_name_cb() to help applications
   that monitor thread creation and termination for the purpose
   of tracking thread names.
-
-  Fixed lost error in provide_error() exception handling.
-
-  Avoid delayed deallocation of jobs by clearing references immediately
-  after execution.
 
 o Thread.ResourceCount
 
