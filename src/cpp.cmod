@@ -731,7 +731,6 @@ PIKEFUN void report(int(0..3) severity,
   int i;
   int fun = -1;
   if (severity >= REPORT_ERROR) {
-    this->compile_errors++;
     compat_fun_name = "compile_error";
   }
   if (this->compile_errors > 10) return;
@@ -795,6 +794,16 @@ static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
 {
   struct string_builder s;
   struct pike_string *msg;
+
+  if (severity >= REPORT_ERROR) {
+    /* NB: This increment is here (and not in report()), to allow
+     *     for overloading of report() with code that doesn't always
+     *     call the above implementation. This increment is not
+     *     optional as there is code that depends on it to detect
+     *     whether other code has failed (eg macro expansion).
+     */
+    this->compile_errors++;
+  }
 
   push_int(severity);
   ref_push_string(this->current_file);
