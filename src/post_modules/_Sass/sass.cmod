@@ -465,11 +465,14 @@ PIKECLASS Api
  *! Convert Sass syntax (i.e. indented syntax) to SCSS syntax.
  *!
  *! @param data
+ *!  Sass syntax text to convert to SCSS syntax.
+ *!
  *! @param options
- *!  This can be a bitwise union of compression level (@[STYLE_NESTED],
+ *!  This is a bitwise union of compression level (@[STYLE_NESTED],
  *!  @[STYLE_EXPANDED], @[STYLE_COMPACT] and $[STYLE_COMPRESSED]) and the
  *!  @tt{SASS2SCSS_*@} constants @[SASS2SCSS_KEEP_COMMENT],
- *!  @[SASS2SCSS_STRIP_COMMENT] and @[SASS2SCSS_CONVERT_COMMENT]
+ *!  @[SASS2SCSS_STRIP_COMMENT] and @[SASS2SCSS_CONVERT_COMMENT].
+ *!  It defaults to @expr{STYLE_NESTED|SASS2SCSS_KEEP_COMMENT@}.
  *!
  *! @returns
  *!  @[data] converted to SCSS syntax.
@@ -478,6 +481,7 @@ PIKEFUN string(8bit) sass2scss (string(8bit) data, void|int options)
 {
   const char *conv;
 
+  /* NB: SASS2SCSS_PRETTIFY_1 is == SASS_STYLE_NESTED. */
   int opts = SASS2SCSS_PRETTIFY_1 | SASS2SCSS_KEEP_COMMENT;
 
   if (options && TYPEOF (*options) == T_INT) {
