@@ -459,6 +459,40 @@ PIKECLASS Api
 /*! @endclass */
 
 
+/*! @decl string(8bit) sass2scss(string(8bit) data)
+ *! @decl string(8bit) sass2scss(string(8bit) data, int options)
+ *!
+ *! Convert Sass syntax (i.e. indented syntax) to SCSS syntax.
+ *!
+ *! @param data
+ *!  Sass syntax text to convert to SCSS syntax.
+ *!
+ *! @param options
+ *!  This is a bitwise union of compression level (@[STYLE_NESTED],
+ *!  @[STYLE_EXPANDED], @[STYLE_COMPACT] and $[STYLE_COMPRESSED]) and the
+ *!  @tt{SASS2SCSS_*@} constants @[SASS2SCSS_KEEP_COMMENT],
+ *!  @[SASS2SCSS_STRIP_COMMENT] and @[SASS2SCSS_CONVERT_COMMENT].
+ *!  It defaults to @expr{STYLE_NESTED|SASS2SCSS_KEEP_COMMENT@}.
+ *!
+ *! @returns
+ *!  @[data] converted to SCSS syntax.
+ */
+PIKEFUN string(8bit) sass2scss (string(8bit) data, void|int options)
+{
+  const char *conv;
+
+  /* NB: SASS2SCSS_PRETTIFY_1 is == SASS_STYLE_NESTED. */
+  int opts = SASS2SCSS_PRETTIFY_1 | SASS2SCSS_KEEP_COMMENT;
+
+  if (options && TYPEOF (*options) == T_INT) {
+    opts = options->u.integer;
+  }
+
+  conv = sass2scss (data->str, opts);
+  push_text (conv);
+}
+
+
 /*! @decl string libsass_version()
  *!
  *! Returns the @tt{libsass@} version this module was compiled against
@@ -576,6 +610,18 @@ PIKE_MODULE_INIT
   add_integer_constant ("HTTP_IMPORT_NONE",   0, 0);
   add_integer_constant ("HTTP_IMPORT_GREEDY", 1, 0);
   add_integer_constant ("HTTP_IMPORT_ANY",    2, 0);
+
+  /**
+   * @decl constant SASS2SCSS_KEEP_COMMENT = 32
+   * @decl constant SASS2SCSS_STRIP_COMMENT = 64
+   * @decl constant SASS2SCSS_CONVERT_COMMENT = 128
+   *
+   * Constants that can be given as option to @[sass2scss()].
+   */
+
+  add_integer_constant ("SASS2SCSS_KEEP_COMMENT", SASS2SCSS_KEEP_COMMENT, 0);
+  add_integer_constant ("SASS2SCSS_STRIP_COMMENT", SASS2SCSS_STRIP_COMMENT, 0);
+  add_integer_constant ("SASS2SCSS_CONVERT_COMMENT", SASS2SCSS_CONVERT_COMMENT, 0);
 
   INIT
 }

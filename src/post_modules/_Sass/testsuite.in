@@ -172,8 +172,7 @@ cond_begin(Web["Sass"])
 h1
   small
     color: blue
-  font-size: 32
-    ";
+  font-size: 32";
 
     sassc->set_options(([
       "source_map_file" : UNDEFINED,
@@ -185,6 +184,27 @@ h1
     sassc->sass_syntax = false;
   ]])
 
+  dnl *** Test sass2scss()
+  dnl     This simply converts Sass syntax to SCSS syntax.
+  test_do([[
+    string sass_str = #"
+body
+  font:
+    family: arial
+    size: 12
+";
+
+    string res = Web.Sass.sass2scss(sass_str);
+    add_constant("sass2scss_res", res);
+  ]])
+
+  test_eq([[ sass2scss_res ]], #"
+body {
+  font: {
+    family: arial;
+    size: 12; } }
+");
+
   dnl *** Clean up
 
   test_do([[
@@ -192,6 +212,7 @@ h1
     rm("teststyle.scss");
     rm("teststyle.css");
     rm("teststyle.css.map");
+    add_constant("sass2scss_res");
     add_constant("scss_comp_file");
     add_constant("scss_comp_map");
     add_constant("scss_str");
