@@ -636,6 +636,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
   va_end(args);
 }
 
+/*! @namespace predef::
+ */
+
+/*! @decl import cpp:: */
+
 /*! @class MasterObject
  */
 
@@ -833,8 +838,6 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 /*! @endclass
  */
 
-/*! @namespace predef:: */
-/*! @decl import cpp:: */
 /*! @endnamespace */
 
 /* #pike handling. */
