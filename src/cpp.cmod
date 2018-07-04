@@ -100,6 +100,9 @@ DECLARATIONS;
 #define CPP_MACRO_IN_USE	2	/* In use. */
 #define CPP_MACRO_VARARGS	4	/* Varargs. */
 
+/*! @class CompilerEnvironment
+ */
+
 /* Consider
  *
  * class Preprocessor
@@ -351,6 +354,7 @@ PIKECLASS define
  *!   @[predef::cpp()]
  */
 PIKECLASS CPP
+  program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
   /*! @decl inherit Reporter
    */
@@ -529,7 +533,10 @@ PIKEFUN void report(int(0..3) severity,
     }
     return;
   }
-  apply_current(f_inherited_Reporter_report_fun_num, args);
+  /* Nothing apropriate in any handlers.
+   * Call the report() in our parent.
+   */
+  apply_external(1, CE_REPORT_FUN_NUM, args);
 }
 
 static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
@@ -5076,6 +5083,9 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 /*! @endclass CPP
  */
 
+/*! @endclass CompilerEnvironment
+ */
+
 /*! @decl string cpp(string data, mapping|string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
@@ -5129,7 +5139,10 @@ PIKEFUN string cpp(string data,
      efun;
 {
   struct svalue *save_sp = Pike_sp - args;
-  struct object *cpp_obj = clone_object(CPP_program, args-1);
+  struct object *cpp_obj =
+    parent_clone_object(CPP_program,
+			compilation_environment, CPP_program_fun_num,
+			args-1);
   struct CPP_struct *this =
     (struct CPP_struct *)get_storage(cpp_obj, CPP_program);
   struct mapping *predefs = NULL;
@@ -5333,9 +5346,15 @@ void f__take_over_initial_predefines (INT32 args)
 /*! @endmodule
  */
 
-void init_cpp()
+void init_cpp_compilerenv_classes(void)
 {
-  struct svalue s;
+  /* NB: This function is called *early* (during compilation
+   *     of the CompilerEnvironment class). This means that
+   *     there are some limitations to what is possible to use.
+   *
+   * NB: This also means that all symbols declared above that
+   *     aren't efuns will show up in CompilerEnvironment.
+   */
 
   efun_str = make_shared_string ("efun");
   constant_str = make_shared_string ("constant");
@@ -5350,6 +5369,11 @@ void init_cpp()
   defined_macro->args=1;
   defined_macro_sval = Pike_sp[-1];
   Pike_sp--;
+}
+
+void init_cpp(void)
+{
+  struct svalue s;
 
   ADD_INT_CONSTANT("__HAVE_CPP_PREFIX_SUPPORT__", 1, 0);
 

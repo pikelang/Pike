@@ -2740,6 +2740,8 @@ static void compile_compiler(void)
   Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
   end_class("lock", 0);
 
+  init_cpp_compilerenv_classes();
+
   compilation_env_program = end_program();
 
   add_global_program("CompilerEnvironment", compilation_env_program);
