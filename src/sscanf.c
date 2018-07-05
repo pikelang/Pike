@@ -46,6 +46,18 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
 }
 #define READ() next_char(str,len)
 
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define NOINLINE_UNALIGNED
+#else
+/* Workaround for gcc 4.7.4 and others "optimizing" away calls to memcpy(),
+ * and replacing them with direct (unaligned) memory accesses.
+ * This generates broken code for eg %F on sparc.
+ * cf https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50569
+ * Note that the patch for the above bug is in gcc 4.7.4, but isn't sufficient.
+ */
+#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC((noinline))
+#endif
+
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
 {
   CONSUME(1); // Start '/' 
@@ -620,7 +632,7 @@ static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
 
 #endif
 
-static FLOAT_TYPE extract_float_be(const char * x) {
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_float_be(const char * x) {
 #ifdef FLOAT_IS_IEEE_BIG
     float f;
     memcpy(&f, x, sizeof(f));
@@ -636,7 +648,7 @@ static FLOAT_TYPE extract_float_be(const char * x) {
 #endif
 }
 
-static FLOAT_TYPE extract_double_be(const char * x) {
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_be(const char * x) {
 #ifdef DOUBLE_IS_IEEE_BIG
     double f;
     memcpy(&f, x, sizeof(f));
@@ -664,7 +676,7 @@ static FLOAT_TYPE extract_double_be(const char * x) {
 #endif
 }
 
-static FLOAT_TYPE extract_float_le(const char * x) {
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_float_le(const char * x) {
 #ifdef FLOAT_IS_IEEE_LITTLE
     float f;
     memcpy(&f, x, sizeof(f));
@@ -680,7 +692,7 @@ static FLOAT_TYPE extract_float_le(const char * x) {
 #endif
 }
 
-static FLOAT_TYPE extract_double_le(const char * x) {
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_le(const char * x) {
 #ifdef DOUBLE_IS_IEEE_LITTLE
     double f;
     memcpy(&f, x, sizeof(f));
@@ -734,9 +746,10 @@ static FLOAT_TYPE extract_double_le(const char * x) {
     (SVAL).u.float_number = fun(x);                         \
 } while (0)
 
-static struct pike_string *get_string_slice( void *input, int shift,
-                                             ptrdiff_t offset, ptrdiff_t len,
-                                             struct pike_string *str )
+static struct pike_string * NOINLINE_UNALIGNED
+  get_string_slice( void *input, int shift,
+		    ptrdiff_t offset, ptrdiff_t len,
+		    struct pike_string *str )
 {
     if( !shift && str )
         return string_slice( str, offset, len );
