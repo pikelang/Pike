@@ -3113,7 +3113,8 @@ class CompatResolver
 
   //! Look up @[identifier] in the root module.
   mixed resolv_base(string identifier, string|void current_file,
-		    object|void current_handler)
+		    object|void current_handler,
+		    object|void current_compat_handler)
   {
     //      werror("Resolv_base(%O)\n",identifier);
     return get_root_module(current_handler)[identifier];
@@ -3135,7 +3136,8 @@ class CompatResolver
   //!   Returns the value of the @[identifier] if it exists,
   //!   and @[UNDEFINED] otherwise.
   mixed resolv(string identifier, string|void current_file,
-	       object|void current_handler)
+	       object|void current_handler,
+	       object|void current_compat_handler)
   {
     resolv_debug("resolv(%O, %O)\n",identifier, current_file);
     INC_RESOLV_MSG_DEPTH();
@@ -3148,8 +3150,8 @@ class CompatResolver
     }
 
     if (current_file && !stringp(current_file)) {
-      error("resolv(%O, %O, %O): current_file is not a string!\n",
-	    identifier, current_file, current_handler);
+      error("resolv(%O, %O, %O, %O): current_file is not a string!\n",
+	    identifier, current_file, current_handler, current_compat_handler);
     }
 
     array(string) tmp = identifier/"::";
@@ -3181,7 +3183,8 @@ class CompatResolver
       }
     } else {
       tmp = identifier/".";
-      ret = resolv_base(tmp[0], current_file, current_handler);
+      ret = resolv_base(tmp[0], current_file,
+			current_handler, current_compat_handler);
       tmp = tmp[1..];
     }
     foreach(tmp,string index) {
