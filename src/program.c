@@ -2023,13 +2023,7 @@ int low_resolve_identifier(struct pike_string *ident)
   CHECK_COMPILER();
 
   ref_push_string(ident);
-  ref_push_string(c->lex.current_file);
-  if (c->handler) {
-    ref_push_object(c->handler);
-  } else {
-    push_int(0);
-  }
-  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL))
+  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 1, NULL))
     handle_compile_exception ("Error resolving '%S'.", ident);
 
   if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) {

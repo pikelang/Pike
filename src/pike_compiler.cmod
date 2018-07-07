@@ -610,21 +610,27 @@ static void f_compilation_env_compile(INT32 args)
 }
 
 /*! @decl mixed resolv(string identifier, string filename, @
- *!		       object|void handler)
+ *!		       object|void handler, object|void compat_handler)
  *!
  *!   Look up @[identifier] in the current context.
  *!
  *!   The default implementation calls the corresponding
- *!   function in the master object.
+ *!   function in the handlers (if any), falling back to
+ *!   the master object.
+ *!
+ *! @returns
+ *!   Returns the value of the @[identifier] if found, and
+ *!   @[UNDEFINED] if not.
  */
 static void f_compilation_env_resolv(INT32 args)
 {
   struct pike_string *ident;
   struct pike_string *filename;
   struct object *handler = NULL;
+  struct object *compat_handler = NULL;
 
-  get_all_args("resolv", args, "%W%W.%O",
-	       &ident, &filename, &handler);
+  get_all_args("resolv", args, "%W%W.%O%O",
+	       &ident, &filename, &handler, &compat_handler);
 
   if(get_master())
   {
@@ -635,7 +641,7 @@ static void f_compilation_env_resolv(INT32 args)
     }else{
       SET_CYCLIC_RET(1);
 
-      APPLY_MASTER("resolv", args);
+      low_unsafe_apply_handler("resolv", handler, compat_handler, args);
     }
     END_CYCLIC();
   } else {
@@ -1665,29 +1671,39 @@ static void f_compilation_compile(INT32 args)
     push_int(0);
 }
 
-/*! @decl mixed resolv(string identifier, string filename, @
- *!                    object handler)
+/*! @decl mixed resolv(string identifier)
  *!
  *!   Resolve the symbol @[identifier].
  *!
- *!   The default implementation calls the corresponding function
- *!   in any active handler, and otherwise falls back to
- *!   @[CompilerEnvironment()->resolv()] in the parent object.
+ *!   The default implementation calls @[CompilerEnvironment()->resolv()]
+ *!   in the parent object, with the remaining arguments taken from the
+ *!   current @[PikeCompiler] context.
+ *!
+ *! @returns
+ *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
  */
 static void f_compilation_resolv(INT32 args)
 {
+  struct pike_string *sym;
   struct compilation *c = THIS_COMPILATION;
   struct object *handler;
   int fun = -1;
 
-  if (((handler = c->handler) && handler->prog &&
-       ((fun = find_identifier("resolv", handler->prog)) != -1)) ||
-      ((handler = c->compat_handler) && handler->prog &&
-       ((fun = find_identifier("resolv", handler->prog)) != -1))) {
-    apply_low(handler, fun, args);
+  get_all_args("resolv", args, "%W", &sym);
+
+  ref_push_string(sym);
+  ref_push_string(c->lex.current_file);
+  if (c->handler) {
+    ref_push_object(c->handler);
   } else {
-    apply_external(1, CE_RESOLV_FUN_NUM, args);
+    push_undefined();
   }
+  if (c->compat_handler) {
+    ref_push_object(c->compat_handler);
+  } else {
+    push_undefined();
+  }
+  apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
 /*! @decl object get_compilation_handler(int major, int minor)
