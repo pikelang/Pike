@@ -886,6 +886,37 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
   this->compat_minor=minor;
 }
 
+/*! @decl mixed resolv(string sym)
+ *!
+ *!   Attempt to resolve a symbol.
+ *!
+ *!   The default implementation calls @[CompilerEnvironment()->resolv()]
+ *!   in the parent object, with the remaining arguments taken from the
+ *!   current @[CPP] context.
+ *!
+ *! @returns
+ *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
+ */
+PIKEFUN mixed resolv(string sym)
+{
+  struct CPP_struct *this = THIS;
+
+  ref_push_string(sym);
+  ref_push_string(this->current_file);
+  if (this->handler) {
+    ref_push_object(this->handler);
+  } else {
+    push_undefined();
+  }
+  if (this->compat_handler) {
+    ref_push_object(this->compat_handler);
+  } else {
+    push_undefined();
+  }
+
+  apply_external(1, CE_RESOLV_FUN_NUM, 4);
+}
+
 /* #if macros and functions. */
 
 /*! @namespace cpp::
@@ -1439,15 +1470,8 @@ static void cpp_constant(struct CPP_struct *this, int value)
     } else if(get_master()) {
       /* Module. */
       ref_push_string(str);
-      ref_push_string(this->current_file);
-      if (this->handler) {
-	ref_push_object(this->handler);
-      } else {
-	push_int(0);
-      }
 
-      if (safe_apply_handler("resolv", this->handler,
-			     this->compat_handler, 3, 0)) {
+      if (safe_apply_current(f_CPP_resolv_fun_num, 1)) {
 	if ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 	     Pike_sp[-1].u.object == placeholder_object) ||
 	    (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
