@@ -732,6 +732,28 @@ static void f_compilation_env_handle_inherit(INT32 args)
   }
 }
 
+/*! @decl program handle_import(string module, string current_file, @
+ *!                             object|void handler)
+ *!
+ *!   Look up an import @[module].
+ *!
+ *!   The default implementation calls the corresponding function
+ *!   in the master object.
+ *!
+ *! @seealso
+ *!   @[MasterObject()->handle_import()].
+ */
+static void f_compilation_env_handle_import(INT32 args)
+{
+  if(get_master())
+  {
+    APPLY_MASTER("handle_import", args);
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 #if 0
 /* @decl int filter_exception(SeverityLevel level, mixed err)
  *
@@ -1911,6 +1933,35 @@ static void f_compilation_handle_inherit(INT32 args)
   }
 }
 
+/*! @decl program handle_import(string module)
+ *!
+ *!   Look up an import @[module].
+ */
+static void f_compilation_handle_import(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct object *handler;
+  int fun = -1;
+
+  if (args > 1) pop_n_elems(args-1);
+
+  ref_push_string(c->lex.current_file);
+  if (c->handler && c->handler->prog) {
+    ref_push_object(c->handler);
+    args = 3;
+  }
+  else args = 2;
+
+  if (((handler = c->handler) && handler->prog &&
+       ((fun = find_identifier("handle_import", handler->prog)) != -1)) ||
+      ((handler = c->compat_handler) && handler->prog &&
+       ((fun = find_identifier("handle_import", handler->prog)) != -1))) {
+    apply_low(handler, fun, args);
+  } else {
+    apply_external(1, CE_HANDLE_IMPORT_FUN_NUM, args);
+  }
+}
+
 /*! @decl int(0..1) pop_type_attribute(string attribute, type a, type b)
  *!
  *!   Type attribute handler.
@@ -2655,6 +2706,9 @@ static void compile_compiler(void)
   ADD_FUNCTION("handle_inherit", f_compilation_handle_inherit,
 	       tFunc(tStr, tPrg(tObj)), 0);
 
+  ADD_FUNCTION("handle_import", f_compilation_handle_import,
+	       tFunc(tStr, tPrg(tObj)), 0);
+
   ADD_FUNCTION("pop_type_attribute", f_compilation_pop_type_attribute,
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
@@ -2722,6 +2776,9 @@ static void compile_compiler(void)
 	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
 
   ADD_FUNCTION("handle_inherit", f_compilation_env_handle_inherit,
+	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
+
+  ADD_FUNCTION("handle_import", f_compilation_env_handle_import,
 	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
 
   /* Reporter */

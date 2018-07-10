@@ -111,6 +111,7 @@ struct compilation
 #define CE_GET_COMPILATION_HANDLER_FUN_NUM		4
 #define CE_GET_DEFAULT_MODULE_FUN_NUM			5
 #define CE_HANDLE_INHERIT_FUN_NUM			6
+#define CE_HANDLE_IMPORT_FUN_NUM			7
 
 /* PikeCompiler function numbers. */
 #define PC_REPORT_FUN_NUM				0
@@ -121,10 +122,11 @@ struct compilation
 #define PC_GET_DEFAULT_MODULE_FUN_NUM			5
 #define PC_CHANGE_COMPILER_COMPATIBILITY_FUN_NUM	6
 #define PC_HANDLE_INHERIT_FUN_NUM			7
-#define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			8
-#define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			9
-#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			10
-#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		11
+#define PC_HANDLE_IMPORT_FUN_NUM			8
+#define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			9
+#define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			10
+#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			11
+#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		12
 
 extern struct program *null_program;
 extern struct program *placeholder_program;
