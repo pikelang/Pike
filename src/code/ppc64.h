@@ -275,7 +275,7 @@ void ppc64_decode_program(struct program *p);
 			"	bctrl"					    \
 			:						    \
 			: "r" (pc), "r" (Pike_interpreter_pointer)	    \
-			: "ctr", "lr", "cc", "memory", "r29", "r0", "r2",   \
+			: "ctr", "lr", "cc", "memory", "r29", "r0",	    \
 			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	    \
 			  "r10", "r11", "r12")
 
@@ -310,7 +310,7 @@ void ppc64_decode_program(struct program *p);
 #ifdef OPCODE_INLINE_RETURN
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#define ENTRY_PROLOGUE_SIZE	3
+#define ENTRY_PROLOGUE_SIZE	4
 
 void ppc64_ins_entry(void);
 #define INS_ENTRY()	ppc64_ins_entry()

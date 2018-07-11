@@ -412,12 +412,14 @@ static void maybe_update_pc(void)
 #ifdef OPCODE_INLINE_RETURN
 void ppc64_ins_entry(void)
 {
-  /* stdu r1, -64(r1) */
-  STDU(1, 1, -64);
+  /* stdu r1, -128(r1) */
+  STDU(1, 1, -128);
   /* mflr r0 */
   MFSPR(0, PPC_SPREG_LR);
-  /* std r0, 80(r1) */
-  STD(0, 1, 80);
+  /* std r0, 144(r1) */
+  STD(0, 1, 144);
+  /* std r2, 120(r1) */
+  STD(2, 1, 120);
 }
 #endif /* OPCODE_INLINE_RETURN */
 
@@ -496,12 +498,14 @@ void ins_f_byte(unsigned int b)
   if (instrs[b].flags & I_RETURN) {
     /* cmpdi r3,-1 */
     CMPI(1, PPC_REG_RET, -1);
-    /* bne .+20 */
-    BC(4, 2, 5);
-    /* ld r0, 80(r1) */
-    LD(0, 1, 80);
-    /* addi r1, r1, 64 */
-    ADDI(1, 1, 64);
+    /* bne .+24 */
+    BC(4, 2, 6);
+    /* ld r0, 144(r1) */
+    LD(0, 1, 144);
+    /* ld r2, 120(r1) */
+    LD(2, 1, 120);
+    /* addi r1, r1, 128 */
+    ADDI(1, 1, 128);
     /* mtlr r0 */
     MTSPR(0, PPC_SPREG_LR);
     /* blr */
