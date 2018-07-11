@@ -34,6 +34,11 @@
 #include "code/arm32.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #include "code/arm64.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#include "code/riscv.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#include "code/riscv.c"
 #else
 #include "code/bytecode.c"
 #endif
+
