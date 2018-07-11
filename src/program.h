@@ -153,6 +153,8 @@ typedef struct node_s node;
 #define PIKE_BYTECODE_PPC64    6
 #define PIKE_BYTECODE_ARM32    7
 #define PIKE_BYTECODE_ARM64    8
+#define PIKE_BYTECODE_RV32     9
+#define PIKE_BYTECODE_RV64     10
 
 #ifndef PIKE_BYTECODE_METHOD
 #error PIKE_BYTECODE_METHOD not set.
@@ -172,6 +174,10 @@ typedef struct node_s node;
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#define PIKE_OPCODE_T unsigned INT16
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#define PIKE_OPCODE_T unsigned INT16
 #else
 #define PIKE_OPCODE_T unsigned INT8
 #endif

@@ -5295,6 +5295,28 @@ if test "$with_machine_code" = "no"; then :; else
     ], [], [
       pike_cv_machine_code_arch=arm64
     ], [])
+    AC_TRY_COMPILE([
+#if defined(__GNUC__)
+#if !defined(__riscv) || __riscv_xlen != 32
+#error Not rv32 architecture
+#endif
+#else
+#error Unsupported compiler
+#endif
+    ], [], [
+      pike_cv_machine_code_arch=rv32
+    ], [])
+    AC_TRY_COMPILE([
+#if defined(__GNUC__)
+#if !defined(__riscv) || __riscv_xlen != 64
+#error Not rv64 architecture
+#endif
+#else
+#error Unsupported compiler
+#endif
+    ], [], [
+      pike_cv_machine_code_arch=rv64
+    ], [])
   ])
   AC_MSG_RESULT($pike_cv_machine_code_arch)
   if test "x$pike_cv_machine_code_arch" = xunknown ; then

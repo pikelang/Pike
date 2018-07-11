@@ -1,3 +1,705 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "svalue.h"
+#include "operators.h"
+#include "bitvector.h"
+#include "object.h"
+#include "builtin_functions.h"
+#include "bignum.h"
+#include "constants.h"
+
+#define MACRO  ATTRIBUTE((unused)) static
+
+enum rv_register {
+  RV_REG_ZERO,
+  RV_REG_RA,
+  RV_REG_SP,
+  RV_REG_GP,
+  RV_REG_TP,
+  RV_REG_T0,
+  RV_REG_T1,
+  RV_REG_T2,
+  RV_REG_S0,
+  RV_REG_PIKE_SP = RV_REG_S0,
+  RV_REG_S1,
+  RV_REG_PIKE_FP = RV_REG_S1,
+  RV_REG_A0,
+  RV_REG_A1,
+  RV_REG_A2,
+  RV_REG_A3,  
+  RV_REG_A4,
+  RV_REG_A5,
+  RV_REG_A6,
+  RV_REG_A7,
+  RV_REG_S2,
+  RV_REG_PIKE_IP = RV_REG_S2,
+  RV_REG_S3,
+  RV_REG_PIKE_LOCALS = RV_REG_S3,
+  RV_REG_PIKE_GLOBALS = RV_REG_S3,
+  RV_REG_S4,
+  RV_REG_S5,
+  RV_REG_S6,
+  RV_REG_S7,
+  RV_REG_S8,
+  RV_REG_S9,
+  RV_REG_S10,
+  RV_REG_S11,
+  RV_REG_T3,
+  RV_REG_T4,
+  RV_REG_T5,
+  RV_REG_T6,
+};
+
+#define RV_IN_RANGE_IMM12(n) (((INT32)(n))>=-2048 && ((INT32)(n))<=2047)
+
+#define RV_R(opcode, funct3, funct7, rd, rs1, rs2)              \
+  ((opcode)|((rd)<<7)|((funct3)<<12)|((rs1)<<15)|((rs2)<<20)|((funct7)<<25))
+#define RV_I(opcode, funct3, rd, rs1, imm)                      \
+  ((opcode)|((rd)<<7)|((funct3)<<12)|((rs1)<<15)|(((imm)&0xfff)<<20))
+#define RV_S(opcode, funct3, rs1, rs2, imm)                     \
+  ((opcode)|(((imm)&0x1f)<<7)|((funct3)<<12)|((rs1)<<15)|       \
+   ((rs2)<<20)|(((imm)&0xfe0)<<(25-5)))
+#define RV_U(opcode, rd, imm)                                   \
+  ((opcode)|((rd)<<7)|((imm)&~0xfff))
+#define RV_J(opcode, rd, imm)					\
+  ((opcode)|((rd)<<7)|((imm)&0xff000)|(((imm)&0x800)<<9)|	\
+   (((imm)&0x7fe)<<20)|(((imm)&~0xfffff)<<11))
+#define RV_B(opcode, funct3, rs1, rs2, imm)				\
+  ((opcode)|(((imm)&0x800)>>4)|(((imm)&0x1e)<<7)|((funct3)<<12)|	\
+   ((rs1)<<15)|((rs2)<<20)|(((imm)&0x7e0)<<20)|(((imm)&~0xfff)<<19))	\
+
+#define RV_LW_(rd, imm, base) RV_I(3, 2, rd, base, imm)
+#define RV_LD_(rd, imm, base) RV_I(3, 3, rd, base, imm)
+#define RV_ADDI_(rd, rs, imm) RV_I(19, 0, rd, rs, imm)
+#define RV_SLLI_(rd, rs, imm) RV_I(19, 1, rd, rs, imm)
+#define RV_XORI(rd, rs, imm) RV_I(19, 4, rd, rs, imm)
+#define RV_AUIPC(rd, imm) RV_U(23, rd, imm)
+#define RV_SW_(rs, imm, base) RV_S(35, 2, base, rs, imm)
+#define RV_SD_(rs, imm, base) RV_S(35, 3, base, rs, imm)
+#define RV_ADD_(rd, rs1, rs2) RV_R(51, 0, 0, rd, rs1, rs2)
+#define RV_LUI_(rd, imm) RV_U(55, rd, imm)
+#define RV_JALR_(rd, base, imm) RV_I(103, 0, rd, base, imm)
+#define RV_JAL_(rd, imm) RV_J(111, rd, imm)
+#define RV_BEQ_(rs1, rs2, imm) RV_B(99, 0, rs1, rs2, imm)
+#define RV_BNE_(rs1, rs2, imm) RV_B(99, 1, rs1, rs2, imm)
+#define RV_BLT(rs1, rs2, imm) RV_B(99, 4, rs1, rs2, imm)
+#define RV_BGE(rs1, rs2, imm) RV_B(99, 5, rs1, rs2, imm)
+#define RV_BLTU(rs1, rs2, imm) RV_B(99, 6, rs1, rs2, imm)
+#define RV_BGEU(rs1, rs2, imm) RV_B(99, 7, rs1, rs2, imm)
+
+#ifdef __riscv_compressed
+
+#define RV_IS_C_REG(reg) ((reg)>=RV_REG_S0 && (reg)<=RV_REG_A5)
+#define RV_IN_RANGE_CI(n) (((INT32)(n))>=-32 && ((INT32)(n))<=31)
+#define RV_IN_RANGE_CS(sz, n) (((INT32)(n))>=0 && ((INT32)(n))<(1<<(5+(sz))) && !(((INT32)(n))&((1<<(sz))-1)))
+#define RV_IN_RANGE_CSS(sz, n) (((INT32)(n))>=0 && ((INT32)(n))<(1<<(6+(sz))) && !(((INT32)(n))&((1<<(sz))-1)))
+#define RV_IN_RANGE_CB(n) (((INT32)n)>=-256 && ((INT32)n)<=255)
+#define RV_IN_RANGE_CJ(n) (((INT32)n)>=-2048 && ((INT32)n)<=2047)
+
+#define RV_CR(op, funct4, rdrs1, rs2) \
+  ((op)|((rs2)<<2)|((rdrs1)<<7)|((funct4)<<12))
+#define RV_CI(op, funct3, rdrs1, imm1, imm2) \
+  ((op)|(((imm1)&0x1f)<<2)|((rdrs1)<<7)|(((imm2)&1)<<12)|((funct3)<<13))
+#define RV_CSS(op, funct3, rs2, imm) \
+  ((op)|((rs2)<<2)|(((imm)&0x3f)<<7)|((funct3)<<13))
+#define RV_CIW(op, funct3, rd, imm) \
+  ((op)|(((rd)-8)<<2)|(((imm)&0xff)<<5)|((funct3)<<13))
+#define RV_CS(op, funct3, rs1, rs2, imm1, imm2)       \
+  ((op)|(((rs2)-8)<<2)|(((rs1)-8)<<7)|((funct3)<<13)| \
+   (((imm1)&3)<<5)|(((imm2)&7)<<10))
+#define RV_CB(op, funct3, rs1, imm)					\
+  ((op)|(((imm)&0x20)>>3)|(((imm)&0x6)<<2)|(((imm)&0xc0)>>1)|		\
+   (((rs1)-8)<<7)|(((imm)&0x18)<<7)|(((imm)&0x100)<<4)|((funct3)<<13))
+#define RV_CJ(op, funct3, imm)					\
+    ((op)|(((imm)&0x20)>>3)|(((imm)&0xe)<<2)|(((imm)&0x80)>>1)|	\
+     (((imm)&0x40)<<1)|(((imm)&0x400)>>2)|(((imm)&0x300)<<1)|	\
+     (((imm)&0x10)<<7)|(((imm)&0x800)<<1)|((funct3)<<13))
+
+#define RV_C_ADDI4SPN(rd, imm) RV_CIW(0, 0, rd, (((imm)&8)>>3)|(((imm)&4)>>1)|\
+				      (((imm)&0x3c0)>>4)|(((imm)&30)<<2))
+#define RV_C_LW(rd, imm, base) RV_CS(0, 2, base, rd, ((imm)>>6)|(((imm)&4)>>1), (imm)>>3)
+#define RV_C_LD(rd, imm, base) RV_CS(0, 3, base, rd, (imm)>>6, (imm)>>3)
+#define RV_C_SW(rs, imm, base) RV_CS(0, 6, base, rs, ((imm)>>6)|(((imm)&4)>>1), (imm)>>3)
+#define RV_C_SD(rs, imm, base) RV_CS(0, 7, base, rs, (imm)>>6, (imm)>>3)
+#define RV_C_ADDI(rdrs1, imm) RV_CI(1, 0, rdrs1, imm, (imm)>>5)
+#define RV_C_JAL(imm) RV_CJ(1, 1, imm)
+#define RV_C_LI(rd, imm) RV_CI(1, 2, rd, imm, (imm)>>5)
+#define RV_C_LUI(rd, imm) RV_CI(1, 3, rd, (imm)>>12, (imm)>>17)
+#define RV_C_ADDI16SP(imm) RV_CI(1, 3, 2, (((imm)&0x20)>>5)|            \
+				 (((imm)&0x180)>>6)|(((imm)&0x40)>>3)|  \
+				 ((imm)&0x10), (imm)>>9)
+#define RV_C_J(imm) RV_CJ(1, 5, imm)
+#define RV_C_BEQZ(rs, imm) RV_CB(1, 6, rs, imm)
+#define RV_C_BNEZ(rs, imm) RV_CB(1, 7, rs, imm)
+#define RV_C_SLLI(rdrs1, imm) RV_CI(2, 0, rdrs1, imm, (imm)>>5)
+#define RV_C_LWSP(rd, imm) RV_CI(2, 2, rd, ((imm)>>6)|((imm)&0x1c), (imm)>>5)
+#define RV_C_LDSP(rd, imm) RV_CI(2, 3, rd, ((imm)>>6)|((imm)&0x18), (imm)>>5)
+#define RV_C_SWSP(rs, imm) RV_CSS(2, 6, rs, ((imm)>>6)|((imm)&0x3c))
+#define RV_C_SDSP(rs, imm) RV_CSS(2, 7, rs, ((imm)>>6)|((imm)&0x38))
+#define RV_C_JR(rs) RV_CR(2, 8, rs, 0)
+#define RV_C_MV(rd, rs) RV_CR(2, 8, rd, rs)
+#define RV_C_JALR(rs) RV_CR(2, 9, rs, 0)
+#define RV_C_ADD(rdrs1, rs) RV_CR(2, 9, rdrs1, rs)
+
+#define RV_LW(rd, imm, base)						  \
+  ((base)==RV_REG_SP && (rd)!=RV_REG_ZERO && RV_IN_RANGE_CSS(2, (imm))?	  \
+   RV_C_LWSP((rd), (imm)) :						  \
+   (RV_IS_C_REG((rd)) && RV_IS_C_REG((base)) && RV_IN_RANGE_CS(2, (imm))? \
+    RV_C_LW((rd), (imm), (base)) : RV_LW_((rd), (imm), (base))))
+#define RV_LD(rd, imm, base)						  \
+  ((base)==RV_REG_SP && (rd)!=RV_REG_ZERO && RV_IN_RANGE_CSS(3, (imm))?	  \
+   RV_C_LDSP((rd), (imm)) :						  \
+   (RV_IS_C_REG((rd)) && RV_IS_C_REG((base)) && RV_IN_RANGE_CS(3, (imm))? \
+    RV_C_LD((rd), (imm), (base)) : RV_LD_((rd), (imm), (base))))
+#define RV_ADDI(rd, rs, imm) \
+  ((rd)!=RV_REG_ZERO && (rs)!=RV_REG_ZERO && (imm)==0? RV_C_MV((rd), (rs)) : \
+   ((rd)==RV_REG_SP && (rs)==RV_REG_SP &&                                    \
+    ((imm)&0xf)==0 && RV_IN_RANGE_CI((imm)>>4)?	RV_C_ADDI16SP((imm)) :       \
+    ((rd)==(rs) && RV_IN_RANGE_CI((imm)) && ((rd)!=RV_REG_ZERO || (imm)==0)? \
+     RV_C_ADDI((rd), (imm)) :                                                \
+     ((rd)!=RV_REG_ZERO && (rs)==RV_REG_ZERO && RV_IN_RANGE_CI((imm))?       \
+      RV_C_LI((rd), (imm)) :                                                 \
+      (RV_IS_C_REG((rd)) && (rs)==RV_REG_SP && (imm)>0 && (imm)<1024 &&      \
+       ((imm)&3)==0? RV_C_ADDI4SPN((rd), (imm)) :                            \
+       RV_ADDI_((rd), (rs), (imm)))))))
+#define RV_SLLI(rd, rs, imm)						  \
+  ((rd) == (rs) && (rd) != RV_REG_ZERO && (imm)>0 && (imm)<__riscv_xlen?  \
+   RV_C_SLLI((rd), (imm)) : RV_SLLI_((rd), (rs), (imm)))
+#define RV_SW(rs, imm, base)						  \
+  ((base)==RV_REG_SP && RV_IN_RANGE_CSS(2, (imm))?			  \
+   RV_C_SWSP((rs), (imm)) :						  \
+   (RV_IS_C_REG((rs)) && RV_IS_C_REG((base)) && RV_IN_RANGE_CS(2, (imm))? \
+    RV_C_SW((rs), (imm), (base)) : RV_SW_((rs), (imm), (base))))
+#define RV_SD(rs, imm, base)						  \
+  ((base)==RV_REG_SP && RV_IN_RANGE_CSS(3, (imm))?			  \
+   RV_C_SDSP((rs), (imm)) :						  \
+   (RV_IS_C_REG((rs)) && RV_IS_C_REG((base)) && RV_IN_RANGE_CS(3, (imm))? \
+    RV_C_SD((rs), (imm), (base)) : RV_SD_((rs), (imm), (base))))
+#define RV_ADD(rd, rs1, rs2)						\
+  ((rd)!=RV_REG_ZERO && (rs1)==RV_REG_ZERO && (rs2)==RV_REG_ZERO?	\
+   RV_C_LI((rd), 0) :							\
+   ((rd)!=RV_REG_ZERO && (rs1)!=RV_REG_ZERO && (rs2)==RV_REG_ZERO?	\
+    RV_C_MV((rd), (rs1)) :						\
+    ((rd)!=RV_REG_ZERO && (rs1)==RV_REG_ZERO && (rs2)!=RV_REG_ZERO?	\
+     RV_C_MV((rd), (rs2)) :						\
+     ((rd)!=RV_REG_ZERO && (rs1)==(rd) && (rs2)!=RV_REG_ZERO?		\
+      RV_C_ADD((rd), (rs2)) :						\
+      ((rd)!=RV_REG_ZERO && (rs1)!=RV_REG_ZERO && (rs2)==(rd)?		\
+       RV_C_ADD((rd), (rs1)) : RV_ADD_(rd, rs1, rs2))))))
+#define RV_LUI(rd, imm)					\
+  ((rd) != RV_REG_ZERO && (rd) != RV_REG_SP &&		\
+   ((INT32)(imm))>=-131072 && ((INT32)(imm))<=131071?	\
+   RV_C_LUI((rd), (imm)) : RV_LUI_((rd), (imm)))
+#define RV_JALR(rd, base, imm)					\
+  ((rd) == RV_REG_ZERO && (base) != RV_REG_ZERO && (imm) == 0?	\
+   RV_C_JR((base)) :						\
+   ((rd) == RV_REG_RA && (base) != RV_REG_ZERO && (imm) == 0?	\
+    RV_C_JALR((base)) : RV_JALR_((rd), (base), (imm))))
+#define RV_JAL(rd, imm)							\
+  ((rd) == RV_REG_ZERO && RV_IN_RANGE_CJ((imm))? RV_C_J((imm)) :	\
+   ((rd) == RV_REG_RA && RV_IN_RANGE_CJ((imm))? RV_C_JAL((imm)) :	\
+    RV_JAL_((rd), (imm))))
+#define RV_BEQ(rs1, rs2, imm)						 \
+  ((rs2) == RV_REG_ZERO && RV_IS_C_REG((rs1)) && RV_IN_RANGE_CB((imm)) ? \
+   RV_C_BEQZ((rs1), (imm)) : RV_BEQ_((rs1), (rs2), (imm)))
+#define RV_BNE(rs1, rs2, imm)						 \
+  ((rs2) == RV_REG_ZERO && RV_IS_C_REG((rs1)) && RV_IN_RANGE_CB((imm)) ? \
+   RV_C_BNEZ((rs1), (imm)) : RV_BNE_((rs1), (rs2), (imm)))
+
+#else
+
+#define RV_LW RV_LW_
+#define RV_LD RV_LD_
+#define RV_ADDI RV_ADDI_
+#define RV_SLLI RV_SLLI_
+#define RV_SW RV_SW_
+#define RV_SD RV_SD_
+#define RV_ADD RV_ADD_
+#define RV_LUI RV_LUI_
+#define RV_JALR RV_JALR_
+#define RV_JAL RV_JAL_
+#define RV_BEQ RV_BEQ_
+#define RV_BNE RV_BNE_
+
+#endif
+
+
+#define RV_MV(rd, rs) RV_ADDI(rd, rs, 0)
+#define RV_LI(rd, imm) RV_ADDI(rd, RV_REG_ZERO, imm)
+#define RV_NOP() RV_ADDI(RV_REG_ZERO, RV_REG_ZERO, 0)
+
+/* Pointer load/store */
+#if __riscv_xlen == 32
+#define RV_Lp RV_LW
+#define RV_Sp RV_SW
+#else
+#define RV_Lp RV_LD
+#define RV_Sp RV_SD
+#endif
+
+#define FLAG_SP_LOADED  1
+#define FLAG_FP_LOADED  2
+#define FLAG_LOCALS_LOADED 4
+#define FLAG_GLOBALS_LOADED 8
+#define FLAG_NOT_DESTRUCTED 16
+
+static struct compiler_state {
+    unsigned INT32 flags;
+} compiler_state;
+
+
+void riscv_ins_int(INT32 n)
+{
+#if PIKE_BYTEORDER == 1234
+  add_to_program((unsigned INT16)n);
+  add_to_program((unsigned INT16)(n >> 16));
+#else
+  add_to_program((unsigned INT16)(n >> 16));
+  add_to_program((unsigned INT16)n);
+#endif
+}
+
+INT32 riscv_read_int(const PIKE_OPCODE_T *ptr)
+{
+#ifdef __riscv_compressed
+#if PIKE_BYTEORDER == 1234
+  return ptr[0] | (ptr[1]<<16);
+#else
+  return (ptr[0]<<16) | ptr[1];
+#endif
+#else
+  return *(const INT32*)ptr;
+#endif
+}
+
+void riscv_upd_int(PIKE_OPCODE_T *ptr, INT32 n)
+{
+#ifdef __riscv_compressed
+#if PIKE_BYTEORDER == 1234
+  ptr[0] = (unsigned INT16)n;
+  ptr[1] = (unsigned INT16)(n >> 16);
+#else
+  ptr[0] = (unsigned INT16)(n >> 16);
+  ptr[1] = (unsigned INT16)n;
+#endif
+#else
+  *(INT32*)ptr = n;
+#endif
+}
+
+static void rv_emit(unsigned INT32 instr)
+{
+  add_to_program((unsigned INT16)instr);
+  if ((instr & 3) == 3)
+    add_to_program((unsigned INT16)(instr >> 16));
+}
+
+static void rv_func_epilogue(void)
+{
+#if __riscv_xlen == 32
+  rv_emit(RV_LW(RV_REG_S3, 12, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S1, 20, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S0, 24, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_RA, 28, RV_REG_SP));
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 32));
+#else
+  rv_emit(RV_LD(RV_REG_S3, 8, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S1, 24, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S0, 32, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_RA, 40, RV_REG_SP));
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 48));
+#endif
+  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_RA, 0));
+}
+
+void riscv_update_f_jump(INT32 offset, INT32 to_offset)
+{
+  PIKE_OPCODE_T *op = &Pike_compiler->new_program->program[offset];
+  unsigned INT32 instr = op[0];
+  to_offset -= offset;
+  if ((instr & 3) == 3) {
+    instr |= op[1] << 16;
+    if ((instr & 0x7f) == 111) {
+      /* JAL */
+      if (to_offset < -524288 || to_offset > 524287)
+	Pike_fatal("riscv_update_f_jump: branch out or range for JAL: %d\n", (int)to_offset);
+      instr = RV_J(111, (instr&0xf80)>>7, to_offset*2);
+    } else if((instr & 0x7f) == 99) {
+      /* BRANCH */
+      if (to_offset < -2048 || to_offset > 2047)
+	Pike_fatal("riscv_update_f_jump: branch out or range for BRANCH: %d\n", (int)to_offset);
+      instr = RV_B(99, (instr & 0x7000)>>12, (instr & 0xf8000)>>15,
+		   (instr & 0x1ff00000)>>20, to_offset*2);
+    } else {
+      Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
+    }
+    op[0] = instr;
+    op[1] = instr >> 16;
+  } else {
+#ifdef __riscv_compressed
+    if ((instr & 0x6003) == 0x2001) {
+      /* C.JAL / C.J */
+      if (to_offset < -1024 || to_offset > 1023)
+	Pike_fatal("riscv_update_f_jump: branch out or range for C.JAL/C.J: %d\n", (int)to_offset);
+      instr = RV_CJ(1, instr>>13, to_offset*2);
+    } else if ((instr & 0xc003) == 0xc001) {
+      /* C.BEQZ / C.BNEZ */
+      if (to_offset < -128 || to_offset > 127)
+	Pike_fatal("riscv_update_f_jump: branch out or range for C.BEQZ/C.BNEZ: %d\n", (int)to_offset);
+      instr = RV_CB(1, instr>>13, ((instr & 0x0380)>>7)+8, to_offset*2);
+    } else
+      Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
+    op[0] = instr;
+#else
+    Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
+#endif
+  }
+}
+
+int riscv_read_f_jump(INT32 offset)
+{
+  PIKE_OPCODE_T *op = &Pike_compiler->new_program->program[offset];
+  INT32 instr = op[0];
+  if ((instr & 3) == 3) {
+    instr |= (INT32)(op[1] << 16);
+    if ((instr & 0x7f) == 111) {
+      /* JAL */
+      return offset +
+	((((instr>>11)&~0xfffff)|
+	  ((instr>>20)&0x7fe)|(((instr)>>9)&0x800)|((instr)&0xff000)) >> 1);
+    } else if((instr & 0x7f) == 99) {
+      /* BRANCH */
+      return offset +
+	((((instr>>19)&~0xfff)|((instr>>20)&0x7e0)|
+	  ((instr>>7)&0x1e)|((instr<<4)&0x800)) >> 1);
+    }
+  } else {
+#ifdef __riscv_compressed
+    if ((instr & 0x6003) == 0x2001) {
+      /* C.JAL / C.J */
+      instr = (instr << 19)>>19;
+      return offset +
+	((((instr>>1)&~0x7ff)|((instr>>7)&0x10)|((instr>>1)&0x300)|
+	  ((instr<<2)&0x400)|((instr>>1)&0x40)|((instr<<1)&0x80)|
+	  ((instr>>2)&0xe)|((instr<<3)&0x20)) >> 1);
+    } else if ((instr & 0xc003) == 0xc001) {
+      /* C.BEQZ / C.BNEZ */
+      instr = (instr << 19)>>19;
+      return offset +
+	((((instr>>4)&~0xff)|((instr>>7)&0x18)|((instr<<1)&0xc0)|
+	  ((instr>>2)&0x6)|((instr<<3)&0x20)) >> 1);
+    }
+#endif
+  }
+
+  Pike_fatal("riscv_read_f_jump on unknown instruction: %x\n", (unsigned)instr);
+  return 0;
+}
+
+static void rv_update_pcrel(INT32 offset, enum rv_register reg, INT32 delta)
+{
+  PIKE_OPCODE_T *instr = &Pike_compiler->new_program->program[offset];
+  unsigned INT32 first = RV_AUIPC(reg, delta);
+  unsigned INT32 second = RV_ADDI_(reg, reg, delta);
+  if ((instr[0] & 0xfff) != (first & 0xfff) || instr[2] != (unsigned INT16)second)
+    Pike_fatal("rv_update_pcrel on mismatching instruction pair\n");
+  instr[0] = first;
+  instr[1] = first >> 16;
+  instr[3] = second >> 16;
+}
+
+static void rv_mov_int32(enum rv_register reg, INT32 val)
+{
+  if (RV_IN_RANGE_IMM12(val))
+    rv_emit(RV_ADDI(reg, RV_REG_ZERO, val));
+  else {
+    /* Adjust for signedness of lower 12 bits... */
+    if (val & 0x800) {
+#if __riscv_xlen > 32
+      if (val >= 0x7ffff800) {
+	/* Adjusting would change the sign bit, need different solution... */
+	rv_emit(RV_LUI(reg, ~val));
+	rv_emit(RV_XORI(reg, reg, val&0xfff));
+	return;
+      }
+#endif
+      val += 0x1000;
+    }
+    rv_emit(RV_LUI(reg, val));
+    if (val & 0xfff)
+      rv_emit(RV_ADDI(reg, reg, val&0xfff));
+  }
+}
+
+MACRO void rv_maybe_update_pc() {
+  {
+    static int last_prog_id=-1;
+    static size_t last_num_linenumbers=(size_t)~0;
+    if(last_prog_id != Pike_compiler->new_program->id ||
+       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
+    {
+      last_prog_id=Pike_compiler->new_program->id;
+      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
+
+      UPDATE_PC();
+    }
+  }
+}
+
+static void rv_call(void *ptr)
+{
+  ptrdiff_t addr = (ptrdiff_t)ptr;
+  if (RV_IN_RANGE_IMM12(addr)) {
+    rv_emit(RV_JALR(RV_REG_RA, RV_REG_ZERO, addr));
+  } else {
+#if __riscv_xlen > 32
+    INT32 low = (INT32)addr;
+    addr >>= 32;
+    if (RV_IN_RANGE_IMM12(low)) {
+      low &= 0xfff;
+      /* Adjust for signedness of lower 12 bits... */
+      if ((low & 0x800)) {
+	addr++;
+      }
+    } else {
+      /* Adjust for signedness of lower 12 bits... */
+      if ((low & 0x800)) {
+	low += 0x1000;
+      }
+      /* Adjust for signedness of lower 32 bits... */
+      if (low < 0)
+	addr++;
+    }
+    if (addr) {
+      rv_mov_int32(RV_REG_T6, addr);
+      rv_emit(RV_SLLI(RV_REG_T6, RV_REG_T6, 32));
+      if (low & ~0xfff) {
+	rv_emit(RV_LUI(RV_REG_T5, low));
+	rv_emit(RV_ADD(RV_REG_T6, RV_REG_T6, RV_REG_T5));
+      }
+    } else {
+      rv_emit(RV_LUI(RV_REG_T6, low));
+    }
+    rv_emit(RV_JALR(RV_REG_RA, RV_REG_T6, low));
+#else
+    /* Adjust for signedness of lower 12 bits... */
+    if (addr & 0x800)
+      addr += 0x1000;
+    rv_emit(RV_LUI(RV_REG_T6, addr));
+    rv_emit(RV_JALR(RV_REG_RA, RV_REG_T6, addr));
+#endif
+  }
+}
+
+static void rv_call_c_opcode(unsigned int opcode)
+{
+  void *addr = instrs[opcode-F_OFFSET].address;
+  int flags = instrs[opcode-F_OFFSET].flags;
+
+  rv_maybe_update_pc();
+
+  if (opcode == F_CATCH)
+    addr = inter_return_opcode_F_CATCH;
+
+  rv_call(addr);
+
+  if (flags & I_UPDATE_SP) {
+    compiler_state.flags &= ~FLAG_SP_LOADED;
+  }
+  if (flags & I_UPDATE_M_SP) {}
+  if (flags & I_UPDATE_FP) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
+  }
+}
+
+void riscv_ins_f_byte(unsigned int opcode)
+{
+  int flags = instrs[opcode-F_OFFSET].flags;
+  INT32 rel_addr = rel_addr;
+
+  switch (opcode) {
+
+  case F_CATCH:
+    {
+      rel_addr = PIKE_PC;
+      rv_emit(RV_AUIPC(RV_REG_A0, 0));
+      rv_emit(RV_ADDI_(RV_REG_A0, RV_REG_A0, 0));
+    }
+    break;
+
+  }
+
+  rv_call_c_opcode(opcode);
+
+  if (flags & I_RETURN) {
+    /* Test for -1 */
+    rv_emit(RV_ADDI(RV_REG_A5, RV_REG_A0, 1));
+    INT32 branch_op = PIKE_PC;
+    rv_emit(RV_BNE(RV_REG_A5, RV_REG_ZERO, 0));
+    rv_func_epilogue();
+    UPDATE_F_JUMP(branch_op, PIKE_PC);
+
+    if (opcode == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+
+      rv_emit(RV_ADDI(RV_REG_T6, RV_REG_RA, 2*JUMP_EPILOGUE_SIZE));
+      rel_addr = PIKE_PC;
+      rv_emit(RV_BEQ(RV_REG_T6, RV_REG_A0, 0));
+    }
+  }
+
+  if (flags & I_JUMP) {
+    /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
+    rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A0, 0));
+
+    if (opcode == F_CATCH) {
+      rv_update_pcrel(rel_addr, RV_REG_A0, 2*(PIKE_PC - rel_addr));
+    } else if (opcode == F_RETURN_IF_TRUE) {
+      UPDATE_F_JUMP(rel_addr, PIKE_PC);
+    }
+  }
+}
+
+void riscv_ins_f_byte_with_arg(unsigned int a, INT32 b)
+{
+  rv_mov_int32(RV_REG_A0, b);
+  riscv_ins_f_byte(a);
+}
+
+void riscv_ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
+{
+  rv_mov_int32(RV_REG_A0, b);
+  rv_mov_int32(RV_REG_A1, c);
+  riscv_ins_f_byte(a);
+}
+
+int riscv_ins_f_jump(unsigned int opcode, int backward_jump)
+{
+  INT32 ret;
+
+  if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+    return -1;
+
+  switch (opcode) {
+    case F_BRANCH:
+      if (backward_jump) {
+	rv_call(branch_check_threads_etc);
+      }
+      ret = PIKE_PC;
+      rv_emit(RV_JAL_(RV_REG_ZERO, 0));
+      return ret;
+  }
+
+  rv_call_c_opcode(opcode);
+
+  INT32 branch_op = PIKE_PC;
+  rv_emit(RV_BEQ(RV_REG_A0, RV_REG_ZERO, 0));
+
+  if (backward_jump) {
+    rv_call(branch_check_threads_etc);
+  }
+  ret = PIKE_PC;
+  rv_emit(RV_JAL_(RV_REG_ZERO, 0));
+
+  UPDATE_F_JUMP(branch_op, PIKE_PC);
+  
+  return ret;
+}
+
+int riscv_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump)
+{
+  if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+    return -1;
+
+  rv_mov_int32(RV_REG_A0, arg1);
+  return riscv_ins_f_jump(opcode, backward_jump);
+}
+
+int riscv_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump)
+{
+  if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+    return -1;
+
+  rv_mov_int32(RV_REG_A0, arg1);
+  rv_mov_int32(RV_REG_A1, arg2);
+  return riscv_ins_f_jump(opcode, backward_jump);
+}
+
+void riscv_start_function(int UNUSED(no_pc))
+{
+}
+
+void riscv_end_function(int UNUSED(no_pc))
+{
+}
+
+void riscv_ins_entry(void)
+{
+  /* corresponds to ENTRY_PROLOGUE_SIZE */
+#if __riscv_xlen == 32
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -32));
+  rv_emit(RV_SW(RV_REG_RA, 28, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S0, 24, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S1, 20, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S3, 12, RV_REG_SP));
+#else
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -48));
+  rv_emit(RV_SD(RV_REG_RA, 40, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S0, 32, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S1, 24, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S3, 8, RV_REG_SP));
+#endif
+  rv_emit(RV_MV(RV_REG_PIKE_IP, RV_REG_A0));
+  riscv_flush_codegen_state();
+}
+
+static void riscv_load_fp_reg(void) {
+  if (!(compiler_state.flags & FLAG_FP_LOADED)) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
+    /* load Pike_interpreter_pointer->frame_pointer into RV_REG_PIKE_FP */
+    rv_emit(RV_Lp(RV_REG_PIKE_FP, offset, RV_REG_PIKE_IP));
+    compiler_state.flags |= FLAG_FP_LOADED;
+    compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
+  }
+}
+
+void riscv_update_pc(void)
+{
+  rv_emit(RV_AUIPC(RV_REG_A5, 0));
+  riscv_load_fp_reg();
+  rv_emit(RV_Sp(RV_REG_A5, OFFSETOF(pike_frame, pc), RV_REG_PIKE_FP));
+}
+
+void riscv_flush_codegen_state(void)
+{
+  compiler_state.flags = 0;
+}
+
+void riscv_flush_instruction_cache(void *addr, size_t len)
+{
+  __builtin___clear_cache(addr, (char*)addr+len);
+}
+
+void riscv_init_interpreter_state(void)
+{
+#ifdef PIKE_DEBUG
+  /* Check sizes */
+
+  assert(RV_IN_RANGE_IMM12(OFFSETOF(Pike_interpreter_struct, frame_pointer)));
+  assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, pc)));
+#endif
+}
+
 
 #undef DISASSEMBLE_32BIT
 #undef DISASSEMBLE_128BIT
@@ -76,7 +778,7 @@ static const char *riscv_fregname(unsigned n)
   return regnames[n&0x3f];
 }
 
-void riscv_disassemble_code(void *addr, size_t bytes)
+void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
 {
   static const char * const rvcq1_op[] = { "sub ", "xor ", "or  ", "and ",
 					   "subw", "addw" };
