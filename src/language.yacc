@@ -4904,27 +4904,26 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 
 static int call_handle_import(struct pike_string *s)
 {
-  struct compilation *c = THIS_COMPILATION;
-  int args;
-
   ref_push_string(s);
-  ref_push_string(c->lex.current_file);
-  if (c->handler && c->handler->prog) {
-    ref_push_object(c->handler);
-    args = 3;
-  }
-  else args = 2;
+  if (safe_apply_current(PC_HANDLE_IMPORT_FUN_NUM, 1)) {
+    if ((1 << TYPEOF(Pike_sp[-1])) &
+	(BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO)) {
+      if (SAFE_IS_ZERO(Pike_sp - 1)) {
+	pop_stack();
+	push_int(0);
+      }
+      if (TYPEOF(Pike_sp[-1]) != T_INT) return 1;
 
-  if (safe_apply_handler("handle_import", c->handler, c->compat_handler,
-			 args, BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO))
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-      return 1;
-    else {
       pop_stack();
       my_yyerror("Couldn't find module to import: %S", s);
+      return 0;
     }
-  else
-    handle_compile_exception ("Error finding module to import");
+    my_yyerror("Invalid return value from handle_import: %O", Pike_sp-1);
+    pop_stack();
+    return 0;
+  }
+  handle_compile_exception ("Error finding module to import");
+  pop_stack();
 
   return 0;
 }
