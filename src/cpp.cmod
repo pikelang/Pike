@@ -383,6 +383,7 @@ PIKECLASS CPP
   INIT
   {
     init_string_builder(&THIS->buf, 0);
+    THIS->current_line = 1;
   }
 
   EXIT
@@ -4926,10 +4927,15 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
     int compat_major = compat_major_sv?compat_major_sv->u.integer:0;
     int compat_minor = compat_minor_sv?compat_minor_sv->u.integer:0;
     int picky_cpp = picky_cpp_sv?picky_cpp_sv->u.integer:0;
+    int add_line_directive = this->current_line != 1;
 
     this->prefix = NULL;
     this->current_line=1;
     this->compile_errors=0;
+    if (this->defines) {
+      free_mapping(this->defines);
+      this->defines = NULL;	/* Paranoia */
+    }
     this->defines = allocate_mapping(32);
     this->keep_comments = 0;
     this->dependencies_fail = 0;
@@ -4958,19 +4964,46 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
       }
     }
 
-    if(current_file)
+    if(current_file) {
       add_ref(current_file);
-    else
+      if (this->current_file != current_file) add_line_directive = 1;
+    } else {
       current_file = make_shared_string("-");
+      if (this->current_file && (this->current_file != current_file)) {
+	add_line_directive = 1;
+      }
+    }
+    if (this->current_file) {
+      free_string(this->current_file);
+    }
     this->current_file = current_file;
+
+    if (add_line_directive) {
+      string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
+      PUSH_STRING_SHIFT(current_file->str,
+			current_file->len,
+			current_file->size_shift,
+			&this->buf);
+      string_builder_putchar(&this->buf, '\n');
+    }
 
     this->compat_major=PIKE_MAJOR_VERSION;
     this->compat_minor=PIKE_MINOR_VERSION;
+    if (this->compat_handler) {
+      free_object(this->compat_handler);
+    }
     this->compat_handler = 0;
+    if (this->handler) {
+      free_object(this->handler);
+    }
     this->handler = handler;
     if(handler)
       add_ref(handler);
 
+    if (this->prefix) {
+      free_string(this->prefix);
+      this->prefix = NULL;
+    }
     if (prefix) {
       int i;
       if (prefix->size_shift) {
@@ -4985,7 +5018,10 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
       add_ref(prefix);
     }
 
-
+    if (this->charset) {
+      free_string(this->charset);
+      this->charset = NULL;
+    }
     if(charset_sv) {
       if(TYPEOF(*charset_sv) == T_STRING) {
 	this->charset = charset_sv->u.string;
@@ -5295,11 +5331,6 @@ PIKEFUN string cpp(string data,
      *     on the stack as we have the save_sp marker.
      */
   }
-
-  string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
-  PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
-		    this->current_file->size_shift, &this->buf);
-  string_builder_putchar(&this->buf, '\n');
 
 #ifdef PIKE_DEBUG
   SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
