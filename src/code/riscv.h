@@ -32,13 +32,8 @@ void riscv_flush_instruction_cache(void *addr, size_t len);
 #define FLUSH_INSTRUCTION_CACHE(ADDR,LEN)         riscv_flush_instruction_cache(ADDR,LEN)
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#ifdef __riscv_compressed
-  /* All the prologue instructions can be compressed */
-  #define ENTRY_PROLOGUE_SIZE	9
-#else
-  /* No compression available */
-  #define ENTRY_PROLOGUE_SIZE	(9*2)
-#endif
+/* The prologue instruction can not be compressed */
+#define ENTRY_PROLOGUE_SIZE	(1*2)
 
 void riscv_start_function(int no_pc);
 void riscv_end_function(int no_pc);

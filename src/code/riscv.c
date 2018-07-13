@@ -269,8 +269,16 @@ enum rv_register {
 #define FLAG_GLOBALS_LOADED 8
 #define FLAG_NOT_DESTRUCTED 16
 
+enum rv_millicode {
+  RV_MILLICODE_PROLOGUE,
+  RV_MILLICODE_EPILOGUE,
+  RV_MILLICODE_RETURN,
+  RV_MILLICODE_MAX = RV_MILLICODE_RETURN
+};
+
 static struct compiler_state {
     unsigned INT32 flags;
+    size_t millicode[RV_MILLICODE_MAX+1];
 } compiler_state;
 
 
@@ -280,6 +288,8 @@ enum rv_jumpentry {
   RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC,
   RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH,
   RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE,
+  RV_JUMPENTRY_LOW_RETURN,
+  RV_JUMPENTRY_LOW_RETURN_POP,
   RV_JUMPENTRY_F_OFFSET,
 };
 
@@ -297,9 +307,11 @@ void riscv_jumptable(void) { }
   extern RETTYPE TARGET ARGTYPES;				\
   JUMP_ENTRY_NOPROTO(OP, TARGET, RETTYPE, ARGTYPES, RET, ARGS)
 
-JUMP_ENTRY(branch_check_threads_etc, branch_check_threads_etc, void, (void), , ())
-JUMP_ENTRY(inter_return_opcode_F_CATCH, inter_return_opcode_F_CATCH, PIKE_OPCODE_T *, (PIKE_OPCODE_T *addr), return, (addr))
-JUMP_ENTRY(complex_svalue_is_true, complex_svalue_is_true, int, (const struct svalue *s), return, (s))
+JUMP_ENTRY_NOPROTO(branch_check_threads_etc, branch_check_threads_etc, void, (void), , ())
+JUMP_ENTRY_NOPROTO(inter_return_opcode_F_CATCH, inter_return_opcode_F_CATCH, PIKE_OPCODE_T *, (PIKE_OPCODE_T *addr), return, (addr))
+JUMP_ENTRY_NOPROTO(complex_svalue_is_true, complex_svalue_is_true, int, (const struct svalue *s), return, (s))
+JUMP_ENTRY_NOPROTO(low_return, low_return, void, (void), , ())
+JUMP_ENTRY_NOPROTO(low_return_pop, low_return_pop, void, (void), , ())
 
 #define OPCODE_NOCODE(DESC, OP, FLAGS)
 #define OPCODE0(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(opcode_, OP), void, (void), , ())
@@ -346,6 +358,8 @@ static void * const rv_jumptable_index[] =
   [RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC] = rv_jumptable_branch_check_threads_etc,
   [RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH] = rv_jumptable_inter_return_opcode_F_CATCH,
   [RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE] = rv_jumptable_complex_svalue_is_true,
+  [RV_JUMPENTRY_LOW_RETURN] = rv_jumptable_low_return,
+  [RV_JUMPENTRY_LOW_RETURN_POP] = rv_jumptable_low_return_pop,
 #include "interpret_protos.h"
 };
 
@@ -396,26 +410,17 @@ static void rv_emit(unsigned INT32 instr)
     add_to_program((unsigned INT16)(instr >> 16));
 }
 
+static void rv_call_millicode(enum rv_register reg, enum rv_millicode milli)
+{
+  INT32 delta = (PIKE_PC - compiler_state.millicode[milli]) * -2;
+  if (delta < -1048576 || delta > 1048575)
+    Pike_fatal("rv_call_millicode: branch out of range for JAL\n");
+  rv_emit(RV_JAL(reg, delta));
+}
+
 static void rv_func_epilogue(void)
 {
-#if __riscv_xlen == 32
-  rv_emit(RV_LW(RV_REG_S4, 8, RV_REG_SP));
-  rv_emit(RV_LW(RV_REG_S3, 12, RV_REG_SP));
-  rv_emit(RV_LW(RV_REG_S2, 16, RV_REG_SP));
-  rv_emit(RV_LW(RV_REG_S1, 20, RV_REG_SP));
-  rv_emit(RV_LW(RV_REG_S0, 24, RV_REG_SP));
-  rv_emit(RV_LW(RV_REG_RA, 28, RV_REG_SP));
-  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 32));
-#else
-  rv_emit(RV_LD(RV_REG_S4, 0, RV_REG_SP));
-  rv_emit(RV_LD(RV_REG_S3, 8, RV_REG_SP));
-  rv_emit(RV_LD(RV_REG_S2, 16, RV_REG_SP));
-  rv_emit(RV_LD(RV_REG_S1, 24, RV_REG_SP));
-  rv_emit(RV_LD(RV_REG_S0, 32, RV_REG_SP));
-  rv_emit(RV_LD(RV_REG_RA, 40, RV_REG_SP));
-  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 48));
-#endif
-  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_RA, 0));
+  rv_call_millicode(RV_REG_ZERO, RV_MILLICODE_EPILOGUE);
 }
 
 void riscv_update_f_jump(INT32 offset, INT32 to_offset)
@@ -618,7 +623,7 @@ static void rv_call(void *ptr)
 }
 #endif
 
-static void rv_call_via_jumptable(enum rv_jumpentry index)
+static INT32 rv_get_jumptable_entry(enum rv_jumpentry index)
 {
   ptrdiff_t base = (ptrdiff_t)(void *)riscv_jumptable;
   ptrdiff_t target = (ptrdiff_t)rv_jumptable_index[index];
@@ -628,8 +633,13 @@ static void rv_call_via_jumptable(enum rv_jumpentry index)
   ptrdiff_t delta = target - base;
   if (!RV_IN_RANGE_IMM12(delta))
     Pike_fatal("rv_call_via_jumptable: target outside of range for index %d\n", (int)index);
+  return (INT32)delta;
+}
 
-  rv_emit(RV_JALR(RV_REG_RA, RV_REG_PIKE_JUMPTABLE, (INT32)(target-base)));
+static void rv_call_via_jumptable(enum rv_jumpentry index)
+{
+  INT32 delta = rv_get_jumptable_entry(index);
+  rv_emit(RV_JALR(RV_REG_RA, RV_REG_PIKE_JUMPTABLE, delta));
 }
 
 static void rv_call_c_opcode(unsigned int opcode)
@@ -653,18 +663,89 @@ static void rv_call_c_opcode(unsigned int opcode)
   }
 }
 
-static void rv_return(unsigned int opcode)
+static void rv_return(void)
 {
   rv_load_fp_reg();
+  rv_call_millicode(RV_REG_ZERO, RV_MILLICODE_RETURN);
+}
+
+static void rv_generate_millicode()
+{
+  compiler_state.millicode[RV_MILLICODE_PROLOGUE] = PIKE_PC;
+#if __riscv_xlen == 32
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -32));
+  rv_emit(RV_SW(RV_REG_RA, 28, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S0, 24, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S1, 20, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S3, 12, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S4, 8, RV_REG_SP));
+#else
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -48));
+  rv_emit(RV_SD(RV_REG_RA, 40, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S0, 32, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S1, 24, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S3, 8, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S4, 0, RV_REG_SP));
+#endif
+  rv_emit(RV_MV(RV_REG_PIKE_IP, RV_REG_A0));
+  rv_emit(RV_MV(RV_REG_PIKE_JUMPTABLE, RV_REG_A1));
+  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_T0, 0));
+
+  compiler_state.millicode[RV_MILLICODE_RETURN] = PIKE_PC;
   rv_emit(RV_LHU(RV_REG_A5, OFFSETOF(pike_frame, flags), RV_REG_PIKE_FP));
-  rv_emit(RV_ANDI(RV_REG_A5, RV_REG_A5, PIKE_FRAME_RETURN_INTERNAL));
+  rv_emit(RV_ANDI(RV_REG_A4, RV_REG_A5, PIKE_FRAME_RETURN_INTERNAL));
   INT32 branch_op = PIKE_PC;
-  rv_emit(RV_BNE(RV_REG_A5, RV_REG_ZERO, 0));
+  rv_emit(RV_BNE(RV_REG_A4, RV_REG_ZERO, 0));
   rv_emit(RV_LI(RV_REG_A0, -1));
-  rv_func_epilogue();
+
+  compiler_state.millicode[RV_MILLICODE_EPILOGUE] = PIKE_PC;
+#if __riscv_xlen == 32
+  rv_emit(RV_LW(RV_REG_S4, 8, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S3, 12, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S1, 20, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_S0, 24, RV_REG_SP));
+  rv_emit(RV_LW(RV_REG_RA, 28, RV_REG_SP));
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 32));
+#else
+  rv_emit(RV_LD(RV_REG_S4, 0, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S3, 8, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S2, 16, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S1, 24, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_S0, 32, RV_REG_SP));
+  rv_emit(RV_LD(RV_REG_RA, 40, RV_REG_SP));
+  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 48));
+#endif
+  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_RA, 0));
+
   UPDATE_F_JUMP(branch_op, PIKE_PC);
-  rv_call_c_opcode(opcode);
-  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A0, 0));
+
+  INT32 delta_return = rv_get_jumptable_entry(RV_JUMPENTRY_LOW_RETURN);
+  INT32 delta_return_pop = rv_get_jumptable_entry(RV_JUMPENTRY_LOW_RETURN_POP);
+
+  rv_emit(RV_ANDI(RV_REG_A5, RV_REG_A5, PIKE_FRAME_RETURN_POP));
+  rv_emit(RV_ADDI(RV_REG_T6, RV_REG_PIKE_JUMPTABLE, delta_return));
+  INT32 branch_op_2 = PIKE_PC;
+  rv_emit(RV_BEQ(RV_REG_A5, RV_REG_ZERO, 0));
+  rv_emit(RV_ADDI(RV_REG_T6, RV_REG_PIKE_JUMPTABLE, delta_return_pop));
+  UPDATE_F_JUMP(branch_op_2, PIKE_PC);
+  rv_emit(RV_JALR(RV_REG_RA, RV_REG_T6, 0));
+  rv_emit(RV_Lx(RV_REG_A5, OFFSETOF(Pike_interpreter_struct, frame_pointer), RV_REG_PIKE_IP));
+  rv_emit(RV_Lx(RV_REG_A5, OFFSETOF(pike_frame, return_addr), RV_REG_A5));
+  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A5, 0));
+}
+
+static void rv_maybe_regenerate_millicode(void)
+{
+  if (Pike_compiler->new_program->num_program == 0 ||
+      /* If the distance to the millicode has exceeded 75% of the reach of JAL,
+	 generate a new instance to avoid accidents.
+	 (This only happens every 768K, so the overhead is quite small.) */
+      PIKE_PC - compiler_state.millicode[RV_MILLICODE_PROLOGUE] > 393216) {
+    rv_generate_millicode();
+  }
 }
 
 void riscv_ins_f_byte(unsigned int opcode)
@@ -711,14 +792,15 @@ void riscv_ins_f_byte(unsigned int opcode)
       rv_emit(RV_BEQ(RV_REG_A0, RV_REG_ZERO, 0));
 
       UPDATE_F_JUMP(branch_op1, PIKE_PC);
-      rv_return(F_RETURN);
+      rv_return();
       UPDATE_F_JUMP(branch_op3, PIKE_PC);
     }
     return;
 
   case F_RETURN:
   case F_DUMB_RETURN:
-    rv_return(opcode);
+    rv_return();
+    rv_maybe_regenerate_millicode();
     return;
   }
 
@@ -736,6 +818,7 @@ void riscv_ins_f_byte(unsigned int opcode)
   if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A0, 0));
+    rv_maybe_regenerate_millicode();
 
     if (opcode == F_CATCH) {
       rv_update_pcrel(rel_addr, RV_REG_A0, 2*(PIKE_PC - rel_addr));
@@ -810,6 +893,7 @@ int riscv_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, in
 
 void riscv_start_function(int UNUSED(no_pc))
 {
+  rv_maybe_regenerate_millicode();
 }
 
 void riscv_end_function(int UNUSED(no_pc))
@@ -819,25 +903,7 @@ void riscv_end_function(int UNUSED(no_pc))
 void riscv_ins_entry(void)
 {
   /* corresponds to ENTRY_PROLOGUE_SIZE */
-#if __riscv_xlen == 32
-  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -32));
-  rv_emit(RV_SW(RV_REG_RA, 28, RV_REG_SP));
-  rv_emit(RV_SW(RV_REG_S0, 24, RV_REG_SP));
-  rv_emit(RV_SW(RV_REG_S1, 20, RV_REG_SP));
-  rv_emit(RV_SW(RV_REG_S2, 16, RV_REG_SP));
-  rv_emit(RV_SW(RV_REG_S3, 12, RV_REG_SP));
-  rv_emit(RV_SW(RV_REG_S4, 8, RV_REG_SP));
-#else
-  rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -48));
-  rv_emit(RV_SD(RV_REG_RA, 40, RV_REG_SP));
-  rv_emit(RV_SD(RV_REG_S0, 32, RV_REG_SP));
-  rv_emit(RV_SD(RV_REG_S1, 24, RV_REG_SP));
-  rv_emit(RV_SD(RV_REG_S2, 16, RV_REG_SP));
-  rv_emit(RV_SD(RV_REG_S3, 8, RV_REG_SP));
-  rv_emit(RV_SD(RV_REG_S4, 0, RV_REG_SP));
-#endif
-  rv_emit(RV_MV(RV_REG_PIKE_IP, RV_REG_A0));
-  rv_emit(RV_MV(RV_REG_PIKE_JUMPTABLE, RV_REG_A1));
+  rv_call_millicode(RV_REG_T0, RV_MILLICODE_PROLOGUE);
   riscv_flush_codegen_state();
 }
 
@@ -867,6 +933,7 @@ void riscv_init_interpreter_state(void)
   assert(RV_IN_RANGE_IMM12(OFFSETOF(Pike_interpreter_struct, stack_pointer)));
   assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, pc)));
   assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, flags)));
+  assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, return_addr)));
 
   enum rv_jumpentry je;
   ptrdiff_t base = (ptrdiff_t)(void *)riscv_jumptable;
@@ -1148,8 +1215,8 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
 	}
 	break;
       case 13:
-	fprintf(stderr, "j       %s,%p\n",
-		riscv_regname(1),
+	fprintf(stderr, "jal     %s,%p\n",
+		riscv_regname(0),
 		((const char *)parcel)+RV_CJ_IMM(instr));
 	break;
       case 14:
