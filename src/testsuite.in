@@ -9878,15 +9878,15 @@ ifefun(_verify_internals,
 test_compile_any([[import Stdio.Readline; mapping x=([]);]])
 
 // testing preprocessor
-test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"#line 1 \"-\"\n\n( (A) ) ( (B) )")
-test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"#line 1 \"-\"\n\nFOO BAR")
-test_eq([[cpp("#define F 'F'\nF")]],"#line 1 \"-\"\n\n'F'")
-test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"#line 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
+test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"\n( (A) ) ( (B) )")
+test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"\nFOO BAR")
+test_eq([[cpp("#define F 'F'\nF")]],"\n'F'")
+test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
 test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
-	"#line 1 \"-\"\n\n\n \"foo\" ")
-test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "#line 1 \"-\"\n\n\n \"\" \n");
-test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "#line 1 \"-\"\n\n\n \"\"   \n" /* Note: Added extra spaces for \r. */);
+	"\n\n \"foo\" ")
+test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "\n\n \"\" \n");
+test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "\n\n \"\"   \n" /* Note: Added extra spaces for \r. */);
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[
@@ -9902,14 +9902,14 @@ test_equal([[
 		 "constant val = TOSTR2(FOO);\n")()->val;
 ]], "")
 test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
-  "#line 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
+  "foo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
 test_equal([[
   compile_string(Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
-test_eq([[cpp("\\\n")]], "#line 1 \"-\"\n\n")
-test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "#line 1 \"-\"\n\n\n\n\n")
+test_eq([[cpp("\\\n")]], "\n")
+test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "\n\n\n\n")
 test_any([[
   #define TOSTR(X)	#X
   return TOSTR(FOO  "String with \\ and \" and  space"  BAR);
