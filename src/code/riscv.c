@@ -74,14 +74,15 @@ enum rv_register {
    ((rs1)<<15)|((rs2)<<20)|(((imm)&0x7e0)<<20)|(((imm)&~0xfff)<<19))	\
 
 #define RV_LW_(rd, imm, base) RV_I(3, 2, rd, base, imm)
-#define RV_LD_(rd, imm, base) RV_I(3, 3, rd, base, imm)
+#define RV_LHU(rd, imm, base) RV_I(3, 5, rd, base, imm)
 #define RV_ADDI_(rd, rs, imm) RV_I(19, 0, rd, rs, imm)
 #define RV_SLLI_(rd, rs, imm) RV_I(19, 1, rd, rs, imm)
 #define RV_XORI(rd, rs, imm) RV_I(19, 4, rd, rs, imm)
+#define RV_ANDI_(rd, rs, imm) RV_I(19, 7, rd, rs, imm)
 #define RV_AUIPC(rd, imm) RV_U(23, rd, imm)
 #define RV_SW_(rs, imm, base) RV_S(35, 2, base, rs, imm)
-#define RV_SD_(rs, imm, base) RV_S(35, 3, base, rs, imm)
 #define RV_ADD_(rd, rs1, rs2) RV_R(51, 0, 0, rd, rs1, rs2)
+#define RV_SLL(rd, rs1, rs2) RV_R(51, 1, 0, rd, rs1, rs2)
 #define RV_LUI_(rd, imm) RV_U(55, rd, imm)
 #define RV_JALR_(rd, base, imm) RV_I(103, 0, rd, base, imm)
 #define RV_JAL_(rd, imm) RV_J(111, rd, imm)
@@ -91,6 +92,18 @@ enum rv_register {
 #define RV_BGE(rs1, rs2, imm) RV_B(99, 5, rs1, rs2, imm)
 #define RV_BLTU(rs1, rs2, imm) RV_B(99, 6, rs1, rs2, imm)
 #define RV_BGEU(rs1, rs2, imm) RV_B(99, 7, rs1, rs2, imm)
+
+#if __riscv_xlen == 64
+
+#define RV_LD_(rd, imm, base) RV_I(3, 3, rd, base, imm)
+#define RV_SD_(rs, imm, base) RV_S(35, 3, base, rs, imm)
+#define RV_SLLW(rd, rs1, rs2) RV_R(59, 1, 0, rd, rs1, rs2)
+
+#elif __riscv_xlen == 32
+
+#define RV_SLLW RV_SLL
+
+#endif
 
 #ifdef __riscv_compressed
 
@@ -119,6 +132,8 @@ enum rv_register {
     ((op)|(((imm)&0x20)>>3)|(((imm)&0xe)<<2)|(((imm)&0x80)>>1)|	\
      (((imm)&0x40)<<1)|(((imm)&0x400)>>2)|(((imm)&0x300)<<1)|	\
      (((imm)&0x10)<<7)|(((imm)&0x800)<<1)|((funct3)<<13))
+#define RV_CIB(op, funct3, funct2, rdrs1, imm)	\
+  RV_CI(op, funct3, ((funct2)<<3)|((rdrs1)-8), imm, (imm)>>5)
 
 #define RV_C_ADDI4SPN(rd, imm) RV_CIW(0, 0, rd, (((imm)&8)>>3)|(((imm)&4)>>1)|\
 				      (((imm)&0x3c0)>>4)|(((imm)&30)<<2))
@@ -133,6 +148,7 @@ enum rv_register {
 #define RV_C_ADDI16SP(imm) RV_CI(1, 3, 2, (((imm)&0x20)>>5)|            \
 				 (((imm)&0x180)>>6)|(((imm)&0x40)>>3)|  \
 				 ((imm)&0x10), (imm)>>9)
+#define RV_C_ANDI(rdrs1, imm) RV_CIB(1, 4, 2, rdrs1, imm)
 #define RV_C_J(imm) RV_CJ(1, 5, imm)
 #define RV_C_BEQZ(rs, imm) RV_CB(1, 6, rs, imm)
 #define RV_C_BNEZ(rs, imm) RV_CB(1, 7, rs, imm)
@@ -210,6 +226,9 @@ enum rv_register {
 #define RV_BNE(rs1, rs2, imm)						 \
   ((rs2) == RV_REG_ZERO && RV_IS_C_REG((rs1)) && RV_IN_RANGE_CB((imm)) ? \
    RV_C_BNEZ((rs1), (imm)) : RV_BNE_((rs1), (rs2), (imm)))
+#define RV_ANDI(rd, rs, imm)					\
+  ((rd) == (rs) && RV_IS_C_REG((rd)) && RV_IN_RANGE_CI((imm))?	\
+   RV_C_ANDI((rd), (imm)) : RV_ANDI_((rd), (rs), (imm)))
 
 #else
 
@@ -225,6 +244,7 @@ enum rv_register {
 #define RV_JAL RV_JAL_
 #define RV_BEQ RV_BEQ_
 #define RV_BNE RV_BNE_
+#define RV_ANDI RV_ANDI_
 
 #endif
 
@@ -235,11 +255,11 @@ enum rv_register {
 
 /* Pointer load/store */
 #if __riscv_xlen == 32
-#define RV_Lp RV_LW
-#define RV_Sp RV_SW
+#define RV_Lx RV_LW
+#define RV_Sx RV_SW
 #else
-#define RV_Lp RV_LD
-#define RV_Sp RV_SD
+#define RV_Lx RV_LD
+#define RV_Sx RV_SD
 #endif
 
 #define FLAG_SP_LOADED  1
@@ -438,6 +458,25 @@ static void rv_mov_int32(enum rv_register reg, INT32 val)
   }
 }
 
+static void rv_load_fp_reg(void) {
+  if (!(compiler_state.flags & FLAG_FP_LOADED)) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
+    /* load Pike_interpreter_pointer->frame_pointer into RV_REG_PIKE_FP */
+    rv_emit(RV_Lx(RV_REG_PIKE_FP, offset, RV_REG_PIKE_IP));
+    compiler_state.flags |= FLAG_FP_LOADED;
+    compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
+  }
+}
+
+static void rv_load_sp_reg(void) {
+  if (!(compiler_state.flags & FLAG_SP_LOADED)) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+    /* load Pike_interpreter_pointer->stack_pointer into RV_REG_PIKE_SP */
+    rv_emit(RV_Lx(RV_REG_PIKE_SP, offset, RV_REG_PIKE_IP));
+    compiler_state.flags |= FLAG_SP_LOADED;
+  }
+}
+
 MACRO void rv_maybe_update_pc() {
   {
     static int last_prog_id=-1;
@@ -519,10 +558,24 @@ static void rv_call_c_opcode(unsigned int opcode)
   }
 }
 
+static void rv_return(unsigned int opcode)
+{
+  rv_load_fp_reg();
+  rv_emit(RV_LHU(RV_REG_A5, OFFSETOF(pike_frame, flags), RV_REG_PIKE_FP));
+  rv_emit(RV_ANDI(RV_REG_A5, RV_REG_A5, PIKE_FRAME_RETURN_INTERNAL));
+  INT32 branch_op = PIKE_PC;
+  rv_emit(RV_BNE(RV_REG_A5, RV_REG_ZERO, 0));
+  rv_emit(RV_LI(RV_REG_A0, -1));
+  rv_func_epilogue();
+  UPDATE_F_JUMP(branch_op, PIKE_PC);
+  rv_call_c_opcode(opcode);
+  rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A0, 0));
+}
+
 void riscv_ins_f_byte(unsigned int opcode)
 {
   int flags = instrs[opcode-F_OFFSET].flags;
-  INT32 rel_addr = rel_addr;
+  INT32 rel_addr;
 
   switch (opcode) {
 
@@ -534,6 +587,44 @@ void riscv_ins_f_byte(unsigned int opcode)
     }
     break;
 
+  case F_RETURN_IF_TRUE:
+    {
+      rv_load_sp_reg();
+      rv_emit(RV_LHU(RV_REG_A5,
+		     -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, tu.t.type),
+		     RV_REG_PIKE_SP));
+      /* everything which is neither function, object or int is true */
+      rv_emit(RV_LUI(RV_REG_T6, (INT32)((1<<(31-PIKE_T_FUNCTION))|
+					(1<<(31-PIKE_T_OBJECT))|
+					(1<<(31-PIKE_T_INT)))));
+      rv_emit(RV_SLLW(RV_REG_T6, RV_REG_T6, RV_REG_A5));
+      INT32 branch_op1 = PIKE_PC;
+      rv_emit(RV_BGE(RV_REG_T6, RV_REG_ZERO, 0));
+
+      rv_emit(RV_Lx(RV_REG_A0,
+		    -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u),
+		    RV_REG_PIKE_SP));
+      /* here we use the fact that PIKE_T_INT is zero */
+      INT32 branch_op2 = PIKE_PC;
+      rv_emit(RV_BEQ(RV_REG_A5, RV_REG_ZERO, 0));
+
+      rv_emit(RV_ADDI(RV_REG_A0, RV_REG_PIKE_SP, -(INT32)sizeof(struct svalue)));
+      rv_call(complex_svalue_is_true);
+
+      UPDATE_F_JUMP(branch_op2, PIKE_PC);
+      INT32 branch_op3 = PIKE_PC;
+      rv_emit(RV_BEQ(RV_REG_A0, RV_REG_ZERO, 0));
+
+      UPDATE_F_JUMP(branch_op1, PIKE_PC);
+      rv_return(F_RETURN);
+      UPDATE_F_JUMP(branch_op3, PIKE_PC);
+    }
+    return;
+
+  case F_RETURN:
+  case F_DUMB_RETURN:
+    rv_return(opcode);
+    return;
   }
 
   rv_call_c_opcode(opcode);
@@ -545,15 +636,6 @@ void riscv_ins_f_byte(unsigned int opcode)
     rv_emit(RV_BNE(RV_REG_A5, RV_REG_ZERO, 0));
     rv_func_epilogue();
     UPDATE_F_JUMP(branch_op, PIKE_PC);
-
-    if (opcode == F_RETURN_IF_TRUE) {
-      /* Kludge. We must check if the ret addr is
-       * orig_addr + JUMP_EPILOGUE_SIZE. */
-
-      rv_emit(RV_ADDI(RV_REG_T6, RV_REG_RA, 2*JUMP_EPILOGUE_SIZE));
-      rel_addr = PIKE_PC;
-      rv_emit(RV_BEQ(RV_REG_T6, RV_REG_A0, 0));
-    }
   }
 
   if (flags & I_JUMP) {
@@ -562,8 +644,6 @@ void riscv_ins_f_byte(unsigned int opcode)
 
     if (opcode == F_CATCH) {
       rv_update_pcrel(rel_addr, RV_REG_A0, 2*(PIKE_PC - rel_addr));
-    } else if (opcode == F_RETURN_IF_TRUE) {
-      UPDATE_F_JUMP(rel_addr, PIKE_PC);
     }
   }
 }
@@ -663,21 +743,11 @@ void riscv_ins_entry(void)
   riscv_flush_codegen_state();
 }
 
-static void riscv_load_fp_reg(void) {
-  if (!(compiler_state.flags & FLAG_FP_LOADED)) {
-    INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
-    /* load Pike_interpreter_pointer->frame_pointer into RV_REG_PIKE_FP */
-    rv_emit(RV_Lp(RV_REG_PIKE_FP, offset, RV_REG_PIKE_IP));
-    compiler_state.flags |= FLAG_FP_LOADED;
-    compiler_state.flags &= ~(FLAG_LOCALS_LOADED|FLAG_GLOBALS_LOADED);
-  }
-}
-
 void riscv_update_pc(void)
 {
   rv_emit(RV_AUIPC(RV_REG_A5, 0));
-  riscv_load_fp_reg();
-  rv_emit(RV_Sp(RV_REG_A5, OFFSETOF(pike_frame, pc), RV_REG_PIKE_FP));
+  rv_load_fp_reg();
+  rv_emit(RV_Sx(RV_REG_A5, OFFSETOF(pike_frame, pc), RV_REG_PIKE_FP));
 }
 
 void riscv_flush_codegen_state(void)
@@ -1125,13 +1195,13 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
 	  if (*op == '*') {
 	    fprintf(stderr, "%s%ci%c   %s,%s,%u\n", op+1,
 		    ((instr & 0x40000000)? 'a':'l'),
-		    ((instr&4)? 'w':' '),
+		    ((instr&8)? 'w':' '),
 		    riscv_regname(RV_REGD(instr)),
 		    riscv_regname(RV_REGS1(instr)),
 		    (unsigned)RV_GET_BITS(instr,5,0,20));
 	  } else
 	    fprintf(stderr, "%s%-*c%s,%s,%d\n", op,
-		    (int)(8-strlen(op)), ((instr&4)? 'w':' '),
+		    (int)(8-strlen(op)), ((instr&8)? 'w':' '),
 		    riscv_regname(RV_REGD(instr)),
 		    riscv_regname(RV_REGS1(instr)),
 		    (int)RV_I_IMM(instr));
@@ -1164,7 +1234,7 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
 	      op = (*op == 'a'? "sub":"sra");
 	  }
 	  fprintf(stderr, "%s%-*c%s,%s,%s\n", op,
-		  (int)(8-strlen(op)), ((instr&4)? 'w':' '),
+		  (int)(8-strlen(op)), ((instr&8)? 'w':' '),
 		  riscv_regname(RV_REGD(instr)),
 		  riscv_regname(RV_REGS1(instr)),
 		  riscv_regname(RV_REGS2(instr)));
