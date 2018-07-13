@@ -42,6 +42,7 @@ enum rv_register {
   RV_REG_PIKE_LOCALS = RV_REG_S3,
   RV_REG_PIKE_GLOBALS = RV_REG_S3,
   RV_REG_S4,
+  RV_REG_PIKE_JUMPTABLE = RV_REG_S4,
   RV_REG_S5,
   RV_REG_S6,
   RV_REG_S7,
@@ -273,6 +274,82 @@ static struct compiler_state {
 } compiler_state;
 
 
+/* Create a <4 KiO jumptable */
+
+enum rv_jumpentry {
+  RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC,
+  RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH,
+  RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE,
+  RV_JUMPENTRY_F_OFFSET,
+};
+
+#define JUMPTABLE_SECTION __attribute__((section(".text.jumptable")))
+
+void riscv_jumptable(void) JUMPTABLE_SECTION;
+void riscv_jumptable(void) { }
+
+#define JUMP_ENTRY_NOPROTO(OP, TARGET, RETTYPE, ARGTYPES, RET, ARGS)       \
+  static RETTYPE PIKE_CONCAT(rv_jumptable_, OP)ARGTYPES JUMPTABLE_SECTION; \
+  static RETTYPE PIKE_CONCAT(rv_jumptable_, OP)ARGTYPES {		   \
+    RET TARGET ARGS;					                   \
+  }
+#define JUMP_ENTRY(OP, TARGET, RETTYPE, ARGTYPES, RET, ARGS)	\
+  extern RETTYPE TARGET ARGTYPES;				\
+  JUMP_ENTRY_NOPROTO(OP, TARGET, RETTYPE, ARGTYPES, RET, ARGS)
+
+JUMP_ENTRY(branch_check_threads_etc, branch_check_threads_etc, void, (void), , ())
+JUMP_ENTRY(inter_return_opcode_F_CATCH, inter_return_opcode_F_CATCH, PIKE_OPCODE_T *, (PIKE_OPCODE_T *addr), return, (addr))
+JUMP_ENTRY(complex_svalue_is_true, complex_svalue_is_true, int, (const struct svalue *s), return, (s))
+
+#define OPCODE_NOCODE(DESC, OP, FLAGS)
+#define OPCODE0(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(opcode_, OP), void, (void), , ())
+#define OPCODE1(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(opcode_, OP), void, (INT32 a), , (a))
+#define OPCODE2(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(opcode_, OP), void, (INT32 a, INT32 b), , (a, b))
+#define OPCODE0_JUMP(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(jump_opcode_, OP), void *, (void), return, ())
+#define OPCODE1_JUMP(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(jump_opcode_, OP), void *, (INT32 a), return, (a))
+#define OPCODE2_JUMP(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(jump_opcode_, OP), void *, (INT32 a, INT32 b), return, (a, b))
+#define OPCODE0_BRANCH(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(test_opcode_,OP), ptrdiff_t, (void), return, ())
+#define OPCODE1_BRANCH(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(test_opcode_,OP), ptrdiff_t, (INT32 a), return, (a))
+#define OPCODE2_BRANCH(OP,DESC,FLAGS) JUMP_ENTRY(OP, PIKE_CONCAT(test_opcode_,OP), ptrdiff_t, (INT32 a, INT32 b), return, (a, b))
+#define OPCODE0_ALIAS(OP,DESC,FLAGS,ADDR) JUMP_ENTRY_NOPROTO(OP, ADDR, void, (void), , ())
+#define OPCODE1_ALIAS(OP,DESC,FLAGS,ADDR) JUMP_ENTRY_NOPROTO(OP, ADDR, void, (INT32 a), , (a))
+#define OPCODE2_ALIAS(OP,DESC,FLAGS,ADDR) JUMP_ENTRY_NOPROTO(OP, ADDR, void, (INT32 a, INT32 b), , (a, b))
+#define OPCODE0_PTRJUMP OPCODE0_JUMP
+#define OPCODE1_PTRJUMP OPCODE1_JUMP
+#define OPCODE2_PTRJUMP OPCODE2_JUMP
+#define OPCODE0_RETURN  OPCODE0_JUMP
+#define OPCODE1_RETURN  OPCODE1_JUMP
+#define OPCODE2_RETURN  OPCODE2_JUMP
+#define OPCODE0_TAIL    OPCODE0
+#define OPCODE1_TAIL    OPCODE1
+#define OPCODE2_TAIL    OPCODE2
+#define OPCODE0_TAILJUMP    OPCODE0_JUMP
+#define OPCODE1_TAILJUMP    OPCODE1_JUMP
+#define OPCODE2_TAILJUMP    OPCODE2_JUMP
+#define OPCODE0_TAILPTRJUMP OPCODE0_PTRJUMP
+#define OPCODE1_TAILPTRJUMP OPCODE1_PTRJUMP
+#define OPCODE2_TAILPTRJUMP OPCODE2_PTRJUMP
+#define OPCODE0_TAILRETURN  OPCODE0_RETURN
+#define OPCODE1_TAILRETURN  OPCODE1_RETURN
+#define OPCODE2_TAILRETURN  OPCODE2_RETURN
+#define OPCODE0_TAILBRANCH  OPCODE0_BRANCH
+#define OPCODE1_TAILBRANCH  OPCODE1_BRANCH
+#define OPCODE2_TAILBRANCH  OPCODE2_BRANCH
+#include "interpret_protos.h"
+#undef JUMP_ENTRY_NOPROTO
+#define JUMP_ENTRY_NOPROTO(OP, TARGET, RETTYPE, ARGTYPES, RET, ARGS) \
+  [ (OP)-F_OFFSET+RV_JUMPENTRY_F_OFFSET ] = (void *)PIKE_CONCAT(rv_jumptable_, OP),
+#undef JUMP_ENTRY
+#define JUMP_ENTRY JUMP_ENTRY_NOPROTO
+static void * const rv_jumptable_index[] =
+{
+  [RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC] = rv_jumptable_branch_check_threads_etc,
+  [RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH] = rv_jumptable_inter_return_opcode_F_CATCH,
+  [RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE] = rv_jumptable_complex_svalue_is_true,
+#include "interpret_protos.h"
+};
+
+
 void riscv_ins_int(INT32 n)
 {
 #if PIKE_BYTEORDER == 1234
@@ -322,6 +399,7 @@ static void rv_emit(unsigned INT32 instr)
 static void rv_func_epilogue(void)
 {
 #if __riscv_xlen == 32
+  rv_emit(RV_LW(RV_REG_S4, 8, RV_REG_SP));
   rv_emit(RV_LW(RV_REG_S3, 12, RV_REG_SP));
   rv_emit(RV_LW(RV_REG_S2, 16, RV_REG_SP));
   rv_emit(RV_LW(RV_REG_S1, 20, RV_REG_SP));
@@ -329,6 +407,7 @@ static void rv_func_epilogue(void)
   rv_emit(RV_LW(RV_REG_RA, 28, RV_REG_SP));
   rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, 32));
 #else
+  rv_emit(RV_LD(RV_REG_S4, 0, RV_REG_SP));
   rv_emit(RV_LD(RV_REG_S3, 8, RV_REG_SP));
   rv_emit(RV_LD(RV_REG_S2, 16, RV_REG_SP));
   rv_emit(RV_LD(RV_REG_S1, 24, RV_REG_SP));
@@ -492,6 +571,7 @@ MACRO void rv_maybe_update_pc() {
   }
 }
 
+#if 0 /* Not needed */
 static void rv_call(void *ptr)
 {
   ptrdiff_t addr = (ptrdiff_t)ptr;
@@ -536,18 +616,33 @@ static void rv_call(void *ptr)
 #endif
   }
 }
+#endif
+
+static void rv_call_via_jumptable(enum rv_jumpentry index)
+{
+  ptrdiff_t base = (ptrdiff_t)(void *)riscv_jumptable;
+  ptrdiff_t target = (ptrdiff_t)rv_jumptable_index[index];
+  if (!target)
+    Pike_fatal("rv_call_via_jumptable: missing target for index %d\n", (int)index);
+
+  ptrdiff_t delta = target - base;
+  if (!RV_IN_RANGE_IMM12(delta))
+    Pike_fatal("rv_call_via_jumptable: target outside of range for index %d\n", (int)index);
+
+  rv_emit(RV_JALR(RV_REG_RA, RV_REG_PIKE_JUMPTABLE, (INT32)(target-base)));
+}
 
 static void rv_call_c_opcode(unsigned int opcode)
 {
-  void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
+  enum rv_jumpentry index = opcode-F_OFFSET+RV_JUMPENTRY_F_OFFSET;
 
   rv_maybe_update_pc();
 
   if (opcode == F_CATCH)
-    addr = inter_return_opcode_F_CATCH;
+    index = RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH;
 
-  rv_call(addr);
+  rv_call_via_jumptable(index);
 
   if (flags & I_UPDATE_SP) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
@@ -609,7 +704,7 @@ void riscv_ins_f_byte(unsigned int opcode)
       rv_emit(RV_BEQ(RV_REG_A5, RV_REG_ZERO, 0));
 
       rv_emit(RV_ADDI(RV_REG_A0, RV_REG_PIKE_SP, -(INT32)sizeof(struct svalue)));
-      rv_call(complex_svalue_is_true);
+      rv_call_via_jumptable(RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE);
 
       UPDATE_F_JUMP(branch_op2, PIKE_PC);
       INT32 branch_op3 = PIKE_PC;
@@ -671,7 +766,7 @@ int riscv_ins_f_jump(unsigned int opcode, int backward_jump)
   switch (opcode) {
     case F_BRANCH:
       if (backward_jump) {
-	rv_call(branch_check_threads_etc);
+	rv_call_via_jumptable(RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC);
       }
       ret = PIKE_PC;
       rv_emit(RV_JAL_(RV_REG_ZERO, 0));
@@ -684,7 +779,7 @@ int riscv_ins_f_jump(unsigned int opcode, int backward_jump)
   rv_emit(RV_BEQ(RV_REG_A0, RV_REG_ZERO, 0));
 
   if (backward_jump) {
-    rv_call(branch_check_threads_etc);
+    rv_call_via_jumptable(RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC);
   }
   ret = PIKE_PC;
   rv_emit(RV_JAL_(RV_REG_ZERO, 0));
@@ -731,6 +826,7 @@ void riscv_ins_entry(void)
   rv_emit(RV_SW(RV_REG_S1, 20, RV_REG_SP));
   rv_emit(RV_SW(RV_REG_S2, 16, RV_REG_SP));
   rv_emit(RV_SW(RV_REG_S3, 12, RV_REG_SP));
+  rv_emit(RV_SW(RV_REG_S4, 8, RV_REG_SP));
 #else
   rv_emit(RV_ADDI(RV_REG_SP, RV_REG_SP, -48));
   rv_emit(RV_SD(RV_REG_RA, 40, RV_REG_SP));
@@ -738,8 +834,10 @@ void riscv_ins_entry(void)
   rv_emit(RV_SD(RV_REG_S1, 24, RV_REG_SP));
   rv_emit(RV_SD(RV_REG_S2, 16, RV_REG_SP));
   rv_emit(RV_SD(RV_REG_S3, 8, RV_REG_SP));
+  rv_emit(RV_SD(RV_REG_S4, 0, RV_REG_SP));
 #endif
   rv_emit(RV_MV(RV_REG_PIKE_IP, RV_REG_A0));
+  rv_emit(RV_MV(RV_REG_PIKE_JUMPTABLE, RV_REG_A1));
   riscv_flush_codegen_state();
 }
 
@@ -766,7 +864,16 @@ void riscv_init_interpreter_state(void)
   /* Check sizes */
 
   assert(RV_IN_RANGE_IMM12(OFFSETOF(Pike_interpreter_struct, frame_pointer)));
+  assert(RV_IN_RANGE_IMM12(OFFSETOF(Pike_interpreter_struct, stack_pointer)));
   assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, pc)));
+  assert(RV_IN_RANGE_IMM12(OFFSETOF(pike_frame, flags)));
+
+  enum rv_jumpentry je;
+  ptrdiff_t base = (ptrdiff_t)(void *)riscv_jumptable;
+  for (je = (enum rv_jumpentry)0; je < sizeof(rv_jumptable_index)/sizeof(rv_jumptable_index[0]); je++) {
+    ptrdiff_t target = (ptrdiff_t)rv_jumptable_index[je];
+    assert (target == 0 || RV_IN_RANGE_IMM12(target - base));
+  }
 #endif
 }
 

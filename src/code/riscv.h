@@ -34,10 +34,10 @@ void riscv_flush_instruction_cache(void *addr, size_t len);
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #ifdef __riscv_compressed
   /* All the prologue instructions can be compressed */
-  #define ENTRY_PROLOGUE_SIZE	7
+  #define ENTRY_PROLOGUE_SIZE	9
 #else
   /* No compression available */
-  #define ENTRY_PROLOGUE_SIZE	(7*2)
+  #define ENTRY_PROLOGUE_SIZE	(9*2)
 #endif
 
 void riscv_start_function(int no_pc);
@@ -98,8 +98,10 @@ void riscv_ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #define ins_f_byte_with_arg(a, b) riscv_ins_f_byte_with_arg(a, b)
 #define ins_f_byte_with_2_args(a, b, c) riscv_ins_f_byte_with_2_args(a, b, c)
 
+extern void riscv_jumptable(void);
+
 #define CALL_MACHINE_CODE(PC)   do {                                                    \
-    return ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
+    return ((int (*)(struct Pike_interpreter_struct *, void *))(pc)) (Pike_interpreter_pointer, (void*)riscv_jumptable); \
 } while(0)
 
 #define DISASSEMBLE_CODE        riscv_disassemble_code
