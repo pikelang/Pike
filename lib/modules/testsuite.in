@@ -1781,7 +1781,7 @@ test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_p
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
@@ -1804,7 +1804,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
     for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_any([[
 #ifdef DISABLE_SLOW_TESTS
@@ -1823,7 +1823,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
     )->wait() - ({-1})]],({}))
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_do([[
 #ifdef DISABLE_SLOW_TESTS
@@ -1850,7 +1850,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
   ]])
 ]])
 
-cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
 test_any([[
   class Fnord
@@ -1931,7 +1931,7 @@ cond([[all_constants()->thread_create]],
 ]])
 
 dnl - This test is disabled for now.
-cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
 test_any([[
   // Check that tracing works...

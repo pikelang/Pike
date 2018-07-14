@@ -8121,7 +8121,7 @@ test_true(intp(signum("SIGKILL")))
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
   test_do(kill(getpid(),signum("SIGFPE")))
