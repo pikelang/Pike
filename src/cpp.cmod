@@ -4966,7 +4966,10 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 
     if(current_file) {
       add_ref(current_file);
-      if (this->current_file != current_file) add_line_directive = 1;
+      if (!this->current_file && (current_file->len == 1) &&
+	  !current_file->size_shift && current_file->str[0] == '-') {
+	/* Noop */
+      } else if (this->current_file != current_file) add_line_directive = 1;
     } else {
       current_file = make_shared_string("-");
       if (this->current_file && (this->current_file != current_file)) {

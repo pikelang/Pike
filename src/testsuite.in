@@ -10093,7 +10093,7 @@ test_do([[
 test_any([[
   class handler {mapping get_predefines() {return (["x": "1", "y": "", "z": 0]);}};
   return cpp ("x y z p", "-", 0, handler());
-]], "#line 1 \"-\"\n1   p");
+]], "1   p");
 test_eval_error([[
   class handler {mixed get_predefines() {return (<"x">);}};
   cpp ("x y z", "-", 0, handler());
