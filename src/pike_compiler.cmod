@@ -2234,7 +2234,7 @@ static void low_enter_compiler(struct object *ce, int inherit)
    */
   new_frame->current_program = ce->prog;
   add_ref(new_frame->current_program);
-  new_frame->context = compilation_program->inherits + inherit;
+  new_frame->context = ce->prog->inherits + inherit;
   new_frame->current_storage = ce->storage + new_frame->context->storage_offset;
 #ifdef PIKE_DEBUG
   if (new_frame->context->prog != compilation_program) {
@@ -2281,8 +2281,8 @@ PMOD_EXPORT void enter_compiler(struct pike_string *filename,
 PMOD_EXPORT void exit_compiler(void)
 {
 #ifdef PIKE_DEBUG
-  if ((Pike_fp->current_program != compilation_program) ||
-      (Pike_fp->fun != PC_COMPILE_FUN_NUM)) {
+  if ((Pike_fp->context->prog != compilation_program) ||
+      (Pike_fp->fun != Pike_fp->context->identifier_level + PC_COMPILE_FUN_NUM)) {
     Pike_fatal("exit_compiler(): Frame stack out of whack!\n");
   }
 #endif /* PIKE_DEBUG */
