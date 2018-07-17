@@ -2752,7 +2752,7 @@ static void compile_compiler(void)
   PIKE_MAP_VARIABLE("p", OFFSETOF(compilation, p),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
-		    tStr, PIKE_T_STRING, ID_HIDDEN);
+		    tStr, PIKE_T_STRING, ID_PROTECTED);
   PIKE_MAP_VARIABLE("default_module", OFFSETOF(compilation, default_module),
 		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
