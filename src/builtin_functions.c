@@ -3034,6 +3034,42 @@ PMOD_EXPORT void f_all_constants(INT32 args)
   ref_push_mapping(get_builtin_constants());
 }
 
+/*! @decl CompilerEnvironment.PikeCompiler get_active_compiler()
+ *!
+ *!   Returns the most recent of the currently active pike compilers,
+ *!   or @[UNDEFINED] if none is active.
+ *!
+ *! @note
+ *!   This function should only be used during a call of @[compile()].
+ *!
+ *! @seealso
+ *!   @[get_active_error_handler()], @[compile()],
+ *!   @[master()->get_compilation_handler()], @[CompilationHandler]
+ */
+PMOD_EXPORT void f_get_active_compiler(INT32 args)
+{
+  struct compilation *c = NULL;
+
+  /* NB: This is an efun, so we need to keep the stack clean. */
+  pop_n_elems(args);
+
+  if (compilation_program) {
+    struct pike_frame *compiler_frame = Pike_fp;
+
+    while (compiler_frame &&
+	   (compiler_frame->context->prog != compilation_program)) {
+      compiler_frame = compiler_frame->next;
+    }
+
+    if (compiler_frame && compiler_frame->current_object->prog) {
+      ref_push_object(compiler_frame->current_object);
+      return;
+    }
+  }
+
+  push_undefined();
+}
+
 /*! @decl CompilationHandler get_active_compilation_handler()
  *!
  *!   Returns the currently active compilation compatibility handler, or
@@ -9767,6 +9803,10 @@ void init_builtin_efuns(void)
   /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
 	   tFunc(tNone,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
+
+  /* function(:object) */
+  ADD_EFUN("get_active_compiler", f_get_active_compiler,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
 
   /* function(:object) */
   ADD_EFUN("get_active_compilation_handler",
