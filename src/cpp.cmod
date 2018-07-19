@@ -5142,6 +5142,69 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
     simple_add_define(this, "SIZEOF_FLOAT",
 		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
   }
+
+  /*! @decl void define_multiple_macros(mapping(string: @
+   *!                                           string|function|object)|void predefs)
+   *!
+   *!   Define multiple macros in one operation.
+   *!
+   *! @param predefs
+   *!   Macros to define.
+   *!
+   *! @seealso
+   *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
+   *!   @[_take_over_initial_predefines()]
+   */
+  PIKEFUN void define_multiple_macros(mapping(string:
+					      string|function|object)|void predefs)
+  {
+    struct CPP_struct *this = THIS;
+    struct keypair *k;
+    int e;
+    if (!predefs) return;
+    NEW_MAPPING_LOOP (predefs->data) {
+      struct pike_string *s;
+      if ((TYPEOF(k->ind) != T_STRING) || !k->ind.u.string->len) {
+	Pike_error("Expected nonempty string as predefine name, got %O.\n",
+		   &k->ind);
+      }
+
+      s = k->ind.u.string;
+
+      if (TYPEOF(k->val) == T_STRING) {
+	/* FIXME: Support "FOO()":"BAR"? */
+	add_define (this, s, k->val.u.string);
+      } else if(TYPEOF(k->val) == T_FUNCTION || TYPEOF(k->val) == T_OBJECT)
+      {
+        struct define_struct *def;
+        if( (s->len > 2) &&
+	    (index_shared_string(s, s->len-1) == ')') &&
+	    (index_shared_string(s, s->len-2) == '('))
+        {
+          push_string(s = string_slice(s, 0, s->len-2));
+          def = alloc_empty_define(s);
+	  pop_stack();
+          def->magic = insert_callback_define;
+          def->flags |= CPP_MACRO_VARARGS;
+          def->args = 1;
+        }
+        else
+        {
+          def = alloc_empty_define(s);
+          def->magic = insert_callback_define_no_args;
+        }
+	mapping_string_insert(this->defines, def->name, Pike_sp-1);
+	pop_stack();
+      }
+      else if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+	add_define (this, s, empty_pike_string);
+      } else {
+	Pike_error("Expected zero, string or function value for "
+		   "predefine %O.\n",
+		   &k->ind);
+      }
+    }
+  }
 }
 /*! @endclass CPP
  */
