@@ -80,6 +80,7 @@ struct pike_predef_s
 };
 
 static int use_initial_predefs;
+static struct mapping *initial_predefs_mapping(void);
 static struct pike_predef_s *first_predef = NULL, *last_predef = NULL;
 
 struct define_argument {
@@ -345,6 +346,15 @@ PIKECLASS define
 }
 /*! @endclass define
  */
+
+PIKEFUN mapping(string:string|function|object) get_predefines()
+{
+  if (use_initial_predefs) {
+    push_mapping(initial_predefs_mapping());
+  } else {
+    APPLY_MASTER("get_predefines", 0);
+  }
+}
 
 /*! @class CPP
  *!
@@ -5204,6 +5214,53 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
 		   &k->ind);
       }
     }
+  }
+
+  /*! @decl mapping(string:string|function|object) get_predefines()
+   *!
+   *!   Get the predefined macros for this preprocessor.
+   *!
+   *!   This function is called by @[init_pike_cpp()] to
+   *!   retrieve the set of macros to define at initialization.
+   *!
+   *!   The default implementation returns the internal set of
+   *!   predefined macros unless @[_take_over_initial_predefines()]
+   *!   has been called, in which case it instead calls the
+   *!   corresponding function in the master.
+   *!
+   *! @note
+   *!   This function does NOT return the set of currently
+   *!   defined macros.
+   *!
+   *! @seealso
+   *!   @[init_pike_cpp()], @[define_multiple_macros()],
+   *!   @[_take_over_initial_predefines()]
+   */
+  PIKEFUN mapping(string:string|function|object) get_predefines()
+  {
+    apply_external(1, f_get_predefines_fun_num, args);
+  }
+
+  /*! @decl void init_pike_cpp()
+   *!
+   *!   Convenience function for initializing the preprocessor
+   *!   to Pike defaults.
+   *!
+   *!   The default implementation is essentially:
+   *!   @code
+   *!     {
+   *!       define_ansi_macros();
+   *!       define_pike_macros();
+   *!       define_multiple_macros(get_predefines());
+   *!     }
+   *!   @endcode
+   */
+  PIKEFUN void init_pike_cpp()
+  {
+    apply_current(f_CPP_define_ansi_macros_fun_num, 0);
+    apply_current(f_CPP_define_pike_macros_fun_num, 0);
+    apply_current(f_CPP_get_predefines_fun_num, 0);
+    apply_current(f_CPP_define_multiple_macros_fun_num, 1);
   }
 }
 /*! @endclass CPP
