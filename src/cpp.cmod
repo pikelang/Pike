@@ -4961,7 +4961,15 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
        "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
 
 	if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
-	if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
+	if ((tmp = simple_mapping_string_lookup(m, "charset"))) {
+	  if ((TYPEOF(*tmp) == PIKE_T_STRING) ||
+	      (TYPEOF(*tmp) == PIKE_T_INT)) {
+	    charset_sv = tmp;
+	  } else {
+	    Pike_error("Expected type string|int, got type %s for charset.",
+		       get_name_of_type(TYPEOF(*tmp)));
+	  }
+	}
 	if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
 	if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
 	if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
