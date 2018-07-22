@@ -366,10 +366,6 @@ PIKEFUN mapping(string:string|function|object) get_predefines()
 PIKECLASS CPP
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-  /*! @decl inherit Reporter
-   */
-  INHERIT reporter;
-
   PIKEVAR mapping(string:object(define)) defines flags ID_PRIVATE|ID_PROTECTED;
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
@@ -388,8 +384,6 @@ PIKECLASS CPP
 
   PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
 
-  static int f_inherited_Reporter_report_fun_num = -1;
-
   INIT
   {
     init_string_builder(&THIS->buf, 0);
@@ -402,17 +396,6 @@ PIKECLASS CPP
 
     if (THIS->buf.s) {
       free_string_builder(&THIS->buf);
-    }
-  }
-
-  EXTRA
-  {
-    int id = find_identifier("report", reporter_program);
-    if (id < 0) {
-      yyerror("Failed to find Reporter::report().\n");
-    } else {
-      f_inherited_Reporter_report_fun_num =
-	really_low_reference_inherited_identifier(NULL, 1, id);
     }
   }
 
