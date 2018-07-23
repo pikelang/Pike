@@ -4502,6 +4502,13 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     this->current_line = save_line;
   }
 
+  PIKEFUN string drain()
+  {
+    struct CPP_struct *this = THIS;
+    push_string(finish_string_builder(&this->buf));
+    init_string_builder(&this->buf, 0);
+  }
+
 /*** Magic defines ***/
 
 /*! @decl constant __LINE__
