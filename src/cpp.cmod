@@ -5191,6 +5191,7 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
         {
           push_string(s = string_slice(s, 0, s->len-2));
           def = alloc_empty_define(s);
+	  stack_swap();
 	  pop_stack();
           def->magic = insert_callback_define;
           def->flags |= CPP_MACRO_VARARGS;
