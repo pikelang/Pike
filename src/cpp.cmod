@@ -880,6 +880,11 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
   this->compat_minor=minor;
 }
 
+  PIKEFUN void change_cpp_compatibility(int major, int minor)
+  {
+    cpp_change_compat(THIS, major, minor);
+  }
+
 /*! @decl mixed resolv(string sym)
  *!
  *!   Attempt to resolve a symbol.
