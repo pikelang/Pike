@@ -4484,7 +4484,17 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
   PIKEFUN void low_cpp(string data, int flags)
   {
-    low_cpp(THIS, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+    struct CPP_struct *this = THIS;
+#ifdef PIKE_DEBUG
+    ONERROR tmp;
+    SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
+#endif /* PIKE_DEBUG */
+
+    low_cpp(this, MKPCHARP_STR(data), data->len, flags, this->charset);
+
+#ifdef PIKE_DEBUG
+    UNSET_ONERROR(tmp);
+#endif /* PIKE_DEBUG */
   }
 
   PIKEFUN string cpp(string data, int flags)
@@ -4493,6 +4503,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     struct string_builder save_buf = this->buf;
     struct pike_string *save_file = this->current_file;
     INT_TYPE save_line = this->current_line;
+#ifdef PIKE_DEBUG
+    ONERROR tmp;
+    SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
+#endif /* PIKE_DEBUG */
 
     if (save_file) add_ref(save_file);
     init_string_builder(&this->buf, 0);
@@ -4505,6 +4519,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     if (this->current_file) free_string(this->current_file);
     this->current_file = save_file;
     this->current_line = save_line;
+
+#ifdef PIKE_DEBUG
+    UNSET_ONERROR(tmp);
+#endif /* PIKE_DEBUG */
   }
 
   PIKEFUN string drain()
@@ -5334,10 +5352,6 @@ PIKEFUN string cpp(string data,
     (struct CPP_struct *)get_storage(cpp_obj, CPP_program);
   struct mapping *predefs = NULL;
 
-#ifdef PIKE_DEBUG
-  ONERROR tmp;
-#endif /* PIKE_DEBUG */
-
   push_object(cpp_obj);
 
   if (use_initial_predefs)
@@ -5459,17 +5473,9 @@ PIKEFUN string cpp(string data,
      */
   }
 
-#ifdef PIKE_DEBUG
-  SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
-#endif /* PIKE_DEBUG */
-
   ref_push_string(data);	/* data */
   push_int(0);			/* flags */
   apply(cpp_obj, "low_cpp", 2);
-
-#ifdef PIKE_DEBUG
-  UNSET_ONERROR(tmp);
-#endif /* PIKE_DEBUG */
 
   if(this->compile_errors)
   {
