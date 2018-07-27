@@ -5260,7 +5260,17 @@ static void insert_callback_define_no_args(struct CPP_struct *this,
    */
   PIKEFUN mapping(string:string|function|object) get_predefines()
   {
+#if 0
     apply_external(1, f_get_predefines_fun_num, args);
+#else
+    struct CPP_struct *this = THIS;
+    if (use_initial_predefs) {
+      push_mapping(initial_predefs_mapping());
+    } else {
+      low_unsafe_apply_handler("get_predefines",
+			       this->handler, this->compat_handler, 0);
+    }
+#endif
   }
 
   /*! @decl void init_pike_cpp()
