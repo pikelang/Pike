@@ -90,7 +90,7 @@ struct define_argument {
 
 struct CPP_struct;
 struct define_struct;
-typedef void (*magic_define_fun)(struct CPP_struct *,
+typedef void (*magic_define_fun)(struct object *,
 				 struct define_struct *,
                                  struct pike_string *,
 				 struct string_builder *);
@@ -139,15 +139,15 @@ DECLARATIONS;
  * }
  */
 
-static void insert_callback_define(struct CPP_struct *this,
+static void insert_callback_define(struct object *cpp_obj,
                                    struct define_struct *def,
                                    struct pike_string *arg,
                                    struct string_builder *tmp);
-static void insert_callback_define_no_args(struct CPP_struct *this,
+static void insert_callback_define_no_args(struct object *cpp_obj,
                                            struct define_struct *def,
                                            struct pike_string *arg,
                                            struct string_builder *tmp);
-static void insert_pragma(struct CPP_struct *this,
+static void insert_pragma(struct object *cpp_obj,
 			  struct define_struct *def,
                           struct pike_string *arg,
 			  struct string_builder *tmp);
@@ -225,12 +225,11 @@ PIKECLASS define
     if(d->magic)
     {
       struct pike_string *a = NULL;
-      struct CPP_struct *this = get_storage(context_obj, CPP_program);
 
       if (d->args > 0) {
 	a = ITEM(arguments)[0].u.string;
       }
-      d->magic(this, d, a, &s);
+      d->magic(context_obj, d, a, &s);
 
       /* NB: The variable 'a' does not holdany refs. */
 
@@ -1382,11 +1381,12 @@ PIKEFUN mixed resolv(string sym)
  *! @seealso
  *!   @[#if], @[#ifdef], @[constant()]
  */
-static void check_defined(struct CPP_struct *this,
+static void check_defined(struct object *cpp_obj,
 			  struct define_struct *UNUSED(def),
                           struct pike_string *arg,
 			  struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   if(arg && FIND_DEFINE(arg))
     string_builder_binary_strcat(tmp, " 1 ", 3);
   else
@@ -4539,11 +4539,12 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
  *! This define contains the current line number, represented as an
  *! integer, in the source file.
  */
-static void insert_current_line(struct CPP_struct *this,
+static void insert_current_line(struct object *cpp_obj,
 				struct define_struct *UNUSED(def),
                                 struct pike_string *UNUSED(arg),
 				struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
 }
 
@@ -4551,11 +4552,12 @@ static void insert_current_line(struct CPP_struct *this,
  *!
  *! This define contains the file path and name of the source file.
  */
-static void insert_current_file_as_string(struct CPP_struct *this,
+static void insert_current_file_as_string(struct object *cpp_obj,
 					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
 		    this->current_file->size_shift, tmp);
 }
@@ -4564,11 +4566,12 @@ static void insert_current_file_as_string(struct CPP_struct *this,
  *!
  *! This define contains the directory path of the source file.
  */
-static void insert_current_dir_as_string(struct CPP_struct *this,
+static void insert_current_dir_as_string(struct object *cpp_obj,
                                          struct define_struct *UNUSED(def),
                                          struct pike_string *UNUSED(arg),
                                          struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   ref_push_string(this->current_file);
   /* FIXME: This isn't safe if the master hasn't been compiled yet. */
   SAFE_APPLY_MASTER("dirname",1);
@@ -4582,7 +4585,7 @@ static void insert_current_dir_as_string(struct CPP_struct *this,
  *! This define contains the current time at the time of compilation,
  *! e.g. "12:20:51".
  */
-static void insert_current_time_as_string(struct CPP_struct *UNUSED(this),
+static void insert_current_time_as_string(struct object *UNUSED(cpp_obj),
 					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
@@ -4601,7 +4604,7 @@ static void insert_current_time_as_string(struct CPP_struct *UNUSED(this),
  *! This define contains the current date at the time of compilation,
  *! e.g. "Jul 28 2001".
  */
-static void insert_current_date_as_string(struct CPP_struct *UNUSED(this),
+static void insert_current_date_as_string(struct object *UNUSED(cpp_obj),
 					  struct define_struct *UNUSED(def),
                                           struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
@@ -4625,11 +4628,12 @@ static void insert_current_date_as_string(struct CPP_struct *UNUSED(this),
  *! @seealso
  *!   @[__REAL_VERSION__]
  */
-static void insert_current_version(struct CPP_struct *this,
+static void insert_current_version(struct object *cpp_obj,
 				   struct define_struct *UNUSED(def),
                                    struct pike_string *UNUSED(arg),
 				   struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   string_builder_sprintf(tmp, " %d.%d ", this->compat_major,
 			 this->compat_minor);
 }
@@ -4643,11 +4647,12 @@ static void insert_current_version(struct CPP_struct *this,
  *! @seealso
  *!   @[__REAL_MINOR__]
  */
-static void insert_current_minor(struct CPP_struct *this,
+static void insert_current_minor(struct object *cpp_obj,
 				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
 }
 
@@ -4656,7 +4661,7 @@ static void insert_current_minor(struct CPP_struct *this,
  *! Int.NATIVE_MAX times) represented as an integer.
  *!
  */
-static void insert_current_counter(struct CPP_struct *UNUSED(this),
+static void insert_current_counter(struct object *UNUSED(cpp_obj),
 				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
@@ -4674,11 +4679,12 @@ static void insert_current_counter(struct CPP_struct *UNUSED(this),
  *! @seealso
  *!   @[__REAL_MAJOR__]
  */
-static void insert_current_major(struct CPP_struct *this,
+static void insert_current_major(struct object *cpp_obj,
 				 struct define_struct *UNUSED(def),
                                  struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   string_builder_sprintf(tmp, " %d ", this->compat_major);
 }
 
@@ -4694,11 +4700,12 @@ static void insert_current_major(struct CPP_struct *this,
  *! @seealso
  *!   @[#pragma]
  */
-static void insert_pragma(struct CPP_struct *this,
+static void insert_pragma(struct object *cpp_obj,
 			  struct define_struct *UNUSED(def),
                           struct pike_string *arg,
 			  struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   int i;
   int in_string = 0;
 
@@ -4753,11 +4760,12 @@ static void insert_pragma(struct CPP_struct *this,
   string_builder_putchar(tmp, '\n');
 }
 
-static void insert_callback_define(struct CPP_struct *this,
+static void insert_callback_define(struct object *cpp_obj,
                                    struct define_struct *def,
                                    struct pike_string *arg,
                                    struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   ref_push_string( def->name );
   ref_push_string( arg );
   if (safe_apply_handler( "evaluate_define",
@@ -4770,7 +4778,7 @@ static void insert_callback_define(struct CPP_struct *this,
         if( min < 32 )
         {
             string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
-            insert_current_file_as_string( this,def,arg,tmp);
+            insert_current_file_as_string(cpp_obj, def, arg, tmp);
             string_builder_putchar(tmp, '\n');
         }
     }
@@ -4778,11 +4786,12 @@ static void insert_callback_define(struct CPP_struct *this,
   }
 }
 
-static void insert_callback_define_no_args(struct CPP_struct *this,
+static void insert_callback_define_no_args(struct object *cpp_obj,
                                            struct define_struct *def,
                                            struct pike_string *UNUSED(arg),
                                            struct string_builder *tmp)
 {
+  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   struct svalue *save_sp = Pike_sp;
   ref_push_string( def->name );
   if (safe_apply_handler( "evaluate_define",
