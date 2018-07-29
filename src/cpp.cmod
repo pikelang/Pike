@@ -4823,6 +4823,7 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
   if (safe_apply(cpp_obj, "evaluate_define", 1) &&
       (TYPEOF(Pike_sp[-1]) == T_STRING)) {
     string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
+  }
   if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
 }
 
