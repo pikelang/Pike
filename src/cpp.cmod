@@ -915,6 +915,33 @@ PIKEFUN mixed resolv(string sym)
   apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
+  /*! @decl string evaluate_define(string def, string|void arguments)
+   *!
+   *!   Evaluate the #define named @[def] with @[arguments].
+   *!
+   *! @param def
+   *!   Name of the macro.
+   *!
+   *! @param arguments
+   *!   Raw string of the contents between the parenthesis
+   *!   for function-style maros. @[UNDEFINED] or left out
+   *!   if not a function-style macro.
+   *!
+   *! This function is used to evaluate callback-style macros
+   *! as defined via @[define_multiple_macros()].
+   *!
+   *! @note
+   *!   This API is likely to be removed in a future version of
+   *!   Pike, where macro functions would be called directly by
+   *!   the preprocessor.
+   */
+  PIKEFUN string evaluate_define(string def, string|void arguments)
+  {
+    struct CPP_struct *this = THIS;
+    low_unsafe_apply_handler("evaluate_define",
+			     this->handler, this->compat_handler, args);
+  }
+
 /* #if macros and functions. */
 
 /*! @namespace cpp::
@@ -4768,9 +4795,8 @@ static void insert_callback_define(struct object *cpp_obj,
   struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   ref_push_string( def->name );
   ref_push_string( arg );
-  if (safe_apply_handler( "evaluate_define",
-			  this->handler, this->compat_handler, 2, 0 ) &&
-      TYPEOF(Pike_sp[-1]) == T_STRING ) {
+  if (safe_apply(cpp_obj, "evaluate_define", 2) &&
+      (TYPEOF(Pike_sp[-1]) == T_STRING)) {
     string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
     if( !this->prefix ){
         int min;
@@ -4794,9 +4820,8 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
   struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
   struct svalue *save_sp = Pike_sp;
   ref_push_string( def->name );
-  if (safe_apply_handler( "evaluate_define",
-			  this->handler, this->compat_handler, 1, 0 ) &&
-      TYPEOF(Pike_sp[-1]) == T_STRING )
+  if (safe_apply(cpp_obj, "evaluate_define", 1) &&
+      (TYPEOF(Pike_sp[-1]) == T_STRING)) {
     string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
   if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
 }
@@ -5191,9 +5216,21 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
    *! @param predefs
    *!   Macros to define.
    *!
+   *! @note
+   *!   Callback-style macros are supported. Note that is up to
+   *!   @[evaluate_define()] to actually remember the callback.
+   *!
+   *! @note
+   *!   It is likely that this function in a future version of Pike
+   *!   @b{will@} actually register the callback, in which case
+   *!   @[evaluate_define()] no longer will be called. The implicit
+   *!   @[evaluate_define()] in that case will probably use the
+   *!   same semantics as the current reference implementation in
+   *!   the master.
+   *!
    *! @seealso
    *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
-   *!   @[_take_over_initial_predefines()]
+   *!   @[_take_over_initial_predefines()], @[evaluate_define()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
 					      string|function|object)|void predefs)
