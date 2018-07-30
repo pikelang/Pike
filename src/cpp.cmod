@@ -915,6 +915,13 @@ PIKEFUN mixed resolv(string sym)
   apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
+  PIKEFUN string decode_charset(string data, string charset)
+  {
+    struct CPP_struct *this = THIS;
+    low_unsafe_apply_handler("decode_charset",
+			     this->handler, this->compat_handler, args);
+  }
+
   /*! @decl string evaluate_define(string def, string|void arguments)
    *!
    *!   Evaluate the #define named @[def] with @[arguments].
@@ -2269,8 +2276,8 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     push_static_text("ebcdic-us");
 
-    if (safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
-			    2, BIT_STRING)) {
+    if (safe_apply_current(f_CPP_decode_charset_fun_num, 2) &&
+	(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
       /* Various consistency checks. */
       if ((Pike_sp[-1].u.string->size_shift) ||
 	  (((size_t)Pike_sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
@@ -2341,8 +2348,8 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     /* Decode the string */
 
-    if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
-			     2, BIT_STRING)) {
+    if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
       cpp_handle_exception (this, "Error decoding with charset %S", new_str);
       free_string (new_str);
       return data;
@@ -3914,9 +3921,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                           Pike_sp[-1].u.string = new_str;
                         } else if (charset) {
                           ref_push_string(charset);
-                          if (!safe_apply_handler ("decode_charset",
-                                                   this->handler, this->compat_handler,
-                                                   2, BIT_STRING)) {
+                          if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+			      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                             cpp_handle_exception (this,
                                                   "Charset decoding failed for included file.");
                             pop_n_elems(Pike_sp - save_sp);
@@ -4413,8 +4419,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   /* The charset name */
                   push_string( make_shared_binary_pcharp( ADD_PCHARP(data,p),pos-p));
 
-                  if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
-                                           2, BIT_STRING)) {
+                  if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+		      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                     cpp_handle_exception (this, NULL);
                   } else {
                     low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string),Pike_sp[-1].u.string->len,
@@ -5416,8 +5422,8 @@ PIKEFUN string cpp(string data,
   if (this->charset) {
     ref_push_string(data);
     ref_push_string(this->charset);
-    if (!safe_apply_handler ("decode_charset", this->handler,
-			     this->compat_handler, 2, BIT_STRING)) {
+    if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
       cpp_handle_exception (this, "Error decoding with charset %S",
 			    THIS->charset);
       Pike_error("Unknown charset.\n");
