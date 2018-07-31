@@ -4558,6 +4558,36 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
+  PIKEFUN void high_cpp(string data)
+  {
+    struct CPP_struct *this = THIS;
+
+    if (this->charset) {
+      ref_push_string(this->charset);
+      apply_current(f_CPP_decode_charset_fun_num, 2);
+      if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+	cpp_handle_exception (this, "Error decoding with charset %S",
+			      THIS->charset);
+	Pike_error("Unknown charset.\n");
+      }
+      data = Pike_sp[-1].u.string;
+    }
+
+    if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
+      /* Try to determine if we need to recode the string */
+      data = recode_string(this, data);
+      push_string(data);
+    }
+    if (data->size_shift) {
+      /* Get rid of any byte order marks (0xfeff) */
+      data = filter_bom(data);
+      push_string(data);
+    }
+
+    push_int(0); /* flags */
+    apply_current(f_CPP_low_cpp_fun_num, 2);
+  }
+
   PIKEFUN string drain()
   {
     struct CPP_struct *this = THIS;
@@ -5419,44 +5449,8 @@ PIKEFUN string cpp(string data,
 
   apply(cpp_obj, "init_pike_cpp", 0);
 
-  if (this->charset) {
-    ref_push_string(data);
-    ref_push_string(this->charset);
-    if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
-	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
-      cpp_handle_exception (this, "Error decoding with charset %S",
-			    THIS->charset);
-      Pike_error("Unknown charset.\n");
-    }
-    data = Pike_sp[-1].u.string;
-    /* NB: We let the stack hold the references to data.
-     *     We don't need to keep track of the number of elements
-     *     on the stack as we have the save_sp marker.
-     */
-  }
-
-  if (this->auto_convert && (!data->size_shift) && (data->len > 1)) {
-    /* Try to determine if we need to recode the string */
-    data = recode_string(this, data);
-    push_string(data);
-    /* NB: We let the stack hold the references to data.
-     *     We don't need to keep track of the number of elements
-     *     on the stack as we have the save_sp marker.
-     */
-  }
-  if (data->size_shift) {
-    /* Get rid of any byte order marks (0xfeff) */
-    data = filter_bom(data);
-    push_string(data);
-    /* NB: We let the stack hold the references to data.
-     *     We don't need to keep track of the number of elements
-     *     on the stack as we have the save_sp marker.
-     */
-  }
-
-  ref_push_string(data);	/* data */
-  push_int(0);			/* flags */
-  apply(cpp_obj, "low_cpp", 2);
+  ref_push_string(data);
+  apply(cpp_obj, "high_cpp", 1);
 
   if(this->compile_errors)
   {
