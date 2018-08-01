@@ -809,9 +809,10 @@ define([AC_LOW_MODULE_INIT],
   
   MY_AC_PROG_CC
 
+  PIKE_USE_SYSTEM_EXTENSIONS
+
   PIKE_SELECT_ABI
 
-  PIKE_USE_SYSTEM_EXTENSIONS
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the
