@@ -915,6 +915,21 @@ PIKEFUN mixed resolv(string sym)
   apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
+  PIKEFUN string handle_include(string header_file, string current_file,
+				int(0..1) is_local_ref)
+  {
+    struct CPP_struct *this = THIS;
+    low_unsafe_apply_handler("handle_include",
+			     this->handler, this->compat_handler, args);
+  }
+
+  PIKEFUN string read_include(string filename)
+  {
+    struct CPP_struct *this = THIS;
+    low_unsafe_apply_handler("read_include",
+			     this->handler, this->compat_handler, args);
+  }
+
   PIKEFUN string decode_charset(string data, string charset)
   {
     struct CPP_struct *this = THIS;
@@ -3869,20 +3884,18 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   {
                     struct pike_string *new_file;
 
-                    if (!safe_apply_handler ("handle_include",
-                                             this->handler, this->compat_handler,
-                                             3, BIT_STRING) ||
-                        !(new_file=Pike_sp[-1].u.string) ) {
+                    if (!safe_apply_current(f_CPP_handle_include_fun_num, 3) ||
+			 (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                       cpp_handle_exception (this, "Couldn't find include file.");
                       pop_n_elems(Pike_sp-save_sp);
                       break;
                     }
+                    new_file = Pike_sp[-1].u.string;
 
                     ref_push_string(new_file);
 
-                    if (!safe_apply_handler ("read_include",
-                                             this->handler, this->compat_handler,
-                                             1, BIT_STRING|BIT_INT)) {
+                    if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
+			 !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
                       cpp_handle_exception (this, "Couldn't read include file.");
                       pop_n_elems(Pike_sp-save_sp);
                       break;
