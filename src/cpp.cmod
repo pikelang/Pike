@@ -915,6 +915,20 @@ PIKEFUN mixed resolv(string sym)
   apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
+  PIKEFUN mapping|object|program handle_import(string module)
+  {
+    struct CPP_struct *this = THIS;
+    ref_push_string(module);
+    ref_push_string(this->current_file);
+    if (this->handler) {
+      ref_push_object(this->handler);
+    } else {
+      push_int(0);
+    }
+    low_unsafe_apply_handler("handle_import",
+			     this->handler, this->compat_handler, 3);
+  }
+
   PIKEFUN string handle_include(string header_file, string current_file,
 				int(0..1) is_local_ref)
   {
@@ -1546,19 +1560,11 @@ static void cpp_constant(struct CPP_struct *this, int value)
   } else {
     /* Handle constant(.foo) */
     push_static_text(".");
-    ref_push_string(this->current_file);
 
-    if (this->handler) {
-      ref_push_object(this->handler);
-    } else {
-      push_int(0);
-    }
-
-    if (safe_apply_handler("handle_import", this->handler,
-			   this->compat_handler, 3,
-			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
+    if (safe_apply_current(f_CPP_handle_import_fun_num, 1) &&
+	((1<<TYPEOF(Pike_sp[-1])) & (BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))) {
       res = !(SAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
-    else {
+    } else {
       cpp_handle_exception (this, "Error importing '.'.");
     }
   }
