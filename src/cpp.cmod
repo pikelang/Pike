@@ -512,7 +512,7 @@ PIKEFUN void report(int(0..3) severity,
   }
   if (found) {
     if (fun_name[0] == 'r') {
-      safe_apply_low2(found, fun, args, fun_name);
+      apply_low(found, fun, args);
     } else if (severity >= REPORT_WARNING) {
       if (args > 5) {
 	f_sprintf(args - 4);
