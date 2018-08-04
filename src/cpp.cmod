@@ -985,6 +985,13 @@ PIKEFUN mixed resolv(string sym)
  *!   Pike has a builtin C-style preprocessor. It works similar to the
  *!   ANSI-C preprocessor but has a few extra features. These and the
  *!   default set of preprocessor macros are described here.
+ *!
+ *!   The preprocessor is usually accessed via
+ *!   @[MasterObject->compile_file()] or @[MasterObject->compile_string()],
+ *!   but may be accessed directly by calling @[cpp()].
+ *!
+ *! @seealso
+ *!   @[compile()], @[cpp()], @[CompilerEnvironment.CPP]
  */
 
 /*! @directive #!
