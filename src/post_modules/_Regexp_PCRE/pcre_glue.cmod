@@ -81,41 +81,21 @@ PIKECLASS _pcre
 		       void|int options,
 		       void|object table)
       {
-	 INT32 options=0;
-	 struct object *table=NULL;
+         struct object *table=NULL;
 	 const char *errptr;
 	 int erroffset;
 
-	 if (THIS->pattern) { free_string(THIS->pattern); THIS->pattern=NULL; }
-
-         /* get stuff as ints and check the string at the same time */
-	 switch (args)
-	 {
-	    default:
-	       if (TYPEOF(Pike_sp[2-args]) != T_INT) /* allow NULL table */
-	       {
-		  get_all_args("create",args,"%S%d%o",
-			       &(THIS->pattern),&options,&table);
-		  break;
-	       }
-	       /* FALLTHRU */
-	    case 2:
-	       get_all_args("create",args,"%S%d",
-			    &(THIS->pattern),&options);
-	       break;
-	    case 1:
-	    case 0:
-	       get_all_args("create",args,"%S",&(THIS->pattern));
-	       break;
-	 }
-	 add_ref(THIS->pattern);
+         if (THIS->pattern) { free_string(THIS->pattern); THIS->pattern=NULL; }
+         THIS->pattern = pattern;
+         add_ref(THIS->pattern);
 
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
 	 THIS->extra=NULL;
 
 	 THIS->re=pcre_compile(
-	    THIS->pattern->str,options,
+            THIS->pattern->str,
+            options ? options->u.integer : 0,
 	    &errptr,&erroffset,
 	    NULL /* table */ );
 
@@ -437,13 +417,10 @@ PIKECLASS _pcre
 	 if (!THIS->re)
 	    Pike_error("need to initialize before exec() is called\n");
 
-         /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
+         if (startoffset)
+           off = startoffset->u.integer;
 
-	 switch (args) /* get ints and check 8 bit compliancy */
-	 {
-	    case 2: get_all_args("exec",args,"%c.%d",&dummy_s,&off); break;
-	    case 1: get_all_args("exec",args,"%c",&dummy_s); break;
-	 }
+         /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
 
 	 if (off > subject->len) {
 	   /* If we don't check this then pcre_exec might return an
@@ -543,8 +520,8 @@ PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
    struct array *res;
 
    for (i=0; i<sz*2; i++)
-      if (TYPEOF(ITEM(previous_result)[i]) != T_INT)
-	 SIMPLE_ARG_TYPE_ERROR("split_subject",2,"array(int)");
+     if (TYPEOF(ITEM(previous_result)[i]) != T_INT)
+       SIMPLE_ARG_TYPE_ERROR("split_subject",2,"array(int)");
 
    res=allocate_array(sz);
    for (i=j=0; j<sz; i+=2,j++)
