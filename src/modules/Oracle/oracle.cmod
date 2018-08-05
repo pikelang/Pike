@@ -786,7 +786,7 @@ OCIError *get_global_error_handle(void)
       time_t t;
       sword rc;
 
-      check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
+      check_all_args(NULL,args,BIT_INT|BIT_STRING,0);
       switch(TYPEOF(*date))
       {
       case T_STRING:

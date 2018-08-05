@@ -902,7 +902,7 @@ static void f_create_euc(INT32 args)
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
 
-  check_all_args("create()", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   str = Pike_sp[-args].u.string;
 
@@ -1300,7 +1300,7 @@ static void f_create_euce(INT32 args)
   int i, j, z, lo=0, hi=num_charset_def-1;
   UNICHAR const *table=NULL;
 
-  check_all_args("create()", args, BIT_STRING, BIT_STRING,
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING,
 		 BIT_STRING|BIT_VOID|BIT_INT,
 		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 

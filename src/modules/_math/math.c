@@ -534,7 +534,7 @@ void f_abs(INT32 args)
   struct svalue zero;
   SET_SVAL(zero, T_INT, NUMBER_NUMBER, integer, 0);
 
-  check_all_args("abs",args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
+  check_all_args(NULL,args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
   pop_n_elems(args-1);
   if(is_lt(sp-1,&zero)) o_negate();
 }
@@ -555,7 +555,7 @@ void f_abs(INT32 args)
 void f_sgn(INT32 args)
 {
   TRIM_STACK(2);
-  check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
+  check_all_args(NULL,args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
   if(args<2)
     push_int(0);
 

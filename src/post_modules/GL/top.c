@@ -63,7 +63,7 @@ static void f_glGet(INT32 args)
   GLboolean b[4];
   GLfloat f[16];
 
-  check_all_args("glGet", args, BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, 0);
 
   arg1=Pike_sp[0-args].u.integer;
 

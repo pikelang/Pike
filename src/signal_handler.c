@@ -2779,7 +2779,7 @@ void f_create_process(INT32 args)
   struct svalue *tmp;
   int e;
 
-  check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
   switch(args)
   {

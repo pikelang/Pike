@@ -309,7 +309,7 @@ array(string) gen_func(string name, string ty)
   prot = (argt*",")+prot;
 
   if(sizeof(argt))
-    res += "\n  check_all_args(\""+name+"\", args, "+
+    res += "\n  check_all_args(NULL, args, "+
       ((Array.map((argt_cut<0?argt:argt[..argt_cut-1]),
 		  lambda(string t) {
 		    return Array.map(t/"|",

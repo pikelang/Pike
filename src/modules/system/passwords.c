@@ -762,7 +762,7 @@ void f_get_groups_for_user(INT32 arg)
   ONERROR err;
   int base_gid;
 
-  check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
+  check_all_args(NULL,arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
   if(TYPEOF(sp[-1]) == T_INT)

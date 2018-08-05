@@ -1407,7 +1407,7 @@ static void image_get_color(INT32 args)
 
 static void image_guess_color(INT32 args)
 {
-  check_all_args("guess", args, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, 0);
 
    f_lower_case(1);
    push_static_text(" ");
@@ -1652,7 +1652,7 @@ static void image_make_greylevel_color(INT32 args)
 static void image_make_html_color(INT32 args)
 {
    int i;
-   check_all_args("html", args, BIT_STRING, 0);
+   check_all_args(NULL, args, BIT_STRING, 0);
 
    f_lower_case(1);
    for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)

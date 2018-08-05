@@ -4286,7 +4286,7 @@ static void file_pipe(INT32 args)
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
   int reverse;
 
-  check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
   if(args && !SUBTYPEOF(Pike_sp[-1])) type = Pike_sp[-args].u.integer;
 
   reverse = type & fd_REVERSE;
@@ -5295,7 +5295,7 @@ void file_proxy(INT32 args)
   int from, to;
 
   THREAD_T id;
-  check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
+  check_all_args(NULL, args, BIT_OBJECT,0);
   f=get_file_storage(Pike_sp[-args].u.object);
   if(!f)
     SIMPLE_ARG_TYPE_ERROR("proxy", 1, "Stdio.File");

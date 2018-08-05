@@ -780,7 +780,7 @@ void f_LogonUser(INT32 args)
   HANDLE x;
   BOOL ret;
 
-  check_all_args("LogonUser",args,
+  check_all_args(NULL, args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
 
@@ -1268,7 +1268,7 @@ void f_NetUserGetInfo(INT32 args)
   LPWSTR server, user;
   NET_API_STATUS ret;
 
-  check_all_args("NetUserGetInfo",args,BIT_STRING|BIT_INT, BIT_STRING, BIT_VOID | BIT_INT, 0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT, BIT_STRING, BIT_VOID | BIT_INT, 0);
 
   if(args>2)
     level=sp[2-args].u.integer;
@@ -1364,7 +1364,7 @@ void f_NetUserEnum(INT32 args)
   DWORD resume=0;
   NET_API_STATUS ret;
 
-  check_all_args("NetUserEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,BIT_INT|BIT_VOID,0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,BIT_INT|BIT_VOID,0);
 
   switch(args)
   {
@@ -1475,7 +1475,7 @@ void f_NetGroupEnum(INT32 args)
   DWORD resume=0;
   NET_API_STATUS ret;
 
-  check_all_args("NetGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
   if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -1577,7 +1577,7 @@ void f_NetLocalGroupEnum(INT32 args)
   DWORD resume=0;
   NET_API_STATUS ret;
 
-  check_all_args("NetLocalGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
   if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -1683,7 +1683,7 @@ void f_NetUserGetGroups(INT32 args)
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
-  check_all_args("NetUserGetGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, 0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, 0);
 
   if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -1795,7 +1795,7 @@ void f_NetUserGetLocalGroups(INT32 args)
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
-  check_all_args("NetUserGetLocalGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, BIT_INT|BIT_VOID, 0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, BIT_INT|BIT_VOID, 0);
 
   if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -1904,7 +1904,7 @@ void f_NetGroupGetUsers(INT32 args)
   struct array *a=0;
   DWORD resume=0;
 
-  check_all_args("NetGroupGetUsers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
   if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -2021,7 +2021,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
   struct array *a=0;
   DWORD resume=0;
 
-  check_all_args("NetLocalGroupGetMembers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
   if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -2129,7 +2129,7 @@ void f_NetGetDCName(INT32 args)
   LPWSTR server, domain;
   NET_API_STATUS ret;
 
-  check_all_args("NetGetDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
   if(TYPEOF(sp[-args]) == T_STRING)
   {
@@ -2198,7 +2198,7 @@ void f_NetGetAnyDCName(INT32 args)
   LPWSTR server, domain;
   NET_API_STATUS ret;
 
-  check_all_args("NetGetAnyDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
+  check_all_args(NULL,args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
   if(TYPEOF(sp[-args]) == T_STRING)
   {
@@ -2430,7 +2430,7 @@ static void f_NetSessionEnum(INT32 args)
   DWORD resume = 0;
   struct array *a=0;
 
-  check_all_args("NetSessionEnum",args,
+  check_all_args(NULL,args,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT|BIT_STRING,
@@ -2521,7 +2521,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   DWORD resume = 0;
   struct array *a=0;
 
-  check_all_args("NetWkstaUserEnum",args,
+  check_all_args(NULL,args,
 		 BIT_INT|BIT_STRING,
 		 BIT_INT,
 		 0);
@@ -2699,7 +2699,7 @@ static void f_LookupAccountName(INT32 args)
   SID_NAME_USE tmp;
   char buffer[1];
 
-  check_all_args("LookupAccountName",args,BIT_INT|BIT_STRING, BIT_STRING,0);
+  check_all_args(NULL,args,BIT_INT|BIT_STRING, BIT_STRING,0);
   if(TYPEOF(sp[-args]) == T_STRING)
   {
     if(sp[-args].u.string->size_shift != 0)
@@ -2990,7 +2990,7 @@ static void f_GetNamedSecurityInfo(INT32 args)
     DACL_SECURITY_INFORMATION;
 
   SE_OBJECT_TYPE type = SE_FILE_OBJECT;
-  check_all_args("GetSecurityInfo",args,BIT_STRING, BIT_VOID|BIT_INT, BIT_VOID|BIT_INT, 0);
+  check_all_args(NULL,args,BIT_STRING, BIT_VOID|BIT_INT, BIT_VOID|BIT_INT, 0);
 
   switch(args)
   {
@@ -3447,8 +3447,7 @@ static void f_sctx_gencontext(INT32 args)
   struct pike_string *in;
   BOOL new_conversation = 0;
 
-  check_all_args("gen_context", args,
-                 BIT_STRING,0);
+  check_all_args(NULL, args, BIT_STRING,0);
 
   in = Pike_sp[-1].u.string;
   if (in->size_shift != 0)

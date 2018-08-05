@@ -323,7 +323,7 @@ static void exit_howl_module(void)
 
 static void f_update_txt(INT32 args)
 {
-  check_all_args("Service->update_txt", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,	/* txt */
 		 0);
 
@@ -345,7 +345,7 @@ static void f_create(INT32 args)
   char                *name, *service, *domain, *txt;
   int                 port, txtlen, err;
 
-  check_all_args("Service->create", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,		/* name */
 		 BIT_STRING,		/* service */
 		 BIT_STRING,		/* domain */

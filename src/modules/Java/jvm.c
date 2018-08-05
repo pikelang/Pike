@@ -2743,7 +2743,7 @@ static void f_get_method(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_method", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(method_program, args+1);
@@ -2759,7 +2759,7 @@ static void f_get_static_method(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_static_method", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(static_method_program, args+1);
@@ -2775,7 +2775,7 @@ static void f_get_field(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_field", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(field_program, args+1);
@@ -2791,7 +2791,7 @@ static void f_get_static_field(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_static_field", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(static_field_program, args+1);
@@ -2807,7 +2807,7 @@ static void f_get_static_field(INT32 args)
 static void f_register_natives(INT32 args)
 {
   struct object *oo;
-  check_all_args("register_natives", args, BIT_ARRAY, 0);
+  check_all_args(NULL, args, BIT_ARRAY, 0);
   push_object(this_object());
   oo=clone_object(natives_program, args+1);
   if(oo->prog!=NULL)

@@ -759,8 +759,7 @@ PIKEFUN void trace(int trace_level)
 
 PIKEFUN void _set_notify_callback(function|void cb)
 {
-	check_all_args("postgres->_set_notify_callback()",
-		       args, BIT_INT|BIT_FUNCTION, 0);
+        check_all_args(NULL, args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
 		if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {

@@ -182,7 +182,7 @@ PIKEFUN void create(object o)
   flags ID_PROTECTED;
 {
 	char *storage;
-	check_all_args("postgres_result->create",args,BIT_OBJECT,0);
+        check_all_args(NULL,args,BIT_OBJECT,0);
 	pgdebug("result->f_create(%d).\n",args);
 
 	storage=get_storage(Pike_sp[-args].u.object, Postgres_postgres_program);
@@ -255,7 +255,7 @@ struct object *make_postgres_result(struct object *postgres,
 PIKEFUN int num_rows()
 {
         int rows;
-	check_all_args("postgres_result->num_rows",args,0);
+        check_all_args(NULL,args,0);
 	if (PQresultStatus(THIS->result)!=PGRES_TUPLES_OK) {
 		push_int(0);
 		return;
@@ -273,7 +273,7 @@ PIKEFUN int num_rows()
 
 PIKEFUN int num_fields()
 {
-	check_all_args("postgres_result->num_fields",args,0);
+        check_all_args(NULL,args,0);
 	if (PQresultStatus(THIS->result)!=PGRES_TUPLES_OK) {
 		push_int(0);
 		return;
@@ -312,7 +312,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
 	int j, numfields, tmp;
 	PGresult * res=THIS->result;
 
-	check_all_args("postgres_result->fetch_fields",args,0);
+        check_all_args(NULL,args,0);
 	numfields=PQnfields(res);
 	for (j=0;j<numfields;j++)
 	{
@@ -375,7 +375,7 @@ PIKEFUN array(string) fetch_row()
 {
 	int j,numfields;
 
-	check_all_args("postgres_result->fetch_row",args,0);
+        check_all_args(NULL,args,0);
 	pgdebug("f_fetch_row(); cursor=%d.\n",THIS->cursor);
 	if (THIS->cursor>=PQntuples(THIS->result)) {
 	  PGresult * res=THIS->result;

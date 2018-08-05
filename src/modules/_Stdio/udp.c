@@ -930,7 +930,7 @@ void udp_sendto(INT32 args)
   if(FD < 0)
     Pike_error("UDP: not open\n");
 
-  check_all_args("send", args,
+  check_all_args(NULL, args,
 		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
 
   if(args>3)

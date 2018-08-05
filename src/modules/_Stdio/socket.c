@@ -137,7 +137,7 @@ static void do_close(struct port *p)
  */
 static void port_set_id(INT32 args)
 {
-  check_all_args("Port->set_id", args, BIT_MIXED, 0);
+  check_all_args(NULL, args, BIT_MIXED, 0);
   assign_svalue(& THIS->id, Pike_sp-args);
   pop_n_elems(args-1);
 }

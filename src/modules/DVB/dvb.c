@@ -550,8 +550,8 @@ static void f_zap(INT32 args) {
   uint sr;
   char *devname;
 
-  check_all_args("DVB.dvb->tune", args, BIT_INT, BIT_INT, BIT_INT | BIT_STRING,
-		  			BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, BIT_INT, BIT_INT | BIT_STRING,
+                 BIT_INT, 0);
 
   sr = (u_short)Pike_sp[-1].u.integer * 1000;
   Pike_sp--;
@@ -985,7 +985,7 @@ static void f_parse_pmt(INT32 args)
   char *devname;
   int cnt = 0, arr = 0;
 
-  check_all_args("DVB.dvb->analyze_pmt", args, BIT_INT, BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, BIT_INT, 0);
 
   devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   dmx = open (devname, O_RDWR | O_NONBLOCK);
@@ -1141,7 +1141,7 @@ static void f_stream_attach(INT32 args) {
   struct svalue feeder;
   unsigned char *pktdata;
 
-  check_all_args("DVB.dvb->stream", args, BIT_INT,
+  check_all_args(NULL, args, BIT_INT,
 		 BIT_FUNCTION | BIT_INT | BIT_VOID, BIT_INT | BIT_VOID, 0);
 
   if(sl_count(DVB) >= MAX_PES_FD)
@@ -1182,7 +1182,7 @@ static void f__sprintf(INT32 args) {
   int n = 0, x, cnt;
   dvb_stream_data *st = DVB->stream;
 
-  check_all_args("DVB.dvb->_sprintf", args, BIT_INT, BIT_MAPPING | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT, BIT_MAPPING | BIT_VOID, 0);
 
   x = Pike_sp[-args].u.integer;
   pop_n_elems(args);
@@ -1240,7 +1240,7 @@ static void f_stream_set_buffer(INT32 args) {
 
   int buflen;
 
-  check_all_args("DVB.Stream->set_buffer", args, BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, 0);
   buflen = (u_short)Pike_sp[-1].u.integer;
   Pike_sp--;
   DVBStream->buflen = buflen;
@@ -1259,7 +1259,7 @@ static void f_stream_create(INT32 args) {
   dvb_data *dvbstor;
   char *devname;
 
-  check_all_args("DVB.dvb->stream", args, BIT_OBJECT, BIT_INT,
+  check_all_args(NULL, args, BIT_OBJECT, BIT_INT,
 		 BIT_FUNCTION | BIT_INT, BIT_INT, 0);
 
   ptype = (u_short)Pike_sp[-1].u.integer;
@@ -1367,7 +1367,7 @@ static void f_stream_read(INT32 args) {
   if(dvb_stream->fd < 0)
     Pike_error("Object destroyed!\n");
 
-  check_all_args("DVB.dvb->stream_read", args, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
   if(args > 1)
     all = (u_short)Pike_sp[-1].u.integer;
   pop_n_elems(args);
@@ -1438,7 +1438,7 @@ static void f_stream_read(INT32 args) {
 
 static void f_stream_info(INT32 args) {
 
-  check_all_args("DVB.dvb->stream_info", args, BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, 0);
   pop_n_elems(args);
   push_int(0);
 
@@ -1515,7 +1515,7 @@ static void f_audio_mute(INT32 args) {
   int mute = 1; /* default is mute = on */
   int ret;
 
-  check_all_args("DVB.dvb->audio_mute", args, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
 
   if(args) {
     mute = (u_short)Pike_sp[-1].u.integer;
@@ -1591,7 +1591,7 @@ static void f_audio_ctrl(INT32 args) {
   int ret;
   int cw = -1;
 
-  check_all_args("DVB.dvb->ctrl", args, BIT_INT | BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_STRING, 0);
 
   if(TYPEOF(Pike_sp[-1]) == T_INT)
     cw = (u_short)Pike_sp[-1].u.integer;
@@ -1635,7 +1635,7 @@ static void f_audio_mixer(INT32 args) {
   int ret;
   audioMixer_t mixer;
 
-  check_all_args("DVB.dvb->audio_mixer", args, BIT_INT, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT, BIT_INT | BIT_VOID, 0);
 
   mixer.volume_right = (unsigned int)Pike_sp[-1].u.integer;
   Pike_sp--;

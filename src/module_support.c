@@ -77,6 +77,12 @@ PMOD_EXPORT int check_args(int args, ...)
   return tmp.argno+1;
 }
 
+static const char* get_fname(const char *fname)
+{
+  if (fname) return fname;
+  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
+}
+
 /* This function generates errors if any of the args first arguments
  * is not OK.
  */
@@ -93,10 +99,10 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   {
   case ERR_NONE: return;
   case ERR_TOO_FEW:
-    new_error(fnname, "Too few arguments.\n", Pike_sp, args);
+    new_error(get_fname(fnname), "Too few arguments.\n", Pike_sp, args);
     break;
   case ERR_TOO_MANY:
-    new_error(fnname, "Too many arguments.\n", Pike_sp, args);
+    new_error(get_fname(fnname), "Too many arguments.\n", Pike_sp, args);
     break;
 
   case ERR_BAD_ARG:
@@ -121,7 +127,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 
     Pike_error("Bad argument %d to %s(), (expecting %s, got %s)\n",
 	  tmp.argno+1,
-	  fnname,
+          get_fname(fnname),
 	  buf,
 	  get_name_of_type(tmp.got));
     break;
@@ -507,12 +513,6 @@ PMOD_EXPORT int get_args(struct svalue *s,
   return ret;
 }
 #endif
-
-static const char* get_fname(const char *fname)
-{
-  if (fname) return fname;
-  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
-}
 
 PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 			      const char *format,  ... )
