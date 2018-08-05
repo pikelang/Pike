@@ -601,7 +601,7 @@ static inline int isHexChar(INT32 c)
 void PIKE_CONCAT(f_,X) (INT32 args)		\
 {						\
   INT_TYPE i;					\
-  get_all_args(#X, args, "%i", &i);		\
+  get_all_args(NULL, args, "%i", &i);		\
   pop_n_elems(args);				\
   push_int( X (i) );				\
 }
