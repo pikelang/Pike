@@ -5860,6 +5860,9 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   time_t retval;
   int normalised_time;
 
+  if (tz <= -3600*100 || tz >= 3600*100)
+    Pike_error("Invalid timezone specified.\n");
+
   date->tm_wday = -1;		/* flag to determine failure */
 
   {
