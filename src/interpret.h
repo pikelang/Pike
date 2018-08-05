@@ -90,7 +90,6 @@ struct pike_frame
    * locals). */
   unsigned INT16 *save_locals_bitmask;
 
-  unsigned INT16 flags;		/** PIKE_FRAME_* */
   /**
    * This tells us the current level of svalues on the stack that can
    * be discarded once the current function is done with them. It is an offset
@@ -100,6 +99,9 @@ struct pike_frame
   INT16 num_args;		/** Number of argument variables. */
 
   INT32 args;			/** Actual number of arguments passed to the function. */
+
+  unsigned INT16 flags;		/** PIKE_FRAME_* */
+
   /**
    * This is an offset from locals and denotes the place where the return value
    * should go.
