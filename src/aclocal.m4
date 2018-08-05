@@ -1299,9 +1299,8 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       ac_link="[$]old_ac_link 2>conftezt.out.2"
       AC_TRY_LINK([
 #ifdef HAVE_SYS_TYPES_H
-#include  <sys/types.h>
+#include <sys/types.h>
 #endif
-      ],[
 #ifdef HAVE_SYS_TYPES_H
 #if SIZEOF_OFF64_T != 0
         /* Make sure that __STDC__ doesn't get set to 1
@@ -1311,14 +1310,12 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 #endif
 #endif
         int foo;
-        int main(int argc, char **argv)
-        {
-	  /* The following code triggs gcc:s generation of aline opcodes,
-	   * which some versions of as does not support.
-	   */
-	  if (argc > 0) argc = 0;
-	  return argc;
-        }
+      ],[
+	/* The following code triggs gcc:s generation of aline opcodes,
+	 * which some versions of as does not support.
+	 */
+	if (argc > 0) argc = 0;
+	return argc;
       ],pike_cv_option_$2=yes,
         pike_cv_option_$2=no)
       if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
