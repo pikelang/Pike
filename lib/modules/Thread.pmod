@@ -876,8 +876,8 @@ optional class ResourceCountKey {
   }
 
   /*semi*/private void destroy() {
+    MutexKey key = parent->_mutex->lock();
     --parent->_count;
-    MutexKey lock = parent->_mutex->lock();
     parent->_cond->signal();
   }
 }
@@ -906,15 +906,17 @@ optional class ResourceCount {
   //!
   //! @param level
   //!   The maximum level that is considered drained.
-  variant /*semi*/final void wait_till_drained(void|int level) {
+  /*semi*/final void wait_till_drained(void|int level) {
+    MutexKey key = _mutex->lock();
     while (_count > level)		// Recheck before allowing further
-      _cond->wait(_mutex->lock());
+      _cond->wait(key);
   }
 
   //! Increments the resource-counter.
   //! @returns
   //!   A @[ResourceCountKey] to decrement the resource-counter again.
   /*semi*/final ResourceCountKey acquire() {
+    MutexKey key = _mutex->lock();
     _count++;
     return ResourceCountKey(this);
   }
