@@ -411,8 +411,7 @@ PIKECLASS _pcre
 
 	 int ovector[OVECTOR_SIZE];
 	 INT32 off=0;
-	 char *dummy_s;
-	 int opts=0;
+         int opts=0;
 
 	 if (!THIS->re)
 	    Pike_error("need to initialize before exec() is called\n");
