@@ -259,7 +259,8 @@ void run_tests() {
                                     bad++;
 				    Tools.Testsuite.log_msg("Failed to perform bootstrap request on node %s\n",
 							    String.string2hex(dht->get_node_id()));
-				    run_tests();
+                                    run_tests();
+                                    return;
 				  }
 				  state->op = 0;
                                   good++;
