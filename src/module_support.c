@@ -511,7 +511,7 @@ PMOD_EXPORT int get_args(struct svalue *s,
 static const char* get_fname(const char *fname)
 {
   if (fname) return fname;
-  return (Pike_fp->current_object->prog->identifiers + Pike_fp->fun)->name->str;
+  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
 }
 
 PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
