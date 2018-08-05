@@ -809,10 +809,9 @@ define([AC_LOW_MODULE_INIT],
   
   MY_AC_PROG_CC
 
-  PIKE_USE_SYSTEM_EXTENSIONS
-
   PIKE_SELECT_ABI
 
+  PIKE_USE_SYSTEM_EXTENSIONS
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the
@@ -1298,9 +1297,12 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       CPPFLAGS="[$]OLD_CPPFLAGS $1"
       old_ac_link="[$]ac_link"
       ac_link="[$]old_ac_link 2>conftezt.out.2"
-      AC_TRY_RUN([
+      AC_TRY_LINK([
 #ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
+#include  <sys/types.h>
+#endif
+      ],[
+#ifdef HAVE_SYS_TYPES_H
 #if SIZEOF_OFF64_T != 0
         /* Make sure that __STDC__ doesn't get set to 1
 	 * on Solaris with old headers.
@@ -1318,9 +1320,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 	  return argc;
         }
       ],pike_cv_option_$2=yes,
-        pike_cv_option_$2=no, [
-        AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
-      ])
+        pike_cv_option_$2=no)
       if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
         pike_cv_option_$2=no
       elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
