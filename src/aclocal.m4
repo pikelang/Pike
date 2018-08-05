@@ -1304,18 +1304,22 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 #ifdef HAVE_SYS_TYPES_H
 #if SIZEOF_OFF64_T != 0
         /* Make sure that __STDC__ doesn't get set to 1
-	 * on Solaris with old headers.
-	 */
+         * on Solaris with old headers.
+         */
         off64_t off64_value = (off64_t)17;
 #endif
 #endif
         int foo;
+        int bar(int argc, char **argv)
+        {
+          /* The following code triggs gcc:s generation of aline opcodes,
+           * which some versions of as does not support.
+           */
+	  if (argc > 0) argc = 0;
+	  return argc;
+        }
       ],[
-	/* The following code triggs gcc:s generation of aline opcodes,
-	 * which some versions of as does not support.
-	 */
-	if (argc > 0) argc = 0;
-	return argc;
+        return bar(0, (void *)0);
       ],pike_cv_option_$2=yes,
         pike_cv_option_$2=no)
       if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
