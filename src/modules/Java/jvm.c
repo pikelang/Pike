@@ -557,7 +557,7 @@ static void f_method_create(INT32 args)
   get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
-    SIMPLE_TYPE_ARG_ERROR("create", 3, "Java class");
+    SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
     destruct(Pike_fp->current_object);
