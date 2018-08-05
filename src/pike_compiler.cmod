@@ -35,6 +35,7 @@
 #include "module_support.h"
 #include "bitvector.h"
 #include "sprintf.h"
+#include "cpp.h"
 
 #include <errno.h>
 #include <fcntl.h>
