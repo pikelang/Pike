@@ -9746,8 +9746,8 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
   if (instr->flags & I_HASARG2) {
     params[1] = buf[1];
   }
-  sprintf(buf[3], "# %s", instr->name);
-  string_builder_append_disassembly(s, addr, addr, buf[3], params, NULL);
+  sprintf(buf[2], "# %s", instr->name);
+  string_builder_append_disassembly(s, addr, addr, buf[2], params, NULL);
 }
 
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr)
