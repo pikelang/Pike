@@ -461,7 +461,7 @@ static void f_reporter_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber, &subsystem, &message);
 
   /* Ignore informational level messages */
@@ -629,7 +629,7 @@ static void f_compilation_env_resolv(INT32 args)
   struct object *handler = NULL;
   struct object *compat_handler = NULL;
 
-  get_all_args("resolv", args, "%W%W.%O%O",
+  get_all_args(NULL, args, "%W%W.%O%O",
 	       &ident, &filename, &handler, &compat_handler);
 
   if(get_master())
@@ -772,7 +772,7 @@ static void f_compilation_env_filter_exception(INT32 args)
   int level;
   struct svalue *err;
 
-  get_all_args("filter_exception", args, "%d%*", &level, &err);
+  get_all_args(NULL, args, "%d%*", &level, &err);
   if (args > 2) {
     pop_n_elems(args-2);
     args = 2;
@@ -1403,7 +1403,7 @@ static void f_compilation_report(INT32 args)
   /* FIXME: get_all_args() ought to have a marker
    *        indicating that we accept more arguments...
    */
-  get_all_args("report", args, "%d", &level);
+  get_all_args(NULL, args, "%d", &level);
 
   if ((c->handler || c->compat_handler)) {
     const char *fun_name = "compile_warning";
@@ -1442,7 +1442,7 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
 
@@ -1521,7 +1521,7 @@ static void f_compilation_create(INT32 args)
 
   STACK_LEVEL_START(args);
 
-  get_all_args("create", args, ".%W%O%d%d%P%O",
+  get_all_args(NULL, args, ".%W%O%d%d%P%O",
 	       &aprog, &ahandler,
 	       &amajor, &aminor,
 	       &atarget, &aplaceholder);
@@ -1589,7 +1589,7 @@ static void f_compilation_compile(INT32 args)
     Pike_error("PikeCompiler in use.\n");
   }
 
-  get_all_args("compile", args, "");
+  get_all_args(NULL, args, "");
 
   check_c_stack(65536);
 
@@ -1711,7 +1711,7 @@ static void f_compilation_resolv(INT32 args)
   struct object *handler;
   int fun = -1;
 
-  get_all_args("resolv", args, "%W", &sym);
+  get_all_args(NULL, args, "%W", &sym);
 
   ref_push_string(sym);
   ref_push_string(c->lex.current_file);
@@ -1800,8 +1800,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
 
   STACK_LEVEL_START(args);
 
-  get_all_args("change_compiler_compatibility", args, "%d%d",
-	       &major, &minor);
+  get_all_args(NULL, args, "%d%d", &major, &minor);
 
   if ((major == -1) && (minor == -1)) {
     major = PIKE_MAJOR_VERSION;
@@ -1988,7 +1987,7 @@ static void f_compilation_pop_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("pop_type_attribute", args, "%W%*%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2030,7 +2029,7 @@ static void f_compilation_push_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("push_type_attribute", args, "%W%*%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2086,7 +2085,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("apply_type_attribute", args, "%W%*.%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*.%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2150,7 +2149,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct pike_string *attribute;
   struct pike_string *test;
   struct svalue *sval;
-  get_all_args("apply_attribute_constant", args, "%S%*", &attribute, &sval);
+  get_all_args(NULL, args, "%S%*", &attribute, &sval);
 
   if ((TYPEOF(*sval) == T_INT) && !sval->u.integer) {
     pop_n_elems(args);

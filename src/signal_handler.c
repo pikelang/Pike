@@ -1827,7 +1827,7 @@ static void f_pid_status_set_priority(INT32 args)
   char *to;
   int r;
 
-  get_all_args("set_priority", args, "%s", &to);
+  get_all_args(NULL, args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
   push_int(r);
@@ -2005,7 +2005,7 @@ static void f_proc_reg_index(INT32 args)
     Pike_error("Process not stopped.\n");
   }
 
-  get_all_args("`[]", args, "%+", &regno);
+  get_all_args(NULL, args, "%+", &regno);
 
   if (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))
     SIMPLE_ARG_TYPE_ERROR("`[]", 1, "register number");
@@ -4495,7 +4495,7 @@ static void f_pid_status_kill(INT32 args)
   INT_TYPE signum;
   int res, save_errno;
 
-  get_all_args("kill", args, "%+", &signum);
+  get_all_args(NULL, args, "%+", &signum);
 
   PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
@@ -4591,7 +4591,7 @@ static void f_pid_status_kill(INT32 args)
 {
   INT_TYPE signum;
 
-  get_all_args("kill", args, "%i", &signum);
+  get_all_args(NULL, args, "%i", &signum);
 
   pop_n_elems(args);
 

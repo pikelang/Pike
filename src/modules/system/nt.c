@@ -64,7 +64,7 @@
 
 #define sp Pike_sp
 
-static void throw_nt_error(char *funcname, int err)
+static void throw_nt_error(int err)
 /*
  *  Give string equivalents to some of the more common NT error codes.
  */
@@ -171,17 +171,17 @@ static void throw_nt_error(char *funcname, int err)
       break;
 
     default:
-      Pike_error("%s: Unknown error 0x%04x (%d)\n", funcname, err, err);
+      Pike_error("Unknown error 0x%04x (%d)\n", err, err);
       return;
   }
-  Pike_error("%s: %s\n", funcname, msg);
+  Pike_error("%s\n", msg);
 }
 
 static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  get_all_args("cp",args,"%s%s",&from,&to);
+  get_all_args(NULL, args, "%s%s", &from, &to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
   pop_n_elems(args);
@@ -219,7 +219,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
 				 buffer+len,
                                  (DWORD)(sizeof(buffer)-len-1));
       if(type>sizeof(buffer)-len-1 || !type)
-	Pike_error("RegGetValue: Failed to expand data.\n");
+        Pike_error("Failed to expand data.\n");
       push_text(buffer+len);
       break;
 
@@ -248,7 +248,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       break;
 
     default:
-      Pike_error("RegGetValue: cannot handle this data type.\n");
+      Pike_error("Cannot handle this data type.\n");
   }
 }
 
@@ -321,11 +321,10 @@ void f_RegGetValue(INT32 args)
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegGetValue", args, "%i%s%s",
-	       &hkey_num, &key, &ind);
+  get_all_args(NULL, args, "%i%s%s", &hkey_num, &key, &ind);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d\n", hkey_num);
+    Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
@@ -336,7 +335,7 @@ void f_RegGetValue(INT32 args)
     return;
   }
   if(ret != ERROR_SUCCESS)
-    throw_nt_error("RegGetValue", ret);
+    throw_nt_error(ret);
 
   ret=RegQueryValueEx(new_key,ind, 0, &type, buffer, &len);
   RegCloseKey(new_key);
@@ -349,7 +348,7 @@ void f_RegGetValue(INT32 args)
     pop_n_elems(args);
     push_undefined();
   }else{
-    throw_nt_error("RegGetValue", ret);
+    throw_nt_error(ret);
   }
 }
 
@@ -401,11 +400,10 @@ void f_RegGetKeyNames(INT32 args)
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
-  get_all_args("RegGetKeyNames", args, "%i%s",
-	       &hkey_num, &key);
+  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d\n", hkey_num);
+    Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
@@ -416,7 +414,7 @@ void f_RegGetKeyNames(INT32 args)
     return;
   }
   if(ret != ERROR_SUCCESS)
-    throw_nt_error("RegGetKeyNames", ret);
+    throw_nt_error(ret);
 
   SET_ONERROR(tmp, do_regclosekey, new_key);
 
@@ -441,7 +439,7 @@ void f_RegGetKeyNames(INT32 args)
 	break;
 
       default:
-        throw_nt_error("RegGetKeyNames", ret);
+        throw_nt_error(ret);
     }
     break;
   }
@@ -492,11 +490,10 @@ void f_RegGetValues(INT32 args)
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args("RegGetValues", args, "%i%s",
-	       &hkey_num, &key);
+  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d\n", hkey_num);
+    Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
@@ -508,7 +505,7 @@ void f_RegGetValues(INT32 args)
     return;
   }
   if(ret != ERROR_SUCCESS)
-    throw_nt_error("RegGetValues", ret);
+    throw_nt_error(ret);
 
   SET_ONERROR(tmp, do_regclosekey, new_key);
   pop_n_elems(args);
@@ -537,7 +534,7 @@ void f_RegGetValues(INT32 args)
 
       default:
 	RegCloseKey(new_key);
-        throw_nt_error("RegGetValues", ret);
+        throw_nt_error(ret);
     }
     break;
   }
@@ -612,8 +609,7 @@ void f_attachconsole(INT32 args)
 {
   int rv;
   int pid;
-  get_all_args("AttachConsole", args, "%d",
-               &pid);
+  get_all_args(NULL, args, "%d", &pid);
 
   rv = (int)AttachConsole(pid);
 
@@ -697,7 +693,7 @@ static void f_sid_account(INT32 args)
   char *sys=0;
   SID_NAME_USE type;
 
-  check_all_args("SID->account",args,BIT_STRING|BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_STRING|BIT_VOID, 0);
   if(args) sys=sp[-1].u.string->str;
 
   if(!THIS_PSID) Pike_error("SID->account on uninitialized SID.\n");
@@ -1291,7 +1287,7 @@ void f_NetUserGetInfo(INT32 args)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
-      Pike_error("NetUserGetInfo, server name string is too wide.\n");
+      Pike_error("Server name string is too wide.\n");
   }else{
     server=NULL;
   }
@@ -1300,7 +1296,7 @@ void f_NetUserGetInfo(INT32 args)
   if(!user)
   {
     if(to_free1) free(to_free1);
-    Pike_error("NetUserGetInfo, user name string is too wide.\n");
+    Pike_error("User name string is too wide.\n");
   }
 
   THREADS_ALLOW();
@@ -1317,7 +1313,7 @@ void f_NetUserGetInfo(INT32 args)
     netapibufferfree(tmp);
   }
   else
-    throw_nt_error("NetGetUserInfo", ret);
+    throw_nt_error(ret);
 }
 
 /*! @decl array(string|array(string|int)) @
@@ -1379,7 +1375,7 @@ void f_NetUserEnum(INT32 args)
 	case 0: case 1: case 2: case 3: case 10: case 11: case 20:
 	  break;
 	default:
-	  Pike_error("Unsupported information level in NetUserEnum.\n");
+          Pike_error("Unsupported information level.\n");
       }
 
     case 1:
@@ -1428,7 +1424,7 @@ void f_NetUserEnum(INT32 args)
     }
     else
     { if (to_free1) free(to_free1);
-      throw_nt_error("NetUserEnum", ret);
+      throw_nt_error(ret);
       return;
     }
   } while (ret == ERROR_MORE_DATA);
@@ -1491,7 +1487,7 @@ void f_NetGroupEnum(INT32 args)
       case 0: case 1: case 2:
 	break;
       default:
-	Pike_error("Unsupported information level in NetGroupEnum.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -1532,7 +1528,7 @@ void f_NetGroupEnum(INT32 args)
     else
     {
       if (to_free1) free(to_free1);
-      throw_nt_error("NetGroupEnum", ret);
+      throw_nt_error(ret);
       return;
     }
   } while (ret == ERROR_MORE_DATA);
@@ -1593,7 +1589,7 @@ void f_NetLocalGroupEnum(INT32 args)
       case 0: case 1:
 	break;
       default:
-	Pike_error("Unsupported information level in NetLocalGroupEnum.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -1634,7 +1630,7 @@ void f_NetLocalGroupEnum(INT32 args)
     else
     {
       if (to_free1) free(to_free1);
-      throw_nt_error("NetLocalGroupEnum", ret);
+      throw_nt_error(ret);
     }
   } while (ret == ERROR_MORE_DATA);
 
@@ -1702,7 +1698,7 @@ void f_NetUserGetGroups(INT32 args)
       case 0: case 1:
 	break;
       default:
-	Pike_error("Unsupported information level in NetUserGetGroups.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -1742,7 +1738,7 @@ void f_NetUserGetGroups(INT32 args)
   {
     if(to_free1) free(to_free1);
     if(to_free2) free(to_free2);
-    throw_nt_error("NetUserGetGroups", ret);
+    throw_nt_error(ret);
   }
 }
 
@@ -1814,7 +1810,7 @@ void f_NetUserGetLocalGroups(INT32 args)
       case 0:
 	break;
       default:
-	Pike_error("Unsupported information level in NetUserGetLocalGroups.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -1857,7 +1853,7 @@ void f_NetUserGetLocalGroups(INT32 args)
     default:
       if(to_free1) free(to_free1);
       if(to_free2) free(to_free2);
-      throw_nt_error("NetUserGetLocalGroups", ret);
+      throw_nt_error(ret);
   }
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
@@ -1923,7 +1919,7 @@ void f_NetGroupGetUsers(INT32 args)
       case 0: case 1:
 	break;
       default:
-	Pike_error("Unsupported information level in NetGroupGetUsers.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -1970,7 +1966,7 @@ void f_NetGroupGetUsers(INT32 args)
       default:
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
-	throw_nt_error("NetGroupGetUsers", ret);
+        throw_nt_error(ret);
     }
     break;
   }
@@ -2040,7 +2036,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
       case 0: case 1: case 2: case 3:
 	break;
       default:
-	Pike_error("Unsupported information level in NetLocalGroupGetMembers.\n");
+        Pike_error("Unsupported information level.\n");
     }
   }
 
@@ -2070,7 +2066,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
       case ERROR_NO_SUCH_ALIAS:
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
-	Pike_error("NetLocalGroupGetMembers: No such alias.\n");
+        Pike_error("No such alias.\n");
 	break;
 
       case NERR_Success:
@@ -2093,7 +2089,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
       default:
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
-	throw_nt_error("NetLocalGroupGetMembers", ret);
+        throw_nt_error(ret);
         break;
     }
     break;
@@ -2139,7 +2135,7 @@ void f_NetGetDCName(INT32 args)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
-      Pike_error("NetGetDCName, server name string is too wide.\n");
+      Pike_error("Server name string is too wide.\n");
   }else{
     server=NULL;
   }
@@ -2148,7 +2144,7 @@ void f_NetGetDCName(INT32 args)
   if(!domain)
   {
     if(to_free1) free(to_free1);
-    Pike_error("NetGetDCName, domain name string is too wide.\n");
+    Pike_error("Domain name string is too wide.\n");
   }
 
   THREADS_ALLOW();
@@ -2167,7 +2163,7 @@ void f_NetGetDCName(INT32 args)
       return;
 
     default:
-      throw_nt_error("NetGetDCName", ret);
+      throw_nt_error(ret);
   }
 }
 
@@ -2208,7 +2204,7 @@ void f_NetGetAnyDCName(INT32 args)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
-      Pike_error("NetGetAnyDCName, server name string is too wide.\n");
+      Pike_error("Server name string is too wide.\n");
   }else{
     server=NULL;
   }
@@ -2217,7 +2213,7 @@ void f_NetGetAnyDCName(INT32 args)
   if(!domain)
   {
     if(to_free1) free(to_free1);
-    Pike_error("NetGetAnyDCName, domain name string is too wide.\n");
+    Pike_error("Domain name string is too wide.\n");
   }
 
   THREADS_ALLOW();
@@ -2236,7 +2232,7 @@ void f_NetGetAnyDCName(INT32 args)
       return;
 
     default:
-      throw_nt_error("NetGetAnyDCName", ret);
+      throw_nt_error(ret);
   }
 }
 
@@ -2452,7 +2448,7 @@ static void f_NetSessionEnum(INT32 args)
       /* valid levels */
       break;
     default:
-      Pike_error("NetSessionEnum: Unsupported level: %d.\n", level);
+      Pike_error("Unsupported level: %d.\n", level);
   }
 
 
@@ -2497,7 +2493,7 @@ static void f_NetSessionEnum(INT32 args)
 	break;
 
       default:
-        throw_nt_error("NetSessionEnum", ret);
+        throw_nt_error(ret);
     }
     break;
   }
@@ -2534,7 +2530,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   level=sp[1-args].u.integer;
 
   if (level != 0 && level != 1)
-      Pike_error("NetWkstaUserEnum: Unsupported level: %d.\n", level);
+      Pike_error("Unsupported level: %d.\n", level);
 
   while(1)
   {
@@ -2575,7 +2571,7 @@ static void f_NetWkstaUserEnum(INT32 args)
 	break;
 
       default:
-        throw_nt_error("NetWkstaUserEnum", ret);
+        throw_nt_error(ret);
     }
     break;
   }
@@ -2659,7 +2655,7 @@ static void f_GetFileAttributes(INT32 args)
 {
   char *file;
   DWORD ret;
-  get_all_args("GetFileAttributes",args,"%s",&file);
+  get_all_args(NULL, args, "%s", &file);
   ret=GetFileAttributes( (LPCTSTR) file);
   pop_stack();
   errno=GetLastError();
@@ -2681,7 +2677,7 @@ static void f_SetFileAttributes(INT32 args)
   char *file;
   INT_TYPE attr, ret;
   DWORD tmp;
-  get_all_args("SetFileAttributes", args, "%s%i", &file, &attr);
+  get_all_args(NULL, args, "%s%i", &file, &attr);
   tmp=attr;
   ret=SetFileAttributes( (LPCTSTR) file, tmp);
   pop_stack();
@@ -2707,11 +2703,11 @@ static void f_LookupAccountName(INT32 args)
   if(TYPEOF(sp[-args]) == T_STRING)
   {
     if(sp[-args].u.string->size_shift != 0)
-       Pike_error("LookupAccountName: System name is wide string.\n");
+       Pike_error("System name is wide string.\n");
     sys=STR0(sp[-args].u.string);
   }
   if(sp[1-args].u.string->size_shift != 0)
-    Pike_error("LookupAccountName: Account name is wide string.\n");
+    Pike_error("Account name is wide string.\n");
 
   acc=STR0(sp[1-args].u.string);
 
@@ -2916,12 +2912,12 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
+  get_all_args(NULL, args, "%s%m", &name, &m);
 
   if((sval=low_mapping_string_lookup(m, literal_type_string)))
   {
     if(TYPEOF(*sval) != T_INT)
-      Pike_error("Bad 'type' in SetNamedSecurityInfo.\n");
+      Pike_error("Bad 'type' type.\n");
     type=sval->u.integer;
   }
 
@@ -2929,7 +2925,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   {
     if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
-      Pike_error("Bad 'owner' in SetNamedSecurityInfo.\n");
+      Pike_error("Bad 'owner' type.\n");
     owner=*(PSID *)get_storage(sval->u.object, sid_program);
     flags |= OWNER_SECURITY_INFORMATION;
   }
@@ -2938,7 +2934,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   {
     if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
-      Pike_error("Bad 'group' in SetNamedSecurityInfo.\n");
+      Pike_error("Bad 'group' type.\n");
     group=*(PSID *)get_storage(sval->u.object, sid_program);
     flags |= GROUP_SECURITY_INFORMATION;
   }
@@ -2946,7 +2942,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   if((sval=simple_mapping_string_lookup(m,"dacl")))
   {
     if(TYPEOF(*sval) != T_ARRAY)
-      Pike_error("Bad 'dacl' in SetNamedSecurityInfo.\n");
+      Pike_error("Bad 'dacl' type.\n");
     dacl=decode_acl(sval->u.array);
     flags |= DACL_SECURITY_INFORMATION;
   }
@@ -2954,7 +2950,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   if((sval=simple_mapping_string_lookup(m,"sacl")))
   {
     if(TYPEOF(*sval) != T_ARRAY)
-      Pike_error("Bad 'sacl' in SetNamedSecurityInfo.\n");
+      Pike_error("Bad 'sacl' type.\n");
     sacl=decode_acl(sval->u.array);
     flags |= SACL_SECURITY_INFORMATION;
   }
@@ -3325,14 +3321,14 @@ static void f_sctx_create(INT32 args)
   TimeStamp       Lifetime;
   char *          pkgName;
 
-  get_all_args("create",args,"%s",&pkgName);
+  get_all_args(NULL, args, "%s", &pkgName);
 
   lstrcpy(sctx->lpPackageName, pkgName);
   ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
 
   if (!SEC_SUCCESS(ss))
   {
-    Pike_error("Could not query package info for %s, error 0x%08x\n",
+    Pike_error("Could not query package info for %s, error 0x%08x.\n",
                sctx->lpPackageName, ss);
   }
 
@@ -3358,7 +3354,7 @@ static void f_sctx_create(INT32 args)
 
   if (!SEC_SUCCESS (ss))
   {
-    Pike_error("AcquireCreds failed: 0x%08x\n", ss);
+    Pike_error("AcquireCreds failed: 0x%08x.\n", ss);
   }
   sctx->hcred_alloced = 1;
 }

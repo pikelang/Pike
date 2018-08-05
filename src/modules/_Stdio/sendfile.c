@@ -868,7 +868,7 @@ static void sf_create(INT32 args)
   memset(&sf, 0, sizeof(struct pike_sendfile));
   SET_SVAL(sf.callback, T_INT, NUMBER_NUMBER, integer, 0);
 
-  get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
+  get_all_args(NULL, args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
 	       &len, &(sf.trailers), &(sf.to_file), &cb);
 

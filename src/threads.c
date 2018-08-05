@@ -2170,7 +2170,7 @@ void f_mutex_lock(INT32 args)
   if(!args)
     type=0;
   else
-    get_all_args("lock",args,"%i",&type);
+    get_all_args(NULL, args, "%i", &type);
 
   switch(type)
   {
@@ -2273,7 +2273,7 @@ void f_mutex_trylock(INT32 args)
   if(!args)
     type=0;
   else
-    get_all_args("trylock",args,"%i",&type);
+    get_all_args(NULL, args, "%i", &type);
 
   switch(type)
   {
@@ -2608,12 +2608,12 @@ void f_cond_wait(INT32 args)
 
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
-    get_all_args("wait", args, "%o.%F", &key, &fsecs);
+    get_all_args(NULL, args, "%o.%F", &key, &fsecs);
     seconds = (INT_TYPE) fsecs;
     nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
   } else {
     /* FIXME: Support bignum nanos. */
-    get_all_args("wait", args, "%o%i%i", &key, &seconds, &nanos);
+    get_all_args(NULL, args, "%o%i%i", &key, &seconds, &nanos);
   }
 
   if ((key->prog != mutex_key) ||

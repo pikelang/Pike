@@ -5569,7 +5569,7 @@ static void f_string_assignment_index(INT32 args)
   ptrdiff_t len;
   INT_TYPE i, p;
 
-  get_all_args("string[]", args, "%i", &p);
+  get_all_args(NULL, args, "%i", &p);
 
   if (!THIS->s) {
     Pike_error("Indexing uninitialized string_assignment.\n");
@@ -5597,7 +5597,7 @@ static void f_string_assignment_assign_index(INT32 args)
   union anything *u;
   ptrdiff_t len;
 
-  get_all_args("string[]=",args,"%i%i",&p,&j);
+  get_all_args(NULL, args, "%i%i", &p, &j);
 
   if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))
   {

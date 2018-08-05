@@ -1000,7 +1000,7 @@ PIKECLASS Backend
        apply_current(Backend_CallOut_program_fun_num, args);
        args = 1;
 
-       get_all_args("low_call_out", args, "%o", &co);
+       get_all_args(NULL, args, "%o", &co);
 
        c = get_storage(co, Backend_CallOut_program);
 

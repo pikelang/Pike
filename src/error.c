@@ -662,7 +662,7 @@ static void f_error_cast(INT32 args)
 static void f_error_index(INT32 args)
 {
   INT_TYPE ind;
-  get_all_args("`[]",args,"%i",&ind);
+  get_all_args(NULL, args, "%i", &ind);
 
   switch(ind)
   {
@@ -821,7 +821,7 @@ static void f_error_create(INT32 args)
   struct pike_string *msg;
   struct array *bt = NULL;
 
-  get_all_args("create", args, "%W.%A", &msg, &bt);
+  get_all_args(NULL, args, "%W.%A", &msg, &bt);
 
   do_free_string(GENERIC_ERROR_THIS->error_message);
   copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
@@ -1021,6 +1021,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   else
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
+
   DWERROR("%s():Bad arg %d (expected %s)\n",
           func, which_argument, expected_type);
   ERROR_DONE();

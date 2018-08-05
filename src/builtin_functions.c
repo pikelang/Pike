@@ -6662,7 +6662,7 @@ static void f_interleave_array(INT32 args)
   int nelems = 0;
   int i;
 
-  get_all_args("interleave_array", args, "%a", &arr);
+  get_all_args(NULL, args, "%a", &arr);
 
   /* We're not interrested in any other arguments. */
   pop_n_elems(args-1);
@@ -6908,7 +6908,7 @@ static void f_longest_ordered_sequence(INT32 args)
   struct array *a = NULL;
   struct array *aa = NULL;
 
-  get_all_args("longest_ordered_sequence", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
@@ -7599,7 +7599,7 @@ PMOD_EXPORT void f_permute( INT32 args )
   struct array *a;
   struct svalue *it;
 
-  get_all_args("permute", args, "%a%+", &a, &n);
+  get_all_args(NULL, args, "%a%+", &a, &n);
 
   if( a->refs>1 )
   {
@@ -7648,7 +7648,7 @@ PMOD_EXPORT void f_diff(INT32 args)
    struct array *a, *b;
    int uniq;
 
-   get_all_args("diff", args, "%a%a", &a, &b);
+   get_all_args(NULL, args, "%a%a", &a, &b);
 
    if ((a == b) || !a->size || !b->size) {
      if (!a->size && !b->size) {
@@ -7720,7 +7720,7 @@ PMOD_EXPORT void f_diff_compare_table(INT32 args)
   struct array *a;
   struct array *b;
 
-  get_all_args("diff_compare_table", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   push_array(diff_compare_table(a, b, NULL));
 }
@@ -7739,7 +7739,7 @@ PMOD_EXPORT void f_diff_longest_sequence(INT32 args)
   struct array *b;
   struct array *cmptbl;
 
-  get_all_args("diff_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl = diff_compare_table(a, b, NULL);
   push_array(cmptbl);
@@ -7766,7 +7766,7 @@ PMOD_EXPORT void f_diff_dyn_longest_sequence(INT32 args)
   struct array *b;
   struct array *cmptbl;
 
-  get_all_args("diff_dyn_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl=diff_compare_table(a, b, NULL);
   push_array(cmptbl);
@@ -8524,7 +8524,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   struct mapping *m;
   int i, j=0,size=0;
 
-  get_all_args("uniq", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
   if( !a->size )
   {
     push_empty_array();
@@ -8569,7 +8569,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 PMOD_EXPORT void f_splice(INT32 args)
 {
   struct array *out;
-  INT32 size=0x7fffffff;
+  INT32 size=MAX_INT32;
   INT32 i,j,k;
 
   for(i=0;i<args;i++)
@@ -8618,7 +8618,7 @@ PMOD_EXPORT void f_everynth(INT32 args)
   TYPE_FIELD types;
   INT32 size=0;
 
-  check_all_args("everynth", args,
+  check_all_args(NULL, args,
 		 BIT_ARRAY, BIT_INT | BIT_VOID, BIT_INT | BIT_VOID , 0);
 
   switch(args)
@@ -9518,10 +9518,10 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   struct pike_string *file = NULL;
 
   if( !(p = program_from_svalue(Pike_sp-args)) )
-      Pike_error("Illegal argument 1 to defined(program,string)\n");
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 1, "program");
 
   if( TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING )
-      Pike_error("Illegal argument 2 to defined(program,string)\n");
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 2, "string");
   else
       ident = Pike_sp[-args+1].u.string;
 
@@ -9586,7 +9586,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
   struct object *par;
   int parid,e,q=0;
 
-  get_all_args("inherit_list",args,"%*",&arg);
+  get_all_args(NULL, args, "%*", &arg);
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
     f_object_program(1);
 
@@ -9671,7 +9671,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
-  check_all_args("Function.defined",args,BIT_FUNCTION, 0);
+  check_all_args(NULL, args, BIT_FUNCTION, 0);
 
   if(SUBTYPEOF(Pike_sp[-args]) != FUNCTION_BUILTIN &&
      Pike_sp[-args].u.object->prog)

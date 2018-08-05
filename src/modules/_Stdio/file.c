@@ -1406,7 +1406,7 @@ static void file_peek(INT32 args)
   int not_eof = 0;
   FLOAT_TYPE tf = 0.0;
 
-  get_all_args("peek",args,".%F%d",&tf,&not_eof);
+  get_all_args(NULL, args, ".%F%d", &tf, &not_eof);
 
   {
 #ifdef HAVE_AND_USE_POLL
@@ -2291,7 +2291,7 @@ static void file_linger(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("linger", args, ".%d", &linger);
+  get_all_args(NULL, args, ".%d", &linger);
 
   if ((linger < -1) || (linger > 0xffff)) {
     SIMPLE_ARG_TYPE_ERROR("linger", 1, "int(-1..65535)");
@@ -2349,7 +2349,7 @@ static void file_nodelay(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("set_nodelay", args, ".%d", &state);
+  get_all_args(NULL, args, ".%d", &state);
 
   if (state && state != 1) {
     SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
@@ -2735,7 +2735,7 @@ static void file_openat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("openat", args, "%S%S.%d", &str, &flag_str, &access);
+  get_all_args(NULL, args, "%S%S.%d", &str, &flag_str, &access);
 
   flags = parse(flag_str->str);
 
@@ -3207,7 +3207,7 @@ static void file_statat(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("statat", args, "%S.%d", &path, &nofollow);
+  get_all_args(NULL, args, "%S.%d", &path, &nofollow);
 
   if (string_has_null(path)) {
     /* Filenames with NUL are not supported. */
@@ -3262,7 +3262,7 @@ static void file_unlinkat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("unlinkat", args, "%S", &str);
+  get_all_args(NULL, args, "%S", &str);
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
@@ -3326,7 +3326,7 @@ static void file_get_dir(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("get_dir", args, ".%S", &path);
+  get_all_args(NULL, args, ".%S", &path);
 
   if (path && string_has_null(path)) {
     fprintf(stderr, "NULL\n");
@@ -3467,7 +3467,7 @@ static void file_getxattr(INT32 args)
   ssize_t res;
   char *name;
 
-  get_all_args( "getxattr", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
 
   THREADS_ALLOW();
   do {
@@ -3527,7 +3527,7 @@ static void file_removexattr( INT32 args )
   char *name;
   int mfd = FD;
   int rv;
-  get_all_args( "removexattr", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fremovexattr( mfd, name, 0 )) < 0) && (errno == EINTR))
@@ -3575,7 +3575,7 @@ static void file_setxattr( INT32 args )
   int flags;
   int rv;
   int mfd = FD;
-  get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
+  get_all_args( NULL, args, "%s%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fsetxattr( mfd, ind, val->str,
@@ -4783,7 +4783,7 @@ static void file_set_keepalive(INT32 args)
   int tmp, i;
   INT_TYPE t;
 
-  get_all_args("set_keepalive", args, "%i", &t);
+  get_all_args(NULL, args, "%i", &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t;
@@ -4828,7 +4828,7 @@ static void file_setsockopt(INT32 args)
   int tmp, i, opt, level;
   INT_TYPE o, t, l;
 
-  get_all_args("setsockopt", args, "%i%i%i", &l, &o, &t);
+  get_all_args(NULL, args, "%i%i%i", &l, &o, &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t; opt = o; level = l;
@@ -4978,12 +4978,12 @@ static void file_connect(INT32 args)
 
   if (args < 4)
   {
-    get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
+    get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
   }
   else if( args == 5 )
   {
     struct svalue *src_sv;
-    get_all_args("connect", args, "%S%*%*%*%S",
+    get_all_args(NULL, args, "%S%*%*%*%S",
                  &dest_addr, &dest_port, &src_sv, &src_port, &data);
     if(TYPEOF(*src_sv) != PIKE_T_INT )
     {
@@ -4992,7 +4992,7 @@ static void file_connect(INT32 args)
       src_addr = src_sv->u.string;
     }
   } else {
-    get_all_args("connect", args, "%S%*%S%*",
+    get_all_args(NULL, args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 
@@ -5987,7 +5987,7 @@ static void f_getprotobyname(INT32 args) {
     struct protoent *proto;
     const char *name;
 
-    get_all_args("getprotobyname", args, "%c", &name);
+    get_all_args(NULL, args, "%c", &name);
 
     proto = getprotobyname(name);
 
