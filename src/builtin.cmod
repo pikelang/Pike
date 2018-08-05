@@ -4584,6 +4584,19 @@ PIKECLASS Null
 /*! @endclass
  */
 
+/*! @class DestructImmediate
+ *! An empty class that can be intherited to get the PROGRAM_DESTRUCT_IMMEDIATE
+ *! flag set.
+ */
+
+PIKECLASS DestructImmediate
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
+{
+}
+
+/*! @endclass
+ */
+
 PMOD_EXPORT
 PIKEFUN int levenshtein_distance(string a, string b)
 {

@@ -4820,10 +4820,10 @@ void lower_inherit(struct program *p,
     return;
   }
 
-  /* Propagate the HAS_C_METHODS and CLEAR_STORAGE flags. */
-  if (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE)) {
+  /* Propagate the HAS_C_METHODS, CLEAR_STORAGE and DESTRUCT_IMMEDIATE flags. */
+  if (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE)) {
     Pike_compiler->new_program->flags |=
-      (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE));
+      (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE));
   }
 
  /* parent offset was increased by 42 for above test.. */

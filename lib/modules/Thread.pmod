@@ -879,6 +879,9 @@ optional class Farm
 //!   @[ResourceCount], @[MutexKey]
 //!
 optional class ResourceCountKey {
+
+  private inherit __builtin.DestructImmediate;
+
   /*semi*/private ResourceCount parent;
 
   /*semi*/private void create(ResourceCount _parent) {
