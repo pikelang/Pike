@@ -10,7 +10,7 @@ void create(?string path)
   pgtk2_verify_setup();
   if (args) {
     char *s;
-    get_all_args("create",args,"%s",&s);
+    get_all_args(NULL,args,"%s",&s);
     if (s) {
       THIS->obj=(void *)gtk_tree_path_new_from_string(s);
       THIS->owned=1;
@@ -31,7 +31,7 @@ string _sprintf(int flag)
   INT_TYPE mode=0;
   pgtk2_verify_inited();
   if (args)
-    get_all_args("_sprintf",args,"%i",&mode);
+    get_all_args(NULL,args,"%i",&mode);
   pgtk2_pop_n_elems(args);
   if (mode!='O') {
     push_undefined();
@@ -72,7 +72,7 @@ void append_index(int index)
   pgtk2_verify_inited();
   {
     INT_TYPE index;
-    get_all_args("append_index",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     gtk_tree_path_append_index((GtkTreePath *)THIS->obj,index);
   }
   RETURN_THIS();
@@ -85,7 +85,7 @@ void prepend_index(int index)
   pgtk2_verify_inited();
   {
     INT_TYPE index;
-    get_all_args("prepend_index",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     gtk_tree_path_prepend_index((GtkTreePath *)THIS->obj,index);
   }
   RETURN_THIS();
@@ -146,7 +146,7 @@ int compare(GTK2.TreePath b)
     GtkTreePath *gp=NULL;
     struct object *o1;
     int res;
-    get_all_args("compare",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     if (o1)
       gp=(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program);
     res=gtk_tree_path_compare((GtkTreePath *)THIS->obj,gp);
@@ -196,7 +196,7 @@ int is_ancestor(GTK2.TreePath descendant)
     GtkTreePath *gp=NULL;
     struct object *o1;
     int res;
-    get_all_args("is_ancestor",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     if (o1)
       gp=(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program);
     res=gtk_tree_path_is_ancestor((GtkTreePath *)THIS->obj,gp);
@@ -213,7 +213,7 @@ int is_descendant(GTK2.TreePath ancestor)
     GtkTreePath *gp = NULL;
     struct object *o1;
     int res;
-    get_all_args("is_descendant",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     if (o1)
       gp=(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program);
     res=gtk_tree_path_is_descendant((GtkTreePath *)THIS->obj,gp);

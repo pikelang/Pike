@@ -47,7 +47,7 @@ void create(int|mapping(string:mixed) mode_or_props)
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
     INT_TYPE mode;
     GtkSizeGroup *gs;
-    get_all_args("create",args,"%i",&mode);
+    get_all_args(NULL,args,"%i",&mode);
     gs=gtk_size_group_new(mode);
     THIS->obj=G_OBJECT(gs);
   } else {

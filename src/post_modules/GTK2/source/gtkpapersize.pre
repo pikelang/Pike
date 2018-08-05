@@ -15,7 +15,7 @@ void create(string|void name, string|void ppd_display_name,
     GtkPaperSize *gps;
     gchar *name=NULL;
 
-    get_all_args("create",args,".%s",&name);
+    get_all_args(NULL,args,".%s",&name);
     gps=gtk_paper_size_new(name);
     THIS->obj=(void *)gps;
   } else if (args==4 || args==5) {
@@ -25,7 +25,7 @@ void create(string|void name, string|void ppd_display_name,
     float width,height;
     INT_TYPE unit=-1;
 
-    get_all_args("create",args,"%s%s%f%f.%i",&name,&ppd_display_name,&width,
+    get_all_args(NULL,args,"%s%s%f%f.%i",&name,&ppd_display_name,&width,
 		 &height,&unit);
     if (unit==-1)
       gps=gtk_paper_size_new_from_ppd(name,ppd_display_name,width,height);
@@ -68,7 +68,7 @@ int is_equal(GTK2.PaperSize size1)
     struct object *o1;
     int res;
 
-    get_all_args("is_equal",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_paper_size_is_equal((GtkPaperSize *)(THIS->obj),
 			(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));
     pgtk2_pop_n_elems(args);
@@ -125,7 +125,7 @@ float get_width(int unit)
   {
     INT_TYPE unit;
 
-    get_all_args("get_width",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_width((GtkPaperSize *)(THIS->obj),unit));
   }
@@ -138,7 +138,7 @@ float get_height(int unit)
   {
     INT_TYPE unit;
 
-    get_all_args("get_height",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_height((GtkPaperSize *)(THIS->obj),unit));
   }
@@ -160,7 +160,7 @@ void set_size(float width, float height, int unit)
     FLOAT_TYPE width,height;
     INT_TYPE unit;
 
-    get_all_args("set_size",args,"%f%f%i",&width,&height,&unit);
+    get_all_args(NULL,args,"%f%f%i",&width,&height,&unit);
     pgtk2_pop_n_elems(args);
     gtk_paper_size_set_size((GtkPaperSize *)(THIS->obj),width,height,unit);
   }
@@ -172,7 +172,7 @@ float get_default_top_margin(int unit)
   pgtk2_verify_inited();
   {
     INT_TYPE unit;
-    get_all_args("get_default_top_margin",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_default_top_margin((GtkPaperSize *)(THIS->obj),unit));
   }
@@ -184,7 +184,7 @@ float get_default_bottom_margin(int unit)
   pgtk2_verify_inited();
   {
     INT_TYPE unit;
-    get_all_args("get_default_bottom_margin",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_default_bottom_margin((GtkPaperSize *)(THIS->obj),unit));
   }
@@ -196,7 +196,7 @@ float get_default_left_margin(int unit)
   pgtk2_verify_inited();
   {
     INT_TYPE unit;
-    get_all_args("get_default_left_margin",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_default_left_margin((GtkPaperSize *)(THIS->obj),unit));
   }
@@ -208,7 +208,7 @@ float get_default_right_margin(int unit)
   pgtk2_verify_inited();
   {
     INT_TYPE unit;
-    get_all_args("get_default_right_margin",args,"%i",&unit);
+    get_all_args(NULL,args,"%i",&unit);
     pgtk2_pop_n_elems(args);
     push_float(gtk_paper_size_get_default_right_margin((GtkPaperSize *)(THIS->obj),unit));
   }

@@ -14,7 +14,7 @@ void create(Pango.Context context)
   pgtk2_verify_setup();
   {
     struct object *o1;
-    get_all_args("create",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     THIS->obj=(void *)pango_layout_new(PANGO_CONTEXT(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
   }
@@ -28,7 +28,7 @@ Pango.Layout copy(Pango.Layout src)
   {
     struct object *o1;
     PangoLayout *pl;
-    get_all_args("copy",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     pl=pango_layout_copy(PANGO_LAYOUT(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
     push_gobject(pl);
@@ -72,7 +72,7 @@ void set_markup(string markup, int length)
 {
   struct pike_string *text;
 
-  get_all_args("set_markup",args,"%t",&text);
+  get_all_args(NULL,args,"%t",&text);
   ref_push_string(text);
   f_string_to_utf8(1);
   pango_layout_set_markup(PANGO_LAYOUT(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
@@ -96,7 +96,7 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
     const char *markup;
     INT_TYPE len, accel_marker=0;
     gunichar accel_char;
-    get_all_args("set_markup_with_accel",args,"%s%i.%i",&markup,&len,
+    get_all_args(NULL,args,"%s%i.%i",&markup,&len,
 				&accel_marker);
     pango_layout_set_markup_with_accel(PANGO_LAYOUT(THIS->obj),
 		markup,len,accel_marker,&accel_char);
@@ -113,7 +113,7 @@ void set_font_description(Pango.FontDescription desc)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_font_description",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     pango_layout_set_font_description(PANGO_LAYOUT(THIS->obj),
 		(PangoFontDescription *)get_gobject(o1));
   }
@@ -215,7 +215,7 @@ void set_tabs(?Pango.TabArray tabs)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_tabs",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     pango_layout_set_tabs(PANGO_LAYOUT(THIS->obj),
 		(PangoTabArray *)get_gobject(o1));
   } else
@@ -260,7 +260,7 @@ mapping(string:int) xy_to_index(int x, int y)
   {
     INT_TYPE x,y;
     int index,trailing,res;
-    get_all_args("xy_to_index",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     pgtk2_pop_n_elems(args);
     res=pango_layout_xy_to_index(PANGO_LAYOUT(THIS->obj),x,y,&index,&trailing);
     if (res) {
@@ -288,7 +288,7 @@ mapping(string:int) index_to_pos(int index)
   {
     INT_TYPE index;
     PangoRectangle pos;
-    get_all_args("index_to_pos",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     pgtk2_pop_n_elems(args);
     pango_layout_index_to_pos(PANGO_LAYOUT(THIS->obj),index,&pos);
     ref_push_string(_STR("x")); push_int(pos.x);
@@ -314,7 +314,7 @@ array(mapping(string:int)) get_cursor_pos(int index)
   {
     INT_TYPE index;
     PangoRectangle pos1,pos2;
-    get_all_args("get_cursor_pos",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     pgtk2_pop_n_elems(args);
     pango_layout_get_cursor_pos(PANGO_LAYOUT(THIS->obj),index,&pos1,&pos2);
     ref_push_string(_STR("x")); push_int(pos1.x);
@@ -351,7 +351,7 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
   {
     INT_TYPE strong,old_index,old_trailing,dir;
     int new_index,new_trailing;
-    get_all_args("move_cursor_visually",args,"%i%i%i%i",&strong,&old_index,
+    get_all_args(NULL,args,"%i%i%i%i",&strong,&old_index,
 			&old_trailing,&dir);
     pgtk2_pop_n_elems(args);
     pango_layout_move_cursor_visually(PANGO_LAYOUT(THIS->obj),
@@ -386,7 +386,7 @@ Pango.LayoutLine get_line(int line)
   {
     INT_TYPE line;
     PangoLayoutLine *pll;
-    get_all_args("get_line",args,"%i",&line);
+    get_all_args(NULL,args,"%i",&line);
     pgtk2_pop_n_elems(args);
     pll=pango_layout_get_line(PANGO_LAYOUT(THIS->obj),line);
     push_gobjectclass(pll,ppango2_layout_line_program);

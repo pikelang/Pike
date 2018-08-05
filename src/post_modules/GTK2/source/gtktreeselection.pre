@@ -69,7 +69,7 @@ array get_selected_rows(GTK2.TreeModel model)
     struct object *o1;
     GtkTreeModel *model;
     int i=0;
-    get_all_args("get_selected_rows",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     model=(GtkTreeModel *)get_gobject(o1);
     gl=g2=gtk_tree_selection_get_selected_rows(GTK_TREE_SELECTION(THIS->obj),
 			&model);
@@ -97,7 +97,7 @@ void select_path(GTK2.TreePath path)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("select_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_selection_select_path(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
@@ -110,7 +110,7 @@ void unselect_path(GTK2.TreePath path)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("unselect_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_selection_unselect_path(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
@@ -125,7 +125,7 @@ int path_is_selected(GTK2.TreePath path)
   {
     struct object *o1;
     int res;
-    get_all_args("path_is_selected",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_selection_path_is_selected(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
@@ -139,7 +139,7 @@ void select_iter(GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("select_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_selection_select_iter(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
   }
@@ -152,7 +152,7 @@ void unselect_iter(GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("unselect_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_selection_unselect_iter(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
   }
@@ -166,7 +166,7 @@ int iter_is_selected(GTK2.TreeIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("iter_is_selected",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_selection_iter_is_selected(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
@@ -188,7 +188,7 @@ void select_range(GTK2.TreePath start, GTK2.TreePath end)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("select_range",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_selection_select_range(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
@@ -203,7 +203,7 @@ void unselect_range(GTK2.TreePath start, GTK2.TreePath end)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("unselect_range",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_selection_unselect_range(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));

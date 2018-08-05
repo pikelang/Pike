@@ -89,7 +89,7 @@ void create(string|mapping(string:mixed) name_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *name;
       GtkTextTag *gt;
-      get_all_args("create",args,"%s",&name);
+      get_all_args(NULL,args,"%s",&name);
       gt=gtk_text_tag_new(name);
       THIS->obj=G_OBJECT(gt);
     } else {
@@ -114,7 +114,7 @@ int event(G.Object event_object, GDK2.Event event, GTK2.TextIter iter)
   {
     struct object *o1,*o2,*o3;
     int res;
-    get_all_args("event",args,"%o%o%o",&o1,&o2,&o3);
+    get_all_args(NULL,args,"%o%o%o",&o1,&o2,&o3);
     res=gtk_text_tag_event(GTK_TEXT_TAG(THIS->obj),
 			G_OBJECT(get_gobject(o1)),
 			(GdkEvent *)get_gobject(o2),

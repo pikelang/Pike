@@ -38,12 +38,12 @@ void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
     GtkWidget *gcb;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *text;
-      get_all_args("create",args,"%s",&text);
+      get_all_args(NULL,args,"%s",&text);
       gcb=gtk_combo_box_new_text();
       THIS->obj=G_OBJECT(gcb);
     } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gcb=gtk_combo_box_new_with_model(GTK_TREE_MODEL(get_gobject(o1)));
       THIS->obj=G_OBJECT(gcb);
     } else {
@@ -126,7 +126,7 @@ void set_active_iter(GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_active_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
@@ -216,7 +216,7 @@ void set_row_separator_func(function(GTK2.TreeModel, GTK2.TreeIter, mixed : int)
     struct svalue *sv1,*sv2;
     struct signal_data *sd;
 
-    get_all_args("set_row_separator_func",args,"%*%*",&sv1,&sv2);
+    get_all_args(NULL,args,"%*%*",&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_row_separator_func",sizeof(struct signal_data)

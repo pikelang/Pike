@@ -21,7 +21,7 @@ void create(string|mapping(string:mixed) uri_or_props, ?string label)
       struct pike_string *t,*t1=NULL;
       GtkWidget *gl;
 
-      get_all_args("create",args,"%T.$T",&t,&t1);
+      get_all_args(NULL,args,"%T.$T",&t,&t1);
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);

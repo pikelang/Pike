@@ -18,13 +18,13 @@ void create(mapping(string:mixed)|int|GDK2.Screen|void props_or_def)
       struct object *o1;
 
       if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
-        get_all_args("create",args,"%i",&def);
+        get_all_args(NULL,args,"%i",&def);
 	if (def)
  	  grm=gtk_recent_manager_get_default();
 	else
 	  grm=gtk_recent_manager_new();
       } else {
-	get_all_args("create",args,"%o",&o1);
+	get_all_args(NULL,args,"%o",&o1);
 	grm=gtk_recent_manager_get_for_screen(GDK_SCREEN(get_gobject(o1)));
       }
       THIS->obj=G_OBJECT(grm);
@@ -56,7 +56,7 @@ int remove_item(string uri)
     GError *error=NULL;
     int res;
 
-    get_all_args("remove_item",args,"%T",&t);
+    get_all_args(NULL,args,"%T",&t);
     ref_push_string(t);
     f_string_to_utf8(1);
     res=gtk_recent_manager_remove_item(GTK_RECENT_MANAGER(THIS->obj),
@@ -78,7 +78,7 @@ mapping lookup_item(string uri)
     GError *error=NULL;
     GtkRecentInfo *gri;
 
-    get_all_args("lookup_item",args,"%T",&t);
+    get_all_args(NULL,args,"%T",&t);
     ref_push_string(t);
     f_string_to_utf8(1);
     gri=gtk_recent_manager_lookup_item(GTK_RECENT_MANAGER(THIS->obj),
@@ -102,7 +102,7 @@ int move_item(string uri, string new_uri)
     GError *error=NULL;
     int res;
 
-    get_all_args("move_item",args,"%T%T",&t,&t1);
+    get_all_args(NULL,args,"%T%T",&t,&t1);
     ref_push_string(t);
     f_string_to_utf8(1);
     ref_push_string(t1);

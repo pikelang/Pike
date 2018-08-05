@@ -63,7 +63,7 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
       struct object *o1;
       GtkTreeModel *gtm;
       GtkWidget *gt;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gtm=GTK_TREE_MODEL(get_gobject(o1));
       if (gtm) {
 	gt=gtk_tree_view_new_with_model(gtm);
@@ -104,7 +104,7 @@ endrequire;
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_model",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_view_set_model(GTK_TREE_VIEW(THIS->obj),
 		GTK_TREE_MODEL(get_gobject(o1)));
   } else {
@@ -243,7 +243,7 @@ void scroll_to_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn column,
   {
     struct object *o1,*o2=0;
     FLOAT_TYPE row_align=0,col_align=0;
-    get_all_args("scroll_to_cell",args,"%o.%O%f%f",&o1,&o2,
+    get_all_args(NULL,args,"%o.%O%f%f",&o1,&o2,
 			&row_align,&col_align);
     gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
@@ -269,7 +269,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
 
   pgtk2_verify_inited();
 
-  get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&ed);
+  get_all_args(NULL,args,"%o.%o%i",&o1,&o2,&ed);
   gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
                            (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
                            GTK_TREE_VIEW_COLUMN(get_gobject(o2)),ed);
@@ -294,7 +294,7 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
   {
     struct object *o1,*o2=NULL,*o3=NULL;
     INT_TYPE ed=0;
-    get_all_args("set_cursor_on_cell",args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
+    get_all_args(NULL,args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
     gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
@@ -329,7 +329,7 @@ void row_activated(GTK2.TreePath path, GTK2.TreeViewColumn column)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("row_activated",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_view_row_activated(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)));
@@ -351,7 +351,7 @@ void expand_to_path(GTK2.TreePath path)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("expand_to_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_view_expand_to_path(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
@@ -366,7 +366,7 @@ int expand_row(GTK2.TreePath path, int open_all)
   {
     struct object *o1;
     INT_TYPE op;
-    get_all_args("expand_row",args,"%o%i",&o1,&op);
+    get_all_args(NULL,args,"%o%i",&o1,&op);
     gtk_tree_view_expand_row(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),op);
   }
@@ -379,7 +379,7 @@ int collapse_row(GTK2.TreePath path)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("collapse_row",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_view_collapse_row(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
@@ -393,7 +393,7 @@ int row_expanded(GTK2.TreePath path)
   {
     struct object *o1;
     int res;
-    get_all_args("row_expanded",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_view_row_expanded(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
@@ -430,7 +430,7 @@ mapping get_path_at_pos(int x, int y)
     GtkTreeViewColumn *col;
     gint cell_x,cell_y;
     int res;
-    get_all_args("get_path_at_pos",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     pgtk2_pop_n_elems(args);
     res=gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(THIS->obj),
 			x,y,&path,&col,&cell_x,&cell_y);
@@ -467,7 +467,7 @@ mapping get_path_at_pos(int x, int y)
   {
     struct object *o1,*o2=NULL;
     GdkRectangle *rect;
-    get_all_args("get_cell_area",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_cell_area",sizeof(GdkRectangle));
@@ -492,7 +492,7 @@ mapping get_path_at_pos(int x, int y)
   {
     struct object *o1,*o2=NULL;
     GdkRectangle *rect;
-    get_all_args("get_background_area",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_background_area",sizeof(GdkRectangle));
@@ -559,7 +559,7 @@ mapping widget_to_tree_coords(int wx, int wy)
   {
     gint tx,ty;
     INT_TYPE wx,wy;
-    get_all_args("widget_to_tree_coords",args,"%i%i",&wx,&wy);
+    get_all_args(NULL,args,"%i%i",&wx,&wy);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),wx,wy,&tx,&ty);
     ref_push_string(_STR("x")); push_int(tx);
@@ -576,7 +576,7 @@ mapping tree_to_widget_coords(int tx, int ty)
   {
     gint wx,wy;
     INT_TYPE tx,ty;
-    get_all_args("tree_to_widget_coords",args,"%i%i",&tx,&ty);
+    get_all_args(NULL,args,"%i%i",&tx,&ty);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),tx,ty,&wx,&wy);
     ref_push_string(_STR("x")); push_int(wx);
@@ -594,7 +594,7 @@ mapping convert_bin_window_to_tree_coords(int bx, int by)
   {
     gint tx,ty;
     INT_TYPE bx,by;
-    get_all_args("convert_bin_window_to_tree_coords",args,"%i%i",&bx,&by);
+    get_all_args(NULL,args,"%i%i",&bx,&by);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_bin_window_to_tree_coords(GTK_TREE_VIEW(THIS->obj),
 			bx,by,&tx,&ty);
@@ -611,7 +611,7 @@ mapping convert_bin_window_to_widget_coords(int bx, int by)
   {
     gint wx,wy;
     INT_TYPE bx,by;
-    get_all_args("convert_bin_window_to_widget_coords",args,"%i%i",&bx,&by);
+    get_all_args(NULL,args,"%i%i",&bx,&by);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_bin_window_to_widget_coords(GTK_TREE_VIEW(THIS->obj),
 			bx,by,&wx,&wy);
@@ -629,7 +629,7 @@ mapping convert_tree_to_bin_window_coords(int tx, int ty)
   {
     gint bx,by;
     INT_TYPE tx,ty;
-    get_all_args("convert_tree_to_bin_window_coords",args,"%i%i",&tx,&ty);
+    get_all_args(NULL,args,"%i%i",&tx,&ty);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_tree_to_bin_window_coords(GTK_TREE_VIEW(THIS->obj),
 			tx,ty,&bx,&by);
@@ -646,7 +646,7 @@ mapping convert_tree_to_widget_coords(int tx, int ty)
   {
     gint wx,wy;
     INT_TYPE tx,ty;
-    get_all_args("convert_tree_to_widget_coords",args,"%i%i",&tx,&ty);
+    get_all_args(NULL,args,"%i%i",&tx,&ty);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),
 			tx,ty,&wx,&wy);
@@ -663,7 +663,7 @@ mapping convert_widget_to_bin_window_coords(int wx, int wy)
   {
     gint bx,by;
     INT_TYPE wx,wy;
-    get_all_args("convert_widget_to_bin_window_coords",args,"%i%i",&wx,&wy);
+    get_all_args(NULL,args,"%i%i",&wx,&wy);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_widget_to_bin_window_coords(GTK_TREE_VIEW(THIS->obj),
 			wx,wy,&bx,&by);
@@ -680,7 +680,7 @@ mapping convert_widget_to_tree_coords(int wx, int wy)
   {
     gint tx,ty;
     INT_TYPE wx,wy;
-    get_all_args("convert_widget_to_tree_coords",args,"%i%i",&wx,&wy);
+    get_all_args(NULL,args,"%i%i",&wx,&wy);
     pgtk2_pop_n_elems(args);
     gtk_tree_view_convert_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),
 			wx,wy,&tx,&ty);
@@ -711,7 +711,7 @@ void enable_model_drag_source(int start_button_mask,
     struct array *targ;
     GtkTargetEntry drag_targets[10];
 
-    get_all_args("enable_model_drag_source", args, "%d%a%d", &btn, &targ, &act);
+    get_all_args(NULL, args, "%d%a%d", &btn, &targ, &act);
     if (targ->size > 10 || _decode_targets(targ, drag_targets))
       SIMPLE_ARG_TYPE_ERROR("enable_model_drag_source", 2, "array(array(string|int))");
     gtk_tree_view_enable_model_drag_source(GTK_TREE_VIEW(THIS->obj), btn,
@@ -730,7 +730,7 @@ void enable_model_drag_dest(array(array) targets, int actions)
     struct array *targ;
     GtkTargetEntry drag_targets[10];
 
-    get_all_args("enable_model_drag_dest", args, "%a%d", &targ, &act);
+    get_all_args(NULL, args, "%a%d", &targ, &act);
     if (targ->size > 10 || _decode_targets(targ, drag_targets))
       SIMPLE_ARG_TYPE_ERROR("enable_model_drag_dest", 2, "array(array(string|int))");
     gtk_tree_view_enable_model_drag_dest(GTK_TREE_VIEW(THIS->obj),
@@ -777,7 +777,7 @@ mapping(string:mixed) get_dest_row_at_pos(int drag_x, int drag_y)
     GtkTreePath *path;
     INT_TYPE drag_x, drag_y;
     GtkTreeViewDropPosition pos;
-    get_all_args("get_dest_row_at_pos", args, "%d%d", &drag_x, &drag_y);
+    get_all_args(NULL, args, "%d%d", &drag_x, &drag_y);
     if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(THIS->obj),
         drag_x, drag_y, &path, &pos))
     {
@@ -864,7 +864,7 @@ void set_row_separator_func(function(GTK2.TreeModel, GTK2.TreeIter, mixed : int)
     struct svalue *sv1,*sv2;
     struct signal_data *sd;
 
-    get_all_args("set_row_separator_func",args,"%*%*",&sv1,&sv2);
+    get_all_args(NULL,args,"%*%*",&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_row_separator_func",sizeof(struct signal_data)

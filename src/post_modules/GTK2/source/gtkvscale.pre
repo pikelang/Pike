@@ -27,7 +27,7 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkWidget *gv;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gv=gtk_vscale_new(GTK_ADJUSTMENT(get_gobject(o1)));
       THIS->obj=G_OBJECT(gv);
     } else {
@@ -36,7 +36,7 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
   } else {
     FLOAT_TYPE min,max,step;
     GtkWidget *gv;
-    get_all_args("create",args,"%f%f%f",&min,&max,&step);
+    get_all_args(NULL,args,"%f%f%f",&min,&max,&step);
     gv=gtk_vscale_new_with_range(min,max,step);
     THIS->obj=G_OBJECT(gv);
   }

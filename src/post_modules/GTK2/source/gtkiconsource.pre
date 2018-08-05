@@ -137,7 +137,7 @@ void set_direction(int dir)
   pgtk2_verify_inited();
   {
     INT_TYPE dir;
-    get_all_args("set_direction",args,"%i",&dir);
+    get_all_args(NULL,args,"%i",&dir);
     gtk_icon_source_set_direction((GtkIconSource *)THIS->obj,dir);
   }
   RETURN_THIS();
@@ -156,7 +156,7 @@ void set_direction_wildcarded(int setting)
   pgtk2_verify_inited();
   {
     INT_TYPE set;
-    get_all_args("set_direction_wildcarded",args,"%i",&set);
+    get_all_args(NULL,args,"%i",&set);
     gtk_icon_source_set_direction_wildcarded((GtkIconSource *)THIS->obj,set);
   }
   RETURN_THIS();
@@ -169,7 +169,7 @@ void set_filename(string filename)
   pgtk2_verify_inited();
   {
     char *file;
-    get_all_args("set_filename",args,"%s",&file);
+    get_all_args(NULL,args,"%s",&file);
     gtk_icon_source_set_filename((GtkIconSource *)THIS->obj,file);
   }
   RETURN_THIS();
@@ -181,7 +181,7 @@ void set_pixbuf(GDK2.Pixbuf pixbuf)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_pixbuf",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_icon_source_set_pixbuf((GtkIconSource *)THIS->obj,
 			GDK_PIXBUF(get_gobject(o1)));
   }
@@ -196,7 +196,7 @@ void set_icon_name(string name)
   pgtk2_verify_inited();
   {
     char *name;
-    get_all_args("set_icon_name",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     gtk_icon_source_set_icon_name((GtkIconSource *)THIS->obj,name);
   }
   RETURN_THIS();
@@ -209,7 +209,7 @@ void set_size(int size)
   pgtk2_verify_inited();
   {
     INT_TYPE size;
-    get_all_args("set_size",args,"%i",&size);
+    get_all_args(NULL,args,"%i",&size);
     gtk_icon_source_set_size((GtkIconSource *)THIS->obj,size);
   }
   RETURN_THIS();
@@ -224,7 +224,7 @@ void set_size_wildcarded(int setting)
   pgtk2_verify_inited();
   {
     INT_TYPE set;
-    get_all_args("set_size_wildcarded",args,"%i",&set);
+    get_all_args(NULL,args,"%i",&set);
     gtk_icon_source_set_size_wildcarded((GtkIconSource *)THIS->obj,set);
   }
   RETURN_THIS();
@@ -236,7 +236,7 @@ void set_state(int state)
   pgtk2_verify_inited();
   {
     INT_TYPE state;
-    get_all_args("set_state",args,"%i",&state);
+    get_all_args(NULL,args,"%i",&state);
     gtk_icon_source_set_state((GtkIconSource *)THIS->obj,state);
   }
   RETURN_THIS();
@@ -251,7 +251,7 @@ void set_state_wildcarded(int setting)
   pgtk2_verify_inited();
   {
     INT_TYPE set;
-    get_all_args("set_state_wildcarded",args,"%i",&set);
+    get_all_args(NULL,args,"%i",&set);
     gtk_icon_source_set_state_wildcarded((GtkIconSource *)THIS->obj,set);
   }
   RETURN_THIS();

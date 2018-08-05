@@ -30,7 +30,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
     GtkWidget *gm;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *label;
-      get_all_args("create",args,"%t",&label);
+      get_all_args(NULL,args,"%t",&label);
       ref_push_string(label);
       f_string_to_utf8(1);
       gm=gtk_menu_item_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));
@@ -55,7 +55,7 @@ void set_submenu(?GTK2.Widget menu)
   {
     struct object *o;
 
-    get_all_args("set_submenu",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     if (o==NULL)
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(THIS->obj),NULL);
     else 
@@ -92,7 +92,7 @@ int toggle_size_request(int requisition)
   {
     INT_TYPE req;
     gint req2;
-    get_all_args("toggle_size_request",args,"%i",&req);
+    get_all_args(NULL,args,"%i",&req);
     pgtk2_pop_n_elems(args);
     req2 = req;
     gtk_menu_item_toggle_size_request(GTK_MENU_ITEM(THIS->obj),&req2);

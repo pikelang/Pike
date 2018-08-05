@@ -40,7 +40,7 @@ int equal(GDK2.Region victim)
 {
   struct object *o;
   GdkRegion *r;
-  get_all_args("equal",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   r=get_gdkobject(o,region);
   if (!r) {
     pgtk2_pop_n_elems(args);
@@ -67,7 +67,7 @@ int rect_in(GDK2.Rectangle r)
 {
   struct object *o;
   GdkRectangle *r;
-  get_all_args("rect_in",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   if (!(r=get_gdkobject(o,rectangle))) {
     Pike_error("Bad argument 1 to GDK2.rect_in( GDK2.Rectangle r )\n");
   } else {

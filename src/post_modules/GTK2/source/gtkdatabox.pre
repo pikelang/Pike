@@ -61,7 +61,7 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
     struct data_wrapper *dw;
     int i,len;
     int ind;
-    get_all_args("data_add",args,"%A%A%o%i%i",&a1,&a2,&o1,&type,&dot_size);
+    get_all_args(NULL,args,"%A%A%o%i%i",&a1,&a2,&o1,&type,&dot_size);
     if (a1==NULL || a2==NULL || a1->size<1 || a2->size<1)
       Pike_error("Not arrays!\n");
     color=(GdkColor *)get_gdkobject(o1,color);
@@ -229,7 +229,7 @@ GDK2.Color data_get_color(int index)
   {
     INT_TYPE index;
     GdkColor *col;
-    get_all_args("get_color",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     col=(GdkColor *)g_malloc(sizeof(GdkColor));
     if (col==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
@@ -250,7 +250,7 @@ array(int) data_get_type(int index)
     INT_TYPE index;
     guint dot_size;
     GtkDataboxDataType type;
-    get_all_args("data_get_type",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     pgtk2_pop_n_elems(args);
     gtk_databox_data_get_type(GTK_DATABOX(THIS->obj),index,&type,&dot_size);
     push_int(type);
@@ -295,7 +295,7 @@ int data_get_grid_config(int index)
   {
     INT_TYPE index;
     unsigned int hlines,vlines;
-    get_all_args("data_get_grid_config",args,"%i",&index);
+    get_all_args(NULL,args,"%i",&index);
     pgtk2_pop_n_elems(args);
     gtk_databox_data_get_grid_config(GTK_DATABOX(THIS->obj),index,
 			&hlines,&vlines);

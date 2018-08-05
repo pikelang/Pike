@@ -25,7 +25,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
     gchar *label2=NULL, *tooltip2=NULL;
     INT_TYPE val;
     GtkRadioAction *gr;
-    get_all_args("create",args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
+    get_all_args(NULL,args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
     if(label) {
       ref_push_string(label);
       f_string_to_utf8(1);
@@ -73,7 +73,7 @@ void set_group(GTK2.RadioAction member)
   {
     GSList *gl;
     struct object *o1;
-    get_all_args("set_group",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gl=gtk_radio_action_get_group(GTK_RADIO_ACTION(get_gobject(o1)));
     gtk_radio_action_set_group(GTK_RADIO_ACTION(THIS->obj),gl);
   }

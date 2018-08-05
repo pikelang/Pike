@@ -136,7 +136,7 @@ void set_paper_size(GTK2.PaperSize paper_size)
   {
     struct object *o1;
 
-    get_all_args("set_paper_size",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_print_settings_set_paper_size((GtkPaperSize *)(get_pg2object(o1,pgtk2_paper_size_program)));
   }
   RETURN_THIS();
@@ -245,7 +245,7 @@ void set_page_ranges(array(array) page_ranges)
     int num_ranges,i;
     GtkPageRange *gpr;
 
-    get_all_args("set_page_ranges",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
 

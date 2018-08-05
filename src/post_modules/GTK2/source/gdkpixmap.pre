@@ -44,7 +44,7 @@ void create(int|object image)
   pgtk2_verify_not_inited();
 
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
-    get_all_args("create",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     i=pgtk2_pixmap_setup(o,&f);
 
     gp=gdk_pixmap_new(0,i->width,i->height,i->depth);
@@ -77,7 +77,7 @@ void set(GDK2.Image|Image.Image image)
   struct object *o;
   int f=0;
   GdkImage *i;
-  get_all_args("set", args, "%o", &o );
+  get_all_args(NULL, args, "%o", &o );
   pgtk2__pixmap_draw(i=pgtk2_pixmap_setup(o,&f));
   if (f)
     g_object_unref(i);

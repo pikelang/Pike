@@ -24,20 +24,20 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   pgtk2_verify_setup();
   pgtk2_verify_not_inited();
   if (args==3) {
-    get_all_args("create",args,"%i%i%n",&x,&y,&d);
+    get_all_args(NULL,args,"%i%i%n",&x,&y,&d);
     if(d->len*8 < x*y)
       Pike_error("Bitmap string is too short\n");
   } else if (args==1) {
     struct object *o;
     struct image *img;
-    get_all_args("create",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     img=get_storage(o, image_program);
     x = img->xsize;
     y = img->ysize;
 
     /* Now we have the image size.. Lets create the bitmap... */
     apply(o,"tobitmap",0);
-    get_all_args("internal",1,"%n",&d);
+    get_all_args(NULL,1,"%n",&d);
     args=2; /* evil me.. */
   } else {
     Pike_error("Wrong number of arguments to GDK2.Bitmap()\n");

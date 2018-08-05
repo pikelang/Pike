@@ -21,7 +21,7 @@ void create(?string desc)
   pgtk2_verify_setup();
   if (args) {
     char *str;
-    get_all_args("create",args,"%s",&str);
+    get_all_args(NULL,args,"%s",&str);
     if (str)
       THIS->obj=(void *)pango_font_description_from_string(str);
     else
@@ -55,7 +55,7 @@ int equal(Pango.FontDescription desc)
     struct object *o1;
     int res;
 
-    get_all_args("equal",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=pango_font_description_equal((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o1));
     pgtk2_pop_n_elems(args);
@@ -79,7 +79,7 @@ void set_family(string family)
   pgtk2_verify_inited();
   {
     char *str;
-    get_all_args("set_family",args,"%s",&str);
+    get_all_args(NULL,args,"%s",&str);
     pango_font_description_set_family((PangoFontDescription *)THIS->obj,
 		str);
   }
@@ -105,7 +105,7 @@ void set_style(int style)
   pgtk2_verify_inited();
   {
     INT_TYPE style;
-    get_all_args("set_style",args,"%i",&style);
+    get_all_args(NULL,args,"%i",&style);
     pango_font_description_set_style((PangoFontDescription *)THIS->obj,style);
   }
   RETURN_THIS();
@@ -125,7 +125,7 @@ void set_variant(int variant)
   pgtk2_verify_inited();
   {
     INT_TYPE var;
-    get_all_args("set_variant",args,"%i",&var);
+    get_all_args(NULL,args,"%i",&var);
     pango_font_description_set_variant((PangoFontDescription *)THIS->obj,var);
   }
   RETURN_THIS();
@@ -148,7 +148,7 @@ void set_weight(int weight)
   pgtk2_verify_inited();
   {
     INT_TYPE we;
-    get_all_args("set_weight",args,"%i",&we);
+    get_all_args(NULL,args,"%i",&we);
     pango_font_description_set_weight((PangoFontDescription *)THIS->obj,we);
   }
   RETURN_THIS();
@@ -170,7 +170,7 @@ void set_stretch(int stretch)
   pgtk2_verify_inited();
   {
     INT_TYPE st;
-    get_all_args("set_stretch",args,"%i",&st);
+    get_all_args(NULL,args,"%i",&st);
     pango_font_description_set_stretch((PangoFontDescription *)THIS->obj,st);
   }
   RETURN_THIS();
@@ -197,7 +197,7 @@ void set_size(int size)
   pgtk2_verify_inited();
   {
     INT_TYPE size;
-    get_all_args("set_size",args,"%i",&size);
+    get_all_args(NULL,args,"%i",&size);
     pango_font_description_set_size((PangoFontDescription *)THIS->obj,size);
   }
   RETURN_THIS();
@@ -221,7 +221,7 @@ void set_absolute_size(float size)
   pgtk2_verify_inited();
   {
     FLOAT_TYPE size;
-    get_all_args("set_absolute_size",args,"%f",&size);
+    get_all_args(NULL,args,"%f",&size);
     pango_font_description_set_absolute_size((PangoFontDescription *)THIS->obj,
 		size);
   }
@@ -248,7 +248,7 @@ void merge(Pango.FontDescription desc, int replace)
   {
     INT_TYPE rep;
     struct object *o1;
-    get_all_args("merge",args,"%o%i",&o1,&rep);
+    get_all_args(NULL,args,"%o%i",&o1,&rep);
     pango_font_description_merge((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o1),rep);
   }
@@ -264,7 +264,7 @@ int better_match(Pango.FontDescription new, ?Pango.FontDescription old)
   {
     struct object *o1,*o2=NULL;
     int res;
-    get_all_args("better_match",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     res=pango_font_description_better_match((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o2),
 		(PangoFontDescription *)get_gobject(o1));

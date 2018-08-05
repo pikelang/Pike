@@ -126,7 +126,7 @@ void set_source_color(object o, GDK2.Color color)
   {
     struct object *o1,*o2;
 
-    get_all_args("set_source_color",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gdk_cairo_set_source_color(((struct cairo_mod_context *)o1->storage)->ctx,
 			(GdkColor *)get_gdkobject(o2,color));
   }
@@ -141,7 +141,7 @@ void set_source_pixbuf(object o, GDK2.Pixbuf pixbuf, float x, float y)
     struct object *o1,*o2;
     FLOAT_TYPE x,y;
 
-    get_all_args("set_source_pixbuf",args,"%o%o%f%f",&o1,&o2,&x,&y);
+    get_all_args(NULL,args,"%o%o%f%f",&o1,&o2,&x,&y);
     gdk_cairo_set_source_pixbuf(((struct cairo_mod_context *)o1->storage)->ctx,
 			GDK_PIXBUF(get_gobject(o2)),x,y);
   }
@@ -157,7 +157,7 @@ void set_source_pixmap(object o, GDK2.Pixmap, float x, float y)
     struct object *o1,*o2;
     FLOAT_TYPE x,y;
 
-    get_all_args("set_source_pixmap",args,"%o%o%f%f",&o1,&o2,&x,&y);
+    get_all_args(NULL,args,"%o%o%f%f",&o1,&o2,&x,&y);
     gdk_cairo_set_source_pixmap(((struct cairo_mod_context *)o1->storage)->ctx,
                         GDK_PIXMAP(get_gobject(o2)),x,y);
   }
@@ -172,7 +172,7 @@ void rectangle(object o, GDK2.Rectangle rect)
   {
     struct object *o1,*o2;
 
-    get_all_args("rectangle",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gdk_cairo_rectangle(((struct cairo_mod_context *)o1->storage)->ctx,
 			(GdkRectangle *)get_gdkobject(o2,rectangle));
   }
@@ -186,7 +186,7 @@ void region(object o, GDK2.Region region)
   {
     struct object *o1,*o2;
 
-    get_all_args("region",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gdk_cairo_region(((struct cairo_mod_context *)o1->storage)->ctx,
 			(GdkRegion *)get_gdkobject(o2,region));
   }

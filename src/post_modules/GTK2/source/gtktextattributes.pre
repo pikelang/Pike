@@ -35,7 +35,7 @@ GTK2.TextAttributes copy_values(GTK2.TextAttributes dest)
   pgtk2_verify_inited();
   {
     struct object *a1;
-    get_all_args("copy_values",args,"%o",&a1);
+    get_all_args(NULL,args,"%o",&a1);
     gtk_text_attributes_copy_values((GtkTextAttributes *)(THIS->obj),
 		(GtkTextAttributes *)get_gobject(a1));
     pgtk2_return_this(args);

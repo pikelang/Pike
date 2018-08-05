@@ -55,7 +55,7 @@ void create(mapping(string:mixed)|GDK2.Pixbuf|string arg)
 	int t=0;
 	GtkStockItem item;
 
-	get_all_args("create",args,"%t",&s1);
+	get_all_args(NULL,args,"%t",&s1);
 	if (s1->size_shift==0) {
 	  t=gtk_stock_lookup(CGSTR0(s1),&item);
 	  if (t)
@@ -71,7 +71,7 @@ void create(mapping(string:mixed)|GDK2.Pixbuf|string arg)
 	struct object *o1;
 	GObject *go;
 
-	get_all_args("create",args,"%o",&o1);
+	get_all_args(NULL,args,"%o",&o1);
 	go=get_gobject(o1);
 	if (GDK_TYPE_PIXBUF==G_TYPE_FROM_INSTANCE(go))
 	  gi=gtk_status_icon_new_from_pixbuf(GDK_PIXBUF(go));

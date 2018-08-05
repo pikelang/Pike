@@ -43,7 +43,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
       GtkTreeViewColumn *gt;
       GtkCellRenderer *rend;
       int i;
-      get_all_args("create",args,"%s%o%s%i",&title,&o1,&prop,&col);
+      get_all_args(NULL,args,"%s%o%s%i",&title,&o1,&prop,&col);
       rend = GTK_CELL_RENDERER(get_gobject(o1));
       gt=gtk_tree_view_column_new_with_attributes(
 			title,
@@ -53,7 +53,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
       /* CJA note to self: Is there a better way to do variadic GTK functions? */
       for (i = 4; i < args; i += 2) {
         /* Note that errors from get_all_args here will look a little odd */
-        get_all_args("create", args-i, "%s%i", &prop, &col);
+        get_all_args(NULL, args-i, "%s%i", &prop, &col);
         gtk_tree_view_column_add_attribute(gt, rend, prop, col);
       }
       THIS->obj=G_OBJECT(gt);
@@ -264,7 +264,7 @@ void cell_set_cell_data(GTK2.TreeModel model, GTK2.TreeIter iter,
   {
     struct object *o1,*o2;
     INT_TYPE expander,expanded;
-    get_all_args("cell_set_cell_data",args,"%o%o%i%i",&o1,&o2,&expander,
+    get_all_args(NULL,args,"%o%o%i%i",&o1,&o2,&expander,
 			&expanded);
     gtk_tree_view_column_cell_set_cell_data(GTK_TREE_VIEW_COLUMN(THIS->obj),
 			GTK_TREE_MODEL(get_gobject(o1)),
@@ -280,7 +280,7 @@ mapping(string:int) cell_get_size(GDK2.Rectangle cell_area)
   {
     struct object *o1;
     gint x_offset,y_offset,width,height;
-    get_all_args("cell_get_size",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_view_column_cell_get_size(GTK_TREE_VIEW_COLUMN(THIS->obj),
 			(GdkRectangle *)get_gdkobject(o1,rectangle),
 			&x_offset,&y_offset,&width,&height);
@@ -303,7 +303,7 @@ mapping cell_get_position(GTK2.CellRenderer cell_renderer)
     gint start_pos,width;
     struct object *o1;
     int res;
-    get_all_args("cell_get_position",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_view_column_cell_get_position(GTK_TREE_VIEW_COLUMN(THIS->obj),
 		GTK_CELL_RENDERER(get_gobject(o1)),&start_pos,&width);
     pgtk2_pop_n_elems(args);

@@ -23,13 +23,13 @@ void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
     GtkToolItem *gm;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *icon;
-      get_all_args("create",args,"%s",&icon);
+      get_all_args(NULL,args,"%s",&icon);
       gm=gtk_menu_tool_button_new_from_stock(icon);
       THIS->obj=G_OBJECT(gm);
     } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct pike_string *t;
       struct object *o1;
-      get_all_args("create",args,"%o%T",&o1,&t);
+      get_all_args(NULL,args,"%o%T",&o1,&t);
       if (t && o1) {
 	ref_push_string(t);
 	f_string_to_utf8(1);
@@ -60,7 +60,7 @@ void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_priva
   {
     struct object *o1;
     char *t1,*t2;
-    get_all_args("set_arrow_tooltip",args,"%o%s%s",&o1,&t1,&t2);
+    get_all_args(NULL,args,"%o%s%s",&o1,&t1,&t2);
     gtk_menu_tool_button_set_arrow_tooltip(GTK_MENU_TOOL_BUTTON(THIS->obj),
 		GTK_TOOLTIPS(get_gobject(o1)),t1,t2);
   }

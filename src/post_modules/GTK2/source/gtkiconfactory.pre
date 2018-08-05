@@ -32,7 +32,7 @@ void add(string stock_id, GTK2.IconSet icon_set)
   {
     char *stock_id;
     struct object *o1;
-    get_all_args("add",args,"%s%o",&stock_id,&o1);
+    get_all_args(NULL,args,"%s%o",&stock_id,&o1);
     gtk_icon_factory_add(GTK_ICON_FACTORY(THIS->obj),stock_id,
 			(GtkIconSet *)get_pg2object(o1,pgtk2_icon_set_program));
   }
@@ -57,7 +57,7 @@ GTK2.IconSet lookup(string stock_id)
   {
     char *stock_id;
     GtkIconSet *gis;
-    get_all_args("lookup",args,"%s",&stock_id);
+    get_all_args(NULL,args,"%s",&stock_id);
     gis=gtk_icon_factory_lookup(GTK_ICON_FACTORY(THIS->obj),stock_id);
     pgtk2_pop_n_elems(args);
     push_gobjectclass(gis,pgtk2_icon_set_program);
@@ -74,7 +74,7 @@ GTK2.IconSet lookup_default(string stock_id)
   {
     char *stock_id;
     GtkIconSet *gis;
-    get_all_args("lookup_default",args,"%s",&stock_id);
+    get_all_args(NULL,args,"%s",&stock_id);
     gis=gtk_icon_factory_lookup_default(stock_id);
     pgtk2_pop_n_elems(args);
     push_gobjectclass(gis,pgtk2_icon_set_program);

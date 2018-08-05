@@ -76,7 +76,7 @@ void create(string|mapping options)
   if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
     char *file;
     
-    get_all_args("create",args,"%s",&file);
+    get_all_args(NULL,args,"%s",&file);
     gp=gdk_pixbuf_new_from_file(file,&error);
     if (gp==NULL)
       Pike_error("Unable to load file %s: %s\n",file,error->message);
@@ -85,7 +85,7 @@ void create(string|mapping options)
     struct svalue *sv;
     int bits = 8, width = -2, height = -2, alpha = 0;
     
-    get_all_args("create",args,"%m",&m);
+    get_all_args(NULL,args,"%m",&m);
     sv=low_mapping_string_lookup(m,_STR("file"));
     if (sv && TYPEOF(*sv) == PIKE_T_STRING) {
       const char *file;
@@ -222,7 +222,7 @@ int set_option(string key, string value)
   {
     const gchar *key,*value;
     int val;
-    get_all_args("set_option",args,"%s%s",&key,&value);
+    get_all_args(NULL,args,"%s%s",&key,&value);
     val=gdk_pixbuf_set_option(GDK_PIXBUF(THIS->obj),key,value);
     pgtk2_pop_n_elems(args);
     push_int(val);
@@ -256,7 +256,7 @@ endrequire;
   pgtk2_verify_inited();
   {
     INT_TYPE src_x,src_y,width,height;
-    get_all_args("new_subpixbuf",args,"%i%i%i%i",&src_x,&src_y,
+    get_all_args(NULL,args,"%i%i%i%i",&src_x,&src_y,
                         &width,&height);
     pgtk2_pop_n_elems(args);
     push_gobject(gdk_pixbuf_new_subpixbuf(GDK_PIXBUF(THIS->obj),
@@ -278,7 +278,7 @@ endrequire;
     int res;
     GError *error=NULL;
     
-    get_all_args("save",args,"%s%n.%m",&filename,&type,&m);
+    get_all_args(NULL,args,"%s%n.%m",&filename,&type,&m);
     if (is_same_string(type,_STR("jpeg"))) {
       const char *quality;
       
@@ -413,7 +413,7 @@ int put_pixel(int x, int y, int r, int g, int b)
     INT_TYPE x,y,r,g,b;
     int nchan,rowstride,w,h;
     guchar *p,*p1;
-    get_all_args("put_pixel",args,"%i%i%i%i%i",&x,&y,&r,&g,&b);
+    get_all_args(NULL,args,"%i%i%i%i%i",&x,&y,&r,&g,&b);
     nchan=gdk_pixbuf_get_n_channels(GDK_PIXBUF(THIS->obj));
     if (nchan < 3)
       Pike_error("Not in RGB.\n");
@@ -446,7 +446,7 @@ int set_alpha(int x, int y, int setting)
     INT_TYPE x,y,a;
     int nchan,rowstride,w,h;
     guchar *p,*p1;
-    get_all_args("set_alpha",args,"%i%i%i",&x,&y,&a);
+    get_all_args(NULL,args,"%i%i%i",&x,&y,&a);
     nchan=gdk_pixbuf_get_n_channels(GDK_PIXBUF(THIS->obj));
     if (nchan < 4)
       Pike_error("No alpha channel present.\n");
@@ -499,7 +499,7 @@ string get_option(string key)
   {
     char *s;
     const gchar *t;
-    get_all_args("get_option",args,"%s",&s);
+    get_all_args(NULL,args,"%s",&s);
     t=gdk_pixbuf_get_option(GDK_PIXBUF(THIS->obj),s);
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_GCHAR(t);
@@ -519,7 +519,7 @@ string get_option(string key)
   {
     GdkPixbuf *gp1;
     INT_TYPE width,height,type=GDK_INTERP_BILINEAR;
-    get_all_args("scale_simple",args,"%i%i.%i",&width,&height,&type);
+    get_all_args(NULL,args,"%i%i.%i",&width,&height,&type);
     pgtk2_pop_n_elems(args);
     gp1=gdk_pixbuf_scale_simple(GDK_PIXBUF(THIS->obj),width,height,type);
     push_gobject(gp1);
@@ -545,7 +545,7 @@ string get_option(string key)
     INT_TYPE dest_x,dest_y,dest_width,dest_height;
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
     INT_TYPE type;
-    get_all_args("scale",args,"%o%i%i%i%i%f%f%f%f%i",&o1,&dest_x,&dest_y,
+    get_all_args(NULL,args,"%o%i%i%i%i%f%f%f%f%i",&o1,&dest_x,&dest_y,
                 &dest_width,&dest_height,&offset_x,&offset_y,
                 &scale_x,&scale_y,&type);
     dest=GDK_PIXBUF(get_gobject(o1));
@@ -581,7 +581,7 @@ string get_option(string key)
     INT_TYPE dest_x,dest_y,dest_width,dest_height;
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
     INT_TYPE type,overall_alpha;
-    get_all_args("composite",args,"%o%i%i%i%i%f%f%f%f%i%i",&o1,&dest_x,
+    get_all_args(NULL,args,"%o%i%i%i%i%f%f%f%f%i%i",&o1,&dest_x,
                 &dest_y,&dest_width,&dest_height,&offset_x,&offset_y,
                 &scale_x,&scale_y,&type,&overall_alpha);
     dest=GDK_PIXBUF(get_gobject(o1));
@@ -614,7 +614,7 @@ string get_option(string key)
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
     INT_TYPE type,overall_alpha,check_x,check_y,check_size;
     INT_TYPE color1,color2;
-    get_all_args("composite_color",args,"%o%i%i%i%i%f%f%f%f%i%i%i%i%i%i%",
+    get_all_args(NULL,args,"%o%i%i%i%i%f%f%f%f%i%i%i%i%i%i%",
 		 &o1,&dest_x,&dest_y,&dest_width,&dest_height,&offset_x,
 		 &offset_y,&scale_x,&scale_y,&type,&overall_alpha,&check_x,
 		 &check_y,&check_size,&color1,&color2);
@@ -658,7 +658,7 @@ endrequire;
     GdkPixbuf *dest;
     struct object *o1;
     INT_TYPE src_x,src_y,width,height,dest_x,dest_y;
-    get_all_args("copy_area",args,"%o%i%i%i%i%i%i",&o1,&src_x,&src_y,
+    get_all_args(NULL,args,"%o%i%i%i%i%i%i",&o1,&src_x,&src_y,
 		&width,&height,&dest_x,&dest_y);
     dest=GDK_PIXBUF(get_gobject(o1));
     gdk_pixbuf_copy_area(GDK_PIXBUF(THIS->obj),src_x,src_y,width,height,
@@ -691,7 +691,7 @@ void saturate_and_pixelate(GDK2.Pixbuf dest, float saturation,
     INT_TYPE x,y,dx,dy,w,h,a;
     GdkBitmap *b;
 
-    get_all_args("render_threshold_alpha",args,"%i%i%i%i%i%i%i",&x,&y,&dx,&dy,
+    get_all_args(NULL,args,"%i%i%i%i%i%i%i",&x,&y,&dx,&dy,
 		 &w,&h,&a);
     b = gdk_pixmap_new( NULL, w, h, 1 );
     if (!b)

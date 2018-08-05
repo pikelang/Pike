@@ -24,7 +24,7 @@ void create(string|mapping(string:mixed)|void font_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       const gchar *font;
       GtkWidget *gf;
-      get_all_args("create",args,"%s",&font);
+      get_all_args(NULL,args,"%s",&font);
       gf=gtk_font_button_new_with_font(font);
       THIS->obj=G_OBJECT(gf);
     } else {

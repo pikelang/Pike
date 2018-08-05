@@ -38,7 +38,7 @@ GTK2.Clipboard get(GDK2.Atom selection)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("get",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     THIS->obj=G_OBJECT(gtk_clipboard_get(get_gdkatom(o1)));
   }
   RETURN_THIS();
@@ -51,7 +51,7 @@ GTK2.Clipboard get_for_display(GDK2.Display display, GDK2.Atom selection)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("get_for_display",args,"%o",&o1,&o2);
+    get_all_args(NULL,args,"%o",&o1,&o2);
     THIS->obj=G_OBJECT(gtk_clipboard_get_for_display(
 		(GdkDisplay *)get_gdkobject(o1,display),get_gdkatom(o2)));
   }
@@ -114,7 +114,7 @@ string wait_for_rich_text(GTK2.TextBuffer buffer)
     gsize len;
     guint8 *res;
 
-    get_all_args("wait_for_rich_text",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_clipboard_wait_for_rich_text(GTK_CLIPBOARD(THIS->obj),
 			GTK_TEXT_BUFFER(get_gobject(o1)),&a,&len);
     pgtk2_pop_n_elems(args);

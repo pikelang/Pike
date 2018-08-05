@@ -15,7 +15,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
   {
     GdkWindow *w;
     INT_TYPE id;
-    get_all_args("create",args,"%i",&id);
+    get_all_args(NULL,args,"%i",&id);
     w=gdk_window_foreign_new(id);
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
@@ -27,7 +27,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     GdkWindow *w;
     long mask=0;
     memset(&attrs,0,sizeof(attrs));
-    get_all_args("create",args,"%o%m",&parent,&m);
+    get_all_args(NULL,args,"%o%m",&parent,&m);
 
 #define GET_ARG(x,y,z) pgtk2_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
 
@@ -146,7 +146,7 @@ void set_cursor(int new_cursor)
   static GdkCursor *font_cursors[256];
   INT_TYPE i;
 
-  get_all_args("set_cursor",args,"%i",&i);
+  get_all_args(NULL,args,"%i",&i);
 
   if (i>255)
     Pike_error("No such cursor\n");
@@ -168,7 +168,7 @@ void set_bitmap_cursor(GDK2.Bitmap image, GDK2.Bitmap mask,
 {
   struct object *s,*m,*fg,*bg;
   INT_TYPE xh,yh;
-  get_all_args("set_bitmap_cursor",args,"%o%o%o%o%i%i",
+  get_all_args(NULL,args,"%o%o%o%o%i%i",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor(GDK_WINDOW(THIS->obj),
                           gdk_cursor_new_from_pixmap(GDK_PIXMAP(get_gobject(s)),
@@ -185,7 +185,7 @@ void shape_combine_mask(GDK2.Bitmap mask, int xoffset, int yoffset)
 {
   struct object *m;
   INT_TYPE x,y;
-  get_all_args("shape_combine",args,"%o%i%i",&m,&x,&y);
+  get_all_args(NULL,args,"%o%i%i",&m,&x,&y);
   gdk_window_shape_combine_mask(GDK_WINDOW(THIS->obj),
                                  get_gdkobject(m,bitmap),x,y);
   RETURN_THIS();
@@ -245,7 +245,7 @@ void set_events(int events)
 //! GDK2.AllEventsMask
 {
   INT_TYPE a;
-  get_all_args("set_events",args,"%i",&a);
+  get_all_args(NULL,args,"%i",&a);
   gdk_window_set_events(GDK_WINDOW(THIS->obj),a);
   RETURN_THIS();
 }
@@ -285,7 +285,7 @@ void set_icon_name(string name)
 //! Set the icon name to the specified string.
 {
   gchar *t;
-  get_all_args("set_icon_name",args,"%s",&t);
+  get_all_args(NULL,args,"%s",&t);
   gdk_window_set_icon_name(GDK_WINDOW(THIS->obj),t);
   RETURN_THIS();
 }
@@ -301,7 +301,7 @@ void move_resize(int x, int y, int w, int h)
 //! Move and resize the window in one call.
 {
   INT_TYPE x,y,w,h;
-  get_all_args("move_resize",args,"%i%i%i%i",&x,&y,&w,&h);
+  get_all_args(NULL,args,"%i%i%i%i",&x,&y,&w,&h);
   gdk_window_move_resize(GDK_WINDOW(THIS->obj),x,y,w,h);
   RETURN_THIS();
 }
@@ -355,7 +355,7 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
   struct object *o;
   INT_TYPE offset=0;
   INT_TYPE delete_when_done=0;
-  get_all_args("get_property",args,"%o.%i%i",&o,&offset,&delete_when_done);
+  get_all_args(NULL,args,"%o.%i%i",&o,&offset,&delete_when_done);
 
   if (gdk_property_get(GDK_WINDOW(THIS->obj),
                        get_gdkatom(o),
@@ -407,7 +407,7 @@ void change_property(GDK2.Atom property, GDK2.Atom type, int mode, string data)
   struct object *o,*t;
   struct pike_string *s;
   INT_TYPE m;
-  get_all_args("change_property",args,"%o%o%i%W",&o,&t,&m,&s);
+  get_all_args(NULL,args,"%o%o%i%W",&o,&t,&m,&s);
 
   gdk_property_change(GDK_WINDOW(THIS->obj),get_gdkatom(o),
                        get_gdkatom(t),8<<s->size_shift,
@@ -421,7 +421,7 @@ void delete_property(GDK2.Atom a)
 //! Delete a property.
 {
   struct object *o;
-  get_all_args("delete_property",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   gdk_property_delete(GDK_WINDOW(THIS->obj),get_gdkatom(o));
   RETURN_THIS();
 }
@@ -431,7 +431,7 @@ void set_background(GDK2.Color|GDK2.Pixmap to)
 //! The argument is either a GDK2.Pixmap or a GDK2.Color object.
 {
   struct object *o;
-  get_all_args("set_background",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
 
 /*   gdk_error_trap_push(); */
   if (!o)

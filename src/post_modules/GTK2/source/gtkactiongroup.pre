@@ -42,7 +42,7 @@ void create(string|mapping(string:mixed) name_or_props)
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
     char *name;
     GtkActionGroup *gag;
-    get_all_args("create",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     gag=gtk_action_group_new(name);
     THIS->obj=G_OBJECT(gag);
   } else {
@@ -104,7 +104,7 @@ void add_action(GTK2.Action action, ?string accelerator)
   {
     struct object *o1;
     char *accel=NULL;
-    get_all_args("add_action",args,"%o.%s",&o1,&accel);
+    get_all_args(NULL,args,"%o.%s",&o1,&accel);
     gtk_action_group_add_action_with_accel(GTK_ACTION_GROUP(THIS->obj),
 			GTK_ACTION(get_gobject(o1)),accel);
   }
@@ -172,7 +172,7 @@ void add_actions(array(mapping(string:mixed)) entries)
     struct svalue *sv;
     struct signal_data *sd = NULL;
     int i;
-    get_all_args("add_actions",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL || a->size<1)
       Pike_error("Invalid array argument 1.\n");
     for (i=0; i<a->size; i++) {
@@ -252,7 +252,7 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
     struct svalue *sv;
     struct signal_data *sd = NULL;
     int i;
-    get_all_args("add_toggle_actions",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL || a->size<1)
       Pike_error("Invalid array argument 1.\n");
     for (i=0; i<a->size; i++) {
@@ -330,7 +330,7 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
     struct svalue *sv,*sv2,*sv3;
     struct signal_data *sd;
     int i,j;
-    get_all_args("add_radio_actions",args,"%A%*%*",&a,&sv2,&sv3);
+    get_all_args(NULL,args,"%A%*%*",&a,&sv2,&sv3);
     if (a==NULL || a->size<1)
       Pike_error("Invalid array argument 1.\n");
     gta=(GtkRadioActionEntry *)g_malloc0(sizeof(GtkRadioActionEntry)*a->size);

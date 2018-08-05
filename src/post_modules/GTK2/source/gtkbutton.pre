@@ -61,7 +61,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
       GtkStockItem item;
       int i=0;
 
-      get_all_args("create",args,"%T",&t);
+      get_all_args(NULL,args,"%T",&t);
       if (t) {
 	if (t->size_shift==0)
 	  i=gtk_stock_lookup(CGSTR0(t),&item);

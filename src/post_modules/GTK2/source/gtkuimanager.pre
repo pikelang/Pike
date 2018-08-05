@@ -120,7 +120,7 @@ array(GTK2.ActionGroup) get_action_groups()
   {
     char *path;
     GtkWidget *w;
-    get_all_args("get_widget",args,"%s",&path);
+    get_all_args(NULL,args,"%s",&path);
     w=gtk_ui_manager_get_widget(GTK_UI_MANAGER(THIS->obj),path);
     pgtk2_pop_n_elems(args);
     push_gobject(w);
@@ -136,7 +136,7 @@ array(GTK2.Widget) get_toplevels(int types)
     GSList *gl,*g2;
     int i=0;
     INT_TYPE type;
-    get_all_args("get_toplevels",args,"%i",&type);
+    get_all_args(NULL,args,"%i",&type);
     pgtk2_pop_n_elems(args);
     gl=g2=gtk_ui_manager_get_toplevels(GTK_UI_MANAGER(THIS->obj),type);
     while (g2) {
@@ -161,7 +161,7 @@ int add_ui_from_string(string buffer)
   {
     const gchar *buff;
     int res;
-    get_all_args("add_ui_from_string",args,"%s",&buff);
+    get_all_args(NULL,args,"%s",&buff);
     res=gtk_ui_manager_add_ui_from_string(GTK_UI_MANAGER(THIS->obj),
 			buff,-1,NULL);
     pgtk2_pop_n_elems(args);

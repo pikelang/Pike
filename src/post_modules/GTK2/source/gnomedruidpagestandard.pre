@@ -31,7 +31,7 @@ void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
     struct pike_string *title;
     struct object *o1,*o2;
     GtkWidget *gps;
-    get_all_args("create",args,"%t%o%o",&title,&o1,&o2);
+    get_all_args(NULL,args,"%t%o%o",&title,&o1,&o2);
     ref_push_string(title);
     f_string_to_utf8(1);
     gps=gnome_druid_page_standard_new_with_vals(GSTR0(Pike_sp[-1].u.string),
@@ -58,7 +58,7 @@ void set_logo(?GDK2.Pixbuf logo)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_logo",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gnome_druid_page_standard_set_logo(GNOME_DRUID_PAGE_STANDARD(THIS->obj),
 			GDK_PIXBUF(get_gobject(o1)));
   } else
@@ -74,7 +74,7 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_top_watermark",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gnome_druid_page_standard_set_top_watermark(
 			GNOME_DRUID_PAGE_STANDARD(THIS->obj),
 			GDK_PIXBUF(get_gobject(o1)));
@@ -91,7 +91,7 @@ void set_title_foreground(GDK2.Color color)
   {
     struct object *o1;
     GdkColor *color;
-    get_all_args("set_title_foreground",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_standard_set_title_foreground(
 			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
@@ -106,7 +106,7 @@ void set_background(GDK2.Color color)
   {
     struct object *o1;
     GdkColor *color;
-    get_all_args("set_background",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_standard_set_background(
 			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
@@ -121,7 +121,7 @@ void set_logo_background(GDK2.Color color)
   {
     struct object *o1;
     GdkColor *color;
-    get_all_args("set_logo_background",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_standard_set_logo_background(
 			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
@@ -136,7 +136,7 @@ void set_contents_background(GDK2.Color color)
   {
     struct object *o1;
     GdkColor *color;
-    get_all_args("set_contents_background",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_standard_set_contents_background(
 			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);

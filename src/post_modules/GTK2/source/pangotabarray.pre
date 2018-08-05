@@ -37,7 +37,7 @@ void resize(int new_size)
   pgtk2_verify_inited();
   {
     INT_TYPE new_size;
-    get_all_args("resize",args,"%i",&new_size);
+    get_all_args(NULL,args,"%i",&new_size);
     pango_tab_array_resize((PangoTabArray *)THIS->obj,new_size); 
     RETURN_THIS();
   }
@@ -50,7 +50,7 @@ void set_tab(int tab_index, int alignment, int location)
   pgtk2_verify_inited();
   {
     INT_TYPE tab_index,alignment,location;
-    get_all_args("set_tab",args,"%i%i%i",&tab_index,&alignment,&location);
+    get_all_args(NULL,args,"%i%i%i",&tab_index,&alignment,&location);
     pango_tab_array_set_tab((PangoTabArray *)THIS->obj,tab_index,alignment,
 			location);
     RETURN_THIS();
@@ -65,7 +65,7 @@ mapping get_tab(int tab_index)
     INT_TYPE tab_index;
     gint location;
     PangoTabAlign alignment;
-    get_all_args("get_tab",args,"%i",&tab_index);
+    get_all_args(NULL,args,"%i",&tab_index);
     pgtk2_pop_n_elems(args);
     pango_tab_array_get_tab((PangoTabArray *)THIS->obj,tab_index,&alignment,
 			&location);

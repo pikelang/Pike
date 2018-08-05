@@ -129,7 +129,7 @@ int has_group(string group_name)
     char *name;
     int hg;
 
-    get_all_args("has_group",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     hg=gtk_recent_info_has_group((GtkRecentInfo *)THIS->obj,name);
     pgtk2_pop_n_elems(args);
     push_int(hg);
@@ -144,7 +144,7 @@ int has_application()
     char *name;
     int hg;
  
-    get_all_args("has_group",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     hg=gtk_recent_info_has_application((GtkRecentInfo *)THIS->obj,name);
     pgtk2_pop_n_elems(args);
     push_int(hg);
@@ -160,7 +160,7 @@ GDK2.Pixbuf get_icon(int size)
     int size;
     GdkPixbuf *gp;
 
-    get_all_args("get_icon",args,"%i",&size);
+    get_all_args(NULL,args,"%i",&size);
     pgtk2_pop_n_elems(args);
     gp=gtk_recent_info_get_icon((GtkRecentInfo *)THIS->obj,size);
     push_gobject(gp);
@@ -221,7 +221,7 @@ int match(GTK2.RecentInfo b)
     struct object *o1;
     int res;
 
-    get_all_args("match",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_recent_info_match((GtkRecentInfo *)THIS->obj,
 			(GtkRecentInfo *)get_pg2object(o1,pgtk2_recent_info_program));
     pgtk2_pop_n_elems(args);

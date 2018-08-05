@@ -85,7 +85,7 @@ void grab(GTK2.Widget widget, int xoffset, int yoffset, int width, int height)
   struct object *o;
   INT_TYPE x,y,w,h;
 
-  get_all_args("grab",args,"%o%i%i%i%i",&o,&x,&y,&w,&h);
+  get_all_args(NULL,args,"%o%i%i%i%i",&o,&x,&y,&w,&h);
 
   if (get_pg2object(o,pgtk2_widget_program))
     win=GTK_WIDGET(get_pg2object(o,pgtk2_widget_program))->window;
@@ -108,13 +108,13 @@ void set(Image.Image|int image_or_xsize,int|void ysize)
   struct object *img;
 
   if (args==1) {
-    get_all_args("init",args,"%o",&img);
+    get_all_args(NULL,args,"%o",&img);
     THIS->obj=G_OBJECT(gdkimage_from_pikeimage(img,THIS->extra_int,
 					       &THIS->obj));
   } else {
     INT_TYPE x,y;
     GdkImage *gi;
-    get_all_args("set",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     if (THIS->obj)
       g_object_unref(THIS->obj);
     gi=gdk_image_new(THIS->extra_int,gdk_visual_get_system(),x,y);
@@ -131,7 +131,7 @@ int get_pixel(int x, int y)
 //! rgb triple. See get_pnm.
 {
   INT_TYPE x,y;
-  get_all_args("get_pixel",args,"%i%i",&x,&y);
+  get_all_args(NULL,args,"%i%i",&x,&y);
   if (!THIS->obj)
     Pike_error("No image.\n");
   pgtk2_pop_n_elems(args);
@@ -144,7 +144,7 @@ void set_pixel(int x, int y, int pixel)
 //! See get_pixel and set.
 {
   INT_TYPE x,y,to;
-  get_all_args("set_pixel",args,"%i%i%i",&x,&y,&to);
+  get_all_args(NULL,args,"%i%i%i",&x,&y,&to);
   if (!THIS->obj)
     Pike_error("No image.\n");
   gdk_image_put_pixel(GDK_IMAGE(THIS->obj),x,y,to);

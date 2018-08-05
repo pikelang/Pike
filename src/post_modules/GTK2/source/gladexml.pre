@@ -32,7 +32,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 		 "after: %d\n",
 		 handler_name,signal_name,signal_data,after);
 #endif
-  get_all_args("_signal_connect",*(INT32 *)args,"%m%*",&callbacks,&data);
+  get_all_args(NULL,*(INT32 *)args,"%m%*",&callbacks,&data);
 /*
   funname=make_shared_string(handler_name);
   cb=low_mapping_string_lookup(callbacks,funname);
@@ -100,7 +100,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
     struct pike_string *fname;
     char *root=NULL,*dom=NULL;
     INT_TYPE size=0;
-    get_all_args("create",args,"%n.%i%s%s",&fname,&size,&root,&dom);
+    get_all_args(NULL,args,"%n.%i%s%s",&fname,&size,&root,&dom);
     if (size==0)
       gl=glade_xml_new(fname->str,root,dom);
     else if ((size < 0) || (size > fname->len))
@@ -122,7 +122,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   {
     char *name;
     GtkWidget *widget;
-    get_all_args("get_widget",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     widget=glade_xml_get_widget(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     push_gobject(widget);
@@ -138,7 +138,7 @@ array(GTK2.Widget) get_widget_prefix(string name)
     char *name;
     GList *gl,*g2;
     int i=0;
-    get_all_args("get_widget_prefix",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     gl=g2=glade_xml_get_widget_prefix(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     while (g2) {
@@ -160,7 +160,7 @@ string get_widget_name(GTK2.Widget widget)
     const char *s;
     struct object *o1;
     GtkWidget *widget;
-    get_all_args("get_widget_name",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     widget=GTK_WIDGET(get_gobject(o1));
     if (!widget)
       Pike_error("GladeXML->get_widget_name:  Invalid argument 1, wanted GTK2 object of type WIDGET.\n");
@@ -182,7 +182,7 @@ int get_signal_id(GTK2.Widget widget)
     GtkWidget *w;
     struct signal_data *sd;
 
-    get_all_args("get_signal_id",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     w=GTK_WIDGET(get_gobject(o1));
     if (!w)
       Pike_error("GladeXML->get_signal_id:  Invalid argument 1, wanted GTK2 object of type WIDGET.\n");

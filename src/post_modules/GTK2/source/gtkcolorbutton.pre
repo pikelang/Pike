@@ -24,7 +24,7 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
       GtkWidget *gcb;
       INT_TYPE red, green, blue;
       color.pixel=0;
-      get_all_args("create",args,"%i%i%i",&red,&green,&blue);
+      get_all_args(NULL,args,"%i%i%i",&red,&green,&blue);
       color.red = (guint16)red;
       color.green = (guint16)green;
       color.blue = (guint16)blue;
@@ -34,7 +34,7 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
       struct object *o1;
       GdkColor *col;
       GtkWidget *gcb;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       col=(GdkColor *)get_gdkobject(o1,color);
       if (col)
 	gcb=gtk_color_button_new_with_color(col);
@@ -63,7 +63,7 @@ void set_color(int|GDK2.Color red, ?int green, ?int blue)
     if (args==3) {
       INT_TYPE red,green,blue;
  
-      get_all_args("set_color",args,"%i%i%i",&red,&green,&blue);
+      get_all_args(NULL,args,"%i%i%i",&red,&green,&blue);
       gcolor.red=red;
       gcolor.green=green;
       gcolor.blue=blue;
@@ -71,7 +71,7 @@ void set_color(int|GDK2.Color red, ?int green, ?int blue)
     } else {
       struct object *o1;
 
-      get_all_args("set_color",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gc=(GdkColor *)get_gdkobject(o1,color);
     }
     gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),gc);

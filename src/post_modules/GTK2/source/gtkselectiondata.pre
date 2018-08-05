@@ -16,7 +16,7 @@ void set_text(string text)
   pgtk2_verify_inited();
   {
     const gchar *text;
-    get_all_args("set_text", args, "%s", &text);
+    get_all_args(NULL, args, "%s", &text);
     gtk_selection_data_set_text( GTK_SELECTION_DATA(THIS->obj), text, -1 );
   }
   RETURN_THIS();

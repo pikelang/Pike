@@ -21,7 +21,7 @@ void create(GTK2.RadioToolButton|mapping(string:mixed)|void groupmember)
       struct object *o1=NULL;
       GtkToolItem *gr;
 
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
 
       if (o1) {
 	gr=gtk_radio_tool_button_new_from_widget(

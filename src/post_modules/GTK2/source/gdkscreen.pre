@@ -46,7 +46,7 @@ void set_default_colormap(GDK2.Colormap colormap)
     struct object *o;
     gpointer *p;
 
-    get_all_args("set_default_colormap",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     p=get_gdkobject(o,colormap);
     pgtk2_pop_n_elems(args);
     if (g_type_is_a(G_TYPE_FROM_INSTANCE(p),g_type_from_name("GdkColormap"))) {
@@ -176,7 +176,7 @@ array list_visuals(?int def)
     GList *gl,*g2;
     int i=0;
 
-    get_all_args("list_visuals",args,"%i",&def);
+    get_all_args(NULL,args,"%i",&def);
     if (def)
       gl=gdk_list_visuals();
     else
@@ -230,7 +230,7 @@ int get_n_monitors();
     INT_TYPE a;
     GdkRectangle *gr;
 
-    get_all_args("get_monitor_geometry",args,"%i",&a);
+    get_all_args(NULL,args,"%i",&a);
     gr=(GdkRectangle *)xalloc(sizeof(GdkRectangle));
     gdk_screen_get_monitor_geometry(GDK_SCREEN(THIS->obj),a,gr);
     pgtk2_pop_n_elems(args);

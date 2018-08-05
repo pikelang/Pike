@@ -53,7 +53,7 @@ void set_cell_data_func(GTK2.CellRenderer cell, function f, mixed user_data)
     struct object *o1;
     struct signal_data *sd;
 
-    get_all_args("set_cell_data_func",args,"%o%*%*",&o1,&sv1,&sv2);
+    get_all_args(NULL,args,"%o%*%*",&o1,&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_cell_data_func",sizeof(struct signal_data));

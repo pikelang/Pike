@@ -46,7 +46,7 @@ void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkWidget *gt;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gt=gtk_text_view_new_with_buffer(GTK_TEXT_BUFFER(get_gobject(o1)));
       THIS->obj=G_OBJECT(gt);
     } else {
@@ -85,7 +85,7 @@ void scroll_to_iter(GTK2.TextIter iter, float within_margin,
     struct object *o1;
     FLOAT_TYPE within_margin,xalign,yalign;
     INT_TYPE use_align;
-    get_all_args("scroll_to_iter",args,"%o%f%i%f%f",&o1,&within_margin,
+    get_all_args(NULL,args,"%o%f%i%f%f",&o1,&within_margin,
 			&use_align,&xalign,&yalign);
     gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),within_margin,use_align,
@@ -137,7 +137,7 @@ int place_cursor_onscreen();
     gdr=g_malloc(sizeof(GdkRectangle));
     if (gdr==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_location",sizeof(GdkRectangle));
-    get_all_args("get_iter_location",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_text_view_get_iter_location(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),gdr);
     pgtk2_pop_n_elems(args);
@@ -154,7 +154,7 @@ int place_cursor_onscreen();
   {
     INT_TYPE y;
     GtkTextIter *gti;
-    get_all_args("get_line_at_y",args,"%i",&y);
+    get_all_args(NULL,args,"%i",&y);
     pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
@@ -174,7 +174,7 @@ mapping get_line_yrange(GTK2.TextIter iter)
   {
     gint y,height;
     struct object *o1;
-    get_all_args("get_line_yrange",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),&y,&height);
     pgtk2_pop_n_elems(args);
@@ -194,7 +194,7 @@ mapping get_line_yrange(GTK2.TextIter iter)
   {
     INT_TYPE x,y;
     GtkTextIter *iter;
-    get_all_args("get_iter_at_location",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     pgtk2_pop_n_elems(args);
     iter=g_malloc(sizeof(GtkTextIter));
     if (iter==NULL)
@@ -215,7 +215,7 @@ require gtk26;
     GtkTextIter *iter;
     INT_TYPE x,y;
     gint trailing;
-    get_all_args("get_iter_at_position",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     pgtk2_pop_n_elems(args);
     iter=g_malloc(sizeof(GtkTextIter));
     if (iter==NULL)
@@ -236,7 +236,7 @@ array buffer_to_window_coords(int wintype, int buffer_x, int buffer_y)
   {
     gint win_x,win_y;
     INT_TYPE buffer_x,buffer_y,wintype;
-    get_all_args("buffer_to_window_coords",args,"%i%i%i",&wintype,
+    get_all_args(NULL,args,"%i%i%i",&wintype,
 			&buffer_x,&buffer_y);
     pgtk2_pop_n_elems(args);
     gtk_text_view_buffer_to_window_coords(GTK_TEXT_VIEW(THIS->obj),
@@ -255,7 +255,7 @@ array window_to_buffer_coords(int wintype, int window_x, int window_y)
   {
     INT_TYPE wintype,win_x,win_y;
     gint buffer_x,buffer_y;
-    get_all_args("window_to_buffer_coords",args,"%i%i%i",&wintype,
+    get_all_args(NULL,args,"%i%i%i",&wintype,
 		&win_x,&win_y);
     pgtk2_pop_n_elems(args);
     gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(THIS->obj),
@@ -302,7 +302,7 @@ int forward_display_line(GTK2.TextIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("forward_display_line",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_text_view_forward_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
@@ -317,7 +317,7 @@ int backward_display_line(GTK2.TextIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("backward_display_line",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_text_view_backward_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
@@ -332,7 +332,7 @@ int forward_display_line_end(GTK2.TextIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("forward_display_line_end",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_text_view_forward_display_line_end(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
@@ -347,7 +347,7 @@ int backward_display_line_start(GTK2.TextIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("backward_display_line_start",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_text_view_backward_display_line_start(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
@@ -362,7 +362,7 @@ int starts_display_line(GTK2.TextIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("starts_display_line",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_text_view_starts_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
@@ -386,7 +386,7 @@ int move_visually(GTK2.TextIter iter, int count)
     struct object *o1;
     INT_TYPE count;
     int res;
-    get_all_args("move_visually",args,"%o%i",&o1,&count);
+    get_all_args(NULL,args,"%o%i",&o1,&count);
     res=gtk_text_view_move_visually(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),count);
     pgtk2_pop_n_elems(args);
@@ -498,7 +498,7 @@ void set_tabs(Pango.TabArray tabs)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_tabs",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_text_view_set_tabs(GTK_TEXT_VIEW(THIS->obj),
 		(PangoTabArray *)get_gobject(o1));
   }

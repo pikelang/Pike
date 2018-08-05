@@ -34,7 +34,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
     struct pike_string *label=NULL,*tooltip=NULL;
     gchar *label2=NULL, *tooltip2=NULL;
     GtkAction *ga;
-    get_all_args("create",args,"%s.%t%t%s",&name,&label,&tooltip,&stock_id);
+    get_all_args(NULL,args,"%s.%t%t%s",&name,&label,&tooltip,&stock_id);
     if(label) {
       ref_push_string(label);
       f_string_to_utf8(1);

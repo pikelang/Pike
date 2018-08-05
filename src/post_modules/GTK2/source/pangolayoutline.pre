@@ -40,7 +40,7 @@ int index_to_x(int index, int trailing)
   {
     INT_TYPE index,trailing;
     int x_pos;
-    get_all_args("index_to_x",args,"%i%i",&index,&trailing);
+    get_all_args(NULL,args,"%i%i",&index,&trailing);
     pgtk2_pop_n_elems(args);
     pango_layout_line_index_to_x((PangoLayoutLine *)THIS->obj,index,trailing,
 			&x_pos);
@@ -64,7 +64,7 @@ mapping(string:int) x_to_index(int x_pos)
   {
     INT_TYPE x_pos;
     int index,trailing;
-    get_all_args("x_to_index",args,"%i",&x_pos);
+    get_all_args(NULL,args,"%i",&x_pos);
     pgtk2_pop_n_elems(args);
     pango_layout_line_x_to_index((PangoLayoutLine *)THIS->obj,x_pos,&index,
 			&trailing);

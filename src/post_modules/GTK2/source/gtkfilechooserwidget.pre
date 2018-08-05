@@ -18,7 +18,7 @@ void create(int|mapping(string:mixed) action_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE action;
       GtkWidget *gf;
-      get_all_args("create",args,"%i",&action);
+      get_all_args(NULL,args,"%i",&action);
       gf=gtk_file_chooser_widget_new(action);
       THIS->obj=G_OBJECT(gf);
     } else {

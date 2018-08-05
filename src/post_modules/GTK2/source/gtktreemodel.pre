@@ -27,7 +27,7 @@ int get_column_type(int index);
     GtkTreeIter *iter;
     struct object *o1;
     int res;
-    get_all_args("get_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     iter=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter",sizeof(GtkTreeIter));
@@ -51,7 +51,7 @@ int get_column_type(int index);
     GtkTreeIter *iter;
     int res;
     const gchar *s;
-    get_all_args("get_iter_from_string",args,"%s",&s);
+    get_all_args(NULL,args,"%s",&s);
 
     iter=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
@@ -97,7 +97,7 @@ int get_column_type(int index);
   {
     GtkTreePath *path;
     struct object *o1;
-    get_all_args("get_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
 
     path=(void *)gtk_tree_model_get_path(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
@@ -115,7 +115,7 @@ array get_row(GTK2.TreeIter iter)
     int cols;
     struct object *o1;
     GtkTreeIter *gti;
-    get_all_args("get_row",args,"%o",&o1); 
+    get_all_args(NULL,args,"%o",&o1); 
     gti=(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program);
     pgtk2_pop_n_elems(args);
     cols=gtk_tree_model_get_n_columns(GTK_TREE_MODEL(THIS->obj));
@@ -138,7 +138,7 @@ mixed get_value(GTK2.TreeIter iter, int column)
     struct object *o1;
     INT_TYPE col;
 
-    get_all_args("get_value",args,"%o%i",&o1,&col);
+    get_all_args(NULL,args,"%o%i",&o1,&col);
     gtk_tree_model_get_value(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),col,&v);
     pgtk2_pop_n_elems(args);
@@ -156,7 +156,7 @@ int iter_next(GTK2.TreeIter iter)
     int res;
     GtkTreeIter *iter;
 
-    get_all_args("iter_next",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     iter=(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program);
     res=gtk_tree_model_iter_next(GTK_TREE_MODEL(THIS->obj),iter);
     pgtk2_pop_n_elems(args);
@@ -172,7 +172,7 @@ int iter_next(GTK2.TreeIter iter)
     GtkTreeIter *iter;
     struct object *o1;
     int res;
-    get_all_args("iter_children",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_children",sizeof(GtkTreeIter));
@@ -196,7 +196,7 @@ int iter_has_child(GTK2.TreeIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("iter_has_child",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_model_iter_has_child(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
@@ -214,7 +214,7 @@ int iter_n_children(GTK2.TreeIter iter)
   {
     struct object *o1;
     int res;
-    get_all_args("iter_n_children",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_model_iter_n_children(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
@@ -234,7 +234,7 @@ int iter_n_children(GTK2.TreeIter iter)
     struct object *o1;
     int res;
     INT_TYPE n;
-    get_all_args("iter_nth_child",args,"%o%i",&o1,&n);
+    get_all_args(NULL,args,"%o%i",&o1,&n);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_nth_child",sizeof(GtkTreeIter));
@@ -258,7 +258,7 @@ int iter_n_children(GTK2.TreeIter iter)
     GtkTreeIter *iter;
     struct object *o1;
     int res;
-    get_all_args("iter_parent",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_parent",sizeof(GtkTreeIter));
@@ -283,7 +283,7 @@ string get_string_from_iter(GTK2.TreeIter iter)
     struct object *o1;
     int res;
     gchar *gs;
-    get_all_args("get_string_from_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gs=gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
@@ -299,7 +299,7 @@ void row_changed(GTK2.TreePath path, GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("row_changed",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_model_row_changed(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 		(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
@@ -313,7 +313,7 @@ void row_inserted(GTK2.TreePath path, GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("row_inserted",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_model_row_inserted(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 		(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
@@ -327,7 +327,7 @@ void row_has_child_toggled(GTK2.TreePath path, GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("row_has_child_toggled",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_tree_model_row_has_child_toggled(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 		(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
@@ -341,7 +341,7 @@ void row_deleted(GTK2.TreePath path)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("row_deleted",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_tree_model_row_deleted(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }

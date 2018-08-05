@@ -218,7 +218,7 @@ mapping(string:int) query_tab_label_packing(GTK2.Widget page)
   struct object *o;
   gboolean expand=0, fill=0;
   GtkPackType pack_type=0;
-  get_all_args("query_tab_label_packing",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   gtk_notebook_query_tab_label_packing(GTK_NOTEBOOK(THIS->obj),
                                        GTK_WIDGET(get_gobject(o)),
                                        &expand,

@@ -314,7 +314,7 @@ GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m);
 
 #define INIT_WITH_PROPS(X) do {	\
 	struct mapping *m;	\
-	get_all_args("create",args,"%m",&m);	\
+        get_all_args(NULL,args,"%m",&m);	\
 	THIS->obj=pgtk2_create_new_obj_with_properties(X,m);	\
       } while(0)
 void pgtk2_push_gvalue_r(const GValue *param, GType t);
