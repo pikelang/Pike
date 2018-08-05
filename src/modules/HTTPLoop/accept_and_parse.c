@@ -573,7 +573,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct svalue *fun, *cb, *program;
   struct cache *c;
   struct args *args = LTHIS;
-  get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
+  get_all_args(NULL, nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
   memset(args, 0, sizeof(struct args));
   if(dolog)

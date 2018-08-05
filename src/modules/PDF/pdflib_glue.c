@@ -145,7 +145,7 @@ static void pdf_begin_page(INT32 args)
    struct pdf_storage *this=THIS;
    FLOAT_TYPE w=a4_width,h=a4_height;
 
-   get_all_args("begin_page",args,".%f%f",&w,&h);
+   get_all_args(NULL, args, ".%f%f", &w, &h);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -181,7 +181,7 @@ static void pdf_get_value(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   get_all_args("get_value",args,"%s.%F",&s,&m);
+   get_all_args(NULL, args, "%s.%F", &s, &m);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -198,7 +198,7 @@ static void pdf_set_value(INT32 args)
    FLOAT_TYPE m;
    char *s;
 
-   get_all_args("set_value",args,"%s%F",&s,&m);
+   get_all_args(NULL, args, "%s%F", &s, &m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -218,7 +218,7 @@ static void pdf_get_parameter(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   get_all_args("get_parameter",args,"%s.%F",&s,&m);
+   get_all_args(NULL, args, "%s.%F", &s, &m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    push_text(PDF_get_parameter(this->pdf,s,(float)m));
@@ -233,7 +233,7 @@ static void pdf_set_parameter(INT32 args)
    struct pdf_storage *this=THIS;
    char *s,*v;
 
-   get_all_args("set_parameter",args,"%s%s",&s,&v);
+   get_all_args(NULL, args, "%s%s", &s, &v);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -251,7 +251,7 @@ static void pdf_set_info(INT32 args)
    struct pdf_storage *this=THIS;
    char *s,*v;
 
-   get_all_args("set_info",args,"%s%s",&s,&v);
+   get_all_args(NULL, args, "%s%s", &s,& v);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -273,7 +273,7 @@ static void pdf_findfont(INT32 args)
    int n;
    char *fontname;
 
-   get_all_args("findfont",args,"%s.%s%d",&fontname,&encoding,&embed);
+   get_all_args(NULL, args, "%s.%s%d", &fontname, &encoding, &embed);
    if(!encoding)
      encoding="host";
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -294,7 +294,7 @@ static void pdf_setfont(INT32 args)
    INT_TYPE n;
    FLOAT_TYPE size;
 
-   get_all_args("setfont",args,"%i%F",&n,&size);
+   get_all_args(NULL, args, "%i%F", &n, &size);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    PDF_setfont(this->pdf,(int)n,(float)size);
@@ -311,7 +311,7 @@ static void pdf_show(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
 
-   get_all_args("show",args,"%W",&ps);
+   get_all_args(NULL, args, "%W", &ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -334,7 +334,7 @@ static void pdf_showxy(INT32 args)
    struct pike_string *ps;
    FLOAT_TYPE x,y;
 
-   get_all_args("showxy",args,"%W%F%F",&ps,&x,&y);
+   get_all_args(NULL, args, "%W%F%F", &ps, &x, &y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -356,7 +356,7 @@ static void pdf_continue_text(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
 
-   get_all_args("continue_text",args,"%W",&ps);
+   get_all_args(NULL, args, "%W", &ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -381,7 +381,7 @@ static void pdf_show_boxed(INT32 args)
    FLOAT_TYPE x=0.0,y=0.0,width=0.0,height=0.0;
    INT_TYPE res=0;
 
-   get_all_args("show_boxed",args,"%s%F%F%F%F%s.%s",
+   get_all_args(NULL, args, "%s%F%F%F%F%s.%s",
                 &text,&x,&y,&width,&height,&mode,&feature);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -401,7 +401,7 @@ static void pdf_stringwidth(INT32 args)
    FLOAT_TYPE res=0.0,size=0.0;
    INT_TYPE font=0;
    struct pike_string *ps=NULL;
-   get_all_args("stringwidth2",args,"%W%i%F",&ps,&font,&size);
+   get_all_args(NULL, args, "%W%i%F", &ps, &font, &size);
    if (ps->size_shift)
       Pike_error("wide strings not supported yet\n");
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -420,7 +420,7 @@ static void pdf_set_text_pos(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0;
-   get_all_args("set_text_pos",args,"%F%F",&x,&y);
+   get_all_args(NULL, args, "%F%F", &x, &y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_set_text_pos(this->pdf,(float)x,(float)y);
@@ -436,7 +436,7 @@ static void pdf_setdash(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE b=0.0,w=0.0;
-   get_all_args("setdash",args,"%F%F",&b,&w);
+   get_all_args(NULL, args, "%F%F", &b, &w);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setdash(this->pdf,(float)b,(float)w);
@@ -452,7 +452,7 @@ static void pdf_setflat(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE flatness=0.0;
-   get_all_args("setflat",args,"%F",&flatness);
+   get_all_args(NULL, args, "%F", &flatness);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setflat(this->pdf,(float)flatness);
@@ -468,7 +468,7 @@ static void pdf_setlinejoin(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE linejoin=0;
-   get_all_args("setlinejoin",args,"%i",&linejoin);
+   get_all_args(NULL, args, "%i", &linejoin);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setlinejoin(this->pdf,(int)linejoin);
@@ -484,7 +484,7 @@ static void pdf_setlinecap(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE linecap=0;
-   get_all_args("setlinecap",args,"%i",&linecap);
+   get_all_args(NULL, args, "%i", &linecap);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setlinecap(this->pdf,(int)linecap);
@@ -500,7 +500,7 @@ static void pdf_setmiterlimit(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE miter=0.0;
-   get_all_args("setmiterlimit",args,"%F",&miter);
+   get_all_args(NULL, args, "%F", &miter);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setmiterlimit(this->pdf,(float)miter);
@@ -516,7 +516,7 @@ static void pdf_setlinewidth(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE width=0.0;
-   get_all_args("setlinewidth",args,"%F",&width);
+   get_all_args(NULL, args, "%F", &width);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setlinewidth(this->pdf,(float)width);
@@ -532,7 +532,7 @@ static void pdf_translate(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE tx=0.0,ty=0.0;
-   get_all_args("translate",args,"%F%F",&tx,&ty);
+   get_all_args(NULL, args, "%F%F", &tx, &ty);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_translate(this->pdf,(float)tx,(float)ty);
@@ -548,7 +548,7 @@ static void pdf_scale(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE sx=0.0,sy=0.0;
-   get_all_args("scale",args,"%F%F",&sx,&sy);
+   get_all_args(NULL, args, "%F%F", &sx, &sy);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_scale(this->pdf,(float)sx,(float)sy);
@@ -564,7 +564,7 @@ static void pdf_rotate(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE phi=0.0;
-   get_all_args("rotate",args,"%F",&phi);
+   get_all_args(NULL, args, "%F", &phi);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_rotate(this->pdf,(float)phi);
@@ -580,7 +580,7 @@ static void pdf_skew(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE alpha=0.0,beta=0.0;
-   get_all_args("skew",args,"%F%F",&alpha,&beta);
+   get_all_args(NULL, args, "%F%F", &alpha, &beta);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_skew(this->pdf,(float)alpha,(float)beta);
@@ -596,7 +596,7 @@ static void pdf_concat(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE a=0.0,b=0.0,c=0.0,d=0.0,e=0.0,f=0.0;
-   get_all_args("concat",args,"%F%F%F%F%F%F",&a,&b,&c,&d,&e,&f);
+   get_all_args(NULL, args, "%F%F%F%F%F%F", &a,&b,&c,&d,&e,&f);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_concat(this->pdf,(float)a,(float)b,(float)c,(float)d,(float)e,(float)f);
@@ -612,7 +612,7 @@ static void pdf_moveto(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0;
-   get_all_args("moveto",args,"%F%F",&x,&y);
+   get_all_args(NULL, args, "%F%F", &x,&y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_moveto(this->pdf,(float)x,(float)y);
@@ -628,7 +628,7 @@ static void pdf_lineto(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0;
-   get_all_args("lineto",args,"%F%F",&x,&y);
+   get_all_args(NULL, args, "%F%F", &x,&y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_lineto(this->pdf,(float)x,(float)y);
@@ -644,7 +644,7 @@ static void pdf_curveto(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x1=0.0,y1=0.0,x2=0.0,y2=0.0,x3=0.0,y3=0.0;
-   get_all_args("curveto",args,"%F%F%F%F%F%F",&x1,&y1,&x2,&y2,&x3,&y3);
+   get_all_args(NULL, args, "%F%F%F%F%F%F", &x1,&y1,&x2,&y2,&x3,&y3);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_curveto(this->pdf,(float)x1,(float)y1,(float)x2,(float)y2,(float)x3,(float)y3);
@@ -660,7 +660,7 @@ static void pdf_circle(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0,r=0.0;
-   get_all_args("circle",args,"%F%F%F",&x,&y,&r);
+   get_all_args(NULL, args, "%F%F%F", &x,&y,&r);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_circle(this->pdf,(float)x,(float)y,(float)r);
@@ -676,7 +676,7 @@ static void pdf_arc(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0,r=0.0,start=0.0,end=0.0;
-   get_all_args("arc",args,"%F%F%F%F%F",&x,&y,&r,&start,&end);
+   get_all_args(NULL, args, "%F%F%F%F%F", &x,&y,&r,&start,&end);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_arc(this->pdf,(float)x,(float)y,(float)r,(float)start,(float)end);
@@ -692,7 +692,7 @@ static void pdf_rect(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0,width=0.0,height=0.0;
-   get_all_args("rect",args,"%F%F%F%F",&x,&y,&width,&height);
+   get_all_args(NULL, args, "%F%F%F%F", &x,&y,&width,&height);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_rect(this->pdf,(float)x,(float)y,(float)width,(float)height);
@@ -708,7 +708,7 @@ static void pdf_setgray_fill(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE gray=0.0;
-   get_all_args("setgray_fill",args,"%F",&gray);
+   get_all_args(NULL, args, "%F", &gray);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setgray_fill(this->pdf,(float)gray);
@@ -724,7 +724,7 @@ static void pdf_setgray_stroke(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE gray=0.0;
-   get_all_args("setgray_stroke",args,"%F",&gray);
+   get_all_args(NULL, args, "%F", &gray);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setgray_stroke(this->pdf,(float)gray);
@@ -740,7 +740,7 @@ static void pdf_setgray(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE gray=0.0;
-   get_all_args("setgray",args,"%F",&gray);
+   get_all_args(NULL, args, "%F", &gray);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setgray(this->pdf,(float)gray);
@@ -756,7 +756,7 @@ static void pdf_setrgbcolor_fill(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE red=0.0,green=0.0,blue=0.0;
-   get_all_args("setrgbcolor_fill",args,"%F%F%F",&red,&green,&blue);
+   get_all_args(NULL, args, "%F%F%F", &red,&green,&blue);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setrgbcolor_fill(this->pdf,(float)red,(float)green,(float)blue);
@@ -772,7 +772,7 @@ static void pdf_setrgbcolor_stroke(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE red=0.0,green=0.0,blue=0.0;
-   get_all_args("setrgbcolor_stroke",args,"%F%F%F",&red,&green,&blue);
+   get_all_args(NULL, args, "%F%F%F", &red,&green,&blue);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setrgbcolor_stroke(this->pdf,(float)red,(float)green,(float)blue);
@@ -788,7 +788,7 @@ static void pdf_setrgbcolor(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE red=0.0,green=0.0,blue=0.0;
-   get_all_args("setrgbcolor",args,"%F%F%F",&red,&green,&blue);
+   get_all_args(NULL, args, "%F%F%F", &red,&green,&blue);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_setrgbcolor(this->pdf,(float)red,(float)green,(float)blue);
@@ -806,7 +806,7 @@ static void pdf_open_image_file(INT32 args)
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,intparam=0;
    char *type=NULL,*filename=NULL,*stringparam=NULL;
-   get_all_args("open_image_file",args,"%s%s.%s%d",&type,
+   get_all_args(NULL, args, "%s%s.%s%d", &type,
                 &filename,&stringparam,&intparam);
    if (!stringparam)
      stringparam="";
@@ -826,7 +826,7 @@ static void pdf_open_CCITT(INT32 args)
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,width=0,height=0,BitReverse=0,K=0,BlackIs1=0;
    char *filename=NULL;
-   get_all_args("open_CCITT",args,"%s%i%i%i%i%i",
+   get_all_args(NULL, args, "%s%i%i%i%i%i",
 		&filename,&width,&height,&BitReverse,&K,&BlackIs1);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
@@ -846,7 +846,7 @@ static void pdf_open_image(INT32 args)
    char *type=NULL,*source=NULL,*params=NULL;
    struct pike_string *ps;
    INT_TYPE res=0,length=0,width=0,height=0,components=0,bpc=0;
-   get_all_args("open_image",args,"%s%s%W%i%i%i%i%s",
+   get_all_args(NULL, args, "%s%s%W%i%i%i%i%s",
 		&type,&source,&ps,&width,&height,
 		&components,&bpc,&params);
    if (ps->size_shift)
@@ -868,7 +868,7 @@ static void pdf_close_image(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE image=0;
-   get_all_args("close_image",args,"%i",&image);
+   get_all_args(NULL, args, "%i", &image);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_close_image(this->pdf,(int)image);
@@ -885,7 +885,7 @@ static void pdf_place_image(INT32 args)
    struct pdf_storage *this=THIS;
    FLOAT_TYPE x=0.0,y=0.0,scale=0.0;
    INT_TYPE image=0;
-   get_all_args("place_image",args,"%i%F%F%F",&image,&x,&y,&scale);
+   get_all_args(NULL, args, "%i%F%F%F", &image,&x,&y,&scale);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_place_image(this->pdf,(int)image,(float)x,(float)y,(float)scale);
@@ -902,7 +902,7 @@ static void pdf_add_bookmark(INT32 args)
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,parent=0,open=0;
    char *text=NULL;
-   get_all_args("add_bookmark",args,"%s%i%i",&text,&parent,&open);
+   get_all_args(NULL, args, "%s%i%i", &text,&parent,&open);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_add_bookmark(this->pdf,text,(int)parent,(int)open);
@@ -919,7 +919,8 @@ static void pdf_attach_file(INT32 args)
    struct pdf_storage *this=THIS;
    char *filename=NULL,*description=NULL,*author=NULL,*mimetype=NULL,*icon=NULL;
    FLOAT_TYPE llx=0.0,lly=0.0,urx=0.0,ury=0.0;
-   get_all_args("attach_file",args,"%F%F%F%F%s%s%s%s%s",&llx,&lly,&urx,&ury,&filename,&description,&author,&mimetype,&icon);
+   get_all_args(NULL, args, "%F%F%F%F%s%s%s%s%s",
+                &llx,&lly,&urx,&ury,&filename,&description,&author,&mimetype,&icon);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_attach_file(this->pdf,(float)llx,(float)lly,(float)urx,(float)ury,filename,description,author,mimetype,icon);
@@ -937,7 +938,8 @@ static void pdf_add_pdflink(INT32 args)
    char *filename=NULL,*dest=NULL;
    INT_TYPE page=0;
    FLOAT_TYPE llx=0.0,lly=0.0,urx=0.0,ury=0.0;
-   get_all_args("add_pdflink",args,"%F%F%F%F%s%i%s",&llx,&lly,&urx,&ury,&filename,&page,&dest);
+   get_all_args(NULL, args, "%F%F%F%F%s%i%s",
+                &llx,&lly,&urx,&ury,&filename,&page,&dest);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_add_pdflink(this->pdf,(float)llx,(float)lly,(float)urx,(float)ury,filename,(int)page,dest);
@@ -955,7 +957,7 @@ static void pdf_add_locallink(INT32 args)
    char *dest=NULL;
    INT_TYPE page=0;
    FLOAT_TYPE llx=0.0,lly=0.0,urx=0.0,ury=0.0;
-   get_all_args("add_locallink",args,"%F%F%F%F%i%s",&llx,&lly,&urx,&ury,&page,&dest);
+   get_all_args(NULL, args, "%F%F%F%F%i%s", &llx,&lly,&urx,&ury,&page,&dest);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_add_locallink(this->pdf,(float)llx,(float)lly,(float)urx,(float)ury,(int)page,dest);
@@ -972,7 +974,7 @@ static void pdf_add_launchlink(INT32 args)
    struct pdf_storage *this=THIS;
    char *filename=NULL;
    FLOAT_TYPE llx=0.0,lly=0.0,urx=0.0,ury=0.0;
-   get_all_args("add_launchlink",args,"%F%F%F%F%s",&llx,&lly,&urx,&ury,&filename);
+   get_all_args(NULL, args, "%F%F%F%F%s", &llx,&lly,&urx,&ury,&filename);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_add_launchlink(this->pdf,(float)llx,(float)lly,(float)urx,(float)ury,filename);
@@ -989,7 +991,7 @@ static void pdf_add_weblink(INT32 args)
    struct pdf_storage *this=THIS;
    char *url=NULL;
    FLOAT_TYPE llx=0.0,lly=0.0,urx=0.0,ury=0.0;
-   get_all_args("add_weblink",args,"%F%F%F%F%s",&llx,&lly,&urx,&ury,&url);
+   get_all_args(NULL, args, "%F%F%F%F%s", &llx,&lly,&urx,&ury,&url);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_add_weblink(this->pdf,(float)llx,(float)lly,(float)urx,(float)ury,url);
@@ -1006,7 +1008,7 @@ static void pdf_set_border_style(INT32 args)
    struct pdf_storage *this=THIS;
    FLOAT_TYPE width=0.0;
    char *style=NULL;
-   get_all_args("set_border_style",args,"%s%F",&style,&width);
+   get_all_args(NULL, args, "%s%F", &style,&width);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_set_border_style(this->pdf,style,(float)width);
@@ -1022,7 +1024,7 @@ static void pdf_set_border_color(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE red=0.0,green=0.0,blue=0.0;
-   get_all_args("set_border_color",args,"%F%F%F",&red,&green,&blue);
+   get_all_args(NULL, args, "%F%F%F", &red,&green,&blue);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_set_border_color(this->pdf,(float)red,(float)green,(float)blue);
@@ -1038,7 +1040,7 @@ static void pdf_set_border_dash(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE b=0.0,w=0.0;
-   get_all_args("set_border_dash",args,"%F%F",&b,&w);
+   get_all_args(NULL, args, "%F%F", &b,&w);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    PDF_set_border_dash(this->pdf,(float)b,(float)w);

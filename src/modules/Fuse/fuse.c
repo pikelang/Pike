@@ -86,7 +86,7 @@ struct getdir_storage
 static void f_getdir_callback( INT32 args )
 {
     char *name;
-    get_all_args( "getdircallback", args, "%s", &name );
+    get_all_args( NULL, args, "%s", &name );
     THISGD->filler( THISGD->h, name, 0, 0 );
 }
 
@@ -532,7 +532,7 @@ static void f_fuse_run( INT32 nargs )
 	Pike_error("There can be only one.\n"
 		   "You have to run multiple processes to have multiple FUSE filesystems\n");
 
-    get_all_args( "run", nargs, "%o%a", &global_fuse_obj, &args );
+    get_all_args( NULL, nargs, "%o%a", &global_fuse_obj, &args );
 
     argv = malloc( sizeof(char *) * args->size );
     for( i = 0; i<args->size; i++ )

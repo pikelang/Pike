@@ -317,7 +317,7 @@ static void f_hp_create( INT32 args )
   INT_TYPE throw_errors = 0;
   INT_TYPE keep_case = 0;
   INT_TYPE no_fold = 0;
-  get_all_args("create",args,".%i%i%i", &throw_errors, &keep_case, &no_fold);
+  get_all_args(NULL,args,".%i%i%i", &throw_errors, &keep_case, &no_fold);
   pop_n_elems(args);
 
   if (THP->headers) {
@@ -692,7 +692,7 @@ static void f_websocket_mask( INT32 args ) {
     size_t len;
     unsigned INT32 m;
 
-    get_all_args("websocket_mask", args, "%n%n", &str, &mask);
+    get_all_args(NULL, args, "%n%n", &str, &mask);
 
     if (mask->len != 4) Pike_error("Wrong mask length.\n");
 

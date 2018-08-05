@@ -525,7 +525,7 @@ static void gz_compress(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("compress", args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
+  get_all_args(NULL, args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
                &wbits);
 
   switch (TYPEOF(*data_arg))

@@ -388,7 +388,7 @@ static void f_blob_remove( INT32 args )
   struct hash *h;
   struct hash *p = NULL;
 
-  get_all_args("remove", args, "%d", &doc_id);
+  get_all_args(NULL, args, "%d", &doc_id);
   r = ((unsigned int)doc_id) % HSIZE;
   h = THIS->hash[r];
 
@@ -424,7 +424,7 @@ static void f_blob_remove_list( INT32 args )
   struct array *docs;
   int i;
 
-  get_all_args("remove_list", args, "%a", &docs);
+  get_all_args(NULL, args, "%a", &docs);
 
   for( i = 0; i<docs->size; i++ )
   {
@@ -486,7 +486,7 @@ static void f_blob_add( INT32 args )
   int docid;
   int field;
   int off;
-  get_all_args("add", args, "%d%d%d", &docid, &field, &off);
+  get_all_args(NULL, args, "%d%d%d", &docid, &field, &off);
   wf_blob_low_add( Pike_fp->current_object, docid, field, off );
   pop_n_elems( args );
 }

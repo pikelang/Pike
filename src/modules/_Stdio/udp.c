@@ -344,7 +344,7 @@ static void udp_set_fd(INT32 args)
 {
   int fd;
 
-  get_all_args("set_fd", args, "%d", &fd);
+  get_all_args(NULL, args, "%d", &fd);
 
   if(FD != -1)
   {
@@ -414,7 +414,7 @@ void udp_enable_multicast(INT32 args)
   char *ip;
   PIKE_SOCKADDR reply;
 
-  get_all_args("enable_multicast", args, "%s", &ip);
+  get_all_args(NULL, args, "%s", &ip);
 
   get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -468,7 +468,7 @@ void udp_enable_multicast(INT32 args)
 void udp_set_multicast_ttl(INT32 args)
 {
   int ttl;
-  get_all_args("set_multicast_ttl", args, "%d", &ttl);
+  get_all_args(NULL, args, "%d", &ttl);
   pop_n_elems(args);
 #ifdef AF_INET6
   if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
@@ -513,7 +513,7 @@ void udp_add_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -599,7 +599,7 @@ void udp_drop_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -674,7 +674,7 @@ void udp_wait(INT32 args)
   int res;
   int e;
 
-  get_all_args("wait", args, "%F", &timeout);
+  get_all_args(NULL, args, "%F", &timeout);
 
   if (timeout < 0.0) {
     timeout = 0.0;
@@ -1133,7 +1133,7 @@ static void udp_connect(INT32 args)
 
   int tmp;
 
-  get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
+  get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
@@ -1308,7 +1308,7 @@ static void udp_set_type(INT32 args)
 {
    int type, proto = 0;
 
-   get_all_args("set_type",args,"%d.%d",&type,&proto);
+   get_all_args(NULL,args,"%d.%d",&type,&proto);
 
    THIS->type=type;
    THIS->protocol=proto;
@@ -1355,7 +1355,7 @@ static void udp_set_buffer(INT32 args)
   if(FD==-1)
     Pike_error("Port is closed.\n");
 
-  get_all_args("set_buffer", args, "%+.%s", &bufsize, &c);
+  get_all_args(NULL, args, "%+.%s", &bufsize, &c);
 
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");

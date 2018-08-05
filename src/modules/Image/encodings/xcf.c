@@ -887,7 +887,7 @@ static void image_xcf____decode( INT32 args )
   struct buffer b;
   struct gimp_image res;
   ONERROR err;
-  get_all_args( "___decode", args, "%S", &s );
+  get_all_args( NULL, args, "%S", &s );
   if(args > 1)
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
@@ -1181,7 +1181,7 @@ void image_xcf_f__decode_tiles( INT32 args )
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
   ONERROR err;
-  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%i%d%d",
+  get_all_args( NULL, args, "%o%O%a%i%i%O%i%d%d",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 

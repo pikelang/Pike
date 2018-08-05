@@ -194,7 +194,7 @@ static void image_ft_face_get_kerning( INT32 args )
 {
   INT_TYPE l, r;
   FT_Vector kern;
-  get_all_args( "get_kerning", args, "%i%i", &l, &r );
+  get_all_args( NULL, args, "%i%i", &l, &r );
   l = FT_Get_Char_Index( TFACE, l );
   r = FT_Get_Char_Index( TFACE, r );
   if( FT_Get_Kerning( TFACE, l, r, ft_kerning_default, &kern ) )
@@ -210,7 +210,7 @@ static void image_ft_face_attach_file( INT32 args )
 {
   char *path;
   FT_Error errcode;
-  get_all_args( "attach_file", args, "%s", &path );
+  get_all_args( NULL, args, "%s", &path );
   if ((errcode = FT_Attach_File( TFACE, path )))
     image_ft_error("Failed to attach file", errcode);
 }
@@ -356,7 +356,7 @@ static void image_ft_face_create( INT32 args )
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
 
-  get_all_args("create", args, "%s.%d", &font, &face_number);
+  get_all_args(NULL, args, "%s.%d", &font, &face_number);
 
   if (face_number < 0)
     SIMPLE_ARG_TYPE_ERROR("create", 2, "int(0..)");

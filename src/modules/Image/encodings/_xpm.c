@@ -246,7 +246,7 @@ void f__xpm_write_rows( INT32 args )
   rgb_group *dst, *adst;
   INT_TYPE y,x,  bpc;
 
-  get_all_args("_xpm_write_rows",args,"%o%o%i%a%a",
+  get_all_args(NULL,args,"%o%o%i%a%a",
                &img,&alpha,&bpc,&colors,&pixels);
 
 #if 0
@@ -438,7 +438,7 @@ void f__xpm_trim_rows( INT32 args )
 {
   struct array *a;
   int i,j=0;
-  get_all_args("_xpm_trim_rows", args, "%a", &a );
+  get_all_args(NULL, args, "%a", &a );
   for(i=0; i<a->size; i++)
   {
     int len,start;

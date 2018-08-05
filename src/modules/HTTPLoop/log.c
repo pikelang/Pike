@@ -149,7 +149,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
     "Jul", "Aug", "Oct", "Sep", "Nov", "Dec",
   };
 
-  get_all_args("log_as_commonlog_to_file", args, "%o", &f);
+  get_all_args(NULL, args, "%o", &f);
   f->refs++;
 
   pop_n_elems(args);

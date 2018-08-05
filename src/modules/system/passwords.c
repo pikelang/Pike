@@ -255,7 +255,7 @@ void f_getgrgid(INT32 args)
 {
   INT_TYPE gid;
   struct group *foo;
-  get_all_args("getgrgid", args, "%i", &gid);
+  get_all_args(NULL, args, "%i", &gid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -298,7 +298,7 @@ void f_getgrnam(INT32 args)
 {
   char *str;
   struct group *foo;
-  get_all_args("getgrnam", args, "%s", &str);
+  get_all_args(NULL, args, "%s", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -348,7 +348,7 @@ void f_getpwnam(INT32 args)
   char *str;
   struct passwd *foo;
 
-  get_all_args("getpwnam", args, "%s", &str);
+  get_all_args(NULL, args, "%s", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -399,7 +399,7 @@ void f_getpwuid(INT32 args)
   INT_TYPE uid;
   struct passwd *foo;
 
-  get_all_args("getpwuid", args, "%i", &uid);
+  get_all_args(NULL, args, "%i", &uid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 

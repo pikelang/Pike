@@ -77,7 +77,7 @@ void image_dct(INT32 args)
 
    CHECK_INIT();
 
-   get_all_args("dct", args, "%d%d", &x, &y);
+   get_all_args(NULL, args, "%d%d", &x, &y);
    x = MAXIMUM(1, x);
    y = MAXIMUM(1, y);
 

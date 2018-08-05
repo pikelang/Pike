@@ -605,7 +605,7 @@ static void my_glFrustum(INT32 args)
 {
   FLOAT_TYPE right,left,bottom,top,close,away;
   GLdouble m[16];
-  get_all_args("glFrustum", args, "%f%f%f%f%f%f",
+  get_all_args(NULL, args, "%f%f%f%f%f%f",
 	       &left, &right, &bottom, &top, &close, &away);
 
   if (right == left) {

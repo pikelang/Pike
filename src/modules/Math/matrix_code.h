@@ -197,7 +197,7 @@ done_made:
 
       if (Pike_sp[-args].u.string==s_identity)
       {
-	 get_all_args(PNAME,args,"%s%i",&dummy,&side);
+         get_all_args(NULL,args,"%s%i",&dummy,&side);
 
 	 THIS->xsize=THIS->ysize=side;
 	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
@@ -228,10 +228,10 @@ done_made:
 	    y = mx->m[1];
 	    z = mx->m[2];
 
-	    get_all_args(PNAME,args,"%s%i%F",&dummy,&side,&r);
+            get_all_args(NULL,args,"%s%i%F",&dummy,&side,&r);
 	 }
 	 else
-	    get_all_args(PNAME,args,"%s%i%F%F%F%F",
+            get_all_args(NULL,args,"%s%i%F%F%F%F",
 			 &dummy,&side,&r,&x,&y,&z);
 
 	 if (side<2)
@@ -339,7 +339,7 @@ void matrixX(__sprintf)(INT32 args)
        Pike_error("Some weirdo is calling sprintf with no ->m!\n");
    }
 
-   get_all_args("_sprintf",args,"%i",&x);
+   get_all_args(NULL,args,"%i",&x);
 
    switch (x)
    {

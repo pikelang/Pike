@@ -965,7 +965,7 @@ void image_create(INT32 args)
    }
    if (args<2) return;
 
-   get_all_args("create", args, "%i%i", &THIS->xsize, &THIS->ysize);
+   get_all_args(NULL, args, "%i%i", &THIS->xsize, &THIS->ysize);
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
 
@@ -1039,7 +1039,7 @@ void image_clone(INT32 args)
    INT_TYPE x,y;
 
    if( args )
-     get_all_args("clone", args, "%+%+", &x, &y);
+     get_all_args(NULL, args, "%+%+", &x, &y);
    else
    {
      x = THIS->xsize;
@@ -1178,7 +1178,7 @@ void image_copy(INT32 args)
       return;
    }
 
-   get_all_args("copy", args, "%d%d%d%d", &x1,&y1,&x2,&y2);
+   get_all_args(NULL, args, "%d%d%d%d", &x1,&y1,&x2,&y2);
 
    CHECK_INIT();
 
@@ -1362,7 +1362,7 @@ static void image_find_autocrop(INT32 args)
    int left=1,right=1,top=1,bottom=1;
 
    if (args)
-     get_all_args("find_autocrop", args, "%d.%d%d%d%d",
+     get_all_args(NULL, args, "%d.%d%d%d%d",
                   &border, &left, &right, &top, &bottom);
 
    CHECK_INIT();
@@ -1461,7 +1461,7 @@ void image_setcolor(INT32 args)
 void image_setpixel(INT32 args)
 {
    int x,y;
-   get_all_args("setpixel", args, "%d%d", &x, &y);
+   get_all_args(NULL, args, "%d%d", &x, &y);
    getrgb(THIS,2,args,args,"setpixel");
    if (!THIS->img) return;
    setpixel_test(x,y);
@@ -1483,7 +1483,7 @@ void image_getpixel(INT32 args)
    int x,y;
    rgb_group rgb;
 
-   get_all_args("setpixel", args, "%d%d", &x, &y);
+   get_all_args(NULL, args, "%d%d", &x, &y);
    if (!THIS->img) return;
    if(x<0||y<0||x>=THIS->xsize||y>=THIS->ysize)
       rgb=THIS->rgb;
@@ -1528,7 +1528,7 @@ void image_getpixel(INT32 args)
 void image_line(INT32 args)
 {
   int x1,y1,x2,y2;
-  get_all_args("line", args, "%d%d%d%d", &x1,&y1,&x2,&y2);
+  get_all_args(NULL, args, "%d%d%d%d", &x1,&y1,&x2,&y2);
    getrgb(THIS,4,args,args,"line");
    if (!THIS->img) return;
 
@@ -1570,7 +1570,7 @@ void image_line(INT32 args)
 void image_box(INT32 args)
 {
   int x1,y1,x2,y2;
-  get_all_args("box", args, "%d%d%d%d", &x1, &y1, &x2, &y2);
+  get_all_args(NULL, args, "%d%d%d%d", &x1, &y1, &x2, &y2);
    getrgb(THIS,4,args,args,"box");
    if (!THIS->img) return;
 
@@ -1613,7 +1613,7 @@ void image_circle(INT32 args)
    int x,y,rx,ry;
    INT32 i;
 
-   get_all_args("circle", args, "%d%d%d%d", &x,&y,&rx,&ry);
+   get_all_args(NULL, args, "%d%d%d%d", &x,&y,&rx,&ry);
    getrgb(THIS,4,args,args,"circle");
    if (!THIS->img) return;
 
@@ -2508,7 +2508,7 @@ void image_threshold(INT32 args)
    CHECK_INIT();
 
    if (args==1 && TYPEOF(sp[-args]) == T_INT) {
-      get_all_args("threshold",args,"%i",&level);
+      get_all_args(NULL,args,"%i",&level);
       level*=3;
       rgb.r=rgb.g=rgb.b=0;
    }
@@ -3195,7 +3195,7 @@ void image_select_from(INT32 args)
    int x,y,low_limit=30;
 
    CHECK_INIT();
-   get_all_args("select_from", args, "%d%d.%d", &x, &y, &low_limit);
+   get_all_args(NULL, args, "%d%d.%d", &x, &y, &low_limit);
    if( low_limit<0 ) low_limit=0;
    low_limit=low_limit*low_limit;
 
@@ -3472,7 +3472,7 @@ CHRONO("apply_matrix");
    {
      struct array *a;
      int r, g, b;
-     get_all_args("apply_matrix", args, "%a%d%d%d", &a, &r, &g, &b);
+     get_all_args(NULL, args, "%a%d%d%d", &a, &r, &g, &b);
      default_rgb.r = r;
      default_rgb.g = g;
      default_rgb.b = b;
@@ -4320,7 +4320,7 @@ void image_write_lsb_rgb(INT32 args)
    rgb_group *d;
    char *s;
 
-   get_all_args("write_lsb_rgb", args, "%c", &s);
+   get_all_args(NULL, args, "%c", &s);
    l=sp[-args].u.string->len;
 
    n=THIS->xsize * THIS->ysize;
@@ -4386,7 +4386,7 @@ void image_write_lsb_grey(INT32 args)
    rgb_group *d;
    char *s;
 
-   get_all_args("write_lsb_grey", args, "%c", &s);
+   get_all_args(NULL, args, "%c", &s);
    l=sp[-args].u.string->len;
 
    n=THIS->xsize * THIS->ysize;
@@ -4462,7 +4462,7 @@ void image_cast(INT32 args)
 {
   struct pike_string *type;
 
-  get_all_args("cast", args, "%n", &type);
+  get_all_args(NULL, args, "%n", &type);
   CHECK_INIT();
 
   if (type == literal_array_string)
@@ -4494,7 +4494,7 @@ void image_cast(INT32 args)
 static void image__sprintf( INT32 args )
 {
   int x;
-  get_all_args("_sprintf", args, "%d", &x);
+  get_all_args(NULL, args, "%d", &x);
 
   pop_n_elems( 2 );
   switch( x )
@@ -4544,7 +4544,7 @@ static void image_grey_blur( INT32 args )
   int ye = THIS->ysize;
   rgb_group *rgb = THIS->img;
 
-  get_all_args("grey_blur", args, "%I", &t);
+  get_all_args(NULL, args, "%I", &t);
   CHECK_INIT();
 
   for( cnt=0; cnt<t; cnt++ )

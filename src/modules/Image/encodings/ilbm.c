@@ -110,7 +110,7 @@ static void image_ilbm___decode(INT32 args)
    extern void parse_iff(char *, unsigned char *, ptrdiff_t,
 			 struct mapping *, char *);
 
-   get_all_args("__decode", args, "%S", &str);
+   get_all_args(NULL, args, "%S", &str);
 
    s = (unsigned char *)str->str;
    len = str->len;
@@ -454,7 +454,7 @@ static void image_ilbm__decode(INT32 args)
     args = 1;
   }
 
-  get_all_args("_decode", args, "%a", &arr);
+  get_all_args(NULL, args, "%a", &arr);
 
   if(args>1)
     pop_n_elems(args-1);
@@ -760,7 +760,7 @@ static void image_ilbm_encode(INT32 args)
 
   extern struct pike_string *make_iff(char *id, struct array *chunks);
 
-  get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
+  get_all_args(NULL, args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 
   if((img=get_storage(imgo, image_program))==NULL)

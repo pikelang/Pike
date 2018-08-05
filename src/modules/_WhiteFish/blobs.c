@@ -114,7 +114,7 @@ static void f_blobs_add_words( INT32 args )
   int i;
   struct blobs *blbl = THIS;
 
-  get_all_args( "add_words", args, "%d%a%d",
+  get_all_args( NULL, args, "%d%a%d",
 		&docid, &words, &field_id);
 
   for( i = 0; i<words->size; i++ )

@@ -65,7 +65,7 @@ void image_neo_f__decode(INT32 args)
   unsigned char *q;
   ONERROR err;
 
-  get_all_args( "decode", args, "%S", &s );
+  get_all_args( NULL, args, "%S", &s );
   if(s->len!=32128)
     Pike_error("This is not a NEO file (wrong file size).\n");
 

@@ -453,7 +453,7 @@ static void image_color_greylevel(INT32 args)
    }
    else
    {
-      get_all_args("greylevel",args,"%i%i%i",&r,&g,&b);
+      get_all_args(NULL,args,"%i%i%i",&r,&g,&b);
    }
    pop_n_elems(args);
    if (r+g+b==0) r=g=b=1;
@@ -576,7 +576,7 @@ static void image_color_grey(INT32 args)
 static void image_color_bits( INT32 args )
 {
   INT_TYPE rb, gb, bb, rs, gs, bs;
-  get_all_args( "bits", args, "%i%i%i%i%i%i", &rb,&gb,&bb, &rs, &gs, &bs );
+  get_all_args( NULL, args, "%i%i%i%i%i%i", &rb,&gb,&bb, &rs, &gs, &bs );
   pop_n_elems( args );
 
 
@@ -654,7 +654,7 @@ static void image_color_hex(INT32 args)
    INT_TYPE i=sizeof(COLORTYPE)*2;
 
    if (args)
-      get_all_args("hex",args,"%i",&i);
+      get_all_args(NULL,args,"%i",&i);
 
    pop_n_elems(args);
    if (i<1)
@@ -754,7 +754,7 @@ static void image_color_name(INT32 args)
 static void image_color_cast(INT32 args)
 {
   struct pike_string *str;
-  get_all_args("cast", args, "%n", &str);
+  get_all_args(NULL, args, "%n", &str);
 
    if (str==literal_array_string)
    {
@@ -1159,7 +1159,7 @@ static void image_color_bright(INT32 args)
 static void image_color_mult(INT32 args)
 {
    FLOAT_TYPE x=0.0;
-   get_all_args("`*",args,"%f",&x);
+   get_all_args(NULL,args,"%f",&x);
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r*x),
 			 (int)(THIS->rgb.g*x),
@@ -1328,7 +1328,7 @@ static void image_get_color(INT32 args)
 	    sp--;
 	    dmalloc_touch_svalue(sp);
 	    push_array_items(sp->u.array);
-	    get_all_args("create",3,"%f%f%f",&h,&s,&v);
+            get_all_args(NULL,3,"%f%f%f",&h,&s,&v);
 	    pop_n_elems(3);
 	    push_int((int)(h/360.0*256.0));
 	    push_int((int)(s/100.0*255.4));
@@ -1560,7 +1560,7 @@ static void image_make_rgb_color(INT32 args)
      r &= 0xff;
    }
    else
-     get_all_args("rgb",args,"%i%i%i",&r,&g,&b);
+     get_all_args(NULL,args,"%i%i%i",&r,&g,&b);
 
    _image_make_rgb_color(r,g,b);
 }
@@ -1573,7 +1573,7 @@ static void image_make_hsv_color(INT32 args)
    if (args && TYPEOF(sp[-args]) == T_INT)
    {
       INT_TYPE hi,si,vi;
-      get_all_args("hsv",args,"%i%i%i",&hi,&si,&vi);
+      get_all_args(NULL,args,"%i%i%i",&hi,&si,&vi);
       pop_n_elems(args);
 
       if (hi<0) hi=(hi%COLORMAX)+COLORMAX;
@@ -1587,7 +1587,7 @@ static void image_make_hsv_color(INT32 args)
    }
    else
    {
-      get_all_args("hsv",args,"%f%f%f",&h,&s,&v);
+      get_all_args(NULL,args,"%f%f%f",&h,&s,&v);
       pop_n_elems(args);
       if (h<0) h = 360 + h - (((int)h/360)*360);
       if (h>360.0) h -= (((int)h/360)*360);
@@ -1629,7 +1629,7 @@ static void image_make_hsv_color(INT32 args)
 static void image_make_cmyk_color(INT32 args)
 {
    FLOAT_TYPE c,m,y,k,r,g,b;
-   get_all_args("cmyk",args,"%F%F%F%F",&c,&m,&y,&k);
+   get_all_args(NULL,args,"%F%F%F%F",&c,&m,&y,&k);
    pop_n_elems(args);
 
    r=100-(c+k);
@@ -1643,7 +1643,7 @@ static void image_make_greylevel_color(INT32 args)
 {
    INT_TYPE i;
 
-   get_all_args("greylevel",args,"%i",&i);
+   get_all_args(NULL,args,"%i",&i);
    pop_n_elems(args);
 
    _image_make_rgb_color(i,i,i);

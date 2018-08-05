@@ -175,7 +175,7 @@ static void f_resultset_create( INT32 args )
 	if( TYPEOF(a->item[0]) == PIKE_T_OBJECT )
 	{
 	  push_object( a->item[0].u.object );
-	  get_all_args( "create", 1, "%l", &di );
+          get_all_args( NULL, 1, "%l", &di );
 	  Pike_sp--;
 	}
 	else
@@ -183,7 +183,7 @@ static void f_resultset_create( INT32 args )
 	if( TYPEOF(a->item[1]) == PIKE_T_OBJECT )
 	{
 	  push_object( a->item[1].u.object );
-	  get_all_args( "create", 1, "%l", &ri );
+          get_all_args( NULL, 1, "%l", &ri );
 	  Pike_sp--;
 	}
 	else
@@ -196,7 +196,7 @@ static void f_resultset_create( INT32 args )
 	if( TYPEOF(d->item[i]) == PIKE_T_OBJECT )
 	{
 	  push_object( d->item[i].u.object );
-	  get_all_args( "create", 1, "%l", &ri );
+          get_all_args( NULL, 1, "%l", &ri );
 	  Pike_sp--;
 	}
 	else
@@ -249,7 +249,7 @@ static void f_resultset_test( INT32 args )
 {
   int i, j, s, b;
   struct object *o = Pike_fp->current_object;
-  get_all_args("test", args, "%d%d%d", &j, &b, &s);
+  get_all_args(NULL, args, "%d%d%d", &j, &b, &s);
   wf_resultset_clear( o );
   for( i = 0; i<j; i++ )
     wf_resultset_add( o, b+i*s, rand()&0xffff );
@@ -274,7 +274,7 @@ static void f_resultset_slice( INT32 args )
     return;
   }
 
-  get_all_args("slice", args, "%d%d", &first, &nelems);
+  get_all_args(NULL, args, "%d%d", &first, &nelems);
 
   if( THIS->d->num_docs - first < nelems )
     nelems = THIS->d->num_docs-first;
@@ -461,7 +461,7 @@ static void f_resultset_or( INT32 args )
   int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
 
-  get_all_args( "or", args, "%o", &right );
+  get_all_args( NULL, args, "%o", &right );
 
   set_r = T( WF_RESULTSET(right) )->d;
 
@@ -564,7 +564,7 @@ static void f_resultset_intersect( INT32 args )
   int left_doc=0, left_rank=0, right_doc=0, right_rank=2147483647, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
 
-  get_all_args( "intersect", args, "%o", &right );
+  get_all_args( NULL, args, "%o", &right );
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
@@ -650,7 +650,7 @@ static void f_resultset_add_ranking( INT32 args )
   int left_doc=0, left_rank=0, right_rank=0, right_doc=0, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
 
-  get_all_args( "sub", args, "%o", &right );
+  get_all_args( NULL, args, "%o", &right );
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
@@ -746,7 +746,7 @@ static void f_resultset_sub( INT32 args )
   int left_doc=0, left_rank=0, right_doc=0, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
 
-  get_all_args( "sub", args, "%o", &right );
+  get_all_args( NULL, args, "%o", &right );
 
   right = WF_RESULTSET( right );
   set_r = T(right)->d;
@@ -877,7 +877,7 @@ static void f_dateset_before( INT32 args )
   ResultSet *source = THIS->d;
   ResultSet *res;
 
-  get_all_args( "before", args, "%d", &before );
+  get_all_args( NULL, args, "%d", &before );
   DUP_DATESET();
 
   if (source) {
@@ -894,7 +894,7 @@ static void f_dateset_after( INT32 args )
   ResultSet *source = THIS->d;
   ResultSet *res;
 
-  get_all_args( "before", args, "%d", &after );
+  get_all_args( NULL, args, "%d", &after );
   DUP_DATESET();
 
   if (source) {
@@ -911,7 +911,7 @@ static void f_dateset_between( INT32 args )
   ResultSet *source = THIS->d;
   ResultSet *res;
 
-  get_all_args( "between", args, "%d%d", &after, &before );
+  get_all_args( NULL, args, "%d%d", &after, &before );
   DUP_DATESET();
 
   if (source) {
@@ -932,7 +932,7 @@ static void f_dateset_not_between( INT32 args )
   ResultSet *source = THIS->d;
   ResultSet *res;
 
-  get_all_args( "not_between", args, "%d%d", &after, &before );
+  get_all_args( NULL, args, "%d%d", &after, &before );
   DUP_DATESET();
 
   if (source) {
@@ -949,7 +949,7 @@ static void f_dateset_not_between( INT32 args )
 static void f_resultset_add( INT32 args )
 {
   INT64 d, h;
-  get_all_args( "add", args, "%l%l", &d, &h );
+  get_all_args( NULL, args, "%l%l", &d, &h );
   wf_resultset_add( Pike_fp->current_object, d, h );
   pop_n_elems(args);
 }
@@ -958,7 +958,7 @@ static void f_resultset_add_many( INT32 args )
 {
   struct array *a, *b;
   int i;
-  get_all_args( "add", args, "%a%a", &a, &b );
+  get_all_args( NULL, args, "%a%a", &a, &b );
   if( a->size != b->size )
     Pike_error("Expected equally sized arrays\n");
   for( i=0;i<a->size;i++ )
@@ -967,7 +967,7 @@ static void f_resultset_add_many( INT32 args )
     if( TYPEOF(a->item[i]) == PIKE_T_OBJECT )
     {
       push_object( a->item[i].u.object );
-      get_all_args( "create", 1, "%l", &di );
+      get_all_args( NULL, 1, "%l", &di );
       Pike_sp--;
     }
     else
@@ -975,7 +975,7 @@ static void f_resultset_add_many( INT32 args )
     if( TYPEOF(b->item[i]) == PIKE_T_OBJECT )
     {
       push_object( b->item[i].u.object );
-      get_all_args( "create", 1, "%l", &ri );
+      get_all_args( NULL, 1, "%l", &ri );
       Pike_sp--;
     }
     else

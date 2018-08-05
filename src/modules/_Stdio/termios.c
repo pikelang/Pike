@@ -385,7 +385,7 @@ void file_tcflush(INT32 args)
       MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
-      get_all_args( "tcflush", args, "%S", &a );
+      get_all_args( NULL, args, "%S", &a );
       if(a == s_tciflush )
 	action=TCIFLUSH;
       else if(a == s_tcoflush )
@@ -407,7 +407,7 @@ void file_tcsendbreak(INT32 args)
 {
   INT_TYPE len=0;
 
-  get_all_args("tcsendbreak", args, "%i", &len);
+  get_all_args(NULL, args, "%i", &len);
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }

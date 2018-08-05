@@ -804,7 +804,7 @@ static void f_cval__sprintf(INT32 args)
   INT_TYPE flag_left, method;
   struct string_builder s;
 
-/*   get_all_args("_sprintf",args,"%i",&x); */
+/*   get_all_args(NULL,args,"%i",&x); */
   if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cval->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
@@ -904,7 +904,7 @@ static void f_cobj_create(INT32 args)
 
   if (args > 0)
   {
-    get_all_args("create", args, "%W", &progID);
+    get_all_args(NULL, args, "%W", &progID);
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
@@ -970,7 +970,7 @@ static void f_cobj_getprop(INT32 args)
   struct pike_string *prop;
   PCHARP propU;
 
-  get_all_args("get_prop", args, "%W", &prop);
+  get_all_args(NULL, args, "%W", &prop);
   propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
   pike_string_cpy(propU, prop);
   SET_INDEX_PCHARP(propU, prop->len, 0);
@@ -1380,7 +1380,7 @@ static void f_create_object(INT32 args)
   PCHARP progID2;
   IDispatch *pDispatch;
 
-  get_all_args("create_object", args, "%W", &progID);
+  get_all_args(NULL, args, "%W", &progID);
 
   progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
   pike_string_cpy(progID2, progID);

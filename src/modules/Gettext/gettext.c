@@ -68,7 +68,7 @@ void f_gettext(INT32 args)
   const char *domain = NULL, *msg;
   int cat = 0;
 
-  get_all_args("gettext", args, "%c.%C%D", &msg, &domain, &cat);
+  get_all_args(NULL, args, "%c.%C%D", &msg, &domain, &cat);
 
   if (domain) {
     if (args > 2 && SUBTYPEOF(Pike_sp[2-args]) == NUMBER_NUMBER)
@@ -97,7 +97,7 @@ void f_gettext(INT32 args)
 void f_dgettext(INT32 args)
 {
   const char *domain, *msg;
-  get_all_args("dgettext", args, "%c%c", &domain, &msg);
+  get_all_args(NULL, args, "%c%c", &domain, &msg);
 
   push_text(dgettext(domain, msg));
 
@@ -124,7 +124,7 @@ void f_dcgettext(INT32 args)
   const char *domain, *msg;
   int category;
 
-  get_all_args("dcgettext", args, "%c%c%d", &domain, &msg, &category);
+  get_all_args(NULL, args, "%c%c%d", &domain, &msg, &category);
 
   push_text(dcgettext(domain, msg, category));
 
@@ -161,7 +161,7 @@ void f_textdomain(INT32 args)
 {
   const char *domain = NULL;
   char *returnstring;
-  get_all_args ("textdomain", args, ".%C", &domain);
+  get_all_args (NULL, args, ".%C", &domain);
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_text(returnstring);
@@ -202,7 +202,7 @@ void f_bindtextdomain(INT32 args)
 {
   char *returnstring;
   const char *domain = NULL, *dirname = NULL;
-  get_all_args ("bindtextdomain", args,	".%C%C", &domain, &dirname);
+  get_all_args (NULL, args, ".%C%C", &domain, &dirname);
 
   if (!domain || !*domain)
     returnstring = NULL;
@@ -251,7 +251,7 @@ void f_setlocale(INT32 args)
   char *returnstring;
   const char *locale;
   int category;
-  get_all_args("setlocale", args, "%d%c", &category, &locale);
+  get_all_args(NULL, args, "%d%c", &category, &locale);
 
   returnstring = setlocale(category, locale);
   pop_n_elems(args);

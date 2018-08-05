@@ -67,7 +67,7 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
   apply((struct object *)object, "crypt", 1);
-  get_all_args("crypt", 1, "%n", &str);
+  get_all_args(NULL, 1, "%n", &str);
   if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
                (long)str->len);
@@ -4264,7 +4264,7 @@ PIKECLASS BlockCipher16
 	RETURN this_object();
       }
 
-      static void blockcipher16_ccm_init_mac_mask(const char *caller)
+      static void blockcipher16_ccm_init_mac_mask()
       {
 	struct pike_string *mac_mask;
 
@@ -4279,7 +4279,7 @@ PIKECLASS BlockCipher16
 
 	apply_current(ccm_state_inh_ctr_state_crypt_fun_num, 1);
 
-	get_all_args(caller, 1, "%n", &mac_mask);
+        get_all_args(NULL, 1, "%n", &mac_mask);
 	NO_WIDE_STRING(mac_mask);
 	if (mac_mask->len != 16) {
 	  Pike_error("Bad string length %ld returned from crypt()\n",
@@ -4299,7 +4299,7 @@ PIKECLASS BlockCipher16
 	NO_WIDE_STRING(data);
 
 	if (!THIS->pbuf.s->len) {
-	  blockcipher16_ccm_init_mac_mask("crypt");
+          blockcipher16_ccm_init_mac_mask();
 	}
 
 	if (!THIS->decrypt_mode) {
@@ -4309,7 +4309,7 @@ PIKECLASS BlockCipher16
 	apply_current(ccm_state_inh_ctr_state_crypt_fun_num, args);
 
 	if (THIS->decrypt_mode) {
-	  get_all_args("crypt", 1, "%n", &data);
+          get_all_args(NULL, 1, "%n", &data);
 
 	  NO_WIDE_STRING(data);
 
@@ -4490,7 +4490,7 @@ PIKECLASS BlockCipher16
 	if (!bytes) {
 	  apply_current(f_Nettle_BlockCipher16_cq__CCM_State_digest_size_fun_num,
 			0);
-	  get_all_args("digest", 1, "%d", &bytes);
+          get_all_args(NULL, 1, "%d", &bytes);
 	}
 	if (bytes < 4) {
 	  bytes = 4;
@@ -4502,7 +4502,7 @@ PIKECLASS BlockCipher16
 
 	if (!pstr->len) {
 	  // Unlikely, but make sure that it is initialized.
-	  blockcipher16_ccm_init_mac_mask("digest");
+          blockcipher16_ccm_init_mac_mask();
 	}
 
 	if (THIS->ctr->crypt_state && THIS->ctr->crypt_state->crypt) {
@@ -4998,7 +4998,7 @@ PIKECLASS BlockCipher16
 	if (!bytes) {
 	  apply_current(f_Nettle_BlockCipher16_cq__EAX_State_digest_size_fun_num,
 			0);
-	  get_all_args("digest", 1, "%d", &bytes);
+          get_all_args(NULL, 1, "%d", &bytes);
 	}
 	if (bytes < 1) {
 	  bytes = 1;

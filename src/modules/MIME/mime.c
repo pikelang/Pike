@@ -777,7 +777,7 @@ static void f_encode_uue( INT32 args )
 }
 
 
-static void low_tokenize( const char *funname, INT32 args, int mode )
+static void low_tokenize( INT32 args, int mode )
 {
 
   /* Tokenize string in sp[-args].u.string.  We'll just push the
@@ -792,7 +792,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
   INT32 n = 0, l, e, d;
   char *p;
 
-  get_all_args(funname, args, "%S.%d", &str, &flags);
+  get_all_args(NULL, args, "%S.%d", &str, &flags);
 
   src = STR0(str);
   cnt = str->len;
@@ -1050,7 +1050,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
  */
 static void f_tokenize( INT32 args )
 {
-  low_tokenize("MIME.tokenize", args, 0 );
+  low_tokenize(args, 0);
 }
 
 /*! @decl array(array(string|int)) tokenize_labled(string header, @
@@ -1091,7 +1091,7 @@ static void f_tokenize( INT32 args )
  */
 static void f_tokenize_labled( INT32 args )
 {
-  low_tokenize("MIME.tokenize_labled", args, 1);
+  low_tokenize(args, 1);
 }
 
 

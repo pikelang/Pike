@@ -203,7 +203,7 @@ static void f_scanner_create( INT32 args )
 {
   char *name;
   if(!sane_is_inited) init_sane();
-  get_all_args( "create", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
 
   if( sane_open( name, &THIS->h ) )
     Pike_error("Failed to open scanner \"%s\"\n", name );
@@ -313,7 +313,7 @@ static void f_scanner_set_option( INT32 args )
   FLOAT_TYPE float_value;
   SANE_Int tmp;
   const SANE_Option_Descriptor *d;
-  get_all_args( "set_option", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
 
   no = find_option( name, &d );
   if( args > 1 )
@@ -323,18 +323,18 @@ static void f_scanner_set_option( INT32 args )
      case SANE_TYPE_BOOL:
      case SANE_TYPE_INT:
      case SANE_TYPE_BUTTON:
-       sp++;get_all_args( "set_option", args, "%I", &int_value );sp--;
+       sp++;get_all_args( NULL, args, "%I", &int_value );sp--;
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &int_value, &tmp );
        break;
      case SANE_TYPE_FIXED:
-       sp++;get_all_args( "set_option", args, "%F", &float_value );sp--;
+       sp++;get_all_args( NULL, args, "%F", &float_value );sp--;
        int_value = SANE_FIX(((double)float_value));
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &int_value, &tmp );
        break;
      case SANE_TYPE_STRING:
-       sp++;get_all_args( "set_option", args, "%s", &name );sp--;
+       sp++;get_all_args( NULL, args, "%s", &name );sp--;
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &name, &tmp );
      case SANE_TYPE_GROUP:
@@ -357,7 +357,7 @@ static void f_scanner_get_option( INT32 args )
   float f;
   SANE_Int tmp;
   const SANE_Option_Descriptor *d;
-  get_all_args( "get_option", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
 
   no = find_option( name, &d );
 

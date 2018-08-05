@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "config.h"
 
@@ -123,7 +129,7 @@ static void f_tokenize( INT32 args )
   int left;
   ONERROR tmp;
 
-  get_all_args("tokenize", args, "%W", &data);
+  get_all_args(NULL, args, "%W", &data);
 
   SET_ONERROR(tmp, do_free_arrayptr, &res);
 

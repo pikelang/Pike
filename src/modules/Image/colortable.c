@@ -2844,7 +2844,7 @@ void image_colortable_rigid(INT32 args)
 
    if (args)
    {
-      get_all_args("rigid",args,"%i%i%i",&r,&g,&b);
+      get_all_args(NULL,args,"%i%i%i",&r,&g,&b);
    }
    else
    {

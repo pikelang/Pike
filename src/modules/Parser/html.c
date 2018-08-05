@@ -5330,7 +5330,7 @@ static void html_quote_stapling(INT32 args)
 {
   int of = !!(THIS->flags & FLAG_QUOTE_STAPLING);
   int f = of;
-  get_all_args("quote_stapling", args, ".%d", &f);
+  get_all_args(NULL, args, ".%d", &f);
   if (f) {
     THIS->flags |= FLAG_QUOTE_STAPLING;
   } else {
