@@ -218,7 +218,7 @@ PIKECLASS Buffer
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
     if( bytes && io->len+bytes < io->len )
-      Pike_error("Too large buffer, can not have more than %lu bytes",
+      Pike_error("Too large buffer, can not have more than %lu bytes.",
                  (size_t)-1);
 
 
@@ -258,7 +258,7 @@ PIKECLASS Buffer
       {
           growth = bytes+1;
           if( io->allocated + growth < io->allocated )
-              Pike_error("Overflow in buffer size calculations\n");
+              Pike_error("Overflow in buffer size calculations.\n");
       }
       io->buffer = xrealloc( io->buffer, io->allocated + growth );
       io->num_malloc++;
@@ -685,7 +685,7 @@ PIKECLASS Buffer
     bytes = (mpz_sizeinbase( i, 2 )+7) / 8;
 
     if( bytes > width )
-      Pike_error("Number too large to store in %d bits\n", width*8);
+      Pike_error("Number too large to store in %d bits.\n", width*8);
 
     d = io_add_space( io, width, 0 );
     io->len += width;
@@ -800,7 +800,7 @@ PIKECLASS Buffer
         break;
       }
     }
-    Pike_error("Illegal argument (not an 8bit string or 8bit buffer object)\n");
+    Pike_error("Illegal argument (not an 8bit string or 8bit buffer object).\n");
   }
 
   /* NOTE: Can return negative integers. */
@@ -817,9 +817,9 @@ PIKECLASS Buffer
       INT64 i64;
       if( int64_from_bignum( &i64, s->u.object ) )
         return i64;
-      Pike_error("Too big bignum, can not fit in indicated width\n");
+      Pike_error("Too big bignum, can not fit in indicated width.\n");
     }
-    Pike_error("Non integer argument\n");
+    Pike_error("Non integer argument.\n");
   }
 
   static void io_append_svalue( Buffer *io, struct svalue *p )
@@ -833,7 +833,7 @@ PIKECLASS Buffer
         {
           struct pike_string *s = p->u.string;
 	  if( !s->len ) return;
-          if( s->size_shift ) Pike_error("Buffer only handles 8bit data\n");
+          if( s->size_shift ) Pike_error("Buffer only handles 8bit data.\n");
           if( !io->buffer )
           {
 #ifdef PIKE_DEBUG
@@ -883,7 +883,7 @@ PIKECLASS Buffer
           if( t != MEMOBJ_NONE )
             io_append( io, ptr, len );
           else
-            Pike_error("Unsupported argument type\n");
+            Pike_error("Unsupported argument type.\n");
         }
         break;
       case PIKE_T_INT:
@@ -961,7 +961,7 @@ PIKECLASS Buffer
         if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
           break;
         if( Pike_sp[-1].u.string->size_shift )
-            Pike_error("Can not handle non-8bit data\n");
+            Pike_error("Can not handle non-8bit data.\n");
         io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
         nbytes -= Pike_sp[-1].u.string->len;
         pop_stack();
@@ -1413,7 +1413,7 @@ PIKECLASS Buffer
 
     if( size_size < (int)sizeof(size_t) &&
         len > (((size_t)1)<<(8*size_size))-1 )
-      Pike_error("Too long string, need larger size field\n");
+      Pike_error("Too long string, need larger size field.\n");
 
     io_add_int( io, len, size_size );
     io_append_svalue( io, str );
@@ -1509,14 +1509,14 @@ PIKECLASS Buffer
     io_unwrite_on_error(io, &e);
 
     if( bpi < 0 )
-      Pike_error("Illegal int width\n");
+      Pike_error("Illegal int width.\n");
 
 #if SIZEOF_LONG == 4
       if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
 #else
       if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
 #endif
-        Pike_error("Result size exceeds ptrdiff_t size\n");
+        Pike_error("Result size exceeds ptrdiff_t size.\n");
 
     io_add_space( io, n, 0 );
     switch( bpi )
@@ -1605,7 +1605,7 @@ PIKECLASS Buffer
       /* hm, well. We could extend the buffer. Should we? */
       if( io_range_error(io, off ) )
         goto again;
-      Pike_error("Writing outside buffer\n");
+      Pike_error("Writing outside buffer.\n");
     }
   }
 
@@ -2092,7 +2092,7 @@ PIKECLASS Buffer
     SET_ONERROR(_e, free_string_builder, &tmp);
     low_f_sprintf(args, &tmp);
     if( tmp.s->size_shift )
-      Pike_error("Buffer only handles 8bit data\n");
+      Pike_error("Buffer only handles 8bit data.\n");
     io_append( THIS, tmp.s->str, tmp.s->len );
     pop_n_elems(args);
     CALL_AND_UNSET_ONERROR(_e);
@@ -2182,9 +2182,9 @@ PIKECLASS Buffer
       {
         /* FIXME: Use real json error? */
         if( err )
-          Pike_error("Syntax error in json at offset %d: %s\n", -stop, err );
+          Pike_error("Syntax error in json at offset %d: %s,\n", -stop, err );
         else
-          Pike_error("Syntax error in json at offset %d\n", -stop );
+          Pike_error("Syntax error in json at offset %d.\n", -stop );
       }
     }
     else
@@ -2200,7 +2200,7 @@ PIKECLASS Buffer
           push_undefined();
         }
         else
-          Pike_error("Missing whitespace between json values at offset %d\n", stop );
+          Pike_error("Missing whitespace between json values at offset %d.\n", stop );
       }
       else
       {
