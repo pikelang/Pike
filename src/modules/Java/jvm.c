@@ -1227,7 +1227,7 @@ static void f_field_set(INT32 args)
   char dorelease;
 
   if(args!=2)
-    SIMPLE_WRONG_NUM_ARGS("set", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set", 2);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = get_storage(Pike_sp[-args].u.object,
