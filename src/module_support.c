@@ -508,6 +508,12 @@ PMOD_EXPORT int get_args(struct svalue *s,
 }
 #endif
 
+static const char* get_fname(const char *fname)
+{
+  if (fname) return fname;
+  return (Pike_fp->current_object->prog->identifiers + Pike_fp->fun)->name->str;
+}
+
 PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 			      const char *format,  ... )
 {
@@ -523,6 +529,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
     case ARGS_LONG:
       break;
     case ARGS_NUL_IN_STRING:
+      fname = get_fname(fname);
       bad_arg_error(fname, args, ret+1,	"string(1..255)",
 	Pike_sp+ret-args,
 	"Bad argument %d to %s(). NUL in string.\n",
@@ -530,7 +537,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       UNREACHABLE();
 
     case ARGS_SUBTYPED_OBJECT:
-      bad_arg_error(fname, args, ret+1, "object",
+      bad_arg_error(get_fname(fname), args, ret+1, "object",
 		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
       UNREACHABLE();
@@ -576,6 +583,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 #endif
       }
 
+      fname = get_fname(fname);
       if (info != ARGS_SHORT) {
         bad_arg_error(fname, args, ret+1, expected_type,
 	  Pike_sp+ret-args,
