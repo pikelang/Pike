@@ -633,7 +633,8 @@ protected class CompilerEnvironment
 
   int compile_exception(mixed err)
   {
-    return 0;
+    function(mixed:int) fun = master()->compile_exception;
+    return fun && fun(err);
   }
 
   string format_exception(mixed err)
