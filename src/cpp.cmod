@@ -597,30 +597,73 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
   va_end(args);
 }
 
+  /*! @decl string format_exception(mixed err)
+   *!
+   *!   Format an exception caught by cpp as a
+   *!   suitable cpp error message.
+   *!
+   *! @param err
+   *!   Caught value.
+   *!
+   *! @returns
+   *!   Returns one of:
+   *!   @mixed
+   *!     @type zero
+   *!       Generate a cpp error using the default format (ie call
+   *!       @[master()->describe_error()], and replace any newlines
+   *!       with spaces).
+   *!     @type string
+   *!       Cpp error message to @[report()]. The empty string
+   *!       supresses the cpp error.
+   *!   @endmixed
+   *!
+   *!   The default implementation just returns @expr{0@}.
+   */
+  PIKEFUN string format_exception(mixed err)
+  {
+    push_int(0);
+  }
+
 static void cpp_handle_exception(struct CPP_struct *this,
 				 const char *cpp_error_fmt, ...)
 {
   struct svalue thrown;
+  struct pike_string *msg = NULL;
   move_svalue (&thrown, &throw_value);
   mark_free_svalue (&throw_value);
 
   if (cpp_error_fmt) {
     va_list args;
     va_start (args, cpp_error_fmt);
+    /* NB: We assume that string_builder_vsprintf() and/or
+     *     init_string_builder() et al don't throw.
+     */
     cpp_report_vsprintf(this, REPORT_ERROR, cpp_error_fmt, args);
     va_end (args);
   }
 
   push_svalue(&thrown);
-  low_safe_apply_handler("compile_exception",
-			 this->handler, this->compat_handler, 1);
+  safe_apply_current(f_CPP_format_exception_fun_num, 1);
 
-  if (SAFE_IS_ZERO(Pike_sp-1)) {
-    struct pike_string *s = format_exception_for_error_msg (&thrown);
-    if (s) {
-      cpp_report(this, REPORT_ERROR, "%S", s);
-      free_string (s);
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+    if (Pike_sp[-1].u.string->len) {
+      msg = Pike_sp[-1].u.string;
+      /* FIXME: Remove the terminating LF and replace the
+       *        other LFs with spaces?
+       * cf format_exception_for_error_message().
+       */
     }
+  } else if (SAFE_IS_ZERO(Pike_sp-1)) {
+    pop_stack();
+    msg = format_exception_for_error_msg(&thrown);
+    if (msg) {
+      push_string(msg);
+    } else {
+      push_int(0);
+    }
+  }
+  if (msg) {
+    cpp_report(this, REPORT_ERROR, "%S", msg);
   }
 
   pop_stack();

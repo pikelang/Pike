@@ -627,6 +627,84 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
+protected class CompilerEnvironment
+{
+  inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
+
+  int compile_exception(mixed err)
+  {
+    return 0;
+  }
+
+  string format_exception(mixed err)
+  {
+    return 0;
+  }
+
+  class CPP
+  {
+    inherit ::this_program;
+
+    protected mixed apply_handler(string fun, mixed ... args)
+    {
+      function f;
+      foreach(({ handler, compat_handler }), object o) {
+	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
+	  return f(@args);
+	}
+      }
+      return CompilerEnvironment::`->(fun)(@args);
+    }
+
+    int compile_exception(mixed err)
+    {
+      return apply_handler(__func__, err);
+    }
+
+    string format_exception(mixed err)
+    {
+      string ret = apply_handler(__func__, err);
+      if (ret) return ret;
+      if (compile_exception(err)) {
+	return "";
+      }
+      return 0;
+    }
+  }
+}
+
+protected CompilerEnvironment DefaultCompilerEnvironment =
+  CompilerEnvironment();
+
+protected string cpp(string data, mapping|string|void current_file,
+		     int|string|void charset, object|void handler,
+		     void|int compat_major, void|int compat_minor,
+		     void|int picky_cpp)
+{
+  mixed err = catch {
+      CompilerEnvironment.CPP cpp_obj =
+	DefaultCompilerEnvironment->CPP(current_file, charset,
+					handler || UNDEFINED,
+					compat_major, compat_minor,
+					picky_cpp);
+
+      cpp_obj->init_pike_cpp();
+      cpp_obj->high_cpp(data);
+
+      if (cpp_obj->compile_errors) {
+	throw(_static_modules.Builtin.CppError("Cpp() failed\n"));
+      }
+      if (cpp_obj->dependencies_fail) {
+	return 0;
+      }
+      return cpp_obj->drain();
+    };
+  if (err) {
+    handle_error(err);
+  }
+  return 0;
+}
+
 //! Compile the Pike code in the string @[source] into a program.
 //! If @[filename] is not specified, it will default to @expr{"-"@}.
 //!
@@ -1862,6 +1940,10 @@ enum bool { false=0, true=1 };
  */
 protected void create()
 {
+  add_constant("CompilerEnvironment", CompilerEnvironment);
+  add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
+  add_constant("cpp", cpp);
+
   foreach(master_efuns, string e)
     if (has_index(this, e))
       add_constant(e, this[e]);
