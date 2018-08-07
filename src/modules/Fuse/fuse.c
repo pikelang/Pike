@@ -39,27 +39,169 @@
 
 // All docs live in module.pmod.in This file, and Fuse, requires C99.
 
-#define THISC ((struct fuse_cmd_storage *)Pike_fp->current_storage)
-static struct program *fuse_cmd_program;
-struct fuse_cmd_storage
-{
-    struct fuse *f;
-    struct fuse_cmd *cmd;
-};
-
-static void f_fuse_cmd_process( INT32 UNUSED(args) )
-{
-    struct svalue *sp = Pike_sp;
-    fuse_process_cmd(THISC->f, THISC->cmd);
-    pop_n_elems( Pike_sp-sp );
-    push_int(0);
-}
-
 static struct object *global_fuse_obj; // There Can Be Only One
 
 #define DEFAULT_ERRNO() do{if((TYPEOF(Pike_sp[-1]) == T_INT) && Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
 
-static int pf_getattr(const char *path, struct stat *stbuf)
+enum dispatch_id {
+    PF_GETATTR,
+    PF_READLINK,
+    PF_GETDIR,
+    PF_MKNOD,
+    PF_MKDIR,
+    PF_UNLINK,
+    PF_RMDIR,
+    PF_SYMLINK,
+    PF_RENAME,
+    PF_LINK,
+    PF_CHMOD,
+    PF_CHOWN,
+    PF_TRUNCATE,
+#if FUSE_VERSION < 26
+    PF_UTIME,
+#else
+    PF_UTIMENS,
+#endif
+    PF_OPEN,
+    PF_READ,
+    PF_WRITE,
+    PF_STATFS,
+    PF_RELEASE,
+    PF_FSYNC,
+    PF_SETXATTR,
+    PF_GETXATTR,
+    PF_LISTXATTR,
+    PF_REMOVEXATTR,
+    PF_CREAT,
+    PF_ACCESS,
+    PF_LOCK
+};
+
+struct dispatch_struct {
+    enum dispatch_id id;
+    int ret;
+
+    union {
+        struct {
+            const char *path;
+            struct stat *stbuf;
+        } pf_getattr;
+        struct {
+            const char *path;
+            char *buf;
+            size_t size;
+        } pf_readlink;
+        struct {
+            const char *path;
+            fuse_dirh_t h;
+            fuse_dirfil_t filler;
+        } pf_getdir;
+        struct {
+            const char *path;
+            mode_t mode;
+            dev_t rdev;
+        } pf_mknod;
+        struct {
+            const char *path;
+            mode_t mode;
+        } pf_mkdir, pf_chmod;
+        struct {
+            const char *path;
+        } pf_unlink, pf_rmdir;
+        struct {
+            const char *from;
+            const char *to;
+        } pf_symlink, pf_rename, pf_link;
+        struct {
+            const char *path;
+            uid_t uid;
+            gid_t gid;
+        } pf_chown;
+        struct {
+            const char *path;
+            off_t size;
+        } pf_truncate;
+#if FUSE_VERSION < 26
+        struct {
+            const char *path;
+            struct utimbuf *buf;
+        } pf_utime;
+#else
+        struct {
+            const char *path;
+            const struct timespec *tv;
+        } pf_utimens;
+#endif
+        struct {
+            const char *path;
+            struct fuse_file_info *fi;
+        } pf_open, pf_release;
+        struct {
+            const char *path;
+            char *buf;
+            size_t size;
+            off_t offset;
+            struct fuse_file_info *fi;
+        } pf_read;
+        struct {
+            const char *path;
+            const char *buf;
+            size_t size;
+            off_t offset;
+            struct fuse_file_info *fi;
+        } pf_write;
+        struct {
+            const char *path;
+            struct statvfs *stbuf;
+        } pf_statfs;
+        struct {
+            const char *path;
+            int isdatasync;
+            struct fuse_file_info *fi;
+        } pf_fsync;
+        struct {
+            const char *path;
+            const char *name;
+            const char *value;
+            size_t size;
+            int flags;
+        } pf_setxattr;
+        struct {
+            const char *path;
+            const char *name;
+            char *value;
+            size_t size;
+        } pf_getxattr;
+        struct {
+            const char *path;
+            char *list;
+            size_t size;
+        } pf_listxattr;
+        struct {
+            const char *path;
+            const char *name;
+        } pf_removexattr;
+        struct {
+            const char *path;
+            mode_t mode;
+            struct fuse_file_info *fi;
+        } pf_creat;
+        struct {
+            const char *path;
+            int mode;
+        } pf_access;
+        struct {
+            const char *path;
+            struct fuse_file_info *fi;
+            int cmd;
+            struct flock *lck;
+        } pf_lock;
+    } sig;
+};
+
+static void low_dispatch(void*);
+
+static int low_pf_getattr(const char *path, struct stat *stbuf)
 {
     extern struct program *stat_program;
     struct stat *st;
@@ -72,7 +214,18 @@ static int pf_getattr(const char *path, struct stat *stbuf)
     return 0;
 }
 
-static int pf_readlink(const char *path, char *buf, size_t size)
+static int pf_getattr(const char *path, struct stat *stbuf)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_GETATTR;
+    dinfo.sig.pf_getattr.path = path;
+    dinfo.sig.pf_getattr.stbuf = stbuf;
+    call_with_interpreter(low_dispatch, &dinfo);
+    return dinfo.ret;
+}
+
+static int low_pf_readlink(const char *path, char *buf, size_t size)
 {
     int res;
     push_text( path );
@@ -84,6 +237,19 @@ static int pf_readlink(const char *path, char *buf, size_t size)
 	return -ENAMETOOLONG;
     memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len+1);
     return 0;
+}
+
+static int pf_readlink(const char *path, char *buf, size_t size)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_READLINK;
+    dinfo.sig.pf_readlink.path = path;
+    dinfo.sig.pf_readlink.buf = buf;
+    dinfo.sig.pf_readlink.size = size;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
 }
 
 static struct program *getdir_program;
@@ -108,7 +274,7 @@ static void push_getdir_callback( fuse_dirh_t h, fuse_dirfil_t filler )
     push_object( o );
 }
 
-static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
+static int low_pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
     push_text( path );
     push_getdir_callback( h, filler );
@@ -118,7 +284,20 @@ static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
+static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_GETDIR;
+    dinfo.sig.pf_getdir.path = path;
+    dinfo.sig.pf_getdir.h = h;
+    dinfo.sig.pf_getdir.filler = filler;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_mknod(const char *path, mode_t mode, dev_t rdev)
 {
     push_text( path );
     push_int( mode );
@@ -129,7 +308,20 @@ static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_mkdir(const char *path, mode_t mode)
+static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_MKNOD;
+    dinfo.sig.pf_mknod.path = path;
+    dinfo.sig.pf_mknod.mode = mode;
+    dinfo.sig.pf_mknod.rdev = rdev;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_mkdir(const char *path, mode_t mode)
 {
     push_text( path );
     push_int( mode );
@@ -139,7 +331,19 @@ static int pf_mkdir(const char *path, mode_t mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_unlink(const char *path)
+static int pf_mkdir(const char *path, mode_t mode)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_MKDIR;
+    dinfo.sig.pf_mkdir.path = path;
+    dinfo.sig.pf_mkdir.mode = mode;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_unlink(const char *path)
 {
     push_text( path );
     apply( global_fuse_obj, "unlink", 1 );
@@ -148,7 +352,18 @@ static int pf_unlink(const char *path)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_rmdir(const char *path)
+static int pf_unlink(const char *path)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_UNLINK;
+    dinfo.sig.pf_unlink.path = path;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_rmdir(const char *path)
 {
     push_text( path );
     apply( global_fuse_obj, "rmdir", 1 );
@@ -157,7 +372,18 @@ static int pf_rmdir(const char *path)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_symlink(const char *from, const char *to)
+static int pf_rmdir(const char *path)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_RMDIR;
+    dinfo.sig.pf_rmdir.path = path;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_symlink(const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
@@ -167,7 +393,19 @@ static int pf_symlink(const char *from, const char *to)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_rename(const char *from, const char *to)
+static int pf_symlink(const char *from, const char *to)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_SYMLINK;
+    dinfo.sig.pf_symlink.from = from;
+    dinfo.sig.pf_symlink.to = to;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_rename(const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
@@ -177,7 +415,19 @@ static int pf_rename(const char *from, const char *to)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_link(const char *from, const char *to)
+static int pf_rename(const char *from, const char *to)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_RENAME;
+    dinfo.sig.pf_rename.from = from;
+    dinfo.sig.pf_rename.to = to;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_link(const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
@@ -187,7 +437,19 @@ static int pf_link(const char *from, const char *to)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_chmod(const char *path, mode_t mode)
+static int pf_link(const char *from, const char *to)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_LINK;
+    dinfo.sig.pf_link.from = from;
+    dinfo.sig.pf_link.to = to;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_chmod(const char *path, mode_t mode)
 {
     push_text( path );
     push_int( mode );
@@ -197,7 +459,19 @@ static int pf_chmod(const char *path, mode_t mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_chown(const char *path, uid_t uid, gid_t gid)
+static int pf_chmod(const char *path, mode_t mode)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_CHMOD;
+    dinfo.sig.pf_chmod.path = path;
+    dinfo.sig.pf_chmod.mode = mode;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_chown(const char *path, uid_t uid, gid_t gid)
 {
     push_text( path );
     push_int( uid );
@@ -208,7 +482,20 @@ static int pf_chown(const char *path, uid_t uid, gid_t gid)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_truncate(const char *path, off_t size)
+static int pf_chown(const char *path, uid_t uid, gid_t gid)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_CHOWN;
+    dinfo.sig.pf_chown.path = path;
+    dinfo.sig.pf_chown.uid = uid;
+    dinfo.sig.pf_chown.gid = gid;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_truncate(const char *path, off_t size)
 {
     push_text( path );
     push_int64( size );
@@ -218,8 +505,20 @@ static int pf_truncate(const char *path, off_t size)
     return -Pike_sp[-1].u.integer;
 }
 
+static int pf_truncate(const char *path, off_t size)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_TRUNCATE;
+    dinfo.sig.pf_truncate.path = path;
+    dinfo.sig.pf_truncate.size = size;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
 #if FUSE_VERSION < 26
-static int pf_utime(const char *path, struct utimbuf *buf)
+static int low_pf_utime(const char *path, struct utimbuf *buf)
 {
     push_text( path );
     push_int( buf->actime );
@@ -229,8 +528,19 @@ static int pf_utime(const char *path, struct utimbuf *buf)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
+static int pf_utime(const char *path, struct utimbuf *buf)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_UTIME;
+    dinfo.sig.pf_utime.path = path;
+    dinfo.sig.pf_utime.utimbuf = buf;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
 #else
-static int pf_utimens(const char *path, const struct timespec tv[2])
+static int low_pf_utimens(const char *path, const struct timespec tv[2])
 {
     push_text( path );
     push_int64( (INT64)tv[0].tv_sec*(INT64)1000000000 + (INT64)tv[0].tv_nsec );
@@ -240,9 +550,21 @@ static int pf_utimens(const char *path, const struct timespec tv[2])
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
+
+static int pf_utimens(const char *path, const struct timespec tv[2])
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_UTIMENS;
+    dinfo.sig.pf_utimens.path;
+    dinfo.sig.pf_utimens.tv = tv;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
 #endif
 
-static int pf_open(const char *path, struct fuse_file_info *fi)
+static int low_pf_open(const char *path, struct fuse_file_info *fi)
 {
     push_text( path );
     push_int( fi->flags );
@@ -252,7 +574,19 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_read(const char *path, char *buf, size_t size, off_t offset,
+static int pf_open(const char *path, struct fuse_file_info *fi)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_OPEN;
+    dinfo.sig.pf_open.path = path;
+    dinfo.sig.pf_open.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_read(const char *path, char *buf, size_t size, off_t offset,
                     struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
@@ -270,7 +604,22 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     return Pike_sp[-1].u.string->len;
 }
 
-static int pf_write(const char *path, const char *buf, size_t size,
+static int pf_read(const char *path, char *buf, size_t size, off_t offset,
+                    struct fuse_file_info *fi) {
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_READ;
+    dinfo.sig.pf_read.path = path;
+    dinfo.sig.pf_read.buf = buf;
+    dinfo.sig.pf_read.size = size;
+    dinfo.sig.pf_read.offset = offset;
+    dinfo.sig.pf_read.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_write(const char *path, const char *buf, size_t size,
 		    off_t offset, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
@@ -282,7 +631,23 @@ static int pf_write(const char *path, const char *buf, size_t size,
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_statfs(const char *path, struct statvfs *stbuf)
+static int pf_write(const char *path, const char *buf, size_t size,
+		    off_t offset, struct fuse_file_info *fi)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_WRITE;
+    dinfo.sig.pf_write.path = path;
+    dinfo.sig.pf_write.buf = buf;
+    dinfo.sig.pf_write.size = size;
+    dinfo.sig.pf_write.offset = offset;
+    dinfo.sig.pf_write.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_statfs(const char *path, struct statvfs *stbuf)
 {
     struct mapping *m;
     struct svalue *val;
@@ -317,7 +682,19 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     return 0;
 }
 
-static int pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
+static int pf_statfs(const char *path, struct statvfs *stbuf)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_STATFS;
+    dinfo.sig.pf_statfs.path = path;
+    dinfo.sig.pf_statfs.stbuf = stbuf;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     apply( global_fuse_obj, "release", 1 );
@@ -326,7 +703,19 @@ static int pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_fsync(const char *path, int isdatasync,
+static int pf_release(const char *path, struct fuse_file_info *fi)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_RELEASE;
+    dinfo.sig.pf_release.path = path;
+    dinfo.sig.pf_release.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_fsync(const char *path, int isdatasync,
                      struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
@@ -337,8 +726,22 @@ static int pf_fsync(const char *path, int isdatasync,
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_setxattr(const char *path, const char *name, const char *value,
-			size_t size, int flags)
+static int pf_fsync(const char *path, int isdatasync,
+                     struct fuse_file_info *fi)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_FSYNC;
+    dinfo.sig.pf_fsync.path = path;
+    dinfo.sig.pf_fsync.isdatasync = isdatasync;
+    dinfo.sig.pf_fsync.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_setxattr(const char *path, const char *name,
+                           const char *value, size_t size, int flags)
 {
     push_text( path );
     push_text( name );
@@ -349,8 +752,24 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
- 
-static int pf_getxattr(const char *path, const char *name, char *value,
+
+static int pf_setxattr(const char *path, const char *name, const char *value,
+			size_t size, int flags)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_SETXATTR;
+    dinfo.sig.pf_setxattr.path = path;
+    dinfo.sig.pf_setxattr.name = name;
+    dinfo.sig.pf_setxattr.value = value;
+    dinfo.sig.pf_setxattr.size = size;
+    dinfo.sig.pf_setxattr.flags = flags;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_getxattr(const char *path, const char *name, char *value,
 		       size_t size)
 {
     unsigned int ds;
@@ -369,7 +788,22 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     return ds;
 }
 
-static int pf_listxattr(const char *path, char *list, size_t size)
+static int pf_getxattr(const char *path, const char *name, char *value,
+		       size_t size)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_GETXATTR;
+    dinfo.sig.pf_getxattr.path = path;
+    dinfo.sig.pf_getxattr.name = name;
+    dinfo.sig.pf_getxattr.value = value;
+    dinfo.sig.pf_getxattr.size = size;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_listxattr(const char *path, char *list, size_t size)
 {
     unsigned int ds;
 
@@ -392,7 +826,20 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     return ds;
 }
 
-static int pf_removexattr(const char *path, const char *name)
+static int pf_listxattr(const char *path, char *list, size_t size)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_LISTXATTR;
+    dinfo.sig.pf_listxattr.path = path;
+    dinfo.sig.pf_listxattr.list = list;
+    dinfo.sig.pf_listxattr.size = size;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_removexattr(const char *path, const char *name)
 {
     push_text( path );
     push_text( name );
@@ -402,7 +849,20 @@ static int pf_removexattr(const char *path, const char *name)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
+static int pf_removexattr(const char *path, const char *name)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_REMOVEXATTR;
+    dinfo.sig.pf_removexattr.path = path;
+    dinfo.sig.pf_removexattr.name= name;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_creat( const char *path, mode_t mode,
+                         struct fuse_file_info *fi)
 {
     push_text( path );
     push_int( mode );
@@ -413,7 +873,20 @@ static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_access( const char *path, int mode)
+static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_CREAT;
+    dinfo.sig.pf_creat.path = path;
+    dinfo.sig.pf_creat.mode = mode;
+    dinfo.sig.pf_creat.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_access( const char *path, int mode)
 {
     push_text( path );
     push_int( mode );
@@ -423,7 +896,20 @@ static int pf_access( const char *path, int mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct flock *lck )
+static int pf_access( const char *path, int mode)
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_ACCESS;
+    dinfo.sig.pf_access.path = path;
+    dinfo.sig.pf_access.mode = mode;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_lock( const char *path, struct fuse_file_info *fi, int cmd,
+                        struct flock *lck )
 {
   push_text( path );
   push_int( cmd );
@@ -457,6 +943,160 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
   }
 }
 
+static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct flock *lck )
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_LOCK;
+    dinfo.sig.pf_lock.path = path;
+    dinfo.sig.pf_lock.fi = fi;
+    dinfo.sig.pf_lock.cmd = cmd;
+    dinfo.sig.pf_lock.lck = lck;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static void low_dispatch(void *vinfo) {
+    struct dispatch_struct *dinfo = vinfo;
+
+    switch (dinfo->id) {
+    case PF_GETATTR:
+        dinfo->ret = low_pf_getattr(dinfo->sig.pf_getattr.path,
+                                    dinfo->sig.pf_getattr.stbuf);
+        return;
+    case PF_READLINK:
+        dinfo->ret = low_pf_readlink(dinfo->sig.pf_readlink.path,
+                                     dinfo->sig.pf_readlink.buf,
+                                     dinfo->sig.pf_readlink.size);
+        return;
+    case PF_GETDIR:
+        dinfo->ret = low_pf_getdir(dinfo->sig.pf_getdir.path,
+                                   dinfo->sig.pf_getdir.h,
+                                   dinfo->sig.pf_getdir.filler);
+        return;
+    case PF_MKNOD:
+        dinfo->ret = low_pf_mknod(dinfo->sig.pf_mknod.path,
+                                  dinfo->sig.pf_mknod.mode,
+                                  dinfo->sig.pf_mknod.rdev);
+        return;
+    case PF_MKDIR:
+        dinfo->ret = low_pf_mkdir(dinfo->sig.pf_mkdir.path,
+                                  dinfo->sig.pf_mkdir.mode);
+        return;
+    case PF_UNLINK:
+        dinfo->ret = low_pf_unlink(dinfo->sig.pf_unlink.path);
+        return;
+
+    case PF_RMDIR:
+        dinfo->ret = low_pf_rmdir(dinfo->sig.pf_rmdir.path);
+        return;
+    case PF_SYMLINK:
+        dinfo->ret = low_pf_symlink(dinfo->sig.pf_symlink.from,
+                                    dinfo->sig.pf_symlink.to);
+        return;
+    case PF_RENAME:
+        dinfo->ret = low_pf_rename(dinfo->sig.pf_rename.from,
+                                   dinfo->sig.pf_rename.to);
+        return;
+    case PF_LINK:
+        dinfo->ret = low_pf_link(dinfo->sig.pf_link.from,
+                                 dinfo->sig.pf_link.to);
+        return;
+    case PF_CHMOD:
+        dinfo->ret = low_pf_chmod(dinfo->sig.pf_chmod.path,
+                                  dinfo->sig.pf_chmod.mode);
+        return;
+    case PF_CHOWN:
+        dinfo->ret = low_pf_chown(dinfo->sig.pf_chown.path,
+                                  dinfo->sig.pf_chown.uid,
+                                  dinfo->sig.pf_chown.gid);
+        return;
+    case PF_TRUNCATE:
+        dinfo->ret = low_pf_truncate(dinfo->sig.pf_truncate.path,
+                                     dinfo->sig.pf_truncate.size);
+        return;
+#if FUSE_VERSION < 26
+    case PF_UTIME:
+        dinfo->ret = low_pf_utime(dinfo->sig.pf_utime.path,
+                                  dinfo->sig.pf_utime.buf);
+        return;
+#else
+    case PF_UTIMENS:
+        dinfo->ret = low_pf_utimens(dinfo->sig.pf_utimens.path,
+                                    dinfo->sig.pf_utimens.tv);
+        return;
+#endif
+    case PF_OPEN:
+        dinfo->ret = low_pf_open(dinfo->sig.pf_open.path,
+                                 dinfo->sig.pf_open.fi);
+        return;
+    case PF_READ:
+        dinfo->ret = low_pf_read(dinfo->sig.pf_read.path,
+                                 dinfo->sig.pf_read.buf,
+                                 dinfo->sig.pf_read.size,
+                                 dinfo->sig.pf_read.offset,
+                                 dinfo->sig.pf_read.fi);
+        return;
+    case PF_WRITE:
+        dinfo->ret = low_pf_write(dinfo->sig.pf_write.path,
+                                  dinfo->sig.pf_write.buf,
+                                  dinfo->sig.pf_write.size,
+                                  dinfo->sig.pf_write.offset,
+                                  dinfo->sig.pf_write.fi);
+        return;
+    case PF_STATFS:
+        dinfo->ret = low_pf_statfs(dinfo->sig.pf_statfs.path,
+                                   dinfo->sig.pf_statfs.stbuf);
+        return;
+    case PF_RELEASE:
+        dinfo->ret = low_pf_release(dinfo->sig.pf_release.path,
+                                    dinfo->sig.pf_release.fi);
+        return;
+    case PF_FSYNC:
+        dinfo->ret = low_pf_fsync(dinfo->sig.pf_fsync.path,
+                                  dinfo->sig.pf_fsync.isdatasync,
+                                  dinfo->sig.pf_fsync.fi);
+        return;
+    case PF_SETXATTR:
+        dinfo->ret = low_pf_setxattr(dinfo->sig.pf_setxattr.path,
+                                     dinfo->sig.pf_setxattr.name,
+                                     dinfo->sig.pf_setxattr.value,
+                                     dinfo->sig.pf_setxattr.size,
+                                     dinfo->sig.pf_setxattr.flags);
+        return;
+    case PF_GETXATTR:
+        dinfo->ret = low_pf_getxattr(dinfo->sig.pf_getxattr.path,
+                                     dinfo->sig.pf_getxattr.name,
+                                     dinfo->sig.pf_getxattr.value,
+                                     dinfo->sig.pf_getxattr.size);
+        return;
+    case PF_LISTXATTR:
+        dinfo->ret = low_pf_listxattr(dinfo->sig.pf_listxattr.path,
+                                      dinfo->sig.pf_listxattr.list,
+                                      dinfo->sig.pf_listxattr.size);
+        return;
+    case PF_REMOVEXATTR:
+        dinfo->ret = low_pf_removexattr(dinfo->sig.pf_removexattr.path,
+                                        dinfo->sig.pf_removexattr.name);
+        return;
+    case PF_CREAT:
+        dinfo->ret = low_pf_creat(dinfo->sig.pf_creat.path,
+                                  dinfo->sig.pf_creat.mode,
+                                  dinfo->sig.pf_creat.fi);
+        return;
+    case PF_ACCESS:
+        dinfo->ret = low_pf_access(dinfo->sig.pf_access.path,
+                                   dinfo->sig.pf_access.mode);
+        return;
+    case PF_LOCK:
+        dinfo->ret = low_pf_lock(dinfo->sig.pf_lock.path,
+                                 dinfo->sig.pf_lock.fi,
+                                 dinfo->sig.pf_lock.cmd,
+                                 dinfo->sig.pf_lock.lck);
+        return;
+    }
+}
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
     .readlink	= pf_readlink,
@@ -493,51 +1133,14 @@ static struct fuse_operations pike_fuse_oper = {
     .create     = pf_creat, 
 };
 
-struct passon {
-    struct fuse *f;
-    struct fuse_cmd *cmd; 
-};
-
-static void low_dispatch_fuse_command( void *ptr )
-{
-    struct passon *x = (struct passon *)ptr;
-    struct svalue *old = Pike_sp;
-    fuse_process_cmd( x->f, x->cmd );
-    pop_n_elems( Pike_sp - old );
-}
-
-static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *UNUSED(a) )
-{
-    struct passon x = {
-	.f = f,
-	.cmd = cmd
-    };
-
-    call_with_interpreter(low_dispatch_fuse_command, &x );
-}
-
-static int global_fuse_fd;
-static char *global_fuse_mp;
-static struct fuse *global_fuse;
-static void pf_fuse_teardown( )
-{
-    if( global_fuse )
-    {
-#if FUSE_VERSION <= 25
-	fuse_teardown( global_fuse, global_fuse_fd, global_fuse_mp );
-#else
-	fuse_teardown( global_fuse, global_fuse_mp );
-#endif
-	global_fuse = NULL;
-    }
-}
-
 static void f_fuse_run( INT32 nargs )
 {
     struct fuse *fuse;
     int i, multi, fd;
     char **argv, *mountpoint;
     struct array *args;
+    int ret;
+
     if( global_fuse_obj )
 	Pike_error("There can be only one.\n"
 		   "You have to run multiple processes to have multiple FUSE filesystems\n");
@@ -555,39 +1158,19 @@ static void f_fuse_run( INT32 nargs )
 	}
 	argv[i] = args->item[i].u.string->str;
     }
-    fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper), 
-		      &mountpoint, &multi, &fd );
-    free( argv );
-
-    global_fuse = fuse;
-    global_fuse_mp = mountpoint;
-    global_fuse_fd = fd;
-    atexit( pf_fuse_teardown );
-
-    if (fuse == NULL)
-	Pike_error("Fuse init failed\n");
 
     enable_external_threads();
     THREADS_ALLOW();
-    if( !fuse_exited( fuse ) )
-	fuse_loop_mt_proc( fuse, dispatch_fuse_command, 0 );
+    ret = fuse_main(args->size, argv, &pike_fuse_oper, NULL);
     THREADS_DISALLOW();
-    // NOTE: Returning to pike tends to hang the kernel, unfortunately, unless pike exits correctly.
-    // Hence exit here.
-#if FUSE_VERSION <= 25
-    fuse_teardown( fuse, fd, mountpoint );
-#else
-    fuse_teardown( fuse, mountpoint);
-#endif
-    global_fuse = NULL;
-    exit(0); 
-    global_fuse_obj=NULL;
+
+    free(argv);
+    exit(ret);
 }
 
 PIKE_MODULE_EXIT
 {
   free_program( getdir_program );
-  free_program( fuse_cmd_program );
 }
 
 /*! @decl constant FUSE_MAJOR_VERSION
@@ -606,13 +1189,6 @@ PIKE_MODULE_INIT
 	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
     }
     getdir_program = end_program();
-
-    start_new_program( );
-    {
-	ADD_STORAGE( struct fuse_cmd_storage );
-	ADD_FUNCTION( "`()", f_fuse_cmd_process, tFunc(tVoid,tVoid), 0 );
-    }
-    fuse_cmd_program = end_program();
 
     add_integer_constant("F_RDLCK", F_GETLK, 0 );
     add_integer_constant("F_WRLCK", F_WRLCK, 0 );

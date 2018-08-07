@@ -27,6 +27,17 @@ o Compiler
   - Fixed an incompatibility between the machine code generator on
     ppc and GCC 7.
 
+o Fuse
+
+  - Switched the Fuse module to use a different libfuse API.
+
+    The way we used to use libfuse got first deprecated and support
+    for it is now removed from the libfuse git repository entirely.
+    In addition, our previous use of said libfuse API triggered a
+    bug resulting in a segmentation fault in at least libfuse 2.9.2
+    and 2.9.7. We now use libfuse in a less elegant but more usual
+    way, and do not trigger the bug anymore.
+
 o Gmp.mpq
 
   Fix numbers between -1.0 and 1.0 sometimes missing a leading 0.
