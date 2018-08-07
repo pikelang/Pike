@@ -960,6 +960,10 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
 static void low_dispatch(void *vinfo) {
     struct dispatch_struct *dinfo = vinfo;
 
+    /* If we error in Pike code later, this will stand and ought to be
+     * a better return value than most. */
+    dinfo->ret = -ENOSYS;
+
     switch (dinfo->id) {
     case PF_GETATTR:
         dinfo->ret = low_pf_getattr(dinfo->sig.pf_getattr.path,

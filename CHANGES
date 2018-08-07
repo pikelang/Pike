@@ -38,6 +38,10 @@ o Fuse
     and 2.9.7. We now use libfuse in a less elegant but more usual
     way, and do not trigger the bug anymore.
 
+  - Handle errors in Fuse operations (i.e. Pike code implementing
+    FUSE filesystems) gently by reporting ENOSYS instead of
+    exiting the process.
+
 o Gmp.mpq
 
   Fix numbers between -1.0 and 1.0 sometimes missing a leading 0.

@@ -1252,6 +1252,42 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
      by incrementing refcount though. */
 }
 
+static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
+                                            void (*func)(void *ctx),
+                                            void *ctx)
+{
+  JMP_BUF back;
+
+  if(SETJMP(back))
+  {
+    if(throw_severity <= THROW_ERROR) {
+      if (state->thread_obj) {
+	/* Copy the thrown exit value to the thread_state here,
+	 * if the thread hasn't been destructed. */
+	assign_svalue(&state->result, &throw_value);
+      }
+
+      call_handle_error();
+    }
+
+    if(throw_severity == THROW_EXIT)
+    {
+      /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
+       * active. Otoh it cannot be done later since it requires the
+       * evaluator stacks in the gc calls. It's difficult to solve
+       * without handing over the cleanup duty to the main thread. */
+      pike_do_exit(throw_value.u.integer);
+    }
+
+    state->status = THREAD_ABORTED;
+  } else {
+    back.severity=THROW_EXIT;
+    func(ctx);
+  }
+
+  UNSETJMP(back);
+}
+
 PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 {
   struct thread_state *state;
@@ -1266,7 +1302,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
       state->debug_flags &= ~THREAD_DEBUG_LOOSE;
 #endif
 
-      func(ctx);
+      CALL_WITH_ERROR_HANDLING(state, func, ctx);
 
 #ifdef PIKE_DEBUG
       /* Restore the looseness property of the thread. */
@@ -1278,7 +1314,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
       SWAP_IN_THREAD(state);
       DO_IF_DEBUG(state->debug_flags &= ~THREAD_DEBUG_LOOSE;)
 
-      func(ctx);
+      CALL_WITH_ERROR_HANDLING(state, func, ctx);
 
       /* Restore */
       DO_IF_DEBUG(state->debug_flags |= THREAD_DEBUG_LOOSE;)
@@ -1301,7 +1337,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     num_threads++;
     thread_table_insert(Pike_interpreter.thread_state);
 
-    func(ctx);
+    CALL_WITH_ERROR_HANDLING(Pike_interpreter.thread_state, func, ctx);
 
     cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
     Pike_interpreter.thread_state->status=THREAD_EXITED;
