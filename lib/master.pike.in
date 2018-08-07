@@ -682,28 +682,22 @@ protected string cpp(string data, mapping|string|void current_file,
 		     void|int compat_major, void|int compat_minor,
 		     void|int picky_cpp)
 {
-  mixed err = catch {
-      CompilerEnvironment.CPP cpp_obj =
-	DefaultCompilerEnvironment->CPP(current_file, charset,
-					handler || UNDEFINED,
-					compat_major, compat_minor,
-					picky_cpp);
+  CompilerEnvironment.CPP cpp_obj =
+    DefaultCompilerEnvironment->CPP(current_file, charset,
+				    handler || UNDEFINED,
+				    compat_major, compat_minor,
+				    picky_cpp);
 
-      cpp_obj->init_pike_cpp();
-      cpp_obj->high_cpp(data);
+  cpp_obj->init_pike_cpp();
+  cpp_obj->high_cpp(data);
 
-      if (cpp_obj->compile_errors) {
-	throw(_static_modules.Builtin.CppError("Cpp() failed\n"));
-      }
-      if (cpp_obj->dependencies_fail) {
-	return 0;
-      }
-      return cpp_obj->drain();
-    };
-  if (err) {
-    handle_error(err);
+  if (cpp_obj->compile_errors) {
+    throw(_static_modules.Builtin.CppError("Cpp() failed\n"));
   }
-  return 0;
+  if (cpp_obj->dependencies_fail) {
+    return 0;
+  }
+  return cpp_obj->drain();
 }
 
 //! Compile the Pike code in the string @[source] into a program.
