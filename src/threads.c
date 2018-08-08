@@ -1312,10 +1312,10 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     free_object(thread_obj);
     thread_obj = NULL;
     num_threads--;
-    mt_unlock_interpreter();
 #ifdef PIKE_DEBUG
     Pike_interpreter_pointer = NULL;
 #endif
+    mt_unlock_interpreter();
   }
 }
 
