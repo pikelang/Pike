@@ -1239,8 +1239,6 @@ static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
        * without handing over the cleanup duty to the main thread. */
       pike_do_exit(throw_value.u.integer);
     }
-
-    state->status = THREAD_ABORTED;
   } else {
     back.severity=THROW_EXIT;
     func(ctx);
