@@ -4627,7 +4627,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  PIKEFUN void high_cpp(string data)
+  PIKEFUN string high_cpp(string data)
   {
     struct CPP_struct *this = THIS;
 
@@ -4655,6 +4655,22 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     push_int(0); /* flags */
     apply_current(f_CPP_low_cpp_fun_num, 2);
+
+    if(this->compile_errors)
+    {
+      throw_error_object(fast_clone_object(cpp_error_program), 0, 0,
+			 "Cpp() failed.\n");
+    }
+    else if(this->dependencies_fail)
+    {
+      push_int(0);
+    }
+    else
+    {
+      push_string(finish_string_builder(&this->buf));
+      /* NB: Make sure the buffer isn't freed twice. */
+      this->buf.s = NULL;
+    }
   }
 
   PIKEFUN string drain()
@@ -5510,9 +5526,6 @@ PIKEFUN string cpp(string data,
     parent_clone_object(CPP_program,
 			compilation_environment, CPP_program_fun_num,
 			args-1);
-  struct CPP_struct *this =
-    (struct CPP_struct *)get_storage(cpp_obj, CPP_program);
-  struct mapping *predefs = NULL;
 
   push_object(cpp_obj);
 
@@ -5521,21 +5534,6 @@ PIKEFUN string cpp(string data,
   ref_push_string(data);
   apply(cpp_obj, "high_cpp", 1);
 
-  if(this->compile_errors)
-  {
-    throw_error_object(fast_clone_object(cpp_error_program), 0, 0,
-		       "Cpp() failed\n");
-  }
-  else if(this->dependencies_fail)
-  {
-    push_int(0);
-  }
-  else
-  {
-    push_string(finish_string_builder(&this->buf));
-    /* NB: Make sure the buffer isn't freed twice. */
-    this->buf.s = NULL;
-  }
   stack_pop_n_elems_keep_top((Pike_sp - save_sp) - 1);
 }
 

@@ -689,15 +689,7 @@ protected string cpp(string data, mapping|string|void current_file,
 				    picky_cpp);
 
   cpp_obj->init_pike_cpp();
-  cpp_obj->high_cpp(data);
-
-  if (cpp_obj->compile_errors) {
-    throw(_static_modules.Builtin.CppError("Cpp() failed\n"));
-  }
-  if (cpp_obj->dependencies_fail) {
-    return 0;
-  }
-  return cpp_obj->drain();
+  return cpp_obj->high_cpp(data);
 }
 
 //! Compile the Pike code in the string @[source] into a program.
