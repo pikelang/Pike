@@ -80,6 +80,7 @@ private int portalbuffersize = PORTALBUFFERSIZE;
 private int timeout = QUERYTIMEOUT;
 private array connparmcache;
 private int reconnected;
+private int lastping = time(1);
 
 protected string _sprintf(int type) {
   string res;
@@ -253,9 +254,15 @@ protected void create(void|string host, void|string database,
 //! @seealso
 //!   @[is_open()]
 /*semi*/final int ping() {
+  int t, ret;
   waitauthready();
-  return is_open()
-   && !catch(proxy.c->start()->sendcmd(FLUSHSEND)) ? !!reconnected : -1;
+  if ((ret = is_open())
+     // Pinging more frequently than MINPINGINTERVAL seconds
+     // is suppressed to avoid artificial TCP-ACK latency
+   && (t = time(1)) - lastping > MINPINGINTERVAL
+   && (ret = !catch(proxy.c->start()->sendcmd(FLUSHSEND))))
+    lastping = t;
+  return ret ? !!reconnected : -1;
 }
 
 //! Cancels all currently running queries in this session.
