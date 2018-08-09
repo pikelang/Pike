@@ -657,6 +657,86 @@ protected class CompilerEnvironment
       return CompilerEnvironment::`->(fun)(@args);
     }
 
+    //! @decl void report(SeverityLevel severity, @
+    //!                   string filename, int(1..) linenumber, @
+    //!                   string subsystem, @
+    //!                   sprintf_format message, sprintf_args ... extra_args)
+    //!
+    //!   Report a diagnostic from the preprocessor.
+    //!
+    //! @param severity
+    //!   The severity of the diagnostic.
+    //!
+    //! @param filename
+    //! @param linenumber
+    //!   Location which triggered the diagnostic.
+    //!
+    //! @param subsystem
+    //!   Typically @expr{"cpp"@}.
+    //!
+    //! @param message
+    //!   String with the diagnostic message, with optional
+    //!   @[sprintf()]-style formatting (if any @[extra_args]).
+    //!
+    //! @param extra_args
+    //!   Extra arguments to @[sprintf()].
+    //!
+    //!   The default implementation does the following:
+    //!
+    //!   @ul
+    //!     @item
+    //!       If there's a handler which implements @[Reporter()->report()],
+    //!       call it with the same arguments.
+    //!     @item
+    //!       Otherwise if there's a handler which implements
+    //!       @[compile_warning()] or @[compile_error()] that matches
+    //!       @[severity], call it with suitable arguments.
+    //!     @item
+    //!       Otherwise if there's a compat handler, use it in the same
+    //!       manner as the handler.
+    //!     @item
+    //!       Otherwise fall back to calling @[::report()] with the
+    //!       same arguments.
+    //!   @endul
+    //!
+    //! @note
+    //!   In Pike 8.0 and earlier @[MasterObject()->report()] was not called.
+    //!
+    //! @seealso
+    //!   @[Reporter()->report()]
+    void report(SeverityLevel severity, string filename, int linenumber,
+		string subsystem,
+		sprintf_format message, sprintf_args ... extra_args)
+    {
+      foreach(({ handler, compat_handler }), object o) {
+	if (!objectp(o)) continue;
+	if (functionp(o->report)) {
+	  o->report(severity, filename, linenumber,
+		    subsystem, message, @extra_args);
+	  return;
+	}
+	if (severity < WARNING) continue;
+	if (severity >= ERROR) {
+	  if (functionp(o->compile_error)) {
+	    o->compile_error(filename, linenumber,
+			     sizeof(extra_args)?
+			     sprintf(message, @extra_args):
+			     message);
+	    return;
+	  }
+	} else {
+	  if (functionp(o->compile_warning)) {
+	    o->compile_warning(filename, linenumber,
+			       sizeof(extra_args)?
+			       sprintf(message, @extra_args):
+			       message);
+	    return;
+	  }
+	}
+      }
+      ::report(severity, filename, linenumber, subsystem, message, @extra_args);
+    }
+
     int compile_exception(mixed err)
     {
       return apply_handler(__func__, err);

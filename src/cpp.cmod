@@ -445,30 +445,15 @@ static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
  *!   Always @expr{"cpp"@}.
  *!
  *! @param message
- *!   @[sprintf()]-style formatting string with the diagnostic message.
+ *!   String with the diagnostic message, with optional
+ *!   @[sprintf()]-style formatting (if any @[extra_args]).
  *!
  *! @param extra_args
  *!   Extra arguments to @[sprintf()].
  *!
- *!   The default implementation does the following:
- *!
- *!   @ul
- *!     @item
- *!       If there's a handler which implements @[Reporter()->report()],
- *!       call it with the same arguments.
- *!     @item
- *!       Otherwise if there's a handler which implements @[compile_warning()]
- *!       or @[compile_error()] that matches @[severity], call it with
- *!       suitable arguments.
- *!     @item
- *!       Otherwise if there's a compat handler, use it in the same manner
- *!       as the handler.
- *!     @item
- *!       Otherwise fall back to calling @[::report()] with the same arguments.
- *!   @endul
- *!
- *! @note
- *!   In Pike 8.0 and earlier @[MasterObject()->report()] was not called.
+ *!   The default implementation just calls
+ *!   @[CompilerEnviroment::report()] in the parent with the
+ *!   same arguments.
  *!
  *! @seealso
  *!   @[Reporter()->report()]
@@ -478,57 +463,7 @@ PIKEFUN void report(int(0..3) severity,
 		    string subsystem,
 		    string message, mixed ... extra_args)
 {
-  struct CPP_struct *this = THIS;
-  const char *compat_fun_name = "compile_warning";
-  const char *fun_name;
-  struct object *found = NULL;
-  int i;
-  int fun = -1;
-  if (severity >= REPORT_ERROR) {
-    compat_fun_name = "compile_error";
-  }
-  if (this->compile_errors > 10) return;
-  for (i = 0; i < 2; i++) {
-    struct object *handler;
-    int j;
-
-    if (!i) {
-      handler = this->handler;
-    } else {
-      handler = this->compat_handler;
-    }
-    if (!handler || !handler->prog) continue;
-    for(j = 0; j < 2; j++) {
-      if (!j) {
-	fun_name = "report";
-      } else {
-	fun_name = compat_fun_name;
-      }
-      if ((fun = find_identifier(fun_name, handler->prog)) != -1) {
-	found = handler;
-	break;
-      }
-    }
-  }
-  if (found) {
-    if (fun_name[0] == 'r') {
-      apply_low(found, fun, args);
-    } else if (severity >= REPORT_WARNING) {
-      if (args > 5) {
-	f_sprintf(args - 4);
-	args = 5;
-	message = Pike_sp[-1].u.string;
-      }
-      ref_push_string(filename);
-      push_int(linenumber);
-      ref_push_string(message);
-      apply_low(found, fun, 3);
-    }
-    return;
-  }
-  /* Nothing apropriate in any handlers.
-   * Call the report() in our parent.
-   */
+  /* Call the report() in our parent. */
   apply_external(1, CE_REPORT_FUN_NUM, args);
 }
 
