@@ -226,7 +226,7 @@ PIKECLASS define
     {
       struct pike_string *a = NULL;
 
-      if (d->args > 0) {
+      if (arguments && (d->args > 0)) {
 	a = ITEM(arguments)[0].u.string;
       }
       d->magic(context_obj, d, a, &s);
@@ -297,11 +297,15 @@ PIKECLASS define
 	      int save_flags = d->flags;
 	      d->flags |= CPP_MACRO_IN_USE;
 
-	      ref_push_string(str);
-	      push_int(flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
-	      safe_apply(context_obj, "cpp", 2);
-	      string_builder_shared_strcat(&s, Pike_sp[-1].u.string);
-	      pop_stack();
+	      if (context_obj) {
+		ref_push_string(str);
+		push_int(flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+		safe_apply(context_obj, "cpp", 2);
+		string_builder_shared_strcat(&s, Pike_sp[-1].u.string);
+		pop_stack();
+	      } else {
+		string_builder_shared_strcat(&s, str);
+	      }
 
 	      d->flags = save_flags;
 
