@@ -87,14 +87,14 @@ PIKECLASS _pcre
 
      if (THIS->pattern) { free_string(THIS->pattern); THIS->pattern=NULL; }
      THIS->pattern = pattern;
-     add_ref(THIS->pattern);
+     add_ref(pattern);
 
      if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
      if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
      THIS->extra=NULL;
 
      THIS->re=pcre_compile(
-       THIS->pattern->str,
+       pattern->str,
        options ? options->u.integer : 0,
        &errptr,&erroffset,
        NULL /* table */ );
