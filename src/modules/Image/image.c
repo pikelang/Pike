@@ -359,7 +359,7 @@ static inline rgb_group _pixel_apply_matrix(struct image *img,
    else res.r=testrange(r*qdiv+default_rgb.r);
    if (sumg) res.g=testrange(default_rgb.g+g/(sumg*div));
    else res.g=testrange(g*qdiv+default_rgb.g);
-   if (sumb) res.b=testrange(default_rgb.g+b/(sumb*div));
+   if (sumb) res.b=testrange(default_rgb.b+b/(sumb*div));
    else res.b=testrange(b*qdiv+default_rgb.b);
 #ifdef MATRIX_DEBUG
    fprintf(stderr,"->%d,%d,%d\n",res.r,res.g,res.b);
