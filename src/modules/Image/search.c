@@ -478,7 +478,7 @@ static inline rgb_group _pixel_apply_max(struct image *img,
    else
      res.g = (COLORTYPE)testrange(g * qdiv + default_rgb.g);
    if (sumb)
-     res.b = (COLORTYPE)testrange(default_rgb.g + b/(sumb * div));
+     res.b = (COLORTYPE)testrange(default_rgb.b + b/(sumb * div));
    else
      res.b = (COLORTYPE)testrange(b * qdiv + default_rgb.b);
 #ifdef MATRIX_DEBUG
