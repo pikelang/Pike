@@ -1304,7 +1304,11 @@ PIKEFUN mixed resolv(string sym)
 	{
 	  INC_PCHARP(ptr, 1);
 	  minor=STRTOL_PCHARP(ptr, &ptr, 10);
-	  cpp_change_compat(this, major, minor);
+
+	  push_int(major);
+	  push_int(minor);
+	  apply_current(f_CPP_change_cpp_compatibility_fun_num, 2);
+	  pop_stack();
 	}else{
 	  cpp_error(this, "Missing '.' in #pike.");
 	  this->compat_minor=0;
@@ -5163,8 +5167,12 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
       }
     }
 
-    if(compat_major)
-      cpp_change_compat(this, compat_major, compat_minor);
+    if(compat_major) {
+      push_int(compat_major);
+      push_int(compat_minor);
+      apply_current(f_CPP_change_cpp_compatibility_fun_num, 2);
+      pop_stack();
+    }
 
     this->picky_cpp = picky_cpp;
     pop_n_elems(args);
