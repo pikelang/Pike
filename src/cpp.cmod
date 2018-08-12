@@ -829,11 +829,6 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
   if(this->compat_major == major &&
      this->compat_minor == minor) return;
 
-  if(this->compat_handler)
-  {
-    free_object(this->compat_handler);
-    this->compat_handler=0;
-  }
   if((major == PIKE_MAJOR_VERSION &&
       minor == PIKE_MINOR_VERSION) || major < 0)
   {
@@ -842,21 +837,6 @@ void cpp_change_compat(struct CPP_struct *this, int major, int minor)
     return; /* Our work here is done */
   }
 
-  push_int(major);
-  push_int(minor);
-  SAFE_APPLY_MASTER("get_compilation_handler",2);
-  if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
-  {
-    if (SUBTYPEOF(Pike_sp[-1])) {
-      cpp_error(this,
-		"#pike: Subtyped compilation handlers are not supported yet.");
-    }
-    this->compat_handler=Pike_sp[-1].u.object;
-    dmalloc_touch_svalue(Pike_sp-1);
-    Pike_sp--;
-  } else {
-    pop_stack();
-  }
   this->compat_major=major;
   this->compat_minor=minor;
 }

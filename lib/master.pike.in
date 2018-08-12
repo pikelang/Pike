@@ -631,6 +631,11 @@ protected class CompilerEnvironment
 {
   inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
 
+  object get_compilation_handler(int major, int minor)
+  {
+    return master()->get_compilation_handler(major, minor);
+  }
+
   int compile_exception(mixed err)
   {
     function(mixed:int) fun = master()->compile_exception;
@@ -735,6 +740,26 @@ protected class CompilerEnvironment
 	}
       }
       ::report(severity, filename, linenumber, subsystem, message, @extra_args);
+    }
+
+    object get_compilation_handler(int major, int minor)
+    {
+      return apply_handler(__func__, major, minor);
+    }
+
+    void change_cpp_compatibility(int major, int minor)
+    {
+      if ((compat_major == major) && (compat_minor == minor)) {
+	return;
+      }
+
+      if (((major == __REAL_MAJOR__) && (minor == __REAL_MINOR__)) ||
+	  (major < 0)) {
+	compat_handler = UNDEFINED;
+      } else {
+	compat_handler = get_compilation_handler(major, minor);
+      }
+      ::change_cpp_compatibility(major, minor);
     }
 
     int compile_exception(mixed err)
