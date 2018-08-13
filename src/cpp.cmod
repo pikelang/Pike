@@ -5018,7 +5018,7 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
   *!   it will default to @expr{"-"@}.
   *!
   *! @param charset
-  *!   Turn on automatic character set detection if @expr{1}, otherwise
+  *!   Turn on automatic character set detection if @expr{1@}, otherwise
   *!   specifies the character set used by the input.
   *!   Defaults to @expr{"ISO-10646"@}.
   *!
