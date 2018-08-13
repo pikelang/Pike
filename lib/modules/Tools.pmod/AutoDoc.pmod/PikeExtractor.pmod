@@ -517,6 +517,11 @@ private class Extractor {
       if (doc) {
         if (wasNonGroupable) {
           object(PikeObject) d = [object(PikeObject)] decls[0];
+	  if (!object_variablep(d, "documentation")) {
+	    werror("No documentation variable in d: %O\n", d);
+	    werror("decls: %O\n", decls);
+	    exit(1);
+	  }
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
