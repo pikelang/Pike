@@ -404,6 +404,9 @@ string get_version()
     if (Stdio.is_dir("refs")) {
       return "rxnpatch";
     }
+    if (Stdio.exist("src/sass.cpp")) {
+      return "pike-modules/Sass";
+    }
     if (Stdio.exist("README.md")) {
       string readme = Stdio.read_bytes("README.md");
       if (has_value(readme, "libsass")) {
