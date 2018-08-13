@@ -824,26 +824,41 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 
 /* #pike handling. */
 
-void cpp_change_compat(struct CPP_struct *this, int major, int minor)
-{
-  if(this->compat_major == major &&
-     this->compat_minor == minor) return;
-
-  if((major == PIKE_MAJOR_VERSION &&
-      minor == PIKE_MINOR_VERSION) || major < 0)
-  {
-    this->compat_major=PIKE_MAJOR_VERSION;
-    this->compat_minor=PIKE_MINOR_VERSION;
-    return; /* Our work here is done */
-  }
-
-  this->compat_major=major;
-  this->compat_minor=minor;
-}
-
+  /*! @decl void change_cpp_compatibility(int major, int minor)
+   *!
+   *!   Change the pike compatibility level for this preprocessor
+   *!   to the specified version of Pike.
+   *!
+   *! @param major
+   *!   Major version of Pike to attempt to be compatible with.
+   *!   Specifying a major version of @expr{-1@} is a short hand
+   *!   for specifying @[__REAL_MAJOR__] and @[__REAL_MINOR__].
+   *!
+   *! @param minor
+   *!   Minor version of Pike to attempt to be compatible with.
+   *!
+   *!   This function is called by the preprocessor to set
+   *!   the compatibility level.
+   *!
+   *!   The default implementation performs some normalization, and
+   *!   then sets @[compat_major] and @[compat_minor] to their
+   *!   respective values (which in turn affects symbols such as
+   *!   @[__MAJOR__] and @[__MINOR__]).
+   */
   PIKEFUN void change_cpp_compatibility(int major, int minor)
   {
-    cpp_change_compat(THIS, major, minor);
+    struct CPP_struct *this = THIS;
+
+    if ((major < 0) || (minor < 0)) {
+      major = PIKE_MAJOR_VERSION;
+      minor = PIKE_MINOR_VERSION;
+    }
+
+    if ((this->compat_major == major) &&
+	(this->compat_minor == minor)) return;
+
+    this->compat_major = major;
+    this->compat_minor = minor;
   }
 
 /*! @decl mixed resolv(string sym)
