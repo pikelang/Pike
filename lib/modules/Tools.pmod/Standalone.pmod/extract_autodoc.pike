@@ -717,7 +717,8 @@ string extract(string filename, string imgdest,
     if (!verbosity)
       ;
     werror("\nERROR: %s\n", describe_error(err));
-    // return 0;
+
+    return 0;
   }
 
   if(!result) result="";
