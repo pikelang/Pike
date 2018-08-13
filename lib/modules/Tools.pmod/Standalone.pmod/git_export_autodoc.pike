@@ -404,6 +404,12 @@ string get_version()
     if (Stdio.is_dir("refs")) {
       return "rxnpatch";
     }
+    if (Stdio.exist("README.md")) {
+      string readme = Stdio.read_bytes("README.md");
+      if (has_value(readme, "libsass")) {
+	return "pike-modules/Sass";
+      }
+    }
   }
 
   error("Unable to determine version of Pike!\n");
