@@ -670,7 +670,7 @@ string extract(string filename, string imgdest,
     else
       werror("%s\n", describe_backtrace(err));
 
-    // return 0;
+    return 0;
   }
 
   if(!result) result="";
