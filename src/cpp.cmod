@@ -350,6 +350,11 @@ PIKECLASS define
 /*! @endclass define
  */
 
+PIKEFUN string evaluate_define(string def, string arguments)
+{
+  APPLY_MASTER("evaluate_define", args);
+}
+
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
   if (use_initial_predefs) {
@@ -950,9 +955,7 @@ PIKEFUN mixed resolv(string sym)
    */
   PIKEFUN string evaluate_define(string def, string|void arguments)
   {
-    struct CPP_struct *this = THIS;
-    low_unsafe_apply_handler("evaluate_define",
-			     this->handler, this->compat_handler, args);
+    apply_external(1, f_evaluate_define_fun_num, args);
   }
 
 /* #if macros and functions. */

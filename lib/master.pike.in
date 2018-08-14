@@ -747,6 +747,11 @@ protected class CompilerEnvironment
       return apply_handler(__func__, major, minor);
     }
 
+    string evaluate_define(string def, string|void arguments)
+    {
+      return apply_handler(__func__, def, arguments);
+    }
+
     void change_cpp_compatibility(int major, int minor)
     {
       if ((compat_major == major) && (compat_minor == minor)) {
