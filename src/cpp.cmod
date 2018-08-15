@@ -217,6 +217,7 @@ PIKECLASS define
   {
     struct define_struct *d = THIS;
     struct string_builder s;
+    struct array *arguments2 = arguments;
     struct array *parts = THIS->parts;
     INT32 i;
     INT_TYPE flags = flags_sval?flags_sval->u.integer:0;
@@ -231,7 +232,7 @@ PIKECLASS define
       }
       d->magic(context_obj, d, a, &s);
 
-      /* NB: The variable 'a' does not holdany refs. */
+      /* NB: The variable 'a' does not hold any refs. */
 
       if (d->magic == insert_callback_define ||
 	  d->magic == insert_callback_define_no_args ||
@@ -239,6 +240,18 @@ PIKECLASS define
 	goto keep_new_lines;
       }
       goto remove_new_lines;
+    }
+
+    if (arguments2 && (d->flags & CPP_MACRO_VARARGS) &&
+	(arguments2->size > d->args)) {
+      /* Join all the varargs with commas. */
+      push_array(slice_array(arguments2, 0, d->args-1));
+      push_array(slice_array(arguments2, d->args-1, arguments2->size));
+      push_text(",");
+      o_multiply();
+      f_aggregate(1);
+      f_add(2);
+      arguments2 = Pike_sp[-1].u.array;
     }
 
     for (i = 0; i < parts->size; i++) {
@@ -252,11 +265,11 @@ PIKECLASS define
 	  int raw_arg = sval->u.integer;
 	  int arg = raw_arg & DEF_ARG_MASK;
 	  struct pike_string *str;
-	  if (!arguments || (arg >= arguments->size)) {
-	    yyerror("Too few arguments to macro.");
+	  if (!arguments2 || (arg >= arguments2->size)) {
+	    my_yyerror("Too few arguments to macro %S.", d->name);
 	    break;
 	  }
-	  str = arguments->item[arg].u.string;
+	  str = arguments2->item[arg].u.string;
 	  if (raw_arg & DEF_ARG_NEED_COMMA) {
 	    if (!(d->flags & CPP_MACRO_VARARGS) ||
 		(arg != d->args-1) ||
