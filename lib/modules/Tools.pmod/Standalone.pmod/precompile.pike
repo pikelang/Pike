@@ -371,6 +371,8 @@ int parse_type(array t, int p)
 	  case "string":
 	    if(arrayp(t[p])) p++;
 	  case "utf8_string":
+	  case "sprintf_format":
+	  case "sprintf_args":
 	  case "bignum":
 	  case "longest":
 	  case "float":
@@ -585,6 +587,7 @@ class PikeType
 	case "8":
 	case "9":
 	case "bignum":
+        case "sprintf_args":
 	  return "mixed";
 
 	  // FIXME: Guess the special "longest" type ought to be
@@ -608,6 +611,7 @@ class PikeType
 	return ret;
 
       case "utf8_string":
+      case "sprintf_format":
 	return "string";
 
 	default: return "object";
@@ -658,6 +662,7 @@ class PikeType
 	case "8":
 	case "9":
 
+        case "sprintf_args":
 	case "mixed":
 	  return ({
 	    "int",
@@ -692,6 +697,7 @@ class PikeType
 	return ({ ret });
 
       case "utf8_string":
+      case "sprintf_format":
 	return ({ "string" });
 
 	case "bignum":
@@ -754,7 +760,7 @@ class PikeType
 	case "float":
 	  return (may_be_void_or_zero (1, 2) == 1 ?
 		  "struct svalue *" : "FLOAT_TYPE");
-        case "utf8_string":
+        case "utf8_string": case "sprintf_format":
 	case "string": return "struct pike_string *";
 
 	case "array":
@@ -769,6 +775,7 @@ class PikeType
 	case "function":
 	case "mixed":
 	case "bignum":
+        case "sprintf_args":
 	  if (is_struct_entry) {
 	    return "struct svalue";
 	  } else {
@@ -884,6 +891,8 @@ class PikeType
 			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
 	case "utf8_string": return "tUtf8Str";
+        case "sprintf_format": return "tAttr(\"sprintf_format\", tStr)";
+        case "sprintf_args": return "tAttr(\"sprintf_args\", tMix)";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
@@ -990,6 +999,12 @@ class PikeType
 
         case "utf8_string":
 	  return "utf8_string";
+
+        case "sprintf_format":
+	  return "string";
+
+        case "sprintf_args":
+	  return "mixed";
 
 	case "bignum":
 	case "longest":
@@ -1284,6 +1299,10 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
       if (res[0] > res[1]) return UNDEFINED;
       return res;
     }
+
+  case "sprintf_format":
+    return ({ -0x80000000, 0x7fffffff });
+
   case "utf8_string":
     if (ranged_type == "string") {
       return ({ 0, 255 });
