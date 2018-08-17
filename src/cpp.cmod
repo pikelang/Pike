@@ -478,7 +478,7 @@ static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
  *!   same arguments.
  *!
  *! @seealso
- *!   @[Reporter()->report()]
+ *!   @[Reporter()->report()], @[cpp_error()]
  */
 PIKEFUN void report(int(0..3) severity,
 		    string filename, int(1..) linenumber,
@@ -553,6 +553,33 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
   cpp_report_vsprintf(this, REPORT_ERROR, fmt, args);
   va_end(args);
 }
+
+  /*! @decl void cpp_error(sprintf_format msg, sprintf_args ... arguments)
+   *!
+   *!   Convenience function for reporting a cpp error at
+   *!   the current position.
+   *!
+   *!   This function calls @[report()] with the same arguments,
+   *!   but prefixed with suitable defaults.
+   *!
+   *! @seealso
+   *!   @[report()]
+   */
+  PIKEFUN void cpp_error(sprintf_format msg, sprintf_args ... arguments)
+  {
+    struct CPP_struct *this = THIS;
+    struct svalue *first_arg = Pike_sp-args;
+    INT32 i;
+
+    push_int(REPORT_ERROR);
+    ref_push_string(this->current_file);
+    push_int(this->current_line);
+    push_constant_text("cpp");
+    for (i = 0; i < args; i++) {
+      push_svalue(first_arg + i);
+    }
+    apply_current(f_CPP_report_fun_num, 4 + args);
+  }
 
   /*! @decl string format_exception(mixed err)
    *!
