@@ -100,6 +100,7 @@ DECLARATIONS;
 #define CPP_MACRO_DISABLED	1	/* Don't expand. */
 #define CPP_MACRO_IN_USE	2	/* In use. */
 #define CPP_MACRO_VARARGS	4	/* Varargs. */
+#define CPP_MACRO_KEEP_NL	8	/* Keep newlines. */
 
 /*! @class CompilerEnvironment
  */
@@ -348,6 +349,8 @@ PIKECLASS define
 	break;
       }
     }
+
+    if (d->flags & CPP_MACRO_KEEP_NL) goto keep_new_lines;
 
   remove_new_lines:
     /* Remove any newlines from the completed expression. */
