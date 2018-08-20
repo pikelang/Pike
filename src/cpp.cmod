@@ -5242,6 +5242,7 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
   PIKEFUN void define_ansi_macros()
   {
     struct CPP_struct *this = THIS;
+    struct define_struct *def;
 
     /* These attempt to be compatible with the C standard. */
     do_magic_define(this,"__LINE__",insert_current_line);
@@ -5250,7 +5251,10 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
     do_magic_define(this,"__TIME__",insert_current_time_as_string);
 
     /* These are from the 201x C standard. */
-    do_magic_define(this,"_Pragma",insert_pragma)->args = 1;
+    def = do_magic_define(this, "_Pragma", insert_pragma);
+    def->args = 1;
+    def->flags |= CPP_MACRO_KEEP_NL;
+
     simple_add_define(this, "static_assert", "_Static_assert");
   }
 
@@ -5380,6 +5384,8 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
           def = alloc_empty_define(s);
           def->magic = insert_callback_define_no_args;
         }
+	def->flags |= CPP_MACRO_KEEP_NL;
+
 	mapping_string_insert(this->defines, def->name, Pike_sp-1);
 	pop_stack();
       }
