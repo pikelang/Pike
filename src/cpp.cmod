@@ -333,10 +333,11 @@ PIKECLASS define
       default:
 	/* FIXME: Check that we have a callable. */
 	if (arguments) {
+	  add_ref(arguments);
 	  push_array_items(arguments);
-	  apply_svalue(sval, arguments->size);
+	  safe_apply_svalue(sval, arguments->size, 1);
 	} else {
-	  apply_svalue(sval, 0);
+	  safe_apply_svalue(sval, 0, 1);
 	}
 	if (TYPEOF(Pike_sp[-1]) != T_STRING) {
 	  my_yyerror("Invalid return value from macro: %s (expected string).",
