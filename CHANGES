@@ -64,6 +64,14 @@ o Pike.identify_cycle
   the issue with hangs if there are objects with lfuns calling
   Pike.identify_cycle() or Pike.count_memory().
 
+o Protocols.HTTP.Server
+
+  Fix an issue with accounting of sent bytes that caused responses
+  to requests over HTTPS to not finish on success, but instead the
+  whole connection to time out. Data for the first request was
+  usually fully written, but the connection neither was properly
+  closed nor re-used.
+
 o Sql.pgsql
 
   - Fix regression bug since rel 12 that hangs queries returning over 1024
