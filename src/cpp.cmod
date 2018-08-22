@@ -233,14 +233,7 @@ PIKECLASS define
       }
       d->magic(context_obj, d, a, &s);
 
-      /* NB: The variable 'a' does not hold any refs. */
-
-      if (d->magic == insert_callback_define ||
-	  d->magic == insert_callback_define_no_args ||
-	  d->magic == insert_pragma) {
-	goto keep_new_lines;
-      }
-      goto remove_new_lines;
+      goto done;
     }
 
     if (arguments2 && (d->flags & CPP_MACRO_VARARGS) &&
@@ -351,15 +344,14 @@ PIKECLASS define
       }
     }
 
-    if (d->flags & CPP_MACRO_KEEP_NL) goto keep_new_lines;
+  done:
+    if (!(d->flags & CPP_MACRO_KEEP_NL)) {
+      /* Remove any newlines from the completed expression. */
+      for(i=0; i< (ptrdiff_t)s.s->len; i++)
+	if(index_shared_string(s.s, i) == '\n')
+	  SET_INDEX_CHARP(s.s->str, i, s.s->size_shift, ' ');
+    }
 
-  remove_new_lines:
-    /* Remove any newlines from the completed expression. */
-    for(i=0; i< (ptrdiff_t)s.s->len; i++)
-      if(index_shared_string(s.s, i) == '\n')
-	SET_INDEX_CHARP(s.s->str, i, s.s->size_shift, ' ');
-
-  keep_new_lines:
     pop_n_elems(args);
     push_string(finish_string_builder(&s));
   }
