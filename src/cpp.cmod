@@ -260,7 +260,14 @@ PIKECLASS define
 	  int arg = raw_arg & DEF_ARG_MASK;
 	  struct pike_string *str;
 	  if (!arguments2 || (arg >= arguments2->size)) {
-	    my_yyerror("Too few arguments to macro %S.", d->name);
+	    if (context_obj) {
+	      push_text("Too few arguments to macro %s.");
+	      ref_push_string(d->name);
+	      safe_apply(context_obj, "cpp_error", 2);
+	      pop_stack();
+	    } else {
+	      my_yyerror("Too few arguments to macro %S.", d->name);
+	    }
 	    break;
 	  }
 	  str = arguments2->item[arg].u.string;
@@ -315,7 +322,6 @@ PIKECLASS define
 	      }
 
 	      d->flags = save_flags;
-
 	    }
 	  }
 	  if (!(raw_arg & DEF_ARG_NOPOSTSPACE)) {
@@ -333,8 +339,15 @@ PIKECLASS define
 	  safe_apply_svalue(sval, 0, 1);
 	}
 	if (TYPEOF(Pike_sp[-1]) != T_STRING) {
-	  my_yyerror("Invalid return value from macro: %s (expected string).",
-		     get_name_of_type(TYPEOF(Pike_sp[-1])));
+	  if (context_obj) {
+	    push_text("Invalid return value from macro %s: %s (expected string).");
+	    ref_push_string(d->name);
+	    push_text(get_name_of_type(TYPEOF(Pike_sp[-3])));
+	    safe_apply(context_obj, "cpp_error", 3);
+	  } else {
+	    my_yyerror("Invalid return value from macro %S: %s (expected string).",
+		       d->name, get_name_of_type(TYPEOF(Pike_sp[-1])));
+	  }
 	  pop_stack();
 	  break;
 	}
