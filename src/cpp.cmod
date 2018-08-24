@@ -223,29 +223,80 @@ PIKECLASS define
     INT32 i;
     INT_TYPE flags = flags_sval?flags_sval->u.integer:0;
 
+    if (d->args >= 0) {
+      if (!arguments) {
+	ref_push_array(&empty_array);
+	arguments = arguments2 = &empty_array;
+
+	if ((!d->args) ||
+	    ((d->flags & CPP_MACRO_VARARGS) && (d->args == 1))) {
+	  /* NB: In the varargs case arguments2 will get
+	   * further adjustment below.
+	   */
+	} else {
+	  if (context_obj) {
+	    push_text("Expected %d arguments to macro %s, got none.");
+	    push_int(d->args);
+	    ref_push_string(d->name);
+	    apply(context_obj, "cpp_error", 3);
+	  } else {
+	    my_yyerror("Expected %d argumnets to macro %S, got none.",
+		       d->args, d->name);
+	  }
+	}
+      }
+
+      if (d->args != arguments2->size) {
+	if (!(d->flags & CPP_MACRO_VARARGS) ||
+	    (d->args > arguments2->size+1)) {
+	  /* Allow varargs to be left out. */
+	  if (context_obj) {
+	    push_text("Bad number of arguments to macro %s, expected %d"
+		      ", got %d.");
+	    ref_push_string(d->name);
+	    push_int(d->args);
+	    push_int(arguments2->size);
+	    apply(context_obj, "cpp_error", 4);
+	  } else {
+	    my_yyerror("Bad number of arguments to macro %S, expected %d"
+		       ", got %d.",
+		       d->name, d->args, arguments2->size);
+	  }
+	}
+	if (d->args > arguments2->size) {
+	  /* Grow arguments2 to at least d->args elements. */
+	  ref_push_array(arguments2);
+	  ref_push_string(empty_pike_string);
+	  f_aggregate(1);
+	  push_int(d->args - arguments2->size);
+	  o_multiply();
+	  f_add(2);
+	  arguments2 = Pike_sp[-1].u.array;
+	} else if ((d->flags & CPP_MACRO_VARARGS) &&
+		   (arguments2->size > d->args)) {
+	  /* Join all the varargs with commas. */
+	  push_array(slice_array(arguments2, 0, d->args-1));
+	  push_array(slice_array(arguments2, d->args-1, arguments2->size));
+	  push_text(",");
+	  o_multiply();
+	  f_aggregate(1);
+	  f_add(2);
+	  arguments2 = Pike_sp[-1].u.array;
+	}
+      }
+    }
+
     init_string_builder(&s, 0);
     if(d->magic)
     {
       struct pike_string *a = NULL;
 
-      if (arguments && (d->args > 0)) {
-	a = ITEM(arguments)[0].u.string;
+      if (arguments2 && (d->args > 0)) {
+	a = ITEM(arguments2)[0].u.string;
       }
       d->magic(context_obj, d, a, &s);
 
       goto done;
-    }
-
-    if (arguments2 && (d->flags & CPP_MACRO_VARARGS) &&
-	(arguments2->size > d->args)) {
-      /* Join all the varargs with commas. */
-      push_array(slice_array(arguments2, 0, d->args-1));
-      push_array(slice_array(arguments2, d->args-1, arguments2->size));
-      push_text(",");
-      o_multiply();
-      f_aggregate(1);
-      f_add(2);
-      arguments2 = Pike_sp[-1].u.array;
     }
 
     for (i = 0; i < parts->size; i++) {
