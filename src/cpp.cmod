@@ -3359,10 +3359,12 @@ static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 
 /* NB: This function is only called from low_cpp(), which
  *     means that Pike_fp->current_object is an object(CPP).
+ *
+ * NB: The arguments (if any) are in an array at the top of the stack,
+ *     and if none there is UNDEFINED.
  */
 static void apply_define(struct CPP_struct *this,
 			 struct define_struct *d,
-			 struct define_argument *arguments,
 			 short flags,
 			 struct pike_string *charset)
 {
@@ -3372,17 +3374,14 @@ static void apply_define(struct CPP_struct *this,
   /* Keep d around... */
   push_svalue(&d->self);
 
-  if (d->args < 0) {
-    push_undefined();
-  } else {
-    int i;
-    BEGIN_AGGREGATE_ARRAY(d->args) {
-      for (i = 0; i < d->args; i++) {
-	push_string(make_shared_binary_pcharp(arguments[i].arg,
-					      arguments[i].len));
-	DO_AGGREGATE_ARRAY(120);
-      }
-    } END_AGGREGATE_ARRAY;
+  stack_swap();
+
+  if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
+      !(d->flags & CPP_MACRO_VARARGS)) {
+    // Allow a single argument to be left out.
+    pop_stack();
+    ref_push_string(empty_pike_string);
+    f_aggregate(1);
   }
   ref_push_object(Pike_fp->current_object);
   push_int(flags);
@@ -3536,7 +3535,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
           if(d && !(d->flags & CPP_MACRO_DISABLED))
           {
-            int arg=0;
             INT_TYPE start_line = this->current_line;
             struct string_builder tmp;
             struct define_argument arguments[ MAX_ARGS];
@@ -3561,48 +3559,33 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 break;
               }
 
-              for(arg=0;arg<d->args;arg++)
-              {
-                if(arg && DATA(pos)==',')
-                {
-                  pos++;
-                  SKIPWHITE();
-                }else{
-                  SKIPWHITE();
-                  if(DATA(pos)==')')
-                  {
-                    if(((d->flags & CPP_MACRO_VARARGS) && (arg + 1 == d->args)) ||
-                       (!arg && (d->args == 1))) {
-                      /* Allow varargs to be left out.
-                       *
-                       * Allow a single argument to be left out.
-                       */
-                      arguments[arg].arg = ADD_PCHARP(data,pos);
-                      arguments[arg].len=0;
-                      continue;
-                    }else{
-                      cpp_error_sprintf(this,
-                                        "Too few arguments to macro %S, expected %d.",
-                                        d->name, d->args);
-                      break;
-                    }
-                  }
-                }
-                arguments[arg].arg = ADD_PCHARP(data,pos);
+	      SKIPWHITE();
 
-                while(1)
-                {
-                  if(pos+1>len)
-                  {
-                    INT_TYPE save_line = this->current_line;
-                    this->current_line = start_line;
-                    cpp_error(this, "End of file in macro call.");
-                    this->current_line = save_line;
-                    break;
-                  }
+	      BEGIN_AGGREGATE_ARRAY(d->args) {
+		int arg=0;
 
-                  switch(DATA(pos++))
-                  {
+		while (DATA(pos) != ')') {
+		  PCHARP arg_start;
+		  size_t arg_len;
+		  if(arg) {
+		    GOBBLE(',');
+		    SKIPWHITE();
+		  }
+		  arg_start = ADD_PCHARP(data, pos);
+
+		  while(1)
+		  {
+		    if(pos+1>len)
+		    {
+		      INT_TYPE save_line = this->current_line;
+		      this->current_line = start_line;
+		      cpp_error(this, "End of file in macro call.");
+		      this->current_line = save_line;
+		      break;
+		    }
+
+		    switch(DATA(pos++))
+		    {
                     case '\n':
                       this->current_line++;
                       PUTNL();
@@ -3651,33 +3634,32 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       continue;
 
                     case ',':
-                      if((d->flags & CPP_MACRO_VARARGS) && (arg+1 == d->args)) continue;
-                      /* FALLTHRU */
-
                     case ')':
                       pos--;
                       break;
-                  }
-                  break;
-                }
-                arguments[arg].len = SUBTRACT_PCHARP(ADD_PCHARP(data,pos),arguments[arg].arg);
-              }
-              SKIPWHITE();
+		    }
+		    break;
+		  }
+		  arg_len = SUBTRACT_PCHARP(ADD_PCHARP(data, pos), arg_start);
+
+		  push_string(make_shared_binary_pcharp(arg_start, arg_len));
+		  DO_AGGREGATE_ARRAY(120);
+
+		  SKIPWHITE();
+		  arg++;
+		}
+
+	      } END_AGGREGATE_ARRAY;
+
               if(!GOBBLE(')')) {
                 this->current_line = start_line;
                 cpp_error_sprintf(this, "Missing ) in the macro %S.", d->name);
               }
-            }
-
-            if(d->args >= 0 && arg != d->args)
-              cpp_error(this, "Wrong number of arguments to macro.");
-
-	    /* NB: If there have been errors in the loop above, arguments may
-	     *     remain (partially) uninitialized.
-	     */
-	    if (!this->compile_errors) {
-	      apply_define(this, d, arguments, flags, charset);
+            } else {
+	      push_undefined();
 	    }
+
+	    apply_define(this, d, flags, charset);
           }else{
             if (OUTP())
               string_builder_shared_strcat (&this->buf, s);
