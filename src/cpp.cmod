@@ -3397,7 +3397,8 @@ static void apply_define(struct CPP_struct *this,
 
   d->flags = save_flags;
 
-  pop_n_elems(Pike_sp - save_sp);
+  /* NB: Pop the args array too... */
+  pop_n_elems(Pike_sp + 1 - save_sp);
 }
 
 /*
