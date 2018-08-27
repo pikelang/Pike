@@ -631,6 +631,8 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
     struct svalue *first_arg = Pike_sp-args;
     INT32 i;
 
+    this->compile_errors++;
+
     push_int(REPORT_ERROR);
     ref_push_string(this->current_file);
     push_int(this->current_line);
