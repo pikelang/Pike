@@ -3567,7 +3567,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 	      BEGIN_AGGREGATE_ARRAY(d->args) {
 		int arg=0;
 
-		while (DATA(pos) != ')') {
+		while ((pos < len) && (DATA(pos) != ')')) {
 		  PCHARP arg_start;
 		  size_t arg_len;
 		  if(arg) {
@@ -3578,7 +3578,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
 		  while(1)
 		  {
-		    if(pos+1>len)
+		    if(pos>=len)
 		    {
 		      INT_TYPE save_line = this->current_line;
 		      this->current_line = start_line;
