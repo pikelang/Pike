@@ -140,14 +140,6 @@ DECLARATIONS;
  * }
  */
 
-static void insert_callback_define(struct object *cpp_obj,
-                                   struct define_struct *def,
-                                   struct pike_string *arg,
-                                   struct string_builder *tmp);
-static void insert_callback_define_no_args(struct object *cpp_obj,
-                                           struct define_struct *def,
-                                           struct pike_string *arg,
-                                           struct string_builder *tmp);
 static void insert_pragma(struct object *cpp_obj,
 			  struct define_struct *def,
                           struct pike_string *arg,
@@ -422,11 +414,6 @@ PIKECLASS define
 }
 /*! @endclass define
  */
-
-PIKEFUN string evaluate_define(string def, string arguments)
-{
-  APPLY_MASTER("evaluate_define", args);
-}
 
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
@@ -1033,31 +1020,6 @@ PIKEFUN mixed resolv(string sym)
     struct CPP_struct *this = THIS;
     low_unsafe_apply_handler("decode_charset",
 			     this->handler, this->compat_handler, args);
-  }
-
-  /*! @decl string evaluate_define(string def, string|void arguments)
-   *!
-   *!   Evaluate the #define named @[def] with @[arguments].
-   *!
-   *! @param def
-   *!   Name of the macro.
-   *!
-   *! @param arguments
-   *!   Raw string of the contents between the parenthesis
-   *!   for function-style maros. @[UNDEFINED] or left out
-   *!   if not a function-style macro.
-   *!
-   *! This function is used to evaluate callback-style macros
-   *! as defined via @[define_multiple_macros()].
-   *!
-   *! @note
-   *!   This API is likely to be removed in a future version of
-   *!   Pike, where macro functions would be called directly by
-   *!   the preprocessor.
-   */
-  PIKEFUN string evaluate_define(string def, string|void arguments)
-  {
-    apply_external(1, f_evaluate_define_fun_num, args);
   }
 
 /* #if macros and functions. */
@@ -2232,18 +2194,49 @@ static struct define_struct *do_magic_define(struct CPP_struct *this,
   return def;
 }
 
-static void add_define(struct CPP_struct *this,
-		       struct pike_string *name,
-		       struct pike_string *what)
+static struct define_struct *add_define(struct CPP_struct *this,
+					struct pike_string *name,
+					struct svalue *what)
 {
-  struct define_struct* def;
-  def=alloc_empty_define(name);
-  ref_push_string(what);
-  f_aggregate(1);
-  def->parts = Pike_sp[-1].u.array;
-  Pike_sp--;
+  struct pike_string *orig_name = name;
+  struct define_struct *def;
+
+  if( (name->len > 2) &&
+      (index_shared_string(name, name->len-1) == ')') &&
+      (index_shared_string(name, name->len-2) == '(')) {
+    /* Function-style macro. */
+    push_string(name = string_slice(name, 0, name->len-2));
+  }
+
+  /* NB: alloc_empty_define() pushes the define object onto the stack.
+   */
+  def = alloc_empty_define(name);
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
   pop_stack();
+
+  if (orig_name != name) {
+    /* Function-style macro. */
+    def->flags |= CPP_MACRO_VARARGS | CPP_MACRO_KEEP_NL;
+    def->args = 1;
+    pop_stack();
+  }
+
+  if (!what || ((TYPEOF(*what) == PIKE_T_INT) && !what->u.integer)) {
+    ref_push_string(empty_pike_string);
+    f_aggregate(1);
+    def->parts = Pike_sp[-1].u.array;
+    Pike_sp--;
+  } else if (TYPEOF(*what) == PIKE_T_ARRAY) {
+    def->parts = what->u.array;
+    add_ref(what->u.array);
+  } else {
+    push_svalue(what);
+    f_aggregate(1);
+    def->parts = Pike_sp[-1].u.array;
+    Pike_sp--;
+  }
+
+  return def;
 }
 
 static void simple_add_define(struct CPP_struct *this,
@@ -2252,9 +2245,9 @@ static void simple_add_define(struct CPP_struct *this,
 {
 
   struct pike_string *name_str = make_define_name(this, name);
-  struct pike_string *what_str = make_shared_string(what);
-  add_define(this, name_str, what_str);
-  free_string(what_str);
+  push_text(what);
+  add_define(this, name_str, Pike_sp-1);
+  pop_stack();
   free_string(name_str);
 }
 
@@ -4933,46 +4926,6 @@ static void insert_pragma(struct object *cpp_obj,
   string_builder_putchar(tmp, '\n');
 }
 
-static void insert_callback_define(struct object *cpp_obj,
-                                   struct define_struct *def,
-                                   struct pike_string *arg,
-                                   struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  ref_push_string( def->name );
-  ref_push_string( arg );
-  if (safe_apply(cpp_obj, "evaluate_define", 2) &&
-      (TYPEOF(Pike_sp[-1]) == T_STRING)) {
-    string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
-    if( !this->prefix ){
-        int min;
-        check_string_range( Pike_sp[-1].u.string, 0, &min, 0 );
-        if( min < 32 )
-        {
-            string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
-            insert_current_file_as_string(cpp_obj, def, arg, tmp);
-            string_builder_putchar(tmp, '\n');
-        }
-    }
-    pop_stack();
-  }
-}
-
-static void insert_callback_define_no_args(struct object *cpp_obj,
-                                           struct define_struct *def,
-                                           struct pike_string *UNUSED(arg),
-                                           struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  struct svalue *save_sp = Pike_sp;
-  ref_push_string( def->name );
-  if (safe_apply(cpp_obj, "evaluate_define", 1) &&
-      (TYPEOF(Pike_sp[-1]) == T_STRING)) {
-    string_builder_shared_strcat(tmp, Pike_sp[-1].u.string);
-  }
-  if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
-}
-
 
 /*! @decl constant __REAL_VERSION__
  *!
@@ -5260,15 +5213,18 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
     pop_n_elems(args);
   }
 
-  /*! @decl void define_macro(string name, string|void value)
+  /*! @decl void define_macro(string name,
+   *!                         string|object|array|function|void value)
    *!
    *! Define a cpp macro.
+   *!
+   *! @seealso
+   *!   @[define_multiple_macros()]
    */
-  PIKEFUN void define_macro(string name, string|void value)
+  PIKEFUN void define_macro(string name,
+			    string|object|array|function|void value)
   {
     struct CPP_struct *this = THIS;
-
-    if (!value) value = empty_pike_string;
 
     add_define(this, name, value);
   }
@@ -5371,21 +5327,9 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
    *! @param predefs
    *!   Macros to define.
    *!
-   *! @note
-   *!   Callback-style macros are supported. Note that is up to
-   *!   @[evaluate_define()] to actually remember the callback.
-   *!
-   *! @note
-   *!   It is likely that this function in a future version of Pike
-   *!   @b{will@} actually register the callback, in which case
-   *!   @[evaluate_define()] no longer will be called. The implicit
-   *!   @[evaluate_define()] in that case will probably use the
-   *!   same semantics as the current reference implementation in
-   *!   the master.
-   *!
    *! @seealso
    *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
-   *!   @[_take_over_initial_predefines()], @[evaluate_define()]
+   *!   @[_take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
 					      string|function|object)|void predefs)
@@ -5395,49 +5339,12 @@ static void insert_callback_define_no_args(struct object *cpp_obj,
     int e;
     if (!predefs) return;
     NEW_MAPPING_LOOP (predefs->data) {
-      struct pike_string *s;
       if ((TYPEOF(k->ind) != T_STRING) || !k->ind.u.string->len) {
 	Pike_error("Expected nonempty string as predefine name, got %O.\n",
 		   &k->ind);
       }
 
-      s = k->ind.u.string;
-
-      if (TYPEOF(k->val) == T_STRING) {
-	/* FIXME: Support "FOO()":"BAR"? */
-	add_define (this, s, k->val.u.string);
-      } else if(TYPEOF(k->val) == T_FUNCTION || TYPEOF(k->val) == T_OBJECT)
-      {
-        struct define_struct *def;
-        if( (s->len > 2) &&
-	    (index_shared_string(s, s->len-1) == ')') &&
-	    (index_shared_string(s, s->len-2) == '('))
-        {
-          push_string(s = string_slice(s, 0, s->len-2));
-          def = alloc_empty_define(s);
-	  stack_swap();
-	  pop_stack();
-          def->magic = insert_callback_define;
-          def->flags |= CPP_MACRO_VARARGS;
-          def->args = 1;
-        }
-        else
-        {
-          def = alloc_empty_define(s);
-          def->magic = insert_callback_define_no_args;
-        }
-	def->flags |= CPP_MACRO_KEEP_NL;
-
-	mapping_string_insert(this->defines, def->name, Pike_sp-1);
-	pop_stack();
-      }
-      else if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
-	add_define (this, s, empty_pike_string);
-      } else {
-	Pike_error("Expected zero, string or function value for "
-		   "predefine %O.\n",
-		   &k->ind);
-      }
+      add_define(this, k->ind.u.string, &k->val);
     }
   }
 

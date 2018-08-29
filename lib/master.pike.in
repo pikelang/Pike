@@ -3163,25 +3163,6 @@ class CompatResolver
     return predefines;
   }
 
-  string evaluate_define(string def, string arguments)
-  {
-      mixed val = arguments ? predefines[def+"()"] : predefines[def];
-      if( callablep(val) )
-      {
-          object C = resolv("Parser.C");
-          array args;
-          if( arguments )
-              args = map(
-                  map(C.group(C.split(arguments))/({","}),C.simple_reconstitute),
-                  Builtin.string_trim);
-          else
-              args = ({});
-
-          val = val( @args );
-      }
-      return (string)val;
-  }
-
   //! Instantiate static modules in the same way that dynamic modules
   //! are instantiated.
   protected mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
