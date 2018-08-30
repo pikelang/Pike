@@ -127,7 +127,9 @@ Building & Tools
 
 o Java
 
-  The location of libjvm is now detected on Ubuntu 18.04.
+  - The location of libjvm is now detected on Ubuntu 18.04.
+
+  - Detect and support OpenJDK 10.
 
 o Postgres
 
