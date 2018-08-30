@@ -34,6 +34,11 @@ o Compiler
   - Fixed an incompatibility between the machine code generator on
     ppc and GCC 7.
 
+  - Support inherit of CompilerEnvironment.
+
+    Fix some bugs triggered in the supporter subsystem when
+    executing in an inherited CompilerEnviroment.
+
 o Filesystem.Monitor
 
   - Fix NULL-dereference in bump().
