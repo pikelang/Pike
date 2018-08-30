@@ -115,10 +115,10 @@ o Stdio.Buffer
 
 o Thread.Farm
 
-  Fixed lost error in provide_error() exception handling.
+  - Fixed lost error in provide_error() exception handling.
 
-  Avoid delayed deallocation of jobs by clearing references immediately
-  after execution.
+  - Avoid delayed deallocation of jobs by clearing references immediately
+    after execution.
 
 o Tools.Standalone
 
