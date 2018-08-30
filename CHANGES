@@ -72,6 +72,18 @@ o Protocols.HTTP.Server
   usually fully written, but the connection neither was properly
   closed nor re-used.
 
+o Sass
+
+  - Errors thrown by handle_sass_import() can now be caught and
+    handled by the caller of compile_file() and compile_string().
+
+  - Added the option "sass_syntax".
+
+    This option will parse the input as having indented Sass
+    syntax. This option only has effect in compile_string().
+
+  - Added method sass2scss() to convert Sass syntax to SCSS syntax.
+
 o Sql.pgsql
 
   - Fix regression bug since rel 12 that hangs queries returning over 1024
