@@ -34,6 +34,12 @@ o Compiler
   - Fixed an incompatibility between the machine code generator on
     ppc and GCC 7.
 
+o Filesystem.Monitor
+
+  - Fix NULL-dereference in bump().
+
+    Survive st being zero in bump().
+
 o Fuse
 
   - Switched the Fuse module to use a different libfuse API.
