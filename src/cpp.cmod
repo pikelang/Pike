@@ -3607,16 +3607,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                     case '/':
                       if (DATA(pos) == '*') {
                         pos++;
-                        if (this->keep_comments) {
-                          SKIPCOMMENT_INC_LINES();
-                          goto ADD_TO_BUFFER;
-                        }
                         SKIPCOMMENT();
                       } else if (DATA(pos) == '/') {
-                        if (this->keep_comments) {
-                          FIND_EOL_PRETEND();
-                          goto ADD_TO_BUFFER;
-                        }
                         FIND_EOL();
                       }
                       continue;
