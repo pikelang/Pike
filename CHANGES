@@ -15,6 +15,13 @@ o Sql.mysql
 Bug fixes
 ---------
 
+o Runtime
+
+  - Fixed loss of Pike_interpreter_pointer (race, --with-debug only).
+
+    The Pike_interpreter_pointer must not be altered by threads not
+    holding the interpreter lock...
+
 o Calendar
 
   - Updated tzdata to 2018e.
