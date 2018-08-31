@@ -193,7 +193,8 @@ PIKECLASS define
 #define tObjImpl_CPP	tObj
 #endif
 
-  /*! @decl string `()(array(string)|void arguments, CPP|void context, int|void flags)
+  /*! @decl string `()(array(string)|void arguments, CPP|void context, @
+   *!                  int|void flags)
    *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
@@ -202,7 +203,8 @@ PIKECLASS define
    *!   CPP context we are evaluating in.
    *!
    *! @returns
-   *!   Returns the expansion of the macro.
+   *!   Returns the expansion of the macro on success, and @expr{0@} (zero)
+   *!   on failure (typically due to invalid @[arguments]).
    */
   PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
 		     int|void flags_sval)
@@ -235,6 +237,8 @@ PIKECLASS define
 	    my_yyerror("Expected %d argumnets to macro %S, got none.",
 		       d->args, d->name);
 	  }
+	  push_int(0);
+	  return;
 	}
       }
 
@@ -254,6 +258,8 @@ PIKECLASS define
 		       ", got %d.",
 		       d->name, d->args, arguments2->size);
 	  }
+	  push_int(0);
+	  return;
 	}
 	if (d->args > arguments2->size) {
 	  /* Grow arguments2 to at least d->args elements. */
@@ -311,7 +317,9 @@ PIKECLASS define
 	    } else {
 	      my_yyerror("Too few arguments to macro %S.", d->name);
 	    }
-	    break;
+	    free_string_builder(&s);
+	    push_int(0);
+	    return;
 	  }
 	  str = arguments2->item[arg].u.string;
 	  if (raw_arg & DEF_ARG_NEED_COMMA) {
@@ -391,8 +399,9 @@ PIKECLASS define
 	    my_yyerror("Invalid return value from macro %S: %s (expected string).",
 		       d->name, get_name_of_type(TYPEOF(Pike_sp[-1])));
 	  }
-	  pop_stack();
-	  break;
+	  free_string_builder(&s);
+	  push_int(0);
+	  return;
 	}
 	string_builder_shared_strcat(&s, Pike_sp[-1].u.string);
 	pop_stack();
@@ -3382,15 +3391,19 @@ static void apply_define(struct CPP_struct *this,
   push_int(flags);
   apply_lfun(d->self.u.object, LFUN_CALL, 3);
 
-  save_flags = d->flags;
-  d->flags |= CPP_MACRO_DISABLED;
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+    save_flags = d->flags;
+    d->flags |= CPP_MACRO_DISABLED;
 
-  /* NB: We're executing in the CPP context object. */
-  low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
-	  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-	  charset);
+    /* NB: We're executing in the CPP context object. */
+    low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
+	    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+	    charset);
 
-  d->flags = save_flags;
+    d->flags = save_flags;
+  } else {
+    this->compile_errors++;
+  }
 
   /* NB: Pop the args array too... */
   pop_n_elems(Pike_sp + 1 - save_sp);
