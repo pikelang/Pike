@@ -1646,6 +1646,33 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
   return m;
 }
 
+PMOD_EXPORT void clear_mapping(struct mapping *m)
+{
+  struct mapping_data *md = m->data;
+  int flags = md->flags;
+
+  if (!md->size) return;
+  unlink_mapping_data(md);
+
+  switch (flags & MAPPING_WEAK) {
+  case 0: md = &empty_data; break;
+  case MAPPING_WEAK_INDICES: md = &weak_ind_empty_data; break;
+  case MAPPING_WEAK_VALUES: md = &weak_val_empty_data; break;
+  default: md = &weak_both_empty_data; break;
+  }
+
+  /* FIXME: Increment hardlinks & valrefs?
+   *    NB: init_mapping() doesn't do this.
+   */
+  add_ref(md);
+  /* gc_init_marker(md); */
+
+  m->data = md;
+#ifdef MAPPING_SIZE_DEBUG
+  m->debug_size = md->size;
+#endif
+}
+
 /* deferred mapping copy! */
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
