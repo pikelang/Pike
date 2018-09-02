@@ -5218,6 +5218,24 @@ static void insert_pragma(struct object *cpp_obj,
     pop_n_elems(args);
   }
 
+  /*! @decl void clear_macros()
+   *!
+   *!   Clear the set of macros.
+   *!
+   *!   It is recomended to call this function when the @[CPP] object
+   *!   is no longer to be used.
+   *!
+   *! @seealso
+   *!   @[define_macro()]
+   */
+  PIKEFUN void clear_macros()
+  {
+    struct CPP_struct *this = THIS;
+    if (this->defines) {
+      clear_mapping(this->defines);
+    }
+  }
+
   /*! @decl void define_macro(string name,
    *!                         string|object|array|function|void value)
    *!
