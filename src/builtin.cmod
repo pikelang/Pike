@@ -1660,6 +1660,25 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
   }
 }
 
+/*! @decl void m_clear(mapping map)
+ *!
+ *!   Clear the contents of a mapping.
+ *!
+ *!   This function clears the content of the mapping @[map] so
+ *!   that it becomes empty. This is an atomic operation.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN void m_clear(mapping map)
+  efun
+  optflags OPT_SIDE_EFFECT;
+{
+  /* FIXME: Add an LFUN__M_CLEAR analogous with LFUN__M_DELETE? */
+  clear_mapping(map);
+}
+
 /*! @decl int get_weak_flag(array|mapping|multiset m)
  *!
  *! Returns the weak flag settings for @[m]. It's a combination of
