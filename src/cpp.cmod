@@ -5056,6 +5056,9 @@ static void insert_pragma(struct object *cpp_obj,
   *!   	   processed. For example, if the prefix is @expr{"foo"@}, then
   *!   	   @expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
   *!   	   processed, @expr{#ifdef COND@} and @expr{__LINE__@} would not.
+  *!     @member mapping(string:mixed) "predefines"
+  *!       Mapping of predefined macros in addition to those
+  *!       returned by @[CPP()->get_predefines()].
   *!   @endmapping
   *!
   *! @param current_file
@@ -5128,6 +5131,11 @@ static void insert_pragma(struct object *cpp_obj,
 	if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
 	if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
 	if (GET_TYPE(INT, "keep_comments")) this->keep_comments = tmp->u.integer;
+	if (GET_TYPE(MAPPING, "predefines")) {
+	  ref_push_mapping(tmp->u.mapping);
+	  apply_current(f_CPP_define_multiple_macros_fun_num, 1);
+	  pop_stack();
+	}
 #undef GET_TYPE
       } else if (TYPEOF(*opts_or_file) == PIKE_T_STRING) {
 	current_file = opts_or_file->u.string;
@@ -5471,6 +5479,9 @@ static void insert_pragma(struct object *cpp_obj,
  *! 		processed. For example, if the prefix is @expr{"foo"@}, then
  *! 		@expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
  *! 		processed, @expr{#ifdef COND@} and @expr{__LINE__@} would not.
+ *!     @member mapping(string:mixed) "predefines"
+ *!             Mapping of predefined macros in addition to those
+ *!             returned by @[CPP()->get_predefines()].
  *! @endmapping
  *!
  *! @seealso
