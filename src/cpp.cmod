@@ -4694,6 +4694,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
       /* NB: Make sure the buffer isn't freed twice. */
       this->buf.s = NULL;
     }
+
+    /* Zap all macros to break any circularities via the mapping. */
+    if (this->defines) {
+      clear_mapping(this->defines);
+    }
   }
 
   PIKEFUN string drain()
