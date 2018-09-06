@@ -8,6 +8,7 @@
 #include "stralloc.h"
 #include "module_support.h"
 #include "interpret.h"
+#include "bignum.h"
 #include "svalue.h"
 #include "pike_macros.h"
 #include "program.h"
@@ -4710,33 +4711,30 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
 /*** Magic defines ***/
 
-/*! @decl constant __LINE__
- *!
- *! This define contains the current line number, represented as an
- *! integer, in the source file.
- */
-static void insert_current_line(struct object *cpp_obj,
-				struct define_struct *UNUSED(def),
-                                struct pike_string *UNUSED(arg),
-				struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
-}
+  /*! @decl constant __LINE__
+   *!
+   *! This define contains the current line number, represented as an
+   *! integer, in the source file.
+   */
+  PIKEFUN string macro___LINE__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %d ");
+    push_int64(this->current_line);
+    f_sprintf(2);
+  }
 
-/*! @decl constant __FILE__
- *!
- *! This define contains the file path and name of the source file.
- */
-static void insert_current_file_as_string(struct object *cpp_obj,
-					  struct define_struct *UNUSED(def),
-                                          struct pike_string *UNUSED(arg),
-					  struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
-		    this->current_file->size_shift, tmp);
-}
+  /*! @decl constant __FILE__
+   *!
+   *! This define contains the file path and name of the source file.
+   */
+  PIKEFUN string macro___FILE__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %q ");
+    ref_push_string(this->current_file);
+    f_sprintf(2);
+  }
 
 /*! @decl constant __DIR__
  *!
@@ -4756,44 +4754,56 @@ static void insert_current_dir_as_string(struct object *cpp_obj,
   pop_stack();
 }
 
-/*! @decl constant __TIME__
- *!
- *! This define contains the current time at the time of compilation,
- *! e.g. "12:20:51".
- */
-static void insert_current_time_as_string(struct object *UNUSED(cpp_obj),
-					  struct define_struct *UNUSED(def),
-                                          struct pike_string *UNUSED(arg),
-					  struct string_builder *tmp)
-{
-  /* FIXME: Is this code safe? */
-  time_t tmp2;
-  char *buf;
-  time(&tmp2);
-  buf=ctime(&tmp2);
+  /*! @decl constant __TIME__
+   *!
+   *! This define contains the current time at the time of compilation,
+   *! e.g. "12:20:51".
+   */
+  PIKEFUN string macro___TIME__()
+  {
+    /* FIXME: Is this code safe? */
+    time_t tmp2;
+    char *buf;
+    push_text(" %q ");
+    time(&tmp2);
+    /* NB: The following code assumes that ctime() has the output format::
+     *
+     *  "Day Mon DD HH:MM:SS YYYY\n"
+     *   ^          ^       ^
+     *   0          11      11+8
+     */
+    buf=ctime(&tmp2);
 
-  PUSH_STRING0((p_wchar0 *)buf+11, 8, tmp);
-}
+    buf[11+8] = 0;
+    push_text(buf + 11);
+    f_sprintf(2);
+  }
 
-/*! @decl constant __DATE__
- *!
- *! This define contains the current date at the time of compilation,
- *! e.g. "Jul 28 2001".
- */
-static void insert_current_date_as_string(struct object *UNUSED(cpp_obj),
-					  struct define_struct *UNUSED(def),
-                                          struct pike_string *UNUSED(arg),
-					  struct string_builder *tmp)
-{
-  /* FIXME: Is this code safe? */
-  time_t tmp2;
-  char *buf;
-  time(&tmp2);
-  buf=ctime(&tmp2);
+  /*! @decl constant __DATE__
+   *!
+   *! This define contains the current date at the time of compilation,
+   *! e.g. "Jul 28 2001".
+   */
+  PIKEFUN string macro___DATE__()
+  {
+    /* FIXME: Is this code safe? */
+    time_t tmp2;
+    char *buf;
+    push_text(" %q ");
+    time(&tmp2);
+    /* NB: The following code assumes that ctime() has the output format::
+     *
+     *  "Day Mon DD HH:MM:SS YYYY\n"
+     *   ^   ^     ^        ^    ^
+     *   0   4     4+6      19   19+5
+     */
+    buf=ctime(&tmp2);
 
-  PUSH_STRING0((p_wchar0 *)buf+4, 6, tmp);
-  PUSH_STRING0((p_wchar0 *)buf+19, 5, tmp);
-}
+    memcpy(buf+4+6, buf+19, 5);
+    buf[4+6+5] = 0;
+    push_text(buf + 4);
+    f_sprintf(2);
+  }
 
 /*! @decl constant __VERSION__
  *!
@@ -5265,6 +5275,15 @@ static void insert_pragma(struct object *cpp_obj,
     add_define(this, name, value);
   }
 
+#cmod_define DO_MAGIC_DEFINE(SYM) do {					\
+      push_text(#SYM);							\
+      ref_push_function(Pike_fp->current_object,			\
+			f_CPP_macro_ ## SYM ## _fun_num +		\
+			Pike_fp->context->identifier_level);		\
+      apply_current(f_CPP_define_macro_fun_num, 2);			\
+      pop_stack();							\
+    } while(0)
+
   /*! @decl void define_ansi_macros()
    *!
    *!   Adds some cpp macros defined by the ANSI-C standards,
@@ -5279,10 +5298,10 @@ static void insert_pragma(struct object *cpp_obj,
     struct define_struct *def;
 
     /* These attempt to be compatible with the C standard. */
-    do_magic_define(this,"__LINE__",insert_current_line);
-    do_magic_define(this,"__FILE__",insert_current_file_as_string);
-    do_magic_define(this,"__DATE__",insert_current_date_as_string);
-    do_magic_define(this,"__TIME__",insert_current_time_as_string);
+    DO_MAGIC_DEFINE(__LINE__);
+    DO_MAGIC_DEFINE(__FILE__);
+    DO_MAGIC_DEFINE(__TIME__);
+    DO_MAGIC_DEFINE(__DATE__);
 
     /* These are from the 201x C standard. */
     def = do_magic_define(this, "_Pragma", insert_pragma);
