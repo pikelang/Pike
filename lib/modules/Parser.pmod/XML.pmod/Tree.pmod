@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.72 2008/06/28 16:36:55 nilsson Exp $
+ * $Id$
  *
  */
 
@@ -283,7 +283,7 @@ class AbstractSimpleNode {
   //! Returns an initialized copy of the node.
   //! @note
   //!   The returned node has no children.
-  AbstractSimpleNode low_clone() {
+  optional AbstractSimpleNode low_clone() {
     return AbstractSimpleNode();
   }
 
@@ -537,7 +537,7 @@ class AbstractNode {
   //! Returns an initialized copy of the node.
   //! @note
   //!   The returned node has no children, and no parent.
-  AbstractNode low_clone()
+  optional AbstractNode low_clone()
   {
     return AbstractNode();
   }
@@ -1309,7 +1309,7 @@ class SimpleNode
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  SimpleNode low_clone()
+  optional SimpleNode low_clone()
   {
     return VirtualNode::low_clone();
   }
@@ -1323,7 +1323,7 @@ class Node
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  Node low_clone()
+  optional Node low_clone()
   {
     return VirtualNode::low_clone();
   }
