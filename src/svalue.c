@@ -1185,7 +1185,12 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
     struct pike_type *b_type = NULL;
     int res;
     if ((TYPEOF(*a) == TYPEOF(*b)) &&
-	(a->u.ptr == b->u.ptr)) return 1;  /* eq */
+	(a->u.ptr == b->u.ptr)) {
+      if ((TYPEOF(*a) != PIKE_T_FUNCTION) ||
+	  (SUBTYPEOF(*a) == SUBTYPEOF(*b))) {
+	return 1;  /* eq */
+      }
+    }
     if (TYPEOF(*a) == T_TYPE) {
       add_ref(a_type = a->u.type);
     } else {
