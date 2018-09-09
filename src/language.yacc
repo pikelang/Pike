@@ -100,6 +100,7 @@
 %token TOK_PUBLIC "public"
 %token TOK_RSH_EQ ">>="
 %token TOK_STATIC "static"
+%token TOK_STATIC_ASSERT "_Static_assert"
 %token TOK_STRING_ID "string"
 %token TOK_SUB_EQ "-="
 %token TOK_TYPEDEF "typedef"
@@ -1020,6 +1021,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
   | typedef {}
+  | static_assertion {}
   | error TOK_LEX_EOF
   {
     reset_type_stack();
@@ -1049,6 +1051,15 @@ def: modifiers optional_attributes simple_type optional_constant
     {
       THIS_COMPILATION->lex.pragmas=$<number>3;
     }
+  ;
+
+static_assertion: TOK_STATIC_ASSERT '(' expr0 ',' expr0 ')' expected_semicolon
+  {
+    Pike_compiler->init_node =
+      mknode(F_COMMA_EXPR, Pike_compiler->init_node,
+	     mkefuncallnode("_Static_assert",
+			    mknode(F_ARG_LIST, $3, $5)));
+  }
   ;
 
 optional_dot_dot_dot: TOK_DOT_DOT_DOT { $$=1; }
@@ -1147,6 +1158,7 @@ magic_identifiers1:
   | TOK_OPTIONAL   { $$ = "optional"; }
   | TOK_VARIANT    { $$ = "variant"; }
   | TOK_WEAK       { $$ = "__weak__"; }
+  | TOK_STATIC_ASSERT	{ $$ = "_Static_assert"; }
   ;
 
 magic_identifiers2:
@@ -1929,7 +1941,9 @@ statements: { $$=0; }
   }
   ;
 
-statement_with_semicolon: unused2 expected_semicolon ;
+statement_with_semicolon: unused2 expected_semicolon
+  | static_assertion { $$ = 0; }
+  ;
 
 normal_label_statement: statement_with_semicolon
   | import { $$=0; }
