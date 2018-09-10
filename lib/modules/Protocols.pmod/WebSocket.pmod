@@ -325,7 +325,7 @@ class Connection {
         http_buffer->add(data);
 
         array tmp = http_buffer->sscanf("%s\r\n\r\n");
-		if (sizeof(tmp)) {
+                if (tmp && sizeof(tmp)) {
 		  stream->set_blocking_keep_callbacks();
 
 		  array lines = tmp[0]/"\r\n";
@@ -566,7 +566,7 @@ class Connection {
             close_reason = frame->reason;
             // TODO: time out the connection
         }
-        if (!will_write) websocket_write();
+	if (!will_write && stream) stream->write("");
     }
 
     //! Send a WebSocket text frame.
