@@ -1021,7 +1021,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
   | typedef {}
-  | static_assertion {}
+  | static_assertion expected_semicolon {}
   | error TOK_LEX_EOF
   {
     reset_type_stack();
@@ -1053,7 +1053,7 @@ def: modifiers optional_attributes simple_type optional_constant
     }
   ;
 
-static_assertion: TOK_STATIC_ASSERT '(' expr0 ',' expr0 ')' expected_semicolon
+static_assertion: TOK_STATIC_ASSERT '(' expr0 ',' expr0 ')'
   {
     Pike_compiler->init_node =
       mknode(F_COMMA_EXPR, Pike_compiler->init_node,
@@ -1942,7 +1942,6 @@ statements: { $$=0; }
   ;
 
 statement_with_semicolon: unused2 expected_semicolon
-  | static_assertion { $$ = 0; }
   ;
 
 normal_label_statement: statement_with_semicolon
@@ -3646,6 +3645,7 @@ expr5: literal_expr
   | gauge
   | typeof
   | sscanf
+  | static_assertion { $$ = mknewintnode(0); }
   | lambda
   | implicit_modifiers anon_class { $$ = $2; }
   | implicit_modifiers enum { $$ = $2; }
