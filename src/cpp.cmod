@@ -4736,23 +4736,19 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
-/*! @decl constant __DIR__
- *!
- *! This define contains the directory path of the source file.
- */
-static void insert_current_dir_as_string(struct object *cpp_obj,
-                                         struct define_struct *UNUSED(def),
-                                         struct pike_string *UNUSED(arg),
-                                         struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  ref_push_string(this->current_file);
-  /* FIXME: This isn't safe if the master hasn't been compiled yet. */
-  SAFE_APPLY_MASTER("dirname",1);
-  PUSH_STRING_SHIFT(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len,
-                    Pike_sp[-1].u.string->size_shift, tmp);
-  pop_stack();
-}
+  /*! @decl constant __DIR__
+   *!
+   *! This define contains the directory path of the source file.
+   */
+  PIKEFUN string macro___DIR__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %q ");
+    ref_push_string(this->current_file);
+    /* FIXME: This isn't safe if the master hasn't been compiled yet. */
+    APPLY_MASTER("dirname", 1);
+    f_sprintf(2);
+  }
 
   /*! @decl constant __TIME__
    *!
@@ -4805,74 +4801,70 @@ static void insert_current_dir_as_string(struct object *cpp_obj,
     f_sprintf(2);
   }
 
-/*! @decl constant __VERSION__
- *!
- *! This define contains the current Pike version as a float. If
- *! another Pike version is emulated, this define is updated
- *! accordingly.
- *!
- *! @seealso
- *!   @[__REAL_VERSION__]
- */
-static void insert_current_version(struct object *cpp_obj,
-				   struct define_struct *UNUSED(def),
-                                   struct pike_string *UNUSED(arg),
-				   struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  string_builder_sprintf(tmp, " %d.%d ", this->compat_major,
-			 this->compat_minor);
-}
+  /*! @decl constant __VERSION__
+   *!
+   *! This define contains the current Pike version as a float. If
+   *! another Pike version is emulated, this define is updated
+   *! accordingly.
+   *!
+   *! @seealso
+   *!   @[__REAL_VERSION__]
+   */
+  PIKEFUN string macro___VERSION__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %d.%d ");
+    push_int(this->compat_major);
+    push_int(this->compat_minor);
+    f_sprintf(3);
+  }
 
 
-/*! @decl constant __MINOR__
- *! This define contains the minor part of the current Pike version,
- *! represented as an integer. If another Pike version is emulated,
- *! this define is updated accordingly.
- *!
- *! @seealso
- *!   @[__REAL_MINOR__]
- */
-static void insert_current_minor(struct object *cpp_obj,
-				 struct define_struct *UNUSED(def),
-                                 struct pike_string *UNUSED(arg),
-				 struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  string_builder_sprintf(tmp, " %d ", this->compat_minor);
-}
+  /*! @decl constant __MINOR__
+   *! This define contains the minor part of the current Pike version,
+   *! represented as an integer. If another Pike version is emulated,
+   *! this define is updated accordingly.
+   *!
+   *! @seealso
+   *!   @[__REAL_MINOR__]
+   */
+  PIKEFUN string macro___MINOR__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %d ");
+    push_int(this->compat_minor);
+    f_sprintf(2);
+  }
 
-/*! @decl int(1..) __COUNTER__
- *! This define contains a unique counter (unless it has been expanded
- *! Int.NATIVE_MAX times) represented as an integer.
- *!
- */
-static void insert_current_counter(struct object *UNUSED(cpp_obj),
-				 struct define_struct *UNUSED(def),
-                                 struct pike_string *UNUSED(arg),
-				 struct string_builder *tmp)
-{
-  static int counter = 0;
-  string_builder_sprintf(tmp, " %d ", ++counter);
-}
+  /*! @decl int(1..) __COUNTER__
+   *! This define contains a unique counter (unless it has been expanded
+   *! Int.NATIVE_MAX times) represented as an integer.
+   *!
+   */
+  PIKEFUN string macro___COUNTER__()
+  {
+    static int counter = 0;
+    push_text(" %d ");
+    push_int(++counter);
+    f_sprintf(2);
+  }
 
-/*! @decl constant __MAJOR__
- *!
- *! This define contains the major part of the current Pike version,
- *! represented as an integer. If another Pike version is emulated,
- *! this define is updated accordingly.
- *!
- *! @seealso
- *!   @[__REAL_MAJOR__]
- */
-static void insert_current_major(struct object *cpp_obj,
-				 struct define_struct *UNUSED(def),
-                                 struct pike_string *UNUSED(arg),
-				 struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  string_builder_sprintf(tmp, " %d ", this->compat_major);
-}
+  /*! @decl constant __MAJOR__
+   *!
+   *! This define contains the major part of the current Pike version,
+   *! represented as an integer. If another Pike version is emulated,
+   *! this define is updated accordingly.
+   *!
+   *! @seealso
+   *!   @[__REAL_MAJOR__]
+   */
+  PIKEFUN string macro___MAJOR__()
+  {
+    struct CPP_struct *this = THIS;
+    push_text(" %d ");
+    push_int(this->compat_major);
+    f_sprintf(2);
+  }
 
 /* _Pragma(STRING) */
 /*! @decl void _Pragma(string directive)
@@ -5324,14 +5316,14 @@ static void insert_pragma(struct object *cpp_obj,
     struct CPP_struct *this = THIS;
 
     /* These are Pike extensions. */
-    do_magic_define(this,"__DIR__",insert_current_dir_as_string);
-    do_magic_define(this,"__VERSION__",insert_current_version);
-    do_magic_define(this,"__MAJOR__",insert_current_major);
-    do_magic_define(this,"__MINOR__",insert_current_minor);
+    DO_MAGIC_DEFINE(__DIR__);
+    DO_MAGIC_DEFINE(__VERSION__);
+    DO_MAGIC_DEFINE(__MAJOR__);
+    DO_MAGIC_DEFINE(__MINOR__);
 
     simple_add_define(this, "__ARGS__", "__args__");
 
-    do_magic_define(this,"__COUNTER__",insert_current_counter);
+    DO_MAGIC_DEFINE(__COUNTER__);
 
 #if 0
     /* Left in place for documentation reference purposes. */
