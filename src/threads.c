@@ -913,6 +913,8 @@ void low_init_threads_disable(void)
   if (!threads_disabled) {
     THREADS_FPRINTF(0, "low_init_threads_disable(): Locking IM's...\n");
 
+    lock_pike_compiler();
+
     if (Pike_interpreter.thread_state) {
       /* Threads have been enabled. */
 
@@ -922,8 +924,6 @@ void low_init_threads_disable(void)
 
       /* Keep this the entire session. */
       mt_lock(&interleave_lock);
-
-      lock_pike_compiler();
 
       im = (IMUTEX_T *)interleave_list;
 
@@ -941,8 +941,6 @@ void low_init_threads_disable(void)
 
       /* Keep this the entire session. */
       mt_lock(&interleave_lock);
-
-      lock_pike_compiler();
 
       im = (IMUTEX_T *)interleave_list;
 
