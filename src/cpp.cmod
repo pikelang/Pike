@@ -98,10 +98,11 @@ typedef void (*magic_define_fun)(struct object *,
 
 DECLARATIONS;
 
-#define CPP_MACRO_DISABLED	1	/* Don't expand. */
-#define CPP_MACRO_IN_USE	2	/* In use. */
-#define CPP_MACRO_VARARGS	4	/* Varargs. */
-#define CPP_MACRO_KEEP_NL	8	/* Keep newlines. */
+#define CPP_MACRO_VARARGS	0x01	/* Varargs. */
+#define CPP_MACRO_KEEP_NL	0x02	/* Keep newlines. */
+#define CPP_MACRO_USER_FLAGS	0x03	/* Mask for valid user flags. */
+#define CPP_MACRO_DISABLED	0x10	/* Don't expand. */
+#define CPP_MACRO_IN_USE	0x20	/* In use. */
 
 /*! @class CompilerEnvironment
  */
@@ -5251,20 +5252,80 @@ static void insert_pragma(struct object *cpp_obj,
     }
   }
 
-  /*! @decl void define_macro(string name,
-   *!                         string|object|array|function|void value)
+  /*! @decl void define_macro(string name, @
+   *!                         string|object|array|function|void value, @
+   *!                         int(-1..)|void numargs, @
+   *!                         int(0..3)|void flags)
    *!
    *! Define a cpp macro.
+   *!
+   *! @param name
+   *!   Name of macro to define. Ending the name with @expr{"()"@}
+   *!   changes the defaults for @[numargs] and @[flags] to
+   *!   @expr{0@} and @expr{3@} respectively.
+   *!
+   *! @param value
+   *!   Macro definition. Defaults to @expr{"1"@}.
+   *!
+   *! @param numargs
+   *!   Number of required arguments to a function-style macro.
+   *!   @expr{-1@} indicates not function-style.
+   *!   Defaults to @expr{-1@}.
+   *!
+   *! @param flags
+   *!   Bit-wise or of flags affecting the macro behavior:
+   *!   @int
+   *!     @value 1
+   *!       Function style macro with a variable number of arguments.
+   *!       Invalid if @[numargs] is @expr{-1@}.
+   *!     @value 2
+   *!       Keep newlines emitted by the macro.
+   *!   @endint
+   *!   Defaults to @expr{0@}.
    *!
    *! @seealso
    *!   @[define_multiple_macros()]
    */
   PIKEFUN void define_macro(string name,
-			    string|object|array|function|void value)
+			    string|object|array|function|void value,
+			    int(-1..)|void numargs,
+			    int(0..3)|void flags)
   {
     struct CPP_struct *this = THIS;
+    int real_numargs = -2;
+    int real_flags = -1;	/* Keep default flags indicator. */
+    struct define_struct *def;
 
-    add_define(this, name, value);
+    if (flags) {
+      if (flags->u.integer & ~CPP_MACRO_USER_FLAGS) {
+	SIMPLE_ARG_TYPE_ERROR("define_macro", 4, "int(0..3)");
+      }
+      real_flags = flags->u.integer;
+    }
+
+    if (numargs) {
+      if (numargs->u.integer < -1) {
+	SIMPLE_ARG_TYPE_ERROR("define_macro", 3, "int(-1..)");
+      }
+
+      real_numargs = numargs->u.integer;
+
+      if ((real_flags >= 0) && (real_flags & CPP_MACRO_VARARGS)) {
+	real_numargs++;
+	if (!real_numargs) {
+	  SIMPLE_ARG_TYPE_ERROR("define_macro", 3, "int(0..)");
+	}
+      }
+    }
+
+    def = add_define(this, name, value);
+
+    if (real_numargs >= -1) {
+      def->args = real_numargs;
+    }
+    if (real_flags >= 0) {
+      def->flags = real_flags;
+    }
   }
 
 #cmod_define DO_MAGIC_DEFINE(SYM) do {					\
