@@ -17,6 +17,9 @@ Bug fixes
 
 o Runtime
 
+  - Fixed NULL dereference (SIGSEGV) in _disable_threads() if
+    another thread is holding the compiler lock.
+
   - Fixed loss of Pike_interpreter_pointer (race, --with-debug only).
 
     The Pike_interpreter_pointer must not be altered by threads not
