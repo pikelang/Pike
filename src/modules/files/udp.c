@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.23 2005/09/14 12:52:24 grubba Exp $
+ * $Id$
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.23 2005/09/14 12:52:24 grubba Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -276,8 +276,8 @@ void udp_wait(INT32 args)
 #else /* !HAVE_POLL */
   THREADS_ALLOW();
 
-  FD_ZERO(&rset);
-  FD_SET(fd, &rset);
+  fd_FD_ZERO(&rset);
+  fd_FD_SET(fd, &rset);
   tv.tv_sec = DO_NOT_WARN((int)timeout);
   tv.tv_usec = DO_NOT_WARN((int)((timeout - ((int)timeout)) * 1000000.0));
   res = fd_select(fd+1, &rset, NULL, NULL, &tv);
@@ -291,7 +291,7 @@ void udp_wait(INT32 args)
     Pike_error("udp->wait(): select() failed with errno %d\n", e);
   } else {
     /* Success? */
-    if (FD_ISSET(fd, &rset)) {
+    if (fd_FD_ISSET(fd, &rset)) {
       res = 1;
     } else {
       res = 0;
