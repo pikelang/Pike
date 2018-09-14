@@ -771,7 +771,7 @@ PIKECLASS CircularList
 
   /*! @decl void push_front(mixed value)
    *!
-   *! Add a new value at the end of the list.
+   *! Add a new value at the front of the list.
    *!
    *! @param value
    *!    The value to add.
