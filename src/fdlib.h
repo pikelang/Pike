@@ -215,6 +215,12 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
 
+/* The struct my_fd_set_s is used by the backend to keep track
+ * of which fds that the user has registered for selection.
+ *
+ * They are copied to corresponding proper fd_sets (via
+ * fd_copy_my_fd_set_to_fd_set()) before each call of fd_select().
+ */
 struct my_fd_set_s
 {
   char bits[FD_SETSIZE/8];
