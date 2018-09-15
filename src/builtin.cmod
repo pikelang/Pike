@@ -2085,7 +2085,7 @@ PIKECLASS RandomInterface
           }
       }
 
-    UNREACHABLE();
+    UNREACHABLE(return);
   }
 
   /*! @decl mixed random(object o)
@@ -3210,7 +3210,7 @@ PIKECLASS single_string_replace
       case eightbit: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
       case sixteenbit: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
       case thirtytwobit: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
-      default: UNREACHABLE();
+      default: UNREACHABLE(break);
       }
 
       if(del->len == to->len)
