@@ -395,6 +395,7 @@ static PIKE_MUTEX_T interpreter_lock;
 static PIKE_MUTEX_T interpreter_lock_wanted;
 PIKE_MUTEX_T thread_table_lock;
 static PIKE_MUTEX_T interleave_lock;
+static struct program *mutex_program = NULL;
 static struct program *mutex_key = 0;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 static struct program *thread_local_prog = 0;
@@ -2579,9 +2580,37 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
 struct pike_cond {
   COND_T cond;
   int wait_count;
+  struct object *mutex_obj;
 };
 
 #define THIS_COND ((struct pike_cond *)(CURRENT_STORAGE))
+
+/*! @decl void create(Thread.Mutex|void mutex)
+ *!
+ *! @param mutex
+ *!   Optional @[Mutex] that protects the resource that the
+ *!   condition signals for.
+ */
+static void f_cond_create(INT32 args)
+{
+  struct pike_cond *cond = THIS_COND;
+  struct object *mux = NULL;
+  get_all_args("create", args, ".%O", &mux);
+  if (cond->mutex_obj) {
+    free_object(cond->mutex_obj);
+    cond->mutex_obj = NULL;
+  }
+  if (mux) {
+    struct program *prog = mux->prog;
+    if (prog) {
+      prog = prog->inherits[SUBTYPEOF(Pike_sp[-args])].prog;
+      if (prog == mutex_program) {
+	cond->mutex_obj = mux;
+	add_ref(mux);
+      }
+    }
+  }
+}
 
 /*! @decl void wait(Thread.MutexKey mutex_key)
  *! @decl void wait(Thread.MutexKey mutex_key, int(0..)|float seconds)
@@ -2648,9 +2677,12 @@ void f_cond_wait(INT32 args)
     get_all_args(NULL, args, "%o%i%i", &key, &seconds, &nanos);
   }
 
+  c = THIS_COND;
+
   if ((key->prog != mutex_key) ||
       (!(OB2KEY(key)->initialized)) ||
-      (!(mut = OB2KEY(key)->mut))) {
+      (!(mut = OB2KEY(key)->mut)) ||
+      (OB2KEY(key)->mutex_obj && (OB2KEY(key)->mutex_obj != c->mutex_obj))) {
     Pike_error("Bad argument 1 to wait()\n");
   }
 
@@ -2658,8 +2690,6 @@ void f_cond_wait(INT32 args)
     pop_n_elems(args - 1);
     args = 1;
   }
-
-  c = THIS_COND;
 
   /* Unlock mutex */
   mutex_obj = OB2KEY(key)->mutex_obj;
@@ -2757,6 +2787,11 @@ void exit_cond_obj(struct object *UNUSED(o))
     THREADS_DISALLOW();
   }
   co_destroy(&(THIS_COND->cond));
+
+  if (THIS_COND->mutex_obj) {
+    free_object(THIS_COND->mutex_obj);
+    THIS_COND->mutex_obj = NULL;
+  }
 }
 
 /*! @endclass
@@ -3393,10 +3428,17 @@ void th_init(void)
   ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tInt,tStr),0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
+  mutex_program = Pike_compiler->new_program;
+  add_ref(mutex_program);
   end_class("mutex", 0);
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(struct pike_cond);
+  PIKE_MAP_VARIABLE("_mutex", OFFSETOF(pike_cond, mutex_obj),
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
+  ADD_FUNCTION("create", f_cond_create,
+	       tFunc(tOr(tObjIs_THREAD_MUTEX, tVoid), tVoid),
+	       ID_PROTECTED);
   ADD_FUNCTION("wait",f_cond_wait,
 	       tOr(tFunc(tObjIs_THREAD_MUTEX_KEY tOr3(tVoid, tIntPos, tFloat),
 			 tVoid),
@@ -3548,6 +3590,12 @@ void th_cleanup(void)
     Pike_interpreter_pointer = original_interpreter;
 
     destruct_objects_to_destruct_cb();
+  }
+
+  if(mutex_program)
+  {
+    free_program(mutex_program);
+    mutex_program = NULL;
   }
 
   if(mutex_key)
