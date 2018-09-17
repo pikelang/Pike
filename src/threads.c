@@ -2682,7 +2682,8 @@ void f_cond_wait(INT32 args)
   if ((key->prog != mutex_key) ||
       (!(OB2KEY(key)->initialized)) ||
       (!(mut = OB2KEY(key)->mut)) ||
-      (OB2KEY(key)->mutex_obj && (OB2KEY(key)->mutex_obj != c->mutex_obj))) {
+      (c->mutex_obj && OB2KEY(key)->mutex_obj &&
+       (OB2KEY(key)->mutex_obj != c->mutex_obj))) {
     Pike_error("Bad argument 1 to wait()\n");
   }
 
