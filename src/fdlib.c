@@ -2566,8 +2566,8 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
      * the new handle.
      */
     set_fd_callback_events(box, box_events, box->flags);
-    if (box_obj) free_object(box_obj);
   }
+  if (box_obj) free_object(box_obj);
 
   FDDEBUG(fprintf(stderr,"Dup2 %d (%d) to %d (%d)\n",
                   from, (long)(ptrdiff_t)h, to, x));
