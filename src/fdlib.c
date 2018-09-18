@@ -17,6 +17,7 @@
 
 #include "global.h"
 #include "fdlib.h"
+#include "backend.h"
 #include "pike_error.h"
 #include <math.h>
 #include "port.h"
@@ -2495,6 +2496,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
+  struct Backend_struct *backend = NULL;
+  struct fd_callback_box *box = NULL;
+  struct object *box_obj = NULL;
+  int box_events = 0;
   int type;
   HANDLE h,x,p=GetCurrentProcess();
 
@@ -2516,12 +2521,35 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 
   release_fd(from);
 
+  backend = get_backend_for_fd(to);
+  if (backend) {
+    box = get_fd_callback_box_for_fd(backend, to);
+    if (box) {
+      /* Temporarily clear the events for the box, to make
+       * sure no events are still registered for the old handle.
+       *
+       * NB: We need to keep a reference to the box object, in
+       *     case the only reference was held by the backend.
+       */
+      box_obj = box->ref_obj;
+      if (box_obj) add_ref(box_obj);
+      box_events = box->events;
+      set_fd_callback_events(box, 0, box->flags);
+    }
+  }
+
   /* NB: Dead-lock proofed by never holding the busy lock for
    *     both from and to.
    */
 
   if (reallocate_fd(to, type, x) < 0) {
     release_fd(to);
+
+    if (box) {
+      /* Restore the events for the box. */
+      set_fd_callback_events(box, box_events, box->flags);
+      if (box_obj) free_object(box_obj);
+    }
 
     if (type == FD_SOCKET) {
       closesocket((SOCKET)x);
@@ -2532,6 +2560,14 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   }
 
   release_fd(to);
+
+  if (box && (type == FD_SOCKET)) {
+    /* Restore the events for the box, to register it with
+     * the new handle.
+     */
+    set_fd_callback_events(box, box_events, box->flags);
+    if (box_obj) free_object(box_obj);
+  }
 
   FDDEBUG(fprintf(stderr,"Dup2 %d (%d) to %d (%d)\n",
                   from, (long)(ptrdiff_t)h, to, x));
