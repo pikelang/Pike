@@ -215,50 +215,11 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
 
-/* The struct my_fd_set_s is used by the backend to keep track
- * of which fds that the user has registered for selection.
- *
- * They are copied to corresponding proper fd_sets (via
- * fd_copy_my_fd_set_to_fd_set()) before each call of fd_select().
- */
-struct my_fd_set_s
-{
-  char bits[FD_SETSIZE/8];
-};
-
-typedef struct my_fd_set_s my_fd_set;
-
 #ifdef PIKE_DEBUG
 #define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
 #else
 #define fd_check_fd(X)
 #endif /* PIKE_DEBUG */
-
-#define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
-#define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
-#define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
-#define my_FD_ZERO(S) memset(& (S)->bits, 0, sizeof(my_fd_set))
-
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {                   \
-    int e_,d_,max_=MINIMUM(FD_SETSIZE>>3,(max+7)>>3);                   \
-    (TO)->fd_count=0;							\
-    for(e_=0;e_<max_;e_++)						\
-    {									\
-      int b_=(FROM)->bits[e_];						\
-      if(b_)								\
-      {									\
-        for(d_=0;d_<8;d_++)						\
-        {								\
-          if(b_ & (1<<d_))						\
-          {								\
-            int fd_=(e_<<3)+d_;						\
-            fd_check_fd(fd_);						\
-            (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
-          }								\
-        }								\
-      }									\
-    }									\
-  }while(0)
 
 extern HANDLE da_handle[FD_SETSIZE];
 extern int fd_type[FD_SETSIZE];
@@ -522,21 +483,6 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define fd_shutdown_read 0
 #define fd_shutdown_write 1
 #define fd_shutdown_both 2
-
-struct my_fd_set_s
-{
-  fd_set tmp;
-};
-
-typedef struct my_fd_set_s my_fd_set;
-
-#define my_FD_CLR(FD,S) FD_CLR((FD), & (S)->tmp)
-#define my_FD_SET(FD,S) FD_SET((FD), & (S)->tmp)
-#define my_FD_ISSET(FD,S) FD_ISSET((FD), & (S)->tmp)
-#define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
-
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
-   memcpy((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)

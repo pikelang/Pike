@@ -3156,33 +3156,27 @@ int pdb_MY_FD_SET2(int *pfd, int fd, int filter, int fflags)
 
 struct sb_selectors
 {
-  int max_fd;
-  my_fd_set sets[3];
-};
-
-struct sb_active_selectors
-{
-  fd_set asets[3];
+  fd_set sets[3];
   int max_fd;
 };
 
 #define SB_SELECT(SET, TIMEOUT)					\
   fd_select((SET).max_fd + 1,					\
-	    (SET).asets + MY_READSET,				\
-	    (SET).asets + MY_WRITESET,				\
-	    (SET).asets + MY_EXCEPTSET,				\
+	    (SET).sets + MY_READSET,				\
+	    (SET).sets + MY_WRITESET,				\
+	    (SET).sets + MY_EXCEPTSET,				\
 	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
 
 void sb_MY_FD_CLR(struct sb_selectors *me, int fd, int setno)
 {
   if(fd > me->max_fd) return;
-  my_FD_CLR(fd, me->sets + setno);
+  fd_FD_CLR(fd, me->sets + setno);
   if(fd == me->max_fd)
   {
     while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, me->sets + MY_READSET) &&
-	  !my_FD_ISSET(me->max_fd, me->sets + MY_WRITESET)
-	  && !my_FD_ISSET(me->max_fd, me->sets + MY_EXCEPTSET)
+	  !fd_FD_ISSET(me->max_fd, me->sets + MY_READSET) &&
+	  !fd_FD_ISSET(me->max_fd, me->sets + MY_WRITESET)
+	  && !fd_FD_ISSET(me->max_fd, me->sets + MY_EXCEPTSET)
       )
       me->max_fd--;
   }
@@ -3190,23 +3184,9 @@ void sb_MY_FD_CLR(struct sb_selectors *me, int fd, int setno)
 
 void sb_MY_FD_SET(struct sb_selectors *me, int fd, int setno)
 {
-  my_FD_SET(fd, me->sets + setno);
+  fd_FD_SET(fd, me->sets + setno);
   if(fd > me->max_fd) me->max_fd=fd;
 }
-
-#ifndef HAVE_POLL
-static void sb_copy_selectors(struct sb_active_selectors *to,
-			      struct sb_selectors *from)
-{
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_READSET,
-			      from->sets + MY_READSET, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_WRITESET,
-			      from->sets + MY_WRITESET, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_EXCEPTSET,
-			      from->sets + MY_EXCEPTSET, from->max_fd+1);
-  to->max_fd=from->max_fd;
-}
-#endif
 
 #ifndef POLL_SET_SIZE
 #define POLL_SET_SIZE		32
@@ -5137,7 +5117,7 @@ PIKECLASS SelectBackend
    * POLL/SELECT fd sets
    */
   CVAR struct sb_selectors set;
-  CVAR struct sb_active_selectors active_set;
+  CVAR struct sb_selectors active_set;
 
   DECLARE_STORAGE
 
@@ -5229,9 +5209,9 @@ PIKECLASS SelectBackend
       /* FIXME: OOB? */
       for(e=0;e<=sb->set.max_fd;e++)
       {
-	if(my_FD_ISSET(e, sb->set.sets + MY_READSET)
-	   || my_FD_ISSET(e, sb->set.sets + MY_WRITESET)
-	   || my_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
+	if(fd_FD_ISSET(e, sb->set.sets + MY_READSET)
+	   || fd_FD_ISSET(e, sb->set.sets + MY_WRITESET)
+	   || fd_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
 	  )
 	{
 	  int ret;
@@ -5294,7 +5274,7 @@ PIKECLASS SelectBackend
 
       poll_timeout = *next_timeout;
 
-      sb_copy_selectors(& sb->active_set, &sb->set);
+      sb->active_set = sb->set;
 
       PDWERR("[%d]BACKEND[%d]: Doing poll on fds:\n", THR_NO, me->id);
 
@@ -5340,7 +5320,7 @@ PIKECLASS SelectBackend
 	box->revents = 0;
 	box->flags = 0;
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_EXCEPTSET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_EXCEPTSET)) {
 	  /* Check for errors. GNU libc says this isn't set on error, but
 	   * POSIX does. FIXME: What bits will be set for errors on GNU
 	   * systems, then? Should we always check for that? */
@@ -5357,12 +5337,12 @@ PIKECLASS SelectBackend
 	  }
 	}
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_READSET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_READSET)) {
           PDWERR("[%d]BACKEND[%d]: read on %d\n", THR_NO, me->id, i);
 	  box->revents |= PIKE_BIT_FD_READ;
 	}
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_WRITESET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_WRITESET)) {
           PDWERR("[%d]BACKEND[%d]: write on %d\n", THR_NO, me->id, i);
 	  /* OOB can by BSD definition always be written, so if we can
 	   * write normal data it's reasonable to assume OOB can be
@@ -5424,7 +5404,7 @@ PIKECLASS SelectBackend
       case EBADF:
 	/* TODO: Fix poll version! */
 
-	sb_copy_selectors(&sb->active_set, &sb->set);
+	sb->active_set = sb->set;
 
 	timeout->tv_usec=0;
 	timeout->tv_sec=0;
@@ -5444,16 +5424,16 @@ PIKECLASS SelectBackend
 	  case EBADF:
 	    {
 	      FOR_EACH_ACTIVE_FD_BOX (me, box) {
-		fd_FD_ZERO(sb->active_set.asets + MY_READSET);
-		fd_FD_ZERO(sb->active_set.asets + MY_WRITESET);
-		fd_FD_ZERO(sb->active_set.asets + MY_EXCEPTSET);
+		fd_FD_ZERO(sb->active_set.sets + MY_READSET);
+		fd_FD_ZERO(sb->active_set.sets + MY_WRITESET);
+		fd_FD_ZERO(sb->active_set.sets + MY_EXCEPTSET);
 
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_READSET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_READSET);
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_WRITESET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_WRITESET);
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_EXCEPTSET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_EXCEPTSET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_READSET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_READSET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_WRITESET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_WRITESET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_EXCEPTSET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_EXCEPTSET);
 
 		timeout->tv_usec=0;
 		timeout->tv_sec=0;
@@ -5601,9 +5581,9 @@ PIKECLASS SelectBackend
     me->handler_data = THIS;
 
     THIS->set.max_fd=0;
-    my_FD_ZERO(THIS->set.sets + MY_READSET);
-    my_FD_ZERO(THIS->set.sets + MY_WRITESET);
-    my_FD_ZERO(THIS->set.sets + MY_EXCEPTSET);
+    fd_FD_ZERO(THIS->set.sets + MY_READSET);
+    fd_FD_ZERO(THIS->set.sets + MY_WRITESET);
+    fd_FD_ZERO(THIS->set.sets + MY_EXCEPTSET);
     /* FIXME: Should there be something else here? */
     /* me->set.num_fds=0; */
   }
