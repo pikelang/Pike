@@ -551,6 +551,70 @@ class AbstractSimpleNode {
     }
     return (res);
   }
+
+  //! Optional factory for creating contained nodes.
+  //!
+  //! @param type
+  //!   Type of node to create. One of:
+  //!   @int
+  //!     @value XML_TEXT
+  //!       XML text. @[text] contains a string with the text.
+  //!     @value XML_COMMENT
+  //!       XML comment. @[text] contains a string with the comment text.
+  //!     @value XML_HEADER
+  //!       @tt{<?xml?>@}-header @[attr] contains a mapping with
+  //!       the attributes.
+  //!     @value XML_PI
+  //!       XML processing instruction. @[name] contains the name of the
+  //!       processing instruction and @[text] the remainder.
+  //!     @value XML_ELEMENT
+  //!       XML element tag. @[name] contains the name of the tag and
+  //!       @[attr] the attributes.
+  //!     @value XML_DOCTYPE
+  //!     @value DTD_ENTITY
+  //!     @value DTD_ELEMENT
+  //!     @value DTD_ATTLIST
+  //!     @value DTD_NOTATION
+  //!       DTD information.
+  //!   @endint
+  //!
+  //! @param name
+  //!   Name of the tag if applicable.
+  //!
+  //! @param attr
+  //!   Attributes for the tag if applicable.
+  //!
+  //! @param text
+  //!   Contained text of the tab if any.
+  //!
+  //! This function is called during parsning to create the various
+  //! XML nodes.
+  //!
+  //! Define this function to provide application-specific XML nodes.
+  //!
+  //! @returns
+  //!   Returns one of
+  //!   @mixed
+  //!     @type AbstractSimpleNode
+  //!       A node object representing the XML tag.
+  //!     @type int(0..0)
+  //!       @expr{0@} (zero) if the subtree rooted here should be cut.
+  //!     @type zero
+  //!       @expr{UNDEFINED@} to fall back to the next level of parser
+  //!       (ie behave as if this function does not exist).
+  //!   @endmixed
+  //!
+  //! @note
+  //!   This function is only relevant for @[XML_ELEMENT] nodes.
+  //!
+  //! @note
+  //!   This function is not available in Pike 7.6 and earlier.
+  //!
+  //! @note
+  //!   In Pike 8.0 and earlier this function was only called in
+  //!   root nodes.
+  optional this_program node_factory(int type, string name,
+				     mapping attr, string text);
 }
 
 //! Base class for nodes with parent pointers.
@@ -1584,6 +1648,8 @@ class XMLParser
 
   this_program doctype_node;
 
+  protected ADT.Stack container_stack = ADT.Stack();
+
   void parse(string data,
              void|mapping predefined_entities,
              ParseFlags|void flags,
@@ -1620,6 +1686,7 @@ class XMLParser
 	}
       }
       catch( data=xp->autoconvert(data) );
+      container_stack = ADT.Stack();
       foreach(xp->parse(data, parse_xml_callback,
                         sizeof(extras) && extras),
               this_program child)
@@ -1686,45 +1753,63 @@ class XMLParser
   //!
   //! @note
   //!   This function is not available in Pike 7.6 and earlier.
-  protected this_program node_factory(int type, string name,
-				      mapping attr, string text);
+  //!
+  //! @seealso
+  //!   @[node_factory_dispatch()], @[AbstractSimpleNode()->node_factory()]
+  protected AbstractSimpleNode node_factory(int type, string name,
+					    mapping attr, string text);
 
-  protected this_program|int(0..0)
+  //! Dispatcher of @[node_factory()].
+  //!
+  //! This function finds a suitable @[node_factory()] given the
+  //! current parser context to call with the same arguments.
+  protected AbstractSimpleNode node_factory_dispatch(int type, string name,
+						     mapping attr, string text)
+  {
+    foreach(reverse(values(container_stack)), AbstractNode n) {
+      if (!n || !n->node_factory) continue;
+      AbstractSimpleNode res = n->node_factory(type, name, attr, text);
+      if (!undefinedp(res)) return res;
+    }
+    return node_factory(type, name, attr, text);
+  }
+
+  protected AbstractSimpleNode|int(0..0)
     parse_xml_callback(string type, string name,
                        mapping attr, string|array contents,
                        mixed location, mixed ...extra)
   {
-    this_program node;
+    AbstractSimpleNode node;
     mapping short_attr = attr;
 
     switch (type) {
     case "":
     case "<![CDATA[":
       //  Create text node
-      return node_factory(XML_TEXT, "", 0, contents);
+      return node_factory_dispatch(XML_TEXT, "", 0, contents);
 
     case "<!--":
       //  Create comment node
-      return node_factory(XML_COMMENT, "", 0, contents);
+      return node_factory_dispatch(XML_COMMENT, "", 0, contents);
 
     case "<?xml":
       //  XML header tag
-      return node_factory(XML_HEADER, "", attr, "");
+      return node_factory_dispatch(XML_HEADER, "", attr, "");
 
     case "<!ENTITY":
-      return node_factory(DTD_ENTITY, name, attr, contents);
+      return node_factory_dispatch(DTD_ENTITY, name, attr, contents);
     case "<!ELEMENT":
-      return node_factory(DTD_ELEMENT, name, 0, contents);
+      return node_factory_dispatch(DTD_ELEMENT, name, 0, contents);
     case "<!ATTLIST":
-      return node_factory(DTD_ATTLIST, name, attr, contents);
+      return node_factory_dispatch(DTD_ATTLIST, name, attr, contents);
     case "<!NOTATION":
-      return node_factory(DTD_NOTATION, name, attr, contents);
+      return node_factory_dispatch(DTD_NOTATION, name, attr, contents);
     case "<!DOCTYPE":
-      return node_factory(XML_DOCTYPE, name, attr, contents);
+      return node_factory_dispatch(XML_DOCTYPE, name, attr, contents);
 
     case "<?":
       //  XML processing instruction
-      return node_factory(XML_PI, name, attr, contents);
+      return node_factory_dispatch(XML_PI, name, attr, contents);
 
     case "<>":
       //  Create new tag node.
@@ -1746,8 +1831,8 @@ class XMLParser
 	  short_attr = UNDEFINED;
 	}
       }
-      node = node_factory(XML_ELEMENT, name, attr, "");
-      if (short_attr) node->set_short_attributes(short_attr);
+      node = node_factory_dispatch(XML_ELEMENT, name, attr, "");
+      if (node && short_attr) node->set_short_attributes(short_attr);
       return node;
 
     case ">":
@@ -1760,7 +1845,7 @@ class XMLParser
           attr = mkmapping(map(indices(attr), lower_case), values(attr));
 	  short_attr = attr;
         }
-        //  Parse namespace information of available.
+        //  Parse namespace information if available.
         if (extra[0]->xmlns) {
           XMLNSParser xmlns = extra[0]->xmlns;
           name = xmlns->Decode(name);
@@ -1769,9 +1854,11 @@ class XMLParser
 	  short_attr = UNDEFINED;
         }
       }
-      node = node_factory(XML_ELEMENT, name, attr, "");
+      node = container_stack->pop();
 
       if (node) {
+	// FIXME: Validate that the node has the expected content.
+
 	//  Add children to our tree node. We need to merge consecutive text
 	//  children since two text elements can't be neighbors according to
 	//  the W3 spec. This is necessary since CDATA sections are
@@ -1820,7 +1907,9 @@ class XMLParser
           extra[0]->xmlns) {
         XMLNSParser xmlns = extra[0]->xmlns;
         attr = xmlns->Enter(attr);
+	name = xmlns->Decode(name);
       }
+      container_stack->push(node_factory_dispatch(XML_ELEMENT, name, attr, ""));
       return 0;
 
     default:
