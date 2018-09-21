@@ -142,11 +142,6 @@ DECLARATIONS;
  * }
  */
 
-static void insert_pragma(struct object *cpp_obj,
-			  struct define_struct *def,
-                          struct pike_string *arg,
-			  struct string_builder *tmp);
-
 /*! @class define
  */
 PIKECLASS define
@@ -2189,20 +2184,6 @@ static struct pike_string *make_define_name(struct CPP_struct *this,
     return finish_string_builder(&s);
   }
   return make_shared_string(name);
-}
-
-static struct define_struct *do_magic_define(struct CPP_struct *this,
-                                             const char *name,
-                                             magic_define_fun fun)
-{
-  struct define_struct* def;
-  struct pike_string *name_str = make_define_name(this, name);
-  def = alloc_empty_define(name_str);
-  free_string(name_str);
-  def->magic=fun;
-  mapping_string_insert(this->defines, def->name, Pike_sp-1);
-  pop_stack();
-  return def;
 }
 
 static struct define_struct *add_define(struct CPP_struct *this,
@@ -4867,77 +4848,78 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
-/* _Pragma(STRING) */
-/*! @decl void _Pragma(string directive)
- *!
- *! This macro inserts the corresponding @[#pragma] @[directive]
- *! in the source.
- *!
- *! e.g. @expr{_Pragma("strict_types")@} is the same
- *! as @expr{#pragma strict_types@} .
- *!
- *! @seealso
- *!   @[#pragma]
- */
-static void insert_pragma(struct object *cpp_obj,
-			  struct define_struct *UNUSED(def),
-                          struct pike_string *arg,
-			  struct string_builder *tmp)
-{
-  struct CPP_struct *this = get_storage(cpp_obj, CPP_program);
-  int i;
-  int in_string = 0;
+  /* _Pragma(STRING) */
+  /*! @decl void _Pragma(string directive)
+   *!
+   *! This macro inserts the corresponding @[#pragma] @[directive]
+   *! in the source.
+   *!
+   *! e.g. @expr{_Pragma("strict_types")@} is the same
+   *! as @expr{#pragma strict_types@} .
+   *!
+   *! @seealso
+   *!   @[#pragma]
+   */
+  PIKEFUN string macro__Pragma(string arg)
+  {
+    struct CPP_struct *this = THIS;
+    struct string_builder tmp;
+    int i;
+    int in_string = 0;
 
-  /* Make some reasonable amount of space. */
-  string_build_mkspace(tmp, arg->len + 20, arg->size_shift);
+    /* Allocate and make some reasonable amount of space. */
+    init_string_builder_alloc(&tmp, arg->len + this->current_file->len + 30,
+			      arg->size_shift);
 
-  string_builder_strcat(tmp, "\n#pragma ");
+    string_builder_strcat(&tmp, "\n#pragma ");
 
-  /* Destringize the argument. */
-  for (i = 0; i < arg->len; i++) {
-    p_wchar2 ch = index_shared_string(arg, i);
-    switch(ch) {
-    case '\n': case '\r':
-      ch = ' ';
-      /* FALLTHRU */
-    case ' ': case '\t':
-      if (in_string) {
-	string_builder_putchar(tmp, ch);
-      }
-      break;
-    case '\"':
-      in_string = !in_string;
-      break;
-    case '\\':
-      if (in_string) {
-        ch = (++i < arg->len) ? index_shared_string(arg, i) : '\0';
-	if ((ch != '\\') && (ch != '\"')) {
-	  cpp_error(this, "Invalid \\-escape in _Pragma().");
-	  break;
+    /* Destringize the argument. */
+    for (i = 0; i < arg->len; i++) {
+      p_wchar2 ch = index_shared_string(arg, i);
+      switch(ch) {
+      case '\n': case '\r':
+	ch = ' ';
+	/* FALLTHRU */
+      case ' ': case '\t':
+	if (in_string) {
+	  string_builder_putchar(&tmp, ch);
 	}
+	break;
+      case '\"':
+	in_string = !in_string;
+	break;
+      case '\\':
+	if (in_string) {
+	  ch = (++i < arg->len) ? index_shared_string(arg, i) : '\0';
+	  if ((ch != '\\') && (ch != '\"')) {
+	    cpp_error(this, "Invalid \\-escape in _Pragma().");
+	    break;
+	  }
+	}
+	/* FALLTHRU */
+      default:
+	if (in_string) {
+	  string_builder_putchar(&tmp, ch);
+	} else {
+	  cpp_error(this, "Invalid character outside of string.");
+	}
+	break;
       }
-      /* FALLTHRU */
-    default:
-      if (in_string) {
-	string_builder_putchar(tmp, ch);
-      } else {
-	cpp_error(this, "Invalid character outside of string.");
-      }
-      break;
     }
-  }
 
-  if (in_string) {
-    cpp_error(this, "Unterminated string constant.");
-  }
+    if (in_string) {
+      cpp_error(this, "Unterminated string constant.");
+    }
 
-  string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
-  PUSH_STRING_SHIFT(this->current_file->str,
-		    this->current_file->len,
-		    this->current_file->size_shift,
-		    tmp);
-  string_builder_putchar(tmp, '\n');
-}
+    string_builder_sprintf(&tmp, "\n#line %ld ", (long)this->current_line);
+    PUSH_STRING_SHIFT(this->current_file->str,
+		      this->current_file->len,
+		      this->current_file->size_shift,
+		      &tmp);
+    string_builder_putchar(&tmp, '\n');
+
+    push_string(finish_string_builder(&tmp));
+  }
 
 
 /*! @decl constant __REAL_VERSION__
@@ -5337,6 +5319,17 @@ static void insert_pragma(struct object *cpp_obj,
       pop_stack();							\
     } while(0)
 
+#cmod_define DO_MAGIC_DEFINE_FUNC(SYM, ARGS, FLAGS) do {		\
+      push_text(#SYM);							\
+      ref_push_function(Pike_fp->current_object,			\
+			f_CPP_macro_ ## SYM ## _fun_num +		\
+			Pike_fp->context->identifier_level);		\
+      push_int(ARGS);							\
+      push_int(FLAGS);							\
+      apply_current(f_CPP_define_macro_fun_num, 4);			\
+      pop_stack();							\
+    } while(0)
+
   /*! @decl void define_ansi_macros()
    *!
    *!   Adds some cpp macros defined by the ANSI-C standards,
@@ -5357,9 +5350,7 @@ static void insert_pragma(struct object *cpp_obj,
     DO_MAGIC_DEFINE(__DATE__);
 
     /* These are from the 201x C standard. */
-    def = do_magic_define(this, "_Pragma", insert_pragma);
-    def->args = 1;
-    def->flags |= CPP_MACRO_KEEP_NL;
+    DO_MAGIC_DEFINE_FUNC(_Pragma, 1, CPP_MACRO_KEEP_NL);
 
     simple_add_define(this, "static_assert", "_Static_assert");
   }
