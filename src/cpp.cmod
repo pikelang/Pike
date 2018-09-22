@@ -502,45 +502,45 @@ static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 		      ptrdiff_t tmp, int flags);
 
 
-/*! @decl void report(SeverityLevel severity, @
- *!                   string filename, int(1..) linenumber, @
- *!                   string subsystem, @
- *!                   string message, mixed ... extra_args)
- *!
- *!   Report a diagnostic from the preprocessor.
- *!
- *! @param severity
- *!   The severity of the diagnostic.
- *!
- *! @param filename
- *! @param linenumber
- *!   Location which triggered the diagnostic.
- *!
- *! @param subsystem
- *!   Always @expr{"cpp"@}.
- *!
- *! @param message
- *!   String with the diagnostic message, with optional
- *!   @[sprintf()]-style formatting (if any @[extra_args]).
- *!
- *! @param extra_args
- *!   Extra arguments to @[sprintf()].
- *!
- *!   The default implementation just calls
- *!   @[CompilerEnviroment::report()] in the parent with the
- *!   same arguments.
- *!
- *! @seealso
- *!   @[Reporter()->report()], @[cpp_error()]
- */
-PIKEFUN void report(int(0..3) severity,
-		    string filename, int(1..) linenumber,
-		    string subsystem,
-		    string message, mixed ... extra_args)
-{
-  /* Call the report() in our parent. */
-  apply_external(1, CE_REPORT_FUN_NUM, args);
-}
+  /*! @decl void report(SeverityLevel severity, @
+   *!                   string filename, int(1..) linenumber, @
+   *!                   string subsystem, @
+   *!                   string message, mixed ... extra_args)
+   *!
+   *!   Report a diagnostic from the preprocessor.
+   *!
+   *! @param severity
+   *!   The severity of the diagnostic.
+   *!
+   *! @param filename
+   *! @param linenumber
+   *!   Location which triggered the diagnostic.
+   *!
+   *! @param subsystem
+   *!   Always @expr{"cpp"@}.
+   *!
+   *! @param message
+   *!   String with the diagnostic message, with optional
+   *!   @[sprintf()]-style formatting (if any @[extra_args]).
+   *!
+   *! @param extra_args
+   *!   Extra arguments to @[sprintf()].
+   *!
+   *!   The default implementation just calls
+   *!   @[CompilerEnviroment::report()] in the parent with the
+   *!   same arguments.
+   *!
+   *! @seealso
+   *!   @[Reporter()->report()], @[cpp_error()]
+   */
+  PIKEFUN void report(int(0..3) severity,
+		      string filename, int(1..) linenumber,
+		      string subsystem,
+		      string message, mixed ... extra_args)
+  {
+    /* Call the report() in our parent. */
+    apply_external(1, CE_REPORT_FUN_NUM, args);
+  }
 
 static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
 				const char *fmt, va_list args)
