@@ -1128,7 +1128,6 @@ class File
 
         if (bytes > 0)
         {
-          buffer->advance(bytes);
           return ___read_callback( ___id||this, buffer );
         }
         else

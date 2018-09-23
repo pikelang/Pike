@@ -1325,6 +1325,9 @@ static void file_read(INT32 args)
       Pike_error("No buffer space.\n");
 
     bytes_read = do_read_into_buffer(fd, m.ptr, (size_t)m.len, &file->my_errno);
+
+    if (bytes_read > 0)
+      pike_advance_memory_object(o, type, bytes_read);
     
     pop_n_elems(args);
     push_int(bytes_read);

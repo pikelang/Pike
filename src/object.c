@@ -3419,6 +3419,43 @@ static Buffer *io_buffer(struct object *o)
   return get_storage( o, iobuf_program );
 }
 
+PMOD_EXPORT int pike_advance_memory_object( struct object *o, enum memobj_type type, size_t length)
+{
+  switch (type) {
+    case MEMOBJ_STRING_BUFFER:
+    {
+      struct string_builder *s = string_buffer(o);
+
+#ifdef DEBUG
+      if (!s)
+        Pike_fatal("pike_advance_memory_object: Wrong buffertype(?), expected String.Buffer()\n");
+      if (length + s->s->len > s->malloced)
+        Pike_fatal("pike_advance_memory_object: called with bad length\n");
+#endif
+
+      s->s->len += length;
+
+      return 0;
+    }
+    case MEMOBJ_STDIO_IOBUFFER:
+    {
+      Buffer *io = io_buffer(o);
+
+#ifdef DEBUG
+      if (!io)
+          Pike_fatal("pike_advance_memory_object: Wrong buffertype(?), expected Stdio.Buffer()\n");
+      if (io->len + length > io->allocated)
+          Pike_fatal("pike_advance_memory_object: called with bad length\n");
+#endif
+
+      io->len += length;
+      return 0;
+    }
+    default:
+      return 1;
+  }
+}
+
 PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pike_memory_object *m,
                                                      int writeable )
 {
