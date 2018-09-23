@@ -397,6 +397,7 @@ PIKE_MUTEX_T thread_table_lock;
 static PIKE_MUTEX_T interleave_lock;
 static struct program *mutex_program = NULL;
 static struct program *mutex_key = 0;
+static struct program *condition_program = NULL;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 static struct program *thread_local_prog = 0;
 PMOD_EXPORT ptrdiff_t thread_storage_offset;
@@ -2413,6 +2414,26 @@ void f_mutex__sprintf (INT32 args)
   }
 }
 
+/*! @decl Condition cond()
+ *!
+ *! Create a @[Condition].
+ *!
+ *! This function is equivalent to
+ *! @code
+ *!   Thread.Condition(mux);
+ *! @endcode
+ *!
+ *! @seealso
+ *!   @[Condition]
+ */
+void f_mutex_cond(INT32 args)
+{
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_program->inherits);
+  push_object(clone_object(condition_program, 1));
+}
+
 void init_mutex_obj(struct object *UNUSED(o))
 {
   co_init(& THIS_MUTEX->condition);
@@ -3427,6 +3448,7 @@ void th_init(void)
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
   ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tInt,tStr),0);
+  ADD_FUNCTION("cond", f_mutex_cond, tFunc(tNone, tObjIs_THREAD_CONDITION), 0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   mutex_program = Pike_compiler->new_program;
@@ -3448,6 +3470,8 @@ void th_init(void)
   ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(tNone,tVoid),0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
+  condition_program = Pike_compiler->new_program;
+  add_ref(condition_program);
   end_class("condition", 0);
 
   {
@@ -3591,6 +3615,12 @@ void th_cleanup(void)
     Pike_interpreter_pointer = original_interpreter;
 
     destruct_objects_to_destruct_cb();
+  }
+
+  if(condition_program)
+  {
+    free_program(condition_program);
+    condition_program = NULL;
   }
 
   if(mutex_program)
