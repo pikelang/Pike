@@ -1300,6 +1300,30 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  *! @seealso
  *!   @[read_oob()], @[write()], @[receive_fd()], @[send_fd()]
  */
+
+/*!
+ *! @decl int read(Stdio.Buffer|String.Buffer dst)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst]. Tries to
+ *! read as many bytes as buffer space available.
+ *! Will advance the write position in @[dst] by the number of bytes
+ *! read.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
+
+/*!
+ *! @decl int read(System.Memory dst, void|int(0..) offset)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst] at offset
+ *! @[offset]. Tries to read as many bytes as buffer space available.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
 static void file_read(INT32 args)
 {
   struct my_file *file = THIS;
@@ -1320,6 +1344,25 @@ static void file_read(INT32 args)
 
     if (m.shift)
       Pike_error("Cannot read into wide-string buffer.\n");
+
+    if (args > 1)
+    {
+      INT_TYPE offset;
+
+      if (TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT || Pike_sp[-args+1].u.integer < 0)
+        SIMPLE_BAD_ARG_ERROR("read()", 2, "int(0..)");
+
+      if (type != MEMOBJ_SYSTEM_MEMORY)
+        SIMPLE_BAD_ARG_ERROR("read()", 1, "System.Memory");
+
+      offset = Pike_sp[-args+1].u.integer;
+
+      if (offset > m.len)
+        Pike_error("Offset out of bounds.\n");
+
+      m.len -= offset;
+      m.ptr = (char*)m.ptr + offset;
+    }
 
     if (!m.len)
       Pike_error("No buffer space.\n");
