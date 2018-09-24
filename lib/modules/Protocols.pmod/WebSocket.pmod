@@ -2,6 +2,8 @@
 
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+constant websocket_version = 13;
+
 //! This module implements the WebSocket protocol as described in RFC 6455.
 
 protected string MASK(string data, string mask) {
@@ -383,6 +385,26 @@ class Connection {
 		}
 	}
 
+    mapping low_connect(Standards.URI endpoint,
+			void|mapping(string:string) extra_headers)
+    {
+      mapping headers = ([
+	"Host" : endpoint->host,
+	"Connection" : "Upgrade",
+	"User-Agent" : "Pike/8.0",
+	"Accept": "*/*",
+	"Upgrade" : "websocket",
+	"Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
+	"Sec-WebSocket-Version": (string)websocket_version,
+      ]);
+
+      foreach(extra_headers; string idx; string val) {
+	headers[idx] = val;
+      }
+
+      return headers;
+    }
+
     //! Connect to a remote WebSocket.
     //! This method will send the actual HTTP request to switch
     //! protocols to the server and once a HTTP 101 response is
@@ -420,19 +442,7 @@ class Connection {
 		  stream = f;
 		}
 
-		mapping headers = ([
-		  "Host" : endpoint->host,
-		  "Connection" : "Upgrade",
-		  "User-Agent" : "Pike/8.0",
-		  "Accept": "*/*",
-		  "Upgrade" : "websocket",
-		  "Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
-		  "Sec-WebSocket-Version": "13",
-		]);
-
-		foreach(extra_headers; string idx; string val) {
-		  headers[idx] = val;
-		}
+		mapping headers = low_connect(endpoint, extra_headers);
 
 		// We use our output buffer to generate the request.
 		buf->add("GET ", endpoint->path," HTTP/1.1\r\n");
@@ -602,19 +612,25 @@ class Request(function(array(string), Request:void) cb) {
 	return 0;
     }
 
-    //! Calling @[websocket_accept] completes the WebSocket connection
-    //! handshake. The protocol should be either @expr{0@} or a protocol
-    //! advertised by the client when initiating the WebSocket connection.
-    //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol) {
+    mapping(string:string) low_websocket_accept(string protocol)
+    {
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
 	    "sec-websocket-accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "sec-websocket-version" : "13",
+            "sec-websocket-version" : (string)websocket_version,
 	]);
 	if (protocol) heads["sec-websocket-protocol"] = protocol;
+	return heads;
+    }
+
+    //! Calling @[websocket_accept] completes the WebSocket connection
+    //! handshake. The protocol should be either @expr{0@} or a protocol
+    //! advertised by the client when initiating the WebSocket connection.
+    //! The returned connection object is in state @[Connection.OPEN].
+    Connection websocket_accept(string protocol) {
+        mapping heads = low_websocket_accept(protocol);
 
         Connection ws = Connection(my_fd);
         my_fd = 0;
