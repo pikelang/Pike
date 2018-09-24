@@ -7,6 +7,7 @@
 #endif
 
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+constant websocket_version = 13;
 
 //! This module implements the WebSocket protocol as described in
 //! @rfc{6455@}.
@@ -468,6 +469,46 @@ class Connection {
         state = CLOSED; // We are closed until we have connected and upgraded the connection;
     }
 
+    protected array(mapping) low_connect(Standards.URI endpoint,
+					 mapping(string:string) extra_headers,
+					 void|array extensions)
+    {
+      string host = endpoint->host;
+
+      if (endpoint->port) host += ":" + endpoint->port;
+
+      mapping headers = ([
+	"Host" : host,
+	"Connection" : "Upgrade",
+	"User-Agent" : agent,
+	"Accept": "*/*",
+	"Upgrade" : "websocket",
+	"Sec-WebSocket-Key" :
+	  MIME.encode_base64(Crypto.Random.random_string(16), 1),
+	"Sec-WebSocket-Version": (string)websocket_version,
+      ]);
+
+      foreach(extra_headers; string idx; string val) {
+	headers[idx] = val;
+      }
+
+      mapping rext;
+
+      if (arrayp(extensions)) {
+	rext = ([]);
+
+	foreach (extensions; int i; extension_factory f) {
+	  mixed o = f(1, 0, rext);
+	  if (objectp(o)) extensions[i] = o;
+	}
+
+	if (sizeof(rext))
+	  headers["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
+      }
+
+      return ({ headers, rext });
+    }
+
     //! Connect to the remote @[endpoint] with optional request
     //! headers specified in @[headers]. This method will send the
     //! actual HTTP request to switch protocols to the server and once
@@ -477,14 +518,13 @@ class Connection {
                 void|array extensions) {
         if (stringp(endpoint)) endpoint = Standards.URI(endpoint);
         this_program::endpoint = endpoint;
-        this_program::extra_headers = extra_headers || ([]);
+        this_program::extra_headers = extra_headers = extra_headers || ([]);
 
         if (endpoint->path == "") endpoint->path = "/";
 
         Stdio.File f = Stdio.File();
         state = CONNECTING;
 
-        string host = endpoint->host;
         int port;
 
         if (endpoint->scheme == "ws") {
@@ -492,8 +532,6 @@ class Connection {
         } else if (endpoint->scheme == "wss") {
             port = endpoint->port || 443;
         } else error("Not a WebSocket URL.\n");
-
-        if (endpoint->port) host += ":" + endpoint->port;
 
         int res = f->connect(endpoint->host, port);
 
@@ -519,34 +557,13 @@ class Connection {
 
         buffer_mode = 0;
 
-        mapping headers = ([
-            "Host" : host,
-            "Connection" : "Upgrade",
-            "User-Agent" : agent,
-            "Accept": "*/*",
-            "Upgrade" : "websocket",
-            "Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
-            "Sec-WebSocket-Version": "13",
-        ]);
-
-        foreach(this_program::extra_headers; string idx; string val) {
-            headers[idx] = val;
-        }
-
-        mapping rext;
-
         if (arrayp(extensions)) {
-            rext = ([]);
+	    // NB: extensions is altered destructively by low_connect().
             extensions = extensions + ({ });
+	}
 
-            foreach (extensions; int i; extension_factory f) {
-              mixed o = f(1, 0, rext);
-              if (objectp(o)) extensions[i] = o;
-            }
-
-            if (sizeof(rext))
-                headers["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
-        }
+	[mapping headers, mapping rext] =
+	  low_connect(endpoint, extra_headers, extensions);
 
         stream->set_nonblocking(curry_back(http_read, _Roxen.HeaderParser(), extensions, rext),
                                 websocket_write, websocket_closed);
@@ -825,24 +842,17 @@ class Request(function(array(string), Request:void) cb) {
 	return 0;
     }
 
-    //! Calling @[websocket_accept] completes the WebSocket connection
-    //! handshake.
-    //! The @expr{protocol@} parameter should be either @expr{0@} or one of
-    //! the protocols advertised by the client when initiating the WebSocket connection.
-    //! Extensions can be specified using the @expr{extensions@}
-    //! parameter.
-    //! Additional HTTP headers in the response can be specified using the @expr{extra_headers@}
-    //! argument.
-    //! 
-    //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
-                                void|mapping extra_headers) {
+    protected array(mapping(string:string)|array)
+        low_websocket_accept(string|void protocol,
+			     array(extension_factory)|void extensions,
+			     mapping(string:string)|void extra_headers)
+    {
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
 	    "Sec-Websocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "Sec-Websocket-Version" : "13",
+            "Sec-Websocket-Version" : (string)websocket_version,
             "Server" : agent,
 	]);
 
@@ -867,6 +877,24 @@ class Request(function(array(string), Request:void) cb) {
         }
 
 	if (protocol) heads["Sec-Websocket-Protocol"] = protocol;
+
+	return ({ heads, _extensions });
+    }
+
+    //! Calling @[websocket_accept] completes the WebSocket connection
+    //! handshake.
+    //! The @expr{protocol@} parameter should be either @expr{0@} or one of
+    //! the protocols advertised by the client when initiating the WebSocket connection.
+    //! Extensions can be specified using the @expr{extensions@}
+    //! parameter.
+    //! Additional HTTP headers in the response can be specified using the @expr{extra_headers@}
+    //! argument.
+    //!
+    //! The returned connection object is in state @[Connection.OPEN].
+    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
+                                void|mapping extra_headers) {
+        [mapping heads, array _extensions] =
+	    low_websocket_accept(protocol, extensions, extra_headers);
 
         Connection ws = Connection(my_fd, _extensions);
         WS_WERR(2, "Using extensions: %O\n", _extensions);
