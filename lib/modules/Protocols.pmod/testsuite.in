@@ -51,4 +51,10 @@ test_any_equal([[
 
 test_do( add_constant("P"); )
 
+test_tests([[
+  array a() {
+    return Tools.Testsuite.run_script("]]SRCDIR[[/WebSocket.test");
+  }
+]])
+
 END_MARKER
