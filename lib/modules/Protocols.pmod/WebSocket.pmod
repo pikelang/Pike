@@ -321,40 +321,66 @@ class Connection {
         if (onopen) onopen(id || this);
     }
 
+    protected string expected_accept;
+
     //! Read callback for HTTP answer when we are in client mode and
     //! have requested an upgrade to WebSocket.
     protected void http_read(mixed id, string data) {
         http_buffer->add(data);
 
         array tmp = http_buffer->sscanf("%s\r\n\r\n");
-                if (tmp && sizeof(tmp)) {
-		  stream->set_blocking_keep_callbacks();
 
-		  array lines = tmp[0]/"\r\n";
-		  string resp = lines[0];
+	if (tmp && sizeof(tmp)) {
+	  stream->set_blocking_keep_callbacks();
 
-		  int http_major, http_minor, status;
-		  if (sscanf(resp, "HTTP/%d.%d %d", http_major, http_minor, status) != 3) {
-			websocket_closed();
-			return;
-		  }
+	  array lines = tmp[0]/"\r\n";
+	  string resp = lines[0];
 
-		  if (status != 101) {
+	  int http_major, http_minor, status;
+	  if (sscanf(resp, "HTTP/%d.%d %d", http_major, http_minor, status) != 3) {
+	    websocket_closed();
+	    return;
+	  }
+
+	  if (status != 101) {
 #ifdef WEBSOCKET_DEBUG
-			werror("Failed to upgrade connection!\n");
+	    werror("Failed to upgrade connection!\n");
 #endif
-			websocket_closed();
-			return;
-		  }
+	    websocket_closed();
+	    return;
+	  }
 
-		  mapping headers = ([]);
-		  foreach(lines[1..];int i; string l) {
-			int res = sscanf(l, "%s: %s", string h, string v);
-			if (res != 2) {
-			  break;
-			}
-			headers[h] = v;
-		  }
+	  mapping headers = ([]);
+	  foreach(lines[1..];int i; string l) {
+	    int res = sscanf(l, "%s:%s", string h, string v);
+	    if (res != 2) {
+	      break;
+	    }
+	    headers[lower_case(String.trim_all_whites(h))] =
+	      String.trim_all_whites(v);
+	  }
+
+	  if (lower_case(headers["upgrade"] || "") != "websocket") {
+	    websocket_closed();
+	    return;
+	  }
+
+	  if (lower_case(headers["connection"] || "") != "upgrade") {
+	    websocket_closed();
+	    return;
+	  }
+
+	  if (headers["sec-websocket-accept"] != expected_accept) {
+	    websocket_closed();
+	    return;
+	  }
+
+	  if (!has_value((array(int))((headers["sec-websocket-version"] ||
+				       (string)websocket_version)/","),
+			 websocket_version)) {
+	    websocket_closed();
+	    return;
+	  }
 
 		  // At this point, we are upgraded, so let's set the
 		  // websocket callback handlers
@@ -394,13 +420,18 @@ class Connection {
 	"User-Agent" : "Pike/8.0",
 	"Accept": "*/*",
 	"Upgrade" : "websocket",
-	"Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
+	"Sec-WebSocket-Key" :
+	  MIME.encode_base64(Crypto.Random.random_string(16), 1),
 	"Sec-WebSocket-Version": (string)websocket_version,
       ]);
 
       foreach(extra_headers; string idx; string val) {
 	headers[idx] = val;
       }
+
+      expected_accept =
+	MIME.encode_base64(Crypto.SHA1.hash(headers["Sec-WebSocket-Key"] +
+					    websocket_id));
 
       return headers;
     }
@@ -596,8 +627,29 @@ class Request(function(array(string), Request:void) cb) {
     inherit Protocols.HTTP.Server.Request;
 
     protected int parse_variables() {
-	if (!has_index(request_headers, "sec-websocket-key"))
+	if ((request_type != "GET") || !has_prefix(protocol, "HTTP/") ||
+	    (protocol[sizeof("HTTP/")..] < "1.1")) {
+	  return ::parse_variables();
+	}
+	if (!has_value(lower_case(request_headers["upgrade"] || ""),
+		       "websocket")) {
+	  return ::parse_variables();
+	}
+	if (!has_value(lower_case(request_headers["connection"] || ""),
+		       "upgrade")) {
+	  return ::parse_variables();
+	}
+	string raw_key;
+	catch {
+	  raw_key = MIME.decode_base64(request_headers["sec-websocket-key"]);
+	};
+	if (!raw_key || (sizeof(raw_key) != 16)) {
 	    return ::parse_variables();
+	}
+	if (request_headers["sec-websocket-version"] !=
+	    (string)websocket_version) {
+	  return ::parse_variables();
+	}
 	if (query!="")
 	    .HTTP.Server.http_decode_urlencoded_query(query,variables);
 	flatten_headers();
