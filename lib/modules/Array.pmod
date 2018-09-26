@@ -149,7 +149,7 @@ int search_array(array arr, string|function|int fun, mixed ... args)
 }
 
 //! Applies the function @[sum] columnwise on the elements in the
-//! provided arrays. E.g. @expr{sum_array(`+,a,b,c)@} does the same
+//! provided arrays. E.g. @expr{sum_arrays(`+,a,b,c)@} does the same
 //! as @expr{`+(a[*],b[*],c[*])@}.
 array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
 {
