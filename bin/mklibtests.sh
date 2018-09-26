@@ -1,13 +1,28 @@
 #! /bin/sh
 
 #
-# Creates testsuit files form the testsuit.in files
-# found in the lib directory.
+# Creates testsuite files from the testsuite.in files
+# found in the lib directory. Also copies *.test files.
 #
 
 src_dir=
 dest_dir=
 bin_dir=
+
+up_to_date() {
+    src_name="$1"
+    if [ "x$2" = "x" ]; then
+	dst_name="$1";
+    else
+	dst_name="$2";
+    fi
+    if [ -f "$dest_dir$path$dst_name" ] && \
+	   [ "x" = "x`find \"\$src_dir\$path\$src_name\" -newer \"\$dest_dir\$path\$dst_name\" -print`" ]; then
+	echo "$dest_dir$path$dst_name already up to date."
+	return 0
+    fi
+    return 1
+}
 
 recurse () {
   path="$1"
@@ -23,25 +38,38 @@ recurse () {
       continue
     fi
 
-    if [ testsuite.in != "$fn" ]; then continue; fi
+    dfn="$fn"
+    case "$fn" in
+	testsuite.in)
+	    dfn="testsuite"
+	    ;;
+	*.test)
+	    ;;
+	*)
+	    continue
+	    ;;
+    esac
 
-    if [ -f "$dest_dir$path"testsuite ] && \
-       [ "" = "`find \"\$src_dir\$path\$fn\" -newer \"\$dest_dir\$path\"testsuite -print`" ]; then
-       echo "$dest_dir$path"testsuite already up to date.
+    if up_to_date "$fn" "$dfn"; then continue; fi
+
+    if exec 5>"$dest_dir$path$dfn"; then :; else
+        echo >&2 "Could not create $dest_dir$path$dfn"
+	continue
+    fi
+
+    if [ "$dfn" = "$fn" ]; then
+	cat "$src_dir$path$fn" >&5
     else
-       if exec 5>"$dest_dir$path"testsuite; then :; else
-         echo >&2 "Could not create $dest_dir$path"testsuite
-	 continue
-       fi
        if [ "$PIKE_PATH_TRANSLATE" = "" ]; then
          "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 -DSRCDIR="$src_dir$path"
        else
          "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 \
 	   -DSRCDIR="`echo $src_dir$path|sed -e $PIKE_PATH_TRANSLATE|$bin_dir/../src/posix_to_native.sh`"
        fi
-       exec 5>&-
-       echo "$dest_dir$path"testsuite updated.
-    fi    
+    fi
+
+    exec 5>&-
+    echo "$dest_dir$path$dfn updated."
   done
 }
 
