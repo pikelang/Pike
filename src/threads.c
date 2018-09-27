@@ -3448,7 +3448,8 @@ void th_init(void)
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
   ADD_FUNCTION("_sprintf",f_mutex__sprintf,tFunc(tInt,tStr),0);
-  ADD_FUNCTION("cond", f_mutex_cond, tFunc(tNone, tObjIs_THREAD_CONDITION), 0);
+  ADD_FUNCTION("condition", f_mutex_cond,
+	       tFunc(tNone, tObjIs_THREAD_CONDITION), 0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   mutex_program = Pike_compiler->new_program;
