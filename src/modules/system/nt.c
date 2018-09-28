@@ -2634,7 +2634,7 @@ static void f_normalize_path(INT32 args)
 
   path = fd_normalize_path(path);
   if (!path) {
-    throw_nt_error("normalize_path", errno);
+    throw_nt_error(errno);
   }
 
   push_text(path);
