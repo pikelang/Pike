@@ -3529,7 +3529,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
           {
             INT_TYPE start_line = this->current_line;
             struct string_builder tmp;
-            struct define_argument arguments[ MAX_ARGS];
 
             if (d == defined_macro) {
               free_string (s);
