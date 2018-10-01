@@ -972,7 +972,7 @@ class Request(function(array(string), Request:void) cb) {
 	return 0;
     }
 
-    protected array(mapping(string:string)|array)
+    array(mapping(string:string)|array)
         low_websocket_accept(string|void protocol,
 			     array(extension_factory)|void extensions,
 			     mapping(string:string)|void extra_headers)
