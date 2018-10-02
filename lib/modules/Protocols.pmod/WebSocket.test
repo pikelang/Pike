@@ -46,15 +46,15 @@ class BrokenPort
       switch(brokeness_state) {
       case NOT_WEBSOCKET:
 	Tools.Testsuite.log_status("Refusing WebSocket attempt.\n");
-	m_delete(heads, "sec-websocket-accept");
+	m_delete(heads, "Sec-WebSocket-Accept");
 	break;
       case BAD_HDR_VERSION:
 	Tools.Testsuite.log_status("Testing bad WebSocket Version header.\n");
-	heads["sec-websocket-version"] = "999";
+	heads["Sec-WebSocket-Version"] = "999";
 	break;
       case BAD_HDR_KEY_ACCEPT:
 	Tools.Testsuite.log_status("Testing bad WebSocket Accept header.\n");
-	heads["sec-websocket-accept"] = "INVALID";
+	heads["Sec-WebSocket-Accept"] = "INVALID";
 	break;
       case BAD_HDR_CONNECTION:
 	Tools.Testsuite.log_status("Testing bad Connection header.\n");

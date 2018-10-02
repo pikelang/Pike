@@ -670,10 +670,10 @@ class Request(function(array(string), Request:void) cb) {
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
-	    "sec-websocket-accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "sec-websocket-version" : (string)websocket_version,
+	    "Sec-WebSocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
+            "Sec-WebSocket-Version" : (string)websocket_version,
 	]);
-	if (protocol) heads["sec-websocket-protocol"] = protocol;
+	if (protocol) heads["Sec-WebSocket-Protocol"] = protocol;
 	return heads;
     }
 
