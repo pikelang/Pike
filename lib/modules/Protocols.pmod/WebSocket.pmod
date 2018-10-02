@@ -981,8 +981,8 @@ class Request(function(array(string), Request:void) cb) {
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
-	    "Sec-Websocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "Sec-Websocket-Version" : (string)websocket_version,
+	    "Sec-WebSocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
+            "Sec-WebSocket-Version" : (string)websocket_version,
             "Server" : agent,
 	]);
 
