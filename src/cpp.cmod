@@ -961,36 +961,36 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     this->compat_minor = minor;
   }
 
-/*! @decl mixed resolv(string sym)
- *!
- *!   Attempt to resolve a symbol.
- *!
- *!   The default implementation calls @[CompilerEnvironment()->resolv()]
- *!   in the parent object, with the remaining arguments taken from the
- *!   current @[CPP] context.
- *!
- *! @returns
- *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
- */
-PIKEFUN mixed resolv(string sym)
-{
-  struct CPP_struct *this = THIS;
+  /*! @decl mixed resolv(string sym)
+   *!
+   *!   Attempt to resolve a symbol.
+   *!
+   *!   The default implementation calls @[CompilerEnvironment()->resolv()]
+   *!   in the parent object, with the remaining arguments taken from the
+   *!   current @[CPP] context.
+   *!
+   *! @returns
+   *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
+   */
+  PIKEFUN mixed resolv(string sym)
+  {
+    struct CPP_struct *this = THIS;
 
-  ref_push_string(sym);
-  ref_push_string(this->current_file);
-  if (this->handler) {
-    ref_push_object(this->handler);
-  } else {
-    push_undefined();
-  }
-  if (this->compat_handler) {
-    ref_push_object(this->compat_handler);
-  } else {
-    push_undefined();
-  }
+    ref_push_string(sym);
+    ref_push_string(this->current_file);
+    if (this->handler) {
+      ref_push_object(this->handler);
+    } else {
+      push_undefined();
+    }
+    if (this->compat_handler) {
+      ref_push_object(this->compat_handler);
+    } else {
+      push_undefined();
+    }
 
-  apply_external(1, CE_RESOLV_FUN_NUM, 4);
-}
+    apply_external(1, CE_RESOLV_FUN_NUM, 4);
+  }
 
   PIKEFUN mapping|object|program handle_import(string module)
   {
