@@ -476,12 +476,12 @@ class Connection {
 		mapping headers = low_connect(endpoint, extra_headers);
 
 		// We use our output buffer to generate the request.
-		buf->add("GET ", endpoint->path," HTTP/1.1\r\n");
-		buf->add("Host: ", endpoint->host, "\r\n");
+		send_raw("GET ", endpoint->path," HTTP/1.1\r\n");
+		send_raw("Host: ", endpoint->host, "\r\n");
 		foreach(headers; string h; string v) {
-		  buf->add(h, ": ", v, "\r\n");
+		  send_raw(h, ": ", v, "\r\n");
 		}
-		buf->add("\r\n");
+		send_raw("\r\n");
 
 		stream->set_nonblocking(http_read, request_upgrade, websocket_closed);
 		return res;
@@ -510,8 +510,8 @@ class Connection {
         return sizeof(buf);
     }
 
-    void send_raw(string s) {
-        buf->add(s);
+    void send_raw(string ... s) {
+        buf->add(@s);
     }
 
     protected void websocket_write() {
