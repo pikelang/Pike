@@ -93,6 +93,25 @@ o Protocols.HTTP.Server
   usually fully written, but the connection neither was properly
   closed nor re-used.
 
+o Protocols.WebSocket
+
+  - Added low_connect() and low_websocket_accept().
+
+    These make it easier to test the error handling in
+    the module, and to replace the HTTP-layer.
+
+  - Improved compliance with RFC 6455 section 4.1.
+
+    o The nonce is now actually random.
+
+    o The http version, method and headers are validated.
+
+    o Header case-sensitivity issues have been fixed.
+
+  - The module now has a testsuite.
+
+  - Improved HTTP-header camel-case consistency.
+
 o Sass
 
   - Errors thrown by handle_sass_import() can now be caught and
@@ -115,6 +134,10 @@ o Sql.pgsql
 o Stdio.Buffer
 
   Eliminate race condition in read_cstring().
+
+o Stdio.UDP
+
+  Fixed wait() failing with ENOTSOCK on NT.
 
 o Thread.Farm
 
@@ -142,6 +165,10 @@ o Java
 o Postgres
 
   Support Postgresql 10 and later.
+
+o Sass
+
+  Improved detection of C++ runtime library on MacOS X.
 
 
 Changes since Pike 8.0.498 (release 11)
