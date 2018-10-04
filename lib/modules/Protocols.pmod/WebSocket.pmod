@@ -574,11 +574,11 @@ class Connection {
 
 
         // We use our output buffer to generate the request.
-        out->add("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
+        send_raw("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
-            out->add(h, ": ", v, "\r\n");
+            send_raw(h, ": ", v, "\r\n");
         }
-        out->add("\r\n");
+        send_raw("\r\n");
         return res;
     }
 
