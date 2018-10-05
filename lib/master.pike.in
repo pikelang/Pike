@@ -631,6 +631,27 @@ protected class CompilerEnvironment
 {
   inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
 
+  mixed resolv(string identifier, string filename,
+	       object|void handler, object|void compat_handler)
+  {
+    return master()->resolv(identifier, filename,
+			    handler, compat_handler);
+  }
+
+  program handle_inherit(string inh, string current_file,
+			 object|void handler, object|void compat_handler)
+  {
+    return master()->handle_inherit(inh, current_file,
+				    handler, compat_handler);
+  }
+
+  program handle_import(string module, string current_file,
+			object|void handler, object|void compat_handler)
+  {
+    return master()->handle_import(module, current_file,
+				   handler, compat_handler);
+  }
+
   object get_compilation_handler(int major, int minor)
   {
     return master()->get_compilation_handler(major, minor);
