@@ -557,6 +557,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('i','m'):
 	  if(ISWORD("import")) return TOK_IMPORT;
+	  if(ISWORD("implements")) return TOK_IMPLEMENTS;
 	  break;
 	case TWO_CHAR('i','n'):
 	  if(ISWORD("int")) return TOK_INT_ID;

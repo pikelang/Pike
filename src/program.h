@@ -859,6 +859,7 @@ PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
 void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
+void compiler_do_implements(node *n);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
