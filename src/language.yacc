@@ -74,7 +74,7 @@
 %token TOK_RESERVED "reserved identifier"
 %token TOK_IF "if"
 %token TOK_IMPORT "import"
-%token TOK_IMPLEMENTS "implements"
+%token TOK_IMPLEMENT "implement"
 %token TOK_INHERIT "inherit"
 %token TOK_INLINE "inline"
 %token TOK_LOCAL_ID "local"
@@ -520,43 +520,43 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
   | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
-implements: modifiers TOK_IMPLEMENTS inherit_ref ';'
+implement: modifiers TOK_IMPLEMENT inherit_ref ';'
   {
     if ($1 && (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-      yywarning("Modifiers ignored for implements.");
+      yywarning("Modifiers ignored for implement.");
     }
     if($3) {
-      compiler_do_implements($3);
+      compiler_do_implement($3);
     }
     pop_stack();
     if ($3) free_node($3);
   }
-  | modifiers TOK_IMPLEMENTS inherit_ref error ';'
+  | modifiers TOK_IMPLEMENT inherit_ref error ';'
   {
     if ($3) free_node($3);
     pop_stack();
     yyerrok;
   }
-  | modifiers TOK_IMPLEMENTS inherit_ref error TOK_LEX_EOF
+  | modifiers TOK_IMPLEMENT inherit_ref error TOK_LEX_EOF
   {
     if ($3) free_node($3);
     pop_stack();
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_IMPLEMENTS inherit_ref error '}'
+  | modifiers TOK_IMPLEMENT inherit_ref error '}'
   {
     if ($3) free_node($3);
     pop_stack();
     yyerror("Missing ';'.");
   }
-  | modifiers TOK_IMPLEMENTS error ';' { yyerrok; }
-  | modifiers TOK_IMPLEMENTS error TOK_LEX_EOF
+  | modifiers TOK_IMPLEMENT error ';' { yyerrok; }
+  | modifiers TOK_IMPLEMENT error TOK_LEX_EOF
   {
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_IMPLEMENTS error '}'
+  | modifiers TOK_IMPLEMENT error '}'
   {
     yyerror("Missing ';'.");
   }
@@ -1059,7 +1059,7 @@ def: modifiers optional_attributes simple_type optional_constant
   }
   | modifiers optional_attributes simple_type optional_constant name_list ';'
   | inheritance {}
-  | implements {}
+  | implement {}
   | import {}
   | constant {}
   | modifiers named_class { free_node($2); }
@@ -1242,7 +1242,7 @@ magic_identifiers3:
   | TOK_DEFAULT    { $$ = "default"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
-  | TOK_IMPLEMENTS { $$ = "implements"; }
+  | TOK_IMPLEMENT  { $$ = "implement"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
   | TOK_PREDEF     { $$ = "predef"; }
   | TOK_RETURN     { $$ = "return"; }
@@ -4596,8 +4596,8 @@ bad_expr_ident:
   { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
-  | TOK_IMPLEMENTS
-  { yyerror_reserved("implements"); }
+  | TOK_IMPLEMENT
+  { yyerror_reserved("implement"); }
   ;
 
 /*

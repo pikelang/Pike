@@ -5540,10 +5540,10 @@ void compiler_do_inherit(node *n,
   }
 }
 
-void compiler_do_implements(node *n)
+void compiler_do_implement(node *n)
 {
   if (!n) {
-    yyerror("Invalid implements directive.");
+    yyerror("Invalid implement directive.");
     return;
   }
   /* FIXME: Implement. */
