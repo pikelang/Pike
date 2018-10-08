@@ -672,6 +672,11 @@ protected class CompilerEnvironment
   {
     inherit ::this_program;
 
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    object handler;
+    object compat_handler;
+#endif
+
     protected mixed apply_handler(string fun, mixed ... args)
     {
       function f;
@@ -768,6 +773,36 @@ protected class CompilerEnvironment
       return apply_handler(__func__, major, minor);
     }
 
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    mapping(string:string|function|object) get_predefines()
+    {
+      return apply_handler(__func__);
+    }
+
+    mixed resolv(string sym)
+    {
+      return apply_handler(__func__, sym, current_file,
+			   handler, compat_handler);
+    }
+
+    string handle_include(string header_file, string current_file,
+			  int(0..1) is_local_ref)
+    {
+      return apply_handler(__func__, header_file, current_file,
+			   is_local_ref);
+    }
+
+    string read_include(string filename)
+    {
+      return apply_handler(__func__, filename);
+    }
+
+    string decode_charset(string data, string charset)
+    {
+      return apply_handler(__func__, data, charset);
+    }
+#endif
+
     string evaluate_define(string def, string|void arguments)
     {
       return apply_handler(__func__, def, arguments);
@@ -802,6 +837,34 @@ protected class CompilerEnvironment
       }
       return 0;
     }
+
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+
+    protected void create(mapping(string:mixed) options)
+    {
+      // werror("CPP(%O)\n", options);
+      handler = options->handler;
+      compat_handler = UNDEFINED;
+      ::create(options);
+    }
+
+    protected variant void create(string|void current_file,
+				  int|string|void charset, object|void handler,
+				  void|int compat_major, void|int compat_minor,
+				  void|int picky_cpp)
+    {
+      mapping(string:mixed) options = ([]);
+#define CPP_OPT(X)	do { if (X) { options->X = X; } } while(0)
+      CPP_OPT(current_file);
+      CPP_OPT(charset);
+      CPP_OPT(handler);
+      CPP_OPT(compat_major);
+      CPP_OPT(compat_minor);
+      CPP_OPT(picky_cpp);
+#undef CPP_OPT
+      local::create(options);
+    }
+#endif
   }
 }
 

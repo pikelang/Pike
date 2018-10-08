@@ -32,6 +32,8 @@
 
 #define DEFAULT_CMOD_STORAGE
 
+/* #define SUPPORT_HANDLERS */
+
 #define CPP_NO_OUTPUT 1		/* Inside false section of #if/#else */
 #define CPP_EXPECT_ELSE 2	/* Expect #else/#elif/#elseif. */
 #define CPP_EXPECT_ENDIF 4	/* Expect #endif */
@@ -421,6 +423,22 @@ PIKECLASS define
 /*! @endclass define
  */
 
+PIKEFUN string handle_include(string header_file, string current_file,
+			      int(0..1) is_local_ref)
+{
+  APPLY_MASTER("handle_include", args);
+}
+
+PIKEFUN string read_include(string filename)
+{
+  APPLY_MASTER("read_include", args);
+}
+
+PIKEFUN string decode_charset(string data, string charset)
+{
+  APPLY_MASTER("decode_charset", args);
+}
+
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
   if (use_initial_predefs) {
@@ -446,8 +464,10 @@ PIKECLASS CPP
   PIKEVAR string current_file;
   PIKEVAR string charset;
   CVAR struct string_builder buf;
+#ifdef SUPPORT_HANDLERS
   PIKEVAR object handler;
   PIKEVAR object compat_handler;
+#endif
   PIKEVAR int compat_major;
   PIKEVAR int compat_minor;
   PIKEVAR string prefix;
@@ -978,6 +998,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 
     ref_push_string(sym);
     ref_push_string(this->current_file);
+#ifdef SUPPORT_HANDLERS
     if (this->handler) {
       ref_push_object(this->handler);
     } else {
@@ -988,6 +1009,10 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     } else {
       push_undefined();
     }
+#else
+    push_undefined();
+    push_undefined();
+#endif
 
     apply_external(1, CE_RESOLV_FUN_NUM, 4);
   }
@@ -997,6 +1022,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     struct CPP_struct *this = THIS;
     ref_push_string(module);
     ref_push_string(this->current_file);
+#ifdef SUPPORT_HANDLERS
     if (this->handler) {
       ref_push_object(this->handler);
     } else {
@@ -1004,28 +1030,43 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     }
     low_unsafe_apply_handler("handle_import",
 			     this->handler, this->compat_handler, 3);
+#else
+    apply_external(1, CE_HANDLE_IMPORT_FUN_NUM, 2);
+#endif
   }
 
   PIKEFUN string handle_include(string header_file, string current_file,
 				int(0..1) is_local_ref)
   {
+#ifdef SUPPORT_HANDLERS
     struct CPP_struct *this = THIS;
     low_unsafe_apply_handler("handle_include",
 			     this->handler, this->compat_handler, args);
+#else
+    apply_external(1, f_handle_include_fun_num, args);
+#endif
   }
 
   PIKEFUN string read_include(string filename)
   {
+#ifdef SUPPORT_HANDLERS
     struct CPP_struct *this = THIS;
     low_unsafe_apply_handler("read_include",
 			     this->handler, this->compat_handler, args);
+#else
+    apply_external(1, f_read_include_fun_num, args);
+#endif
   }
 
   PIKEFUN string decode_charset(string data, string charset)
   {
+#ifdef SUPPORT_HANDLERS
     struct CPP_struct *this = THIS;
     low_unsafe_apply_handler("decode_charset",
 			     this->handler, this->compat_handler, args);
+#else
+    apply_external(1, f_decode_charset_fun_num, args);
+#endif
   }
 
 /* #if macros and functions. */
@@ -5114,7 +5155,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		       get_name_of_type(TYPEOF(*tmp)));
 	  }
 	}
+#ifdef SUPPORT_HANDLERS
 	if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
+#endif
 	if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
 	if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
 	if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
@@ -5159,6 +5202,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     this->compat_major=PIKE_MAJOR_VERSION;
     this->compat_minor=PIKE_MINOR_VERSION;
+#ifdef SUPPORT_HANDLERS
     if (this->compat_handler) {
       free_object(this->compat_handler);
     }
@@ -5169,6 +5213,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     this->handler = handler;
     if(handler)
       add_ref(handler);
+#endif
 
     if (this->prefix) {
       free_string(this->prefix);
@@ -5468,7 +5513,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    */
   PIKEFUN mapping(string:string|function|object) get_predefines()
   {
-#if 0
+#ifndef SUPPORT_HANDLERS
     apply_external(1, f_get_predefines_fun_num, args);
 #else
     struct CPP_struct *this = THIS;
@@ -5649,6 +5694,9 @@ void init_cpp(void)
   struct svalue s;
 
   ADD_INT_CONSTANT("__HAVE_CPP_PREFIX_SUPPORT__", 1, 0);
+#ifndef SUPPORT_HANDLERS
+  ADD_INT_CONSTANT("__HAVE_CPP_NO_HANDLERS__", 1, 0);
+#endif
 
   /* Somewhat tricky to add a _constant_ function in _static_modules.Builtin. */
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
