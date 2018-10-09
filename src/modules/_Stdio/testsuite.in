@@ -432,24 +432,26 @@ test_any([[
    return 1;
 ]], 1 )
 
+cond_begin([[ System["__MMAP__"] ]])
 dnl create/add( system.memory )
-test_any([[
-  System.Memory a = System.Memory(__FILE__);
-  System.Memory b = System.Memory(100);
+  test_any([[
+    System.Memory a = System.Memory(__FILE__);
+    System.Memory b = System.Memory(100);
 
-  Stdio.Buffer buf = Stdio.Buffer(a);
+    Stdio.Buffer buf = Stdio.Buffer(a);
 
-  if( buf->_size_object() != 0 )
-    return -1;
+    if( buf->_size_object() != 0 )
+      return -1;
 
-  buf->add( b );
+    buf->add( b );
 
-  if( buf->_size_object() < sizeof(a)+sizeof(b) )
-    return -2;
- if( !has_suffix((string)buf,"\0"*100) )
-    return -3;
- return 1;
-]], 1)
+    if( buf->_size_object() < sizeof(a)+sizeof(b) )
+      return -2;
+    if( !has_suffix((string)buf,"\0"*100) )
+      return -3;
+    return 1;
+  ]], 1)
+cond_end
 
 dnl create/add( buffer )
 test_any([[
