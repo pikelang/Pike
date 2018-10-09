@@ -2359,7 +2359,7 @@ PIKECLASS Buffer
 
   /*! @decl string(8bit) read( int n )
    *!
-   *! Read @[bytes] bytes of data from the buffer.
+   *! Read @[n] bytes of data from the buffer.
    *!
    *! If there is not enough data available this returns 0.
    *!
