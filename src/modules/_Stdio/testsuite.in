@@ -926,7 +926,7 @@ test_any([[
 ]], -1)
 
 test_any_equal([[
-  Stdio.Buffer b = Stdio.Buffer("AAAABAABABAAABAABBABB");
+  Stdio.Buffer buf = Stdio.Buffer("AAAABAABABAAABAABBABB");
   array(string) res = ({});
   string s;
   while (s = buf->read_cstring('B')) {
@@ -936,7 +936,7 @@ test_any_equal([[
 ]], ({ "AAAA", "AA", "A", "AAA", "AA", "", "A", "" }))
 
 test_any_equal([[
-  Stdio.Buffer b = Stdio.Buffer("AAAABAABABAAABAABBABB");
+  Stdio.Buffer buf = Stdio.Buffer("AAAABAABABAAABAABBABB");
   array(string) res = ({});
   string s;
   while (s = buf->read_cstring('B', 'A')) {
