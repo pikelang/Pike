@@ -1815,7 +1815,8 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl string(8bit) read_cstring(void|int sentinel)
+  /*! @decl string(8bit) read_cstring(void|int(8bit) sentinel, @
+   *!                                 void|int(8bit) escape)
    *!
    *! Reads a \0 terminated C-string and returns the
    *! string excluding the terminating \0.
@@ -1825,29 +1826,75 @@ PIKECLASS Buffer
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
    *!
    *! @param sentinel
-   *! A different character can be used as end sentinel of the string.
+   *!   A different character can be used as end sentinel of the string.
+   *!
+   *! @param escape
+   *!   An optional character used as a prefix to quote the following
+   *!   character. UNDEFINED and the same value as @[sentinel] mean
+   *!   that there is no escape character.
+   *!
+   *! @note
+   *!   Escape characters (if any) are left untouched in the returned string.
    *!
    *! @seealso
    *!   @[_search()]
    */
-  PIKEFUN string(8bit) read_cstring(void|int sentinel)
+  PIKEFUN string(8bit) read_cstring(void|int(8bit) sentinel,
+				    void|int(8bit) escape)
   {
     Buffer *io = THIS;
     int csentinel = sentinel ? sentinel->u.integer : 0;
 
-    do
-      if ( LIKELY(io_len(THIS)) )
-      {
-        const char * start = (char*)io_read_pointer(io);
-        const char * end = memchr(start, csentinel, io_len(io));
-        if ( LIKELY(end) )
-        {
-          push_string(io_read_string(io, end - start));
-          io_read_byte_uc(io);	     /* consume the terminating sentinel byte */
-          return;
-        }
-      }
-    while ( UNLIKELY(io_range_error(THIS, 0)) );
+    if (!escape || (escape->u.integer == csentinel)) {
+      do {
+	if ( LIKELY(io_len(io)) )
+	{
+	  const char * start = (char*)io_read_pointer(io);
+	  const char * end = memchr(start, csentinel, io_len(io));
+
+	  if ( LIKELY(end) )
+	  {
+	    push_string(io_read_string(io, end - start));
+	    io_read_byte_uc(io);  /* consume the terminating sentinel byte */
+	    return;
+	  }
+	}
+      } while ( UNLIKELY(io_range_error(io, 0)) );
+    } else {
+      int cescape = escape->u.integer;
+      do {
+	if ( LIKELY(io_len(io)) )
+	{
+	  const char * start = (char*)io_read_pointer(io);
+	  const char * end = memchr(start, csentinel, io_len(io));
+
+	  if ( LIKELY(end) )
+	  {
+	    /* Check if we have any escaped characters. */
+	    const char * esc = start;
+	    while (UNLIKELY(esc = memchr(esc, cescape, end - esc))) {
+	      esc += 2;
+	      if (end + 1 == esc) {
+		/* NB: The following is integer underflow safe;
+		 *   Worst case: end = start + io_len(io) - 1.
+		 *           ==> esc = start + io_len(io).
+		 *           ==> start + io_len - esc == 0.
+		 */
+		end = memchr(esc, csentinel, start + io_len(io) - esc);
+		if (UNLIKELY(!end)) {
+		  goto fail;
+		}
+	      }
+	    }
+	    push_string(io_read_string(io, end - start));
+	    io_read_byte_uc(io);  /* consume the terminating sentinel byte */
+	    return;
+	  }
+	}
+      fail:
+	;	/* NB: Some C-compilers require a statement after a label. */
+      } while ( UNLIKELY(io_range_error(io, 0)) );
+    }
 
     push_undefined();
   }

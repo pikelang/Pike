@@ -925,6 +925,26 @@ test_any([[
   return -1;
 ]], -1)
 
+test_any_equal([[
+  Stdio.Buffer b = Stdio.Buffer("AAAABAABABAAABAABBABB");
+  array(string) res = ({});
+  string s;
+  while (s = buf->read_cstring('B')) {
+    res += ({ s });
+  }
+  return res;
+]], ({ "AAAA", "AA", "A", "AAA", "AA", "", "A", "" }))
+
+test_any_equal([[
+  Stdio.Buffer b = Stdio.Buffer("AAAABAABABAAABAABBABB");
+  array(string) res = ({});
+  string s;
+  while (s = buf->read_cstring('B', 'A')) {
+    res += ({ s });
+  }
+  return res;
+]], ({ "AAAA", "AA", "ABAAABAA", "", "AB" }))
+
 dnl search
 
 test_any_equal([[
