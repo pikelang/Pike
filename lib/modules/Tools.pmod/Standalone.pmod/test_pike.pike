@@ -390,22 +390,22 @@ class Watchdog
   }
 }
 
-string find_test(string ts)
+array(string) find_test(string ts)
 {
   if(Stdio.is_file(ts))
-    return ts;
+    return ({ ts });
   if(Stdio.is_dir(ts))
-     return combine_path(ts, "testsuite");
+    return find_testsuites(ts);
 
   // Let's DWIM
   string try;
   if(Stdio.is_file(try="tlib/modules/"+replace(ts, ".", ".pmod/")+".pmod/testsuite"))
-    return try;
+    return ({ try });
   if(Stdio.is_file(try="../../lib/modules/"+replace(ts, ".", ".pmod/")+".test"))
-    return try;
-  if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return try;
-  if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return try;
-  return ts;
+    return ({ try });
+  if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return ({ try });
+  if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return ({ try });
+  return ({});
 }
 
 //
@@ -802,11 +802,11 @@ int main(int argc, array(string) argv)
   if(!subprocess)
     log_msg("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
 
-  testsuites += Getopt.get_args(argv, 1)[1..];
-  foreach(testsuites; int pos; string ts) {
-    testsuites[pos] = ts = find_test(ts);
-    if(!file_stat(ts))
+  foreach(Getopt.get_args(argv, 1)[1..], string ts) {
+    array(string) tests = find_test(ts);
+    if(!sizeof(tests))
       exit(EXIT_TEST_NOT_FOUND, "Could not find test %O.\n", ts);
+    testsuites += tests;
   }
 
   if(!sizeof(testsuites))
