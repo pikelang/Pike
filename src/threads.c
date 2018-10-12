@@ -2985,11 +2985,18 @@ static void check_thread_interrupt(struct callback *foo,
  *!
  *! Interrupt the thread with the message @[msg].
  *!
+ *! This function causes the thread to throw an error
+ *! where the message defaults to @expr{"Interrupted.\n"@}.
+ *!
  *! @fixme
  *!   The argument @[msg] is currently ignored.
  *!
  *! @note
  *!   Interrupts are asynchronous, and are currently not queued.
+ *!
+ *! @note
+ *!   Due to the asynchronous nature of interrupts, it may take
+ *!   some time before the thread reacts to the interrupt.
  */
 static void f_thread_id_interrupt(INT32 args)
 {
@@ -3026,6 +3033,10 @@ static void low_thread_kill (struct thread_state *th)
  *!
  *! @note
  *!   Interrupts are asynchronous, and are currently not queued.
+ *!
+ *! @note
+ *!   Due to the asynchronous nature of interrupts, it may take
+ *!   some time before the thread reacts to the interrupt.
  */
 static void f_thread_id_kill(INT32 args)
 {
