@@ -1663,8 +1663,14 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+  /* FIXME: Use ffi_closure_alloc() et al. */
+  s = ffi_prep_closure_loc (&ctx->closure, &ctx->cif,
+			    ffi_dispatch, data, &ctx->closure);
+#else
   s = ffi_prep_closure (&ctx->closure, &ctx->cif,
 			ffi_dispatch, data);
+#endif
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 

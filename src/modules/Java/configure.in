@@ -470,10 +470,16 @@ if test "x$with_java" = xyes; then
       ], [])
 
       pike_java_ffi=no
-      AC_CHECK_LIB(ffi, ffi_prep_closure, [
-	if test "$ac_cv_header_ffi_h" = yes \
-             -o "$ac_cv_header_ffi_ffi_h" = yes \
-             -o "$ac_cv_header_libffi_ffi_h" = yes; then
+      if test "$ac_cv_header_ffi_h" = yes \
+          -o "$ac_cv_header_ffi_ffi_h" = yes \
+          -o "$ac_cv_header_libffi_ffi_h" = yes; then
+	AC_CHECK_LIB(ffi, ffi_prep_closure_loc,
+	[AC_DEFINE(HAVE_FFI_PREP_CLOSURE_LOC, 1,
+		   [Define to 1 if you have ffi_prep_closure_loc.])
+        ])
+	AC_CHECK_LIB(ffi, ffi_prep_closure)
+	if test "$ac_cv_lib_ffi_ffi_prep_closure_loc" = yes \
+	    -o "$ac_cv_lib_ffi_ffi_prep_closure" = yes; then
 	  LIBS="-lffi $LIBS"
 	  JAVA_LIBS="-lffi ${JAVA_LIBS}"
 	  AC_DEFINE(HAVE_FFI)
@@ -481,7 +487,9 @@ if test "x$with_java" = xyes; then
 	else
 	  :
 	fi
-      ], [])
+      else
+	:
+      fi
 
       # Java/AIX has this. For debug...
       AC_CHECK_LIB(java, ibmFindDLL, [
