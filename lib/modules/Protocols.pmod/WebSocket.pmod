@@ -577,8 +577,9 @@ class Connection {
         }
     }
 
-    protected void websocket_closed() {
-        stream->set_nonblocking(0,0,0);
+    protected void websocket_closed()
+    {
+        stream && stream->set_nonblocking(0,0,0);
         stream = 0;
         // if this is the end of a proper close handshake, this wont do anything
         close_event(0);
