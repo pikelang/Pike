@@ -278,19 +278,41 @@ protected void connect(string server,int port,int blocking)
 {
    DBG("<- (connect %O:%d)\n",server,port);
 
-   int success;
-   if(con->_fd)
-     success = con->connect(server, port);
-   else
-     // What is this supposed to do? /mast
-     success = con->connect(server, port, blocking);
+   int count;
+   while(1) {
+     int success;
+     if(con->_fd)
+       success = con->connect(server, port);
+     else
+       // What is this supposed to do? /mast
+       // SSL.File?
+       success = con->connect(server, port, blocking);
 
-   if(!success) {
+     if (success) {
+       if (count) DBG("<- (connect success)\n");
+       break;
+     }
+
      errno = con->errno();
      DBG("<- (connect error: %s)\n", strerror (errno));
-     close_connection();
-     ok = 0;
-     return;
+     count++;
+     if ((count > 10) || (errno != System.EADDRINUSE)) {
+       DBG("<- (connect fail)\n");
+       close_connection();
+       ok = 0;
+       return;
+     }
+     // EADDRINUSE: All tuples hostip:hport:serverip:sport are busy.
+     // Wait for a bit to allow the OS to recycle some ports.
+     sleep(0.1);
+     if (con->_fd) {
+       // Normal file. Close and reopen.
+       // NB: This seems to be needed on Solaris 11 as otherwise
+       //     the connect() above instead will fail with ETIMEDOUT.
+       close_connection();
+       con = Stdio.File();
+       con->open_socket(-1, 0, server);
+     }
    }
 
    DBG("<- %O\n",request);
