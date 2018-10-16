@@ -4072,6 +4072,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
       if( c > 1 ) {
 	push(P_REG_RBP);
+	sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
         add_reg_imm_reg(P_REG_RBX, c*sizeof(struct svalue), P_REG_RBP );
       }
 
@@ -4084,6 +4085,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
         add_reg_imm(P_REG_RBX, sizeof(struct svalue ) );
         cmp_reg_reg( P_REG_RBX, P_REG_RBP );
         jne(&label_A);
+	add_reg_imm(P_REG_RSP, 8);
 	pop(P_REG_RBP);
       }
     }
