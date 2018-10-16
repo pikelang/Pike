@@ -46,7 +46,7 @@
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 static void debug_dump_ind_data (struct msnode_ind *node,
 				 struct multiset_data *msd);
-DECLSPEC(noreturn) static void debug_multiset_fatal (
+DECLSPEC(noreturn) static void PIKE_UNUSED_ATTRIBUTE debug_multiset_fatal (
   struct multiset *l, const char *fmt, ...) ATTRIBUTE((noreturn, format (printf, 2, 3)));
 #define multiset_fatal (fprintf (stderr, "%s:%d: Fatal in multiset: ", \
 				 __FILE__, __LINE__), debug_multiset_fatal)
