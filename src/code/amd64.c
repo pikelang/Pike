@@ -2394,7 +2394,9 @@ void ins_f_byte(unsigned int b)
      LABEL_C;/* all done, res in RAX */
       /* free value, store result */
       push( P_REG_RAX );
+      sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
       amd64_free_svalue( P_REG_RBX, 0 );
+      add_reg_imm(P_REG_RSP, 8);
       pop( P_REG_RAX );
       mov_reg_mem(P_REG_RAX,    P_REG_RBX, OFFSETOF(svalue, u.integer));
       mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
@@ -2806,8 +2808,10 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       /* SVALUE_PTR optimization */
       mov_mem_reg( sp_reg, -3*sizeof(struct svalue)+8, P_REG_RDX );
       push( P_REG_RDX );
+      sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
       /* Free old value. */
       amd64_free_svalue( P_REG_RDX, 0 );
+      add_reg_imm(P_REG_RSP, 8);
       pop( P_REG_RDX );
 
       /* Assign new value. */
