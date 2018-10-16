@@ -42,6 +42,12 @@ o Compiler
     Fix some bugs triggered in the supporter subsystem when
     executing in an inherited CompilerEnviroment.
 
+  - Adhere to the calling convention more in the machine code
+    generator on amd64, namely by keeping the stack pointer aligned
+    before calling into C code.
+    GCC 8 started to emit instructions relying on the correct,
+    alignment, causing General Protection Faults.
+
 o Filesystem.Monitor
 
   - Fix NULL-dereference in bump().
