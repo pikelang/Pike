@@ -1887,10 +1887,11 @@ AC_DEFUN(PIKE_LOW_PKG_CONFIG,
   $2="[$]$2 ${pkg_stuff}"
 ])
 
-dnl package
+dnl package, on_success_opt, on_failure_opt
 AC_DEFUN(PIKE_PKG_CONFIG,
 [
   AC_REQUIRE([PIKE_PROG_PKG_CONFIG])dnl
+  pike_cv_pkg_config_$1=no
   if test "${PKG_CONFIG}" = no; then :; else
     AC_MSG_CHECKING([if a pkg-config based $1 is installed])
     if "${PKG_CONFIG}" "$1"; then
@@ -1899,8 +1900,16 @@ AC_DEFUN(PIKE_PKG_CONFIG,
       PIKE_LOW_PKG_CONFIG([$1], [CFLAGS],   [--cflags-only-other])
       PIKE_LOW_PKG_CONFIG([$1], [LDFLAGS],  [--libs-only-L])
       PIKE_LOW_PKG_CONFIG([$1], [LIBS],     [--libs-only-l --libs-only-other])
+      pike_cv_pkg_config_$1=yes
     else
       AC_MSG_RESULT(no)
     fi
   fi
+  ifelse([$2$3], , , [
+    if test "x$pike_cv_pkg_config_$1" = "xno"; then
+      ifelse([$3], , :, [$3])
+    else
+      ifelse([$2], , :, [$2])
+    fi
+  ])
 ])
