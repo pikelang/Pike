@@ -44,23 +44,7 @@
 
 /* Time to include stuff. */
 
-/* postgres_fe.h should be used in preference to postgres.h in
- * client code.
- */
 #include "override.h"
-#ifdef HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H
-#include <server/postgres_fe.h>
-#elif defined(HAVE_SERVER_POSTGRES_FE_H)
-#include <server/postgres_fe.h>
-#elif defined(HAVE_POSTGRES_FE_H)
-#include <postgres_fe.h>
-#elif defined(HAVE_POSTGRESQL_SERVER_POSTGRES_H)
-#include <server/postgres.h>
-#elif defined(HAVE_SERVER_POSTGRES_H)
-#include <server/postgres.h>
-#elif defined(HAVE_POSTGRES_H)
-#include <postgres.h>
-#endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
 
 #endif

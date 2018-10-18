@@ -82,19 +82,11 @@ dnl see if we can find the include files in any of the standard locations
   AC_MSG_CHECKING(for location of the Postgres include files)
   AC_CACHE_VAL(pike_cv_pgres_include_dir, [
     for pike_cv_pgres_include_dir in $include_searchpath no; do
-      echo "Trying $pike_cv_pgres_include_dir/server/catalog/pg_type.h" >&AC_FD_CC
-      if test -f $pike_cv_pgres_include_dir/server/catalog/pg_type.h; then
+      echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
+      if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
 	break
       fi
     done
-    if test x$pike_cv_pgres_include_dir = xno; then
-      for pike_cv_pgres_include_dir in $include_searchpath no; do
-	echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
-        if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
-	  break
-        fi
-      done
-    fi
   ])
   if test x$pike_cv_pgres_include_dir != xno; then
     AC_MSG_RESULT([$pike_cv_pgres_include_dir])
@@ -113,14 +105,7 @@ dnl see if we can find the include files in any of the standard locations
   fi
 
 dnl final check, just to be sure we did not mess up
-  AC_CHECK_HEADERS(postgres.h postgres_fe.h \
-		   server/postgres.h server/postgres_fe.h \
-		   postgresql/server/postgres.h \
-		   postgresql/server/postgres_fe.h \
-		   server/catalog/pg_type.h catalog/pg_type.h \
-		   postgresql/server/catalog/pg_type.h \
-		   server/pg_config.h postgresql/server/pg_config.h \
-		   pg_config.h libpq-fe.h)
+  AC_CHECK_HEADERS(libpq-fe.h)
 
   if test "x$ac_cv_header_libpq_fe_h = xyes"; then
       # Rational: OpenSolaris as of 20070128 includes a libpq-fe.h that
@@ -128,13 +113,6 @@ dnl final check, just to be sure we did not mess up
       # that, but does not include openssl/ssl.h in the dist.
       AC_MSG_CHECKING(if libpq-fe.h works)
       AC_TRY_COMPILE([
-#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
-#include <postgresql/server/pg_config.h>
-#elif HAVE_SERVER_PG_CONFIG_H
-#include <server/pg_config.h>
-#elif defined(HAVE_PG_CONFIG_H)
-#include <pg_config.h>
-#endif
 #include <libpq-fe.h>
       ], [], [
           AC_MSG_RESULT(yes)
