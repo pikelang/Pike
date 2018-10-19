@@ -37,6 +37,31 @@ void create(int max_size) {
   */
 }
 
+array _encode()
+{
+  array elems = stack[..top-1];
+  if (size == maxsize) {
+    elems = stack[top..] + elems;
+  }
+  return ({ maxsize, elems, latest_entry_num, no_adjacent_duplicates });
+}
+
+void _decode(array encoded)
+{
+  if ((sizeof(encoded) < 4) ||
+      !intp(encoded[0]) || !arrayp(encoded[1]) ||
+      !intp(encoded[2]) || !intp(encoded[3])) {
+    error("Unsupported encoding.\n");
+  }
+  [maxsize, stack, latest_entry_num, no_adjacent_duplicates] = encoded[..3];
+  top = size = sizeof(stack);
+  if (top == maxsize) {
+    top = 0;
+  } else {
+    stack += allocate(maxsize - size);
+  }
+}
+
 //! Change how the History object should treat two
 //! identical values in a row. If 1 than only unique
 //! values are allowed after each other.
