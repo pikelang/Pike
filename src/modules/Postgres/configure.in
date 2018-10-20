@@ -61,13 +61,6 @@ lib_searchpath="$pike_postgres_user_lib_directory $lib_searchpath"
 echo "include searchpath: $include_searchpath" >&AC_FD_CC
 echo "lib searchpath: $lib_searchpath" >&AC_FD_CC
 
-dnl check for dirname and locate, we might need them
-AC_CHECK_PROG(dirname,dirname,yes)
-AC_CHECK_PROG(locate,locate,yes)
-if test x$ac_cv_prog_dirname$ac_cv_prog_locate = xyesyes; then
-  pike_try_locate=yes
-fi
-
 dnl start actual work
 if test x$with_postgres = xyes; then
   ac_pike_postgres_works=yes
@@ -141,6 +134,13 @@ dnl okay, now let us start working on the libraries
       AC_MSG_RESULT(found.)
     else
       AC_MSG_RESULT(not found.)
+
+      # check for dirname and locate, we might need them
+      AC_CHECK_PROG(dirname,dirname,yes)
+      AC_CHECK_PROG(locate,locate,yes)
+      if test x$ac_cv_prog_dirname$ac_cv_prog_locate = xyesyes; then
+	  pike_try_locate=yes
+      fi
     fi
     if test x$pike_cv_pgres_lib_dir$pike_cv_can_try_locate = xnoyes; then
       AC_MSG_CHECKING(whether we can locate it anyway)
