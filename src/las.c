@@ -3121,6 +3121,8 @@ static void fix_auto_node(node *n, struct pike_type *type)
       }
     }
     break;
+  default:
+    break;
   }
 }
 
