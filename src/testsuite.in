@@ -10750,6 +10750,9 @@ test_eq([[combine_path(".", "bar")]],"bar")
 test_eq([[combine_path("./", "bar")]],"bar")
 test_eq([[combine_path(".", "../bar")]],"../bar")
 test_eq([[combine_path("./", "../bar")]],"../bar")
+test_eq([[combine_path("./bar")]],"bar")
+test_eq([[combine_path("./bar")]],"bar")
+test_eq([[combine_path("./../bar")]],"../bar")
 
 // - combine_path_nt
 test_eq([[combine_path_nt("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")

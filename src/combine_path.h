@@ -210,16 +210,42 @@ static void APPEND_PATH(struct string_builder *s,
 	      } else if (IS_SEP(index_shared_string(s->s, 0))) {
 		tmp++;
 	      }
-	      
+
 	      if (tmp < abs)
 		tmp = abs;
-	      else
-		if ((tmp+1 < s->s->len) &&
-		    (index_shared_string(s->s,tmp)=='.') &&
-		    (index_shared_string(s->s,tmp+1)=='.') && 
-		    ( (tmp+2 == s->s->len) ||
-		      IS_SEP(index_shared_string(s->s,tmp+2))))
-		  break;
+	      else {
+		if (index_shared_string(s->s,tmp)=='.') {
+		  if ((tmp+1 < s->s->len) &&
+		      (index_shared_string(s->s,tmp+1)=='.') &&
+		      ( (tmp+2 == s->s->len) ||
+			IS_SEP(index_shared_string(s->s,tmp+2)))) {
+		    break;
+		  } else if ((tmp+1 == s->s->len) ||
+			     IS_SEP(index_shared_string(s->s,tmp+1))) {
+		    /* Previous is "." or "./".
+		     * Replace it with "..".
+		     */
+		    if (tmp+1 != s->s->len) {
+		      /* Remove the separator. */
+		      s->s->len--;
+		    }
+		    PUSH('.');
+		    from += 2;
+		    if (c3) {
+		      PUSH('/');
+		      from++;
+		    }
+#if COMBINE_PATH_DEBUG > 0
+		    /* s->s->str[s->s->len]=0; */
+		    fprintf(stderr,"combine_path(2),   TO: %s[%d]\n",
+			    s->s->str, s->s->len);
+		    fprintf(stderr,"combine_path(2), FROM (%d): %s[%d]\n",
+			    from, path.ptr+from, len-from);
+#endif
+		    continue;
+		  }
+		}
+	      }
 
 	      from+=(c3? 3:2);
 	      s->s->len=tmp;
