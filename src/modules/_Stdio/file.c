@@ -3329,7 +3329,6 @@ static void file_get_dir(INT32 args)
   get_all_args(NULL, args, ".%S", &path);
 
   if (path && string_has_null(path)) {
-    fprintf(stderr, "NULL\n");
     /* Filenames with NUL are not supported. */
     ERRNO = errno = ENOENT;
     pop_n_elems(args);
@@ -3342,7 +3341,10 @@ static void file_get_dir(INT32 args)
 
   while(1) {
     THREADS_ALLOW_UID();
-    if (!path) {
+    /* NB: The empty string is also an alias for the current directory.
+     *     This is a convenience eg when recursing with dirname().
+     */
+    if (!path || !path->len) {
       dfd = dup(fd);
     } else {
       dfd = openat(fd, path->str, O_RDONLY);

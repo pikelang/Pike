@@ -997,7 +997,10 @@ void f_get_dir(INT32 args)
 
   get_all_args("get_dir", args, ".%S", &str);
 
-  if(!str) {
+  /* NB: The empty string is also an alias for the current directory.
+   *     This is a convenience eg when recursing with dirname().
+   */
+  if(!str || !str->len) {
     push_static_text(".");
     str = Pike_sp[-1].u.string;
     args++;
@@ -1216,7 +1219,10 @@ void f_get_dir(INT32 args)
 
   get_all_args("get_dir",args,".%N",&str);
 
-  if(!str) {
+  /* NB: The empty string is also an alias for the current directory.
+   *     This is a convenience eg when recursing with dirname().
+   */
+  if(!str || !str->len) {
 #if defined(__amigaos4__)
     push_empty_string();
 #else
