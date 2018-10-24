@@ -67,37 +67,40 @@ if test x$with_postgres = xyes; then
 
   PIKE_FEATURE_NODEP(Postgres)
 
-  OLD_CPPFLAGS=$CPPFLAGS
-  OLD_LIBS=$LIBS
-  OLD_LDFLAGS=$LDFLAGS
+  PIKE_PKG_CONFIG(libpq, [], [
 
-dnl see if we can find the include files in any of the standard locations
-  AC_MSG_CHECKING(for location of the Postgres include files)
-  AC_CACHE_VAL(pike_cv_pgres_include_dir, [
-    for pike_cv_pgres_include_dir in $include_searchpath no; do
-      echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
-      if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
-	break
-      fi
-    done
-  ])
-  if test x$pike_cv_pgres_include_dir != xno; then
-    AC_MSG_RESULT([$pike_cv_pgres_include_dir])
-  else
-    AC_MSG_RESULT(not found.)
-  fi
+    OLD_CPPFLAGS=$CPPFLAGS
+    OLD_LIBS=$LIBS
+    OLD_LDFLAGS=$LDFLAGS
 
-  if test x$pike_cv_pgres_include_dir != xno; then
-    CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
-    if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
-      # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
-      #     that expects <server/utils/palloc.h> to be available
-      #     as <utils/palloc.h>.
-      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
+    # See if we can find the include files in any of the standard locations
+    AC_MSG_CHECKING(for location of the Postgres include files)
+    AC_CACHE_VAL(pike_cv_pgres_include_dir, [
+      for pike_cv_pgres_include_dir in $include_searchpath no; do
+        echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
+        if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
+	  break
+        fi
+      done
+    ])
+    if test x$pike_cv_pgres_include_dir != xno; then
+      AC_MSG_RESULT([$pike_cv_pgres_include_dir])
+    else
+      AC_MSG_RESULT(not found.)
     fi
-  fi
 
-dnl final check, just to be sure we did not mess up
+    if test x$pike_cv_pgres_include_dir != xno; then
+      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
+      if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
+        # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
+        #     that expects <server/utils/palloc.h> to be available
+        #     as <utils/palloc.h>.
+        CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
+      fi
+    fi
+  ])
+
+  # Final check, just to be sure we did not mess up
   AC_CHECK_HEADERS(libpq-fe.h)
 
   if test "x$ac_cv_header_libpq_fe_h = xyes"; then
@@ -118,8 +121,8 @@ dnl final check, just to be sure we did not mess up
     ac_pike_postgres_works=no
   fi
 
-dnl okay, now let us start working on the libraries
-  if test x$ac_pike_postgres_skip = xno; then
+  # Okay, now let us start working on the libraries
+  if test x$ac_pike_postgres_skip$pike_cv_pkg_config_libpq = xnono; then
     AC_MSG_CHECKING(for location of the Postgres library)
     AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
       for pike_cv_pgres_lib_dir in $lib_searchpath no; do
@@ -157,14 +160,15 @@ dnl okay, now let us start working on the libraries
       fi
     fi
 
-dnl last check, just to be sure
+    # Last check, just to be sure
     if test x$pike_cv_pgres_lib_dir != xno; then
       LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir -R$pike_cv_pgres_lib_dir"
     fi
     AC_CHECK_LIB(crypt, crypt)
     AC_SEARCH_LIBS(PQclear, pq libpq)
   fi
-  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea PQescapeStringConn PQescapeString)
+  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea \
+		 PQescapeStringConn PQescapeString)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
     AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
   fi
