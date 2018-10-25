@@ -1912,7 +1912,7 @@ protected int queue_write()
     res = 0;
   }
 
-  if (!sizeof(write_buffer)) {
+  if (!sizeof(write_buffer) || write_errno) {
     if (stream) stream->set_write_callback(0);
     if (!(conn->state & CONNECTION_handshaking)) {
       SSL3_DEBUG_MSG("queue_write: Write buffer empty -- ask for some more data.\n");
@@ -2201,11 +2201,15 @@ protected int ssl_write_callback (int ignored)
 
     schedule_poll();
 
-    if ((close_state >= NORMAL_CLOSE &&
-	 (conn->state & CONNECTION_local_closing)) || write_errno) {
+    if ((close_state >= NORMAL_CLOSE) &&
+	(conn->state & CONNECTION_local_closing)) {
       SSL3_DEBUG_MSG ("ssl_write_callback: "
 		      "In or after local close - shutting down\n");
       shutdown();
+    } else if (write_errno) {
+      SSL3_DEBUG_MSG ("ssl_write_callback: "
+		      "Write failure - unregistering callback.\n");
+      stream->set_write_callback(0);
     }
   } LEAVE;
   return ret;
