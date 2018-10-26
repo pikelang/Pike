@@ -67,7 +67,12 @@ if test x$with_postgres = xyes; then
 
   PIKE_FEATURE_NODEP(Postgres)
 
-  PIKE_PKG_CONFIG(libpq, [], [
+  PIKE_PKG_CONFIG(libpq, [
+		      AC_CHECK_FUNCS(PQclear)
+		      if test "x$ac_cv_func_PQclear" = "xno"; then
+			  ac_pike_postgres_works=no
+		      fi
+		  ], [
 
     OLD_CPPFLAGS=$CPPFLAGS
     OLD_LIBS=$LIBS
