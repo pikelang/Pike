@@ -5753,6 +5753,7 @@ int low_define_variable(struct pike_string *name,
 			INT32 run_time_type)
 {
   struct compilation *c = THIS_COMPILATION;
+  unsigned int identifier_flags = IDENTIFIER_VARIABLE;
   union idptr func;
 
 #ifdef PIKE_DEBUG
@@ -5767,11 +5768,16 @@ int low_define_variable(struct pike_string *name,
   func.offset = offset - Pike_compiler->new_program->inherits[0].storage_offset;
   if (run_time_type == PIKE_T_FREE) func.offset = -1;
 
+  if (run_time_type & PIKE_T_NO_REF_FLAG) {
+    run_time_type &= ~PIKE_T_NO_REF_FLAG;
+    identifier_flags |= IDENTIFIER_NO_THIS_REF;
+  }
+
   if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
   return
     add_identifier(c, type, name,
-		   flags, IDENTIFIER_VARIABLE, 0,
+		   flags, identifier_flags, 0,
 		   func,
 		   run_time_type);
 }
