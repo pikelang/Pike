@@ -175,8 +175,8 @@
  *!       the moon or anything else the @[lfun::_sprintf()] method
  *!       implementor wanted for debugging.
  *!     @value 'p'
- *!       Hexadecimal presentation of the memory address of the object.
- *!       Integers have no address, and are printed as themselves.
+ *!       Hexadecimal representation of the memory address of the object.
+ *!       Integers and floats have no address, and are printed as themselves.
  *!     @value 'H'
  *!       Binary Hollerith string. Equivalent to @expr{sprintf("%c%s",
  *!       strlen(str), str)@}. Arguments (such as width etc) adjust the
@@ -1763,18 +1763,28 @@ cont_2:
 
       case 'p':
       {
-	struct byte_buffer b = BUFFER_INIT();
-	char buf[50];
 	struct svalue *t;
+	struct pike_string *str;
 	GET_SVALUE(t);
-	if (TYPEOF(*t) == T_INT)
-	  sprintf (buf, "%ld", (long)t->u.integer);
-	else
-	  sprintf (buf, "%p", t->u.refs);
-	buffer_add_str (&b, buf);
-	fsp->b=MKPCHARP(buffer_ptr(&b),0);
-	fsp->len=buffer_content_length(&b);
-	fsp->fi_free_string=buffer_ptr(&b);
+	if (TYPEOF(*t) == T_INT) {
+	  push_string(make_shared_binary_string((void *)&t->u.integer,
+						sizeof(INT_TYPE)));
+	} else if (TYPEOF(*t) == T_FLOAT) {
+	  push_string(make_shared_binary_string((void *)&t->u.float_number,
+						sizeof(FLOAT_TYPE)));
+	} else {
+	  push_string(make_shared_binary_string((void *)&t->u.refs, sizeof(void *)));
+	}
+	push_int((PIKE_BYTEORDER == 1234)?2:0);
+	f_string2hex(2);
+
+	str = Pike_sp[-1].u.string;
+	fsp->b = MKPCHARP_STR(str);
+	fsp->len = str->len;
+	fsp->to_free_string = str;
+
+	add_ref(str);
+	pop_stack();
 	break;
       }
 
