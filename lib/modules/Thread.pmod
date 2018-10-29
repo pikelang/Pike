@@ -388,7 +388,7 @@ optional class Queue {
     buffer[w_ptr] = value;
     w_ptr++;
     int items = w_ptr - r_ptr;
-    r_cond::signal();
+    r_cond::broadcast();
     key=0;
     return items;
   }
