@@ -1,0 +1,6 @@
+Modified files:
+  pike/lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
+  pike/lib/modules/Thread.pmod
+  pike/lib/modules/Tools.pmod/Hilfe.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/extract_autodoc.pike
