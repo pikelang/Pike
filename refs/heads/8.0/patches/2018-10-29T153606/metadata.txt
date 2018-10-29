@@ -1,0 +1,103 @@
+subject: Pike 8.0: Thread.Queue, SSL.File, Protocols.WebSocket, Parser.XML.Tree, Protocols.HTTP.Query
+from: d73b7171d404802e843cd193796ec4755289fb08
+to: b140179884ea6bbe338f08dcf19e0f661327825b
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-10-29T151847
+restart: true
+
+Multiple changes:
+
+• Thread.Queue [Paranoia]: Broadcast the changed state.
+
+This is intended to ensure that the state-changed signal
+is not lost.
+
+Consider the case when there is a thread that listens on the
+condition, but does not act on it; it could starve the threads
+that do intend to act on it.
+
+Fixes [PIKE-140].
+
+• SSL.File: Do not close automatically on write error.
+
+The internal ssl_write_callback() would call shutdown()
+on write error, which would cause the object to enter
+one of the closed states, without the user actually
+having closed the file.
+
+This in turn caused errors like "Not open.\n" from
+functions like read() and set_nonblocking().
+
+Potential fix for [PIKE-138].
+
+• ADT.History: Support encode_value()/decode_value().
+
+Encoding and decoding of ADT.History-objects should now work with
+the default Codec.
+
+Fixes [LysLysKOM 22936192].
+
+• Protocols.HTTP.Query [Solaris]: Survive EADDRINUSE.
+
+On Solaris 11 Stdio.File()->connect() often fails with EADDRINUSE.
+If this happens, retry the connection.
+
+Potential fix for [PIKE-136].
+
+• Protocols.WebSocket: Potential fix for [PIKE-135].
+
+Fixes error: Indexing the NULL value with "set_nonblocking".
+
+• Protocols.WebSocket.Connection: Use send_raw() in connect().
+
+Avoid messing directly with the send buffer from connect().
+
+• Protocols.WebSocket: Improved HTTP header camel-case consistency.
+
+• Testsuite [Protocols.WebSocket]: Added a basic testsuite.
+
+Test the initial HTTP handshaking.
+
+• Protocols.WebSocket: Improved compliance with RFC 6455 4.1.
+
+Backport from Pike 8.1:
+
+Client:
+
+  * Generate an actually random nonce for the Sec-WebSocket-Key
+    header.
+
+  * Validate that the Sec-WebSocket-Accept header received from
+    the server matches the Sec-WebSocket-Key that was sent.
+
+Server:
+
+  * Validate that the request method is "GET".
+
+  * Validate that the Sec-WebSocket-Key header is syntactically
+    correct.
+
+Both:
+
+  * Validate use of the Connection and Upgrade headers.
+
+  * Validate the Sec-WebSocket-Version header.
+
+• Protocols.WebSocket: Added low_{connect,websocket_accept}().
+
+Backport from Pike 8.1:
+
+This breaks out the generation of WebSocket HTTP headers to
+separate functions, which makes the modules easier to instrument
+for testing.
+
+Also adds the symbolic constant websocket_version.
+
+• Protocols.WebSocket: Guard against null dereference and ensure proper write callback triggering.
+
+• Parser.XML.Tree: Declare low_clone() as optional.
+
+Fixes issues assigning eg a SimpleElementNode object to
+a variable declared as a SimpleNode in strict_types mode.
+
+Fixes [PIKE-122].
