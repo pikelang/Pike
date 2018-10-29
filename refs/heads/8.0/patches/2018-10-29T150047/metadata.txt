@@ -1,0 +1,82 @@
+subject: Pike 8.0: Pgsql, tzdata2018e, UTF-8 encoded UTF-16 in Mysql.
+from: 20d87739fec8f65c9312670b35a47a8df9d675f3
+to: 4bfba6477f2b69adccf0d9aac406809049fc22f5
+originator: Henrik Grubbstrom
+depends: 2018-05-09T095711|pike/8.0.604
+restart: true
+
+Multiple changes:
+
+• pgsql: reset_dbsession() drains the pending error messages as well.
+
+• Updated to tzdata2018e.
+
+• pgsql: Release lock on collision with another thread on the same portal.
+
+• pgsql: Simplify code; clear stmtifkey always.
+
+• pgsql: Improve _sprintf() formatting.
+
+• pgsql: Delay started() lock release to prevent early unlock by sendcmd().
+
+• Sql.mysql / Mysql.SqlTable: Use UTF-8 encoded UTF-16 in a couple of other applicable cases.
+
+• pgsql: Make replenishrows() wait until the query has properly started.
+
+• Sql.mysql: Use/support UTF-8 encoded UTF-16.
+
+MySQL/MariaDB default to a "utf8" character set that may only
+encode the BMP (max 3 bytes). In MySQL/MariaDB 5.5 and later
+there is an additional character set "utf8mb4" that also supports
+the code points outside the BMP. This new character set however
+requires redefining tables, etc for it to be able to be used.
+
+As a work-around we instead default to keep using the "utf8"
+character set while encoding characters outside the BMP with
+surrogate pairs. This works seemlessly with old table definitions,
+while having the minor defect of characters outside the BMP not
+collating as single characters.
+
+Fixes [PIKE-112].
+
+• EFUNs: Support encoding to UTF-8 encoded UTF-16 in string_to_utf8().
+
+string_to_utf8() now supports the same extensions as utf8_to_string().
+
+Fixes [PIKE-111].
+
+• pgsql: Fix regression error in adaptive buffer refill.
+
+sizeof(Thread.Queue()) is not equal to Thread.Queue()->size().
+Fixes the calculation for adaptive buffer refills.
+Without this fix, it *will* result in hung queries, but only
+if the number of rows returned exceeds 1024.
+
+• pgsql: Missing declaration in debugging mode.
+
+• pgsql: Fix unitialised mode regression from last commit.
+
+• Let the SSL test program accept SSL 3.0 connections.
+
+• pgsql: Disentangle concurrent stash flushes explicitly.
+
+- Solves the last remaining one-deadlock-per-month problem.
+- Speeds up the critical path with regard to stash-flushing.
+
+• pgsql: Extra diagnostics and release all locks upon async query termination.
+
+• pgsql: Add optional communicationslog per filedescriptor for debugging.
+
+• pgsql: Guard against async destructs.
+
+• pgsql: Avoid lock recursion and a deadlock.
+
+• pgsql: Accomodate for sscanf() using range_error(0).
+
+• pgsql: Return data even after the local backend has died.
+
+• Thread.ResourceCount: Drop superfluous argument.
+
+• pgsql: Eliminate rare deadlock on heavy interleaved queries tuned.
+
+• pgsql: Eliminate rare deadlock on heavy interleaved queries.
