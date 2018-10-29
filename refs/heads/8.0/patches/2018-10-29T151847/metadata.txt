@@ -1,0 +1,47 @@
+subject: Pike 8.0: Protocols.HTTP.Query, Filesystem.Monitor, Thread.Farm, Autodoc.
+from: 4bfba6477f2b69adccf0d9aac406809049fc22f5
+to: d73b7171d404802e843cd193796ec4755289fb08
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-10-29T150047
+restart: true
+
+Multiple changes:
+
+• Hilfe: Autodoc fix
+
+By "ungrouping" strings and a class, we get AutoDoc for the whole
+Hilfe.pmod!
+
+• Tools.Standalone.extract_autodoc: Terminate on failure.
+
+Reenables termination on extraction failure.
+
+Fixes some of LysLysKOM 22790861:
+
+| 22790861 idag 15:27 /51 rader/ ceder (-) Per Cederqvist
+| Mottagare: Pike (-) developers forum <20653>
+| Ärende: wrong exit code of extract_autodoc on errors
+| ------------------------------------------------------------
+| I think extract_autodoc should exit with a non-0 exitcode whenever it
+| produces an error message.  Right now, it doesn't, which can cause
+| documentation markup errors to go unnoticed.
+
+• Filesystem.Monitor: Fix NULL-dereference in bump().
+
+Survive st being zero in bump().
+
+Fixes [PIKE-116].
+
+• Thread.Farm: Clear references to current job in thread farm directly after execution to
+avoid delayed deallocation.
+
+• Thread.Farm: pass exceptions to provide_error
+
+In case an exception was thrown, the value of err ended up being
+the Result object, while the error got lost.
+
+• Protocols.HTTP.Query: Fix HEAD with keep-alive.
+
+data() for HEAD requests attempted to read the (non-existant)
+contents, which caused it to hang until the other end closes
+the connection due to eg time out.
