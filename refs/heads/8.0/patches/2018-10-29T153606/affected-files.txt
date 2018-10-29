@@ -1,0 +1,10 @@
+Added files:
+  pike/lib/modules/Protocols.pmod/WebSocket.test
+Modified files:
+  pike/lib/modules/ADT.pmod/History.pike
+  pike/lib/modules/Parser.pmod/XML.pmod/Tree.pmod
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Server.pmod/Request.pike
+  pike/lib/modules/Protocols.pmod/WebSocket.pmod
+  pike/lib/modules/SSL.pmod/File.pike
+  pike/lib/modules/Thread.pmod
