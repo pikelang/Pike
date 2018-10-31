@@ -375,7 +375,10 @@ PIKECLASS define
 	    }
 	  }
 	  if (!(raw_arg & DEF_ARG_NOPOSTSPACE)) {
-	    string_builder_putchar(&s, ' ');
+	    if (!s.s->len ||
+		!wide_isspace(index_shared_string(s.s, s.s->len-1))) {
+	      string_builder_putchar(&s, ' ');
+	    }
 	  }
 	}
 	break;
@@ -3494,14 +3497,19 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
         PUTC(' ');
         break;
 
+      case '\r':
+	/* NB: Keep only CR's that aren't followed by NL. */
+	if (DATA(pos) == '\n') break;
+	/* FALLTHRU */
       case '\t':
       case ' ':
-      case '\r':
-        PUTC(' ');
+        PUTC(c);
 
       do_skipwhite:
-        while( wide_isspace(c=DATA(pos)) && c != '\n' && c != '\r' )
+        while( wide_isspace(c=DATA(pos)) && c != '\n' && c != '\r' ) {
+	  PUTC(c);
           pos++;
+	}
         break;
 
         /* Minor optimization */
@@ -4441,6 +4449,12 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       FIND_END_OF_CHAR();
                       string_builder_append(&str, ADD_PCHARP(data, tmp3), pos - tmp3);
                       continue;
+
+		    case '\r':
+		      if (DATA(pos) != '\n') {
+			string_builder_putchar(&str, '\r');
+		      }
+		      break;
 
                     case '\n':
                       PUTNL();

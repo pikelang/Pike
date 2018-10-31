@@ -9882,11 +9882,13 @@ test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"\n( (A) ) ( (B) )")
 test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"\nFOO BAR")
 test_eq([[cpp("#define F 'F'\nF")]],"\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
-test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
+test_eq([[cpp("\t  foo\xfeff""bar \xfeff gazonk")]],
+        [[cpp("\t  foobar  gazonk")]])
+test_eq([[cpp("\t  foobar  gazonk\n")]], "\t  foobar  gazonk\n")
 test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
 	"\n\n \"foo\" ")
 test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "\n\n \"\" \n");
-test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "\n\n \"\"   \n" /* Note: Added extra spaces for \r. */);
+test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "\n\n \"\" \n");
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[
