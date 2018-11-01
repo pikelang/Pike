@@ -380,8 +380,12 @@ optional class Queue {
     buffer[w_ptr] = value;
     w_ptr++;
     int items = w_ptr - r_ptr;
-    r_cond::broadcast();
+    // NB: The mutex MUST be released before the broadcast to work
+    //     around bugs in glibc 2.24 and earlier. This seems to
+    //     affect eg RHEL 7 (glibc 2.17).
+    //     cf https://sourceware.org/bugzilla/show_bug.cgi?id=13165
     key=0;
+    r_cond::broadcast();
     return items;
   }
 
