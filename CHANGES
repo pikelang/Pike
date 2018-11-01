@@ -1,5 +1,8 @@
 Changes since Pike 8.0.702 (release 13)
 
+Bug fixes
+---------
+
 o Compiler
 
   - Adhere to the calling convention more in the machine code
