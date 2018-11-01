@@ -1,3 +1,14 @@
+Changes since Pike 8.0.702 (release 13)
+
+o Compiler
+
+  - Adhere to the calling convention more in the machine code
+    generator on amd64, namely by keeping the stack pointer aligned
+    before calling into C code.
+    GCC 8 started to emit instructions relying on the correct,
+    alignment, causing General Protection Faults.
+
+
 Changes since Pike 8.0.610 (release 12)
 
 New Features
@@ -41,12 +52,6 @@ o Compiler
 
     Fix some bugs triggered in the supporter subsystem when
     executing in an inherited CompilerEnviroment.
-
-  - Adhere to the calling convention more in the machine code
-    generator on amd64, namely by keeping the stack pointer aligned
-    before calling into C code.
-    GCC 8 started to emit instructions relying on the correct,
-    alignment, causing General Protection Faults.
 
 o Filesystem.Monitor
 
