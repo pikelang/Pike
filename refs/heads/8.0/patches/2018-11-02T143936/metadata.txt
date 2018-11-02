@@ -1,0 +1,8 @@
+subject: Pike 8.0: Sync with Roxen 6.2.214-r1
+from: b140179884ea6bbe338f08dcf19e0f661327825b
+to: aff56ac64ee875d0b6f754efbd22e149842d3415
+originator: Marcus Wellhardh
+depends: 2018-10-29T153606
+restart: true
+
+• release number bumped to 8.0.716 by export.pike
