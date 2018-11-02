@@ -1161,16 +1161,16 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[#if], @[#ifdef], @[defined]
  */
 
-/*! @directive #require
- *!
- *!   If the directive evaluates to false, the source file will be
- *!   considered to have failed dependencies, and will not be found by
- *!   the resolver. In practical terms the @[cpp()] call will return
- *!   zero.
- *!
- *! @seealso
- *!   @[#if]
- */
+  /*! @directive #require
+   *!
+   *!   If the directive evaluates to false, the source file will be
+   *!   considered to have failed dependencies, and will not be found by
+   *!   the resolver. In practical terms the @[cpp()] call will return
+   *!   zero.
+   *!
+   *! @seealso
+   *!   @[#if]
+   */
   PIKEFUN string(0..0) directive_require(int flags, string line)
   {
     struct CPP_struct *this = THIS;
@@ -1267,28 +1267,28 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
  */
 
-/*! @directive #error
- *!
- *!   Throw an error during preprocessing.
- *!
- *!   This directive causes a cpp error. It can be used to notify
- *!   the user that certain functions are missing and similar things.
- *!
- *! @note
- *!   Note that this directive will cause @[cpp()] to throw
- *!   an error at the end of preprocessing, which will cause
- *!   any compilation to fail.
- *!
- *! @example
- *!   @code
- *!   #if !constant(Yp)
- *!   #error Support for NIS not available.
- *!   #endif
- *!   @endcode
- *!
- *! @seealso
- *!   @[#warning]
- */
+  /*! @directive #error
+   *!
+   *!   Throw an error during preprocessing.
+   *!
+   *!   This directive causes a cpp error. It can be used to notify
+   *!   the user that certain functions are missing and similar things.
+   *!
+   *! @note
+   *!   Note that this directive will cause @[cpp()] to throw
+   *!   an error at the end of preprocessing, which will cause
+   *!   any compilation to fail.
+   *!
+   *! @example
+   *!   @code
+   *!   #if !constant(Yp)
+   *!   #error Support for NIS not available.
+   *!   #endif
+   *!   @endcode
+   *!
+   *! @seealso
+   *!   @[#warning]
+   */
   PIKEFUN string(0..0) directive_error(int flags, string line)
   {
     struct CPP_struct *this = THIS;
@@ -1299,23 +1299,23 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     push_empty_string();
   }
 
-/*! @directive #warning
- *!
- *!   Generate a warning during preprocessing.
- *!
- *!   This directive causes a cpp warning, it can be used to notify
- *!   the user that certain functions are missing and similar things.
- *!
- *! @example
- *!   @code
- *!   #if !constant(Yp)
- *!   #warning Support for NIS not available. Some features may not work.
- *!   #endif
- *!   @endcode
- *!
- *! @seealso
- *!   @[#error]
- */
+  /*! @directive #warning
+   *!
+   *!   Generate a warning during preprocessing.
+   *!
+   *!   This directive causes a cpp warning, it can be used to notify
+   *!   the user that certain functions are missing and similar things.
+   *!
+   *! @example
+   *!   @code
+   *!   #if !constant(Yp)
+   *!   #warning Support for NIS not available. Some features may not work.
+   *!   #endif
+   *!   @endcode
+   *!
+   *! @seealso
+   *!   @[#error]
+   */
   PIKEFUN string(0..0) directive_warning(int flags, string line)
   {
     struct CPP_struct *this = THIS;
@@ -1358,39 +1358,39 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @tt{#line 1 "/home/pike/program.pike.in"@}. Then this
  *!   filename will be used instead of the current file for error
  *!   messages.
-*/
-
-/*! @directive #pike
- *!
- *!   Set the Pike compiler backward compatibility level.
- *!
- *!   This tells the compiler which version of Pike it should
- *!   attempt to emulate from this point on in the current
- *!   compilation unit.
- *!
- *!   This is typically used to "quick-fix" old code to work
- *!   with more recent versions of Pike.
- *!
- *! @example
- *!   @code
- *!   // This code was written for Pike 7.2, and depends on
- *!   // the old behaviour for @expr{7.2::dirname()@}.
- *!   #pike 7.2
- *!
- *!   // ... Code that uses @[dirname()] ...
- *!   @endcode
- *!
- *!   This directive is also needed for Pike modules that
- *!   have been installed globally, and might be used by
- *!   a Pike that has been started with the @tt{-V@} flag.
- *!
- *! @example
- *!   @code
- *!   // Pike modules that are bundled with Pike are
- *!   // typically written for the same version of Pike.
- *!   #pike __REAL_VERSION__
- *!   @endcode
  */
+
+  /*! @directive #pike
+   *!
+   *!   Set the Pike compiler backward compatibility level.
+   *!
+   *!   This tells the compiler which version of Pike it should
+   *!   attempt to emulate from this point on in the current
+   *!   compilation unit.
+   *!
+   *!   This is typically used to "quick-fix" old code to work
+   *!   with more recent versions of Pike.
+   *!
+   *! @example
+   *!   @code
+   *!   // This code was written for Pike 7.2, and depends on
+   *!   // the old behaviour for @expr{7.2::dirname()@}.
+   *!   #pike 7.2
+   *!
+   *!   // ... Code that uses @[dirname()] ...
+   *!   @endcode
+   *!
+   *!   This directive is also needed for Pike modules that
+   *!   have been installed globally, and might be used by
+   *!   a Pike that has been started with the @tt{-V@} flag.
+   *!
+   *! @example
+   *!   @code
+   *!   // Pike modules that are bundled with Pike are
+   *!   // typically written for the same version of Pike.
+   *!   #pike __REAL_VERSION__
+   *!   @endcode
+   */
   PIKEFUN string(0..0) directive_pike(int flags, string line)
   {
     struct CPP_struct *this = THIS;
@@ -1480,43 +1480,43 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[#include]
  */
 
-/*! @directive #pragma
- *!
- *!   This is a generic directive for flags to the compiler.
- *!
- *!   These are some of the flags that are available:
- *!   @string
- *!     @value "all_inline"
- *!       This is the same as adding the modifier @tt{inline@}
- *!       to all functions that follow.
- *!     @value "all_final"
- *!       Instructs the compiler to mark all symbols as @tt{final@}.
- *!     @value "deprecation_warnings"
- *!       Enable warnings for use of deprecated symbols (default).
- *!     @value "no_deprecation_warnings"
- *!       Disable warnings for use of deprecated symbols. This is
- *!       typically used in code that implements the deprecated
- *!       symbols.
- *!     @value "save_parent"
- *!       Cause nested classes to save a reference to their
- *!       surrounding class even if not strictly needed.
- *!     @value "dont_save_parent"
- *!       Inverse of @tt{"save_parent"@}. This is needed to override
- *!       if the global symbol @[predef::__pragma_save_parent__]
- *!       has been set.
- *!     @value "strict_types"
- *!       Enable warnings for all cases where the compiler
- *!       isn't certain that the types are correct.
- *!     @value "disassemble"
- *!       Enable disassembly output for the code being compiled.
- *!       Note that this option essentially has a function-level
- *!       scope, so enabling it for just a few lines is usually
- *!       a noop. This is similar to @[Debug.assembler_debug()]
- *!       level @expr{3@}.
- *!     @value "no_disassemble"
- *!       Disable disassembly output (default).
- *!   @endstring
- */
+  /*! @directive #pragma
+   *!
+   *!   This is a generic directive for flags to the compiler.
+   *!
+   *!   These are some of the flags that are available:
+   *!   @string
+   *!     @value "all_inline"
+   *!       This is the same as adding the modifier @tt{inline@}
+   *!       to all functions that follow.
+   *!     @value "all_final"
+   *!       Instructs the compiler to mark all symbols as @tt{final@}.
+   *!     @value "deprecation_warnings"
+   *!       Enable warnings for use of deprecated symbols (default).
+   *!     @value "no_deprecation_warnings"
+   *!       Disable warnings for use of deprecated symbols. This is
+   *!       typically used in code that implements the deprecated
+   *!       symbols.
+   *!     @value "save_parent"
+   *!       Cause nested classes to save a reference to their
+   *!       surrounding class even if not strictly needed.
+   *!     @value "dont_save_parent"
+   *!       Inverse of @tt{"save_parent"@}. This is needed to override
+   *!       if the global symbol @[predef::__pragma_save_parent__]
+   *!       has been set.
+   *!     @value "strict_types"
+   *!       Enable warnings for all cases where the compiler
+   *!       isn't certain that the types are correct.
+   *!     @value "disassemble"
+   *!       Enable disassembly output for the code being compiled.
+   *!       Note that this option essentially has a function-level
+   *!       scope, so enabling it for just a few lines is usually
+   *!       a noop. This is similar to @[Debug.assembler_debug()]
+   *!       level @expr{3@}.
+   *!     @value "no_disassemble"
+   *!       Disable disassembly output (default).
+   *!   @endstring
+   */
   PIKEFUN string(0..0) directive_pragma(int flags, string line)
   {
     struct CPP_struct *this = THIS;
