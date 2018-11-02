@@ -1,0 +1,16 @@
+subject: Pike 8.0: Thread.Queue: Attempt to work around glibc bugs
+from: aff56ac64ee875d0b6f754efbd22e149842d3415
+to: eccaaf9814335d9bb326a2f278d4f0d8478b7061
+originator: Marcus Wellhardh
+depends: 2018-11-02T143936|pike/8.0.716
+restart: true
+
+• Thread.Queue [Paranoia]: Attempt to work around glibc bugs.
+
+Glibc 2.24 and earlier have a broken implementation of condition
+variables (cf https://sourceware.org/bugzilla/show_bug.cgi?id=13165).
+
+Attempt to work around the issue by having the signalling thread
+release the associated mutex before signalling.
+
+Potential fix for [Pike-140].
