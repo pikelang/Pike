@@ -1,17 +1,12 @@
-/*
+/* -*- c -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
 
-#include "global.h"
-#include "interpret.h"
 #include "module.h"
-#include "stralloc.h"
-#include "mapping.h"
-#include "array.h"
+#include "interpret.h"
 #include "builtin_functions.h"
-#include "svalue.h"
 #include "pike_types.h"
 #include "module_support.h"
 
