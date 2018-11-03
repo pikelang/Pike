@@ -41,6 +41,17 @@ PMOD_EXPORT const char msg_ssval_obj_wo_refs[] =
   "(short) Svalue to object without references.\n";
 #endif
 
+PMOD_EXPORT void check_destructed(struct svalue *s)
+{
+  if(IS_DESTRUCTED(s)) {
+    free_object(s->u.object);
+    SET_SVAL(*s, PIKE_T_INT,
+	     NUMBER_DESTRUCTED,
+	     integer, 0);
+  }
+}
+
+
 /*
  * This routine frees a short svalue given a pointer to it and
  * its type.
