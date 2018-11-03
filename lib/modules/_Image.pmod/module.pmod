@@ -304,7 +304,7 @@ Image.Image load(void|object|string file)
 //! @decl Image.Layer filled_circle_layer(int d,int r,int g,int b)
 //! @decl Image.Layer filled_circle_layer(int xd,int yd,int r,int g,int b)
 //!
-//!	Generates a filled circle of the 
+//!	Generates a filled circle of the
 //!	dimensions xd x yd (or d x d).
 //!	The Image is a white circle on black background; the layer
 //!	function defaults to a white circle (the background is transparent).
@@ -321,7 +321,7 @@ Image.Image filled_circle(int xd, void|int yd)
    array x=map(map(map(enumerate(n,2*Math.pi/n),sin),`*,xd/2.0),`+,xd/2.0);
    array y=map(map(map(enumerate(n,2*Math.pi/n),cos),`*,yd/2.0),`+,yd/2.0);
 
-  return 
+  return
      Image.Image(xd,yd,0,0,0)
      ->setcolor(255,255,255)
      ->polyfill( Array.splice( x,y ) );
@@ -344,7 +344,7 @@ Image.Layer filled_circle_layer(int xd,int|Image.Color.Color ...args)
       case 2:
 	 [yd,c]=args;
       case 1:
-	 if (objectp(args[0])) c=args[0]; 
+	 if (objectp(args[0])) c=args[0];
 	 else yd=args[0],c=Image.Color.white;
       default:
 	 c=Image.Color.white;

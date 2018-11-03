@@ -49,6 +49,12 @@ protected int isIdent(string s) {
   return 1;
 }
 
+protected int(0..1) isVersion(string s)
+{
+  string trailer = "";
+  return (sscanf(s, "%*d.%*d%s", trailer) == 3) && (trailer == "");
+}
+
 protected int(0..1) isFloat(string s)
 {
   int n;
@@ -112,9 +118,9 @@ class SourcePosition {
       werror("**********************************************************\n");
       werror("**********************************************************\n");
     }
-    this_program::filename = filename;
-    this_program::firstline = firstline;
-    this_program::lastline = lastline; 
+    this::filename = filename;
+    this::firstline = firstline;
+    this::lastline = lastline;
   }
 
   //! @returns

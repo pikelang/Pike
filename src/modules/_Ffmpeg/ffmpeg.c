@@ -11,6 +11,7 @@
  *
  */
 
+#include "global.h"
 #include "config.h"
 
 #include "interpret.h"
@@ -23,12 +24,8 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-
 #ifdef HAVE_WORKING_LIBFFMPEG
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <math.h>
 
 /* ffmpeg includes typedef's these */
@@ -228,10 +225,10 @@ static void f_codec_info(INT32 args) {
 
   pop_n_elems(args);
   if(THIS->codec) {
-    push_text("name");		push_text( THIS->codec->name );
-    push_text("type");		push_int( THIS->codec->type );
-    push_text("id");		push_int( THIS->codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
+    push_static_text("name");		push_text( THIS->codec->name );
+    ref_push_string(literal_type_string);		push_int( THIS->codec->type );
+    push_static_text("id");		push_int( THIS->codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
     f_aggregate_mapping( 2*4 );
   } else
     push_int(0);
@@ -312,12 +309,12 @@ static void f_get_codec_status(INT32 args) {
     push_int(0);
     return;
   }
-  
-  push_text("name");		push_text( THIS->codec->name );
-  push_text("type");		push_int( THIS->codec->type );
-  push_text("id");		push_int( THIS->codec->id );
-  push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
-  push_text("flags");		push_int( THIS->codec_context.flags );
+
+  push_static_text("name");		push_text( THIS->codec->name );
+  ref_push_string(literal_type_string);		push_int( THIS->codec->type );
+  push_static_text("id");		push_int( THIS->codec->id );
+  push_static_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
+  push_static_text("flags");		push_int( THIS->codec_context.flags );
   cnt = 5;
 
 #ifdef USE_AVMEDIA_TYPE_ENUM
@@ -326,8 +323,8 @@ static void f_get_codec_status(INT32 args) {
   if(THIS->codec->type == CODEC_TYPE_AUDIO) {
 #endif
     /* audio only */
-    push_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
-    push_text("channels");	push_int( THIS->codec_context.channels );
+    push_static_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
+    push_static_text("channels");	push_int( THIS->codec_context.channels );
     cnt += 2;
   }
 
@@ -337,7 +334,7 @@ static void f_get_codec_status(INT32 args) {
   if(THIS->codec->type == CODEC_TYPE_VIDEO) {
 #endif
     /* video only */
-    push_text("frame_rate");
+    push_static_text("frame_rate");
 #ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
     /* avcodec.h 1.392 (LIBAVCODEC_BUILD 4753) and earlier. */
     push_int(THIS->codec_context.frame_rate);
@@ -346,7 +343,7 @@ static void f_get_codec_status(INT32 args) {
     push_int(THIS->codec_context.time_base.den/
 	     THIS->codec_context.time_base.num);
 #endif /* HAVE_AVCODECCONTEXT_FRAME_RATE */
-    push_text("width");		push_int( THIS->codec_context.width );
+    push_static_text("width");		push_int( THIS->codec_context.width );
     cnt += 2;
   }
 
@@ -440,9 +437,9 @@ static void f_decode(INT32 args) {
   if(samples_size > 0) {
     /* frame was decoded */
     pop_n_elems(args);
-    push_text("data");
+    push_static_text("data");
     push_string(make_shared_binary_string((char *)THIS->outbuf, samples_size));
-    push_text("decoded");
+    push_static_text("decoded");
     push_int(len);
     f_aggregate_mapping( 2*2 );
     return;
@@ -490,10 +487,10 @@ static void f_list_codecs(INT32 args) {
   codec = NULL;
   while ((codec = av_codec_next(codec))) {
     cnt++;
-    push_text("name");		push_text( codec->name );
-    push_text("type");		push_int( codec->type );
-    push_text("id");		push_int( codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(codec) );
+    push_static_text("name");		push_text( codec->name );
+    ref_push_string(literal_type_string);		push_int( codec->type );
+    push_static_text("id");		push_int( codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(codec) );
     f_aggregate_mapping( 2*4 );
   }
 #else /* !HAVE_AV_CODEC_NEXT */
@@ -505,10 +502,10 @@ static void f_list_codecs(INT32 args) {
   codec = first_avcodec;
   while(codec != NULL) {
     cnt++;
-    push_text("name");		push_text( codec->name );
-    push_text("type");		push_int( codec->type );
-    push_text("id");		push_int( codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(codec) );
+    push_static_text("name");		push_text( codec->name );
+    ref_push_string(literal_type_string);		push_int( codec->type );
+    push_static_text("id");		push_int( codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(codec) );
     codec = codec->next;
     f_aggregate_mapping( 2*4 );
   }
@@ -590,7 +587,7 @@ static void exit_ffmpeg_data(struct object *obj) {
 
 PIKE_MODULE_INIT {
 
-  add_function("list_codecs", f_list_codecs, "function(:array|int)", 0);
+  ADD_FUNCTION("list_codecs", f_list_codecs, tFunc(tVoid,tOr(tArray,tInt)), 0);
 
 #ifdef LIBAVCODEC_VERSION
   add_string_constant("lib_version", DEFINETOSTR(LIBAVCODEC_VERSION), 0);
@@ -710,12 +707,12 @@ PIKE_MODULE_INIT {
   start_new_program();
   ADD_STORAGE(ffmpeg_data);
 
-  add_function("create", f_create, "function(int, int, int|void, int|void, int|void:void)", 0);
-  add_function("get_codec_info", f_codec_info, "function(:mapping)", 0);
-  add_function("decode", f_decode, "function(string:mapping|int)", 0);
-  add_function("encode", f_encode, "function(string:mapping|int)", 0);
-  add_function("set_codec_param", f_set_codec_param, "function(string,mixed:int)", 0);
-  add_function("get_codec_status", f_get_codec_status, "function(:mapping|int)", 0);
+  ADD_FUNCTION("create", f_create, tFunc(tInt tInt tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid), tVoid), 0);
+  ADD_FUNCTION("get_codec_info", f_codec_info, tFunc(tVoid,tMapping), 0);
+  ADD_FUNCTION("decode", f_decode, tFunc(tStr,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("encode", f_encode, tFunc(tStr,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("set_codec_param", f_set_codec_param, tFunc(tStr tMix,tInt), 0);
+  ADD_FUNCTION("get_codec_status", f_get_codec_status, tFunc(tVoid,tOr(tMapping,tInt)), 0);
 
   set_init_callback(init_ffmpeg_data);
   set_exit_callback(exit_ffmpeg_data);

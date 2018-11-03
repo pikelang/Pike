@@ -88,7 +88,7 @@ Q:  I'm a mad astronomer, how do I do the same conversions with
     julian day numbers?
 
 A:  Julian day numbers are used as the internal representation
-    for the day, and for most other bigger-then-time-of-day calculations.
+    for the day, and for most other bigger-than-time-of-day calculations.
      
       > Calendar.Day("julian",2454545);  
       Result: Day(Wed 19 Mar 2008)
@@ -145,17 +145,22 @@ A:  ->format_xxx();
       > Calendar.Day()->format_time();
       Result: "2001-01-10 00:00:00"
 
-    This is all the formats:
+    These are all the formats:
 
+    format_commonlog      "10/Jan/2001:10:49:57 +0100"
     format_ext_time       "Wednesday, 10 January 2001 10:49:57"
     format_ext_time_short "Wed, 10 Jan 2001 10:49:57 CET"
     format_ext_ymd        "Wednesday, 10 January 2001"
     format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
     format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
+    format_iso_short      "20010110T10:49:57"
+    format_mdy            "10/1/1"
     format_mod            "10:49"
     format_month          "2001-01"
     format_month_short    "200101"
     format_mtime          "2001-01-10 10:49"
+    format_nice           "10 Jan 2001 10:49:57"
+    format_nicez          "10 Jan 2001 10:49:57 CET"
     format_time           "2001-01-10 10:49:57"
     format_time_short     "20010110 10:49:57"
     format_time_xshort    "010110 10:49:57"
@@ -176,6 +181,10 @@ A:  ->format_xxx();
     format_ctime          "Wed Jan 10 10:49:57 2001\n"
     format_smtp           "Wed, 10 Jan 2001 10:49:57 +0100"
     format_http           "Wed, 10 Jan 2001 09:49:57 GMT"
+
+    For objects with a size, e.g. when taking the distance between two
+    time points, the format_elapsed function can also be called to get
+    something similar to "35d8:06:41.547".
 
 -------------------------------------------------------------------------  
 
@@ -240,8 +249,7 @@ Q:  Are there other calendars?
 
 A:  Yes. 
 
-    Calendar.Day is really a shortcut to Calendar.ISO.Day;
-    this is tuned in the localization.h file.
+    Calendar.Day is really a shortcut to Calendar.ISO.Day.
 
     There is currently:
 
@@ -388,10 +396,7 @@ Q:  I don't like that weeks starts on Mondays.
 
 A:  According to the ISO 8601 standard, weeks start on mondays.
 
-    If you don't like it, edit the Calendar.pmod/localization.h
-    file to use the Gregorian calendar instead of the ISO.
-
-    Or use Calendar.Gregorian.Day, etc.
+    If you don't like it, use Calendar.Gregorian.Day, etc.
 
 -------------------------------------------------------------------------  
 
@@ -424,7 +429,7 @@ A:  Events.<region>
 
 Q:  How accurate are the events information?
 
-A:  For some regions, very. For most region, not very.
+A:  For some regions, very. For most regions, not very.
 
     The first reason is lack of information of this kind on
     the web, especially sorted into useful rules (like "the
@@ -437,7 +442,7 @@ A:  For some regions, very. For most region, not very.
     events/regions file and send me <mirar+pike@mirar.org> a patch.
 
     Don't send me "the x region is all wrong!" mails without
-    telling me how it should look.
+    telling me what it should look like.
 
 -------------------------------------------------------------------------  
 
@@ -453,9 +458,6 @@ A:  No it isn't.  But:
     To make sure the right timezone is used, use the standard
     timezone names. Those aren't "CET" or "PST", but 
     "Europe/Amsterdam" or "America/Dawson".
-
-    You can tune the default timezone by editing
-    Calendar.pmod/localization.h.
 
     OR this may be in the future and you have a changed DST
     rule and uses an old Pike. Then you can either download

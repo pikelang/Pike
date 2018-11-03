@@ -138,7 +138,7 @@ class vbuffer {
   int seek(int val) {
       return fd->seek(val);
   }
-    
+
   // Peeks data from buffer
   //
   // @param n

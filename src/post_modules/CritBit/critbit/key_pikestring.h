@@ -4,7 +4,7 @@
 #include "pike_int_types.h"
 
 typedef struct pike_string * CB_NAME(string);
-typedef p_wchar2 CB_NAME(char);
+typedef unsigned INT32 CB_NAME(char);
 
 #ifdef cb_string
 # undef cb_string
@@ -15,6 +15,9 @@ typedef p_wchar2 CB_NAME(char);
 # undef cb_char
 #endif
 #define cb_char CB_NAME(char)
+
+#define hton8(x) (x)
+#define get_unaligned_be8(x) ((unsigned INT8 *)x)[0]
 
 #ifdef CB_SOURCE
 #define CB_ADD_KEY_REF(x)	do { if ((x).str) add_ref((x).str); } while(0)
@@ -68,11 +71,11 @@ static inline cb_size cb_prefix_count_wide0(const cb_string s1,
 #define PREFIX(n) do {						\
     size_t k = j/sizeof(unsigned INT ##n );				\
     for (;k < len.chars/sizeof(unsigned INT ##n );k++) {		\
-	unsigned INT ##n x = ((unsigned INT ##n *)p1)[k] 		\
-			^ ((unsigned INT ##n *)p2)[k];	    	\
+        unsigned INT ##n x = get_unaligned_be ##n (p1 + k * sizeof(unsigned INT ##n))\
+                           ^ get_unaligned_be ##n (p2 + k * sizeof(unsigned INT ##n));\
 	if (x) {						\
 	    unsigned INT32 a;						\
-	    a = clz ##n(hton ##n(x));				\
+	    a = clz ##n(x);				\
 	    start.chars = k*sizeof(unsigned INT ##n ) + a/8;	\
 	    start.bits = 24 + a % 8;				\
 	    return start;					\
@@ -133,10 +136,10 @@ static inline cb_size cb_prefix_count_widestring(const cb_string s1,
 		    s1->str, s1, s2->str, s2, t.chars, t.bits, r.chars,
 		    r.bits, len.chars, len.bits, start.chars, start.bits);
 	    fprintf(stderr, "here you die: %p, %lu\n", chrptr,
-		    r.bits/(unsigned INT64)zero);
+		    r.bits/(UINT64)zero);
 	    fprintf(stderr, "%p %p %p", zero, n1, n2);
-	    n1 = n2 = (void*)(zero = (unsigned INT64)chrptr ^ (unsigned INT64)n1
-			      ^ (unsigned INT64)n2);
+	    n1 = n2 = (void*)(zero = (UINT64)chrptr ^ (UINT64)n1
+			      ^ (UINT64)n2);
 	    fprintf(stderr, "%p %p %p %p %p %p", zero, n1, n2, rp, (void*)rp,
 		    tp, (void*)tp);
 	}

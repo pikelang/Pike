@@ -12,7 +12,6 @@
 #include "fdlib.h"
 #include "fd_control.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"
@@ -40,7 +39,7 @@ static struct data get_data( struct source *src, off_t len )
     len = s->len;
     s->s.eof = 1;
   }
-    
+
   do {
     struct pike_string *st;
 
@@ -85,9 +84,9 @@ struct source *source_block_pikestream_make( struct svalue *s,
   if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
       (find_identifier("read",s->u.object->prog)==-1) )
     return 0;
-  
-  res = malloc( sizeof( struct pf_source ) );
-  MEMSET( res, 0, sizeof( struct pf_source ) );
+
+  res = calloc( 1, sizeof( struct pf_source ) );
+  if( !res ) return NULL;
 
   res->len = len;
   res->skip = start;

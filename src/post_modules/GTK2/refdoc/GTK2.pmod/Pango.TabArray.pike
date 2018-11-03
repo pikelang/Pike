@@ -1,3 +1,5 @@
+//! A set of tab stops for laying out text that includes tab characters.
+//!
 //!
 
 inherit G.Object;

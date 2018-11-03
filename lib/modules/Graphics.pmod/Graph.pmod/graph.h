@@ -6,5 +6,3 @@
 #define GETFONT(WHATFONT) ((diagram_data->WHATFONT) || diagram_data->font)
 
 //#define BG_DEBUG 1
-
-

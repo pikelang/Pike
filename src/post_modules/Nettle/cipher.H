@@ -3,6 +3,32 @@
  * Cmod header-file acting as a template for the cipher classes.
  */
 
+#cmod_ifndef CIPHER_MODE
+
+#cmod_error "CIPHER_MODE MUST be defined!"
+
+#cmod_elif (CIPHER_MODE == STREAM_MODE)
+/* Stream cipher. */
+
+/* Base name of inherited class. */
+#cmod_define BASE_CIPHER	Cipher
+/* Number of inherits to get to the Nettle_Cipher inherit. */
+#cmod_define INHERIT_DEPTH	1
+
+#cmod_elif (CIPHER_MODE == BLOCK16_MODE)
+/* Block cipher with a 16 byte block size. */
+
+#cmod_define BASE_CIPHER	BlockCipher16
+#cmod_define INHERIT_DEPTH	(BLOCKCIPHER16_CIPHER_INHERIT + 1)
+
+#cmod_else
+/* Block cipher with a block size other than 16 bytes. */
+
+#cmod_define BASE_CIPHER	BlockCipher
+#cmod_define INHERIT_DEPTH	(BLOCKCIPHER_CIPHER_INHERIT + 1)
+
+#cmod_endif
+
 DOCSTART() @class PIKE_NAME
  *!
  *! Implementation of the PIKE_NAME cipher.
@@ -10,18 +36,18 @@ DOCSTART() @class PIKE_NAME
 DOCEND()
 PIKECLASS PIKE_NAME
 {
-  DOCSTART() @decl inherit Cipher
+  DOCSTART() @decl inherit BASE_CIPHER
   DOCEND()
-  INHERIT Cipher;
+  INHERIT cmod_CONCAT_EVAL(Nettle_, BASE_CIPHER);
 
   static const struct pike_cipher cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
     _PIKE_CIPHER(NETTLE_NAME, PIKE_NAME);
 
   INIT
     {
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     INHERIT_DEPTH, Nettle_Cipher_program);
       cipher->meta = &cmod_CONCAT_EVAL(pike_, NETTLE_NAME);
     }
 
@@ -38,9 +64,9 @@ PIKECLASS PIKE_NAME
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
-       */
+      cmod___SLASH__* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of BASE_CIPHER.
+       *cmod___SLASH__
       struct program *parent_prog = Pike_compiler->previous->new_program;
       struct object *parent_obj = Pike_compiler->previous->fake_object;
       int parent_State_fun_num =
@@ -51,9 +77,10 @@ PIKECLASS PIKE_NAME
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
+	  low_inherit(parent_State_prog, 0, parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
@@ -63,9 +90,9 @@ PIKECLASS PIKE_NAME
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->NETTLE_NAME;
     }
   }
@@ -76,3 +103,7 @@ PIKECLASS PIKE_NAME
 
 DOCSTART() @endclass PIKE_NAME
 DOCEND()
+
+#cmod_undef CIPHER_MODE
+#cmod_undef BASE_CIPHER
+#cmod_undef INHERIT_DEPTH

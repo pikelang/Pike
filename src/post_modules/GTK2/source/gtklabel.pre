@@ -41,7 +41,7 @@ void create(string|mapping(string:mixed)|void text_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *gl;
-      get_all_args("create",args,"%T",&t);
+      get_all_args(NULL,args,"%T",&t);
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);

@@ -1,12 +1,10 @@
 #pike __REAL_VERSION__
+#require constant(System._Inotify.parse_event)
 
 /* vim:syntax=lpc
  */
 
 //! @ignore
-#if !constant (System._Inotify.parse_event)
-constant this_program_does_not_exist = 1;
-#else
 inherit System._Inotify;
 //! @endignore
 
@@ -37,10 +35,10 @@ class Watch {
     void create(string name, int mask,
 		function(int, int, string, mixed ...:void) callback,
 		array extra) {
-	this_program::name = name;
-	this_program::mask = mask;
-	this_program::callback = callback;
-	this_program::extra = extra;
+	this::name = name;
+	this::mask = mask;
+	this::callback = callback;
+	this::extra = extra;
     }
 }
 
@@ -50,11 +48,10 @@ class DirWatch {
     void handle_event(int wd, int mask, int cookie,
 		      int|string name) {
 	if (name) {
-	    name = (has_suffix(this_program::name, "/")
-		    ? this_program::name
-		    : (this_program::name+"/")) + name;
+	    name = (has_suffix(this::name, "/")
+		    ? this::name : (this::name+"/")) + name;
 	} else {
-	    name = this_program::name;
+	    name = this::name;
 	}
 
 	callback(mask, cookie, name, @extra);
@@ -66,32 +63,8 @@ class FileWatch {
 
     void handle_event(int wd, int mask, int cookie,
 		      int|string name) {
-	callback(mask, cookie, this_program::name, @extra);
+	callback(mask, cookie, this::name, @extra);
     }
-}
-
-// The reason for this extra indirection is to remove
-// cyclic references from the Instance class to make
-// sure inotify instances are destructed when they go out of
-// external references. This would not be happening otherwise
-// since File objects still have references from the backend.
-function parse_fun(mapping watches) {
-    void parse(mixed id, string data) {
-	while (sizeof(data)) {
-	    array a = parse_event(data);
-	    object watch;
-
-	    if (watch = watches[a[0]]) {
-		if (a[1] == IN_IGNORED) {
-		    m_delete(watches, a[0]);
-		}
-		watch->handle_event(a[0], a[1], a[2], a[3]);
-	    }
-
-	    data = data[a[4]..];
-	}
-    };
-    return parse;
 }
 
 //! More convenient interface to inotify(7). Automatically reads events
@@ -104,16 +77,24 @@ function parse_fun(mapping watches) {
 //! @note
 //!	The number of inotify instances is limited by ulimits.
 class Instance {
-    protected object instance;
-    protected Stdio.File file;
+    inherit _Instance;
     protected mapping(int:object) watches = ([]);
 
+    void event_callback(int wd, int event, int cookie, string path)
+    {
+	Watch watch = watches[wd];
+	if (watch) {
+	    if (event == IN_IGNORED) {
+		m_delete(watches, wd);
+		werror("Watch %O (wd: %d) deleted.\n", watch, wd);
+	    }
+	    watch->handle_event(wd, event, cookie, path);
+	}
+    }
+
     void create() {
-	instance = _Instance();
-	file = Stdio.File();
-	file->assign(instance->fd());
-	file->set_nonblocking();
-	file->set_read_callback(parse_fun(watches));
+	set_event_callback(event_callback);
+	set_nonblocking();
     }
 
      //! Add a watch for a certain file and a set of events specified by
@@ -138,8 +119,9 @@ class Instance {
      //!
     int add_watch(string filename, int mask,
 		  function(int, int, string, mixed ...:void) callback,
-		  mixed ... extra) {
-	int wd = instance->add_watch(filename, mask);
+		  mixed ... extra)
+    {
+	int wd = ::add_watch(filename, mask);
 
 //! @ignore
 # if constant(@module@.IN_MASK_ADD)
@@ -160,25 +142,4 @@ class Instance {
 
 	return wd;
     }
-
-    //! Remove the watch associated with the watch descriptor @expr{wd@}.
-    void rm_watch(int wd) {
-	if (!has_index(watches, wd)) {
-	    error("Watch %d does not exist.\n", wd);
-	}
-
-	m_delete(watches, wd);
-	instance->rm_watch(wd);
-    }
-
-    void destroy() {
-	file->set_read_callback(0);
-	/*
-	 * closing the last copy of an inotify fd currently takes a long time (~100ms).
-	 * make sure to close the file first, to allow releasing the interpreter lock
-	 * during the last close call in the instance EXIT handler.
-	 */
-	file->close();
-    }
 }
-#endif

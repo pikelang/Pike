@@ -12,17 +12,13 @@
  * Encoder created May 2010 by Martin Stjernholm.
  */
 
-#include "array.h"
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
 #include "module.h"
+#include "cyclic.h"
+#include "interpret.h"
 #include "pike_error.h"
 #include "pike_float.h"
 #include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
+#include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static
 
@@ -32,18 +28,21 @@ DECLARATIONS
 
 /*! @module JSON */
 
-#define ASCII_ONLY 1
-#define HUMAN_READABLE 2
-#define PIKE_CANONICAL 4
+#define JSON_ASCII_ONLY     (1<<0)
+#define JSON_HUMAN_READABLE (1<<1)
+#define JSON_PIKE_CANONICAL (1<<2)
 
-#define JSON_UTF8	1
-#define JSON_ERROR	2
-#define JSON_VALIDATE	4
+#define JSON_UTF8	    (1<<3)
+#define JSON_ERROR	    (1<<4)
+#define JSON_VALIDATE	    (1<<5)
+#define JSON_FIRST_VALUE    (1<<6)
+#define JSON_NO_OBJ         (1<<7)
 
 static char *err_msg;
 
-#define PUSH_SPECIAL(X) do {if (!(state->flags&JSON_VALIDATE)) {	\
-    push_object (get_val_##X());					\
+#define PUSH_SPECIAL(X,Y) do {if (!(state->flags&JSON_VALIDATE)) {	\
+      if (state->flags&JSON_NO_OBJ) { Y; }                              \
+      else  push_object (get_val_##X());                                \
 } c++; if (state->level > 0) return p+1; } while(0)
 
 #define PARSE(X, FPC) do {						\
@@ -86,7 +85,7 @@ static void json_escape_string (struct string_builder *buf, int flags,
       Pike_error ("Cannot json encode non-unicode char "
 		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
     if (c == '"' || c == '\\' || c <= 0x1f ||
-	(c >= 0x7f && flags & ASCII_ONLY) ||
+        (c >= 0x7f && flags & JSON_ASCII_ONLY) ||
 	/* Let's escape U+2028 and U+2029 as well for compat with
 	 * parsers built in javascript - see
 	 * http://timelessrepo.com/json-isnt-a-javascript-subset. */
@@ -263,8 +262,11 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
     }
 
     case PIKE_T_INT:
-      string_builder_append_integer (&ctx->buf, val->u.integer,
-				     10, APPEND_SIGNED, 0, 0);
+      if(SUBTYPEOF(*val))
+          string_builder_strcat(&ctx->buf,"null");
+      else
+          string_builder_append_integer (&ctx->buf, val->u.integer,
+                                         10, APPEND_SIGNED, 0, 0);
       break;
 
     case PIKE_T_FLOAT: {
@@ -318,7 +320,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       string_builder_putchar (&ctx->buf, '{');
       check_mapping_for_destruct (val->u.mapping);
       if (m_sizeof (val->u.mapping)) {
-	if (ctx->flags & PIKE_CANONICAL)
+        if (ctx->flags & JSON_PIKE_CANONICAL)
 	  encode_mapcont_canon (ctx, val->u.mapping);
 	else
 	  encode_mapcont (ctx, val->u.mapping);
@@ -369,6 +371,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	break;
       }
     }
+    /* FALLTHRU */
 
     default:
       Pike_error ("Cannot json encode %s.\n", get_name_of_type (TYPEOF(*val)));
@@ -391,7 +394,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   be escaped. The flag value is 1.
  *!
  *!   Characters above U+FFFF are encoded using escaped surrogate
- *!   pairs, as per RFC 4627.
+ *!   pairs, as per @rfc{4627@}.
  *!
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result easier on human
@@ -413,6 +416,18 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   will be different from this one. In that case a separate flag
  *!   has to be added so this one doesn't change - hence the name
  *!   @[PIKE_CANONICAL].
+ *! @enddl
+ */
+
+/*! @decl constant NO_OBJECTS
+ *!
+ *! Bit field flags for use with @[decode]:
+ *!
+ *! @dl
+ *! @item Standards.JSON.NO_OBJECTS
+ *!   Do not decode @expr{"true"@}, @expr{"false"@} and @expr{"null"@}
+ *!   into @[Val.true], @[Val.false] and @[Val.null], but instead
+ *!   @expr{1@}, @expr{0@} and @expr{UNDEFINED@}.
  *! @enddl
  */
 
@@ -451,13 +466,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *! @[escape_string]
  */
 PIKEFUN string encode (int|float|string|array|mapping|object val,
-		       void|int flags, void|function|object|program|string callback)
+                       void|int flags, void|function|object|program|string callback,
+                       void|int base_indent )
   optflags OPT_TRY_OPTIMIZE;
 {
   struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
-  ctx.indent = (ctx.flags & HUMAN_READABLE ? 0 : -1);
+  ctx.indent = (ctx.flags & JSON_HUMAN_READABLE ? base_indent ? base_indent->u.integer : 0 : -1);
   ctx.callback = callback;
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
@@ -527,6 +543,24 @@ void low_validate(struct pike_string *data, int flags) {
     return;
 }
 
+ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
+{
+    ptrdiff_t stop;
+    struct parser_state state;
+
+    err_msg = NULL;
+    state.flags = flags;
+    state.level = 0;
+    stop = _parse_JSON(data, 0, len, &state );
+    if (state.flags & JSON_ERROR )
+    {
+        if( err_out )
+            *err_out = err_msg;
+        return -stop;
+    }
+    return stop;
+}
+
 void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
@@ -560,7 +594,7 @@ void low_decode(struct pike_string *data, int flags) {
 /*! @decl int validate(string s)
  *!
  *! Checks if a string is valid JSON.
- *! 
+ *!
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
@@ -570,22 +604,29 @@ PIKEFUN int validate(string data) {
     low_validate(data, 0);
 }
 
-/*! @decl array|mapping|string|float|int|object decode(string s)
+/*! @decl array|mapping|string|float|int|object decode(string s, void|int flags)
  *!
  *! Decodes a JSON string.
- *! 
+ *!
+ *! @param flags
+ *!   The flag @[NO_OBJECTS] can be used to output @expr{1@}, @expr{0@}
+ *!   and @expr{UNDEFINED@} instead of @[Val.true], @[Val.false] and
+ *!   @[Val.null].
+ *!
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.
  */
-PIKEFUN array|mapping|string|float|int|object decode(string data) {
-    low_decode(data, 0);
+PIKEFUN array|mapping|string|float|int|object decode(string data,
+                                                     void|int flags) {
+  int f = (flags ? flags->u.integer : 0) & (JSON_UTF8|JSON_NO_OBJ);
+  low_decode(data, f);
 }
 
 /*! @decl int validate_utf8(string s)
  *!
  *! Checks if a string is valid utf8 encoded JSON.
- *! 
+ *!
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
@@ -603,7 +644,7 @@ PIKEFUN int validate_utf8(string data) {
  *!
  *! Decodes an utf8 encoded JSON string.
  *! Should give the same result as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
- *! 
+ *!
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.
@@ -612,7 +653,7 @@ PIKEFUN array|mapping|string|float|int|object decode_utf8(string data) {
     if (data->size_shift) {
 	ref_push_string(data);
 	push_int(0);
-	push_text("Strings wider than 1 byte are NOT valid UTF-8.");
+	push_static_text("Strings wider than 1 byte are NOT valid UTF-8.");
 	apply (Pike_fp->current_object, "decode_error", 3);
     }
 
@@ -625,11 +666,14 @@ PIKEFUN array|mapping|string|float|int|object decode_utf8(string data) {
 
 PIKE_MODULE_INIT
 {
-  add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
-  add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
-  add_integer_constant ("PIKE_CANONICAL", PIKE_CANONICAL, 0);
+  add_integer_constant ("ASCII_ONLY", JSON_ASCII_ONLY, 0);
+  add_integer_constant ("HUMAN_READABLE", JSON_HUMAN_READABLE, 0);
+  add_integer_constant ("PIKE_CANONICAL", JSON_PIKE_CANONICAL, 0);
+  add_integer_constant ("NO_OBJECTS", JSON_NO_OBJ, 0);
 
   INIT;
+
+  PIKE_MODULE_EXPORT(Standards.JSON, parse_json_pcharp );
 }
 
 PIKE_MODULE_EXIT

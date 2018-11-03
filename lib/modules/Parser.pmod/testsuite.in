@@ -3,14 +3,29 @@ START_MARKER
 define(test_pike_token,[[
 test_equal(Parser.Pike.low_split($1),({$1}))
 ]])
+define(not_pike_token,[[
+test_equal(Parser.Pike.low_split($1),({}))
+]])
 
 test_equal(Parser.Pike.low_split(""),({}))
 test_pike_token("// 256 tokens")
 test_pike_token("#\"\"")
+not_pike_token("#\" ")
 test_pike_token("# \"\"")
 test_pike_token("#\"\\\"\"")
 test_pike_token("#\"\\\\\"")
 test_pike_token("#\" \"")
+test_pike_token("#{ #}")
+test_pike_token("# { #}")
+not_pike_token("#{ ")
+not_pike_token("#{ #")
+not_pike_token("#{ #]")
+test_pike_token("#( #)")
+test_pike_token("# ( #)")
+not_pike_token("#\x28 #}")
+test_pike_token("#[ #]")
+test_pike_token("# [ #]")
+not_pike_token("#[ #}")
 test_pike_token("#string\"\"")
 test_pike_token("# string\"\"")
 test_pike_token("# string \"\"")
@@ -140,9 +155,69 @@ test_pike_token("'\\ '")
 test_pike_token("\"\"")
 test_pike_token("\" \"")
 test_pike_token("\"\\\"\"")
+test_pike_token("FOO")
+test_pike_token("FOO1_2")
+test_pike_token("`FOO")
+test_pike_token("`FOO1_2")
 
 test_equal( Parser.Pike.split("\n// x\n"), ({ "\n", "// x", "\n\n" }) )
 test_equal( Parser.Pike.split("\n// x"), ({ "\n", "// x", "\n" }) )
+
+test_any_equal([[
+string data = #"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");";
+array a = Parser.C.split(data);
+add_constant("split_data", a);
+return a;
+]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
+" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
+"(", "\"%d //\"", ")", ";", "\n" }))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data)->text;
+]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
+" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
+"(", "\"%d //\"", ")", ";", "\n" }))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data)->line;
+]], ({1})*5 + ({2})*16 + ({3})*6))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data,"a")->file;
+]], "a"*27/1)
+
+test_any_equal([[
+return Parser.C.hide_whitespaces(Parser.C.tokenize(split_data))->text;
+]], ({ "int", "i", ";", "for", "(", "i", "=", "0", ";",
+"i", "<", "7", ";", "i", "++", ")", "printf",
+"(", "\"%d //\"", ")", ";" }))
+
+test_any_equal([[
+return Parser.C.hide_whitespaces(Parser.C.tokenize(Parser.C.split("a \r\n\t\x2000\x2001 b")))->text;
+]], "ab"/1)
+
+test_any_equal([[
+return Parser.C.simple_reconstitute(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
+]],#"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_any_equal([[
+return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
+]],#"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_any_equal([[
+return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data, "a")));
+]],#"#line 1 \"a\"
+int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_do(add_constant("split_data"))
 
 test_equal([[
   Parser.Tabular(#"\

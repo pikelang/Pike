@@ -8,33 +8,30 @@
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
  *
- * Henrik Grubbström 1999-03-04
+ * Henrik Grubbstrï¿½m 1999-03-04
  */
 
 #ifdef __MINGW32__
 #error Smartlink binary does not support Mingw32.
 #endif
 
+#ifdef PIKE_CORE
+#include "machine.h"
+#else
 /* NOTE: Use confdefs.h and not machine.h, since we are compiled by configure
  */
 #include "confdefs.h"
+#endif
 
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif /* HAVE_STDLIB_H */
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif /* HAVE_STRING_H */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -92,6 +89,13 @@ int main(int argc, char **argv)
   char *full_rpath;
   char **new_argv;
   char *ld_lib_path;
+  
+#if defined(USE_Wl_rpath_darwin)
+  char **darwin_argv;
+  char * darwin_arg;
+  int darwin_argc = 0;
+#endif
+
   int new_argc;
   int n32 = 0;
   int linking = 1;	/* Maybe */
@@ -110,7 +114,7 @@ int main(int argc, char **argv)
 	    argv[0]);
     exit(0);
   }
-  
+
   if (putenv("LD_PXDB=/dev/null")) {
     fatal("Out of memory (1)!\n");
   }
@@ -153,6 +157,14 @@ int main(int argc, char **argv)
   if (!(new_argv = malloc(sizeof(char *)*(argc + 150)))) {
     fatal("Out of memory (5)!\n");
   }
+  
+#if defined(USE_Wl_rpath_darwin)
+  /* 50 rpath args should be enough... */
+    if (!(darwin_argv = malloc(sizeof(char *)*(argc + 50)))) {
+    fatal("Out of memory (6)!\n");
+  }
+#endif
+
 
   new_argc = 0;
   full_rpath = rpath;
@@ -188,21 +200,41 @@ int main(int argc, char **argv)
 	      new_argv[new_argc++] = argv[i];
 	      new_argv[new_argc++] = argv[i+1];
 	    }
+            i++;
 	  }
 	} else {
 	  if (add_path(lpath, argv[i]+2)) {
 	    new_argv[new_argc++] = argv[i];
 	  }
 	}
+        continue;
       } else if (argv[i][1] == 'R') {
 	/* -R */
 	if (!argv[i][2]) {
 	  i++;
 	  if (i < argc) {
 	    rpath_in_use |= add_path(rpath, argv[i]);
+#if defined(USE_Wl_rpath_darwin)
+           if(!(darwin_arg = malloc(sizeof(char *) * (strlen(argv[i]) + 12)))) /*  path lengh plus length of -Wl,-rpath, */
+           {
+             fatal("Out of memory (7)!\n");
+           }
+           darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
+           darwin_arg = strcat(darwin_arg, argv[i]);
+           darwin_argv[darwin_argc++] = darwin_arg;
+#endif
 	  }
 	} else {
 	  rpath_in_use |= add_path(rpath, argv[i] + 2);
+#if defined(USE_Wl_rpath_darwin)
+          if(!(darwin_arg = malloc(sizeof(char *) * (strlen(argv[i] + 2) + 12)))) /*  path lengh plus length of -Wl,-rpath, */
+          {
+            fatal("Out of memory (7.5)!\n");
+          }
+          darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
+          darwin_arg = strcat(darwin_arg, argv[i] + 2);
+          darwin_argv[darwin_argc++] = darwin_arg;
+#endif
 	}
 	continue;
       } else if ((argv[i][1] == 'n') && (argv[i][2] == '3') &&
@@ -258,7 +290,7 @@ int main(int argc, char **argv)
   }
 
 #ifndef USE_Wl
-  /* This code strips '-Wl,' from arguments if the 
+  /* This code strips '-Wl,' from arguments if the
    * linker is '*ld'
    */
   if(linking)
@@ -300,7 +332,7 @@ int main(int argc, char **argv)
   if (ld_lib_path) {
     char *p;
 
-    while (p = strchr(ld_lib_path, ':')) {
+    while ((p = strchr(ld_lib_path, ':'))) {
       *p = 0;
       rpath_in_use |= add_path(rpath, ld_lib_path);
       *p = ':';		/* Make sure LD_LIBRARY_PATH isn't modified */
@@ -340,6 +372,9 @@ int main(int argc, char **argv)
     }
 #elif defined(USE_R) || defined(USE_Wl_R)
     new_argv[new_argc++] = full_rpath;
+#elif defined(USE_Wl_rpath_darwin)
+   for(int darwin_argc_i = 0; darwin_argc_i < darwin_argc; darwin_argc_i++)
+    new_argv[new_argc++] = darwin_argv[darwin_argc_i];
 #elif defined(USE_LD_LIBRARY_PATH)
     if (putenv(full_rpath)) {
       fatal("Out of memory (6)!");
@@ -387,15 +422,15 @@ int main(int argc, char **argv)
     }
   }
 
-#if 0	/* Enabling this messes with the definition of EOPNOTSUP */
-#ifdef USE_OSX_TWOLEVEL_NAMESPACE
-  /* Mac OS X needs to be 10.3 or better for ld to accept
-     "-undefined dynamic_lookup" */
-  if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
-    fatal("Out of memory (8)!\n");
+  if (getenv("SMARTLINK_DEBUG")) {
+    int i = 0;
+    fprintf(stderr, "SMARTLINK:");
+    while (new_argv[i]) {
+      fprintf(stderr, " %s", new_argv[i]);
+      i++;
+    }
+    fprintf(stderr, "\n");
   }
-#endif
-#endif
 
   execv(argv[1], new_argv);
   fprintf(stderr, "%s: exec of %s failed!\n", argv[0], argv[1]);

@@ -178,10 +178,9 @@ do_dump: {
 	if (array(string) dirlist = get_dir (fakeroot (file))) {
 	  if (!quiet) logmsg ("Is a directory (dumping recursively).\n");
 	  foreach (dirlist, string subfile)
-	    if (subfile != "CVS" &&
-		(has_suffix (subfile, ".pike") ||
-		 has_suffix (subfile, ".pmod") ||
-		 Stdio.is_dir (file + "/" + subfile)))
+            if (has_suffix (subfile, ".pike") ||
+                has_suffix (subfile, ".pmod") ||
+                Stdio.is_dir (file + "/" + subfile))
 	      if (!dumpit (combine_path (file, subfile),
 			   combine_path (outfile, subfile)))
 		return 0;
@@ -189,9 +188,9 @@ do_dump: {
 	  break do_dump;
 	}
 	else {
-	  logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
-		  strerror (errno()));
-	  break do_dump;
+          logmsg("Is an unreadable directory (not dumped recursively): %s.\n",
+                 strerror(errno()));
+          break do_dump;
 	}
       }
       else if (!s->isreg)
@@ -230,9 +229,9 @@ do_dump: {
 	  string dir = combine_path (outfile, "..");
 	  if (!Stdio.is_dir (fakeroot(dir)))
 	    if (!Stdio.mkdirhier (fakeroot(dir))) {
-	      logmsg ("Failed to create target directory %O: %s.\n",
-		      dir, strerror (errno()));
-	      break do_dump;
+              logmsg ("Failed to create target directory %O: %s.\n", dir,
+                      strerror(errno()));
+              break do_dump;
 	    }
 
 	  Stdio.write_file(fakeroot(outfile)+".o",s);
@@ -252,6 +251,12 @@ do_dump: {
 		 p->dont_dump_program ? "dont_dump_program" :
 		 "this_program_does_not_exist");
       }
+    }
+
+    else if (arrayp(err) && err[0] == "Required feature missing.\n") {
+	ok = 1;			// Don't count this as a failure.
+	if(!quiet)
+	  logmsg("Not dumped due to missing feature.\n");
     }
 
     else {
@@ -319,13 +324,14 @@ void setup_logging(void|string file) {
 
 int pos;
 array files;
+int result;
 
 void dump_files() {
 
   if(pos>=sizeof(files)) {
     if (update_stamp)
       Stdio.write_file (update_stamp, version());
-    exit(0);
+    exit(result);
   }
 
 #if constant(alarm)
@@ -346,8 +352,10 @@ void dump_files() {
     outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
   }
 
-  if (!dumpit(file, outfile) && !nt_install)
+  if (!dumpit(file, outfile) && !nt_install) {
+    result = 1;
     pos = sizeof(files); // exit
+  }
 
 #if constant(alarm)
   alarm(0);

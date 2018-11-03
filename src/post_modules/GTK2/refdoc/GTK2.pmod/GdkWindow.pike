@@ -53,6 +53,14 @@ mapping get_property( GDK2.Atom atom, int|void offset, int|void delete_when_done
 //!
 //!
 
+GDK2.Window grab_input_focus( );
+//! Forcibly grab the input focus.
+//!
+//! Useful for override-redirect windows in games. Note that the only
+//! way to get rid of the focus is to close the window, be careful.
+//!
+//!
+
 int is_viewable( );
 //! Return 1 if the window is mapped.
 //!

@@ -26,7 +26,7 @@ void create(string|mapping|void label_or_props, ?int mnemonic)
       GtkWidget *gcb;
       INT_TYPE nem=0;
 
-      get_all_args("create",args,"%T.%i",&t,&nem);
+      get_all_args(NULL,args,"%T.%i",&t,&nem);
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);

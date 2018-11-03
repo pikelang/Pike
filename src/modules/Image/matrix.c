@@ -60,26 +60,7 @@ static void chrono(char *x)
 
 /***************** internals ***********************************/
 
-#define apply_alpha(x,y,alpha) \
-   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
-
-#define set_rgb_group_alpha(dest,src,alpha) \
-   ((dest).r=apply_alpha((dest).r,(src).r,alpha), \
-    (dest).g=apply_alpha((dest).g,(src).g,alpha), \
-    (dest).b=apply_alpha((dest).b,(src).b,alpha))
-
-#define pixel(_img,x,y) ((_img)->img[(x)+(y)*(_img)->xsize])
-
-#define setpixel(x,y) \
-   (THIS->alpha? \
-    set_rgb_group_alpha(THIS->img[(x)+(y)*THIS->xsize],THIS->rgb,THIS->alpha): \
-    ((pixel(THIS,x,y)=THIS->rgb),0))
-
-#define setpixel_test(x,y) \
-   (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
-    0:(setpixel(x,y),0))
-
-static INLINE int getrgb(struct image *img,
+static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
@@ -110,25 +91,10 @@ static INLINE int getrgb(struct image *img,
    return 3;
 }
 
-
-static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
-{
-   INT32 i;
-   if (args-args_start<3) return 0;
-   for (i=0; i<3; i++)
-      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
-         Pike_error("Illegal r,g,b argument to %s\n",name);
-   rgb->r=sp[-args+args_start].u.integer;
-   rgb->g=sp[1-args+args_start].u.integer;
-   rgb->b=sp[2-args+args_start].u.integer;
-   return 1;
-}
-
 /** end internals **/
 
 
-#define decimals(x) ((x)-DOUBLE_TO_INT(x))
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
+#define decimals(x) ((x)-(int)(x))
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r += (float)((src)->r*(factor)), \
     (dest)->g += (float)((src)->g*(factor)), \
@@ -136,7 +102,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
 
-static INLINE void scale_add_line(double py,double dx,
+static inline void scale_add_line(double py,double dx,
 				  rgbd_group *new,INT32 yn,INT32 newx,
 				  rgb_group *img,INT32 y,INT32 xsize)
 {
@@ -146,12 +112,12 @@ static INLINE void scale_add_line(double py,double dx,
    img=img+y*xsize;
    for (x=0,xn=0; x<xsize; img++,x++,xn+=dx)
    {
-      if (DOUBLE_TO_INT(xn) < DOUBLE_TO_INT(xn+dx))
+     if ((int)xn < (int)(xn+dx))
       {
 	 xndxd=py*(1.0-decimals(xn));
 	 if (xndxd)
 	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
-	 if (dx>=1.0 && (xd = DOUBLE_TO_INT(xn+dx) - DOUBLE_TO_INT(xn))>1)
+         if (dx>=1.0 && (xd = (int)(xn+dx) - (int)xn)>1)
             while (--xd)
 	    {
 	       new++;
@@ -196,38 +162,38 @@ CHRONO("scale begin");
 
    for (y=0,yn=0; y<source->ysize; y++,yn+=dy)
    {
-      if (DOUBLE_TO_INT(yn)<DOUBLE_TO_INT(yn+dy))
+     if ((int)yn<(int)(yn+dy))
       {
 	 if (1.0-decimals(yn))
 	    scale_add_line((1.0-decimals(yn)),dx,
-			   new, DOUBLE_TO_INT(yn), newx,
+                           new, (int)yn, newx,
 			   source->img, y, source->xsize);
-	 if ((yd = DOUBLE_TO_INT(yn+dy) - DOUBLE_TO_INT(yn))>1)
+         if ((yd = (int)(yn+dy) - (int)yn)>1)
             while (--yd)
-   	       scale_add_line(1.0, dx, new, DOUBLE_TO_INT(yn+yd), newx,
+              scale_add_line(1.0, dx, new, (int)(yn+yd), newx,
 			      source->img, y, source->xsize);
 	 if (decimals(yn+dy))
-	    scale_add_line((decimals(yn+dy)), dx, new, DOUBLE_TO_INT(yn+dy),
+           scale_add_line((decimals(yn+dy)), dx, new, (int)(yn+dy),
 			   newx, source->img, y, source->xsize);
       }
       else
-	 scale_add_line(dy, dx, new, DOUBLE_TO_INT(yn), newx,
-			source->img, y, source->xsize);
+        scale_add_line(dy, dx, new, (int)yn, newx,
+                       source->img, y, source->xsize);
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
-   if (d) 
+   if (d)
    {
 
 CHRONO("transfer begin");
 
      s=new;
      y=newx*newy;
-     while (y--) 
+     while (y--)
      {
-       d->r = MINIMUM(DOUBLE_TO_INT(s->r+0.5),255);
-       d->g = MINIMUM(DOUBLE_TO_INT(s->g+0.5),255);
-       d->b = MINIMUM(DOUBLE_TO_INT(s->b+0.5),255);
+       d->r = MINIMUM((int)(s->r+0.5),255);
+       d->g = MINIMUM((int)(s->g+0.5),255);
+       d->b = MINIMUM((int)(s->b+0.5),255);
        d++; s++;
      }
 
@@ -240,7 +206,7 @@ CHRONO("scale end");
 
    THREADS_DISALLOW();
    if (!d)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+     out_of_memory_error(NULL, -1, 0);
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -260,7 +226,7 @@ void img_scale2(struct image *dest, struct image *source)
    new=xalloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
 
    THREADS_ALLOW();
-   MEMSET(new,0,newx*newy*sizeof(rgb_group));
+   memset(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
    dest->xsize=newx;
@@ -299,7 +265,7 @@ void img_scale2(struct image *dest, struct image *source)
        pixel(dest,newx,y).g = (COLORTYPE)
 	 (((INT32) pixel(source,2*newx,2*y+0).g+
 	   (INT32) pixel(source,2*newx,2*y+1).g) >> 1);
-       pixel(dest,newx,y).g = (COLORTYPE)
+       pixel(dest,newx,y).b = (COLORTYPE)
 	 (((INT32) pixel(source,2*newx,2*y+0).b+
 	   (INT32) pixel(source,2*newx,2*y+1).b) >> 1);
      }
@@ -383,8 +349,8 @@ void image_scale(INT32 args)
             return;
          }
 	 img_scale(newimg, THIS,
-		   DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
-		   DOUBLE_TO_INT(THIS->ysize*sp[-args].u.float_number));
+		   (int)(THIS->xsize*sp[-args].u.float_number),
+		   (int)(THIS->ysize*sp[-args].u.float_number));
       }
    }
    else if (args>=2 &&
@@ -409,8 +375,8 @@ void image_scale(INT32 args)
 	    TYPEOF(sp[-args]) == T_FLOAT &&
 	    TYPEOF(sp[1-args]) == T_FLOAT)
       img_scale(newimg, THIS,
-		DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
-		DOUBLE_TO_INT(THIS->ysize*sp[1-args].u.float_number));
+		(int)(THIS->xsize*sp[-args].u.float_number),
+		(int)(THIS->ysize*sp[1-args].u.float_number));
    else if (args>=2 &&
 	    TYPEOF(sp[-args]) == T_INT &&
 	    TYPEOF(sp[1-args]) == T_INT)
@@ -420,8 +386,8 @@ void image_scale(INT32 args)
    else
    {
       free_object(o);
-      bad_arg_error("image->scale",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->scale()\n");
+      bad_arg_error("scale",args,0,"",sp-args,
+                    "Bad arguments to scale.\n");
    }
    pop_n_elems(args);
    push_object(o);
@@ -453,8 +419,7 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -492,8 +457,7 @@ static void img_cw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   id->img=xalloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD);
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;
@@ -518,8 +482,7 @@ void img_ccw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   id->img=xalloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD);
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;
@@ -562,8 +525,7 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -616,8 +578,7 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -667,8 +628,7 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -698,7 +658,7 @@ void image_mirrory(INT32 args)
 }
 
 
-#define ROUND(X) (DOUBLE_TO_COLORTYPE((X)+0.5))
+#define ROUND(X) ((COLORTYPE)((X)+0.5))
 
 static void img_skewx(struct image *src,
 		      struct image *dest,
@@ -712,9 +672,9 @@ static void img_skewx(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0 = -diff;
+      dest->xsize = (int)(ceil(-diff)) + src->xsize, x0 = -diff;
    else
-      dest->xsize = DOUBLE_TO_INT(ceil(diff)) + src->xsize, x0=0;
+      dest->xsize = (int)(ceil(diff)) + src->xsize, x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
 
@@ -739,7 +699,7 @@ static void img_skewx(struct image *src,
       int j;
 
       if (xpn) rgb=*s;
-      for (j = x0i = DOUBLE_TO_INT((x0f = floor(x0))); j--;) *(d++)=rgb;
+      for (j = x0i = (int)((x0f = floor(x0))); j--;) *(d++)=rgb;
       if (!(xm=(x0-x0f)))
       {
 	 for (j=len; j--;) *(d++)=*(s++);
@@ -800,9 +760,9 @@ static void img_skewy(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 = -diff;
+      dest->ysize = (int)(ceil(-diff)) + src->ysize, y0 = -diff;
    else
-      dest->ysize = DOUBLE_TO_INT(ceil(diff)) + src->ysize, y0 = 0;
+      dest->ysize = (int)(ceil(diff)) + src->ysize, y0 = 0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
@@ -827,7 +787,7 @@ CHRONO("skewy begin\n");
       int j;
 
       if (xpn) rgb=*s;
-      for (j = y0i = DOUBLE_TO_INT((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
+      for (j = y0i = (int)((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
       if (!(ym=(y0-y0f)))
       {
 	 for (j=len; j--;) *d=*s,d+=xsz,s+=xsz;
@@ -901,8 +861,8 @@ CHRONO("skewy end\n");
 **! returns the new image object
 **! arg int x
 **!    the number of pixels
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **! arg float yfactor
 **!    best described as: x=yfactor*this->ysize()
@@ -918,20 +878,20 @@ void image_skewx(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewx",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args])== T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx",args,0,"",sp-args,
+                    "Bad arguments to skewx.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewx"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewx(THIS,(struct image*)(o->storage),diff,0);
@@ -962,8 +922,8 @@ void image_skewx(INT32 args)
 **!	<td>->skewy_expand(15);</td>
 **!	</tr></table>
 **!
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **! returns the new image object
 **! arg int y
@@ -982,20 +942,20 @@ void image_skewy(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewy",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewy",args,0,"",sp-args,
+                    "Bad arguments to skewy.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewy"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewy(THIS,(struct image*)(o->storage),diff,0);
@@ -1010,20 +970,20 @@ void image_skewx_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewx_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx_expand",args,0,"",sp-args,
+                    "Bad arguments to skewx_expand.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewx_expand"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewx(THIS,(struct image*)(o->storage),diff,1);
@@ -1038,20 +998,20 @@ void image_skewy_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewy_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx_expand",args,0,"",sp-args,
+                    "Bad arguments to skewy_expand.\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"skewy_expand"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewy(THIS,(struct image*)(o->storage),diff,1);
@@ -1069,22 +1029,21 @@ void img_rotate(INT32 args,int xpn)
    struct image *dest,d0,dest2;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("rotate",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       angle = sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       angle = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->rotate()\n");
+      bad_arg_error("rotate",args,0,"",sp-args,
+                    "Bad arguments to rotate.\n");
 
-   if (!THIS->img) 
-      Pike_error("Called Image.Image object is not initialized\n");;
+   CHECK_INIT();
 
    dest2.img=d0.img=NULL;
 
-   if (angle<-135) angle-=360*DOUBLE_TO_INT((angle-225)/360);
-   else if (angle>225) angle-=360*DOUBLE_TO_INT((angle+135)/360);
+   if (angle<-135) angle-=360*(int)((angle-225)/360);
+   else if (angle>225) angle-=360*(int)((angle+135)/360);
    if (angle<-45)
    {
       img_ccw(THIS,&dest2);
@@ -1108,7 +1067,7 @@ void img_rotate(INT32 args,int xpn)
    o=clone_object(image_program,0);
 
    dest=(struct image*)(o->storage);
-   if (!getrgb(dest,1,args,"image->rotate()"))
+   if (!getrgb(dest,1,args,"rotate"))
       (dest)->rgb=THIS->rgb;
    d0.rgb=dest2.rgb=dest->rgb;
 
@@ -1128,7 +1087,7 @@ void img_rotate(INT32 args,int xpn)
 **! method object rotate(int|float angle,int r,int g,int b)
 **! method object rotate_expand(int|float angle)
 **! method object rotate_expand(int|float angle,int r,int g,int b)
-**!	Rotates an image a certain amount of degrees (360° is 
+**!	Rotates an image a certain amount of degrees (360° is
 **!	a complete rotation) counter-clockwise:
 **!
 **!	<table><tr valign=center>
@@ -1141,8 +1100,8 @@ void img_rotate(INT32 args,int xpn)
 **!	<td>->rotate_expand(15);</td>
 **!	</tr></table>
 **!
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **!
 **!	This rotate uses the <ref>skewx</ref>() and <ref>skewy</ref>() functions.
@@ -1178,15 +1137,15 @@ void img_translate(INT32 args,int expand)
 
    if (TYPEOF(sp[-args]) == T_FLOAT) xt=sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT) xt=sp[-args].u.integer;
-   else bad_arg_error("image->translate",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->translate()\n");
+   else bad_arg_error("translate",args,1,"",sp+1-1-args,
+                      "Bad argument 1 to translate.\n");
 
    if (TYPEOF(sp[1-args]) == T_FLOAT) yt=sp[1-args].u.float_number;
    else if (TYPEOF(sp[1-args]) == T_INT) yt=sp[1-args].u.integer;
-   else bad_arg_error("image->translate",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to image->translate()\n");
+   else bad_arg_error("translate",args,2,"",sp+2-1-args,
+                      "Bad argument 2 to translate.\n");
 
-   getrgb(THIS,2,args,"image->translate()\n");
+   getrgb(THIS,2,args,"translate");
 
    xt-=floor(xt);
    yt-=floor(yt);
@@ -1206,7 +1165,7 @@ void img_translate(INT32 args,int expand)
 
    if (!xt)
    {
-      MEMCPY(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      memcpy(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
    }
    else
    {

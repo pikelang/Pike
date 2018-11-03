@@ -55,7 +55,7 @@ test_dec_enc_canon("0", 0)
 test_dec_enc_canon("1", 1)
 test_dec_enc_canon((string) (Int.NATIVE_MAX + 1), Int.NATIVE_MAX+1)
 test_dec_enc_canon((string) (Int.NATIVE_MIN - 1), Int.NATIVE_MIN-1)
-test_enc(UNDEFINED, "0")
+test_enc(UNDEFINED, "null")
 
 test_dec_enc_canon("-1.0", -1.0)
 test_dec_enc_canon("0.0", 0.0)
@@ -72,6 +72,8 @@ test_eval_error(Standards.JSON.encode("\x0123456"))
 test_dec_enc_string(\u2027\\u2028\\u2029\u2030, \u2027\u2028\u2029\u2030)
 test_dec_enc_string(foo\\ud834\\udd1ebar, foo\U0001d11ebar,
 		    Standards.JSON.ASCII_ONLY)
+test_dec_enc_string(\ud7ff, \ud7ff)
+test_dec_enc_string(\ue000, \ue000)
 test_dec_error("\"\U00110000\"", 1)
 test_dec_error("\"\\ud800\"", 7)
 test_dec_error("\"\\ud800\\ud834\\udd1e\"", 12)
@@ -113,6 +115,11 @@ test_true(functionp(Standards.JSON.validate))
 test_eq(Val.true, Standards.JSON.decode("true"))
 test_eq(Val.false, Standards.JSON.decode("false"))
 test_eq(Val.null, Standards.JSON.decode("null"))
+test_eq(1, Standards.JSON.decode("true", Standards.JSON.NO_OBJECTS))
+test_eq(0, Standards.JSON.decode("false", Standards.JSON.NO_OBJECTS))
+test_false(undefinedp(Standards.JSON.decode("false", Standards.JSON.NO_OBJECTS)))
+test_eq(0, Standards.JSON.decode("null", Standards.JSON.NO_OBJECTS))
+test_true(undefinedp(Standards.JSON.decode("null", Standards.JSON.NO_OBJECTS)))
 
 // test numbers
 test_eq(Standards.JSON.decode("0E4"), 0.0)
@@ -120,9 +127,9 @@ test_eq(Standards.JSON.decode("0E4"), 0.0)
 // test reference counter.
 // not sure how stable that is among pike versions....
 // It better be, or else we got garbage trouble. /mast
-test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
-test_eq(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
-test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
+test_true(Debug.refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
+test_eq(Debug.refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
+test_eq(Debug.refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
 
 // testing if junk at the end breaks
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
@@ -352,8 +359,8 @@ test_equal(parse("{\"x\":[]}"),(["x":({})]))
 test_equal(parse("{\"x\":true}"),(["x":Val.true]))
 test_equal(parse("{\"x\":false}"),(["x":Val.false]))
 test_equal(parse("{\"x\":null}"),(["x":Val.null]))
-test_eq(Standards.JSON.encode(class foo{}(), 0, "foo"),"foo")
-test_eq(Standards.JSON.encode(class foo{}(), 0, lambda(mixed ... a) { return "bar"; }),"bar")
+test_eq(Standards.JSON.encode(class {}(), 0, "foo"),"foo")
+test_eq(Standards.JSON.encode(class {}(), 0, lambda(mixed ... a) { return "bar"; }),"bar")
 test_do(add_constant("parse"))
 
 END_MARKER

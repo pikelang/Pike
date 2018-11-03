@@ -375,7 +375,6 @@ test_compile_error_any([[
   </subsection>
 
   <subsection title="test_compile_warning" />
-  <subsection title="test_compile_warning_any" />
   <subsection title="test_eval_error" />
   <subsection title="test_define_program" />
   <subsection title="test_program" />

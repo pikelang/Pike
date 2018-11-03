@@ -7,7 +7,7 @@ class Timezone
 
   // seconds to utc, not counting DST
   protected int offset_to_utc;
-   
+
   // timezone name
   string name;
 
@@ -18,7 +18,7 @@ class Timezone
   protected void create(int offset, string name)
   {
     offset_to_utc=offset;
-    this_program::name=name;
+    this::name=name;
   }
 
    // seconds to UTC, counting DST
@@ -49,7 +49,7 @@ class Timezone
 class Language
 {
    constant is_language=1;
-   
+
    string month_name_from_number(int n);
    string month_shortname_from_number(int n);
    int month_number_from_name(string name);

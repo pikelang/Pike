@@ -103,7 +103,7 @@ protected string trim_xml( string what )
         what += " @item " + (n->get_children()->render_xml()*"" - "\n") + "\n";
       else if(n->get_any_name()=="dd")
 	what += " " + n->get_children()->render_xml()*"" + "\n";
-      else if(!sizeof(String.trim_all_whites(n->get_text())))
+      else if(sizeof(String.trim(n->get_text())))
 	werror("Warning: Discarding HTML subtree: %O\n", n->render_xml());
     }
     what += " @enddl\n" + c;
@@ -183,10 +183,10 @@ protected string class_name( Class cls, int|void nmn )
 }
 
 
-protected string make_function_doc( Function f, Class c )
+protected string make_function_doc( GtkFunction f, Class c )
 {
   if( f->name == "_sprintf" ||
-      (f->name == "destroy" && (< 0, "" >)[f->doc] ) )
+      (f->name == "_destruct" && (< 0, "" >)[f->doc] ) )
     return "";
 
   string vtype;
@@ -239,7 +239,7 @@ protected string make_function_doc( Function f, Class c )
   imgfile=imgfilename(c->name+"_"+f->name);
   if( !f->doc || !sizeof( f->doc ) )
   {
-    werror("Warning:"+f->file+":"+f->line+": "
+    werror("Warning: "+f->file+":"+f->line+": "
 	   +c->name+"->"+f->name+" not documented\n" );
     res += "//!\n";
   }
@@ -263,7 +263,7 @@ protected void output_class( Class cls, int lvl )
   array functions = ({});
   imgfile=imgfilename(cls->name);
   if( cls->name!="_global" && (!cls->doc || !sizeof( cls->doc )) )
-    werror("Warning:"+cls->file+":"+cls->line+": "
+    werror("Warning: "+cls->file+":"+cls->line+": "
 	   +cls->name+" not documented\n" );
 
   result =  make_pike_refdoc( cls->doc, cls->signals );

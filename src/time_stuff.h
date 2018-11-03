@@ -16,9 +16,7 @@
 # if HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # else
-#  if HAVE_TIME_H
 #   include <time.h>
-#  endif
 # endif
 #endif
 
@@ -64,10 +62,6 @@
  * generally useful but is so far slightly MS specific, which is why
  * it still resides in fdlib.c. (It just needs some more of the usual
  * HAVE_XYZ configure test hoopla.) */
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
-#endif
 
 #ifndef HAVE_STRUCT_TIMEVAL
 struct timeval

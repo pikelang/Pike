@@ -12,23 +12,21 @@ mapping(string:string|array(string))
    http_decode_urlencoded_query(string query,
 				void|mapping dest)
 {
-   if (!dest) dest=([]);
+    if (!dest) dest=([]);
 
-   foreach (query/"&",string s)
-   {
-      string i,v;
-      if (sscanf(s,"%s=%s",i,v)<2) v=i=http_decode_string(s);
-      else i=http_decode_string(replace(i,"+"," ")),v=http_decode_string(replace(v,"+"," "));
-      if (dest[i]) 
-	 if (arrayp(dest[i])) dest[i]+=({v});
-	 else dest[i]=({dest[i],v});
-      else dest[i]=v;
-   }
-   
-   return dest;
+    foreach (query/"&",string s)
+    {
+        string i,v;
+        if (sscanf(s,"%s=%s",i,v)<2) v=i=http_decode_string(s);
+        else i=http_decode_string(replace(i,"+"," ")),v=http_decode_string(replace(v,"+"," "));
+        if (dest[i])
+            if (arrayp(dest[i])) dest[i]+=({v});
+            else dest[i]=({dest[i],v});
+        else dest[i]=v;
+    }
+
+    return dest;
 }
-
-
 
 //! Looks up the file extension in a table to return a suitable MIME
 //! type.
@@ -41,10 +39,17 @@ string extension_to_type(string extension)
 //! type.
 string filename_to_type(string filename)
 {
-   array v=filename/".";
-   if (sizeof(v)<2) return extension_to_type("default");
-   return extension_to_type(v[-1]);
+  array v=lower_case(filename)/".";
+  if (sizeof(v)<2) return extension_to_type("default");
+  string ext = v[-1];
+  sscanf(ext, "%s~", ext);
+  sscanf(ext, "%s#", ext);
+  return extension_to_type(ext);
 }
+
+
+private int lt=-1;
+private string lres;
 
 //!	Makes a time notification suitable for the HTTP protocol.
 //! @param time
@@ -54,15 +59,16 @@ string filename_to_type(string filename)
 //!  Example : Thu, 03 Aug 2000 05:40:39 GMT
 string http_date(int time)
 {
-   return Calendar.ISO_UTC.Second(time)->format_http();
+   if( time == lt ) return lres;
+   lt = time;
+   return lres = Calendar.ISO_UTC.Second(time)->format_http();
 }
 
-//! 	Decode a HTTP date to seconds since 1970 (UTC)
+//! Decode a HTTP date to seconds since 1970 (UTC)
 //! @returns
 //!	zero (UNDEFINED) if the given string isn't a HTTP date
 int http_decode_date(string data)
 {
-
    Calendar.ISO_UTC.Second s=Calendar.ISO_UTC.http_time(data);
    if (!s) return UNDEFINED;
    return s->unix_time();

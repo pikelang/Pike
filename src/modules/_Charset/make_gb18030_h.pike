@@ -216,11 +216,7 @@ int main(int argc, array(string) argv)
 			"static p_wchar2 gb18030_to_unicode(p_wchar2 i)\n"
 			"{\n"
 			"  static int last_j;\n"
-#if 0
-			"  fprintf(stderr, \"gb18030_to_unicode(0x%%06x)\",\n"
-			"          i);\n"
-#endif /* 0 */
-			"  if (gb18030_info[last_j].index > i) {\n"
+                        "  if (gb18030_info[last_j].index > i) {\n"
 			"    int jlo = 0, jhi = last_j, jmid;\n"
 			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
 			"      if (gb18030_info[jmid].index <= i) {\n"
@@ -255,13 +251,7 @@ int main(int argc, array(string) argv)
 			"               last_j);\n"
 			"  }\n"
 			"#endif /* PIKE_DEBUG */\n"
-#if 0
-			"  fprintf(stderr, \" j: %%d, index: 0x%%06x,\"\n"
-			"          \" ucode: 0x%%06x\\n\",\n"
-			"          last_j, gb18030_info[last_j].index,\n"
-			"          gb18030_info[last_j].ucode);\n"
-#endif /* 0 */
-			"  return i - gb18030_info[last_j].index +\n"
+                        "  return i - gb18030_info[last_j].index +\n"
 			"    gb18030_info[last_j].ucode;\n"
 			"}\n"
 			"\n"
@@ -292,11 +282,7 @@ int main(int argc, array(string) argv)
 			"\n"
 			"  if (u < 0x80) return NULL;\n"
 			"\n"
-#if 0
-			"  fprintf(stderr, \"get_gb18030e_info(0x%%06x)\",\n"
-			"          u);\n"
-#endif /* 0 */
-			"  if (gb18030e_info[last_j].ulow > u) {\n"
+                        "  if (gb18030e_info[last_j].ulow > u) {\n"
 			"    int jlo = 0, jhi = last_j, jmid;\n"
 			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
 			"      if (gb18030e_info[jmid].ulow <= u) {\n"
@@ -331,14 +317,7 @@ int main(int argc, array(string) argv)
 			"               last_j);\n"
 			"  }\n"
 			"#endif /* PIKE_DEBUG */\n"
-#if 0
-			"  fprintf(stderr, \" j: %%d, ulow: 0x%%06x,\"\n"
-			"          \" uhigh: 0x%06x index: %d\\n\",\n"
-			"          last_j, gb18030e_info[last_j].ulow,\n"
-			"          gb18030e_info[last_j].uhigh,\n"
-			"          gb18030e_info[last_j].index);\n"
-#endif /* 0 */
-			"  if (gb18030e_info[last_j].uhigh < u) return NULL;\n"
+                        "  if (gb18030e_info[last_j].uhigh < u) return NULL;\n"
 			"  return gb18030e_info + last_j;\n"
 			"}\n"
 			"\n",

@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* Integer types with defined sizes.
  *
  * Extracted from global.h 1.90
@@ -126,9 +132,21 @@
 # define INT16 short
 #endif
 
+#ifndef MAX_INT16
+# define MAX_UINT16 65535
+# define MAX_INT16 32767
+# define MIN_INT16 (-32768)
+#endif
+
 /* and INT8 */
 #ifndef INT8
 # define INT8 char
+#endif
+
+#ifndef MAX_INT8
+# define MAX_UINT8 255
+# define MAX_INT8 127
+# define MIN_INT8 (-128)
 #endif
 
 #ifdef INT64
@@ -163,3 +181,5 @@
 # define MAX_TIME_T MAX_INT32
 # define MIN_TIME_T MIN_INT32
 #endif
+
+#define INT_SPRINTF_SIZE(a) (2 + (sizeof(a) * 5 + 1)/2)

@@ -90,7 +90,7 @@ string quotemeta(string in) {
 	if(instr) ret += "\\";
 
       default:
-	if(instr) ret += in[i..i];	
+	if(instr) ret += in[i..i];
       }
   }
   return ret;
@@ -212,7 +212,7 @@ mapping parse_xml_file(string filename, string language) {
   Stdio.File in=Stdio.FILE();
   if(!in->open(filename, "r"))
     return ([]);
-  write("Reading %s%s", 	
+  write("Reading %s%s",
 	language ? "["+language+"] " : "",
 	(filename/"/")[-1]);
   string line = in->gets();
@@ -436,7 +436,7 @@ void write_xml_file(string filename, string language, string encoding,
 		     old_ids[id]->changetag : "");
       if(old_ids) {
 	if(diff!="")
-	  stats->changed++;	
+	  stats->changed++;
 	else if(!old_ids[id] || !old_ids[id]->text ||
 	   String.trim_whites(old_ids[id]->text)=="" ) {
 	  diff = "<new/>\n";
@@ -772,7 +772,7 @@ void update_xml_sourcefiles(array filelist) {
 		  args->project = m->project;
 		return 0;
 	      });
-    xml_parser->		
+    xml_parser->
       add_container("translate",
 		    // This is the string container
 		    lambda(object foo, mapping m, string c) {
@@ -1071,7 +1071,7 @@ int main(int argc, array(string) argv) {
   write("\n");
 
   // Read, parse and (if necessary) update the sourcefiles
-  object R = Regexp("(\.pike|\.pmod)$");
+  object R = Regexp("(pike|pmod)$");
   foreach(files, string filename)
     if(R->match(filename))
       update_pike_sourcefiles( ({ filename }) );

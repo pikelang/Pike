@@ -18,7 +18,7 @@ void init_resultset_program(void);
 void exit_resultset_program(void);
 
 
-struct object *wf_resultset_new( );
+struct object *wf_resultset_new( void );
 /* Create a new (empty) set */
 
 void wf_resultset_push( struct object *o );
@@ -54,7 +54,7 @@ void wf_resultset_clear( struct object *o );
 /* Remove all entries from the set. */
 
 /* Pike methods in the set class, not availble from C:
- *  
+ *
  *  cast(string) --> string|array
  *  test(num,start,step) --> Generate random set
  *  sort()   --> sort on weight

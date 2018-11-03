@@ -13,15 +13,17 @@
 #include "object.h"
 #include "builtin_functions.h"
 
-/* This is defined on windows */
-#ifdef REG_NONE
-#undef REG_NONE
-#endif
+enum ia32_reg {P_REG_EAX = 0, P_REG_EBX = 3, P_REG_ECX = 1, P_REG_EDX = 2,
+               P_REG_NONE = 4, P_REG_ESP = 4, P_REG_EBP = 5, P_REG_ESI = 6,
+               P_REG_EDI = 7, };
 
-enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4,
-	       REG_ESP = 4, REG_EBP = 5, REG_ESI = 6, REG_EDI = 7, };
+#define REG_BITMASK ((1 << P_REG_NONE) - 1)
 
-#define REG_BITMASK ((1 << REG_NONE) - 1)
+/* Padding needed to align ESP on a 16-byte boundary after
+ * a function call. This is needed to be able to call
+ * functions that use SSE2 opcodes.
+ */
+#define STACK_PAD	0x0c
 
 /* #define REGISTER_DEBUG */
 
@@ -71,7 +73,7 @@ static int alloc_regs = 0, valid_regs = 0;
 #define MOV_ABSADDR_TO_REG(ADDR, REG) do {				\
     MAKE_VALID_REG (REG);						\
     /* movl addr,%reg */						\
-    if ((REG) == REG_EAX)						\
+    if ((REG) == P_REG_EAX)						\
       add_to_program (0xa1); /* Move dword at address to EAX. */	\
     else {								\
       add_to_program (0x8b); /* Move r/m32 to r32. */			\
@@ -90,7 +92,7 @@ static int alloc_regs = 0, valid_regs = 0;
 #define MOV_REG_TO_ABSADDR(REG, ADDR) do {				\
     CHECK_VALID_REG (REG);						\
     /* movl %reg,addr */						\
-    if ((REG) == REG_EAX)						\
+    if ((REG) == P_REG_EAX)						\
       add_to_program (0xa3); /* Move EAX to dword at address. */	\
     else {								\
       add_to_program (0x89); /* Move r32 to r/m32. */			\
@@ -255,7 +257,7 @@ static int alloc_regs = 0, valid_regs = 0;
       add_to_program (0x48 | (REG)); /* Decrement r32. */		\
     else if (val_ < -128 || val_ > 127) {				\
       /* addl $val,%reg */						\
-      if ((REG) == REG_EAX)						\
+      if ((REG) == P_REG_EAX)						\
 	add_to_program (0x05); /* Add imm32 to EAX. */			\
       else {								\
 	add_to_program (0x81); /* Add imm32 to r/m32. */		\
@@ -340,7 +342,7 @@ static int alloc_regs = 0, valid_regs = 0;
   } while (0)
 
 #define CMP_REG_IMM32(REG, IMM) do {		\
-    if ((REG) == REG_EAX) {			\
+    if ((REG) == P_REG_EAX) {			\
       add_to_program(0x3d);			\
     } else {					\
       add_to_program(0x81);			\
@@ -405,14 +407,14 @@ void ia32_ins_entry(void)
    *
    * also cf Fig 3-16.
    */
-  PUSH_REG(REG_EBP);
-  MOV_REG_TO_REG(REG_ESP, REG_EBP);
+  PUSH_REG(P_REG_EBP);
+  MOV_REG_TO_REG(P_REG_ESP, P_REG_EBP);
   /* FIXME: Add local storage here if needed. */
-  PUSH_REG(REG_EDI);
-  PUSH_REG(REG_ESI);
-  PUSH_REG(REG_EBX);
-  /* Funcall arguments (4 * 4 bytes). */
-  ADD_VAL_TO_REG(-0x10, REG_ESP);
+  PUSH_REG(P_REG_EDI);
+  PUSH_REG(P_REG_ESI);
+  PUSH_REG(P_REG_EBX);
+  /* Funcall arguments (4 * 4 bytes + padding). */
+  ADD_VAL_TO_REG(-(0x10 + STACK_PAD), P_REG_ESP);
 
 #ifdef REGISTER_DEBUG
   valid_regs = 0;
@@ -441,8 +443,8 @@ ptrdiff_t ia32_prev_stored_pc; /* PROG_PC at the last point Pike_fp->pc was upda
 
 void ia32_flush_code_generator(void)
 {
-  next_reg = REG_EAX;
-  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  next_reg = P_REG_EAX;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = P_REG_NONE;
   CLEAR_REGS();
   ia32_prev_stored_pc = -1;
 }
@@ -458,7 +460,7 @@ static enum ia32_reg alloc_reg (int avoid_regs)
     /* There's a free register. */
 
     for (reg = next_reg; (1 << reg) & used_regs;) {
-      reg = (reg + 1) % REG_NONE;
+      reg = (reg + 1) % P_REG_NONE;
 #ifdef PIKE_DEBUG
       if (reg == next_reg) Pike_fatal ("Failed to find a free register.\n");
 #endif
@@ -471,19 +473,19 @@ static enum ia32_reg alloc_reg (int avoid_regs)
      * probably be replaced with an LRU strategy. */
 
     for (reg = next_reg; (1 << reg) & avoid_regs;) {
-      reg = (reg + 1) % REG_NONE;
+      reg = (reg + 1) % P_REG_NONE;
 #ifdef PIKE_DEBUG
       if (reg == next_reg) Pike_fatal ("Failed to find a non-excluded register.\n");
 #endif
     }
 
-    if (sp_reg == reg)			{sp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (fp_reg == reg)		{fp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (mark_sp_reg == reg)	{mark_sp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (pi_reg == reg)		{pi_reg = REG_NONE; DEALLOC_REG (reg);}
+    if (sp_reg == reg)			{sp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (fp_reg == reg)		{fp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (mark_sp_reg == reg)	{mark_sp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (pi_reg == reg)		{pi_reg = P_REG_NONE; DEALLOC_REG (reg);}
   }
 
-  if (reg == pi_reg)		        {pi_reg = REG_NONE; DEALLOC_REG (reg);}
+  if (reg == pi_reg)		        {pi_reg = P_REG_NONE; DEALLOC_REG (reg);}
 
 #ifdef REGISTER_DEBUG
   if ((1 << reg) & alloc_regs) Pike_fatal ("Clobbering allocated register.\n");
@@ -496,11 +498,11 @@ static enum ia32_reg alloc_reg (int avoid_regs)
 #define DEF_LOAD_REG(REG, SET)						\
   static void PIKE_CONCAT(load_,REG) (int avoid_regs)			\
   {									\
-    if (REG == REG_NONE) {						\
+    if (REG == P_REG_NONE) {						\
       REG = alloc_reg (avoid_regs);					\
       /* Update the round robin pointer here so that we disregard */	\
       /* the direct calls to alloc_reg for temporary registers. */	\
-      next_reg = (REG + 1) % REG_NONE;					\
+      next_reg = (REG + 1) % P_REG_NONE;					\
       {SET;}								\
     }									\
     else								\
@@ -529,8 +531,8 @@ DEF_LOAD_REG (mark_sp_reg, {
 static void ia32_call_c_function(void *addr)
 {
   CALL_RELATIVE(addr);
-  next_reg = REG_EAX;
-  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  next_reg = P_REG_EAX;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = P_REG_NONE;
   CLEAR_REGS();
 }
 
@@ -625,9 +627,9 @@ static void ia32_local_lvalue(INT32 arg)
   struct svalue tmp[2];
   enum ia32_reg addr_reg = ia32_get_local_addr(arg);
 
-  MEMSET(tmp, 0, sizeof(tmp));
-  tmp[0].type=T_SVALUE_PTR;
-  tmp[1].type=T_VOID;
+  memset(tmp, 0, sizeof(tmp));
+  SET_SVAL_TYPE(tmp[0], T_SVALUE_PTR);
+  SET_SVAL_TYPE(tmp[1], T_VOID);
 
   load_pi_reg ((1 << addr_reg)|(1 << sp_reg));
   load_sp_reg ((1 << addr_reg)|(1 << pi_reg));
@@ -696,9 +698,7 @@ static void ia32_mark(void)
 static void ia32_push_int(INT32 x)
 {
   struct svalue tmp;
-  tmp.type=PIKE_T_INT;
-  tmp.subtype=0;
-  tmp.u.integer=x;
+  SET_SVAL(tmp, PIKE_T_INT, 0, integer, x);
   ia32_push_constant(&tmp);
 }
 
@@ -899,10 +899,10 @@ void ins_f_byte(unsigned int b)
       /* FIXME: Is there really no easier way to get at EIP? */
       add_to_program(0xe8);
       PUSH_INT(0);
-      POP_REG(REG_EAX);	/* EIP ==> EAX */
-      ADD_VAL_TO_REG(0x7fffffff, REG_EAX);
+      POP_REG(P_REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, P_REG_EAX);
       rel_addr = PIKE_PC;
-      MOV_REG_TO_RELSTACK(REG_EAX, 0);
+      MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
     }
     break;
 #endif
@@ -926,23 +926,23 @@ void ins_f_byte(unsigned int b)
        * above exited with a RET, in which case EIP
        * is at ESP[-4]...
        */
-      MOV_RELSTACK_TO_REG(-4, REG_ESI);
-      ADD_VAL_TO_REG(JUMP_EPILOGUE_SIZE, REG_ESI);
+      MOV_RELSTACK_TO_REG(-4, P_REG_ESI);
+      ADD_VAL_TO_REG(JUMP_EPILOGUE_SIZE, P_REG_ESI);
     }
-    CMP_REG_IMM32(REG_EAX, -1);
+    CMP_REG_IMM32(P_REG_EAX, -1);
     JNE(0);
     skip = (INT32)PIKE_PC;
-    ADD_VAL_TO_REG(0x10, REG_ESP);	/* Funcall arguments (4 * 4 bytes). */
-    POP_REG(REG_EBX);
-    POP_REG(REG_ESI);
-    POP_REG(REG_EDI);
-    POP_REG(REG_EBP);
+    ADD_VAL_TO_REG(0x10 + STACK_PAD, P_REG_ESP);	/* Funcall arguments (4 * 4 bytes) + padding. */
+    POP_REG(P_REG_EBX);
+    POP_REG(P_REG_ESI);
+    POP_REG(P_REG_EDI);
+    POP_REG(P_REG_EBP);
     RET();
     Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
     if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
-      CMP_REG_REG(REG_EAX, REG_ESI);
+      CMP_REG_REG(P_REG_EAX, P_REG_ESI);
       JE(0x02);
       add_to_program (0xff);	/* jmp *%eax */
       add_to_program (0xe0);
@@ -1036,7 +1036,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
 
     case F_CONSTANT:
-      /* 
+      /*
        * This would work nicely for all pike types, but we would
        * have to augment dumping
        *
@@ -1046,7 +1046,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        * /grubba 2003-12-11
        */
       if(!REFCOUNTED_TYPE(TYPEOF(Pike_compiler->new_program->constants[b].sval)) &&
-	 !Pike_compiler->new_program->constants[b].sval.subtype)
+	 !SUBTYPEOF(Pike_compiler->new_program->constants[b].sval))
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
@@ -1119,7 +1119,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       ia32_call_c_function(branch_check_threads_etc);
     }
     add_to_program(0xe9);
-    ret=DO_NOT_WARN( (INT32) PIKE_PC );
+    ret=(INT32) PIKE_PC;
     PUSH_INT(0);
   }
 
@@ -1133,7 +1133,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       add_to_program (5 + 1 + 4);
       ia32_call_c_function (branch_check_threads_etc); /* 5 bytes */
       add_to_program (0xe9);	/* jmp rel32 */
-      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      ret = (INT32) PIKE_PC;
       PUSH_INT (0);		/* 4 bytes */
     }
     else {
@@ -1144,7 +1144,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       }
       add_to_program (0x0f);	/* jnz rel32 */
       add_to_program (0x85);
-      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      ret = (INT32) PIKE_PC;
       PUSH_INT (0);
     }
   }
@@ -1190,10 +1190,10 @@ INT32 ia32_read_f_jump(INT32 offset)
   return read_pointer(offset) + offset + 4;
 }
 
-#define addstr(s, l) low_my_binary_strcat((s), (l), buf)
+#define addstr(s, l) buffer_memcpy(buf, (s), (l))
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
-void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
+void ia32_encode_program(struct program *p, struct byte_buffer *buf)
 {
   size_t prev = 0, rel;
   /* De-relocate the program... */
@@ -1303,8 +1303,4 @@ void ia32_init_interpreter_state(void)
       ia32_clflush_size = cpu_info.clflush_size * 8;
     }
   }
-
-#ifdef OPCODE_INLINE_RETURN
-  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-#endif
 }

@@ -45,7 +45,7 @@ struct atari_palette* decode_atari_palette(unsigned char *pal,
 					  unsigned int size)
 {
   unsigned int i;
-  struct atari_palette* ret_pal = xalloc(sizeof(struct atari_palette));
+  struct atari_palette* ret_pal = ALLOC_STRUCT(atari_palette);
 
   ret_pal->size=size;
   ret_pal->colors=xalloc(size*sizeof(rgb_group) + RGB_VEC_PAD);

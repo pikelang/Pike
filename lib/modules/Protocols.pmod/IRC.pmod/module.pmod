@@ -1,5 +1,31 @@
 #pike __REAL_VERSION__
 
+//! IRC client and connection handling.
+//! 
+//! Start with @ref{Client@} and @ref{Channel@}.
+//!
+//! @example
+//! Protocols.IRC.client irc;
+//! class channel_notif
+//! {
+//!     inherit Protocols.IRC.Channel;
+//!     void not_message(object person,string msg)
+//!     {
+//!         if (msg == "!hello") irc->send_message(name, "Hello, "+person->nick+"!");
+//!     }
+//! }
+//! int main()
+//! {
+//!     irc = Protocols.IRC.Client("irc.freenode.net", ([
+//!         "nick": "DemoBot12345",
+//!         "realname": "Demo IRC bot",
+//!         "channel_program": channel_notif,
+//!     ]));
+//!     irc->join_channel("#bot-test");
+//!     return -1;
+//! }
+
+
 //! Abstract class for a person.
 class Person
 {
@@ -27,16 +53,20 @@ class Person
    void me(string what);
 }
 
-//! Abstract class for a IRC channel.
+//! Abstract class for an IRC channel.
 class Channel
 {
-  //! The name of the channel.
-  string name;
+   //! The name of the channel.
+   string name;
 
-   void	not_message(Person who,string message);
-   void	not_join(Person who);
-   void	not_part(Person who,string message,Person executor);
-   void	not_mode(Person who,string mode);
-   void	not_failed_to_join();
-   void not_invite(Person who);
+   //! Called whenever a message arrives on this channel.
+   void not_message(Person who,string message) { }
+
+   //! Called whenever someone joins this channel.
+   void not_join(Person who) { }
+
+   void not_part(Person who,string message,Person executor) { }
+   void not_mode(Person who,string mode) { }
+   void not_failed_to_join() { }
+   void not_invite(Person who) { }
 }

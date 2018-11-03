@@ -30,7 +30,7 @@ class SimpleRegexp
 	return result;
 
       array a = repreg->split(in);
-       
+
       if(!a)
 	return result + in;
 
@@ -38,16 +38,16 @@ class SimpleRegexp
 
       if(i == -1)
 	error("Split resulted in unknown substring %O of %O.", a[0], in);
-       
+
       result += in[..i-1]+(functionp(transform)?transform(a[0]):transform);
       in = in[i+sizeof(a[0])..];
     }
   }
-  
+
   protected void create(string|void _regexp_string)
   {
     regexp_string = _regexp_string;
-  
+
     if(regexp_string)
       ::create(regexp_string);
     else

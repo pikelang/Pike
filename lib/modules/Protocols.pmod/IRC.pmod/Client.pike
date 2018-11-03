@@ -1,12 +1,10 @@
 #pike __REAL_VERSION__
 
-#if constant(Crypto.Random)
-
 import ".";
 
 Raw raw;
 //FIXME: Unknown what this default password is good for. Probably not needed.
-string pass=MIME.encode_base64(Crypto.Random.random_string(6));
+string pass=MIME.encode_base64(random_string(6));
 
 mapping options;
 
@@ -16,7 +14,7 @@ mapping channels=([]);
 //! @param server
 //!   The IRC server to connect to.
 //!   If server is an object, it is assumed to be a newly established
-//!   connection to the IRC server to be used. Pass @[SSL.sslfile]
+//!   connection to the IRC server to be used. Pass @[SSL.File]
 //!   connections here to connect to SSL secured IRC networks.
 //! @param options
 //!   An optional mapping with additional IRC client options.
@@ -47,6 +45,9 @@ mapping channels=([]);
 //!       lost or when a ping isn't answered with a pong within the time
 //!       set by the @tt{ping_timeout@} option. The default behaviour is
 //!       to complain on stderr and self destruct.
+//!     @member program "channel_program"
+//!       An instance of this is created for each channel connected to via
+//!       join_channel() - should be a subclass of Protocols.IRC.Channel.
 //!     @member function(mixed ...:void) "error_notify"
 //!       This function is called when a KILL or ERROR command is recieved
 //!       from the IRC server.
@@ -103,7 +104,7 @@ void create(string|object _server,void|mapping(string:mixed) _options)
 
    cmd->create(raw);
 
-   cmd->pass(options->pass||pass); 
+   cmd->pass(options->pass||pass);
    cmd->nick(options->nick);
    // If a connection object was passed as 'server' parameter to the
    // constructor, we just pretend to the other server that we reached it
@@ -231,7 +232,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "352": // who list
-	 if (sizeof(extra)>2 && 
+	 if (sizeof(extra)>2 &&
 	     message && (c=channels[lower_case(message||"")]))
 	 {
 	    Person p=person(extra[3],extra[0]+"@"+extra[1]);
@@ -274,7 +275,7 @@ void got_notify(string from,string type,
 	    return;
 	 }
 	 break;
-	 
+
 
 	 /* --- */
 
@@ -337,7 +338,7 @@ void got_notify(string from,string type,
 
 	 foreach (values(channels),c)
 	    if (c)
-	       if (c->not_quit || c->not_part) 
+	       if (c->not_quit || c->not_part)
 		  (c->not_quit||c->not_part)(originator,message,originator);
 
 	 break;
@@ -388,8 +389,19 @@ void got_notify(string from,string type,
 	 options->notice_invite(originator,message,@extra);
 	 return;
 
+      case "CAP":
+	 if (message=="ACK")
+	 {
+	     if (!options->capability_notify) break;
+	     options->capability_notify(from, to, extra);
+	     return;
+	 }
+	 break;
+
+#ifdef IRC_DEBUG
       default:
 	 werror("got unknown message: %O, %O, %O, %O\n",from,type,to,message);
+#endif
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)
@@ -406,13 +418,13 @@ object cmd=class
    {
       program prog;
       object ret;
-   	    
+
       void create(program p,object _ret)
       {
    	 prog=p;
    	 ret=_ret;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 mixed m;
@@ -422,16 +434,16 @@ object cmd=class
    	 else return m;
       }
    }
-   	 
+
    class AsyncRequest
    {
       program prog;
-   	    
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 object req=prog();
@@ -439,16 +451,16 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    class AsyncCBRequest
    {
       program prog;
-   
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(function callback,mixed ...args)
       {
    	 object req=prog();
@@ -457,7 +469,7 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    mixed `->(string request)
    {
       mixed|program p;
@@ -490,6 +502,23 @@ object cmd=class
 void send_message(string|array to,string msg)
 {
    cmd->privmsg( (arrayp(to)?to*",":to), msg);
+}
+
+void join_channel(string chan)
+{
+   cmd->join(chan);
+   if (options->channel_program)
+   {
+      object ch = options->channel_program();
+      ch->name = lower_case(chan);
+      channels[lower_case(chan)] = ch;
+   }
+}
+
+void part_channel(string chan)
+{
+   cmd->part(chan);
+   m_delete(channels, lower_case(chan));
 }
 
 // ----- persons
@@ -550,7 +579,3 @@ void forget_person(object p)
 {
    m_delete(nick2person,p->nick);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif // constant(Crypto.Random.random_string)

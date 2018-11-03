@@ -24,6 +24,7 @@ struct lex
   char *end;
   INT_TYPE current_line;
   INT32 pragmas;
+  node *attributes;
   struct pike_string *current_file;
   int (*current_lexer)(struct lex *, YYSTYPE *);
 };
@@ -33,6 +34,7 @@ struct lex
 int parse_esc_seq0 (p_wchar0 *buf, p_wchar2 *chr, ptrdiff_t *len);
 int parse_esc_seq1 (p_wchar1 *buf, p_wchar2 *chr, ptrdiff_t *len);
 int parse_esc_seq2 (p_wchar2 *buf, p_wchar2 *chr, ptrdiff_t *len);
+int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len);
 
 int yylex0(struct lex *, YYSTYPE *);
 int yylex1(struct lex *, YYSTYPE *);

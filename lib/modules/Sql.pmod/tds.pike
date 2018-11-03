@@ -254,7 +254,7 @@ protected {
 
 	string data = socket->read(len);
 	if (!data || sizeof(data) < len) {
-	  tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s\n",
+          tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s.\n",
 		    len, data, sizeof(data||""), strerror(socket->errno()));
 	}
 	TDS_WERROR("Read packet with %d bytes.\n%s\n",
@@ -263,7 +263,7 @@ protected {
 	inpos = 0;
       }
 
-      protected void destroy()
+      protected void _destruct()
       {
 	// Return the connection to the idle state.
 	while (!done) {
@@ -342,7 +342,7 @@ protected {
       }
     }
 
-    //static InPacket login_answer;
+    //protected InPacket login_answer;
 
     //! An outgoing packet to the TDS server.
     class Packet
@@ -353,7 +353,7 @@ protected {
 
       protected void create(int|void flags)
       {
-	this_program::flags = flags;
+	this::flags = flags;
       }
 
       void put_int8(int i)
@@ -420,8 +420,10 @@ protected {
 	strings += ({ raw });
       }
 
-      mixed cast(string s)
+      protected string cast(string type)
       {
+        if( type!="string" ) return UNDEFINED;
+
 	int trailer_start = flags && 4;
 	foreach(segments, string|int seg) {
 	  trailer_start += stringp(seg)?sizeof(seg):(seg<0)?8:4;
@@ -517,7 +519,7 @@ protected {
       p->put_raw(COLLATION, 4);		// collation
 
       p->put_string(hostname);		// hostname
-      
+
       if (domain) {
 	p->put_string("");
 	p->put_string("");
@@ -539,7 +541,7 @@ protected {
 	p->put_string("");
       }
       p->put_string("");
-      
+
       TDS_WERROR("Sending login packet.\n");
       return send_packet(p, 0x10, 1);
     }
@@ -578,18 +580,7 @@ protected {
     string answer_nt_challenge(string passwd, string nonce)
     {
       string nt_passwd = string_to_utf16(passwd);
-#if constant(Crypto.MD4)
-      Crypto.MD4 md4 = Crypto.MD4();
-#else
-#if constant(Crypto.md4)
-      Crypto.md4 md4 = Crypto.md4();
-#else
-      predef::error("MD4 hashes not supported in this Pike.\n");
-      mixed md4;
-#endif
-#endif
-      md4->update(nt_passwd);
-      return encrypt_answer(md4->digest() + "\0"*16, nonce);
+      return encrypt_answer(Crypto.MD4.hash(nt_passwd) + "\0"*16, nonce);
     }
 
     protected void send_auth(string nonce)
@@ -1181,6 +1172,7 @@ protected {
 	  return res;
 	}
       case SYBNUMERIC:
+      case SYBDECIMAL:
 	{
 	  string res =
 	    sprintf("%d", array_sscanf(raw[1..],
@@ -1198,17 +1190,28 @@ protected {
 	  }
 
 	  // Fix the sign.
-	  if (!res[0]) {
+	  if (!raw[0]) {
 	    res = "-" + res;
 	  }
 	  TDS_CONV_WERROR("%O (scale: %d) ==> %O\n",
 			  raw, scale, res);
 	  return res;
 	}
-      case SYBDECIMAL:
+      case SYBUNIQUE:
+	{
+	  string res = Standards.UUID.UUID(raw)->str();
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
+	}
+      case SYBFLTN:
+	{
+	  string res =
+	    sprintf("%g", @array_sscanf(raw, "%-" + sizeof(raw) + "F"));
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
+	}
       case SYBREAL:
       case SYBFLT8:
-      case SYBUNIQUE:
       default:
 	// FIXME:
 	TDS_CONV_WERROR("Not yet supported: %d (%O)\n",
@@ -1346,7 +1349,7 @@ protected {
 	    // Workaround for bugs in MSSQL 6.5 & 7.0 for TDS 4.2.
 	    product_version = (product_version & 0xffff00) | 0x800000000;
 	  }
-	  
+
 	  // TDS 5.0 reports 5 on success 6 on fail.
 	  // TDS 4.2 reports 1 on success and N/A on failure.
 	  if ((ack == 5) || (ack == 1)) ok = 1;
@@ -1389,7 +1392,7 @@ protected {
       p->put_byte(SYBNTEXT);
       p->put_int(sizeof(query->query_string));
       p->put_raw(COLLATION, sizeof(COLLATION));
-      p->put_int(sizeof(query->query_string));      
+      p->put_int(sizeof(query->query_string));
       p->put_raw(query->query_string, sizeof(query->query_string));
 
       int i;
@@ -1431,12 +1434,12 @@ protected {
 	username = tmp[1..]*"\\";
       }
 
-      this_program::server = server;
-      this_program::port = port;
-      this_program::database = database;
-      this_program::username = username;
-      this_program::password = auth;
-      this_program::domain = domain;
+      this::server = server;
+      this::port = port;
+      this::database = database;
+      this::username = username;
+      this::password = auth;
+      this::domain = domain;
 
       TDS_WERROR("Connecting to %s:%d with TDS version %d.%d\n",
 		 server, port, major_version, minor_version);

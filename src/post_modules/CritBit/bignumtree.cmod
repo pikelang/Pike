@@ -1,7 +1,14 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* vim:syntax=c
  */
+#ifdef PIKE_DEBUG
 #define DEBUG_CHECKS
-
+#endif
 #include "common.h"
 
 #include "critbit/bignum2svalue.h"

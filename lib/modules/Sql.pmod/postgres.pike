@@ -7,7 +7,7 @@
 
 // Cannot dump this since the #if constant(...) check below may depend
 // on the presence of system libs at runtime.
-constant dont_dump_program = 1;
+optional constant dont_dump_program = 1;
 
 #if constant(Postgres.postgres)
 
@@ -184,7 +184,7 @@ void create(void|string host, void|string database, void|string user,
 	if (stringp(host)&&(search(host,":")>=0))
 		if (sscanf(host,"%s:%d",real_host,port)!=2)
 			ERROR("Error in parsing the hostname argument.\n");
-	
+
 	mo::create(real_host||"",real_db||"",user||"",pass||"",port);
 }
 
@@ -205,8 +205,8 @@ protected void poll (int delay)
 //! put previously, and any polling cycle.
 //!
 //! With one argument, sets the notification callback (there can be only
-//! one for each sqlobject). 
-//! 
+//! one for each sqlobject).
+//!
 //! With two arguments, sets a notification callback and sets a polling
 //! cycle.
 //!
@@ -214,7 +214,7 @@ protected void poll (int delay)
 //! delivered, that is piggyback with a query result. This means that
 //! if you don't do any query, you'll receive no notification. The polling
 //! cycle starts a call_out cycle which will do an empty query when
-//! the specified interval expires, so that pending notifications 
+//! the specified interval expires, so that pending notifications
 //! may be delivered.
 //!
 //! The callback function must return no value, and takes a string argument,
@@ -242,7 +242,7 @@ void set_notify_callback(int|function f, int|float|void poll_delay) {
 		return;
 	}
 	mo::_set_notify_callback(f);
-	if(poll_delay>0) 
+	if(poll_delay>0)
 		poll(poll_delay);
 }
 
@@ -405,7 +405,7 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 //! @seealso
 //!   @[Sql.Sql], @[Sql.sql_result]
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
-{  
+{
   if(stringp(q) && String.width(q)>8)
     q=string_to_utf8(q);
   if (!bindings)
@@ -432,7 +432,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
       rval=sizeof(value) ? indices(value)[0] : "";
     }
     else {
-      if(zero_type(value))
+      if(undefinedp(value))
         paramValues[pi++]=UNDEFINED;
       else {
         if(stringp(value) && String.width(value)>8)
@@ -472,7 +472,7 @@ int|object streaming_query(object|string q,
 //! onto
 //!   @tt{pgsql://[user[:password]@@][hostname][:port][/database]@}
 //!
-//! The reason this happens, is because Pike was compiled without libpq
+//! This only happens if Pike was compiled without libpq
 //! support, therefore Pike falls back to the faster, smaller memory
 //! footprint, more advanced and native PostgreSQL driver called @[Sql.pgsql].
 //!

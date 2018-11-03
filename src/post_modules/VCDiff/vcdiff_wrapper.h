@@ -10,7 +10,7 @@ extern "C" {
   void *vcdiff_init_dictionary (const char* dictionary, size_t len);
   void *vcdiff_init_encoder (const void* hashed_dict);
   void *vcdiff_init_decoder (const char* dictionary, size_t len);
-  
+
   int vcdiff_encode_chunk (const void* vcencoder,
 			   const char* in_buf,
 			   int in_buf_len,
@@ -28,7 +28,7 @@ extern "C" {
   void vcdiff_free_dictionary (const void* hashed_dict);
   void vcdiff_free_encoder (const void* vcencoder);
   void vcdiff_free_decoder (const void* vcdecoder);
-  
+
 
 #ifdef __cplusplus
 }

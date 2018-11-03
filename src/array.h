@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
+#include "gc_header.h"
 
 /* This debug tool writes out messages whenever arrays with unfinished
  * type fields are encountered. */
@@ -17,25 +18,26 @@
 /**
  * A Pike array is represented as a 'struct array' with all the
  * needed svalues malloced in the same block.
- * 
+ *
  * @see type_field
  */
 struct array
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  GC_MARKER_MEMBERS;
+  INT32 size;		/**< number of svalues in this array */
+  INT32 malloced_size;	/**< number of svalues that can fit in this array */
+  TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
+         	* data in this array.
+                * Bits can be set that don't exist in the array. type_field is
+                * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
+                * arrays so that they can be modified without having to update
+                * this. It should be set accurately when that's done, though.
+                */
+  INT16 flags;          /**< ARRAY_* flags */
 
   struct array *next;	/**< we need to keep track of all arrays */
   struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
-  INT32 size;		/**< number of svalues in this array */
-  INT32 malloced_size;	/**< number of svalues that can fit in this array */
-  TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
-			  * data in this array.
-   Bits can be set that don't exist in the array. type_field is
-   * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
-   * arrays so that they can be modified without having to update
-   * this. It should be set accurately when that's done, though. */
-  INT16 flags;          /**< ARRAY_* flags */
   struct svalue *item;  /**< the array of svalues */
   struct svalue real_item[1];
 };
@@ -90,6 +92,9 @@ extern struct array *gc_internal_array;
       really_free_array(v_);						\
   }while(0)
 
+#define low_allocate_array(size, extra_space)				\
+  dmalloc_touch (struct array *,					\
+		 real_allocate_array ((size), (extra_space)))
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
 
@@ -103,15 +108,11 @@ typedef int (*cmpfun)(const struct svalue *, const struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
 typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
-
-#define low_allocate_array(size, extra_space)				\
-  dmalloc_touch (struct array *,					\
-		 real_allocate_array ((size), (extra_space)))
-
 /* Prototypes begin here */
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
+PMOD_EXPORT void clear_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 ind);
 PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index,
@@ -145,8 +146,8 @@ PMOD_EXPORT INT32 *get_switch_order(struct array *a);
 PMOD_EXPORT INT32 *get_alpha_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
 INT32 switch_lookup(struct array *a, struct svalue *s);
-PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order);
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
+PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order);
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order);
 PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void array_check_type_field(struct array *v);
@@ -163,17 +164,13 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args);
 PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processing *p);
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 						 struct array *b, INT32 op);
-PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op);
-PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
-					struct array *b,
-					INT32 op);
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b);
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b);
 int array_is_constant(struct array *a,
 		      struct processing *p);
 node *make_node_from_array(struct array *a);
 PMOD_EXPORT void push_array_items(struct array *a);
-void describe_array_low(struct array *a, struct processing *p, int indent);
+void describe_array_low(struct byte_buffer *buf, struct array *a, struct processing *p, int indent);
 #ifdef PIKE_DEBUG
 void simple_describe_array(struct array *a);
 void describe_index(struct array *a,
@@ -181,7 +178,7 @@ void describe_index(struct array *a,
 		    struct processing *p,
 		    int indent);
 #endif
-void describe_array(struct array *a,struct processing *p,int indent);
+void describe_array(struct byte_buffer *buf,struct array *a,struct processing *p,int indent);
 PMOD_EXPORT struct array *aggregate_array(INT32 args);
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *explode(struct pike_string *str,
@@ -194,13 +191,14 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end);
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
+ptrdiff_t do_gc_weak_array(struct array *a);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
 #endif
-PMOD_EXPORT void visit_array (struct array *a, int action);
-void gc_mark_array_as_referenced(struct array *a);
-void real_gc_cycle_check_array(struct array *a, int weak);
+PMOD_EXPORT void visit_array (struct array *a, int action, void *extra);
+PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a);
+PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);
 void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);
@@ -214,13 +212,17 @@ void debug_dump_array(struct array *a);
 void count_memory_in_arrays(size_t *num_, size_t *size_);
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b);
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
+
+/* Automap internals. */
+void assign_array_level_value( struct array *a, struct svalue *b, int level );
+void assign_array_level( struct array *a, struct array *b, int level );
 /* Prototypes end here */
 
 #define array_get_flags(a) ((a)->flags)
 
-#define visit_array_ref(A, REF_TYPE)					\
+#define visit_array_ref(A, REF_TYPE, EXTRA)				\
   visit_ref (pass_array (A), (REF_TYPE),				\
-	     (visit_thing_fn *) &visit_array, NULL)
+	     (visit_thing_fn *) &visit_array, (EXTRA))
 #define gc_cycle_check_array(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
 
@@ -258,8 +260,8 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
       } END_ACCEPT_UNFINISHED_TYPE_FIELDS;				\
       /* Unless the user does something, the type field will contain */	\
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
-      MEMCPY((char *) (ITEM(base_sval[-1].u.array) + oldsize__),	\
-	     (char *) base_sval, diff__ * sizeof(struct svalue));	\
+      memcpy(ITEM(base_sval[-1].u.array) + oldsize__,                   \
+	     base_sval, diff__ * sizeof(struct svalue));                \
       Pike_sp = base_sval;						\
     }									\
   } while (0)
@@ -309,8 +311,8 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 
 
 /**
- * Sets an index in an array. 
- * 
+ * Sets an index in an array.
+ *
  * @param V the array to modify
  * @param I the index of the array to set
  * @param S the svalue to set

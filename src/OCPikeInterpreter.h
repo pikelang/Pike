@@ -21,7 +21,7 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSException.h>
 
-__attribute__((visibility("default")))
+PMOD_EXPORT
 @interface OCPikeInterpreter : NSObject
 {
   int is_started;

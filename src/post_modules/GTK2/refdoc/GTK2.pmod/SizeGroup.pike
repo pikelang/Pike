@@ -20,7 +20,7 @@
 //! one you have added all widgets to a GTK2.SizeGroup, you can drop the initial
 //! reference to the size group.  If the widgets in the size group are
 //! subsequently destroyed, then they will be removed from the size group; when
-//! allow idgets have been removed, the size group will be freed.
+//! all widgets have been removed, the size group will be freed.
 //! 
 //! Widgets can be part of multiple size groups; GTK+ will compute the
 //! horizontal size of a widget from the horizontal requisition of all widgets
@@ -58,6 +58,11 @@ int get_ignore_hidden( );
 
 int get_mode( );
 //! Gets the current mode.
+//!
+//!
+
+array get_widgets( );
+//! Returns the list of widgets associated with this size group.
 //!
 //!
 

@@ -14,11 +14,11 @@ protected inherit .DocParser;
 // DOC EXTRACTION
 //========================================================================
 
-protected private class Extractor {
+private class Extractor {
   protected constant WITH_NL = .PikeParser.WITH_NL;
 
-  //  static private string filename;
-  protected private .PikeParser parser;
+  // private string filename;
+  private .PikeParser parser;
 
   protected .Flags flags;
   protected int verbosity;
@@ -40,6 +40,7 @@ protected private class Extractor {
 	       pos->filename||"-", pos->firstline, msg);
       }
     }
+    msg = (pos->filename||"-")+":"+(pos->firstline)+": "+msg;
     return msg;
   }
 
@@ -53,7 +54,7 @@ protected private class Extractor {
   }
 
   protected void create(string s, string filename, .Flags flags) {
-    this_program::flags = flags;
+    this::flags = flags;
     verbosity = flags & .FLAG_VERB_MASK;
 
     parser = .PikeParser(0, filename, flags);
@@ -71,7 +72,7 @@ protected private class Extractor {
       string s = tokens[i];
       int pos = positions[i];
       if (has_prefix(s, DOC_COMMENT)) {
-        s = String.trim_all_whites(s[sizeof(DOC_COMMENT) .. ]);
+        s = String.trim(s[sizeof(DOC_COMMENT) .. ]);
         if (s == "@ignore") {
 	  ignores->push(pos);
 	  continue;
@@ -204,9 +205,17 @@ protected private class Extractor {
       else if (parser->peekToken() == "}")
         // reached the end of the enum { ... }.
         return;
-      else
+      else {
         extractorError("expected doc comment or enum constant, got %O",
                        parser->peekToken());
+	// NB: Only reached in FLAG_KEEP_GOING mode.
+
+	if (parser->peekToken() == "") return;	// EOF.
+
+	// Get rid of the erroneous token.
+	parser->readToken();
+	continue;
+      }
 
       if (doc) {
         .DocParser.Parse parse =
@@ -219,15 +228,14 @@ protected private class Extractor {
           extractorError("@%s not allowed in doc for enum constant",
                          metadata->type);
         doc->xml = parse->doc("_enumconstant");
-
-        parent->addChild(DocGroup(consts, doc));
       }
-      // ignore constants without any adjacent doc comment...
+      parent->addChild(DocGroup(consts, doc));
     }
   }
 
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
-  protected array(array(PikeObject)|int(0..1)) parseAdjacentDecls(Class|Module c)
+  protected array(array(PikeObject)|int(0..1)) parseAdjacentDecls(AutoDoc root,
+								  Class|Module c)
   {
     array(PikeObject) res = ({ });
     for (;;) {
@@ -262,14 +270,14 @@ protected private class Extractor {
 	}
 	if (parser->peekToken() == "{") {
 	  parser->eat("{");
-	  parseClassBody([object(Class)] p, 0);
+	  parseClassBody(root, [object(Class)] p, 0);
 	  parser->eat("}");
 	}
       }
       else if (objectp(p) && p->objtype == "modifier" &&
 	       parser->peekToken() == "{") {
 	parser->eat("{");
-        parseClassBody(c, p->modifiers);
+        parseClassBody(root, c, p->modifiers);
 	parser->eat("}");
       }
       else if (objectp(p) && p->objtype == "enum") {
@@ -304,6 +312,7 @@ protected private class Extractor {
         return ({ res, terminating_nl });
     }
   }
+
   // parseClassBody does the main work and scans the stream looking for:
   // 1.   doclines + decls, no blank line in between
   // 2.   decls + doclines,    -----  "  " -----
@@ -313,10 +322,11 @@ protected private class Extractor {
   // If 'filename' is supplied, it will look for standalone doc comments
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
-  Documentation parseClassBody(Class|Module c,
+  Documentation parseClassBody(AutoDoc root, Class|Module c,
                                array(string) defModifiers,
                                void|string filename,
-                               void|string inAt) {
+			       void|string inAt)
+  {
     Documentation filedoc = 0;
   mainloop:
     for (;;) {
@@ -339,14 +349,14 @@ protected private class Extractor {
         doc = readAdjacentDocLines();    // read the doc comment lines
         s = parser->peekToken(WITH_NL);
         if (!isDelimiter(s)) {           // and decls that may follow
-          [decls, got_nl] = parseAdjacentDecls(c);
+          [decls, got_nl] = parseAdjacentDecls(root, c);
           s = parser->peekToken(WITH_NL);
           if (isDocComment(s))
             extractorError("doc + decl + doc is forbidden!");
         }
       }
       else {
-        [decls, got_nl] = parseAdjacentDecls(c);
+        [decls, got_nl] = parseAdjacentDecls(root, c);
         s = parser->peekToken(WITH_NL);
         if (isDocComment(s))
           doc = readAdjacentDocLines();
@@ -371,11 +381,9 @@ protected private class Extractor {
 
       if (!doc) {
         foreach (decls, PikeObject obj)
-          if (obj->objtype == "class" &&
-	      ([object(Class)]obj)->containsDoc() &&
-	      sizeof(filter(obj->docGroups->documentation, `!=, EmptyDoc))) {
-	    extractorWarning("undocumented class %O contains doc comments",
-			     obj->name);
+          if ((< "class", "enum" >)[obj->objtype] && obj->containsDoc()) {
+	    extractorWarning("undocumented %s %O contains doc comments",
+			     obj->objtype, obj->name);
 	    doc = EmptyDoc;
 	  }
       }
@@ -387,18 +395,22 @@ protected private class Extractor {
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();
+	object(Class)|Module parent = c;
         if (meta->type && meta->type != "decl") {
           string what = meta->type;
           switch(what) {
+	    case "namespace":
+	      parent = root;
+	      // FALL_THROUGH
             case "module":
-              if (c->objtype == "class" && what == "module")
-                extractorError("@module not allowed in class files");
+              // if (c->objtype == "class" && what == "module")
+              //   extractorError("@module not allowed in class files");
               // fall through
             case "class":
               if (sizeof(decls))
-                extractorError("@module doc comment must stand alone");
-              object(Class)|object(Module) alreadyChild =
-                c->findChild(meta->name);
+                extractorError("@%s doc comment must stand alone", what);
+	      object(Class)|object(Module) alreadyChild =
+		parent->findChild(meta->name);
               object(Class)|object(Module) m;
               if (alreadyChild) {
                 m = alreadyChild;
@@ -414,17 +426,23 @@ protected private class Extractor {
                 m->name = meta->name;
               }
               doc->xml = parse->doc("_" + what);
-              m->documentation = doc;
-              if (alreadyChild)
-                if (doc->xml && doc->xml != "")
+	      if (doc->xml && doc->xml != "") {
+		if (alreadyChild && alreadyChild->documentation &&
+		    alreadyChild->documentation->xml &&
+		    alreadyChild->documentation->xml != "") {
                   extractorError("doc not allowed on reentrance into '%s %s'",
                                  m->objtype, m->name);
+		}
+		m->documentation = doc;
+	      }
               if (!alreadyChild)
-                c->AddChild(m);
-              parseClassBody(m, 0, 0, what);
+                parent->addChild(m);
+              parseClassBody(root, m, 0, 0, what);
               continue mainloop;
+
             case "endclass":
             case "endmodule":
+            case "endnamespace":
               if (sizeof(decls))
                 extractorError("@%s doc comment must stand alone", meta->type);
               if (inAt != what - "end")
@@ -434,6 +452,7 @@ protected private class Extractor {
                 extractorError("'@%s %s' doesn't match '@%s %s'",
                                meta->type, meta->name, c->objtype, c->name || "");
               return 0;  // no filedoc possible
+
             default:
               extractorError("@%s is not allowed in Pike files", meta->type);
           }
@@ -497,17 +516,29 @@ protected private class Extractor {
 
       if (doc) {
         if (wasNonGroupable) {
-          object(PikeObject) d = [object(PikeObject)] decls[0];
+          object(PikeObject) d;
+	  foreach(decls, object(PikeObject) po) {
+	    if (object_variablep(po, "documentation")) {
+	      d = po;
+	      break;
+	    }
+	    werror("Warning: Skipping declaration %O.\n", po);
+	  }
+	  if (!d) {
+	    werror("No documentation variable in documented declarations.\n");
+	    werror("decls: %O\n", decls);
+	    exit(1);
+	  }
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
-          c->AddChild(d);
+          c->addChild(d);
         }
         else {
           DocGroup d = DocGroup(decls, doc);
           d->appears = appears;
           d->belongs = belongs;
-          c->AddGroup(d);
+          c->addGroup(d);
         }
 
         string context;
@@ -521,7 +552,7 @@ protected private class Extractor {
 	foreach(decls, PikeObject obj) {
 	  if ((obj->objtype == "inherit") ||
 	      (obj->objtype == "import")) {
-	    c->AddInherit(obj);
+	    c->addInherit(obj);
 	  }
 	}
       }
@@ -531,7 +562,7 @@ protected private class Extractor {
   void parseCreateArgList(Class c) {
     Method createMethod = Method();
     createMethod->name = "create";
-    createMethod->modifiers = ({ "static" });
+    createMethod->modifiers = ({ "protected" });
     createMethod->returntype = VoidType();
     createMethod->argnames = ({});
     createMethod->argtypes = ({});
@@ -594,65 +625,60 @@ protected private class Extractor {
     }
   }
 
-} // static private class Extractor
+} // private class Extractor
 
 //! Extract documentation for a Pike namespace.
 //!
 //! @seealso
 //!   @[extractModule()], @[extractClass()]
-NameSpace extractNamespace(string s, void|string filename,
-			   void|string namespaceName, void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+void extractNamespace(AutoDoc root, string s, void|string filename,
+		      void|string namespaceName, void|.Flags flags)
+{
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
   ns->name = namespaceName || filename;
-  Documentation doc = e->parseClassBody(ns, 0, filename);
+  root->addChild(ns);
+  Documentation doc = e->parseClassBody(root, ns, 0, filename);
   ns->documentation = doc;
-  // if there was no documentation in the file whatsoever
-  if (!doc && !sizeof(ns->docGroups) && !sizeof(ns->children))
-    return 0;
-  return ns;
 }
 
 //! Extract documentation for a Pike module.
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractClass()]
-Module extractModule(string s, void|string filename, void|string moduleName,
-		     void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+void extractModule(AutoDoc root, Module parent, string s, void|string filename,
+		   void|string moduleName, void|.Flags flags)
+{
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Module m = Module();
   m->name = moduleName || filename;
-  Documentation doc = e->parseClassBody(m, 0, filename);
+  parent->addChild(m);
+  Documentation doc = e->parseClassBody(root, m, 0, filename);
   m->documentation = doc;
-  // if there was no documentation in the file whatsoever
-  if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
-    return 0;
 
   // If there's a _module_value it replaces the module itself.
   PikeObject module_value = m->findChild("_module_value");
   if (module_value) {
     module_value->name = m->name;
-    m = module_value;
+    parent->children -= ({ m });
+    parent->addChild(module_value);
   }
-  return m;
 }
 
 //! Extract documentation for a Pike class (aka program).
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractModule()]
-Class extractClass(string s, void|string filename, void|string className,
-		   void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+void extractClass(AutoDoc root, Module parent, string s, void|string filename,
+		  void|string className, void|.Flags flags)
+{
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Class c = Class();
   c->name = className || filename;
-  Documentation doc = e->parseClassBody(c, 0, filename);
+  parent->addChild(c);
+  Documentation doc = e->parseClassBody(root, c, 0, filename);
   c->documentation = doc;
-  // if there was no documentation in the file...
-  if (!doc && !sizeof(c->docGroups) && !sizeof(c->children))
-    return 0;
-  return c;
 }

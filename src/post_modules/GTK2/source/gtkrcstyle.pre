@@ -17,7 +17,7 @@ void set_name(string name)
   {
     gchar *name;
     GtkRcStyle *style;
-    get_all_args("set_name",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     style=GTK_RC_STYLE(THIS->obj);
     style->name=g_strdup(name);
   }
@@ -34,7 +34,7 @@ void set_bg_pixmap_name(array(string) names)
     int i;
     GtkRcStyle *style;
     style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_bg_pixmap_name",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     for (i=0; i<(a->size>5?5:a->size); i++) {
       style->bg_pixmap_name[i]=g_strdup(PGTK_GETSTR(ITEM(a)+i));
     }
@@ -50,7 +50,7 @@ void set_color_flags(array(int) flags)
     struct array *a;
     int i;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_color_flags",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     for (i=0; i<(a->size>5?5:a->size); i++) {
       style->color_flags[i]=PGTK_GETINT(ITEM(a)+i);
     }
@@ -83,7 +83,7 @@ void set_fg(array(GDK2.Color) colors)
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_fg",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     set_colors(a,style->fg);
   }
   RETURN_THIS();
@@ -96,7 +96,7 @@ void set_bg(array(GDK2.Color) colors)
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_bg",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     set_colors(a,style->bg);
   }
   RETURN_THIS();
@@ -109,7 +109,7 @@ void set_text(array(GDK2.Color) colors)
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_text",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     set_colors(a,style->text);
   }
   RETURN_THIS();
@@ -122,7 +122,7 @@ void set_base(array(GDK2.Color) colors)
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    get_all_args("set_base",args,"%a",&a);
+    get_all_args(NULL,args,"%a",&a);
     set_colors(a,style->base);
   }
   RETURN_THIS();
@@ -135,7 +135,7 @@ void set_xthickness(int value)
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
     INT_TYPE val;
-    get_all_args("set_xthickness",args,"%i",&val);
+    get_all_args(NULL,args,"%i",&val);
     style->xthickness=val;
   }
   RETURN_THIS();
@@ -148,7 +148,7 @@ void set_ythickness(int value)
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
     int val;
-    get_all_args("set_ythickness",args,"%a",&val);
+    get_all_args(NULL,args,"%a",&val);
     style->ythickness=val;
   }
   RETURN_THIS();

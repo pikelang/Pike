@@ -174,7 +174,7 @@ constant key_names =
 
   -100:"Joy0",  -101:"Joy1",  -102:"Joy2",  -103:"Joy3",
   -104:"Joy4",  -105:"Joy5",  -106:"Joy6",  -107:"Joy7",
-  -108:"Joy8",  -109:"Joy9",  -110:"Joy10",  -111:"Joy11", 
+  -108:"Joy8",  -109:"Joy9",  -110:"Joy10",  -111:"Joy11",
   -112:"Joy12", -113:"Joy13",  -114:"Joy14",  -115:"Joy15",
   -116:"Joy16", -117:"Joy17",  -118:"Joy18",  -119:"Joy19",
 
@@ -194,11 +194,11 @@ constant key_names =
 
 #ifdef __NT__
 string get_nt_keymap() {
-  string keymap = RegGetValue(HKEY_CURRENT_USER,
-			      "Keyboard Layout\\Preload", "1");
-  keymap = RegGetValue(HKEY_LOCAL_MACHINE,
-		       "SYSTEM\\CurrentControlSet\\Control\\"
-		       "Keyboard Layout\\DosKeybCodes", keymap);
+  string keymap = System.RegGetValue(HKEY_CURRENT_USER,
+                                     "Keyboard Layout\\Preload", "1");
+  keymap = System.RegGetValue(HKEY_LOCAL_MACHINE,
+                              "SYSTEM\\CurrentControlSet\\Control\\"
+                              "Keyboard Layout\\DosKeybCodes", keymap);
   return keymap;
 }
 #endif
@@ -273,9 +273,10 @@ class Event
     return hash( sprintf( "%d %d %d", press, key, modifiers ) );
   }
 
-  string cast(string to) {
+  protected string cast(string to)
+  {
     if(to=="string") return data;
-    error("Can not cast to %s.\n", to);
+    return UNDEFINED;
   }
 
   void update_modifiers(int _modifiers) {

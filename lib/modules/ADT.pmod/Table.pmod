@@ -10,23 +10,23 @@
 //! Optionally, one can provide a column type. The Table module can do a number
 //! of operations on a given table, like computing the sum of a column,
 //! grouping, sorting etc.
-//! 
+//!
 //! All column references are case insensitive. A column can be referred to by
 //! its position (starting from zero). All operations are non-destructive. That
 //! means that a new table object will be returned after, for example, a sort.
 
 //! The table base-class.
 class table {
-  protected private mapping fieldmap;
-  protected private array table, fields, types;
-  
-  protected private array|int remap(array|string|int cs, int|void forgive)
+  protected mapping fieldmap;
+  protected array table, fields, types;
+
+  protected array|int remap(array|string|int cs, int|void forgive)
   {
     array v = ({});
     int ap = arrayp(cs);
     if(!ap) cs = ({ cs });
     foreach(cs, string|int f)
-      if(zero_type(intp(f)?f:fieldmap[lower_case(f)])) {
+      if(undefinedp(intp(f)?f:fieldmap[lower_case(f)])) {
 	if(!forgive)
 	  TABLE_ERR("Unknown field '"+f+"'");
       } else
@@ -53,8 +53,8 @@ class table {
     mapping m = decode_value(s);
     return copy(m->table, m->fields, m->types);
   }
-  
-  mixed cast(string type)
+
+  protected mixed cast(string type)
   {
     switch(type) {
     case "array":
@@ -62,35 +62,36 @@ class table {
     case "string":
       return ASCII->encode(this);
     }
+    return UNDEFINED;
   }
 
   //! This method returns the column names for the table. The case used when
   //! the table was created will be returned.
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return copy_value(fields);
-  }  
+  }
 
   //! This method returns the contents of a table as a two dimensional array.
   //! The format is an array of rows. Each row is an array of columns.
-  array(array) _values()
+  protected array(array) _values()
   {
     return copy_value(table);
-  }  
+  }
 
   //! This method returns the number of rows in the table.
-  int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(table);
   }
 
   //! This method reverses the rows of the table and returns a
   //! new table object.
-  object reverse()
+  protected this_program reverse()
   {
     return copy(predef::reverse(table), fields, types);
   }
-  
+
   //! This method returns the contents of a given column as an array.
   array col(int|string column)
   {
@@ -104,7 +105,7 @@ class table {
   }
 
   //! Same as @[col()].
-  array `[](int|string column)
+  protected array `[](int|string column)
   {
     return col(column);
   }
@@ -112,38 +113,38 @@ class table {
   //! This method compares two tables. They are equal if the contents
   //! of the tables and the column names are equal. The column name
   //! comparison is case insensitive.
-  int `==(object table)
+  protected int(0..1) `==(object table)
   {
     return (equal(Array.map(fields, lower_case),
 		  Array.map(indices(table), lower_case)) &&
-	    equal(this_program::table, values(table)));
+	    equal(this::table, values(table)));
   }
 
   //! This method appends two tables. The table given as an argument will be
   //! added at the bottom of the current table. Note, the column names must
   //! be equal. The column name comparison is case insensitive.
-  object append_bottom(object table)
+  this_program append_bottom(object table)
   {
     if(!equal(Array.map(indices(table), lower_case),
 	      Array.map(fields, lower_case)))
       TABLE_ERR("Table fields are not equal.");
-    return copy(this_program::table+values(table), fields, types);
+    return copy(this::table+values(table), fields, types);
   }
 
   //! This method appends two tables. The table given as an argument will be
   //! added on the right side of the current table. Note that the number of
   //! rows in both tables must be equal.
-  object append_right(object table)
+  this_program append_right(object table)
   {
-    if(sizeof(table) != sizeof(this_program::table))
+    if(sizeof(table) != sizeof(this::table))
       TABLE_ERR("Table sizes are not equal.");
     array v = values(table);
-    for(int r = 0; r < sizeof(this_program::table); r++)
-      v[r] = this_program::table[r] + v[r];
+    for(int r = 0; r < sizeof(this::table); r++)
+      v[r] = this::table[r] + v[r];
     return copy(v, fields+indices(table), types+table->all_types());
   }
 
-  protected private mixed op_col(function f, int|string c, mixed ... args)
+  protected mixed op_col(function f, int|string c, mixed ... args)
   {
     c = remap(c);
     mixed x = table[0][c];
@@ -173,7 +174,7 @@ class table {
   }
 
   //! This method returns a new table object with the selected columns only.
-  object select(int|string ... columns)
+  this_program select(int|string ... columns)
   {
     array t = ({});
     columns = remap(columns);
@@ -184,7 +185,7 @@ class table {
 
   //! Like @[select()], but the given @[columns] will not be in the
   //! resulting table.
-  object remove(int|string ... columns)
+  this_program remove(int|string ... columns)
   {
     return select(@remap(fields) - remap(columns, 1));
   }
@@ -193,7 +194,7 @@ class table {
   //! returns zero, the row will be thrown away. If the function
   //! returns something non-zero, the row will be kept. The result
   //! will be returned as a new table object.
-  object where(array(int|string)|int|string columns, function f,
+  this_program where(array(int|string)|int|string columns, function f,
 	       mixed ... args)
   {
     array t = ({});
@@ -219,7 +220,7 @@ class table {
       f = mkmapping(args[0], allocate(sizeof(args[0]), f));
       args = args[1..];
     }
-    
+
     mapping m = ([]);
     array cs = remap(indices(f));
     f = mkmapping(cs, values(f));
@@ -279,7 +280,7 @@ class table {
     return copy(t, fields, types);
   }
 
-  protected private this_program _sort(int is_reversed, int|string ... cs)
+  protected this_program _sort(int is_reversed, int|string ... cs)
   {
     if(!sizeof(cs))
       return this;
@@ -314,11 +315,11 @@ class table {
   //! @seealso
   //! @[rsort()]
   //!
-  object sort(int|string ... columns)
+  this_program sort(int|string ... columns)
   {
     return _sort(0, @columns);
   }
-  
+
   //! Like @[sort()], but in descending order.
   object rsort(int|string ... columns)
   {
@@ -327,7 +328,7 @@ class table {
 
   //! This method truncates the table to the first @[n] rows and returns
   //! a new object.
-  object limit(int n)
+  this_program limit(int n)
   {
     return copy(table[0..(n-1)], fields, types);
   }
@@ -335,7 +336,7 @@ class table {
   //! This method renames the column named @[from] to @[to] and
   //! returns a new table object. Note that @[from] can be the column
   //! position.
-  object rename(string|int from, string to)
+  this_program rename(string|int from, string to)
   {
     array a = copy_value(fields);
     a[remap(from)] = to;
@@ -387,8 +388,8 @@ class table {
   //! @seealso
   //!   @[ADT.Table.ASCII.encode()]
   //!
-  void create(array(array) table, array(string) column_names,
-	      array(mapping(string:string))|void column_types)
+  protected void create(array(array) table, array(string) column_names,
+                        array(mapping(string:string))|void column_types)
   {
     if(!arrayp(table))
       TABLE_ERR("Table not array");
@@ -400,7 +401,7 @@ class table {
       if(!stringp(s))
 	TABLE_ERR("Field name not string");
 
-    this_program::table = copy_value(table);
+    this::table = copy_value(table);
     fields = copy_value(column_names);
     types = allocate(sizeof(column_names));
 
@@ -417,8 +418,8 @@ class table {
 }
 
 object Separated = class {
-  protected private string _string(mixed x) { return (string)x; }
-  
+  protected string _string(mixed x) { return (string)x; }
+
   object decode(string s, void|mapping options)
   {
     string rowsep = options->rowsep||"\n";
@@ -426,7 +427,7 @@ object Separated = class {
     array t = Array.map(s/rowsep, `/, colsep);
     return table(t[1..], t[0], options->types);
   }
-  
+
   mixed encode(object t, void|mapping options)
   {
     options = options || ([]);
@@ -462,7 +463,7 @@ object ASCII = class {
     mapping sizes = ([]);
     array fields = indices(t);
     string indent = " " * options->indent;
-    
+
     t = t->copy(({ fields }) + values(t));
     for(int field = 0; field < sizeof(fields); field++)
       t = (t->map(lambda(mixed m, int field, mapping sizes)

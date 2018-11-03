@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK2) && constant(GTK2.Widget)
+#require constant(GTK2.Widget)
 
 #define INDEX(x) GTK2[x]
 
@@ -43,16 +42,12 @@ mixed `[](string what)
 {
   if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;
-  if(!zero_type(INDEX("Gdk"+what)))
+  if(has_index(GTK2, "Gdk"+what))
     return INDEX("Gdk"+what);
-  if(!zero_type(INDEX("GDK_"+what)))
+  if(has_index(GTK2, "GDK_"+what))
     return INDEX("GDK_"+what);
-  if(!zero_type(INDEX("GDK_"+upper_case(GTK2->unsillycaps(what)))))
+  if(has_index(GTK2, "GDK_"+upper_case(GTK2->unsillycaps(what))))
     return INDEX("GDK_"+upper_case(GTK2->unsillycaps(what)));
   return UNDEFINED;
 //   return  GDKSupport[what];
 }
-
-#else /* constant(GTK2.Widget) */
-constant this_program_does_not_exist=1;
-#endif

@@ -14,6 +14,7 @@ mapping(int:string) replycodes =
    421:"<host> Service not available, closing transmission channel "
        "[This may be a reply to any command if the service knows it "
        "must shut down]",
+   454:"TLS not available due to temporary reason",
    450:"Requested mail action not taken: mailbox unavailable "
        "[E.g., mailbox busy]",
    451:"Requested action aborted: local error in processing",
@@ -63,7 +64,8 @@ class ClientHelper
     return tokens*"";
   }
 
-  //! Return an RFC2822 date-time string suitable for the @tt{Date:@} header.
+  //! Return an @rfc{2822@} date-time string suitable for the
+  //! @tt{Date:@} header.
   string rfc2822date_time(int ts)
   {
     mapping(string:int) lt = localtime(ts);
@@ -107,15 +109,15 @@ class Client
   //! @decl void create()
   //! @decl void create(Stdio.File server)
   //! @decl void create(string server, void|int port)
-  //! Creates an SMTP mail client and connects it to the
-  //! the @[server] provided. The server parameter may
-  //! either be a string with the hostname of the mail server,
-  //! or it may be a file object acting as a mail server.
-  //! If @[server] is a string, then an optional port parameter
-  //! may be provided. If no port parameter is provided, port
-  //! 25 is assumed. If no parameters at all is provided
-  //! the client will look up the mail host by searching
-  //! for the DNS MX record.
+  //!
+  //! Creates an SMTP mail client and connects it to the the @[server]
+  //! provided. The server parameter may either be a string with the
+  //! hostname of the mail server, or it may be a file object acting
+  //! as a mail server.  If @[server] is a string, then an optional
+  //! port parameter may be provided. If no port parameter is
+  //! provided, port 25 is assumed. If no parameters at all is
+  //! provided the client will look up the mail host by searching for
+  //! the DNS MX record.
   //!
   //! @throws
   //!   Throws an exception if the client fails to connect to
@@ -169,11 +171,11 @@ class Client
 
     return MIME.quote(tokens);
   }
-  
-  //! Sends a mail message from @[from] to the mail addresses
-  //! listed in @[to] with the mail body @[body]. The body
-  //! should be a correctly formatted mail DATA block, e.g.
-  //! produced by @[MIME.Message].
+
+  //! Sends a mail message from @[from] to the mail addresses listed
+  //! in @[to] with the mail body @[body]. The body should be a
+  //! correctly formatted mail DATA block, e.g.  produced by
+  //! @[MIME.Message].
   //!
   //! @seealso
   //!   @[simple_mail]
@@ -223,7 +225,7 @@ class Client
   //!
   //! @note
   //!   Some important headers are set to:
-  //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and 
+  //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and
   //!   @expr{"Content-Transfer-Encoding: 8bit"@}.
   //!   The @expr{"Date:"@} header is set to the current local time.
   //!   The @expr{"Message-Id"@} header is set to a @[Standards.UUID]
@@ -461,20 +463,19 @@ class AsyncClient
     }
   }
 
-  //! Creates an SMTP mail client and connects it to the
-  //! the @[server] provided. The server parameter may
-  //! either be a string with the hostname of the mail server,
-  //! or it may be a file object acting as a mail server.
-  //! If @[server] is a string, then an optional port parameter
-  //! may be provided. If no port parameter is provided, port
-  //! 25 is assumed. If no parameters at all is provided
-  //! the client will look up the mail host by searching
-  //! for the DNS MX record.
+  //! Creates an SMTP mail client and connects it to the the @[server]
+  //! provided. The server parameter may either be a string with the
+  //! hostname of the mail server, or it may be a file object acting
+  //! as a mail server.  If @[server] is a string, then an optional
+  //! port parameter may be provided. If no port parameter is
+  //! provided, port 25 is assumed. If no parameters at all is
+  //! provided the client will look up the mail host by searching for
+  //! the DNS MX record.
   //!
-  //! The callback will first be called when the connection is established
-  //! (@expr{cb(1, @@args)@}) or fails to be established with an error. The
-  //! callback will also be called with an error if one occurs during the
-  //! delivery of mails.
+  //! The callback will first be called when the connection is
+  //! established (@expr{cb(1, @@args)@}) or fails to be established
+  //! with an error. The callback will also be called with an error if
+  //! one occurs during the delivery of mails.
   //!
   //! In the error cases, the @expr{cb@} gets called the following ways:
   //! @ul
@@ -496,9 +497,9 @@ class AsyncClient
 	if (!cb) cb = server->cb;
 	if (!args) args = server->args;
 	object t = server->server;
-	this_program::port = port;
-	this_program::args = args;
-	this_program::cb = cb;
+	this::port = port;
+	this::args = args;
+	this::cb = cb;
 
 	// fetch queue
 	foreach(server->error_cbs; function f; array args)
@@ -511,16 +512,16 @@ class AsyncClient
 	sequences = substitute_callback_rec(server->sequences, server);
 
 	destruct(server);
-	this_program::server = server = t;
+	this::server = server = t;
 	initiate_connection(server, port, cb, @args);
 	return;
       }
     }
 
-    this_program::server = server;
-    this_program::port = port;
-    this_program::cb = cb;
-    this_program::args = args;
+    this::server = server;
+    this::port = port;
+    this::cb = cb;
+    this::args = args;
 
     if(!error_cbs[cb]) error_cbs[cb] = ({ });
     error_cbs[cb] += ({ args });
@@ -529,16 +530,16 @@ class AsyncClient
     {
       // Lookup MX record here (Using DNS.pmod)
       dns->async_get_mx(gethostname(), lambda(array a)
-			{
-			   if (a)
-			   {
-			      dns->async_host_to_ip(a[0], lambda(string host, string ip)
-						    {
-						      initiate_connection(ip, port, cb, @args);
-						    });
-			   } else
-			      error("Failed to connect to mail server.\n");
-			});
+        {
+          if (a)
+          {
+            dns->async_host_to_ip(a[0], lambda(string host, string ip)
+              {
+                initiate_connection(ip, port, cb, @args);
+              });
+          } else
+            error("Failed to connect to mail server.\n");
+        });
     } else
     {
        if (is_ip(server))
@@ -547,9 +548,9 @@ class AsyncClient
        }
        else
 	  dns->async_host_to_ip(server, lambda(string host, string ip)
-				{
-			           initiate_connection(ip, port, cb, @args);
-				});
+            {
+              initiate_connection(ip, port, cb, @args);
+            });
     }
   }
 
@@ -700,7 +701,7 @@ class AsyncClient
   //!
   //! @note
   //!   Some important headers are set to:
-  //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and 
+  //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and
   //!   @expr{"Content-Transfer-Encoding: 8bit"@}. @expr{"Date:"@}
   //!   header isn't used at all.
   //!
@@ -798,15 +799,15 @@ class Configuration {
 
   //! Message max size
   int maxsize = 100240000;
-  
+
   //! Maximum number of recipients (default 1000)
   int maxrcpt = 1000;
-  
+
   //! Verify sender domain for MX
   int checkdns = 0;
-  
+
   //! Lamme check email from validity
-  int checkemail = 1; 
+  int checkemail = 1;
 
   //! Give raw data and normal MIME data, if set to
   //! yes your cb_data function should take an extra
@@ -879,7 +880,7 @@ class Connection {
   protected array(string) sequence = ({ });
   // the message id of the current mail
   protected string|int messageid;
-  
+
   // whether you are in data mode or not...
   int datamode = 0;
 
@@ -924,7 +925,7 @@ class Connection {
        return check[1];
      return 0;
    }
-   
+
    protected void outcode(int code, void|string internal_error)
    {
      string msg = (string) code + " ";
@@ -945,7 +946,7 @@ class Connection {
 
    protected void log(string fmt, mixed ... args)
    {
-     string errmsg = Calendar.now()->format_time() + 
+     string errmsg = Calendar.now()->format_time() +
        " Pike "+protocol+" server : ";
      if(messageid)
        errmsg += messageid + ": ";
@@ -955,7 +956,7 @@ class Connection {
      else
        logfunction(errmsg);
    }
-  
+
    // make the received header
    protected string received()
    {
@@ -969,7 +970,7 @@ class Connection {
        gethostname(), messageid, Calendar.now()->format_smtp());
      return rec;
    }
-   
+
    void helo(string argument)
    {
      remove_call_out(handle_timeout);
@@ -1020,7 +1021,7 @@ class Connection {
       if(lower_case(parts[0]) != what)
         return 500;
       string validating_mail;
-      parts[1] = String.trim_all_whites(parts[1]);
+      parts[1] = String.trim(parts[1]);
       if(!sscanf(parts[1], "<%s>", validating_mail))
         sscanf(parts[1], "%s", validating_mail);
 
@@ -1061,7 +1062,7 @@ class Connection {
         }
       }
       if(what == "to")
-      { 
+      {
         int relayok = 0;
         foreach(domains;; string domain)
         {
@@ -1077,7 +1078,7 @@ class Connection {
       }
       return validating_mail;
    }
-   
+
    void mail(string argument)
    {
      remove_call_out(handle_timeout);
@@ -1131,7 +1132,7 @@ class Connection {
      else
        outcode(503);
    }
- 
+
    void rcpt(string argument)
    {
      mixed err;
@@ -1170,7 +1171,7 @@ class Connection {
        outcode(getretcode(check), geterrorstring(check));
      }
    }
-  
+
    void data(string argument)
    {
      remove_call_out(handle_timeout);
@@ -1206,7 +1207,7 @@ class Connection {
      }
      return message;
    }
-   
+
    protected MIME.Message low_message(string content)
    {
      datamode = 0;
@@ -1262,7 +1263,7 @@ class Connection {
      call_out(handle_timeout, 310, "NOOP");
      outcode(250);
    }
-  
+
    void rset()
    {
      remove_call_out(handle_timeout);
@@ -1274,21 +1275,21 @@ class Connection {
      //sequence = ({ });
      outcode(250);
    }
-   
+
    void vrfy()
    {
      remove_call_out(handle_timeout);
      call_out(handle_timeout, 310, "VRFY");
      outcode(252);
    }
-   
+
    void quit()
    {
      fd->write("221 " + replace(replycodes[221], "<host>", localhost)
 	       + "\r\n");
      shutdown_fd();
    }
-   
+
    protected int launch_functions(string line)
    {
      array(string) command = line / " ";
@@ -1299,7 +1300,7 @@ class Connection {
        mixed err = 0;
        if(has_index(commands, _command))
        {
-         err = catch 
+         err = catch
          {
 #ifdef SMTP_DEBUG
             log("calling %O\n", _command);
@@ -1320,7 +1321,7 @@ class Connection {
        }
      }
    }
-  
+
    protected void read_cb(mixed id, string data)
    {
      string pattern;
@@ -1346,11 +1347,7 @@ class Connection {
          launch_functions(inputbuffer[..end]);
          if(lower_case(inputbuffer[..end]) == "quit")
          {
-#if constant(this)
            destruct(this);
-#else
-           destruct(this_object());
-#endif
            return;
          }
          pattern = "\r\n";
@@ -1374,7 +1371,7 @@ class Connection {
        bufferposition = search(inputbuffer, pattern);
      }
    }
-   
+
    protected void write_cb()
    {
      fd->write("220 " + replace(replycodes[220], "<host>", localhost)
@@ -1399,7 +1396,7 @@ class Connection {
      destruct(lock);
 #endif
    }
-   
+
    protected void close_cb(int i_close_the_stream)
    {
      if(!i_close_the_stream)
@@ -1440,14 +1437,14 @@ class Connection {
      call_out(handle_timeout, 300, "'First connexion'");
    }
 
-   void destroy()
+   protected void _destruct()
    {
      shutdown_fd();
    }
 
 };
 
-//! The use of Protocols.SMTP.server is quite easy and allow you 
+//! The use of Protocols.SMTP.server is quite easy and allow you
 //!  to design custom functions to process mail. This module does not
 //!  handle mail storage nor relaying to other domains.
 //! So it is your job to provide mail storage and relay mails to other servers
@@ -1465,11 +1462,9 @@ class Server {
      destruct(fd);
    }
 
-   //! @decl void create(array(string) _domains, void|int port,@
-   //! 				void|string ip, function _cb_mailfrom,@
-   //!				function _cb_rcptto, function _cb_data)
-   //!	Create a receiving SMTP server. It implements RFC 2821, 2822 and 1854.
-   //! 
+   //!	Create a receiving SMTP server. It implements @rfc{2821@},
+   //!	@rfc{2822@} and @rfc{1854@}.
+   //!
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one
    //!   domain (the first one will be used for MAILER-DAEMON address).
@@ -1495,9 +1490,9 @@ class Server {
    //!  void|string rawdata)
    //!  object mime : the mime data object
    //!  string sender : sender of the mail (from the mailfrom command)
-   //!  array(string) recipients : one or more recipients given by the rcpt 
+   //!  array(string) recipients : one or more recipients given by the rcpt
    //!     to command
-   //! return : SMTP code to output to the client. If you return an array 
+   //! return : SMTP code to output to the client. If you return an array
    //!   the first element is the SMTP code and the second is the error string
    //!   to display.
    //! @example
@@ -1513,10 +1508,10 @@ class Server {
    //!   // check the user's mailbox here
    //!   return 250;
    //! }
-   //! 
+   //!
    //! int cb_data(object mime, string sender, array(string) recipients)
    //! {
-   //!   write(sprintf("smtpd: mailfrom=%s, to=%s, headers=%O\ndata=%s\n", 
+   //!   write(sprintf("smtpd: mailfrom=%s, to=%s, headers=%O\ndata=%s\n",
    //!   sender, recipients * ", ", mime->headers, mime->getdata()));
    //!   // check the data and deliver the mail here
    //!   if(mime->body_parts)
@@ -1526,18 +1521,17 @@ class Server {
    //!   }
    //!   return 250;
    //! }
-   //! 
+   //!
    //! int main(int argc, array(string) argv)
    //! {
    //!   Protocols.SMTP.Server(({ "ece.fr" }), 2500, "127.0.0.1", @
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
-   void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom,
-     function _cb_rcptto, function _cb_data)
+   void create(array(string) domains, void|int port, void|string ip,
+               function cb_mailfrom, function cb_rcptto, function cb_data)
    {
-     config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
-     random_seed(getpid() + time());
+     config = Configuration(domains, cb_mailfrom, cb_rcptto, cb_data);
      if(!port)
        port = 25;
      fdport = Stdio.Port(port, accept_callback, ip);

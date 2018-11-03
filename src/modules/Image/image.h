@@ -13,62 +13,65 @@
 /* Various X86 dialects. */
 #define IMAGE_MMX   1
 #define IMAGE_SSE   2
-#define IMAGE_3DNOW 4 
-#define IMAGE_EMMX  8 
+#define IMAGE_3DNOW 4
+#define IMAGE_EMMX  8
 extern int image_cpuid;
 
-
-#define MAX_NUMCOL 32768
-
-#define QUANT_SELECT_CACHE 6
-
 #define COLORTYPE unsigned char
-#define COLORSIZE 1
 #define COLORMAX 255
 #define COLORLMAX 0x7fffffff
 #define COLORLBITS 31
-#define COLORBITS 8
 
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
 #define COLORL_TO_FLOAT(X) ((float)((((float)(X))/(float)(COLORLMAX>>8))/256.0))
 
+#define CHECK_INIT() if(!THIS->img) \
+    Pike_error("Image object not initialized.\n");
+
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
 
-/* Some marcos to avoid loss of precision warnings. */
-#ifdef __ECL
-static inline int DOUBLE_TO_INT(double d)
+#define testrange(x) _testrange((int)x)
+
+static inline int _testrange(int x)
 {
-  return DO_NOT_WARN((int)d);
+  if(x>255) return 255;
+  if(x<0) return 0;
+  return x;
 }
-static inline char DOUBLE_TO_CHAR(double d)
+
+static inline int absdiff(int a, int b)
 {
-  return DO_NOT_WARN((char)d);
+  return a<b?(b-a):(a-b);
 }
-static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
-{
-  return DO_NOT_WARN((COLORTYPE)d);
-}
-static inline COLORTYPE FLOAT_TO_COLOR(double X)
-{
-  return DO_NOT_WARN((COLORTYPE)((X)*((double)COLORMAX+0.4)));
-}
-static inline INT32 FLOAT_TO_COLORL(double X)
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+
+#define apply_alpha(x,y,alpha) \
+   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
+
+#define set_rgb_group_alpha(dest,src,alpha) \
+   ((dest).r=apply_alpha((dest).r,(src).r,alpha), \
+    (dest).g=apply_alpha((dest).g,(src).g,alpha), \
+    (dest).b=apply_alpha((dest).b,(src).b,alpha))
+
+static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
 {
   /* stupid floats */
-  return (DO_NOT_WARN((INT32)((X)*((double)(COLORLMAX/256))))*256+
-	  DO_NOT_WARN((INT32)((X)*255)));
+  /* The problem here is that the range of X is 0.0 - 1.0 inclusive,
+   * while it would be simpler if the max value wasn't reachable.
+   *
+   * A straight multiplication with COLORLMAX would map too few
+   * colors to COLORLMAX. We thus multiply with the size of the
+   * COLORL range (0 - COLORLMAX, ie (COLORLMAX + 1)) and check
+   * for the special case of X == 1.0.
+   */
+  unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
+  if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
+  return (INT32)tmp;
 }
-#else /* !__ECL */
-#define DOUBLE_TO_INT(D)	((int)(D))
-#define DOUBLE_TO_CHAR(D)	((char)(D))
-#define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
-#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
-#define FLOAT_TO_COLORL(X) /* stupid floats */ \
-	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
-#endif /* __ECL */
 
 #ifdef USE_VALGRIND
 /* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
@@ -82,13 +85,13 @@ static inline INT32 FLOAT_TO_COLORL(double X)
 
 #define FS_SCALE 1024
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b;
 /*   COLORTYPE __padding_dont_use__;*/
 } rgb_group;
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b,alpha;
 } rgba_group;
@@ -145,9 +148,9 @@ void image_paste_alpha_color(INT32 args);
 
 void image_add_layers(INT32 args);
 enum layer_method
-   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2, 
+   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2,
      LAYER_MULT=3, LAYER_ADD=4, LAYER_DIFF=5 };
-	 
+
 
 /* matrix.c */
 
@@ -174,7 +177,7 @@ void image_frompnm(INT32 args);
 /* x.c */
 
 void image_x_encode_pseudocolor(INT32 args);
- 
+
 /* pattern.c */
 
 void image_noise(INT32 args);
@@ -236,7 +239,7 @@ void image_orient4(INT32 args);
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb_dest);
 int image_color_arg(int arg,rgb_group *rgb_dest);
-void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+void _image_make_rgb_color(INT32 r,INT32 g,INT32 b);
 
 /* search.c */
 

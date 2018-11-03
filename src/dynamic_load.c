@@ -15,59 +15,55 @@
 #  include "interpret.h"
 #  include "constants.h"
 #  include "pike_error.h"
-#  include "module.h"
+#  include "pike_compiler.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
 #  include "main.h"
 #  include "constants.h"
 #  include "lex.h"
 #  include "object.h"
+#  include "cyclic.h"
 
 #else /* TESTING */
 
 #include <stdio.h>
+#include <string.h>
 
 #endif /* !TESTING */
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif /* HAVE_ERRNO_H */
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif /* HAVE_STRING_H */
 
-#if !defined(HAVE_DLOPEN)
+#if !defined(HAVE_DLOPEN) || defined(USE_SEMIDYNAMIC_MODULES)
 
-#if defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
+#ifdef USE_SEMIDYNAMIC_MODULES
+#undef HAVE_DLOPEN
+#define USE_STATIC_MODULES
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#define USE_DYNAMIC_MODULES
+#elif defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
 #define USE_DLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else
-#if defined(HAVE_SHL_LOAD) && defined(HAVE_DL_H)
+#elif defined(HAVE_SHL_LOAD) && defined(HAVE_DL_H)
 #define USE_HPUX_DL
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else
-
-#ifdef USE_DLL
-#if defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
-    defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
+#elif defined(USE_DLL) && \
+      defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
+      defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
 #define USE_LOADLIBRARY
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#endif
-#endif
-
-#ifdef HAVE_MACH_O_DYLD_H
+#elif defined(HAVE_MACH_O_DYLD_H)
 /* MacOS X... */
 #define USE_DYLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#endif /* HAVE_MACH_O_DYLD_H */
+#endif
 
-#endif
-#endif
 #else
+/* HAVE_DLOPEN */
 #define HAVE_SOME_DLOPEN
 #endif
 
@@ -76,13 +72,60 @@
 
 typedef void (*modfun)(void);
 
-#ifdef USE_LOADLIBRARY
+#ifdef USE_STATIC_MODULES
+
+static void *dlopen(const char *foo, int how)
+{
+  struct pike_string *s = low_read_file(foo);
+  char *name, *end;
+  void *res;
+
+  if (!s) return NULL;
+  if (strncmp(s->str, "PMODULE=\"", 9)) {
+    free_string(s);
+    return NULL;
+  }
+  name = s->str + 9;
+  if (!(end = strchr(name, '\"'))) {
+    free_string(s);
+    return NULL;
+  }
+
+  res = find_semidynamic_module(name, end - name);
+  free_string(s);
+  return res;
+}
+
+static char *dlerror(void)
+{
+  return "Invalid dynamic module.";
+}
+
+static void *dlsym(void *module, char *function)
+{
+  if (!strcmp(function, "pike_module_init"))
+    return get_semidynamic_init_fun(module);
+  if (!strcmp(function, "pike_module_exit"))
+    return get_semidynamic_exit_fun(module);
+  return NULL;
+}
+
+static int dlinit(void)
+{
+  return 1;
+}
+
+static void dlclose(void *module)
+{
+}
+
+#elif defined(USE_LOADLIBRARY)
 #include <windows.h>
 
 static TCHAR *convert_string(const char *str, ptrdiff_t len)
 {
   ptrdiff_t e;
-  TCHAR *ret=(TCHAR *)xalloc((len+1) * sizeof(TCHAR));
+  TCHAR *ret=xalloc((len+1) * sizeof(TCHAR));
   for(e=0;e<len;e++) ret[e]=EXTRACT_UCHAR(str+e);
   ret[e]=0;
   return ret;
@@ -94,7 +137,7 @@ static void *dlopen(const char *foo, int how)
   HINSTANCE ret;
   tmp=convert_string(foo, strlen(foo));
   ret=LoadLibrary(tmp);
-  free((char *)tmp);
+  free(tmp);
   return (void *)ret;
 }
 
@@ -176,7 +219,7 @@ static int dlinit(void)
 
 #include <dl.h>
 
-#if defined(BIND_VERBOSE)
+#ifdef BIND_VERBOSE
 #define RTLD_NOW	BIND_IMMEDIATE | BIND_VERBOSE
 #else
 #define RTLD_NOW	BIND_IMMEDIATE
@@ -195,11 +238,7 @@ static void *dlopen(const char *libname, int how)
 
 static char *dlerror(void)
 {
-#ifdef HAVE_STRERROR
   return strerror(errno);
-#else
-  return ""; /* I hope it's better than null..*/
-#endif
 }
 
 static void *dlsym(void *module, char *function)
@@ -272,10 +311,8 @@ static void *dlopen(const char *module_name, int how)
   if ((code = NSCreateObjectFileImageFromFile(module_name,
 					      &handle->image)) !=
       NSObjectFileImageSuccess) {
-#ifdef PIKE_DEBUG
-    fprintf(stderr, "NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
-	    module_name, code);
-#endif /* PIKE_DEBUG */
+    DWERR("NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
+          module_name, code);
     pike_dl_error = "NSCreateObjectFileImageFromFile() failed.";
     dlclose(handle);
     return NULL;
@@ -336,7 +373,7 @@ static const char *dlerror(void)
 #endif
 
 #ifndef RTLD_GLOBAL
-#define RTLD_GLOBAL 0 
+#define RTLD_GLOBAL 0
 #endif
 
 #ifndef NO_PIKE_GUTS
@@ -405,12 +442,13 @@ void f_load_module(INT32 args)
 {
   extern int global_callable_flags;
 
-  void *module;
+  void *module = NULL;
   modfun init, exit;
   struct module_list *new_module;
   struct pike_string *module_name;
 
   ONERROR err;
+  DECLARE_CYCLIC();
 
   module_name = Pike_sp[-args].u.string;
 
@@ -430,12 +468,16 @@ void f_load_module(INT32 args)
       }
   }
 
-  /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
-  /* Using RTLD_LAZY is faster, but makes it impossible to 
-   * detect linking problems at runtime..
-   */
-  module=dlopen(module_name->str, 
-                RTLD_NOW /*|RTLD_GLOBAL*/  );
+  if (!BEGIN_CYCLIC(module_name, 0)) {
+    SET_CYCLIC_RET(1);
+
+    /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
+    /* Using RTLD_LAZY is faster, but makes it impossible to
+     * detect linking problems at runtime..
+     */
+    module=dlopen(module_name->str,
+		  RTLD_NOW /*|RTLD_GLOBAL*/  );
+  }
 
   if(!module)
   {
@@ -444,6 +486,7 @@ void f_load_module(INT32 args)
     ((struct module_load_error_struct *) (err_obj->storage + module_load_error_offset))
 
     const char *err = dlerror();
+    struct pike_string *str;
     if (err) {
       if (err[strlen (err) - 1] == '\n')
 	push_string (make_shared_binary_string (err, strlen (err) - 1));
@@ -451,19 +494,20 @@ void f_load_module(INT32 args)
 	push_text (err);
     }
     else
-      push_constant_text ("Unknown reason");
+      push_static_text ("Unknown reason");
 
     add_ref (LOADERR_STRUCT (err_obj)->path = Pike_sp[-args - 1].u.string);
-    add_ref (LOADERR_STRUCT (err_obj)->reason = Pike_sp[-1].u.string);
+    add_ref (LOADERR_STRUCT (err_obj)->reason = str = Pike_sp[-1].u.string);
+    pop_stack();
 
-    if (Pike_sp[-args].u.string->len < 1024) {
-      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
+    if (str->len < 1024) {
+      throw_error_object (err_obj, "load_module", args,
 			  "load_module(\"%s\") failed: %s\n",
-			  module_name->str, Pike_sp[-1].u.string->str);
+                          module_name->str, str->str);
     } else {
-      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
-			  "load_module() failed: %s\n",
-			  Pike_sp[-1].u.string->str);
+      throw_error_object (err_obj, "load_module", args,
+                          "load_module(\"%s\") failed.\n",
+                          module_name->str);
     }
   }
 
@@ -478,6 +522,7 @@ void f_load_module(INT32 args)
 		mp->name->str, module_name->str);
 	pop_n_elems(args);
 	ref_push_program(mp->module_prog);
+	END_CYCLIC();
 	return;
       }
   }
@@ -503,19 +548,6 @@ void f_load_module(INT32 args)
     }
   }
 
-#if defined(__NT__) && defined(_M_IA64)
-  {
-    fprintf(stderr, "pike_module_init: 0x%p\n"
-	    "  func: 0x%p\n"
-	    "  gp:   0x%p\n",
-	    init, ((void **)init)[0], ((void **)init)[1]);
-    fprintf(stderr, "pike_module_exit: 0x%p\n"
-	    "  func: 0x%p\n"
-	    "  gp:   0x%p\n",
-	    exit, ((void **)exit)[0], ((void **)exit)[1]);
-  }
-#endif /* __NT__ && _M_IA64 */
-
   new_module=ALLOC_STRUCT(module_list);
   new_module->next=dynamic_module_list;
   dynamic_module_list=new_module;
@@ -535,13 +567,7 @@ void f_load_module(INT32 args)
   { struct svalue *save_sp=Pike_sp;
 #endif
   SET_ONERROR(err, cleanup_compilation, NULL);
-#if defined(__NT__) && defined(_M_IA64)
-  fprintf(stderr, "Calling pike_module_init()...\n");
-#endif /* __NT__ && _M_IA64 */
   (*(modfun)init)();
-#if defined(__NT__) && defined(_M_IA64)
-  fprintf(stderr, "pike_module_init() done.\n");
-#endif /* __NT__ && _M_IA64 */
   UNSET_ONERROR(err);
 #ifdef PIKE_DEBUG
   if(Pike_sp != save_sp)
@@ -587,10 +613,12 @@ void f_load_module(INT32 args)
       dynamic_module_list = new_module->next;
       free_string(new_module->name);
       free(new_module);
+      END_CYCLIC();
       Pike_error("Failed to initialize dynamic module \"%S\".\n",
 		 module_name);
     }
   }
+  END_CYCLIC();
 }
 
 #endif /* USE_DYNAMIC_MODULES */
@@ -600,7 +628,7 @@ void init_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
   if (dlinit()) {
-  
+
     /* function(string:program) */
 
     ADD_EFUN("load_module", f_load_module,
@@ -658,7 +686,7 @@ void free_dynamic_load(void)
     if (tmp->module_prog)
       Pike_fatal ("There's still a program for a dynamic module.\n");
 #endif
-    free((char *)tmp);
+    free(tmp);
   }
 #endif
 }

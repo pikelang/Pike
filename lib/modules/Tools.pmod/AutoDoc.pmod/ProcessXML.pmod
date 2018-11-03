@@ -117,37 +117,6 @@ protected private void processWarning(string message, mixed ... args) {
 // From source file to XML
 //========================================================================
 
-// Wrap child in the proper modules and namespace.
-protected object makeWrapper(array(string) modules, object|void child)
-{
-  object m;
-  if (child->objtype != "autodoc") {
-    if (child->objtype != "namespace") {
-      string namespace = "predef";	// Default namespace.
-      if (sizeof(modules) && has_suffix(modules[0], "::")) {
-	// The parent module list starts with a namespace.
-	namespace = modules[0][..<2];
-	modules = modules[1..];
-      }
-      foreach(reverse(modules), string n) {
-	m = .PikeObjects.Module();
-	m->name = n;
-	if (child)
-	  m->AddChild(child);
-	child = m;
-      }
-      m = .PikeObjects.NameSpace();
-      m->name = namespace;
-      m->AddChild(child);
-      child = m;
-    }
-    m = .PikeObjects.AutoDoc();
-    m->AddChild(child);
-    child = m;
-  }
-  return child;
-}
-
 //! This function extracts documentation from a file. The parameters
 //! @[type], @[name], and @[parentModules] are used only when
 //! @[pikeMode] != 0 and no C-style doc comments are present.
@@ -176,7 +145,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
                   string|void name, array(string)|void parentModules,
 		  void|.Flags flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
 
   // extract the file...
   // check if there are C style doc comments in it,
@@ -204,29 +173,69 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     if (has_suffix(namespace, "::")) {
       namespace = namespace[..<2];
     }
+    // FIXME: Ought to handle emacs-style encoding directives.
+    catch { contents = utf8_to_string(contents); };
     object m = .CExtractor.extract(contents, filename, namespace, flags);
     return m->xml(flags);
   }
   else if(stylePike && has_value(contents, "//!")) {
+    // FIXME: Ought to handle #charset.
+    catch { contents = utf8_to_string(contents); };
     if(has_suffix(filename, ".pmod.in")) {
       contents = replace(contents, "@module@",
 			 "\"___" + (parentModules[1..] + ({ name }))*"." +"\"");
     }
-    object m;
+
+    // Generate empty nodes for the parentModules.
+    object root = .PikeObjects.AutoDoc();
+    object m = root;
+    if (type != "namespace") {
+      object child = .PikeObjects.NameSpace();
+      m->addChild(child);
+      m = child;
+      m->name = "predef";
+      foreach(parentModules||({}); int i; string n) {
+	if (!i && has_suffix(n, "::")) {
+	  // The parent module list starts with a namespace.
+	  m->name = n[..<2];
+	  continue;
+	}
+	child = .PikeObjects.Module();
+	child->name = n;
+	m->addChild(child);
+	m = child;
+      }
+    }
+
     switch(type) {
     case "module":
-      m = .PikeExtractor.extractModule(contents, filename, name, flags);
+      .PikeExtractor.extractModule(root, m, contents, filename, name, flags);
       break;
     default:
     case "class":
-      m = .PikeExtractor.extractClass(contents, filename, name, flags);
+      .PikeExtractor.extractClass(root, m, contents, filename, name, flags);
       break;
     case "namespace":
-      m = .PikeExtractor.extractNamespace(contents, filename, name, flags);
+      .PikeExtractor.extractNamespace(root, contents, filename, name, flags);
       break;
     }
-    if (m)
-      return makeWrapper(parentModules, m)->xml(flags);
+
+    object child, prev, next;
+    for (child = root; prev != m; prev = child, child = next) {
+      if (child->documentation || sizeof(child->docGroups) ||
+	  (sizeof(child->children) > 1)) {
+	return root->xml(flags);
+      }
+      if (!sizeof(child->children)) break;
+      next = child->children[0];
+    }
+
+    // child here is either an undocumented, empty m,
+    // or the (only) child to m.
+    if (child->documentation || sizeof(child->docGroups) ||
+	sizeof(child->children)) {
+      return root->xml(flags);
+    }
   }
   return "";
 }
@@ -441,10 +450,10 @@ protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
   //     and it comes first among the element nodes.
   SimpleNode orig_text = orig->get_first_element("text");
   SimpleNode new_text = new->get_first_element("text");
-  if (new_text && sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+  if (new_text && sizeof(String.trim(new_text->value_of_node()))) {
     if (!orig_text) {
       orig->add_child(new_text);
-    } else if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+    } else if (!sizeof(String.trim(orig_text->value_of_node()))) {
       orig->replace_child(orig_text, new_text);
     } else {
       orig_text->replace_children(orig_text->get_children() +
@@ -516,7 +525,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
       dest_children[name] = node;
     } else if (isDoc(node)) {
       // Strip empty doc nodes.
-      if (sizeof(String.trim_all_whites(node->value_of_node())))
+      if (sizeof(String.trim(node->value_of_node())))
 	dest_has_doc = node;
     } else if (isDocGroup(node)) {
       // Docgroups are special:
@@ -531,7 +540,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     } else if (isModifiers(node)) {
       dest_modifiers = (multiset(string))node->get_elements()->get_any_name();
     } else if (!isText(node) ||
-	       sizeof(String.trim_all_whites(node->value_of_node()))) {
+               sizeof(String.trim(node->value_of_node()))) {
       other_children += ({ node });
     }
   }
@@ -590,7 +599,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 	    dest_groups[name] += ({ node });
 	  }
 	  SimpleNode doc = node->get_first_element("doc");
-	  if (doc && !sizeof(String.trim_all_whites(doc->value_of_node()))) {
+          if (doc && !sizeof(String.trim(doc->value_of_node()))) {
 	    // The doc is NULL.
 	    node->remove_child(doc);
 	  }
@@ -603,12 +612,12 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
         break;
 
       case "doc":
-	if (!sizeof(String.trim_all_whites(node->value_of_node()))) {
+        if (!sizeof(String.trim(node->value_of_node()))) {
 	  // NULL doc.
 	} else if (dest_has_doc) {
 	  if ((node->get_attributes()["placeholder"] == "true") ||
-	      (String.trim_all_whites(node->value_of_node()) ==
-	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
+              (String.trim(node->value_of_node()) ==
+               String.trim(dest_has_doc->value_of_node()))) {
 	    // New doc is placeholder or same as old.
 	  } else if (dest_has_doc->get_attributes()["placeholder"] != "true") {
 	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
@@ -638,7 +647,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 
       default:
 	if (!isText(node) ||
-	    sizeof(String.trim_all_whites(node->value_of_node()))) {
+            sizeof(String.trim(node->value_of_node()))) {
 	  if (node->get_any_name() != "source-position") {
 	    werror("Got other node: %O\n", node->render_xml());
 	  }
@@ -799,7 +808,7 @@ protected void recurseAppears(string namespace,
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
 void handleAppears(SimpleNode root, .Flags|void flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   tasks = ({ });
   foreach(root->get_elements("namespace"), SimpleNode namespaceNode) {
     string namespace = namespaceNode->get_attributes()->name + "::";
@@ -969,11 +978,15 @@ protected class ScopeStack {
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
-      if (name = ([ "7.8":"7.7",
-		    "7.6":"7.5",
-		    "7.4":"7.3",
-		    "7.2":"7.1",
-		    "7.0":"0.7" ])[name]) {
+      if (name = ([
+	    "predef":"8.1",
+	    "8.0":"7.9",
+	    "7.8":"7.7",
+	    "7.6":"7.5",
+	    "7.4":"7.3",
+	    "7.2":"7.1",
+	    "7.0":"0.7",
+	  ])[name]) {
 	// Add an alias for development version.
 	scopes[name] = scopes[namespace];
       }
@@ -1292,7 +1305,7 @@ class NScope
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
-    this_program::path = path;
+    this::path = path;
     enterNode(tree);
   }
 
@@ -1400,7 +1413,7 @@ class NScope
       case "class":
       case "enum":
 	// FIXME: What about unnamed enums?
-	n = child->get_attributes()->name;	  
+	n = child->get_attributes()->name;
 	if (n) {
 	  if (child->get_any_name() == "namespace") {
 	    n += "::";
@@ -1500,13 +1513,13 @@ class NScopeStack
 
   protected void create(NScope scopes, string|void logfile, .Flags|void flags)
   {
-    this_program::scopes = scopes;
-    this_program::logfile = logfile;
-    if (zero_type(flags)) flags = .FLAG_NORMAL;
-    this_program::flags = flags;
+    this::scopes = scopes;
+    this::logfile = logfile;
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
+    this::flags = flags;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (sizeof(failures)) {
       logfile = logfile || "resolution.log";
@@ -1606,6 +1619,7 @@ class NScopeStack
       // Inherit or namespace.
       switch(ref[0]) {
       case "this_program::":
+      case "this::":
 	while (pos) {
 	  if ((<"class", "module", "namespace">)[current->type]) {
 	    return current->lookup(ref[1..]);
@@ -1615,6 +1629,24 @@ class NScopeStack
 	}
 	return 0;
       case "::":
+	if ((sizeof(ref) > 1) && (ref[1] == "this_program")) {
+	  // Handle ::this_program.
+	  NScope this_p;
+	  while (pos--) {
+	    if ((current->type == "class") || (current->type == "module")) {
+	      this_p = current;
+	      current = stack[pos];
+	      break;
+	    }
+	    current = stack[pos];
+	  }
+	  if (this_p) {
+	    ref[1] = splitRef(this_p->name)[-1];
+	  } else {
+	    current = top;
+	    pos = sizeof(stack);
+	  }
+	}
 	while(pos) {
 	  if (current->inherits) {
 	    foreach(current->inherits; ; string|NScope scope) {
@@ -1640,7 +1672,8 @@ class NScopeStack
 	  "7.3":"7.4",
 	  "7.5":"7.6",
 	  "7.7":"7.8",
-	  "7.9":"predef",
+	  "7.9":"8.0",
+	  "8.1":"predef",
 	])[inh] || inh;
 	while(pos) {
 	  string|NScope scope;

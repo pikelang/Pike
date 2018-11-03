@@ -5,10 +5,10 @@
 //!   Ought to have support for charset conversion.
 class OutputController
 {
-  protected private .File outfd;
-  protected private .Terminfo.Termcap term;
-  protected private int xpos = 0, columns = 0;
-  protected private mapping oldattrs = 0;
+  private .File outfd;
+  private .Terminfo.Termcap term;
+  private int xpos = 0, columns = 0;
+  private mapping oldattrs = 0;
 
 #define BLINK     1
 #define BOLD      2
@@ -18,8 +18,8 @@ class OutputController
 #define STANDOUT  32
 #define UNDERLINE 64
 
-  protected private int selected_attributes = 0, needed_attributes = 0;
-  protected private int active_attributes = 0;
+  private int selected_attributes = 0, needed_attributes = 0;
+  private int active_attributes = 0;
 
   protected int low_attribute_mask(array(string) atts)
   {
@@ -124,7 +124,7 @@ class OutputController
 				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     disable();
   }
@@ -437,17 +437,17 @@ class OutputController
 //!   Ought to have support for charset conversion.
 class InputController
 {
-  protected private object infd, term;
-  protected private int enabled = -1;
-  protected private function(:int) close_callback = 0;
-  protected private string prefix="";
-  protected private mapping(int:function|mapping(string:function)) bindings=([]);
-  protected private function grab_binding = 0;
-  protected private mapping oldattrs = 0;
+  private object infd, term;
+  private int enabled = -1;
+  private function(:int) close_callback = 0;
+  private string prefix="";
+  private mapping(int:function|mapping(string:function)) bindings=([]);
+  private function grab_binding = 0;
+  private mapping oldattrs = 0;
 
   int dumb=0;
 
-  protected void destroy()
+  protected void _destruct()
   {
     catch{ infd->set_blocking(); };
     if(dumb)
@@ -457,7 +457,7 @@ class InputController
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
   }
 
-  protected private string process_input(string s)
+  private string process_input(string s)
   {
     int i;
 
@@ -494,7 +494,7 @@ class InputController
     return "";
   }
 
-  protected private void read_cb(mixed _, string s)
+  private void read_cb(mixed _, string s)
   {
     if (!s || s=="")
       return;
@@ -506,14 +506,14 @@ class InputController
     prefix = process_input(s);
   }
 
-  protected private void close_cb()
+  private void close_cb()
   {
     if (close_callback && close_callback())
       return;
     destruct(this);
   }
 
-  protected private int set_enabled(int e)
+  private int set_enabled(int e)
   {
     if (e != enabled)
     {
@@ -701,7 +701,7 @@ class InputController
       switch(k[i])
       {
       case '\\':
-	if(i<sizeof(k)-1) 
+	if(i<sizeof(k)-1)
 	  switch(k[i+1]) {
 	  case '0':
 	  case '1':
@@ -744,7 +744,7 @@ class InputController
 	  }
 	break;
       case '^':
-	if(i<sizeof(k)-1 && k[i+1]>='?' && k[i+1]<='_') 
+	if(i<sizeof(k)-1 && k[i+1]>='?' && k[i+1]<='_')
 	  k = k[..i-1]+(k[i+1]=='?'? "\177":sprintf("%c",k[i+1]-'@'))+k[i+2..];
 	break;
       }
@@ -812,8 +812,8 @@ class InputController
 //!
 class DefaultEditKeys
 {
-  protected private multiset word_break_chars =
-    mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
+  private multiset word_break_chars =
+    mkmultiset("\t \n\r/*?_-.[]~&;!#$%^(){}<>\"'`"/"");
   protected object _readline;
 
   //!
@@ -966,7 +966,7 @@ class DefaultEditKeys
     while(word_break_chars[ line[p..p] ] && p >= 0)
       // find first "non break char"
       p--;
-    for(;p >= 0; p--) 
+    for(;p >= 0; p--)
       if(word_break_chars[ line[p..p] ]) {
 	p++; // We want to be one char before the break char.
 	break;
@@ -991,7 +991,7 @@ class DefaultEditKeys
   {
     _readline->kill(_readline->getcursorpos(), forward_find_word());
   }
-  
+
   //!
   void backward_kill_word()
   {
@@ -1023,13 +1023,13 @@ class DefaultEditKeys
 
   //!
   void kill_ring_save()
-  { 
+  {
     _readline->add_to_kill_ring(_readline->region());
   }
 
   //!
   void kill_region()
-  { 
+  {
     _readline->kill(@_readline->pointmark());
   }
 
@@ -1149,7 +1149,7 @@ class DefaultEditKeys
       ic->bind("^J", newline);
       return;
     }
-    
+
     foreach(default_bindings, array(string|function) b)
       ic->bind(@b);
   }
@@ -1166,16 +1166,16 @@ class DefaultEditKeys
 //!
 class History
 {
-  protected private array(string) historylist;
-  protected private mapping(int:string) historykeep=([]);
-  protected private int minhistory, maxhistory, historynum;
+  private array(string) historylist;
+  private mapping(int:string) historykeep=([]);
+  private int minhistory, maxhistory, historynum;
 
   //!
   string encode()
   {
     return historylist*"\n";
   }
-  
+
   //!
   int get_history_num()
   {
@@ -1230,6 +1230,17 @@ class History
     maxhistory = maxhist;
   }
 
+  //! Pop the last string off the history, discarding it.
+  //! If text is provided, will only pop that string.
+  //! Returns 1 if a string was removed, 0 if not.
+  int(0..1) pop(string|void text)
+  {
+    if (sizeof(historylist) < 2) return 0; //Not enough to pop
+    if (text && historylist[-2] != text) return 0; //Wrong string
+    historylist = historylist[..<2] + ({historylist[-1]});
+    return 1;
+  }
+
   //!
   void create(int maxhist, void|array(string) hist)
   {
@@ -1240,19 +1251,19 @@ class History
 }
 
 
-protected private OutputController output_controller;
-protected private InputController input_controller;
-protected private string prompt="";
-protected private array(string) prompt_attrs=0;
-protected private string text="", readtext;
-protected private function(string:void) newline_func;
-protected private int cursorpos = 0;
-protected private int mark = 0;
-/*static private */ History historyobj = 0;
-protected private int hide = 0;
+private OutputController output_controller;
+private InputController input_controller;
+private string prompt="";
+private array(string) prompt_attrs=0;
+private string text="", readtext;
+private function(string:void) newline_func;
+private int cursorpos = 0;
+private int mark = 0;
+/* private */ History historyobj = 0;
+private int hide = 0;
 
-protected private array(string) kill_ring=({});
-protected private int kill_ring_size=30;
+private array(string) kill_ring=({});
+private int kill_ring_size=30;
 
 //!  get current output control object
 //!  @returns
@@ -1410,7 +1421,7 @@ void delete(int p1, int p2)
 array(int) pointmark() // returns point and mark in numeric order
 {
    int p1,p2;
-   p1=getcursorpos(),p2=getmark();   
+   p1=getcursorpos(),p2=getmark();
    if (p1>p2) return ({p2,p1});
    return ({p1,p2});
 }
@@ -1497,7 +1508,7 @@ void redisplay(int clear, int|void nobackup)
 	output_controller->turn_on(@prompt_attrs);
       output_controller->write(prompt);
       if(prompt_attrs)
-	output_controller->turn_off(@prompt_attrs);      
+	output_controller->turn_off(@prompt_attrs);
     }
     output_controller->write(text,0,hide);
   }
@@ -1505,7 +1516,7 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
-protected private void initline()
+private void initline()
 {
   text = "";
   cursorpos = 0;
@@ -1538,7 +1549,7 @@ void eof()
     historyobj->finishline(text);
   initline();
   if(newline_func)
-    newline_func(0);    
+    newline_func(0);
 }
 
 //! Print a message to the output device
@@ -1581,7 +1592,7 @@ void list_completions(array(string) c)
 		  c*"\n"));
 }
 
-protected private void read_newline(string s)
+private void read_newline(string s)
 {
   input_controller->disable();
   readtext = s;
@@ -1639,7 +1650,7 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
     old_attrs = prompt_attrs;
     set_prompt(local_prompt, attrs);
   }
-  
+
   function oldnl = newline_func;
   if(attrs)
       output_controller->turn_on(@attrs);
@@ -1655,10 +1666,10 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
 
 
   set_nonblocking(oldnl);
-  
+
   if(local_prompt)
     set_prompt(old_prompt, old_attrs);
-  
+
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
@@ -1692,7 +1703,7 @@ History get_history()
   return historyobj;
 }
 
-protected void destroy()
+protected void _destruct()
 {
   if(input_controller)
     destruct(input_controller);
@@ -1718,7 +1729,7 @@ protected void destroy()
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
-  atexit(destroy);
+  atexit(_destruct);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
   DefaultEditKeys(this);

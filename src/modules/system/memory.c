@@ -20,15 +20,10 @@
 #include "global.h"
 #include "system_machine.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_FCNTL_H
@@ -42,10 +37,6 @@
 #ifdef HAVE_SYS_SHM_H
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#endif
-
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #endif
 
 #ifdef HAVE_CYGWIN_SHM_H
@@ -79,7 +70,6 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
-#include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "program.h"
@@ -106,12 +96,14 @@ static void memory_shm(INT32 args);
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_memory(struct object *UNUSED(o))
 {
    THIS->p=NULL;
    THIS->size=0;
    THIS->flags=0;
 }
+#endif
 
 static void memory__size_object( INT32 UNUSED(args) )
 {
@@ -143,9 +135,9 @@ static void MEMORY_FREE( struct memory_storage *storage )
 }
 
 
-#define MEMORY_VALID(STORAGE,FUNC)					\
-   if (!(STORAGE->p))							\
-      Pike_error("%s: no memory in this Memory object\n",FUNC);
+#define MEMORY_VALID(STORAGE)                                           \
+  if (!(STORAGE->p))							\
+    Pike_error("No memory in this Memory object.\n");
 
 static void exit_memory(struct object *UNUSED(o))
 {
@@ -175,12 +167,12 @@ static void memory_create(INT32 args)
 	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
-	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
+         SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
+      pop_n_elems(args);
    }
    else
    {
       MEMORY_FREE(THIS);
-      push_int(0);
    }
 }
 
@@ -193,7 +185,7 @@ static void memory_create(INT32 args)
  *!	PROT_READ|PROT_WRITE, readable and writable, but if it fails
  *!	it will try once more in PROT_READ only.
  */
-static INLINE off_t file_size(int fd)
+static inline off_t file_size(int fd)
 {
   PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&
@@ -219,11 +211,11 @@ static void memory_shm( INT32 args )
   MEMORY_FREE(THIS);
 
   if( args < 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("shmat",2);
   if (TYPEOF(Pike_sp[1-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
+    SIMPLE_ARG_TYPE_ERROR("shmat",1,"int(0..)");
   if (TYPEOF(Pike_sp[-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
+    SIMPLE_ARG_TYPE_ERROR("shmat",0,"int(0..)");
 
   if( (id = shmget( Pike_sp[0-args].u.integer,
 		    Pike_sp[1-args].u.integer,
@@ -232,10 +224,10 @@ static void memory_shm( INT32 args )
     switch( errno )
     {
       case EINVAL:
-	Pike_error("Too large or small shared memory segment\n");
+        Pike_error("Too large or small shared memory segment.\n");
 	break;
       case ENOSPC:
-	Pike_error("Out of resources, cannot create segment\n");
+        Pike_error("Out of resources, cannot create segment.\n");
 	break;
     }
   }
@@ -264,18 +256,18 @@ static void memory_shm( INT32 args )
       {
 	THIS->flags = 0;
 	CloseHandle( handle );
-	Pike_error("Failed to create segment\n");
+        Pike_error("Failed to create segment.\n");
       }
     }
     else
     {
 	THIS->flags = 0;
 	CloseHandle( handle );
-	Pike_error("Failed to create segment\n");
+        Pike_error("Failed to create segment.\n");
     }
   }
 #else /* !WIN32SHM */
-   Pike_error("Memory.shmat(): system has no shmat() (sorry)\n");
+   Pike_error("System has no shmat() (sorry).\n");
 #endif /* WIN32SHM */
 #endif /* HAVE_SYS_SHM_H */
 }
@@ -288,18 +280,18 @@ static void memory__mmap(INT32 args,int complain,int private)
    off_t osize=0;
    size_t offset=0,size=0;
    char *mem;
-   int flags=0; 
+   int flags=0;
    int resflags=MEM_FREE_MUNMAP|MEM_WRITE|MEM_READ;
-  
+
    MEMORY_FREE(THIS); /* we expect this even on error */
 
-   if (args<1) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
+   if (args<1)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("mmap",1);
 
    if (args>=2) {
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",2,"int(0..)");
       else
 	 offset=sp[1-args].u.integer;
    }
@@ -307,7 +299,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args>=3) {
       if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
@@ -316,22 +308,22 @@ static void memory__mmap(INT32 args,int complain,int private)
    {
       struct object *o=sp[-args].u.object;
       ref_push_object(o);
-      push_text("query_fd");
+      push_static_text("query_fd");
       f_index(2);
       if (TYPEOF(sp[-1]) == T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-			      "(string or) Stdio.File (missing query_fd)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                               "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
       if (TYPEOF(sp[-1]) != T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-			      "(string or) Stdio.File (weird query_fd)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                               "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
 	 if (complain)
-	    SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-				 "(string or) Stdio.File (file not open)");
-	 else 
+	    SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                                  "(string or) Stdio.File (file not open)");
+	 else
 	    RETURN(0);
       }
 
@@ -342,8 +334,8 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */
-      
+      get_all_args(NULL, args, "%s", &filename); /* 8 bit! */
+
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
       if( fd < 0 )
@@ -354,7 +346,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 
       if (fd<0) {
 	 if (complain)
-	    Pike_error("Memory.mmap(): Failed to open file\n");
+            Pike_error("Failed to open file.\n");
 	 else
 	    RETURN(0);
       }
@@ -363,21 +355,21 @@ static void memory__mmap(INT32 args,int complain,int private)
 
    if (osize<0)
    {
-      if (doclose) fd_close(fd); 					
+      if (doclose) fd_close(fd);
       if (!complain)
 	 RETURN(0);
       else
-	 Pike_error("Memory.mmap(): Not a regular file\n");
+         Pike_error("Not a regular file.\n");
    }
 
    if (!size) size=((size_t)osize)-offset;
    if (offset+size>(size_t)osize)
-      Pike_error("Memory.mmap(): mapped area outside file\n");
+      Pike_error("Mapped area outside file.\n");
 
 #ifdef PAGE_SIZE
    if (offset%PAGE_SIZE)
-      Pike_error("Memory.mmap(): mapped offset not aligned to PAGE_SIZE "
-		 "(%d aka System.PAGE_SIZE)\n",(int)offset);
+      Pike_error("Mapped offset not aligned to PAGE_SIZE "
+                 "(%d aka System.PAGE_SIZE).\n",(int)offset);
 #endif
 
    if (private) flags|=MAP_PRIVATE;
@@ -401,19 +393,19 @@ static void memory__mmap(INT32 args,int complain,int private)
 	 RETURN(0);
       else switch (errno)
       {
-	 case EBADF:  Pike_error("Memory.mmap(): error: not a valid fd\n");
-	 case EACCES: Pike_error("Memory.mmap(): error: no access\n");
-	 case EINVAL: 
-	    Pike_error("Memory.mmap(): error: invalid parameters "
-		       "(probably non-aligned offset or size)\n");
-	 case EAGAIN: Pike_error("Memory.mmap(): error: file is locked\n");
-	 case ENOMEM: 
-	    Pike_error("Memory.mmap(): error: out of address space\n");
-	 default:     
-	    Pike_error("Memory.mmap(): unknown error: errno=%d\n",errno);
+         case EBADF:  Pike_error("Error: not a valid fd.\n");
+         case EACCES: Pike_error("Error: no access.\n");
+	 case EINVAL:
+            Pike_error("Error: invalid parameters "
+                       "(probably non-aligned offset or size).\n");
+         case EAGAIN: Pike_error("Error: file is locked.\n");
+	 case ENOMEM:
+            Pike_error("Error: out of address space.\n");
+	 default:
+            Pike_error("Unknown error: errno=%d.\n",errno);
       }
    }
-   
+
 /* need to do this again, due to threads */
    MEMORY_FREE(THIS);
 
@@ -424,7 +416,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    RETURN(1); /* ok */
 
 #else /* HAVE_MMAP */
-   Pike_error("Memory.mmap(): system has no mmap() (sorry)\n");
+   Pike_error("System has no mmap() (sorry).\n");
 #endif
 }
 
@@ -452,26 +444,25 @@ static void memory_allocate(INT32 args)
    unsigned char *mem;
 
    if (args>=2)
-      get_all_args("Memory.allocate",args,"%+%+",&size,&c);
+      get_all_args(NULL, args, "%+%+", &size,&c);
    else
-      get_all_args("Memory.allocate",args,"%+",&size);
+      get_all_args(NULL, args, "%+", &size);
 
    /* just to be sure */
    if (size<0)
-      SIMPLE_BAD_ARG_ERROR("Memory.allocate",1,"int(0..)");
-   
-   pop_n_elems(args);
+      SIMPLE_ARG_TYPE_ERROR("allocate",1,"int(0..)");
+
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
-      mem = (unsigned char *)xalloc(size);
-      MEMSET(mem,c,size);
+      mem = xalloc(size);
+      memset(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
-      mem = (unsigned char *)xalloc(size);
-      MEMSET(mem,c,size);
+      mem = xalloc(size);
+      memset(mem,c,size);
    }
 
    MEMORY_FREE(THIS);
@@ -485,10 +476,8 @@ static void memory_allocate(INT32 args)
  *!
  *!	Free the allocated or <tt>mmap</tt>ed memory.
  */
-static void memory_free(INT32 args)
+static void memory_free(INT32 UNUSED(args))
 {
-   pop_n_elems(args);
-   push_int(0);
    MEMORY_FREE(THIS);
 }
 
@@ -501,7 +490,7 @@ static void memory_free(INT32 args)
  */
 static void memory__sizeof(INT32 args)
 {
-   MEMORY_VALID(THIS,"Memory._sizeof");
+   MEMORY_VALID(THIS);
    pop_n_elems(args);
    push_int64(THIS->size);
 }
@@ -535,39 +524,35 @@ static void memory_writeable(INT32 args)
  */
 static void memory_cast(INT32 args)
 {
-   char *s;
-   get_all_args("Memory.cast",args,"%s",&s);
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
 
-   MEMORY_VALID(THIS,"Memory.cast");
-   
-   if (strncmp(s,"string",5)==0)
-   {
-      pop_n_elems(args);
-      push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
-      return;
-   }
-   if (strncmp(s,"array",5)==0)
-   {
-      struct array *a;
-      size_t i,sz=THIS->size;
-      struct svalue *sv;
+  MEMORY_VALID(THIS);
 
-      pop_n_elems(args);
+  if (type == literal_string_string)
+  {
+    push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
+  }
+  else if (type == literal_array_string)
+  {
+    struct array *a;
+    size_t i,sz=THIS->size;
+    struct svalue *sv;
 
-      a=low_allocate_array(sz,0);
+    a=low_allocate_array(sz,0);
 
-      sv=ITEM(a);
-      for (i=0; i<sz; i++)
-      {
-	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
-	 sv++;
-      }
-      a->type_field = BIT_INT;
+    sv=ITEM(a);
+    for (i=0; i<sz; i++)
+    {
+      sv->u.integer=(((unsigned char*)(THIS->p)))[i];
+      sv++;
+    }
+    a->type_field = BIT_INT;
 
-      push_array(a);
-
-      return;
-   }
+    push_array(a);
+  }
+  else
+    push_undefined();
 }
 
 /*! @decl string pread(int(0..) pos,int(0..) len)
@@ -586,19 +571,19 @@ static void memory_cast(INT32 args)
  *!	@[len] is the number of characters, wide or not. @[pos]
  *!	is the byte position (!).
  */
-#define MEMORY_PREADN(FUNC,NAME,N,MAKER)				\
+#define MEMORY_PREADN(FUNC,N,MAKER)                                     \
    static void FUNC(INT32 args)						\
    {									\
       INT_TYPE pos,len;							\
       size_t rpos,rlen;							\
       									\
-      get_all_args(NAME,args,"%+%+",&pos,&len);				\
+      get_all_args(NULL,args,"%+%+",&pos,&len);				\
       rpos=(size_t)pos;							\
       rlen=(size_t)len;							\
    									\
-      MEMORY_VALID(THIS,NAME);						\
+      MEMORY_VALID(THIS);						\
       if (rpos+rlen*N>THIS->size)					\
-   	 Pike_error(NAME": reading (some) outside allocation\n");	\
+        Pike_error("Reading (some) outside allocation.\n");             \
    									\
       if (!rlen)							\
    	 push_empty_string();						\
@@ -687,21 +672,21 @@ static void copy_reverse_string1_to_2(unsigned char *d,
 MAKE_REVERSE_ORDER_STRINGN(1)
 MAKE_REVERSE_ORDER_STRINGN(2)
 
-MEMORY_PREADN(memory_pread,"Memory.pread",1,make_shared_binary_string)
+MEMORY_PREADN(memory_pread,1,make_shared_binary_string)
 #if (PIKE_BYTEORDER == 1234)
-MEMORY_PREADN(memory_pread16i,"Memory.pread16i",2,make_shared_binary_string1)
-MEMORY_PREADN(memory_pread32i,"Memory.pread32i",4,make_shared_binary_string2)
-MEMORY_PREADN(memory_pread16,"Memory.pread16",2,make_reverse_order_string1)
-MEMORY_PREADN(memory_pread32,"Memory.pread32",4,make_reverse_order_string2)
+MEMORY_PREADN(memory_pread16i,2,make_shared_binary_string1)
+MEMORY_PREADN(memory_pread32i,4,make_shared_binary_string2)
+MEMORY_PREADN(memory_pread16,2,make_reverse_order_string1)
+MEMORY_PREADN(memory_pread32,4,make_reverse_order_string2)
 #else
-MEMORY_PREADN(memory_pread16,"Memory.pread16",2,make_shared_binary_string1)
-MEMORY_PREADN(memory_pread32,"Memory.pread32",4,make_shared_binary_string2)
-MEMORY_PREADN(memory_pread16i,"Memory.pread16i",2,make_reverse_order_string1)
-MEMORY_PREADN(memory_pread32i,"Memory.pread32i",4,make_reverse_order_string2)
+MEMORY_PREADN(memory_pread16,2,make_shared_binary_string1)
+MEMORY_PREADN(memory_pread32,4,make_shared_binary_string2)
+MEMORY_PREADN(memory_pread16i,2,make_reverse_order_string1)
+MEMORY_PREADN(memory_pread32i,4,make_reverse_order_string2)
 #endif
 
-MEMORY_PREADN(memory_pread16n,"Memory.pread16n",2,make_shared_binary_string1)
-MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
+MEMORY_PREADN(memory_pread16n,2,make_shared_binary_string1)
+MEMORY_PREADN(memory_pread32n,4,make_shared_binary_string2)
 
 /*! @decl int pwrite(int(0..) pos,string data)
  *! @decl int pwrite16(int(0..) pos,string data)
@@ -709,34 +694,34 @@ MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
  *! @decl int pwrite16i(int(0..) pos,string data)
  *! @decl int pwrite32i(int(0..) pos,string data)
  *!
- *!	Write a string to the memory (and to the file, if it's mmap()ed). 
- *!	The 16 and 32 variants writes widestrings, 
+ *!	Write a string to the memory (and to the file, if it's mmap()ed).
+ *!	The 16 and 32 variants writes widestrings,
  *!	16 or 32 bits (2 or 4 bytes) wide,
  *!	the 'i' variants in intel byteorder, the other in network byteorder.
  *!
  *! returns the number of bytes (not characters) written
  */
-static void pwrite_n(INT32 args,int shift,int reverse,char *func)
+static void pwrite_n(INT32 args, int shift, int reverse)
 {
    INT_TYPE pos;
    size_t rpos,rlen;
    struct pike_string *ps;
    unsigned char *d;
 
-   get_all_args(func,args,"%+%W",&pos,&ps);
+   get_all_args(NULL,args,"%+%W",&pos,&ps);
    rpos=(size_t)pos;
    rlen=(ps->len<<shift);
 
    if (ps->size_shift>shift)
-      Pike_error("%s: given string wider (%d) then what we write (%d)\n",
-		 func,8<<ps->size_shift,8<<shift);
+      Pike_error("Given string wider (%d) than what we write (%d).\n",
+                 8<<ps->size_shift,8<<shift);
 
-   MEMORY_VALID(THIS,func);
+   MEMORY_VALID(THIS);
    if (!(THIS->flags&MEM_WRITE))
-      Pike_error("%s: can't write in this memory\n",func);
-   
+      Pike_error("Can't write in this memory.\n");
+
    if (rpos+(rlen<<shift)>THIS->size)
-      Pike_error("%s: writing outside allocation\n",func);
+      Pike_error("Writing outside allocation.\n");
 
    d=THIS->p+rpos;
 
@@ -745,13 +730,13 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	   THIS->p,rpos,THIS->p+rpos,ps->str,ps->len,shift,ps->size_shift);
 #endif
 
-   if (rlen) 
+   if (rlen)
       switch (ps->size_shift*010 + shift)
       {
 	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
-	    else MEMCPY(d,ps->str,ps->len*4);
+	    else memcpy(d,ps->str,ps->len*4);
 	    break;
 	 case 012: /* 1 -> 2 */
 	    if (reverse)
@@ -766,7 +751,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
-	    else MEMCPY(d,ps->str,ps->len*2);
+	    else memcpy(d,ps->str,ps->len*2);
 	    break;
 	 case 001: /* 0 -> 1 */
 	    if (reverse)
@@ -774,61 +759,61 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
 	 case 000:
-	    MEMCPY(d,ps->str,ps->len);
+	    memcpy(d,ps->str,ps->len);
 	    break;
 	 default:
-	    Pike_error("Illegal state %d -> %d\n",ps->size_shift,shift);
+            Pike_error("Illegal state %d -> %d.\n",ps->size_shift,shift);
       }
 
    pop_n_elems(args);
    push_int64(rlen);
 }
 
-#define PWRITEN(CFUNC,FUNC,SHIFT,REV)					\
-   static void CFUNC(INT32 args)					\
-   {									\
-      pwrite_n(args,SHIFT,REV,FUNC);					\
-   }
+#define PWRITEN(CFUNC,SHIFT,REV)					\
+  static void CFUNC(INT32 args)                                         \
+  {									\
+    pwrite_n(args,SHIFT,REV);                                           \
+  }
 
-PWRITEN(memory_pwrite,"pwrite",0,0)
+PWRITEN(memory_pwrite,0,0)
 #if (PIKE_BYTEORDER == 1234)
-PWRITEN(memory_pwrite16,"pwrite16",1,1)
-PWRITEN(memory_pwrite32,"pwrite32",2,1)
-PWRITEN(memory_pwrite16i,"pwrite16i",1,0)
-PWRITEN(memory_pwrite32i,"pwrite32i",2,0)
+PWRITEN(memory_pwrite16,1,1)
+PWRITEN(memory_pwrite32,2,1)
+PWRITEN(memory_pwrite16i,1,0)
+PWRITEN(memory_pwrite32i,2,0)
 #else
-PWRITEN(memory_pwrite16,"pwrite16",1,0)
-PWRITEN(memory_pwrite32,"pwrite32",2,0)
-PWRITEN(memory_pwrite16i,"pwrite16i",1,1)
-PWRITEN(memory_pwrite32i,"pwrite32i",2,1)
+PWRITEN(memory_pwrite16,1,0)
+PWRITEN(memory_pwrite32,2,0)
+PWRITEN(memory_pwrite16i,1,1)
+PWRITEN(memory_pwrite32i,2,1)
 #endif
-PWRITEN(memory_pwrite16n,"pwrite16n",1,0)
-PWRITEN(memory_pwrite32n,"pwrite32n",2,0)
+PWRITEN(memory_pwrite16n,1,0)
+PWRITEN(memory_pwrite32n,2,0)
 
 /*! @decl int `[](int pos)
  *! @decl string `[](int pos1,int pos2)
  */
 static void memory_index(INT32 args)
 {
-   MEMORY_VALID(THIS,"Memory.`[]");
+   MEMORY_VALID(THIS);
 
    if (args==1)
    {
       INT_TYPE pos;
       size_t rpos = 0;
-      get_all_args("Memory.`[]",args,"%i",&pos);
+      get_all_args("`[]",args,"%i",&pos);
       if (pos<0) {
-	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
-	    Pike_error("Memory.`[]: Index is out of range\n");
+         if ((off_t)-pos>=(off_t)THIS->size)
+            Pike_error("Index is out of range.\n");
 	 else
-	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
+            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
       }
-      else 
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
-	    Pike_error("Memory.`[]: Index is out of range\n");
+            Pike_error("Index is out of range.\n");
       }
 
       push_int( (((unsigned char*)(THIS->p)))[rpos] );
@@ -842,9 +827,9 @@ static void memory_index(INT32 args)
 	 INT_TYPE pos1,pos2;
 	 size_t rpos1,rpos2;
 
-	 get_all_args("Memory.`[]",args,"%i%i",&pos1,&pos2);
+	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
 	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
+	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1;
 	 else rpos2=(size_t)pos2;
 
 	 if (rpos2<rpos1)
@@ -862,30 +847,30 @@ static void memory_index(INT32 args)
  */
 static void memory_index_write(INT32 args)
 {
-   MEMORY_VALID(THIS,"Memory.`[]=");
+   MEMORY_VALID(THIS);
 
    if (!(THIS->flags&MEM_WRITE))
-      Pike_error("`[]=: can't write in this memory\n");
+      Pike_error("Can't write in this memory.\n");
 
    if (args==2)
    {
       INT_TYPE pos,ch;
       size_t rpos = 0;
-      get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
-      if (pos<0) 
-	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
-	    Pike_error("Memory.`[]=: Index is out of range\n");
+      get_all_args("`[]=",args,"%i%i",&pos,&ch);
+      if (pos<0)
+         if ((off_t)-pos>=(off_t)THIS->size)
+            Pike_error("Index is out of range.\n");
 	 else
-	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
-      else 
+            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
-	    Pike_error("Memory.`[]=: Index is out of range\n");
+            Pike_error("Index is out of range.\n");
       }
       if (ch<0 || ch>255)
-	 Pike_error("Memory.`[]=: Can only write bytes (0..255)\n");
+         Pike_error("Can only write bytes (0..255).\n");
 
       push_int( (((unsigned char*)(THIS->p)))[rpos] = ch );
    }
@@ -894,17 +879,17 @@ static void memory_index_write(INT32 args)
      INT_TYPE pos1, pos2;
      struct pike_string *ps;
 
-     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
+     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
      if (pos1 < 0) pos1 = 0;
      if (pos2 < 0) pos2 = 0;
 
      if ((pos2<pos1) || (ps->len != pos2-pos1+1))
-       Pike_error("Memory.`[]=: source and destination "
-		  "not equally long (%ld v/s %ld; can't resize memory)\n",
-		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
+       Pike_error("Source and destination "
+                  "not equally long (%ld v/s %ld; can't resize memory).\n",
+                  (long)ps->len, (long)pos2-(long)pos1);
      else
-       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+       memcpy(THIS->p+pos1, ps->str, ps->len);
 
      ref_push_string(ps);
    }
@@ -916,7 +901,7 @@ static void memory_index_write(INT32 args)
 
 /*! @endmodule
  */
-  
+
 /*** module init & exit & stuff *****************************************/
 
 void init_system_memory(void)
@@ -928,10 +913,10 @@ void init_system_memory(void)
    start_new_program();
    ADD_STORAGE(struct memory_storage);
 
-   ADD_FUNCTION("create", 
-		memory_create,    
+   ADD_FUNCTION("create",
+		memory_create,
 		tOr3(tFunc(tVoid,tVoid),
-		     tFunc(tOr(tStr,tObj) 
+		     tFunc(tOr(tStr,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
 
@@ -941,10 +926,10 @@ void init_system_memory(void)
 
 #ifdef HAVE_MMAP
    ADD_FUNCTION("mmap",memory_mmap,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
    ADD_FUNCTION("mmap_private",memory_mmap_private,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
 #endif
 
@@ -953,7 +938,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_size_object",memory__size_object,
                 tFunc(tVoid,tInt),0);
-   
+
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 
    ADD_FUNCTION("valid",memory_valid,tFunc(tVoid,tInt01),0);
@@ -961,7 +946,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_sizeof",memory__sizeof,tFunc(tVoid,tIntPos),0);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)),0);
+		tFunc(tStr,tOr(tArr(tInt),tStr)),ID_PRIVATE);
 
    ADD_FUNCTION("`[]",memory_index,
 		tOr(tFunc(tInt,tInt),
@@ -987,7 +972,9 @@ void init_system_memory(void)
    ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_memory);
+#endif
    set_exit_callback(exit_memory);
    end_class("Memory",0);
 

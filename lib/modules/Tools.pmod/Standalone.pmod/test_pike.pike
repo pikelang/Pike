@@ -3,9 +3,7 @@
 
 constant description = "Executes tests according to testsuite files.";
 
-constant log_msg = Tools.Testsuite.log_msg;
-constant log_msg_cont = Tools.Testsuite.log_msg_cont;
-constant log_status = Tools.Testsuite.log_status;
+import Tools.Testsuite;
 
 protected enum exit_codes {
   EXIT_OK,
@@ -16,10 +14,6 @@ protected enum exit_codes {
 
 #if !constant(_verify_internals)
 #define _verify_internals()
-#endif
-
-#if !constant(_dmalloc_set_name)
-void _dmalloc_set_name(mixed ... args) {}
 #endif
 
 int foo(string opt)
@@ -38,15 +32,14 @@ mapping(string:int) cond_cache=([]);
 
 void print_code(string test)
 {
-  array lines = Charset.encoder("iso-8859-1", 0,
-                                lambda(string s) {
-                                  return sprintf("\\%o", s[0]);
-                                })->feed(test)->drain()/"\n";
-  foreach(lines; int r; string line) {
+  test = Charset.encoder("iso-8859-1", 0,
+                         lambda(string s) {
+                           return sprintf("\\%o", s[0]);
+                         })->feed(test)->drain();
+  foreach(test/"\n"; int r; string line) {
     log_msg("%3d: %s\n", r+1, line);
   }
   log_msg("\n");
-  return;
 }
 
 void report_size()
@@ -56,50 +49,71 @@ void report_size()
 #endif
 }
 
-array find_testsuites(string dir)
+array(string) find_testsuites(string dir)
 {
-  array(string) ret=({});
-  if(array(string) s=get_dir(dir||"."))
+  array(string) ret = ({});
+  if(array(string) s = get_dir(dir))
   {
-    if(has_value(s,"no_testsuites")) return ret;
+    if(has_value(s, "no_testsuites")) return ret;
     foreach(s, string file)
     {
-      string name=combine_path(dir||"",file);
-      if(Stdio.is_dir(name)) {
-	ret+=find_testsuites(name);
-	continue;
-      }
-      switch(file)
-      {
-      case "testsuite":
-      case "module_testsuite":
-	ret+=({ combine_path(dir||"",file) });
+      string name = combine_path(dir, file);
+      if(Stdio.is_dir(name))
+	ret += find_testsuites(name);
+      else if(file=="testsuite") {
+	ret += ({ combine_path(dir, file) });
+      } else if(has_suffix(file, ".test")) {
+	ret += ({ combine_path(dir, file) });
       }
     }
   }
   return ret;
 }
 
-array(string|array(string)) read_tests( string fn ) {
-  string|array(string) tests = Stdio.read_file( fn );
+class ScriptTestsuite(string file_name)
+{
+  inherit Testsuite;
+  protected int(1..1) _sizeof() { return 1; }
+  protected this_program `+(mixed steps)
+  {
+    if(steps) file_name = 0;
+    return this;
+  }
+  protected int(0..1) `!() { return !file_name; }
+  int(0..0) next()
+  {
+    file_name = 0;
+    return 0;
+  }
+  int(0..) index() { return 0; }
+  Test value()
+  {
+    return Test(file_name, 1, 1, "RUNCT",
+                sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", file_name));
+  }
+}
+
+Testsuite read_tests( string fn ) {
+  string tests = Stdio.read_file( fn );
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",
 	    fn, errno());
     exit(EXIT_TEST_NOT_FOUND);
   }
 
-  string pike_compat;
-  if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
-    if(!has_suffix(tests, "END\n"))
-      log_msg("%s: Missing end marker.\n", fn);
-    else
-      tests = tests[..<sizeof ("END\n")];
-    pike_compat = String.trim_whites (pike_compat);
-    if (pike_compat == "") pike_compat = 0;
-  }
+  string test_type = "legacy";
+  sscanf(tests, "%*sTEST:%*[ \t]%s%*[ \t\n]", test_type);
+  if (test_type == "RUN-AS-PIKE-SCRIPT")
+    return ScriptTestsuite(fn);
 
-  tests = tests/"\n....\n";
-  return ({pike_compat, tests[..<1]});
+  tests = String.trim(tests);
+  if(!sizeof(tests)) return 0;
+
+  if( fn=="testsuite" || has_suffix(fn, "/testsuite") )
+    return M4Testsuite(tests, fn);
+
+  log_msg("Unable to make sense of test file %O.\n", fn);
+  return 0;
 }
 
 mapping(string:int) pushed_warnings = ([]);
@@ -115,6 +129,13 @@ class WarningFlag {
     warning = 1;
   }
 
+  void write_warnings(string fname, string source)
+  {
+    log_msg("%s produced warning.\n"
+            "%{%s\n%}", fname, warnings);
+    print_code(source);
+  }
+
   void compile_error(string file, int line, string text) {
     log_msg("%s:%d: %s\n", file,line,text);
   }
@@ -125,12 +146,12 @@ class WarningFlag {
 //
 
 #ifndef WATCHDOG_TIMEOUT
-// 20 minutes should be enough..
+// 40 minutes should be enough...
 #if !constant(_reset_dmalloc)
-#define WATCHDOG_TIMEOUT 60*20
+#define WATCHDOG_TIMEOUT 60*40
 #else
 // ... unless we're running dmalloc
-#define WATCHDOG_TIMEOUT 60*80
+#define WATCHDOG_TIMEOUT 60*160
 #endif
 #endif
 
@@ -169,7 +190,7 @@ void watchdog_new_pid (int pid)
 void watchdog_start_new_test (string current_test, mixed... args)
 // Tells the watchdog that a new test is about to be run. This clears
 // the test output buffer if the watchdog is buffering stdout (i.e. is
-// not running in verbose mode) .
+// not running in verbose mode).
 {
   if (use_watchdog)
     send_watchdog_command ("cur " + current_test, @args);
@@ -193,7 +214,7 @@ class Watchdog
   int verbose, timeout_phase;
   int start_time = time();
 
-  protected inherit Tools.Testsuite.WatchdogFilterStream;
+  protected inherit WatchdogFilterStream;
 
   string format_timestamp()
   {
@@ -257,7 +278,7 @@ class Watchdog
   void stdin_close (mixed ignored)
   {
     if (stdin->errno()) {
-      WATCHDOG_MSG ("Error reading stdin pipe: %s\n",
+      WATCHDOG_MSG ("Error reading stdin pipe: %s.\n",
 		    strerror (stdin->errno()));
     }
     _exit(EXIT_OK);
@@ -352,7 +373,7 @@ class Watchdog
   void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
-    this_program::verbose = verbose;
+    this::verbose = verbose;
     WATCHDOG_DEBUG_MSG ("Watchdog started.\n");
     stdin = Stdio.File ("stdin");
 #ifdef __NT__
@@ -369,20 +390,136 @@ class Watchdog
   }
 }
 
-string find_test(string ts)
+array(string) find_test(string ts)
 {
   if(Stdio.is_file(ts))
-    return ts;
+    return ({ ts });
   if(Stdio.is_dir(ts))
-     return combine_path(ts, "testsuite");
+    return find_testsuites(ts);
 
   // Let's DWIM
   string try;
   if(Stdio.is_file(try="tlib/modules/"+replace(ts, ".", ".pmod/")+".pmod/testsuite"))
-    return try;
-  if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return try;
-  if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return try;
-  return ts;
+    return ({ try });
+  if(Stdio.is_file(try="../../lib/modules/"+replace(ts, ".", ".pmod/")+".test"))
+    return ({ try });
+  if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return ({ try });
+  if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return ({ try });
+  return ({});
+}
+
+//
+// Plugins
+//
+
+class WidenerPlugin
+{
+  inherit Plugin;
+  int shift;
+
+  int(0..1) active(Test t)
+  {
+    shift = t->number % 3;
+    return !!shift;
+  }
+
+  string process_name(string name)
+  {
+    return sprintf("%s (shift %d)", name, shift);
+  }
+
+  string preprocess(string source)
+  {
+    string widener = ([ 0:"",
+                        1:"\nint \x30c6\x30b9\x30c8=0;\n",
+                        2:"\nint \x10001=0;\n" ])[shift];
+    return source + "\n" + widener;
+  }
+}
+
+class SaveParentPlugin
+{
+  inherit Plugin;
+
+  int(0..1) active(Test t)
+  {
+    if( has_value(t->source, "don't save parent") ) return 0;
+    return 0; // Disabled for now.
+    return (t->number/6)&1;
+  }
+
+  string process_name(string name, string source)
+  {
+    return name + " (save parent)";
+  }
+
+  string preprocess(string source)
+  {
+    return "#pragma save_parent\n# 1\n" + source;
+  }
+}
+
+class CRNLPlugin
+{
+  inherit Plugin;
+
+  int(0..1) active(Test t)
+  {
+    return (t->number/3)&1;
+  }
+
+  string process_name(string name)
+  {
+    return name + " (CRNL)";
+  }
+
+  string preprocess(string source)
+  {
+    return replace(source, "\n", "\r\n");
+  }
+}
+
+class LinePlugin
+{
+  inherit Plugin;
+  string preprocess(string source)
+  {
+    if(source[-1]!='\n') source+="\n";
+
+    int computed_line=sizeof(source/"\n");
+    foreach((source/"#")[1..], string cpp)
+    {
+      // FIXME: We could calculate the offset from this value.
+      if(has_prefix(cpp,"line") || sscanf(cpp,"%*d"))
+      {
+        computed_line=0;
+        break;
+      }
+    }
+
+    return source +
+      "int __cpp_line=__LINE__; "
+      "int __rtl_line=([array(array(int))]backtrace())[-1][1]; "
+      "int __computed_line="+computed_line+";\n";
+  }
+
+  int(0..1) inspect(Test t, object o)
+  {
+    if( o->__cpp_line != o->__rtl_line ||
+        ( o->__computed_line && o->__computed_line!=o->__cpp_line))
+    {
+      log_msg(t->name() + " Line numbering failed.\n");
+      print_code(t->prepare_source());
+      log_msg("   Preprocessed:\n");
+      print_code(cpp(t->prepare_source(), t->file));
+      log_msg("   CPP lines: %d\n",o->__cpp_line);
+      log_msg("   RTL lines: %d\n",o->__rtl_line);
+      if(o->__computed_line)
+        log_msg("Actual lines: %d\n",o->__computed_line);
+      return 0;
+    }
+    return 1;
+  }
 }
 
 //
@@ -391,16 +528,14 @@ string find_test(string ts)
 
 int main(int argc, array(string) argv)
 {
-  int watchdog_pid, subprocess;
-  int e, verbose, prompt, successes, errors, t, check, asmdebug;
+  int watchdog_pid, subprocess, failed_cond;
+  int verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
-  array(string) tests;
   array(string) forked;
   int start, fail, mem;
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
-  int shift;
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
@@ -460,8 +595,8 @@ int main(int argc, array(string) argv)
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
-    ({"regression",Getopt.NO_ARG,({"-r","--regression"})}),
     ({"subprocess", Getopt.NO_ARG, ({"--subprocess"})}),
+    ({"cond",Getopt.NO_ARG,({"--failed-cond","--failed-conditionals"})}),
     )),array opt)
     {
       switch(opt[0])
@@ -514,20 +649,20 @@ int main(int argc, array(string) argv)
         case "asm": asmdebug+=foo(opt[1]); break;
 	case "mem": mem=1; break;
 
-	case "auto":
-	  if(stringp(opt[1]))
-	    testsuites=find_testsuites(opt[1]);
-	  else
-	    testsuites=find_testsuites(".");
-	  break;
+        case "auto":
+          if(stringp(opt[1]))
+            testsuites+=sort(find_testsuites(opt[1]));
+          else
+            testsuites+=sort(find_testsuites("."));
+          break;
 
-        case "regression":
-	  add_constant("regression", 1);
-	  break;
-
-	case "subprocess":
+        case "subprocess":
 	  subprocess = 1;
-	  break;
+          break;
+
+        case "cond":
+          failed_cond = 1;
+          break;
 
 #ifdef HAVE_DEBUG
 	case "debug":
@@ -558,7 +693,7 @@ int main(int argc, array(string) argv)
   putenv ("TEST_VERBOSITY", (string) verbose);
   putenv ("TEST_ON_TTY", (string) (maybe_tty && Stdio.Terminfo.is_tty()));
 
-  Tools.Testsuite.log_start (verbose, maybe_tty && Stdio.Terminfo.is_tty());
+  log_start (verbose, maybe_tty && Stdio.Terminfo.is_tty());
 
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
@@ -595,7 +730,7 @@ int main(int argc, array(string) argv)
     if (asmdebug) forked += ({ "--asm=" + asmdebug });
     if (mem) forked += ({ "--memory" });
     // auto already handled.
-    if (all_constants()->regression) forked += ({ "--regression" });
+    if (failed_cond) forked += ({ "--failed-cond" });
     forked += ({"--subprocess"});
     // debug port not propagated.
     //log_msg("forked:%O\n", forked);
@@ -620,7 +755,7 @@ int main(int argc, array(string) argv)
       Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC | Stdio.PROP_NONBLOCK);
 #endif /* __NT__ */
       if (!pipe_2) {
-	log_msg ("Failed to create pipe for watchdog: %s\n",
+        log_msg ("Failed to create pipe for watchdog: %s.\n",
 		 strerror (pipe_1->errno()));
 	exit(EXIT_WATCHDOG_FAILED);
       }
@@ -667,11 +802,11 @@ int main(int argc, array(string) argv)
   if(!subprocess)
     log_msg("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
 
-  testsuites += Getopt.get_args(argv, 1)[1..];
-  foreach(testsuites; int pos; string ts) {
-    testsuites[pos] = ts = find_test(ts);
-    if(!file_stat(ts))
+  foreach(Getopt.get_args(argv, 1)[1..], string ts) {
+    array(string) tests = find_test(ts);
+    if(!sizeof(tests))
       exit(EXIT_TEST_NOT_FOUND, "Could not find test %O.\n", ts);
+    testsuites += tests;
   }
 
   if(!sizeof(testsuites))
@@ -696,15 +831,17 @@ int main(int argc, array(string) argv)
       foreach(testsuites, string testsuite) {
 	int failure;
 	array(int) subres =
-	  Tools.Testsuite.low_run_script (forked + ({ testsuite }), ([]));
+          low_run_script (forked + ({ testsuite }), ([]));
 	if (!subres) {
+	  log_status ("");
+	  log_msg("Failed to spawn testsuite %O.\n", testsuite);
 	  errors++;
 	  failure = 1;
 	} else {
 	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
 	  if (!(sub_succeeded || sub_failed || sub_skipped))
 	    continue;
-	  if (verbose) {
+	  if (verbose || sub_failed) {
 	    log_status ("");
 	    log_msg("Subresult: %d tests, %d failed, %d skipped\n",
 		    sub_succeeded + sub_failed, sub_failed, sub_skipped);
@@ -725,19 +862,18 @@ int main(int argc, array(string) argv)
   testloop:
     foreach(testsuites, string testsuite)
     {
-      [string pike_compat, tests] = read_tests( testsuite );
-
-      if (!sizeof (tests))
+      Testsuite tests = read_tests( testsuite );
+      if (!objectp(tests) || !sizeof(tests))
 	continue;
 
-      log_msg("Doing tests in %s%s (%s)\n", testsuite,
-	      pike_compat ? " in " + pike_compat + " compat mode" : "",
-	      ({sizeof(tests) + " tests",
+      log_msg("Doing tests in %s (%s)\n",
+              tests->name ? tests->name() : testsuite,
+              ({sizeof(tests) + " tests",
 		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
-      int testno, testline;
-      for(e=start;e<sizeof(tests);e++)
+      tests+=start;
+      foreach(tests; int e; Test test)
       {
 	if (!((e-start) % 10))
 	  report_size();
@@ -757,31 +893,43 @@ int main(int argc, array(string) argv)
 	  _verify_internals();
 	}
 
-	string test = tests[e];
-
-	// Is there a condition for this test?
-	string condition;
-	if( sscanf(test, "COND %s\n%s", condition, test)==2 )
+        // Is there a condition for this test?
+        if( sizeof(test->conditions) )
         {
-	  int tmp;
+          // FIXME: Support more than one condition (current testsuite
+          // format only handles one though)
+          if( sizeof(test->conditions)>1 )
+            error("Only one concurrent condition supported.\n");
+
+          int tmp;
+          string condition = test->conditions[0];
 	  if(!(tmp=cond_cache[condition]))
 	  {
 	    mixed err = catch {
-	      tmp=!!(compile_string("mixed c() { return "+condition+"; }",
-				    "Cond "+(e+1))()->c());
+              tmp=!!(test->compile("mixed c() { return "+condition+"; }")()->c());
 	    };
 
 	    if(err) {
 	      if (err && err->is_cpp_or_compilation_error)
-		log_msg( "Conditional %d%s failed.\n",
-			 e+1, testline?" (line "+testline+")":"");
+                log_msg( "Conditional %d failed.\n", e+1);
 	      else
-		log_msg( "Conditional %d%s failed:\n"
-			 "%s\n", e+1, testline?" (line "+testline+")":"",
+                log_msg( "Conditional %d failed:\n%s\n", e+1,
 			 describe_backtrace(err) );
               print_code( condition );
 	      errors++;
 	      tmp = -1;
+	    }
+
+            if (tmp != 1) {
+              if ((verbose > 1 || failed_cond) && !err) {
+                log_msg("Conditional %d failed:\n", e+1);
+		print_code( condition );
+	      }
+	    } else if (verbose > 5) {
+              log_msg("Conditional %d succeeded.\n", e+1);
+	      if (verbose > 9) {
+		print_code( condition );
+	      }
 	    }
 
 	    if(!tmp) tmp=-1;
@@ -791,26 +939,17 @@ int main(int argc, array(string) argv)
 	  if(tmp==-1)
 	  {
 	    if(verbose>1)
-	      log_msg("Not doing test "+(e+1)+"\n");
-	    successes++;
+              log_msg("Not doing test "+(e+1)+"\n");
+            successes++;
 	    skipped++;
 	    skip=1;
 	  }
 	}
 
-	string|int type;
-	sscanf(test, "%s\n%s", type, test);
+        string source = test->source;
 
-	string testfile;
-	sscanf(type, "%s: test %d, expected result: %s", testfile, testno, type);
-
-	if (testfile) {
-	  array split = testfile / ":";
-	  testline = (int) split[-1];
-	  testfile = split[..sizeof (split) - 2] * ":";
-	}
-
-	watchdog_start_new_test ("Test %d at %s:%d", e + 1, testfile, testline);
+        watchdog_start_new_test ("Test %d at %s:%d", e + 1,
+                                 test->file, test->line);
 
 	if(maybe_tty && Stdio.Terminfo.is_tty())
         {
@@ -818,7 +957,7 @@ int main(int argc, array(string) argv)
 	    // \r isn't necessary here if everyone uses
 	    // Tools.Testsuite.{log_msg|log_status}, but it avoids
 	    // messy lines for all the tests that just write directly.
-	    log_status ("test %d, line %d\r", e+1, testline);
+	    log_status ("test %d, line %d\r", e+1, test->line);
 	  }
 	}
 	else if(verbose > 1){
@@ -850,7 +989,7 @@ int main(int argc, array(string) argv)
 	  default:
 	    log_msg_cont(skip?"-":"+");
 	    break;
-		
+
 	  case 9:
 	  case 19:
 	  case 29:
@@ -864,214 +1003,148 @@ int main(int argc, array(string) argv)
 	}
 	if(skip) continue;
 
-	if (!testfile || !testno || !type) {
-	  log_msg ("Invalid format in test file: %O\n", type);
-	  errors++;
-	  continue;
-	}
-
-	if (pike_compat)
-	  test = "#pike " + pike_compat + "\n" + test;
+        test->add_plugin( WidenerPlugin() );
+        test->add_plugin( SaveParentPlugin() );
+        test->add_plugin( CRNLPlugin() );
+        test->add_plugin( LinePlugin() );
 
 	if (prompt) {
 	  if (Stdio.Readline()->
 	      read(sprintf("About to run test: %d. [<RETURN>/'quit']: ",
-			   testno)) == "quit") {
+			   test->number)) == "quit") {
 	    break testloop;
 	  }
 	}
 
 	if(verbose>1)
 	{
-	  log_msg("Doing test %d (%d total) at %s:%d%s\n",
-		  testno, successes+errors+1, testfile, testline, extra_info);
-	  if(verbose>2) print_code(test);
+          log_msg("Doing test %d (%d total) at %s:%d%s\n", test->number,
+                  successes+errors+1, test->file, test->line, extra_info);
+	  if(verbose>2) print_code(source);
 	}
 
 	if(check > 1) _verify_internals();
-	
-	shift++;
-	string fname = testfile + ":" + testline + ": Test " + testno +
-	  " (shift " + (shift%3) + ")";
 
-	string widener = ([ 0:"",
-			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
-			    2:"\nint \x10001=0;\n" ])[shift%3];
+        string fname = test->name();
 
-	// widener += "#pragma strict_types\n";
-
-	if(test[-1]!='\n') test+="\n";
-
-	int computed_line=sizeof(test/"\n");
-	array gnapp= test/"#";
-	for(int e=1;e<sizeof(gnapp);e++)
-	{
-	  if(sscanf(gnapp[e],"%*d"))
-	  {
-	    computed_line=0;
-	    break;
-	  }
-	}
-	string linetester="int __cpp_line=__LINE__; int __rtl_line=([array(array(int))]backtrace())[-1][1];\n";
-
-	string to_compile = test + linetester + widener;
-
-	if((shift/6)&1)
-	{
-	  if(search("don't save parent",to_compile) != -1)
-	  {
-	    fname+=" (save parent)";
-	    to_compile=
-	      "#pragma save_parent\n"
-	      "# 1\n"
-	      +to_compile;
-	  }
-	}
-
-	if((shift/3)&1)
-	{
-	  fname+=" (CRNL)";
-	  to_compile=replace(to_compile,"\n","\r\n");
-	}
-
-	// _optimizer_debug(5);
-	
-	if(verbose>9) print_code(to_compile);
-	WarningFlag wf;
-	switch(type)
+        if(verbose>9) print_code(test->prepare_source());
+        switch(test->type)
         {
-	  mixed at,bt;
+          WarningFlag wf;
+          mixed at,bt;
 	  mixed err;
 	case "COMPILE":
 	  wf = WarningFlag();
-	  master()->set_inhibit_compile_errors(wf);
-	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+          test->inhibit_errors = wf;
+          test->compile();
+          if(test->compilation_error)
 	  {
-	    _dmalloc_set_name();
-	    master()->set_inhibit_compile_errors(0);
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
-	    print_code(test);
+              log_msg ("%s failed:\n%s", fname,
+                       describe_backtrace (test->compilation_error));
+	    print_code(source);
 	    errors++;
 	  }
-	  else {
-	    _dmalloc_set_name();
-	    master()->set_inhibit_compile_errors(0);
-
-	    if(wf->warning) {
-	      log_msg (fname + " produced warning.\n");
-	      log_msg ("%{%s\n%}", wf->warnings);
-	      print_code(test);
-	      errors++;
+          else
+          {
+            if(wf->warning) {
+              wf->write_warnings(fname, source);
+              errors++;
 	      break;
 	    }
 
 	    successes++;
 	  }
 	  break;
-	
+
 	case "COMPILE_ERROR":
-	  master()->set_inhibit_compile_errors(1);
-	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+          test->compile();
+          if(test->compilation_error)
 	  {
-	    if (objectp (err) && err->is_cpp_or_compilation_error) {
-	      _dmalloc_set_name();
-	      successes++;
+            if (test->compilation_error->is_cpp_or_compilation_error) {
+              successes++;
 	    }
 	    else {
-	      _dmalloc_set_name();
-	      log_msg ("%s failed.\n"
+              log_msg ("%s failed.\n"
 		       "Expected compile error, got another kind of error:\n%s",
-		       fname, describe_backtrace (err));
-	      print_code(test);
+                       fname, describe_backtrace (test->compilation_error));
+	      print_code(source);
 	      errors++;
 	    }
 	  }
 	  else {
-	    _dmalloc_set_name();
-	    log_msg (fname + " failed (expected compile error).\n");
-	    print_code(test);
+            log_msg (fname + " failed (expected compile error).\n");
+	    print_code(source);
 	    errors++;
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
+          break;
 
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
-	  master()->set_inhibit_compile_errors(wf);
-	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+          test->inhibit_errors = wf;
+          test->compile();
+          if(test->compilation_error)
 	  {
-	    _dmalloc_set_name();
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
-	    print_code(test);
+              log_msg ("%s failed:\n%s", fname,
+                       describe_backtrace (test->compilation_error));
+	    print_code(source);
 	    errors++;
 	  }
 	  else {
-	    _dmalloc_set_name();
-	    if( wf->warning )
+            if( wf->warning )
 	      successes++;
 	    else {
 	      log_msg(fname + " failed (expected compile warning).\n");
-	      print_code(test);
+	      print_code(source);
 	      errors++;
 	    }
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
+          break;
 
 	case "EVAL_ERROR":
-	  master()->set_inhibit_compile_errors(1);
-	  _dmalloc_set_name(fname,0);
-
-	  at = gauge {
+          at = gauge {
 	    err=catch {
 	      // Is it intentional that compilation errors are
 	      // considered success too? /mast
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
-	      // or evaluation. /mast
-	      a = compile_string(to_compile, testsuite)()->a();
-	    };
-	  };
-	  if(err)
+              // or evaluation. /mast
+                a = test->compile()()->a();
+            };
+          };
+          if(err)
 	  {
-	    _dmalloc_set_name();
-	    successes++;
+            successes++;
 	    if(verbose>3)
 	      log_msg("Time in a(): %f\n",at);
 	  }
 	  else {
 	    watchdog_show_last_test();
-	    _dmalloc_set_name();
-	    log_msg("%s failed (expected eval error).\n"
+            log_msg("%s failed (expected eval error).\n"
 		    "Got %O\n", fname, a);
-	    print_code(test);
+	    print_code(source);
 	    errors++;
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
-	
+          break;
+
 	default:
 	  if (err = catch{
 	    wf = WarningFlag();
-	    master()->set_inhibit_compile_errors(wf);
-	    _dmalloc_set_name(fname,0);
-	    o=compile_string(to_compile,testsuite)();
-	    _dmalloc_set_name();
+            test->inhibit_errors = wf;
+            o=test->compile()();
+            if(test->compilation_error)
+              throw(test->compilation_error);
 
 	    if(check > 1) _verify_internals();
-	
+
 	    a=b=0;
 	    if(t) trace(t);
-	    _dmalloc_set_name(fname,1);
+
 	    if(functionp(o->a))
 	    {
 	      // trace(10);
@@ -1083,98 +1156,82 @@ int main(int argc, array(string) argv)
 	    {
 	      bt = gauge { b=o->b(); };
 	    }
-		
-	    _dmalloc_set_name();
 
 	    if(t) trace(0);
 	    if(check > 1) _verify_internals();
 
-	    if(wf->warning) {
-	      log_msg("%s produced warning.\n"
-		      "%{%s\n%}", fname, wf->warnings);
-	      print_code(test);
-	      errors++;
+            if(wf->warning) {
+              wf->write_warnings(fname, source);
+              errors++;
 	      break;
 	    }
-	    master()->set_inhibit_compile_errors(0);
-
-	  }) {
+          }) {
 	    if(t) trace(0);
-	    master()->set_inhibit_compile_errors(0);
-	    watchdog_show_last_test();
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            watchdog_show_last_test();
+            if (test->compilation_error?->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s\n", fname, describe_backtrace (err));
-	    print_code(test);
+              log_msg ("%s failed:\n%s\n", fname,
+                       describe_backtrace (test->compilation_error||err));
+	    print_code(source);
 	    errors++;
 	    break;
-	  }
+          }
 
-	  if( o->__cpp_line != o->__rtl_line ||
-	      ( computed_line && computed_line!=o->__cpp_line))
-	    {
-	      log_msg(fname + " Line numbering failed.\n");
-	      print_code(to_compile);
-	      log_msg("   Preprocessed:\n");
-	      print_code(cpp(to_compile, testsuite));
-	      log_msg("   CPP lines: %d\n",o->__cpp_line);
-	      log_msg("   RTL lines: %d\n",o->__rtl_line);
-	      if(computed_line)
-		log_msg("Actual lines: %d\n",computed_line);
-	      errors++;
-	    }
+          foreach(test->plugins;; Plugin plugin)
+            if( plugin->inspect && !plugin->inspect(test, o) )
+              errors++;
 
 	  if(verbose>2)
 	    log_msg("Time in a(): %f, Time in b(): %O\n",at,bt);
-	
-	  switch(type)
+
+	  switch(test->type)
 	  {
 	  case "FALSE":
 	    if(a)
 	    {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
 	      successes++;
 	    }
 	    break;
-		
+
 	  case "TRUE":
 	    if(!a)
 	    {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
 	      successes++;
 	    }
 	    break;
-		
+
 	  case "PUSH_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n", a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n", a);
 	    } else {
 	      pushed_warnings[a]++;
 	    }
 	    break;
-		
+
 	  case "POP_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n", a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n", a);
 	    } else if (pushed_warnings[a]) {
 	      if (!--pushed_warnings[a]) {
 		m_delete(pushed_warnings, a);
@@ -1182,11 +1239,11 @@ int main(int argc, array(string) argv)
 	    } else {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O not pushed!\n", a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O not pushed!\n", a);
 	    }
 	    break;
-		
+
 	  case "RUN":
 	    successes++;
 	    break;
@@ -1198,15 +1255,15 @@ int main(int argc, array(string) argv)
 	       sizeof (a) > 3) {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed to return proper results.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
 	      successes += a[0];
 	      errors += a[1];
 	      if (sizeof (a) >= 3) skipped += a[2];
-	      if (verbose>1)
+	      if ((verbose>1) || a[1])
 		if(a[1])
 		  log_msg("%d/%d tests failed%s.\n",
 		      a[1], a[0]+a[1],
@@ -1218,13 +1275,16 @@ int main(int argc, array(string) argv)
 	    break;
 
 	  case "EQ":
-	    if(a!=b)
-	    {
+            if(a==b)
+            {
+	      successes++;
+	    }
+            else {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n"
-		      "o->b(): %O\n", a, b);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1240,19 +1300,19 @@ int main(int argc, array(string) argv)
 	      _dump_program_tables(object_program(o));
 #endif
 	    }
-	    else {
+            break;
+
+	  case "EQUAL":
+            if(equal(a,b))
+            {
 	      successes++;
 	    }
-	    break;
-		
-	  case "EQUAL":
-	    if(!equal(a,b))
-	    {
+            else {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
-	      print_code(test);
-	      log_msg("o->a(): %O\n"
-		      "o->b(): %O\n", a, b);
+	      print_code(source);
+	      log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1265,19 +1325,16 @@ int main(int argc, array(string) argv)
 		}
 	      }
 	    }
-	    else {
-	      successes++;
-	    }
-	    break;
-		
+            break;
+
 	  default:
-	    log_msg("%s: Unknown test type (%O).\n", fname, type);
+	    log_msg("%s: Unknown test type (%O).\n", fname, test->type);
 	    errors++;
 	  }
 	}
 
 	if(check > 2) _verify_internals();
-	
+
 	if(fail && errors)
 	  exit(EXIT_TEST_FAILED);
 
@@ -1285,7 +1342,7 @@ int main(int argc, array(string) argv)
 	{
 	  break testloop;
 	}
-	
+
 	a=b=0;
       }
 
@@ -1310,7 +1367,6 @@ int main(int argc, array(string) argv)
     if(mem)
     {
       int total;
-      tests=0;
       gc();
       mapping tmp=_memory_usage();
       log_msg("%-10s: %6s %10s\n","Category","num","bytes");
@@ -1335,7 +1391,7 @@ int main(int argc, array(string) argv)
 
     if(errors || verbose>1)
     {
-      log_msg("Failed tests: "+errors+".\n");
+      log_msg("Failed tests: "+errors+".        \n");
     }
 
     log_msg("Total tests: %d (%d tests skipped)\n", successes+errors, skipped);
@@ -1349,19 +1405,18 @@ int main(int argc, array(string) argv)
     // test.
     watchdog_start_new_test ("");
 
-    Tools.Testsuite.report_result (successes, errors, skipped);
+    report_result (successes, errors, skipped);
   }
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
     multiset const_names = (multiset)const_names;
-    foreach(indices(all_constants()), string const)
-      if( !const_names[const] )
-	log_msg("Leaked constant %O\n", const);
+    foreach(indices(all_constants()), string const_name)
+      if( !const_names[const_name] )
+	log_msg("Leaked constant %O\n", const_name);
   }
 #endif
 
-  add_constant("regression");
   add_constant("_verbose");
   add_constant("__signal_watchdog");
   add_constant("RUNPIKE");
@@ -1419,4 +1474,5 @@ Usage: test_pike [args] [testfiles]
 -a, --auto[=dir]    Let the test program find the testsuites automatically.
 -T, --notty         Format output for non-tty.
 -d, --debug         Opens a debug port.
+--failed-cond       Outputs failing test conditionals.
 ";

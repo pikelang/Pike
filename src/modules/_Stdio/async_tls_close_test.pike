@@ -5,23 +5,38 @@ int main (int argc, array(string) argv)
 {
   string fail;
 
+  if (argc < 3) {
+    werror("Expected at least two arguments.\n");
+    exit(1);
+  }
+
   int clean_close = argv[1] == "1";
   int block = argv[2] == "1";
 
   Pike.Backend blocked_backend = Pike.Backend();
   Stdio.Port blocked_server = Stdio.Port();
   blocked_server->set_backend (blocked_backend);
-  blocked_server->bind (36565, lambda () {
-				 fail = "Should never accept a connection.\n";
-			       });
+  if (!blocked_server->bind (0,
+			     lambda () {
+			       fail = "Should never accept a connection.\n";
+			     })) {
+    Tools.Testsuite.log_msg("Failed to bind port: %s.\n", strerror(errno()));
+    Tools.Testsuite.report_result(0, 1);
+    exit(4);
+  }
+
+  string addr = blocked_server->query_address();
+  int port = (int)(addr/" ")[-1];
+  addr = (addr/" ")[0];
 
   Stdio.File con = Stdio.File();
-  SSL.sslfile tlscon;
+  SSL.File tlscon;
   con->async_connect (
-    "127.0.0.1", 36565,
+    addr, port,
     lambda (int success) {
       if (success) {
-	tlscon = SSL.sslfile (con, SSL.context(), 1, 0);
+	tlscon = SSL.File (con, SSL.Context());
+	tlscon->connect("localhost");
 	tlscon->set_write_callback (lambda () {
 				      fail = "Handshake should not succeed.\n";
 				    });
@@ -71,22 +86,33 @@ int main (int argc, array(string) argv)
 		"clean_close=%d block=%d res=%{%O %}\n",
 		clean_close, block, res);
 	    Tools.Testsuite.report_result (successful, !successful);
-	    exit (!successful);
+	    _exit (!successful);
 	  })
 	  fail = "Error in call out: " + describe_backtrace (err);
       }
       if (fail) werror (fail);
-      exit (2);
+      _exit (2);
     }, 0.5);
 
   thread_create (lambda () {
 		   sleep (1);
 #if 0
 		   werror ("\n");
+		   werror ("blocked_server: %O (fd: %d)\n",
+			   blocked_server, blocked_server->query_fd());
 		   foreach (all_threads(), Thread.Thread t)
 		     werror ("\n" + describe_backtrace (t->backtrace()));
 #endif
 		   destruct (blocked_server);
+
+		   sleep (2);
+		   Tools.Testsuite.log_msg("Poll didn't wake up.\n"
+					   "Async tls close on stalled connection failed: "
+					   "tlscon: %O "
+					   "clean_close=%d block=%d\n",
+					   tlscon, clean_close, block);
+		   Tools.Testsuite.report_result(0, 1);
+		   _exit(3);
 		 });
 
   return -1;

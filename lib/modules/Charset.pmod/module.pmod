@@ -10,7 +10,7 @@ protected private inherit _Charset;
 //! character case is ignored, as are the most common non-alaphanumeric
 //! characters appearing in character set names. E.g. @expr{"iso-8859-1"@}
 //! works just as well as @expr{"ISO_8859_1"@}. All encodings specified in
-//! RFC 1345 are supported.
+//! @rfc{1345@} are supported.
 //!
 //! First of all the Charset module is capable of handling the following
 //! encodings of Unicode:
@@ -102,6 +102,9 @@ protected private inherit _Charset;
 //! @endul
 //!
 //! +359 more.
+//!
+//! @note
+//!   In Pike 7.8 and earlier this module was named @[Locale.Charset].
 
 //! Virtual base class for charset decoders.
 //! @example
@@ -171,7 +174,11 @@ class Encoder
   //! @param rc
   //!   Function that is called to encode characters
   //!   outside the current character encoding.
-  void set_replacement_callback(function(string:string) rc);
+  //!
+  //! @returns
+  //!   Returns the current object to allow for chaining
+  //!   of calls.
+  this_program set_replacement_callback(function(string:string) rc);
 }
 
 private class ASCIIDec {
@@ -291,7 +298,7 @@ private class ISO6937dec {
   {
     decoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -302,12 +309,13 @@ private class ISO6937dec {
 
 // Decode GSM 03.38.
 private class GSM03_38dec {
-  static Decoder decoder = rfc1345("gsm0338");
-  static string trailer = "";
+  protected Decoder decoder = rfc1345("gsm0338");
+  protected string trailer = "";
   string drain()
   {
     // Escape sequences for GSM 03.38.
     // cf http://en.wikipedia.org/wiki/Short_message_service
+    // https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=139
     string res =
       replace(trailer + decoder->drain(),
 	      "\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2,
@@ -320,7 +328,7 @@ private class GSM03_38dec {
   {
     decoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -329,7 +337,7 @@ private class GSM03_38dec {
   }
 }
 
-// Decode HZ encoding of EUC-CN. RFC 1843.
+// Decode HZ encoding of EUC-CN. @rfc{1843@}.
 private class HZ_dec
 {
   protected Decoder decoder = EUCDec("gb2312", "euccn");
@@ -386,7 +394,7 @@ private class HZ_dec
       }
     }
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -452,7 +460,7 @@ void set_decoder(string name, Decoder decoder)
 //!   "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us",
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
-//!   various encodings as described by RFC1345.
+//!   various encodings as described by @rfc{1345@}.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
 Decoder decoder(string name)
@@ -533,7 +541,10 @@ Decoder decoder(string name)
     return p();
   }
 
-  error("Unknown character encoding "+name+"\n");
+  if( p = master()->resolv(orig_name+".CharsetDecoder") )
+    return p();
+
+  error("Unknown character encoding "+orig_name+"\n");
 }
 
 private class ASCIIEnc
@@ -585,9 +596,10 @@ private class ASCIIEnc
     s = "";
     return this;
   }
-  void set_replacement_callback(function(string:string) rc)
+  this_program set_replacement_callback(function(string:string) rc)
   {
     repcb = rc;
+    return this;
   }
   protected void create(string|void r, string|void rc)
   {
@@ -731,7 +743,7 @@ private class ISO6937enc {
     }
     encoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     encoder->clear();
@@ -741,8 +753,8 @@ private class ISO6937enc {
 
 // Encode GSM 03.38.
 private class GSM03_38enc {
-  static Encoder encoder;
-  static void create(string|void replacement,
+  protected Encoder encoder;
+  protected void create(string|void replacement,
 		     function(string:string)|void repcb)
   {
     encoder = rfc1345("gsm0338", 1, replacement, repcb);
@@ -760,7 +772,7 @@ private class GSM03_38enc {
 		"\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2);
     encoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     encoder->clear();
@@ -786,7 +798,7 @@ void set_encoder(string name, Encoder encoder)
 //!   "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us",
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
-//!   various encodings as described by RFC1345.
+//!   various encodings as described by @rfc{1345@}.
 //!
 //! @param replacement
 //!   The string to use for characters that cannot be represented in
@@ -820,11 +832,11 @@ Encoder encoder(string name, string|void replacement,
     // FIXME: This doesn't accurately check the range of valid
     // characters according to the chosen charset.
     return ASCIIEnc(replacement, repcb);
-  
+
   if ((< "ascii", "us", "usascii", "isoir6", "iso646us", "iso646irv1991",
 	 "367", "ansix341968", "iso4873" >)[name])
     return USASCIIEnc(replacement, repcb);
-  
+
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(name[7..], replacement, repcb);
 
@@ -885,7 +897,7 @@ Encoder encoder(string name, string|void replacement,
     return p(replacement, repcb);
   }
 
-  error("Unknown character encoding "+name+"\n");
+  error("Unknown character encoding "+orig_name+"\n");
 }
 
 
@@ -1205,9 +1217,9 @@ class DecodeError
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
-    this_program::err_str = err_str;
-    this_program::err_pos = err_pos;
-    this_program::charset = charset;
+    this::err_str = err_str;
+    this::err_pos = err_pos;
+    this::charset = charset;
     ::create (format_err_msg ("Error decoding",
 			      err_str, err_pos, charset, reason),
 	      bt);
@@ -1258,9 +1270,9 @@ class EncodeError
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
-    this_program::err_str = err_str;
-    this_program::err_pos = err_pos;
-    this_program::charset = charset;
+    this::err_str = err_str;
+    this::err_pos = err_pos;
+    this::charset = charset;
     ::create (format_err_msg ("Error encoding",
 			      err_str, err_pos, charset, reason),
 	      bt);

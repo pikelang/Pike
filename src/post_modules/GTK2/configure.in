@@ -7,6 +7,14 @@ PIKE_FEATURE_WITHOUT(GTK2)
 
 AC_MODULE_INIT()
 
+# some Darwin/OSX headers have Objective-C syntax, so we need 
+# to enable that on the compiler in order for header checks to succeed.
+case "$pike_cv_sys_os" in
+  Darwin)
+    CFLAGS="$CFLAGS -x objective-c"
+;;
+esac
+
 dnl AC_DEFINE(FUNCPROTO)
 dnl AC_DEFINE(HAVE_GNOME)
 dnl AC_DEFINE(HAVE_DPMS)
@@ -17,16 +25,24 @@ AC_DEFINE(FUNCPROTO)
 AC_HEADER_STDC
 
 # Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
-AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
+AC_CHECK_HEADERS( netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
 
-AC_CHECK_FUNCS( gethrtime signal sigaction )
+AC_CHECK_FUNCS( gethrtime sigaction )
 
-AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
+PIKE_PROG_PKG_CONFIG
 
 AC_SUBST(pgtk2_have_x11)
 pgtk2_have_x11=nox11
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk224)
+pgtk_has_gtk224=nogtk224
+AC_SUBST(pgtk_has_gtk222)
+pgtk_has_gtk222=nogtk222
+AC_SUBST(pgtk_has_gtk220)
+pgtk_has_gtk220=nogtk220
+AC_SUBST(pgtk_has_gtk218)
+pgtk_has_gtk218=nogtk218
 AC_SUBST(pgtk_has_gtk216)
 pgtk_has_gtk216=nogtk216
 AC_SUBST(pgtk_has_gtk214)
@@ -81,7 +97,7 @@ AC_DEFUN([AC_CHECK_PKG],
 [
   AC_MSG_CHECKING([for $1])
   AC_CACHE_VAL([pgtk2_cv_pkg_]translit([$1], [-+.], [___]), [
-    if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+    if [$]PKG_CONFIG $1 2>/dev/null; then
       [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=yes
     else
       [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=no
@@ -99,8 +115,8 @@ AC_DEFUN([AC_CHECK_PKG],
     #   /grubba 2005-10-05
     OLD_CFLAGS="$CFLAGS"
     OLD_LIBS="$LIBS"
-    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
-    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
+    LIBS="`[$]PKG_CONFIG --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
+    CFLAGS="`[$]PKG_CONFIG --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
 
     # Header check necessary for PIKE_FUNCS_NEED_DECLS.
     ifelse([$2],,,[AC_CHECK_HEADERS($2)])
@@ -125,7 +141,7 @@ dnl package
 AC_DEFUN(PGTK_CHECK_VERSION, [
   AC_MSG_CHECKING(for $1 version)
   AC_CACHE_VAL([pgtk2_cv_ver_]translit([$1], [-+.], [___]), [
-    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
+    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`[$]PKG_CONFIG --modversion $1 2>/dev/null`
   ])
   AC_MSG_RESULT($[pgtk2_cv_ver_]translit([$1], [-+.], [___]))
 ])
@@ -187,6 +203,22 @@ else
       if test $gtkminorvers -ge 16 ; then
 	pgtk_has_gtk216=gtk216
 	AC_DEFINE(HAVE_GTK216)
+      fi
+      if test $gtkminorvers -ge 18 ; then
+	pgtk_has_gtk218=gtk218
+	AC_DEFINE(HAVE_GTK218)
+      fi
+      if test $gtkminorvers -ge 20 ; then
+	pgtk_has_gtk220=gtk220
+	AC_DEFINE(HAVE_GTK220)
+      fi
+      if test $gtkminorvers -ge 22 ; then
+	pgtk_has_gtk222=gtk222
+	AC_DEFINE(HAVE_GTK222)
+      fi
+      if test $gtkminorvers -ge 24 ; then
+	pgtk_has_gtk224=gtk224
+	AC_DEFINE(HAVE_GTK224)
       fi
     fi
   ],,GTK2)
@@ -330,14 +362,14 @@ else
         fi
       ])
     ])
-  
+
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
     #       both of which should already be present.
     #   /grubba 2005-10-05
-    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
-    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_CFLAGS="`[$]PKG_CONFIG --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_LIBS="`[$]PKG_CONFIG --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
 
     AC_DEFINE(PGTK_AUTO_UTF8)
   fi
@@ -349,7 +381,9 @@ OLD_LIBS="$LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
 LIBS="$LIBS $GTK_LIBS"
 
-AC_CHECK_FUNCS(gtk_tree_selection_unselect_range)
+AC_CHECK_HEADERS( gdk/gdkx.h gdk/gdkwin32.h gdk/gdkquartz.h )
+
+AC_CHECK_FUNCS(gtk_tree_selection_unselect_range g_value_get_schar g_value_set_schar)
 
 AC_MSG_CHECKING([if g_signal_connect_data takes six args])
 AC_CACHE_VAL(pgtk2_cv_g_signal_connect_has_six_args, [
@@ -370,13 +404,13 @@ fi
 AC_MSG_CHECKING([if we are using X11])
 AC_CACHE_VAL(pgtk2_cv_have_x11, [
    AC_TRY_COMPILE([
-#include <gdk/gdk.h> 
-#include <gdk/gdkx.h> 
- ], 
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+ ],
  [
      GdkWindow *w = (GdkWindow *)0;
      Window window = GDK_WINDOW_XWINDOW (w);
- ], 
+ ],
  [pgtk2_cv_have_x11=x11],
  [pgtk2_cv_have_x11=nox11])
 ])
@@ -387,10 +421,22 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# some Darwin/OSX headers have Objective-C syntax,
+# so we need to enable that on the compiler.
+case "$pike_cv_sys_os" in
+  Darwin)
+    GTK_CFLAGS="$GTK_CFLAGS -x objective-c"
+;;
+esac
+
 LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
 
 AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk224)
+AC_SUBST(pgtk_has_gtk222)
+AC_SUBST(pgtk_has_gtk220)
+AC_SUBST(pgtk_has_gtk218)
 AC_SUBST(pgtk_has_gtk216)
 AC_SUBST(pgtk_has_gtk214)
 AC_SUBST(pgtk_has_gtk212)
@@ -422,5 +468,7 @@ AC_SUBST(WITH_GTK)
 PGTK_CFLAGS="$GTK_CFLAGS"
 PGTK_LIBS="$GTK_LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
+
 LIBS="$MODULE_LDFLAGS $LIBS"
+
 AC_OUTPUT(Makefile options)

@@ -17,7 +17,7 @@ protected mapping ext2type = ([
 // present from the IANA media types list on 2002-02-05, with the exception
 // of application types.
 //
-// the second portion of the list consists of registered and common 
+// the second portion of the list consists of registered and common
 // types as of 2012-04-17. The bulk of this list comes from the public
 // domain mime types list published by the Apache Software Foundation.
 
@@ -350,6 +350,7 @@ protected mapping ext2type = ([
 // Other
 
   "c"       : "text/x-c-code",
+  "cmod"    : "text/x-cmod-code",
   "cc"      : "text/x-c++-code",
   "cpp"     : "text/x-c++-code",
   "etx"     : "text/x-setext",
@@ -1499,6 +1500,7 @@ protected mapping ext2type = ([
   "dtd"         : "application/xml-dtd",
   "xop"         : "application/xop+xml",
   "xpl"         : "application/xproc+xml",
+  "xsl"         : "application/xslt+xml",
   "xslt"        : "application/xslt+xml",
   "xspf"        : "application/xspf+xml",
   "mxml"        : "application/xv+xml",
@@ -1661,4 +1663,5 @@ string `()(string ext) {
 protected mixed cast(string to)
 {
   if(to=="mapping") return small_ext2type + ext2type;
+  return UNDEFINED;
 }

@@ -63,9 +63,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
   // Prior to 7.3.11 there were implicit imports of Image
   // and Stdio. cf src/modules/Image/illustration.pike.
@@ -129,9 +126,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
   // Prior to 0.7.3 the Image module classes were all lower-case.
   #"// Pike 0.6 illustration, implicit imports, only Image.image.
@@ -193,9 +187,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
 });
 
@@ -213,7 +204,7 @@ module : mapping <- moduleM
 	"see also" : array of references
 	"note" : mapping of "desc": text
 	"modules" : same as classes (below)
-	"classes" : mapping 
+	"classes" : mapping
 		class : mapping <- classM
 	        	"see also" : array of references
 			"desc" : text
@@ -451,7 +442,7 @@ string make_nice_reference(string what,string prefix,string stuff)
    {
       q=prefix+what;
    }
-   else 
+   else
       q=what;
 
    return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
@@ -503,7 +494,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
   if (has_prefix(tag, "/")) {
     // End tag. Pop to starttag.
     tag = tag[1..];
-    if (!has_value(nesting->arr[..nesting->ptr-1], tag)) {
+    if (!has_value(nesting, tag)) {
       // Extraneous end-tag -- remove it.
       return ({""});
     }
@@ -625,7 +616,7 @@ string doctype(string type,void|string indent)
    };
    string combine_or(string a,string b)
    {
-     b = String.trim_all_whites(b);
+     b = String.trim(b);
      if (b[..3]=="<or>") b=b[4..<5];
      return "<or>"+a+b+"</or>";
    };
@@ -813,9 +804,9 @@ void docdecl(string enttype,
 	     break;
 	   }
 	   if(br==-1 || (in[i]==',' && !br)) {
-	     if(String.trim_all_whites(t)==")")
+             if(String.trim(t)==")")
 	       return res;
-	     if(String.trim_all_whites(t[..<1])=="void" && res=="")
+             if(String.trim(t[..<1])=="void" && res=="")
 		return "<argument/>\n";
 
 	     if(t[-1]==')')
@@ -836,13 +827,13 @@ void docdecl(string enttype,
 	 i++;
 	 for (; i<sizeof(in); i++) {
 	   if(in[i]==')') {
-	     if(!sizeof(String.trim_all_whites(n)))
+             if(!sizeof(String.trim(n)))
 	       throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     return res + "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";
 	   }
 	   if(in[i]==',') {
-	     if(!sizeof(String.trim_all_whites(n)))
+             if(!sizeof(String.trim(n)))
 		throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     res += "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";
@@ -1088,7 +1079,7 @@ void document(string enttype,
       string method_name;
       mapping method;
 
-      if (huh->methods) 
+      if (huh->methods)
 	 foreach (huh->methods,method)
 	    method_names|=(method->names=get_method_names(method->decl));
 
@@ -1166,7 +1157,8 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
       }
       string read() {
 	 return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
-			       "<autodoc>\n" + doc + "</autodoc>\n");
+			       "<autodoc>\n" + string_to_utf8(doc) +
+			       "</autodoc>\n");
       }
    }();
 
@@ -1311,11 +1303,12 @@ array(string) make_illustration(array(string) templates,
     handler = CompilationHandler();
     ip = UNDEFINED;
     err = catch {
+        Random.Interface rnd = Random.Deterministic(0);
+        add_constant("random", rnd->random);
+        add_constant("random_string", rnd->random_string);
+
 	ip = compile_string(code, "-", handler);
-	// Make sure we get the same images every time,
-	// even if they have a random component.
-	random_seed(0x6aa6a66a);
-	object g = ip(name, verbosity, type);
+        object g = ip(name, verbosity, type);
 	return ({ g->make() });
       };
   }
@@ -1338,7 +1331,7 @@ array(string) make_illustration(array(string) templates,
 void create(string image_dir, void|.Flags flags)
 {
   verbosity = (flags & .FLAG_VERB_MASK);
-  this_program::flags = flags;
+  this::flags = flags;
 
   IMAGE_DIR = image_dir;
 
@@ -1401,12 +1394,13 @@ void create(string image_dir, void|.Flags flags)
       object g;
 
       err = catch {
+        Random.Interface rnd = Random.Deterministic(0);
+        add_constant("random", rnd->random);
+        add_constant("random_string", rnd->random_string);
+
 	g = compile_string(execute + c)
 	  (illustration_counter, name);
-	// Make sure we get the same images every time,
-	// even if they have a random component.
-	random_seed(0x6aa6a66a);
-	g->main();
+        g->main();
       };
 
       if(err) {
@@ -1552,9 +1546,6 @@ void create(string image_dir, void|.Flags flags)
   void create(int _img_counter, string _prefix) {
     img_counter = _img_counter;
     prefix = _prefix;
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
   }
 
   string illustration(string|Image.Image img, mapping|object extra,
@@ -1579,7 +1570,7 @@ void create(string image_dir, void|.Flags flags)
 #endif
   }
 
-  static string low_mktag(string name, void|mapping args) {
+  protected string low_mktag(string name, void|mapping args) {
     if(!args) args = ([]);
     string res = \"<\" + name;
     foreach(sort(indices(args)), string attr)

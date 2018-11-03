@@ -334,7 +334,14 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if (sizeof(res) && (res != "\n")) {
 	  // Validate the extracted XML.
 	  mixed err = catch {
-	      Parser.XML.Tree.simple_parse_input(res);
+	      Parser.XML.Tree.SimpleRootNode root =
+		Parser.XML.Tree.simple_parse_input(res);
+	      Parser.XML.Tree.Node n = root->get_children()[0];
+	      if ((n->get_node_type() == Parser.XML.Tree.XML_HEADER) &&
+		  (lower_case(n->get_attributes()->encoding||"") == "utf-8")) {
+		// Validate UTF-8 encoding.
+		string dec = utf8_to_string(res);
+	      }
 	    };
 	  if (err) {
 	    werror("Extractor generated broken XML for file %s:\n"
@@ -710,7 +717,8 @@ string extract(string filename, string imgdest,
     if (!verbosity)
       ;
     werror("\nERROR: %s\n", describe_error(err));
-    // return 0;
+
+    return 0;
   }
 
   if(!result) result="";

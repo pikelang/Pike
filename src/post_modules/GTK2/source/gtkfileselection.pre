@@ -67,7 +67,7 @@ void create(string|mapping(string:mixed) title_or_props)
 
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       GtkWidget *gf;
-      get_all_args("create",args,"%t",&title);
+      get_all_args(NULL,args,"%t",&title);
       ref_push_string(title);
       f_string_to_utf8(1);
       gf=gtk_file_selection_new(CGSTR0(Pike_sp[-1].u.string));

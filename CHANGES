@@ -1,963 +1,533 @@
-Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
-----------------------------------------------------------------------
+Pike 8.1: Changes since Pike 8.0 (scratch area for future release notes)
+------------------------------------------------------------------------
 
 New language features
 ---------------------
 
-o Added a way to access the local, and not the overloaded,
-  implementation of a symbol.
-
-  As an example, given the classes:
-    | class Test
-    | {
-    |     int a( ) { return 1; }
-    |     int b( ) { return local::a(); }	// New
-    |     int c( ) { return a(); }
-    | }
-    |
-    | class Test2
-    | {
-    |    int a() { return 42; }
-    | }
+o Unlimited character constant size.
 
-  Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
-  and Test2()->c() will return 42.
+  There is no longer any limit to the size of character constants,
+  e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+o 'auto' type added.
 
-o Added new syntax that can be used to return the current object as if
-  it was a class it is inheriting
+  This is much like a strict typed mixed. The actual type is deduced
+  compile-time.
 
-    The syntax is X::this, where X is the inherited class.
+  Typical use is as the type for variables in foreach when looping over
+  complexly typed values, or as the type in macro-defined functions and
+  similar.
 
-    The returned object will not include any symbols not available in
-    the class X, but your overloaded methods (and other identifiers)
-    will be the ones returned when the object is indexed.
+  auto can be used as return type for a function, it will be the
+  type-union of all the types of the return statements in the
+  function.
 
-o Added a way to easily inherit the implementation of a subclass in an
-  inheriting class.
+o typeof(X) can now be used as a type.
 
-    | inherit ::this_program
+  The main use case is in macros, but it might be useful for other
+  things as well (as an example in a typedef).
 
-  The syntax refers to the previous definition of the current class
-  in the inherited class, and is typically used with inherit like:
+  typedef typeof(Val.true)|typeof(Val.false) bool;
 
-    | inherit Foo;
-    |
-    | // Override the Bar inherited from Foo.
-    | class Bar {
-    |    // The new Bar is based on the implementation of Bar in Foo.
-    |    inherit ::this_program;
-    |    // ...
-    | }
+  typeof, when used like this, behaves very much like the C++
+  decltype() expression.
 
-o Added new syntax for referring to and naming inherits.
+o ** operator added. It's exponentiation and works with most
+  combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
 
-    | inherit "foo.pike";
-    | inherit "foo/bar/baz.pike" : "foo/bar";
-    | // ...
-    |   "foo.pike"::foo();
-    |   "foo/bar"::baz();
+  `** and ``** operator overloading functions added.
 
-o Lookup of named inherits now also looks in indirect inherits.
+  This introduces one incompatible change: Previously the "pow"
+  function called a "_pow" function in the first argument if it was an
+  object. It has now been changed to also use `** (or, rather, pow()
+  is now implemented using predef::`**()).
 
-    | class A { int fun() {} }
-    | class B { inherit A; }
-    | class C {
-    |   inherit B;
-    |   // ...
-    |     // The function fun may here be referred to as any of:
-    |     B::A::fun();
-    |     B::fun();
-    |     A::fun();	// New.
+o Three pass compiler.
 
-o Implemented the variant keyword.
+  An extra pass of the compiler has been added. It is used to properly
+  resolve types in forward referring expressions, and is only run when
+  needed.
 
-  The keyword was present before, but did not actually do anything
-  useful.
+o #pragma disassemble
 
-  This is used to do function overloading based on the argument types.
+  This directive is now available even in pikes compiled --without-debug.
 
-  As an example:
-    | class Test1 { int b(); }
-    | class Test2 { int a(); }
-    |
-    | class Foo
-    | {
-    |     variant string foo( object q ){ return "Genericfoo"; }
-    |     variant string foo( Test1 x ) { return "Test 1"; }
-    |     variant string foo( Test2 x ) { return "Test 2"; }
-    |
-    |     variant string bar( int(0..0) s ) { return "0"; }
-    |     variant float bar( int(1..1) s ) { return 1.0; }
-    |     variant int bar( int(2..2) s ) { return 2; }
-    | }
+  The byte code output is now interleaved with the generated machine code
+  on selected architectures.
 
-  A common use-case is functions that return different types depending
-  on the arguments, such as getenv:
+o Complain about redundant backslash escapes.
 
-    |  string|mapping(string:string) getenv( string|void variable );
+o '__weak__' modifier added.
 
-  can now be rewritten as
+  It is now possible to declare object variables to have weak references.
 
-    |  variant string getenv( string variable );
-    |  variant mapping(string:string) getenv( );
+o Support for arguments to implicit lambdas added.
 
-  which gives significantly better type-checking.
+  Implicit lambdas now behave as if they were declared as
+  lambda(mixed ... __ARGS__).
 
-o The type-checker has been rewritten.
+  Support for this feature can be detected with #ifdef __ARGS__.
 
-  Mainly it is now much better at finding type errors, and most error
-  messages are more readable.
+o Function local function declarations are now statements
+  (and not expressions). This means that there is no longer
+  any need to terminate them with a semicolon.
 
-o Allow '.' to be used as an index operator in the few places it did
-  not work before.
+o Anonymous class definitions are now always expressions.
 
-o "Safe" index
+o Function local class definitions are now statements
+  (and not expressions). This means that there is no longer
+  any need to terminate them with a semicolon.
 
-  Copied from a popular extension to other C-like languages.
+o Complain about shadowed variant functions.
 
-  X[?ind] is equivalent to ((auto _ = X),(_ && _[ind]))
-  while X?->ind is equivalent to ((auto _ = X),(_ && _->ind))
+o Machine code support for more architectures.
 
-  The main use is 'deep indexing' where some elements can be 0:
+  There's now machine code support for arm32 and arm64.
 
-    | request_id?->user?->misc?->x
+o Fixed multiple integer over- and underflow bugs.
 
-  vs
+o Extended sscanf %O
 
-    | request_id && request_id->user && request_id->user->misc
-    |  && request_id->user->misc->x
+  sscanf() is now able to parse all base types that sprintf %O can
+  output. It can now also parse most literal constants pike accepts,
+  including integers prefixed with 0x and 0b, and floating point
+  numbers in scientific notation.
 
-o Added the '?:' operator for compatibility with other C-like
-  languages. It is identical to '||' in pike.
+o Returning void
 
-o The && operator changed, when doing A && B, and A is false, keep A
-  instead of returning 0.
+  It is now possible to return void responses from void functions.
 
-  This is especially useful then A is not actually 0, but an object
-  that evaluates to false, or UNDEFINED.
+    void a() { return; }
+    void b() { return a(); }
 
-o Fixed symbol resolution with deep inherits and mixins.
+o Protocols.DNS now supports encoding and decoding CAA RRs.
 
 
-New preprocessor features
--------------------------
+Bug fixes
+---------
 
-o Support for the ", ##__VA_ARGS__" cpp feature.
+o Operator functions
 
-  This makes the ‘##’ token paste operator have a special meaning
-  when placed between a comma and a variable argument. If you write
+  Calling operator functions with more than two arguments will now
+  work correctly for objects, where previously only the first two
+  objects where added.
 
-    | #define err(format, ...) f(debug)werror("ERROR: "+format, ##__VA_ARGS__)
+  When adding arrays, multisets and mappings, UNDEFINED will now
+  always be ignored. Previously it was only ignored when first in the
+  argument list, otherwise an exception would be thrown.
 
-  and the variable argument is left out when the err macro is used,
-  then the comma before the ‘##’ will be deleted. This does not
-  happen if you pass an empty argument, nor does it happen if the
-  token preceding ‘##’ is anything other than a comma.
+  The LFUNs will now be called with a consistent number of
+  arguments. Pike implementations rarely implemented varargs on
+  operator LFUNs, so this change should address many potential hidden
+  errors.
 
-o The preprocessor can now be run with a cpp prefix feature.
+o Protocols.HTTP.Server
 
-  This is currently used by the precompiler to avoid two levels of
-  preprocessing, one using "#cmod_" as the prefix and the other "#".
+  The server module will now read payloads for HTTP PUT requests, just
+  as any other method. Previously it would stop reading the body and
+  it was up to the caller to read enough data from the socket and
+  combine with already read data.
 
-o Dynamic macros
+  Setting "connection" header in the "extra_heads" to Request object
+  method response_and_finish() will now control if keep-alive should be
+  used or not. Otherwise it will be decided by the clients request
+  headers, as previously.
 
-  You can now add programatic macros. There is currently no syntax
-  that can be used to define these while compiling code, but you can
-  add them from one program before compiling plug-ins/modules.
+  The headers "content-type", "content-range", "content-length",
+  "server", "date" and "last-modified" will not be added or
+  overwritten if provided in the "extra_heads".
 
-  The main use is macros like DEBUG(...) and IFDEBUG() that would
-  expand to something if a debug setting is enabled in the module but
-  nothing otherwise, or, to take an actual example from the Opera
-  Mini source code:
+  Header names in "extra_heads" will not have their case modified.
 
-    | add_predefine( "METRIC()",
-    |     lambda( string name, string ... code )
-    |     {
-    |         string type = type_of( code );
-    |         string aggregate = aggregate_of( code );
-    |         string format = format_of( code );
-    |         code -= ({ 0 });
-    |         return replace( base_metric_class,
-    |                     (["ID":(string)next_metric_id++,
-    |                       "NAME":stringify(name),
-    |                       "TYPE":type,
-    | 			   "AGGREGATE":aggregate,
-    | 			   "FORMAT":format,
-    |                       "CODE":make_value_function(code),
-    |                    ]));
-    |      });
 
+Incompatible changes
+--------------------
 
-  That is, a macro that needs does some calculations, and rewrite the
-  code more than is possible in normal macros..
+o Sql.Sql is no longer a wrapper class, but a function.
 
-  This one expands something along the lines of
+  The wrapper class has been obsoleted by introduction of the
+  new base class __builtin.Sql.Connection. Note that it is
+  still possible to use Sql.Sql as the type of connection objects.
 
-    | METRIC("requests", Summarize, PerSecond,
-    |        floating_average_diff(requests));
+o Gz.crc32 and Nettle.crc32c now only return positive results.
 
-  into
+o glob() has changed.
 
-    | class Metric_requests_01
-    | {
-    |    inherit Server.Metric;
-    |    constant name = "transcoder:requests";
-    |    constant type = Float;
-    |    constant format = PerSecond;
-    |    constant aggregate = Summarize;
-    |
-    |    float value() {
-    |       return floating_average_diff(requests);
-    |    }
-    | }
+  The main incompatibilities are that [ and \ are now special
+  characters in the pattern, and if you check the return value against
+  1 instead of checking if it's true, and use an array as the first
+  argument you will have to change your code.
 
+  This is in order to extend the glob function to cover what
+  'standard' glob functions do:
 
-Optimizations
--------------
+  glob() now accepts quotes (\* to match a single *, as an example)
+  and handles ranges ([abc] for a, b or c, [a-z0-9] for a single
+  character between a and z or 0-9
 
-o New significantly faster block allocator
+  You can also negate a range using ^ or ! ([^a-zA-Z] as an example).
 
-  The free in the old one was O(n^2), which means that as an example
-  creating a lot of objects and then free:ing them mainly used CPU in
-  the block allocator.
+  When the first argument (the pattern) to glob is an array, glob now
+  returns which pattern in the array matched.
 
-  This fix changed the ordo of one of the tests that did that very
-  thing (binarytrees) from O(n^2) to O(n), and as such is more than a
-  simple percentual speedup in some cases, but it always improves the
-  performance some since the base speed is also faster.
+o hash() has been changed to use siphash. The old hash function is
+  available under the name hash_8_0(). Note that this is not a
+  cryptographic hash function.
 
-o Power-of-two hashtables are now used for most hashtables
+o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
 
-  This speeds up mappings and other hashtables a few percent, and also
-  simplifies the code.
+o If a thread exits with by throwing, the thrown value is propagated to wait().
 
-o Significantly changed x86-32 and an entirely new AMD64/x86-64
-  machine-code compilation backend
+o String.trim_all_whites() renamed String.trim().
 
-  The main feature with the x86-32 edition is that it is now using
-  normal function call mechanics, which means that it now works with
-  modern GCC:s.
+o Floats are no longer by default sorted before added. This may reduce
+  the precision but increases the speed of adding large number of
+  floats by a factor of 500. Applications handling floats with large
+  differences in magnitude need to apply the appropriate sorting
+  before arithmetics. As `+ was the only operator that performed
+  sorting, and functions like Array.sum did not, this was already a
+  concern.
 
-  The x86-64 backends has been rewritten so that it is easier to add
-  new instructions (x86-64) and opcodes (pike) to it.
+o Returning UNDEFINED from `+ and ``+ is not allowed and will cause an
+  exception.
 
-o Svalue type renumbering
-
-  PIKE_T_INT is now type #0, which makes certain things significantly
-  faster.
-
-  As an example, clearing of object variables is now done
-  automatically when the object is created since all object memory is
-  set to 0.
-
-  The same thing happens when clearing values on the stack.
-
-o string(x..y) (constant) types
-
-  The strings now keep track of the min/max values in addition to two
-  new flags: all-uppercase and all-lowercase.
-
-    | > typeof("foo");
-    | (1) Result: string(102..111)
-
-  This is used to optimize certain operations,
-  lower_case, upper_case, search and string_has_null for now.
-  It could be added to other places in the future as well.
-
-  The fairly common case where you are doing lower_case or upper_case
-  on an already lower or uppercase strings is now significantly
-  faster.
-
-o Several other optimizations to execution speed has been done
-
-  + object indexing (cache, generic speedups)
-
-  + lower_apply, changes to apply in general
-    Taken together these individually small optimizations speeds up at
-    least pike -x benchmark more than 5%.
-
-  + A lot of opcodes implemented in machine-code for x86-64
-    This speed up the loop benchmarks close to a factor of 3. But then
-    again, most real code is nothing like that benchmark.
-
-  + Several new opcodes added
-    As an example an observation was that most branch_if_zero is
-    followed by an is_eq, is_lt or is_gt or similar. Those opcodes
-    always return 1 or 0. So, two new opcodes, quick_branch_if_zero
-    and quick_branch_if_non_zero were added that map directly to three
-    x86-64 opcodes, there is no need to check the types, do a real
-    pop_stack etc.
-
-o Faster hash-function for strings
-
-  + Also siphash24 was added and is used in case the string hash table
-    becomes inefficient
-
-
-Deprecated features and modules
--------------------------------
-
-o Tools.PEM and Tools.X409 deprecated
-
-  Use the corresponding modules in Standards.
-
-o The built in sandbox is now deprecated
-
-  Unless somebody wants to take ownership of the feature and keep it
-  up to date the security system will be removed in the next stable
-  release.
-
-o The compiler now warns about switch statements where the cases
-  aren't enumerable, since these will generate random failures
-  if the code is read from a dump.
-
-o strlen() now only accepts strings
-
-
-Removed features and modules
-----------------------------
-
-o Removed facets
-
-  The optional (and not enabled by default) support for facet classes
-  has been removed, since it was only partially done and not really
-  used.
-
-o It is no longer possible to compile pike without libgmp.
-
-  Bignums are now a required language feature
-
-o The old low-level 'files' module has been renamed to _Stdio
-
-o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
-
-o Locale.Charset
-
-  The charset module is now available on the top level as 'Charset'
+o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
+  syslog() and closelog() have been moved to System.
 
 
 New modules
 -----------
 
-o Pike.Watchdog
+o ADT.Scheduler & ADT.TreeScheduler
 
-  A Watchdog that ensures that the process is not hung for an extended
-  period of time. The definition of 'hung' is: Has not used the
-  default backend.
+  These are variants of ADT.Heap where elements typically aren't
+  removed from the heap.
 
-  To use it simply keep an instance of the watchdog around in your
-  application:
+o Apple.Keychain
 
-    | Pike.Watchdog x = Pike.Watchdog( 5 ); // max 5s blocking
+  Parser for Apple Keychain format files (like the ones in
+  /System/Library/Keychains/).
 
-  An important and useful side-effect of this class is that the
-  process will start to respond to kill -QUIT by printing a lot of
-  debug information to stderr, including memory usage, and if pike is
-  compiled with profiling, the CPU used since the last time kill -QUIT
-  was called.
+o __builtin.Sql
 
-o Crypto.Password
+  Generic base classes for Sql API modules.
 
-  A module that can be used to verify and create passwd/ldap style
-  password hashes.
+o Filesystem.Zip
+o Function.bind()
 
-  It tries to support most common password hashing schemes.
+  Partially evaluate a function. Similar to Function.curry, but with
+  better granularity.
 
-o Debug.Profiling
+o Standards.HPack (RFC 7541)
+o Stdio.FakePipe
 
-  Tools useful for collecting and format for output the profiling
-  information generated when pike is compiled --with-profiling.
+  A simulated Stdio.Pipe.
 
-o NetUtils
+o Parser.Markdown
 
-  This module contains a lot of functions useful for the storage and
-  processing of network addresses, it supports IPv4 and IPv6.
+o Crypto.Checksum
 
-o Added ADT.CritBit module
+  This module collect non-cryptographic checksums. Support for crc32,
+  adler32 and Castagnoli CRC (CRC32C).
 
-  Mapping-like key-sorted data structures for string, int and
-  float-keys (ADT.CritBit.Tree, ADT.CritBit.IntTree,
-  ADT.CritBit.FloatTree). Implemented in C.
+  NB: In the future these may be amended to support the Crypto.Hash API.
 
-o Standards.BSON
+o Parser.ECMAScript
 
-  A new module for working with BSON serialized data.
-  See http://bsonspec.org/
+  This module simply provides a token splitter for
+  ECMAScript/JavaScript.
 
-o Geography.GeoIP
+o Web.EngineIO & Web.SocketIO
+o Protocols.HTTP2
+o Bittorrent.DHT
+o Standards.MsgPack
+o Web.Auth & Web.Api
 
-  Does geolocation of IPv4-numbers using databases from maxmind.com
-  or software77.net
+
+New features
+------------
+
+o predef::equal()
+
+  equal() on functions now checks if their definitions are same identifier
+  in the same program.
+
+o predef::gc()
+
+  gc() called with a weak mapping as argument now removes weak references
+  that are only held by that mapping.
+
+o ADT.Heap
+
+  - An indirection object ADT.Heap.Element has been added to make it
+    possible to optimize several heap operations.
+
+  - Added low_pop().
+
+o Crypto & Nettle
+
+  - Added Curve25519 and EdDSA25519.
+
+o Filesystem.Monitor
+
+  The filesystem monitoring system now uses accelleration via
+  Inotify et al.
+
+o Gmp
+
+  - mpf is now implemented using gmpf if the library is available.
+
+  - Improved support for GMP 5.0 and later.
+
+o GTK2
+
+  Multiple runtime fixes.
+
+o JOSE (JSON Object Signing and Encryption)
+
+  Some low-level API support has been added to the Crypto and Web
+  modules to support parts of RFC 7515 - 7520.
+
+o MasterObject
+
+  - Protect against the same file being compiled concurrently
+    in multiple threads.
+
+  - cast_to_program() and cast_to_object() should now be thread safe.
+
+o CompilerEnvironment()->lock()
+
+  Access to the compiler lock.
+
+o Crypto.ECC.Curve.Point
+
+  A point on an ECC curve.
+
+o Parser.Pike
+
+  Support new language features.
+
+o Protocols.DNS.server
+
+  Derived classes can now override report_decode_error() and
+  handle_decode_error() to change how errors while decoding a DNS
+  packet are reported and handled.
 
 o Protocols.WebSocket
 
-  An implementation of the WebSocket (RFC 6455) standard, both server
-  and client
+  Multiple API changes.
 
-o Image.WebP
+o Random rewrite
 
-  Encoder and decoder for the WEBP image format.
-  More information about the format can be found on
-  https://developers.google.com/speed/webp/
+  The random functions have been rewritten to ensure security by
+  default. random_string() and random() now get their data directly
+  from the operating system random generator, i.e. /dev/urandom on
+  most unixen. This is about half the speed compared with the
+  random_string function in Pike 8.0, but is now as secure as the
+  system random generator.
 
-o Serializer
+  For consumers of random data that have additional requirements,
+  different random generators are exposed in the new module
+  Random. The module has the following generators:
 
-  APIs useful to simplify serialization and deserialization of
-  objects Mainly it allows you to easily iterate over the object
-  variables, including the private ones.
+  - Random.Interface
 
-  + Serializer.Encodable
-    A class that can be inherit to make an object easily serializable
-    using encode_value.
+    This is not actually a generator, but an interface class that is
+    inherited into all the other generators. It contains code that can
+    turn the output from the random_string method into random numbers
+    with different limits without introducing bias. It also contains
+    code for all the different variants of random() on different
+    types. This is currently not possible to implement in Pike code,
+    as the typing is too complicated and it is not possible to access
+    private/protected _random methods in objects.
 
-o Filesystem.Monitor and the low level System.Inotify + System.FSEvents
+  - Random.System
 
-  Basic filesystem monitoring.
+    This generator maps directly on top of the system random
+    generator. This is the default generator used for random() and
+    random_string().
 
-  This module is intended to be used for incremental scanning of a
-  filesystem.
+  - Random.Deterministic
 
-  Supports FSEvents on MacOS X and Inotify on Linux to provide low
-  overhead monitoring; other systems currently use a less efficient
-  polling approach.
+    This generator creates the same sequence of random numbers for a
+    given seed, with good pseudo random properties.
 
-o Mysql.SqlTable
+  - Random.Hardware
 
-  This class provides some abstractions on top of an SQL table.
+    This generator accesses the hardware random generator, when
+    available.
 
-  At the core it is generic for any SQL database, but the current
-  implementation is MySQL specific on some points, notably the
-  semantics of AUTO_INCREMENT, the quoting method, knowledge about
-  column types, and some conversion functions. Hence the location in
-  the Mysql module.
+  - Random.Fast
 
-  Among other things, this class handles some convenient conversions
-  between SQL and pike data types
+    This generator takes entropy from the Random.System, but feeds
+    it into a cryptographic pseudo random number generator to be
+    able to output data fast. This is not the default random number
+    generator to avoid loading crypto code on every startup.
 
-o Parser.CSV
+  Comparing the different generators with each other gives the
+  following approximate speeds on a Linux system with hardware
+  random support:
 
-  This is a parser for line oriented data that is either comma,
-  semi-colon or tab separated.  It extends the functionality
-  of the Parser.Tabular with some specific functionality related
-  to a header and record oriented parsing of huge datasets.
+    Random.System           1.0
+    Pike 8.0 random_string  0.45
+    Random.Hardware         0.25
+    Random.Fast             0.20
+    Random.Deterministic    0.20
 
-o ZXID
+  Objects implementing the _random lfun now get two arguments, the
+  current random_string() and random() functions. This is convenient
+  for C-level functions that doesn't have to look up functions
+  themselves. Note that it is possible for a user to replace these
+  with non-conforming functions (returning values of the wrong type,
+  strings of the wrong length or shift size, and values outside the
+  given range) or even non-functions.
 
-  ZXID is a library that implements SAML 2.0, Liberty ID-WSF 2.0
-  and XACML 2.0.
+  All code in Pike that uses random now uses the current random
+  functions (though in some cases fixed at object creation). This
+  allows for repeatable results if the random functions are replaced
+  with a deterministic random generator, such as
+  Random.Deterministic. Example:
 
-  This module implements a wrapper for ZXID. The interface is similar
-  to the C one, but using generally accepted Pike syntax.
+    Random.Deterministic rnd = Random.Deterministic( seed );
+    add_constant( "random_string", rnd->random_string );
+    add_constant( "random", rnd->random );
 
-o Git
+o Sql
 
-  A module for interacting with the Git distributed version control
-  system.
+  - Most Sql C-modules converted to cmod.
 
-o Val
+  - Added next_result().
 
-  This module contains special values used by various modules, e.g.
-  a Val.null value used both by Sql and Standards.JSON.
+  - ODBC & tds: Support more datatypes.
 
-  In many ways these values should be considered constant, but it is
-  possible for a program to replace them with extended versions,
-  provided they don't break the behavior of the base classes defined
-  here. Since there is no good mechanism to handle such extending in
-  several steps, pike libraries should preferably ensure that the
-  base classes defined here provide required functionality directly.
+  - ODBC: Support big_typed_query().
 
-o __builtin
+  - pgsql: Lots of changes and fixes.
 
-  The __builtin module is now a directory module, so that it can provide
-  a suitable namespace for code written in Pike intended for being
-  inherited from modules written in C (cf precompile).
+o SSL
+
+  - Support session tickets.
+
+  - Support Negotiated FF-DHE.
+
+  - Support client certificates.
+
+  - Support ALPN.
+
+  - Prefer AEAD suites to CBC suites.
+
+  - SSL.File supports set_buffer_mode().
+
+o Standards.PKCS
+
+  Support PKCS#8 private keys.
+
+o String.Buffer & Stdio.Buffer
+
+  Added _search().
+
+o The self testing framework now supports *.test-files.
+
+o Thread
+
+  - _sprintf() improvements: Thread.Mutex now prints the ID of the thread
+    holding the lock, and thread IDs are shown as hexadecimal numbers.
+
+  - Thread.Farm now supports a callback for thread creation and termination
+    for the purpose of tracking thread names.
+
+o sprintf %x
+
+  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
+  representation of their contents. Just calling sprintf("%x",data) is
+  the same as calling String.string2hex(data).
+
+o Unicode 10.0.0.
+
+o Unicode.is_whitespace()
+
+  This new function returns if a unicode character is a whitespace
+  characer or not.
 
 
-Extensions and new functions
+Deprecated symbols and modules
+------------------------------
+
+o Sql.mysql_result and Sql.mysqls_result have been deprecated.
+  Use Sql.Result instead.
+
+o call_function() has been deprecated. Use `()() instead.
+
+
+Removed features and modules
 ----------------------------
 
-o Bz2.File added
+o Compatibility for Pike versions before 7.8 is no longer available.
 
-  It implements a Stdio.File like API, including support for the same
-  iterator API that Stdio.File has, allowing for convenient line
-  iterations over BZ2 compressed files.
+o GTK1 library is deprecated, so glue code is removed.
 
-    | foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
 
-o Image.JPEG
+C-level API changes
+-------------------
 
-  + decode now supports basic CMYK/YCCK support
+o The contract for functions is now changed so that a function is no
+  longer required to clean the stack. The topmost value of the stack
+  will be regarded as the return value and the rest of the items on
+  the stack, compared to before the function arguments were pushed,
+  will be popped and discarded. Efuns still have to clean their stack
+  as previously.
 
-  + exif_decode is a new function that will rotate the image
-    according to exif information
+o Removed add_function, pike_add_function, pike_add_function2,
+  simple_add_variable, map_variable and MAP_VARIABLE. This removes the
+  remaining few API:s where text types were used. Use ADD_FUNCTION and
+  PIKE_MAP_VARIABLE instead.
 
-o String.Buffer
+o Removed the functions my_rand and my_srand. Use the random functions
+  on the stack for _random lfuns, the push_random_string or look up
+  the random function from get_builtin_constants(). For deterministic
+  pseudo random, create a private Random.Deterministic object.
 
-  String.Buffer can now add the storage from a different String.Buffer
-  object with the add() method.
+o The preprocessor has been converted into a cmod, and been modified
+  to use more standard Pike datatypes.
 
-  It is possible to add sprintf-formatted data to a String.Buffer
-  object by calling the sprintf() method. This function works just as
-  the normal sprintf(), but writes to the buffer instead.
+o The preprocessor-specific hashtable implementation has been removed.
 
-  The new method addat() allows for writing into the buffer at any
-  position.
+o The gdb_backtraces() function is now available also --without-debug.
 
-o SDL.Music added to SDL.
+o There's now support to block mapping hashtables from being shrunk
+  on map_delete().
 
-  Allows the playback of audio/music files.
-  Requires the SDL_mixed library.
+o guaranteed_memset() is replaced with secure_zero() which fills a
+  buffer with zero. On x86 SSE2 is used to zero the memory without
+  loading it into the CPU cache, as this function is typically used
+  before calling free() on memory with cryptographic key data.
 
-o System.TM
 
-  Low-level wrapper for struct tm.
+Documentation
+-------------
 
-  This can be used to do (very) simple calendar operations. It is,
-  as it stands, not 100% correct unless the local time is set to
-  GMT, and does mirror functionality already available in gmtime()
-  and localtime() and friends, but in a (perhaps) easier to use API.
+o RFC references added.
 
-o decode_value now throws the error object Error.DecodeError.
+o Character encoding issues fixed.
 
-  Useful to catch format errors in the decode string.
+o Added @enum/@endenum markup.
 
-o Process.daemon
-
-  The daemon() function is for programs wishing to detach themselves
-  from the controlling terminal and run in the background as system
-  daemons.
-
-o Debug.pp_object_usage()
-
-  Pretty-print debug information, useful to get debug information
-  about object counts and memory usage in pike applications.
-
-  Uses the new _object_size lfun, if present in objects, to account
-  for RAM-usage in C-objects that allocate their own memory.
-
-o Mysql
-
-  + Added support more modern client libraries (incl. MariaDB)
-
-  + Mysql.mysql now has methods to query the id or SQLSTATE of the
-    last error.
-
-o Protocols.DNS
-
-  + Prevent endless loops in maliciously crafted domain names.
-
-  + Add QTYPE T_ANY to DNS enum EntryType in DNS.pmod.
-
-  + Handle truncated labels
-
-  + TCP client and server support
-
-o Thread no longer inherits Thread.Thread (aka thread_create)
-
-o Thread.Farm now might work
-
-o Cmod precompiler.
-
-  + inherit "identifier"
-    -- inherit the program returned by calling master()->resolve() on
-       the specified identifier. Useful to inherit code written in pike.
-
-o String.levenshtein_distance()
-
-  The function calculates the Levenshtein distance between two
-  strings. The Levenshtein distance describes the minimum number of
-  edit operations (insert, delete or substitute a character) to get
-  from one string to the other.
-
-  This can be used in approximate string matching to find matches
-  for a short string in many longer texts, when a small number of
-  differences is expected.
-
-o System.sync()
-
-  Synchronizes the filesystem on systems where this is possible
-  (currently windows and UNIX-like systems).
-
-o System.getloadavg()
-
-  Return the current 1, 5 and 15 minute system load averages as an array.
-
-o access()
-
-  Check if a file exist and can also return if it is readable and or
-  writeable for the current process.
-
-o glob()
-
-  The glob function has been extended to accept an array of globs as
-  the first (glob pattern) argument.
-
-  In this case, if any of the given patterns match the function will
-  return true, or, if the second argument is also an array, all
-  entries that match any glob in the first array.
-
-o Stdio.UDP():
-
-  + added IPv6 multicast support
-
-  + added set_buffer
-
-o Stdio.File():
-
-  + send_fd and receive_fd
-    These functions can be used to send and receive an open
-    file-descriptor over another file-descriptor. The functions are
-    only available on some systems, and they generally only work
-    when the file the descriptors are sent over is a UNIX domain
-    socket or a pipe.
-
-  + Changed internally to remove one level of indirection.
-    The Stdio.File object no longer has a _Stdio.Fd_ref in _fd. They
-    are instead directly inheriting _Stdio.FD.
-
-    _fd is still available for compatibility, but internally it is gone.
-
-  + Fixed grantpt() on Solaris failing with EPERM.
-
-o Unicode databases updated to 6.3.0 from 5.1.0
-
-  This is the latest released Unicode database from unicode.org.
-
-o The Search search engine module has seen several fixes
-
-  + Added support for padded blobs. This improves performance when
-    incrementally growing blobs. This feature is only enabled if
-    Search.Process.Compactor says this is OK, see the documentation
-    for more information.
-
-  + Several locking optimizations, specifically, avoid locking and
-    unlocking for every single iteration when merging and syncing
-    blobs.
-
-  + Charset conversion fixes
-
-  + Fixes for queries where the same world occur multiple times
-    ('foo and bar and foo')
-
-o pike -x benchmark
-
-  + Output format changed
-
-  + Also added support for JSON output.
-
-  + The results should be more consistent.
-
-  + Added options to allow comparison with a previous run.
-
-o New stand-alone tools added to make it possible to build
-  documentation without the pike build tree
-
-  + autodoc_to_html
-    AutoDoc XML to HTML converter.
-
-  + autodoc_to_split_html
-    AutoDoc XML to splitted HTML converter.
-
-  + git_export_autodoc
-    Exports a stream of autodoc.xml suitable for git-fast-import.
-    Used on pike-librarian.
-
-o Readline tries to set the charset to the terminal charset
-
-  This makes it possible to write non-7bit characters on a terminal
-  if the terminal supports it.
-
-o Fixed units in pike --help=kladdkaka
-
-o Several changes has been done to the GTK2 module
-
-  + GTK2.DrawingArea no longer crash in draw_text if you pass odd parameters.
-
-  + draw_pixbuf can now be passed width and height -1, which makes it
-    take the size from the passed image.
-
-  + GDKEvent no longer crash when you extract strings from them
-
-  + accelerators now work
-
-  + Fixed RadioToolButton
-
-  + signal_connect can now connect a signal in front of the list
-
-  + Several fixes to Tree related objects
-
-  + GTK2.SourceView added
-
-  + GTK2.Spinner added
-
-o A few issues were fixed that were found by Coverity
-
-  + Fixed memory leak in Math.Transform
-
-  + Fixed two compares that were written as assignments (errno
-    checks for EINTR for sockets)
-
-o System.get_home + System.get_user
-
-  (mostly) Cross-platform ways to get the user name and home directory.
-
-o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
-
-  These are useful to create or close the console window that is
-  shown for pike programs.
-
-o Process - forkd
-
-  Forkd can be used to more cheaply create new processes on UNIX like
-  systems.
-
-  This is done by first starting a sub-process that is then used to
-  create new processes.
-
-  If your main process is large, this is significantly faster than
-  using the normal create_process, and does not risk running out of
-  memory for the forked (temporary) copy of the main process that is
-  created.
-
-o MacOSX CoreFoundation support in the backend
-
-  This makes it somewhat more likely that native libraries can work
-  with pike.
-
-o Better IPv6 support.
-
-  This includes detection of IPV6 mapped IPV4 addresses
-  (::FFFF:i.p.v.4) and full support for IPv6 in the UDP
-  code.
-
-o Asynchronous Protocols.SNMP client
-
-o Fixes to Process.run, Process.spawn_pike and friends.
-
-  + Support OS/2 path conventions
-
-  + Fixed multiple issues with search_path()/locate_binary()
-    - locate_binary() is now more reliable on Windows
-    - Now invalidates the cached path is PATH is changed
-    - Uses locate_binary to scan the path
-    - spawn_pike() now uses search_path()
-
-  + You can now optionally have System.spawn_pike pass predefines,
-    program and include path to the spawned pike, in addition to the
-    module path.
-
-o Lots of autodoc fixes
-
-  A lot more of the previously existing, but broken, documentation is
-  now readable.
-
-o predef::types
-
-  This is equivalent to values and indices, but instead gives the
-  types for each value.
-
-  Basically only useful for objects.
-
-o Builtin._get_setter
-
-  This function returns a setter for a variable in an object.
-  The setter, when called, will set the variable value to the passed
-  argument.
-
-o Parser.XML.Tree fixes
-
-  + Several namespace improvement and handling fixes
-
-o New charsets
-
-  A lot of ISO-IR charsets added:
-    9-1, 9-2, 31, 232, 234, 231 (aka ANSI/NISO Z39.46, aka ANSEL) 230
-    (aka TDS 565) 225 (SR 14111:1998), 197/209 (sami) 208 (IS 434:1997)
-    207 (IS 433:1996), 204,205 and 206 (aka 8859-1, 8859-4 and 8859-13
-    with euro) 201, 200, 138 (ECMA-121) 198 (ISO 8859-8:1999) 182, 181,
-    189 (TCVN 5712:1993, aka VSCII) 167, 166 (aka TIS 620-2533 (1990)),
-    164, 160, 151 (NC 99-10:81), 68 (APL), 59 (CODAR-U), 202 (KPS
-    9566-97). Fixed CSA_Z242.4
-
-o Several fixes to Protocols.HTTP
-
-  + Improved Protocols.HTTP.Query.PseudoFile
-    (significantly better Stdio.Stream simulation)
-
-  + Do not use hard coded Linux errno:s
-
-  + Case insensitive handling of header overrides in do_method
-
-  + Fixed broken check for URL passwords when querying
-
-  + Add more descriptive HTTP responses along with a mostly complete
-    list of codes
-
-  + Handle non-standards compliant relative redirects
-
-  + Cleaner handling of async DNS failures
-
-  + Handle chunked transfer encoding correctly when doing async
-    queries
-
-  + Fixes for the proxy client support
-
-  + Several keep-alive handling fixes
-
-  + Server:
-    - More forgiving MIME parsing for MSIE
-    - Fixed range header handling
-    - Fixed parsing of broken multipart/form-data data
-    - Added optional error_callback to attach_fd
-    - The response processor (response_and_finish) now treats the
-      reply mapping as read-only.
-    - Support if-none-match (etag:s)
-    - Ignore errors in close when destroying the object
-
-o dtrace support (on MacOSX)
-
-  Pike now supports dtrace events on function enter and leaving (and
-  when stack frames are notionally popped, for functions doing
-  tailrecursion).
-
-o sizeof() now supports ADT.struct.
-
-
-Crypto and SSL
---------------
-
-o SNI client extension support for SSL (Server Name Indicator)
-
-o Standards.PEM
-
-  + Added some support for encrypted PEM files
-
-o Nettle refactored
-
-  CBC cipher mode is now twice as fast.
-
-o Crypto.GCM
-
-  GCM (Galois Counter Mode) cipher mode added.
-
-o AES support added to the SSL module
-
-  This adds support for the following cipher suites:
-    TLS_rsa_with_aes_128_cbc_sha
-    TLS_dhe_dss_with_aes_128_cbc_sha
-    TLS_dhe_rsa_with_aes_128_cbc_sha
-    TLS_rsa_with_aes_256_cbc_sha
-    TLS_dhe_dss_with_aes_256_cbc_sha
-    TLS_dhe_rsa_with_aes_256_cbc_sha
-
-o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
-
-o Blowfish and Serpent support fixed in Nettle
-
-o Crypto.PGP
-
-  Added support for SHA256, SHA384 and SHA512 as hash functions.
-  Expose the used hash and key types in the out data
-
-o Crypto.Arctwo
-
-  The 1-128 bit cipher Arctwo is now provided as a block cipher in
-  Crypto. This cipher is only intended for compatibility with OLD
-  third party code, and should NOT be used for new development.
-
-o Crypto.Camellia
-
-  The 128/256 bit cipher Camellia is now available as block cipher in
-  Crypto. In addition the following cipher suites have been added to
-  SSL:
-
-    TLS_rsa_with_camellia_128_cbc_sha
-    TLS_dhe_dss_with_camellia_128_cbc_sha
-    TLS_dhe_rsa_with_camellia_128_cbc_sha
-    TLS_rsa_with_camellia_256_cbc_sha
-    TLS_dhe_dss_with_camellia_256_cbc_sha
-    TLS_dhe_rsa_with_camellia_256_cbc_sha
-
-o Crypto.SALSA20 and Crypto.SALSA20R12
-
-  The 128/256 bit cipher SALSA20 is now available as a stream cipher
-  in Crypto. SALSA20R12 is SALSA20 reduced to just 12 rounds.
-
-o Crypto.SHA3_224, Crypto.SHA3_256, Crypto.SHA3_384 and Crypto.SHA3_512
-
-  The SHA-3 secure hash algorithm has been added in multiple variants.
-
-o Crypto.GOST94 and RIPEMD160
-
-  The lesser used hash functions GOST R 34.11-94 (RFC 4357) and
-  RIPEMD160 have been added.
-
-o Crypto.RSA and Crypto.DSA
-
-  The key generation for RSA and DSA are now done by Nettle. This
-  results in 90% faster key generation for RSA. Key generation for DSA
-  is 10 times slower, but produces better quality keys.
-
-o Crypto.Hash
-
-  Added support for pbkdf1 from PKCS#5v1.5 and pbkdf2 from PKCS#5v2.0.
-
-o Standards.X509
-
-  X509 was moved from Tools to Standards and has been refactored and
-  bug fixed. It is now possible to extend both validation and creation
-  of certificates with new cipher and hash algorithms. A range of new
-  algorithms are supported for both RSA and DSA:
-
-    RSA MD2
-    RSA MD5
-    RSA SHA-1
-    RSA SHA-2-256
-    RSA SHA-2-384
-    RSA SHA-2-512
-    DSA SHA-1
-    DSA SHA-2-224
-    DSA SHA-2-256
-
-  Note that the API has changed compared with Tools.X509 and there is
-  now a single make_selfsigned_certificate() method for both RSA and
-  DSA, though it takes the same arguments. In addition a hash function
-  and serial number can be supplied. The hash function defaults to
-  SHA-2-256.
+o Support undocumented enums with documented constants.
 
 
 Building and installing
 -----------------------
 
-o -fvisibility=hidden is now the default
+o GMP 4.1 or later is now required.
 
-  This means that PMOD_EXPORT is now actually needed on systems like
-  Linux and MacOSX. It also means that the binary is slightly smaller
-  and faster.
+o C99 assumed
 
-o clang compilation fixes (bignum overflow checks, misc)
+  The configure tests will not check for functions defined in C99
+  anymore and C99 compiler support is assumed.
 
-  It is now possible to compile pike using a modern clang compiler.
+Optimizations
+-------------
 
-o Removed bundles
-
-  Pike no longer comes with copies of some libraries, and the support
-  for that in the makefile has been removed.
-
-o Several OS/2 and windows compilation fixes
-
-
-Lots of bug fixes
------------------
-
-
-o Fixed symbol resolution with deep inherits and mixins
-
-o Fixed PNG 4bpl indexed mode with alpha
-
-o The _sprintf LFUN now works with %F
-
-o A lot more, see the (more or less) full changelog for more info:
-
-   http://pike-librarian.lysator.liu.se/index.xml?m=pike.git&start=forever&branch=7.9&template=logonly.inc
+o Removed the GC marker hash table. For types which require GC markers,
+  they are now allocated as parf of the data type. This significantly
+  improves GC performance ( up to a factor if 2 in some situations ).

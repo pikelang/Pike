@@ -2,7 +2,6 @@
 #define CB_KEY_PIKEINT_H
 #include "bitvector.h"
 #include "pike_int_types.h"
-#include <gmp.h>
 #include "bignum.h"
 
 typedef struct object * CB_NAME(string);
@@ -18,12 +17,14 @@ typedef mp_limb_t CB_NAME(char);
 #endif
 #define cb_char CB_NAME(char)
 
-static CB_INLINE unsigned INT32 gclz(mp_limb_t a) {
-    if (sizeof(mp_limb_t) == 8) {
-	return clz64((unsigned INT64)a);
-    } else {
-	return clz32((unsigned INT32)a);
-    }
+static inline unsigned INT32 gclz(mp_limb_t a) {
+#if GMP_NUMB_BITS == 64
+    return clz64((UINT64)a);
+#elif GMP_NUMB_BITS == 32
+    return clz32((unsigned INT32)a);
+#else
+#error Only supports limb sizes of 32 or 64 bits.
+#endif
 }
 
 #define O2G(o) ((MP_INT*)(o->storage))
@@ -38,20 +39,18 @@ static CB_INLINE unsigned INT32 gclz(mp_limb_t a) {
 #define CB_GC_CHECK_KEY(key)	gc_check((key).str)
 #define CB_GC_RECURSE_KEY(key)	gc_recurse_object((key).str)
 
-// int mpz_cmp (mpz_t op1, mpz_t op2)
-#define CB_KEY_EQ(k1, k2)	( (k1).str == (k2).str || !mpz_cmp(K2G(k1), K2G(k2)) )
-#define CB_KEY_LT(k1, k2)	( (k1).str != (k2).str && mpz_cmp(K2G(k1), K2G(k2)) < 0 )
+// int low_compare_bignums (MP_INT op1, MP_INT op2)
+#define CB_KEY_EQ(k1, k2)	( (k1).str == (k2).str || !low_compare_bignums(K2G(k1), K2G(k2)) )
+#define CB_KEY_LT(k1, k2)	( (k1).str != (k2).str && low_compare_bignums(K2G(k1), K2G(k2)) < 0 )
 
-static CB_INLINE mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
+static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
     MP_INT * i = O2G(s);
 
     n += abs(i->_mp_size);
-    if (n > 0) {
-	//fprintf(stderr, ">> %lld %lld\n", n, i->_mp_d[abs(n)]);
-	return i->_mp_d[abs(i->_mp_size)-n];
+    if (n >= 0) {
+        return i->_mp_d[abs(i->_mp_size) - 1 - n];
     } else {
-	//fprintf(stderr, "»» %lld %lld\n", n, i->_mp_d[abs(n)]);
-	return 0;
+        return 0;
     }
 }
 

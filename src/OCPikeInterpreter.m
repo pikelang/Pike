@@ -128,7 +128,7 @@ void shared_interpreter_cleanup(int exitcode)
     add_pike_string_constant("__embedded_resource_directory",
         master,
         strlen(master));
-								
+
     add_pike_string_constant("__master_cookie",
                              master,
                             strlen(master));
@@ -146,24 +146,20 @@ void shared_interpreter_cleanup(int exitcode)
 	         * master it'd be reported with a raw error dump otherwise. */
 	        struct generic_error_struct *err;
 
-	        dynamic_buffer buf;
-	        dynbuf_string s;
+	        byte_buffer buf = BUFFER_INIT();
 	        struct svalue t;
 
 		move_svalue (Pike_sp++, &throw_value);
 		mark_free_svalue (&throw_value);
-	        err = (struct generic_error_struct *)
-	          get_storage (Pike_sp[-1].u.object, generic_error_program);
+	        err = get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	        t.type = PIKE_T_STRING;
 	        t.u.string = err->error_message;
 
-	        init_buf(&buf);
-	        describe_svalue(&t,0,0);
-	        s=complex_free_buf(&buf);
+	        describe_svalue(&buf,&t,0,0);
 
-	        fputs(s.str, stderr);
-	        free(s.str);
+	        fputs(buffer_get_string(&buf), stderr);
+                buffer_free(&buf);
 	      } 
 	      else
 	        call_handle_error();
@@ -173,15 +169,6 @@ void shared_interpreter_cleanup(int exitcode)
 
 	    if ((m = load_pike_master())) {
 	      back.severity=THROW_EXIT;
-//	      pike_push_argv(argc, argv);
-#if 0
-	      // Ok, I've no idea how this is supposed to work since I
-	      // can't find the actual _main call anywhere, but it
-	      // does not expect to receive an environment array
-	      // anymore. /mast
-	      pike_push_env();
-#endif
-
 		}
    return YES;
 }
@@ -198,7 +185,7 @@ void shared_interpreter_cleanup(int exitcode)
 - (struct program *)compileString: (id)code
 {
   struct program * p = NULL;
-  push_text([code UTF8String]);
+  push_static_text([code UTF8String]);
   f_utf8_to_string(1);
   f_compile(1);
   if(Pike_sp[-1].type==T_PROGRAM)
@@ -232,7 +219,7 @@ void shared_interpreter_cleanup(int exitcode)
  
 	i=find_identifier("foo", p);
 
-    o = low_clone(p);
+    o = fast_clone_object(p);
 
     apply_low(o, i, 0);
 

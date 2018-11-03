@@ -43,6 +43,8 @@ GTK2.GdkColor data_get_color( int index );
 //!
 
 array data_get_extrema( );
+//! Get the bounds of the data set (?)
+//!
 //!
 
 int data_get_grid_config( int index );
@@ -56,9 +58,13 @@ array data_get_type( int index );
 //!
 
 mapping data_get_value( int x, int y );
+//! Get the value at the given coordinates.
+//!
 //!
 
 array data_get_visible_extrema( );
+//! Get the positions of the edges of the display.
+//!
 //!
 
 int data_remove( int index );
@@ -72,6 +78,8 @@ int data_remove_all( );
 //!
 
 int data_set_color( int index, GTK2.GdkColor color );
+//! Set the color at index.
+//!
 //!
 
 int data_set_grid_config( int index, int hlines, int vlines );
@@ -120,6 +128,8 @@ GTK2.Databox redraw( );
 //!
 
 GTK2.Databox rescale( );
+//! Rescale with automatically-calculated extrema.
+//!
 //!
 
 GTK2.Databox rescale_inverted( int invertX, int invertY );
@@ -128,6 +138,8 @@ GTK2.Databox rescale_inverted( int invertX, int invertY );
 //!
 
 GTK2.Databox rescale_with_values( float minx, float miny, float maxx, float maxy );
+//! Rescale with specific data extrema.
+//!
 //!
 
 GTK2.Databox set_background_color( GTK2.GdkColor color );

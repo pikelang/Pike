@@ -1,7 +1,15 @@
-#include "stack_allocator.h"
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "stack_allocator.h"
+#include "block_alloc.h"
+
+MALLOC_FUNCTION
 static struct chunk * alloc_chunk(size_t size) {
-    struct chunk * c = (struct chunk*)xalloc(sizeof(struct chunk) + size);
+    struct chunk * c = xalloc(sizeof(struct chunk) + size);
     c->data = c->top = c + 1;
     c->size = size;
     c->prev = NULL;
@@ -14,17 +22,11 @@ void stack_alloc_enlarge(struct stack_allocator * a, size_t len) {
 
     size = c ? c->size * 2 : a->initial;
 
-    if (len <= size) {
+    if (len <= size)
         len = size;
-    } else if (len & (len-1)) {
-        len |= len >> 1;
-        len |= len >> 2;
-        len |= len >> 4;
-        len |= len >> 8;
-        len |= len >> 16;
-        len |= len >> 32;
-        len ++;
-    }
+    else
+        len = ptr_hash_find_hashsize(len);
+
     a->cur = alloc_chunk(len);
     a->cur->prev = c;
 }
@@ -39,16 +41,4 @@ void stack_alloc_destroy(struct stack_allocator * a) {
     }
 
     a->cur = NULL;
-}
-
-size_t stack_alloc_count(struct stack_allocator * a) {
-    struct chunk * c = a->cur;
-    size_t size = 0;
-
-    while (c) {
-        size += c->size;
-        c = c->prev;
-    }
-
-    return size;
 }

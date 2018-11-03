@@ -94,10 +94,10 @@
 		     }
 #endif
 		  }
-#endif 
+#endif
 #ifndef ALL_IS_NOP
 	       }
-	       else 
+	       else
 	       {
 		  rgb_group res;
 

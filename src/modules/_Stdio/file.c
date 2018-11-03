@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#define NO_PIKE_SHORTHAND
 #include "global.h"
 #include "fdlib.h"
 #include "pike_netlib.h"
@@ -19,12 +18,11 @@
 #include "fd_control.h"
 #include "module_support.h"
 #include "operators.h"
-#include "pike_security.h"
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "gc.h"
 #include "time_stuff.h"
-
+#include "buffer.h"
 #include "file_machine.h"
 #include "file.h"
 #include "pike_error.h"
@@ -32,10 +30,7 @@
 #include "pike_types.h"
 #include "threads.h"
 #include "program_id.h"
-
-#ifdef HAVE_SYS_TYPE_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPE_H */
+#include "sprintf.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
@@ -89,12 +84,6 @@
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
-
-/* Ugly patch for AIX 3.2 */
-#ifdef u
-#undef u
-#endif
-
 #endif
 
 #ifdef HAVE_SYS_PROTOSW_H
@@ -121,7 +110,9 @@
 #include <net/netdb.h>
 #endif /* HAVE_NET_NETDB_H */
 
-#include "dmalloc.h"
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
 
 
 #undef THIS
@@ -135,14 +126,27 @@
 #define INUSE_BUSYWAIT_DELAY	0.01
 #define INUSE_TIMEOUT		0.1
 
-/* Don't try to use socketpair() on AmigaOS, socketpair_ultra works better */
-#ifdef __amigaos__
-#undef HAVE_SOCKETPAIR
-#endif
-
 #ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
+#endif
+
+#ifndef HAVE_DIRFD
+#ifdef HAVE_DIR_DD_FD
+#define dirfd(dir__)	(((DIR*)dir__)->dd_fd)
+#define HAVE_DIRFD
+#elif defined(HAVE_DIR_D_FD)
+#define dirfd(dir__)	(((DIR*)dir__)->d_fd)
+#define HAVE_DIRFD
+#endif
+#endif
+
+/*
+ * gcc with -O3 generates very bloated code for the functions in this file. One rather extreme example
+ * is file_open, which ends up having 32 call sites of open(2).
+ */
+#ifdef __GNUC__
+#pragma GCC optimize "-Os"
 #endif
 
 /* #define SOCKETPAIR_DEBUG */
@@ -151,6 +155,64 @@ struct program *file_program;
 struct program *file_ref_program;
 
 /*! @module Stdio
+ */
+
+/*! @enum FileModeFlags
+ *!
+ *! File mode flags returned by @[Fd()->mode()].
+ */
+
+/*! @decl constant FILE_READ = 0x1000
+ *!   File open for reading.
+ */
+/*! @decl constant FILE_WRITE = 0x2000
+ *!   File open for writing.
+ */
+/*! @decl constant FILE_APPEND = 0x4000
+ *!   File open for appending.
+ */
+/*! @decl constant FILE_CREATE = 0x8000
+ *!   Create a new file if it didn't exist earlier.
+ */
+/*! @decl constant FILE_TRUNC = 0x0100
+ *!   Truncate the file on open.
+ */
+/*! @decl constant FILE_EXCLUSIVE = 0x0200
+ *!   Exclusive access to the file.
+ */
+/*! @decl constant FILE_NONBLOCKING = 0x0400
+ *!   File opened in nonblocking mode.
+ */
+
+/*! @endenum FileModeFlags
+ */
+
+/*! @enum FilePropertyFlags
+ *!
+ *! File properties for use with eg @[Fd()->pipe()],
+ *! and returned by eg @[Fd()->mode()].
+ */
+
+/*! @decl constant PROP_SEND_FD = 0x0040
+ *!   File is capable of sending open file descriptors.
+ */
+/*! @decl constant PROP_BIDIRECTIONAL = 0x0010
+ *!   File supports both sending and receiving.
+ */
+/*! @decl constant PROP_BUFFERED = 0x0008
+ *!   File has internal buffering.
+ */
+/*! @decl constant PROP_SHUTDOWN = 0x0004
+ *!   File supports unidirectional close.
+ */
+/*! @decl constant PROP_NONBLOCK = 0x0002
+ *!   File supports nonblocking operation.
+ */
+/*! @decl constant PROP_IPC = 0x0001
+ *!   File can be used for interprocess communication.
+ */
+
+/*! @endenum FilePropertyFlags
  */
 
 /*! @class Fd_ref
@@ -228,14 +290,21 @@ static void fd_backtick__fd(INT32 args)
 			  Pike_fp->current_program->inherits);
 }
 
-/*! @endclass
+/*! @decl protected int(0..) _errno
+ *!
+ *! Variable containing the internal value returned by @[errno()].
+ *!
+ *! @seealso
+ *!   @[errno()]
  */
 
-/* The class below is not accurate, but it's the lowest exposed API
- * interface, which make the functions appear where users actually
- * look for them. /mast */
-
-/*! @class File
+/*! @decl mixed _read_callback
+ *! @decl mixed _write_callback
+ *! @decl mixed _read_oob_callback
+ *! @decl mixed _write_oob_callback
+ *! @decl mixed _fs_event_callback
+ *!
+ *! Callback functions installed by @[Stdio.File()->set_callbacks()] et al.
  */
 
 static struct my_file *get_file_storage(struct object *o)
@@ -247,14 +316,14 @@ static struct my_file *get_file_storage(struct object *o)
     return ((struct my_file *)
 	    (o->storage + file_program->inherits->storage_offset));
 
-  if((f=(struct my_file *)get_storage(o,file_program)))
+  if((f=get_storage(o,file_program)))
     return f;
 
-  if((sval=(struct svalue *)get_storage(o,file_ref_program))) {
+  if((sval=get_storage(o,file_ref_program))) {
     if (TYPEOF(*sval) == PIKE_T_OBJECT) {
       ob = sval->u.object;
       /* FIXME: Use the subtype information! */
-      if(ob && (f=(struct my_file *)get_storage(ob, file_program)))
+      if(ob && (f=get_storage(ob, file_program)))
 	return f;
     }
   }
@@ -268,7 +337,7 @@ static void debug_check_internals (struct my_file *f)
   size_t ev;
 
   if (f->box.ref_obj->prog && file_program &&
-      !get_storage(f->box.ref_obj,file_program))
+      !get_storage(f->box.ref_obj,file_program) )
     Pike_fatal ("ref_obj is not a file object.\n");
 
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)
@@ -373,13 +442,18 @@ static void init_fd(int fd, int open_mode, int flags)
 
 /* Use ptrdiff_t for the fd since we're passed a void * and should
  * read it as an integer of the same size. */
-static void do_close_fd(ptrdiff_t fd)
+static int do_close_fd(ptrdiff_t fd)
 {
   int ret;
-  if (fd < 0) return;
+  int preve;
+  if (fd < 0) return 0;
+  errno = 0;
   do {
+    preve = errno;
     ret = fd_close(fd);
   } while ((ret == -1) && (errno == EINTR));
+  if ((ret == -1) && preve) return 0;
+  return ret;
 }
 
 #ifdef HAVE_PIKE_SEND_FD
@@ -433,7 +507,7 @@ static void restore_fd_info(int *fd_info)
       free(fd_info);
       fd_info = other_fd_info;
     } else {
-      int *new_fd_info = malloc(num_fds * sizeof(int));
+      int *new_fd_info = calloc(num_fds, sizeof(int));
       if (!new_fd_info) {
 	/* FIXME: Huston, we have a problem... */
 	Pike_fatal("Out of memory in send_fd().\n");
@@ -481,72 +555,21 @@ static void free_fd_stuff(void)
   }
 }
 
-static void close_fd_quietly(void)
+static void close_fd(int quiet)
 {
   int fd=FD;
+  int olde = 0;
   if(fd<0) return;
 
   free_fd_stuff();
   SUB_FD_EVENTS (THIS, ~0);
-  change_fd_for_box (&THIS->box, -1);
-
-  while(1)
-  {
-    int i, e;
-    THREADS_ALLOW_UID();
-    i=fd_close(fd);
-    e=errno;
-    THREADS_DISALLOW_UID();
-
-    check_threads_etc();
-
-    if(i < 0)
-    {
-      switch(e)
-      {
-	default: {
-	  JMP_BUF jmp;
-	  if (SETJMP (jmp))
-	    call_handle_error();
-	  else {
-	    ERRNO=errno=e;
-	    change_fd_for_box (&THIS->box, fd);
-	    push_int(e);
-	    f_strerror(1);
-	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
-	  }
-	  UNSETJMP (jmp);
-	  break;
-	}
-
-	case EBADF:
-	  break;
-
-#ifdef SOLARIS
-	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
-#endif
-
-       case EINTR:
-	 continue;
-      }
-    }
-    break;
-  }
-}
-
-static void close_fd(void)
-{
-  int fd=FD;
-  if(fd<0) return;
-
-  free_fd_stuff();
-  SUB_FD_EVENTS (THIS, ~0);
+  /* NB: The fd will always be closed on return from fd_close()
+   *     (except for the EINTR case on eg HPUX).
+   */
   change_fd_for_box (&THIS->box, -1);
 
   if ( (THIS->flags & FILE_NOT_OPENED) )
-     return;
+    return;
 
   while(1)
   {
@@ -556,32 +579,65 @@ static void close_fd(void)
     e=errno;
     THREADS_DISALLOW_UID();
 
+    /* fprintf(stderr, "fd_close(%d): ret: %d, errno: %d\n", fd, i, e); */
+
     check_threads_etc();
 
     if(i < 0)
     {
+      ERRNO = errno = e;
       switch(e)
       {
 	default:
-	  ERRNO=errno=e;
-	  change_fd_for_box (&THIS->box, fd);
 	  push_int(e);
 	  f_strerror(1);
-	  Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+
+	  if (quiet) {
+	    /* NB: FIXME: This has quite a bit of overhead... */
+	    JMP_BUF jmp;
+	    if (SETJMP (jmp))
+	      call_handle_error();
+	    else {
+	      Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	    }
+	    UNSETJMP (jmp);
+	  } else {
+	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	  }
 	  break;
 
+#if 0
+#ifdef ENOSPC
+        case ENOSPC:
+	  /* FreeBSD: The underlying object did not fit, cached data was lost. */
+	  break;
+#endif
+#endif
+#ifdef ECONNRESET
+        case ECONNRESET:
+	  /* FreeBSD: The peer shut down the connection before all pending data
+	   *          was delivered.
+	   */
+	  break;
+#endif
+
 	case EBADF:
+	  if (olde) {
+	    /* Probably an OS where fds are closed on EINTR (ie most). */
+	    ERRNO = errno = 0;
+	    break;
+	  }
 	  Pike_error("Internal error: Closing a non-active file descriptor %d.\n",fd);
 	  break;
 
 #ifdef SOLARIS
 	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
+        case EAGAIN:
+	  break;
 #endif
-
-       case EINTR:
-	 continue;
+        case EINTR:
+	  olde = e;
+	  continue;
       }
     }
     break;
@@ -660,167 +716,81 @@ static int map(int flags)
   return ret;
 }
 
-static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
+/* read only once */
+#define PIKE_READ_ONCE       1U
+
+/* ignore the number of bytes, read as much as possible.
+ * count is used as the numer of bytes read per call
+ * to read(2). */
+#define PIKE_READ_NO_LENGTH  2U
 
 static struct pike_string *do_read(int fd,
-				   INT32 r,
-				   int all,
-				   int *err)
+				   size_t count,
+				   unsigned int mode,
+				   INT_TYPE *err)
 {
-  ONERROR ebuf;
-  ptrdiff_t bytes_read, i;
-  INT32 try_read;
-  bytes_read=0;
-  *err=0;
+  struct byte_buffer buf = BUFFER_INIT();
+  int e = 0;
 
-  if(r <= DIRECT_BUFSIZE ||
-     (all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1)))   /* r<<1 != power of two */
-  {
-    struct pike_string *str;
+  buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-    i=r;
+  while (1) {
 
-    str=begin_shared_string(r);
+    THREADS_ALLOW();
 
-    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
+    while (count) {
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
+      ptrdiff_t bytes_read;
 
-    do{
-      int fd=FD;
-      int e;
-      THREADS_ALLOW();
-
-      try_read = i;
-      i = fd_read(fd, str->str+bytes_read, i);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>0)
-      {
-	r-=i;
-	bytes_read+=i;
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	break;
-      }
-      else if(e != EINTR)
-      {
-	*err=e;
-	if(!bytes_read)
-	{
-	  do_free_unlinked_pike_string(str);
-	  UNSET_ONERROR(ebuf);
-	  return 0;
-	}
-	break;
+      /* make space for exactly len bytes plus the terminating null byte. */
+      /* NOTE: as long as count comes from pike, it was signed, i.e. len+1
+       * cannot overflow */
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
+        e = ENOMEM;
+        break;
       }
 
-      /*
-       * Large reads cause the kernel to validate more memory before
-       * starting the actual read, and hence cause slowdowns.
-       * Ideally you read as much as you're going to receive.
-       * This buffer calculation algorithm tries to optimise the
-       * read length depending on past read chunksizes.
-       * For network reads this allows it to follow the packetsizes.
-       * The initial read will attempt the full buffer.  /srb
-       */
-      if( i < try_read )
-	i += SMALL_NETBUF;
-      else
-	i += (r-i)>>1;
-      if (i < SMALL_NETBUF)
-	i = SMALL_NETBUF;
-      if(i > r-SMALL_NETBUF)
-	i = r;
-    }while(r);
+      bytes_read = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
 
-    UNSET_ONERROR(ebuf);
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
 
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
 
-    if(bytes_read == str->len)
-    {
-      return end_shared_string(str);
-    }else{
-      return end_and_resize_shared_string(str, bytes_read);
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
+      } else {
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
+      }
     }
 
-  }else{
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     *
-     * The slowdowns most likely are because of memory validation
-     * done by the kernel for buffer space which is later unused
-     * (short read)   /srb
-     */
-    dynamic_buffer b;
+    THREADS_DISALLOW();
 
-    b.s.str=0;
-    initialize_buf(&b);
-    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
-    i = all && (r<<1)>r ? DIRECT_BUFSIZE : READ_BUFFER;
-    do{
-      int e;
-      char *buf;
+    check_threads_etc();
 
-      try_read = i;
+    if (e == EINTR) {
+      e = 0;
+      continue;
+    }
 
-      buf = low_make_buf_space(try_read, &b);
-
-      THREADS_ALLOW();
-      i = fd_read(fd, buf, try_read);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>=0)
-      {
-	bytes_read+=i;
-	r-=i;
-	if(try_read > i)
-	  low_make_buf_space(i - try_read, &b);
-	if(!all || !i) break;
-      }
-      else
-      {
-	low_make_buf_space(-try_read, &b);
-	if(e != EINTR)
-	{
-	  *err=e;
-	  if(!bytes_read)
-	  {
-	    free(b.s.str);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-
-      /* See explanation in previous loop above */
-      if( i < try_read )
-	i += SMALL_NETBUF;
-      else
-	i += (DIRECT_BUFSIZE-i)>>1;
-      if (i < SMALL_NETBUF)
-	i = SMALL_NETBUF;
-      if(i > r-SMALL_NETBUF)
-	i = r;
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    return low_free_buf(&b);
+    break;
   }
+
+  if (e && !buffer_content_length(&buf)) {
+    buffer_free(&buf);
+    *err = e;
+    return NULL;
+  }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  return buffer_finish_pike_string(&buf);
 }
 
 /* This function is used to analyse anonymous fds, so that
@@ -940,7 +910,7 @@ static int low_fd_query_properties(int fd)
 #ifdef HAVE_PIKE_SEND_FD
 static void receive_fds(int *fds, size_t num_fds)
 {
-  size_t i;
+  volatile size_t i;
 
   for (i = 0; i < num_fds; i++) {
     int fd = fds[i];
@@ -995,18 +965,16 @@ static void check_message(struct msghdr *msg)
 #define CMSG_LEN(x)	(x)
 #endif
 
-static struct pike_string *do_recvmsg(INT32 r, int all)
+static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *err)
 {
-  ONERROR ebuf;
-  ptrdiff_t bytes_read = 0, i;
-  int fd = FD;
   struct {
     struct msghdr msg;
     struct iovec iov;
     char cmsgbuf[CMSG_LEN(sizeof(int)*128)];
   } message;
-
-  ERRNO=0;
+  struct byte_buffer buf = BUFFER_INIT();
+  int e = 0;
+  ptrdiff_t bytes_read = 0;
 
   message.msg.msg_name = NULL;
   message.msg.msg_namelen = 0;
@@ -1017,39 +985,45 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
   message.msg.msg_flags = 0;
 #endif
 
-  if(r <= 65536)
-  {
-    struct pike_string *str;
+  buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-    str=begin_shared_string(r);
+  while (1) {
 
-    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
+    THREADS_ALLOW();
 
-    do{
-      int fd=FD;
-      int e;
+    while (count) {
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
+
+      /* make space for exactly len bytes plus the terminating null byte */
+      /* as long as count comes from pike, it was signed, i.e. len+1 is safe */
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
+        e = ENOMEM;
+        break;
+      }
+
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-      /* XPG 4.2 */
       message.msg.msg_control = &message.cmsgbuf;
       message.msg.msg_controllen = sizeof(message.cmsgbuf);
 #else
-      /* BSD */
       message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
-      message.iov.iov_base = str->str + bytes_read;
-      message.iov.iov_len = r;
-      THREADS_ALLOW();
-      i = recvmsg(fd, &message.msg, 0);
+      message.iov.iov_base = buffer_alloc_unsafe(&buf, len);
+      message.iov.iov_len = len;
+
+      bytes_read = recvmsg(fd, &message.msg, 0);
       e=errno;
-      THREADS_DISALLOW();
 
-      check_threads_etc();
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
 
-      if(i>0)
-      {
-	r-=i;
-	bytes_read+=i;
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
+
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
 
 	if (
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -1058,122 +1032,57 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
 	    message.msg.msg_accrightslen
 #endif
 	    ) {
-	  check_message(&message.msg);
-	}
-
-	if(!all) break;
+          /* we have to call receive_fds, so break out of the loop */
+          break;
+        }
+      } else {
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
       }
-      else if(i==0)
-      {
-	break;
-      }
-      else if(e != EINTR)
-      {
-	ERRNO=e;
-	if(!bytes_read)
-	{
-	  do_free_unlinked_pike_string(str);
-	  UNSET_ONERROR(ebuf);
-	  return 0;
-	}
-	break;
-      }
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    if(bytes_read == str->len)
-    {
-      return end_shared_string(str);
-    }else{
-      return end_and_resize_shared_string(str, bytes_read);
     }
 
-  }else{
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     */
-#define CHUNK ( 1024 * 8 )
-    INT32 try_read;
-    dynamic_buffer b;
+    THREADS_DISALLOW();
 
-    b.s.str=0;
-    initialize_buf(&b);
-    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
-    do{
-      int e;
-      char *buf;
-      try_read=MINIMUM(CHUNK,r);
+    check_threads_etc();
 
+    if (e) {
+      if (e == EINTR) {
+        e = 0;
+        continue;
+      }
+      break;
+    }
+
+    if (UNLIKELY(
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-      message.msg.msg_control = &message.cmsgbuf;
-      message.msg.msg_controllen = sizeof(message.cmsgbuf);
+        message.msg.msg_controllen
 #else
-      message.msg.msg_accrights = (void *)&message.cmsgbuf;
-      message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
+        message.msg.msg_accrightslen
 #endif
-      message.iov.iov_base = low_make_buf_space(try_read, &b);
-      message.iov.iov_len = try_read;
-
-      THREADS_ALLOW();
-      i = recvmsg(fd, &message.msg, 0);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i>0)
-      {
-	bytes_read+=i;
-	r-=i;
-	if (
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	    message.msg.msg_controllen
-#else
-	    message.msg.msg_accrightslen
-#endif
-	    ) {
-	  check_message(&message.msg);
-	}
-	if (i != try_read) {
-	  low_make_buf_space(i - try_read, &b);
-	}
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	low_make_buf_space(-try_read, &b);
-	break;
-      }
-      else
-      {
-	low_make_buf_space(-try_read, &b);
-	if(e != EINTR)
-	{
-	  ERRNO=e;
-	  if(!bytes_read)
-	  {
-	    free(b.s.str);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    return low_free_buf(&b);
-#undef CHUNK
+        )) {
+      ONERROR ebuf;
+      SET_ONERROR(ebuf, buffer_free, &buf);
+      check_message(&message.msg);
+      UNSET_ONERROR(ebuf);
+      if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
+    }
+    break;
   }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  if (e) {
+    *err = e;
+
+    if (!buffer_content_length(&buf)) {
+      buffer_free(&buf);
+      return NULL;
+    }
+  }
+
+  return buffer_finish_pike_string(&buf);
 }
 
 /* Send a set of iovecs and fds over an fd. */
@@ -1209,7 +1118,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
 
-  MEMCPY(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
+  memcpy(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
   msg.msg_flags = 0;
 
 #else
@@ -1233,9 +1142,9 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 #endif /* HAVE_PIKE_SEND_FD */
 
 static struct pike_string *do_read_oob(int UNUSED(fd),
-				       INT32 r,
+				       ptrdiff_t r,
 				       int all,
-				       int *err)
+				       INT_TYPE *err)
 {
   ONERROR ebuf;
   INT32 bytes_read,i;
@@ -1364,29 +1273,34 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
 static void file_read(INT32 args)
 {
   struct pike_string *tmp;
-  INT32 all, len;
+  unsigned INT32 mode = 0;
+  size_t count = DIRECT_BUFSIZE;
 
   if(FD < 0)
     Pike_error("File not open.\n");
 
   if(!args)
   {
-    len=0x7fffffff;
+    mode |= PIKE_READ_NO_LENGTH;
   }
   else
   {
+    INT_TYPE len;
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->read()", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
+    if (!len && SUBTYPEOF(Pike_sp[-args])) {
+      mode |= PIKE_READ_NO_LENGTH;
+    } else {
+      count = len;
+    }
   }
 
   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
   {
-    all=0;
-  }else{
-    all=1;
+    mode |= PIKE_READ_ONCE;
   }
 
   pop_n_elems(args);
@@ -1395,7 +1309,7 @@ static void file_read(INT32 args)
   /* Check if there's any need to use recvmsg(2). */
   if ((THIS->open_mode & fd_SEND_FD) &&
       (THIS->flags & FILE_HAVE_RECV_FD)) {
-    if ((tmp = do_recvmsg(len, all)))
+    if ((tmp = do_recvmsg(FD, count, mode, & ERRNO)))
       push_string(tmp);
     else {
       errno = ERRNO;
@@ -1403,7 +1317,7 @@ static void file_read(INT32 args)
     }
   } else
 #endif /* HAVE_PIKE_SEND_FD */
-    if((tmp=do_read(FD, len, all, & ERRNO)))
+    if((tmp=do_read(FD, count, mode, & ERRNO)))
       push_string(tmp);
     else {
       errno = ERRNO;
@@ -1483,14 +1397,8 @@ static void file_read(INT32 args)
  *!
  *! @note
  *!    The function may be interrupted prematurely
- *!    of the timeout (due to signals); 
+ *!    of the timeout (due to signals);
  *!    check the timing manually if this is imporant.
- *!
- *! @note
- *!    The @[not_eof] parameter was added in Pike 7.7.
- *!
- *! @note
- *!    This function was not available on NT in Pike 7.6 and earlier.
  */
 static void file_peek(INT32 args)
 {
@@ -1498,7 +1406,7 @@ static void file_peek(INT32 args)
   int not_eof = 0;
   FLOAT_TYPE tf = 0.0;
 
-  get_all_args("peek",args,".%F%d",&tf,&not_eof);
+  get_all_args(NULL, args, ".%F%d", &tf, &not_eof);
 
   {
 #ifdef HAVE_AND_USE_POLL
@@ -1619,11 +1527,6 @@ static void file_peek(INT32 args)
  *! stream.
  *!
  *! @note
- *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
- *!   not in Pike 0.6 through 7.4 if they were compiled with the
- *!   option @tt{'--without-oob'@}.
- *!
- *! @note
  *!   It is not guaranteed that all out-of-band data sent from the
  *!   other end is received. Most streams only allow for a single byte
  *!   of out-of-band data at a time.
@@ -1656,7 +1559,7 @@ static void file_read_oob(INT32 args)
   else
   {
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->read_oob", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("read_oob", 1, "int");
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
@@ -1715,35 +1618,24 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
 }
 
 #undef CBFUNCS
+
 #define CBFUNCS(CB, EVENT)						\
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
     if(!args)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
+      SIMPLE_WRONG_NUM_ARGS_ERROR("set_" #CB, 1);                       \
     set_fd_event_cb (THIS, Pike_sp-args, EVENT, 0);			\
-  }									\
-									\
-  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
-  {									\
-    pop_n_elems(args);							\
-    push_svalue(& THIS->event_cbs[EVENT]);				\
   }
 
 #define CBFUNCS2(CB, EVENT)						\
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
     if(args<2)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
+      SIMPLE_WRONG_NUM_ARGS_ERROR("set_" #CB, 2);                       \
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)				\
-      SIMPLE_ARG_TYPE_ERROR("Stdio.File->set_" #CB, 2, "int");		\
+      SIMPLE_ARG_TYPE_ERROR("set_" #CB, 2, "int");                      \
     set_fd_event_cb (THIS, Pike_sp-args, EVENT,				\
 		     Pike_sp[1-args].u.integer);			\
-  }									\
-									\
-  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
-  {									\
-    pop_n_elems(args);							\
-    push_svalue(& THIS->event_cbs[EVENT]);				\
   }
 
 CBFUNCS(read_callback, PIKE_FD_READ)
@@ -1757,13 +1649,13 @@ static void file_query_fs_event_flags(INT32 args)
 {
   short flags;
   pop_n_elems(args);
-  
+
   flags = get_fd_event_flags(THIS);
   push_int(flags);
 }
 
 
-static void file__enable_callbacks(INT32 args)
+static void file__enable_callbacks(INT32 UNUSED(args))
 {
   struct my_file *f = THIS;
   size_t ev;
@@ -1787,12 +1679,9 @@ static void file__enable_callbacks(INT32 args)
 
     ADD_FD_EVENTS (f, cb_events);
   }
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
-static void file__disable_callbacks(INT32 args)
+static void file__disable_callbacks(INT32 UNUSED(args))
 {
   struct my_file *f = THIS;
 
@@ -1802,9 +1691,6 @@ static void file__disable_callbacks(INT32 args)
 #endif
 
   SUB_FD_EVENTS (f, ~0);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 
@@ -1815,33 +1701,60 @@ static void file__disable_callbacks(INT32 args)
  *!
  *! Write data to a file or a stream.
  *!
- *! Writes @[data] and returns the number of bytes that were
- *! actually written. It can be less than the size of the given data if
- *!
- *! @ul
- *!   @item
- *!     some data was written successfully and then something went
- *!     wrong, or
- *!   @item
- *!     nonblocking mode is used and not all data could be written
- *!     without blocking.
- *! @endul
- *!
- *! -1 is returned if something went wrong and no bytes were written.
- *! If only some data was written due to an error and that error
- *! persists, then a later call to @[write()] fails and returns -1.
- *!
- *! If everything went fine, a call to @[errno()] directly afterwards
- *! returns zero.
- *!
- *! If @[data] is an array of strings, they are written in sequence.
- *!
- *! If more than one argument is given, @[sprintf()] is used to format
- *! them using @[format]. If @[format] is an array, the strings in it
- *! are concatenated and the result is used as format string.
- *!
  *! If there are any file descriptors that have been queued for sending
  *! (with @[send_fd()]), they will be sent.
+ *!
+ *! @param data
+ *!   Data to write.
+ *!
+ *!   If @[data] is an array of strings, they are written in sequence.
+ *!
+ *! @param format
+ *! @param extras
+ *!   If more than one argument is given, @[sprintf()] is used to format
+ *!   them using @[format]. If @[format] is an array, the strings in it
+ *!   are concatenated and the result is used as format string.
+ *!
+ *! @returns
+ *!   Writes @[data] and returns the number of bytes that were
+ *!   actually written.
+ *!
+ *!   @int
+ *!     @value 1..
+ *!       The number of bytes successfully written to the OS buffers.
+ *!
+ *!       This can be less than the size of the given data if eg:
+ *!       @ul
+ *!         @item
+ *!           Some data was written successfully and then something went
+ *!           wrong.
+ *!
+ *!           If only some data was written due to an error and that error
+ *!           persists, then a later call to @[write()] will fail and return
+ *!           @expr{-1@}.
+ *!
+ *!         @item
+ *!           Nonblocking mode is used and not all data could be written
+ *!           without blocking.
+ *!       @endul
+ *!
+ *!     @value 0
+ *!       No bytes were written. This may be due to
+ *!       @ul
+ *!         @item
+ *!           @[data] or the formatted data being the empty string.
+ *!
+ *!         @item
+ *!           Nonblocking mode is used and no data could be written
+ *!           without blocking.
+ *!       @endul
+ *!
+ *!     @value -1
+ *!       Something went wrong and no bytes were written.
+ *!   @endint
+ *!
+ *!   If everything went fine, a call to @[errno()] directly afterwards
+ *!   returns zero.
  *!
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
@@ -1858,7 +1771,7 @@ static void file_write(INT32 args)
 
   if(args<1 || ((TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) &&
 		(TYPEOF(Pike_sp[-args]) != PIKE_T_ARRAY)))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
+    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
 
   if(FD < 0)
     Pike_error("File not open for write.\n");
@@ -1868,14 +1781,14 @@ static void file_write(INT32 args)
 
     if( (a->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
+      SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
 
     i = a->size;
     while(i--)
       if (a->item[i].u.string->size_shift)
 	Pike_error("Bad argument 1 to file->write().\n"
 		   "Element %ld is a wide string.\n",
-		   DO_NOT_WARN((long)i));
+                   (long)i);
 
 #ifdef HAVE_WRITEV
     if (args > 1) {
@@ -1901,8 +1814,7 @@ static void file_write(INT32 args)
       push_int(0);
       return;
     } else {
-      struct iovec *iovbase =
-	(struct iovec *)xalloc(sizeof(struct iovec)*a->size);
+      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
       struct iovec *iov = iovbase;
       int iovcnt = a->size;
 
@@ -1957,7 +1869,6 @@ static void file_write(INT32 args)
 
 	if(i<0)
 	{
-	  /* perror("writev"); */
 #ifdef HAVE_PIKE_SEND_FD
 	  if (fd_info) {
 	    restore_fd_info(fd_info);
@@ -1974,6 +1885,8 @@ static void file_write(INT32 args)
 	    } else {
 	      push_int(written);
 	    }
+	    /* Minor race - see below. */
+	    THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 	    return;
 
 	  case EINTR: continue;
@@ -2019,6 +1932,9 @@ static void file_write(INT32 args)
       }
 
       free(iovbase);
+
+      /* Minor race - see below. */
+      THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
       if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
 	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
@@ -2156,11 +2072,6 @@ static void file_write(INT32 args)
  *! them.
  *!
  *! @note
- *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
- *!   not in Pike 0.6 through 7.4 if they were compiled with the
- *!   option @tt{'--without-oob'@}.
- *!
- *! @note
  *!   It is not guaranteed that all out-of-band data sent from the
  *!   other end is received. Most streams only allow for a single byte
  *!   of out-of-band data at a time. Some streams sends the rest of
@@ -2175,7 +2086,7 @@ static void file_write_oob(INT32 args)
   struct pike_string *str;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->write_oob()",1,"string");
+    SIMPLE_ARG_TYPE_ERROR("write_oob",1,"string");
 
   if(args > 1)
   {
@@ -2277,7 +2188,6 @@ static void file_write_oob(INT32 args)
  */
 static void file_send_fd(INT32 args)
 {
-  int e;
   int other_fd;
   struct object *o = NULL;
   struct my_file *f = NULL;
@@ -2286,7 +2196,7 @@ static void file_send_fd(INT32 args)
   if(args<1 || (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT) ||
      !(o = Pike_sp[-args].u.object)->prog ||
      (o->prog->inherits[SUBTYPEOF(Pike_sp[-args])].prog != file_program))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->send_fd()", 1, "object(is Stdio.Fd)");
+    SIMPLE_ARG_TYPE_ERROR("send_fd", 1, "Stdio.Fd");
 
   f = (struct my_file *)
     (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-args])].storage_offset);
@@ -2319,8 +2229,11 @@ static void file_send_fd(INT32 args)
     THIS->fd_info = fd_info = fds;
 #ifdef PIKE_DEBUG
     /* Note: Unusual range. */
-    for (e = fds[0]-2; e > fds[1]; e--) {
-      fds[e + 1] = -1;
+    {
+      int e;
+      for (e = fds[0]-2; e > fds[1]; e--) {
+        fds[e + 1] = -1;
+      }
     }
 #endif
   }
@@ -2378,10 +2291,10 @@ static void file_linger(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("Stdio.File->linger", args, ".%d", &linger);
+  get_all_args(NULL, args, ".%d", &linger);
 
   if ((linger < -1) || (linger > 0xffff)) {
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->linger()", 1, "int(-1..65535)");
+    SIMPLE_ARG_TYPE_ERROR("linger", 1, "int(-1..65535)");
   }
 
   if (linger == -1) {
@@ -2406,6 +2319,64 @@ static void file_linger(INT32 args)
 }
 #endif
 
+#ifdef TCP_NODELAY
+/*! @decl int(0..1) set_nodelay(int(0..1)|void state)
+ *!
+ *! Control Nagle's Algorithm (RFC 896)
+ *!
+ *! @param state
+ *!   @int
+ *!     @value 0
+ *!       Return to the normal state of using Nagle's Algorithm
+ *!     @value 1
+ *!       (default) Disable Nagling - small writes will not be queued.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success, and @expr{0@} (zero) on failure.
+ *!
+ *! @note
+ *!   This operation is only valid on sockets.
+ *!
+ *! @seealso
+ *!   setsockopt()
+ */
+static void file_nodelay(INT32 args)
+{
+  int fd = FD;
+  int state = 1;
+
+  if(fd < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args(NULL, args, ".%d", &state);
+
+  if (state && state != 1) {
+    SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
+  }
+
+  errno = 0;
+  while ((fd_setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+			&state, sizeof(state)) < 0) &&
+	 (errno == EINTR)) {
+    errno = 0;
+  }
+  if (errno) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif
+
+#ifndef SHUT_RD
+#define SHUT_RD	0
+#endif
+#ifndef SHUT_WR
+#define SHUT_WR	1
+#endif
+
 static int do_close(int flags)
 {
   struct my_file *f = THIS;
@@ -2423,12 +2394,12 @@ static int do_close(int flags)
     if(f->open_mode & FILE_WRITE)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 0);
+      fd_shutdown(FD, SHUT_RD);
       f->open_mode &=~ FILE_READ;
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
@@ -2436,7 +2407,7 @@ static int do_close(int flags)
     if(f->open_mode & FILE_READ)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 1);
+      fd_shutdown(FD, SHUT_WR);
       f->open_mode &=~ FILE_WRITE;
 #ifdef HAVE_PIKE_SEND_FD
       if (f->fd_info) do_close_fd_info(f->fd_info);
@@ -2444,18 +2415,18 @@ static int do_close(int flags)
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
     f->flags&=~FILE_NOT_OPENED;
-    close_fd();
+    close_fd(0);
     return 1;
 
   default:
     Pike_fatal("Bug in switch implementation!\n");
-    return 0; /* Make CC happy */
+    UNREACHABLE(return 0);
   }
 }
 
@@ -2476,28 +2447,28 @@ static void file_grantpt( INT32 args )
 {
   pop_n_elems(args);
 #if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
-  push_constant_text("Process.Process");
+  push_static_text("Process.Process");
   APPLY_MASTER("resolv", 1);
 
 #ifdef USE_PT_CHMOD
   /* pt_chmod wants to get the fd number as the first argument. */
-  push_constant_text(USE_PT_CHMOD);
-  push_constant_text("4");
+  push_text(USE_PT_CHMOD);
+  push_static_text("4");
   f_aggregate(2);
 
   /* Send the pty as both fd 3 and fd 4. */
-  push_constant_text("fds");
+  push_static_text("fds");
   ref_push_object(Pike_fp->current_object);
   ref_push_object(Pike_fp->current_object);
   f_aggregate(2);
   f_aggregate_mapping(2);
 #else /* USE_CHGPT */
   /* chgpt on HPUX doesn't like getting any arguments... */
-  push_constant_text(USE_CHGPT);
+  push_text(USE_CHGPT);
   f_aggregate(1);
 
   /* chgpt wants to get the pty on fd 0. */
-  push_constant_text("stdin");
+  push_static_text("stdin");
   ref_push_object(Pike_fp->current_object);
   f_aggregate_mapping(2);
 #endif /* USE_PT_CHMOD */
@@ -2537,12 +2508,12 @@ static void file_grantpt( INT32 args )
  *! Close a file or stream.
  *!
  *! If direction is not specified, both the read and the write
- *! direction is closed. Otherwise only the directions specified is
+ *! direction are closed. Otherwise only the directions specified is
  *! closed.
  *!
  *! @returns
- *! Nonzero is returned if the file or stream wasn't open in the
- *! specified direction, zero otherwise.
+ *!   Returns @expr{1@} if the file or stream now is closed in
+ *!   all directions, and @expr{0@} otherwise.
  *!
  *! @throws
  *! An exception is thrown if an I/O error occurs.
@@ -2660,22 +2631,22 @@ static void file_open(INT32 args)
   int access;
   int err;
   struct pike_string *str, *flag_str;
-  close_fd();
+  close_fd(0);
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->open", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("open", 2);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING &&
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 1, "string|int");
+    SIMPLE_ARG_TYPE_ERROR("open", 1, "string|int");
 
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 2, "string");
+    SIMPLE_ARG_TYPE_ERROR("open", 2, "string");
 
   if (args > 2)
   {
     if (TYPEOF(Pike_sp[2-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 3, "int");
+      SIMPLE_ARG_TYPE_ERROR("open", 3, "int");
     access = Pike_sp[2-args].u.integer;
   } else
     access = 00666;
@@ -2693,63 +2664,6 @@ static void file_open(INT32 args)
        push_int(0);
        return;
      }
-
-#ifdef PIKE_SECURITY
-     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-     {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	   Pike_error("Permission denied.\n");
-
-	if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
-	{
-	   push_text("write");
-	}else{
-	   push_text("read");
-	}
-
-	ref_push_object(Pike_fp->current_object);
-	ref_push_string(str);
-	ref_push_string(flag_str);
-	push_int(access);
-
-	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(TYPEOF(Pike_sp[-1]))
-	{
-	   case PIKE_T_INT:
-	      switch(Pike_sp[-1].u.integer)
-	      {
-		 case 0: /* return 0 */
-		    ERRNO=errno=EPERM;
-		    pop_n_elems(args+1);
-		    push_int(0);
-		    return;
-
-		 case 1: /* return 1 */
-		    pop_n_elems(args+1);
-		    push_int(1);
-		    return;
-
-		 case 2: /* ok */
-		    pop_stack();
-		    break;
-
-		 case 3: /* permission denied */
-		    Pike_error("Stdio.file->open: permission denied.\n");
-
-		 default:
-		    Pike_error("Error in user->valid_open, wrong return value.\n");
-	      }
-	      break;
-
-	   default:
-	      Pike_error("Error in user->valid_open, wrong return type.\n");
-
-	   case PIKE_T_STRING:
-	      str=Pike_sp[-1].u.string;
-	      args++;
-	}
-     }
-#endif
 
      if(!( flags &  (FILE_READ | FILE_WRITE)))
 	Pike_error("Must open file for at least one of read and write.\n");
@@ -2782,15 +2696,6 @@ static void file_open(INT32 args)
   }
   else
   {
-#ifdef PIKE_SECURITY
-     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-     {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	   Pike_error("Permission denied.\n");
-	Pike_error("Permission denied.\n");
-	/* FIXME!! Insert better security here */
-     }
-#endif
      fd=Pike_sp[-args].u.integer;
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
@@ -2815,7 +2720,7 @@ static void file_open(INT32 args)
  *!   Returns a new file object on success, and @expr{0@} (zero) on failure.
  *!
  *! @note
- *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!   Not available on all architectures.
  *!
  *! @seealso
  *!   @[open()], @[statat()], @[unlinkat()]
@@ -2830,8 +2735,7 @@ static void file_openat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("Stdio.File->openat", args, "%S%S.%d",
-	       &str, &flag_str, &access);
+  get_all_args(NULL, args, "%S%S.%d", &str, &flag_str, &access);
 
   flags = parse(flag_str->str);
 
@@ -2842,66 +2746,6 @@ static void file_openat(INT32 args)
     push_int(0);
     return;
   }
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-  {
-    if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-      Pike_error("Permission denied.\n");
-
-    if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
-    {
-      push_text("write");
-    }else{
-      push_text("read");
-    }
-
-    ref_push_object(Pike_fp->current_object);
-    ref_push_string(str);
-    ref_push_string(flag_str);
-    push_int(access);
-
-    safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_openat",5);
-    switch(TYPEOF(Pike_sp[-1]))
-    {
-    case PIKE_T_INT:
-      switch(Pike_sp[-1].u.integer)
-      {
-      case 0: /* return 0 */
-	ERRNO=errno=EPERM;
-	pop_n_elems(args+1);
-	push_int(0);
-	return;
-
-#if 0
-      case 1: /* return 1 */
-	pop_n_elems(args+1);
-	push_int(1);
-	return;
-#endif
-
-      case 2: /* ok */
-	pop_stack();
-	break;
-
-      case 3: /* permission denied */
-	Pike_error("Stdio.file->openat: permission denied.\n");
-
-      default:
-	Pike_error("Error in user->valid_openat, wrong return value.\n");
-      }
-      break;
-
-    default:
-      Pike_error("Error in user->valid_openat, wrong return type.\n");
-
-    case PIKE_T_STRING:
-      /* Alternate path. */
-      str=Pike_sp[-1].u.string;
-      args++;
-    }
-  }
-#endif
 
   if(!(flags & (FILE_READ | FILE_WRITE)))
     Pike_error("Must open file for at least one of read and write.\n");
@@ -2947,17 +2791,17 @@ static void file_openpt(INT32 args)
 #ifdef HAVE_POSIX_OPENPT
   struct pike_string *flag_str;
 #endif
-  close_fd();
+  close_fd(0);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->openpt", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("openpt", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->openpt", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("openpt", 1, "string");
 
 #ifdef HAVE_POSIX_OPENPT
   flags = parse((flag_str = Pike_sp[-args].u.string)->str);
-  
+
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     Pike_error("Must open file for at least one of read and write.\n");
 
@@ -2990,7 +2834,7 @@ static void file_openpt(INT32 args)
 #else
   if(args > 1)
     pop_n_elems(args - 1);
-  push_constant_text(PTY_MASTER_PATHNAME);
+  push_text(PTY_MASTER_PATHNAME);
   stack_swap();
   file_open(2);
 #endif
@@ -3036,31 +2880,108 @@ void file_sync(INT32 args)
 }
 #endif /* HAVE_FSYNC */
 
-#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#if (defined(HAVE_LSEEK64) || defined(__NT__))
 #define SEEK64
 #endif
 
-/*! @decl int seek(int pos)
- *! @decl int seek(int unit, int mult)
- *! @decl int seek(int unit, int mult, int add)
+
+/*! @decl int seek(int offset)
+ *! @decl int seek(int offset, string whence)
  *!
- *! Seek to a specified offset in a file.
+ *! The seek() function repositions the offset of the open file
+ *! associated with the file descriptor fd to the argument @[offset]
+ *! according to the directive @[whence] as follows:
  *!
- *! If @[mult] or @[add] are specified, @[pos] is calculated as
- *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *! @string
+ *! @value Stdio.SEEK_SET
+ *! The offset is set to @[offset] bytes.
+ *! @value Stdio.SEEK_CUR
+ *! The offset is set to its current location plus @[offset] bytes.
+ *! @value Stdio.SEEK_END
+ *! The offset is set to the size of the file plus @[offset] bytes.
+ *! @endstring
  *!
- *! If @[pos] is negative then it is relative to the end of the file,
- *! otherwise it's an absolute offset from the start of the file.
+ *! If @[whence] is not specified it is SEEK_SET if @[offset] is
+ *! positive, and if @[offset] is negative SEEK_END.
+ *!
+ *! The seek() function on most operating systems allows the file
+ *! offset to be set beyond the end of the file (but this does not
+ *! change the size of the file).  If data is later written at this
+ *! point, subsequent reads of the data in the gap (a "hole") return
+ *! null bytes ('\0') until data is actually written into the gap.
+ *!
+ *! Seeking file data and holes
+ *!
+ *! Stdio.SEEK_DATA and Stdio.SEEK_HOLE are nonstandard extensions
+ *! present in Linux, Solaris, FreeBSD, and DragonFly BSD; they are
+ *! proposed for inclusion in the next POSIX revision.
+ *! @string
+ *! @value Stdio.SEEK_DATA
+ *!  Adjust the file offset to the next location in the file greater
+ *!  than or equal to offset containing data.  If offset points to
+ *!  data, then the file offset is set to offset.
+ *!
+ *! @value Stdio.SEEK_HOLE
+ *! Adjust the file offset to the next hole in the file greater than
+ *! or equal to offset.  If offset points into the middle of a hole,
+ *! then the file offset is set to offset.  If there is no hole past
+ *! offset, then the file offset is adjusted to the end of the file
+ *! (i.e., there is an implicit hole at the end of any file).
+ *! @endstring
+ *!
+ *! In both of the above cases, seek() fails if offset points past the
+ *! end of the file.
+ *!
+ *! These operations allow applications to map holes in a sparsely
+ *! allocated file.  This can be useful for applications such as file
+ *! backup tools, which can save space when creating backups and
+ *! preserve holes, if they have a mechanism for discovering holes.
+ *!
+ *! For the purposes of these operations, a hole is a sequence of
+ *! zeros that (normally) has not been allocated in the underlying
+ *! file storage.  However, a filesystem is not obliged to report
+ *! holes, so these operations are not a guaranteed mechanism for
+ *! mapping the storage space actually allocated to a file.
+ *! (Furthermore, a sequence of zeros that actually has been written
+ *! to the underlying storage may or may not be reported as a hole.)
+ *!
+ *! In the simplest implementation, a filesystem can support the
+ *! operations by making SEEK_HOLE always return the offset of the end
+ *! of the file, and making SEEK_DATA always return offset (i.e., even
+ *! if the location referred to by offset is a hole, it can be
+ *! considered to consist of data that is a sequence of zeros).
  *!
  *! @returns
- *!   Returns the new offset, or @expr{-1@} on failure.
- *!
- *! @note
- *!   The arguments @[mult] and @[add] are considered obsolete, and
- *!   should not be used.
+ *! Upon successful completion, seek() returns the resulting offset
+ *! location as measured in bytes from the beginning of the file.  On
+ *! error, the value (off_t) -1 is returned and @[errno] is set to
+ *! indicate the error.
  *!
  *! @seealso
  *!   @[tell()]
+ */
+
+/*
+ * @decl deprecated variant int seek(int unit, int mult)
+ * @decl deprecated variant int seek(int unit, int mult, int add)
+ *
+ * Seek to a specified offset in a file.
+ *
+ * If @[mult] or @[add] are specified, @[pos] is calculated as
+ * @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *
+ * If @[pos] is negative then it is relative to the end of the file,
+ * otherwise it's an absolute offset from the start of the file.
+ *
+ * @returns
+ *   Returns the new offset, or @expr{-1@} on failure.
+ *
+ * @note
+ *   The arguments @[mult] and @[add] are considered obsolete, and
+ *   should not be used.
+ *
+ * @seealso
+ *   @[tell()]
  */
 static void file_seek(INT32 args)
 {
@@ -3069,9 +2990,10 @@ static void file_seek(INT32 args)
 #else
   off_t to = 0;
 #endif
+  int how = SEEK_SET;
 
   if( args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->seek", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("seek", 1);
 
 #if defined (SEEK64)
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
@@ -3081,32 +3003,42 @@ static void file_seek(INT32 args)
   else
 #endif
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("seek", 1, "int");
     else
       to=Pike_sp[-args].u.integer;
 
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  if(args>1)
-  {
-    if(TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 2, "int");
-    to *= Pike_sp[-args+1].u.integer;
-  }
-  if(args>2)
-  {
-    if(TYPEOF(Pike_sp[-args+2]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 3, "int");
-    to += Pike_sp[-args+2].u.integer;
-  }
 
+  if( args == 2 && TYPEOF(Pike_sp[-args+1]) == PIKE_T_STRING )
+  {
+    how = Pike_sp[-args+1].u.string->str[0];
+  }
+  else
+  {
+    if(args>1)
+    {
+      if(TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT)
+        SIMPLE_ARG_TYPE_ERROR("seek", 2, "int");
+      to *= Pike_sp[-args+1].u.integer;
+    }
+    if(args>2)
+    {
+      if(TYPEOF(Pike_sp[-args+2]) != PIKE_T_INT)
+        SIMPLE_ARG_TYPE_ERROR("seek", 3, "int");
+      to += Pike_sp[-args+2].u.integer;
+    }
+
+    if( to < 0 )
+      how = SEEK_END;
+  }
   ERRNO=0;
 
 #if defined(HAVE_LSEEK64) && !defined(__NT__)
-  to = lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = lseek64(FD,to,how);
 #else
-  to = fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = fd_lseek(FD,to,how);
 #endif
   if(to<0) ERRNO=errno;
 
@@ -3114,7 +3046,7 @@ static void file_seek(INT32 args)
   push_int64(to);
 }
 
-#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#if (defined(HAVE_LSEEK64) || defined(__NT__))
 #define TELL64
 #endif
 
@@ -3164,17 +3096,12 @@ static void file_tell(INT32 args)
  */
 static void file_truncate(INT32 args)
 {
-#if defined(INT64)
   INT64 len = 0;
-#else
-  off_t len = 0;
-#endif
   int res;
 
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->truncate", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("truncate", 1);
 
-#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
     if (!int64_from_bignum(&len, Pike_sp[-args].u.object))
@@ -3182,9 +3109,8 @@ static void file_truncate(INT32 args)
   }
   else
 #endif
-#endif
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->truncate", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("truncate", 1, "int");
     else
       len = Pike_sp[-args].u.integer;
 
@@ -3192,11 +3118,8 @@ static void file_truncate(INT32 args)
     Pike_error("File not open.\n");
 
   ERRNO=0;
-#ifdef HAVE_FTRUNCATE64
-  res = ftruncate64 (FD, len);
-#else
+
   res=fd_ftruncate(FD, len);
-#endif
 
   pop_n_elems(args);
 
@@ -3217,9 +3140,6 @@ static void file_truncate(INT32 args)
  *!
  *! @returns
  *!   See @[file_stat()] for a description of the return value.
- *!
- *! @note
- *!   Prior to Pike 7.1 this function returned an array(int).
  *!
  *! @seealso
  *!   @[file_stat()], @[statat()]
@@ -3271,7 +3191,7 @@ static void file_stat(INT32 args)
  *!   See @[file_stat()] for a description of the return value.
  *!
  *! @note
- *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!   Not available on all architectures.
  *!
  *! @seealso
  *!   @[file_stat()], @[stat()], @[openat()], @[unlinkat()]
@@ -3287,7 +3207,7 @@ static void file_statat(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("statat", args, "%S.%d", &path, &nofollow);
+  get_all_args(NULL, args, "%S.%d", &path, &nofollow);
 
   if (string_has_null(path)) {
     /* Filenames with NUL are not supported. */
@@ -3339,12 +3259,10 @@ static void file_unlinkat(INT32 args)
 
   destruct_objects_to_destruct();
 
-  VALID_FILE_IO("rm","write");
-
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("unlinkat", args, "%S", &str);
+  get_all_args(NULL, args, "%S", &str);
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
@@ -3379,11 +3297,99 @@ static void file_unlinkat(INT32 args)
 #endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
 
+#if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
+/*! @decl array(string) get_dir(string|void path)
+ *!
+ *! Get directory contents relative to an open directory.
+ *!
+ *! @param path
+ *!   Path relative to the open directory. Defaults to the
+ *!   directory itself.
+ *!
+ *! @returns
+ *!   Returns an array of filenames.
+ *!
+ *! @note
+ *!   Not available on all architectures.
+ *!
+ *! @seealso
+ *!   @[predef::get_dir()], @[statat()], @[openat()], @[unlinkat()]
+ */
+static void file_get_dir(INT32 args)
+{
+  int fd;
+  int dfd;
+  struct pike_string *path = NULL;
+  ptrdiff_t name_max = -1;
+  DIR *dir = NULL;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args(NULL, args, ".%S", &path);
+
+  if (path && string_has_null(path)) {
+    /* Filenames with NUL are not supported. */
+    ERRNO = errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  fd = FD;
+  dfd = -1;
+
+  while(1) {
+    THREADS_ALLOW_UID();
+    /* NB: The empty string is also an alias for the current directory.
+     *     This is a convenience eg when recursing with dirname().
+     */
+    if (!path || !path->len) {
+      dfd = dup(fd);
+    } else {
+      dfd = openat(fd, path->str, O_RDONLY);
+    }
+    THREADS_DISALLOW_UID();
+
+    if ((dfd == -1) && (errno == EINTR)) {
+      check_threads_etc();
+      continue;
+    }
+    break;
+  }
+
+  if (dfd == -1) {
+    ERRNO = errno;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+#ifdef HAVE_FPATHCONF
+  name_max = fpathconf(dfd, _PC_NAME_MAX);
+#endif /* HAVE_FPATHCONF */
+
+  if (!(dir = fdopendir(dfd))) {
+    ERRNO = errno;
+    close(dfd);
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  /* NB: The fd dfd has been eaten by fdopendir(3),
+   *     so we don't need to close it.
+   */
+
+  low_get_dir(dir, name_max);
+}
+#endif /* HAVE_FDOPENDIR && HAVE_OPENAT */
+
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /* All A-OK.*/
 
 /*! @decl array(string) listxattr( )
- *! 
+ *!
  *! Return an array of all extended attributes set on the file
  */
 static void file_listxattr(INT32 args)
@@ -3447,12 +3453,12 @@ static void file_listxattr(INT32 args)
   f_aggregate(1);
   o_subtract();
 
-  if( do_free ) 
+  if( do_free )
     free( ptr );
 }
 
 /*! @decl string getxattr(string attr)
- *! 
+ *!
  *! Return the value of a specified attribute, or 0 if it does not exist
  */
 static void file_getxattr(INT32 args)
@@ -3462,8 +3468,8 @@ static void file_getxattr(INT32 args)
   int mfd = FD, do_free = 0;
   ssize_t res;
   char *name;
-  
-  get_all_args( "getxattr", args, "%s", &name );
+
+  get_all_args( NULL, args, "%s", &name );
 
   THREADS_ALLOW();
   do {
@@ -3510,7 +3516,7 @@ static void file_getxattr(INT32 args)
   }
 
   push_string( make_shared_binary_string( ptr, res ) );
-  if( do_free && ptr ) 
+  if( do_free && ptr )
     free( ptr );
 }
 
@@ -3523,7 +3529,7 @@ static void file_removexattr( INT32 args )
   char *name;
   int mfd = FD;
   int rv;
-  get_all_args( "removexattr", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fremovexattr( mfd, name, 0 )) < 0) && (errno == EINTR))
@@ -3550,15 +3556,15 @@ static void file_removexattr( INT32 args )
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
- *! The flags parameter can be used to refine the semantics of the operation.  
+ *! The flags parameter can be used to refine the semantics of the operation.
  *!
  *! @[Stdio.XATTR_CREATE] specifies a pure create, which
- *! fails if the named attribute exists already.  
+ *! fails if the named attribute exists already.
  *!
  *! @[Stdio.XATTR_REPLACE] specifies a pure replace operation, which
  *! fails if the named attribute does not already exist.
  *!
- *! By default (no flags), the extended attribute will be created if need be, 
+ *! By default (no flags), the extended attribute will be created if need be,
  *! or will simply replace the value if the attribute exists.
  *!
  *! @returns
@@ -3571,7 +3577,7 @@ static void file_setxattr( INT32 args )
   int flags;
   int rv;
   int mfd = FD;
-  get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
+  get_all_args( NULL, args, "%s%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fsetxattr( mfd, ind, val->str,
@@ -3606,7 +3612,7 @@ static void file_errno(INT32 args)
   push_int(ERRNO);
 }
 
-/*! @decl int mode()
+/*! @decl FileModeFlags|FilePropertyFlags mode()
  *!
  *! Returns the open mode and capabilities for the file.
  *!
@@ -3642,7 +3648,7 @@ static void file_errno(INT32 args)
  *! @endint
  *!
  *! @note
- *!   In some versions of Pike 7.7 and 7.8 the @tt{PROP_@} flags were
+ *!   In some versions of Pike 7.8 the @tt{PROP_@} flags were
  *!   filtered from the result.
  *!
  *! @seealso
@@ -3674,14 +3680,13 @@ static void file_set_backend (INT32 args)
   struct my_file *f = THIS;
   struct Backend_struct *backend;
 
-  if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->set_backend", 1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
-  backend = (struct Backend_struct *)
-    get_storage (Pike_sp[-args].u.object, Backend_program);
+    SIMPLE_ARG_TYPE_ERROR ("set_backend", 1, "Pike.Backend");
+  backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_ARG_TYPE_ERROR ("set_backend", 1, "Pike.Backend");
 
   /* FIXME: Only allow set_backend() if the file is open? */
 
@@ -3697,8 +3702,6 @@ static void file_set_backend (INT32 args)
   else
     INIT_FD_CALLBACK_BOX (&f->box, backend, f->box.ref_obj,
 			  f->box.fd, 0, got_fd_event, f->box.flags);
-
-  pop_n_elems (args - 1);
 }
 
 /*! @decl Pike.Backend query_backend()
@@ -3728,7 +3731,7 @@ static void file_query_backend (INT32 args)
  *! @seealso
  *!   @[set_blocking()]
  */
-static void file_set_nonblocking(INT32 args)
+static void file_set_nonblocking(INT32 UNUSED(args))
 {
   if(FD < 0) Pike_error("File not open.\n");
 
@@ -3745,8 +3748,6 @@ static void file_set_nonblocking(INT32 args)
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;
-
-  pop_n_elems(args);
 }
 
 /*! @decl void set_blocking()
@@ -3758,14 +3759,13 @@ static void file_set_nonblocking(INT32 args)
  *! @seealso
  *!   @[set_nonblocking()]
  */
-static void file_set_blocking(INT32 args)
+static void file_set_blocking(INT32 UNUSED(args))
 {
   if(FD >= 0)
   {
     set_nonblocking(FD,0);
     THIS->open_mode &=~ FILE_NONBLOCKING;
   }
-  pop_n_elems(args);
 }
 
 /*! @decl void set_close_on_exec(int(0..1) yes_no)
@@ -3783,8 +3783,8 @@ static void file_set_blocking(INT32 args)
  */
 static void file_set_close_on_exec(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_close_on_exec", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_close_on_exec", 1);
   if(FD <0)
     Pike_error("File not open.\n");
 
@@ -3794,7 +3794,6 @@ static void file_set_close_on_exec(INT32 args)
   }else{
     my_set_close_on_exec(FD,1);
   }
-  pop_n_elems(args);
 }
 
 /*! @decl int is_open()
@@ -3860,12 +3859,11 @@ static void file_release_fd(INT32 args)
  */
 static void file_take_fd(INT32 args)
 {
-  if (args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->take_fd", 1);
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("take_fd", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->take_fd", 0, "int");
+    SIMPLE_ARG_TYPE_ERROR ("take_fd", 0, "int");
   change_fd_for_box(&THIS->box, Pike_sp[-args].u.integer);
-  pop_n_elems(args);
 }
 
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
@@ -3885,9 +3883,8 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
     f->flags |= (THIS->flags & FILE_HAVE_RECV_FD);
   } else {
     /* Clone a plain Fd object. */
-    o = low_clone(file_program);
+    o = fast_clone_object(file_program);
     f = (struct my_file *) o->storage + file_program->inherits->storage_offset;
-    call_c_initializers(o);
   }
   change_fd_for_box(&f->box, fd);
   if (fd >= 0) {
@@ -3967,10 +3964,12 @@ static void file_set_buffer(INT32 args)
 
   if(FD==-1)
     Pike_error("Stdio.File->set_buffer() on closed file.\n");
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_buffer", 1);
+  if(args<1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_buffer", 1);
+  if(args>2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_buffer", 2);
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->set_buffer", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("set_buffer", 1, "int");
 
   bufsize=Pike_sp[-args].u.integer;
   if(bufsize < 0)
@@ -3979,12 +3978,11 @@ static void file_set_buffer(INT32 args)
   if(args>1)
   {
     if(TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->set_buffer", 2, "string");
+      SIMPLE_ARG_TYPE_ERROR("set_buffer", 2, "string");
     flags=parse(Pike_sp[1-args].u.string->str);
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
-  pop_n_elems(args);
 
 #ifdef SOCKET_BUFFER_MAX
 #if SOCKET_BUFFER_MAX
@@ -4056,7 +4054,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
    */
   ACCEPT_SIZE_T len;
 
-  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
+  memset(&addr,0,sizeof(struct sockaddr_in));
 
   /* We lie, we actually create an AF_INET socket... */
   if(family != AF_UNIX || type != SOCK_STREAM)
@@ -4088,7 +4086,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
      * Let's hope those few people who don't have socketpair have
      * a loopback on 127.0.0.1
      */
-    MEMSET((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    memset(&my_addr,0,sizeof(struct sockaddr_in));
     my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);
@@ -4194,7 +4192,7 @@ retry_connect:
 #ifdef HAVE_AND_USE_POLL
       struct pollfd fds;
       int timeout = 1;
-	  
+
       fds.fd = socketpair_fd;
       fds.events = POLLIN;
       fds.revents = 0;
@@ -4213,7 +4211,7 @@ retry_connect:
       fd_select(socketpair_fd + 1, &fds, 0, 0, &tv);
 #endif
     }
-    
+
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
@@ -4290,13 +4288,13 @@ static void file_pipe(INT32 args)
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
   int reverse;
 
-  check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
   if(args && !SUBTYPEOF(Pike_sp[-1])) type = Pike_sp[-args].u.integer;
 
   reverse = type & fd_REVERSE;
   type &= ~fd_REVERSE;
 
-  close_fd();
+  close_fd(0);
   pop_n_elems(args);
   ERRNO=0;
 
@@ -4321,7 +4319,7 @@ static void file_pipe(INT32 args)
 #if defined(HAVE_SOCKETPAIR)
     if(!(type & ~(UNIX_SOCKET_CAPABILITIES)))
     {
-      i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, inout);
       if (i >= 0) {
 	type=UNIX_SOCKET_CAPABILITIES;
 	break;
@@ -4332,7 +4330,7 @@ static void file_pipe(INT32 args)
 #ifndef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
     if(!(type & ~(SOCKET_CAPABILITIES)))
     {
-      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, inout);
       if (i >= 0) {
 	type=SOCKET_CAPABILITIES;
 	break;
@@ -4357,7 +4355,7 @@ static void file_pipe(INT32 args)
     errno = ERRNO;
     push_int(0);
   }
-  else if (reverse) 
+  else if (reverse)
   {
     init_fd(inout[1], FILE_WRITE | (type&fd_BIDIRECTIONAL?FILE_READ:0) |
 	    fd_query_properties(inout[1], type), 0);
@@ -4409,7 +4407,7 @@ static void file_handle_events(int event)
       if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
 		       FILE_LOCK_FD |
 		       FILE_NOT_OPENED)))
-	close_fd_quietly();
+	close_fd(1);
       else
 	free_fd_stuff();
 #ifdef HAVE_PIKE_SEND_FD
@@ -4488,7 +4486,7 @@ static void low_dup(struct object *UNUSED(toob),
  *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
  *!
  *! @note
- *!   In Pike 7.7 and later @[to] need not be open, in which
+ *!   @[to] need not be open, in which
  *!   case a new fd is allocated.
  *!
  *! @note
@@ -4503,21 +4501,21 @@ static void file_dup2(INT32 args)
   struct object *o;
   struct my_file *fd;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->dup2", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("dup2", 1);
 
   if(FD < 0)
     Pike_error("File not open.\n");
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
+    SIMPLE_ARG_TYPE_ERROR("dup2", 1, "Stdio.File");
 
   o=Pike_sp[-args].u.object;
 
   fd=get_file_storage(o);
 
   if(!fd)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
+    SIMPLE_ARG_TYPE_ERROR("dup2", 1, "Stdio.File");
 
   if(fd->box.fd < 0) {
     int new_fd;
@@ -4592,7 +4590,7 @@ static void file_open_socket(INT32 args)
   int fd;
   int family=-1;
 
-  close_fd();
+  close_fd(0);
 
   if (args > 2 && TYPEOF(Pike_sp[2-args]) == PIKE_T_INT &&
       Pike_sp[2-args].u.integer != 0)
@@ -4600,9 +4598,8 @@ static void file_open_socket(INT32 args)
   else if (args > 2 && TYPEOF(Pike_sp[2-args]) == PIKE_T_STRING &&
 	   !Pike_sp[2-args].u.string->size_shift) {
     PIKE_SOCKADDR addr;
-    int addr_len;
-    addr_len = get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
-			     NULL, -1, 0);
+    get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
+                  NULL, -1, 0);
     family = SOCKADDR_FAMILY(addr);
     INVALIDATE_CURRENT_TIME();
   }
@@ -4624,11 +4621,11 @@ static void file_open_socket(INT32 args)
     if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
 	(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
 	 Pike_sp[-args].u.string->size_shift)) {
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "int|string (8bit)");
+      SIMPLE_ARG_TYPE_ERROR("open_socket", 1, "int|string(8bit)");
     }
     if (args > 1 && !UNSAFE_IS_ZERO(&Pike_sp[1-args])) {
       if (TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING) {
-	SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 2, "string");
+	SIMPLE_ARG_TYPE_ERROR("open_socket", 2, "string");
       }
 
       name = Pike_sp[1-args].u.string->str;
@@ -4676,16 +4673,21 @@ static void file_open_socket(INT32 args)
     /* FreeBSD 7.x wants this to reuse portnumbers.
      * Linux 2.6.x seems to have reserved a slot for the option, but not
      * enabled it. Survive libc's with the option on kernels without.
+     *
+     * The emulated Linux runtime on MS Windows 10 fails this with EINVAL.
      */
     o=1;
     if((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
 #ifdef ENOPROTOOPT
        && (errno != ENOPROTOOPT)
 #endif
+#ifdef EINVAL
+       && (errno != EINVAL)
+#endif
 #ifdef WSAENOPROTOOPT
        && (errno != WSAENOPROTOOPT)
 #endif
-){
+       ){
       ERRNO=errno;
       while (fd_close(fd) && errno == EINTR) {}
       errno = ERRNO;
@@ -4737,16 +4739,21 @@ static void file_open_socket(INT32 args)
     /* FreeBSD 7.x wants this to reuse portnumbers.
      * Linux 2.6.x seems to have reserved a slot for the option, but not
      * enabled it. Survive libc's with the option on kernels without.
+     *
+     * The emulated Linux runtime on MS Windows 10 fails this with EINVAL.
      */
     o=1;
     if((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
 #ifdef ENOPROTOOPT
        && (errno != ENOPROTOOPT)
 #endif
+#ifdef EINVAL
+       && (errno != EINVAL)
+#endif
 #ifdef WSAENOPROTOOPT
        && (errno != WSAENOPROTOOPT)
 #endif
-){
+       ){
       ERRNO=errno;
       while (fd_close(fd) && errno == EINTR) {}
       errno = ERRNO;
@@ -4768,13 +4775,17 @@ static void file_open_socket(INT32 args)
 }
 
 /*! @decl int(0..1) set_keepalive(int(0..1) on_off)
+ *!
+ *! Equivalent to setsockopt(Stdio.SO_KEEPALIVE, on_off), but will set errno
+ *! if SO_KEEPALIVE is not supported, rather than issuing a compilation error
+ *! for the missing constant.
  */
 static void file_set_keepalive(INT32 args)
 {
   int tmp, i;
   INT_TYPE t;
 
-  get_all_args("Stdio.File->set_keepalive", args, "%i", &t);
+  get_all_args(NULL, args, "%i", &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t;
@@ -4798,6 +4809,39 @@ static void file_set_keepalive(INT32 args)
 #endif /* ENOTTY */
 #endif /* ENOTSUP */
 #endif /* SO_KEEPALIVE */
+  pop_n_elems(args);
+  push_int(!i);
+}
+
+/*! @decl int(0..1) setsockopt(int level,int opt,int state)
+ *!
+ *! Set socket options like Stdio.SO_KEEPALIVE. This function is always
+ *! available; the presence or absence of the option constants indicates
+ *! availability of those features.
+ *!
+ *! @returns
+ *!   1 if successful, 0 if not (and sets errno())
+ *!
+ *! @seealso
+ *!   @[set_keepalive()]
+ */
+static void file_setsockopt(INT32 args)
+{
+  int tmp, i, opt, level;
+  INT_TYPE o, t, l;
+
+  get_all_args(NULL, args, "%i%i%i", &l, &o, &t);
+
+  /* In case int and INT_TYPE have different sizes */
+  tmp = t; opt = o; level = l;
+
+  i = fd_setsockopt(FD, level, opt, (char *)&tmp, sizeof(tmp));
+  if(i)
+  {
+    ERRNO=errno;
+  }else{
+    ERRNO=0;
+  }
   pop_n_elems(args);
   push_int(!i);
 }
@@ -4841,8 +4885,8 @@ static void file_connect_unix( INT32 args )
   int addr_len;
   int tmp;
 
-  if( args < 1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->connect_unix", 1);
+  if( args != 1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("connect_unix", 1);
   if( (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) ||
       (Pike_sp[-args].u.string->size_shift) )
     Pike_error("Illegal argument. Expected string(8bit)\n");
@@ -4862,7 +4906,7 @@ static void file_connect_unix( INT32 args )
 #endif
   pop_n_elems(args);
 
-  close_fd();
+  close_fd(0);
   change_fd_for_box (&THIS->box, socket(AF_UNIX,SOCK_STREAM,0));
 
   if( FD < 0 )
@@ -4893,19 +4937,30 @@ static void file_connect_unix( INT32 args )
 /*! @decl int(0..1) connect(string dest_addr, int dest_port)
  *! @decl int(0..1) connect(string dest_addr, int dest_port, @
  *!                         string src_addr, int src_port)
+ *! @decl string(0..255)|int(0..0) connect(string dest_addr, int dest_port, @
+ *!                         string|int(0..0) src_addr, int|int(0..0) src_port, @
+ *!                         string(0..255) data)
  *!
  *!   Open a TCP/IP connection to the specified destination.
  *!
  *!   In nonblocking mode, success is indicated with the write-callback,
  *!   and failure with the close-callback or the read_oob-callback.
  *!
+ *!   If the @[data] argument is included the socket will use
+ *!   TCP_FAST_OPEN if available, if not the data will @i{not be
+ *!   sent@}. In the data case the function either returns the data
+ *!   that has not been sent (only one packet can be sent with this
+ *!   option) or 0 if the connection failed immediately.
+ *!
  *! @returns
- *!   Returns @expr{1@} on success, and @expr{0@} on failure.
+ *!  Returns @expr{1@} or the remaining @expr{data@} on success, and
+ *!  @expr{0@} on failure.
  *!
  *! @note
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
  *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
+ *!
  */
 static void file_connect(INT32 args)
 {
@@ -4913,26 +4968,43 @@ static void file_connect(INT32 args)
   int addr_len;
   struct pike_string *dest_addr = NULL;
   struct pike_string *src_addr = NULL;
+  struct pike_string *data = NULL;
   struct svalue *dest_port = NULL;
   struct svalue *src_port = NULL;
 
   int tmp, was_closed = FD < 0;
-  int tries;
+  int fd, sent = 0;
+  int nb_mode;
+  int old_events;
+  int e;
 
-  if (args < 4) {
-    get_all_args("Stdio.File->connect", args, "%S%*", &dest_addr, &dest_port);
+  if (args < 4)
+  {
+    get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
+  }
+  else if( args == 5 )
+  {
+    struct svalue *src_sv;
+    get_all_args(NULL, args, "%S%*%*%*%S",
+                 &dest_addr, &dest_port, &src_sv, &src_port, &data);
+    if(TYPEOF(*src_sv) != PIKE_T_INT )
+    {
+      if (TYPEOF(*src_sv) != PIKE_T_STRING || src_sv->u.string->size_shift)
+        SIMPLE_ARG_TYPE_ERROR("connect", 3, "int|string(8bit)");
+      src_addr = src_sv->u.string;
+    }
   } else {
-    get_all_args("Stdio.File->connect", args, "%S%*%S%*",
+    get_all_args(NULL, args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 2, "int|string (8bit)");
+    SIMPLE_ARG_TYPE_ERROR("connect", 2, "int|string(8bit)");
 
   if(src_port && TYPEOF(*src_port) != PIKE_T_INT &&
      (TYPEOF(*src_port) != PIKE_T_STRING || src_port->u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 4, "int|string (8bit)");
+    SIMPLE_ARG_TYPE_ERROR("connect", 4, "int|string(8bit)");
 
 /*   fprintf(stderr, "connect: family: %d\n", SOCKADDR_FAMILY(addr)); */
 
@@ -4945,7 +5017,7 @@ static void file_connect(INT32 args)
 
   if(was_closed)
   {
-    if (args < 4) {
+    if (!src_addr) {
       push_int(-1);
       push_int(0);
       push_int(SOCKADDR_FAMILY(addr));
@@ -4960,49 +5032,59 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  for(tries = 0;; tries++)
+  nb_mode = !!(THIS->open_mode & FILE_NONBLOCKING);
+
+  /* Inhibit the backend for this fd while connect(2) is running. */
+  if ((old_events = THIS->box.events)) {
+    set_fd_callback_events(&(THIS->box), 0, THIS->box.flags);
+  }
+
+  fd = FD;
+  THREADS_ALLOW();
+  for(;;)
   {
-    tmp=FD;
-    THREADS_ALLOW();
-    tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
-    THREADS_DISALLOW();
-    if(tmp<0)
-      switch(errno)
-      {
-#if 0
-	/* Even though this code is robust(er) now,
-	 * it has no business here and should be dealt
-	 * with at the Pike programming level.
-	 */
-#ifdef EADDRINUSE
-	case EADDRINUSE:
+#ifdef MSG_FASTOPEN
+    if( data )
+    {
+      tmp = sendto(fd, data->str, data->len, MSG_FASTOPEN,
+                   (struct sockaddr *)&addr, addr_len );
+    }
+    else
 #endif
-#ifdef WSAEADDRINUSE
-	case WSAEADDRINUSE:
-#endif
-	  if(tries > INUSE_TIMEOUT/INUSE_BUSYWAIT_DELAY)
-	  {
-	    /* errno = EAGAIN; */	/* no ports available */
-	    break;
-	  }
-          sysleep(INUSE_BUSYWAIT_DELAY);
-	  /* FALL_THROUGH */
-#endif
-	case EINTR:
-	  continue;
-      }
+    {
+      tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
+    }
+    if( tmp<0 && (errno==EINTR))
+      continue;
     break;
   }
+  THREADS_DISALLOW();
+
+  e = errno;
+
+  if (old_events) {
+    /* Reenable the backend. */
+    set_fd_callback_events(&(THIS->box), old_events, THIS->box.flags);
+  }
+
+  errno = e;
+
+  /* NB: On success in threaded callback-mode, some other thread may
+   *     have messed with us before THREADS_DISALLOW() has finished.
+   *
+   *     We thus mustn't look at the current settings of ourselves, as
+   *     they may have been changed since before the fd_connect() call.
+   */
 
   if(tmp < 0
 #ifdef EINPROGRESS
-     && !(errno==EINPROGRESS && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == EINPROGRESS && nb_mode)
 #endif
 #ifdef WSAEWOULDBLOCK
-     && !(errno==WSAEWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == WSAEWOULDBLOCK && nb_mode)
 #endif
 #ifdef EWOULDBLOCK
-     && !(errno==EWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == EWOULDBLOCK && nb_mode)
 #endif
     )
   {
@@ -5016,10 +5098,17 @@ static void file_connect(INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
-
     ERRNO=0;
-    pop_n_elems(args);
-    push_int(1);
+    if( data )
+    {
+      push_string( make_shared_binary_string( data->str + tmp, data->len-tmp ) );
+      stack_pop_n_elems_keep_top( args );
+    }
+    else
+    {
+      pop_n_elems(args);
+      push_int(1);
+    }
   }
 }
 
@@ -5116,43 +5205,6 @@ static void file_query_address(INT32 args)
   }
 }
 
-/*! @decl Stdio.File `<<(string data)
- *! @decl Stdio.File `<<(mixed data)
- *!
- *! Write some data to a file.
- *!
- *! If @[data] is not a string, it is casted to string, and then
- *! written to the file.
- *!
- *! @note
- *!   Throws an error if not all data could be written.
- *!
- *! @seealso
- *!   @[write()]
- */
-static void file_lsh(INT32 args)
-{
-  ptrdiff_t len;
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->`<<", 1);
-  if(args > 1)
-    pop_n_elems(args-1);
-
-  if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-  {
-    ref_push_type_value(string_type_string);
-    stack_swap();
-    f_cast();
-  }
-
-  len=Pike_sp[-1].u.string->len;
-  file_write(1);
-  if(len != Pike_sp[-1].u.integer) Pike_error("Stdio.File << failed.\n");
-  pop_stack();
-
-  push_object(this_object());
-}
-
 /*! @decl void create(string filename)
  *! @decl void create(string filename, string mode)
  *! @decl void create(string filename, string mode, int access)
@@ -5169,10 +5221,11 @@ static void file_create(INT32 args)
   if(!args) return;
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING &&
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->create", 1, "int|string");
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "int|string");
 
-  close_fd();
+  close_fd(0);
   file_open(args);
+  pop_stack();
 }
 
 #ifdef _REENTRANT
@@ -5224,7 +5277,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
   low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
   num_threads--;
   mt_unlock_interpreter();
-  free((char *)p);
+  free(p);
   th_exit(0);
   return 0;
 }
@@ -5244,10 +5297,10 @@ void file_proxy(INT32 args)
   int from, to;
 
   THREAD_T id;
-  check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
+  check_all_args(NULL, args, BIT_OBJECT,0);
   f=get_file_storage(Pike_sp[-args].u.object);
   if(!f)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->proxy", 1, "Stdio.File");
+    SIMPLE_ARG_TYPE_ERROR("proxy", 1, "Stdio.File");
 
   from=fd_dup(f->box.fd);
   if(from<0)
@@ -5271,15 +5324,13 @@ void file_proxy(INT32 args)
   num_threads++;
   if(th_create_small(&id,proxy_thread,p))
   {
-    free((char *)p);
+    free(p);
     while (fd_close(from) && errno == EINTR) {}
     while (fd_close(to) && errno == EINTR) {}
     Pike_error("Failed to create thread.\n");
   }
 
   th_destroy(& id);
-  pop_n_elems(args);
-  push_int(0);
 }
 
 PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
@@ -5329,7 +5380,7 @@ static void low_file_lock(INT32 args, int flags)
 {
   int ret,fd=FD;
   struct object *o;
-  
+
   destruct_objects_to_destruct();
 
   if(FD < 0)
@@ -5454,16 +5505,7 @@ static void exit_file_lock_key(struct object *DEBUGUSED(o))
       }
     }while(err<0 && errno==EINTR);
 
-#ifdef _REENTRANT
-    THIS_KEY->owner = NULL;
-    if(THIS_KEY->owner_obj)
-    {
-      free_object(THIS_KEY->owner_obj);
-      THIS_KEY->owner_obj = NULL;
-    }
-#endif
     THIS_KEY->f->key = 0;
-    THIS_KEY->f = 0;
   }
 }
 
@@ -5473,13 +5515,13 @@ static void init_file_locking(void)
   START_NEW_PROGRAM_ID (STDIO_FILE_LOCK_KEY);
   off = ADD_STORAGE(struct file_lock_key_storage);
 #ifdef _REENTRANT
-  MAP_VARIABLE("_owner",tObj,0,
-	       off + OFFSETOF(file_lock_key_storage, owner_obj),
-	       PIKE_T_OBJECT);
+  PIKE_MAP_VARIABLE("_owner",
+                    off + OFFSETOF(file_lock_key_storage, owner_obj),
+                    tObj, PIKE_T_OBJECT, 0);
 #endif
-  MAP_VARIABLE("_file",tObj,0,
-	       off + OFFSETOF(file_lock_key_storage, file),
-	       PIKE_T_OBJECT);
+  PIKE_MAP_VARIABLE("_file",
+                    off + OFFSETOF(file_lock_key_storage, file),
+                    tObj, PIKE_T_OBJECT, 0);
   set_init_callback(init_file_lock_key);
   set_exit_callback(exit_file_lock_key);
   file_lock_key_program=end_program();
@@ -5506,91 +5548,87 @@ static void exit_file_locking(void)
  */
 static void f_get_all_active_fd(INT32 args)
 {
-  int i,fds,ne;
+  int i,fds=0;
   PIKE_STAT_T foo;
-
-  ne = MAX_OPEN_FILEDESCRIPTORS;
+  struct svalue *sp;
 
   pop_n_elems(args);
-  for (i=fds=0; i<ne; i++)
+  sp = Pike_sp;
   {
-    int q;
+#ifndef __NT__
+    DIR *tmp;
+#endif
     THREADS_ALLOW();
-    q = fd_fstat(i,&foo);
-    THREADS_DISALLOW();
-    if(!q)
+#ifndef __NT__
+    if( (tmp = opendir(
+#ifdef HAVE_DARWIN_XATTR
+           "/dev/fd"
+#else
+           "/proc/self/fd"
+#endif
+           )) )
     {
-      push_int(i);
-      fds++;
+#ifdef HAVE_DIRFD
+      INT_TYPE dfd = dirfd(tmp);
+#endif
+
+      while(1)
+      {
+        INT_TYPE fd;
+        char *ep;
+        struct dirent *res;
+        /* solaris, linux, cygwin, darwin, netbsd et.al. */
+        res = NULL;
+        while( UNLIKELY(!(res = readdir(tmp))) && UNLIKELY(errno==EINTR))
+          ;
+        if( !res )
+          break;
+
+        fd = strtol(res->d_name, &ep, 10);
+
+        if( LIKELY(ep != res->d_name)
+#ifdef HAVE_DIRFD
+	    && (fd != dfd)
+#endif
+	    )
+        {
+          SET_SVAL_TYPE_SUBTYPE(*sp,PIKE_T_INT,0);
+          sp++->u.integer = fd;
+          fds++;
+        }
+      }
+      closedir(tmp);
     }
+    else
+#endif /* __NT__ */
+    {
+#ifdef HAVE_SYSCONF
+      int max = sysconf(_SC_OPEN_MAX);
+      /* NOTE: This might have been lowered, so we might not actually
+       * get all FD:s.  It is usually good, however.
+       *
+       * Also, this is not used on many systems
+       */
+#else
+      int max = 65535;
+#endif
+      for (i=0; i<max; i++)
+      {
+        int q;
+        q = fd_fstat(i,&foo);
+        if(!q)
+        {
+          SET_SVAL_TYPE_SUBTYPE(*sp,PIKE_T_INT,0);
+          sp++->u.integer = i;
+          fds++;
+        }
+      }
+    }
+    THREADS_DISALLOW();
+    Pike_sp = sp;
   }
   f_aggregate(fds);
 }
-
-#ifdef HAVE_NOTIFICATIONS
-
-/*! @class File
- */
-
-/*! @decl void notify(void|int notification, function(void:void) callback)
- *! Receive notification when change occur within the fd.
- *! To use, create a Stdio.File object of a directory like
- *! Stdio.File(".") and then call notify() with the appropriate
- *! parameters.
- *!
- *! @note
- *! When a program registers for some notification, only the first notification
- *! will be received unless DN_MULTISHOT is specified as part of the
- *! notification argument.
- *!
- *! @note
- *! At present, this function is Linux-specific and requires a kernel which
- *! supports the F_NOTIFY fcntl() call.
- *!
- *! @param notification
- *! What to notify the callback of. See the Stdio.DN_* constants for more
- *! information about possible notifications.
- *!
- *! @param callback
- *! Function which should be called when notification is received. The
- *! function gets the signal used to indicate the notification as its
- *! argument and shouldn't return anyting.
- */
-void file_set_notify(INT32 args) {
-  int notifications = 0;
-
-  if (args == 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("notify",2);
-
-  if (args > 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("notify", 2);
-
-  if (args && TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("notify", 0, "int");
-
-  if (args && TYPEOF(Pike_sp[1-args]) != PIKE_T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("notify", 1, "function(void:void)");
-
-  if (args) {
-    notifications = Pike_sp[1-args].u.integer;
-  }
-
-#ifdef __linux__
-  if (args) {
-    pop_n_elems(1);
-    push_int(SIGIO);
-
-  }
-  fcntl(FD, F_NOTIFY, notifications);
-#endif /* __linux__ */
-
-  pop_n_elems(args);
-}
-
-/*! @endclass
- */
-
-#endif /* HAVE_NOTIFICATIONS */
 
 /*! @decl constant NOTE_ATTRIB = 8
  *
@@ -5752,6 +5790,7 @@ PIKE_MODULE_EXIT
 
   exit_stdio_udp();
   exit_stdio_sendfile();
+  exit_stdio_buffer();
 
   if(file_program)
   {
@@ -5800,18 +5839,9 @@ static void file___init_ref(struct object *UNUSED(o))
   SET_SVAL(REF, PIKE_T_OBJECT, 0, object, file_make_object_from_fd(-1, 0, 0));
 }
 
-/* Avoid loss of precision warnings. */
-#ifdef __ECL
-static inline long TO_LONG(ptrdiff_t x)
-{
-  return DO_NOT_WARN((long)x);
-}
-#else /* !__ECL */
-#define TO_LONG(x)	((long)(x))
-#endif /* __ECL */
-
 #ifdef PIKE_DEBUG
-void check_static_file_data(struct callback *a, void *b, void *c)
+void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
+                            void *UNUSED(c))
 {
   if(file_program)
   {
@@ -5820,7 +5850,7 @@ void check_static_file_data(struct callback *a, void *b, void *c)
        PIKE_CONCAT(Y,_function_number)>			    \
        file_program->num_identifier_references)		    \
       Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
-		 TO_LONG(PIKE_CONCAT(Y,_function_number)));
+                 (long)(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }
 }
@@ -5842,9 +5872,9 @@ static void fd__sprintf(INT32 args)
   INT_TYPE type;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
+    SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
 
   type = Pike_sp[-args].u.integer;
   pop_n_elems(args);
@@ -5861,7 +5891,7 @@ static void fd__sprintf(INT32 args)
 
     case 't':
     {
-      push_text("Fd");
+      push_static_text("Fd");
       return;
     }
   }
@@ -5928,7 +5958,7 @@ static void f_gethostip(INT32 args) {
 
 	push_text( ifr->ifr_name );
 
-	push_constant_text( "ips" );
+	push_static_text( "ips" );
 	memcpy( &addr, &ifr->ifr_addr, sizeof(ifr->ifr_addr) );
 	push_text( inet_ntoa( addr.sin_addr ) );
 	f_aggregate(1);
@@ -5948,19 +5978,45 @@ static void f_gethostip(INT32 args) {
   push_mapping(m);
 }
 
+/*! @decl int getprotobyname(string(8bit) name)
+ *!
+ *! Returns the protocol number of the protocol @expr{name@}.
+ *! This calls the POSIX function getprotobyname.
+ *! If the protocol cannot be found an error is thrown.
+ */
+static void f_getprotobyname(INT32 args) {
+#ifdef HAVE_GETPROTOBYNAME
+    struct protoent *proto;
+    const char *name;
+
+    get_all_args(NULL, args, "%c", &name);
+
+    proto = getprotobyname(name);
+
+    if (proto) {
+        push_int(proto->p_proto);
+        return;
+    }
+#endif
+    Pike_error("Could not find protocol.\n");
+}
+
 #ifdef HAVE_OPENPTY
 #include <pty.h>
 #endif
 
+int fd_write_identifier_offset;
+
 PIKE_MODULE_INIT
 {
   struct object *o;
+  int write_fun_num;
 
   Pike_compiler->new_program->id = PROG_MODULE_STDIO_ID;
 
   init_stdio_efuns();
   init_stdio_stat();
-
+  init_stdio_buffer();
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 
@@ -5969,16 +6025,23 @@ PIKE_MODULE_INIT
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
 
-  MAP_VARIABLE("_read_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
-  MAP_VARIABLE("_write_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),PIKE_T_MIXED);
-  MAP_VARIABLE("_read_oob_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
-  MAP_VARIABLE("_write_oob_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
-   MAP_VARIABLE("_fs_event_callback",tMix,0,
-     	       OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),PIKE_T_MIXED);
+  PIKE_MAP_VARIABLE("_errno", OFFSETOF(my_file, my_errno),
+                    tIntPos, PIKE_T_INT, ID_PROTECTED);
+  PIKE_MAP_VARIABLE("_read_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_write_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_read_oob_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_write_oob_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_fs_event_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
+                    tMix, PIKE_T_MIXED, 0);
 
   fd_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", fd_fd_factory,
@@ -5999,6 +6062,10 @@ PIKE_MODULE_INIT
 
   file_program=end_program();
   add_program_constant("Fd",file_program,0);
+
+  write_fun_num = find_identifier("write", file_program);
+  fd_write_identifier_offset =
+    file_program->identifier_references[write_fun_num].identifier_offset;
 
   o=file_make_object_from_fd(0, low_fd_query_properties(0)|FILE_READ,
 			     fd_CAN_NONBLOCK);
@@ -6026,7 +6093,7 @@ PIKE_MODULE_INIT
 
   START_NEW_PROGRAM_ID (STDIO_FD_REF);
   ADD_STORAGE(struct svalue);
-  MAP_VARIABLE("_fd", tObjIs_STDIO_FD, 0, 0, PIKE_T_MIXED);
+  PIKE_MAP_VARIABLE("_fd", 0, tObjIs_STDIO_FD, PIKE_T_MIXED, 0);
   set_init_callback(file___init_ref);
 
 #define FILE_FUNC(X,Y,Z)			\
@@ -6054,6 +6121,29 @@ PIKE_MODULE_INIT
    */
   add_integer_constant("XATTR_REPLACE", XATTR_REPLACE, 0 );
 #endif
+
+  /* enum FileModeFlags */
+  type_stack_mark();
+  push_int_type(0, 0xffff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("FileModeFlags", Pike_sp-1, 0);
+  pop_stack();
+
+  add_integer_constant("FILE_READ", FILE_READ, 0);
+  add_integer_constant("FILE_WRITE", FILE_WRITE, 0);
+  add_integer_constant("FILE_APPEND", FILE_APPEND, 0);
+  add_integer_constant("FILE_CREATE", FILE_CREATE, 0);
+  add_integer_constant("FILE_TRUNC", FILE_TRUNC, 0);
+  add_integer_constant("FILE_EXCLUSIVE", FILE_EXCLUSIVE, 0);
+  add_integer_constant("FILE_NONBLOCKING", FILE_NONBLOCKING, 0);
+
+  /* enum FilePropertyFlags */
+  type_stack_mark();
+  push_int_type(0, 0xff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("FilePropertyFlags", Pike_sp-1, 0);
+  pop_stack();
+
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
   add_integer_constant("PROP_SEND_FD",fd_SEND_FD,0);
@@ -6064,62 +6154,66 @@ PIKE_MODULE_INIT
 
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
 
-#ifdef DN_ACCESS
-  /*! @decl constant DN_ACCESS
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are accessed.
+  /* seek modes. These are strings to keep compatibility in seek(). */
+  {
+    static char seek_how[] = {
+      SEEK_CUR,0,
+      SEEK_SET,0,
+      SEEK_END,0
+#ifdef SEEK_DATA
+      ,SEEK_DATA,0,
+      SEEK_HOLE,0
+#endif
+    };
+    add_string_constant( "SEEK_CUR", seek_how+0, 0 );
+    add_string_constant( "SEEK_SET", seek_how+2, 0 );
+    add_string_constant( "SEEK_END", seek_how+4, 0 );
+#ifdef SEEK_DATA
+    add_string_constant( "SEEK_DATA", seek_how+6, 0 );
+    add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
+#endif
+  };
+
+#ifdef SOL_SOCKET
+  /*! @decl constant SOL_SOCKET
+   *! Used in @[File.setsockopt()] to set socket-level options
    */
-  add_integer_constant("DN_ACCESS", DN_ACCESS, 0);
+  add_integer_constant("SOL_SOCKET", SOL_SOCKET, 0);
 #endif
 
-#ifdef DN_MODIFY
-  /*! @decl constant DN_MODIFY
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are modified.
+#ifdef IPPROTO_IP
+  /*! @decl constant IPPROTO_IP
+   *! Used in @[File.setsockopt()] to set IP-level options
    */
-  add_integer_constant("DN_MODIFY", DN_MODIFY, 0);
+  add_integer_constant("IPPROTO_IP", IPPROTO_IP, 0);
 #endif
 
-#ifdef DN_CREATE
-  /*! @decl constant DN_CREATE
-   *! Used in @[File.notify()] to get a callback when new
-   *! files are created within a directory.
+#ifdef IPPROTO_TCP
+  /*! @decl constant IPPROTO_TCP
+   *! Used in @[File.setsockopt()] to set TCP-level options
    */
-  add_integer_constant("DN_CREATE", DN_CREATE, 0);
+  add_integer_constant("IPPROTO_TCP", IPPROTO_TCP, 0);
 #endif
 
-#ifdef DN_DELETE
-  /*! @decl constant DN_DELETE
-   *! Used in @[File.notify()] to get a callback when files
-   *! are deleted within a directory.
+#ifdef TCP_NODELAY
+  /*! @decl constant TCP_NODELAY
+   *! Used in @[File.setsockopt()] to control Nagle's Algorithm.
    */
-  add_integer_constant("DN_DELETE", DN_DELETE, 0);
+  add_integer_constant("TCP_NODELAY", TCP_NODELAY, 0);
 #endif
 
-#ifdef DN_RENAME
-  /*! @decl constant DN_RENAME
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are renamed.
+#ifdef SO_KEEPALIVE
+  /*! @decl constant SO_KEEPALIVE
+   *! Used in @[File.setsockopt()] to control TCP/IP keep-alive packets.
    */
-  add_integer_constant("DN_RENAME", DN_RENAME, 0);
+  add_integer_constant("SO_KEEPALIVE", SO_KEEPALIVE, 0);
 #endif
 
-#ifdef DN_ATTRIB
-  /*! @decl constant DN_ATTRIB
-   *! Used in @[File.notify()] to get a callback when attributes
-   *! of files within a directory are changed.
+#ifdef IP_TOS
+  /*! @decl constant IP_TOS
+   *! Used in @[File.setsockopt()] to set Type Of Service
    */
-  add_integer_constant("DN_ATTRIB", DN_ATTRIB, 0);
-#endif
-
-#ifdef DN_MULTISHOT
-  /*! @decl constant DN_MULTISHOT
-   *! Used in @[File.notify()]. If DN_MULTISHOT is used, signals will
-   *! be sent for all notifications the program has registred for. Otherwise
-   *! only the first event the program is listening for will be received and
-   *! then the program must reregister for the events to receive futher events.
-   */
-  add_integer_constant("DN_MULTISHOT", DN_MULTISHOT, 0);
+  add_integer_constant("IP_TOS", IP_TOS, 0);
 #endif
 
   add_integer_constant("__HAVE_OOB__",1,0);
@@ -6166,6 +6260,10 @@ PIKE_MODULE_INIT
 #endif
 #endif /* 0 */
 
+#ifdef __NT__
+  add_integer_constant("__HAVE_UTF8_FS__", 1, 0);
+#endif
+
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);
 #endif
@@ -6183,6 +6281,7 @@ PIKE_MODULE_INIT
 				      0,
 				      0));
 #endif
+  ADD_FUNCTION2("getprotobyname", f_getprotobyname, tFunc(tStr8,tInt), 0, 0);
 }
 
 /*! @endmodule

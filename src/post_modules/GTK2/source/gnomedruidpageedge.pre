@@ -27,7 +27,7 @@ void create(int position, ?int anti_alias)
   {
     INT_TYPE pos,aa=0;
     GtkWidget *gpe;
-    get_all_args("create",args,"%i.%i",&pos,&aa);
+    get_all_args(NULL,args,"%i.%i",&pos,&aa);
 
     if (aa)
       gpe=gnome_druid_page_edge_new_aa(pos);
@@ -47,7 +47,7 @@ void set_bg_color(GDK2.Color color)
   {
     GdkColor *color;
     struct object *o1;
-    get_all_args("set_bg_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_edge_set_bg_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			color);
@@ -62,7 +62,7 @@ void set_textbox_color(GDK2.Color color)
   {
     GdkColor *color;
     struct object *o1;
-    get_all_args("set_textbox_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_edge_set_textbox_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			color);
@@ -77,7 +77,7 @@ void set_logo_bg_color(GDK2.Color color)
   {
     GdkColor *color;
     struct object *o1;
-    get_all_args("set_logo_bg_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_edge_set_logo_bg_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			color);
@@ -92,7 +92,7 @@ void set_title_color(GDK2.Color color)
   {
     GdkColor *color;
     struct object *o1;
-    get_all_args("set_title_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_edge_set_title_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			color);
@@ -107,7 +107,7 @@ void set_text_color(GDK2.Color color)
   {
     GdkColor *color;
     struct object *o1;
-    get_all_args("set_text_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     color=(GdkColor *)get_gdkobject(o1,color);
     gnome_druid_page_edge_set_text_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			color);
@@ -134,7 +134,7 @@ void set_logo(?GDK2.Pixbuf logo)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_logo",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gnome_druid_page_edge_set_logo(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			GDK_PIXBUF(get_gobject(o1)));
   } else {
@@ -150,7 +150,7 @@ void set_watermark(?GDK2.Pixbuf watermark)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_watermark",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gnome_druid_page_edge_set_watermark(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			GDK_PIXBUF(get_gobject(o1)));
   } else
@@ -165,7 +165,7 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_top_watermark",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gnome_druid_page_edge_set_top_watermark(GNOME_DRUID_PAGE_EDGE(THIS->obj),
 			GDK_PIXBUF(get_gobject(o1)));
   } else

@@ -8,6 +8,8 @@
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
  */
 
+#include <math.h>
+
 #define HSHIFT 0
 #include "pike_search_engine2.c"
 #undef HSHIFT
@@ -27,9 +29,9 @@
 
 
 #define INTERMEDIATE(NAME)			\
-PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
-		   PCHARP haystack,		\
-		   ptrdiff_t haystacklen)		\
+PCHARP PxC3(NAME,NSHIFT,N)(void *s,	        \
+                           PCHARP haystack,	\
+                           ptrdiff_t haystacklen)       \
 {						\
   switch(haystack.shift)			\
   {						\
@@ -37,15 +39,14 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,1);				\
     INTERCASE(NAME,2);				\
   }                                             \
-  Pike_fatal("Illegal shift\n");                     \
-  return haystack;	/* NOT_REACHED */	\
+  UNREACHABLE(return haystack);                 \
 }						\
 						\
 static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
   (SearchMojtFunc0)PxC3(NAME,NSHIFT,0),		\
-  (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),			\
-  (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),			\
-  (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),			\
+  (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),		\
+  (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),		\
+  (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),		\
 };
 
 
@@ -79,11 +80,11 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   if(needlelen < 7)
     Pike_fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
 #endif
-  
+
 #ifdef TUNAFISH
   hsize=52+(max_haystacklen >> 7)  - (needlelen >> 8);
   max  =13+(max_haystacklen >> 4)  - (needlelen >> 5);
-  
+
   if(hsize > (ptrdiff_t) NELEM(s->set))
   {
     hsize=NELEM(s->set);
@@ -103,18 +104,18 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     linklen[e]=0;
   }
   hsize--;
-  
+
   if(max > (ptrdiff_t)needlelen) max=needlelen;
   max=(max-sizeof(INT32)+1) & ~(sizeof(INT32) - 1);
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
-  
+
   /* This assumes 512 buckets - Hubbe */
-  maxlinklength = my_sqrt(DO_NOT_WARN((unsigned int)max/2))+1;
-  
+  maxlinklength = (INT32)sqrt((double)max/2)+1;
+
   ptr=& s->links[0];
-  
+
   q=(NCHAR *)needle;
-  
+
 #if PIKE_BYTEORDER == 4321 && NSHIFT == 0
   for(tmp = e = 0; e < (ptrdiff_t)sizeof(INT32)-1; e++)
   {
@@ -122,14 +123,14 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     tmp|=*(q++);
   }
 #endif
-	
+
   for(e=0;e<max;e++)
   {
 #if PIKE_BYTEORDER == 4321  && NSHIFT == 0
     tmp<<=8;
     tmp|=*(q++);
 #else
-    /* FIXME tmp=EXTRACT_INT(q); */
+    /* FIXME tmp=(INT32)get_unaligned32(q); */
     tmp=NameN(GET_4_UNALIGNED_CHARS)(q);
     q++;
 #endif
@@ -137,26 +138,26 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     h+=h>>7;
     h+=h>>17;
     h&=hsize;
-    
+
     ptr->offset=e;
     ptr->key=tmp;
     ptr->next=s->set[h];
     s->set[h]=ptr;
     ptr++;
     linklen[h]++;
-    
+
     if(linklen[h] > maxlinklength)
     {
       return 0;
     }
-    
+
   }
   s->hsize=hsize;
   s->max=max;
 
   return 1;
 }
-			
+
 
 void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 				   NCHAR *needle,
@@ -172,7 +173,7 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
   if(needlelen < 2)
     Pike_fatal("boyer-moore-hubbe search does not work with single-character search strings!\n");
 #endif
-  
+
 #ifdef TUNAFISH
   s->plen = 8 + ((max_haystacklen-needlelen) >> 5);
   if(s->plen>needlelen) s->plen=needlelen;
@@ -181,20 +182,20 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
   s->plen=BMLEN;
   if(s->plen>needlelen) s->plen=needlelen;
 #endif
-  
+
   for(e=0;e<(ptrdiff_t)NELEM(s->d1);e++) s->d1[e]=s->plen;
-  
+
   for(e=0;e<s->plen;e++)
   {
     s->d1[ PxC3(BMHASH,NSHIFT,0) (needle[e]) ]=s->plen-e-1;
     s->d2[e]=s->plen*2-e-1;
   }
-  
+
   for(e=0;e<s->plen;e++)
   {
     ptrdiff_t d;
     for(d=0;d<=e && needle[s->plen-1-d]==needle[e-d];d++);
-    
+
     if(d>e)
     {
       while(s->plen-1-d>=0)
@@ -227,8 +228,8 @@ void NameN(init_memsearch)(
       s->mojt.vtab=& PxC3(memchr_search,NSHIFT,_vtable);
       return;
 
-#define MMCASE(X)							\
-    case X:								\
+#define MMCASE(X)						\
+    case X:							\
       s->mojt.data=(void *) needle;				\
       s->mojt.vtab=& PxC4(memchr_memcmp,X,NSHIFT,_vtable);	\
       return
@@ -293,7 +294,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     struct svalue *sval,stmp;
     struct pike_mem_searcher *s;
     struct object *o;
-    
+
     if(!hashkey)
       hashkey=NameN(make_shared_binary_string)(needle,len);
     else
@@ -335,18 +336,16 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 	for(prev = md->hash + e; (k = *prev);) {
 	  count++;
 	  if (REFCOUNTED_TYPE(TYPEOF(k->val)) &&
-	      (*k->val.u.refs == 1)) {
-	    /* map_delete(memsearch_cache, &k->ind); */
-	    *prev = k->next;
+              (*k->val.u.refs == 1))
+          {
+            *prev = k->next;
 	    free_svalue(&k->ind);
 	    free_svalue(&k->val);
 	    mapping_free_keypair(md, k);
 	    md->size--;
 	    continue;
-	  } else if (count < 10) {
-	    // locate_references(k->val.u.refs);
-	  }
-	  prev = &k->next;
+          }
+          prev = &k->next;
 	}
       }
       memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;

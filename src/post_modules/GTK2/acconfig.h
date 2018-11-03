@@ -16,6 +16,10 @@
 #undef HAVE_GTK212
 #undef HAVE_GTK214
 #undef HAVE_GTK216
+#undef HAVE_GTK218
+#undef HAVE_GTK220
+#undef HAVE_GTK222
+#undef HAVE_GTK224
 #undef HAVE_ATK
 #undef HAVE_ATK18
 #undef HAVE_PANGO

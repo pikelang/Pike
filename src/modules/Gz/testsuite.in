@@ -21,9 +21,6 @@ define(dotest,[[
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
 
-  test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
-  test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
-
   test_true(Gz.File)
   test_any([[
     string orig = ((string) Array.enumerate(256)) * 1024;
@@ -35,7 +32,40 @@ define(dotest,[[
     string readback = f->read();
     f->close();
     return orig==readback;
-]], 1)
+  ]], 1)
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]], "\37\213\b\0\0\0\0\0\0\3KO\254\312\317\313\6\0\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb9");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]], "\37\213\b\0\0\0\0\0\0\3KO\254\312\317\313\6\0\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb0");
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]],  "\37\213\b\0\0\0\0\0\0\3x\1\1\6\0\371\377gazonk\b\321\2\213\240\362vf\6\0\0\0")
+
+  test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("","wb");
+    Gz.File g = Gz.File(f, "wb");
+    g->setparams(0);
+    g->write("gazonk");
+    g->close();
+    return (string)f;
+  ]],  "\37\213\b\0\0\0\0\0\0\3x\1\1\6\0\371\377gazonk\b\321\2\213\240\362vf\6\0\0\0")
 
   dotest(random_string(32768))
   dotest(random_string(524288))
@@ -87,9 +117,14 @@ return Gz.compress("x",0,9,x);
 ]])
 cond_resolv(Gz.crc32,
 [[
-  dnl Some known collisions taken from http://blog.trungson.com/?p=99
-  test_eq(Gz.crc32("a1sellers"), Gz.crc32("advertees"))
-  test_eq(Gz.crc32("fc0591"), Gz.crc32("123rainerbommert"))
-  test_not_eq(Gz.crc32("a1sellers"), Gz.crc32("123rainerbommert"))
+  test_eq(Gz.crc32(""), 0)
+  test_eq(Gz.crc32("a"), 0xe8b7be43)
+  test_eq(Gz.crc32("abc"), 0x352441c2)
+  test_eq(Gz.crc32("12345678901234567890123456789012345678901234567890123456789012345678901234567890"), 0x7ca94a72)
+
+  test_eq(Gz.adler32(""), 1)
+  test_eq(Gz.adler32("a"), 0x620062)
+  test_eq(Gz.adler32("abc"), 0x24d0127)
+  test_eq(Gz.adler32("12345678901234567890123456789012345678901234567890123456789012345678901234567890"), 0x97b61069)
 ]])
 END_MARKER

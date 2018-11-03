@@ -1,0 +1,224 @@
+START_MARKER
+
+test_do( add_constant("real_random", random) )
+
+dnl int random(int)
+test_eq(random(-1), 0)
+test_eq(random(0), 0)
+test_eq(random(1), 0)
+test_do( add_constant("random", Random.Deterministic(42)->random) )
+test_eq( random(0x7fffffff), 1351601066)
+test_eq( random(10), 1)
+test_eq( random(10), 4)
+test_eq( random(10), 5)
+cond(Pike.get_runtime_info()->int_size == 64, [[
+test_eq( random(0x7ffffffff), 27692873120)
+test_eq( random(0x7fffffffffffffff), 5484257398290798648)
+test_eq( random(0x7ffffffffffffffff), 120525567616026645578)
+]])
+cond(Pike.get_runtime_info()->int_size == 32, [[
+test_eq( random(0x7ffffffff), 3047125750)
+test_eq( random(0x7fffffffffffffff), 4060256752354925388)
+test_eq( random(0x7ffffffffffffffff), 120525567616026645578)
+]])
+test_do( add_constant("random", real_random) )
+
+dnl float random(float)
+test_eq(random(-1.0), 0.0)
+test_eq(random(0.0), 0.0)
+test_do( add_constant("random", Random.Deterministic(42)->random) )
+test_eq(sprintf("%.4f", random(10.0)), "7.7220")
+test_eq(sprintf("%.4f", random(10.0)), "3.9002")
+test_eq(sprintf("%.4f", random(10.0)), "2.9730")
+test_do( add_constant("random", real_random) )
+
+
+dnl mixed random(array)
+test_eval_error(random(({})))
+test_eq( random(({7})), 7 )
+test_do( add_constant("random", Random.Deterministic(20)->random) )
+test_any([[
+  string res = "";
+  for(int i; i<10; i++)
+    res += random( ({1,2,3,4}) );
+  return res;
+]], "1341312312")
+test_do( add_constant("random", real_random) )
+
+dnl mixed random(multiset)
+test_eval_error(random((<>)))
+test_eq( random((<8>)), 8 )
+test_do( add_constant("random", Random.Deterministic(11)->random) )
+test_any([[
+  mapping lex=([]);
+  string res = "";
+  multiset m = (< "a","b","c","d" >);
+  for(int i; i<10; i++)
+  {
+    string s = random(m);
+    if( !lex[s] )
+      lex[s] = sizeof(lex);
+    res += lex[s];
+  }
+  return res;
+]], "0121234231")
+test_do( add_constant("random", real_random) )
+
+dnl array random(mapping)
+test_eval_error(random(([])))
+test_equal( random(([5:6])), ({5,6}) )
+test_do( add_constant("random", Random.Deterministic(11)->random) )
+test_any([[
+  mapping lex=([]);
+  string res = "";
+  mapping m = ([ "1":1, "2":2, "3":3, "4":4 ]);
+  for(int i; i<10; i++)
+  {
+    string s = random(m)[0];
+    if( !lex[s] )
+      lex[s] = sizeof(lex);
+    res += lex[s];
+  }
+  return res;
+]], "0121234231")
+test_do( add_constant("random", real_random) )
+
+dnl mixed random(object)
+test_eq([[ random( class() { function _random(function a, function b) { return a; }}() ) ]], random_string)
+test_eq([[ random( class() { function _random(function a, function b) { return b; }}() ) ]], random)
+
+dnl string random_string(int)
+test_eval_error( return random_string(-1); )
+test_eq( random_string(0), "" )
+test_eq( sizeof(random_string(47)), 47 )
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= random_string(16);
+  return x;
+]], "\0"*16)
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= ~random_string(16);
+  return x;
+]], "\0"*16)
+
+
+test_do([[
+  class R {
+    inherit Random.Interface;
+
+    int counter;
+    string random_string(int len)
+    {
+      String.Buffer b = String.Buffer(len);
+      for(int i; i<len; i++)
+	b->putchar( (counter + i)&0xff );
+      counter += len;
+      return (string)b;
+    }
+  };
+  add_constant("RND",R());
+]])
+test_eq( RND->random_string(5), "\0\1\2\3\4" )
+test_eq( RND->counter, 5)
+test_eq( RND->random_string(5), "\5\6\7\10\11" )
+test_eq( RND->counter, 10)
+test_eq( RND->random(10), 0 )
+test_eq( RND->counter, 18)
+test_eq( sprintf("%.4f", RND->random(10.0)), "0.9802" )
+test_eq( RND->counter, 26)
+test_eq( RND->random( ({1,2,3}) ), 3 )
+test_eq( RND->counter, 34)
+test_eq( RND->random( (<1,2,3>) ), 3 )
+test_equal( RND->random( ([1:2,3:4]) ), ({ 3,4 }))
+test_eq( RND->counter, 34)
+test_do( add_constant("RND") )
+
+test_eval_error([[
+  class R {
+    inherit Random.Interface;
+    string random_string(int len) { return 0; }
+  }()->random(10);
+]])
+test_eval_error([[
+  class R {
+    inherit Random.Interface;
+    string random_string(int len) { return "12345"; }
+  }()->random(10);
+]])
+dnl test_do([[
+dnl   class R {
+dnl     inherit Random.Interface;
+dnl     string random_string(int len) { return 0; }
+dnl     variant int random(int limit) { return ::random(limit); }
+dnl   }()->random( ({1,2,3}) );
+dnl ]])
+
+test_any([[
+  function r1 = Random.System()->random_string;
+  function r2 = Random.System()->random_string;
+  return sizeof(r1(1)+r2(1)+r1(1)+r2(1));
+]], 4)
+
+test_do( add_constant("RND",Random.Deterministic(0)) )
+test_eq( String.string2hex(RND->random_string(10)), "983e6a98702d56a70531")
+test_eq( RND->random(10), 5 )
+test_do( add_constant("RND") )
+
+cond_resolv( Random.Hardware, [[
+  test_any([[
+    for(int i=1; i<18; i++)
+    {
+      string x = "\377"*i;
+      for(int j; j<100; j++) x &= random_string(i);
+      if( x != "\0"*i ) return 0;
+    }
+    return 1;
+  ]], 1)
+  test_any([[
+    for(int i=1; i<18; i++)
+    {
+      string x = "\377"*i;
+      for(int j; j<100; j++) x &= ~random_string(i);
+      if( x != "\0"*i ) return 0;
+    }
+    return 1;
+  ]], 1)
+]])
+
+test_any([[
+  int sz;
+  Random.Interface r = Random.Fast();
+  for(int i; i<128; i++)
+    sz += sizeof(r->random_string(9001));
+  return sz;
+]], 1152128)
+
+test_do( add_constant("real_random") )
+
+test_do([[
+#pragma no_deprecation_warnings
+mapping(string:int) states = ([]);
+
+  void get_state ()
+  {
+    // Something in the following code confuses the runtime.
+    random_seed(time(1));
+    int i = random(65535);
+    // The cast complains about casting a mapping.
+    if (states[(string) i]) i = random(65535);
+  };
+
+  get_state();
+#pragma deprecation_warnings
+]])
+
+test_do([[
+  Random.Interface r = Random.AES128_CTR_DRBG(String.hex2string("ce50f33da5d4c1d3d4004eb35244b7f2cd7f2e5076fbf6780a7ff634b249a5fc"));
+  r->random_string(64); // FIXME: Why are we lagging 64 bytes from test vector?
+  if( String.string2hex(r->random_string(64)) !=
+      "6545c0529d372443b392ceb3ae3a99a30f963eaf313280f1d1a1e87f9db373d361e75d18018266499cccd64d9bbb8de0185f213383080faddec46bae1f784e5a" )
+    error("Wrong\n");
+]])
+
+END_MARKER

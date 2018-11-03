@@ -8,7 +8,7 @@ protected mixed _index( string ind );
 //!
 
 
-mixed cast( string to );
+mapping cast( string to );
 //! Cast to different types.
 //!
 //!

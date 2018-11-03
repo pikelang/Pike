@@ -9,8 +9,8 @@ number, i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches
 have an odd minor version.
 
 Keep in mind that the git versions are under heavy development and
-have not been tested nearly as well as the offcial releases.  You use
-the code AT YOUR OWN RISK.
+have not been tested nearly as well as the official releases.  You
+use the code AT YOUR OWN RISK.
 
 
 DEPENDENCIES
@@ -96,7 +96,7 @@ CONFIGURE OPTIONS AND BUILD VARIABLES
 If you want to pass arguments to the configure script (see below), the
 simplest way is to use the CONFIGUREARGS variable, like this:
 
-    make CONFIGUREARGS="--prefix=/usr/local/my-pike --with-security"
+    make CONFIGUREARGS="--prefix=/usr/local/my-pike --with-debug"
 
 The arguments passed through CONFIGUREARGS are remembered in the build
 tree and reused if CONFIGUREARGS is undefined or the empty string.
@@ -118,9 +118,6 @@ Some options for the configure script are:
 --prefix=/foo/bar         if you want to install Pike in /foo/bar,
                           default is /usr/local.
 --without-gdbm            compile without gdbm support
---without-bignums         disable support for large integers
---without-gmp             compile without gmp support (implies
-                          --without-bignums)
 --with-rtldebug           compile with runtime debug checks
 --without-cdebug          compile without debug symbols (-g)
 --with-debug              same as --with-rtldebug --with-cdebug
@@ -138,7 +135,6 @@ Some options for the configure script are:
 --with-poll               use poll instead of select
 --with-dmalloc            compile with memory tracking, makes Pike
                           very slow, use for debugging only.
---with-security           enable internal object security system
 
 
 You might also want to set the following environment variables:

@@ -73,8 +73,8 @@ Tools
     Functions for dmalloc (DEBUG_MALLOC). The code is in
     pike_memory.c.
 
-  dynamic_buffer.c
-  dynamic_buffer.h
+  buffer.c
+  buffer.h
     Tool for building strings in streaming fashion.
 
   fsort.c
@@ -89,10 +89,6 @@ Tools
     Included initially in just about every file. Contains macros for
     the chosen Pike integer and float types, and various other basic
     macros.
-
-  hashtable.c
-  hashtable.h
-    A simple hash table for pike strings. Used by cpp.c.
 
   malloc.c
     Memory allocation functions. This overrides the libc implementation
@@ -134,24 +130,21 @@ Tools
   rbtree_low.h
     Red/black tree implementation. Used to implement the multisets.
 
+  siphash24.h
   siphash24.c
     Fast, secure hash function used to prevent hash table DoS
     collision attacks.
 
-  strip-opcodes
+  strip_opcodes
     sh-script used to convert interpret_functions.h into
     interpret_protos.h_src.
-
-  stuff.c
-  stuff.h
-    Miscellaneous smaller utility functions, primarily numerical.
 
   time_stuff.h
     Some tools to handle timeval structs.
 
 Compiler
 
-  cpp.c
+  cpp.cmod
   cpp.h
     Wrap together the preprocessor from preprocessor.h.
 
@@ -188,6 +181,9 @@ Compiler
   lexer.h
     The actual lexer. Included by lex.c for different string widths.
 
+  opcode_list.h
+    List of stack machine opcodes.
+
   opcodes.c
   opcodes.h
     Opcode lookup tables and primitives for them. The opcode enums
@@ -205,10 +201,6 @@ Compiler
     The core of the peephole optimizer. peep_engine.c is generated
     from transformation rules for opcode sequences in peep.in.
     peep_engine.c is included by peep.c.
-
-  preprocessor.h
-    The bulk of the preprocessor. Included by cpp.c once for each
-    string width.
 
   pike_compiler.h
     Definition of the compilator context.
@@ -316,14 +308,13 @@ Module system
     Implement the loading of dynamic modules (the load_module
     function).
 
-  module.c
-  module.h
+  pike_modules.c
+  pike_modules.h
     Maintain the entry and exit hooks for the statically compiled
     modules.
 
-  module_magic.h
-    Compatibility header for old modules that don't use
-    PIKE_MODULE_INIT and PIKE_MODULE_EXIT.
+  module.h
+    Include file for most of what a Pike module needs.
 
   module_support.c
   module_support.h
@@ -419,14 +410,11 @@ Core runtime support
   pike_types.h
     Handling of types in pike.
 
-  pike_security.h
-  security.c
-    The pike security system.
-
   signal_handler.c
   signal_handler.h
     Signal and process support.
 
+  sprintf.h
   sprintf.c
     Implement the sprintf function.
 
@@ -437,6 +425,10 @@ Core runtime support
   stack_allocator.c
   stack_allocator.h
     Stack-based memory handling for sprintf.
+
+  string_builder.h
+  string_builder.c
+    Dynamically build strings.
 
   svalue.c
   svalue.h
@@ -489,10 +481,6 @@ Build system
   make_variables.in
     Template for propagating make variables in the subdirectories.
 
-  patch_cc1.c
-    Small utility that binary patches gcc so that it doesn't use
-    .ua{half,word} directives. May be invoked by configure.
-
   Pike_ui.wxs
     User interface description for the Pike WIN32 installer.
 
@@ -543,6 +531,9 @@ Testsuite
     Testsuite for the core.
 
 Miscellaneous
+
+  coverity_model.c
+    Workaroound for issues in Coverity Prevent static code analysis.
 
   program_id.h
     Statically allocated program id numbers.

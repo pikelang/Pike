@@ -3,15 +3,15 @@ AC_CONFIG_HEADER(config.h)
 
 PIKE_FEATURE_WITHOUT(SANE)
 AC_ARG_WITH(sane,     [  --with(out)-sane       Support SANE],[],[with_sane=yes])
-
 AC_MODULE_INIT()
+
 if test x$with_sane = xyes ; then
   PIKE_FEATURE_NODEP(SANE)
-  AC_CHECK_HEADERS(sane/sane.h sane.h)
+  AC_CHECK_HEADERS(sane/sane.h sane.h, [break;])
   AC_CHECK_LIB(sane, sane_open)
-  if test "x$ac_cv_header_sane_h:$ac_cv_header_sane_sane_h" = "xno:no"; then
+  if test "$ac_cv_header_sane_h:$ac_cv_header_sane_sane_h" = "no:no"; then
     :
-  elif test "x$av_cv_lib_sane_sane_open" = "xyes"; then
+  elif test "$ac_cv_lib_sane_sane_open" = "yes"; then
     PIKE_FEATURE_OK(SANE)
   fi
 fi

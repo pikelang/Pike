@@ -90,7 +90,8 @@ protected void build_pike_fadds( Class cls, int lvl )
     if( cls->name != "_global" )
     {
       res +=
-          "   start_new_program(); /* "+cls->name+" */\n";
+	"   start_new_program(); /* "+cls->name+" */\n" +
+	"   Pike_compiler->new_program->id = " + cls->class_id() + ";\n";
       if( sizeof(cls->inherits) )
 	foreach( cls->inherits, Class c )
 	  res += "  low_inherit( "+glue_c_name(c->c_name())+
@@ -109,8 +110,8 @@ protected void build_pike_fadds( Class cls, int lvl )
       output_thing( cls->members[ f ] );
     if( cls->name != "_global" )
     {
-      res += ("  "+glue_c_name(cls->c_name())+"_program = end_program();\n"
-	      "  "+glue_c_name(cls->c_name())+"_program->id = "+cls->class_id()+";\n");
+      res += ("  "+glue_c_name(cls->c_name())+"_program = end_program();\n");
+
       res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
 	      "                       "+glue_c_name(cls->c_name())+"_program, ID_FINAL);\n");
 //      predef::write("pike_name==%s\n",cls->pike_name());
@@ -213,8 +214,8 @@ array(string) output( mapping(string:Class) classes,
     foreach( strings; string str; int idx )
     {
       initfun += sprintf("\n  /* %O */\n", str);
-      initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_binary_string(" +
-        S(str,0,2) + "," + sizeof(str) + ");\n";
+      initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_static_string(" +
+        S(str,1,2) + "," + sizeof(str) + ",0);\n";
     }
     exitfun += #"
   {

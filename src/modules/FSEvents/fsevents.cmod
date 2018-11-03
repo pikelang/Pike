@@ -1,17 +1,19 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /*! @module System
  */
 
 /*! @module FSEvents
  */
 
-#include "global.h"
-#include "interpret.h"
 #include "module.h"
+#include "interpret.h"
 #include "program.h"
-#include "stralloc.h"
-#include "svalue.h"
 #include "threads.h"
-#include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
 
@@ -28,10 +30,10 @@
 DECLARATIONS
 #ifdef HAVE_FRAMEWORK_CORESERVICES
 
-void low_stop();
+void low_stop(void);
 struct pike_string * string_from_cfstring(CFStringRef cfString);
 
-struct event_callback_ctx 
+struct event_callback_ctx
 {
   ConstFSEventStreamRef streamRef;
   void *clientCallBackInfo;
@@ -75,13 +77,13 @@ PIKEFUN int is_started()
 
 /*! @decl void flush_async()
  *!
- *! Requests that the FS Events service to flush out any events that have occurred but have not yet been 
- *! delivered, due to the latency parameter that was supplied when the stream was created. 
+ *! Requests that the FS Events service to flush out any events that have occurred but have not yet been
+ *! delivered, due to the latency parameter that was supplied when the stream was created.
  *!
  *! This flushing occurs asynchronously -- events most likely will not have been delivered
- *! by the time this call returns. 
+ *! by the time this call returns.
  *!
- *! @note 
+ *! @note
  *! Only call this function after the stream has been started, via start().
  */
 PIKEFUN void flush_async()
@@ -94,13 +96,13 @@ PIKEFUN void flush_async()
 
 /*! @decl void flush_sync()
  *!
- *! Requests that the FS Events service to flush out any events that have occurred but have not yet been 
- *! delivered, due to the latency parameter that was supplied when the stream was created. 
+ *! Requests that the FS Events service to flush out any events that have occurred but have not yet been
+ *! delivered, due to the latency parameter that was supplied when the stream was created.
  *!
- *! Flushing synchronously when using this method; clients will have received all the callbacks by 
+ *! Flushing synchronously when using this method; clients will have received all the callbacks by
  *! the time this call returns to them.
  *!
- *! @note 
+ *! @note
  *! Only call this function after the stream has been started, via start().
  *!
  */
@@ -116,15 +118,15 @@ PIKEFUN void flush_sync()
  *!   Creates a new Public.System.FSEvents.EventStream object
  *!
  *! @param paths
- *! An array with each element containing a path to a directory, signifying the root of a 
+ *! An array with each element containing a path to a directory, signifying the root of a
  *! filesystem hierarchy to be watched for modifications.
  *!
  *! Additional paths may be added later using @[add_path()], though only if the stream is stopped.
  *!
  *! @param latency
- *! The number of seconds the service should wait after hearing about an event from the kernel 
- *! before passing it along to the client via its callback. Specifying a larger value may 
- *! result in more effective temporal coalescing, resulting in fewer callbacks and greater 
+ *! The number of seconds the service should wait after hearing about an event from the kernel
+ *! before passing it along to the client via its callback. Specifying a larger value may
+ *! result in more effective temporal coalescing, resulting in fewer callbacks and greater
  *! overall efficiency.
  *!
  *! @param since_when
@@ -139,11 +141,11 @@ PIKEFUN void flush_sync()
 PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void flags)
 {
   int idx = 0, cnt = 0;
-  
+
   THIS->isRunning = 0;
   THIS->_latency = latency;
 
-  if(sinceWhen && sinceWhen->type == T_INT)
+  if(sinceWhen && TYPEOF(*sinceWhen) == T_INT)
   {
     THIS->_sinceWhen = sinceWhen->u.integer;
   }
@@ -152,7 +154,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
     THIS->_sinceWhen = kFSEventStreamEventIdSinceNow;
   }
 
-  if(flags && flags->type == T_INT)
+  if(flags && TYPEOF(*flags) == T_INT)
   {
     THIS->_flags = flags->u.integer;
   }
@@ -160,7 +162,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
   {
     THIS->_flags = kFSEventStreamCreateFlagNone;
   }
-  
+
   THIS->_paths = CFArrayCreateMutable(NULL, 0, NULL);
   CFRetain(THIS->_paths);
 
@@ -170,7 +172,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
     {
       struct svalue sv;
       CFStringRef str;
-      if(ITEM(paths)[idx].type != T_STRING) continue;
+      if(TYPEOF(ITEM(paths)[idx]) != T_STRING) continue;
       sv = ITEM(paths)[idx];
       push_svalue(&sv);
       f_string_to_utf8(1);
@@ -180,10 +182,6 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
       cnt++;
     }
   }
-	
-  pop_n_elems(args);
-
-  return;
 }
 
 /*! @decl void add_path(string path)
@@ -210,20 +208,18 @@ PIKEFUN void add_path(string path)
     size = CFArrayGetCount(THIS->_paths);
     CFArrayInsertValueAtIndex( (CFMutableArrayRef)THIS->_paths, size, str);
   }
-  pop_stack();
 }
 
 /*! @decl void set_callback(function callback)
  *! Sets the function that will be called when a file notification event is received.
- *! 
+ *!
  *! The method signature for the callback is:
- *! 
+ *!
  *! void event_callback(string path, int flags, int event_id)
  */
 PIKEFUN void set_callback(function callback)
 {
   assign_svalue(&THIS->callback_func, callback);
-  pop_stack();
 }
 
 /*
@@ -233,9 +229,9 @@ PIKEFUN void set_callback(function callback)
 /*! @decl void start()
  *!
  *! Requests that new events be delivered to this EventStream.
- *! 
- *! If a value was supplied for the since_when parameter then "historical" events will be sent via 
- *! your callback first, then a HistoryDone event, then "contemporary" events will be sent on 
+ *!
+ *! If a value was supplied for the since_when parameter then "historical" events will be sent via
+ *! your callback first, then a HistoryDone event, then "contemporary" events will be sent on
  *! an ongoing basis.
  */
 PIKEFUN void start()
@@ -252,16 +248,16 @@ PIKEFUN void start()
 
   if(!THIS->_sinceWhen)
     Pike_error("EventStream: no startdate.\n");
-				
+
   if(!THIS->_latency)
     Pike_error("EventStream: no latency.\n");
 
   if(CFArrayGetCount(THIS->_paths))
-  {	
+  {
     THIS->runLoop = CFRunLoopGetCurrent();
     CFRetain(THIS->runLoop);
- 
-    context.version = 0; 
+
+    context.version = 0;
     context.info = THIS;
     context.retain = NULL;
     context.release = NULL;
@@ -295,7 +291,7 @@ PIKEFUN void stop()
   low_stop();
 }
 
-void low_stop()
+void low_stop(void)
 {
   if(THIS->isRunning)
   {
@@ -337,10 +333,10 @@ static void event_callback(ConstFSEventStreamRef streamRef,
   ctx.eventPaths = eventPaths;
   ctx.eventFlags = eventFlags;
   ctx.eventIds = eventIds;
- 
+
   ctx_ptr = &ctx;
 
-  call_with_interpreter((void *)&do_event_callback, (void *)ctx_ptr);  
+  call_with_interpreter((void *)&do_event_callback, (void *)ctx_ptr);
 /*
       do_event_callback(streamRef, clientCallBackInfo, numEvents, eventPaths, eventFlags, eventIds);
 */
@@ -355,7 +351,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
      CFStringRef eventPath;
      struct pike_string * str;
      const char * u8s;
-	 struct EventStream_struct * eventStreamObj;
+	 struct FSEvents_EventStream_struct * eventStreamObj;
 
 	 eventPath = CFArrayGetValueAtIndex(ctx->eventPaths, (CFIndex)cnt);
 	 str = string_from_cfstring(eventPath);
@@ -363,7 +359,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
 	 f_utf8_to_string(1);
 	 push_int(ctx->eventFlags[cnt]);
 	 push_int(ctx->eventIds[cnt]);
-	 eventStreamObj = (struct EventStream_struct *)(ctx->clientCallBackInfo);
+	 eventStreamObj = (struct FSEvents_EventStream_struct *)(ctx->clientCallBackInfo);
  	 apply_svalue(&eventStreamObj->callback_func, 3);
   }
 }
@@ -400,8 +396,6 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
   return str;
 }
 
-#endif /* HAVE_FRAMEWORK_CORESERVICES */
-
   INIT
   {
   }
@@ -416,22 +410,27 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
 
 }
 
+/*! @endclass
+ */
+
+#endif /* HAVE_FRAMEWORK_CORESERVICES */
+
 PIKE_MODULE_INIT
 {
   INIT;
-/*! @decl constant kFSEventStreamEventFlagNone 
+/*! @decl constant kFSEventStreamEventFlagNone
  */
 
-/*! @decl constant kFSEventStreamEventFlagMustScanSubDirs 
+/*! @decl constant kFSEventStreamEventFlagMustScanSubDirs
  */
 
-/*! @decl constant kFSEventStreamEventFlagUserDropped 
+/*! @decl constant kFSEventStreamEventFlagUserDropped
  */
 
 /*! @decl constant kFSEventStreamEventFlagKernelDropped
  */
 
-/*! @decl constant kFSEventStreamEventFlagEventIdsWrapped 
+/*! @decl constant kFSEventStreamEventFlagEventIdsWrapped
  */
 
 /*! @decl constant kFSEventStreamEventFlagHistoryDone
@@ -450,7 +449,7 @@ PIKE_MODULE_INIT
  *! Available in MacOS X 10.7 and newer.
  */
 
-/*! @decl constant kFSEventStreamEventFlagItemRemoved 
+/*! @decl constant kFSEventStreamEventFlagItemRemoved
  *! Available in MacOS X 10.7 and newer.
  */
 
@@ -462,7 +461,7 @@ PIKE_MODULE_INIT
  *! Available in MacOS X 10.7 and newer.
  */
 
-/*! @decl constant kFSEventStreamEventFlagModified 
+/*! @decl constant kFSEventStreamEventFlagItemModified
  *! Available in MacOS X 10.7 and newer.
  */
 
@@ -474,7 +473,7 @@ PIKE_MODULE_INIT
  *! Available in MacOS X 10.7 and newer.
  */
 
-/*! @decl constant kFSEventStreamEventFlagXattrMod 
+/*! @decl constant kFSEventStreamEventFlagXattrMod
  *! Available in MacOS X 10.7 and newer.
  */
 
@@ -490,7 +489,7 @@ PIKE_MODULE_INIT
  *! Available in MacOS X 10.7 and newer.
  */
 
-/*! @decl constant kFSEventStreamCreateFlagFileEvents 
+/*! @decl constant kFSEventStreamCreateFlagFileEvents
  *! Available in MacOS X 10.7 and newer.
  */
 
@@ -514,9 +513,9 @@ PIKE_MODULE_INIT
  ADD_ICONST(kFSEventStreamEventFlagNone);
 #endif
 
-#if HAVE_DECL_KFSEVENTSTREAMEVENTMUSTSCANSUBDIRS
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGMUSTSCANSUBDIRS
  ADD_ICONST(kFSEventStreamEventFlagMustScanSubDirs);
-#endif 
+#endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGUSERDROPPED
  ADD_ICONST(kFSEventStreamEventFlagUserDropped);
@@ -552,11 +551,11 @@ PIKE_MODULE_INIT
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMREMOVED
  ADD_ICONST(kFSEventStreamEventFlagItemRemoved);
-#endif 
+#endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGINODEMETAMOD
  ADD_ICONST(kFSEventStreamEventFlagItemInodeMetaMod);
-#endif 
+#endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMRENAMED
  ADD_ICONST(kFSEventStreamEventFlagItemRenamed);
@@ -625,9 +624,6 @@ PIKE_MODULE_EXIT
 {
   EXIT;
 }
-
-/*! @endclass
- */
 
 /*! @endmodule
  */

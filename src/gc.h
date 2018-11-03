@@ -13,6 +13,7 @@
 #include "threads.h"
 #include "interpret.h"
 #include "pike_rusage.h"
+#include "gc_header.h"
 
 /* 1: Normal operation. 0: Disable automatic gc runs. -1: Disable
  * completely. */
@@ -72,25 +73,13 @@ extern struct svalue gc_done_cb;
 
 /* #define GC_MARK_DEBUG */
 
-/* If we only have 32 bits we need to make good use of them for the
- * alloc counter since it can get high, but if we have 64 it's best to
- * stay away from unsigned since rotten compilers like MSVC haven't
- * had the energy to implement conversion from that type to floating
- * point. :P */
-#ifdef INT64
 #define ALLOC_COUNT_TYPE INT64
 #define ALLOC_COUNT_TYPE_MAX MAX_INT64
 #define PRINT_ALLOC_COUNT_TYPE PRINTINT64"d"
-#else
-#define ALLOC_COUNT_TYPE unsigned long
-#define ALLOC_COUNT_TYPE_MAX ULONG_MAX
-#define PRINT_ALLOC_COUNT_TYPE "lu"
-#endif
 
 extern int num_objects, got_unlinked_things;
 extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold, saved_alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
-extern int gc_generation;
 extern int gc_trace, gc_debug;
 #ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 extern cpu_time_t auto_gc_time;
@@ -112,9 +101,9 @@ extern int gc_keep_markers;
 #define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
 
 #define LOW_GC_ALLOC(OBJ) do {						\
- extern int d_flag;							\
  num_objects++;								\
  num_allocs++;								\
+ gc_init_marker(OBJ);                                                   \
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
@@ -142,7 +131,6 @@ extern int gc_keep_markers;
  * gc_mark function on. The new block must take over all references
  * that pointed to the old block. */
 #define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
-  extern int d_flag;							\
   if (d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     gc_move_marker ((OLDPTR), (NEWPTR));				\
@@ -151,7 +139,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can't contain references. */
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc == GC_PASS_CHECK)					\
     Pike_fatal("No free is allowed in this gc pass.\n");		\
@@ -162,7 +149,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can contain references. */
 #define GC_FREE_BLOCK(PTR) do {						\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     Pike_fatal("Freeing objects within gc is not allowed.\n");		\
@@ -188,32 +174,6 @@ extern int gc_keep_markers;
 
 struct gc_rec_frame;
 
-struct marker
-{
-  struct marker *next;
-  struct gc_rec_frame *frame;	/* Pointer to the cycle check rec frame. */
-  void *data;
-  INT32 refs;
-  /* Internal references (both weak and nonweak). Increased during
-   * check pass. */
-  INT32 weak_refs;
-  /* Weak (implying internal) references. Increased during check pass.
-   * Set to -1 during check pass if it reaches the total number of
-   * references. Set to 0 during mark pass if a nonweak reference is
-   * found. Decreased during zap weak pass as gc_do_weak_free() is
-   * called. */
-#ifdef PIKE_DEBUG
-  INT32 xrefs;
-  /* Known external references. Increased by gc_mark_external(). */
-  INT32 saved_refs;
-  /* References at beginning of gc. Set by pretouch and check passes.
-   * Decreased by gc_do_weak_free() as weak references are removed. */
-  unsigned INT32 flags;
-#else
-  unsigned INT16 flags;
-#endif
-};
-
 #define GC_MARKED		0x0001
 /* The thing has less internal references than references, or has been
  * visited by reference from such a thing. Set in the mark pass. */
@@ -224,7 +184,7 @@ struct marker
 #define GC_CYCLE_CHECKED	0x0004
 /* The thing has been pushed in the cycle check pass. */
 #define GC_LIVE			0x0008
-/* The thing is a live object (i.e. not destructed and got a destroy
+/* The thing is a live object (i.e. not destructed and got a _destruct
  * function) or is referenced from a live object. Set in the cycle
  * check pass. */
 #define GC_LIVE_OBJ		0x0010
@@ -279,25 +239,33 @@ struct marker
  * might still take place so the thing runs out of refs too early. */
 #endif
 
-PMOD_EXPORT struct marker *pmod_get_marker (void *p);
-PMOD_EXPORT struct marker *pmod_find_marker (void *p);
+extern unsigned INT16 gc_generation;
 
-#define get_marker debug_get_marker
-#define find_marker debug_find_marker
+static inline struct marker *find_marker(void *ptr) {
+    struct marker *m = (struct marker *)ptr;
 
-#include "block_alloc_h.h"
-PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker, n/a);
+    if (m->gc_generation != gc_generation) return NULL;
+    return m;
+}
 
-#undef get_marker
-#undef find_marker
+static inline struct marker *get_marker(void *ptr) {
+    struct marker *m = (struct marker *)ptr;
 
-#ifdef DYNAMIC_MODULE
-#define get_marker(X) ((struct marker *) debug_malloc_pass(pmod_get_marker(X)))
-#define find_marker(X) ((struct marker *) debug_malloc_pass(pmod_find_marker(X)))
-#else
-#define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
-#define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
-#endif
+    if (m->gc_generation != gc_generation) {
+        gc_init_marker(m);
+        m->gc_generation = gc_generation;
+    }
+
+    return m;
+}
+
+static inline void remove_marker(void *ptr) {
+    ptr = ptr;
+}
+
+static inline void move_marker(struct marker *m, void *ptr) {
+    *get_marker(ptr) = *m;
+}
 
 extern size_t gc_ext_weak_refs;
 
@@ -320,6 +288,7 @@ void describe_location(void *real_memblock,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...);
+#ifdef PIKE_DEBUG
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
@@ -328,13 +297,14 @@ void low_describe_something(void *a,
 			    void *inblock);
 void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
 PMOD_EXPORT void describe(void *x);
-void debug_describe_svalue(struct svalue *s);
-void gc_watch(void *a);
+PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
+PMOD_EXPORT void gc_watch(void *a);
+#endif
 void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
 PMOD_EXPORT int real_gc_check_weak(void *a);
 void exit_gc(void);
-void locate_references(void *a);
+PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
 void debug_gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
@@ -355,6 +325,7 @@ size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
 void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);
+void f_identify_cycle(INT32 args);
 void cleanup_gc(void);
 
 #if defined (PIKE_DEBUG) && defined (DEBUG_MALLOC)
@@ -376,7 +347,7 @@ void cleanup_gc(void);
 
 /* An object is considered live if its program has the flag
  * PROGRAM_LIVE_OBJ set. That flag gets set if:
- * o  There's a destroy LFUN,
+ * o  There's a _destruct LFUN,
  * o  a program event callback is set with pike_set_prog_event_callback,
  * o  an exit callback is set with set_exit_callback, or
  * o  any inherited program has PROGRAM_LIVE_OBJ set.
@@ -387,8 +358,8 @@ void cleanup_gc(void);
 #ifdef GC_MARK_DEBUG
 
 void gc_mark_enqueue (queue_call fn, void *data);
-void gc_mark_run_queue();
-void gc_mark_discard_queue();
+void gc_mark_run_queue(void);
+void gc_mark_discard_queue(void);
 
 #else  /* !GC_MARK_DEBUG */
 
@@ -426,7 +397,7 @@ PMOD_EXPORT extern const char *gc_found_place;
     gc_found_in_type = orig_gc_found_in_type;				\
   } while (0)
 
-static INLINE int debug_gc_check (void *a, const char *place)
+static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -436,7 +407,7 @@ static INLINE int debug_gc_check (void *a, const char *place)
   return res;
 }
 
-static INLINE int debug_gc_check_weak (void *a, const char *place)
+static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -481,15 +452,15 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 #ifdef PIKE_DEBUG
 
 #define gc_checked_as_weak(X) do {					\
-  get_marker(X)->flags |= GC_CHECKED_AS_WEAK;				\
+  get_marker(X)->gc_flags |= GC_CHECKED_AS_WEAK;			\
 } while (0)
 #define gc_assert_checked_as_weak(X) do {				\
-  if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
+  if (!(find_marker(X)->gc_flags & GC_CHECKED_AS_WEAK))			\
     Pike_fatal("A thing was checked as nonweak but "			\
 	       "marked or cycle checked as weak.\n");			\
 } while (0)
 #define gc_assert_checked_as_nonweak(X) do {				\
-  if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
+  if (find_marker(X)->gc_flags & GC_CHECKED_AS_WEAK)			\
     Pike_fatal("A thing was checked as weak but "			\
 	       "marked or cycle checked as nonweak.\n");		\
 } while (0)
@@ -507,32 +478,33 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
    gc_cycle_check_svalues((S), (N)) :					\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_svalues((S), (N)) :						\
-   (visit_svalues ((S), (N), REF_TYPE_NORMAL), 0))
+   (visit_svalues ((S), (N), REF_TYPE_NORMAL, NULL), 0))
 #define gc_recurse_short_svalue(U,T)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_short_svalue((U), (T)) :					\
-   visit_short_svalue ((U), (T), REF_TYPE_NORMAL))
+   visit_short_svalue ((U), (T), REF_TYPE_NORMAL, NULL))
 #define gc_recurse_weak_svalues(S,N)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_svalues((S), (N)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_svalues((S), (N)) :					\
-   (visit_svalues ((S), (N), REF_TYPE_WEAK), 0))
+   (visit_svalues ((S), (N), REF_TYPE_WEAK, NULL), 0))
 #define gc_recurse_weak_short_svalue(U,T)				\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_short_svalue((U), (T)) :				\
-   visit_short_svalue ((U), (T), REF_TYPE_WEAK))
+   visit_short_svalue ((U), (T), REF_TYPE_WEAK, NULL))
 
 #define GC_RECURSE_THING(V, T)						\
-  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
-   PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   PIKE_CONCAT(gc_cycle_check_, T)(V, DMALLOC_TOUCH_MARKER(V, 0)) :	\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
-   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
-   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL))
+   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(DMALLOC_TOUCH_MARKER(V, V)) : \
+   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V),			\
+				 REF_TYPE_NORMAL, NULL))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -543,7 +515,7 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 #define gc_is_referenced(X) \
   DMALLOC_TOUCH_MARKER(X, debug_gc_is_referenced(debug_malloc_pass(X)))
 #else
-#define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
+#define gc_is_referenced(X) !(get_marker(X)->gc_flags & GC_NOT_REFERENCED)
 #endif
 
 #define add_gc_callback(X,Y,Z) \
@@ -592,7 +564,7 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER(X, TYPE, WEAK) do {				\
   void *_thing_ = (X);							\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_MARKED)) {					\
+  if (!(_m_->gc_flags & GC_MARKED)) {					\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
 	Pike_fatal("Recursing immediately in gc cycle check.\n");	\
@@ -603,9 +575,9 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER_OBJECT(X, WEAK) do {				\
   struct object *_thing_ = (X);						\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_MARKED)) {					\
+  if (!(_m_->gc_flags & GC_MARKED)) {					\
     if (gc_object_is_live (_thing_))					\
-      _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
+      _m_->gc_flags |= GC_LIVE|GC_LIVE_OBJ;				\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
 	Pike_fatal("Recursing immediately in gc cycle check.\n");	\
@@ -626,12 +598,17 @@ extern int gc_in_cycle_check;
  * use thread local storage when the time comes. */
 
 /* A visit_thing_fn is made for every type of refcounted block. An
- * INT32 refcounter is assumed to be first in every block. The
+ * INT32 refcounter is assumed to be first in every block.
+ * The visit_thing_fn should start by calling the visit_enter function
+ * with src_thing, the base type and extra as arguments. Then
  * visit_thing_fn should call visit_ref exactly once for every
  * refcounted ref inside src_thing, in a stable order. dst_thing is
  * then the target of the ref, ref_type describes the type of the ref
  * itself (REF_TYPE_*), visit_dst is the visit_thing_fn for the target
  * block, and extra is an arbitrary value passed along to visit_dst.
+ * After visit_ref has been called for all refcounted things, visit_leave
+ * should be called with the same arguments as the initial call of
+ * visit_enter.
  *
  * action identifies some action that the visit_thing_fn should take
  * (VISIT_*). Also, visit_ref_cb is likely to get a return value that
@@ -641,9 +618,13 @@ extern int gc_in_cycle_check;
  * immediately, queued and called later, or not called at all. */
 
 typedef void visit_thing_fn (void *src_thing, int action, void *extra);
+typedef void visit_enter_cb (void *thing, int type, void *extra);
 typedef void visit_ref_cb (void *dst_thing, int ref_type,
 			   visit_thing_fn *visit_dst, void *extra);
+typedef void visit_leave_cb (void *thing, int type, void *extra);
+PMOD_EXPORT extern visit_enter_cb *visit_enter;
 PMOD_EXPORT extern visit_ref_cb *visit_ref;
+PMOD_EXPORT extern visit_leave_cb *visit_leave;
 
 #define REF_TYPE_STRENGTH 0x03	/* Bits for normal/weak/strong. */
 #define REF_TYPE_NORMAL	0x00	/* Normal (nonweak and nonstrong) ref. */
@@ -672,54 +653,65 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
  * mc_counted_bytes, then visit the refs. Never combined with
  * VISIT_COMPLEX_ONLY. */
 
+#define VISIT_MODE_MASK 0x0F
+/* Bitmask for visit mode selection. The rest is flags. */
+
+#define VISIT_NO_REFS 0x10
+/* Don't visit any refs. Typically set when lookahead is negative as
+   an optimization. */
+
+#define VISIT_FLAGS_MASK 0xF0
+/* Bitmask for visit flags. */
+
 /* Map between type and visit function for the standard ref types. */
 PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
-					   int ref_type);
+					   int ref_type, void *extra);
 
-static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
-					   int ref_type)
+static inline int PIKE_UNUSED_ATTRIBUTE real_visit_short_svalue (union anything *u, TYPE_T t,
+								   int ref_type, void *extra)
 {
   check_short_svalue (u, t);
   if (REFCOUNTED_TYPE(t))
-    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
+    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], extra);
   return 0;
 }
-#define visit_short_svalue(U, T, REF_TYPE) \
-  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
+#define visit_short_svalue(U, T, REF_TYPE, EXTRA)				\
+  (real_visit_short_svalue (debug_malloc_pass ((U)), (T), (REF_TYPE), (EXTRA)))
 
 #ifdef DEBUG_MALLOC
-static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
-						int ref_type, char *l)
+static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalues (struct svalue *s, size_t num,
+									int ref_type, char *l, void *extra)
 {
-  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+  return real_visit_svalues (dmalloc_check_svalues (s, num, l),
+			     num, ref_type, extra);
 }
-#define visit_svalues(S, NUM, REF_TYPE)					\
-  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
-static INLINE void dmalloc_visit_svalue (struct svalue *s,
-					 int ref_type, char *l)
+#define visit_svalues(S, NUM, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
+static inline void PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalue (struct svalue *s,
+								 int ref_type, void *extra, char *l)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
   if (REFCOUNTED_TYPE(t)) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
-#define visit_svalue(S, REF_TYPE) \
-  dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
+#define visit_svalue(S, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalue ((S), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
 #else
 #define visit_svalues real_visit_svalues
-static INLINE void visit_svalue (struct svalue *s, int ref_type)
+static inline void PIKE_UNUSED_ATTRIBUTE visit_svalue (struct svalue *s, int ref_type, void *extra)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
   if (REFCOUNTED_TYPE(t)) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
 #endif
@@ -730,5 +722,8 @@ static INLINE void visit_svalue (struct svalue *s, int ref_type)
 PMOD_EXPORT extern int mc_pass;
 PMOD_EXPORT extern size_t mc_counted_bytes;
 PMOD_EXPORT int mc_count_bytes (void *thing);
+
+void init_mc(void);
+void exit_mc(void);
 
 #endif

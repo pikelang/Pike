@@ -26,6 +26,21 @@ test_eq( Unicode.is_rtlstring("hej"), 0 )
 test_eq( Unicode.is_rtlstring("hej\x5besan"), 1 )
 test_eq( Unicode.is_rtlstring("\uffffffff"), 0)
 
+test_eq( Unicode.is_whitespace(0), 0 )
+test_eq( Unicode.is_whitespace(' '), 1 )
+test_eq( Unicode.is_whitespace('\t'), 1 )
+test_eq( Unicode.is_whitespace('\r'), 1 )
+test_eq( Unicode.is_whitespace('\n'), 1 )
+test_eq( Unicode.is_whitespace('\v'), 1 )
+test_eq( Unicode.is_whitespace('\f'), 1 )
+test_eq( Unicode.is_whitespace('a'), 0 )
+test_eq( Unicode.is_whitespace(0x85), 1 )
+test_eq( Unicode.is_whitespace(0xa0), 1 )
+test_eq( Unicode.is_whitespace(0x1234), 0 )
+test_eq( Unicode.is_whitespace(0x2000), 1 )
+test_eq( Unicode.is_whitespace(0x3000), 1 )
+
+
 test_true( sizeof(Unicode.version) )
 test_true( stringp(Unicode.version) )
 

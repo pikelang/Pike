@@ -56,8 +56,10 @@
   } while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
-  MAP_VARIABLE(#NAME2, CTYPE, 0, \
-	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
+  PIKE_MAP_VARIABLE(#NAME2, \
+                    current_offset + (((char *)&(foo.NAME2))-((char *)&foo)),\
+                    CTYPE, RUNTYPE, 0);
+
 #define ERR_CONST(TYPE, NAME, VALUE) \
   PIKE_CONCAT3 (add_, TYPE, _constant) (NAME, VALUE, 0);
 
@@ -112,7 +114,7 @@
 DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct pike_string *,tStr,PIKE_T_STRING,error_message)
   ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)
-  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PROTECTED)
+  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PRIVATE)
   ERR_FUNC("`[]",f_error_index,tFunc(tInt01,tMixed),ID_PROTECTED)
   ERR_FUNC("_sizeof",f_error__sizeof,tFunc(tNone,tInt2),ID_PROTECTED)
   ERR_FUNC("_indices",f_error__indices,tFunc(tNone,tArr(tInt01)),ID_PROTECTED)

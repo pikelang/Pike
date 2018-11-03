@@ -135,8 +135,8 @@ class ParseError
   protected void create (string filename, int pos, string message,
 			 void|array bt)
   {
-    this_program::filename = filename;
-    this_program::pos = pos;
+    this::filename = filename;
+    this::pos = pos;
     parse_message = message;
     ::create (sprintf ("PikeParser: %s:%d: %s\n", filename, pos, message), bt);
   }
@@ -270,9 +270,11 @@ string eat(multiset(string) | string token) {
 //!   into new-style.
 string eatIdentifier(void|int allowScopePrefix) {
   //  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
-  string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
-    ? readToken()
-    : "";
+  string scope = "";
+  if ((lookAhead(1) == "::") &&
+      (scopeModules[lookAhead(0)] || isVersion(lookAhead(0)))) {
+    scope = readToken();
+  }
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
@@ -400,16 +402,25 @@ StringType|IntType parseRange(StringType|IntType s)
   string tk;
   if (peekToken() == "(") {
     readToken();
-    if (peekToken() != "..")
+    switch (peekToken()) {
+    case "zero":
+      eat("zero");
+      s->min = s->max = "0";
+      eat(")");
+      return s;
+    case "..":
+      break;
+    default:
       s->min = eatLiteral();
-
-    if( (<"bit","bits">)[(tk = peekToken())] )
-    {
-        eat(tk);
+      if(sscanf(s->min, "%sbit", s->min) ||
+	 (<"bit","bits">)[(tk = peekToken())] )
+      {
+        if (tk) eat(tk);
         eat(")");
         s->max = (string)((1<<(int)s->min)-1);
         s->min = "0";
         return s;
+      }
     }
 
     eat("..");
@@ -603,7 +614,7 @@ Type parseType() {
     case ".":
       return parseObject();
     default:
-      if (isIdent(s))
+      if (isIdent(s) || (lookAhead(1) == "::" && isVersion(s)))
         return parseObject();
       else
         return 0;
@@ -850,10 +861,12 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     Type t = parseOrType();
     // only allow lfun::, predef::, :: in front of methods/variables
     string name = eatIdentifier(args["allowScopePrefix"]);
+
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
       m->modifiers = modifiers;
       m->name = name;
+      m->position = position;
       m->returntype = t;
       eat("(");
       [m->argnames, m->argtypes] = parseArgList(args["allowArgListLiterals"]);
@@ -865,6 +878,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
         Variable v = Variable();
         v->modifiers = modifiers;
         v->name = name;
+	v->position = position;
         v->type = t;
         vars += ({ v });
         skipUntil( (< ";", ",", EOF >) );  // Skip possible init expr
@@ -899,7 +913,7 @@ array(array(string)|array(int)) tokenize(string s, int line) {
       // But convert #pike directives to corresponding imports,
       // so that the resolver can find the correct symbols later.
       if (has_prefix(s, "#pike ") || has_prefix(s, "#pike\t")) {
-	string version = String.trim_all_whites(s[sizeof("#pike ")..]);
+        string version = String.trim(s[sizeof("#pike ")..]);
 	if (version == "__REAL_VERSION__") {
 	  version = "predef";
 	}
@@ -955,7 +969,7 @@ protected void create(string|void s,
 		      string|SourcePosition|void _filename,
 		      int|void line, .Flags|void flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   if (s) {
     if (objectp(_filename)) {
       line = _filename->firstline;

@@ -32,12 +32,16 @@
 
 /* #define DEBUG */
 
+#ifdef DEBUG
+#define WERR(...) fprintf(stderr,__VA_ARGS__)
+#else
+#define WERR(...)
+#endif
 
 gzFile gz;
 
 static void gr(char *ptr, int len)
 {
-/*  fprintf(stderr,"Reading %d\n",len); */
   if(gzread(gz, ptr, len) != len)
   {
     puts("Failed to decompress data!\n");
@@ -50,7 +54,6 @@ static unsigned int read_int(void)
 {
   unsigned char x[4];
   gr(x,4);
-/*   fprintf(stderr,"Got 0x%02x%02x%02x%02x\n",x[0],x[1],x[2],x[3]); */
   return (x[0] << 24) | (x[1]<<16) | (x[2]<<8) | x[3];
 }
 
@@ -76,7 +79,6 @@ void my_uncompress(char *file,int argc, char **argv)
   if(lseek(fd, SEEK_TO, SEEK_SET)<0)
   {
     perror("lseek");
-/*    fprintf(stderr,"SEEK_TO=%d\n",SEEK_TO); */
     exit(1);
   }
 
@@ -100,9 +102,7 @@ void my_uncompress(char *file,int argc, char **argv)
     perror("chdir");
     exit(1);
   }
-#ifdef DEBUG
-  fprintf(stderr,"Changing dir to %s\n",d);
-#endif
+  WERR("Changing dir to %s\n",d);
 
   while(1)
   {
@@ -112,17 +112,12 @@ void my_uncompress(char *file,int argc, char **argv)
     GR(type);
 
     len=read_int();
-#ifdef DEBUG
-    fprintf(stderr,"namelen=%d\n",len);
-#endif
-    
+    WERR("namelen=%d\n",len);
+
     gr(buffer, len);
     buffer[len]=0;
-    
 
-#ifdef DEBUG
-    fprintf(stderr,"Type %c: %s\n",type,buffer);
-#endif
+    WERR("Type %c: %s\n",type,buffer);
 
    switch(type)
     {
@@ -134,12 +129,10 @@ void my_uncompress(char *file,int argc, char **argv)
 	break;
 
       case 'e': /* setenv */
-#ifdef DEBUG
-	fprintf(stderr,"putenv(%s)\n",buffer);
-#endif
-	putenv(buffer);
+        WERR("putenv(%s)\n",buffer);
+        putenv(buffer);
 	break;
-	
+
       case 's': /* system */
 	/* We ignore error so that we can continue with
 	 * file deletion
@@ -155,9 +148,7 @@ void my_uncompress(char *file,int argc, char **argv)
 	  for(e=0;e<argc;e++)
 	  {
 	    char *c;
-#ifdef DEBUG
-	    fprintf(stderr,"argv[%d]=%s\n",e,argv[e]);
-#endif
+            WERR("argv[%d]=%s\n",e,argv[e]);
 
 	    *(ptr++)=' ';
 	    *(ptr++)='"';
@@ -172,7 +163,7 @@ void my_uncompress(char *file,int argc, char **argv)
 		  *(ptr++)='\\';
 		  *(ptr++)='"';
 		  break;
-#endif		  
+#endif
 		case '"':
 		  *(ptr++)='\\';
 		default:
@@ -183,12 +174,10 @@ void my_uncompress(char *file,int argc, char **argv)
 	  }
 	  *(ptr++)=0;
 	}
-#ifdef DEBUG
-	fprintf(stderr,"system(%s)\n",buffer);
-#endif
-	system(buffer);
+        WERR("system(%s)\n",buffer);
+        system(buffer);
 	break;
-	
+
       case 'd': /* dir */
 	/* We ignore mkdir errors and just assume that the
 	 * directory already exists
@@ -196,14 +185,12 @@ void my_uncompress(char *file,int argc, char **argv)
 	/* fprintf(stderr,"mkdir(%s)\n",buffer); */
 	mkdir(buffer, 0777);
 	break;
-	
+
       case 'f': /* file */
       {
 	FILE *f;
-#ifdef DEBUG
-	fprintf(stderr,"file(%s)\n",buffer);
-#endif
-	f=fopen(buffer,"wb");
+        WERR("file(%s)\n",buffer);
+        f=fopen(buffer,"wb");
 	if(!f)
 	{
 	  perror("fopen");
@@ -229,12 +216,10 @@ void my_uncompress(char *file,int argc, char **argv)
 	}
       }
       break;
-      
+
       case 'D':
-#ifdef DEBUG
-	fprintf(stderr,"unlink(%s)\n",buffer);
-#endif
-	if(unlink(buffer)<0 && rmdir(buffer)<0)
+        WERR("unlink(%s)\n",buffer);
+        if(unlink(buffer)<0 && rmdir(buffer)<0)
 	{
 #ifdef DEBUG
 	  fprintf(stderr,"Failed to delete %s\n",buffer);
@@ -243,7 +228,7 @@ void my_uncompress(char *file,int argc, char **argv)
 /*	  exit(1); */
 	}
 	break;
-	
+
       default:
 	fprintf(stderr,"Wrong type (%c (%d))!\n",type,type);
 	exit(1);

@@ -7,10 +7,13 @@
 //!
 //! Note that no actual cipher algorithm is implemented
 //! in the base class. They are implemented in classes
-//! that inherit this class.
+//! that inherit (usually via @[predef::Nettle.Cipher]) this class.
+//!
+//! @seealso
+//!   @[predef::Nettle.Cipher], @[Crypto.Cipher]
 
 //! Returns a human readable name for the algorithm.
-string(8bit) name();
+string(7bit) name();
 
 //! @returns
 //!   The recommended key size for the cipher.
@@ -38,10 +41,8 @@ class State
   //!   @[set_encrypt_key], @[crypt]
   this_program set_decrypt_key(string(8bit) key, void|int force);
 
-  protected function(int:string(8bit)) random_string;
-
-  //! Generate a key by calling @[Crypto.Random.random_string] and
-  //! initialize the object for encryption with that key.
+  //! Generate a key by calling @[random_string] and initialize the
+  //! object for encryption with that key.
   //!
   //! @returns
   //!   The generated key.
@@ -50,10 +51,6 @@ class State
   //!   @[set_encrypt_key]
   string(8bit) make_key()
   {
-    if (!random_string) {
-      object random = [object]master()->resolv("Crypto.Random");
-      random_string = [function(int:string(8bit))]random->random_string;
-    }
     string(8bit) key = random_string(global::key_size());
     set_encrypt_key(key);
     return key;
@@ -72,7 +69,29 @@ class State
 
   //! @returns
   //!   The actual key size for this cipher.
-  int(0..) key_size();
+  //!
+  //! Defaults to just returning @expr{global::key_size()@}.
+  int(0..) key_size()
+  {
+    return global::key_size();
+  }
+
+  //! Returns a human readable name for the algorithm.
+  //!
+  //! Defaults to just returning @expr{global::name()@}.
+  string(7bit) name()
+  {
+    return global::name();
+  }
+
+  //! @returns
+  //!   The block size of the cipher (@expr{1@} for stream ciphers).
+  //!
+  //! Defaults to just returning @expr{global::block_size()@}.
+  int(0..) block_size()
+  {
+    return global::block_size();
+  }
 }
 
 //! Calling `() will return a @[State] object.

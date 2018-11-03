@@ -13,21 +13,18 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle named lambdas.
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
-- Filter exit/quit from history. Could be done by adding a 'pop'
-  method to Readline.History and calling it from StdinHilfe's
-  destroy.
 - Add some better multiline edit support.
 - Improve doc command to get documentation from c-code.
 ";
 
 // The Big To Do:
 // The parser part of Hilfe should really be redesigned once again.
-// The user input is first run through Parser.Pike.split and outputted
-// as a token stream. This stream is fed into a streming parser which
+// The user input is first run through Parser.Pike.split and output
+// as a token stream. This stream is fed into a streaming parser which
 // then relocates the variables and outputs expression objects with
 // evaluation destinations already assigned. Note that the streaming
 // parser can not start on the next expression before the previous
-// expression has been evaulated, because the variable table might not
+// expression has been evaluated, because the variable table might not
 // be up to date.
 
 //! Abstract class for Hilfe commands.
@@ -71,8 +68,8 @@ class CommandReset {
       e->safe_write("No symbol given as argument to reset.\n");
       return;
     }
-    if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
-       zero_type(e->functions[n]) && zero_type(e->programs[n])) {
+    if(!has_index(e->variables, n) && !has_index(e->constants, n) &&
+       !has_index(e->functions, n) && !has_index(e->programs, n)) {
       e->safe_write("Symbol %O not defined.\n", n);
       return;
     }
@@ -302,6 +299,10 @@ protected class CommandExit {
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
+    if (e->readline) {
+      e->readline->get_history()->pop(line);
+      e->save_history();
+    }
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
@@ -310,15 +311,15 @@ protected class CommandExit {
 
 protected class CommandDoc {
   inherit Command;
-  string help(string what) 
-  { 
+  string help(string what)
+  {
     return #"Show documentation for pike modules and classes.
-Documentation for the symbol before the cursor is also accessible 
-by pressing F1."; 
+Documentation for the symbol before the cursor is also accessible
+by pressing F1.";
   }
 
   void exec(Evaluator e, string line, array(string) words,
-	    array(string) tokens) 
+	    array(string) tokens)
   {
     if (sizeof(tokens) > 3)
       output_doc(e, Parser.Pike.group(tokens[2..]));
@@ -389,10 +390,6 @@ protected class CommandHelp {
 
     case "about hilfe":
       e->print_version();
-      write(#"
-Initial version written by Fredrik Hübinette 1996-2000
-Rewritten by Martin Nilsson 2002
-");
       return;
     }
 
@@ -433,19 +430,19 @@ protected class CommandDot {
   inherit Command;
   string help(string what) { return 0; }
 
-  protected constant usr_vector_a = ({
+  local protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
     32, 72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108,
     115, 32, 103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111,
     117, 32, 115, 101, 101, 32 });
-  protected constant usr_vector_b = ({
+  local protected constant usr_vector_b = ({
     32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97,
     110, 121, 32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114,
     111, 109, 32, 104, 101, 114, 101, 46 });
-  protected constant usr_vector_c = ({
+  local protected constant usr_vector_c = ({
     32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110,
     103, 32 });
-  protected constant usr_vector_d = usr_vector_c[..8] + ({
+  local protected constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
   protected array(string) thing(array|mapping|object thing, string what,
@@ -561,7 +558,7 @@ class CommandDump {
       write(e->history->status());
       return;
     case "memory":
-      write(master()->resolv("Debug.pp_memory_usage")());
+      write(Pike.Lazy.Debug.pp_memory_usage());
       return;
     case "":
       dump(e);
@@ -679,7 +676,7 @@ protected class SubSysBackend {
 
   protected void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
-    object backend = master()->resolv("Pike.DefaultBackend");
+    object backend = Pike.DefaultBackend;
     mixed err;
     do {
       err = catch {
@@ -716,7 +713,7 @@ protected class SubSysLogger {
       running = 1;
     }
 
-    protected void destroy() {
+    protected void _destruct() {
       e && e->remove_input_hook(this);
       running = 0;
     }
@@ -868,27 +865,29 @@ protected class SubSystems {
   }
 }
 
+local {
+
 protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
 protected constant modifier = (< "extern", "final", "inline", "local",
-                                 "nomask", "optional", "private", "protected",
-                                 "public", "static", "variant" >);
+                                 "optional", "private", "protected",
+                                 "public", "static", "variant", "deprecated" >);
 
 protected constant types = (< "string", "int", "float", "array", "mapping",
                               "multiset", "mixed", "object", "program",
                               "function", "void" >);
 
 // infix token may appear between two literals
-protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
+protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=",
                               "+", "+=", ",", "-", "-=",
                               "->", "->=", "/", "/=",
                               "<", "<<", "<<=", "<=", "==",
                               ">", ">=", ">>", ">>=",
                               "^", "^=", "|", "|=", "~", "~=",
-                              "&&", "||", "=", ".." >);
+                              "&&", "||", "=", "..", "**" >);
 
-// before literal but not after 
+// before literal but not after
 protected constant prefix = (< "!", "@", "(", "({", "([", "(<", "[", "{",
                                "<", ">" >);
 
@@ -910,6 +909,8 @@ protected constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)",
 // All of the above except ".", "|", "&" and "~".
 protected constant notype = (infix+prefix+postfix+prepostfix+seperator) -
   (< ".", "|", "&", "~" >);
+
+}
 
 string typeof_token(string|array token)
 {
@@ -1104,7 +1105,7 @@ class Expression {
 
     // Well, we did find a type declaration, but it
     // wasn't used for anything except perhaps loading
-    // a module into pike, e.g. "spider;"
+    // a module into pike, e.g. "_Roxen;"
     return -1;
   }
 
@@ -1153,7 +1154,7 @@ class Expression {
     case "array": return tokens;
     case "string": return code();
     }
-    error("Can not cast to %O\n", to);
+    return UNDEFINED;
   }
 
   protected string _sprintf(int t) {
@@ -1163,7 +1164,7 @@ class Expression {
 
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
 //! that manages the current state of the parser. Essentially tokens are
-//! entered in one end and complete expressions are outputted in the other.
+//! entered in one end and complete expressions are output in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 protected class ParserState {
   protected ADT.Stack pstack = ADT.Stack();
@@ -1300,7 +1301,7 @@ protected class ParserState {
   //! @[push_string] was executed. The error will be
   //! printed with the print function @[w].
   void show_error(function(array(string)|string, mixed ... : int) w) {
-    if(!error) return;
+    if(!caught_error) return;
     w("Hilfe Error: %s", caught_error);
     caught_error = 0;
   }
@@ -1359,7 +1360,7 @@ protected class ParserState {
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(sizeof(pstack)) return 0;
-    if(low_state->in_token) return 0;
+    if(low_state->remains) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -1605,24 +1606,28 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokenize the input
+    int(0..1) finished = state->finishedp();
     array(string) tokens = state->push_string(s+"\n");
     array(string) words = s/" ";
     string command = words[0];
 
-    // See if first token is a command and not a defined entity.
-    if(commands[command] && zero_type(constants[command]) &&
-       zero_type(variables[command]) && zero_type(functions[command]) &&
-       (sizeof(words)==1 || words[1]!=";")) {
-      commands[command]->exec(this, s, words, tokens);
-      return;
-    }
+    if(finished)
+    {
+      // See if first token is a command and not a defined entity.
+      if(commands[command] && !has_index(constants, command) &&
+         !has_index(variables, command) && !has_index(functions, command) &&
+         (sizeof(words)==1 || words[1]!=";")) {
+        commands[command]->exec(this, s, words, tokens);
+        return;
+      }
 
-    // See if the command is executed in overridden mode.
-    if(sizeof(command) && command[0]=='.') {
-      command = command[1..];
-      if(commands[command]) {
-	commands[command]->exec(this, s, words, tokens);
-	return;
+      // See if the command is executed in overridden mode.
+      if(sizeof(command) && command[0]=='.') {
+        command = command[1..];
+        if(commands[command]) {
+          commands[command]->exec(this, s, words, tokens);
+          return;
+        }
       }
     }
 
@@ -1688,7 +1693,7 @@ class Evaluator {
   protected void add_hilfe_variable(string type, string code, string var) {
     int(0..1) existed;
     mixed old_value;
-    if(!zero_type(variables[var])) {
+    if(has_index(variables, var)) {
       old_value = m_delete(variables, var);
       existed = 1;
     }
@@ -1852,6 +1857,11 @@ class Evaluator {
 
 	    string t = expr[i];
 
+            if(t==".") {
+              i++;
+              continue;
+            }
+
             if(t=="lambda") {
               int d = expr->depth(i);
               do {
@@ -1994,7 +2004,8 @@ class Evaluator {
       case "do":
       case "while":
       case "foreach":
-	// Parse loops.
+      case "switch":
+	// Value-less statements
 	evaluate(expr->code(), 0);
 	return 0;
 
@@ -2144,7 +2155,7 @@ class Evaluator {
   //! Gets as arguments in order: The safe_write function
   //! (function(string, mixed ...:int), the result as a string (string),
   //! the history entry number (int), the result (mixed), the compilation
-  //! time (int) and the evaulation time (int). If the evaluated expression
+  //! time (int) and the evaluation time (int). If the evaluated expression
   //! didn't return anything (e.g. a for loop) then 0 will be given as the
   //! result string.
   function reswrite = std_reswrite;
@@ -2152,6 +2163,7 @@ class Evaluator {
 
   protected string hch_errors = "";
   protected string hch_warnings = "";
+
   protected class HilfeCompileHandler (int stack_level) {
 
     protected void create() {
@@ -2165,7 +2177,7 @@ class Evaluator {
       object compat = get_active_compilation_handler();
       if (compat?->get_default_module) {
 	// Support things like @expr{7.4::rusage}.
-	return compat->get_default_module() + hilfe_symbols;
+	return (compat->get_default_module()||all_constants()) + hilfe_symbols;
       }
       return all_constants() + hilfe_symbols;
     }
@@ -2216,7 +2228,7 @@ class Evaluator {
       if (sizeof(hch_warnings))
         safe_write(hch_warnings);
     }
-  };
+  }
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
   //! If a new variable is compiled to be tested, its name
@@ -2246,14 +2258,14 @@ class Evaluator {
     if(new_var=="__")
       safe_write("Hilfe Warning: History variable __ is no "
 		 "longer reachable.\n");
-    else if(zero_type(symbols["__"]) && zero_type(variables["__"])) {
+    else if(!has_index(symbols, "__") && !has_index(variables, "__")) {
       symbols["__"] = history;
     }
 
     if(new_var=="_")
       safe_write("Hilfe Warning: History variable _ is no "
 		 "longer reachable.\n");
-    else if(zero_type(symbols["_"]) && zero_type(variables["__"])
+    else if(!has_index(symbols, "_") && !has_index(variables, "_")
 	    && sizeof(history)) {
       symbols["_"] = history[-1];
     }
@@ -2329,7 +2341,7 @@ class Evaluator {
   void evaluate(string a, int(0..1) show_result)
   {
     if(trace_level)
-      a = "\ntrace("+trace_level+");\n" + a;
+        a = "\ntrace("+trace_level+");\n"+a;
 #if constant(_debug)
     if(debug_level)
       a = "\n_debug("+debug_level+");\n" + a;
@@ -2428,7 +2440,7 @@ array(object|array(string)) resolv(Evaluator e, array completable,
     if (base=base_objects(e)[completable[0]])
       return resolv(e, completable[1..], base, "object");
 
-    if (sizeof(completable) > 1 
+    if (sizeof(completable) > 1
         && (base=master()->root_module[completable[0]]))
       return resolv(e, completable[1..], base, "module");
     return ({ 0, completable, type });
@@ -2444,7 +2456,7 @@ array(object|array(string)) resolv(Evaluator e, array completable,
       if (typeof_token(completable[0]) == "symbol"
           && (newbase = base->findObject(completable[0])))
         return resolv(e, completable[1..], newbase, type);
-      else if (sizeof(completable) > 2 
+      else if (sizeof(completable) > 2
             && typeof_token(completable[0]) == "argumentgroup"
             && typeof_token(completable[1]) == "reference")
         return resolv(e, completable[2..], base, type);
@@ -2510,6 +2522,14 @@ class StdinHilfe
     exit(1);
   }
 
+  protected int do_write(string a, mixed ... args )
+  {
+    if( sizeof( args ) )
+      a = sprintf(a,@args);
+    write(a);
+    return strlen(a);
+  }
+
   //! Any hilfe statements given in the init array will be executed
   //! once .hilferc has been executed.
   protected void create(void|array(string) init)
@@ -2517,6 +2537,9 @@ class StdinHilfe
     readline = Stdio.Readline();
     write = readline->write;
     ::create();
+
+    add_constant("werror",do_write);
+    add_constant("write",do_write);
 
     load_hilferc();
     if(init) map(init, add_buffer);
@@ -2557,10 +2580,10 @@ class StdinHilfe
 
       if ( ( _tokentype == "reference" &&
              (!tokentype || tokentype == "symbol"))
-            || (_tokentype == "symbol" && (!tokentype 
+            || (_tokentype == "symbol" && (!tokentype
                  || (< "reference", "referencegroup",
                        "argumentgroup" >)[tokentype]))
-            || ( (<"argumentgroup", "referencegroup" >)[_tokentype] 
+            || ( (<"argumentgroup", "referencegroup" >)[_tokentype]
                  && (!tokentype || tokentype == "reference"))
          )
       {
@@ -2574,7 +2597,7 @@ class StdinHilfe
     }
 
     // keep the last whitespace
-    if (arrayp(tokens) && sizeof(tokens) && 
+    if (arrayp(tokens) && sizeof(tokens) &&
         typeof_token(tokens[-1]) == "whitespace")
       completable = ({ " " }) + completable;
     return reverse(completable);
@@ -2709,7 +2732,7 @@ class StdinHilfe
       array tokens = Parser.Pike.split(input);
       if (variables->DEBUG_COMPLETIONS)
           readline->message(sprintf("\n\ntokenize(%O): %O\n\n", input, tokens));
-      // drop the linebreak that split appends 
+      // drop the linebreak that split appends
       if (tokens[-1] == "\n")
         tokens = tokens[..<1];
       else if (tokens[-1][-1] == '\n')
@@ -2731,7 +2754,7 @@ class StdinHilfe
     string dir = dirname(path);
     string file = basename(path);
     catch
-    { 
+    {
       files += get_dir(dir);
     };
 
@@ -2771,7 +2794,7 @@ class StdinHilfe
   array|string get_module_completions(array completable)
   {
     array rest = completable;
-    object base; 
+    object base;
     string type;
     int(0..1) space;
 
@@ -2783,7 +2806,7 @@ class StdinHilfe
       space = true;
       completable = completable[..<1];
     }
-    
+
     if (sizeof(completable) > 1)
       [base, rest, type] = resolv(this, completable);
 
@@ -2796,9 +2819,9 @@ class StdinHilfe
       return completions;
   }
 
-  mapping reftypes = ([ "module":".", 
-                     "object":"->", 
-                     "mapping":"->", 
+  mapping reftypes = ([ "module":".",
+                     "object":"->",
+                     "mapping":"->",
                      "function":"(",
                      "program":"(",
                      "method":"(",
@@ -2888,7 +2911,7 @@ class StdinHilfe
 
       if (sizeof(completable) == 1)
       {
-          if (type == "autodoc" 
+          if (type == "autodoc"
               && typeof_token(completable[0]) == "argumentgroup")
             if (space)
               return (array)infix;
@@ -2929,7 +2952,7 @@ class StdinHilfe
             }
             else if (intp(base[module]) || floatp(base[module]) || stringp(base[module]) )
               return (array)infix;
-            else 
+            else
             {
               // FIXME: need to check if thismodule is something indexable
               thismodule = base[module];
@@ -2948,7 +2971,7 @@ class StdinHilfe
           else
             safe_write(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
       }
-      
+
       return modules;
   }
 }

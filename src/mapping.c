@@ -14,18 +14,23 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 #include "pike_types.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "interpret.h"
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
-#include "pike_security.h"
 #include "block_allocator.h"
 #include "opcodes.h"
-#include "stuff.h"
+#include "pike_cpulib.h"
 
+/* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4
-#define MIN_LINK_LENGTH 1
+
+/* Minimum number of elements in a hashtable is half of the slots. */
+#define MIN_LINK_LENGTH_NUMERATOR	1
+#define MIN_LINK_LENGTH_DENOMINATOR	2
+
+/* Number of keypairs to allocate for a given size. */
 #define MAP_SLOTS(X) ((X)?((X)+((X)>>4)+8):0)
 
 struct mapping *first_mapping;
@@ -62,7 +67,6 @@ void really_free_mapping(struct mapping * m) {
     Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs);
   }
 #endif
-  FREE_PROT(m);
   unlink_mapping_data(m->data);
   DOUBLEUNLINK(first_mapping, m);
   GC_FREE(m);
@@ -70,11 +74,11 @@ void really_free_mapping(struct mapping * m) {
 }
 
 ATTRIBUTE((malloc))
-static struct mapping * alloc_mapping() {
+static struct mapping * alloc_mapping(void) {
     return ba_alloc(&mapping_allocator);
 }
 
-void free_all_mapping_blocks() {
+void free_all_mapping_blocks(void) {
     ba_destroy(&mapping_allocator);
 }
 
@@ -119,11 +123,11 @@ void mapping_free_keypair(struct mapping_data *md, struct keypair *k)
   FREE_KEYPAIR(md, k);
 }
 
-static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
+static inline int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
     return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
 }
 
-static INLINE int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
+static inline int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
     return (!t1 && !t2) || t1 & t2 || (t1|t2) & BIT_OBJECT;
 }
 
@@ -175,37 +179,49 @@ static struct mapping_data weak_both_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
+/*
+ * This rounds an integer up to the next power of two. For x a power
+ * of two, this will just return the same again.
+ */
+static unsigned INT32 find_next_power(unsigned INT32 x)
+{
+    if( x == 0 ) return 1;
+    return 1<<(my_log2(x-1)+1);
+}
+
 /** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
  * allocated space.
  */
 static void init_mapping(struct mapping *m,
-			 INT32 size,
+			 INT32 hashsize,
 			 INT16 flags)
 {
   struct mapping_data *md;
   ptrdiff_t e;
-  INT32 hashsize;
+  INT32 size;
 
   debug_malloc_touch(m);
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
     Pike_fatal("Can't allocate a new mapping_data inside gc.\n");
-  if(size < 0) Pike_fatal("init_mapping with negative value.\n");
+  if(hashsize < 0) Pike_fatal("init_mapping with negative value.\n");
 #endif
-  if(size)
+  if(hashsize)
   {
-    hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
+    if (hashsize & (hashsize - 1)) {
+      hashsize = find_next_power(hashsize);
+    }
+
+    size = hashsize * AVG_LINK_LENGTH;
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
-    md=(struct mapping_data *)xalloc(e);
+    md=xcalloc(1,e);
 
     m->data=md;
     md->hashsize=hashsize;
-    
-    MEMSET((char *)md->hash, 0, sizeof(struct keypair *) * md->hashsize);
-    
+
     md->free_list=MD_KEYPAIRS(md, hashsize);
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
     for(e=1;e<size;e++)
@@ -214,20 +230,17 @@ static void init_mapping(struct mapping *m,
       mark_free_svalue (&md->free_list[e-1].ind);
       mark_free_svalue (&md->free_list[e-1].val);
     }
-    md->free_list[e-1].next=0;
+    /* md->free_list[e-1].next=0; */
     mark_free_svalue (&md->free_list[e-1].ind);
     mark_free_svalue (&md->free_list[e-1].val);
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-    md->ind_types = 0;
-    md->val_types = 0;
+    /* md->ind_types = 0; */
+    /* md->val_types = 0; */
     md->flags = flags;
-    md->size = 0;
-    md->refs=0;
-#ifdef ATOMIC_SVALUE
-    md->ref_type = T_MAPPING_DATA;
-#endif
-    md->valrefs=0;
-    md->hardlinks=0;
+    /* md->size = 0; */
+    /* md->refs=0; */
+    /* md->valrefs=0; */
+    /* md->hardlinks=0; */
     md->num_keypairs=size;
   }else{
     switch (flags & MAPPING_WEAK) {
@@ -238,10 +251,21 @@ static void init_mapping(struct mapping *m,
     }
   }
   add_ref(md);
+  gc_init_marker(md);
   m->data=md;
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = md->size;
 #endif
+}
+
+static struct mapping *allocate_mapping_no_init(void)
+{
+  struct mapping *m=alloc_mapping();
+  GC_ALLOC(m);
+  m->refs = 0;
+  add_ref(m);	/* For DMALLOC... */
+  DOUBLELINK(first_mapping, m);
+  return m;
 }
 
 /** This function allocates an empty mapping with initial room
@@ -254,26 +278,10 @@ static void init_mapping(struct mapping *m,
  */
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
-  struct mapping *m;
-
-  m=alloc_mapping();
-
-  GC_ALLOC(m);
-
-  INITIALIZE_PROT(m);
-  init_mapping(m,size,0);
-
-#ifdef ATOMIC_SVALUE
-  m->ref_type = T_MAPPING;
-#endif
-  m->refs = 0;
-  add_ref(m);	/* For DMALLOC... */
-
-  DOUBLELINK(first_mapping, m);
-
+  struct mapping *m = allocate_mapping_no_init();
+  init_mapping(m, (size + AVG_LINK_LENGTH - 1) / AVG_LINK_LENGTH, 0);
   return m;
 }
-
 
 PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 {
@@ -284,7 +292,23 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 #ifdef PIKE_DEBUG
   if (md->refs) {
     Pike_fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
-	  md->refs);
+	       md->refs);
+  }
+
+  if (!md->size) {
+    /* Paranoia and keep gcc happy. */
+    if (md == &empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is empty_data!\n");
+    }
+    if (md == &weak_ind_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_ind_empty_data!\n");
+    }
+    if (md == &weak_val_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_val_empty_data!\n");
+    }
+    if (md == &weak_both_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_both_empty_data!\n");
+    }
   }
 #endif /* PIKE_DEBUG */
 
@@ -294,7 +318,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
     free_svalue(& k->ind);
   }
 
-  free((char *) md);
+  free(md);
   GC_FREE_BLOCK(md);
 }
 
@@ -339,6 +363,7 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
       switch(md->flags & MAPPING_WEAK) {
       default:
 	Pike_fatal("Instable mapping data flags.\n");
+	break;
       case MAPPING_WEAK_INDICES:
 	if (!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
 	    (*from->ind.u.refs > 1)) {
@@ -432,6 +457,7 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
       switch(md->flags & MAPPING_WEAK) {
       default:
 	Pike_fatal("Instable mapping data flags.\n");
+	break;
       case MAPPING_WEAK_INDICES:
 	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
 	    (*from->ind.u.refs > 1)) {
@@ -502,10 +528,10 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
  * run, but is used seldom enough not to degrade preformance significantly.
  *
  * @param m the mapping to be rehashed
- * @param new_size new mappingsize
+ * @param hashsize new mappingsize
  * @return the rehashed mapping
  */
-static struct mapping *rehash(struct mapping *m, int new_size)
+static struct mapping *rehash(struct mapping *m, int hashsize)
 {
   struct mapping_data *md, *new_md;
 #ifdef PIKE_DEBUG
@@ -522,12 +548,15 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(d_flag>1)  check_mapping(m);
 #endif
 
-  /* FIXME: The special case below seems suspect.
-   *	/grubba 2011-09-04
-   */
-  if ((md->hashsize == new_size) && (md->refs == 1)) return m;
+  /* NB: Code duplication from init_mapping(). */
+  if (hashsize & (hashsize - 1))
+    hashsize = find_next_power(hashsize);
+  if ((md->hashsize == hashsize) && (md->refs == 1)
+      /* FIXME: Paranoia check below; is this needed? */
+      && !MD_FULLP(md))
+    return m;
 
-  init_mapping(m, new_size, md->flags);
+  init_mapping(m, hashsize, md->flags);
   debug_malloc_touch(m);
   new_md=m->data;
 
@@ -551,7 +580,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
-    free((char *)md);
+    free(md);
     GC_FREE_BLOCK(md);
   }
 
@@ -570,6 +599,65 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #endif
 
   return m;
+}
+
+ptrdiff_t do_gc_weak_mapping(struct mapping *m)
+{
+  struct mapping_data *md = m->data;
+  ptrdiff_t initial_size = md->size;
+  INT32 e;
+
+  if (!(md->flags & MAPPING_WEAK) || (md->refs != 1)) {
+    // Nothing to do.
+    return 0;
+  }
+
+  for (e = 0; e < md->hashsize; e++) {
+    struct keypair **kp = md->hash + e;
+    struct keypair *k;
+    while ((k = *kp)) {
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Unstable mapping data flags.\n");
+	break;
+      case MAPPING_WEAK_INDICES:
+	if (REFCOUNTED_TYPE(TYPEOF(k->ind)) && (*k->ind.u.refs > 1)) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if (REFCOUNTED_TYPE(TYPEOF(k->val)) && (*k->val.u.refs > 1)) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreferenced counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if ((!REFCOUNTED_TYPE(TYPEOF(k->ind)) || (*k->ind.u.refs > 1)) &&
+	    (!REFCOUNTED_TYPE(TYPEOF(k->val)) || (*k->val.u.refs > 1))) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      }
+      /* Unlink. */
+      *kp = k->next;
+
+      /* Free. */
+      free_svalue(&k->ind);
+      free_svalue(&k->val);
+
+      k->next = md->free_list;
+      md->free_list = k;
+      md->size--;
+
+      /* Note: Do not advance kp here, as it has been done by the unlink. */
+    }
+  }
+  return initial_size - md->size;
 }
 
 /*
@@ -596,7 +684,8 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   size=MAPPING_DATA_SIZE(md->hashsize, md->num_keypairs);
 
   nmd=(struct mapping_data *)xalloc(size);
-  MEMCPY(nmd, md, size);
+  memcpy(nmd, md, size);
+  gc_init_marker(nmd);
   off=((char *)nmd) - ((char *)md);
 
   RELOC(nmd->free_list);
@@ -623,6 +712,8 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   add_ref(nmd);	/* For DMALLOC... */
   nmd->valrefs=0;
   nmd->hardlinks=0;
+  nmd->ind_types = md->ind_types;
+  nmd->val_types = md->val_types;
 
   /* FIXME: What about nmd->flags? */
 
@@ -642,6 +733,34 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
 #define MAPPING_DATA_IN_USE(MD) ((MD)->refs != (MD)->hardlinks + 1)
 
+/**
+ * void LOW_FIND(int (*FUN)(const struct svalue *IND, const struct svalue *KEY),
+ *               const struct svalue *KEY,
+ *               CODE_IF_FOUND,
+ *               CODE_IF_NOT_FOUND)
+ *
+ * Needs local variables:
+ *   struct mapping *m;
+ *   struct mapping_data *md;
+ *   size_t h, h2;
+ *   struct svalue *key;
+ *   struct keypair *k, **prev;
+ *
+ * CODE_IF_FOUND must end with a return, goto or longjmp to
+ * avoid CODE_IF_NOT_FOUND being called afterwards, or for
+ * potential multiple matches.
+ *
+ * On entry:
+ *   m is the mapping to search.
+ *   key === KEY.
+ *   h2 = hash_svalue(key).
+ *
+ * Internals:
+ *   md = m->data.
+ *   md gets an extra ref.
+ *
+ * When CODE_IF_FOUND gets executed k points to the matching keypair.
+ */
 #define LOW_FIND(FUN, KEY, FOUND, NOT_FOUND) do {		\
   md=m->data;                                                   \
   add_ref(md);						        \
@@ -713,7 +832,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
     free_mapping_data(md);					\
 }while(0)
 
-      
+
 /* Assumes md is *NOT* locked */
 #define COPYMAP2() do {				\
   ptrdiff_t off;				\
@@ -732,6 +851,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 #define PREPARE_FOR_INDEX_CHANGE2() \
   if(md->refs>1) COPYMAP2()
 
+#if 0
 #define PROPAGATE() do {			\
    if(md->refs==1)				\
    {						\
@@ -741,6 +861,9 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
      md->hash[h]=k;				\
    }						\
  }while(0)
+#else
+#define PROPAGATE()
+#endif
 
 
 /* Assumes md is locked */
@@ -819,9 +942,11 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *val,
 				    int overwrite)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md, *omd;
+  int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -829,7 +954,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
 
   h2=hash_svalue(key);
-  
+
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -862,7 +987,16 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
   if(!overwrite) return;
   PREPARE_FOR_DATA_CHANGE2();
   PROPAGATE(); /* propagate after preparing */
@@ -883,18 +1017,23 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  grow_md = MD_FULLP(md);
+
   /* We do a re-hash here instead of copying the mapping. */
-  if(
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-     (!md->free_list) ||
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-     (md->size >= md->num_keypairs) ||
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-     md->refs>1)
+  if(grow_md || md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->size * 2 + 2);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -939,9 +1078,11 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     const struct svalue *key,
 				     TYPE_T t)
 {
-  unsigned INT32 h, h2;
+  size_t h, h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
+  int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -986,17 +1127,26 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag)
     check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
   if(TYPEOF(k->val) == t)
   {
     PREPARE_FOR_DATA_CHANGE2();
     PROPAGATE(); /* prepare then propagate */
-    
+
     return & ( k->val.u );
   }
-  
+
   return 0;
-  
+
  mg_insert:
 #ifdef PIKE_DEBUG
   if(m->data != md)
@@ -1004,21 +1154,25 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag)
     check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
 
   if(t != T_INT) return 0;
 
+  grow_md = MD_FULLP(md);
+
   /* no need to call PREPARE_* because we re-hash instead */
-  if(
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-     !(md->free_list) ||
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-     (md->size >= md->num_keypairs) ||
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-     md->refs>1)
+  if(grow_md || md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->size * 2 + 2);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1053,7 +1207,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			const struct svalue *key,
 			struct svalue *to)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
 
@@ -1089,13 +1243,13 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
  md_remove_value:
 #ifdef PIKE_DEBUG
   if(md->refs <= 1)
-    Pike_fatal("Too few refs i mapping->data\n");
+    Pike_fatal("Too few refs in mapping->data\n");
   if(m->data != md)
     Pike_fatal("Wrong dataset in mapping_delete!\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
 #endif
-  free_mapping_data(md);
+  sub_ref(md);
   PREPARE_FOR_INDEX_CHANGE2();
   /* No need to propagate */
   *prev=k->next;
@@ -1115,11 +1269,18 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   if(m->data ==md)
     m->debug_size--;
 #endif
-  
-  if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
-  {
-    debug_malloc_touch(m);
-    rehash(m, MAP_SLOTS(m->data->size));
+
+  if (UNLIKELY(!md->size)) {
+    md->ind_types = md->val_types = 0;
+  }
+
+  if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
+    if((md->size * MIN_LINK_LENGTH_DENOMINATOR <
+	md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
+       (md->hashsize > AVG_LINK_LENGTH)) {
+      debug_malloc_touch(m);
+      rehash(m, md->hashsize>>1);
+    }
   }
 
 #ifdef PIKE_DEBUG
@@ -1157,7 +1318,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
       for(prev= md->hash + e;(k=*prev);)
       {
 	check_destructed(& k->val);
-	
+
 	if((TYPEOF(k->ind) == T_OBJECT || TYPEOF(k->ind) == T_FUNCTION) &&
 	   !k->ind.u.object->prog)
 	{
@@ -1191,10 +1352,13 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     md->val_types = val_types;
     md->ind_types = ind_types;
 
-    if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
-    {
-      debug_malloc_touch(m);
-      rehash(m, MAP_SLOTS(md->size));
+    if (!(md->flags & MAPPING_FLAG_NO_SHRINK)) {
+      if((md->size * MIN_LINK_LENGTH_DENOMINATOR <
+	  md->hashsize * MIN_LINK_LENGTH_NUMERATOR) &&
+	 (md->hashsize > AVG_LINK_LENGTH)) {
+	debug_malloc_touch(m);
+	rehash(m, md->hashsize>>1);
+      }
     }
 
 #ifdef PIKE_DEBUG
@@ -1206,7 +1370,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 					      const struct svalue *key)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k=0, **prev=0;
   struct mapping_data *md, *omd;
 
@@ -1230,10 +1394,13 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p)
+                                                     const struct pike_string *p)
 {
   struct svalue tmp;
-  SET_SVAL(tmp, T_STRING, 0, string, p);
+  /* Expanded SET_SVALUE macro to silence discard const warning. */
+  struct svalue *ptr = &tmp;
+  ptr->u.string = (struct pike_string *)p;
+  SET_SVAL_TYPE_SUBTYPE(*ptr, T_STRING, 0);
   return low_mapping_lookup(m, &tmp);
 }
 
@@ -1361,7 +1528,7 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
   NEW_MAPPING_LOOP(m->data) assign_svalue(s++, & k->ind);
 
   a->type_field = m->data->ind_types;
-  
+
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
@@ -1394,7 +1561,7 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m)
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-  
+
   return a;
 }
 
@@ -1479,26 +1646,32 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
   return m;
 }
 
-#if 0
-PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
+PMOD_EXPORT void clear_mapping(struct mapping *m)
 {
-  INT32 e;
-  struct mapping *n;
-  struct keypair *k;
-  struct mapping_data *md;
+  struct mapping_data *md = m->data;
+  int flags = md->flags;
 
-  md=m->data;
-  n=allocate_mapping(MAP_SLOTS(md->size));
+  if (!md->size) return;
+  unlink_mapping_data(md);
 
-  md->valrefs++;
+  switch (flags & MAPPING_WEAK) {
+  case 0: md = &empty_data; break;
+  case MAPPING_WEAK_INDICES: md = &weak_ind_empty_data; break;
+  case MAPPING_WEAK_VALUES: md = &weak_val_empty_data; break;
+  default: md = &weak_both_empty_data; break;
+  }
+
+  /* FIXME: Increment hardlinks & valrefs?
+   *    NB: init_mapping() doesn't do this.
+   */
   add_ref(md);
-  NEW_MAPPING_LOOP(md) mapping_insert(n, &k->ind, &k->val);
-  md->valrefs--;
-  free_mapping_data(md);
-  
-  return n;
+  /* gc_init_marker(md); */
+
+  m->data = md;
+#ifdef MAPPING_SIZE_DEBUG
+  m->debug_size = md->size;
+#endif
 }
-#else
 
 /* deferred mapping copy! */
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
@@ -1510,9 +1683,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
-  n=allocate_mapping(0);
-  debug_malloc_touch(n->data);
-  free_mapping_data(n->data);
+  n=allocate_mapping_no_init();
   n->data=m->data;
 #ifdef MAPPING_SIZE_DEBUG
   n->debug_size=n->data->size;
@@ -1523,8 +1694,6 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
   debug_malloc_touch(n->data);
   return n;
 }
-
-#endif
 
 /* copy_mapping() for when destructive operations are ok.
  *
@@ -1706,7 +1875,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     b = tmp;
     a_md = b_md;
     b_md = b->data;
-  }    
+  }
   res = destructive_copy_mapping(b);
   SET_ONERROR(err, do_free_mapping, res);
 
@@ -1771,7 +1940,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
     zipper=get_set_order(ai);
     order_array(ai, zipper);
     order_array(av, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   bi=mapping_indices(b);
@@ -1785,7 +1954,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
     zipper=get_set_order(bi);
     order_array(bi, zipper);
     order_array(bv, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   zipper=merge(ai,bi,op);
@@ -1800,7 +1969,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   UNSET_ONERROR(r2); free_array(bv);
   UNSET_ONERROR(r1); free_array(av);
 
-  free((char *)zipper);
+  free(zipper);
 
   m=mkmapping(ci, cv);
   free_array(ci);
@@ -1813,7 +1982,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
  * FIXME: It ought to be optimized just like the unordered variant.
  *	/grubba 2003-11-12
  */
-PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op)
 {
   ONERROR r1,r2;
@@ -1831,7 +2000,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
     zipper=get_set_order(ai);
     order_array(ai, zipper);
     order_array(av, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   switch (op) /* no elements from »b» may be selected */
@@ -1852,8 +2021,8 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 
   UNSET_ONERROR(r2); free_array(av);
   UNSET_ONERROR(r1); free_array(ai);
-  
-  free((char *)zipper);
+
+  free(zipper);
 
   m=mkmapping(ci, cv);
   free_array(ci);
@@ -1862,7 +2031,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
   return m;
 }
 
-PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op)
 {
   ONERROR r1;
@@ -1883,6 +2052,49 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
     m=merge_mapping_array_ordered(a,b,op);
 
   return m;
+}
+
+void o_append_mapping( INT32 args )
+{
+  struct svalue *lval = Pike_sp - args;
+  struct svalue *val = lval + 2;
+  int lvalue_type;
+
+#ifdef PIKE_DEBUG
+  if (args < 3) {
+    Pike_fatal("Too few arguments to o_append_mapping(): %d\n", args);
+  }
+#endif
+  args -= 3;
+  /* Note: val should always be a zero here! */
+  lvalue_type = lvalue_to_svalue_no_free(val, lval);
+
+  if ((TYPEOF(*val) == T_MAPPING) && (lvalue_type != PIKE_T_GET_SET)) {
+    struct mapping *m = val->u.mapping;
+    if( m->refs == 2 )
+    {
+      if ((TYPEOF(*lval) == T_OBJECT) &&
+	  lval->u.object->prog &&
+	  ((FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_INDEX) >= 0) ||
+	   (FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_ARROW) >= 0))) {
+	/* There's a function controlling assignments in this object,
+	 * so we can't alter the mapping in place.
+	 */
+      } else {
+	int i;
+	/* fprintf( stderr, "map_refs==2\n" ); */
+	for( i=0; i<args; i+=2 )
+	  low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 2 );
+	stack_pop_n_elems_keep_top(2+args);
+	return;
+      }
+    }
+  }
+
+  f_aggregate_mapping(args);
+  f_add(2);
+  assign_lvalue(lval, val);
+  stack_pop_2_elems_keep_top();
 }
 
 /* NOTE: May perform destructive operations on either of the arguments
@@ -1920,7 +2132,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
       if(e==md->size)
 	return copy_mapping(m);
 #endif
-    
+
       if(m->refs == 1 && !md->hardlinks)
       {
 	add_ref( ret=m );
@@ -1937,7 +2149,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   {
     struct mapping *m=argp[d].u.mapping;
     struct mapping_data *md=m->data;
-    
+
     add_ref(md);
     NEW_MAPPING_LOOP(md)
       low_mapping_insert(ret, &k->ind, &k->val, 2);
@@ -1975,6 +2187,8 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   check_mapping_for_destruct(b);
 
   if(m_sizeof(a) != m_sizeof(b)) return 0;
+
+  if (m_sizeof(a) == 0) return 1;
 
   if (!check_type_overlaps(a->data->ind_types, b->data->ind_types) ||
       !check_type_overlaps(a->data->val_types, b->data->val_types)) return 0;
@@ -2038,7 +2252,7 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   return eq;
 }
 
-void describe_mapping(struct mapping *m,struct processing *p,int indent)
+void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing *p,int indent)
 {
   struct processing doing;
   struct array *a;
@@ -2054,7 +2268,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
   if(! m->data->size)
   {
-    my_strcat("([ ])");
+    buffer_add_str(b, "([ ])");
     return;
   }
 
@@ -2065,7 +2279,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     if(p->pointer_a == (void *)m)
     {
       sprintf(buf,"@%ld",(long)e);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
       return;
     }
   }
@@ -2076,25 +2290,25 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     int notfirst = 0;
 
     if (m->data->size == 1) {
-      my_strcat("([ /* 1 element */\n");
+      buffer_add_str(b, "([ /* 1 element */\n");
     } else {
       sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
     }
 
     NEW_MAPPING_LOOP(m->data) {
-      if (notfirst) my_strcat(",\n");
+      if (notfirst) buffer_add_str(b, ",\n");
       else notfirst = 1;
       for(d = 0; d < indent; d++)
-	my_putchar(' ');
-      describe_svalue(&k->ind, indent+2, &doing);
-      my_strcat (": ");
-      describe_svalue(&k->val, indent+2, &doing);
+	buffer_add_char(b, ' ');
+      describe_svalue(b, &k->ind, indent+2, &doing);
+      buffer_add_str (b, ": ");
+      describe_svalue(b, &k->val, indent+2, &doing);
     }
 
-    my_putchar('\n');
-    for(e=2; e<indent; e++) my_putchar(' ');
-    my_strcat("])");
+    buffer_add_char(b, '\n');
+    for(e=2; e<indent; e++) buffer_add_char(b, ' ');
+    buffer_add_str(b, "])");
     return;
   }
 
@@ -2102,20 +2316,18 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   SET_ONERROR(err, do_free_array, a);
 
   if(! m->data->size) {		/* mapping_indices may remove elements */
-    my_strcat("([ ])");
+    buffer_add_str(b, "([ ])");
   }
   else {
     int save_t_flag = Pike_interpreter.trace_level;
-    dynamic_buffer save_buf;
 
     if (m->data->size == 1) {
-      my_strcat("([ /* 1 element */\n");
+      buffer_add_str(b, "([ /* 1 element */\n");
     } else {
       sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
-      my_strcat(buf);
+      buffer_add_str(b, buf);
     }
 
-    save_buffer (&save_buf);
     Pike_interpreter.trace_level = 0;
     if(SETJMP(catch)) {
       free_svalue(&throw_value);
@@ -2125,37 +2337,36 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       sort_array_destructively(a);
     UNSETJMP(catch);
     Pike_interpreter.trace_level = save_t_flag;
-    restore_buffer (&save_buf);
 
     for(e = 0; e < a->size; e++)
     {
       struct svalue *tmp;
       if(e)
-	my_strcat(",\n");
-    
-      for(d = 0; d < indent; d++)
-	my_putchar(' ');
+	buffer_add_str(b, ",\n");
 
-      describe_svalue(ITEM(a)+e, indent+2, &doing);
-      my_strcat (": ");
+      for(d = 0; d < indent; d++)
+	buffer_add_char(b, ' ');
+
+      describe_svalue(b, ITEM(a)+e, indent+2, &doing);
+      buffer_add_str (b, ": ");
 
       {
 	int save_t_flag=Pike_interpreter.trace_level;
 	Pike_interpreter.trace_level=0;
-	
+
 	tmp=low_mapping_lookup(m, ITEM(a)+e);
-	
+
 	Pike_interpreter.trace_level=save_t_flag;
       }
       if(tmp)
-	describe_svalue(tmp, indent+2, &doing);
+	describe_svalue(b, tmp, indent+2, &doing);
       else
-	my_strcat("** gone **");
+	buffer_add_str(b, "** gone **");
     }
 
-    my_putchar('\n');
-    for(e=2; e<indent; e++) my_putchar(' ');
-    my_strcat("])");
+    buffer_add_char(b, '\n');
+    for(e=2; e<indent; e++) buffer_add_char(b, ' ');
+    buffer_add_str(b, "])");
   }
 
   UNSET_ONERROR(err);
@@ -2285,7 +2496,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     push_int(0);
     copy_svalues_recursively_no_free(Pike_sp-2,&k->ind, 1, p);
     copy_svalues_recursively_no_free(Pike_sp-1,&k->val, 1, p);
-    
+
     low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
     pop_n_elems(2);
   }
@@ -2311,15 +2522,15 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 
   if(md->size)
   {
-    unsigned INT32 h2,h=0;
+    size_t h2,h=0;
     struct keypair *k=md->hash[0], **prev;
 
     if(key)
     {
       h2=hash_svalue(key);
-      
+
       FIND();
-      
+
       if(!k)
       {
 	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
@@ -2327,14 +2538,14 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
       }
       k=k->next;
     }
-    
-    
+
+
     md=m->data;
     if(md->size)
     {
       md->valrefs++;
       add_ref(md);
-      
+
       if(h < (unsigned INT32)md->hashsize)
       {
 	while(1)
@@ -2344,7 +2555,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 	    if(is_eq(look_for, &k->val))
 	    {
 	      assign_svalue_no_free(to,&k->ind);
-	      
+
 	      md->valrefs--;
 	      free_mapping_data(md);
 	      return;
@@ -2358,7 +2569,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 	}
       }
     }
-    
+
     md->valrefs--;
     free_mapping_data(md);
   }
@@ -2400,7 +2611,7 @@ void check_mapping(const struct mapping *m)
       fprintf(stderr,"Pike was in GC stage %d when this fatal occurred:\n",Pike_in_gc);
       Pike_in_gc=0;
     }
-    
+
     fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping:\n",m->debug_size,md->size);
     describe(m);
     fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping data:\n",m->debug_size,md->size);
@@ -2448,9 +2659,9 @@ void check_mapping(const struct mapping *m)
   if(md->hashsize > md->num_keypairs)
     Pike_fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
 
-  if(md->num_keypairs > (md->hashsize + 3) * AVG_LINK_LENGTH)
+  if(md->num_keypairs > (md->hashsize + AVG_LINK_LENGTH - 1) * AVG_LINK_LENGTH)
     Pike_fatal("Mapping from hell detected, attempting to send it back...\n");
-  
+
   if(md->size > 0 && (!md->ind_types || !md->val_types))
     Pike_fatal("Mapping type fields are... wrong.\n");
 
@@ -2473,13 +2684,8 @@ void check_mapping(const struct mapping *m)
 
       check_svalue(& k->ind);
       check_svalue(& k->val);
-
-      /* FIXME add check for k->hval
-       * beware that hash_svalue may be threaded and locking
-       * is required!!
-       */
     }
-  
+
   if(md->size != num)
     Pike_fatal("Shields are failing, hull integrity down to 20%%\n");
 
@@ -2495,9 +2701,10 @@ void check_all_mappings(void)
 #endif
 
 static void visit_mapping_data (struct mapping_data *md, int action,
-				struct mapping *UNUSED(m))
+				void *extra)
 {
-  switch (action) {
+  visit_enter(md, T_MAPPING_DATA, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2510,7 +2717,8 @@ static void visit_mapping_data (struct mapping_data *md, int action,
       break;
   }
 
-  if ((md->ind_types | md->val_types) &
+  if (!(action & VISIT_NO_REFS) &&
+      (md->ind_types | md->val_types) &
       (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES)) {
     int ind_ref_type =
       md->flags & MAPPING_WEAK_INDICES ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
@@ -2519,15 +2727,17 @@ static void visit_mapping_data (struct mapping_data *md, int action,
     INT32 e;
     struct keypair *k;
     NEW_MAPPING_LOOP (md) {
-      visit_svalue (&k->ind, ind_ref_type);
-      visit_svalue (&k->val, val_ref_type);
+      visit_svalue (&k->ind, ind_ref_type, extra);
+      visit_svalue (&k->val, val_ref_type, extra);
     }
   }
+  visit_leave(md, T_MAPPING_DATA, extra);
 }
 
-PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 {
-  switch (action) {
+  visit_enter(m, T_MAPPING, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2541,7 +2751,8 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
   }
 
   visit_ref (m->data, REF_TYPE_INTERNAL,
-	     (visit_thing_fn *) &visit_mapping_data, m);
+	     (visit_thing_fn *) &visit_mapping_data, extra);
+  visit_leave(m, T_MAPPING, extra);
 }
 
 #ifdef MAPPING_SIZE_DEBUG
@@ -2665,8 +2876,9 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
     gc_free_svalue(&k->val);						\
   else if ((REMOVE = W_REC(&k->val, 1)))				\
     gc_free_svalue(&k->ind);						\
-  else									\
-    N_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+  else if (N_REC(&k->ind, 1)) /* Now we can recurse the index. */	\
+    Pike_fatal("Mapping: %s and %s don't agree.\n",			\
+	       TOSTR(N_TST), TOSTR(N_REC));				\
 } while (0)
 
 #define GC_REC_KP_BOTH(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
@@ -2674,8 +2886,9 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
     gc_free_svalue(&k->val);						\
   else if ((REMOVE = W_REC(&k->val, 1)))				\
     gc_free_svalue(&k->ind);						\
-  else									\
-    W_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+  else if (W_REC(&k->ind, 1)) /* Now we can recurse the index. */	\
+    Pike_fatal("Mapping: %s and %s don't agree.\n",			\
+	       TOSTR(W_TST), TOSTR(W_REC));				\
 } while (0)
 
 void gc_mark_mapping_as_referenced(struct mapping *m)
@@ -2960,13 +3173,11 @@ size_t gc_free_all_unreferenced_mappings(void)
 
 void simple_describe_mapping(struct mapping *m)
 {
-  dynamic_buffer save_buf;
-  char *s;
-  init_buf(&save_buf);
-  describe_mapping(m,0,2);
-  s=simple_free_buf(&save_buf);
-  fprintf(stderr,"%s\n",s);
-  free(s);
+  struct byte_buffer buf = BUFFER_INIT();
+  describe_mapping(&buf,m,0,2);
+  buffer_add_str(&buf, "\n");
+  fputs(buffer_get_string(&buf), stderr);
+  buffer_free(&buf);
 }
 
 

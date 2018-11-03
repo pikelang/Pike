@@ -11,13 +11,18 @@ array(int) proximity_ranking;
 //!
 int cutoff;
 
-//! @decl void create(void|int cutoff, void|array(int) proximity_ranking,@
-//!       void|Search.Database.Base db, void|array(int)|mapping(string:int) field_ranking)
-//! @[cutoff] defaults to 8, @[proximity_ranking] defaults to
-//! @expr{({ 8, 7, 6, 5, 4, 3, 2, 1, })@}
-//! and @[field_ranking] defaults to @expr{({ 17, 0, 147 }) + allocate(62)@}.
-//! @[db] is only
-//! needed if @[field_ranking] is provided as a mapping.
+//! @decl void create(void|int cutoff, void|array(int) proximity_ranking)
+//! @decl void create(int cutoff, array(int) proximity_ranking,@
+//!       Search.Database.Base db, array(int)|mapping(string:int) field_ranking)
+//!
+//! @param cutoff
+//!   Defaults to 8
+//! @param proximity_ranking
+//!   Defaults to @expr{({ 8, 7, 6, 5, 4, 3, 2, 1, })@}
+//! @param field_ranking
+//!   Defaults to @expr{({ 17, 0, 147 }) + allocate(62)@}.
+//! @param db
+//!   Only needed if @[field_ranking] is provided as a mapping.
 void create(void|int _cutoff, void|array(int) _proximity_ranking,
             void|Search.Database.Base db, void|array(int)|mapping(string:int) _field_ranking)
 {
@@ -25,7 +30,7 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
 
   // Set cutoff to a value > 0.
   cutoff = _cutoff || 8;
-  
+
   if(_proximity_ranking)
     proximity_ranking = copy_value(_proximity_ranking);
   else

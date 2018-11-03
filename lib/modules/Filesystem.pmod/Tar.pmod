@@ -82,7 +82,7 @@ class _Tar
 	error ("Failed to seek to position %d in %O.\n", start, fd);
     }
 
-    protected void destroy()
+    protected void _destruct()
     {
       fd_in_use = -1;
     }
@@ -160,7 +160,7 @@ class _Tar
     // Header description:
     //
     // Fieldno	Offset	len	Description
-    // 
+    //
     // 0	0	100	Filename
     // 1	100	8	Mode (octal)
     // 2	108	8	uid (octal)
@@ -280,16 +280,16 @@ class _Tar
 
   void create(object fd, string filename, object parent)
   {
-    this_program::filename = filename;
+    this::filename = filename;
     // read all entries
 
-    this_program::fd = fd;
+    this::fd = fd;
     int pos = 0; // fd is at position 0 here
     string next_name;
     for(;;)
     {
       Record r;
-      string s = this_program::fd->read(512);
+      string s = this::fd->read(512);
 
       if(s=="" || sizeof(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
 	break;
@@ -311,11 +311,11 @@ class _Tar
       pos += 512 + r->size;
       if(pos%512)
 	pos += 512 - (pos%512);
-      if (this_program::fd->seek(pos) < 0)
+      if (this::fd->seek(pos) < 0)
 	error ("Failed to seek to position %d in %O.\n", pos, fd);
     }
 
-    filename_to_entry = mkmapping(entries->fullpath, entries);
+    filename_to_entry = mkmapping(filenames = entries->fullpath, entries);
 
     // create missing dirnodes
 
@@ -326,16 +326,28 @@ class _Tar
       if(path[..<1]==last) continue; // same dir
       last = path[..<1];
 
-      for(int i = 0; i<sizeof(last); i++)
-	if(!filename_to_entry[last[..i]*"/"])
-	  mkdirnode(last[..i]*"/", r, parent);
+      for(int i = 0; i<sizeof(last); i++) {
+	if(!filename_to_entry[last[..i]*"/"]) {
+	  string dir = last[..i]*"/";
+	  mkdirnode(dir, r, parent);
+	  filenames += ({ dir });
+	}
+      }
     }
 
-    filenames = indices(filename_to_entry);
+    // NB: It's legal to have several entries for the same path;
+    //     the last one wins.
+    filenames = Array.uniq(filenames);
   }
 
-  protected void extract_bits (string dest, Record r, int which_bits)
+  protected void extract_bits (string dest, Stdio.Stat r, int which_bits)
   {
+    if (!r->RECORDSIZE) {
+      // This is just a Stdio.Stat and not a Record.
+      //
+      // Just restore the mode bits.
+      which_bits = ~(EXTRACT_SKIP_MODE | EXTRACT_SKIP_EXT_MODE);
+    }
 #if constant (utime)
     if (!(which_bits & EXTRACT_SKIP_MTIME)) {
       mixed err = catch {
@@ -351,14 +363,12 @@ class _Tar
     }
 #endif
 
-#if constant (chmod)
     if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
       if (which_bits & EXTRACT_SKIP_EXT_MODE)
 	chmod (dest, r->mode & 0777);
       else
 	chmod (dest, r->mode & 07777);
     }
-#endif
 
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
@@ -378,6 +388,12 @@ class _Tar
     }
 #endif
   }
+
+#if !constant(access)
+  // Probably NT or similar single-user OS,
+  // so pretend we can access anything.
+  protected int access(string path, string|void flags) { return 1; }
+#endif
 
   void extract (string src_dir, string dest_dir,
 		void|string|function(string,Filesystem.Stat:int|string) filter,
@@ -442,83 +458,186 @@ class _Tar
       (flags & (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME|EXTRACT_CHOWN)) !=
       (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME);
 
-    mapping(string:Record) dirs = ([]);
+    mapping(string:Stdio.Stat) restore_bits = ([]);
 
-    foreach (entries, Record r) {
-      string fullpath = r->fullpath;
-      if (has_prefix (fullpath, src_dir)) {
-	string subpath = fullpath[sizeof (src_dir) - 1..];
-	string|int filter_res;
-
-	if (!filter ||
-	    (stringp (filter) ? glob (filter, subpath) :
-	     (filter_res = filter (subpath, r)))) {
-	  string destpath = dest_dir +
-	    (stringp (filter_res) ? filter_res : subpath);
-
-	  if (r->isdir) {
-	    if (!Stdio.mkdirhier (destpath))
-	      error ("Failed to create directory %q: %s\n",
-		     destpath, strerror (errno()));
-
-	    // Set bits etc afterwards on dirs.
-	    if (do_extract_bits)
-	      dirs[destpath] = r;
-	  }
-
-	  else {
-	    string dest_dir = (destpath / "/")[..<1] * "/";
-	    if (!Stdio.is_dir (dest_dir))
-	      if (!Stdio.mkdirhier (dest_dir))
-		error ("Failed to create directory %q: %s\n",
-		       destpath, strerror (errno()));
-
-	    if (r->isreg) {
-	      Stdio.File o = Stdio.File();
-	      if (!o->open (destpath, "wct"))
-		error ("Failed to create %q: %s\n",
-		       destpath, strerror (o->errno()));
-
-	      Stdio.BlockFile i = r->open ("r");
-	      do {
-		string data = i->read (1024 * 1024);
-		if (data == "") break;
-		if (o->write (data) != sizeof (data))
-		  error ("Failed to write %q: %s\n",
-			 destpath, strerror (o->errno()));
-	      } while (1);
-
-	      i->close();
-	      o->close();
-
-	      if (do_extract_bits)
-		extract_bits (destpath, r, flags);
-	    }
-
-#if constant (symlink)
-	    else if (r->islnk) {
-	      symlink (r->arch_linkname, destpath);
-
-	      if (do_extract_bits)
-		extract_bits (destpath, r, flags);
-	    }
+    // Similar to Stdio.mkdirhier(), but ensures that we have
+    // read, write and execute permission on the resulting directory.
+    //
+    // The original directory permissions (if altered)
+    // are registered in the variable "restore_bits" above.
+    int mkdirhier(string pathname)
+    {
+      string path = "";
+#ifdef __NT__
+      pathname = replace(pathname, "\\", "/");
+      if (pathname[1..2] == ":/" && `<=("A", upper_case(pathname[..0]), "Z"))
+	path = pathname[..2], pathname = pathname[3..];
 #endif
-
-	    else if (flags & EXTRACT_ERR_ON_UNKNOWN)
-	      error ("Failed to extract entry of unsupported type %x: %O\n",
-		     r->mode & 0xf000, r);
+      if (pathname == "") pathname = ".";
+      array(string) segments = pathname/"/";
+      if (segments[0] == "") {
+	path += "/";
+	pathname = pathname[1..];
+	segments = segments[1..];
+      }
+      // FIXME: An alternative could be a binary search,
+      //        but since it is usually only the last few
+      //        segments of the path that are missing, we
+      //        just do a linear search from the end.
+      int i = sizeof(segments);
+      while (i--) {
+	string p = path + segments[..i]*"/";
+	Stdio.Stat st;
+	if ((st = file_stat(p))) {
+	  if (!st->isdir) return 0;
+	  if (!access(p, "rwx")) {
+	    // We're not allowed to write.
+	    // Attempt to adjust the permissions temporarily.
+	    catch {
+	      chmod(p, st->mode | 0700);
+	      if (!restore_bits[p]) {
+		// Register p for permission restoration.
+		restore_bits[p] = st;
+	      }
+	    };
+	  }
+	  break;
+	}
+      }
+      if (!i && !sizeof(path) && !access(".", "rwx")) {
+	// We're not allowed to write.
+	// Attempt to adjust the permissions temporarily.
+	catch {
+	  Stdio.Stat st = file_stat(".");
+	  chmod(".", st->mode | 0700);
+	  if (!restore_bits["."]) {
+	    // Register "." for permission restoration.
+	    restore_bits["."] = st;
+	  }
+	};
+      }
+      i++;
+      while (i < sizeof(segments)) {
+	string p = path + segments[..i++] * "/";
+	if (!mkdir(p, 0777)) {
+	  if (errno() != System.EEXIST)
+	    return 0;
+	  else {
+	    Stdio.Stat st;
+	    if ((st = file_stat(p))) {
+	      if (!st->isdir) return 0;
+	      // Directory exists, but we couldn't access it
+	      // in the earlier loop, so it was probably hidden.
+	      if (!access(path, "rw")) {
+		// We're not allowed to write.
+		// Attempt to adjust the permissions temporarily.
+		catch {
+		  chmod(p, st->mode | 0700);
+		  if (!restore_bits[p]) {
+		    // Register p for permission restoration.
+		    restore_bits[p] = st;
+		  }
+		};
+	      }
+	    }
 	  }
 	}
       }
+      return Stdio.is_dir(path + pathname) && access(path + pathname, "rwx");
+    };
+
+    mixed err = catch {
+	foreach (entries, Record r) {
+	  string fullpath = r->fullpath;
+	  if (has_prefix (fullpath, src_dir)) {
+	    string subpath = fullpath[sizeof (src_dir) - 1..];
+	    string|int filter_res;
+
+	    if (!filter ||
+		(stringp (filter) ? glob (filter, subpath) :
+		 (filter_res = filter (subpath, r)))) {
+	      string destpath = dest_dir +
+		(stringp (filter_res) ? filter_res : subpath);
+
+	      if (r->isdir) {
+		if (!mkdirhier(destpath))
+                  error ("Failed to create directory %q: %s.\n",
+                         destpath, strerror(errno()));
+
+		// Set bits etc afterwards on dirs.
+		if (do_extract_bits)
+		  restore_bits[destpath] = r;
+	      }
+
+	      else {
+		string dest_dir = (destpath / "/")[..<1] * "/";
+		if (!mkdirhier(dest_dir))
+                  error ("Failed to create directory %q: %s.\n",
+                         destpath, strerror(errno()));
+
+		if (r->isreg) {
+		  Stdio.File o = Stdio.File();
+		  if (!o->open (destpath, "wct")) {
+		    // Could be because the file exists, but
+		    // with bad access permissions for us.
+		    Stdio.Stat st = file_stat(destpath);
+		    if (!st || catch {
+			chmod(destpath, st->mode | 0600);
+			if (!do_extract_bits)
+			  restore_bits[destpath] = st;
+		      } || !o->open (destpath, "wct")) {
+                      error ("Failed to create %q: %s.\n",
+			     destpath, strerror (o->errno()));
+		    }
+		  }
+
+		  Stdio.BlockFile i = r->open ("r");
+		  do {
+		    string data = i->read (1024 * 1024);
+		    if (data == "") break;
+		    if (o->write (data) != sizeof (data))
+                      error ("Failed to write %q: %s.\n",
+			     destpath, strerror (o->errno()));
+		  } while (1);
+
+		  i->close();
+		  o->close();
+
+		  if (do_extract_bits)
+		    extract_bits (destpath, r, flags);
+		}
+
+#if constant (symlink)
+		else if (r->islnk) {
+		  symlink (r->arch_linkname, destpath);
+
+		  if (do_extract_bits)
+		    extract_bits (destpath, r, flags);
+		}
+#endif
+
+		else if (flags & EXTRACT_ERR_ON_UNKNOWN)
+		  error ("Failed to extract entry of unsupported type %x: %O\n",
+			 r->mode & 0xf000, r);
+	      }
+	    }
+	  }
+	}
+      };
+
+    // Make sure to restore directory permissions, etc
+    // even if we've failed.
+    if (sizeof(restore_bits)) {
+      array(string) paths = indices(restore_bits);
+      foreach (reverse(sort(paths)), string destpath) {
+	mixed e = catch {
+	    extract_bits(destpath, restore_bits[destpath], flags);
+	  };
+	if (!err) err = e;
+      }
     }
 
-    if (do_extract_bits) {
-      array(string) dirpaths = indices (dirs);
-      sort (map (dirpaths, sizeof), dirpaths);
-      dirpaths = reverse (dirpaths);
-      foreach (dirpaths, string destpath)
-	extract_bits (destpath, dirs[destpath], flags);
-    }
+    if (err) throw(err);
   }
 
   protected string _sprintf(int t)
@@ -561,14 +680,27 @@ class _TarFS
     return tar->filename_to_entry[root+file];
   }
 
+  protected string fixup_dir(string path, string dir)
+  {
+    path = path[sizeof(dir)..];
+    return (path/"/")[0];
+  }
+
   array(string) get_dir(void|string directory, void|string|array globs)
   {
     directory = combine_path_unix(wd, (directory||""), "");
 
-    array f = glob(root+directory+"?*", tar->filenames);
-    f -= glob(root+directory+"*/*", f); // stay here
+    if (!has_suffix(directory, "/")) directory += "/";
 
-    return f;
+    array(string) f =
+      map(filter(tar->filenames, has_prefix, directory),
+	  fixup_dir, directory);
+
+    if (globs) {
+      f = glob(globs, f);
+    }
+
+    return Array.uniq(f - ({ "" }));
   }
 
   Filesystem.Base cd(string directory)

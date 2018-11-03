@@ -1,14 +1,13 @@
 /* nettle.cmod -*- c -*- */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
-/* For this_object() */
-#include "object.h"
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
-#include "pike_memory.h"
+#include "pike_cpulib.h"
+#include "bignum.h"
+#include "sprintf.h"
 
 #include "nettle_config.h"
 
@@ -17,10 +16,11 @@
 #include "nettle.h"
 
 #include <nettle/yarrow.h>
-#include <nettle/knuth-lfib.h>
+#include <nettle/memxor.h>
 
-#include <stdio.h>
-#include <stdarg.h>
+#ifdef HAVE_NETTLE_VERSION_H
+#include <nettle/version.h>
+#endif
 
 DECLARATIONS
 
@@ -29,6 +29,28 @@ DECLARATIONS
  *! you are doing something very special, you would want to use the
  *! Crypto module instead.
  */
+
+/*! @decl string version()
+ *! Returns the version of the Nettle library, e.g. "3.1". 0 is
+ *! returned when runtime version is unknown.
+ */
+PIKEFUN string version()
+{
+#ifdef HAVE_NETTLE_VERSION_H
+  push_constant_text("%d.%d");
+#ifdef HAVE_NETTLE_VERSION_MAJOR
+  push_int( nettle_version_major() );
+  push_int( nettle_version_minor() );
+#else
+  /* Probably Nettle 3.1.1. */
+  push_int( NETTLE_VERSION_MAJOR );
+  push_int( NETTLE_VERSION_MINOR );
+#endif
+  f_sprintf(3);
+#else
+  push_int(0);
+#endif
+}
 
 /*! @class Yarrow
  *!
@@ -41,60 +63,35 @@ DECLARATIONS
  *! internal state of 256 bits.
  */
 PIKECLASS Yarrow
+program_flags PROGRAM_CLEAR_STORAGE;
 {
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
 
-#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-  /* NOTE: Nettle 2.0 does not have the automatic seed_file maintenance
-   *       that Nettle 1.x had. This stuff is needed since it affected
-   *       the state emitted by random_string(). When Nettle 2.0 is the
-   *       default, consider implementing this via overloading of the
-   *       various seeding functions instead, since it does have a bit
-   *       of overhead.
-   *
-   *	/grubba 2009-07-05
-   */
-  PIKEVAR string seed_file flags ID_PRIVATE|ID_STATIC;
-#endif
-
   DECLARE_STORAGE;
 
-#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-  static void pike_generate_seed_file(void)
-  {
-    struct pike_string *seed_file =
-      begin_shared_string(YARROW256_SEED_FILE_SIZE);
-    yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
-    if (THIS->seed_file) {
-      free_string(THIS->seed_file);
-    }
-    THIS->seed_file = end_shared_string(seed_file);
-  }
-#else
-#define pike_generate_seed_file()
-#endif
-
-  /*! @decl void create(void|int sources)
+  /*! @decl void create(void|int(0..) sources)
    *! The number of entropy sources that will feed entropy to the
    *! random number generator is given as an argument to Yarrow
    *! during instantiation.
    *! @seealso
    *!   @[update]
    */
-  PIKEFUN void create(void|int arg)
+  PIKEFUN void create(void|int(0..) arg)
     flags ID_PROTECTED;
   {
     INT32 num = 0;
 
     if(arg) {
-      if (TYPEOF(*arg) != PIKE_T_INT)
-	Pike_error("Bad argument type.\n");
       num = arg->u.integer;
       if(num < 0)
 	Pike_error("Invalid number of sources.\n");
       free (THIS->sources);
-      THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      if( num > 0 )
+        THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+      else
+        THIS->sources = NULL;
+      pop_stack();
     }
     else
     {
@@ -109,12 +106,12 @@ PIKECLASS Yarrow
    *! The random generator needs to be seeded before it can be used.
    *! The seed must be at least 32 characters long. The seed could be
    *! stored from a previous run by inserting the value returned from
-   *! @[get_seed].
+   *! previous @[random_string] call.
    *!
    *! @returns
    *!   Returns the called object.
    *! @seealso
-   *!   @[min_seed_size], @[get_seed], @[is_seeded]
+   *!   @[min_seed_size], @[is_seeded]
    */
   PIKEFUN object seed(string(0..255) data)
     optflags OPT_SIDE_EFFECT;
@@ -125,7 +122,6 @@ PIKECLASS Yarrow
 
     NO_WIDE_STRING(data);
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
-    pike_generate_seed_file();
     RETURN this_object();
   }
 
@@ -139,42 +135,6 @@ PIKECLASS Yarrow
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN YARROW256_SEED_FILE_SIZE;
-  }
-
-  /*! @decl string(0..255) get_seed()
-   *!   Returns part of the internal state so that it can
-   *!   be saved for later seeding.
-   *!
-   *! @seealso
-   *!   @[seed()], @[random_string()]
-   */
-  PIKEFUN string(0..255) get_seed()
-    optflags OPT_EXTERNAL_DEPEND;
-    rawtype tDeprecated(tFunc(tNone, tStr8));
-  {
-    if( !yarrow256_is_seeded(&THIS->ctx) )
-      Pike_error("Random generator not seeded.\n");
-
-#ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-    RETURN make_shared_binary_string(THIS->ctx.seed_file,
-                                     YARROW256_SEED_FILE_SIZE);
-#else
-    if (THIS->seed_file) {
-      REF_RETURN THIS->seed_file;
-    } else {
-      /*
-       * It seems somewhat unreasonable to use uninitialized memory here.
-       * Instead, I think the user should be warned. It really isnt a very
-       * good source of entropy and may lead to undefined behavior in C.
-       * Why not simply return 0 in that case?
-       *  /arne
-       */
-      struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      PIKE_MEM_RW_RANGE(s->str, YARROW256_SEED_FILE_SIZE);
-      s = end_shared_string(s);
-      RETURN s;
-    }
-#endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
   }
 
   /*! @decl int(0..1) is_seeded()
@@ -209,7 +169,6 @@ PIKECLASS Yarrow
 #else
     yarrow256_force_reseed(&THIS->ctx);
 #endif
-    pike_generate_seed_file();
   }
 
   /*! @decl int(0..1) update(string(0..255) data, int source, int entropy)
@@ -234,9 +193,6 @@ PIKECLASS Yarrow
       Pike_error("Impossibly large entropy value.\n");
     ret = yarrow256_update(&THIS->ctx, source, entropy, data->len,
 			   (const uint8_t *)data->str);
-    if (ret) {
-      pike_generate_seed_file();
-    }
     RETURN ret;
   }
 
@@ -250,10 +206,10 @@ PIKECLASS Yarrow
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string(0..255) random_string(int length)
+  /*! @decl string(0..255) random_string(int(0..) length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string(0..255) random_string(int length)
+  PIKEFUN string(0..255) random_string(int(0..) length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -264,6 +220,23 @@ PIKECLASS Yarrow
     rnd = begin_shared_string(length);
     yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
     RETURN end_shared_string(rnd);
+  }
+
+  /*! @decl string(0..255) get_seed()
+   *!   Returns part of the internal state so that it can be saved for
+   *!   later seeding. This method is deprecated. Instead read the
+   *!   @[min_seed_size] number of bytes from the @[random_string]
+   *!   method.
+   *!
+   *! @seealso
+   *!   @[seed()], @[random_string()]
+   */
+  PIKEFUN string(0..255) get_seed()
+    optflags OPT_EXTERNAL_DEPEND;
+    rawtype tDeprecated(tFunc(tNone, tStr8));
+  {
+    push_int(YARROW256_SEED_FILE_SIZE);
+    f_Nettle_Yarrow_random_string(1);
   }
 
   INIT
@@ -285,6 +258,349 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
+#define INCREMENT(size, ctr)			\
+  do {						\
+    unsigned increment_i = (size) - 1;		\
+    if (++(ctr)[increment_i] == 0)		\
+      while (increment_i > 0			\
+	     && ++(ctr)[--increment_i] == 0 )	\
+	;					\
+  } while (0)
+
+/*! @class Fortuna
+ *!
+ *! Implements the Fortuna PRNG generator, designed by Niels Ferguson and
+ *! Bruce Schneier and described in Practical Cryptography. Web
+ *! published exerpt at https://www.schneier.com:443/fortuna.pdf
+ *!
+ *! This implementation uses AES256 to generate output and SHA256 to
+ *! generate keys.
+ *!
+ *! To use this class an entropy accumulator needs to be implemented
+ *! and supply the @[reseed()] method with new entopy.
+ */
+PIKECLASS Fortuna
+program_flags PROGRAM_CLEAR_STORAGE;
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR struct sha256_ctx sha_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+
+  DECLARE_STORAGE;
+
+#ifndef AES256_KEY_SIZE
+#define AES256_KEY_SIZE	(256>>3)
+#endif
+
+  static void fortuna_generate(uint8_t *data)
+  {
+    aes_encrypt(&THIS->aes_ctx, 16, data, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  static void fortuna_rekey(void)
+  {
+    fortuna_generate(THIS->key);
+    fortuna_generate(THIS->key+16);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Updated the internal key with the provided additional entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    sha256_update(&THIS->sha_ctx, 32, THIS->key);
+    sha256_update(&THIS->sha_ctx, data->len, (const uint8_t *)data->str);
+    sha256_digest(&THIS->sha_ctx, 32, THIS->key);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. In contrast with
+   *! the Fortuna PseudoRandomData function, which only allows 2^20
+   *! bytes of random data per call, the necessary rekey operations
+   *! are here performed internally, so no such restrictions apply.
+   */
+  PIKEFUN string(8bit) random_string(int(0..) len)
+  {
+    int stored = 0;
+    struct pike_string *s;
+    uint8_t *str;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
+
+    s = begin_shared_string(len);
+    str = (uint8_t *)s->str;
+
+    while( (len-stored) >= 16 )
+    {
+      fortuna_generate(str);
+      stored += 16;
+      str += 16;
+
+      if( !(stored % (1<<20)) )
+        fortuna_rekey();
+    }
+
+    if( len>stored )
+    {
+      uint8_t *buf = alloca(16);
+      fortuna_generate(buf);
+      memcpy(str, buf, len-stored);
+    }
+
+    fortuna_rekey();
+
+    RETURN end_shared_string(s);
+  }
+
+  INIT
+  {
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,32);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    sha256_init(&THIS->sha_ctx);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class AES128_CTR_DRBG
+ *!
+ *! Minimal implementation of NIST SP800-90Ar1 pseudo random number
+ *! generator CTR_DRBG using AES-128. No personalization, nounces or
+ *! additional data are supported.
+ *!
+ *! @seealso
+ *!  @[Random.AES128_CTR_DRBG]
+ */
+PIKECLASS AES128_CTR_DRBG
+program_flags PROGRAM_CLEAR_STORAGE;
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+  CVAR INT64 reseed_counter;
+  CVAR INT64 reseed_interval;
+
+  DECLARE_STORAGE;
+
+  /*
+   * blocklen = 128
+   * ctr_len = 128
+   * keylen = 128
+   * seedlen = 256
+   * reseed_interval = 2**48
+   */
+
+#ifndef AES128_KEY_SIZE
+#define AES128_KEY_SIZE	(128>>3)
+#endif
+
+  static void ctr_debug_update(char *data)
+  {
+    uint8_t tmp_key[16];
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, tmp_key, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+    aes_encrypt(&THIS->aes_ctx, 16, THIS->ctr, THIS->ctr);
+    memcpy(THIS->key, tmp_key, 16);
+    if( data )
+    {
+      memxor(THIS->key, (uint8_t*)data, 16);
+      memxor(THIS->ctr, (uint8_t*)data+16, 16);
+    }
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Updated the internal key with the provided additional entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    if( data->len!=32 )
+      Pike_error("Illegal entropy size.\n");
+    NO_WIDE_STRING(data);
+    ctr_debug_update(data->str);
+    THIS->reseed_counter = 1;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(int(1..281474976710656) interval)
+  {
+    INT64 interval_int64 = interval;
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval_int64;
+  }
+
+  /*! @decl int(1..281474976710656) reseed_interval
+   *! The number of times @[random_string] can be called before a
+   *! reseeding is forced. The number needs to be in the range of
+   *! 1..1<<48.
+   *!
+   *! @seealso
+   *!   @[entropy_underflow]
+   */
+  PIKEFUN void `reseed_interval=(object(Gmp.mpz) interval)
+  {
+    INT64 interval_int64 = 0;
+    if (!low_int64_from_bignum(&interval_int64, interval))
+      Pike_error("Invalid interval.\n");
+    if( interval_int64 < 1 || interval_int64 > (((INT64)1)<<48) )
+      Pike_error("Interval out of range.\n");
+    THIS->reseed_interval = interval_int64;
+  }
+
+  PIKEFUN int `reseed_interval()
+  {
+    push_int64(THIS->reseed_interval);
+  }
+
+  /*! @decl void entropy_underflow()
+   *! Called when @[random_string] has been called more than
+   *! @[reseed_interval] times.
+   */
+  PIKEFUN void entropy_underflow()
+    flags ID_PROTECTED;
+  {
+    Pike_error("Requires reseed.\n");
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. Does not allow
+   *! for additional input data in the call.
+   */
+  PIKEFUN string(8bit) random_string(int(0..) len)
+  {
+    int stored = 0;
+    struct pike_string *s;
+    uint8_t *str;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
+    if(THIS->reseed_counter>THIS->reseed_interval)
+      apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
+
+    s = begin_shared_string(len);
+    str = (uint8_t *)s->str;
+
+    while( (len-stored) >= 16 )
+    {
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, str, THIS->ctr);
+      stored += 16;
+      str += 16;
+
+      if( !(stored % (1<<19)) )
+      {
+        ctr_debug_update(NULL);
+        THIS->reseed_counter++;
+        if(THIS->reseed_counter>THIS->reseed_interval)
+          apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
+      }
+    }
+
+    if( len>stored )
+    {
+      uint8_t buf[16];
+      INCREMENT(16, THIS->ctr);
+      aes_encrypt(&THIS->aes_ctx, 16, buf, THIS->ctr);
+      memcpy(str, buf, len-stored);
+    }
+
+    ctr_debug_update(NULL);
+    THIS->reseed_counter++;
+
+    RETURN end_shared_string(s);
+  }
+
+  INIT
+  {
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,16);
+    THIS->reseed_counter = 1;
+    THIS->reseed_interval = ((INT64)1)<<48;
+    aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @decl int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
+ *!
+ *! Unpads a message that has been padded according to
+ *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2, but without the
+ *! null byte prefix. The padding method used on the original message
+ *! must be provided in the @[type] parameter. All content dependent
+ *! processing is done in constant time for the same padding type and
+ *! @[data] length.
+ *!
+ *! @returns
+ *!   Returns the position in the string where the first non-padding
+ *!   character is, or 0.
+ */
+PIKEFUN int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
+{
+  int i, pad=0, nonpad=0, pos=0;
+  unsigned char *str;
+
+  NO_WIDE_STRING(data);
+
+  /* Indata is smaller than minimum size, so we can exit immediately
+     without timing issue. 1 type + 8 padding + 1 delimiter + 1 value
+     = 11 bytes. */
+  if(data->len < 11 ) RETURN 0;
+  str = (unsigned char*)data->str + data->len - 1;
+
+  for(i=data->len-1; i>0; i--,str--)
+  {
+    switch(*str)
+    {
+    case 0:     pos=i; break;
+    case 0xff:  pad=i; break;
+    default: nonpad=i; break;
+    }
+  }
+
+  if( type==2 )
+  {
+    nonpad=pos+1;
+    pad=1;
+  }
+
+  if( (pad==1) + (nonpad>pos) + (*str==type) + (pos>8) == 4 )
+    RETURN pos+1;
+  RETURN 0;
+}
+
+
 /*! @decl string(0..127) crypt_md5(string(0..255) password, @
  *!                                string(0..255) salt,@
  *!                                void|string(0..255) magic)
@@ -293,11 +609,22 @@ PIKECLASS Yarrow
  *!
  *! The @[password] memory will be cleared before released.
  */
-PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
-				 void|string(0..255) magic)
-     optflags OPT_TRY_OPTIMIZE;
+PIKEFUN string(0..127) crypt_md5(string pw, string salt,
+				 void|string magic)
+  optflags OPT_TRY_OPTIMIZE;
+  /* NB: We use a weaker type above to allow us to delay
+   *     throwing errors on wide strings until we've had
+   *     time to censor the password string.
+   */
+  rawtype tFunc(tStr8 tStr8 tOr(tStr8, tVoid), tStr7);
 {
   char *hash;
+
+  /* Censor the password. */
+  push_string(pw);
+  args++;
+  add_ref(Pike_sp[-args].u.string = MK_STRING("censored"));
+
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
 
@@ -318,70 +645,131 @@ PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
   push_text(hash);
 }
 
-#if 0
+#ifdef HAVE_CRC32_INTRINSICS
+static int supports_sse42 = 0;
 
-/* @class LFib
- * The Donald Knuth Lagged Fibonacci pseudo random number generator.
- * This is @b{not@} a source for cryptographic randomness. Use
- * @[Crypto.Yarrow] instead.
- */
-PIKECLASS LFib
+static ATTRIBUTE((target("sse4")))
+  unsigned int intel_crc32c(const unsigned int *p, size_t len,
+   unsigned int h)
 {
-  CVAR struct knuth_lfib_ctx *ctx;
+  const unsigned int *e = p + (len>>2);
+  const unsigned char *c = (const unsigned char*)e;
+  h = ~h;
 
-  INIT {
-    THIS->ctx = xalloc(sizeof(struct knuth_lfib_ctx));
-  }
+  /* .. all full integers .. */
+  while( p<e )
+    h = __builtin_ia32_crc32si(h, *(p++));
 
-  EXIT
-    gc_trivial;
+  len &= 3;
+
+  /* any remaining bytes. */
+  while( len-- )
+    h = __builtin_ia32_crc32qi(h, *(c++));
+
+  return ~h;
+}
+#endif /* HAVE_CRC32_INTRINSICS */
+
+/* Copyright 2001, D. Otis.  Use this program, code or tables    */
+/* extracted from it, as desired without restriction.            */
+static const INT32 crc[256] = {
+  0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
+  0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
+  0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B,
+  0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24,
+  0x105EC76F, 0xE235446C, 0xF165B798, 0x030E349B,
+  0xD7C45070, 0x25AFD373, 0x36FF2087, 0xC494A384,
+  0x9A879FA0, 0x68EC1CA3, 0x7BBCEF57, 0x89D76C54,
+  0x5D1D08BF, 0xAF768BBC, 0xBC267848, 0x4E4DFB4B,
+  0x20BD8EDE, 0xD2D60DDD, 0xC186FE29, 0x33ED7D2A,
+  0xE72719C1, 0x154C9AC2, 0x061C6936, 0xF477EA35,
+  0xAA64D611, 0x580F5512, 0x4B5FA6E6, 0xB93425E5,
+  0x6DFE410E, 0x9F95C20D, 0x8CC531F9, 0x7EAEB2FA,
+  0x30E349B1, 0xC288CAB2, 0xD1D83946, 0x23B3BA45,
+  0xF779DEAE, 0x05125DAD, 0x1642AE59, 0xE4292D5A,
+  0xBA3A117E, 0x4851927D, 0x5B016189, 0xA96AE28A,
+  0x7DA08661, 0x8FCB0562, 0x9C9BF696, 0x6EF07595,
+  0x417B1DBC, 0xB3109EBF, 0xA0406D4B, 0x522BEE48,
+  0x86E18AA3, 0x748A09A0, 0x67DAFA54, 0x95B17957,
+  0xCBA24573, 0x39C9C670, 0x2A993584, 0xD8F2B687,
+  0x0C38D26C, 0xFE53516F, 0xED03A29B, 0x1F682198,
+  0x5125DAD3, 0xA34E59D0, 0xB01EAA24, 0x42752927,
+  0x96BF4DCC, 0x64D4CECF, 0x77843D3B, 0x85EFBE38,
+  0xDBFC821C, 0x2997011F, 0x3AC7F2EB, 0xC8AC71E8,
+  0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
+  0x61C69362, 0x93AD1061, 0x80FDE395, 0x72966096,
+  0xA65C047D, 0x5437877E, 0x4767748A, 0xB50CF789,
+  0xEB1FCBAD, 0x197448AE, 0x0A24BB5A, 0xF84F3859,
+  0x2C855CB2, 0xDEEEDFB1, 0xCDBE2C45, 0x3FD5AF46,
+  0x7198540D, 0x83F3D70E, 0x90A324FA, 0x62C8A7F9,
+  0xB602C312, 0x44694011, 0x5739B3E5, 0xA55230E6,
+  0xFB410CC2, 0x092A8FC1, 0x1A7A7C35, 0xE811FF36,
+  0x3CDB9BDD, 0xCEB018DE, 0xDDE0EB2A, 0x2F8B6829,
+  0x82F63B78, 0x709DB87B, 0x63CD4B8F, 0x91A6C88C,
+  0x456CAC67, 0xB7072F64, 0xA457DC90, 0x563C5F93,
+  0x082F63B7, 0xFA44E0B4, 0xE9141340, 0x1B7F9043,
+  0xCFB5F4A8, 0x3DDE77AB, 0x2E8E845F, 0xDCE5075C,
+  0x92A8FC17, 0x60C37F14, 0x73938CE0, 0x81F80FE3,
+  0x55326B08, 0xA759E80B, 0xB4091BFF, 0x466298FC,
+  0x1871A4D8, 0xEA1A27DB, 0xF94AD42F, 0x0B21572C,
+  0xDFEB33C7, 0x2D80B0C4, 0x3ED04330, 0xCCBBC033,
+  0xA24BB5A6, 0x502036A5, 0x4370C551, 0xB11B4652,
+  0x65D122B9, 0x97BAA1BA, 0x84EA524E, 0x7681D14D,
+  0x2892ED69, 0xDAF96E6A, 0xC9A99D9E, 0x3BC21E9D,
+  0xEF087A76, 0x1D63F975, 0x0E330A81, 0xFC588982,
+  0xB21572C9, 0x407EF1CA, 0x532E023E, 0xA145813D,
+  0x758FE5D6, 0x87E466D5, 0x94B49521, 0x66DF1622,
+  0x38CC2A06, 0xCAA7A905, 0xD9F75AF1, 0x2B9CD9F2,
+  0xFF56BD19, 0x0D3D3E1A, 0x1E6DCDEE, 0xEC064EED,
+  0xC38D26C4, 0x31E6A5C7, 0x22B65633, 0xD0DDD530,
+  0x0417B1DB, 0xF67C32D8, 0xE52CC12C, 0x1747422F,
+  0x49547E0B, 0xBB3FFD08, 0xA86F0EFC, 0x5A048DFF,
+  0x8ECEE914, 0x7CA56A17, 0x6FF599E3, 0x9D9E1AE0,
+  0xD3D3E1AB, 0x21B862A8, 0x32E8915C, 0xC083125F,
+  0x144976B4, 0xE622F5B7, 0xF5720643, 0x07198540,
+  0x590AB964, 0xAB613A67, 0xB831C993, 0x4A5A4A90,
+  0x9E902E7B, 0x6CFBAD78, 0x7FAB5E8C, 0x8DC0DD8F,
+  0xE330A81A, 0x115B2B19, 0x020BD8ED, 0xF0605BEE,
+  0x24AA3F05, 0xD6C1BC06, 0xC5914FF2, 0x37FACCF1,
+  0x69E9F0D5, 0x9B8273D6, 0x88D28022, 0x7AB90321,
+  0xAE7367CA, 0x5C18E4C9, 0x4F48173D, 0xBD23943E,
+  0xF36E6F75, 0x0105EC76, 0x12551F82, 0xE03E9C81,
+  0x34F4F86A, 0xC69F7B69, 0xD5CF889D, 0x27A40B9E,
+  0x79B737BA, 0x8BDCB4B9, 0x988C474D, 0x6AE7C44E,
+  0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
+};
+
+/*! @decl int(0..) crc32c(string(8bit) data, void|int(0..) seed)
+ *! Implements the Castagnoli CRC, CRC32C. Hardware optimized on Intel
+ *! CPUs with SSE 4.2.
+ *!
+ *! @param seed
+ *! Can be fed with the result of the previous invocation to chain on new data.
+ *! Defaults to zero on virgin runs.
+ */
+PIKEFUN int(0..) crc32c(string(8bit) data, void|int(0..) seed)
+{
+  unsigned int h = 0;
+  if(seed)
+    h = seed->u.integer;
+
+#ifdef HAVE_CRC32_INTRINSICS
+  if(supports_sse42)
   {
-    free(THIS->ctx);
+    push_int64(intel_crc32c((const unsigned int *)data->str, data->len, h));
   }
-
-  /* @decl void create(int seed)
-   * The Lfib generator must be seeded with a number.
-   */
-  PIKEFUN void create(int seed)
-    flags ID_PROTECTED;
+  else
+#endif /* HAVE_CRC32_INTRISINCS */
   {
-    knuth_lfib_init(THIS->ctx, seed);
-  }
-
-  /* @decl this_program reseed(int s)
-   * Reseed this object with seed @[s].
-   * @return
-   *   Returns the current object.
-   */
-  PIKEFUN object reseed(int s) {
-    knuth_lfib_init(THIS->ctx, s);
-    RETURN this_object();
-  }
-
-  /* Get one 32bit pseudorandom integer.
-   */
-  PIKEFUN int get() {
-    RETURN knuth_lfib_get(THIS->ctx);
-  }
-
-  /* Get a pseudorandom string of length @[len].
-   */
-  PIKEFUN string(0..255) get_string(int len) {
-    struct pike_string *s = begin_shared_string(len);
-    knuth_lfib_random(THIS->ctx, len, s->str);
-    push_string(end_shared_string(s));
+    unsigned int i=0, len = data->len;
+    for(h = ~h; i<len; i++)
+      h = (h>>8)^crc[(h^data->str[i])&0xFF];
+    push_int64(~h);
   }
 }
 
-/* @endclass
- */
-
-#endif
-
 /*! @endmodule
  */
-
-
 
 #endif /* HAVE_LIBNETTLE */
 
@@ -394,7 +782,9 @@ PIKE_MODULE_INIT
   INIT;
 #ifdef HAVE_LIBNETTLE
   hash_init();
+  mac_init();
   cipher_init();
+  aead_init();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
   start_new_program();
@@ -407,12 +797,22 @@ PIKE_MODULE_INIT
 #ifdef HAVE_LIBHOGWEED
   hogweed_init();
 #endif
+
+#ifdef HAVE_CRC32_INTRINSICS
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    supports_sse42 = cpuid[3] & bit_SSE4_2;
+  }
+#endif /* HAVE_CRC32_INTRISINCS */
 }
 
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBNETTLE
+  aead_exit();
   cipher_exit();
+  mac_exit();
   hash_exit();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__

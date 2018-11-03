@@ -4,11 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #include "interpret.h"
 #include "svalue.h"
@@ -70,7 +67,7 @@ static void do_free(void)
 {
   if(THIS->regexp)
   {
-    free((char *)THIS->regexp);
+    free(THIS->regexp);
     THIS->regexp=0;
   }
 }
@@ -86,13 +83,12 @@ static void do_free(void)
  */
 static void regexp_create(INT32 args)
 {
-  const char *str;
-
-  do_free();
   if(args)
   {
-    get_all_args("Regexp.SimpleRegexp->create", args, "%s", &str);
-    THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str, 0);
+    const char *str;
+    do_free();
+    get_all_args(NULL, args, "%s", &str);
+    THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str);
   }
 }
 
@@ -119,15 +115,14 @@ static void regexp_match(INT32 args)
   int i;
   struct regexp *regexp = THIS->regexp;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Regexp.SimpleRegexp->match", 1);
-  
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("match", 1);
+
   if(TYPEOF(Pike_sp[-args]) == T_STRING)
   {
     if(Pike_sp[-args].u.string->size_shift)
-      SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
-			   "Expected string (8bit)");
-    
+      SIMPLE_ARG_TYPE_ERROR("match", 1, "string(8bit)");
+
     i = pike_regexec(regexp, (char *)STR0(Pike_sp[-args].u.string));
     pop_n_elems(args);
     push_int(i);
@@ -143,10 +138,9 @@ static void regexp_match(INT32 args)
     for(i = n = 0; i < arr->size; i++)
     {
       struct svalue *sv = ITEM(arr) + i;
-      
+
       if(TYPEOF(*sv) != T_STRING || sv->u.string->size_shift)
-	SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
-			     "Expected string (8bit)");
+	SIMPLE_ARG_TYPE_ERROR("match", 1, "string(8bit)");
 
       if(pike_regexec(regexp, (char *)STR0(sv->u.string)))
       {
@@ -154,14 +148,13 @@ static void regexp_match(INT32 args)
 	n++;
       }
     }
-    
+
     f_aggregate(n);
     stack_pop_n_elems_keep_top(args);
     return;
   }
   else
-    SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
-			 "string|array(string)");
+    SIMPLE_ARG_TYPE_ERROR("match", 1, "string|array(string)");
 }
 
 /*! @decl array(string) split(string s)
@@ -186,7 +179,7 @@ static void regexp_split(INT32 args)
   struct pike_string *s;
   struct regexp *r;
 
-  get_all_args("Regexp.SimpleRegexp->split", args, "%S", &s);
+  get_all_args(NULL, args, "%S", &s);
 
   if(pike_regexec(r=THIS->regexp, s->str))
   {
@@ -213,11 +206,6 @@ static void regexp_split(INT32 args)
   }
 }
 
-static void init_regexp_glue(struct object *UNUSED(o))
-{
-  THIS->regexp=0;
-}
-
 static void exit_regexp_glue(struct object *UNUSED(o))
 {
   do_free();
@@ -237,7 +225,8 @@ PIKE_MODULE_INIT
   ADD_STORAGE(struct regexp_glue);
 
   /* function(void|string:void) */
-  ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),0);
+  ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),
+               ID_PROTECTED);
 
   /* function(string:int) */
   ADD_FUNCTION("match",regexp_match,
@@ -246,7 +235,6 @@ PIKE_MODULE_INIT
   /* function(string:string*) */
   ADD_FUNCTION("split",regexp_split,tFunc(tStr,tArr(tStr)),0);
 
-  set_init_callback(init_regexp_glue);
   set_exit_callback(exit_regexp_glue);
   end_class("_SimpleRegexp", 0);
 }

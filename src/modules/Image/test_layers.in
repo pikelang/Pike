@@ -29,7 +29,7 @@
    });
 
    // test lay one layer
-   foreach (normal_layers,array la) 
+   foreach (normal_layers,array la)
    {
       object l=la[1];
       object e_i=l->image()->copy(),e_a;
@@ -71,7 +71,7 @@
    foreach (normal_layers,array l) l[1]->set_offset(0,0);
 
    werror(" (2)");
-   foreach (normal_layers,array la) 
+   foreach (normal_layers,array la)
    {
       werror(".");
 
@@ -105,7 +105,7 @@
 	    b->set_offset(-200,-200);
 	    object res=Image.lay(({a,b}),200,200,100,100);
 	    if (a->image()*aa!=res->image()*aa) fail("image differ (c):"+la[0]+"+"+lb[0]+"\n");
-	    if (aa!=res->alpha()) fail("alpha differ (c):"+la[0]+"+"+lb[0]+"\n"); 
+	    if (aa!=res->alpha()) fail("alpha differ (c):"+la[0]+"+"+lb[0]+"\n");
 	 }
       }
    }
@@ -113,7 +113,7 @@
    foreach (normal_layers,array l) l[1]->set_offset(0,0);
 
    werror(" (3)");
-   foreach (normal_layers,array la) 
+   foreach (normal_layers,array la)
    {
       Stdio.stderr->write(" ");
       foreach (normal_layers,array lb)

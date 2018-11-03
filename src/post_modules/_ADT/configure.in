@@ -7,5 +7,3 @@ AC_MODULE_INIT()
 AC_SUBST(AUTO)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

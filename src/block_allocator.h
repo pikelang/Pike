@@ -1,10 +1,15 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef BLOCK_ALLOCATOR_H
 #define BLOCK_ALLOCATOR_H
 
 #include "global.h"
 #include "pike_error.h"
 #include "pike_memory.h"
-#include "pike_int_types.h"
 
 struct ba_layout {
     unsigned INT32 offset;
@@ -52,13 +57,13 @@ typedef void (*ba_walk_callback)(struct ba_iterator *,void*);
 PMOD_EXPORT
 void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data);
 
-static INLINE int ba_it_step(struct ba_iterator * it) {
+static inline int PIKE_UNUSED_ATTRIBUTE ba_it_step(struct ba_iterator * it) {
     it->cur = (char*)it->cur + it->l.block_size;
 
     return (char*)it->cur < (char*)it->end;
 }
 
-static INLINE void * ba_it_val(struct ba_iterator * it) {
+static inline void PIKE_UNUSED_ATTRIBUTE * ba_it_val(struct ba_iterator * it) {
     return it->cur;
 }
 
@@ -83,7 +88,7 @@ PMOD_EXPORT void ba_free_all(struct block_allocator * a);
 PMOD_EXPORT size_t ba_count(const struct block_allocator * a);
 PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, size_t * size);
 
-static INLINE void ba_init(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks) {
+static inline void PIKE_UNUSED_ATTRIBUTE ba_init(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks) {
     ba_init_aligned(a, block_size, blocks, 0);
 }
 #endif

@@ -11,18 +11,16 @@ MODULE_SEGMENTS=
 
 for a in `(cd $srcdir ; echo *)`
 do
-  if test "$a" != "CVS" -a "$a" != "RCS" ; then
-    if test -d "$srcdir/$a" ; then
-      if test -f "$srcdir/$a/configure.in"; then
-        yesno=`eval echo \\$with_$a`
+  if test -d "$srcdir/$a" ; then
+    if test -f "$srcdir/$a/configure.in"; then
+      yesno=`eval echo \\$with_$a`
 	if test "x${yesno-}" != xno ; then
 	  if test x$POST_MODULE_BUILD_TYPE = xstatic; then
 	    MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
 	    MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
 	  fi
-          module_names="$module_names $a"
-  	  dirs="$dirs $a"
-        fi
+        module_names="$module_names $a"
+	  dirs="$dirs $a"
       fi
     fi
   fi
@@ -37,4 +35,3 @@ dependencies=$srcdir/dependencies
 AC_CONFIG_SUBDIRS($dirs)
 
 AC_OUTPUT(Makefile,[:],dirs="$module_names")
-

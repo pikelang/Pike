@@ -7,7 +7,6 @@
 /*
  * Config-file for the Pike mySQL-module.
  *
- * Henrik Grubbström 1997-01-30
  */
 
 #ifndef PIKE_MYSQL_CONFIG_H
@@ -57,6 +56,9 @@
 
 /* Define if your mysql.h defines SHUTDOWN_DEFAULT */
 #undef HAVE_SHUTDOWN_DEFAULT
+
+/* Define if your mysql.h defines MARIADB_CLIENT_VERSION */
+#undef HAVE_MARIADB_CLIENT_VERSION
 
 /* Define if MYSQL_FIELD has a charsetnr member */
 #undef HAVE_MYSQL_FIELD_CHARSETNR

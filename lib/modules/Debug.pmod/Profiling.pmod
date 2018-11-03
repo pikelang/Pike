@@ -1,8 +1,8 @@
 /* -*- Mode: pike; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #pike __REAL_VERSION__
+#require constant(get_profiling_info)
 
-#if constant(get_profiling_info)
-private multiset(program) object_programs() 
+private multiset(program) object_programs()
 {
     multiset x = (<>);
     int orig_enabled = Pike.gc_parameters()->enabled;
@@ -66,7 +66,7 @@ private string program_name(program|object what)
 {
     if( pnc[what] ) return pnc[what];
     string p;
-    if( (p = search(master()->programs,what)) && p != "main") 
+    if( (p = search(master()->programs,what)) && p != "main")
         return pnc[what] = normalize_name(p);
     return pnc[what] = filter_obj_name(sprintf("%O",what)-".pike");
 }
@@ -124,7 +124,7 @@ private mapping low_get_prof_info( bool avoid_overhead )
 
     foreach(indices(tmp), string c)
     {
-        // if( has_prefix( c, "/master" ) ) 
+        // if( has_prefix( c, "/master" ) )
         //     continue;
         if( has_value( c, "Profiling" ) )
             continue;
@@ -327,6 +327,3 @@ void display(int|void num,
     sort( (array(float))column(rows,1+(__MINOR__==6?0:1)), rows );
     output_result( reverse(rows)[..num||99], 6 );
 }
-#else
-constant this_program_does_not_exist = 1;
-#endif

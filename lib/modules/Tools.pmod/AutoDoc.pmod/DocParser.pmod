@@ -75,6 +75,7 @@ mapping(string : DocTokenType) keywordtype =
   "sub" : BRACEKEYWORD,
   "sup" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
+  "rfc" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
@@ -128,7 +129,7 @@ mapping(string : array(string)) attributenames =
 mapping(string:array(string)) required_attributes =
 ([
   "param" : ({ "name" }),
-]);  
+]);
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
@@ -291,7 +292,7 @@ protected array(Token) split(string s, SourcePosition pos) {
   return res;
 }
 
-//! Internal class for parsing documentation markup. 
+//! Internal class for parsing documentation markup.
 protected class DocParserClass {
 
   //!
@@ -441,7 +442,7 @@ protected class DocParserClass {
   }
 
   protected mapping(string : string) sectionArgHandler(string keyword, string arg) {
-    return ([ "title" : String.trim_all_whites (arg) ]);
+    return ([ "title" : String.trim (arg) ]);
   }
 
   protected string typeArgHandler(string keyword, string arg) {
@@ -485,9 +486,12 @@ protected class DocParserClass {
     return "";
   }
 
-  protected mapping(string:string) itemArgHandler (string keyword, string arg)
+  protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
-    return (["name": String.trim_all_whites (arg)]);
+    arg = String.trim(arg);
+    if (arg == "") return "";
+    if (!has_value(arg, "@")) return ([ "name":arg ]);
+    return xmlNode(arg);
   }
 
   protected mapping(string : string) standardArgHandler(string keyword, string arg)
@@ -691,7 +695,7 @@ protected class DocParserClass {
 	res += closetag(tagstack[0]);
       tagstack = tagstack[1..];
     }
-    res = String.trim_all_whites(res-"<p></p>");
+    res = String.trim(res-"<p></p>");
     if(!sizeof(res)) return "\n";
     return "<p>" + res + "</p>\n";
   }
@@ -844,15 +848,15 @@ protected class DocParserClass {
 			SourcePosition|void position,
 			.Flags|void flags)
   {
-    if (zero_type(flags)) flags = .FLAG_NORMAL;
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
 
-    this_program::flags = flags;
+    this::flags = flags;
 
     if (arrayp(s)) {
       tokenArr = s;
     }
     else {
-      if (!position) throw(({ __FILE__,__LINE__,"position == 0"}));
+      if (!position) error("position == 0");
       tokenArr = split(s, position);
     }
     tokenArr += ({ Token(ENDTOKEN, 0, 0, 0, 0) });
@@ -870,6 +874,7 @@ protected class DocParserClass {
       string endkeyword = 0;
       switch (keyword) {
       case "namespace":
+      case "enum":
       case "class":
       case "module":
 	{
@@ -909,6 +914,7 @@ protected class DocParserClass {
 	break;
 
       case "endnamespace":
+      case "endenum":
       case "endclass":
       case "endmodule":
 	{
@@ -984,7 +990,7 @@ protected class DocParserClass {
           if (meta->belongs)
             parseError("@belongs before @directive");
           meta->type = "decl";
-	  string s = String.trim_all_whites(arg);
+          string s = String.trim(arg);
           meta->decls += ({ .PikeObjects.CppDirective(s) });
 	}
 	break;

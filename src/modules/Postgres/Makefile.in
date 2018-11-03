@@ -10,4 +10,8 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
+postgres.o: $(SRCDIR)/postgres.c
+
+pgresult.o: $(SRCDIR)/pgresult.c
+
 @dependencies@

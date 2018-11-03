@@ -185,7 +185,7 @@ void push_pwent(struct passwd *ent)
     if(foo)
       push_text(foo->sp_pwdp);
     else
-      push_text("x");
+      push_static_text("x");
   } else
 #endif /* Shadow password support */
   SAFE_PUSH_TEXT(ent->pw_passwd);
@@ -196,7 +196,7 @@ void push_pwent(struct passwd *ent)
 #ifdef HAVE_PW_GECOS
   SAFE_PUSH_TEXT(ent->pw_gecos);
 #else /* !HAVE_PW_GECOS */
-  push_text("Mister Anonymous");
+  push_static_text("Mister Anonymous");
 #endif /* HAVE_PW_GECOS */
   SAFE_PUSH_TEXT(ent->pw_dir);
   SAFE_PUSH_TEXT(ent->pw_shell);
@@ -255,7 +255,7 @@ void f_getgrgid(INT32 args)
 {
   INT_TYPE gid;
   struct group *foo;
-  get_all_args("getgrgid", args, "%i", &gid);
+  get_all_args(NULL, args, "%i", &gid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -298,7 +298,7 @@ void f_getgrnam(INT32 args)
 {
   char *str;
   struct group *foo;
-  get_all_args("getgrnam", args, "%s", &str);
+  get_all_args(NULL, args, "%s", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -348,7 +348,7 @@ void f_getpwnam(INT32 args)
   char *str;
   struct passwd *foo;
 
-  get_all_args("getpwnam", args, "%s", &str);
+  get_all_args(NULL, args, "%s", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -399,7 +399,7 @@ void f_getpwuid(INT32 args)
   INT_TYPE uid;
   struct passwd *foo;
 
-  get_all_args("getpwuid", args, "%i", &uid);
+  get_all_args(NULL, args, "%i", &uid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -762,7 +762,7 @@ void f_get_groups_for_user(INT32 arg)
   ONERROR err;
   int base_gid;
 
-  check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
+  check_all_args(NULL,arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
   if(TYPEOF(sp[-1]) == T_INT)

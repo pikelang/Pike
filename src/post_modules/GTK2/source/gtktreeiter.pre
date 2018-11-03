@@ -29,7 +29,7 @@ GTK2.TreeIter copy()
   }
 }
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned)
     g_free((GtkTreeIter *)THIS->obj);

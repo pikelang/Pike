@@ -18,7 +18,7 @@ void create(string|mapping(string:mixed)|void label)
       GtkWidget *gi;
       int t=0;
 
-      get_all_args("create",args,"%t",&s1);
+      get_all_args(NULL,args,"%t",&s1);
       if(s1->size_shift==0)
 	t=gtk_stock_lookup(CGSTR0(s1),&item);
       if (t)

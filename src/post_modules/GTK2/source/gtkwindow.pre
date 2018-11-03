@@ -67,7 +67,7 @@ void create(int|mapping(string:mixed) props)
     
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       GtkWidget *gw;
-      get_all_args("create",args,"%i",&wt);
+      get_all_args(NULL,args,"%i",&wt);
       gw=gtk_window_new(wt);
       THIS->obj=G_OBJECT(gw); 
     } else {
@@ -195,7 +195,7 @@ void set_geometry_hints(GTK2.Widget widget, mapping(string:int) geometry)
     GdkGeometry geo;
 /*    GdkWindowHints mask; */
     long mask;
-    get_all_args("set_geometry_hints",args,"%o%m",&o1,&m);
+    get_all_args(NULL,args,"%o%m",&o1,&m);
     GET_ARG(min_width,PIKE_T_INT,GDK_HINT_MIN_SIZE);
     GET_ARG(min_height,PIKE_T_INT,GDK_HINT_MIN_SIZE);
     GET_ARG(max_width,PIKE_T_INT,GDK_HINT_MAX_SIZE);
@@ -219,7 +219,7 @@ void set_gravity(int gravity);
 //! The default window gravity is GDK2.GRAVITY_NORTH_WEST, which will typically
 //! "do what you mean."
 
-void get_gravity();
+int get_gravity();
 //! Gets the value set by set_gravity().
 
 void set_position(int pos);
@@ -295,7 +295,7 @@ void set_default(GTK2.Widget child);
 //! The default widget is the widget that's activated when the user presses
 //! Enter in a dialog (for example).  This function sets or unsets the default
 //! widget.  When setting (rather than unsetting) the default widget it's
-//! generally easier to call GTK2.Widget->grab_focus() on the widget.
+//! generally easier to call GTK2.Widget->grab_default() on the widget.
 
 void present();
 //! Presents this window to the user.  This may mean raising the window
@@ -662,7 +662,7 @@ void set_icon_list(array(GDK2.Pixbuf) list)
     GdkPixbuf *gp;
     int i;
 
-    get_all_args("set_icon_list",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       SIMPLE_ARG_ERROR("set_icon_list",args,"Invalid array");
     for (i=0; i<a->size; i++) {

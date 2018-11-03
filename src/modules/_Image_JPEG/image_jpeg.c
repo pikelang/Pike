@@ -5,16 +5,29 @@
 */
 
 #include "global.h"
-
 #include "config.h"
 
 #if !defined(HAVE_LIBJPEG)
 #undef HAVE_JPEGLIB_H
 #endif
 
-#ifdef HAVE_JPEGLIB_H
+#include "pike_compiler.h"
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "stralloc.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "operators.h"
+#include "pike_types.h"
 
-#include <stdio.h>
+#ifdef HAVE_JPEGLIB_H
 
 /* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
@@ -25,14 +38,11 @@
 #endif
 
 #ifdef HAVE_JCONFIG_H_HAVE_BOOLEAN
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #ifdef HAVE_WTYPES_H
 /* jconfig.h has probably been compiled without WIN32_LEAN_AND_MEAN...
  * So we need this one to get the boolean typedef.
  */
 #include <wtypes.h>
-#endif
 #endif
 #endif
 
@@ -48,21 +58,6 @@
 #undef EXTERN
 #endif
 
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
-#include "interpret.h"
-#include "svalue.h"
-#include "threads.h"
-#include "array.h"
-#include "mapping.h"
-#include "pike_error.h"
-#include "stralloc.h"
-#include "threads.h"
-#include "builtin_functions.h"
-#include "module_support.h"
-#include "operators.h"
-
 #define sp Pike_sp
 
 #ifdef HAVE_JPEGLIB_H
@@ -72,7 +67,7 @@
 #ifdef DYNAMIC_MODULE
 static struct program *image_program;
 #else
-extern struct program *image_program; 
+extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
@@ -198,7 +193,7 @@ static boolean my_jpeg_marker_parser(j_decompress_ptr cinfo)
    length-=2;
    length &= 0xffff;
 
-   mm=(struct my_marker*)xalloc(sizeof(struct my_marker)+length);
+   mm=xalloc(sizeof(struct my_marker)+length);
    mm->id=cinfo->unread_marker;
    mm->len=length;
    mm->next=mds->first_marker;
@@ -242,12 +237,12 @@ static boolean my_empty_output_buffer(struct jpeg_compress_struct *cinfo)
    char *new;
 
    pos=dm->len; /* foo! dm->len-dm->pub.free_in_buffer; */
-   new=(char*)realloc(dm->buf,dm->len+BUF_INCREMENT);
+   new=realloc(dm->buf,dm->len+BUF_INCREMENT);
    if (!new) return FALSE;
 
    dm->buf = new;
    dm->len += BUF_INCREMENT;
-   dm->pub.free_in_buffer = DO_NOT_WARN(dm->len - pos);
+   dm->pub.free_in_buffer = dm->len - pos;
    dm->pub.next_output_byte = (JOCTET*)new + pos;
 
    return TRUE;
@@ -267,7 +262,7 @@ struct pike_string* my_result_and_clean(struct jpeg_compress_struct *cinfo)
       struct pike_string *ps;
       ps=make_shared_binary_string(dm->buf,
 				   (char*)dm->pub.next_output_byte-(char*)dm->buf);
-      
+
       free(dm->buf);
       dm->buf=NULL;
       return ps;
@@ -395,7 +390,7 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
 	       temp = table[i];
 	       /* limit the values to the valid range */
 	       if (temp <= 0L) temp = 1L;
-	       if (temp > 32767L) temp = 32767L; 
+	       if (temp > 32767L) temp = 32767L;
 	       (*qtblptr)->quantval[i] = (UINT16) temp;
 	    }
 
@@ -424,13 +419,28 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
-	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_STRING ||
-	     k->val.u.string->size_shift)
-	    Pike_error("Image.JPEG.encode: illegal value of option "
-		       "marker; expected mapping(int:8 bit string)\n");
-	 jpeg_write_marker(cinfo, k->ind.u.integer, 
-			   (const unsigned char *)k->val.u.string->str,
-			   k->val.u.string->len); 
+	 if (TYPEOF(k->ind) == T_INT) {
+	    if (TYPEOF(k->val) == T_STRING && !k->val.u.string->size_shift) {
+	       jpeg_write_marker(cinfo, k->ind.u.integer,
+				 (const unsigned char *)k->val.u.string->str,
+				 k->val.u.string->len);
+	       continue;
+	    } else if (TYPEOF(k->val) == T_ARRAY) {
+	       struct array *a = k->val.u.array;
+	       INT32 i;
+	       for (i = 0; i < a->size; i++) {
+		 struct pike_string *str = ITEM(a)[i].u.string;
+		 if (TYPEOF(ITEM(a)[i]) != T_STRING || str->size_shift)
+		   goto fail;
+		 jpeg_write_marker(cinfo, k->ind.u.integer,
+				   STR0(str), str->len);
+	       }
+	       continue;
+	    }
+	 }
+      fail:
+	 Pike_error("Image.JPEG.encode: illegal value of option marker; "
+		    "expected mapping(int:string(8bit)|array(string(8bit)))\n");
       }
 
    return 1;
@@ -448,9 +458,9 @@ static int parameter_comment(struct svalue *map,struct pike_string *what,
       Pike_error("Image.JPEG.encode: illegal value of option comment;"
 		 " expected 8 bit string\n");
 
-   jpeg_write_marker(cinfo, JPEG_COM, 
+   jpeg_write_marker(cinfo, JPEG_COM,
 		     (const unsigned char *)v->u.string->str,
-		     v->u.string->len); 
+		     v->u.string->len);
 
    return 1;
 }
@@ -464,9 +474,9 @@ struct my_source_mgr
 static void my_init_source(struct jpeg_decompress_struct *cinfo)
 {
   struct my_source_mgr *sm = (struct my_source_mgr *)cinfo->src;
-  
+
   sm->pub.next_input_byte = (JOCTET*)sm->str->str;
-  sm->pub.bytes_in_buffer = DO_NOT_WARN(sm->str->len);
+  sm->pub.bytes_in_buffer = sm->str->len;
 }
 
 static boolean my_fill_input_buffer(struct jpeg_decompress_struct *cinfo)
@@ -485,7 +495,7 @@ static void my_skip_input_data(struct jpeg_decompress_struct *cinfo,
 			       long num_bytes)
 {
    struct my_source_mgr *sm=(struct my_source_mgr *)cinfo->src;
- 
+
    if (((unsigned long)num_bytes)>sm->pub.bytes_in_buffer)
       num_bytes=sm->pub.bytes_in_buffer;
 
@@ -524,7 +534,7 @@ static int marker_exists_in_args(INT32 args, int which)
    return 0;
 }
 
-static void my_copy_jpeg_markers(INT32 args, 
+static void my_copy_jpeg_markers(INT32 args,
 				 struct my_decompress_struct *mds,
 				 j_compress_ptr cinfo)
 {
@@ -533,7 +543,7 @@ static void my_copy_jpeg_markers(INT32 args,
 	if (args < 2 || !marker_exists_in_args(args, mm->id)) {
 	  jpeg_write_marker(cinfo, mm->id,
 			    mm->data,
-			    mm->len); 
+			    mm->len);
 	}
 	mds->first_marker=mm->next;
 	free(mm);
@@ -591,13 +601,13 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
 {
     int transform = 0;
     if (args > 1 && parameter_int(sp+1-args,param_transform,&transform) &&
-	((transform == JXFORM_FLIP_H) || 
-	(transform == JXFORM_FLIP_V) || 
-	(transform == JXFORM_NONE) || 
-	(transform == JXFORM_ROT_90) || 
-	(transform == JXFORM_ROT_180) || 
-	(transform == JXFORM_ROT_270) || 
-	(transform == JXFORM_TRANSPOSE) || 
+	((transform == JXFORM_FLIP_H) ||
+	(transform == JXFORM_FLIP_V) ||
+	(transform == JXFORM_NONE) ||
+	(transform == JXFORM_ROT_90) ||
+	(transform == JXFORM_ROT_180) ||
+	(transform == JXFORM_ROT_270) ||
+	(transform == JXFORM_TRANSPOSE) ||
 	(transform == JXFORM_TRANSVERSE))) {
 	options->transform = transform;
     } else {
@@ -655,7 +665,7 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
  *!     Default is off for quality<25.
  *!   @member mapping(int:array(array(int))) "quant_tables"
  *!     Tune quantisation tables manually.
- *!   @member mapping(int:string) "marker"
+ *!   @member mapping(int:string(8bit)|array(string(8bit))) "marker"
  *!     Application and comment markers;
  *!     the integer should be one of @[Marker.COM], @[Marker.APP0],
  *!     @[Marker.APP1], ..., @[Marker.APP15]. The string is up to the application;
@@ -704,7 +714,7 @@ static void image_jpeg_encode(INT32 args)
    if (args<1
        || (TYPEOF(sp[-args]) != T_OBJECT && TYPEOF(sp[-args]) != T_STRING)
        || (TYPEOF(sp[-args]) == T_OBJECT &&
-	   !(img=(struct image*) get_storage(sp[-args].u.object,image_program)))
+	   !(img= get_storage(sp[-args].u.object,image_program)))
        || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
@@ -712,35 +722,35 @@ static void image_jpeg_encode(INT32 args)
        /* Compression from Image.Image object */
        if (!img->img)
 	   Pike_error("Image.JPEG.encode: Given image is empty.\n");
-       
+
        tmp=malloc(img->xsize*3*8);
-       if (!tmp) 
+       if (!tmp)
 	   Pike_error("Image.JPEG.encode: out of memory\n");
        /* init jpeg library objects */
-       
+
        jpeg_std_error(&errmgr);
-       
+
        errmgr.error_exit=my_error_exit;
        errmgr.emit_message=my_emit_message;
        errmgr.output_message=my_output_message;
-       
+
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
-       
+
        cinfo.err=&errmgr;
-       
+
        jpeg_create_compress(&cinfo);
 
        cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
-       
+
        cinfo.image_width=img->xsize;
        cinfo.image_height=img->ysize;
        cinfo.input_components=3;     /* 1 */
        cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
-       
+
        jpeg_set_defaults(&cinfo);
-       
+
        cinfo.optimize_coding=(img->xsize*img->ysize)<50000;
    } else {
        /* "Compression" from JPEG block */
@@ -749,7 +759,7 @@ static void image_jpeg_encode(INT32 args)
        jvirt_barray_ptr *src_coef_arrays, *dst_coef_arrays;
 #else
        Pike_error("Image.JPEG.encode: Raw JPEG data transformation not allowed"
-                  " when Pike is compiled with this version of libjpeg.\n"); 
+                  " when Pike is compiled with this version of libjpeg.\n");
 #endif /*TRANSFORMS_SUPPORTED*/
 
        jpeg_std_error(&errmgr);
@@ -757,7 +767,7 @@ static void image_jpeg_encode(INT32 args)
        errmgr.error_exit=my_error_exit;
        errmgr.emit_message=my_emit_message;
        errmgr.output_message=my_output_message;
-       
+
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
@@ -825,7 +835,7 @@ static void image_jpeg_encode(INT32 args)
 	 cinfo.smoothing_factor=p;
       }
 
-      
+
       if (parameter_int(sp+1-args,param_x_density,&p) &&
 	  parameter_int(sp+1-args,param_y_density,&q))
       {
@@ -851,7 +861,7 @@ static void image_jpeg_encode(INT32 args)
 	      p==JDCT_ISLOW ||
 	      p==JDCT_FASTEST))
 	 cinfo.dct_method=p;
-      
+
       if (parameter_int(sp+1-args,param_progressive,&p) && p)
 	 jpeg_simple_progression(&cinfo);
 
@@ -872,17 +882,17 @@ static void image_jpeg_encode(INT32 args)
        /* Compression from Image.Image object */
        y=img->ysize;
        s=img->img;
-       
+
        THREADS_ALLOW();
        while (y)
 	   {
 	       int n,i,y2=y;
 	       if (y2>8) y2=8;
-	       n=img->xsize*y2; 
+	       n=img->xsize*y2;
 	       i=0;
 	       while (n--)
 		   tmp[i++]=s->r, tmp[i++]=s->g, tmp[i++]=s->b, s++;
-	       
+
 	       row_pointer[0]=tmp;
 	       row_pointer[1]=tmp+img->xsize*3;
 	       row_pointer[2]=tmp+img->xsize*3*2;
@@ -892,18 +902,18 @@ static void image_jpeg_encode(INT32 args)
 	       row_pointer[6]=tmp+img->xsize*3*6;
 	       row_pointer[7]=tmp+img->xsize*3*7;
 	       jpeg_write_scanlines(&cinfo, row_pointer, y2);
-	       
+
 	       y-=y2;
 	   }
        THREADS_DISALLOW();
-       
+
        free(tmp);
    } else {
        /* "Compression" from JPEG block */
 
    }
    jpeg_finish_compress(&cinfo);
-   
+
    pop_n_elems(args);
    push_string(my_result_and_clean(&cinfo));
 
@@ -983,6 +993,8 @@ static void image_jpeg_encode(INT32 args)
  *!     JPEG quant tables.
  *!   @member int(0..100) "quality"
  *!     JPEG quality guess.
+ *!   @member mapping(int(0..255):string(8bit)|array(string(8bit))) "marker"
+ *!     Mapping from application and comment markers to their values.
  *! @endmapping
  */
 
@@ -1002,7 +1014,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    rgb_group *d;
    JSAMPROW row_pointer[8];
 
-   int n=0,m;
+   int n=0;
 
    if (args<1
        || TYPEOF(sp[-args]) != T_STRING
@@ -1010,7 +1022,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
    /* init jpeg library objects */
-   
+
    init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
    if (mds.cinfo.jpeg_color_space == JCS_CMYK ||
@@ -1040,10 +1052,10 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       if (parameter_int(sp+1-args,param_fancy_upsampling,&p))
 	 mds.cinfo.do_fancy_upsampling=!!p;
-      
+
       if (parameter_int(sp+1-args,param_block_smoothing,&p))
 	 mds.cinfo.do_block_smoothing=!!p;
-      
+
       if (parameter_int(sp+1-args,param_scale_denom,&p)
 	 &&parameter_int(sp+1-args,param_scale_num,&q))
 	 mds.cinfo.scale_num=q,
@@ -1054,19 +1066,22 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    if (mode!=IMG_DECODE_IMAGE)
    {
+      struct mapping *markers;
+      int got_comment = 0;
+
       /* standard header info */
 
-      push_text("type"); n++;
-      push_text("image/jpeg");
+      ref_push_string(literal_type_string); n++;
+      push_static_text("image/jpeg");
 
-      push_text("xsize"); n++;
+      push_static_text("xsize"); n++;
       push_int(mds.cinfo.image_width);
 
-      push_text("ysize"); n++;
+      push_static_text("ysize"); n++;
       push_int(mds.cinfo.image_height);
 
-      push_text("xdpi"); n++;
-      push_text("ydpi"); n++;
+      push_static_text("xdpi"); n++;
+      push_static_text("ydpi"); n++;
       switch (mds.cinfo.density_unit)
       {
 	 default:
@@ -1078,66 +1093,99 @@ static void img_jpeg_decode(INT32 args,int mode)
 	    push_float( mds.cinfo.Y_density );
 	    break;
 	 case 2:
-	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.X_density/2.54)) );
+            push_float( (FLOAT_TYPE)(mds.cinfo.X_density/2.54) );
 	    stack_swap();
-	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.Y_density/2.54)) );
+            push_float( (FLOAT_TYPE)(mds.cinfo.Y_density/2.54) );
 	    break;
       }
 
       /* JPEG special header */
 
-      push_text("num_components"); n++;
+      push_static_text("num_components"); n++;
       push_int(mds.cinfo.num_components);
 
-      push_text("color_space"); n++;
+      push_static_text("color_space"); n++;
       switch (mds.cinfo.jpeg_color_space)
       {
-	 case JCS_UNKNOWN:	push_text("UNKNOWN"); break;
-	 case JCS_GRAYSCALE:	push_text("GRAYSCALE"); break;
-	 case JCS_RGB:		push_text("RGB"); break;
-	 case JCS_YCbCr:	push_text("YUV"); break;
-	 case JCS_CMYK:		push_text("CMYK"); break;
-	 case JCS_YCCK:		push_text("YCCK"); break;
-	 default:		push_text("?"); break;
+	 case JCS_UNKNOWN:	push_static_text("UNKNOWN"); break;
+	 case JCS_GRAYSCALE:	push_static_text("GRAYSCALE"); break;
+	 case JCS_RGB:		push_static_text("RGB"); break;
+	 case JCS_YCbCr:	push_static_text("YUV"); break;
+	 case JCS_CMYK:		push_static_text("CMYK"); break;
+	 case JCS_YCCK:		push_static_text("YCCK"); break;
+	 default:		push_static_text("?"); break;
       }
 
-      push_text("density_unit"); n++;
+      push_static_text("density_unit"); n++;
       push_int(mds.cinfo.density_unit);
 
-      push_text("x_density"); n++;
+      push_static_text("x_density"); n++;
       push_int(mds.cinfo.X_density);
 
-      push_text("y_density"); n++;
+      push_static_text("y_density"); n++;
       push_int(mds.cinfo.Y_density);
 
-      push_text("adobe_marker"); n++;
+      push_static_text("adobe_marker"); n++;
       push_int(mds.cinfo.saw_Adobe_marker);
 
       ref_push_string(param_marker); n++;
-      m=0;
+      push_mapping(markers = allocate_mapping(mds.first_marker?10:0));
       while (mds.first_marker)
       {
 	 struct my_marker *mm=mds.first_marker;
+	 struct svalue *val;
 	 push_int(mm->id);
-	 push_string(make_shared_binary_string((char *)mm->data, mm->len));
-	 m++;
+	 if ((val = low_mapping_lookup(markers, Pike_sp-1))) {
+	    if (TYPEOF(*val) == T_STRING) {
+	       /* Both values are strings. */
+	       ref_push_string(val->u.string);
+	       push_string(make_shared_binary_string((char *)mm->data,
+						     mm->len));
+	       f_aggregate(2);
+	    } else {
+	       struct array *old = val->u.array;
+	       struct array *new;
+	       push_string(make_shared_binary_string((char *)mm->data,
+						     mm->len));
+
+	       /* Make sure not to free the old array in place
+		* on realloc, as that would invalidate the mapping.
+		*/
+	       add_ref(old);
+
+	       new = append_array(old, Pike_sp-1);
+	       pop_stack();
+	       if (new == old) {
+		 /* Array modified in place.
+		  * No need to reassign it.
+		  * Remove the extra reference from above.
+		  */
+		 free_array(old);
+		 goto next_marker;
+	       }
+	       /* The reference we added to old has migrated to new.
+		* Pass it along to the stack.
+		*/
+	       push_array(new);
+	    }
+	 } else {
+	    push_string(make_shared_binary_string((char *)mm->data, mm->len));
+	 }
+	 mapping_insert(markers, Pike_sp-2, Pike_sp-1);
+	 if ((mm->id == JPEG_COM) && !got_comment) {
+	    /* First comment - Add the comment to the main mapping too. */
+	    stack_swap();
+	    pop_stack();	/* Zap mm->id from the stack. */
+	    ref_push_string(param_comment);
+	    stack_swap();	/* And replace it with "comment". */
+	    n++;		/* One more element for the main mapping. */
+	    got_comment = 1;
+	 } else {
+	    pop_n_elems(2);
+	 }
+      next_marker:
 	 mds.first_marker=mm->next;
 	 free(mm);
-      }
-      f_aggregate_mapping(m*2);
-
-      if (m)
-      {
-	 stack_dup();
-	 push_int(JPEG_COM);
-	 f_index(2);
-	 if (TYPEOF(sp[-1]) == T_STRING)
-	 {
-	    ref_push_string(param_comment); n++;
-	    stack_swap();
-	 }
-	 else
-	    pop_stack();
       }
    }
 
@@ -1156,7 +1204,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       bytes_per_pixel = mds.cinfo.output_components;
 
       o=clone_object(image_program,0);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
       img->img=malloc(bytes_per_pixel *
 		      mds.cinfo.output_width*mds.cinfo.output_height);
@@ -1176,7 +1224,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 free_object(o);
 	 Pike_error("Image.JPEG.decode: out of memory\n");
       }
-   
+
       y=img->ysize;
       d=img->img;
 
@@ -1228,7 +1276,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       {
 	 int i,m,j;
 
-	 push_text("quant_tables");
+	 push_static_text("quant_tables");
 	 for (i=m=0; i<NUM_QUANT_TBLS; i++)
 	 {
 	    if (mds.cinfo.quant_tbl_ptrs[i])
@@ -1259,7 +1307,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	       else if (w>q) a=++c;
 	       else b=c;
 	    }
-	    push_text("quality");
+	    push_static_text("quality");
 	    push_int(c);
 	    n++;
 	 }
@@ -1277,7 +1325,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    }
    else if (mode==IMG_DECODE_MUCH)
    {
-      push_text("image");
+      push_static_text("image");
       push_object(o);
       n++;
    }
@@ -1334,13 +1382,13 @@ void image_jpeg_quant_tables(INT32 args)
 
    cinfo.image_width=17;
    cinfo.image_height=17;
-   cinfo.input_components=3;     
-   cinfo.in_color_space=JCS_RGB; 
+   cinfo.input_components=3;
+   cinfo.in_color_space=JCS_RGB;
 
    if (args)
    {
       INT_TYPE q;
-      get_all_args("Image.JPEG.quant_tables",args,"%i",&q);
+      get_all_args(NULL,args,"%i",&q);
       jpeg_set_quality(&cinfo,q,0);
    }
 
@@ -1501,7 +1549,7 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
-#ifdef DYNAMIC_MODULE
+#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
        yyerror("Could not load Image module.");

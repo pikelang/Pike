@@ -26,7 +26,7 @@ object tileimage(object img, int xs, int ys)
   int srcy=img->ysize();
   if(srcx <= 0 || srcy <= 0)
     return dest;
-  
+
   for(int x=0; x<=xs; x+=srcx)
     for(int y=0; y<=ys; y+=srcy)
       dest->paste(img,x,y);
@@ -78,7 +78,7 @@ string diagram_neng(float a)
   int i = (int) floor(p+0.000001);
   if ((a<1.0)&&(a>=0.0999999))
     i=0;
-  string s; 
+  string s;
   sscanf(sprintf("%g%s", a*exp(-i*log(1000.0)), pfix[6+i]), "%*[ ]%s", s);
 
   return foo+s;
@@ -116,7 +116,7 @@ mapping(string:mixed) setinitcolors(mapping(string:mixed) diagram_data)
   foreach(diagram_data->data, array(mixed) fo)
     if (sizeof(fo)>diagram_data->datasize)
       diagram_data->datasize=sizeof(fo);
-  
+
   if (diagram_data->type=="sumbars")
     for(int i; i<sizeof(diagram_data->data); i++)
       diagram_data->data[i]=diagram_data->data[i]+
@@ -155,7 +155,7 @@ mapping(string:mixed) setinitcolors(mapping(string:mixed) diagram_data)
       numbers=diagram_data->datasize;
     else
       numbers=sizeof(diagram_data->data);
-    
+
     array(array(int)) carr=allocate(numbers);
     int steg=128+128/(numbers);
 
@@ -207,9 +207,9 @@ mapping(string:mixed) setinitcolors(mapping(string:mixed) diagram_data)
     if (diagram_data->bw)
       for(int i=0; i<numbers; i++)
 	carr[i]=({ (i*steg)%256,
-		   (i*steg)%256, 
+		   (i*steg)%256,
 		   (i*steg)%256 });
-      
+
       diagram_data->datacolors=carr;
     }
 
@@ -222,12 +222,12 @@ mapping(string:mixed) setinitcolors(mapping(string:mixed) diagram_data)
 mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 {
   float xminvalue=0.0, xmaxvalue=-STORT, yminvalue=0.0, ymaxvalue=-STORT;
-  
+
   if (diagram_data->xmin)
     xminvalue=STORT;
   if (diagram_data->ymin)
     yminvalue=STORT;
-  
+
   if (diagram_data->labelcolor==0)
     diagram_data->labelcolor=diagram_data->textcolor;
   if (diagram_data->labelcolor && sizeof(diagram_data->labelcolor)!=3)
@@ -247,16 +247,16 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 					  255-diagram_data->datacolors[i][1],
 					  255-diagram_data->datacolors[i][2]
       });
-      
+
     }
   //diagram_data->backlinewidth=diagram_data->linewidth+1.0;
-  
+
   if (!(diagram_data->legendcolor))
     diagram_data->legendcolor=diagram_data->bgcolor;
-  
+
   if (diagram_data->type=="graph")
     diagram_data->subtype="line";
-  
+
   if (diagram_data->type=="bars")
     diagram_data->xminvalue=0;
 
@@ -288,7 +288,7 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   {
     diagram_data->data=Array.map(diagram_data->data, replace,
 				   VOIDSYMBOL, 0.0);
-    
+
     int j=sizeof(diagram_data->data);
     float k;
     if (diagram_data->subtype=="norm")
@@ -306,7 +306,7 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
       }
       yminvalue=0.0;
       ymaxvalue=100.0;
-      
+
     }
     else
       for(int i=0; i<diagram_data->datasize; i++)
@@ -318,13 +318,13 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
       }
     xminvalue=0.0;
     xmaxvalue=10.0;
-      
+
   }
   else
     foreach(diagram_data->data, array(float|string) d)
     {
       int j=sizeof(d);
-	
+
       if (diagram_data->type=="graph")
       {
 	d-=({VOIDSYMBOL});
@@ -348,7 +348,7 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 	  for(int i; i<j; i++)
 	    if (floatp(d[i]))
 	    {
-	      float k; 
+	      float k;
 	      if (yminvalue>(k=d[i]))
 		yminvalue=k;
 	      if (ymaxvalue<(k))
@@ -370,8 +370,8 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 	    {
 	      if (!floatp(d[i]))
 		d[i]=0;
-	      
-	      float k; 
+
+	      float k;
 	      if (yminvalue>(k=d[i]))
 		yminvalue=k;
 	      if (ymaxvalue<(k))
@@ -432,10 +432,10 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
     if (diagram_data->xnames)
       diagram_data->xspace=max((diagram_data->xmaxvalue-
 				  diagram_data->xminvalue)
-				 /(float)(max(sizeof(diagram_data->xnames), 
+				 /(float)(max(sizeof(diagram_data->xnames),
 					      diagram_data->datasize)),
 				 LITET*20);
-  
+
   //If ynames exist, set yspace
   if (diagram_data->ynames)
   {
@@ -450,7 +450,7 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   //Check if labelsize is to big:
   if (diagram_data->labelsize>diagram_data->ysize/5)
     diagram_data->labelsize=diagram_data->ysize/5;
-  
+
   return diagram_data;
 };
 
@@ -479,12 +479,12 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
       else
 	diagram_data->xnamesimg[i]=
 	  Image.Image(diagram_data->fontsize,diagram_data->fontsize);
-      
+
       if (diagram_data->xnamesimg[i]->xsize()<1)
 	diagram_data->xnamesimg[i]=Image.Image(diagram_data->fontsize,
 					   diagram_data->fontsize);
     }
-      
+
     notext=GETFONT(ynamesfont);
 
     diagram_data->ynamesimg=allocate(j=sizeof(diagram_data->ynames));
@@ -504,7 +504,7 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
 	else
 	  diagram_data->ynamesimg[i]=
 	    Image.Image(diagram_data->fontsize,diagram_data->fontsize);
-	
+
 	if (diagram_data->ynamesimg[i]->xsize()<1)
 	  diagram_data->ynamesimg[i]=Image.Image(diagram_data->fontsize,
 					     diagram_data->fontsize);
@@ -523,41 +523,41 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
 	else
 	  diagram_data->ynamesimg[i]=
 	    Image.Image(diagram_data->fontsize,diagram_data->fontsize);
-	
+
 	if (diagram_data->ynamesimg[i]->xsize()<1)
 	  diagram_data->ynamesimg[i]=Image.Image(diagram_data->fontsize,
 					     diagram_data->fontsize);
       }
-      
+
       if (diagram_data->orient=="vert")
 	for(int i; i<sizeof(diagram_data->xnamesimg); i++)
 	  diagram_data->xnamesimg[i]=diagram_data->xnamesimg[i]
 	    ->rotate_ccw();
-      
-      
+
+
       xmaxynames=0, ymaxynames=0, xmaxxnames=0, ymaxxnames=0;
-      
+
       foreach(diagram_data->xnamesimg, object img)
-	if (img->ysize()>ymaxxnames) 
+	if (img->ysize()>ymaxxnames)
 	  ymaxxnames=img->ysize();
-      
+
       foreach(diagram_data->xnamesimg, object img)
-	if (img->xsize()>xmaxxnames) 
+	if (img->xsize()>xmaxxnames)
 	  xmaxxnames=img->xsize();
-      
+
       foreach(diagram_data->ynamesimg, object img)
-	if (img->ysize()>ymaxynames) 
+	if (img->ysize()>ymaxynames)
 	  ymaxynames=img->ysize();
-      
+
       foreach(diagram_data->ynamesimg, object img)
-	if (img->xsize()>xmaxynames) 
+	if (img->xsize()>xmaxynames)
 	  xmaxynames=img->xsize();
-      
+
       diagram_data->ymaxxnames=ymaxxnames;
       diagram_data->xmaxxnames=xmaxxnames;
       diagram_data->ymaxynames=ymaxynames;
       diagram_data->xmaxynames=xmaxynames;
-      
+
       if(!diagram_data->namesize)
 	diagram_data->namesize = diagram_data->fontsize;
 
@@ -567,37 +567,37 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
 	diagram_data->fontsize=diagram_data->fontsize
 	  * diagram_data->ysize/2/(ymaxxnames+xmaxynames);
       }
-      
+
       if (ymaxynames>diagram_data->ysize/3)
       {
 	tobig+=2;
 	diagram_data->fontsize=diagram_data->fontsize
 	  * diagram_data->ysize/3/ymaxynames;
       }
-      
+
       if (xmaxynames>diagram_data->xsize/2)
       {
 	tobig+=2;
 	diagram_data->fontsize=diagram_data->fontsize
 	  * diagram_data->xsize/2/xmaxynames;
       }
-      
+
       if (xmaxxnames>diagram_data->xsize/3)
       {
 	tobig+=2;
 	diagram_data->fontsize=diagram_data->fontsize
 	  * diagram_data->xsize/3/xmaxxnames;
       }
-      
+
       if (tobig==1)
 	tobig=0;
       else
 	tobig--;
-      
-  } 
+
+  }
 }
 
-//Remove ending zeros. 
+//Remove ending zeros.
 //The Swedish is some insults between the programmers
 string no_end_zeros(string f)
 {
@@ -618,7 +618,7 @@ string no_end_zeros(string f)
 
 //This functions just happen to draw the grid...
 mapping draw_grid(mapping diagram_data, int|float xpos_for_yaxis,
-		   int|float ypos_for_xaxis, float xmore, float ymore, 
+		   int|float ypos_for_xaxis, float xmore, float ymore,
 		   float xstart, float ystart, float si)
 {
   //Draw the vertical grid (vertgrid)
@@ -644,10 +644,10 @@ mapping draw_grid(mapping diagram_data, int|float xpos_for_yaxis,
 	  {
 	    float temp;
 	    graph->
-	      polygone(({ 
+	      polygone(({
 		(temp=(vfx[i]- diagram_data->xminvalue)* xmore+xstart)-gw2,
 		ystart,
-		
+
 		temp+gw2,
 		ystart,
 
@@ -665,13 +665,13 @@ mapping draw_grid(mapping diagram_data, int|float xpos_for_yaxis,
 						  - diagram_data->xminvalue)
 						 * xmore+xstart),
 						diagram_data->ysize-ystart,
-						
+
 						((diagram_data->values_for_xnames[i]
 						  - diagram_data->xminvalue)
 						 * xmore+xstart),
 						diagram_data->ysize
 						- diagram_data->ystop
-					      }), 
+					      }),
 					      1, 1)[0]);
 	    */
       }
@@ -692,13 +692,13 @@ mapping draw_grid(mapping diagram_data, int|float xpos_for_yaxis,
 		       (-(diagram_data->values_for_ynames[i]-
 			  diagram_data->yminvalue)
 			*ymore+diagram_data->ysize-ystart),
-		       
+
 		       diagram_data->xstop,
 		       (-(diagram_data->values_for_ynames[i]-
 			  diagram_data->yminvalue)
 			*ymore+diagram_data->ysize-
 			ystart)
-		     }), 
+		     }),
 		     1, 1)[0]);
       }
 }
@@ -726,7 +726,7 @@ mapping set_legend_size(mapping diagram_data)
 	sizeof(diagram_data->datacolors))
       diagram_data->legend_texts=diagram_data->legend_texts
 	[..sizeof(diagram_data->datacolors)-1];
-    
+
     int r=0;
     while(tobig)
     {
@@ -736,9 +736,9 @@ mapping set_legend_size(mapping diagram_data)
       {
 	texts=allocate(sizeof(diagram_data->legend_texts));
 	plupps=allocate(sizeof(diagram_data->legend_texts));
-	
+
 	object notext=GETFONT(legendfont);
-	
+
 	j=sizeof(texts);
 	if (!diagram_data->legendcolor)
 	  diagram_data->legendcolor=diagram_data->bgcolor;
@@ -754,22 +754,22 @@ mapping set_legend_size(mapping diagram_data)
 	    texts[i]=
 	      Image.Image(diagram_data->legendfontsize,
 		    diagram_data->legendfontsize);
-		
+
 	  if (texts[i]->xsize()<1)
 	    texts[i]=Image.Image(diagram_data->legendfontsize,
 			   diagram_data->legendfontsize);
 	}
-	    
+
 	xmax=0, ymax=0;
-	
+
 	foreach(texts, object img)
-	  if (img->ysize()>ymax) 
+	  if (img->ysize()>ymax)
 	    ymax=img->ysize();
 
 	foreach(texts, object img)
-	  if (img->xsize()>xmax) 
-	    xmax=img->xsize(); 
-	  
+	  if (img->xsize()>xmax)
+	    xmax=img->xsize();
+
 	//Draw the line for Graph / the box for bars
 	if ((diagram_data->type=="graph") ||
 	    (diagram_data->type=="bars") ||
@@ -779,14 +779,14 @@ mapping set_legend_size(mapping diagram_data)
 	  {
 	    plupps[i]=Image.Image(diagram_data->legendfontsize,
 			    diagram_data->legendfontsize);
-		
+
 	    plupps[i]->setcolor(255,255,255);
 	    if ( (diagram_data->linewidth*1.5
 		  < (float)diagram_data->legendfontsize)
 		 && (diagram_data->subtype=="line")
 		 && (diagram_data->drawtype!="level") )
 	      plupps[i]->polygone(make_polygon_from_line(
-				   diagram_data->linewidth, 
+				   diagram_data->linewidth,
 				   ({
 				     (float)(diagram_data->linewidth/2+1),
 				     (float)(plupps[i]->ysize()-
@@ -794,7 +794,7 @@ mapping set_legend_size(mapping diagram_data)
 				     (float)(plupps[i]->xsize()-
 					     diagram_data->linewidth/2-2),
 				     (float)(diagram_data->linewidth/2+1)
-				   }), 
+				   }),
 				   1, 1)[0]);
 	    else
 	      plupps[i]->box( 1, 1, plupps[i]->xsize()-2,
@@ -807,7 +807,7 @@ mapping set_legend_size(mapping diagram_data)
 	b;
 	columnnr=(diagram_data->image->xsize()-4)/
 	  (b=xmax+2*diagram_data->legendfontsize);
-	  
+
 	if (columnnr==0)
 	{
 	  int m=((diagram_data->image->xsize()-4)-2*diagram_data->legendfontsize);
@@ -822,11 +822,11 @@ mapping set_legend_size(mapping diagram_data)
 	    }
 	  columnnr=1;
 	}
-	
+
 	raws=(j+columnnr-1)/columnnr;
 	diagram_data->legend_size=raws*diagram_data->legendfontsize;
-	
-	
+
+
 	if (diagram_data->image->ysize()/2>=raws
 	    * diagram_data->legendfontsize)
 	  tobig=0;
@@ -840,49 +840,39 @@ mapping set_legend_size(mapping diagram_data)
 	      -> ysize()/2/raws;
 	}
       }
-      
+
     }
   }
 
   //Place images and texts
-  
+
   if (diagram_data->legend_texts)
   {
     for(int i=0; i<j; i++)
     {
+      int xpos = (i/raws)*b;
+      int ypos = (i%raws)*diagram_data->legendfontsize +
+	diagram_data->image->ysize() - diagram_data->legend_size;
+
       diagram_data->image
-	->paste_alpha_color(plupps[i], 
-			    @(diagram_data->datacolors[i]), 
-			    (i/raws)*b,
-			    (i%raws)*diagram_data->legendfontsize
-			    +diagram_data->image
-			    ->ysize()-diagram_data->legend_size );
+	->paste_alpha_color(plupps[i],
+			    @(diagram_data->datacolors[i]),
+			    xpos, ypos);
       diagram_data->image->setcolor(0,0,0);
       draw( diagram_data->image, 0.5,
-	    ({(i/raws)*b, (i%raws)*diagram_data->legendfontsize+
-	      diagram_data->image->ysize()-diagram_data->legend_size+1,
-	      (i/raws)*b+plupps[i]->xsize()-1.0,
-	      (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size+1, 
-	      (i/raws)*b+plupps[i]->xsize()-1.0,
-	      (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size
-	      + plupps[i]->ysize()-1,
-	      (i/raws)*b+1,
-	      (i%raws)*diagram_data->legendfontsize + diagram_data->image
-	      -> ysize()-diagram_data->legend_size+plupps[i]->ysize()-1,
-	      (i/raws)*b, (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size+1
-	    })); 
-      
-      
+	    ({
+	      xpos, ypos+1,
+	      xpos + plupps[i]->xsize() - 1.0, ypos+1,
+	      xpos + plupps[i]->xsize() - 1.0, ypos + plupps[i]->ysize() - 1,
+	      xpos, ypos + plupps[i]->ysize() - 1,
+	      xpos, ypos+1,
+	    }));
+
+
       diagram_data->image
-	->paste_alpha_color(texts[i], 
-			    @(diagram_data->textcolor), 
-			    (i/raws)*b+1+diagram_data->legendfontsize,
-			    (i%raws)*diagram_data->legendfontsize+
-			    diagram_data->image->ysize()
-			    - diagram_data->legend_size );
+	->paste_alpha_color(texts[i],
+			    @(diagram_data->textcolor),
+			    xpos + 1 + diagram_data->legendfontsize, ypos);
     }
   }
   else
@@ -903,8 +893,8 @@ mapping(string:mixed) init_bg(mapping diagram_data)
     else
       if (diagram_data->image&&(diagram_data->image->xsize()>4)&&
 	  (diagram_data->image->ysize()>4))
-	diagram_data->image=tileimage(diagram_data->image, 
-					diagram_data->xsize, 
+	diagram_data->image=tileimage(diagram_data->image,
+					diagram_data->xsize,
 					diagram_data->ysize);
       else
 	diagram_data->image=Image.Image(diagram_data->xsize,
@@ -930,18 +920,18 @@ int write_name(mapping diagram_data)
 
   if (text->xsize()>=diagram_data->xsize)
     text->scale(diagram_data->xsize-1,0);
-  
+
   array color;
   if (diagram_data->namecolor)
     color=diagram_data->namecolor;
   else
     color=diagram_data->textcolor;
-  
+
 
   diagram_data->image
     -> paste_alpha_color( text, @(color),
 			  diagram_data->xsize/2-text->xsize()/2, 2 );
-	  
+
   return text->ysize()+2;
 }
 
@@ -949,9 +939,9 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 {
   //Supports only xsize>=100
   int si=diagram_data->fontsize;
-  
+
   //No uneven data
-  
+
   for(int i=0; i<sizeof(diagram_data->data); i++)
     if (sizeof(diagram_data->data[i])%2)
       diagram_data->data[i]
@@ -967,7 +957,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   set_legend_size(diagram_data);
 
   diagram_data->ysize-=diagram_data->legend_size;
-  
+
   //Get biggest and smallest data-value
   init(diagram_data);
 
@@ -991,7 +981,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 	if ((range>-LITET)&&
 	    (range<LITET))
 	  range=LITET*10.0;
-	
+
 	float space=pow(10.0, floor(log(range/3.0)/log(10.0)));
 	if ( range/space > 5.0 )
 	{
@@ -1008,7 +998,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   if (!(diagram_data->yspace))
   {
     //Initiate how long it is between
-      
+
     float range=(diagram_data->ymaxvalue
 		 - diagram_data->yminvalue);
     if ((range>-LITET)&&
@@ -1024,9 +1014,9 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     else
       if (range/space<2.5)
 	space *= 0.5;
-    diagram_data->yspace=space;      
+    diagram_data->yspace=space;
   }
- 
+
   if (!(diagram_data->values_for_xnames))
   {
     if ((diagram_data->xspace<LITET)&&
@@ -1037,60 +1027,74 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     start=diagram_data->xspace*ceil((start)/diagram_data->xspace);
     diagram_data->values_for_xnames=({start});
     while(diagram_data->values_for_xnames[-1]
-	  <= diagram_data->xmaxvalue-diagram_data->xspace)
+	  <= diagram_data->xmaxvalue-diagram_data->xspace) {
       diagram_data->values_for_xnames+=({start+=diagram_data->xspace});
+      if (diagram_data->values_for_xnames[-1] <=
+	  diagram_data->values_for_xnames[-2]) {
+	// Step smaller than mantissa or negative.
+	diagram_data->values_for_xnames = diagram_data->values_for_xnames[..<1];
+	break;
+      }
+    }
   }
   if (!(diagram_data->values_for_ynames))
   {
     if ((diagram_data->yspace<LITET)&&
 	(diagram_data->yspace>-LITET))
       error( "Very bad error because yspace is zero!\n" );
-    
+
     float start;
     start=diagram_data->yminvalue;
     start=diagram_data->yspace*ceil((start)/diagram_data->yspace);
     diagram_data->values_for_ynames=({start});
     while(diagram_data->values_for_ynames[-1]
-	  <= diagram_data->ymaxvalue-diagram_data->yspace)
+	  <= diagram_data->ymaxvalue-diagram_data->yspace) {
       diagram_data->values_for_ynames+=({start+=diagram_data->yspace});
+      if (diagram_data->values_for_ynames[-1] <=
+	  diagram_data->values_for_ynames[-2]) {
+	// Step smaller than mantissa or negative.
+	diagram_data->values_for_ynames = diagram_data->values_for_ynames[..<1];
+	break;
+      }
+    }
   }
-  
+
   //Generate the texten if it doesn't exist
   if (!(diagram_data->ynames))
     if (diagram_data->eng)
       {
 	diagram_data->ynames=
 	  allocate(sizeof(diagram_data->values_for_ynames));
-	
+
 	for(int i=0; i<sizeof(diagram_data->values_for_ynames); i++)
 	  diagram_data->ynames[i]=
 	    diagram_eng((float)(diagram_data->values_for_ynames[i]));
-      } 
+      }
     else if (diagram_data->neng)
       {
 	diagram_data->ynames=
 	  allocate(sizeof(diagram_data->values_for_ynames));
-	
+
 	for(int i=0; i<sizeof(diagram_data->values_for_ynames); i++)
 	  diagram_data->ynames[i]=
 	    diagram_neng((float)(diagram_data->values_for_ynames[i]));
       } else {
 	diagram_data->ynames=
 	  allocate(sizeof(diagram_data->values_for_ynames));
-	
+
 	for(int i=0; i<sizeof(diagram_data->values_for_ynames); i++)
 	  diagram_data->ynames[i]=
 	    no_end_zeros((string)(diagram_data->values_for_ynames[i]));
       }
-  
 
-    
+
+
   if (!(diagram_data->xnames))
     if (diagram_data->eng)
     {
       diagram_data->xnames=
 	allocate(sizeof(diagram_data->values_for_xnames));
-      
+
       for(int i=0; i<sizeof(diagram_data->values_for_xnames); i++)
 	diagram_data->xnames[i]=
 	  diagram_eng((float)(diagram_data->values_for_xnames[i]));
@@ -1099,7 +1103,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     {
       diagram_data->xnames=
 	allocate(sizeof(diagram_data->values_for_xnames));
-      
+
       for(int i=0; i<sizeof(diagram_data->values_for_xnames); i++)
 	diagram_data->xnames[i]=
 	  diagram_neng((float)(diagram_data->values_for_xnames[i]));
@@ -1108,12 +1112,12 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     {
       diagram_data->xnames=
 	allocate(sizeof(diagram_data->values_for_xnames));
-      
+
       for(int i=0; i<sizeof(diagram_data->values_for_xnames); i++)
 	diagram_data->xnames[i]=
 	  no_end_zeros((string)(diagram_data->values_for_xnames[i]));
     }
-  
+
 
   //Draw images with the texts
   //calculate xmaxynames, ymaxynames xmaxxnames ymaxxnames
@@ -1139,7 +1143,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 	-> write(label)->scale(0,diagram_data->labelsize);
     else
       labelimg=Image.Image(diagram_data->labelsize,diagram_data->labelsize);
-      
+
     if (labelimg->xsize()<1)
       labelimg=Image.Image(diagram_data->labelsize,diagram_data->labelsize);
 
@@ -1150,7 +1154,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     labely=diagram_data->labelsize;
     labelx=labelimg->xsize();
   }
-  
+
   labely+=write_name(diagram_data);
 
   int ypos_for_xaxis; //Distance from below
@@ -1162,15 +1166,15 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   if (((float)diagram_data->yminvalue>-LITET)&&
       ((float)diagram_data->yminvalue<LITET))
     diagram_data->yminvalue=0.0;
-  
+
   if (diagram_data->yminvalue<0)
   {
-    //Calculate position for the x-axis. 
+    //Calculate position for the x-axis.
     //If this doesn't work: Draw the x-axis at bottom or top
     // and recalculate diagram_data->ystart
     ypos_for_xaxis=((-diagram_data->yminvalue)*(diagram_data->ystop-diagram_data->ystart))/
       (diagram_data->ymaxvalue-diagram_data->yminvalue)+diagram_data->ystart;
-      
+
     int minpos;
     minpos=max(labely, diagram_data->ymaxxnames)+si/2;
     if (minpos>ypos_for_xaxis)
@@ -1211,7 +1215,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
       ypos_for_xaxis=max(labely, diagram_data->ymaxxnames)+si/2;
       diagram_data->ystart=ypos_for_xaxis+si*2;
     }
-  
+
   //Calculate position for the y-axis
   diagram_data->xstart=(int)ceil(diagram_data->linewidth);
   diagram_data->xstop=diagram_data->xsize-
@@ -1220,17 +1224,17 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   if (((float)diagram_data->xminvalue>-LITET)&&
       ((float)diagram_data->xminvalue<LITET))
     diagram_data->xminvalue=0.0;
-  
+
   if (diagram_data->xminvalue<0.0)
   {
-    //Calculate position for the y-axis. 
+    //Calculate position for the y-axis.
     //If this doesn't work: Draw the y-axis at right or left
     // and recalculate diagram_data->xstart
     xpos_for_yaxis=((-diagram_data->xminvalue)*(diagram_data->xstop
 						  - diagram_data->xstart))/
       (diagram_data->xmaxvalue-diagram_data->xminvalue)
       + diagram_data->xstart;
-      
+
     int minpos;
     minpos=diagram_data->xmaxynames+si/2+
       diagram_data->linewidth+2;
@@ -1276,47 +1280,47 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 
   //draw the axises.
   graph->setcolor(@(diagram_data->axcolor));
-  
+
   //Draw the x-axis
   if ((diagram_data->xminvalue<=LITET)&&
       (diagram_data->xmaxvalue>=-LITET))
     graph->
-      polygone(make_polygon_from_line(diagram_data->linewidth, 
+      polygone(make_polygon_from_line(diagram_data->linewidth,
 				      ({
 					diagram_data->linewidth,
 					diagram_data->ysize- ypos_for_xaxis,
 					diagram_data->xsize-
-					si-labelx/2, 
+					si-labelx/2,
 					diagram_data->ysize-ypos_for_xaxis
-				      }), 
+				      }),
 				      1, 1)[0]);
   else
     if (diagram_data->xmaxvalue<-LITET)
     {
       graph->
 	polygone(make_polygon_from_line(
-		   diagram_data->linewidth, 
+		   diagram_data->linewidth,
 		   ({
 		     diagram_data->linewidth,
 		     diagram_data->ysize- ypos_for_xaxis,
-		     
-		     xpos_for_yaxis-4.0/3.0*si, 
+
+		     xpos_for_yaxis-4.0/3.0*si,
 		     diagram_data->ysize-ypos_for_xaxis,
-		     
-		     xpos_for_yaxis-si, 
+
+		     xpos_for_yaxis-si,
 		     diagram_data->ysize-ypos_for_xaxis-
 		     si/2.0,
-		     xpos_for_yaxis-si/1.5, 
+		     xpos_for_yaxis-si/1.5,
 		     diagram_data->ysize-ypos_for_xaxis+
 		     si/2.0,
-		     
-		     xpos_for_yaxis-si/3.0, 
+
+		     xpos_for_yaxis-si/3.0,
 		     diagram_data->ysize-ypos_for_xaxis,
-		     
-		     diagram_data->xsize-si-labelx/2, 
+
+		     diagram_data->xsize-si-labelx/2,
 		     diagram_data->ysize-ypos_for_xaxis
-		     
-		   }), 
+
+		   }),
 		   1, 1)[0]);
     }
     else
@@ -1324,91 +1328,91 @@ mapping(string:mixed) create_graph(mapping diagram_data)
       {
 	graph->
 	  polygone(make_polygon_from_line(
-		     diagram_data->linewidth, 
+		     diagram_data->linewidth,
 		     ({
 		       diagram_data->linewidth,
 		       diagram_data->ysize- ypos_for_xaxis,
-		       
-		       xpos_for_yaxis+si/3.0, 
+
+		       xpos_for_yaxis+si/3.0,
 		       diagram_data->ysize-ypos_for_xaxis,
-		       
-		       xpos_for_yaxis+si/1.5, 
+
+		       xpos_for_yaxis+si/1.5,
 		       diagram_data->ysize-ypos_for_xaxis-
 		       si/2.0,
-		       xpos_for_yaxis+si, 
+		       xpos_for_yaxis+si,
 		       diagram_data->ysize-ypos_for_xaxis+
 		       si/2.0,
-		       
-		       xpos_for_yaxis+4.0/3.0*si, 
+
+		       xpos_for_yaxis+4.0/3.0*si,
 		       diagram_data->ysize-ypos_for_xaxis,
-		       
-		       diagram_data->xsize-si-labelx/2, 
+
+		       diagram_data->xsize-si-labelx/2,
 		       diagram_data->ysize-ypos_for_xaxis
-		       
-		     }), 
+
+		     }),
 		     1, 1)[0]);
-	
+
       }
-  
+
   graph->polygone(
 		  ({
 		    diagram_data->xsize-
 		    diagram_data->linewidth/2-
-		    (float)si-labelx/2, 
+		    (float)si-labelx/2,
 		    diagram_data->ysize-ypos_for_xaxis-
 		    (float)si/4.0,
-		    
+
 		    diagram_data->xsize-
-		    diagram_data->linewidth/2-labelx/2, 
+		    diagram_data->linewidth/2-labelx/2,
 		    diagram_data->ysize-ypos_for_xaxis,
-		    
+
 		    diagram_data->xsize-
 		    diagram_data->linewidth/2-
-		    (float)si-labelx/2, 
+		    (float)si-labelx/2,
 		    diagram_data->ysize-ypos_for_xaxis+
 		    (float)si/4.0
 		  })
 		  );
-  
+
 
   //Draw the Y-axis
   if ((diagram_data->yminvalue<=LITET)&&
       (diagram_data->ymaxvalue>=-LITET))
     graph->
       polygone(make_polygon_from_line(
-                 diagram_data->linewidth, 
+                 diagram_data->linewidth,
 		 ({
 		   xpos_for_yaxis,
 		   diagram_data->ysize-diagram_data->linewidth,
 		   xpos_for_yaxis,
 		   si+labely
-		 }), 
+		 }),
 		 1, 1)[0]);
   else
     if (diagram_data->ymaxvalue<-LITET)
     {
       graph->
 	polygone(make_polygon_from_line(
-                   diagram_data->linewidth, 
+                   diagram_data->linewidth,
 		   ({
 		     xpos_for_yaxis,
 		     diagram_data->ysize-diagram_data->linewidth,
-		     
+
 		     xpos_for_yaxis,
 		     diagram_data->ysize-ypos_for_xaxis+si*4.0/3.0,
-		     
+
 		     xpos_for_yaxis-si/2.0,
 		     diagram_data->ysize-ypos_for_xaxis+si,
-		     
+
 		     xpos_for_yaxis+si/2.0,
 		     diagram_data->ysize-ypos_for_xaxis+si/1.5,
-		     
+
 		     xpos_for_yaxis,
 		     diagram_data->ysize-ypos_for_xaxis+si/3.0,
-		     
+
 		     xpos_for_yaxis,
 		     si+labely
-		   }), 
+		   }),
 		   1, 1)[0]);
     }
     else
@@ -1416,29 +1420,29 @@ mapping(string:mixed) create_graph(mapping diagram_data)
       {
 	graph->
 	  polygone(make_polygon_from_line(
-		     diagram_data->linewidth, 
+		     diagram_data->linewidth,
 		     ({
 		       xpos_for_yaxis,
 		       diagram_data->ysize-diagram_data->linewidth,
-		       
+
 		       xpos_for_yaxis,
 		       diagram_data->ysize-ypos_for_xaxis-si/3.0,
-		       
+
 		       xpos_for_yaxis-si/2.0,
 		       diagram_data->ysize-ypos_for_xaxis-si/1.5,
-		       
+
 		       xpos_for_yaxis+si/2.0,
 		       diagram_data->ysize-ypos_for_xaxis-si,
-		       
+
 		       xpos_for_yaxis,
 		       diagram_data->ysize-ypos_for_xaxis-si*4.0/3.0,
-		       
+
 		       xpos_for_yaxis,
 		       si+labely
-		     }), 
+		     }),
 		     1, 1)[0]);
       }
-    
+
   //Draw arrow
   graph->
     polygone(
@@ -1448,18 +1452,18 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 	       diagram_data->linewidth/2.0+
 	       (float)si+
 	       labely,
-				      
+
 	       xpos_for_yaxis,
 	       diagram_data->linewidth/2.0+
 	       labely,
-	
+
 	       xpos_for_yaxis+
 	       (float)si/4.0,
 	       diagram_data->linewidth/2.0+
 	       (float)si+
 	       labely
-	     })); 
-  
+	     }));
+
   //Calculate some shit
   float xstart=(float)diagram_data->xstart;
   float xmore=(-xstart+diagram_data->xstop)/
@@ -1467,10 +1471,10 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   float ystart=(float)diagram_data->ystart;
   float ymore=(-ystart+diagram_data->ystop)/
     (diagram_data->ymaxvalue-diagram_data->yminvalue);
-  
-  draw_grid(diagram_data, xpos_for_yaxis, ypos_for_xaxis, 
+
+  draw_grid(diagram_data, xpos_for_yaxis, ypos_for_xaxis,
 	    xmore, ymore, xstart, ystart, (float) si);
-  
+
   //Paste the texts on the X-axis
   int s=sizeof(diagram_data->xnamesimg);
   for(int i=0; i<s; i++)
@@ -1478,19 +1482,19 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 	(diagram_data->values_for_xnames[i]>diagram_data->xminvalue))
     {
       graph->setcolor(@diagram_data->textcolor);
-      graph->paste_alpha_color(diagram_data->xnamesimg[i], 
-			       @(diagram_data->textcolor), 
+      graph->paste_alpha_color(diagram_data->xnamesimg[i],
+			       @(diagram_data->textcolor),
 			       (int)floor((diagram_data->values_for_xnames[i]
 					   - diagram_data->xminvalue)
 					  * xmore+xstart
 					  - diagram_data->xnamesimg[i]
-					  -> xsize()/2), 
+					  -> xsize()/2),
 			       (int)floor(diagram_data->ysize-ypos_for_xaxis
 					  + si/2.0));
       graph->setcolor(@diagram_data->axcolor);
       graph->
 	polygone(make_polygon_from_line(
-		   diagram_data->linewidth, 
+		   diagram_data->linewidth,
 		   ({
 		     ((diagram_data->values_for_xnames[i]
 		       - diagram_data->xminvalue) * xmore+xstart),
@@ -1499,7 +1503,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 		       diagram_data->xminvalue)
 		      *xmore+xstart),
 		     diagram_data->ysize-ypos_for_xaxis-si/4
-		   }), 
+		   }),
 		   1, 1)[0]);
     }
 
@@ -1511,8 +1515,8 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     {
       graph->setcolor(@diagram_data->textcolor);
       graph->paste_alpha_color(
-               diagram_data->ynamesimg[i], 
-	       @(diagram_data->textcolor), 
+               diagram_data->ynamesimg[i],
+	       @(diagram_data->textcolor),
 	       (int)floor(xpos_for_yaxis-
 			  si/4.0-diagram_data->linewidth-
 			  diagram_data->ynamesimg[i]->xsize()),
@@ -1523,19 +1527,19 @@ mapping(string:mixed) create_graph(mapping diagram_data)
       graph->setcolor(@diagram_data->axcolor);
       graph->
 	polygone(make_polygon_from_line(
-          diagram_data->linewidth, 
+          diagram_data->linewidth,
 	  ({
 	    xpos_for_yaxis - si/4,
 	    (-(diagram_data->values_for_ynames[i]
 	       - diagram_data->yminvalue)
 	     *ymore+diagram_data->ysize-ystart),
-	    
+
 	    xpos_for_yaxis+
 	    si/4,
 	    (-(diagram_data->values_for_ynames[i]-
 	       diagram_data->yminvalue)
 	     *ymore+diagram_data->ysize-ystart)
-	  }), 
+	  }),
 	  1, 1)[0]);
     }
 
@@ -1543,13 +1547,13 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   //Paste labels ({xquantity, yquantity, xunit, yunit})
   if (diagram_data->labelsize)
   {
-    graph->paste_alpha_color(labelimg, 
-			     @(diagram_data->labelcolor), 
+    graph->paste_alpha_color(labelimg,
+			     @(diagram_data->labelcolor),
 			     diagram_data->xsize-labelx
 			     - (int)ceil((float)diagram_data->linewidth),
 			     diagram_data->ysize
 			     - (int)ceil((float)(ypos_for_xaxis-si/2)));
-    
+
     string label;
     int x;
     int y;
@@ -1563,30 +1567,30 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 	-> scale(0,diagram_data->labelsize);
     else
       labelimg=Image.Image(diagram_data->labelsize,diagram_data->labelsize);
-    
+
     if (labelimg->xsize()<1)
       labelimg=Image.Image(diagram_data->labelsize,diagram_data->labelsize);
-    
+
     if (labelimg->xsize()>
 	diagram_data->xsize)
       labelimg=labelimg->scale(diagram_data->xsize, 0);
-    
-    
+
+
     x=max(2,((int)floor((float)xpos_for_yaxis)-labelimg->xsize()/2));
     x=min(x, graph->xsize()-labelimg->xsize());
-      
-    y=0; 
+
+    y=0;
 
     if (label && sizeof(label))
-      graph->paste_alpha_color(labelimg, 
+      graph->paste_alpha_color(labelimg,
 			       @(diagram_data->labelcolor), x,
 			       2+labely-labelimg->ysize());
-      
+
   }
 
   //Draw the data
   int farg=0;
-  
+
   foreach(diagram_data->data, array(float) d)
   {
     d-=({VOIDSYMBOL});
@@ -1595,14 +1599,14 @@ mapping(string:mixed) create_graph(mapping diagram_data)
       d[i]=(d[i]-diagram_data->xminvalue)*xmore+xstart;
       i++;
       d[i]=-(d[i]-diagram_data->yminvalue)*ymore+diagram_data->ysize
-	- ystart;	  
+	- ystart;
     }
 
     graph->setcolor(@(diagram_data->datacolors[farg++]));
-    
+
     draw(graph, diagram_data->linewidth,d);
   }
-  
+
   diagram_data->ysize-=diagram_data->legend_size;
   diagram_data->image=graph;
   return diagram_data;

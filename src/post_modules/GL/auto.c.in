@@ -20,14 +20,12 @@
 #include "mapping.h"
 #include "pike_types.h"
 
-#ifdef HAVE_WINDEF_H
-#include <windows.h>
-#endif /* HAVE_WINDEF_H */
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#else
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
-#ifdef HAVE_OPENGL_GL_H
-#include <OpenGL/gl.h>
 #endif /* HAVE_OPENGL_GL_H */
 
 
@@ -92,8 +90,8 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 	if(ty&(1<<tt)) {
 	  ty&=~(1<<tt);
 	  if(n++)
-	    strcat(buf, " or ");
-	  strcat(buf, get_name_of_type(tt));
+	    strncat(buf, " or ", sizeof(buf)-strlen(buf)-1);
+	  strncat(buf, get_name_of_type(tt), sizeof(buf)-strlen(buf)-1);
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
 		 get_name_of_type(TYPEOF(s[i])), buf);
@@ -107,10 +105,10 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
     Pike_error("Internal error in check_234_args for %s!\n", func);
   else if(rty&ZT_INT)
     tt=ZT_INT;
-  else 
+  else
     tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
   ret->ty=tt;
-  for(i=0; i<args; i++) 
+  for(i=0; i<args; i++)
     switch(tt)
     {
     case ZT_INT:
@@ -118,18 +116,18 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
       break;
     case ZT_FLOAT:
       ret->v.f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
-      break;      
+      break;
     case ZT_DOUBLE:
       ret->v.d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:
 		   s[i].u.float_number);
-      break;      
+      break;
     }
   return args;
 }
 
 static int img_inited=0;
 
-static void img_init()
+static void img_init(void)
 {
   glPixelStorei(GL_PACK_SWAP_BYTES, 0);
   glPixelStorei(GL_PACK_LSB_FIRST, 0);
@@ -166,7 +164,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   static struct program *image_program=NULL;
 
   if(image_program == NULL) {
-    push_text("Image.Image");
+    push_static_text("Image.Image");
     SAFE_APPLY_MASTER("resolv",1);
     image_program=program_from_svalue(sp-1);
     pop_stack();
@@ -179,7 +177,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     struct svalue *v;
     if((v=simple_mapping_string_lookup(a->u.mapping, "rgb"))) {
       if(TYPEOF(*v) == T_OBJECT &&
-	 (rgbstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 (rgbstor = get_storage(v->u.object, image_program)) != NULL &&
 	 rgbstor->img != NULL)
 	;
       else
@@ -187,7 +185,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "luminance"))) {
       if(TYPEOF(*v) == T_OBJECT &&
-	 (lumstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 (lumstor = get_storage(v->u.object, image_program)) != NULL &&
 	 lumstor->img != NULL)
 	;
       else
@@ -195,7 +193,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "alpha"))) {
       if(TYPEOF(*v) == T_OBJECT &&
-	 (astor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 (astor = get_storage(v->u.object, image_program)) != NULL &&
 	 astor->img != NULL)
 	;
       else
@@ -204,7 +202,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     if( (v=simple_mapping_string_lookup(a->u.mapping, "mem" )) ) {
 
       if(shm_program == NULL) {
-	push_text("System.Memory");
+	push_static_text("System.Memory");
 	SAFE_APPLY_MASTER("resolv",1);
 	shm_program=program_from_svalue(sp-1);
 	pop_stack();
@@ -213,7 +211,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
       }
 
       if( TYPEOF(*v) == T_OBJECT &&
-	  (stor_mem = (void *)get_storage( v->u.object, shm_program ) ) )
+	  (stor_mem = get_storage( v->u.object, shm_program ) ) )
       {
 	INT_TYPE x=0, y=0, row=0;
 	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_w" )) )
@@ -253,7 +251,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
       }
     }
   } else if(TYPEOF(*a) == T_OBJECT &&
-	    (rgbstor = (void *)get_storage(a->u.object, image_program)) !=
+	    (rgbstor = get_storage(a->u.object, image_program)) !=
 	    NULL && rgbstor->img != NULL)
     ;
   else
@@ -348,7 +346,7 @@ static void *get_mem_object( struct svalue *x )
 
   if(shm_program == NULL)
   {
-    push_text("System.Memory");
+    push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv",1);
     shm_program=program_from_svalue(sp-1);
     pop_stack();
@@ -356,11 +354,11 @@ static void *get_mem_object( struct svalue *x )
       Pike_error("Can't resolve System.Memory!\n");
   }
   if( TYPEOF(*x) != T_OBJECT ||
-      !(stor_mem = (void *)get_storage( x->u.object, shm_program ) ) )
+      !(stor_mem = get_storage( x->u.object, shm_program ) ) )
     Pike_error("Expected System.Memory object\n");
   return stor_mem->p;
 }
-    
+
 
 
 static void release_img(struct zimage *img)
@@ -377,7 +375,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
   if(args!=1)
     Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
-  
+
   if(TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
@@ -412,10 +410,10 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
     Pike_error("Internal error in check_1n_args for %s!\n", func);
   else if(rty&ZT_INT)
     tt=ZT_INT;
-  else 
+  else
     tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
 
-  for(i=0; i<args; i++) 
+  for(i=0; i<args; i++)
     switch(tt)
     {
     case ZT_INT:
@@ -423,11 +421,11 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
       break;
     case ZT_FLOAT:
       ret->f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
-      break;      
+      break;
     case ZT_DOUBLE:
       ret->d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
-      break;      
-    }  
+      break;
+    }
 
   return tt|(arr?ZT_ARRAY:0);
 }
@@ -446,7 +444,7 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
 
   if(args!=1)
     Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
-  
+
   /* Make sure we were sent an array */
   if(TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
@@ -481,7 +479,7 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
     Pike_error("Internal error in check_1unlimited_args for %s!\n", func);
   else if(rty&ZT_INT)
     tt=ZT_INT;
-  else 
+  else
     tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
 
   ret[0] = (void *)xalloc(args * sizeof(union zvalue));
@@ -493,11 +491,11 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
       break;
     case ZT_FLOAT:
       ((GLfloat *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
-      break;      
+      break;
     case ZT_DOUBLE:
       ((GLdouble *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
-      break;      
-    }  
+      break;
+    }
 
   return tt|(arr?ZT_ARRAY:0);
 }
@@ -522,7 +520,7 @@ static void my_glDeleteTextures( INT32 args );
 static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
 
-static void pre_init()
+static void pre_init(void)
 {
   add_function_constant("glFrustum", my_glFrustum,
 			"function(float,float,float,float,float,float:void)",
@@ -536,14 +534,14 @@ static void pre_init()
 			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
 }
 
-static void post_init()
+static void post_init(void)
 {
 }
 
 @@
 static void my_glGenTextures( INT32 args )
 {
-  GLint *res;
+  GLuint *res;
   struct array *a;
   int ntexts;
   int i;
@@ -552,8 +550,7 @@ static void my_glGenTextures( INT32 args )
   ntexts = Pike_sp[-1].u.integer;
   pop_stack();
 
-  res = xalloc( sizeof( GLint ) * ntexts );
-  memset( res, 0, sizeof(GLint)*ntexts );
+  res = xcalloc( sizeof( GLuint ), ntexts );
   glGenTextures( ntexts, res );
   a = allocate_array( ntexts );
   for( i = 0; i<ntexts; i++ )
@@ -573,7 +570,7 @@ static void my_glDeleteTextures( INT32 args )
     {
       if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
-	SIMPLE_BAD_ARG_ERROR("glDeleteTextures", i+1, "int");
+	SIMPLE_ARG_TYPE_ERROR("glDeleteTextures", i+1, "int");
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }
@@ -594,7 +591,7 @@ static void my_glCallLists( INT32 args )
     {
       if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
-	SIMPLE_BAD_ARG_ERROR("glCallLists", i+1, "int");
+	SIMPLE_ARG_TYPE_ERROR("glCallLists", i+1, "int");
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }
@@ -608,7 +605,7 @@ static void my_glFrustum(INT32 args)
 {
   FLOAT_TYPE right,left,bottom,top,close,away;
   GLdouble m[16];
-  get_all_args("glFrustum", args, "%f%f%f%f%f%f",
+  get_all_args(NULL, args, "%f%f%f%f%f%f",
 	       &left, &right, &bottom, &top, &close, &away);
 
   if (right == left) {

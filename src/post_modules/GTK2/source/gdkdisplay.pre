@@ -35,7 +35,7 @@ void open(string name)
     const gchar *name;
     GdkDisplay *gd;
 
-    get_all_args("open",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     gd=gdk_display_open(name);
     if (THIS->obj)
       g_object_unref(THIS->obj);
@@ -176,7 +176,7 @@ void warp_pointer(GDK2.Screen screen, int x, int y)
     struct object *o1;
     INT_TYPE x,y;
 
-    get_all_args("warp_pointer",args,"%o%i%i",&o1,&x,&y);
+    get_all_args(NULL,args,"%o%i%i",&o1,&x,&y);
     gdk_display_warp_pointer(GDK_DISPLAY_OBJECT(THIS->obj),
 			GDK_SCREEN(get_gobject(o1)),x,y);
   }
@@ -229,7 +229,7 @@ int request_selection_notification(GDK2.Atom selection)
   {
     struct object *o1;
     int res;
-    get_all_args("request_selection_notification",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gdk_display_request_selection_notification(
 		GDK_DISPLAY_OBJECT(THIS->obj),
 		get_gdkatom(o1));
@@ -252,7 +252,7 @@ void store_clipboard(GDK2.Window clipboard_window,
     struct object *o1;
     struct array *a=NULL;
 
-    get_all_args("store_clipboard",args,"%o%A",&o1,&a);
+    get_all_args(NULL,args,"%o%A",&o1,&a);
     if (a!=NULL) {
       GdkAtom *targets;
       int n;

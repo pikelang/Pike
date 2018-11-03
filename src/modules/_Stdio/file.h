@@ -16,6 +16,34 @@
 #include <arpa/inet.h>
 #define ARPA_INET_H
 
+#ifdef HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# ifdef HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+# else /* !HAVE_SYS_NDIR_H */
+#  ifdef HAVE_SYS_DIR_H
+#   include <sys/dir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+#  else /* !HAVE_SYS_DIR_H */
+#   ifdef HAVE_NDIR_H
+#    include <ndir.h>
+#    define dirent direct
+#    define NAMLEN(dirent) (dirent)->d_namlen
+#   else /* !HAVE_NDIR_H */
+#    ifdef HAVE_DIRECT_H
+#     include <direct.h>
+#     define NAMLEN(dirent) strlen((dirent)->d_name)
+#    endif /* HAVE_DIRECT_H */
+#   endif /* HAVE_NDIR_H */
+#  endif /* HAVE_SYS_DIR_H */
+# endif /* HAVE_SYS_NDIR_H */
+#endif /* HAVE_DIRENT_H */
+
 /* Stupid patch to avoid trouble with Linux includes... */
 #ifdef LITTLE_ENDIAN
 #undef LITTLE_ENDIAN
@@ -43,7 +71,7 @@ struct my_file
 
   short open_mode;
   short flags;
-  int my_errno;
+  INT_TYPE my_errno;
 
 #ifdef HAVE_PIKE_SEND_FD
   int *fd_info;
@@ -55,7 +83,7 @@ struct my_file
    *   Note that to avoid races between the call to
    *   send_fd() and the call to write(), these fds
    *   are dup(2)'ed in send_fd() and close(2)'ed after
-   *   sending in write() (or close() or destroy()).
+   *   sending in write() (or close() or _destruct()).
    */
 #endif
 
@@ -86,10 +114,10 @@ struct pike_sendfile
   struct my_file *from;
   struct my_file *to;
 
-  LONGEST sent;
+  INT64 sent;
 
-  LONGEST offset;
-  LONGEST len;
+  INT64 offset;
+  INT64 len;
 
   struct iovec *hd_iov;
   struct iovec *tr_iov;
@@ -106,6 +134,8 @@ struct pike_sendfile
 
 extern struct program *file_program;
 extern struct program *file_ref_program;
+
+extern int fd_write_identifier_offset;
 
 /* Note: Implemented in ../system/system.c! */
 extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service,
@@ -137,18 +167,6 @@ void exit_stdio_sendfile(void);
 void init_stdio_udp(void);
 void exit_stdio_udp(void);
 
-#define CBFUNCS(X) \
-static void PIKE_CONCAT(file_set_,X) (INT32 args); \
-static void PIKE_CONCAT(file_query_,X) (INT32 args);
-CBFUNCS(read_callback)
-CBFUNCS(write_callback)
-CBFUNCS(read_oob_callback)
-CBFUNCS(write_oob_callback)
-CBFUNCS(fs_event_callback)
-
-static void file_query_fs_event_flags(INT32 args);
-
-static void file_write(INT32 args);
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
 PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
 				    int fd, int mode, int guess);
@@ -163,6 +181,10 @@ PMOD_EXPORT int pike_make_pipe(int *fds);
 PMOD_EXPORT int fd_from_object(struct object *o);
 void f_strerror(INT32 args);
 void push_stat(PIKE_STAT_T *s);
+
+#ifndef __NT__
+void low_get_dir(DIR *dir, ptrdiff_t name_max);
+#endif
 /* Prototypes end here */
 
 /* Defined by winnt.h */

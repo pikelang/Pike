@@ -4,7 +4,7 @@
 
 //! Support for the Domain Name System protocol.
 //!
-//! RFC 1034, RFC 1035 and RFC 2308
+//! Implements @rfc{1034@}, @rfc{1035@} and @rfc{2308@}.
 
 protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
@@ -79,19 +79,20 @@ enum EntryType
   //! Type - start of a zone of authority
   T_SOA=6,
 
-  //! Type - mailbox domain name (EXPERIMENTAL)
+  //! Type - mailbox domain name (Obsolete)
   T_MB=7,
 
-  //! Type - mail group member (EXPERIMENTAL)
+  //! Type - mail group member (Obsolete)
   T_MG=8,
 
-  //! Type - mail rename domain name (EXPERIMENTAL)
+  //! Type - mail rename domain name (Obsolete)
   T_MR=9,
 
-  //! Type - null RR (EXPERIMENTAL)
+  //! Type - null RR (Obsolete @rfc{1035@})
   T_NULL=10,
 
-  //! Type - well known service description
+  //! Type - well known service description (Obsolete @rfc{1123@} and
+  //! @rfc{1127@})
   T_WKS=11,
 
   //! Type - domain name pointer
@@ -100,7 +101,7 @@ enum EntryType
   //! Type - host information
   T_HINFO=13,
 
-  //! Type - mailbox or mail list information
+  //! Type - mailbox or mail list information (Obsolete)
   T_MINFO=14,
 
   //! Type - mail exchange
@@ -109,26 +110,192 @@ enum EntryType
   //! Type - text strings
   T_TXT=16,
 
-  //! Type - IPv6 address record (RFC 1886)
+  //! Type - Responsible Person
+  T_RP=17,
+
+  //! Type - AFC database record (@rfc{1183@})
+  T_AFSDB=18,
+
+  //! Type - X25 PSDN address (@rfc{1183@})
+  T_X25=19,
+
+  //! Type - ISDN address (@rfc{1183@})
+  T_ISDN=20,
+
+  //! Type - Route Through (@rfc{1183@})
+  T_RT=21,
+
+  //! Type - OSI Network Service Access Protocol (@rfc{1348@},
+  //! @rfc{1637@} and @rfc{1706@})
+  T_NSAP=22,
+
+  //! Type - OSI NSAP Pointer (@rfc{1348@} and Obsolete @rfc{1637@})
+  T_NSAP_PTR=23,
+
+  //! Type - Signature (@rfc{2535@})
+  T_SIG=24,
+
+  //! Type - Key record (@rfc{2535@} and @rfc{2930@})
+  T_KEY=25,
+
+  //! Type - Pointer to X.400 mapping information (@rfc{1664@})
+  T_PX=26,
+
+  //! Type - Global Position (@rfc{1712@} Obsolete use LOC).
+  T_GPOS=27,
+
+  //! Type - IPv6 address record (@rfc{1886@})
   T_AAAA=28,
 
-  //! Type - Location Record (RFC 1876)
+  //! Type - Location Record (@rfc{1876@})
   T_LOC=29,
 
-  //! Type - Service location record (RFC 2782)
+  //! Type - Next (@rfc{2065@} and Obsolete @rfc{3755@})
+  T_NXT=30,
+
+  //! Type - Nimrod Endpoint IDentifier (draft)
+  T_EID=31,
+
+  //! Type - Nimrod Locator (draft)
+  T_NIMLOC=32,
+
+  //! Type - Service location record (@rfc{2782@})
   T_SRV=33,
 
-  //! Type - NAPTR (RFC 3403)
+  //! Type - ATM End System Address (af-saa-0069.000)
+  T_ATMA=34,
+
+  //! Type - NAPTR (@rfc{3403@})
   T_NAPTR=35,
 
-  //! Type - IPv6 address record (RFC 2874, incomplete support)
+  //! Type - Key eXchanger record (@rfc{2230@})
+  T_KX=36,
+
+  //! Type - Certificate Record (@rfc{4398@})
+  T_CERT=37,
+
+  //! Type - IPv6 address record (@rfc{2874@} and Obsolete @rfc{6563@})
   T_A6=38,
 
-  //! Type - SPF - Sender Policy Framework (RFC 4408)
+  //! Type - Delegation Name (@rfc{2672@})
+  T_DNAME=39,
+
+  //! Type - Kitchen Sink (draft)
+  T_SINK=40,
+
+  //! Type - Option (@rfc{2671@})
+  T_OPT=41,
+
+  //! Type - Address Prefix List (@rfc{3123@})
+  T_APL=42,
+
+  //! Type - Delegation Signer (@rfc{4034@})
+  T_DS=43,
+
+  //! Type - SSH Public Key Fingerprint (@rfc{4255@})
+  T_SSHFP=44,
+
+  //! Type - IPsec Key (@rfc{4025@})
+  T_IPSECKEY=45,
+
+  //! Type - DNSSEC signature (@rfc{4034@})
+  T_RRSIG=46,
+
+  //! Type - Next-Secure record (@rfc{4034@})
+  T_NSEC=47,
+
+  //! Type - DNS Key record (@rfc{4034@})
+  T_DNSKEY=48,
+
+  //! Type - DHCP identifier (@rfc{4701@})
+  T_DHCID=49,
+
+  //! Type - NSEC record version 3 (@rfc{5155@})
+  T_NSEC3=50,
+
+  //! Type - NSEC3 parameters (@rfc{5155@})
+  T_NSEC3PARAM=51,
+
+  //! Type - TLSA certificate association (@rfc{6698@})
+  T_TLSA=52,
+
+  //! Type - Host Identity Protocol (@rfc{5205@})
+  T_HIP=55,
+
+  //! Type - SPF - Sender Policy Framework (@rfc{4408@})
   T_SPF=99,
+
+  // UserDB via DNS?
+  T_UINFO=100,
+  T_UID=101,
+  T_GID=102,
+  T_UNSPEC=103,
+
+  //! Type - Secret key record (@rfc{2930@})
+  T_TKEY=249,
+
+  //! Type - Transaction Signature (@rfc{2845@})
+  T_TSIG=250,
+
+  //! Type - Incremental Zone Transfer (@rfc{1996@})
+  T_IXFR=251,
+
+  //! Type - Authoritative Zone Transfer (@rfc{1035@})
+  T_AXFR=252,
+
+  //! Type - Mail Box (MB, MG or MR) (Obsolete - use MX)
+  T_MAILB=253,
+
+  //! Type - Mail Agent (both MD and MF) (Obsolete - use MX)
+  T_MAILA=254,
 
   //! Type - ANY - A request for all records
   T_ANY=255,
+
+  //! Type - Certificate Authority Authorization (@rfc{6844@})
+  T_CAA=257,
+
+  //! Type - DNSSEC Trust Authorities (draft)
+  T_TA=32768,
+
+  //! Type - DNSSEC Lookaside Validation Record (@rfc{4431@})
+  T_DLV=32769,
+};
+
+//! Flag bits used in @[T_DNSKEY] RRs.
+enum DNSKEY_Flags {
+  F_ZONEKEY		= 0x0100,	//! Zone Key.
+  F_SECUREENTRYPOINT	= 0x0001,	//! Secure Entry Point.
+};
+
+//! DNSSEC Protocol types.
+//!
+//! @note
+//!   @rfc{4034@} obsoleted all but @[DNSSEC_DNSSEC].
+enum DNSSEC_Protocol {
+  DNSSEC_TLS		= 1,	//! Reserved for use by TLS.
+  DNSSEC_EMAIL		= 2,	//! Reserved for use by SMTP et al.
+  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. @rfc{4034:2.1.2@}.
+  DNSSEC_IPSEC		= 4,	//! Reserved for use by IPSEC.
+  DNSSEC_ALL		= 255,	//! Any use. Discouraged.
+};
+
+//! DNSSEC Algorithm types.
+enum DNSSES_Algorithm {
+  DNSSEC_RSAMD5		= 1,	//! RSA/MD5 @rfc{2537@}.
+  DNSSEC_DH		= 2,	//! Diffie-Hellman @rfc{2539@}.
+  DNSSEC_DSA		= 3,	//! DSA/SHA1 @rfc{2536@}.
+  DNSSEC_ECC		= 4,
+  DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 @rfc{3110@}.
+
+  DNSSEC_INDIRECT	= 252,
+  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based @rfc{4035:A.1.1@}.
+  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based @rfc{4035:A.1.1@}.
+};
+
+//! DNSSEC Digest types.
+enum DNSSEC_Digests {
+  DNSSEC_SHA1		= 1,	//! SHA1 digest @rfc{4035:A.2@}.
 };
 
 int safe_bind(Stdio.UDP udp, string|int port, string|void device)
@@ -140,8 +307,11 @@ int safe_bind(Stdio.UDP udp, string|int port, string|void device)
 #if constant(System.EADDRINUSE)
   if (errno() == System.EADDRINUSE) return 0;
 #endif
-  werror("Protocols.DNS: Binding of UDP port failed with errno %d: %s\n",
-	 errno(), strerror(errno()));
+#if constant(System.WSAEACCES)
+  if (errno() == System.WSAEACCES) return 0;
+#endif
+  werror("Protocols.DNS: Binding of UDP port failed with errno %d: %s.\n",
+         errno(), strerror(errno()));
   master()->handle_error(err);
   return 0;
 }
@@ -216,7 +386,7 @@ class protocol
      case T_A6:
        if( stringp( entry->a6 ) || !entry->a6 )
          return "\0"+make_raw_addr6(entry->a6);
-       return sprintf( "%c%s%s", 
+       return sprintf( "%c%s%s",
                        entry->a6->prefixlen,
                        make_raw_addr6(entry->a6->address)[entry->a6->prefixlen/8..],
                        entry->a6->prefixname||"");
@@ -245,8 +415,29 @@ class protocol
                     return sprintf("%1H", t);
                   })*"";
      case T_LOC:
-       // FIXME: Not implemented yet.
-     default:
+       int encode_T_LOC_tinyfloat(float|int subject)
+       {
+	 int power = min((int)(log(subject*100.0)/log(10.0)), 9);
+	 int base =  min((int)(subject*100.0/pow(10.0,power)), 9);
+	 return ((base&0xf)<<4)|(power&0xf);
+       };
+       if ((entry->version? entry->version:1) != 1)
+	 error("Only T_LOC version 1 is supported");
+       return sprintf("%1c%1c%1c%1c%4c%4c%4c",
+		      0, // Only version that currently exists
+		      encode_T_LOC_tinyfloat(entry->size? entry->size:100.0), //Default is 1M
+		      encode_T_LOC_tinyfloat(entry->h_prec? entry->h_prec:1000*100.0), // Default is 10KM
+		      encode_T_LOC_tinyfloat(entry->v_prec? entry->v_prec:10*100.0), // Default is 10M
+		      entry->lat?(int)(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
+		      );
+     case T_CAA:
+       if (entry->tag == "" || !entry->tag)
+         error("An empty tag is not permitted.\n");
+       return sprintf("%c%H%s", entry->flags | (!!entry->critical << 7),
+                      entry->tag, entry->value || "");
+    default:
        return "";
     }
   }
@@ -342,14 +533,14 @@ class protocol
 	  if(next==-1) next=pos+1;
 	  n[0]=next;
 	  return ret*".";
-	  
+
 	case 1..63:
 	  pos+=len+1;
 	  ret+=({msg[pos-len..pos-1]});
 	  continue;
-	  
+
 	default:
-	  if((~len)&0xc0) 
+	  if((~len)&0xc0)
 	    error("Invalid message compression mode.\n");
 	  if(next==-1) next=pos+2;
 	  pos=((len&63)<<8) + msg[pos+1];
@@ -439,7 +630,7 @@ class protocol
   //!             @member string "os"
   //!           @endmapping
   //!         @value T_SRV
-  //!           RFC 2052 and RFC 2782.
+  //!           @rfc{2052@} and @rfc{2782@}.
   //!           @mapping
   //!             @member int "priority"
   //!             @member int "weight"
@@ -464,12 +655,12 @@ class protocol
   //!             @member int "version"
   //!               Version, currently only version @expr{0@} (zero) is
   //!               supported.
-  //!             @member int "size"
-  //!             @member int "h_perc"
-  //!             @member int "v_perc"
-  //!             @member int "lat"
-  //!             @member int "long"
-  //!             @member int "alt"
+  //!             @member float "size"
+  //!             @member float "h_perc"
+  //!             @member float "v_perc"
+  //!             @member float "lat"
+  //!             @member float "long"
+  //!             @member float "alt"
   //!           @endmapping
   //!         @value T_SOA
   //!           @mapping
@@ -483,7 +674,7 @@ class protocol
   //!             @member int "minimum"
   //!               Note: For historical reasons this entry is named
   //!               @expr{"minimum"@}, but it contains the TTL for
-  //!               negative answers (RFC 2308).
+  //!               negative answers (@rfc{2308@}).
   //!           @endmapping
   //!         @value T_NAPTR
   //!           @mapping
@@ -511,6 +702,16 @@ class protocol
   //!           @mapping
   //!             @member string "spf"
   //!           @endmapping
+  //!         @value T_CAA
+  //!           @mapping
+  //!             @member int "critical"
+  //!               Sets the critical bit of the flag field.
+  //!             @member int "flags"
+  //!
+  //!             @member string "tag"
+  //!               Cannot be empty.
+  //!             @member string "value"
+  //!         @endmapping
   //!       @endint
   //!   @endarray
   array decode_entries(string s,int num, array(int) next)
@@ -523,7 +724,7 @@ class protocol
       sscanf(s[next[0]..next[0]+10],
 	     "%2c%2c%4c%2c",
 	     m->type,m->cl,m->ttl,m->len);
-      
+
     next[0]+=10;
     int tmp=next[0];
     switch(m->type)
@@ -581,11 +782,11 @@ class protocol
 	{
 	  int aByte;
 	  aByte  = decode_byte(s,next);
-	  m->size = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->size = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->h_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->h_perc = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  aByte = decode_byte(s,next);
-	  m->v_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->v_perc = (((aByte>>4)&0xf)%10)*(pow(10,(aByte&0xf)%10)/100.0);
 	  m->lat = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->long = ((decode_int(s,next)-(2<<30))/3600000.0);
 	  m->alt = ((decode_int(s,next)/100.0)-100000.0);
@@ -623,8 +824,17 @@ class protocol
       case T_SPF:
 	m->spf = decode_string(s, next);
 	break;
+      case T_CAA:
+        {
+          string tag;
+
+          m->critical = !!((m->flags = decode_byte(s, next)) & 0x80);
+          tag = m->tag = decode_string(s, next);
+          m->value = s[next[0]..next[0] + m->len - 3 - sizeof(tag)];
+        }
+        break;
     }
-    
+
     next[0]=tmp+m->len;
     ret+=({m});
     }
@@ -648,14 +858,14 @@ class protocol
     m->aa=(m->c1>>2)&1;
     m->opcode=(m->c1>>3)&15;
     m->qr=(m->c1>>7)&1;
-    
+
     m->rcode=m->c2&15;
     m->cd=(m->c2>>4)&1;
     m->ad=(m->c2>>5)&1;
     m->ra=(m->c2>>7)&1;
-    
+
     m->length=sizeof(s);
-    
+
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
     for(int i=0; i<m->qdcount; i++) {
@@ -700,7 +910,7 @@ protected void create()
 	// IPv4 is present.
 	array(string) a = udp2->query_address()/" ";
 	int port = (int)a[1];
-	string key = Crypto.Random.random_string(16);
+	string key = random_string(16);
 	udp2->set_nonblocking();
 
 	// We shouldn't get any lost packets, since we're on the loop-back,
@@ -760,7 +970,7 @@ class server_base
   //! @param cb
   //!   Callback you can call with the result instead of returning it.
   //!   In that case, return @expr{0@} (zero).
-  //!  
+  //!
   //!
   //! Overload this function to implement the proper lookup.
   //!
@@ -844,6 +1054,29 @@ class server_base
     // This is a stub intended to simplify servers which allow recursion
   }
 
+  //! Report a failure to decode a DNS request.
+  //!
+  //! The default implementation writes a backtrace to stderr.  This
+  //! method exists so that derived servers can replace it with more
+  //! appropriate error handling for their environment.
+  protected void report_decode_error(mixed err, mapping m, Stdio.UDP|object udp)
+  {
+    werror("DNS: Failed to read %s packet.\n%s\n",
+	   udp->tcp_connection ? "TCP" : "UDP",
+	   describe_backtrace(err));
+  }
+
+  //! Respond to a query that cannot be decoded.
+  //!
+  //! This method exists so that servers can override the default behaviour.
+  protected void handle_decode_error(mapping err, mapping m,
+				     Stdio.UDP|object udp)
+  {
+    if(m && m->data && sizeof(m->data)>=2)
+      send_reply((["rcode":1]),
+                 mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+  }
+
   //! Low-level DNS-data receiver.
   //!
   //! This function receives the raw DNS-data from the @[Stdio.UDP] socket
@@ -856,12 +1089,8 @@ class server_base
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror("DNS: Failed to read %s packet.\n%s\n",
-	     udp->tcp_connection ? "TCP" : "UDP",
-	     describe_backtrace(err));
-      if(m && m->data && sizeof(m->data)>=2)
-	send_reply((["rcode":1]),
-		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+      report_decode_error(err, m, udp);
+      handle_decode_error(err, m, udp);
     }
     else if(q->qr)
       handle_response(q, m, udp);
@@ -872,7 +1101,7 @@ class server_base
   protected void send_reply(mapping r, mapping q, mapping m,
 			    Stdio.UDP|object con);
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(sizeof(ports))
     {
@@ -974,7 +1203,7 @@ class tcp_server
     Stdio.File con;
 
     protected void create(Stdio.File con) {
-      this_program::con = con;
+      this::con = con;
       con->set_nonblocking(rcb, wcb, ccb);
       c_id = call_out(destruct, 120, this);
     }
@@ -1034,7 +1263,7 @@ class tcp_server
       c_id = call_out(destruct, 120, this);
     }
 
-    void destroy() {
+    protected void _destruct() {
       if (con) con->close();
       destruct(con);
       m_delete(connections, this);
@@ -1100,13 +1329,13 @@ class tcp_server
     }
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     foreach (connections; Connection con;) {
       destruct(con);
     }
 
-    ::destroy();
+    ::_destruct();
   }
 }
 
@@ -1136,9 +1365,9 @@ class dual_server {
     ::create(arg1, @args);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
-    ::destroy();
+    ::_destruct();
   }
 }
 
@@ -1147,7 +1376,7 @@ class dual_server {
 #define RETRY_DELAY 5
 
 //! Synchronous DNS client.
-class client 
+class client
 {
   inherit protocol;
 
@@ -1162,30 +1391,30 @@ class client
     }),string key)
     {
       catch {
-	res += ({ RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
+	res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
       };
     }
 
-#if constant(RegGetKeyNames)
-    /* Catch if RegGetKeyNames() doesn't find the directory. */
+#if constant(System.RegGetKeyNames)
+    /* Catch if System.RegGetKeyNames() doesn't find the directory. */
     catch {
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
 				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
-				"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
+                                "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
@@ -1236,15 +1465,15 @@ class client
   {
     if (!etc_hosts) {
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
-	
+
       string raw = read_etc_file("hosts");
-	
+
       if (raw && sizeof(raw)) {
 	foreach(raw/"\n"-({""}), string line) {
 	  // Handle comments, and split the line on white-space
 	  line = lower_case(replace((line/"#")[0], "\t", " "));
 	  array arr = (line/" ") - ({ "" });
-	    
+
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
 	      foreach(arr[1..], string name) {
@@ -1308,7 +1537,7 @@ class client
 	  } else {
 	    nameservers = ({});
 	  }
-	  
+
 	  if (domains = System->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
@@ -1351,7 +1580,7 @@ class client
 	      rest = replace(rest, "\t", " ");
 	      domains += ((rest/" ") - ({""}));
 	      break;
-	      
+
 	    case "nameserver":
 	      if (!is_ip(rest)) {
 		// Not an IP-number!
@@ -1384,15 +1613,15 @@ class client
                                }
                                return d;
                              });
-    } 
-    else 
+    }
+    else
     {
-      if(arrayp(server))	
+      if(arrayp(server))
 	nameservers = server;
       else
 	nameservers = ({ server });
 
-      if(arrayp(domain))	
+      if(arrayp(domain))
 	domains = domain;
       else
 	if(stringp(domain))
@@ -1460,7 +1689,7 @@ class client
   protected mapping low_gethostbyname(string s, int type)
   {
     mapping m;
-    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
+    if(sizeof(domains) && sizeof(s) && s[-1] != '.' && sizeof(s/".") < 3) {
       mapping m = do_sync_query(mkquery(s, C_IN, type));
       if(!m || !m->an || !sizeof(m->an))
 	foreach(domains, string domain)
@@ -1474,7 +1703,7 @@ class client
       return do_sync_query(mkquery(s, C_IN, type));
     }
   }
-  
+
   //! @decl array gethostbyname(string hostname)
   //!	Queries the host name from the default or given
   //!	DNS server. The result is an array with three elements,
@@ -1534,12 +1763,12 @@ class client
     });
   }
 
-  //!	Queries the service record (RFC 2782) from the default or given
-  //!	DNS server. The result is an array of arrays with the
-  //!   following six elements for each record. The array is
-  //!   sorted according to the priority of each record.
+  //!	Queries the service record (@rfc{2782@}) from the default or
+  //!	given DNS server. The result is an array of arrays with the
+  //!	following six elements for each record. The array is sorted
+  //!	according to the priority of each record.
   //!
-  //!   Each element of the array returned represents a service 
+  //!   Each element of the array returned represents a service
   //!   record. Each service record contains the following:
   //!
   //! @returns
@@ -1563,9 +1792,9 @@ class client
     if(!service) error("no service name specified.");
     if(!protocol) error("no service name specified.");
 
-    if(sizeof(domains) && !name) { 
+    if(sizeof(domains) && !name) {
       // we haven't provided a target domain to search on.
-      // we probably shouldn't do a searchdomains search, 
+      // we probably shouldn't do a searchdomains search,
       // as it might return ambiguous results.
       m = do_sync_query(
         mkquery("_" + service +"._"+ protocol + "." + name, C_IN, T_SRV));
@@ -1585,7 +1814,7 @@ class client
     if (!m) { // no entries.
       return ({});
     }
-    
+
     array res=({});
     foreach(m->an, mapping x)
     {
@@ -1725,6 +1954,35 @@ class client
 
     return b;
   }
+
+  //!
+  class Request(string domain, string req,
+		function(string,mapping,mixed...:void) callback,
+		array(mixed) args)
+  {
+    int retries;
+    int timestamp = time();
+
+    //! Cancel the current request.
+    void cancel()
+    {
+      remove(this);
+    }
+    mixed retry_co;
+  };
+
+  mapping requests=([]);
+
+  protected void remove(object(Request) r)
+  {
+    if(!r) return;
+    sscanf(r->req,"%2c",int id);
+    m_delete(requests,id);
+    if (r->retry_co) remove_call_out(r->retry_co);
+    r->retry_co = UNDEFINED;
+    r->callback && r->callback(r->domain,0,@r->args);
+    destruct(r);
+  }
 }
 
 #define REMOVE_DELAY 120
@@ -1738,48 +1996,33 @@ class async_client
   inherit Stdio.UDP : udp;
   async_client next_client;
 
-  class Request
-  {
-    string req;
-    string domain;
-    function callback;
-    int retries;
-    int timestamp;
-    array args;
-  };
-
-  mapping requests=([]);
-
-  protected private void remove(object(Request) r)
-  {
-    if(!r) return;
-    sscanf(r->req,"%2c",int id);
-    m_delete(requests,id);
-    r->callback(r->domain,0,@r->args);
-    destruct(r);
-  }
-
   void retry(object(Request) r, void|int nsno)
   {
     if(!r) return;
     if (nsno >= sizeof(nameservers)) {
       if(r->retries++ > RETRIES)
       {
-	call_out(remove,REMOVE_DELAY,r);
+	r->retry_co = call_out(remove, REMOVE_DELAY, r);
 	return;
       } else {
 	nsno = 0;
       }
     }
-    
-    send(nameservers[nsno],53,r->req);
-    call_out(retry,RETRY_DELAY,r,nsno+1);
+
+    r->retry_co = call_out(retry, RETRY_DELAY, r, nsno+1);
+    udp::send(nameservers[nsno], 53, r->req);
   }
 
+  //! Enqueue a new raw DNS request.
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object.
+  //!
+  //! @note
+  //!   Pike versions prior to 8.0 did not return the @[Request] object.
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
     for(int e=next_client ? 100 : 256;e>=0;e--)
     {
@@ -1787,28 +2030,23 @@ class async_client
       if(!catch { requests[lid]++; })
       {
 	string req=low_mkquery(lid,domain,cl,type);
-	
-	object r=Request();
-	r->req=req;
-	r->domain=domain;
-	r->callback=callback;
-	r->args=args;
-	r->timestamp=time();
-	requests[lid]=r;
-	udp::send(nameservers[0],53,r->req);
-	call_out(retry,RETRY_DELAY,r,1);
-	return;
+
+        object r = Request(domain, req, callback, args);
+	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
+	requests[lid] = r;
+	udp::send(nameservers[0], 53, req);
+	return r;
       }
     }
-    
+
     /* We failed miserably to find a request id to use,
-     * so we create a second UDP port to be able to have more 
+     * so we create a second UDP port to be able to have more
      * requests 'in the air'. /Hubbe
      */
     if(!next_client)
       next_client=this_program(nameservers,domains);
-    
-    next_client->do_query(domain, cl, type, callback, @args);
+
+    return next_client->do_query(domain, cl, type, callback, @args);
   }
 
   protected private void rec_data(mapping m)
@@ -1832,15 +2070,15 @@ class async_client
     }
   }
 
-  protected private void generic_get(string d,
-				  mapping answer,
-				  int multi, 
-				  int all,
-				  int type, 
-				  string field,
-				  string domain,
-				  function callback,
-				  mixed ... args)
+  protected private Request generic_get(string d,
+					mapping answer,
+					int multi,
+					int all,
+					int type,
+					string field,
+					string domain,
+					function callback,
+					mixed ... args)
   {
     if(!answer || !answer->an || !sizeof(answer->an))
     {
@@ -1850,9 +2088,9 @@ class async_client
 	callback(domain,0,@args);
       } else {
 	// Multiple domain request. Try the next one...
-	do_query(domain+"."+domains[multi], C_IN, type,
-		 generic_get, ++multi, all, type, field, domain,
-		 callback, @args);
+	return do_query(domain+"."+domains[multi], C_IN, type,
+			generic_get, ++multi, all, type, field, domain,
+			callback, @args);
       }
     } else {
       if (all) {
@@ -1862,61 +2100,61 @@ class async_client
 	  if(an[field])
 	  {
 	    callback(domain, an[field], @args);
-	    return;
+	    return UNDEFINED;
 	  }
 	callback(domain,0,@args);
-	return;
       }
     }
+    return UNDEFINED;
   }
 
   //!
-  void host_to_ip(string host, function callback, mixed ... args)
+  Request host_to_ip(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_A,
-	       generic_get, 0, 0, T_A, "a", host, callback, @args );
+      return do_query(host, C_IN, T_A,
+		      generic_get, 0, 0, T_A, "a", host, callback, @args );
     } else {
-      do_query(host, C_IN, T_A,
-	       generic_get, -1, 0, T_A, "a",
-	       host, callback, @args);
+      return do_query(host, C_IN, T_A,
+		      generic_get, -1, 0, T_A, "a",
+		      host, callback, @args);
     }
   }
 
   //!
-  void ip_to_host(string ip, function callback, mixed ... args)
+  Request ip_to_host(string ip, function callback, mixed ... args)
   {
-    do_query(arpa_from_ip(ip), C_IN, T_PTR,
-	     generic_get, -1, 0, T_PTR, "ptr",
-	     ip, callback,
-	     @args);
+    return do_query(arpa_from_ip(ip), C_IN, T_PTR,
+		    generic_get, -1, 0, T_PTR, "ptr",
+		    ip, callback,
+		    @args);
   }
 
   //!
-  void get_mx_all(string host, function callback, mixed ... args)
+  Request get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_MX,
-	       generic_get, 0, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, 0, 1, T_MX, "mx", host, callback, @args);
     } else {
-      do_query(host, C_IN, T_MX,
-	       generic_get, -1, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, -1, 1, T_MX, "mx", host, callback, @args);
     }
   }
 
   //!
-  void get_mx(string host, function callback, mixed ... args)
+  Request get_mx(string host, function callback, mixed ... args)
   {
-    get_mx_all(host,
-	       lambda(string domain, array(mapping) mx,
-		      function callback, mixed ... args) {
-		 array a;
-		 if (mx) {
-		   a = column(mx, "mx");
-		   sort(column(mx, "preference"), a);
-		 }
-		 callback(a, @args);
-	       }, callback, @args);
+    return get_mx_all(host,
+		      lambda(string domain, array(mapping) mx,
+			     function callback, mixed ... args) {
+			array a;
+			if (mx) {
+			  a = column(mx, "mx");
+			  sort(column(mx, "preference"), a);
+			}
+			callback(a, @args);
+		      }, callback, @args);
   }
 
   //! Close the client.
@@ -2000,20 +2238,30 @@ class async_tcp_client
 {
   inherit async_client;
 
-  class Request(string domain, string req,
-		function(string,mapping,mixed...:void) callback,
-		array(mixed) args)
+  //!
+  class Request
   {
-    Stdio.File sock;
-    string writebuf="",readbuf="";
+    inherit ::this_program;
 
-    void create()
+    protected Stdio.File sock;
+    protected string writebuf="",readbuf="";
+
+    protected void create(string domain, string req,
+			  function(string,mapping,mixed...:void) callback,
+			  array(mixed) args)
     {
+      ::create(domain, req, callback, args);
       sock=Stdio.File();
       sock->async_connect(nameservers[0], 53, connectedcb);
     }
 
-    void connectedcb(int ok)
+    protected void close()
+    {
+      sock && sock->close();
+      sock = UNDEFINED;
+    }
+
+    protected void connectedcb(int ok)
     {
       if (!ok) {callback(domain, 0, @args); return;}
       sock->set_nonblocking(readcb, writecb, closecb);
@@ -2021,37 +2269,41 @@ class async_tcp_client
       writecb();
     }
 
-    void readcb(mixed id,string data)
+    protected void readcb(mixed id,string data)
     {
       readbuf+=data;
       if (sscanf(readbuf,"%2H",string ret))
       {
         if (callback) callback(domain, decode_res(ret), @args);
         callback=0;
-        sock->close();
+        close();
       }
     }
 
-    void writecb()
+    protected void writecb()
     {
       if (writebuf!="") writebuf=writebuf[sock->write(writebuf)..];
     }
 
-    void closecb()
+    protected void closecb()
     {
-      sock->close();
-      if (callback) callback(domain, 0, @args);
-      callback=0;
+      cancel();
+    }
+
+    void cancel()
+    {
+      close();
+      ::cancel();
     }
   }
 
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
     string req=low_mkquery(random(65536),domain,cl,type);
-    Request(domain, req, callback, args);
+    return Request(domain, req, callback, args);
   }
 }
 
@@ -2087,11 +2339,12 @@ class async_dual_client
   }
 
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
-    UDP::do_query(domain,cl,type,check_truncation,cl,type,callback,@args);
+    return UDP::do_query(domain,cl,type,check_truncation,
+			 cl,type,callback,@args);
   }
 
   void create(mixed ... args) {::create(@args);}
@@ -2101,11 +2354,11 @@ class async_dual_client
 async_client global_async_client;
 
 #define GAC(X)								\
-void async_##X( string host, function callback, mixed ... args ) 	\
+async_client.Request async_##X( string host, function callback, mixed ... args ) 	\
 {									\
   if( !global_async_client )						\
     global_async_client = async_client();				\
-  global_async_client->X(host,callback,@args);				\
+  return global_async_client->X(host,callback,@args);			\
 }
 
 //! @ignore

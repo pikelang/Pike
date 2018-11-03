@@ -1,5 +1,5 @@
 @make_variables@
-VPATH=@srcdir@@PATH_SEPARATOR@@srcdir@/../..@PATH_SEPARATOR@../..
+VPATH=@srcdir@
 OBJS=whitefish.o resultset.o blob.o buffer.o blobs.o linkfarm.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@

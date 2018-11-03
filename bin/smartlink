@@ -161,7 +161,12 @@ if test x$# != x0 ; then
    SunOS\ 5.*)
      LDOPTS="$LDOPTS -R$RPATH"
    ;;
-   Linux\ 2.*)
+   Linux\ 1.*)
+     LD_LIBRARY_PATH="$RPATH"
+     LD_RUN_PATH="$RPATH"
+     export LD_LIBRARY_PATH LD_RUN_PATH
+   ;;
+   Linux\ *)
      if test x$LINKING != xno -a "x$RPATH" != x ; then
       LDOPTS="$LDOPTS -Wl,-rpath,$RPATH"
      fi
@@ -169,6 +174,17 @@ if test x$# != x0 ; then
    UnixWare\ 7.*)
      if test x$LINKING != xno -a "x$RPATH" != x ; then
        LDOPTS="$LDOPTS -Xlinker -YP, -Xlinker $RPATH"
+     fi
+   ;;
+   Darwin\ *|NetBSD\ *)
+    if test x$LINKING != xno -a "x$RPATH" != x ; then
+      OIFS="$IFS"
+      IFS=":"
+      RPP="$PATH"
+      for RP in $RPATH ; do
+       LDOPTS="$LDOPTS -Wl,-rpath,$RP"
+     done
+     IFS="$OIFS"
      fi
    ;;
    *)
@@ -193,9 +209,17 @@ fi
 #esac
 
 case "$UNAME" in
+  Darwin\ 1[3-9]*|Darwin\ [2-9][0-9]*)
+    # C++ Name mangling changed here, need to be able to interoperate with modern libs
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x" ; then
+      export MACOSX_DEPLOYMENT_TARGET=10.9
+    fi
+  ;;
   Darwin\ [7-9]*|Darwin\ [1-9][0-9]*)
     # Needs to be 10.3 or better for ld to accept "-undefined dynamic_lookup"
-    export MACOSX_DEPLOYMENT_TARGET=10.3
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x" ; then
+      export MACOSX_DEPLOYMENT_TARGET=10.3
+    fi
   ;;
   *)
   ;;

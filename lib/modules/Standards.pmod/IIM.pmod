@@ -14,7 +14,7 @@ mapping(int:mapping(int:string)) fields =
   ([
     1: ([   // ENVELOPE RECORD
       0:   "model version",
-      5:   "destinatino",
+      5:   "destination",
       20:  "file format",
       22:  "file format version",
       30:  "service identifier",
@@ -24,7 +24,7 @@ mapping(int:mapping(int:string)) fields =
       70:  "date sent",
       80:  "time sent",
       90:  "coded character set",
-      100: "uno",
+      100: "uno",			// Unique Name of Object.
       120: "arm Identifier",
       122: "arm Version",
     ]),
@@ -37,8 +37,8 @@ mapping(int:mapping(int:string)) fields =
       8:   "editorial update",
       10:  "urgency",
       12:  "subject reference",
-      15:  "category",
-      20:  "supplemental category",
+      15:  "category",			// Obsoleted by "subject reference".
+      20:  "supplemental category",	// Obsoleted by "subject reference".
       22:  "fixture identifier",
       25:  "keywords",
       26:  "content location code",
@@ -132,7 +132,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
   }
   //werror("blocks: %O\n", blocks);
   foreach(blocks, string block) {
-    //werror("block: %O\n", String.string2hex(block));
+    //werror("block: %x\n", block);
     if (sizeof(block) < 6) {
       werror("Malformed 8BIM block\n");
       continue;
@@ -141,7 +141,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
     string block_type_2;
     int block_length;
     string info;
-    
+
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
       // The two bytes after the description text is zero padding, then comes
@@ -186,7 +186,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	    continue;
 	  }
 	}
-#if 1
+#if 0
 	werror("Unknown segment marker: 0x%02x\n"
 	       "record_set: %d\n"
 	       "id: %d\n"
@@ -202,7 +202,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 
       //werror("%3d: ", id);
       //werror("%O\n", data);
-      //werror("info: %O\n", String.string2hex(info));
+      //werror("info: %x\n", info);
       string label =
 	fields[record_set][id] ||
 	(string)record_set + ":" + (string)id;
@@ -299,22 +299,11 @@ mapping get_information(Stdio.File fd)
       if (line[0] != '%') continue;
       if (bytes < 0) sscanf(line, "%%BeginPhotoshop:%*[ ]%d", bytes);
       else if (has_prefix(line, "%EndPhotoshop")) {
-	break;
-      } else if (has_prefix(line, "% ")) {
-#if constant(String.hex2string)
-	photoshop_data += String.hex2string(line[2..]);
-#else
-	photoshop_data += Crypto.hex_to_string(line[2..]);
-#endif
-	if (sizeof(photoshop_data) >= bytes) break;
-      } else {
-#if constant(String.hex2string)
-	photoshop_data += String.hex2string(line[1..]);
-#else
-	photoshop_data += Crypto.hex_to_string(line[1..]);
-#endif
-	if (sizeof(photoshop_data) >= bytes) break;
+        break;
       }
+      // Let hex2string swollow "%" and possible " ".
+      photoshop_data += String.hex2string(line);
+      if (sizeof(photoshop_data) >= bytes) break;
     }
   } else if (marker == "\xff\xd8") {
     do {
@@ -408,7 +397,7 @@ mapping get_information(Stdio.File fd)
     }
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
-    object decoder = Locale.Charset.decoder(charset);
+    object decoder = Charset.decoder(charset);
     foreach(res; string key; array(string) vals) {
       res[key] = map(vals,
 		     lambda(string val, object decoder) {

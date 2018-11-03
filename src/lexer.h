@@ -6,9 +6,6 @@
 
 /*
  * Lexical analyzer template.
- * Based on lex.c 1.62
- *
- * Henrik Grubbström 1999-02-20
  */
 
 #ifndef SHIFT
@@ -21,8 +18,8 @@
 
 /* Generic */
 #define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) SKIP(); }while(0)
+#define SKIPSPACE() do { while(wide_isspace(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
+#define SKIPWHITE() do { while(wide_isspace(LOOK())) SKIP(); }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
 
 #if (SHIFT == 0)
@@ -35,7 +32,7 @@
 #define SKIPN(N) (lex->pos += (N))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;				\
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     lex->pos++;					\
@@ -43,7 +40,7 @@
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
-#define ISWORD(X) ((len == strlen(X)) && !MEMCMP(buf,X,strlen(X)))
+#define ISWORD(X) ((len == CONSTANT_STRLEN(X)) && !memcmp(buf,X,len))
 
 /*
  * Function renaming
@@ -53,7 +50,7 @@
 #define yylex yylex0
 #define low_yylex low_yylex0
 #define lex_atoi atoi
-#define lex_strtol STRTOL
+#define lex_strtol strtol
 #define lex_strtod my_strtod
 #define lex_isidchar isidchar
 
@@ -61,11 +58,11 @@
 
 #define LOOK() INDEX_CHARP(lex->pos,0,SHIFT)
 #define SKIP() (lex->pos += (1<<SHIFT))
-#define SKIPN(N) (lex->pos += ((N)<<SHIFT))
+#define SKIPN(N) (lex->pos += (N) < 0 ? -(-(N) << SHIFT) : ((N)<<SHIFT))
 #define GETC() (SKIP(),INDEX_CHARP(lex->pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;                                        \
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     SKIP();					\
@@ -74,7 +71,7 @@
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
 
-#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, len))
 
 #if (SHIFT == 1)
 
@@ -109,7 +106,7 @@
 #endif /* SHIFT == 1 */
 
 
-#define lex_isidchar(X) ((((unsigned) X)>=256) || isidchar(X))
+#define lex_isidchar(X) wide_isidchar(X)
 
 static int low_isword(char *buf, char *X, size_t len)
 {
@@ -194,6 +191,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 {
   ptrdiff_t l = 1;
   p_wchar2 c;
+  int of = 0;
 
   switch ((c = *buf))
   {
@@ -212,62 +210,77 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
-      int of = 0;
       unsigned INT32 n = c-'0';
-      for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
-	n = DO_UINT32_MUL_OVERFLOW(n, 8, &of);
-	n += buf[l] - '0';
+      for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
+	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
+	  of = 1;
+	else
+	  n += buf[l] - '0';
       }
-      if (of) {*len = l; return 4;}
+      if (of) {
+	*len = l;
+	return 4;
+      }
       c = (p_wchar2)n;
       break;
     }
 
     case '8': case '9':
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
 	yywarning("%c is not a valid octal digit.", c);
       break;
-      
+
     case 'x': {
-      int of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
-	    n += buf[l] - '0';
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - '0';
 	    continue;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
-	    n += buf[l] - 'a' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'a' + 10;
 	    continue;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
-	    n += buf[l] - 'A' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'A' + 10;
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 5;}
+      if (of) {
+	*len = l;
+	return 5;
+      }
       c = (p_wchar2)n;
       break;
     }
 
     case 'd': {
-      int of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    n = DO_UINT32_MUL_OVERFLOW(n, 10, &of);
-	    n = DO_UINT32_ADD_OVERFLOW(n, buf[l] - '0', &of);
+	    if (DO_UINT32_MUL_OVERFLOW(n, 10, &n) || DO_UINT32_ADD_OVERFLOW(n, buf[l] - '0', &n)) {
+	      of = 1;
+            }
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 6;}
+      if (of) {
+	*len = l;
+	return 6;
+      }
       c = (p_wchar2)n;
       break;
     }
@@ -276,6 +289,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case 'U': {
       /* FIXME: Do we need compat goo to turn this off? */
       /* Note: Code dup in gobble_identifier in preprocessor.h. */
+      unsigned INT32 n = 0;
       int stop, longq;
       l = 1;
       if (buf[1] == c) {
@@ -296,24 +310,35 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	stop = l + 8;
 	longq = 1;
       }
-      c = 0;
       for (; l < stop; l++)
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    c = 16 * c + buf[l] - '0';
+	    n = 16 * n + buf[l] - '0';
 	    break;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    c = 16 * c + buf[l] - 'a' + 10;
+	    n = 16 * n + buf[l] - 'a' + 10;
 	    break;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    c = 16 * c + buf[l] - 'A' + 10;
+	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
 	  default:
 	    *len = l;
 	    return longq ? 8 : 7;
 	}
+      c = (p_wchar2)n;
+      break;
     }
+  case '\\': case '\'': case '\"':
+    break;
+  default:
+    /* Warn about this as it is commonly due to broken escaping,
+     * and to be forward compatible with adding future new escapes.
+     */
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+      yywarning("Redundant backslash-escape: \'\\%c\'.", c);
+    }
+    break;
   }
 
   *len = l;
@@ -340,17 +365,17 @@ static p_wchar2 char_const(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       return 0;
     case 4: case 5: case 6:
-      if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too large character value in escape.");
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror ("Too large character value in escape.");
       c = -1;
       break;
     case 7:
-      if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\u escape.");
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
-      if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\U escape.");
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror ("Too few hex digits in \\U escape.");
       return '\\';
   }
   SKIPN (l);
@@ -366,13 +391,14 @@ static struct pike_string *readstring(struct lex *lex)
 #endif /* SHIFT != 0 */
 
   init_string_builder(&tmp,0);
-  
+
   while(1)
   {
     char *buf;
     size_t len;
 
-    READBUF(((C > '\\') || ((C != '"') && (C != '\\') && (C != '\n'))));
+    READBUF(((C > '\\') ||
+	     ((C != '"') && (C != '\\') && (C != '\n') && (C != '\r'))));
     if (len) {
 #if (SHIFT == 0)
       string_builder_binary_strcat(&tmp, buf, len);
@@ -387,19 +413,19 @@ static struct pike_string *readstring(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       yyerror("End of file in string.");
       break;
-      
-    case '\n':
+
+    case '\n': case '\r':
       lex->current_line++;
       yyerror("Newline in string.");
       break;
-      
+
     case '\\':
       string_builder_putchar(&tmp, char_const(lex));
       continue;
-      
+
     case '"':
       break;
-      
+
     default:
 #ifdef PIKE_DEBUG
       Pike_fatal("Default case in readstring() reached. c:%d\n", c);
@@ -413,7 +439,9 @@ static struct pike_string *readstring(struct lex *lex)
 
 
 
+#if LEXDEBUG>4
 static int low_yylex(struct lex *lex, YYSTYPE *);
+#endif /* LEXDEBUG>4 */
 int yylex(struct lex *lex, YYSTYPE *yylval)
 #if LEXDEBUG>4
 {
@@ -440,7 +468,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   char *buf;
 
 #ifdef __CHECKER__
-  MEMSET((char *)yylval,0,sizeof(YYSTYPE));
+  memset(yylval,0,sizeof(YYSTYPE));
 #endif
 #ifdef MALLOC_DEBUG
   check_sfltable();
@@ -468,6 +496,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('a','r'):
 	  if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
+	case TWO_CHAR('a','u'):
+	  if(ISWORD("auto")) return TOK_AUTO_ID;
+	  break;
 	case TWO_CHAR('b','r'):
 	  if(ISWORD("break")) return TOK_BREAK;
 	  break;
@@ -481,6 +512,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('c','o'):
 	  if(ISWORD("constant")) return TOK_CONSTANT;
 	  if(ISWORD("continue")) return TOK_CONTINUE;
+	  if(ISWORD("const")) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	      yywarning("const will soon be a reserved keyword.");
+	    }
+	    break;
+	  }
 	  break;
 	case TWO_CHAR('d','e'):
 	  if(ISWORD("default")) return TOK_DEFAULT;
@@ -514,13 +551,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("gauge")) return TOK_GAUGE;
 	  break;
 	case TWO_CHAR('g','l'):
-	  if (ISWORD("global") && !TEST_COMPAT(7,2)) return TOK_GLOBAL;
+	  if (ISWORD("global")) return TOK_GLOBAL;
 	  break;
 	case TWO_CHAR('i','f'):
 	  if(ISWORD("if")) return TOK_IF;
 	  break;
 	case TWO_CHAR('i','m'):
 	  if(ISWORD("import")) return TOK_IMPORT;
+	  if(ISWORD("implement")) return TOK_IMPLEMENT;
 	  break;
 	case TWO_CHAR('i','n'):
 	  if(ISWORD("int")) return TOK_INT_ID;
@@ -541,9 +579,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('m','u'):
 	  if(ISWORD("multiset")) return TOK_MULTISET_ID;
-	  break;
-	case TWO_CHAR('n','o'):
-	  if(ISWORD("nomask")) return TOK_NO_MASK;
 	  break;
 	case TWO_CHAR('o','b'):
 	  if(ISWORD("object")) return TOK_OBJECT_ID;
@@ -586,8 +621,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('w','h'):
 	  if(ISWORD("while")) return TOK_WHILE;
 	  break;
+	case TWO_CHAR('_','S'):
+	  if(ISWORD("_Static_assert")) return TOK_STATIC_ASSERT;
+	  break;
 	case TWO_CHAR('_','_'):
-	  if (TEST_COMPAT(7,6)) break;
 	  if(len < 5) break;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;
@@ -595,6 +632,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
+	  if(ISWORD("__weak__"))
+	    return TOK_WEAK;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
@@ -622,7 +661,11 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	     * - Upper case is used for symbols intended for #if constant().
 	     */
 	    if (tmp->size_shift) {
-	      free_string(tmp);	    
+	      free_string(tmp);
+	      return TOK_IDENTIFIER;
+	    }
+	    if(ISWORD("__args__")) {
+	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
 	    while(len--) {
@@ -632,7 +675,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 		return TOK_IDENTIFIER;
 	      }
 	    }
-	    free_string(tmp);	    
+	    free_string(tmp);
 	  }
 	  return TOK_RESERVED;
 	}
@@ -693,7 +736,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
     case '#':
       SKIPSPACE();
-      READBUF(C!='\n' && C!=' ' && C!='\t');
+      READBUF(!wide_isspace(C));
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
@@ -704,9 +747,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
 	  if (LOOK() < '0' || LOOK() > '9') goto unknown_directive;
 
-	  READBUF(C!='\n' && C!=' ' && C!='\t');
-	  /* fallthrough */
+	  READBUF(!wide_isspace(C));
 	} else goto unknown_directive;
+	/* FALLTHRU */
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	lex->current_line = lex_strtol(buf, NULL, 10)-1;
@@ -717,7 +760,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  free_string(lex->current_file);
 	  lex->current_file = dmalloc_touch(struct pike_string *, tmp);
 	}
-	if (Pike_compiler->compiler_pass == 1 &&
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
 	    !Pike_compiler->new_program->num_linenumbers) {
 	  /* A nested program will always get an entry right away in
 	   * language.yacc. */
@@ -733,12 +776,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	if(ISWORD("pragma"))
 	{
 	  SKIPSPACE();
-	  READBUF(C!='\n'&&C!=' ');
+	  READBUF(!wide_isspace(C));
 	  if (ISWORD("all_inline"))
 	  {
 	    lex->pragmas |= ID_INLINE;
 	  }
-	  else if (ISWORD("all_final") || ISWORD("all_nomask"))
+	  else if (ISWORD("all_final"))
 	  {
 	    lex->pragmas |= ID_FINAL;
 	  }
@@ -762,9 +805,25 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
 	  }
+	  else if (ISWORD("disassemble"))
+	  {
+	    lex->pragmas |= ID_DISASSEMBLE;
+	  }
+	  else if (ISWORD("no_disassemble"))
+	  {
+	    lex->pragmas &= ~ID_DISASSEMBLE;
+	  }
+          else if (ISWORD("dynamic_dot"))
+          {
+            lex->pragmas |= ID_DYNAMIC_DOT;
+          }
+          else if (ISWORD("no_dynamic_dot"))
+          {
+            lex->pragmas &= ~ID_DYNAMIC_DOT;
+          }
           else
           {
-            if( Pike_compiler->compiler_pass == 1 )
+            if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
               yywarning("Unknown #pragma directive.");
           }
 	  break;
@@ -792,34 +851,21 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       default:
 unknown_directive:
-	/* FIXME: This doesn't look all that safe...
-	 * buf isn't NUL-terminated, and it won't work on wide strings.
-	 * /grubba 1999-02-20
-	 * It also modified a shared string... ie. this code was not
-	 * good at all. Fixed.
-	 * /grubba 2000-11-19 (in Versailles)
-	 */
 	if (len < 256) {
 #if (SHIFT == 0)
 	  struct pike_string *dir =
 	    make_shared_binary_string(buf, len);
-#else /* SHIFT != 0 */
-#if (SHIFT == 1)
+#elif (SHIFT == 1)
 	  struct pike_string *dir =
 	    make_shared_binary_string1((p_wchar1 *)buf, len);
-#else /* SHIFT != 1 */
-#if (SHIFT == 2)
+#elif (SHIFT == 2)
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
-#else /* SHIFT != 2 */
-#error Unsupported SHIFT.
-#endif /* SHIFT == 2 */
-#endif /* SHIFT == 1 */
-#endif /* SHIFT == 0 */
+#endif
 	  my_yyerror("Unknown preprocessor directive %S.", dir);
 	  free_string(dir);
 	} else {
@@ -832,30 +878,69 @@ unknown_directive:
 
     case ' ':
     case '\t':
+    case '\r':
       continue;
 
     case '\'':
-      switch(c=GETC())
       {
-      case 0:
-	lex->pos -= (1<<SHIFT);
-	yyerror("Unexpected end of file\n");
-	break;
+        unsigned int l = 0;
+        struct svalue res = svalue_int_zero;
+        MP_INT bigint;
 
-      case '\\':
-	c = char_const(lex);
-	break;
+        while(1)
+        {
+          INT32 tmp;
+          switch( (tmp=GETC()) )
+          {
+            case 0:
+              lex->pos -= (1<<SHIFT);
+              yyerror("Unexpected end of file\n");
+              goto return_char;
 
-      case '\'':
-	yyerror("Zero-length character constant.");
-	debug_malloc_pass( yylval->n=mkintnode(0) );
-	return TOK_NUMBER;
+            case '\\':
+              tmp = char_const(lex);
+              /* fallthrough. */
+            default:
+              l++;
+              if( l == sizeof(INT_TYPE)-1 )
+              {
+                /* overflow possible. Switch to bignums. */
+                mpz_init(&bigint);
+                mpz_set_ui(&bigint,res.u.integer);
+                TYPEOF(res) = PIKE_T_OBJECT;
+              }
+
+              if( l >= sizeof(INT_TYPE)-1 )
+              {
+                mpz_mul_2exp(&bigint,&bigint,8);
+                mpz_add_ui(&bigint,&bigint,tmp);
+              }
+              else
+              {
+                res.u.integer <<= 8;
+                res.u.integer |= tmp;
+              }
+              break;
+
+            case '\'':
+              if( l == 0 )
+                yyerror("Zero-length character constant.");
+              goto return_char;
+          }
+        }
+      return_char:
+        if( TYPEOF(res) == PIKE_T_OBJECT )
+        {
+          push_bignum( &bigint );
+          mpz_clear(&bigint);
+          reduce_stack_top_bignum();
+          res = *--Pike_sp;
+        }
+        debug_malloc_pass( yylval->n=mksvaluenode(&res) );
+        free_svalue( &res );
+        return TOK_NUMBER;
       }
-      if(!GOBBLE('\''))
-	yyerror("Unterminated character constant.");
-      debug_malloc_pass( yylval->n=mkintnode(c) );
-      return TOK_NUMBER;
-	
+      UNREACHABLE();
     case '"':
     {
       struct pike_string *s=readstring(lex);
@@ -863,7 +948,7 @@ unknown_directive:
       free_string(s);
       return TOK_STRING;
     }
-  
+
     case ':':
       if(GOBBLE(':')) return TOK_COLON_COLON;
       return c;
@@ -876,12 +961,11 @@ unknown_directive:
       }
       if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
 	  (c >= '0')) {
-	/* FIXME: Only in Pike 7.7 and later mode? */
-	lex->pos -= (1<<SHIFT);
+        lex->pos -= (1<<SHIFT);
 	goto read_float;
       }
       return '.';
-  
+
     case '0':
     {
       int base = 0;
@@ -909,6 +993,7 @@ unknown_directive:
 	return TOK_NUMBER;
       }
     }
+    /* FALLTHRU */
 
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
@@ -956,7 +1041,7 @@ unknown_directive:
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
-	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
+            for (l=0; wide_isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
 		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {
@@ -1007,17 +1092,17 @@ unknown_directive:
       if(GOBBLE('>')) return TOK_ARROW;
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
-  
+
     case '+':
       if(GOBBLE('=')) return TOK_ADD_EQ;
       if(GOBBLE('+')) return TOK_INC;
       return '+';
-  
+
     case '&':
       if(GOBBLE('=')) return TOK_AND_EQ;
       if(GOBBLE('&')) return TOK_LAND;
       return '&';
-  
+
     case '|':
       if(GOBBLE('=')) return TOK_OR_EQ;
       if(GOBBLE('|')) return TOK_LOR;
@@ -1026,23 +1111,28 @@ unknown_directive:
     case '^':
       if(GOBBLE('=')) return TOK_XOR_EQ;
       return '^';
-  
+
     case '*':
       if(GOBBLE('=')) return TOK_MULT_EQ;
+      if(GOBBLE('*'))
+      {
+          if(GOBBLE('=')) return TOK_POW_EQ;
+          return TOK_POW;
+      }
       return '*';
 
     case '%':
       if(GOBBLE('=')) return TOK_MOD_EQ;
       return '%';
-  
+
     case '/':
       if(GOBBLE('=')) return TOK_DIV_EQ;
       return '/';
-  
+
     case '=':
       if(GOBBLE('=')) return TOK_EQ;
       return '=';
-  
+
     case '<':
       if(GOBBLE('<'))
       {
@@ -1051,7 +1141,7 @@ unknown_directive:
       }
       if(GOBBLE('=')) return TOK_LE;
       return '<';
-  
+
     case '>':
       if(GOBBLE(')')) return TOK_MULTISET_END;
       if(GOBBLE('=')) return TOK_GE;
@@ -1092,6 +1182,8 @@ unknown_directive:
       /* if( GOBBLE('.' ) ) */
       /*   return TOK_SAFE_INDEX; */
 
+      /* FALLTHRU */
+
     case ']':
     case ',':
     case '~':
@@ -1117,12 +1209,17 @@ unknown_directive:
 	  offset--;
 	}
       }
-      
+
       switch(c = GETC())
       {
       case '/': tmp="```/"; break;
       case '%': tmp="```%"; break;
-      case '*': tmp="```*"; break;
+      case '*':
+          if( GOBBLE('*') )
+              tmp="```**";
+          else
+              tmp="```*";
+          break;
       case '&': tmp="```&"; break;
       case '|': tmp="```|"; break;
       case '^': tmp="```^"; break;
@@ -1155,13 +1252,13 @@ unknown_directive:
 
       case '(':
 	tmp="```()";
-	if(GOBBLE(')')) 
+	if(GOBBLE(')'))
 	{
 	  break;
 	}
 	yyerror("Illegal ` identifier. Expected `().");
 	break;
-	
+
       case '-':
 	if(GOBBLE('>'))
 	{
@@ -1259,7 +1356,7 @@ unknown_directive:
       }
     }
 
-  
+
     default:
       {
 	if (c > 31) {

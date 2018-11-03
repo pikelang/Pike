@@ -109,7 +109,7 @@ this_program clone()
 int(0..1) `==(this_program other)
 {
    if (!objectp(other)) return 0;
-   return 
+   return
       other->timezone==timezone &&
       other->language==language;
 }

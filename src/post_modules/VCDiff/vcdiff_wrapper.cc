@@ -1,6 +1,5 @@
 #ifdef HAVE_VCDIFF
 
-#include <iostream>
 #include <string>
 #include <string.h>
 #include <stdlib.h>
@@ -29,7 +28,7 @@ void* vcdiff_init_dictionary (const char* dictionary, size_t len)
 void* vcdiff_init_encoder (const void* hashed_dict)
 {
   open_vcdiff::VCDiffStreamingEncoder *vcencoder;
-  vcencoder = 
+  vcencoder =
     new open_vcdiff
     ::VCDiffStreamingEncoder ((const open_vcdiff::HashedDictionary*)hashed_dict,
 			      false,

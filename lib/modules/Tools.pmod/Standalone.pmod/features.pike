@@ -36,8 +36,8 @@ void test_ipv6()
 }
 
 void f(string sym, void|string name) {
-  int x = !zero_type(all_constants()[sym]) ||
-    !zero_type(master()->resolv(sym));
+  int x = has_index(all_constants(), sym) ||
+    !undefinedp(master()->resolv(sym));
   item(name||sym, x);
 }
 
@@ -57,15 +57,18 @@ int main(int num, array(string) args) {
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
-  f("_leak", "PIKE_DEBUG");
+  f("Debug.HAVE_DEBUG", "PIKE_DEBUG");
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
 
   write("\nRuntime options\n");
   mapping(string:string|int) rt = Pike.get_runtime_info();
   item(sprintf("%d-bit ABI", rt->abi), 1);
-  item("Machine code", !(<"default", "computed_goto">)[rt->bytecode_method]);
-  item("Auto bignum", rt->auto_bignum);
+  if (!(<"default">)[rt->bytecode_method]) {
+    item(sprintf("Machine code: %s", rt->bytecode_method), 1);
+  } else {
+    item("Machine code", 0);
+  }
 
   test_ipv6();
 
@@ -119,7 +122,6 @@ int main(int num, array(string) args) {
   F(setsid);
   F(setuid);
   F(symlink);
-  F(syslog);
   F(thread_set_concurrency); // UNIX_THREADS
   F(ualarm);
   F(uname);
@@ -132,9 +134,21 @@ int main(int num, array(string) args) {
   M(COM.com);
 
   write("\nCrypto\n");
-  F(Crypto.CAMELLIA);
+  F(Crypto.AES.GCM);
+  F(Crypto.Blowfish);
+  F(Crypto.Camellia);
+  F(Crypto.ChaCha20);
+  F(Crypto.ECC.Curve);
+  F(Crypto.GOST94);
   F(Crypto.IDEA);
-  F(Crypto.MD4);
+  F(Crypto.RIPEMD160);
+  F(Crypto.SALSA20);
+  F(Crypto.SALSA20R12);
+  F(Crypto.Serpent);
+  F(Crypto.SHA224);
+  F(Crypto.SHA384);
+  F(Crypto.SHA512);
+  F(Crypto.SHA3_512);
 
   write("\nDebug\n");
   F(Debug.assembler_debug);
@@ -167,12 +181,18 @@ int main(int num, array(string) args) {
 
   write("\nGL\n");
   M(GL.glGet);
+  M(GL.GLSL.glCreateShader);
 
   write("\nGLUT\n");
   M(GLUT.glutGet);
 
   write("\nGmp\n");
   M(Gmp.mpz);
+  F(Gmp.mpf);
+  f("Gmp.MPF_IS_IEEE", "Gmp.mpf [IEEE]");
+  F(Gmp.mpq);
+  F(Gmp.mpz);
+
 
 #if 0
   write("\nGnome\n");
@@ -191,13 +211,6 @@ int main(int num, array(string) args) {
 
   write("\nGSSAPI\n");
   M(GSSAPI.Context);
-
-  write("\nGTK1\n");
-  M(GTK1.gtk_init);
-  F(GTK1.Databox);
-  F(GTK1.GladeXML);
-  F(GTK1.GLArea);
-  F(GTK1.HandleBox);
 
   write("\nGTK2\n");
   M(GTK2.gtk_init);
@@ -234,9 +247,6 @@ int main(int num, array(string) args) {
   write("\nMIME\n");
   M(MIME.Message);
 
-  write("\nMird\n");
-  M(Mird.Mird);
-
   write("\nMsql\n");
   M(Msql.version);
 #if 0 // if Msql version is >2
@@ -252,7 +262,7 @@ int main(int num, array(string) args) {
   // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
   string license = "Unknown";
   string version = "Unknown";
-  string client_info = mysql_obj?->client_info && mysql_obj->client_info();
+  string client_info = mysql_obj[?"client_info"] && mysql_obj["client_info"]();
   if (client_info) {
     sscanf(client_info, "%*s(%s)%*s/%s", license, version);
   }
@@ -278,9 +288,6 @@ int main(int num, array(string) args) {
 
   // Perl
 
-  write("\nPike\n");
-  F(Pike.Security);
-
   // Pipe
 
   write("\nProcess\n");
@@ -293,6 +300,9 @@ int main(int num, array(string) args) {
   write("\nPostgres\n");
   M(Postgres.postgres);
   M(_PGsql.PGsql);
+
+  write("\nRandom\n");
+  F(Random.Hardware);
 
   write("\nRegexp\n");
   f("_Regexp_PCRE._pcre", "Regexp.PCRE");
@@ -307,7 +317,8 @@ int main(int num, array(string) args) {
   F(SDL.Music);
   F(SDL.open_audio);	/* Aka SDL_mixer */
 
-  // Ssleay
+  write("\nSQLite\n");
+  M(SQLite.library_version);
 
   write("\nStandards\n");
   M(Standards.JSON.encode);
@@ -352,6 +363,9 @@ int main(int num, array(string) args) {
   M(sybase.sybase);
 
   write("\nSystem\n");
+  M(System.FSEvents.EventStream);
+  M(System.Inotify._Instance);
+  M(System.Wnotify.EventPoller);
   F(System.dumpable);
   F(System.endgrent);
   F(System.endpwent);
@@ -371,7 +385,7 @@ int main(int num, array(string) args) {
   write("     System.setitimer types: ");
   array itimer_types = ({});
 #define ITIMER(X) \
-  if(!zero_type(System.ITIMER_##X)) itimer_types += ({ #X })
+  if(!undefinedp(System.ITIMER_##X)) itimer_types += ({ #X })
   ITIMER(REAL);
   ITIMER(VIRTUAL);
   ITIMER(PROF);
@@ -379,7 +393,10 @@ int main(int num, array(string) args) {
 #endif
   F(System.setpwent);
   F(System.setrlimit);
+  F(System.syslog);
   F(System.usleep);
+  F(System.FSEvents.EventStream);
+  F(System.Inotify);
   // System.CPU_TIME_IS_THREAD_LOCAL
   // System.Memory.shmat
   // System.Memory.PAGE_SIZE
@@ -388,7 +405,11 @@ int main(int num, array(string) args) {
   // System.Memory.__MMAP__
 
   write("\nVCDiff\n");
-  M(VCDiff.Encoder);
+  F(VCDiff.Decoder);
+  F(VCDiff.Encoder);
+
+  write("\nWeb\n");
+  M(Web.Sass.Compiler);
 
   write("\nYp\n");
   M(Yp.default_domain);

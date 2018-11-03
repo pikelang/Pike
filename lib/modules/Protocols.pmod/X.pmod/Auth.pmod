@@ -18,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -31,24 +31,24 @@ class auth_file
   {
     return sprintf("%d:%s", display, address);
   }
-  
+
   void create(string s)
   {
-    object struct = ADT.struct(s);
+    Stdio.Buffer struct = Stdio.Buffer(s);
 
-    while (!struct->is_empty())
+    while (sizeof(struct))
       {
 	mapping m = ([ ]);
-	
-	m->family = struct->get_uint(2);
-	m->address = struct->get_var_string(2);
-	m->display = (int) struct->get_var_string(2);
-	m->name = struct->get_var_string(2);
-	m->data = struct->get_var_string(2); 
+
+	m->family = struct->read_int(2);
+	m->address = struct->read_hstring(2);
+	m->display = (int) struct->read_hstring(2);
+	m->name = struct->read_hstring(2);
+	m->data = struct->read_hstring(2);
 
 	if (!auth[m->family])
 	  auth[m->family] = ([]);
-	
+
 	auth[m->family][make_key(m->address, m->display)] = m;
       }
   }
@@ -64,7 +64,7 @@ class auth_file
 				    lambda(string s)
 				    { return (int) s; }));
   }
-  
+
   mapping lookup_ip(string ip, int display)
   {
     if(ip == "127.0.0.1")
@@ -78,7 +78,7 @@ class lock_key
   string name;
   string c_name;
   string l_name;
-  
+
   void create(string f)
   {
     name = f;
@@ -102,11 +102,11 @@ class lock_key
     if (!f->open(c_name, "cxw"))
       return 0;
     f->close();
-    
+
     return my_hardlink(c_name, l_name) && this;
   }
-  
-  void destroy()
+
+  protected void _destruct()
   {
     rm(c_name);
     rm(l_name);

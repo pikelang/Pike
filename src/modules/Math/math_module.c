@@ -4,10 +4,10 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "config.h"
 #include "program.h"
-#include "module.h"
+#include "pike_float.h"
 
 #include "math_module.h"
 #include "transforms.h"
@@ -21,9 +21,7 @@ struct program *math_matrix_program;
 struct program *math_imatrix_program;
 struct program *math_fmatrix_program;
 struct program *math_smatrix_program;
-#ifdef INT64
 struct program *math_lmatrix_program;
-#endif /* INT64 */
 struct program *math_transforms_program;
 
 static const struct math_class
@@ -34,9 +32,7 @@ static const struct math_class
 } sub[] = {
    {"Matrix",init_math_matrix,&math_matrix_program},
    {"IMatrix",init_math_imatrix,&math_imatrix_program},
-#ifdef INT64
    {"LMatrix",init_math_lmatrix,&math_lmatrix_program},
-#endif /* INT64 */
    {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
    {"Transforms",init_math_transforms,&math_transforms_program},
@@ -58,6 +54,8 @@ static const struct math_class
 
 /*! @decl constant nan
  *! Floating point not-a-number (e.g. inf/inf).
+ *! @seealso
+ *!   @[Float.isnan()]
  */
 
 /*! @endmodule */
@@ -76,12 +74,18 @@ PIKE_MODULE_EXIT
    exit_math_transforms();
 }
 
+
+#ifdef HAS_MPI
+void matrix_op_create(INT32 args);
+void imatrix_op_create(INT32 args);
+void lmatrix_op_create(INT32 args);
+void fmatrix_op_create(INT32 args);
+void smatrix_op_create(INT32 args);
+#endif
+
 PIKE_MODULE_INIT
 {
    int i;
-   DECLARE_INF
-   DECLARE_NAN
-   
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
    {
       struct program *p;
@@ -94,8 +98,15 @@ PIKE_MODULE_INIT
       else free_program(p);
    }
 
-   add_float_constant("pi",3.14159265358979323846  ,0);
-   add_float_constant("e", 2.7182818284590452354   ,0);
-   add_float_constant("inf", MAKE_INF(1), 0);
-   add_float_constant("nan", MAKE_NAN(), 0);
+   add_float_constant("pi",3.14159265358979323846  ,ID_LOCAL);
+   add_float_constant("e", 2.7182818284590452354   ,ID_LOCAL);
+   add_float_constant("inf", MAKE_INF(), ID_LOCAL);
+   add_float_constant("nan", MAKE_NAN(), ID_LOCAL);
+#ifdef HAS_MPI
+   add_function_constant("Matrix_op_create", matrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("IMatrix_op_create", imatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("LMatrix_op_create", lmatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("FMatrix_op_create", fmatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("SMatrix_op_create", smatrix_op_create, "function(function,int,int,int:object)", 0);
+#endif
 }

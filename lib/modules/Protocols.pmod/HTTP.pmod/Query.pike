@@ -25,6 +25,13 @@
 //!    return -1;
 //! }
 
+#ifdef HTTP_QUERY_DEBUG
+#define DBG(X ...) werror(X)
+#else
+#define DBG(X ...)
+#endif
+
+#define RUNTIME_RESOLVE(X) master()->resolv(#X)
 /****** variables **************************************************/
 
 // open
@@ -51,14 +58,29 @@ string protocol;
 int status;
 string status_desc;
 
-int data_timeout = 120;	// seconds
+//! @ignore
+// Deprecated, use the same value as in timeout unless explicitly set
+int data_timeout = 0;	// seconds
+//! @endignore
+
+//! @[timeout] is the time to wait in seconds on connection and/or data.
+//! If data is fetched asynchronously the watchdog will be reset every time
+//! data is received. Defaults to @tt{120@} seconds.
+//! @[maxtime] is the time the entire operation is allowed to take, no matter
+//! if the connection and data fetching is successful. This is by default
+//! indefinitely.
+//!
+//! @note
+//!  These values only have effect in asynchroneous calls
 int timeout = 120;	// seconds
+int maxtime;
 
 // internal
-#if constant(SSL.Cipher.CipherAlgorithm)
- import SSL.Constants;
-#endif
 int(0..1) https = 0;
+
+// This is used in async_fetch* and aync_timeout to keep track of when we last
+// got data and if the timeout should abort or be reset
+protected int(0..) timeout_watchdog;
 
 //! Connected host and port.
 //!
@@ -69,7 +91,7 @@ int port;
 
 object con;
 string request;
-protected string send_buffer;
+protected Stdio.Buffer send_buffer;
 
 string buf="",headerbuf="";
 int datapos, discarded_bytes, cpos;
@@ -81,7 +103,44 @@ object conthread;
 local function request_ok,request_fail;
 array extra_args;
 
+void init_async_timeout()
+{
+  call_out(async_timeout, timeout);
+}
+
+void remove_async_timeout()
+{
+  remove_call_out(async_timeout);
+}
+
 /****** internal stuff *********************************************/
+
+// Callout id if maxtime is set.
+protected array(function) co_maxtime;
+
+#define TOUCH_TIMEOUT_WATCHDOG() (timeout_watchdog = time(1))
+
+#define SET_MAXTIME_CALL_OUT()                                              \
+  do {                                                                      \
+    if (maxtime) {                                                          \
+      DBG("+++ SET_MAXTIME_CALL_OUT()\n");                                  \
+      co_maxtime = call_out(lambda() {                                      \
+        /* Proper timeout status is set in async_timeout if status is 0 */  \
+        status = 0;                                                         \
+        async_timeout(true);                                                \
+      }, maxtime);                                                          \
+    }                                                                       \
+  } while (0)
+
+#define REMOVE_MAXTIME_CALL_OUT()             \
+  do {                                        \
+    if (co_maxtime) {                         \
+      DBG("--- REMOVE_MAXTIME_CALL_OUT()\n"); \
+      remove_call_out(co_maxtime);            \
+      co_maxtime = 0;                         \
+    }                                         \
+    remove_call_out(async_timeout);           \
+  } while (0)
 
 protected int ponder_answer( int|void start_position )
 {
@@ -102,14 +161,11 @@ protected int ponder_answer( int|void start_position )
       }
 
       s=con->read(8192,1);
-#ifdef HTTP_QUERY_DEBUG
-      werror("-> %O\n",s);
-#endif
+      DBG("-> %O\n",s);
+
       if (!s) {
 	errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	DBG ("<- (read error: %s)\n", strerror (errno));
 	return 0;
       }
       if (s=="") {
@@ -120,9 +176,7 @@ protected int ponder_answer( int|void start_position )
 #else
           errno = 104;
 #endif
-#ifdef HTTP_QUERY_DEBUG
-	  werror ("<- (premature EOF)\n");
-#endif
+	  DBG ("<- (premature EOF)\n");
 	  return -1;
 	}
 	i=strlen(buf);
@@ -138,10 +192,8 @@ protected int ponder_answer( int|void start_position )
    if (buf[i..i+1]=="\n\n") datapos=i+2;
    else datapos=i+4;
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("** %d bytes of header; %d bytes left in buffer (pos=%d)\n",
-	  sizeof(headerbuf),sizeof(buf)-datapos,datapos);
-#endif
+   DBG("** %d bytes of header; %d bytes left in buffer (pos=%d)\n",
+       sizeof(headerbuf),sizeof(buf)-datapos,datapos);
 
    // split headers
 
@@ -153,66 +205,108 @@ protected int ponder_answer( int|void start_position )
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
       switch(n=lower_case(n))
       {
-	 case "set-cookie":
-	    headers[n]=(headers[n]||({}))+({d});
-	    break;
-	 default:
-	   headers[n]=d;
+      case "set-cookie":
+        headers[n]=(headers[n]||({}))+({d});
+        break;
+
+      case "accept-ranges":
+      case "age":
+      case "connection":
+      case "content-type":
+      case "content-encoding":
+      case "content-range":
+      case "content-length":
+      case "date":
+      case "etag":
+      case "keep-alive":
+      case "last-modified":
+      case "location":
+      case "retry-after":
+      case "transfer-encoding":
+        headers[n]=d;
+        break;
+
+      case "allow":
+      case "cache-control":
+      case "vary":
+        if( headers[n] )
+          headers[n] += ", " +d;
+        else
+          headers[n] = d;
+        break;
+
+      default:
+        if( headers[n] )
+          headers[n] += "; " +d;
+        else
+          headers[n] = d;
+        break;
       }
    }
 
    // done
    ok=1;
-   remove_call_out(async_timeout);
+   remove_async_timeout();
+   TOUCH_TIMEOUT_WATCHDOG();
 
    if (request_ok) request_ok(this,@extra_args);
    return 1;
 }
 
-protected void close_connection()
+protected void close_connection(int|void terminate_now)
 {
-  Stdio.File con = this_program::con;
+  object(Stdio.File)|SSL.File con = this::con;
   if (!con) return;
-  this_program::con = 0;
+  this::con = 0;
   con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
+
+  if (terminate_now) {
+    // We don't want to wait for the close() to complete...
+    con->set_nonblocking();
+    con->close();
+
+    if (!con->shutdown) return;
+
+    // Probably SSL.
+    //
+    // Force the connection to shutdown.
+    con = con->shutdown();
+
+    if (!con) return;
+  }
+
   con->close();
 }
 
-#if constant(SSL.Cipher.CipherAlgorithm)
-SSL.context context;
-#endif
+object/*SSL.Context*/ context;
+object/*SSL.Session*/ ssl_session;
 
 void start_tls(int|void blocking, int|void async)
 {
-#ifdef HTTP_QUERY_DEBUG
-  werror("start_tls(%d)\n", blocking);
-#endif
-#if constant(SSL.Cipher.CipherAlgorithm)
+  DBG("start_tls(%d,%d)\n", blocking, async);
+
   if( !context )
   {
-    // Create a context
-    context = SSL.context();
-    // Allow only strong crypto
-    context->preferred_suites -= ({
-      //Weaker ciphersuites.
-      SSL_rsa_export_with_rc4_40_md5,
-      SSL_rsa_export_with_rc2_cbc_40_md5,
-      SSL_rsa_export_with_des40_cbc_sha,
-    });
-    context->random = Crypto.Random.random_string;
-  }
-
-  if(real_host)
-  {
-    context->client_use_sni = 1;
-    context->client_server_names = ({real_host});
+    context = RUNTIME_RESOLVE(SSL.Context)();
+    if(!context)
+      error("Can not handle HTTPs queries, pike compiled without crypto support\n");
+    context->trusted_issuers_cache = RUNTIME_RESOLVE(Standards.X509.load_authorities)(0,1);
   }
 
   object read_callback=con->query_read_callback();
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context, 1, blocking);
+  object/*SSL.File*/ ssl = RUNTIME_RESOLVE(SSL.File)(con, context);
+  if (blocking) {
+    ssl->set_blocking();
+  }
+
+  if (!(ssl_session = ssl->connect(real_host, ssl_session))) {
+    error("HTTPS connection failed.\n");
+  }
+
+  con=ssl;
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);
@@ -222,38 +316,50 @@ void start_tls(int|void blocking, int|void async)
       ssl->set_close_callback(close_callback);
     }
   }
-  con=ssl;
-#else
-  error ("HTTPS not supported (Nettle support is required).\n");
-#endif
 }
 
 protected void connect(string server,int port,int blocking)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- (connect %O:%d)\n",server,port);
-#endif
+   DBG("<- (connect %O:%d)\n",server,port);
 
-   int success;
-   if(con->_fd)
-     success = con->connect(server, port);
-   else
-     // What is this supposed to do? /mast
-     success = con->connect(server, port, blocking);
+   int count;
+   while(1) {
+     int success;
+     if(con->_fd)
+       success = con->connect(server, port);
+     else
+       // What is this supposed to do? /mast
+       // SSL.File?
+       success = con->connect(server, port, blocking);
 
-   if(!success) {
+     if (success) {
+       if (count) DBG("<- (connect success)\n");
+       break;
+     }
+
      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-     werror("<- (connect error: %s)\n", strerror (errno));
-#endif
-     close_connection();
-     ok = 0;
-     return;
+     DBG("<- (connect error: %s)\n", strerror (errno));
+     count++;
+     if ((count > 10) || (errno != System.EADDRINUSE)) {
+       DBG("<- (connect fail)\n");
+       close_connection();
+       ok = 0;
+       return;
+     }
+     // EADDRINUSE: All tuples hostip:hport:serverip:sport are busy.
+     // Wait for a bit to allow the OS to recycle some ports.
+     sleep(0.1);
+     if (con->_fd) {
+       // Normal file. Close and reopen.
+       // NB: This seems to be needed on Solaris 11 as otherwise
+       //     the connect() above instead will fail with ETIMEDOUT.
+       close_connection();
+       con = Stdio.File();
+       con->open_socket(-1, 0, server);
+     }
    }
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n",request);
-#endif
+   DBG("<- %O\n",request);
 
    if(https) {
      start_tls(blocking);
@@ -261,9 +367,7 @@ protected void connect(string server,int port,int blocking)
 
    if (con->write(request) != sizeof (request)) {
      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-     werror ("-> (write error: %s)\n", strerror (errno));
-#endif
+     DBG ("-> (write error: %s)\n", strerror (errno));
    }
    else
      ponder_answer();
@@ -272,41 +376,44 @@ protected void connect(string server,int port,int blocking)
 protected void async_close()
 {
   con->set_blocking();
-  if (ponder_answer() <= 0) {
+  int res = ponder_answer();
+  if (res == -1) {
+    async_reconnect();
+  } else if (!res) {
     async_failed();
   }
 }
 
 protected void async_read(mixed dummy,string s)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",sizeof(s));
-#endif
+   DBG("-> %d bytes of data\n",sizeof(s));
 
    buf+=s;
    if (has_value(buf, "\r\n\r\n") || has_value(buf,"\n\n"))
    {
       con->set_blocking();
-      ponder_answer();
+      if (ponder_answer() == -1)
+	async_reconnect();
    }
+}
+
+protected void async_reconnect()
+{
+  close_connection();
+  dns_lookup_async(host, async_got_host, port);
 }
 
 protected void async_write()
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n", send_buffer);
-#endif
-   int bytes;
-   if ((bytes = con->write(send_buffer)) < sizeof(send_buffer)) {
-     if (bytes < 0) {
-       errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-       werror ("-> (write error: %s)\n", strerror (errno));
-#endif
-     } else if (bytes) {
-       send_buffer = send_buffer[bytes..];
+   DBG("<- %O\n", send_buffer);
+   int bytes = send_buffer->output_to(con);
+   if (sizeof(send_buffer)) {
+     if (bytes >= 0) {
        return;
      }
+     errno = con->errno();
+     DBG ("-> (write error: %s)\n", strerror (errno));
+     // We'll clear the write callback below.
    }
    con->set_nonblocking(async_read,0,async_close);
 }
@@ -314,26 +421,30 @@ protected void async_write()
 protected void async_connected()
 {
    con->set_nonblocking(async_read,async_write,async_close);
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n","");
-#endif
+   DBG("<- %O\n","");
    con->write("");
 }
 
 protected void low_async_failed(int errno)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("** calling failed cb %O\n", request_fail);
-#endif
+   REMOVE_MAXTIME_CALL_OUT();
+
+   DBG("** calling failed cb %O (%O:%O:%O)\n", request_fail, errno, host, this);
    if (errno)
-     this_program::errno = errno;
+     this::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
-   remove_call_out(async_timeout);
+
+   remove_async_timeout();
 }
 
 protected void async_failed()
 {
+  DBG("** Async connection failure.\n");
+  if (!status) {
+    status = 502;	// HTTP_BAD_GW
+    status_desc = "Bad Gateway";
+  }
 #if constant(System.EHOSTUNREACH)
   low_async_failed(con?con->errno():System.EHOSTUNREACH);
 #else
@@ -341,11 +452,21 @@ protected void async_failed()
 #endif
 }
 
-protected void async_timeout()
+protected void async_timeout(void|bool force)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("** TIMEOUT\n");
-#endif
+   if (!force && !zero_type(timeout_watchdog)) {
+     int deltat = time(1) - timeout_watchdog;
+     if (deltat >= 0) {
+       call_out(this_function, data_timeout || timeout);
+       return;
+     }
+   }
+
+   DBG("** TIMEOUT\n");
+   if (!status) {
+     status = 504;	// HTTP_GW_TIMEOUT
+     status_desc = "Gateway timeout";
+   }
    close_connection();
 #if constant(System.ETIMEDOUT)
    low_async_failed(System.ETIMEDOUT);
@@ -356,13 +477,11 @@ protected void async_timeout()
 
 void async_got_host(string server,int port)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("async_got_host %s:%d\n", server, port);
-#endif
+   DBG("async_got_host %s:%d\n", server || "NULL", port);
    if (!server)
    {
       async_failed();
-      if (this_object()) {
+      if (this) {
 	//  we may be destructed here
 	close_connection();
       }
@@ -370,41 +489,45 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   con->async_connect(server, port,
-		      lambda(int success)
-		      {
-			if (success) {
-			  // Connect ok.
-			  if(https) {
-			    start_tls(0, 1);
-			  }
-			  else
-			    async_connected();
-			} else {
-			  // Connect failed.
-			  if (!con->is_open())
-			    // Other code assumes an existing con is
-			    // an open one.
-			    con = 0;
-			  async_failed();
-			}
-		      });
+   if( !con->async_connect(server, port,
+                           lambda(int success)
+                           {
+                             if (success) {
+                               // Connect ok.
+                               if(https) {
+                                 start_tls(0, 1);
+                               }
+                               else
+                                 async_connected();
+                             } else {
+                               // Connect failed.
+                               if (!con->is_open())
+                                 // Other code assumes an existing con is
+                                 // an open one.
+                                 con = 0;
+                               async_failed();
+                             }
+                           }))
+   {
+     DBG("Failed to open socket: %s.\n", strerror(con->errno()));
+     async_failed();
+   }
    // NOTE: In case of failure the timeout is already in place.
 }
 
 void async_fetch_read(mixed dummy,string data)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",sizeof(data));
-#endif
+   TOUCH_TIMEOUT_WATCHDOG();
+   DBG("-> %d bytes of data\n",sizeof(data));
    buf+=data;
 
-   if (!zero_type (headers["content-length"]) &&
+   if (has_index(headers, "content-length") &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
-      remove_call_out(async_timeout); // Bug 4773
+      REMOVE_MAXTIME_CALL_OUT();
+      remove_async_timeout(); // Bug 4773
       con->set_nonblocking(0,0,0);
-      request_ok(this_object(), @extra_args);
+      request_ok(this, @extra_args);
    }
 }
 
@@ -413,6 +536,7 @@ void async_fetch_read(mixed dummy,string data)
 // by the server. Except for calling the callback and have ->data() be
 // the messenger...
 void async_fetch_read_chunked(mixed dummy, string data) {
+    TOUCH_TIMEOUT_WATCHDOG();
     int np = -1, f;
     buf+=data;
 OUTER: while (sizeof(buf) > cpos) {
@@ -425,7 +549,7 @@ OUTER: while (sizeof(buf) > cpos) {
 		if (sscanf(buf[cpos..f], "%x", np)) {
 		    if (np) cpos = f+np+4;
 		    else {
-			if (sscanf(buf[cpos..f+3], "%*x%*[ ]%s", data)
+			if (sscanf(buf[cpos..f+3], "%*x%*[^\r\n]%s", data)
 				== 3 && sizeof(data) == 4) break;
 			return;
 		    }
@@ -435,8 +559,9 @@ OUTER: while (sizeof(buf) > cpos) {
 	    }
 	    return;
 	} while(0);
-	remove_call_out(async_timeout);
+	remove_async_timeout();
 	con->set_nonblocking(0,0,0);
+        REMOVE_MAXTIME_CALL_OUT();
 	request_ok(this, @extra_args);
 	break;
     }
@@ -444,26 +569,25 @@ OUTER: while (sizeof(buf) > cpos) {
 
 void async_fetch_close()
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> close\n");
-#endif
+   DBG("-> close\n");
    close_connection();
-   remove_call_out(async_timeout);
+   remove_async_timeout();
+   REMOVE_MAXTIME_CALL_OUT();
    if (errno) {
-     if (request_fail) (request_fail)(this_object(), @extra_args);
+     if (request_fail) (request_fail)(this, @extra_args);
    } else {
-     if (request_ok) (request_ok)(this_object(), @extra_args);
+     if (request_ok) (request_ok)(this, @extra_args);
    }
 }
 
 /****** utilities **************************************************/
 string headers_encode(mapping(string:array(string)|string) h)
 {
-    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language", 
-                              "accept-ranges", "cache-control", "content-length", 
-                              "content-type", "if-match", "if-modified-since", 
-                              "if-none-match", "if-range", "if-unmodified-since", 
-                              "max-forwards", "proxy-authorization", "transfer-encoding", 
+    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language",
+                              "accept-ranges", "cache-control", "content-length",
+                              "content-type", "if-match", "if-modified-since",
+                              "if-none-match", "if-range", "if-unmodified-since",
+                              "max-forwards", "proxy-authorization", "transfer-encoding",
                               "user-agent", "www-autenticate" });
    constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
 
@@ -500,7 +624,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!
 mapping hostname_cache=([]);
 
-protected Protocols.DNS.async_client async_dns;
+protected object/*Protocols.DNS.async_client*/ async_dns;
 protected int last_async_dns;
 protected mixed async_id;
 
@@ -511,9 +635,6 @@ protected mixed async_id;
 // Check if it's time to clean up the async dns object.
 protected void clean_async_dns()
 {
-#ifdef HTTP_QUERY_NOISE
-  werror("clean_async_dns\n");
-#endif
   int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
   if (time_left >= 0) {
     // Not yet.
@@ -532,9 +653,7 @@ protected void clean_async_dns()
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
-#ifdef HTTP_QUERY_DEBUG
-  werror("dns_lookup_callback %s = %s\n", name, ip||"NULL");
-#endif
+   DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
    hostname_cache[name]=ip;
    if (functionp(callback))
       callback(ip,@extra);
@@ -562,7 +681,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    }
 
    if (!async_dns) {
-     async_dns = Protocols.DNS.async_client();
+     async_dns = RUNTIME_RESOLVE(Protocols.DNS.async_client)();
    }
    async_dns->host_to_ip(hostname, dns_lookup_callback, callback, @extra);
    last_async_dns = time(1);
@@ -584,12 +703,13 @@ string dns_lookup(string hostname)
        (id=hostname_cache[hostname]))
       return id;
 
-   array hosts = Protocols.DNS.client()->gethostbyname( hostname );
+   array hosts = gethostbyname(hostname);//RUNTIME_RESOLVE(Protocols.DNS.client)()->gethostbyname( hostname );
    if (array ip = hosts && hosts[1])
      if (sizeof(ip)) {
        //  Prefer IPv4 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
+       
        if (sizeof(v4))
 	 return v4[random(sizeof(v4))];
        return sizeof(v6) && v6[random(sizeof(v6))];
@@ -674,7 +794,7 @@ this_program thread_request(string server, int port, string query,
 
    // prepare the request
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
@@ -684,10 +804,10 @@ this_program thread_request(string server, int port, string query,
    if (!headers) headers="";
    else if (mappingp(headers))
    {
-      headers=mkmapping(Array.map(indices(headers),lower_case),
+      headers=mkmapping(map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers["content-length"]=sizeof(data);
+      if (data) headers["content-length"]=(string)sizeof(data);
 
       headers=headers_encode(headers);
    }
@@ -707,31 +827,30 @@ this_program sync_request(string server, int port, string query,
 {
   int kept_alive;
 
-  this_program::real_host = server;
+  this::real_host = server;
   // start open the connection
   if(con && con->is_open() &&
-     this_program::host == server &&
-     this_program::port == port &&
+     this::host == server &&
+     this::port == port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("** Connection kept alive!\n");
-#endif
+    DBG("** Connection kept alive!\n");
     kept_alive = 1;
     // Remove unread data from the connection.
-    this_program::data();
+    this::data();
   }
   else
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("** Starting new connection to %O:%d.\n"
-	   "   con: %O (%d)\n"
-	   "   Previously connected to %O:%d\n",
-	   server, port, con, con && con->is_open(),
-	   this_program::host, this_program::port);
-#endif
+    DBG("** Starting new connection to %O:%d.\n"
+        "   con: %O (%d)\n"
+        "   Previously connected to %O:%d\n",
+        server, port, con, con && con->is_open(),
+        this::host, this::port);
     close_connection();	// Close any old connection.
+
+    this::host = server;
+    this::port = port;
 
     string ip = dns_lookup( server );
     if(ip) server = ip; // cheaty, if host doesn't exist
@@ -744,9 +863,6 @@ this_program sync_request(string server, int port, string query,
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
     }
     con = new_con;
-
-    this_program::host = server;
-    this_program::port = port;
   }
 
   // prepare the request
@@ -779,7 +895,7 @@ this_program sync_request(string server, int port, string query,
 	data = string_to_utf8(data);
       }
 
-      http_headers["content-length"] = sizeof( data );
+      http_headers["content-length"] = (string)sizeof( data );
     }
 
     http_headers = headers_encode( http_headers );
@@ -789,14 +905,10 @@ this_program sync_request(string server, int port, string query,
 
   if(kept_alive)
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("<- %O\n",request);
-#endif
+    DBG("<- %O\n",request);
     if (con->write( request ) != sizeof (request)) {
       errno = con->errno;
-#ifdef HTTP_QUERY_DEBUG
-      werror ("-> (write error: %s)\n", strerror (errno));
-#endif
+      DBG ("-> (write error: %s)\n", strerror (errno));
     }
     else
       if (ponder_answer() == -1) {
@@ -815,58 +927,45 @@ this_program sync_request(string server, int port, string query,
 this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("async_request %s:%d %q\n", server, port, query);
-#endif
+   SET_MAXTIME_CALL_OUT();
+   DBG("async_request %s:%d %q\n", server, port, query);
 
-  this_program::real_host = server;
+  this::real_host = server;
 
-   int keep_alive = con && con->is_open() && (this_program::host == server) &&
-     (this_program::port == port) && this_program::headers &&
-     (lower_case(this_program::headers->connection||"close") != "close");
+   if (con) con->set_nonblocking_keep_callbacks();
 
-#if 0
-   if (con && !keep_alive) {
-     werror("NOT KEPT ALIVE!\n"
-	    "con->is_open: %O\n"
-	    "Connected host: %O:%O\n"
-	    "Requested host: %O:%O\n"
-	    "Connection headers: %O\n",
-	    con->is_open(),
-	    this_program::host, this_program::port,
-	    server, port,
-	    this_program::headers);
-   }
-#endif
+   int keep_alive = con && con->is_open() && (this::host == server) &&
+     (this::port == port) && this::headers &&
+     (lower_case(this::headers->connection||"close") != "close");
 
    // start open the connection
 
-   call_out(async_timeout,timeout);
+   init_async_timeout();
 
    // prepare the request
 
    if (!headers) headers="";
    else if (mappingp(headers))
    {
-      headers=mkmapping(Array.map(indices(headers),lower_case),
+      headers=mkmapping(map(indices(headers),lower_case),
 			values(headers));
 
-      if (data) headers["content-length"]=sizeof(data);
+      if (data) headers["content-length"]=(string)sizeof(data);
 
       headers=headers_encode(headers);
    }
 
-   send_buffer = request = query+"\r\n"+headers+"\r\n"+(data||"");
+   send_buffer = Stdio.Buffer(request = query+"\r\n"+headers+"\r\n"+(data||""));
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
 
    if (!keep_alive) {
       close_connection();
-      this_program::host = server;
-      this_program::port = port;
+      this::host = server;
+      this::port = port;
       dns_lookup_async(server,async_got_host,port);
    }
    else
@@ -899,6 +998,7 @@ string data(int|void max_length)
 #endif
 
    if (buf=="") return ""; // already emptied
+   if (is_empty_response()) return "";
 
    if (headers["transfer-encoding"] &&
        lower_case(headers["transfer-encoding"])=="chunked")
@@ -911,11 +1011,9 @@ string data(int|void max_length)
 	 int len;
 	 string s;
 
-#ifdef HTTP_QUERY_NOISE
-	 werror("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
-#endif
+	 DBG("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
 
-	 if (sscanf(rbuf,"%x%*[ ]\r\n%s",len,s)==3)
+	 if (sscanf(rbuf,"%x%*[^\r\n]\r\n%s",len,s)==3)
 	 {
 	    if (len==0)
 	    {
@@ -924,15 +1022,11 @@ string data(int|void max_length)
 		  int i;
 		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
 		  {
-#ifdef HTTP_QUERY_DEBUG
-		    werror ("<- data() read\n");
-#endif
+		    DBG ("<- data() read\n");
 		     s=con->read(8192,1);
 		     if (!s) {
 		       errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-		       werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+		       DBG ("<- (read error: %s)\n", strerror (errno));
 		       return 0;
 		     }
 		     if (s=="") return lbuf;
@@ -941,10 +1035,6 @@ string data(int|void max_length)
 		  }
 		  else
 		  {
-#ifdef HTTP_QUERY_NOISE
-		     werror("fin: buf len=%d; res len=%d\n",
-			    strlen(buf),strlen(rbuf));
-#endif
  	             // entity_headers=rbuf[..i-1];
 		     return lbuf;
 		  }
@@ -954,15 +1044,11 @@ string data(int|void max_length)
 	    {
 	       if (strlen(s)<len)
 	       {
-#ifdef HTTP_QUERY_DEBUG
-		 werror ("<- data() read 2\n");
-#endif
+		 DBG ("<- data() read 2\n");
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
 		  if (!t) {
 		    errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-		    werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+		    DBG ("<- (read error: %s)\n", strerror (errno));
 		    return 0;
 		  }
 		  if (t=="") return lbuf+s;
@@ -979,15 +1065,11 @@ string data(int|void max_length)
 	 }
 	 else
 	 {
-#ifdef HTTP_QUERY_DEBUG
-	   werror ("<- data() read 3\n");
-#endif
+	   DBG ("<- data() read 3\n");
 	    s=con->read(8192,1);
 	    if (!s) {
 	      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	      werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	      DBG ("<- (read error: %s)\n", strerror (errno));
 	      return 0;
 	    }
 	    if (s=="") return lbuf;
@@ -998,35 +1080,28 @@ string data(int|void max_length)
    }
 
    int len=(int)headers["content-length"];
-   int l;
-// test if len is zero to get around zero_type bug (??!?) /Mirar
-   if(!len && zero_type( len ))
-      l=0x7fffffff;
-   else {
+   int l = (1<<31)-1;
+
+   if(!undefinedp( len ))
+   {
       len -= discarded_bytes;
       l=len-sizeof(buf)+datapos;
    }
-   if(!zero_type(max_length) && l>max_length-sizeof(buf)+datapos)
-     l = max_length-sizeof(buf)+datapos;
+   if(!undefinedp(max_length))
+     l = min(l, max_length-sizeof(buf)+datapos);
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("fetch data: %d bytes needed, got %d, %d left\n",
-	  len,sizeof(buf)-datapos,l);
-#endif
+   DBG("fetch data: %d bytes needed, got %d, %d left\n",
+       len,sizeof(buf)-datapos,l);
 
    if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
-#ifdef HTTP_QUERY_DEBUG
-       werror ("<- data() read 4\n");
-#endif
+       DBG ("<- data() read 4\n");
        string s = con->read();
        if (!s) {
 	 errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	 werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	 DBG ("<- (read error: %s)\n", strerror (errno));
 	 return 0;
        }
        buf += s; // First, they may well lie about the content-length
@@ -1035,31 +1110,21 @@ string data(int|void max_length)
      }
      else
      {
-#ifdef HTTP_QUERY_DEBUG
-       werror ("<- data() read 5\n");
-#endif
+       DBG ("<- data() read 5\n");
        string s = con->read(l);
        if (!s && strlen(buf) <= datapos) {
 	 errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	 werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	 DBG ("<- (read error: %s)\n", strerror (errno));
 	 return 0;
        }
        if( s )
 	 buf += s;
      }
    }
-   if(zero_type( len ))
+   if(undefinedp( len ))
      len = sizeof( buf ) - datapos;
-   if(!zero_type(max_length) && len>max_length)
+   if(!undefinedp(max_length) && len>max_length)
      len = max_length;
-#ifdef HTTP_QUERY_NOISE
-   werror("buf[datapos..]      : %O\n", buf[datapos
-				        ..min(sizeof(buf), datapos+19)]);
-   werror("buf[..datapos+len] : %O\n", buf[max(0, datapos+len-19)
-				        ..min(sizeof(buf), datapos+len)]);
-#endif
    return buf[datapos..datapos+len-1];
 }
 
@@ -1099,7 +1164,7 @@ string incr_data(int max_length)
   return ret;
 }
 
-//!	Gives back the number of downloaded bytes.
+//! Gives back the number of downloaded bytes.
 int downloaded_bytes()
 {
   if(datapos)
@@ -1115,7 +1180,7 @@ int total_bytes()
   if(!headers)
     return -1;
   int len=(int)headers["content-length"];
-  if(zero_type(len))
+  if(undefinedp(len))
     return -1;
   else
     return len;
@@ -1152,7 +1217,7 @@ int total_bytes()
 
 //! @decl string cast("string")
 //!	Gives back the answer as a string.
-array|mapping|string cast(string to)
+protected array|mapping|string cast(string to)
 {
    switch (to)
    {
@@ -1168,7 +1233,7 @@ array|mapping|string cast(string to)
          data();
          return buf;
    }
-   error("HTTP.Query: can't cast to "+to+"\n");
+   return UNDEFINED;
 }
 
 //! Minimal simulation of a @[Stdio.File] object.
@@ -1180,38 +1245,29 @@ array|mapping|string cast(string to)
 //!   before having read all data.
 class PseudoFile
 {
-   string buf;
+   Stdio.Buffer buf;
    int len;
 
    protected void create(string _buf, int _len)
    {
-      buf=_buf;
+      buf=Stdio.Buffer(_buf);
       len=_len;
    }
 
    //!
    string read(int n, int(0..1)|void not_all)
    {
-      string s;
-
       if (!len) return "";
       if (n > len) n = len;
 
       if (sizeof(buf)<n && con)
-      {
-	 if (!not_all || !sizeof(buf)) {
-	    string s = con->read(n-sizeof(buf), not_all);
-	    if (s) {
-	       buf += s;
-	    }
-	 }
-      }
+         buf->input_from( con, n-sizeof(buf), not_all);
 
-      s=buf[..n-1];
-      buf=buf[n..];
-      if (len != 0x7fffffff) {
-	len -= sizeof(s);
-      }
+      string s = buf->read(min(n,sizeof(buf)));
+
+      if (len != 0x7fffffff)
+        len -= strlen(s);
+
       return s;
    }
 
@@ -1250,16 +1306,16 @@ object file(void|mapping newheader,void|mapping removeheader)
       if (hbuf=="") hbuf="\r\n";
       hbuf = protocol + " " + status + " " + status_desc + "\r\n" +
 	hbuf + "\r\n";
-      if (zero_type(headers["content-length"]))
-	 len=0x7fffffff;
-      else
+      if (has_index(headers, "content-length"))
 	 len = sizeof(hbuf)+(int)headers["content-length"];
+      else
+	 len=0x7fffffff;
       return PseudoFile(hbuf + buf[datapos..],len);
    }
-   if (zero_type(headers["content-length"]))
-      len=0x7fffffff;
-   else
+   if (has_index(headers, "content-length"))
       len=sizeof(headerbuf)+4+(int)h["content-length"];
+   else
+      len=0x7fffffff;
    return PseudoFile(headerbuf + "\r\n\r\n" + buf[datapos..], len);
 }
 
@@ -1279,17 +1335,21 @@ object datafile()
 #if constant(thread_create)
    `()();
 #endif
-   return PseudoFile(buf[datapos..], (int)headers["content-length"]);
+   return PseudoFile(buf[datapos..], (int)(headers["content-length"]||0x7ffffff));
 }
 
-protected void destroy()
+protected void _destruct()
 {
    if (async_id) {
      remove_call_out(async_id);
    }
    async_id = 0;
+   if(async_dns) {
+     async_dns->close();
+     async_dns = 0;
+   }
 
-   catch(close());
+   catch(close_connection(1));
 }
 
 //! Close all associated file descriptors.
@@ -1303,25 +1363,47 @@ void close()
   }
 }
 
+private int(0..1) is_empty_response()
+{
+  return (status >= 100 && status < 200) ||
+    (status == 204) || (status == 304) ||
+    (request && (upper_case(request[..4]) == "HEAD "));
+}
+
+private int(0..1) body_is_fetched()
+{
+  // There is no body in these requests
+  // and the content-length header must be ignored
+  if (is_empty_response() || !con) {
+    return 1;
+  }
+
+  // the length is given by chunked encoding if the following is true
+  // see section 4.4 of rfc 2616
+  int(0..1) ignore_length =
+          !(headers->connection == "close" || (protocol == "HTTP/1.0" && !headers->connection)) &&
+          headers["transfer-encoding"] && headers["transfer-encoding"] != "identity";
+
+  if (!ignore_length && has_index(headers, "content-length")) {
+      if (sizeof(buf)-datapos >= (int)headers["content-length"]) {
+        return 1;
+      }
+  }
+
+  return 0;
+}
+
 //! Fetch all data in background.
 //!
 //! @seealso
 //!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
-   if (!zero_type (headers["content-length"]) &&
-       sizeof(buf)-datapos>=(int)headers["content-length"])
-   {
-      // FIXME: This is triggered erroneously for chunked transfer!
-      call_out(callback, 0, this_object(), @extra);
-      return;
-   }
+  if (body_is_fetched()) {
+    call_out(callback, 0, this, @extra);
+    return;
+  }
 
-   if (!con)
-   {
-      call_out(callback, 0, this_object(), @extra); // nothing to do, stupid...
-      return;
-   }
    extra_args=extra;
    request_ok=callback;
    cpos = datapos;
@@ -1334,7 +1416,7 @@ void async_fetch(function callback,mixed ... extra)
    }
 }
 
-//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! Like @[async_fetch()], except with a timeout and a corresponding fail
 //! callback function.
 //!
 //! @seealso
@@ -1342,30 +1424,31 @@ void async_fetch(function callback,mixed ... extra)
 void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
-
-  if (!zero_type (headers["content-length"]) &&
-      sizeof(buf)-datapos>=(int)headers["content-length"])
-  {
-    call_out(ok_callback, 0, this_object(), @extra);
-    return;
-  }
-
-  if (!con)
-  {
-    // nothing to do, stupid...
-    call_out(fail_callback, 0, this_object(), @extra);
+  if (body_is_fetched()) {
+    call_out(ok_callback, 0, this, @extra);
     return;
   }
 
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
-  call_out(async_timeout, data_timeout);
+  cpos = datapos;
+
+  // NB: Different timeout than init_async_timeout().
+  call_out(async_timeout, data_timeout || timeout);
 
   // NB: The timeout is currently not reset on each read, so the whole
   // response has to be read within data_timeout seconds. Is that
   // intentional? /mast
-  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
+  //
+  // This is hopefully fixed now.
+  if (lower_case(headers["transfer-encoding"]) != "chunked")
+    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+  else {
+    con->set_nonblocking(async_fetch_read_chunked,0,async_fetch_close);
+    async_fetch_read_chunked(0, ""); // might already be complete
+                                     // in buffer
+  }
 }
 
 protected string _sprintf(int t)

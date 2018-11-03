@@ -149,7 +149,7 @@ int search_array(array arr, string|function|int fun, mixed ... args)
 }
 
 //! Applies the function @[sum] columnwise on the elements in the
-//! provided arrays. E.g. @expr{sum_array(`+,a,b,c)@} does the same
+//! provided arrays. E.g. @expr{sum_arrays(`+,a,b,c)@} does the same
 //! as @expr{`+(a[*],b[*],c[*])@}.
 array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
 {
@@ -252,7 +252,7 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
 
 //! Get multiple columns from an array.
 //!
-//! This function is equvivalent to
+//! This function is equivalent to
 //! @pre{
 //!   map(ind, lambda(mixed i) { return column(x, i); })
 //! @}
@@ -578,7 +578,7 @@ array uniq2(array a)
    return res;
 }
 
-//! Make an array of the argument, if it isn't already. A zero_type
+//! Make an array of the argument, if it isn't already. An undefined
 //! argument gives the empty array. This is useful when something is
 //! either an array or a basic datatype, for instance in headers from
 //! the MIME module or Protocols.HTTP.Server.
@@ -587,14 +587,14 @@ array uniq2(array a)
 //!   @dl
 //!     @item arrayp(x)
 //!       arrayify(x) => x
-//!     @item zero_type(x)
+//!     @item undefinedp(x)
 //!       arrayify(x) => ({})
 //!     @item otherwise
 //!       arrayify(x) => ({ x })
 //!   @enddl
 array arrayify(void|array|mixed x)
 {
-   if(zero_type(x)) return ({});
+   if(undefinedp(x)) return ({});
    if(arrayp(x)) return [array]x;
    return ({ x });
 }
@@ -697,7 +697,7 @@ array(array(array)) greedy_diff(array from, array to)
 int|mapping(mixed:int) count(array|mapping|multiset haystack,
 			     mixed|void needle)
 {
-  if(zero_type(needle))
+  if(undefinedp(needle))
   {
     mapping(mixed:int) res = ([]);
     if(mappingp(haystack))
@@ -719,7 +719,7 @@ array common_prefix(array(array) arrs)
 
   array arrs0 = arrs[0];
   int n, i;
-  
+
   catch
   {
     for(n = 0; n < sizeof(arrs0); n++)

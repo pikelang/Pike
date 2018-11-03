@@ -128,7 +128,7 @@ void ppc32_push_svalue(int reg, INT32 offs, int force_reftype)
       STW(0, PPC_REG_PIKE_SP, e);
     }
   }
- 
+
   /* lwz r0,offs(r) */
   LWZ(0, reg, offs);
   /* lwz r11,refs+offs(r) */
@@ -173,7 +173,7 @@ void ppc32_push_constant(INT32 arg)
    * Note: The constants table may contain UNDEFINED in case of being
    *       called through decode_value() in PORTABLE_BYTECODE mode.
    */
-  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !sval->subtype) {
+  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !SUBTYPEOF(*sval)) {
     int e;
     INT32 last=0;
 
@@ -187,7 +187,7 @@ void ppc32_push_constant(INT32 arg)
       STW(0, PPC_REG_PIKE_SP, e);
     }
 
-    INCR_SP_REG(sizeof(struct svalue));  
+    INCR_SP_REG(sizeof(struct svalue));
 
     return;
   }
@@ -247,7 +247,7 @@ void ppc32_local_lvalue(INT32 arg)
   STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
   /* stw r3,u.lval(pike_sp) */
   STW(PPC_REG_ARG1, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.lval));
-  INCR_SP_REG(sizeof(struct svalue)*2);  
+  INCR_SP_REG(sizeof(struct svalue)*2);
 }
 
 void ppc32_push_global(INT32 arg)
@@ -256,7 +256,7 @@ void ppc32_push_global(INT32 arg)
   /* lwz r5,context(pike_fp) */
   LWZ(PPC_REG_ARG3, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* lwz r4,current_object(pike_fp) */
-  LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP, 
+  LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP,
       OFFSETOF(pike_frame, current_object));
   /* lha r5,identifier_level(r5) */
   LHA(PPC_REG_ARG3, PPC_REG_ARG3, OFFSETOF(inherit, identifier_level));
@@ -270,7 +270,7 @@ void ppc32_push_global(INT32 arg)
     /* mr r3,pike_sp */
     ORI(PPC_REG_ARG1, PPC_REG_PIKE_SP, 0);
   } else {
-    /* lwz r3,stack_pointer(pike_interpreter) */ 
+    /* lwz r3,stack_pointer(pike_interpreter) */
     LWZ(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
 	OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
@@ -305,7 +305,7 @@ void ppc32_push_int(INT32 x, int s)
   if(x != MAKE_TYPE_WORD(PIKE_T_INT, s))
     SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, s));
   STW(0, PPC_REG_PIKE_SP, 0);
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc32_push_string(INT32 arg, int st)
@@ -314,7 +314,7 @@ void ppc32_push_string(INT32 arg, int st)
 
   LOAD_FP_REG();
   LOAD_SP_REG();
-  
+
   /* lwz r11,context(pike_fp) */
   LWZ(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* lwz r11,prog(r11) */
@@ -333,7 +333,7 @@ void ppc32_push_string(INT32 arg, int st)
 
   /* lwz r11,offs(r11) */
   LWZ(11, 11, offs);
-  
+
   if(sizeof(struct svalue) > 8)
   {
     int e;
@@ -359,7 +359,7 @@ void ppc32_push_string(INT32 arg, int st)
   /* stw r0,0(r11) */
   STW(0, 11, 0);
 
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc32_mark(void)
@@ -383,12 +383,6 @@ static void ppc32_escape_catch(void)
   /* stw r4,recoveries(pike_interpreter) */
   STW(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
       OFFSETOF(Pike_interpreter_struct, recoveries));
-  /* lwz r4,save_expendible(r3) */
-  LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
-      OFFSETOF(catch_context, save_expendible));
-  /* stw r4,expendible(pike_fp) */
-  STW(PPC_REG_ARG2, PPC_REG_PIKE_FP,
-      OFFSETOF(pike_frame, expendible));
   /* lwz r4,prev(r3) */
   LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
       OFFSETOF(catch_context, prev));
@@ -413,9 +407,22 @@ static void maybe_update_pc(void)
   }
 }
 
+#ifdef OPCODE_INLINE_RETURN
+void ppc32_ins_entry(void)
+{
+  /* stwu r1, -32(r1) */
+  STWU(1, 1, -32);
+  /* mflr r0 */
+  MFSPR(0, PPC_SPREG_LR);
+  /* stw r0, 36(r1) */
+  STW(0, 1, 36);
+}
+#endif /* OPCODE_INLINE_RETURN */
+
 void ins_f_byte(unsigned int b)
 {
   void *addr;
+  INT32 rel_addr;
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
@@ -440,15 +447,15 @@ void ins_f_byte(unsigned int b)
    case F_CONST0 - F_OFFSET:
      ppc32_push_int(0, 0);
      return;
-     
+
    case F_CONST1 - F_OFFSET:
      ppc32_push_int(1, 0);
      return;
-     
+
    case F_CONST_1 - F_OFFSET:
      ppc32_push_int(-1, 0);
      return;
-     
+
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       SET_REG(PPC_REG_ARG1, 1);
@@ -465,10 +472,54 @@ void ins_f_byte(unsigned int b)
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
+
+#ifdef OPCODE_INLINE_RETURN
+  case F_CATCH - F_OFFSET:
+    /* Special argument for the F_CATCH instruction. */
+    addr = inter_return_opcode_F_CATCH;
+    /* bl .+4 */
+    BL(4);
+    /* mflr r3 */
+    MFSPR(PPC_REG_ARG1, PPC_SPREG_LR);
+    rel_addr = PIKE_PC;
+    /* addi r3, r3, offs */
+    ADDI(PPC_REG_ARG1, PPC_REG_ARG1, 4);
+    break;
+#endif
   }
 
   FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(addr);
+#ifdef OPCODE_INLINE_RETURN
+  if (instrs[b].flags & I_RETURN) {
+    /* cmpwi r3,-1 */
+    CMPI(0, PPC_REG_RET, -1);
+    /* bne .+20 */
+    BC(4, 2, 5);
+    /* lwz r0, 36(r1) */
+    LWZ(0, 1, 36);
+    /* addi r1, r1, 32 */
+    ADDI(1, 1, 32);
+    /* mtlr r0 */
+    MTSPR(0, PPC_SPREG_LR);
+    /* blr */
+    BCLR(20, 0);
+
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+
+      /* mflr r0 */
+      MFSPR(0, PPC_SPREG_LR);
+      /* subf r0, r0, r3 */
+      SUBF(0, 0, PPC_REG_RET);
+      /* cmplwi r0, JUMP_EPILOGUE_SIZE */
+      CMPLI(0, 0, JUMP_EPILOGUE_SIZE*4);
+      /* beq .+12 */
+      BC(12, 2, 3);
+    }
+  }
+#endif
 #ifdef OPCODE_RETURN_JUMPADDR
   if (instrs[b].flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
@@ -476,6 +527,12 @@ void ins_f_byte(unsigned int b)
     MTSPR(PPC_REG_RET, PPC_SPREG_LR);
     /* blr */
     BCLR(20, 0);
+
+#ifdef OPCODE_INLINE_RETURN
+    if (b == F_CATCH - F_OFFSET) {
+      Pike_compiler->new_program->program[rel_addr] += (PIKE_PC - rel_addr)*4;
+    }
+#endif
   }
 #endif
 }
@@ -603,7 +660,7 @@ INT32 ppc32_ins_f_jump(unsigned int a, int backward_jump)
     if(pos_)
       Pike_compiler->new_program->program[pos_-1] += 4*(PIKE_PC-pos_);
   }
-  ret=DO_NOT_WARN( (INT32) PIKE_PC );
+  ret=(INT32) PIKE_PC;
   /* b . */
   B(0);
   return ret;
@@ -680,10 +737,10 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
 }
 
 #if 0
-#define addstr(s, l) low_my_binary_strcat((s), (l), buf)
+#define addstr(s, l) buffer_memcpy(buf, (s), (l))
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
-void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
+void ppc32_encode_program(struct program *p, struct byte_buffer *buf)
 {
   size_t prev = 0, rel;
   /* De-relocate the program... */
@@ -733,7 +790,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 {
   /*
     Short forms of multicharacter opcode forms:
-    
+
     F = XFX
     G = XFL
     L = XL
@@ -741,7 +798,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
     S = SC
   */
   static const char *opname[] = {
-    NULL, NULL, NULL, "Dtwi", NULL, NULL, NULL, "Dmulli", 
+    NULL, NULL, NULL, "Dtwi", NULL, NULL, NULL, "Dmulli",
     "Dsubfic", NULL, "Dcmpli", "Dcmpi", "Daddic", "Daddic.", "Daddi", "Daddis",
     NULL, "Ssc", NULL, NULL, "Mrlwimi", "Mrlwinm", NULL, "Mrlwnm",
     "Dori", "Doris", "Dxori", "Dxoris", "Dandi.", "Dandis.", NULL, NULL,
@@ -859,7 +916,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	int h;
 	xo = (instr>>1)&1023;
 	h = (xo^119)%19;
-	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);	
+	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);
       }
       break;
     case 31:
@@ -1047,7 +1104,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	/* Maybe pretty-print BO/BI here? */
 	fprintf(stderr, "%s%s %d,%d\n", instr_name, ((instr&1)? "l":""),
 		(instr>>21)&31, (instr>>16)&31);
-      else if(xo&1) 
+      else if(xo&1)
 	fprintf(stderr, "%s crb%d,crb%d,crb%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       else

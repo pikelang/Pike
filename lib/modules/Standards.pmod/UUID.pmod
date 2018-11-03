@@ -5,11 +5,14 @@
 //! Globally Unique Identifiers (GUID).
 //!
 //! @seealso
-//!   RFC4122: A Universally Unique IDentifier (UUID) URN Namespace
-//!   ITU-T X.667: Generation and registration of Universally Unique
-//!                Identifiers (UUIDs) and their use as ASN.1 object
-//!                identifier components
-//!
+//!   @dl
+//!     @item @rfc{4122@}
+//!       A Universally Unique IDentifier (UUID) URN Namespace.
+//!     @item ITU-T X.667
+//!       Generation and registration of Universally Unique
+//!       Identifiers (UUIDs) and their use as ASN.1 object
+//!       identifier components.
+//!   @enddl
 
 //
 // 2004-10-01 Henrik Grubbström
@@ -231,7 +234,7 @@ class UUID {
     validate();
   }
 
-  mixed cast(string to) {
+  protected mixed cast(string to) {
     switch(to) {
     case "string": return str();
     case "mapping": return ([
@@ -240,6 +243,7 @@ class UUID {
       "time_hi_and_version" : time_hi_and_version(),
     ]);
     }
+    return UNDEFINED;
   }
 
 }

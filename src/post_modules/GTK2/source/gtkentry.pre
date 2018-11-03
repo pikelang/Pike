@@ -52,7 +52,7 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE max;
       GtkWidget *ge;
-      get_all_args("create",args,"%i",&max);
+      get_all_args(NULL,args,"%i",&max);
       ge=gtk_entry_new();
       gtk_entry_set_max_length(GTK_ENTRY(ge),max);
       THIS->obj=G_OBJECT(ge);
@@ -85,7 +85,7 @@ void set_visibility(int visiblep);
 
 void set_invisible_char(int ch);
 //! Sets the character to use in place of the actual text when 
-//! set_invisibility() has been called to set text visibility to false.  i.e.
+//! set_visibility() has been called to set text visibility to false.  i.e.
 //! this is the character used in "password" mode to show the user how many
 //! characters have been type.  The default invisible char is an asterisk
 //! ('*').  If you set the invisible char to 0, then the user will get no
@@ -104,7 +104,12 @@ int get_has_frame();
 
 require gtk216;
 void set_icon_from_pixbuf(int icon_pos,GDK2.Pixbuf b);
+//! Set the icon from the given in-memory image, or 0 to remove the icon at
+//! that position.
+
 void set_icon_from_stock(int icon_pos,string id);
+//! Set the icon using a stock icon. To remove the icon, use
+//! set_icon_from_pixbuf().
 endrequire;
 
 require gtk210;
@@ -154,7 +159,7 @@ void set_inner_border(int left, int right, int top, int bottom)
     INT_TYPE l,r,t,b;
     GtkBorder gb;
 
-    get_all_args("set_inner_border",args,"%i%i%i%i",&l,&r,&t,&b);
+    get_all_args(NULL,args,"%i%i%i%i",&l,&r,&t,&b);
     gb.left=l;
     gb.right=r;
     gb.top=t;

@@ -8,7 +8,7 @@ class Thread
   multiset unread_numbers=(<>);
   mapping(int:object) textno_to_node;
   mapping(int:object) unread_texts;
-  int max_follow;  
+  int max_follow;
 
   class Node
   {
@@ -16,7 +16,7 @@ class Thread
     int conf_no;
     Node parent;
     int unread;
-  
+
     array(Node) children = ({ });
 
     string get_aux_item_author(object text)
@@ -52,7 +52,7 @@ class Thread
 		   "depth":      (string)depth ]),
 		children->flatten(depth+1) });
     }
-    
+
 
     Node possible_parent(int follow)
     {
@@ -72,7 +72,7 @@ class Thread
 	return 0;
       }
     }
-    
+
     array(Node) possible_children(int follow)
     {
       foreach(text->misc->comm_in, Session.Text child)
@@ -91,12 +91,12 @@ class Thread
       }
       return children;
     }
-    
+
     void create(Session.Text _text, int _conf_no, int follow)
     {
       text=_text;
       conf_no=_conf_no;
-      
+
       textno_to_node[text->no]=this;
       _text->clear_stat;
 
@@ -108,7 +108,7 @@ class Thread
 	m_delete(unread_texts, text->no);
 	follow=max_follow;
       }
-      
+
       parent=possible_parent(follow);
       children=possible_children(follow);
       //   werror("Parent to %d: %d\n",_text->no, parent && parent->text->no);
@@ -124,7 +124,7 @@ class Thread
     textno_to_node=_textno_to_node;
     unread_numbers=(< @indices(unread_texts) >);
     max_follow=_max_follow;
-    
+
     Node start_node=Node(start_from, conf_no, max_follow);
     Node temp;
 
@@ -149,13 +149,13 @@ void create(array(Session.Text) unread_texts,
   mapping m_unread_texts=mkmapping(unread_texts->no,
 				   unread_texts);
   m_delete(m_unread_texts,0);
-  
+
   foreach(unread_texts->no-({0}), int no)
   {
     if(!(m_unread_texts[no]->misc))
       m_delete(m_unread_texts,no);
   }
-  
+
   foreach(unread_texts->no, array(int) unread_texts_no)
   {
     if(!m_unread_texts[unread_texts_no])

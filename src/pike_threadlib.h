@@ -22,11 +22,6 @@
  */
 #include <signal.h>
 
-#ifdef HAVE_SYS_TYPES_H
-/* Needed for pthread_t on OSF/1 */
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-
 #ifdef PIKE_THREADS
 
 /* The fp macro conflicts with Solaris's <pthread.h>. */
@@ -103,6 +98,8 @@
 #endif /* FRAMEPOINTER_WAS_DEFINED */
 
 PMOD_EXPORT extern int threads_disabled;
+PMOD_EXPORT extern cpu_time_t threads_disabled_acc_time;
+PMOD_EXPORT extern cpu_time_t threads_disabled_start;
 PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
 PMOD_EXPORT extern struct program *thread_id_prog;
 PMOD_EXPORT extern int num_threads;
@@ -184,7 +181,7 @@ void th_atfork_child(void);
  * with only one CPU. Otherwise, only systemcalls are actually
  * threaded.
  */
-#define th_setconcurrency(X) 
+#define th_setconcurrency(X)
 #ifdef HAVE_SCHED_YIELD
 #define low_th_yield() sched_yield()
 #elif defined (HAVE_PTHREAD_YIELD)
@@ -302,7 +299,6 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #ifdef NT_THREADS
 
 #include <process.h>
-#include <windows.h>
 
 #define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
     if (!(CALL))						\
@@ -408,7 +404,7 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 #endif
 
 #ifndef th_equal
-#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
+#define th_equal(X,Y) (!memcmp(&(X),&(Y),sizeof(THREAD_T)))
 #endif
 
 #ifndef th_hash
@@ -681,6 +677,7 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 #define DEFINE_MUTEX(X)
 #define DEFINE_IMUTEX(X)
 #define init_interleave_mutex(X)
+#define exit_interleave_mutex(X)
 #define LOCK_IMUTEX(X)
 #define UNLOCK_IMUTEX(X)
 #define mt_init(X)
@@ -724,11 +721,6 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
-
-#ifndef NO_PIKE_SHORTHAND
-#define MUTEX_T PIKE_MUTEX_T
-#endif
-
 
 /* Initializer macros for static mutex and condition variables */
 #ifdef PTHREAD_MUTEX_INITIALIZER

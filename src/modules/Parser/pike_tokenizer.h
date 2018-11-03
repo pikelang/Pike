@@ -65,12 +65,30 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if(data[pos]=='-' || data[pos]=='+') pos++;
 	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
+	if(data[pos]=='b')
+	{
+	  pos++;
+          if(data[pos]=='i')
+              pos++;
+          if(data[pos]=='t')
+              pos++;
+	}
 	if( pos != len )
 	  pos--;
 	break;
 
       case  '`':
 	if(data[pos+1]=='`') pos++;
+        if(m_isidchar(data[pos+1]))
+        {
+            do {
+                pos++;
+            } while(m_isidchar2(data[pos+1]));
+            if(data[pos+1] == '=')
+                pos++;
+            break;
+            // NOTE: Depends on string having null at end.
+        }
 	switch(data[pos+1]) {
 	case '<':
 	case '>':
@@ -94,6 +112,8 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	case '/': case '%': case '*': case '&': case '|':
 	case '^': case '+': case '!': case '=': case '~':
 	  pos++;
+          if(data[pos+1] == '*')
+              pos++;
 	  break;
 	}
 	if(data[pos+1]=='=') pos++;
@@ -158,30 +178,22 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '+': case '&':  case '|':
 	if( data[pos+1] == data[pos] ) pos++;
 	else if( data[pos+1] == '=' ) pos++;
+	/* FALLTHRU */
 
-
-      case '*': case '%':  
+      case '*': case '%':
       case '^': case '!':  case '~':  case '=':
 	if( data[pos+1] == '=' )
 	  pos++;
 	break;
-	
-      case ' ':
-      case '\n':
-      case '\r':
-      case '\t':
-      case '\14':
-	pos++;
+
+      SPACECASE
+        pos++;
 	while( pos < len )
 	{
 	  switch(data[pos])
-	  {
-	    case ' ':
-	    case '\n':
-	    case '\r':
-	    case '\t':
-	    case '\14':
-	      pos++;
+          {
+            SPACECASE
+              pos++;
 	      continue;
 	  }
 	  break;
@@ -216,7 +228,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	if( pos >= len )
 	  goto failed_to_find_end;
 	break;
-	
+
       case '#':
 	pos++;
 	SKIPWHT();
@@ -229,7 +241,29 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if (pos >= len)
 	    goto failed_to_find_end;
 	  break;
-	}
+        }
+        {
+          char end = 0;
+          switch( data[pos] )
+          {
+          case '(': end=')'; break;
+          case '[': end=']'; break;
+          case '{': end='}'; break;
+          }
+          if(end)
+          {
+            for (pos++; pos<len-1; pos++)
+              if (data[pos] == '#' && data[pos+1] == end)
+              {
+                pos++;
+                end=0;
+                break;
+              }
+            if (end)
+              goto failed_to_find_end;
+            break;
+          }
+        }
 	if( data[pos] == 's' &&
 	    data[pos+1] == 't' &&
 	    data[pos+2] == 'r' &&

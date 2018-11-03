@@ -7,7 +7,7 @@
 /*
   Pike Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
   Should be reasonably compatible and somewhat faster than v1.05+ of Lynscar's
-  sprintf. It requires the buffering function provided in dynamic_buffer.c
+  sprintf. It requires the buffering function provided in buffer.h
    Fail-safe memory-leak-protection is implemented through a stack that can
    be deallocated at any time. If something fails horribly this stack will be
   deallocated at next call of sprintf. Most operators doesn't need this
@@ -46,7 +46,7 @@
    A newspaper
    sprintf("%-=*s %-=*s\n",width/2,article1,width/2,article2);
 
-   A 'dotted-line' pricelist row 
+   A 'dotted-line' pricelist row
    sprintf("%'.'-10s.%'.'4d\n",item,cost);
 
 */
@@ -160,7 +160,7 @@
  *!     @value 'E'
  *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
  *!     @value 'F'
- *!       Binary IEEE representation of float (@tt{%4F@} gives 
+ *!       Binary IEEE representation of float (@tt{%4F@} gives
  *!       single precision, @tt{%8F@} gives double precision)
  *!       in network (big endian) byte order. To get little endian
  *!       byte order, negate the field size.
@@ -174,6 +174,9 @@
  *!       how the result looks can vary depending on locale, phase of
  *!       the moon or anything else the @[lfun::_sprintf()] method
  *!       implementor wanted for debugging.
+ *!     @value 'p'
+ *!       Hexadecimal representation of the memory address of the object.
+ *!       Integers and floats have no address, and are printed as themselves.
  *!     @value 'H'
  *!       Binary Hollerith string. Equivalent to @expr{sprintf("%c%s",
  *!       strlen(str), str)@}. Arguments (such as width etc) adjust the
@@ -326,7 +329,9 @@
 #include "array.h"
 #include "svalue.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "sprintf.h"
+#include "buffer.h"
+#include "pike_compiler.h"
 #include "pike_types.h"
 #include "constants.h"
 #include "interpret.h"
@@ -339,14 +344,11 @@
 #include "operators.h"
 #include "opcodes.h"
 #include "cyclic.h"
-#include "module.h"
 #include "pike_float.h"
 #include "stack_allocator.h"
 #include <ctype.h>
 #include "module_support.h"
 #include "bitvector.h"
-
-#include <math.h>
 
 #define RETURN_SHARED_STRING
 
@@ -420,7 +422,7 @@ struct format_stack
 #endif
 #endif
 
-INLINE static void low_write_IEEE_float(char *b, double d, int sz)
+static void low_write_IEEE_float(char *b, double d, int sz)
 {
   int maxexp;
   unsigned INT32 maxf;
@@ -463,24 +465,18 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
     break;
   }
 #else
-#ifdef HAVE_ISINF
-  if(isinf(d))
+  if(PIKE_ISINF(d))
     e = maxexp;
-  else
-#endif
-  if(PIKE_ISNAN(d)) {
-    e = maxexp; f = maxf;
-  } else
+  else if(PIKE_ISNAN(d))
+  {
+    e = maxexp;
+    f = maxf;
+  }
 #ifdef HAVE_ISZERO
-  if(iszero(d))
+  else if(iszero(d))
     e = 0;
-  else
 #endif
-#ifdef HAVE_FINITE
-  if(!finite(d))
-    e = maxexp;
-#endif
-  ; /* Terminate any remaining else */
+
 #ifdef HAVE_SIGNBIT
   if((s = signbit(d)))
     d = fabs(d);
@@ -493,7 +489,7 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
 #endif
 
   if(e<0) {
-    d = FREXP(d, &e);
+    d = frexp(d, &e);
     if(d == 1.0) {
       d=0.5;
       e++;
@@ -505,7 +501,7 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
       e += 126;
       d *= 16777216.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       f = ((INT32)floor(d))&maxf;
@@ -514,7 +510,7 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
       e += 1022;
       d *= 2097152.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       d2 = floor(d);
@@ -550,7 +546,7 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
 
 /* Position a string inside a field with fill */
 
-INLINE static void fix_field(struct string_builder *r,
+static void fix_field(struct string_builder *r,
 			     PCHARP b,
 			     ptrdiff_t len,
 			     int flags,
@@ -600,10 +596,10 @@ INLINE static void fix_field(struct string_builder *r,
       string_builder_append(r,b,len);
       return;
     }
-  
+
     if (flags & (FIELD_CENTER|FIELD_LEFT)) {
       ptrdiff_t d=0;
-  
+
       if(flags & FIELD_CENTER)
       {
   	e=len;
@@ -615,7 +611,7 @@ INLINE static void fix_field(struct string_builder *r,
   	  width-=e;
   	}
       }
-  
+
       /* Left adjust */
       if(pos_pad && EXTRACT_PCHARP(b)!='-')
       {
@@ -631,7 +627,7 @@ INLINE static void fix_field(struct string_builder *r,
 	string_builder_append(r, b, len);
 	width -= len;
       }
-#else /* 0 */  
+#else /* 0 */
       d+=MINIMUM(width,len);
       while(len && width)
       {
@@ -641,13 +637,13 @@ INLINE static void fix_field(struct string_builder *r,
   	width--;
       }
 #endif /* 1 */
-  
+
       if(width>0)
       {
 	d%=pad_length;
 	string_builder_fill(r, width, pad_string, pad_length, d);
       }
-      
+
       return;
     }
   }
@@ -674,17 +670,25 @@ INLINE static void fix_field(struct string_builder *r,
 
 static void free_sprintf_strings(struct format_stack *fs)
 {
-  for(;fs->fsp>=fs->format_info_stack;fs->fsp--)
+  struct format_info * f, * fend;
+  f = fs->fsp;
+  fend = fs->format_info_stack;
+  for(;f>=fend;f--)
   {
-    if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
-    fs->fsp->fi_free_string=0;
-    if(fs->fsp->to_free_string) free_string(fs->fsp->to_free_string);
-    fs->fsp->to_free_string=0;
+    if(f->fi_free_string) free(f->fi_free_string);
+#ifdef PIKE_DEBUG
+    f->fi_free_string=0;
+#endif
+    if(f->to_free_string) free_string(f->to_free_string);
+#ifdef PIKE_DEBUG
+    f->to_free_string=0;
+#endif
   }
+  fs->fsp = f;
 }
 
 static void sprintf_error(struct format_stack *fs,
-			  char *s,...) ATTRIBUTE((noreturn,format (printf, 2, 3)));
+			  char *s,...) ATTRIBUTE((noinline,noreturn,format (printf, 2, 3)));
 static void sprintf_error(struct format_stack *fs,
 			  char *s,...)
 {
@@ -698,14 +702,95 @@ static void sprintf_error(struct format_stack *fs,
   va_end(args);
 }
 
-/* This is called once for every '%' on every outputted line
+static void mapping_to_format_info(struct mapping * m, struct format_info * fsp, int * indent) {
+  struct svalue *sval;
+
+  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
+      (TYPEOF(*sval) == T_INT)) {
+    fsp->precision = sval->u.integer;
+  }
+  if ((sval = simple_mapping_string_lookup(m, "width")) &&
+      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
+    fsp->width = sval->u.integer;
+  }
+  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
+      (TYPEOF(*sval) == T_INT)) {
+    if (sval->u.integer) {
+      fsp->flags |= FIELD_LEFT;
+    } else {
+      fsp->flags &= ~FIELD_LEFT;
+    }
+  }
+  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
+      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
+    *indent = sval->u.integer;
+  }
+}
+
+static int call_object_sprintf(int mode, struct object * o, ptrdiff_t fun, struct format_stack * fs) {
+  int n = 0;
+  struct format_info *fsp = fs->fsp;
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(o, fun)) {
+      END_CYCLIC();
+      return 0;
+  }
+
+  push_int(mode);
+
+  if (fsp->precision!=SPRINTF_UNDECIDED)
+  {
+     push_constant_text("precision");
+     push_int(fsp->precision);
+     n+=2;
+  }
+  if (fsp->width!=SPRINTF_UNDECIDED)
+  {
+     push_constant_text("width");
+     push_int64(fsp->width);
+     n+=2;
+  }
+  if ((fsp->flags&FIELD_LEFT))
+  {
+     push_constant_text("flag_left");
+     push_int(1);
+     n+=2;
+  }
+  f_aggregate_mapping(n);
+
+  SET_CYCLIC_RET(1);
+
+  apply_low(o, fun, 2);
+
+  END_CYCLIC();
+
+  if(TYPEOF(Pike_sp[-1]) == T_STRING)
+  {
+    DO_IF_DEBUG( if(fsp->to_free_string)
+                 Pike_fatal("OOps in sprintfn"); )
+    fsp->to_free_string = (--Pike_sp)->u.string;
+
+    fsp->b = MKPCHARP_STR(fsp->to_free_string);
+    fsp->len = fsp->to_free_string->len;
+    return 1;
+  }
+
+  if (!SAFE_IS_ZERO(Pike_sp-1))
+    sprintf_error(fs,"(object) returned illegal value from _sprintf()\n");
+  pop_stack();
+
+  return 0;
+}
+
+/* This is called once for every '%' on every output line
  * it takes care of linebreak and column mode. It returns 1
  * if there is more for next line.
  */
 
-INLINE static int do_one(struct format_stack *fs,
-			 struct string_builder *r,
-			 struct format_info *f)
+static int do_one(struct format_stack *fs,
+                  struct string_builder *r,
+                  struct format_info *f)
 {
   PCHARP rest;
   ptrdiff_t e, d, lastspace;
@@ -731,6 +816,8 @@ INLINE static int do_one(struct format_stack *fs,
 	    lastspace=e;
 	    rest=ADD_PCHARP(f->b,e+1);
 	  }
+	  /* FALLTHRU */
+
 	default:
 	  continue;
       }
@@ -763,10 +850,6 @@ INLINE static int do_one(struct format_stack *fs,
     rest=f->b;
     for(d=0;INDEX_PCHARP(rest,d) && e;d++)
     {
-#if 0
-      if(rest != f->b)
-	fix_field(" ",1,0,1," ",1,0);
-#endif
 
       while(INDEX_PCHARP(rest,d) && INDEX_PCHARP(rest,d)!='\n')
 	d++;
@@ -802,10 +885,6 @@ INLINE static int do_one(struct format_stack *fs,
 
     for(d=0;rest.ptr && d<col;d++)
     {
-#if 0
-      if(rest != f->b)
-	fix_field(" ",1,0,1," ",1,0);
-#endif
 
       /* Find end of entry */
       for(e=0;COMPARE_PCHARP(ADD_PCHARP(rest, e),<,end) &&
@@ -860,6 +939,13 @@ INLINE static int do_one(struct format_stack *fs,
   return f->len>0;
 }
 
+#define POP_ARGUMENT() do { \
+    if (arg) arg = NULL;      \
+    else if (argument < num_arg) {\
+        lastarg=argp+(argument++); \
+    } \
+    else sprintf_error(fs, "Too few arguments to sprintf.\n"); \
+} while (0)
 
 #define GET_SVALUE(VAR) \
   if(arg) \
@@ -870,7 +956,7 @@ INLINE static int do_one(struct format_stack *fs,
     if(argument >= num_arg) \
     { \
       sprintf_error(fs, "Too few arguments to sprintf.\n"); \
-      break; /* make gcc happy */ \
+      UNREACHABLE(break); \
     } \
     VAR=lastarg=argp+(argument++); \
   }
@@ -883,7 +969,7 @@ INLINE static int do_one(struct format_stack *fs,
     if(argument >= num_arg) \
     { \
       sprintf_error(fs, "Too few arguments to sprintf.\n"); \
-      break; /* make gcc happy */ \
+      UNREACHABLE(break); \
     } \
     VAR=argp+argument; \
   }
@@ -896,7 +982,7 @@ INLINE static int do_one(struct format_stack *fs,
     { \
       sprintf_error(fs, "Wrong type for argument %d: expected %s, got %s.\n",argument+1,TYPE_NAME, \
 		    get_name_of_type(TYPEOF(*tmp_))); \
-      break; /* make gcc happy */ \
+      UNREACHABLE(break); \
     } \
     VAR=tmp_->u.EXTENSION; \
   }
@@ -907,140 +993,24 @@ INLINE static int do_one(struct format_stack *fs,
 #define GET_ARRAY(VAR) GET(VAR,T_ARRAY,"array",array)
 #define GET_OBJECT(VAR) GET(VAR,T_OBJECT,"object",object)
 
-#define DO_OP()								\
-   if(fs->fsp->flags & SNURKEL)						\
-   {									\
-     ONERROR _e;							\
-     struct array *_v;							\
-     struct string_builder _b;						\
-     init_string_builder(&_b,0);					\
-     SET_ONERROR(_e, free_string_builder, &_b);				\
-     GET_ARRAY(_v);							\
-     for(tmp=0;tmp<_v->size;tmp++)					\
-     {									\
-       struct svalue *save_sp=Pike_sp;					\
-       array_index_no_free(Pike_sp,_v,tmp);				\
-       Pike_sp++;							\
-       low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,	\
-			Pike_sp-1,1,nosnurkel+1, compat_mode);		\
-       if(save_sp < Pike_sp) pop_stack();				\
-     }									\
-     fs->fsp->b=MKPCHARP_STR(_b.s);					\
-     fs->fsp->len=_b.s->len;						\
-     fs->fsp->fi_free_string=(char *)_b.s;				\
-     fs->fsp->pad_string=MKPCHARP(" ",0);				\
-     fs->fsp->pad_length=1;						\
-     fs->fsp->column_width=0;						\
-     fs->fsp->pos_pad=0;						\
-     fs->fsp->flags=0;							\
-     fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;		\
-     UNSET_ONERROR(_e);							\
-     break;                                                             \
-   }
-
-#define CHECK_OBJECT_SPRINTF()						      \
-	{								      \
-	   /* NOTE: It would be nice if this was a do { } while(0) macro */   \
-	   /* but it cannot be since we need to break out of the case... */   \
-	  struct svalue *sv;						      \
-	  PEEK_SVALUE(sv);						      \
-	  if(TYPEOF(*sv) == T_OBJECT && sv->u.object->prog)		      \
-	  {                                                                   \
-            ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
-	    if (fun != -1) {						      \
-              DECLARE_CYCLIC();						      \
-              if (!BEGIN_CYCLIC(sv->u.object, fun))			      \
-              {                                                               \
-              	int n=0;						      \
-	      	push_int(EXTRACT_PCHARP(a));				      \
-	      	if (fs->fsp->precision!=SPRINTF_UNDECIDED)		      \
-	      	{							      \
-	      	   push_constant_text("precision");			      \
-	      	   push_int(fs->fsp->precision);			      \
-              	   n+=2;						      \
-	      	}							      \
-	      	if (fs->fsp->width!=SPRINTF_UNDECIDED)			      \
-	      	{							      \
-	      	   push_constant_text("width");	           		      \
-	      	   push_int64(fs->fsp->width);				      \
-              	   n+=2;						      \
-	      	}							      \
-	      	if ((fs->fsp->flags&FIELD_LEFT))			      \
-	      	{							      \
-	      	   push_constant_text("flag_left");	       		      \
-	      	   push_int(1);						      \
-              	   n+=2;						      \
-	      	}							      \
-	      	f_aggregate_mapping(n);					      \
-	      								      \
-	      	SET_CYCLIC_RET(1);					      \
-	      	apply_low(sv->u.object, fun, 2);                              \
-									      \
-		if(TYPEOF(Pike_sp[-1]) == T_STRING)			      \
-	      	{	                                                      \
-              	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
-              		       Pike_fatal("OOps in sprintf\n"); )             \
-              	  fs->fsp->to_free_string = (--Pike_sp)->u.string;            \
-	      								      \
-	      	  fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);	      \
-	      	  fs->fsp->len = fs->fsp->to_free_string->len;		      \
-	      								      \
-              	  /* We have to lift one argument from the format stack. */   \
-              	  GET_SVALUE(sv);                                             \
-                  END_CYCLIC();						      \
-	      	  break;						      \
-	      	}							      \
-	      	if(!SAFE_IS_ZERO(Pike_sp-1))				      \
-	      	{							      \
-	      	   sprintf_error(fs,"argument %d (object) returned "	      \
-	      			 "illegal value from _sprintf()\n",	      \
-				 argument+1);				      \
-	      	}							      \
-	      	pop_stack();						      \
-              }								      \
-              END_CYCLIC();						      \
-	    }								      \
-	  }								      \
-	}
 
 /* This is the main pike_sprintf function, note that it calls itself
  * recursively during the '%{ %}' parsing. The string is stored in
  * the buffer in save_objectII.c
  */
-
-#if 0
-/* Looks to me like forgotten debug code. Anyway, we can't make this
- * fatal since it might trig in _sprintf/sprintf recursions in pike
- * code. /mast */
-#undef check_c_stack
-#define check_c_stack(X) do {                                           \
-    ptrdiff_t x_= (((char *)&x_) - Pike_interpreter.stack_top) +	\
-      STACK_DIRECTION * (Pike_interpreter.c_stack_margin + (X));	\
-  x_*=STACK_DIRECTION;                                                  \
-  if(x_>0) {                                                            \
-    /*low_error(Pike_check_c_stack_errmsg);*/                           \
-    Pike_fatal("C stack overflow (%d): x_:%p &x_:%p top: %p margin: %p\n",	\
-               (X), x_, &x_, Pike_interpreter.stack_top,		\
-               Pike_interpreter.c_stack_margin);                        \
-  }                                                                     \
-  }while(0)
-#endif
-
-
 static void low_pike_sprintf(struct format_stack *fs,
 			     struct string_builder *r,
 			     PCHARP format,
 			     ptrdiff_t format_len,
 			     struct svalue *argp,
 			     ptrdiff_t num_arg,
-			     int nosnurkel,
-			     int compat_mode)
+			     int nosnurkel)
 {
   int argument=0;
   int tmp,setwhat,d,e,indent;
   char buffer[140];
   ptrdiff_t start;
-  struct format_info *f;
+  struct format_info *f, *fsp;
   double tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
@@ -1069,22 +1039,23 @@ static void low_pike_sprintf(struct format_stack *fs,
     if(fs->fsp < fs->format_info_stack)
       Pike_fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
-    fs->fsp->pad_string=MKPCHARP(" ",0);
-    fs->fsp->pad_length=1;
-    fs->fsp->fi_free_string=0;
-    fs->fsp->to_free_string=0;
-    fs->fsp->column_width=0;
-    fs->fsp->pos_pad = 0;
-    fs->fsp->flags = 0;
-    fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;
+    fsp = fs->fsp;
+    fsp->pad_string=MKPCHARP(" ",0);
+    fsp->pad_length=1;
+    fsp->fi_free_string=0;
+    fsp->to_free_string=0;
+    fsp->column_width=0;
+    fsp->pos_pad = 0;
+    fsp->flags = 0;
+    fsp->width=fsp->precision=SPRINTF_UNDECIDED;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
       for(e=0;INDEX_PCHARP(a,e)!='%' &&
 	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++);
-      fs->fsp->b=a;
-      fs->fsp->len=e;
-      fs->fsp->width=e;
+      fsp->b=a;
+      fsp->len=e;
+      fsp->width=e;
       INC_PCHARP(a,e-1);
       continue;
     }
@@ -1096,30 +1067,133 @@ static void low_pike_sprintf(struct format_stack *fs,
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
-#if 0
-      fprintf(stderr,"sprintf-flop: %d (%c)\n",
-	      EXTRACT_PCHARP(a),EXTRACT_PCHARP(a));
-#endif
-      switch(EXTRACT_PCHARP(a))
+      int mode = EXTRACT_PCHARP(a);
+
+      switch (mode) {
+      case '{':
+      case 'n':
+      case 't':
+      case 'c':
+      case 'H':
+      case 'b':
+      case 'o':
+      case 'd':
+      case 'u':
+      case 'x':
+      case 'X':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      case 'F':
+      case 'O':
+      case 'p':
+      case 's':
+      case 'q':
+        if(UNLIKELY(fsp->flags & SNURKEL))
+        {
+          ONERROR _e;
+          struct array *_v;
+          struct string_builder _b;
+          init_string_builder(&_b,0);
+          SET_ONERROR(_e, free_string_builder, &_b);
+          GET_ARRAY(_v);
+          for(tmp=0;tmp<_v->size;tmp++)
+          {
+            struct svalue *save_sp=Pike_sp;
+            array_index_no_free(Pike_sp,_v,tmp);
+            Pike_sp++;
+            low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,
+                             Pike_sp-1,1,nosnurkel+1);
+            fsp = fs->fsp;
+            if(save_sp < Pike_sp) pop_stack();
+          }
+          fsp->b=MKPCHARP_STR(_b.s);
+          fsp->len=_b.s->len;
+          fsp->to_free_string=_b.s;
+          fsp->pad_string=MKPCHARP(" ",0);
+          fsp->pad_length=1;
+          fsp->column_width=0;
+          fsp->pos_pad=0;
+          fsp->flags=0;
+          fsp->width=fsp->precision=SPRINTF_UNDECIDED;
+          UNSET_ONERROR(_e);
+          break;
+        }
+      default:
+        goto cont_1;
+      }
+      break;
+
+cont_1:
+
+      switch (mode) {
+      case 't':
+      case 'c':
+      case 'H':
+      case 'b':
+      case 'o':
+      case 'd':
+      case 'u':
+      case 'x':
+      case 'X':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      case 'F':
+        /* Its necessary to use CHECK_OBJECT_SPRINTF() here,
+           because describe_svalue encodes \t and others
+           when returned by _sprintf */
+      case 'O':
+      case 's':
+      case 'q':
+        {
+          struct svalue *sv;
+          PEEK_SVALUE(sv);
+          if(TYPEOF(*sv) == T_OBJECT && sv->u.object->prog)
+          {
+            ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);
+            if (fun != -1) {
+              if (call_object_sprintf(mode, sv->u.object, fun, fs)) {
+                POP_ARGUMENT();
+                break;
+              }
+            }
+          }
+        }
+	/* FALLTHRU */
+
+      default:
+        goto cont_2;
+      }
+      break;
+
+cont_2:
+
+      switch(mode)
       {
       default:
-	if(EXTRACT_PCHARP(a) < 256 && 
-	   isprint(EXTRACT_PCHARP(a)))
+	if(mode < 256 && isprint(mode))
 	{
 	  sprintf_error(fs, "Error in format string, %c is not a format.\n",
-			EXTRACT_PCHARP(a));
+			mode);
 	}else{
 	  sprintf_error(fs,"Error in format string, U%08x is not a format.\n",
-			EXTRACT_PCHARP(a));
+			mode);
 	}
+	break;
 
       /* First the modifiers */
       case '0':
-	 if (setwhat<2) 
-	 { 
-	    fs->fsp->flags|=ZERO_PAD; 
-	    continue; 
+	 if (setwhat<2)
+	 {
+	    fsp->flags|=ZERO_PAD;
+	    continue;
 	 }
+	 /* FALLTHRU */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -1141,27 +1215,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			  argument+1, "int|mapping(string:int)",
 			  get_name_of_type(TYPEOF(*sval)));
 	  }
-	  m = sval->u.mapping;
-	  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
-	      (TYPEOF(*sval) == T_INT)) {
-	    fs->fsp->precision = sval->u.integer;
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "width")) &&
-	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
-	    fs->fsp->width = sval->u.integer;
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
-	      (TYPEOF(*sval) == T_INT)) {
-	    if (sval->u.integer) {
-	      fs->fsp->flags |= FIELD_LEFT;
-	    } else {
-	      fs->fsp->flags &= ~FIELD_LEFT;
-	    }
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
-	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
-	    indent = sval->u.integer;
-	  }
+          mapping_to_format_info(sval->u.mapping, fsp, &indent);
 	  continue;
 	}
 
@@ -1171,11 +1225,12 @@ static void low_pike_sprintf(struct format_stack *fs,
 	case 0:
 	case 1:
 	  if(tmp < 0) sprintf_error(fs, "Illegal width %d.\n", tmp);
-	  fs->fsp->width=tmp;
+	  fsp->width=tmp;
 	  if (!setwhat) break;
-	case 2: fs->fsp->precision=tmp; break;
-	case 3: fs->fsp->column_width=tmp; break;
-	case 4: fs->fsp->precision=-tmp; break;
+	  /* FALLTHRU */
+	case 2: fsp->precision=tmp; break;
+	case 3: fsp->column_width=tmp; break;
+	case 4: fsp->precision=-tmp; break;
 	}
 	continue;
 
@@ -1183,35 +1238,35 @@ static void low_pike_sprintf(struct format_stack *fs,
       case '.': setwhat=2; continue;
       case ':': setwhat=1; continue;
 
-      case '=': fs->fsp->flags|=LINEBREAK;
-	if (fs->fsp->flags & ROUGH_LINEBREAK)
+      case '=': fsp->flags|=LINEBREAK;
+	if (fsp->flags & ROUGH_LINEBREAK)
 	  sprintf_error(fs,
 			"Combining modifiers '=' and '/' is not allowed.\n");
 	continue;
-      case '/': fs->fsp->flags|=ROUGH_LINEBREAK;
-	if (fs->fsp->flags & LINEBREAK)
+      case '/': fsp->flags|=ROUGH_LINEBREAK;
+	if (fsp->flags & LINEBREAK)
 	  sprintf_error(fs,
 			"Combining modifiers '=' and '/' is not allowed.\n");
 	continue;
-      case '#': fs->fsp->flags|=COLUMN_MODE; continue;
-      case '$': fs->fsp->flags|=INVERSE_COLUMN_MODE; continue;
+      case '#': fsp->flags|=COLUMN_MODE; continue;
+      case '$': fsp->flags|=INVERSE_COLUMN_MODE; continue;
 
       case '-':
 	if(setwhat==2)
 	  setwhat=4;
 	else
-	  fs->fsp->flags|=FIELD_LEFT;
+	  fsp->flags|=FIELD_LEFT;
 	continue;
-      case '|': fs->fsp->flags|=FIELD_CENTER; continue;
-      case ' ': fs->fsp->pos_pad=' '; continue;
-      case '+': fs->fsp->pos_pad='+'; continue;
-      case '!': fs->fsp->flags^=DO_TRUNC; continue;
-      case '^': fs->fsp->flags|=REPEAT; continue;
-      case '>': fs->fsp->flags|=MULTI_LINE_BREAK; continue;
-      case '_': fs->fsp->flags|=WIDTH_OF_DATA; continue;
+      case '|': fsp->flags|=FIELD_CENTER; continue;
+      case ' ': fsp->pos_pad=' '; continue;
+      case '+': fsp->pos_pad='+'; continue;
+      case '!': fsp->flags^=DO_TRUNC; continue;
+      case '^': fsp->flags|=REPEAT; continue;
+      case '>': fsp->flags|=MULTI_LINE_BREAK; continue;
+      case '_': fsp->flags|=WIDTH_OF_DATA; continue;
       case '@':
 	if(++num_snurkel > nosnurkel)
-	  fs->fsp->flags|=SNURKEL;
+	  fsp->flags|=SNURKEL;
 	continue;
 
       case '\'':
@@ -1227,8 +1282,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	}
 	if(tmp)
 	{
-	  fs->fsp->pad_string=a;
-	  fs->fsp->pad_length=tmp;
+	  fsp->pad_string=a;
+	  fsp->pad_length=tmp;
 	}
 	INC_PCHARP(a,tmp);
 	continue;
@@ -1238,8 +1293,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	struct pike_string *s;
 	GET_STRING(s);
 	if (s->len) {
-	  fs->fsp->pad_string=MKPCHARP_STR(s);
-	  fs->fsp->pad_length=s->len;
+	  fsp->pad_string=MKPCHARP_STR(s);
+	  fsp->pad_length=s->len;
 	}
 	continue;
       }
@@ -1257,30 +1312,26 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  INC_PCHARP(a,1);
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
-	if(EXTRACT_PCHARP(a)!=']') 
+	if(EXTRACT_PCHARP(a)!=']')
 	  sprintf_error(fs, "Expected ] in format string, not %c.\n",
 			EXTRACT_PCHARP(a));
 	if(tmp >= num_arg)
 	  sprintf_error(fs, "Not enough arguments to [%d].\n",tmp);
 	arg = argp+tmp;
 	continue;
-	
+
         /* now the real operators */
 
       case '{':
       {
 	struct array *w;
 	struct string_builder b;
-#ifdef PIKE_DEBUG
-	struct format_info *fsp_save=fs->fsp;
-#endif
-	DO_OP();
 	for(e=1,tmp=1;tmp;e++)
 	{
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
 	    sprintf_error(fs, "Missing %%} in format string.\n");
-	    break;		/* UNREACHED */
+            UNREACHABLE(break);
 	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
 	    {
@@ -1290,12 +1341,12 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    }
 	  }
 	}
-            
+
 	GET_ARRAY(w);
 	if(!w->size)
 	{
-	  fs->fsp->b=MKPCHARP("",0);
-	  fs->fsp->len=0;
+	  fsp->b=MKPCHARP("",0);
+	  fsp->len=0;
 	}else{
 	  ONERROR err;
 	  init_string_builder(&b,0);
@@ -1316,45 +1367,40 @@ static void low_pike_sprintf(struct format_stack *fs,
 	      array_index_no_free(Pike_sp,w,tmp);
 	      Pike_sp++;
 	    }
-	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0,
-			     compat_mode);
+	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0);
+            fsp = fs->fsp;
 	    pop_n_elems(Pike_sp-s);
 	  }
 #ifdef PIKE_DEBUG
 	  if(fs->fsp < fs->format_info_stack)
 	    Pike_fatal("sprintf: fs->fsp out of bounds.\n");
-	  if(fs->fsp!=fsp_save)
-	    Pike_fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
 #endif
-	  fs->fsp->b=MKPCHARP_STR(b.s);
-	  fs->fsp->len=b.s->len;
-	  fs->fsp->fi_free_string=(char *)b.s;
+	  fsp->b=MKPCHARP_STR(b.s);
+	  fsp->len=b.s->len;
+	  fsp->to_free_string=b.s;
 	  UNSET_ONERROR(err);
 	}
-	
+
 	INC_PCHARP(a,e);
 	break;
       }
 
       case '%':
-	fs->fsp->b=MKPCHARP("%",0);
-	fs->fsp->len=fs->fsp->width=1;
+	fsp->b=MKPCHARP("%",0);
+	fsp->len=fsp->width=1;
 	break;
 
       case 'n':
-	DO_OP();
-	fs->fsp->b=MKPCHARP("",0);
-	fs->fsp->len=0;
+	fsp->b=MKPCHARP("",0);
+	fsp->len=0;
 	break;
 
       case 't':
       {
 	struct svalue *t;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_SVALUE(t);
-	fs->fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
-	fs->fsp->len=strlen((char *)fs->fsp->b.ptr);
+	fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
+	fsp->len=strlen((char *)fsp->b.ptr);
 	break;
       }
 
@@ -1363,25 +1409,23 @@ static void low_pike_sprintf(struct format_stack *fs,
         INT_TYPE tmp;
 	ptrdiff_t l,n;
 	char *x;
-        DO_OP();
-	CHECK_OBJECT_SPRINTF()
-	if(fs->fsp->width == SPRINTF_UNDECIDED)
+	if(fsp->width == SPRINTF_UNDECIDED)
 	{
 	  GET_INT(tmp);
           x=(char *)sa_alloc(&fs->a, 4);
-	  if(tmp<256) fs->fsp->b=MKPCHARP(x,0);
-	  else if(tmp<65536) fs->fsp->b=MKPCHARP(x,1);
-	  else  fs->fsp->b=MKPCHARP(x,2);
-	  SET_INDEX_PCHARP(fs->fsp->b,0,tmp);
-	  fs->fsp->len=1;
+	  if(tmp<256) fsp->b=MKPCHARP(x,0);
+	  else if(tmp<65536) fsp->b=MKPCHARP(x,1);
+	  else  fsp->b=MKPCHARP(x,2);
+	  SET_INDEX_PCHARP(fsp->b,0,tmp);
+	  fsp->len=1;
 	}
-	else if ( (fs->fsp->flags&FIELD_LEFT) )
+	else if ( (fsp->flags&FIELD_LEFT) )
 	{
 	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if(fsp->width > 0) l=fsp->width;
           x=(char *)sa_alloc(&fs->a, l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
+	  fsp->b=MKPCHARP(x,0);
+	  fsp->len=l;
 	  GET_INT(tmp);
 	  n=0;
 	  while(n<l)
@@ -1390,13 +1434,13 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    tmp>>=8;
 	  }
 	}
-	else 
+	else
 	{
 	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if(fsp->width > 0) l=fsp->width;
 	  x=(char *)sa_alloc(&fs->a, l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
+	  fsp->b=MKPCHARP(x,0);
+	  fsp->len=l;
 	  GET_INT(tmp);
 	  while(--l>=0)
 	  {
@@ -1415,8 +1459,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	ptrdiff_t l,n;
 	char *x;
 
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 	if( s->size_shift )
 	  sprintf_error(fs, "%%H requires all characters in the string "
@@ -1424,9 +1466,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 	tmp = s->len;
         l=1;
-        if(fs->fsp->width > 0)
-          l=fs->fsp->width;
-        else if(fs->fsp->flags&ZERO_PAD)
+        if(fsp->width > 0)
+          l=fsp->width;
+        else if(fsp->flags&ZERO_PAD)
           sprintf_error(fs, "Length of string to %%H is 0.\n");
 
 	/* Note: The >>-operator performs an implicit % (sizeof(tmp)*8)
@@ -1437,10 +1479,10 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 
         x=(char *)sa_alloc(&fs->a, l);
-        fs->fsp->b=MKPCHARP(x,0);
-        fs->fsp->len=l;
+        fsp->b=MKPCHARP(x,0);
+        fsp->len=l;
 
-        if ( (fs->fsp->flags&FIELD_LEFT) )
+        if ( (fsp->flags&FIELD_LEFT) )
 	{
 	  n=0;
 	  while(n<l)
@@ -1449,7 +1491,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    tmp>>=8;
 	  }
 	}
-	else 
+	else
 	{
 	  while(--l>=0)
 	  {
@@ -1458,39 +1500,63 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  }
 	}
 
-	init_string_builder_alloc(&buf, s->len+fs->fsp->len, 0);
-	string_builder_append(&buf,fs->fsp->b,fs->fsp->len);
+	init_string_builder_alloc(&buf, s->len+fsp->len, 0);
+	string_builder_append(&buf,fsp->b,fsp->len);
 	string_builder_shared_strcat(&buf,s);
-	
-	fs->fsp->b = MKPCHARP_STR(buf.s);
-	fs->fsp->len = buf.s->len;
+
+	fsp->b = MKPCHARP_STR(buf.s);
+	fsp->len = buf.s->len;
 	buf.s->len = buf.malloced;
-	fs->fsp->to_free_string = buf.s;
+	fsp->to_free_string = buf.s;
 	break;
       }
 
+      case 'x':
+      case 'X':
+      {
+        struct svalue *v;
+        PEEK_SVALUE(v);
+        if(TYPEOF(*v)==T_STRING)
+        {
+          struct pike_string *str;
+          push_svalue(v);
+          if( mode=='X' )
+          {
+            push_int(1);
+            f_string2hex(2);
+          }
+          else
+            f_string2hex(1);
+
+          str = Pike_sp[-1].u.string;
+          fsp->b = MKPCHARP_STR(str);
+          fsp->len = str->len;
+          fsp->to_free_string = str;
+
+          add_ref(str);
+          pop_stack();
+          POP_ARGUMENT();
+          break;
+        }
+      }
+      /* FALLTHRU */
       case 'b':
       case 'o':
       case 'd':
       case 'u':
-      case 'x':
-      case 'X':
       {
 	int base = 0, mask_size = 0;
-	char mode, *x;
+       char *x;
 	INT_TYPE val;
-	
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
+
 	GET_INT(val);
 
-	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision > 0)
-	  mask_size = fs->fsp->precision;
-	
-	mode=EXTRACT_PCHARP(a);
+	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision > 0)
+	  mask_size = fsp->precision;
+
 	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
-	fs->fsp->b=MKPCHARP(x,0);
-	
+	fsp->b=MKPCHARP(x,0);
+
 	switch(mode)
 	{
 	  case 'b': base = 1; break;
@@ -1538,7 +1604,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	else
 	  sprintf(x, "%"PRINTPIKEINT"d", val);
 
-	fs->fsp->len=strlen(x);
+	fsp->len=strlen(x);
 	break;
       }
 
@@ -1549,8 +1615,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'G':
       {
 	char *x;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_FLOAT(tf);
 
 	/* Special casing for infinity and not a number,
@@ -1558,55 +1622,55 @@ static void low_pike_sprintf(struct format_stack *fs,
 	 */
 	if (PIKE_ISNAN(tf)) {
 	  /* NaN */
-	  fs->fsp->b = MKPCHARP("nan", 0);
-	  fs->fsp->len = 3;
+	  fsp->b = MKPCHARP("nan", 0);
+	  fsp->len = 3;
 	  break;
 	} else if (PIKE_ISINF(tf)) {
 	  /* Infinity. */
 	  if (tf > 0.0) {
-	    fs->fsp->b = MKPCHARP("inf", 0);
-	    fs->fsp->len = 3;
+	    fsp->b = MKPCHARP("inf", 0);
+	    fsp->len = 3;
 	  } else {
-	    fs->fsp->b = MKPCHARP("-inf", 0);
-	    fs->fsp->len = 4;
+	    fsp->b = MKPCHARP("-inf", 0);
+	    fsp->len = 4;
 	  }
 	  break;
 	}
 
-	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
+	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
 
 	/* FIXME: The constant (320) is good for IEEE double precision
 	 * float, but will definitely fail for bigger precision! --aldem
 	 */
-	x=(char *)xalloc(320+MAXIMUM(fs->fsp->precision,3));
-	fs->fsp->fi_free_string=x;
-	fs->fsp->b=MKPCHARP(x,0);
-	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
+	x=(char *)xalloc(320+MAXIMUM(fsp->precision,3));
+	fsp->fi_free_string=x;
+	fsp->b=MKPCHARP(x,0);
+	sprintf(buffer,"%%*.*%c", mode);
 
-	if(fs->fsp->precision<0) {
-	  double m=pow(10.0, (double)fs->fsp->precision);
-	  tf = RINT(tf*m)/m;
-	} else if (fs->fsp->precision==0) {
-	  tf = RINT(tf);
+	if(fsp->precision<0) {
+	  double m=pow(10.0, (double)fsp->precision);
+	  tf = rint(tf*m)/m;
+	} else if (fsp->precision==0) {
+	  tf = rint(tf);
         }
 
 	debug_malloc_touch(x);
-	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
+	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
 	debug_malloc_touch(x);
-	fs->fsp->len=strlen(x);
-	
+	fsp->len=strlen(x);
+
 	/* Make sure that the last digits really are zero. */
-	if(fs->fsp->precision<0)
+	if(fsp->precision<0)
 	{
 	  ptrdiff_t i, j;
 	  /* Find the ending of the number.  Yes, this can be made
 	     simpler now when the alignment bug for floats is fixed. */
-	  for(i=fs->fsp->len-1; i>=0; i--)
+	  for(i=fsp->len-1; i>=0; i--)
  	    if('0'<=x[i] && x[i]<='9')
 	    {
-	      i+=fs->fsp->precision+1;
+	      i+=fsp->precision+1;
 	      if(i>=0 && '0'<=x[i] && x[i]<='9')
-		for(j=0; j<-fs->fsp->precision; j++)
+		for(j=0; j<-fsp->precision; j++)
 		  x[i+j]='0';
 	      break;
 	    }
@@ -1618,28 +1682,25 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
         ptrdiff_t l;
 	char *x;
-        DO_OP();
-        CHECK_OBJECT_SPRINTF();
         l=4;
-        if(fs->fsp->width > 0) l=fs->fsp->width;
+        if(fsp->width > 0) l=fsp->width;
 	if(l != 4 && l != 8)
-	  sprintf_error(fs, "Invalid IEEE width %ld.\n",
-			PTRDIFF_T_TO_LONG(l));
-	x=(char *)sa_alloc(&fs->a, l);
-	fs->fsp->b=MKPCHARP(x,0);
-	fs->fsp->len=l;
+          sprintf_error(fs, "Invalid IEEE width %ld.\n", (long)l);
+        x=(char *)sa_alloc(&fs->a, l);
+	fsp->b=MKPCHARP(x,0);
+	fsp->len=l;
 	GET_FLOAT(tf);
 	switch(l) {
 	case 4:
 	  {
-	    float f = DO_NOT_WARN((float)tf);
+            float f = (float)tf;
 #if SIZEOF_FLOAT_TYPE > 4
 	    /* Some paranoia in case libc doesn't handle
 	     * conversion to denormalized floats. */
 	    if ((f != 0.0) || (tf == 0.0)) {
 #endif
 #ifdef FLOAT_IS_IEEE_BIG
-	      MEMCPY(x, &f, 4);
+	      memcpy(x, &f, 4);
 #elif defined(FLOAT_IS_IEEE_LITTLE)
 	      x[0] = ((char *)&f)[3];
 	      x[1] = ((char *)&f)[2];
@@ -1657,7 +1718,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
-	  MEMCPY(x, &tf, 8);
+	  memcpy(x, &tf, 8);
 #elif defined(DOUBLE_IS_IEEE_LITTLE)
 	  x[0] = ((char *)&tf)[7];
 	  x[1] = ((char *)&tf)[6];
@@ -1671,7 +1732,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  low_write_IEEE_float(x, tf, 8);
 #endif
 	}
-	if (fs->fsp->flags & FIELD_LEFT) {
+	if (fsp->flags & FIELD_LEFT) {
 	  /* Reverse the byte order. */
 	  int i;
 	  char c;
@@ -1688,77 +1749,53 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'O':
       {
 	struct svalue *t;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
-	/* Its necessary to use CHECK_OBJECT_SPRINTF() here,
-	   because describe_svalue encodes \t and others 
-	   when returned by _sprintf */
 	GET_SVALUE(t);
-	if (compat_mode && (compat_mode <= 76)) {
-	  /* We don't care about the nested case, since it
-	   * contains line feeds and comments and stuff anyway.
-	   */
-	  if (TYPEOF(*t) == T_STRING) {
-	    struct string_builder buf;
-	    init_string_builder_alloc(&buf, t->u.string->len+2, 0);
-	    string_builder_putchar(&buf, '"');
-	    string_builder_quote_string(&buf, t->u.string, 0, 0x7fffffff, 0);
-	    string_builder_putchar(&buf, '"');
-	    
-	    fs->fsp->b = MKPCHARP_STR(buf.s);
-	    fs->fsp->len = buf.s->len;
-	    /* NOTE: We need to do this since we're not
-	     *       using free_string_builder(). */
-	    buf.s->len = buf.malloced;
-	    fs->fsp->to_free_string = buf.s;
-	    break;
-	  }
-	}
 	{
-	  dynamic_buffer save_buf;
-	  dynbuf_string s;
+          struct byte_buffer buf = BUFFER_INIT();
 
-	  init_buf(&save_buf);
-	  describe_svalue(t,indent,0);
-	  s=complex_free_buf(&save_buf);
-	  fs->fsp->b=MKPCHARP(s.str,0);
-	  fs->fsp->len=s.len;
-	  fs->fsp->fi_free_string=s.str;
+	  describe_svalue(&buf,t,indent,0);
+	  fsp->b=MKPCHARP(buffer_ptr(&buf),0);
+	  fsp->len=buffer_content_length(&buf);
+	  fsp->fi_free_string=buffer_ptr(&buf);
 	  break;
 	}
       }
 
-#if 0
-      /* This can be useful when doing low level debugging. */
       case 'p':
       {
-	dynamic_buffer save_buf;
-	dynbuf_string s;
-	char buf[50];
 	struct svalue *t;
-	DO_OP();
+	struct pike_string *str;
 	GET_SVALUE(t);
-	init_buf(&save_buf);
-	sprintf (buf, "%p", t->u.refs);
-	my_strcat (buf);
-	s=complex_free_buf(&save_buf);
-	fs->fsp->b=MKPCHARP(s.str,0);
-	fs->fsp->len=s.len;
-	fs->fsp->fi_free_string=s.str;
+	if (TYPEOF(*t) == T_INT) {
+	  push_string(make_shared_binary_string((void *)&t->u.integer,
+						sizeof(INT_TYPE)));
+	} else if (TYPEOF(*t) == T_FLOAT) {
+	  push_string(make_shared_binary_string((void *)&t->u.float_number,
+						sizeof(FLOAT_TYPE)));
+	} else {
+	  push_string(make_shared_binary_string((void *)&t->u.refs, sizeof(void *)));
+	}
+	push_int((PIKE_BYTEORDER == 1234)?2:0);
+	f_string2hex(2);
+
+	str = Pike_sp[-1].u.string;
+	fsp->b = MKPCHARP_STR(str);
+	fsp->len = str->len;
+	fsp->to_free_string = str;
+
+	add_ref(str);
+	pop_stack();
 	break;
       }
-#endif
 
       case 's':
       {
 	struct pike_string *s;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
-	fs->fsp->b=MKPCHARP_STR(s);
-	fs->fsp->len=s->len;
-	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision < fs->fsp->len)
-	  fs->fsp->len = (fs->fsp->precision < 0 ? 0 : fs->fsp->precision);
+	fsp->b=MKPCHARP_STR(s);
+	fsp->len=s->len;
+	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision < fsp->len)
+	  fsp->len = (fsp->precision < 0 ? 0 : fsp->precision);
 	break;
       }
 
@@ -1767,24 +1804,22 @@ static void low_pike_sprintf(struct format_stack *fs,
 	struct string_builder buf;
 	struct pike_string *s;
 
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 
 	init_string_builder_alloc(&buf, s->len+2, 0);
 	string_builder_putchar(&buf, '"');
 	string_builder_quote_string(&buf, s, 0,
-				    (fs->fsp->precision == SPRINTF_UNDECIDED)?
-				    0x7fffffff:fs->fsp->precision-1,
+				    (fsp->precision == SPRINTF_UNDECIDED)?
+				    0x7fffffff:fsp->precision-1,
 				    QUOTE_NO_STRING_CONCAT);
 	string_builder_putchar(&buf, '"');
 
-	fs->fsp->b = MKPCHARP_STR(buf.s);
-	fs->fsp->len = buf.s->len;
+	fsp->b = MKPCHARP_STR(buf.s);
+	fsp->len = buf.s->len;
 	/* NOTE: We need to do this since we're not
 	 *       using free_string_builder(). */
 	buf.s->len = buf.malloced;
-	fs->fsp->to_free_string = buf.s;
+	fsp->to_free_string = buf.s;
 	break;
       }
       }
@@ -1820,7 +1855,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	f->column_width=max_len;
       f->column_entries=nr;
       columns=f->width/(f->column_width+1);
-      
+
       if(f->column_width<1 || columns<1)
 	columns=1;
       f->column_modulo=(nr+columns-1)/columns;
@@ -1836,12 +1871,12 @@ static void low_pike_sprintf(struct format_stack *fs,
       if(! MEMCHR_PCHARP(f->b, '\n', f->len).ptr ) f->flags|=MULTI_LINE;
     }
   }
-  
+
   for(f=fs->format_info_stack + start+1;f<=fs->fsp;)
   {
     for(;f<=fs->fsp && !(f->flags&MULTILINE);f++)
       do_one(fs, r, f);
-    
+
     do {
       d=0;
       for(e=0;f+e<=fs->fsp && (f[e].flags & MULTILINE);e++)
@@ -1853,23 +1888,30 @@ static void low_pike_sprintf(struct format_stack *fs,
     for(;f<=fs->fsp && (f->flags&MULTILINE); f++);
   }
 
-  while(fs->fsp>fs->format_info_stack + start)
+  f = fs->fsp;
+  fsp = fs->format_info_stack + start;
+  while(f > fsp)
   {
 #ifdef PIKE_DEBUG
-    if(fs->fsp < fs->format_info_stack)
+    if(f < fs->format_info_stack)
       Pike_fatal("sprintf: fsp out of bounds.\n");
 #endif
-    
-    if(fs->fsp->fi_free_string)
-      free(fs->fsp->fi_free_string);
-    fs->fsp->fi_free_string=0;
-    
-    if(fs->fsp->to_free_string)
-      free_string(fs->fsp->to_free_string);
-    fs->fsp->to_free_string=0;
-    
-    fs->fsp--;
+
+    if(f->fi_free_string)
+      free(f->fi_free_string);
+#ifdef PIKE_DEBUG
+    f->fi_free_string=0;
+#endif
+
+    if(f->to_free_string)
+      free_string(f->to_free_string);
+#ifdef PIKE_DEBUG
+    f->to_free_string=0;
+#endif
+
+    f--;
   }
+  fs->fsp = f;
 }
 
 static void free_f_sprintf_data (struct format_stack *fs)
@@ -1880,7 +1922,7 @@ static void free_f_sprintf_data (struct format_stack *fs)
 }
 
 /* The efun */
-void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
+void low_f_sprintf(INT32 args, struct string_builder *r)
 {
   ONERROR uwp;
   struct pike_string *ret;
@@ -1896,14 +1938,14 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
       o_cast(string_type_string, PIKE_T_STRING);
       if (TYPEOF(Pike_sp[-1]) != T_STRING) {
 	/* We don't accept objects... */
-	Pike_error("sprintf(): Cast to string failed.\n");
+	Pike_error("Cast to string failed.\n");
       }
       /* Replace the original object with the new string. */
       assign_svalue(argp, Pike_sp-1);
       /* Clean up the stack. */
       pop_stack();
     } else {
-      SIMPLE_BAD_ARG_ERROR("sprintf", 1, "string|object");
+      SIMPLE_ARG_TYPE_ERROR("sprintf", 1, "string|object");
     }
   }
 
@@ -1919,7 +1961,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
 		   argp->u.string->len,
 		   argp+1,
 		   args-1,
-		   0, compat_mode);
+		   0);
   UNSET_ONERROR(uwp);
   stack_alloc_destroy(&fs.a);
   free (fs.format_info_stack);
@@ -1931,31 +1973,7 @@ void f_sprintf(INT32 args)
   struct string_builder r;
   SET_ONERROR(uwp, free_string_builder, &r);
   init_string_builder(&r,0);
-  low_f_sprintf(args, 0, &r);
-  UNSET_ONERROR(uwp);
-  pop_n_elems(args);
-  push_string(finish_string_builder(&r));
-}
-
-/* Compatibility notes regarding %O:
- *
- * In Pike 0.5 and earlier only the characters '\\' and '"' were quoted
- * by %O.
- *
- * Quoting of '\n', '\t', '\b' and '\r' was added in Pike 0.6.
- *
- * Quoting of '\f', '\a' and '\v' was added in Pike 7.5.
- *
- * Quoting of '\e' was added in Pike 7.7.
- */
-
-static void f_sprintf_76(INT32 args)
-{
-  ONERROR uwp;
-  struct string_builder r;
-  SET_ONERROR(uwp, free_string_builder, &r);
-  init_string_builder(&r,0);
-  low_f_sprintf(args, 76, &r);
+  low_f_sprintf(args, &r);
   UNSET_ONERROR(uwp);
   pop_n_elems(args);
   push_string(finish_string_builder(&r));
@@ -2025,18 +2043,18 @@ static int push_sprintf_argument_types(PCHARP format,
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
-      switch(EXTRACT_PCHARP(a))
+      switch(c = EXTRACT_PCHARP(a))
       {
       default:
-	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
+	if(c < 256 && isprint(c))
 	{
 	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, %c is not a format.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	}else{
 	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, U%08x is not a format.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	}
 	ret = -1;
 	num_snurkel = 0;
@@ -2044,7 +2062,6 @@ static int push_sprintf_argument_types(PCHARP format,
 
       /* First the modifiers */
       case '*':
-	tmp = 0;
 	if (setwhat < 2) {
 	  push_int_type(0, MAX_INT32);
 	} else {
@@ -2060,7 +2077,7 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case '0':
 	if (setwhat<2) continue;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -2079,7 +2096,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	    if (' ' < min_char) min_char = ' ';
 	    if (' ' > max_char) max_char = ' ';
 	  }
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 	case 2: case 3: case 4: break;
 	}
 	setwhat++;
@@ -2114,11 +2131,11 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case '#': case '$': case '>':
 	if ('\n' < min_char) min_char = '\n';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '|': case ' ': case '+':
 	if (' ' > max_char) max_char = ' ';
 	if (' ' < min_char) min_char = ' ';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case '!': case '^': case '_':
 	continue;
 
@@ -2177,25 +2194,17 @@ static int push_sprintf_argument_types(PCHARP format,
 	if(EXTRACT_PCHARP(a)=='*') {
 	  push_int_type(0, /*num_arg*/ MAX_INT32);
 	  INC_PCHARP(a,1);
-	  tmp = 0;
-	} else
-	  tmp=STRTOL_PCHARP(a,&a,10);
-	if(EXTRACT_PCHARP(a)!=']')  {
+	}
+        else
+	  STRTOL_PCHARP(a,&a,10);
+	if((c = EXTRACT_PCHARP(a))!=']')  {
 	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	  ret = -1;
 	}
-#if 0
-	if(tmp >= num_arg) {
-	  yyreport(severity, type_check_system_string,
-		   0, "Not enough arguments to [%d].", tmp);
-	  ret = -1;
-	}
-#endif /* 0 */
-	/* arg = argp+tmp; */
 	continue;
-	
+
         /* now the real operators */
 
       case '{':
@@ -2221,7 +2230,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	    if (c > max_char) max_char = c;
 	  }
 	}
-            
+
 	type_stack_mark();
 	/* Note: No need to check the return value, since we
 	 *       simply or all the types together. Thus the
@@ -2242,7 +2251,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	push_type(T_OR);
 
 	push_type(PIKE_T_ARRAY);
-	
+
 	INC_PCHARP(a,e);
 	break;
       }
@@ -2263,7 +2272,7 @@ static int push_sprintf_argument_types(PCHARP format,
       case 't':
       {
 	push_type(T_MIXED);
-	
+
 	/* Lower-case ASCII */
 	if ('a' < min_char) min_char = 'a';
 	if ('z' > max_char) max_char = 'z';
@@ -2288,22 +2297,32 @@ static int push_sprintf_argument_types(PCHARP format,
       }
 
       case 'x':
-      case 'X':
 	if ('f' > max_char) max_char = 'f';
-	/* FALL_THROUGH */
+        /* FALLTHRU */
+      case 'X':
+        if ('F' > max_char) max_char = 'F';
+        if ('+' < min_char) min_char = '+';
+        push_int_type(0, 255);
+	push_type(T_STRING);
+        push_object_type(0, 0);
+        push_type(T_OR);
+        push_int_type(MIN_INT32, MAX_INT32);
+        push_type(T_OR);
+        break;
+
       case 'd':
       case 'u':
 	if ('9' > max_char) max_char = '9';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 'o':
 	if ('7' > max_char) max_char = '7';
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 'b':
-	if ('2' > max_char) max_char = '7';
-	if ('+' < min_char) min_char = '+';
+	if ('1' > max_char) max_char = '1';
+        if ('+' < min_char) min_char = '+';
       {
-	push_object_type(0, 0);
-	push_int_type(MIN_INT32, MAX_INT32);
+        push_object_type(0, 0);
+        push_int_type(MIN_INT32, MAX_INT32);
 	push_type(T_OR);
 	break;
       }
@@ -2331,14 +2350,11 @@ static int push_sprintf_argument_types(PCHARP format,
 	break;
       }
 
-#if 0
-      /* This can be useful when doing low level debugging. */
       case 'p':
       {
 	push_type(T_MIXED);
 	break;
       }
-#endif
       case 'H':
       {
 	push_object_type(0, 0);
@@ -2391,7 +2407,7 @@ static node *optimize_sprintf(node *n)
     /* First argument is a constant string. */
     struct pike_string *fmt = (*arg0)->u.sval.u.string;
 
-    if(arg1 && num_args == 2 && 
+    if(arg1 && num_args == 2 &&
        fmt->size_shift == 0 && fmt->len == 2 && STR0(fmt)[0]=='%')
     {
       /* First argument is a two character format string. */
@@ -2410,10 +2426,20 @@ static node *optimize_sprintf(node *n)
 	return ret;
 
       case 'x':
-	ADD_NODE_REF2(*arg1,
-		      ret = mkefuncallnode("int2hex",*arg1);
-	  );
-	return ret;
+        switch( TYPEOF((*arg1)->u.sval) )
+        {
+        case T_STRING:
+          ADD_NODE_REF2(*arg1,
+                        ret = mkefuncallnode("string2hex",*arg1);
+          );
+          break;
+        case T_INT:
+          ADD_NODE_REF2(*arg1,
+                        ret = mkefuncallnode("int2hex",*arg1);
+          );
+          break;
+        }
+        return ret;
       case '%':
 	{
 	  /* FIXME: This code can be removed when the generic
@@ -2481,7 +2507,7 @@ static node *optimize_sprintf(node *n)
  *!   @[PikeCompiler()->apply_attribute_constant()], @[sprintf()]
  */
 void f___handle_sprintf_format(INT32 args)
-{  
+{
   struct pike_type *res;
   struct pike_type *tmp;
   struct pike_string *attr;
@@ -2538,7 +2564,7 @@ void f___handle_sprintf_format(INT32 args)
   if (marker > '9') marker = 0;
 
   fmt = Pike_sp[-3].u.string;
-  MAKE_CONST_STRING(attr, "sprintf_args");  
+  MAKE_CONST_STRING(attr, "sprintf_args");
 
   type_stack_mark();
   type_stack_mark();
@@ -2550,7 +2576,7 @@ void f___handle_sprintf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;
@@ -2683,7 +2709,7 @@ void f___handle_sprintf_format(INT32 args)
 	  push_type_value(res);
 	  return;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PSAT_INVALID:
       case PSAT_INVALID|PSAT_MARKER:
 	/* There was a position argument or a parse error in strict mode. */
@@ -2804,7 +2830,7 @@ void f___handle_sprintf_format(INT32 args)
 /*! @endmodule
  */
 
-void init_sprintf()
+void init_sprintf(void)
 {
   struct pike_string *attr;
   struct svalue s;
@@ -2836,22 +2862,15 @@ void init_sprintf()
   free_type(s.u.type);
 
   /* function(string|object, mixed ... : string) */
-  ADD_EFUN2("sprintf", 
+  ADD_EFUN2("sprintf",
 	    f_sprintf,
 	    tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
 		   tAttr("sprintf_args", tMix), tAttr("sprintf_result", tStr)),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
-
-  ADD_EFUN2("sprintf_76", 
-	    f_sprintf_76,
-	    tFuncV(tOr(tStr, tObj), tMix, tStr),
-	    OPT_TRY_OPTIMIZE,
-	    optimize_sprintf,
-	    0);
 }
 
-void exit_sprintf()
+void exit_sprintf(void)
 {
 }

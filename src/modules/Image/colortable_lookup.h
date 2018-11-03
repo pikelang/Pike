@@ -39,8 +39,8 @@ void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
 
 CHRONO("init flat/cubicles");
 
-      cub=cubs->cubicles=malloc(sizeof(struct nctlu_cubicle)*n2);
-      
+      cub=cubs->cubicles=calloc(sizeof(struct nctlu_cubicle), n2);
+
       if (!cub) Pike_error("out of memory\n");
 
       while (n2--) /* initiate all to empty */
@@ -91,13 +91,13 @@ CHRONO("begin flat/cubicles");
       }
 
       lc->src=*s;
-      
+
       r=((val.r*red+redm)>>8);
       g=((val.g*green+greenm)>>8);
       b=((val.b*blue+bluem)>>8);
 
       cub=cubs->cubicles+r+g*red+b*redgreen;
-      
+
       if (!cub->index) /* need to build that cubicle */
 	 _build_cubicle(nct,r,g,b,red,green,blue,cub);
 
@@ -106,14 +106,14 @@ CHRONO("begin flat/cubicles");
       m=cub->n;
       ci=cub->index;
 
-      mindist=256*256*100; /* max dist is 256²*3 */
-      
+      mindist=256*256*100; /* max dist is 256^2*3 */
+
       while (m--)
       {
 	 int dist=sf.r*SQ(fe[*ci].color.r-val.r)+
 	          sf.g*SQ(fe[*ci].color.g-val.g)+
 	          sf.b*SQ(fe[*ci].color.b-val.b);
-	 
+
 	 if (dist<mindist)
 	 {
 	    lc->dest=fe[*ci].color;
@@ -121,7 +121,7 @@ CHRONO("begin flat/cubicles");
 	    lc->index=*ci;
 	    NCTLU_CACHE_HIT_WRITE;
 	 }
-	 
+
 	 ci++;
       }
 
@@ -178,7 +178,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
       ptrdiff_t m;
       struct nct_flat_entry *fe;
       struct lookupcache *lc;
-	 
+
       if (dither_encode)
       {
 	 rgbl_group val;
@@ -207,11 +207,11 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 
       lc->src=*s;
 
-      mindist=256*256*100; /* max dist is 256²*3 */
-      
+      mindist=256*256*100; /* max dist is 256^2*3 */
+
       fe=feprim;
       m=mprim;
-      
+
       while (m--)
 	 if (fe->no!=-1)
 	 {
@@ -219,15 +219,15 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	       sf.r*SQ(fe->color.r-rgbr)+
 	       sf.g*SQ(fe->color.g-rgbg)+
 	       sf.b*SQ(fe->color.b-rgbb);
-	 
+
 	    if (dist<mindist)
 	    {
 	       lc->dest=fe->color;
 	       mindist=dist;
-	       lc->index = DO_NOT_WARN((int)fe->no);
+               lc->index = (int)fe->no;
 	       NCTLU_CACHE_HIT_WRITE;
 	    }
-	 
+
 	    fe++;
 	 }
 	 else fe++;
@@ -241,7 +241,7 @@ done_pixel:
 	 if (++rowcount==rowlen)
 	 {
 	    rowcount=0;
-	    if (dither_newline) 
+	    if (dither_newline)
 	       (dither_newline)NCTLU_LINE_ARGS;
 	 }
       }
@@ -291,7 +291,7 @@ void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
    while (n--)
    {
       rgbl_group val;
-	 
+
       if (dither_encode)
       {
 	 val=dither_encode(dith,rowpos,*s);
@@ -316,7 +316,7 @@ void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
         if (++rowcount==rowlen)
         {
           rowcount=0;
-          if (dither_newline) 
+          if (dither_newline)
             (dither_newline)NCTLU_LINE_ARGS;
         }
       }
@@ -353,9 +353,9 @@ void NCTLU_CUBE_NAME(rgb_group *s,
    green=cube->g;	hgreen=green/2;  greenm=green-1;
    blue=cube->b; 	hblue=blue/2;    bluem=blue-1;
 
-   redf = DO_NOT_WARN((float)(255.0/redm));
-   greenf = DO_NOT_WARN((float)(255.0/greenm));
-   bluef = DO_NOT_WARN((float)(255.0/bluem));
+   redf = (float)(255.0/redm);
+   greenf = (float)(255.0/greenm);
+   bluef = (float)(255.0/bluem);
 
    CHRONO("begin cube map");
 
@@ -382,7 +382,7 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    if (++rowcount==rowlen)
 	    {
 	       rowcount=0;
-	       if (dither_newline) 
+	       if (dither_newline)
 		  (dither_newline)NCTLU_LINE_ARGS;
 	    }
 	 }
@@ -395,11 +395,8 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 
       while (n--) /* similar to _find_cube_dist() */
       {
-	 struct nct_scale *sc;
-	 int mindist;
-	 int i;
-	 int nc;
-	 struct lookupcache *lc;
+         int mindist;
+         struct lookupcache *lc;
 	 rgbl_group val;
 
 	 if (dither_encode)
@@ -431,7 +428,7 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    lc->dest.g=((int)(((val.g*green+hgreen)>>8)*greenf));
 	    lc->dest.b=((int)(((val.b*blue+hblue)>>8)*bluef));
 
-	    lc->index=i=
+            lc->index=
 	       ((val.r*red+hred)>>8)+
 	       (((val.g*green+hgreen)>>8)+
 		((val.b*blue+hblue)>>8)*green)*red;
@@ -446,32 +443,32 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	 else
 	 {
 	    mindist=10000000;
-	    i=0;
-	 }
+         }
 
 	 if (mindist>=cube->disttrig)
 	 {
-	    /* check scales to get better distance if possible */
+            /* check scales to get better distance if possible */
+            int i;
+            int nc=cube->r*cube->g*cube->b;
+            struct nct_scale *sc=cube->firstscale;
 
-	    nc=cube->r*cube->g*cube->b;
-	    sc=cube->firstscale;
 	    while (sc)
 	    {
 	       /* what step is closest? project... */
 
-	      i = DOUBLE_TO_INT((sc->steps *
-				 (((int)val.r-(int)sc->low.r)*sc->vector.r +
-				  ((int)val.g-(int)sc->low.g)*sc->vector.g +
-				  ((int)val.b-(int)sc->low.b)*sc->vector.b)) *
-				sc->invsqvector);
+              i = (int)((sc->steps *
+                         (((int)val.r-(int)sc->low.r)*sc->vector.r +
+                          ((int)val.g-(int)sc->low.g)*sc->vector.g +
+                          ((int)val.b-(int)sc->low.b)*sc->vector.b)) *
+                        sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
-	       if (sc->no[i]>=nc) 
+	       if (sc->no[i]>=nc)
 	       {
 		  double f= i * sc->mqsteps;
-		  int drgbr = sc->low.r + DOUBLE_TO_INT(sc->vector.r*f);
-		  int drgbg = sc->low.g + DOUBLE_TO_INT(sc->vector.g*f);
-		  int drgbb = sc->low.b + DOUBLE_TO_INT(sc->vector.b*f);
+                  int drgbr = sc->low.r + (int)(sc->vector.r*f);
+                  int drgbg = sc->low.g + (int)(sc->vector.g*f);
+                  int drgbb = sc->low.b + (int)(sc->vector.b*f);
 
 		  int ldist=sf.r*SQ(val.r-drgbr)+
 		     sf.g*SQ(val.g-drgbg)+sf.b*SQ(val.b-drgbb);
@@ -486,12 +483,12 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 		     NCTLU_CACHE_HIT_WRITE;
 		  }
 	       }
-	    
+
 	       nc+=sc->realsteps;
-	    
+
 	       sc=sc->next;
-	    }
-	 }
+            }
+         }
 done_pixel:
          if (dither_encode)
          {
@@ -525,7 +522,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 {
    switch (nct->type)
    {
-      case NCT_CUBE: 
+      case NCT_CUBE:
 #ifdef COLORTABLE_DEBUG
 	 fprintf(stderr,
 		 "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"
@@ -561,14 +558,13 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 #endif /* COLORTABLE_DEBUG */
 	       return &NCTLU_FLAT_CUBICLES_NAME;
 	 }
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
 
       default:
 	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
 	       __FILE__,__LINE__);
    }
-   /* NOT_REACHED */
-   return 0;
+   UNREACHABLE(return 0);
 }
 
 int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,

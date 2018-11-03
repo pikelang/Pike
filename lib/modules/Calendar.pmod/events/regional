@@ -2253,7 +2253,9 @@ Region "jm"
   Add   "c/christmas"             h # "Christmas"             (25-Dec 2000)
   Add   "c/boxing"                h # "Boxing Day"            (26-Dec 2000)
 
-# japan
+#--------------------------------------------------------------
+# Japan
+#--------------------------------------------------------------
 Region "jp"
   Add   "new year"                           -      # "New Year's Day"                    Fixed Jan  1
   Event "jp/kakizome"                        -        "Kakizome"                          Fixed Jan  2
@@ -2262,7 +2264,7 @@ Region "jp"
   Event "jp/bean-throwing festival"          -        "Bean-Throwing Festival"            Fixed Feb  4
   Event "jp/martyr"                          -        "Martyr Day"                        Fixed Feb  5
   Event "jp/national foundation"             -        "National Foundation Day"           Fixed Feb 11
-  Event "jp/empire"                          -        "Empire Day"                   Fixed Feb 11
+  Event "jp/empire"                          -        "Empire Day"                        Fixed Feb 11
   Event "jp/gion matsuri"                    -        "Gion Matsuri"                      Fixed Feb 16  9 days
   Event "jp/hina matsuri"                    -        "Hina Matsuri"                      Fixed Mar  3
   Event "jp/kambutsue"                       -        "Kambutsue"                         Fixed Apr  8

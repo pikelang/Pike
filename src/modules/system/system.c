@@ -19,10 +19,6 @@
 #include "system_machine.h"
 #include "system.h"
 
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
-
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
@@ -38,21 +34,14 @@
 #include "constants.h"
 #include "time_stuff.h"
 #include "pike_memory.h"
-#include "pike_security.h"
 #include "bignum.h"
 #include "pike_rusage.h"
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
+#include "sprintf.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif /* HAVE_ERRNO_H */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
+
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif /* HAVE_PWD_H */
@@ -115,9 +104,6 @@
 #include <sys/loadavg.h>
 #endif
 
-#include "dmalloc.h"
-
-
 #define sp Pike_sp
 
 #ifndef NGROUPS_MAX
@@ -133,6 +119,16 @@
 #else /* !HAVE_IN_ADDR_T */
 #define IN_ADDR_T	unsigned int
 #endif /* HAVE_IN_ADDR_T */
+
+#ifdef SOCK_DEBUG
+#define SOCKWERR(X, ...)	fprintf(stderr, X, __VA_ARGS__)
+#else
+#define SOCKWERR(X, ...)
+#endif
+
+#ifdef USE_VALGRIND
+#undef HAS___BUILTIN_IA32_RDRAND64_STEP
+#endif
 
 /*
  * Functions
@@ -250,8 +246,6 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
-  VALID_FILE_IO("hardlink","write");
-
   get_all_args("hardlink",args, "%s%s", &from, &to);
 
   do {
@@ -285,8 +279,6 @@ void f_symlink(INT32 args)
   char *from;
   char *to;
   int err;
-
-  VALID_FILE_IO("symlink","write");
 
   get_all_args("symlink",args, "%s%s", &from, &to);
 
@@ -323,8 +315,6 @@ void f_readlink(INT32 args)
   char *buf;
   int err;
 
-  VALID_FILE_IO("readlink","read");
-
   get_all_args("readlink",args, "%s", &path);
 
   buflen = 100;
@@ -332,7 +322,7 @@ void f_readlink(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      Pike_error("readlink(): Out of memory\n");
+      Pike_error("Out of memory.\n");
     }
 
     do {
@@ -386,8 +376,6 @@ void f_resolvepath(INT32 args)
   char *buf;
   int len = -1;
 
-  VALID_FILE_IO("resolvepath","read");
-
   get_all_args("resolvepath", args, "%s", &path);
 
 #ifdef HAVE_RESOLVEPATH
@@ -396,7 +384,7 @@ void f_resolvepath(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      Pike_error("resolvepath(): Out of memory\n");
+      Pike_error("Out of memory.\n");
     }
 
     do {
@@ -415,9 +403,9 @@ void f_resolvepath(INT32 args)
   buflen = PATH_MAX+1;
 
   if (!(buf = alloca(buflen))) {
-    Pike_error("resolvepath(): Out of memory\n");
+    Pike_error("Out of memory.\n");
   }
-  
+
   if ((buf = realpath(path, buf))) {
     len = strlen(buf);
   }
@@ -445,8 +433,6 @@ void f_resolvepath(INT32 args)
 void f_umask(INT32 args)
 {
   int oldmask;
-
-  VALID_FILE_IO("umask","status");
 
   if (args) {
     INT_TYPE setmask;
@@ -477,8 +463,6 @@ void f_chmod(INT32 args)
   char *path;
   INT_TYPE mode;
   int err;
-
-  VALID_FILE_IO("chmod","chmod");
 
   get_all_args("chmod", args, "%s%i", &path, &mode);
   do {
@@ -517,11 +501,6 @@ void f_chown(INT32 args)
   INT_TYPE gid;
   int symlink = 0;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("chown: permission denied.\n");
-#endif
 
   get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
 
@@ -604,11 +583,6 @@ void f_utime(INT32 args)
   INT_TYPE atime, mtime;
   int symlink = 0;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("utime: permission denied.\n");
-#endif
 
   get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
 
@@ -770,11 +744,6 @@ void f_initgroups(INT32 args)
   int err;
   INT_TYPE group;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("initgroups: permission denied.\n");
-#endif
-
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
@@ -801,11 +770,6 @@ void f_cleargroups(INT32 args)
 {
   static const gid_t gids[1]={ 65534 }; /* To safeguard against stupid OS's */
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("cleargroups: permission denied.\n");
-#endif
 
   pop_n_elems(args);
   err = setgroups(0, (gid_t *)gids);
@@ -836,22 +800,17 @@ void f_setgroups(INT32 args)
   INT32 size;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setgroups: permission denied.\n");
-#endif
-
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
-    gids = (gid_t *)alloca(arr->size * sizeof(gid_t));
-    if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
+    gids = alloca(arr->size * sizeof(gid_t));
+    if (!gids) Pike_error("Too large array (%d).\n", arr->size);
   } else {
     gids = (gid_t *)safeguard;
   }
 
   for (i=0; i < size; i++) {
     if (TYPEOF(arr->item[i]) != T_INT) {
-      Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
+      Pike_error("Bad element %d in array (expected int).\n", i);
     }
     gids[i] = arr->item[i].u.integer;
   }
@@ -892,7 +851,7 @@ void f_getgroups(INT32 args)
     /* OS which doesn't understand this convention */
     numgrps = NGROUPS_MAX;
   }
-  gids = (gid_t *)xalloc(sizeof(gid_t) * numgrps);
+  gids = xalloc(sizeof(gid_t) * numgrps);
 
   numgrps = getgroups(numgrps, gids);
 
@@ -933,11 +892,11 @@ void f_innetgr(INT32 args)
   for(i = 0; i < args; i++) {
     if (TYPEOF(sp[i-args]) == T_STRING) {
       if (sp[i-args].u.string->size_shift) {
-	SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string (8bit)");
+	SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string (8bit)");
       }
       strs[i] = sp[i-args].u.string->str;
     } else if (sp[i-args].u.integer) {
-      SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string|void");
+      SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string|void");
     }
   }
 
@@ -950,7 +909,7 @@ void f_innetgr(INT32 args)
 }
 #endif /* HAVE_INNETGR */
 
-#ifdef HAVE_SETUID 
+#ifdef HAVE_SETUID
 /*! @decl int setuid(int uid)
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
@@ -970,13 +929,8 @@ void f_setuid(INT32 args)
   int err;
   INT_TYPE id;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setuid: permission denied.\n");
-#endif
-
   get_all_args("setuid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1016,12 +970,8 @@ void f_setgid(INT32 args)
   int err;
   INT_TYPE id;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setgid: permission denied.\n");
-#endif
   get_all_args("setgid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1058,12 +1008,8 @@ void f_seteuid(INT32 args)
   INT_TYPE id;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("seteuid: permission denied.\n");
-#endif
   get_all_args("seteuid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1084,7 +1030,7 @@ void f_seteuid(INT32 args)
   push_int(err);
 }
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
- 
+
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
 /*! @decl int setegid(int egid)
  *!
@@ -1106,11 +1052,6 @@ void f_setegid(INT32 args)
   INT_TYPE id;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setegid: permission denied.\n");
-#endif
-
   get_all_args("setegid", args, "%i", &id);
 
   if(id == -1)
@@ -1122,7 +1063,7 @@ void f_setegid(INT32 args)
   } else {
     id = sp[-args].u.integer;
   }
- 
+
   /* FIXME: Check return-code */
 #ifdef HAVE_SETEGID
   err = setegid(id);
@@ -1157,7 +1098,7 @@ void f_getpgrp(INT32 args)
 
   if (args) {
     if (TYPEOF(sp[-args]) != T_INT) {
-      SIMPLE_BAD_ARG_ERROR("getpgrp", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("getpgrp", 1, "int");
     }
     pid = sp[-args].u.integer;
   }
@@ -1166,7 +1107,7 @@ void f_getpgrp(INT32 args)
   pgid = getpgid(pid);
 #elif defined(HAVE_GETPGRP)
   if (pid && (pid != getpid())) {
-    Pike_error("getpgrp(): Mode not supported on this OS\n");
+    Pike_error("Mode not supported on this OS.\n");
   }
   pgid = getpgrp();
 #endif
@@ -1221,7 +1162,7 @@ void f_getsid(INT32 args)
 {
   int pid = 0;
   if (args >= 1 && TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("getsid", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("getsid", 1, "int");
   if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
@@ -1273,7 +1214,7 @@ void f_setsid(INT32 args)
  *!
  *! @note
  *!   This function is currently only available on some versions of Linux.
- */ 
+ */
 void f_dumpable(INT32 args)
 {
   int current = prctl(PR_GET_DUMPABLE);
@@ -1284,9 +1225,9 @@ void f_dumpable(INT32 args)
   }
   if (args) {
     INT_TYPE val;
-    get_all_args("dumpable", args, "%i", &val);
+    get_all_args(NULL, args, "%i", &val);
     if (val & ~1) {
-      SIMPLE_BAD_ARG_ERROR("dumpable", 1, "int(0..1)");
+      SIMPLE_ARG_TYPE_ERROR("dumpable", 1, "int(0..1)");
     }
     if (prctl(PR_SET_DUMPABLE, val) == -1) {
       int err = errno;
@@ -1313,12 +1254,8 @@ void f_setresuid(INT32 args)
   INT_TYPE ruid, euid,suid;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setresuid: permission denied.\n");
-#endif
   get_all_args("setresuid", args, "%i%i%i", &ruid,&euid,&suid);
- 
+
   err = setresuid(ruid,euid,suid);
 
   pop_n_elems(args);
@@ -1340,12 +1277,8 @@ void f_setresgid(INT32 args)
   INT_TYPE rgid, egid,sgid;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setresgid: permission denied.\n");
-#endif
   get_all_args("setresgid", args, "%i%i%i", &rgid,&egid,&sgid);
- 
+
   err = setresgid(rgid,egid,sgid);
 
   pop_n_elems(args);
@@ -1375,7 +1308,7 @@ f_get(f_getuid, getuid)
  */
 f_get(f_getgid, getgid)
 #endif
- 
+
 #ifdef HAVE_GETEUID
 /*! @decl int geteuid()
  *!   Get the effective user ID.
@@ -1409,7 +1342,7 @@ f_get(f_getpid, getpid)
  */
 f_get(f_getppid, getppid)
 #endif
- 
+
 #undef f_get
 
 #ifdef HAVE_CHROOT
@@ -1444,11 +1377,6 @@ f_get(f_getppid, getppid)
 void f_chroot(INT32 args)
 {
   int res;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("chroot: permission denied.\n");
-#endif
 
 #ifdef HAVE_FCHROOT
   check_all_args("chroot", args, BIT_STRING|BIT_OBJECT, 0);
@@ -1491,7 +1419,7 @@ void f_chroot(INT32 args)
 #endif /* HAVE_FCHROOT */
 }
 #endif /* HAVE_CHROOT */
- 
+
 #ifdef HAVE_SYSINFO
 #  ifdef SI_HOSTNAME
 #    define USE_SYSINFO
@@ -1616,28 +1544,28 @@ void f_uname(INT32 args)
 {
   struct svalue *old_sp;
   struct utsname foo;
- 
+
   pop_n_elems(args);
   old_sp = sp;
- 
+
   if(uname(&foo) < 0)
-    Pike_error("uname() system call failed.\n");
- 
-  push_text("sysname");
+    Pike_error("System call failed.\n");
+
+  push_static_text("sysname");
   push_text(foo.sysname);
- 
-  push_text("nodename");
+
+  push_static_text("nodename");
   push_text(foo.nodename);
- 
-  push_text("release");
+
+  push_static_text("release");
   push_text(foo.release);
- 
-  push_text("version");
+
+  push_static_text("version");
   push_text(foo.version);
- 
-  push_text("machine");
+
+  push_static_text("machine");
   push_text(foo.machine);
- 
+
   f_aggregate_mapping(sp-old_sp);
 }
 #endif /* HAVE_UNAME */
@@ -1657,7 +1585,7 @@ void f_gethostname(INT32 args)
   struct utsname foo;
   pop_n_elems(args);
   if(uname(&foo) < 0)
-    Pike_error("uname() system call failed.\n");
+    Pike_error("System call failed.\n");
   push_text(foo.nodename);
 }
 #elif defined(HAVE_GETHOSTNAME)
@@ -1674,7 +1602,7 @@ void f_gethostname(INT32 args)
   char name[1024];
   pop_n_elems(args);
   if (sysinfo(SI_HOSTNAME, name, sizeof(name)) < 0) {
-    Pike_error("sysinfo() system call failed.\n");
+    Pike_error("System call failed.\n");
   }
   push_text(name);
 }
@@ -1685,8 +1613,8 @@ void f_gethostname(INT32 args)
  * 2.2 Text Representation of Addresses
  *
  *  There are three conventional forms for representing IPv6 addresses
- *  as text strings: 
- * 
+ *  as text strings:
+ *
  *   1. The preferred form is x:x:x:x:x:x:x:x, where the 'x's are the
  *      hexadecimal values of the eight 16-bit pieces of the address.
  * 	Examples:
@@ -1761,7 +1689,7 @@ int my_isipv6nr(char *s)
     case 'A':case 'B':case 'C':case 'D':case 'E':case 'F':
     case 'a':case 'b':case 'c':case 'd':case 'e':case 'f':
       is_hex = 1;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case '0':case '1':case '2':case '3':case '4':
     case '5':case '6':case '7':case '8':case '9':
       has_value++;
@@ -1843,7 +1771,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYNAME(X) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(gethostbyname_r((X), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1853,7 +1781,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYADDR(X,Y,Z) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(gethostbyaddr_r((X),(Y),(Z), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1886,7 +1814,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETSERVBYNAME(X,Y) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(getservbyname_r((X), (Y), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1914,28 +1842,42 @@ int my_isipv6nr(char *s)
 #endif
 #endif /* !GETSERV_DECLARE */
 
-/* this is used from modules/file, and modules/spider! */
+/* Ensure that the hint flags exist. */
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG	0
+#endif
+#ifndef AI_NUMERICHOST
+#define AI_NUMERICHOST	0
+#endif
+#ifndef AI_NUMERICSERV
+#define AI_NUMERICSERV	0
+#endif
+#ifndef AI_V4MAPPED
+#define AI_V4MAPPED	0
+#endif
+
+/* this is also used from modules/_Stdio */
 int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
-		  int inet_flags)
+                  int inet_flags)
 {
 #ifdef HAVE_GETADDRINFO
   struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
-  char servnum_buf[200];
+  char servnum_buf[20];
 #endif /* HAVE_GETADDRINFO */
-
+  int err;
   int udp = inet_flags & 1;
 
-  MEMSET((char *)addr,0,sizeof(PIKE_SOCKADDR));
+  memset(addr,0,sizeof(PIKE_SOCKADDR));
   if(name && !strcmp(name,"*"))
     name = NULL;
 
 #ifdef HAVE_GETADDRINFO
-/*   fprintf(stderr, "get_inet_addr(): Trying getaddrinfo\n"); */
+  SOCKWERR("get_inet_addr(): Trying getaddrinfo\n");
   if(!name) {
     hints.ai_flags = AI_PASSIVE;
     /* Avoid creating an IPv6 address for "*". */
     /* For IN6ADDR_ANY, use "::". */
-    hints.ai_family = PF_INET;
+    hints.ai_family = AF_INET;
 #ifdef PF_INET6
   } else if (inet_flags & 2) {
     /* Force IPv6. */
@@ -1946,49 +1888,67 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
      * bound to ::FFFF:127.0.0.1 can't connect
      * to the IPv4 address 127.0.0.1.
      */
-    hints.ai_family = PF_INET6;
-#ifdef AI_V4MAPPED
+    hints.ai_family = AF_INET6;
     hints.ai_flags = AI_V4MAPPED;
-#endif
-#endif
   }
+#endif
+  hints.ai_flags |= AI_NUMERICHOST|AI_ADDRCONFIG;
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
-  if(!service)
-    sprintf(servnum_buf, "%"PRINTPIKEINT"d", (port<0? 0:port));
-  if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
+  if (!service && (port > 0) && (port & 0xffff)) {
+    /* NB: MacOS X doesn't like the combination of AI_NUMERICSERV and port #0.
+     *     cf [bug 7599] and https://bugs.python.org/issue17269 .
+     */
+    hints.ai_flags |= AI_NUMERICSERV;
+    sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
+  }
+
+#if AI_NUMERICHOST != 0
+  if( (err=getaddrinfo(name, service, &hints, &res)) )
+  {
+    /* Try again without AI_NUMERICHOST. */
+    hints.ai_flags &= ~AI_NUMERICHOST;
+    err=getaddrinfo(name, service, &hints, &res);
+  }
+#endif
+  if(!err)
+  {
     struct addrinfo *p, *found = NULL;
     size_t addr_len=0;
     for(p=res; p; p=p->ai_next) {
       if(p->ai_addrlen > addr_len &&
-	 p->ai_addrlen <= sizeof(*addr) &&
-	 p->ai_addr)
-	addr_len = (found = p)->ai_addrlen;
+         p->ai_addrlen <= sizeof(*addr) &&
+         p->ai_addr)
+        addr_len = (found = p)->ai_addrlen;
     }
     if(found) {
-/*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
-/* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
-      MEMCPY((char *)addr, (char *)found->ai_addr, addr_len);
+      SOCKWERR("Got %d bytes (family: %d (%d))\n",
+	       addr_len, found->ai_addr->sa_family, found->ai_family);
+      memcpy(addr, found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
     if(addr_len) {
-/*       fprintf(stderr, "family: %d\n", SOCKADDR_FAMILY(*addr)); */
+      SOCKWERR("family: %d\n", SOCKADDR_FAMILY(*addr));
       return addr_len;
     }
+  } else {
+    SOCKWERR("Failed with err: %d: %s, errno %d: %s, flags: %d\n",
+	     err, gai_strerror(err), errno, strerror(errno), hints.ai_flags);
   }
+  if (service == servnum_buf) service = NULL;
 #endif /* HAVE_GETADDRINFO */
-  
+
   SOCKADDR_FAMILY(*addr) = AF_INET;
 #ifdef AF_INET6
   if (inet_flags & 2) {
     SOCKADDR_FAMILY(*addr) = AF_INET6;
-    /* Note: This is equvivalent to :: (aka IPv6 ANY). */
-    MEMSET(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
+    /* Note: This is equivalent to :: (aka IPv6 ANY). */
+    memset(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
   }
 #endif
 
   if(!name)
   {
-/*     fprintf(stderr, "get_inet_addr(): ANY\n"); */
+    SOCKWERR("get_inet_addr(): ANY\n");
 #ifdef AF_INET6
     if (!(inet_flags & 2))
 #endif
@@ -1999,7 +1959,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
    */
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
-/*     fprintf(stderr, "get_inet_addr(): IP\n"); */
+    SOCKWERR("get_inet_addr(): IP\n");
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
 #ifdef AF_INET6
@@ -2009,7 +1969,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       ipv4.sin_addr.s_addr = inet_addr(name);
       addr->ipv6.sin6_addr.s6_addr[10] = 0xff;
       addr->ipv6.sin6_addr.s6_addr[11] = 0xff;
-      MEMCPY(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
+      memcpy(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
     } else
 #endif
       addr->ipv4.sin_addr.s_addr = inet_addr(name);
@@ -2018,33 +1978,33 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   {
 #ifdef GETHOST_DECLARE
     GETHOST_DECLARE;
-/*     fprintf(stderr, "get_inet_addr(): Trying gethostbyname()\n"); */
+    SOCKWERR("get_inet_addr(): Trying gethostbyname()\n");
     CALL_GETHOSTBYNAME(name);
 
     if(!ret) {
       if (strlen(name) < 1024) {
-	Pike_error("Invalid address '%s'\n",name);
+        Pike_error("Invalid address '%s'.\n",name);
       } else {
-	Pike_error("Invalid address\n");
+        Pike_error("Invalid address.\n");
       }
     }
 
     SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
 
 #ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-	   (char *)ret->h_addr_list[0],
-	   ret->h_length);
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr_list[0],
+           ret->h_length);
 #else
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-	   (char *)ret->h_addr,
-	   ret->h_length);
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr,
+           ret->h_length);
 #endif
 #else
     if (strlen(name) < 1024) {
-      Pike_error("Invalid address '%s'\n",name);
+      Pike_error("Invalid address '%s'.\n",name);
     } else {
-      Pike_error("Invalid address\n");
+      Pike_error("Invalid address.\n");
     }
 #endif
   }
@@ -2052,14 +2012,14 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   if(service) {
 #ifdef GETSERV_DECLARE
     GETSERV_DECLARE;
-/*     fprintf(stderr, "get_inet_addr(): Trying getserv()\n"); */
+    SOCKWERR("get_inet_addr(): Trying getserv()\n");
     CALL_GETSERVBYNAME(service, (udp? "udp":"tcp"));
 
     if(!ret) {
       if (strlen(service) < 1024) {
-	Pike_error("Invalid service '%s'\n",service);
+        Pike_error("Invalid service '%s'.\n",service);
       } else {
-	Pike_error("Invalid service\n");
+        Pike_error("Invalid service.\n");
       }
     }
 
@@ -2071,13 +2031,13 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       addr->ipv4.sin_port = ret->s_port;
 #else
     if (strlen(service) < 1024) {
-      Pike_error("Invalid service '%s'\n",service);
+      Pike_error("Invalid service '%s'.\n",service);
     } else {
-      Pike_error("Invalid service\n");
+      Pike_error("Invalid service.\n");
     }
 #endif
-  } else if(port >= 0) {
-/*     fprintf(stderr, "get_inet_addr(): port()\n"); */
+  } else if(port > 0) {
+    SOCKWERR("get_inet_addr(): port()\n");
 #ifdef AF_INET6
     if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
       addr->ipv6.sin6_port = htons((unsigned INT16)port);
@@ -2085,7 +2045,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif
       addr->ipv4.sin_port = htons((unsigned INT16)port);
   } else {
-/*     fprintf(stderr, "get_inet_addr(): ANY port()\n"); */
+    SOCKWERR("get_inet_addr(): ANY port()\n");
 #ifdef AF_INET6
     if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
       addr->ipv6.sin6_port = 0;
@@ -2103,7 +2063,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 static void describe_hostent(struct hostent *hp)
 {
   push_text(hp->h_name);
-  
+
 #ifdef HAVE_H_ADDR_LIST
   {
     char **p;
@@ -2116,15 +2076,15 @@ static void describe_hostent(struct hostent *hp)
       push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
 #else
       struct in_addr in;
- 
-      MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
+
+      memcpy(&in.s_addr, *p, sizeof (in.s_addr));
       push_text(inet_ntoa(in));
 #endif
       nelem++;
     }
 
     f_aggregate(nelem);
- 
+
     nelem=0;
     for (p = hp->h_aliases; *p != 0; p++) {
       push_text(*p);
@@ -2140,7 +2100,7 @@ static void describe_hostent(struct hostent *hp)
     push_text(fd_inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
 #else
     struct in_addr in;
-    MEMCPY(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
+    memcpy(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
     push_text(inet_ntoa(in));
 #endif
   }
@@ -2175,9 +2135,9 @@ void f_gethostbyaddr(INT32 args)
   get_all_args("gethostbyaddr", args, "%s", &name);
 
   if ((int)(addr = inet_addr(name)) == -1) {
-    Pike_error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
+    Pike_error("IP-address must be of the form a.b.c.d.\n");
   }
- 
+
   pop_n_elems(args);
 
   CALL_GETHOSTBYADDR((char *)&addr, sizeof (addr), AF_INET);
@@ -2187,9 +2147,9 @@ void f_gethostbyaddr(INT32 args)
     push_int(0);
     return;
   }
- 
+
   describe_hostent(ret);
-}  
+}
 
 /*! @decl array(string|array(string)) gethostbyname(string hostname)
  *!
@@ -2222,15 +2182,15 @@ void f_gethostbyname(INT32 args)
 
   CALL_GETHOSTBYNAME(name);
   INVALIDATE_CURRENT_TIME();
- 
+
   pop_n_elems(args);
-  
+
   if(!ret) {
     push_int(0);
     return;
   }
   describe_hostent(ret);
-}  
+}
 #endif /* HAVE_GETHOSTBYNAME */
 
 #if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
@@ -2267,7 +2227,7 @@ extern void init_system_memory(void);
  *!   If you don't need it to be independant of the system clock, use
  *!   @[predef::sleep()] instead.
  *!
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  *!
  *! @seealso
@@ -2290,7 +2250,7 @@ static void f_system_sleep(INT32 args)
 
 /*! @decl void usleep(int usec)
  *!
- *! Call the system usleep() function. 
+ *! Call the system usleep() function.
  *!
  *! This is not to be confused with the global function @[predef::sleep()]
  *! that does more elaborate things and can sleep with better precision
@@ -2304,7 +2264,7 @@ static void f_system_sleep(INT32 args)
  *!   If you don't need it to be independant of the system clock, use
  *!   @[predef::sleep()] instead.
  *!
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  *!
  *! @seealso
@@ -2327,7 +2287,7 @@ static void f_system_usleep(INT32 args)
 
 /*! @decl float nanosleep(int|float seconds)
  *!
- *! Call the system nanosleep() function. 
+ *! Call the system nanosleep() function.
  *!
  *! This is not to be confused with the global function @[predef::sleep()]
  *! that does more elaborate things and can sleep with better precision
@@ -2339,7 +2299,7 @@ static void f_system_usleep(INT32 args)
  *!   @[predef::sleep()] @[sleep()] @[usleep()]
  *!
  *! @note
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  */
 static void f_system_nanosleep(INT32 args)
@@ -2383,36 +2343,80 @@ static void f_system_nanosleep(INT32 args)
 #define PIKE_RLIM_T rlim_t
 #endif
 
-#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
-static struct pike_string *s_cpu=NULL;
-static struct pike_string *s_fsize=NULL;
-static struct pike_string *s_data=NULL;
-static struct pike_string *s_stack=NULL;
-static struct pike_string *s_core=NULL;
-static struct pike_string *s_rss=NULL;
-static struct pike_string *s_nproc=NULL;
-static struct pike_string *s_nofile=NULL;
-static struct pike_string *s_memlock=NULL;
-static struct pike_string *s_as=NULL;
-static struct pike_string *s_vmem=NULL;
-
-static void make_rlimit_strings(void)
-{
-   MAKE_CONSTANT_SHARED_STRING(s_cpu,"cpu");
-   MAKE_CONSTANT_SHARED_STRING(s_fsize,"fsize");
-   MAKE_CONSTANT_SHARED_STRING(s_data,"data");
-   MAKE_CONSTANT_SHARED_STRING(s_stack,"stack");
-   MAKE_CONSTANT_SHARED_STRING(s_core,"core");
-   MAKE_CONSTANT_SHARED_STRING(s_rss,"rss");
-   MAKE_CONSTANT_SHARED_STRING(s_nproc,"nproc");
-   MAKE_CONSTANT_SHARED_STRING(s_nofile,"nofile");
-   MAKE_CONSTANT_SHARED_STRING(s_memlock,"memlock");
-   MAKE_CONSTANT_SHARED_STRING(s_as,"as");
-   MAKE_CONSTANT_SHARED_STRING(s_vmem,"vmem");
-}
-#endif /* HAVE_GETRLIMIT || HAVE_SETRLIMIT */
-
 #ifdef HAVE_GETRLIMIT
+static const struct {
+    const char *name;
+    const int lim;
+} __limits[] = {
+#ifdef RLIMIT_CORE
+    {"core", RLIMIT_CORE},
+#endif
+#ifdef RLIMIT_CPU
+    {"cpu", RLIMIT_CPU},
+#endif
+#ifdef RLIMIT_DATA
+    {"data", RLIMIT_DATA},
+#endif
+#ifdef RLIMIT_FSIZE
+    {"fsize", RLIMIT_FSIZE},
+#endif
+#ifdef RLIMIT_NOFILE
+    {"nofile", RLIMIT_NOFILE},
+#endif
+#ifdef RLIMIT_MEMLOCK
+    {"memlock", RLIMIT_MEMLOCK},
+#endif
+#ifdef RLIMIT_MSGQUEUE
+    {"msgqueue", RLIMIT_MSGQUEUE},
+#endif
+#ifdef RLIMIT_NICE
+    {"nice", RLIMIT_NICE},
+#endif
+#ifdef RLIMIT_RTPRIO
+    {"rtprio", RLIMIT_RTPRIO},
+#endif
+#ifdef RLIMIT_RTTIME
+    {"rttime", RLIMIT_RTTIME},
+#endif
+#ifdef RLIMIT_NPROC
+    {"nproc", RLIMIT_NPROC},
+#endif
+#ifdef RLIMIT_RSS
+    {"rss", RLIMIT_RSS},
+#endif
+#ifdef RLIMIT_SIGPENDING
+    {"sigpending", RLIMIT_SIGPENDING},
+#endif
+#ifdef RLIMIT_STACK
+    {"stack", RLIMIT_STACK},
+#endif
+#ifdef RLIMIT_VMEM
+    {"map_mem", RLIMIT_VMEM},
+    {"vmem", RLIMIT_VMEM},
+#endif
+#ifdef RLIMIT_AS
+    {"as", RLIMIT_AS},
+    {"mem", RLIMIT_AS},
+#endif
+};
+
+int get_limit_id( const char *limit )
+{
+   unsigned int i;
+   for( i=0; i<sizeof(__limits)/sizeof(__limits[0]); i++ )
+     if( !strcmp( limit, __limits[i].name ) )
+       return __limits[i].lim;
+   return -1;
+}
+
+int get_one_limit( const char *limit, struct rlimit *rl )
+{
+   int lim = get_limit_id( limit );
+   if( lim < 0 )
+       return -2;
+   return getrlimit( lim, rl );
+}
+
 /*! @decl array(int) getrlimit(string resource)
  *! Returns the current process limitation for the selected @[resource].
  *!
@@ -2463,101 +2467,38 @@ static void f_getrlimit(INT32 args)
 {
    struct rlimit rl;
    int res=-1;
-   if (!s_cpu) make_rlimit_strings();
-   if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
+   if (args!=1)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("getrlimit",1);
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("getrlimit",1,"string");
-
-#ifdef RLIMIT_CPU
-   if (sp[-args].u.string==s_cpu)
-      res=getrlimit(RLIMIT_CPU,&rl);
-#endif
-#ifdef RLIMIT_FSIZE
-   else if (sp[-args].u.string==s_fsize)
-      res=getrlimit(RLIMIT_FSIZE,&rl);
-#endif
-#ifdef RLIMIT_DATA
-   else if (sp[-args].u.string==s_data)
-      res=getrlimit(RLIMIT_DATA,&rl);
-#endif
-#ifdef RLIMIT_STACK
-   else if (sp[-args].u.string==s_stack)
-      res=getrlimit(RLIMIT_STACK,&rl);
-#endif
-#ifdef RLIMIT_CORE
-   else if (sp[-args].u.string==s_core)
-      res=getrlimit(RLIMIT_CORE,&rl);
-#endif
-#ifdef RLIMIT_RSS
-   else if (sp[-args].u.string==s_rss)
-      res=getrlimit(RLIMIT_RSS,&rl);
-#endif
-#ifdef RLIMIT_NPROC
-   else if (sp[-args].u.string==s_nproc)
-      res=getrlimit(RLIMIT_NPROC,&rl);
-#endif
-#ifdef RLIMIT_NOFILE
-   else if (sp[-args].u.string==s_nofile)
-      res=getrlimit(RLIMIT_NOFILE,&rl);
-#endif
-#ifdef RLIMIT_MEMLOCK
-   else if (sp[-args].u.string==s_memlock)
-      res=getrlimit(RLIMIT_MEMLOCK,&rl);
-#endif
-#ifdef RLIMIT_AS
-   else if (sp[-args].u.string==s_as)
-      res=getrlimit(RLIMIT_AS,&rl);
-#endif
-#ifdef RLIMIT_VMEM
-   else if (sp[-args].u.string==s_vmem)
-      res=getrlimit(RLIMIT_VMEM,&rl);
-#endif
-/* NOFILE is called OFILE on some systems */
-#ifdef RLIMIT_OFILE
-   else if (sp[-args].u.string==s_nofile)
-      res=getrlimit(RLIMIT_OFILE,&rl);
-#endif
-   else if (sp[-args].u.string==s_cpu      ||
-	    sp[-args].u.string==s_fsize    ||
-	    sp[-args].u.string==s_data     ||
-	    sp[-args].u.string==s_stack    ||
-	    sp[-args].u.string==s_core     ||
-	    sp[-args].u.string==s_rss      ||
-	    sp[-args].u.string==s_nproc    ||
-	    sp[-args].u.string==s_nofile   ||
-	    sp[-args].u.string==s_memlock  ||
-	    sp[-args].u.string==s_vmem     ||
-	    sp[-args].u.string==s_as)
+      SIMPLE_ARG_TYPE_ERROR("getrlimit",1,"string");
+   res = get_one_limit( Pike_sp[-args].u.string->str, &rl );
+   if( res == -2 )
    {
 /* no such resource on this system */
       rl.rlim_cur=(PIKE_RLIM_T)0;
       rl.rlim_max=(PIKE_RLIM_T)0;
       res=0;
    }
-   else
-      Pike_error("getrlimit: no such resource\n");
 
    if (res==-1)
    {
 /* this shouldn't happen */
-      Pike_error("getrlimit: error; errno=%d\n",errno);
+      Pike_error("error; errno=%d.\n",errno);
    }
-
    pop_n_elems(args);
 #ifdef RLIM_INFINITY
    if (rl.rlim_cur==RLIM_INFINITY)
       push_int(-1);
    else
 #endif
-      push_int( (INT_TYPE)rl.rlim_cur );
+      push_int64( (INT_TYPE)rl.rlim_cur );
 
 #ifdef RLIM_INFINITY
    if (rl.rlim_max==RLIM_INFINITY)
       push_int(-1);
    else
 #endif
-      push_int( (INT_TYPE)rl.rlim_max );
+      push_int64( (INT_TYPE)rl.rlim_max );
 
    f_aggregate(2);
 }
@@ -2570,104 +2511,45 @@ static void f_getrlimit(INT32 args)
  */
 static void f_getrlimits(INT32 args)
 {
+   unsigned int i;
    int n=0;
    pop_n_elems(args); /* no args */
-
-   if (!s_cpu) make_rlimit_strings();
-
-#ifdef RLIMIT_CPU
-   ref_push_string(s_cpu);
-   ref_push_string(s_cpu);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_FSIZE
-   ref_push_string(s_fsize);
-   ref_push_string(s_fsize);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_DATA
-   ref_push_string(s_data);
-   ref_push_string(s_data);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_STACK
-   ref_push_string(s_stack);
-   ref_push_string(s_stack);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_CORE
-   ref_push_string(s_core);
-   ref_push_string(s_core);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_RSS
-   ref_push_string(s_rss);
-   ref_push_string(s_rss);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_NPROC
-   ref_push_string(s_nproc);
-   ref_push_string(s_nproc);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_NOFILE 
-   ref_push_string(s_nofile);
-   ref_push_string(s_nofile);
-   f_getrlimit(1);
-   n+=2;
-#else
-#ifdef RLIMIT_OFILE 
-   ref_push_string(s_nofile);
-   ref_push_string(s_nofile);
-   f_getrlimit(1);
-   n+=2;
-#endif
-#endif
-
-#ifdef RLIMIT_MEMLOCK
-   ref_push_string(s_memlock);
-   ref_push_string(s_memlock);
-   f_getrlimit(1);
-   n+=2;
-#endif
-
-#ifdef RLIMIT_AS
-   ref_push_string(s_as);
-   ref_push_string(s_as);
-   f_getrlimit(1);
-   n+=2;
-#endif
-   
-#ifdef RLIMIT_VMEM
-#if RLIMIT_VMEM != RLIMIT_AS
-/* they are alias on some systems, OSF1 for one */
-   ref_push_string(s_vmem);
-   ref_push_string(s_vmem);
-   f_getrlimit(1);
-   n+=2;
-#endif
-#endif
-   
+   for( i=0; i<sizeof(__limits)/sizeof(__limits[0]); i++ )
+   {
+       push_text( __limits[i].name );
+       push_text( __limits[i].name );
+       f_getrlimit(1);
+       n += 2;
+   }
    f_aggregate_mapping(n);
 }
 
 #endif
 
 #ifdef HAVE_SETRLIMIT
+int set_one_limit( const char *limit, INT64 soft, INT64 hard )
+{
+   struct rlimit rl;
+   int lim;
+#ifdef RLIM_INFINITY
+   if( soft == -1 )
+       rl.rlim_cur = RLIM_INFINITY;
+   else
+       rl.rlim_cur = soft;
+   if( hard == -1 )
+       rl.rlim_max = RLIM_INFINITY;
+   else
+       rl.rlim_max = hard;
+#else
+   rl.rlim_cur = soft;
+   rl.rlim_max = hard;
+#endif
+   lim = get_limit_id( limit );
+   if( lim < 0 )
+       return -2;
+   return setrlimit( lim, &rl );
+}
+
 /*! @decl int(0..1) setrlimit(string resource, int soft, int hard)
  *! Sets the @[soft] and the @[hard] process limit on a @[resource].
  *! @seealso
@@ -2675,105 +2557,32 @@ static void f_getrlimits(INT32 args)
  */
 static void f_setrlimit(INT32 args)
 {
-   struct rlimit rl;
-   int res=-1;
-   if (!s_cpu) make_rlimit_strings();
-   if (args<3)
-      SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
+   if (args!=3)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("setrlimit",3);
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("setrlimit",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",1,"string");
    if (TYPEOF(sp[1-args]) != T_INT ||
-       sp[1-args].u.integer<-1) 
-      SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
+       sp[1-args].u.integer<-1)
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",2,"int(-1..)");
    if (TYPEOF(sp[2-args]) != T_INT ||
-       sp[2-args].u.integer<-1) 
-      SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
+       sp[2-args].u.integer<-1)
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",3,"int(-1..)");
 
-#ifdef RLIM_INFINITY
-   if (sp[1-args].u.integer==-1)
-      rl.rlim_cur=RLIM_INFINITY;
-   else
-#endif
-      rl.rlim_cur=(PIKE_RLIM_T)sp[1-args].u.integer;
-
-#ifdef RLIM_INFINITY
-   if (sp[2-args].u.integer==-1)
-      rl.rlim_max=RLIM_INFINITY;
-   else
-#endif
-      rl.rlim_max=(PIKE_RLIM_T)sp[2-args].u.integer;
-
-
-#ifdef RLIMIT_CPU
-   if (sp[-args].u.string==s_cpu)
-      res=setrlimit(RLIMIT_CPU,&rl);
-#endif
-#ifdef RLIMIT_FSIZE
-   else if (sp[-args].u.string==s_fsize)
-      res=setrlimit(RLIMIT_FSIZE,&rl);
-#endif
-#ifdef RLIMIT_DATA
-   else if (sp[-args].u.string==s_data)
-      res=setrlimit(RLIMIT_DATA,&rl);
-#endif
-#ifdef RLIMIT_STACK
-   else if (sp[-args].u.string==s_stack)
-      res=setrlimit(RLIMIT_STACK,&rl);
-#endif
-#ifdef RLIMIT_CORE
-   else if (sp[-args].u.string==s_core)
-      res=setrlimit(RLIMIT_CORE,&rl);
-#endif
-#ifdef RLIMIT_RSS
-   else if (sp[-args].u.string==s_rss)
-      res=setrlimit(RLIMIT_RSS,&rl);
-#endif
-#ifdef RLIMIT_NPROC
-   else if (sp[-args].u.string==s_nproc)
-      res=setrlimit(RLIMIT_NPROC,&rl);
-#endif
-#ifdef RLIMIT_NOFILE
-   else if (sp[-args].u.string==s_nofile)
-      res=setrlimit(RLIMIT_NOFILE,&rl);
-#endif
-#ifdef RLIMIT_MEMLOCK
-   else if (sp[-args].u.string==s_memlock)
-      res=setrlimit(RLIMIT_MEMLOCK,&rl);
-#endif
-#ifdef RLIMIT_AS
-   else if (sp[-args].u.string==s_as)
-      res=setrlimit(RLIMIT_AS,&rl);
-#endif
-#ifdef RLIMIT_VMEM
-   else if (sp[-args].u.string==s_vmem)
-      res=setrlimit(RLIMIT_VMEM,&rl);
-#endif
-/* NOFILE is called OFILE on some systems */
-#ifdef RLIMIT_OFILE
-   else if (sp[-args].u.string==s_nofile)
-      res=setrlimit(RLIMIT_OFILE,&rl);
-#endif
-   else if (sp[-args].u.string==s_cpu      ||
-	    sp[-args].u.string==s_fsize    ||
-	    sp[-args].u.string==s_data     ||
-	    sp[-args].u.string==s_stack    ||
-	    sp[-args].u.string==s_core     ||
-	    sp[-args].u.string==s_rss      ||
-	    sp[-args].u.string==s_nproc    ||
-	    sp[-args].u.string==s_nofile   ||
-	    sp[-args].u.string==s_memlock  ||
-	    sp[-args].u.string==s_vmem     ||
-	    sp[-args].u.string==s_as)
-      Pike_error("setrlimit: no %s resource on this system\n",
-		 sp[-args].u.string->str);
-   else
-      Pike_error("setrlimit: no such resource\n");
-
-   pop_n_elems(args);
-   if (res==-1)
-      push_int(0);
-   else
-      push_int(1);
+   switch( set_one_limit( Pike_sp[-args].u.string->str, Pike_sp[1-args].u.integer, Pike_sp[2-args].u.integer ) )
+   {
+    case -2:
+        Pike_error("No %s resource on this system.\n",
+        sp[-args].u.string->str);
+        break;
+    case -1:
+        pop_n_elems(args);
+        push_int(0);
+        break;
+    default:
+        pop_n_elems(args);
+        push_int(1);
+        break;
+   }
 }
 #endif
 
@@ -2786,7 +2595,7 @@ void f_setproctitle(INT32 args)
   char *title;
 
   if (args > 1) f_sprintf(args);
-  get_all_args("setproctitle", args, "%s", &title);
+  get_all_args(NULL, args, "%s", &title);
   setproctitle("%s", title);
   pop_stack();
 }
@@ -2833,7 +2642,7 @@ void f_system_setitimer(INT32 args)
    get_all_args("setitimer",args,"%+%F",&what,&interval);
 
    if (interval<0.0)
-      SIMPLE_BAD_ARG_ERROR("setitimer",2,"positive or zero int or float");
+      SIMPLE_ARG_TYPE_ERROR("setitimer",2,"positive or zero int or float");
    else if (interval==0.0)
       res=setitimer( (int)what,NULL,&otimer );
    else
@@ -2850,10 +2659,10 @@ void f_system_setitimer(INT32 args)
       switch (errno)
       {
 	 case EINVAL:
-	    Pike_error("setitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+            Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
 	    break;
 	 default:
-	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+            Pike_error("Unknown error (errno=%d).\n",errno);
 	    break;
       }
    }
@@ -2895,10 +2704,10 @@ void f_system_getitimer(INT32 args)
       switch (errno)
       {
 	 case EINVAL:
-	    Pike_error("getitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+            Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
 	    break;
 	 default:
-	    Pike_error("getitimer: unknown error (errno=%d)\n",errno);
+            Pike_error("Unknown error (errno=%d).\n",errno);
 	    break;
       }
    }
@@ -2929,7 +2738,7 @@ void f_system_getitimer(INT32 args)
  *!
  *! @example
  *!   system.get_netinfo_property(".", "/locations/resolver", "domain");
- *!   ({ 
+ *!   ({
  *!      "idonex.se"
  *!   })
  *!
@@ -2945,7 +2754,7 @@ static void f_get_netinfo_property(INT32 args)
   ni_namelist  prop_list;
   ni_status    res;
   unsigned int i, num_replies;
-  
+
   get_all_args("get_netinfo_property", args, "%s%s%s",
 	       &domain_str, &path_str, &prop_str);
 
@@ -2966,9 +2775,9 @@ static void f_get_netinfo_property(INT32 args)
     }
     ni_free(dom);
   } else {
-    Pike_error("get_netinfo_property: error: %s\n", ni_error(res));
+    Pike_error("Error: %s.\n", ni_error(res));
   }
-  
+
   /* make array of all replies; missing properties or invalid directory
      are simply returned as integer 0 */
   if (res == NI_OK)
@@ -3004,7 +2813,7 @@ void f_system_getloadavg(INT32 args)
   if (getloadavg(load, 3) == -1) {
     Pike_error("getloadavg failed.\n");
   }
-  
+
   for (i = 0; i <= 2; i++) {
     push_float((FLOAT_TYPE)load[i]);
   }
@@ -3043,7 +2852,7 @@ struct timeval
 /*! @decl array(int) gettimeofday()
  *! Calls gettimeofday(); the result is an array of
  *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
- *! as given by the gettimeofday(2) system call 
+ *! as given by the gettimeofday(2) system call
  *! (read the man page).
  *!
  *! @seealso
@@ -3058,7 +2867,7 @@ static void f_gettimeofday(INT32 args)
 #endif
    pop_n_elems(args);
    if (gettimeofday(&tv,&tz))
-      Pike_error("gettimeofday: gettimeofday failed, errno=%d\n",errno);
+      Pike_error("gettimeofday failed, errno=%d.\n",errno);
    push_int(tv.tv_sec);
    push_int(tv.tv_usec);
 #ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
@@ -3237,36 +3046,36 @@ static void f_getrusage(INT32 args)
 		"System usage information not available.\n", Pike_sp, args);
 
    pop_n_elems(args);
-   
-   push_text("utime");      push_int(rusage_values[n++]);
-   push_text("stime");      push_int(rusage_values[n++]);
-   push_text("maxrss");     push_int(rusage_values[n++]);
-   push_text("ixrss");      push_int(rusage_values[n++]);
-   push_text("idrss");      push_int(rusage_values[n++]);
-   push_text("isrss");      push_int(rusage_values[n++]);
-   push_text("minflt");     push_int(rusage_values[n++]);
-   push_text("majflt");     push_int(rusage_values[n++]);
-   push_text("nswap");      push_int(rusage_values[n++]);
-   push_text("inblock");    push_int(rusage_values[n++]);
-   push_text("oublock");    push_int(rusage_values[n++]);
-   push_text("msgsnd");     push_int(rusage_values[n++]);
-   push_text("msgrcv");     push_int(rusage_values[n++]);
-   push_text("nsignals");   push_int(rusage_values[n++]);
-   push_text("nvcsw");      push_int(rusage_values[n++]);
-   push_text("nivcsw");     push_int(rusage_values[n++]);
-   push_text("sysc");       push_int(rusage_values[n++]);
-   push_text("ioch");       push_int(rusage_values[n++]);
-   push_text("rtime");      push_int(rusage_values[n++]);
-   push_text("ttime");      push_int(rusage_values[n++]);
-   push_text("tftime");     push_int(rusage_values[n++]);
-   push_text("dftime");     push_int(rusage_values[n++]);
-   push_text("kftime");     push_int(rusage_values[n++]);
-   push_text("ltime");      push_int(rusage_values[n++]);
-   push_text("slptime");    push_int(rusage_values[n++]);
-   push_text("wtime");      push_int(rusage_values[n++]);
-   push_text("stoptime");   push_int(rusage_values[n++]);
-   push_text("brksize");    push_int(rusage_values[n++]);
-   push_text("stksize");    push_int(rusage_values[n++]);
+
+   push_static_text("utime");      push_int(rusage_values[n++]);
+   push_static_text("stime");      push_int(rusage_values[n++]);
+   push_static_text("maxrss");     push_int(rusage_values[n++]);
+   push_static_text("ixrss");      push_int(rusage_values[n++]);
+   push_static_text("idrss");      push_int(rusage_values[n++]);
+   push_static_text("isrss");      push_int(rusage_values[n++]);
+   push_static_text("minflt");     push_int(rusage_values[n++]);
+   push_static_text("majflt");     push_int(rusage_values[n++]);
+   push_static_text("nswap");      push_int(rusage_values[n++]);
+   push_static_text("inblock");    push_int(rusage_values[n++]);
+   push_static_text("oublock");    push_int(rusage_values[n++]);
+   push_static_text("msgsnd");     push_int(rusage_values[n++]);
+   push_static_text("msgrcv");     push_int(rusage_values[n++]);
+   push_static_text("nsignals");   push_int(rusage_values[n++]);
+   push_static_text("nvcsw");      push_int(rusage_values[n++]);
+   push_static_text("nivcsw");     push_int(rusage_values[n++]);
+   push_static_text("sysc");       push_int(rusage_values[n++]);
+   push_static_text("ioch");       push_int(rusage_values[n++]);
+   push_static_text("rtime");      push_int(rusage_values[n++]);
+   push_static_text("ttime");      push_int(rusage_values[n++]);
+   push_static_text("tftime");     push_int(rusage_values[n++]);
+   push_static_text("dftime");     push_int(rusage_values[n++]);
+   push_static_text("kftime");     push_int(rusage_values[n++]);
+   push_static_text("ltime");      push_int(rusage_values[n++]);
+   push_static_text("slptime");    push_int(rusage_values[n++]);
+   push_static_text("wtime");      push_int(rusage_values[n++]);
+   push_static_text("stoptime");   push_int(rusage_values[n++]);
+   push_static_text("brksize");    push_int(rusage_values[n++]);
+   push_static_text("stksize");    push_int(rusage_values[n++]);
 
    f_aggregate_mapping(n*2);
 }
@@ -3282,6 +3091,56 @@ void f_daemon(INT32 args)
    push_int( daemon( a, b) );
 }
 #endif /* HAVE_DAEMON */
+
+#if HAS___BUILTIN_IA32_RDRAND64_STEP
+
+static UINT64 rand64()
+{
+  unsigned long long rnd;
+  int i;
+  for( i=0; i<10; i++ )
+  {
+    if( __builtin_ia32_rdrand64_step( &rnd ) )
+      return rnd;
+  }
+  Pike_error("Unable to read random from hardware.\n");
+}
+
+/*! @decl string(8bit) hw_random(int(0..) length)
+ *! Read a specified number of bytes from the hardware random
+ *! generator, if available. This function will not exist if hardware
+ *! random is not available. Currently only supports Intel RDRAND CPU
+ *! instruction.
+ */
+void f_hw_random(INT32 args)
+{
+  INT_TYPE len, e=0;
+  if(args!=1 || TYPEOF(Pike_sp[-1])!=T_INT || (len=Pike_sp[-1].u.integer)<0)
+    SIMPLE_ARG_TYPE_ERROR("hw_random", 1, "int(0..)");
+
+  UINT64 *str;
+  ONERROR err;
+  struct pike_string *ret = begin_shared_string(len);
+  SET_ONERROR(err, do_free_unlinked_pike_string, ret);
+  str = (UINT64 *)ret->str;
+  while( (e+=sizeof(INT64)) <= len )
+  {
+    str[0] = rand64();
+    str++;
+  }
+
+  UINT64 rnd = rand64();
+  for(e-=sizeof(INT64); e<len; e++)
+  {
+    ret->str[e] = rnd&0xff;
+    rnd >>= 8;
+  }
+
+  UNSET_ONERROR(err);
+  pop_stack();
+  push_string(end_shared_string(ret));
+}
+#endif
 
 /*! @endmodule
  */
@@ -3299,25 +3158,25 @@ PIKE_MODULE_INIT
    * From this file:
    */
 #ifdef HAVE_LINK
-  
+
 /* function(string, string:void) */
   ADD_EFUN("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_LINK */
 #ifdef HAVE_SYMLINK
-  
+
 /* function(string, string:void) */
   ADD_EFUN("symlink", f_symlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("symlink", f_symlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SYMLINK */
 #ifdef HAVE_READLINK
-  
+
 /* function(string:string) */
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
-  
+
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
@@ -3350,24 +3209,24 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_INITGROUPS
-  
+
 /* function(string, int:void) */
   ADD_EFUN("initgroups", f_initgroups,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("initgroups", f_initgroups,tFunc(tStr tInt,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
 #ifdef HAVE_SETGROUPS
-  
+
 /* function(:void) */
   ADD_EFUN("cleargroups", f_cleargroups,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("cleargroups", f_cleargroups,tFunc(tNone,tVoid), 0, OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
-  
+
 /* function(array(int):void) */
   ADD_EFUN("setgroups", f_setgroups,tFunc(tArr(tInt),tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgroups", f_setgroups,tFunc(tArr(tInt),tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SETGROUPS */
 #ifdef HAVE_GETGROUPS
-  
+
 /* function(:array(int)) */
   ADD_EFUN("getgroups", f_getgroups,tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getgroups", f_getgroups,tFunc(tNone,tArr(tInt)), 0, OPT_EXTERNAL_DEPEND);
@@ -3382,25 +3241,25 @@ PIKE_MODULE_INIT
 	   0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
-  
+
 /* function(int:int) */
   ADD_EFUN("setuid", f_setuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setuid", f_setuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETGID
-  
+
 /* function(int:int) */
   ADD_EFUN("setgid", f_setgid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgid", f_setgid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
-  
+
 /* function(int:int) */
   ADD_EFUN("seteuid", f_seteuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("seteuid", f_seteuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
-  
+
 /* function(int:int) */
   ADD_EFUN("setegid", f_setegid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setegid", f_setegid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
@@ -3417,41 +3276,41 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_GETUID
-  
+
 /* function(:int) */
   ADD_EFUN("getuid", f_getuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getuid", f_getuid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_GETGID
-  
+
 /* function(:int) */
   ADD_EFUN("getgid", f_getgid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getgid", f_getgid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif
- 
+
 #ifdef HAVE_GETEUID
-  
+
 /* function(:int) */
   ADD_EFUN("geteuid", f_geteuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("geteuid", f_geteuid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
-  
+
 /* function(:int) */
   ADD_EFUN("getegid", f_getegid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getegid", f_getegid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETEUID */
- 
-  
+
+
 /* function(:int) */
 /* Also available as efun */
   ADD_FUNCTION2("getpid", f_getpid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
-  
+
 /* function(:int) */
   ADD_EFUN("getppid", f_getppid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getppid", f_getppid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPPID */
- 
+
 #ifdef HAVE_GETPGRP
 /* function(:int) */
   ADD_EFUN("getpgrp", f_getpgrp, tFunc(tOr(tInt, tVoid), tInt),
@@ -3487,51 +3346,52 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_GETRLIMIT
-  ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)), 
+  ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)),
 		0, OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("getrlimits", f_getrlimits, 
-		tFunc(tNone, tMap(tStr,tArr(tInt))), 
+  ADD_FUNCTION2("getrlimits", f_getrlimits,
+		tFunc(tNone, tMap(tStr,tArr(tInt))),
 		0, OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETRLIMIT
-  ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01), 
+  ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01),
 		0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETPROCTITLE
   ADD_FUNCTION2("setproctitle", f_setproctitle, tFuncV(tString, tMix, tVoid),
                 0, OPT_SIDE_EFFECT);
 #endif
-#ifdef HAVE_CHROOT 
-  
+#ifdef HAVE_CHROOT
+
 /* function(string|object:int) */
-  ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 
+  ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt),
            OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 0,
            OPT_SIDE_EFFECT);
 #endif /* HAVE_CHROOT */
- 
+
 #if defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
-  
+
 /* function(:mapping) */
   ADD_EFUN("uname", f_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 #endif /* HAVE_UNAME */
- 
+
 #if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
-  
+
 /* function(:string) */
-  ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_TRY_OPTIMIZE);
-  ADD_FUNCTION2("gethostname", f_gethostname,tFunc(tNone,tStr), 0, OPT_TRY_OPTIMIZE);
+  ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("gethostname", f_gethostname,tFunc(tNone,tStr), 0,
+                OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
 #ifdef GETHOST_DECLARE
-  
+
 /* function(string:array) */
   ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
            OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tArray), 0,
            OPT_EXTERNAL_DEPEND);
-  
+
 /* function(string:array) */
   ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
            OPT_EXTERNAL_DEPEND);
@@ -3543,18 +3403,17 @@ PIKE_MODULE_INIT
    * From syslog.c:
    */
 #ifdef HAVE_SYSLOG
-  
+
 /* function(string,int,int:void) */
-  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
-  
+  ADD_FUNCTION2("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0,
+                OPT_SIDE_EFFECT);
+
 /* function(int,string:void) */
-  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
-  
+  ADD_FUNCTION2("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0,
+                OPT_SIDE_EFFECT);
+
 /* function(:void) */
-  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION2("closelog", f_closelog,tFunc(tNone,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SYSLOG */
 
 #ifdef HAVE_SLEEP
@@ -3640,6 +3499,15 @@ PIKE_MODULE_INIT
                 0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_DAEMON */
 
+#if HAS___BUILTIN_IA32_RDRAND64_STEP
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    if( cpuid[3] & bit_RDRND_2 )
+      ADD_FUNCTION("hw_random", f_hw_random, tFunc(tIntPos,tStr8), 0);
+  }
+#endif
+
 #ifdef __NT__
   {
     extern void init_nt_system_calls(void);
@@ -3662,50 +3530,4 @@ PIKE_MODULE_EXIT
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_destroy(&gethostbyname_mutex);
 #endif
-#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
-  if (s_cpu) {
-    free_string(s_cpu);
-    s_cpu=NULL;
-  }
-  if (s_fsize) {
-    free_string(s_fsize);
-    s_fsize=NULL;
-  }
-  if (s_data) {
-    free_string(s_data);
-    s_data=NULL;
-  }
-  if (s_stack) {
-    free_string(s_stack);
-    s_stack=NULL;
-  }
-  if (s_core) {
-    free_string(s_core);
-    s_core=NULL;
-  }
-  if (s_rss) {
-    free_string(s_rss);
-    s_rss=NULL;
-  }
-  if (s_nproc) {
-    free_string(s_nproc);
-    s_nproc=NULL;
-  }
-  if (s_nofile) {
-    free_string(s_nofile);
-    s_nofile=NULL;
-  }
-  if (s_memlock) {
-    free_string(s_memlock);
-    s_memlock=NULL;
-  }
-  if (s_as) {
-    free_string(s_as);
-    s_as=NULL;
-  }
-  if (s_vmem) {
-    free_string(s_vmem);
-    s_vmem=NULL;
-  }
-#endif /* HAVE_GETRLIMIT || HAVE_SETRLIMIT */
 }

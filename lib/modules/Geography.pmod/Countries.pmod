@@ -1,55 +1,62 @@
 #pike __REAL_VERSION__
 
 mapping _continents=
-([ 
-   ","  "Europe":
-   ({ "AD","AL","AT","BA","BE","BG","BY","CH","CZ",
-      "DE","DK","EE","ES","FI","FO","FR","GB","GE","GI",
-      "GR","HR","HU","IE","IS","IT","JE","LI","LT","LU",
-      "LV","MC","MD","MK","MT","NL","NO","PL","PT","RO",
-      "RU","SE","SI","SJ","SK","SM","TM","UA","VA","YU",}),
+([
+   "Europe":
+   ({ "AD","AL","AT","AX","BA","BE","BG","BY","CH","CZ",
+      "DE","DK","EE","ES","FI","FO","FR","GB","GE","GG",
+      "GI","GR","HR","HU","IE","IM","IS","IT","JE","LI",
+      "LT","LU","LV","MC","MD","ME","MK","MT","NL","NO",
+      "PL","PT","RO","RS","RU","SE","SI","SJ","SK","SM",
+      "TM","UA","VA"
+   }),
 
-   "Africa": 
+   "Africa":
    ({ "AC","AO","BF","BI","BJ","BW","CF","CG","CG","CI",
       "CM","CV","DJ","DZ","EG","EH","ER","ET","GA","GH",
-      "GM","GN","GQ","GW","KE","KM","LR","LS","LY",
-      "MA","MG","ML","MR","MU","MW","MZ","NA","NE",
-      "NG","RW","SC","SD","SH","SL","SN","SO","ST",
-      "SZ","TD","TG","TN","TZ","UG","ZA","ZM","ZR","ZW",
-      "YT"
+      "GM","GN","GQ","GW","KE","KM","LR","LS","LY","MA",
+      "MG","ML","MR","MU","MW","MZ","NA","NE","NG","RW",
+      "SC","SD","SH","SL","SN","SO","SS","ST","SZ","TD",
+      "TG","TN","TZ","UG","ZA","ZM","ZR","ZW","YT"
    }),
 
    "Asia":
-   ({ "AC","AE","AF","AM","AZ","BD","BH","BN","BT","BV","CN","CX",
-      "CY","HK","ID","IL","IO","IN","IQ","IR","JO","JP",
-      "KG","KH","KP","KR","KW","KZ","LA","LB","LK",
-      "MM","MN","MO","MV","MY","NP","OM","PH","PK","RE",
-      "QA","SA","SG","SY","TH","TJ","TR","TW","UZ",
-      "VN","YE","RU"}),
+   ({ "AC","AE","AF","AM","AZ","BD","BH","BN","BT","BV",
+      "CN","CX","CY","HK","ID","IL","IO","IN","IQ","IR",
+      "JO","JP","KG","KH","KP","KR","KW","KZ","LA","LB",
+      "LK","MM","MN","MO","MV","MY","NP","OM","PH","PK",
+      "PS","QA","RE","RU","SA","SG","SY","TH","TJ","TL",
+      "TR","TW","UZ","VN","YE"
+   }),
 
    "North America":
-   ({ "AG","AW","BB","BM","BS","BZ","CA","CR",
-      "CU","DM","DO","GD","GL","GT","HN","HT","JM","KN",
-      "KY","LC","MQ","MS","MX","NI","PA","PR","SV","TT",
-      "US","VC","PM"}),
+   ({ "AG","AW","BB","BM","BS","BZ","CA","CR","CU","CW",
+      "DM","DO","GD","GL","GT","HN","HT","JM","KN","KY",
+      "LC","MF","MQ","MS","MX","NI","PA","PR","SV","TT",
+      "US","VC","PM","SX"
+   }),
 
    "South America":
-   ({"AI","AN","AR","BO","BR","CL","CO","EC","FK","GF",
-     "GY","PE","PY","SR","UY","VE","GP","GS","TC","VG","VI"}),
+   ({ "AI","AN","AR","BO","BQ","BR","CL","CO","EC","FK",
+      "GF","GY","PE","PY","SR","UY","VE","GP","GS","TC",
+      "VG","VI"
+   }),
 
    "Oceania":
-   ({"AS","AU","CC","CK","FJ","FM","KI","MH","MP","NC","NR","NU",
-     "NZ","PF","PG","PN","PW","SB","TO","TV","VU","WS","GU","NF",
-     "TK","TP","WF"}),
+   ({ "AS","AU","CC","CK","FJ","FM","KI","MH","MP","NC",
+      "NR","NU","NZ","PF","PG","PN","PW","SB","TO","TV",
+      "VU","WS","GU","NF","TK","UM","WF"
+   }),
 
    "Antarctica":
-   ({"AQ","TF","HM"}),
+   ({ "AQ","TF","HM" }),
 ]);
 
 //!	All known countries.
 array(Country) countries=
 ({
-   Country("AC","Ascension","SH"), // saint helena?
+   // AA USER ASSIGNED
+   Country("AC","Ascension","SH"), // EXCEPTIONALLY RESERVED
    Country("AD","Andorra","AN"),
    Country("AE","United Arab Emirates","AE"),
    Country("AF","Afghanistan","AF"),
@@ -57,14 +64,16 @@ array(Country) countries=
    Country("AI","Anguilla","AV"),
    Country("AL","Albania","AL"),
    Country("AM","Armenia","AM"),
-   Country("AN","Netherlands Antilles","NL"),
+   Country("AN","Netherlands Antilles","NL"), // TRANSITIONALLY RESERVED
    Country("AO","Angola","AO"),
+   // AP NOT USED
    Country("AQ","Antarctica","AY"),
    Country("AR","Argentina","AR"),
-   Country("AS","American Samoa","WS"),
+   Country("AS","American Samoa","AQ"),
    Country("AT","Austria","AU"),
    Country("AU","Australia","AS"),
    Country("AW","Aruba","AA"),
+   Country("AX","Aland Islands",0),
    Country("AZ","Azerbaijan","AJ"),
    Country("BA","Bosnia and Herzegovina","BK"),
    Country("BB","Barbados","BB"),
@@ -78,24 +87,28 @@ array(Country) countries=
    Country("BM","Bermuda","BD"),
    Country("BN","Brunei Darussalam","BX",
 	   (["aka":({"Brunei"})])),
-   Country("BO","Bolivia","BL"),
+   Country("BO","Bolivia","BL",(["aka":({"Plurinational State of Bolivia"})])),
+   Country("BQ","Bonaire","??",
+           (["aka":({"Bonaire, Sint Eustatius and Saba"})])),
    Country("BR","Brazil","BR"),
    Country("BS","Bahamas","BF",(["aka":({"The Bahamas"})])),
    Country("BT","Bhutan","BT"),
+   // BU TRANSITIONALLY RESERVED
    Country("BV","Bouvet Island","BV"),
    Country("BW","Botswana","BC"),
+   // BX NOT USED
    Country("BY","Belarus","BO"),
    Country("BZ","Belize","BH"),
    Country("CA","Canada","CA"),
    Country("CC","Cocos Islands","CK",
 	   (["aka":({"Keeling Islands"})])),
-   Country("CF","Central African Republic","CT"),
-   Country("CG","Congo","CF",(["aka":({"Congo, Republic of the",
-				       "Congo (Brazzaville)"})])),
-   Country("??","Congo (Kinshasa)","CG",
+   Country("CD","Congo (Kinshasa)","CG",
 	   (["aka":({"Congo, Democratic Republic of the",
 		     "Congo (Kinshasa)","Congo"}),
 	     "_continent":"Africa"])),
+   Country("CF","Central African Republic","CT"),
+   Country("CG","Congo","CF",(["aka":({"Congo, Republic of the",
+				       "Congo (Brazzaville)"})])),
    Country("CH","Switzerland","SZ"),
    Country("CI","Cote D'Ivoire","IV",(["aka":({"Ivory Coast"})])),
    Country("CK","Cook Islands","CW"),
@@ -103,40 +116,59 @@ array(Country) countries=
    Country("CM","Cameroon","CM"),
    Country("CN","China","CH"),
    Country("CO","Colombia","CO"),
+   // CP EXCEPTIONALLY RESERVED
    Country("CR","Costa Rica","CS"),
-   Country("CS","Czechoslovakia","LO",(["former":1,
-				   "_continent":"Europe"])),
+   Country("CS","Czechoslovakia","LO", // TRANSITIONALLY RESERVED
+           (["former":1, "_continent":"Europe"])),
    Country("CU","Cuba","CU"),
    Country("CV","Cape Verde","CV"),
+   Country("CW","Curacao",0),
    Country("CX","Christmas Island","KT"),
    Country("CY","Cyprus","CY"),
    Country("CZ","Czech Republic","EZ"),
    Country("DE","Germany","GM"),
+   // DG EXCEPTIONALLY RESERVED
    Country("DJ","Djibouti","DJ"),
    Country("DK","Denmark","DA"),
    Country("DM","Dominica","DO"),
    Country("DO","Dominican Republic","DR"),
+   // DY INDETERMINATELY RESERVED
    Country("DZ","Algeria","AG"),
+   // EA EXCEPTIONALLY RESERVED
    Country("EC","Ecuador","EC"),
    Country("EE","Estonia","EN"),
+   // EF NOT USED
    Country("EG","Egypt","EG"),
    Country("EH","Western Sahara","WI"),
    Country("ER","Eritrea","ER"),
+   // EM NOT USED
+   // EP NOT USED
    Country("ES","Spain","SP"),
    Country("ET","Ethiopia","ET"),
+   // EU EXCEPTIONALLY RESERVED
+   // EV NOT USED
+   // EW INDETERMINATELY RESERVED
+   // EZ EXCEPTIONALLY RESERVED
    Country("FI","Finland","FI"),
    Country("FJ","Fiji","FJ"),
    Country("FK","Falkland Islands","FA",(["aka":({"Malvinas"})])),
+   // FL INDETERMINATELY RESERVED
    Country("FM","Micronesia","NE",
 	   (["aka":({"Federated States of Micronesia",
 		     "Micronesia, Federated States of"})])),
    Country("FO","Faroe Islands","FO"),
    Country("FR","France","FR"),
+   // FZ EXCEPTIONALY RESERVED
    Country("GA","Gabon","GB"),
-   Country("GB","United Kingdom","UK",(["aka":({"Great Britain"})])),
+   Country("GB","United Kingdom","UK",
+           (["aka":
+             ({"Great Britain",
+               "United Kingdom of Great Britain and Northen Ireland"})])),
+   // GC NOT USED
    Country("GD","Grenada","GJ"),
    Country("GE","Georgia","GG"),
    Country("GF","French Guiana","FG"),
+   Country("GG","Guernsey",0),
    Country("GH","Ghana","GH"),
    Country("GI","Gibraltar","GI"),
    Country("GL","Greenland","GL"),
@@ -146,26 +178,31 @@ array(Country) countries=
    Country("GP","Guadeloupe","GP"),
    Country("GQ","Equatorial Guinea","EK"),
    Country("GR","Greece","GR"),
-   Country("GS","S. Georgia and S. Sandwich Isls.","SX"),
+   Country("GS","S. Georgia and S. Sandwich Isls.","SX",
+           (["aka":({"South Georgia and the South Sandwich Islands"})])),
    Country("GT","Guatemala","GT"),
    Country("GU","Guam","GQ"),
    Country("GW","Guinea-Bissau","PU"),
    Country("GY","Guyana","GY"),
    Country("HK","Hong Kong","HK"),
-   Country("HM","Heard and McDonald Islands","HM"),
+   Country("HM","Heard Island and McDonald Islands","HM"),
    Country("HN","Honduras","HO"),
    Country("HR","Croatia","HR",(["aka":({"Hrvatska"})])),
    Country("HT","Haiti","HA"),
    Country("HU","Hungary","HU"),
+   // IB NOT USED
+   // IC EXCEPTIONALLY RESERVED
    Country("ID","Indonesia","ID"),
    Country("IE","Ireland","EI"),
    Country("IL","Israel","IS",(["aka":({"State of Israel"})])),
+   Country("IM","Isle of Man",0),
    Country("IN","India","IN"),
    Country("IO","British Indian Ocean Territory","IO"),
    Country("IQ","Iraq","IZ"),
-   Country("IR","Iran","IR"),
+   Country("IR","Iran","IR",(["aka":({"Islamic Republic of Iran"})])),
    Country("IS","Iceland","IC"),
    Country("IT","Italy","IT"),
+   // JA INDETERMINATELY RESERVED
    Country("JE","Jersey","JE"),
    Country("JM","Jamaica","JM"),
    Country("JO","Jordan","JO"),
@@ -176,14 +213,19 @@ array(Country) countries=
    Country("KI","Kiribati","KR"),
    Country("KM","Comoros","CN"),
    Country("KN","Saint Kitts and Nevis","SC"),
-   Country("KP","North Korea","KN",(["aka":({"Korea, North"})])),
-   Country("KR","South Korea","KS",(["aka":({"Korea, South"})])),
+   Country("KP","North Korea","KN",
+           (["aka":
+             ({"Korea, North",
+               "Democratic People's Republic of Korea"})])),
+   Country("KR","South Korea","KS",(["aka":({"Korea, South",
+                                             "Republic of Korea"})])),
    Country("KW","Kuwait","KU"),
    Country("KY","Cayman Islands","CJ"),
    Country("KZ","Kazakhstan","KZ"),
-   Country("LA","Laos","LA"),
+   Country("LA","Laos","LA",(["aka":({"Lao People's Democratic Republic"})])),
    Country("LB","Lebanon","LE"),
    Country("LC","Saint Lucia","ST"),
+   // LF INDETERMINATELY RESERVED
    Country("LI","Liechtenstein","LS"),
    Country("LK","Sri Lanka","CE"),
    Country("LR","Liberia","LI"),
@@ -194,10 +236,14 @@ array(Country) countries=
    Country("LY","Libya","LY"),
    Country("MA","Morocco","MO"),
    Country("MC","Monaco","MN"),
-   Country("MD","Moldova","MD"),
+   Country("MD","Moldova","MD",(["aka":({"Republic of Moldova"})])),
+   Country("ME","Montenegro","MW"),
+   Country("MF","Saint Martin","??",(["aka":({"French Saint Martin"})])),
    Country("MG","Madagascar","MA"),
    Country("MH","Marshall Islands","RM"),
-   Country("MK","Macedonia","MK"),
+   Country("MK","Macedonia","MK",
+           (["aka":({"The former Yugoslav Republic of Macedonia",
+                     "Republic of Macedonia"})])),
    Country("ML","Mali","ML"),
    Country("MM","Myanmar","BM",
 	   (["aka":({"Burma"})])),
@@ -224,28 +270,38 @@ array(Country) countries=
    Country("NO","Norway","NO"),
    Country("NP","Nepal","NP"),
    Country("NR","Nauru","NR"),
-   Country("NT","Neutral Zone","??",(["_continent":"N/A"])),
+   Country("NT","Neutral Zone","??", // TRANSITIONALLY RESERVED
+           (["_continent":"N/A"])),
    Country("NU","Niue","NE"),
    Country("NZ","New Zealand (Aotearoa)","NZ",
 	   (["aka":({"Aotearoa","New Zealand","New Zeeland"})])),
+   // OA NOT USED
    Country("OM","Oman","MU"),
    Country("PA","Panama","PM"),
    Country("PE","Peru","PE"),
    Country("PF","French Polynesia","FP"),
    Country("PG","Papua New Guinea","PP"),
    Country("PH","Philippines","RP"),
+   // PI INDETERMINATELY RESERVED
    Country("PK","Pakistan","PK"),
    Country("PL","Poland","PL"),
    Country("PM","St. Pierre and Miquelon","SB"),
    Country("PN","Pitcairn","PC",
 	   (["aka":({"Pitcairn Islands"})])),
    Country("PR","Puerto Rico","RQ"),
+   Country("PS","Palestine","??",(["aka":({"State of Palestine"})])),
    Country("PT","Portugal","PO"),
    Country("PW","Palau","PS"),
    Country("PY","Paraguay","PA"),
    Country("QA","Qatar","QA"),
+   // QM-QZ USER ASSIGNED
+   // RA-RC INDETERMINATELY RESERVED
    Country("RE","Reunion","RE"),
+   // RH-RI INDETERMINATELY RESERVED
+   // RL-RN INDETERMINATELY RESERVED
    Country("RO","Romania","RO",(["aka":({"Rumania"})])),
+   // RP INDETERMINATELY RESERVED
+   Country("RS","Serbia","SR"),
    Country("RU","Russian Federation","RS",
 	   (["aka":({"Russia"}),
 	     "_continent":"Europe"
@@ -256,13 +312,17 @@ array(Country) countries=
    Country("SC","Seychelles","SE"),
    Country("SD","Sudan","SU"),
    Country("SE","Sweden","SW"),
+   // SF TRANSITIONALLY RESERVED
    Country("SG","Singapore","SN"),
-   Country("SH","St. Helena","SH", // including ascension?
-	   (["aka":({"Saint Helena"})])),
+   Country("SH","St. Helena","SH",
+           (["aka":({"Saint Helena",
+                     "Sait Helena, Ascension and Tristan da Cunha" })])),
    Country("SI","Slovenia","SI"),
    Country("SJ","Svalbard and Jan Mayen Islands","??"),
-   Country("??","Svalbard","SV"),
-   Country("??","Jan Mayen","JN"),
+   Country("??","Svalbard","SV",
+           (["_continent":"Europe"])),
+   Country("??","Jan Mayen","JN",
+           (["_continent":"Europe"])),
    Country("SK","Slovak Republic","LO",
 	   (["aka":({"Slovakia"})])),
    Country("SL","Sierra Leone","SL"),
@@ -270,12 +330,15 @@ array(Country) countries=
    Country("SN","Senegal","SG"),
    Country("SO","Somalia","SO"),
    Country("SR","Suriname","NS"),
+   Country("SS","South Sudan",0),
    Country("ST","Sao Tome and Principe","TP"),
-   Country("SU","USSR","??",(["former":1,
+   Country("SU","USSR","??",(["former":1, // EXCEPTIONALLY RESERVED
 			      "_continent":"Asia"])),
    Country("SV","El Salvador","ES"),
+   Country("SX","Sint Maarten","??",(["aka":({"Dutch Sint Maarten"})])),
    Country("SY","Syria","SY"),
    Country("SZ","Swaziland","WZ"),
+   // TA EXCEPTIONALLY RESERVED
    Country("TC","Turks and Caicos Islands","??"),
    Country("TD","Chad","CD"),
    Country("TF","French Southern Territories","??"),
@@ -283,45 +346,54 @@ array(Country) countries=
    Country("TH","Thailand","TH"),
    Country("TJ","Tajikistan","TI"),
    Country("TK","Tokelau","TL"),
+   Country("TL","Timor-Leste",0,(["aka":({"East Timor"})])),
    Country("TM","Turkmenistan","TX"),
    Country("TN","Tunisia","TS"),
    Country("TO","Tonga","TN"),
-   Country("TP","East Timor","??"), // indonesia?
+   Country("TP","East Timor","??", // TRANSITIONALLY RESERVED
+           (["former":1,"_continent":"Oceania"])),
    Country("TR","Turkey","TU"),
    Country("TT","Trinidad and Tobago","TD"),
    Country("TV","Tuvalu","TV"),
    Country("TW","Taiwan","TW"),
-   Country("TZ","Tanzania","TZ"),
+   Country("TZ","Tanzania","TZ",(["aka":({"United Republic of Tanzania"})])),
    Country("UA","Ukraine","UP"),
    Country("UG","Uganda","UG"),
-   Country("US","United States","US"),
+   // UK EXCEPTIONALLY RESERVED
+   Country("UM","United States Minor Outlying Islands",0),
+   // UN EXCEPTIONALLY RESERVED
+   Country("US","USA","US",(["aka":({"United States of America"})])),
    Country("UY","Uruguay","UY"),
    Country("UZ","Uzbekistan","UZ"),
-   Country("VA","Vatican City State (Holy See)","VT",
+   Country("VA","Vatican City State","VT",
 	   (["aka":({"Holy See",
-		     "Holy See (Vatican City)"})])),
+                     "Vatican City"})])),
    Country("VC","Saint Vincent and the Grenadines","VC"),
-   Country("VE","Venezuela","VE"),
+   Country("VE","Venezuela","VE",
+           (["aka":({"bolivarian Republic of Venezuela"})])),
    Country("VG","Virgin Islands (British)","VI"),
    Country("VI","Virgin Islands (U.S.)","VQ"),
    Country("VN","Viet Nam","VM",(["aka":({"Vietnam"})])),
    Country("VU","Vanuatu","NH"),
    Country("WF","Wallis and Futuna Islands","WF"),
+   // WG INDETERMINATELY RESERVED
+   // WL INDETERMINATELY RESERVED
+   // WO NO USED
    Country("WS","Samoa","WS",
 	   (["aka":({"Western Samoa"})])),
-   Country("??","American Samoa","AQ"),
+   // WV INDETERMINATELY RESERVED
+   // XA-XZ USER ASSIGNED
    Country("YE","Yemen","YM"),
    Country("YT","Mayotte","MF"),
-   Country("YU","Yugoslavia","??",
-	   (["aka":({"Serbia and Montenegro"})])),
-   Country("??","Montenegro","MW",
-	   (["_continent":"Europe"])),
-   Country("??","Serbia","SR",
-	   (["_continent":"Europe"])),
+   Country("YU","Yugoslavia","??", // TRANSITIONALLY RESERVED
+           (["former":1, "_continent":"Europe"])),
+   // YV INDETERMINATELY RESERVED
    Country("ZA","South Africa","SF"),
    Country("ZM","Zambia","ZA"),
-   Country("ZR","Zaire","??"),
+   Country("ZR","Zaire","??", // TRANSITIONALLY RESERVED
+           (["former":1,"_continent":"Africa"])),
    Country("ZW","Zimbabwe","ZI"),
+   // ZZ USER ASSIGNED
 });
 
 //! Country
@@ -331,7 +403,7 @@ class Country
    //!    ISO 2-character code aka domain name
 
    string fips10; // iso-2-character-code aka domain name
-   //!    FIPS 10-character code; 
+   //!    FIPS 10-character code;
    //!    "Federal Information Processing Standards 10-3" etc,
    //!    used by some goverments in the US.
 
@@ -374,12 +446,12 @@ class Country
 
    //! @decl string cast("string")
    //!	It is possible to cast a country to a string,
-   //!	which will be the same as performing 
+   //!	which will be the same as performing
    //!	@expr{country->name;@}.
-   string cast(string to)
+   protected string cast(string to)
    {
-      if (to[..5]=="string") return name;
-      error("can't cast to %O\n",to);
+      if (to=="string") return name;
+      return UNDEFINED;
    }
 
    string _sprintf(int t)
@@ -440,8 +512,7 @@ Country from_domain(string domain)
 	"GOV":_from_domain->US,
 	"NET":_from_domain->US,
 	"ORG":_from_domain->US,
-	"UM":_from_domain->US,
-	"UK":_from_domain->GB,
+        "UK":_from_domain->GB,
 	"FX":_from_domain->FR,
       ]);
    }
@@ -464,7 +535,7 @@ Country from_name(string name)
 		  lambda(Country c)
 		  {
 		     if (c->aka && sizeof(c->aka))
-			return 
+			return
 		     ([lower_case(c->name):c])+
 			   (mapping)map(
 			      c->aka,
@@ -480,7 +551,7 @@ Country from_name(string name)
 }
 
 //! @decl mapping(string:array(Country)) continents()
-//!	Gives back a mapping from continent name to 
+//!	Gives back a mapping from continent name to
 //!	an array of the countries on that continent.
 //!
 //!	The continents are:
@@ -508,18 +579,12 @@ mapping(string:array(Country)) continents()
       _cached_continents[name]=map(
 	 iso2s,
 	 lambda(string iso2)
-	 {
-	    Country co=_from_domain[iso2];
-	    if (!co) error("%O has unknown country: %O\n",name,iso2);
+         {
+            Country co=_from_domain[iso2];
+            if (!co) error("%O has unknown country: %O\n",name,iso2);
 	    if (!co->_continent) co->_continent=name;
 	    return co;
 	 });
-
-#if 1
-   foreach (countries,Country co)
-      if (!co->_continent)
-	 werror("no continent: %O %O\n",co->iso2,co);
-#endif
 
    return _cached_continents;
 }
@@ -532,11 +597,11 @@ mapping(string:array(Country)) continents()
 //!	returns that country if possible:
 //!
 //! @code
-//! > Geography.Countries.se;    
+//! > Geography.Countries.se;
 //! Result: Country(Sweden)
 //! > Geography.Countries.djibouti;
 //! Result: Country(Djibouti)
-//! > Geography.Countries.com;     
+//! > Geography.Countries.com;
 //! Result: Country(United States)
 //! > Geography.Countries.wallis_and_futuna_islands->iso2;
 //! Result: "WF"

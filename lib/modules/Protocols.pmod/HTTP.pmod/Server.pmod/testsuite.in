@@ -5,17 +5,8 @@ define(setup_request_test,[[
   test_do([[
   class FD {
     inherit Stdio.FakeFile;
-    function read_cb;
-    function close_cb;
-    void set_nonblocking(function r, mixed x, function c) {
-      read_cb = r;
-      close_cb = c;
-    }
     void add(string s) {
       read_cb(0, s);
-    }
-    void set_read_callback(function r) {
-      read_cb = r;
     }
   };
   add_constant("FD",FD(""));

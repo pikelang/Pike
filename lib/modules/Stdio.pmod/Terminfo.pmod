@@ -38,7 +38,7 @@ protected private class TermMachine {
   {
     return intp(map[id]) && [int]map[id];
   }
-  
+
   string tgetstr(string id)
   {
     return stringp(map[id]) && [string]map[id];
@@ -52,10 +52,10 @@ protected private class TermMachine {
     int z;
     mapping var=([]);
     array args0=args;
-    
+
 #define POP (z=[int]args[0],args=args[1..],z)
 #define PUSH(x) (args=({x})+args)
-    
+
     while ( (fmt=fmt[1..])!=({}) )
       if (fmt[0]=="") res+="%";
       else
@@ -70,15 +70,15 @@ protected private class TermMachine {
 	  break;
 	case 'c': res+=sprintf("%c%s",POP,fmt[0][1..]); break;
 	case 's': res+=sprintf("%s%s",[string](mixed)POP,fmt[0][1..]); break;
-	  
-	case '\'': 
+
+	case '\'':
 	  sscanf(fmt[0],"'%s'%s",tmp,fmt[0]);
 	  if (tmp=="") tmp="\0";
 	  if (tmp[0]=='\\') tmp=sprintf("%c",(int)("0"+tmp[1..]));
 	  PUSH(tmp[0]);
 	  res+=fmt[0];
 	  break;
-	case '{': 
+	case '{':
 	  sscanf(fmt[0],"{%d}%s",z,fmt[0]);
 	  res+=fmt[0];
 	  PUSH(z);
@@ -173,17 +173,17 @@ class Termcap {
       error("Termcap: Unparsable entry\n");
     aliases=en[..i-1]/"|";
     en=en[i..];
-    
+
     while (en!="")
     {
       string name;
       string data;
       if(sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s"+br+"%s",name,data,en) < 4)
-      {	
+      {
 	sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s",name,data);
 	en="";
       }
-      
+
       if (data=="") // boolean
       {
 	if (name!="") map[name]=1;
@@ -207,12 +207,12 @@ class Termcap {
 	  if (sscanf(en,"%s"+br+"%s",add,en)<2) break;
 	  data+="\\"+add;
 	}
-	
+
 	data=replace(data,"\\^","\\*");
-	
+
 	if (has_value(data, "^"))
 	  data=replace(data,ctrlcharsfrom,ctrlcharsto);
-	
+
 	data = replace(data,
 		  ({"\\E","\\e","\\n","\\r","\\t","\\b","\\f",
 		    "\\*","\\\\","\\,","\\:","#",
@@ -237,7 +237,7 @@ class Termcap {
 	  }
 
 	map[name]=data;
-	
+
       }
       else // weird
       {
@@ -249,7 +249,7 @@ class Termcap {
   }
 
   //!
-  void create(string cap, TermcapDB|void tcdb, int|void maxrecurse)
+  protected void create(string cap, TermcapDB|void tcdb, int|void maxrecurse)
   {
     int i=0;
     while((i=search(cap, "\\\n", i))>=0) {
@@ -277,6 +277,9 @@ class Termcap {
 class Terminfo {
 
   inherit TermMachine;
+
+  protected local constant MAGIC = 0432;	// SysV
+  protected local constant MAGIC2 = 01036;	// Ncurses 6
 
   //!
   array(string) aliases;
@@ -342,7 +345,7 @@ class Terminfo {
 
     if (6!=sscanf(swab(f->read(12)), "%2c%2c%2c%2c%2c%2c",
 		  magic, sname, nbool, nnum, nstr, sstr) ||
-	magic != 0432)
+	(magic != MAGIC && magic != MAGIC2))
       return 0;
     aliases = (f->read(sname)-"\0")/"|";
     {
@@ -355,14 +358,23 @@ class Terminfo {
       map = mkmapping(boolnames[..sizeof(bools)-1], bools);
     }
     {
-      array(int) nums = [array(int)]
-	array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
+      array(int) nums;
+      if (magic == MAGIC2) {
+	// 32-bit little-endian integers.
+	nums = array_sscanf(f->read(nnum*4), "%-4c"*nnum);
+      } else {
+	nums = [array(int)]
+	  array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
+      }
       if (sizeof(nums)>sizeof(numnames))
 	nums = nums[..sizeof(numnames)-1];
       mapping(string:int) tmp = mkmapping(numnames[..sizeof(nums)-1], nums);
-      foreach (numnames[..sizeof(nums)-1], string name)
-	if (tmp[name]>=0xfffe)
-	  m_delete(tmp, name);
+      foreach (numnames[..sizeof(nums)-1], string name) {
+	if (tmp[name]>=0xfffe) {
+	  if ((magic == MAGIC) || (tmp[name] >= 0xfffffffe))
+	    m_delete(tmp, name);
+	}
+      }
       map += tmp;
     }
     {
@@ -395,7 +407,7 @@ class Terminfo {
   }
 
   //!
-  void create(string filename)
+  protected void create(string filename)
   {
     .File f = .File();
     if (!f->open(filename, "r"))
@@ -418,7 +430,7 @@ class TermcapDB {
   protected private mapping(string:int|Termcap) cache=([]);
   protected private int complete_index=0;
 
-  void create(string|void filename)
+  protected void create(string|void filename)
   {
     if (!filename) {
       string tce = [string]getenv("TERMCAP");
@@ -459,7 +471,7 @@ class TermcapDB {
     string q;
     q=::read(8192);
     if (q=="" || !q) return 0;
-    buf+=q; 
+    buf+=q;
     return 1;
   }
 
@@ -477,10 +489,10 @@ class TermcapDB {
     for (;;)
     {
       if (buf=="" && !more_data()) return 0; // eof
-      
+
       sscanf(buf,"%*[ \t\r\n]%s",buf);
       if (buf=="") continue;
-      
+
       if (buf[0]=='#') // comment, scan to newline
       {
 	while ((i=search(buf,"\n"))<0)
@@ -502,7 +514,7 @@ class TermcapDB {
     {
       if (!more_data()) return 0; // eof
     }
-    
+
     while (buf[i-1]=='\\')
     {
       res+=buf[..i-2];
@@ -517,7 +529,7 @@ class TermcapDB {
 	if (!more_data()) return 0; // eof
       }
     }
-    
+
     res+=buf[..i-1];
     buf=buf[i+1..];
 
@@ -534,7 +546,7 @@ class TermcapDB {
     return read();
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     LOCK;
     if(!complete_index) {
@@ -546,7 +558,7 @@ class TermcapDB {
     return sort(indices(cache));
   }
 
-  array(Termcap) _values()
+  protected array(Termcap) _values()
   {
     array(object|int) res = ({});
     mapping(int:string) extra = ([]);
@@ -596,13 +608,13 @@ class TermcapDB {
       int i, j;
 
       if (buf=="" && !more_data()) return 0; // eof
-      
+
       i=search(buf,find);
       if (i!=-1)
       {
 	int j=i;
 	while (j>=0 && buf[j]!='\n') j--; // find backwards
-	
+
 	if (buf!="" && buf[j+1]!='#')  // skip comments
 	{
 	  buf=buf[j+1..];
@@ -613,7 +625,7 @@ class TermcapDB {
 	  if (!more_data()) return 0; // eof
 
 	buf = buf[i+1..];
-	
+
 	continue;
       }
       for(j=-1; (i=search(buf,"\n",j+1))>=0; j=i);
@@ -622,12 +634,12 @@ class TermcapDB {
     }
   }
 
-  Termcap load(string term, int|void maxrecurse)
+  protected Termcap load(string term, int|void maxrecurse)
   {
     int|string|Termcap cap;
 
     LOCK;
-    if (zero_type(cache[term]))
+    if (!has_index(cache, term))
     {
       if (!complete_index)
       {
@@ -656,7 +668,7 @@ class TermcapDB {
     return objectp(cap) && [object(Termcap)]cap;
   }
 
-  Termcap `[](string name)
+  protected Termcap `[](string name)
   {
     return load(name);
   }
@@ -671,7 +683,7 @@ class TerminfoDB {
   protected private mapping(string:Terminfo) cache = ([]);
   protected private int complete_index=0;
 
-  protected string _sprintf()
+  protected string _sprintf(int c)
   {
     return sprintf("Stdio.Terminfo.TerminfoDB(%O)", dir);
   }
@@ -707,14 +719,14 @@ class TerminfoDB {
       error("failed to read terminfo dir %O\n", dirname);
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     LOCK;
     if (!complete_index) {
       foreach (get_dir(dir), string a)
 	if (sizeof(a) == 1)
 	  foreach (get_dir(dir+a), string b)
-	    if(zero_type(cache[b]))
+	    if(!has_index(cache, b))
 	      cache[b] = 0;
       complete_index = 1;
     }
@@ -722,7 +734,7 @@ class TerminfoDB {
     return sort(indices(cache));
   }
 
-  array(object) _values()
+  protected array(object) _values()
   {
     return predef::map(_indices(),
                        [function(string:object(Terminfo))]
@@ -732,7 +744,7 @@ class TerminfoDB {
                        });
   }
 
-  Terminfo load(string term)
+  protected Terminfo load(string term)
   {
     Terminfo ti;
 
@@ -755,7 +767,7 @@ class TerminfoDB {
     return ti;
   }
 
-  Terminfo `[](string name)
+  protected Terminfo `[](string name)
   {
     return load(name);
   }
@@ -800,15 +812,15 @@ class MetaTerminfoDB {
 	db = TerminfoDB(db);
       }
       if (!db) continue;
-      this_program::dbs += ({ db });
+      this::dbs += ({ db });
     }
-    // werror("TerminfoDBs: %O\n", this_program::dbs);
-    if (!sizeof(this_program::dbs)) {
+    // werror("TerminfoDBs: %O\n", this::dbs);
+    if (!sizeof(this::dbs)) {
       destruct(this);
     }
   }
 
-  Terminfo `[](string name)
+  protected Terminfo `[](string name)
   {
     foreach(dbs, TerminfoDB db) {
       Terminfo ti = db[name];
@@ -895,7 +907,7 @@ Termcap getTerm(string|void term)
 }
 
 //! Returns an object describing the fallback terminal for the terminal
-//! @[term]. This is usually equvivalent to @[Stdio.Terminfo.getTerm("dumb")].
+//! @[term]. This is usually equivalent to @[Stdio.Terminfo.getTerm("dumb")].
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm

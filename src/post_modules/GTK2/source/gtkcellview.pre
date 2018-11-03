@@ -18,12 +18,12 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
     GtkWidget *gcv;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gcv=gtk_cell_view_new_with_pixbuf(GDK_PIXBUF(get_gobject(o1)));
       THIS->obj=G_OBJECT(gcv);
     } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *str;
-      get_all_args("create",args,"%t",&str);
+      get_all_args(NULL,args,"%t",&str);
       ref_push_string(str);
       f_string_to_utf8(1);
       gcv=gtk_cell_view_new_with_text(CGSTR0(Pike_sp[-1].u.string));
@@ -36,7 +36,7 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
     struct pike_string *str;
     INT_TYPE mark;
     GtkWidget *gcv;
-    get_all_args("create",args,"%t%i",&str,&mark);
+    get_all_args(NULL,args,"%t%i",&str,&mark);
     ref_push_string(str);
     f_string_to_utf8(1);
     if (mark)
@@ -67,7 +67,7 @@ void set_displayed_row(?GTK2.TreePath path)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_displayed_row",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   } else {
@@ -96,7 +96,7 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
   {
     struct object *o1;
     GtkRequisition req;
-    get_all_args("get_size_of_row",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),&req);
     pgtk2_pop_n_elems(args);
@@ -112,7 +112,7 @@ void set_background_color(GDK2.Color color)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_background_color",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_cell_view_set_background_color(GTK_CELL_VIEW(THIS->obj),
 		(GdkColor *)get_gdkobject(o1,color));
   }

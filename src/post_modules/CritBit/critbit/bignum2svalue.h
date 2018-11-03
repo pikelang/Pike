@@ -3,13 +3,6 @@
 #endif
 #define CB_NAMESPACE	bignum2svalue
 
-#ifndef CB_INLINE
-# define CB_INLINE
-#else
-# undef CB_INLINE
-# define CB_INLINE inline
-#endif
-
 #ifndef CB_STATIC
 # define CB_STATIC
 #else

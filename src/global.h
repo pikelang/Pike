@@ -14,6 +14,7 @@
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
+#  define _TIME_BITS 64
 #  define _LARGEFILE_SOURCE
 /* #  define _LARGEFILE64_SOURCE 1 */	/* This one is for explicit 64bit. */
 #endif
@@ -64,12 +65,44 @@
 #define NTDDI_VERSION 0x05ffffff
 #endif
 
-#endif /* __NT__ */
+#ifdef _MSC_VER
+/* Microsoft C.
+ *
+ * Version table from
+ * http://stackoverflow.com/questions/70013/how-to-detect-if-im-compiling-code-with-visual-studio-2008
+ * MSVC++ 14.0 _MSC_VER == 1900 (Visual Studio 2015)
+ * MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
+ * MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
+ * MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
+ * MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
+ * MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
+ * MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
+ * MSVC++ 7.0  _MSC_VER == 1300
+ * MSVC++ 6.0  _MSC_VER == 1200
+ * MSVC++ 5.0  _MSC_VER == 1100
+ */
+#if _MSC_VER <= 1900
+/* VS 2015 or earlier do not have all C99 keywords...
+ * cf https://msdn.microsoft.com/en-us/library/bw1hbe6y.aspx
+ */
+#define inline __inline
+#if _MSC_VER <= 1800
+/* The isnan() macro was added in VS 2015.
+ */
+#define isnan(X)	_isnan(X)
+#endif /* _MSC_VER <= 1800 */
+#endif /* _MSC_VER <= 1900 */
+#endif /* _MSC_VER */
 
-#ifdef __amigaos__
-/* Avoid getting definitions of struct in_addr from <unistd.h>... */
-#define __USE_NETINET_IN_H
-#endif
+/* NB: Defaults to 64. */
+#ifndef FD_SETSIZE
+/*
+ * In reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
+#endif /* FD_SETSIZE */
+
+#endif /* __NT__ */
 
 /*
  * Some structure forward declarations are needed.
@@ -80,25 +113,17 @@
 #define NO_FIX_MALLOC
 #endif
 
-#ifndef STRUCT_PROGRAM_DECLARED
-#define STRUCT_PROGRAM_DECLARED
-struct program;
-#endif
-
-struct function;
-#ifndef STRUCT_SVALUE_DECLARED
-#define STRUCT_SVALUE_DECLARED
-struct svalue;
-#endif
-struct sockaddr;
-struct object;
 struct array;
+struct function;
+struct mapping;
+struct multiset;
+struct object;
+struct pike_string;
+struct program;
+struct sockaddr;
 struct svalue;
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
 struct timeval;
-#endif
+
 
 #ifndef CONFIGURE_TEST
 /* machine.h doesn't exist if we're included from a configure test
@@ -134,7 +159,7 @@ struct timeval;
 #define ORIG_PACKAGE_URL PACKAGE_URL
 #undef PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
 #include "machine.h"
 
@@ -169,9 +194,9 @@ struct timeval;
 #define PACKAGE_URL ORIG_PACKAGE_URL
 #undef ORIG_PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
-#endif
+#endif /* CONFIGURE_TEST */
 
 /* Some identifiers used as flags in the machine.h defines. */
 #define PIKE_YES	1
@@ -187,14 +212,6 @@ struct timeval;
 #endif /* HAVE_OSERROR && !errno */
 #endif /* _SGI_SPROC_THREADS */
 
-/* This macro is only provided for compatibility with
- * Windows PreRelease. Use ALIGNOF() instead!
- * (Needed for va_arg().)
- */
-#ifndef __alignof
-#define __alignof(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
-#endif /* __alignof */
-
 #ifdef HAVE_FUNCTION_ATTRIBUTES
 #define ATTRIBUTE(X) __attribute__ (X)
 #else
@@ -206,6 +223,36 @@ struct timeval;
 #else /* !HAVE_DECLSPEC */
 #define DECLSPEC(X)
 #endif /* HAVE_DECLSPEC */
+
+#ifdef HAS___BUILTIN_EXPECT
+# define UNLIKELY(X) __builtin_expect( (long)(X), 0 )
+# define LIKELY(X) __builtin_expect( (long)(X), 1 )
+#else
+# define UNLIKELY(X) X
+# define LIKELY(X) X
+#endif
+
+#ifdef HAS___BUILTIN_UNREACHABLE
+# define UNREACHABLE(X) __builtin_unreachable()
+#else
+# define UNREACHABLE(X) X
+#endif
+
+#ifdef HAS___BUILTIN_ASSUME
+# define STATIC_ASSUME(X) __builtin_assume(X)
+#else
+# ifdef HAS___BUILTIN_UNREACHABLE
+#  define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# else
+#  define STATIC_ASSUME(X)
+# endif
+#endif
+
+#ifdef HAS___BUILTIN_CONSTANT_P
+# define STATIC_IS_CONSTANT(X)	__builtin_constant_p(X)
+#else
+# define STATIC_IS_CONSTANT(X)	0
+#endif
 
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
@@ -236,18 +283,11 @@ struct timeval;
  */
 #define MAX_LOCAL	256
 
-/*
- * define NO_GC to get rid of garbage collection
- */
-#ifndef NO_GC
-#define GC2
-#endif
-
-#if defined(i386)
+#if defined(i386) || defined(__powerpc__) || defined(__x86_64__) || (defined(__aarch64__) && defined(__ARM_FEATURE_UNALIGNED))
 #ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define HANDLES_UNALIGNED_MEMORY_ACCESS
 #endif
-#endif
+#endif /* i386 */
 
 /* AIX requires this to be the first thing in the file.  */
 #if HAVE_ALLOCA_H
@@ -257,7 +297,7 @@ struct timeval;
 #   undef alloca
 #  endif
 #  define alloca __builtin_alloca
-# endif 
+# endif
 #else
 # ifdef __GNUC__
 #  ifdef alloca
@@ -266,19 +306,13 @@ struct timeval;
 #  define alloca __builtin_alloca
 # else
 #  ifdef _AIX
- #pragma alloca
+#pragma alloca
 #  else
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca();
 #   endif
 #  endif
 # endif
-#endif
-
-#ifdef __NT__
-/* We are running NT */
-#undef FD_SETSIZE
-#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
 #ifdef HAVE_DEVICES_TIMER_H
@@ -290,14 +324,11 @@ void *alloca();
 
 #include <stdio.h>
 #include <stdarg.h>
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#endif
+#include <string.h>
+#include <limits.h>
+#include <float.h>
 
 #ifdef HAVE_MALLOC_H
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
@@ -310,17 +341,7 @@ void *alloca();
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
@@ -329,8 +350,6 @@ void *alloca();
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #endif
-
-#include <float.h>
 
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"
@@ -366,38 +385,34 @@ void *alloca();
 #define B8_T __int64
 #elif SIZEOF_CHAR_P == 8
 #define B8_T char *
-#elif defined(B4_T)
-struct b8_t_s { B4_T x,y; };
-#define B8_T struct b8_t_s
 #endif
 
-#if defined(B8_T)
-struct b16_t_s { B8_T x,y; };
-#define B16_T struct b16_t_s
+#if (SIZEOF___INT128 - 0) == 16
+#define B16_T __int128
 #endif
 
 /* INT_TYPE stuff */
 #ifndef MAX_INT_TYPE
-# if defined (WITH_SHORT_INT)
+# ifdef WITH_SHORT_INT
 
 #  define MAX_INT_TYPE	SHRT_MAX
 #  define MIN_INT_TYPE	SHRT_MIN
 #  define PRINTPIKEINT	"h"
 #  define INT_ARG_TYPE	int
 
-# elif defined (WITH_INT_INT)
+# elif defined(WITH_INT_INT)
 
 #  define MAX_INT_TYPE	INT_MAX
 #  define MIN_INT_TYPE	INT_MIN
 #  define PRINTPIKEINT	""
 
-# elif defined (WITH_LONG_INT)
+# elif defined(WITH_LONG_INT)
 
 #  define MAX_INT_TYPE	LONG_MAX
 #  define MIN_INT_TYPE	LONG_MIN
 #  define PRINTPIKEINT	"l"
 
-# elif defined (WITH_LONG_LONG_INT)
+# elif defined(WITH_LONG_LONG_INT)
 
 #  ifdef LLONG_MAX
 #   define MAX_INT_TYPE	LLONG_MAX
@@ -426,7 +441,7 @@ struct b16_t_s { B8_T x,y; };
 #endif
 
 /* FLOAT_TYPE stuff */
-#if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
+#ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
 
 #  define PIKEFLOAT_MANT_DIG	LDBL_MANT_DIG
 #  define PIKEFLOAT_DIG		LDBL_DIG
@@ -439,7 +454,7 @@ struct b16_t_s { B8_T x,y; };
 #  define PIKEFLOAT_EPSILON	LDBL_EPSILON
 #  define PRINTPIKEFLOAT	"L"
 
-#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
+#elif defined(WITH_DOUBLE_PRECISION_SVALUE)
 
 #  define PIKEFLOAT_MANT_DIG	DBL_MANT_DIG
 #  define PIKEFLOAT_DIG		DBL_DIG
@@ -484,20 +499,27 @@ typedef unsigned char p_wchar0;
 typedef unsigned INT16 p_wchar1;
 typedef signed INT32 p_wchar2;
 
+enum size_shift {
+    eightbit=0,
+    sixteenbit=1,
+    thirtytwobit=2,
+};
+
 typedef struct p_wchar_p
 {
-  p_wchar0 *ptr;
-  int shift;
+  void *ptr;
+  enum size_shift shift;
 } PCHARP;
 
-/* Pointless in git. */
-#define RCSID(X)
+#define WERR(...) fprintf(stderr,__VA_ARGS__)
 
 #ifdef PIKE_DEBUG
 
 #define DO_IF_DEBUG(X) X
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
+#define DWERR(...) WERR(__VA_ARGS__)
 
+/* Control assert() definition in <assert.h> */
 #undef NDEBUG
 
 /* Set of macros to simplify passing __FILE__ and __LINE__ to
@@ -507,15 +529,16 @@ typedef struct p_wchar_p
 #define DLOC_DECL		const char *dloc_file, int dloc_line
 #define COMMA_DLOC_DECL		, const char *dloc_file, int dloc_line
 #define DLOC_ARGS		dloc_file, dloc_line
-#define DLOC_PF(PRE, SUF)	PRE "%s:%d" SUF
 #define DLOC_ARGS_OPT		dloc_file, dloc_line
 #define COMMA_DLOC_ARGS_OPT	, dloc_file, dloc_line
+#define USE_DLOC_ARGS()		((void)(DLOC_ARGS_OPT))
 #define DLOC_ENABLED
 
 #else  /* !PIKE_DEBUG */
 
 #define DO_IF_DEBUG(X)
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) NO_DEBUG
+#define DWERR(...)
 #define NDEBUG
 
 #define DLOC
@@ -523,9 +546,9 @@ typedef struct p_wchar_p
 #define DLOC_DECL
 #define COMMA_DLOC_DECL
 #define DLOC_ARGS		__FILE__, __LINE__
-#define DLOC_PF(PRE, SUF)
 #define DLOC_ARGS_OPT
 #define COMMA_DLOC_ARGS_OPT
+#define USE_DLOC_ARGS()
 
 #endif	/* !PIKE_DEBUG */
 
@@ -543,31 +566,39 @@ typedef struct p_wchar_p
 #define DO_IF_INTERNAL_PROFILING(X)
 #endif
 
-#ifndef INLINE
-#if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
-#define INLINE inline
-#else
-#define INLINE
-#endif
-#endif
-
 /* Suppress compiler warnings for unused parameters if possible. The mangling of
    argument name is required to catch when an unused argument later is used without
    removing the annotation. */
-#ifndef UNUSED
+#ifndef PIKE_UNUSED_ATTRIBUTE
 # ifdef __GNUC__
-#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED) __attribute__((unused))
+#  define PIKE_UNUSED_ATTRIBUTE  __attribute__((unused))
+#  if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE  __attribute__((warn_unused_result))
+#  else /* GCC < 3.4 */
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
+#  endif
 # else
-#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
+#  define PIKE_UNUSED_ATTRIBUTE
+#  define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 # endif
 #endif
-#ifndef DEBUGUSED
-# ifdef PIKE_DEBUG
-#  define DEBUGUSED(x) x
-# else
-#  define DEBUGUSED(x) UNUSED(x)
-# endif
+#ifndef PIKE_UNUSED
+# define PIKE_UNUSED(x)  PIKE_CONCAT(x,_UNUSED) PIKE_UNUSED_ATTRIBUTE
 #endif
+#ifndef UNUSED
+# define UNUSED(x)  PIKE_UNUSED(x)
+#endif
+#ifdef PIKE_DEBUG
+# define DEBUGUSED(x) x
+#else
+# define DEBUGUSED(x) PIKE_UNUSED(x)
+#endif
+#ifdef DEBUG_MALLOC
+# define DMALLOCUSED(x) x
+#else
+# define DMALLOCUSED(x) PIKE_UNUSED(x)
+#endif
+
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
@@ -590,7 +621,7 @@ typedef struct p_wchar_p
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
 #  endif
-# else 
+# else
 #  define PMOD_EXPORT
 # endif
 #endif
@@ -605,25 +636,6 @@ typedef struct p_wchar_p
 #endif
 #endif
 
-#ifdef PIKE_SECURITY
-#define DO_IF_SECURITY(X) X
-#else
-#define DO_IF_SECURITY(X)
-#endif
-
-/* Used by the AutoBuild system to mark known warnings. */
-#define DO_NOT_WARN(X)	(X)
-
-/* Some functions/macros used to avoid loss of precision warnings. */
-#ifdef __ECL
-static INLINE long PTRDIFF_T_TO_LONG(ptrdiff_t x)
-{
-  return DO_NOT_WARN((long)x);
-}
-#else /* !__ECL */
-#define PTRDIFF_T_TO_LONG(x)       ((long)(x))
-#endif /* __ECL */
-
 #ifndef HAVE_STRUCT_IOVEC
 #define HAVE_STRUCT_IOVEC
 struct iovec {
@@ -632,6 +644,62 @@ struct iovec {
 };
 #endif /* !HAVE_STRUCT_IOVEC */
 
+#ifdef HAVE_NON_SCALAR_OFF64_T
+/* Old Solaris uses unions instead of long long for 64bit values when __STDC__.
+ *
+ * Add some conversion functions for convenience.
+ *
+ * The types longlong_t and u_longlong_t are both from <sys/types.h>.
+ *
+ * Common types that are compatible with longlong_t:
+ *   off64_t, blckcnt64_t, offset_t, diskaddr_t
+ *
+ * Common types that are compatible with u_longlong_t:
+ *   ino64_t, fsblkcnt64_t, fsfilcnt64_t, u_offset_t, len_t
+ */
+static inline INT64 PIKE_UNUSED_ATTRIBUTE pike_longlong_to_int64(longlong_t val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.longlong = val;
+  return tmp.scalar;
+}
+static inline unsigned INT64 PIKE_UNUSED_ATTRIBUTE pike_ulonglong_to_uint64(u_longlong_t val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.ulonglong = val;
+  return tmp.uscalar;
+}
+static inline longlong_t PIKE_UNUSED_ATTRIBUTE pike_int64_to_longlong(INT64 val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.scalar = val;
+  return tmp.longlong;
+}
+static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsigned INT64 val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.uscalar = val;
+  return tmp.ulonglong;
+}
+#else /* !HAVE_NON_SCALAR_OFF64_T */
+#define pike_longlong_to_int64(VAL)	((INT64)(VAL))
+#define pike_ulonglong_to_uint64(VAL)	((unsigned INT64)(VAL))
+#define pike_int64_to_longlong(VAL)	((INT64)(VAL))
+#define pike_uint64_to_ulonglong(VAL)	((unsigned INT64)(VAL))
+#endif /* HAVE_NON_SCALAR_OFF64_T */
+
 #include "port.h"
 #include "dmalloc.h"
 
@@ -639,44 +707,28 @@ struct iovec {
  * pike_cpulib.h. Otherwise we get pesky include loops. */
 /* #include "pike_cpulib.h" */
 
-#ifdef BUFSIZ
-#define PROT_STDIO(x) PROT(x)
-#else
-#define PROT_STDIO(x) ()
-#endif
-
-#ifdef __STDC__
-#define PROT(x) x
-#else
-#define PROT(x) ()
-#endif
-
 #ifdef MALLOC_DECL_MISSING
-char *malloc PROT((int));
-char *realloc PROT((char *,int));
-void free PROT((char *));
-char *calloc PROT((int,int));
+void *malloc (int);
+void *realloc (void *,int);
+void free (void *);
+void *calloc (int,int);
 #endif
 
 #ifdef GETPEERNAME_DECL_MISSING
-int getpeername PROT((int, struct sockaddr *, int *));
+int getpeername (int, struct sockaddr *, int *);
 #endif
 
 #ifdef GETHOSTNAME_DECL_MISSING
-void gethostname PROT((char *,int));
+void gethostname (char *,int);
 #endif
 
 #ifdef POPEN_DECL_MISSING
-FILE *popen PROT((char *,char *));
+FILE *popen (char *,char *);
 #endif
 
 #ifdef GETENV_DECL_MISSING
-char *getenv PROT((char *));
+char *getenv (char *);
 #endif
-
-#ifdef USE_CRYPT_C
-char *crypt(const char *, const char *);
-#endif /* USE_CRYPT_C */
 
 /* If this define is present, error() has been renamed to Pike_error() and
  * error.h has been renamed to pike_error.h
@@ -687,15 +739,8 @@ char *crypt(const char *, const char *);
 /* Compatibility... */
 #define USE_PIKE_TYPE	2
 
-#ifdef PIKE_RUN_UNLOCKED
-#define DO_IF_RUN_UNLOCKED(X) X
-#else
-#define DO_IF_RUN_UNLOCKED(X)
-#endif
-
 /* Used in more than one place, better put it here */
-
-#if defined(PROFILING)
+#ifdef PROFILING
 #define DO_IF_PROFILING(X) X
 #else
 #define DO_IF_PROFILING(X)
@@ -704,9 +749,19 @@ char *crypt(const char *, const char *);
 /* #define PROFILING_DEBUG */
 
 #ifdef PROFILING_DEBUG
-#define DO_IF_PROFILING_DEBUG(X)	X
+#define W_PROFILING_DEBUG(...) WERR(__VA_ARGS__)
 #else /* !PROFILING_DEBUG */
-#define DO_IF_PROFILING_DEBUG(X)
+#define W_PROFILING_DEBIG(...)
 #endif /* PROFILING_DEBUG */
+
+#ifdef HAVE_C99_STRUCT_LITERAL_EXPR
+/* This macro is used for eg type-safe struct initializers. */
+#define CAST_STRUCT_LITERAL(TYPE)	(TYPE)
+#else
+/* Prior to C99 the literal was a special form only valid in
+ * initializers (ie not in general expressions).
+ */
+#define CAST_STRUCT_LITERAL(TYPE)
+#endif
 
 #endif

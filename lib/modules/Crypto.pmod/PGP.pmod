@@ -1,9 +1,14 @@
 
-//! PGP stuff. See RFC 4880.
+//! PGP stuff. See @rfc{4880@}.
 
 #pike __REAL_VERSION__
+#require constant(Crypto.HashState)
 
-#if constant(Crypto.HashState)
+protected Gmp.mpz read_number(Stdio.Buffer b)
+{
+  int bits = b->read_int(2);
+  return Gmp.mpz(b->read_int( (bits+7)>>3 ));
+}
 
 // Decodes a PGP public key.
 // @returns
@@ -13,30 +18,23 @@
 //     @member int validity
 //     @member object key
 //   @endmapping
-protected mapping decode_public_key(string s) {
-
+protected mapping decode_public_key(Stdio.Buffer b)
+{
   mapping r = ([]);
-  string key;
-  int l;
-  if(s[0]>=4)
-    sscanf(s, "%1c%4c%1c%2c%s", r->version, r->tstamp,
-	   r->type, l, key);
-  else
-    sscanf(s, "%1c%4c%2c%1c%2c%s", r->version, r->tstamp, r->validity,
-	   r->type, l, key);
+
+  r->version = b->read_int8();
+  r->tstamp  = b->read_int32();
+  if( r->version < 4 )
+    r->validity = b->read16();
+  r->type    = b->read_int8();
 
   switch(r->type) {
   case 1: {
     // RSA, Encrypt or Sign
     r->_type = "RSA (encrypt or sign)";
-    Gmp.mpz n, e;
 
-    l = (l+7)>>3;
-    n = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    e = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.RSA()->set_public_key(n, e);
+    // n and e
+    r->key = Crypto.RSA()->set_public_key(read_number(b), read_number(b));
   }
     break;
   case 2:
@@ -54,21 +52,10 @@ protected mapping decode_public_key(string s) {
   case 17: {
     // DSA
     r->_type = "DSA";
-    Gmp.mpz p, q, g, y;
 
-    l = (l+7)>>3;
-    p = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    q = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    g = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    y = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.DSA()->set_public_key(p, q, g, y);
-    r->key->random = Crypto.Random.random_string;
+    // p, q, g and y
+    r->key = Crypto.DSA()->set_public_key(read_number(b), read_number(b),
+                                          read_number(b), read_number(b));
   }
     break;
   case 18:
@@ -99,6 +86,35 @@ protected mapping decode_public_key(string s) {
   return r;
 }
 
+protected mapping decode_secret_key(Stdio.Buffer b)
+{
+  mapping r = decode_public_key(b);
+
+  int usage = b->read_int8();
+  if( usage != 0 )
+  {
+    r->_error = "Only unencrypted string-to-key usage supported.";
+    return r;
+  }
+
+  switch(r->type)
+  {
+  case 1:
+    // d, p and q.
+    r->key->set_private_key(read_number(b), ({ read_number(b), read_number(b) }));
+    // u. Not used
+    read_number(b);
+    break;
+
+  case 17:
+    // x
+    r->key->set_private_key(read_number(b));
+    break;
+  }
+
+  return r;
+}
+
 // Decodes a PGP signature
 // @returns
 //   @mapping
@@ -115,23 +131,23 @@ protected mapping decode_public_key(string s) {
 //     @member Gmp.mpz digest_r
 //     @member Gmp.mpz digest_s
 //   @endmapping
-protected mapping decode_signature(string s) {
-
+protected mapping decode_signature(Stdio.Buffer b)
+{
   mapping r = ([]);
-  int l5, l;
-  string dig;
-  sscanf(s, "%1c%1c%1c%4c%8s%1c%1c%2c%2c%s", r->version, l5, r->classification,
-	 r->tstamp, r->key_id, r->type, r->digest_algorithm,
-	 r->md_csum, l, dig);
+  r->version = b->read_int8();
+  int l5 = b->read_int8();
+  r->classification = b->read_int8();
+  r->tstamp = b->read_int32();
+  r->key_id = b->read(8);
+  r->type = b->read_int8();
+  r->digest_algorithm = b->read_int8();
+  r->md_csum = b->read_int16();
+
   if(r->type == 1) {
-    l = (l+7)>>3;
-    r->digest = Gmp.mpz(dig[..l-1],256);
+    r->digest = read_number(b);
   } else if(r->type == 17) {
-    l = (l+7)>>3;
-    r->digest_r = Gmp.mpz(dig[..l-1],256);
-    sscanf(dig[l..], "%2c%s", l, dig);
-    l = (l+7)>>3;
-    r->digest_s = Gmp.mpz(dig[..l-1],256);
+    r->digest_r = read_number(b);
+    r->digest_s = read_number(b);
   }
   return r;
 }
@@ -183,43 +199,54 @@ protected constant pgp_id = ([
 protected mapping(string:function) pgp_decoder = ([
   "public_key":decode_public_key,
   "public_subkey":decode_public_key,
+  "secret_key":decode_secret_key,
+  "secret_subkey":decode_secret_key,
   "signature":decode_signature,
   "compressed_data":decode_compressed,
 ]);
 
 //! Decodes PGP data.
-mapping(string:string|mapping) decode(string s) {
-
-  mapping(string:string|mapping) r = ([]);
-  int i = 0;
-  while(i<strlen(s)) {
-    int h = s[i++];
-    int data_l = 0;
-    switch(h&3) {
-     case 0:
-       sscanf(s[i..i], "%1c", data_l);
-       i++;
-       break;
-     case 1:
-       sscanf(s[i..i+1], "%2c", data_l);
-       i+=2;
-       break;
-     case 2:
-       sscanf(s[i..i+3], "%4c", data_l);
-       i+=4;
-       break;       
-     case 3:
-       data_l = strlen(s)-i;
-       break;
+mapping(string:string|mapping|array) decode(string s)
+{
+  Stdio.Buffer buf = Stdio.Buffer(s);
+  mapping(string:string|mapping|array) r = ([]);
+  while( sizeof(buf) )
+  {
+    int h = buf->read_int8();
+    Stdio.Buffer data;
+    if( (h&3) == 3 )
+    {
+      data = buf;
     }
-    if(i+data_l > strlen(s))
-      error("Bad PGP data\n");
-    h>>=2;
-    if(pgp_id[h])
-      r[pgp_id[h]] = (pgp_decoder[pgp_id[h]] || `+)(s[i..i+data_l-1]);
     else
-      r[sprintf("unknown_%07b",h)] = s[i..i+data_l-1];
-    i += data_l;
+    {
+      int len = 1<<(h&3);
+      data = buf->read_hbuffer( len );
+      if( !data )
+      {
+        if( len<=sizeof(buf) )
+          len = buf->read_int(len);
+        error("Attempt to read %d from %d bytes of data.\n", len, sizeof(buf));
+      }
+    }
+
+    h >>= 2;
+    string id = pgp_id[h] || sprintf("unknown_%07b",h);
+    mapping|string val;
+    if(pgp_decoder[id])
+      val = pgp_decoder[id](data);
+    else
+      val = data->read();
+
+    if( r[id] )
+    {
+      if(!arrayp(r[id]))
+        r[id] = ({ r[id], val });
+      else
+        r[id] += ({ r[id] });
+    }
+    else
+      r[id] = val;
   }
   return r;
 }
@@ -246,7 +273,7 @@ protected int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
   int csum;
   if(1 != sscanf(digest, "%2c", csum) || csum != sig->md_csum)
     return 0;
-    
+
   if(key->type == 1 && sig->digest_algorithm == 1)
     return key->key->raw_verify("0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+
 				digest, sig->digest);
@@ -362,7 +389,3 @@ mapping(string:mixed) decode_radix64(string data) {
   ret->actual_checksum = crc24(ret->data);
   return ret;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

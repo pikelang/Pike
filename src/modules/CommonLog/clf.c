@@ -14,10 +14,8 @@
 #include "module_support.h"
 #include "pike_error.h"
 #include "bignum.h"
-#include "pike_security.h"
 
 #include "threads.h"
-#include <stdio.h>
 #include <fcntl.h>
 
 
@@ -60,7 +58,7 @@ PIKE_MODULE_INIT
 {
   int i;
 
-  MEMSET(char_class, CLS_TOKEN, sizeof(char_class));
+  memset(char_class, CLS_TOKEN, sizeof(char_class));
   for(i='\0'; i<=' '; i++)
     char_class[i] = CLS_WSPACE;
   for(i='0'; i<='9'; i++)
@@ -158,9 +156,9 @@ static void f_read( INT32 args )
   struct svalue *old_sp;
   /* #define DYNAMIC_BUF */
 #ifdef DYNAMIC_BUF
-  dynamic_buffer buf;
+  struct byte_buffer buf;
 #else
-#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = realloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
+#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = xrealloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
 #define PUSHBUF() do { push_string( make_shared_binary_string( buf,bufpos ) ); bufpos=0; } while(0)
   char *buf;
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;
@@ -173,64 +171,19 @@ static void f_read( INT32 args )
   }
   old_sp = sp;
 
-  get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
+  get_all_args(NULL, args, "%*%*", &logfun, &file);
   if(TYPEOF(*logfun) != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
+    SIMPLE_ARG_TYPE_ERROR("read", 1, "function");
 
   if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
-    
+
     if(f == -1)
-      Pike_error("CommonLog.read: File is not open.\n");
+      Pike_error("File is not open.\n");
     my_fd = 0;
   } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
-#ifdef PIKE_SECURITY
-      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-      {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	  Pike_error("Permission denied.\n");
-	push_text("read");
-	push_int(0);
-	ref_push_string(file->u.string);
-	push_text("r");
-	push_int(00666);
-
-	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(TYPEOF(Pike_sp[-1]))
-	{
-	case PIKE_T_INT:
-	  switch(Pike_sp[-1].u.integer)
-	  {
-	  case 0: /* return 0 */
-	    errno=EPERM;
-	    Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
-		       errno);
-
-	  case 2: /* ok */
-	    pop_stack();
-	    break;
-
-	  case 3: /* permission denied */
-	    Pike_error("CommonLog.read: permission denied.\n");
-
-	  default:
-	    Pike_error("Error in user->valid_open, wrong return value.\n");
-	  }
-	  break;
-
-	default:
-	  Pike_error("Error in user->valid_open, wrong return type.\n");
-
-	case PIKE_T_STRING:
-	  /*	  if(Pike_sp[-1].u.string->shift_size) */
-	  /*	    file=Pike_sp[-1]; */
-	  pop_stack();
-	}
-
-      }
-#endif
     do {
       THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
@@ -240,10 +193,10 @@ static void f_read( INT32 args )
     } while (1);
 
     if(f < 0)
-      Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
-	    errno);
+      Pike_error("Failed to open file for reading (errno=%d).\n",
+                 errno);
   } else
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 2, "string|Stdio.File");
+    SIMPLE_ARG_TYPE_ERROR("read", 2, "string|Stdio.File");
 
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);
@@ -308,9 +261,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -321,14 +273,14 @@ static void f_read( INT32 args )
       case 1:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* remotehost */
+	push_string( buffer_finish_pike_string( &buf ) ); /* remotehost */
 #else
 	PUSHBUF();
 #endif
@@ -342,9 +294,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -357,7 +308,7 @@ static void f_read( INT32 args )
       case 3:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -365,7 +316,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* rfc931 */
+	push_string( buffer_finish_pike_string( &buf ) ); /* rfc931 */
 #else
 	PUSHBUF(); /* rfc931 */
 #endif
@@ -379,9 +330,8 @@ static void f_read( INT32 args )
 	    break;
 	  }
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -394,7 +344,7 @@ static void f_read( INT32 args )
       case 5:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -402,7 +352,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* authuser */
+	push_string( buffer_finish_pike_string( &buf ) ); /* authuser */
 #else
 	PUSHBUF(); /* authuser */
 #endif
@@ -423,8 +373,7 @@ static void f_read( INT32 args )
       case 7:
 	if(cls == CLS_QUOTE) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
+	  buffer_init( &buf );
 #else
 	  bufpos = 0;
 #endif
@@ -443,14 +392,14 @@ static void f_read( INT32 args )
 	  state = 9;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
 	  state = 0;
 	} else
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -459,8 +408,8 @@ static void f_read( INT32 args )
       case 9:
 	if(cls > CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( '"', &buf);
-	  low_my_putchar( c, &buf);
+	  buffer_add_char( &buf,  '"');
+	  buffer_add_char( &buf,  c);
 #else
 	  BUFSET('"');
 	  BUFSET(c);
@@ -469,7 +418,7 @@ static void f_read( INT32 args )
 	  break;
 	}
 #ifdef DYNAMIC_BUF
-	push_string( low_free_buf( &buf ) ); /* protocol */
+	push_string( buffer_finish_pike_string( &buf ) ); /* protocol */
 #else
 	PUSHBUF(); /* protoocl */
 #endif
@@ -682,7 +631,7 @@ static void f_read( INT32 args )
       case 31:
 	if(cls == CLS_QUOTE) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
 	  PUSHBUF();
 #endif
@@ -691,14 +640,14 @@ static void f_read( INT32 args )
 	  state = 10;
 	} else if(cls >= CLS_TOKEN)
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
 
 	else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); /* method */
+	  push_string( buffer_finish_pike_string( &buf ) ); /* method */
 #else
 	  PUSHBUF(); /* method */
 #endif
@@ -712,9 +661,8 @@ static void f_read( INT32 args )
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -730,21 +678,21 @@ static void f_read( INT32 args )
 	  state = 34;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else if(cls == CLS_WSPACE) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) );  /* path */
+	  push_string( buffer_finish_pike_string( &buf ) );  /* path */
 #else
 	  PUSHBUF();  /* path */
 #endif
 	  state = 35;
-	} else	
+	} else
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET(c);
 #endif
@@ -753,8 +701,8 @@ static void f_read( INT32 args )
       case 34:
 	if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  low_my_putchar( '"', &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_add_char( &buf ,  '"');
+	  buffer_add_char( &buf ,  c);
 #else
 	  BUFSET('"');
 	  BUFSET(c);
@@ -763,30 +711,29 @@ static void f_read( INT32 args )
 	  state = 33;
 	} else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( buffer_finish_pike_string( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	}
 	break;
       case 35:
 	if(cls == CLS_QUOTE) {
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
-	  buf.s.str = NULL;
-	  initialize_buf( &buf );
-	  low_my_putchar( c, &buf );
+	  buffer_init( &buf );
+	  buffer_add_char( &buf ,  c);
 #else
 	  bufpos = 0;
 	  BUFSET(c);
@@ -804,9 +751,9 @@ static void f_read( INT32 args )
      state == 8 || state == 9 ||
      state == 31 || state == 33 || state == 34) {
 #ifdef DYNAMIC_BUF
-    push_string( low_free_buf( &buf ) ); 
+    push_string( buffer_finish_pike_string( &buf ) );
 #else
-    PUSHBUF(); 
+    PUSHBUF();
 #endif
   }
   if(sp == old_sp + 15) {
@@ -824,7 +771,7 @@ static void f_read( INT32 args )
      * want to free it.
      */
     fd_close(f);
-  pop_n_elems(sp-old_sp+args);  
+  pop_n_elems(sp-old_sp+args);
   push_int64(offs0);
 }
 

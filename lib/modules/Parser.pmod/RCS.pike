@@ -66,6 +66,10 @@ mapping(string:Revision) revisions;
 //! (rcsfile(5), of course, fails to state such irrelevant information).
 array(Revision) trunk = ({});
 
+//! Feature detection constant for the @tt{max_revisions@} argument
+//! to @[create()], @[parse()] and @[parse_delta_sections()].
+constant max_revisions_supported = 1;
+
 protected mapping parse_mapping(array data)
 {
      return (mapping)(data/2);
@@ -93,7 +97,11 @@ string rcs_file_name;
 //!   initialization will be performed at all. If no value is given at
 //!   all, but @[file_name] was provided, that file will be loaded and
 //!   parsed for object initialization.
-void create(string|void file_name, string|int(0..0)|void file_contents)
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
+void create(string|void file_name, string|int(0..0)|void file_contents,
+            void|int max_revisions)
 {
   if(!file_name)
   {
@@ -103,14 +111,14 @@ void create(string|void file_name, string|int(0..0)|void file_contents)
   else
   {
     rcs_file_name = file_name;
-    if(!zero_type(file_contents) && !file_contents)
+    if(!undefinedp(file_contents) && !file_contents)
       return;
     if(!file_contents)
       file_contents = Stdio.read_file(file_name);
     if(!file_contents)
       error("Couldn't read %s\n", file_name);
   }
-  parse(tokenize(file_contents));
+  parse(tokenize(file_contents), 0, max_revisions);
 }
 
 //! Lower-level API function for parsing only the admin section (the
@@ -149,7 +157,7 @@ loop:
 	      break;
 	  case "symbols":
 	      tags = parse_mapping( raw[i][1..] );
-	      foreach(tags; string name; string revision ) 
+	      foreach(tags; string name; string revision )
 	      {
 		  if(revision == "1.1.1")
 		      branches[revision] = name; // the vendor branch
@@ -196,6 +204,9 @@ loop:
 //! @param raw
 //!   The tokenized RCS file, with admin section removed. (See
 //!   @[parse_admin_section].)
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
 //! @returns
 //!   The rest of the RCS file, delta sections removed.
 //! @seealso
@@ -203,11 +214,11 @@ loop:
 //!   @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
-array parse_delta_sections(array raw)
+array parse_delta_sections(array raw, void|int max_revisions)
 {
   string revision, ptr;
   revisions = ([]);
-  
+
   int i;
   Revision R;
 loop:
@@ -237,6 +248,9 @@ loop:
 	  default:
 	      if( sizeof(raw[i])>2 && raw[i][1] == "date" )
 	      {
+                  if (max_revisions && sizeof (revisions) >= max_revisions)
+                    break loop;
+
 		  R = Revision();
 		  R->revision = revision = raw[i][0];
 		  if( String.count( revision, "." ) == 1)
@@ -261,23 +275,26 @@ loop:
   {
     if(ptr = R->rcs_next)
     {
-      Revision N = revisions[ptr];
-      N->rcs_prev = R->revision;	// The reverse of rcs_next.
+      if (Revision N = revisions[ptr]) {
+        N->rcs_prev = R->revision;	// The reverse of rcs_next.
 
-      if(String.count(R->revision, ".") > 1)
-      {
-	R->next = ptr; // on a branch, the next pointer means the successor
-	N->ancestor = R->revision;
-      }
-      else // current revision is on the trunk:
-      {
-	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
-	N->next = R->revision;
+        if(String.count(R->revision, ".") > 1)
+        {
+	  R->next = ptr; // on a branch, the next pointer means the successor
+	  N->ancestor = R->revision;
+        }
+        else // current revision is on the trunk:
+        {
+	  R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
+	  N->next = R->revision;
+        }
       }
     }
     foreach(R->branches, string branch_point) {
-      revisions[branch_point]->rcs_prev = R->revision;
-      revisions[branch_point]->ancestor = R->revision;
+      if (revisions[branch_point]) {
+        revisions[branch_point]->rcs_prev = R->revision;
+        revisions[branch_point]->ancestor = R->revision;
+      }
     }
   }
 
@@ -295,7 +312,7 @@ loop:
   }
 #endif
 
-  return raw[i][2..];
+  return raw[-1][2..];
 }
 
 //! @decl array(array(string)) tokenize( string data )
@@ -366,7 +383,7 @@ class DeltatextIterator
     callback_args = progress_callback_args;
   }
 
-  protected string _sprintf(int|void type, mapping|void options)
+  protected string _sprintf(int type)
   {
     string name = "DeltatextIterator";
     if(type == 't')
@@ -450,14 +467,14 @@ class DeltatextIterator
 	  return 0;
 
       this_rev = raw[o];
+      Revision current = revisions[this_rev];
+      if (!current) return 0;
 
       if(callback)
 	  if(callback_args)
 	      callback(this_rev, @callback_args);
 	  else
 	      callback(this_rev);
-
-      Revision current = revisions[this_rev];
 
       if( raw[o+1] != "log" )  return 0;
 
@@ -526,6 +543,9 @@ class DeltatextIterator
 //!   The unprocessed RCS file.
 //! @param progress_callback
 //!   Passed on to @[parse_deltatext_sections].
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
 //! @returns
 //!   The fully initialized object (only returned for API convenience;
 //!   the object itself is destructively modified to match the data
@@ -533,9 +553,11 @@ class DeltatextIterator
 //! @seealso
 //!   @[parse_admin_section], @[parse_delta_sections],
 //!   @[parse_deltatext_sections], @[create]
-this_program parse(array raw, void|function(string:void) progress_callback)
+this_program parse(array raw, void|function(string:void) progress_callback,
+                   void|int max_revisions)
 {
-  parse_deltatext_sections(parse_delta_sections(parse_admin_section(raw)),
+  parse_deltatext_sections(parse_delta_sections(parse_admin_section(raw),
+                                                max_revisions),
 			   progress_callback);
   return this;
 }
@@ -557,7 +579,7 @@ string get_contents_for_revision( string|Revision rev,
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( rev->text ) return rev->text;
-  
+
   //  Find first revision with expanded text content and apply subsequent
   //  diffs.
   string base;
@@ -572,7 +594,7 @@ string get_contents_for_revision( string|Revision rev,
   } while (cur && !base);
   if (!base)
     return 0;
-  
+
   Revision clear_in_next_iter = 0;
   foreach (reverse(diff_revs), Revision cur) {
     string diff = cur->rcs_text;
@@ -635,7 +657,7 @@ string get_contents_for_revision( string|Revision rev,
     }
     append( old[of..] );
     base = new->get();
-    
+
     //  Caller may request that intermediate revisions are not stored
     //  in memory longer than necessary.
     if (dont_cache_data) {
@@ -646,7 +668,7 @@ string get_contents_for_revision( string|Revision rev,
     }
     cur->text = base;
   }
-  
+
   //  Return for requested revision
   string res = rev->text;
   if (dont_cache_data)
@@ -854,7 +876,7 @@ class Revision
   //!   @[get_contents_for_revision()], @[rcs_text]
   string text;
 
-  protected string _sprintf(int|void type)
+  protected string _sprintf(int type)
   {
     if(type == 't')
       return "Revision";

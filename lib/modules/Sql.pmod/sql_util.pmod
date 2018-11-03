@@ -91,7 +91,7 @@ array(string|mapping(string|int:mixed))
       string bind_name;
       do {
 	bind_name = ":arg"+(a++);
-      } while (!zero_type (bindings[bind_name]));
+      } while (has_index (bindings, bind_name));
       args[j]=bind_name;
       bindings[bind_name] = s;
       new_bindings = 1;
@@ -134,7 +134,7 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
   function my_quote=(driver&&driver->quote?driver->quote:quote);
   v=map(values(bindings),
 	lambda(mixed m) {
-	  if(zero_type(m))
+	  if(undefinedp(m))
 	    return "NULL";
 	  if (objectp (m) && m->is_val_null)
 	    // Note: Could need bug compatibility here - in some cases
@@ -160,6 +160,8 @@ class UnicodeWrapper (
 		      protected object master_result
 		      )
 {
+  inherit Sql.Result;
+
   //! Returns the number of rows in the result.
   int num_rows()
   {
@@ -198,12 +200,12 @@ class UnicodeWrapper (
       field_info = master_result->fetch_fields();
       foreach(field_info, int|mapping(string:mixed) field) {
 	if (mappingp(field)) {
-	  field->name = utf8_to_string(field->name);
+	  field->name = utf8_to_string(field->name, 2);
 	  if (field->table) {
-	    field->table = utf8_to_string(field->table);
+	    field->table = utf8_to_string(field->table, 2);
 	  }
 	  if (field->default) {
-	    field->default = utf8_to_string(field->default);
+	    field->default = utf8_to_string(field->default, 2);
 	  }
 	}
       }
@@ -227,7 +229,7 @@ class UnicodeWrapper (
     array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
       if (stringp(val)) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
@@ -239,8 +241,6 @@ class UnicodeWrapper (
     return master_result->fetch_json_result();
   }
 }
-
-#if constant (___Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 
 class MySQLUnicodeWrapper
 //! Result wrapper for MySQL that performs UTF-8 decoding of all
@@ -260,31 +260,29 @@ class MySQLUnicodeWrapper
     array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
       if (stringp(val) && field_info[i]->charsetnr != 63) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
   }
 }
 
-#else
-
 class MySQLBrokenUnicodeWrapper
-// This one is used to get a buggy unicode support when compiled with
-// an old MySQL client lib that doesn't have the charsetnr property in
-// the field info. It looks at the binary flag instead, which is set
-// for binary fields but might also be set for text fields (e.g. with
-// a definition like "VARCHAR(255) BINARY").
-//
-// I.e. the effect of using this one is that text fields with the
-// binary flag won't be correctly decoded in unicode decode mode.
-//
-// This has to be enabled either by passing "broken-unicode" as
-// charset to Sql.mysql.create or Sql.mysql.set_charset, by calling
-// Sql.mysql.set_unicode_decode_mode(-1), or by defining the
-// environment variable PIKE_BROKEN_MYSQL_UNICODE_MODE. That will
-// cause this buggy variant to be used if and only if the MySQL client
-// lib doesn't support the charsetnr property.
+//! This one is used to get a buggy unicode support when compiled with
+//! an old MySQL client lib that doesn't have the charsetnr property in
+//! the field info. It looks at the binary flag instead, which is set
+//! for binary fields but might also be set for text fields (e.g. with
+//! a definition like @expr{"VARCHAR(255) BINARY"@}).
+//!
+//! I.e. the effect of using this one is that text fields with the
+//! binary flag won't be correctly decoded in unicode decode mode.
+//!
+//! This has to be enabled either by passing @expr{"broken-unicode"@} as
+//! charset to @[Sql.mysql.create] or @[Sql.mysql.set_charset], by calling
+//! @[Sql.mysql.set_unicode_decode_mode(-1)], or by defining the
+//! environment variable @tt{PIKE_BROKEN_MYSQL_UNICODE_MODE@}. That will
+//! cause this buggy variant to be used if and only if the MySQL client
+//! lib doesn't support the charsetnr property.
 {
   inherit UnicodeWrapper;
 
@@ -296,11 +294,9 @@ class MySQLBrokenUnicodeWrapper
     foreach(row; int i; string|int val) {
       if (stringp(val) && field_info[i]->flags &&
 	  !field_info[i]->flags->binary) {
-	row[i] = utf8_to_string(val);
+	row[i] = utf8_to_string(val, 2);
       }
     }
     return row;
   }
 }
-
-#endif

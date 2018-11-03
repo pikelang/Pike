@@ -7,8 +7,16 @@
 //! current size, i.e. pushing an element on an full 32 slot stack will
 //! result in a 64 slot stack with 33 elements.
 
-int ptr;
-array arr;
+// NB: There's apparently quite a bit of code that accesses these
+//     directly, so they can't be made protected directly.
+//     Any accesses to ptr should be replaced with sizeof(),
+//     and any to arr with values().
+//
+//     The pragma is to be removed when ptr and arr are declared protected.
+#pragma no_deprecation_warnings
+
+__deprecated__(int) ptr;
+__deprecated__(array) arr;
 
 //! Push an element on the top of the stack.
 void push(mixed val)
@@ -23,10 +31,30 @@ void push(mixed val)
 //! popping it.
 //! @throws
 //!   Throws an error if called on an empty stack.
+//! @seealso
+//!   @[peek()]
 mixed top()
 {
   if (ptr) {
     return arr[ptr-1];
+  }
+  error("Stack underflow\n");
+}
+
+//! Returns an element from the stack, without popping it.
+//!
+//! @param offset
+//!   The number of elements from the top of the stack to skip.
+//!
+//! @throws
+//!   Throws an error if called on an empty stack.
+//!
+//! @seealso
+//!   @[top()]
+mixed peek(int|void offset)
+{
+  if ((offset >= 0) && ((ptr-offset) > 0)) {
+    return arr[ptr-offset-1];
   }
   error("Stack underflow\n");
 }
@@ -74,7 +102,7 @@ mixed pop(void|int val)
   } else {
     if(--ptr < 0)
 	error("Stack underflow\n");
-  
+
     ret = arr[ptr];
     arr[ptr]=0; /* Don't waste references */
   }
@@ -131,9 +159,10 @@ protected int _search(mixed item)
   return -1;
 }
 
-//! A stack added with another stack yields a third
-//! a third stack will all the stack elements from
-//! the two first stacks.
+//! A stack added with another stack yields a new
+//! stack with all the elements from both stacks,
+//! and the elements from the second stack at the
+//! top of the new stack.
 this_program `+(this_program s) {
   array elem = arr[..ptr-1]+values(s);
   this_program ns = this_program(1);
@@ -141,13 +170,11 @@ this_program `+(this_program s) {
   return ns;
 }
 
-mixed cast(string to) {
-  switch(to) {
-  case "array":
-      return _values();
-  default:
-      error("Cannot cast to %s.\n", to);
-  }
+protected mixed cast(string to)
+{
+  if( to=="array" )
+    return _values();
+  return UNDEFINED;
 }
 
 string _sprintf(int t) {

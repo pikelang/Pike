@@ -15,14 +15,13 @@
 #include "array.h"
 #include "multiset.h"
 #include "lex.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "fsort.h"
 #include "threads.h"
-#include "stuff.h"
 #include "version.h"
 #include "bignum.h"
 #include "pikecode.h"
@@ -30,6 +29,9 @@
 #include "opcodes.h"
 #include "peep.h"
 #include "pike_compiler.h"
+#include "bitvector.h"
+#include "pike_float.h"
+#include "sprintf.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -61,12 +63,6 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif /* HAVE_IEEEFP_H */
-
-#include <math.h>
-
 #ifdef PIKE_DEBUG
 #define encode_value2 encode_value2_
 #define decode_value2 decode_value2_
@@ -86,7 +82,7 @@
  *
  * These are NOT to be renumbered unless the file-format version is changed!
  */
-/* Current encoding: ¶ke0
+/* Current encoding: \266ke0
  *
  * +---+-+-+-------+
  * |s z|s|n| t a g |
@@ -165,7 +161,7 @@ struct encode_data
    * value less than COUNTER_START means that it's a forward reference
    * to a thing not yet encoded. */
   struct array *delayed;
-  dynamic_buffer buf;
+  struct byte_buffer buf;
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
@@ -184,8 +180,9 @@ static struct object *encoder_codec (struct encode_data *data)
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
-#define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
-#define addchar(t)   low_my_putchar((char)(t), &(data->buf))
+#define addstr(s, l) buffer_memcpy(&(data->buf), (s), (l))
+#define addchar(t)   buffer_add_char(&(data->buf), (char)(t))
+#define addchar_unsafe(t)       buffer_add_char_unsafe(&(data->buf), t)
 
 /* Code a pike string */
 
@@ -193,57 +190,40 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #define ENCODE_DATA(S) \
    addstr( (S)->str, (S)->len << (S)->size_shift );
 #else
-#define ENCODE_DATA(S) 				\
-    switch((S)->size_shift)			\
-    {						\
-      case 1:					\
-        for(q=0;q<(S)->len;q++) {		\
-           INT16 s=htons( STR1(S)[q] );		\
-           addstr( (char *)&s, sizeof(s));	\
-        }					\
-        break;					\
-      case 2:					\
-        for(q=0;q<(S)->len;q++) {		\
-           INT32 s=htonl( STR2(S)[q] );		\
-           addstr( (char *)&s, sizeof(s));	\
-        }					\
-        break;					\
-    }
+#define ENCODE_DATA(S) do {                                             \
+    buffer_ensure_space(&(data->buf), (S)->len << (S)->size_shift);     \
+    if ((S)->size_shift == 1) {                                         \
+        const p_wchar1 *src = STR1(S);                                  \
+        ptrdiff_t len = (S)->len, q;                                    \
+        for(q=0;q<len;q++) {                                            \
+           buffer_add_be16_unsafe(&(data->buf), src[q]);                \
+        }                                                               \
+    } else { /* shift 2 */                                              \
+        const p_wchar2 *src = STR2(S);                                  \
+        ptrdiff_t len = (S)->len, q;                                    \
+        for(q=0;q<len;q++) {                                            \
+           buffer_add_be32_unsafe(&(data->buf), src[q]);                \
+        }                                                               \
+    }                                                                   \
+} while(0)
 #endif
 
-#define adddata(S) do {					\
-  if((S)->size_shift)					\
-  {							\
+#define adddata(S) do {                                 \
+  const struct pike_string *__str = (S);                \
+  if(__str->size_shift)                                 \
+  {                                                     \
     int q;                                              \
-    code_entry(TAG_STRING,-1, data);			\
-    code_entry((S)->size_shift, (S)->len, data);	\
-    ENCODE_DATA(S);                                     \
-  }else{						\
-    code_entry(TAG_STRING, (S)->len, data);		\
-    addstr((char *)((S)->str),(S)->len);		\
-  }							\
+    code_entry(TAG_STRING,-1, data);                    \
+    code_entry(__str->size_shift, __str->len, data);    \
+    ENCODE_DATA(__str);                                 \
+  }else{                                                \
+    code_entry(TAG_STRING, __str->len, data);           \
+    addstr((char *)(__str->str),__str->len);            \
+  }                                                     \
 }while(0)
 
-/* Like adddata, but allows null pointers */
-
-#define adddata3(S) do {			\
-  if(S) {					\
-    adddata(S);                                 \
-  } else {					\
-    code_entry(TAG_INT, 0, data);			\
-  }						\
-}while(0)
-
-#define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
-
+#ifdef ENCODE_DEBUG
 /* NOTE: Fix when type encodings change. */
-static int type_to_tag(int type)
-{
-  if (type == T_FLOAT) return TAG_FLOAT;
-  if (type == T_TYPE) return TAG_TYPE;
-  if (type <= MAX_TYPE) return type ^ MIN_REF_TYPE;
-  return type;
-}
 static int tag_to_type(int tag)
 {
   if (tag == TAG_FLOAT) return T_FLOAT;
@@ -251,11 +231,14 @@ static int tag_to_type(int tag)
   if (tag <= MAX_TYPE) return tag ^ MIN_REF_TYPE;
   return tag;
 }
+#endif
 
 /* Let's cram those bits... */
 static void code_entry(int tag, INT64 num, struct encode_data *data)
 {
   int t;
+  /* this needs 5 bytes maximal */
+  buffer_ensure_space(&data->buf, 5);
   EDB(5,
     fprintf(stderr,"%*sencode: code_entry(tag=%d (%s), num=%ld)\n",
 	    data->depth, "", tag,
@@ -270,7 +253,7 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
   if(num < MAX_SMALL)
   {
     tag |= TAG_SMALL | (num << SIZE_SHIFT);
-    addchar((char)tag);
+    addchar_unsafe((char)tag);
     return;
   }else{
     num -= MAX_SMALL;
@@ -286,20 +269,14 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
   }
 
   tag |= t << SIZE_SHIFT;
-  addchar((char)tag);
+  addchar_unsafe((char)tag);
 
   switch(t)
   {
-#if 0
-  case 7: addchar(DO_NOT_WARN((char)((num >> 56)&0xff)));
-  case 6: addchar(DO_NOT_WARN((char)((num >> 48)&0xff)));
-  case 5: addchar(DO_NOT_WARN((char)((num >> 40)&0xff)));
-  case 4: addchar(DO_NOT_WARN((char)((num >> 32)&0xff)));
-#endif /* 0 */
-  case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
-  case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
-  case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
-  case 0: addchar(DO_NOT_WARN((char)(num&0xff)));
+  case 3: addchar_unsafe((char)((num >> 24)&0xff)); /* FALLTHRU */
+  case 2: addchar_unsafe((char)((num >> 16)&0xff)); /* FALLTHRU */
+  case 1: addchar_unsafe((char)((num >> 8)&0xff));  /* FALLTHRU */
+  case 0: addchar_unsafe((char)(num&0xff));
   }
 }
 
@@ -307,16 +284,8 @@ static void code_number(ptrdiff_t num, struct encode_data *data)
 {
   EDB(5, fprintf(stderr, "%*scode_number(%d)\n",
 		 data->depth, "", num));
-  code_entry(DO_NOT_WARN(num & 15),
-	     num >> 4, data);
+  code_entry(num & 15, num >> 4, data);
 }
-
-#ifdef _REENTRANT
-static void do_enable_threads(void)
-{
-  exit_threads_disable(NULL);
-}
-#endif
 
 /* NOTE: Take care to encode it exactly as the corresponing
  *       type string would have been encoded (cf T_FUNCTION, T_MANY,
@@ -345,9 +314,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   switch(t->type) {
     default:
       Pike_fatal("error in type tree: %d.\n", t->type);
-      /*NOTREACHED*/
-
-      break;
+      UNREACHABLE(break);
 
     case PIKE_T_ATTRIBUTE:	/* FIXME: Strip this in compat mode. */
     case PIKE_T_NAME:
@@ -358,7 +325,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       }
       t=t->cdr;
       goto one_more_type;
-    
+
     case T_ASSIGN:
       {
 	ptrdiff_t marker = CAR_TO_INT(t);
@@ -377,7 +344,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	t = t->cdr;
       }
       addchar(T_MANY);
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case T_MANY:
       encode_type(t->car, data);
       t = t->cdr;
@@ -410,16 +377,8 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val;
 
-	val = CAR_TO_INT(t);
-	addchar((val >> 24)&0xff);
-	addchar((val >> 16)&0xff);
-	addchar((val >> 8)&0xff);
-	addchar(val & 0xff);
-	val = CDR_TO_INT(t);
-	addchar((val >> 24)&0xff);
-	addchar((val >> 16)&0xff);
-	addchar((val >> 8)&0xff);
-	addchar(val & 0xff);
+        buffer_add_be32(&data->buf, CAR_TO_INT(t));
+        buffer_add_be32(&data->buf, CDR_TO_INT(t));
       }
       break;
 
@@ -473,41 +432,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       encode_value2(Pike_sp-1, data, 0);
       pop_stack();
       break;
-    }
-  }
-}
-
-static void zap_unfinished_program(struct program *p)
-{
-  int e;
-  debug_malloc_touch(p);
-  if(p->flags & PROGRAM_FIXED) return; /* allow natural zapping */
-  debug_malloc_touch(p);
-  if(p->parent)
-  {
-    free_program(p->parent);
-    p->parent=0;
-  }
-  for(e=0;e<p->num_constants;e++)
-  {
-    free_svalue(& p->constants[e].sval);
-    mark_free_svalue (&p->constants[e].sval);
-  }
-  
-  for(e=0;e<p->num_inherits;e++)
-  {
-    if(p->inherits[e].parent)
-    {
-      free_object(p->inherits[e].parent);
-      p->inherits[e].parent=0;
-    }
-    if(e)
-    {
-      if(p->inherits[e].prog)
-      {
-	free_program(p->inherits[e].prog);
-	p->inherits[e].prog=0;
-      }
     }
   }
 }
@@ -570,7 +494,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
 	  }else{
 	    print_svalue(stderr, val);
-	  
 	  }
 	  fputc('\n', stderr););
       code_entry (TAG_DELAYED, entry_id.u.integer, data);
@@ -595,10 +518,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  {
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
 	  }else{
-	    print_svalue(stderr, val);	  
+	    print_svalue(stderr, val);
 	  }
 	  fputc('\n', stderr););
-      mapping_insert(data->encoded, val, &entry_id);
+      if( TYPEOF(*val) < MIN_REF_TYPE || val->u.dummy->refs > 1 )
+          mapping_insert(data->encoded, val, &entry_id);
       data->counter.u.integer++;
     }
   }
@@ -607,36 +531,34 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   {
     case T_INT:
       /* NOTE: Doesn't encode NUMBER_UNDEFINED et al. */
-      /* But that's a feature; NUMBER_UNDEFINED is an inherently
-       * transient value. It would lose its usefulness otherwise.
-       * /mast */
-
-#if SIZEOF_INT_TYPE > 4
-    {
-      INT_TYPE i=val->u.integer;
-      if (i != (INT32)i)
       {
-	 /* Reuse the id. */
-	 data->counter.u.integer--;
-	 /* Make sure we don't find ourselves again below... */
-	 map_delete(data->encoded, val);
-
-	 /* Encode as a bignum */
-	 push_int(i);
-	 convert_stack_top_to_bignum();
-	 encode_value2(Pike_sp-1,data, 0);
-	 pop_stack();
-
-	 /* Restore the entry we removed above. */
-	 mapping_insert(data->encoded, val, &entry_id);
-	 goto encode_done;
-      }
-      else
-	 code_entry(TAG_INT, i,data);
-    }
-#else       
-      code_entry(TAG_INT, val->u.integer,data);
+        INT_TYPE i=val->u.integer;
+#if SIZEOF_INT_TYPE > 4
+        if (i != (INT32)i)
+        {
+          MP_INT tmp;
+          /* Note: Assumes sizeof_int_type is a multiple of 8. */
+#if (SIZEOF_INT_TYPE > SIZEOF_LONG) || (SIZEOF_INT_TYPE&7)
+#  error Assumption about size of int type not true.
 #endif
+          char buffer[16*(SIZEOF_INT_TYPE/8)];
+          size_t l;
+          /* Note: conversion to base 36 could be done directly here
+             using / and % instead.  Doing it like this is actually
+             only slightly slower, however, and saves on code size.
+          */
+          mpz_init_set_si( &tmp, i );
+          mpz_get_str( buffer, 36, &tmp );
+          mpz_clear( &tmp );
+          l = strlen(buffer);
+          code_entry(TAG_OBJECT, 2, data);
+          code_entry(TAG_STRING, l, data);
+          addstr(buffer,l);
+        }
+        else
+#endif
+          code_entry(TAG_INT, i, data);
+      }
       break;
 
     case T_STRING:
@@ -715,27 +637,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #else
       {
 	int pike_ftype=Pike_FP_UNKNOWN;
-#ifdef HAVE_ISINF
-	if(isinf(d))
-	  pike_ftype=Pike_FP_PINF;
-	else
-#endif
-#ifdef HAVE_ISNAN
-	  if(isnan(d)) {
-	    pike_ftype=Pike_FP_SNAN;
-	  } else
-#endif
+        if(PIKE_ISINF(d))
+          pike_ftype=Pike_FP_PINF;
+        else if(PIKE_ISNAN(d))
+          pike_ftype=Pike_FP_SNAN;
 #ifdef HAVE_ISZERO
-	    if(iszero(d))
-	      pike_ftype=Pike_FP_PZERO;
-	    else
+        else if(iszero(d))
+          pike_ftype=Pike_FP_PZERO;
 #endif
-#ifdef HAVE_FINITE
-	      if(!finite(d))
-		pike_ftype=Pike_FP_PINF;
-#endif
-	; /* Terminate any remaining else */
-	
+
 	if(
 #ifdef HAVE_SIGNBIT
 	  signbit(d)
@@ -748,13 +658,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    case Pike_FP_PINF:
 	      pike_ftype=Pike_FP_NINF;
 	      break;
-	      
+
+#ifdef HAVE_ISZERO
 	    case Pike_FP_PZERO:
 	      pike_ftype=Pike_FP_NZERO;
 	      break;
+#endif
 	  }
 	}
-	
+
 	if(pike_ftype != Pike_FP_UNKNOWN)
 	{
 	  code_entry(TAG_FLOAT,0,data);
@@ -773,33 +685,20 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	int y;
 	double tmp;
 
-	tmp = FREXP(d, &y);
-	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
+	tmp = frexp(d, &y);
+        x = (INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp);
 	y -= sizeof(INT64)*8 - 2;
 
 	EDB(2,fprintf(stderr,
 		    "Encoding float... tmp: %10g, x: 0x%016llx, y: %d\n",
 		    tmp, x, y));
 
-#if 0
-	if (x && !(x & 0xffffffffUL)) {
-#endif /* 0 */
-	  x >>= 32;
-	  y += 32;
+        x >>= 32;
+        y += 32;
 
-	  EDB(2,fprintf(stderr,
+        EDB(2,fprintf(stderr,
 		      "Reducing float... x: 0x%08llx, y: %d\n",
 		      x, y));
-#if 0
-	}
-#endif /* 0 */
-#if 0
-	while(x && y && !(x&1))
-	{
-	  x>>=1;
-	  y++;
-	}
-#endif
 	code_entry(TAG_FLOAT,x,data);
 	code_entry(TAG_FLOAT,y,data);
       }
@@ -834,7 +733,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	order = get_switch_order(Pike_sp[-2].u.array);
 	order_array(Pike_sp[-2].u.array, order);
 	order_array(Pike_sp[-1].u.array, order);
-	free((char *) order);
+	free(order);
       }
 
       code_entry(TAG_MAPPING, Pike_sp[-2].u.array->size,data);
@@ -850,9 +749,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_MULTISET: {
       struct multiset *l = val->u.multiset;
 
-      if (multiset_indval (l) ||
-	  TYPEOF(*multiset_get_cmp_less(l)) != T_INT)
-	Pike_error ("FIXME: Encoding of multisets with values and/or "
+      if (TYPEOF(*multiset_get_cmp_less(l)) != T_INT)
+	Pike_error ("FIXME: Encoding of multisets with "
 		    "custom sort function not yet implemented.\n");
       else {
 	/* Encode valueless multisets without compare functions in a
@@ -872,7 +770,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  push_array(multiset_indices(l));
 	  order = get_switch_order(Pike_sp[-1].u.array);
 	  order_array(Pike_sp[-1].u.array, order);
-	  free((char *) order);
+	  free(order);
 	  for (i = 0; i < Pike_sp[-1].u.array->size; i++)
 	    encode_value2(ITEM(Pike_sp[-1].u.array)+i, data, 0);
 	  pop_stack();
@@ -895,16 +793,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
        */
       if(is_bignum_object(val->u.object))
       {
+        MP_INT *i = (MP_INT*)val->u.object->storage;
+        char *buffer;
+        size_t l;
+
+        buffer = xalloc(mpz_sizeinbase(i, 36)+2);
+        mpz_get_str( buffer, 36, i );
+        l = strlen(buffer);
 	code_entry(TAG_OBJECT, 2, data);
-	/* 256 would be better, but then negative numbers
-	 * won't work... /Hubbe
-	 */
-	push_int(36);
-	apply(val->u.object,"digits",1);
-	if(TYPEOF(Pike_sp[-1]) != T_STRING)
-	  Pike_error("Gmp.mpz->digits did not return a string!\n");
-	encode_value2(Pike_sp-1, data, 0);
-	pop_stack();
+        code_entry(TAG_STRING, l, data);
+        addstr(buffer,l);
+        free(buffer);
 	break;
       }
 
@@ -920,7 +819,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	case T_INT:
 	  if(SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
 	  {
-	    int to_change = data->buf.s.len;
+	    int to_change = buffer_content_length(&data->buf);
 	    struct svalue tmp = entry_id;
 
 	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
@@ -939,7 +838,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* We have to remove ourself from the cache */
 	    map_delete(data->encoded, val);
-	    
+
 	    pop_stack();
 	    push_svalue(val);
 	    f_object_program(1);
@@ -948,7 +847,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    code_entry(TAG_OBJECT, 3,data);
 	    encode_value2(Pike_sp-1, data, 1);
 	    pop_stack();
-	    
+
 	    push_svalue(val);
 
 	    /* If we do not exist in cache, use backwards-
@@ -960,12 +859,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      int fun;
 	      EDB(1,fprintf(stderr, "%*sZapping 3 -> 1 in TAG_OBJECT\n",
 			    data->depth, ""));
-	      
+
 	      /* This causes the code_entry above to
 	       * become: code_entry(TAG_OBJECT, 1, data);
 	       * -Hubbe
 	       */
-	      data->buf.s.str[to_change] = 99;
+	      ((char*)buffer_ptr(&data->buf))[to_change] = 99;
 
 	      fun = find_identifier("encode_object",
 				    encoder_codec (data)->prog);
@@ -979,7 +878,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    break;
 	  }
-	  /* FALL THROUGH */
+          /* FALLTHRU */
 
 	default:
 	  code_entry(TAG_OBJECT, 0,data);
@@ -1039,7 +938,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_PROGRAM:
     {
       int d;
-      if (val->u.program->id < PROG_DYNAMIC_ID_START) {
+      if ((val->u.program->id < PROG_DYNAMIC_ID_START) &&
+	  (val->u.program->id >= 0)) {
 	code_entry(TAG_PROGRAM, 3, data);
 	push_int(val->u.program->id);
 	encode_value2(Pike_sp-1, data, 0);
@@ -1065,7 +965,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  int has_local_c_methods = 0;
 	  for (d = 0; d < p->num_identifiers; d++) {
-	    if (IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
+	    struct identifier *id = p->identifiers + d;
+	    if (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+		!low_is_variant_dispatcher(id)) {
 	      has_local_c_methods = 1;
 	      break;
 	    }
@@ -1086,10 +988,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	      ref_push_program(p);
 	      f_function_name(1);
-#if 0
-	      if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
-		Pike_error("Cannot encode C programs.\n");
-#endif
 	      encode_value2(Pike_sp-1, data, 0);
 
 	      pop_n_elems(2);
@@ -1100,158 +998,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    if( p->event_handler )
 	      Pike_error("Cannot encode programs with event handlers.\n");
-#if 0
-	    Pike_error("Cannot encode C programs.\n");
-#endif
 	  } else {
 	    EDB(1, fprintf(stderr,
 			   "%*sencode: encoding program overloading a C program.\n",
 			   data->depth, ""));
 	  }
 	}
-
-#ifdef OLD_PIKE_ENCODE_PROGRAM
-
-	EDB(1,
-	    fprintf(stderr, "%*sencode: encoding program in old style\n",
-		    data->depth, ""));
-
-	/* Type 1 -- Old-style encoding. */
-
-	code_entry(TAG_PROGRAM, 1, data);
-	push_compact_version();
-	encode_value2(Pike_sp-1,data, 0);
-	pop_stack();
-	code_number(p->flags,data);
-	code_number(p->storage_needed,data);
-	code_number(p->xstorage,data);			/**/
-	code_number(p->parent_info_storage,data);	/**/
-
-	code_number(p->alignment_needed,data);
-	code_number(p->timestamp.tv_sec,data);
-	code_number(p->timestamp.tv_usec,data);
-
-	if(p->parent)
-	  ref_push_program(p->parent);
-	else
-	  push_int(0);
-	encode_value2(Pike_sp-1,data, 0);		/**/
-	pop_stack();
-
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-	code_number( p->PIKE_CONCAT(num_,NAME), data);
-#include "program_areas.h"
-
-	code_number(PIKE_BYTECODE_METHOD, data);
-
-#ifdef ENCODE_PROGRAM
-#ifdef PIKE_DEBUG
-	{
-	  ptrdiff_t bufpos = data->buf.s.len;
-#endif /* PIKE_DEBUG */
-	  ENCODE_PROGRAM(p, &(data->buf));
-#ifdef PIKE_DEBUG
-	  if (p->num_program * sizeof(p->program[0]) !=
-	      data->buf.s.len - bufpos) {
-	    Pike_fatal("ENCODE_PROGRAM() failed:\n"
-		  "Encoded data len: %ld\n"
-		  "Expected data len: %ld\n",
-		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
-		  DO_NOT_WARN((long)(data->buf.s.len - bufpos)));
-	  }
-	}
-#endif /* PIKE_DEBUG */
-#else /* !ENCODE_PROGRAM */
-	adddata2(p->program, p->num_program);
-#endif /* ENCODE_PROGRAM */
-
-	adddata2(p->relocations, p->num_relocations);
-
-	adddata2(p->linenumbers, p->num_linenumbers);
-	
-	for(d=0;d<p->num_identifier_index;d++)
-	  code_number(p->identifier_index[d],data);
-
-	for(d=0;d<p->num_variable_index;d++)
-	  code_number(p->variable_index[d],data);
-
-	for(d=0;d<p->num_identifier_references;d++)
-	{
-	  code_number(p->identifier_references[d].inherit_offset,data);
-	  code_number(p->identifier_references[d].identifier_offset,data);
-	  code_number(p->identifier_references[d].id_flags,data);
-	  EDB(3,fprintf(stderr,"IDREF%x > %d: { %d, %d, %d }\n",
-		      p->id,d,
-		      p->identifier_references[d].inherit_offset,
-		      p->identifier_references[d].identifier_offset,
-		      p->identifier_references[d].id_flags););
-	}
-
-	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
-
-	for(d=0;d<p->num_inherits;d++)
-	{
-	  code_number(p->inherits[d].inherit_level,data);
-	  code_number(p->inherits[d].identifier_level,data);
-	  code_number(p->inherits[d].parent_offset,data);
-	  code_number(p->inherits[d].parent_identifier,data);
-	  code_number(p->inherits[d].storage_offset,data);
-
-	  if(p->inherits[d].parent)
-	  {
-	    ref_push_function(p->inherits[d].parent,
-			      p->inherits[d].parent_identifier);
-	    EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
-			  p->id, p->inherits[d].parent,
-			  p->inherits[d].parent_identifier););
-	  }else if(p->inherits[d].prog){
-	    ref_push_program(p->inherits[d].prog);
-	  }else{
-	    Pike_error("Failed to encode inherit #%d\n", d);
-	    push_int(0);
-	  }
-	  encode_value2(Pike_sp-1,data, 1);
-	  pop_stack();
-
-          adddata3(p->inherits[d].name);
-
-	  EDB(3,fprintf(stderr,"INHERIT%x > %d: %d id=%d\n",
-		      p->id,d,
-		      p->inherits[d].prog->num_identifiers,
-		      p->inherits[d].prog->id););
-	}
-
-	for(d=0;d<p->num_identifiers;d++)
-	{
-	  adddata(p->identifiers[d].name);
-	  encode_type(p->identifiers[d].type, data);
-	  code_number(p->identifiers[d].identifier_flags,data);
-	  code_number(p->identifiers[d].run_time_type,data);
-	  code_number(p->identifiers[d].opt_flags,data);
-	  code_number(p->identifiers[d].filename_strno, data);
-	  code_number(p->identifiers[d].linenumber, data);
-	  if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
-	    code_number(p->identifiers[d].func.ext_ref.depth,data);
-	    code_number(p->identifiers[d].func.ext_ref.id,data);
-	  } else if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
-	    code_number(p->identifiers[d].func.offset,data);
-	  } else {
-	    Pike_error("Cannot encode functions implemented in C "
-		       "(identifier=\"%S\").\n",
-		       p->identifiers[d].name);
-	  }
-	}
-
-	for(d=0;d<NUM_LFUNS;d++)
-	  code_number(p->lfuns[d], data);
-
-	for(d=0;d<p->num_constants;d++)
-	{
-	  encode_value2(& p->constants[d].sval, data, 0);
-	  adddata3(NULL /* p->constants[d].name */);
-	}
-
-#else /* !OLD_PIKE_ENCODE_PROGRAM */
 
 	/* Portable encoding (4 and 5). */
 
@@ -1299,46 +1051,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	/* Byte-code method
 	 */
-#ifdef PIKE_PORTABLE_BYTECODE
 	code_number(PIKE_BYTECODE_PORTABLE, data);
-#else /* !PIKE_PORTABLE_BYTECODE */
-	code_number(PIKE_BYTECODE_METHOD, data);
-#ifdef PIKE_USE_MACHINE_CODE
-	/* Add the checksum of the instrs array. */
-	code_number(instrs_checksum, data);
-#endif /* PIKE_USE_MACHINE_CODE */
-
-	/* program */
-#ifdef ENCODE_PROGRAM
-#ifdef PIKE_DEBUG
-	{
-	  ptrdiff_t bufpos = data->buf.s.len;
-#endif /* PIKE_DEBUG */
-	  ENCODE_PROGRAM(p, &(data->buf));
-#ifdef PIKE_DEBUG
-	  if (p->num_program * sizeof(p->program[0]) !=
-	      data->buf.s.len - bufpos) {
-	    Pike_fatal("ENCODE_PROGRAM() failed:\n"
-		  "Encoded data len: %ld\n"
-		  "Expected data len: %ld\n",
-		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
-		  DO_NOT_WARN((long)(data->buf.s.len - bufpos)));
-	  }
-	}
-#endif /* PIKE_DEBUG */
-#else /* !ENCODE_PROGRAM */
-	adddata2(p->program, p->num_program);
-#endif /* ENCODE_PROGRAM */
-
-	/* relocations */
-	for(d=0; d<(int)p->num_relocations; d++) {
-	  code_number(p->relocations[d], data);
-	}
-
-	/* linenumbers */
-	adddata2(p->linenumbers, p->num_linenumbers);
-
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 	{
 	  struct svalue str_sval;
@@ -1352,7 +1065,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	EDB(5, dump_program_tables(p, data->depth));
 
-#ifdef PIKE_PORTABLE_BYTECODE
 	/* Encode the efun constants since they are needed by the optimizer. */
 	{
 	  struct svalue str_sval;
@@ -1374,29 +1086,20 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
-#if 0
-	    if (p->constants[d].name) {
-	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data, 0);
-	    } else {
-#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
-#if 0
-	    }
-#endif /* 0 */
 	  }
 	}
-#endif /* PIKE_PORTABLE_BYTECODE */
+
 	/* Dump the identifiers in a portable manner... */
 	{
 	  int inherit_num = 1;
 	  struct svalue str_sval;
-	  char *id_dumped = (char *) alloca(p->num_identifiers);
+	  char *id_dumped = alloca(p->num_identifiers);
 	  int d_min = 0;
-	  MEMSET(id_dumped,0,p->num_identifiers);
+	  memset(id_dumped,0,p->num_identifiers);
 	  SET_SVAL(str_sval, T_STRING, 0, string, NULL);
 
 	  EDB(2,
@@ -1540,11 +1243,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    free_string(symbol);
 		  }
 		} else if (id->name && (id->name->len>1) &&
-			   (index_shared_string(id->name, 0) == '`') &&
-			   ((((unsigned)index_shared_string(id->name, 1)) >=
-			     256) ||
-			    isidchar(index_shared_string(id->name, 1)))) {
-		  /* New-style getter/setter. */
+                           (index_shared_string(id->name, 0) == '`') &&
+                           wide_isidchar(index_shared_string(id->name, 1))) {
+                  /* New-style getter/setter. */
 		  struct pike_string *symbol = NULL;
 		  if (index_shared_string(id->name, id->name->len-1) != '=') {
 		    /* Getter callback. */
@@ -1581,6 +1282,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
 		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
+		    /* Either already dumped, or the dispatcher is in
+		     * front of us, which indicates that we are overloading
+		     * an inherited function with a variant.
+		     */
 		    gs_flags |= ID_VARIANT;
 		  } else {
 		    /* First variant. */
@@ -1669,6 +1374,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  break;
 
 		case IDENTIFIER_PIKE_FUNCTION:
+		encode_pike_function:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding function\n",
 			      data->depth, ""));
@@ -1699,7 +1405,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->identifier_flags, data);
 
 		  /* func */
-#ifdef PIKE_PORTABLE_BYTECODE
 		  if (id->func.offset >= 0) {
 		    /* Code the number of the string containing
 		     * the raw bytecode.
@@ -1710,9 +1415,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    /* Prototype */
 		    code_number(-1, data);
 		  }
-#else /* !PIKE_PORTABLE_BYTECODE */
-		  code_number(id->func.offset, data);
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 		  /* opt_flags */
 		  code_number(id->opt_flags, data);
@@ -1720,15 +1422,57 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		case IDENTIFIER_C_FUNCTION:
 		  if (is_variant_dispatcher(p, d)) {
-		    /* This is handled by end_first_pass() et all. */
+		    int k;
+		    int j;
+		    struct identifier *other = NULL;
+		    /* This is handled by end_first_pass() et al. */
 		    /* NB: This can be reached even though id_dumped
 		     *     for it gets set by the variant functions,
 		     *     if it is overriding an old definition.
 		     *
-		     * We thus need to make sure id_dumped stays cleared.
+		     * Note that this means that even the first local
+		     * function must have the variant modifier (since
+		     * otherwise it would have overridden the old def
+		     * and not the dispatcher). This is handled
+		     * automatically by the use of id_dumped for the
+		     * dispatcher as marker for whether the first
+		     * variant has been added or not.
 		     */
-		    id_dumped[ref->identifier_offset] = 0;
-		    continue;
+		    EDB(3,
+		      fprintf(stderr, "%*sencode: encoding variant dispatcher\n",
+			      data->depth, ""));
+
+		    for(k = 0; k < p->num_identifiers; k++) {
+		      other = p->identifiers + k;
+		      if (other->name == id->name) break;
+		    }
+		    if (other >= id) {
+		      /* variant before termination function. */
+		      break;
+		    }
+		    if ((other->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+			IDENTIFIER_PIKE_FUNCTION) {
+		      struct reference *r = NULL;
+		      for (j = 0; j < p->num_identifier_references; j++) {
+			r = p->identifier_references + j;
+			if (!r->inherit_offset && (r->identifier_offset == k)) {
+			  /* Found the override. */
+			  break;
+			}
+		      }
+		      if ((j != p->num_identifier_references) && (j > d)) {
+			/* We have a termination function at identifier k,
+			 * that was overridden by the variant dispatcher.
+			 *
+			 * We need to encode it here at its original place.
+			 */
+			id_dumped[k] = 1;
+			gs_flags = r->id_flags & ref->id_flags;
+			id = other;
+			ref = r;
+			goto encode_pike_function;
+		      }
+		    }
 		  }
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
@@ -1858,6 +1602,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(d_max, data);
 
 	      /* name */
+              if (!inh->name)
+                  Pike_error("Cannot encode programs with unnamed inherits.\n");
 	      str_sval.u.string = inh->name;
 	      encode_value2(&str_sval, data, 0);
 
@@ -1915,34 +1661,23 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		fprintf(stderr, "%*sencode: encoding constant #%d\n",
 			data->depth, "", d));
 
-#ifdef PIKE_PORTABLE_BYTECODE
 	    if (((TYPEOF(p->constants[d].sval) == T_FUNCTION) &&
 		 (SUBTYPEOF(p->constants[d].sval) == FUNCTION_BUILTIN)) ||
 		(TYPEOF(p->constants[d].sval) == T_TYPE)) {
 	      /* Already encoded above. */
 	      continue;
 	    }
-#endif /* PIKE_PORTABLE_BYTECODE */
+
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
-#if 0
-	    if (p->constants[d].name) {
-	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data, 0);
-	    } else {
-#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
-#if 0
-	    }
-#endif /* 0 */
 	  }
 	}
-#endif /* OLD_PIKE_ENCODE_PROGRAM */
       }else{
 	code_entry(TAG_PROGRAM, 0, data);
 	encode_value2(Pike_sp-1, data, 0);
@@ -1961,7 +1696,7 @@ encode_done:;
 
 static void free_encode_data(struct encode_data *data)
 {
-  toss_buffer(& data->buf);
+  buffer_free(& data->buf);
   if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array(data->delayed);
@@ -2011,7 +1746,7 @@ void f_encode_value(INT32 args)
   int i;
   data=&d;
 
-  check_all_args("encode_value", args,
+  check_all_args(NULL, args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -2023,9 +1758,10 @@ void f_encode_value(INT32 args)
 #endif
 		 0);
 
-  initialize_buf(&data->buf);
+  buffer_init(&data->buf);
   data->canonic = 0;
   data->encoded=allocate_mapping(128);
+  data->encoded->data->flags |= MAPPING_FLAG_NO_SHRINK;
   data->delayed = allocate_array (0);
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
 
@@ -2036,10 +1772,9 @@ void f_encode_value(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -2061,7 +1796,7 @@ void f_encode_value(INT32 args)
   free_array (data->delayed);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&data->buf));
+  push_string(buffer_finish_pike_string(&data->buf));
 }
 
 /*! @decl string encode_value_canonic(mixed value, object|void codec)
@@ -2089,7 +1824,7 @@ void f_encode_value_canonic(INT32 args)
   int i;
   data=&d;
 
-  check_all_args("encode_value_canonic", args,
+  check_all_args(NULL, args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -2101,12 +1836,12 @@ void f_encode_value_canonic(INT32 args)
 #endif
 		 0);
 
-  initialize_buf(&data->buf);
+  buffer_init(&data->buf);
   data->canonic = 1;
   data->encoded=allocate_mapping(128);
   data->delayed = allocate_array (0);
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
-  
+
 #ifdef ENCODE_DEBUG
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
@@ -2114,10 +1849,9 @@ void f_encode_value_canonic(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value_canonic: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -2139,7 +1873,7 @@ void f_encode_value_canonic(INT32 args)
   free_array (data->delayed);
 
   pop_n_elems(args);
-  push_string(low_free_buf(&data->buf));
+  push_string(buffer_finish_pike_string(&data->buf));
 }
 
 
@@ -2181,11 +1915,6 @@ struct decode_data
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
-#if TWO_PASS_DECODE_WORKS
-  /* The delay stuff can trig a second pass through the decoder,
-   * but it doesn't seem to really handle that. /mast */
-  struct Supporter supporter;
-#endif
 };
 
 static struct object *decoder_codec (struct decode_data *data)
@@ -2201,13 +1930,13 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    Pike_error("Decode error: Not enough data in string.\n");
+    Pike_error("Not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
 
 static DECLSPEC(noreturn) void decode_error (
   struct decode_data *data, struct svalue *decoding, const char *msg, ...)
-  ATTRIBUTE((noreturn));
+    ATTRIBUTE((noinline,noreturn));
 
 static DECLSPEC(noreturn) void decode_error (
   struct decode_data *data, struct svalue *decoding, const char *msg, ...)
@@ -2218,22 +1947,21 @@ static DECLSPEC(noreturn) void decode_error (
   struct object *o = fast_clone_object (decode_error_program);
   struct decode_error_struct *dec =
     (struct decode_error_struct *) (o->storage + decode_error_offset);
-  struct generic_error_struct *gen =
-    (struct generic_error_struct *) get_storage (o, generic_error_program);
+  struct generic_error_struct *gen = get_storage (o, generic_error_program);
 
   ASSERT_THREAD_SWAPPED_IN();
 
   copy_shared_string (dec->decode_string, data->data_str);
 
   if (decoding) {
-    push_constant_text ("Error while decoding "); n++;
-    push_constant_text ("%O");
+    push_static_text ("Error while decoding "); n++;
+    push_static_text ("%O");
     push_svalue (decoding);
     f_sprintf (2); n++;
-    push_constant_text (":\n"); n++;
+    push_static_text (":\n"); n++;
   }
   else {
-    push_constant_text ("Decode error: "); n++;
+    push_static_text ("Decode error: "); n++;
   }
 
   init_string_builder (&sb, 0);
@@ -2260,7 +1988,8 @@ static DECLSPEC(noreturn) void decode_error (
      num=e;						\
   } else {						\
     num = 0;						\
-    while(e-->=0) num = (num<<8) + (GETC()+1);		\
+    while(e-->=0) num = ((UINT64)num<<8)                \
+			    + (GETC()+1);		\
     num += MAX_SMALL - 1;				\
   }							\
   if(what & TAG_NEG) {					\
@@ -2282,13 +2011,6 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error(data, NULL, "Wrong bits (%d).\n", what & TAG_MASK);	\
     (Y)=num;								\
   } while(0);
-
-#define getdata2(S,L) do {						\
-      if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
-	decode_error(data, NULL, "String range error.\n");		\
-      MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
-      data->ptr+=sizeof(S[0])*(L);					\
-  }while(0)
 
 #if PIKE_BYTEORDER == 4321
 #define BITFLIP(S)
@@ -2318,7 +2040,7 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
 		    sz, data->len - data->ptr);				\
     STR=begin_wide_shared_string(num, what);				\
-    MEMCPY(STR->str, data->data + data->ptr, sz);			\
+    memcpy(STR->str, data->data + data->ptr, sz);			\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
@@ -2334,39 +2056,11 @@ static DECLSPEC(noreturn) void decode_error (
   }									    \
 }while(0)
 
-#define getdata(X) do {				\
-   long length;					\
-   decode_entry(TAG_STRING, length,data);	\
-   if(data->pass == 1)				\
-     get_string_data(X, length, data);		\
-   else						\
-     data->ptr+=length;				\
-  }while(0)
-
-#define getdata3(X) do {						     \
-  INT32 what, e;							\
-  INT64 num;								\
-  DECODE("getdata3");							     \
-  switch(what & TAG_MASK)						     \
-  {									     \
-    case TAG_INT:							     \
-      X=0;								     \
-      break;								     \
-									     \
-    case TAG_STRING:							     \
-      get_string_data(X,num,data);                                           \
-      break;								     \
-									     \
-    default:								     \
-      decode_error (data, NULL, "Tag is wrong: %d\n", what & TAG_MASK);	\
-    }									     \
-}while(0)
-
 #define decode_number(X,data) do {		\
    INT32 what, e;				\
    INT64 num;					\
    DECODE("decode_number");			\
-   X=(what & TAG_MASK) | ((INT32) num<<4);	\
+   X=(what & TAG_MASK) | ((UINT64)num<<4);      \
    EDB(5, fprintf(stderr, "%*s  ==>%ld\n",	\
 		  data->depth, "", (long) X));	\
   }while(0)					\
@@ -2374,10 +2068,6 @@ static DECLSPEC(noreturn) void decode_error (
 
 static void restore_type_stack(struct pike_type **old_stackp)
 {
-#if 0
-  fprintf(stderr, "Restoring type-stack: %p => %p\n",
-	  Pike_compiler->type_stackp, old_stackp);
-#endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_stackp > Pike_compiler->type_stackp) {
     Pike_fatal("type stack out of sync!\n");
@@ -2390,10 +2080,6 @@ static void restore_type_stack(struct pike_type **old_stackp)
 
 static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
 {
-#if 0
-  fprintf(stderr, "Restoring type-mark: %p => %p\n",
-	  Pike_compiler->pike_type_mark_stackp, old_type_mark_stackp);
-#endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_type_mark_stackp > Pike_compiler->pike_type_mark_stackp) {
     Pike_fatal("type Pike_interpreter.mark_stack out of sync!\n");
@@ -2419,8 +2105,7 @@ static void low_decode_type(struct decode_data *data)
   {
     default:
       decode_error(data, NULL, "Error in type string (%d).\n", tmp);
-      /*NOTREACHED*/
-      break;
+      UNREACHABLE(break);
 
     case T_ASSIGN:
       tmp = GETC();
@@ -2475,14 +2160,16 @@ static void low_decode_type(struct decode_data *data)
     case T_INT:
       {
 	INT32 min=0, max=0;
-	min = GETC();
-	min = (min<<8)|GETC();
-	min = (min<<8)|GETC();
-	min = (min<<8)|GETC();
-	max = GETC();
-	max = (max<<8)|GETC();
-	max = (max<<8)|GETC();
-	max = (max<<8)|GETC();
+	if(data->ptr + 8 > data->len)
+          decode_error(data, NULL, "Not enough data.\n");
+	min = get_unaligned_be32(data->data + data->ptr);
+	data->ptr += 4;
+	max = get_unaligned_be32(data->data + data->ptr);
+	data->ptr += 4;
+
+        if (min > max)
+          decode_error(data, NULL, "Error in int type (min (%d) > max (%d)).\n", min, max);
+
 	push_int_type(min, max);
       }
       break;
@@ -2585,24 +2272,6 @@ static void low_decode_type(struct decode_data *data)
   UNSET_ONERROR(err1);
 }
 
-
-static void zap_placeholder(struct object *placeholder)
-{
-  /* fprintf(stderr, "Destructing placeholder.\n"); */
-  if (placeholder->storage) {
-    debug_malloc_touch(placeholder);
-    destruct(placeholder);
-  } else {
-    free_program(placeholder->prog);
-    placeholder->prog = NULL;
-    debug_malloc_touch(placeholder);
-  }
-  free_object(placeholder);
-}
-
-static int init_placeholder(struct object *placeholder);
-
-
 #define SETUP_DECODE_MEMOBJ(TYPE, U, VAR, ALLOCATE,SCOUR) do {		\
   struct svalue *tmpptr;						\
   struct svalue tmp;							\
@@ -2672,12 +2341,18 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 		 "%td (expected multiple of 3).\n", bytecode->len);
   }
 
-  init_bytecode();  
+  init_bytecode();
 
   SET_ONERROR(err, exit_bytecode, NULL);
 
   switch(bytecode->size_shift) {
 #define SIGNED_CHAR(X)	X
+
+#if SIZEOF_INT_TYPE > 4
+#define DO_HIGH(X) (X)
+#else
+#define DO_HIGH(X) 0
+#endif
 
     /* The EMIT_BYTECODE2 macro will generate the warning
      * "comparison is always false due to limited range of data type"
@@ -2696,7 +2371,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
       } else if (STR(bytecode)[e] == F_LINE) {		\
 	current_line =					\
 	  ((unsigned INT32)STR(bytecode)[e+1]) |	\
-	  ((INT_TYPE)STR(bytecode)[e+2])<<32;		\
+	  DO_HIGH(((INT_TYPE)STR(bytecode)[e+2])<<32);  \
       } else if (!current_file) {			\
 	decode_error(data, NULL, "Missing filename directive in "	\
 		     "byte code.\n");			\
@@ -2742,10 +2417,6 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 #undef SIGNED_CHAR
 #undef EMIT_BYTECODE
 #undef EMIT_BYTECODE2
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Bad size_shift: %d\n", bytecode->size_shift);
-#endif
   }
   UNSET_ONERROR(err);
   return assemble(1);
@@ -2846,22 +2517,19 @@ static void decode_value2(struct decode_data *data)
 
       if(!res)
       {
-	DECLARE_INF
-	DECLARE_NAN
-
-	switch(num)
+        switch(num)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_NAN()));
+            push_float((FLOAT_TYPE)MAKE_NAN());
 	    break;
-		       
+
 	  case Pike_FP_NINF: /* Negative infinity */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(-1)));
+            push_float(-(FLOAT_TYPE)MAKE_INF());
 	    break;
 
 	  case Pike_FP_PINF: /* Positive infinity */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(1)));
+            push_float((FLOAT_TYPE)MAKE_INF());
 	    break;
 
 	  case Pike_FP_NZERO: /* Negative Zero */
@@ -2869,13 +2537,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  default:
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+            push_float((FLOAT_TYPE)ldexp(res, num));
 	    break;
 	}
 	break;
       }
 
-      push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+      push_float((FLOAT_TYPE)ldexp(res, num));
       break;
     }
 
@@ -2884,7 +2552,6 @@ static void decode_value2(struct decode_data *data)
       struct pike_type *t;
 
       decode_type(t, data);
-      check_type_string(t);
       push_type_value(t);
 
       entry_id = data->counter;
@@ -2901,7 +2568,7 @@ static void decode_value2(struct decode_data *data)
 		     "Failed to decode array (array size is negative).\n");
 
       /* Heruetical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode array (not enough data).\n");
 
       EDB(2,fprintf(stderr, "%*sDecoding array of size %d to <%d>\n",
@@ -2930,7 +2597,7 @@ static void decode_value2(struct decode_data *data)
 		     "(mapping size is negative).\n");
 
       /* Heuristical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode mapping "
 		     "(not enough data).\n");
 
@@ -2960,7 +2627,7 @@ static void decode_value2(struct decode_data *data)
 		     "(multiset size is negative).\n");
 
       /* Heruetical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode multiset "
 		     "(not enough data).\n");
 
@@ -3104,9 +2771,7 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  push_int(36);
 	  convert_stack_top_with_base_to_bignum();
-#if SIZEOF_INT_TYPE > 4
 	  reduce_stack_top_bignum();
-#endif
 	  break;
 	}
 
@@ -3185,9 +2850,6 @@ static void decode_value2(struct decode_data *data)
 	    if (f >= 0) {
 	      struct svalue func;
 	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
-#ifdef PIKE_SECURITY
-	      /* FIXME: Check access to the function. */
-#endif
 	      debug_malloc_touch(p);
 	      pop_n_elems(2);
 	      *Pike_sp++ = func;
@@ -3264,619 +2926,7 @@ static void decode_value2(struct decode_data *data)
 
 	case 1:			/* Old-style encoding. */
 	{
-	  int d, in;
-	  size_t size=0;
-	  char *dat=0;
-	  struct program *p;
-	  struct object *placeholder=0;
-	  ONERROR err1, err2, err3, err4;
-
-#ifdef _REENTRANT
-	  ONERROR err;
-	  low_init_threads_disable();
-	  SET_ONERROR(err, do_enable_threads, 0);
-#endif
-
-	  fprintf (stderr, "Warning: Using old-style encoding\n");
-
-	  EDB(2,fprintf(stderr, "%*sDecoding a program to <%d>: ",
-		      data->depth, "", entry_id.u.integer);
-	      print_svalue(stderr, &entry_id);
-	      fputc('\n', stderr););
-
-	  SETUP_DECODE_MEMOBJ(T_PROGRAM, program, p, low_allocate_program(),;);
-
-	  debug_malloc_touch(p);
-	  SET_ONERROR(err3, zap_unfinished_program, p);
-	  
-	  if(data->pass == 1)
-	  {
-#if TWO_PASS_DECODE_WORKS
-	    if(! data->supporter.prog)
-	      data->supporter.prog = p;
-#endif
-
-	    debug_malloc_touch(p);
-	    ref_push_program(p);
-	    apply(decoder_codec (data), "__register_new_program", 1);
-	      
-	    /* return a placeholder */
-	    if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
-	    {
-	      placeholder=Pike_sp[-1].u.object;
-	      if(placeholder->prog != null_program)
-		decode_error(data, NULL, "Placeholder object is not "
-			     "a __null_program clone.\n");
-	      dmalloc_touch_svalue(Pike_sp-1);
-	      Pike_sp--;
-	    }
-	    else if (TYPEOF(Pike_sp[-1]) != T_INT ||
-		     Pike_sp[-1].u.integer)
-	      decode_error (data, NULL, "Expected placeholder object or zero "
-			    "from __register_new_program.\n");
-	    else {
-	      pop_stack();
-	    }
-	  }
-
-	  if(placeholder)
-	    SET_ONERROR(err4, zap_placeholder, placeholder);
-
-	  decode_value2(data);
-	  push_compact_version();
-	  if(!is_eq(Pike_sp-1,Pike_sp-2)
-#ifdef ENCODE_DEBUG
-	     && !data->debug
-#endif
-	    )
-	    decode_error(data, NULL, "Cannot decode programs encoded "
-			 "with other pike version %O.\n", Pike_sp - 2);
-	  pop_n_elems(2);
-
-#ifdef ENCODE_DEBUG
-	  if (!data->debug)
-#endif
-	    data->pickyness++;
-
-	  debug_malloc_touch(p);
-	  decode_number(p->flags,data);
-
-	  if(data->pass == 1)
-	  {
-	    p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
-			  PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
-	    p->flags |= PROGRAM_AVOID_CHECK;
-	  }
-	  decode_number(p->storage_needed,data);
-	  decode_number(p->xstorage,data);
-	  decode_number(p->parent_info_storage,data);
-	  decode_number(p->alignment_needed,data);
-	  decode_number(p->timestamp.tv_sec,data);
-	  decode_number(p->timestamp.tv_usec,data);
-
-	  if(data->pass && p->parent)
-	  {
-	    free_program(p->parent);
-	    p->parent=0;
-	  }
-
-	  debug_malloc_touch(p);
-	  decode_value2(data);
-	  switch(TYPEOF(Pike_sp[-1]))
-	  {
-	    case T_INT:
-	      p->parent=0;
-	      break;
-	    case T_PROGRAM:
-	      p->parent=Pike_sp[-1].u.program;
-	      break;
-	    case T_FUNCTION:
-	      p->parent=program_from_svalue(Pike_sp-1);
-	      break;
-	    default:
-	      if (data->pickyness)
-		decode_error(data, NULL, "Program decode failed. Got: %O\n",
-			     Pike_sp - 1);
-	      p->parent = 0;
-	      break;
-	  }
-	  if(p->parent) {
-	    add_ref(p->parent);
-	  }
-	  pop_stack();
-
-	  debug_malloc_touch(p);
-
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-	  decode_number( p->PIKE_CONCAT(num_,NAME), data);
-#include "program_areas.h"
-
-
-	  if(data->pass == 1)
-	  {
-#ifdef PIKE_USE_MACHINE_CODE
-  /* We want our program to be in mexec-allocated memory... */
-#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
-#endif /* PIKE_USE_MACHINE_CODE */ 
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-          size=DO_ALIGN(size, ALIGNOF(TYPE)); \
-          size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
-#include "program_areas.h"
-
-	    dat=xalloc(size);
-	    debug_malloc_touch(dat);
-	    MEMSET(dat,0,size);
-	    size=0;
-#ifdef PIKE_USE_MACHINE_CODE
-  /* We want our program to be in mexec-allocated memory... */
-#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
-          p->NAME = (TYPE *)mexec_alloc(p->PIKE_CONCAT(num_, NAME) *	\
-					sizeof(p->NAME[0]));
-#endif /* PIKE_USE_MACHINE_CODE */ 
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-	  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
-          p->NAME=(TYPE *)(dat+size); \
-          size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
-#include "program_areas.h"
-
-	    for(e=0;e<p->num_constants;e++)
-	      mark_free_svalue (&p->constants[e].sval);
-
-	    debug_malloc_touch(dat);
-	    debug_malloc_touch(p);
-	    
-	    p->total_size=size + sizeof(struct program);
-	    
-	    p->flags |= PROGRAM_OPTIMIZED;
-	  }
-
-	  {
-	    INT32 bytecode_method = 0;
-	    decode_number(bytecode_method, data);
-	    if (bytecode_method != PIKE_BYTECODE_METHOD) {
-	      decode_error(data, NULL,
-			   "Unsupported byte-code method: %d. Expected %d\n",
-			   bytecode_method, PIKE_BYTECODE_METHOD);
-	    }
-	  }
-
-	  getdata2(p->program, p->num_program);
-	  getdata2(p->relocations, p->num_relocations);
-
-#ifdef DECODE_PROGRAM
-	  {
-	    int byteorder = PIKE_BYTEORDER;	/* FIXME: Used by bytecode.h */
-	    DECODE_PROGRAM(p);
-	  }
-#endif /* DECODE_PROGRAM */
-	  make_program_executable(p);
-
-	  getdata2(p->linenumbers, p->num_linenumbers);
-
-	  /* Now with the linenumber info in place it gets useful to
-	   * include the program in error messages. */
-
-#ifdef DEBUG_MALLOC
-	  if(p->num_linenumbers && p->linenumbers &&
-	     EXTRACT_UCHAR(p->linenumbers)==127)
-	  {
-	    char *foo = p->linenumbers + 1;
-	    int len = get_small_number(&foo);
-	    int shift = *foo;
-	    char *fname = ++foo;
-	    foo += len << shift;
-	    get_small_number(&foo); /* pc offset */
-	    /* FIXME: Dmalloc doesn't support wide filenames. */
-	    debug_malloc_name(p, fname, get_small_number(&foo));
-	  }
-#endif
-
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_identifier_index;d++)
-	  {
-	    decode_number(p->identifier_index[d],data);
-	    if(p->identifier_index[d] > p->num_identifier_references)
-	    {
-	      p->identifier_index[d]=0;
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
-	    }
-	  }
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_variable_index;d++)
-	  {
-	    decode_number(p->variable_index[d],data);
-	    if(p->variable_index[d] > p->num_identifiers)
-	    {
-	      p->variable_index[d]=0;
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
-	    }
-	  }
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_identifier_references;d++)
-	  {
-	    decode_number(p->identifier_references[d].inherit_offset,data);
-	    if(p->identifier_references[d].inherit_offset > p->num_inherits)
-	    {
-	      p->identifier_references[d].inherit_offset=0;
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
-	    }
-	    decode_number(p->identifier_references[d].identifier_offset,data);
-	    decode_number(p->identifier_references[d].id_flags,data);
-
-	    EDB(3,fprintf(stderr,"IDREF%x < %d: { %d, %d, %d }\n",
-			p->id,d,
-			p->identifier_references[d].inherit_offset,
-			p->identifier_references[d].identifier_offset,
-			p->identifier_references[d].id_flags); );
-	  }
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_strings;d++)
-	    getdata(p->strings[d]);
-
-	  debug_malloc_touch(p);
-	  debug_malloc_touch(dat);
-
-/*	  p->inherits[0].prog=p;
-	  p->inherits[0].parent_offset=1;
-*/
-
-	  if(placeholder && data->pass==1)
-	  {
-	    if(placeholder->prog != null_program)
-	    {
-	      debug_malloc_touch(placeholder);
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1, "Placeholder is no longer "
-			   "a __null_program clone.\n");
-	    }else{
-	      free_program(placeholder->prog);
-	      add_ref(placeholder->prog = p);
-	      debug_malloc_touch(placeholder);
-	    }
-	  }
-
-	  debug_malloc_touch(p);
-
-	  in=p->num_inherits;
-	  for(d=0;d<in;d++)
-	  {
-	    decode_number(p->inherits[d].inherit_level,data);
-	    decode_number(p->inherits[d].identifier_level,data);
-	    decode_number(p->inherits[d].parent_offset,data);
-	    decode_number(p->inherits[d].parent_identifier,data);
-	    decode_number(p->inherits[d].storage_offset,data);
-
-	    decode_value2(data);
-	    if(d==0)
-	    {
-	      if(TYPEOF(Pike_sp[-1]) != T_PROGRAM ||
-		 Pike_sp[-1].u.program != p) {
-		ref_push_program (p);
-		decode_error(data, Pike_sp - 1,
-			     "Program decode of self inherit failed. Got: %O\n",
-			     Pike_sp - 2);
-	      }
-	      sub_ref(p);
-	    }
-
-	    if(data->pass > 1)
-	    {
-	      if(p->inherits[d].prog)
-	      {
-		free_program(p->inherits[d].prog);
-		p->inherits[d].prog=0;
-	      }
-
-	      if(p->inherits[d].parent)
-	      {
-		free_object(p->inherits[d].parent);
-		p->inherits[d].parent=0;
-	      }
-	    }
-
-	    switch(TYPEOF(Pike_sp[-1]))
-	    {
-	      case T_PROGRAM:
-		EDB(3, fprintf(stderr,"INHERIT%x = prog\n",p->id); );
-		p->inherits[d].prog=Pike_sp[-1].u.program;
-		Pike_sp--;
-		dmalloc_touch_svalue(Pike_sp);
-		break;
-
-	      case T_FUNCTION:
-		if(SUBTYPEOF(Pike_sp[-1]) != FUNCTION_BUILTIN) {
-		  EDB(3, fprintf(stderr,"INHERIT%x = func { %p, %d} \n",p->id,Pike_sp[-1].u.object, SUBTYPEOF(Pike_sp[-1])); );
-
-		  p->inherits[d].parent_identifier = SUBTYPEOF(Pike_sp[-1]);
-		  p->inherits[d].prog=program_from_svalue(Pike_sp-1);
-		  if(!p->inherits[d].prog) {
-		    ref_push_program (p);
-		    decode_error(data, Pike_sp - 1, "Failed to decode "
-				 "inherited program. Got: %O\n", Pike_sp - 2);
-		  }
-		  add_ref(p->inherits[d].prog);
-		  p->inherits[d].parent=Pike_sp[-1].u.object;
-		  Pike_sp--;
-		  dmalloc_touch_svalue(Pike_sp);
-		  break;
-		}
-		/* Fall through */
-
-	      default:
-		ref_push_program (p);
-		decode_error(data, Pike_sp - 1,
-			     "Failed to decode inherited program. Got: %O\n",
-			     Pike_sp - 2);
-	    }
-
-	    p->num_inherits=d+1;
-
-	    getdata3(p->inherits[d].name);
-
-	    EDB(3, fprintf(stderr,"INHERIT%x < %d: %d id=%d\n",
-			 p->id,d,
-			 p->inherits[d].prog->num_identifiers,
-			 p->inherits[d].prog->id); );
-	  }
-
-	  debug_malloc_touch(dat);
-
-
-	  SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
-	  SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_identifiers;d++)
-	  {
-	    getdata(p->identifiers[d].name);
-	    decode_type(p->identifiers[d].type,data);
-	    decode_number(p->identifiers[d].identifier_flags,data);
-	    decode_number(p->identifiers[d].run_time_type,data);
-	    decode_number(p->identifiers[d].opt_flags,data);
-	    decode_number(p->identifiers[d].filename_strno, data);
-	    decode_number(p->identifiers[d].linenumber, data);
-	    if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
-	      decode_number(p->identifiers[d].func.ext_ref.depth, data);
-	      decode_number(p->identifiers[d].func.ext_ref.id, data);
-	    } else if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags))
-	    {
-	      decode_number(p->identifiers[d].func.offset,data);
-	    } else {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Cannot decode function implemented in C: %S\n",
-			   p->identifiers[d].name);
-	    }
-	  }
-
-
-	  UNSET_ONERROR(err2);
-	  UNSET_ONERROR(err1);
-
-	  debug_malloc_touch(dat);
-
-	  debug_malloc_touch(p);
-	  for(d=0;d<NUM_LFUNS;d++)
-	    decode_number(p->lfuns[d],data);
-
-	  debug_malloc_touch(dat);
-
-	  debug_malloc_touch(p);
-
-	  fsort_program_identifier_index(p->identifier_index,
-					 p->identifier_index +
-					 p->num_identifier_index - 1,
-					 p);
-
-	  debug_malloc_touch(dat);
-	  debug_malloc_touch(p);
-
-	  p->flags |= PROGRAM_PASS_1_DONE | PROGRAM_FIXED;
-	  for(d=0;d<p->num_constants;d++)
-	  {
-	    decode_value2(data);
-	    if(data->pass > 1)
-	    {
-	      assign_svalue(& p->constants[d].sval , Pike_sp -1 );
-	      pop_stack();
-	    }else{
-	      dmalloc_touch_svalue(Pike_sp-1);
-	      p->constants[d].sval=*--Pike_sp;
-	    }
-	    dmalloc_touch_svalue(Pike_sp);
-	    {
-	      struct pike_string *dummy = NULL;
-	      getdata3(dummy /*p->constants[d].name*/);
-	      if (dummy) free_string(dummy);
-	    }
-	  }
-
-#ifdef PIKE_DEBUG	  
-	  {
-	    int q;
-	    for(q=0;q<p->num_inherits;q++)
-	      if(!p->inherits[q].prog)
-		Pike_fatal("FOOBAR!@!!!\n");
-	  }
-#endif
-
-	  if(placeholder && data->pass == 1)
-	  {
-	    if(placeholder->storage)
-	    {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Placeholder already has storage!\n");
-	    } else {
-	      placeholder->storage=p->storage_needed ?
-		(char *)xcalloc(p->storage_needed, 1) :
-		(char *)NULL;
-	      call_c_initializers(placeholder);
-	    }
-	  }
-
-#ifdef ENCODE_DEBUG
-	  if (!data->debug)
-#endif
-	    data->pickyness--;
-
-	  if(placeholder)
-	  {
-	    free_object(placeholder);
-	    UNSET_ONERROR(err4);
-	  }
-	  UNSET_ONERROR(err3);
-
-	  ref_push_program(p);
-
-	  if(!(p->flags & PROGRAM_FINISHED)
-#if TWO_PASS_DECODE_WORKS
-	     && !data->supporter.depends_on
-#endif
-	    )
-	  {
-	    /* Logic for the PROGRAM_FINISHED flag:
-	     * The purpose of this code is to make sure that the PROGRAM_FINISHED
-	     * flag is not set on the program until all inherited programs also
-	     * have that flag. -Hubbe
-	     */
-	    for(d=1;d<p->num_inherits;d++)
-	      if(! (p->inherits[d].prog->flags & PROGRAM_FINISHED))
-		break;
-	    
-	    if(d == p->num_inherits)
-	    {
-	      p->flags &=~ PROGRAM_AVOID_CHECK;
-	      p->flags |= PROGRAM_FINISHED;
-
-	      if (placeholder)
-	      {
-		if(!init_placeholder(placeholder))
-		  placeholder=0;
-	      }
-	      
-	      /* Go through the linked list of unfinished programs
-	       * to see what programs are now finished.
-	       */
-	      {
-		struct unfinished_prog_link *l, **ptr;
-		
-#ifdef PIKE_DEBUG
-		check_program(p);
-#endif /* PIKE_DEBUG */
-		
-		/* It is possible that we need to restart loop
-		 * in some cases... /Hubbe
-		 */
-		for(ptr= &data->unfinished_programs ; (l=*ptr);)
-		{
-		  struct program *pp=l->prog;
-		  for(d=1;d<pp->num_inherits;d++)
-		    if(! (pp->inherits[d].prog->flags & PROGRAM_FINISHED))
-		      break;
-		  
-		  if(d == pp->num_inherits)
-		  {
-		    fsort_program_identifier_index(pp->identifier_index,
-						   pp->identifier_index +
-						   pp->num_identifier_index - 1,
-						   pp);
-
-		    pp->flags &=~ PROGRAM_AVOID_CHECK;
-		    pp->flags |= PROGRAM_FINISHED;
-		    
-#ifdef PIKE_DEBUG
-		    check_program(pp);
-#endif /* PIKE_DEBUG */
-		    
-		    *ptr = l->next;
-		    free((char *)l);
-		  }else{
-		    ptr=&l->next;
-		  }
-		}
-	      }
-	      
-	      /* Go through the linked list of unfinished objects
-	       * to see what objects are now finished.
-	       */
-	      {
-		int decode_fun = -1;
-		struct unfinished_obj_link *l, **ptr;
-		if (data->unfinished_objects) {
-		  decode_fun = find_identifier("decode_object",
-					       decoder_codec (data)->prog);
-		  if (decode_fun < 0)
-		    decode_error(data, Pike_sp - 1,
-				 "Cannot decode objects without a "
-				 "\"decode_object\" function in the codec.\n");
-		}
-		for(ptr= &data->unfinished_objects ; (l=*ptr);)
-		{
-		  int fun;
-		  struct object *o=l->o;
-		  if(o->prog)
-		  {
-		    if(o->prog->flags & PROGRAM_FINISHED)
-		    {
-		      apply_lfun(o, LFUN___INIT, 0);
-		      pop_stack();
-		      /* FIXME: Should call LFUN_CREATE here in <= 7.2
-		       * compatibility mode. */
-		    }else{
-		      ptr=&l->next;
-		      continue;
-		    }
-		  }
-
-		  /* Note: We steal the references from l. */
-		  push_object(o);
-		  *(Pike_sp++) = l->decode_arg;
-
-		  *ptr = l->next;
-		  free((char *)l);
-
-		  /* Let the codec do it's job... */
-		  apply_low(decoder_codec (data), decode_fun, 2);
-		  if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) &&
-		      o->prog &&
-		      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
-		    /* Call lfun::create(@args). */
-		    INT32 args;
-		    Pike_sp--;
-		    args = Pike_sp->u.array->size;
-		    if (args) {
-		      /* Note: Eats reference to the array. */
-		      push_array_items(Pike_sp->u.array);
-		    } else {
-		      free_array(Pike_sp->u.array);
-		    }
-		    apply_low(o, fun, args);
-		  }
-		  pop_stack();
-		}
-	      }
-	    }else{
-	      struct unfinished_prog_link *l;
-	      l=ALLOC_STRUCT(unfinished_prog_link);
-	      l->prog=p;
-	      l->next=data->unfinished_programs;
-	      data->unfinished_programs=l;
-	    }
-	  }
-
-#ifdef _REENTRANT
-	  UNSET_ONERROR(err);
-	  exit_threads_disable(NULL);
-#endif
-	  goto decode_done;
+	  decode_error(data, NULL, "Failed to decode program. Old-style program encoding is not supported, anymore.\n");
 	}
 
 	case 2:
@@ -3923,26 +2973,6 @@ static void decode_value2(struct decode_data *data)
 	      fputc ('\n', stderr););
 
 	  data->delay_counter++;
-
-#if 0
-	  /* Is this necessary? In that case, how do we pass an
-	   * adequate context to __register_new_program so that it
-	   * knows which program is being decoded? */
-	    ref_push_program (p);
-	    apply (decoder_codec (data), "__register_new_program", 1);
-	      
-	    /* Returns a placeholder. */
-	    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	      if (Pike_sp[-1].u.object->prog != null_program)
-		decode_error (data, NULL, "Placeholder object is not "
-			      "a null_program clone.\n");
-	    }
-	    else if (TYPEOF(Pike_sp[-1]) != T_INT ||
-		     Pike_sp[-1].u.integer)
-	      decode_error (data, NULL, "Expected placeholder object or zero "
-			    "from __register_new_program.\n");
-	    pop_stack();
-#endif
 
 	  break;
 	}
@@ -4025,15 +3055,12 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  old_pragmas = c->lex.pragmas;
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
+	  /* We also don't want to generate deprecation warnings. */
+	  c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
 
 	  /* Start the new program. */
-	  low_start_new_program(p, 1, NULL, 0, NULL);
+	  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
-#if TWO_PASS_DECODE_WORKS
-	  if(! data->supporter.prog)
-	    data->supporter.prog = p;
-#endif
-
 	  p->flags = p_flags;
 
 	  /* Kludge to get end_first_pass() to free the program. */
@@ -4048,7 +3075,7 @@ static void decode_value2(struct decode_data *data)
 	    if (fun >= 0) {
 	      ref_push_program(p);
 	      apply_low(data->codec, fun, 1);
-	      
+
 	      /* Returned a placeholder */
 	      if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
 	      {
@@ -4127,77 +3154,10 @@ static void decode_value2(struct decode_data *data)
 
 	  /* Byte-code method */
 	  decode_number(bytecode_method, data);
-	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
-	  } else if (bytecode_method != PIKE_BYTECODE_METHOD) {
+	  if (bytecode_method != PIKE_BYTECODE_PORTABLE) {
 	    decode_error(data, NULL, "Unsupported byte-code method: %d\n",
 			 bytecode_method);
-	  } else {
-
-#ifdef PIKE_PORTABLE_BYTECODE
-	    fprintf(stderr, "Warning: Decoding non-portable bytecode.\n");
-#endif /* PIKE_PORTABLE_BYTECODE */
-
-#ifdef PIKE_USE_MACHINE_CODE
-	    {
-	      size_t csum;
-	      /* Check the checksum of the instrs array. */
-	      decode_number(csum, data);
-	      if (csum != instrs_checksum) {
-		decode_error(data, NULL,
-			     "Bad instruction checksum: %d (expected %d)\n",
-			     csum, instrs_checksum);
-	      }	    
-	    }
-#endif /* PIKE_USE_MACHINE_CODE */
-
-	    /* Decode program */
-	    if (data->ptr + (int)local_num_program >= data->len) {
-	      decode_error(data, NULL,
-			   "Failed to decode program (string too short).\n");
-	    }
-	    low_add_many_to_program(Pike_compiler,
-				    (PIKE_OPCODE_T *)(data->data + data->ptr),
-				    local_num_program);
-	    data->ptr += local_num_program * sizeof(PIKE_OPCODE_T);
-
-	    /* Decode relocations */
-	    for (e=0; e<(int)local_num_relocations; e++) {
-	      size_t reloc;
-	      decode_number(reloc, data);
-	      CHECK_RELOC(reloc, (size_t) local_num_program);
-	      add_to_relocations(reloc);
-	    }
-
-	    /* Perform relocation. */
-#ifdef DECODE_PROGRAM
-	    DECODE_PROGRAM(p);
-#endif /* DECODE_PROGRAM */
-	    make_program_executable(p);
-
-	    /* Decode linenumbers */
-	    if (data->ptr + (int)local_num_linenumbers >= data->len) {
-	      decode_error(data, NULL, "Failed to decode linenumbers "
-			   "(string too short).\n");
-	    }
-	    for (e=0; e<(int)local_num_linenumbers; e++) {
-	      char lineno_info;
-	      lineno_info = *(data->data + data->ptr++);
-	      add_to_linenumbers(lineno_info);
-	    }
-
-	    /* Now with the linenumber info in place it gets useful to
-	     * include the program in error messages. */
-
-	    EDB(2,
-		fprintf(stderr, "%*sThe program is: ", data->depth, "");
-		push_program (p);
-		print_svalue (stderr, --Pike_sp);
-		fputc('\n', stderr));
 	  }
-
-	  /* identifier_index & variable_index are created by
-	   * fixate_program() and optimize_program().
-	   */
 
 	  /* Decode strings */
 	  for (e=0; e<local_num_strings; e++) {
@@ -4246,7 +3206,7 @@ static void decode_value2(struct decode_data *data)
 	      ref_push_program (p);
 	      decode_error(data, Pike_sp - 1,
 			   "Bad efun/type number: %d (expected 0 - %d).\n",
-			   efun_no, local_num_constants-1);	      
+			   efun_no, local_num_constants-1);
 	    }
 	    constant = p->constants+efun_no;
 	    /* value */
@@ -4277,29 +3237,11 @@ static void decode_value2(struct decode_data *data)
 	    }
 	    /* name */
 	    decode_value2(data);
-#if 0
-	    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	      constant->name = Pike_sp[-1].u.string;
-	    } else if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-		       !Pike_sp[-1].u.integer) {
-	      constant->name = NULL;
-	    } else {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Name of constant is not a string: %O\n",
-			   Pike_sp - 2);
-	    }
-	    constant->sval = Pike_sp[-2];
-	    dmalloc_touch_svalue(Pike_sp-1);
-	    dmalloc_touch_svalue(Pike_sp-2);
-	    Pike_sp -= 2;
-#else /* !0 */
 	    constant->offset = -1;
 	    pop_stack();
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-#endif /* 0 */
 	    decode_number(entry_type, data);
 	  }
 
@@ -4364,6 +3306,14 @@ static void decode_value2(struct decode_data *data)
 		/* identifier_offset */
 		/* Actually the id ref number from the inherited program */
 		decode_number(ref_no, data);
+
+                if (ref.inherit_offset >= p->num_inherits)
+                    decode_error(data, NULL, "Inherit offset out of range %u vs %u.\n",
+                                 ref.inherit_offset, p->num_inherits);
+                if (ref_no < 0 || ref_no >= p->inherits[ref.inherit_offset].prog->num_identifier_references)
+                    decode_error(data, NULL, "Identifier reference out of range %u vs %u.\n",
+                    ref_no, p->inherits[ref.inherit_offset].prog->num_identifier_references);
+
 		ref.identifier_offset = p->inherits[ref.inherit_offset].prog->
 		  identifier_references[ref_no].identifier_offset;
 
@@ -4373,7 +3323,7 @@ static void decode_value2(struct decode_data *data)
 		/* Expected identifier reference number */
 		decode_number(no, data);
 
-		if (no > p->num_identifier_references) {
+		if (no < 0 || no > p->num_identifier_references) {
 		  EDB (3, dump_program_tables (p, data->depth));
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
@@ -4434,8 +3384,7 @@ static void decode_value2(struct decode_data *data)
 
 		/* func */
 		decode_number(func.offset, data);
-		if (bytecode_method == PIKE_BYTECODE_PORTABLE &&
-		    func.offset != -1) {
+		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
 		  int old_a_flag;
 #endif
@@ -4484,15 +3433,19 @@ static void decode_value2(struct decode_data *data)
 				    Pike_sp[-1].u.type,
 				    id_flags, func_flags,
 				    &func, opt_flags);
-		if (no >= p->num_identifier_references ||
+		if ((no < 0 || no >= p->num_identifier_references) ||
 		    (no != n &&
 		     (p->identifier_references[no].id_flags != id_flags ||
 		      p->identifier_references[no].identifier_offset !=
 		      p->identifier_references[n].identifier_offset ||
 		      p->identifier_references[no].inherit_offset != 0))) {
+#ifdef PIKE_DEBUG
+		  dump_program_tables(Pike_compiler->new_program, 0);
+#endif
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
-			       "Bad function identifier offset: %d\n", no);
+			       "Bad function identifier offset for %S:%T: %d != %d\n",
+			       Pike_sp[-3].u.string, Pike_sp[-2].u.type, n, no);
 		}
 
 		pop_n_elems(2);
@@ -4770,12 +3723,10 @@ static void decode_value2(struct decode_data *data)
 	  check_program (p);
 #endif
 
-	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
-	    /* We've regenerated p->program, so these may be off. */
-	    local_num_program = p->num_program;
-	    local_num_relocations = p->num_relocations;
-	    local_num_linenumbers = p->num_linenumbers;
-	  }
+          /* We've regenerated p->program, so these may be off. */
+          local_num_program = p->num_program;
+          local_num_relocations = p->num_relocations;
+          local_num_linenumbers = p->num_linenumbers;
 
 	  /* Verify... */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
@@ -4808,29 +3759,11 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    /* name */
 	    decode_value2(data);
-#if 0
-	    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	      constant->name = Pike_sp[-1].u.string;
-	    } else if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-		       !Pike_sp[-1].u.integer) {
-	      constant->name = NULL;
-	    } else {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Name of constant is not a string: %O\n",
-			   Pike_sp - 2);
-	    }
-	    constant->sval = Pike_sp[-2];
-	    dmalloc_touch_svalue(Pike_sp-1);
-	    dmalloc_touch_svalue(Pike_sp-2);
-	    Pike_sp -= 2;
-#else /* !0 */
 	    constant->offset = -1;
 	    pop_stack();
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-#endif /* 0 */	    
 	    EDB(5,
 		fprintf(stderr, "%*sDecoded constant %d to a %s\n",
 			data->depth, "",
@@ -4917,27 +3850,6 @@ decode_done:;
 #endif
 }
 
-/* Placed after to prevent inlining */
-static int init_placeholder(struct object *placeholder)
-{
-  JMP_BUF rec;
-  /* Initialize the placeholder. */
-  if(SETJMP(rec))
-  {
-    dmalloc_touch_svalue(&throw_value);
-    call_handle_error();
-    zap_placeholder(placeholder);
-    UNSETJMP(rec);
-    return 1;
-  }else{
-    call_pike_initializers(placeholder,0);
-    UNSETJMP(rec);
-    return 0;
-  }
-}
-
-
-
 static struct decode_data *current_decode = NULL;
 
 static void free_decode_data (struct decode_data *data, int delay,
@@ -4971,14 +3883,6 @@ static void free_decode_data (struct decode_data *data, int delay,
 
 #ifdef PIKE_DEBUG
   if (!free_after_error) {
-    NEW_MAPPING_LOOP (data->decoded->data) {
-      if (TYPEOF(k->val) == T_PROGRAM &&
-	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
-	decode_error (data, NULL,
-		      "Got unfinished program <%O> after decode: %O\n",
-		      &k->ind, &k->val);
-      }
-    }
     if(data->unfinished_programs)
       Pike_fatal("We have unfinished programs left in decode()!\n");
     if(data->unfinished_objects)
@@ -4988,15 +3892,13 @@ static void free_decode_data (struct decode_data *data, int delay,
   }
 #endif
 
-  free_string (data->data_str);
   if (data->codec) free_object (data->codec);
-  free_mapping(data->decoded);
 
   while(data->unfinished_programs)
   {
     struct unfinished_prog_link *tmp=data->unfinished_programs;
     data->unfinished_programs=tmp->next;
-    free((char *)tmp);
+    free(tmp);
   }
 
   while(data->unfinished_objects)
@@ -5005,7 +3907,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     data->unfinished_objects=tmp->next;
     free_svalue(&tmp->decode_arg);
     free_object(tmp->o);
-    free((char *)tmp);
+    free(tmp);
   }
 
   while(data->unfinished_placeholders)
@@ -5013,7 +3915,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     struct unfinished_obj_link *tmp=data->unfinished_placeholders;
     data->unfinished_placeholders=tmp->next;
     free_object(tmp->o);
-    free((char *)tmp);
+    free(tmp);
   }
 
 #ifdef PIKE_THREADS
@@ -5021,6 +3923,30 @@ static void free_decode_data (struct decode_data *data, int delay,
   free_object (data->thread_obj);
 #endif
 
+#ifdef PIKE_DEBUG
+  if (!free_after_error) {
+    NEW_MAPPING_LOOP (data->decoded->data) {
+      if (TYPEOF(k->val) == T_PROGRAM &&
+	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
+	ONERROR err;
+	/* Move some references to the stack so that they
+	 * will be freed when decode_error() throws, but
+	 * still be available to decode_error().
+	 */
+	push_string(data->data_str);
+	push_mapping(data->decoded);
+	SET_ONERROR(err, free, data);
+
+	decode_error (data, NULL,
+		      "Got unfinished program <%O> after decode: %O\n",
+		      &k->ind, &k->val);
+	UNSET_ONERROR(err);
+      }
+    }
+  }
+#endif
+  free_string(data->data_str);
+  free_mapping(data->decoded);
   free( (char *) data);
 }
 
@@ -5036,44 +3962,11 @@ static void low_do_decode (struct decode_data *data)
   }
 }
 
-#if TWO_PASS_DECODE_WORKS
-/* Run pass2 */
-int re_decode(struct decode_data *data, int ignored)
-{
-  JMP_BUF recovery;
-  struct svalue orig_thrown;
-  move_svalue (&orig_thrown, &throw_value);
-  mark_free_svalue (&throw_value);
-
-  if (SETJMP (recovery)) {
-    UNSETJMP (recovery);
-    call_handle_error();
-    move_svalue (&throw_value, &orig_thrown);
-    free_decode_data (data, 0, 1);
-    return 0;
-  }
-
-  else {
-    data->next = current_decode;
-    low_do_decode (data);
-    UNSETJMP (recovery);
-    move_svalue (&throw_value, &orig_thrown);
-    free_decode_data (data, 0, 0);
-    return 1;
-  }
-}
-#endif
-
 static void error_free_decode_data (struct decode_data *data)
 {
   int delay;
   debug_malloc_touch (data);
-#if TWO_PASS_DECODE_WORKS
-  delay=unlink_current_supporter(&data->supporter);
-  call_dependants(& data->supporter, 1);
-#else
   delay = 0;
-#endif
   free_decode_data (data, delay, 1);
 }
 
@@ -5096,8 +3989,7 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
        ) {
       struct svalue *res;
-      struct svalue val = SVALUE_INIT_INT (0);
-      val.u.integer = COUNTER_START;
+      struct svalue val = SVALUE_INIT_INT (COUNTER_START);
       if ((res = low_mapping_lookup(data->decoded, &val))) {
 	push_svalue(res);
 	return 1;
@@ -5152,24 +4044,13 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
   SET_ONERROR(err, error_free_decode_data, data);
 
-#if TWO_PASS_DECODE_WORKS
-  init_supporter(& data->supporter,
-		 (supporter_callback *) re_decode,
-		 (void *)data);
-#endif
-
   low_do_decode (data);
 
   UNSET_ONERROR(err);
 
   {
     int delay;
-#if TWO_PASS_DECODE_WORKS
-    delay=unlink_current_supporter(&data->supporter);
-    call_dependants(& data->supporter, 1);
-#else
     delay = 0;
-#endif
     free_decode_data (data, delay, 0);
   }
 
@@ -5367,13 +4248,13 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   switch(i)
   {
   case TAG_INT:
-    push_int(DO_NOT_WARN(t));
+    push_int(t);
     return;
 
   case TAG_FLOAT:
     if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
       decode_error(current_decode, NULL, "Float architecture not supported.\n");
-    push_int(DO_NOT_WARN(t)); /* WARNING! */
+    push_int(t);
     SET_SVAL_TYPE(Pike_sp[-1], T_FLOAT);
     return;
 
@@ -5397,7 +4278,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 			 "length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MULTISET:
@@ -5405,7 +4286,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 			 "length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate_multiset(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate_multiset(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MAPPING:
@@ -5417,7 +4298,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
       rec_restore_value(v,l);
       rec_restore_value(v,l);
     }
-    f_aggregate_mapping(DO_NOT_WARN(t*2)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate_mapping(t*2); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_OBJECT:
@@ -5449,7 +4330,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   default:
     decode_error(current_decode, NULL, "Unknown type tag %ld:%ld\n",
-	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
+                 (long)i, (long)t);
   }
 }
 
@@ -5486,7 +4367,7 @@ void f_decode_value(INT32 args)
   int debug = 0;
 #endif /* ENCODE_DEBUG */
 
-  check_all_args("decode_value", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -5510,7 +4391,7 @@ void f_decode_value(INT32 args)
       if (TYPEOF(Pike_sp[1-args]) == T_OBJECT) {
 	if (SUBTYPEOF(Pike_sp[1-args])) {
 	  struct decode_data data;
-	  MEMSET (&data, 0, sizeof (data));
+	  memset (&data, 0, sizeof (data));
 	  data.data_str = s;	/* Not refcounted. */
 	  decode_error(&data, NULL,
 		       "The codec may not be a subtyped object yet.\n");
@@ -5540,7 +4421,7 @@ void f_decode_value(INT32 args)
     ptrdiff_t l=s->len;
     struct decode_data data;
     ONERROR uwp;
-    MEMSET (&data, 0, sizeof (data));
+    memset (&data, 0, sizeof (data));
     data.data_str = s;		/* Not refcounted. */
     SET_ONERROR (uwp, restore_current_decode, current_decode);
     current_decode = &data;

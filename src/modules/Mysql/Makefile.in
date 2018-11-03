@@ -3,10 +3,12 @@ VPATH=@srcdir@
 OBJS=mysql.o result.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
-DUMMY=dummy.o
-LINKER_OPTIONS=modules/Mysql/dummy.o
-
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+mysql.o: $(SRCDIR)/mysql.c
+
+result.o: $(SRCDIR)/result.c
+
 @dependencies@

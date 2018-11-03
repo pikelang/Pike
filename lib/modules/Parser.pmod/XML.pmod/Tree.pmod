@@ -6,8 +6,7 @@
 //! XML parser that generates node-trees.
 //!
 //! Has some support for XML namespaces
-//! @url{http://www.w3.org/TR/REC-xml-names/@}
-//! RFC 2518 23.4.
+//! @url{http://www.w3.org/TR/REC-xml-names/@} @rfc{2518:23.4@}.
 //!
 //! @note
 //!   This module defines two sets of node trees;
@@ -111,7 +110,7 @@ enum ParseFlags {
   // Negated flag for compatibility.
   PARSE_DISALLOW_RXML_ENTITIES =	0x8,
 #define PARSE_DISALLOW_RXML_ENTITIES	0x8
-  
+
   PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
 #define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
   PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
@@ -149,13 +148,34 @@ string roxen_text_quote(string data) {
 }
 
 //! Quotes the string given in @[data] by escaping &, <, >, ' and ".
-string attribute_quote(string data)
+string attribute_quote(string data, void|string ignore)
 {
-  return replace(data, ([ "\"":"&quot;",
-			  "'":"&apos;",
-			  "&":"&amp;",
-			  "<":"&lt;",
-			  ">":"&gt;" ]) );
+  switch(ignore)
+  {
+  case "\"":
+    return replace(data, ([ "'":"&apos;",
+                            "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+  case "'":
+    return replace(data, ([ "\"":"&quot;",
+                            "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+
+  default:
+    return replace(data, ([ "\"":"&quot;",
+                            "'":"&apos;",
+                            "&":"&amp;",
+                            "\n":"&#a;",
+                            "\r":"&#d;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+  }
 }
 
 //! Quotes strings just like @[attribute_quote], but entities in the
@@ -180,7 +200,11 @@ class XMLNSParser {
 
   void create()
   {
-    namespace_stack->push(([]));	// Sentinel.
+    // Sentinel and default namespaces.
+    namespace_stack->push(([
+			    "xml":"http://www.w3.org/XML/1998/namespace",
+			    "xmlns":"http://www.w3.org/2000/xmlns/",
+			  ]));
   }
 
   //! Check @[attrs] for namespaces.
@@ -193,9 +217,21 @@ class XMLNSParser {
     foreach(attrs; string attr; string val) {
       if (attr == "xmlns") {
 	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
+	if ((val == "http://www.w3.org/2000/xmlns/") ||
+	    (val == "http://www.w3.org/XML/1998/namespace")) {
+	  error("Invalid namespace declaration.\n");
+	}
 	namespaces[0] = val;
       } else if (has_prefix(attr, "xmlns:")) {
 	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
+	if ((val == "http://www.w3.org/2000/xmlns/") ||
+	    (val == "http://www.w3.org/XML/1998/namespace") ||
+	    (attr == "xmlns:xml") || (attr == "xmlns:xmlns")) {
+	  if ((attr != "xmlns:xml") ||
+	      (val != "http://www.w3.org/XML/1998/namespace")) {
+	    error("Invalid namespace declaration.\n");
+	  }
+	}
 	namespaces[attr[6..]] = val;
       }
     }
@@ -228,7 +264,7 @@ class XMLNSParser {
       key = name[..i-1];
       name = name[i+1..];
     }
-    if (has_prefix(key||"", "xml") || (name == "xmlns")) {
+    if ((key || name) == "xmlns") {
       if (key) name = key + ":" + name;
       return name;
     }
@@ -273,8 +309,8 @@ class XMLNSParser {
 //! Base class for nodes.
 class AbstractSimpleNode {
   //  Private member variables
-  /* static */ array(AbstractSimpleNode) mChildren = ({ });
-  
+  /* protected */ array(AbstractSimpleNode) mChildren = ({ });
+
   //! Returns all the nodes children.
   array(AbstractSimpleNode) get_children() { return (mChildren); }
 
@@ -284,7 +320,7 @@ class AbstractSimpleNode {
   //! Returns an initialized copy of the node.
   //! @note
   //!   The returned node has no children.
-  AbstractSimpleNode low_clone() {
+  optional AbstractSimpleNode low_clone() {
     return AbstractSimpleNode();
   }
 
@@ -304,7 +340,7 @@ class AbstractSimpleNode {
     else
       return (mChildren[-1]);
   }
-  
+
   //! The [] operator indexes among the node children, so
   //! @expr{node[0]@} returns the first node and @expr{node[-1]@} the last.
   //! @note
@@ -330,7 +366,7 @@ class AbstractSimpleNode {
   AbstractSimpleNode add_child(AbstractSimpleNode c)
   {
     mChildren += ({ c });
-	
+
     //  Let caller get the node back for easy chaining of calls
     return this;
   }
@@ -387,7 +423,7 @@ class AbstractSimpleNode {
 
 
   //! Replaces the first occurrence of the old node child with
-  //! the new node child.
+  //! the new node child or children.
   //! @note
   //!   The return value differs from the one returned
   //!   by @[Node()->replace_child()].
@@ -395,12 +431,15 @@ class AbstractSimpleNode {
   //!   Returns the current node on success, and @expr{0@} (zero)
   //!   if the node @[old] wasn't found.
   AbstractSimpleNode replace_child(AbstractSimpleNode old,
-				   AbstractSimpleNode new)
+                                   AbstractSimpleNode|array(AbstractSimpleNode) new)
   {
     int index = search(mChildren, old);
     if (index < 0)
       return 0;
-    mChildren[index] = new;
+    if( arrayp(new) )
+      mChildren = mChildren[..index-1] + new + mChildren[index+1..];
+    else
+      mChildren[index] = new;
     return this;
   }
 
@@ -432,7 +471,7 @@ class AbstractSimpleNode {
       if (c->walk_preorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
   }
-  
+
   //! Traverse the node subtree in preorder, root node first, then
   //! subtrees from left to right. For each node we call @[cb_1]
   //! before iterating through children, and then @[cb_2]
@@ -445,7 +484,7 @@ class AbstractSimpleNode {
 		      mixed ... args)
   {
     int  res;
-	
+
     res = cb_1(this, @args);
     if (!res)
       foreach(mChildren, AbstractSimpleNode c)
@@ -504,7 +543,7 @@ class AbstractSimpleNode {
   array(AbstractSimpleNode) get_descendants(int(0..1) include_self)
   {
     array   res;
-	
+
     //  Walk subtrees in document order and add to resulting list
     res = include_self ? ({ this }) : ({ });
     foreach(mChildren, AbstractSimpleNode child) {
@@ -512,13 +551,77 @@ class AbstractSimpleNode {
     }
     return (res);
   }
+
+  //! Optional factory for creating contained nodes.
+  //!
+  //! @param type
+  //!   Type of node to create. One of:
+  //!   @int
+  //!     @value XML_TEXT
+  //!       XML text. @[text] contains a string with the text.
+  //!     @value XML_COMMENT
+  //!       XML comment. @[text] contains a string with the comment text.
+  //!     @value XML_HEADER
+  //!       @tt{<?xml?>@}-header @[attr] contains a mapping with
+  //!       the attributes.
+  //!     @value XML_PI
+  //!       XML processing instruction. @[name] contains the name of the
+  //!       processing instruction and @[text] the remainder.
+  //!     @value XML_ELEMENT
+  //!       XML element tag. @[name] contains the name of the tag and
+  //!       @[attr] the attributes.
+  //!     @value XML_DOCTYPE
+  //!     @value DTD_ENTITY
+  //!     @value DTD_ELEMENT
+  //!     @value DTD_ATTLIST
+  //!     @value DTD_NOTATION
+  //!       DTD information.
+  //!   @endint
+  //!
+  //! @param name
+  //!   Name of the tag if applicable.
+  //!
+  //! @param attr
+  //!   Attributes for the tag if applicable.
+  //!
+  //! @param text
+  //!   Contained text of the tab if any.
+  //!
+  //! This function is called during parsning to create the various
+  //! XML nodes.
+  //!
+  //! Define this function to provide application-specific XML nodes.
+  //!
+  //! @returns
+  //!   Returns one of
+  //!   @mixed
+  //!     @type AbstractSimpleNode
+  //!       A node object representing the XML tag.
+  //!     @type int(0..0)
+  //!       @expr{0@} (zero) if the subtree rooted here should be cut.
+  //!     @type zero
+  //!       @expr{UNDEFINED@} to fall back to the next level of parser
+  //!       (ie behave as if this function does not exist).
+  //!   @endmixed
+  //!
+  //! @note
+  //!   This function is only relevant for @[XML_ELEMENT] nodes.
+  //!
+  //! @note
+  //!   This function is not available in Pike 7.6 and earlier.
+  //!
+  //! @note
+  //!   In Pike 8.0 and earlier this function was only called in
+  //!   root nodes.
+  optional this_program node_factory(int type, string name,
+				     mapping attr, string text);
 }
 
 //! Base class for nodes with parent pointers.
 class AbstractNode {
   inherit AbstractSimpleNode;
   //  Private member variables
-  /* static */ AbstractNode           mParent = 0;
+  /* protected */ AbstractNode           mParent = 0;
 
   // Instruct Pike.count_memory to search three steps: mChildren (in
   // VirtualNode also mAttrNodes) -> array value -> mParent.
@@ -542,7 +645,7 @@ class AbstractNode {
   //! Returns an initialized copy of the node.
   //! @note
   //!   The returned node has no children, and no parent.
-  AbstractNode low_clone()
+  optional AbstractNode low_clone()
   {
     return AbstractNode();
   }
@@ -564,7 +667,7 @@ class AbstractNode {
   AbstractNode get_root()
   {
     AbstractNode  parent, node;
-    
+
     parent = this;
     while (node = parent->mParent)
       parent = node;
@@ -584,7 +687,7 @@ class AbstractNode {
   AbstractNode add_child(AbstractNode c)
   {
     c->mParent = ::add_child(c);
-	
+
     //  Let caller get the new node back for easy chaining of calls
     return (c);
   }
@@ -622,19 +725,25 @@ class AbstractNode {
   //! @[fix_tree] has to be called on the root node when the building
   //! is done.
   AbstractNode tmp_add_child(AbstractNode c)
-    {::add_child (c); return c;}
+  {
+    ::add_child (c); return c;
+  }
   AbstractNode tmp_add_child_before (AbstractNode c, AbstractNode old)
-    {return ::add_child_before (c, old);}
+  {
+    return ::add_child_before (c, old);
+  }
   AbstractNode tmp_add_child_after (AbstractNode c, AbstractNode old)
-    {return ::add_child_after (c, old);}
+  {
+    return ::add_child_after (c, old);
+  }
 
   //! Fix all parent pointers recursively in a tree that has been
   //! built with @[tmp_add_child].
   void fix_tree()
   {
     foreach (mChildren, AbstractNode c)
-      if (c->mParent != this_object()) {
-	c->mParent = this_object();
+      if (c->mParent != this) {
+	c->mParent = this;
 	c->fix_tree();
       }
   }
@@ -663,14 +772,14 @@ class AbstractNode {
   }
 
 
-  //! Replaces the first occurrence of the old node child with
-  //! the new node child. All parent references are updated.
+  //! Replaces the first occurrence of the old node child with the new
+  //! node child or children. All parent references are updated.
   //! @note
   //!   The returned value is NOT the current node.
   //! @returns
   //!   Returns the new child node.
   AbstractNode replace_child(AbstractNode old,
-			     AbstractNode new)
+                             AbstractNode|array(AbstractNode) new)
   {
     if (!::replace_child(old, new)) return 0;
     new->mParent = this;
@@ -681,7 +790,9 @@ class AbstractNode {
   //! Replaces this node with the provided one.
   //! @returns
   //!   Returns the new node.
-  AbstractNode replace_node(AbstractNode new) {
+  AbstractNode|array(AbstractNode)
+    replace_node(AbstractNode|array(AbstractNode) new)
+  {
     mParent->replace_child(this, new);
     return new;
   }
@@ -735,7 +846,7 @@ class AbstractNode {
   {
     array     res;
     AbstractNode  node;
-	
+
     //  Repeat until we reach the top
     res = include_self ? ({ this }) : ({ });
     node = this;
@@ -749,7 +860,7 @@ class AbstractNode {
   {
     AbstractNode   node, root, self;
     array      res = ({ });
-	
+
     //  Walk tree from root until we find ourselves and add all preceding
     //  nodes. We should return the nodes in reverse document order.
     self = this;
@@ -762,7 +873,7 @@ class AbstractNode {
 			  else
 			    res = ({ n }) + res;
 			});
-	
+
     //  Finally remove all of our ancestors
     root = this;
     while (node = root->get_parent()) {
@@ -778,7 +889,7 @@ class AbstractNode {
     array      siblings;
     AbstractNode   node;
     array      res = ({ });
-	
+
     //  Add subtrees from right-hand siblings and keep walking towards
     //  the root of the tree.
     node = this;
@@ -791,7 +902,7 @@ class AbstractNode {
 			   res += ({ n });
 			 });
       }
-	  
+
       node = node->get_parent();
     } while (node);
     return (res);
@@ -826,7 +937,7 @@ protected class VirtualNode {
   //  info for faster processing. Some use it for storing flags and others
   //  use it to cache reference objects.
   public mixed           mNodeData = 0;
-  
+
   //  Public methods
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
@@ -870,7 +981,7 @@ protected class VirtualNode {
 
   //!
   void set_doc_order(int o)  { mDocOrder = o; }
-  
+
   //! Returns the name of the element node, or the nearest element above if
   //! an attribute node.
   string get_tag_name()
@@ -903,7 +1014,7 @@ protected class VirtualNode {
   {
     return mNamespace + mTagName;
   }
-  
+
   string get_short_name()
   {
     return mShortNamespace + mTagName;
@@ -941,7 +1052,7 @@ protected class VirtualNode {
       //  If attribute node we return attribute value. For text nodes we
       //  return (you guessed it!) text.
       return (mText);
-	
+
     default:
       //  Concatenate text children
       walk_preorder(lambda(Node n) {
@@ -1027,16 +1138,15 @@ protected class VirtualNode {
 
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
-  mixed cast(string to) {
-    if(to=="object") return this;
+  protected mixed cast(string to) {
     if(to=="string") return render_xml();
-    error( "Can not case Node to "+to+".\n" );
+    return UNDEFINED;
   }
 
   // FIXME: Consider moving this to the corresponding base node classes?
   protected void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
-			     function(string:string) attrq,
+                             function(string,void|string:string) attrq,
 			     void|mapping(string:string) namespace_lookup)
   {
     string tagname;
@@ -1048,19 +1158,22 @@ protected class VirtualNode {
     case XML_ELEMENT:
       if (!sizeof(tagname = n->get_short_name()))
 	break;
-      
+
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
-	foreach(sort(indices(attr)), string a) {
-	  data->add(" ", a, "='", attrq(attr[a]), "'");
-	}
+        foreach(sort(indices(attr)), string a) {
+          if( has_value(attr[a], "'") )
+            data->add(" ", a, "=\"", attrq(attr[a], "'"), "\"");
+          else
+            data->add(" ", a, "='", attrq(attr[a], "\""), "'");
+        }
       }
       if (n->count_children())
 	data->add(">");
       else
 	data->add("/>");
       break;
-			
+
     case XML_HEADER:
       data->add("<?xml");
       if (mapping attr = n->get_attributes() + ([])) {
@@ -1087,7 +1200,7 @@ protected class VirtualNode {
 	data->add(" ", text);
       data->add("?>");
       break;
-			
+
     case XML_COMMENT:
       data->add("<!--", n->get_text(), "-->");
       break;
@@ -1132,7 +1245,7 @@ protected class VirtualNode {
       n->render_expression(data);
       data->add(" >\n");
       break;
-    } 
+    }
 
     // FIXME: The following code is probably only relevant to
     //        XML_ELEMENT and XML_DOCTYPE nodes. Consider moving
@@ -1176,8 +1289,14 @@ protected class VirtualNode {
   {
     if (!mTagName) return;
     if (!forward_lookup) {
-      forward_lookup = ([]);
-      backward_lookup = ([]);
+      forward_lookup = ([
+	"http://www.w3.org/XML/1998/namespace":"xml:",
+	"http://www.w3.org/2000/xmlns/":"xmlns:",
+      ]);
+      backward_lookup = ([
+	"xml:":"http://www.w3.org/XML/1998/namespace",
+	"xmlns:":"http://www.w3.org/2000/xmlns/",
+      ]);
     } else {
       // Make sure changes aren't propagated backwards...
       forward_lookup += ([]);
@@ -1225,10 +1344,18 @@ protected class VirtualNode {
 	  }
 
 	  if (found) {
+#if 0
+	    werror("Found: NS: %O <%s%s/>\n",
+		   found, forward_lookup[found], full_name[sizeof(found)..]);
+#endif /* 0 */
 	    mTagName = full_name[sizeof(found)..];
 	    mNamespace = found;
 	    mShortNamespace = forward_lookup[found];
 	  } else {
+#if 0
+	    werror("No suitable namespace found for %O.\n",
+		   full_name);
+#endif /* 0 */
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
 	    int i;
@@ -1242,6 +1369,11 @@ protected class VirtualNode {
 	  }
 	}
       }
+#if 0
+      werror("attrs: %O\n"
+	     "short attrs: %O\n",
+	     attrs, short_attrs);
+#endif /* 0 */
       // Then set the short namespaces for any attributes.
       foreach(indices(attrs), string attr_name) {
 	if (!has_prefix(attr_name, "xmlns:")) {
@@ -1273,15 +1405,28 @@ protected class VirtualNode {
 
 	    if (!(prefix = forward_lookup[ns])) {
 	      // We need to allocate a short namespace symbol.
+#if 0
+	      werror("Namespace %O not found in %O\n",
+		     ns, forward_lookup);
+#endif /* 0 */
 	      // FIXME: This is O(n²).
 	      int i;
 	      while(backward_lookup[prefix = ("NS"+i+":")]) {
 		i++;
 	      }
-	      backward_lookup[mShortNamespace] = ns;
+	      backward_lookup[prefix] = ns;
 	      forward_lookup[mNamespace] = prefix;
 	      attrs["xmlns:NS"+i] = ns;
 	      short_attrs["xmlns:NS"+i] = ns;
+#if 0
+	      werror("New namespace: %O %O\n", prefix, ns);
+	      werror("Forward_lookup: %O\n"
+		     "Backward_lookup: %O\n"
+		     "mNamespace:%O\n",
+		     forward_lookup,
+		     backward_lookup,
+		     mNamespace);
+#endif /* 0 */
 	    }
 	    m_delete(short_attrs, attr_name);
 	    short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
@@ -1294,17 +1439,41 @@ protected class VirtualNode {
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
 
+  protected Charset.Encoder get_encoder(string encoding)
+  {
+    return Charset.encoder(encoding)->set_replacement_callback(lambda(string c)
+      {
+        return sprintf("&#%x;", c[0]);
+      });
+  }
+
   //! Creates an XML representation of the node sub tree. If the
   //! flag @[preserve_roxen_entities] is set, entities on the form
   //! @tt{&foo.bar;@} will not be escaped.
   //!
   //! @param namespace_lookup
   //!   Mapping from namespace prefix to namespace symbol prefix.
+  //!
+  //! @param encoding
+  //!   Force a specific output character encoding. By default the
+  //!   encoding set in the document XML processing instruction will
+  //!   be used, with UTF-8 as a fallback. Setting this value will
+  //!   change the XML processing instruction, if present.
   string render_xml(void|int(0..1) preserve_roxen_entities,
-		    void|mapping(string:string) namespace_lookup)
+                    void|mapping(string:string) namespace_lookup,
+                    void|string encoding)
   {
     String.Buffer data = String.Buffer();
-    string encoding = get_encoding();
+    if( encoding )
+    {
+      Node xml_header;
+      if (sizeof(get_children()) &&
+          (xml_header = get_children()[0])->get_node_type()==XML_HEADER)
+        xml_header->get_attributes()->encoding=encoding;
+    }
+    else
+      encoding = get_encoding();
+
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
@@ -1312,8 +1481,8 @@ protected class VirtualNode {
 		     namespace_lookup);
     else
       low_render_xml(data, this, text_quote, attribute_quote,
-		     namespace_lookup);
-    return Charset.encoder(encoding)->feed((string)data)->drain();
+                     namespace_lookup);
+    return get_encoder(encoding)->feed((string)data)->drain();
   }
 
   //! Creates an XML representation for the node sub tree and streams
@@ -1326,16 +1495,16 @@ protected class VirtualNode {
 	encoder->feed(args[*]);
 	f->write(encoder->drain());
       }
-    } (f, Charset.encoder(get_encoding()));
+    } (f, get_encoder(get_encoding()));
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
-		     roxen_attribute_quote);
+                     roxen_attribute_quote);
     else
       low_render_xml(data, this, text_quote, attribute_quote);
   }
 
-  /*static*/ void _add_to_text (string str)
+  /*protected*/ void _add_to_text (string str)
   // Only to be used internally from the parse callback.
   {
     mText += str;
@@ -1354,7 +1523,7 @@ class SimpleNode
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  SimpleNode low_clone()
+  optional SimpleNode low_clone()
   {
     return VirtualNode::low_clone();
   }
@@ -1368,7 +1537,7 @@ class Node
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  Node low_clone()
+  optional Node low_clone()
   {
     return VirtualNode::low_clone();
   }
@@ -1400,7 +1569,7 @@ class Node
     //  Return if already computed
     if (mAttrNodes)
       return (mAttrNodes);
-	
+
     //  Only applicable for XML_ROOT and XML_ELEMENT
     if ((mNodeType != XML_ROOT) && (mNodeType != XML_ELEMENT))
       return ({ });
@@ -1418,7 +1587,7 @@ class Node
       mAttrNodes += ({ node });
     }
     return (mAttrNodes);
-  }  
+  }
 
   //  Override AbstractNode::`[]
   protected Node `[](string|int pos)
@@ -1427,7 +1596,7 @@ class Node
     if (stringp(pos)) {
       //  Make sure attribute node list is instantiated
       array(Node) attr = get_attribute_nodes();
-	  
+
       //  Find attribute name
       foreach(attr, Node n)
 	if (n->get_attr_name() == pos)
@@ -1454,9 +1623,6 @@ class WrappedSimple
 {
   inherit .Simple;
 
-#if (__REAL_VERSION__ > 7.65)
-  // CMOD-based xml parser ==> we can overload internal functions.
-
   string lookup_entity(string entity)
   {
     string ret = ::lookup_entity(entity);
@@ -1469,7 +1635,6 @@ class WrappedSimple
     werror("define_entity_raw(%O, %O)\n", entity, raw);
     ::define_entity_raw(entity, raw);
   }
-#endif
 }
 
 //! Mixin for parsing XML.
@@ -1482,6 +1647,8 @@ class XMLParser
   void create(int, string, mapping, string);
 
   this_program doctype_node;
+
+  protected ADT.Stack container_stack = ADT.Stack();
 
   void parse(string data,
              void|mapping predefined_entities,
@@ -1498,12 +1665,12 @@ class XMLParser
       xp->compat_allow_errors ("7.2");
     else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
       xp->compat_allow_errors ("7.6");
-  
+
     //  Init parser with predefined entities
     if (predefined_entities)
       foreach(indices(predefined_entities), string entity)
         xp->define_entity_raw(entity, predefined_entities[entity]);
-  
+
     // Construct tree from string
     mixed err = catch
     {
@@ -1519,6 +1686,7 @@ class XMLParser
 	}
       }
       catch( data=xp->autoconvert(data) );
+      container_stack = ADT.Stack();
       foreach(xp->parse(data, parse_xml_callback,
                         sizeof(extras) && extras),
               this_program child)
@@ -1585,45 +1753,63 @@ class XMLParser
   //!
   //! @note
   //!   This function is not available in Pike 7.6 and earlier.
-  protected this_program node_factory(int type, string name,
-				      mapping attr, string text);
+  //!
+  //! @seealso
+  //!   @[node_factory_dispatch()], @[AbstractSimpleNode()->node_factory()]
+  protected AbstractSimpleNode node_factory(int type, string name,
+					    mapping attr, string text);
 
-  protected this_program|int(0..0)
+  //! Dispatcher of @[node_factory()].
+  //!
+  //! This function finds a suitable @[node_factory()] given the
+  //! current parser context to call with the same arguments.
+  protected AbstractSimpleNode node_factory_dispatch(int type, string name,
+						     mapping attr, string text)
+  {
+    foreach(reverse(values(container_stack)), AbstractNode n) {
+      if (!n || !n->node_factory) continue;
+      AbstractSimpleNode res = n->node_factory(type, name, attr, text);
+      if (!undefinedp(res)) return res;
+    }
+    return node_factory(type, name, attr, text);
+  }
+
+  protected AbstractSimpleNode|int(0..0)
     parse_xml_callback(string type, string name,
                        mapping attr, string|array contents,
                        mixed location, mixed ...extra)
   {
-    this_program node;
+    AbstractSimpleNode node;
     mapping short_attr = attr;
 
     switch (type) {
     case "":
     case "<![CDATA[":
       //  Create text node
-      return node_factory(XML_TEXT, "", 0, contents);
+      return node_factory_dispatch(XML_TEXT, "", 0, contents);
 
     case "<!--":
       //  Create comment node
-      return node_factory(XML_COMMENT, "", 0, contents);
+      return node_factory_dispatch(XML_COMMENT, "", 0, contents);
 
     case "<?xml":
       //  XML header tag
-      return node_factory(XML_HEADER, "", attr, "");
+      return node_factory_dispatch(XML_HEADER, "", attr, "");
 
     case "<!ENTITY":
-      return node_factory(DTD_ENTITY, name, attr, contents);
+      return node_factory_dispatch(DTD_ENTITY, name, attr, contents);
     case "<!ELEMENT":
-      return node_factory(DTD_ELEMENT, name, 0, contents);
+      return node_factory_dispatch(DTD_ELEMENT, name, 0, contents);
     case "<!ATTLIST":
-      return node_factory(DTD_ATTLIST, name, attr, contents);
+      return node_factory_dispatch(DTD_ATTLIST, name, attr, contents);
     case "<!NOTATION":
-      return node_factory(DTD_NOTATION, name, attr, contents);
+      return node_factory_dispatch(DTD_NOTATION, name, attr, contents);
     case "<!DOCTYPE":
-      return node_factory(XML_DOCTYPE, name, attr, contents);
+      return node_factory_dispatch(XML_DOCTYPE, name, attr, contents);
 
     case "<?":
       //  XML processing instruction
-      return node_factory(XML_PI, name, attr, contents);
+      return node_factory_dispatch(XML_PI, name, attr, contents);
 
     case "<>":
       //  Create new tag node.
@@ -1645,8 +1831,8 @@ class XMLParser
 	  short_attr = UNDEFINED;
 	}
       }
-      node = node_factory(XML_ELEMENT, name, attr, "");
-      if (short_attr) node->set_short_attributes(short_attr);
+      node = node_factory_dispatch(XML_ELEMENT, name, attr, "");
+      if (node && short_attr) node->set_short_attributes(short_attr);
       return node;
 
     case ">":
@@ -1659,7 +1845,7 @@ class XMLParser
           attr = mkmapping(map(indices(attr), lower_case), values(attr));
 	  short_attr = attr;
         }
-        //  Parse namespace information of available.
+        //  Parse namespace information if available.
         if (extra[0]->xmlns) {
           XMLNSParser xmlns = extra[0]->xmlns;
           name = xmlns->Decode(name);
@@ -1668,9 +1854,11 @@ class XMLParser
 	  short_attr = UNDEFINED;
         }
       }
-      node = node_factory(XML_ELEMENT, name, attr, "");
+      node = container_stack->pop();
 
       if (node) {
+	// FIXME: Validate that the node has the expected content.
+
 	//  Add children to our tree node. We need to merge consecutive text
 	//  children since two text elements can't be neighbors according to
 	//  the W3 spec. This is necessary since CDATA sections are
@@ -1719,7 +1907,9 @@ class XMLParser
           extra[0]->xmlns) {
         XMLNSParser xmlns = extra[0]->xmlns;
         attr = xmlns->Enter(attr);
+	name = xmlns->Decode(name);
       }
+      container_stack->push(node_factory_dispatch(XML_ELEMENT, name, attr, ""));
       return 0;
 
     default:
@@ -1752,7 +1942,7 @@ SimpleRootNode simple_parse_file(string path,
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
-  
+
   //  Try loading file and parse its contents
   if(catch {
     data = file->read();
@@ -1787,14 +1977,14 @@ RootNode parse_input(string data, void|int(0..1) no_fallback,
 
     return RootNode(data, predefined_entities, flags);
 }
-  
+
 //! Loads the XML file @[path], creates a node tree representation and
 //! returns the root node.
 Node parse_file(string path, int(0..1)|void parse_namespaces)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
-  
+
   //  Try loading file and parse its contents
   if(catch {
     data = file->read();
@@ -2056,7 +2246,7 @@ class SimpleDTDElementNode
   //!
   protected void create(string name, array expression)
   {
-    this_program::expression = expression;
+    this::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
   }
 }
@@ -2317,7 +2507,7 @@ class DTDElementNode
   //!
   protected void create(string name, array expression)
   {
-    this_program::expression = expression;
+    this::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
   }
 }

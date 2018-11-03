@@ -1,6 +1,4 @@
-/* parse_line.pike
- *
- */
+//! parse_line.pike
 
 #pike __REAL_VERSION__
 
@@ -31,11 +29,11 @@ int eolp()
 }
 #endif
 
-// Returns -1 on error. All valid numbers ar non-negative.
+// Returns -1 on error. All valid numbers are non-negative.
 int get_number()
 {
   skip_whitespace();
-      
+
   if (!sizeof(buffer))
     return -1;
 
@@ -43,11 +41,11 @@ int get_number()
   for(i = 0; i<sizeof(buffer); i++)
     if ( (buffer[i] < '0') || ('9' < buffer[i]) )
       break;
-      
+
   // Disallow too large numbers
   if (!i || (i > 9) )
     return -1;
-      
+
   int res = array_sscanf(buffer[..i-1], "%d")[0];
   buffer = buffer[i..];
   return res;
@@ -77,7 +75,7 @@ string|object get_string()
 
   if (!sizeof(buffer))
     return 0;
-      
+
   switch(buffer[0])
   {
   case '"':
@@ -119,7 +117,7 @@ string|object get_string()
 string|object get_astring()
 {
   werror("get_astring: buffer = '%s'\n", buffer);
-      
+
   skip_whitespace();
   if (!sizeof(buffer))
     return 0;
@@ -132,30 +130,29 @@ string|object get_astring()
     return get_atom();
   }
 }
-  
-/* Returns a set object. */
+
+//! Returns a set object.
 object get_set()
 {
   string atom = get_atom();
   if (!atom)
     return 0;
-      
+
   return .types.imap_set()->init(atom);
 }
 
-/* Parses an object that can be a string, an atom (possibly with
- * options in brackets) or a list.
- *
- * eol can be 0, meaning no end of line or list expected,
- * a positive int, meaning a character (e.g. ')' or ']' that terminates the list,
- * or -1, meaning that the list terminates at end of line.
- */
+//! Parses an object that can be a string, an atom (possibly with
+//! options in brackets) or a list.
+//!
+//! eol can be 0, meaning no end of line or list expected,
+//! a positive int, meaning a character (e.g. ')' or ']' that terminates the list,
+//! or -1, meaning that the list terminates at end of line.
 mapping get_token(int eol, int accept_options)
 {
   skip_whitespace();
   if (!sizeof(buffer))
     return (eol == -1) && ([ "type" : "eol", "eol" : 1 ]);
-  
+
   if (eol && (buffer[0] == eol))
   {
     buffer = buffer[1..];
@@ -185,7 +182,7 @@ mapping get_token(int eol, int accept_options)
   }
 }
 
-/* Reads a <start.size> suffix */
+//! Reads a <start.size> suffix
 mapping get_range(mapping atom)
 {
   if (!sizeof(buffer) || (buffer[0] != '<'))
@@ -198,11 +195,11 @@ mapping get_range(mapping atom)
     return 0;
 
   buffer = buffer[1..];
-      
+
   int size = get_number();
   if ((size <= 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
-      
+
   buffer = buffer[1..];
 
   atom->range = ({ start, size });
@@ -210,9 +207,8 @@ mapping get_range(mapping atom)
   return atom;
 }
 
-/* Get a list of atoms.
- * Primarily intended for use by STORE for the flags argument.
- */
+//! Get a list of atoms.
+//! Primarily intended for use by STORE for the flags argument.
 array(string) get_flag_list()
 {
   skip_whitespace();
@@ -247,15 +243,14 @@ array(string) get_flag_list()
 }
 
 
-/* Parses an object that (recursivly) can contain atoms (possible
- * with options in brackets) or lists. Note that strings are not
- * accepted, as it is a little difficult to wait for the
- * continuation of the request.
- *
- * FIXME: This function is used to read fetch commands. This breaks
- * rfc-2060 compliance, as the names of headers can be represented
- * as string literals. */
-  
+//! Parses an object that (recursivly) can contain atoms (possible
+//! with options in brackets) or lists. Note that strings are not
+//! accepted, as it is a little difficult to wait for the
+//! continuation of the request.
+//!
+//! FIXME: This function is used to read fetch commands. This breaks
+//! rfc-2060 compliance, as the names of headers can be represented
+//! as string literals.
 mapping get_simple_list(int max_depth)
 {
   skip_whitespace();
@@ -282,16 +277,16 @@ array do_parse_simple_list(int max_depth, int terminator)
   array a = ({ });
 
   werror("do_parse_simple_list(%d, '%c')\n", max_depth, terminator);
-      
+
   buffer = buffer[1..];
 
   while(1)
   {
     skip_whitespace();
-	
+
     if (!sizeof(buffer))
       return 0;
-	
+
     if (buffer[0] == terminator)
     {
       buffer = buffer[1..];
@@ -314,16 +309,15 @@ array do_parse_simple_list(int max_depth, int terminator)
   }
 }
 
-/* Reads an atom, optionally followd by a list enclosed in square
- * brackets. Naturally, the atom itself cannot contain any brackets.
- *
- * Returns a mapping
- *    type : "atom",
- *    atom : name,
- *    raw : name[options]
- *    options : parsed options,
- *    range : ({ start, size })
- */
+//! Reads an atom, optionally followd by a list enclosed in square
+//! brackets. Naturally, the atom itself cannot contain any brackets.
+//!
+//! Returns a mapping
+//!    type : "atom",
+//!    atom : name,
+//!    raw : name[options]
+//!    options : parsed options,
+//!    range : ({ start, size })
 mapping get_atom_options(int max_depth)
 {
   string atom = get_atom(1);
@@ -337,10 +331,10 @@ mapping get_atom_options(int max_depth)
     res->raw = atom;
     return res;
   }
-      
+
   /* Parse options */
   string option_start = buffer;
-      
+
   array options = do_parse_simple_list(max_depth - 1, ']');
 
   if (!options) {
@@ -354,7 +348,7 @@ mapping get_atom_options(int max_depth)
   res->raw = atom +
     option_start[..<sizeof(buffer)];
 
-      
+
   if (!sizeof(buffer) || (buffer[0] != '<'))
     return res;
 
@@ -366,11 +360,11 @@ mapping get_atom_options(int max_depth)
     return 0;
 
   buffer = buffer[1..];
-      
+
   int size = get_number();
   if ((size < 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
-      
+
   buffer = buffer[1..];
 
   res->range = ({ start, size });

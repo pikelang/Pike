@@ -1,11 +1,12 @@
 //! Properties:
+//! int alignment
 //! Pango.AttrList attributes
 //! string background
 //! GDK2.Color background-gdk
 //! int background-set
 //! int editable
 //! int editable-set
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! int ellipsize-set
 //! string family
 //! int family-set

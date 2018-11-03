@@ -1,6 +1,5 @@
-import Stdio;
 
-mapping exts = ([]);
+
 constant days = ({ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" });
 constant months = ({ "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" });
@@ -86,13 +85,13 @@ mixed handle(object o)
 	res += "<b><a href=../>Parent Directory...</a></b>\n\n";
       string file2;
       foreach(sort(get_dir(f)||({})), string file) {
-	int size = file_size(f+file);
+        int size = Stdio.file_size(f+file);
 	int islink;
-#if constant(readlink)
-	catch { readlink(f+file); islink = 1; };
+#if constant(Stdio.readlink)
+        catch { Stdio.readlink(f+file); islink = 1; };
 #endif
 	string ext = (file / ".") [-1];
-	string ctype = (size >= 0 ? exts[ext] || "text/plain" :
+	string ctype = (size >= 0 ? MIME.ext_to_media_type(ext) || "text/plain" :
 			"Directory");
 	if(size < -1)
 	  file += "/";
@@ -120,8 +119,7 @@ mixed handle(object o)
     }
   } else {
     string ext = (f / ".") [-1];
-    string ctype = exts[ext] || "text/plain";
-#if 1
+    string ctype = MIME.ext_to_media_type(ext) || "text/plain";
     o->reply_with_cache("HTTP/1.1 200 Ok\r\n"
 			"Content-type: "+ctype+"\r\n"
 			"Content-Length: "+s[1]+"\r\n"
@@ -130,18 +128,7 @@ mixed handle(object o)
 			"Server: Neo-FastSpeed\r\n"
 			"Connection: Keep-Alive\r\n"
 			"\r\n"+
-			read_bytes(f), 20);
-#else
-    o->reply("HTTP/1.1 200 Ok\r\n"
-             "Content-type: "+ctype+"\r\n"
-             "Content-Length: "+s[1]+"\r\n"
-             "Last-Modified: "+http_date(s[4])+"\r\n"
-             "MIME-Version: 1.0\r\n"
-             "Server: Neo-FastSpeed\r\n"
-             "Connection: Keep-Alive\r\n"
-             "\r\n",
-             Stdio.File(f, "r"), s[1]);
-#endif
+                        Stdio.read_bytes(f), 20);
     destruct(o);
   }
 }
@@ -151,18 +138,10 @@ object l;
 
 int main(int argc, array (string) argv)
 {
-#if efun(thread_set_concurrency)
+#if constant(thread_set_concurrency)
   thread_set_concurrency(100);
 #endif
   port = Stdio.Port();
-  array foo;
-  foreach(read_file((argv[0] - "wwwserver.pike") + "extensions")/"\n",
-	  string s) {
-    if(sizeof(s) && s[0] != '#' && (foo = (s / "\t" - ({""}))) &&
-       sizeof(foo) == 2)
-      exts[foo[0]] = foo[1];
-  }
-  werror(sprintf("Found %d extensions...\n", sizeof(exts)));
   if(!port->bind(PORT))
   {
     werror("Bind failed.\n");

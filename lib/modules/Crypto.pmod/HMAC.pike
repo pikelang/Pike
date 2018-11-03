@@ -1,10 +1,9 @@
 
-//! HMAC, defined by RFC-2104
+//! HMAC, defined by @rfc{2104@}.
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 protected .Hash H;  // hash object
 
@@ -45,11 +44,7 @@ string(8bit) pkcs_digest(string(8bit) s)
 //! can perform the actual HMAC hashing. E.g. doing a HMAC hash with
 //! MD5 and the password @expr{"bar"@} of the string @expr{"foo"@}
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
-Crypto.Hash.HMAC `()(string(8bit) passwd)
+Crypto.MAC.State `()(string(8bit) passwd)
 {
   return H->HMAC(passwd, B);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

@@ -5,8 +5,8 @@
 #include "pike_int_types.h"
 
 #if SIZEOF_FLOAT_TYPE == 8
-typedef unsigned INT64 CB_NAME(string);
-typedef unsigned INT64 CB_NAME(char);
+typedef UINT64 CB_NAME(string);
+typedef UINT64 CB_NAME(char);
 #else
 typedef unsigned INT32 CB_NAME(string);
 typedef unsigned INT32 CB_NAME(char);
@@ -33,14 +33,10 @@ typedef unsigned INT32 CB_NAME(char);
 #define int2float(x)	(*(FLOAT_TYPE*)&(x))
 #define float2int(x)	(*(cb_char*)&(x))
 
-typedef union {
-    FLOAT_TYPE f;
-    cb_char i;
-} cb_float;
+static inline cb_string cb_encode_float(FLOAT_TYPE f) {
+    cb_char str;
 
-
-static inline cb_string cb_encode_float(const cb_float f) {
-    cb_char str = f.i;
+    memcpy(&str, &f, sizeof(str));
 
     if (str & MASK(cb_char, 1)) {
 	str = ~str;
@@ -52,15 +48,17 @@ static inline cb_string cb_encode_float(const cb_float f) {
 }
 
 static inline FLOAT_TYPE cb_decode_float(cb_char s) {
-    cb_float u;
+    FLOAT_TYPE f;
+
     if (s & MASK(cb_char, 1)) {
 	s = (s ^ MASK(cb_char, 1));
     } else {
 	s = (~s);
     }
-    u.i = s;
 
-    return u.f;
+    memcpy(&f, &s, sizeof(f));
+
+    return f;
 }
 
 #define CB_ADD_KEY_REF(x)	do { } while(0)
@@ -88,7 +86,7 @@ static inline FLOAT_TYPE cb_decode_float(cb_char s) {
 static inline cb_size cb_prefix_count_float(const cb_string s1,
 					    const cb_string s2,
 					    const cb_size len,
-					    const cb_size start) {
+                                            const cb_size UNUSED(start)) {
     cb_size ret;
 
     if (s1 == s2) return len;

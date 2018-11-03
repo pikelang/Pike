@@ -7,9 +7,7 @@
 #ifndef PIKE_NETLIB_H
 #define PIKE_NETLIB_H
 
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -18,6 +16,7 @@
 #endif /* HAVE_SYS_SOCKET_H */
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif /* HAVE_NETINET_IN_H */
 
 #ifdef HAVE_WINSOCK2_H

@@ -113,7 +113,6 @@ this_program filter_destructively(function f)
 /// OPERATORS ///
 /////////////////
 
-
 //! Subset. A <= B returns true if all items in A are also present in B.
 int(0..1) subset(ADT.Set other)
 {
@@ -123,7 +122,6 @@ int(0..1) subset(ADT.Set other)
 
   return 1;
 }
-
 
 //! Superset. A >= B returns true if all items in B are also present in A.
 int(0..1) superset(ADT.Set other)
@@ -168,22 +166,6 @@ int(0..1) `>(ADT.Set other)
 
   return superset(other);
 }
-
-
-//! Subset operator.
-function `<= = subset;
-
-
-//! Superset operator.
-function `>= = superset;
-
-
-//! Inequality. A != B is equivalent to !(A == B).
-int(0..1) `!=(ADT.Set other)
-{
-  return !(this == other);
-}
-
 
 //! Union. Returns a set containing all elements present in either
 //! or both of the operand sets.
@@ -262,13 +244,10 @@ array(mixed) _values()
 
 
 //! An ADT.Set can be cast to an array or a multiset.
-mixed cast(string to)
+protected mixed cast(string to)
 {
   switch(to)
   {
-    case "object":
-      return this;
-
     case "array":
       return indices(set);
 
@@ -276,7 +255,7 @@ mixed cast(string to)
       return copy_value(set);
 
     default:
-      error("Cannot cast ADT.Set to %s.\n", to);
+      return UNDEFINED;
   }
 }
 

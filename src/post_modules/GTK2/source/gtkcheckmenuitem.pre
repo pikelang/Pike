@@ -29,7 +29,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *label;
       GtkWidget *gc;
-      get_all_args("create",args,"%t",&label);
+      get_all_args(NULL,args,"%t",&label);
       ref_push_string(label);
       f_string_to_utf8(1);
       gc=gtk_check_menu_item_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));

@@ -50,14 +50,6 @@
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_SOCKET_H
@@ -114,6 +106,11 @@
 #define MAP_FILE	0
 #endif /* !MAP_FILE */
 
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP	IPPROTO_TCP
+#endif
+
 /*
  * Only support for threaded operation right now.
  */
@@ -157,65 +154,34 @@ static struct program *pike_sendfile_prog = NULL;
  * Struct init code.
  */
 
-static void init_pike_sendfile(struct object *UNUSED(o))
-{
-  MEMSET(THIS, 0, sizeof(struct pike_sendfile));
-
-  /* callback doesn't actually need to be initialized since it is a
-   * mapped variable, but since we just zapped it with zeroes we need
-   * to set the type to T_INT again.. /Hubbe
-   */
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-}
-
 static void exit_pike_sendfile(struct object *UNUSED(o))
 {
   SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
 
-  if (THIS->iovs) {
+  if (THIS->iovs)
     free(THIS->iovs);
-    THIS->iovs = NULL;
-  }
-  if (THIS->buffer) {
+
+  if (THIS->buffer)
     free(THIS->buffer);
-    THIS->buffer = NULL;
-  }
-  if (THIS->headers) {
+
+  if (THIS->headers)
     free_array(THIS->headers);
-    THIS->headers = NULL;
-  }
-  if (THIS->trailers) {
+
+  if (THIS->trailers)
     free_array(THIS->trailers);
-    THIS->trailers = NULL;
-  }
-  if (THIS->from_file) {
+
+  if (THIS->from_file)
     free_object(THIS->from_file);
-    THIS->from_file = NULL;
-  }
-  if (THIS->to_file) {
+
+  if (THIS->to_file)
     free_object(THIS->to_file);
-    THIS->to_file = NULL;
-  }
-  if (THIS->args) {
-    free_array(THIS->args);
-    THIS->args = NULL;
-  }
-  if (THIS->self) {
-    /* This can occur if Pike exits before the backend has started. */
+
+  /* This can occur if Pike exits before the backend has started. */
+  if (THIS->self)
     free_object(THIS->self);
-    THIS->self = NULL;
-  }
-  /* This is not required since this is a mapped variable.
-   * /Hubbe
-   * But we do it anyway for paranoia reasons.
-   * /grubba 1999-10-14
-   */
-  free_svalue(&(THIS->callback));
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-  if (THIS->backend_callback) {
+
+  if (THIS->backend_callback)
     remove_callback (THIS->backend_callback);
-    THIS->backend_callback = NULL;
-  }
 }
 
 /*
@@ -290,7 +256,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSE
 }
 
 /*
- * Code called in the threaded case. 
+ * Code called in the threaded case.
  */
 
 /* writev() without the IOV_MAX limit. */
@@ -305,8 +271,7 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
     int cnt;
     for(cnt = 0; cnt < iovcnt; cnt++) {
       SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %ld\n",
-		   cnt, iov[cnt].iov_base,
-		   DO_NOT_WARN((long)iov[cnt].iov_len)));
+                   cnt, iov[cnt].iov_base, (long)iov[cnt].iov_len));
     }
   }
 #endif /* SF_DEBUG */
@@ -335,7 +300,7 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
       /* Error or file closed at other end. */
       SF_DFPRINTF((stderr, "sendfile: send_iov(): writev() failed with errno:%d.\n"
 		   "sendfile: Sent %ld bytes so far.\n",
-		   errno, DO_NOT_WARN((long)sent)));
+                   errno, (long)sent));
       return sent;
     } else {
       sent += bytes;
@@ -400,7 +365,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 		       &new_val, sizeof(new_val))<0) &&
 	   (errno == EINTR))
       ;
-  }  
+  }
 #endif /* TCP_CORK || TCP_NODELAY */
 #endif /* SOL_TCP */
 
@@ -559,8 +524,8 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
 
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-		 DO_NOT_WARN((long)this->sent)));
-    
+                 (long)this->sent));
+
 #if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE) && !defined(HAVE_MACOSX_SENDFILE)
     SF_DFPRINTF((stderr,
 		 "sendfile: Sending file with sendfile() Linux & Solaris.\n"));
@@ -573,7 +538,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 	    S_ISREG(st.st_mode)) {
 	  this->len = st.st_size - offset;	/* To end of file */
 	} else {
-	  this->len = MAX_LONGEST;
+	  this->len = MAX_INT64;
 	}
       }
       while (this->len > 0) {
@@ -667,7 +632,10 @@ void low_do_sendfile(struct pike_sendfile *this)
 #endif
     SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
 
-    fd_lseek(this->from_fd, this->offset, SEEK_SET);
+    while ((fd_lseek(this->from_fd, this->offset, SEEK_SET) < 0) &&
+	   (errno == EINTR))
+      ;
+
     {
       ptrdiff_t buflen;
       ptrdiff_t len;
@@ -675,7 +643,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 	len = this->buf_size;
       }
       else
-	len = DO_NOT_WARN ((ptrdiff_t) this->len);
+        len = (ptrdiff_t) this->len;
       while ((buflen = fd_read(this->from_fd, this->buffer, len)) > 0) {
 	char *buf = this->buffer;
 	this->len -= buflen;
@@ -695,13 +663,13 @@ void low_do_sendfile(struct pike_sendfile *this)
 	  len = this->buf_size;
 	}
 	else
-	  len = DO_NOT_WARN ((ptrdiff_t) this->len);
+          len = (ptrdiff_t) this->len;
       }
     }
   send_trailers:
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-		 DO_NOT_WARN((long)this->sent)));
-    
+                 (long)this->sent));
+
     /* No more need for the buffer */
     free(this->buffer);
     this->buffer = NULL;
@@ -803,7 +771,7 @@ static void worker(void *this_)
     /* Paranoia */
     change_fd_for_box (&this->to->box, -1);
   }
-    
+
   /* Neither of the following can be done in our current context
    * so we do them from a backend callback.
    * * Call the callback.
@@ -831,7 +799,7 @@ static void worker(void *this_)
 
   /* We're gone... */
   num_threads--;
-    
+
   mt_unlock_interpreter();
 
   /* Die */
@@ -868,6 +836,11 @@ static void worker(void *this_)
  *!   In Pike 7.7 and later the @[callback] function will be called
  *!   from the backend associated with @[to].
  *!
+ *! @note
+ *!   May use blocking I/O and thus trigger process being killed
+ *!   with @tt{SIGPIPE@} when the other end closes the connection.
+ *!   Add a call to @[signal()] to avoid this.
+ *!
  *! @seealso
  *!   @[Stdio.sendfile()]
  */
@@ -876,7 +849,7 @@ static void sf_create(INT32 args)
   struct pike_sendfile sf;
   int iovcnt = 0;
   struct svalue *cb = NULL;
-  LONGEST offset, len;
+  INT64 offset, len;
 
   if (THIS->to_file) {
     Pike_error("sendfile->create(): Called a second time!\n");
@@ -892,10 +865,10 @@ static void sf_create(INT32 args)
    * This means that we can throw errors without needing to clean up.
    */
 
-  MEMSET(&sf, 0, sizeof(struct pike_sendfile));
+  memset(&sf, 0, sizeof(struct pike_sendfile));
   SET_SVAL(sf.callback, T_INT, NUMBER_NUMBER, integer, 0);
 
-  get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
+  get_all_args(NULL, args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
 	       &len, &(sf.trailers), &(sf.to_file), &cb);
 
@@ -918,13 +891,12 @@ static void sf_create(INT32 args)
   /* Check that we're called with the right kind of objects. */
   if (sf.to_file->prog == file_program) {
     sf.to = (struct my_file *)(sf.to_file->storage);
-  } else if (!(sf.to = (struct my_file *)get_storage(sf.to_file,
-						     file_program))) {
+  } else if (!(sf.to = get_storage(sf.to_file, file_program))) {
     struct svalue *sval;
-    if (!(sval = (struct svalue *)get_storage(sf.to_file, file_ref_program)) ||
+    if (!(sval = get_storage(sf.to_file, file_ref_program)) ||
 	(TYPEOF(*sval) != T_OBJECT) ||
-	!(sf.to = (struct my_file *)get_storage(sval->u.object, file_program))) {
-      SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+	!(sf.to = get_storage(sval->u.object, file_program))) {
+      SIMPLE_ARG_TYPE_ERROR("sendfile", 6, "object(Stdio.File)");
     }
     add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
@@ -939,7 +911,7 @@ static void sf_create(INT32 args)
   }
   if ((sf.to->flags & FILE_LOCK_FD) ||
       (sf.to->box.fd < 0)) {
-    SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+    SIMPLE_ARG_TYPE_ERROR("sendfile", 6, "object(Stdio.File)");
   }
   sf.to_fd = sf.to->box.fd;
 
@@ -955,14 +927,12 @@ static void sf_create(INT32 args)
   if (sf.from_file) {
     if (sf.from_file->prog == file_program) {
       sf.from = (struct my_file *)(sf.from_file->storage);
-    } else if (!(sf.from = (struct my_file *)get_storage(sf.from_file,
-							 file_program))) {
+    } else if (!(sf.from = get_storage(sf.from_file, file_program))) {
       struct svalue *sval;
-      if (!(sval = (struct svalue *)get_storage(sf.from_file,
-						file_ref_program)) ||
-	  !(TYPEOF(*sval) != T_OBJECT) ||
-	!(sf.from = (struct my_file *)get_storage(sval->u.object, file_program))) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
+      if (!(sval = get_storage(sf.from_file, file_ref_program)) ||
+	  (TYPEOF(*sval) != T_OBJECT) ||
+	!(sf.from = get_storage(sval->u.object, file_program))) {
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 2, "object(Stdio.File)");
       }
       add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
@@ -977,7 +947,7 @@ static void sf_create(INT32 args)
     }
     if ((sf.from->flags & FILE_LOCK_FD) ||
 	(sf.from->box.fd < 0)) {
-      SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
+      SIMPLE_ARG_TYPE_ERROR("sendfile", 2, "object(Stdio.File)");
     }
     sf.from_fd = sf.from->box.fd;
   }
@@ -990,7 +960,7 @@ static void sf_create(INT32 args)
 
     for (i=0; i < a->size; i++) {
       if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 1, "array(string)");
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 1, "array(string)");
       }
     }
     iovcnt = a->size;
@@ -1004,7 +974,7 @@ static void sf_create(INT32 args)
 
     for (i=0; i < a->size; i++) {
       if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 5, "array(string)");
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 5, "array(string)");
       }
     }
     iovcnt += a->size;
@@ -1017,7 +987,7 @@ static void sf_create(INT32 args)
     iovcnt = 2;
 #endif /* HAVE_HPUX_SENDFILE */
 
-    sf.iovs = (struct iovec *)xalloc(sizeof(struct iovec) * iovcnt);
+    sf.iovs = xalloc(sizeof(struct iovec) * iovcnt);
 
     sf.hd_iov = sf.iovs;
 #ifdef HAVE_HPUX_SENDFILE
@@ -1120,16 +1090,10 @@ static void sf_create(INT32 args)
 
   if (sf.from_file) {
     /* We may need a buffer to hold the data */
-    if (sf.iovs) {
-      ONERROR tmp;
-      SET_ONERROR(tmp, free, sf.iovs);
-
-      sf.buffer = (char *)xalloc(BUF_SIZE);
-
-      UNSET_ONERROR(tmp);
-    } else {
-      sf.buffer = (char *)xalloc(BUF_SIZE);
-    }
+    ONERROR tmp;
+    SET_ONERROR(tmp, free, sf.iovs);
+    sf.buffer = xalloc(BUF_SIZE);
+    UNSET_ONERROR(tmp);
     sf.buf_size = BUF_SIZE;
   }
 
@@ -1195,8 +1159,7 @@ static void sf_create(INT32 args)
 	sf.from->flags &= ~FILE_LOCK_FD;
       }
       free_object(THIS->self);
-      resource_error("Stdio.sendfile", sp, 0, "threads", 1,
-		     "Failed to create thread.\n");
+      Pike_error("Failed to create thread.\n");
     }
 #endif /* 0 */
   }
@@ -1216,17 +1179,16 @@ void init_stdio_sendfile(void)
 #ifdef _REENTRANT
   START_NEW_PROGRAM_ID (STDIO_SENDFILE);
   ADD_STORAGE(struct pike_sendfile);
-  MAP_VARIABLE("_args", tArray, 0, OFFSETOF(pike_sendfile, args),
-	       T_ARRAY);
-  MAP_VARIABLE("_callback", tFuncV(tInt,tMix,tVoid), 0,
-	       OFFSETOF(pike_sendfile, callback), T_MIXED);
+  PIKE_MAP_VARIABLE("_args", OFFSETOF(pike_sendfile, args),
+                    tArray, T_ARRAY, 0);
+  PIKE_MAP_VARIABLE("_callback", OFFSETOF(pike_sendfile, callback),
+                    tFuncV(tInt,tMix,tVoid), T_MIXED, 0);
 
   /* function(array(string),object,int,int,array(string),object,function(int,mixed...:void),mixed...:void) */
   ADD_FUNCTION("create", sf_create,
 	       tFuncV(tArr(tStr) tObj tInt tInt tArr(tStr) tObj
 		      tFuncV(tInt, tMix, tVoid), tMix, tVoid), 0);
 
-  set_init_callback(init_pike_sendfile);
   set_exit_callback(exit_pike_sendfile);
 
   pike_sendfile_prog = end_program();

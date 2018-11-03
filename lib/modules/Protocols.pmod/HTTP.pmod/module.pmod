@@ -46,6 +46,7 @@ constant HTTP_UNSUPP_MEDIA	= 415; // RFC 2616 10.4.16: Unsupported Media Type
 constant HTTP_BAD_RANGE		= 416; // RFC 2616 10.4.17: Requested Range Not Satisfiable
 constant HTTP_EXPECT_FAILED	= 417; // RFC 2616 10.4.18: Expectation Failed
 constant HTCPCP_TEAPOT		= 418; // RFC 2324 2.3.2: I'm a teapot
+constant HTTP_MISDIRECTED_REQ	= 421; // RFC 7540 9.1.2: Misdirected Request
 constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
 constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
 constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
@@ -113,6 +114,7 @@ constant response_codes =
   416:"416 Requested range not statisfiable",
   417:"417 Expectation Failed",
   418:"418 I'm a teapot", // Ha ha
+  421:"421 Misdirected Request",
   422:"422 Unprocessable Entity", // WebDAV
   423:"423 Locked", // WebDAV
   424:"424 Failed Dependency", // WebDAV
@@ -181,7 +183,7 @@ constant response_codes =
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
   }
 
   if (url->scheme == "http") {
@@ -191,11 +193,11 @@ constant response_codes =
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.sslfile)
   } else if (url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -220,7 +222,6 @@ constant response_codes =
       con->start_tls(1);
     }
     proxy_headers = request_headers;
-#endif
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
@@ -267,29 +268,23 @@ constant response_codes =
   if(!con)
     con = .Query();
 
-#if constant(SSL.sslfile) 	
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
   con->https = (url->scheme=="https")? 1 : 0;
-#else
-  if(url->scheme!="http")
-    error("Can't handle %O or any other protocol than HTTP "
-	  "(HTTPS requires Nettle support).\n",
-	  url->scheme);
-#endif
 
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host + 
+    "host" : url->host +
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
   if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
 
   if(!request_headers)
     request_headers = default_headers;
@@ -316,7 +311,7 @@ constant response_codes =
 
   if (!con->ok) {
     if (con->errno)
-      error ("I/O error: %s\n", strerror (con->errno));
+      error ("I/O error: %s.\n", strerror (con->errno));
     return 0;
   }
   return con;
@@ -403,30 +398,25 @@ void do_async_method(string method,
     error("Asynchronous httpu or httpmu not yet supported.\n");
   }
 
-#if constant(SSL.sslfile) 	
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
   con->https = (url->scheme=="https")? 1 : 0;
-#else
-  if(url->scheme!="http")
-    error("Can't handle %O or any other protocol than HTTP.\n",
-	  url->scheme);
-#endif
 
   if(!request_headers)
     request_headers = ([]);
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host + 
+    "host" : url->host +
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
-  if(url->user || url->passwd)
+  if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
   request_headers = default_headers | request_headers;
 
   string query=url->query;
@@ -440,15 +430,6 @@ void do_async_method(string method,
 
   string path=url->path;
   if(path=="") path="/";
-
-  if (!con->headers ||
-      lower_case(con->headers["connection"]||"close") == "close") {
-    // Reset the state of con.
-    con->data_timeout = 120;
-    con->timeout = 120;
-    con->con = 0;
-    // con->conthread = 0;
-  }
 
   con->async_request(url->host, url->port,
 		     method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
@@ -475,8 +456,14 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 {
   con->set_callbacks(@orig_cb_info);
 
+  // Install the timeout handler for the interval until
+  // the TLS connection is up.
+  con->init_async_timeout();
   con->con->set_nonblocking(0,
 			    lambda() {
+			      // Remove the timeout handler; it will be
+			      // reinstated by do_async_method() below.
+			      con->remove_async_timeout();
 			      do_async_method(method, url, query_variables,
 					      request_headers, con, data);
 			    }, con->async_failed);
@@ -553,7 +540,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
   }
 
   if (url->scheme == "http") {
@@ -563,11 +550,11 @@ void do_async_proxied_method(string|Standards.URI proxy,
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.sslfile)
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -598,7 +585,6 @@ void do_async_proxied_method(string|Standards.URI proxy,
     } else {
       proxy_headers = request_headers;
     }
-#endif
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
@@ -736,26 +722,26 @@ string post_url_data(string|Standards.URI url,
 //!
 //!	Example:
 //!	@pre{
-//!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );  
+//!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );
 //!     Result: "lilith=blue&anna=eva"
-//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0"]) );  
-//!     Result: "%26amp%3b=%26&%27%3d%22=%00%00%00"
+//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0\u0434"]) );
+//!     Result: "%27%3D%22=%00%00%00%D0%B4&%26amp%3B=%26"
 //!	@}
 string http_encode_query(mapping(string:int|string|array(string)) variables)
 {
-   return Array.map((array)variables,
-		    lambda(array(string|int|array(string)) v)
-		    {
-		       if (intp(v[1]))
-			  return uri_encode(v[0]);
-		       if (arrayp(v[1]))
-			 return map(v[1], lambda (string val) {
-					    return 
-					      uri_encode(v[0])+"="+
-					      uri_encode(val);
-					  })*"&";
-		       return uri_encode(v[0])+"="+ uri_encode(v[1]);
-		    })*"&";
+   return map((array)variables,
+              lambda(array(string|int|array(string)) v)
+              {
+                if (intp(v[1]))
+                  return uri_encode(v[0]);
+                if (arrayp(v[1]))
+                  return map(v[1], lambda (string val) {
+                                     return
+                                       uri_encode(v[0])+"="+
+                                       uri_encode(val);
+                                   })*"&";
+                return uri_encode(v[0])+"="+ uri_encode(v[1]);
+              })*"&";
 }
 
 protected local constant gen_delims = ":/?#[]@" // RFC 3986, section 2.2
@@ -776,7 +762,7 @@ string percent_encode (string s)
 //! Encodes the given string using @tt{%XX@} encoding, except that URI
 //! unreserved chars are not encoded. The unreserved chars are
 //! @tt{A-Z@}, @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and
-//! @tt{~@} (see RFC 2396 section 2.3).
+//! @tt{~@} (see @rfc{2396:2.3@}).
 //!
 //! 8-bit chars are encoded straight, and wider chars are not allowed.
 //! That means this encoding is applicable if @[s] is a binary octet
@@ -816,14 +802,13 @@ string uri_encode (string s)
 //! component part in a URI. This means that all URI reserved and
 //! excluded characters are encoded, i.e. everything except @tt{A-Z@},
 //! @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@} (see
-//! RFC 2396 section 2.3).
+//! @rfc{2396:2.3@}).
 //!
 //! 8-bit chars and wider are encoded using UTF-8 followed by
-//! percent-encoding. This follows RFC 3986 section 2.5, the
-//! IRI-to-URI conversion method in the IRI standard (RFC 3987) and
-//! appendix B.2 in the HTML 4.01 standard. It should work regardless
-//! of the charset used in the XML document the URI might be inserted
-//! into.
+//! percent-encoding. This follows @rfc{3986:2.5@}, the IRI-to-URI
+//! conversion method in the IRI standard (@rfc{3987@}) and appendix
+//! B.2 in the HTML 4.01 standard. It should work regardless of the
+//! charset used in the XML document the URI might be inserted into.
 //!
 //! @seealso
 //! @[uri_decode], @[uri_encode_invalids], @[iri_encode]
@@ -835,16 +820,16 @@ string uri_encode_invalids (string s)
 //! Encodes all "dangerous" chars in the given string using @tt{%XX@}
 //! encoding, so that it can be included as a URI in an HTTP message
 //! or header field. This includes control chars, space and various
-//! delimiter chars except those in the URI @tt{reserved@} set (RFC
-//! 2396 section 2.2).
+//! delimiter chars except those in the URI @tt{reserved@} set
+//! (@rfc{2396:2.2@}).
 //!
 //! Since this function doesn't touch the URI @tt{reserved@} chars nor
 //! the escape char @tt{%@}, it can be used on a complete formatted
 //! URI or IRI.
 //!
 //! 8-bit chars and wider are encoded using UTF-8 followed by
-//! percent-encoding. This follows RFC 3986 section 2.5, the IRI
-//! standard (RFC 3987) and appendix B.2 in the HTML 4.01 standard.
+//! percent-encoding. This follows @rfc{3986:2.5@}, the IRI standard
+//! (@rfc{3987@}) and appendix B.2 in the HTML 4.01 standard.
 //!
 //! @note
 //! The characters in the URI @tt{reserved@} set are: @tt{:@},
@@ -880,7 +865,7 @@ string uri_decode (string s)
 string iri_encode (string s)
 //! Encodes the given string using @tt{%XX@} encoding to be used as a
 //! component part in an IRI (Internationalized Resource Identifier,
-//! see RFC 3987). This means that all chars outside the IRI
+//! see @rfc{3987@}). This means that all chars outside the IRI
 //! @tt{iunreserved@} set are encoded, i.e. this function encodes
 //! equivalently to @[uri_encode] except that all 8-bit and wider
 //! characters are left as-is.
@@ -900,49 +885,13 @@ string iri_encode (string s)
 		  sprintf ("%%%02X", ((array(int)) replace_chars)[*]));
 }
 
-#if 0
-// These functions are disabled since I haven't found a way to
-// implement them even remotely efficiently using pike only. /mast
-
-string uri_normalize (string s)
-//! Normalizes the URI-style @tt{%XX@} encoded string @[s] by decoding
-//! all URI @tt{unreserved@} chars, i.e. US-ASCII digits, letters,
-//! @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@}.
-//!
-//! Since only unreserved chars are decoded, the result is always
-//! semantically equivalent to the input. It's therefore safe to use
-//! this on a complete formatted URI.
-//!
-//! @seealso
-//! @[uri_decode], @[uri_encode], @[iri_normalize]
-{
-  // FIXME
-}
-
-string iri_normalize (string s)
-//! Normalizes the IRI-style UTF-8 and @tt{%XX@} encoded string @[s]
-//! by decoding all IRI @tt{unreserved@} chars, i.e. everything except
-//! the URI @tt{reserved@} chars and control chars.
-//!
-//! Since only unreserved chars are decoded, the result is always
-//! semantically equivalent to the input. It's therefore safe to use
-//! this on a complete formatted IRI.
-//!
-//! @seealso
-//! @[iri_decode], @[uri_normalize]
-{
-  // FIXME
-}
-
-#endif
-
 string quoted_string_encode (string s)
 //! Encodes the given string quoted to be used as content inside a
-//! @tt{quoted-string@} according to RFC 2616 section 2.2. The
-//! returned string does not include the surrounding @tt{"@} chars.
+//! @tt{quoted-string@} according to @rfc{2616:2.2@}. The returned
+//! string does not include the surrounding @tt{"@} chars.
 //!
 //! @note
-//! The @tt{quoted-string@} quoting rules in RFC 2616 have several
+//! The @tt{quoted-string@} quoting rules in @rfc{2616@} have several
 //! problems:
 //!
 //! @ul
@@ -966,80 +915,11 @@ string quoted_string_encode (string s)
 
 string quoted_string_decode (string s)
 //! Decodes the given string which has been encoded as a
-//! @tt{quoted-string@} according to RFC 2616 section 2.2. @[s] is
-//! assumed to not include the surrounding @tt{"@} chars.
+//! @tt{quoted-string@} according to @rfc{2616:2.2@}. @[s] is assumed
+//! to not include the surrounding @tt{"@} chars.
 //!
 //! @seealso
 //! @[quoted_string_encode]
 {
   return map (s / "\\\\", replace, "\\", "") * "\\";
-}
-
-// --- Compatibility code
-
-__deprecated__ string http_encode_string(string in)
-//! This is a deprecated alias for @[uri_encode], for compatibility
-//! with Pike 7.6 and earlier.
-//!
-//! In 7.6 this function didn't handle 8-bit and wider chars
-//! correctly. It encoded 8-bit chars directly to @tt{%XX@} escapes,
-//! and it used nonstandard @tt{%uXXXX@} escapes for 16-bit chars.
-//!
-//! That is considered a bug, and hence the function is changed. If
-//! you need the old buggy encoding then use the 7.6 compatibility
-//! version (@expr{#pike 7.6@}).
-//!
-//! @deprecated uri_encode
-{
-  return uri_encode (in);
-}
-
-//! This function used to claim that it encodes the specified string
-//! according to the HTTP cookie standard. If fact it does not - it
-//! applies URI-style (i.e. @expr{%XX@}) encoding on some of the
-//! characters that cannot occur literally in cookie values. There
-//! exist some web servers (read Roxen and forks) that usually perform
-//! a corresponding nonstandard decoding of %-style escapes in cookie
-//! values in received requests.
-//!
-//! This function is deprecated. The function @[quoted_string_encode]
-//! performs encoding according to the standard, but it is not safe to
-//! use with arbitrary chars. Thus URI-style encoding using
-//! @[uri_encode] or @[percent_encode] is normally a good choice, if
-//! you can use @[uri_decode]/@[percent_decode] at the decoding end.
-//!
-//! @deprecated
-__deprecated__ string http_encode_cookie(string f)
-{
-   return replace(
-      f,
-      ({ "\000", "\001", "\002", "\003", "\004", "\005", "\006", "\007",
-	 "\010", "\011", "\012", "\013", "\014", "\015", "\016", "\017",
-	 "\020", "\021", "\022", "\023", "\024", "\025", "\026", "\027",
-	 "\030", "\031", "\032", "\033", "\034", "\035", "\036", "\037",
-	 "\177",
-	 "\200", "\201", "\202", "\203", "\204", "\205", "\206", "\207",
-	 "\210", "\211", "\212", "\213", "\214", "\215", "\216", "\217",
-	 "\220", "\221", "\222", "\223", "\224", "\225", "\226", "\227",
-	 "\230", "\231", "\232", "\233", "\234", "\235", "\236", "\237",
-	 " ", "%", "'", "\"", ",", ";", "=", ":" }),
-      ({ 
-	 "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",
-	 "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f",
-	 "%10", "%11", "%12", "%13", "%14", "%15", "%16", "%17",
-	 "%18", "%19", "%1a", "%1b", "%1c", "%1d", "%1e", "%1f",
-	 "%7f",
-	 "%80", "%81", "%82", "%83", "%84", "%85", "%86", "%87",
-	 "%88", "%89", "%8a", "%8b", "%8c", "%8d", "%8e", "%8f",
-	 "%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97",
-	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f",
-	 "%20", "%25", "%27", "%22", "%2c", "%3b", "%3d", "%3a" }));
-}
-
-//! Helper function for replacing HTML entities with the corresponding
-//! unicode characters.
-//! @deprecated Parser.parse_html_entities
-__deprecated__ string unentity(string s)
-{
-  return master()->resolv("Parser.parse_html_entities")(s,1);
 }

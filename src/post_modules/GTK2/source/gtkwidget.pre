@@ -3,11 +3,6 @@ class GTK2.Widget;
 inherit GTK2.Object;
 
 %{
-#ifndef __NT__
-#include <gdk/gdkx.h>
-#else
-#include <gdk/gdkwin32.h>
-#endif
 #undef TWIN
 #undef _GC
 #define TWIN (GTK_WIDGET(THIS->obj)->window)
@@ -123,7 +118,7 @@ signal grab_focus;
 signal grab_notify;
 signal hide;
 //! Called when the widget is hidden
-signal heirarchy_changed;
+signal hierarchy_changed;
 signal key_press_event;
 //! Called when a keyboard key is pressed
 signal key_release_event;
@@ -388,7 +383,7 @@ void shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
   {
     struct object *o1;
     INT_TYPE x,y;
-    get_all_args("shape_combine_mask",args,"%o%i%i",&o1,&x,&y);
+    get_all_args(NULL,args,"%o%i%i",&o1,&x,&y);
     gtk_widget_shape_combine_mask(GTK_WIDGET(THIS->obj),
                 (GdkBitmap *)get_gdkobject(o1,bitmap),x,y);
   }
@@ -403,7 +398,7 @@ void input_shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y
   {
     struct object *o1;
     INT_TYPE x,y;
-    get_all_args("shape_combine_mask",args,"%o%i%i",&o1,&x,&y);
+    get_all_args(NULL,args,"%o%i%i",&o1,&x,&y);
     gtk_widget_input_shape_combine_mask(GTK_WIDGET(THIS->obj), 
                 (GdkBitmap *)get_gdkobject(o1,bitmap),x,y);
   } 
@@ -448,7 +443,7 @@ void modify_style(GTK2.RcStyle style);
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("modify_style",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_widget_modify_style(GTK_WIDGET(THIS->obj),
                 GTK_RC_STYLE(get_gobject(o1)));
   }
@@ -476,7 +471,7 @@ void modify_fg(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    get_all_args("modify_fg",args,"%i.%o",&state,&o1);
+    get_all_args(NULL,args,"%i.%o",&state,&o1);
     gtk_widget_modify_fg(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -491,7 +486,7 @@ void modify_bg(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    get_all_args("modify_bg",args,"%i.%o",&state,&o1);
+    get_all_args(NULL,args,"%i.%o",&state,&o1);
     gtk_widget_modify_bg(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -506,7 +501,7 @@ void modify_text(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    get_all_args("modify_text",args,"%i.%o",&state,&o1);
+    get_all_args(NULL,args,"%i.%o",&state,&o1);
     gtk_widget_modify_text(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -521,7 +516,7 @@ void modify_base(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    get_all_args("modify_base",args,"%i.%o",&state,&o1);
+    get_all_args(NULL,args,"%i.%o",&state,&o1);
     gtk_widget_modify_base(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -540,7 +535,7 @@ void modify_font(Pango.FontDescription font)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("modify_font",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_widget_modify_font(GTK_WIDGET(THIS->obj),
                 (PangoFontDescription *)get_pg2object(o1,ppango2_font_description_program));
   }
@@ -574,7 +569,7 @@ void modify_font(Pango.FontDescription font)
   {
     PangoLayout *pl;
     const gchar *str;
-    get_all_args("create_pango_layout",args,"%s",&str);
+    get_all_args(NULL,args,"%s",&str);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),str);
     pgtk2_pop_n_elems(args);
     push_gobject(pl);
@@ -587,7 +582,8 @@ endrequire;
 //! A convenience function that uses the theme engine and rc file settings
 //! to look up stock_id and render it to a pixbuf.  stock_id should be a
 //! stock icon ID such as GTK2.STOCK_OPEN or GTK2.STOCK_OK.  size should be a
-//! size such as GTK2.ICON_SIZE_MENU.  detail should be a string that identifies//! the widget or code doing the rendering, so that theme engines can
+//! size such as GTK2.ICON_SIZE_MENU.  detail should be a string that identifies
+//! the widget or code doing the rendering, so that theme engines can
 //! special-case rendering for that widget or code.
 //! <p>
 //! The pixels in the returned GDK2.Pixbuf are shared with the rest of the
@@ -598,7 +594,7 @@ endrequire;
     const gchar *stock_id,*detail;
     INT_TYPE size;
     GdkPixbuf *gp;
-    get_all_args("render_icon",args,"%s%i%s",&stock_id,&size,&detail);
+    get_all_args(NULL,args,"%s%i%s",&stock_id,&size,&detail);
     gp=gtk_widget_render_icon(GTK_WIDGET(THIS->obj),stock_id,size,detail);
     pgtk2_pop_n_elems(args);
     push_gobject(gp);
@@ -634,7 +630,7 @@ mixed style_get_property(string name)
   {
     char *name;
     GValue v = {0};
-    get_all_args("style_get_property",args,"%s",&name);
+    get_all_args(NULL,args,"%s",&name);
     gtk_widget_style_get_property(GTK_WIDGET(THIS->obj),name,&v);
 /*  pgtk2_push_gvalue(&v); */
     pgtk2_pop_n_elems(args);
@@ -666,7 +662,7 @@ require gtk22;
   {
     struct object *o1;
     GtkClipboard *gcl;
-    get_all_args("get",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gcl=gtk_widget_get_clipboard(GTK_WIDGET(THIS->obj),get_gdkatom(o1));
     pgtk2_pop_n_elems(args);
     push_gobject(gcl);
@@ -865,7 +861,7 @@ GDK2.Pixmap get_snapshot(GDK2.Rectangle clip_rect)
   {
     struct object *o1;
     GdkPixmap *pixmap=NULL;
-    get_all_args("get_snapshot",args,"%O",&o1);
+    get_all_args(NULL,args,"%O",&o1);
     pixmap=gtk_widget_get_snapshot(GTK_WIDGET(THIS->obj),
 			(GdkRectangle *)get_gdkobject(o1,rectangle));
     pgtk2_pop_n_elems(args);
@@ -881,11 +877,101 @@ not gtk214;
 GDK2.Window get_window()
 {
   pgtk2_verify_inited();
-  // Prior to GTK 2.14 this was retrieved straight from the struct. cf:
-  // http://mail.gnome.org/archives/gtk-devel-list/2004-September/msg00087.html
+  /* Prior to GTK 2.14 this was retrieved straight from the struct. cf:
+  http://mail.gnome.org/archives/gtk-devel-list/2004-September/msg00087.html */
   push_gobject(GTK_WIDGET(THIS->obj)->window);
 }
 endnot;
+
+%{
+//Helper for drag_source_set and drag_dest_set
+//Returns 0 on success, 1 to raise an error
+//Also used in gtktreeview.pre
+int _decode_targets(struct array *targ, GtkTargetEntry *drag_targets)
+{
+    int i;
+    for (i=0; i<targ->size; i++) {
+      struct array *cur;
+      struct pike_string *str;
+      INT32 min, max;
+      if (TYPEOF(ITEM(targ)[i]) != PIKE_T_ARRAY) return 1;
+      cur = ITEM(targ)[i].u.array;
+      if (cur->size != 3) return 1;
+      if (TYPEOF(ITEM(cur)[0]) != PIKE_T_STRING
+          || TYPEOF(ITEM(cur)[1]) != PIKE_T_INT
+          || TYPEOF(ITEM(cur)[2]) != PIKE_T_INT)
+        return 1;
+      str = ITEM(cur)[0].u.string;
+      /* The string has to be printable ASCII - it should be a MIME type.
+      Quick check: ASCII strings will have size_shift of zero. */
+      if (str->size_shift) return 1;
+      /* But not all eight-bit strings are printable ASCII. */
+      check_string_range(str, 0, &min, &max);
+      if (min < ' ' || max >= 128) return 1;
+      drag_targets[i].target = str->str;
+      drag_targets[i].flags = ITEM(cur)[1].u.integer;
+      drag_targets[i].info = ITEM(cur)[2].u.integer;
+    }
+    return 0;
+}
+%}
+
+void drag_source_set(int buttons, array targets, int actions)
+//! Set this widget up so a drag operation will start when the user clicks and
+//! drags on this widget.
+//! <p>
+//! buttons is a bitwise 'or' of the mouse buttons that can initiate dragging,
+//! eg GTK2.GDK_BUTTON1_MASK.
+//! <p>
+//! targets is an array of triples eg ({({"text/plain", GTK2.TARGET_SAME_APP, 0})})
+//! where each triple gives an identifying MIME type, a flag specifying whether the
+//! drag should be allowed to go to other applications, and an ID which will be
+//! passed on to signal handlers. NOTE: For internal reasons, you are currently
+//! permitted a maximum of ten targets.
+//! <p>
+//! actions is the set of valid actions that can be performed; use constants
+//! GTK2.GDK_ACTION_COPY|GTK2.GDK_ACTION_MOVE etc.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE btn, act;
+    struct array *targ;
+    GtkTargetEntry drag_targets[10];
+
+    get_all_args(NULL, args, "%d%a%d", &btn, &targ, &act);
+    /* Once C99 is supported - check the Windows builds - replace the above
+    declaration with a dynamic array, and remove the guard condition in the
+    arg type check. Then you'll be able to have more than ten drag targets,
+    and memory will be allocated more tightly. Do this again in three other
+    places where the same thing can be found.
+    GtkTargetEntry drag_targets[targ->size]; */
+    if (targ->size > 10 || _decode_targets(targ, drag_targets))
+      SIMPLE_ARG_TYPE_ERROR("drag_source_set", 2, "array(array(string|int))");
+    gtk_drag_source_set(GTK_WIDGET(THIS->obj), btn,
+      drag_targets, targ->size, act);
+  }
+  RETURN_THIS();
+}
+
+void drag_dest_set(int flags, array targets, int actions)
+//! Set this widget up so it can accept drops. Parallel to @[drag_source_set]
+//! - see there for arg info. flags allows default drop behaviour to turned on
+//! and off; use GTK2.DEST_DEFAULT_ALL for normal behaviour.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE flags, act;
+    struct array *targ;
+    GtkTargetEntry drag_targets[10];
+
+    get_all_args(NULL, args, "%d%a%d", &flags, &targ, &act);
+    if (targ->size > 10 || _decode_targets(targ, drag_targets))
+      SIMPLE_ARG_TYPE_ERROR("drag_dest_set", 2, "array(array(string|int))");
+    gtk_drag_dest_set(GTK_WIDGET(THIS->obj), flags,
+      drag_targets, targ->size, act);
+  }
+  RETURN_THIS();
+}
 
 void set_flags(int flags)
 //! Set certain flags, such as GTK2.CAN_DEFAULT.
@@ -893,7 +979,7 @@ void set_flags(int flags)
   pgtk2_verify_inited();
   {
     INT_TYPE flags;
-    get_all_args("set_flags",args,"%i",&flags);
+    get_all_args(NULL,args,"%i",&flags);
     GTK_WIDGET_SET_FLAGS(GTK_WIDGET(THIS->obj),flags);
   }
   RETURN_THIS();
@@ -905,7 +991,7 @@ void unset_flags(int flags)
   pgtk2_verify_inited();
   {
     INT_TYPE flags;
-    get_all_args("unset_flags",args,"%i",&flags);
+    get_all_args(NULL,args,"%i",&flags);
     GTK_WIDGET_UNSET_FLAGS(GTK_WIDGET(THIS->obj),flags);
   }
   RETURN_THIS();

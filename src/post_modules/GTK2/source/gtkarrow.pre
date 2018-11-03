@@ -23,7 +23,7 @@ void create(int|mapping(string:mixed) arrow_type_or_props, ?int shadow_type)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE arrow,shadow;
       GtkWidget *ga;
-      get_all_args("create",args,"%i%i",&arrow,&shadow);
+      get_all_args(NULL,args,"%i%i",&arrow,&shadow);
       ga=gtk_arrow_new(arrow,shadow);
       THIS->obj=G_OBJECT(ga);
     } else {

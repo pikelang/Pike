@@ -84,6 +84,13 @@ errprint(__file__:__line__: [[
 Argument \$2 to \$1 has ]]len([[\$3]])[[ characters,
 some m4 implementations only allow 4096.
 ]])m4exit(1)]])dnl
+ifelse(index([[\$3]],[[
+....
+]]),-1,,[[dnl
+errprint(__file__:__line__: [[
+Argument \$2 to \$1 contains the "...." sequence, used internally by
+the testsuite.
+]])m4exit(1)]])dnl
 ]])
 
 ifdef([[__gnu__]],
@@ -93,7 +100,6 @@ ifdef([[__gnu__]],
 
 define(SEPARATOR,[[....]])
 define(CONDITION,[[]])
-define(M4_TESTDIR,combine_path("$1",".."))
 
 define(DOTEST,dnl
 checkarg([[DOTEST]],1)dnl
@@ -120,9 +126,6 @@ mixed a() { return [[\$1]]; })
 DOTEST(POP_WARNING,dnl
 mixed a() { return [[\$1]]; })
 ]])
-
-define(pop_warning, [[DOTEST(POP_WARNING,dnl
-mixed a() { return [[\$1]]; })]])
 
 define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[\$1]]; }
@@ -164,16 +167,13 @@ define(test_compile_error_any,[[DOTEST(COMPILE_ERROR,dnl
 define(test_compile_warning,[[DOTEST(COMPILE_WARNING,dnl
 mixed a() { [[\$1]];})]])
 
-define(test_compile_warning_any,[[DOTEST(COMPILE_WARNING,dnl
-[[\$1]])]])
-
 define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
 mixed a() { [[\$1]]; })]])
 
 define(test_define_program,[[DOTEST(RUN,dnl
-void a() { add_constant("[[\$1]]",class c {
-  [[\$2]]
-});})]])
+void a() { class [[\$1]] { [[\$2]] }
+           add_constant("[[\$1]]", [[\$1]]);
+})]])
 
 define(test_program, [[DOTEST(TRUE,dnl
 [[\$1]])]])
@@ -210,9 +210,8 @@ cond_end
 ]])
 
 define(cond_resolv,[[cond([[master()->resolv(dnl
-  String.trim_all_whites("\$1"))]],[[\$2]])]])
+  String.trim("\$1"))]],[[\$2]])]])
 define(ifefun,[[cond([[all_constants()->\$1]],[[\$2]])]])
-define(nonregression,[[ifefun(regression,[[\$1]])]])
 
 define(TESTNO,0)
 

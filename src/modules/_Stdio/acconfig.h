@@ -38,8 +38,17 @@
 /* Define this if you want to disable the use of sendfile(2). */
 #undef HAVE_BROKEN_SENDFILE
 
+/* Define this if your DIR has the field dd_fd (POSIX or X/OPEN). */
+#undef HAVE_DIR_DD_FD
+
+/* Define this if your DIR has the field d_fd (old Solaris). */
+#undef HAVE_DIR_D_FD
+
 /* Define this if you have a struct stat with 'blocks' member. */
 #undef HAVE_STRUCT_STAT_BLOCKS
+
+/* Define this if your struct stat has nanosecond resolution timefields. */
+#undef HAVE_STRUCT_STAT_NSEC
 
 /* Define this if you have a struct sockaddr_un with 'sun_len' member. */
 #undef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
@@ -52,6 +61,9 @@
 
 /* Define if your statfs struct has the f_bavail member */
 #undef HAVE_STATFS_F_BAVAIL
+
+/* Define if your statfs struct has the f_fstypename member */
+#undef HAVE_STATFS_F_FSTYPENAME
 
 /* Define if you have the struct fs_data */
 #undef HAVE_STRUCT_FS_DATA
@@ -83,9 +95,6 @@
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
 
-/* Define if you have a working getcwd */
-#undef HAVE_WORKING_GETCWD
-
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
@@ -93,16 +102,10 @@
 #undef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
 
 /* Buffer size to use on open sockets */
-#undef SOCKET_BUFFER_MAX 
-
-/* Number of args to mkdir() */
-#define MKDIR_ARGS 2
+#undef SOCKET_BUFFER_MAX
 
 /* With termios */
-#undef WITH_TERMIOS 
-
-/* Filesystem notifications */
-#undef HAVE_NOTIFICATIONS
+#undef WITH_TERMIOS
 
 /* Define to path of pseudo terminal master device if available */
 #undef PTY_MASTER_PATHNAME

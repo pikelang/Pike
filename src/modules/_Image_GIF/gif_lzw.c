@@ -20,7 +20,7 @@
 #define DEFAULT_OUTBYTES 16384
 #define STDLZWCODES 8192
 
-static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
+static inline void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 {
    if (lzw->outpos+4>=lzw->outlen)
    {
@@ -87,7 +87,7 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
    }
 }
 
-static INLINE void lzw_add(struct gif_lzw *lzw,int c)
+static inline void lzw_add(struct gif_lzw *lzw,int c)
 {
    lzwcode_t lno,lno2;
    struct gif_lzwc *l;
@@ -129,7 +129,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       for (i=0; i<(1L<<lzw->bits); i++)
 	 lzw->code[i].firstchild=LZWCNULL;
       lzw->codes=(1L<<lzw->bits)+2;
-      
+
       /* output clearcode, 1000... (bits) */
       lzw_output(lzw, (lzwcode_t)(1L<<lzw->bits));
 
@@ -146,7 +146,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw_output(lzw,lzw->current);
 
    lno=lzw->code[lzw->current].firstchild;
-   lno2 = DO_NOT_WARN((lzwcode_t)lzw->codes);
+   lno2 = (lzwcode_t)lzw->codes;
    l=lzw->code+lno2;
    l->next=lno;
    l->firstchild=LZWCNULL;
@@ -154,7 +154,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw->code[lzw->current].firstchild=lno2;
 
    lzw->codes++;
-   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits)) 
+   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits))
       lzw->codebits++;
 
    lzw->current=c;
@@ -172,7 +172,7 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->codes=(1L<<bits)+2;
    lzw->bits=bits;
    lzw->codebits=bits+1;
-   lzw->code=(struct gif_lzwc*) malloc(sizeof(struct gif_lzwc)*4096);
+   lzw->code=malloc(sizeof(struct gif_lzwc)*4096);
 
    if (!lzw->code) { lzw->broken=1; return; }
 
@@ -202,10 +202,10 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->outbit)
    {
       if (lzw->reversebits)
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)(lzw->lastout<<
-							   (8-lzw->outbit)));
+         lzw->out[lzw->outpos++] = (lzwcode_t)(lzw->lastout<<
+                                               (8-lzw->outbit));
       else
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)lzw->lastout);
+         lzw->out[lzw->outpos++] = (lzwcode_t)lzw->lastout;
    }
 }
 

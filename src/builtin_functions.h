@@ -7,6 +7,8 @@
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
 
+#include "time_stuff.h"
+
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
@@ -50,12 +52,9 @@ PMOD_EXPORT struct object *get_val_null(void);
 PMOD_EXPORT struct program *get_sql_null_prog(void);
 
 PMOD_EXPORT void f_equal(INT32 args);
-PMOD_EXPORT void f_hash(INT32 args);
 PMOD_EXPORT void f_copy_value(INT32 args);
 PMOD_EXPORT void f_lower_case(INT32 args);
 PMOD_EXPORT void f_upper_case(INT32 args);
-PMOD_EXPORT void f_random_string (INT32 args);
-PMOD_EXPORT void f_random_seed(INT32 args);
 PMOD_EXPORT void f_query_num_arg(INT32 args);
 PMOD_EXPORT void f_search(INT32 args);
 PMOD_EXPORT void f_has_prefix(INT32 args);
@@ -70,6 +69,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args);
 PMOD_EXPORT void f_unicode_to_string(INT32 args);
 PMOD_EXPORT void f_string_to_utf8(INT32 args);
 PMOD_EXPORT void f_utf8_to_string(INT32 args);
+void f___get_first_arg_type(INT32 args);
 PMOD_EXPORT void f_all_constants(INT32 args);
 PMOD_EXPORT void f_allocate(INT32 args);
 void f_this_object(INT32 args);
@@ -83,7 +83,6 @@ PMOD_EXPORT void f_destruct(INT32 args);
 PMOD_EXPORT void f_indices(INT32 args);
 PMOD_EXPORT void f_values(INT32 args);
 PMOD_EXPORT void f_types(INT32 args);
-PMOD_EXPORT void f_next_object(INT32 args);
 PMOD_EXPORT void f_object_program(INT32 args);
 int find_longest_prefix(char *str,
 			ptrdiff_t len,
@@ -103,6 +102,7 @@ PMOD_EXPORT void f_replace(INT32 args);
 PMOD_EXPORT void f_compile(INT32 args);
 PMOD_EXPORT void f_objectp(INT32 args);
 PMOD_EXPORT void f_functionp(INT32 args);
+PMOD_EXPORT int callablep(struct svalue *s);
 PMOD_EXPORT void f_callablep(INT32 args);
 PMOD_EXPORT void f_sleep(INT32 args);
 PMOD_EXPORT void f_delay(INT32 args);
@@ -117,13 +117,14 @@ TYPEP(f_floatp, "floatp", PIKE_T_FLOAT)
 PMOD_EXPORT void f_sort(INT32 args);
 PMOD_EXPORT void f_rows(INT32 args);
 PMOD_EXPORT void f__verify_internals(INT32 args);
-PMOD_EXPORT void f__debug(INT32 args);
-PMOD_EXPORT void f__optimizer_debug(INT32 args);
-PMOD_EXPORT void f__assembler_debug(INT32 args);
-PMOD_EXPORT void f__compiler_trace(INT32 args);
 PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
+time_t mktime_zone(struct tm *date, int other_timezone, int tz);
 PMOD_EXPORT void f_mktime (INT32 args);
+#ifdef HAVE_STRPTIME
+PMOD_EXPORT void f_strptime (INT32 args);
+#endif
+PMOD_EXPORT void f_strftime (INT32 args);
 PMOD_EXPORT void f_glob(INT32 args);
 PMOD_EXPORT void f_permute(INT32 args);
 struct diff_magic_link;
@@ -137,10 +138,6 @@ struct callback *add_memory_usage_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
 PMOD_EXPORT void f__memory_usage(INT32 args);
-PMOD_EXPORT void f__next(INT32 args);
-PMOD_EXPORT void f__prev(INT32 args);
-PMOD_EXPORT void f__refs(INT32 args);
-PMOD_EXPORT void f__leak(INT32 args);
 PMOD_EXPORT void f__typeof(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
@@ -186,7 +183,7 @@ PMOD_EXPORT void f_mkmapping(INT32 args);
 PMOD_EXPORT void f_string_count(INT32 args);
 PMOD_EXPORT void f_string_trim_whites(INT32 args);
 PMOD_EXPORT void f_string_normalize_space(INT32 args);
-PMOD_EXPORT void f_string_trim_all_whites(INT32 args);
+PMOD_EXPORT void f_string_trim(INT32 args);
 PMOD_EXPORT void f_program_implements(INT32 args);
 PMOD_EXPORT void f_program_inherits(INT32 args);
 PMOD_EXPORT void f_program_defined(INT32 args);
@@ -196,7 +193,6 @@ PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
-PMOD_EXPORT void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
 struct pike_list_node
@@ -208,7 +204,7 @@ struct pike_list_node
   struct svalue val;
 };
 void count_memory_in_pike_list_nodes(size_t * n, size_t * s);
-void free_all_pike_list_node_blocks();
+void free_all_pike_list_node_blocks(void);
 PMOD_EXPORT void free_list_node(struct pike_list_node *node);
 PMOD_EXPORT void unlink_list_node(struct pike_list_node *n);
 PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,

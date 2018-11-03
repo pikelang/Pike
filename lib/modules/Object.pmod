@@ -6,8 +6,12 @@ constant DESTRUCT_EXPLICIT = __builtin.DESTRUCT_EXPLICIT;
 constant DESTRUCT_NO_REFS = __builtin.DESTRUCT_NO_REFS;
 constant DESTRUCT_GC = __builtin.DESTRUCT_GC;
 constant DESTRUCT_CLEANUP = __builtin.DESTRUCT_CLEANUP;
-//! Flags passed to @[lfun::destroy].
+//! Flags passed to @[lfun::_destruct].
 //!
 //! @note
 //! @[Object.DESTRUCT_EXPLICIT] is @expr{0@} and
 //! @[Object.DESTRUCT_CLEANUP] is @expr{1@} for compatibility.
+
+constant secure = __builtin.object_secure;
+
+constant variablep = object_variablep;

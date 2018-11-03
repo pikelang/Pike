@@ -14,8 +14,9 @@ class A {
     foreach(indices(b_to_t), string symbol)
       if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
   }
-}(); )
-    
+}
+A(); )
+
 
 // - Standards.PEM
 test_any_equal([[
@@ -51,8 +52,14 @@ return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
   "recipient-id-symmetric": "linn@zendia.enet.dec.com,ptf-kmc,3\0pem-dev@tis.com,ptf-kmc,4"
 ]) ]])
 
+test_any([[
+return Standards.PEM.Message(#"-----BEGIN FOO-----
+  QkFS
+  -----END FOO-----")->body;
+]], "BAR")
 
 // - Standards.URI
+// RFC 3986 5.4.1 Normal Examples
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
 test_equal((string)Standards.URI("g",             "http://a/b/c/d;p?q"), "http://a/b/c/g")
 test_equal((string)Standards.URI("./g",           "http://a/b/c/d;p?q"), "http://a/b/c/g")
@@ -75,7 +82,10 @@ test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
+
 test_equal((string)Standards.URI("",              "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q")
+
+// RFC 3986 5.4.2 Abnormal Examples
 test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
@@ -95,6 +105,8 @@ test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
 test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
+
+test_equal((string)Standards.URI("c?d=e", "http://a.b"), "http://a.b/c?d=e")
 test_equal(Standards.URI("http://www.com/")->get_query_variables(),([]))
 test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"]))
 test_equal(Standards.URI("http://www.com/?a=b&a=b")->get_query_variables(),(["a":"b"]))
@@ -102,17 +114,33 @@ test_equal(Standards.URI("http://www.com/?a=b&c")->get_query_variables(),(["a":"
 test_equal(Standards.URI("http://www.com/?foo")->get_http_path_query(),"/?foo")
 test_equal(Standards.URI("http://www.com/?")->get_http_path_query(),"/?")
 test_equal(Standards.URI("http://www.com/")->get_http_path_query(),"/")
+test_equal((string)Standards.URI("://"), "://")
+test_equal((string)Standards.URI("/", "://"), ":///")
+test_equal((string)Standards.URI("foo.bar", ":///"), ":///foo.bar")
+test_equal(Standards.URI(":///foo/")->combine_uri_path("", "/foo/"), "/foo/")
 test_eval_error(Standards.URI("www.com"))
 test_eq((string)Standards.URI("www.com","http://"),"http://www.com")
+test_eq((string)Standards.URI("www.com/x?a=b#y","http://"),"http://www.com/x?a=b#y")
 test_eq((string)Standards.URI("ftp://www.com/x?a=b#y","http://"),"ftp://www.com/x?a=b#y")
+test_eq(Standards.URI("http://bloke@gmail.com@yahoo.com")->user, "bloke@gmail.com")
+test_eq((string)Standards.URI("a",             "file:"), "file:a")
+test_eq((string)Standards.URI("a",             "file:b"), "file:a")
+test_eq((string)Standards.URI("a",             "file:b/c"), "file:b/a")
+test_eq((string)Standards.URI("a/b",           "file:"), "file:a/b")
+test_eq((string)Standards.URI("a/b",           "file:c"), "file:a/b")
+test_eq((string)Standards.URI("a/b",           "file:c/d"), "file:c/a/b")
+test_eq((string)Standards.URI("<a@example.com>", "mailto:"), "mailto:<a@example.com>")
 // Some tests of empty path followed by a query.
 test_eq(Standards.URI("http://user:??@host?query")->query, "query")
+test_eq(Standards.URI("http://user:??@host?query")->user, "user")
 test_eq(Standards.URI("http://user:??@host?query")->password, "??")
 test_eq(Standards.URI("http://user:??@host?query")->path, "")
 test_eq(Standards.URI("HTTP://WWW.COM/")->scheme, "http")
 // test `==
 test_true(Standards.URI("a://b:c@d:1/e?f=g&h")==
           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_true(Standards.URI("a://b:c@d:1/e?f=g&h#i")==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
 test_true(Standards.URI("A://b:c@D:01/e?f=g&h")==
           Standards.URI("a://b:c@d:1/e?f=g&h"))
 test_false(Standards.URI("x://b:c@d:1/e?f=g&h")==
@@ -129,10 +157,13 @@ test_false(Standards.URI("a://b:c@d:1/x?f=g&h")==
            Standards.URI("a://b:c@d:1/e?f=g&h"))
 test_false(Standards.URI("a://b:c@d:1/e?x=g&h")==
            Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/e?f=g&h#i")==
+	   Standards.URI("a://b:c@d:1/e?f=g&h#I"))
 // codec
-test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h")))==
-          Standards.URI("a://b:c@d:1/e?f=g&h"))
-
+test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h#i")))==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
+test_true(Standards.URI(Standards.URI("a://b:c@d:1/e?f=g&h#i"))==
+	  Standards.URI("a://b:c@d:1/e?f=g&h#i"))
 
 test_eval_error(Standards.URI(""))
 test_eval_error(Standards.URI("#foo"))
@@ -230,15 +261,15 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
 -----END CERTIFICATE-----";
   object o = Standards.PEM.Message(pem);
   object t = Standards.X509.decode_certificate(o->body);
-  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[2][0][1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject[2][0][1]->value, "extensions":t->extensions])
+  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm[0], "issuer":t->issuer[2][0][1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject[2][0][1]->value, "extensions":t->extensions])
 ]],[[
 ([ /* 9 elements */
-  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.5)",
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,5),
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
   "extensions": ([]),
-  "not_after": 1848866399,
-  "not_before": 822870000,
+  "not_after": 1848873599,
+  "not_before": 822873600,
   "serial": "3f691e819cf09a4af373ffb948a2e4dd",
   "subject": "Class 1 Public Primary Certification Authority",
   "version": 1
@@ -256,15 +287,64 @@ test_any_equal([[
   string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
 
   object t = Standards.X509.decode_certificate(c);
-  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":t->extensions, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
+  mapping ext = t->extensions;
+  foreach(ext; string id; object value) ext[id]=value->get_der();
+  return ([
+    "version" : t->version,
+    "serial":t->serial->digits(16),
+    "algorithm":t->algorithm[0],
+    "issuer":t->issuer[0][0][1]->value,
+    "subject":t->subject[0][0][1]->value,
+    "extensions":ext,
+    "public_key":(int)t->public_key->pkc->public_key_equal(rsa),
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_subkey" : t->ext_subjectKeyIdentifier,
+    "ext_ku" : t->ext_keyUsage,
+  ])
 ]],[[ ([
-  "version" : 1,
+  "version" : 3,
   "serial" : "5",
-  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.11)",
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,11),
   "issuer" : "Test",
   "subject" : "Test",
-  "extensions" : ([]),
+  "extensions" : ([
+      Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+      Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\5\240",
+      Standards.ASN1.Types.Identifier(2,5,29,19): "0\0"
+  ]),
   "public_key": 1,
+  "ext_bc" : 1,
+  "ext_bc_ca" : 0,
+  "ext_bc_len" : 0,
+  "ext_subkey" : "\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+  "ext_ku" : Standards.X509.KU_digitalSignature|Standards.X509.KU_keyEncipherment,
+]) ]])
+
+test_any_equal([[
+  object rsa = Crypto.RSA();
+  rsa->set_public_key(Gmp.mpz(10091719133288484609038014264477683817475840711323254929480453433408142690559279434827127011542800608968367637399409601909209406663819557863705925738798431), 65537);
+
+  array attrs = ({
+    ([ "organizationName" : Standards.ASN1.Types.PrintableString("Test") ]),
+    ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
+  });
+
+  string c = Standards.X509.make_root_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
+
+  object t = Standards.X509.decode_certificate(c);
+  return ([
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_ku" : t->ext_keyUsage,
+  ])
+]],[[ ([
+  "ext_bc" : 1,
+  "ext_bc_ca" : 1,
+  "ext_bc_len" : 0,
+  "ext_ku" : Standards.X509.KU_keyCertSign|Standards.X509.KU_cRLSign,
 ]) ]])
 
 test_any([[
@@ -310,9 +390,92 @@ test_any([[
   return 1;
 ]], 1)
 
+cond_resolv( Crypto.ECC, [[
+test_any([[
+  Crypto.Sign key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
+
+  foreach( ({ 0,
+    Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Crypto.SHA224,
+#endif
+    Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Crypto.SHA512,
+#endif
+  }), object h)
+  {
+    string s = Standards.X509.make_selfsigned_certificate(key, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
+]], 1)
+]])
+
+test_any([[
+  Crypto.RSA root_rsa = Crypto.RSA();
+  root_rsa->generate_key(512);
+  string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"DaRoot" ]));
+  object rtbs = Standards.X509.decode_certificate(root);
+
+  Crypto.RSA cert_rsa = Crypto.RSA();
+  cert_rsa->generate_key(512);
+  string c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, 3600, ([ "commonName":"*" ]));
+
+  mapping auths = ([ rtbs->subject->get_der() : rtbs->public_key ]);
+
+  mapping m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(!m->verified || m->error_code || m->self_signed)
+    return m+(["line":__LINE__]);
+
+  c = Standards.X509.make_selfsigned_certificate(cert_rsa, 3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_ROOT_UNTRUSTED)
+    return m+(["line":__LINE__]);
+
+  c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, -3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_TOO_OLD)
+    return m+(["line":__LINE__]);
+
+  {
+    object dn = Standards.PKCS.Certificate.build_distinguished_name(
+      ([ "commonName" : "*" ]) );
+    object val = Standards.ASN1.Types.Sequence( ({
+                   Standards.ASN1.Types.UTC()->set_posix( time()+1000 ),
+                   Standards.ASN1.Types.UTC()->set_posix( time()+2000 ),
+                 }) );
+    object tbs = Standards.X509.make_tbs(rtbs->subject,
+		   cert_rsa->pkcs_signature_algorithm_id(Crypto.SHA256),
+		   dn, cert_rsa->pkcs_public_key(),
+		   Standards.ASN1.Types.Integer(1), val, 0);
+    c = Standards.X509.sign_tbs(tbs, root_rsa, Crypto.SHA256)->get_der();
+  }
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_TOO_NEW)
+    return m+(["line":__LINE__]);
+
+  return 1;
+]], 1)
+
+test_true(mappingp(Standards.X509.load_authorities()))
 
 define(test_cert, ([[
-  test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
+  test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE[0]->body, ([])))
+  test_any([[
+    string der = Standards.PEM.Messages(#"$1")->get_certificate();
+    object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
+    /* TBS does not contain the full certificate... */
+    /* if( o->get_der() != der ) return -1; */
+
+    if( o->ext_basicConstraints != 1) return 2;
+    if( !o->public_key->pkc ) return 3;
+    return 1;
+  ]], 1)
 ]]))
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
@@ -356,6 +519,7 @@ Vue27gwE5EFxe0/5NwQmjkyH6xD6KQx71T1pRdLr8MiAD1YhPsXx61VkDgtm
 -----END CERTIFICATE-----)
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -newkey rsa:2048 -out certfile.cer
+cond_resolv(Crypto.SHA384, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIC+TCCAeGgAwIBAgIJAL7hTIcdxBC2MA0GCSqGSIb3DQEBDAUAMBMxETAPBgNV
 BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNDkyMFoXDTE0MTExOTEzNDkyMFowEzER
@@ -374,8 +538,10 @@ dddT4IhF0ccFNVops9yUkgdiSaZL+iWBKzPxNSP2m785ldzfpAaBfkIjtQm0LUtP
 Mc8wNpKQCO3ldK2Paq+At0aaPXlRVIUtS9/w0MYL90w/3iDzR3OtTvb85I87G3A1
 xuStSBwdb6EpBU2Ige9qw5TVaulCBjAmdOUIJRwU5UoWTktcmrsM0aqjf+/R
 -----END CERTIFICATE-----)
+]])
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -newkey rsa:2048 -out certfile.cer
+cond_resolv(Crypto.SHA512, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIIC+TCCAeGgAwIBAgIJANPdhgZsaxbZMA0GCSqGSIb3DQEBDQUAMBMxETAPBgNV
 BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNTg1M1oXDTE0MTExOTEzNTg1M1owEzER
@@ -394,6 +560,7 @@ aCBpDINBOdGmnLiBxN1x9Q7EPP3pLbba1/bo2Od3ptd3GWUlmoufjuLezgSRni52
 9lj8H5z7G8tvU2OZKYHI6y3n5Q6SUh+LRUAwYnKaO54WVsjO6oA6DD0Z6HovzQfN
 AWbDAMbePGe4sM6h5f3MO/v3Wbxkv1scn2PuvHQ1xpTfp7z+yAc8kB4udUnC
 -----END CERTIFICATE-----)
+]])
 
 dnl openssl dsaparam -genkey -out dsaparam 1024
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -newkey dsa:dsaparam.txt -out certfile.cer
@@ -416,6 +583,7 @@ AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
 -----END CERTIFICATE-----)
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha224 -newkey dsa:dsaparam.txt -out certfile.cer
+cond_resolv(Crypto.SHA224, [[
 test_cert(-----BEGIN CERTIFICATE-----
 MIICtzCCAnSgAwIBAgIJAOX731WMZ8z4MAsGCWCGSAFlAwQDATATMREwDwYDVQQD
 DAhQaWtlQ2VydDAeFw0xMzExMjEyMjQ4MzlaFw0xNDExMjEyMjQ4MzlaMBMxETAP
@@ -433,6 +601,7 @@ hXWv/TjSQJyMjDyj9jAfBgNVHSMEGDAWgBSxIQL2L5SVhXWv/TjSQJyMjDyj9jAM
 BgNVHRMEBTADAQH/MAsGCWCGSAFlAwQDAQMwADAtAhUAiaubShILTT032QiN0839
 FjXjMH4CFG58nH+vm7Sm19iEmkyAIuxCSWLt
 -----END CERTIFICATE-----)
+]])
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey dsa:dsaparam.txt -out certfile.cer
 test_cert(-----BEGIN CERTIFICATE-----
@@ -452,5 +621,139 @@ Zt8leQB4DR+YGM+qMB8GA1UdIwQYMBaAFCWcSXcij0VjZt8leQB4DR+YGM+qMAwG
 A1UdEwQFMAMBAf8wCwYJYIZIAWUDBAMCAzAAMC0CFQDQLFyJApRqu2RgJrpDBNBp
 m7GVvwIUYpUR6uKR45jxvAgL6W4yvRRP7vI=
 -----END CERTIFICATE-----)
+
+dnl openssl ecparam -out ec_key.pem -name prime192v1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_192R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBSzCCAQKgAwIBAgIJAMj9iSOoOhP/MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwMzUwWhcNMTUwMjIwMjMwMzUwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBJMBMGByqGSM49AgEGCCqGSM49AwEBAzIABO8Nc4TWmi6n
+SOzblmAc9JFj5bDpmh9d93iHQUQIAUZ7LNTKv1V9tTNM+jZAYrr/+6NQME4wHQYD
+VR0OBBYEFEedlGtZ8r6IqvFJyZz2bTGgo0wIMB8GA1UdIwQYMBaAFEedlGtZ8r6I
+qvFJyZz2bTGgo0wIMAwGA1UdEwQFMAMBAf8wCQYHKoZIzj0EAQM4ADA1AhkA0FYQ
+k2RmcnzBakhpsxneFHHW1zYIKmBIAhgDcmopMyY+DdGfY1PyjZQAMK6wd2apnxA=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp224r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_224R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWTCCAQegAwIBAgIJAKy2vVL0uZPvMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjIyODEzWhcNMTUwMjIwMjIyODEzWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBOMBAGByqGSM49AgEGBSuBBAAhAzoABLBH4yk4C3aO0tsM
+zek5hOHT4QTLT0JXN6ISNcMKqUCRVKpCvGSzeEXNJxapMiYWHdjLYD+4JVrxo1Aw
+TjAdBgNVHQ4EFgQUjokv7Vc49VVyQxypwozb6K2WmsgwHwYDVR0jBBgwFoAUjokv
+7Vc49VVyQxypwozb6K2WmsgwDAYDVR0TBAUwAwEB/zAJBgcqhkjOPQQBA0EAMD4C
+HQC2JfGfDizRP3ZHxaoZghBK/7dnHcT322QuFR6iAh0A4LJK8jnqAMRI0PD1JKDm
+dfPFb1cNwHMDje6/kw==
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha224 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_224R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAOha9wA3a+TQMAoGCCqGSM49BAMBMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTMxNVoXDTE1MDIyMDIyNTMxNVowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwEDQAAw
+PQIdALIF/yYyUXiMvY8wEkBrtXpksqsfDqrWALd7U1ACHGaRu/84qvnQwzyAvl+j
+b5Z/So1yqBUf4XBq0Es=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_224R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAJPEMg5QZ2AoMAoGCCqGSM49BAMCMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTQzOFoXDTE1MDIyMDIyNTQzOFowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwIDQAAw
+PQIdALQKF7WnOEjWGfCEwsJu4H7TleWwjBdSQhZSHHACHFzkyw1hf7mI05liXDoB
+kgzS9dNkRDh/CNvJidE=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_224R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJALahVk/hu/hnMAoGCCqGSM49BAMDMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTU0NFoXDTE1MDIyMDIyNTU0NFowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwMDQAAw
+PQIcQ9LlOcOtKZlTqZiH8mLYT2aR61dFcAdqxqpRXQIdAK9x8HwlpDIoDn/BI1mC
+XRYzQ3xFhbfJ8HcxTbw=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_224R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAIDLkTGU0TRQMAoGCCqGSM49BAMEMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTcwNVoXDTE1MDIyMDIyNTcwNVowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwQDQAAw
+PQIcU0QhBUpHiMyHO5CbDrUhHralI2PsWJ3uxdVQqAIdAJqfn4ZOA1GL7GS8M/qz
+Nsv1aJAwJPuGLiymoU4=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name prime256v1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_256R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBazCCARKgAwIBAgIJAM1x4Mn082OeMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwNTU4WhcNMTUwMjIwMjMwNTU4WjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABIJ+nZxoPPQM
+MJnOyOrDX7WSy6bHc9N5nR4yresTNgnQUlXTP8Ew3RcVpNlfAHhqzCvw7O7KTQ/1
+KTkQi3ad7y6jUDBOMB0GA1UdDgQWBBQdqJlyddJwwi0zmnidBkWzO1+LezAfBgNV
+HSMEGDAWgBQdqJlyddJwwi0zmnidBkWzO1+LezAMBgNVHRMEBTADAQH/MAkGByqG
+SM49BAEDSAAwRQIgPKBNFDgNeKuPxrXy4s8JK8IUxMjm9IopfE83FwtS090CIQC9
++0YHz9XhIlDO/P/M/C8MN0B7UMclhORDsUwuB7UWNg==
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp384r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_384R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBqDCCAS+gAwIBAgIJANvhD1nHQbI5MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjI1OTIyWhcNMTUwMjIwMjI1OTIyWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDB2MBAGByqGSM49AgEGBSuBBAAiA2IABBt1/QmpRtdKGu7Q
+79jLjyqjoq8srnaXIWQLLxHO42BwvXEprey0Jfpw0ckTkDjc7i6949Bbp0nGz/7i
+t5+AGxwXvoGkqbJnChlAEyFfKnQCd6mTmdJ2TSpR9OZcvwV0UaNQME4wHQYDVR0O
+BBYEFDyKXEk69swxYjAw5/CIEprBAyvzMB8GA1UdIwQYMBaAFDyKXEk69swxYjAw
+5/CIEprBAyvzMAwGA1UdEwQFMAMBAf8wCQYHKoZIzj0EAQNoADBlAjEA+T1yj7A3
+nj6PzbohEjh9Tu6yMrCw2bgPVli5WNzuu19/zTfx+DWtt/18ULG4X54oAjAlQTnu
+sO5NVHxzBVp4KKpeSo+GYCAxRVgYGWk5OSvNtM7ymVmcMXtzg18atpBaMaw=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp521r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC.SECP_521R1, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIB8jCCAVWgAwIBAgIJANiMssVQFtzxMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwMDQ1WhcNMTUwMjIwMjMwMDQ1WjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEAZIjDKupLtSo
+n+rHVD685yCjuYzkEurcuxoPXFNqQ445BRj5FcV3o9+YtFUGTr+Zyr0A083x3khS
+A4/ztz7jzIqWAFWj0tFeckWNxxYbl4zIPaTIsSLV+EZhhpia6OoYtzKQeIN8NwI2
+RNC2IzEe9kxFPOJ6A2FNqWojevI1eGSS9nUBo1AwTjAdBgNVHQ4EFgQU+71Yb0C9
+d8sIZnqP7UrREpyyqEkwHwYDVR0jBBgwFoAU+71Yb0C9d8sIZnqP7UrREpyyqEkw
+DAYDVR0TBAUwAwEB/zAJBgcqhkjOPQQBA4GLADCBhwJBS1pKdJcRD10CL+hvzbfZ
+CyfO2yKeE5wCOnw4OKhKAUkNXyG4yNUeTu4DERxiu7NmS7dIPiOF4/EuN48yUu5o
+oYwCQgEl0Y76aF2udd6/IP2kSHonzmWyspaD77/N1cBlkJ95ztgZQZw+EquafiCV
+1osuk7lVUdguih1HssW1BjTkGeD4+g==
+-----END CERTIFICATE-----)
+]])
 
 END_MARKER

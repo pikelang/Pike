@@ -4,8 +4,10 @@ static inline size_t _low_cb_check_node(cb_node_t node, const char *, int);
 #ifdef DEBUG_CHECKS
 # define cb_check_node(node)	do { _low_cb_check_node(node, \
 					    __FILE__, __LINE__); } while (0)
+# define DEBUGCHECKUSED(X)	X
 #else
 # define cb_check_node(node)	do {} while(0)
+# define DEBUGCHECKUSED(X)	UNUSED(X)
 #endif
 
 #define CB_FATAL(x)	Pike_error x
@@ -23,9 +25,9 @@ static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
 #ifdef CB_PRINT_CHAR
 	CB_PRINT_CHAR(buf, key.str, i.chars);
 #else
-	string_builder_sprintf(buf, "(%d, %d) b: ", i.chars, CB_WIDTH(s));
+	string_builder_sprintf(buf, "(%d, %d) b: ", i.chars, CB_WIDTH(key.str));
 
-	for (i.bits = 0; i.bits < CB_WIDTH(s); i.bits++) {
+	for (i.bits = 0; i.bits < CB_WIDTH(key.str); i.bits++) {
 	    string_builder_sprintf(buf, "%d", CB_GET_BIT(key.str, i));
 	}
 	string_builder_putchar(buf, ' ');
@@ -51,7 +53,7 @@ static inline void cb_print_key(struct string_builder * buf, const cb_key key) {
     cb_size i;
 
     for (i.chars = 0; i.chars < key.len.chars; i.chars++) {
-	for (i.bits = 0; i.bits < CB_WIDTH(s); i.bits++) {
+	for (i.bits = 0; i.bits < CB_WIDTH(key.str); i.bits++) {
 	    string_builder_putchar(buf, CB_GET_BIT(key.str, i) ? '1' : '0');
 	}
     }
@@ -72,7 +74,7 @@ static inline void cb_print_node(struct string_builder * buf,
 				 cb_node_t node, int depth) {
     string_builder_putchars(buf, ' ', depth);
     string_builder_sprintf(buf, "%x #%lu (%d) --> ", node,
-			   node->size, node->value.type);
+			   node->size, TYPEOF(node->value));
     string_builder_putchars(buf, ' ', MAXIMUM(0, 15-depth));
     cb_debug_print_key(buf, node->key);
     if (CB_HAS_VALUE(node)) CB_PRINT_KEY(buf, node->key);
@@ -142,7 +144,9 @@ static inline int cb_print_path(struct string_builder *buf, cb_node_t node,
     return 0;
 }
 
-static inline void cb_check(cb_node_t node, cb_node_t last, char *issue) {
+static inline void cb_check(cb_node_t node,
+                            cb_node_t DEBUGCHECKUSED(last),
+                            char *issue) {
 #ifdef DEBUG_CHECKS
     if (CB_LT(node->key.len, last->key.len)) {
 	struct string_builder buf;
@@ -186,7 +190,7 @@ static inline int cb_rec_check_parents(cb_node_t node) {
 
 static inline void cb_aggregate_values(cb_node_t node,
 				       struct array * a, size_t start,
-				       size_t len) {
+				       size_t UNUSED(len)) {
     if (CB_HAS_VALUE(node))
 	CB_GET_VALUE(node, ITEM(a)+start++);
     WALK_FORWARD(node, {
@@ -224,4 +228,3 @@ static inline size_t _low_cb_check_node(cb_node_t node,
 
     return node->size;
 }
-

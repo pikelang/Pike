@@ -1,14 +1,14 @@
 #!/usr/local/bin/pike
-#pike 0.6
+#pike 7.8
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
 
-#include <simulate.h>
-#include <stdio.h>
-#include <string.h>
+import Stdio;
+import String;
 
-multiset efuns = mklist(indices(all_efuns())) | (<"sscanf","gauge","catch">);
+multiset efuns = mkmultiset(indices(all_constants())) |
+  (<"sscanf","gauge","catch">);
 mapping short_descs = ([]);
 mapping keywords = ([]);
 
@@ -25,7 +25,7 @@ protected constant known_constants = (< "PI" >);
 string fippel_path(string path)
 {
   sscanf(path,"./%s",path);
-  path=replace(path,"/","_");
+  path=predef::replace(path,"/","_");
   if(path[strlen(path)-5..]==".bmml") path=path[..strlen(path)-6];
   if(path[strlen(path)-5..]!=".html") path+=".html";
 
@@ -44,7 +44,7 @@ string even_more_magic(string block, int indent)
 {
   if(-1==search(block,"\t"))
   {
-    return replace(block,"\n","<br />\n");
+    return predef::replace(block,"\n","<br />\n");
   }else{
     int e,d;
     mixed tmp,tmp2;
@@ -119,7 +119,7 @@ string more_magic(string s, int quote)
     }
     accumulator+=rest+"\n";
   }
-  
+
   FLUSH();
 
   while(sizeof(ilevel)>1)
@@ -137,7 +137,7 @@ string magic(string s, int quote)
   foreach(s/"\n\n",s)
   {
     sscanf(s,"\t%s",s);
-    s=replace(s,"\n\t","\n");
+    s=predef::replace(s,"\n\t","\n");
     ret += ({ more_magic(s, quote) });
   }
 
@@ -147,8 +147,8 @@ string magic(string s, int quote)
 /*
  * Magic to convert SYNTAX sections
  */
-static inherit Regexp : lastident;
-static inherit Regexp : megamagic;
+protected inherit Regexp.SimpleRegexp : lastident;
+protected inherit Regexp.SimpleRegexp : megamagic;
 
 string syntax_magic(string s)
 {
@@ -191,20 +191,20 @@ array(string) to=({"&amp;","&lt;","&gt;"});
 
 string html_quote(string s)
 {
-  return replace(s,from,to);
+  return predef::replace(s,from,to);
 }
 
 string html_unquote(string s)
 {
-  return replace(s,to, from);
+  return predef::replace(s,to, from);
 }
 
 string url_quote(string s)
 {
-  return replace(s, 
+  return predef::replace(s,
 		 ({" ","`","\"","%"}),
 		 ({"%20","%60","%22","%37"}));
-		 
+
 }
 
 string mkdocument(string s, string title, array(string)|void root)
@@ -241,12 +241,10 @@ string short(string s)
 }
 
 
-inherit Regexp:is_example;
+inherit Regexp.SimpleRegexp:is_example;
 
-//! @ignore
-list(string) indexes_done=(<>);
-list(string) pages_done=(<>);
-//! @endignore
+multiset(string) indexes_done=(<>);
+multiset(string) pages_done=(<>);
 
 void done(string a)
 {
@@ -270,10 +268,10 @@ string mkindex(string topic, int usehead)
     foreach(my_sort(m_indices(pages)),a)
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
-    
+
     ret+="</ul>\n";
     break;
-    
+
   case "programs":
     head="<b>Builtin programs:</b>\n";
     ret="<ul>\n";
@@ -283,11 +281,11 @@ string mkindex(string topic, int usehead)
       done(a);
       if(sscanf(a,"/precompiled/%s",string tmp))
 	done(capitalize(tmp));
-	
+
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
     }
-    
+
     ret+="</ul>\n";
     break;
 
@@ -301,15 +299,15 @@ string mkindex(string topic, int usehead)
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
     }
-    
+
     ret+="</ul>\n";
     break;
-    
+
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-//    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
-//    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
+//    werror("all pages: %O\n",sort(m_indices(pages)));
+//    werror("pages done: %O\n",sort(m_indices(pages_done)));
     foreach(my_sort(m_indices(pages) - indices(pages_done) ),a)
     {
       if(a[0..4]=="index") continue;
@@ -318,7 +316,7 @@ string mkindex(string topic, int usehead)
     }
     ret+="</ul>\n";
     break;
-    
+
   case "efuns":
     head="<b>All builtin functions:</b>\n";
     ret="<ul>\n";
@@ -332,16 +330,16 @@ string mkindex(string topic, int usehead)
 	ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	  "</li>\n";
       }else{
-	perror("Warning: no page for function: "+a+".\n");
+	werror("Warning: no page for function: "+a+".\n");
       }
     }
     ret+="</ul>\n";
     break;
-    
+
   default:
     if(!keywords[prefix+topic])
     {
-      perror("Unknown keyword "+topic+".\n");
+      werror("Unknown keyword "+topic+".\n");
       return "";
     }
 
@@ -379,7 +377,7 @@ string convert_page(string path, string fname,
 
   cont = cont||read_bytes(path);
 
-//  perror("foo: "+path[strlen(path)-5..]+".\n");
+//  werror("foo: "+path[strlen(path)-5..]+".\n");
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short) ||
      // Both of the following are broken syntax.
      sscanf(cont,"NAME\t\n\t%s - %s\n",name,short) ||
@@ -438,7 +436,7 @@ string convert_page(string path, string fname,
       if(!strlen(part)) continue;
 
       sections=part/"\n\n";
-      
+
       /* Merge sections that do not have a header together */
       for(section=0;section<sizeof(sections);section++)
       {
@@ -446,7 +444,7 @@ string convert_page(string path, string fname,
 	if (has_prefix(sections[section], "\n"))
 	  sections[section] = sections[section][1..];
 	sscanf(sections[section], "%s\n", section_header);
-	if(!strlen(String.trim_all_whites(section_header)) ||
+        if(!strlen(String.trim(section_header)) ||
 	   upper_case(section_header) != section_header ||
 	   lower_case(section_header) == section_header)
 	{
@@ -463,7 +461,7 @@ string convert_page(string path, string fname,
 	mixed a, b;
 	sscanf(sections[headno],"%s\n%s",type,rest);
 
-	type = type && String.trim_all_whites(type);
+        type = type && String.trim(type);
 
 	switch(type)
 	{
@@ -471,13 +469,13 @@ string convert_page(string path, string fname,
 	case "NAME":
 	  if((sscanf(rest, "\t%s - %s", part_name, b)!=2) &&
 	     (sscanf(rest,"    %*[\t ]%s - %s", part_name, b) != 3))
-	    perror("Warning NAME section broken!\n");
+	    werror("Warning NAME section broken!\n");
 
 	  section_path = module_path + part_name/".";
 	  if (!partno) {
 	    module_path = section_path;
 	  }
-	  
+
 	  rest="\t<tt>"+part_name+"</tt> - "+b;
 
 	  part_names = ({ part_name });
@@ -497,10 +495,10 @@ string convert_page(string path, string fname,
 	case "DIRECTIVE":
 	  if((sscanf(rest, "\t%s", part_name) != 1) &&
 	     (sscanf(rest,"    %*[\t ]%s", part_name) != 2))
-	    perror("Warning DIRECTIVE section broken!\n");
+	    werror("Warning DIRECTIVE section broken!\n");
 
 	  symbol_type = "directive";
-	  part_names = map(part_name/"\n", String.trim_all_whites);
+          part_names = map(part_name/"\n", String.trim);
 
 	  rest = "";
 	  break;
@@ -521,7 +519,7 @@ string convert_page(string path, string fname,
 
 	case "KEYWORD":
 	case "KEYWORDS":
-	  a=replace(rest,({"\n"," ","\t"}),({"","",""}))/",";
+	  a=predef::replace(rest,({"\n"," ","\t"}),({"","",""}))/",";
 	  b=({});
 	  foreach(a,a)
 	  {
@@ -533,7 +531,7 @@ string convert_page(string path, string fname,
 	  break;
 
 	case "SEE ALSO":
-	  rest=replace(rest,({"\n"," ","\t"}),({"","",""}));
+	  rest=predef::replace(rest,({"\n"," ","\t"}),({"","",""}));
 	  a=rest/",";
 	  b = map(a, lambda(string tmp) {
 		       string to = tmp;
@@ -641,34 +639,34 @@ string convert_page(string path, string fname,
     string title;
     int section;
 
-    cont=replace(cont,"$version",version());
+    cont=predef::replace(cont,"$version",version());
     cont=html_quote(cont);
     sections=cont/"\n\n";
-    
+
     for(section=0;section<sizeof(sections);section++)
     {
       string tmp,pre,a,b;
       tmp=sections[section];
       sscanf(tmp,"%[\t ]",pre);
-      
+
       switch(pre)
       {
       case "":
 	title=tmp;
 	tmp="<h1><center>"+tmp+"</center></h1>";
 	break;
-	
+
       case " ":
 	sscanf(tmp," %s",tmp);
 	tmp="<h2>"+tmp+"</h2>";
 	break;
-	
+
       case "  ":
 	sscanf(tmp,"  %s",tmp);
-	tmp=replace(tmp,"\n  ","\n");
+	tmp=predef::replace(tmp,"\n  ","\n");
 	tmp=more_magic(tmp,0);
 	break;
-	
+
       case "\t":
 	sscanf(tmp,"\t%s %s",pre, a);
 	switch(pre)
@@ -696,7 +694,7 @@ string convert_page(string path, string fname,
 	  break;
 
 	default:
-	  perror("Unknown directive: "+pre+".\n");
+	  werror("Unknown directive: "+pre+".\n");
 	}
 
       }
@@ -747,7 +745,7 @@ string convert_page(string path, string fname,
 	case '\t': p=1; sscanf(line,"\t%s",line); break;
 	default: p=2; break;
 	}
-	
+
 	if(p!=pre)
 	{
 	  switch(pre)
@@ -759,7 +757,7 @@ string convert_page(string path, string fname,
 	    output+="<pre>\n"+tmp+"</pre>\n";
 	    break;
 	  case 0:
-	    output+="<p>" + replace(tmp,"\n\n","\n</p><p>\n") + "</p>\n";
+	    output+="<p>" + predef::replace(tmp,"\n\n","\n</p><p>\n") + "</p>\n";
 	    break;
 	  }
 	  pre=p;
@@ -769,7 +767,7 @@ string convert_page(string path, string fname,
       tmp+=line+"\n";
     }
     output=mkdocument(output,"Pike: "+
-		      replace((fname/"/")[-1],"_"," "), root);
+		      predef::replace((fname/"/")[-1],"_"," "), root);
 #else
     return "";
 #endif
@@ -777,7 +775,7 @@ string convert_page(string path, string fname,
   else
   {
     if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
-      perror("Warning: not converting "+path+".\n");
+      werror("Warning: not converting "+path+".\n");
     output="";
   }
   return output;
@@ -807,7 +805,7 @@ void traversedir(string path)
   string _prefix=prefix;
 
 
-  tmp=clone(FILE);
+  tmp=FILE();
   if(tmp->open(path+"/.bmmlrc","r"))
   {
     while(tmp2=tmp->gets())
@@ -827,7 +825,7 @@ void traversedir(string path)
 
   destruct(tmp);
 
-  foreach(get_dir(path) - ({"CVS","RCS",".cvsignore",".bmmlrc"}),file)
+  foreach(get_dir(path) - ({".gitignore",".bmmlrc"}),file)
   {
     string tmp;
     if(file[-1]=='~') continue;
@@ -850,7 +848,7 @@ void traversedir(string path)
 void dodocs(string path, int module)
 {
   cd(path);
-  perror("Doing "+path+"\n");
+  werror("Doing "+path+"\n");
   if(!module)
   {
     docdir="";
@@ -889,11 +887,11 @@ int main(int argc, array(string) argv)
 
   if(argc < 3)
   {
-    perror("Usage: html_docs.pike to_path from_path [module_doc_path ...]\n");
+    werror("Usage: html_docs.pike to_path from_path [module_doc_path ...]\n");
     exit(0);
   }
 
-//  perror(sprintf("argv = %O\n",argv));
+//  werror("argv = %O\n",argv);
 
   for(e=1;e<sizeof(argv);e++)
     argv[e]=combine_path(getcwd(),argv[e]);
@@ -914,9 +912,9 @@ int main(int argc, array(string) argv)
   write("Writing html files.\n");
   //writepages=1;
   for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
-    
+
   foreach(indices(keywords) - indices(indexes_done),np)
   {
-    perror("Keywords never indexed: "+np+"\n");
+    werror("Keywords never indexed: "+np+"\n");
   }
 }

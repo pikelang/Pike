@@ -33,7 +33,7 @@ int insert_text(string text, int length, int pos)
     struct pike_string *text;
     INT_TYPE len,pos;
     int pos2;
-    get_all_args("insert_text",args,"%t%i%i",&text,&len,&pos);
+    get_all_args(NULL,args,"%t%i%i",&text,&len,&pos);
     pos2 = pos;
     ref_push_string(text);
     f_string_to_utf8(1);
@@ -56,7 +56,7 @@ string get_chars(int start, int end);
   {
     gchar *s;
     INT_TYPE start,end;
-    get_all_args("get_chars",args,"%i%i",&start,&end);
+    get_all_args(NULL,args,"%i%i",&start,&end);
     pgtk2_pop_n_elems(args);
     s=gtk_editable_get_chars(GTK_EDITABLE(THIS->obj),start,end);
     PGTK_PUSH_GCHAR(s);

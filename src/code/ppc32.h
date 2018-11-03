@@ -19,17 +19,22 @@
 		     ((XO)<<1)|(LK))
 #define PPC_INSTR_XFX_FORM(OPCD,S,SPR,XO)			\
       add_to_program(((OPCD)<<26)|((S)<<21)|((SPR)<<11)|((XO)<<1))
+#define PPC_INSTR_XO_FORM(OPCD,D,A,B,OE,XO,Rc)				\
+      add_to_program(((OPCD)<<26)|((D)<<21)|((A)<<16)|((B)<<11)|((OE)<<10)|((XO)<<1)|(Rc))
 
 #define BC(BO,BI,BD) PPC_INSTR_B_FORM(16,BO,BI,BD,0,0)
 
 #define CMPLI(crfD,A,UIMM) PPC_INSTR_D_FORM(10,crfD,A,UIMM)
+#define CMPI(crfD,A,UIMM) PPC_INSTR_D_FORM(11,crfD,A,UIMM)
 #define ADDIC(D,A,SIMM) PPC_INSTR_D_FORM(12,D,A,SIMM)
 #define ADDI(D,A,SIMM) PPC_INSTR_D_FORM(14,D,A,SIMM)
 #define ADDIS(D,A,SIMM) PPC_INSTR_D_FORM(15,D,A,SIMM)
 #define ORI(A,S,UIMM) PPC_INSTR_D_FORM(24,S,A,UIMM)
 #define LWZ(D,A,d) PPC_INSTR_D_FORM(32,D,A,d)
 #define STW(S,A,d) PPC_INSTR_D_FORM(36,S,A,d)
+#define STWU(S,A,d) PPC_INSTR_D_FORM(37,S,A,d)
 #define LHA(D,A,d) PPC_INSTR_D_FORM(42,D,A,d)
+#define STH(S,A,d) PPC_INSTR_D_FORM(44,S,A,d)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
 
@@ -41,6 +46,9 @@
 #define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
 #define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
+
+#define SUBF(D,A,B) PPC_INSTR_XO_FORM(31,D,A,B,0,40,0)
+#define DIVWU(D,A,B) PPC_INSTR_XO_FORM(31,D,A,B,0,459,0)
 
 #define LOW_GET_JUMP()	((INT32)PROG_COUNTER[JUMP_EPILOGUE_SIZE])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))
@@ -217,9 +225,9 @@ extern void ppc32_flush_instruction_cache(void *addr, size_t len);
 #define FLUSH_INSTRUCTION_CACHE ppc32_flush_instruction_cache
 
 #if 0
-struct dynamic_buffer_s;
+struct byte_buffer;
 
-void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+void ppc32_encode_program(struct program *p, struct byte_buffer *buf);
 void ppc32_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	ppc32_encode_program(P, BUF)
@@ -235,7 +243,7 @@ void ppc32_decode_program(struct program *p);
 #define CALL_MACHINE_CODE(pc)						    \
   __asm__ __volatile__( "	mtctr %0\n"				    \
 			"	mr "PPC_REGNAME(29)",%1\n"		    \
-			"	bctr"					    \
+			"	bctrl"					    \
 			:						    \
 			: "r" (pc), "r" (Pike_interpreter_pointer)	    \
 			: "ctr", "lr", "cc", "memory", "r29", "r0",	    \
@@ -244,6 +252,7 @@ void ppc32_decode_program(struct program *p);
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
+#define OPCODE_INLINE_RETURN
 
 #ifdef OPCODE_RETURN_JUMPADDR
 
@@ -267,6 +276,17 @@ void ppc32_decode_program(struct program *p);
 #define JUMP_EPILOGUE_SIZE 0
 
 #endif /* !OPCODE_RETURN_JUMPADDR */
+
+
+#ifdef OPCODE_INLINE_RETURN
+
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	3
+
+void ppc32_ins_entry(void);
+#define INS_ENTRY()	ppc32_ins_entry()
+
+#endif /* OPCODE_INLINE_RETURN */
 
 
 #ifdef PIKE_DEBUG

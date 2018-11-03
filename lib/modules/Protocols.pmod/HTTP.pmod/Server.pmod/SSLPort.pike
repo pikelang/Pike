@@ -1,122 +1,108 @@
 #pike __REAL_VERSION__
+#require constant(SSL.Port)
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+inherit SSL.Port;
 
 import ".";
 
-MySSLPort port;
 int portno;
-string|int(0..0) interface;
+string interface;
 function(Request:void) callback;
 
 //!
 object|function|program request_program=Request;
 
-//! The simplest SSL server possible. Binds a port and calls
-//! a callback with @[request_program] objects.
+//! A very simple SSL server. Binds a port and calls a callback with
+//! @[request_program] objects.
 
 //! Create a HTTPS (HTTP over SSL) server.
 //!
-//! @param _callback
+//! @param callback
 //!   The function run when a request is received.
 //!   takes one argument of type @[Request].
-//! @param _portno
+//! @param port
 //!   The port number to bind to, defaults to 443.
-//! @param _interface
+//! @param interface
 //!   The interface address to bind to.
 //! @param key
 //!   An optional SSL secret key, provided in binary format, such
 //!   as that created by @[Standards.PKCS.RSA.private_key()].
 //! @param certificate
-//!   An optional SSL certificate or chain of certificates with the host 
+//!   An optional SSL certificate or chain of certificates with the host
 //!   certificate first, provided in binary format.
-void create(function(Request:void) _callback,
-	    void|int _portno,
-	    void|string _interface, void|string key, void|string|array certificate)
+//! @param reuse_port
+//!   If true, enable SO_REUSEPORT if the OS supports it. See
+//!   @[Stdio.Port.bind] for more information
+protected void create(function(Request:void) callback,
+                      void|int port,
+                      void|string interface,
+                      void|string|Crypto.Sign.State key,
+                      void|string|array(string) certificate,
+                      void|int reuse_port)
 {
-   portno=_portno;
-   if (!portno) portno=443; // default HTTPS port
+  ::create();
 
-   callback=_callback;
-   interface=_interface;
+  portno = port || 443;
+  this::callback=callback;
+  this::interface=interface;
 
-   port=MySSLPort();
-   port->set_default_keycert();
-   if(key)
-     port->set_key(key);
-   if(certificate)
-     port->set_certificate(certificate);
+  if( key && certificate )
+  {
+    if( stringp(certificate) )
+      certificate = ({ certificate });
+    ctx->add_cert( key, certificate, ({"*"}) );
+  }
+  else
+    set_default_keycert();
 
-   if (!port->bind(portno,new_connection,[string]interface))
-      error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
-	    interface?interface+":":"",
-	    portno,strerror(port->errno()));
+  if (!bind(portno, new_connection, this::interface, reuse_port))
+    error("Failed to bind port %s%d: %s\n",
+          interface?interface+":":"", portno, strerror(errno()));
 }
 
-//! Closes the HTTP port.
-void close()
-{
-   destruct(port);
-   port=0;
-}
-
-void destroy() { close(); }
+protected void _destruct() { close(); }
 
 //! The port accept callback
 protected void new_connection()
 {
-   SSL.sslfile fd=port->accept();
+   SSL.File fd=accept();
    Request r=request_program();
    r->attach_fd(fd,this,callback);
 }
 
-//!
-class MySSLPort
+protected void set_default_keycert()
 {
-
-  inherit SSL.sslport;
-
-  //!
-  void set_default_keycert()
+  foreach(({ Crypto.RSA(), Crypto.DSA(),
+#if constant(Crypto.ECC.Curve)
+             Crypto.ECC.SECP_521R1.ECDSA(),
+#endif
+          }), Crypto.Sign private_key)
   {
-    rsa = Crypto.RSA();
-    rsa->generate_key( 4096 );
+    switch(private_key->name()) {
+    case "RSA":
+      private_key->generate_key(4096);
+      break;
+    case "DSA":
+      private_key->generate_key(4096, 160);
+      break;
+    default:
+      // ECDSA.
+      private_key->generate_key();
+      break;
+    }
 
-    mapping attrs = ([
+    mapping a = ([
       "organizationName" : "Pike TLS server",
       "commonName" : "*",
     ]);
 
-    certificates = ({
-      Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs)
-    });
-  }
+    string c = Standards.X509.make_selfsigned_certificate(private_key,
+                                                          3600*24*365, a);
 
-  //!
-  void set_key(string skey)
-  {
-    rsa = Standards.PKCS.RSA.parse_private_key(skey);
+    ctx->add_cert( private_key, ({ c }) );
   }
-
-  //!
-  void set_certificate(string|array(string) certificate)
-  {
-    if(arrayp(certificate))
-      certificates = [array(string)]certificate;
-    else
-      certificates = ({ [string]certificate });
-  }
-
-  void create()
-  {
-    sslport::create();
-    random = Crypto.Random.random_string;
-  }
-
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%O:%d)", this_program, interface, portno);
 }
-
-#endif

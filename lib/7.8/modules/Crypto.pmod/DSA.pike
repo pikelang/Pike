@@ -3,8 +3,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Random)
+#require constant(Crypto.Random)
 
 protected Gmp.mpz p; // Modulo
 protected Gmp.mpz q; // Group order
@@ -13,7 +12,7 @@ protected Gmp.mpz g; // Generator
 protected Gmp.mpz y; // Public key
 protected Gmp.mpz x; // Private key
 
-function(int:string) random = Crypto.Random.random_string;
+function(int(0..):string) random = Crypto.Random.random_string;
 
 
 // Accessors
@@ -29,17 +28,6 @@ Gmp.mpz get_x() { return x; } //! Returns the private key.
 this_program set_public_key(Gmp.mpz p_, Gmp.mpz q_, Gmp.mpz g_, Gmp.mpz y_)
 {
   p = p_; q = q_; g = g_; y = y_;
-
-#if 0
-#define D(x) ((x) ? (x)->digits() : "NULL")
-  werror("dsa->set_public_key\n"
-	 "  p = %s,\n"
-	 "  q = %s,\n"
-	 "  g = %s,\n"
-	 "  y = %s,\n",
-	 D(p), D(q), D(g), D(y));
-#endif
-  
   return this;
 }
 
@@ -52,7 +40,7 @@ this_program set_private_key(Gmp.mpz secret)
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string) r)
+this_program set_random(function(int(0..):string) r)
 {
   random = r;
   return this;
@@ -61,12 +49,12 @@ this_program set_random(function(int:string) r)
 //! Makes a DSA hash of the messge @[msg].
 Gmp.mpz hash(string msg)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(Crypto.SHA1.hash(msg), 256) % q);
+  return [object(Gmp.mpz)](Gmp.mpz(Crypto.SHA1.hash([string(8bit)]msg), 256) % q);
 }
-  
+
 protected Gmp.mpz random_number(Gmp.mpz n)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n);
+  return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)), 256) % n);
 }
 
 protected Gmp.mpz random_exponent()
@@ -79,7 +67,7 @@ protected Gmp.mpz random_exponent()
 array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 {
   if(!k) k = random_exponent();
-  
+
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
   Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
 
@@ -133,7 +121,7 @@ string sign_ssl(string msg)
 int(0..1) verify_ssl(string msg, string s)
 {
 #define Object Standards.ASN1.Types.Object
-  Object a = Standards.ASN1.Decode.simple_der_decode(s);
+  Object a = Standards.ASN1.Decode.simple_der_decode([string(8bit)]s);
 
   if (!a
       || (a->type_name != "SEQUENCE")
@@ -155,7 +143,7 @@ int(0..1) verify_ssl(string msg, string s)
 protected string nist_hash(Gmp.mpz x)
 {
   string s = x->digits(256);
-  return Crypto.SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
+  return Crypto.SHA1.hash([string(8bit)]s[sizeof(s) - SEED_LENGTH..]);
 }
 
 //! The (slow) NIST method of generating a DSA prime pair. Algorithm
@@ -275,7 +263,3 @@ int(0..1) public_key_equal (.DSA dsa)
 
 //! Returns the string @expr{"DSA"@}.
 string name() { return "DSA"; }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

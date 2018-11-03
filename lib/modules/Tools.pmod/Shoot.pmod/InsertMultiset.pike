@@ -13,7 +13,7 @@ int perform()
    {
       multiset v=(<>);
       for (int j=0; j<m; j++)
-	 v[j]=42;
+	 v[j]=1;
    }
    return n;
 }

@@ -26,6 +26,10 @@ test_any([[
 ]], "abcdefghij")
 test_any([[
   String.Buffer s=String.Buffer();
+  return s->get() + s->get();
+]], "")
+test_any([[
+  String.Buffer s=String.Buffer();
   s->add("xxx");
   string t=s->get();
   s->add("yyy");
@@ -63,28 +67,8 @@ test_any([[
   b->add("x");
   return (string)b;
 ]], "abc\400\500\400x")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->add("x");
-  b->sprintf("%x",1178);
-  b->add("y");
-  return (string)b;
-]], "x49ay")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->sprintf("%x", 10);
-  b->sprintf("%x", 11);
-  return (string)b;
-]], "ab")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->sprintf("");
-  return (string)b;
-]], "")
 
-test_compile_error([[ String.Buffer()->sprintf("%d"); ]])
-test_eval_error([[ function f=String.Buffer()->sprintf; f("%d"); ]])
-test_eval_error([[ String.Buffer()->add("x",0); ]])
+test_eval_error([[ String.Buffer()->add("x",([])); ]])
 
 test_do([[
   String.Buffer b = String.Buffer();
@@ -104,6 +88,13 @@ test_do([[
   b->add ("x\12345678");
   return (string) b;
 ]])
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b->add("foobar");
+  return ({ search(b, 'f'), search(b, 'o'), search(b, 'x'), search(b, 0),
+	    search(b, -1), search(b, 'o', 1), search(b, 'o', 2),
+	    search(b, 'o', 0, 0), search(b, 'o', 0, 3) });
+]], ({ 0, 1, -1, -1, -1, 1, 2, -1, 1 }))
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)
@@ -128,15 +119,17 @@ test_eq(String.trim_whites (""), "")
 test_eq(String.trim_whites (" \t\rx\r\t "), "\rx\r")
 test_eq(String.trim_whites (" \t\nx\n\t "), "\nx\n")
 
-test_eq(String.trim_all_whites (" \t\n\r\0 \t\n\r"), "\0")
-test_eq(String.trim_all_whites (" \t\n\r\400 \t\n\r"), "\400")
-test_eq(String.trim_all_whites (" \t\n\r\200000 \t\n\r"), "\200000")
-test_eq(String.trim_all_whites ("\0"), "\0")
-test_eq(String.trim_all_whites ("\400"), "\400")
-test_eq(String.trim_all_whites ("\200000"), "\200000")
-test_eq(String.trim_all_whites (" \t\n\r "), "")
-test_eq(String.trim_all_whites (""), "")
-test_eq(String.trim_all_whites ("\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000abc\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"), "abc")
+test_eq(String.trim_all_whites, String.trim)
+
+test_eq(String.trim (" \t\n\r\0 \t\n\r"), "\0")
+test_eq(String.trim (" \t\n\r\400 \t\n\r"), "\400")
+test_eq(String.trim (" \t\n\r\200000 \t\n\r"), "\200000")
+test_eq(String.trim ("\0"), "\0")
+test_eq(String.trim ("\400"), "\400")
+test_eq(String.trim ("\200000"), "\200000")
+test_eq(String.trim (" \t\n\r "), "")
+test_eq(String.trim (""), "")
+test_eq(String.trim ("\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000abc\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"), "abc")
 
 test_eq(String.normalize_space ("\v\f \t\n\r\0\v\f \t\n\r"), "\0")
 test_eq(String.normalize_space ("\v\f \t\n\r\400\v\f \t\u2000\n\r"), "\400")
@@ -163,6 +156,18 @@ test_eq(String.normalize_space ("  a  bb   ccc   ddd \n eee f g\n","\xf0000 "),
 	"a\U000f0000bb\U000f0000ccc\U000f0000ddd\neee\U000f0000f\U000f0000g\n")
 
 dnl MISSING TEST: String.Iterator
+
+test_eq(sizeof(String.Iterator("abcdefg")), 7)
+
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+    foreach(random(String.Iterator("abcdefg"));; int v)
+      r += sprintf("%c",v);
+  return r;
+]], "gcdefgefgbcdefgfg")
+test_do(add_constant("random",Random.System()->random))
 
 test_any([[
   object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
@@ -248,13 +253,20 @@ test_eq(String.int2hex(Gmp.mpz(1)), "1")
 
 test_eq(String.string2hex(""), "")
 test_eq(String.string2hex("x"), "78")
-test_eq(String.string2hex("x\xff"), "78ff")
+test_eq(String.string2hex("x\xff",0), "78ff")
+test_eq(String.string2hex("x\xff",1), "78FF")
 test_eval_error(return String.string2hex("x\xfff"))
 
 test_eq(String.hex2string(""), "")
 test_eq(String.hex2string("ab00"), "\xab\0")
+test_eq(String.hex2string("ab 00"), "\xab\0")
+test_eq(String.hex2string("ab  00"), "\xab\0")
+test_eq(String.hex2string("ab   00"), "\xab\0")
+test_eq(String.hex2string("ab 00 "), "\xab\0")
+test_eq(String.hex2string("ab 00  "), "\xab\0")
+test_eq(String.hex2string("ab 00   "), "\xab\0")
 test_eval_error(return String.hex2string("ab0"))
-dnl test_eval_error(return String.hex2string("ax"))
+test_eval_error(return String.hex2string("ax"))
 
 test_eq([[ String.implode_nicely( ({ "1","2","3" }) ) ]],[[ "1, 2 and 3" ]])
 test_eq([[ String.implode_nicely( ({ "1","2","3" }), "och" ) ]],[[ "1, 2 och 3" ]])
@@ -281,7 +293,19 @@ test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
 test_eq(String.common_prefix(({ "abc", "abc", "abc" })), "abc")
 test_eq(String.common_prefix(({})), "")
 
-dnl MISSING TEST: fuzzymatch
+test_any_equal([[
+  array words = ({ "buck", "dog", "ducking", "respiration", "1337" });
+  array match = ({});
+  foreach( words, string word )
+    match += ({ String.fuzzymatch("duck", word) });
+  sort(match, words);
+  return words;
+]], ({ "respiration", "1337", "dog", "ducking", "buck" }))
+
+
+test_eq(String.levenshtein_distance("a",""), 1)
+test_eq(String.levenshtein_distance("pike","bikes"), 2)
+test_eq(String.levenshtein_distance("p\x1234ke","b\x1234kes"), 2)
 
 test_eq(String.soundex(""),"000")
 test_eq(String.soundex("AI"),"A000")

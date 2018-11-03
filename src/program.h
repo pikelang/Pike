@@ -11,11 +11,12 @@
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "svalue.h"
-#include "dmalloc.h"
 #include "time_stuff.h"
 #include "program_id.h"
 #include "pike_rusage.h"
 #include "block_allocator.h"
+#include "string_builder.h"
+#include "gc_header.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
@@ -50,68 +51,74 @@ PMOD_EXPORT extern struct program_state * Pike_compiler;
   } while(0)
 
 extern struct pike_string *this_program_string;
+extern struct pike_string *this_string;
+extern struct pike_string *args_string;
 
 /* Common compiler subsystems */
 extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
 
-#define LFUN___INIT 0
-#define LFUN_CREATE 1
-#define LFUN_DESTROY 2
-#define LFUN_ADD 3
-#define LFUN_SUBTRACT 4
-#define LFUN_AND 5
-#define LFUN_OR 6
-#define LFUN_XOR 7
-#define LFUN_LSH 8
-#define LFUN_RSH 9
-#define LFUN_MULTIPLY 10
-#define LFUN_DIVIDE 11
-#define LFUN_MOD 12
-#define LFUN_COMPL 13
-#define LFUN_EQ 14
-#define LFUN_LT 15
-#define LFUN_GT 16
-#define LFUN___HASH 17
-#define LFUN_CAST 18
-#define LFUN_NOT 19
-#define LFUN_INDEX 20
-#define LFUN_ASSIGN_INDEX 21
-#define LFUN_ARROW 22
-#define LFUN_ASSIGN_ARROW 23
-#define LFUN__SIZEOF 24
-#define LFUN__INDICES 25
-#define LFUN__VALUES 26
-#define LFUN_CALL 27
-#define LFUN_RADD 28
-#define LFUN_RSUBTRACT 29
-#define LFUN_RAND 30
-#define LFUN_ROR 31
-#define LFUN_RXOR 32
-#define LFUN_RLSH 33
-#define LFUN_RRSH 34
-#define LFUN_RMULTIPLY 35
-#define LFUN_RDIVIDE 36
-#define LFUN_RMOD 37
-#define LFUN_ADD_EQ 38
-#define LFUN__IS_TYPE 39
-#define LFUN__SPRINTF 40
-#define LFUN__EQUAL 41
-#define LFUN__M_DELETE 42
-#define LFUN__GET_ITERATOR 43
-#define LFUN_RANGE 44
+enum LFUN {
+    LFUN___INIT,
+    LFUN_CREATE,
+    LFUN__DESTRUCT,
+    LFUN_ADD,
+    LFUN_SUBTRACT,
+    LFUN_AND,
+    LFUN_OR,
+    LFUN_XOR,
+    LFUN_LSH,
+    LFUN_RSH,
+    LFUN_MULTIPLY,
+    LFUN_DIVIDE,
+    LFUN_MOD,
+    LFUN_COMPL,
+    LFUN_EQ,
+    LFUN_LT,
+    LFUN_GT,
+    LFUN___HASH,
+    LFUN_CAST,
+    LFUN_NOT,
+    LFUN_INDEX,
+    LFUN_ASSIGN_INDEX,
+    LFUN_ARROW,
+    LFUN_ASSIGN_ARROW,
+    LFUN__SIZEOF,
+    LFUN__INDICES,
+    LFUN__VALUES,
+    LFUN_CALL,
+    LFUN_RADD,
+    LFUN_RSUBTRACT,
+    LFUN_RAND,
+    LFUN_ROR,
+    LFUN_RXOR,
+    LFUN_RLSH,
+    LFUN_RRSH,
+    LFUN_RMULTIPLY,
+    LFUN_RDIVIDE,
+    LFUN_RMOD,
+    LFUN_ADD_EQ,
+    LFUN__IS_TYPE,
+    LFUN__SPRINTF,
+    LFUN__EQUAL,
+    LFUN__M_DELETE,
+    LFUN__GET_ITERATOR,
+    LFUN_RANGE,
 
-#define NUM_LFUNS 45
-
+    NUM_LFUNS,
 /* NOTE: After this point there are only fake lfuns.
- *       ie use low_find_lfun(), and NOT FIND_LFUN()!
  */
-#define LFUN__SEARCH 45
-#define LFUN__TYPES 46
-#define LFUN__SERIALIZE 47
-#define LFUN__DESERIALIZE 48
-#define LFUN__SIZE_OBJECT 49
-#define LFUN__RANDOM 50
+
+    LFUN__SEARCH = NUM_LFUNS,
+    LFUN__TYPES,
+    LFUN__SERIALIZE,
+    LFUN__DESERIALIZE,
+    LFUN__SIZE_OBJECT,
+    LFUN__RANDOM,
+    LFUN_POW,
+    LFUN_RPOW,
+    LFUN__SQRT,
+};
 
 extern const char *const lfun_names[];
 
@@ -121,11 +128,6 @@ extern struct pike_string *lfun_strings[];
 #define STRUCT_NODE_S_DECLARED
 struct node_s;
 typedef struct node_s node;
-#endif
-
-#ifndef STRUCT_OBJECT_DECLARED
-#define STRUCT_OBJECT_DECLARED
-struct object;
 #endif
 
 #undef EXTERN
@@ -143,12 +145,16 @@ struct object;
 /* Byte-code method identification. */
 #define PIKE_BYTECODE_PORTABLE	-1	/* Only used by the codec. */
 #define PIKE_BYTECODE_DEFAULT	0
-#define PIKE_BYTECODE_GOTO	1
+#define PIKE_BYTECODE_GOTO	1       /* Not in use */
 #define PIKE_BYTECODE_SPARC	2
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32    4
 #define PIKE_BYTECODE_AMD64    5
 #define PIKE_BYTECODE_PPC64    6
+#define PIKE_BYTECODE_ARM32    7
+#define PIKE_BYTECODE_ARM64    8
+#define PIKE_BYTECODE_RV32     9
+#define PIKE_BYTECODE_RV64     10
 
 #ifndef PIKE_BYTECODE_METHOD
 #error PIKE_BYTECODE_METHOD not set.
@@ -164,9 +170,14 @@ struct object;
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #define PIKE_OPCODE_T unsigned INT32
-#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-#define PIKE_OPCODE_T void *
-#define PIKE_INSTR_T void *
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
+#define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
+#define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#define PIKE_OPCODE_T unsigned INT16
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#define PIKE_OPCODE_T unsigned INT16
 #else
 #define PIKE_OPCODE_T unsigned INT8
 #endif
@@ -262,6 +273,7 @@ union idptr
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
 #define IDENTIFIER_HAS_BODY 16  /* Function has a body (set already in pass 1). */
+#define IDENTIFIER_WEAK	16	/* Used for variables only: Weak reference. */
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
 
@@ -283,8 +295,8 @@ struct identifier
 {
   struct pike_string *name;
   struct pike_type *type;
-  unsigned INT32 filename_strno;	/* Index in strings. */
   INT_TYPE linenumber;
+  unsigned INT32 filename_strno;	/* Index in strings. */
   unsigned INT8 identifier_flags;	/* IDENTIFIER_??? */
   unsigned INT8 run_time_type;		/* PIKE_T_??? */
   unsigned INT16 opt_flags;		/* OPT_??? */
@@ -299,7 +311,7 @@ struct identifier
 
 /*
  * This is used to store constants, both
- * inline constants and those defined explicitly with 
+ * inline constants and those defined explicitly with
  * the constant keyword.
  */
 struct program_constant
@@ -331,13 +343,16 @@ struct program_constant
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
+#define ID_WEAK		  0x800 /* Variable has weak references. */
 
-#define ID_MODIFIER_MASK 0x07ff
+#define ID_MODIFIER_MASK 0x0fff
 
 #define ID_STRICT_TYPES             0x8000 /* #pragma strict_types */
 #define ID_SAVE_PARENT             0x10000 /* #pragma save_parent */
 #define ID_DONT_SAVE_PARENT        0x20000 /* #pragma dont_save_parent */
 #define ID_NO_DEPRECATION_WARNINGS 0x40000 /* #pragma no_deprecation_warnings */
+#define ID_DISASSEMBLE             0x80000 /* #pragma disassemble */
+#define ID_DYNAMIC_DOT            0x100000 /* #pragma dynamic_dot */
 
 
 /*
@@ -409,6 +424,7 @@ struct inherit
   /* All the identifier references in the inherited program have been
    * copied to this program with the first one at this offset. */
   INT16 identifier_level;
+  /* TODO: why is this signed. */
 
   /* The index of the identifier reference in the parent program for
    * the identifier from which this inherit was done. -1 if there's no
@@ -486,16 +502,16 @@ struct inherit
   struct pike_string *name;
 };
 
-
-/*
- * Storage struct for a trampoline object
- * (not a part of the program type)
+/**
+ * Special inherit references.
+ *
+ * These are used by find_inherited_identifier().
  */
-struct pike_trampoline
-{
-  struct pike_frame *frame;
-  INT32 func;
-};
+#define INHERIT_SELF	0	/* Self. */
+#define INHERIT_LOCAL	-1	/* Self and not overrideable (force local). */
+#define INHERIT_GLOBAL	-2	/* Self and overrideable. */
+#define INHERIT_ALL	-3	/* All inherits but not self. */
+
 
 
 
@@ -521,11 +537,12 @@ struct pike_trampoline
 /* Self explanatory, automatically detected */
 #define PROGRAM_HAS_C_METHODS 0x20
 
-/* Objects created from this program are constant and shareable */
+/* Objects created from this program are immutable and shareable. */
 #define PROGRAM_CONSTANT 0x40
 
 /* Objects have pointers to the parent object. Use LOW_PARENT_INFO or
- * PARENT_INFO to extract it. */
+ * PARENT_INFO to extract it.
+ * Note that this is also set by #pragma save_parent. */
 #define PROGRAM_USES_PARENT 0x80
 
 /* Objects should not be destructed even when they only have weak
@@ -542,7 +559,8 @@ struct pike_trampoline
 #define PROGRAM_VIRGIN 0x800
 
 /* Don't allow the program to be inherited or cloned if there's no
- * parent object. Might only be set if PROGRAM_USES_PARENT is. */
+ * parent object. May only be set if PROGRAM_USES_PARENT is.
+ * Set this if the parent pointer is actually used by the program. */
 #define PROGRAM_NEEDS_PARENT 0x1000
 
 /* Program has code to be executed when it's destructed. This causes
@@ -566,6 +584,9 @@ struct pike_trampoline
  * this optimization trick can never be used in a dynamically loaded
  * module. */
 #define PROGRAM_LIVE_OBJ 0x2000
+
+/* Clear the object storage on destruct. */
+#define PROGRAM_CLEAR_STORAGE	0x4000
 
 /* Using define instead of enum allows for ifdefs - Hubbe */
 #define PROG_EVENT_INIT 0
@@ -603,9 +624,9 @@ struct identifier_lookup_cache
 
 struct program
 {
-  PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
-
+  GC_MARKER_MEMBERS;
   INT32 id;             /* used to identify program in caches */
+
   /* storage_needed - storage needed in object struct
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.
@@ -616,12 +637,13 @@ struct program
 
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
+  /* 5 bytes padding.. */
   struct timeval timestamp;
 
   struct program *next;
   struct program *prev;
   struct program *parent;
-  
+
   node *(*optimize)(node *n);
 
   void (*event_handler)(int);
@@ -639,36 +661,62 @@ struct program
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
 #include "program_areas.h"
-  
+
   INT16 lfuns[NUM_LFUNS];
 };
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
+
 #ifdef PIKE_DEBUG
-static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
-{
-  if (x < 0 || x >= p->num_identifier_references) {
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x, const struct program *p) {
+  if (x >= p->num_identifier_references) {
     dump_program_tables(p, 4);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
   }
   return x;
 }
-#else
-#define CHECK_IDREF_RANGE(X, P) (X)
+#else /* !PIKE_DEBUG */
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x,
+					       const struct program *PIKE_UNUSED(p)) {
+  return x;
+}
 #endif
 
-#define PTR_FROM_INT(P, X)	((P)->identifier_references + \
-				 CHECK_IDREF_RANGE((X), (P)))
+static inline struct reference *PTR_FROM_INT(const struct program *p, unsigned INT16 x) {
+  x = CHECK_IDREF_RANGE(x, p);
+  return p->identifier_references + x;
+}
 
-#define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
-#define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
-#define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
-#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
+static inline struct inherit *INHERIT_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *,p)->inherits + x->inherit_offset;
+}
 
-#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
+static inline struct program *PROG_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *, INHERIT_FROM_PTR(p,x)->prog);
+}
+
+static inline struct identifier *ID_FROM_PTR(const struct program *p, const struct reference *x) {
+  return PROG_FROM_PTR(p,x)->identifiers + x->identifier_offset;
+}
+
+static inline struct inherit *INHERIT_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return INHERIT_FROM_PTR(p, ref);
+}
+
+static inline struct program *PROG_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return PROG_FROM_PTR(p, ref);
+}
+
+static inline struct identifier *ID_FROM_INT(const struct program *p, unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return ID_FROM_PTR(p, ref);
+}
+
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
 #ifdef DO_PIKE_CLEANUP
@@ -694,21 +742,14 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TY
 #endif
 
 ATTRIBUTE((malloc))
-PMOD_EXPORT struct program * alloc_program();
+PMOD_EXPORT struct program * alloc_program(void);
 PMOD_EXPORT void really_free_program(struct program * p);
 void count_memory_in_programs(size_t *num, size_t *_size);
-void free_all_program_blocks();
+void free_all_program_blocks(void);
 
 
 extern struct program *first_program;
-extern struct program *null_program;
-extern struct program *compilation_env_program;
-extern struct program *compilation_program;
-extern struct object *compilation_environment;
-extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
-extern struct program *placeholder_program;
-extern struct object *placeholder_object;
 
 /* Flags for identifier finding... */
 #define SEE_STATIC 1
@@ -735,52 +776,21 @@ extern struct object *placeholder_object;
   void PIKE_CONCAT(add_to_,NAME)(ARGTYPE ARG);
 #include "program_areas.h"
 
-typedef int supporter_callback (void *, int);
-
-struct Supporter
-{
-#ifdef PIKE_DEBUG
-  int magic;
-#endif
-
-  struct Supporter *previous;
-  /* Makes up a linked list of supporters with the first one in
-   * current_supporter. Supporters are linked onto this list during
-   * the (recursive) compilation of each compilation unit (i.e.
-   * compiled string). Thus nested programs and programs built from C
-   * don't have supporters. */
-
-  struct Supporter *depends_on;
-  /* The supporter furthest in on the current_supporter linked list
-   * that this one depends on. When it gets unlinked from that list,
-   * this becomes a back pointer for the dependants linked list
-   * below. */
-
-  struct Supporter *dependants, *next_dependant;
-  /* dependants points to a linked list of supporters that depends on
-   * this one, and next_dependant makes up the links between those
-   * supporters. A supporter is linked onto this list when it is
-   * unlinked from the current_supporter list. */
-
-  struct object *self;
-  supporter_callback *fun;
-  void *data;
-
-  struct program *prog;
-  /* The top level program in the compilation unit. */
-};
-
 /* Prototypes begin here */
 PMOD_EXPORT void do_free_program (struct program *p);
 void ins_int(INT32 i, void (*func)(char tmp));
-void ins_short(int i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
 node *find_module_identifier(struct pike_string *ident,
 			     int see_inherit);
+node *find_predef_identifier(struct pike_string *ident);
+int low_resolve_identifier(struct pike_string *ident);
 node *resolve_identifier(struct pike_string *ident);
 PMOD_EXPORT struct program *resolve_program(struct pike_string *ident);
+node *find_inherited_identifier(struct program_state *inherit_state,
+				int inherit_depth, int inh,
+				struct pike_string *ident);
 node *program_magic_identifier (struct program_state *state,
 				int state_depth, int inherit_num,
 				struct pike_string *ident,
@@ -805,6 +815,7 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
+int low_is_variant_dispatcher(struct identifier *id);
 int is_variant_dispatcher(struct program *prog, int fun);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
@@ -821,9 +832,9 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 							  int f);
 PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 						   int e,
-						   struct pike_string *name,
+                                                   struct pike_string *name,
 						   int flags);
-int find_inherit(struct program *p, struct pike_string *name);
+int find_inherit(const struct program *p, const struct pike_string *name);
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
 					       struct pike_string *name);
@@ -840,29 +851,31 @@ PMOD_EXPORT void low_inherit(struct program *p,
 			     int parent_offset,
 			     INT32 flags,
 			     struct pike_string *name);
+PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
+					    struct pike_string *symbol,
+					    INT32 flags,
+					    int failure_severity_level);
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
 void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
+void compiler_do_implement(node *n);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
-int isidentifier(struct pike_string *s);
+int isidentifier(const struct pike_string *s);
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
 			     int flags, int depth, int refno);
+int is_auto_variable_type( int variable );
 int low_define_variable(struct pike_string *name,
 			struct pike_type *type,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type);
-PMOD_EXPORT int map_variable(const char *name,
-		 const char *type,
-		 INT32 flags,
-		 size_t offset,
-		 INT32 run_time_type);
+void fix_auto_variable_type( int id, struct pike_type *type );
 PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,
@@ -873,9 +886,6 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 int define_variable(struct pike_string *name,
 		    struct pike_type *type,
 		    INT32 flags);
-PMOD_EXPORT int simple_add_variable(const char *name,
-			const char *type,
-			INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
 		 const struct svalue *c,
 		 INT32 flags);
@@ -916,22 +926,23 @@ INT32 define_function(struct pike_string *name,
 		      unsigned function_flags,
 		      union idptr *func,
 		      unsigned opt_flags);
-PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
-							 struct program *prog,
+PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_string *name,
+							 const struct program *prog,
 							 int flags);
 int really_low_find_variant_identifier(struct pike_string *name,
 				       struct program *prog,
 				       struct pike_type *type,
 				       int start_pos,
 				       int flags);
-PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
+PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun);
+PMOD_EXPORT int find_lfun_fatal(struct program *p, enum LFUN lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
-int low_find_shared_string_identifier(struct pike_string *name,
-				      struct program *prog);
+int low_find_shared_string_identifier(const struct pike_string *name,
+				      const struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
-				  struct program *prog);
-PMOD_EXPORT int find_identifier(const char *name,struct program *prog);
+				  const struct program *prog);
+PMOD_EXPORT int find_identifier(const char *name,const struct program *prog);
 int store_prog_string(struct pike_string *str);
 int store_constant(const struct svalue *foo,
 		   int equal,
@@ -969,63 +980,18 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
 						    int fun,
 						    INT_TYPE *linep);
-PMOD_EXPORT void va_yyreport(int severity_level,
-			     struct pike_string *file, INT_TYPE line,
-			     struct pike_string *system, INT32 args,
-			     const char *fmt, va_list vargs);
-PMOD_EXPORT void low_yyreport(int severity_level,
-			      struct pike_string *file, INT_TYPE line,
-			      struct pike_string *system,
-			      INT32 args, const char *fmt, ...);
-PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
-			  INT32 args, const char *fmt, ...);
-PMOD_EXPORT void yywarning(char *fmt, ...);
-PMOD_EXPORT void my_yyerror(const char *fmt,...);
-PMOD_EXPORT void yyerror(const char *s);
-void yytype_report(int severity_level,
-		   struct pike_string *expect_file, INT_TYPE expect_line,
-		   struct pike_type *expected_t,
-		   struct pike_string *got_file, INT_TYPE got_line,
-		   struct pike_type *got_t,
-		   INT32 args, const char *fmt, ...);
-void yytype_error(const char *msg, struct pike_type *expected_t,
-		  struct pike_type *got_t, unsigned int flags);
-struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
-void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
 void count_memory_in_supporter_markers(size_t *num, size_t *size);
-void verify_supporters(void);
-void init_supporter(struct Supporter *s,
-		    supporter_callback *fun,
-		    void *data);
-int unlink_current_supporter(struct Supporter *c);
-int call_dependants(struct Supporter *s, int finish);
-int report_compiler_dependency(struct program *p);
-struct compilation;
-void run_pass2(struct compilation *c);
-PMOD_EXPORT void enter_compiler(struct pike_string *filename,
-				INT_TYPE linenumber);
-PMOD_EXPORT void exit_compiler(void);
-struct program *compile(struct pike_string *aprog,
-			struct object *ahandler,
-			int amajor, int aminor,
-			struct program *atarget,
-			struct object *aplaceholder);
-PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned flags,
-				   unsigned opt_flags);
-PMOD_EXPORT int quick_add_function(const char *name,
-				   int name_length,
-				   void (*cfun)(INT32),
-				   const char *type,
-				   int type_length,
-				   unsigned flags,
-				   unsigned opt_flags);
+PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
+                                       void (*cfun)(INT32),
+                                       const char *type,
+                                       int type_length,
+                                       unsigned flags,
+                                       unsigned opt_flags);
 void check_all_programs(void);
-void placeholder_index(INT32 args);
 void init_program(void);
 void cleanup_program(void);
-PMOD_EXPORT void visit_program (struct program *p, int action);
+PMOD_EXPORT void visit_program (struct program *p, int action, void *extra);
 void gc_mark_program_as_referenced(struct program *p);
 void real_gc_cycle_check_program(struct program *p, int weak);
 unsigned gc_touch_all_programs(void);
@@ -1034,15 +1000,12 @@ void gc_mark_all_programs(void);
 void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
 size_t gc_free_all_unreferenced_programs(void);
-void push_compiler_frame(int lexical_scope);
-void low_pop_local_variables(int level);
-void pop_local_variables(int level);
-void pop_compiler_frame(void);
-PMOD_EXPORT char *get_inherit_storage(struct object *o, int inherit);
+PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
-PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
+PMOD_EXPORT void *get_storage(struct object *o, struct program *p);
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
+PMOD_EXPORT struct program *program_from_type(const struct pike_type *t);
 PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
 						    int *parent_id);
@@ -1062,11 +1025,47 @@ void string_builder_explain_not_compatible(struct string_builder *s,
 void string_builder_explain_not_implements(struct string_builder *s,
 					   struct program *a,
 					   struct program *b);
-PMOD_EXPORT void *parent_storage(int depth);
-PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
+PMOD_EXPORT void *parent_storage(int depth, struct program *expected);
+PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
+PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
+						   const PIKE_OPCODE_T *start,
+						   const PIKE_OPCODE_T *end,
+						   const char *opcode,
+						   const char **params,
+						   const char *comment);
+enum Pike_opcodes;
+PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
+						   const PIKE_OPCODE_T *addr,
+						   enum Pike_opcodes op,
+						   int arg1,
+						   int arg2);
+PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr);
+PMOD_EXPORT void simple_add_reverse_symbol(const char *sym, void *addr);
+PMOD_EXPORT void init_reverse_symbol_table();
+PMOD_EXPORT struct pike_string *reverse_symbol_lookup(void *addr);
 /* Prototypes end here */
+
+/**
+ * Look up the given lfun in the given program and returns the
+ * function number it has in the program, or -1 if not found.
+ */
+static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN lfun) {
+#ifdef PIKE_DEBUG
+    dmalloc_touch(struct program*, p);
+    if ((int)lfun < 0) return find_lfun_fatal(p, lfun);
+#endif
+    if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) return p->lfuns[lfun];
+    return low_find_lfun(p, lfun);
+}
+
+#define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
+    low_quick_add_function(STATIC_IS_CONSTANT(NAME)                             \
+                           ? make_shared_static_string(NAME, NLEN, eightbit)    \
+                           : make_shared_binary_string(NAME, NLEN),             \
+                           FUNC, TYPE, TLEN, FLAGS, OPT)
+
 
 #ifndef PIKE_USE_MACHINE_CODE
 #define make_program_executable(X)
@@ -1097,9 +1096,6 @@ void make_program_executable(struct program *p);
   quick_map_variable(NAME, CONSTANT_STRLEN(NAME), OFFSET, \
                      TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
 
-#define MAP_VARIABLE(NAME, TYPE, FLAGS, OFFSET, RTYPE) \
-  PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTYPE, FLAGS)
-
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
   DTYPE_START;							\
   {DTYPE}							\
@@ -1112,14 +1108,6 @@ void make_program_executable(struct program *p);
     free_string(_t);						\
   }								\
 } while (0)
-
-#define pike_add_function(NAME, CFUN, TYPE, FLAGS)	\
-  pike_add_function2(NAME, CFUN, TYPE, FLAGS,		\
-                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
-
-#ifndef NO_PIKE_SHORTHAND
-#define add_function pike_add_function
-#endif
 
 #define ADD_INHERIT(PROGRAM, FLAGS) \
   low_inherit((PROGRAM), 0, 0, 0, (FLAGS), 0)
@@ -1140,9 +1128,9 @@ void make_program_executable(struct program *p);
 
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
 
-#define visit_program_ref(P, REF_TYPE)				\
+#define visit_program_ref(P, REF_TYPE, EXTRA)			\
   visit_ref (pass_program (P), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_program, NULL)
+	     (visit_thing_fn *) &visit_program, (EXTRA))
 #define gc_cycle_check_program(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_program, (X), (WEAK))
 
@@ -1159,12 +1147,32 @@ void make_program_executable(struct program *p);
     (Pike_compiler->compat_major == (MAJOR) && \
      Pike_compiler->compat_minor <= (MINOR)))
 
-#endif /* PROGRAM_H */
 
-/* Kludge... */
-#ifndef LAS_H
-/* FIXME: Needed for the OPT_??? macros.
- * Maybe they should be moved here, since las.h includes this file anyway?
- */
-#include "las.h"
-#endif /* !LAS_H */
+#define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
+				    * only used in node_info
+				    */
+#define OPT_NOT_CONST       0x2    /* isn't constant */
+#define OPT_SIDE_EFFECT     0x4    /* has side effects */
+#define OPT_ASSIGNMENT      0x8    /* does assignments */
+#define OPT_TRY_OPTIMIZE    0x10   /* might be worth optimizing */
+#define OPT_EXTERNAL_DEPEND 0x20   /* the value depends on external
+				    * influences (such as read_file or so)
+				    */
+#define OPT_CASE            0x40   /* contains case(s) */
+#define OPT_CONTINUE        0x80   /* contains continue(s) */
+#define OPT_BREAK           0x100  /* contains break(s) */
+#define OPT_RETURN          0x200  /* contains return(s) */
+#define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
+#define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
+#define OPT_APPLY           0x1000 /* contains apply */
+#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
+				    * parent also is optimized away */
+#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
+				    * isn't counted as side effect). Only used
+				    * in tree_info. */
+
+/* This is a statement which got custom break/continue label handling.
+ * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
+#define OPT_CUSTOM_LABELS   0x10000
+
+#endif /* PROGRAM_H */

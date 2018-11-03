@@ -15,7 +15,7 @@
 //! password hashing schemes. The @[hash] can be on any
 //! of the following formats.
 //!
-//! LDAP-style (RFC2307) hashes:
+//! LDAP-style (@rfc{2307@}) hashes:
 //! @string
 //!   @value "{SHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 //!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
@@ -84,6 +84,10 @@
 //!     Source: Unix crypt using SHA-256 and SHA-512
 //!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
+//!   @value "$3$$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//!     This is interpreted as the NT LANMANAGER (NTLM) password
+//!     hash. It is a hex representation of MD4 of the password.
+//!
 //!   @value "$1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
 //!     The string is interpreted according to the GNU libc2 extension
 //!     of @expr{crypt(3C)@} where @expr{SSSSSSSS@} is up to 8 chars of
@@ -141,7 +145,9 @@ int verify(string(8bit) password, string(8bit) hash)
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
     // since it might support more schemes than we do.
-    if ((hash == "") || crypt(password, hash)) return 1;
+    catch {
+      if ((hash == "") || crypt(password, hash)) return 1;
+    };
     if (hash[0] != '$') {
       if (hash[0] == '_') {
 	// FIXME: BSDI-style crypt(3C).
@@ -167,7 +173,9 @@ int verify(string(8bit) password, string(8bit) hash)
     case "2y":	// Blowfish (stronger)
       break;
 
+    case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
+      return this::hash(password, "3")[4..] == [string(7bit)]hash;
       break;
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
@@ -215,6 +223,10 @@ int verify(string(8bit) password, string(8bit) hash)
 //!       @[SHA256.crypt_hash()] with 96 bits of salt and a default
 //!       of @expr{5000@} rounds.
 //!
+//!     @value "3"
+//!     @value "NT"
+//!       The NTLM MD4 hash.
+//!
 //!     @value "1"
 //!     @value "$1$"
 //!       @[MD5.crypt_hash()] with 48 bits of salt and @expr{1000@} rounds.
@@ -224,7 +236,7 @@ int verify(string(8bit) password, string(8bit) hash)
 //!
 //!   @endstring
 //!
-//!   LDAP (RFC2307)-style. Don't use these if you can avoid it,
+//!   LDAP (@rfc{2307@})-style. Don't use these if you can avoid it,
 //!   since they are suspectible to attacks. In particular avoid
 //!   the unsalted variants at all costs:
 //!   @string
@@ -267,7 +279,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
                   int|void rounds)
 {
   function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
-  int salt_size = 16;
+  int(0..) salt_size = 16;
   int default_rounds = 5000;
 
   string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,
@@ -320,6 +332,12 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   case "":
     return crypt(password);
 
+  case "nt":
+    scheme = "NT";
+  case "3":
+    password = [string(8bit)](reverse((string_to_unicode(password)/2)[*])*"");
+    return "$"+scheme+"$$"+String.string2hex(Crypto.MD4.hash(password));
+
   case "sha":
   case "{sha}":
     salt_size = 0;
@@ -352,10 +370,9 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
   // NB: The salt must be printable.
   string(7bit) salt =
-    MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1];
+    [string(7bit)]replace(MIME.encode_base64(random_string(salt_size))[..salt_size-1], "+", ".");
 
   string(8bit) hash = crypt_hash(password, salt, rounds);
 
   return render_hash([string(7bit)]scheme, salt, hash, rounds);
 }
-

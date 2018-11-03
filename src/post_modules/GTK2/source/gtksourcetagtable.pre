@@ -29,7 +29,7 @@ void add_tags(array(GTK2.TextTag) tags)
     struct array *a;
     int i;
     struct svalue *sv;
-    get_all_args("create",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       Pike_error("No array!\n");
     if (a->size<1)

@@ -1,11 +1,13 @@
-
 #pike __REAL_VERSION__
+#require constant(SQLite.SQLite)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
-constant dont_dump_program = 1;
+//! Interface to SQLite3 databases.
 
-#if constant(SQLite.SQLite)
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
+optional constant dont_dump_program = 1;
+
+//!
 inherit SQLite.SQLite;
 
 void create(string a, void|string b, void|mixed c, void|mixed d,
@@ -14,6 +16,7 @@ void create(string a, void|string b, void|mixed c, void|mixed d,
   ::create(a);
 }
 
+//!
 array list_fields(string n, string|void wild)
 {
   string qry = "";
@@ -22,10 +25,14 @@ array list_fields(string n, string|void wild)
 
   array r = query(qry);
 
+  if (!r || !sizeof(r)) {
+    predef::error("Unknown table: %s\n", n);
+  }
+
   // now, we weed out the ones that don't match wild, if provided
   if(wild)
   {
-    r = filter(r, lambda(mapping row) 
+    r = filter(r, lambda(mapping row)
               { return (search(row->name, wild) !=-1); }
           );
   }
@@ -38,9 +45,9 @@ array list_fields(string n, string|void wild)
 
     fld->name = f->name;
     fld->table = n;
-  
-    string t, l;   
- 
+
+    string t, l;
+
     if(!sscanf(f->type, "%s(%s)", t, l))
       t = f->type;
 
@@ -79,14 +86,15 @@ array list_fields(string n, string|void wild)
   return fields;
 }
 
+//!
 array list_tables(string|void n)
 {
   string qry = "";
 
   if(n)
-    qry = "SELECT name FROM SQLITE_MASTER WHERE name like '" + n + "%' and TYPE='table'";  
+    qry = "SELECT name FROM SQLITE_MASTER WHERE name like '" + n + "%' and TYPE='table'";
   else
-    qry = "SELECT name FROM SQLITE_MASTER where TYPE='table'";  
+    qry = "SELECT name FROM SQLITE_MASTER where TYPE='table'";
 
   array r = query(qry);
   array out = ({});
@@ -100,8 +108,3 @@ array list_tables(string|void n)
   }
   return out;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
-

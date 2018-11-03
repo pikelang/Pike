@@ -25,22 +25,24 @@
 //!         ({ "nor", "Norwegian" }) }),
 //!      "swe");
 string select(string name, array(string)|array(array(string)) choices,
-		  void|string selected) {
-  string ret = "<select name=\"" + name + "\">\n";
+                  void|string selected) {
+  .Buffer ret = .Buffer();
+  ret->add("<select name=\"", name, "\">\n");
 
   if(sizeof(choices) && arrayp(choices[0])) {
     foreach([array(array(string))]choices, array(string) value)
-      ret += "<option value=\"" + value[0] + "\"" +
-	(value[0]==selected?" selected=\"selected\"":"") +
-	">" + value[1] + "</option>\n";
+      ret->add("<option value=\"", value[0], "\"",
+               (value[0]==selected?" selected=\"selected\"":""),
+               ">", value[1], "</option>\n");
   } else {
     foreach([array(string)]choices, string value)
-      ret += "<option value=\"" + value + "\"" +
-	(value==selected?" selected=\"selected\"":"") +
-	">" + value + "</option>\n";
+      ret->add("<option value=\"", value, "\"",
+               (value==selected?" selected=\"selected\"":""),
+               ">", value, "</option>\n");
   }
 
-  return ret + "</select>";
+  ret->add("</select>");
+  return (string)ret;
 }
 
 //! This function should solve most of the obox needs that arises. It
@@ -259,6 +261,6 @@ class OBox {
       return rows;
     if(to=="string")
       return render();
-    error("Could not cast OBox object to %s.\n", to);
+    return UNDEFINED;
   }
 }

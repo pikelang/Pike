@@ -17,9 +17,9 @@ autom4te.cache
 /configure
 /conftest.c
 /conftest.h
+/cpp.c
 /dependencies
 /dumpmodule.log
-/hilfe
 /hsort_template.h
 /interpret_functions_fixed.h
 /interpret_protos.h
@@ -35,9 +35,6 @@ autom4te.cache
 /language.h.nolines
 /language.h_src
 /language.h_src.nolines
-/lexer0.h
-/lexer1.h
-/lexer2.h
 /lib
 /machine.h
 /machine.h.in
@@ -47,12 +44,11 @@ autom4te.cache
 /master-stamp
 /module_magic.c
 /num_files_to_install
-/patch_cc1
-/patch_cc1.o
 /peep_engine.c
 /pike
 /pike.syms
 /pike.tmp
+/pike_compiler.c
 /posix_to_native.sh
 /precompile
 /precompile-method
@@ -63,6 +59,7 @@ autom4te.cache
 /specs
 /stamp-h
 /stamp-h.in
+/string_builder.c
 /test-install
 /testsuite
 /treeopt.h

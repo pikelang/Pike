@@ -1,0 +1,330 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
+  Author: Pontus Östlund <https://github.com/poppa/>
+*/
+
+//! Sass is a scripting language that is interpreted into Cascading Style
+//! Sheets (CSS). This module is a glue for @tt{libsass@}.
+//!
+//! @seealso
+//!  SASS @url{http://sass-lang.com/@}
+
+#pike __REAL_VERSION__
+#require constant(Web@module@)
+
+//! @ignore
+inherit Web@module@;
+//! @endignore
+
+//! Shorthand for @tt{string(8bit)@}
+protected typedef string(8bit) s8;
+
+class Compiler
+//! Sass/SCSS compiler.
+//!
+//! @example
+//! @code
+//! Web.Sass.Compiler compiler = Web.Sass.Compiler();
+//!
+//! // Allow for HTTP imports, disallowed by default.
+//! compiler->http_import = Web.Sass.HTTP_IMPORT_ANY;
+//!
+//! // Minify the output and create a source map file.
+//! compiler->set_options(([
+//!   "output_style" : Web.Sass.STYLE_COMPRESSED,
+//!   "source_map_file" : "path/to/write/source.map"
+//! ]));
+//!
+//! if (mixed e = catch(compiler->compile_file("input.scss", "output.css"))) {
+//!   werror("Failed compiling input.scss to output.css\n");
+//! }
+//! @endcode
+{
+  inherit Api;
+
+  //! If a Sass file is importing an external URI this flag determines if
+  //! thats allowed at all, or if the content type of the imported file has
+  //! to be in @[http_import_allow_ct], or if anything goes.
+  //! Default is @[HTTP_IMPORT_NONE].
+  //!
+  //! @seealso
+  //!  @[HTTP_IMPORT_NONE], @[HTTP_IMPORT_GREEDY] and
+  //!  @[HTTP_IMPORT_ANY].
+  public int(0..2) http_import = HTTP_IMPORT_NONE;
+
+
+  //! List of allowed content types if @[http_import] is set to
+  //! @[HTTP_IMPORT_GREEDY]. The default is to allow @tt{text/scss@} and
+  //! @tt{text/sass@}.
+  public multiset(s8) http_import_allow_ct =
+    (< "text/scss", "text/sass" >);
+
+
+  //! Should file access be tested right away when paths are set or should that
+  //! be left to Sass to handle? The default value is @tt{true@}.
+  public bool check_file_access = true;
+
+
+  //! @decl protected string|array(string(8bit)) handle_sass_import(@
+  //!                          string(8bit) path, @
+  //!                          void|string(8bit) absolute_path, @
+  //!                          void|string(8bit) relative_path)
+  //!
+  //! Resolve imports in sass/scss files.
+  //!
+  //! @note
+  //!  In general this method doesn't need to overloaded. In principle it's
+  //!  only necessary if the Sass files reside in a non-standard filesystem.
+  //!
+  //! @note
+  //!  If overloaded @[abs_path] and @[rel_path] is the absolute and relaive
+  //!  paths of the file containing the import statement @[path].
+  //!  If the Sass/SCSS files are located in a normal filesystem this method
+  //!  can return the contents of @[path] as a string and @tt{libsass@} will
+  //!  resolve the paths to the imports by itself.
+  //!
+  //!  However, if the files are not located in a normal filesystem this
+  //!  function should return an array of two indices, where the first index
+  //!  should be the contents of @[path] and the second the calculated absolute
+  //!  path of @[path].
+  //!
+  //! @param path
+  //!  This is the value of `path` in @tt{@@import 'path'@}.
+  //! @param absolute_path
+  //!  This is the absolute path of the file containing the @tt{@@import@}
+  //!  statement.
+  //! @param relative_path
+  //!  The relative path of @[absolute_path] in relation to the prevoius
+  //!  @[absolute_path]
+  //!
+  //! @returns
+  //!  @mixed
+  //!   @type int(0..0)
+  //!    If undefined is returned the import resolution is given back to
+  //!    @tt{libsass@}.
+  //!   @type string(8bit)
+  //!    The contents of @[path]
+  //!   @type array(string(8bit))
+  //!    if an array is returned it should contain two indices, where the first
+  //!    if the contents of @[path] and the second should be the absolute path
+  //!    @[path]. This is only useful (needed) if the Sass files doesn't
+  //!    reside in a normal filesystem that @tt{libsass@} can read.
+  //!  @endmixed
+  protected s8|array(s8) handle_sass_import(s8 path, s8 abs_path, s8 rel_path)
+  {
+    Standards.URI uri;
+
+    // If it's not an URI we assume it's a local import and we let Sass handle
+    // it. This could of course be a, by mistake, malformed URI, but then Sass
+    // will eventually throw.
+    if (catch (uri = Standards.URI(path))) {
+      return UNDEFINED;
+    }
+
+    if (http_import == HTTP_IMPORT_NONE) {
+      error("Imports over HTTP not allowed!\n");
+    }
+
+    Protocols.HTTP.Query q = Protocols.HTTP.get_url(uri);
+
+    if (q->status / 100 != 2) {
+      error("Bad HTTP status (%d) for @import %q!\n",
+            q->status, (string) uri);
+    }
+
+    array(string) ct_parts = map(q->headers["content-type"]/";",
+                                 String.trim_all_whites);
+
+    if (http_import == HTTP_IMPORT_GREEDY) {
+      if (!http_import_allow_ct[ct_parts[0]]) {
+        error("Returned content type from import (%s) was %q. "
+              "Expected %s!\n", uri, ct_parts[0],
+              String.implode_nicely((array)http_import_allow_ct, "or"));
+      }
+    }
+
+    s8 data = q->data();
+
+#if 0
+    // FIXME: Decode/encode properly to UTF-8
+    if (sizeof(ct_parts) > 1) {
+      sscanf(ct_parts[1], "%*s=%s", string charset);
+      // In case of charset="utf-8" or charset='utf-8', remove the "fnutts"
+      if (charset && charset[0] < 65) {
+        charset = charset[1..<1];
+      }
+    }
+#endif
+
+    return data;
+  }
+
+
+  // Documented in the CMOD
+  void `include_path=(s8 path)
+  {
+    if (check_file_access && stringp(path) && !Stdio.exist(path)) {
+      error("Include path %q does not exist!\n", path);
+    }
+
+    ::include_path = path;
+  }
+
+
+  // Documented in the CMOD
+  // In Pike 8.1 this is needed or else the compiler will bitch about
+  // "No getter for variable" when the setter above is defined!
+  s8 `include_path()
+  {
+    return ::include_path;
+  }
+
+
+  //! Compile the file @[input_file] and return the result
+  //!
+  //! @param input_file
+  //!  The SCSS file to compile
+  //!
+  //! @returns
+  //!  A mapping with the generated CSS and source mapping file if such is
+  //!  set to be generated
+  //!
+  //!  @mapping
+  //!   @member string(8bit) "css"
+  //!    The generated CSS
+  //!   @member string(8bit) "map"
+  //!    The generated source mapping data
+  //!  @endmapping
+  mapping(s8:s8) compile_file(s8 input_file)
+  {
+    if (check_file_access && !Stdio.exist(input_file)) {
+      error("Input file %q does not exist or isn't accessible!\n",
+            input_file);
+    }
+
+    return ::compile_file(input_file);
+  }
+
+
+  //! Compile the file @[input_file] and write the result to @[output_file].
+  //! If a source mapping file is set to be generated either via
+  //! @[set_options()] or @[source_map_file] it will be written as per
+  //! the value set in the option.
+  //!
+  //! @param input_file
+  //!  The SCSS file to compile
+  //! @param output_file
+  //!  The name of the CSS file to save the result in.
+  variant void compile_file(s8 input_file, s8 output_file)
+  {
+    if (check_file_access && !Stdio.exist(input_file)) {
+      error("Input file %q does not exist or isn't accessible!\n",
+            input_file);
+    }
+
+    mapping(s8:s8) val = ::compile_file(input_file);
+    Stdio.write_file(output_file, val->css);
+
+    if (val->map && source_map_file) {
+      Stdio.write_file(source_map_file, val->map);
+    }
+  }
+
+
+  //! Set options to the SASS compiler.
+  //!
+  //! @param opts
+  //!  @mapping
+  //!   @member int "output_style"
+  //!    Any of the @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT]
+  //!    or @[STYLE_COMPRESSED] constants. See also @[output_style].
+  //!
+  //!   @member string(8bit) "include_path"
+  //!    Path to root of incude files. See also @[include_path].
+  //!
+  //!   @member string(8bit) "source_map_file"
+  //!    File to write source map file to.
+  //!    See also @[source_map_file].
+  //!
+  //!   @member bool "source_comments"
+  //!    Turn on/off comments in the output containing info about the source
+  //!    file - line numbers and such. Default of @tt{false@}. See also
+  //!    @[source_comments].
+  //!
+  //!   @member bool "source_map_embed"
+  //!    Turn on/off if a source map should be embedded in the output or not.
+  //!    Default is @tt{false@}. See also @[source_map_embed].
+  //!
+  //!   @member string(8bit) "source_map_root"
+  //!    Set the root path of the source files, relative to where the
+  //!    source.map file is written.
+  //!    See also @[source_map_root]
+  //!
+  //!   @member bool "omit_source_map_url"
+  //!    Omit the #sourceMappingURL or not.
+  //!    See also @[omit_source_map_url]
+  //!
+  //!   @member bool "sass_syntax"
+  //!    Turn on/off Sass syntax, i.e. indented syntax. Only necessary when
+  //!    using @[compile_string()]
+  //!
+  //!   @member int "precision"
+  //!    Floating point precision. See also @[precision].
+  //!  @endmapping
+  void set_options(mapping(s8:s8|int) opts)
+  {
+    foreach (opts; string opt; string|int val) {
+      switch (opt)
+      {
+        case "output_style":
+          if (!(< STYLE_NESTED, STYLE_COMPRESSED, STYLE_COMPACT,
+                  STYLE_EXPANDED >)[val])
+          {
+            error("Unrecognized output style value!\n");
+          }
+          output_style = val;
+          break;
+
+        case "include_path":
+          include_path = val;
+          break;
+
+        case "source_map_file":
+          source_map_file = val;
+          break;
+
+        case "source_map_embed":
+          source_map_embed = val;
+          break;
+
+        case "source_map_root":
+          source_map_root = val;
+          break;
+
+        case "omit_source_map_url":
+          omit_source_map_url = val;
+          break;
+
+        case "source_comments":
+          source_comments = val;
+          break;
+
+        case "precision":
+          precision = val;
+          break;
+
+        case "sass_syntax":
+          sass_syntax = val;
+          break;
+
+        default:
+          error("Unknown option %O!\n", opt);
+      }
+    }
+  }
+}

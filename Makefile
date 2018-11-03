@@ -45,7 +45,7 @@ all: bin/pike compile
 force:
 	-@$(BIN_TRUE)
 
-src/configure:
+src/configure: src/configure.in src/aclocal.m4
 	cd src && ./run_autoconfig .
 
 force_autoconfig:
@@ -119,15 +119,15 @@ configure: src/configure builddir
 	  if test -f Makefile -a -f config.status -a -f .configureargs -a \
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	  else \
-	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
 	    if test "x$${CONFIG_SHELL}" = "x" && \
 	      /bin/bash -norc -c : 2>/dev/null; then \
 	      CONFIG_SHELL="/bin/bash -norc" ; \
 	    fi ;\
 	    runconfigure () { \
-	      CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
+	      CONFIG_SITE=x CONFIG_SHELL=$${CONFIG_SHELL-/bin/sh} $${CONFIG_SHELL-/bin/sh} \
 		"$$srcdir"/configure "$$@" || exit $$?; \
 	    }; \
+	    echo Running $$CONFIG_SHELL $$srcdir/configure $$configureargs in $$builddir; \
 	    eval runconfigure $$configureargs; \
 	    echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
@@ -190,6 +190,11 @@ legal: bin/pike
 
 release_checks: bin/pike
 	bin/pike tools/release_checks.pike
+
+gtkdoc: bin/pike
+	bin/pike src/post_modules/GTK2/build_pgtk.pike --source=src/post_modules/GTK2/source \
+		--destination=src/post_modules/GTK2/refdoc \
+		output/doc-pikeref.pike
 
 # Don't make bin/pike if we're recursing with a $(METATARGET) since we
 # don't want the backquote expression which usually is part of
@@ -278,11 +283,13 @@ gdb_hilfe:
 	@$(DO_MAKE) "METATARGET=gdb_hilfe" _make_in_builddir
 
 source:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
+	cd src && ./run_autoconfig .
 	@EXPORT_PREREQ=yepp ; echo ; \
 	if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
 	  echo 'No documentation source built.'; \
@@ -299,11 +306,13 @@ export:
 	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 export_forced:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 snapshot_export:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
@@ -312,9 +321,9 @@ snapshot_export:
 snapshot: snapshot_export
 
 xenofarm_export:
+	cd src && ./run_autoconfig .
 	@echo Begin export
 	@rm -f export_result.txt
-	done >>export_result.txt
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
@@ -385,33 +394,19 @@ distclean:
 	-rm -f bin/pike
 
 srcclean:
-	for d in `find src -type d -print`; do \
-	  if test -f "$$d/.cvsignore"; then \
-	    (cd "$$d" && rm -f `cat ".cvsignore"`); \
-	  else :; fi; \
-	done
+	@git clean -X -f
 
-gitclean: srcclean distclean docspotless
+gitclean: srcclean distclean docclean
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
-
-cvsclean: gitclean
-
-delete_docs:
-	-rm -rf "$(BUILDDIR)/doc_build"
-	-rm -f "$(BUILDDIR)/autodoc.xml"
-	-rm -f "$(BUILDDIR)/modref.xml"
-	-rm -f "$(BUILDDIR)/onepage.xml"
-	-rm -f "$(BUILDDIR)/traditional.xml"
+	-rm -rf xenofarm_result
+	-rm -f xenofarm_result.tar
+	-rm -f xenofarm_result.tar.gz
 
 docclean:
-	@$(DO_MAKE) delete_docs
-
-docspotless: docclean
-	if test -f "refdoc/Makefile"; then \
-	  cd refdoc; $(DO_MAKE) spotless; \
-	else :; fi
+	cd refdoc ; $(DO_MAKE) clean
+	@$(DO_MAKE) "METATARGET=doc_clean" _make_in_builddir
 
 depend:
 	@if test -d build; then \
@@ -446,7 +441,3 @@ pikefun_TAGS:
 	`find . -type f -name '*.[ch]' -print`
 	cd lib/modules && ../../bin/pike_etags.sh \
 	  `find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
-
-test:
-	echo CONFIGUREARGS:"$(CONFIGUREARGS)"
-	echo "$${CONFIGUREARGS}"

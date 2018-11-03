@@ -1,9 +1,0 @@
-@make_variables@
-VPATH=@srcdir@
-OBJS=spider.o discdate.o stardate.o
-MODULE_LDFLAGS=@LDFLAGS@
-
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
-@dynamic_module_makefile@
-@dependencies@

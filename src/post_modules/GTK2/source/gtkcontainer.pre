@@ -30,7 +30,7 @@ void add(GTK2.Widget widget)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("add",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_container_add(GTK_CONTAINER(THIS->obj),GTK_WIDGET(get_gobject(o1)));
   }
   RETURN_THIS();
@@ -144,7 +144,7 @@ void set_focus_chain(array focusable_widgets)
   pgtk2_verify_inited();
   {
     struct array *a;
-    get_all_args("set_focus_chain",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid argument.\n");
     if (a->size) {

@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "stralloc.h"
+#include "string_builder.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
 
@@ -23,10 +24,7 @@ void TYPE_STACK_DEBUG(const char *fun);
  */
 struct pike_type
 {
-  INT32 refs;
-#ifdef ATOMIC_SVALUE
-  INT32 ref_type;
-#endif
+  GC_MARKER_MEMBERS;
   unsigned INT32 hash;
   struct pike_type *next;
   unsigned INT32 flags;
@@ -73,11 +71,53 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
 /*
+ * Flags used by low_match_types().
+ */
+#define A_EXACT 1
+#define B_EXACT 2
+#define NO_MAX_ARGS 4
+#define NO_SHORTCUTS 8
+
+#define TYPE_GROUPING
+
+/*
+ * Flags used by pike_types_le()
+ */
+#define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
+#define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
+				 * Relevant for markers.
+				 */
+#ifdef TYPE_GROUPING
+#define LE_A_GROUPED	4	/* Argument A has been grouped.
+				 * Perform weaker checking for OR-nodes. */
+#define LE_B_GROUPED	8	/* Argument B has been grouped.
+				 * Perform weaker checking for OR-nodes. */
+#define LE_A_B_GROUPED	12	/* Both the above two flags. */
+#endif
+#define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
+#define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
+#define LE_TYPE_SVALUE	64	/* Same matching as match_type_svalue(). */
+
+/*
+ * Flags used by low_get_first_arg_type()
+ *
+ * Note that these differ for the flags to get_first_arg_type().
+ */
+#define FILTER_KEEP_VOID 1	/* Keep void during the filtering. */
+
+/*
+ * Flags used as flag_method to mk_type()
+ */
+#define PT_COPY_CAR	1
+#define PT_COPY_CDR	2
+#define PT_COPY_BOTH	3
+#define PT_IS_MARKER	4	/* The node is a marker. */
+
+/*
  * new_check_call(), check_splice_call() and get_first_arg_type() flags
  */
 #define CALL_STRICT		0x0001	/* Strict checking. */
 #define CALL_NOT_LAST_ARG	0x0002	/* This is not the last argument. */
-#define CALL_7_6		0x0004	/* Pike 7.6 compatibility mode. */
 #define CALL_WEAK_VOID		0x0008	/* Allow promotion of void to zero. */
 #define CALL_ARG_LVALUE		0x0010	/* Argument is lvalue (sscanf). */
 #define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */
@@ -96,14 +136,8 @@ void debug_free_type(struct pike_type *t);
 #endif /* DEBUG_MALLOC */
 #define CONSTTYPE(X) make_pike_type(X)
 
-extern struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
-extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
-
-#ifdef DEBUG_MALLOC
-#define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass_named(T, "check_type_string"))
-#elif defined (PIKE_DEBUG)
-#define check_type_string debug_check_type_string
-#endif /* PIKE_DEBUG */
+extern struct pike_type **type_stack;
+extern struct pike_type ***pike_type_mark_stack;
 
 #define debug_free_type_preamble(T) do {				\
     debug_malloc_touch_named (T, "free_type");				\
@@ -136,11 +170,26 @@ PMOD_EXPORT extern struct pike_type *type_type_string;
 PMOD_EXPORT extern struct pike_type *mixed_type_string;
 PMOD_EXPORT extern struct pike_type *void_type_string;
 PMOD_EXPORT extern struct pike_type *zero_type_string;
+PMOD_EXPORT extern struct pike_type *inheritable_type_string;
+PMOD_EXPORT extern struct pike_type *typeable_type_string;
 PMOD_EXPORT extern struct pike_type *enumerable_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
-extern struct pike_type *sscanf_76_type_string;
+PMOD_EXPORT extern struct pike_type *utf8_type_string;
+
+PMOD_EXPORT extern struct pike_string *literal_string_string;
+PMOD_EXPORT extern struct pike_string *literal_int_string;
+PMOD_EXPORT extern struct pike_string *literal_float_string;
+PMOD_EXPORT extern struct pike_string *literal_function_string;
+PMOD_EXPORT extern struct pike_string *literal_object_string;
+PMOD_EXPORT extern struct pike_string *literal_program_string;
+PMOD_EXPORT extern struct pike_string *literal_array_string;
+PMOD_EXPORT extern struct pike_string *literal_multiset_string;
+PMOD_EXPORT extern struct pike_string *literal_mapping_string;
+PMOD_EXPORT extern struct pike_string *literal_type_string;
+PMOD_EXPORT extern struct pike_string *literal_mixed_string;
+
 
 #define CONSTTYPE(X) make_pike_type(X)
 
@@ -176,8 +225,7 @@ extern struct pike_type_location *all_pike_type_locations;
 #define init_type_stack() type_stack_mark()
 #define exit_type_stack() do {\
     ptrdiff_t q_q_q_q = pop_stack_mark(); \
-    if(q_q_q_q) Pike_fatal("Type stack out of wack! %ld\n", \
-                      PTRDIFF_T_TO_LONG(q_q_q_q)); \
+    if(q_q_q_q) Pike_fatal("Type stack out of wack! %ld\n", (long)q_q_q_q); \
   } while(0)
 #else
 #define init_type_stack type_stack_mark
@@ -194,15 +242,7 @@ void debug_push_reverse_type(unsigned int type);
 #define push_reverse_type debug_push_reverse_type
 #endif /* DEBUG_MALLOC */
 
-#define type_stack_mark() do {				\
-  if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
-    Pike_fatal("Type mark stack overflow.\n");		\
-  else {						\
-    *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
-    Pike_compiler->pike_type_mark_stackp++;					\
-  }							\
-  TYPE_STACK_DEBUG("type_stack_mark");			\
-} while(0)
+extern void type_stack_mark(void);
 
 #define reset_type_stack() do {			\
    type_stack_pop_to_mark();			\
@@ -211,9 +251,8 @@ void debug_push_reverse_type(unsigned int type);
 
 /* Prototypes begin here */
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
-PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type();
+PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type(void);
 PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
-void debug_check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);
 void debug_pop_type_stack(unsigned int expected);
@@ -238,9 +277,10 @@ struct pike_type *debug_compiler_pop_type(void);
 struct pike_type *parse_type(const char *s);
 void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
-void my_describe_type(struct pike_type *type);
+void low_describe_type(struct string_builder *s, struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
+int get_int_type_range(struct pike_type *t, INT_TYPE *range);
 struct pike_type *or_pike_types(struct pike_type *a,
 				struct pike_type *b,
 				int zero_implied);
@@ -250,6 +290,7 @@ int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type);
 int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b);
+int check_variant_overload(struct pike_type *a, struct pike_type *b);
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *type_of_index,
 			     node *n);
@@ -300,7 +341,7 @@ void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
 PMOD_EXPORT void *find_type(struct pike_type *t,
 			    void *(*cb)(struct pike_type *));
-PMOD_EXPORT void visit_type (struct pike_type *t, int action);
+PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra);
 void gc_mark_type_as_referenced(struct pike_type *t);
 void gc_check_type (struct pike_type *t);
 void gc_check_all_types (void);
@@ -320,68 +361,15 @@ struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
 void register_attribute_handler(struct pike_string *attr,
 				struct svalue *handler);
+
+/* used by the precompiler to get the correct object types */
+PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
+
 /* Prototypes end here */
 
-#define visit_type_ref(T, REF_TYPE)				\
+#define visit_type_ref(T, REF_TYPE, EXTRA)			\
   visit_ref (pass_type (T), (REF_TYPE),				\
-	     (visit_thing_fn *) &visit_type, NULL)
-
-#if 0 /* FIXME: Not supported under USE_PIKE_TYPE yet. */
-/* "Dynamic types" - use with ADD_FUNCTION_DTYPE */
-#define dtStore(TYPE) {int e; for (e=0; e<CONSTANT_STRLEN(TYPE); e++) unsafe_push_type((TYPE)[e]);}
-#define dtArr(VAL) {unsafe_push_type(PIKE_T_ARRAY); {VAL}}
-#define dtArray dtArr(dtMix)
-#define dtMap(IND,VAL) {unsafe_push_type(PIKE_T_MAPPING); {VAL} {IND}}
-#define dtMapping dtMap(dtMix,dtMix)
-#define dtSet(IND) {unsafe_push_type(PIKE_T_MULTISET); {IND}}
-#define dtMultiset dtSet(dtMix)
-#define dtObjImpl(PROGRAM) {push_object_type_backwards(0, (PROGRAM)->id);}
-#define dtObjIs(PROGRAM) {push_object_type_backwards(1, (PROGRAM)->id);}
-#define dtObj dtStore(tObj)
-#define dtFuncV(ARGS,REST,RET) MagicdtFuncV(RET,REST,ARGS)
-#define dtFunc(ARGS,RET) MagicdtFunc(RET,ARGS)
-#define MagicdtFuncV(RET,REST,ARGS) {unsafe_push_type(PIKE_T_FUNCTION); {ARGS} unsafe_push_type(T_MANY); {REST} {RET}}
-#define MagicdtFunc(RET,ARGS) dtFuncV(ARGS {}, dtVoid, RET)
-#define dtFunction dtFuncV({},dtAny,dtAny)
-#define dtNone {}
-#define dtPrg {unsafe_push_type(PIKE_T_PROGRAM);}
-#define dtProgram {unsafe_push_type(PIKE_T_PROGRAM);}
-#define dtStr {unsafe_push_type(PIKE_T_STRING);}
-#define dtString {unsafe_push_type(PIKE_T_STRING);}
-#define dtType {unsafe_push_type(PIKE_T_TYPE);}
-#define dtFlt {unsafe_push_type(PIKE_T_FLOAT);}
-#define dtFloat {unsafe_push_type(PIKE_T_FLOAT);}
-#define dtIntRange(LOW,HIGH) {unsafe_push_type(PIKE_T_INT); push_type_int_backwards(LOW); push_type_int_backwards(HIGH);}
-#define dtInt dtStore(tInt)
-#define dtZero {unsafe_push_type(PIKE_T_ZERO);}
-#define dtVoid {unsafe_push_type(T_VOID);}
-#define dtVar(X) {unsafe_push_type(X);}
-#define dtSetvar(X,TYPE) {unsafe_push_type(T_ASSIGN); {TYPE}}
-#define dtNot(TYPE) {unsafe_push_type(T_NOT); {TYPE}}
-#define dtAnd(A,B) {unsafe_push_type(T_AND); {A} {B}}
-#define dtOr(A,B) {unsafe_push_type(T_OR); {A} {B}}
-#define dtOr3(A,B,C) dtOr(A,dtOr(B,C))
-#define dtOr4(A,B,C,D) dtOr(A,dtOr3(B,C,D))
-#define dtOr5(A,B,C,D,E) dtOr(A,dtOr4(B,C,D,E))
-#define dtOr6(A,B,C,D,E,F) dtOr(A,dtOr5(B,C,D,E,F))
-#define dtMix {unsafe_push_type(PIKE_T_MIXED);}
-#define dtMixed {unsafe_push_type(PIKE_T_MIXED);}
-#define dtComplex dtStore(tComplex)
-#define dtStringIndicable dtStore(tStringIndicable)
-#define dtRef dtStore(tRef)
-#define dtIfnot(A,B) dtAnd(dtNot(A),B)
-#define dtAny dtStore(tAny)
-#define DTYPE_START do {						\
-  unsafe_type_stack_mark();						\
-  unsafe_type_stack_mark();						\
-} while (0)
-#define DTYPE_END(TYPESTR) do {						\
-  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))	\
-    Pike_fatal("Type stack overflow.\n");				\
-  type_stack_reverse();							\
-  (TYPESTR)=pop_unfinished_type();					\
-} while (0)
-#endif /* 0 */
+	     (visit_thing_fn *) &visit_type, (EXTRA))
 
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))
@@ -421,10 +409,6 @@ void register_attribute_handler(struct pike_string *attr,
 #define push_finished_type debug_push_finished_type
 #define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
-#endif
-
-#ifndef PIKE_DEBUG
-#define check_type_string(X)
 #endif
 
 #endif

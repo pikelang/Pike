@@ -1,0 +1,238 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+
+int main()
+{
+  Tools.Testsuite.log_status("Test Protocols.HTTP.Server.Request");
+  call_out(do_tests, 0);
+  return -1;
+}
+
+class Port
+{
+  Request request_program = Request;
+}
+
+class Request
+{
+  inherit Protocols.HTTP.Server.Request;
+
+  void _attach_fd(Stdio.NonblockingStream _fd, void|Concurrent.Promise p)
+  {
+    ::attach_fd(_fd, Port(), p?->success || _callback);
+  }
+
+  array _requests = ({});
+  void _callback(Request r)
+  {
+    _requests += ({ r });
+  }
+}
+
+class FDWrapper
+{
+  string response = "";
+  array get_response()
+  {
+    array ret = _Roxen.HeaderParser()->feed(response);
+    if( !ret ) return 0;
+    int len = (int)ret[2]["content-length"];
+    response = ret[0][len..];
+    ret[0] = ret[0][..len-1];
+    return ret;
+  }
+  array get_json()
+  {
+    array ret = get_response();
+    ret[0] = Standards.JSON.decode(ret[0]);
+    foreach( "content-length,date,last-modified,server"/",", string name)
+    {
+      if(stringp(ret[2][name]))
+        m_delete(ret[2], name);
+    }
+    return ret;
+  }
+  class FD
+  {
+    Stdio.Buffer outbuf = Stdio.Buffer();
+    void create(string method, string path, mapping args, string data)
+    {
+      request(method, path, args, data);
+    }
+
+    variant void create(string data)
+    {
+      outbuf->add(data);
+    }
+
+    void request(string method, string path, mapping args, string data)
+    {
+      if( data )
+        args["Content-Length"] = (string)sizeof(data);
+      else
+        data = "";
+
+      outbuf->sprintf("%s %s HTTP/1.0\r\n%{%s: %s\r\n%}\r\n%s",
+                      method, path, (array)args, data);
+      if( r )
+        r(this, outbuf->read());
+    }
+
+    function r, w, c;
+    void set_nonblocking(function x, function y, function z)
+    {
+      r = x;
+      w = y;
+      c = z;
+
+      if( r && sizeof(outbuf))
+        r(this, outbuf->read());
+      if( this && w ) w();
+    }
+
+    void set_read_callback(function a) { }
+    void set_blocking() { }
+    int write(string d)
+    {
+      response += d;
+      return sizeof(d);
+    }
+    void close() { }
+
+    string query_address()
+    {
+      return "1.2.3.4";
+    }
+
+    //void destroy() { werror("%s\n\n", describe_backtrace(backtrace())); }
+  }
+}
+
+void do_tests()
+{
+  // Set up a linked list of Promises.
+  Concurrent.Promise start = Concurrent.Promise();
+  Concurrent.Promise next = start;
+  int good, bad;
+
+  void Test(function test)
+  {
+    next = next->then(lambda()
+      {
+        return test();
+      },
+      lambda(array bt)
+      {
+        werror("\n"+describe_backtrace(bt));
+        bad++;
+        return test();
+      });
+  };
+
+  void test_eq(mixed a, mixed b)
+  {
+    if( equal(a,b) )
+      good++;
+    else
+    {
+      object frame = backtrace()[-2];
+      werror("\n%s:%d\n", frame[0], frame[1]);
+      werror("%O != %O.\n", a, b);
+      bad++;
+    }
+  };
+
+  //
+  // --- Start tests
+  //
+
+  Test() {
+    // Testing how a minimal request fills the Request object
+    // variables.
+    object fd = FDWrapper();
+    Concurrent.Promise p = Concurrent.Promise();
+    Request()->_attach_fd(fd->FD("GET / HTTP/1.0\r\n\r\n"), p);
+    p->then() {
+      Request r = __ARGS__[0];
+      test_eq(r->buf, "");
+      test_eq(r->raw, "GET / HTTP/1.0\r\n\r\n");
+      test_eq(r->body_raw, "");
+      test_eq(r->request_raw, "GET / HTTP/1.0");
+      test_eq(r->request_type, "GET");
+      test_eq(r->full_query, "/");
+      test_eq(r->not_query, "/");
+      test_eq(r->query, "");
+      test_eq(r->protocol, "HTTP/1.0");
+      test_eq(abs(r->started-time())<2, 1);
+      test_eq(r->request_headers, ([]));
+      test_eq(r->variables, ([]));
+      test_eq(r->cookies, ([]));
+      test_eq(r->misc, ([]));
+      test_eq(r->send_timeout_delay, 180);
+      test_eq(r->connection_timeout_delay, 180);
+      test_eq(r->get_ip(), "1.2.3.4");
+
+      // Further testing a minimal response.
+      Concurrent.Promise p = Concurrent.Promise();
+      r->response_and_finish( ([]), p->success);
+      p->then() {
+        // Take r from arguments rather than context to verify that it
+        // is actually sent in the callback.
+        Request r = __ARGS__[0];
+
+        // Actual size depends on header sizes (date, server).
+        test_eq(r->sent_data()>228, 1);
+
+        array resp = fd->get_response();
+        test_eq(resp[0], "");
+        test_eq(resp[1], "HTTP/1.0 200 OK");
+        mapping m = resp[2];
+
+        // Remove variable headers
+        test_eq(stringp(m_delete(m, "date")), 1);
+        test_eq(stringp(m_delete(m, "last-modified")), 1);
+        test_eq(stringp(m_delete(m, "server")), 1);
+        test_eq(m, ([
+                  "connection": "close",
+                  "content-length": "0",
+                  "content-type": "application/octet-stream",
+                ]));
+      };
+      return p;
+    };
+    return p;
+  };
+
+  Test() {
+    object fd = FDWrapper();
+    Request r = Request();
+    Concurrent.Promise p = Concurrent.Promise();
+    r->_attach_fd(fd->FD("GET", "/a/b.html?x=y",
+                         (["FOO":"BAR","cookie":"a=b;c=d"]),
+                         "Payload"), p);
+    p->then() {
+      test_eq(r->body_raw,"Payload");
+      test_eq(r->request_raw, "GET /a/b.html?x=y HTTP/1.0");
+      test_eq(r->request_type, "GET");
+      test_eq(r->full_query, "/a/b.html?x=y");
+      test_eq(r->not_query, "/a/b.html");
+      test_eq(r->query, "x=y");
+      test_eq(r->protocol, "HTTP/1.0");
+      test_eq(r->request_headers, (["content-length":"7","foo":"BAR",
+                                    "cookie":"a=b;c=d"]));
+      test_eq(r->variables, (["x":"y"]));
+      test_eq(r->cookies, (["a":"b","c":"d"]));
+    };
+    return p;
+  };
+
+  //
+  // --- End tests
+  //
+
+  Test() {
+    Tools.Testsuite.report_result(good,bad);
+    exit(0);
+  };
+
+  start->success(1);
+}

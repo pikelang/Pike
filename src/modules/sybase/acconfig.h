@@ -16,7 +16,7 @@
 @TOP@
 
 /* Define to enable the sybase module. */
-#undef HAVE_SYBASE 
+#undef HAVE_SYBASE
 
 @BOTTOM@
 

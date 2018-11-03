@@ -1,11 +1,16 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "pike_error.h"
 #include "pike_memory.h"
+#include "pike_macros.h"
 
 #include "block_allocator.h"
 #include "bitvector.h"
-
-#include <stdlib.h>
 
 #define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + (l).doffset + (n)*((l).block_size)))
 #define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + (l).doffset + (l).offset))
@@ -14,41 +19,43 @@
 #define BA_ONE	((struct ba_block_header *)1)
 #define BA_FLAG_SORTED 1u
 
+#ifdef PIKE_DEBUG
 static void print_allocator(const struct block_allocator * a);
+#endif
 
 #ifdef PIKE_DEBUG
 static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header *loc,
                          int ln);
 #endif
 
-static INLINE unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
+static inline unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
                                              const void * ptr) {
     return ((char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
 }
 
-static INLINE void ba_dec_layout(struct ba_layout * l, int i) {
+static inline void ba_dec_layout(struct ba_layout * l, int i) {
     l->blocks >>= i;
     l->offset += l->block_size;
     l->offset >>= i;
     l->offset -= l->block_size;
 }
 
-static INLINE void ba_inc_layout(struct ba_layout * l, int i) {
+static inline void ba_inc_layout(struct ba_layout * l, int i) {
     l->blocks <<= i;
     l->offset += l->block_size;
     l->offset <<= i;
     l->offset -= l->block_size;
 }
 
-static INLINE void ba_double_layout(struct ba_layout * l) {
+static inline void ba_double_layout(struct ba_layout * l) {
     ba_inc_layout(l, 1);
 }
 
-static INLINE void ba_half_layout(struct ba_layout * l) {
+static inline void ba_half_layout(struct ba_layout * l) {
     ba_dec_layout(l, 1);
 }
 
-static INLINE struct ba_layout ba_get_layout(const struct block_allocator * a, int i) {
+static inline struct ba_layout ba_get_layout(const struct block_allocator * a, int i) {
     struct ba_layout l = a->l;
     ba_inc_layout(&l, i);
     return l;
@@ -58,7 +65,7 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
-static INLINE void ba_clear_page(struct block_allocator * a, struct ba_page * p, struct ba_layout * l) {
+static inline void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struct ba_page * p, struct ba_layout * l) {
     p->h.used = 0;
     p->h.flags = BA_FLAG_SORTED;
     p->h.first = BA_BLOCKN(*l, p, 0);
@@ -71,20 +78,29 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + l.doffset;
     struct ba_page * p;
+
+    /*
+     * note that i is always positive, so this only
+     * happens if ba_get_layout overflows
+     */
+    if (a->l.offset > l.offset || n < l.offset) {
+        Pike_error(msg_out_of_mem_2, a->l.offset);
+    }
+
     if (l.alignment) {
-	p = (struct ba_page*)aligned_alloc(n, l.alignment);
+	p = xalloc_aligned(n, l.alignment);
     } else {
 #ifdef DEBUG_MALLOC
 	/* In debug malloc mode, calling xalloc from the block alloc may result
 	 * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
 	 */
-	p = (struct ba_page*)system_malloc(n);
+	p = system_malloc(n);
 	if (!p) {
 	    fprintf(stderr, "Fatal: Out of memory.\n");
 	    exit(17);
 	}
 #else
-	p = (struct ba_page*)xalloc(n);
+	p = xalloc(n);
 #endif
     }
     ba_clear_page(a, p, &a->l);
@@ -93,7 +109,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 }
 
 static void ba_free_empty_pages(struct block_allocator * a) {
-    int i = a->size - 1;
+    int i;
 
     for (i = a->size - 1; i >= 0; i--) {
         struct ba_page * p = a->pages[i];
@@ -106,26 +122,33 @@ static void ba_free_empty_pages(struct block_allocator * a) {
         a->pages[i] = NULL;
     }
 
-    a->size = i+1;
-    a->alloc = a->last_free = MAXIMUM(0, i);
+    if (a->size != i+1) {
+        a->size = i+1;
+        a->alloc = a->last_free = MAXIMUM(0, i);
+    }
 }
 
-PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
+static void ba_low_init_aligned(struct block_allocator * a) {
     unsigned INT32 block_size = MAXIMUM(a->l.block_size, sizeof(struct ba_block_header));
 
     PIKE_MEMPOOL_CREATE(a);
 
     if (a->l.alignment) {
+#if PIKE_DEBUG
 	if (a->l.alignment & (a->l.alignment - 1))
 	    Pike_fatal("Block allocator a->l.alignment is not a power of 2.\n");
 	if (block_size & (a->l.alignment-1))
 	    Pike_fatal("Block allocator block size is not aligned.\n");
+#endif
 	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), a->l.alignment);
     } else {
 	a->l.doffset = sizeof(struct ba_page);
     }
 
-    a->l.blocks = round_up32(a->l.blocks);
+    if (a->l.blocks & (a->l.blocks - 1)) {
+        unsigned INT32 tmp = round_up32(a->l.blocks);
+        if (tmp) a->l.blocks = tmp;
+    } else if (!a->l.blocks) a->l.blocks = 1;
     a->l.block_size = block_size;
     a->l.offset = block_size * (a->l.blocks-1);
 }
@@ -161,18 +184,15 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
     int i;
-    struct ba_layout l;
 
     if (!a->l.offset) return;
     if (!a->size) return;
 
-    l = ba_get_layout(a, 0);
-
     for (i = 0; i < a->size; i++) {
-        struct ba_page * page = a->pages[i];
-        ba_clear_page(a, page, &l);
-        ba_double_layout(&l);
+        free(a->pages[i]);
+        a->pages[i] = NULL;
     }
+    a->size = 0;
     a->alloc = 0;
     a->last_free = 0;
 }
@@ -220,7 +240,7 @@ static void ba_low_alloc(struct block_allocator * a) {
     }
 
     if (a->size == (sizeof(a->pages)/sizeof(a->pages[0]))) {
-        Pike_error("Out of memory.");
+        Pike_error(msg_out_of_mem_2, a->l.offset);
     }
     a->pages[a->size] = ba_alloc_page(a, a->size);
     a->alloc = a->size;
@@ -299,10 +319,7 @@ PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr) {
     }
 found:
 
-#ifdef PIKE_DEBUG
     if (p) {
-#endif
-    {
 	struct ba_block_header * b = (struct ba_block_header*)ptr;
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
@@ -321,16 +338,16 @@ found:
                 ba_clear_page(a, p, &l);
             }
 	}
-    }
-#ifdef PIKE_DEBUG
     } else {
+#ifdef PIKE_DEBUG
 	print_allocator(a);
-	Pike_fatal("ptr %p not in any page.\n", ptr);
-    }
 #endif
+	Pike_error("Trying to free unknown block %p.\n", ptr);
+    }
     PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
 
+#ifdef PIKE_DEBUG
 static void print_allocator(const struct block_allocator * a) {
     int i;
     struct ba_layout l;
@@ -342,8 +359,6 @@ static void print_allocator(const struct block_allocator * a) {
 		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
     }
 }
-
-#ifdef PIKE_DEBUG
 
 #define Pike_nfatal(n) \
     (fprintf(stderr,msg_fatal_error,__FILE__,(long)(n)),debug_fatal)
@@ -371,11 +386,11 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struc
 
 #if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
 #define BV_LENGTH   64
-#define BV_ONE	    ((unsigned INT64)1)
-#define BV_NIL	    ((unsigned INT64)0)
+#define BV_ONE	    ((UINT64)1)
+#define BV_NIL	    ((UINT64)0)
 #define BV_CLZ	    clz64
 #define BV_CTZ	    ctz64
-typedef unsigned INT64 bv_int_t;
+typedef UINT64 bv_int_t;
 #else
 #define BV_LENGTH   32
 #define BV_ONE	    ((unsigned INT32)1)
@@ -392,17 +407,17 @@ struct bitvector {
     bv_int_t * v;
 };
 
-static INLINE void bv_set_vector(struct bitvector * bv, void * p) {
+static inline void bv_set_vector(struct bitvector * bv, void * p) {
     bv->v = (bv_int_t*)p;
 }
 
-static INLINE size_t bv_byte_length(struct bitvector * bv) {
+static inline size_t bv_byte_length(struct bitvector * bv) {
     size_t bytes = ((bv->length + 7) / 8);
 
     return PIKE_ALIGNTO(bytes, BV_WIDTH);
 }
 
-static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
+static inline void bv_set(struct bitvector * bv, size_t n, int value) {
     size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     bv_int_t * _v = bv->v + c;
@@ -410,36 +425,46 @@ static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
     else *_v &= ~(BV_ONE << bit);
 }
 
-static INLINE int bv_get(struct bitvector * bv, size_t n) {
+static inline int bv_get(struct bitvector * bv, size_t n) {
     size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     return !!(bv->v[c] & (BV_ONE << bit));
 }
 
-static INLINE size_t bv_ctz(struct bitvector * bv, size_t n) {
-    size_t bit = n % BV_LENGTH;
-    size_t c = n / BV_LENGTH;
-    bv_int_t * _v = bv->v + c;
-    bv_int_t V = *_v & (~BV_NIL << bit);
+static size_t bv_ctz(struct bitvector * bv, size_t n) {
+    size_t bit;
+    size_t c;
+    bv_int_t * _v;
+    bv_int_t V;
 
-    bit = c * BV_LENGTH;
-    while (!(V)) {
-	if (bit >= bv->length) {
-	    bit = (size_t)-1;
-	    goto RET;
-	}
-	V = *(++_v);
-	bit += (BV_WIDTH*8);
+    if (n < bv->length) {
+        bit = n % BV_LENGTH;
+        c = n / BV_LENGTH;
+        _v = bv->v + c;
+        V = *_v & (~BV_NIL << bit);
+
+        bit = c * BV_LENGTH;
+
+        while (1) {
+            if (V) {
+                bit += BV_CTZ(V);
+                if (bit >= bv->length) break;
+                return bit;
+            }
+
+            bit += BV_LENGTH;
+
+            if (bit >= bv->length) break;
+
+            V = *(++_v);
+        }
     }
-    bit += BV_CTZ(V);
-    if (bit >= bv->length) bit = (size_t)-1;
 
-RET:
-    return bit;
+    return (size_t)-1;
 }
 
-#ifdef BA_DEBUG
-static INLINE void bv_print(struct bitvector * bv) {
+#ifdef PIKE_DEBUG
+static void PIKE_UNUSED_ATTRIBUTE bv_print(struct bitvector * bv) {
     size_t i;
     for (i = 0; i < bv->length; i++) {
 	fprintf(stderr, "%d", bv_get(bv, i));
@@ -448,12 +473,17 @@ static INLINE void bv_print(struct bitvector * bv) {
 }
 #endif
 
-struct ba_block_header * ba_sort_list(const struct ba_page * p,
-				      struct ba_block_header * b,
-				      const struct ba_layout * l) {
+static void ba_sort_free_list(const struct block_allocator *VALGRINDUSED(a),
+			      struct ba_page *p,
+                              const struct ba_layout *l) {
     struct bitvector v;
     size_t i, j;
-    struct ba_block_header ** t = &b;
+    struct ba_block_header * b = p->h.first;
+    struct ba_block_header ** t = &p->h.first;
+
+    if (!b) return;
+
+    j = 0;
 
     v.length = l->blocks;
     i = bv_byte_length(&v);
@@ -467,12 +497,31 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     while (b) {
 	unsigned INT32 n = ba_block_number(l, p, b);
+#ifdef PIKE_DEBUG
+        if (bv_get(&v, n)) {
+            fprintf(stderr, "Double free detected.");
+            /* Printing an error to stderr here and continuing makes probably more sense
+             * than throwing an error. This sort algorithm will "correct" the corrupted free
+             * list.
+             */
+        }
+#endif
 	bv_set(&v, n, 1);
+        j++;
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
+        PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
 	if (b->next == BA_ONE) {
 	    v.length = n+1;
+            PIKE_MEMPOOL_FREE(a, b, l->block_size);
 	    break;
-	} else b = b->next;
+	} else {
+            struct ba_block_header * tmp = b->next;
+            PIKE_MEMPOOL_FREE(a, b, l->block_size);
+            b = tmp;
+        }
     }
+
+    b = NULL;
 
     /*
      * Handle consecutive free blocks in the end, those
@@ -480,9 +529,11 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     if (v.length) {
 	i = v.length-1;
-	while (i && bv_get(&v, i)) { i--; }
+	while (i && bv_get(&v, i)) { i--; j--; }
 	v.length = i+1;
     }
+
+    if (!j) goto last;
 
     j = 0;
 
@@ -490,37 +541,33 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      * We now rechain all blocks.
      */
     while ((i = bv_ctz(&v, j)) != (size_t)-1) {
-	*t = BA_BLOCKN(*l, p, i);
-	t = &((*t)->next);
+        struct ba_block_header * tmp = b;
+	*t = b = BA_BLOCKN(*l, p, i);
+        if (tmp) PIKE_MEMPOOL_FREE(a, tmp, l->block_size);
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
+	t = &(b->next);
 	j = i+1;
     }
 
+last:
     /*
      * The last one
      */
 
     if (v.length < l->blocks) {
-	*t = BA_BLOCKN(*l, p, v.length);
-	(*t)->next = BA_ONE;
-    } else *t = NULL;
-
-    return b;
-}
-
-static INLINE void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
-    while (b && b != BA_ONE) {
-        PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
-        PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
-        b = b->next;
+        struct ba_block_header * tmp = b;
+        *t = b = BA_BLOCKN(*l, p, v.length);
+        if (tmp) PIKE_MEMPOOL_FREE(a, tmp, l->block_size);
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
+	b->next = BA_ONE;
+        PIKE_MEMPOOL_FREE(a, b, l->block_size);
+    } else {
+        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
+        PIKE_MEMPOOL_ALLOC(a, t, l->block_size);
+        *t = NULL;
+        PIKE_MEMPOOL_FREE(a, t, l->block_size);
     }
-}
 
-static INLINE void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
-    while (b && b != BA_ONE) {
-        struct ba_block_header * next = b->next;
-        PIKE_MEMPOOL_FREE(a, b, a->l.block_size);
-        b = next;
-    }
 }
 
 /*
@@ -551,19 +598,16 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
     for (i = 0; i < a->size; i++) {
         struct ba_page * p = a->pages[i];
         if (p && p->h.used) {
-            struct ba_block_header * free_list, * free_block;
-
-            ba_list_defined(a, p->h.first);
+            struct ba_block_header *free_block;
 
             if (!(p->h.flags & BA_FLAG_SORTED)) {
-                p->h.first = ba_sort_list(p, p->h.first, &it.l);
+                ba_sort_free_list(a, p, &it.l);
                 p->h.flags |= BA_FLAG_SORTED;
             }
             /* we fake an allocation to prevent the page from being freed during iteration */
             p->h.used ++;
 
-            free_list = p->h.first;
-            free_block = free_list;
+            free_block = p->h.first;
 
             it.cur = BA_BLOCKN(it.l, p, 0);
 
@@ -584,20 +628,31 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
                 }
 
                 it.end = free_block;
-                free_block = free_block->next;
+
+                PIKE_MEMPOOL_ALLOC(a, free_block, it.l.block_size);
+                PIKE_MEM_RW_RANGE(free_block, sizeof(struct ba_block_header));
+                {
+                    struct ba_block_header *tmp = free_block->next;
+                    PIKE_MEMPOOL_FREE(a, free_block, it.l.block_size);
+                    free_block = tmp;
+                }
 
 #ifdef PIKE_DEBUG
                 if ((char*)it.end < (char*)it.cur)
                     Pike_fatal("Free list not sorted in ba_walk.\n");
 #endif
-                if ((char*)it.end != (char*)it.cur)
+                if ((char*)it.end != (char*)it.cur) {
+#ifdef PIKE_DEBUG
+                    ba_check_ptr(a, i, it.cur, NULL, __LINE__);
+                    ba_check_ptr(a, i, (char*)it.end - it.l.block_size, NULL, __LINE__);
+#endif
                     cb(&it, data);
+                }
 
                 it.cur = (char*)it.end + it.l.block_size;
             }
 
             /* if the callback throws, this will never happen */
-            ba_list_undefined(a, free_list);
             p->h.used--;
         }
         ba_double_layout(&it.l);

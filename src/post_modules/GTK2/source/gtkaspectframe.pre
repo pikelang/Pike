@@ -33,7 +33,7 @@ void create(mapping|string label, ?float xalign, ?float yalign,
     FLOAT_TYPE xalign=0.5,yalign=0.5,ratio=1.0;
     INT_TYPE obey_child=1;
     GtkWidget *gaf;
-    get_all_args("create",args,"%t.%f%f%f%i",&label,&xalign,&yalign,
+    get_all_args(NULL,args,"%t.%f%f%f%i",&label,&xalign,&yalign,
 			&ratio,&obey_child);
     ref_push_string(label);
     f_string_to_utf8(1);

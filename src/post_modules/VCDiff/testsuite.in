@@ -31,7 +31,7 @@ test_codec([[ "" ]], [[ "ABC" ]])
 test_codec([[ "ABC" ]], [[ "ABC" ]])
 test_codec([[ "ABCDEFGHIJKL" ]], [[ "ABCDEFGHIJKL" * 1000 ]])
 
-test_eval_error([[ 
+test_eval_error([[
   VCDiff.Encoder vcenc = VCDiff.Encoder ("foobar"*10);
   string s = vcenc->encode_chunk ("foobar" * 30);
   s += vcenc->encode_chunk();

@@ -98,7 +98,7 @@ void alookup(string key,
 //! a request by Martin Stjerrholm, and their purpose is to have some
 //! weak form of referential integrity. Simply speaking, they are a list
 //! of keys which (if present) will be deleted when the stored entry is
-//! deleted (either forcibly or not). They must be handled by the storage 
+//! deleted (either forcibly or not). They must be handled by the storage
 //! manager.
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {
@@ -117,7 +117,7 @@ void store(string key, mixed value, void|int max_life,
 
 //! Forcibly removes some key.
 //! If the 'hard' parameter is supplied and true, deleted objects will also
-//! have their @[lfun::destroy] method called upon removal by some
+//! have their @[lfun::_destruct] method called upon removal by some
 //! backends (i.e. memory)
 void delete(string key, void|int(0..1)hard) {
   if (!stringp(key)) key=(string)key; // paranoia
@@ -146,7 +146,7 @@ private void do_cleanup(function expiry_function, object storage) {
 #if constant(thread_create)
 protected Thread.Thread cleanup_thread;
 
-protected void destroy()
+protected void _destruct()
 {
   if (Thread.Thread t = cleanup_thread) {
     cleanup_thread = 0;

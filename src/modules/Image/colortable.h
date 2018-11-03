@@ -37,7 +37,7 @@ struct nct_scale
    struct nct_scale *next;
    rgb_group low,high;
    rgbl_group vector; /* high-low */
-   double invsqvector; /* |vector|² */
+   double invsqvector; /* |vector|^2 */
    INT32 realsteps;
    int steps;
    double mqsteps;     /* 1.0/(steps-1) */
@@ -46,8 +46,8 @@ struct nct_scale
 
 struct neo_colortable
 {
-   enum nct_type 
-   { 
+   enum nct_type
+   {
       NCT_NONE, /* no colors */
       NCT_FLAT, /* flat with weight */
       NCT_CUBE  /* cube with additions */
@@ -76,7 +76,7 @@ struct neo_colortable
       } cube;
    } u;
 
-   rgbl_group spacefactor; 
+   rgbl_group spacefactor;
       /* rgb space factors, normally 2,3,1 */
 
    struct lookupcache
@@ -86,7 +86,7 @@ struct neo_colortable
       int index;
    } lookupcachehash[COLORLOOKUPCACHEHASHSIZE];
 
-   union 
+   union
    {
       struct nctlu_cubicles
       {
@@ -94,7 +94,7 @@ struct neo_colortable
 	 int accur; /* accuracy, default 2 */
 	 struct nctlu_cubicle
 	 {
-	    int n; 
+	    int n;
 	    int *index; /* NULL if not initiated */
 	 } *cubicles; /* [r*g*b], index as [ri+(gi+bi*g)*r] */
       } cubicles;
@@ -116,7 +116,7 @@ struct neo_colortable
 
    union
    {
-      struct 
+      struct
       {
 	 float downback;
 	 float down;
@@ -126,7 +126,8 @@ struct neo_colortable
       } floyd_steinberg;
       struct nctd_randomcube
       {
-	 int r,g,b;
+         int r,g,b;
+         struct svalue *rnd;
       } randomcube;
       struct nctd_ordered
       {

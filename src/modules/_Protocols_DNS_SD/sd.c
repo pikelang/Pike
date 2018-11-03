@@ -6,12 +6,12 @@
 
 
 /* Glue for DNS Service Discovery, which is built on top of e.g. Multicast
-   DNS (ZeroConf/Rendezvous/Bonjour). Using this API a Pike program can 
-   register a service (e.g. a web server) and have other applications on 
+   DNS (ZeroConf/Rendezvous/Bonjour). Using this API a Pike program can
+   register a service (e.g. a web server) and have other applications on
    the local network detect it without additional configuration.
 
    The specification can be found at <http://www.dns-sd.org/>.
-   
+
    The implementation requires either the dns_ds.h (found in Mac OS X
    and SunOS 5.11+) or howl.h (part of libhowl on Linux).
 */
@@ -60,6 +60,14 @@
 
 #define IS_ERR(x) ((x) != kDNSServiceErr_NoError)
 
+/* Include these for htons(3SOCKET) et al. */
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 /* Instance variables for each service registration */
 struct service {
   DNSServiceRef  service_ref;
@@ -72,7 +80,7 @@ static void raise_error(char *msg, DNSServiceErrorType err)
 
   if (err == kDNSServiceErr_NoError)
     return;
-  
+
   switch (err) {
   case kDNSServiceErr_NoSuchName:
     reason = "No such name";
@@ -139,7 +147,7 @@ static DNSServiceErrorType start_service(struct service *svc,
 {
   DNSServiceErrorType err;
   DNSServiceRef       ref;
-  
+
   /* Empty strings should be passed as NULL in order to get default values */
   if (name && !strlen(name))
     name = NULL;
@@ -149,7 +157,7 @@ static DNSServiceErrorType start_service(struct service *svc,
     txt = NULL;
 
   // port must be provided in network byte-order.
-  port = htons(port);  
+  port = htons(port);
 
   svc->service_ref = NULL;
   err = DNSServiceRegister(&ref, 0, 0, name, service, domain, NULL, port,
@@ -164,10 +172,8 @@ static DNSServiceErrorType start_service(struct service *svc,
 
 static void stop_service(struct service *svc)
 {
-  if (svc->service_ref) {
+  if (svc->service_ref)
     DNSServiceRefDeallocate(svc->service_ref);
-    svc->service_ref = NULL;
-  }
 }
 
 
@@ -211,7 +217,7 @@ static void raise_error(char *msg, sw_result err)
 
   if (err == SW_OKAY)
     return;
-  
+
   switch (err) {
   case SW_DISCOVERY_E_NO_MEM:
     reason = "No memory";
@@ -248,13 +254,13 @@ static sw_result start_service(struct service *svc,
 			       int txtlen)
 {
   sw_result err = SW_DISCOVERY_E_UNKNOWN;
-  
+
   /* Empty strings should be passed as NULL in order to get default values */
   if (domain && !strlen(domain))
     domain = NULL;
   if (txt && !txtlen)
     txt = NULL;
-  
+
   err = sw_discovery_publish(service_session,
 			     0, name, service, domain, NULL, port,
 			     txt, txtlen, start_reply_fn, NULL,
@@ -290,7 +296,7 @@ static void * howl_thread(void *arg)
 }
 
 
-static void init_howl_module()
+static void init_howl_module(void)
 {
   if (sw_discovery_init(&service_session) == SW_OKAY) {
     th_create_small(&service_thread, howl_thread, NULL);
@@ -298,12 +304,12 @@ static void init_howl_module()
 }
 
 
-static void exit_howl_module()
+static void exit_howl_module(void)
 {
   /* Close active session */
   if (service_session)
     sw_discovery_fina(service_session);
-  
+
   /* Kill Howl thread if running */
   if (service_thread)
     th_kill(service_thread, SIGCHLD);
@@ -317,15 +323,15 @@ static void exit_howl_module()
 
 static void f_update_txt(INT32 args)
 {
-  check_all_args("Service->update_txt", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,	/* txt */
 		 0);
-  
+
   /* Can only be called if we have valid service */
-  if (THIS->service_ref) { 
+  if (THIS->service_ref) {
     char *txt = sp[0 - args].u.string->str;
     int  txtlen = sp[0 - args].u.string->len;
-    
+
     int err = update_txt_record(THIS, txt, txtlen);
     if (IS_ERR(err))
       raise_error("Could not update TXT record.", err);
@@ -338,18 +344,18 @@ static void f_create(INT32 args)
 {
   char                *name, *service, *domain, *txt;
   int                 port, txtlen, err;
-  
-  check_all_args("Service->create", args,
+
+  check_all_args(NULL, args,
 		 BIT_STRING,		/* name */
 		 BIT_STRING,		/* service */
 		 BIT_STRING,		/* domain */
 		 BIT_INT,		/* port */
 		 BIT_STRING | BIT_VOID,	/* txt */
 		 0);
-  
+
   /* Stop existing service if one is running */
   stop_service(THIS);
-  
+
   /* Get string arguments which should already be UTF-8 and clipped to
      appropriate lengths. */
   name    = sp[0 - args].u.string->str;
@@ -361,18 +367,11 @@ static void f_create(INT32 args)
      trust strlen. */
   txt     = (args == 5) ? sp[4 - args].u.string->str : NULL;
   txtlen  = txt ? sp[4 - args].u.string->len : 0;
-  
+
   /* Register new service */
   err = start_service(THIS, name, service, domain, port, txt, txtlen);
   if (IS_ERR(err))
     raise_error("Could not register service.", err);
-  pop_n_elems(args);
-}
-
-
-static void init_service_struct(struct object *UNUSED(o))
-{
-  THIS->service_ref = 0;
 }
 
 
@@ -386,19 +385,18 @@ static void exit_service_struct(struct object *UNUSED(o))
 PIKE_MODULE_INIT
 {
   start_new_program();
-  
+
   ADD_STORAGE(struct service);
-  
-  set_init_callback(init_service_struct);
+
   set_exit_callback(exit_service_struct);
-  
+
   /* function(string, string, string, int, string|void:void) */
   ADD_FUNCTION("create", f_create,
 	       tFunc(tStr tStr tStr tInt tOr(tStr, tVoid), tVoid), 0);
-  
+
   /* function(string:void) */
   ADD_FUNCTION("update_txt", f_update_txt, tFunc(tStr, tVoid), 0);
-  
+
   end_class("Service", 0);
 
 #ifdef HAVE_HOWL

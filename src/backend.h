@@ -8,7 +8,6 @@
 #define BACKEND_H
 
 #include "global.h"
-#include "time_stuff.h"
 #include "callback.h"
 
 /*
@@ -22,7 +21,6 @@
  * Used on:
  *   Solaris 7 + patches and above.
  *   OSF/1 + patches and above.
- *   IRIX 5.6.15m and above.
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVPOLL
@@ -52,7 +50,7 @@
  */
 #define BACKEND_OOB_IS_SIMULATED
 
-#if defined(HAVE_CFRUNLOOPRUNINMODE)
+#ifdef HAVE_CFRUNLOOPRUNINMODE
 /* Have kqueue+CFRunLoop variant (Mac OSX, iOS) */
 #define BACKEND_USES_CFRUNLOOP
 #endif /* HAVE_CFRUNLOOPRUNINMODE */
@@ -81,7 +79,7 @@ extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
 
 void count_memory_in_compat_cb_boxs(size_t *num, size_t *size);
-void free_all_compat_cb_box_blocks();
+void free_all_compat_cb_box_blocks(void);
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1
@@ -119,10 +117,13 @@ struct fd_callback_box
   struct object *ref_obj;	/**< If set, it's the object containing the box.
 				 * It then acts as the ref from the backend to
 				 * the object and is refcounted by the backend
-				 * whenever any event is wanted. */
+				 * whenever any event is wanted.
+				 *
+				 * It receives a ref for each when next and/or
+				 * events are non-zero. */
   struct fd_callback_box *next;	/**< Circular list of active fds in a backend.
 				 * NULL if the fd is not active in some
-				 * backend. Note: ref_obj MUST be freed if
+				 * backend. Note: ref_obj MUST be freed when
 				 * the box is unlinked. */
   int fd;			/**< Use change_fd_for_box to change this. May
 				 * be negative, in which case only the ref

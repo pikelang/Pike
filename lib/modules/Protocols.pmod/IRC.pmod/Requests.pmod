@@ -12,7 +12,7 @@ class Request
 {
    function callback;
    string cmd=0;
-   
+
    void async(object con,mixed ...args)
    {
       con->transmit_noreply(cmd,encode(args));
@@ -20,7 +20,7 @@ class Request
    }
 
    int(1..1) sync(object con,mixed ...args)
-   { 
+   {
       con->transmit_noreply(cmd,encode(args));
       return 1;
    }
@@ -60,7 +60,7 @@ mixed decode_answer(string s)
 
    string cmd;
    program p;
-   
+
    void create(string _cmd,string ...args)
    {
       source=replace(source,"%cmd%",cmd=_cmd);
@@ -82,10 +82,10 @@ mixed decode_answer(string s)
 
    object `()(mixed ... args)
    {
-      if (!p) 
-      { 
-	 p=compile_string(source,"NoReply."+cmd); 
-	 source=0; 
+      if (!p)
+      {
+	 p=compile_string(source,"NoReply."+cmd);
+	 source=0;
       }
       return p(@args);
    }
@@ -105,6 +105,7 @@ object part=NoReply("PART","string");
 object names=NoReply("NAMES","string");
 object who=NoReply("WHO","string");
 object kick=NoReply("KICK","string","string","text");
+object cap=NoReply("CAP","string","text");
 
 class mode
 {
@@ -116,9 +117,9 @@ class mode
    {
       switch (sizeof(args))
       {
-         case 2:  
+         case 2:
             return sprintf("%s %s",@args);
-         case 3:  
+         case 3:
             return sprintf("%s %s :%s",@args);
          default:
             error("illegal number of args to MODE");

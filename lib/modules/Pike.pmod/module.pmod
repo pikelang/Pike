@@ -4,6 +4,9 @@
 // Pike core things that don't belong anywhere else.
 //
 
+// These symbols won't be overloaded.
+local {
+
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
 constant WEAK = WEAK_INDICES|WEAK_VALUES;
@@ -74,13 +77,16 @@ constant DefaultBackend = __builtin.__backend;
 constant gc_parameters = __builtin.gc_parameters;
 constant implicit_gc_real_time = __builtin.implicit_gc_real_time;
 constant count_memory = __builtin.count_memory;
+constant identify_cycle = __builtin.identify_cycle;
 
 constant get_runtime_info = __builtin.get_runtime_info;
 
 // Type-checking:
+constant soft_cast = predef::__soft_cast;
 constant low_check_call = predef::__low_check_call;
 constant get_return_type = predef::__get_return_type;
 constant get_first_arg_type = predef::__get_first_arg_type;
+constant get_type_attributes = predef::__get_type_attributes;
 
 // precompile.pike checks for this
 #if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
@@ -127,3 +133,5 @@ TYPE check_call(TYPE fun_type, TYPE ... arg_types)
   return ret;
 }
 #endif /* 0 */
+
+}

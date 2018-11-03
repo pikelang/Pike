@@ -9,23 +9,25 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
+#include "gc_header.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MAPPING_WEAK_INDICES	2
 #define MAPPING_WEAK_VALUES	4
 #define MAPPING_WEAK		6
 #define MAPPING_FLAG_WEAK	6 /* Compat. */
+#define MAPPING_FLAG_NO_SHRINK	0x1000
 
 struct keypair
 {
   struct keypair *next;
-  unsigned INT32 hval;
+  size_t hval;
   struct svalue ind, val;
 };
 
 struct mapping_data
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  GC_MARKER_MEMBERS;
   INT32 valrefs; /* lock values too */
   INT32 hardlinks;
   INT32 size, hashsize;
@@ -42,7 +44,7 @@ struct mapping_data
 
 struct mapping
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  GC_MARKER_MEMBERS;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif
@@ -63,25 +65,19 @@ extern struct mapping *gc_internal_mapping;
 
 #define MD_KEYPAIRS(MD, HSIZE) \
    ( (struct keypair *)							\
-     DO_ALIGN( PTR_TO_INT(((struct mapping_data *)(MD))->hash + HSIZE),	\
+     DO_ALIGN( PTR_TO_INT(MD) + OFFSETOF(mapping_data, hash) + HSIZE * sizeof(struct keypair *),	\
 	       ALIGNOF(struct keypair)) )
+
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<(md)->hashsize;e++) for(k=(md)->hash[e];k;k=k->next)
-
-/* WARNING: this should not be used */
-#define MAPPING_LOOP(m) \
-  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data))) ;e<(m)->data->hashsize;e++) for(k=(m)->data->hash[e];k;k=k->next)
-
+#define MD_FULLP(md) (!(md)->free_list)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define NEW_MAPPING_LOOP(md) \
   for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
-
-/* WARNING: this should not be used */
-#define MAPPING_LOOP(m) \
-  for(((k = MD_KEYPAIRS((m)->data, (m)->data->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data)) ) ; e<(m)->data->size; e++,k++)
+#define MD_FULLP(md) ((md)->size >= (md)->num_keypairs)
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
@@ -132,7 +128,6 @@ PMOD_EXPORT void really_free_mapping(struct mapping *md);
 }while(0)
 
 /* Prototypes begin here */
-void really_free_mapping(struct mapping * m);
 void count_memory_in_mappings(size_t * num, size_t * size);
 
 
@@ -161,6 +156,15 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
   * @see free_mapping
   */
 PMOD_EXPORT void do_free_mapping(struct mapping *m);
+
+/** Perform a quick gc of the specified weak mapping.
+ *
+ * @param m The weak mapping to be garbage collected.
+ * @return The number of freed elements.
+ *
+ * @see do_gc
+ */
+ptrdiff_t do_gc_weak_mapping(struct mapping *m);
 
 /** Makes a copy of the passed mapping data and returns it to the caller.
   *
@@ -243,9 +247,9 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
   * @see simple_mapping_string_lookup
   */
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p);
+                                                     const struct pike_string *p);
 
-/** A shortcut function for inserting an entry into a mapping for cases 
+/** A shortcut function for inserting an entry into a mapping for cases
   * where the key is a Pike string.
   *
   * @param m mapping to insert the new entry into
@@ -296,7 +300,7 @@ PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
 							const char *p);
 
 /** First look up @b key1 in the passed mapping and check whether the returned
-  * value, if any, is a mapping itself. If it is a mapping, look it up using 
+  * value, if any, is a mapping itself. If it is a mapping, look it up using
   * @b key2 and return the retrieved entry's value, if any. If key1 lookup in
   * the @b m mapping doesn't return a mapping and @b create is not 0 allocate
   * a new mapping, insert it in @b m and use for lookup with @b key2. If @b key2
@@ -350,16 +354,16 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m);
 PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
 PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
 PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
-PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
+PMOD_EXPORT void clear_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
-PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op);
-PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op);
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
-void describe_mapping(struct mapping *m,struct processing *p,int indent);
+void describe_mapping(struct byte_buffer *buf, struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
@@ -373,7 +377,7 @@ PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
 void check_mapping(const struct mapping *m);
 void check_all_mappings(void);
 #endif
-PMOD_EXPORT void visit_mapping (struct mapping *m, int action);
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra);
 void gc_mark_mapping_as_referenced(struct mapping *m);
 void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);
@@ -386,15 +390,16 @@ void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 int mapping_is_constant(struct mapping *m,
 			struct processing *p);
-void free_all_mapping_blocks();
+void free_all_mapping_blocks(void);
 
+void o_append_mapping( INT32 args );
 /* Prototypes end here */
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 
-#define visit_mapping_ref(M, REF_TYPE)				\
+#define visit_mapping_ref(M, REF_TYPE, EXTRA)			\
   visit_ref (pass_mapping (M), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_mapping, NULL)
+	     (visit_thing_fn *) &visit_mapping, (EXTRA))
 #define gc_cycle_check_mapping(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_mapping, (X), (WEAK))
 

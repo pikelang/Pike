@@ -9,14 +9,12 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
   sys/param.h sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
-  direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
+  direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h sys/termios.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
-  sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h libzfs.h \
+  sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
   AvailabilityMacros.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 /* Needed for <sys/socketvar.h> on Solaris 10. */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
@@ -57,15 +55,19 @@ fi
 
 
 AC_HEADER_DIRENT
-AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl AC_CHECK_LIB(zfs, libzfs_init)
 
-AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
+dnl GMP is required and tested for in Gmp module. We just want LIBS
+dnl updated here. This is needed in case the gmp library is not a
+dnl shared library.
+AC_CHECK_LIB(gmp, main)
+
+AC_HAVE_FUNCS(readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
- madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
+ madvise poll setsockopt getprotobyname inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
  fdopendir pathconf fpathconf dirfd fstatat openat unlinkat kqueue access)
 
@@ -83,9 +85,7 @@ AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -129,6 +129,47 @@ dnl PIKE_CHECK_ZFS_ENUM(zfs_prop_t, ZFS_PROP_UTF8ONLY)
 
 AC_FUNC_MMAP
 
+if test "x$ac_cv_func_dirfd" = "xyes"; then :; else
+  # DIR.dd_fd is POSIX and X/OPEN.
+  # DIR.d_fd is old Solaris.
+
+  AC_MSG_CHECKING(if DIR has a dd_fd member)
+  AC_CACHE_VAL(pike_cv_DIR_dd_fd, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <dirent.h>
+    ], [
+      DIR dir;
+      dir.dd_fd = 0;
+    ], [pike_cv_DIR_dd_fd=yes],[pike_cv_DIR_dd_fd=no])
+  ])
+
+  if test "$pike_cv_DIR_dd_fd" = "yes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_DIR_DD_FD)
+  else
+    AC_MSG_RESULT(no)
+
+    AC_MSG_CHECKING(if DIR has a d_fd member)
+    AC_CACHE_VAL(pike_cv_DIR_d_fd, [
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <dirent.h>
+      ], [
+        DIR dir;
+        dir.d_fd = 0;
+      ], [pike_cv_DIR_d_fd=yes],[pike_cv_DIR_d_fd=no])
+    ])
+
+    if test "$pike_cv_DIR_d_fd" = "yes"; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_DIR_D_FD)
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+fi
+
 AC_MSG_CHECKING(if struct stat has a blocks member)
 AC_CACHE_VAL(pike_cv_struct_stat_blocks, [
 	AC_TRY_COMPILE([
@@ -147,12 +188,28 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(if struct stat has a st_atim member)
+AC_CACHE_VAL(pike_cv_struct_stat_atim, [
+	AC_TRY_COMPILE([
+#include <sys/stat.h>
+], [
+	struct stat s;
+        s.st_atim.tv_sec = 10;
+        s.st_atim.tv_nsec = 1000;
+],  [pike_cv_struct_stat_atim=yes],[pike_cv_struct_stat_atim=no])
+])
+
+if test "$pike_cv_struct_stat_atim" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_STRUCT_STAT_NSEC)
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -174,9 +231,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX or MacOS X) or 7(FreeBSD) arguments)
   AC_CACHE_VAL(pike_cv_sendfile_args, [
     AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -189,9 +244,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       # Probably FreeBSD-style, but we need to check that
       # we indeed have a prototype...
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -207,9 +260,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=7 ])
     ], [
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -282,9 +333,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       AC_MSG_CHECKING(struct sf_hdtr)
       AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
         AC_TRY_LINK([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -317,34 +366,6 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 else
   :
 fi
-
-AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
-AC_CACHE_VAL(pike_cv_func_mkdir_args,[
-AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#endif
-],[
-  mkdir("conftestdir",0666);
-],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
-])
-
-AC_MSG_RESULT($pike_cv_func_mkdir_args)
-AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
 
 if test x$ac_cv_func_getxattr = xyes ; then
   AC_MSG_CHECKING(if getxattr takes 4(Linux) or 6(Darwin) arguments)
@@ -664,9 +685,7 @@ if test x$ac_cv_func_statvfs = xyes ; then
 #ifdef HAVE_SYS_SYSPROTO_H
 #include <sys/sysproto.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #include <sys/stat.h>
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
@@ -986,6 +1005,52 @@ if test x$ac_cv_func_statfs = xyes ; then
     if test x$pike_cv_struct_statfs_f_bavail = xyes; then
       AC_DEFINE(HAVE_STATFS_F_BAVAIL)
     else :; fi
+    AC_MSG_CHECKING(if the struct statfs has the member f_fstypename)
+    AC_CACHE_VAL(pike_cv_struct_statfs_f_fstypename, [
+      AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_SYSPROTO_H
+#include <sys/sysproto.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <sys/stat.h>
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+#ifdef HAVE_SYS_STATFS_H
+#include <sys/statfs.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+      ], [
+        struct statfs st;
+        char * x = st.f_fstypename;
+      ], [ pike_cv_struct_statfs_f_fstypename=yes
+      ], [ pike_cv_struct_statfs_f_fstypename=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_struct_statfs_f_fstypename)
+    if test x$pike_cv_struct_statfs_f_fstypename = xyes; then
+      AC_DEFINE(HAVE_STATFS_F_FSTYPENAME)
+    else :; fi
   else
     # No struct statfs. We might be running ULTRIX,
     # so check for struct fs_data.
@@ -1281,102 +1346,6 @@ fi
 
 AC_DEFINE_UNQUOTED(SOCKET_BUFFER_MAX,$pike_cv_socket_buffer_max)
 AC_MSG_RESULT($pike_cv_socket_buffer_max)
-
-AC_MSG_CHECKING(for working getcwd)
-AC_CACHE_VAL(pike_cv_func_working_getcwd,
-[
-AC_TRY_RUN([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#ifndef POSIX_SOURCE
-#define POSIX_SOURCE
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#endif /* HAVE_DIRECT_H */
-#include <signal.h>
-
-#ifndef __NT__
-int sig_child(int arg)
-{
-#ifdef HAVE_WAITPID
-  waitpid(-1,0,WNOHANG);
-#else
-#ifdef HAVE_WAIT3
-  wait3(0,WNOHANG,0);
-#else
-#ifdef HAVE_WAIT4
-  wait3(-1,0,WNOHANG,0);
-#else
-
-  /* Leave them hanging */
-
-#endif /* HAVE_WAIT4 */
-#endif /* HAVE_WAIT3 */
-#endif /* HAVE_WAITPID */
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(SIGCHLD, sig_child);
-#endif
-}
-
-int sig_alarm() { exit(1); }
-#endif /* !__NT__ */
-
-int main()
-{
-  char *tmp;
-#ifndef __NT__
-  signal(SIGCHLD,sig_child);
-  signal(SIGALRM,sig_alarm);
-  alarm(4);
-#endif /* !__NT__ */
-  tmp=getcwd(0,10000);
-  if(tmp && strlen(tmp) <10000) exit(0);
-  exit(1);
-}
-],pike_cv_func_working_getcwd=yes,pike_cv_func_working_getcwd=no,
-  pike_cv_func_working_getcwd=yes)])
-
-if test "$pike_cv_func_working_getcwd" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_WORKING_GETCWD)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(if filesystem notifications exists)
-AC_CACHE_VAL(pike_cv_have_notifications, [
-  AC_TRY_COMPILE([
-  #ifdef __linux__
-  #define _GNU_SOURCE
-  #include <fcntl.h>
-  #endif
-  ],[
-       #ifdef __linux__
-         int test = F_NOTIFY;
-       #endif
-  ], [ pike_cv_have_notifications=yes ], [ pike_cv_have_notifications=no ])
-])
-if test "$pike_cv_have_notifications" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_NOTIFICATIONS)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(if filesystem notifications exists)
 
 AC_MSG_CHECKING(for pty master device)
 AC_CACHE_VAL(pike_cv_pty_master_pathname, [

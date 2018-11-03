@@ -1,20 +1,22 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /*! @module System
  */
 
 /*! @module Wnotify
  *!
- *! An interface to Windows filesystem change information. 
+ *! An interface to Windows filesystem change information.
  *!
  */
 
-#include "global.h"
-#include "interpret.h"
 #include "module.h"
+#include "interpret.h"
 #include "program.h"
-#include "stralloc.h"
-#include "svalue.h"
 #include "threads.h"
-#include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
 
@@ -28,12 +30,8 @@
 #include <FileAPI.h>
 #endif /* HAVE_FILEAPI_H */
 
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif /* HAVE_WINDOWS_H */
-
 #ifdef HAVE_WINBASE_H
-#include <winbase.h>
+#include <WinBase.h>
 #endif /* HAVE_WINBASE_H */
 
 #ifndef MAX_LEN
@@ -64,49 +62,33 @@ PIKECLASS NotificationHandle
     add_ref(path);
     THIS->watch_subtree = watch_subtree;
     THIS->filter = filter;
+
     if(string_has_null(path))
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: path cannot contain null.\n");
-    }
-    if((1 << path->size_shift)>1)
-    {
-      pop_n_elems(args);
+    if(path->size_shift)
       Pike_error("NotificationHandle: path cannot be a wide string.\n");
-    }
     if(THIS->path->len > MAX_LEN)
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: length of path is too long.\n");
-    }
+
     h = FindFirstChangeNotification(path->str, (BOOL)THIS->watch_subtree, (DWORD)THIS->filter);
     if(h == INVALID_HANDLE_VALUE)
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: failed to create handle.\n");
-    }
     else
       THIS->handle = h;
-    pop_n_elems(args);
-    return;
   }
 
   /*! @decl int get_error()
    */
   PIKEFUN int get_error()
   {
-    DWORD e;
-
-    e = GetLastError();
-
-    push_int(e);
+    RETURN GetLastError();
   }
 
   PIKEFUN void read_change()
   {
 /*
     BOOL res;
-*/	
+*/
     if(!THIS->triggered)
     {
       Pike_error("NotificationHandle.read_change(): no change event triggered.\n");
@@ -140,43 +122,27 @@ PIKECLASS EventPoller
   CVAR int handles_size;
   CVAR int handles_used;
 
-  /*! @decl void add_handle(NotificationHandle handle) 
+  /*! @decl void add_handle(NotificationHandle handle)
    */
   PIKEFUN void add_handle(object handle)
   {
     void * h;
-    int s,  n;
-    struct array * ph;
     HANDLE nh;
-    HANDLE * handles;
-    h = get_storage(handle, NotificationHandle_program);
-    if(!h)
-    {
-      pop_stack();
-      Pike_error("add_handle: invalid object type.\n");
-    }
 
-    ph = append_array(THIS->phandles, &Pike_sp[-args]);
-    THIS->phandles = ph;
-    nh = OBJ2_NOTIFICATIONHANDLE(handle)->handle;
+    h = get_storage(handle, Wnotify_NotificationHandle_program);
+    if(!h)
+      Pike_error("add_handle: invalid object type.\n");
+
+    THIS->phandles = append_array(THIS->phandles, &Pike_sp[-args]);
+    nh = OBJ2_WNOTIFY_NOTIFICATIONHANDLE(handle)->handle;
 
     if(THIS->handles_size <= THIS->handles_used)
     {
-       s = n = THIS->handles_size || 1;
-       s*=2;
-       handles = realloc(THIS->handles, sizeof(HANDLE) * s);
-       if(!handles) 
-       {
-         pop_stack();
-         Pike_error("add_handle: failed to allocate memory.\n");
-       }
-
-       THIS->handles = handles;
+       int s = THIS->handles_size || 1;
+       THIS->handles = xrealloc(THIS->handles, sizeof(HANDLE) * s * 2);
     }
 
     THIS->handles[THIS->handles_used++] = nh;
-
-    pop_stack();
   }
 
   /*! @decl NotificationHandle|int poll(void|float timeout)
@@ -187,16 +153,13 @@ PIKECLASS EventPoller
     DWORD to;
 
     if(THIS->handles_used < 1)
-    {
-      pop_stack();
       Pike_error("poll: no paths to monitor.\n");
-    }     
 
-    if(!timeout || (timeout->type == PIKE_T_INT && timeout->u.integer == 0))
+    if(!timeout || SAFE_IS_ZERO(timeout))
     {
        to = INFINITE;
     }
-    else if(timeout->type == PIKE_T_FLOAT)
+    else if(TYPEOF(*timeout) == PIKE_T_FLOAT)
     {
       to = (DWORD)timeout->u.float_number * 1000;
     }
@@ -215,10 +178,9 @@ PIKECLASS EventPoller
       struct svalue * sv;
       sv = THIS->phandles->item+res;
       /* TODO: proper value checking of the items in the array! */
-      OBJ2_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
+      OBJ2_WNOTIFY_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
       push_svalue(&ITEM(THIS->phandles)[res]);
       FindNextChangeNotification(THIS->handles+res);
-
     }
     else if(res >= WAIT_ABANDONED_0 && res <= (WAIT_ABANDONED_0 + THIS->handles_used - 1))
     {
@@ -233,9 +195,7 @@ PIKECLASS EventPoller
 
   INIT
   {
-    struct array * a;
-    a = allocate_array(0);
-   THIS->phandles = a;
+    THIS->phandles = allocate_array(0);
   }
 
   EXIT

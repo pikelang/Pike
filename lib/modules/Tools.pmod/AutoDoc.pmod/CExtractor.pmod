@@ -34,7 +34,7 @@ protected private class Extractor {
   protected array(.DocParser.Parse) tokens = ({});
 
   protected void create(string s, string filename) {
-    this_program::filename = filename;
+    this::filename = filename;
 
     array(string) ctokens = Parser.C.split(s);
     array(array(SourcePosition|string)) a = ({});
@@ -81,6 +81,7 @@ protected private class Extractor {
       // Namespaces are always located in the root.
       parent = root;
       // FALL_THROUGH
+    case "enum":
     case "class":
     case "module":
       {
@@ -103,11 +104,12 @@ protected private class Extractor {
         }
         else {
           c = (["module":Module,
+		"enum":Enum,
 		"class":Class,
 		"namespace":NameSpace])[meta->type]();
           c->name = meta->name;
 	  foreach(meta->inherits, PikeObject p)
-	    c->AddInherit(p);
+	    c->addInherit(p);
         }
         decls = ({ c });
         tokens = tokens[1..];
@@ -156,7 +158,7 @@ protected private class Extractor {
 	    extractorErrorAt(token->currentPosition,
 			     "enum can not be grouped"
 			     " with other declarations");
-	
+
 	  if (contexts["inherit"])
 	    extractorErrorAt(token->currentPosition,
 			     "inherit can not be grouped"
@@ -192,9 +194,9 @@ protected private class Extractor {
 
   }
 
-  void parseClassBody(Class|Module|NameSpace c, AutoDoc root) {
+  void parseClassBody(Enum|Class|Module|NameSpace c, AutoDoc root) {
     for(;;) {
-      array(string|Class|Module|DocGroup) a = parseObject(c, root);
+      array(string|Enum|Class|Module|DocGroup) a = parseObject(c, root);
       if (!a)
         return;
       switch ([string]a[0]) {
@@ -202,19 +204,19 @@ protected private class Extractor {
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a namespace we already know of:
           if (search(root->children, a[1]) < 0)
-            root->AddChild([object(NameSpace)]a[1]);
+            root->addChild([object(NameSpace)]a[1]);
           break;
-	  
+
         case "class":
         case "module":
         case "enum":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a @class or @module that was reentered:
 	  if (search(c->children, a[1]) < 0)
-	    c->AddChild([object(Class)|object(Module)]a[1]);
+	    c->addChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
-          c->AddGroup([object(DocGroup)]a[1]);
+          c->addGroup([object(DocGroup)]a[1]);
           break;
         default:
 	  werror("parseClassBody(): Unhandled object: %O\n", a);
@@ -237,7 +239,7 @@ AutoDoc extract(string s, string|void filename, string|void namespace,
   ns->name = namespace || "predef";
   ns->documentation = Documentation();
   ns->documentation->xml = "";
-  m->AddChild(ns);
+  m->addChild(ns);
 
   // Perform the actual parsing.
   e->parseClassBody(ns, m);

@@ -7,7 +7,7 @@
 //! @note
 //! Note that this implementation is far
 //! from complete and that interface changes
-//! might be neccessary during the implementation
+//! might be necessary during the implementation
 //! of the full standard.
 
 //
@@ -631,7 +631,7 @@ class Tagv2 {
     build_frame_map();
   }
 
-  string _sprintf(int t, mapping args) {
+  string _sprintf(int t) {
     if(t!='O') return 0;
     if(!header) return sprintf("ID3v2()");
     return sprintf("ID3v%d.%d.%d(%d)", header->major_version,
@@ -1207,7 +1207,7 @@ class Tagv1 {
 }
 
 class Framev1 {
-  
+
   string id;
   int size;
   FrameDatav1 data;
@@ -1361,7 +1361,7 @@ class Tag {
      return rv;
    }
 
-  protected string _sprintf(int t, mapping args) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("Tag(%O)", tag);
   }
 

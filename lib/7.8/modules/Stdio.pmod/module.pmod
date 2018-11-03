@@ -6,8 +6,9 @@
 //! is that @[Stdio.File] and @[Stdio.FILE] use
 //! proxy functions defined in @[_Stdio.Fd_ref],
 //! instead of accessing the file descriptors directly.
+#pragma no_deprecation_warnings
 
-//! @decl inherit 7.8::Stdio
+//! @decl inherit 7.9::Stdio
 
 //! @ignore
 inherit Stdio.module;
@@ -42,7 +43,7 @@ inherit Stdio.module;
 class File
 {
   optional inherit _Stdio.Fd_ref;
-  
+
 #if constant(predef::Stdio.file_open_places)
   /*static*/ int open_file_id = next_open_file_id++;
 #endif
@@ -276,7 +277,7 @@ class File
 #endif
     is_file = 0;
     debug_file = "socket";
-    debug_mode = host+":"+port; 
+    debug_mode = host+":"+port;
     debug_bits = 0;
     if(!client) {
       if (::connect(host, port)) {
@@ -297,7 +298,7 @@ class File
 #if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
-  //! 
+  //!
   //! @returns
   //!  Returns @expr{1@} on success, and @expr{0@} on failure.
   //!
@@ -353,7 +354,7 @@ class File
   }
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If trim is true, all @tt{'\r'@} characters will be removed from
   //! the input.
   {
@@ -585,7 +586,7 @@ class File
       return;
     }
 
-    debug_file = file;  
+    debug_file = file;
     debug_mode = mode;
     debug_bits = bits;
     switch(file)
@@ -603,7 +604,7 @@ class File
 	__closed_backtrace=0;
 #endif
 	break;
-	
+
       case "stderr":
 	_fd=_stderr;
 #ifdef __STDIO_DEBUG
@@ -768,25 +769,12 @@ class File
 
     if (!___read_callback) {
       if (___close_callback) {
-#if 0
-	/* This code only works for the POLL case! */
-	if ((peek(0, 1) == -1) && (errno() == System.EPIPE))
-#endif /* 0 */
 	  return __stdio_close_callback();
       }
       return 0;
     }
 
     if (!errno()) {
-#if 0
-      if (!(::mode() & PROP_IS_NONBLOCKING))
-	error ("Read callback called on blocking socket!\n"
-	       "Callbacks: %O, %O\n"
-	       "Id: %O\n",
-	       ___read_callback,
-	       ___close_callback,
-	       ___id);
-#endif /* 0 */
 
       string s;
 #ifdef STDIO_CALLBACK_TEST_MODE
@@ -830,22 +818,19 @@ class File
 
   protected int __stdio_fs_event_callback(int event_mask)
   {
-    BE_WERR ("__stdio_fs_event_callback()");    
-    
+    BE_WERR ("__stdio_fs_event_callback()");
+
     if (!___fs_event_callback) return 0;
 
   	if(errno())
     	BE_WERR ("  got error " + strerror (errno()) + " from read()");
-    
+
     return ___fs_event_callback(___id, event_mask);
   }
 
   protected int __stdio_close_callback()
   {
     BE_WERR ("__stdio_close_callback()");
-#if 0
-    if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
-#endif /* 0 */
 
     if (!___close_callback) return 0;
 
@@ -1057,7 +1042,7 @@ class File
   //! @param event_mask
   //!  An event mask specifing bitwise OR of one or more event types to
   //!  monitor, selected from @[Stdio.NOTE_WRITE] and friends.
-  //! 
+  //!
   //! @note
   //!   These functions do not set the file nonblocking.
   //!
@@ -1081,7 +1066,7 @@ class File
   //! that the callbacks can be called immediately by the backend
   //! thread, so it might not be safe to continue using the stream in
   //! this thread.
-  //! 
+  //!
   //! Because of that, it's useful to talk about "callback mode" when
   //! any callback is installed. In callback mode the stream should be
   //! seen as "bound" to the backend thread. For instance, it's only
@@ -1214,7 +1199,7 @@ class File
     }
     else
     {
-      ::set_fs_event_callback(0, 0);      
+      ::set_fs_event_callback(0, 0);
     }
   }
 
@@ -1228,7 +1213,7 @@ class File
       }
     }
   }
-  
+
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
 
@@ -1339,7 +1324,7 @@ class File
 #ifdef __STDIO_DEBUG
     if(mixed x=catch { ::set_nonblocking(); })
     {
-      x[0]+=(__closed_backtrace ? 
+      x[0]+=(__closed_backtrace ?
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
 	   "This file has never been open.\n" );
       throw(x);
@@ -1398,27 +1383,15 @@ class File
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_blocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_nonblocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
-   
+
   protected void destroy()
   {
     BE_WERR("destroy()");
@@ -1534,7 +1507,7 @@ class FILE
   private array(string) cached_lines = ({});
 
   private function(string:string) output_conversion, input_conversion;
-  
+
   protected string _sprintf( int type, mapping flags )
   {
     return ::_sprintf( type, flags );
@@ -1553,7 +1526,7 @@ class FILE
       return 0;
     }
   }
- 
+
   inline private int get_data()
   {
     if( bpos )
@@ -1738,7 +1711,7 @@ class FILE
   array(string) ngets(void|int(1..) n, int(0..1)|void not_all)
   {
     array(string) res;
-    if (!n) 
+    if (!n)
     {
        res=read()/"\n";
        if (res[-1]=="" || not_all) return res[..<1];
@@ -1821,7 +1794,7 @@ class FILE
     }
   }
 #endif
-  
+
   int assign(File|FILE foo)
   {
     bpos=0; cached_lines=({}); lp=0;
@@ -1879,8 +1852,8 @@ class FILE
   {
     return lambda(){ return read( nbytes); };
   }
-    
-  //! Returns an iterator that will loop over the lines in this file. 
+
+  //! Returns an iterator that will loop over the lines in this file.
   //!
   //! @seealso
   //!   @[line_iterator()]
@@ -1893,7 +1866,7 @@ class FILE
   }
 
   object line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If @[trim] is true, all @tt{'\r'@} characters will be removed
   //! from the input.
   //!
@@ -1904,7 +1877,7 @@ class FILE
   //! functions that read data with the line iterator, it will produce
   //! unexpected results since the internal buffer in the iterator will not
   //! contain sequential file-data in those cases.
-  //! 
+  //!
   //! @seealso
   //!   @[_get_iterator()]
   {
@@ -2020,33 +1993,3 @@ class FILE
     return b[bpos++];
   }
 }
-
-//! An instance of @tt{FILE("stderr")@}, the standard error stream. Use this
-//! when you want to output error messages.
-//!
-//! @seealso
-//!   @[predef::werror()]
-FILE stderr=FILE("stderr");
-
-//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
-//! when you want to write anything to the standard output.
-//!
-//! @seealso
-//!   @[predef::write()]
-FILE stdout=FILE("stdout");
-
-//! An instance of @tt{FILE("stdin")@}, the standard input stream. Use this
-//! when you want to read anything from the standard input.
-//! This example will read lines from standard input for as long as there
-//! are more lines to read. Each line will then be written to stdout together
-//! with the line number. We could use @[Stdio.stdout.write()] instead
-//! of just @[write()], since they are the same function.
-//!
-//! @example
-//!  int main()
-//!  {
-//!    int line;
-//!    while(string s=Stdio.stdin.gets())
-//! 	 write("%5d: %s\n", line++, s);
-//!  }
-FILE stdin=FILE("stdin");

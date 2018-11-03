@@ -13,10 +13,10 @@ COM_AVAILABLE=0
 
 PIKE_FEATURE_WITHOUT(COM)
 AC_ARG_WITH(com,  [  --without-com       no support for COM],[],[with_com=yes])
-AC_ARG_WITH(com-include-dir, 
+AC_ARG_WITH(com-include-dir,
 	[  --with-com-include-dir=dir    look for header-files in dir],
 	[pike_com_user_include_directory=$withval])
-AC_ARG_WITH(com-lib-dir, 
+AC_ARG_WITH(com-lib-dir,
 	[  --with-com-lib-dir=dir    look for COM libs in dir],
 	[pike_com_user_lib_directory=$withval])
 
@@ -165,7 +165,7 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
     fi
   fi
 
-  AC_CHECK_HEADERS(objbase.h winbase.h setjmp.h ole2.h)
+  AC_CHECK_HEADERS(objbase.h winbase.h ole2.h)
 
   pike_cv_com=no
 

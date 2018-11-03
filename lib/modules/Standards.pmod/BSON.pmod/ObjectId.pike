@@ -5,10 +5,9 @@ int timestamp;
 int host;
 int pid;
 int counter;
-private function getCounter;
 
 //!
-static void create(string|void _id)
+protected void create(string|void _id)
 {
   if(_id)
   {
@@ -19,24 +18,23 @@ static void create(string|void _id)
     generate_id();
 }
 
-static void generate_id()
+protected void generate_id()
 {
     id = sprintf("%4c%3s%2c%3c", time(), make_host_hash(), getpid(), make_counter());
     populate();
 }
 
-static string make_host_hash()
+protected string make_host_hash()
 {
   return Crypto.MD5.hash(System.gethostname())[..2];
 }
 
-static int make_counter()
+protected int make_counter()
 {
-  if(!getCounter) getCounter = master()->resolv("Standards.BSON.getCounter");
-  return getCounter();
+  return Pike.Lazy.Standards.BSON.getCounter();
 }
 
-static void populate()
+protected void populate()
 {
   if(sizeof(id) == 24)
     sscanf(id, "%8x%6x%4x%6x", timestamp, host, pid, counter);
@@ -46,19 +44,18 @@ static void populate()
 }
 
 string get_id()
-{ 
+{
   return sprintf("%4c%3c%2c%3c", timestamp, host, pid, counter);
 }
 
-string _sprintf(mixed t)
+protected string _sprintf(mixed t)
 {
-	return "ObjectId(" + String.string2hex(get_id()) + ")";
+  return sprintf("ObjectId(%x)", get_id());
 }
 
-static mixed cast(string t)
+protected mixed cast(string t)
 {
   if(t == "string")
     return String.string2hex(get_id());
-  else
-    throw(Error.Generic("invalid cast of ObjectId to " + t + "\n"));
+  return UNDEFINED;
 }

@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.DES3)
 
 //! The inadequate key size of @[DES] has already been mentioned. One
 //! way to increase the key size is to pipe together several DES boxes
@@ -30,10 +31,4 @@
 //! secure, i.e. there are no known attacks significantly better than
 //! brute force.
 
-#if constant(Nettle) && constant(Nettle.DES3)
-
 inherit Nettle.DES3;
-
-#else
-constant this_program_does_not_exist=1;
-#endif

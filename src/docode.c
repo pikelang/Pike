@@ -45,6 +45,7 @@ struct statement_label_name
   struct statement_label_name *next;
   struct pike_string *str;
   INT_TYPE line_number;
+  int used;
 };
 
 struct statement_label
@@ -173,12 +174,12 @@ static struct switch_data current_switch = {0, 0, 0, 0, 0, NULL, NULL};
 
 void upd_int(int offset, INT32 tmp)
 {
-  MEMCPY(Pike_compiler->new_program->program+offset, (char *)&tmp,sizeof(tmp));
+  memcpy(Pike_compiler->new_program->program+offset, &tmp, sizeof(tmp));
 }
 
 INT32 read_int(int offset)
 {
-  return EXTRACT_INT(Pike_compiler->new_program->program+offset);
+  return (INT32)get_unaligned32(Pike_compiler->new_program->program+offset);
 }
 
 static int label_no=0;
@@ -195,7 +196,7 @@ int do_jump(int token,INT32 lbl)
 
 
 #define LBLCACHESIZE 4711
-#define CURRENT_INSTR ((long)instrbuf.s.len / (long)sizeof(p_instr))
+#define CURRENT_INSTR (buffer_content_length(&instrbuf) / sizeof(p_instr))
 #define MAX_UNWIND 100
 
 static int lbl_cache[LBLCACHESIZE];
@@ -210,7 +211,7 @@ static int do_branch(INT32 lbl)
     INT32 last,pos=lbl_cache[lbl % LBLCACHESIZE];
     if(pos < (last=CURRENT_INSTR) &&  (CURRENT_INSTR - pos) < MAX_UNWIND)
     {
-#define BUF ((p_instr *)instrbuf.s.str)
+#define BUF ((p_instr *)buffer_ptr(&instrbuf))
       if(BUF[pos].opcode == F_LABEL && BUF[pos].arg == lbl)
       {
 	for(;pos < last;pos++)
@@ -268,7 +269,7 @@ void do_pop(int x)
   case 1: emit0(F_POP_VALUE); break;
   default: emit1(F_POP_N_ELEMS,x); break;
   }
-  current_stack_depth -= x;
+  modify_stack_depth(-x);
 }
 
 static void do_pop_mark(void *UNUSED(ignored))
@@ -339,7 +340,7 @@ static void code_expression(node *n, int flags, char *err)
   }
 }
 
-void do_cond_jump(node *n, int label, int iftrue, int flags)
+static void do_cond_jump(node *n, int label, int iftrue, int flags)
 {
   iftrue=!!iftrue;
   if((flags & DO_POP) && node_is_tossable(n))
@@ -369,25 +370,29 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
       do_cond_jump(CDR(n), label, iftrue, flags);
     }
     return;
-    
+
   case F_APPLY:
     if(!is_efun(CAR(n), f_not)) break;
+    /* FALLTHRU */
 
   case F_NOT:
     if(!(flags & DO_POP)) break;
     do_cond_jump(CDR(n), label , !iftrue, flags | DO_NOT_COPY);
     return;
+  default:
+    /* Inform gcc that we handle all the values in the enum. */
+    break;
   }
 
   code_expression(n, flags | DO_NOT_COPY, "condition");
-  
+
   if(flags & DO_POP)
   {
     if(iftrue)
       do_jump(F_BRANCH_WHEN_NON_ZERO, label);
     else
       do_jump(F_BRANCH_WHEN_ZERO, label);
-    current_stack_depth--;
+    modify_stack_depth(-1);
   }else{
     if(iftrue)
       do_jump(F_LOR, label);
@@ -430,6 +435,24 @@ static INT32 count_cases(node *n)
   }
 }
 
+static int has_automap(node *n)
+{
+  if(!n) return 0;
+  switch(n->token)
+  {
+  case F_AUTO_MAP_MARKER:
+  case F_AUTO_MAP:
+    return 1;
+
+  default:
+    if(car_is_node(n) && has_automap(CAR(n)) )
+      return 1;
+    if( cdr_is_node(n) && has_automap(CDR(n)) )
+      return 1;
+  }
+  return 0;
+}
+
 
 int generate_call_function(node *n)
 {
@@ -442,7 +465,7 @@ int generate_call_function(node *n)
   return 1;
 }
 
-static INLINE struct compiler_frame *find_local_frame(INT32 depth)
+static struct compiler_frame *find_local_frame(INT32 depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
   while(--depth>=0) f=f->previous;
@@ -458,9 +481,21 @@ static int do_lfun_call(int id, node *args)
   struct reference *ref =
     Pike_compiler->new_program->identifier_references + id;
 
-  emit0(F_MARK);
-  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-  do_docode(args,0);
+  if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
+     ((id == Pike_compiler->compiler_frame->current_function_number) ||
+      ((!ref->inherit_offset) &&
+       (ref->identifier_offset ==
+	Pike_compiler->new_program->
+	identifier_references[Pike_compiler->compiler_frame->
+			      current_function_number].identifier_offset))) &&
+     !(Pike_compiler->new_program->
+       identifiers[ref->identifier_offset].identifier_flags &
+       (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
+     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
+  {
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    emit0(F_MARK);
+    do_docode(args,0);
 
   /* Test description:
    *
@@ -474,24 +509,12 @@ static int do_lfun_call(int id, node *args)
    *
    * * Check that the current function doesn't contain scoped functions.
    */
-  if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
-     ((id == Pike_compiler->compiler_frame->current_function_number) ||
-      ((!ref->inherit_offset) &&
-       (ref->identifier_offset ==
-	Pike_compiler->new_program->
-	identifier_references[Pike_compiler->compiler_frame->
-			      current_function_number].identifier_offset))) &&
-     !(Pike_compiler->new_program->
-       identifiers[ref->identifier_offset].identifier_flags &
-       (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
-     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
-  {
-    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & ID_INLINE))
+    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
     {
       /* Identifier is declared inline/local
        * or in inlining pass.
        */
-      if ((ref->id_flags & ID_INLINE) &&
+      if ((ref->id_flags & (ID_INLINE|ID_PRIVATE)) &&
 	  (!Pike_compiler->compiler_frame->is_inline)) {
 	/* Explicit local:: reference in first pass.
 	 *
@@ -511,10 +534,30 @@ static int do_lfun_call(int id, node *args)
       Pike_compiler->compiler_frame->recur_label =
 	do_jump(F_POINTER, Pike_compiler->compiler_frame->recur_label);
     }
-  } else {
-    emit1(F_CALL_LFUN, id);
+    POP_AND_DONT_CLEANUP;
+    return 1;
   }
-  POP_AND_DONT_CLEANUP;
+ else {
+#ifdef USE_APPLY_N
+   int nargs = count_args(args);
+    if( nargs == -1 )
+    {
+#endif
+     PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+      emit0(F_MARK);
+      do_docode(args,0);
+      emit1(F_CALL_LFUN, id);
+    POP_AND_DONT_CLEANUP;
+    return 1;
+#ifdef USE_APPLY_N
+    }
+    else
+    {
+      do_docode(args,0);
+      emit2(F_CALL_LFUN_N, id, nargs);
+    }
+#endif
+  }
   return 1;
 }
 
@@ -538,9 +581,9 @@ static void emit_apply_builtin(char *func)
 			  n->name);
       if(TYPEOF(n->u.sval) == T_FUNCTION &&
 	 SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN)
-	emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_CALL_BUILTIN, (INT32)tmp1);
       else
-	emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_APPLY, (INT32)tmp1);
       break;
 
     default:
@@ -602,7 +645,7 @@ static void emit_builtin_svalue(char *func)
 			  (!(n->tree_info & OPT_EXTERNAL_DEPEND)) &&
 			  (TYPEOF(n->u.sval) != T_TYPE),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       break;
 
     default:
@@ -658,6 +701,130 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
   emit1 (F_RANGE, bound_types);
 }
 
+static void emit_global( int n )
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+  struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+  if(!(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+     && !ref->inherit_offset
+     && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
+     && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
+  {
+    /* fprintf( stderr, "private global %d\n", (INT32)id->func.offset  ); */
+    if( ref->id_flags & (ID_PRIVATE|ID_FINAL) )
+    {
+      if(  id->run_time_type == PIKE_T_MIXED  )
+	emit1(F_PRIVATE_GLOBAL, id->func.offset);
+      else
+	emit2(F_PRIVATE_TYPED_GLOBAL, id->func.offset, id->run_time_type);
+      return;
+    }
+
+    if( id->run_time_type == PIKE_T_MIXED )
+    {
+      emit2(F_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n);
+      return;
+    }
+/*  else if( (id->func.offset < 65536) && (n<65536) ) */
+/*  { */
+/* 	INT32 mix = id->func.offset | (n<<16); */
+/* 	emit2(F_PRIVATE_IF_DIRECT_TYPED_GLOBAL, mix, id->run_time_type); */
+/*  } */
+  }
+  emit1(F_GLOBAL, n);
+}
+
+static void emit_assign_global( int n, int and_pop )
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+  struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+  if( !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && !ref->inherit_offset
+      && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
+      && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
+  {
+    if( (ref->id_flags & (ID_PRIVATE|ID_FINAL)) )
+    {
+      if( id->run_time_type == PIKE_T_MIXED )
+        emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
+              id->func.offset);
+      else
+        emit2((and_pop?F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_TYPED_GLOBAL),
+              id->func.offset, id->run_time_type);
+      return;
+    }
+    if( id->run_time_type == PIKE_T_MIXED )
+    {
+      emit2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n );
+      if( and_pop )
+	emit0(F_POP_VALUE);
+      return;
+    }
+  }
+  emit1((and_pop?F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL), n);
+}
+
+static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
+{
+  struct compilation *c = THIS_COMPILATION;
+  node **arg;
+  int no = 0;
+  int tmp1=store_constant(&func->u.sval,
+                          !(func->tree_info & OPT_EXTERNAL_DEPEND),
+                          func->name);
+
+
+#ifdef PIKE_DEBUG
+  arg = my_get_arg(&args,0);
+  if( !node_is_eq(*arg,lval) )
+    Pike_fatal("lval should be the same as arg1, or this will not work.\n");
+#endif
+  do_docode(lval, DO_LVALUE);
+  emit0(F_MARK);
+  emit0(F_CONST0);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  while ((arg = my_get_arg(&args, ++no)) && *arg) {
+     do_docode(*arg, 0);
+   }
+   emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, (INT32)tmp1);
+   POP_AND_DONT_CLEANUP;
+   return 1;
+}
+
+static int is_apply_constant_function_arg0( node *n, node *target )
+{
+    if (/*n->token == F_APPLY &&*/
+        (CAR(n)->token == F_CONSTANT) &&
+        (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+        (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
+        (CAR(n)->u.sval.u.efun->function != f_map) &&
+        (CAR(n)->u.sval.u.efun->function != f_filter)) {
+	/* efuns typically don't access object variables. */
+        node *args = CDR(n), **arg;
+	if (args)
+        {
+            arg = my_get_arg(&args, 0);
+            if (arg && node_is_eq(target, *arg) &&
+                !(args->tree_info & OPT_ASSIGNMENT))
+            {
+                if(match_types(target->type, array_type_string) ||
+                   match_types(target->type, string_type_string) ||
+                   match_types(target->type, object_type_string) ||
+                   match_types(target->type, multiset_type_string) ||
+                   match_types(target->type, mapping_type_string))
+                {
+                    return emit_ltosval_call_and_assign(target,CAR(n),args);
+                }
+            }
+	}
+    }
+    return 0;
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -670,7 +837,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     yyerror("Argument count mismatch for multi-assignment.\n");
     return;
   }
-  
+
   if (vars->token == F_LVALUE_LIST) {
     var = CAR(vars);
     vars = CDR(vars);
@@ -681,7 +848,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
   switch(var->token) {
   case F_LOCAL:
-    if(var->u.integer.a >= 
+    if(var->u.integer.a >=
        find_local_frame(var->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
 
@@ -695,19 +862,6 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     code_expression(val, 0, "RHS");
     emit_multi_assign(vals, vars, no+1);
     emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
-    break;
-
-    /* FIXME: Make special case for F_EXTERNAL */
-  case F_IDENTIFIER:
-    if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program,
-					    var->u.id.number)->identifier_flags))
-    {
-      yyerror("Cannot assign functions or constants.\n");
-    }else{
-      code_expression(val, 0, "RHS");
-      emit_multi_assign(vals, vars, no+1);
-      emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.id.number);
-    }
     break;
 
   case F_GET_SET:
@@ -754,7 +908,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 	}
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_EXTERNAL:
     /* Check that it is in this context */
     if(Pike_compiler ->new_program->id == var->u.integer.a)
@@ -765,7 +919,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
       {
 	code_expression(val, 0, "RHS");
 	emit_multi_assign(vals, vars, no+1);
-	emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.integer.b);
+        emit_assign_global( var->u.integer.b, 1 );
 	break;
       }
     }
@@ -798,12 +952,11 @@ static int do_docode2(node *n, int flags)
 	emit1(F_NUMBER,0);
 	emit1(F_NUMBER,0);
 	return 2;
-	
+
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
       case F_LOCAL:
       case F_GLOBAL:
-      case F_IDENTIFIER:
       case F_INDEX:
       case F_ARROW:
       case F_ARG_LIST:
@@ -827,7 +980,7 @@ static int do_docode2(node *n, int flags)
   {
     ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (32768) -
       Pike_interpreter.stack_top ;
-    x_*=STACK_DIRECTION;						
+    x_*=STACK_DIRECTION;
     if(x_>0)
     {
       yyerror("Too deep recursion in compiler. (please report this)");
@@ -853,7 +1006,7 @@ static int do_docode2(node *n, int flags)
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);
     return 1;
-      
+
   case F_EXTERNAL:
   case F_GET_SET:
     {
@@ -956,7 +1109,7 @@ static int do_docode2(node *n, int flags)
 	   * prototype. */
 	  emit1(F_LFUN, n->u.integer.b);
 	} else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-		   (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
+		   (ref->id_flags & (ID_INLINE|ID_PRIVATE)) && !ref->inherit_offset &&
 		   (id->func.const_info.offset >= 0)) {
 	  /* An inline, local or final constant identifier.
 	   * No need for vtable traversal during runtime.
@@ -971,7 +1124,7 @@ static int do_docode2(node *n, int flags)
 	    emit1(F_CONSTANT, id->func.const_info.offset);
 	  }
 	}else{
-	  emit1(F_GLOBAL, n->u.integer.b);
+          emit_global( n->u.integer.b );
 	}
       }
     }
@@ -1031,6 +1184,17 @@ static int do_docode2(node *n, int flags)
     return 1;
   }
 
+  case F_APPEND_MAPPING: {
+    emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    do_docode(CAR(n),DO_LVALUE);
+    emit0(F_CONST0);	/* Reserved for svalue. */
+    do_docode(CDR(n),0);
+    emit0(F_APPEND_MAPPING);
+    POP_AND_DONT_CLEANUP;
+    return 1;
+  }
+
   case '?':
   {
     INT32 *prev_switch_jumptable = current_switch.jumptable;
@@ -1040,9 +1204,9 @@ static int do_docode2(node *n, int flags)
     if(!CDDR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+      do_jump_when_zero(CAR(n), (INT32)tmp1);
       DO_CODE_BLOCK(CADR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -1050,22 +1214,22 @@ static int do_docode2(node *n, int flags)
     if(!CADR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+      do_jump_when_non_zero(CAR(n), (INT32)tmp1);
       DO_CODE_BLOCK(CDDR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
 
     tmp1=alloc_label();
-    do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+    do_jump_when_zero(CAR(n), (INT32)tmp1);
 
     adroppings=do_docode(CADR(n), flags);
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
     tmp2=do_branch(-1);
-    low_insert_label( DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp1 );
 
     bdroppings=do_docode(CDDR(n), flags);
     if(adroppings < bdroppings)
@@ -1075,190 +1239,99 @@ static int do_docode2(node *n, int flags)
 
     if(adroppings > bdroppings)
     {
-      update_arg(DO_NOT_WARN((INT32)tmp3),
-		 adroppings - bdroppings);
+      update_arg((INT32)tmp3, adroppings - bdroppings);
       adroppings=bdroppings;
     }
 
-    low_insert_label( DO_NOT_WARN((INT32)tmp2));
+    low_insert_label( (INT32)tmp2 );
 
     current_switch.jumptable = prev_switch_jumptable;
     return adroppings;
   }
-      
-  case F_AND_EQ:
-  case F_OR_EQ:
-  case F_XOR_EQ:
-  case F_LSH_EQ:
-  case F_RSH_EQ:
-  case F_ADD_EQ:
-  case F_SUB_EQ:
-  case F_MULT_EQ:
-  case F_MOD_EQ:
-  case F_DIV_EQ:
-    if((CAR(n) && CAR(n)->token == F_AUTO_MAP_MARKER) ||
-       (CDR(n) && CDR(n)->token == F_AUTO_MAP_MARKER))
-    {
-      char *opname;
-
-      if(CAR(n)->token == F_AUTO_MAP_MARKER)
-      {
-	int depth=0;
-	node *tmp=CAR(n);
-	while(tmp->token == F_AUTO_MAP_MARKER)
-	{
-	  depth++;
-	  tmp=CAR(tmp);
-	}
-	tmp1=do_docode(tmp,DO_LVALUE);
-	emit0(F_MARK);
-	emit0(F_MARK);
-	emit0(F_LTOSVAL);
-	emit1(F_NUMBER,depth);
-	emit_apply_builtin("__builtin.automap_marker");
-      }else{
-	tmp1=do_docode(CAR(n),DO_LVALUE);
-	emit0(F_LTOSVAL);
-      }
-
-      switch(n->token)
-      {
-	case F_ADD_EQ: opname="`+"; break;
-	case F_AND_EQ: opname="`&"; break;
-	case F_OR_EQ:  opname="`|"; break;
-	case F_XOR_EQ: opname="`^"; break;
-	case F_LSH_EQ: opname="`<<"; break;
-	case F_RSH_EQ: opname="`>>"; break;
-	case F_SUB_EQ: opname="`-"; break;
-	case F_MULT_EQ:opname="`*"; break;
-	case F_MOD_EQ: opname="`%"; break;
-	case F_DIV_EQ: opname="`/"; break;
-	default:
-	  Pike_fatal("Really???\n");
-	  opname="`make gcc happy";
-      }
-
-      emit_builtin_svalue(opname);
-      emit2(F_REARRANGE,1,1);
-
-      if(CDR(n)->token == F_AUTO_MAP)
-      {
-	do_encode_automap_arg_list(CDR(n), 0);
-      }else{
-	code_expression(CDR(n), 0, "assignment");
-      }
-      emit_apply_builtin("__automap__");
-    }else{
-      tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef PIKE_DEBUG
-      if(tmp1 != 2)
-	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
-#endif
-
-      if(n->token == F_ADD_EQ && (flags & DO_POP))
-      {
-	code_expression(CDR(n), 0, "assignment");
-	emit0(F_ADD_TO_AND_POP);
-	return 0;
-      }
-      
-      if(CAR(n)->token != F_AUTO_MAP &&
-	 (match_types(CAR(n)->type, array_type_string) ||
-	  match_types(CAR(n)->type, string_type_string) ||
-	  match_types(CAR(n)->type, mapping_type_string) ||
-	  match_types(CAR(n)->type, object_type_string)))
-      {
-	code_expression(CDR(n), 0, "assignment");
-	emit0(F_LTOSVAL2_AND_FREE);
-      }else{
-	emit0(F_LTOSVAL);
-	code_expression(CDR(n), 0, "assignment");
-      }
-      
-      
-      switch(n->token)
-      {
-	case F_ADD_EQ:
-	  if(CAR(n)->type == int_type_string &&
-	     CDR(n)->type == int_type_string)
-	  {
-	    emit0(F_ADD_INTS);
-	  }
-	  else if(CAR(n)->type == float_type_string &&
-		  CDR(n)->type == float_type_string)
-	  {
-	    emit0(F_ADD_FLOATS);
-	  }else{
-	    emit0(F_ADD);
-	  }
-	  break;
-	case F_AND_EQ: emit0(F_AND); break;
-	case F_OR_EQ:  emit0(F_OR);  break;
-	case F_XOR_EQ: emit0(F_XOR); break;
-	case F_LSH_EQ: emit0(F_LSH); break;
-	case F_RSH_EQ: emit0(F_RSH); break;
-	case F_SUB_EQ: emit0(F_SUBTRACT); break;
-	case F_MULT_EQ:emit0(F_MULTIPLY);break;
-	case F_MOD_EQ: emit0(F_MOD); break;
-	case F_DIV_EQ: emit0(F_DIVIDE); break;
-      }
-    }
-    
-    if(flags & DO_POP)
-    {
-      emit0(F_ASSIGN_AND_POP);
-      return 0;
-    }else{
-      emit0(F_ASSIGN);
-      return 1;
-    }
 
   case F_MULTI_ASSIGN:
     if (flags & DO_POP) {
-      emit_multi_assign(CAR(n), CDR(n), 0);
+      emit_multi_assign(CDR(n), CAR(n), 0);
       return 0;
     } else {
       /* Fall back to the normal assign case. */
-      tmp1=do_docode(CDR(n),DO_LVALUE);
+      tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
+      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1) );
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-      do_docode(CAR(n), 0);
+      do_docode(CDR(n), 0);
       emit_apply_builtin("aggregate");
       POP_AND_DONT_CLEANUP;
       emit0(F_ASSIGN);
       return 1;
     }
 
+  case F_ASSIGN_SELF:
+    /* in assign self we know this:
+     *
+     * car(n) = lvalue
+     * cdr(n)= softcast(apply(efun, arglist(car(n),one more arg)))
+     *
+     * The first argument of the arglist is equal to the lvalue.
+     *
+     * We only want to evaluate car(n) once.
+     */
+    if( CAR(n)->token == F_AUTO_MAP_MARKER )
+      yyerror("[*] is not yet supported here\n");
+    return emit_ltosval_call_and_assign( CAR(n), CAADR(n), CDADR(n) );
+
   case F_ASSIGN:
-    switch(CAR(n)->token)
+
+    if( CAR(n)->token == F_AUTO_MAP_MARKER )
+    {
+        int depth = 0;
+        node *lval = CAR(n);
+        while( lval->token == F_AUTO_MAP_MARKER )
+        {
+            lval = CAR(lval);
+            depth++;
+        }
+        do_docode(lval,0); /* note: not lvalue */
+        if(do_docode(CDR(n),0)!=1)
+            yyerror("RHS is void!");
+
+        if( CDR(n)->token == F_AUTO_MAP_MARKER ||
+            CDR(n)->token == F_AUTO_MAP ||
+            /* Well, hello there... ;) */
+            /* This is what is generated by a[*] += 10 and such. */
+            (CDR(n)->token == F_SOFT_CAST &&
+             has_automap(CDR(n))))
+        {
+          emit1(F_ASSIGN_INDICES,depth);
+        }
+        else
+        {
+          emit1(F_ASSIGN_ALL_INDICES,depth);
+        }
+        if( flags & DO_POP )
+            emit0( F_POP_VALUE );
+        return !(flags&DO_POP);
+    }
+
+    switch(CDR(n)->token)
     {
     case F_RANGE:
-    case F_AND:
-    case F_OR:
-    case F_XOR:
-    case F_LSH:
-    case F_RSH:
-    case F_ADD:
-    case F_MOD:
-    case F_SUBTRACT:
-    case F_DIVIDE:
-    case F_MULTIPLY:
-      if(node_is_eq(CDR(n),CAAR(n)))
+      if(node_is_eq(CAR(n),CADR(n)))
       {
-	int num_args;
-	tmp1=do_docode(CDR(n),DO_LVALUE);
-	if(match_types(CDR(n)->type, array_type_string) ||
-	   match_types(CDR(n)->type, string_type_string) ||
-	   match_types(CDR(n)->type, object_type_string) ||
-	   match_types(CDR(n)->type, multiset_type_string) ||
-	   match_types(CDR(n)->type, mapping_type_string))
+        int num_args;
+	/* tmp1=do_docode(CDR(n),DO_LVALUE); */
+	if(match_types(CAR(n)->type, array_type_string) ||
+	   match_types(CAR(n)->type, string_type_string) ||
+	   match_types(CAR(n)->type, object_type_string) ||
+	   match_types(CAR(n)->type, multiset_type_string) ||
+	   match_types(CAR(n)->type, mapping_type_string))
 	{
-	  num_args = do_docode(CDAR(n), 0);
+          do_docode(CAR(n),DO_LVALUE);
+	  num_args = do_docode(CDDR(n), 0);
 	  switch (num_args)
 	  {
 	    case 0: emit0(F_LTOSVAL_AND_FREE); break;
@@ -1270,154 +1343,136 @@ static int do_docode2(node *n, int flags)
 #endif
 	  }
 	}else{
+          goto do_not_suboptimize_assign;
 	  emit0(F_LTOSVAL);
-	  num_args = do_docode(CDAR(n), 0);
+	  num_args = do_docode(CDDR(n), 0);
 	}
 
-	if (CAR (n)->token == F_RANGE)
-	  emit_range (CAR (n) DO_IF_DEBUG (COMMA num_args));
+	if (CDR (n)->token == F_RANGE)
+	  emit_range (CDR (n) DO_IF_DEBUG (COMMA num_args));
 	else
-	  emit0(CAR(n)->token);
+	  emit0(CDR(n)->token);
 
 	emit0(n->token);
 	return n->token==F_ASSIGN; /* So when is this false? /mast */
       }
+      goto do_not_suboptimize_assign;
+
+    case F_SOFT_CAST:
+        /*  a  = [type]`oper(a,*) */
+        if( CADR(n)->token == F_APPLY &&
+            is_apply_constant_function_arg0( CADR(n), CAR(n) ))
+            return 1;
+        goto do_not_suboptimize_assign;
     case F_APPLY:
-      if ((CAAR(n)->token == F_CONSTANT) &&
-	  (TYPEOF(CAAR(n)->u.sval) == T_FUNCTION) &&
-	  (SUBTYPEOF(CAAR(n)->u.sval) == FUNCTION_BUILTIN) &&
-	  (CAAR(n)->u.sval.u.efun->function != f_map) &&
-	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
-	/* efuns typically don't access object variables. */
-	node *args = CDAR(n);
-	if (args) {
-	  node **arg = my_get_arg(&args, 0);
-	  if (arg && node_is_eq(CDR(n), *arg) &&
-	      !(args->tree_info & OPT_ASSIGNMENT)) {
-	    /* First arg is the lvalue.
-	     *
-	     * We optimize this to allow for destructive operations.
-	     */
-	    int no = 0;
-	    tmp1 = do_docode(CDR(n), DO_LVALUE);
-	    emit0(F_MARK_AND_CONST0);
-	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-	    while ((arg = my_get_arg(&args, ++no)) && *arg) {
-	      do_docode(*arg, 0);
-	    }
-	    tmp1=store_constant(&CAAR(n)->u.sval,
-				!(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-				CAAR(n)->name);
-	    emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
-	    POP_AND_DONT_CLEANUP;
-	    return 1;
-	  }
-	}
-      }
-      /* FALL_THROUGH */
+        /*  a  = `oper(a,*) */
+        if (is_apply_constant_function_arg0( CDR(n), CAR(n) ))
+            return 1;
+      /* FALLTHRU */
     default:
-      switch(CDR(n)->token)
+      do_not_suboptimize_assign:
+      switch(CAR(n)->token)
       {
+      case F_GLOBAL:
+	  if(CAR(n)->u.integer.b) goto normal_assign;
+	  code_expression(CDR(n), 0, "RHS");
+          emit_assign_global( CAR(n)->u.integer.a, flags & DO_POP );
+          break;
       case F_LOCAL:
-	if(CDR(n)->u.integer.a >= 
-	   find_local_frame(CDR(n)->u.integer.b)->max_number_of_locals)
+	if(CAR(n)->u.integer.a >=
+	   find_local_frame(CAR(n)->u.integer.b)->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
-	if(CDR(n)->u.integer.b) goto normal_assign;
+	if(CAR(n)->u.integer.b) goto normal_assign;
 
-	if (CDR(n)->node_info & OPT_ASSIGNMENT) {
+	if (CAR(n)->node_info & OPT_ASSIGNMENT) {
 	  /* Initialize. */
 	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, CDR(n)->u.integer.a);
+	  emit1(F_ASSIGN_LOCAL_AND_POP, CAR(n)->u.integer.a);
 	}
-	code_expression(CAR(n), 0, "RHS");
+	code_expression(CDR(n), 0, "RHS");
 	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
-	     CDR(n)->u.integer.a );
+	     CAR(n)->u.integer.a );
 	break;
 
-	/* FIXME: Make special case for F_EXTERNAL */
-      case F_IDENTIFIER:
-	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.id.number)->identifier_flags))
-	{
-	  yyerror("Cannot assign functions or constants.\n");
-	}else{
-	  code_expression(CAR(n), 0, "RHS");
-	  emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-		CDR(n)->u.id.number);
-	}
-	break;
-
-        case F_GET_SET:
-	  {
-	    /* Check for the setter function. */
-	    struct program_state *state = Pike_compiler;
-	    int program_id = CDR(n)->u.integer.a;
-	    int level = 0;
-	    while (state && (state->new_program->id != program_id)) {
-	      state = state->previous;
-	      level++;
-	    }
-	    if (!state) {
-	      yyerror("Lost parent.");
-	    } else {
-	      struct reference *ref =
-		PTR_FROM_INT(state->new_program, CDR(n)->u.integer.b);
-	      struct identifier *id =
-		ID_FROM_PTR(state->new_program, ref);
-	      struct inherit *inh =
-		INHERIT_FROM_PTR(state->new_program, ref);
-	      int f;
+      case F_GET_SET:
+      {
+        /* Check for the setter function. */
+        struct program_state *state = Pike_compiler;
+        int program_id = CAR(n)->u.integer.a;
+        int level = 0;
+        while (state && (state->new_program->id != program_id)) {
+          state = state->previous;
+          level++;
+        }
+        if (!state) {
+          yyerror("Lost parent.");
+        } else {
+          struct reference *ref =
+            PTR_FROM_INT(state->new_program, CAR(n)->u.integer.b);
+          struct identifier *id =
+            ID_FROM_PTR(state->new_program, ref);
+          struct inherit *inh =
+            INHERIT_FROM_PTR(state->new_program, ref);
+          int f;
 #ifdef PIKE_DEBUG
-	      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
-		  (id->run_time_type != PIKE_T_GET_SET)) {
-		Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
-			   "  identifier_flags: 0x%08x\n"
-			   "  run_time_type; %s (%d)\n",
-			   id->identifier_flags,
-			   get_name_of_type(id->run_time_type),
-			   id->run_time_type);
-	      }
+          if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+              (id->run_time_type != PIKE_T_GET_SET)) {
+            Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
+                       "  identifier_flags: 0x%08x\n"
+                       "  run_time_type; %s (%d)\n",
+                       id->identifier_flags,
+                       get_name_of_type(id->run_time_type),
+                       id->run_time_type);
+          }
 #endif /* PIKE_DEBUG */
-	      f = id->func.gs_info.setter;
-	      if (f == -1) {
-		yywarning("Variable %S lacks a setter.", id->name);
-	      } else if (!level) {
-		f += inh->identifier_level;
-		if (flags & DO_POP) {
-		  emit0(F_MARK);
-		  code_expression(CAR(n), 0, "RHS");
-		} else {
-		  code_expression(CAR(n), 0, "RHS");
-		  emit0(F_MARK);
-		  emit0(F_DUP);
-		}
-		emit1(F_CALL_LFUN, f);
-		emit0(F_POP_VALUE);
-		return !(flags & DO_POP);
-	      }
-	    }
-	  }
-	  /* FALL_THROUGH */
-	case F_EXTERNAL:
-	  /* Check that it is in this context */
-	  if(Pike_compiler ->new_program->id == CDR(n)->u.integer.a)
-	  {
-	    /* Check that it is a variable */
-	    if(CDR(n)->u.integer.b != IDREF_MAGIC_THIS &&
-	       IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
-	    {
-	      code_expression(CAR(n), 0, "RHS");
-	      emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-		    CDR(n)->u.integer.b);
-	      break;
-	    }
-	  }
-	  /* fall through */
+          f = id->func.gs_info.setter;
+          if (f == -1) {
+            yywarning("Variable %S lacks a setter.", id->name);
+          } else if (!level) {
+            f += inh->identifier_level;
+            if (flags & DO_POP) {
+#ifndef USE_APPLY_N
+              emit0(F_MARK);
+#endif
+              code_expression(CDR(n), 0, "RHS");
+            } else {
+              code_expression(CAR(n), 0, "RHS");
+#ifndef USE_APPLY_N
+              emit0(F_MARK);
+#endif
+              emit0(F_DUP);
+            }
+#ifdef USE_APPLY_N
+            emit2(F_CALL_LFUN_N, f, 1);
+#else
+            emit1(F_CALL_LFUN, f);
+#endif
+            emit0(F_POP_VALUE);
+            return !(flags & DO_POP);
+          }
+        }
+      }
+      /* FALLTHRU */
+      case F_EXTERNAL:
+        /* Check that it is in this context */
+        if(Pike_compiler ->new_program->id == CAR(n)->u.integer.a)
+        {
+          /* Check that it is a variable */
+          if(CAR(n)->u.integer.b != IDREF_MAGIC_THIS &&
+             IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CAR(n)->u.integer.b)->identifier_flags))
+          {
+            code_expression(CDR(n), 0, "RHS");
+            emit_assign_global(CAR(n)->u.integer.b, flags & DO_POP );
+            break;
+          }
+        }
+        /* fall through */
 
       default:
       normal_assign:
-	tmp1=do_docode(CDR(n),DO_LVALUE);
-	if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
+	tmp1=do_docode(CAR(n),DO_LVALUE);
+	if(do_docode(CDR(n),0)!=1) yyerror("RHS is void!");
 	emit0(flags & DO_POP ? F_ASSIGN_AND_POP:F_ASSIGN);
 	break;
       }
@@ -1429,37 +1484,16 @@ static int do_docode2(node *n, int flags)
     tmp1=alloc_label();
     if(flags & DO_POP)
     {
-      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, DO_POP);
+      do_cond_jump(CAR(n), (INT32)tmp1, n->token == F_LOR, DO_POP);
       DO_CODE_BLOCK(CDR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       return 0;
     }else{
-      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
+      do_cond_jump(CAR(n), (INT32)tmp1, n->token == F_LOR, 0);
       code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       return 1;
     }
-
-  case F_EQ:
-  case F_NE:
-  case F_ADD:
-  case F_LT:
-  case F_LE:
-  case F_GT:
-  case F_GE:
-  case F_SUBTRACT:
-  case F_MULTIPLY:
-  case F_DIVIDE:
-  case F_MOD:
-  case F_LSH:
-  case F_RSH:
-  case F_XOR:
-  case F_OR:
-  case F_AND:
-  case F_NOT:
-  case F_COMPL:
-  case F_NEGATE:
-    Pike_fatal("Optimizer error.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
@@ -1469,7 +1503,7 @@ static int do_docode2(node *n, int flags)
 #endif
 	do_docode (CDR (n), DO_NOT_COPY);
       emit_range (n DO_IF_DEBUG (COMMA num_args));
-      return DO_NOT_WARN((INT32)tmp1);
+      return (INT32)tmp1;
     }
 
     /* The special bound type nodes are simply ignored when the
@@ -1624,7 +1658,7 @@ static int do_docode2(node *n, int flags)
     }else{
       tmp2=ins_label(-1);
     }
-    do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp2));
+    do_jump_when_non_zero(CAR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1634,6 +1668,7 @@ static int do_docode2(node *n, int flags)
   }
 
   case ' ':
+    /* FIXME: Is this code reached? */
     ret = do_docode(CAR(n),0);
     return ret + do_docode(CDR(n),DO_LVALUE);
 
@@ -1656,7 +1691,7 @@ static int do_docode2(node *n, int flags)
       }else{
 	emit0(F_CONST0);
 	emit0(F_CONST0);
-	current_stack_depth+=2;
+	modify_stack_depth(2);
       }
 
       if(CDDR(arr))
@@ -1665,7 +1700,7 @@ static int do_docode2(node *n, int flags)
       }else{
 	emit0(F_CONST0);
 	emit0(F_CONST0);
-	current_stack_depth+=2;
+	modify_stack_depth(2);
       }
 
       PUSH_CLEANUP_FRAME(do_pop, 5);
@@ -1678,13 +1713,13 @@ static int do_docode2(node *n, int flags)
       /* Doubt it's necessary to use a label separate from
        * current_label->break_label, but I'm playing safe. /mast */
       tmp3 = alloc_label();
-      do_jump(F_FOREACH_START, DO_NOT_WARN((INT32) tmp3));
+      do_jump(F_FOREACH_START, (INT32) tmp3);
       tmp1=ins_label(-1);
       DO_CODE_BLOCK(CDR(n));
       ins_label(current_label->continue_label);
-      do_jump(F_FOREACH_LOOP, DO_NOT_WARN((INT32)tmp1));
+      do_jump(F_FOREACH_LOOP, (INT32)tmp1);
       ins_label(current_label->break_label);
-      low_insert_label( DO_NOT_WARN((INT32)tmp3));
+      low_insert_label( (INT32)tmp3 );
 
       current_switch.jumptable = prev_switch_jumptable;
       POP_STATEMENT_LABEL;
@@ -1692,7 +1727,7 @@ static int do_docode2(node *n, int flags)
       BLOCK_END;
       return 0;
     }
-    
+
 
     BLOCK_BEGIN;
 
@@ -1708,13 +1743,29 @@ static int do_docode2(node *n, int flags)
 	/* Optimize foreach(x[start..],y). */
 	do_docode (CAR(range), DO_NOT_COPY_TOPLEVEL);
 	do_docode (CDR(arr), DO_NOT_COPY|DO_LVALUE);
+	if ((low->token == F_CONSTANT) && (TYPEOF(low->u.sval) == PIKE_T_INT)) {
+	  if (low->u.sval.u.integer < 0) {
+	    emit0(F_CONST0);
+	    goto foreach_arg_pushed;
+	  }
+	  do_docode (CAR(low), DO_NOT_COPY);
+	  goto foreach_arg_pushed;
+	}
 	do_docode (CAR(low), DO_NOT_COPY);
+	tmp1 = alloc_label();
+	emit0(F_DUP);
+	emit0(F_CONST0);
+	do_jump(F_BRANCH_WHEN_GE, tmp1);
+	/* The value is negative. replace it with zero. */
+	emit0(F_POP_VALUE);
+	emit0(F_CONST0);
+        low_insert_label((INT32)tmp1);
 	goto foreach_arg_pushed;
       }
     }
     do_docode(arr,DO_NOT_COPY);
     emit0(F_CONST0);
-    current_stack_depth++;
+    modify_stack_depth(1);
   foreach_arg_pushed:
     PUSH_CLEANUP_FRAME(do_pop, 4);
 
@@ -1727,8 +1778,8 @@ static int do_docode2(node *n, int flags)
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    low_insert_label( DO_NOT_WARN((INT32)tmp3));
-    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp3 );
+    do_jump(n->token, (INT32)tmp1);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1758,8 +1809,8 @@ static int do_docode2(node *n, int flags)
 
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    low_insert_label( DO_NOT_WARN((INT32)tmp3));
-    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp3 );
+    do_jump(n->token, (INT32)tmp1);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1799,7 +1850,7 @@ static int do_docode2(node *n, int flags)
     tmp2=ins_label(-1);
     DO_CODE_BLOCK(CAR(n));
     ins_label(current_label->continue_label);
-    do_jump_when_non_zero(CDR(n), DO_NOT_WARN((INT32)tmp2));
+    do_jump_when_non_zero(CDR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1828,7 +1879,7 @@ static int do_docode2(node *n, int flags)
 	emit0(F_CONST0);
       else {
 	if(tmp1>1)
-	  do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+          do_pop((INT32)(tmp1-1));
 	emit0(F_CAST_TO_INT);
       }
       return 1;
@@ -1838,16 +1889,16 @@ static int do_docode2(node *n, int flags)
       if(!tmp1)
 	emit0(F_CONST0);
       else if(tmp1>1)
-	do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+        do_pop((INT32)(tmp1-1));
       emit0(F_CAST_TO_STRING);
       return 1;
     default:
       if (compile_type_to_runtime_type(n->type) == PIKE_T_MIXED) {
 	tmp1 = do_docode(CAR(n), 0);
-	if(!tmp1) 
+	if(!tmp1)
 	  emit0(F_CONST0);
 	else if(tmp1>1)
-	  do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+          do_pop((INT32)(tmp1-1));
 	return 1;
       }
     }
@@ -1855,12 +1906,12 @@ static int do_docode2(node *n, int flags)
       struct svalue sv;
       SET_SVAL(sv, T_TYPE, 0, type, n->type);
       tmp1 = store_constant(&sv, 0, n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
     }
 
     tmp1=do_docode(CAR(n),0);
     if(!tmp1) { emit0(F_CONST0); tmp1=1; }
-    if(tmp1>1) do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+    if(tmp1>1) do_pop((INT32)(tmp1-1));
 
     emit0(F_CAST);
     return 1;
@@ -1871,35 +1922,44 @@ static int do_docode2(node *n, int flags)
 	struct svalue sv;
 	SET_SVAL(sv, T_TYPE, 0, type, n->type);
 	tmp1 = store_constant(&sv, 0, n->name);
-	emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_CONSTANT, (INT32)tmp1);
       }
       tmp1 = do_docode(CAR(n), 0);
       if (!tmp1) { emit0(F_CONST0); tmp1 = 1; }
-      if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
+      if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
       emit0(F_SOFT_CAST);
       return 1;
     }
     tmp1 = do_docode(CAR(n), flags);
-    if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
+    if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
     return !!tmp1;
 
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)
     {
+      int args = count_args(CDR(n));
       if(TYPEOF(CAR(n)->u.sval) == T_FUNCTION)
       {
 	if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) /* driver fun? */
 	{
-	  if(!CAR(n)->u.sval.u.efun->docode || 
+	  if(!CAR(n)->u.sval.u.efun->docode ||
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
-	    if(count_args(CDR(n))==1)
+	    if(args==1)
 	    {
 	      do_docode(CDR(n),0);
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
-	      emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
+              emit1(F_CALL_BUILTIN1, (INT32)tmp1);
+#ifdef USE_APPLY_N
+	    }else if(args>0){
+	      do_docode(CDR(n),0);
+	      tmp1=store_constant(& CAR(n)->u.sval,
+				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				  CAR(n)->name);
+              emit2(F_CALL_BUILTIN_N, (INT32)tmp1, args);
+#endif
 	    }else{
 	      emit0(F_MARK);
 	      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
@@ -1907,34 +1967,41 @@ static int do_docode2(node *n, int flags)
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
-	      emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+              emit1(F_CALL_BUILTIN, (INT32)tmp1);
 	      POP_AND_DONT_CLEANUP;
 	    }
 	  }
-	  if(n->type == void_type_string)
-	    return 0;
-
-	  return 1;
+	  if (!n->type) fix_type_field(n);
+	  return !pike_types_le(n->type, void_type_string);
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
        	}
       }
-
-      emit0(F_MARK);
-      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-      do_docode(CDR(n),0);
-      tmp1=store_constant(& CAR(n)->u.sval,
-			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-			  CAR(n)->name);
-      emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
-      POP_AND_DONT_CLEANUP;
-      
+#ifdef USE_APPLY_N
+      if( args <= 1 )
+#endif
+      {
+        emit0(F_MARK);
+        PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+        do_docode(CDR(n),0);
+        tmp1=store_constant(& CAR(n)->u.sval,
+                            !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+                            CAR(n)->name);
+        emit1(F_APPLY, (INT32)tmp1);
+        POP_AND_DONT_CLEANUP;
+      }
+#ifdef USE_APPLY_N
+      else
+      {
+        do_docode(CDR(n),0);
+        tmp1=store_constant(& CAR(n)->u.sval,
+                            !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+                            CAR(n)->name);
+        emit2(F_APPLY_N, (INT32)tmp1, args);
+      }
+#endif
       return 1;
-    }
-    else if(CAR(n)->token == F_IDENTIFIER)
-    {
-      return do_lfun_call(CAR(n)->u.id.number, CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
 	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
@@ -1968,12 +2035,10 @@ static int do_docode2(node *n, int flags)
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
 
-      tmp=findstring("call_function");
-      if(!tmp) yyerror("No call_function efun.");
-      foo=find_module_identifier(tmp,0);
+      foo=find_module_identifier(lfun_strings[LFUN_CALL],0);
       if(!foo || foo->token!=F_CONSTANT)
       {
-	yyerror("No call_function efun.");
+        yyerror("No `() efun.");
       }else{
 	if(TYPEOF(foo->u.sval) == T_FUNCTION &&
 	   SUBTYPEOF(foo->u.sval) == FUNCTION_BUILTIN &&
@@ -1983,7 +2048,7 @@ static int do_docode2(node *n, int flags)
 	}else{
 	  /* We might want to put "predef::"+foo->name here /Hubbe */
 	  tmp1=store_constant(& foo->u.sval, 1, foo->name);
-	  emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+          emit1(F_APPLY, (INT32)tmp1);
 	}
       }
       free_node(foo);
@@ -2002,7 +2067,7 @@ static int do_docode2(node *n, int flags)
       n->parent = NULL;
       tmp1 = 0;
     next_car:
-      while (CAR(n) && 
+      while (CAR(n) &&
 	     ((CAR(n)->token == F_ARG_LIST) ||
 	      (CAR(n)->token == F_COMMA_EXPR))) {
 	CAR(n)->parent = n;
@@ -2010,7 +2075,7 @@ static int do_docode2(node *n, int flags)
       }
       /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
       tmp1 += do_docode(CAR(n), flags & ~WANT_LVALUE);
-      
+
       do {
 	if (CDR(n)) {
 	  if ((CDR(n)->token == F_ARG_LIST) ||
@@ -2039,7 +2104,7 @@ static int do_docode2(node *n, int flags)
       /* Restore root->parent. */
       root->parent = parent;
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
 
     /* Switch:
@@ -2078,7 +2143,7 @@ static int do_docode2(node *n, int flags)
     cases=count_cases(CDR(n));
 
     tmp1=emit1(F_SWITCH,0);
-    current_stack_depth--;
+    modify_stack_depth(-1);
     emit1(F_ALIGN,sizeof(INT32));
 
     current_switch.values_on_stack=0;
@@ -2086,12 +2151,12 @@ static int do_docode2(node *n, int flags)
     current_switch.less_label=-1;
     current_switch.greater_label=-1;
     current_switch.default_label=-1;
-    current_switch.jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
-    jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
+    current_switch.jumptable=xalloc(sizeof(INT32)*(cases*2+2));
+    jumptable=xalloc(sizeof(INT32)*(cases*2+2));
 
     for(e=1; e<cases*2+2; e++)
     {
-      jumptable[e] = DO_NOT_WARN((INT32)emit1(F_POINTER, 0));
+      jumptable[e] = (INT32)emit1(F_POINTER, 0);
       current_switch.jumptable[e]=-1;
     }
     emit0(F_NOTREACHED);
@@ -2139,7 +2204,7 @@ static int do_docode2(node *n, int flags)
     order_array(Pike_sp[-1].u.array,order);
 
     reorder((void *)(current_switch.jumptable+2),cases,sizeof(INT32)*2,order);
-    free((char *)order);
+    free(order);
 
     current_switch.jumptable[1] = current_switch.less_label;
     current_switch.jumptable[current_switch.index - 1] = current_switch.greater_label;
@@ -2154,12 +2219,11 @@ static int do_docode2(node *n, int flags)
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch.jumptable[e]);
 
-    update_arg(DO_NOT_WARN((INT32)tmp1),
-	       store_constant(Pike_sp-1,1,0));
+    update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
 
     pop_stack();
-    free((char *)jumptable);
-    free((char *)current_switch.jumptable);
+    free(jumptable);
+    free(current_switch.jumptable);
 
     current_switch = prev_switch;
 
@@ -2191,7 +2255,7 @@ static int do_docode2(node *n, int flags)
 	  if(!is_const(case_val))
 	    yyerror("Case label isn't constant.");
 
-	  if (case_val->type && !TEST_COMPAT(0,6)) {
+	  if (case_val->type) {
 	    if (!pike_types_le(case_val->type, current_switch.type)) {
 	      if (!match_types(case_val->type, current_switch.type)) {
 		yytype_error("Type mismatch in case.",
@@ -2265,8 +2329,10 @@ static int do_docode2(node *n, int flags)
       struct statement_label_name *lbl_name;
       for (label = current_label; label; label = label->prev)
 	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
-	  if (lbl_name->str == name)
+	  if (lbl_name->str == name) {
+	    lbl_name->used = 1;
 	    goto label_found_1;
+	  }
       my_yyerror("No surrounding statement labeled %S.", name);
       return 0;
 
@@ -2324,6 +2390,7 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
+    name.used = 0;
 
     for (label = current_label; label; label = label->prev) {
       struct statement_label_name *lbl_name;
@@ -2354,6 +2421,11 @@ static int do_docode2(node *n, int flags)
     DO_CODE_BLOCK(CDR(n));
     if (!name.next && current_label->emit_break_label)
       low_insert_label(current_label->break_label);
+    if (!name.used) {
+      low_yyreport(REPORT_WARNING, n->current_file, n->line_number,
+		   parser_system_string, 0,
+                   "Label %S not used.", name.str);
+    }
     POP_STATEMENT_LABEL;
     BLOCK_END;
     return 0;
@@ -2395,9 +2467,9 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_SSCANF:
-    tmp1=do_docode(CDAR(n),DO_NOT_COPY);
+    tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit2(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)), CAAR(n)->u.sval.u.integer);
+    emit1(F_SSCANF, (INT32)(tmp1+tmp2));
     return 1;
 
   case F_CATCH: {
@@ -2412,8 +2484,6 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
     current_label->break_label=alloc_label();
-    if (TEST_COMPAT(7,0))
-      current_label->continue_label = current_label->break_label;
 
     DO_CODE_BLOCK(CAR(n));
 
@@ -2423,7 +2493,7 @@ static int do_docode2(node *n, int flags)
     current_switch.jumptable = prev_switch_jumptable;
     do_branch (tmp1);
 
-    current_stack_depth++;
+    modify_stack_depth(1);
     /* Entry point called via catching_eval_instruction() after
      * catching an error.
      *
@@ -2433,7 +2503,7 @@ static int do_docode2(node *n, int flags)
      *     that requires the entry code to have run.
      */
     emit0(F_ENTRY);
-    ins_label(DO_NOT_WARN((INT32)tmp1));
+    ins_label((INT32)tmp1);
 
     POP_AND_DONT_CLEANUP;
     return 1;
@@ -2449,7 +2519,7 @@ static int do_docode2(node *n, int flags)
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
+      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1));
       return 2;
 
   case F_ARROW:
@@ -2463,7 +2533,7 @@ static int do_docode2(node *n, int flags)
       return 2;
     }else{
       tmp1 = do_docode(CAR(n), DO_NOT_COPY);
-      if ((tmp2 = lfun_lookup_id(CDR(n)->u.sval.u.string)) != -1) {
+      if ((tmp2 = lfun_lookup_id(CDR(n)->u.sval.u.string)) != -1 ) {
 	emit1(F_LOOKUP_LFUN, tmp2);
       } else {
 	emit1(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
@@ -2471,11 +2541,11 @@ static int do_docode2(node *n, int flags)
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
-	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
+	if(n && n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
 	  emit0(F_COPY_VALUE);
       }
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
   case F_INDEX:
     if(flags & WANT_LVALUE)
@@ -2491,7 +2561,7 @@ static int do_docode2(node *n, int flags)
 #endif
 	emit0(F_INDIRECT);
       }
-      
+
       if(do_docode(CDR(n),0) != 1)
 	Pike_fatal("Internal compiler error, please report this (1).\n");
       if(CDR(n)->token != F_CONSTANT &&
@@ -2511,11 +2581,11 @@ static int do_docode2(node *n, int flags)
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
-	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
+	if(n && (n->token==F_CONSTANT) && !(n->node_info & OPT_EXTERNAL_DEPEND))
 	  emit0(F_COPY_VALUE);
       }
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
   case F_CONSTANT:
     switch(TYPEOF(n->u.sval))
@@ -2545,7 +2615,7 @@ static int do_docode2(node *n, int flags)
 
     case T_STRING:
       tmp1=store_prog_string(n->u.sval.u.string);
-      emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_STRING, (INT32)tmp1);
       return 1;
 
     case T_FUNCTION:
@@ -2583,7 +2653,7 @@ static int do_docode2(node *n, int flags)
 	  return 1;
 	}
       }
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     default:
 #ifdef PIKE_DEBUG
       if((TYPEOF(n->u.sval) == T_OBJECT) &&
@@ -2593,12 +2663,12 @@ static int do_docode2(node *n, int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       return 1;
 
     case T_TYPE:
       tmp1 = store_constant(&(n->u.sval), 0, n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       return 1;
 
     case T_ARRAY:
@@ -2607,8 +2677,8 @@ static int do_docode2(node *n, int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
-      
+      emit1(F_CONSTANT, (INT32)tmp1);
+
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
       {
@@ -2643,7 +2713,7 @@ static int do_docode2(node *n, int flags)
     }
 
   case F_LOCAL:
-    if(n->u.integer.a >= 
+    if(n->u.integer.a >=
        find_local_frame(n->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
 
@@ -2691,35 +2761,8 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
-  case F_IDENTIFIER: {
-    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, n->u.id.number);
-    if(IDENTIFIER_IS_FUNCTION(id->identifier_flags))
-    {
-      if(flags & WANT_LVALUE)
-      {
-	yyerror("Cannot assign functions.\n");
-      }else{
-	if (id->identifier_flags & IDENTIFIER_HAS_BODY)
-	  /* Only use this opcode when it's certain that the result
-	   * can't zero, i.e. when we know the function isn't just a
-	   * prototype. */
-	  emit1(F_LFUN,n->u.id.number);
-	else
-	  emit1(F_GLOBAL,n->u.id.number);
-      }
-    }else{
-      if(flags & WANT_LVALUE)
-      {
-	emit1(F_GLOBAL_LVALUE,n->u.id.number);
-	return 2;
-      }else{
-	emit1(F_GLOBAL,n->u.id.number);
-      }
-    }
-    return 1;
-  }
-
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     ret = do_docode(CAR(n),flags);
     return ret + do_docode(CDR(n), flags | DO_LVALUE);
 
@@ -2731,33 +2774,74 @@ static int do_docode2(node *n, int flags)
     return 1;
 
   case F_AUTO_MAP_MARKER:
-    yyerror("[*] not supported here.\n");
-    emit0(F_CONST0);
+    if( flags & DO_LVALUE )
+    {
+        do_docode(CAR(n),DO_LVALUE);
+    }
+    else
+    {
+        yyerror("[*] not supported here.\n");
+        emit0(F_CONST0);
+    }
+    return 1;
+
+  case F_TYPEOF:
+    {
+      struct svalue s;
+      /* NB: This should only be reachable via eval_low().
+       *     Typically treeopt will get rid of this node.
+       */
+      SET_SVAL(s, PIKE_T_TYPE, 0, type,
+	       CAR(n)->type?CAR(n)->type:mixed_type_string);
+      tmp1 = store_constant(&s, 0, NULL);
+      emit1(F_CONSTANT, (INT32)tmp1);
+    }
     return 1;
 
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
-    return 0;			/* make gcc happy */
+    UNREACHABLE(return 0);
+  }
+}
+
+static void emit_save_locals(struct compiler_frame *f)
+{
+  struct compilation *c = THIS_COMPILATION;
+  unsigned INT16 offset;
+  unsigned INT16 idx;
+  int num_locals = f->max_number_of_locals;
+
+  for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
+    unsigned int bitmask = 0;
+    for (idx = 0; idx < 16; idx++) {
+      int local_var_idx = offset * 16 + idx;
+      if (local_var_idx >= num_locals) {
+        break;
+      }
+      if (f->variable[local_var_idx].flags & LOCAL_VAR_USED_IN_SCOPE) {
+        bitmask |= 1 << idx;
+      }
+    }
+    if (bitmask) {
+      emit1(F_SAVE_LOCALS, (offset << 16) | bitmask);
+    }
   }
 }
 
 /* Used to generate code for functions. */
-INT32 do_code_block(node *n)
+INT32 do_code_block(node *n, int identifier_flags)
 {
   struct compilation *c = THIS_COMPILATION;
   struct reference *id = NULL;
-  struct identifier *i = NULL;
   INT32 entry_point;
   int aggregate_cnum = -1;
-#ifdef PIKE_DEBUG
-  if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");
+  int save_stack_depth = current_stack_depth;
+  int save_label_no = label_no;
   current_stack_depth = 0;
-#endif
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
       Pike_compiler->compiler_frame->current_function_number;
-    i = ID_FROM_PTR(Pike_compiler->new_program, id);
   }
 
   init_bytecode();
@@ -2772,13 +2856,13 @@ INT32 do_code_block(node *n)
     emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
   }
   emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-  if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+  if (identifier_flags & IDENTIFIER_VARARGS) {
     struct svalue *sval =
       simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
     if (!sval) {
       yyerror("predef::aggregate() is missing.\n");
       Pike_fatal("No aggregate!\n");
-      return 0;
+      UNREACHABLE(return 0);
     }
     aggregate_cnum = store_constant(sval, 0, NULL);
     emit1(F_CALL_BUILTIN, aggregate_cnum);
@@ -2798,7 +2882,7 @@ INT32 do_code_block(node *n)
   emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
         Pike_compiler->compiler_frame->max_number_of_locals);
   if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-    emit1(F_PROTECT_STACK, Pike_compiler->compiler_frame->max_number_of_locals);
+    emit_save_locals(Pike_compiler->compiler_frame);
   }
 
   if(id && (id->id_flags & ID_INLINE))
@@ -2829,7 +2913,7 @@ INT32 do_code_block(node *n)
       emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
     }
     emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-    if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+    if (identifier_flags & IDENTIFIER_VARARGS) {
       emit1(F_CALL_BUILTIN, aggregate_cnum);
       if (Pike_compiler->compiler_frame->max_number_of_locals !=
 	  Pike_compiler->compiler_frame->num_args+1) {
@@ -2849,17 +2933,15 @@ INT32 do_code_block(node *n)
 	    Pike_compiler->compiler_frame->max_number_of_locals);
     }
     if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-      emit1(F_PROTECT_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals);
+      emit_save_locals(Pike_compiler->compiler_frame);
     }
 
     DO_CODE_BLOCK(n);
   }
   entry_point = assemble(1);
 
-#ifdef PIKE_DEBUG
-  current_stack_depth = -4711;
-#endif
+  current_stack_depth = save_stack_depth;
+  label_no = save_label_no;
   return entry_point;
 }
 
@@ -2868,12 +2950,11 @@ INT32 docode(node *n)
 {
   INT32 entry_point;
   int label_no_save = label_no;
-  dynamic_buffer instrbuf_save = instrbuf;
+  struct byte_buffer instrbuf_save = instrbuf;
   int stack_depth_save = current_stack_depth;
   struct statement_label *label_save = current_label;
   struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;
 
-  instrbuf.s.str=0;
   label_no=1;
   current_stack_depth = 0;
   current_label = &top_statement_label_dummy;	/* Fix these two to */

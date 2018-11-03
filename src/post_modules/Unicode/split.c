@@ -6,7 +6,6 @@
 
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -40,7 +39,7 @@ struct words *uc_words_write( struct words *d,
   return d;
 }
 
-struct words *uc_words_new( )
+struct words *uc_words_new( void )
 {
   struct words *s = malloc( sizeof( struct words ) + 31*8 );
   s->allocated_size = 32;
@@ -80,7 +79,7 @@ struct words *unicode_split_words_pikestr0( struct pike_string *data )
   struct words *res = uc_words_new();
   p_wchar0 *ptr = STR0 (data);
   unsigned int sz = data->len;
-  
+
   for( i=0; i<sz; i++, ptr++ )
   {
     switch( _unicode_is_wordchar( *ptr ) )

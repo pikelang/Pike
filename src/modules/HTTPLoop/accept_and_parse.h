@@ -8,9 +8,7 @@
 #define CACHE_HTABLE_SIZE 40951
 
 #if !defined(__NT__) && !defined(__WIN32__)
-#ifdef HAVE_SIGNAL
-# define HAVE_TIMEOUTS
-#endif
+#define HAVE_TIMEOUTS
 #endif
 
 struct res
@@ -29,7 +27,7 @@ struct res
 
   char   *content;
   ptrdiff_t content_len;
-  
+
   char *leftovers;
   ptrdiff_t leftovers_len;
 
@@ -56,7 +54,7 @@ struct file_ret
   time_t mtime;
 };
 
-struct pstring 
+struct pstring
 {
   ptrdiff_t len;
   char *str;
@@ -76,24 +74,18 @@ struct filesystem
 #endif
 };
 
-#ifdef INT64
-#define LONG_LONG INT64
-#else
-#define LONG_LONG long
-#endif
-
 struct cache
 {
-  MUTEX_T mutex;
+  PIKE_MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
-  unsigned LONG_LONG size, entries, max_size;
-  unsigned LONG_LONG hits, misses, stale;
+  UINT64 size, entries, max_size;
+  UINT64 hits, misses, stale;
   size_t num_requests, sent_data, received_data;
   int gone;
 };
 
-struct args 
+struct args
 {
   int fd;
   struct args *next;
@@ -108,7 +100,7 @@ struct args
   struct log *log;
 };
 
-struct log_entry 
+struct log_entry
 {
   struct log_entry *next;
   int t;
@@ -122,12 +114,12 @@ struct log_entry
   struct pike_string *protocol;
 };
 
-struct log 
+struct log
 {
   struct log *next;
   struct log_entry *log_head;
   struct log_entry *log_tail;
-  MUTEX_T log_lock;
+  PIKE_MUTEX_T log_lock;
 };
 
 
@@ -171,17 +163,4 @@ struct c_request_object
 
 void aap_handle_connection(struct args *arg);
 void free_args( struct args *arg );
-struct args *new_args( );
-
-
-
-#if 0
-#  define aap_malloc debug_aap_malloc
-#  define aap_free   debug_aap_free
-#else
-#  define aap_malloc malloc
-#  define aap_free   free
-#endif
-
-void *debug_aap_malloc( int nbytes );
-void debug_aap_free( void *what );
+struct args *new_args( void );

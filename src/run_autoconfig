@@ -25,14 +25,14 @@ if test "x$1" = "x" ; then
 
   localdir=`pwd`
 else
-  cd "$1"
-
   localdir=`echo $0 | sed 's@[^/]*$@@g'`
   if test "x$localdir" = "x"; then
     localdir=`pwd`
   else
     localdir=`cd $localdir;pwd`
   fi
+
+  cd "$1"
 fi
 
 findprog() {
@@ -114,7 +114,7 @@ OIFS="$IFS"
 IFS=''
 ( find . -follow -type d -print $prune_flag || \
   find . -type d -print $prune_flag
-) | egrep -v '/(CVS)|(RCS)|(test-install)$' | sort | uniq | (
+) | egrep -v '/(test-install)$' | sort | uniq | (
   while read dir; do
 
     IFS="$OIFS"

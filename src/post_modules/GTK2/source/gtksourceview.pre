@@ -52,7 +52,7 @@ void create(?GTK2.SourceBuffer buffer)
   if (args) {
     struct object *o1;
     GtkWidget *gs;
-    get_all_args("create",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gs=gtk_source_view_new_with_buffer(
 			GTK_SOURCE_BUFFER(get_gobject(o1)));
     THIS->obj=G_OBJECT(gs);
@@ -121,7 +121,7 @@ void set_marker_pixbuf(string type, GDK2.Pixbuf pixbuf)
   {
     char *type;
     struct object *o1;
-    get_all_args("set_marker_pixbuf",args,"%s%o",&type,&o1);
+    get_all_args(NULL,args,"%s%o",&type,&o1);
     gtk_source_view_set_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type,
 			GDK_PIXBUF(get_gobject(o1)));
   }
@@ -135,7 +135,7 @@ GDK2.Pixbuf get_marker_pixbuf(string type)
   {
     char *type;
     GdkPixbuf *gp;
-    get_all_args("get_marker_pixbuf",args,"%s",&type);
+    get_all_args(NULL,args,"%s",&type);
     gp=gtk_source_view_get_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type);
     pgtk2_pop_n_elems(args);
     if (gp)

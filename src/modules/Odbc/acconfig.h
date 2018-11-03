@@ -7,7 +7,6 @@
 /*
  * Config-file for the Pike ODBC-module.
  *
- * Henrik Grubbström
  */
 
 #ifndef PIKE_ODBC_CONFIG_H

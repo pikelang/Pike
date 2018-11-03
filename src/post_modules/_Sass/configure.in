@@ -1,0 +1,93 @@
+AC_INIT(sass.cmod)
+AC_ARG_WITH(
+    [sass],
+    [AS_HELP_STRING(
+	 [--with(out)-sass],
+	 [Support for SASS])],
+    [],
+    [with_sass=yes])
+AC_ARG_WITH(
+    [sass-debug],
+    [AS_HELP_STRING(
+	 [--with(out)-sass-debug],
+	 [Enable module debug. Only for dev purposes])],
+    [with_sass_debug="$withval"],
+    [with_sass_debug=no])
+
+AC_MODULE_INIT()
+
+AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_WITHOUT(Sass)
+
+have_libsass="no"
+
+AS_IF(
+    [ test "x$with_sass_debug" != xno ],
+    [ AC_DEFINE(PIKE_SASS_DEBUG, [1], [Defined if --with-sass-debug]) ])
+
+AS_IF(
+    [ test "x$with_sass" != "xno" ],
+    [
+	PIKE_FEATURE_NODEP(Sass)
+
+	AC_CHECK_HEADER(
+	    [sass.h],
+	    [
+		# NB: When linking to the static library,
+		#     -lstdc++ and/or -lc++ must be listed explicitly.
+		AC_CHECK_LIB(stdc++, __dynamic_cast)
+		AC_CHECK_LIB(c++, _Znam)
+
+		AC_CHECK_LIB(
+		    sass, libsass_version,
+		    [
+			CMOD_LIBS=" -lsass"
+			CMOD_CFLAGS=""
+
+			AC_SUBST(CMOD_CFLAGS)
+			AC_SUBST(CMOD_LIBS)
+
+			PIKE_FEATURE_OK(Sass)
+
+			AC_DEFINE(HAVE_LIBSASS, [1],
+				  [Define to 1 if you have libsass.])
+			have_libsass="yes"
+		    ])
+	    ])
+    ])
+
+AS_IF(
+    [ test "x$have_libsass" = "xyes" ],
+    [
+	#
+	# Check for features in libsass
+	#
+
+	# NB: Not available in the libsass in Ubuntu 16.04 (3.3.4-1).
+	AC_CHECK_LIB(
+	    sass, sass_copy_c_string,
+	    [
+		#LIBS="${LIBS-} -lsass"
+		AC_DEFINE(HAVE_LIBSASS_COPY_C_STRING, [1],
+			  [Defined if sass_copy_c_string is available ])
+	    ])
+
+	AC_CHECK_LIB(
+	    sass, sass_delete_options,
+	    [
+		#LIBS="${LIBS-} -lsass"
+		AC_DEFINE(HAVE_LIBSASS_DELETE_OPTIONS, [1],
+			  [Defined if sass_delete_options is available ])
+	    ])
+
+	AC_CHECK_LIB(
+	    sass, libsass_language_version,
+	    [
+		#LIBS="${LIBS-} -lsass"
+		AC_DEFINE(HAVE_LIBSASS_LANGUAGE_VERSION, [1],
+			  [True if libsass_language_version() is available])
+	    ])
+    ])
+
+AC_OUTPUT(Makefile, echo FOO >stamp-h)

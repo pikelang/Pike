@@ -7,6 +7,11 @@
  * 2011-04-22 Henrik Grubbström
  */
 
+// NB: This script needs to be able to run on an older system pike.
+#if !constant(String.trim)
+#define trim	trim_all_whites
+#endif
+
 // These are the characters added by JIS X0213/AMMENDMENT-1:2004.
 // All of them are in JIS X0213 plane 1.
 constant jis_x0213_amd_1_2004 = ([
@@ -68,7 +73,7 @@ array(array(int)) parse_jisx_file(string path)
   array(array(int)) result = allocate(2, allocate)(94*94, 0xfffd);
   foreach(f->line_iterator(1);;string line) {
     line = (line/"#")[0];
-    array(string) fields = map(line/"\t", String.trim_all_whites) - ({ "" });
+    array(string) fields = map(line/"\t", String.trim) - ({ "" });
     if (sizeof(fields) < 2) continue;
     int plane;
     if (has_prefix(fields[0], "3-")) {

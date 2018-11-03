@@ -7,10 +7,12 @@
 //! int headers-visible
 //! int hover-expand
 //! int hover-selection
+//! int level-indentation
 //! GTK2.TreeModel model
 //! int reorderable
 //! int rules-hint
 //! int search-column
+//! int show-expanders
 //! GTK2.Adjustment vadjustment
 //! 
 //! Style properties:
@@ -82,10 +84,57 @@ GTK2.TreeView columns_autosize( );
 //!
 //!
 
+mapping convert_bin_window_to_tree_coords( int bx, int by );
+//! Convert bin_window coordinates to tree coordinates.
+//!
+//!
+
+mapping convert_bin_window_to_widget_coords( int bx, int by );
+//! Convert bin_window coordinates to widget coordinates.
+//!
+//!
+
+mapping convert_tree_to_bin_window_coords( int tx, int ty );
+//! Converts tree coordinates (coordinates in full scrollable area of the tree) to
+//! bin_window coordinates.
+//!
+//!
+
+mapping convert_tree_to_widget_coords( int tx, int ty );
+//! Convert tree coordinates to widget coordinates.
+//!
+//!
+
+mapping convert_widget_to_bin_window_coords( int wx, int wy );
+//! Convert widget coordinates to bin_window coordinates.
+//!
+//!
+
+mapping convert_widget_to_tree_coords( int wx, int wy );
+//! Convert widget coordinates to tree coordinates.
+//!
+//!
+
 protected GTK2.TreeView create( GTK2.TreeModel model_or_props );
 //! Create a new W(TreeView), with or without a default model.
 //!
 //!
+
+GTK2.GdkPixmap create_row_drag_icon( GTK2.TreePath path );
+//! Creates a GDK2.Pixmap representation of the row at path.  This image is
+//! used for a drag icon.
+//!
+//!
+
+GTK2.TreeView enable_model_drag_dest( array targets, int actions );
+//! Turns the view into a drop destination for automatic DND.
+//! See also: @[drag_dest_set], @[drag_source_set]
+//
+
+GTK2.TreeView enable_model_drag_source( int start_button_mask, array targets, int actions );
+//! Turns the view into a drag source for automatic DND.
+//! See also: @[drag_source_set]
+//
 
 GTK2.TreeView expand_all( );
 //! Recursively expands all nodes.
@@ -150,9 +199,29 @@ mapping get_cursor( );
 //!
 //!
 
+mapping get_dest_row_at_pos( int drag_x, int drag_y );
+//! Determines the destination row for a given position.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]) if there is such
+//! a row, or 0 if not.
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+//!
+//!
+
+mapping get_drag_dest_row( );
+//! Gets information about the row that is highlighted for feedback.
+//! Returns ([ "path": GTK2.TreePath, "pos": int ]);
+//! pos will be one of GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+//!
+//!
+
 int get_enable_search( );
 //! Returns whether or not the tree allows to start interactive searching by
 //! typing in text.
+//!
+//!
+
+int get_enable_tree_lines( );
+//! Returns whether or not tree lines are drawn.
 //!
 //!
 
@@ -162,13 +231,43 @@ GTK2.TreeViewColumn get_expander_column( );
 //!
 //!
 
+int get_fixed_height_mode( );
+//! Returns whether fixed height mode is turned on.
+//!
+//!
+
+int get_grid_lines( );
+//! Returns which grid lines are enabled.
+//!
+//!
+
 GTK2.Adjustment get_hadjustment( );
 //! Gets the W(Adjustment) currently being used for the horizontal aspect.
 //!
 //!
 
+int get_headers_clickable( );
+//! Returns whether all header columns are clickable.
+//!
+//!
+
 int get_headers_visible( );
 //! Returns true if the headers are visible.
+//!
+//!
+
+int get_hover_expand( );
+//! Returns whether hover expansion mode is turned on.
+//!
+//!
+
+int get_hover_selection( );
+//! Returns whether hover selection mode is turned on.
+//!
+//!
+
+int get_level_indentation( );
+//! Returns the amount, in pixels, of extra indentation for child levels
 //!
 //!
 
@@ -193,6 +292,13 @@ int get_reorderable( );
 //!
 //!
 
+int get_rubber_banding( );
+//! Returns whether rubber banding is turned on.  If the selection mode is
+//! GTK2.SELECTION_MULTIPLE, rubber banding will allow the user to select
+//! multiple rows by dragging the mouse.
+//!
+//!
+
 int get_rules_hint( );
 //! Gets the setting set by set_rules_hint().
 //!
@@ -203,8 +309,25 @@ int get_search_column( );
 //!
 //!
 
+GTK2.Entry get_search_entry( );
+//! Returns the GTK2.Entry which is currently in use as interactive search
+//! entry.  In case the built-in entry is being used, 0 will be returned.
+//!
+//!
+
+array get_selected( );
+//! Shortcut to GTK2.TreeView->get_selection() and 
+//! GTK2.TreeSelection()->get_selected().
+//!
+//!
+
 GTK2.TreeSelection get_selection( );
 //! Gets the W(TreeSelection) associated with this TreeView.
+//!
+//!
+
+int get_show_expanders( );
+//! Returns whether or not expanders are drawn
 //!
 //!
 
@@ -313,6 +436,12 @@ GTK2.TreeView set_cursor_on_cell( GTK2.TreePath path, GTK2.TreeViewColumn focus_
 //!
 //!
 
+GTK2.TreeView set_drag_dest_row( GTK2.TreePath path, int pos );
+//! Sets the row that is highlighted for feedback. pos is one of the four
+//! constants GTK2.TREE_VIEW_DROP_[INTO_OR_]{BEFORE,AFTER}.
+//!
+//!
+
 GTK2.TreeView set_enable_search( int enable_search );
 //! If enable_search is set, then the user can type in text to search through
 //! the tree interactively (this is sometimes called "typeahead find").
@@ -322,10 +451,29 @@ GTK2.TreeView set_enable_search( int enable_search );
 //!
 //!
 
+GTK2.TreeView set_enable_tree_lines( int enabled );
+//! Sets whether to draw lines interconnecting the expanders.  This does not
+//! have any visible effects for lists.
+//!
+//!
+
 GTK2.TreeView set_expander_column( GTK2.TreeViewColumn column );
 //! Sets the column to draw the expander arrow at.  It must be in the view.
 //! If column is omitted, then the expander arrow is always at the first
 //! visible column.
+//!
+//!
+
+GTK2.TreeView set_fixed_height_mode( int enable );
+//! Enables or disables the fixed height mode.  Fixed height mode speeds up
+//! W(TreeView) by assuming that all rows have the same height.  Only enable
+//! this option if all rows are the same height and all columns are of type
+//! GTK2.TREE_VIEW_COLUMN_FIXED.
+//!
+//!
+
+GTK2.TreeView set_grid_lines( int grid_lines );
+//! Sets which grid lines to draw.
 //!
 //!
 
@@ -344,6 +492,19 @@ GTK2.TreeView set_headers_visible( int headers_visible );
 //!
 //!
 
+GTK2.TreeView set_hover_expand( int expand );
+//! Enables or disables the hover expansion mode.  Hover expansion makes rows
+//! expand or collapse if the pointer moves over them.
+//!
+//!
+
+GTK2.TreeView set_hover_selection( int hover );
+//! Enables or disables the hover selection mode.  Hover selection makes the
+//! selected row follow the pointer.  Currently, this works only for the
+//! selection modes GTK2.SELECTION_SINGLE and GTK2.SELECTION_BROWSE.
+//!
+//!
+
 GTK2.TreeView set_model( GTK2.TreeModel model );
 //! Sets the model.  If this TreeView already has a model set, it will remove
 //! it before setting the new model.
@@ -359,6 +520,18 @@ GTK2.TreeView set_reorderable( int reorderable );
 //! This function does not give you any degree of control over the order --
 //! any reordering is allowed.  If more control is needed, you should probably
 //! handle drag and drop manually.
+//!
+//!
+
+GTK2.TreeView set_row_separator_func( function f, mixed user_data );
+//! Sets the row separator function, which is used to determine whether a
+//! row should be drawn as a separator.  If the row separator function is 0
+//! no separators are drawn.  This is the default value.
+//!
+//!
+
+GTK2.TreeView set_rubber_banding( int enable );
+//! Enables or disables rubber banding.
 //!
 //!
 
@@ -388,19 +561,30 @@ GTK2.TreeView set_search_column( int column );
 //!
 //!
 
+GTK2.TreeView set_search_entry( GTK2.Entry entry );
+//! Sets the entry which the interactive search code will use.  This is useful
+//! when you want to provide a search entry in your interface at all times
+//! at a fixed position.  Passing 0 will make the interactive search code
+//! use the built-in popup entry again.
+//!
+//!
+
+GTK2.TreeView set_show_expanders( int show );
+//! Sets whether to draw and enable expanders and indent child rows.
+//!
+//!
+
 GTK2.TreeView set_vadjustment( GTK2.Adjustment vadj );
 //! Sets the W(Adjustment) for the current vertical aspect.
 //!
 //!
 
-mapping tree_to_widget_coords( int tx, int ty );
-//! Converts tree coordinates (coordinates in full scrollable area of the tree)
-//! to widget coordinates.
+GTK2.TreeView unset_rows_drag_dest( );
+//! Undoes the effect of enable_model_drag_dest().
 //!
 //!
 
-mapping widget_to_tree_coords( int wx, int wy );
-//! converts widget coordinates to coordinates for the tree window (the full
-//! scrollable area of the tree).
+GTK2.TreeView unset_rows_drag_source( );
+//! Undoes the effect of enable_model_drag_source().
 //!
 //!

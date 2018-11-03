@@ -1,0 +1,47 @@
+AC_INIT(mpi.cmod)
+AC_ARG_WITH(mpi, MY_DESCR([--with-mpi],[enable MPI suppport]),
+            [], [with_mpi=no])
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(mpi_config.h)
+define(TEST_BUILTIN, [
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_RUN([
+$3
+unsigned long lint;
+int main(int argc, char **argv)
+{
+    static volatile int foo = 0;
+    foo = (int)$1($2);
+    return 0;
+}
+    ],
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    ,
+    AC_MSG_RESULT(no)
+    )
+])
+
+TEST_BUILTIN(__builtin_expect, [argc,0])
+
+if test "x$with_mpi" == "xyes"
+then
+    AC_MSG_CHECKING(whether MPI is present)
+    AC_TRY_RUN([
+#include "mpi.h"
+
+    int main(int argc, char **argv)
+    {
+	MPI_Comm c;
+
+	return 0;
+    }
+	],
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAS_MPI, 1, [Whether MPI is available])
+	LIBS="${LIBS-} -lmpi",
+	AC_MSG_RESULT(no)
+    )
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

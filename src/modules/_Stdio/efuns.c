@@ -19,55 +19,17 @@
 #include "backend.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "pike_security.h"
 #include "bignum.h"
 
 #include "file_machine.h"
 #include "file.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 #include <signal.h>
 #include <errno.h>
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif /* HAVE_LIMITS_H */
-
-#ifdef HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# ifdef HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-# else /* !HAVE_SYS_NDIR_H */
-#  ifdef HAVE_SYS_DIR_H
-#   include <sys/dir.h>
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#  else /* !HAVE_SYS_DIR_H */
-#   ifdef HAVE_NDIR_H
-#    include <ndir.h>
-#    define dirent direct
-#    define NAMLEN(dirent) (dirent)->d_namlen
-#   else /* !HAVE_NDIR_H */
-#    ifdef HAVE_DIRECT_H
-#     include <direct.h>
-#     define NAMLEN(dirent) strlen((dirent)->d_name)
-#    endif /* HAVE_DIRECT_H */
-#   endif /* HAVE_NDIR_H */
-#  endif /* HAVE_SYS_DIR_H */
-# endif /* HAVE_SYS_NDIR_H */
-#endif /* HAVE_DIRENT_H */
-
-#include "dmalloc.h"
 
 #ifdef HAVE_PROCESS_H
 #include <process.h>
@@ -88,13 +50,18 @@ static libzfs_handle_t *libzfs_handle;
 
 #define sp Pike_sp
 
-/* #define DEBUG_FILE */
 /* #define READDIR_DEBUG */
+#ifdef READDIR_DEBUG
+#define RDWERR(...) fprintf(stderr,__VA_ARGS__)
+#else
+#define RDWERR(...)
+#endif
 
 #ifdef __NT__
 
 #include <winbase.h>
 #include <io.h>
+#include <direct.h>
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -130,21 +97,18 @@ struct array *encode_stat(PIKE_STAT_T *s)
     stack_pop_to_no_free (ITEM(a) + 1);
     if (TYPEOF(ITEM(a)[1]) == T_OBJECT) a->type_field |= BIT_OBJECT;
     break;
-    
+
   case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
 #ifdef S_IFLNK
   case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
 #endif
   default:
-#ifdef DEBUG_FILE
-    fprintf(stderr, "encode_stat(): mode:%ld\n", (long)S_IFMT & s->st_mode);
-#endif /* DEBUG_FILE */
     ITEM(a)[1].u.integer=-4;
     break;
   }
-  ITEM(a)[2].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_atime);
-  ITEM(a)[3].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_mtime);
-  ITEM(a)[4].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_ctime);
+  ITEM(a)[2].u.integer = (INT_TYPE) s->st_atime;
+  ITEM(a)[3].u.integer = (INT_TYPE) s->st_mtime;
+  ITEM(a)[4].u.integer = (INT_TYPE) s->st_ctime;
   ITEM(a)[5].u.integer=s->st_uid;
   ITEM(a)[6].u.integer=s->st_gid;
   return a;
@@ -152,7 +116,7 @@ struct array *encode_stat(PIKE_STAT_T *s)
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /*! @decl array(string) listxattr( string file, void|int(0..1) symlink )
- *! 
+ *!
  *! Return an array of all extended attributes set on the file
  */
 
@@ -228,7 +192,7 @@ static void f_listxattr(INT32 args)
   f_aggregate(1);
   o_subtract();
 
-  if (do_free) 
+  if (do_free)
     free(ptr);
 }
 
@@ -241,7 +205,7 @@ static void f_listxattr(INT32 args)
 #endif /* !HAVE_DARWIN_XATTR */
 
 /*! @decl string getxattr(string file, string attr, void|int(0..1) symlink)
- *! 
+ *!
  *! Return the value of a specified attribute, or 0 if it does not exist.
  */
 static void f_getxattr(INT32 args)
@@ -300,7 +264,7 @@ static void f_getxattr(INT32 args)
   }
 
   push_string( make_shared_binary_string( ptr, res ) );
-  if( do_free && ptr ) 
+  if( do_free && ptr )
     free( ptr );
 }
 
@@ -320,7 +284,7 @@ static void f_removexattr( INT32 args )
 {
   char *name, *file;
   int nofollow=0, rv;
-  
+
   get_all_args( "removexattr", args, "%s%s.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
@@ -356,15 +320,15 @@ static void f_removexattr( INT32 args )
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
- *! The flags parameter can be used to refine the semantics of the operation.  
+ *! The flags parameter can be used to refine the semantics of the operation.
  *!
  *! @[Stdio.XATTR_CREATE] specifies a pure create, which
- *! fails if the named attribute exists already.  
+ *! fails if the named attribute exists already.
  *!
  *! @[Stdio.XATTR_REPLACE] specifies a pure replace operation, which
  *! fails if the named attribute does not already exist.
  *!
- *! By default (no flags), the extended attribute will be created if need be, 
+ *! By default (no flags), the extended attribute will be created if need be,
  *! or will simply replace the value if the attribute exists.
  *!
  *! @returns
@@ -373,7 +337,7 @@ static void f_removexattr( INT32 args )
 static void f_setxattr( INT32 args )
 {
   char *ind, *file;
-  struct pike_string *val;  
+  struct pike_string *val;
   int flags;
   int rv;
   int nofollow=0;
@@ -436,13 +400,11 @@ void f_file_stat(INT32 args)
   PIKE_STAT_T st;
   int i, l;
   struct pike_string *str;
-  
-  VALID_FILE_IO("file_stat","read");
 
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("file_stat", 1);
   if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
-    SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string(0..255)");
+    SIMPLE_ARG_TYPE_ERROR("file_stat", 1, "string(0..255)");
 
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
@@ -484,22 +446,15 @@ void f_file_stat(INT32 args)
  */
 void f_file_truncate(INT32 args)
 {
-#if defined(INT64)
   INT64 len = 0;
-#else
-  off_t len = 0;
-#endif
   struct pike_string *str;
   int res;
 
-  VALID_FILE_IO("file_truncate","write");
-
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("file_truncate", 2);
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("file_truncate", 1, "string");
 
-#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[1-args])) {
     if (!int64_from_bignum(&len, Pike_sp[1-args].u.object))
@@ -507,9 +462,8 @@ void f_file_truncate(INT32 args)
   }
   else
 #endif
-#endif
     if(TYPEOF(sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("file_truncate", 2, "int");
+      SIMPLE_ARG_TYPE_ERROR("file_truncate", 2, "int");
     else
       len = sp[1-args].u.integer;
 
@@ -523,45 +477,7 @@ void f_file_truncate(INT32 args)
     return;
   }
 
-#ifdef __NT__
-  {
-    HANDLE h = CreateFile(str->str, GENERIC_WRITE,
-			  FILE_SHARE_READ|FILE_SHARE_WRITE,
-			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(h == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
-      errno = GetLastError();
-      res=-1;
-    } else {
-      LONG high;
-      DWORD err;
-#ifdef INT64
-      high = DO_NOT_WARN ((LONG) (len >> 32));
-      len &= ((INT64) 1 << 32) - 1;
-#else
-      high = 0;
-#endif
-      if (SetFilePointer(h, DO_NOT_WARN ((LONG) len), &high, FILE_BEGIN) ==
-	  INVALID_SET_FILE_POINTER &&
-	  (err = GetLastError()) != NO_ERROR) {
-	errno = err;
-	res = -1;
-      }
-      else if (!SetEndOfFile(h)) {
-	errno = GetLastError();
-	res=-1;
-      }
-      else
-	res = 0;
-      CloseHandle(h);
-    }
-  }
-#else  /* !__NT__ */
-#ifdef HAVE_TRUNCATE64
-  res = truncate64 (str->str, len);
-#else
-  res=truncate(str->str, len);
-#endif
-#endif /* __NT__ */
+  res = fd_truncate(str->str, len);
 
   pop_n_elems(args);
 
@@ -602,7 +518,9 @@ void f_file_truncate(INT32 args)
  *!       on all systems.
  *!     @member string "fstype"
  *!       Type of filesystem (eg @expr{"nfs"@}). This item is not
- *!       available on all systems.
+ *!       available on all systems. For some more uncommon filesystems
+ *!       this may be an integer representing the magic number for the
+ *!       filesystem type (cf @tt{statfs(2)@} on eg Linux systems).
  *!   @endmapping
  *!
  *! @note
@@ -620,54 +538,62 @@ void f_filesystem_stat( INT32 args )
   DWORD bytes_per_sector = -1;
   DWORD free_clusters = -1;
   DWORD total_clusters = -1;
+  p_wchar1 *root;
   char _p[4];
   char *p = _p;
   unsigned int free_sectors;
   unsigned int total_sectors;
 
-  VALID_FILE_IO("filesystem_stat","read");
-
   get_all_args( "filesystem_stat", args, "%s", &path );
 
-  if(sp[-1].u.string->len < 2 || path[1] != ':')
-  {
-    p = 0;
+  root = pike_dwim_utf8_to_utf16(path);
+  if (root[0] && root[1] == ':') {
+    root[2] = '\\';
+    root[3] = 0;
   } else {
-    p[0] = path[0];
-    p[1] = ':';
-    p[2] = '\\';
-    p[3] = 0;
+    free(root);
+    root = NULL;
   }
-  
-  if(!GetDiskFreeSpace( p, &sectors_per_cluster, 
-			&bytes_per_sector,
-			&free_clusters, 
-			&total_clusters ))
+
+  if(!GetDiskFreeSpaceW( root, &sectors_per_cluster,
+			 &bytes_per_sector,
+			 &free_clusters,
+			 &total_clusters ))
   {
+    if (root) free(root);
     pop_n_elems(args);
     push_int( 0 );
     return;
   }
 
+  if (root) free(root);
+
   free_sectors = sectors_per_cluster  * free_clusters;
   total_sectors = sectors_per_cluster * total_clusters;
-  
+
   pop_n_elems( args );
-  push_text("blocksize");
+  push_static_text("blocksize");
   push_int(bytes_per_sector);
-  push_text("blocks");
+  push_static_text("blocks");
   push_int(total_sectors);
-  push_text("bfree");
+  push_static_text("bfree");
   push_int(free_sectors);
-  push_text("bavail");
+  push_static_text("bavail");
   push_int(free_sectors);
   f_aggregate_mapping( 8 );
 }
 
 #else /* !__NT__ */
 
-#if  !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
+#if !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
 #undef HAVE_STATFS
+#endif
+
+#if defined(HAVE_STATFS) && defined(HAVE_STATVFS) && !defined(HAVE_STATVFS_F_BASETYPE)
+/* Linux libc doesn't provide fs type info in statvfs(2),
+ * so use statfs(2) instead.
+ */
+#undef HAVE_STATVFS
 #endif
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
@@ -686,6 +612,9 @@ void f_filesystem_stat( INT32 args )
 #endif /* HAVE_SYS_VFS_H */
 #ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
+#ifdef HAVE_LINUX_MAGIC_H
+#include <linux/magic.h>
+#endif /* HAVE_LINUX_MAGIC_H */
 #endif /* HAVE_SYS_STATFS_H */
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -711,7 +640,6 @@ void f_filesystem_stat(INT32 args)
   /* Probably only ULTRIX has this name for the struct */
   struct fs_data st;
 #else /* !HAVE_STRUCT_FS_DATA */
-    /* Should not be reached */
 #error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
@@ -720,7 +648,6 @@ void f_filesystem_stat(INT32 args)
   PIKE_STAT_T statbuf;
   struct ustat st;
 #else /* !HAVE_USTAT */
-  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -728,10 +655,10 @@ void f_filesystem_stat(INT32 args)
   int i;
   struct pike_string *str;
 
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("filesystem_stat", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("filesystem_stat", 1);
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("filesystem_stat", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("filesystem_stat", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -759,7 +686,6 @@ void f_filesystem_stat(INT32 args)
     i = ustat(statbuf.st_rdev, &st);
   }
 #else
-  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -771,107 +697,126 @@ void f_filesystem_stat(INT32 args)
     push_int(0);
   }else{
     int num_fields = 0;
-    char *fsname = NULL;
 #ifdef HAVE_STATVFS
 #if 0
-    push_text("id");         push_int(st.f_fsid);
+    push_static_text("id");         push_int(st.f_fsid);
     num_fields++;
 #endif
-    push_text("blocksize");  push_int(st.f_frsize);
-    push_text("blocks");     push_int(st.f_blocks);
-    push_text("bfree");      push_int(st.f_bfree);
-    push_text("bavail");     push_int(st.f_bavail);
-    push_text("files");      push_int(st.f_files);
-    push_text("ffree");      push_int(st.f_ffree);
-    push_text("favail");     push_int(st.f_favail);
+    push_static_text("blocksize");  push_int(st.f_frsize);
+    push_static_text("blocks");     push_int(st.f_blocks);
+    push_static_text("bfree");      push_int(st.f_bfree);
+    push_static_text("bavail");     push_int(st.f_bavail);
+    push_static_text("files");      push_int(st.f_files);
+    push_static_text("ffree");      push_int(st.f_ffree);
+    push_static_text("favail");     push_int(st.f_favail);
     num_fields += 7;
 #ifdef HAVE_STATVFS_F_FSTR
-    push_text("fsname");     push_text(fsname = st.f_fstr);
+    push_static_text("fsname");     push_text(st.f_fstr);
     num_fields++;
 #endif /* HAVE_STATVFS_F_FSTR */
 #ifdef HAVE_STATVFS_F_BASETYPE
-    push_text("fstype");     push_text(st.f_basetype);
+    push_static_text("fstype");     push_text(st.f_basetype);
     num_fields++;
 #endif /* HAVE_STATVFS_F_BASETYPE */
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
 #if 0 && HAVE_STATFS_F_FSID
-    push_text("id");           push_int(st.f_fsid);
+    push_static_text("id");           push_int(st.f_fsid);
     num_fields++;
 #endif
-    push_text("blocksize");    push_int(st.f_bsize);
-    push_text("blocks");       push_int(st.f_blocks);
-    push_text("bfree");        push_int(st.f_bfree);
-    push_text("files");        push_int(st.f_files);
-    push_text("ffree");        push_int(st.f_ffree);
-    push_text("favail");       push_int(st.f_ffree);
+    push_static_text("blocksize");    push_int(st.f_bsize);
+    push_static_text("blocks");       push_int(st.f_blocks);
+    push_static_text("bfree");        push_int(st.f_bfree);
+    push_static_text("files");        push_int(st.f_files);
+    push_static_text("ffree");        push_int(st.f_ffree);
+    push_static_text("favail");       push_int(st.f_ffree);
     num_fields += 6;
 #ifdef HAVE_STATFS_F_BAVAIL
-    push_text("bavail");       push_int(st.f_bavail);
+    push_static_text("bavail");       push_int(st.f_bavail);
     num_fields++;
 #endif /* HAVE_STATFS_F_BAVAIL */
+    push_static_text("fstype");
+#ifdef HAVE_STATFS_F_FSTYPENAME
+    push_text(st.f_fstypename);
+#else
+    switch(st.f_type) {
+#ifdef BTRFS_SUPER_MAGIC
+   case BTRFS_SUPER_MAGIC:	push_static_text("btrfs");	break;
+#endif /* BTRFS_SUPER_MAGIC */
+#ifdef EXT2_SUPER_MAGIC
+    case EXT2_SUPER_MAGIC:	push_static_text("ext");	break;
+#endif /* EXT2_SUPER_MAGIC */
+#ifdef ISOFS_SUPER_MAGIC
+    case ISOFS_SUPER_MAGIC:	push_static_text("isofs");	break;
+#endif /* ISOFS_SUPER_MAGIC */
+#ifdef JFFS2_SUPER_MAGIC
+    case JFFS2_SUPER_MAGIC:	push_static_text("jffs2");	break;
+#endif /* JFFS2_SUPER_MAGIC */
+#ifdef MSDOS_SUPER_MAGIC
+    case MSDOS_SUPER_MAGIC:	push_static_text("msdos");	break;
+#endif /* MSDOS_SUPER_MAGIC */
+#ifdef NFS_SUPER_MAGIC
+    case NFS_SUPER_MAGIC:	push_static_text("nfs");	break;
+#endif /* NFS_SUPER_MAGIC */
+#ifndef NTFS_SB_MAGIC
+#define NTFS_SB_MAGIC	0x5346544e
+#endif
+    case NTFS_SB_MAGIC:		push_static_text("ntfs");	break;
+#ifdef PROC_SUPER_MAGIC
+    case PROC_SUPER_MAGIC:	push_static_text("procfs");	break;
+#endif /* PROC_SUPER_MAGIC */
+#ifdef RAMFS_MAGIC
+    case RAMFS_MAGIC:		push_static_text("ramfs");	break;
+#endif /* RAMFS_MAGIC */
+#ifdef REISERFS_SUPER_MAGIC
+    case REISERFS_SUPER_MAGIC:	push_static_text("reiserfs");	break;
+#endif /* REISERFS_SUPER_MAGIC */
+#ifdef SMB_SUPER_MAGIC 
+    case SMB_SUPER_MAGIC:	push_static_text("smb");	break;
+#endif /* SMB_SUPER_MAGIC */
+#ifdef SYSFS_MAGIC
+    case SYSFS_MAGIC:		push_static_text("sysfs");	break;
+#endif /* SYSFS_MAGIC */
+#ifdef TMPFS_MAGIC
+    case TMPFS_MAGIC:		push_static_text("tmpfs");	break;
+#endif /* TMPFS_MAGIC */
+#ifdef XENFS_SUPER_MAGIC
+    case XENFS_SUPER_MAGIC:	push_static_text("xenfs");	break;
+#endif /* XENFS_SUPER_MAGIC */
+    default:
+      push_int(st.f_type);
+      break;
+    }
+#endif /* HAVE_STATFS_F_FSTYPENAME */
+    num_fields++;
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA
     /* ULTRIX */
-    push_text("blocksize");    push_int(st.fd_bsize);
-    push_text("blocks");       push_int(st.fd_btot);
-    push_text("bfree");        push_int(st.fd_bfree);
-    push_text("bavail");       push_int(st.fd_bfreen);
+    push_static_text("blocksize");    push_int(st.fd_bsize);
+    push_static_text("blocks");       push_int(st.fd_btot);
+    push_static_text("bfree");        push_int(st.fd_bfree);
+    push_static_text("bavail");       push_int(st.fd_bfreen);
     num_fields += 4;
 #else /* !HAVE_STRUCT_FS_DATA */
-    /* Should not be reached */
 #error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
-    push_text("bfree");      push_int(st.f_tfree);
-    push_text("ffree");      push_int(st.f_tinode);
-    push_text("fsname");     push_text(fsname = st.f_fname);
+    push_static_text("bfree");      push_int(st.f_tfree);
+    push_static_text("ffree");      push_int(st.f_tinode);
+    push_static_text("fsname");     push_text(st.f_fname);
     num_fields += 3;
 #else
-    /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
-#if 0
-#if defined(HAVE_LIBZFS_INIT) && defined(HAVE_ZFS_PATH_TO_ZHANDLE)
-    /* zfs_path_to_zhandle() has an unfortunate tendency to output stuff
-     * to stderr when it fails...
-     */
-    if (fsname && !strcmp(fsname, "zfs")) {
-      zfs_handle_t *zfs_handle;
-      if ((str->len == 1) && (str->str[0] == '.')) {
-	/* Workaround for bug in zfs_path_to_zhandle(). */
-	zfs_handle = zfs_path_to_zhandle(libzfs_handle, "./",
-					 ZFS_TYPE_FILESYSTEM);
-      } else {
-	zfs_handle = zfs_path_to_zhandle(libzfs_handle, str->str,
-					 ZFS_TYPE_FILESYSTEM);
-      }
-      if (zfs_handle) {
-#ifndef HAVE_ZFS_PROP_UTF8ONLY
-	/* NOTE: ZFS_PROP_UTF8ONLY is not present in Solaris 10 127112-05.
-	 *       Attempt to be forward compatible.
-	 */
-#define ZFS_PROP_UTF8ONLY	(ZFS_PROP_XATTR + 4)
-#endif /* !HAVE_ZFS_PROP_UTF8ONLY */
-	if (zfs_prop_get_int(zfs_handle, ZFS_PROP_UTF8ONLY)) {
-	  push_text("filename_encoding");
-	  push_text("utf8");
-	  num_fields++;
-	}
-      }
-    }
-#endif /* HAVE_LIBZFS_INIT && HAVE_ZFS_PATH_TO_ZHANDLE */
-#endif /* 0 */
-
     f_aggregate_mapping(num_fields*2);
   }
 }
-  
+
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 #endif /* __NT__ */
 
@@ -882,8 +827,13 @@ void f_filesystem_stat(INT32 args)
  *! @returns
  *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
  *!
+ *! @note
+ *!   May fail with @[errno()] set to @[EISDIR] or @[ENOTDIR]
+ *!   if the file has changed to a directory during the call
+ *!   or the reverse.
+ *!
  *! @seealso
- *!   @[mkdir()], @[Stdio.recursive_rm()]
+ *!   @[Stdio.File()->unlinkat()], @[mkdir()], @[Stdio.recursive_rm()]
  */
 void f_rm(INT32 args)
 {
@@ -893,16 +843,14 @@ void f_rm(INT32 args)
 
   destruct_objects_to_destruct();
 
-  VALID_FILE_IO("rm","write");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("rm", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("rm", 1, "string");
 
   str = sp[-args].u.string;
-  
+
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
@@ -921,39 +869,15 @@ void f_rm(INT32 args)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
     {
-      while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_rmdir(str->str) != -1) && (errno == EINTR))
 	;
     }else{
-      while (!(i = unlink(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_unlink(str->str) != -1) && (errno == EINTR))
 	;
     }
-#ifdef __NT__
-    /* NT looks at the permissions on the file itself and refuses to
-     * remove files we don't have write access to. Thus we chmod it
-     * and try again, to make rm() more unix-like. */
-    if (!i && errno == EACCES && !(st.st_mode & _S_IWRITE)) {
-      if (chmod(str->str, st.st_mode | _S_IWRITE) == -1)
-	errno = EACCES;
-      else {
-	if(S_IFDIR == (S_IFMT & st.st_mode))
-	{
-	  while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
-	    ;
-	}else{
-	  while (!(i = unlink(str->str) != -1) && (errno == EINTR))
-	    ;
-	}
-	if (!i) {		/* Failed anyway; try to restore the old mode. */
-	  int olderrno = errno;
-	  chmod(str->str, st.st_mode);
-	  errno = olderrno;
-	}
-      }
-    }
-#endif
   }
   THREADS_DISALLOW_UID();
-      
+
   pop_n_elems(args);
   push_int(i);
 }
@@ -977,14 +901,12 @@ void f_mkdir(INT32 args)
   int mode;
   int i;
   char *s, *s_dup;
-  
-  VALID_FILE_IO("mkdir","write");
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mkdir", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mkdir", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("mkdir", 1, "string");
 
   mode = 0777;			/* &'ed with ~umask anyway. */
 
@@ -1016,70 +938,14 @@ void f_mkdir(INT32 args)
       s[str->len - 1] = '\0';
     }
   }
-  
-#if MKDIR_ARGS == 2
+
   THREADS_ALLOW_UID();
-  i = mkdir(s, mode) != -1;
+  i = fd_mkdir(s, mode) != -1;
   THREADS_DISALLOW_UID();
-#else
 
-#ifdef HAVE_LSTAT
-#define LSTAT lstat
-#else
-#define LSTAT stat
-#endif
-
-  {
-    /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
-    int mask = umask(0);
-    /* The following is basically the normal THREADS_ALLOW_UID/
-     * THREADS_DISALLOW_UID macros expanded. They cannot be used
-     * directly due to the nested disallow/allow block below. */
-    struct thread_state *cur_ts_ext = Pike_interpreter.thread_state;
-    pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-    i = mkdir(s) != -1;
-    umask(mask);
-    if (i) {
-      /* Attempt to set the mode.
-       *
-       * This code needs to be as paranoid as possible.
-       */
-      struct stat statbuf1;
-      struct stat statbuf2;
-      i = LSTAT(s, &statbuf1) != -1;
-      if (i) {
-	i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
-      }
-      if (i) {
-	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
-	do {
-	  i = chmod(s, mode) != -1;
-	  if (i || errno != EINTR) break;
-	  pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-	  check_threads_etc();
-	  pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-	} while (1);
-      }
-      if (i) {
-	i = LSTAT(s, &statbuf2) != -1;
-      }
-      if (i) {
-	i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
-	if (!i) {
-	  errno = EPERM;
-	}
-      }
-      if (!i) {
-	rmdir(s);
-      }
-    }
-    pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-  }
-#endif
-  
   if (s_dup)
     free(s_dup);
-  
+
   pop_n_elems(args);
   push_int(i);
 }
@@ -1120,85 +986,60 @@ void f_mkdir(INT32 args)
  *! @seealso
  *!   @[mkdir()], @[cd()]
  */
+#ifdef __NT__
 void f_get_dir(INT32 args)
 {
-#ifdef __NT__
   HANDLE dir;
   WIN32_FIND_DATAW d;
-  struct string_builder sb;
-#else /* !__NT__ */
-#ifdef USE_FDOPENDIR
-  int dir_fd;
-#endif
-  DIR *dir = NULL;
-#ifdef HAVE_READDIR_R
-  ptrdiff_t name_max = -1;
-#endif
-#endif /* __NT__ */
   struct pike_string *str=0;
+  p_wchar1 *pattern;
+  size_t plen;
 
-  VALID_FILE_IO("get_dir","read");
+  get_all_args("get_dir", args, ".%S", &str);
 
-#ifdef __NT__
-  get_all_args("get_dir",args,".%T",&str);
-#else /* !__NT__ */
-  get_all_args("get_dir",args,".%N",&str);
-#endif /* __NT__ */
-
-  if(!str) {
-#if defined(__amigaos4__)
-    push_empty_string();
-#else
-    push_constant_text(".");
-#endif
+  /* NB: The empty string is also an alias for the current directory.
+   *     This is a convenience eg when recursing with dirname().
+   */
+  if(!str || !str->len) {
+    push_static_text(".");
     str = Pike_sp[-1].u.string;
     args++;
-  }
-
-#ifdef __NT__
-
-  if (str->size_shift == 2) {
-    /* Filenames that are too wide are not supported. */
-    errno = ENOENT;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
-  init_string_builder_alloc(&sb, str->len+2, 1);
-
-  string_builder_shared_strcat(&sb, str);
-
-  /* Append "/" "*". */
-  if (sb.s->len && (STR1(sb.s)[sb.s->len-1] != '/') &&
-      (STR1(sb.s)[sb.s->len-1] != '\\')) {
-    STR1(sb.s)[sb.s->len++] = '/';
-  }
-  STR1(sb.s)[sb.s->len++] = '*';
-  STR1(sb.s)[sb.s->len] = '\0';
-
-  if (wcslen(STR1(sb.s)) != (size_t)sb.s->len) {
+  } else if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
-    free_string_builder(&sb);
     errno = ENOENT;
     pop_n_elems(args);
     push_int(0);
     return;
   }
 
-#ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
-#endif /* READDIR_DEBUG */
+  pattern = pike_dwim_utf8_to_utf16(str->str);
 
-  dir = FindFirstFileW(STR1(sb.s), &d);
+  if (!pattern) {
+    SIMPLE_OUT_OF_MEMORY_ERROR("get_dir", (str->len + 4) * sizeof(p_wchar1));
+  }
 
-  free_string_builder(&sb);
+  plen = wcslen(pattern);
 
-  if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+  /* Append "/" "*".
+   *
+   * NB: pike_dwim_utf8_to_utf16() allocates space for at
+   *     least 3 extra characters.
+   */
+  if (plen && (pattern[plen-1] != '/') && (pattern[plen-1] != '\\')) {
+    pattern[plen++] = '/';
+  }
+  pattern[plen++] = '*';
+  pattern[plen] = 0;
+
+  RDWERR("FindFirstFile(\"%S\")...\n", STR1(sb.s));
+
+  dir = FindFirstFileW(pattern, &d);
+
+  free(pattern);
+
+  if (dir == INVALID_HANDLE_VALUE) {
     int err = GetLastError();
-#ifdef READDIR_DEBUG
-    fprintf(stderr, "  INVALID_HANDLE_VALUE, error %d\n", err);
-#endif /* READDIR_DEBUG */
+    RDWERR("  INVALID_HANDLE_VALUE, error %d\n", err);
 
     pop_n_elems(args);
     if (err == ERROR_FILE_NOT_FOUND) {
@@ -1224,23 +1065,32 @@ void f_get_dir(INT32 args)
     BEGIN_AGGREGATE_ARRAY(10);
 
     do {
-#ifdef READDIR_DEBUG
-      fprintf(stderr, "  \"%S\"\n", d.cFileName);
-#endif /* READDIR_DEBUG */
+      ONERROR uwp;
+      p_wchar0 *utf8_fname;
+
+      RDWERR("  \"%S\"\n", d.cFileName);
       /* Filter "." and ".." from the list. */
       if(d.cFileName[0]=='.')
       {
 	if(!d.cFileName[1]) continue;
 	if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
       }
-      push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
+
+      utf8_fname = pike_utf16_to_utf8(d.cFileName);
+      if (!utf8_fname) {
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_dir",
+				   (wcslen(d.cFileName) + 4) * sizeof(p_wchar1));
+      }
+
+      SET_ONERROR(uwp, free, utf8_fname);
+      push_text(utf8_fname);
+      CALL_AND_UNSET_ONERROR(uwp);
+
       DO_AGGREGATE_ARRAY(120);
     } while(FindNextFileW(dir, &d));
     err = GetLastError();
 
-#ifdef READDIR_DEBUG
-    fprintf(stderr, "  DONE, error %d\n", err);
-#endif /* READDIR_DEBUG */
+    RDWERR("  DONE, error %d\n", err);
 
     FindClose(dir);
 
@@ -1255,8 +1105,132 @@ void f_get_dir(INT32 args)
       return;
     }
   }
+}
 
 #else /* !__NT__ */
+
+/* Note: Also used from file_get_dir(). */
+void low_get_dir(DIR *dir, ptrdiff_t UNUSED(name_max))
+{
+  if(dir) {
+    struct dirent *d;
+#if defined(_REENTRANT)
+#define FPR 1024
+    char buffer[MAXPATHLEN * 4];
+    char *ptrs[FPR];
+    ptrdiff_t lens[FPR];
+#endif /* _REENTRANT */
+
+    BEGIN_AGGREGATE_ARRAY(10);
+
+#if defined(_REENTRANT)
+    while(1)
+    {
+      int e;
+      int num_files=0;
+      char *bufptr=buffer;
+      int err = 0;
+
+      THREADS_ALLOW();
+
+      while(1)
+      {
+	/* Modern impementations of readdir(3C) are thread-safe with
+	 * respect to unique DIRs.
+	 *
+	 * Linux Glibc has deprecated readdir_r(3C).
+	 */
+	errno = 0;
+	while (!(d = readdir(dir)) && (errno == EINTR))
+	  ;
+	if (!d) {
+          RDWERR("readdir(), d= %p\n", d);
+          RDWERR("readdir() => errno %d\n", errno);
+          /* Solaris readdir_r seems to set errno to ENOENT sometimes.
+	   *
+	   * AIX readdir seems to set errno to EBADF at end of dir.
+	   */
+	  if ((errno == ENOENT) || (errno == EBADF)) {
+	    errno = 0;
+	  }
+	  break;
+	}
+        RDWERR("POSIX readdir_r() => \"%s\"\n", d->d_name);
+	/* Filter "." and ".." from the list. */
+	if(d->d_name[0]=='.')
+	{
+	  if(NAMLEN(d)==1) continue;
+	  if(d->d_name[1]=='.' && NAMLEN(d)==2) continue;
+	}
+	if(num_files >= FPR) break;
+	lens[num_files]=NAMLEN(d);
+	if(bufptr+lens[num_files] >= buffer+sizeof(buffer)) break;
+	memcpy(bufptr, d->d_name, lens[num_files]);
+	ptrs[num_files]=bufptr;
+	bufptr+=lens[num_files];
+	num_files++;
+      }
+      THREADS_DISALLOW();
+      if ((!d) && err) {
+	Pike_error("get_dir(): readdir_r() failed: %d\n", err);
+      }
+      RDWERR("Pushing %d filenames...\n", num_files);
+      for(e=0;e<num_files;e++)
+      {
+	push_string(make_shared_binary_string(ptrs[e],lens[e]));
+      }
+      if(d)
+	push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
+      else
+	break;
+      DO_AGGREGATE_ARRAY(120);
+    }
+#else
+    for(d=readdir(dir); d; d=readdir(dir))
+    {
+      RDWERR("readdir(): %s\n", d->d_name);
+      /* Filter "." and ".." from the list. */
+      if(d->d_name[0]=='.')
+      {
+	if(NAMLEN(d)==1) continue;
+	if(d->d_name[1]=='.' && NAMLEN(d)==2) continue;
+      }
+      push_string(make_shared_binary_string(d->d_name, NAMLEN(d)));
+
+      DO_AGGREGATE_ARRAY(120);
+    }
+#endif
+    closedir(dir);
+
+    END_AGGREGATE_ARRAY;
+  } else {
+    push_int(0);
+  }
+}
+
+void f_get_dir(INT32 args)
+{
+#ifdef USE_FDOPENDIR
+  int dir_fd;
+#endif
+  DIR *dir = NULL;
+  ptrdiff_t name_max = -1;
+  struct pike_string *str=0;
+
+  get_all_args("get_dir",args,".%N",&str);
+
+  /* NB: The empty string is also an alias for the current directory.
+   *     This is a convenience eg when recursing with dirname().
+   */
+  if(!str || !str->len) {
+#if defined(__amigaos4__)
+    push_empty_string();
+#else
+    push_static_text(".");
+#endif
+    str = Pike_sp[-1].u.string;
+    args++;
+  }
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
@@ -1287,171 +1261,13 @@ void f_get_dir(INT32 args)
 #ifdef USE_PATHCONF
   name_max = pathconf(str->str, _PC_NAME_MAX);
 #endif
+
   THREADS_DISALLOW_UID();
-  if(dir)
-  {
-    struct dirent *d;
-    struct dirent *tmp = NULL;
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
-#define FPR 1024
-    char buffer[MAXPATHLEN * 4];
-    char *ptrs[FPR];
-    ptrdiff_t lens[FPR];
 
-#ifndef NAME_MAX
-#define NAME_MAX 1024
-#endif
-    if (name_max < NAME_MAX)
-      name_max = NAME_MAX;
-    if (name_max < 1024) name_max = 1024;
-
-    if (!(tmp = malloc(sizeof(struct dirent) + name_max + 1))) {
-      closedir(dir);
-      Pike_error("get_dir(): Out of memory\n");
-    }
-#endif /* _REENTRANT && HAVE_READDIR_R */
-
-    BEGIN_AGGREGATE_ARRAY(10);
-
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
-    while(1)
-    {
-      int e;
-      int num_files=0;
-      char *bufptr=buffer;
-      int err = 0;
-
-      THREADS_ALLOW();
-
-      while(1)
-      {
-#if defined(HAVE_SOLARIS_READDIR_R)
-	/* Solaris readdir_r returns the second arg on success,
-	 * and returns NULL on error or at end of dir.
-	 */
-	errno=0;
-	do {
-	  d=readdir_r(dir, tmp);
-	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
-	if (!d) {
-	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
-	   */
-	  if (errno == ENOENT) {
-	    err = 0;
-	  } else {
-	    err = errno;
-	  }
-	  break;
-	}
-#elif defined(HAVE_HPUX_READDIR_R)
-	/* HPUX's readdir_r returns an int instead:
-	 *
-	 *  0	- Successfull operation.
-	 * -1	- End of directory or encountered an error (sets errno).
-	 */
-	errno=0;
-	if (readdir_r(dir, tmp)) {
-	  d = NULL;
-	  err = errno;
-	  break;
-	} else {
-	  d = tmp;
-	}
-#elif defined(HAVE_POSIX_READDIR_R)
-	/* POSIX readdir_r returns 0 on success, and ERRNO on failure.
-	 * at end of dir it sets the third arg to NULL.
-	 */
-	d = NULL;
-	errno = 0;
-	if ((err = readdir_r(dir, tmp, &d)) || !d) {
-#ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r(\"%s\") => err %d\n",
-		  str->str, err);
-	  fprintf(stderr, "POSIX readdir_r(), d= 0x%08x\n",
-		  (unsigned int)d);
-#endif /* READDIR_DEBUG */
-	  if (err == -1) {
-	    /* Solaris readdir_r returns -1, and sets errno. */
-	    err = errno;
-	  }
-#ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r(\"%s\") => errno %d\n",
-		  str->str, err);
-#endif /* READDIR_DEBUG */
-	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
-	   *
-	   * AIX readdir_r seems to set errno to EBADF at end of dir.
-	   */
-	  if ((err == ENOENT) || (err == EBADF)) {
-	    err = 0;
-	  }
-	  break;
-	}
-#ifdef READDIR_DEBUG
-	fprintf(stderr, "POSIX readdir_r(\"%s\") => \"%s\"\n",
-		str->str, d->d_name);
-#endif /* READDIR_DEBUG */
-#else
-#error Unknown readdir_r variant
-#endif
-	/* Filter "." and ".." from the list. */
-	if(d->d_name[0]=='.')
-	{
-	  if(NAMLEN(d)==1) continue;
-	  if(d->d_name[1]=='.' && NAMLEN(d)==2) continue;
-	}
-	if(num_files >= FPR) break;
-	lens[num_files]=NAMLEN(d);
-	if(bufptr+lens[num_files] >= buffer+sizeof(buffer)) break;
-	MEMCPY(bufptr, d->d_name, lens[num_files]);
-	ptrs[num_files]=bufptr;
-	bufptr+=lens[num_files];
-	num_files++;
-      }
-      THREADS_DISALLOW();
-      if ((!d) && err) {
-	free(tmp);
-	Pike_error("get_dir(): readdir_r(\"%S\") failed: %d\n", str, err);
-      }
-#ifdef READDIR_DEBUG
-      fprintf(stderr, "Pushing %d filenames...\n", num_files);
-#endif /* READDIR_DEBUG */
-      for(e=0;e<num_files;e++)
-      {
-	push_string(make_shared_binary_string(ptrs[e],lens[e]));
-      }
-      if(d)
-	push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
-      else
-	break;
-      DO_AGGREGATE_ARRAY(120);
-    }
-
-    free(tmp);
-#else
-    for(d=readdir(dir); d; d=readdir(dir))
-    {
-      /* Filter "." and ".." from the list. */
-      if(d->d_name[0]=='.')
-      {
-	if(NAMLEN(d)==1) continue;
-	if(d->d_name[1]=='.' && NAMLEN(d)==2) continue;
-      }
-      push_string(make_shared_binary_string(d->d_name, NAMLEN(d)));
-
-      DO_AGGREGATE_ARRAY(120);
-    }
-#endif
-    closedir(dir);
-
-    END_AGGREGATE_ARRAY;
-    stack_pop_n_elems_keep_top(args);
-  } else {
-    pop_n_elems(args);
-    push_int(0);
-  }
-#endif /* __NT__ */
+  low_get_dir(dir, name_max);
+  stack_pop_n_elems_keep_top(args);
 }
+#endif /* __NT__ */
 
 /*! @decl int cd(string s)
  *!
@@ -1468,13 +1284,11 @@ void f_cd(INT32 args)
   INT32 i;
   struct pike_string *str;
 
-  VALID_FILE_IO("cd","status");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("cd", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("cd", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("cd", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -1486,7 +1300,7 @@ void f_cd(INT32 args)
     return;
   }
 
-  i = chdir(str->str) != -1;
+  i = fd_chdir(str->str) != -1;
   pop_n_elems(args);
   push_int(i);
 }
@@ -1500,38 +1314,14 @@ void f_cd(INT32 args)
  */
 void f_getcwd(INT32 args)
 {
-  char *e;
-  char *tmp;
-#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
-  INT32 size;
-
-  size=1000;
-  do {
-    tmp=(char *)xalloc(size);
-    e = getcwd(tmp,size);
-    if (e || errno!=ERANGE) break;
-    free(tmp);
-    tmp=0;
-    size*=2;
-  } while (size < 10000);
-#else
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 32768
-#endif
-  tmp=xalloc(MAXPATHLEN+1);
-  THREADS_ALLOW_UID();
-  e = getwd(tmp);
-  THREADS_DISALLOW_UID();
-#endif
-  if(!e) {
-    if (tmp) 
-      free(tmp);
+  char *e = fd_get_current_dir_name();
+  if (!e) {
     Pike_error("Failed to fetch current path.\n");
   }
 
   pop_n_elems(args);
   push_text(e);
-  free(tmp);
+  free(e);
 }
 
 #ifdef HAVE_EXECVE
@@ -1572,13 +1362,7 @@ void f_exece(INT32 args)
   save_sp=sp-args;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("exece", 2);
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("exece: permission denied.\n");
-#endif
-
+    SIMPLE_WRONG_NUM_ARGS_ERROR("exece", 2);
 
   e=0;
   en=0;
@@ -1586,30 +1370,35 @@ void f_exece(INT32 args)
   {
   default:
     if(TYPEOF(sp[2-args]) != T_MAPPING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
     en=sp[2-args].u.mapping;
     mapping_fix_type_field(en);
 
     if(m_ind_types(en) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
     if(m_val_types(en) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
+
+    /* FALLTHRU */
 
   case 2:
     if(TYPEOF(sp[1-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 2, "array(string)");
 
 
     if(array_fix_type_field(sp[1-args].u.array) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 2, "array(string)");
+
+    /* FALLTHRU */
 
   case 1:
     if(TYPEOF(sp[0-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
+      SIMPLE_ARG_TYPE_ERROR("exece", 1, "string");
+    break;
   }
 
-  argv=(char **)xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
-  
+  argv=xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
+
   argv[0]=sp[0-args].u.string->str;
 
   for(e=0;e<sp[1-args].u.array->size;e++)
@@ -1625,16 +1414,16 @@ void f_exece(INT32 args)
     INT32 e, i = 0;
     struct keypair *k;
 
-    env=(char **)malloc((1+m_sizeof(en)) * sizeof(char *));
+    env=calloc(1+m_sizeof(en), sizeof(char *));
     if(!env) {
       free(argv);
       SIMPLE_OUT_OF_MEMORY_ERROR("exece", (1+m_sizeof(en)*sizeof(char *)));
     }
 
     NEW_MAPPING_LOOP(en->data) {
-      push_string(k->ind.u.string);
-      push_constant_text("=");
-      push_string(k->val.u.string);
+      ref_push_string(k->ind.u.string);
+      push_static_text("=");
+      ref_push_string(k->val.u.string);
       f_add(3);
       env[i++]=sp[-1].u.string->str;
       dmalloc_touch_svalue(sp-1);
@@ -1695,22 +1484,15 @@ void f_mv(INT32 args)
   INT32 i;
   struct pike_string *str1;
   struct pike_string *str2;
-#ifdef __NT__
-  int orig_errno = errno;
-  int err;
-  PIKE_STAT_T st;
-#endif
 
-  VALID_FILE_IO("mv","write");
-
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mv", 2);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mv", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("mv", 1, "string");
 
   if(TYPEOF(sp[-args+1]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mv", 2, "string");
+    SIMPLE_ARG_TYPE_ERROR("mv", 2, "string");
 
   str1 = sp[-args].u.string;
   str2 = sp[1-args].u.string;
@@ -1727,170 +1509,7 @@ void f_mv(INT32 args)
     return;
   }
 
-#ifndef __NT__
-  i=rename(str1->str, str2->str);
-#else
-
-  /* Emulate the behavior of unix rename(2) when the destination exists. */
-
-  if (movefileex) {
-    if (MoveFileEx (str1->str, str2->str, 0)) {
-      i = 0;
-      goto no_nt_rename_kludge;
-    }
-    if ((i = GetLastError()) != ERROR_ALREADY_EXISTS)
-      goto no_nt_rename_kludge;
-  }
-  else {
-    /* Fall back to rename() for W98 and earlier. Unlike MoveFileEx,
-     * it can't move directories between directories. */
-    if (!rename (str1->str, str2->str)) {
-      i = 0;
-      goto no_nt_rename_kludge;
-    }
-    if ((i = errno) != EEXIST)
-      goto no_nt_rename_kludge;
-  }
-
-#ifdef HAVE_LSTAT
-  if (fd_lstat (str2->str, &st)) goto no_nt_rename_kludge;
-#else
-  if (fd_stat (str2->str, &st)) goto no_nt_rename_kludge;
-#endif
-
-  if ((st.st_mode & S_IFMT) != S_IFDIR && movefileex) {
-    /* MoveFileEx can overwrite a file but not a dir. */
-    if (!(st.st_mode & _S_IWRITE))
-      /* Like in f_rm, we got to handle the case that NT looks on the
-       * permissions on the file itself before removing it. */
-      if (chmod (str2->str, st.st_mode | _S_IWRITE))
-	goto no_nt_rename_kludge;
-    if (movefileex (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING))
-      i = 0;			/* Success. */
-    else
-      chmod (str2->str, st.st_mode);
-  }
-
-  else {
-    char *s = malloc (str2->len + 2), *p;
-    if (!s) {
-      i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
-      goto no_nt_rename_kludge;
-    }
-    memcpy (s, str2->str, str2->len);
-    p = s + str2->len;
-    p[2] = 0;
-
-    if ((st.st_mode & S_IFMT) == S_IFDIR) {
-      /* Check first that the target is empty if it's a directory, so
-       * that we won't even bother trying with the stunt below. */
-      WIN32_FIND_DATA *dir = malloc (sizeof (WIN32_FIND_DATA));
-      HANDLE h;
-      if (!dir) {
-	i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
-	goto nt_rename_kludge_end;
-      }
-      p[0] = '/', p[1] = '*';
-      h = FindFirstFile (s, dir);
-      if (h != INVALID_HANDLE_VALUE) {
-	do {
-	  if (dir->cFileName[0] != '.' ||
-	      (dir->cFileName[1] &&
-	       (dir->cFileName[1] != '.' || dir->cFileName[2]))) {
-	    /* Target dir not empty. */
-	    FindClose (h);
-	    free (dir);
-	    goto nt_rename_kludge_end;
-	  }
-	} while (FindNextFile (h, dir));
-	FindClose (h);
-      }
-      free (dir);
-    }
-
-    /* Move away the target temporarily to do the move, then cleanup
-     * or undo depending on how it went. */
-    for (p[0] = 'A'; p[0] != 'Z'; p[0]++)
-      for (p[1] = 'A'; p[1] != 'Z'; p[1]++) {
-	if (movefileex) {
-	  if (!movefileex (str2->str, s, 0)) {
-	    if (GetLastError() == ERROR_ALREADY_EXISTS) continue;
-	    else goto nt_rename_kludge_end;
-	  }
-	}
-	else {
-	  if (rename (str2->str, s)) {
-	    if (errno == EEXIST) continue;
-	    else goto nt_rename_kludge_end;
-	  }
-	}
-	if (movefileex ?
-	    movefileex (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING) :
-	    !rename (str1->str, str2->str)) {
-	  if (!(st.st_mode & _S_IWRITE))
-	    if (chmod (s, st.st_mode | _S_IWRITE))
-	      goto nt_rename_kludge_fail;
-	  if ((st.st_mode & S_IFMT) == S_IFDIR) {
-	    while ((err = rmdir (s)) && (errno == EINTR))
-	      ;
-	  } else {
-	    while ((err = unlink (s)) && (errno == EINTR))
-	      ;
-	  }
-	  if (!err) {		/* Success. */
-	    i = 0;
-	    goto nt_rename_kludge_end;
-	  }
-
-	nt_rename_kludge_fail:
-	  /* Couldn't remove the old target, perhaps the directory
-	   * grew files. */
-	  if (!(st.st_mode & _S_IWRITE))
-	    chmod (s, st.st_mode);
-	  if (movefileex ?
-	      !movefileex (str2->str, str1->str, MOVEFILE_REPLACE_EXISTING) :
-	      rename (str2->str, str1->str)) {
-	    /* Old target left behind but the rename is still
-	     * successful, so we claim success anyway in lack of
-	     * better error reporting capabilities. */
-	    i = 0;
-	    goto nt_rename_kludge_end;
-	  }
-	}
-
-	rename (s, str2->str);
-	goto nt_rename_kludge_end;
-      }
-
-  nt_rename_kludge_end:
-    free (s);
-  }
-
-no_nt_rename_kludge:
-  if (i) {
-    if (movefileex)
-      switch (i) {
-	/* Try to translate NT errors to errno codes that NT's rename()
-	 * would return. */
-	case ERROR_INVALID_NAME:
-	  errno = EINVAL;
-	  break;
-	case ERROR_NOT_ENOUGH_MEMORY:
-	  errno = ENOMEM;
-	  break;
-	case ERROR_FILE_NOT_FOUND:
-	case ERROR_PATH_NOT_FOUND:
-	  errno = ENOENT;
-	  break;
-	case ERROR_ALREADY_EXISTS:
-	  errno = EEXIST;
-	  break;
-	default:
-	  errno = EACCES;
-      }
-  }
-  else errno = orig_errno;
-#endif /* __NT__ */
+  i = fd_rename(str1->str, str2->str);
 
   pop_n_elems(args);
   push_int(!i);
@@ -1909,10 +1528,10 @@ void f_strerror(INT32 args)
   char *s;
   int err;
 
-  if(!args) 
-    SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
   if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("strerror", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
 
   err = sp[-args].u.integer;
   pop_n_elems(args);
@@ -1928,7 +1547,7 @@ void f_strerror(INT32 args)
   if(s)
     push_text(s);
   else {
-    push_constant_text("Error ");
+    push_static_text("Error ");
     push_int(err);
     f_add(2);
   }
@@ -1950,8 +1569,20 @@ static void f_errno(INT32 args)
   push_int(errno);
 }
 
+#ifdef HAVE__ACCESS
+#define access(PATH, FLAGS)	_access(PATH, FLAGS)
+#define HAVE_ACCESS
+#endif
 
-#if defined(HAVE_ACCESS)
+#ifdef HAVE_ACCESS
+
+#ifndef R_OK
+#define R_OK	4
+#define W_OK	2
+#define X_OK	1
+#define F_OK	0
+#endif
+
 /*! @decl int access( string path, string|void mode )
  *!
  *! access() checks if the calling process can access the file
@@ -2047,7 +1678,7 @@ static void f_access( INT32 args )
     pop_n_elems(args);
     push_int( !res );
 }
-#endif
+#endif /* HAVE_ACCESS */
 
 void init_stdio_efuns(void)
 {
@@ -2099,35 +1730,35 @@ void init_stdio_efuns(void)
 #endif
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
-  
+
 /* function(string:mapping(string:string|int)) */
   ADD_EFUN("filesystem_stat", f_filesystem_stat,tFunc(tStr,tMap(tStr,tOr(tStr,tInt))), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #endif /* HAVE_STATVFS || HAVE_STATFS */
-  
+
 /* function(:int) */
   ADD_EFUN("errno",f_errno,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-  
+
 /* function(string:int) */
   ADD_EFUN("rm",f_rm,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(string,void|int:int) */
   ADD_EFUN("mkdir",f_mkdir,tFunc(tStr tOr(tVoid,tInt),tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(string,string:int) */
   ADD_EFUN("mv", f_mv,tFunc(tStr tStr,tInt), OPT_SIDE_EFFECT);
-  
+
 /* function(string:string *) */
   ADD_EFUN("get_dir",f_get_dir,tFunc(tOr(tVoid,tStr),tArr(tStr)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-  
+
 /* function(string:int) */
   ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(:string) */
   ADD_EFUN("getcwd",f_getcwd,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 #ifdef HAVE_EXECVE
 /* function(string,mixed*,void|mapping(string:string):int) */
-  ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT); 
+  ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT);
 #endif
 
 /* function(int:string) */

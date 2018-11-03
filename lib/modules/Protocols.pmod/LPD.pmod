@@ -1,6 +1,6 @@
-//
-// LPD.pmod: an implementation of the BSD lpd protocol (RFC 1179).
-// This is a module for pike.
+//!
+//! An implementation of the BSD lpd protocol (@rfc{1179@}).
+//!
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 // 2 August 2012 <bill@welliver.org> Bill Welliver>
 //
@@ -8,7 +8,7 @@
 #pike __REAL_VERSION__
 
 //! A client for communicating with printers and print spoolers that
-//! support the BSD lpd protocol (RFC 1179).
+//! support the BSD lpd protocol (@rfc{1179@}).
 class client {
   string host;
   int port;
@@ -17,11 +17,11 @@ class client {
   string jobtype;
   string jobname;
 
-  static int connect(string host, int port)
+  protected int connect(string host, int port)
   {
     int a=random(10);
     // try to open one of the "official" local socket ports.
-    // not having one doesn't seem to be a problem with most LPD 
+    // not having one doesn't seem to be a problem with most LPD
     // servers, but we should at least try. will probably fail
     // if two try to open the same local port at once. ymmv.
     int res=conn->open_socket(721 + a);
@@ -29,7 +29,7 @@ class client {
     return conn->connect(host, port);
   }
 
-  static void send(string s, mixed ... args)
+  protected void send(string s, mixed ... args)
 {
 #ifdef LPD_DEBUG
   werror("LPD: sending %O\n", s);
@@ -43,8 +43,8 @@ class client {
   int set_job_type(string type)
   {
     type=lower_case(type);
-    
-    switch (type) { 
+
+    switch (type) {
      case "f":
      case "text":
       jobtype="f";
@@ -76,7 +76,7 @@ class client {
 //! @decl int start_queue(string queue)
 //! Start the queue @i{queue@} if not already printing.
 //! @returns
-//! Returns 0 if unable to connect, 1 otherwise. 
+//! Returns 0 if unable to connect, 1 otherwise.
   int start_queue(string queue)
   {
     if(!queue) return 0;
@@ -92,7 +92,7 @@ class client {
     return res;
   }
 
-static string make_control(int jn)
+protected string make_control(int jn)
 {
   String.Buffer control = String.Buffer();
 
@@ -109,7 +109,7 @@ static string make_control(int jn)
                  "N", jobname, "\n");
   }
   else
-  { 
+  {
     control->add("JPike LPD Client Job ", (string)jn, "\n",
                  "NPike LPD Client Job ", (string)jn, "\n");
   }
@@ -142,7 +142,7 @@ static string make_control(int jn)
     }
 
     string control = make_control(jn);
-    
+
     werror("job file:\n\n" + control  + "\n\n");
 
     send("%c%d cfA%03d%s\n", 2, sizeof(control),
@@ -239,7 +239,7 @@ static string make_control(int jn)
 //! if not provided, defaults to @i{localhost@}.
 //! @param portnum
 //! Contains the port the print host is listening on.
-//! if not provided, defaults to port @i{515@}, the RFC 1179 standard.
+//! if not provided, defaults to port @i{515@}, the @rfc{1179@} standard.
   void create(string|void hostname, int|void portnum)
   {
     host=hostname || "localhost";

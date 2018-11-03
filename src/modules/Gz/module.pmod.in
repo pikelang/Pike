@@ -1,9 +1,10 @@
 // -*- pike -*-
 #pike __REAL_VERSION__
-
-#if constant(@module@)
+#require constant(@module@)
 
 inherit @module@;
+
+#define DATA_CHUNK_SIZE 64*1024
 
 //! Low-level implementation of read/write support for GZip files
 class _file {
@@ -11,7 +12,7 @@ class _file {
   protected private Stdio.Stream f;
   protected private inflate inf;
   protected private deflate def;
-  protected private int level, strategy;
+  protected private int level, strategy, window_size;
   protected private string read_buf;
   protected private int file_pos, crc, write_mode, at_eof;
 
@@ -68,8 +69,8 @@ class _file {
 
     if(sizeof(buf))
       fill_read_buffer(buf);
-    
-    return 1;    
+
+    return 1;
   }
 
   protected int make_header()
@@ -84,7 +85,28 @@ class _file {
   //!   The filename or an open filedescriptor or Stream for the GZip
   //!   file to use.
   //! @param mode
-  //!   Mode for the fileoperations. Defaults to read only.
+  //!   Mode for the file operations. Defaults to read only. The
+  //!   following mode characters are unique to Gz.File.
+  //!
+  //!   @string
+  //!     @value "0"
+  //!     @value "1"
+  //!     @value "2"
+  //!     @value "3"
+  //!     @value "4"
+  //!     @value "5"
+  //!     @value "6"
+  //!     @value "7"
+  //!     @value "8"
+  //!     @value "9"
+  //!       Values 0 to 9 set the compression level from no
+  //!       compression to maximum available compression. Defaults to
+  //!       6.
+  //!     @value "f"
+  //!       Sets the compression strategy to @[FILTERED].
+  //!     @value "h"
+  //!       Sets the compression strategy to @[HUFFMAN_ONLY].
+  //!   @endstring
   //!
   //! @note
   //!   If the object already has been opened, it will first be closed.
@@ -94,6 +116,7 @@ class _file {
     write_mode = 0;
     level = 6;
     strategy = DEFAULT_STRATEGY;
+    window_size = 15;
     if(mode) {
       mode = filter(mode, lambda(int n) {
 			    if(n == 'w' || n == 'a')
@@ -120,7 +143,7 @@ class _file {
 	return 0;
     }
     return write_mode? make_header() : check_header();
-  }  
+  }
 
   //! Opens a gzip file for reading.
   protected void create(void|string|Stdio.Stream gzFile, void|string mode)
@@ -130,7 +153,7 @@ class _file {
   }
 
   //! closes the file
-  //! @returns 
+  //! @returns
   //!  1 if successful
   int close()
   {
@@ -186,7 +209,7 @@ class _file {
 
   //! Reads len (uncompressed) bytes from the file.
   //! If read is unsuccessful, 0 is returned.
-  int|string read(int len)  
+  int|string read(int len)
   {
     while(sizeof(read_buf) < len)
       if(!fill_read_buffer())
@@ -198,11 +221,11 @@ class _file {
   }
 
   //! Writes the data to the file.
-  //! @returns 
+  //! @returns
   //!  the number of bytes written to the file.
   int write(string data)
   {
-    if(!def) def = deflate(-level, strategy);
+    if(!def) def = deflate(-level, strategy, window_size);
     string comp = def->deflate(data, NO_FLUSH);
     if(f->write(comp) != sizeof(comp))
       return 0;
@@ -220,7 +243,7 @@ class _file {
   //!   SEEK_SET = set current position in file to pos
   //!   SEEK_CUR = new position is current+pos
   //!   SEEK_END is not supported.
-  //! @returns 
+  //! @returns
   //!   New position or negative number if seek failed.
   int seek(int pos, void|int type)
   {
@@ -265,14 +288,14 @@ class _file {
     }
   }
 
-  //! @returns 
+  //! @returns
   //!  the current position within the file.
   int tell()
   {
     return file_pos;
   }
 
-  //! @returns 
+  //! @returns
   //!  1 if EOF has been reached.
   int(0..1) eof()
   {
@@ -283,25 +306,24 @@ class _file {
     return at_eof;
   }
 
-  //! Sets the encoding level and strategy
-  //! @param level
-  //!   Level of the compression.
-  //!   0 is the least compression, 9 is max. 8 is default.
-  //! @param strategy
-  //!   Set strategy for encoding to one of the following:
-  //!   DEFAULT_STRATEGY
-  //!   FILTERED
-  //!   HUFFMAN_ONLY
-  int setparams(int level, int strategy)
-  {
-    if(def) {
+  //! Sets the encoding level, strategy and window_size.
+  //!
+  //! @seealso
+  //!   @[Gz.deflate]
+  int setparams(void|int(0..9) level, void|int strategy,
+   void|int(8..15) window_size) {
+    if (def) {
       string s = def->deflate("", SYNC_FLUSH);
-      if(sizeof(s) && f->write(s) != sizeof(s))
+      if (sizeof(s) && f->write(s) != sizeof(s))
 	return 0;
       def = 0;
     }
-    _file::level = level;
-    _file::strategy = strategy;
+    if (!zero_type(level))
+      _file::level = level;
+    if (!zero_type(strategy))
+      _file::strategy = strategy;
+    if (!zero_type(window_size))
+      _file::window_size = window_size;
     return 1;
   }
 
@@ -356,7 +378,7 @@ class File {
     return ::close();
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     close();
   }
 
@@ -376,7 +398,7 @@ class File {
   //! @enddl
   //! For the wb and ab mode, additional parameters may
   //! be specified. Please se zlib manual for more info.
-  //! @returns 
+  //! @returns
   //!  non-zero if successful.
   int open(string|int|Stdio.Stream file, void|string mode) {
     string open_mode="rb";
@@ -405,13 +427,31 @@ class File {
     String.Buffer buf = String.Buffer();
     string data;
     do {
-      if (!(data = ::read(1024*64))) break;
+      if (!(data = ::read(DATA_CHUNK_SIZE))) break;
       buf->add(data);
     } while (sizeof(data));
     return (string)buf;
   }
-}
 
-#else
-constant this_program_does_not_exist = 1;
-#endif // constant(@module@)
+
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
+  {
+    return lambda(){ return ::read(nbytes); };
+  }
+
+  String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
+  //! Returns an iterator that will loop over the lines in this file.
+  //! If trim is true, all @tt{'\r'@} characters will be removed from
+  //! the input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
+    // This one is about twice as fast, but it's way less flexible.
+    return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
+  }
+}

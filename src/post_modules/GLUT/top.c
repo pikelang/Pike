@@ -4,30 +4,26 @@
 || for more information.
 */
 
-#include "global.h"
-
+#include "module.h"
 #include "config.h"
 
-#include "stralloc.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
-#include "module.h"
 
 #define GLUT_API_VERSION 4
 
 #ifdef HAVE_LIBGLUT
-#ifdef HAVE_GL_GLUT_H
-#include <GL/glut.h>
-#else
 #ifdef HAVE_GLUT_GLUT_H
 #include <GLUT/glut.h>
-#endif
-#endif
-#endif
+#else
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+#endif /* HAVE_GLUT_GLUT_H */
+#endif /* HAVE_LIBGLUT */
 
 
 PIKE_MODULE_INIT

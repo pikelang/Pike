@@ -6,6 +6,13 @@
 //!
 //!
 
+protected GDK2.Color _destruct( );
+//! Destroys the color object. Please note that this function does
+//! not free the color from the X-colormap (in case of pseudocolor)
+//! right now.
+//!
+//!
+
 int blue( );
 //! Returns the blue color component.
 //!
@@ -15,13 +22,6 @@ protected GDK2.Color create( object|int color_or_r, int|void g, int|void b );
 //! r g and b are in the range 0 to 255, inclusive.
 //! If color is specified, it should be an Image.Color object, and the
 //! only argument.
-//!
-//!
-
-GDK2.Color destroy( );
-//! Destroys the color object. Please note that this function does
-//! not free the color from the X-colormap (in case of pseudocolor)
-//! right now.
 //!
 //!
 

@@ -1,6 +1,5 @@
 #ifndef CB_KEY_PTR_H
 #define CB_KEY_PTR_H
-#include <sys/types.h>
 #include "global.h"
 #include "pike_int_types.h"
 
@@ -11,10 +10,10 @@
 #endif
 
 #if SIZEOF_CHAR_P == 8
-# define _VOIDP_TYPE unsigned INT64
+# define _VOIDP_TYPE UINT64
 # define gclz(x) clz64(x)
 #elif SIZEOF_CHAR_P == 4
-# define _VOIDP_TYPE unsigned INT64
+# define _VOIDP_TYPE UINT64
 # define gclz(x) clz32(x)
 #else
 # error UNKNOWN POINTER SIZE

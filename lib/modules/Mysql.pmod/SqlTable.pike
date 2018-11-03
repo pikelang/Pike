@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
-#if !constant (___Mysql)
-constant this_program_does_not_exist = 1;
-#else  // !___Mysql
+#require constant(___Mysql)
 
 //! This class provides some abstractions on top of an SQL table.
 //!
@@ -67,7 +65,7 @@ constant this_program_does_not_exist = 1;
 //! @note
 //! The handling of TIMESTAMP columns in MySQL (as of 5.1 at least)
 //! through UNIX_TIMESTAMP and FROM_UNIXTIME has one problem if the
-//! active time zone uses daylight savings time:
+//! active time zone uses daylight-saving time:
 //!
 //! Apparently FROM_UNIXTIME internally formats the integer to a MySQL
 //! date/time string, which is then parsed again to set the unix
@@ -167,6 +165,14 @@ protected constant mysql_datetime_types = ([
   "datetime": 1, "date": 1, "time": 1, "year": 1,
 ]);
 
+// Cache for _sizeof().
+protected int num_entries = -1;
+
+protected void invalidate_cache()
+{
+  num_entries = -1;
+}
+
 // FIXME: Add a setting to be able to "deprecate" columns for
 // migration from a column to a field in the properties blob. The
 // deprecation means the column will be queried, but the value will be
@@ -198,8 +204,8 @@ protected void create (function(void:Sql.Sql) get_db,
 //! "properties" then it is used for this purpose. Set to @expr{"-"@}
 //! to force this feature to be disabled.
 {
-  this_program::get_db = get_db;
-  this_program::table = table;
+  this::get_db = get_db;
+  this::table = table;
 
   Sql.Sql conn = get_db();
 
@@ -241,8 +247,8 @@ protected void create (function(void:Sql.Sql) get_db,
 	if (!prop_col_info->length)
 	  error ("Unable to determine maximum length of the property "
 		 "column %O. Got column info: %O\n", prop_col, prop_col_info);
-	this_program::prop_col = prop_col_info->name;
-	this_program::prop_col_max_length = prop_col_info->length;
+	this::prop_col = prop_col_info->name;
+	this::prop_col_max_length = prop_col_info->length;
       }
     }
   }
@@ -702,8 +708,8 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+  Sql.mysql conn = db_conn;
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert %O\n",
@@ -711,9 +717,10 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("INSERT `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
-  if (zero_type (first_rec[id_col]))
+  if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
   else
     return first_rec[id_col];
@@ -723,8 +730,8 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert_ignore], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+  Sql.mysql conn = db_conn;
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert_ignore %O\n",
@@ -732,11 +739,12 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("INSERT IGNORE `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
   int last_insert_id = conn->insert_id();
   if (last_insert_id &&
-      sizeof (records) == 1 && zero_type (first_rec[id_col]))
+      sizeof (records) == 1 && !has_index (first_rec, id_col))
     // Only set the field if we got a single record. Otherwise we
     // don't really know which record it applies to.
     first_rec[id_col] = last_insert_id;
@@ -747,8 +755,8 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[replace], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+  Sql.mysql conn = db_conn;
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: replace %O\n",
@@ -756,9 +764,10 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   conn->big_query ("REPLACE `" + table + "` " +
 		   make_insert_clause (records),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
   if (!id_col) return 0;
-  if (zero_type (first_rec[id_col]))
+  if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
   else
     return first_rec[id_col];
@@ -769,8 +778,8 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[update], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+  Sql.mysql conn = db_conn;
+#ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
 #endif
@@ -789,7 +798,8 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 					     clear_other_fields == 2) + " "
 		   "WHERE " + pk_where + " "
 		   "LIMIT 1",	// The limit is just extra paranoia.
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
 }
 
 int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
@@ -797,8 +807,8 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[insert_or_update], but a database connection object is
 //! passed explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+  Sql.mysql conn = db_conn;
+#ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
 #endif
@@ -821,7 +831,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
   string prop_col_value;
 
   if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col) error ("Column(s) %s missing in table %O.\n",
 			  String.implode_nicely (indices (other_fields)),
 			  table);
@@ -842,13 +852,13 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
       update_set[i++] = "`" + col + "`=VALUES(`" + col + "`)";
   }
 
-  if (prop_col_value && zero_type (real_cols[prop_col])) {
+  if (prop_col_value && !has_index (real_cols, prop_col)) {
     if (clear_other_fields)
       update_set += ({"`" + prop_col + "`=VALUES(`" + prop_col + "`)"});
     real_cols[prop_col] = prop_col_value;
   }
 
-  if (id_col && zero_type (real_cols[id_col]))
+  if (id_col && !has_index (real_cols, id_col))
     update_set += ({"`" + id_col + "`=LAST_INSERT_ID(`" + id_col + "`)"});
 
   if (clear_other_fields == 2) {
@@ -860,9 +870,11 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 		   make_insert_clause (({real_cols})) + " " +
 		   (sizeof (update_set) ?
 		    "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
 
-  if (id_col && zero_type (record[id_col]))
+  invalidate_cache();
+
+  if (id_col && !has_index (record, id_col))
     record[id_col] = conn->insert_id();
 
   if (sizeof (other_fields) && !clear_other_fields &&
@@ -905,9 +917,10 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
 
-  db_conn->master_sql->big_query ("DELETE FROM `" + table + "` "
-				  "WHERE (" + where + ") " + (rest || ""),
-				  bindings);
+  db_conn->big_query ("DELETE FROM `" + table + "` "
+		      "WHERE (" + where + ") " + (rest || ""),
+		      bindings);
+  invalidate_cache();
 }
 
 void conn_remove (Sql.Sql db_conn, mixed id)
@@ -915,10 +928,11 @@ void conn_remove (Sql.Sql db_conn, mixed id)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove %O\n", this, id);
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + simple_make_pk_where (id),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
 }
 
 void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
@@ -926,11 +940,12 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove_multi %{%O,%}\n", this, ids);
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   // FIXME: Split into several queries if the list is very long.
   conn->big_query ("DELETE FROM `" + table + "` "
 		   "WHERE " + make_multi_pk_where (ids),
-		   0, query_charset);
+		   UNDEFINED, query_charset);
+  invalidate_cache();
 }
 
 Result conn_select (Sql.Sql db_conn, string|array where,
@@ -954,7 +969,7 @@ Result conn_select (Sql.Sql db_conn, string|array where,
   query += res->prepare_select_expr (fields, select_exprs, !!table_refs) +
     " FROM `" + table + "` " + (table_refs || "");
 
-  res->res = db_conn->master_sql->big_typed_query (
+  res->res = db_conn->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
   return res;
@@ -971,7 +986,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     select_expr = handle_argspec (select_expr, bindings);
   if (arrayp (where)) where = handle_argspec (where, bindings);
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
-  if (!sizeof (bindings)) bindings = 0;
+  if (!sizeof (bindings)) bindings = UNDEFINED;
 
   string property;
   string col_type = col_types[select_expr];
@@ -992,10 +1007,10 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     query += select_expr;
   query += " FROM `" + table + "` " + (table_refs || "");
 
-  Sql.mysql_result res = db_conn->master_sql->big_typed_query (
+  Sql.Result res = db_conn->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (res->num_fields() != 1)
     error ("Result from %O did not contain a single field (got %d fields).\n",
 	   query, res->num_fields());
@@ -1024,9 +1039,9 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
 //! Like @[get], but a database connection object is passed explicitly
 //! instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (fields && !sizeof (fields)) error ("No fields selected.\n");
 #endif
 
@@ -1048,7 +1063,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
       mapping(string:string) field_map = mkmapping (fields, fields);
       other_fields = field_map - real_cols;
     }
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col)
       error ("Requested nonexisting column(s) %s.\n",
 	     String.implode_nicely (indices (other_fields ||
@@ -1076,7 +1091,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
   }
 
   string pk_where = simple_make_pk_where (id);
-  Mysql.mysql_result res =
+  Sql.Result res =
     conn->big_typed_query ("SELECT " + (select_cols * ",") + " "
 			   "FROM `" + table + "` "
 			   "WHERE " + pk_where,
@@ -1112,7 +1127,7 @@ Result conn_get_multi (Sql.Sql db_conn, array(mixed) ids,
 //! Like @[get_multi], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
+  Sql.mysql conn = db_conn;
   Result res = Result();
   // FIXME: Split into several queries if the list is very long.
   res->res =
@@ -1132,7 +1147,7 @@ class Result
 //! iterator interface and can therefore be used directly in e.g.
 //! @expr{foreach@}.
 {
-  Sql.mysql_result res;
+  Sql.Result res;
   //! The underlying result object from the db connection.
 
   protected array(string) real_col_names;
@@ -1245,7 +1260,7 @@ class Result
   // Internal function to initialize all the variables from an
   // optional array of requested fields.
   {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (fields && !sizeof (fields)) error ("No fields selected.\n");
 #endif
 
@@ -1293,7 +1308,7 @@ class Result
 	mapping(string:string) field_map = mkmapping (fields, fields);
 	other_fields = field_map - real_cols;
       }
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (!prop_col)
 	error ("Requested nonexisting column(s) %s.\n",
 	       String.implode_nicely (indices (other_fields ||
@@ -1326,7 +1341,7 @@ class Result
   // Iterator interface. This is a separate object only to avoid
   // implementing a `! in Result, which would make it behave oddly.
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   protected int got_iterator;
 #endif
 
@@ -1334,7 +1349,7 @@ class Result
   //! Returns an iterator for the result. Only one iterator may be
   //! created per @[Result] object.
   {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (got_iterator)
       error ("Cannot create more than one iterator for a Result object.\n");
     got_iterator = 1;
@@ -1424,10 +1439,10 @@ protected mapping(string:mixed) decode_props (string prop_val, string where)
 }
 
 protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
-// A value with zero_type is formatted as "DEFAULT".
+// An undefined value is formatted as "DEFAULT".
 {
   if (stringp (val)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (col_types[col_name] != "string")
       error ("Got string value %q for %s column `%s`.\n",
 	     val, col_types[col_name], col_name);
@@ -1443,13 +1458,13 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
       // FIXME: If the column holds binary data we should throw an
       // error here instead of sending what is effectively garbled
       // data.
-      buf->add ("_utf8\"", string_to_utf8 (quote (val)), "\"");
+      buf->add ("_utf8\"", string_to_utf8 (quote (val), 2), "\"");
   }
   else if (intp (val)) {
-    if (zero_type (val))
+    if (undefinedp (val))
       buf->add ("DEFAULT");
     else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (col_types[col_name] != "int" && !datetime_cols[col_name])
 	error ("Got integer value %O for %s column `%s`.\n",
 	       val, col_types[col_name] || "string", col_name);
@@ -1463,7 +1478,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
   else if (val == Val.null)
     buf->add ("NULL");
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (objectp (val) && functionp (val->den)) {
       // Allow Gmp.mpq for float fields, and for int fields if they
       // have no fractional part.
@@ -1495,7 +1510,7 @@ protected string make_insert_clause (array(mapping(string:mixed)) records)
   // FIXME: Ought to use bindings, but Mysql.mysql doesn't support it
   // yet (as of pike 7.8.191).
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
 
@@ -1504,7 +1519,7 @@ protected string make_insert_clause (array(mapping(string:mixed)) records)
     mapping(string:mixed) other_fields = rec - real_cols;
 
     if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (!prop_col) error ("Column(s) %s missing.\n",
 			    String.implode_nicely (indices (other_fields)));
 #endif
@@ -1557,7 +1572,7 @@ protected string make_pk_where (mapping(string:mixed) rec)
 // primary key, or zero if the record doesn't have values for all pk
 // columns. The pk fields are also removed from the rec mapping.
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (pk_cols)) error ("There is no primary key in this table.\n");
 #endif
   String.Buffer buf = String.Buffer();
@@ -1565,7 +1580,7 @@ protected string make_pk_where (mapping(string:mixed) rec)
   foreach (pk_cols, string pk_col) {
     if (first) first = 0; else buf->add (" AND ");
     mixed val = m_delete (rec, pk_col);
-    if (zero_type (val) || val == Val.null)
+    if (undefinedp (val) || val == Val.null)
       return 0;
     buf->add ("`", pk_col, "`=");
     add_mysql_value (buf, pk_col, val);
@@ -1577,14 +1592,14 @@ protected string simple_make_pk_where (mixed id)
 // Returns a WHERE expression like "a=1 AND b=2" for matching the
 // primary key. id is like the argument to get().
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (pk_cols)) error ("There is no primary key in this table.\n");
 #endif
 
   String.Buffer buf = String.Buffer();
   if (sizeof (pk_cols) == 1) {
     buf->add ("`", pk_cols[0], "`=");
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (id == Val.null)
       error ("Cannot use Val.null for primary key column %O.\n",
 	     pk_cols[0]);
@@ -1594,7 +1609,7 @@ protected string simple_make_pk_where (mixed id)
   }
 
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!arrayp (id) || sizeof (id) != sizeof (pk_cols))
       error ("The id must be an array with %d elements.\n", sizeof (pk_cols));
 #endif
@@ -1602,7 +1617,7 @@ protected string simple_make_pk_where (mixed id)
     foreach (pk_cols; int i; string pk_col) {
       if (first) first = 0; else buf->add (" AND ");
       buf->add ("`", pk_cols[0], "`=");
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (id[i] == Val.null)
 	error ("Cannot use Val.null for primary key column %O.\n", pk_col);
 #endif
@@ -1618,7 +1633,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
 // Returns a WHERE expression like "foo IN (2,3,17,4711)" for matching
 // a bunch of records by primary key.
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (sizeof (pk_cols) != 1)
     error ("The table must have a single column primary key.\n");
 #endif
@@ -1631,7 +1646,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   string optional_not = negated?" NOT ":"";
 
   if ((<"float", "int">)[pk_type]) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     foreach (ids; int i; mixed id)
       if (!intp (id) && !floatp (id))
 	error ("Expected numeric value for primary key column %O, "
@@ -1644,7 +1659,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   }
 
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     foreach (ids; int i; mixed id)
       if (!stringp (id))
 	error ("Expected string value for primary key column %O, "
@@ -1674,7 +1689,7 @@ protected string get_and_merge_props (Sql.mysql conn, string pk_where,
       conn->big_query ("SELECT `" + prop_col + "` "
 		       "FROM `" + table + "` "
 		       "WHERE " + pk_where,
-		       0, query_charset)->fetch_row())
+		       UNDEFINED, query_charset)->fetch_row())
     old_props = decode_props (ent[0], pk_where);
   else
     old_props = ([]);
@@ -1711,7 +1726,7 @@ protected void update_props (Sql.mysql conn, string pk_where,
 		   "_binary\"" + quote (encoded_props) + "\" "
 		   "WHERE " + pk_where + " "
 		   "LIMIT 1",	// In case the WHERE condition is bad.
-		   0, query_charset);
+		   UNDEFINED, query_charset);
 }
 
 protected mapping(string:mixed) update_pack_fields (
@@ -1725,7 +1740,7 @@ protected mapping(string:mixed) update_pack_fields (
   mapping(string:mixed) other_fields = rec - real_cols;
 
   if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col) error ("Column(s) %s missing in table %O.\n",
 			  String.implode_nicely (indices (other_fields)),
 			  table);
@@ -1765,4 +1780,13 @@ protected string make_set_clause (mapping(string:mixed) rec,
 
   return buf->get();
 }
-#endif
+
+protected int _sizeof()
+{
+  int ret = num_entries;
+  if (ret < 0) {
+    // NB: Thread safe!
+    ret = num_entries = (int)(select1("COUNT(*)", "TRUE")[0]);
+  }
+  return ret;
+}

@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "global.h"
-	  
+
 #include "machine.h"
 #include "module_support.h"
 #include "object.h"
@@ -16,12 +16,7 @@
 #include "builtin_functions.h"
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -41,17 +36,17 @@
 
 #define sp Pike_sp
 
-int num_log_entries;
-void free_log_entry( struct log_entry *le )
+static int num_log_entries;
+static void free_log_entry( struct log_entry *le )
 {
   num_log_entries--;
-  aap_free( le );
+  free( le );
 }
 
-struct log_entry *new_log_entry(ptrdiff_t extra)
+static struct log_entry *new_log_entry(ptrdiff_t extra)
 {
   num_log_entries++;
-  return aap_malloc( sizeof( struct log_entry )+extra );
+  return malloc( sizeof( struct log_entry )+extra );
 }
 
 
@@ -71,16 +66,17 @@ static void push_log_entry(struct log_entry *le)
   lo->method = make_shared_binary_string(le->method.str, le->method.len);
   lo->protocol = le->protocol;
   le->protocol->refs++;
-#ifdef fd_inet_ntop
   {
+#ifdef fd_inet_ntop
     char buffer[64];
-    lo->from = make_shared_string( fd_inet_ntop(SOCKADDR_FAMILY(le->from),
-						SOCKADDR_IN_ADDR(le->from),
-						buffer, sizeof(buffer)) );
-  }
-#else
-  lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
+    if (fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+		     SOCKADDR_IN_ADDR(le->from),
+		     buffer, sizeof(buffer)))
+      lo->from = make_shared_string(buffer);
+    else
 #endif
+      lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
+  }
   push_object( o );
 }
 
@@ -90,12 +86,14 @@ void f_aap_log_as_array(INT32 args)
   struct log *l = LTHIS->log;
   int n = 0;
   pop_n_elems(args);
-  
+
+  THREADS_ALLOW();
   mt_lock( &l->log_lock );
   le = l->log_head;
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
-  
+  THREADS_DISALLOW();
+
   while(le)
   {
     struct log_entry *l;
@@ -112,9 +110,9 @@ void f_aap_log_as_array(INT32 args)
 
 void f_aap_log_exists(INT32 UNUSED(args))
 {
-  if(LTHIS->log->log_head) 
+  if(LTHIS->log->log_head)
     push_int(1);
-  else 
+  else
     push_int(0);
 }
 
@@ -127,11 +125,13 @@ void f_aap_log_size(INT32 UNUSED(args))
     push_int(0);
     return;
   }
+  THREADS_ALLOW();
   mt_lock( &l->log_lock );
-  le = l->log_head; 
+  le = l->log_head;
   while((le = le->next))
     n++;
   mt_unlock( &l->log_lock );
+  THREADS_DISALLOW();
   push_int(n);
 }
 
@@ -149,7 +149,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
     "Jul", "Aug", "Oct", "Sep", "Nov", "Dec",
   };
 
-  get_all_args("log_as_commonlog_to_file", args, "%o", &f);
+  get_all_args(NULL, args, "%o", &f);
   f->refs++;
 
   pop_n_elems(args);
@@ -165,11 +165,11 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   THREADS_ALLOW();
 
   mt_lock( &l->log_lock );
-  le = l->log_head; 
+  le = l->log_head;
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 
-  MEMSET(&tm, 0, sizeof(tm));
+  memset(&tm, 0, sizeof(tm));
 
   while(le)
   {
@@ -183,16 +183,8 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
       gmtime_r( &t, &tm );
 #else
       struct tm *tm_p;
-#ifdef HAVE_GMTIME
       tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
-
-#else
-#ifdef HAVE_LOCALTIME
-      tm_p = localtime( &t ); /* This will break if two threads run
-			       localtime() at once. */
-#endif
-#endif
       if (tm_p) tm = *tm_p;
 #endif
       ot = le->t;
@@ -221,7 +213,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	      tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
 	      le->raw.str, /* request line */
 	      le->reply, /* reply code */
-	      DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+              (long)le->sent_bytes); /* bytes transfered */
     } else
 #endif /* fd_inet_ntop */
     fprintf(foo,
@@ -235,7 +227,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	    tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
 	    le->raw.str, /* request line */
 	    le->reply, /* reply code */
-	    DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+            (long)le->sent_bytes); /* bytes transfered */
     free_log_entry( le );
     n++;
     le = l;
@@ -257,7 +249,7 @@ void aap_log_append(int sent, struct args *arg, int reply)
   le->sent_bytes = sent;
   le->reply = reply;
   le->received_bytes = arg->res.body_start + arg->res.content_len;
-  MEMCPY(data_to, arg->res.data, arg->res.body_start-4);
+  memcpy(data_to, arg->res.data, arg->res.body_start-4);
   le->raw.str = data_to;
   le->raw.len = arg->res.body_start-4;
   le->url.str = (data_to + (size_t)(arg->res.url-arg->res.data));

@@ -7,7 +7,6 @@
 /* New memory searcher functions */
 
 #include "global.h"
-#include "stuff.h"
 #include "mapping.h"
 #include "object.h"
 #include "pike_memory.h"
@@ -17,7 +16,6 @@
 #include "module_support.h"
 #include "pike_macros.h"
 #include "pike_search.h"
-#include "bignum.h"
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
@@ -71,13 +69,13 @@ static const struct SearchMojtVtable nil_search_vtable = {
 
 #define HUBBE_ALIGN0(q) q=(p_wchar0 *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
-#define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
+#define GET_4_UNALIGNED_CHARS0(PTR)  (INT32)get_unaligned32(PTR)
 
-#define HUBBE_ALIGN1(q) 
+#define HUBBE_ALIGN1(q)
 #define GET_4_ALIGNED_CHARS1 GENERIC_GET4_CHARS
 #define GET_4_UNALIGNED_CHARS1 GENERIC_GET4_CHARS
 
-#define HUBBE_ALIGN2(q) 
+#define HUBBE_ALIGN2(q)
 #define GET_4_ALIGNED_CHARS2 GENERIC_GET4_CHARS
 #define GET_4_UNALIGNED_CHARS2 GENERIC_GET4_CHARS
 
@@ -142,9 +140,6 @@ PMOD_EXPORT void pike_init_memsearch(struct pike_mem_searcher *s,
       init_memsearch2(s,(p_wchar2*)needle.ptr, needlelen, max_haystacklen);
       return;
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift\n");
-#endif
 }
 
 PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
@@ -154,18 +149,14 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
 {
   switch(needle.shift)
   {
-    default:
-#ifdef PIKE_DEBUG
-      Pike_fatal("Illegal shift\n");
     case 0:
-#endif
       return compile_memsearcher0((p_wchar0*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 1:
       return compile_memsearcher1((p_wchar1*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
-  /* NOTREACHED */
+  UNREACHABLE();
 }
 
 PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str)
@@ -196,9 +187,9 @@ void init_pike_searching(void)
 {
   start_new_program();
   pike_search_struct_offset=ADD_STORAGE(struct pike_mem_searcher);
-  MAP_VARIABLE("__s", tStr, 0,
-	       pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s),
-	       PIKE_T_STRING);
+  PIKE_MAP_VARIABLE("__s",
+                    pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s),
+                    tStr, PIKE_T_STRING, 0);
   pike_search_program=end_program();
   add_program_constant("Search",pike_search_program,ID_PROTECTED);
 

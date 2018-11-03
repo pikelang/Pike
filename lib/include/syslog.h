@@ -31,6 +31,3 @@
 #define  LOG_NOTICE  (1<<5)
 #define  LOG_INFO    (1<<6)
 #define  LOG_DEBUG   (1<<7)
-
-
-

@@ -48,7 +48,7 @@ int id = ADT.get_item_id();
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
-  foreach(::_indices(2), string index) {
+  foreach(::_indices(this, 0), string index) {
     mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }
@@ -77,13 +77,13 @@ string encode() {
 
 // --- LFUN overloading.
 
-//! @decl static mixed `[](string item)
-//! @decl static mixed `->(string item)
+//! @decl protected mixed `[](string item)
+//! @decl protected mixed `->(string item)
 //! The struct can be indexed by item name to get the
 //! associated value.
 
-//! @decl static mixed `[]=(string item)
-//! @decl static mixed `->=(string item)
+//! @decl protected mixed `[]=(string item)
+//! @decl protected mixed `->=(string item)
 //! It is possible to assign a new value to a struct
 //! item by indexing it by name and assign a value.
 
@@ -130,6 +130,7 @@ protected mixed cast(string to) {
   case "string": return encode();
   case "array": return items->encode();
   }
+  return UNDEFINED;
 }
 
 
@@ -329,7 +330,7 @@ class Chars {
   protected Item dynsize;
   protected string value;
 
-  //! @decl static void create(int|Item size, void|string value)
+  //! @decl protected void create(int|Item size, void|string value)
   //! @[size] is the number of bytes that are part of this struct
   //! item, or optionally an earlier Item that will be looked up in
   //! runtime.

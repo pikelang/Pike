@@ -36,11 +36,6 @@ constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
 //! inside a pointer, which typically means that it's 64 bit on "true"
 //! 64 bit architectures.
 //!
-//! @note
-//! If Pike is compiled with the configure flag
-//! @expr{--without-bignum@} (which is discouraged), then all
-//! arithmetic operations will instead silently wrap around at these
-//! limits.
 
 //! Swaps the upper and lower byte in a word.
 //!
@@ -105,31 +100,31 @@ class Inf {
     return arg==this;
   }
   protected int(0..1) _is_type(mixed type) { return (< "int", "object" >)[type]; }
-  protected mixed _random() { return this; }
+  protected mixed _random(function rnd_string, function rnd) {
+    if (neg) return 0;
+    return this;
+  }
   protected mixed _sqrt() { return this; }
   // % == nan
   // & == nan
-  protected mixed `*(mixed ... args) {
+  protected mixed `*(mixed arg) {
     int n = neg;
-    foreach(args, mixed arg)
-      if(arg<0) n = !n;
+    if(arg<0) n = !n;
     if(n) return ninf;
     return inf;
   }
-  protected mixed ``*(mixed ... args) { return `*(@args); }
-  protected mixed `+(mixed ... args) {
-    foreach(args, mixed arg)
-      if(arg==`-()) error("NaN\n");
+  protected mixed ``*(mixed arg) { return `*(arg); }
+  protected mixed `+(mixed arg) {
+    if(arg==`-()) error("NaN\n");
     return this;
   }
-  protected mixed ``+(mixed ... args) { return ``+(@args); }
-  protected mixed `-(mixed ... args) {
-    if(!sizeof(args)) {
+  protected mixed ``+(mixed arg) { return ``+(arg); }
+  protected mixed `-(void|mixed arg) {
+    if(!query_num_arg()) {
       if(neg) return inf;
       return ninf;
     }
-    foreach(args, mixed arg)
-      if(arg==inf || arg==ninf) error("NaN\n");
+    if(arg==inf || arg==ninf) error("NaN\n");
     return this;
   }
   protected mixed ``-(mixed arg) {
@@ -167,7 +162,7 @@ class Inf {
     case "float":
       return Math.inf;
     default:
-      error("Can not cast to %O.\n", to);
+      return UNDEFINED;
     }
   }
   protected string _sprintf(int t) {

@@ -1,11 +1,14 @@
 int failed;
 
+constant log_msg = Tools.Testsuite.log_msg;
+constant log_status = Tools.Testsuite.log_status;
+
 /* Ensure the sets contains the same indices */
 void ensure( mixed t, string msg )
 {
   if( !t )
   {
-    werror( msg+"\n" );
+    log_msg(msg+"\n");
     failed++;
   }
 }
@@ -14,9 +17,11 @@ void ensure_i( object r1, object r2, string msg )
 {
   if( !equal( column((array)r1,0), column((array)r2,0) ) )
   {
-    werror( msg+"\nOP1: %{%d, %}\nOP2: %{%d, %}\n",
-	  column((array)r1,0),
-	  column((array)r2,0) );
+    log_msg(msg+"\n"
+	    "OP1: %{%d, %}\n"
+	    "OP2: %{%d, %}\n",
+	    column((array)r1,0),
+	    column((array)r2,0));
     failed++;
   }
 }
@@ -26,10 +31,11 @@ void ensure_v( object r1, object r2, string msg )
 {
   if( !equal( (array)r1, (array)r2 ) )
   {
-    werror( msg+"\nGot     : %{%d, %} : %{%d, %}\nExpected: %{%d, %} : %{%d, %}\n\n\n",
+    log_msg(msg+"\n"
+	    "Got     : %{%d, %} : %{%d, %}\n"
+	    "Expected: %{%d, %} : %{%d, %}\n",
 	    column((array)r1,0), column((array)r1,1),
-	    column((array)r2,0), column((array)r2,1)
-	  );
+	    column((array)r2,0), column((array)r2,1));
     failed++;
   }
 }
@@ -38,9 +44,10 @@ void ensure_v( object r1, object r2, string msg )
 #define OP( X, Y ) ensure_v(X,Y,"Test "+(test++)+" failed: "+#X+" != "+#Y);
 #define ENSURE( X ) ensure(X,"Test "+(test++)+" failed: "+#X+" is not true");
 
-void main()
+int test;
+
+void resultset_tests()
 {
-  int test;
   object r0 = _WhiteFish.ResultSet();
   object r1 = _WhiteFish.ResultSet( ({ 1,    3,    5 }));
   object r2 = _WhiteFish.ResultSet( ({    2,    4,    6 }));
@@ -52,20 +59,30 @@ void main()
   ENSURE( r0->size() == 0 );  ENSURE( r1->size() == 3 );
   ENSURE( r2->size() == 3 );  ENSURE( r3->size() == 6 );
 
+  log_status("r0->memsize(): %d\r", r0->memsize());
   ENSURE( r0->memsize() );
-  ENSURE( r0->memsize() < r1->memsize() );
+  log_status("r1->memsize(): %d\r", r1->memsize());
+  ENSURE( r0->memsize() <= r1->memsize() );
+  log_status("r2->memsize(): %d\r", r2->memsize());
   ENSURE( r1->memsize() == r2->memsize() );
+  log_status("r3->memsize(): %d\r", r3->memsize());
   ENSURE( r2->memsize() <= r3->memsize() );
 
+  log_status("r0->overhead(): %d\r", r0->overhead());
   ENSURE( r0->overhead() );
+  log_status("r1->overhead(): %d\r", r1->overhead());
+  log_status("r2->overhead(): %d\r", r2->overhead());
   ENSURE( r1->overhead() == r2->overhead() );
+  log_status("r3->overhead(): %d\r", r3->overhead());
   ENSURE( r2->overhead() > r3->overhead() );
 
 
+  log_status("r1->dup()->overhead: %d\r", r1->dup()->overhead());
   ENSURE( r1->overhead() >= r1->dup()->overhead() );
+  log_status("r3->dup()->overhead: %d\r", r3->dup()->overhead());
   ENSURE( r2->overhead() >= r3->dup()->overhead() );
   ENSURE( r3->overhead() >= r3->dup()->overhead() );
-  ENSURE( r0->overhead() == r3->dup()->overhead() );
+  ENSURE( r0->overhead() >= r3->dup()->overhead() );
   
   // 2: Check set _indices_
 
@@ -142,6 +159,117 @@ void main()
   OP( r3->add_ranking( r1 ), r3_r1 );
   OP( r3->add_ranking( r2 ), r3_r2 );
   OP( r3->add_ranking( r3 ), r3_r3 );
+}
 
-  werror("Done %d tests, %d failed\n", test, failed );
+void blob_tests()
+{
+  object bs1 = _WhiteFish.Blobs();
+  object bs2 = _WhiteFish.Blobs();
+
+  log_status("Adding words to blobs...\r");
+  test++;
+  for(int i=0; i < 1024; i++) {
+    // Six binary words per document...
+    array(string) words = sprintf("%09b", ((i*521) & 511))/3;
+    bs1->add_words(i, words, 0);
+    bs1->add_words(i, sprintf("%09b", i & 511)/3, 1);
+
+    words = sprintf("%09b", ((i*523) & 511))/3;
+    bs2->add_words(i, words, 0);
+    bs2->add_words(i, sprintf("%09b", i & 511)/3, 1);
+  }
+
+  log_status("Reading blobs [1]...\r");
+  test++;
+  mapping(string:_WhiteFish.Blob) blobs1 = ([]);
+  int btest = test;
+  while(1) {
+    array(string) word_hits = bs1->read();
+    if (!word_hits[0]) {
+      if (sizeof(blobs1) != 8) {
+	log_msg("Test %d: Unexpected number of words in blobs #1!\n", btest);
+	failed++;
+      }
+      break;
+    }
+    log_status("Blobs #1, Word: %O\r", word_hits[0]);
+    test++;
+    if (blobs1[word_hits[0]]) {
+      log_msg("Test %d: Blob for word %O already existed!\n",
+	      test, word_hits[0]);
+      failed++;
+    }
+    // NB: Direct init.
+    blobs1[word_hits[0]] = _WhiteFish.Blob(word_hits[1]);
+    string probe = blobs1[word_hits[0]]->data();
+    test++;
+    if (word_hits[1] != probe) {
+      log_msg("Test %d: probe mismatch: %O != %O\n", test, probe, word_hits[1]);
+      failed++;
+    }
+    blobs1[word_hits[0]]->merge(probe);
+  }
+
+  log_status("Reading blobs [2]...\r");
+  test++;
+  mapping(string:_WhiteFish.Blob) blobs2 = ([]);
+  btest = test;
+  while(1) {
+    array(string) word_hits = bs2->read();
+    if (!word_hits[0]) {
+      if (sizeof(blobs2) != 8) {
+	log_msg("Test %d: Unexpected number of words in blobs #2!\n", btest);
+	failed++;
+      }
+      break;
+    }
+    log_status("Blobs #2, Word: %O\r", word_hits[0]);
+    test++;
+    if (blobs2[word_hits[0]]) {
+      log_msg("Test %d: Blob for word %O already existed!\n",
+	      test, word_hits[0]);
+      failed++;
+    }
+    // NB: Empty init followed by merge.
+    blobs2[word_hits[0]] = _WhiteFish.Blob();
+    blobs2[word_hits[0]]->merge(word_hits[1]);
+    string probe = blobs2[word_hits[0]]->data();
+    test++;
+    if (word_hits[1] != probe) {
+      log_msg("Test %d: probe mismatch: %O != %O\n", test, probe, word_hits[1]);
+      failed++;
+    }
+    blobs2[word_hits[0]]->merge(probe);
+  }
+
+  log_status("Merging blob 1 and 2...\r");
+  foreach(blobs1; string word; _WhiteFish.Blob b1) {
+    test++;
+    _WhiteFish.Blob b2 = m_delete(blobs2, word);
+    if (!b2) {
+      log_msg("Test %d: No blob #2 for word %O.\n", test, word);
+      failed++;
+      b2 = _WhiteFish.Blob();
+    }
+    test++;
+    log_status("Merging blobs for word %O...\r", word);
+    b1->merge(b2->data());
+  }
+
+  test++;
+  if (sizeof(blobs2)) {
+    log_msg("Test %d: Blobs #2 still contains %d unmerged words.\n",
+	    test, sizeof(blobs2));
+    failed++;
+  }
+}
+
+int main()
+{
+  resultset_tests();
+
+  blob_tests();
+
+  Tools.Testsuite.report_result(test-failed, failed);
+  return !!failed;
 }

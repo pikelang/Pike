@@ -2,4 +2,76 @@ START_MARKER
 test_do( Filesystem.System() )
 test_do( Filesystem.Base() )
 test_do( Filesystem.Traversion(".") )
+
+dnl Filesystem.Zip
+
+test_do([[
+  string z = String.hex2string(
+    "504b03040a00000000007d868845000000000000000000000000"
+    "05001c00746573742f55540900031dc98554e055ef5475780b00"
+    "0104e803000004e8030000504b03040a00020000007d86884520"
+    "303a3606000000060000001e001c00746573742f615f6c697474"
+    "6c655f746573745f66696c652e73756666697855540900031dc9"
+    "8554cb5bc65475780b000104e803000004e803000068656c6c6f"
+    "0a504b01021e030a00000000007d868845000000000000000000"
+    "000000050018000000000000001000fd4100000000746573742f"
+    "55540500031dc9855475780b000104e803000004e8030000504b"
+    "01021e030a00020000007d86884520303a360600000006000000"
+    "1e0018000000000001000000b4813f000000746573742f615f6c"
+    "6974746c655f746573745f66696c652e73756666697855540500"
+    "031dc9855475780b000104e803000004e8030000504b05060000"
+    "000002000200af0000009d0000000000");
+  add_constant("Z", Filesystem.Zip(0,0,Stdio.FakeFile(z)));
+]])
+
+test_equal(Z->get_dir(), ({"test"}))
+test_false(Z->cd("toast"))
+test_do(Z->cd("test"))
+test_equal(Z->get_dir(), ({"test"}))
+test_equal(Z->cd("test")->get_dir(), ({"a_little_test_file.suffix"}))
+test_eq(Z->open("test/a_little_test_file.suffix","r")->read(), "hello\n")
+
+test_do(add_constant("Z"))
+
+dnl Filesystem.Tar
+
+test_do([[
+  // # tar tvzf test.tar.gz
+  // drwxr-xr-x 0/0               0 2016-11-29 11:43 dir/
+  // -rw-r--r-- 0/0               2 2016-11-29 11:43 dir/two.txt
+  // -rw-r--r-- 0/0               2 2016-11-29 11:43 one.txt
+  //
+  // one.txt contains "1\n".
+  // dir/two.txt contains "2\n".
+
+  string tgz = String.hex2string(
+	"1f8b0800000000000003edd3310ac3300c4661cf"
+	"3d454ed05a8a655f281dba34500cedf1ab66cc10"
+	"c8a042c8fb161b8ffe79d3e3754bc1b26b66cbe9"
+	"d6e77297314b53b3a6c5df4d6b494342b8c9f7ef"
+	"eff9da3f3d74ff5acac6febadabf3619d3909927"
+	"9c5ef883339b9ff7d0f6f7f6efe5fffa975ce9ff"
+	"1f84fe010000000000000000000038bc2f1ebda0"
+	"9c00280000");
+  add_constant("T", Filesystem.Tar("test.tar.gz", UNDEFINED,
+				   Gz.File(Stdio.FakeFile(tgz, "rb"), "rb")));
+]])
+
+test_equal(sort(T->get_dir()), ({ "dir", "one.txt" }))
+test_equal(T->get_dir(UNDEFINED, "*.txt"), ({ "one.txt" }))
+test_equal(T->get_dir("dir"), ({ "two.txt" }))
+test_equal(T->get_dir(UNDEFINED, "dir*"), ({ "dir" }))
+test_eval_error(T->open("dir/non_existant.txt","r")->read())
+test_eq(T->open("one.txt","r")->read(), "1\n")
+test_eq(T->open("dir/two.txt","r")->read(), "2\n")
+test_false(T->cd("somewhere"))
+test_false(T->cd("one.txt"))
+test_true(T->cd("dir"))
+test_equal(T->get_dir(), ({"dir", "one.txt"}))
+test_equal(T->cd("dir")->get_dir(), ({"two.txt"}))
+test_false(T->cd("dir")->open("one.txt","r"))
+test_eq(T->cd("dir")->open("two.txt","r")->read(), "2\n")
+
+test_do(add_constant("T"))
+
 END_MARKER

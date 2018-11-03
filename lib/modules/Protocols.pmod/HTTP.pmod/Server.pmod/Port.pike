@@ -11,24 +11,21 @@ object|function|program request_program=.Request;
 //! The simplest server possible. Binds a port and calls
 //! a callback with @[request_program] objects.
 
-//! @decl void create(function(.Request:void) callback)
-//! @decl void create(function(.Request:void) callback,@
-//!                   int portno, void|string interface)
-void create(function(.Request:void) _callback,
-	    void|int _portno,
-	    void|string _interface)
+//!
+void create(function(.Request:void) callback,
+            void|int portno,
+            void|string interface,
+            void|int reuse_port)
 {
-   portno=_portno;
-   if (!portno) portno=80; // default HTTP port
+  this::portno=portno || 80;
 
-   callback=_callback;
-   interface=_interface;
-
-   port=Stdio.Port();
-   if (!port->bind(portno,new_connection,interface))
-      error("HTTP.Server.Port: failed to bind port %s%d: %s\n",
-	    interface?interface+":":"",
-	    portno,strerror(port->errno()));
+  this::callback=callback;
+  this::interface=interface;
+  port=Stdio.Port();
+  if (!port->bind(portno,new_connection,interface,reuse_port))
+    error("HTTP.Server.Port: failed to bind port %s%d: %s.\n",
+          interface?interface+":":"",
+          portno,strerror(port->errno()));
 }
 
 //! Closes the HTTP port.
@@ -38,15 +35,12 @@ void close()
    port=0;
 }
 
-void destroy() { close(); }
+protected void _destruct() { close(); }
 
 // the port accept callback
 
 protected void new_connection()
 {
     while( Stdio.File fd=port->accept() )
-    {
-	.Request r=request_program();
-	r->attach_fd(fd,this,callback);
-    }
+      request_program()->attach_fd(fd,this,callback);
 }

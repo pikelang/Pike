@@ -54,7 +54,7 @@ void set_mode( int fullscreen, int depth,
   window->signal_connect( "configure_event", lambda() {
 					       configure_event(window->xsize(),
 							       window->ysize());
-					     });  
+					     });
 
 
   window->signal_connect( "key_press_event",
@@ -95,7 +95,7 @@ void set_mode( int fullscreen, int depth,
     ChangeRes.change_res( width, height );
     ChangeRes.pan_to( 0,0 );
 #endif
-	    
+
     window->show_now();
     GDK.Window w = window->get_gdkwindow();
     GTK.move_cursor_abs( w, 10, 10 );

@@ -110,7 +110,7 @@ int main(int argc, char **argv)
       PIKE_FEATURE([Image.TIFF],[no (tifflib version 42)])
     else
       AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_WORKING_LIBTIFF) 
+      AC_DEFINE(HAVE_WORKING_LIBTIFF)
       PIKE_FEATURE_OK(Image.TIFF)
       AC_MSG_CHECKING(for version of tifflib)
       if test "x$ac_cv_header_tiffvers_h" = "xyes"; then
@@ -133,5 +133,3 @@ EOF
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

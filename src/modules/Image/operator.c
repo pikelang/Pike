@@ -36,10 +36,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
-
-#define testrange(x) (MAXIMUM(MINIMUM(DOUBLE_TO_INT(x),255),0))
-
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
    struct image *img,*oper;					        \
@@ -48,7 +44,7 @@ extern struct program *image_program;
    rgb_group trgb;                                                      \
    INT32 i;								\
 									\
-   if (!THIS->img) Pike_error("no image\n");				\
+   CHECK_INIT();                                                        \
 									\
    if (args && TYPEOF(sp[-args]) == T_INT)				\
    {									\
@@ -59,10 +55,10 @@ extern struct program *image_program;
    }									\
    else if (args && TYPEOF(sp[-args]) == T_FLOAT)			\
    {									\
-      rgb.r=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      rgb.g=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      rgb.b=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      oper=NULL;							\
+     rgb.r=(int)(255*sp[-args].u.float_number);                         \
+     rgb.g=(int)(255*sp[-args].u.float_number);                         \
+     rgb.b=(int)(255*sp[-args].u.float_number);                         \
+     oper=NULL;                                                         \
    }									\
    else if (args && (TYPEOF(sp[-args]) == T_ARRAY ||			\
 		     TYPEOF(sp[-args]) == T_OBJECT ||			\
@@ -77,13 +73,14 @@ extern struct program *image_program;
      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT			\
        || !sp[-args].u.object						\
        || sp[-args].u.object->prog!=image_program)			\
-      Pike_error("illegal arguments to image->"what"()\n");		\
+      Pike_error("illegal arguments to "what".\n");		\
 									\
       oper=(struct image*)sp[-args].u.object->storage;			\
       if (!oper->img) Pike_error("no image (operand)\n");		\
       if (oper->xsize!=THIS->xsize					\
           || oper->ysize!=THIS->ysize)					\
-         Pike_error("operands differ in size (image->"what")\n");	\
+        Pike_error("operands differ in size.\n");                       \
+      rgb.r=rgb.b=rgb.g=0;    /*silence warning,hyperminimal suboptimization..*/ \
    }									\
 									\
    push_int(THIS->xsize);						\
@@ -138,8 +135,8 @@ STANDARD_OPERATOR_HEADER("`-")
       s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -170,17 +167,17 @@ STANDARD_OPERATOR_HEADER("`+")
        image_add_buffers_mmx_x86asm( d, s1, s2, (i*3)/8 );
        nleft = (i*3)%8;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i * 3 - nleft] = 
+         ((unsigned char *)d)[i * 3 - nleft] =
                     MINIMUM((((unsigned char *)s1)[i * 3 - nleft] +
                              ((unsigned char *)s2)[i * 3 - nleft]), 255 );
-     } else 
+     } else
 #endif
      while (i--)
      {
        d->r=MINIMUM(s1->r+s2->r,255);
        d->g=MINIMUM(s1->g+s2->g,255);
        d->b=MINIMUM(s1->b+s2->b,255);
-       s1++; s2++; d++; 
+       s1++; s2++; d++;
      }
    }
    else
@@ -217,8 +214,8 @@ STANDARD_OPERATOR_HEADER("`+")
      }
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -259,8 +256,8 @@ STANDARD_OPERATOR_HEADER("`*")
        image_mult_buffers_mmx_x86asm( d,s1,s2,(i*3)/4 );
        nleft =  (i*3)%4;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i-nleft-1]  = 
-                    (((unsigned char *)s1)[i-nleft-1] * 
+         ((unsigned char *)d)[i-nleft-1]  =
+                    (((unsigned char *)s1)[i-nleft-1] *
                      ((unsigned char *)s2)[i-nleft-1]) / 255;
      } else
 #endif
@@ -270,10 +267,10 @@ STANDARD_OPERATOR_HEADER("`*")
         d->r=(s1->r * s2->r) / 255;
         d->g=(s1->g * s2->g) / 255;
         d->b=(s1->b * s2->b) / 255;
-        s1++; s2++; d++; 
+        s1++; s2++; d++;
      }
   }
-   else if( (rgb.r < 256) && 
+   else if( (rgb.r < 256) &&
             (rgb.g < 256) &&
             (rgb.b < 256) )
    {
@@ -294,7 +291,7 @@ STANDARD_OPERATOR_HEADER("`*")
        d->r=(s1->r * rgb.r) / 255;
        d->g=(s1->g * rgb.g) / 255;
        d->b=(s1->b * rgb.b) / 255;
-       s1++; d++; 
+       s1++; d++;
      }
    }
    else
@@ -308,12 +305,12 @@ STANDARD_OPERATOR_HEADER("`*")
        d->r=MINIMUM(r,255);
        d->g=MINIMUM(g,255);
        d->b=MINIMUM(b,255);
-       s1++; d++; 
+       s1++; d++;
      }
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -350,7 +347,7 @@ STANDARD_OPERATOR_HEADER("`%%")
       d->r=s1->r%(s2->r?s2->r:1);
       d->g=s1->g%(s2->g?s2->g:1);
       d->b=s1->b%(s2->b?s2->b:1);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -358,11 +355,11 @@ STANDARD_OPERATOR_HEADER("`%%")
       d->r=s1->r%(rgb.r?rgb.r:1);
       d->g=s1->g%(rgb.g?rgb.g:1);
       d->b=s1->b%(rgb.b?rgb.b:1);
-      s1++; d++; 
+      s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 void image_operator_divide(INT32 args)
@@ -394,7 +391,7 @@ void image_operator_divide(INT32 args)
 	d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
 	d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
 	d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
-	s1++; s2++; d++; 
+	s1++; s2++; d++;
       }
     else
       while (i--)
@@ -402,10 +399,10 @@ void image_operator_divide(INT32 args)
 	d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
 	d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
 	d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
-	s1++; d++; 
+	s1++; d++;
       }
     THREADS_DISALLOW();
-    pop_n_elems(args);		   		   		
+    pop_n_elems(args);
     push_object(o);
   }
 }
@@ -416,7 +413,7 @@ void image_operator_divide(INT32 args)
 **! method object `|(array(int) color)
 **! method object `|(int value)
 **!	makes a new image out of the maximum pixels values
-**!	
+**!
 **! returns the new image object
 **!
 **! arg object operand
@@ -438,7 +435,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
       d->r=MAXIMUM(s1->r,s2->r);
       d->g=MAXIMUM(s1->g,s2->g);
       d->b=MAXIMUM(s1->b,s2->b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -446,11 +443,11 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
       d->r=MAXIMUM(s1->r,rgb.r);
       d->g=MAXIMUM(s1->g,rgb.g);
       d->b=MAXIMUM(s1->b,rgb.b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -458,7 +455,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
 **! method object `&(array(int) color)
 **! method object `&(int value)
 **!	makes a new image out of the minimum pixels values
-**!	
+**!
 **! returns the new image object
 **!
 **! arg object operand
@@ -480,7 +477,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
       d->r=MINIMUM(s1->r,s2->r);
       d->g=MINIMUM(s1->g,s2->g);
       d->b=MINIMUM(s1->b,s2->b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -488,11 +485,11 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
       d->r=MINIMUM(s1->r,rgb.r);
       d->g=MINIMUM(s1->g,rgb.g);
       d->b=MINIMUM(s1->b,rgb.b);
-      s1++; d++; 
+      s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 
@@ -508,8 +505,8 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **! method int `>(int value)
 **!	Compares an image with another image or a color.
 **!
-**!	Comparision is strict and on pixel-by-pixel basis. 
-**!	(Means if not all pixel r,g,b values are 
+**!	Comparision is strict and on pixel-by-pixel basis.
+**!	(Means if not all pixel r,g,b values are
 **!	correct compared with the corresponding
 **!	pixel values, 0 is returned.)
 **!
@@ -525,10 +522,10 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **!	equal to ({value,value,value}).
 **!
 **! see also: `-, `+, `|, `*, `&
-**!	
+**!
 **! note:
 **!	`&lt; or `> on empty ("no image") image objects or images
-**!	with different size will result in an error. 
+**!	with different size will result in an error.
 **!	`== is always true on two empty image objects and
 **!	always false if one and only one of the image objects
 **!	is empty or the images differs in size.
@@ -545,8 +542,8 @@ void image_operator_equal(INT32 args)
    INT32 i;
    int res=1;
 
-   if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR ("Image->`==", 1);
+   if (args!=1)
+     SIMPLE_WRONG_NUM_ARGS_ERROR ("`==", 1);
 
    if (TYPEOF(sp[-args]) == T_INT)
    {
@@ -581,7 +578,7 @@ void image_operator_equal(INT32 args)
    else
    {
       if (TYPEOF(sp[-args]) != T_OBJECT
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program))) {
+       || !(oper=get_storage(sp[-args].u.object,image_program))) {
 	/* `== must be able to compare anything with anything -
 	 * shouldn't throw an error here. */
 	pop_n_elems (args);
@@ -602,6 +599,8 @@ void image_operator_equal(INT32 args)
 	 push_int(0);
 	 return;
       }
+      /* silence warning.. */
+      rgb.r = rgb.g = rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -640,8 +639,7 @@ void image_operator_lesser(INT32 args)
    INT32 i;
    int res=1;
 
-   if (!THIS->img)
-      Pike_error("image->`<: operator 1 has no image\n");
+   CHECK_INIT();
 
    if (args && TYPEOF(sp[-args]) == T_INT)
    {
@@ -665,14 +663,17 @@ void image_operator_lesser(INT32 args)
    {
       if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("image->`<: illegal argument 2\n");
+       || !(oper=get_storage(sp[-args].u.object,image_program)))
+         Pike_error("Illegal argument 2.\n");
 
       if (!oper->img)
-	 Pike_error("image->`<: operator 2 has no image\n");
+         Pike_error("Operator 2 has no image.\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
-	 Pike_error("image->`<: operators differ in size\n");
+         Pike_error("Operators differ in size.\n");
+      rgb.r = 0;
+      rgb.g = 0;
+      rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -712,8 +713,7 @@ void image_operator_greater(INT32 args)
    INT32 i;
    int res=1;
 
-   if (!THIS->img)
-      Pike_error("image->`>: operator 1 has no image\n");
+   CHECK_INIT();
 
    if (args && TYPEOF(sp[-args]) == T_INT)
    {
@@ -737,14 +737,17 @@ void image_operator_greater(INT32 args)
    {
       if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("image->`>: illegal argument 2\n");
+       || !(oper=get_storage(sp[-args].u.object,image_program)))
+         Pike_error("Illegal argument 2.\n");
 
       if (!oper->img)
-	 Pike_error("image->`>: operator 2 has no image\n");
+         Pike_error("Operator 2 has no image.\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
-	 Pike_error("image->`>: operators differ in size\n");
+         Pike_error("Operators differ in size.\n");
+      rgb.r = 0;
+      rgb.g = 0;
+      rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -783,16 +786,16 @@ void image_operator_greater(INT32 args)
 **! method array(int) max()
 **! method array(int) sum()
 **! method array(float) sumf()
-**!     Gives back the average, minimum, maximum color value, 
+**!     Gives back the average, minimum, maximum color value,
 **!	and the sum of all pixel's color value.
 **!
 **! note:
 **!	sum() values can wrap! Most systems only have 31 bits
-**!	available for positive integers. (Meaning, be careful 
+**!	available for positive integers. (Meaning, be careful
 **!	with images that have more than 8425104 pixels.)
 **!
 **!	average() and sumf() may also wrap, but on a line basis.
-**!	(Meaning, be careful with images that are wider 
+**!	(Meaning, be careful with images that are wider
 **!      than 8425104 pixels.) These functions may have a precision
 **!	problem instead, during to limits in the 'double' C type and/or
 **!	'float' Pike type.
@@ -806,10 +809,9 @@ void image_average(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->average(): no image\n");
+   CHECK_INIT();
    if (!THIS->xsize || !THIS->ysize)
-      Pike_error("Image.Image->average(): no pixels in image (division by zero)\n");
+      Pike_error("No pixels in image (division by zero).\n");
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -831,9 +833,9 @@ void image_average(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.r/(float)THIS->ysize)));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.g/(float)THIS->ysize)));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.b/(float)THIS->ysize)));
+   push_float((FLOAT_TYPE)(sumy.r/(float)THIS->ysize));
+   push_float((FLOAT_TYPE)(sumy.g/(float)THIS->ysize));
+   push_float((FLOAT_TYPE)(sumy.b/(float)THIS->ysize));
 
    f_aggregate(3);
 }
@@ -847,8 +849,7 @@ void image_sumf(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->sumf(): no image\n");
+   CHECK_INIT();
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -870,9 +871,9 @@ void image_sumf(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.r));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.g));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.b));
+   push_float((FLOAT_TYPE)sumy.r);
+   push_float((FLOAT_TYPE)sumy.g);
+   push_float((FLOAT_TYPE)sumy.b);
 
    f_aggregate(3);
 }
@@ -885,8 +886,7 @@ void image_sum(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->sum(): no image\n");
+   CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -914,8 +914,7 @@ void image_min(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->min(): no image\n");
+   CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -943,8 +942,7 @@ void image_max(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->max(): no image\n");
+   CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -980,7 +978,7 @@ void image_max(INT32 args)
 **!	as the <ref>grey</ref>() method.
 */
 
-static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
+static inline void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
                            char *name)
 {
    INT32 i;
@@ -1007,18 +1005,17 @@ void image_find_min(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"Image.Image->find_min()");
+      getrgbl(&rgb,0,args,"find_min");
    if (rgb.r||rgb.g||rgb.b)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
       div=1.0;
-   
+
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->find_min(): no image\n");
+   CHECK_INIT();
    if (!THIS->xsize || !THIS->ysize)
-      Pike_error("Image.Image->find_min(): no pixels in image (none to find)\n");
+      Pike_error("No pixels in image (none to find).\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;
@@ -1055,18 +1052,17 @@ void image_find_max(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"Image.Image->find_max()");
+      getrgbl(&rgb,0,args,"find_max");
    if (rgb.r||rgb.g||rgb.b)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
       div=1.0;
-   
+
    pop_n_elems(args);
 
-   if (!THIS->img)
-      Pike_error("Image.Image->find_max(): no image\n");
+   CHECK_INIT();
    if (!THIS->xsize || !THIS->ysize)
-      Pike_error("Image.Image->find_max(): no pixels in image (none to find)\n");
+      Pike_error("No pixels in image (none to find).\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;

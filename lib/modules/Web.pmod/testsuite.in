@@ -1,5 +1,95 @@
 START_MARKER
 
+// - JOSE stuff.
+
+test_do([[
+  // NB: The first of the keys (RSA) is the first key from
+  //     https://www.googleapis.com/oauth2/v3/certs
+  //     as of 2016-12-21T15:30 CET.
+  //
+  //     The remaining keys are ECC kays with secret key 17.
+  add_constant("JOSE_KEYS", Web.decode_jwk_set(Standards.JSON.decode(#{
+{
+ "keys": [
+  {
+   "kty": "RSA",
+   "alg": "RS256",
+   "use": "sig",
+   "kid": "a7ceb41ef494685d7d1933ba942d4f931b045bca",
+   "n": "xt3BKbHZv5sPB-28248CgeHoltTpYsn2HfbAwMxf2VwkKbkSSYuLa39zPD3zm_NN-QSEmWt_O9EKy_BXirgWa7BWfP5zgdpiGUFSAyCNK1ZCp7Jr9krLEeFv4gbvXTfpYqn3pz_VDLfnqbCyfZjfPzFDeshW8mjt8cP7ymUiW7feEvuqZVY-VSzLg19j7QO1EZllBQJKZfWg0wA43qI-60e1vaTX46p_aHq6PajzAzIqAvvtINpzIB5UbCFsQzX1uiRZq1LHFnkq3qZXRKil2HnuGyKe5YWuuRrifmDFd-phhIM_ERdqjJ5aGTqgcJGPQUZqnFDam6_ykNDgfVc5rw",
+   "e": "AQAB"
+  },
+  {
+   "kty": "EC",
+   "crv": "P-256",
+   "x": "R3dpBMDxzDqcCYS2b3UwGl-mhnjw1kr4uhq840c4pz4",
+   "y": "qgBe5rW5VyhiMYVld2SOg4GygEQo1XM_MveH_3Hx_Nw",
+   "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABE"
+  },
+  {
+   "kty": "EC",
+   "crv": "P-384",
+   "x": "QJmVIgi0iJYApeu8sT4aMmkr77BzO0Hm3MYU5C5YBfgXASqZGvH0hsrzqa3Z_8wD",
+   "y": "Xs-Ud3gzBZg5R0WUr2A1mBY60_gAitDNm3l9J38jiLME2k0vqpaA7PplDvXiOwmg",
+   "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAR"
+  },
+  {
+   "kty": "EC",
+   "crv": "P-521",
+   "x": "AbAN23B_Ew7aE6C4dGRZI5Bqme6eJp-is7TWZSTyaSUIWHYKaeZ0_gKH3055m1aBOA_4wwQq8NGkEHb4F6hTEQrg",
+   "y": "AIVoPx19sWV228ER1OSu3dEGt5lTTPaZEKmNaKwrIqEyPfnaVk723Qvw0vZ1fxat9CDmkFWUwrdV9TW5y3xw5kZH",
+   "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAR"
+  }
+ ]
+}#})));
+]])
+
+dnl Test the RSA key.
+test_eq(JOSE_KEYS[0]->get_n(), 25104535623743707320656430842273047489421931661054046436864276136896954247116774600371129208701318485681607548345785157677647440308146736706880207661503956700781264125464666580037918575149742716890136600418607766360624528525964225271969234523918593846243497884086307844005821548112523754805709774608954142759170550122072769185959774002199928792087063255374369087056099165663359006211993968323926489943733227627447524410469630952835163468639487111775266277702261874653212573608228878032954837146037495964294228021607454593039418927028674019171758453060380942526261939521665923782677900380094508639500030038654192138671);
+test_eq(JOSE_KEYS[0]->get_e(), 65537);
+
+dnl Test the ECC keys.
+cond_resolv(Crypto.ECC.Curve, [[
+  test_do([[
+    foreach(JOSE_KEYS[1..], Crypto.ECC.Curve.ECDSA ecdsa) {
+      if (ecdsa->get_private_key() != 17) {
+	error("Unexpected private key; %O, %O != 17.\n",
+	      ecdsa, ecdsa->get_private_key);
+      }
+      if (!equal(ecdsa->get_point(), (ecdsa->get_curve() * 17))) {
+	error("Invalid decoded key; %O != %O.\n", ecdsa, ecdsa->get_curve() * 17);
+      }
+    }
+  ]])
+]]);
+
+test_do(add_constant("JOSE_KEYS"))
+
+dnl Test JWK Thumbprints (Vector from RFC 7638 3.1).
+test_any_equal([[
+  Crypto.Sign.State key = Web.decode_jwk(Standards.JSON.decode(#[
+     {
+      "kty": "RSA",
+      "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+      "e": "AQAB",
+      "alg": "RS256",
+      "kid": "2011-04-29"
+     } #]));
+  return (array)key->jwk_thumbprint(Crypto.SHA256);
+]], ({
+  55, 54, 203, 177, 120, 124, 184, 48, 156, 119, 238, 140, 55, 5, 197,
+  225, 111, 251, 158, 133, 151, 21, 144, 31, 30, 76, 89, 177, 17, 130,
+  245, 123
+}))
+
+dnl Test character decoding.
+test_any_eq([[
+  // [PIKE-76].
+  object hmac = Crypto.SHA256.HMAC("foobar");
+  return Web.decode_jwt(hmac,
+	 Web.encode_jwt(hmac, ([ "sub":"\302\230ystein" ])))->sub;
+]], "\302\230ystein")
+
 // - Web.RDF
 test_any_equal([[
   object r = Web.RDF();
@@ -553,7 +643,7 @@ dnl   <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
 dnl 		   dc:title="RDF/XML Syntax Specification (Revised)">
 dnl     <ex:editor rdf:nodeID="abc"/>
 dnl   </rdf:Description>
-dnl 
+dnl
 dnl   <rdf:Description rdf:nodeID="abc"
 dnl                    ex:fullName="Dave Beckett">
 dnl     <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>

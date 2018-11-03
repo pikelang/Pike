@@ -7,17 +7,16 @@
 //!      Generator g=Generator();
 //!      foreach (am[1..<1];;string f)
 //!         g->add(f);
-//!   
+//!
 //!      string dest=am[-1];
 //!      if (-1==search(dest,"torrent")) dest+=".torrent";
-//!   
+//!
 //!      Stdio.write_file(dest,g->digest());
 //!      return 0;
 //!   }
 
 #pike __REAL_VERSION__
-
-#if constant(.Torrent)
+#require constant(Protocols.Bittorrent.Torrent)
 
 inherit .Torrent;
 
@@ -28,7 +27,7 @@ string announce="http://";
 array(array(string)) announce_list=({});
 
 //! @decl void create(void|string base, void|int piece_size)
-//! Create a generator. 
+//! Create a generator.
 //!
 //! @param base
 //!   The base filename/path in the torrent.
@@ -85,9 +84,9 @@ this_program add_file(string path,void|string filename)
    Target t=Target(base,st->size,offset,f==""?0:f/"/");
    t->fd=fd;
    targets+=({t});
-   
+
    offset+=st->size;
-   
+
    return this;
 }
 
@@ -150,9 +149,9 @@ string digest(void|function(int,int:void) progress_callback)
 
    if (info_sha1=="" || !info_sha1)
       build_sha1s(progress_callback);
-   
+
    info["creation date"]=time();
-   if (announce) 
+   if (announce)
    {
       info["announce"]=announce;
       info["announce-list"]=announce_list;
@@ -163,7 +162,7 @@ string digest(void|function(int,int:void) progress_callback)
    info->info->name=base;
    info->info["piece length"]=piece_size;
    info->info["pieces"]=info_sha1;
-   
+
    if (sizeof(targets)>1)
    {
       info->info->files=({});
@@ -177,9 +176,3 @@ string digest(void|function(int,int:void) progress_callback)
 
    return .Bencoding.encode(info);
 }
-
-#else /* !constant(.Torrent) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(.Torrent) */

@@ -50,15 +50,18 @@
 //! @enddl
 //!
 //! @endsection
+//!
+//! @seealso
+//!   @[Sql.Connection], @[Sql.Sql()]
 
 #pike __REAL_VERSION__
+#require constant(Mysql.mysql)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
-constant dont_dump_program = 1;
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
+optional constant dont_dump_program = 1;
 
-#if constant(Mysql.mysql)
-
+//!
 inherit Mysql.mysql;
 
 #define UNICODE_DECODE_MODE	1 // Unicode decode mode
@@ -406,7 +409,7 @@ string quote(string s)
 		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" }));
 }
 
-string latin1_to_utf8 (string s)
+string latin1_to_utf8 (string s, int extended)
 //! Converts a string in MySQL @expr{latin1@} format to UTF-8.
 {
   return string_to_utf8 (replace (s, ([
@@ -418,10 +421,12 @@ string latin1_to_utf8 (string s)
     "\x94": "\u201D", "\x95": "\u2022", "\x96": "\u2013", "\x97": "\u2014",
     "\x98": "\u02DC", "\x99": "\u2122", "\x9a": "\u0161", "\x9b": "\u203A",
     "\x9c": "\u0153", /*"\x9d": "\u009D",*/ "\x9e": "\u017E", "\x9f": "\u0178",
-  ])));
+  ])), extended);
 }
 
-string utf8_encode_query (string q, function(string:string) encode_fn)
+string utf8_encode_query (string q,
+			  function(string, mixed|void...:string) encode_fn,
+			  mixed ... extras)
 //! Encodes the appropriate sections of the query with @[encode_fn].
 //! Everything except strings prefixed by an introducer (i.e.
 //! @expr{_something@} or @expr{N@}) is encoded.
@@ -430,7 +435,7 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
   string e = "";
   while (1) {
     sscanf(q, "%[^\'\"]%s", string prefix, string suffix);
-    e += encode_fn (prefix);
+    e += encode_fn (prefix, @extras);
 
     if (suffix == "") break;
 
@@ -526,19 +531,13 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
       }
       e += s;
     } else {
-      e += encode_fn (suffix[..end]);
+      e += encode_fn (suffix[..end], @extras);
     }
 
     q = suffix[end+1..];
   }
   return e;
 }
-
-// The following time conversion functions assumes the SQL server
-// handles time in this local timezone. They map the special zero
-// time/date spec to 0.
-
-private constant timezone = localtime (0)->timezone;
 
 //! Converts a system time value to an appropriately formatted time
 //! spec for the database.
@@ -552,12 +551,7 @@ private constant timezone = localtime (0)->timezone;
 //!   seconds-since-midnight value.
 string encode_time (int time, void|int date)
 {
-  if (date) {
-    if (!time) return "000000";
-    mapping(string:int) ct = localtime (time);
-    return sprintf ("%02d%02d%02d", ct->hour, ct->min, ct->sec);
-  }
-  else return sprintf ("%02d%02d%02d", time / 3600 % 24, time / 60 % 60, time % 60);
+  return ::encode_time(time, date) - ":";
 }
 
 //! Converts a system time value to an appropriately formatted
@@ -567,9 +561,7 @@ string encode_time (int time, void|int date)
 //!   Time to encode.
 string encode_date (int time)
 {
-  if (!time) return "00000000";
-  mapping(string:int) ct = localtime (time);
-  return sprintf ("%04d%02d%02d", ct->year + 1900, ct->mon + 1, ct->mday);
+  return ::encode_date(time) - "-";
 }
 
 //! Converts a system time value to an appropriately formatted
@@ -579,66 +571,7 @@ string encode_date (int time)
 //!   Time to encode.
 string encode_datetime (int time)
 {
-  if (!time) return "00000000000000";
-  mapping(string:int) ct = localtime (time);
-  return sprintf ("%04d%02d%02d%02d%02d%02d",
-		  ct->year + 1900, ct->mon + 1, ct->mday,
-		  ct->hour, ct->min, ct->sec);
-}
-
-//! Converts a database time spec to a system time value.
-//!
-//! @param timestr
-//!   Time spec to decode.
-//!
-//! @param date
-//!   Take the date part from this system time value. If zero, a
-//!   seconds-since-midnight value is returned.
-int decode_time (string timestr, void|int date)
-{
-  int hour = 0, min = 0, sec = 0;
-  if (sscanf (timestr, "%d:%d:%d", hour, min, sec) <= 1)
-    sscanf (timestr, "%2d%2d%2d", hour, min, sec);
-  if (date && (hour || min || sec)) {
-    mapping(string:int) ct = localtime (date);
-    return mktime (sec, min, hour, ct->mday, ct->mon, ct->year, ct->isdst, ct->timezone);
-  }
-  else return (hour * 60 + min) * 60 + sec;
-}
-
-//! Converts a database date-only spec to a system time value.
-//! Assumes 4-digit years.
-//!
-//! @param datestr
-//!   Date spec to decode.
-int decode_date (string datestr)
-{
-  int year = 0, mon = 0, mday = 0, n;
-  n = sscanf (datestr, "%d-%d-%d", year, mon, mday);
-  if (n <= 1) n = sscanf (datestr, "%4d%2d%2d", year, mon, mday);
-  if (year || mon || mday)
-    return mktime (0, 0, 0, n == 3 ? mday : 1, n >= 2 && mon - 1, year - 1900,
-		   -1, timezone);
-  else return 0;
-}
-
-//! Converts a database date and time spec to a system time value.
-//! Can decode strings missing the time part.
-//!
-//! @param datestr
-//!   Date and time spec to decode.
-int decode_datetime (string timestr)
-{
-  array(string) a = timestr / " ";
-  if (sizeof (a) == 2)
-    return decode_date (a[0]) + decode_time (a[1]);
-  else {
-    int n = sizeof (timestr);
-    if (n >= 12)
-      return decode_date (timestr[..n-7]) + decode_time (timestr[n-6..n-1]);
-    else
-      return decode_date (timestr);
-  }
+  return replace(::encode_datetime(time), "-:T"/"", ({"", "", ""}));
 }
 
 #if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
@@ -672,7 +605,7 @@ int decode_datetime (string timestr)
 	new_send_charset = "latin1";					\
       else {								\
 	CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");	\
-	query = utf8_encode_query (query, latin1_to_utf8);		\
+	query = utf8_encode_query (query, latin1_to_utf8, 2);		\
 	new_send_charset = "utf8";					\
       }									\
     }									\
@@ -685,7 +618,7 @@ int decode_datetime (string timestr)
        */								\
       if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {	\
 	CH_DEBUG ("Converting query to utf8.\n");			\
-	query = utf8_encode_query (query, string_to_utf8);		\
+	query = utf8_encode_query (query, string_to_utf8, 2);		\
 	new_send_charset = "utf8";					\
       }									\
     }									\
@@ -740,9 +673,9 @@ int decode_datetime (string timestr)
   }									\
   return res;
 
-Mysql.mysql_result big_query (string query,
-			      mapping(string|int:mixed)|void bindings,
-			      void|string charset)
+variant Result big_query (string query,
+			  mapping(string|int:mixed)|void bindings,
+			  void|string charset)
 //! Sends a query to the server.
 //!
 //! @param query
@@ -767,7 +700,7 @@ Mysql.mysql_result big_query (string query,
 //!   inserts) where you want to avoid the query parsing overhead.
 //!
 //! @returns
-//!   A @[Mysql.mysql_result] object is returned if the query is of a
+//!   A @[Result] object is returned if the query is of a
 //!   kind that returns a result. Zero is returned otherwise.
 //!
 //!   The individual fields are returned as strings except for @tt{NULL@},
@@ -779,14 +712,14 @@ Mysql.mysql_result big_query (string query,
   QUERY_BODY (big_query);
 }
 
-Mysql.mysql_result streaming_query (string query,
-				    mapping(string|int:mixed)|void bindings,
-				    void|string charset)
+variant Result streaming_query (string query,
+				mapping(string|int:mixed)|void bindings,
+				void|string charset)
 //! Makes a streaming SQL query.
 //!
 //! This function sends the SQL query @[query] to the Mysql-server.
 //! The result of the query is streamed through the returned
-//! @[Mysql.mysql_result] object. Note that the involved database
+//! @[Result] object. Note that the involved database
 //! tables are locked until all the results has been read.
 //!
 //! In all other respects, it behaves like @[big_query].
@@ -797,9 +730,9 @@ Mysql.mysql_result streaming_query (string query,
   QUERY_BODY (streaming_query);
 }
 
-Mysql.mysql_result big_typed_query (string query,
-				    mapping(string|int:mixed)|void bindings,
-				    void|string charset)
+variant Result big_typed_query (string query,
+				mapping(string|int:mixed)|void bindings,
+				void|string charset)
 //! Makes a typed SQL query.
 //!
 //! This function sends the SQL query @[query] to the MySQL server and
@@ -815,9 +748,9 @@ Mysql.mysql_result big_typed_query (string query,
   QUERY_BODY (big_typed_query);
 }
 
-Mysql.mysql_result streaming_typed_query (string query,
-					  mapping(string|int:mixed)|void bindings,
-					  void|string charset)
+variant Result streaming_typed_query (string query,
+				      mapping(string|int:mixed)|void bindings,
+				      void|string charset)
 //! Makes a streaming typed SQL query.
 //!
 //! This function acts as the combination of @[streaming_query()]
@@ -827,6 +760,28 @@ Mysql.mysql_result streaming_typed_query (string query,
 //!   @[big_typed_query()], @[streaming_typed_query()]
 {
   QUERY_BODY (streaming_typed_query);
+}
+
+array(string) list_dbs(string|void wild)
+{
+  Result res = ::list_dbs(wild);
+  array(string) ret = ({});
+  array(string) row;
+  while((row = res->fetch_row()) && sizeof(row)) {
+    ret += ({ row[0] });
+  }
+  return ret;
+}
+
+array(string) list_tables(string|void wild)
+{
+  Result res = ::list_tables(wild);
+  array(string) ret = ({});
+  array(string) row;
+  while((row = res->fetch_row()) && sizeof(row)) {
+    ret += ({ row[0] });
+  }
+  return ret;
 }
 
 int(0..1) is_keyword( string name )
@@ -945,7 +900,3 @@ protected void create(string|void host, string|void database,
     update_unicode_encode_mode_from_charset ("latin1");
   }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(Mysql.mysql) */

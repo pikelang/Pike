@@ -48,7 +48,7 @@ void create(?int best, int|void depth, int|void type)
     INT_TYPE best=0,depth=0,type=-1;
     GdkVisual *gv;
 
-    get_all_args("create",args,"%i.%i%i",&best,&depth,&type);
+    get_all_args(NULL,args,"%i.%i%i",&best,&depth,&type);
     if (best==0) {
       gv=gdk_visual_get_system();
     } else {

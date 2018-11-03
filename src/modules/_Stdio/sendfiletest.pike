@@ -89,7 +89,7 @@ void next()
   testno++;
 
   function test;
-  if (!(test = this_object()["test"+testno])) exit_test(0);
+  if (!(test = this["test"+testno])) exit_test(0);
   mixed err;
   if (err = catch {
     log_status("Sendfile test: %d", testno);

@@ -10,6 +10,82 @@
 protected inherit "module.pmod";
 protected inherit Parser.XML.Tree;
 
+constant lfuns = ([
+  "`+": "OBJ + x",
+  "`-": "OBJ - x",
+  "`&": "OBJ & x",
+  "`|": "OBJ | x",
+  "`^": "OBJ ^ x",
+  "`<<":"OBJ << x",
+  "`>>":"OBJ >> x",
+  "`*": "OBJ * x",
+  "`**": "OBJ ** x",
+  "`/": "OBJ / x",
+  "`%": "OBJ % x",
+  "`~": "~OBJ",
+  "`==": "OBJ == x",
+  "`<": "OBJ < x",
+  "`>": "OBJ > x",
+  "__hash":"hash_value(OBJ)",
+  "cast":"(cast)OBJ",
+  "`!": "!OBJ",
+  "`[]":"OBJ[ x ]",
+  "`->":"OBJ->X",
+  "_sizeof":"sizeof(OBJ)",
+  "_indices":"indices(OBJ)",
+  "_values":"values(OBJ)",
+  "_size_object":"Debug.size_object(OBJ)",
+  "`()":"OBJ()",
+  "``+":"x + OBJ",
+  "``-":"x - OBJ",
+  "``&":"x & OBJ",
+  "``|":"x | OBJ",
+  "``^":"x ^ OBJ",
+  "``<<":"x << OBJ",
+  "``>>":"x >> OBJ",
+  "``*":"x * OBJ",
+  "``**":"x ** OBJ",
+  "``/":"x / OBJ",
+  "``%":"x % OBJ",
+
+  "`->=":"OBJ->X = y",
+  "`[]=":"OBJ[ x ] = y",
+  "`+=":"OBJ += x", /* not really all that nice looking... */
+
+  "`-=":"NOTIMPL",
+  "`&=":"NOTIMPL",
+  "`|=":"NOTIMPL",
+  "`^=":"NOTIMPL",
+  "`<<=":"NOTIMPL",
+  "`>>=":"NOTIMPL",
+  "`*=":"NOTIMPL",
+  "`/=":"NOTIMPL",
+  "`%=":"NOTIMPL",
+  "`~=":"NOTIMPL",
+  "`<=":"NOTIMPL",
+  "`>=":"NOTIMPL",
+  "`!=":"NOTIMPL",
+
+  "_is_type":"is_type(OBJ)",/*  requires more work..*/
+  "_sprintf":"sprintf(...,OBJ)",
+  "_equal":"equal(OBJ,x)",
+  "_m_delete":"m_delete(OBJ,x)",
+  "_get_iterator":"foreach(OBJ;...)",
+  "`[..]":"OBJ[start..end]",
+  /* NOTE: After this point there are only fake lfuns. */
+  "_search":"search(OBJ,x)",
+  "_random":"random(OBJ)",
+  /*
+    "_types",
+  "_serialize",
+  "_deserialize",
+  "_size_object",
+*/
+  // "sqrt":"sqrt(OBJ)",
+  // "pow":"pow(OBJ)",
+  "_decode":"OBJ = decode_value(...)",
+  "_encode":"str = encode_value(OBJ)",
+]);
 
 //========================================================================
 // REPRESENTATION OF TYPES
@@ -145,8 +221,8 @@ class StringType {
   }
   string xml(.Flags|void flags) {
     if (min||max)
-      return xmltag("string", 
-                    xmltag("min", min) + 
+      return xmltag("string",
+                    xmltag("min", min) +
                     xmltag("max", max));
     return xmltag("string");
   }
@@ -529,6 +605,12 @@ class PikeObject {
   //!
   Documentation squeezedInDoc;
 
+  int containsDoc()
+  {
+    if (squeezedInDoc && squeezedInDoc != EmptyDoc) return 1;
+    return 0;
+  }
+
   protected string standardTags(.Flags|void flags) {
     string s = "";
     if (position)
@@ -640,18 +722,123 @@ class _Class_or_Module {
   //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
 
+  void fixGettersSetters()
+  {
+    mapping(string:array(PikeObject)) found = ([]);
+    mapping(string:mapping(string:Documentation)) docs = ([]);
+
+    foreach( docGroups;int index; DocGroup doge )
+    {
+      foreach( doge->objects; int subindex; PikeObject o )
+      {
+	if( lfuns[o->name] == "NOTIMPL" && objtype != "namespace")
+	{
+	  werror("WARNING: Dropping documentation for %s. "
+		 "There is no such operator\n"
+		 "Found in documentation for %s\n",
+		 o->name,o->position?->filename||name);
+	  doge->objects[subindex] = 0;
+	}
+	else if( o->name[0..0] == "`" && !lfuns[o->name] )
+	{
+	  string key = o->name[1..]-"=";
+	  found[key] += ({ o });
+	  doge->objects[subindex] = 0;
+	  if(!docs[key] )
+	    docs[key] = ([]);
+	  if( doge->documentation )
+	    if( o->name[-1] == '=' )
+	      docs[key]->set = doge->documentation;
+	    else
+	      docs[key]->get = doge->documentation;
+	}
+      }
+      doge->objects -= ({0});
+      if( sizeof( doge->objects ) == 0 )
+      {
+	docGroups[index]=0;
+      }
+    }
+    docGroups -= ({0});
+
+    foreach( found; string key; array(PikeObject) o )
+    {
+      Variable nvar = Variable();
+      Documentation outdoc=Documentation();
+      DocGroup ngroup = DocGroup(({nvar}),outdoc);
+      string extra;
+
+      docGroups += ({ ngroup });
+
+      if( sizeof( o ) == 1 )
+      {
+	if( o[0]->name[-1] == '=' )
+	  extra = "Write only";
+	else
+	  extra = "Read only";
+      }
+      nvar->name = key;
+      nvar->type = o[0]->returntype;
+      nvar->position = o[0]->position;
+      outdoc->position = o[0]->position;
+
+      mapping(string:Documentation) doc = docs[key];
+      if( doc?->set?->text && doc?->get?->text &&
+	  strlen(doc->set->text) && strlen(doc->get->text) &&
+	  doc->set->text != doc->get->text )
+      {
+        outdoc->text = "Getting\n\n"
+          "\n"+doc->get->text+"\n\n"+
+          "Setting\n\n"+
+          doc->get->text+"\n\n";
+      }
+      else
+      {
+	if( doc?->set?->text && strlen(doc->set->text) )
+	{
+	  outdoc->text = doc->set->text;
+	}
+	else if( doc?->get?->text && strlen(doc->get->text) )
+	{
+	  outdoc->text = doc->get->text;
+	}
+	else
+	  outdoc->text="";
+      }
+      if( extra )
+	outdoc->text += "\n@note\n"+extra;
+
+      object p = master()->resolv("Tools.AutoDoc.DocParser.Parse")
+	(outdoc->text,
+	 SourcePosition(__FILE__, __LINE__, __LINE__));
+
+      p->metadata();
+      outdoc->xml = p->doc("_method");
+    }
+  }
+
   //! @returns
   //!   Returns @expr{1@} if there is any documentation
   //!   at all for this entity.
-  int containsDoc() { return documentation != 0 || sizeof(docGroups) > 0; }
+  int containsDoc() {
+    if (documentation && documentation != EmptyDoc) return 1;
+    if (::containsDoc()) return 1;
+    foreach(docGroups, DocGroup dg) {
+      if (dg->documentation && dg->documentation != EmptyDoc) return 1;
+    }
+    foreach(children, _Class_or_Module c) {
+      if (c->containsDoc()) return 1;
+    }
+    return 0;
+  }
 
   //! Adds @[p] to the set of @[inherits].
-  void AddInherit(PikeObject p) {
+  void addInherit(PikeObject p) {
     inherits += ({ p });
   }
 
   //! Adds @[c] to the set of @[children].
-  void AddChild(_Class_or_Module c) { children += ({ c }); }
+  void addChild(_Class_or_Module c) { children += ({ c }); }
 
   //! @returns
   //!   Returns the first child with the name @[name] if any.
@@ -677,11 +864,13 @@ class _Class_or_Module {
   }
 
   //! Adds @[d] to the set of @[docGroups].
-  void AddGroup(DocGroup d) {
+  void addGroup(DocGroup d) {
     docGroups += ({ d });
   }
 
+
   string xml(.Flags|void flags) {
+    fixGettersSetters();
     string contents = standardTags(flags);
     if (documentation && documentation->xml != "")
       contents += xmltag("doc", documentation->xml);
@@ -736,6 +925,7 @@ class _Class_or_Module {
 
 //! Represents a class.
 class Class {
+
   //!
   inherit _Class_or_Module;
 
@@ -780,7 +970,7 @@ class AutoDoc {
 
 //! A modifier range, e.g.:
 //! @code
-//! static private {
+//! final protected {
 //!   ...
 //!   <<declarations>>
 //!   ...
@@ -915,6 +1105,22 @@ class Enum {
 
   //! Adds @[c] to the set of @[children].
   void addChild(DocGroup c) { children += ({ c }); }
+
+  //! Adds @[c] to the set of @[children].
+  void addGroup(DocGroup c) { children += ({ c }); }
+
+  //! @returns
+  //!   Returns @expr{1@} if there is any documentation
+  //!   at all for this entity.
+  int containsDoc()
+  {
+    if (documentation && documentation != EmptyDoc) return 1;
+    if (::containsDoc()) return 1;
+    foreach(children, DocGroup c) {
+      if (c->documentation && c->documentation != EmptyDoc) return 1;
+    }
+    return 0;
+  }
 
   string xml(.Flags|void flags) {
 

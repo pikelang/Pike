@@ -79,10 +79,16 @@ int errno() { return 0; }
 //! Returns size and the creation time of the string.
 Stdio.Stat stat() {
   Stdio.Stat st = Stdio.Stat();
+  st->isreg = 1;
   st->size = sizeof(data);
   st->mtime=st->ctime=mtime;
   st->atime=time();
   return st;
+}
+
+int mode()
+{
+  return 0x1000; // FILE_READ (from Pike/src/modules/_Stdio/file.h)
 }
 
 //! @seealso
@@ -129,7 +135,7 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
   if (len < 0) error("Cannot read negative number of characters.\n");
   int start=ptr;
   ptr += len;
-  if(zero_type(len) || ptr>sizeof(data))
+  if(undefinedp(len) || ptr>sizeof(data))
     ptr = sizeof(data);
 
   // FIXME: read callback
@@ -186,18 +192,36 @@ void unread(string s) {
 
 //! @seealso
 //!   @[Stdio.File()->seek()]
-int seek(int pos, void|int mult, void|int add) {
-  if(mult)
-    pos = pos*mult+add;
-  if(pos<0)
+int seek(int pos, string|void how) {
+  if( !how )
   {
-    pos = sizeof(data)+pos;
-    if( pos < 0 )
-	pos = 0;
+      how = Stdio.SEEK_SET;
+      if( pos < 0 )
+          how = Stdio.SEEK_END;
   }
-  ptr = pos;
-  if( ptr > strlen( data ) )
-      ptr = strlen(data);
+  switch( how )
+  {
+      case Stdio.SEEK_SET:
+          ptr = pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+      case Stdio.SEEK_END:
+          ptr = sizeof(data)+pos;
+          if( ptr < 0 )
+              ptr = 0;
+          break;
+      case Stdio.SEEK_CUR:
+          ptr += pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+#if Stdio.SEEK_HOLE
+      case Stdio.SEEK_HOLE:
+      case Stdio.SEEK_DATA:
+          return -1;
+#endif
+  }
   return ptr;
 }
 
@@ -256,7 +280,7 @@ void set_blocking_keep_callbacks() { }
 //! @seealso
 //!   @[Stdio.File()->set_blocking]
 void set_nonblocking(function rcb, function wcb, function ccb,
-		     function rocb, function wocb) {
+                     void|function rocb, void|function wocb) {
   read_cb = rcb;
   write_cb = wcb;
   close_cb = ccb;
@@ -319,12 +343,10 @@ string _sprintf(int t) {
 // FakeFile specials.
 
 //! A FakeFile can be casted to a string.
-mixed cast(string to) {
-  switch(to) {
-  case "string": return data;
-  case "object": return this;
-  }
-  error("Can not cast object to %O.\n", to);
+protected mixed cast(string to) {
+  if( to == "string" )
+    return data;
+  return UNDEFINED;
 }
 
 //! Sizeof on a FakeFile returns the size of its contents.
@@ -348,7 +370,6 @@ NOPE(tcsetattr);
 // Stdio.Fd
 NOPE(dup2);
 NOPE(lock); // We could implement this
-NOPE(mode); // We could implement this
 NOPE(proxy); // We could implement this
 NOPE(query_fd);
 NOPE(read_oob);

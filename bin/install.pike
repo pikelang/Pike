@@ -326,7 +326,7 @@ class Dialog
     int height = 33;
     int transparent = 1;
     string font = "\\VSI_MS_Sans_Serif16.0_1_0";
-    static void create()
+    protected void create()
     {
       text = banner;
     }
@@ -514,7 +514,7 @@ class Dialog
     return res;
   }
 
-  static void create()
+  protected void create()
   {
     // NOTE: __INIT must have finished before the objects are cloned.
     controls = ({
@@ -578,7 +578,7 @@ class ExitDialog
       "could be installed. You need to restart the installer to try again.";
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({ BodyText() });
@@ -663,7 +663,7 @@ class FolderDialog
     }
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({
@@ -693,7 +693,7 @@ class ProgressDialog
     return res;
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({
@@ -1038,11 +1038,11 @@ void install_dir(string from, string to, int dump)
   mkdirhier(to);
   foreach(get_dir(from),string file)
   {
-    if(file=="CVS") continue;
     if(file=="testsuite.in") continue;
     if(file[..1]==".#") continue;
     if(file[0]=='#' && file[-1]=='#') continue;
     if(file[-1]=='~') continue;
+    if(has_suffix(file, ".test")) continue;
     mixed stat=file_stat(combine_path(from,file));
     if (stat) {
       if(stat[1]==-2) {
@@ -1582,7 +1582,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2013 IDA, Linköping University
+#" Copyright (C) 1994-2018 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
@@ -1690,8 +1690,11 @@ done
 
   status("Creating", export_base_name);
 
+  //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
+  //  on OS X which otherwise would hinder self-extraction from bootstrapping.
   Process.create_process( ({ "tar","cf", export_base_name,
-			     script, tmpname+".x", tmpname+".tar.gz" }))
+			     script, tmpname+".x", tmpname+".tar.gz" }),
+			  ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
     ->wait();
 
   status("Filtering to root/root ownership", export_base_name);
@@ -2444,7 +2447,7 @@ void make_master(string dest, string master, string lib_prefix,
   status("Finalizing",master,"done");
 }
 
-// Install file while fixing CC= w.r.t. smartlink
+// Install file while fixing CC= and CXX= w.r.t. smartlink
 void fix_smartlink(string src, string dest, string include_prefix)
 {
   status("Finalizing",src);
@@ -2453,6 +2456,8 @@ void fix_smartlink(string src, string dest, string include_prefix)
 			  string cc;
 			  if(2==sscanf(s, "CC=%*s/smartlink %s", cc))
 			    return "CC="+include_prefix+"/smartlink "+cc;
+			  else if(2==sscanf(s, "CXX=%*s/smartlink %s", string cxx))
+			    return "CXX="+include_prefix+"/smartlink "+cxx;
 			  else
 			    return s;
 			})*"\n";
@@ -2543,6 +2548,7 @@ void dump_modules()
   // very short memory for application arguments.
 
   int offset = 1;
+ dumploop:
   foreach(to_dump/25.0, array delta_dump)
   {
     mixed err = catch {
@@ -2555,10 +2561,12 @@ void dump_modules()
 				 }) : ({}) ) +
 			       delta_dump, options);
       int retcode=p->wait();
-      if (retcode)
+      if (retcode) {
 	error_msg("Dumping of some modules failed (not fatal) (0x%:08x):\n"
 		  "%{  %O\n%}",
 		  retcode, delta_dump);
+	break dumploop;
+      }
     };
     if (err) {
       error_msg ("Failed to spawn module dumper (not fatal):\n"

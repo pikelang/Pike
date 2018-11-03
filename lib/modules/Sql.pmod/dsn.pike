@@ -5,16 +5,17 @@
  */
 
 #pike __REAL_VERSION__
+#require constant(Odbc.odbc)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
-constant dont_dump_program = 1;
+// Cannot dump this since the #require check above depends on the
+// presence of system libs at runtime.
+optional constant dont_dump_program = 1;
 
-#if constant(Odbc.odbc)
-inherit Odbc.odbc;
+inherit .odbc;
 
-void create(string|void host, string|void db, string|void user,
-	    string|void password, mapping(string:int|string)|void options)
+protected void create(string|void host, string|void db, string|void user,
+		      string|void password,
+		      mapping(string:int|string)|void options)
 {
   // FIXME: Quoting?
   string connectstring="";
@@ -42,16 +43,3 @@ void create(string|void host, string|void db, string|void user,
   }
   ::create_dsn(connectstring);
 }
-
-int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
-{  
-  if (!bindings)
-    return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q, bindings, this));
-}
-
-constant list_dbs = Odbc.list_dbs;
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(Odbc.odbc) */

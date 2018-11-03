@@ -1,5 +1,4 @@
-/* imap_server.pike
- */
+//! imap_server.pike
 #pike __REAL_VERSION__
 
 constant unauth_commands =
@@ -62,7 +61,7 @@ constant all_commands = unauth_commands | auth_commands | select_commands;
 
 class connection
 {
-  object io;  // Protocol object 
+  object io;  // Protocol object
 
   object db; /* Mail backend */
 
@@ -100,7 +99,7 @@ class connection
 	next_action(handler(s));
       }
   }
-  
+
   void show_backtrace(mixed e)
     {
       werror(describe_backtrace(e));
@@ -140,11 +139,11 @@ class connection
 	error( "IMAP.pmod: Internal error, action = %O\n", action );
       }
     }
-  
+
   void handle_request(object(.requests.request) req)
     {
       mapping action;
-      
+
       mixed e;
       if (e = catch(action = req->process(session, db, io->send_imap)))
 	{

@@ -99,7 +99,7 @@ if test x$with_ttflib = xyes ; then
       ])
       AC_MSG_RESULT([$pike_cv_lib_ttf_works])
       if test "x$pike_cv_lib_ttf_works" = "xyes"; then
-        AC_DEFINE(HAVE_LIBTTF) 
+        AC_DEFINE(HAVE_LIBTTF)
         PIKE_FEATURE_OK(Image.TTF)
       else
         PIKE_FEATURE([Image.TTF], [no (broken library)])
@@ -136,5 +136,3 @@ if test x$with_ttflib = xyes ; then
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

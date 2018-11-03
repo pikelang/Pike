@@ -39,4 +39,3 @@ int perform()
    // the string is processed 'n' times.
    return n * tags;
 }
-

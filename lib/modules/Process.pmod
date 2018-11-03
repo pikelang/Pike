@@ -6,7 +6,7 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
-#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
+#if defined(__NT__)
 constant path_separator = ";";
 #else
 constant path_separator = ":";
@@ -179,7 +179,8 @@ class Process
 
 #if constant(Stdio.__HAVE_SEND_FD__)
     // Forkd mode requires send_fd().
-    if (zero_type(new_modifiers->forkd)) new_modifiers->forkd = forkd_default;
+    if (undefinedp(new_modifiers->forkd))
+      new_modifiers->forkd = forkd_default;
     if (new_modifiers->forkd && assert_forkd()) {
       process_fd = Stdio.File();
       forkd_pipe->
@@ -190,9 +191,9 @@ class Process
       m_delete(new_modifiers, "forkd");
       __callback = m_delete(new_modifiers, "callback");
 
-      if (zero_type(new_modifiers->uid)) {
+      if (undefinedp(new_modifiers->uid)) {
 	new_modifiers->uid = geteuid();
-	if (zero_type(new_modifiers->gid)) {
+	if (undefinedp(new_modifiers->gid)) {
 	  new_modifiers->gid = getegid();
 	}
 	if (!new_modifiers->setgroups) {
@@ -230,10 +231,11 @@ class Process
       }
       int bytes = process_fd->write(data);
       if (bytes != sizeof(data)) {
+	int fd_errno = process_fd->errno();
 	process_fd->close();
 	process_fd = UNDEFINED;
-	error("Failed to write spawn request (%d != %d).\n",
-	      bytes, sizeof(data));
+	error("Failed to write spawn request (%d != %d, errno: %d, errmsg: %s).\n",
+	      bytes, sizeof(data), fd_errno, strerror(fd_errno) || "?");
       }
       process_backend = Pike.SmallBackend();
       process_backend->add_file(process_fd);
@@ -299,24 +301,24 @@ class Process
       case "PID":
 	__pid = packet;
 	if (__status == -1) __status = 0;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "SIGNAL":
 	__last_signal = packet;
 	break;
       case "START":
 	__status = 0;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "STOP":
 	__status = 1;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "EXIT":
 	__result = packet;
 	__status = 2;
 	do_close();
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       default:
 	__result = 255;
@@ -346,7 +348,10 @@ class Process
       };
     // Filter errors about the backend already running.
     if (arrayp(err) && sizeof(err) &&
-	stringp(err[0]) && has_prefix(err[0], "Backend already ")) return;
+	stringp(err[0]) && has_prefix(err[0], "Backend already ")) {
+      sleep(t);
+      return;
+    }
     throw(err);
   }
 
@@ -373,17 +378,18 @@ class Process
   int wait()
   {
     if (process_backend) {
-      do_poll(0.0);
-      while (__status <= 0) {
-	do_poll(3600.0);
-      }
+      float t = 0.0;
+      do {
+	do_poll(t);
+	if (t < 1.0) t += 0.1;
+      } while (__status <= 0);
       return __result;
     }
     return ::wait();
   }
 #endif /* __HAVE_SEND_FD__ */
 
-  protected void destroy() {
+  protected void _destruct() {
     remove_call_out(watcher);
     remove_call_out(killer);
 #if constant(Stdio.__HAVE_SEND_FD__)
@@ -438,12 +444,21 @@ protected array(string) runpike;
 //! @param options
 //!   Process creation options. See @[Process.Process] for details. May also
 //!   specify "add_predefines", "add_program_path", or "add_include_path" in
-//!   order to include these components in command path (module path is 
+//!   order to include these components in command path (module path is
 //!   included by default.)
+//!
+//! @param launcher
+//!   Optional launcher prefix command used to spawn the pike binary.
+//!
+//!   When used this is typically something like
+//!   @expr{({ "/usr/bin/valgrind" })@}.
+//!
+//!   Defaults to the empty array.
 //!
 //! @seealso
 //!   @[Process.Process]
-Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
+Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
+		   array(string)|void launcher)
 {
   if (!runpike) {
     array(string) res = ({
@@ -480,10 +495,11 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
       res[0] = search_path(res[0]);
     runpike = res;
   }
-  return Process(runpike + argv, options);
+  if (!launcher) launcher = ({});
+  return Process(launcher + runpike + argv, options);
 }
 
-//! Easy and lazy way of using @[Process.Process] that runs a process 
+//! Easy and lazy way of using @[Process.Process] that runs a process
 //! and returns a mapping with the output and exit code without
 //! having to make sure you read nonblocking yourself.
 //!
@@ -494,11 +510,13 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   calling @[split_quoted_string()] in an operating
 //!   system dependant mode.
 //! @param modifiers
-//!   It takes all the modifiers @[Process.Process] accepts, with 
-//!   the exception of stdout and stderr. Since the point of this 
-//!   function is to handle those you can not supply your own.
+//!   It takes all the modifiers @[Process.Process] accepts, with
+//!   the exception of stdout and stderr. Each must be either absent, or
+//!   a function accepting a string; if present, the functions will be called
+//!   whenever output is made on the corresponding stream, otherwise the data
+//!   will be collected and returned in the result mapping.
 //!
-//!   If @expr{modifiers->stdin@} is set to a string it will automaticly be
+//!   If @expr{modifiers->stdin@} is set to a string it will automatically be
 //!   converted to a pipe that is fed to stdin of the started process.
 //!
 //! @seealso
@@ -507,18 +525,20 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //! @returns
 //!   @mapping
 //!     @member string "stdout"
-//!       Everything the process wrote on stdout.
+//!       Everything the process wrote on stdout, unless a stdout function was
+//!       provided.
 //!     @member string "stderr"
-//!       Everything the process wrote on stderr.
+//!       Everything the process wrote on stderr, similarly.
 //!     @member int "exitcode"
 //!       The process' exitcode.
 //!   @endmapping
 //!
-//! @note 
-//!   As the entire output of stderr and stdout is stored in the 
-//!   returned mapping it could potentially grow until memory runs out. 
-//!   It is therefor adviceable to set up rlimits if the output has a
-//!   potential to be very large.
+//! @note
+//!   As the entire output of stderr and stdout is stored in the
+//!   returned mapping it could potentially grow until memory runs out.
+//!   It is therefore advisable to set up rlimits if the output has a
+//!   potential to be very large, or else provide functions to handle
+//!   partial data.
 //!
 //! @example
 //!   Process.run( ({ "ls", "-l" }) );
@@ -533,11 +553,12 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   if(!modifiers)
     modifiers = ([]);
 
-  if(modifiers->stdout || modifiers->stderr)
+  if((modifiers->stdout && !callablep(modifiers->stdout))
+    || (modifiers->stderr && !callablep(modifiers->stderr)))
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
-  Stdio.File mystdout = Stdio.File(); 
+  Stdio.File mystdout = Stdio.File();
   Stdio.File mystderr = Stdio.File();
   Stdio.File mystdin;
 
@@ -546,14 +567,14 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   {
     mystdin = Stdio.File();
     stdin_str = modifiers->stdin;
-    p = Process(cmd, modifiers + ([ 
+    p = Process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                   "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
                 ]));
   }
   else
-    p = Process(cmd, modifiers + ([ 
+    p = Process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                 ]));
@@ -581,11 +602,13 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   mystdout->set_backend (backend);
   mystderr->set_backend (backend);
 
-  mystdout->set_read_callback( lambda( mixed i, string data) { 
-                                 gotstdout += data; 
+  mystdout->set_read_callback( lambda( mixed i, string data) {
+                                 if (modifiers->stdout) modifiers->stdout(data);
+                                 else gotstdout += data;
                                } );
   mystderr->set_read_callback( lambda( mixed i, string data) {
-                                 gotstderr += data;
+                                 if (modifiers->stderr) modifiers->stderr(data);
+                                 else gotstderr += data;
                                } );
   mystdout->set_close_callback( lambda () {
 				  mystdout->set_read_callback(0);
@@ -598,6 +621,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 				  mystderr = 0;
 				});
 
+#if constant(Shuffler)
   if (mystdin) {
     Shuffler.Shuffler sfr = Shuffler.Shuffler();
     sfr->set_backend (backend);
@@ -609,6 +633,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 			   });
     sf->start();
   }
+#endif
 
   while( mystdout || mystderr || mystdin )
     backend( 1.0 );
@@ -820,7 +845,7 @@ piece_loop:
       }
       last+=piece[1..];
       break;
-      
+
       case '\\':
       if(sizeof(piece)>1)
       {
@@ -836,7 +861,7 @@ piece_loop:
 	last+=x[++e];
       }
       break;
-      
+
       case ' ':
       case '\t':
       case '\n':
@@ -898,11 +923,9 @@ Process spawn(string command, void|Stdio.Stream stdin,
       command[0] != '\"' || command[sizeof(command)-1] != '\"')
     command = "\"" + command + "\"";
   return Process(({ "cmd", "/c", command }),data);
-#elif defined(__amigaos__)
-  return Process(split_quoted_string(command),data);
-#else /* !__NT__||__amigaos__ */
+#else /* !__NT__ */
   return Process(({ "/bin/sh", "-c", command }),data);
-#endif /* __NT__||__amigaos__ */
+#endif /* __NT__ */
 }
 
 //! @decl string popen(string command)
@@ -999,8 +1022,8 @@ class Spawn
 
    private object low_spawn(array(Stdio.File) fdp,
 			    array(Stdio.File) fd_to_close,
-			    string cmd, void|array(string) args, 
-			    void|mapping(string:string) env, 
+			    string cmd, void|array(string) args,
+			    void|mapping(string:string) env,
 			    string|void cwd)
    {
       Stdio.File pie, pied; // interprocess communication
@@ -1015,8 +1038,8 @@ class Spawn
 	 {
 	    if(cwd && !cd(cwd))
 	    {
-	       error( "pike: cannot change cwd to "+cwd+
-		      ": "+strerror(errno())+"\n" );
+              error( "pike: cannot change cwd to %O: %s.\n", cwd,
+                     strerror(errno()) );
 	    }
 
 	    if (sizeof(fdp)>0 && fdp[0]) fdp[0]->dup2(Stdio.File("stdin"));
@@ -1027,16 +1050,16 @@ class Spawn
 	       if (objectp(f)) { f->close(); destruct(f); }
 	    pie->close();
 	    destruct(pie);
-	   
+
 	    pied->set_close_on_exec(1);
 
-	    if (env) 
+	    if (env)
 	       exece(cmd,args||({}),env);
-	    else 
+	    else
 	       exece(cmd,args||({}));
 
-	    error( "pike: failed to exece "+cmd+
-		   ": "+strerror(errno())+"\n" );
+            error( "pike: failed to exece %O: %s.\n", cmd,
+                   strerror(errno()) );
 	 };
 
 	 pied->write(encode_value(err));
@@ -1086,8 +1109,8 @@ class Spawn
 #if constant(kill)
    //!
    int kill(int signal)
-   { 
-      return predef::kill(pid,signal); 
+   {
+      return predef::kill(pid,signal);
    }
 #endif
 
@@ -1196,7 +1219,7 @@ void daemon(int nochdir, int noclose,
     };
 
     if (low_daemon(nochdir, noclose) == -1)
-      error("Failed to daemonize: " + strerror(errno())+"\n");
+      error("Failed to daemonize: %s.\n", strerror(errno()));
     if (!modifiers)
         return;
 

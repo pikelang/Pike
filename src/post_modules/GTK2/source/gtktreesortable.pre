@@ -42,7 +42,7 @@ void set_sort_func(int column, function f, mixed user_data)
     INT_TYPE col;
     struct signal_data *sd;
 
-    get_all_args("set_sort_func",args,"%i%*%*",&col,&sv1,&sv2);
+    get_all_args(NULL,args,"%i%*%*",&col,&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_sort_func",sizeof(struct signal_data));
@@ -76,7 +76,7 @@ void set_default_sort_func(function f, mixed user_data)
   {
     struct svalue *sv1,*sv2;
     struct signal_data *sd;
-    get_all_args("set_default_sort_func",args,"%*%*",&sv1,&sv2);
+    get_all_args(NULL,args,"%*%*",&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_default_sort_func",sizeof(struct signal_data));

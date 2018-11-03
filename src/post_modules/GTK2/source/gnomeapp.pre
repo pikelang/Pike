@@ -139,7 +139,7 @@ static void replyfunc(int reply, struct signal_data *d)
 {
   push_int(reply);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,2);
+  safe_apply_svalue(&d->cb, 2, 1);
   pop_stack();
   xfree(d);
 }
@@ -148,7 +148,7 @@ static void sreplyfunc(char *reply, struct signal_data *d)
 {
   PGTK_PUSH_GCHAR(reply);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,2);
+  safe_apply_svalue(&d->cb, 2, 1);
   pop_stack();
   xfree(d);
   g_free( reply ); /* should we? */
@@ -158,7 +158,7 @@ static gdouble progressfunc(struct signal_data *d)
 {
   gdouble res;
   push_svalue(&d->args);
-  apply_svalue(&d->cb,1);
+  safe_apply_svalue(&d->cb, 1, 1);
   res=(gdouble)Pike_sp[-1].u.float_number;
   pop_stack();
   return res;

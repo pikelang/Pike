@@ -98,7 +98,7 @@ string fix(string path)
     {
       srcdir=".";
     }
-    
+
     if(!srcdir)
     {
       werror("You must provide --source=<source dir>\n");
@@ -151,12 +151,12 @@ void do_make(array(string) cmd)
     lmp="./plib/modules";
   else
     lmp = local_module_path;
-  
+
   if(srcdir !=".") full_srcdir=srcdir + "/";
   else full_srcdir=getcwd() + "/";
 
   array extra_args = ({});
-  
+
   if( old_style_module )
   {
     extra_args =
@@ -186,7 +186,7 @@ void do_make(array(string) cmd)
       "LOCAL_MODULE_PATH=" + lmp,
     });
   }
-  
+
   array(string) makecmd=({make})+do_split_quoted_string(make_flags)+extra_args+cmd;
 
   if(tmp1=max_time_of_files("Makefile"))
@@ -229,7 +229,7 @@ int main(int argc, array(string) argv)
   putenv("RUNPIKE", run_pike);
 
   load_specs(specspath);
-  
+
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"autoconf",Getopt.NO_ARG,({"--autoconf"}) }),
     ({"configure",Getopt.NO_ARG,({"--configure"}) }),
@@ -267,11 +267,11 @@ int main(int argc, array(string) argv)
 	case "configure": run->configure=ALWAYS; do_zero(); break;
 	case "make": run->make=ALWAYS; do_zero(); break;
 	case "depend": run->depend=ALWAYS; do_zero(); break;
-	  
-	case "all": 
+
+	case "all":
 	  run->depend=run->autoheader=run->autoconf=run->configure=run->make=ALWAYS;
 	  break;
-	  
+
 	case "auto":
 	  run->depend=run->autoheader=run->autoconf=run->configure=run->make=AUTO;
 	  break;
@@ -280,7 +280,7 @@ int main(int argc, array(string) argv)
 
   argv=Getopt.get_args(argv);
   string configure_args="";
-  
+
   foreach( argv, string arg )
     if( sscanf( arg, "CONFIGUREARGS=%s", configure_args ) )
       argv-=({arg});
@@ -294,7 +294,7 @@ int main(int argc, array(string) argv)
   {
     if(tmp1=max_time_of_files("$src/Makefile.am",configure_in))
     {
-      write("** Running automake\n"); 
+      write("** Running automake\n");
       if(run->automake == ALWAYS ||
 	 max_time_of_files("$src/Makefile.in") < tmp1)
       {
@@ -304,8 +304,8 @@ int main(int argc, array(string) argv)
       }
     }
   }
-  
-  
+
+
   if( max_time_of_files( configure_in ) <  max_time_of_files( "$src/configure.ac" ) )
     configure_in = "$src/configure.ac" ;
 
@@ -320,7 +320,7 @@ int main(int argc, array(string) argv)
 
   if( sscanf( configure_content, "%*sAC_CONFIG_HEADER(%[^)])", stamp_file ) == 2 )
     stamp_file="$src/"+stamp_file+".in";
-  
+
   if(run->autoheader)
   {
     if(tmp1=max_time_of_files("$src/acconfig.h",configure_in))

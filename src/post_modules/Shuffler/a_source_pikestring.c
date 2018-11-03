@@ -28,11 +28,11 @@ static struct data get_data( struct source *src, off_t len )
 {
   struct ps_source *s = (struct ps_source *)src;
   struct data res;
-  
+
   res.do_free = 0;
   res.off = 0;
   res.data = s->str->str + s->offset;
-  
+
   if( len > s->len )
   {
     len = s->len;
@@ -60,10 +60,10 @@ struct source *source_pikestring_make( struct svalue *s,
   if( TYPEOF(*s) != PIKE_T_STRING )   return 0;
   if( s->u.string->size_shift )    return 0;
 
-  res = malloc( sizeof( struct ps_source ) );
+  res = calloc( 1, sizeof( struct ps_source ) );
+  if( !res ) return NULL;
   debug_malloc_touch( res );
   debug_malloc_touch( s );
-  MEMSET( res, 0, sizeof( struct ps_source ) );
 
   res->s.free_source = free_source;
   res->s.get_data = get_data;

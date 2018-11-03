@@ -7,7 +7,6 @@
 /*
  * Prototypes for the Pike system-module
  *
- * Henrik Grubbström 1997-01-28
  */
 
 #ifndef PIKE_MODULES_SYSTEM_H
@@ -59,11 +58,11 @@ struct memory_storage
 {
    unsigned char *p;
    size_t size;
-   
+
 #define MEM_READ        0x01
 #define MEM_WRITE       0x02
 #define MEM_FREE_FREE   0x10
-#define MEM_FREE_MUNMAP 0x20   
+#define MEM_FREE_MUNMAP 0x20
 #define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
 #ifdef WIN32SHM

@@ -1,5 +1,6 @@
 //! Properties:
 //! GTK2.FileChooserDialog dialog
+//! int focus-on-click
 //! string title
 //! int width-chars
 //!
@@ -15,6 +16,11 @@ protected GTK2.FileChooserButton create( string|mapping title_or_props, int|void
 //!
 //!
 
+int get_focus_on_click( );
+//! Returns whether the button grabs focus when it is clicked.
+//!
+//!
+
 string get_title( );
 //! Retrieves the title of the browse dialog.
 //!
@@ -23,6 +29,14 @@ string get_title( );
 int get_width_chars( );
 //! Retrieves the width in characters of the button widget's
 //! entry and/or label.
+//!
+//!
+
+GTK2.FileChooserButton set_focus_on_click( int focus );
+//! Sets whether the button will grab focus when it is clicked with the mouse.
+//! Making mouse clicks not grab focus is useful in places like toolbars where
+//! you don't want the keyboard focus removed from the main area of the
+//! application.
 //!
 //!
 

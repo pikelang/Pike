@@ -260,12 +260,12 @@ class NetMask
             case "array":
                 return ({ net, mask });
             default:
-                error("Can not cast to %O\n", type );
+                return UNDEFINED;
         }
 
     }
 
-    protected string _sprintf( int flag, mapping opt )
+    protected string _sprintf( int flag )
     {
         switch( flag )
         {
@@ -327,7 +327,7 @@ class IpRangeLookup
         return range_to_info + ([]);
     }
 
-    protected string _sprintf()
+    protected string _sprintf(int c)
     {
         return sprintf("IpRangeLookup( %{%O %})",Array.flatten(values(range_to_info)));
     }
@@ -368,7 +368,7 @@ class IpRangeLookup
 
     // Ensures that the netmask only contains 255 or 0 bytes.
     // This is used to speed up the lookup() function above.
-    static string trim_net( int net, int mask )
+    protected string trim_net( int net, int mask )
     {
         int x = (net&(((1<<(mask->size()))-1)^((1<<(mask->size()-(mask->popcount()&~7)))-1)));
 
@@ -388,7 +388,7 @@ class IpRangeLookup
     //!     Each range can be a single addresses ("192.168.1.1"), a
     //!     range of addresses ("192.168.1.1-192.168.1.5") or be
     //!     written in CIDR notation ("192.168.1.0/24").
-    void create(mapping(mixed:array(string)) ranges, int|void _debug)
+    void create(mapping(mixed:array(string)) ranges)
     {
         void add_range( Range range )
         {
@@ -650,8 +650,14 @@ mapping(string:array(string)) local_interfaces()
         foreach( (ifconfig(iface) + ifconfig(iface + " inet6"))/"\n",
                  string q )
         {
-            string i,m;
+            string i,m,f;
             q = String.trim_whites(q);
+            if( sscanf( q, "%*sflags=%*x<%s>", f )==3 &&
+                search(f/",", "UP")<0) {
+                // ignore interfaces which are not up
+                ips = ({});
+                break;
+            }
             if( (sscanf( q, "inet addr:%[^ ]%*sMask:%s", i, m )==3) ||
                 (sscanf( q, "inet %[^ ] mask %[^ ]", i, m )==2) ||
                 (sscanf( q, "inet %[^ ]%*snetmask %[^ ]", i, m )==3))
@@ -1031,7 +1037,7 @@ array(NetworkType) _connectable_network_types( bool v6, bool v4, bool has_teredo
     return res;
 }
 
-//! Returns network types in priority order according to RFC 3484.
+//! Returns network types in priority order according to @rfc{3484@}.
 //!
 //! This function assumes a network category (ipv4 or ipv6) is
 //! available if the local host has a configured address (excluding
@@ -1091,7 +1097,7 @@ array(string) _sort_addresses(array(string) addresses,
 }
 
 //! Given a list of addresses, sort them according to connectable
-//! priority order (RFC 3484).
+//! priority order (@rfc{3484@}).
 //!
 //! If @[exclude_types] is specified, addresses that match any of the
 //! network types (({"local", "localhost"}) for the local network as an example)

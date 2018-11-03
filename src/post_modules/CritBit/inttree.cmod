@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* vim:syntax=c
  */
 #include "common.h"
@@ -60,6 +66,7 @@ cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
 	if (e > 32) Pike_error("Mask is too big!");
 	key.len.chars = 0;
 	key.len.bits = WASTED_BITS + e;
+	/* FALLTHRU */
     case 4:
 	if (a > 255 || b > 255 || c > 255 || d > 255)
 	    Pike_error("Bad ip.\n");
@@ -78,8 +85,9 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
 
     unsigned INT32 ip = (unsigned INT32)key.str;
 
-    if (key.len.bits || !key.len.chars) {
-	ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
+    if (!key.len.chars) {
+	if (key.len.bits > WASTED_BITS)
+	    ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
 	len = snprintf(buf, 19, "%u.%u.%u.%u/%u",
 		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
 		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff),
@@ -139,7 +147,7 @@ PIKECLASS IPv4Tree {
     }
 
     PIKEFUN int umask(int n) {
-	RETURN MASK(unsigned INT64, n);
+        RETURN MASK(UINT64, n);
     }
 
     PIKEFUN int cmp_key(mixed a, mixed b) {

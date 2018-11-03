@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* Misc stuff for dealing with floats.
  */
 
@@ -5,6 +11,8 @@
 #define PIKE_FLOAT_H
 
 #include "global.h"
+
+#include <math.h>
 
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -16,39 +24,34 @@
 #include <fp_class.h>
 #endif
 
-/* isnan()...
- */
-#ifdef HAVE_ISNAN
-#if defined(HAVE__ISNAN) && defined(__NT__)
-/* On NT only _isnan() has a prototype.
- * isnan() is the standardized name, so use that
- * on all other platforms.
- */
-#define PIKE_ISNAN(X)	_isnan(X)
-#else /* !(HAVE__ISNAN && __NT__) */
-#define PIKE_ISNAN(X)	isnan(X)
-#endif /* HAVE__ISNAN && __NT__ */
-#else /* !HAVE_ISNAN */
 #ifdef HAVE__ISNAN
-#define PIKE_ISNAN(X)	_isnan(X)
-#else /* !HAVE__ISNAN */
-/* Fallback function */
-static INLINE int pike_isnan(double x)
-{
-  return ((x == 0.0) == (x < 0.0)) &&
-    ((x == 0.0) == (x > 0.0));
-}
-#define PIKE_ISNAN(X)	pike_isnan(X)
-#endif /* HAVE__ISNAN */
-#endif /* HAVE_ISNAN */
+#define PIKE_ISNAN(X) _isnan(X)
+#else
+#define PIKE_ISNAN(X) isnan(X)
+#endif
 
-/* isinf()...
- */
 #ifdef HAVE_ISINF
 #define PIKE_ISINF(X)	isinf(X)
-#else /* HAVE_ISINF */
+#elif defined(HAVE_ISFINITE)
+#define PIKE_ISINF(X)   (!isfinite(X))
+#elif defined(HAVE__FINITE)
+#define PIKE_ISINF(X)   (!_finite(X))
+#else
 #define PIKE_ISINF(X)	((X) && ((X)+(X) == (X)))
 #endif /* HAVE_ISINF */
+
+#ifdef INFINITY
+#define MAKE_INF() INFINITY
+#else
+#define MAKE_INF() (DBL_MAX+DBL_MAX)
+#endif
+
+#ifdef HAVE_NAN
+#define MAKE_NAN() (nan(""))
+#else
+#define MAKE_NAN() (MAKE_INF()-MAKE_INF())
+#endif
+
 
 #ifdef HAVE_ISUNORDERED
 #define PIKE_ISUNORDERED(X,Y) isunordered(X,Y)

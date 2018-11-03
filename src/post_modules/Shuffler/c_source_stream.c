@@ -13,7 +13,6 @@
 #include "fd_control.h"
 #include "backend.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"
@@ -68,7 +67,7 @@ static struct data get_data( struct source *src, off_t UNUSED(len) )
   if( s->available ) /* There is data in the buffer. Return it. */
   {
     res.data = s->_buffer;
-    MEMCPY( res.data, s->_read_buffer, res.len );
+    memcpy( res.data, s->_read_buffer, res.len );
     s->available = 0;
     setup_callbacks( src );
   }
@@ -117,7 +116,7 @@ static void read_callback( int UNUSED(fd), struct fd_source *s )
       s->skip -= l;
       return;
     }
-    MEMCPY( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
+    memcpy( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
     l-=s->skip;
     s->skip = 0;
   }
@@ -167,14 +166,13 @@ struct source *source_stream_make( struct svalue *s,
   if (find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  res = malloc( sizeof( struct fd_source ) );
+  res = calloc( 1, sizeof( struct fd_source ) );
   if (!res) return NULL;
-  MEMSET( res, 0, sizeof( struct fd_source ) );
 
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
-  
+
   res->len = len;
   res->skip = start;
 

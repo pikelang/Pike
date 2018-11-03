@@ -1,5 +1,4 @@
-/* IMAP.requests
- */
+//! IMAP.requests
 
 #pike __REAL_VERSION__
 
@@ -33,18 +32,18 @@ class request
     {
       return ([ "action" : "bad", "tag" : tag, "msg" : msg]);
     }
-  
+
   mapping easy_process(mixed ... args);
-  
+
   array args;
   int argc;
-  
+
   mapping process(mapping s, object db, function io)
     {
       session = s;
       server = db;
       send = io;
-      
+
       return collect_args();
     }
 
@@ -66,17 +65,17 @@ class request
       args[argc++] = o;
       return collect_args();
     }
-  
+
   mapping collect_args()
     {
       if (argc == sizeof(args))
-	return easy_process(@args);	
+	return easy_process(@args);
 
       switch(((array(array(string)))arg_info)[argc][0])
       {
       case "number":
 	return parser->get_number(append_number);
-	
+
       case "string":
 	return parser->get_astring(append_arg);
 
@@ -125,11 +124,11 @@ class noop
   mapping easy_process()
     {
       array status = server->update(session);
-      
+
       if (status)
 	foreach(status, array a)
 	  send("*", @a);
-      
+
       send(tag, "OK", "NOOP done");
       server->log(session, "NOOP", "", 200);
       return ([ "action" : "finished" ]);
@@ -140,7 +139,7 @@ class capability
 {
   inherit request;
   constant arg_info = ({ });
-  
+
   mapping easy_process()
     {
       send("*", "CAPABILITY", @server->capabilities(session));
@@ -156,15 +155,15 @@ class login
   constant arg_info = ({
     ({ "astring", "Ready for user name" }),
     ({ "astring", "Ready for pass word" }) });
-  
+
   mixed uid;
   mixed get_uid() { return uid; }
-  
+
   mapping easy_process(string name, string passwd)
     {
       /* Got name and passwd. Attempt authentication. */
       uid = server->login(session, name, passwd);
-      
+
       if (!uid)
       {
 	send(tag, "NO", "LOGIN failed");
@@ -182,7 +181,7 @@ class logout
 {
   inherit request;
   constant arg_info = ({ });
-  
+
   mapping easy_process()
     {
       send("*", "BYE");
@@ -262,13 +261,13 @@ class list
     if ( (reference == "")
 	 && (lower_case(glob) == "inbox") )
       glob = "INBOX";
-      
+
     array mailboxes = server->list(session, reference, glob);
-      
+
     if (mailboxes) {
       foreach(mailboxes, array a)
 	send("*", "LIST", @a);
-      
+
       send(tag, "OK", "LIST done");
       server->log(session, "LIST", sprintf("%O:%O", reference, glob), 200);
     } else {
@@ -293,13 +292,13 @@ class lsub
       if ( (reference == "")
 	   && (lower_case(glob) == "inbox") )
 	glob = "INBOX";
-      
+
       array mailboxes = server->lsub(session, reference, glob);
-      
+
       if (mailboxes)
 	foreach(mailboxes, array a)
 	  send("*", "LSUB", @a);
-      
+
       send(tag, "OK", "LSUB done");
       server->log(session, "LSUB", sprintf("%O:%O", reference, glob), 200);
       return ([ "action" : "finished" ]);
@@ -568,7 +567,7 @@ class fetch
       break;	/* FIXME: Was FALL_THROUGH */
     case "list":
       fetch_attrs = allocate(sizeof(request->list));
-      
+
       for(int i = 0; i<sizeof(fetch_attrs); i++)
       {
 	if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
@@ -673,7 +672,7 @@ class fetch
 	werror("Insane options?\n");
 	return 0;
       }
-	
+
       if (sizeof(atom->options)) {
 	array path = atom->options[0]->atom / ".";
 
@@ -721,7 +720,7 @@ class fetch
 	&& res;
 
     res->raw_wanted = wanted;
-      
+
     res->wanted = path[0];
     res->section = path[1..];
     return (res->wanted == "rfc822") && res;
@@ -736,7 +735,7 @@ class search
   mapping easy_process(array args)
     {
       string charset = "us-ascii";
-	
+
       if (!sizeof(args))
 	return bad("No arguments to SEARCH");
 
@@ -750,18 +749,18 @@ class search
       }
 
       mapping criteria = parse_criteria(args)->parse_toplevel();
-      
+
       if (!criteria)
 	return bad("Invalid search criteria");
-      
+
       array matches = server->search(session, charset, criteria);
-      
+
       if (matches)
       {
 	send("*", "SEARCH", @matches);
     	send(tag, "OK", "SEARCH done");
 	server->log(session, "SEARCH", "", 200);
-      }  
+      }
       else {
     	send(tag, "NO", "SEARCH failed");
 	server->log(session, "SEARCH", "", 400);
@@ -769,7 +768,7 @@ class search
 
       return ([ "action" : "finished" ]);
     }
-  
+
   // Like lower_case(), but allows zeros
   string lower(string s)
     {
@@ -797,7 +796,7 @@ class search
       {
 	if (!criteria)
 	  return 0;
-      
+
 	switch(sizeof(criteria))
 	{
 	case 0:
@@ -815,7 +814,7 @@ class search
       {
 	if (!criteria)
 	  return 0;
-      
+
 	switch(sizeof(criteria))
 	{
 	case 0:
@@ -832,10 +831,10 @@ class search
       {
 	if (!criteria)
 	  return 0;
-      
+
 	return ([ "type" : "not" , "not" : criteria ]);
       }
-      
+
     mapping get_token()
       {
 	if (i == sizeof(input))
@@ -843,19 +842,19 @@ class search
 
 	return input[i++];
       }
-  
+
     string get_atom()
       {
 	if (i == sizeof(input))
 	  return 0;
 	return input[i++]->atom;
       }
-  
+
     string get_astring()
       {
 	if (i == sizeof(input))
 	  return 0;
-      
+
 	return astring(input[i++]);
       }
 
@@ -874,14 +873,14 @@ class search
       i++;
       return input[i]->atom && imap_set()->init(input[i]->atom);
     }
-	
+
     mapping parse_one()
       {
 	mapping token = get_token();
 
 	if (!token)
 	  return 0;
-      
+
 	switch(token->type)
 	{
 	case "list":
@@ -937,7 +936,7 @@ class search
 	  case "text":
 	  case "to": {
 	    string arg = get_astring();
-	  
+
 	    return arg && ([ "type" : key, key : arg ]);
 	  }
 	  /* Flag based criteria */
@@ -952,9 +951,9 @@ class search
 	    string header = get_astring();
 	    if (!header)
 	      return 0;
-	  
+
 	    string value = get_astring();
-	  
+
 	    return value && ([ "type" : key, "header" : header, "value" : value ]);
 	  }
 	  /* Criterias taking numeric values */
@@ -963,19 +962,19 @@ class search
 	    int value = get_number();
 	    return (i >= 0) && ([ "type" : key, key : value ]);
 	  }
-	  case "not": 
+	  case "not":
 	    return make_complement(parse_one());
-	    
+
 	  case "or": {
 	    mapping c1, c2;
-	    
+
 	    return (c1 = parse_one())
 	      && (c2 = parse_one())
 	      && make_union( ({ c1, c2 }) );
 	  }
 	  default: {
 	    object set = imap_set()->init(key);
-	    
+
 	    return set && ([ "type" : "set", "set" : set ]);
 	  }
 	  }
@@ -983,7 +982,7 @@ class search
 	  return 0;
 	}
       }
-  
+
     array parse_all()
       {
 	array res = ({ });
@@ -1033,13 +1032,13 @@ class find
 
     if (lower_case(glob) == "inbox")
       glob = "INBOX";
-      
+
     array mailboxes = server->list(session, "", glob);
-      
+
     if (mailboxes) {
       foreach(mailboxes, array a)
 	send("*", "MAILBOX", a[-1]);
-      
+
       send(tag, "OK", "FIND done");
       server->log(session, "FIND", sprintf("%O:%O", type, glob), 200);
     } else {

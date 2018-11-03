@@ -1,5 +1,8 @@
 AC_INIT(dynamic_module_makefile.in)
 
+AC_ARG_WITH(mpi, MY_DESCR([--with-mpi],[enable MPI suppport]),
+            [], [with_mpi=no])
+
 PIKE_RETAIN_VARIABLES()
 
 AC_SET_MAKE
@@ -11,17 +14,16 @@ MODULE_SEGMENTS=
 
 for a in `(cd $srcdir ; echo *)`
 do
-  if test "$a" != "CVS" -a "$a" != "RCS" ; then
-    if test -d "$srcdir/$a" ; then
-      if test -f "$srcdir/$a/configure.in"; then
-  	yesno=`eval echo \\$with_$a`
-  	if test "x${yesno-}" != xno ; then
-  	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
+  if test -d "$srcdir/$a" ; then
+    if test -f "$srcdir/$a/configure.in"; then
+	yesno=`echo $a | tr ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz`
+	yesno=`eval echo \\$with_$yesno`
+	if test "x${yesno-}" != xno ; then
+	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
 	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
-  	  module_names="$module_names $a"
-  	  dirs="$dirs $a"
-  	fi
-      fi
+	  module_names="$module_names $a"
+	  dirs="$dirs $a"
+	fi
     fi
   fi
 done
@@ -35,4 +37,3 @@ dependencies=$srcdir/dependencies
 AC_CONFIG_SUBDIRS($dirs)
 
 AC_OUTPUT(Makefile,[:],dirs="$module_names")
-

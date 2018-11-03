@@ -15,7 +15,7 @@
 //! float angle
 //! Pango.AttrList attributes
 //! int cursor-position
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! int justfy @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //! string label
 //! int max-width-chars
@@ -86,6 +86,11 @@ mapping get_layout_offsets( );
 
 int get_line_wrap( );
 //! Returns whether lines in the label are automatically wrapped.
+//!
+//!
+
+int get_line_wrap_mode( );
+//! Returns line wrap mode used by the label.
 //!
 //!
 
@@ -164,7 +169,7 @@ GTK2.Label set_angle( int|float angle );
 GTK2.Label set_ellipsize( int mode );
 //! Sets the mode used to ellipsize (add an ellipsis: "...") to the text if
 //! there is not enough space to render the entire string.
-//! One of .
+//! One of @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START].
 //!
 //!
 
@@ -188,6 +193,12 @@ GTK2.Label set_line_wrap( int wrap );
 //! Toggles line wrapping within the widget.  True makes it break lines if
 //! text exceeds the widget's size.  False lets the text get cut off by the
 //! edge of the widget if it exceeds the widget size.
+//!
+//!
+
+GTK2.Label set_line_wrap_mode( int wrap_mode );
+//! If line wrapping is on, this controls how the line wrapping is done.  The
+//! Default is Pango.WRAP_WORD, which means wrap on word boundaries.
 //!
 //!
 

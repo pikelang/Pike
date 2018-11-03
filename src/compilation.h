@@ -49,23 +49,23 @@
 
 #ifdef DECLARE
 #define IMEMBER(X,Y,Z) Z,
-#define STACKMEMBER(X,Y,Z) Z,
+#define STACKMEMBER(X,Y,Z) 0,
 #define ZMEMBER(X,Y,Z) Z,
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
   struct X * Y = & PIKE_CONCAT(Y,_base); \
-  struct X PIKE_CONCAT(Y,_base) = { 0, 
+  struct X PIKE_CONCAT(Y,_base) = { 0,
 #define SEND };
 #endif
 
 #ifdef PUSH
 #define IMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
       struct X *nEw; \
       nEw=ALLOC_STRUCT(X); \
-      MEMSET((char *)nEw, 0, sizeof(struct X)); \
+      memset((char *)nEw, 0, sizeof(struct X)); \
       nEw->previous=Pike_compiler;
 #define SEND \
       Pike_compiler=nEw; \
@@ -75,13 +75,13 @@
 
 
 #ifdef POP
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-    if(Pike_compiler->Y < oLd->Y) \
-      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-            PTRDIFF_T_TO_LONG(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
+  if(Pike_compiler->Y < oLd->Y) \
+    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+               (long)(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
 
 #define SNAME(X,Y) { \
       struct X *oLd=Pike_compiler->previous;
@@ -100,9 +100,9 @@
 #ifdef INIT
 #define IMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
-      MEMSET(c, 0, sizeof(struct X));		\
+      memset(c, 0, sizeof(struct X));		\
       c->previous = Pike_compiler;
 #define SEND \
       Pike_compiler = c; \
@@ -112,13 +112,13 @@
 
 
 #ifdef EXIT
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-    if(c->Y < oLd->Y) \
-      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-            PTRDIFF_T_TO_LONG(oLd->Y - c->Y), c->Y); )
+  if(c->Y < oLd->Y) \
+    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+               (long)(oLd->Y - c->Y), c->Y); )
 
 #define SNAME(X,Y) { \
     struct X *oLd = c->previous;
@@ -159,10 +159,11 @@
   ZMEMBER(int,num_parse_error,0)
   ZMEMBER(struct compiler_frame *,compiler_frame,0)
   ZMEMBER(INT32,num_used_modules,0)
-  IMEMBER(int,compiler_pass,0)
+  IMEMBER(int, compiler_pass, COMPILER_PASS_NONE)
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
+  ZMEMBER(node *,current_attributes,0)
   ZMEMBER(int,varargs,0)
   ZMEMBER(int, num_create_args, 0)
   ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */

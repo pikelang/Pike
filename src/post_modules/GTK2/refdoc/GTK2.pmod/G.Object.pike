@@ -6,23 +6,20 @@
 //! @b{notify@}
 //!
 
+protected G.Object _destruct( );
+//! Destroy this object. This is the normal way to (eg) close a
+//! window - simply call destruct(obj) and it will be destroyed.
+//!
+//!
+
 G.Object accel_groups_activate( int accel_key, int accel_mods );
 //! Finds the first accelerator in an GTK.AccelGroup attached to this object
 //! that matches accel_key and accel_mods, and activates that accelerator.
 //!
 //!
 
-G.Object destroy( );
-//! Destroy this object. This is the normal way to (eg) close a window.
-//!
-//!
-
 object get_data( string name );
-//! Each object carries around a table of associations from strings to
-//! pointers. This function lets you set an association. 
-//!
-//! If the object already had an association with that name, the old
-//! association will be destroyed.
+//! Gets a named field from the object.
 //!
 //!
 
@@ -33,6 +30,11 @@ string get_docs( );
 
 mixed get_property( string property );
 //! Get a property.
+//!
+//!
+
+int is_floating( );
+//! Checks whether this object has a floating reference.
 //!
 //!
 
@@ -47,7 +49,11 @@ G.Object notify( string property );
 //!
 
 object set_data( string name, mixed arg );
-//! Gets a named field from the object.
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association.
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
 //!
 //!
 
@@ -85,6 +91,11 @@ G.Object signal_disconnect( int signal_id );
 
 G.Object signal_emit( string signal_name, string|void detail );
 //! Send the current named signal.
+//!
+//!
+
+G.Object signal_stop( string signal_name );
+//! Stop the emission of a signal.
 //!
 //!
 

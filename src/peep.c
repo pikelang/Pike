@@ -6,7 +6,7 @@
 
 #include "global.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
+#include "buffer.h"
 #include "program.h"
 #include "las.h"
 #include "docode.h"
@@ -15,16 +15,14 @@
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
-#include "dmalloc.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "opcodes.h"
 #include "builtin_functions.h"
 #include "constants.h"
 #include "interpret.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
-#ifdef PIKE_DEBUG
 static int hasarg(int opcode)
 {
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
@@ -47,19 +45,19 @@ static void dump_instr(p_instr *p)
     fprintf(stderr,")");
   }
 }
-#endif
 
 
 static int asm_opt(void);
 
 /* Output buffer. The optimization eye is at the end of the buffer. */
-dynamic_buffer instrbuf;
+struct byte_buffer instrbuf;
 long num_instrs = 0;
 
 
 void init_bytecode(void)
 {
-  initialize_buf(&instrbuf);
+  buffer_init(&instrbuf);
+  buffer_ensure_space(&instrbuf, 512);
   num_instrs = 0;
 }
 
@@ -68,8 +66,8 @@ void exit_bytecode(void)
   ptrdiff_t e, length;
   p_instr *c;
 
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
   for(e=0;e<length;e++) {
     free_string(dmalloc_touch_named(struct pike_string *, c[e].file,
@@ -78,8 +76,8 @@ void exit_bytecode(void)
     c[e].file = (void *)(ptrdiff_t)~0;
 #endif
   }
-  
-  toss_buffer(&instrbuf);
+
+  buffer_free(&instrbuf);
 }
 
 /* insert_opcode{,0,1,2}() append an opcode to the instrbuf. */
@@ -87,11 +85,11 @@ void exit_bytecode(void)
 ptrdiff_t insert_opcode(p_instr *opcode)
 {
   /* Note: Steals references from opcode. */
-  p_instr *p = (p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
+  p_instr *p = (p_instr *)buffer_alloc(&instrbuf, sizeof(p_instr));
   if (!p) Pike_fatal("Out of memory in peep.\n");
   *p = *opcode;
   num_instrs++;
-  return p - (p_instr *)instrbuf.s.str;
+  return p - (p_instr *)buffer_ptr(&instrbuf);
 }
 
 ptrdiff_t insert_opcode2(unsigned int f,
@@ -107,11 +105,11 @@ ptrdiff_t insert_opcode2(unsigned int f,
     Pike_fatal("hasarg2(%d) is wrong!\n",f);
 #endif
 
-  p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
+  p=(p_instr *)buffer_alloc(&instrbuf, sizeof(p_instr));
 
 
 #ifdef PIKE_DEBUG
-  if(!instrbuf.s.len)
+  if(!buffer_content_length(&instrbuf))
     Pike_fatal("Low make buf space failed!!!!!!\n");
 #endif
 
@@ -123,7 +121,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
   p->arg=b;
   p->arg2=c;
 
-  return p - (p_instr *)instrbuf.s.str;
+  return p - (p_instr *)buffer_ptr(&instrbuf);
 }
 
 ptrdiff_t insert_opcode1(unsigned int f,
@@ -154,10 +152,10 @@ void update_arg(int instr,INT32 arg)
 {
   p_instr *p;
 #ifdef PIKE_DEBUG
-  if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
+  if(instr > (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr) || instr < 0)
     Pike_fatal("update_arg outside known space.\n");
-#endif  
-  p=(p_instr *)instrbuf.s.str;
+#endif
+  p=(p_instr *)buffer_ptr(&instrbuf);
   p[instr].arg=arg;
 }
 
@@ -174,9 +172,7 @@ INT32 assemble(int store_linenumbers)
   INT32 *labels, *jumps, *uses, *aliases;
   ptrdiff_t e, length;
   p_instr *c;
-#ifdef PIKE_PORTABLE_BYTECODE
-  struct pike_string *tripples = NULL;
-#endif /* PIKE_PORTABLE_BYTECODE */
+  struct pike_string *triples = NULL;
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
   int synch_depth = 0;
@@ -184,9 +180,12 @@ INT32 assemble(int store_linenumbers)
 #endif
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
+  struct lex *lex;
+  CHECK_COMPILER();
+  lex = &THIS_COMPILATION->lex;
 
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
 #ifdef PIKE_DEBUG
   if((a_flag > 1 && store_linenumbers) || a_flag > 2)
@@ -194,7 +193,7 @@ INT32 assemble(int store_linenumbers)
     for (e = 0; e < length; e++) {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "~~~%4ld %4lx %*s", (long)c[e].line,
-	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
+              (unsigned long)e, synch_depth, "");
       dump_instr(c+e);
       fprintf(stderr,"\n");
       if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
@@ -205,10 +204,9 @@ INT32 assemble(int store_linenumbers)
   }
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
   /* No need to do this for constant evaluations. */
   if (store_linenumbers) {
-    p_wchar2 *current_tripple;
+    p_wchar2 *current_triple;
     struct pike_string *previous_file = NULL;
     INT_TYPE previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
@@ -229,51 +227,53 @@ INT32 assemble(int store_linenumbers)
     /* fprintf(stderr, "length:%d directives:%d\n",
      *         length, num_linedirectives);
      */
-      
-    if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
+
+    if (!(triples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
       Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
 		 3*(length+num_linedirectives), length, num_linedirectives);
     }
     previous_file = NULL;
     previous_line = 0;
-    current_tripple = STR2(tripples);
+    current_triple = STR2(triples);
     for (e = 0; e < length; e++) {
       if (c[e].file != previous_file) {
-	current_tripple[0] = F_FILENAME;
-	current_tripple[1] =
+	current_triple[0] = F_FILENAME;
+	current_triple[1] =
 	  store_prog_string(dmalloc_touch_named(struct pike_string *,
 						c[e].file,
 						"store_prog_string"));
-	current_tripple[2] = 0;
-	current_tripple += 3;
+	current_triple[2] = 0;
+	current_triple += 3;
 	previous_file = dmalloc_touch_named(struct pike_string *,
 					    c[e].file, "prev_file");
       }
       if (c[e].line != previous_line) {
-	current_tripple[0] = F_LINE;
-	current_tripple[1] = c[e].line;
-	current_tripple[2] = c[e].line>>32;
-	current_tripple += 3;
+	current_triple[0] = F_LINE;
+	current_triple[1] = c[e].line;
+#if SIZEOF_INT_TYPE > 4
+	current_triple[2] = c[e].line>>32;
+#else
+        current_triple[2] = 0;
+#endif
+	current_triple += 3;
 	previous_line = c[e].line;
       }
-      current_tripple[0] = c[e].opcode;
-      current_tripple[1] = c[e].arg;
-      current_tripple[2] = c[e].arg2;
-      current_tripple += 3;
+      current_triple[0] = c[e].opcode;
+      current_triple[1] = c[e].arg;
+      current_triple[2] = c[e].arg2;
+      current_triple += 3;
     }
 #ifdef PIKE_DEBUG
-    if (current_tripple != STR2(tripples) + 3*(length + num_linedirectives)) {
-      Pike_fatal("Tripple length mismatch %d != %d 3*(%d + %d)\n",
-		 current_tripple - STR2(tripples),
+    if (current_triple != STR2(triples) + 3*(length + num_linedirectives)) {
+      Pike_fatal("Triple length mismatch %d != %d 3*(%d + %d)\n",
+		 current_triple - STR2(triples),
 		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
     }
 #endif /* PIKE_DEBUG */
-    tripples = end_shared_string(tripples);
+    triples = end_shared_string(triples);
   }
-  
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
     if(c->opcode == F_LABEL) {
@@ -294,11 +294,11 @@ INT32 assemble(int store_linenumbers)
 	    "Reference to undefined label %d > %d\n"
 	    "Bad instructions are marked with '***':\n",
 	    max_pointer, max_label);
-    c=(p_instr *)instrbuf.s.str;
+    c=(p_instr *)buffer_ptr(&instrbuf);
     for(e=0;e<length;e++,c++) {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, " * %4ld %4lx ",
-	      (long)c->line, DO_NOT_WARN((unsigned long)e));
+              (long)c->line, (unsigned long)e);
       dump_instr(c);
       if ((instrs[c->opcode - F_OFFSET].flags & I_POINTER) &&
 	  (c->arg > max_label)) {
@@ -308,7 +308,7 @@ INT32 assemble(int store_linenumbers)
       }
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
-    
+
     Pike_fatal("Reference to undefined label %d > %d\n",
 	       max_pointer, max_label);
   }
@@ -316,40 +316,38 @@ INT32 assemble(int store_linenumbers)
 
 #ifndef INS_ENTRY
   /* Replace F_ENTRY with F_NOP if we have no entry prologue. */
-  for (c = (p_instr *) instrbuf.s.str, e = 0; e < length; e++, c++)
+  for (c = (p_instr *) buffer_ptr(&instrbuf), e = 0; e < length; e++, c++)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
 #endif
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * 4 * (max_label+2));
+  labels=xalloc(sizeof(INT32) * 4 * (max_label+2));
   jumps = labels + max_label + 2;
-  uses = jumps + max_label + 2;
-  aliases = uses + max_label + 2;
+  aliases = jumps + max_label + 2;
+  uses = aliases + max_label + 2;
   while(relabel)
   {
     /* First do the relabel pass. */
-    for(e=0;e<=max_label;e++)
-    {
-      labels[e]=jumps[e]= aliases[e] = -1;
-      uses[e]=0;
-    }
-    
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    /* Set labels, jumps and aliases to all -1. */
+    memset(labels, 0xff, ((max_label + 2) * 3) * sizeof(INT32));
+    memset(uses, 0x00, (max_label + 2) * sizeof(INT32));
+
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0) {
 	INT32 l = c[e].arg;
-	labels[l]=DO_NOT_WARN((INT32)e);
+        labels[l]=(INT32)e;
 	while (e+1 < length &&
 	       c[e+1].opcode == F_LABEL && c[e+1].arg >= 0) {
 	  /* aliases is used to compact several labels at the same
 	   * position to one label. That's necessary for some peep
 	   * optimizations to work well. */
 	  e++;
-	  labels[c[e].arg] = DO_NOT_WARN((INT32)e);
+          labels[c[e].arg] = (INT32)e;
 	  aliases[c[e].arg] = l;
 	}
       }
-    
+
     for(e=0;e<length;e++)
     {
       if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
@@ -360,39 +358,41 @@ INT32 assemble(int store_linenumbers)
 	{
 	  int tmp;
 	  tmp=labels[c[e].arg];
-	  
+
 	  while(tmp<length &&
 		(c[tmp].opcode == F_LABEL ||
 		 c[tmp].opcode == F_NOP)) tmp++;
-	  
+
 	  if(tmp>=length) break;
-	  
+
 	  if(c[tmp].opcode==F_BRANCH)
 	  {
 	    c[e].arg=c[tmp].arg;
 	    continue;
 	  }
-	  
+
 #define TWOO(X,Y) (((X)<<8)+(Y))
-	  
+
 	  switch(TWOO(c[e].opcode,c[tmp].opcode))
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
+	      /* FALLTHRU */
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
+	      /* FALLTHRU */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LOR, F_RETURN):
 	      c[e].opcode=F_RETURN_IF_TRUE;
 	      goto pointer_opcode_done;
-	      
+
 	    case TWOO(F_BRANCH, F_RETURN):
 	    case TWOO(F_BRANCH, F_RETURN_0):
 	    case TWOO(F_BRANCH, F_RETURN_1):
@@ -418,7 +418,7 @@ INT32 assemble(int store_linenumbers)
       }
     pointer_opcode_done:;
     }
-    
+
     for(e=0;e<=max_label;e++)
     {
       if(!uses[e] && labels[e]>=0)
@@ -459,8 +459,8 @@ INT32 assemble(int store_linenumbers)
   }
 
   /* Time to create the actual bytecode. */
-  c=(p_instr *)instrbuf.s.str;
-  length=instrbuf.s.len / sizeof(p_instr);
+  c=(p_instr *)buffer_ptr(&instrbuf);
+  length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
 
@@ -469,24 +469,17 @@ INT32 assemble(int store_linenumbers)
   START_NEW_FUNCTION(store_linenumbers);
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
   while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
 #endif
 
   if (store_linenumbers) {
-    ins_data(store_prog_string(tripples));
-    free_string(tripples);
+    ins_data(store_prog_string(triples));
+    free_string(triples);
   } else {
     ins_data(0);
   }
-#else
-#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( ((INT32) PIKE_PC) & (ALIGN_PIKE_JUMPS-1)))
-    ins_byte(0);
-#endif
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   entry_point = PIKE_PC;
 
@@ -496,22 +489,36 @@ INT32 assemble(int store_linenumbers)
   FLUSH_CODE_GENERATOR_STATE();
   for(e=0;e<length;e++)
   {
+#ifdef DISASSEMBLE_CODE
+    size_t opcode_start = PIKE_PC;
+#endif
 #ifdef PIKE_DEBUG
-    if (c != (((p_instr *)instrbuf.s.str)+e)) {
+    if (c != (((p_instr *)buffer_ptr(&instrbuf))+e)) {
       Pike_fatal("Instruction loop deviates. "
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
-		 e, c - ((p_instr *)instrbuf.s.str));
-    }
-    if((a_flag > 2 && store_linenumbers) || a_flag > 3)
-    {
-      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
-	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
-      dump_instr(c);
-      fprintf(stderr,"\n");
-      if (c->opcode == F_SYNCH_MARK) synch_depth++;
+		 e, c - ((p_instr *)buffer_ptr(&instrbuf)));
     }
 #endif
+    if(
+#ifdef PIKEDEBUG
+       ((a_flag > 2) && store_linenumbers) ||
+       (a_flag > 3) ||
+#endif
+       (lex->pragmas & ID_DISASSEMBLE))
+    {
+#ifdef PIKE_DEBUG
+      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
+              (unsigned long)PIKE_PC, synch_depth, "");
+#else
+      fprintf(stderr, "===%4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
+#endif
+      dump_instr(c);
+      fprintf(stderr,"\n");
+#ifdef PIKE_DEBUG
+      if (c->opcode == F_SYNCH_MARK) synch_depth++;
+#endif
+    }
 
     if(store_linenumbers) {
       store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
@@ -525,9 +532,13 @@ INT32 assemble(int store_linenumbers)
 
     switch(c->opcode)
     {
+    case F_START_FUNCTION:
+#ifdef INS_START_FUNCTION
+      INS_START_FUNCTION();
+#endif
+      break;
     case F_NOP:
     case F_NOTREACHED:
-    case F_START_FUNCTION:
       break;
     case F_ALIGN:
       ins_align(c->arg);
@@ -562,10 +573,10 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("max_label calculation failed!\n");
 
       if(labels[c->arg] != -1)
-	Pike_fatal("Duplicate label!\n");
+	Pike_fatal("Duplicate label %d!\n", c->arg);
 #endif
       FLUSH_CODE_GENERATOR_STATE();
-      labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
+      labels[c->arg] = (INT32)PIKE_PC;
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
 	  (c[1].opcode != F_BYTE) &&
@@ -586,7 +597,7 @@ INT32 assemble(int store_linenumbers)
       if(c->arg > max_label || c->arg < 0)
 	Pike_fatal("Jump to unknown label?\n");
 #endif
-      tmp = DO_NOT_WARN((INT32)PIKE_PC);
+      tmp = (INT32)PIKE_PC;
       ins_pointer(jumps[c->arg]);
       jumps[c->arg]=tmp;
       break;
@@ -611,7 +622,7 @@ INT32 assemble(int store_linenumbers)
 	if(c->arg > max_label || c->arg < 0)
 	  Pike_fatal("Jump to unknown label?\n");
 #endif
-	tmp = DO_NOT_WARN((INT32)PIKE_PC);
+        tmp = (INT32)PIKE_PC;
 	ins_pointer(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
@@ -637,8 +648,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_TWO_ARGS */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */
@@ -668,8 +679,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_ARG */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */
@@ -690,6 +701,14 @@ INT32 assemble(int store_linenumbers)
 #endif
       }
     }
+
+#ifdef DISASSEMBLE_CODE
+    if((lex->pragmas & ID_DISASSEMBLE) && PIKE_PC > opcode_start)
+    {
+        DISASSEMBLE_CODE(Pike_compiler->new_program->program + opcode_start,
+                         (PIKE_PC - opcode_start)*sizeof(PIKE_OPCODE_T));
+    }
+#endif
 
 #ifdef PIKE_DEBUG
     if (instrs[c->opcode - F_OFFSET].flags & I_HASPOINTER) {
@@ -720,11 +739,11 @@ INT32 assemble(int store_linenumbers)
 	case F_RETURN_0:
 	case F_RETURN_1:
 	case F_RETURN_LOCAL:
-	  
+
 #define CALLS(X) \
       case PIKE_CONCAT3(F_,X,_AND_RETURN): \
       case PIKE_CONCAT3(F_MARK_,X,_AND_RETURN):
-	  
+
 	  CALLS(APPLY)
 	    CALLS(CALL_FUNCTION)
 	    CALLS(CALL_LFUN)
@@ -734,7 +753,7 @@ INT32 assemble(int store_linenumbers)
       }
     }
 #endif
-    
+
     c++;
   }
 
@@ -747,8 +766,7 @@ INT32 assemble(int store_linenumbers)
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
 	Pike_fatal("Hyperspace error: unknown jump point %ld(%ld) at %d (pc=%x).\n",
-		   PTRDIFF_T_TO_LONG(e), PTRDIFF_T_TO_LONG(max_label),
-		   labels[e], jumps[e]);
+                   (long)e, (long)max_label, labels[e], jumps[e]);
 #endif
 #ifdef INS_F_JUMP
       if(jumps[e] < 0)
@@ -766,7 +784,7 @@ INT32 assemble(int store_linenumbers)
     }
   }
 
-  free((char *)labels);
+  free(labels);
 
 #ifdef END_FUNCTION
   END_FUNCTION(store_linenumbers);
@@ -796,9 +814,9 @@ INT32 assemble(int store_linenumbers)
 /**** Peephole optimizer ****/
 
 static void do_optimization(int topop, int topush, ...);
-static INLINE int opcode(int offset);
-static INLINE int argument(int offset);
-static INLINE int argument2(int offset);
+static inline int opcode(int offset);
+static inline int argument(int offset);
+static inline int argument2(int offset);
 
 #include "peep_engine.c"
 
@@ -818,7 +836,7 @@ static p_instr *instructions;
 
 /* insopt{0,1,2} push an instruction on instrstack. */
 
-static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
+static inline p_instr *insopt2(int f, INT32 a, INT32 b,
 			       INT_TYPE cl, struct pike_string *cf)
 {
   p_instr *p;
@@ -845,7 +863,7 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
   return p;
 }
 
-static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
+static inline p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
 			       struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
@@ -856,7 +874,7 @@ static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
   return insopt2(f,a,0,cl, cf);
 }
 
-static INLINE p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
+static inline p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -868,14 +886,14 @@ static INLINE p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 #ifdef PIKE_DEBUG
 static void debug(void)
 {
-  if (num_instrs != (long)instrbuf.s.len / (long)sizeof(p_instr)) {
+  if (num_instrs != (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr)) {
     Pike_fatal("PEEP: instrbuf lost count (%d != %d)\n",
-	       num_instrs, (long)instrbuf.s.len / (long)sizeof(p_instr));
+	       num_instrs, (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr));
   }
-  if(instrbuf.s.len)
+  if(buffer_content_length(&instrbuf))
   {
     p_instr *p;
-    p=(p_instr *)low_make_buf_space(0, &instrbuf);
+    p=(p_instr *)buffer_dst(&instrbuf);
     if(!p[-1].file)
       Pike_fatal("No file name on last instruction!\n");
   }
@@ -886,13 +904,13 @@ static void debug(void)
 
 
 /* Offset from the end of instrbuf backwards. */
-static INLINE p_instr *instr(int offset)
+static inline p_instr *instr(int offset)
 {
   if (offset >= num_instrs) return NULL;
-  return ((p_instr *)low_make_buf_space(0, &instrbuf)) - (offset + 1);
+  return ((p_instr *)buffer_dst(&instrbuf)) - (offset + 1);
 }
 
-static INLINE int opcode(int offset)
+static inline int opcode(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -900,7 +918,7 @@ static INLINE int opcode(int offset)
   return -1;
 }
 
-static INLINE int argument(int offset)
+static inline int argument(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -908,7 +926,7 @@ static INLINE int argument(int offset)
   return -1;
 }
 
-static INLINE int argument2(int offset)
+static inline int argument2(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -943,13 +961,13 @@ static void pop_n_opcodes(int n)
     Pike_fatal("Popping out of instructions.\n");
 #endif
 
-  p = ((p_instr *)low_make_buf_space(0, &instrbuf)) - n;
+  p = ((p_instr *)buffer_dst(&instrbuf)) - n;
   for (e = 0; e < n; e++) {
     free_string(dmalloc_touch_named(struct pike_string *, p[e].file,
 				    "pop_n_opcodes"));
   }
   num_instrs -= n;
-  low_make_buf_space(-((INT32)sizeof(p_instr))*n, &instrbuf);
+  buffer_remove(&instrbuf, sizeof(p_instr)*n);
 }
 
 
@@ -992,7 +1010,7 @@ static void do_optimization(int topop, int topush, ...)
   pop_n_opcodes(topop);
 
   va_start(arglist, topush);
-  
+
   while((oplen = va_arg(arglist, int)))
   {
     q++;
@@ -1072,8 +1090,8 @@ static int asm_opt(void)
     ptrdiff_t e, length;
     int synch_depth = 0;
 
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
     fprintf(stderr,"Before peep optimization:\n");
     for(e=0;e<length;e++,c++)
@@ -1087,9 +1105,8 @@ static int asm_opt(void)
   }
 #endif
 
-  len=instrbuf.s.len/sizeof(p_instr);
-  instructions=(p_instr *)instrbuf.s.str;
-  instrbuf.s.str=0;
+  len=buffer_content_length(&instrbuf)/sizeof(p_instr);
+  instructions=(p_instr *)buffer_ptr(&instrbuf);
   init_bytecode();
 
   for(eye = 0; advance();)
@@ -1097,9 +1114,7 @@ static int asm_opt(void)
 #ifdef PIKE_DEBUG
     if(a_flag>6) {
       int e;
-      fprintf(stderr, "#%ld,%ld:",
-              DO_NOT_WARN((long)eye),
-              stack_depth);
+      fprintf(stderr, "#%ld,%ld:", (long)eye, stack_depth);
       for(e = 4;e--;) {
         fprintf(stderr," ");
         dump_instr(instr(e));
@@ -1112,7 +1127,7 @@ static int asm_opt(void)
     relabel |= low_asm_opt();
   }
 
-  free((char *)instructions);
+  free(instructions);
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)
@@ -1121,8 +1136,8 @@ static int asm_opt(void)
     ptrdiff_t e, length;
     int synch_depth = 0;
 
-    c=(p_instr *)instrbuf.s.str;
-    length=instrbuf.s.len / sizeof(p_instr);
+    c=(p_instr *)buffer_ptr(&instrbuf);
+    length=buffer_content_length(&instrbuf) / sizeof(p_instr);
 
     fprintf(stderr,"After peep optimization:\n");
     for(e=0;e<length;e++,c++)

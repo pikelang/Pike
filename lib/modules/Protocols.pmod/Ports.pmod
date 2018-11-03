@@ -4,9 +4,12 @@
  * Henrik Grubbström 1998-06-23
  */
 
+//! A list of named ports.
+//! This is similar to /etc/services.
+
 #pike __REAL_VERSION__
 
-// Contains all UDP ports assigned for private use as of RFC 1700
+//! Contains all UDP ports assigned for private use as of @rfc{1700@}.
 constant private_udp = ([
   "mail":              24,	//    any private mail system
   "printer":           35,	//    any private printer server
@@ -17,7 +20,7 @@ constant private_udp = ([
   "terminal-link":     87,	//    any private terminal link
 ]);
 
-// Contains all TCP ports assigned for private use as of RFC 1700
+//! Contains all TCP ports assigned for private use as of @rfc{1700@}.
 constant private_tcp = ([
   "mail":              24,	//    any private mail system
   "printer":           35,	//    any private printer server
@@ -28,7 +31,7 @@ constant private_tcp = ([
   "terminal-link":     87,	//    any private terminal link
 ]);
 
-// Contains all non-private UDP port assignments as of RFC 1700
+//! Contains all non-private UDP port assignments as of @rfc{1700@}.
 constant udp = ([
   "tcpmux":             1,	//    TCP Port Service Multiplexer
   "compressnet-mgmt":   2,	//    Management Utility
@@ -87,6 +90,7 @@ constant udp = ([
   "finger":            79,	//    Finger
   "www-http":          80,	//    World Wide Web HTTP
   "http":              80,	//    World Wide Web HTTP
+  "ws":                80,      //    WebSockets
   "hosts2-ns":         81,	//    HOSTS2 Name Server
   "xfer":              82,	//    XFER Utility
   "mit-ml-dev":        83,	//    MIT ML Device
@@ -307,6 +311,7 @@ constant udp = ([
   "decvms-sysmgt":    441,	//    decvms-sysmgt
   "cvc_hostd":        442,	//    cvc_hostd
   "https":            443,	//    https  MCom
+  "wss":              443,      //    Secure WebSocket
   "snpp":             444,	//    Simple Network Paging Protocol
   "microsoft-ds":     445,	//    Microsoft-DS
   "ddm-rdb":          446,	//    DDM-RDB
@@ -705,8 +710,8 @@ constant udp = ([
   "isode-dua":      17007,	//
 ]);
 
-// Contains all non-private TCP port assignments as of RFC 1700
-// Extended with some non-official.
+//! Contains all non-private TCP port assignments as of @rfc{1700@}.
+//! Extended with some non-official.
 constant tcp = ([
   "tcpmux":           	1,	//    TCP Port Service Multiplexer
   "compressnet-mgmt": 	2,	//    Management Utility
@@ -767,6 +772,7 @@ constant tcp = ([
   "finger":            79,	//    Finger
   "www-http":          80,	//    World Wide Web HTTP
   "http":              80,	//    World Wide Web HTTP
+  "ws":                80,      //    WebSockets
   "hosts2-ns":         81,	//    HOSTS2 Name Server
   "xfer":              82,	//    XFER Utility
   "mit-ml-dev":        83,	//    MIT ML Device
@@ -990,6 +996,7 @@ constant tcp = ([
   "decvms-sysmgt":    441,	//    decvms-sysmgt
   "cvc_hostd":        442,	//    cvc_hostd
   "https":            443,	//    https  MCom
+  "wss":              443,      //    Secure WebSockets
   "snpp":             444,	//    Simple Network Paging Protocol
   "microsoft-ds":     445,	//    Microsoft-DS
   "ddm-rdb":          446,	//    DDM-RDB
@@ -1400,3 +1407,80 @@ constant tcp = ([
   "man":             9535,	//
   "isode-dua":      17007,	//
 ]);
+
+
+//! A single service registration. Used as the return value for the
+//! @[lookup] method.
+class Service(string name, int port, string protocol, string comment)
+{
+    protected string _sprintf(int flag) {
+        if( flag == 'O' )
+            return "Service("+name+" "+port+"/"+protocol+")";
+        if( flag == 'd' )
+            return (string)port;
+        return name;
+    }
+    protected  bool `<(Service x ) {
+        if( objectp(x) ) return x->port < port ? 1 : x->protocol > protocol;
+    }
+    protected bool `==(Service x) {
+        if( objectp(x) ) return x->port == port && x->name == name && x->protocol == protocol;
+    }
+    protected int __hash() { return hash(name); }
+}
+
+
+
+//! If @[name] is not an indentifier in this module, return the first
+//! matching protocol.  This would be the first element in the array
+//! returned by @[lookup]
+Service|mixed `[](string name )
+{
+    if( mixed res = predef::`->(this,name))
+        return res;
+    array x = lookup(name);
+    if( sizeof(x) )
+        return x[0];
+    return 0;
+}
+
+private mapping(string:array(Service)) services = ([]);
+
+//! Return all ports registered for the specified name
+//! This function also reads data from /etc/services if possible.
+array(Service) lookup( string name )
+{
+    if( !sizeof( services ) && file_stat("/etc/services") )
+    {
+        foreach( (Stdio.read_file("/etc/services")||"")/"\n", string l )
+        {
+            sscanf( l, "%s#", l );
+            l = String.trim(l);
+            array tk  = replace(l,"\t", " ")/" "-({""});
+            if( sizeof( tk ) > 1 && has_value( tk[1],"/") )
+                services[tk[0]] += ({ Service(tk[0],(int)(tk[1]/"/")[0],(tk[1]/"/")[1], tk[2..]*" ") });
+        }
+    }
+    array x = ({});
+    if( services[name] )
+        x+= services[name];
+    if( tcp[name] )
+        x+=({Service(name,tcp[name],"tcp","")});
+    else if( private_tcp[name] )
+        x+=({Service(name,private_tcp[name],"tcp","")});
+    if( udp[name] )
+        x+=({Service(name,tcp[name],"udp","")});
+    else if( private_udp[name] )
+        x+=({Service(name,private_udp[name],"udp","")});
+    return sort(Array.uniq(x));
+}
+
+//! Return the first port registered for the specified name (the
+//! lowest numbered tcp port, or if there is no tcp ports, the lowest
+//! numbered udp port)
+int port( string name )
+{
+    array possible = lookup(name);
+    if( sizeof( possible ) )
+        return possible[0]->port;
+}

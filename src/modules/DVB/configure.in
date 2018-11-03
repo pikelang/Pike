@@ -29,13 +29,13 @@ dnl some better way: FIXME!!1!¡ /Mirar
 
   dnl Checking for version 2+ API
   AC_CHECK_HEADERS(linux/dvb/version.h,
-      [[ 
+      [[
         AC_CHECK_HEADERS(linux/dvb/sec.h,
 	      [PIKE_FEATURE(DVB,[yes (version 2 api)])],
 	      [PIKE_FEATURE(DVB,[no (missing linux/dvb/sec.h - version 3 api?)]) ])
       ]])
 
-	  
+
   AC_CHECK_HEADERS(ost/frontend.h,
       [ PIKE_FEATURE(DVB,[yes (version 1 api)]) ])
 

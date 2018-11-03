@@ -83,7 +83,7 @@ int closed()
   return con->closed;
 }
 
-void destroy()
+protected void _destruct()
 {
   catch (con->close());
 }

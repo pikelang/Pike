@@ -1,10 +1,7 @@
 #pike __REAL_VERSION__
+#require constant(ADT._CritBit)
 
 //! @ignore
-#if !constant (ADT._CritBit)
-constant this_program_does_not_exist = 1;
-#else
-
 inherit ADT._CritBit : C;
 //! @endignore
 
@@ -164,7 +161,7 @@ class RangeSet {
 
     //! Create a RangeSet from a given tree program.
     void create(function|object|program tree) {
-	this_program::tree = objectp(tree) ? tree : tree();
+	this::tree = objectp(tree) ? tree : tree();
     }
 
     mixed `[](mixed key) {
@@ -274,7 +271,7 @@ class MultiRangeSet {
     int|float max_len;
 
     void create(function|program|object tree) {
-	this_program::tree = objectp(tree) ? tree : tree();
+	this::tree = objectp(tree) ? tree : tree();
     }
 
     mixed `[](mixed key) {
@@ -391,8 +388,8 @@ class Reverse(object tree) {
 	return tree->nth(sizeof(tree)-n);
     }
 
-    mixed _random() {
-	return random(tree);
+    mixed _random(function rnd_str, function rnd) {
+        return rnd(tree);
     }
 
     int(0..) depth() {
@@ -507,9 +504,10 @@ class MultiTree {
 	return m_delete(tree(idx), idx);
     }
 
-    mixed _random() {
-	int n = random(sizeof(this));
-	return nth(n);
+    mixed _random(function rnd_str, function rnd) {
+        int n = sizeof(this);
+        if (!n) return UNDEFINED;
+	return nth(rnd(n));
     }
 
     int first() {
@@ -599,13 +597,13 @@ class MultiTree {
 	}
 	return ret;
     }
-	
+
     class MultiIterator {
 	array oit, it;
 
 	void create(int step, mixed|void start, mixed|void stop) {
-	    int i = zero_type(start) ? 0 : itree(start);
-	    int j = zero_type(stop) ? sizeof(trees)-1 : itree(stop);
+	    int i = undefinedp(start) ? 0 : itree(start);
+	    int j = undefinedp(stop) ? sizeof(trees)-1 : itree(stop);
 
 	    array t = trees[i..j];
 	    j = sizeof(t);
@@ -619,8 +617,8 @@ class MultiTree {
 		t[-1] = t[-1]->_get_iterator(step, start);
 	    }
 
-	    this_program::oit = t;
-	    this_program::it = t + ({ });
+	    this::oit = t;
+	    this::it = t + ({ });
 	}
 
 	int(0..1) `!() {
@@ -664,5 +662,3 @@ class IntTree {
     }
 }
 #endif // constant(ADT._CritBit.BigNumTree)
-
-#endif // constant(ADT._CritBit)

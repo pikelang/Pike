@@ -10,6 +10,7 @@
 //! int decorated
 //! int default-height
 //! int default-width
+//! int deletable
 //! int destroy-with-parent
 //! int focus-on-map
 //! int gravity @[GDK_GRAVITY_CENTER], @[GDK_GRAVITY_EAST], @[GDK_GRAVITY_NORTH], @[GDK_GRAVITY_NORTH_EAST], @[GDK_GRAVITY_NORTH_WEST], @[GDK_GRAVITY_SOUTH], @[GDK_GRAVITY_SOUTH_EAST], @[GDK_GRAVITY_SOUTH_WEST], @[GDK_GRAVITY_STATIC] and @[GDK_GRAVITY_WEST]
@@ -18,12 +19,15 @@
 //! string icon-name
 //! int is-active
 //! int modal
+//! float opacity
 //! int resizable
 //! string role
 //! GDK2.Screen screen
 //! int skip-pager-hint
 //! int skip-taskbar-hint
+//! string startup-id
 //! string title
+//! GTK2.Window transient-for
 //! int type @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL]
 //! int type-hint @[GDK_WINDOW_TYPE_HINT_DESKTOP], @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_DOCK], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL], @[GDK_WINDOW_TYPE_HINT_SPLASHSCREEN], @[GDK_WINDOW_TYPE_HINT_TOOLBAR] and @[GDK_WINDOW_TYPE_HINT_UTILITY]
 //! int urgency-hint
@@ -117,6 +121,11 @@ mapping get_default_size( );
 //!
 //!
 
+int get_deletable( );
+//! Returns whether the window has been set to have a close button.
+//!
+//!
+
 int get_destroy_with_parent( );
 //! Returns whether the window will be destroyed with its transient parent.
 //!
@@ -135,8 +144,13 @@ int get_focus_on_map( );
 //!
 //!
 
-GTK2.Window get_gravity( );
+int get_gravity( );
 //! Gets the value set by set_gravity().
+//!
+//!
+
+GTK2.WindowGroup get_group( );
+//! Returns the group for this widget or the default group.
 //!
 //!
 
@@ -162,6 +176,11 @@ int get_mnemonic_modifier( );
 
 int get_modal( );
 //! Returns whether the window is modal.
+//!
+//!
+
+float get_opacity( );
+//! Fetches the requested opacity.
 //!
 //!
 
@@ -374,7 +393,7 @@ GTK2.Window set_default( GTK2.Widget child );
 //! The default widget is the widget that's activated when the user presses
 //! Enter in a dialog (for example).  This function sets or unsets the default
 //! widget.  When setting (rather than unsetting) the default widget it's
-//! generally easier to call GTK2.Widget->grab_focus() on the widget.
+//! generally easier to call GTK2.Widget->grab_default() on the widget.
 //!
 //!
 
@@ -406,6 +425,20 @@ GTK2.Window set_default_size( int width, int height );
 //! 
 //! Window scan't actually be 0x0 in size, they must be at least 1x1, but
 //! passing 0 for width and height is OK, resulting in a 1x1 default size.
+//!
+//!
+
+GTK2.Window set_deletable( int setting );
+//! By default, windows have a close button in the window frame.  Some
+//! window managers allow GTK+ to disable this button.  If you set the
+//! deletable property to FALSE using this function, GTK+ will do its best
+//! to convince the window manager not to show a close button.  Depending
+//! on the system, this function may not have any effect when called on a
+//! window that is already visible, so you should call it before calling
+//! show().
+//! 
+//! On Windows, this function always works, since there's no window manager
+//! policy involved.
 //!
 //!
 
@@ -546,6 +579,12 @@ GTK2.Window set_modal( int setting );
 //!
 //!
 
+GTK2.Window set_opacity( float opacity );
+//! Request the windowing system to make this window partially transparent,
+//! with opacity 0 being full transparent and 1 fully opaque.
+//!
+//!
+
 GTK2.Window set_position( int pos );
 //! Sets a position contraint for this window.  If the old or new constraint
 //! is GTK2.WIN_POS_CENTER_ALWAYS, this will also cause the window to be
@@ -568,6 +607,18 @@ GTK2.Window set_skip_pager_hint( int setting );
 GTK2.Window set_skip_taskbar_hint( int setting );
 //! Windows may set a hint asking the desktop environment not to display the
 //! window in the task bar.  This function sets this hint.
+//!
+//!
+
+GTK2.Window set_startup_id( string id );
+//! Startup notification identifiers are used by desktop environment to 
+//! track application startup, to provide user feedback and other features. 
+//! This function changes the corresponding property on the underlying 
+//! GDK2.Window. Normally, startup identifier is managed automatically and 
+//! you should only use this function in special cases like transferring 
+//! focus from other processes. You should use this function before 
+//! calling window->present() or any equivalent function generating a 
+//! window map event.
 //!
 //!
 

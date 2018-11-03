@@ -1,0 +1,10 @@
+AC_INIT(hpack.cmod)
+AC_CONFIG_HEADER(hpack_config.h)
+
+AC_SET_MAKE
+
+AC_MODULE_INIT(Standards.HPack)
+
+PIKE_FEATURE_OK(Standards.HPack)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

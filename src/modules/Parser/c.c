@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "config.h"
 
@@ -101,7 +107,7 @@ MAKE_PUSH_TOKEN(2);
 static void do_free_arrayptr( struct array **x )
 {
   free_array( *x );
-}			   
+}
 
 /*! @decl array(array(string)|string) tokenize(string code)
  *!
@@ -123,10 +129,10 @@ static void f_tokenize( INT32 args )
   int left;
   ONERROR tmp;
 
-  get_all_args("tokenize", args, "%W", &data);
+  get_all_args(NULL, args, "%W", &data);
 
   SET_ONERROR(tmp, do_free_arrayptr, &res);
-  
+
   switch(data->size_shift)
   {
     case 0:
@@ -141,10 +147,6 @@ static void f_tokenize( INT32 args )
       left = tokenize2(&res,STR2(data), data->len);
       left_s = make_shared_binary_string2(STR2(data)+left, data->len-left);
       break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_error("Unknown shift size %d.\n", data->size_shift);
-#endif
   }
 
   UNSET_ONERROR(tmp);
@@ -167,12 +169,12 @@ static void f_tokenize( INT32 args )
 /*! @endmodule
  */
 
-void init_parser_c()
+void init_parser_c(void)
 {
   ADD_FUNCTION2("tokenize", f_tokenize,
 		tFunc(tStr, tArr(tOr(tArr(tStr),tStr))), 0, 0);
 }
 
-void exit_parser_c()
+void exit_parser_c(void)
 {
 }

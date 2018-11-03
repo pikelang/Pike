@@ -56,9 +56,7 @@ void add_runned(PIKE_INSTR_T instr)
     tmp=tmp[0]->next + last_instruction[e];
     last_instruction[e]=last_instruction[e+1];
   }
-#ifndef HAVE_COMPUTED_GOTO
   ((char **)(tmp))[0]++;
-#endif /* !HAVE_COMPUTED_GOTO */
   last_instruction[e]=instr;
 }
 
@@ -198,23 +196,23 @@ void present_runned(struct instr_counter *d, int depth, int maxdepth)
 #define ALIASADDR(X)
 #endif
 
-#define OPCODE0(OP,DESC,FLAGS) { DESC, OP, FLAGS ADDR(OP) },
-#define OPCODE1(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_HASARG ADDR(OP) },
-#define OPCODE2(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_TWO_ARGS ADDR(OP) },
+#define OPCODE0(OP,DESC,FLAGS) { DESC, FLAGS ADDR(OP) },
+#define OPCODE1(OP,DESC,FLAGS) { DESC, FLAGS | I_HASARG ADDR(OP) },
+#define OPCODE2(OP,DESC,FLAGS) { DESC, FLAGS | I_TWO_ARGS ADDR(OP) },
 #define OPCODE0_TAIL(OP,DESC,FLAGS) OPCODE0(OP,DESC,FLAGS)
 #define OPCODE1_TAIL(OP,DESC,FLAGS) OPCODE1(OP,DESC,FLAGS)
 #define OPCODE2_TAIL(OP,DESC,FLAGS) OPCODE2(OP,DESC,FLAGS)
 
-#define OPCODE0_PTRJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISPTRJUMP JUMPADDR(OP) },
-#define OPCODE1_PTRJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISPTRJUMPARG JUMPADDR(OP) },
-#define OPCODE2_PTRJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISPTRJUMPARGS JUMPADDR(OP) },
+#define OPCODE0_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMP JUMPADDR(OP) },
+#define OPCODE1_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMPARG JUMPADDR(OP) },
+#define OPCODE2_PTRJUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISPTRJUMPARGS JUMPADDR(OP) },
 #define OPCODE0_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE0_PTRJUMP(OP,DESC,FLAGS)
 #define OPCODE1_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE1_PTRJUMP(OP,DESC,FLAGS)
 #define OPCODE2_TAILPTRJUMP(OP,DESC,FLAGS) OPCODE2_PTRJUMP(OP,DESC,FLAGS)
 
-#define OPCODE0_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMP JUMPADDR(OP) },
-#define OPCODE1_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARG JUMPADDR(OP) },
-#define OPCODE2_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARGS JUMPADDR(OP) },
+#define OPCODE0_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMP JUMPADDR(OP) },
+#define OPCODE1_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMPARG JUMPADDR(OP) },
+#define OPCODE2_JUMP(OP,DESC,FLAGS) { DESC, FLAGS | I_ISJUMPARGS JUMPADDR(OP) },
 #define OPCODE0_TAILJUMP(OP, DESC, FLAGS) OPCODE0_JUMP(OP,DESC,FLAGS)
 #define OPCODE1_TAILJUMP(OP, DESC, FLAGS) OPCODE1_JUMP(OP,DESC,FLAGS)
 #define OPCODE2_TAILJUMP(OP, DESC, FLAGS) OPCODE2_JUMP(OP,DESC,FLAGS)
@@ -226,79 +224,31 @@ void present_runned(struct instr_counter *d, int depth, int maxdepth)
 #define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_RETURN(OP,DESC,FLAGS)
 #define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_RETURN(OP,DESC,FLAGS)
 
-#define OPCODE0_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS ALIASADDR(A) },
-#define OPCODE1_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS | I_HASARG ALIASADDR(A) },
-#define OPCODE2_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS | I_TWO_ARGS ALIASADDR(A) },
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS ALIASADDR(A) },
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS | I_HASARG ALIASADDR(A) },
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, A) { DESC, FLAGS | I_TWO_ARGS ALIASADDR(A) },
 
-#define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
-#define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },
-#define OPCODE2_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARGS BRANCHADDR(OP) },
+#define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
+#define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },
+#define OPCODE2_BRANCH(OP,DESC,FLAGS) { DESC, FLAGS | I_ISBRANCHARGS BRANCHADDR(OP) },
 #define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) OPCODE0_BRANCH(OP,DESC,FLAGS)
 #define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) OPCODE1_BRANCH(OP,DESC,FLAGS)
 #define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) OPCODE2_BRANCH(OP,DESC,FLAGS)
 
-const struct keyword instr_names[]=
-{
-#ifndef PIKE_PRECOMPILER
-#include "interpret_protos.h"
-#endif /* !PIKE_PRECOMPILER */
-{ "%=",			F_MOD_EQ,0 NULLADDR },	
-{ "&=",			F_AND_EQ,0 NULLADDR },	
-{ "|=",			F_OR_EQ,0 NULLADDR },	
-{ "*=",			F_MULT_EQ,0 NULLADDR },	
-{ "+=",			F_ADD_EQ,0 NULLADDR },	
-{ "-=",			F_SUB_EQ,0 NULLADDR },	
-{ "/=",			F_DIV_EQ,0 NULLADDR },	
-{ "<<=",		F_LSH_EQ,0 NULLADDR },	
-{ ">>=",		F_RSH_EQ,0 NULLADDR },	
-{ "^=",			F_XOR_EQ,0 NULLADDR },	
-{ "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
-{ "arg+=256",		F_PREFIX_256,0 NULLADDR },
-{ "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },
-{ "arg+=256*XX",	F_PREFIX_WORDX256,0 NULLADDR },
-{ "arg+=256*XXX",	F_PREFIX_24BITX256,0 NULLADDR },
-{ "arg+=512",		F_PREFIX_512,0 NULLADDR },
-{ "arg+=768",		F_PREFIX_768,0 NULLADDR },
+#define OPCODE_NOCODE(DESC, OP, FLAGS)   { DESC, FLAGS NULLADDR },
 
-{ "arg+=1024",		F_PREFIX2_1024,0 NULLADDR },
-{ "arg+=256",		F_PREFIX2_256,0 NULLADDR },
-{ "arg+=256*X",		F_PREFIX2_CHARX256,0 NULLADDR },
-{ "arg+=256*XX",	F_PREFIX2_WORDX256,0 NULLADDR },
-{ "arg+=256*XXX",	F_PREFIX2_24BITX256,0 NULLADDR },
-{ "arg+=512",		F_PREFIX2_512,0 NULLADDR },
-{ "arg+=768",		F_PREFIX2_768,0 NULLADDR },
-
-{ "break",		F_BREAK,0 NULLADDR },	
-{ "case",		F_CASE,0 NULLADDR },	
-{ "continue",		F_CONTINUE,0 NULLADDR },	
-{ "default",		F_DEFAULT,0 NULLADDR },	
-{ "do-while",		F_DO,0 NULLADDR },	
-{ "for",		F_FOR,0 NULLADDR },
-
-{ "pointer",		F_POINTER, I_ISPOINTER NULLADDR },
-{ "data",		F_DATA, I_DATA NULLADDR },
-{ "byte",		F_BYTE, I_DATA NULLADDR },
-{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },	
-{ "label",		F_LABEL,I_HASARG NULLADDR },
-{ "align",		F_ALIGN, I_HASARG NULLADDR },
-{ "nop",                F_NOP,0 NULLADDR },
-{ "entry",		F_ENTRY,0 NULLADDR },
-{ "filename", 		F_FILENAME, 0 NULLADDR },
-{ "line",		F_LINE, 0 NULLADDR },
-{ "get/set",		F_GET_SET, 0 NULLADDR },
-{ "function start",     F_START_FUNCTION,0 NULLADDR },
-{ "notreached!",        F_NOTREACHED, 0 NULLADDR },
+const struct instr instrs[] = {
+  { "offset", 0 NULLADDR },
+#include "opcode_list.h"
 };
 
-struct instr instrs[F_MAX_INSTR - F_OFFSET];
-#ifdef PIKE_USE_MACHINE_CODE
-size_t instrs_checksum;
-#endif /* PIKE_USE_MACHINE_CODE */
+#ifdef PIKE_DEBUG
+unsigned long pike_instrs_compiles[F_MAX_OPCODE-F_OFFSET];
 
 const char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
-  
+
   if (n<F_MAX_OPCODE)
   {
     if ((n >= F_OFFSET) && instrs[n-F_OFFSET].name)
@@ -326,33 +276,7 @@ const char *get_f_name(int n)
   return low_get_f_name(n, NULL);
 }
 
-#ifdef HAVE_COMPUTED_GOTO
-const char *get_opcode_name(PIKE_INSTR_T n)
-{
-  int fcode;
-  int low = 0;
-  int high = F_MAX_OPCODE - F_OFFSET;
-  static char buf[64];
-
-  if (!n) {
-    return "<NULL opcode!>";
-  }
-
-  while (low < high) {
-    int mid = (low+high)/2;
-    if (opcode_to_fcode[mid].opcode < n) {
-      low = mid + 1;
-    } else if (opcode_to_fcode[mid].opcode > n) {
-      high = mid;
-    } else {
-      return get_f_name(opcode_to_fcode[mid].fcode);
-    }
-  }
-
-  sprintf(buf, "<Unknown opcode 0x%p>", n);
-  return buf;
-}
-#endif /* HAVE_COMPUTED_GOTO */
+#endif /* PIKE_DEBUG */
 
 const char *get_token_name(int n)
 {
@@ -368,57 +292,11 @@ const char *get_token_name(int n)
 
 void init_opcodes(void)
 {
-  unsigned int i;
 #ifdef PIKE_DEBUG
-  int fatal_later=0;
 #ifdef INSTR_PROFILING
   instr_counter_storage=init_instr_storage_pointers(p_flag);
 #endif
 #endif
-
-  for(i=0; i<NELEM(instr_names);i++)
-  {
-#ifdef PIKE_DEBUG
-    if(instr_names[i].token >= F_MAX_INSTR)
-    {
-      fprintf(stderr,"Error in instr_names[%u]\n\n",i);
-      fatal_later++;
-    }
-
-    if(instrs[instr_names[i].token - F_OFFSET].name)
-    {
-      fprintf(stderr,"Duplicate name for %s\n",instr_names[i].word);
-      fatal_later++;
-    }
-#endif
-
-    instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
-    instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
-#ifdef PIKE_USE_MACHINE_CODE
-    instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;
-#endif
-  }
-
-#ifdef PIKE_USE_MACHINE_CODE
-  instrs_checksum = hashmem((const unsigned char*)instrs, sizeof(instrs),
-			    sizeof(struct instr));
-  /* fprintf(stderr, "Instruction checksum: %d\n", instrs_checksum); */
-#endif /* PIKE_USE_MACHINE_CODE */
-
-#ifdef PIKE_DEBUG
-  for(i=1; i<F_MAX_OPCODE-F_OFFSET;i++)
-  {
-    if(!instrs[i].name)
-    {
-      fprintf(stderr,"Opcode %d does not have a name.\n",i);
-      fatal_later++;
-    }
-  }
-  if(fatal_later)
-    Pike_fatal("Found %d errors in instrs.\n",fatal_later);
-
-#endif
-
 }
 
 void exit_opcodes(void)
@@ -434,7 +312,7 @@ void exit_opcodes(void)
     for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
     {
       fprintf(stderr,"%08ld;;%-30s\n",
-	      (long)instrs[e].compiles,
+	      (long)pike_instrs_compiles[e],
 	      low_get_f_name(e+F_OFFSET,0));
     }
 

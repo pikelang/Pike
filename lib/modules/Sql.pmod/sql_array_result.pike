@@ -1,34 +1,34 @@
 
 #pike __REAL_VERSION__
 
-inherit .sql_result;
+inherit __builtin.Sql.Result;
 
-array master_res;
+array _values;
 
 void create(array res) {
   if(!res || !arrayp(res))
     error("Bad argument.\n");
-  master_res = res;
+  _values = res;
 }
 
 int num_rows() {
-  return sizeof(master_res);
+  return sizeof(_values);
 }
 
 int num_fields() {
-  return sizeof(master_res[0]);
+  return sizeof(_values[0]);
 }
 
 int eof() {
-  return index >= sizeof(master_res);
+  return index >= sizeof(_values);
 }
 
 // Only supports the name field.
 array(mapping(string:mixed)) fetch_fields() {
-  array(mapping(string:mixed)) res = allocate(sizeof(master_res[0]));
+  array(mapping(string:mixed)) res = allocate(sizeof(_values[0]));
   int i;
 
-  foreach(sort(indices(master_res[0])), string name)
+  foreach(sort(indices(_values[0])), string name)
     res[i++] = ([ "name": name ]);
 
   return res;
@@ -41,11 +41,16 @@ void seek(int skip) {
 
 int|array(string|int) fetch_row() {
   array res;
-      
-  if (index >= sizeof(master_res))
+
+  if (index >= sizeof(_values))
     return 0;
 
-  sort(indices(master_res[index]), res = values(master_res[index]));
+  sort(indices(_values[index]), res = values(_values[index]));
   index++;
   return res;
+}
+
+this_program next_result()
+{
+  return 0;
 }

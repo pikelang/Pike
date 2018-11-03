@@ -1,5 +1,5 @@
 START_MARKER
-test_program([[ Parser.LR.Parser p = 
+test_program([[ Parser.LR.Parser p =
   Parser.LR.GrammarParser.make_parser("foo : bar;foo : foo bar;bar : \"a\";");
   int pos;
   array(string) data="aaaaaaaaa"/"";

@@ -1,11 +1,10 @@
 /* -*- C -*- */
 class GTK2.CellEditable;
+//! Interface for widgets which are used for editing cells.
 mixin_for G.Object;
 
 signal editing_done;
 signal remove_widget;
-
-//! Interface for widgets which are used for editing cells.
 
 void start_editing(?GDK2.Event event)
 //! Begins editing.  event is the GDK2.Event that began the editing process.
@@ -15,7 +14,7 @@ void start_editing(?GDK2.Event event)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("start_editing",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_cell_editable_start_editing(GTK_CELL_EDITABLE(THIS->obj),
 		(GdkEvent *)get_gdkobject(o1,event));
   } else

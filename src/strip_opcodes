@@ -27,10 +27,9 @@ sed -e '
 : loop
   /OPCODE[0-9]/!b keepnl
 
-# Stupid IRIX cpp turns --- into -- -
 # SysV sed does not support multi-character *-expressions,
 # so we use ½ instead.
-  s/ -- \{0,1\}- / ½ /g
+  s/ --- / ½ /g
 
 # Make sure the substitute flag is cleared.
   t loop

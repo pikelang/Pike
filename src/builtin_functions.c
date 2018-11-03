@@ -29,14 +29,11 @@
 #include "time_stuff.h"
 #include "version.h"
 #include "encode.h"
-#include <math.h>
 #include <ctype.h>
 #include "module_support.h"
-#include "module.h"
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
-#include "pike_security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "peep.h"
@@ -44,6 +41,8 @@
 #include "lex.h"
 #include "pike_float.h"
 #include "pike_compiler.h"
+#include "port.h"
+#include "siphash24.h"
 
 #include <errno.h>
 
@@ -66,22 +65,46 @@
 
 /*! @decl int equal(mixed a, mixed b)
  *!
- *!   This function checks if the values @[a] and @[b] are equal.
+ *!   This function checks if the values @[a] and @[b] are equivalent.
  *!
- *!   For all types but arrays, multisets and mappings, this operation is
- *!   the same as doing @expr{@[a] == @[b]@}.
- *!   For arrays, mappings and multisets however, their contents are checked
- *!   recursively, and if all their contents are the same and in the same
- *!   place, they are considered equal.
+ *! @returns
+ *!   If either of the values is an object the (normalized) result
+ *!   of calling @[lfun::_equal()] will be returned.
+ *!
+ *!   Returns @expr{1@} if both values are false (zero, destructed objects,
+ *!   prototype functions, etc).
+ *!
+ *!   Returns @expr{0@} (zero) if the values have different types.
+ *!
+ *!   Otherwise depending on the type of the values:
+ *!   @mixed
+ *!     @type int
+ *!     @type float
+ *!     @type string
+ *!     @type program
+ *!       Returns the same as @expr{a == b@}.
+ *!     @type array
+ *!     @type mapping
+ *!     @type multiset
+ *!     @type object
+ *!       The contents of @[a] and @[b] are checked recursively, and
+ *!       if all their contents are @[equal] and in the same place,
+ *!       they are considered equal.
+ *!
+ *!       Note that for objects this case is only reached if neither
+ *!       @[a] nor @[b] implements @[lfun::_equal()].
+ *!     @type type
+ *!       Returns @expr{(a <= b) && (b <= a)@}.
+ *!  @endmixed
  *!
  *! @seealso
- *!   @[copy_value()]
+ *!   @[copy_value()], @[`==()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
   int i;
   if(args != 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("equal", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("equal", 2);
 
   i=is_equal(Pike_sp-2,Pike_sp-1);
   pop_n_elems(args);
@@ -200,29 +223,8 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
-/*! @decl __deprecated__ int hash_7_4(string s)
- *! @decl __deprecated__ int hash_7_4(string s, int max)
- *!
- *! @deprecated 7.4::hash
- *!
- *! @seealso
- *!   @[7.4::hash()]
- */
-
-/*! @decl __deprecated__ int hash_7_0(string s)
- *! @decl __deprecated__ int hash_7_0(string s, int max)
- *!
- *! @deprecated 7.0::hash
- *!
- *! @seealso
- *!   @[7.0::hash()]
- */
-
-/*! @namespace 7.4::
- */
-
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
-  static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
+  static inline size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
       size_t ret,c;                                                         \
                                                                             \
@@ -242,22 +244,23 @@ MK_HASHMEM(simple_hashmem, unsigned char)
 MK_HASHMEM(simple_hashmem1, p_wchar1)
 MK_HASHMEM(simple_hashmem2, p_wchar2)
 
-/*! @decl int hash(string s)
- *! @decl int hash(string s, int max)
+/*! @decl int hash_7_4(string s)
+ *! @decl int hash_7_4(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
- *!   will always hash to the same value, also between processes.
+ *!   always hashes to the same value, also between processes.
  *!
  *!   If @[max] is given, the result will be >= 0 and < @[max],
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   This function is provided for backward compatibility reasons.
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.4.
  *!
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[predef::hash()], @[7.0::hash()]
+ *!   @[hash_7_6()], @[hash_7_0]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -265,10 +268,10 @@ static void f_hash_7_4(INT32 args)
   struct pike_string *s = Pike_sp[-args].u.string;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("7.4::hash",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("7.4::hash",1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("7.4::hash", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("7.4::hash", 1, "string");
 
   i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
 		     100<<s->size_shift);
@@ -276,8 +279,8 @@ static void f_hash_7_4(INT32 args)
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("7.4::hash",2,"int");
-    
+      SIMPLE_ARG_TYPE_ERROR("7.4::hash",2,"int");
+
     if(!Pike_sp[1-args].u.integer)
       PIKE_ERROR("7.4::hash", "Modulo by zero.\n", Pike_sp, args);
 
@@ -287,16 +290,10 @@ static void f_hash_7_4(INT32 args)
   push_int64(i);
 }
 
-/*! @endnamespace
- */
-
-/*! @namespace 7.0::
- */
-
-ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+ATTRIBUTE((const)) static inline size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 {
   size_t ret,c;
-  
+
   if(!(ret=str++[0]))
     return ret;
   for(; maxn>=0; maxn--)
@@ -310,8 +307,8 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
   return ret;
 }
 
-/*! @decl int hash(string s)
- *! @decl int hash(string s, int max)
+/*! @decl int hash_7_0(string s)
+ *! @decl int hash_7_0(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes.
@@ -320,21 +317,22 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   This function is provided for backward compatibility reasons.
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.0.
  *!
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[predef::hash()], @[7.4::hash()]
+ *!   @[hash()], @[hash_7_4]
  */
 static void f_hash_7_0( INT32 args )
 {
   struct pike_string *s = Pike_sp[-args].u.string;
   unsigned int i;
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("7.0::hash",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("7.0::hash",1);
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("7.0::hash", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("7.0::hash", 1, "string");
 
   if( s->size_shift )
   {
@@ -342,13 +340,13 @@ static void f_hash_7_0( INT32 args )
     return;
   }
 
-  i = DO_NOT_WARN((unsigned int)hashstr( (unsigned char *)s->str,
-					 MINIMUM(100,s->len)));
+  i = (unsigned int)hashstr( (unsigned char *)s->str,
+                             MINIMUM(100,s->len));
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("7.0::hash",2,"int");
-    
+      SIMPLE_ARG_TYPE_ERROR("7.0::hash",2,"int");
+
     if(!Pike_sp[1-args].u.integer)
       PIKE_ERROR("7.0::hash", "Modulo by zero.\n", Pike_sp, args);
 
@@ -358,8 +356,81 @@ static void f_hash_7_0( INT32 args )
   push_int( i );
 }
 
-/*! @endnamespace
+/*! @decl int hash_8_0(string s)
+ *! @decl int hash_8_0(string s, int max)
+ *!
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes,
+ *!   architectures, and Pike versions (see compatibility notes below,
+ *!   though).
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @deprecated
+ *!
+ *!  Use @[hash_value()] for in-process hashing (eg, for implementing
+ *!    @[lfun::_hash()]) or one of the cryptographic hash functions.
+ *!
+ *! @note
+ *!  This function is really bad at hashing strings. Similar string
+ *!  often return similar hash values.
+ *!
+ *!  It is especially bad for url:s, paths and similarly formatted
+ *!  strings.
+ *!
+ *! @note
+ *!   The hash algorithm was changed in Pike 7.5. If you want a hash
+ *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!   The difference only affects wide strings.
+ *!
+ *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
+ *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
+ *!
+ *! @note
+ *!   This hash function differs from the one provided by @[hash_value()],
+ *!   in that @[hash_value()] returns a process specific value.
+ *!
+ *! @seealso
+ *!   @[hash()], @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
+static void f_hash_8_0(INT32 args)
+{
+  size_t i = 0;
+  struct pike_string *s;
+
+  if(!args)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("hash",1);
+
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("hash", 1, "string");
+
+  s = Pike_sp[-args].u.string;
+  switch(s->size_shift) {
+  case 0:
+    i = simple_hashmem(STR0(s), s->len, 100);
+    break;
+  case 1:
+    i = simple_hashmem1(STR1(s), s->len, 100);
+    break;
+  case 2:
+    i = simple_hashmem2(STR2(s), s->len, 100);
+    break;
+  }
+
+  if(args > 1)
+  {
+    if(TYPEOF(Pike_sp[1-args]) != T_INT)
+      SIMPLE_ARG_TYPE_ERROR("hash_8_0",2,"int");
+
+    if(Pike_sp[1-args].u.integer <= 0)
+      PIKE_ERROR("hash_8_0", "Modulo < 1.\n", Pike_sp, args);
+
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+  }
+  pop_n_elems(args);
+  push_int64(i);
+}
 
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
@@ -373,61 +444,44 @@ static void f_hash_7_0( INT32 args )
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   The hash algorithm was changed in Pike 7.5. If you want a hash
- *!   that is compatible with Pike 7.4 and earlier, use @[7.4::hash()].
- *!   The difference only affects wide strings.
+ *!   The hash algorithm was changed in Pike 8.1. If you want a hash
+ *!   that is compatible with Pike 8.0 and earlier, use @[hash_8_0()].
+ *!
+ *!   The hash algorithm was also changed in Pike 7.5. If you want a hash
+ *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!   The difference with regards to @[hash_8_0()] only affects wide strings.
  *!
  *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
- *!   that is compatible with Pike 7.0 and earlier, use @[7.0::hash()].
+ *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
  *!
  *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[7.0::hash()], @[7.4::hash()], @[hash_value]
+ *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
  */
-PMOD_EXPORT void f_hash(INT32 args)
+PMOD_EXPORT void f_hash( INT32 args )
 {
-  size_t i = 0;
-  struct pike_string *s;
+  size_t res;
 
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
+      PIKE_ERROR("hash","Argument is not a string\n",Pike_sp,args);
 
-  if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
+  res = pike_string_siphash24(Pike_sp[-args].u.string, 0) & 0x7fffffff;
 
-  s = Pike_sp[-args].u.string;
-  switch(s->size_shift) {
-  case 0:
-    i = simple_hashmem(STR0(s), s->len, 100);
-    break;
-  case 1:
-    i = simple_hashmem1(STR1(s), s->len, 100);
-    break;
-  case 2:
-    i = simple_hashmem2(STR2(s), s->len, 100);
-    break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("hash(): Unsupported string shift: %d\n", s->size_shift);
-    break;
-#endif
-  }
-
-  if(args > 1)
-  {
+  if( args > 1 ) {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("hash",2,"int");
-    
+      SIMPLE_ARG_TYPE_ERROR("hash",2,"int");
+
     if(Pike_sp[1-args].u.integer <= 0)
       PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
 
-    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+    res %= Pike_sp[1-args].u.integer;
   }
+
   pop_n_elems(args);
-  push_int64(i);
+  push_int(res);
 }
 
 /*! @decl int hash_value (mixed value)
@@ -446,17 +500,18 @@ PMOD_EXPORT void f_hash(INT32 args)
  *!   This is the hashing method used by mappings.
  *!
  *! @seealso
- *!   @[hash()], @[lfun::__hash()]
+ *!   @[lfun::__hash()]
  */
 void f_hash_value(INT32 args)
 {
-  unsigned INT32 h;
+  size_t h;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash_value",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("hash_value",1);
 
   h = hash_svalue (Pike_sp - args);
   pop_n_elems (args);
+  /* NB: We assume that INT_TYPE has the same width as size_t. */
   push_int (h);
 }
 
@@ -477,7 +532,7 @@ void f_hash_value(INT32 args)
 PMOD_EXPORT void f_copy_value(INT32 args)
 {
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("copy_value",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("copy_value",1);
 
   pop_n_elems(args-1);
   push_undefined();	/* Placeholder */
@@ -520,7 +575,7 @@ static struct case_info *find_ci(INT32 c)
   }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
-    return ci; 
+    return ci;
   }
 
   while (lo != hi-1) {
@@ -550,7 +605,7 @@ static struct case_info *find_ci_shift0(INT32 c)
   }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
-    return ci; 
+    return ci;
   }
 
   while (lo != hi-1) {
@@ -676,7 +731,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -752,7 +807,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   }
 
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -816,39 +871,19 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   push_string(ret);
 }
 
-/*! @decl string random_string(int len)
- *!
- *!   Returns a string of random characters 0-255 with the length @[len].
- */
-PMOD_EXPORT void f_random_string(INT32 args)
-{
-  struct pike_string *ret;
-  INT_TYPE len, e;
-  get_all_args("random_string",args,"%+",&len);
-  ret = begin_shared_string(len);
-  for(e=0;e<len;e++) ret->str[e] = DO_NOT_WARN((char)my_rand());
-  pop_n_elems(args);
-  push_string(end_shared_string(ret));
-}
-
 /*! @decl void random_seed(int seed)
  *!
  *!   This function sets the initial value for the random generator.
  *!
  *! @seealso
  *!   @[random()]
+ *!
+ *! @deprecated
+ *!   @[Random.Deterministic]
  */
-PMOD_EXPORT void f_random_seed(INT32 args)
+static void f_random_seed(INT32 args)
 {
   INT_TYPE i;
-  check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
-  if(TYPEOF(Pike_sp[-args]) == T_INT)
-  {
-    i=Pike_sp[-args].u.integer;
-  }else{
-    i=hash_svalue(Pike_sp-args);
-  }
-  my_srand(i);
   pop_n_elems(args);
 }
 
@@ -868,18 +903,18 @@ void f_query_num_arg(INT32 args)
   push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
-/*! @decl int search(string haystack, string|int needle, int|void start)
- *! @decl int search(array haystack, mixed needle, int|void start)
+/*! @decl int search(string haystack, string|int needle, int|void start, @
+ *!                  int|void end)
+ *! @decl int search(array haystack, mixed needle, int|void start, int|void end)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
- *! @decl mixed search(object haystack, mixed needle, mixed|void start)
+ *! @decl mixed search(object haystack, mixed needle, mixed|void start, @
+ *!                    mixed ... extra_args)
  *!
- *!   Search for @[needle] in @[haystack]. Return the position of @[needle] in
- *!   @[haystack] or @expr{-1@} if not found.
+ *!   Search for @[needle] in @[haystack].
  *!
- *!   If the optional argument @[start] is present search is started at
- *!   this position.
- *!
- *!   @mixed haystack
+ *! @param haystack
+ *!   Item to search in. This can be one of:
+ *!   @mixed
  *!     @type string
  *!       When @[haystack] is a string @[needle] must be a string or an int,
  *!       and the first occurrence of the string or int is returned.
@@ -891,13 +926,12 @@ void f_query_num_arg(INT32 args)
  *!     @type mapping
  *!       When @[haystack] is a mapping, @[search()] tries to find the index
  *!       connected to the data @[needle]. That is, it tries to lookup the
- *!       mapping backwards. If @[needle] isn't present in the mapping, zero
- *!       is returned, and zero_type() will return 1 for this zero.
+ *!       mapping backwards.
  *!
  *!     @type object
  *!       When @[haystack] is an object implementing @[lfun::_search()],
- *!       the result of calling @[lfun::_search()] with @[needle] will
- *!       be returned.
+ *!       the result of calling @[lfun::_search()] with @[needle], @[start]
+ *!       and any @[extra_args] will be returned.
  *!
  *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
  *!       it is assumed to be an @[Iterator], and implement
@@ -906,8 +940,28 @@ void f_query_num_arg(INT32 args)
  *!       elements with @[`==()] until a match with @[needle] is found.
  *!       If @[needle] is found @[haystack] will be advanced to the element,
  *!       and the iterator index will be returned. If @[needle] is not
- *!       found, @[haystack] will be advanced to the end (and will thus
- *!       evaluate to false), and a zero with zero_type 1 will be returned.
+ *!       found, @[haystack] will be advanced to the end.
+ *!   @endmixed
+ *!
+ *! @param start
+ *!   If the optional argument @[start] is present search is started at
+ *!   this position. This has no effect on mappings.
+ *!
+ *! @param end
+ *!   If the optional argument @[end] is present, the search will terminate
+ *!   at this position (exclusive) if not found earlier.
+ *!
+ *! @returns
+ *!   Returns the position of @[needle] in @[haystack] if found.
+ *!
+ *!   If not found the returned value depends on the type of @[haystack]:
+ *!   @mixed
+ *!     @type string|array
+ *!       @expr{-1@}.
+ *!     @type mapping|object(Iterator)
+ *!       @[UNDEFINED].
+ *!     @type object
+ *!       The value returned by @[lfun::_search()].
  *!   @endmixed
  *!
  *! @note
@@ -920,15 +974,16 @@ void f_query_num_arg(INT32 args)
  *!   In all other cases @expr{-1@} will be returned when not found.
  *!
  *! @seealso
- *!   @[indices()], @[values()], @[zero_type()], @[has_value()], 
+ *!   @[indices()], @[values()], @[zero_type()], @[has_value()],
  *!   @[has_prefix()], @[has_suffix()]
  */
 PMOD_EXPORT void f_search(INT32 args)
 {
   ptrdiff_t start;
+  ptrdiff_t end;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("search", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("search", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -937,22 +992,43 @@ PMOD_EXPORT void f_search(INT32 args)
     struct pike_string *haystack = Pike_sp[-args].u.string;
 
     start=0;
+    end = haystack->len;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
+	SIMPLE_ARG_TYPE_ERROR("search", 3, "int");
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
+      }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(start<0) {
+            bad_arg_error("search", args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
       }
     }
 
     if(haystack->len < start)
-      bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp-args,
+      bad_arg_error("search", args, 3, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
+
+    if (end <= start) {
+      pop_n_elems(args);
+      push_int(-1);
+      return;
+    }
 
     if ((TYPEOF(Pike_sp[1-args]) == T_INT) ||
 	((TYPEOF(Pike_sp[1-args]) == T_STRING) &&
@@ -978,7 +1054,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -991,7 +1067,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -1000,21 +1076,12 @@ PMOD_EXPORT void f_search(INT32 args)
       case 2:
 	{
 	  p_wchar2 *str = STR2(haystack);
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == (p_wchar2)val) break;
 	    start++;
 	  }
 	}
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("search(): Unsupported string shift: %d!\n",
-	      haystack->size_shift);
-	break;
-#endif
-      }
-      if (start >= haystack->len) {
-	start = -1;
       }
     } else if(TYPEOF(Pike_sp[1-args]) == T_STRING) {
       /* Handle searching for the empty string. */
@@ -1022,30 +1089,52 @@ PMOD_EXPORT void f_search(INT32 args)
 	start = string_search(haystack,
 			      Pike_sp[1-args].u.string,
 			      start);
+	end -= Pike_sp[1-args].u.string->len-1;
       }
     } else {
-      SIMPLE_BAD_ARG_ERROR("search", 2, "string | int");
+      SIMPLE_ARG_TYPE_ERROR("search", 2, "string | int");
     }
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
   }
 
   case T_ARRAY:
     start=0;
+    end = Pike_sp[-args].u.array->size;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
+	SIMPLE_ARG_TYPE_ERROR("search", 3, "int");
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
+      }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(end<0) {
+            bad_arg_error("search", args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
       }
     }
     start=array_search(Pike_sp[-args].u.array,Pike_sp+1-args,start);
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
 
@@ -1116,7 +1205,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	      /* FIXME: Should probably indicate not found in some other way.
 	       *        On the other hand, the iterator should be false now.
 	       */
-	      push_undefined();	
+	      push_undefined();
 	      return;
 	    }
 	    pop_n_elems(2);
@@ -1124,9 +1213,9 @@ PMOD_EXPORT void f_search(INT32 args)
 	}
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   default:
-    SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping|object");
+    SIMPLE_ARG_TYPE_ERROR("search", 1, "string|array|mapping|object");
   }
 }
 
@@ -1145,8 +1234,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 {
   struct pike_string *a, *b;
 
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_prefix", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_prefix", 2);
   if((TYPEOF(Pike_sp[-args]) != T_STRING) &&
      (TYPEOF(Pike_sp[-args]) != T_OBJECT))
     SIMPLE_ARG_TYPE_ERROR("has_prefix", 1, "string|object");
@@ -1161,7 +1250,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     int inherit_no = SUBTYPEOF(Pike_sp[-args]);
 
     if (!o->prog || FIND_LFUN(o->prog, LFUN__SIZEOF) < 0) {
-      Pike_error("has_prefix(): Object in argument 1 lacks lfun::_sizeof().\n");
+      Pike_error("Object in argument 1 lacks lfun::_sizeof().\n");
     }
 
     apply_lfun(o, LFUN__SIZEOF, 0);
@@ -1208,7 +1297,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str, b->str, b->len << b->size_shift);
+    int res = !memcmp(a->str, b->str, b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
     return;
@@ -1234,10 +1323,6 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
-  default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
-	  a->size_shift, b->size_shift);
-    break;
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
@@ -1255,8 +1340,8 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
 {
   struct pike_string *a, *b;
 
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_suffix", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_suffix", 2);
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("has_suffix", 1, "string");
   if(TYPEOF(Pike_sp[1-args]) != T_STRING)
@@ -1281,7 +1366,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str + ((a->len - b->len)<<b->size_shift), b->str,
+    int res = !memcmp(a->str + ((a->len - b->len)<<b->size_shift), b->str,
 		      b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
@@ -1308,10 +1393,6 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
-  default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
-	  a->size_shift, b->size_shift);
-    break;
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
@@ -1345,43 +1426,40 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
 PMOD_EXPORT void f_has_index(INT32 args)
 {
   int t = 0;
-  
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_index", 2);
-  if(args > 2)
-    pop_n_elems(args-2);
+
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_index", 2);
 
   switch(TYPEOF(Pike_sp[-2]))
   {
     case T_STRING:
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.string->len);
-  
+
       pop_n_elems(args);
       push_int(t);
       break;
-      
+
     case T_ARRAY:
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.array->size);
-      
+
       pop_n_elems(args);
       push_int(t);
       break;
-      
-    case T_MULTISET:
+
     case T_MAPPING:
-      f_index(2);
-      f_zero_type(1);
-      
-#ifdef PIKE_DEBUG
-      if(TYPEOF(Pike_sp[-1]) != T_INT)
-	PIKE_ERROR("has_index",
-		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
-#endif
-      Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
-      break;
-      
+        t=!!low_mapping_lookup( Pike_sp[-2].u.mapping, Pike_sp-1 );
+        pop_n_elems(2);
+        push_int(t);
+        break;
+
+    case T_MULTISET:
+        t = multiset_member( Pike_sp[-2].u.multiset, Pike_sp-1 );
+        pop_n_elems(2);
+        push_int(t);
+        break;
+
     case T_OBJECT:
     case T_PROGRAM:
       /* FIXME: If the object behaves like an array, it will throw an
@@ -1390,7 +1468,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
 
 	 Maybe we should use object->_has_index(index) provided that
 	 the object implements it.
-	 
+
 	 /Noring */
       /* If it is an iterator object we may want to use the iterator
          interface to look for the index. */
@@ -1399,7 +1477,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
       f_indices(1);
       stack_swap();
       f_search(2);
-      
+
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
       else
@@ -1437,27 +1515,22 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *! @endcode
  *!
  *! @seealso
- *!   @[has_index()], @[indices()], @[search()], @[has_prefix()], 
+ *!   @[has_index()], @[indices()], @[search()], @[has_prefix()],
  *!   @[has_suffix()], @[values()], @[zero_type()]
  */
 PMOD_EXPORT void f_has_value(INT32 args)
 {
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_value", 2);
-  if(args > 2)
-    pop_n_elems(args-2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_value", 2);
 
   switch(TYPEOF(Pike_sp[-2]))
   {
     case T_MAPPING:
       f_search(2);
       f_zero_type(1);
-      
+
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
-      else
-	PIKE_ERROR("has_value",
-		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
       break;
 
     case T_PROGRAM:
@@ -1466,13 +1539,13 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	 with `values' in case of objects. The problem is that we cannot
 	 use `search' directly since it's undefined whether it returns
 	 -1 (array) or 0 (mapping) during e.g. some data type emulation.
-	 
+
 	 Maybe we should use object->_has_value(value) provided that
 	 the object implements it.
-	 
+
 	 /Noring */
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_MULTISET:
       /* FIXME: This behavior for multisets isn't clean. It should be
@@ -1481,7 +1554,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
       f_values(1);
       stack_swap();
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_STRING:   /* Strings are odd. /Noring */
     case T_ARRAY:
@@ -1489,8 +1562,6 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
-      else
-	PIKE_ERROR("has_value", "Search gave incorrect result.\n", Pike_sp, args);
       break;
 
     default:
@@ -1519,13 +1590,11 @@ PMOD_EXPORT void f_has_value(INT32 args)
  */
 PMOD_EXPORT void f_add_constant(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("add_constant");
-
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("add_constant", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("add_constant", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("add_constant", 1, "string");
 
   if(args>1)
   {
@@ -1604,12 +1673,10 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  */
 PMOD_EXPORT void f_zero_type(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("zero_type",1);
 
-  if((TYPEOF(Pike_sp[-args]) == T_OBJECT ||
-      TYPEOF(Pike_sp[-args]) == T_FUNCTION)
-     && !Pike_sp[-args].u.object->prog)
+  if(IS_DESTRUCTED(Pike_sp-args))
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
@@ -1627,14 +1694,41 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   }
 }
 
-static int generate_zero_type(node *n)
+static int generate_arg_for(node *n)
 {
-  struct compilation *c = THIS_COMPILATION;
-  CHECK_COMPILER();
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in generate_zero_type().\n");
-  emit0(F_ZERO_TYPE);
+  return 1;
+}
+
+static int generate_zero_type(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for( n ) )
+      emit0(F_ZERO_TYPE);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_undefinedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_UNDEFINEDP);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_destructedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_DESTRUCTEDP);
+  else
+      return 0;
   return 1;
 }
 
@@ -1642,9 +1736,23 @@ static int generate_zero_type(node *n)
  * Some wide-strings related functions
  */
 
-/*! @decl string(0..255) string_to_unicode(string s)
+/*! @decl string(0..255) string_to_unicode(string s, int(0..2)|void byteorder)
  *!
  *!   Converts a string into an UTF16 compliant byte-stream.
+ *!
+ *! @param s
+ *!   String to convert to UTF16.
+ *!
+ *! @param byteorder
+ *!   Byte-order for the output. One of:
+ *!   @int
+ *!     @value 0
+ *!       Network (aka big-endian) byte-order (default).
+ *!     @value 1
+ *!       Little-endian byte-order.
+ *!     @value 2
+ *!       Native byte-order.
+ *!   @endint
  *!
  *! @note
  *!   Throws an error if characters not legal in an UTF16 stream are
@@ -1663,8 +1771,22 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   struct pike_string *out = NULL;
   ptrdiff_t len;
   ptrdiff_t i;
+  unsigned INT_TYPE byteorder = 0;
 
-  get_all_args("string_to_unicode", args, "%W", &in);
+  get_all_args("string_to_unicode", args, "%W.%i", &in, &byteorder);
+
+  if (byteorder >= 2) {
+    if (byteorder == 2) {
+#if PIKE_BYTEORDER == 1234
+      /* Little endian. */
+      byteorder = 1;
+#else
+      byteorder = 0;
+#endif
+    } else {
+      SIMPLE_ARG_TYPE_ERROR("string_to_unicode", 2, "int(0..2)|void");
+    }
+  }
 
   switch(in->size_shift) {
   case 0:
@@ -1672,20 +1794,9 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     len = in->len * 2;
     out = begin_shared_string(len);
     if (len) {
-      MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
-#ifdef PIKE_DEBUG
-      if (d_flag) {
-	for(i = len; i--;) {
-	  if (out->str[i]) {
-	    Pike_fatal("MEMSET didn't clear byte %ld of %ld\n",
-		  PTRDIFF_T_TO_LONG(i+1),
-		  PTRDIFF_T_TO_LONG(len));
-	  }
-	}
-      }
-#endif /* PIKE_DEBUG */
+      memset(out->str, 0, len);	/* Clear the upper (and lower) byte */
       for(i = in->len; i--;) {
-	out->str[i * 2 + 1] = in->str[i];
+	out->str[i * 2 + 1 - byteorder] = in->str[i];
       }
     }
     out = end_shared_string(out);
@@ -1695,24 +1806,28 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     /* FIXME: Should we check for 0xfffe & 0xffff here too? */
     len = in->len * 2;
     out = begin_shared_string(len);
+    if (byteorder ==
 #if (PIKE_BYTEORDER == 4321)
-    /* Big endian -- We don't need to do much...
-     *
-     * FIXME: Future optimization: Check if refcount is == 1,
-     * and perform sufficient magic to be able to convert in place.
-     */
-    MEMCPY(out->str, in->str, len);
+	1	/* Little endian. */
 #else
-    /* Other endianness, may need to do byte-order conversion also. */
-    {
+	0	/* Big endian. */
+#endif
+	) {
+      /* Other endianness, may need to do byte-order conversion also. */
       p_wchar1 *str1 = STR1(in);
       for(i = in->len; i--;) {
 	unsigned INT32 c = str1[i];
-	out->str[i * 2 + 1] = c & 0xff;
-	out->str[i * 2] = c >> 8;
+	out->str[i * 2 + 1 - byteorder] = c & 0xff;
+	out->str[i * 2 + byteorder] = c >> 8;
       }
+    } else {
+      /* Native byte order -- We don't need to do much...
+       *
+       * FIXME: Future optimization: Check if refcount is == 1,
+       * and perform sufficient magic to be able to convert in place.
+       */
+      memcpy(out->str, in->str, len);
     }
-#endif
     out = end_shared_string(out);
     break;
   case 2:
@@ -1728,17 +1843,17 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	    /* 0xfffe: Byte-order detection illegal character.
 	     * 0xffff: Illegal character.
 	     */
-	    Pike_error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
-		  "is not a Unicode character.",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Illegal character 0x%04x (index %ld) "
+                       "is not a Unicode character.",
+                       str2[i], (long)i);
 	  }
 	  if (str2[i] > 0x10ffff) {
-	    Pike_error("string_to_unicode(): Character 0x%08x (index %ld) "
-		  "is out of range (0x00000000..0x0010ffff).",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Character 0x%08x (index %ld) "
+                       "is out of range (0x00000000..0x0010ffff).",
+                       str2[i], (long)i);
 	  }
-	  /* Extra wide characters take two unicode characters in space.
-	   * ie One unicode character extra.
+	  /* Extra wide characters take two UTF16 characters in space.
+	   * ie One UTF16 character extra.
 	   */
 	  len += 2;
 	}
@@ -1753,41 +1868,48 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	if (c > 0xffff) {
 	  /* Use surrogates */
 	  c -= 0x10000;
-	  
-	  out->str[j + 1] = c & 0xff;
-	  out->str[j] = 0xdc | ((c >> 8) & 0x03);
+
+	  out->str[j + 1 - byteorder] = c & 0xff;
+	  out->str[j + byteorder] = 0xdc | ((c >> 8) & 0x03);
 	  j -= 2;
 	  c >>= 10;
 	  c |= 0xd800;
 	}
-	out->str[j + 1] = c & 0xff;
-	out->str[j] = c >> 8;
+	out->str[j + 1 - byteorder] = c & 0xff;
+	out->str[j + byteorder] = c >> 8;
       }
 #ifdef PIKE_DEBUG
       if (j) {
 	Pike_fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
-	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
+                   (long)len, (long)j);
       }
 #endif /* PIKE_DEBUG */
       out = end_shared_string(out);
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
-    break;
-#endif
   }
   pop_n_elems(args);
   push_string(out);
 }
 
-/*! @decl string unicode_to_string(string(0..255) s)
+/*! @decl string unicode_to_string(string(0..255) s, int(0..2)|void byteorder)
  *!
  *!   Converts an UTF16 byte-stream into a string.
  *!
- *! @note
- *!   This function did not decode surrogates in Pike 7.2 and earlier.
+ *! @param s
+ *!   String to convert to UTF16.
+ *!
+ *! @param byteorder
+ *!   Default input byte-order. One of:
+ *!   @int
+ *!     @value 0
+ *!       Network (aka big-endian) byte-order (default).
+ *!     @value 1
+ *!       Little-endian byte-order.
+ *!     @value 2
+ *!       Native byte-order.
+ *!   @endint
+ *!   Note that this argument is disregarded if @[s] starts with a BOM.
  *!
  *! @seealso
  *!   @[Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
@@ -1798,14 +1920,41 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   struct pike_string *in;
   struct pike_string *out = NULL;
   ptrdiff_t len, i, num_surrogates = 0;
+  INT_TYPE byteorder = 0;
   int swab=0;
   p_wchar1 surr1, surr2, surrmask, *str0;
 
-  get_all_args("unicode_to_string", args, "%S", &in);
+  get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
 
   if (in->len & 1) {
-    bad_arg_error("unicode_to_string", Pike_sp-args, args, 1, "string", Pike_sp-args,
+    bad_arg_error("unicode_to_string", args, 1, "string", Pike_sp-args,
 		  "String length is odd.\n");
+  }
+
+  if (byteorder >= 2) {
+    if (byteorder == 2) {
+#if PIKE_BYTEORDER == 1234
+      /* Little endian. */
+      byteorder = 1;
+#else
+      byteorder = 0;
+#endif
+    } else {
+      SIMPLE_ARG_TYPE_ERROR("unicode_to_string", 2, "int(0..2)|void");
+    }
+  }
+
+  if (byteorder !=
+#if PIKE_BYTEORDER == 1234
+      1
+#else
+      0
+#endif
+      ) {
+    /* Need to swap as the wanted byte-order differs
+     * from the native byte-order.
+     */
+    swab = 1;
   }
 
   /* Check byteorder of UTF data */
@@ -1822,12 +1971,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
     str0 ++;
     len -= 2;
   } else {
-    /* No byte order mark.  Need to swap unless big endian */
-#if (PIKE_BYTEORDER == 4321)
-    swab = 0;
-#else
-    swab = 1;
-#endif /* PIKE_BYTEORDER == 4321 */
+    /* No byte order mark.  Use the user-specified byte-order. */
   }
 
   /* Indentify surrogates by pre-swapped bitmasks, for efficiency */
@@ -1865,7 +2009,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
 	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
 	    (str0[-2]&surrmask) == surr1) {
-	    
+
 	  str2[i] = ((str0[-2]&0x3ff)<<10) + (str0[-1]&0x3ff) + 0x10000;
 
 	  --str0;
@@ -1880,10 +2024,10 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
      * FIXME: Future optimization: Perform sufficient magic
      * to do the conversion in place if the ref-count is == 1.
      */
-      MEMCPY(out->str, (char *)(str0-len), len*2);
+      memcpy(out->str, str0-len, len*2);
   } else {
     /* Reverse endian */
-    
+
     if (num_surrogates) {
       /* Convert surrogates */
 
@@ -1893,7 +2037,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
 	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
 	    (str0[-2]&surrmask) == surr1) {
-	    
+
 #if (PIKE_BYTEORDER == 4321)
 	  str2[i] = ((((unsigned char *)str0)[-3]&3)<<18) +
 	    (((unsigned char *)str0)[-4]<<10) +
@@ -1941,19 +2085,89 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string(0..255) string_to_utf8(string s)
- *! @decl string(0..255) string_to_utf8(string s, int extended)
+/*! @decl string(1..) string_filter_non_unicode(string s)
  *!
- *!   Converts a string into an UTF-8 compliant byte-stream.
+ *!  Replace the most obviously non-unicode characters from @[s] with
+ *!  the unicode replacement character.
+ *!
+ *! @note
+ *!   This will replace characters outside the ranges
+ *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}
+ *!   with 0xffea (the replacement character).
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[string_to_unicode()],
+ *!   @[unicode_to_string()], @[utf8_to_string()], @[string_to_utf8()]
+ */
+static void f_string_filter_non_unicode( INT32 args )
+{
+  struct pike_string *in;
+  INT32 min,max;
+  int i;
+  static const p_wchar1 replace = 0xfffd;
+  static const PCHARP repl_char = {(void*)&replace,1};
+
+  get_all_args("filter_non_unicode", args, "%W", &in);
+  check_string_range( in, 1, &min, &max );
+
+  if( !in->len || (min >= 0 && max < 0xd800) )
+      return; /* The string is obviously ok. */
+
+  if( (max < 0 || min > 0x10ffff) || (max < 0xe000 && min > 0xd7ff) )
+  {
+      /* All invalid. Could probably be optimized. */
+      debug_make_shared_binary_pcharp( repl_char, 1 );
+      push_int( in->len );
+      o_multiply();
+  }
+  else
+  {
+      /* Note: we could optimize this by not doing any string builder
+       * at all unless there is at least one character that needs to
+       * be replaced.
+       */
+      struct string_builder out;
+      /* on average shift 1 is more correct than in->size_shift, since
+       * there is usually only the one character that is outside the
+       * range.
+       */
+      init_string_builder_alloc( &out, in->len, 1 );
+      for( i=0; i<in->len; i++ )
+      {
+          p_wchar2 c = index_shared_string(in,i);
+          if( (c < 0 || c > 0x10ffff) || (c>0xd7ff && c<0xe000) )
+              string_builder_append( &out, repl_char, 1 );
+          else
+              string_builder_putchar( &out, c );
+      }
+      push_string( finish_string_builder( &out ) );
+  }
+}
+
+/*! @decl utf8_string string_to_utf8(string s)
+ *! @decl utf8_string string_to_utf8(string s, int extended)
+ *!
+ *!   Convert a string into a UTF-8 compliant byte-stream.
+ *!
+ *! @param s
+ *!   String to encode into UTF-8.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept and encode the characters outside the valid ranges
+ *!       using the same algorithm. Such encoded characters are
+ *!       however not UTF-8 compliant.
+ *!     @value 2
+ *!       Encode characters outside the BMP with UTF-8 encoded UTF-16
+ *!       (ie split them into surrogate pairs and encode).
+ *!   @endint
  *!
  *! @note
  *!   Throws an error if characters not valid in an UTF-8 stream are
  *!   encountered. Valid characters are in the ranges
  *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}.
- *!
- *!   If @[extended] is 1 then characters outside the valid ranges are
- *!   accepted too and encoded using the same algorithm. Such encoded
- *!   characters are however not UTF-8 compliant.
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()],
@@ -1964,10 +2178,11 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   ptrdiff_t len;
   struct pike_string *in;
   struct pike_string *out;
-  ptrdiff_t i,j;
+  ptrdiff_t i;
   INT_TYPE extended = 0;
   PCHARP src;
   INT32 min, max;
+  unsigned char * dst;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
@@ -1992,13 +2207,16 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	if (c & ~0xffff) {
 	  /* 17bit or more. */
 	  len++;
-	  if (!extended && c > 0x10ffff)
-	    bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+	  if (!(extended & 1) && c > 0x10ffff)
+            bad_arg_error ("string_to_utf8", args, 1,
 			   NULL, Pike_sp - args,
 			   "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
 			   "outside the allowed range.\n",
 			   c, i);
-	  if (c & ~0x1fffff) {
+	  if ((extended & 2) && (c <= 0x10ffff)) {
+	    /* Encode with a surrogate pair. */
+	    len += 2;
+	  } else if (c & ~0x1fffff) {
 	    /* 22bit or more. */
 	    len++;
 	    if (c & ~0x3ffffff) {
@@ -2012,8 +2230,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 	    }
 	  }
 	}
-	else if (!extended && c >= 0xd800 && c <= 0xdfff)
-	  bad_arg_error ("string_to_utf8", Pike_sp - args, args, 1,
+	else if (!(extended & 1) && c >= 0xd800 && c <= 0xdfff)
+          bad_arg_error ("string_to_utf8", args, 1,
 			 NULL, Pike_sp - args,
 			 "Character 0x%08x at index %"PRINTPTRDIFFT"d is "
 			 "in the surrogate range and therefore invalid.\n",
@@ -2027,57 +2245,75 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
     return;
   }
   out = begin_shared_string(len);
+  dst = STR0(out);
 
-  for(i=j=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
     unsigned INT32 c = EXTRACT_PCHARP(src);
     if (!(c & ~0x7f)) {
       /* 7bit */
-      out->str[j++] = c;
+      *dst++ = c;
     } else if (!(c & ~0x7ff)) {
       /* 11bit */
-      out->str[j++] = 0xc0 | (c >> 6);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xc0 | (c >> 6);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0xffff)) {
       /* 16bit */
-      out->str[j++] = 0xe0 | (c >> 12);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xe0 | (c >> 12);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
+    } else if ((extended & 2) && (c <= 0x10ffff)) {
+      /* Encode with surrogates. */
+      c -= 0x10000;
+      /* 0xd800 | (c>>10)
+       * 0b1101 10cccc cccccc
+       * UTF8: 11101101 1010cccc 10cccccc
+       */
+      *dst++ = 0xed;
+      *dst++ = 0xa0 | (c >> 16);
+      *dst++ = 0x80 | ((c >> 10) & 0x3f);
+      /* 0xdc00 | (c & 0x3ff)
+       * 0b1101 11cccc cccccc
+       * UTF8: 11101101 1011cccc 10cccccc
+       */
+      *dst++ = 0xed;
+      *dst++ = 0xb0 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x1fffff)) {
       /* 21bit */
-      out->str[j++] = 0xf0 | (c >> 18);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xf0 | (c >> 18);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x3ffffff)) {
       /* 26bit */
-      out->str[j++] = 0xf8 | (c >> 24);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xf8 | (c >> 24);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else if (!(c & ~0x7fffffff)) {
       /* 31bit */
-      out->str[j++] = 0xfc | (c >> 30);
-      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = 0xfc | (c >> 30);
+      *dst++ = 0x80 | ((c >> 24) & 0x3f);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     } else {
       /* 32 - 36bit */
-      out->str[j++] = DO_NOT_WARN((char)0xfe);
-      out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 12) & 0x3f);
-      out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
-      out->str[j++] = 0x80 | (c & 0x3f);
+      *dst++ = (char)0xfe;
+      *dst++ = 0x80 | ((c >> 30) & 0x3f);
+      *dst++ = 0x80 | ((c >> 24) & 0x3f);
+      *dst++ = 0x80 | ((c >> 18) & 0x3f);
+      *dst++ = 0x80 | ((c >> 12) & 0x3f);
+      *dst++ = 0x80 | ((c >> 6) & 0x3f);
+      *dst++ = 0x80 | (c & 0x3f);
     }
   }
 #ifdef PIKE_DEBUG
-  if (len != j) {
+  if (len != dst - STR0(out)) {
     Pike_fatal("string_to_utf8(): Calculated and actual lengths differ: "
-	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n", len, j);
+	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n", len, dst - STR0(out));
   }
 #endif /* PIKE_DEBUG */
   out = end_shared_string(out);
@@ -2085,8 +2321,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-/*! @decl string utf8_to_string(string(0..255) s)
- *! @decl string utf8_to_string(string(0..255) s, int extended)
+/*! @decl string utf8_to_string(utf8_string s)
+ *! @decl string utf8_to_string(utf8_string s, int extended)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
@@ -2107,12 +2343,12 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
  *!
  *! @note
- *!   In conformance with RFC 3629 and Unicode 3.1 and later,
+ *!   In conformance with @rfc{3629@} and Unicode 3.1 and later,
  *!   non-shortest forms are not decoded. An error is thrown instead.
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
- *!   @[unicode_to_string()]
+ *!   @[unicode_to_string()], @[validate_utf8()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
@@ -2156,7 +2392,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
        */
 
       if ((c & 0xc0) == 0x80) {
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+        bad_arg_error ("utf8_to_string", args, 1,
 		       NULL, Pike_sp - args,
 		       "Invalid continuation character 0x%02x "
 		       "at index %"PRINTPTRDIFFT"d.\n",
@@ -2166,7 +2402,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #define GET_CHAR(in, i, c) do {						\
 	i++;								\
 	if (i >= in->len)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+          bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
 			 "Truncated UTF-8 sequence at end of string.\n"); \
 	c = STR0 (in)[i];						\
@@ -2174,7 +2410,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #define GET_CONT_CHAR(in, i, c) do {					\
 	GET_CHAR(in, i, c);						\
 	if ((c & 0xc0) != 0x80)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+          bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
 			 "Expected continuation character at index %d, " \
 			 "got 0x%02x.\n",				\
@@ -2182,7 +2418,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       } while (0)
 
 #define UTF8_SEQ_ERROR(prefix, c, i, problem) do {			\
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+        bad_arg_error ("utf8_to_string", args, 1,                       \
 		       NULL, Pike_sp - args,				\
 		       "UTF-8 sequence beginning with %s0x%02x "	\
 		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
@@ -2272,7 +2508,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	}
 
 	else if (c == 0xff)
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+          bad_arg_error ("utf8_to_string", args, 1,
 			 NULL, Pike_sp - args,
 			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
 			 i);
@@ -2425,9 +2661,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
 #ifdef PIKE_DEBUG
   if (j != len) {
-    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: "
+    Pike_fatal("Calculated and actual lengths differ: "
 	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
-	  len, j);
+               len, j);
   }
 #endif /* PIKE_DEBUG */
   out = low_end_shared_string(out);
@@ -2436,6 +2672,162 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 #endif
   pop_n_elems(args);
   push_string(out);
+}
+
+/*! @decl string validate_utf8(utf8_string s)
+ *! @decl string validate_utf8(utf8_string s, int extended)
+ *!
+ *!   Checks whether a string is a valid UTF-8 byte-stream.
+ *!
+ *! @param s
+ *!   String of UTF-8 encoded data to validate.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept the extension used by @[string_to_utf8()], including
+ *!       lone UTF-16 surrogates.
+ *!     @value 2
+ *!       Accept UTF-8 encoded UTF-16 (ie accept valid surrogate-pairs).
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the stream is not a legal
+ *!   UTF-8 byte-stream, and @expr{1@} if it is.
+ *!
+ *! @note
+ *!   In conformance with @rfc{3629@} and Unicode 3.1 and later,
+ *!   non-shortest forms are considered invalid.
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[unicode_to_string()], @[utf8_to_string()]
+ */
+PMOD_EXPORT void f_validate_utf8(INT32 args)
+{
+  struct pike_string *in;
+  ptrdiff_t i;
+  INT_TYPE extended = 0;
+  INT32 min, max;
+  int ret = 1;
+  p_wchar1 expect_low_surrogate = 0;
+
+  get_all_args("validate_utf8", args, "%T.%i", &in, &extended);
+
+  if (in->size_shift) {
+    /* Wide string -- not UTF-8. */
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+
+  for(i=0; ret && (i < in->len); i++) {
+    p_wchar0 c = STR0(in)[i];
+    /* NB: unsigned INT64 to handle bit 33. */
+    unsigned INT64 ch;
+    unsigned INT64 full_mask = 0x3f;
+    unsigned INT64 hi_mask = 0x3e;
+
+    /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+     * Byte Sequences
+     *
+     *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+     * 000000-00007f   00-7f
+     * 000080-0007ff   c2-df     80-bf
+     * 000800-000fff    e0       a0-bf     80-bf
+     * 001000-00cfff   e1-ec     80-bf     80-bf
+     * 00d000-00d7ff    ed       80-9f     80-bf
+     * 00e000-00ffff   ee-ef     80-bf     80-bf
+     * 010000-03ffff    f0       90-bf     80-bf     80-bf
+     * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+     * 100000-10ffff    f4       80-8f     80-bf     80-bf
+     */
+
+    if (!(c & 0x80)) {
+      if (expect_low_surrogate) ret = 0;	/* Expected low surrogate. */
+      continue;
+    }
+
+    if (!(c & 0x40)) {
+      /* Invalid continuation char. */
+      ret = 0;
+      break;
+    }
+
+    if (c == 0xff) {
+      /* Invalid UTF-8 code-point. */
+      ret = 0;
+      break;
+    }
+
+    ch = c;
+
+    while (c & 0x40) {
+      /* NB: We rely on the NUL-terminator in pike_strings. */
+      p_wchar0 cc = STR0(in)[++i];
+      if ((cc & 0xc0) != 0x80) {
+	/* Expected continuation char. */
+	ret = 0;
+	break;
+      }
+      ch = ch<<6 | (cc & 0x3f);
+      full_mask |= full_mask << 5;
+      hi_mask <<= 5;
+      c <<= 1;
+    }
+
+    ch = ch & full_mask;
+
+    if (!(ch & hi_mask) || (ch < 0x80)) {
+      /* The 5 most significant bits of ch are all zero.
+       * This means that it was a non-minimal form.
+       *
+       * Note that a special case is needed for the range 0x40..0x7f.
+       */
+      ret = 0;
+      break;
+    }
+
+    if ((ch & ~0x7ff) == 0xd800) {
+      /* Surrogate */
+      if (!(extended & 3)) {
+	ret = 0;
+	break;
+      }
+      if (!(extended & 1) && ((ch & 0x400) != expect_low_surrogate)) {
+	/* Bad surrogate pair. */
+	ret = 0;
+	break;
+      }
+      expect_low_surrogate = (ch & 0x400) ^ 0x400;
+    } else if (!(extended & 1) && expect_low_surrogate) {
+      ret = 0;
+      break;
+    } else if (ch >= 0x110000) {
+      /* Character out of range. */
+      if (!(extended & 1) || (ch >= (((unsigned INT64)1) << 32))) {
+	ret = 0;
+	break;
+      }
+    }
+  }
+
+  if (!(extended & 1) && expect_low_surrogate) {
+    ret = 0;
+  }
+
+  pop_n_elems(args);
+  push_int(ret);
 }
 
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
@@ -2454,7 +2846,10 @@ static void f_parse_pike_type( INT32 args )
   free_type(t);
 }
 
-/*! @decl type __soft_cast(type to, type from)
+/*! @module Pike
+ */
+
+/*! @decl type soft_cast(type to, type from)
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
  */
@@ -2478,8 +2873,8 @@ static void f___soft_cast(INT32 args)
   }
 }
 
-/*! @decl type __low_check_call(type fun_type, type arg_type)
- *! @decl type __low_check_call(type fun_type, type arg_type, int flags)
+/*! @decl type low_check_call(type fun_type, type arg_type)
+ *! @decl type low_check_call(type fun_type, type arg_type, int flags)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -2530,7 +2925,7 @@ static void f___low_check_call(INT32 args)
   }
 }
 
-/*! @decl type __get_return_type(type fun_type)
+/*! @decl type get_return_type(type fun_type)
  *!
  *!   Check what a function of the type @[fun_type] will
  *!   return if called with no arguments.
@@ -2558,7 +2953,7 @@ static void f___get_return_type(INT32 args)
   }
 }
 
-/*! @decl type __get_first_arg_type(type fun_type)
+/*! @decl type get_first_arg_type(type fun_type)
  *!
  *!   Check if a function of the type @[fun_type] may be called
  *!   with an argument, and return the type of that argument.
@@ -2569,7 +2964,7 @@ static void f___get_return_type(INT32 args)
  *!   Returns @tt{0@} (zero) if a function of the type @[fun_type]
  *!   may not be called with any argument, or if it is not callable.
  */
-static void f___get_first_arg_type(INT32 args)
+void f___get_first_arg_type(INT32 args)
 {
   struct pike_type *res;
   if (args != 1) {
@@ -2588,7 +2983,7 @@ static void f___get_first_arg_type(INT32 args)
   }
 }
 
-/*! @decl array(string) __get_type_attributes(type t)
+/*! @decl array(string) get_type_attributes(type t)
  *!
  *!   Get the attribute markers for a type.
  *!
@@ -2596,7 +2991,7 @@ static void f___get_first_arg_type(INT32 args)
  *!   Returns an array with the attributes for the type @[t].
  *!
  *! @seealso
- *!   @[__get_return_type()], @[__get_first_arg_type()]
+ *!   @[get_return_type()], @[get_first_arg_type()]
  */
 static void f___get_type_attributes(INT32 args)
 {
@@ -2622,6 +3017,9 @@ static void f___get_type_attributes(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+/*! @endmodule Pike
+ */
+
 /*! @decl mapping (string:mixed) all_constants()
  *!
  *!   Returns a mapping containing all global constants, indexed on the name
@@ -2634,6 +3032,42 @@ PMOD_EXPORT void f_all_constants(INT32 args)
 {
   pop_n_elems(args);
   ref_push_mapping(get_builtin_constants());
+}
+
+/*! @decl CompilerEnvironment.PikeCompiler get_active_compiler()
+ *!
+ *!   Returns the most recent of the currently active pike compilers,
+ *!   or @[UNDEFINED] if none is active.
+ *!
+ *! @note
+ *!   This function should only be used during a call of @[compile()].
+ *!
+ *! @seealso
+ *!   @[get_active_error_handler()], @[compile()],
+ *!   @[master()->get_compilation_handler()], @[CompilationHandler]
+ */
+PMOD_EXPORT void f_get_active_compiler(INT32 args)
+{
+  struct compilation *c = NULL;
+
+  /* NB: This is an efun, so we need to keep the stack clean. */
+  pop_n_elems(args);
+
+  if (compilation_program) {
+    struct pike_frame *compiler_frame = Pike_fp;
+
+    while (compiler_frame &&
+	   (compiler_frame->context->prog != compilation_program)) {
+      compiler_frame = compiler_frame->next;
+    }
+
+    if (compiler_frame && compiler_frame->current_object->prog) {
+      ref_push_object(compiler_frame->current_object);
+      return;
+    }
+  }
+
+  push_undefined();
 }
 
 /*! @decl CompilationHandler get_active_compilation_handler()
@@ -2664,7 +3098,7 @@ PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
       c = (struct compilation *)compiler_frame->current_storage;
     }
   }
-  
+
   pop_n_elems(args);
   if (c && c->compat_handler) {
     ref_push_object(c->compat_handler);
@@ -2701,7 +3135,7 @@ PMOD_EXPORT void f_get_active_error_handler(INT32 args)
       c = (struct compilation *)compiler_frame->current_storage;
     }
   }
-  
+
   pop_n_elems(args);
   if (c && c->handler) {
     ref_push_object(c->handler);
@@ -2761,7 +3195,8 @@ PMOD_EXPORT void f_allocate(INT32 args)
  *!
  *!   Returns the object we are currently evaluating in.
  *!
- *!   @[level] might be used to access the object of a surrounding
+ *! @param level
+ *!   @[level] may be used to access the object of a surrounding
  *!   class: The object at level 0 is the current object, the object
  *!   at level 1 is the one belonging to the class that surrounds
  *!   the class that the object comes from, and so on.
@@ -2780,7 +3215,7 @@ void f_this_object(INT32 args)
 
   if (args) {
     if (TYPEOF(Pike_sp[-args]) != T_INT || Pike_sp[-args].u.integer < 0)
-      SIMPLE_BAD_ARG_ERROR ("this_object", 1, "a non-negative integer");
+      SIMPLE_ARG_TYPE_ERROR ("this_object", 1, "a non-negative integer");
     level = Pike_sp[-args].u.integer;
   }
   else
@@ -2897,8 +3332,8 @@ static int generate_this_object(node *n)
  */
 PMOD_EXPORT void f_throw(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("throw", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("throw", 1);
   assign_svalue(&throw_value,Pike_sp-args);
   pop_n_elems(args);
   throw_severity=0;
@@ -2924,13 +3359,12 @@ int in_forked_child = 0;
 PMOD_EXPORT void f_exit(INT32 args)
 {
   static int in_exit=0;
-  ASSERT_SECURITY_ROOT("exit");
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("exit", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("exit", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("exit", 1, "int");
 
   if(in_exit) Pike_error("exit already called!\n");
   in_exit=1;
@@ -2973,7 +3407,6 @@ PMOD_EXPORT void f_exit(INT32 args)
 void f__exit(INT32 args)
 {
   int code;
-  ASSERT_SECURITY_ROOT("_exit");
 
   get_all_args("_exit", args, "%d", &code);
 
@@ -2995,19 +3428,20 @@ void f__exit(INT32 args)
  *!   This function returns the number of seconds since 00:00:00 UTC, 1 Jan 1970.
  *!
  *!   The second syntax does not query the system for the current
- *!   time. Instead the latest done by the pike process is returned
- *!   again. That's slightly faster but can be wildly inaccurate. Pike
+ *!   time, instead the last time value used by the pike process is returned
+ *!   again. It avoids a system call, and thus is slightly faster,
+ *!   but can be wildly inaccurate. Pike
  *!   queries the time internally when a thread has waited for
  *!   something, typically in @[sleep] or in a backend (see
  *!   @[Pike.Backend]).
  *!
- *!   The third syntax can be used to measure time more preciely than one
- *!   second. It return how many seconds has passed since @[t]. The precision
+ *!   The third syntax can be used to measure time more precisely than one
+ *!   second. It returns how many seconds have passed since @[t]. The precision
  *!   of this function varies from system to system.
  *!
  *! @seealso
  *!   @[ctime()], @[localtime()], @[mktime()], @[gmtime()],
- *!   @[System.gettimeofday], @[gethrtime]
+ *!   @[System.gettimeofday()], @[gethrtime()]
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
@@ -3038,8 +3472,10 @@ PMOD_EXPORT void f_time(INT32 args)
   push_int(ret.tv_sec);
 }
 
-/*! @decl string(0..127) crypt(string password)
- *! @decl int(0..1) crypt(string typed_password, string crypted_password)
+/*! @decl string(46..122) crypt(string(1..255) password)
+ *! @decl int(0..1) crypt(string(1..255) input_password, @
+ *!                       string(46..122) crypted_password)
+ *! @decl string(46..122) crypt()
  *!
  *!   This function crypts and verifies a short string (only the first
  *!   8 characters are significant).
@@ -3051,6 +3487,9 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   @[crypted_password], and returns @expr{1@} if they match, and
  *!   @expr{0@} (zero) otherwise.
  *!
+ *!   The third syntax generates a random string and then crypts it,
+ *!   creating a string useful as a password.
+ *!
  *! @note
  *!   Note that strings containing null characters will only be
  *!   processed up until the null character.
@@ -3058,11 +3497,22 @@ PMOD_EXPORT void f_time(INT32 args)
 PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
-  char *ret, *pwd, *saltp = NULL;
-  char *choise =
-    "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
+  char *ret, *pwd = NULL, *saltp = NULL;
+  char *alphabet =
+    "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-  get_all_args("crypt", args, "%s.%s", &pwd, &saltp);
+  get_all_args("crypt", args, ".%s%s", &pwd, &saltp);
+
+  if( !pwd )
+  {
+    do {
+      push_random_string(16);
+      push_constant_text("\0");
+      f_minus(2);
+    } while(Pike_sp[-1].u.string->len<8);
+    pwd = Pike_sp[-1].u.string->str;
+    args++;
+  }
 
   if(saltp)
   {
@@ -3073,11 +3523,19 @@ PMOD_EXPORT void f_crypt(INT32 args)
       return;
     }
   } else {
-    unsigned int foo; /* Sun CC wants this :( */
-    foo=my_rand();
-    salt[0] = choise[foo % (size_t) strlen(choise)];
-    foo=my_rand();
-    salt[1] = choise[foo % (size_t) strlen(choise)];
+    struct svalue *random =
+      simple_mapping_string_lookup(get_builtin_constants(), "random");
+    if(!random || (TYPEOF(*random) != T_FUNCTION))
+      Pike_error("Unable to resolve random function.\n");
+    push_int(4096); /* strlen(alphbet)**2 */
+    apply_svalue(random, 1);
+    if(TYPEOF(Pike_sp[-1])!=T_INT)
+      Pike_error("Couldn't generate random number.\n");
+
+    salt[0] = alphabet[ Pike_sp[-1].u.integer & 0x3f ];
+    salt[1] = alphabet[ (Pike_sp[-1].u.integer>>6) & 0x3f ];
+    pop_stack();
+
     saltp=salt;
     if (args > 1) {
       pop_n_elems(args-1);
@@ -3126,12 +3584,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @expr{o->destroy()@}, and then clears all variables in the
+ *!   Calls @expr{o->_destruct()@}, and then clears all variables in the
  *!   object. If no argument is given, the current object is destructed.
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
- */ 
+ */
 PMOD_EXPORT void f_destruct(INT32 args)
 {
   struct object *o;
@@ -3143,7 +3601,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
 	pop_n_elems(args);
 	return;
       }
-      SIMPLE_BAD_ARG_ERROR("destruct", 1, "object");
+      SIMPLE_ARG_TYPE_ERROR("destruct", 1, "object");
     }
 
     o=Pike_sp[-args].u.object;
@@ -3158,10 +3616,6 @@ PMOD_EXPORT void f_destruct(INT32 args)
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n",
 	       Pike_sp, args);
-#ifdef PIKE_SECURITY
-  if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
-    Pike_error("Destruct permission denied.\n");
-#endif
   debug_malloc_touch(o);
   destruct_object (o, DESTRUCT_EXPLICIT);
   pop_n_elems(args);
@@ -3172,16 +3626,24 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!
  *!   Return an array of all valid indices for the value @[x].
  *!
- *!   For strings and arrays this is simply an array of ascending
- *!   numbers.
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!     @type array
+ *!       For strings and arrays this is simply an array of ascending
+ *!       numbers.
  *!
- *!   For mappings and multisets, the array might contain any value.
+ *!     @type mapping
+ *!     @type multiset
+ *!       For mappings and multisets, the array might contain any value.
  *!
- *!   For objects which define @[lfun::_indices()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_indices()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with all non-protected symbols is
- *!   returned.
+ *!       For other objects an array with the names of all non-protected
+ *!       symbols is returned.
+ *!  @endmixed
  *!
  *! @seealso
  *!   @[values()], @[types()], @[lfun::_indices()]
@@ -3191,8 +3653,8 @@ PMOD_EXPORT void f_indices(INT32 args)
   ptrdiff_t size;
   struct array *a = NULL;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("indices", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("indices", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3208,7 +3670,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     while(--size>=0)
     {
       /* Elements are already integers. */
-      ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
+      ITEM(a)[size].u.integer = (INT_TYPE)size;
     }
     a->type_field = BIT_INT;
     break;
@@ -3237,13 +3699,12 @@ PMOD_EXPORT void f_indices(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("indices", 1,
-			 "string|array|mapping|"
-			 "multiset|object|program|function");
-    return; /* make apcc happy */
+    SIMPLE_ARG_TYPE_ERROR("indices", 1,
+                          "string|array|mapping|"
+                          "multiset|object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
@@ -3290,7 +3751,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
       }
     }
 
-    /* If it is an object, it *may* be overloaded, we or with 
+    /* If it is an object, it *may* be overloaded, we or with
      * the deftype....
      */
 #if 1
@@ -3304,7 +3765,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
     }
 #endif
   }
-  
+
   return 0; /* continue optimization */
 }
 
@@ -3407,9 +3868,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	  copy_pike_type(types[argno], arg->type);
 	}
 	argno = !argno;
-	/* Handle the special case where CAR & CDR are the same.
-	 * Only occurrs with SHARED_NODES.
-	 */
+	/* Handle the special case where CAR & CDR are the same.  */
       } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
       goto retrace;
     }
@@ -3447,7 +3906,7 @@ static node *fix_aggregate_mapping_type(node *n)
 
     if (n->parent) {
       n->parent->node_info |= OPT_TYPE_NOT_FIXED;
-    }    
+    }
   }
  done:
   if (args) {
@@ -3468,21 +3927,29 @@ static node *fix_aggregate_mapping_type(node *n)
  *!   Return an array of all possible values from indexing the value
  *!   @[x].
  *!
- *!   For strings an array of int with the ISO10646 codes of the
- *!   characters in the string is returned.
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!       For strings an array of int with the ISO10646 codes of the
+ *!       characters in the string is returned.
  *!
- *!   For a multiset an array filled with ones (@expr{1@}) is
- *!   returned.
+ *!     @type multiset
+ *!       For a multiset an array filled with ones (@expr{1@}) is
+ *!       returned.
  *!
- *!   For arrays a single-level copy of @[x] is returned.
+ *!     @type array
+ *!       For arrays a single-level copy of @[x] is returned.
  *!
- *!   For mappings the array may contain any value.
+ *!     @type mapping
+ *!       For mappings the array may contain any value.
  *!
- *!   For objects which define @[lfun::_values()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_values()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with the values of all non-protected
- *!   symbols is returned.
+ *!       For other objects an array with the values of all non-protected
+ *!       symbols is returned.
+ *!  @endmixed
  *!
  *! @seealso
  *!   @[indices()], @[types()], @[lfun::_values()]
@@ -3491,8 +3958,8 @@ PMOD_EXPORT void f_values(INT32 args)
 {
   ptrdiff_t size;
   struct array *a = NULL;
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("values", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("values", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3535,13 +4002,12 @@ PMOD_EXPORT void f_values(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("values", 1,
-			 "string|array|mapping|multiset|"
-			 "object|program|function");
-    return;  /* make apcc happy */
+    SIMPLE_ARG_TYPE_ERROR("values", 1,
+                          "string|array|mapping|multiset|"
+                          "object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
@@ -3549,18 +4015,26 @@ PMOD_EXPORT void f_values(INT32 args)
 
 /*! @decl array(type(mixed)) types(string|array|mapping|multiset|object x)
  *!
- *!   Return an array of all valid indices for the value @[x].
+ *!   Return an array with the types of all valid indices for the value @[x].
  *!
- *!   For strings this is simply an array with @tt{int@}
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!       For strings this is simply an array with @tt{int@}
  *!
- *!   For arrays, mappings and multisets this is simply
- *!   an array with @tt{mixed@}.
+ *!     @type array
+ *!     @type mapping
+ *!     @type multiset
+ *!       For arrays, mappings and multisets this is simply
+ *!       an array with @tt{mixed@}.
  *!
- *!   For objects which define @[lfun::_types()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_types()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with type types for all non-protected
- *!   symbols is returned.
+ *!       For other objects an array with type types for all non-protected
+ *!       symbols is returned.
+ *!   @endmixed
  *!
  *! @note
  *!   This function was added in Pike 7.9.
@@ -3574,8 +4048,8 @@ PMOD_EXPORT void f_types(INT32 args)
   struct array *a = NULL;
   struct pike_type *default_type = mixed_type_string;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("types", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("types", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3624,60 +4098,15 @@ PMOD_EXPORT void f_types(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("types", 1,
-			 "string|array|mapping|"
-			 "multiset|object|program|function");
-    return; /* make apcc happy */
+    SIMPLE_ARG_TYPE_ERROR("types", 1,
+                          "string|array|mapping|"
+                          "multiset|object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
-}
-
-/*! @decl object next_object(object o)
- *! @decl object next_object()
- *!
- *!   Returns the next object from the list of all objects.
- *!
- *!   All objects are stored in a linked list.
- *!
- *! @returns
- *!   If no arguments have been given @[next_object()] will return the first
- *!   object from the list.
- *!
- *!   If @[o] has been specified the object after @[o] on the list will be
- *!   returned.
- *!
- *! @note
- *!   This function is not recomended to use.
- *!
- *! @seealso
- *!   @[destruct()]
- */
-PMOD_EXPORT void f_next_object(INT32 args)
-{
-  struct object *o;
-
-  ASSERT_SECURITY_ROOT("next_object");
-
-  if(args < 1)
-  {
-    o = first_object;
-  }else{
-    if(TYPEOF(Pike_sp[-args]) != T_OBJECT)
-      SIMPLE_BAD_ARG_ERROR("next_object", 1, "object");
-    o = Pike_sp[-args].u.object->next;
-  }
-  while(o && !o->prog) o=o->next;
-  pop_n_elems(args);
-  if(!o)
-  {
-    push_int(0);
-  }else{
-    ref_push_object(o);
-  }
 }
 
 /*! @decl program|function object_program(mixed o)
@@ -3691,28 +4120,13 @@ PMOD_EXPORT void f_next_object(INT32 args)
  */
 PMOD_EXPORT void f_object_program(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("object_program", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("object_program", 1);
 
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
   {
     struct object *o=Pike_sp[-args].u.object;
     struct program *p = o->prog;
-
-#if 0
-    /* This'd be nice, but it doesn't work well since the returned
-     * function can't double as a program (program_from_svalue returns
-     * NULL for it). */
-    if (p == pike_trampoline_program) {
-      struct pike_trampoline *t = (struct pike_trampoline *) o->storage;
-      if (t->frame && t->frame->current_object) {
-	add_ref (o = t->frame->current_object);
-	pop_n_elems (args);
-	push_function (o, t->func);
-	return;
-      }
-    }
-#endif
 
     if(p)
     {
@@ -3730,7 +4144,7 @@ PMOD_EXPORT void f_object_program(INT32 args)
 	  push_function(loc.o, loc.parent_identifier);
 	  return;
 	}
-      } else if((p->flags & PROGRAM_USES_PARENT) && 
+      } else if((p->flags & PROGRAM_USES_PARENT) &&
 	 PARENT_INFO(o)->parent &&
 	 PARENT_INFO(o)->parent->prog)
       {
@@ -3936,7 +4350,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("reverse", 1, "string|int|array");    
+    SIMPLE_ARG_TYPE_ERROR("reverse", 1, "string|int|array");
   }
 }
 
@@ -4025,12 +4439,12 @@ int find_longest_prefix(char *str,
   }
   return match;
 }
-			       
+
 
 static int replace_sortfun(struct replace_many_tupel *a,
 			   struct replace_many_tupel *b)
 {
-  return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
+  return (int)my_quick_strcmp(a->ind, b->ind);
 }
 
 void free_replace_many_context(struct replace_many_context *ctx)
@@ -4047,7 +4461,7 @@ void free_replace_many_context(struct replace_many_context *ctx)
 	free_string(ctx->empty_repl);
       }
     }
-    free ((char *) ctx->v);
+    free (ctx->v);
     ctx->v = NULL;
   }
 }
@@ -4104,8 +4518,8 @@ void compile_replace_many(struct replace_many_context *ctx,
   fsort((char *)ctx->v, num, sizeof(struct replace_many_tupel),
 	(fsortfun)replace_sortfun);
 
-  MEMSET(ctx->set_start, 0, sizeof(ctx->set_start));
-  MEMSET(ctx->set_end, 0, sizeof(ctx->set_end));
+  memset(ctx->set_start, 0, sizeof(ctx->set_start));
+  memset(ctx->set_end, 0, sizeof(ctx->set_end));
   ctx->other_start = num;
 
   for(e=0;e<num;e++)
@@ -4311,7 +4725,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!
  *!   This function can do several kinds replacement operations, the
  *!   different syntaxes do different things as follows:
- *! 
+ *!
  *!   If all the arguments are strings, a copy of @[s] with every
  *!   occurrence of @[from] replaced with @[to] will be returned.
  *!   Special case: @[to] will be inserted between every character in
@@ -4320,7 +4734,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
  *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equvivalent to @expr{@[mkmapping](@[from], @[to])@} can be
+ *!   a mapping equivalent to @expr{@[mkmapping](@[from], @[to])@} can be
  *!   used.
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which
@@ -4343,7 +4757,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 	 mapping_fix_type_field(Pike_sp[-1].u.mapping);
 	 if( (m->data->ind_types & ~BIT_STRING) ||
 	     (m->data->val_types & ~BIT_STRING) ) {
-	   SIMPLE_BAD_ARG_ERROR("replace", 2, "mapping(string:string)");
+	   SIMPLE_ARG_TYPE_ERROR("replace", 2, "mapping(string:string)");
 	 }
        }
 
@@ -4354,7 +4768,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 	args++;
      }
      else
-	SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
+	SIMPLE_WRONG_NUM_ARGS_ERROR("replace", 3);
   } else if (args > 3) {
     pop_n_elems(args-3);
     args = 3;
@@ -4382,29 +4796,29 @@ PMOD_EXPORT void f_replace(INT32 args)
     switch(TYPEOF(Pike_sp[1-args]))
     {
     default:
-      SIMPLE_BAD_ARG_ERROR("replace", 2, "string|array");
+      SIMPLE_ARG_TYPE_ERROR("replace", 2, "string|array");
 
     case T_STRING:
       if(TYPEOF(Pike_sp[2-args]) != T_STRING)
-	SIMPLE_BAD_ARG_ERROR("replace", 3, "string");
+	SIMPLE_ARG_TYPE_ERROR("replace", 3, "string");
 
       s=string_replace(Pike_sp[-args].u.string,
 		       Pike_sp[1-args].u.string,
 		       Pike_sp[2-args].u.string);
       break;
-      
+
     case T_ARRAY:
       if (TYPEOF(Pike_sp[2-args]) == T_STRING) {
 	push_int(Pike_sp[1-args].u.array->size);
 	stack_swap();
 	f_allocate(2);
       } else if(TYPEOF(Pike_sp[2-args]) != T_ARRAY)
-	SIMPLE_BAD_ARG_ERROR("replace", 3, "array|string");
+	SIMPLE_ARG_TYPE_ERROR("replace", 3, "array|string");
 
       s=replace_many(Pike_sp[-args].u.string,
 		     Pike_sp[1-args].u.array,
 		     Pike_sp[2-args].u.array);
-    
+
     }
     pop_n_elems(args);
     push_string(s);
@@ -4412,7 +4826,7 @@ PMOD_EXPORT void f_replace(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("replace", 1, "array|mapping|string");
+    SIMPLE_ARG_TYPE_ERROR("replace", 1, "array|mapping|string");
   }
 }
 
@@ -4442,7 +4856,11 @@ node *optimize_replace(node *n)
      */
     node **arg1 = my_get_arg(&_CDR(n), 1);
     node **arg2 = my_get_arg(&_CDR(n), 2);
-    struct program *replace_compiler = NULL;
+
+    /* This variable is modified in between setjmp and longjmp,
+     * so it needs to be volatile to prevent it from being globbered.
+     */
+    struct program * volatile replace_compiler = NULL;
 
     if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
 		  arg2 &&
@@ -4566,7 +4984,7 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   Set the value @[m] to use weak or normal references in its
  *!   indices and/or values (whatever is applicable). @[state] is a
  *!   bitfield built by using @expr{|@} between the following flags:
- *!   
+ *!
  *!   @int
  *!   	@value Pike.WEAK_INDICES
  *!   	  Use weak references for indices. Only applicable for
@@ -4577,7 +4995,7 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   	@value Pike.WEAK
  *!   	  Shorthand for @expr{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
  *!   @endint
- *!   
+ *!
  *!   If a flag is absent, the corresponding field will use normal
  *!   references. @[state] can also be @expr{1@} as a compatibility
  *!   measure; it's treated like @[Pike.WEAK].
@@ -4615,7 +5033,7 @@ void f_set_weak_flag(INT32 args)
       multiset_set_flags (s->u.multiset, flags);
       break;
     default:
-      SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");
+      SIMPLE_ARG_TYPE_ERROR("set_weak_flag",1,"array|mapping|multiset");
   }
   pop_n_elems(args-1);
 }
@@ -4630,8 +5048,8 @@ void f_set_weak_flag(INT32 args)
  */
 PMOD_EXPORT void f_objectp(INT32 args)
 {
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("objectp", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT || !Pike_sp[-args].u.object->prog
      || is_bignum_object(Pike_sp[-args].u.object))
   {
@@ -4654,8 +5072,8 @@ PMOD_EXPORT void f_objectp(INT32 args)
 PMOD_EXPORT void f_functionp(INT32 args)
 {
   int res = 0;
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("functionp", 1);
   if( TYPEOF(Pike_sp[-args]) == T_FUNCTION &&
       (SUBTYPEOF(Pike_sp[-args]) == FUNCTION_BUILTIN ||
        Pike_sp[-args].u.object->prog))
@@ -4664,27 +5082,17 @@ PMOD_EXPORT void f_functionp(INT32 args)
   push_int(res);
 }
 
-static int callablep(struct svalue *s)
+PMOD_EXPORT int callablep(struct svalue *s)
 {
-  int ret = 0;
-  DECLARE_CYCLIC();
-
-  if (BEGIN_CYCLIC(s, NULL)) {
-    END_CYCLIC();
-    return 1;
-  }
-
-  SET_CYCLIC_RET((ptrdiff_t)1);
-
   switch( TYPEOF(*s) )
   {
     case T_FUNCTION:
       if( SUBTYPEOF(*s) == FUNCTION_BUILTIN
 	  || s->u.object->prog)
-	ret = 1;
+        return 1;
       break;
     case T_PROGRAM:
-      ret = 1;
+      return 1;
       break;
     case T_OBJECT:
       {
@@ -4692,28 +5100,43 @@ static int callablep(struct svalue *s)
 	if((p = s->u.object->prog) &&
 	   FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog,
 		     LFUN_CALL ) != -1)
-          ret = 1;
+          return 1;
       }
       break;
     case T_ARRAY:
+    {
+      int ret = 0;
+      DECLARE_CYCLIC();
+
+      if (BEGIN_CYCLIC(s, NULL)) {
+        END_CYCLIC();
+        return 1;
+      }
+
+      SET_CYCLIC_RET((ptrdiff_t)1);
+
       array_fix_type_field(s->u.array);
       if( !s->u.array->type_field) {
         ret = 1;
-	break;
       }
-      if( !(s->u.array->type_field & ~(BIT_CALLABLE|BIT_INT)) ) {
+      else if( !(s->u.array->type_field & ~(BIT_CALLABLE|BIT_INT)) ) {
 	struct array *a = s->u.array;
 	int i;
 	ret = 1;
 	for(i=0; i<a->size; i++)
-	  if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
-	    ret = 0;
+          if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
+          {
+            ret = 0;
+            break;
+          }
       }
+      END_CYCLIC();
+      return ret;
       break;
+    }
   }
 
-  END_CYCLIC();
-  return ret;
+  return 0;
 }
 
 /*! @decl int callablep(mixed arg)
@@ -4727,8 +5150,8 @@ static int callablep(struct svalue *s)
 PMOD_EXPORT void f_callablep(INT32 args)
 {
   int res = 0;
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("callablep", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("callablep", 1);
 
   res = callablep(&Pike_sp[-args]);
   pop_n_elems(args);
@@ -4819,7 +5242,7 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 
 /*! @decl void sleep(int|float s, void|int abort_on_signal)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep, and only when
  *!   @[abort_on_signal] is set. If more than one thread is running
@@ -4857,17 +5280,16 @@ PMOD_EXPORT void f_sleep(INT32 args)
 }
 
 #undef FIX_LEFT
-#undef GET_TIME_ELAPSED
 #undef TIME_ELAPSED
 
 /*! @decl void delay(int|float s)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during delay. Beware that this function uses busy-waiting
  *!   to achieve the highest possible accuracy.
- *!   
+ *!
  *! @seealso
  *!   @[signal()], @[sleep()]
  */
@@ -4894,11 +5316,18 @@ PMOD_EXPORT void f_delay(INT32 args)
    delaysleep(delay, do_abort_on_signal, !do_abort_on_signal && delay<10);
 }
 
-/*! @decl int gc()
+/*! @decl int gc(mapping|array|void quick)
  *!
  *!   Force garbage collection.
  *!
- *!   This function checks all the memory for cyclic structures such
+ *! @param quick
+ *!   Perform a quick garbage collection on just this value,
+ *!   which must have been made weak by @[set_weak_flag()].
+ *!   All values that only have a single reference from
+ *!   @[quick] will then be freed.
+ *!
+ *!   When @[quick] hasn't been specified or is @[UNDEFINED],
+ *!   this function checks all the memory for cyclic structures such
  *!   as arrays containing themselves and frees them if appropriate.
  *!   It also frees up destructed objects and things with only weak
  *!   references.
@@ -4913,7 +5342,7 @@ PMOD_EXPORT void f_delay(INT32 args)
  *!   mappings, multisets, objects and programs that had no nonweak
  *!   external references during the garbage collection. It's normally
  *!   the same as the number of freed things, but there might be some
- *!   difference since destroy() functions are called during freeing,
+ *!   difference since _destruct() functions are called during freeing,
  *!   which can cause more things to be freed or allocated.
  *!
  *! @seealso
@@ -4921,8 +5350,22 @@ PMOD_EXPORT void f_delay(INT32 args)
  */
 void f_gc(INT32 args)
 {
-  pop_n_elems(args);
-  push_int(do_gc(NULL, 1));
+  ptrdiff_t res = 0;
+  switch(args? TYPEOF(Pike_sp[-args]): PIKE_T_MIXED) {
+  case PIKE_T_MAPPING:
+    res = do_gc_weak_mapping(Pike_sp[-args].u.mapping);
+    pop_n_elems(args);
+    break;
+  case PIKE_T_ARRAY:
+    res = do_gc_weak_array(Pike_sp[-args].u.array);
+    pop_n_elems(args);
+    break;
+  default:
+    pop_n_elems(args);
+    res = do_gc(NULL, 1);
+    break;
+  }
+  push_int(res);
 }
 
 #ifdef TYPEP
@@ -4935,8 +5378,8 @@ void f_gc(INT32 args)
   {									\
     int t;								\
     struct program *p;							\
-    if (args<1)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
+    if (args!=1)                                                        \
+      SIMPLE_WRONG_NUM_ARGS_ERROR(NAME, 1);				\
     if (TYPEOF(Pike_sp[-args]) == T_OBJECT &&				\
 	(p = Pike_sp[-args].u.object->prog))				\
     {									\
@@ -4946,7 +5389,7 @@ void f_gc(INT32 args)
       {									\
 	int id_level =							\
 	  p->inherits[SUBTYPEOF(Pike_sp[-args])].identifier_level;	\
-	push_constant_text(TYPE_NAME);					\
+	ref_push_string(literal_##TYPE_NAME##_string);			\
 	apply_low(Pike_sp[-args-1].u.object, fun + id_level, 1);	\
 	stack_unlink(args);						\
 	return;								\
@@ -4966,8 +5409,8 @@ void f_gc(INT32 args)
  */
 PMOD_EXPORT void f_undefinedp(INT32 args)
 {
-  if( args<1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("undefinedp", 1);
+  if( args!=1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("undefinedp", 1);
   f_zero_type(args);
   Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_UNDEFINED);
 }
@@ -4982,8 +5425,8 @@ PMOD_EXPORT void f_undefinedp(INT32 args)
  */
 PMOD_EXPORT void f_destructedp(INT32 args)
 {
-  if( args<1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("destructedp", 1);
+  if( args!=1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("destructedp", 1);
   f_zero_type(args);
   Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_DESTRUCTED);
 }
@@ -4998,8 +5441,8 @@ PMOD_EXPORT void f_destructedp(INT32 args)
  */
 PMOD_EXPORT void f_programp(INT32 args)
 {
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("programp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("programp", 1);
   switch(TYPEOF(Pike_sp[-args]))
   {
   case T_PROGRAM:
@@ -5014,6 +5457,7 @@ PMOD_EXPORT void f_programp(INT32 args)
       push_int(1);
       return;
     }
+    /* FALLTHRU */
 
   default:
     pop_n_elems(args);
@@ -5076,12 +5520,12 @@ PMOD_EXPORT void f_programp(INT32 args)
  */
 
 
-TYPEP(f_intp, "intp", T_INT, "int")
-TYPEP(f_mappingp, "mappingp", T_MAPPING, "mapping")
-TYPEP(f_arrayp, "arrayp", T_ARRAY, "array")
-TYPEP(f_multisetp, "multisetp", T_MULTISET, "multiset")
-TYPEP(f_stringp, "stringp", T_STRING, "string")
-TYPEP(f_floatp, "floatp", T_FLOAT, "float")
+TYPEP(f_intp, "intp", T_INT, int)
+TYPEP(f_mappingp, "mappingp", T_MAPPING, mapping)
+TYPEP(f_arrayp, "arrayp", T_ARRAY, array)
+TYPEP(f_multisetp, "multisetp", T_MULTISET, multiset)
+TYPEP(f_stringp, "stringp", T_STRING, string)
+TYPEP(f_floatp, "floatp", T_FLOAT, float)
 
 /*! @decl array sort(array(mixed) index, array(mixed) ... data)
  *!
@@ -5127,7 +5571,7 @@ TYPEP(f_floatp, "floatp", T_FLOAT, "float")
  *!
  *! @returns
  *!   The first argument is returned.
- *! 
+ *!
  *! @note
  *!   The sort is stable, i.e. elements that are compare-wise equal
  *!   aren't reordered.
@@ -5141,18 +5585,18 @@ PMOD_EXPORT void f_sort(INT32 args)
   struct array *a;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("sort", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("sort", 1);
   if(TYPEOF(Pike_sp[-args]) != T_ARRAY)
-    SIMPLE_BAD_ARG_ERROR("sort", 1, "array");
+    SIMPLE_ARG_TYPE_ERROR("sort", 1, "array");
   a = Pike_sp[-args].u.array;
 
   for(e=1;e<args;e++)
   {
     if(TYPEOF(Pike_sp[e-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("sort", e+1, "array");
+      SIMPLE_ARG_TYPE_ERROR("sort", e+1, "array");
 
     if(Pike_sp[e-args].u.array->size != a->size)
-      bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
+      bad_arg_error("sort", args, e+1, "array", Pike_sp+e-args,
 		    "Argument %d has wrong size.\n", (e+1));
   }
 
@@ -5161,7 +5605,7 @@ PMOD_EXPORT void f_sort(INT32 args)
     order = stable_sort_array_destructively(a);
     for(e=1;e<args;e++) order_array(Pike_sp[e-args].u.array,order);
     pop_n_elems(args-1);
-    free((char *)order);
+    free(order);
   }
   else {
     /* If there are only simple types in the array we can use unstable
@@ -5225,50 +5669,11 @@ PMOD_EXPORT void f_rows(INT32 args)
     types |= 1 << TYPEOF(ITEM(a)[e]);
   }
   a->type_field = types;
-  
+
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   pop_n_elems(args);
   push_array(a);
-}
-
-
-/*! @decl int map_all_objects(function(object:void) cb)
- *! @belongs Debug
- *!
- *! Call cb for all objects that currently exist. The callback will
- *! not be called with destructed objects as it's argument.
- *!
- *! Objects might be missed if @[cb] creates new objects or destroys
- *! old ones.
- *!
- *! This function is only intended to be used for debug purposes.
- *!
- *! @returns
- *!   The total number of objects
- *!
- *! @seealso
- *!   @[next_object()]
- */
-static void f_map_all_objects( INT32 args )
-{
-    struct object *o = first_object;
-    INT32 total = 0;
-    ASSERT_SECURITY_ROOT("_map_all_objects");
-    while( o )
-    {
-        struct object *next = o->next;
-        if( o->prog )
-        {
-            ref_push_object( o );
-            safe_apply_svalue( Pike_sp-2, 1, 1 );
-            pop_stack();
-        }
-        total++;
-        o = next;
-    }
-    pop_stack();
-    push_int(total);
 }
 
 /*! @decl void verify_internals()
@@ -5287,7 +5692,6 @@ static void f_map_all_objects( INT32 args )
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
-  ASSERT_SECURITY_ROOT("_verify_internals");
 
   /* Keep below calls to low_thorough_check_short_svalue, or else we
    * get O(n!) or so, where n is the number of allocated things. */
@@ -5302,163 +5706,52 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-#ifdef PIKE_DEBUG
-
-/*! @decl int debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the run-time debug level.
- *!
- *! @returns
- *!   The old debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__debug(INT32 args)
+static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 {
-  INT_TYPE d;
-
-  ASSERT_SECURITY_ROOT("_debug");
-
-  get_all_args("_debug", args, "%i", &d);
-  pop_n_elems(args);
-  push_int(d_flag);
-  d_flag = d;
-}
-
-/*! @decl int optimizer_debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the optimizer debug level.
- *!
- *! @returns
- *!   The old optimizer debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__optimizer_debug(INT32 args)
-{
-  INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_optimizer_debug");
-
-  get_all_args("_optimizer_debug", args, "%i", &l);
-  pop_n_elems(args);
-  push_int(l_flag);
-  l_flag = l;
-}
-
-
-/*! @decl int assembler_debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the assembler debug level.
- *!
- *! @returns
- *!   The old assembler debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__assembler_debug(INT32 args)
-{
-  INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_assembler_debug");
-
-  get_all_args("_assembler_debug", args, "%i", &l);
-  pop_n_elems(args);
-  push_int(a_flag);
-  a_flag = l;
-}
-
-/*! @decl void dump_program_tables(program p, int|void indent)
- *! @belongs Debug
- *!
- *! Dumps the internal tables for the program @[p] on stderr.
- *!
- *! @param p
- *!   Program to dump.
- *!
- *! @param indent
- *!   Number of spaces to indent the output.
- *!
- *! @note
- *!   In Pike 7.8.308 and earlier @[indent] wasn't supported.
- */
-void f__dump_program_tables(INT32 args)
-{
-  struct program *p;
-  int indent = 0;
-
-  ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
-  get_all_args("_dump_program_tables", args, "%p.%d", &p, &indent);
-
-  dump_program_tables(p, indent);
-  pop_n_elems(args);
-}
-
-#ifdef YYDEBUG
-
-/*! @decl int compiler_trace(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the compiler trace level.
- *!
- *! @returns
- *!   The old compiler trace level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__compiler_trace(INT32 args)
-{
-  extern int yydebug;
-  INT_TYPE yyd;
-  ASSERT_SECURITY_ROOT("_compiler_trace");
-
-  get_all_args("_compiler_trace", args, "%i", &yyd);
-  pop_n_elems(args);
-  push_int(yydebug);
-  yydebug = yyd;
-}
-
-#endif /* YYDEBUG */
-#endif
-
-#if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
-static void encode_struct_tm(struct tm *tm)
-{
-  push_text("sec");
+  push_static_text("sec");
   push_int(tm->tm_sec);
-  push_text("min");
+  push_static_text("min");
   push_int(tm->tm_min);
-  push_text("hour");
+  push_static_text("hour");
   push_int(tm->tm_hour);
 
-  push_text("mday");
+  push_static_text("mday");
   push_int(tm->tm_mday);
-  push_text("mon");
+  push_static_text("mon");
   push_int(tm->tm_mon);
-  push_text("year");
+  push_static_text("year");
   push_int(tm->tm_year);
 
-  push_text("wday");
+  push_static_text("wday");
   push_int(tm->tm_wday);
-  push_text("yday");
+  push_static_text("yday");
   push_int(tm->tm_yday);
-  push_text("isdst");
+  push_static_text("isdst");
   push_int(tm->tm_isdst);
-}
-#endif
 
-#if defined (HAVE_GMTIME) || defined (HAVE_GMTIME_R) || defined (HAVE_GMTIME_S)
+  push_static_text("timezone");
+  push_int(gmtoffset);
+
+  f_aggregate_mapping(20);
+}
+
+static void encode_tm_tz(const struct tm*tm)
+{
+  encode_struct_tm(tm,
+#ifdef STRUCT_TM_HAS_GMTOFF
+   -tm->tm_gmtoff
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+   -tm->__tm_gmtoff
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+   /* Assume dst is one hour. */
+   timezone - 3600*tm->tm_isdst
+#else
+   /* Assume dst is one hour. */
+   -3600*tm->tm_isdst
+#endif
+                                 );
+}
+
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
@@ -5467,7 +5760,8 @@ static void encode_struct_tm(struct tm *tm)
  *!   not adjusted for the local time zone.
  *!
  *! @seealso
- *!   @[localtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -5475,12 +5769,12 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   struct tm tm_s;
 #endif
   struct tm *tm;
-  LONGEST tt;
+  INT64 tt;
   time_t t;
 
   get_all_args("gmtime", args, "%l", &tt);
 
-#if SIZEOF_TIME_T < SIZEOF_LONGEST
+#if SIZEOF_TIME_T < SIZEOF_INT64
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
 #endif
@@ -5494,17 +5788,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   tm = gmtime(&t);
 #endif
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
-		       "the timestamp %"PRINTLONGEST"d.\n", (LONGEST) t);
+                       "the timestamp %"PRINTINT64"d.\n", (INT64) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
-
-  push_text("timezone");
-  push_int(0);
-  f_aggregate_mapping(20);
+  encode_struct_tm(tm, 0);
 }
-#endif
 
-#ifdef HAVE_LOCALTIME
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
@@ -5529,9 +5817,9 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   	@member int(0..365) "yday"
  *!   	  Day of the year.
  *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	  Is daylight-saving time active.
  *!   	@member int "timezone"
- *!   	  Offset from UTC, including daylight savings time adjustment.
+ *!   	  Offset from UTC, including daylight-saving time adjustment.
  *!   @endmapping
  *!
  *! An error is thrown if the localtime(2) call failed on the system.
@@ -5540,20 +5828,21 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!
  *! @note
  *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
- *!   present, and was sometimes not adjusted for daylight savings time.
+ *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
  *! @seealso
- *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
   struct tm *tm;
-  LONGEST tt;
+  INT64 tt;
   time_t t;
 
   get_all_args("localtime", args, "%l", &tt);
 
-#if SIZEOF_TIME_T < SIZEOF_LONGEST
+#if SIZEOF_TIME_T < SIZEOF_INT64
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif
@@ -5563,248 +5852,142 @@ PMOD_EXPORT void f_localtime(INT32 args)
   if (!tm) Pike_error ("localtime() on this system cannot handle "
 		       "the timestamp %ld.\n", (long) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
+  encode_tm_tz(tm);
+}
 
-  push_text("timezone");
-#ifdef STRUCT_TM_HAS_GMTOFF
-  push_int(-tm->tm_gmtoff);
-#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
-  push_int(-tm->__tm_gmtoff);
-#elif defined(HAVE_EXTERNAL_TIMEZONE)
-  /* Assume dst is one hour. */
-  push_int(timezone - 3600*tm->tm_isdst);
+time_t mktime_zone(struct tm *date, int other_timezone, int tz)
+{
+  time_t retval;
+  int normalised_time;
+
+  if (tz <= -3600*100 || tz >= 3600*100)
+    Pike_error("Invalid timezone specified.\n");
+
+  date->tm_wday = -1;		/* flag to determine failure */
+
+  {
+    int sec, min, hour;
+    sec = date->tm_sec;
+    min = date->tm_min;
+    hour = date->tm_hour;
+
+    min += sec / 60;
+    if ((sec %= 60) < 0)
+      min--, sec += 60;
+    hour += min / 60;
+    if ((min %= 60) < 0)
+      hour--, min += 60;
+    if ((hour %= 24) < 0)
+      hour += 24;
+    normalised_time = ((hour * 60) + min) * 60 + sec;
+  }
+
+  retval = mktime(date);
+  if (date->tm_wday < 0) {
+    if (other_timezone) {
+      /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+      const char *orig_tz = getenv("TZ");
+      char tzbuf[20];
+      ONERROR uwp;
+      char *tzsgn = tz < 0 ? "-" : "+";
+      if (tz < 0) tz = -tz;
+      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+	      tzsgn,
+	      tz/3600,
+	      (tz/60)%60,
+	      tz % 60);
+      putenv(tzbuf);
+      if (!orig_tz) {
+#ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
+	orig_tz = "TZ=";
 #else
-  /* Assume dst is one hour. */
-  push_int(-3600*tm->tm_isdst);
+	orig_tz = "TZ";
 #endif
-  f_aggregate_mapping(20);
-}
-#endif
-
-#if defined (HAVE_GMTIME) || defined (HAVE_LOCALTIME)
-
-#define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
-
-static const int mon_lengths[2][12] = {
-  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-};
-
-static void normalize_date (struct tm *t)
-/* Normalizes t->tm_mday and t->tm_mon. */
-{
-  int q, year, mon, mday, leap;
-
-  q = t->tm_mon / 12;
-  if (t->tm_mon < 0) q--;
-  t->tm_mon -= q * 12;
-  t->tm_year += q;
-
-  year = t->tm_year + 1900;
-  leap = isleap (year);
-  mon = t->tm_mon;
-  mday = t->tm_mday;
-
-  if (mday > 0) {
-    int mon_len = mon_lengths[leap][mon];
-    if (mday <= mon_len) return;
-    do {
-      mday -= mon_len;
-      if (++mon == 12) mon = 0, year++, leap = isleap (year);
-    } while (mday > (mon_len = mon_lengths[leap][mon]));
-  }
-
-  else
-    do {
-      if (mon == 0) mon = 11, year--, leap = isleap (year);
-      else mon--;
-      mday += mon_lengths[leap][mon];
-    } while (mday < 1);
-
-  t->tm_year = year - 1900;
-  t->tm_mon = mon;
-  t->tm_mday = mday;
-}
-
-#define CHECKED_DIFF_MULT(RES, A, B, MULT, OVERFLOW) do {		\
-    RES = (A - B) * (MULT);						\
-    if ((A > B) != (RES > 0)) {OVERFLOW;}				\
-  } while (0)
-
-#define CHECKED_ADD(ACC, DIFF, OVERFLOW) do {				\
-    time_t res_ = ACC + DIFF;						\
-    if ((ACC > 0) == (DIFF > 0) && (ACC > 0) != (res_ > 0))		\
-      {OVERFLOW;}							\
-    else								\
-      ACC = res_;							\
-  } while (0)
-
-/* Returns the approximate difference in seconds between the
- * two struct tm's.
- */
-static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
-{
-  time_t base, diff;
-
-  /* Win32 localtime() returns NULL for all dates before Jan 01, 1970. */
-  if (!t2) return -1;
-
-  CHECKED_DIFF_MULT (base, t1->tm_year, t2->tm_year, 60*60*24*31*12,
-		     return base < 0 ? MAX_TIME_T : MIN_TIME_T);
-
-  /* Overflow detection not necessary on these fields since we can
-   * assume they're all in the valid ranges here. */
-  diff =
-    (t1->tm_mon - t2->tm_mon) * (60*60*24*31) +
-    (t1->tm_mday - t2->tm_mday) * (60*60*24) +
-    (t1->tm_hour - t2->tm_hour) * (60*60) +
-    (t1->tm_min - t2->tm_min) * 60 +
-    (t1->tm_sec - t2->tm_sec);
-
-  CHECKED_ADD (base, diff,
-	       return diff < 0 ? MIN_TIME_T : MAX_TIME_T);
-
-  return base;
-}
-
-typedef struct tm *time_fn (const time_t *);
-
-/* Inverse operation of gmtime or localtime. Unlike mktime(3), this
- * doesn't fill in a normalized time in target_tm.
- */
-static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn)
-{
-  struct tm norm_tm = *target_tm;
-  time_t current_ts = 0;
-  time_t displacement;
-  time_t diff_ts, old_diff_ts = 0;
-  int loop_cnt, tried_dst_displacement = 0;
-
-#ifdef DEBUG_MY_TIME_INVERSE
-  fprintf (stderr, "target: y %d m %d d %d h %d m %d isdst %d\n",
-	   target_tm->tm_year, target_tm->tm_mon, target_tm->tm_mday,
-	   target_tm->tm_hour, target_tm->tm_min, target_tm->tm_isdst);
-#endif
-
-  /* An hour, minute or second value outside the valid range is
-   * treated as a displacement rather than an absolute time spec. We
-   * therefore zero them in the target time spec and add the
-   * displacement seconds back to the time_t afterwards. This way we
-   * don't need to worry about them in the date normalization. */
-
-  /* It's quicker to always move the seconds to the displacement. It
-   * works just as well and we don't need to consider leap seconds. */
-  displacement = norm_tm.tm_sec;
-  norm_tm.tm_sec = 0;
-
-  /* Bug: The following conversions to seconds ought to compensate for
-   * leap seconds. That should only happen if timefn takes leap
-   * seconds into account however, which it might not do. */
-  if (norm_tm.tm_min < 0 || norm_tm.tm_min >= 60) {
-    time_t d;
-    CHECKED_DIFF_MULT (d, norm_tm.tm_min, 0, 60, return 0);
-    CHECKED_ADD (displacement, d, return 0);
-    norm_tm.tm_min = 0;
-  }
-  if (norm_tm.tm_hour < 0 || norm_tm.tm_hour >= 60) {
-    time_t d;
-    CHECKED_DIFF_MULT (d, norm_tm.tm_hour, 0, 60*60, return 0);
-    CHECKED_ADD (displacement, d, return 0);
-    norm_tm.tm_hour = 0;
-  }
-
-  /* Normalize the date. This is necessary since the simplistic diff
-   * calculation in my_tm_diff doesn't work on invalid dates like
-   * November 100th or March -10th. (Can't use the displacement
-   * variable for an invalid tm_mday since the number of seconds per
-   * day isn't constant.) */
-  normalize_date (&norm_tm);
-#ifdef DEBUG_MY_TIME_INVERSE
-  fprintf (stderr, "normalized: y %d m %d d %d h %d m %d isdst %d\n"
-	   "displacement: %ld\n",
-	   norm_tm.tm_year, norm_tm.tm_mon, norm_tm.tm_mday,
-	   norm_tm.tm_hour, norm_tm.tm_min, norm_tm.tm_isdst,
-	   (long) displacement);
-#endif
-
-  /* This loop seems stable, and usually converges in two passes.
-   * The loop counter is for paranoia reasons.
-   */
-  for (loop_cnt = 0; loop_cnt < 20; loop_cnt++, old_diff_ts = diff_ts) {
-    struct tm *current_tm = timefn(&current_ts);
-#ifdef DEBUG_MY_TIME_INVERSE
-    fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
-	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
-	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-#endif
-
-    diff_ts = my_tm_diff (&norm_tm, current_tm);
-#ifdef DEBUG_MY_TIME_INVERSE
-    fprintf (stderr, "diff: %ld\n", (long) diff_ts);
-#endif
-
-    if (!current_tm) {
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "outside range for timefn().\n");
-#endif
-      return 0;
-    }
-
-    if (!diff_ts) {
-      /* Got a satisfactory time, but if norm_tm has an opinion on
-       * DST we should check if we can return an alternative in the
-       * same DST zone, to cope with the overlapping DST adjustment at
-       * fall. */
-      if (norm_tm.tm_isdst >= 0 &&
-	  norm_tm.tm_isdst != current_tm->tm_isdst &&
-	  !tried_dst_displacement) {
-	/* Offset the time a day and iterate some more (only once
-	 * more, really), so that we approach the target time from the
-	 * right direction. */
-	if (norm_tm.tm_isdst)
-	  current_ts -= 24 * 3600;
-	else
-	  current_ts += 24 * 3600;
-	tried_dst_displacement = 1;
-#ifdef DEBUG_MY_TIME_INVERSE
-	fprintf (stderr, "dst displacement\n");
-#endif
-	continue;
       }
-      break;
+      SET_ONERROR(uwp, putenv, orig_tz);
+      /* NB: No need to call tzset(); mktime() will call it. */
+      retval = mktime_zone(date, 0, 0);
+      CALL_AND_UNSET_ONERROR(uwp);
+      return retval;
     }
-
-    if (diff_ts == -old_diff_ts) {
-      /* We're oscillating. Shouldn't happen since norm_tm ought to be
-       * valid. */
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "oscillation detected: %ld <-> %ld\n",
-	       (long) old_diff_ts, (long) diff_ts);
-#endif
-      return 0;
-    }
-
-    /* It's ok to not add the full diff here since we're looping. Do
-     * this since the diff calculation can overshoot the target
-     * time. */
-    CHECKED_ADD (current_ts, diff_ts, {
-	if (diff_ts > 0 && current_ts < MAX_TIME_T)
-	  current_ts = MAX_TIME_T;
-	else if (diff_ts < 0 && current_ts > MIN_TIME_T)
-	  current_ts = MIN_TIME_T;
-	else
-	  return 0;
-      });
+    Pike_error("Time conversion unsuccessful.\n");
   }
 
-  CHECKED_ADD (current_ts, displacement, return 0);
+  if(other_timezone)
+  {
+    normalised_time -= ((date->tm_hour * 60) + date->tm_min) * 60 + date->tm_sec;
+    if (normalised_time < -12*60*60)
+      normalised_time += 24*60*60;
+    else if (normalised_time > 12*60*60)
+      normalised_time -= 24*60*60;
 
-  *result = current_ts;
-  return 1;
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    retval += date->__tm_gmtoff;
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+    retval += date->tm_gmtoff;
+#elif defined(HAVE_EXTERNAL_TIMEZONE) && defined(HAVE_EXTERNAL_ALTZONE)
+    if (date->tm_isdst) {
+      retval -= altzone;
+    } else {
+      retval -= timezone;
+    }
+#else
+    {
+      /* NB: The tm from gmtime(3F) will always have tm_isdst == 0,
+       *     but mktime() is always in the local time zone, and will
+       *     adjust it and tm_hour if the local time zone is in dst.
+       *     This causes an error of typically one hour in dst when
+       *     used without preadjustment.
+       */
+      struct tm gmt_tm = *gmtime(&retval);
+      gmt_tm.tm_isdst = date->tm_isdst;
+      normalised_time += retval - mktime(&gmt_tm);
+    }
+#endif
+    retval += normalised_time + tz;
+  }
+  return retval;
 }
-#endif /* HAVE_GMTIME || HAVE_LOCALTIME */
 
-#if defined (HAVE_MKTIME) || defined (HAVE_LOCALTIME)
+static void unwind_tm()
+{
+  push_static_text("sec");
+  push_static_text("min");
+  push_static_text("hour");
+  push_static_text("mday");
+  push_static_text("mon");
+  push_static_text("year");
+  push_static_text("isdst");
+  push_static_text("timezone");
+  f_aggregate(8);
+  f_rows(2);
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
+  push_array_items(Pike_sp->u.array);
+}
+
+static int get_tm(const char *fname, int args, struct tm *date)
+{
+  INT_TYPE sec, min, hour, mday, mon, year;
+  INT_TYPE isdst = -1, tz = 0;
+
+  get_all_args(fname, args, "%i%i%i%i%i%i.%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+
+  memset(date, 0, sizeof(*date));
+  date->tm_sec = sec;
+  date->tm_min = min;
+  date->tm_hour = hour;
+  date->tm_mday = mday;
+  date->tm_mon = mon;
+  date->tm_year = year;
+  date->tm_isdst = isdst;
+#ifdef NULL_IS_SPECIAL
+  date->tm_zone = NULL;
+#endif
+  return tz;
+}
+
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int|void isdst, int|void tz)
@@ -5827,154 +6010,56 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
  *!   	  Month of the year.
  *!   	@member int(0..) "year"
  *!   	  Year since 1900.
- *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	@member int(-1..1) "isdst"
+ *!   	  Is daylight-saving time active.  If omitted or set to @expr{-1@},
+ *!       it means that the information is not available.
  *!   	@member int "timezone"
- *!   	  The timezone offset from UTC in seconds. If left out, the time
+ *!   	  The timezone offset from UTC in seconds. If omitted, the time
  *!       will be calculated in the local timezone.
  *!   @endmapping
  *!
  *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @note
+ *!   For proper UTC calculations ensure that @expr{isdst = 0@} @b{and@}
+ *!   @expr{timezone = 0@}; omitting either one of these parameters
+ *!   @b{will@} mess up the UTC calculation.
+ *!
+ *! @note
  *!   On some operating systems (notably AIX and Win32), dates before
  *!   00:00:00 UTC, Jan 1, 1970 are not supported.
  *!
- *!   On most systems, the supported range of dates are Dec 13, 1901
- *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!   On most 32-bit systems, the supported range of dates is from Dec 13, 1901
+ *!   20:45:52 UTC through to Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!
+ *!   On most 64-bit systems, the supported range of dates is expressed
+ *!   in 56 bits and is thus practically
+ *!   unlimited (at least up to 1141 milion years in the past
+ *!   and into the future).
  *!
  *! @seealso
- *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
+ *!   @[time()], @[ctime()], @[localtime()], @[gmtime()], @[strftime()]
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
-  INT_TYPE sec, min, hour, mday, mon, year;
-  INT_TYPE isdst = -1, tz = 0;
   struct tm date;
   time_t retval;
+  int normalised_time, tz;
 
   if (args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
-    MEMSET(&date, 0, sizeof(date));
-
-    push_text("sec");
-    push_text("min");
-    push_text("hour");
-    push_text("mday");
-    push_text("mon");
-    push_text("year");
-    push_text("isdst");
-    push_text("timezone");
-    f_aggregate(8);
-    f_rows(2);
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
-    push_array_items(Pike_sp->u.array);
-
-    args=8;
+    unwind_tm();
+    args += 7;
   }
 
-  get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
-	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+  tz = get_tm("mktime", args, &date);
 
-  MEMSET(&date, 0, sizeof(date));
-  date.tm_sec=sec;
-  date.tm_min=min;
-  date.tm_hour=hour;
-  date.tm_mday=mday;
-  date.tm_mon=mon;
-  date.tm_year=year;
-  date.tm_isdst=isdst;
-
-  /* date.tm_zone = NULL; */
-
-#ifdef HAVE_GMTIME
-  if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-  {
-    /* UTC-relative time. Use gmtime. */
-    if (!my_time_inverse (&date, &retval, gmtime))
-      PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
-    retval += tz;
-  } else
-#endif /* HAVE_GMTIME */
-
-  {
-#ifndef HAVE_GMTIME
-#ifdef STRUCT_TM_HAS_GMTOFF
-    /* BSD-style */
-    date.tm_gmtoff = 0;
-#else
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-    /* (Old) Linux-style */
-    date.__tm_gmtoff = 0;
-#else
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Pre-adjust for the timezone.
-       *
-       * Note that pre-adjustment must be done on AIX for dates
-       * near Jan 1, 1970, since AIX mktime(3) doesn't support
-       * negative time.
-       */
-      date.tm_sec += tz
-#ifdef HAVE_EXTERNAL_TIMEZONE
-	- timezone
-#endif /* HAVE_EXTERNAL_TIMEZONE */
-	;
-    }
-#endif /* STRUCT_TM_HAS___TM_GMTOFF */
-#endif /* STRUCT_TM_HAS_GMTOFF */
-#endif  /* !HAVE_GMTIME */
-
-#ifdef HAVE_MKTIME
-    retval = mktime(&date);
-    if (retval == -1)
-#endif
-    {
-#ifdef HAVE_LOCALTIME
-      /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
-       * so try our own inverse function with localtime.
-       *
-       * Note that localtime on Win32 will also fail for dates before 1970.
-       */
-      if (!my_time_inverse (&date, &retval, localtime))
-#endif
-	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
-    }
-
-#if !defined (HAVE_GMTIME) && (defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF))
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Post-adjust for the timezone.
-       *
-       * Note that tm_gmtoff has the opposite sign of timezone.
-       *
-       * Note also that it must be post-adjusted, since the gmtoff
-       * field is set by mktime(3).
-       */
-#ifdef STRUCT_TM_HAS_GMTOFF
-      retval += tz + date.tm_gmtoff;
-#else
-      retval += tz + date.__tm_gmtoff;
-#endif /* STRUCT_TM_HAS_GMTOFF */
-    }
-#endif /* !HAVE_GMTIME && (STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF) */
-
-#if 0
-    /* Disabled since the adjustment done here with a hardcoded one
-     * hour is bogus in many time zones. mktime(3) in GNU libc is
-     * documented to normalize the date spec, which means that e.g.
-     * asking for DST time in a non-DST zone will override tm_isdst.
-     * /mast */
-    if ((isdst != -1) && (isdst != date.tm_isdst)) {
-      /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-      retval += 3600 * (isdst - date.tm_isdst);
-    }
-#endif	/* 0 */
-  }
+  retval = mktime_zone(&date,
+                       args > 7 && SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER,
+	               tz);
 
   pop_n_elems(args);
 #if SIZEOF_TIME_T > SIZEOF_INT_TYPE
@@ -5983,136 +6068,308 @@ PMOD_EXPORT void f_mktime (INT32 args)
   push_int(retval);
 #endif
 }
-#define GOT_F_MKTIME
-#endif	/* HAVE_MKTIME || HAVE_LOCALTIME */
 
-/* Parse a sprintf/sscanf-style format string */
-static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
-{
-  ptrdiff_t i;
-  ptrdiff_t offset = 0;
-  struct svalue *old_sp = Pike_sp;
-
-  for (i=offset; i < slen; i++) {
-    if (s[i] == '%') {
-      ptrdiff_t j;
-      if (i != offset) {
-	push_string(make_shared_binary_string0(s + offset, i));
-	if ((Pike_sp != old_sp+1) && (TYPEOF(Pike_sp[-2]) == T_STRING)) {
-	  /* Concat. */
-	  f_add(2);
-	}
-      }
-
-      for (j = i+1;j<slen;j++) {
-	int c = s[j];
-
-	switch(c) {
-	  /* Flags */
-	case '!':
-	case '#':
-	case '$':
-	case '-':
-	case '/':
-	case '0':
-	case '=':
-	case '>':
-	case '@':
-	case '^':
-	case '_':
-	case '|':
-	  continue;
-	  /* Padding */
-	case ' ':
-	case '\'':
-	case '+':
-	case '~':
-	  continue;
-	  /* Attributes */
-	case '.':
-	case ':':
-	case ';':
-	  continue;
-	  /* Attribute value */
-	case '1': case '2': case '3': case '4': case '5':
-	case '6': case '7': case '8': case '9':
-	  continue;
-	  /* Specials */
-	case '%':
-	  push_constant_text("%");
-	  if ((Pike_sp != old_sp+1) && (TYPEOF(Pike_sp[-2]) == T_STRING)) {
-	    /* Concat. */
-	    f_add(2);
-	  }
-	  break;
-	case '{':
-	  i = j + 1 + low_parse_format(s + j + 1, slen - (j+1));
-	  f_aggregate(1);
-	  if ((i + 2 >= slen) || (s[i] != '%') || (s[i+1] != '}')) {
-	    Pike_error("parse_format(): Expected %%}.\n");
-	  }
-	  i += 2;
-	  break;
-	case '}':
-	  f_aggregate(DO_NOT_WARN(Pike_sp - old_sp));
-	  return i;
-	  /* Set */
-	case '[':
-	  
-	  break;
-	  /* Argument */
-	default:
-	  break;
-	}
-	break;
-      }
-      if (j == slen) {
-	Pike_error("parse_format(): Unterminated %%-expression.\n");
-      }
-      offset = i = j;
-    }
-  }
-
-  if (i != offset) {
-    push_string(make_shared_binary_string0(s + offset, i));
-    if ((Pike_sp != old_sp+1) && (TYPEOF(Pike_sp[-2]) == T_STRING)) {
-      /* Concat. */
-      f_add(2);
-    }
-  }
-
-  f_aggregate(DO_NOT_WARN(Pike_sp - old_sp));
-  return i;
-}
-
-/** @decl array parse_format(string fmt)
- **
- **   Parses a sprintf/sscanf-style format string
+#ifdef HAVE_STRPTIME
+/*! @decl mapping(string:int) strptime(string(1..255) data, string(1..255) format)
+ *!
+ *! Parse the given @[data] using the format in @[format] as a date.
+ *!
+ *! @dl
+ *!   @item %%
+ *!     The % character.
+ *!
+ *!   @item %a or %A
+ *!     The weekday name according to the C locale, in abbreviated
+ *!     form or the full name.
+ *!
+ *!   @item %b or %B or %h
+ *!     The month name according to the C locale, in abbreviated form
+ *!     or the full name.
+ *!
+ *!   @item %c
+ *!     The date and time representation for the C locale.
+ *!
+ *!   @item %C
+ *!     The century number (0-99).
+ *!
+ *!   @item %d or %e
+ *!     The day of month (1-31).
+ *!
+ *!   @item %D
+ *!     Equivalent to %m/%d/%y.
+ *!
+ *!   @item %H
+ *!     The hour (0-23).
+ *!
+ *!   @item %I
+ *!     The hour on a 12-hour clock (1-12).
+ *!
+ *!   @item %j
+ *!     The day number in the year (1-366).
+ *!
+ *!   @item %m
+ *!     The month number (1-12).
+ *!
+ *!   @item %M
+ *!     The minute (0-59).
+ *!
+ *!   @item %n
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %p
+ *!     The C locale's equivalent of AM or PM.
+ *!
+ *!   @item %R
+ *!     Equivalent to %H:%M.
+ *!
+ *!   @item %S
+ *!     The second (0-60; 60 may occur for leap seconds;
+ *!     earlier also 61 was allowed).
+ *!
+ *!   @item %t
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %T
+ *!     Equivalent to %H:%M:%S.
+ *!
+ *!   @item %U
+ *!     The week number with Sunday the first day of the week (0-53).
+ *!
+ *!   @item %w
+ *!     The weekday number (0-6) with Sunday = 0.
+ *!
+ *!   @item %W
+ *!     The week number with Monday the first day of the week (0-53).
+ *!
+ *!   @item %x
+ *!     The date, using the C locale's date format.
+ *!
+ *!   @item %X
+ *!     The time, using the C locale's time format.
+ *!
+ *!   @item %y
+ *!     The year within century (0-99).  When a century is not
+ *!     otherwise specified, values in the range 69-99 refer to years
+ *!     in the twentieth century (1969-1999); values in the range
+ *!     00-68 refer to years in the twenty-first century (2000-2068).
+ *!
+ *!   @item %Y
+ *!     The year, including century (for example, 1991).
+ *! @enddl
+ *!
+ *! @seealso
+ *!  @[localtime()], @[gmtime()], @[strftime()]
  */
-static void f_parse_format(INT32 args)
+PMOD_EXPORT void f_strptime (INT32 args)
 {
-  struct pike_string *s = NULL;
-  struct array *a;
-  ptrdiff_t len;
-
-  get_all_args("parse_format", args, "%W", &s);
-
-  len = low_parse_format(STR0(s), s->len);
-  if (len != s->len) {
-    Pike_error("parse_format(): Unexpected %%} in format string at offset %ld\n",
-	  PTRDIFF_T_TO_LONG(len));
-  }
-#ifdef PIKE_DEBUG
-  if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {
-    Pike_fatal("parse_format(): Unexpected result from low_parse_format()\n");
-  }
-#endif /* PIKE_DEBUG */
-  a = (--Pike_sp)->u.array;
-  debug_malloc_touch(a);
-
-  pop_n_elems(args);
-  push_array(a);
+    struct tm tm;
+    const char* ret;
+    if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+    memset(&tm, 0, sizeof(tm));
+    ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
+    pop_n_elems(args);
+    if (ret)
+      encode_tm_tz(&tm);
+    else
+      push_int(0);
 }
+#endif /* HAVE_STRPTIME */
+/*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
+ *!
+ *! Convert the structure to a string.
+ *!
+ *! @dl
+ *!   @item %a
+ *!     The abbreviated weekday name according to the current locale
+ *!
+ *!   @item %A
+ *!     The full weekday name according to the current locale.
+ *!
+ *!   @item %b
+ *!     The abbreviated month name according to the current locale.
+ *!
+ *!   @item %B
+ *!     The full month name according to the current locale.
+ *!
+ *!   @item %c
+ *!     The preferred date and time representation for the current locale.
+ *!
+ *!   @item %C
+ *!     The century number (year/100) as a 2-digit integer.
+ *!
+ *!   @item %d
+ *!     The day of the month as a decimal number (range 01 to 31).
+ *!
+ *!   @item %D
+ *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+ *!     Americans should note that in other countries @expr{%d/%m/%y@}
+ *!     is rather common. This means that in international context
+ *!     this format is ambiguous and should not be used.)
+ *!
+ *!   @item %e
+ *!     Like @expr{%d@}, the day of the month as a decimal number,
+ *!     but a leading zero is replaced by a space.
+ *!
+ *!   @item %E
+ *!     Modifier: use alternative format, see below.
+ *!
+ *!   @item %F
+ *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!
+ *!   @item %G
+ *!     The ISO 8601 week-based year (see NOTES) with century as a
+ *!     decimal number. The 4-digit year corresponding to the ISO
+ *!     week number (see @expr{%V@}). This has the same format and
+ *!     value as @expr{%Y@}, except that if the ISO week number
+ *!     belongs to the previous or next year, that year is used instead.
+ *!
+ *!   @item %g
+ *!     Like @expr{%G@}, but without century, that is,
+ *!     with a 2-digit year (00-99). (TZ)
+ *!
+ *!   @item %h
+ *!     Equivalent to %b.
+ *!
+ *!   @item %H
+ *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!
+ *!   @item %I
+ *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!
+ *!   @item %j
+ *!     The day of the year as a decimal number (range 001 to 366).
+ *!
+ *!   @item %k
+ *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
+ *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
+ *!
+ *!   @item %l
+ *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
+ *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
+ *!
+ *!   @item %m
+ *!     The month as a decimal number (range 01 to 12).
+ *!
+ *!   @item %M
+ *!     The minute as a decimal number (range 00 to 59).
+ *!
+ *!   @item %n
+ *!     A newline character. (SU)
+ *!
+ *!   @item %O
+ *!     Modifier: use alternative format, see below. (SU)
+ *!
+ *!   @item %p
+ *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+ *!     value, or the corresponding strings for the current locale.
+ *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+ *!
+ *!   @item %P
+ *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+ *!     or a corresponding string for the current locale.
+ *!
+ *!   @item %r
+ *!     The time in a.m. or p.m. notation. In the POSIX locale this is
+ *!     equivalent to @expr{%I:%M:%S %p@}.
+ *!
+ *!   @item %R
+ *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
+ *!     For a version including the seconds, see @expr{%T@} below.
+ *!
+ *!   @item %s
+ *!     The number of seconds since the Epoch,
+ *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!
+ *!   @item %S
+ *!     The second as a decimal number (range 00 to 60).
+ *!     (The range is up to 60 to allow for occasional leap seconds.)
+ *!
+ *!   @item %t
+ *!     A tab character. (SU)
+ *!
+ *!   @item %T
+ *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!
+ *!   @item %u
+ *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
+ *!     See also @expr{%w@}. (SU)
+ *!
+ *!   @item %U
+ *!     The week number of the current year as a decimal number,
+ *!     range 00 to 53, starting with the first Sunday as the first
+ *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!
+ *!   @item %V
+ *!     The ISO 8601 week number of the current year as a decimal number,
+ *!     range 01 to 53, where week 1 is the first week that has at least
+ *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!
+ *!   @item %w
+ *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
+ *!     See also @expr{%u@}.
+ *! @enddl
+ *!
+ *! @seealso
+ *!  @[ctime()], @[mktime()], @[strptime()], @[Gettext.setlocale]
+ */
+PMOD_EXPORT void f_strftime (INT32 args)
+{
+    char buffer[8192];
+    struct tm date;
+    buffer[0] = 0;
+
+    unwind_tm();
+    get_tm("strftime", 8, &date);
+    pop_n_elems(8);
+    if (Pike_sp[-1].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+
+    strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
+
+    pop_stack();
+    push_text( buffer );
+}
+
+#define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
+  {                                                                   \
+      unsigned against = EXTRACT_S;                                   \
+      int inverted=0,matched=0;                                       \
+      j++;                                                            \
+      i++;                                                            \
+      if(EXTRACT_M == '!' || EXTRACT_M == '^')                        \
+      {                                                               \
+        i++;                                                          \
+        inverted=1;                                                   \
+        matched =1;                                                   \
+      }                                                               \
+      while(i<ML)                                                     \
+      {                                                               \
+        unsigned c = EXTRACT_M;                                       \
+        unsigned e = 0;                                               \
+        if(c==']')                                                    \
+          break;                                                      \
+        i++;                                                          \
+        if( EXTRACT_M == '-' )                                        \
+        {                                                             \
+          i++;                                                        \
+          e = EXTRACT_M;                                              \
+          i++;                                                        \
+        }                                                             \
+        else                                                          \
+          e=c;                                                        \
+                                                                      \
+        if( c <= against && e >= against )                            \
+        {                                                             \
+          if(inverted)                                                \
+            return 0;                                                 \
+          matched=1;                                                  \
+        }                                                             \
+      }                                                               \
+      if (!matched || i>=ML) return 0;                                \
+      break;                                                          \
+  }
+
 
 /* Common case: both strings are 8bit. */
 static int does_match_8_8( const unsigned char *s, int j, int sl,
@@ -6143,6 +6400,15 @@ static int does_match_8_8( const unsigned char *s, int j, int sl,
           return 1;
       }
       return 0;
+
+
+    case '[':
+      DOES_MATCH_CLASS(m[i],s[j],ml);
+      break;
+
+     case '\\':
+       if (++i==ml) return 0;
+       /* FALLTHRU */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -6182,6 +6448,15 @@ static int does_match_16_8( const unsigned short *s, int j, int sl,
       }
       return 0;
 
+
+    case '[':
+      DOES_MATCH_CLASS(m[i],s[j],ml);
+      break;
+
+     case '\\':
+       if (++i==ml) return 0;
+       /* FALLTHRU */
+
      default:
          if(j>=sl || m[i] != s[j] )
              return 0;
@@ -6204,7 +6479,7 @@ static int does_match_x_x(struct pike_string *s,int j,
        if(j++>=s->len) return 0;
        break;
 
-     case '*': 
+     case '*':
       i++;
       if (i==m->len) return 1;	/* slut */
 
@@ -6214,7 +6489,14 @@ static int does_match_x_x(struct pike_string *s,int j,
 
       return 0;
 
-     default: 
+    case '[':
+      DOES_MATCH_CLASS(index_shared_string(m,i),index_shared_string(s,j),m->len);
+      break;
+
+     case '\\':
+       if (++i==m->len) return 0;
+       /* FALLTHRU */
+     default:
        if(j>=s->len ||
 	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;
        j++;
@@ -6235,7 +6517,7 @@ static int does_match(struct pike_string *s,int j,
     return does_match_x_x( s,j,m,i );
 }
 /*! @decl int(0..1) glob(string glob, string str)
- *! @decl int(0..1) glob(array(string) glob, string str)
+ *! @decl string glob(array(string) glob, string str)
  *! @decl array(string) glob(string glob, array(string) str)
  *! @decl array(string) glob(array(string) glob, array(string) str)
  *!
@@ -6243,13 +6525,15 @@ static int does_match(struct pike_string *s,int j,
  *!
  *! @param glob
  *!   @mixed
- *!    @type string 
+ *!    @type string
  *!      The glob pattern. A question sign ('?') matches any character
  *!      and an asterisk ('*') matches a string of arbitrary length. All
  *!      other characters only match themselves.
  *!    @type array(string)
- *!      the function returns true, or keeps a string, if any of the given
- *!       patterns match
+ *!      the function returns the matching glob if any of the given
+ *!      patterns match. Otherwise 0. If the second argument is an array
+ *!      it will behave as if the first argument is a string (see
+ *!      below)
  *!  @endmixed
  *!
  *! @param str
@@ -6268,33 +6552,30 @@ static int does_match(struct pike_string *s,int j,
  *!   @[sscanf()], @[Regexp]
  */
 
-static int any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
+static struct pike_string *any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
 {
    INT32 i;
    for( i =0; i<nglobs; i++ )
    {
      struct pike_string *str2 = items[i].u.string;
      if( str == str2 )
-       return 1;
+       return str;
      if( does_match(str,0,str2,0) )
-       return 1;
+       return str2;
    }
    return 0;
-} 
+}
 
 PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i;
   struct array *a;
   struct svalue *glob;
+  struct pike_string *tmp;
   int nglobs;
 
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("glob", 2);
-
-  if(args > 2)
-    pop_n_elems(args-2);
-  args=2;
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("glob", 2);
 
   if (TYPEOF(Pike_sp[-args]) == T_STRING)
   {
@@ -6308,20 +6589,23 @@ PMOD_EXPORT void f_glob(INT32 args)
       nglobs = ga->size;
       for( i=0; i<nglobs; i++ )
 	  if( TYPEOF(ga->item[i]) != PIKE_T_STRING )
-              SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+              SIMPLE_ARG_TYPE_ERROR("glob", 1, "string|array(string)");
   }
   else
-      SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+      SIMPLE_ARG_TYPE_ERROR("glob", 1, "string|array(string)");
 
 
   switch(TYPEOF(Pike_sp[1-args]))
   {
   case T_STRING:
-      i = any_does_match(glob,nglobs,Pike_sp[1-args].u.string);
-      pop_n_elems(2);
-      push_int(i);
-   break;
-    
+    tmp = any_does_match(glob,nglobs,Pike_sp[1-args].u.string);
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY && tmp)
+      ref_push_string(tmp);
+    else
+      push_int(!!tmp);
+    stack_pop_n_elems_keep_top(2);
+    break;
+
   case T_ARRAY: {
     INT32 j;
     unsigned matches = 0;
@@ -6330,7 +6614,7 @@ PMOD_EXPORT void f_glob(INT32 args)
 
     if( (a->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+      SIMPLE_ARG_TYPE_ERROR("glob", 2, "string|array(string)");
 
     check_stack(120);
     BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
@@ -6355,7 +6639,7 @@ PMOD_EXPORT void f_glob(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+    SIMPLE_ARG_TYPE_ERROR("glob", 2, "string|array(string)");
   }
 }
 
@@ -6381,14 +6665,14 @@ static void f_interleave_array(INT32 args)
   int nelems = 0;
   int i;
 
-  get_all_args("interleave_array", args, "%a", &arr);
+  get_all_args(NULL, args, "%a", &arr);
 
   /* We're not interrested in any other arguments. */
   pop_n_elems(args-1);
 
   if( (arr->type_field & ~BIT_MAPPING) &&
       (array_fix_type_field(arr) & ~BIT_MAPPING) )
-    SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
+    SIMPLE_ARG_TYPE_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
 
   /* The order array */
   ref_push_array(arr);
@@ -6407,18 +6691,18 @@ static void f_interleave_array(INT32 args)
     INT_TYPE low = MAX_INT_TYPE;
 #ifdef PIKE_DEBUG
     if (TYPEOF(ITEM(arr)[i]) != T_MAPPING) {
-      Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
+      Pike_error("Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
     md = ITEM(arr)[i].u.mapping->data;
     NEW_MAPPING_LOOP(md) {
       if (TYPEOF(k->ind) != T_INT) {
-	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
+	Pike_error("Index not an integer in mapping %d!\n", i);
       }
       if (low > k->ind.u.integer) {
 	low = k->ind.u.integer;
 	if (low < 0) {
-	  Pike_error("interleave_array(): Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
+	  Pike_error("Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
 		low, i);
 	}
       }
@@ -6452,10 +6736,7 @@ static void f_interleave_array(INT32 args)
     max *= 2;
     /* max will be the padding at the end. */
     size = (nelems + max) * 8;	/* Initial size */
-    if (!(tab = malloc(size + max))) {
-      SIMPLE_OUT_OF_MEMORY_ERROR("interleave_array", size+max);
-    }
-    MEMSET(tab, 0, size + max);
+    tab = xcalloc(size + max, 1);
 
     for (i = 0; i < order->size; i++) {
       int low = ITEM(min)[i].u.integer;
@@ -6504,10 +6785,10 @@ static void f_interleave_array(INT32 args)
 	char *newtab = realloc(tab, size*2 + max);
 	if (!newtab) {
 	  free(tab);
-	  Pike_error("interleave_array(): Couldn't extend table!\n");
+	  Pike_error("Couldn't extend table!\n");
 	}
 	tab = newtab;
-	MEMSET(tab + size + max, 0, size);
+	memset(tab + size + max, 0, size);
 	size = size * 2;
       }
     }
@@ -6563,17 +6844,19 @@ static struct array *longest_ordered_sequence(struct array *a)
   ONERROR tmp;
   ONERROR tmp2;
 
-  if(!a->size)
-    return allocate_array(0);
+  if(!a->size) {
+    add_ref(&empty_array);
+    return &empty_array;
+  }
 
-  stack = malloc(sizeof(int)*a->size);
-  links = malloc(sizeof(int)*a->size);
+  stack = calloc(sizeof(int), a->size);
+  links = calloc(sizeof(int), a->size);
 
   if (!stack || !links)
   {
     if (stack) free(stack);
     if (links) free(links);
-    return 0;
+    return NULL;
   }
 
   /* is_gt(), is_lt() and low_allocate_array() can generate errors. */
@@ -6597,8 +6880,7 @@ static struct array *longest_ordered_sequence(struct array *a)
     stack[pos] = i;
   }
 
-  /* FIXME(?) memory unfreed upon error here */
-  res = low_allocate_array(top, 0); 
+  res = low_allocate_array(top, 0);
   while (ltop != -1)
   {
     ITEM(res)[--top].u.integer = ltop;
@@ -6629,7 +6911,7 @@ static void f_longest_ordered_sequence(INT32 args)
   struct array *a = NULL;
   struct array *aa = NULL;
 
-  get_all_args("Array.longest_ordered_sequence", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
@@ -6638,11 +6920,10 @@ static void f_longest_ordered_sequence(INT32 args)
   /* THREADS_DISALLOW(); */
 
   if (!aa) {
-    SIMPLE_OUT_OF_MEMORY_ERROR("Array.longest_ordered_sequence",
+    SIMPLE_OUT_OF_MEMORY_ERROR("longest_ordered_sequence",
 			       (int)sizeof(int *)*a->size*2);
   }
 
-  pop_n_elems(args);
   push_array(aa);
 }
 
@@ -6712,7 +6993,7 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
 }
 
 struct diff_magic_link
-{ 
+{
    int x;
    int refs;
    struct diff_magic_link *prev;
@@ -6736,7 +7017,7 @@ struct diff_magic_link_head
 
 static int dmls=0;
 
-static INLINE struct diff_magic_link_pool*
+static inline struct diff_magic_link_pool*
          dml_new_pool(struct diff_magic_link_pool **pools)
 {
    struct diff_magic_link_pool *new;
@@ -6752,7 +7033,7 @@ static INLINE struct diff_magic_link_pool*
    return *pools;
 }
 
-static INLINE struct diff_magic_link* 
+static inline struct diff_magic_link*
        dml_new(struct diff_magic_link_pool **pools)
 {
    struct diff_magic_link *new;
@@ -6780,11 +7061,11 @@ static INLINE struct diff_magic_link*
       pool->firstfreenum=1;
       return pool->dml;
    }
-   
-   return NULL;
-}	
 
-static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
+   return NULL;
+}
+
+static inline void dml_free_pools(struct diff_magic_link_pool *pools)
 {
    struct diff_magic_link_pool *pool;
 
@@ -6796,7 +7077,7 @@ static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
    }
 }
 
-static INLINE void dml_delete(struct diff_magic_link_pool *pools,
+static inline void dml_delete(struct diff_magic_link_pool *pools,
 			      struct diff_magic_link *dml)
 {
   struct diff_magic_link *prev;
@@ -6813,13 +7094,13 @@ static INLINE void dml_delete(struct diff_magic_link_pool *pools,
   }
 }
 
-static INLINE int diff_ponder_stack(int x,
+static inline int diff_ponder_stack(int x,
 				    struct diff_magic_link **dml,
 				    int top)
 {
    int middle,a,b;
-   
-   a=0; 
+
+   a=0;
    b=top;
    while (b>a)
    {
@@ -6832,13 +7113,13 @@ static INLINE int diff_ponder_stack(int x,
    return a;
 }
 
-static INLINE int diff_ponder_array(int x,
+static inline int diff_ponder_array(int x,
 				    struct svalue *arr,
 				    int top)
 {
    int middle,a,b;
-   
-   a=0; 
+
+   a=0;
    b=top;
    while (b>a)
    {
@@ -6884,14 +7165,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    if(!cmptbl->size)
      return allocate_array(0);
 
-   stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
-
-   if (!stack) {
-     int args = 0;
-     SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence",
-				(int)sizeof(struct diff_magic_link*) *
-				cmptbl->size);
-   }
+   stack = xcalloc(sizeof(struct diff_magic_link*), cmptbl->size);
 
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen, 1);
@@ -7001,9 +7275,9 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 	       dml->prev = NULL;
 
 	     top++;
-	    
+
 	     stack[pos] = dml;
-	   } else if (pos && 
+	   } else if (pos &&
 		      stack[pos]->refs == 1 &&
 		      stack[pos-1] == stack[pos]->prev)
 	   {
@@ -7039,7 +7313,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
 	     if (!--stack[pos]->refs)
 	       dml_delete(pools, stack[pos]);
-	    
+
 	     stack[pos] = dml;
 	   }
 #ifdef DIFF_DEBUG
@@ -7061,7 +7335,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    free(marks);
 
    /* FIXME(?) memory unfreed upon error here. */
-   a=low_allocate_array(top,0); 
+   a=low_allocate_array(top,0);
    if (top)
    {
        dml=stack[top-1];
@@ -7104,12 +7378,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int off2 = blen + 1;
   ONERROR err;
 
-  table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
-  if (!table) {
-    int args = 0;
-    SIMPLE_OUT_OF_MEMORY_ERROR("diff_dyn_longest_sequence",
-			       sizeof(struct diff_magic_link_head) * 2 * off2);
-  }
+  table = xcalloc(sizeof(struct diff_magic_link_head)*2, off2);
 
   /* FIXME: Assumes NULL is represented with all zeroes */
   /* NOTE: Scan strings backwards to get the same result as the G-M
@@ -7258,7 +7527,7 @@ static struct array* diff_build(struct array *a,
    /* FIXME(?) memory unfreed upon error here (and later) */
    ad=low_allocate_array(0,32);
    bd=low_allocate_array(0,32);
-   
+
    eqstart=0;
    lbi=bi=ai=-1;
    for (i=0; i<seq->size; i++)
@@ -7306,7 +7575,7 @@ static struct array* diff_build(struct array *a,
       push_array(friendly_slice_array(b,lbi+1,b->size));
       bd=append_array(bd, Pike_sp-1);
       pop_stack();
-      
+
       push_array(friendly_slice_array(a,ai+1,a->size));
       ad=append_array(ad,Pike_sp-1);
       pop_stack();
@@ -7317,7 +7586,7 @@ static struct array* diff_build(struct array *a,
    return aggregate_array(2);
 }
 
-/*! @decl array permute(array in, int number)
+/*! @decl array permute(array in, int(0..) number)
  *!
  *!   Give a specified permutation of an array.
  *!
@@ -7333,16 +7602,16 @@ PMOD_EXPORT void f_permute( INT32 args )
   struct array *a;
   struct svalue *it;
 
-  if( args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("permute", 2);
-  if( TYPEOF(Pike_sp[ -2 ]) != T_ARRAY )
-     SIMPLE_BAD_ARG_ERROR("permute", 1, "array");
-  if (TYPEOF(Pike_sp[ -1 ]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("permute", 2, "int");
+  get_all_args(NULL, args, "%a%+", &a, &n);
 
-  n  = Pike_sp[ -1 ].u.integer;
-  a = copy_array( Pike_sp[ -2 ].u.array );
-  pop_n_elems( args );
+  if( a->refs>1 )
+  {
+    a = copy_array( a );
+    push_array( a );
+  }
+  else
+    pop_n_elems(args-1);
+
   q = a->size;
   it = a->item;
   while( n && q )
@@ -7359,7 +7628,6 @@ PMOD_EXPORT void f_permute( INT32 args )
     }
     i++;
   }
-  push_array( a );
 }
 
 /*! @decl array(array(array)) diff(array a, array b)
@@ -7383,7 +7651,7 @@ PMOD_EXPORT void f_diff(INT32 args)
    struct array *a, *b;
    int uniq;
 
-   get_all_args("diff", args, "%a%a", &a, &b);
+   get_all_args(NULL, args, "%a%a", &a, &b);
 
    if ((a == b) || !a->size || !b->size) {
      if (!a->size && !b->size) {
@@ -7399,13 +7667,12 @@ PMOD_EXPORT void f_diff(INT32 args)
        f_aggregate(1);
        f_aggregate(2);
      }
-     stack_pop_n_elems_keep_top(args);
      return;
    }
 
    cmptbl = diff_compare_table(a, b, &uniq);
-
    push_array(cmptbl);
+
 #ifdef ENABLE_DYN_DIFF
    if (uniq * 100 > cmptbl->size) {
 #endif /* ENABLE_DYN_DIFF */
@@ -7421,14 +7688,11 @@ PMOD_EXPORT void f_diff(INT32 args)
 	     uniq, cmptbl->size);
 #endif /* DIFF_DEBUG */
      seq = diff_dyn_longest_sequence(cmptbl, b->size);
-   }     
+   }
 #endif /* ENABLE_DYN_DIFF */
-   push_array(seq);
-   
-   diff=diff_build(a,b,seq);
 
-   pop_n_elems(2+args);
-   push_array(diff);
+   push_array(seq);
+   push_array(diff_build(a,b,seq));
 }
 
 /*! @decl array(array(int)) diff_compare_table(array a, array b)
@@ -7458,14 +7722,10 @@ PMOD_EXPORT void f_diff_compare_table(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *cmptbl;
 
-  get_all_args("diff_compare_table", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
-  cmptbl = diff_compare_table(a, b, NULL);
-
-  pop_n_elems(args);
-  push_array(cmptbl);
+  push_array(diff_compare_table(a, b, NULL));
 }
 
 /*! @decl array(int) diff_longest_sequence(array a, array b)
@@ -7480,19 +7740,14 @@ PMOD_EXPORT void f_diff_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *seq;
   struct array *cmptbl;
 
-  get_all_args("diff_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl = diff_compare_table(a, b, NULL);
-
   push_array(cmptbl);
 
-  seq = diff_longest_sequence(cmptbl, b->size);
-
-  pop_n_elems(args+1);
-  push_array(seq); 
+  push_array(diff_longest_sequence(cmptbl, b->size));
 }
 
 /*! @decl array(int) diff_dyn_longest_sequence(array a, array b)
@@ -7512,19 +7767,14 @@ PMOD_EXPORT void f_diff_dyn_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *seq;
   struct array *cmptbl;
 
-  get_all_args("diff_dyn_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl=diff_compare_table(a, b, NULL);
-
   push_array(cmptbl);
 
-  seq = diff_dyn_longest_sequence(cmptbl, b->size);
-
-  pop_n_elems(args+1);
-  push_array(seq); 
+  push_array(diff_dyn_longest_sequence(cmptbl, b->size));
 }
 
 /*! @endmodule
@@ -7570,6 +7820,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 #elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
 #endif
+
   pop_n_elems(args);
   ss=Pike_sp;
 
@@ -7579,9 +7830,19 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
 #if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
-  push_text("num_malloc_blocks");
+  push_static_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
-  push_text("malloc_block_bytes");
+  push_static_text("malloc_block_bytes");
+  if (mi.arena < 0) {
+    /* Kludge for broken Linux libc, where the fields are ints.
+     *
+     * 31-bit overflow, so perform an unsigned read.
+     */
+    size = (unsigned int)mi.arena;
+  } else {
+    /* On Solaris the fields are unsigned long (and may thus be 64-bit). */
+    size = mi.arena;
+  }
   /* NB: Kludge for glibc: hblkhd is intended for malloc overhead
    *     according to the Solaris manpages, but glibc keeps the
    *     amount of mmapped memory there, and uses the arena only
@@ -7591,30 +7852,55 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    *     small enough not to affect the total much, so no need
    *     for a special case.
    */
-  push_ulongest(mi.arena + mi.hblkhd);
-
-  push_text("num_malloc");
-  push_ulongest(mi.ordblks + mi.smblks);
-  push_text("malloc_bytes");
-  if (!mi.smblks) {
-    /* NB: Kludge for dlmalloc: usmblks contains the max uordblks value. */
-    push_ulongest(mi.uordblks);
+  if (mi.hblkhd < 0) {
+    size += (unsigned int)mi.hblkhd;
   } else {
-    push_ulongest(mi.usmblks + mi.uordblks);
+    size += mi.hblkhd;
   }
+  push_ulongest(size);
 
-  push_text("num_free_blocks");
+  push_static_text("num_malloc");
+  push_ulongest(mi.ordblks + mi.smblks);
+  push_static_text("malloc_bytes");
+  if (mi.uordblks < 0) {
+    size = (unsigned int)mi.uordblks;
+  } else {
+    size = mi.uordblks;
+  }
+  if (mi.smblks) {
+    /* NB: Not dlmalloc where usmblks contains the max uordblks value. */
+    if (mi.usmblks < 0) {
+      size += (unsigned int)mi.usmblks;
+    } else {
+      size += mi.usmblks;
+    }
+  }
+  push_ulongest(size);
+
+  push_static_text("num_free_blocks");
   push_int(1);
-  push_text("free_block_bytes");
-  push_ulongest(mi.fsmblks + mi.fordblks);
+  push_static_text("free_block_bytes");
+  if (mi.fsmblks < 0) {
+    size = (unsigned int)mi.fsmblks;
+  } else {
+    size = mi.fsmblks;
+  }
+  if (mi.fordblks < 0) {
+    size += (unsigned int)mi.fordblks;
+  } else {
+    size += mi.fordblks;
+  }
+  push_ulongest(size);
+
+  count_string_types();
 
 #endif
 
 #define COUNT(TYPE) do {					\
     PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
-    push_text("num_" #TYPE "s");				\
+    push_static_text("num_" #TYPE "s");				\
     push_ulongest(num);						\
-    push_text(#TYPE "_bytes");					\
+    push_static_text(#TYPE "_bytes");				\
     push_ulongest(size);					\
   } while(0)
 
@@ -7624,10 +7910,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(callback);
   COUNT(catch_context);
   COUNT(compat_cb_box);
-  COUNT(destroy_called_mark);
+  COUNT(destruct_called_mark);
   COUNT(gc_rec_frame);
   COUNT(mapping);
-  COUNT(marker);
   COUNT(mc_marker);
   COUNT(multiset);
   COUNT(node_s);
@@ -7636,7 +7921,6 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(pike_list_node);
   COUNT(pike_type);
   COUNT(program);
-  COUNT(short_pike_string);
   COUNT(string);
 #ifdef PIKE_DEBUG
   COUNT(supporter_marker);
@@ -7658,7 +7942,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
   call_callback(&memory_usage_callback, NULL);
 
-  f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
+  f_aggregate_mapping(Pike_sp - ss);
 }
 
 /* Estimate the size of an svalue, not including objects.
@@ -7674,11 +7958,6 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    the number of references to it.
 */
 
-struct string_header
-{
-    PIKE_STRING_CONTENTS;
-};
-
 unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
 {
     unsigned int res = 0;
@@ -7688,14 +7967,10 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     struct svalue *x;
     struct keypair *k;
 
-    switch( s->type )
+    switch( TYPEOF(*s) )
     {
         case PIKE_T_STRING:
-            /* FIXME: This makes assumptions about the threshold for short strings. */
-            if( s->u.string->flags & STRING_IS_SHORT )
-                return (16+sizeof(struct string_header)) / s->u.string->refs;
-            return ((s->u.string->len << s->u.string->size_shift) +
-                    sizeof(struct string_header)) / s->u.string->refs;
+            return count_memory_in_string(s->u.string) / s->u.string->refs;
         case PIKE_T_INT:
         case PIKE_T_OBJECT:
         case PIKE_T_FLOAT:
@@ -7714,7 +7989,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     }
 
     low_mapping_insert( *m, s, &svalue_int_one, 0 );
-    switch( s->type )
+    switch( TYPEOF(*s) )
     {
         case PIKE_T_ARRAY:
             res = sizeof( struct array );
@@ -7757,7 +8032,16 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
             break;
     }
     res /= *s->u.refs;
-    low_mapping_lookup(*m,s)->u.integer = res;
+
+    /* NB: We added s to the mapping above the switch, so we should
+     *     always find something here, but...
+     */
+    x = low_mapping_lookup(*m, s);
+    assert(x);
+    assert(TYPEOF(*x) == PIKE_T_INT);
+    assert(!SUBTYPEOF(*x));
+    x->u.integer = res;
+
     return res;
 }
 
@@ -7783,7 +8067,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
  *! @seealso
  *!   @[lfun::_size_object()], @[sizeof()]
  */
-static void f__size_object( INT32 args )
+static void f__size_object( INT32 UNUSED(args) )
 {
     size_t sum;
     unsigned int i;
@@ -7791,7 +8075,7 @@ static void f__size_object( INT32 args )
     struct object *o;
     struct program *p;
     struct mapping *map = NULL;
-    if( Pike_sp[-1].type != PIKE_T_OBJECT )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT )
         Pike_error("Expected an object as argument\n");
     o = Pike_sp[-1].u.object;
 
@@ -7807,7 +8091,7 @@ static void f__size_object( INT32 args )
     if( (fun = low_find_lfun( p, LFUN__SIZE_OBJECT)) != -1 )
     {
         apply_low( o, fun, 0 );
-        if( Pike_sp[-1].type == PIKE_T_INT )
+        if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
             sum += Pike_sp[-1].u.integer;
         pop_stack();
     }
@@ -7839,152 +8123,6 @@ static void f__size_object( INT32 args )
     push_int(sum);
 }
 
-
-/*! @decl mixed _next(mixed x)
- *!
- *!   Find the next object/array/mapping/multiset/program or string.
- *!
- *!   All objects, arrays, mappings, multisets, programs and strings are
- *!   stored in linked lists inside Pike. This function returns the next
- *!   item on the corresponding list. It is mainly meant for debugging
- *!   the Pike runtime, but can also be used to control memory usage.
- *!
- *! @seealso
- *!   @[next_object()], @[_prev()]
- */
-PMOD_EXPORT void f__next(INT32 args)
-{
-  struct svalue tmp;
-
-  ASSERT_SECURITY_ROOT("_next");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_next", 1);
-  
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
-  switch(TYPEOF(tmp))
-  {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
-  case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
-  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
-  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
-  case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
-  case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
-  default:
-    SIMPLE_BAD_ARG_ERROR("_next", 1,
-			 "object|array|mapping|multiset|program|string");
-  }
-  if(tmp.u.refs)
-  {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
-    pop_stack();
-    push_int(0);
-  }
-}
-
-/*! @decl mixed _prev(mixed x)
- *!
- *!   Find the previous object/array/mapping/multiset or program.
- *!
- *!   All objects, arrays, mappings, multisets and programs are
- *!   stored in linked lists inside Pike. This function returns the previous
- *!   item on the corresponding list. It is mainly meant for debugging
- *!   the Pike runtime, but can also be used to control memory usage.
- *!
- *! @note
- *!   Unlike @[_next()] this function does not work on strings.
- *!
- *! @seealso
- *!   @[next_object()], @[_next()]
- */
-PMOD_EXPORT void f__prev(INT32 args)
-{
-  struct svalue tmp;
-
-  ASSERT_SECURITY_ROOT("_prev");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_prev", 1);
-  
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
-  switch(TYPEOF(tmp))
-  {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
-  case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
-  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
-  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
-  case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
-  default:
-    SIMPLE_BAD_ARG_ERROR("_prev", 1, "object|array|mapping|multiset|program");
-  }
-  if(tmp.u.refs)
-  {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
-    pop_stack();
-    push_int(0);
-  }
-}
-
-/*! @decl int _refs(string|array|mapping|multiset|function|object|program o)
- *!
- *!   Return the number of references @[o] has.
- *!
- *!   It is mainly meant for debugging the Pike runtime, but can also be
- *!   used to control memory usage.
- *!
- *! @note
- *!   Note that the number of references will always be at least one since
- *!   the value is located on the stack when this function is executed.
- *!
- *! @seealso
- *!   @[_next()], @[_prev()]
- */
-PMOD_EXPORT void f__refs(INT32 args)
-{
-  INT32 i;
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_refs", 1);
-
-  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("refs", 1,
-			 "array|mapping|multiset|object|"
-			 "function|program|string");
-
-  i=Pike_sp[-args].u.refs[0];
-  pop_n_elems(args);
-  push_int(i);
-}
-
-#ifdef PIKE_DEBUG
-/* This function is for debugging *ONLY*
- * do not document please. /Hubbe
- */
-PMOD_EXPORT void f__leak(INT32 args)
-{
-  INT32 i;
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
-
-  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("_leak", 1,
-			 "array|mapping|multiset|object|"
-			 "function|program|string");
-
-  add_ref(Pike_sp[-args].u.dummy);
-  i=Pike_sp[-args].u.refs[0];
-  pop_n_elems(args);
-  push_int(i);
-}
-#endif
-
 /*! @decl type _typeof(mixed x)
  *!
  *!   Return the runtime type of @[x].
@@ -7997,7 +8135,7 @@ PMOD_EXPORT void f__typeof(INT32 args)
   struct pike_type *t;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_typeof", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_typeof", 1);
 
   t = get_type_of_svalue(Pike_sp-args);
 
@@ -8022,22 +8160,21 @@ PMOD_EXPORT void f__typeof(INT32 args)
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
   struct object *new_master;
-  ASSERT_SECURITY_ROOT("replace_master");
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("replace_master", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR("replace_master", 1, "object");
+    SIMPLE_ARG_TYPE_ERROR("replace_master", 1, "object");
   new_master = Pike_sp[-args].u.object;
   if(!new_master->prog)
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
 
   if (SUBTYPEOF(Pike_sp[-args]))
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
 
-  push_constant_text ("is_pike_master");
+  push_static_text ("is_pike_master");
   args++;
   object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
 
@@ -8206,6 +8343,51 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
   }
 }
 
+/*! @decl int gethrdtime(void|int nsec)
+ *!
+ *! Return the high resolution real time spent with threads disabled
+ *! since the Pike interpreter was started. The time is normally
+ *! returned in microseconds, but if the optional argument @[nsec]
+ *! is nonzero it's returned in nanoseconds.
+ *!
+ *! @note
+ *!   The actual accuracy on many systems is significantly less than
+ *!   microseconds or nanoseconds. See @[System.REAL_TIME_RESOLUTION].
+ *!
+ *! @seealso
+ *!   @[_disable_threads()], @[gethrtime()]
+ */
+static void f_gethrdtime(INT32 args)
+{
+  int nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+  cpu_time_t time;
+#ifdef PIKE_THREADS
+  time = threads_disabled_acc_time;
+  if (threads_disabled) {
+    time += get_real_time() - threads_disabled_start;
+  }
+#else
+  time = get_real_time();
+#endif
+  pop_n_elems(args);
+
+  if (nsec) {
+    push_int64(time);
+#ifndef LONG_CPU_TIME
+    push_int(1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  } else {
+#if CPU_TIME_TICKS_LOW > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+}
+
 #ifdef PROFILING
 /*! @decl array(int|mapping(string:array(int))) @
  *!           get_profiling_info(program prog)
@@ -8245,11 +8427,11 @@ static void f_get_prof_info(INT32 args)
   int i;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR("get_profiling_info", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("get_profiling_info", 1);
   }
   prog = program_from_svalue(Pike_sp-args);
   if(!prog)
-    SIMPLE_BAD_ARG_ERROR("get_profiling_info", 1, "program");
+    SIMPLE_ARG_TYPE_ERROR("get_profiling_info", 1, "program");
 
   /* ({ num_clones, ([ "fun_name":({ num_calls, total_time, self_time }) ]) })
    */
@@ -8305,7 +8487,7 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   get_all_args("variablep",args,"%o%S",&o, &s);
 
   if(!o->prog)
-    bad_arg_error("variablep", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("variablep", args, 1, "object", Pike_sp-args,
 		  "Called on destructed object.\n");
 
   /* FIXME: Ought to be overloadable, since `[]=() is... */
@@ -8345,9 +8527,15 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   struct mapping *m;
   int i, j=0,size=0;
 
-  get_all_args("uniq", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
+  if( !a->size )
+  {
+    push_empty_array();
+    return;
+  }
+
   push_mapping(m = allocate_mapping(a->size));
-  push_array(b = allocate_array(a->size));
+  b = allocate_array(a->size);
 
   for(i =0; i< a->size; i++)
   {
@@ -8358,13 +8546,14 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
       assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
     }
   }
-  dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp--; /* keep the ref to 'b' */
-  ACCEPT_UNFINISHED_TYPE_FIELDS {
-    b=resize_array(b,  j);
-  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
+
   b->type_field = a->type_field;
-  pop_n_elems(args-1); /* pop args and the mapping */
+  if (j != a->size) {
+    /* There are zeros in the unused fields... */
+    b->type_field |= BIT_INT;
+    b = array_shrink(b, j);
+    b->type_field = a->type_field;
+  }
   push_array(b);
 }
 
@@ -8383,37 +8572,38 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 PMOD_EXPORT void f_splice(INT32 args)
 {
   struct array *out;
-  INT32 size=0x7fffffff;
+  INT32 size=MAX_INT32;
   INT32 i,j,k;
 
   for(i=0;i<args;i++)
     if (TYPEOF(Pike_sp[i-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("splice", i+1, "array");
+      SIMPLE_ARG_TYPE_ERROR("splice", i+1, "array");
     else
       if (Pike_sp[i-args].u.array->size < size)
 	size=Pike_sp[i-args].u.array->size;
 
-  out=allocate_array(args * size);
-  if (!args)
+  if(!args || !size)
   {
-    push_array(out);
+    push_empty_array();
     return;
   }
 
+  out=allocate_array(args * size);
   out->type_field=0;
-  for(i=-args; i<0; i++) out->type_field|=Pike_sp[i].u.array->type_field;
 
   for(k=j=0; j<size; j++)
     for(i=-args; i<0; i++)
-      assign_svalue_no_free(out->item+(k++), Pike_sp[i].u.array->item+j);
+    {
+      assign_svalue_no_free(out->item+k, Pike_sp[i].u.array->item+j);
+      out->type_field |= (1<<TYPEOF(*(out->item+(k++))));
+    }
 
-  pop_n_elems(args);
   push_array(out);
   return;
 }
 
-/*! @decl array(mixed) everynth(array(mixed) a, void|int n, @
- *!                             void|int start)
+/*! @decl array(mixed) everynth(array(mixed) a, void|int(1..) n, @
+ *!                             void|int(0..) start)
  *!
  *!   Return an array with every @[n]:th element of the array @[a].
  *!
@@ -8431,7 +8621,7 @@ PMOD_EXPORT void f_everynth(INT32 args)
   TYPE_FIELD types;
   INT32 size=0;
 
-  check_all_args("everynth", args,
+  check_all_args(NULL, args,
 		 BIT_ARRAY, BIT_INT | BIT_VOID, BIT_INT | BIT_VOID , 0);
 
   switch(args)
@@ -8440,13 +8630,15 @@ PMOD_EXPORT void f_everynth(INT32 args)
     case 3:
      start=Pike_sp[2-args].u.integer;
      if(start<0)
-       bad_arg_error("everynth", Pike_sp-args, args, 3, "int", Pike_sp+2-args,
+       bad_arg_error("everynth", args, 3, "int", Pike_sp+2-args,
 		     "Argument negative.\n");
+     /* FALLTHRU */
     case 2:
       n=Pike_sp[1-args].u.integer;
       if(n<1)
-	bad_arg_error("everynth", Pike_sp-args, args, 2, "int", Pike_sp+1-args,
+        bad_arg_error("everynth", args, 2, "int", Pike_sp+1-args,
 		      "Argument negative.\n");
+     /* FALLTHRU */
     case 1:
       ina=Pike_sp[-args].u.array;
   }
@@ -8459,7 +8651,6 @@ PMOD_EXPORT void f_everynth(INT32 args)
   }
   a->type_field=types;
 
-  pop_n_elems(args);
   push_array(a);
   return;
 }
@@ -8478,26 +8669,24 @@ PMOD_EXPORT void f_transpose(INT32 args)
   INT32 j,i;
   TYPE_FIELD type=0;
 
-  if (args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("transpose", 1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("transpose", 1);
 
   if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
-    SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
+    SIMPLE_ARG_TYPE_ERROR("transpose", 1, "array(array)");
 
   in=Pike_sp[-args].u.array;
   sizein=in->size;
 
   if(!sizein)
   {
-    pop_n_elems(args);
-    out=allocate_array(0);
-    push_array(out);
-    return; 
+    push_empty_array();
+    return;
   }
 
   if( (in->type_field != BIT_ARRAY) &&
       (array_fix_type_field(in) != BIT_ARRAY) )
-    SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
+    SIMPLE_ARG_TYPE_ERROR("transpose", 1, "array(array)");
 
   sizeininner=in->item->u.array->size;
 
@@ -8509,7 +8698,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
 
   for(i=0; i<sizein; i++)
     type|=in->item[i].u.array->type_field;
-  
+
   for(j=0; j<sizeininner; j++)
   {
     struct svalue * ett;
@@ -8526,166 +8715,12 @@ PMOD_EXPORT void f_transpose(INT32 args)
   }
 
   out->type_field=BIT_ARRAY;
-  pop_n_elems(args);
   push_array(out);
   return;
 }
 
 /*! @endmodule
  */
-
-#ifdef DEBUG_MALLOC
-/*! @decl void reset_dmalloc()
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__reset_dmalloc(INT32 args)
-{
-  ASSERT_SECURITY_ROOT("_reset_dmalloc");
-  pop_n_elems(args);
-  reset_debug_malloc();
-}
-
-/*! @decl void dmalloc_set_name(string filename, int linenumber)
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
-{
-  char *s;
-  INT_TYPE i;
-  extern char * dynamic_location(const char *file, INT_TYPE line);
-  extern char * dmalloc_default_location;
-
-  if(args)
-  {
-    get_all_args("_dmalloc_set_name", args, "%s%i", &s, &i);
-    dmalloc_default_location = dynamic_location(s, i);
-  }else{
-    dmalloc_default_location=0;
-  }
-  pop_n_elems(args);
-}
-
-/*! @decl void list_open_fds()
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__list_open_fds(INT32 args)
-{
-  extern void list_open_fds(void);
-  list_open_fds();
-}
-
-/*! @decl void dump_dmalloc_locations(string|array|mapping| @
- *!                                   multiset|function|object| @
- *!                                   program|type o)
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__dump_dmalloc_locations(INT32 args)
-{
-  ASSERT_SECURITY_ROOT("_dump_dmalloc_locations");
-  if(args)
-    debug_malloc_dump_references (Pike_sp[-args].u.refs, 2, 1, 0);
-  pop_n_elems(args-1);
-}
-#endif
-
-#ifdef PIKE_DEBUG
-/*! @decl void locate_references(string|array|mapping| @
- *!                              multiset|function|object| @
- *!                              program|type o)
- *! @belongs Debug
- *!
- *!   This function is mostly intended for debugging. It will search through
- *!   all data structures in Pike looking for @[o] and print the
- *!   locations on stderr. @[o] can be anything but @expr{int@} or
- *!   @expr{float@}.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__locate_references(INT32 args)
-{
-  ASSERT_SECURITY_ROOT("_locate_references");
-  if(args)
-    locate_references(Pike_sp[-args].u.refs);
-  pop_n_elems(args-1);
-}
-
-/*! @decl mixed describe(mixed x)
- *! @belongs Debug
- *!
- *!   Prints out a description of the thing @[x] to standard error.
- *!   The description contains various internal info associated with
- *!   @[x].
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__describe(INT32 args)
-{
-  struct svalue *s;
-  ASSERT_SECURITY_ROOT("_describe");
-  get_all_args("_describe", args, "%*", &s);
-  debug_describe_svalue(debug_malloc_pass(s));
-  pop_n_elems(args-1);
-}
-
-/*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
- *! @belongs Debug
- *!
- *!   Sets a watch on the given thing, so that the gc will print a
- *!   message whenever it's encountered. Intended to be used together
- *!   with breakpoints to debug the garbage collector.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__gc_set_watch(INT32 args)
-{
-  ASSERT_SECURITY_ROOT("_gc_set_watch");
-
-  if (args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
-  if (!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
-  gc_watch(Pike_sp[-args].u.refs);
-  pop_n_elems(args);
-}
-
-/*! @decl void dump_backlog()
- *! @belongs Debug
- *!
- *!   Dumps the 1024 latest executed opcodes, along with the source
- *!   code lines, to standard error. The backlog is only collected on
- *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
- *!   argument on the command line.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__dump_backlog(INT32 args)
-{
-  ASSERT_SECURITY_ROOT("_dump_backlog");
-  pop_n_elems(args);
-  dump_backlog();
-}
-
-#endif
 
 /*! @decl mixed map(mixed arr, void|mixed fun, mixed ... extra)
  *!
@@ -8711,10 +8746,9 @@ PMOD_EXPORT void f__dump_backlog(INT32 args)
  *!
  *!     @item object
  *!       If there is a @[lfun::cast] method in the object, it's
- *!       called
- *!       to try to cast the object to an array, a mapping, or a
- *!       multiset, in that order, which is then handled as described
- *!       above.
+ *!       called to try to cast the object to an array, a mapping, or
+ *!       a multiset, in that order, which is then handled as
+ *!       described above.
  *!   @enddl
  *!
  *!   @[fun] is applied in different ways depending on its type:
@@ -8728,6 +8762,10 @@ PMOD_EXPORT void f__dump_backlog(INT32 args)
  *!     @item object
  *!       @[fun] is used as a function like above, i.e. the
  *!       @[lfun::`()] method in it is called.
+ *!
+ *!     @item array
+ *!       Each element of the @[fun] array will be called for each
+ *!       element of @[arr].
  *!
  *!     @item multiset
  *!     @item mapping
@@ -8763,7 +8801,7 @@ PMOD_EXPORT void f_map(INT32 args)
    TYPE_FIELD types;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("map", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("map", 1);
    else if (args<2)
       { push_int(0); args++; }
 
@@ -8775,8 +8813,8 @@ PMOD_EXPORT void f_map(INT32 args)
       case T_MAPPING:
       case T_PROGRAM:
       case T_FUNCTION:
-	 /* mapping ret =                             
-	       mkmapping(indices(arr),                
+	 /* mapping ret =
+	       mkmapping(indices(arr),
 	                 map(values(arr),fun,@extra)); */
 	 f_aggregate(args-2);
 	 mysp=Pike_sp;
@@ -8798,7 +8836,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       case T_MULTISET:
-	 /* multiset ret =                             
+	 /* multiset ret =
 	       (multiset)(map(indices(arr),fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
@@ -8807,10 +8845,9 @@ PMOD_EXPORT void f_map(INT32 args)
 	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_map(args);               
+	 f_map(args);
 
-	 /* FIXME: Handle multisets with values like mappings. */
-	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
+	 push_multiset (mkmultiset (Pike_sp[-1].u.array));
 	 free_array (Pike_sp[-2].u.array);
 	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp[-2] = Pike_sp[-1];
@@ -8818,125 +8855,81 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       case T_STRING:
-	 /* multiset ret =                             
+	 /* multiset ret =
 	       (string)(map((array)arr,fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_map(args);               
+	 f_map(args);
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
 
       case T_OBJECT:
-	 /* if arr->cast :              
+	 /* if arr->cast :
                try map((array)arr,fun,@extra);
                try map((mapping)arr,fun,@extra);
                try map((multiset)arr,fun,@extra); */
 
 	 mysp=Pike_sp+3-args;
 
-	 push_svalue(mysp-3);
-	 push_constant_text("cast");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    pop_stack();
+           struct object *o = mysp[-3].u.object;
+           INT16 osub = SUBTYPEOF(mysp[-3]);
+           int f = FIND_LFUN(o->prog->inherits[osub].prog,
+                             LFUN_CAST);
 
-	    push_constant_text("array");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
-	    {
+           if( f!=-1 )
+           {
+
+             ref_push_string(literal_array_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
 
-	    push_constant_text("mapping");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
-	    {
+             ref_push_string(literal_mapping_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
 
-	    push_constant_text("multiset");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
-	    {
+             ref_push_string(literal_multiset_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
+           }
 	 }
-	 pop_stack();
 
-         /* if arr->_sizeof && arr->`[] 
-               array ret; ret[i]=arr[i];
-               ret=map(ret,fun,@extra); */
-
-	 /* class myarray { int a0=1,a1=2; int `[](int what) { return ::`[]("a"+what); } int _sizeof() { return 2; } } 
-	    map(myarray(),lambda(int in){ werror("in=%d\n",in); }); */
-
-	 push_svalue(mysp-3);
-	 push_constant_text("`[]");
-	 f_arrow(2);
-	 push_svalue(mysp-3);
-	 push_constant_text("_sizeof");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-2)&&!UNSAFE_IS_ZERO(Pike_sp-1))
-	 {
-	    f_call_function(1);
-	    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	       SIMPLE_BAD_ARG_ERROR("map", 1, 
-				    "object sizeof() returning integer");
-	    n=Pike_sp[-1].u.integer;
-	    pop_stack();
-	    push_array(d=allocate_array(n));
-	    types = 0;
-	    stack_swap();
-	    for (i=0; i<n; i++)
-	    {
-	       stack_dup(); /* `[] */
-	       push_int(i);
-	       f_call_function(2);
-	       stack_pop_to_no_free (ITEM(d) + i);
-	       types |= 1 << TYPEOF(*ITEM(d));
-	    }
-	    d->type_field = types;
-	    pop_stack();
-	    free_svalue(mysp-3);
-	    mysp[-3]=*(--Pike_sp);
-	    dmalloc_touch_svalue(Pike_sp);
-	    f_map(args);
-	    return;
-	 }
-	 pop_stack();
-	 pop_stack();
-
-	 SIMPLE_BAD_ARG_ERROR("map",1,
-			      "object that works in map");
+	 SIMPLE_ARG_TYPE_ERROR("map",1,
+                               "object that works in map");
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("map",1,
-			      "array|mapping|program|function|"
-			      "multiset|string|object");
+	 SIMPLE_ARG_TYPE_ERROR("map",1,
+                               "array|mapping|program|function|"
+                               "multiset|string|object");
    }
 
    if (UNSAFE_IS_ZERO (Pike_sp-args+1)) {
@@ -9008,7 +9001,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	   for (i=0; i<n; i++)
 	   {
 	     push_svalue(ITEM(a)+i);
-	     if (splice) 
+	     if (splice)
 	     {
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
@@ -9032,7 +9025,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 pop_stack();
 	 stack_swap();
 	 f_rows(2);
-	 return; 
+	 return;
 
       case T_STRING:
 	 /* ret[i]=arr[i][fun](@extra); */
@@ -9060,10 +9053,10 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("map",2,
-			      "function|program|object|"
-			      "string|int(0..0)|multiset");
-   }      
+	 SIMPLE_ARG_TYPE_ERROR("map",2,
+                               "function|program|object|"
+                               "string|int(0..0)|multiset");
+   }
 }
 
 /*! @decl mixed filter(mixed arr, void|mixed fun, mixed ...extra)
@@ -9152,18 +9145,18 @@ PMOD_EXPORT void f_filter(INT32 args)
    struct svalue *mysp;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("filter", 1);
-   
+      SIMPLE_WRONG_NUM_ARGS_ERROR("filter", 1);
+
    switch (TYPEOF(Pike_sp[-args]))
    {
       case T_ARRAY:
 	 if (args >= 2 && TYPEOF(Pike_sp[1-args]) == T_ARRAY) {
 	   if (Pike_sp[1-args].u.array->size != Pike_sp[-args].u.array->size)
-	     SIMPLE_BAD_ARG_ERROR("filter", 2, "array of same size as the first");
+	     SIMPLE_ARG_TYPE_ERROR("filter", 2, "array of same size as the first");
 	   pop_n_elems(args-2);
 	 }
 	 else {
-	   MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
+	   memmove(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
 	   dmalloc_touch_svalue(Pike_sp);
 	   Pike_sp++;
 	   add_ref_svalue(Pike_sp-args);
@@ -9177,7 +9170,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    if (!UNSAFE_IS_ZERO(f->item+i))
 	    {
 	       push_svalue(a->item+i);
-	       if (m++>32) 
+	       if (m++>32)
 	       {
 		  f_aggregate(m);
 		  m=0;
@@ -9198,10 +9191,10 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_MAPPING:
       case T_PROGRAM:
       case T_FUNCTION:
-	 /* mapping ret =                             
-	       mkmapping(indices(arr),                
+	 /* mapping ret =
+	       mkmapping(indices(arr),
 	                 map(values(arr),fun,@extra)); */
-	 MEMMOVE(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
+	 memmove(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
 	 Pike_sp+=2;
 	 mark_free_svalue (Pike_sp-args-2);
 	 mark_free_svalue (Pike_sp-args-1);
@@ -9243,13 +9236,12 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 f_indices(1);              /* call f_indices */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);
 
-	 /* FIXME: Handle multisets with values like mappings. */
-	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
+	 push_multiset (mkmultiset (Pike_sp[-1].u.array));
 	 free_array (Pike_sp[-2].u.array);
 	 Pike_sp[-2] = Pike_sp[-1];
 	 dmalloc_touch_svalue(Pike_sp-1);
@@ -9261,71 +9253,68 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_filter(args);               
+	 f_filter(args);
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
 
       case T_OBJECT:
 	 mysp=Pike_sp+3-args;
 
-	 push_svalue(mysp-3);
-	 push_constant_text("cast");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    pop_stack();
+            struct object *o = mysp[-3].u.object;
+            int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(mysp[-3])].prog,
+                              LFUN_CAST);
 
-	    push_constant_text("array");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+            if( f!=-1 )
+            {
+              ref_push_string(literal_array_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    push_constant_text("mapping");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_mapping_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    push_constant_text("multiset");
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_multiset_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
+            }
 	 }
-	 pop_stack();
 
-	 SIMPLE_BAD_ARG_ERROR("filter",1,
-			      "...|object that can be cast to array, multiset or mapping");
+	 SIMPLE_ARG_TYPE_ERROR("filter",1,
+                               "...|object that can be cast to array, multiset or mapping");
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("filter",1,
-			      "array|mapping|program|function|"
-			      "multiset|string|object");
+	 SIMPLE_ARG_TYPE_ERROR("filter",1,
+                               "array|mapping|program|function|"
+                               "multiset|string|object");
    }
 }
 
@@ -9401,8 +9390,8 @@ void f_enumerate(INT32 args)
    INT_TYPE n;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("enumerate", 1);
-   if (args<2) 
+      SIMPLE_WRONG_NUM_ARGS_ERROR("enumerate", 1);
+   if (args<2)
    {
       push_int(1);
       args++;
@@ -9419,27 +9408,27 @@ void f_enumerate(INT32 args)
    {
       INT_TYPE step,start;
 
-      get_all_args("enumerate", args, "%i%i%i", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+      get_all_args("enumerate", args, "%+%i%i", &n, &step, &start);
+
+      {
+        INT_TYPE tmp;
+
+        /* this checks if
+         *      (n - 1) * step + start
+         * will overflow. if it does, we continue with the slow path. If it does not,
+         * adding step to start repeatedly will not overflow below. This check has
+         * false positives, but is much simpler to check than e.g. doing one check
+         * for every iteration
+         */
+        if (DO_INT_TYPE_MUL_OVERFLOW(n-1, step, &tmp) || INT_TYPE_ADD_OVERFLOW(tmp, start))
+          goto slow_path;
+      }
 
       pop_n_elems(args);
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
 	 ITEM(d)[i].u.integer=start;
-	 if ((step>0 && start+step<start) ||
-	     (step<0 && start+step>start)) /* overflow */
-	 {
-	    pop_stack();
-	    push_int(n);
-	    push_int(step);
-	    convert_stack_top_to_bignum();
-	    push_int(start);
-	    convert_stack_top_to_bignum();
-	    f_enumerate(3);
-	    return;
-	 }
 	 start+=step;
       }
       d->type_field = BIT_INT;
@@ -9452,12 +9441,8 @@ void f_enumerate(INT32 args)
    {
       FLOAT_TYPE step, start;
 
-      get_all_args("enumerate", args, "%i%F%F", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-
+      get_all_args("enumerate", args, "%+%F%F", &n, &step, &start);
       pop_n_elems(args);
-
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
@@ -9468,9 +9453,10 @@ void f_enumerate(INT32 args)
    }
    else
    {
-      TYPE_FIELD types = 0;
-      get_all_args("enumerate", args, "%i", &n);
-      if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+      TYPE_FIELD types;
+slow_path:
+      types = 0;
+      get_all_args("enumerate", args, "%+", &n);
       if (args>4) pop_n_elems(args-4);
       push_array(d=allocate_array(n));
       if (args<4)
@@ -9535,10 +9521,10 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   struct pike_string *file = NULL;
 
   if( !(p = program_from_svalue(Pike_sp-args)) )
-      Pike_error("Illegal argument 1 to defined(program,string)\n");
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 1, "program");
 
-  if( Pike_sp[-args+1].type != PIKE_T_STRING )
-      Pike_error("Illegal argument 2 to defined(program,string)\n");
+  if( TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING )
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 2, "string");
   else
       ident = Pike_sp[-args+1].u.string;
 
@@ -9547,14 +9533,12 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
       INT_TYPE line;
       struct pike_string *tmp = low_get_program_line(p, &line);
 
-      pop_n_elems(args);
-
-      if (tmp) 
+      if (tmp)
       {
           push_string(tmp);
           if(line >= 1)
           {
-              push_constant_text(":");
+              push_static_text(":");
               push_int(line);
               f_add(3);
           }
@@ -9580,10 +9564,9 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
 
   if (file)
   {
-      pop_n_elems(args);
       if (line) {
           push_string(file);
-          push_constant_text(":");
+          push_static_text(":");
           push_int(line);
           f_add(3);
       }
@@ -9591,7 +9574,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
           push_string (file);
       return;
   }
-  pop_n_elems(args);
+
   push_int(0);
 }
 
@@ -9606,13 +9589,13 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
   struct object *par;
   int parid,e,q=0;
 
-  get_all_args("inherit_list",args,"%*",&arg);
+  get_all_args(NULL, args, "%*", &arg);
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
     f_object_program(1);
-  
+
   p=program_from_svalue(arg);
-  if(!p) 
-    SIMPLE_BAD_ARG_ERROR("inherit_list", 1, "program");
+  if(!p)
+    SIMPLE_ARG_TYPE_ERROR("inherit_list", 1, "program");
 
   if(TYPEOF(*arg) == T_FUNCTION)
   {
@@ -9644,7 +9627,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	      tmp.o=par;
 	      tmp.parent_identifier=parid;
 	      tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
-	      
+
 	      find_external_context(&tmp, in->parent_offset-1);
 	      ref_push_function(tmp.o,
 				in->parent_identifier +
@@ -9652,11 +9635,11 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	    }
 	  }
 	  break;
-	  
+
 	  case INHERIT_PARENT:
 	    ref_push_function(in->parent, in->parent_identifier);
 	    break;
-	    
+
 	  case OBJECT_PARENT:
 	    if(par)
 	    {
@@ -9691,7 +9674,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
-  check_all_args("Function.defined",args,BIT_FUNCTION, 0);
+  check_all_args(NULL, args, BIT_FUNCTION, 0);
 
   if(SUBTYPEOF(Pike_sp[-args]) != FUNCTION_BUILTIN &&
      Pike_sp[-args].u.object->prog)
@@ -9728,10 +9711,9 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 
     if (file)
     {
-      pop_n_elems(args);
       if (line) {
 	push_string(file);
-	push_constant_text(":");
+	push_static_text(":");
 	push_int(line);
 	f_add(3);
       }
@@ -9741,7 +9723,6 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     }
   }
 
-  pop_n_elems(args);
   push_int(0);
 }
 
@@ -9758,16 +9739,14 @@ void init_builtin_efuns(void)
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
   ADD_EFUN("gethrtime", f_gethrtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("gethrdtime", f_gethrdtime,
+	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
 #ifdef PROFILING
   ADD_EFUN("get_profiling_info", f_get_prof_info,
 	   tFunc(tPrg(tObj),tArray), OPT_EXTERNAL_DEPEND);
 #endif /* PROFILING */
 
-  ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
-#ifdef PIKE_DEBUG
-  ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
-#endif
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
   /* class __master
@@ -9789,35 +9768,10 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
   ADD_PROTOTYPE("write", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
   ADD_PROTOTYPE("werror", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-  
-  /* FIXME: Are these three actually supposed to be used?
-   * They are called by encode.c:rec_restore_value
-   *	/grubba 2000-03-13
-   */
-
-#if 0 /* they are not required - Hubbe */
-  ADD_PROTOTYPE("functionof", tFunc(tStr, tFunction), ID_OPTIONAL);
-  ADD_PROTOTYPE("objectof", tFunc(tStr, tObj), ID_OPTIONAL);
-  ADD_PROTOTYPE("programof", tFunc(tStr, tPrg(tObj)), ID_OPTIONAL);
-#endif
 
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
   ADD_PROTOTYPE("resolv",
 		tFunc(tStr tOr(tStr,tVoid) tOr(tObj,tVoid), tMix), 0);
-
-#if 0
-  /* Getenv and putenv are efuns, they do not HAVE to be defined in the
-   * master object. -Hubbe
-   */
-
-  /* These two aren't called from C-code, but are popular from other code. */
-  ADD_PROTOTYPE("getenv",
-		tOr(tFunc(tStr,tStr), tFunc(tNone, tMap(tStr, tStr))),
-		ID_OPTIONAL);
-  ADD_PROTOTYPE("putenv", tFunc(tStr tStr, tVoid), ID_OPTIONAL);
-
-#endif
-
 
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
@@ -9827,65 +9781,58 @@ void init_builtin_efuns(void)
 	   tFunc(tObj, tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("master", f_master,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-#if 0 /* FIXME: dtFunc isn't USE_PIKE_TYPE compatible */
-  ADD_EFUN_DTYPE("replace_master", f_replace_master,
-		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
-		 OPT_SIDE_EFFECT);
 
-  /* function(:object) */
-  /* FIXME: */
-  ADD_EFUN_DTYPE("master", f_master,
-		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
-		 OPT_EXTERNAL_DEPEND);
-#endif /* 0 */
-  
   /* __master still contains a reference */
   free_program(pike___master_program);
-  
-/* function(string,void|mixed:void) */
+
+  /* function(string,void|mixed:void) */
   ADD_EFUN("add_constant", f_add_constant,
 	   tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
 
-/* function(0=mixed ...:array(0)) */
+  /* function(0=mixed ...:array(0)) */
   ADD_EFUN2("aggregate",debug_f_aggregate,
 	    tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_f_aggregate, 0);
-  
-/* function(0=mixed ...:multiset(0)) */
+
+  /* function(0=mixed ...:multiset(0)) */
   ADD_EFUN("aggregate_multiset",f_aggregate_multiset,
 	   tFuncV(tNone,tSetvar(0,tMix),tSet(tVar(0))),OPT_TRY_OPTIMIZE);
-  
-/* function(0=mixed ...:mapping(0:0)) */
+
+  /* function(0=mixed ...:mapping(0:0)) */
   ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
 	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
 	    OPT_TRY_OPTIMIZE, fix_aggregate_mapping_type, 0);
 
-/* function(:mapping(string:mixed)) */
+  /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
 	   tFunc(tNone,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
-  
+
+  /* function(:object) */
+  ADD_EFUN("get_active_compiler", f_get_active_compiler,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+
   /* function(:object) */
   ADD_EFUN("get_active_compilation_handler",
 	   f_get_active_compilation_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-  
+
   /* function(:object) */
   ADD_EFUN("get_active_error_handler",
 	   f_get_active_error_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-  
-/* function(int,void|0=mixed:array(0)) */
+
+  /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
 	   tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
-/* function(string...:string) */
+  /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
 #ifdef __amigaos__
@@ -9894,60 +9841,69 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
 #endif
 #endif
-  
+
   ADD_EFUN("compile", f_compile,
 	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
 	   OPT_EXTERNAL_DEPEND);
-  
-/* function(1=mixed:1) */
+
+  /* function(1=mixed:1) */
   ADD_EFUN("copy_value",f_copy_value,tFunc(tSetvar(1,tMix),tVar(1)),0);
-  
-/* function(string:string)|function(string,string:int) */
+
+  /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
-	   tOr(tFunc(tStr,tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
-  
-/* function(object|void:void) */
+           tOr(tFunc(tOr(tStr,tVoid),tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
+
+  /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
-  
-/* function(mixed,mixed:int) */
+
+  /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
 
   /* function(array(0=mixed),int|void,int|void:array(0)) */
   ADD_FUNCTION2("everynth",f_everynth,
-		tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
+                tFunc(tArr(tSetvar(0,tMix)) tOr(tInt1Plus,tVoid) tOr(tIntPos,tVoid),
 		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
-  
-/* function(int:void) */
+
+  /* function(int:void) */
   ADD_EFUN("exit",f_exit,tFuncV(tInt tOr(tVoid,tStr),tOr(tVoid,tMix),tVoid),
 	   OPT_SIDE_EFFECT);
-  
-/* function(int:void) */
+
+  /* function(int:void) */
   ADD_EFUN("_exit",f__exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
 
-/* function(mixed:int) */
+  /* function(mixed:int) */
   ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
-/* function(string,string:int)|function(string,string*:array(string)) */
-  ADD_EFUN("glob",f_glob,
-	   tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt),tFunc(tOr(tStr,tArr(tStr)) tArr(tStr),tArr(tStr))),
-	   OPT_TRY_OPTIMIZE);
-  
-/* function(string,int|void:int) */
-  ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
+  /* function(string,string:int(0..1))|function(string,string*:array(string)) */
+  ADD_EFUN("glob",f_glob,
+           tOr3(tFunc(tStr tStr,tInt01),
+                tFunc(tArr(tStr) tStr,tStr),
+                tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
+	   OPT_TRY_OPTIMIZE);
+
+  /* function(string,int|void:int) */
   ADD_EFUN("hash_7_0",f_hash_7_0,
-           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
+	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
-           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
+	   OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("hash_8_0", f_hash_8_0,
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
+	   OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash",f_hash,
+	   tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("indices",f_indices,
 	    tOr3(tFunc(tArray,tArr(tIntPos)),
@@ -9958,75 +9914,50 @@ void init_builtin_efuns(void)
 		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
-  ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
-  ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,
+            0, generate_undefinedp);
+  ADD_EFUN2("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,
+            0, generate_destructedp);
 
-/* function(mixed:int) */
+  /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
 
-/* function(mixed:int) */
+  /* function(mixed:int) */
   ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
-/* function(string:string)|function(int:int) */
+
+  /* function(string:string)|function(int:int) */
   ADD_EFUN("lower_case",f_lower_case,
 	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
-/* function(1=mixed,int:1) */
+
+  /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
 	   tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
 
   ADD_INT_CONSTANT("PIKE_WEAK_INDICES", PIKE_WEAK_INDICES, 0);
   ADD_INT_CONSTANT("PIKE_WEAK_VALUES", PIKE_WEAK_VALUES, 0);
 
-/* function(void|object:object) */
-  ADD_EFUN("next_object",f_next_object,
-	   tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
-
-  ADD_EFUN("_map_all_objects",f_map_all_objects,
-           tFunc(tFunction,tIntPos),OPT_EXTERNAL_DEPEND);
-  
-/* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
-  ADD_EFUN("_next",f__next,
-	   tOr6(tFunc(tStr,tStr),
-		tFunc(tObj,tObj),
-		tFunc(tMapping,tMapping),
-		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg(tObj),tPrg(tObj)),
-		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
-  
-/* function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
-  ADD_EFUN("_prev",f__prev,
-	   tOr5(tFunc(tObj,tObj),
-		tFunc(tMapping,tMapping),
-		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg(tObj),tPrg(tObj)),
-		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
-  
   /* function(mixed:program|function) */
   ADD_EFUN2("object_program", f_object_program,
 	    tFunc(tMix, tOr(tPrg(tObj),tFunction)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt01),0);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("programp",f_programp,tFunc(tMix,tInt01),0);
-  
-/* function(:int) */
+
+  /* function(:int) */
   ADD_EFUN("query_num_arg",f_query_num_arg,
 	   tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-  
-/* function(int:void) */
-  ADD_EFUN("random_seed",f_random_seed,
-	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
 
-  ADD_EFUN("random_string",f_random_string,
-	   tFunc(tInt,tString), OPT_EXTERNAL_DEPEND);
-  
+  /* function(int:void) */
+  ADD_EFUN("random_seed",f_random_seed,
+           tAttr("deprecated",tFunc(tInt,tVoid)),OPT_SIDE_EFFECT);
+
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
 		 tFunc(tStr tArr(tStr) tOr(tArr(tStr), tStr), tStr),
@@ -10034,14 +9965,14 @@ void init_builtin_efuns(void)
 		 tFunc(tSetvar(0,tArray) tMix tMix,tVar(0)),
 		 tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),
 	    OPT_TRY_OPTIMIZE, optimize_replace, 0);
-  
+
   ADD_EFUN("reverse",f_reverse,
 	   tOr3(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
 		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
 		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
 		      tVar(0))),0);
-  
-/* function(mixed,array:array) */
+
+  /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
 	   tOr6(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tArr(tVar(0)),
 		      tArr(tVar(1))),
@@ -10053,15 +9984,15 @@ void init_builtin_efuns(void)
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
-	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt),
+	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
-		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
-		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
-		      tVar(1)),
-		tFunc(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tVar(3))),
+		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
+                      tOr(tVoid,tVar(1)), tVar(1)),
+		tFuncV(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tMix, tVar(3))),
 	   0);
-  
+
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
 	    OPT_TRY_OPTIMIZE, 0, 0);
 
@@ -10084,13 +10015,13 @@ void init_builtin_efuns(void)
 		tFunc(tObj tMix, tInt01)),
 	   OPT_TRY_OPTIMIZE);
 
-/* function(float|int,int|void:void) */
+  /* function(float|int,int|void:void) */
   ADD_EFUN("sleep", f_sleep,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("delay", f_delay,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
-  
-/* function(array(0=mixed),array(mixed)...:array(0)) */
+
+  /* function(array(0=mixed),array(mixed)...:array(0)) */
   ADD_EFUN("sort",f_sort,
 	   tFuncV(tArr(tSetvar(0,tMix)),tArr(tMix),tArr(tVar(0))),
 	   OPT_SIDE_EFFECT);
@@ -10104,40 +10035,40 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("uniq_array", f_uniq_array,
 		tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp, tFunc(tMix,tInt01), 0);
 
   ADD_EFUN2("this_object", f_this_object,tFunc(tOr(tVoid,tIntPos),tObj),
 	    OPT_EXTERNAL_DEPEND, optimize_this_object, generate_this_object);
-  
-/* function(mixed:void) */
+
+  /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tOr(tMix,tVoid)),OPT_SIDE_EFFECT);
-  
-/* function(void|int(0..1):int(2..))|function(int(2..):float) */
+
+  /* function(void|int(0..1):int(2..))|function(int(2..):float) */
   ADD_EFUN("time",f_time,
 	   tOr(tFunc(tOr(tVoid,tInt01),tInt2Plus),
 	       tFunc(tInt2Plus,tFlt)),
 	   OPT_SIDE_EFFECT);
-  
+
   /* function(array(0=mixed):array(0)) */
   ADD_FUNCTION2("transpose",f_transpose,
 		tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
-  
-/* function(string:string)|function(int:int) */
+
+  /* function(string:string)|function(int:int) */
   ADD_EFUN("upper_case",f_upper_case,
 	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
 
-/* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+  /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("values",f_values,
 	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
 	       tFunc(tOr4(tArr(tSetvar(0,tMix)),
 			  tMap(tMix,tSetvar(0,tMix)),
 			  tObj,tPrg(tObj)),
 		     tArr(tVar(0)))),0,fix_values_type,0);
-  
-/* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+
+  /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
 	    tOr3(tFunc(tOr3(tNStr(tSetvar(0,tInt)),
 			    tArr(tSetvar(0,tMix)),
@@ -10145,18 +10076,13 @@ void init_builtin_efuns(void)
 		       tArr(tType(tVar(0)))),
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
-  
-/* function(mixed:int) */
+
+  /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
-  
-/* function(string,string:array) */
+
+  /* function(string,string:array) */
   ADD_EFUN("array_sscanf", f_sscanf,
 	   tFunc(tStr tAttr("sscanf_format", tStr),
-		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
-
-/* function(string,string:array) */
-  ADD_EFUN("array_sscanf_76", f_sscanf_76,
-	   tFunc(tStr tAttr("sscanf_76_format", tStr),
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
@@ -10164,22 +10090,29 @@ void init_builtin_efuns(void)
 	   0);
 
   /* Some Wide-string stuff */
-  
-/* function(string:string(0..255)) */
+
+  /* function(string,int(0..2)|void:string(0..255)) */
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
-	   tFunc(tStr,tStr8), OPT_TRY_OPTIMIZE);
-  
-/* function(string(0..255):string) */
+	   tFunc(tStr tOr(tInt02,tVoid),tStr8), OPT_TRY_OPTIMIZE);
+
+  /* function(string(0..255),int(0..2)|void:string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
-	   tFunc(tStr8,tStr), OPT_TRY_OPTIMIZE);
-  
-/* function(string,int|void:string(0..255)) */
+	   tFunc(tStr8 tOr(tInt02,tVoid),tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(string,int|void:utf8_string) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
+	   tFunc(tStr tOr(tInt,tVoid),tUtf8Str), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("string_filter_non_unicode", f_string_filter_non_unicode,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
-  
-/* function(string(0..255),int|void:string) */
+
+  /* function(utf8_string,int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
-	   tFunc(tStr8 tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tUtf8Str tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(string(8bit),int|void:int(0..1)) */
+  ADD_EFUN("validate_utf8", f_validate_utf8,
+	   tFunc(tStr8 tOr(tInt,tVoid),tInt01), OPT_TRY_OPTIMIZE);
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
@@ -10209,75 +10142,52 @@ void init_builtin_efuns(void)
 	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_LOCALTIME
-  
-/* function(int:mapping(string:int)) */
+  /* function(int:mapping(string:int)) */
   ADD_EFUN("localtime",f_localtime,
 	   tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GMTIME
-  
-/* function(int:mapping(string:int)) */
-  ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
-#endif
 
-#ifdef GOT_F_MKTIME
-  
-/* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
+  /* function(int:mapping(string:int)) */
+  ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
+
+  /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping(string:int):int) */
   ADD_EFUN("mktime",f_mktime,
 	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
-	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
+	       tFunc(tOr(tObj, tMap(tStr, tInt)),tInt)),OPT_TRY_OPTIMIZE);
+
+#ifdef HAVE_STRPTIME
+  /* function(string, string:mapping(string:int)) */
+  ADD_EFUN("strptime", f_strptime,
+           tFunc(tStr tStr, tMap(tStr, tInt)), OPT_TRY_OPTIMIZE);
 #endif
 
-/* function(:void) */
+  /* function(string,mapping(string:int):string) */
+  ADD_EFUN("strftime", f_strftime,
+           tFunc(tStr tMap(tStr,tInt), tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,
 	   tFunc(tNone,tVoid),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
-#ifdef PIKE_DEBUG
-  
-/* function(int:int) */
-  ADD_EFUN("_debug",f__debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("_optimizer_debug",f__optimizer_debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("_assembler_debug",f__assembler_debug,
-	   tFunc(tInt,tInt), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-  ADD_EFUN("_dump_program_tables", f__dump_program_tables,
-	   tFunc(tPrg(tObj),tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-#ifdef YYDEBUG
-  
-/* function(int:int) */
-  ADD_EFUN("_compiler_trace",f__compiler_trace,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-#endif /* YYDEBUG */
-#endif
-  
-/* function(:mapping(string:int)) */
+  /* function(:mapping(string:int)) */
   ADD_EFUN("_memory_usage",f__memory_usage,
 	   tFunc(tNone,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN("_size_object",f__size_object,
 	   tFunc(tObj,tInt),OPT_EXTERNAL_DEPEND);
 
-  
-/* function(:int) */
-  ADD_EFUN("gc",f_gc,tFunc(tNone,tInt),OPT_SIDE_EFFECT);
-  
-/* function(:string) */
+
+  /* function(:int) */
+  ADD_EFUN("gc", f_gc, tFunc(tOr(tMix, tVoid), tInt), OPT_SIDE_EFFECT);
+
+  /* function(:string) */
   ADD_EFUN("version", f_version,tFunc(tNone,tStr), OPT_TRY_OPTIMIZE);
 
   /* Note: The last argument to the encode and decode functions is
    * intentionally not part of the prototype, to keep it free for
    * other uses in the future. */
 
-/* function(mixed,void|object:string) */
+  /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value", f_encode_value,
 	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
@@ -10285,11 +10195,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
 	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
-/* function(string,void|object:mixed) */
+  /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
 	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
-  
-/* function(object,string:int) */
+
+  /* function(object,string:int) */
   ADD_EFUN("object_variablep", f_object_variablep,
 	   tFunc(tObj tStr,tInt), OPT_EXTERNAL_DEPEND);
 
@@ -10297,25 +10207,28 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("interleave_array", f_interleave_array,
 		tFunc(tArr(tMap(tInt, tMix)), tArr(tInt)), 0,
 		OPT_TRY_OPTIMIZE);
+
   /* function(array(0=mixed),array(1=mixed):array(array(array(0)|array(1))) */
   ADD_FUNCTION2("diff", f_diff,
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
 		      tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
 		OPT_TRY_OPTIMIZE);
 
-  /* Generate the n:th permutation of the array given as the first argument */
-  ADD_FUNCTION2("permute", f_permute, tFunc(tArray tInt,tArray), 0,
+  ADD_FUNCTION2("permute", f_permute, tFunc(tArray tIntPos,tArray), 0,
 		OPT_TRY_OPTIMIZE);
 
   /* function(array,array:array(int)) */
   ADD_FUNCTION2("diff_longest_sequence", f_diff_longest_sequence,
 		tFunc(tArray tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
+
   /* function(array,array:array(int)) */
   ADD_FUNCTION2("diff_dyn_longest_sequence", f_diff_dyn_longest_sequence,
 		tFunc(tArray tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
+
   /* function(array,array:array(array)) */
   ADD_FUNCTION2("diff_compare_table", f_diff_compare_table,
 		tFunc(tArray tArray, tArr(tArr(tInt))), 0, OPT_TRY_OPTIMIZE);
+
   /* function(array:array(int)) */
   ADD_FUNCTION2("longest_ordered_sequence", f_longest_ordered_sequence,
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
@@ -10347,7 +10260,7 @@ void init_builtin_efuns(void)
 			   tMap(tVar(3),tMix),
 			   tMap(tVar(3),tArr(tMix)),
 			   tMap(tVar(3),tOr(tInt0,tVar(2)))),
-		
+
  		 tMapStuff(tSet(tSetvar(1,tMix)),tVar(1),
 			   tSet(tVar(2)),
 			   tSet(tInt01),
@@ -10364,7 +10277,7 @@ void init_builtin_efuns(void)
 			   tMap(tStr,tArr(tMix)),
 			   tMap(tStr,tOr(tInt0,tVar(2)))),
 
-		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString), 
+		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
 		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
 		       tFuncV(tString tSet(tMix),tMix,tString),
 		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
@@ -10377,7 +10290,7 @@ void init_builtin_efuns(void)
 
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
-  
+
 #if 1
   ADD_EFUN2("filter", f_filter,
 	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
@@ -10405,54 +10318,42 @@ void init_builtin_efuns(void)
 		tFunc(tIntPos tOr(tInt,tFloat) tFloat,tArr(tFloat)),
 		tFunc(tIntPos tMix tObj,tArr(tVar(1))),
 		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tVar(1))),
-		tFunc(tIntPos tMix tMix 
+		tFunc(tIntPos tMix tMix
 		      tFuncV(tNone,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
-		
+
   ADD_FUNCTION2("inherit_list", f_inherit_list,
-		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0, OPT_TRY_OPTIMIZE);
+		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0,
+                OPT_TRY_OPTIMIZE);
+
   ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,
-               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0, OPT_TRY_OPTIMIZE);
+               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0,
+                OPT_TRY_OPTIMIZE);
+
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
-#ifdef DEBUG_MALLOC
-  
-/* function(void:void) */
-  ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,
-	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
-  ADD_EFUN("_dmalloc_set_name",f__dmalloc_set_name,
-	   tOr(tFunc(tStr tInt,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
-  ADD_EFUN("_list_open_fds",f__list_open_fds,
-	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
-  ADD_EFUN("_dump_dmalloc_locations",f__dump_dmalloc_locations,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
-#endif
-#ifdef PIKE_DEBUG
-  
-/* function(1=mixed:1) */
-  ADD_EFUN("_locate_references",f__locate_references,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
-  ADD_EFUN("_describe",f__describe,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
-  ADD_EFUN("_gc_set_watch", f__gc_set_watch,
-	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
-  ADD_EFUN("_dump_backlog", f__dump_backlog,
-	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_gdb_breakpoint", pike_gdb_breakpoint,
-	   tFuncV(tNone,tMix,tVoid), OPT_SIDE_EFFECT);
-#endif
+	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
 
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
+
   ADD_FUNCTION ("implicit_gc_real_time", f_implicit_gc_real_time,
 		tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
+
   ADD_FUNCTION ("count_memory", f_count_memory,
 		tFuncV(tOr(tInt,tMap(tString,tInt)),
 		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
 			    tString,tType(tMix),tInt),
 		       tInt), 0);
+
+  ADD_FUNCTION("identify_cycle", f_identify_cycle,
+	       tFunc(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
+			  tString,tType(tMix)),
+		     tArr(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
+			       tString,tType(tMix)))), 0);
 
   ADD_INT_CONSTANT ("NATIVE_INT_MAX", MAX_INT_TYPE, 0);
   ADD_INT_CONSTANT ("NATIVE_INT_MIN", MIN_INT_TYPE, 0);
@@ -10470,7 +10371,7 @@ void init_builtin_efuns(void)
 
 #ifdef WITH_DOUBLE_PRECISION_SVALUE
   ADD_INT_CONSTANT("__DOUBLE_PRECISION_FLOAT__",1,0);
-#else 
+#else
 #ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
   ADD_INT_CONSTANT("__LONG_DOUBLE_PRECISION_FLOAT__",1,0);
 #else
@@ -10482,6 +10383,9 @@ void init_builtin_efuns(void)
   ADD_INT_CONSTANT ("DESTRUCT_NO_REFS", DESTRUCT_NO_REFS, 0);
   ADD_INT_CONSTANT ("DESTRUCT_GC", DESTRUCT_GC, 0);
   ADD_INT_CONSTANT ("DESTRUCT_CLEANUP", DESTRUCT_CLEANUP, 0);
+
+  ADD_INT_CONSTANT("LOWEST_COMPAT_MAJOR", LOWEST_COMPAT_MAJOR, 0);
+  ADD_INT_CONSTANT("LOWEST_COMPAT_MINOR", LOWEST_COMPAT_MINOR, 0);
 }
 
 void exit_builtin_efuns(void)

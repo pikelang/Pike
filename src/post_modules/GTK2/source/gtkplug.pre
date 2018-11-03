@@ -28,7 +28,7 @@ void create(int|mapping(string:mixed) socket_id_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE id;
       GtkWidget *gp;
-      get_all_args("create",args,"%i",&id);
+      get_all_args(NULL,args,"%i",&id);
       gp=gtk_plug_new(id);
       THIS->obj=G_OBJECT(gp);
     } else {

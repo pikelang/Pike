@@ -12,12 +12,7 @@
 #include <fdlib.h>
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -37,7 +32,7 @@ int aap_get_time(void)
 {
   static int t = 0;
   static int last_time;
-  if(!(t++%10)) last_time = TIME(0);
+  if(!(t++%10)) last_time = time(0);
   return last_time;
 }
 
@@ -116,5 +111,5 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
     }
   }
   return 0;
-} 
+}
 #endif

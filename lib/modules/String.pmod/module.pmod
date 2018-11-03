@@ -1,27 +1,44 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+constant Bootstring = __builtin.bootstring;
 constant Buffer = __builtin.Buffer;
-
-constant count=__builtin.string_count;
-constant width=__builtin.string_width;
-constant trim_whites = __builtin.string_trim_whites;
-constant normalize_space = __builtin.string_normalize_space;
-constant trim_all_whites = __builtin.string_trim_all_whites;
 constant Iterator = __builtin.string_iterator;
-constant SplitIterator = __builtin.string_split_iterator;
 constant Replace = __builtin.multi_string_replace;
 constant SingleReplace = __builtin.single_string_replace;
-constant Bootstring = __builtin.bootstring;
-constant int2char = int2char;
-constant int2hex = int2hex;
-constant string2hex = __builtin.string2hex;
+constant SplitIterator = __builtin.string_split_iterator;
+
+constant count = __builtin.string_count;
+constant filter_non_unicode = string_filter_non_unicode;
 constant hex2string = __builtin.hex2string;
+constant int2char = predef::int2char;
+constant int2hex = predef::int2hex;
+constant normalize_space = __builtin.string_normalize_space;
+constant range = __builtin.string_range;
 constant secure = __builtin.string_secure;
 constant status = __builtin.string_status;
+constant trim = __builtin.string_trim;
+/* deprecated */ constant trim_all_whites = __builtin.string_trim;
+constant trim_whites = __builtin.string_trim_whites;
+constant width = __builtin.string_width;
 
 constant __HAVE_SPRINTF_STAR_MAPPING__ = 1;
 constant __HAVE_SPRINTF_NEGATIVE_F__ = 1;
+
+#if constant(predef::string2hex)
+/* NB: This module is used from the precompiler, and may thus be used
+ *     with older versions of Pike.
+ */
+constant string2hex = predef::string2hex;
+#else
+/* NB: Intentionally uses integer ranges instead of 7bit/8bit
+ *     for improved backward compat.
+ */
+string(0..127) string2hex(string(0..255) s)
+{
+  return sprintf("%{%02x%}", (array(int(0..255)))s);
+}
+#endif
 
 //! This function implodes a list of words to a readable string, e.g.
 //! @expr{({"straw","berry","pie"})@} becomes
@@ -68,7 +85,7 @@ string sillycaps(string str)
  * {
  *   if(!sizeof(strs))
  *     return "";
- *  
+ *
  *   for(int n = 0; n < sizeof(strs[0]); n++)
  *     for(int i = 1; i < sizeof(strs); i++)
  * 	if(sizeof(strs[i]) <= n || strs[i][n] != strs[0][n])
@@ -97,7 +114,7 @@ string common_prefix(array(string) strs)
   int n, i;
 
   int sz = min(@map(strs, sizeof));
-  
+
   for(n = 0; n < sz; n++)
     for(i = 1; i < sizeof(strs); i++)
       if(strs[i][n] != strs0[n])
@@ -215,11 +232,10 @@ int levenshtein_distance(string a, string b)
     // Thus lev_0[j] = j for j=0..|b|:
     int(0..2147483647) len = strlen(b);
 
-    if( len == 2147483647 ) 
+    if( len > 2147483646 )
         error("Too large string.\n");
 
     ++len;
-
     array(int) lev_i = enumerate(len);
     for (int i = 0; i < strlen(a); i++)
     {
@@ -233,7 +249,7 @@ int levenshtein_distance(string a, string b)
         // Use the mathematical formula to fill in the rest of the row:
         for (int j = 0; j < strlen(b); j++)
         {
-            int cost = (a[i] == b[j]) ? 0 : 1;
+            int cost = (a[i] != b[j]);
             lev_i[j + 1] = min(lev_i[j] + 1,
                                lev_p[j + 1] + 1,
                                lev_p[j] + cost);
@@ -306,8 +322,8 @@ string int2size( int size )
   if(size==1) return "1 byte";
   int oldmask = -1;
   int mask = -1024;
-  int no;
-  int val = size;
+  int(0..) no;
+  int(0..) val = [int(0..)]size;
   while (size & mask) {
     if (++no == sizeof(prefix))
       return sprintf("%d %s", val, prefix[-1]);
@@ -320,9 +336,10 @@ string int2size( int size )
   if (!(decimal = (size & ~oldmask))) return sprintf("%d %s", val, prefix[no]);
 
   // Convert the decimal to base 10.
-  decimal += 1<<(no*10 - 4);	// Rounding.
+  // NB: no >= 1 since otherwise ~oldmask == ~-1 == 0 and we return above.
+  decimal += 1<<[int(6..)](no*10 - 4);	// Rounding.
   decimal *= 5;
-  decimal >>= no*10 - 1;
+  decimal >>= [int(9..)](no*10 - 1);
 
   if (decimal == 10) {
     val++;

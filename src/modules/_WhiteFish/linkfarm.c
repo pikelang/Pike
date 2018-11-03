@@ -1,6 +1,11 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "interpret.h"
 #include "program.h"
 #include "array.h"
@@ -36,7 +41,7 @@ struct linkfarm
 
 static struct hash *new_hash( struct pike_string *id )
 {
-  struct hash *res = xalloc( sizeof( struct hash ) );
+  struct hash *res = ALLOC_STRUCT( hash );
   copy_shared_string(res->s, id);
   res->next = 0;
   return res;
@@ -133,8 +138,8 @@ static void f_linkfarm_add( INT32 args )
 {
   struct pike_string *s;
   struct linkfarm *f = THIS;
-  
-  get_all_args("LinkFarm()->add", args, "%W", &s);
+
+  get_all_args(NULL, args, "%W", &s);
   low_add(f, s);
   pop_n_elems(args);
 }
@@ -150,7 +155,7 @@ static void f_linkfarm_memsize( INT32 args )
   int i;
   struct hash *h;
   struct linkfarm *t = THIS;
-  
+
   for( i = 0; i<HSIZE; i++ )
   {
     h = t->hash[i];
@@ -197,43 +202,30 @@ static void f_linkfarm_read( INT32 args )
 /*! @endmodule
  */
 
-
-static void init_linkfarm_struct( )
-{
-  MEMSET( THIS, 0, sizeof( struct linkfarm ) );
-}
-
-static void exit_linkfarm_struct( )
+static void exit_linkfarm_struct(struct object *UNUSED(o))
 {
   int i;
 
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-
-/*   if( THIS->buffer ) */
-/*     wf_buffer_free( THIS->buffer ); */
-
-  init_linkfarm_struct();
 }
 
 
-void init_linkfarm_program()
+void init_linkfarm_program(void)
 {
   start_new_program();
   ADD_STORAGE(struct linkfarm);
-  add_function("add",f_linkfarm_add,
-	       "function(string:void)",0 );
-  add_function("memsize", f_linkfarm_memsize, "function(void:int)", 0 );
-  add_function("read", f_linkfarm_read, "function(void:array(string))", 0 );
-  set_init_callback( init_linkfarm_struct );
+  ADD_FUNCTION("add",f_linkfarm_add,tFunc(tStr,tVoid),0);
+  ADD_FUNCTION("memsize", f_linkfarm_memsize, tFunc(tVoid,tInt), 0 );
+  ADD_FUNCTION("read", f_linkfarm_read, tFunc(tVoid,tArr(tStr)), 0 );
   set_exit_callback( exit_linkfarm_struct );
   linkfarm_program = end_program( );
   add_program_constant( "LinkFarm", linkfarm_program, 0 );
 }
 
-void exit_linkfarm_program()
+void exit_linkfarm_program(void)
 {
   free_program( linkfarm_program );
 }
-  
+

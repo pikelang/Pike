@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  */
 
-//! Base storage-object for the cache system.
+//! Base stored object for the cache system.
 
 #pike __REAL_VERSION__
 
@@ -35,7 +35,7 @@ int recursive_low_size(mixed whatfor) {
   if (stringp(whatfor)) return sizeof(whatfor);
   if (intp(whatfor)) return SIZEOF_INT; //NOTE: not true for bignums...
   if (floatp(whatfor)) return SIZEOF_FLOAT;
-  if (programp(whatfor) || objectp(whatfor) || 
+  if (programp(whatfor) || objectp(whatfor) ||
       functionp(whatfor)) return DEFAULT_SIZE;
   // only composite types ahead
   array(mixed) iter;

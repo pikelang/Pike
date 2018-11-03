@@ -6,8 +6,12 @@
 
 #pike __REAL_VERSION__
 
-//! Implements the generic result of the SQL-interface.
+//! Implements the generic result base class of the SQL-interface.
 //! Used for return results from SQL.sql->big_query().
+//!
+//! You typically don't get a direct clone of this class,
+//! but of a class that inherits it, like @[sql_array_result]
+//! or @[sql_object_result].
 
 //! The actual result.
 mixed master_res;
@@ -38,10 +42,7 @@ protected string _sprintf(int type, mapping|void flags)
 int num_rows();
 
 //! Returns the number of fields in the result.
-int num_fields()
-{
-  return master_res->num_fields();
-}
+int num_fields();
 
 //! Returns non-zero if there are no more rows.
 int eof();
@@ -70,6 +71,20 @@ void seek(int skip) {
 //!   documentation for more details on how different data types are
 //!   represented.
 int|array(string|int|float) fetch_row();
+
+//! Switch to the next set of results.
+//!
+//! Some databases support returning more than one set of results.
+//! This function terminates the current result and switches to
+//! the next (if any).
+//!
+//! @returns
+//!   Returns the @[sql_result] object if there were more results,
+//!   and @expr{0@} (zero) otherwise.
+//!
+//! @throws
+//!   May throw the same errors as @[Sql.Sql()->big_query()] et al.
+this_program next_result();
 
 // --- Iterator API
 

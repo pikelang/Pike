@@ -13,6 +13,8 @@
 
 #include <tchar.h>
 
+/* #define PIKE_DLL_DEBUG */
+
 #define JNI_CreateJavaVM createjavavm
 typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
 static createjavavmtype JNI_CreateJavaVM = NULL;
@@ -24,57 +26,88 @@ static int open_nt_dll(void)
   WCHAR keyname[] = L"SOFTWARE\\JavaSoft\\Java Runtime Environment";
   HKEY key;
   WCHAR *libname = buffer;
-  DWORD type, len = sizeof(buffer)/2;
+  DWORD type, len = sizeof(buffer)/sizeof(WCHAR);
   DWORD l;
   HINSTANCE kernel;
   DWORD (WINAPI *getdlldir)(DWORD nBufferLength, WCHAR *lpBuffer) = NULL;
   BOOL (WINAPI *setdlldir)(WCHAR *lpPathname) = NULL;
-  
+
   l = GetEnvironmentVariableW(L"PIKE_JRE_JVMDLL", buffer, len);
   if (l > 0) {
     len = l;
-  }
-  else if(RegOpenKeyExW(HKEY_CURRENT_USER, keyname, 0,
-			KEY_READ, &key) == ERROR_SUCCESS ||
-          RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyname, 0,
-			KEY_READ, &key) == ERROR_SUCCESS) {
-    WCHAR *subkeyname = L"1.2";
-    HKEY subkey;
-
-    if(ERROR_SUCCESS == RegQueryValueExW(key, L"CurrentVersion", 0,
-					 &type, buffer, &len) &&
-       type == REG_SZ) {
-      subkeyname = buffer;
-    }
-
-    if(RegOpenKeyExW(key, subkeyname, 0, KEY_READ, &subkey) ==
-       ERROR_SUCCESS) {
-
-      len = sizeof(buffer)-16;
-
-      if(ERROR_SUCCESS == RegQueryValueExW(subkey, L"RuntimeLib", 0,
-					   &type, buffer, &len))
-	switch(type) {
-	 case REG_SZ:
-	   len /= sizeof(*buffer);
-	   break;
-	 case REG_EXPAND_SZ:
-	   {
-	     WCHAR *subbuffer = buffer + MAX_PATH + 16;
-	     l = ExpandEnvironmentStringsW(buffer, subbuffer, MAX_PATH + 16);
-	     if(l && l <= MAX_PATH + 16) {
-	       libname = subbuffer;
-	       len = l;
-	     }
-	   }
-	   break;
-	}
-      RegCloseKey(subkey);
-    }
-    RegCloseKey(key);
   } else {
-    len = wcslen(buffer);
+    HKEY root = HKEY_CURRENT_USER;
+    int i;
+    for (i = 0; i < 2; i++, root = HKEY_LOCAL_MACHINE) {
+      WCHAR *subkeyname = L"1.2";
+      HKEY subkey;
+      int code;
+
+      if (RegOpenKeyExW(root, keyname, 0, KEY_READ, &key) != ERROR_SUCCESS)
+	continue;
+
+      if ((RegQueryValueExW(key, L"CurrentVersion", 0,
+			    &type, buffer, &len) == ERROR_SUCCESS) &&
+	  type == REG_SZ) {
+	subkeyname = buffer;
+      } else {
+	/* NB: The key exists, but is empty or similar (eg remnants
+	 *     from an old installation). Try the next root key.
+	 */
+	if (!i) {
+	  RegCloseKey(key);
+	  continue;
+	}
+	/* Use the default ("1.2" above). */
+      }
+
+#ifdef PIKE_DLL_DEBUG
+      fwprintf(stderr, L"JVM subkeyname: %s\r\n", subkeyname);
+#endif /* PIKE_DLL_DEBUG */
+
+      if(RegOpenKeyExW(key, subkeyname, 0, KEY_READ, &subkey) ==
+	 ERROR_SUCCESS) {
+
+	len = sizeof(buffer)-16;
+
+	if(ERROR_SUCCESS == RegQueryValueExW(subkey, L"RuntimeLib", 0,
+					     &type, buffer, &len)) {
+	  switch(type) {
+	  case REG_SZ:
+	    len /= sizeof(WCHAR);
+	    break;
+	  case REG_EXPAND_SZ:
+	    {
+	      WCHAR *subbuffer = buffer + MAX_PATH + 16;
+	      l = ExpandEnvironmentStringsW(buffer, subbuffer, MAX_PATH + 16);
+	      if(l && l <= MAX_PATH + 16) {
+		libname = subbuffer;
+		len = l;
+	      }
+	    }
+	    break;
+	  }
+	  /* Success! */
+	  break;
+#ifdef PIKE_DLL_DEBUG
+	} else {
+	  fwprintf(stderr, L"JVM: No RuntimeLib!\r\n");
+#endif /* PIKE_DLL_DEBUG */
+	}
+	RegCloseKey(subkey);
+#ifdef PIKE_DLL_DEBUG
+      } else {
+	fwprintf(stderr, L"JVM: No subkey!\r\n");
+#endif /* PIKE_DLL_DEBUG */
+      }
+      RegCloseKey(key);
+      len = wcslen(buffer);
+    }
   }
+
+#ifdef PIKE_DLL_DEBUG
+  fwprintf(stderr, L"JVM libname: %s\r\n", libname);
+#endif /* PIKE_DLL_DEBUG */
 
   /* Java 6 and 7 jvm.dll have dependencies on msvcr71.dll and msvcr100.dll
    * respectively. They are located in the parent directory of the one
@@ -124,6 +157,10 @@ static int open_nt_dll(void)
 	}
       }
 
+#ifdef PIKE_DLL_DEBUG
+      fwprintf(stderr, L"JVM dlldir: %s\r\n", libname);
+#endif /* PIKE_DLL_DEBUG */
+
       setdlldir(libname);
 
       /* Restore the zapped diretory separator. */
@@ -138,6 +175,10 @@ static int open_nt_dll(void)
       jvmdll = LoadLibraryW(libname);
     }
   } else {
+#ifdef PIKE_DLL_DEBUG
+    fwprintf(stderr, L"JVM Warning: no SetDllDirectory\r\n");
+#endif /* PIKE_DLL_DEBUG */
+
     /* No SetDllDirectory(). */
     jvmdll = LoadLibraryW(libname);
   }
@@ -158,7 +199,7 @@ static int open_nt_dll(void)
   return 0;
 }
 
-static void close_nt_dll()
+static void close_nt_dll(void)
 {
   if(jvmdll != NULL && FreeLibrary(jvmdll))
     jvmdll = NULL;

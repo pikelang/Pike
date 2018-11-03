@@ -53,8 +53,8 @@ ANSI/DEC escape sequences as white space. Supported formats are
 possible to do color markup in the actual source file.</p>
 
 <p>The preprocessor will treat seven consecutive &lt; characters
-outside of a string as an CVS conflict error and will return "CVS
-conflict detected."</p>
+outside of a string as an version control conflict error and will
+return "Merge conflict detected."</p>
 
 </section>
 
@@ -134,7 +134,6 @@ will thus cause it to evaluated several times during execution. E.g.
 when called with MSG(random(1000));.</li>
 <li>A backslash (\) at the end of the line can be used to make the
 definition span several lines.</li>
-<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
 <li>It is possible to define macros with a variable list of arguments
 by using the ... syntax.</li>
 <li>Macros are often formulated so that a semicolon after it is
@@ -144,6 +143,7 @@ apropriate, for improved code readability.</li>
 group them together in containment block, such as do { BODY } while(0).
 If you do not, your macro could produce other hard to track down bugs,
 if put as a loop or if body without surrounding curly braces.</li>
+<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
 <li>A double hash (##) in front of a macro variable concatenates it with
 the text before it.</li>
 </ul>
@@ -165,6 +165,8 @@ hash character and the rest of the directive to create indentation in code.</p>
 
 <insert-move entity='cpp::.#""'/>
 
+<insert-move entity='cpp::.#(#)'/>
+
 <insert-move entity="cpp::.#string"/>
 
 <insert-move entity="cpp::.#include"/>
@@ -185,15 +187,17 @@ hash character and the rest of the directive to create indentation in code.</p>
 
 <insert-move entity="cpp::.#undef"/>
 
-<insert-move entity="cpp::.#error"/>
-
 <insert-move entity="cpp::.#charset"/>
 
 <insert-move entity="cpp::.#pike"/>
 
 <insert-move entity="cpp::.#pragma"/>
 
+<insert-move entity="cpp::.#require"/>
+
 <insert-move entity="cpp::.#warning"/>
+
+<insert-move entity="cpp::.#error"/>
 
 </section>
 
@@ -211,6 +215,7 @@ hash character and the rest of the directive to create indentation in code.</p>
   <insert-move entity="cpp::.__FILE__"/>
   <insert-move entity="cpp::.__DIR__"/>
   <insert-move entity="cpp::.__LINE__"/>
+  <insert-move entity="cpp::.__COUNTER__"/>
   <insert-move entity="cpp::.__AUTO_BIGNUM__"/>
   <insert-move entity="cpp::.__NT__"/>
   <insert-move entity="cpp::.__PIKE__"/>

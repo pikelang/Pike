@@ -82,9 +82,6 @@ test_pike.pike
   The program that performs the test suite when make
   verify is run.
 
-unbug
-  A GDB frontend for debugging pike code.
-
 xenofarm.sh
   Generates a Xenofarm result package if run in a Xenofarm build
   package.

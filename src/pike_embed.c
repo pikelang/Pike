@@ -1,4 +1,10 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Pike embedding API.
  *
  * Henrik Grubbström 2004-12-27
@@ -28,7 +34,6 @@
 #include "main.h"
 #include "operators.h"
 #include "rbtree.h"
-#include "pike_security.h"
 #include "constants.h"
 #include "version.h"
 #include "program.h"
@@ -38,7 +43,7 @@
 #include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "pike_embed.h"
-#include "bignum.h"
+#include "pike_modules.h"
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -46,16 +51,8 @@
 
 #include "las.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
-
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 #include "time_stuff.h"
 
@@ -72,8 +69,6 @@
 int try_use_mmx;
 #endif
 
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
 
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
@@ -116,36 +111,21 @@ const char *master_file = NULL;
 
 void init_pike(char **argv, const char *file)
 {
-#ifndef HAVE_UNION_INIT
-  svalue_int_one.u.integer = 1;
-#endif
-
   init_pike_memory();
 
   init_rusage();
 
   /* Attempt to make sure stderr is unbuffered. */
-#ifdef HAVE_SETVBUF
   setvbuf(stderr, NULL, _IONBF, 0);
-#else /* !HAVE_SETVBUF */
-#ifdef HAVE_SETBUF
-  setbuf(stderr, NULL);
-#endif /* HAVE_SETBUF */
-#endif /* HAVE_SETVBUF */
-
-  TRACE((stderr, "Init CPU lib...\n"));
-  
-  init_pike_cpulib();
 
 #ifdef TRY_USE_MMX
   TRACE((stderr, "Init MMX...\n"));
-  
   try_use_mmx=mmx_ok();
 #endif
+
 #ifdef OWN_GETHRTIME
 /* initialize our own gethrtime conversion /Mirar */
   TRACE((stderr, "Init gethrtime...\n"));
-  
   own_gethrtime_init();
 #endif
 
@@ -153,7 +133,6 @@ void init_pike(char **argv, const char *file)
   master_file = file;
 
   TRACE((stderr, "Main init...\n"));
-  
   fd_init();
   {
     extern void init_node_s_blocks(void);
@@ -166,7 +145,6 @@ void init_pike(char **argv, const char *file)
   tzset();
 #endif /* HAVE_TZSET */
 
-#ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
@@ -182,7 +160,6 @@ void init_pike(char **argv, const char *file)
 #ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
 #endif
-#endif
 }
 
 static void (*pike_exit_cb)(int);
@@ -195,7 +172,7 @@ void init_pike_runtime(void (*exit_cb)(int))
   pike_exit_cb = exit_cb;
 
   TRACE((stderr, "Init C stack...\n"));
-  
+
   Pike_interpreter.stack_top = (char *)&exit_cb;
 
   /* Adjust for anything already pushed on the stack.
@@ -207,10 +184,10 @@ void init_pike_runtime(void (*exit_cb)(int))
    * too unsafe (consider 64-bit systems).
    */
 #if STACK_DIRECTION < 0
-  /* Equvivalent with |= 0xffff */
+  /* Equivalent with |= 0xffff */
   Pike_interpreter.stack_top += ~(PTR_TO_INT(Pike_interpreter.stack_top)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
-  /* Equvivalent with &= ~0xffff */
+  /* Equivalent with &= ~0xffff */
   Pike_interpreter.stack_top -= PTR_TO_INT(Pike_interpreter.stack_top) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
@@ -241,15 +218,6 @@ void init_pike_runtime(void (*exit_cb)(int))
        */
       if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
 #endif
-
-#if defined(_AIX) && defined(__ia64)
-      /* getrlimit() on AIX 5L/IA64 Beta 3 reports 32MB by default,
-       * even though the stack is just 8MB.
-       */
-      if (lim.rlim_cur > 8*1024*1024) {
-        lim.rlim_cur = 8*1024*1024;
-      }
-#endif /* _AIX && __ia64 */
 
 #if STACK_DIRECTION < 0
       Pike_interpreter.stack_top -= lim.rlim_cur;
@@ -282,8 +250,8 @@ void init_pike_runtime(void (*exit_cb)(int))
 	/* Linux glibc threads are limited to a 4 Mb stack
 	 * __pthread_initial_thread_bos is the actual limit
 	 */
-	
-	if(__pthread_initial_thread_bos && 
+
+	if(__pthread_initial_thread_bos &&
 	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
 	{
 	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
@@ -314,63 +282,31 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
-#if 0
-#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
-#define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
-
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-  {
-    struct rlimit lim;
-    long tmp;
-    if(!getrlimit(RLIMIT_NOFILE, &lim))
-    {
-#ifdef RLIM_INFINITY
-      if(lim.rlim_max == RLIM_INFINITY)
-	lim.rlim_max=MAX_OPEN_FILEDESCRIPTORS;
-#endif
-      tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
-      lim.rlim_cur=tmp;
-      setrlimit(RLIMIT_NOFILE, &lim);
-    }
-  }
-#endif
-#endif
-  
   TRACE((stderr, "Init time...\n"));
-  
   UPDATE_CURRENT_TIME();
 
   TRACE((stderr, "Init threads...\n"));
-
   low_th_init();
 
   TRACE((stderr, "Init strings...\n"));
-  
   init_shared_string_table();
 
   TRACE((stderr, "Init interpreter...\n"));
-
   init_interpreter();
 
   TRACE((stderr, "Init types...\n"));
-
   init_types();
 
   TRACE((stderr, "Init opcodes...\n"));
-
   init_opcodes();
 
   TRACE((stderr, "Init destruct...\n"));
-
   low_init_object();
 
   TRACE((stderr, "Init programs...\n"));
-
   init_program();
 
   TRACE((stderr, "Init objects...\n"));
-
   init_object();
 
   if(SETJMP(back))
@@ -389,7 +325,6 @@ void init_pike_runtime(void (*exit_cb)(int))
     back.severity=THROW_EXIT;
 
     TRACE((stderr, "Init modules...\n"));
-
     init_modules();
 
 #ifdef TEST_MULTISET
@@ -458,7 +393,7 @@ void gdb_break_on_pike_stack_record(long stack_size)
 static unsigned int samples[8200];
 long record;
 
-static void sample_stack(struct callback *cb,void *tmp,void *ignored)
+static void sample_stack(struct callback *cb,void *UNUSED(tmp),void *UNUSED(ignored))
 {
   long stack_size=( ((char *)&cb) - Pike_interpreter.stack_bottom) * STACK_DIRECTION;
   stack_size>>=10;
@@ -481,7 +416,7 @@ void pike_enable_stack_profiling(void)
 {
 #ifdef PROFILING
   add_to_callback(&evaluator_callbacks, sample_stack, 0, 0);
-#endif	    
+#endif
 }
 
 static struct callback_list exit_callbacks;
@@ -558,67 +493,3 @@ void pike_push_argv(int argc, char **argv)
   a->type_field = BIT_STRING;
   push_array(a);
 }
-
-#ifdef __amigaos4__
-#define timeval timeval_amigaos
-#include <exec/types.h>
-#include <utility/hooks.h>
-#include <dos/dosextens.h>
-#include <proto/dos.h>
-
-static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
-						 APTR REG(a2,userdata),
-						 struct ScanVarsMsg *REG(a1,msg))
-{
-  if(msg->sv_GDir[0] == '\0' ||
-     !strcmp(msg->sv_GDir, "ENV:")) {
-    push_text(msg->sv_Name);
-    push_constant_text("=");
-    push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
-    f_add(3);
-  }
-
-  return 0;
-}
-
-static struct Hook scan_amigaos_environment_hook = {
-  { NULL, NULL },
-  (ULONG (*)())scan_amigaos_environment_func,
-  NULL, NULL
-};
-#endif /* __amigsos4__ */
-
-#if 0
-/* This is now handled by PIKEFUN _getenv in builtin.cmod. */
-void pike_push_env(void)
-{
-#ifdef __amigaos__
-#ifdef __amigaos4__
-  if(DOSBase->lib_Version >= 50) {
-    struct svalue *mark = Pike_sp;
-    IDOS->ScanVars(&scan_amigaos_environment_hook,
-		   GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
-		   NULL);
-    f_aggregate(Pike_sp-mark);
-  } else
-#endif
-    push_array(allocate_array_no_init(0,0));
-#else
-#ifdef DECLARE_ENVIRON
-  extern char **environ;
-#endif
-  struct array *a;
-  int num;
-
-  for(num=0;environ[num];num++);
-  a=allocate_array_no_init(num,0);
-  for(num=0;environ[num];num++)
-  {
-    SET_SVAL(ITEM(a)[num], T_STRING, 0,
-	     string, make_shared_string(environ[num]));
-  }
-  a->type_field = BIT_STRING;
-  push_array(a);
-#endif
-}
-#endif	/* 0 */

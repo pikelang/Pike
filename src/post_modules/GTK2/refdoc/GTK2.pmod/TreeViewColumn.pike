@@ -76,8 +76,9 @@ GTK2.TreeViewColumn clicked( );
 //!
 //!
 
-protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string|void property, int|void col );
-//! Creates a new W(TreeViewColumn).
+protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string property, int col, int|string... moreprops );
+//! Creates a new W(TreeViewColumn). At least one property/col pair must be
+//! specified; any number of additional pairs can also be given.
 //!
 //!
 
@@ -164,6 +165,11 @@ string get_title( );
 //!
 //!
 
+GTK2.Widget get_tree_view( );
+//! Returns the W(TreeView) that this TreeViewColumn has been inserted into.
+//!
+//!
+
 int get_visible( );
 //! Returns true if the column is visible.
 //!
@@ -188,7 +194,7 @@ GTK2.TreeViewColumn pack_end( GTK2.CellRenderer cell, int expand );
 GTK2.TreeViewColumn pack_start( GTK2.CellRenderer cell, int expand );
 //! Packs the cell into the beginning of the column.  If expand is false, then
 //! the cell is allocated no more space than it needs.  Any unused space is
-//! divied evenly between cels for which expand is true.
+//! divied evenly between cells for which expand is true.
 //!
 //!
 

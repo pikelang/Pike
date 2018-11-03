@@ -17,6 +17,29 @@ export LIBDIR_SRC
 export TMP_BUILDDIR
 export SRCDIR
 
+# NB: /usr/bin/id on Solaris doesn't support -u.
+for ID in /usr/xpg4/bin/id /usr/bin/id /bin/id id; do
+    if [ -x "$ID" ]; then
+	if "$ID" -u >/dev/null 2>&1; then
+	    break;
+	fi
+    fi
+done
+export ID
+
+TMP_OUT="${TMPDIR-/tmp}/precompile-`$ID -u 2>/dev/null`-$$.out"
+export TMP_OUT
+
+# Attempt to avoid leaving droppings on user abort.
+signal_exit()
+{
+    echo "Aborted by signal." >&2
+    rm -f "${TMP_OUT}"
+    exit 1
+}
+# HUP, INT, TERM
+trap signal_exit 1 2 15
+
 retries=.
 
 if test "@CROSS@" = "yes"; then
@@ -80,7 +103,7 @@ case $method in
     LAST_PIKE=pike
   ;;
   QQQQQQQ)
-   if [ "x$UNIQPATH" = "x" ] ; then 
+   if [ "x$UNIQPATH" = "x" ] ; then
     UNIQPATH=""
     ifs_save="${IFS- 	}"
     IFS=" @PATH_SEPARATOR@"
@@ -95,8 +118,7 @@ case $method in
      fi
      done
    fi
-    for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
-             pike73 pike72 pike71 pike70
+    for p in pike80 pike pike79 pike78 pike77 pike76 pike7
     do
       for dir in $UNIQPATH
       do
@@ -125,14 +147,22 @@ case $method in
   ;;
 esac
 
+
+
 if test "x${RUNPIKE-}" != x ; then
   echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-    $RUNPIKE $SCRIPT "$@" >&5
+# Do not output directly, if this generates data but the command
+# fails we have an issue. So, first output to a temporary file.
+
+  $RUNPIKE $SCRIPT "$@" >${TMP_OUT}
 
   if [ $? = 0 ]; then
+    cat ${TMP_OUT} >&5
+    rm -f ${TMP_OUT}
     exit 0
   fi
+  rm -f ${TMP_OUT}
 fi
 
 method="Q$method"

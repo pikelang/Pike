@@ -1,7 +1,4 @@
-/* parser.pike
- *
- * Continuation based imap parser.
- */
+//! Continuation based imap parser.
 
 #pike __REAL_VERSION__
 
@@ -16,7 +13,7 @@ void create(object l)
 }
 
 /* These functions are all called directly or indirectly by the
- * request enging in imap_server.pike. When a complete value is ready,
+ * request engine in imap_server.pike. When a complete value is ready,
  * they call a continuation function given as an argument. They all
  * return an action mapping, saying what to do next. */
 
@@ -27,7 +24,7 @@ class line_handler
 {
   function process;
   array args;
-    
+
   void create(function p, mixed ... a)
     {
       process = p;
@@ -50,7 +47,7 @@ mapping get_number(function c)
   return ([ "action" : "expect_line",
 	    "handler" : line_handler(get_number, c) ]);
 }
-  
+
 /* Value is a string */
 mapping get_atom(function c)
 {
@@ -83,7 +80,7 @@ mapping get_flag_list(function c)
 class get_string_handler
 {
   function c;
-    
+
   void create(function _c)
     {
       c = _c;
@@ -139,14 +136,14 @@ mapping get_set(function c)
   return ([ "action" : "expect_line",
 	    "handler" : line_handler(get_set, c) ]);
 }
-  
+
 /* The values produced by these functions are mappings, all of which
  * includes a type field. */
 
 class handle_literal
 {
   function handler;
-  
+
   void create(function h)
     {
       handler = h;
@@ -159,11 +156,11 @@ class handle_literal
 
 /* The function c is called with the resulting mapping and the
  * optional arguments. */
-  
+
 class handle_list
 {
   function c;
-  
+
   void create(function _c)
     {
       c = _c;
@@ -182,7 +179,7 @@ class collect_list
   int max_depth;
   int eol;
   int accept_options;
-  
+
   function c;
 
   void create(int _max_depth, int _eol, int _options, function _c)
@@ -192,19 +189,19 @@ class collect_list
       accept_options = _options;
       c = _c;
     }
-    
+
   mapping append(mapping value)
     {
       if (!value)
 	return c(0);
-      
+
       if (value->eol)
 	return c(l);
       l += ({ value });
 
       return collect();
     }
-    
+
   mapping collect()
     {
       return get_any(max_depth, eol, accept_options, append);
@@ -216,7 +213,7 @@ class handle_options
 {
   function c;
   mapping value;
-    
+
   void create(mapping v, function _c)
     {
       value = v;
@@ -227,7 +224,7 @@ class handle_options
     {
       if (!l)
 	return c(0);
-      
+
       value->options = l;
       /* line cannot be NULL, as the last token parsed is always ']',
        * not a literal */
@@ -247,7 +244,7 @@ mapping get_any(int max_depth, int eol, int accept_options, function c)
 
   if (!t)
     return c(t);
-  
+
   switch(t->type)
   {
   case "atom":
@@ -277,7 +274,7 @@ class collect_varargs
 
   int max_depth;
   int accept_options;
-  
+
   function c;
 
   void create(int _max_depth, int _options, function _c)
@@ -286,7 +283,7 @@ class collect_varargs
       accept_options = _options;
       c = _c;
     }
-    
+
   mapping append(mapping value)
     {
       if (value->eol)
@@ -295,7 +292,7 @@ class collect_varargs
 
       return collect();
     }
-    
+
   mapping collect()
     {
       return get_any(max_depth, 0, accept_options, append);

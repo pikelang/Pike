@@ -14,7 +14,6 @@
 #include "interpret.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "pike_security.h"
 #include "gc.h"
 #include "block_allocator.h"
 
@@ -85,7 +84,7 @@ void really_free_callable(struct callable * c) {
 void count_memory_in_callables(size_t * num, size_t * size) {
     ba_count_all(&callable_allocator, num, size);
 }
-void free_all_callable_blocks() {
+void free_all_callable_blocks(void) {
     ba_destroy(&callable_allocator);
 }
 
@@ -99,11 +98,12 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       optimize_fun optimize,
 					       docode_fun docode)
 {
-  struct callable *f=(struct callable*)ba_alloc(&callable_allocator);
+  struct callable *f=ba_alloc(&callable_allocator);
 #ifdef PIKE_DEBUG
   DOUBLELINK(first_callable, f);
 #endif
   INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
+  gc_init_marker(f);
   f->function=fun;
   f->name=name;
   f->type=type;
@@ -122,7 +122,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
       z = new_get_return_type(type, CALL_INHIBIT_WARNINGS);
       free_type(type);
     }
-    f->may_return_void = (z == void_type_string);
+    f->may_return_void = pike_types_le(z, void_type_string);
     if(!z) Pike_fatal("Function has no valid return type.\n");
     free_type(z);
   }
@@ -183,9 +183,6 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
 
   n = make_shared_binary_string(name, name_length);
   t = make_pike_type(type);
-#ifdef DEBUG
-  check_type_string(t);
-#endif
   add_ref(n);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
 	   low_make_callable(fun, n, t, flags, optimize, docode));
@@ -194,9 +191,10 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
   free_string(n);
 }
 
-PMOD_EXPORT void visit_callable (struct callable *c, int action)
+PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 {
-  switch (action) {
+  visit_enter(c, T_STRUCT_CALLABLE, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -210,12 +208,13 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action)
   }
 
   if (!(action & VISIT_COMPLEX_ONLY)) {
-    visit_type_ref (c->type, REF_TYPE_NORMAL);
-    visit_string_ref (c->name, REF_TYPE_NORMAL);
+    visit_type_ref (c->type, REF_TYPE_NORMAL, extra);
+    visit_string_ref (c->name, REF_TYPE_NORMAL, extra);
   }
 
   /* Looks like the c->prog isn't refcounted..? */
   /* visit_program_ref (c->prog, REF_TYPE_NORMAL); */
+  visit_leave(c, T_STRUCT_CALLABLE, extra);
 }
 
 #ifdef PIKE_DEBUG
@@ -230,7 +229,7 @@ void present_constant_profiling(void)
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(300);
+  builtin_constants = allocate_mapping(325);
 }
 
 void exit_builtin_constants(void)

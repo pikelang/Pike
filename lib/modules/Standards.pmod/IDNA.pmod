@@ -1,14 +1,11 @@
 #pike __REAL_VERSION__
 
-//! This module implements various algorithms specified by
-//! the Internationalizing Domain Names in Applications (IDNA) memo by
-//! the Internet Engineering Task Force (IETF), see
-//! @url{ftp://ftp.rfc-editor.org/in-notes/rfc3490.txt@}.
+//! This module implements various algorithms specified by the
+//! Internationalizing Domain Names in Applications (IDNA) memo by the
+//! Internet Engineering Task Force (IETF), see @rfc{3490@}.
 
-//! Punycode transcoder, see
-//! @url{ftp://ftp.rfc-editor.org/in-notes/rfc3492.txt@}.
-//! Punycode is used by @[to_ascii] as an "ASCII Compatible Encoding" when
-//! needed.
+//! Punycode transcoder, see @rfc{3492@}.  Punycode is used by
+//! @[to_ascii] as an "ASCII Compatible Encoding" when needed.
 object Punycode = class {
 
     inherit String.Bootstring;
@@ -299,14 +296,15 @@ protected constant stringprep_casefold_dest =
 
 
 
-//! Prepare a Unicode string for ACE transcoding.  Used by @[to_ascii].
-//! Nameprep is a profile of Stringprep, which is described in RFC 3454.
+//! Prepare a Unicode string for ACE transcoding.  Used by
+//! @[to_ascii].  Nameprep is a profile of Stringprep, which is
+//! described in @rfc{3454@}.
 //!
 //! @param s
 //!   The string to prep.
 //! @param allow_unassigned
 //!   Set this flag the the string to transform is a "query string",
-//!   and not a "stored string".  See RFC 3454.
+//!   and not a "stored string".  See @rfc{3454@}.
 //!
 string nameprep(string s, int(0..1)|void allow_unassigned)
 {
@@ -319,7 +317,7 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 
   // Mapping:  Table B.2 - Case folding for use with NFKC
   s = replace(s, stringprep_casefold_src, stringprep_casefold_dest);
-  
+
   // Normalize
   s = Unicode.normalize(s, "NFKC");
 
@@ -371,18 +369,18 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 //!   The sequence of Unicode code points to transform.
 //! @param allow_unassigned
 //!   Set this flag if the the string to transform is a "query string",
-//!   and not a "stored string".  See RFC 3454.
+//!   and not a "stored string".  See @rfc{3454@}.
 //! @param use_std3_ascii_rules
 //!   Set this flag to enforce the restrictions on ASCII characters in
 //!   host names imposed by STD3.
 //!
-string to_ascii(string s, int(0..1)|void allow_unassigned,
-		int(0..1)|void use_std3_ascii_rules)
+string(7bit) to_ascii(string s, int(0..1)|void allow_unassigned,
+		      int(0..1)|void use_std3_ascii_rules)
 {
-  int is_ascii = max(@values(s)) < 128;
+  int is_ascii = String.range(s)[1] < 128;
   if(!is_ascii) {
     s = nameprep(s, allow_unassigned);
-    is_ascii = max(@values(s)) < 128;
+    is_ascii = String.range(s)[1] < 128;
   }
   if(use_std3_ascii_rules) {
     if(array_sscanf(s, "%*[^\0-,./:-@[-`{-\x7f]%n")[0] != sizeof(s))
@@ -412,7 +410,7 @@ string to_ascii(string s, int(0..1)|void allow_unassigned,
 string to_unicode(string s)
 {
   string s0 = s;
-  if(max(@values(s)) >= 128 &&
+  if(String.range(s)[1] >= 128 &&
      catch(s = nameprep(s, 1)))
     return s0;
   if(lower_case(s[..3]) != "xn--")
@@ -429,8 +427,8 @@ string to_unicode(string s)
 
 //! Takes a sequence of labels separated by '.' and applies
 //! @[to_ascii] on each.
-string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
-		     int(0..1)|void use_std3_ascii_rules)
+string(7bit) zone_to_ascii(string s, int(0..1)|void allow_unassigned,
+			   int(0..1)|void use_std3_ascii_rules)
 {
   if(has_suffix(s, ".") && !has_suffix(s, ".."))
     return sizeof(s)>1?

@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -5,11 +11,9 @@
 #include "array.h"
 #include "pike_macros.h"
 #include "program.h"
-#include "stralloc.h"
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"
-#include "dynamic_buffer.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
@@ -19,9 +23,18 @@
 
 DECLARATIONS
 
+/* NB: Usually pulled in from crtbeginS.o, but we compile with -nostartfiles...
+ *
+ *     cf http://wiki.osdev.org/C%2B%2B#GCC
+ *     and http://www.linuxquestions.org/questions/programming-9/fyi-shared-libs-and-iostream-c-331113/#post1681605
+ *
+ *     It is needed due to vcdiff_wrapper.cc pulling in iostream.
+ */
+void *__dso_handle = NULL;
+
 /*! @module VCDiff
  *!
- *! Pike glue for the open-vcdiff differential compression library. 
+ *! Pike glue for the open-vcdiff differential compression library.
  *! http://code.google.com/p/open-vcdiff/
  *!
  *! Encoding and decoding relies on a common string that the differences are
@@ -42,7 +55,7 @@ PIKECLASS Encoder {
   CVAR void *vcencoder;
   CVAR int test;
   CVAR int encoder_state;
-    
+
   PIKEFUN void create (string dictionary)
   {
     void *_dict;
@@ -70,7 +83,6 @@ PIKECLASS Encoder {
     } else {
       Pike_error ("Initializing dictionary failed.\n");
     }
-    pop_n_elems (args);
   }
 
   PIKEFUN string encode (string data)
@@ -78,12 +90,12 @@ PIKECLASS Encoder {
     push_int (1);
     apply (Pike_fp->current_object, "encode_chunk", 2);
   }
-    
+
   PIKEFUN string encode_chunk (void|string data, void|int(0..1) flush)
   {
     char *in_buf = NULL;
     int in_buf_len = 0;
-      
+
     char *out_buf = NULL;
     int out_buf_len = 0;
 
@@ -95,11 +107,11 @@ PIKECLASS Encoder {
 
     struct pike_string *s;
     struct string_builder sb;
-      
+
     if (THIS->encoder_state == 0) {
       Pike_error ("Calling encode_chunk in un-initialized object.\n");
     }
-      
+
     if (data) {
       if (data->size_shift)
 	Pike_error("Wide strings not supported.\n");
@@ -116,7 +128,7 @@ PIKECLASS Encoder {
 
     if (flush) {
       // Flush internal buffers.
-      vcdiff_encode_chunk (vcenc, NULL, 0, 
+      vcdiff_encode_chunk (vcenc, NULL, 0,
 			   &trailer, &trailer_len, enc_state_ptr);
     }
 
@@ -132,13 +144,13 @@ PIKECLASS Encoder {
     s = finish_string_builder (&sb);
     RETURN s;
   }
-    
+
   INIT {
     THIS->dict = NULL;
     THIS->vcencoder = NULL;
     THIS->encoder_state = 0;
   }
-    
+
   EXIT {
     if (THIS->dict != NULL)
       vcdiff_free_dictionary (THIS->dict);
@@ -153,7 +165,7 @@ PIKECLASS Decoder {
   CVAR int decoder_state;
   CVAR char *dict_str;
   CVAR int dict_len;
-    
+
   PIKEFUN void create (string dictionary)
   {
     if (dictionary->size_shift)
@@ -169,20 +181,19 @@ PIKECLASS Decoder {
     THIS->vcdecoder = vcdiff_init_decoder (THIS->dict_str, THIS->dict_len);
 
     THIS->decoder_state = 2;
-    pop_n_elems (args);
   }
-    
+
   PIKEFUN string decode (string data)
   {
     push_int (1);
     apply (Pike_fp->current_object, "decode_chunk", 2);
   }
-    
-  PIKEFUN string decode_chunk (string data, void|int(0..1) flush)
+
+  PIKEFUN string decode_chunk (void|string data, void|int(0..1) flush)
   {
     char *in_buf = NULL;
     int in_buf_len = 0;
-      
+
     char *out_buf = NULL;
     int out_buf_len = 0;
 
@@ -195,11 +206,11 @@ PIKECLASS Decoder {
     struct pike_string *s;
     struct string_builder sb;
     int res = 0;
-      
+
     if (THIS->decoder_state == 0) {
       Pike_error ("Calling decode_chunk in un-initialized object.\n");
     }
-      
+
     if (data) {
       if (data->size_shift)
 	Pike_error("Wide strings not supported.\n");
@@ -218,7 +229,7 @@ PIKECLASS Decoder {
 
     if (flush) {
       // Flush internal buffers.
-      vcdiff_decode_chunk (vcdec, NULL, 0, 
+      vcdiff_decode_chunk (vcdec, NULL, 0,
 			   &trailer, &trailer_len, dec_state_ptr);
     }
 
@@ -235,16 +246,16 @@ PIKECLASS Decoder {
 
     RETURN s;
   }
-    
+
   INIT {
     THIS->vcdecoder = NULL;
     THIS->decoder_state = 0;
   }
-    
+
   EXIT {
     if (THIS->vcdecoder != NULL)
       vcdiff_free_decoder (THIS->vcdecoder);
-    if (THIS->dict_str != NULL)  
+    if (THIS->dict_str != NULL)
       free (THIS->dict_str);
   }
 }
@@ -266,4 +277,3 @@ PIKE_MODULE_EXIT
   EXIT
 #endif
 }
-

@@ -47,7 +47,7 @@ void create(float|mapping(string:int) xalign_or_props, ?float yalign,
   if (args==4) {
     FLOAT_TYPE xalign,yalign,xscale,yscale;
     GtkWidget *ga;
-    get_all_args("create",args,"%f%f%f%f",&xalign,&yalign,&xscale,&yscale);
+    get_all_args(NULL,args,"%f%f%f%f",&xalign,&yalign,&xscale,&yscale);
     ga=gtk_alignment_new(xalign,yalign,xscale,yscale);
     THIS->obj=G_OBJECT(ga);
   } else {

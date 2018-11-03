@@ -22,8 +22,8 @@ constant TM    = __builtin.TM;
 //!  the process (rather than the effective user)..
 string get_user()
 {
-#if constant(System.GetUserName)
-  return System.GetUserName();
+#if constant(_system.GetUserName)
+  return GetUserName();
 #elseif constant(getuid)
   return [string]getpwuid(getuid())[0];
 #else
@@ -53,6 +53,5 @@ string get_home()
   if(home) return home;
 #endif
 
-  return 0;      
+  return 0;
 }
-

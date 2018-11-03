@@ -64,9 +64,13 @@ class Node
   Node get_first_child() {return 0;}
   Node get_last_child() {return 0;}
   Node get_previous_sibling()
-    {return parent_node && parent_node->_get_child_by_pos (pos_in_parent - 1);}
+  {
+    return parent_node && parent_node->_get_child_by_pos (pos_in_parent - 1);
+  }
   Node get_next_sibling()
-    {return parent_node && parent_node->_get_child_by_pos (pos_in_parent + 1);}
+  {
+    return parent_node && parent_node->_get_child_by_pos (pos_in_parent + 1);
+  }
 
   //NamedNodeMap get_attributes() {return 0;}
   Document get_owner_document() {return owner_document;}
@@ -183,14 +187,14 @@ class Node
 
   // Internals.
 
-  static constant class_name = "Node";
+  protected constant class_name = "Node";
 
   /*protected*/ int pos_in_parent;
 
   /*protected*/ Document _get_doc() {return owner_document;}
   /*protected*/ void _text_content (String.Buffer into);
   /*protected*/ void _xml_format (String.Buffer into);
-  /*protected*/ void _destruct_tree() {destruct (this_object());}
+  /*protected*/ void _destruct_tree() {destruct (this);}
 
 #define WS "%*[ \t\n\r]"
 #define NAME "%[^][ \t\n\r/@(){},=.]"
@@ -199,12 +203,11 @@ class Node
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
     msg += sprintf ("%s node%s.\n", class_name,
-		    this_object()->node_name ?
-		    " " + this_object()->node_name : "");
+		    this->node_name ? " " + this->node_name : "");
     error (msg);
   };
 
-  static array(string) parse_trivial_node_type_path (string path)
+  protected array(string) parse_trivial_node_type_path (string path)
   {
     string orig_path = path;
     while (sscanf (path, WS"."WS"%s", string rest) == 3) {
@@ -234,9 +237,9 @@ class Node
     return ({0, 0});
   }
 
-  static string sprintf_name (int flag) {return "";}
-  static string sprintf_attr (int flag) {return "";}
-  static string sprintf_content (int flag) {return "";}
+  protected string sprintf_name (int flag) {return "";}
+  protected string sprintf_attr (int flag) {return "";}
+  protected string sprintf_content (int flag) {return "";}
 
   string _sprintf (int flag)
   {
@@ -258,10 +261,10 @@ class Node
 
 #define CHECK_CONTENT							\
   if (stringp (content))						\
-    content = sloppy_parse_fragment (content, this_object());
+    content = sloppy_parse_fragment (content, this);
 #define NODE_AT(POS) (stringp (content[POS]) ? make_node (POS) : content[POS])
 
-static class NodeWithChildren
+protected class NodeWithChildren
 {
   inherit Node;
 
@@ -283,7 +286,7 @@ static class NodeWithChildren
 
   // Internals.
 
-  static constant class_name = "NodeWithChildren";
+  protected constant class_name = "NodeWithChildren";
 
   /*protected*/ string|array(string|Node) content;
 
@@ -300,7 +303,7 @@ static class NodeWithChildren
     if (arrayp (content))
       foreach (content, string|Node child)
 	if (objectp (child)) child->_destruct_tree();
-    destruct (this_object());
+    destruct (this);
   }
 
   /*protected*/ Node make_node (int pos)
@@ -328,7 +331,7 @@ static class NodeWithChildren
     else
       node = Text (doc, text);
     content[pos] = node;
-    node->parent_node = this_object();
+    node->parent_node = this;
     node->pos_in_parent = pos;
     return node;
   }
@@ -342,7 +345,7 @@ static class NodeWithChildren
 	  make_node (i);
   }
 
-  static void format_attrs (mapping(string:string) attrs, String.Buffer into)
+  protected void format_attrs (mapping(string:string) attrs, String.Buffer into)
   {
     if (owner_document->raw_values)
       foreach (indices (attrs), string attr) {
@@ -385,7 +388,7 @@ static class NodeWithChildren
       }
   }
 
-  static void xml_format_children (String.Buffer into)
+  protected void xml_format_children (String.Buffer into)
   {
     if (stringp (content)) into->add (content);
     if (arrayp (content))
@@ -394,7 +397,7 @@ static class NodeWithChildren
 	else child->_xml_format (into);
   }
 
-  static string sprintf_content (int flag)
+  protected string sprintf_content (int flag)
   {
     if (stringp (content)) return sprintf ("%O", content);
     if (arrayp (content))
@@ -408,9 +411,9 @@ static class NodeWithChildren
 
 #define CHECK_LOOKUP_MAPPING if (!id_prefix) fix_lookup_mapping();
 
-static int last_used_id = 0;
+protected int last_used_id = 0;
 
-static class NodeWithChildElements
+protected class NodeWithChildElements
 //!  Node with child elements.
 {
   inherit NodeWithChildren;
@@ -506,8 +509,8 @@ static class NodeWithChildElements
 	if (!sizeof (name))
 	  simple_path_error ("No attribute name after @ in ");
 
-	foreach (rec_search ? ({this_object()}) + get_descendant_elements() :
-		 ({this_object()}), NodeWithChildElements node) {
+	foreach (rec_search ? ({this}) + get_descendant_elements() :
+		 ({this}), NodeWithChildElements node) {
 	  mapping(string:string) attr = node->attributes;
 	  if (!mappingp (attr))
 	    simple_path_error ("Cannot access an attribute %O in ", name);
@@ -912,11 +915,11 @@ static class NodeWithChildElements
     return res;
   }
 
-  static constant class_name = "NodeWithChildElements";
+  protected constant class_name = "NodeWithChildElements";
 
-  static string id_prefix;
+  protected string id_prefix;
 
-  static void fix_lookup_mapping()
+  protected void fix_lookup_mapping()
   {
     id_prefix = (string) ++last_used_id + ":";
     CHECK_CONTENT;
@@ -961,19 +964,31 @@ class Document
 #if 0
   // Disabled for now since the tree can't be manipulated anyway.
   Element create_element (string tag_name)
-    {return Element (this_object(), tag_name);}
+  {
+    return Element (this, tag_name);
+  }
   //DocumentFragment create_document_fragment();
   Text create_text_node (string data)
-    {return Text (this_object(), data);}
+  {
+    return Text (this, data);
+  }
   Comment create_comment (string data)
-    {return Comment (this_object(), data);}
+  {
+    return Comment (this, data);
+  }
   CDATASection create_cdata_section (string data)
-    {return CDATASection (this_object(), data);}
+  {
+    return CDATASection (this, data);
+  }
   ProcessingInstruction create_processing_instruction (string target, string data)
-    {return ProcessingInstruction (this_object(), target, data);}
+  {
+    return ProcessingInstruction (this, target, data);
+  }
   //Attr create_attribute (string name, string|void default_value);
   EntityReference create_entity_reference (string name)
-    {return EntityReference (this_object(), name);}
+  {
+    return EntityReference (this, name);
+  }
 #endif
 
   //NodeList get_elements_by_tag_name (string tagname);
@@ -1005,7 +1020,7 @@ class Document
   //! @note
   //! Not DOM compliant.
 
-  static void create (void|string|array(string|Node) c, void|int raw_vals)
+  protected void create (void|string|array(string|Node) c, void|int raw_vals)
   {
     content = c;
     raw_values = raw_vals;
@@ -1013,17 +1028,17 @@ class Document
 
   // Internals.
 
-  static constant class_name = "Document";
+  protected constant class_name = "Document";
 
   /*protected*/ int raw_values;
-  static Element document_element = 0;
+  protected Element document_element = 0;
   /*protected*/ mapping(string:array(Node)) _lookup_mapping = ([]);
 
-  /*protected*/ Document _get_doc() {return this_object();}
+  /*protected*/ Document _get_doc() { return this; }
 
   /*protected*/ void _xml_format (String.Buffer into) {xml_format_children (into);}
 
-  static void destroy()
+  protected void _destruct()
   {
     if (arrayp (content))
       foreach (content, string|Node child)
@@ -1048,11 +1063,17 @@ class Element
   //NamedNodeMap get_attributes();
 
   string get_attribute (string name)
-    {return attributes[name] || "";}
+  {
+    return attributes[name] || "";
+  }
   void set_attribute (string name, string value)
-    {attributes[name] = value;}
+  {
+    attributes[name] = value;
+  }
   void remove_attribute (string name)
-    {m_delete (attributes, name);}
+  {
+    m_delete (attributes, name);
+  }
 
   //Attr get_attribute_node (string name);
   //Attr set_attribute_node (Attr new_attr);
@@ -1060,7 +1081,7 @@ class Element
 
   //void normalize();
 
-  static void create (Document owner, string name, void|mapping(string:string) attr)
+  protected void create (Document owner, string name, void|mapping(string:string) attr)
   {
     owner_document = owner;
     node_name = name;
@@ -1069,7 +1090,7 @@ class Element
 
   // Internals.
 
-  static constant class_name = "Element";
+  protected constant class_name = "Element";
 
   /*protected*/ void _xml_format (String.Buffer into)
   {
@@ -1084,9 +1105,9 @@ class Element
       into->add (" />");
   }
 
-  static string sprintf_name() {return node_name;}
+  protected string sprintf_name() {return node_name;}
 
-  static string sprintf_attr()
+  protected string sprintf_attr()
   {
     if (sizeof (attributes))
       return "(" + map ((array) attributes,
@@ -1111,15 +1132,25 @@ class CharacterData
   int get_length() {return sizeof (node_value);}
 
   string substring_data (int offset, int count)
-    {return node_value[offset..offset + count - 1];}
+  {
+    return node_value[offset..offset + count - 1];
+  }
   void append_data (string arg)
-    {node_value += arg;}
+  {
+    node_value += arg;
+  }
   void insert_data (int offset, string arg)
-    {node_value = node_value[..offset - 1] + arg + node_value[offset..];}
+  {
+    node_value = node_value[..offset - 1] + arg + node_value[offset..];
+  }
   void delete_data (int offset, int count)
-    {node_value = node_value[..offset - 1] + node_value[offset + count..];}
+  {
+    node_value = node_value[..offset - 1] + node_value[offset + count..];
+  }
   void replace_data (int offset, int count, string arg)
-    {node_value = node_value[..offset - 1] + arg + node_value[offset + count..];}
+  {
+    node_value = node_value[..offset - 1] + arg + node_value[offset + count..];
+  }
 
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)
@@ -1131,7 +1162,7 @@ class CharacterData
 
   // Internals.
 
-  static constant class_name = "CharacterData";
+  protected constant class_name = "CharacterData";
 
   /*protected*/ void _text_content (String.Buffer into)
   {
@@ -1146,7 +1177,7 @@ class CharacterData
       into->add (node_value);
   }
 
-  static string sprintf_content (int flag) {return sprintf ("%O", node_value);}
+  protected string sprintf_content (int flag) {return sprintf ("%O", node_value);}
 }
 
 class Text
@@ -1159,7 +1190,7 @@ class Text
 
   //Text split_text (int offset);
 
-  static void create (Document owner, string data)
+  protected void create (Document owner, string data)
   {
     owner_document = owner;
     node_value = data;
@@ -1167,7 +1198,7 @@ class Text
 
   // Internals.
 
-  static constant class_name = "Text";
+  protected constant class_name = "Text";
 
   /*protected*/ void _xml_format (String.Buffer into)
   {
@@ -1195,7 +1226,7 @@ class Comment
     return xml_format && "";
   }
 
-  static void create (Document owner, string data)
+  protected void create (Document owner, string data)
   {
     owner_document = owner;
     node_value = data;
@@ -1203,7 +1234,7 @@ class Comment
 
   // Internals.
 
-  static constant class_name = "Comment";
+  protected constant class_name = "Comment";
 
   /*protected*/ void _xml_format (String.Buffer into)
   {
@@ -1219,7 +1250,7 @@ class CDATASection
   int get_node_type() { return CDATA_SECTION_NODE; }
   string get_node_name() { return "#cdata-section"; }
 
-  static void create (Document owner, string data)
+  protected void create (Document owner, string data)
   {
     owner_document = owner;
     node_value = data;
@@ -1227,7 +1258,7 @@ class CDATASection
 
   // Internals.
 
-  static constant class_name = "CDATASection";
+  protected constant class_name = "CDATASection";
 
   /*protected*/ void _text_content (String.Buffer into)
   {
@@ -1271,7 +1302,7 @@ class EntityReference
     return xml_format && "";
   }
 
-  static void create (Document owner, string name)
+  protected void create (Document owner, string name)
   {
     owner_document = owner;
     node_name = name;
@@ -1279,7 +1310,7 @@ class EntityReference
 
   // Internals.
 
-  static constant class_name = "EntityReference";
+  protected constant class_name = "EntityReference";
 
   /*protected*/ void _text_content (String.Buffer into)
   {
@@ -1293,7 +1324,7 @@ class EntityReference
 	error ("Cannot decode entity reference %O.\n", node_name);
   }
 
-  static string sprintf_name() {return node_name;}
+  protected string sprintf_name() {return node_name;}
 
   /*protected*/ void _xml_format (String.Buffer into)
   {
@@ -1327,7 +1358,7 @@ class ProcessingInstruction
     return xml_format && "";
   }
 
-  static void create (Document owner, string t, string data)
+  protected void create (Document owner, string t, string data)
   {
     owner_document = owner;
     node_name = t;
@@ -1336,7 +1367,7 @@ class ProcessingInstruction
 
   // Internals.
 
-  static constant class_name = "ProcessingInstruction";
+  protected constant class_name = "ProcessingInstruction";
 
   /*protected*/ void _text_content (String.Buffer into)
   {
@@ -1359,15 +1390,15 @@ class ProcessingInstruction
       into->add ("<?", node_name, "?>");
   }
 
-  static string sprintf_name() {return node_name;}
-  static string sprintf_content (int flag) {return sprintf ("%O", node_value);}
+  protected string sprintf_name() {return node_name;}
+  protected string sprintf_content (int flag) {return sprintf ("%O", node_value);}
 }
 
 // Internals.
 
-static int(0..0) return_zero() {return 0;}
+protected int(0..0) return_zero() {return 0;}
 
-static array sloppy_parser_container_callback (
+protected array sloppy_parser_container_callback (
   Parser.HTML p, mapping(string:string) args, string content, Node cur)
 {
   if (Parser.HTML ent_p = p->entity_parser)
@@ -1379,7 +1410,7 @@ static array sloppy_parser_container_callback (
   return ({element});
 }
 
-static array|int sloppy_parser_tag_callback (Parser.HTML p, string text, Node cur)
+protected array|int sloppy_parser_tag_callback (Parser.HTML p, string text, Node cur)
 {
   if (text[-2] != '/') {
     sscanf (text, "<%[^ \t\n\r>]", text);
@@ -1396,7 +1427,7 @@ static array|int sloppy_parser_tag_callback (Parser.HTML p, string text, Node cu
   return ({element});
 }
 
-static array sloppy_parser_entity_callback (Parser.HTML p, string text, Node cur)
+protected array sloppy_parser_entity_callback (Parser.HTML p, string text, Node cur)
 {
   text = p->tag_name();
   if (string chr = Parser.decode_numeric_xml_entity (text))
@@ -1406,13 +1437,13 @@ static array sloppy_parser_entity_callback (Parser.HTML p, string text, Node cur
   return ({ent});
 }
 
-static class SloppyParser
+protected class SloppyParser
 {
   inherit Parser.HTML;
   Parser.HTML entity_parser;
 }
 
-static SloppyParser sloppy_parser_template =
+protected SloppyParser sloppy_parser_template =
   lambda() {
     SloppyParser p = SloppyParser();
     p->lazy_entity_end (1);
@@ -1427,7 +1458,7 @@ static SloppyParser sloppy_parser_template =
     return p;
   }();
 
-static array(string|Node) sloppy_parse_fragment (string frag, Node cur)
+protected array(string|Node) sloppy_parse_fragment (string frag, Node cur)
 {
   Parser.HTML p = sloppy_parser_template->clone();
   if (!cur->_get_doc()->raw_values)

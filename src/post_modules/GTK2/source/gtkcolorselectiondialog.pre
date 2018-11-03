@@ -22,7 +22,7 @@ void create(string|mapping(string:mixed) title_or_props)
     struct pike_string *title;
     GtkWidget *gc;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
-      get_all_args("create",args,"%t",&title);
+      get_all_args(NULL,args,"%t",&title);
       ref_push_string(title);
       f_string_to_utf8(1);
       gc=gtk_color_selection_dialog_new(CGSTR0(Pike_sp[-1].u.string));

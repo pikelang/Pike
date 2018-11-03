@@ -176,7 +176,7 @@ protected constant response_dtd = #"
 "+common_dtd_fragment+#"]>
 ";
 
-// One more fix because some people found the specs too easy and 
+// One more fix because some people found the specs too easy and
 // decided that you can have <value>test</value>
 // (that is omitting string inside a value).
 protected class StringWrap(string s){};

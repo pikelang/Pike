@@ -2,22 +2,24 @@
 
   constant BSONJavascript = 1;
 
-  static string data;
-  
+  protected string data;
+  mapping scope;
+
   //!
-  static void create(string _data)
+protected void create(string _data, void|mapping _scope)
   {
      data = _data;
+     scope = _scope || ([]);
   }
-  
-  static int _sizeof()
-  { 
+
+  protected int _sizeof()
+  {
     return sizeof(data);
   }
-  
-  static mixed cast(string type)
+
+  protected mixed cast(string type)
   {
     if(type == "string")
       return data;
+    return UNDEFINED;
   }
-

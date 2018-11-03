@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#require constant(Standards.UUID.make_version3)
 
 /*
  * Make a Wix modules source XML file from an existing set of
@@ -8,8 +9,6 @@
  */
 
 constant description = "Creates a Wix modules source XML file.";
-
-#if constant(Standards.UUID.make_version3)
 
 int main(int argc, array(string) argv)
 {
@@ -69,7 +68,7 @@ int main(int argc, array(string) argv)
   argv = Getopt.get_args(argv);
 
   string version_guid =
-    Standards.UUID.make_version3(base_guid, version_str)->str();
+    Standards.UUID.make_version3(version_str, base_guid)->str();
   Standards.XML.Wix.Directory root =
     Standards.XML.Wix.Directory("SourceDir",
 				Standards.UUID.UUID(version_guid)->encode(),
@@ -106,9 +105,3 @@ int main(int argc, array(string) argv)
 					 manufacturer, descr, version_guid,
 					 comments)->render_xml());
 }
-
-#else /* !constant(Standards.UUID.make_version3) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(Standards.UUID.make_version3) */

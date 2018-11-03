@@ -1,6 +1,25 @@
 AC_INIT(inotify.cmod)
+AC_CONFIG_HEADER(inotify_config.h)
+
 AC_MODULE_INIT()
 AC_HAVE_HEADERS(sys/inotify.h)
 AC_CHECK_HEADERS(sys/inotify.h)
 
-AC_OUTPUT(Makefile)
+  AC_MSG_CHECKING(if struct dirent has a d_type member)
+  AC_CACHE_VAL(pike_cv_dirent_d_type, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <dirent.h>
+    ], [
+      struct dirent d;
+      d.d_type = 0;
+    ], [pike_cv_dirent_d_type=yes],[pike_cv_dirent_d_type=no])
+  ])
+
+  if test "$pike_cv_dirent_d_type" = "yes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_DIRENT_D_TYPE)
+  else
+    AC_MSG_RESULT(no)
+  fi
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

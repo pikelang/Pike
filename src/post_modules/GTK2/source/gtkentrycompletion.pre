@@ -56,7 +56,7 @@ void set_match_func( function(object,string,object:void) cb )
                                                          gpointer user_data);
     struct signal_data *sd;
     struct svalue *sv1;
-    get_all_args("set_match_func",args,"%*",&sv1);
+    get_all_args(NULL,args,"%*",&sv1);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
         SIMPLE_OUT_OF_MEMORY_ERROR("set_match_func",sizeof(struct signal_data));
@@ -78,7 +78,7 @@ void set_model(?GTK2.TreeModel model)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("set_model",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_entry_completion_set_model(GTK_ENTRY_COMPLETION(THIS->obj),
 		GTK_TREE_MODEL(get_gobject(o1)));
   } else {

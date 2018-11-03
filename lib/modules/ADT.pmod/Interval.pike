@@ -150,8 +150,8 @@ void create(mixed a, mixed b) {
 	b = Closed(b);
     }
     if (!b->overlaps(a)) error("Trying to create empty interval.\n");
-    this_program::a = a;
-    this_program::b = b;
+    this::a = a;
+    this::b = b;
 }
 
 int(0..1) `==(mixed i) {
@@ -246,9 +246,8 @@ int(0..1) contains(mixed x) {
 mixed beginning() { return start; }
 mixed end() { return stop; }
 
-mixed cast(string type) {
-    switch (type) {
-    case "array":
-	return ({ start, stop });
-    }
+protected mixed cast(string type) {
+  if( type=="array" )
+    return ({ start, stop });
+  return UNDEFINED;
 }

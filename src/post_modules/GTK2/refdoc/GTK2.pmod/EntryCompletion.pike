@@ -103,6 +103,11 @@ GTK2.EntryCompletion set_inline_completion( int inline_completion );
 //!
 //!
 
+GTK2.EntryCompletion set_inline_selection( int inline_selection );
+//! Sets whether it is possible to cycle through the possible completions inside the entry.
+//!
+//!
+
 GTK2.EntryCompletion set_match_func( function cb );
 //! Sets the function to be called to decide if a specific row should
 //! be displayed.

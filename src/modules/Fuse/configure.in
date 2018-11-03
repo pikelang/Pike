@@ -16,7 +16,7 @@ else
     AC_CACHE_VAL(pike_cv_c9x_compiler, [
       AC_TRY_COMPILE([
 	// C++ comment.
-	
+
 	// Structure field assignment.
 	static struct foo {
 	  int field1, field2;
@@ -32,9 +32,9 @@ else
     ])
     if test "$pike_cv_c9x_compiler" = "yes"; then
       AC_MSG_RESULT(yes)
-      AC_CHECK_LIB(fuse, fuse_read_cmd, [ 
-            LIBS="${LIBS-} -lfuse" 
-            AC_DEFINE(HAVE_LIBFUSE,1,[Define if libfuse and fuse.h is available]) 
+      AC_CHECK_LIB(fuse, fuse_read_cmd, [
+            LIBS="${LIBS-} -lfuse"
+            AC_DEFINE(HAVE_LIBFUSE,1,[Define if libfuse and fuse.h is available])
             PIKE_FEATURE_OK(Fuse)
       ])
     else

@@ -7,6 +7,7 @@ MODDIR=Standards.pmod/
 MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
 OBJS=bson.o
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 

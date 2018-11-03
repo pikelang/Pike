@@ -5,6 +5,14 @@ string vpath;
 
 string main_branch;
 
+// NB: This script is run with an installed Pike binary, which
+//     is likely to be older than the one we are exporting...
+#if constant(String.trim)
+constant trim = String.trim;
+#else
+constant trim = String.trim_all_whites;
+#endif
+
 string dirname(string dir)
 {
   array tmp=dir/"/";
@@ -69,17 +77,18 @@ void run( string cmd, mixed ... args )
   }
 }
 
-void fix_configure(string dir)
+void fix_configure(string dir, Stdio.Stat aclocal)
 {
   Stdio.Stat config=file_stat(dir+"/configure");
   Stdio.Stat config_in=file_stat(dir+"/configure.in");
 
   if(config_in)
   {
-    if(!config || config_in->mtime > config->mtime)
+    if(!config || config_in->mtime > config->mtime ||
+       (aclocal && aclocal->mtime > config->mtime))
     {
       werror("Fixing configure in "+dir+".\n");
-      run( "autoconf", ([ "cwd":dir ]) );
+      run( pike_base_name+"/src/run_autoconfig", "--no-recursion", dir );
     }
   }
 }
@@ -132,7 +141,7 @@ string git_cmd(string ... args)
   mapping r = Process.run( ({ "git" }) + args );
   if( r->exitcode )
     exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
-  return String.trim_all_whites(r->stdout||"");
+  return trim(r->stdout||"");
 }
 
 void git_bump_version()
@@ -206,9 +215,12 @@ array(string) build_file_list(string list_file)
 
 constant stamp=#"Pike export stamp
 time:%t
+type:%type
 major:%maj
 minor:%min
 build:%bld
+revision:%rev
+source:%src
 year:%Y
 month:%M
 day:%D
@@ -341,6 +353,9 @@ int main(int argc, array(string) argv)
     git_cmd("checkout", tag);
   }
 
+  string revision = git_cmd("rev-list", "-1", "HEAD");
+  string source = ((git_cmd("ls-tree", "HEAD", "src")/"\t")[0]/" ")[-1];
+
   t = t||time();
   mapping m = gmtime(t);
   array(int) version = getversion();
@@ -348,6 +363,9 @@ int main(int argc, array(string) argv)
     "%maj":(string) version[0],
     "%min":(string) version[1],
     "%bld":(string) version[2],
+    "%rev":revision,
+    "%src":source,
+    "%type":snapshot?"snapshot":"release",
     "%Y":sprintf("%04d",1900+m->year),
     "%M":sprintf("%02d",1+m->mon),
     "%D":sprintf("%02d",m->mday),
@@ -362,11 +380,18 @@ int main(int argc, array(string) argv)
   if (snapshot)
     vpath = sprintf("Pike-v%d.%d-snapshot", @version);
 
-  fix_configure(pike_base_name+"/src");
+  Stdio.Stat aclocal=file_stat(pike_base_name+"/src/aclocal.m4");
+
+  fix_configure(pike_base_name+"/src", aclocal);
+  fix_configure(pike_base_name+"/src/modules", aclocal);
+  fix_configure(pike_base_name+"/src/post_modules", aclocal);
 
   foreach(get_dir(pike_base_name+"/src/modules"), string fn)
     if(Stdio.is_dir(pike_base_name+"/src/modules/"+fn))
-      fix_configure("modules/"+fn);
+      fix_configure(pike_base_name+"/src/modules/"+fn, aclocal);
+  foreach(get_dir(pike_base_name+"/src/post_modules"), string fn)
+    if(Stdio.is_dir(pike_base_name+"/src/post_modules/"+fn))
+      fix_configure(pike_base_name+"/src/post_modules/"+fn, aclocal);
 
   rm(vpath);
   symlink(".", vpath);
@@ -408,6 +433,7 @@ int main(int argc, array(string) argv)
     Stdio.recursive_rm(vpath);
   }
 
+  rm(pike_base_name+"/"+filename+".tar.gz");
   run( "gzip", "-9", pike_base_name+"/"+filename+".tar" )
   {
     clean_exit(1, "Gzip failed!\n");

@@ -1,4 +1,5 @@
 /* -*- C -*- */
 
 class GTK2.Allocation;
+//!
 inherit GDK2.Rectangle;

@@ -10,12 +10,7 @@
 #include <stralloc.h>
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -31,15 +26,16 @@
 #include "cache.h"
 #include "util.h"
 #include "backend.h"
+#include "pike_embed.h"
 
 
 struct cache *first_cache;
 
 static struct pike_string *free_queue[1024];
 static int numtofree;
-static MUTEX_T tofree_mutex;
+static PIKE_MUTEX_T tofree_mutex;
 
-static MUTEX_T cache_entry_lock;
+static PIKE_MUTEX_T cache_entry_lock;
 int next_free_ce, num_cache_entries;
 struct cache_entry *free_cache_entries[1024];
 
@@ -48,13 +44,13 @@ static void low_free_cache_entry( struct cache_entry *arg )
   num_cache_entries--;
 
   aap_enqueue_string_to_free( arg->data );
-  aap_free( arg->url ); /* host is in the same malloced area */
+  free( arg->url ); /* host is in the same malloced area */
 
   mt_lock( &cache_entry_lock );
   if( next_free_ce < 1024 )
     free_cache_entries[next_free_ce++] = arg;
   else
-    aap_free(arg);
+    free(arg);
   mt_unlock( &cache_entry_lock );
 /*   fprintf(stderr, " %d+%d args\n", num_cache_entries, next_free_ce ); */
 }
@@ -67,13 +63,13 @@ struct cache_entry *new_cache_entry( )
   if( next_free_ce )
     res = free_cache_entries[--next_free_ce];
   else
-    res = aap_malloc( sizeof( struct cache_entry ) );
+    res = malloc( sizeof( struct cache_entry ) );
   mt_unlock( &cache_entry_lock );
 /*   fprintf(stderr, " %d+%d centries\n", num_cache_entries, next_free_ce ); */
   return res;
 }
 
-static void really_free_from_queue(void) 
+static void really_free_from_queue(void)
 /* Must have tofree lock and interpreter lock */
 {
   int i;
@@ -146,7 +142,6 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
 				    struct cache_entry *prev, size_t b)
 {
 #ifdef DEBUG
-  extern int d_flag;
   if(d_flag>2)
   {
     if(b!=(cache_hash(e->url, e->url_len) +
@@ -178,7 +173,7 @@ void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
   if(e->refs<=0)
     Pike_fatal("Freeing free cache entry\n");
 #endif
-  if(!--e->refs) 
+  if(!--e->refs)
     really_free_cache_entry(c,e,prev,b);
 }
 
@@ -192,7 +187,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
     t = c->htable[ hv ];
     while(t)
     {
-      if( t == e ) 
+      if( t == e )
       {
 	really_free_cache_entry(c,t,p,hv);
 	break;
@@ -200,7 +195,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
       p=t;
       t=t->next;
     }
-  }  
+  }
   mt_unlock( &c->mutex );
 }
 
@@ -216,8 +211,8 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
     Pike_fatal("Cache insert running unlocked\n");
 #endif
   c->size += ce->data->len;
-  if((head = aap_cache_lookup(ce->url, ce->url_len, 
-                              ce->host, ce->host_len, c, 1, 
+  if((head = aap_cache_lookup(ce->url, ce->url_len,
+                              ce->host, ce->host_len, c, 1,
                               &p, &hv)))
   {
     c->size -= head->data->len;
@@ -225,12 +220,12 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
     head->data = ce->data;
     head->stale_at = ce->stale_at;
     aap_free_cache_entry( c, head, p, hv );
-    aap_free(ce);
+    free(ce);
   } else {
     c->entries++;
-    t = aap_malloc( ce->url_len + ce->host_len );
-    MEMCPY(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
-    MEMCPY(t,ce->host,ce->host_len); ce->host = t;
+    t = malloc( ce->url_len + ce->host_len );
+    memcpy(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
+    memcpy(t,ce->host,ce->host_len); ce->host = t;
     ce->next = c->htable[hv];
     ce->refs = 1;
     c->htable[hv] = ce;
@@ -238,7 +233,7 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
 }
 
 struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
-				     char *ho, ptrdiff_t hlen, 
+				     char *ho, ptrdiff_t hlen,
 				     struct cache *c, int nolock,
 				     struct cache_entry **p, size_t *hv)
 {
@@ -246,10 +241,10 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   struct cache_entry *e, *prev=NULL;
 
   if( hv ) *hv = h;
-  if(!nolock) 
+  if(!nolock)
     mt_lock(&c->mutex);
 #ifdef DEBUG
-  else 
+  else
   {
     extern int d_flag;
     if((d_flag>2) && !mt_trylock( & c->mutex ))
@@ -260,8 +255,8 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   e = c->htable[h];
   while(e)
   {
-    if(e->url_len == len && e->host_len == hlen 
-       && !memcmp(e->url,s,len) 
+    if(e->url_len == len && e->host_len == hlen
+       && !memcmp(e->url,s,len)
        && !memcmp(e->host,ho,hlen))
     {
       int t = aap_get_time();

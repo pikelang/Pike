@@ -8,7 +8,7 @@
 #define ADD_EFUN_H
 
 #include "svalue.h"
-#include "hashtable.h"
+#include "gc_header.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
 
 typedef int (*docode_fun)(node *n);
@@ -18,13 +18,13 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  GC_MARKER_MEMBERS;
+  INT16 flags; /* OPT_* */
+  INT16 internal_flags;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;
   struct program *prog;
-  INT16 flags; /* OPT_* */
-  INT16 internal_flags;
 #ifdef PIKE_DEBUG
   INT8 may_return_void;
   long runs;
@@ -49,7 +49,7 @@ void add_pike_string_constant(const char *name, const char *str, int len);
 PMOD_EXPORT void add_global_program(const char *name, struct program *p);
 void really_free_callable(struct callable * c);
 void count_memory_in_callables(size_t * num, size_t * size);
-void free_all_callable_blocks();
+void free_all_callable_blocks(void);
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_type *type,
@@ -75,14 +75,14 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
                                 int flags,
                                 optimize_fun optimize,
                                 docode_fun docode);
-PMOD_EXPORT void visit_callable (struct callable *c, int action);
+PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra);
 void init_builtin_constants(void);
 void exit_builtin_constants(void);
 /* Prototypes end here */
 
-#define visit_callable_ref(C, REF_TYPE)				\
+#define visit_callable_ref(C, REF_TYPE, EXTRA)			\
   visit_ref (pass_callable (C), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_callable, NULL)
+	     (visit_thing_fn *) &visit_callable, (EXTRA))
 
 #include "pike_macros.h"
 

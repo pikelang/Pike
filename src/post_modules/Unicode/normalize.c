@@ -6,7 +6,6 @@
 
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -75,7 +74,7 @@ static struct canonic_h  *canonic_hash[HSIZE];
 static int hashes_inited = 0;
 #endif
 
-static void init_hashes()
+static void init_hashes(void)
 {
   unsigned int i;
 
@@ -86,21 +85,21 @@ static void init_hashes()
 
   for( i = 0; i<sizeof(_d)/sizeof(_d[0]); i++ )
   {
-    int h = _d[i].c%HSIZE;
+    unsigned int h = (unsigned int)_d[i].c%HSIZE;
     decomp_h[i].v = _d+i;
     decomp_h[i].next = decomp_hash[h];
     decomp_hash[h] = decomp_h+i;
   }
   for( i = 0; i<sizeof(_c)/sizeof(_c[0]); i++ )
   {
-    int h = ((_c[i].c1<<16)|_c[i].c2)%HSIZE;
+    unsigned int h = (((unsigned int)_c[i].c1<<16)|_c[i].c2)%HSIZE;
     comp_h[i].v = _c+i;
     comp_h[i].next = comp_hash[h];
     comp_hash[h] = comp_h+i;
   }
   for( i = 0; i<sizeof(_ca)/sizeof(_ca[0]); i++ )
   {
-    int h = _ca[i].c % HSIZE;
+    unsigned int h = (unsigned int)_ca[i].c % HSIZE;
     canonic_h[i].v = _ca+i;
     canonic_h[i].next = canonic_hash[h];
     canonic_hash[h] = canonic_h+i;
@@ -108,14 +107,14 @@ static void init_hashes()
 }
 
 
-void unicode_normalize_init()
+void unicode_normalize_init(void)
 {
   init_hashes();
 }
 
 const struct decomp *get_decomposition( int c )
 {
-  int hv = c % HSIZE;
+  unsigned int hv = (unsigned int)c % HSIZE;
   const struct decomp_h *r = decomp_hash[hv];
   while( r )
   {
@@ -128,7 +127,7 @@ const struct decomp *get_decomposition( int c )
 
 int get_canonical_class( int c )
 {
-  int hv = c % HSIZE;
+  unsigned int hv = (unsigned int)c % HSIZE;
   const struct canonic_h *r = canonic_hash[hv];
   while( r )
   {
@@ -152,6 +151,8 @@ int get_canonical_class( int c )
 int get_compose_pair( int c1, int c2 )
 {
   const struct comp_h *r;
+  unsigned int hv;
+
   if( c1 >= LBase )
   {
     /* Perhaps hangul */
@@ -176,8 +177,10 @@ int get_compose_pair( int c1, int c2 )
     }
   }
 
+  hv = (unsigned int)c1 << 16 | (unsigned int)c2;
   /* Nope. Not hangul. */
-  for( r=comp_hash[ ((unsigned int)((c1<<16) | (c2))) % HSIZE ]; r; r=r->next )
+  for( r=comp_hash[ hv % HSIZE ];
+       r; r=r->next )
     if( (r->v->c1 == c1) && (r->v->c2 == c2) )
       return r->v->c;
 
@@ -258,7 +261,7 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int UNUSED(how) )
   int lastclass = get_canonical_class( startch )?256:0;
   unsigned int startpos = 0, comppos=1;
   unsigned int pos;
-  
+
   for( pos = 1; pos < source->size; pos++ )
   {
     int ch = source->data[ pos ];
@@ -292,7 +295,14 @@ struct pike_string *unicode_normalize( struct pike_string *source,
     return source;
   }
   /* What, me lisp? */
-  if( how & COMPOSE_BIT )
+  if( how & COMPOSE_BIT ) {
+    if (!source->size_shift && !(how & COMPAT_BIT)) {
+      /* NB: There are 8-bit characters that are changed in
+       *     compat mode; eg NBSP (0xA0) and DIAERESIS (0xA8).
+       */
+      add_ref(source);
+      return source;
+    }
     return
       uc_buffer_to_pikestring(
 	unicode_compose_buffer(
@@ -302,6 +312,7 @@ struct pike_string *unicode_normalize( struct pike_string *source,
 	      source ),
 	    how ),
 	  how ) );
+  }
   return
     uc_buffer_to_pikestring(
       unicode_decompose_buffer(

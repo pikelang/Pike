@@ -33,7 +33,7 @@
 //!
 //! @b{move_focus@}
 //!
-//! @b{move_viewpoert@}
+//! @b{move_viewport@}
 //!
 //! @b{page_horizontally@}
 //!

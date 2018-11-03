@@ -1,6 +1,430 @@
 
 START_MARKER
 
+dnl - Concurrent
+
+test_do([[
+  class AsyncResult {
+    mixed result = UNDEFINED;
+    int state;
+
+    void failure(mixed val)
+    {
+      if (state) error("Multiple results.\n");
+      state = -1;
+      result = val;
+    }
+
+    void success(mixed val)
+    {
+      if (state) error("Multiple results.\n");
+      state = 1;
+      result = val;
+    }
+
+    mixed get_result(int expected)
+    {
+      mixed res = (state == expected) && result;
+      state = 0;
+      result = UNDEFINED;
+      return res;
+    }
+  };
+  add_constant("AsyncResult", AsyncResult());
+]])
+
+define(init_promise, [[
+  test_do([[
+    Concurrent.Promise p = Concurrent.Promise();
+    add_constant("promise", p);
+    add_constant("future", p->future());
+  ]])
+]])
+
+define(init_future, [[
+  test_do([[
+    future->on_success(AsyncResult.success);
+    future->on_failure(AsyncResult.failure);
+  ]])
+]])
+
+define(std_init_promise, [[
+  init_promise()
+  init_future()
+]])
+
+dnl expected_result_state, expected_result_value
+define(exit_promise, [[
+  test_any_equal([[
+    while(Pike.DefaultBackend(0.0))
+      ;
+    return AsyncResult->get_result($1);
+  ]], $2)
+]])
+
+dnl - success()
+std_init_promise()
+test_do([[ promise->success(1); ]])
+test_eval_error([[ promise->success(2); ]])
+test_eval_error([[ promise->failure(3); ]])
+test_do([[ promise->try_success(4); ]])
+test_do([[ promise->try_success(5); ]])
+exit_promise(1, 1)
+
+dnl - failure()
+std_init_promise()
+test_do([[ promise->failure(6); ]])
+test_eval_error([[ promise->success(7); ]])
+test_eval_error([[ promise->failure(8); ]])
+test_do([[ promise->try_success(9); ]])
+test_do([[ promise->try_success(10); ]])
+exit_promise(-1, 6)
+
+dnl - try_success()
+std_init_promise()
+test_do([[ promise->try_success(11); ]])
+test_eval_error([[ promise->success(12); ]])
+test_eval_error([[ promise->failure(13); ]])
+test_do([[ promise->try_success(14); ]])
+test_do([[ promise->try_success(15); ]])
+exit_promise(1, 11)
+
+dnl - try_failure()
+std_init_promise()
+test_do([[ promise->try_failure(16); ]])
+test_eval_error([[ promise->success(17); ]])
+test_eval_error([[ promise->failure(18); ]])
+test_do([[ promise->try_success(19); ]])
+test_do([[ promise->try_success(20); ]])
+exit_promise(-1, 16)
+
+dnl - Late adding of callbacks.
+init_promise()
+test_do([[ promise->success(21); ]])
+test_eval_error([[ promise->success(22); ]])
+test_eval_error([[ promise->failure(23); ]])
+test_do([[ promise->try_success(24); ]])
+test_do([[ promise->try_success(25); ]])
+exit_promise(0, 0)
+init_future()
+exit_promise(1, 21)
+
+dnl - TODO: Future()->get().
+
+dnl - map()
+init_promise()
+test_do([[ add_constant("future", future->map(`+, 100)); ]])
+init_future()
+test_do([[ promise->success(17); ]])
+exit_promise(1, 117)
+
+dnl - map_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->success(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 21)
+
+dnl - recover()
+init_promise()
+test_do([[ add_constant("future", future->recover(`+, 12)); ]])
+init_future()
+test_do([[ promise->failure(10); ]])
+exit_promise(1, 22)
+
+dnl - recover_with()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("future", future->map_with(
+    lambda(int resp) {
+      p11->success(resp + 11);
+      return p11->future();
+    })); ]])
+test_do([[ add_constant("future", future->recover_with(
+    lambda(int resp) {
+      p11->success(resp + 12);
+      return p11->future();
+    })); ]])
+init_future()
+test_do([[ promise->failure(10); ]])
+test_do([[ add_constant("p11"); ]])
+exit_promise(1, 22)
+
+dnl - filter() - true
+init_promise()
+test_do([[ add_constant("future", future->filter(`&, 1)); ]])
+init_future()
+test_do([[ promise->success(11); ]])
+exit_promise(1, 11)
+
+dnl - filter() - false
+init_promise()
+test_do([[ add_constant("future", future->filter(`&, 1)); ]])
+init_future()
+test_do([[ promise->success(10); ]])
+exit_promise(-1, UNDEFINED)
+
+dnl - transform() - true
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, `-, 100)); ]])
+init_future()
+test_do([[ promise->success(1); ]])
+exit_promise(1, 101)
+
+dnl - transform() - false
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, `-, 100)); ]])
+init_future()
+test_do([[ promise->failure(1); ]])
+exit_promise(1, -99)
+
+dnl - transform() - exception
+init_promise()
+test_do([[ add_constant("future", future->transform(`+, throw)); ]])
+init_future()
+test_do([[ promise->failure(1); ]])
+exit_promise(-1, 1)
+
+dnl - transform_with()
+
+dnl - zip()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ add_constant("future",
+            promise->future()->zip(p11, p12, p13)); ]])
+init_future()
+test_do([[ p13->success(13); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({14, 11, 12, 13}))
+
+dnl - Promise.depend() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
+
+dnl - Promise.depend() no backend - true
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]]);
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.depend() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p13->failure(13); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 13)
+
+dnl - Promise.depend() no backend - false
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]]);
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p13->failure(13); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 13)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.fold() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+test_do([[ promise->fold(10,
+                     lambda(int val, int acc) { return val+acc; }); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 10 + 11 + 12 + 13 + 13 + 11 + 12 + 14 + 15)
+
+dnl - Promise.fold() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+             ->depend(({}))->depend(p13->future())
+             ->depend(({p13->future(),p11->future(),p12->future()}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+test_do([[ promise->fold(10,
+                     lambda(int val, int acc) { return val+acc; }); ]])
+init_future()
+test_do([[ p11->failure(11); ]])
+test_do([[ p12->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, 11)
+
+dnl - Concurrent.first_completed()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.first_completed(({p11, promise, p12, p13})
+             ->future())); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 12)
+
+dnl - Concurrent.results()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.results(({p11, promise, p12, p13})
+             ->future())); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11, 14, 12, 13}))
+
+dnl - Concurrent.results() - empty
+init_promise()
+test_do([[ add_constant("future", Concurrent.results(({}))); ]])
+init_future()
+exit_promise(1, ({}))
+
+dnl - Concurrent.traverse()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.traverse(({p11, promise, p12, p13})
+             ->future(), lambda(int val) { return val+val;})); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11+11, 14+14, 12+12, 13+13}))
+
+dnl - Concurrent.fold()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.fold(({p11, promise, p12, p13})
+             ->future(), 10, lambda(int val, int acc) { return val+acc;})); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, 10+11+14+12+13)
+
+test_do([[ add_constant("future"); ]])
+test_do([[ add_constant("promise"); ]])
+test_do([[ add_constant("AsyncResult"); ]])
+
 dnl - NetUtils
 
 test_equal( NetUtils.string_to_ip( "0.0.0.0" ), 0 );
@@ -36,7 +460,7 @@ test_equal( NetUtils.ip_to_string( 4294967296 ), "::1:0:0" );
 test_equal(NetUtils.ip_to_string( 0xffffeeeeaaaa99998888777766665555 ),
                 "ffff:eeee:aaaa:9999:8888:7777:6666:5555");
 
-test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ), 
+test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ),
                 "ffff::5555");
 
 test_equal(NetUtils.ip_to_string( 0x00010000000000000000000000000000 ),
@@ -50,13 +474,13 @@ test_equal( NetUtils.cidr_to_netmask( "ff::/0" ), ({ 0,0 }) );
 
 test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/32" ),
                  ({ 0xffffffff,NetUtils.IPV6_FULL_MASK }) );
-test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ), 
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ),
                  ({ 0xffff0000,NetUtils.IPV6_FULL_MASK^0xffff }) );
-test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ), 
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ),
                  ({ 0x00000000,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
-test_equal( NetUtils.cidr_to_netmask( "::/0"  ), 
+test_equal( NetUtils.cidr_to_netmask( "::/0"  ),
                  ({ 0x00000000,0 }) );
-test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ), 
+test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ),
                  ({ 0x0a1e0000,NetUtils.IPV6_FULL_MASK^0x7fff }) );
 test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"),
                  ({ 0x0001000200030004<<64,
@@ -462,27 +886,36 @@ class Opt
   Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
   Opt name = HasOpt("-n")|HasOpt("--name")|Default("Donald");
   Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
+  Opt i = Int(HasOpt("-i")|Default(42));
+  Opt m = Multiple(HasOpt("-m"));
 };
 
 add_constant("o",Opt);
 return 1;
 ]], 1)
 
-test_equal( sort(indices(o(({"x"})))) , ({ "debug", "name", "verbose" }) )
-test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", Arg.REST:({}) ]) )
+test_equal( sort(indices(o(({"x"})))) , sort(({ Arg.PATH, Arg.REST, Arg.APP, "debug", "help", "i", "m", "name", "verbose" })) )
+test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", "i":42, Arg.REST:({}) ]) )
 test_equal( o(({"x"}),([]))->verbose , 0 )
 test_equal( o(({"x"}),([]))->debug , 0 )
 test_equal( o(({"x"}),([]))->name , "Donald" )
 test_equal( o("x --name=foo"/" ",([]))->name , "foo" )
 test_equal( o("x -n=foo"/" ",([]))->name , "foo" )
 test_equal( o("x -n foo"/" ",([]))->name , "foo" )
-test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", Arg.REST : ({ "xor" }) ]) )
+test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", "i":42, Arg.REST : ({ "xor" }) ]) )
 test_equal( o(({"x"}),(["VERBOSE":"1"]))->verbose, "1" )
-test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", Arg.REST : ({ "--verbose=5" }) ]) )
+test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", "i":42, Arg.REST : ({ "--verbose=5" }) ]) )
+test_equal( o("x -v florp"/" ")[Arg.REST], ({ "florp" }) )
 test_equal( o("x -v -v"/" ",([]))->verbose , 2 )
+test_equal( o("x"/" ")->i, 42 )
+test_equal( o("x -i 7"/" ")->i, 7 )
+test_equal( o("/a/b/c -v"/" ")[Arg.PATH], "/a/b/c" )
+test_equal( o("/a/b/c -v"/" ")[Arg.APP], "c")
+test_equal( o("x"/" ")->m, 0)
+test_equal( o("x -m a"/" ")->m, ({ "a" }))
+test_equal( o("x -m a -m b"/" ")->m, ({ "a", "b" }))
 
 test_do(add_constant("o"))
-
 
 dnl - Array
 
@@ -548,6 +981,7 @@ test_equal(Array.splice(),
 test_equal(Array.splice(({})),
 	({}))
 
+test_equal(Array.transpose( ({ }) ), ({}))
 test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 	({ ({1,4}), ({2,5}), ({3,6}) }))
 test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
@@ -566,6 +1000,13 @@ test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return 1; } ),
 test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return i%2; } ),
 	({1,3,5}))
 test_equal([[ Array.filter( ({}), lambda(int i) { return 1; })]], ({}))
+test_eq(filter("\0\1\2", `<, 2), "\0\1")
+test_equal(filter((["a":1,"b":2]), `<, 2), (["a":1]))
+test_equal(filter((<0,1,2>), `<, 2), (<0,1>))
+test_any_equal(class A { constant a=1; constant b=2; }; return filter(A, `<, 2);, (["a":1]))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="mapping") return (["a":1,"b":2]);}}; return filter(A(), `<, 2);, (["a":1]))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="array") return ({1,2,3});}}; return filter(A(), `<, 2);, ({1}))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="multiset") return (<1,2,3>);}}; return filter(A(), `<, 2);, (<1>))
 
 test_equal(Array.permute( ({ 1,2 }), 0 ),
 	({ 1,2 }))
@@ -576,6 +1017,13 @@ test_equal(Array.permute( ({ 1,2 }), 2 ),
 test_equal(Array.permute( ({ 1,2,3,4,5,6,7,8,9,10 }), 3628800),
 	({ 1,2,3,4,5,6,7,8,9,10 }))
 test_equal(Array.permute( ({}), 1 ), ({}))
+test_eval_error(Array.permute( "12"/1, random(1)-2))
+test_any_equal([[
+  function f = Array.permute;
+  array a = ({ 1,2 });
+  return f(a, 1, 2);
+]], ({ 2, 1}))
+test_eval_error(Array.permute( ({1,2}), -(1+random(1))))
 
 test_equal(Array.enumerate(0), ({}))
 test_equal(Array.enumerate(1), ({ 0 }))
@@ -583,6 +1031,7 @@ test_equal(Array.enumerate(5), ({ 0,1,2,3,4 }))
 test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
 test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
 test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
+test_equal(Array.enumerate(5,1,Int.NATIVE_MAX-1), ({ Int.NATIVE_MAX-1, Int.NATIVE_MAX, Int.NATIVE_MAX+1, Int.NATIVE_MAX+2, Int.NATIVE_MAX+3 }))
 
 test_eq([[ Array.reduce(`>>, ({})) ]], 0)
 test_eq([[ Array.reduce(`==, ({}), 1) ]], 1)
@@ -595,13 +1044,10 @@ test_eq([[ Array.rreduce(`<<, ({4,3,2,1})) ]], 1125899906842624)
 test_equal(Array.shuffle(({})), ({}))
 test_equal(Array.shuffle(({1})), ({1}))
 test_any([[
-  random_seed(4711);
   array b = Array.shuffle(Array.enumerate(1000));
-  random_seed(4711);
   // There is a chance in 1000! (aprox. 4E2568) that this fails of
   // natural causes.
-  return equal(b, Array.shuffle(Array.enumerate(1000))) &&
-               !equal(Array.enumerate(1000),b);
+  return !equal(b, Array.shuffle(Array.enumerate(1000)));
 ]], 1);
 test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000)))) )
 
@@ -825,6 +1271,29 @@ test_equal(Array.common_prefix(({ "muzzle"/1, "muzzy"/1 })), "muzz"/1)
 test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
 test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
 test_equal(Array.common_prefix(({})), ({}))
+
+test_any([[
+  // Check foreach iterator stepping behavior.
+  array a = indices (allocate (7));
+  Array.Iterator i = get_iterator (a);
+  foreach (i;; int v)
+    if (v > 3) break;
+  foreach (i;; int v)
+    if (v < 5) break;
+  foreach (i;; int v)
+    return v;
+]], 4)
+test_eq( sizeof(Array.Iterator(({1,2,3,4}))), 4 )
+
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<4; i++)
+    foreach(random(Array.Iterator("12345678"/1));; string v)
+      r += v;
+  return r;
+]], "7883456785678")
+test_do(add_constant("random",Random.System()->random))
 
 dnl - Colors
 
@@ -1161,18 +1630,48 @@ test_eq( Int.swap_long(array_sscanf("\1\2\3\4", "%4c")[0]),
 
 dnl - Mapping
 dnl Mapping.delete
-dnl Mapping.Iterator
+
+test_eq( sizeof(Mapping.Iterator(([1:2,3:4]))), 2 )
 
 test_do([[
   // Test for [bug 5085].
   for (int i=0; i < 100; i++) {
     // The following line trigged the bug 33% of the time.
-    get_iterator(([1:1]))->_random();
+    get_iterator(([1:1]))->_random(random_string, random);
   }
 ]])
 
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+  {
+    int n;
+    foreach(random(Mapping.Iterator(([1:"1",2:"2",3:"3"])));; string v)
+      n++;
+    r += n;
+  }
+  return r;
+]], "11312")
+test_do(add_constant("random",Random.System()->random))
+
 dnl - Multiset
-dnl Multiset.Iterator
+
+test_eq( sizeof(Multiset.Iterator((<1,2,3>))), 3 )
+
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+  {
+    int n;
+    foreach(random(Multiset.Iterator((<2,4,6,8,9>))); int v;)
+      n++;
+    r += n;
+  }
+  return r;
+]], "31443")
+test_do(add_constant("random",Random.System()->random))
 
 dnl - Process
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
@@ -1282,12 +1781,12 @@ test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_p
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
-  
+
   test_any([[
     object o=Process.create_process(({"/bin/cat","/dev/null"}));
     if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return 99;
@@ -1305,7 +1804,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
     for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_any([[
 #ifdef DISABLE_SLOW_TESTS
@@ -1324,7 +1823,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
     )->wait() - ({-1})]],({}))
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_do([[
 #ifdef DISABLE_SLOW_TESTS
@@ -1351,7 +1850,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
   ]])
 ]])
 
-cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
 test_any([[
   class Fnord
@@ -1371,13 +1870,21 @@ int gnapp(int t)
       o->wait();
       __signal_watchdog();
     }
-//    werror("%d",t);
+    if (gethostname() == "medaka")
+      werror("%s: %d:%d\n", __FILE__, t, e);
   }
   return -1;
 }
 
 array start()
 {
+  if ((uname()->sysname == "Linux") &&
+      (< "3.15", "3.16", "3.17", "3.18">)[uname()->release[..3] ]) {
+    // This test trigers a kernel bug in Linux kernels 3.15 - 3.18
+    // introduced in commit b3ab03160dfaf8ab78d476b670de319f4c1a5685,
+    // and fixed in commit 3245d6acab981a2388ffb877c7ecc97e763c59d4.
+    return ({});
+  }
   array a=({});
   for(int e=0;e<10;e++)
     a+=({thread_create(gnapp,e)});
@@ -1421,32 +1928,10 @@ cond([[all_constants()->thread_create]],
 
     return num_ok;
   ]], 5)
-
-  test_any([[
-    #pike 7.4
-    int num_ok = 0;
-
-    Thread.Mutex m = Thread.Mutex();
-    Thread.MutexKey l = m->lock();
-
-    void thread_fn()
-    {
-      m->lock();
-      num_ok++;
-    };
-
-    array(Thread.Thread) t = (({Thread.thread_create}) * 5) (thread_fn);
-
-    sleep (0.5); // Make sure they are waiting for the lock.
-    destruct (m); // Destructs the outstanding lock too.
-    sleep (0.5); // Wait for them to finish.
-
-    return num_ok;
-  ]], 5)
 ]])
 
 dnl - This test is disabled for now.
-cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
 test_any([[
   // Check that tracing works...
@@ -1568,42 +2053,27 @@ test_false([[ TestQueue->size() ]])
 test_true([[ zero_type(TestQueue->try_read()) ]])
 test_do([[ add_constant("TestQueue"); ]])
 
-test_false(!Val.true)
-test_true(!Val.false)
-test_eq((int) Val.true, 1)
-test_eq((int) Val.false, 0)
-test_eq((string) Val.true, "1")
-test_eq((string) Val.false, "0")
-test_false(Val.true == 0)
-test_false(Val.true == 1)
-test_false(Val.false == 0)
-test_false(Val.false == 1)
-test_false(Val.true == Val.false)
-test_true(Val.true == Val.true)
-test_true(Val.false == Val.false)
+// Thread.ResourceCount
+test_do([[ add_constant("TestResourceCount", Thread.ResourceCount()); ]])
+test_any_equal([[
+  int i;
+  array a = allocate(10);
+  for(i = 0; i < 10; i++) {
+    a[i] = TestResourceCount->acquire();
+  }
+  for(i = 0; i < 10; i++) {
+    a[i] = 0;
+    a[i] = TestResourceCount->drained();
+  }
+  return a;
+]], ({ 0,0,0,0,0,0,0,0,0,1 }))
+test_do([[ add_constant("TestResourceCount"); ]])
 
-test_true(!Val.null)
-test_eval_error((int) Val.null)
-test_eval_error((string) Val.null)
-test_false(Val.null == 0)
-test_false(Val.null == 1)
-test_false(Val.null == Val.true)
-test_false(Val.null == Val.false)
-test_true(Val.null == Val.null)
-
-test_true(decode_value (encode_value (Val.null)) == Val.null)
-test_true(decode_value (encode_value (Val.true)) == Val.true)
-test_true(decode_value (encode_value (Val.false)) == Val.false)
-test_true(decode_value ("\266ke0#\6\5rVal.null") == Val.null)
-test_true(decode_value ("\266ke0#\6\5rVal.true") == Val.true)
-test_true(decode_value ("\266ke0#\6\6rVal.false") == Val.false)
-
-test_true(([Val.null: 1])[Val.null])
-test_false(([Val.false: 1])[Val.null])
-test_false(([0: 1])[Val.null])
-test_true(([Val.true: 1])[Val.true])
-test_false(([Val.true: 1])[Val.false])
-test_true(([Val.false: 1])[Val.false])
-test_false(([Val.true: 1])[Val.false])
+test_any([[
+  function a = lambda(string x) { return x+"a"; };
+  function b = lambda(string x) { return x+"b"; };
+  function q = Function.composite(a, b);
+  return map("123"/1, q)*"-";
+]], "1ba-2ba-3ba")
 
 END_MARKER

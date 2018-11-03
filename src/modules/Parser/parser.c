@@ -4,16 +4,12 @@
 || for more information.
 */
 
-#include "global.h"
-#include "stralloc.h"
-#include "global.h"
+#include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
-#include "object.h"
 #include "operators.h"
-#include "module.h"
 
 #include "parser.h"
 
@@ -28,14 +24,14 @@
 #define PARSER_CLASS(name,init,exit,prog,id) \
     void init(void); void exit(void); struct program *prog;
 #define PARSER_SUBMODULE(name,init,exit)  \
-    void init(void); void exit(void); 
+    void init(void); void exit(void);
 #define PARSER_SUBMODMAG(name,init,exit) \
     void init(void); void exit(void);
 #define PARSER_FUNCTION(name,func,def0,def1) \
     void func(INT32 args);
 #include "initstuff.h"
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -48,14 +44,14 @@ static struct
 #undef PARSER_SUBMODULE
 #undef PARSER_FUNCTION
 #undef PARSER_SUBMODMAG
-#define PARSER_SUBMODMAG(a,b,c) 
+#define PARSER_SUBMODMAG(a,b,c)
 #define PARSER_FUNCTION(a,b,c,d)
 #define PARSER_CLASS(name,init,exit,prog,id) { name,init,exit,&prog,id },
 #define PARSER_SUBMODULE(a,b,c)
 #include "initstuff.h"
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -70,7 +66,7 @@ static struct
   {0,0,0 }
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -91,8 +87,7 @@ static struct
 #define PARSER_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
       Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
-            __FILE__, __LINE__, \
-            PTRDIFF_T_TO_LONG(sp - save_sp), X); \
+                 __FILE__, __LINE__, (long)(sp - save_sp), X);         \
     } \
   } while(0)
 #else
@@ -120,7 +115,7 @@ static void parser_magic_index(INT32 args)
 {
    int i;
 
-   if (args!=1) 
+   if (args!=1)
       Pike_error("Parser.`[]: Too few or too many arguments\n");
    if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("Parser.`[]: Illegal type of argument\n");
@@ -147,7 +142,7 @@ static void parser_magic_index(INT32 args)
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
-	 
+
 	 ref_push_object(submagic[i].o);
 	 return;
       }
@@ -161,7 +156,7 @@ static void parser_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_constant_text("_Parser_");
+      push_static_text("_Parser_");
       stack_swap();
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
@@ -170,7 +165,7 @@ static void parser_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_constant_text("_Parser");
+      push_static_text("_Parser");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       if(TYPEOF(sp[-2]) == T_INT)
@@ -222,7 +217,7 @@ PIKE_MODULE_INIT
       fprintf(stderr,"Parser: initiating submodule \"Parser.%s\"...\n",
 	      initsubmodule[i].name);
 #endif
-      
+
       start_new_program();
       (initsubmodule[i].init)();
       PARSER_CHECK_STACK(initsubmodule[i].name);

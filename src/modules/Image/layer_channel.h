@@ -11,15 +11,15 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    int len,double alpha)
 {
   if (da != sa)
-    MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
+    memcpy(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
 #define da da da /* protect */
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
      if (d != s)
-       MEMCPY(d,s,sizeof(rgb_group)*len);
+       memcpy(d,s,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
    {
@@ -36,7 +36,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	     *d=*s;
 	   else
 	     L_CHANNEL_DO(*s,*l,*d,*la);
-	   l++; s++; la++; d++; sa++; 
+	   l++; s++; la++; d++; sa++;
 	 }
    }
    else
@@ -45,13 +45,13 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; d++; sa++; 
+	    l++; s++; d++; sa++;
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; la++; d++; sa++; 
+	    l++; s++; la++; d++; sa++;
 	 }
    }
 }

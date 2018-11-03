@@ -1,6 +1,21 @@
+START_MARKER
+
 define(test_dec,[[
   test_equal(Standards.BSON.decode([[$1]]),
           [[$2]])
+  test_equal(Standards.BSON.decode(Stdio.Buffer([[$1]])),
+          [[$2]])
+]])
+
+define(test_enc,[[
+  test_do(Standards.BSON.decode(String.hex2string($2)))
+  test_do(Standards.BSON.decode(Stdio.Buffer(String.hex2string($2))))
+  test_equal(String.string2hex(Standards.BSON.encode([[$1]])),[[$2]])
+]])
+
+define(test_enc_dec,[[
+    test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$1]] ]))
+    test_equal(Standards.BSON.decode(Stdio.Buffer(Standards.BSON.encode(([ "foo" : [[$1]] ])))), ([ "foo" : [[$1]] ]))
 ]])
 
 test_true(Val.true)
@@ -12,6 +27,83 @@ test_false(Val.null)
 test_dec("\5\0\0\0\0", ([]))
 
 test_dec("\21\0\0\0\2foo\0\4\0\0\0bar\0\0", (["foo": "bar"]))
+test_dec("\f\0\0\0\20a\0\377\377\377\377\0", (["a":-1]))
+test_dec("\20\0\0\0\22a\0\370\351\333\315\277\377\377\377\0", (["a": -0x4032241608 ]))
 
 test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\20" +"2\0\302\a\0\0\0\0",
   (["BSON": ({"awesome", 5.05, 1986})]))
+
+test_enc_dec(Val.null)
+test_enc_dec(Val.false)
+test_enc_dec(Val.true)
+test_enc_dec(({ 2.15392757010452e+18, Math.e, Math.pi, Math.inf }));
+test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
+test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
+test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebabe))
+test_eval_error(Standards.BSON.Timestamp(-0xdeadbeef, 0xcafebad))
+test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebad))
+test_eval_error(Standards.BSON.Timestamp(0xdeadbeef, -0xcafebad))
+test_enc_dec(Standards.BSON.Timestamp(0xdeadbeeff00dbad))
+test_eval_error(Standards.BSON.Timestamp(-0xdeadbeeff00dbad))
+test_enc_dec(indices(all_constants()))
+test_enc_dec(([ "x" : ([ "y" : ([ "z" : 7 ]) ]) ]))
+test_enc_dec(Standards.BSON.Binary("abc",1))
+
+dnl From libbson tests
+dnl test-bson.c
+
+dnl test_bson_append_utf8
+test_enc((["hello":"world"]), "160000000268656c6c6f0006000000776f726c640000")
+
+dnl test_bson_append_symbol : not supported field type 0x0e
+
+dnl test_bson_append_null
+test_enc((["hello":Val.null]), "0c0000000a68656c6c6f0000")
+
+dnl test_bson_append_bool
+test_enc((["bool":Val.true]), "0c00000008626f6f6c000100")
+
+dnl test_bson_append_double
+test_any([[
+  // We can't explicitly encode doubles with the current API.
+  mapping m = Standards.BSON.decode(String.hex2string("1500000001646f75626c65005305a3923add5e4000"));
+  /* NB: Decodes to 123.4567.
+   *     On 32-bit platforms this gets rounded to 123.457.
+   *     Add 0.0003 so that the result is the same on 64-bit too.
+   */
+  return (string)(m->double + 0.0003);
+]], "123.457")
+
+dnl test_bson_append_document
+dnl We can't explicitly encode document with the current API.
+test_equal(Standards.BSON.decode(String.hex2string("1400000003646f63756d656e7400050000000000")), ([ "document":([]) ]))
+
+dnl test_bson_append_oid
+test_enc((["oid":Standards.BSON.ObjectId(String.hex2string("1234567890abcdef1234abcd"))]), "16000000076f6964001234567890abcdef1234abcd00")
+
+dnl test_bson_append_array
+test_enc((["array":({"hello","world"})]),
+"2b000000046172726179001f0000000230000600000068656c6c6f0002310006000000776f726c64000000")
+
+dnl test_bson_append_binary : not supported field type 0x34
+
+dnl test_bson_append_time_t
+test_enc((["time_t":Calendar.Second("unix",1234567890)]),
+"150000000974696d655f74005004fb711f01000000")
+
+dnl test_bson_append_undefined : not supported field type 0x06
+
+dnl test_bson_append_regex
+test_enc((["regex":Standards.BSON.Regex("^abcd","ilx")]),
+"160000000b7265676578005e6162636400696c780000")
+
+dnl test_bson_append_code
+test_enc((["code":Standards.BSON.Javascript("var a = {};")]),
+"1b0000000d636f6465000c0000007661722061203d207b7d3b0000")
+
+dnl test_bson_append_code_with_scope not fully implemented
+
+dnl test_bson_append_dbpointer : not supported field type 0x0c
+
+
+END_MARKER

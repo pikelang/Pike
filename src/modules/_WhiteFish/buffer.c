@@ -1,9 +1,6 @@
 #include "global.h"
 #include "config.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -19,7 +16,7 @@
 #include "blob.h"
 #include "buffer.h"
 
-static INLINE int range( int n, int m )
+static inline int range( int n, int m )
 {
   int o;
   int f;
@@ -41,12 +38,12 @@ static void wf_buffer_make_space( struct buffer *b, unsigned int n )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
-    fatal("Oops\n");
+    Pike_fatal("Oops\n");
 #endif
   if( b->allocated_size-b->size < n )
   {
     b->allocated_size += range(n,b->allocated_size);
-    b->data = realloc(b->data,b->allocated_size);
+    b->data = xrealloc(b->data,b->allocated_size);
   }
 }
 
@@ -71,7 +68,7 @@ void wf_buffer_wint( struct buffer *b,
 {
   s = htonl(s);
   wf_buffer_make_space( b, 4 );
-  MEMCPY( b->data+b->size, &s, 4 );
+  memcpy( b->data+b->size, &s, 4 );
   b->size += 4;
 }
 
@@ -93,6 +90,7 @@ void wf_buffer_rewind_w( struct buffer *b, int n )
     b->size -= n;
   else
     b->size = 0;
+  if (b->size > b->rpos) b->rpos = b->size;
 }
 
 int wf_buffer_rbyte( struct buffer *b )
@@ -104,22 +102,27 @@ int wf_buffer_rbyte( struct buffer *b )
 
 unsigned int wf_buffer_rint( struct buffer *b )
 {
-  return (((((wf_buffer_rbyte( b )<<8) |
-	     wf_buffer_rbyte( b ))<<8) |
-	   wf_buffer_rbyte( b ))<<8)   |
-         wf_buffer_rbyte( b );
+  unsigned int res = wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_memcpy( struct buffer *d,
 		      struct buffer *s,
 		      int nelems )
 {
-  if( (s->rpos+nelems) > s->size )
+  if( (s->rpos+nelems) > s->size ) {
+#ifdef PIKE_DEBUG
+    Pike_fatal("wf_buffer_memcpy(%p, %p, %d): Attempt to copy more than source (%d).\n",
+	       d, s, nelems, s->size-s->rpos);
+#endif
     nelems = s->size-s->rpos;
+  }
   if( nelems <= 0 )
     return 0;
   wf_buffer_make_space( d, nelems );
-  MEMCPY( d->data+d->size, s->data+s->rpos, nelems );
+  memcpy( d->data+d->size, s->data+s->rpos, nelems );
   s->rpos += nelems;
   d->size += nelems;
   return nelems;
@@ -127,7 +130,8 @@ int wf_buffer_memcpy( struct buffer *d,
 
 int wf_buffer_rshort( struct buffer *b )
 {
-  return (wf_buffer_rbyte( b ) << 8) | wf_buffer_rbyte( b );
+  int res = wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_eof( struct buffer *b )
@@ -145,22 +149,22 @@ void wf_buffer_seek_w( struct buffer *b, unsigned int pos )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
-    fatal( "Oops, read_only\n");
+    Pike_fatal( "Oops, read_only\n");
 #endif
   if( pos > b->size )
   {
     wf_buffer_make_space( b, (unsigned int)(pos-b->size) );
-    MEMSET( b->data+b->size, 0, (unsigned int)(pos-b->size) );
+    memset( b->data+b->size, 0, (unsigned int)(pos-b->size) );
   }
   b->size = pos;
 }
-  
+
 void wf_buffer_clear( struct buffer *b )
 {
   if( !b->read_only && b->data )
     free( b->data );
   if( b->read_only && b->str )    free_string( b->str );
-  MEMSET(b, 0, sizeof(struct buffer));
+  memset(b, 0, sizeof(struct buffer));
 }
 
 void wf_buffer_free( struct buffer *b )
@@ -188,29 +192,27 @@ void wf_buffer_set_pike_string( struct buffer *b,
     b->str = data;
     add_ref(data);
     b->size = data->len;
-    b->data = data->str;
+    b->data = STR0(data);
   }
   else
   {
     b->size = data->len;
     b->data = malloc( b->size );
     b->allocated_size = b->size;
-    MEMCPY( b->data, data->str, b->size );
+    memcpy( b->data, data->str, b->size );
   }
 }
 
 struct buffer *wf_buffer_new( )
 {
-  struct buffer *b = xalloc( sizeof( struct buffer ) );
-  MEMSET( b, 0, sizeof(struct buffer) );
-  return b;
+  return xcalloc( 1, sizeof( struct buffer ) );
 }
 
 void wf_buffer_append( struct buffer *b,
-		       char *data,
+		       unsigned char *data,
 		       int size )
 {
   wf_buffer_make_space( b, size );
-  MEMCPY( b->data+b->size, data, size );
+  memcpy( b->data+b->size, data, size );
   b->size+=size;
 }

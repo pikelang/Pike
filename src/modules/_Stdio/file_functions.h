@@ -44,13 +44,21 @@ FILE_FUNC("linger", file_linger,
 	  tFunc(tOr3(tInt_10, tWord, tVoid), tInt01))
 #endif
 
+#ifdef TCP_NODELAY
+/* function(int(0..1)|void:int(0..1)) */
+FILE_FUNC("nodelay", file_nodelay,
+	  tFunc(tOr(tInt01, tVoid), tInt01))
+#endif
+
 #ifdef HAVE_FSYNC
 /*  function(:int) */
 FILE_FUNC("sync", file_sync, tFunc(tNone,tInt))
 #endif /* HAVE_FSYNC */
 
 /* function(int,int|void,int|void:int) */
-FILE_FUNC("seek",file_seek, tFunc(tInt tOr(tInt,tVoid) tOr(tInt,tVoid),tInt))
+FILE_FUNC("seek",file_seek,
+          tOr(tFunc(tInt tOr(tNStr(tInt05),tVoid),tInt),
+              tAttr("deprecated",tFunc(tInt tInt tOr(tInt,tVoid),tInt))))
 /* function(:int) */
 FILE_FUNC("tell",file_tell, tFunc(tNone,tInt))
 /* function(int:int) */
@@ -64,6 +72,9 @@ FILE_FUNC("statat", file_statat,
 FILE_FUNC("unlinkat", file_unlinkat, tFunc(tStr, tInt01));
 #endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
+#if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
+FILE_FUNC("get_dir", file_get_dir, tFunc(tOr(tStr,tVoid),tArr(tStr8)));
+#endif /* HAVE_FDOPENDIR && HAVE_OPENAT */
 /* function(:int) */
 FILE_FUNC("errno",file_errno, tFunc(tNone,tInt))
 /* function(:int) */
@@ -126,7 +137,8 @@ FILE_FUNC("set_buffer",file_set_buffer, tFunc(tInt tOr(tStr,tVoid),tVoid))
 FILE_FUNC("open_socket",file_open_socket,
 	  tFunc(tOr3(tInt,tStr,tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tInt))
 /* function(string,int|string:int)|function(string,int|string,string,int|string:int) */
-FILE_FUNC("connect",file_connect, tOr(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr),tInt)))
+    FILE_FUNC("connect",file_connect, tOr3(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr),tInt),
+                                           tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr) tStr8,tStr)))
 #ifdef HAVE_SYS_UN_H
 /* function(string:int) */
 FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
@@ -135,15 +147,13 @@ FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
 FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr))
 /* function(void|string,void|string:void) */
 FILE_FUNC("create",file_create, tFunc(tOr3(tVoid,tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tVoid))
-/* function(mixed:object) */
-FILE_FUNC("`<<",file_lsh, tAttr("deprecated", tFunc(tMixed,FILE_OBJ)))
 
 #ifdef _REENTRANT
 /* function(object:void) */
 FILE_FUNC("proxy",file_proxy, tFunc(tObj,tVoid))
 #endif
 
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 /* function(void|int:object) */
 FILE_FUNC("lock",file_lock, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FILE_LOCK_KEY))
 /* function(void|int:object) */
@@ -180,10 +190,8 @@ FILE_FUNC("tcflush",file_tcflush, tFunc(tNone,tStr))
 FILE_FUNC("set_keepalive",file_set_keepalive, tFunc(tInt,tInt))
 #endif
 
-#ifdef HAVE_NOTIFICATIONS
-/*  function(int,function,void|int:void) */
-FILE_FUNC("notify", file_set_notify, tFunc(tInt tFunction tOr(tVoid,tInt),tVoid))
-#endif
+/* function(int,int:int) */
+FILE_FUNC("setsockopt",file_setsockopt, tFunc(tInt tInt,tInt))
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 FILE_FUNC( "listxattr", file_listxattr, tFunc(tVoid,tArr(tStr)))

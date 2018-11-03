@@ -56,12 +56,12 @@ AC_CONFIG_HEADER(fsevents_config.h)
 AC_MODULE_INIT()
 
 AC_CHECK_HEADERS(CoreServices/CoreServices.h)
-AC_CHECK_FRAMEWORK(CoreServices, FSEventStreamCreate) 
+AC_CHECK_FRAMEWORK(CoreServices, FSEventStreamCreate)
 
-AC_CHECK_DECLS([kFSEventStreamEventFlagKernelDropped, kFSEventStreamEventFlagEventIdsWrapped, kFSEventStreamEventFlagHistoryDone, kFSEventStreamEventFlagRootChanged, kFSEventStreamEventFlagMount, kFSEventStreamEventFlagUnmount],[],[],[#import <CoreServices/CoreServices.h>])
-AC_CHECK_DECLS([kFSEventStreamEventFlagItemRemoved, kFSEventStreamEventFlagItemInodeMetaMod, kFSEventStreamEventFlagItemRenamed, kFSEventStreamEventFlagItemModified, kFSEventStreamEventFlagItemFinderInfoMod, kFSEventStreamEventFlagItemChangeOwner, kFSEventStreamEventFlagItemXattrMod, kFSEventStreamEventFlagItemIsFile, kFSEventStreamEventFlagItemIsDir, kFSEventStreamEventFlagItemIsSymlink, kFSEventStreamCreateFlagFileEvents],[],[],[#import <CoreServices/CoreServices.h>])
+AC_CHECK_DECLS([kFSEventStreamEventFlagMustScanSubDirs, kFSEventStreamEventFlagUserDropped, kFSEventStreamEventFlagKernelDropped, kFSEventStreamEventFlagEventIdsWrapped, kFSEventStreamEventFlagHistoryDone, kFSEventStreamEventFlagRootChanged, kFSEventStreamEventFlagMount, kFSEventStreamEventFlagUnmount],[],[],[#import <CoreServices/CoreServices.h>])
+AC_CHECK_DECLS([kFSEventStreamEventFlagItemCreated, kFSEventStreamEventFlagItemRemoved, kFSEventStreamEventFlagItemInodeMetaMod, kFSEventStreamEventFlagItemRenamed, kFSEventStreamEventFlagItemModified, kFSEventStreamEventFlagItemFinderInfoMod, kFSEventStreamEventFlagItemChangeOwner, kFSEventStreamEventFlagItemXattrMod, kFSEventStreamEventFlagItemIsFile, kFSEventStreamEventFlagItemIsDir, kFSEventStreamEventFlagItemIsSymlink, kFSEventStreamCreateFlagFileEvents],[],[],[#import <CoreServices/CoreServices.h>])
 AC_CHECK_DECLS([kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagWatchRoot, kFSEventStreamCreateFlagNoDefer, kFSEventStreamEventIdSinceNow],[],[],[#import <CoreServices/CoreServices.h>])
-AC_SUBST(CMOD_CFLAGS) 
+AC_SUBST(CMOD_CFLAGS)
 AC_SUBST(CMOD_LIBS)
 
 AC_OUTPUT(Makefile)

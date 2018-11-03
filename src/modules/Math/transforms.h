@@ -4,5 +4,5 @@
 || for more information.
 */
 
-void init_math_transforms();
-void exit_math_transforms();
+void init_math_transforms(void);
+void exit_math_transforms(void);

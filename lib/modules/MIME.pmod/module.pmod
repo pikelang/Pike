@@ -5,10 +5,10 @@
 // Marcus Comstedt 1996-1999
 
 
-//! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
+//! @rfc{1521@}, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
 //! structure which is the base for all messages read and written by
 //! modern mail and news programs.  It is also partly the base for the
-//! HTTP protocol.  Just like RFC822, MIME declares that a message should
+//! HTTP protocol.  Just like @rfc{822@}, MIME declares that a message should
 //! consist of two entities, the headers and the body.  In addition, the
 //! following properties are given to these two entities:
 //!
@@ -72,7 +72,7 @@ protected class StringRange
   {
     if (start == end) {
       data = "";
-      this_program::start = this_program::end = 0;
+      this::start = this::end = 0;
       return;
     }
     if (start < 0) start = 0;
@@ -90,8 +90,8 @@ protected class StringRange
       start = 0;
     }
     data = s;
-    this_program::start = start;
-    this_program::end = end;
+    this::start = start;
+    this::end = end;
   }
   protected int _sizeof()
   {
@@ -113,9 +113,9 @@ protected class StringRange
     if (high < 0) high = 0;
     if (low > len) low = len;
     if (high > len) high = len;
-    if (!low && (high == len)) return this_object();
+    if (!low && (high == len)) return this;
     if ((high - low) < 65536) return data[start+low..start+high-1];
-    return StringRange(this_object(), low, high);
+    return StringRange(this, low, high);
   }
   protected int `[](int pos)
   {
@@ -135,14 +135,9 @@ protected class StringRange
   }
   protected mixed cast(string type)
   {
-    switch(type) {
-    case "string":
+    if( type == "string" )
       return data[start..end-1];
-    case "object":
-      return this_object();
-    default:
-      error("StringRange: Unsupported cast to %s.\n", type);
-    }
+    return UNDEFINED;
   }
   protected int _search(string frag, int|void pos)
   {
@@ -162,34 +157,70 @@ protected class StringRange
     if (c == 'O')
       return sprintf("StringRange(%d bytes[%d..%d] %O)",
 		     data && sizeof(data), start, end-1, data && data[..40]);
-    return (string)this_object();
+    return (string)this;
   }
 }
 
-#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 413))
-// Compat with some older Pikes...
+private string boundary_prefix;
 
-// Support has_prefix on objects.
-protected int(0..1) has_prefix(string|object s, string prefix)
+//! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
+//! prefix when creating a boundary string.
+//!
+//! @throws
+//!  An error is thrown if @[boundary_prefix] doesn't adhere to @rfc{1521@}.
+//!
+//! @seealso
+//!  @[MIME.generate_boundary()], @[MIME.get_boundary_prefix()]
+//!
+//! @param boundary_prefix
+//!  This must adhere to @rfc{1521@} and can not be longer than 56 characters.
+void set_boundary_prefix(string(8bit) boundary_prefix)
 {
-  if (!objectp(s)) return predef::has_prefix(s, prefix);
-  for(int i = 0; i < sizeof(prefix); i++) {
-    if (s[i] != prefix[i]) return 0;
+  // 5 upto 14 chars is randomly added to the boundary so the prefix must not
+  // risking overflowing the max-length of 70 chars
+  if (boundary_prefix && (sizeof(boundary_prefix) + 14) > 70) {
+    error("Too long boundary prefix. The boundary prefix can not be longer "
+          "than 56 characters.\n");
   }
-  return 1;
+
+  sscanf(boundary_prefix, "%*s%[^0-9a-zA-Z'()+_,./:=?-]", string illegal);
+
+  if (illegal && sizeof(illegal)) {
+    error("An illegal character (%q) was found in the boundary prefix.\n",
+          illegal);
+  }
+
+  this::boundary_prefix = boundary_prefix;
 }
 
-#endif
+//! Returns the @tt{boundary_prefix@} set via @[set_boundary_prefix()].
+//!
+//! @seealso
+//!  @[MIME.set_boundary_prefix()], @[MIME.Message.setboundary()]
+string(8bit) get_boundary_prefix()
+{
+  return boundary_prefix;
+}
 
 //! This function will create a string that can be used as a separator string
-//! for multipart messages.  The generated string is guaranteed not to appear
+//! for multipart messages. If a boundary prefix has been set
+//! using @[MIME.set_boundary_prefix()], the generated string will be prefixed
+//! with the boundary prefix.
+//!
+//! The generated string is guaranteed not to appear
 //! in @tt{base64@}, @tt{quoted-printable@}, or @tt{x-uue@} encoded data.
 //! It is also unlikely to appear in normal text.  This function is used by
 //! the cast method of the @tt{Message@} class if no boundary string is
 //! specified.
 //!
+//! @seealso
+//! @[MIME.set_boundary_prefix()]
+//!
 string generate_boundary( )
 {
+  if (boundary_prefix) {
+    return boundary_prefix + random( 1000000000 );
+  }
   return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
 }
 
@@ -275,10 +306,10 @@ string encode( string data, string encoding, void|string filename,
 }
 
 //! Extracts the textual content and character set from an @i{encoded word@}
-//! as specified by RFC1522.  The result is an array where the first element
-//! is the raw text, and the second element the name of the character set.
-//! If the input string is not an encoded word, the result is still an array,
-//! but the char set element will be set to 0.
+//! as specified by @rfc{1522@}/@rfc{2047@}.  The result is an array where the
+//! first element is the raw text, and the second element the name of the
+//! character set. If the input string is not an encoded word, the result is
+//! still an array, but the char set element will be set to 0.
 //!
 //! @note
 //! Note that this function can only be applied to individual encoded words.
@@ -308,7 +339,7 @@ array(string) decode_word( string word )
     return ({ word, 0 });
 }
 
-//! Create an @i{encoded word@} as specified in RFC1522 from an array
+//! Create an @i{encoded word@} as specified in @rfc{1522@} from an array
 //! containing a raw text string and a char set name.
 //!
 //! The text will be transfer encoded according to the encoding argument,
@@ -409,7 +440,7 @@ array(array(string)) decode_words_text( string txt )
 //! Like @[MIME.decode_words_text()], but the extracted strings are
 //! also remapped from their specified character encoding into UNICODE,
 //! and then pasted together.  The result is thus a string in the original
-//! text format, without RFC1522 escapes, and with all characters in UNICODE
+//! text format, without @rfc{1522@} escapes, and with all characters in UNICODE
 //! encoding.
 //!
 //! @seealso
@@ -417,7 +448,7 @@ array(array(string)) decode_words_text( string txt )
 //!
 string decode_words_text_remapped( string txt )
 {
-  return Array.map(decode_words_text(txt), remap)*"";
+  return map(decode_words_text(txt), remap)*"";
 }
 
 //! Tokenizes a header value just like @[MIME.tokenize()], but also
@@ -433,7 +464,7 @@ string decode_words_text_remapped( string txt )
 //!
 array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 {
-  return Array.map(tokenize(phrase, flags),
+  return map(tokenize(phrase, flags),
 		   lambda(string|int item) {
 		     return intp(item)? item : decode_word(item);
 		   });
@@ -442,7 +473,7 @@ array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized()], but the extracted atoms are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is thus identical to that of @[MIME.tokenize()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 //! @seealso
 //! @[MIME.decode_words_tokenized_labled_remapped]
@@ -451,7 +482,7 @@ array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 array(string|int) decode_words_tokenized_remapped( string phrase,
 						   int|void flags )
 {
-  return Array.map(decode_words_tokenized(phrase, flags),
+  return map(decode_words_tokenized(phrase, flags),
 		   lambda(array(string)|int item) {
 		     return intp(item)? item : remap(item);
 		   });
@@ -483,7 +514,7 @@ array(string|int) decode_words_tokenized_remapped( string phrase,
 array(array(string|int|array(array(string))))
 decode_words_tokenized_labled( string phrase, int|void flags )
 {
-  return Array.map( tokenize_labled( phrase, flags ),
+  return map( tokenize_labled( phrase, flags ),
 		    lambda(array(string|int) item) {
 		      switch(item[0]) {
 		      case "encoded-word":
@@ -501,18 +532,18 @@ decode_words_tokenized_labled( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized_labled()], but the extracted words are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is identical to that of @[MIME.tokenize_labled()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 array(array(string|int))
 decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 {
-  return Array.map(decode_words_tokenized_labled(phrase, flags),
+  return map(decode_words_tokenized_labled(phrase, flags),
 		   lambda(array(string|int|array(array(string|int))) item) {
 		     switch(item[0]) {
 		     case "word":
 		       return ({ "word", remap(item[1..]) });
 		     case "comment":
-		       return ({ "comment", Array.map(item[1], remap)*"" });
+		       return ({ "comment", map(item[1], remap)*"" });
 		     default:
 		       return item;
 		     }
@@ -614,7 +645,7 @@ string encode_words_text_remapped(string text, string encoding,
 //!
 string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 {
-  return quote(Array.map(phrase, lambda(array(string)|int item) {
+  return quote(map(phrase, lambda(array(string)|int item) {
 				   return intp(item)? item :
 				     encode_word(item, encoding);
 				 }));
@@ -660,7 +691,7 @@ string encode_words_quoted_remapped(array(string|int) phrase, string encoding,
 string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
 {
   return
-    quote_labled(Array.map(phrase,
+    quote_labled(map(phrase,
 			   lambda(array(string|int|array(string)) item) {
 			     switch(item[0]) {
 			     case "word":
@@ -720,7 +751,7 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 
 //! Provide a reasonable default for the subtype field.
 //!
-//! Some pre-RFC1521 mailers provide only a type and no subtype in the
+//! Some pre-@rfc{1521@} mailers provide only a type and no subtype in the
 //! Content-Type header field.  This function can be used to obtain a
 //! reasonable default subtype given the type of a message.  (This is done
 //! automatically by the @[MIME.Message] class.)
@@ -766,11 +797,16 @@ string guess_subtype( string type )
 //! The first element is a mapping containing the headers found.  The second
 //! element is a string containing the body.
 //!
-//! Headers that occurr multiple times will have their contents NUL separated,
+//! Headers that occur multiple times will have their contents NUL separated,
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
-array(mapping(string:string|array(string))|string|StringRange) 
+//! @note
+//! Some headers (eg Subject) may include @rfc{1522@}/@rfc{2047@} encoded words. To
+//! decode these, see @[decode_words_text] and @[decode_words_tokenized] and
+//! their friends.
+//!
+array(mapping(string:string|array(string))|string|StringRange)
   parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
   string head, header, hname, hcontents;
@@ -796,7 +832,7 @@ array(mapping(string:string|array(string))|string|StringRange)
   }
   mapping(string:string|array) headers = ([ ]);
   foreach( replace(head, ({"\r", "\n ", "\n\t"}),
-		   ({"", " ", " "}))/"\n", header ) 
+		   ({"", " ", " "}))/"\n", header )
   {
     if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
@@ -846,6 +882,11 @@ class Message {
   //! @[type], @[subtype], @[charset], @[boundary], @[transfer_encoding],
   //! @[params], @[disposition], @[disp_params], @[setencoding()],
   //! @[setparam()], @[setdisp_param()], @[setcharset()], @[setboundary()]
+  //!
+  //! @note
+  //! Some headers (eg Subject) may include @rfc{1522@}/@rfc{2047@} encoded words. To
+  //! decode these, see @[decode_words_text] and @[decode_words_tokenized] and
+  //! their friends.
   //!
   mapping(string:string) headers;
 
@@ -1081,7 +1122,7 @@ class Message {
   {
     if(encoded_data && !decoded_data)
       decoded_data = getdata( );
-    headers["content-transfer-encoding"] = transfer_encoding = 
+    headers["content-transfer-encoding"] = transfer_encoding =
       lower_case( encoding );
     encoded_data = 0;
   }
@@ -1190,18 +1231,18 @@ class Message {
   //!
   //! @seealso
   //! @[create()]
-  string cast( string dest_type )
+  protected string cast( string dest_type )
   {
     string data;
     object body_part;
-    
+
     if (dest_type != "string")
-      error( "Can't cast Message to %s.\n", dest_type);
-    
+      return UNDEFINED;
+
     data = getencoded( );
-    
+
     if (body_parts) {
-      
+
       if (!boundary) {
 	if (type != "multipart") {
 	  type = "multipart";
@@ -1209,13 +1250,13 @@ class Message {
 	}
 	setboundary( generate_boundary( ) );
       }
-      
+
       data += "\r\n";
       foreach( body_parts, body_part )
 	data += "--"+boundary+"\r\n"+((string)body_part)+"\r\n";
       data += "--"+boundary+"--\r\n";
     }
-    
+
     headers["content-length"] = ""+sizeof(data);
 
     return map( indices(headers),
@@ -1426,7 +1467,7 @@ class Message {
 	arr = arr2;
 	arr2 = 0;
       }
-      
+
       array(string|int) p;
       if(sizeof(arr[0])!=1 || !stringp(arr[0][0]))
       {
@@ -1515,7 +1556,7 @@ class Message {
 	} else
 	  error("boundary missing from multipart-body\n");
       }
-      if ((epilogue != "") && !guess) {
+      if (epilogue != "" && epilogue != "\n" && epilogue != "\r\n" && !guess) {
 	error("multipart message improperly terminated (%O%s)\n",
 	      epilogue[..200],
 	      sizeof(epilogue) > 201 ? "[...]" : "");
@@ -1533,7 +1574,7 @@ class Message {
   {
     if (c == 'O')
       return sprintf("Message(%O)", disp_params);
-    return (string)this_object();
+    return (string)this;
   }
 }
 
@@ -1603,7 +1644,7 @@ int|object reconstruct_partial(array(object) collection)
     mapping(string:string) enclosing_headers = parts[1]->headers;
 
     object reconstructed =
-      Message(`+(@Array.map(sort(indices(parts)),
+      Message(`+(@map(sort(indices(parts)),
 			    lambda(int i, mapping(int:object) parts){
 	return parts[i]->getencoded();
       }, parts)));

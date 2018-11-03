@@ -14,12 +14,12 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_error.h"
+#include "module_support.h"
 
 #include "image.h"
 
@@ -31,9 +31,6 @@ extern struct program *image_program;
 #undef THIS /* Needed for NT */
 #endif
 #define THIS ((struct image *)(Pike_fp->current_storage))
-#define THISOBJ (Pike_fp->current_object)
-
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 static const double c0=0.70710678118654752440;
 static const double pi=3.14159265358979323846;
@@ -41,7 +38,7 @@ static const double pi=3.14159265358979323846;
 /*
 **! method object dct(int newx,int newy)
 **!	Scales the image to a new size.
-**!	
+**!
 **!	Method for scaling is rather complex;
 **!	the image is transformed via a cosine transform,
 **!	and then resampled back.
@@ -57,7 +54,7 @@ static const double pi=3.14159265358979323846;
 **!	true experiment, but works...
 **!
 **! note
-**!	Do NOT use this function if you don't know what 
+**!	Do NOT use this function if you don't know what
 **!     you're dealing with! Read some signal theory first...
 **!
 **!	It doesn't use any fct (compare: fft) algorithms.
@@ -78,13 +75,16 @@ void image_dct(INT32 args)
    double *costbl;
    rgb_group *pix;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
+
+   get_all_args(NULL, args, "%d%d", &x, &y);
+   x = MAXIMUM(1, x);
+   y = MAXIMUM(1, y);
 
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
-	   DO_NOT_WARN((unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize)),
-	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
+           (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
+           (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
 #endif
 
    area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1);
@@ -92,35 +92,22 @@ void image_dct(INT32 args)
    if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
    {
       free(area);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
-   
-   if (args>=2 
-       && TYPEOF(sp[-args]) == T_INT
-       && TYPEOF(sp[1-args]) == T_INT)
-   {
-      img->xsize=MAXIMUM(1,sp[-args].u.integer);
-      img->ysize=MAXIMUM(1,sp[1-args].u.integer);
-   }
-   else {
-     free(area);
-     free(costbl);
-     free_object(o);
-     bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
-		   "Bad arguments to image->dct()\n");
-   }
+   img->xsize = x;
+   img->ysize = y;
 
-   if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
-				     img->xsize*img->ysize+RGB_VEC_PAD)))
+   if (!(img->img=malloc(sizeof(rgb_group)*
+                         img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free(area);
       free(costbl);
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    xsz2=THIS->xsize*2.0;
@@ -138,7 +125,7 @@ void image_dct(INT32 args)
 	 d=(u?1:c0)*(v?1:c0)/4.0;
 	 sum.r=sum.g=sum.b=0;
 	 pix=THIS->img;
-	 
+
 	 for (x=0; x<THIS->xsize; x++)
 	    costbl[x]=cos( (2*x+1)*u*pi/xsz2 );
 
@@ -191,19 +178,19 @@ void image_dct(INT32 args)
 	    for (u=0; u<THIS->xsize; u++)
 	    {
 	       double z;
-	       z = (u?1:c0) * costbl[u] * z0; 
-	       sum.r += DO_NOT_WARN((float)(val->r*z));
-	       sum.g += DO_NOT_WARN((float)(val->g*z));
-	       sum.b += DO_NOT_WARN((float)(val->b*z));
+	       z = (u?1:c0) * costbl[u] * z0;
+               sum.r += (float)(val->r*z);
+               sum.g += (float)(val->g*z);
+               sum.b += (float)(val->b*z);
 	       val++;
 	    }
 	 }
 	 sum.r *= (float)enh;
 	 sum.g *= (float)enh;
 	 sum.b *= (float)enh;
-	 pix->r=testrange((DOUBLE_TO_INT(sum.r+0.5)));
-	 pix->g=testrange((DOUBLE_TO_INT(sum.g+0.5)));
-	 pix->b=testrange((DOUBLE_TO_INT(sum.b+0.5)));
+         pix->r=testrange((int)(sum.r+0.5));
+         pix->g=testrange((int)(sum.g+0.5));
+         pix->b=testrange((int)(sum.b+0.5));
 	 pix++;
       }
 #ifdef DCT_DEBUG

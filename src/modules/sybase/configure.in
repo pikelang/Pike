@@ -2,7 +2,7 @@ dnl This file is part of the Sybase driver for the Pike programming language
 dnl by Francesco Chemolli <kinkie@roxen.com> 10/12/1999
 
 
-AC_INIT(sybase.c)
+AC_INIT(sybase.cmod)
 AC_CONFIG_HEADER(sybase_config.h)
 
 AC_MODULE_INIT()
@@ -87,7 +87,7 @@ AC_CACHE_VAL(pike_cv_framework_sybaseopenclient, [
     CS_CONTEXT *context;
     CS_RETCODE ret;
     ret = cs_ctx_alloc(CS_VERSION_110, &context);
-    ret = ct_init(context, CS_VERSION_110);    
+    ret = ct_init(context, CS_VERSION_110);
   ], [
     pike_cv_framework_sybaseopenclient="yes"
   ])

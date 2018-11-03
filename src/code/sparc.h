@@ -81,9 +81,12 @@ extern const unsigned INT32 sparc_flush_instruction_cache[];
   (((void (*)(void *,size_t))sparc_flush_instruction_cache)	\
    (ADDR, (LEN)+sizeof(PIKE_OPCODE_T)))
 
-struct dynamic_buffer_s;
+struct byte_buffer;
 
-void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+#define MACHINE_CODE_FORCE_FP()	sparc_force_fp()
+int sparc_force_fp(void);
+
+void sparc_encode_program(struct program *p, struct byte_buffer *buf);
 void sparc_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	sparc_encode_program(P, BUF)

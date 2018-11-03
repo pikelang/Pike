@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! This is the standard conservative christian calendar,
-//! used regularly in some countries - USA, for instance - and 
+//! used regularly in some countries - USA, for instance - and
 //! which derivate - the @[ISO] calendar - is used in most of
 //! Europe.
 
@@ -26,8 +26,8 @@ private protected mixed __initstuff=lambda()
    f_year_number_from_name="year_number_from_name";
 }();
 
-protected int(0..1) year_leap_year(int y) 
-{ 
+protected int(0..1) year_leap_year(int y)
+{
    return (!(((y)%4) || (!((y)%100) && ((y)%400))));
 }
 
@@ -41,7 +41,7 @@ protected array(int) year_from_julian_day(int jd)
    int century_day=d-century_jd;
    int century_year=(100*century_day+75)/36525;
 
-   return 
+   return
    ({
       century*100+century_year+1,
       1721426+century_year*365+century_year/4+century_jd,
@@ -122,7 +122,7 @@ protected array(int) week_from_julian_day(int jd)
    int w=(yday+k)/7;
    int wjd=jd-(jd+1)%7;
 
-   if (!w) 
+   if (!w)
    {
 // handle the case that the day is in the previous year;
 // years previous to years staring on saturday,
@@ -169,7 +169,7 @@ class cYear
       {
 	 case 0: return 0;
 	 case 1: return 365+leap_year();
-	 default: 
+	 default:
 	    return julian_day_from_year(y+n)-yjd;
       }
    }
@@ -183,7 +183,7 @@ class cYear
    {
       if (!n) return 1;
       if (n==1) return 53+(yjd%7==5 && leap_year());
-      return 
+      return
 	 Week("julian",jd)
 	 ->range(Week("julian",julian_day_from_year(y+n)-1))
 	 ->number_of_weeks();
@@ -283,7 +283,7 @@ class cWeek
    {
       mixed err=catch
       {
-	 return 
+	 return
 	    sprintf("%s %s",
 		    week_name(),
 		    year_name());

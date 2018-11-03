@@ -8,6 +8,9 @@ Arguments:
 -h, --help
   Shows this help text.
 
+-l, --list
+  Shows a list of available tests.
+
 -s<number>, --max-seconds=<number>
   Runs a test at most <number> of seconds, rounded up to the closest
   complete test. Defaults to 3.
@@ -18,7 +21,7 @@ Arguments:
 --json, -j
   Output result as JSON instead of human readable text
 
---compare, -c
+--compare=<file>, -c <file>
   Read a result previously created by saving the output of --json and
   print relative results
 ";
@@ -61,8 +64,9 @@ int(0..) main(int num, array(string) args)
      ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "maxsec",  Getopt.HAS_ARG, "-s,--max-seconds"/"," }),
      ({ "tests",   Getopt.HAS_ARG, "-t,--tests"/"," }),
-     ({ "json",    Getopt.NO_ARG, "-j,--json"/"," }),
-     ({ "compare",    Getopt.HAS_ARG, "-c,--compare"/"," }),
+     ({ "json",    Getopt.NO_ARG,  "-j,--json"/"," }),
+     ({ "compare", Getopt.HAS_ARG, "-c,--compare"/"," }),
+     ({ "list",    Getopt.NO_ARG,  "-l,--list"/"," }),
    })), array opt)
    {
     switch(opt[0])
@@ -90,6 +94,12 @@ int(0..) main(int num, array(string) args)
 	break;
       case "tests":
 	test_globs = opt[1] / ",";
+        break;
+      case "list":
+        write("Available tests:\n%{  %s\n%}",
+              sort(indices(tests)-({"Overhead"})));
+        return 0;
+        break;
     }
   }
   if( json )
@@ -141,17 +151,17 @@ int(0..) main(int num, array(string) args)
          total_pct += pct;
          if( isatty )
            write( color( pct ) );
-         write("%40s%s %5.1f%%\n",
-               dot(id,40,true,odd=!odd),
-               dot(res->readable,18,false,odd),
+         write("%42s%s %5.1f%%\n",
+               dot(id,42,true,odd=!odd),
+               dot(res->readable,16,false,odd),
                pct);
          if( isatty ) write( "\e[0m" );
        }
      }
      else
      {
-       write(dot(id,40,true,odd=!odd) +
-             dot(res->readable,19,false,odd)+"\n");
+       write(dot(id,42,true,odd=!odd) +
+             dot(res->readable,17,false,odd)+"\n");
      }
    }
    if( json )
@@ -164,6 +174,5 @@ int(0..) main(int num, array(string) args)
            total_pct / n_tests);
    }
    else
-     write("-"*58+"\n");
+     write("-"*59+"\n");
 }
-

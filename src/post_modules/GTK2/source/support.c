@@ -76,7 +76,7 @@ void pgtk2_index_stack(char *what) {
 
 int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b) {
   struct color_struct *col;
-  col=(struct color_struct *)get_storage(o,image_color_program);
+  col=get_storage(o,image_color_program);
   if (!col)
     return 0;
   *r=col->rgbl.r/(COLORLMAX/65535);
@@ -94,7 +94,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
 
   TIMER_INIT("Getting extents");
 
-  img_data=(struct image*)get_storage(img, image_program);
+  img_data=get_storage(img, image_program);
 
   /* 1a: create the actual image... */
   x = img_data->xsize;
@@ -162,7 +162,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       int j,i,r,g,b;
       PFTIME("Creating colormap");
       colors_allocated=1;
-      MEMSET(allocated,0,sizeof(allocated));
+      memset(allocated,0,sizeof(allocated));
       for (r=0; r<3; r++) for (g=0; g<4; g++) for (b=0; b<3; b++) {
 	GdkColor color;
 	color.red = (guint16)(r * (65535/2.0));
@@ -203,7 +203,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       Pike_sp[-2]=Pike_sp[0];
       /* on stack: function array */
       PFTIME("Creating colormap obj");
-      apply_svalue(Pike_sp-2,1);
+      safe_apply_svalue(Pike_sp-2, 1, 1);
       /* on stack: function cmap */
       get_all_args("internal",1,"%o",&pike_cmap);
       pike_cmap->refs+=100; /* lets keep this one.. :-) */
@@ -241,13 +241,13 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       /* on stack: function img bpp linepad depth cmap*/
       /*             6       5    4  3       2     1 */
       PFTIME("Dithering image");
-      apply_svalue(Pike_sp-6,5);
+      safe_apply_svalue(Pike_sp-6, 5, 1);
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
 	gdk_image_destroy((void *)i);
 	Pike_error("Failed to convert image\n");
       }
       PFTIME("Converting image");
-      MEMCPY(i->mem,Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+      memcpy(i->mem,Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
       pop_stack(); /* string */
       pop_stack(); /* function */
     }
@@ -270,13 +270,12 @@ void push_gobjectclass(void *obj, struct program *def) {
       ref_push_object(o);
       return;
     }
-  o=low_clone(def);
-  call_c_initializers(o);
+  o=fast_clone_object(def);
   ((struct object_wrapper *)o->storage)->obj=obj;
   pgtk2__init_object(o);
 
   /* Extra ref already added in pgtk2__init_object */
-  push_object(o); 
+  push_object(o);
   return;
 }
 
@@ -287,11 +286,10 @@ void push_pgdk2object(void *obj, struct program *def, int owned) {
     push_int(0);
     return;
   }
-  o=low_clone(def);
-  call_c_initializers(o);
+  o=fast_clone_object(def);
   ((struct object_wrapper *)o->storage)->obj=obj;
   ((struct object_wrapper *)o->storage)->owned = owned;
-  push_object(o); 
+  push_object(o);
   return;
 }
 
@@ -299,7 +297,7 @@ GObject *get_pg2object(struct object *from, struct program *type) {
   struct object_wrapper * o;
   if (!from)
     return NULL;
-  o=(struct object_wrapper *)get_storage(from,type);
+  o=get_storage(from,type);
   if (!o)
     return 0;
   return o->obj;
@@ -307,7 +305,7 @@ GObject *get_pg2object(struct object *from, struct program *type) {
 
 void *get_pgdk2object(struct object *from, struct program *type) {
   void *f;
-  if (!from) 
+  if (!from)
     return NULL;
   if (type)
     f=get_storage( from, type );
@@ -319,8 +317,7 @@ void *get_pgdk2object(struct object *from, struct program *type) {
 }
 
 void pgtk2_destruct(struct object *o) {
-  struct object_wrapper *ow=
-	   (struct object_wrapper *)get_storage(o,pg2_object_program);
+  struct object_wrapper *ow=get_storage(o,pg2_object_program);
   if (ow) /* This should always be true. But let's add a check anyway. */
     ow->obj=NULL;
   if (o->refs>1)
@@ -349,21 +346,21 @@ void pgtk2_get_mapping_arg(struct mapping *map,
          if (len!=sizeof(char *))
            Pike_fatal("oddities detected\n");
 #endif
-         MEMCPY(((char **)dest),&s->u.string->str,sizeof(char *));
+         memcpy(dest,&s->u.string->str,sizeof(char *));
          break;
        case PIKE_T_INT:
          if (len==2) {
            short i=(short)s->u.integer;
-           MEMCPY(((short *)dest),&i,2);
+           memcpy(dest,&i,2);
          } else if (len==4)
-           MEMCPY(((int *)dest),&s->u.integer,len);
+           memcpy(dest,&s->u.integer,len);
          break;
        case PIKE_T_FLOAT:
          if (len==sizeof(FLOAT_TYPE))
-           MEMCPY(((FLOAT_TYPE *)dest),&s->u.float_number,len);
+           memcpy(dest,&s->u.float_number,len);
          else if (len==sizeof(double)) {
            double d=s->u.float_number;
-           MEMCPY(((double *)dest),&d,len);
+           memcpy(dest,&d,len);
          }
          break;
       }
@@ -392,7 +389,7 @@ struct my_pixel pgtk2_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
   GdkColor * c;
   struct my_pixel res;
   int l;
-  if (!col) 
+  if (!col)
     col=gdk_colormap_get_system();
   *((int  *)&res)=0;
   switch(i->visual->type) {
@@ -437,7 +434,7 @@ void push_atom(GdkAtom a) {
 void push_Xpseudo32bitstring(void *f, int nelems) {
   if (sizeof(long)!=4) {
     long *q=(long *)f;
-    int *res=(int *)xalloc(nelems*4),i;
+    int *res=xalloc(nelems*4),i;
     for (i=0; i<nelems; i++)
       res[i]=q[i];
     push_string(make_shared_binary_string2((const p_wchar2 *)res,nelems));
@@ -451,7 +448,7 @@ void push_Xpseudo32bitstring(void *f, int nelems) {
 gint pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
   int res;
   push_svalue(&d->args);
-  apply_svalue(&d->cb, 1);
+  safe_apply_svalue(&d->cb, 1, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -460,7 +457,7 @@ gint pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
 
 void push_gdk_event(GdkEvent *e) {
   if (e) {
-    GdkEvent *f=g_malloc(sizeof(GdkEvent)); 
+    GdkEvent *f=g_malloc(sizeof(GdkEvent));
     if (f==NULL) {
       push_int(0);
       return;
@@ -472,14 +469,6 @@ void push_gdk_event(GdkEvent *e) {
 }
 
 enum { PUSHED_NOTHING, PUSHED_VALUE, NEED_RETURN, };
-
-/*
-static int pgtk2_push_selection_data_param( GValue *a )
-{
-  push_pgdk2object( GTK_VALUE_POINTER(*a), pgtk2_selection_data_program);
-  return PUSHED_VALUE;
-}
-*/
 
 static int pgtk2_push_accel_group_param(const GValue *a) {
   g_object_ref(g_value_get_pointer(a));
@@ -495,11 +484,6 @@ static int pgtk2_push_ctree_node_param(const GValue *a )
 }
 */
 
-static int pgtk2_push_gdk_drag_context_param(const GValue *a) {
-  push_gdkobject(g_value_get_pointer(a),drag_context,0);
-  return PUSHED_VALUE;
-}
-
 static int pgtk2_push_gdk_event_param(const GValue *a) {
   push_gdk_event(g_value_get_boxed(a));
   return NEED_RETURN;
@@ -507,49 +491,58 @@ static int pgtk2_push_gdk_event_param(const GValue *a) {
 
 static int pgtk2_push_gdk_rectangle_param(const GValue *a) {
   GdkRectangle *r = (GdkRectangle *) g_value_get_boxed(a);
-  push_text("x"); push_int(r->x);
-  push_text("y"); push_int(r->y);
-  push_text("width"); push_int(r->width);
-  push_text("height"); push_int(r->height);
+  push_static_text("x"); push_int(r->x);
+  push_static_text("y"); push_int(r->y);
+  push_static_text("width"); push_int(r->width);
+  push_static_text("height"); push_int(r->height);
   f_aggregate_mapping(8);
   return PUSHED_VALUE;
 }
 
 static int pgtk2_push_int_param(const GValue *a) {
-  LONGEST retval;
+  INT64 retval;
   switch (G_VALUE_TYPE(a)) {
     case G_TYPE_UINT:
-      retval=(LONGEST)g_value_get_uint(a);
+      retval=(INT64)g_value_get_uint(a);
       break;
     case G_TYPE_INT64:
-      retval=(LONGEST)g_value_get_int64(a);
+      retval=(INT64)g_value_get_int64(a);
       break;
     case G_TYPE_UINT64:
-      retval=(LONGEST)g_value_get_uint64(a);
+      retval=(INT64)g_value_get_uint64(a);
       break;
     case G_TYPE_INT:
-      retval=(LONGEST)g_value_get_int(a); 
-      break;
-    case G_TYPE_ENUM:
-      retval=(LONGEST)g_value_get_enum(a); 
+      retval=(INT64)g_value_get_int(a);
       break;
     case G_TYPE_FLAGS:
-      retval=(LONGEST)g_value_get_flags(a); 
+      retval=(INT64)g_value_get_flags(a);
       break;
     case G_TYPE_BOOLEAN:
-      retval=(LONGEST)g_value_get_boolean(a); 
+      retval=(INT64)g_value_get_boolean(a);
       break;
     case G_TYPE_LONG:
-      retval=(LONGEST)g_value_get_long(a); 
+      retval=(INT64)g_value_get_long(a);
       break;
     case G_TYPE_CHAR:
-      retval=(LONGEST)g_value_get_char(a); 
+#ifdef HAVE_G_VALUE_GET_SCHAR
+      retval=(INT64)g_value_get_schar(a);
+#else
+      retval=(INT64)g_value_get_char(a);
+#endif
       break;
     default:
-      retval=(LONGEST)g_value_get_uint(a); 
+      retval=(INT64)g_value_get_uint(a);
       break;
   }
   push_int64(retval);
+  return PUSHED_VALUE;
+}
+
+static int pgtk2_push_enum_param(const GValue *a) {
+  /* This can't be handled by push_int_param as the type of
+  an enumeration is some subclass of G_TYPE_ENUM, rather than
+  actually being G_TYPE_ENUM exactly. */
+  push_int64((INT64)g_value_get_enum(a));
   return PUSHED_VALUE;
 }
 
@@ -581,10 +574,17 @@ static int pgtk2_push_object_param(const GValue *a) {
       push_gdkobject(gp,color,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTreePath"))) {
       push_pgdk2object(gp,pgtk2_tree_path_program,0);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTextIter"))) {
+      push_pgdk2object(gp,pgtk2_text_iter_program,0);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkSelectionData"))) {
+      push_pgdk2object(gp,pgtk2_selection_data_program,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRectangle"))) {
       push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
       push_gdkobject(gp,region,0);
+    } else {
+      /* Don't know how to push this sort of object, so push its name */
+      PGTK_PUSH_GCHAR(G_VALUE_TYPE_NAME(a));
     }
   } else {
     obj=g_value_get_object(a);
@@ -595,9 +595,7 @@ static int pgtk2_push_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_pike_object_param(const GValue *a) {
-  struct object *o=g_value_get_pointer(a);
-  if (o)
-    ref_push_object(o);
+  push_int64((INT64)g_value_get_pointer(a));
   return PUSHED_VALUE;
 }
 
@@ -632,15 +630,12 @@ static void build_push_callbacks() {
   CB(GTK_TYPE_TREE_ITER,	pgtk2_push_object_param);
   CB(GTK_TYPE_TREE_MODEL,	pgtk2_push_object_param);
   CB(PANGO_TYPE_ATTR_LIST,	pgtk2_push_object_param);
-  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param); 
+  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param);
   CB(PANGO_TYPE_FONT_DESCRIPTION,	pgtk2_push_object_param);
   CB(PANGO_TYPE_CONTEXT,	pgtk2_push_object_param);
   CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
 
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk2_push_accel_group_param );
-  /*#ifndef HAS_GTK_20*/
-  CB( GDK_TYPE_DRAG_CONTEXT, pgtk2_push_gdk_drag_context_param );
-  /*#endif*/
   CB( GDK_TYPE_EVENT,        pgtk2_push_gdk_event_param );
   CB( GDK_TYPE_RECTANGLE, pgtk2_push_gdk_rectangle_param );
 
@@ -655,7 +650,7 @@ static void build_push_callbacks() {
   CB( G_TYPE_INT,              pgtk2_push_int_param );
   CB( G_TYPE_INT64,              pgtk2_push_int_param );
   CB( G_TYPE_UINT64,              pgtk2_push_int_param );
-  CB( G_TYPE_ENUM,             pgtk2_push_int_param );
+  CB( G_TYPE_ENUM,             pgtk2_push_enum_param );
   CB( G_TYPE_FLAGS,            pgtk2_push_int_param );
   CB( G_TYPE_BOOLEAN,          pgtk2_push_int_param );
   CB( G_TYPE_UINT,             pgtk2_push_int_param );
@@ -663,8 +658,8 @@ static void build_push_callbacks() {
   CB( G_TYPE_ULONG,            pgtk2_push_int_param );
   CB( G_TYPE_CHAR,             pgtk2_push_int_param );
 
-  CB( G_TYPE_NONE,    NULL ); 
-  
+  CB( G_TYPE_NONE,    NULL );
+
   CB( G_TYPE_POINTER,  pgtk2_push_pike_object_param );
 
   CB( G_TYPE_PARAM, pgtk2_push_gparamspec_param );
@@ -772,7 +767,7 @@ void pgtk2_signal_func_wrapper(struct signal_data *d,
     pgtk2_push_gvalue_rt(&(param_values[i]));
   }
   push_svalue(&d->args);
-  apply_svalue(&d->cb,2+n_params);
+  safe_apply_svalue(&d->cb, 2+n_params, 1);
   if (return_value && G_VALUE_TYPE(return_value) != 0 )
       pgtk2_set_value(return_value,&Pike_sp[-1]);
   pop_stack();
@@ -786,7 +781,7 @@ void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
 
 void pgtk2_push_gchar(const gchar *s) {
   if (s) {
-    push_text(s); 
+    push_text(s);
     push_int(1);
     f_utf8_to_string(2);
   } else
@@ -842,7 +837,7 @@ void pgtk2_default__sprintf(int args, int offset, int len) {
 }
 
 void pgtk2_clear_obj_struct(struct object *o) {
-  MEMSET(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
+  memset(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
 }
 
 void pgtk2_setup_mixin(struct object *o, struct program *p) {
@@ -853,28 +848,23 @@ void pgtk2_setup_mixin(struct object *o, struct program *p) {
   ((struct mixin_wrapper *)Pike_fp->current_storage)->offset = offset;
 }
 
-LONGEST pgtk2_get_int(struct svalue *s) {
+INT64 pgtk2_get_int(struct svalue *s) {
   if (TYPEOF(*s) == PIKE_T_INT)
     return s->u.integer;
-#ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
-    LONGEST res;
+    INT64 res;
     int64_from_bignum(&res,s->u.object);
     return res;
   }
-#endif
   if (TYPEOF(*s) == PIKE_T_FLOAT)
-    return (LONGEST)s->u.float_number;
+    return (INT64)s->u.float_number;
   return 0;
 }
 
 int pgtk2_is_int(struct svalue *s) {
   return ((TYPEOF(*s) == PIKE_T_INT) ||
-          (TYPEOF(*s) == PIKE_T_FLOAT)
-#ifdef AUTO_BIGNUM
-          || is_bignum_object_in_svalue(s)
-#endif
-         );
+          (TYPEOF(*s) == PIKE_T_FLOAT) ||
+          is_bignum_object_in_svalue(s));
 }
 
 /* double should be enough */
@@ -883,16 +873,15 @@ double pgtk2_get_float(struct svalue *s) {
     return s->u.float_number;
   if (TYPEOF(*s) == PIKE_T_INT)
     return (double)s->u.integer;
-#ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
     FLOAT_TYPE f;
-    push_text("float");
-    apply(s->u.object,"cast",1);
+    ref_push_type_value(float_type_string);
+    stack_swap();
+    f_cast();
     f=Pike_sp[-1].u.float_number;
     pop_stack();
     return (double)f;
   }
-#endif
   return 0.0;
 }
 
@@ -902,11 +891,8 @@ void pgtk2_free_object(struct object *o) {
 
 int pgtk2_is_float(struct svalue *s) {
   return ((TYPEOF(*s) == PIKE_T_FLOAT) ||
-          (TYPEOF(*s) == PIKE_T_INT)
-#ifdef AUTO_BIGNUM
-          || is_bignum_object_in_svalue(s)
-#endif
-         );
+          (TYPEOF(*s) == PIKE_T_INT) ||
+          is_bignum_object_in_svalue(s));
 }
 
 void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
@@ -918,7 +904,7 @@ void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
   if (!(gps->flags & G_PARAM_WRITABLE))
     Pike_error("This property is not writable.\n");
 /*
-  if (gps->value_type==PANGO_TYPE_STYLE || 
+  if (gps->value_type==PANGO_TYPE_STYLE ||
 	gps->value_type==GTK_TYPE_WRAP_MODE ||
 	gps->value_type==GTK_TYPE_JUSTIFICATION ||
 	gps->value_type==PANGO_TYPE_UNDERLINE ||
@@ -1201,7 +1187,11 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_uint(gv,(guint)PGTK_GETINT(sv));
       break;
     case G_TYPE_CHAR:
+#ifdef HAVE_G_VALUE_SET_SCHAR
+      g_value_set_schar(gv,(gchar)PGTK_GETINT(sv));
+#else
       g_value_set_char(gv,(gchar)PGTK_GETINT(sv));
+#endif
       break;
     case G_TYPE_UCHAR:
       g_value_set_uchar(gv,(guchar)PGTK_GETINT(sv));
@@ -1256,7 +1246,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
     case G_TYPE_POINTER:
       if (TYPEOF(*sv) == PIKE_T_OBJECT) {
 	g_value_set_pointer(gv,sv->u.object);
- 	add_ref(sv->u.object); 
+ 	add_ref(sv->u.object);
       } else
 	g_value_set_pointer(gv,NULL);
       break;
@@ -1275,7 +1265,7 @@ int pgtk2_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
   push_pgdk2object(a,pgtk2_tree_iter_program,0);
   push_pgdk2object(b,pgtk2_tree_iter_program,0);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,4);
+  safe_apply_svalue(&d->cb, 4, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -1325,13 +1315,12 @@ void pgtk2_marshaller(GClosure *closure,
 		      gpointer marshal_data) {
   typedef void (*pgtk2_marshal_func)(gpointer data1,
 				     gpointer data2,
-				     guint n_params, 
+				     guint n_params,
 				     const GValue *param_values,
 				     GValue *return_value);
-  register pgtk2_marshal_func callback;
-  register GCClosure *cc=(GCClosure *)closure;
-  register gpointer data1,data2;
-
+  pgtk2_marshal_func callback;
+  GCClosure *cc=(GCClosure *)closure;
+  gpointer data1,data2;
 
   if (G_CCLOSURE_SWAP_DATA(closure)) {
     data1=closure->data;
@@ -1352,7 +1341,7 @@ int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
   push_gobject(model);
   push_gobjectclass(iter,pgtk2_tree_iter_program);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,3);
+  safe_apply_svalue(&d->cb, 3, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -1368,7 +1357,7 @@ int pgtk2_entry_completion_match_func( GtkEntryCompletion *x,
   push_gobject(x);
   pgtk2_push_gchar( key );
   push_gobjectclass(iter,pgtk2_tree_iter_program);
-  apply_svalue( &d->cb, 3 );
+  safe_apply_svalue( &d->cb, 3, 1 );
   res = Pike_sp[-1].u.integer;
   pop_stack();
   return res;

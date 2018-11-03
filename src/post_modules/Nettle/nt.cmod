@@ -1,15 +1,16 @@
-/* -*- c -*- */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-#include "global.h"
+#include "module.h"
 
 #ifdef __NT__
 
 #include "interpret.h"
-#include "svalue.h"
-#include "object.h"
 #include "module_support.h"
 #include "pike_macros.h"
-#include "stralloc.h"
 
 #include "nettle.h"
 
@@ -83,7 +84,6 @@ PIKECLASS CryptContext
 	break;
       }
     }
-    pop_n_elems(args);
   }
 
   /*! @decl string(0..255) read(int size, string(0..255)|void init)
@@ -103,7 +103,7 @@ PIKECLASS CryptContext
     }
     res = begin_shared_string(size);
     if(init && size>0)
-      MEMCPY(res->str, init->str, MINIMUM(init->len,size));
+      memcpy(res->str, init->str, MINIMUM(init->len,size));
     if(CryptGenRandom(THIS->handle, size, (BYTE*)res->str)) {
       pop_n_elems(args);
       push_string(end_shared_string(res));
@@ -115,10 +115,13 @@ PIKECLASS CryptContext
     }
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->handle = 0;
   }
+#endif
+
   EXIT
     gc_trivial;
   {
@@ -138,7 +141,7 @@ PIKECLASS CryptContext
 /*! @endmodule
  */
 
-void nt_init()
+void nt_init(void)
 {
   INIT;
 
@@ -166,7 +169,7 @@ void nt_init()
 
 }
 
-void nt_exit()
+void nt_exit(void)
 {
   EXIT;
 }

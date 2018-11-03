@@ -9,13 +9,10 @@
  */
 
 #define COM_DEBUG
-#define NO_PIKE_SHORTHAND
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include "global.h"
+
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -25,6 +22,7 @@
 #include "pike_error.h"
 #include "module_support.h"
 #include "pike_memory.h"
+#include "pike_types.h"
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
@@ -131,16 +129,15 @@ static void com_throw_error(HRESULT hr)
 {
   LPVOID lpMsgBuf;
   ONERROR tmp;
-  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-                FORMAT_MESSAGE_FROM_SYSTEM | 
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
-                MAKELANGID(LANG_NEUTRAL, 
+                MAKELANGID(LANG_NEUTRAL,
                            SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,
                 0, NULL);
   SET_ONERROR(tmp, LocalFree, lpMsgBuf);
   Pike_error("Com Error: %s\n", lpMsgBuf);
-  /* NOT_REACHED */
-  CALL_AND_UNSET_ONERROR(tmp);
+  UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp));
 }
 
 static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
@@ -162,7 +159,7 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
   PCHARP pchar;
 
   VariantInit(v);
-      
+
   switch(TYPEOF(*sv))
   {
     case PIKE_T_INT:
@@ -247,7 +244,7 @@ static void create_variant_arg(int args, DISPPARAMS **dpar)
     for (i=0; i<args; i++)
       set_variant_arg(&varg[args-i-1], &Pike_sp[i-args]);
   }
-  
+
   *dpar = malloc(sizeof(DISPPARAMS));
   (*dpar)->cNamedArgs = 0;
   (*dpar)->rgdispidNamedArgs = NULL;
@@ -314,14 +311,12 @@ static void low_push_safearray(SAFEARRAY *psa, UINT dims,
 
   SafeArrayLock(psa);
   SafeArrayGetVartype(psa, &vtype);
-  
+
   if (vtype != VT_VARIANT)
   {
     /* TODO: Handle more array types */
     Pike_error("Unknown vartype: %d\n", vtype);
-    /* Not reached! */
-    push_undefined();
-    return;
+    UNREACHABLE(return);
   }
 
   SafeArrayGetLBound(psa, curdim, &lbound);
@@ -381,7 +376,7 @@ static void push_varg(VARIANT *varg)
     push_safearray(varg->parray);
     return;
   }
-  
+
   VariantInit(&cv);
   switch (varg->vt & VT_TYPEMASK)
   {
@@ -586,11 +581,7 @@ static void cval_push_result(INT32 args, int flags)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
-    /* NOT reached! */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -626,21 +617,7 @@ static void exit_cval_struct(struct object *o)
   }
 }
 
-/*   pike_add_function("create", f_cval_create, "function(void:void)", 0); */
-/*
-static void f_cval_create(INT32 args)
-{
-}
-*/
-
-/*   pike_add_function("destroy", f_cval_destroy, "function(void:void)", 0); */
-/*
-static void f_cval_destroy(INT32 args)
-{
-}
-*/
-
-/*   pike_add_function("_value", f_cval_value, "function(:mixed)", 0); */
+/*   ADD_FUNCTION("_value", f_cval_value, tFunc(tVoid,tMix), 0); */
 static void f_cval__value(INT32 args)
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
@@ -694,7 +671,7 @@ ROPERATOR(mod)
 #undef ROPERATOR
 
 
-/*   pike_add_function("__hash", f_cval___hash, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("__hash", f_cval___hash, tFunc(tMix,tMix), 0); */
 static void f_cval___hash(INT32 args)
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
@@ -703,7 +680,7 @@ static void f_cval___hash(INT32 args)
   f_hash(args);
 }
 
-/*   pike_add_function("cast", f_cval_cast, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("cast", f_cval_cast, tFunc(tMix,tMix), 0); */
 static void f_cval_cast(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -713,32 +690,31 @@ static void f_cval_cast(INT32 args)
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to cast().\n");
 
-  if (!strcmp(Pike_sp[-args].u.string->str, "object")) {
+  if( Pike_sp[-args].u.string == literal_string_string )
+  {
     pop_n_elems(args);
-    push_object(this_object());
+    cval_push_result(0, DISPATCH_PROPERTYGET);
   }
-
-  
-/*   if (strcmp(Pike_sp[-args].u.string->str, "string")) */
-/*     Pike_error("cast() to other type than string.\n"); */
-
-  pop_n_elems(args);
-  cval_push_result(0, DISPATCH_PROPERTYGET);
+  else
+  {
+    pop_n_elems(args);
+    push_undefined();
+  }
 }
 
-/*   pike_add_function("`[]", f_cval_ind, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`[]", f_cval_ind, tFunc(tMix,tMix), 0); */
 /* static void f_cval_ind(INT32 args) */
 /* { */
 /*   f_index(args); */
 /* } */
 
-/*   pike_add_function("`[]=", f_cval_indset, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`[]=", f_cval_indset, tFunc(tMix,tMix), 0); */
 /* static void f_cval_indset(INT32 args) */
 /* { */
 /*   f_index_assign(args); */
 /* } */
 
-/*   pike_add_function("`->", f_cval_aind, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`->", f_cval_aind, tFunc(tMix,tMix), 0); */
 static void f_cval_arrow(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -766,7 +742,7 @@ static void f_cval_arrow(INT32 args)
   f_arrow(2);
 }
 
-/*   pike_add_function("`->=", f_cval_aindset, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`->=", f_cval_aindset, tFunc(tMix,tMix), 0); */
 static void f_cval_arrow_assign(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -785,38 +761,38 @@ static void f_cval_arrow_assign(INT32 args)
   f_arrow_assign(3);
 }
 
-/*   pike_add_function("_sizeof", f_cval__sizeof, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_sizeof", f_cval__sizeof, tFunc(tMix,tMix), 0); */
 /* static void f_cval__sizeof(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("_indices", f_cval__indices, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_indices", f_cval__indices, tFunc(tMix,tMix), 0); */
 /* static void f_cval__indices(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("_values", f_cval__values, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_values", f_cval__values, tFunc(tMix,tMix), 0); */
 /* static void f_cval__values(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("`()", f_cval_func, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`()", f_cval_func, tFunc(tMix,tMix), 0); */
 static void f_cval_func(INT32 args)
 {
   cval_push_result(args, DISPATCH_METHOD);
 }
 
-/*   pike_add_function("`+=", f_cval_inc, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("`+=", f_cval_inc, tFunc(tMix,tMix), 0); */
 /* static void f_cval_inc(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("_is_type", f_cval__is_type, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_is_type", f_cval__is_type, tFunc(tMix,tMix), 0); */
 /* static void f_cval__is_type(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("_sprintf", f_cval__sprintf, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_sprintf", f_cval__sprintf, tFunc(tMix,tMix), 0); */
 static void f_cval__sprintf(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -827,23 +803,23 @@ static void f_cval__sprintf(INT32 args)
 /*   struct pike_string *s = 0; */
   INT_TYPE flag_left, method;
   struct string_builder s;
-  
-/*   get_all_args("_sprintf",args,"%i",&x); */
+
+/*   get_all_args(NULL,args,"%i",&x); */
   if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cval->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cval->_sprintf().\n");
-  
+
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("precision");
+  push_static_text("precision");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"precision\" argument to Com->_sprintf() is not an integer.\n");
   precision_undecided = (SUBTYPEOF(Pike_sp[-1]) != NUMBER_NUMBER);
   precision = (--Pike_sp)->u.integer;
-  
+
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("width");
+  push_static_text("width");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"width\" argument to Com->_sprintf() is not an integer.\n");
@@ -851,7 +827,7 @@ static void f_cval__sprintf(INT32 args)
   width = (--Pike_sp)->u.integer;
 
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("flag_left");
+  push_static_text("flag_left");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"flag_left\" argument to Com->_sprintf() is not an integer.\n");
@@ -889,7 +865,7 @@ static void f_cval__sprintf(INT32 args)
         p += sprintf(p, ".%d", precision);
       p += sprintf(p, "%c", method);
       push_text(buf);
-        
+
       cval_push_result(0, DISPATCH_PROPERTYGET);
       f_sprintf(2);
       return;
@@ -899,15 +875,15 @@ static void f_cval__sprintf(INT32 args)
       push_int(0);
       return;
   }
-  
+
 }
 
-/*   pike_add_function("_equal", f_cval__equal, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_equal", f_cval__equal, tFunc(tMix,tMix), 0); */
 /* static void f_cval__equal(INT32 args) */
 /* { */
 /* } */
 
-/*   pike_add_function("_m_delete", f_cval__m_delete, "function(mixed:mixed)", 0); */
+/*   ADD_FUNCTION("_m_delete", f_cval__m_delete, tFunc(tMix,tMix), 0); */
 /* static void f_cval__m_delete(INT32 args) */
 /* { */
 /* } */
@@ -928,11 +904,11 @@ static void f_cobj_create(INT32 args)
 
   if (args > 0)
   {
-    get_all_args("Com.obj->create()", args, "%W", &progID);
+    get_all_args(NULL, args, "%W", &progID);
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
-    
+
     hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
     if (!SUCCEEDED(hr))
     {
@@ -940,7 +916,7 @@ static void f_cobj_create(INT32 args)
       destruct(Pike_fp->current_object);
       return;
     }
-    
+
     hr = CoCreateInstance(&clsid, NULL, CLSCTX_SERVER,
                           &IID_IDispatch, (void**)&cobj->pIDispatch);
     if (!SUCCEEDED(hr))
@@ -953,7 +929,7 @@ static void f_cobj_create(INT32 args)
 
   cobj->method_map = allocate_mapping(10);
   mapping_set_flags(cobj->method_map, MAPPING_WEAK);
-  
+
   pop_n_elems(args);
   push_int(0);
 
@@ -994,7 +970,7 @@ static void f_cobj_getprop(INT32 args)
   struct pike_string *prop;
   PCHARP propU;
 
-  get_all_args("Com.obj->get_prop()", args, "%W", &prop);
+  get_all_args(NULL, args, "%W", &prop);
   propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
   pike_string_cpy(propU, prop);
   SET_INDEX_PCHARP(propU, prop->len, 0);
@@ -1009,7 +985,7 @@ static void f_cobj_getprop(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
+
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1056,11 +1032,7 @@ static void f_cobj_setprop(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
-    /* Not reached */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -1104,11 +1076,7 @@ static void f_cobj_call_method(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-
-    /* Not reached */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -1143,7 +1111,7 @@ static void f_cobj_arrow(INT32 args)
     struct pike_string *method;
     OLECHAR method2[MAX_PATH+1];
     PCHARP  tmp;
-    
+
     method = Pike_sp[-args].u.string;
 
     if (method->len > MAX_PATH)
@@ -1197,7 +1165,7 @@ static void f_cobj__sprintf(INT32 args)
     Pike_error("Bad argument 1 for Com.cobj->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cobj->_sprintf().\n");
-  
+
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
@@ -1205,13 +1173,13 @@ static void f_cobj__sprintf(INT32 args)
 	struct string_builder s;
 	init_string_builder(&s, 0);
 	string_builder_sprintf(&s, "Com.cobj(%llx)",
-			       (LONGEST)(ptrdiff_t)cobj->pIDispatch);
+                               (INT64)(ptrdiff_t)cobj->pIDispatch);
 	push_string(finish_string_builder(&s));
 	stack_pop_n_elems_keep_top(args);
 	return;
       }
   }
-  
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -1224,13 +1192,13 @@ static void f_cobj__indices(INT32 args)
   TYPEATTR * pTypeAttr;
   int count = 0;
   HRESULT hr;
-  
+
   if (args != 0 )
     Pike_error("Bad arguments for Com.cobj->_indices().\n");
-  
+
   hr = cobj->pIDispatch->lpVtbl->GetTypeInfo(cobj->pIDispatch, 0,
                                              GetUserDefaultLCID(), &ptinfo);
-  
+
   if (FAILED(hr))
   {
     f_aggregate(0);
@@ -1274,7 +1242,7 @@ static void f_cobj__indices(INT32 args)
       }
       ptinforef->lpVtbl->Release(ptinforef);
     }
-    
+
     ptinfo->lpVtbl->ReleaseTypeAttr(ptinfo, pTypeAttr);
   }
 
@@ -1365,13 +1333,13 @@ static void exit_com_struct(struct object *o)
 /*     0  /\* Zero named arguments *\/ */
 /*   }; */
 /*   VARIANT varResult; */
-  
+
 /*   hr = CLSIDFromProgID(progid, &clsid); */
 /*   hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER, */
 /*                         &IID_IDispatch, (void**)&pIDispatch); */
 /*   pIDispatch->lpVtbl->GetIDsOfNames(pIDispatch, &IID_NULL, &name, 1, */
 /*                                     GetUserDefaultLCID(), &dispid); */
-  
+
 /*   hr = pIDispatch->lpVtbl->Invoke(pIDispatch, */
 /*                                   dispid, */
 /*                                   &IID_NULL, */
@@ -1412,23 +1380,22 @@ static void f_create_object(INT32 args)
   PCHARP progID2;
   IDispatch *pDispatch;
 
-  get_all_args("Com->create_object()", args, "%W", &progID);
-  //check_all_args("create_object", args, BIT_STRING, 0);
+  get_all_args(NULL, args, "%W", &progID);
 
   progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
   pike_string_cpy(progID2, progID);
   SET_INDEX_PCHARP(progID2, progID->len, 0);
-  
+
   hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
   free(progID2.ptr);
-  
+
   if (FAILED(hr))
   {
     pop_n_elems(args);
     push_int(0);
     return;
   }
-  
+
   hr = CoCreateInstance(&clsid, NULL, CLSCTX_SERVER,
                         &IID_IDispatch, (void**)&pDispatch);
   if (FAILED(hr))
@@ -1442,7 +1409,7 @@ static void f_create_object(INT32 args)
   if (oo->prog!=NULL)
   {
     struct cobj_storage *co;
-    
+
     co = (struct cobj_storage *)(oo->storage);
     co->pIDispatch = pDispatch;
     push_object(oo);
@@ -1496,10 +1463,10 @@ static void f_get_object(INT32 args)
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
-    
+
     hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
     free(progID2.ptr);
-    
+
     if (FAILED(hr))
     {
       pop_n_elems(args);
@@ -1575,7 +1542,7 @@ static void f_get_object(INT32 args)
           push_int(0);
           return;
         }
-        
+
         if (FAILED(hr = pPF->lpVtbl->Load(pPF, filename2, 0)) ||
             FAILED(hr = pPF->lpVtbl->QueryInterface(pPF, &IID_IDispatch,
                                                     (void **)&pDispatch)) )
@@ -1585,7 +1552,7 @@ static void f_get_object(INT32 args)
           push_int(0);
           return;
         }
-        
+
         pPF->lpVtbl->Release(pPF);
       }
       break;
@@ -1600,7 +1567,7 @@ static void f_get_object(INT32 args)
   if (oo->prog!=NULL)
   {
     struct cobj_storage *co;
-    
+
     co = (struct cobj_storage *)(oo->storage);
     co->pIDispatch = pDispatch;
     push_object(oo);
@@ -1624,7 +1591,7 @@ static void f_get_object(INT32 args)
 char * GetTypeKindName( TYPEKIND typekind )
 {
   char *s = "<unknown>";
-  
+
   switch( typekind )
   {
     CASE_STRING( TKIND_ENUM );
@@ -1636,14 +1603,14 @@ char * GetTypeKindName( TYPEKIND typekind )
     CASE_STRING( TKIND_ALIAS );
     CASE_STRING( TKIND_UNION );
   }
-  
+
   return s;
 }
 
 char * GetInvokeKindName( INVOKEKIND invkind )
 {
   char *s = "<unknown>";
-  
+
   switch( invkind )
   {
     CASE_STRING( INVOKE_FUNC );
@@ -1651,7 +1618,7 @@ char * GetInvokeKindName( INVOKEKIND invkind )
     CASE_STRING( INVOKE_PROPERTYPUT );
     CASE_STRING( INVOKE_PROPERTYPUTREF );
   }
-  
+
   return s;
 }
 
@@ -1661,45 +1628,45 @@ void EnumTypeInfoMembers( LPTYPEINFO pITypeInfo, LPTYPEATTR pTypeAttr  )
   if ( pTypeAttr->cFuncs )
   {
     printf( "  Functions:\n" );
-    
+
     for ( i = 0; i < pTypeAttr->cFuncs; i++ )
     {
       FUNCDESC * pFuncDesc;
       BSTR pszFuncName;
-      
+
       pITypeInfo->lpVtbl->GetFuncDesc( pITypeInfo, i, &pFuncDesc );
-      
+
       pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, pFuncDesc->memid, &pszFuncName,0,0,0);
-      
+
       printf( "    %-32ls", pszFuncName );
-      
+
       printf( " (%s)\n", GetInvokeKindName(pFuncDesc->invkind) );
-      
+
       pITypeInfo->lpVtbl->ReleaseFuncDesc( pITypeInfo, pFuncDesc );
       SysFreeString( pszFuncName );
     }
   }
-  
+
   if ( pTypeAttr->cVars )
   {
     printf( "  Variables:\n" );
-    
+
     for ( i = 0; i < pTypeAttr->cVars; i++ )
     {
       VARDESC * pVarDesc;
       BSTR pszVarName;
-      
+
       pITypeInfo->lpVtbl->GetVarDesc( pITypeInfo, i, &pVarDesc );
-      
+
       pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, pVarDesc->memid, &pszVarName,0,0,0);
-      
+
       printf( "    %ls\n", pszVarName );
-      
+
       pITypeInfo->lpVtbl->ReleaseVarDesc( pITypeInfo, pVarDesc );
       SysFreeString( pszVarName );
     }
   }
-  
+
 }
 
 void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
@@ -1711,23 +1678,23 @@ void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
   hr = pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, MEMBERID_NIL, &pszTypeInfoName, 0, 0, 0);
   if ( S_OK != hr )
     return;
-  
+
   hr = pITypeInfo->lpVtbl->GetTypeAttr( pITypeInfo, &pTypeAttr );
   if ( S_OK != hr )
   {
     SysFreeString( pszTypeInfoName );
     return;
   }
-  
+
   printf( "%ls - %s\n", pszTypeInfoName,
             GetTypeKindName(pTypeAttr->typekind) );
-  
+
   EnumTypeInfoMembers( pITypeInfo, pTypeAttr );
-  
+
   printf( "\n" );
-  
+
   SysFreeString( pszTypeInfoName );
-  
+
   pITypeInfo->lpVtbl->ReleaseTypeAttr( pITypeInfo, pTypeAttr );
 }
 
@@ -1742,7 +1709,7 @@ static void f_get_typeinfo(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  struct cobj_storage *co;  
+  struct cobj_storage *co;
   ITypeInfo *ptinfo;
   TYPEATTR *ptattr;
 
@@ -1751,7 +1718,7 @@ static void f_get_typeinfo(INT32 args)
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       Pike_sp[-args].u.object->prog != cobj_program)
     Pike_error("Bad argument 1 for Com->GetTypeInfo().\n");
- 
+
   co = (struct cobj_storage *)Pike_sp[-args].u.object->storage;
   co->pIDispatch->lpVtbl->GetTypeInfo(co->pIDispatch, 0,
                                       GetUserDefaultLCID(), &ptinfo);
@@ -1781,7 +1748,7 @@ static void f_get_constants(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  struct cobj_storage *co;  
+  struct cobj_storage *co;
   ITypeInfo *ptinfo;
   ITypeLib *ptlib;
   UINT tiCount;
@@ -1812,8 +1779,7 @@ static void f_get_constants(INT32 args)
     if (FAILED(hr))
     {
       com_throw_error(hr);
-      /* Not reached */
-      return;
+      UNREACHABLE(return);
     }
   }
   else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT &&
@@ -1840,16 +1806,16 @@ static void f_get_constants(INT32 args)
   }
   else
     Pike_error("Bad argument 1 for Com->GetConstants().\n");
- 
+
 
   tiCount = ptlib->lpVtbl->GetTypeInfoCount(ptlib);
 
   for (i=0; i<tiCount; i++)
   {
     ITypeInfo *pITypeInfo;
-    
+
     hr = ptlib->lpVtbl->GetTypeInfo(ptlib, i, &pITypeInfo);
-    
+
     if ( S_OK == hr )
     {
       //DisplayTypeInfo( pITypeInfo );
@@ -1862,14 +1828,14 @@ static void f_get_constants(INT32 args)
           count += push_typeinfo_members(pITypeInfo, pTypeAttr,
                                          TYPEINFO_VAR_CONST);
         }
-        
+
         pITypeInfo->lpVtbl->ReleaseTypeAttr(pITypeInfo, pTypeAttr);
       }
 
       pITypeInfo->lpVtbl->Release(pITypeInfo);
     }
   }
-  
+
   f_aggregate_mapping(count*2);
 
   stack_pop_n_elems_keep_top(args);
@@ -1882,20 +1848,20 @@ static void f_com__sprintf(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  
+
   if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com->_sprintf().\n");
-  
+
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
-      push_constant_text("Com()");
+      push_static_text("Com()");
       stack_pop_n_elems_keep_top(args);
       return;
   }
-  
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -1913,54 +1879,52 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct cval_storage);
-/*   pike_add_function("create", f_cval_create, "function(void:void)", 0); */
-/*   pike_add_function("destroy", f_cval_destroy, "function(void:void)", 0); */
 
-  pike_add_function("_value", f_cval__value, "function(:mixed)", 0);
+  ADD_FUNCTION("_value", f_cval__value, tFunc(tVoid,tMix), 0);
 
-  pike_add_function("`+", f_cval_add, "function(mixed:mixed)", 0);
-  pike_add_function("`-", f_cval_minus, "function(mixed:mixed)", 0);
-  pike_add_function("`&", f_cval_and, "function(mixed:mixed)", 0);
-  pike_add_function("`|", f_cval_or, "function(mixed:mixed)", 0);
-  pike_add_function("`^", f_cval_xor, "function(mixed:mixed)", 0);
-  pike_add_function("`<<", f_cval_lsh, "function(mixed:mixed)", 0);
-  pike_add_function("`>>", f_cval_rsh, "function(mixed:mixed)", 0);
-  pike_add_function("`*", f_cval_multiply, "function(mixed:mixed)", 0);
-  pike_add_function("`/", f_cval_divide, "function(mixed:mixed)", 0);
-  pike_add_function("`%", f_cval_mod, "function(mixed:mixed)", 0);
-  pike_add_function("`~", f_cval_compl, "function(:mixed)", 0);
-  pike_add_function("`==", f_cval_eq, "function(mixed:mixed)", 0);
-  pike_add_function("`<", f_cval_lt, "function(mixed:mixed)", 0);
-  pike_add_function("`>", f_cval_gt, "function(mixed:mixed)", 0);
+  ADD_FUNCTION("`+", f_cval_add, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`-", f_cval_minus, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`&", f_cval_and, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`|", f_cval_or, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`^", f_cval_xor, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`<<", f_cval_lsh, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`>>", f_cval_rsh, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`*", f_cval_multiply, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`/", f_cval_divide, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`%", f_cval_mod, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`~", f_cval_compl, tFunc(tVoid,tMix), 0);
+  ADD_FUNCTION("`==", f_cval_eq, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`<", f_cval_lt, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`>", f_cval_gt, tFunc(tMix,tMix), 0);
 
-  pike_add_function("__hash", f_cval___hash, "function(:mixed)", 0);
-  pike_add_function("cast", f_cval_cast, "function(mixed:mixed)", 0);
-  pike_add_function("`!", f_cval_not, "function(:mixed)", 0);
-/*   pike_add_function("`[]", f_cval_ind, "function(mixed:mixed)", 0); */
-/*   pike_add_function("`[]=", f_cval_indset, "function(mixed:mixed)", 0); */
-  pike_add_function("`[]", f_cval_arrow, "function(mixed:mixed)", 0);
-  pike_add_function("`[]=", f_cval_arrow_assign, "function(mixed:mixed)", 0);
-  pike_add_function("`->", f_cval_arrow, "function(mixed:mixed)", 0);
-  pike_add_function("`->=", f_cval_arrow_assign, "function(mixed:mixed)", 0);
-/*   pike_add_function("_sizeof", f_cval__sizeof, "function(mixed:mixed)", 0); */
-/*   pike_add_function("_indices", f_cval__indices, "function(mixed:mixed)", 0); */
-/*   pike_add_function("_values", f_cval__values, "function(mixed:mixed)", 0); */
-  pike_add_function("`()", f_cval_func, "function(mixed:mixed)", 0);
-  pike_add_function("``+", f_cval_radd, "function(mixed:mixed)", 0);
-  pike_add_function("``-", f_cval_rminus, "function(mixed:mixed)", 0);
-  pike_add_function("``&", f_cval_rand, "function(mixed:mixed)", 0);
-  pike_add_function("``|", f_cval_ror, "function(mixed:mixed)", 0);
-  pike_add_function("``^", f_cval_rxor, "function(mixed:mixed)", 0);
-  pike_add_function("``<<", f_cval_rlsh, "function(mixed:mixed)", 0);
-  pike_add_function("``>>", f_cval_rrsh, "function(mixed:mixed)", 0);
-  pike_add_function("``*", f_cval_rmultiply, "function(mixed:mixed)", 0);
-  pike_add_function("``/", f_cval_rdivide, "function(mixed:mixed)", 0);
-  pike_add_function("``%", f_cval_rmod, "function(mixed:mixed)", 0);
-/*   pike_add_function("`+=", f_cval_inc, "function(mixed:mixed)", 0); */
-/*   pike_add_function("_is_type", f_cval__is_type, "function(mixed:mixed)", 0); */
-  pike_add_function("_sprintf", f_cval__sprintf, "function(mixed:mixed)", 0);
-/*   pike_add_function("_equal", f_cval__equal, "function(mixed:mixed)", 0); */
-/*   pike_add_function("_m_delete", f_cval__m_delete, "function(mixed:mixed)", 0); */
+  ADD_FUNCTION("__hash", f_cval___hash, tFunc(tVoid,tMix), 0);
+  ADD_FUNCTION("cast", f_cval_cast, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`!", f_cval_not, tFunc(tVoid,tMix), 0);
+/*   ADD_FUNCTION("`[]", f_cval_ind, tFunc(tMix,tMix), 0); */
+/*   ADD_FUNCTION("`[]=", f_cval_indset, tFunc(tMix,tMix), 0); */
+  ADD_FUNCTION("`[]", f_cval_arrow, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`[]=", f_cval_arrow_assign, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`->", f_cval_arrow, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`->=", f_cval_arrow_assign, tFunc(tMix,tMix), 0);
+/*   ADD_FUNCTION("_sizeof", f_cval__sizeof, tFunc(tMix,tMix), 0); */
+/*   ADD_FUNCTION("_indices", f_cval__indices, tFunc(tMix,tMix), 0); */
+/*   ADD_FUNCTION("_values", f_cval__values, tFunc(tMix,tMix), 0); */
+  ADD_FUNCTION("`()", f_cval_func, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``+", f_cval_radd, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``-", f_cval_rminus, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``&", f_cval_rand, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``|", f_cval_ror, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``^", f_cval_rxor, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``<<", f_cval_rlsh, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``>>", f_cval_rrsh, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``*", f_cval_rmultiply, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``/", f_cval_rdivide, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("``%", f_cval_rmod, tFunc(tMix,tMix), 0);
+/*   ADD_FUNCTION("`+=", f_cval_inc, tFunc(tMix,tMix), 0); */
+/*   ADD_FUNCTION("_is_type", f_cval__is_type, tFunc(tMix,tMix), 0); */
+  ADD_FUNCTION("_sprintf", f_cval__sprintf, tFunc(tMix,tMix), 0);
+/*   ADD_FUNCTION("_equal", f_cval__equal, tFunc(tMix,tMix), 0); */
+/*   ADD_FUNCTION("_m_delete", f_cval__m_delete, tFunc(tMix,tMix), 0); */
 
   set_init_callback(init_cval_struct);
   set_exit_callback(exit_cval_struct);
@@ -1969,18 +1933,15 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct cobj_storage);
-  pike_add_function("create", f_cobj_create, "function(string:void)", 0);
-  pike_add_function("get_prop", f_cobj_getprop, "function(string:mixed)", 0);
-  pike_add_function("set_prop", f_cobj_setprop,
-                    "function(string,mixed:mixed)", 0);
-  pike_add_function("call_method", f_cobj_call_method,
-                    "function(string:mixed)", 0);
-  pike_add_function("`->", f_cobj_arrow, "function(string:mixed)", 0);
-  pike_add_function("`->=", f_cobj_arrow_assign,
-                    "function(string,mixed:mixed)", 0);
-  pike_add_function("_sprintf", f_cobj__sprintf, "function(mixed:mixed)", 0);
-  pike_add_function("_indices", f_cobj__indices, "function(:mixed)", 0);
-  
+  ADD_FUNCTION("create", f_cobj_create, tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("get_prop", f_cobj_getprop, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("set_prop", f_cobj_setprop, tFunc(tStr tMix,tMix), 0);
+  ADD_FUNCTION("call_method", f_cobj_call_method, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("`->", f_cobj_arrow, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("`->=", f_cobj_arrow_assign, tFunc(tStr tMix,tMix), 0);
+  ADD_FUNCTION("_sprintf", f_cobj__sprintf, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("_indices", f_cobj__indices, tFunc(tVoid,tMix), 0);
+
   set_init_callback(init_cobj_struct);
   set_exit_callback(exit_cobj_struct);
   cobj_program = end_program();
@@ -1990,21 +1951,19 @@ PIKE_MODULE_INIT
 #ifdef USE_COM_PROG
   start_new_program();
   ADD_STORAGE(struct com_storage);
-  pike_add_function("create", f_create, "function(string|void:void)", 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), 0);
 #endif /* USE_COM_PROG */
 
-/*   pike_add_function("get_version", f_get_version, "function(:int)", 0); */
-/*   pike_add_function("get_nt_systeminfo", f_get_nt_systeminfo, */
-/*                     "function(:string|array|mapping)", 0); */
-  pike_add_function("CreateObject", f_create_object,
-                    "function(string:object)", 0);
-  pike_add_function("GetObject", f_get_object,
-                    "function(string|void,string|void:object)", 0);
-  pike_add_function("GetTypeInfo", f_get_typeinfo,
-                    "function(object:mixed)", 0);
-  pike_add_function("GetConstants", f_get_constants,
-                    "function(object|string:mapping)", 0);
-  pike_add_function("_sprintf", f_com__sprintf, "function(mixed:mixed)", 0);
+/*   ADD_FUNCTION("get_version", f_get_version, tFunc(tVoid,tInt), 0); */
+/*   ADD_FUNCTION("get_nt_systeminfo", f_get_nt_systeminfo, */
+/*                     tFunc(tVoid,tOr3(tStr,tArray,tMapping), 0); */
+  ADD_FUNCTION("CreateObject", f_create_object, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("GetObject", f_get_object,
+               tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid),tObj), 0);
+  ADD_FUNCTION("GetTypeInfo", f_get_typeinfo, tFunc(tObj,tMix), 0);
+  ADD_FUNCTION("GetConstants", f_get_constants,
+               tFunc(tOr(tObj,tStr),tMapping), 0);
+  ADD_FUNCTION("_sprintf", f_com__sprintf, tFunc(tMix,tMix), 0);
 
 #ifdef USE_COM_PROG
   set_init_callback(init_com_struct);
@@ -2042,5 +2001,3 @@ PIKE_MODULE_EXIT
   CoUninitialize();
 #endif /* HAVE_COM */
 }
-
-

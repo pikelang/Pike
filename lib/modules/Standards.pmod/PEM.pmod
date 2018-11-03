@@ -1,15 +1,15 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-//! Support for parsing PEM-style messages, defined in RFC1421.
-//! Encapsulation defined in RFC934.
+//! Support for parsing PEM-style messages, defined in @rfc{1421@}.
+//! Encapsulation defined in @rfc{934@}.
 
 //! Key derivation function used in PEM.
 //!
 //! @fixme
 //!   Derived from OpenSSL. Is there any proper specification?
 //!
-//!   It seems to be related to PBKDF1 from RFC2898.
+//!   It seems to be related to PBKDF1 from @rfc{2898@}.
 string(8bit) derive_key(string(8bit) password, string(8bit) salt, int bytes)
 {
   string(8bit) out = "";
@@ -43,13 +43,13 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   if (!dek_info) return body;
   array(string) d = dek_info/",";
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
-  string method = lower_case(String.trim_all_whites(d[0]));
-  object cipher = ([
-    "des-cbc": Crypto.DES,
-    "des-ede3-cbc": Crypto.DES3,
-    "aes-128-cbc": Crypto.AES,
-    "aes-192-cbc": Crypto.AES,
-    "aes-256-cbc": Crypto.AES,
+  string method = lower_case(String.trim(d[0]));
+  Crypto.AES.CBC._Buffer cipher = ([
+    "des-cbc": Crypto.DES.CBC.Buffer,
+    "des-ede3-cbc": Crypto.DES3.CBC.Buffer,
+    "aes-128-cbc": Crypto.AES.CBC.Buffer,
+    "aes-192-cbc": Crypto.AES.CBC.Buffer,
+    "aes-256-cbc": Crypto.AES.CBC.Buffer,
   ])[method];
   if (!cipher) error("Unsupported cipher suite.\n");
   int key_size = ([
@@ -57,31 +57,52 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
     "aes-128-cbc": 16,
     "aes-256-cbc": 32,
   ])[method] || 24;
-  string(8bit) iv = String.hex2string(String.trim_all_whites(d[1]));
+  string(8bit) iv = String.hex2string(d[1]);
   key = derive_key(key, iv[..7], key_size);
-  Crypto.Buffer decoder = Crypto.Buffer(Crypto.CBC(cipher));
+  Crypto.AES.CBC.Buffer.State decoder = cipher();
   decoder->set_decrypt_key(key);
   return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
+}
+
+//! Decrypt a PEM Message.
+//!
+//! @param body
+//!   Fragment with encypted PEM body.
+//!
+//! @param password
+//!   Decryption password.
+//!
+//! @returns
+//!   Returns the decrypted body text.
+string decrypt_fragment(Message m, string(8bit) pwd)
+{
+  // FIXME: Check proc-type = "4,ENCRYPTED"?
+  string(8bit) dek = m->headers["dek-info"];
+  if(!dek) return 0;;
+  return decrypt_body(dek, m->body, pwd);
 }
 
 //! Represents a PEM-style message.
 class Message
 {
   //! Pre-encapsulation boundary string.
+  //!
+  //! Typically a string like @expr{"CERTIFICATE"@} or @expr{"PRIVATE KEY"@}.
   string pre;
 
   //! Post-encapsulation boundary string.
+  //!
+  //! Usually the same value as @[pre].
   string post;
 
-  //! Encapsulated headers. If headers occurred multiple times, they
-  //! will be concatenated to the value with a null character as
-  //! delimiter.
-  mapping(string:string) headers;
+  //! Encapsulated headers. If headers occur multiple times, they
+  //! will be concatenated separated by delimiting NUL characters.
+  mapping(string(8bit):string(8bit)) headers;
 
   //! The decode message body.
-  string body;
+  string(8bit) body;
 
-  //! Message trailer, like RFC4880 checksum.
+  //! Message trailer, like @rfc{4880@} checksum.
   string trailer;
 
   protected void create(string|array(string) data)
@@ -96,13 +117,13 @@ class Message
     else
       lines = [array(string)]data;
 
-    if( sscanf(lines[0], "-----BEGIN %s-----", pre)!=1 )
+    if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
+
     lines = lines[1..];
-    if( sscanf(lines[-1], "-----END %s-----", post)==1 )
+    if( sscanf(lines[-1], "%*[ \t]-----END %s-----", post)==2 )
     {
       lines = lines[..<1];
-      // if(pre!=post) error("Encapsulation boundary mismatch.\n");
     }
 
     if( sizeof(lines[-1]) && lines[-1][0]=='=' )
@@ -112,8 +133,8 @@ class Message
     }
 
     array res = MIME.parse_headers(lines*"\n");
-    headers = [mapping(string:string)]res[0];
-    body = MIME.decode_base64([string]res[1]);
+    headers = [mapping(string(8bit):string(8bit))]res[0];
+    body = MIME.decode_base64([string(8bit)]res[1]);
   }
 }
 
@@ -127,10 +148,9 @@ class Messages
   array(string|Message) fragments = ({});
 
   //! This is a mapping from encapsulation boundary string to Message
-  //! object. If several messages with the same boundary string are
-  //! decoded, only the latest will be in this mapping. All message
-  //! objects will be listed, in order, in @[fragments].
-  mapping(string:Message) parts = ([]);
+  //! objects. All message objects and surrounding text will be
+  //! listed, in order, in @[fragments].
+  mapping(string:array(Message)) parts = ([]);
 
   //! A Messages object is created with the file or stream data.
   protected void create(string data)
@@ -160,7 +180,7 @@ class Messages
       if(objectp(part))
       {
         Message msg = [object(Message)]part;
-        parts[msg->pre]=msg;
+        parts[msg->pre] += ({ msg });
       }
   }
 
@@ -169,6 +189,71 @@ class Messages
     if( !sizeof(lines) || !has_prefix(lines[0], "-----BEGIN ") )
       return ({ lines*"\n" });
     return ({ Message(lines) });
+  }
+
+  //! Returns an array of all fragments with any of the given
+  //! @[labels] in the boundy preamble.
+  array(Message) get_fragments(multiset labels)
+  {
+    array(Message) ret = ({});
+    foreach(fragments, string|Message m)
+    {
+      if(objectp(m) && labels[m->pre])
+        ret += ({ m });
+    }
+    return ret;
+  }
+
+  //! Returns an array of the string bodies of all fragments with any
+  //! of the given @[labels] in the boundy preamble.
+  array(string) get_fragment_bodies(multiset labels)
+  {
+    return get_fragments(labels)->body;
+  }
+
+  //! Returns an array of all the bodies of @expr{"CERTIFICATE"@} and
+  //! @expr{"X509 CERTIFICATE"@} fragments.
+  array(string) get_certificates()
+  {
+    // FIXME: Support "TRUSTED CERTIFICATE" that contains additional
+    // information (trusted uses, rejected uses, alias and key id).
+    return get_fragment_bodies( (< "CERTIFICATE", "X509 CERTIFICATE" >) );
+  }
+
+  //! Convenience wrapper for @[get_certificates] that returns the
+  //! first available certificate, or @expr{0@}.
+  string get_certificate()
+  {
+    return get_certificates()[?0];
+  }
+
+  protected array(Message) low_get_private_keys()
+  {
+    return get_fragments( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
+                             "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+  }
+
+  //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
+  //! @expr{"DSA PRIVATE KEY"@}, @expr{"EC PRIVATE KEY"@} and
+  //! @expr{"ANY PRIVATE KEY"@} fragments.
+  array(string) get_private_keys()
+  {
+    return low_get_private_keys()->body;
+  }
+
+  //! Convenience wrapper for @[get_private_key] that returns the
+  //! first available key, or @expr{0@}.
+  string get_private_key()
+  {
+    return get_private_keys()[?0];
+  }
+
+  //! Returns the first key, decoded by the @[pwd] password.
+  string get_encrypted_private_key(string(8bit) pwd)
+  {
+    Message m = low_get_private_keys()[?0];
+    if(!m) return 0;
+    return decrypt_fragment(m, pwd);
   }
 
   protected string _sprintf(int t)
@@ -183,7 +268,9 @@ class Messages
 string simple_decode(string pem)
 {
   Messages m = Messages(pem);
-  return sizeof(m->parts)==1 && values(m->parts)[0]->body;
+  return sizeof(m->parts)==1 &&
+    sizeof(values(m->parts)[0])==1 &&
+    values(m->parts)[0][0]->body;
 }
 
 //! Creates a PEM message, wrapped to 64 character lines.
@@ -199,7 +286,7 @@ string simple_decode(string pem)
 //!   pairs.
 //!
 //! @param checksum
-//!   Optional checksum string, added as per RFC4880.
+//!   Optional checksum string, added as per @rfc{4880@}.
 string build(string tag, string data,
              void|mapping(string:string) headers,
              void|string checksum)

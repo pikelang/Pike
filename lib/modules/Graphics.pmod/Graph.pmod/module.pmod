@@ -204,12 +204,12 @@ protected inherit .create_pie;
 //!
 //!       The color of the grid. Default is black.
 //!   @endmapping
-mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data, 
+mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
 				    string type)
 {
 
   //This maps from mapping entry to defaulvalue
-  //This may be optimized, but I don't think the zeros mather. 
+  //This may be optimized, but I don't think the zeros mather.
   //I just wanted all indices to be here. But this will not be
   //Updated so it is a bad idea in the long run.
   mapping md=
@@ -219,7 +219,7 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
       "drawtype":"linear", //Will be set to "2D" for pie below
       "tone":0,
       "3Ddepth":10,
-      "data":({({1.0}), ({2.0}), 
+      "data":({({1.0}), ({2.0}),
 	       ({4.0})}), //Will be set to something else with graph
       "labels":0, //array(string) ({xquantity, yquantity, xunit, yunit})
       "xnames":0, //array(string) ?
@@ -264,7 +264,7 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
     ]);
 
   foreach( md; string i; mixed v)
-    if(zero_type(diagram_data[i]))
+    if(!has_index(diagram_data, i))
       diagram_data[i]=v;
 
   switch(type)
@@ -314,35 +314,35 @@ Image.Image pie(mapping(string:mixed) diagram_data)
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "pie");
   return create_pie(diagram_data)->image;
-} 
+}
 
 Image.Image bars(mapping(string:mixed) diagram_data)
 {
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "bars");
   return create_bars(diagram_data)->image;
-} 
+}
 
 Image.Image sumbars(mapping(string:mixed) diagram_data)
-{ 
+{
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "sumbars");
   return create_bars(diagram_data)->image;
-} 
+}
 
 Image.Image line(mapping(string:mixed) diagram_data)
 {
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "line");
   return create_bars(diagram_data)->image;
-} 
+}
 
 Image.Image norm(mapping(string:mixed) diagram_data)
 {
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "norm");
   return create_bars(diagram_data)->image;
-} 
+}
 
 Image.Image graph(mapping(string:mixed) diagram_data)
 {

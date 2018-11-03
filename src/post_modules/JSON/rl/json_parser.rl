@@ -1,4 +1,5 @@
-/* vim: syntax=ragel */
+/* vim: syntax=ragel
+ */
 
 #include "mapping.h"
 #include "operators.h"
@@ -27,9 +28,9 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
     action parse_mapping { PARSE(mapping, fpc); fexec i; }
     action parse_array { PARSE(array, fpc); fexec i; }
 
-    action push_true { PUSH_SPECIAL(true); }
-    action push_false { PUSH_SPECIAL(false); }
-    action push_null { PUSH_SPECIAL(null); }
+    action push_true { PUSH_SPECIAL(true, push_int(1)); }
+    action push_false { PUSH_SPECIAL(false, push_int(0)); }
+    action push_null { PUSH_SPECIAL(null, push_undefined()); }
 
     main := myspace* . (number_start >parse_number |
 			string_start >parse_string |
@@ -42,7 +43,7 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
 }%%
 
 static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    p_wchar2 i = p;
+    ptrdiff_t i = p;
     int cs;
     int c = 0;
     %% write data;
@@ -52,6 +53,12 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
 
     if (cs >= JSON_first_final) {
 	return p;
+    }
+
+    if ( (state->flags & JSON_FIRST_VALUE) && (c==1) )
+    {
+      state->flags &= ~JSON_ERROR;
+      return p-1;
     }
 
     if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);

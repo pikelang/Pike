@@ -21,10 +21,11 @@
 #include "module_support.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "pike_security.h"
 #include "main.h"
 #include "time_stuff.h"
+
 #include <signal.h>
+#include <errno.h>
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -61,9 +62,6 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
@@ -71,10 +69,6 @@
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
-#endif
-
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
 #endif
 
 #ifdef HAVE_POLL
@@ -95,17 +89,14 @@
 # include <sys/termio.h>
 #endif
 
-#ifdef HAVE_SYS_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
 # include <sys/termios.h>
 #endif
 
 #ifdef HAVE_SYS_PTRACE_H
-/* <sys/ptrace.h> on Linux/IA64 includes <asm/current.h>,
- * which contains stuff that some compilers (ecc) don't like...
- */
-#ifndef _ASM_IA64_CURRENT_H
-#define _ASM_IA64_CURRENT_H
-#endif
 #include <sys/ptrace.h>
 #endif
 
@@ -261,9 +252,9 @@
 /* #define PROC_DEBUG */
 
 #ifdef PROC_DEBUG
-#define PROC_FPRINTF(X)	fprintf X
+#define PROC_FPRINTF(...)	fprintf(stderr, __VA_ARGS__)
 #else
-#define PROC_FPRINTF(X)
+#define PROC_FPRINTF(...)
 #endif /* PROC_DEBUG */
 
 #if !defined(__NT__) && !defined(__amigaos__)
@@ -317,6 +308,7 @@
 #define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
 
 #define INIT_FIFO(pre,TYPE)
+#define REINIT_FIFO(pre,TYPE)
 
 #else /* NEED_SIGNAL_SAFE_FIFO */
 
@@ -360,12 +352,34 @@
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[0], 1);	\
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
 }while(0)
-   
+
+#define REINIT_FIFO(pre,TYPE) do {			\
+  close(PIKE_CONCAT(pre,_fd)[0]);			\
+  close(PIKE_CONCAT(pre,_fd)[1]);			\
+  INIT_FIFO(pre,TYPE);					\
+} while(0)
+
 #endif /* else NEED_SIGNAL_SAFE_FIFO */
 
 #ifndef SAFE_FIFO_DEBUG_END
 #define SAFE_FIFO_DEBUG_BEGIN() do {
 #define SAFE_FIFO_DEBUG_END()  }while(0)
+#endif
+
+
+/* There is really no need at all to optimize this for speed.
+
+   The issue is that the loops checking EINTR etc are unrolled 32
+   times or so, which is very very pointless and makes the code size
+   explode for no good reason.
+
+   An alternative solution would be helper functions for all
+   systemcalls that can be interrupted (in reality, usually none when
+   using modern OS:es and setting the signal flags correctly, but...)
+*/
+
+#ifdef __GNUC__
+#pragma GCC optimize "-Os"
 #endif
 
 extern int fd_from_object(struct object *o);
@@ -695,9 +709,8 @@ void process_done(pid_t pid, const char *from)
     default:
 #ifdef PROC_DEBUG
       dump_process_history(pid);
-      PROC_FPRINTF((stderr,
-		    "[%d] Process debug: Unknown child %ld in %s! (status=%d)\n",
-		    getpid(), (long)pid,from,process_info[pid]));
+      PROC_FPRINTF("[%d] Process debug: Unknown child %ld in %s! (status=%d)\n",
+                   getpid(), (long)pid,from,process_info[pid]);
 #endif
       break;
   }
@@ -743,8 +756,7 @@ static RETSIGTYPE receive_signal(int signum)
 /* This function is intended to work like signal(), but better :) */
 void my_signal(int sig, sigfunctype fun)
 {
-  PROC_FPRINTF((stderr, "[%d] my_signal(%d, 0x%p)\n",
-		getpid(), sig, (void *)fun));
+  PROC_FPRINTF("[%d] my_signal(%d, 0x%p)\n", getpid(), sig, (void *)fun);
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
@@ -754,7 +766,7 @@ void my_signal(int sig, sigfunctype fun)
      *   where _funcptr is a union. ie sa_handler and
      *   sa_sigaction overlap.
      */
-    MEMSET((char *)&action, 0, sizeof(action));
+    memset(&action, 0, sizeof(action));
     action.sa_handler = fun;
     sigfillset(&action.sa_mask);
     action.sa_flags = 0;
@@ -768,7 +780,7 @@ void my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGVEC
   {
     struct sigvec action;
-    MEMSET((char *)&action, 0, sizeof(action));
+    memset(&action, 0, sizeof(action));
     action.sv_handler= fun;
     action.sv_mask=-1;
 #ifdef SV_INTERRUPT
@@ -788,7 +800,6 @@ void my_signal(int sig, sigfunctype fun)
 PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if(d_flag>5) do_debug();
 #endif
 
@@ -913,17 +924,15 @@ static void f_signal(int args)
   int signum;
   sigfunctype func;
 
-  ASSERT_SECURITY_ROOT("signal");
-
-  PROC_FPRINTF((stderr, "[%d] f_signal(%d)\n", getpid(), args));
+  PROC_FPRINTF("[%d] f_signal(%d)\n", getpid(), args);
 
   check_signals(0,0,0);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signal", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("signal", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("signal", 1, "int");
 
   signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
@@ -934,7 +943,7 @@ static void f_signal(int args)
 #endif
     )
   {
-    Pike_error("Signal out of range.\n");
+    Pike_error("Signal %d out of range.\n", signum);
   }
 
   if(!signal_evaluator_callback)
@@ -957,13 +966,13 @@ static void f_signal(int args)
 	func=receive_sigchild;
 	break;
 #endif
-	
+
 #ifdef SIGPIPE
       case SIGPIPE:
 	func=(sigfunctype) SIG_IGN;
 	break;
 #endif
-	
+
       default:
 	if(default_signals[signum])
 	  func=receive_signal;
@@ -1013,10 +1022,10 @@ static void f_signum(int args)
 {
   int i;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signum", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signum", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("signum", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("signum", 1, "string");
 
   i=signum(Pike_sp[-args].u.string->str);
   pop_n_elems(args);
@@ -1034,10 +1043,10 @@ static void f_signame(int args)
 {
   char *n;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signame", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("signame", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("signame", 1, "int");
 
   n=signame(Pike_sp[-args].u.integer);
   pop_n_elems(args);
@@ -1071,7 +1080,7 @@ void forkd(int fd)
   if (fd != 3) {
     do {
       i = dup2(fd, 3);
-    } while ((i < 0) && ((errno == EINTR) || (errno == EBUSY)));
+    } while (UNLIKELY(i < 0) && UNLIKELY((errno == EINTR) || (errno == EBUSY)));
     if (i < 0) {
       write(2, "FORKD: Failed to dup fd!\n", 25);
       _exit(0);
@@ -1082,7 +1091,7 @@ void forkd(int fd)
     int j;
     do {
       j = close(i);
-    } while ((j < 0) && (errno == EINTR));
+    } while (UNLIKELY(j < 0) && UNLIKELY(errno == EINTR));
     if ((j < 0) && (errno == EBADF)) num_fail++;
   }
 
@@ -1095,7 +1104,7 @@ void forkd(int fd)
     iov.iov_len = 1;
     do {
       i = recvmsg(fd, &msg, 0);
-    } while ((i < 0) && (errno == EINTR));
+    } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
     if (!i) _exit(0);	/* Connection closed, shutdown forkd. */
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
       int ctrl_fd = NULL;
@@ -1108,7 +1117,7 @@ void forkd(int fd)
       num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
       do {
 	i = fork();
-      } while ((i < 0) && (errno == EINTR));
+      } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
       if (i < 0) {
 	/* Fork failure. */
       } else if (i) {
@@ -1119,7 +1128,7 @@ void forkd(int fd)
       }
       do {
 	i = close(ctrl_fd);
-      } while ((i < 0) && (errno == EINTR));
+      } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
     }
   }
 }
@@ -1162,12 +1171,17 @@ void forkd(int fd)
 
 #ifdef USE_SIGCHILD
 
+#ifdef SIGNAL_ONESHOT
 static RETSIGTYPE receive_sigchild(int signum)
+#else
+static RETSIGTYPE receive_sigchild(int UNUSED(signum))
+#endif
 {
   pid_t pid;
   WAITSTATUSTYPE status;
+  int masked_errno = errno;
 
-  PROC_FPRINTF((stderr, "[%d] receive_sigchild\n", getpid()));
+  PROC_FPRINTF("[%d] receive_sigchild\n", getpid());
 
 #ifdef SIGNAL_ONESHOT
   /* Reregister the signal early, so that we don't
@@ -1181,29 +1195,34 @@ static RETSIGTYPE receive_sigchild(int signum)
  try_reap_again:
   /* We carefully reap what we saw */
   pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
-  
+
   if(pid>0)
   {
     wait_data wd;
 
 #ifdef __CHECKER__
     /* Clear potential padding. */
-    MEMSET(&wd, 0, sizeof(wd));
+    memset(&wd, 0, sizeof(wd));
 #endif
 
-    PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
-		  getpid(), pid));
+    PROC_FPRINTF("[%d] receive_sigchild got pid %d\n",
+                 getpid(), pid);
 
     wd.pid=pid;
     wd.status=status;
     wait_push(wd);
     goto try_reap_again;
   }
-  PROC_FPRINTF((stderr, "[%d] receive_sigchild: No more dead children.\n",
-		getpid()));
+  PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
+               getpid());
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
+
+  /* The wait and possibly the signal stuff can obfuscate errno here,
+   * while outside of the signal handler we might be in, say, the backend,
+   * and cause a bit of trouble there. Let's leave errno as we found it. */
+  errno = masked_errno;
 }
 #endif
 
@@ -1243,7 +1262,7 @@ static void init_pid_status(struct object *UNUSED(o))
 {
   THIS->pid=-1;
 #ifdef __NT__
-  THIS->handle = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS->handle = INVALID_HANDLE_VALUE;
 #else
   THIS->sig=0;
   THIS->flags=0;
@@ -1276,7 +1295,7 @@ static void call_pid_status_callback(struct callback *cb, void *pid, void *UNUSE
   struct pid_status *p;
   remove_callback(cb);
   if (!o) return;
-  if(!(p=(struct pid_status *)get_storage(o, pid_status_program))) {
+  if(!(p=get_storage(o, pid_status_program))) {
     free_object(o);
     return;
   }
@@ -1290,8 +1309,8 @@ static void report_child(int pid,
 			 const char *from)
 {
   /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
-  PROC_FPRINTF((stderr, "[%d] report_child(%d, %d, \"%s\")\n",
-		getpid(), (int)pid, *(int *) &status, from));
+  PROC_FPRINTF("[%d] report_child(%d, %d, \"%s\")\n",
+               getpid(), (int)pid, *(int *) &status, from);
 
   if (!WIFSTOPPED(status)) {
     process_done(pid, from);
@@ -1307,10 +1326,10 @@ static void report_child(int pid,
       if(TYPEOF(*s) == T_OBJECT)
       {
 	struct object *o;
-	PROC_FPRINTF((stderr, "[%d] Found pid object for pid %d: %p\n",
-		      getpid(), (int)pid, s->u.object));
-	if((p=(struct pid_status *)get_storage((o = s->u.object),
-					       pid_status_program)))
+        PROC_FPRINTF("[%d] Found pid object for pid %d: %p\n",
+                     getpid(), (int)pid, s->u.object);
+	if((p=get_storage((o = s->u.object),
+                          pid_status_program)))
 	{
 	  if (!SAFE_IS_ZERO(&p->callback)) {
 	    /* Call the callback from a proper pike thread... */
@@ -1338,16 +1357,14 @@ static void report_child(int pid,
 #endif
 		p->sig = WTERMSIG(status);
 	      } else {
-#ifdef PIKE_DEBUG
-		fprintf(stderr, "Process %d died of strange cause 0x%08lx.\n",
-			pid, (unsigned long)status);
-#endif
-	      }
+                DWERR("Process %d died of strange cause 0x%08lx.\n",
+                      pid, (unsigned long)status);
+              }
 	      p->result=-1;
 	    }
 	    p->state = PROCESS_EXITED;
-	    PROC_FPRINTF((stderr, "[%d] Pid %d has exited\n",
-			  getpid(), (int)pid));
+            PROC_FPRINTF("[%d] Pid %d has exited\n",
+                         getpid(), (int)pid);
 	  }
 	}
       }
@@ -1370,8 +1387,8 @@ static void report_child(int pid,
        */
       map_delete(pid_mapping, &key);
     }else{
-      PROC_FPRINTF((stderr,"[%d] report_child on unknown child: %d,%d\n",
-		    getpid(),pid,status));
+      PROC_FPRINTF("[%d] report_child on unknown child: %d,%d\n",
+                   getpid(),pid,status);
     }
   }
 }
@@ -1380,26 +1397,26 @@ static void report_child(int pid,
 #ifdef USE_WAIT_THREAD
 static COND_T process_status_change;
 static COND_T start_wait_thread;
-static MUTEX_T wait_thread_mutex;
+static PIKE_MUTEX_T wait_thread_mutex;
 static int wait_thread_running = 0;
 
 static void do_da_lock(void)
 {
-  PROC_FPRINTF((stderr, "[%d] fork: getting the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: getting the lock.\n", getpid());
 
   mt_lock(&wait_thread_mutex);
 
-  PROC_FPRINTF((stderr, "[%d] fork: got the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: got the lock.\n", getpid());
 }
 
 static void do_bi_do_da_lock(void)
 {
-  PROC_FPRINTF((stderr, "[%d] wait thread: This is your wakeup call!\n",
-		getpid()));
+  PROC_FPRINTF("[%d] wait thread: This is your wakeup call!\n",
+               getpid());
 
   co_signal(&start_wait_thread);
 
-  PROC_FPRINTF((stderr, "[%d] fork: releasing the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: releasing the lock.\n", getpid());
 
   mt_unlock(&wait_thread_mutex);
 }
@@ -1411,31 +1428,30 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     perror("pthread atfork");
     exit(1);
   }
-  
+
   while(1)
   {
     WAITSTATUSTYPE status;
     int pid;
     int err;
 
-    PROC_FPRINTF((stderr, "[%d] wait_thread: getting the lock.\n", getpid()));
+    PROC_FPRINTF("[%d] wait_thread: getting the lock.\n", getpid());
 
     mt_lock(&wait_thread_mutex);
     pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
     err = errno;
-    
+
     if(pid < 0 && err == ECHILD)
     {
-      PROC_FPRINTF((stderr, "[%d] wait_thread: sleeping\n", getpid()));
+      PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
 
       co_wait(&start_wait_thread, &wait_thread_mutex);
 
-      PROC_FPRINTF((stderr, "[%d] wait_thread: waking up\n", getpid()));
+      PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
     }
 
-    PROC_FPRINTF((stderr, "[%d] wait_thread: releasing the lock.\n",
-		  getpid()));
+    PROC_FPRINTF("[%d] wait_thread: releasing the lock.\n", getpid());
 
     mt_unlock(&wait_thread_mutex);
 
@@ -1445,14 +1461,14 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       errno = 0;
       if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: pid=%d status=%d errno=%d\n",
-		    getpid(), pid, status, errno));
-    
+      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d\n",
+                   getpid(), pid, status, errno);
+
 #ifdef ENODEV
       /* FreeBSD threads are broken, and sometimes
        * signals status 0, errno ENODEV on living processes.
        */
-    } while (errno == ENODEV);
+    } while (UNLIKELY(errno == ENODEV));
 #endif
 
     if(pid>0)
@@ -1485,14 +1501,14 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 	  ) {
 #if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 
-	PROC_FPRINTF((stderr, "[%d] wait thread: Got signal %d from pid %d\n",
-		      getpid(), WSTOPSIG(status), pid));
+        PROC_FPRINTF("[%d] wait thread: Got signal %d from pid %d\n",
+                     getpid(), WSTOPSIG(status), pid);
 
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), WSTOPSIG(status));
 #else /* defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED) */
 
-	PROC_FPRINTF((stderr, "[%d] wait thread: Got L/E/F status (0x%08x) from pid %d\n",
-		      getpid(), status, pid));
+        PROC_FPRINTF("[%d] wait thread: Got L/E/F status (0x%08x) from pid %d\n",
+                     getpid(), status, pid);
 
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), 0);
 #endif /* !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED) */
@@ -1500,13 +1516,12 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       }
 #endif /* HAVE_PTRACE && (SIGPROF || _W_SLWTED || _W_SEWTED || _W_SFWTED) */
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: locking interpreter, pid=%d\n",
-		    getpid(), pid));
+      PROC_FPRINTF("[%d] wait thread: locking interpreter, pid=%d\n",
+                   getpid(), pid);
 
       low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: reporting the event!\n",
-		    getpid()));
+      PROC_FPRINTF("[%d] wait thread: reporting the event!\n", getpid());
 
       report_child(pid, status, "wait_thread");
       co_broadcast(& process_status_change);
@@ -1619,8 +1634,7 @@ static void f_pid_status_wait(INT32 args)
     int pid = THIS->pid;
     WAITSTATUSTYPE status;
 
-    PROC_FPRINTF((stderr, "[%d] wait(%d): Waiting for child...\n",
-		  getpid(), pid));
+    PROC_FPRINTF("[%d] wait(%d): Waiting for child...\n", getpid(), pid);
 
     THREADS_ALLOW();
     pid = WAITPID(pid, &status, 0|WUNTRACED);
@@ -1635,9 +1649,9 @@ static void f_pid_status_wait(INT32 args)
     {
       switch(err)
       {
-      case EINTR: 
+      case EINTR:
 	break;
-	      
+
 #if defined(_REENTRANT) || defined(USE_SIGCHILD)
       case ECHILD:
 	/* If there is a SIGCHILD handler, it might have reaped
@@ -1661,8 +1675,7 @@ static void f_pid_status_wait(INT32 args)
 	  THREADS_ALLOW();
 	  while ((!(killret = kill(pid, 0), killerr = errno, killret)) &&
 		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
-	    PROC_FPRINTF((stderr, "[%d] wait(%d): Sleeping...\n",
-			  getpid(), pid));
+            PROC_FPRINTF("[%d] wait(%d): Sleeping...\n", getpid(), pid);
 #ifdef HAVE_POLL
 	    {
 	      struct pollfd pfd[1];
@@ -1681,15 +1694,14 @@ static void f_pid_status_wait(INT32 args)
 #endif /* HAVE_POLL */
 	  }
 	  THREADS_DISALLOW();
-	  if (killret && killerr == ESRCH) { 
+	  if (killret && killerr == ESRCH) {
 	    if (alreadydied)
 	      goto lostchild;	/* But if we already looped, punt */
 	    alreadydied = 1;	/* We try looping once, to cover for races */
 	  }
 	}
 	/* The process has died. */
-	PROC_FPRINTF((stderr, "[%d] wait(%d): Process dead.\n",
-		      getpid(), pid));
+        PROC_FPRINTF("[%d] wait(%d): Process dead.\n", getpid(), pid);
 
 	if ((THIS->state == PROCESS_RUNNING) ||
 	    (!wait_for_stopped && THIS->state == PROCESS_STOPPED)) {
@@ -1697,9 +1709,9 @@ static void f_pid_status_wait(INT32 args)
 	   * Try waiting some more, and if that
 	   * doesn't work, let the main loop complain.
 	   */
-	  PROC_FPRINTF((stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"[%d] wait(%d): Sleeping some more...\n",
-			getpid(), pid, getpid(), pid));
+          PROC_FPRINTF("[%d] wait(%d): ... but not officially, yet.\n"
+                       "[%d] wait(%d): Sleeping some more...\n",
+                       getpid(), pid, getpid(), pid);
 	  THREADS_ALLOW();
 #ifdef HAVE_POLL
 	  poll(NULL, 0, 100);
@@ -1712,9 +1724,8 @@ static void f_pid_status_wait(INT32 args)
 	   * same process, or if the second sleep above wasn't enough
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
-	  PROC_FPRINTF((stderr,
-			"[%d] wait(%d): Child isn't reaped yet, looping.\n",
-			getpid(), pid));
+          PROC_FPRINTF("[%d] wait(%d): Child isn't reaped yet, looping.\n",
+                       getpid(), pid);
 	}
 	break;
 #endif /* _REENTRANT || USE_SIGCHILD */
@@ -1758,9 +1769,6 @@ lostchild:
  *!   @value 2
  *!     Exited
  *! @endint
- *!
- *! @note
- *!   Prior to Pike 7.5 the value 1 was returned for exited processes.
  */
 static void f_pid_status_status(INT32 args)
 {
@@ -1809,6 +1817,7 @@ static void f_pid_status_pid(INT32 args)
  *!   @item "highest"
  *!   @item "higher"
  *!   @item "high"
+ *!   @item "normal"
  *!   @item "low"
  *!   @item "lowest"
  *! @enddl
@@ -1817,9 +1826,8 @@ static void f_pid_status_set_priority(INT32 args)
 {
   char *to;
   int r;
-  ASSERT_SECURITY_ROOT("Process->set_priority");
 
-  get_all_args("set_priority", args, "%s", &to);
+  get_all_args(NULL, args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
   push_int(r);
@@ -1892,7 +1900,6 @@ static void exit_trace_process(struct object *UNUSED(o))
 static void f_trace_process_cont(INT32 args)
 {
   int cont_signal = 0;
-  ASSERT_SECURITY_ROOT("TraceProcess->cont");
 
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
@@ -1924,9 +1931,8 @@ static void f_trace_process_cont(INT32 args)
    * of cont(SIGKILL) unless they get some help...
    */
   if (cont_signal == SIGKILL) {
-    PROC_FPRINTF((stderr,
-		  "[%d] cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
-		  getpid(), THIS->pid));
+    PROC_FPRINTF("[%d] cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
+                 getpid(), THIS->pid);
     if (kill(THIS->pid, SIGKILL) == -1) {
       int err = errno;
       if (err != ESRCH) {
@@ -1935,8 +1941,6 @@ static void f_trace_process_cont(INT32 args)
     }
   }
 #endif /* __FreeBSD__ */
-  pop_n_elems(args);
-  push_int(0);
 }
 
 /*! @decl void exit()
@@ -1950,8 +1954,6 @@ static void f_trace_process_cont(INT32 args)
  */
 static void f_trace_process_exit(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("TraceProcess->exit");
-
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -1968,7 +1970,6 @@ static void f_trace_process_exit(INT32 args)
     Pike_error("Failed to exit process. errno:%d\n", err);
   }
   pop_n_elems(args);
-  push_int(0);  
 }
 
 #if 0	/* Disabled for now. */
@@ -1983,7 +1984,7 @@ static void f_trace_process_exit(INT32 args)
 
 /* NB: No storage needed, all state is in the parent object. */
 
-#define THIS_PROC_REG_PROC_ID	((struct pid_status *)parent_storage(1))
+#define THIS_PROC_REG_PROC_ID	((struct pid_status *)parent_storage(1, pid_status_program))
 
 /*! @decl int `[](int regno)
  *!   Get the contents of register @[regno].
@@ -1993,8 +1994,6 @@ static void f_proc_reg_index(INT32 args)
   struct pid_status *proc = THIS_PROC_REG_PROC_ID;
   INT_TYPE regno = 0;
   long val;
-
-  ASSERT_SECURITY_ROOT("Registers->`[]()");
 
   if(proc->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
@@ -2006,12 +2005,10 @@ static void f_proc_reg_index(INT32 args)
     Pike_error("Process not stopped.\n");
   }
 
-  get_all_args("`[]", args, "%i", &regno);
+  get_all_args(NULL, args, "%+", &regno);
 
-  if ((regno < 0) ||
-      (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))) {
-    SIMPLE_BAD_ARG_ERROR("`[]", 1, "register number");
-  }
+  if (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))
+    SIMPLE_ARG_TYPE_ERROR("`[]", 1, "register number");
 
   if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
 		    ((long *)(((struct user *)NULL)->regs)) + regno, 0)) == -1) {
@@ -2066,7 +2063,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
 #ifdef __ixemul__
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
-  
+
   sprintf(buf, "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
@@ -2086,7 +2083,7 @@ struct perishables
   BPTR stdout_b;
   BPTR stderr_b;
   BPTR cwd_lock;
-  dynamic_buffer cmd_buf;
+  struct byte_buffer cmd_buf;
 };
 
 static void free_perishables(struct perishables *storage)
@@ -2096,18 +2093,21 @@ static void free_perishables(struct perishables *storage)
   if(storage->stderr_b!=0) Close(storage->stderr_b);
   if(storage->cwd_lock!=0)
     UnLock(storage->cwd_lock);
-  low_free_buf(&storage->cmd_buf);
+  buffer_free(&storage->cmd_buf);
 }
 
 #else /* !__amigaos__ */
 
 #ifdef __NT__
 
+/* NB: Handles returned by this function are only safe as
+ *     long as the interpreter lock isn't released.
+ */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
 				     int for_reading)
 {
-  HANDLE ret = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  HANDLE ret = INVALID_HANDLE_VALUE;
   struct svalue *save_stack=Pike_sp;
   struct svalue *tmp;
   if((tmp=simple_mapping_string_lookup(optional, name)))
@@ -2115,52 +2115,34 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     if(TYPEOF(*tmp) == T_OBJECT)
     {
       INT32 fd=fd_from_object(tmp->u.object);
+      HANDLE h;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
 
-#if 0
-      {
-	int q;
-	for(q=0;q<MAX_OPEN_FILEDESCRIPTORS;q++)
-	{
-	  if(fd_type[q]<-1)
-	  {
-	    DWORD flags;
-	    fprintf(stderr,"%3d: %d %08x",q,fd_type[q],da_handle[q],flags);
-	    GetHandleInformation((HANDLE)da_handle[q],&flags);
-	    if(flags & HANDLE_FLAG_INHERIT)
-	      fprintf(stderr," inheritable");
-	    if(flags & HANDLE_FLAG_PROTECT_FROM_CLOSE)
-	      fprintf(stderr," non-closable");
-	    fprintf(stderr,"\n");
-	  }
-	}
-      }
-#endif
-
-
       if(!(fd_query_properties(fd, 0) & fd_INTERPROCESSABLE))
       {
 	void create_proxy_pipe(struct object *o, int for_reading);
-	
+
 	create_proxy_pipe(tmp->u.object, for_reading);
 	fd=fd_from_object(Pike_sp[-1].u.object);
-	
-	if(fd == -1)
-	  Pike_error("Proxy thread creation failed for %s.\n",name);
       }
-      
-      
+
+      if(fd_to_handle(fd, NULL, &h) < 0)
+	Pike_error("File for %s is not open.\n",name);
+
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
-			  da_handle[fd],
+			  h,
 			  GetCurrentProcess(),	/* Target process */
 			  &ret,
 			  0,			/* Access */
 			  1,
-			  DUPLICATE_SAME_ACCESS))
-	  /* This could cause handle-leaks */
-	  Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+			  DUPLICATE_SAME_ACCESS)) {
+	release_fd(fd);
+	/* This could cause handle-leaks */
+	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+      }
+      release_fd(fd);
     }
   }
   pop_n_elems(Pike_sp-save_stack);
@@ -2210,7 +2192,7 @@ static void free_perishables(struct perishables *storage)
   if(storage->env) free( storage->env );
   if(storage->argv) free( storage->argv );
 #ifdef HAVE_SETRLIMIT
-  while(storage->limits) 
+  while(storage->limits)
   {
     struct pike_limit *n = storage->limits->next;
     free( storage->limits );
@@ -2293,14 +2275,18 @@ static int set_priority( int pid, char *to )
   if(!strcmp( to, "realtime" ) ||
      !strcmp( to, "highest" ))
     prilevel = 3;
-  if(!strcmp( to, "higher" ))
+  else if(!strcmp( to, "higher" ))
     prilevel = 2;
   else if(!strcmp( to, "high" ))
     prilevel = 1;
+  else if(!strcmp( to, "normal" ))
+    prilevel = 0;
   else if(!strcmp( to, "low" ))
     prilevel = -1;
   else if(!strcmp( to, "lowest" ))
     prilevel = -2;
+  else
+      Pike_error("bad priority %s", to);
 #ifdef __NT__
   {
     HANDLE process;
@@ -2315,36 +2301,36 @@ static int set_priority( int pid, char *to )
       /* Permission denied, or no such process. */
       return 0;
     }
-    
+
     switch( prilevel )
     {
     case -1:
-#ifdef BELOW_NORMAL_PRIORITY_CLASS
+# ifdef BELOW_NORMAL_PRIORITY_CLASS
       how = BELOW_NORMAL_PRIORITY_CLASS;
       break;
-#endif
+# endif
       /* Fallthrough */
     case -2:           how = IDLE_PRIORITY_CLASS;     break;
     case 0:            how = NORMAL_PRIORITY_CLASS;   break;
     case 1:
-#ifdef ABOVE_NORMAL_PRIORITY_CLASS
+# ifdef ABOVE_NORMAL_PRIORITY_CLASS
       how = ABOVE_NORMAL_PRIORITY_CLASS;
       break;
-#endif
+# endif
       /* Fallthrough */
     case 2:            how = HIGH_PRIORITY_CLASS;     break;
     case 3:            how = REALTIME_PRIORITY_CLASS; break;
     }
-    
+
     if( SetPriorityClass( process, how ) )
       how = 1;
-    else 
+    else
       how = 0;
     CloseHandle( process );
     return how;
   }
 #else
-#ifdef HAVE___PRIOCNTL
+# ifdef HAVE___PRIOCNTL
   if(!pid) pid = getpid();
   if( prilevel > 1 )
   {
@@ -2365,8 +2351,8 @@ static int set_priority( int pid, char *to )
       long pad2[10];
     } foo;
 
-    MEMSET(&params, 0, sizeof(params));
-    MEMSET(&foo, 0, sizeof(foo));
+    memset(&params, 0, sizeof(params));
+    memset(&foo, 0, sizeof(foo));
 
     strcpy(foo.pc_clname, "RT");
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
@@ -2391,8 +2377,8 @@ static int set_priority( int pid, char *to )
       long pad2[10];
     } foo;
 
-    MEMSET(&params, 0, sizeof(params));
-    MEMSET(&foo, 0, sizeof(foo));
+    memset(&params, 0, sizeof(params));
+    memset(&foo, 0, sizeof(foo));
     strcpy(foo.pc_clname, "TS");
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
@@ -2401,71 +2387,83 @@ static int set_priority( int pid, char *to )
     params.ts_uprilim = prilevel*foo.ts_maxupri/2;
     return priocntl(P_PID, (id_t)pid, PC_SETPARMS, (void *)(&params)) != -1;
   }
-#else
-#ifdef HAVE_SCHED_SETSCHEDULER
-  if( prilevel == 3 )
+# else
+#  ifdef HAVE_SCHED_SETSCHEDULER
   {
+    int class;
+    int maxprio = 2;
+    int minprio = -2;
     struct sched_param param;
-    MEMSET(&param, 0, sizeof(param));
-    param.sched_priority = sched_get_priority_max( SCHED_FIFO );
-    return !sched_setscheduler( pid, SCHED_FIFO, &param );
-  } else {
-#ifdef SCHED_RR
-    struct sched_param param;
-    int class = SCHED_OTHER;
-    MEMSET(&param, 0, sizeof(param));
+    memset(&param, 0, sizeof(param));
+
+    if( prilevel == 3 )
+    {
+      class = SCHED_FIFO;
+      param.sched_priority = sched_get_priority_max( class );
+      return !sched_setscheduler( pid, class, &param );
+    }
+#   ifdef SCHED_RR
     if(prilevel == 2)
     {
       class = SCHED_RR;
-      prilevel = -2; /* lowest RR priority... */
-      param.sched_priority = sched_get_priority_min( class )+
-        (sched_get_priority_max( class )-
-         sched_get_priority_min( class ))/3 * (prilevel+2);
+      param.sched_priority = sched_get_priority_min( class );
       return !sched_setscheduler( pid, class, &param );
-    } 
-#endif
-#ifdef HAVE_SETPRIORITY
-    errno = 0;
-    return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
-#else
+    }
+    maxprio = 1;
+#   endif
+#   ifdef SCHED_IDLE
+    if(prilevel == -2)
+    {
+      class = SCHED_IDLE;
+      param.sched_priority = sched_get_priority_min( class );
+      return !sched_setscheduler( pid, class, &param );
+    }
+    minprio = -1;
+#   endif
+
+    class = SCHED_OTHER;
     param.sched_priority = sched_get_priority_min( class )+
       (sched_get_priority_max( class )-
-       sched_get_priority_min( class ))/3 * (prilevel+2);
-    return !sched_setscheduler( pid, class, &param );
-#endif
+       sched_get_priority_min( class ))/(maxprio-minprio) * (prilevel-minprio);
+    if (sched_setscheduler( pid, class, &param ) < 0)
+      return 0;
+
+    /* When using SCHED_OTHER, we also want to use setpriority, so we
+       don't return in here in that case.  Instead, we fall through to
+       the HAVE_SETPRIORITY (or even HAVE_NICE) code blocks, if
+       available. */
   }
-#else
-#ifdef HAVE_SETPRIORITY
+
+#  endif
+#  ifdef HAVE_SETPRIORITY
   {
-    if(prilevel == 3) 
+    if(prilevel == 3)
       prilevel = 2;
     errno = 0;
     return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
   }
-#else
-#ifdef HAVE_NICE
+#  else
+#   ifdef HAVE_NICE
   if(!pid || pid == getpid())
   {
     errno=0;
     return !(nice( -prilevel*10 - nice(0) ) != -1) || errno!=EPERM;
   }
-#endif
-#endif
-#endif
-#endif
+#   endif
+#  endif
+# endif
 #endif
   return 0;
 }
 
-/*! @decl int set_priority(string level, int|void pid)
+/*! @decl int set_priority(string level, int(0..)|void pid)
  */
 void f_set_priority( INT32 args )
 {
   INT_TYPE pid = 0;
   char *plevel;
-  ASSERT_SECURITY_ROOT("set_priority");
 
-  get_all_args("set_priority", args, "%s.%i", &plevel, &pid);
+  get_all_args("set_priority", args, "%s.%+", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
   push_int( pid );
@@ -2474,13 +2472,16 @@ void f_set_priority( INT32 args )
 
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
-static void internal_add_limit( struct perishables *storage, 
-                                char *UNUSED(limit_name),
+static void internal_add_limit( struct perishables *storage,
                                 int limit_resource,
                                 struct svalue *limit_value )
 {
   struct rlimit ol;
   struct pike_limit *l = NULL;
+
+  if( limit_resource < 0  )
+    return; /* Compat: Ignore unknown limits. */
+
 #ifndef RLIM_SAVED_MAX
   getrlimit( limit_resource, &ol );
 #else
@@ -2596,11 +2597,19 @@ int fd_cleanup_cb(void *data, int fd)
  *! @member function(Process.Process:void) "callback"
  *!  Function called when the created process changes state.
  *!
+ *!  Note that this function is called in a signal handler context,
+ *!  which means that it may be called by any thread at any time after
+ *!  the child process has changed state, and is thus not only called
+ *!  by the main thread when the main backend is idle. Indeed, you can
+ *!  specify a callback even if your program does not use a backend.
+ *!
  *! @member string "cwd"
  *!  Execute the command in another directory than the current
  *!  directory of this process. Please note that if the command is
  *!  given is a relative path, it will be relative to this directory
  *!  rather than the current directory of this process.
+ *!
+ *!  Note also that the path is relative to the @expr{"chroot"@} if used.
  *!
  *! @member string "chroot"
  *!   Chroot to this directory before executing the command.
@@ -2759,6 +2768,10 @@ int fd_cleanup_cb(void *data, int fd)
 DEFINE_IMUTEX(handle_protection_mutex);
 #endif /* __NT__ */
 
+#ifdef HAVE_SETRLIMIT
+extern int get_limit_id( const char *limit );
+#endif
+
 void f_create_process(INT32 args)
 {
   struct array *cmd=0;
@@ -2766,9 +2779,7 @@ void f_create_process(INT32 args)
   struct svalue *tmp;
   int e;
 
-  ASSERT_SECURITY_ROOT("Process->create");
-
-  check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
   switch(args)
   {
@@ -2779,30 +2790,33 @@ void f_create_process(INT32 args)
       if(m_ind_types(optional) & ~BIT_STRING)
 	Pike_error("Bad index type in argument 2 to Process->create()\n");
 
+      /* FALLTHRU */
+
     case 1: cmd=Pike_sp[-args].u.array;
       if(cmd->size < 1)
 	Pike_error("Too few elements in argument array.\n");
-      
+
       if( (cmd->type_field & ~BIT_STRING) &&
 	  (array_fix_type_field(cmd) & ~BIT_STRING) )
 	Pike_error("Bad argument 1 to Process().\n");
 
       for(e=0;e<cmd->size;e++)
 	if(ITEM(cmd)[e].u.string->size_shift)
-	  Pike_error("Argument is not an 8-bit string.\n");	
+	  Pike_error("Argument is not an 8-bit string.\n");
   }
 
 
 #ifdef __NT__
   {
-    HANDLE t1 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-    HANDLE t2 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-    HANDLE t3 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+    HANDLE t1 = INVALID_HANDLE_VALUE;
+    HANDLE t2 = INVALID_HANDLE_VALUE;
+    HANDLE t3 = INVALID_HANDLE_VALUE;
     STARTUPINFO info;
     PROCESS_INFORMATION proc;
     int ret,err;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     void *env=NULL;
+    struct byte_buffer buf;
 
     /* Quote command to allow all characters (if possible) */
     /* Damn! NT doesn't have quoting! The below code attempts to
@@ -2813,14 +2827,13 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
-      dynamic_buffer buf;
-      initialize_buf(&buf);
+      buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
 	int quote=0;
 	if(e)
 	{
-	  low_my_putchar(' ', &buf);
+	  buffer_add_char( &buf, ' ');
 	}
         /* If the argument begins AND ends with double quote assume
          * it is already correctly quoted
@@ -2829,14 +2842,14 @@ void f_create_process(INT32 args)
             ITEM(cmd)[e].u.string->str[0] != '"' ||
             ITEM(cmd)[e].u.string->str[ITEM(cmd)[e].u.string->len-1] != '"')
           {
-            quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
-              STRCHR(ITEM(cmd)[e].u.string->str,' ');
+            quote=strchr(ITEM(cmd)[e].u.string->str,'"') ||
+              strchr(ITEM(cmd)[e].u.string->str,' ');
           }
 
 	if(quote)
 	{
           int numslash;
-	  low_my_putchar('"', &buf);
+	  buffer_add_char( &buf, '"');
 
           /* Quoting rules used by Microsoft VC startup code:
            * literal double quote must be preceeded by
@@ -2856,7 +2869,7 @@ void f_create_process(INT32 args)
                     numslash++;
                   }
                 if (d >= ITEM(cmd)[e].u.string->len)
-                  numslash *= 2; /* argument ends with backslashes, need to 
+                  numslash *= 2; /* argument ends with backslashes, need to
                                     double because we add a doubleqoute below */
                 else if (ITEM(cmd)[e].u.string->str[d] == '"')
                   numslash = 2*numslash + 1; /* escape backslashes and the
@@ -2864,45 +2877,43 @@ void f_create_process(INT32 args)
 
                 /* insert the correct number of backslashes */
                 for (;numslash > 0; numslash--)
-                  low_my_putchar('\\', &buf);
+                  buffer_add_char( &buf, '\\');
 
                 /* add the character following backslash, if any */
                 if (d<ITEM(cmd)[e].u.string->len)
-                  low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+                  buffer_add_char( &buf, ITEM(cmd)[e].u.string->str[d]);
 
 		break;
 
 	      case '"':
-		low_my_putchar('\\', &buf);
+		buffer_add_char( &buf, '\\');
                 /* fall through */
 	      default:
-		low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+		buffer_add_char( &buf, ITEM(cmd)[e].u.string->str[d]);
 	    }
 	  }
-	  low_my_putchar('"', &buf);
+	  buffer_add_char( &buf, '"');
 	}else{
-	  low_my_binary_strcat(ITEM(cmd)[e].u.string->str,
-			       ITEM(cmd)[e].u.string->len,
-			       &buf);
+	  buffer_memcpy(&buf, ITEM(cmd)[e].u.string->str, ITEM(cmd)[e].u.string->len);
 	}
       }
-      low_my_putchar(0, &buf);
-      
+      buffer_add_char( &buf, 0);
+
 /*      fprintf(stderr,"COM: %s\n",buf.s.str); */
 
       /* NOTE: buf isn't finalized, since CreateProcess performs destructive
        *       operations on it.
        */
 
-      command_line=(TCHAR *)buf.s.str;
+      command_line = (TCHAR *)buffer_get_string(&buf);
     }
 
     /* FIXME: Ought to set filename properly.
      */
 
-    MEMSET(&info,0,sizeof(info));
+    memset(&info,0,sizeof(info));
     info.cb=sizeof(info);
-    
+
     GetStartupInfo(&info);
 
     /* Protect inherit status for handles */
@@ -2928,13 +2939,13 @@ void f_create_process(INT32 args)
       }
 
       t1=get_inheritable_handle(optional, "stdin",1);
-      if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdInput=t1;
+      if(t1 != INVALID_HANDLE_VALUE) info.hStdInput=t1;
 
       t2=get_inheritable_handle(optional, "stdout",0);
-      if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdOutput=t2;
+      if(t2 != INVALID_HANDLE_VALUE) info.hStdOutput=t2;
 
       t3=get_inheritable_handle(optional, "stderr",0);
-      if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdError=t3;
+      if(t3 != INVALID_HANDLE_VALUE) info.hStdError=t3;
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
@@ -2959,7 +2970,7 @@ void f_create_process(INT32 args)
 	      {
 		check_stack(3);
 		ref_push_string(ITEM(i)[e].u.string);
-		push_constant_text("=");
+		push_static_text("=");
 		ref_push_string(ITEM(v)[e].u.string);
 		f_add(3);
 		ptr++;
@@ -2996,19 +3007,19 @@ void f_create_process(INT32 args)
 		      &info,
 		      &proc);
     err=GetLastError();
-    
+
     THREADS_DISALLOW_UID();
 
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
     if(env) pop_stack();
-    if(command_line) free(command_line);
+    buffer_free(&buf);
 #if 1
-    if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t1);
-    if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t2);
-    if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t3);
+    if(t1 != INVALID_HANDLE_VALUE) CloseHandle(t1);
+    if(t2 != INVALID_HANDLE_VALUE) CloseHandle(t2);
+    if(t3 != INVALID_HANDLE_VALUE) CloseHandle(t3);
 #endif
-    
+
     if(ret)
     {
       CloseHandle(proc.hThread);
@@ -3028,34 +3039,32 @@ void f_create_process(INT32 args)
 
     storage.stdin_b = storage.stdout_b = storage.stderr_b = 0;
     storage.cwd_lock = 0;
-    initialize_buf(&storage.cmd_buf);
+    buffer_init(&storage.cmd_buf);
 
     SET_ONERROR(err, free_perishables, &storage);
 
     for(e=0;e<cmd->size;e++)
     {
       if(e)
-        low_my_putchar(' ', &storage.cmd_buf);
-      if(STRCHR(STR0(ITEM(cmd)[e].u.string),'"') || STRCHR(STR0(ITEM(cmd)[e].u.string),' ')) {
-        low_my_putchar('"', &storage.cmd_buf);
+        buffer_add_char( &storage.cmd_buf, ' ');
+      if(strchr(STR0(ITEM(cmd)[e].u.string),'"') || strchr(STR0(ITEM(cmd)[e].u.string),' ')) {
+        buffer_add_char( &storage.cmd_buf, '"');
 	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
 	{
 	  switch(STR0(ITEM(cmd)[e].u.string)[d])
 	  {
 	    case '*':
 	    case '"':
-	      low_my_putchar('*', &storage.cmd_buf);
+	      buffer_add_char( &storage.cmd_buf, '*');
             default:
-	      low_my_putchar(STR0(ITEM(cmd)[e].u.string)[d], &storage.cmd_buf);
+	      buffer_add_char( &storage.cmd_buf, STR0(ITEM(cmd)[e].u.string)[d]);
 	  }
 	}
-        low_my_putchar('"', &storage.cmd_buf);	
+        buffer_add_char( &storage.cmd_buf, '"');
       } else
-        low_my_binary_strcat(STR0(ITEM(cmd)[e].u.string),
-			     ITEM(cmd)[e].u.string->len,
-			     &storage.cmd_buf);
+        buffer_memcpy(&storage.cmd_buf, STR0(ITEM(cmd)[e].u.string), ITEM(cmd)[e].u.string->len);
     }
-    low_my_putchar('\0', &storage.cmd_buf);
+    buffer_add_char( &storage.cmd_buf, '\0');
 
     if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
       if(TYPEOF(*tmp) == T_STRING)
@@ -3066,14 +3075,13 @@ void f_create_process(INT32 args)
     storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
     storage.stderr_b = get_amigados_handle(optional, "stderr", 2);
 
-    PROC_FPRINTF((stderr,
-		  "[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
-		  "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
-		  getpid(),
-		  storage.cmd_buf.s.str, storage.stdin_b,
-		  storage.stdout_b, storage.stderr_b,
-		  (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
-		  storage.cwd_lock));
+    PROC_FPRINTF("[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
+                 "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
+                 getpid(),
+                 storage.cmd_buf.s.str, storage.stdin_b,
+                 storage.stdout_b, storage.stderr_b,
+                 (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
+                 storage.cwd_lock);
 
     if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
 		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
@@ -3092,7 +3100,7 @@ void f_create_process(INT32 args)
 
       if(storage.cwd_lock!=0)
         UnLock(storage.cwd_lock);
-      low_free_buf(&storage.cmd_buf);
+      buffer_free(&storage.cmd_buf);
 
     */
   }
@@ -3176,7 +3184,6 @@ void f_create_process(INT32 args)
 	    wanted_gid=tmp->u.integer;
 	    gid_request=1;
 	    break;
-	    
 #if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRENT)
 	  case T_STRING:
 	  {
@@ -3193,7 +3200,6 @@ void f_create_process(INT32 args)
 	  }
 	  break;
 #endif
-	  
 	  default:
 	    Pike_error("Invalid argument for gid.\n");
 	}
@@ -3220,7 +3226,7 @@ void f_create_process(INT32 args)
 	if (i) {
 	  /* Don't forget stdin, stdout, and stderr */
 	  num_fds = i+3;
-	  storage.fds = fds = (int *)xalloc(sizeof(int)*(num_fds));
+	  storage.fds = fds = xalloc(sizeof(int)*(num_fds));
 	  fds[0] = fds[1] = fds[2] = -1;
 	  while (i--) {
 	    if (TYPEOF(a->item[i]) == T_OBJECT) {
@@ -3266,51 +3272,18 @@ void f_create_process(INT32 args)
       if((tmp=simple_mapping_string_lookup(optional, "rlimit")))
       {
         struct svalue *tmp2;
+        unsigned int i;
+        struct mapping *m = tmp->u.mapping;
+        struct keypair *k;
         if(TYPEOF(*tmp) != T_MAPPING)
           Pike_error("Wrong type of argument for the 'rusage' option. "
-                "Should be mapping.\n");
-
-#define ADD_LIMIT(X,Y,Z) internal_add_limit(&storage,X,Y,Z);
-          
-#ifdef RLIMIT_CORE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "core")))
-        ADD_LIMIT( "core", RLIMIT_CORE, tmp2 );
-#endif        
-#ifdef RLIMIT_CPU
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "cpu")))
-        ADD_LIMIT( "cpu", RLIMIT_CPU, tmp2 );
-#endif        
-#ifdef RLIMIT_DATA
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "data")))
-        ADD_LIMIT( "data", RLIMIT_DATA, tmp2 );
-#endif        
-#ifdef RLIMIT_FSIZE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "fsize")))
-        ADD_LIMIT( "fsize", RLIMIT_FSIZE, tmp2 );
-#endif        
-#ifdef RLIMIT_NOFILE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "nofile")))
-        ADD_LIMIT( "nofile", RLIMIT_NOFILE, tmp2 );
-#endif        
-#ifdef RLIMIT_STACK
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "stack")))
-        ADD_LIMIT( "stack", RLIMIT_STACK, tmp2 );
-#endif        
-#ifdef RLIMIT_VMEM
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "map_mem"))
-         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "vmem")))
-        ADD_LIMIT( "map_mem", RLIMIT_VMEM, tmp2 );
-#endif        
-#ifdef RLIMIT_AS
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "as"))
-         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "mem")))
-        ADD_LIMIT( "mem", RLIMIT_AS, tmp2 );
-#endif        
+                     "Should be mapping.\n");
+        NEW_MAPPING_LOOP( m->data )
+          if( TYPEOF(k->ind) == PIKE_T_STRING )
+            internal_add_limit( &storage, get_limit_id(k->ind.u.string->str), &k->val );
       }
-#undef ADD_LIMIT
-#endif        
+#endif
 
-      
       if((tmp=simple_mapping_string_lookup(optional, "uid")))
       {
 	switch(TYPEOF(*tmp))
@@ -3334,7 +3307,7 @@ void f_create_process(INT32 args)
 	    }
 #endif
 	    break;
-	    
+
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWENT)
 	  case T_STRING:
 	  {
@@ -3353,7 +3326,6 @@ void f_create_process(INT32 args)
 	    break;
 	  }
 #endif
-	    
 	  default:
 	    Pike_error("Invalid argument for uid.\n");
 	}
@@ -3388,8 +3360,8 @@ void f_create_process(INT32 args)
 	  int ptr=0;
 	  i=mapping_indices(m);
 	  v=mapping_values(m);
-	  
-	  storage.env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
+
+	  storage.env=xalloc((1+m_sizeof(m)) * sizeof(char *));
 	  for(e=0;e<i->size;e++)
 	  {
 	    if(TYPEOF(ITEM(i)[e]) == T_STRING &&
@@ -3397,7 +3369,7 @@ void f_create_process(INT32 args)
 	    {
 	      check_stack(3);
 	      ref_push_string(ITEM(i)[e].u.string);
-	      push_constant_text("=");
+	      push_static_text("=");
 	      ref_push_string(ITEM(v)[e].u.string);
 	      f_add(3);
 	      storage.env[ptr++]=Pike_sp[-1].u.string->str;
@@ -3481,15 +3453,15 @@ void f_create_process(INT32 args)
       do_initgroups=0;
     }
 #endif /* HAVE_SETGROUPS */
-    
+
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
     if (pike_make_pipe(control_pipe) < 0) {
       Pike_error("Failed to create child communication pipe.\n");
     }
 
-    PROC_FPRINTF((stderr,"[%d] control_pipe: %d, %d\n",
-		  getpid(), control_pipe[0], control_pipe[1]));
+    PROC_FPRINTF("[%d] control_pipe: %d, %d\n",
+                 getpid(), control_pipe[0], control_pipe[1]);
 #ifdef USE_WAIT_THREAD
     if (!wait_thread_running) {
       THREAD_T foo;
@@ -3501,11 +3473,6 @@ void f_create_process(INT32 args)
     }
     num_threads++;    /* We use the interpreter lock */
 #endif
-#if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
-    init_threads_disable(NULL);
-    storage.disabled = 1;
-#endif
-
 
     th_atfork_prepare();
     {
@@ -3516,8 +3483,8 @@ void f_create_process(INT32 args)
 	;
 
       do {
-	PROC_FPRINTF((stderr,"[%d] Forking... (pid=%d errno=%d)\n",
-		      getpid(), pid, errno));
+        PROC_FPRINTF("[%d] Forking... (pid=%d errno=%d)\n",
+                     getpid(), pid, errno);
 #ifdef HAVE_VFORK
 	pid=vfork();
 #else /* !HAVE_VFORK */
@@ -3529,8 +3496,8 @@ void f_create_process(INT32 args)
 #endif /* HAVE_VFORK */
 	if (pid == -1) {
 	  errnum = errno;
-	  if (errnum == EAGAIN) {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with EAGAIN\n", getpid()));
+	  if (UNLIKELY(errnum == EAGAIN)) {
+            PROC_FPRINTF("[%d] Fork failed with EAGAIN\n", getpid());
 	    /* Process table full or similar.
 	     * Try sleeping for a bit.
 	     *
@@ -3547,18 +3514,18 @@ void f_create_process(INT32 args)
 	      /* Try again */
 	      continue;
 	    }
-	  } else if (errnum == EINTR) {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with EINTR\n", getpid()));
+	  } else if (UNLIKELY(errnum == EINTR)) {
+            PROC_FPRINTF("[%d] Fork failed with EINTR\n", getpid());
 	    /* Try again */
 	    continue;
 	  } else {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with errno:%d\n",
-			  getpid(), errnum));
+            PROC_FPRINTF("[%d] Fork failed with errno:%d\n",
+                         getpid(), errnum);
 	  }
 	}
 #ifdef PROC_DEBUG
 	else if (pid) {
-	  PROC_FPRINTF((stderr, "[%d] Fork ok pid:%d\n", getpid(), pid));
+          PROC_FPRINTF("[%d] Fork ok pid:%d\n", getpid(), pid);
 	} else {
 	  write(2, "Fork ok pid:0\n", 14);
 	}
@@ -3566,7 +3533,7 @@ void f_create_process(INT32 args)
 	break;
       } while(1);
 
-      while(sigprocmask(SIG_SETMASK, &old_sig, 0)) {
+      while(UNLIKELY(sigprocmask(SIG_SETMASK, &old_sig, 0))) {
 #ifdef PROC_DEBUG
 	char errcode[3] = {
 	  '0'+((errno/100)%10),
@@ -3581,9 +3548,9 @@ void f_create_process(INT32 args)
     }
 
     if(pid) {
-      PROC_FPRINTF((stderr, "[%d] th_at_fork_parent()...\n", getpid()));
+      PROC_FPRINTF("[%d] th_at_fork_parent()...\n", getpid());
       th_atfork_parent();
-      PROC_FPRINTF((stderr, "[%d] th_at_fork_parent() done\n", getpid()));
+      PROC_FPRINTF("[%d] th_at_fork_parent() done\n", getpid());
     } else {
 #ifdef PROC_DEBUG
       write(2, "th_at_fork_child()...\n", 22);
@@ -3604,28 +3571,25 @@ void f_create_process(INT32 args)
        * fork() failed
        */
 
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
-      while(close(control_pipe[1]) < 0 && errno==EINTR);
+        while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
+        while(UNLIKELY(close(control_pipe[1]) < 0) && UNLIKELY(errno==EINTR));
 
       free_perishables(&storage);
 
-      if (errnum == EAGAIN) {
-	Pike_error("Process.create_process(): fork() failed with EAGAIN.\n"
-		   "Process table full?\n");
+      if (UNLIKELY(errnum == EAGAIN)) {
+	Pike_error("fork() failed with EAGAIN. Process table full?\n");
       }
 #ifdef ENOMEM
-      if (errnum == ENOMEM) {
-	Pike_error("Process.create_process(): fork() failed with ENOMEM.\n"
-		   "Out of memory?\n");
+      if (UNLIKELY(errnum == ENOMEM)) {
+	Pike_error("fork() failed with ENOMEM. Out of memory?\n");
       }
 #endif /* ENOMEM */
-      Pike_error("Process.create_process(): fork() failed. errno:%d\n",
-		 errnum);
+      Pike_error("fork() failed. errno:%d\n", errnum);
     } else if(pid) {
       int olderrno;
       int cnt = 0;
 
-      PROC_FPRINTF((stderr, "[%d] Parent\n", getpid()));
+      PROC_FPRINTF("[%d] Parent\n", getpid());
 
       process_started(pid);  /* Debug */
       /*
@@ -3633,7 +3597,7 @@ void f_create_process(INT32 args)
        */
 
       /* Close our child's end of the pipe. */
-      while(close(control_pipe[1]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[1]) < 0) && UNLIKELY(errno==EINTR));
 
       free_perishables(&storage);
 
@@ -3662,188 +3626,139 @@ void f_create_process(INT32 args)
       buf[0] = 0;
 
 
-      /*
-       * This code works, but seems to slow down process creation
-       * rathern than speed it up. Only tested on Linux.
-       * /Hubbe
-       */
-#if 0
-      {
-	int gnapp=0;
-	while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
-	  ;
-	THREADS_ALLOW();
-	if(e!=1) {
-	  /* Paranoia in case close() sets errno. */
-	  olderrno = errno;
-	  while(close(control_pipe[0]) < 0 && errno==EINTR);
-	  gnapp=1;
-	} else {
-	  /* Wait for exec or error */
-	  while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
-	    ;
-	  /* Paranoia in case close() sets errno. */
-	  olderrno = errno;
-
-	  while(close(control_pipe[0]) < 0 && errno==EINTR);
-	}
-	THREADS_DISALLOW();
-	if(gnapp)
-	  Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
-		     e ,olderrno);
-      }
-#else
       THREADS_ALLOW();
 
 #ifndef HAVE_VFORK
       /* The following code won't work with a real vfork(). */
-      PROC_FPRINTF((stderr, "[%d] Parent: Wake up child.\n", getpid()));
-      while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
+      PROC_FPRINTF("[%d] Parent: Wake up child.\n", getpid());
+      while (UNLIKELY(((e = write(control_pipe[0], buf, 1)) < 0)) && UNLIKELY(errno == EINTR))
 	;
       if(e!=1) {
 	/* Paranoia in case close() sets errno. */
 	olderrno = errno;
-	while(close(control_pipe[0]) < 0 && errno==EINTR)
+	while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR))
 	  ;
 	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 		   e ,olderrno);
       }
 #endif /* !HAVE_VFORK */
 
-      PROC_FPRINTF((stderr, "[%d] Parent: Wait for child...\n", getpid()));
+      PROC_FPRINTF("[%d] Parent: Wait for child...\n", getpid());
       /* Wait for exec or error */
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) &&
-	     (errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))
+      while (UNLIKELY((e = read(control_pipe[0], buf, 3)) < 0) &&
+             (errno == EINTR ||
+              (LIKELY(errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))))
 	;
 #else /* !EBADF || !EPIPE */
       /* This code *should* work... */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+      while (UNLIKELY((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
 #endif /* EBADF && EPIPE */
       /* Paranoia in case close() sets errno. */
       olderrno = errno;
 
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
 
       THREADS_DISALLOW();
-#endif
 
-      PROC_FPRINTF((stderr, "[%d] Parent: Child init done.\n", getpid()));
+      PROC_FPRINTF("[%d] Parent: Child init done.\n", getpid());
 
       if (!e) {
 	/* OK! */
 	pop_n_elems(args);
-	push_int(0);
-	return;
+        return;
       } else if (e < 0) {
 	/* Something went wrong with our read(2). */
 #ifdef ENODEV
 	if (olderrno == ENODEV) {
 	  /* This occurrs sometimes on FreeBSD... */
-	  Pike_error("Process.create_process(): read(2) failed with ENODEV!\n"
-		     "Probable operating system bug.\n");
+	  Pike_error("read(2) failed with ENODEV. Probable operating system bug.\n");
 	}
 #endif /* ENODEV */
-	Pike_error("Process.create_process(): read(2) failed with errno %d\n",
-		   olderrno);
+	Pike_error("read(2) failed with errno %d.\n", olderrno);
       } else {
 	/* Something went wrong in the child. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  if (buf[2]) {
-	    Pike_error("Process.create_process(): chdir(\"/\") in chroot failed. errno:%d\n",
-		       buf[1]);
+	    Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n", buf[1]);
 	  }
-	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("chdir() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_DUP:
-	  Pike_error("Process.create_process(): dup() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("dup() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_DUP2:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): dup2(x, %d) failed with EINVAL.\n",
-		       buf[2]);
+	    Pike_error("dup2(x, %d) failed with EINVAL.\n", buf[2]);
 	  }
-	  Pike_error("Process.create_process(): dup2(x, %d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_SETGID:
-	  Pike_error("Process.create_process(): setgid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("setgid(%d) failed. errno:%d\n", buf[2], buf[1]);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): setgroups() failed with EINVAL.\n"
+	    Pike_error("setgroups() failed with EINVAL.\n"
 		       "Too many supplementary groups (%d)?\n",
 		       storage.num_wanted_gids);
 	  }
-	  Pike_error("Process.create_process(): setgroups() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("setgroups() failed. errno:%d.\n", buf[1]);
 	  break;
 #endif
 	case PROCE_GETPWUID:
-	  Pike_error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_INITGROUPS:
-	  Pike_error("Process.create_process(): initgroups() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("initgroups() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_SETUID:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): Invalid uid: %d.\n",
-		       (int)wanted_uid);
+	    Pike_error("Invalid uid: %d.\n", (int)wanted_uid);
 	  }
-	  Pike_error("Process.create_process(): setuid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_SETSID:
-          Pike_error("Process.create_process(): setsid() failed.\n");
+          Pike_error("setsid() failed.\n");
 	  break;
 	case PROCE_SETCTTY:
-          Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
+          Pike_error("Failed to set controlling TTY. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
 	  case ENOENT:
-	    Pike_error("Process.create_process(): "
-		       "Executable file not found.\n");
+	    Pike_error("Executable file not found.\n");
 	    break;
 	  case EACCES:
-	    Pike_error("Process.create_process(): Access denied.\n");
+	    Pike_error("Access denied.\n");
 	    break;
 #ifdef E2BIG
 	  case E2BIG:
-	    Pike_error("Process.create_process(): Arglist too long.\n");
+	    Pike_error("Arglist too long.\n");
 	    break;
 #endif /* E2BIG */
 	  }
-	  
-	  Pike_error("Process.create_process(): exec() failed. errno:%d\n"
-		     "File not found?\n", buf[1]);
+
+	  Pike_error("exec() failed. errno:%d. File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec(%d, 1) failed. errno:%d\n",
+	  Pike_error("set_close_on_exec(%d, 1) failed. errno:%d.\n",
 		     buf[2], buf[1]);
 	  break;
 	case PROCE_CLRCLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec(%d, 0) failed. errno:%d\n",
+	  Pike_error("set_close_on_exec(%d, 0) failed. errno:%d.\n",
 		     buf[2], buf[1]);
 	  break;
 	case PROCE_CHROOT:
-	  Pike_error("Process.create_process(): chroot() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("chroot() failed. errno:%d.\n", buf[1]);
 	  break;
 	case 0:
 	  /* read() probably failed. */
 	default:
-	  Pike_error("Process.create_process(): "
-		     "Child failed: %d, %d, %d, %d, %d!\n",
+	  Pike_error("Child failed: %d, %d, %d, %d, %d!\n",
 		     buf[0], buf[1], buf[2], e, olderrno);
 	  break;
 	}
@@ -3881,11 +3796,11 @@ void f_create_process(INT32 args)
       pid = getpid();
 
       /* Close our parent's end of the pipe. */
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
 
 #ifndef HAVE_VFORK
       /* Wait for parent to get ready... */
-      while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
+      while (UNLIKELY((( e = read(control_pipe[1], buf, 1)) < 0)) && UNLIKELY((errno == EINTR)))
 	;
 
 #ifdef PROC_DEBUG
@@ -3910,36 +3825,25 @@ void f_create_process(INT32 args)
 #endif /* PROC_DEBUG */
 
 #endif /* HAVE_VFORK */
-
-/* We don't call _any_ pike functions at all after this point, so
- * there is no need at all to call this callback, really.
- */
-
-/* 
-#ifdef _REENTRANT
-      num_threads=1;
-#endif
-      call_callback(&fork_child_callback, 0); 
-*/
-
       for(e=0;e<cmd->size;e++) storage.argv[e]=cmd->item[e].u.string->str;
       storage.argv[e]=0;
 
       if(storage.env) environ=storage.env;
 
 #ifdef HAVE_SETEUID
-      seteuid(0);
+      if( seteuid(0) == -1 ) {
+          /* all is ok, just silencing gcc-warning */
+      }
 #else /* !HAVE_SETEUID */
 #ifdef HAVE_SETRESUID
       setresuid(0,0,-1);
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
 
-      if (!keep_signals) 
+      if (!keep_signals)
       {
 	int i;
 	/* Restore the signals to the defaults. */
-#ifdef HAVE_SIGNAL
 #ifdef _sys_nsig
         for(i=0; i<_sys_nsig; i++)
           signal(i, SIG_DFL);
@@ -3947,24 +3851,21 @@ void f_create_process(INT32 args)
         for(i=0; i<NSIG; i++)
           signal(i, SIG_DFL);
 #endif /* _sys_nsig */
-#endif /* HAVE_SIGNAL */
       }
 
       if(mchroot)
       {
 	if( chroot( mchroot ) )
         {
-	  /* FIXME: Is this fprintf safe? */
-	  PROC_FPRINTF((stderr,
-			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
-			getpid(), chroot, errno));
+	  /* fprintf is not safe if we use vfork. */
+          PROC_FPRINTF("[%d] child: chroot(\"%s\") failed, errno=%d\n",
+                       getpid(), chroot, errno);
           PROCERROR(PROCE_CHROOT, 0);
         }
 	if (chdir("/"))
 	{
-	  PROC_FPRINTF((stderr,
-			"[%d] child: chdir(\"/\") failed, errno=%d\n",
-			getpid(), errno));
+          PROC_FPRINTF("[%d] child: chdir(\"/\") failed, errno=%d\n",
+                       getpid(), errno);
 	  PROCERROR(PROCE_CHDIR, 1);
 	}
       }
@@ -3973,16 +3874,19 @@ void f_create_process(INT32 args)
       {
         if( chdir( tmp_cwd ) )
         {
-	  /* FIXME: Is this fprintf safe? */
-	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
-			getpid(), tmp_cwd, errno));
+	  /* fprintf is not safe if we use vfork. */
+          PROC_FPRINTF("[%d] child: chdir(\"%s\") failed, errno=%d\n",
+                       getpid(), tmp_cwd, errno);
           PROCERROR(PROCE_CHDIR, 0);
         }
       }
 
 #ifdef HAVE_NICE
       if(nice_val)
-        nice(nice_val);
+          if( nice(nice_val) == -1 )
+          {
+              /* nice failed. Should we do something? */
+          }
 #endif
 
 #ifdef HAVE_SETRLIMIT
@@ -4133,7 +4037,7 @@ void f_create_process(INT32 args)
 		/* NOTE: OpenBSD sets errno to EBADF if fd is > than
 		 *       any open fd.
 		 */
-	      } while (errno && (errno != EBADF));
+	      } while (UNLIKELY(errno && (errno != EBADF)));
 	      break;
 	    }
 #endif
@@ -4241,7 +4145,11 @@ void f_create_process(INT32 args)
 #endif /* SETUID */
 
 #ifdef HAVE_SETEUID
-      seteuid(wanted_uid);
+      if( seteuid(wanted_uid) == -1 )
+      {
+          perror("seteuid");
+          PROCERROR(PROCE_SETUID, (int)wanted_uid);
+      }
 #else /* !HAVE_SETEUID */
 #ifdef HAVE_SETRESUID
       setresuid(wanted_uid, wanted_uid, -1);
@@ -4252,7 +4160,7 @@ void f_create_process(INT32 args)
       set_close_on_exec(0,0);
       set_close_on_exec(1,0);
       set_close_on_exec(2,0);
-      
+
 #ifdef HAVE_BROKEN_F_SETFD
       do_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
@@ -4268,7 +4176,7 @@ void f_create_process(INT32 args)
 	ptrace(PTRACE_TRACEME, 0, NULL, 0);
       }
 #endif /* HAVE_PTRACE */
-	
+
 #ifdef PROC_DEBUG
       write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Calling exec()...\n", 25);
@@ -4276,11 +4184,10 @@ void f_create_process(INT32 args)
 
       execvp(storage.argv[0],storage.argv);
 
-      /* FIXME: Is this fprintf safe? */
-      PROC_FPRINTF((stderr,
-		    "[%d] Child: execvp(\"%s\", ...) failed\n"
-		    "errno = %d\n",
-		    getpid(), storage.argv[0], errno));
+      /* fprintf is not safe if we use vfork. */
+      PROC_FPRINTF("[%d] Child: execvp(\"%s\", ...) failed\n"
+                   "errno = %d\n",
+                   getpid(), storage.argv[0], errno);
 #ifndef HAVE_BROKEN_F_SETFD
       /* No way to tell about this on broken OS's :-( */
       PROCERROR(PROCE_EXEC, 0);
@@ -4291,7 +4198,6 @@ void f_create_process(INT32 args)
 #endif /* __amigaos__ */
 #endif /* __NT__ */
   pop_n_elems(args);
-  push_int(0);
 }
 
 #ifdef HAVE_FORK
@@ -4326,7 +4232,6 @@ void Pike_f_fork(INT32 args)
   if(num_threads >1)
     Pike_error("You cannot use fork in a multithreaded application.\n");
 #endif
-  ASSERT_SECURITY_ROOT("fork");
 
   th_atfork_prepare();
 /*   THREADS_ALLOW_UID(); */
@@ -4354,8 +4259,7 @@ void Pike_f_fork(INT32 args)
        */
       THREAD_T foo;
       if (th_create_small(&foo, wait_thread, 0)) {
-	Pike_error("Failed to create wait thread!\n"
-		   "errno: %d\n", errno);
+	Pike_error("Failed to create wait thread. errno: %d.\n", errno);
       }
       wait_thread_running = 1;
     }
@@ -4378,10 +4282,9 @@ void Pike_f_fork(INT32 args)
       });
     in_forked_child = 1;
   }
-  
+
   if(pid==-1) {
-    Pike_error("Fork failed\n"
-	  "errno: %d\n", errno);
+    Pike_error("Fork failed. errno:%d.\n", errno);
   }
 
   if(pid)
@@ -4400,9 +4303,8 @@ void Pike_f_fork(INT32 args)
     }
 #endif
 
-    o=low_clone(pid_status_program);
-    call_c_initializers(o);
-    p=(struct pid_status *)get_storage(o,pid_status_program);
+    o=fast_clone_object(pid_status_program);
+    p=get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;
     push_object(o);
@@ -4414,6 +4316,10 @@ void Pike_f_fork(INT32 args)
     /* forked copy. there is now only one thread running, this one. */
     num_threads=1;
 #endif
+
+    REINIT_FIFO(sig, unsigned char);
+    REINIT_FIFO(wait,wait_data);
+
     /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
     push_int(0);
@@ -4424,11 +4330,9 @@ void Pike_f_fork(INT32 args)
 
 
 #ifdef HAVE_KILL
-/*! @decl void kill(int pid, int signal)
+/*! @decl int(0..1) kill(int pid, int signal)
  *!
- *! Send a signal to another process. Returns nonzero if it worked,
- *! zero otherwise. @[errno] may be used in the latter case to find
- *! out what went wrong.
+ *! Send a signal to another process.
  *!
  *! Some signals and their supposed purpose:
  *! @int
@@ -4503,6 +4407,14 @@ void Pike_f_fork(INT32 args)
  *!     Stack fault
  *! @endint
  *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       Success.
+ *!     @value 0
+ *!       Failure. @[errno()] is set to EINVAL, EPERM or ESRCH.
+ *!   @endint
+ *!
  *! @note
  *!   Note that you have to use signame to translate the name of a signal
  *!   to its number.
@@ -4519,10 +4431,8 @@ static void f_kill(INT32 args)
   int pid = 0;
   int res, save_errno;
 
-  ASSERT_SECURITY_ROOT("kill");
-
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("kill", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -4533,16 +4443,15 @@ static void f_kill(INT32 args)
     /* FIXME: What about if it's an object? */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int");
   }
-    
+
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 2, "int");
 
   signum = Pike_sp[1-args].u.integer;
 
-  PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
-		getpid(), pid, signum));
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
@@ -4561,14 +4470,16 @@ static void f_kill(INT32 args)
 /*! @class create_process
  */
 
-/*! @decl int kill(int signal)
+/*! @decl int(0..1) kill(int signal)
+ *!
+ *! Send a signal to the process.
  *!
  *! @returns
  *!   @int
  *!     @value 1
- *!       Success
+ *!       Success.
  *!     @value 0
- *!       Failure. errno is set to EINVAL, EPERM or ESRCH.
+ *!       Failure. @[errno()] is set to EINVAL, EPERM or ESRCH.
  *!   @endint
  *!
  *! @note
@@ -4584,16 +4495,9 @@ static void f_pid_status_kill(INT32 args)
   INT_TYPE signum;
   int res, save_errno;
 
-  ASSERT_SECURITY_ROOT("Process->kill");
+  get_all_args(NULL, args, "%+", &signum);
 
-  get_all_args("pid->kill", args, "%i", &signum);
-
-  if (pid < 0) {
-    Pike_error("pid->kill(): No process\n");
-  }
-
-  PROC_FPRINTF((stderr, "[%d] pid->kill: pid=%d, signum=%d\n",
-		getpid(), pid, signum));
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
@@ -4617,13 +4521,11 @@ static void f_pid_status_kill(INT32 args)
 #define HAVE_KILL
 static void f_kill(INT32 args)
 {
-  HANDLE proc = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-  HANDLE tofree = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-
-  ASSERT_SECURITY_ROOT("kill");
+  HANDLE proc = INVALID_HANDLE_VALUE;
+  HANDLE tofree = INVALID_HANDLE_VALUE;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("kill", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -4632,7 +4534,7 @@ static void f_kill(INT32 args)
 			    0,
 			    Pike_sp[-args].u.integer);
 /*    fprintf(stderr,"PROC: %ld %ld\n",(long)proc,INVALID_HANDLE_VALUE); */
-    if(!proc || proc == DO_NOT_WARN(INVALID_HANDLE_VALUE))
+    if(!proc || proc == INVALID_HANDLE_VALUE)
     {
       errno=EPERM;
       pop_n_elems(args);
@@ -4644,8 +4546,8 @@ static void f_kill(INT32 args)
   case T_OBJECT:
   {
     struct pid_status *p;
-    if((p=(struct pid_status *)get_storage(Pike_sp[-args].u.object,
-					  pid_status_program)))
+    if((p=get_storage(Pike_sp[-args].u.object,
+                      pid_status_program)))
     {
       proc=p->handle;
       break;
@@ -4653,11 +4555,11 @@ static void f_kill(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
+    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int|object");
   }
-    
+
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 2, "int");
 
   switch(Pike_sp[1-args].u.integer)
   {
@@ -4665,7 +4567,7 @@ static void f_kill(INT32 args)
       pop_n_elems(args);
       push_int(1);
       break;
-      
+
     case SIGKILL:
     {
       int i=TerminateProcess(proc,0xff);
@@ -4674,14 +4576,14 @@ static void f_kill(INT32 args)
       check_signals(0,0,0);
       break;
     }
-      
+
     default:
       errno=EINVAL;
       pop_n_elems(args);
       push_int(0);
       break;
   }
-  if(tofree != DO_NOT_WARN(INVALID_HANDLE_VALUE))
+  if(tofree != INVALID_HANDLE_VALUE)
     CloseHandle(tofree);
 }
 
@@ -4689,9 +4591,7 @@ static void f_pid_status_kill(INT32 args)
 {
   INT_TYPE signum;
 
-  ASSERT_SECURITY_ROOT("Process->kill");
-
-  get_all_args("pid->kill", args, "%i", &signum);
+  get_all_args(NULL, args, "%i", &signum);
 
   pop_n_elems(args);
 
@@ -4746,13 +4646,11 @@ static void f_alarm(INT32 args)
 {
   long seconds;
 
-  ASSERT_SECURITY_ROOT("alarm");
-
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("alarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("alarm", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("alarm", 1, "int");
 
   seconds=Pike_sp[-args].u.integer;
 
@@ -4792,13 +4690,11 @@ static void f_ualarm(INT32 args)
 #endif /* !HAVE_UALARM */
   long useconds;
 
-  ASSERT_SECURITY_ROOT("ualarm");
-
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("ualarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("ualarm", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("ualarm", 1, "int");
 
   useconds=Pike_sp[-args].u.integer;
 
@@ -4827,16 +4723,6 @@ static void f_ualarm(INT32 args)
 #endif /* HAVE_UALARM */
 }
 #endif /* HAVE_UALARM || HAVE_SETITIMER */
-
-#ifdef PIKE_DEBUG
-static RETSIGTYPE fatal_signal(int signum)
-{
-  my_signal(signum,SIG_DFL);
-  Pike_fatal("Fatal signal (%s) recived.\n",signame(signum));
-}
-#endif
-
-
 
 static struct array *atexit_functions;
 
@@ -4879,7 +4765,7 @@ static void do_signal_exit(INT32 sig)
 void f_atexit(INT32 args)
 {
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("atexit", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("atexit", 1);
 
   if(!atexit_functions)
   {
@@ -4904,75 +4790,88 @@ void f_atexit(INT32 args)
   pop_n_elems(args);
 }
 
+/* This function may be called from modules that may have thrashed
+ * the signal handler for a specific signal. eg MariaDB and SIGPIPE.
+ */
+PMOD_EXPORT void restore_signal_handler(int sig)
+{
+  if ((TYPEOF(signal_callbacks[sig]) != PIKE_T_INT) || default_signals[sig])
+  {
+    sigfunctype func = receive_signal;
+#ifdef USE_SIGCHILD
+    if (sig == SIGCHLD) {
+      func = receive_sigchild;
+    }
+#endif
+    my_signal(sig, func);
+  } else {
+    switch(sig) {
+      /* SIGCHLD */
+#ifdef SIGCHLD
+    case SIGCHLD:
+#ifdef USE_SIGCHILD
+      my_signal(sig, receive_sigchild);
+#else
+      my_signal(sig, SIG_DFL);
+#endif
+      break;
+#endif
+
+      /* SIGFPE */
+#ifdef SIGFPE
+    case SIGFPE:
+#ifdef IGNORE_SIGFPE
+      my_signal(sig, SIG_IGN);
+#else
+      my_signal(sig, SIG_DFL);
+#endif
+      break;
+#endif
+
+      /* SIGPIPE */
+#ifdef SIGPIPE
+    case SIGPIPE:
+      my_signal(sig, SIG_IGN);
+      break;
+#endif
+
+  /* The Java JVM has a tendency to mess with the following... */
+#ifdef SIGSEGV
+    case SIGSEGV:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGBUS
+    case SIGBUS:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGXFSZ
+    case SIGXFSZ:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGILL
+    case SIGILL:
+      my_signal(SIGILL, SIG_DFL);
+      break;
+#endif
+
+    default:
+      break;
+    }
+  }
+}
+
 /* This fuction may be called from modules that may have thrashed
  * the signal handler state on load. eg the Java module.
  */
 PMOD_EXPORT void low_init_signals(void)
 {
   int e;
-
-  /* SIGCHLD */
-#ifdef USE_SIGCHILD
-  my_signal(SIGCHLD, receive_sigchild);
-#elif defined(SIGCHLD)
-  my_signal(SIGCHLD, SIG_DFL);
-#endif
-
-  /* SIGPIPE */
-#ifdef SIGPIPE
-  my_signal(SIGPIPE, SIG_IGN);
-#endif
-
-  /* The Java JVM has a tendency to mess with the following... */
-#ifdef SIGSEGV
-  my_signal(SIGSEGV, SIG_DFL);
-#endif
-#ifdef SIGBUS
-  my_signal(SIGBUS, SIG_DFL);
-#endif
-#ifdef SIGXFSZ
-  my_signal(SIGXFSZ, SIG_DFL);
-#endif
-#ifdef SIGILL
-  my_signal(SIGILL, SIG_DFL);
-#endif
-
-  /* SIGFPE */
-#ifdef IGNORE_SIGFPE
-  my_signal(SIGFPE, SIG_IGN);
-#elif defined(SIGFPE)
-  my_signal(SIGFPE, SIG_DFL);
-#endif
-
-  /* SIGPIPE */
-#ifdef SIGPIPE
-#ifdef PIKE_EXTRA_DEBUG
-  set_pike_debug_options(DEBUG_SIGNALS, DEBUG_SIGNALS);
-#endif
-  if (set_pike_debug_options(0,0) & DEBUG_SIGNALS) {
-    if (sizeof(void *) == 8) {
-      /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
-       * Force a core dump.
-       */
-      my_signal(SIGPIPE, (sigfunctype) abort);
-    }
-  }
-#endif
-
   /* Restore any custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
-    
-    if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
-	default_signals[e])
-    {
-      sigfunctype func = receive_signal;
-#ifdef USE_SIGCHILD
-      if (e == SIGCHLD) {
-	func = receive_sigchild;
-      }
-#endif
-      my_signal(e, func);      
-    }
+    restore_signal_handler(e);
   }
 }
 
@@ -5036,7 +4935,7 @@ void init_signals(void)
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
   /* function(string:int) */
-  ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
+  ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tIntPos),0);
   /* function(int(0..1)|void:int) */
   ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tNone,tInt),0);
   /* function(:int) */
@@ -5047,7 +4946,7 @@ void init_signals(void)
   ADD_FUNCTION("pid",f_pid_status_pid,tFunc(tNone,tInt),0);
 #ifdef HAVE_KILL
   /* function(int:int) */
-  ADD_FUNCTION("kill",f_pid_status_kill,tFunc(tInt,tInt), 0);
+  ADD_FUNCTION("kill", f_pid_status_kill, tFunc(tInt,tInt01), 0);
 #endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
@@ -5084,18 +4983,18 @@ void init_signals(void)
 
   end_class("TraceProcess", 0);
 #endif /* HAVE_PTRACE */
-  
+
 /* function(string,int|void:int) */
   ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),
            OPT_SIDE_EFFECT);
-  
+
   ADD_EFUN("signal",f_signal,
 	   tFunc(tInt tOr(tVoid,tFunc(tOr(tVoid,tInt),tVoid)),tMix),
 	   OPT_SIDE_EFFECT);
 
 #ifdef HAVE_KILL
 /* function(int|object,int:int) */
-  ADD_EFUN("kill",f_kill,tFunc(tOr(tInt,tObj) tInt,tInt),OPT_SIDE_EFFECT);
+  ADD_EFUN("kill", f_kill, tFunc(tOr(tInt,tObj) tInt,tInt01), OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_FORK
@@ -5105,10 +5004,10 @@ void init_signals(void)
 
 /* function(int:string) */
   ADD_EFUN("signame",f_signame,tFunc(tInt,tStr),0);
-  
+
 /* function(string:int) */
   ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
-  
+
 /* function(:int) */
   ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
 

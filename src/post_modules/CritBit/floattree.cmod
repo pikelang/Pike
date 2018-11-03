@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* vim:syntax=c
  */
 #include "common.h"
@@ -34,13 +40,13 @@ PIKECLASS FloatTree {
 } while(0)
 #define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
 
-static INLINE cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
-    cb_float f;
+static inline cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
+    FLOAT_TYPE f;
 
     if (TYPEOF(*v) == PIKE_T_INT) {
-	f.f = (FLOAT_TYPE)v->u.integer;
+	f = (FLOAT_TYPE)v->u.integer;
     } else {
-	f.f = v->u.float_number;
+	f = v->u.float_number;
     }
 
     return cb_encode_float(f);
