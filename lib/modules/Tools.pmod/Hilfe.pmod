@@ -222,7 +222,7 @@ protected class CommandSet {
     }
 
     if(arg_check("assembler_debug")) {
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
       e->assembler_debug_level = (int)words[2];
 #else
       write("Assembler debug not available.\n");
@@ -231,7 +231,7 @@ protected class CommandSet {
     }
 
     if(arg_check("compiler_trace")) {
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
       e->compiler_trace_level = (int)words[2];
 #else
       write("Compiler trace not available.\n");
@@ -2123,12 +2123,12 @@ class Evaluator {
 
   //! The current trace level.
   int trace_level;
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
   //! The current assembler debug level.
   //! Only available if Pike is compiled with RTL debug.
   int assembler_debug_level;
 #endif
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
   //! The current compiler trace level.
   //! Only available if Pike is compiled with RTL debug.
   int compiler_trace_level;
@@ -2299,13 +2299,13 @@ class Evaluator {
     program p;
     mixed err;
 
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
     if(assembler_debug_level)
-      _assembler_debug(assembler_debug_level);
+      Debug.assembler_debug(assembler_debug_level);
 #endif
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
     if(compiler_trace_level)
-      _compiler_trace(compiler_trace_level);
+      Debug.compiler_trace(compiler_trace_level);
 #endif
 
     float compile_time = gauge {
@@ -2313,11 +2313,11 @@ class Evaluator {
     };
     last_compile_time = (int)(compile_time*1000000);
 
-#if constant(_assembler_debug)
-    _assembler_debug(0);
+#if constant(Debug.assembler_debug)
+    Debug.assembler_debug(0);
 #endif
-#if constant(_compiler_trace)
-    _compiler_trace(0);
+#if constant(Debug.compiler_trace)
+    Debug.compiler_trace(0);
 #endif
 
     if(warnings||err)
