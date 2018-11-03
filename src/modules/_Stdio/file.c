@@ -1939,7 +1939,7 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 #endif
       i = writev(fd, iov, cnt);
 
-    e=errno;
+    if (i < 0) e = errno;
 
     THREADS_DISALLOW();
 
@@ -2040,7 +2040,7 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
     } else
 #endif
       i=fd_write(fd, start, len - written);
-    e=errno;
+    if (i < 0 ) e = errno;
 
     if(i<0)
     {
@@ -2119,7 +2119,7 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     } else
 #endif
       i=fd_write(fd, str->str + written, str->len - written);
-    e=errno;
+    if (i < 0) e = errno;
     THREADS_DISALLOW();
 
     check_threads_etc();
