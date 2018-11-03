@@ -4,18 +4,13 @@
 || for more information.
 */
 
-#include "global.h"
 #include "module.h"
 #include "pike_compiler.h"
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "main.h"
-#include "svalue.h"
 #include "interpret.h"
-#include "stralloc.h"
-#include "object.h"
-#include "mapping.h"
 #include "program_id.h"
 #include "lex.h"
 #include "cpp.h"
@@ -25,7 +20,6 @@
 #include "signal_handler.h"
 #include "dynamic_load.h"
 #include "gc.h"
-#include "multiset.h"
 #include "pike_types.h"
 #include "constants.h"
 #include "bignum.h"

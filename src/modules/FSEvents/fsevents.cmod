@@ -12,7 +12,6 @@
 
 #include "module.h"
 #include "interpret.h"
-#include "program.h"
 #include "threads.h"
 #include "pike_types.h"
 #include "builtin_functions.h"

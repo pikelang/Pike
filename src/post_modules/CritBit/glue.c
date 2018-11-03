@@ -8,7 +8,6 @@
 
 #include "interpret.h"
 #include "pike_macros.h"
-#include "program.h"
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"

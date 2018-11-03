@@ -11,7 +11,6 @@
 /* Todo: make sure only one thread accesses the same gdbmmod */
 
 #include "interpret.h"
-#include "program.h"
 #include "module_support.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)

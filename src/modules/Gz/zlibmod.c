@@ -6,7 +6,6 @@
 
 #include "module.h"
 #include "zlib_machine.h"
-#include "program.h"
 #include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)

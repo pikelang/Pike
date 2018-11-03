@@ -32,7 +32,6 @@
 #ifdef HAVE_SYBASE
 
 #include "pike_error.h"
-#include "program.h"
 #include "las.h"
 #include "threads.h"
 #include "module_support.h"

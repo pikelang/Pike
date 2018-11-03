@@ -14,12 +14,10 @@
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
-#include "global.h"
+#include "module.h"
 
 #include <math.h>
 #include <ctype.h>
-
-#include "stralloc.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_NETINET_IN_H
@@ -35,9 +33,7 @@
 #endif
 
 #include "pike_macros.h"
-#include "object.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
 #include "pike_error.h"
 
