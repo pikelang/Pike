@@ -249,11 +249,13 @@ regexp *pike_regcomp(const char *exp)
   char   *scan;
   int     flags;
   short  *exp2,*dest,c;
+  ONERROR oerr;
 
   if (exp == NULL)
     FAIL("NULL argument");
 
   exp2=xcalloc( (strlen(exp)+1), sizeof(short) );
+  SET_ONERROR(oerr, free, exp2);
   for ( dest=exp2; (c=UCHARAT(exp++)); ) {
     switch (c) {
     case '(':
@@ -304,17 +306,11 @@ regexp *pike_regcomp(const char *exp)
   /* Small enough for pointer-storage convention? */
   if (regsize >= 32767L)	/* Probably could be 65535L. */
   {
-    free(exp2);
     FAIL("regexp too big");
   }
 
   /* Allocate space. */
-  r = malloc(sizeof(regexp) + (unsigned) regsize);
-  if(!r)
-  {
-    free(exp2);
-    Pike_error(msg_out_of_mem);
-  }
+  r = xalloc(sizeof(regexp) + (unsigned) regsize);
 
   /* Second pass: emit code. */
   regparse = exp2;
@@ -338,7 +334,7 @@ regexp *pike_regcomp(const char *exp)
 
     /* Starting-point info. */
     if (OP(scan) == EXACTLY)
-      r->regstart = *OPERAND(scan);
+       r->regstart = *OPERAND(scan);
     else if (OP(scan) == BOL)
       r->reganch++;
 
@@ -365,7 +361,7 @@ regexp *pike_regcomp(const char *exp)
   }
 
  exit_regcomp:
-  free(exp2);
+  CALL_AND_UNSET_ONERROR(oerr);
   return r;
 }
 

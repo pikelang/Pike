@@ -42,6 +42,12 @@ o ** operator added. It's exponentiation and works with most
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
 
+o Three pass compiler.
+
+  An extra pass of the compiler has been added. It is used to properly
+  resolve types in forward referring expressions, and is only run when
+  needed.
+
 o #pragma disassemble
 
   This directive is now available even in pikes compiled --without-debug.
@@ -60,7 +66,15 @@ o Support for arguments to implicit lambdas added.
   Implicit lambdas now behave as if they were declared as
   lambda(mixed ... __ARGS__).
 
+  Support for this feature can be detected with #ifdef __ARGS__.
+
 o Function local function declarations are now statements
+  (and not expressions). This means that there is no longer
+  any need to terminate them with a semicolon.
+
+o Anonymous class definitions are now always expressions.
+
+o Function local class definitions are now statements
   (and not expressions). This means that there is no longer
   any need to terminate them with a semicolon.
 
@@ -78,6 +92,15 @@ o Extended sscanf %O
   output. It can now also parse most literal constants pike accepts,
   including integers prefixed with 0x and 0b, and floating point
   numbers in scientific notation.
+
+o Returning void
+
+  It is now possible to return void responses from void functions.
+
+    void a() { return; }
+    void b() { return a(); }
+
+o Protocols.DNS now supports encoding and decoding CAA RRs.
 
 
 Bug fixes
@@ -98,9 +121,33 @@ o Operator functions
   operator LFUNs, so this change should address many potential hidden
   errors.
 
+o Protocols.HTTP.Server
+
+  The server module will now read payloads for HTTP PUT requests, just
+  as any other method. Previously it would stop reading the body and
+  it was up to the caller to read enough data from the socket and
+  combine with already read data.
+
+  Setting "connection" header in the "extra_heads" to Request object
+  method response_and_finish() will now control if keep-alive should be
+  used or not. Otherwise it will be decided by the clients request
+  headers, as previously.
+
+  The headers "content-type", "content-range", "content-length",
+  "server", "date" and "last-modified" will not be added or
+  overwritten if provided in the "extra_heads".
+
+  Header names in "extra_heads" will not have their case modified.
+
 
 Incompatible changes
 --------------------
+
+o Sql.Sql is no longer a wrapper class, but a function.
+
+  The wrapper class has been obsoleted by introduction of the
+  new base class __builtin.Sql.Connection. Note that it is
+  still possible to use Sql.Sql as the type of connection objects.
 
 o Gz.crc32 and Nettle.crc32c now only return positive results.
 
@@ -136,13 +183,16 @@ o String.trim_all_whites() renamed String.trim().
 o Floats are no longer by default sorted before added. This may reduce
   the precision but increases the speed of adding large number of
   floats by a factor of 500. Applications handling floats with large
-  differences in magnitude need to apply the appropritate sorting
+  differences in magnitude need to apply the appropriate sorting
   before arithmetics. As `+ was the only operator that performed
   sorting, and functions like Array.sum did not, this was already a
   concern.
 
 o Returning UNDEFINED from `+ and ``+ is not allowed and will cause an
   exception.
+
+o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
+  syslog() and closelog() have been moved to System.
 
 
 New modules
@@ -162,14 +212,6 @@ o __builtin.Sql
 
   Generic base classes for Sql API modules.
 
-o CompilerEnvironment()->lock()
-
-  Access to the compiler lock.
-
-o Crypto.ECC.Curve.Point
-
-  A point on an ECC curve.
-
 o Filesystem.Zip
 o Function.bind()
 
@@ -183,16 +225,17 @@ o Stdio.FakePipe
 
 o Parser.Markdown
 
-o Concurrent.Future and Concurrent.Promise
-
-  These are used to simplify handling of asynchronous results.
-
 o Crypto.Checksum
 
   This module collect non-cryptographic checksums. Support for crc32,
   adler32 and Castagnoli CRC (CRC32C).
 
   NB: In the future these may be amended to support the Crypto.Hash API.
+
+o Parser.ECMAScript
+
+  This module simply provides a token splitter for
+  ECMAScript/JavaScript.
 
 o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
@@ -203,6 +246,11 @@ o Web.Auth & Web.Api
 
 New features
 ------------
+
+o predef::equal()
+
+  equal() on functions now checks if their definitions are same identifier
+  in the same program.
 
 o predef::gc()
 
@@ -247,9 +295,23 @@ o MasterObject
 
   - cast_to_program() and cast_to_object() should now be thread safe.
 
+o CompilerEnvironment()->lock()
+
+  Access to the compiler lock.
+
+o Crypto.ECC.Curve.Point
+
+  A point on an ECC curve.
+
 o Parser.Pike
 
   Support new language features.
+
+o Protocols.DNS.server
+
+  Derived classes can now override report_decode_error() and
+  handle_decode_error() to change how errors while decoding a DNS
+  packet are reported and handled.
 
 o Protocols.WebSocket
 
@@ -368,10 +430,19 @@ o The self testing framework now supports *.test-files.
 
 o Thread
 
-  _sprintf() improvements: Thread.Mutex now prints the ID of the thread
-  holding the lock, and thread IDs are shown as hexadecimal numbers.
+  - _sprintf() improvements: Thread.Mutex now prints the ID of the thread
+    holding the lock, and thread IDs are shown as hexadecimal numbers.
 
-o Unicode 8.0.0.
+  - Thread.Farm now supports a callback for thread creation and termination
+    for the purpose of tracking thread names.
+
+o sprintf %x
+
+  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
+  representation of their contents. Just calling sprintf("%x",data) is
+  the same as calling String.string2hex(data).
+
+o Unicode 10.0.0.
 
 o Unicode.is_whitespace()
 
@@ -426,6 +497,11 @@ o The gdb_backtraces() function is now available also --without-debug.
 o There's now support to block mapping hashtables from being shrunk
   on map_delete().
 
+o guaranteed_memset() is replaced with secure_zero() which fills a
+  buffer with zero. On x86 SSE2 is used to zero the memory without
+  loading it into the CPU cache, as this function is typically used
+  before calling free() on memory with cryptographic key data.
+
 
 Documentation
 -------------
@@ -448,3 +524,10 @@ o C99 assumed
 
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
+
+Optimizations
+-------------
+
+o Removed the GC marker hash table. For types which require GC markers,
+  they are now allocated as parf of the data type. This significantly
+  improves GC performance ( up to a factor if 2 in some situations ).

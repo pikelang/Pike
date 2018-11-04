@@ -2,6 +2,11 @@
 
 inherit _Debug;
 
+//! Can be custom filled from within your program in order to
+//! have global references to explore live datastructures using
+//! @[Inspect]; comes preinitialised with the empty mapping, ready for use.
+mapping globals = ([]);
+
 constant verify_internals = _verify_internals;
 constant memory_usage = _memory_usage;
 constant gc_status = _gc_status;
@@ -1157,6 +1162,10 @@ string get_perf_map(program p, mapping|void m) {
     string pname= sprintf("%O", p);
 
     int total_size = m_delete(m, 0);
+
+    if (!sizeof (m))
+      return 0;
+
     array k = indices(m), v = values(m), l = allocate(sizeof(k));
     int i;
 

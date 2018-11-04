@@ -21,25 +21,17 @@
 
 #endif /*HAVE_MSQL*/
 
-#include "global.h"
 #include "module.h"
-#include "program.h"
+#include "pike_compiler.h"
 #include "module_support.h"
 
 #ifdef HAVE_MSQL
 
 #include "threads.h"
-#include "machine.h"
 #include "interpret.h"
 #include "builtin_functions.h"
-#include "svalue.h"
-#include "array.h"
-#include "mapping.h"
-#include "stralloc.h"
 #include "operators.h"
-#include "multiset.h"
 #include "pike_types.h"
-#include "interpret.h"
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
@@ -129,6 +121,10 @@ static char * decode_msql_type (int msql_type)
 #endif
 
 	DECLARE_STORAGE;
+
+	/*! @decl inherit __builtin.Sql.Connection
+	 */
+	INHERIT "__builtin.Sql.Connection";
 
 INIT
 {
@@ -467,23 +463,79 @@ PIKEFUN void select_db(string(1..255) dbname)
         do_select_db(dbname->str);
 }
 
-/*! @decl array(mapping(string:mixed)) query (string sqlquery)
+  /*! @class Result
+   */
+  PIKECLASS Result
+  {
+    CVAR m_result *result;
+
+    /*! @decl inherit __builtin.Sql.Result
+     */
+    INHERIT "__builtin.Sql.Result";
+
+    EXIT
+    {
+      if (THIS->result) {
+	msqlFreeResult(THIS->result);
+      }
+    }
+
+    PIKEFUN int num_rows()
+    {
+      RETURN msqlNumRows(THIS->result);
+    }
+
+    PIKEFUN int num_fields()
+    {
+      RETURN msqlNumFields(THIS->result);
+    }
+
+    PIKEFUN array(mapping(string:mixed)) fetch_fields()
+    {
+      int i;
+      int num_fields = msqlNumFields(THIS->result);
+
+      msqlFieldSeek(THIS->result, 0);
+
+      BEGIN_AGGREGATE_ARRAY(num_fields);
+      for (i = 0; i < num_fields; i++) {
+	m_field *field = msqlFetchField(THIS->result);
+	push_text("name");
+	push_text(field->name);
+	push_text("table");
+	push_text(field->table);
+	f_aggregate_mapping(4);
+	DO_AGGREGATE_ARRAY(100);
+      }
+      END_AGGREGATE_ARRAY;
+    }
+
+    PIKEFUN array(string|int(0..0)) fetch_row()
+    {
+      int num_fields = msqlNumFields(THIS->result);
+      m_row row = msqlFetchRow(THIS->result);
+      int i;
+      BEGIN_AGGREGATE_ARRAY(num_fields);
+      for (i = 0; i < num_fields; i++) {
+	if (row[i]) {
+	  push_text(row[i]);
+	} else {
+	  push_undefined();
+	}
+	DO_AGGREGATE_ARRAY(100);
+      }
+      END_AGGREGATE_ARRAY;
+    }
+  }
+  /*! @endclass Result
+   */
+
+/*! @decl variant Result big_query(string(8bit) sqlquery)
  *!
  *! This is all you need to query the database. It takes as argument an SQL
- *! query string (i.e.: "SELECT foo,bar FROM baz WHERE name like '%kinkie%'"
+ *! query string (e.g.: "SELECT foo,bar FROM baz WHERE name like '%kinkie%'"
  *! or "INSERT INTO baz VALUES ('kinkie','made','this')")
- *! and returns a data structure containing the returned values.
- *! The structure is an array (one entry for each returned row) of mappings
- *! which have the column name as index and the column contents as data.
- *! So to access a result from the first example you would have to do
- *! "results[0]->foo".
- *!
- *! A query which returns no data results in an empty array (and NOT in a 0).
- *! Also notice that when there is a column name clash (that is: when you
- *! join two or more tables which have columns with the same name), the
- *! clashing columns are renamed to <tablename>+"."+<column name>.
- *! To access those you'll have to use the indexing operator '[]
- *! (i.e.: results[0]["foo.bar"]).
+ *! and returns an object containing the returned values.
  *!
  *! @throws
  *! Errors (both from the interface and the SQL server) are reported via
@@ -494,43 +546,39 @@ PIKEFUN void select_db(string(1..255) dbname)
  *!
  *! @note
  *! Note that if the query is NOT a of SELECT type, but UPDATE or
- *! MODIFY, the returned value is an empty array.
+ *! MODIFY, the returned value is a @expr{0@} (zero).
  *! @b{This is not an error@}. Errors are reported @b{only@} via exceptions.
  *!
  *! @seealso
  *!   @[error]
  */
-
-/* Gets an SQL query, and returns an array of the results, one element
- * for each result line, each row is a mapping with the column name as
- * index and the data as value.
- * CAN raise exceptions if there's no active database.
- */
-
-PIKEFUN array(mapping(string:mixed)) query(string(1..255) sqlquery)
-{
-	int status, num_fields,num_rows,j,k,tmp_socket,*duplicate_names_map;
-	m_result * result;
-	m_field * current_field;
-	m_row row;
-	struct array *field_names, *retval;
-	char * query, ** names;
+  PIKEFUN object big_query(string(1..255) sqlquery)
+    flags ID_VARIANT;
+  {
+	int status, socket;
+	m_result *result = NULL;
+	struct object *o;
+	struct Msql_msql_Result_struct *res;
 
         if (!THIS->connected)
 		Pike_error("Must connect to database server before querying it.\n");
 	if (!THIS->db_selected)
 		Pike_error("Must select database before querying it.\n");
 
-	tmp_socket=THIS->socket;
-        query=sqlquery->str;
+	socket = THIS->socket;
 
 #ifdef MSQL_DEBUG
-	printf ("MSQLMod: Query is\"%s\"\n",query);
+	fprintf(stderr, "MSQLMod: Query is\"%s\"\n", sqlquery->str);
 #endif
 
 	THREADS_ALLOW();
 	MSQL_LOCK();
-	status=msqlQuery(tmp_socket,query);
+	status = msqlQuery(socket, sqlquery->str);
+
+	if (status != -1) {
+	  /*We have what we want. We need to construct the returned structure*/
+	  result=msqlStoreResult();
+	}
 	MSQL_UNLOCK();
 	THREADS_DISALLOW();
 
@@ -542,91 +590,23 @@ PIKEFUN array(mapping(string:mixed)) query(string(1..255) sqlquery)
 #ifdef MSQL_VERSION_2
 	THIS->affected=status;
 #endif
-	pop_n_elems(args);
-	/*We have what we want. We need to construct the returned structure*/
-	THREADS_ALLOW();
-	MSQL_LOCK();
-	result=msqlStoreResult();
-	MSQL_UNLOCK();
-	THREADS_DISALLOW();
-	if (!result || !(num_rows=msqlNumRows(result)) ) {
-		f_aggregate(0);
-		return;
+	if (!result) {
+	  push_int(0);
+	  return;
 	}
 
-	/*First off: we need to know the field names
-	 *in their correct order, and store them in arrays for further analysis
-	 */
-	num_fields=msqlNumFields(result);
-	duplicate_names_map = malloc (sizeof(int)*num_fields);
-	names = malloc (sizeof(char*)*num_fields);
-	if (!duplicate_names_map || !names)
-		Pike_error ("Memory exhausted.\n");
+	apply_current(Msql_msql_Result_program_fun_num, 0);
 
-	/* initialize support structure for duplicate column names */
-	for (j=0;j<num_fields;j++)
-		duplicate_names_map[j]=0;
-
-	/* Find duplicate column names */
-	for (j=0;j<num_fields;j++) {
-		current_field=msqlFetchField(result);
-		names[j]=current_field->name;
-	}
-	for (j=0;j<num_fields;j++)
-		for (k=j+1;k<num_fields;k++)
-			if (!strcmp(names[j],names[k])) {
-				duplicate_names_map[j]=1;
-				duplicate_names_map[k]=1;
-			}
-
-	/* Reset field cursor */
-	msqlFieldSeek(result,0);
-
-	/* create array containing column names */
-	for (j=0;j<num_fields;j++) {
-		current_field=msqlFetchField(result);
-		if (!current_field)
-			Pike_error ("Huh? Weird! Null field returned at index %d.\n",j);
-		if (duplicate_names_map[j]) {
-			/* If we have a clashing column name we need to prepend "tablename."*/
-			push_text (current_field->table);
-			push_static_text (".");
-			push_text(current_field->name);
-			f_add(3);
-		}
-		else
-			push_text(current_field->name);
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) ||
+	    !(res = get_storage(Pike_sp[-1].u.object,
+				Msql_msql_Result_program)) ||
+	    res->result) {
+	  msqlFreeResult(result);
+	  Pike_error("Bad msql result object!\n");
 	}
 
-	field_names=aggregate_array(num_fields);
-
-	/* Let's fetch the rows and accumulate them as mappings on the stack. */
-	for (j=0;j<num_rows;j++)
-	{
-		struct array * this_row;
-		struct mapping * this_result;
-		int k;
-		row=msqlFetchRow(result);
-		for (k=0;k<num_fields;k++) {
-			if (!row[k]) {
-				push_undefined();
-				continue;
-			}
-			push_text((char *)row[k]); break;
-		}
-		this_row=aggregate_array(num_fields);
-		this_result=mkmapping(field_names,this_row);
-		push_mapping(this_result); /*we're putting mappings on the stack*/
-		free_array(this_row);
-	}
-
-	/* Wrap it up and free the used memory */
-	f_aggregate(num_rows); /* aggregate and push the resulting array */
-	free_array(field_names);
-	free(duplicate_names_map);
-	free(names);
-	msqlFreeResult(result);
-}
+	res->result = result;
+  }
 
 /*! @decl string server_info()
  *!
@@ -669,7 +649,7 @@ PIKEFUN string host_info()
 	push_text(msqlGetHostInfo());
 }
 
-/*! @decl string error()
+/*! @decl string error(void|int clear)
  *!
  *! This function returns the textual description of the last server-related
  *! error. Returns 0 if no error has occurred yet. It is not cleared upon
@@ -680,11 +660,19 @@ PIKEFUN string host_info()
  *!   @[query]
  */
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
-        if (THIS->error_msg)
+	int clearit = clear && clear->u.integer;
+
+	pop_n_elems(args);
+
+        if (THIS->error_msg) {
 		ref_push_string(THIS->error_msg);
-	else
+		if (clearit) {
+			free_string(THIS->error_msg);
+        		THIS->error_msg = 0;
+		}
+	} else
 	        push_int(0);
 }
 

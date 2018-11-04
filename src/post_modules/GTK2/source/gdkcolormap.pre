@@ -19,7 +19,7 @@ void create(GDK2.Visual visual, ?int allocate, ?int system)
     struct object *o1;
     INT_TYPE all=0,sys=0;
 
-    get_all_args("create",args,"%o.%i%i",&o1,&all,&sys);
+    get_all_args(NULL,args,"%o.%i%i",&o1,&all,&sys);
     gv=GDK_VISUAL(get_gdkobject(o1,visual));
     if (sys)
       gcm=gdk_colormap_get_system();
@@ -41,7 +41,7 @@ int alloc_colors(array(GDK2.Color) colors, int writeable,
     GdkColor *gc;
     int res,*suc;
 
-    get_all_args("alloc_colors",args,"%A%i%i",&a,&wr,&best);
+    get_all_args(NULL,args,"%A%i%i",&a,&wr,&best);
     if (a==NULL)
       Pike_error("Invalid array.\n");
 
@@ -79,7 +79,7 @@ int alloc_color(GDK2.Color color, int writeable, int best_match)
     GdkColor *gc;
     struct object *o1;
 
-    get_all_args("alloc_color",args,"%o%i%i",&o1,&wr,&best);
+    get_all_args(NULL,args,"%o%i%i",&o1,&wr,&best);
     gc=(GdkColor *)get_gdkobject(o1,color);
     pgtk2_pop_n_elems(args);
     push_int(gdk_colormap_alloc_color(GDK_COLORMAP(THIS->obj),gc,wr,best));
@@ -95,7 +95,7 @@ void free_colors(array(GDK2.Color) colors)
     int i;
     GdkColor *gc;
 
-    get_all_args("free_colors",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
     gc=(GdkColor *)xalloc(sizeof(GdkColor)*a->size);
@@ -121,7 +121,7 @@ void free_colors(array(GDK2.Color) colors)
     INT_TYPE pix;
     GdkColor *gc;
 
-    get_all_args("query_color",args,"%i",&pix);
+    get_all_args(NULL,args,"%i",&pix);
     gc=(GdkColor *)xalloc(sizeof(GdkColor));
     gdk_colormap_query_color(GDK_COLORMAP(THIS->obj),pix,gc);
     pgtk2_pop_n_elems(args);

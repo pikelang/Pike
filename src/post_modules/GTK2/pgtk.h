@@ -51,6 +51,16 @@
 #include <arpa/inet.h>
 #endif
 
+#if defined(HAVE_GDK_GDKX_H)
+#include <gdk/gdkx.h>
+#elif defined(HAVE_GDK_GDKWIN32_H)
+#include <gdk/gdkwin32.h>
+#elif defined(HAVE_GDK_GDKQUARTZ_H)
+#include <gdk/gdkquartz.h>
+#else
+#error Must have one of gdkx.h, gdkwin32.h, or gdkquartz.h available
+#endif
+
 /*
 #undef GTK_STYLE
 #define GTK_STYLE(X) ((GtkStyle *)X)
@@ -304,7 +314,7 @@ GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m);
 
 #define INIT_WITH_PROPS(X) do {	\
 	struct mapping *m;	\
-	get_all_args("create",args,"%m",&m);	\
+        get_all_args(NULL,args,"%m",&m);	\
 	THIS->obj=pgtk2_create_new_obj_with_properties(X,m);	\
       } while(0)
 void pgtk2_push_gvalue_r(const GValue *param, GType t);

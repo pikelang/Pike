@@ -48,6 +48,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "builtin_functions.h"
+#include "pike_search.h"
 
 #ifdef _REENTRANT
 #include <errno.h>
@@ -446,6 +447,20 @@ static void low_accept_loop(struct args *arg)
 	struct cache *c, *p = NULL;
 	struct log *l, *n = NULL;
 	/* oups. */
+
+	/* NB: log_head is protected by the log_lock mutex. */
+	mt_lock(&arg->log->log_lock);
+	while(arg->log->log_head)
+	{
+	  struct log_entry *l = arg->log->log_head->next;
+	  free(arg->log->log_head);
+	  arg->log->log_head = l;
+	}
+	mt_unlock(&arg->log->log_lock);
+
+	/* NB: The cache, and the variables first_cache and aap_first_log
+	 *     are protected by the interpreter lock.
+	 */
 	low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 	for(i=0; i<CACHE_HTABLE_SIZE; i++)
 	{
@@ -459,12 +474,6 @@ static void low_accept_loop(struct args *arg)
 	    free(t->url);
 	    free(t);
 	  }
-	}
-	while(arg->log->log_head)
-	{
-	  struct log_entry *l = arg->log->log_head->next;
-	  free(arg->log->log_head);
-	  arg->log->log_head = l;
 	}
 
 	c = first_cache;
@@ -564,7 +573,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct svalue *fun, *cb, *program;
   struct cache *c;
   struct args *args = LTHIS;
-  get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
+  get_all_args(NULL, nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
   memset(args, 0, sizeof(struct args));
   if(dolog)
@@ -846,7 +855,6 @@ PIKE_MODULE_INIT
                tFunc(tOr(tStr,tVoid) tOr(tObj,tVoid) tOr(tInt,tVoid),tVoid),0);
   ADD_FUNCTION("reply_with_cache", f_aap_reply_with_cache,
                tFunc(tStr tInt,tVoid), 0);
-  set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
   add_program_constant("RequestProgram", c_request_program, 0 );

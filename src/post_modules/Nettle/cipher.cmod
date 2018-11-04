@@ -4,15 +4,10 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "array.h"
 #include "operators.h"
 #include "threads.h"
-
-/* For this_object() */
-#include "object.h"
 #include "pike_compiler.h"
 #include "module_support.h"
 
@@ -72,7 +67,7 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
   apply((struct object *)object, "crypt", 1);
-  get_all_args("crypt", 1, "%n", &str);
+  get_all_args(NULL, 1, "%n", &str);
   if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
                (long)str->len);
@@ -197,10 +192,12 @@ PIKECLASS Cipher
 
   DECLARE_STORAGE;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->meta = NULL;
   }
+#endif
 
   /*! @decl string(0..255) name()
    *!
@@ -259,24 +256,7 @@ PIKECLASS Cipher
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.Hash.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
     CVAR pike_nettle_crypt_func crypt;
@@ -352,7 +332,7 @@ PIKECLASS Cipher
      *!
      *! @returns
      *!   The generated key. The key memory will be cleared before
-     *!   released.
+     *!   being released.
      *!
      *! @seealso
      *!   @[set_encrypt_key]
@@ -363,12 +343,25 @@ PIKECLASS Cipher
       struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
 
-      push_random_string(info->meta->key_size);
+      /* NB: Some ciphers (eg Blowfish) have weak keys, for which
+       *     set_encrypt_key() will throw an error. We thus need
+       *     to retry with a new key on error.
+       */
+      while(1) {
+	JMP_BUF recover;
+	if (!SETJMP(recover)) {
+	  push_random_string(info->meta->key_size);
 
-      stack_dup();
-      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
-      apply_current(f_Nettle_Cipher_State_set_encrypt_key_fun_num, 1);
-      pop_stack();
+	  stack_dup();
+	  Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+	  apply_current(f_Nettle_Cipher_State_set_encrypt_key_fun_num, 1);
+	  pop_stack();
+
+	  UNSETJMP(recover);
+	  return;
+	}
+	UNSETJMP(recover);
+      }
     }
 
     /*! @decl string(0..255) crypt(string(0..255) data)
@@ -453,12 +446,14 @@ PIKECLASS Cipher
       apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->ctx = NULL;
       THIS->crypt = NULL;
       THIS->key_size = 0;
     }
+#endif
 
     EXIT
     {
@@ -492,7 +487,7 @@ PIKECLASS BufferedCipher
    */
   /*! @decl inherit Cipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Cipher;
 
 #define PAD_SSL        0
 #define PAD_ISO_10126  1
@@ -599,25 +594,27 @@ PIKECLASS BufferedCipher
       CVAR unsigned char *backlog;
       CVAR int backlog_len;
 
+#ifdef PIKE_NULL_IS_SPECIAL
       INIT {
 	THIS->object = NULL;
 	THIS->block_size = 0;
 	THIS->backlog = NULL;
 	THIS->backlog_len = 0;
       }
+#endif
 
       EXIT
 	gc_trivial;
       {
 	if(THIS->backlog) {
-	  guaranteed_memset(THIS->backlog, 0, THIS->block_size);
+          secure_zero(THIS->backlog, THIS->block_size);
 	  free(THIS->backlog);
-	  THIS->backlog = NULL;
-	}
-	if(THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
+        }
+        if(THIS->object)
+        {
+          free_object(THIS->object);
+          THIS->object = NULL;
+        }
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -679,7 +676,8 @@ PIKECLASS BufferedCipher
 	THIS->backlog = xcalloc(1, block_size);
 	THIS->backlog_len = 0;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1107,7 +1105,7 @@ PIKECLASS BlockCipher
 
   /*! @decl inherit BufferedCipher
    */
-  INHERIT Nettle_BufferedCipher;
+  INHERIT BufferedCipher;
 
   /*! @module CBC
    *! Implementation of the Cipher Block Chaining mode (CBC).
@@ -1125,12 +1123,12 @@ PIKECLASS BlockCipher
   {
     /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT BufferedCipher;
 
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1, Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".CBC");
       f_add(2);
@@ -1138,19 +1136,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
@@ -1164,27 +1162,10 @@ PIKECLASS BlockCipher
 
       EXTRA
       {
-	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of Cipher via BufferedCipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -1197,14 +1178,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if(THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if(THIS->iv) {
+        if(THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -1218,7 +1193,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -1286,7 +1261,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1489,7 +1465,7 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".PCBC");
       f_add(2);
@@ -1629,12 +1605,12 @@ PIKECLASS BlockCipher
   {
     /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT BufferedCipher;
 
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1, Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".IGE");
       f_add(2);
@@ -1642,19 +1618,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
       push_int(2);
       f_multiply(2);
@@ -1670,27 +1646,10 @@ PIKECLASS BlockCipher
 
       EXTRA
       {
-	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of Cipher via BufferedCipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -1703,14 +1662,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if(THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if(THIS->iv) {
+        if(THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -1724,7 +1677,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -1792,7 +1745,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2032,12 +1986,12 @@ PIKECLASS BlockCipher
   {
     /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT BufferedCipher;
 
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1, Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".ABC");
       f_add(2);
@@ -2045,19 +1999,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
       push_int(2);
       f_multiply(2);
@@ -2073,27 +2027,10 @@ PIKECLASS BlockCipher
 
       EXTRA
       {
-	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of Cipher via BufferedCipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -2106,14 +2043,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if(THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if(THIS->iv) {
+        if(THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -2127,7 +2058,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -2195,7 +2126,8 @@ PIKECLASS BlockCipher
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2434,7 +2366,7 @@ PIKECLASS BlockCipher
   {
     /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT BufferedCipher;
 
     /*! @decl string(0..255) name()
      *! Returns the base cipher name appended with the string @expr{".CFB"@}.
@@ -2442,7 +2374,7 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_static_text(".CFB");
       f_add(2);
@@ -2450,19 +2382,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
@@ -2478,27 +2410,10 @@ PIKECLASS BlockCipher
 
       EXTRA
       {
-	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of Cipher via BufferedCipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -2511,14 +2426,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if (THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if (THIS->iv) {
+        if (THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl object `obj()
@@ -2545,7 +2454,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -2615,7 +2524,8 @@ PIKECLASS BlockCipher
 	THIS->block_size = block_size;
 	THIS->mode = 0;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2922,7 +2832,7 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_static_text(".CTR");
       f_add(2);
@@ -2930,19 +2840,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
@@ -2961,24 +2871,7 @@ PIKECLASS BlockCipher
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.Cipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
       }
 
       PIKEVAR object object
@@ -2990,14 +2883,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if (THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if (THIS->iv) {
+        if (THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl object `obj()
@@ -3024,7 +2911,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -3093,7 +2980,8 @@ PIKECLASS BlockCipher
 
 	THIS->block_size = block_size;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -3307,7 +3195,7 @@ PIKECLASS BlockCipher
   {
     /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT BufferedCipher;
 
     /*! @decl string(0..255) name()
      *! Returns the base cipher name appended with the string @expr{".OFB"@}.
@@ -3315,7 +3203,7 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
       push_static_text(".OFB");
       f_add(2);
@@ -3323,19 +3211,19 @@ PIKECLASS BlockCipher
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+      apply_external(1,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
@@ -3351,27 +3239,10 @@ PIKECLASS BlockCipher
 
       EXTRA
       {
-	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of Cipher via BufferedCipher.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
       }
 
       PIKEVAR object object
@@ -3383,14 +3254,8 @@ PIKECLASS BlockCipher
       EXIT
 	gc_trivial;
       {
-	if (THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if (THIS->iv) {
+        if (THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl object `obj()
@@ -3417,7 +3282,7 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -3486,7 +3351,8 @@ PIKECLASS BlockCipher
 
 	THIS->block_size = block_size;
 
-	add_ref(THIS->object = o);
+        add_ref(THIS->object = o);
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -3749,7 +3615,7 @@ PIKECLASS BlockCipher
  */
 
 #define BLOCKCIPHER_CIPHER_INHERIT	(BUFFEREDCIPHER_CIPHER_INHERIT + \
-					 Nettle_BlockCipher_Nettle_BufferedCipher_inh_num)
+					 Nettle_BlockCipher_BufferedCipher_inh_num)
 
 /*! @class BlockCipher16
  *!
@@ -3766,7 +3632,7 @@ PIKECLASS BlockCipher16
    */
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
 #ifdef HAVE_NETTLE_GCM_H
   PIKEVAR object(Nettle_AEAD) GCM;
@@ -3845,26 +3711,9 @@ PIKECLASS BlockCipher16
       EXTRA
       {
 	/* Perform an inherit of the State class (if any) that our parent
-	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	 * may contain via its inherit of __builtin.Nettle.AE.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
       }
 
       PIKEVAR object object
@@ -3876,14 +3725,8 @@ PIKECLASS BlockCipher16
       EXIT
 	gc_trivial;
       {
-	if(THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
-	if(THIS->iv) {
+        if(THIS->iv)
 	  free_string(THIS->iv);
-	  THIS->iv = NULL;
-	}
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -3897,7 +3740,7 @@ PIKECLASS BlockCipher16
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+	apply_external(2,  Nettle_BlockCipher_BufferedCipher_inh_offset +
 		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
@@ -3961,7 +3804,9 @@ PIKECLASS BlockCipher16
 	    get_inherit_storage(o, inh - o->prog->inherits);
 	} else {
 	  THIS->crypt_state = NULL;
-	}
+        }
+
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -4224,24 +4069,7 @@ PIKECLASS BlockCipher16
       /* Perform an inherit if the _CTR class that our parent contains
        * via its inherit of BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent__CTR_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("_CTR"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent__CTR_fun_num >= 0) {
-	struct program *parent__CTR_prog =
-	  low_program_from_function(parent_obj, parent__CTR_fun_num);
-	if (parent__CTR_prog) {
-	  parent__CTR_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent__CTR_fun_num);
-	  low_inherit(parent__CTR_prog, 0,
-		      parent__CTR_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("_CTR"), 0, REPORT_ERROR);
     }
 
     /*! @decl string(8bit) name()
@@ -4304,24 +4132,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the _CTR.State class that our parent
 	 * contains via its inherit of _CTR.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
 
 	/* We want to call some of our inherited functions recursively... */
 	ccm_state_inh_ctr_state_create_fun_num =
@@ -4361,8 +4172,7 @@ PIKECLASS BlockCipher16
 
       EXIT
       {
-	THIS->ctr = NULL;
-	free_string_builder(&THIS->abuf);
+        free_string_builder(&THIS->abuf);
 	free_string_builder(&THIS->pbuf);
       }
 
@@ -4454,14 +4264,14 @@ PIKECLASS BlockCipher16
 	RETURN this_object();
       }
 
-      static void blockcipher16_ccm_init_mac_mask(const char *caller)
+      static void blockcipher16_ccm_init_mac_mask()
       {
 	struct pike_string *mac_mask;
 
 	if (!THIS->nonce) {
 	  /* NB: Default to nonce of 13 NULs. */
 	  add_ref(THIS->nonce = nul13_string);
-          memcpy(THIS->ctr->iv, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+          memcpy(STR0(THIS->ctr->iv), "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
 	}
 
 	/* Save the first block from the CTR to encrypt the MAC. */
@@ -4469,7 +4279,7 @@ PIKECLASS BlockCipher16
 
 	apply_current(ccm_state_inh_ctr_state_crypt_fun_num, 1);
 
-	get_all_args(caller, 1, "%n", &mac_mask);
+        get_all_args(NULL, 1, "%n", &mac_mask);
 	NO_WIDE_STRING(mac_mask);
 	if (mac_mask->len != 16) {
 	  Pike_error("Bad string length %ld returned from crypt()\n",
@@ -4489,7 +4299,7 @@ PIKECLASS BlockCipher16
 	NO_WIDE_STRING(data);
 
 	if (!THIS->pbuf.s->len) {
-	  blockcipher16_ccm_init_mac_mask("crypt");
+          blockcipher16_ccm_init_mac_mask();
 	}
 
 	if (!THIS->decrypt_mode) {
@@ -4499,7 +4309,7 @@ PIKECLASS BlockCipher16
 	apply_current(ccm_state_inh_ctr_state_crypt_fun_num, args);
 
 	if (THIS->decrypt_mode) {
-	  get_all_args("crypt", 1, "%n", &data);
+          get_all_args(NULL, 1, "%n", &data);
 
 	  NO_WIDE_STRING(data);
 
@@ -4680,7 +4490,7 @@ PIKECLASS BlockCipher16
 	if (!bytes) {
 	  apply_current(f_Nettle_BlockCipher16_cq__CCM_State_digest_size_fun_num,
 			0);
-	  get_all_args("digest", 1, "%d", &bytes);
+          get_all_args(NULL, 1, "%d", &bytes);
 	}
 	if (bytes < 4) {
 	  bytes = 4;
@@ -4692,7 +4502,7 @@ PIKECLASS BlockCipher16
 
 	if (!pstr->len) {
 	  // Unlikely, but make sure that it is initialized.
-	  blockcipher16_ccm_init_mac_mask("digest");
+          blockcipher16_ccm_init_mac_mask();
 	}
 
 	if (THIS->ctr->crypt_state && THIS->ctr->crypt_state->crypt) {
@@ -4812,7 +4622,11 @@ PIKECLASS BlockCipher16
    *! @seealso
    *!   @[CBC], @[CTR], @[BlockCipher16.CCM], @[BlockCipher16.GCM]
    */
-  PIKEVAR object(Nettle_AEAD) EAX;
+  PIKEVAR object(Nettle_AEAD) EAX
+    /* NB: Solaris 11/x86 has a conflicting #define of EAX in <sys/regset.h>,
+     *     which gets included when __EXTENSIONS__ is defined.
+     */
+    c_name EAX_object;
 
   PIKECLASS _EAX
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
@@ -4878,36 +4692,10 @@ PIKECLASS BlockCipher16
 
       EXTRA
       {
-	/* Perform an inherit of the State class that our parent
-	 * contains via its inherit of AEAD.
+	/* Perform an inherit of the State class (if any) that our parent
+	 * may contain via its inherit of __builtin.Nettle.AEAD.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
-      }
-
-      EXIT
-	gc_trivial;
-      {
-	if (THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -4974,7 +4762,8 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	THIS->mode = 0;
+        THIS->mode = 0;
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -5209,7 +4998,7 @@ PIKECLASS BlockCipher16
 	if (!bytes) {
 	  apply_current(f_Nettle_BlockCipher16_cq__EAX_State_digest_size_fun_num,
 			0);
-	  get_all_args("digest", 1, "%d", &bytes);
+          get_all_args(NULL, 1, "%d", &bytes);
 	}
 	if (bytes < 1) {
 	  bytes = 1;
@@ -5324,7 +5113,7 @@ PIKECLASS BlockCipher16
      *!
      *! The state for a GCM instance.
      */
-    PIKECLASS State
+   PIKECLASS State
       program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       DOCSTART() @decl inherit AEAD::State
@@ -5335,24 +5124,7 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the State class (if any) that our parent
 	 * may contain via its inherit of __builtin.Nettle.AEAD.
 	 */
-	struct program *parent_prog = Pike_compiler->previous->new_program;
-	struct object *parent_obj = Pike_compiler->previous->fake_object;
-	int parent_State_fun_num =
-	  really_low_find_shared_string_identifier(MK_STRING("State"),
-						   parent_prog,
-						   SEE_PROTECTED|SEE_PRIVATE);
-	if (parent_State_fun_num >= 0) {
-	  struct program *parent_State_prog =
-	    low_program_from_function(parent_obj, parent_State_fun_num);
-	  if (parent_State_prog) {
-	    parent_State_fun_num =
-	      really_low_reference_inherited_identifier(Pike_compiler->previous,
-							0, parent_State_fun_num);
-	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num,
-			1 + 42, 0, NULL);
-	  }
-	}
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
       }
 
       PIKEVAR object object
@@ -5370,15 +5142,6 @@ PIKECLASS BlockCipher16
       INIT
       {
 	THIS->mode = -1;
-      }
-
-      EXIT
-	gc_trivial;
-      {
-	if (THIS->object) {
-	  free_object(THIS->object);
-	  THIS->object = NULL;
-	}
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -5444,7 +5207,8 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	THIS->mode = -1;
+        THIS->mode = -1;
+        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -5787,7 +5551,7 @@ PIKECLASS BlockCipher16
 #ifdef HAVE_NETTLE_EAX_H
     apply_current(Nettle_BlockCipher16_cq__EAX_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-      add_ref(THIS_NETTLE_BLOCKCIPHER16->EAX = Pike_sp[-1].u.object);
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->EAX_object = Pike_sp[-1].u.object);
     }
     pop_stack();
 #endif
@@ -5858,7 +5622,7 @@ PIKECLASS ARCTWO
 {
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
   static const struct pike_cipher pike_arctwo =
     _PIKE_CIPHER(arctwo, ARCTWO);
@@ -5888,32 +5652,17 @@ PIKECLASS ARCTWO
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
+      /* Perform an inherit of the Cipher.State class (if any) that our parent
+       * may contain via its inherit of Cipher via BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Nettle_Cipher_State_set_encrypt_key_fun_num);
-	  f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Nettle_Cipher_State_set_decrypt_key_fun_num);
-	}
+      if( lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING) )
+      {
+        f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
+          really_low_reference_inherited_identifier(NULL, 1,
+                                                    f_Nettle_Cipher_State_set_encrypt_key_fun_num);
+        f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
+          really_low_reference_inherited_identifier(NULL, 1,
+                                                    f_Nettle_Cipher_State_set_decrypt_key_fun_num);
       }
     }
 
@@ -6235,7 +5984,7 @@ PIKECLASS CHACHA
 {
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
   static const struct pike_cipher pike_chacha =
     _PIKE_CIPHER(chacha, CHACHA);
@@ -6262,27 +6011,10 @@ PIKECLASS CHACHA
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
+      /* Perform an inherit of the Cipher.State class (if any) that our parent
+       * may contain via its inherit of Cipher via BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
     CVAR struct chacha_ctx chacha;
@@ -6416,7 +6148,7 @@ PIKECLASS DES
 {
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
   INIT
     {
@@ -6475,27 +6207,10 @@ PIKECLASS DES
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
+      /* Perform an inherit of the Cipher.State class (if any) that our parent
+       * may contain via its inherit of Cipher via BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
     CVAR struct des_ctx des;
@@ -6654,7 +6369,7 @@ PIKECLASS DES3
 {
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
   INIT
     {
@@ -6719,27 +6434,10 @@ PIKECLASS DES3
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
+      /* Perform an inherit of the Cipher.State class (if any) that our parent
+       * may contain via its inherit of Cipher via BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
     CVAR struct des3_ctx des3;
@@ -6816,7 +6514,7 @@ PIKECLASS SALSA20
 {
   /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_BlockCipher;
+  INHERIT BlockCipher;
 
   static const struct pike_cipher pike_salsa20 =
     _PIKE_CIPHER(salsa20, SALSA20);
@@ -6843,27 +6541,10 @@ PIKECLASS SALSA20
 
     EXTRA
     {
-      /* Perform an inherit of the Cipher.State class that our parent
-       * contains via its inherit of Cipher.
+      /* Perform an inherit of the Cipher.State class (if any) that our parent
+       * may contain via its inherit of Cipher via BlockCipher.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
     CVAR struct salsa20_ctx salsa20;
@@ -6931,7 +6612,7 @@ PIKECLASS SALSA20R12
 {
   /*! @decl inherit SALSA20
    */
-  INHERIT Nettle_SALSA20;
+  INHERIT SALSA20;
 
   static const struct pike_cipher pike_salsa20r12 =
     _PIKE_CIPHER(salsa20r12, SALSA20R12);

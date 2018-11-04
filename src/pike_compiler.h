@@ -10,6 +10,7 @@
 #include "lex.h"
 #include "program.h"
 
+extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
@@ -91,9 +92,16 @@ struct compilation
 #define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
 #define MAYBE_THIS_COMPILATION  ((Pike_fp && compilation_program && (Pike_fp->context->prog == compilation_program))?THIS_COMPILATION:NULL)
 
-/* Flags. */
-#define COMPILER_BUSY	1	/* The compiler is busy compiling. */
-#define COMPILER_DONE	2	/* The compiler is finished compiling. */
+/* Complier passes */
+#define COMPILER_PASS_NONE	0
+#define COMPILER_PASS_FIRST	1
+#define COMPILER_PASS_EXTRA	2
+#define COMPILER_PASS_LAST	3
+
+/* Flags for struct compilation. */
+#define COMPILER_BUSY			1	/* The compiler is busy. */
+#define COMPILER_DONE			2	/* The compiler is finished. */
+#define COMPILER_NEED_EXTRA_PASS	4	/* Run an extra pass. */
 
 /* CompilerEnvironment function numbers. */
 #define CE_REPORT_FUN_NUM				0
@@ -103,6 +111,7 @@ struct compilation
 #define CE_GET_COMPILATION_HANDLER_FUN_NUM		4
 #define CE_GET_DEFAULT_MODULE_FUN_NUM			5
 #define CE_HANDLE_INHERIT_FUN_NUM			6
+#define CE_HANDLE_IMPORT_FUN_NUM			7
 
 /* PikeCompiler function numbers. */
 #define PC_REPORT_FUN_NUM				0
@@ -113,10 +122,11 @@ struct compilation
 #define PC_GET_DEFAULT_MODULE_FUN_NUM			5
 #define PC_CHANGE_COMPILER_COMPATIBILITY_FUN_NUM	6
 #define PC_HANDLE_INHERIT_FUN_NUM			7
-#define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			8
-#define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			9
-#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			10
-#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		11
+#define PC_HANDLE_IMPORT_FUN_NUM			8
+#define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			9
+#define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			10
+#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			11
+#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		12
 
 extern struct program *null_program;
 extern struct program *placeholder_program;
@@ -160,11 +170,6 @@ void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
-struct program *compile(struct pike_string *aprog,
-			struct object *ahandler,
-			int amajor, int aminor,
-			struct program *atarget,
-			struct object *aplaceholder);
 void push_compiler_frame(int lexical_scope);
 node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);

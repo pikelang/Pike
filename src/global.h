@@ -14,6 +14,7 @@
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
+#  define _TIME_BITS 64
 #  define _LARGEFILE_SOURCE
 /* #  define _LARGEFILE64_SOURCE 1 */	/* This one is for explicit 64bit. */
 #endif
@@ -93,12 +94,15 @@
 #endif /* _MSC_VER <= 1900 */
 #endif /* _MSC_VER */
 
-#endif /* __NT__ */
+/* NB: Defaults to 64. */
+#ifndef FD_SETSIZE
+/*
+ * In reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
+#endif /* FD_SETSIZE */
 
-#ifdef __amigaos__
-/* Avoid getting definitions of struct in_addr from <unistd.h>... */
-#define __USE_NETINET_IN_H
-#endif
+#endif /* __NT__ */
 
 /*
  * Some structure forward declarations are needed.
@@ -109,25 +113,17 @@
 #define NO_FIX_MALLOC
 #endif
 
-#ifndef STRUCT_PROGRAM_DECLARED
-#define STRUCT_PROGRAM_DECLARED
-struct program;
-#endif
-
-struct function;
-#ifndef STRUCT_SVALUE_DECLARED
-#define STRUCT_SVALUE_DECLARED
-struct svalue;
-#endif
-struct sockaddr;
-struct object;
 struct array;
+struct function;
+struct mapping;
+struct multiset;
+struct object;
+struct pike_string;
+struct program;
+struct sockaddr;
 struct svalue;
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
 struct timeval;
-#endif
+
 
 #ifndef CONFIGURE_TEST
 /* machine.h doesn't exist if we're included from a configure test
@@ -245,7 +241,17 @@ struct timeval;
 #ifdef HAS___BUILTIN_ASSUME
 # define STATIC_ASSUME(X) __builtin_assume(X)
 #else
-# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# ifdef HAS___BUILTIN_UNREACHABLE
+#  define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# else
+#  define STATIC_ASSUME(X)
+# endif
+#endif
+
+#ifdef HAS___BUILTIN_CONSTANT_P
+# define STATIC_IS_CONSTANT(X)	__builtin_constant_p(X)
+#else
+# define STATIC_IS_CONSTANT(X)	0
 #endif
 
 #ifndef HAVE_WORKING_REALLOC_NULL
@@ -277,14 +283,7 @@ struct timeval;
  */
 #define MAX_LOCAL	256
 
-/*
- * define NO_GC to get rid of garbage collection
- */
-#ifndef NO_GC
-#define GC2
-#endif
-
-#ifdef i386
+#if defined(i386) || defined(__powerpc__) || defined(__x86_64__) || (defined(__aarch64__) && defined(__ARM_FEATURE_UNALIGNED))
 #ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define HANDLES_UNALIGNED_MEMORY_ACCESS
 #endif
@@ -342,9 +341,7 @@ void *alloca();
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
@@ -388,14 +385,10 @@ void *alloca();
 #define B8_T __int64
 #elif SIZEOF_CHAR_P == 8
 #define B8_T char *
-#elif defined(B4_T)
-struct b8_t_s { B4_T x,y; };
-#define B8_T struct b8_t_s
 #endif
 
-#ifdef B8_T
-struct b16_t_s { B8_T x,y; };
-#define B16_T struct b16_t_s
+#if (SIZEOF___INT128 - 0) == 16
+#define B16_T __int128
 #endif
 
 /* INT_TYPE stuff */
@@ -526,6 +519,7 @@ typedef struct p_wchar_p
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
 #define DWERR(...) WERR(__VA_ARGS__)
 
+/* Control assert() definition in <assert.h> */
 #undef NDEBUG
 
 /* Set of macros to simplify passing __FILE__ and __LINE__ to
@@ -650,6 +644,62 @@ struct iovec {
 };
 #endif /* !HAVE_STRUCT_IOVEC */
 
+#ifdef HAVE_NON_SCALAR_OFF64_T
+/* Old Solaris uses unions instead of long long for 64bit values when __STDC__.
+ *
+ * Add some conversion functions for convenience.
+ *
+ * The types longlong_t and u_longlong_t are both from <sys/types.h>.
+ *
+ * Common types that are compatible with longlong_t:
+ *   off64_t, blckcnt64_t, offset_t, diskaddr_t
+ *
+ * Common types that are compatible with u_longlong_t:
+ *   ino64_t, fsblkcnt64_t, fsfilcnt64_t, u_offset_t, len_t
+ */
+static inline INT64 PIKE_UNUSED_ATTRIBUTE pike_longlong_to_int64(longlong_t val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.longlong = val;
+  return tmp.scalar;
+}
+static inline unsigned INT64 PIKE_UNUSED_ATTRIBUTE pike_ulonglong_to_uint64(u_longlong_t val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.ulonglong = val;
+  return tmp.uscalar;
+}
+static inline longlong_t PIKE_UNUSED_ATTRIBUTE pike_int64_to_longlong(INT64 val)
+{
+  union {
+    INT64	scalar;
+    longlong_t	longlong;
+  } tmp;
+  tmp.scalar = val;
+  return tmp.longlong;
+}
+static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsigned INT64 val)
+{
+  union {
+    unsigned INT64	uscalar;
+    u_longlong_t	ulonglong;
+  } tmp;
+  tmp.uscalar = val;
+  return tmp.ulonglong;
+}
+#else /* !HAVE_NON_SCALAR_OFF64_T */
+#define pike_longlong_to_int64(VAL)	((INT64)(VAL))
+#define pike_ulonglong_to_uint64(VAL)	((unsigned INT64)(VAL))
+#define pike_int64_to_longlong(VAL)	((INT64)(VAL))
+#define pike_uint64_to_ulonglong(VAL)	((unsigned INT64)(VAL))
+#endif /* HAVE_NON_SCALAR_OFF64_T */
+
 #include "port.h"
 #include "dmalloc.h"
 
@@ -703,5 +753,15 @@ char *getenv (char *);
 #else /* !PROFILING_DEBUG */
 #define W_PROFILING_DEBIG(...)
 #endif /* PROFILING_DEBUG */
+
+#ifdef HAVE_C99_STRUCT_LITERAL_EXPR
+/* This macro is used for eg type-safe struct initializers. */
+#define CAST_STRUCT_LITERAL(TYPE)	(TYPE)
+#else
+/* Prior to C99 the literal was a special form only valid in
+ * initializers (ie not in general expressions).
+ */
+#define CAST_STRUCT_LITERAL(TYPE)
+#endif
 
 #endif

@@ -183,14 +183,21 @@ class OptLibrary
   {
     inherit Opt;
     protected string opt;
-    protected int double;
 
     protected void create(string _opt)
     {
-      if( sizeof(_opt)>2 && has_prefix(_opt, "--") )
-        double = 1;
-      else if( sizeof(_opt)!=2 || _opt[0]!='-' || _opt=="--" )
-        error("%O not a valid option.\n", _opt);
+      switch (sizeof(_opt))
+      {
+        default:
+          if (has_prefix(_opt, "--"))
+            break;
+        case 2:
+          if (_opt[0]=='-' && _opt[1]!='-')
+            break;
+        case 1:
+        case 0:
+          error("%O not a valid option.\n", _opt);
+      }
       opt = _opt;
     }
 
@@ -199,26 +206,18 @@ class OptLibrary
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
-      if( double )
+      if( argv[0]==opt )
       {
-        if( argv[0]==opt )
-        {
-          argv[0] = 0;
-          return (int)previous+1;
-        }
-        return previous || ::get_value(argv, env, previous);
+        argv[0] = 0;
+        return (int)previous+1;
       }
 
-      if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
+      if (sizeof(opt) == 2 && sizeof(argv[0])>2
+       && argv[0][0]=='-' && argv[0][1]!='-'
+       && has_value(argv[0], opt[1..1]))
       {
-        array parts = argv[0]/"=";
-        if( has_value(parts[0], opt[1..1]) )
-        {
-          parts[0] -= opt[1..1];
-          argv[0] = parts*"=";
-          if(argv[0]=="-") argv[0] = 0;
-          return (int)previous+1;
-        }
+        argv[0] -= opt[1..1];
+        return (int)previous+1;
       }
 
       return previous || ::get_value(argv, env, previous);
@@ -305,7 +304,7 @@ class OptLibrary
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
-      if( double )
+      if( sizeof(opt) > 2 )
       {
         // --foo
         if( argv[0]==opt )
@@ -377,7 +376,7 @@ class OptLibrary
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
-      if( double )
+      if( sizeof(opt) > 2 )
       {
         // --foo bar
         if( argv[0]==opt )

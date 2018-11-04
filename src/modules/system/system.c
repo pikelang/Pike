@@ -38,6 +38,7 @@
 #include "pike_rusage.h"
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
+#include "sprintf.h"
 
 #include <errno.h>
 
@@ -123,6 +124,10 @@
 #define SOCKWERR(X, ...)	fprintf(stderr, X, __VA_ARGS__)
 #else
 #define SOCKWERR(X, ...)
+#endif
+
+#ifdef USE_VALGRIND
+#undef HAS___BUILTIN_IA32_RDRAND64_STEP
 #endif
 
 /*
@@ -317,7 +322,7 @@ void f_readlink(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      Pike_error("readlink(): Out of memory\n");
+      Pike_error("Out of memory.\n");
     }
 
     do {
@@ -379,7 +384,7 @@ void f_resolvepath(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      Pike_error("resolvepath(): Out of memory\n");
+      Pike_error("Out of memory.\n");
     }
 
     do {
@@ -398,7 +403,7 @@ void f_resolvepath(INT32 args)
   buflen = PATH_MAX+1;
 
   if (!(buf = alloca(buflen))) {
-    Pike_error("resolvepath(): Out of memory\n");
+    Pike_error("Out of memory.\n");
   }
 
   if ((buf = realpath(path, buf))) {
@@ -798,14 +803,14 @@ void f_setgroups(INT32 args)
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
     gids = alloca(arr->size * sizeof(gid_t));
-    if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
+    if (!gids) Pike_error("Too large array (%d).\n", arr->size);
   } else {
     gids = (gid_t *)safeguard;
   }
 
   for (i=0; i < size; i++) {
     if (TYPEOF(arr->item[i]) != T_INT) {
-      Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
+      Pike_error("Bad element %d in array (expected int).\n", i);
     }
     gids[i] = arr->item[i].u.integer;
   }
@@ -1102,7 +1107,7 @@ void f_getpgrp(INT32 args)
   pgid = getpgid(pid);
 #elif defined(HAVE_GETPGRP)
   if (pid && (pid != getpid())) {
-    Pike_error("getpgrp(): Mode not supported on this OS\n");
+    Pike_error("Mode not supported on this OS.\n");
   }
   pgid = getpgrp();
 #endif
@@ -1220,7 +1225,7 @@ void f_dumpable(INT32 args)
   }
   if (args) {
     INT_TYPE val;
-    get_all_args("dumpable", args, "%i", &val);
+    get_all_args(NULL, args, "%i", &val);
     if (val & ~1) {
       SIMPLE_ARG_TYPE_ERROR("dumpable", 1, "int(0..1)");
     }
@@ -1544,7 +1549,7 @@ void f_uname(INT32 args)
   old_sp = sp;
 
   if(uname(&foo) < 0)
-    Pike_error("uname() system call failed.\n");
+    Pike_error("System call failed.\n");
 
   push_static_text("sysname");
   push_text(foo.sysname);
@@ -1580,7 +1585,7 @@ void f_gethostname(INT32 args)
   struct utsname foo;
   pop_n_elems(args);
   if(uname(&foo) < 0)
-    Pike_error("uname() system call failed.\n");
+    Pike_error("System call failed.\n");
   push_text(foo.nodename);
 }
 #elif defined(HAVE_GETHOSTNAME)
@@ -1597,7 +1602,7 @@ void f_gethostname(INT32 args)
   char name[1024];
   pop_n_elems(args);
   if (sysinfo(SI_HOSTNAME, name, sizeof(name)) < 0) {
-    Pike_error("sysinfo() system call failed.\n");
+    Pike_error("System call failed.\n");
   }
   push_text(name);
 }
@@ -1684,7 +1689,7 @@ int my_isipv6nr(char *s)
     case 'A':case 'B':case 'C':case 'D':case 'E':case 'F':
     case 'a':case 'b':case 'c':case 'd':case 'e':case 'f':
       is_hex = 1;
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case '0':case '1':case '2':case '3':case '4':
     case '5':case '6':case '7':case '8':case '9':
       has_value++;
@@ -1897,12 +1902,14 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
   }
 
-  if( (err=getaddrinfo(name, service, &hints, &res)) && AI_NUMERICHOST )
+#if AI_NUMERICHOST != 0
+  if( (err=getaddrinfo(name, service, &hints, &res)) )
   {
     /* Try again without AI_NUMERICHOST. */
     hints.ai_flags &= ~AI_NUMERICHOST;
     err=getaddrinfo(name, service, &hints, &res);
   }
+#endif
   if(!err)
   {
     struct addrinfo *p, *found = NULL;
@@ -1934,7 +1941,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #ifdef AF_INET6
   if (inet_flags & 2) {
     SOCKADDR_FAMILY(*addr) = AF_INET6;
-    /* Note: This is equvivalent to :: (aka IPv6 ANY). */
+    /* Note: This is equivalent to :: (aka IPv6 ANY). */
     memset(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
   }
 #endif
@@ -1976,9 +1983,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
     if(!ret) {
       if (strlen(name) < 1024) {
-        Pike_error("Invalid address '%s'\n",name);
+        Pike_error("Invalid address '%s'.\n",name);
       } else {
-        Pike_error("Invalid address\n");
+        Pike_error("Invalid address.\n");
       }
     }
 
@@ -1995,9 +2002,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif
 #else
     if (strlen(name) < 1024) {
-      Pike_error("Invalid address '%s'\n",name);
+      Pike_error("Invalid address '%s'.\n",name);
     } else {
-      Pike_error("Invalid address\n");
+      Pike_error("Invalid address.\n");
     }
 #endif
   }
@@ -2010,9 +2017,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
     if(!ret) {
       if (strlen(service) < 1024) {
-        Pike_error("Invalid service '%s'\n",service);
+        Pike_error("Invalid service '%s'.\n",service);
       } else {
-        Pike_error("Invalid service\n");
+        Pike_error("Invalid service.\n");
       }
     }
 
@@ -2024,9 +2031,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       addr->ipv4.sin_port = ret->s_port;
 #else
     if (strlen(service) < 1024) {
-      Pike_error("Invalid service '%s'\n",service);
+      Pike_error("Invalid service '%s'.\n",service);
     } else {
-      Pike_error("Invalid service\n");
+      Pike_error("Invalid service.\n");
     }
 #endif
   } else if(port > 0) {
@@ -2128,7 +2135,7 @@ void f_gethostbyaddr(INT32 args)
   get_all_args("gethostbyaddr", args, "%s", &name);
 
   if ((int)(addr = inet_addr(name)) == -1) {
-    Pike_error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
+    Pike_error("IP-address must be of the form a.b.c.d.\n");
   }
 
   pop_n_elems(args);
@@ -2476,7 +2483,7 @@ static void f_getrlimit(INT32 args)
    if (res==-1)
    {
 /* this shouldn't happen */
-      Pike_error("getrlimit: error; errno=%d\n",errno);
+      Pike_error("error; errno=%d.\n",errno);
    }
    pop_n_elems(args);
 #ifdef RLIM_INFINITY
@@ -2564,7 +2571,7 @@ static void f_setrlimit(INT32 args)
    switch( set_one_limit( Pike_sp[-args].u.string->str, Pike_sp[1-args].u.integer, Pike_sp[2-args].u.integer ) )
    {
     case -2:
-        Pike_error("setrlimit: no %s resource on this system\n",
+        Pike_error("No %s resource on this system.\n",
         sp[-args].u.string->str);
         break;
     case -1:
@@ -2588,7 +2595,7 @@ void f_setproctitle(INT32 args)
   char *title;
 
   if (args > 1) f_sprintf(args);
-  get_all_args("setproctitle", args, "%s", &title);
+  get_all_args(NULL, args, "%s", &title);
   setproctitle("%s", title);
   pop_stack();
 }
@@ -2652,10 +2659,10 @@ void f_system_setitimer(INT32 args)
       switch (errno)
       {
 	 case EINVAL:
-	    Pike_error("setitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+            Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
 	    break;
 	 default:
-	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+            Pike_error("Unknown error (errno=%d).\n",errno);
 	    break;
       }
    }
@@ -2697,10 +2704,10 @@ void f_system_getitimer(INT32 args)
       switch (errno)
       {
 	 case EINVAL:
-	    Pike_error("getitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+            Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
 	    break;
 	 default:
-	    Pike_error("getitimer: unknown error (errno=%d)\n",errno);
+            Pike_error("Unknown error (errno=%d).\n",errno);
 	    break;
       }
    }
@@ -2768,7 +2775,7 @@ static void f_get_netinfo_property(INT32 args)
     }
     ni_free(dom);
   } else {
-    Pike_error("get_netinfo_property: error: %s\n", ni_error(res));
+    Pike_error("Error: %s.\n", ni_error(res));
   }
 
   /* make array of all replies; missing properties or invalid directory
@@ -2860,7 +2867,7 @@ static void f_gettimeofday(INT32 args)
 #endif
    pop_n_elems(args);
    if (gettimeofday(&tv,&tz))
-      Pike_error("gettimeofday: gettimeofday failed, errno=%d\n",errno);
+      Pike_error("gettimeofday failed, errno=%d.\n",errno);
    push_int(tv.tv_sec);
    push_int(tv.tv_usec);
 #ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
@@ -3398,16 +3405,15 @@ PIKE_MODULE_INIT
 #ifdef HAVE_SYSLOG
 
 /* function(string,int,int:void) */
-  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
+  ADD_FUNCTION2("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0,
+                OPT_SIDE_EFFECT);
 
 /* function(int,string:void) */
-  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
+  ADD_FUNCTION2("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0,
+                OPT_SIDE_EFFECT);
 
 /* function(:void) */
-  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION2("closelog", f_closelog,tFunc(tNone,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SYSLOG */
 
 #ifdef HAVE_SLEEP

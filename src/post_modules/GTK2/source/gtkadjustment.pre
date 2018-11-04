@@ -58,7 +58,7 @@ void create(float|mapping(string:mixed)|void value_or_props,
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_FLOAT) {
       FLOAT_TYPE val,lower,upper,step_inc,page_inc,page_size;
       val=lower=upper=step_inc=page_inc=page_size=0.0;
-      get_all_args("create",args,"%f.%f%f%f%f%f",&val,&lower,&upper,
+      get_all_args(NULL,args,"%f.%f%f%f%f%f",&val,&lower,&upper,
 			&step_inc,&page_inc,&page_size);
       ga=gtk_adjustment_new(val,lower,upper,step_inc,page_inc,page_size);
       THIS->obj=G_OBJECT(ga);

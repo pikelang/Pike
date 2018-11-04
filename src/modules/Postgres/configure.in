@@ -61,112 +61,52 @@ lib_searchpath="$pike_postgres_user_lib_directory $lib_searchpath"
 echo "include searchpath: $include_searchpath" >&AC_FD_CC
 echo "lib searchpath: $lib_searchpath" >&AC_FD_CC
 
-dnl check for dirname and locate, we might need them
-AC_CHECK_PROG(dirname,dirname,yes)
-AC_CHECK_PROG(locate,locate,yes)
-if test x$ac_cv_prog_dirname$ac_cv_prog_locate = xyesyes; then
-  pike_try_locate=yes
-fi
-
 dnl start actual work
 if test x$with_postgres = xyes; then
   ac_pike_postgres_works=yes
 
   PIKE_FEATURE_NODEP(Postgres)
 
-  OLD_CPPFLAGS=$CPPFLAGS
-  OLD_LIBS=$LIBS
-  OLD_LDFLAGS=$LDFLAGS
+  PIKE_PKG_CONFIG(libpq, [
+		      AC_CHECK_FUNCS(PQclear)
+		      if test "x$ac_cv_func_PQclear" = "xno"; then
+			  ac_pike_postgres_works=no
+		      fi
+		  ], [
 
-dnl see if we can find the include files in any of the standard locations
-  AC_MSG_CHECKING(for location of the Postgres include files)
-  AC_CACHE_VAL(pike_cv_pgres_include_dir, [
-    for pike_cv_pgres_include_dir in $include_searchpath no; do
-      echo "Trying $pike_cv_pgres_include_dir/server/catalog/pg_type.h" >&AC_FD_CC
-      if test -f $pike_cv_pgres_include_dir/server/catalog/pg_type.h; then
-	break
-      fi
-    done
-    if test x$pike_cv_pgres_include_dir = xno; then
+    OLD_CPPFLAGS=$CPPFLAGS
+    OLD_LIBS=$LIBS
+    OLD_LDFLAGS=$LDFLAGS
+
+    # See if we can find the include files in any of the standard locations
+    AC_MSG_CHECKING(for location of the Postgres include files)
+    AC_CACHE_VAL(pike_cv_pgres_include_dir, [
       for pike_cv_pgres_include_dir in $include_searchpath no; do
-	echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
+        echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
         if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
 	  break
         fi
       done
-    fi
-  ])
-  if test x$pike_cv_pgres_include_dir != xno; then
-    AC_MSG_RESULT([$pike_cv_pgres_include_dir])
-  else
-    AC_MSG_RESULT(not found.)
-  fi
-
-  if test x$pike_cv_pgres_include_dir != xno; then
-    CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
-    if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
-      # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
-      #     that expects <server/utils/palloc.h> to be available
-      #     as <utils/palloc.h>.
-      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
-    fi
-  fi
-
-dnl final check, just to be sure we did not mess up
-  AC_CHECK_HEADERS(postgres.h postgres_fe.h \
-		   server/postgres.h server/postgres_fe.h \
-		   postgresql/server/postgres.h \
-		   postgresql/server/postgres_fe.h \
-		   server/catalog/pg_type.h catalog/pg_type.h \
-		   postgresql/server/catalog/pg_type.h \
-		   server/pg_config.h postgresql/server/pg_config.h \
-		   pg_config.h libpq-fe.h)
-
-dnl check whether we have Postgres 7.2 or newer.
-  HAVE_PG72=no
-  AC_EGREP_CPP([\"7\.[2-9].*], [
-#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
-#include <postgresql/server/pg_config.h>
-#elif defined(HAVE_SERVER_PG_CONFIG_H)
-#include <server/pg_config.h>
-#elif defined(HAVE_PG_CONFIG_H)
-#include <pg_config.h>
-#endif
-PG_VERSION
-  ], [
-    HAVE_PG72=yes
-    AC_DEFINE(HAVE_PG72)
-  ], [
-    # Detect Postgres 8.x and 9.x.
-    AC_EGREP_CPP([\"[8-9]\..*], [
-#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
-#include <postgresql/server/pg_config.h>
-#elif defined(HAVE_SERVER_PG_CONFIG_H)
-#include <server/pg_config.h>
-#elif defined(HAVE_PG_CONFIG_H)
-#include <pg_config.h>
-#endif
-PG_VERSION
-    ], [
-      HAVE_PG72=yes
-      AC_DEFINE(HAVE_PG72)
-    ], [
-      # Detect Postgres 10.x and anything later.
-      AC_EGREP_CPP([\"[1-9][0-9][0-9]*\..*], [
-#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
-#include <postgresql/server/pg_config.h>
-#elif defined(HAVE_SERVER_PG_CONFIG_H)
-#include <server/pg_config.h>
-#elif defined(HAVE_PG_CONFIG_H)
-#include <pg_config.h>
-#endif
-PG_VERSION
-      ], [
-        HAVE_PG72=yes
-        AC_DEFINE(HAVE_PG72)
-      ])
     ])
+    if test x$pike_cv_pgres_include_dir != xno; then
+      AC_MSG_RESULT([$pike_cv_pgres_include_dir])
+    else
+      AC_MSG_RESULT(not found.)
+    fi
+
+    if test x$pike_cv_pgres_include_dir != xno; then
+      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
+      if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
+        # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
+        #     that expects <server/utils/palloc.h> to be available
+        #     as <utils/palloc.h>.
+        CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
+      fi
+    fi
   ])
+
+  # Final check, just to be sure we did not mess up
+  AC_CHECK_HEADERS(libpq-fe.h)
 
   if test "x$ac_cv_header_libpq_fe_h = xyes"; then
       # Rational: OpenSolaris as of 20070128 includes a libpq-fe.h that
@@ -174,13 +114,6 @@ PG_VERSION
       # that, but does not include openssl/ssl.h in the dist.
       AC_MSG_CHECKING(if libpq-fe.h works)
       AC_TRY_COMPILE([
-#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
-#include <postgresql/server/pg_config.h>
-#elif HAVE_SERVER_PG_CONFIG_H
-#include <server/pg_config.h>
-#elif defined(HAVE_PG_CONFIG_H)
-#include <pg_config.h>
-#endif
 #include <libpq-fe.h>
       ], [], [
           AC_MSG_RESULT(yes)
@@ -188,16 +121,13 @@ PG_VERSION
           AC_MSG_RESULT(no)
           ac_pike_postgres_works=no
       ])
-  fi
-
-  echo "Have Postgres 7.2? $HAVE_PG72"
-  if test "x$ac_cv_header_libpq_fe_h" = xno -o \
-	  "x$HAVE_PG72$ac_cv_header_postgres_h$ac_cv_header_postgres_fe_h$ac_cv_header_server_postgres_h$ac_cv_header_server_postgres_fe_h" = xnonononono ; then
+  else
     ac_pike_postgres_skip=yes
+    ac_pike_postgres_works=no
   fi
 
-dnl okay, now let us start working on the libraries
-  if test x$ac_pike_postgres_skip = xno; then
+  # Okay, now let us start working on the libraries
+  if test x$ac_pike_postgres_skip$pike_cv_pkg_config_libpq = xnono; then
     AC_MSG_CHECKING(for location of the Postgres library)
     AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
       for pike_cv_pgres_lib_dir in $lib_searchpath no; do
@@ -212,6 +142,13 @@ dnl okay, now let us start working on the libraries
       AC_MSG_RESULT(found.)
     else
       AC_MSG_RESULT(not found.)
+
+      # check for dirname and locate, we might need them
+      AC_CHECK_PROG(dirname,dirname,yes)
+      AC_CHECK_PROG(locate,locate,yes)
+      if test x$ac_cv_prog_dirname$ac_cv_prog_locate = xyesyes; then
+	  pike_try_locate=yes
+      fi
     fi
     if test x$pike_cv_pgres_lib_dir$pike_cv_can_try_locate = xnoyes; then
       AC_MSG_CHECKING(whether we can locate it anyway)
@@ -228,14 +165,15 @@ dnl okay, now let us start working on the libraries
       fi
     fi
 
-dnl last check, just to be sure
+    # Last check, just to be sure
     if test x$pike_cv_pgres_lib_dir != xno; then
       LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir -R$pike_cv_pgres_lib_dir"
     fi
     AC_CHECK_LIB(crypt, crypt)
     AC_SEARCH_LIBS(PQclear, pq libpq)
   fi
-  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea PQescapeStringConn PQescapeString)
+  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea \
+		 PQescapeStringConn PQescapeString)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
     AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
   fi

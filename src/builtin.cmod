@@ -26,13 +26,14 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
-#include "stuff.h"
+#include "pike_cpulib.h"
 #include "gc.h"
 #include "block_allocator.h"
 #include "pikecode.h"
 #include "opcodes.h"
 #include "whitespace.h"
 #include "sprintf.h"
+#include "pike_search.h"
 
 #include <errno.h>
 #include <math.h>
@@ -44,8 +45,29 @@
 
 #define DEFAULT_CMOD_STORAGE
 
-DECLARATIONS
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    struct tm_extra { };
+#define tm_zone			__tm_zone
+#define tm_gmtoff		__tm_gmtoff
+#define GET_GMTOFF(TM)		((TM)->tm_gmtoff)
+#define GET_ZONE(this)		((this)->t.tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(this, VAL)	((this)->t.tm_zone = (VAL))
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+    struct tm_extra { };
+#define GET_GMTOFF(TM)		((TM)->tm_gmtoff)
+#define GET_ZONE(this)		((this)->t.tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(this, VAL)	((this)->t.tm_zone = (VAL))
+#else
+    struct tm_extra { const char *tm_zone; };
+#define GET_GMTOFF(TM)		0
+#define GET_ZONE(this)		((this)->extra.tm_zone)
+#define SET_GMTOFF(TM, VAL)	(VAL)
+#define SET_ZONE(this, VAL)	((this)->extra.tm_zone = (VAL))
+#endif
 
+DECLARATIONS
 
 /*! @module System
  */
@@ -59,31 +81,10 @@ PIKECLASS TM
     CVAR struct tm t;
     CVAR time_t unix_time;
     CVAR int modified;
-    CVAR struct pike_string *set_zone;
-
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-#define tm_zone __tm_zone
-#define tm_gmtoff __tm_gmtoff
-#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
-#define GET_ZONE(TM)	((TM)->tm_zone)
-#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
-#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
-#elif defined(STRUCT_TM_HAS_GMTOFF)
-#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
-#define GET_ZONE(TM)	((TM)->tm_zone)
-#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
-#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
-#else
-#define GET_GMTOFF(TM)	0
-#define GET_ZONE(TM)	((char*)NULL)
-#define SET_GMTOFF(TM, VAL)	(VAL)
-#define SET_ZONE(TM, VAL)	(VAL)
-#endif
+    CVAR struct tm_extra extra;
 
 #define strftime_zone strftime
-#define mktime_zone mktime
 #define strptime_zone strptime
-#define asctime_zone asctime
 #define localtime_zone(X,Y) localtime(X)
 #ifndef HAVE_EXTERNAL_TIMEZONE
 #undef timezone
@@ -91,100 +92,28 @@ PIKECLASS TM
 
 #define MODIFY(X) do{ THIS->modified = 1;THIS->t.X; }while(0)
 #define FIX_THIS() do {                                               \
-        if(THIS->modified){                                           \
-            THIS->unix_time = mktime_zone( &THIS->t );                \
-            THIS->modified = 0;                                       \
-        }                                                             \
+        if(THIS->modified)                                            \
+          fix_tm(THIS);                                               \
     }  while(0)
+
+    static void fix_tm(struct TM_struct *this)
+    {
+      const char *tm_zone = GET_ZONE(this);
+      int is_utc_zone = tm_zone && !strcmp(tm_zone, "UTC");
+      if (is_utc_zone)
+        this->t.tm_isdst = 0;
+      this->unix_time = mktime_zone(&this->t, is_utc_zone, 0);
+      this->modified = 0;
+    }
 
 #ifdef HAVE_STRPTIME
     /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
      *!
-     *! Parse the given @[data] using the format in @[format] as a date.
+     *! @note
+     *!  The @expr{format@} and @expr{data@} are reversed.
      *!
-     *! @dl
-     *!   @item %%
-     *!     The % character.
-     *!
-     *!   @item %a or %A
-     *!     The weekday name according to the C locale, in abbreviated
-     *!     form or the full name.
-     *!
-     *!   @item %b or %B or %h
-     *!     The month name according to the C locale, in abbreviated form
-     *!     or the full name.
-     *!
-     *!   @item %c
-     *!     The date and time representation for the C locale.
-     *!
-     *!   @item %C
-     *!     The century number (0-99).
-     *!
-     *!   @item %d or %e
-     *!     The day of month (1-31).
-     *!
-     *!   @item %D
-     *!     Equivalent to %m/%d/%y.
-     *!
-     *!   @item %H
-     *!     The hour (0-23).
-     *!
-     *!   @item %I
-     *!     The hour on a 12-hour clock (1-12).
-     *!
-     *!   @item %j
-     *!     The day number in the year (1-366).
-     *!
-     *!   @item %m
-     *!     The month number (1-12).
-     *!
-     *!   @item %M
-     *!     The minute (0-59).
-     *!
-     *!   @item %n
-     *!     Arbitrary whitespace.
-     *!
-     *!   @item %p
-     *!     The C locale's equivalent of AM or PM.
-     *!
-     *!   @item %R
-     *!     Equivalent to %H:%M.
-     *!
-     *!   @item %S
-     *!     The second (0-60; 60 may occur for leap seconds;
-     *!     earlier also 61 was allowed).
-     *!
-     *!   @item %t
-     *!     Arbitrary whitespace.
-     *!
-     *!   @item %T
-     *!     Equivalent to %H:%M:%S.
-     *!
-     *!   @item %U
-     *!     The week number with Sunday the first day of the week (0-53).
-     *!
-     *!   @item %w
-     *!     The weekday number (0-6) with Sunday = 0.
-     *!
-     *!   @item %W
-     *!     The week number with Monday the first day of the week (0-53).
-     *!
-     *!   @item %x
-     *!     The date, using the C locale's date format.
-     *!
-     *!   @item %X
-     *!     The time, using the C locale's time format.
-     *!
-     *!   @item %y
-     *!     The year within century (0-99).  When a century is not
-     *!     otherwise specified, values in the range 69-99 refer to years
-     *!     in the twentieth century (1969-1999); values in the range
-     *!     00-68 refer to years in the twenty-first century (2000-2068).
-     *!
-     *!   @item %Y
-     *!     The year, including century (for example, 1991).
-     *! @enddl
-     *!
+     *! @seealso
+     *!   @[strptime]
      */
     PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
     {
@@ -197,147 +126,16 @@ PIKECLASS TM
     }
 #endif /* HAVE_STRPTIME */
     /*! @decl string(1..255) strftime( string(1..255) format )
-     *! See also @[Gettext.setlocale]
      *!
-     *! Convert the structure to a string.
-     *!
-     *! @dl
-     *!   @item %a
-     *!     The abbreviated weekday name according to the current locale
-     *!
-     *!   @item %A
-     *!     The full weekday name according to the current locale.
-     *!
-     *!   @item %b
-     *!     The abbreviated month name according to the current locale.
-     *!
-     *!   @item %B
-     *!     The full month name according to the current locale.
-     *!
-     *!   @item %c
-     *!     The preferred date and time representation for the current locale.
-     *!
-     *!   @item %C
-     *!     The century number (year/100) as a 2-digit integer.
-     *!
-     *!   @item %d
-     *!     The day of the month as a decimal number (range 01 to 31).
-     *!
-     *!   @item %D
-     *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
-     *!     Americans should note that in other countries @expr{%d/%m/%y@}
-     *!     is rather common. This means that in international context
-     *!     this format is ambiguous and should not be used.)
-     *!
-     *!   @item %e
-     *!     Like @expr{%d@}, the day of the month as a decimal number,
-     *!     but a leading zero is replaced by a space.
-     *!
-     *!   @item %E
-     *!     Modifier: use alternative format, see below.
-     *!
-     *!   @item %F
-     *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
-     *!
-     *!   @item %G
-     *!     The ISO 8601 week-based year (see NOTES) with century as a
-     *!     decimal number. The 4-digit year corresponding to the ISO
-     *!     week number (see @expr{%V@}). This has the same format and
-     *!     value as @expr{%Y@}, except that if the ISO week number
-     *!     belongs to the previous or next year, that year is used instead.
-     *!
-     *!   @item %g
-     *!     Like @expr{%G@}, but without century, that is,
-     *!     with a 2-digit year (00-99). (TZ)
-     *!
-     *!   @item %h
-     *!     Equivalent to %b.
-     *!
-     *!   @item %H
-     *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
-     *!
-     *!   @item %I
-     *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
-     *!
-     *!   @item %j
-     *!     The day of the year as a decimal number (range 001 to 366).
-     *!
-     *!   @item %k
-     *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
-     *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
-     *!
-     *!   @item %l
-     *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
-     *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
-     *!
-     *!   @item %m
-     *!     The month as a decimal number (range 01 to 12).
-     *!
-     *!   @item %M
-     *!     The minute as a decimal number (range 00 to 59).
-     *!
-     *!   @item %n
-     *!     A newline character. (SU)
-     *!
-     *!   @item %O
-     *!     Modifier: use alternative format, see below. (SU)
-     *!
-     *!   @item %p
-     *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
-     *!     value, or the corresponding strings for the current locale.
-     *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
-     *!
-     *!   @item %P
-     *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
-     *!     or a corresponding string for the current locale.
-     *!
-     *!   @item %r
-     *!     The time in a.m. or p.m. notation. In the POSIX locale this is
-     *!     equivalent to @expr{%I:%M:%S %p@}.
-     *!
-     *!   @item %R
-     *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
-     *!     For a version including the seconds, see @expr{%T@} below.
-     *!
-     *!   @item %s
-     *!     The number of seconds since the Epoch,
-     *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
-     *!
-     *!   @item %S
-     *!     The second as a decimal number (range 00 to 60).
-     *!     (The range is up to 60 to allow for occasional leap seconds.)
-     *!
-     *!   @item %t
-     *!     A tab character. (SU)
-     *!
-     *!   @item %T
-     *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
-     *!
-     *!   @item %u
-     *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
-     *!     See also @expr{%w@}. (SU)
-     *!
-     *!   @item %U
-     *!     The week number of the current year as a decimal number,
-     *!     range 00 to 53, starting with the first Sunday as the first
-     *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
-     *!
-     *!   @item %V
-     *!     The ISO 8601 week number of the current year as a decimal number,
-     *!     range 01 to 53, where week 1 is the first week that has at least
-     *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
-     *!
-     *!   @item %w
-     *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
-     *!     See also @expr{%u@}.
-     *! @enddl
+     *! @seealso
+     *!  @[strftime], @[Gettext.setlocale]
      */
-    PIKEFUN string strftime(string(1..255) format)
+    PIKEFUN string(1..255) strftime(string(1..255) format)
     {
-        char *buffer = xalloc( 8192 );
+        char buffer[8192];
         buffer[0] = 0;
-        strftime_zone( buffer, 8192, format->str, &THIS->t );
-        push_text( buffer );
+        strftime_zone(buffer, sizeof(buffer), format->str, &THIS->t);
+        push_text(buffer);
     }
 
     /*! @decl int(0..60) sec;
@@ -363,7 +161,7 @@ PIKECLASS TM
     PIKEFUN int(1..31) `mday()      { FIX_THIS();RETURN THIS->t.tm_mday; }
     PIKEFUN int(0..11) `mon()       { FIX_THIS();RETURN THIS->t.tm_mon; }
 
-    PIKEFUN int `year()             { FIX_THIS();RETURN THIS->t.tm_year+1900; }
+    PIKEFUN int `year()      { FIX_THIS();RETURN THIS->t.tm_year+1900; }
     PIKEFUN int `sec=(int a) { MODIFY(tm_sec=a); }
     PIKEFUN int `min=(int a) { MODIFY(tm_min=a); }
     PIKEFUN int `hour=(int a){ MODIFY(tm_hour=a); }
@@ -373,7 +171,7 @@ PIKECLASS TM
 
     /*! @decl int isdst
      *!
-     *! True if daylight savings are in effect.  If this field is -1
+     *! True if daylight-saving is in effect.  If this field is -1
      *! (the default) it (and the timezone info) will be updated
      *! automatically using the timezone rules.
      */
@@ -392,7 +190,7 @@ PIKECLASS TM
      *! The day of the year, from 0 (the first day) to 365
      *! This is calculated from the other fields and can not be changed directly.
      */
-    PIKEFUN int(0..365) `yday()      { FIX_THIS(); RETURN THIS->t.tm_yday; }
+    PIKEFUN int(0..365) `yday()    { FIX_THIS(); RETURN THIS->t.tm_yday; }
 
     /*! @decl int unix_time()
      *! Return the unix time corresponding to this time_t. If no time
@@ -413,17 +211,18 @@ PIKECLASS TM
     {
         FIX_THIS();
         {
-            char *tval = asctime_zone( &THIS->t );
-            if( tval )
-                push_text( tval );
-            else
-                push_undefined();
+#define STRFTIME_MAXSIZE 26
+          char s[STRFTIME_MAXSIZE];
+          if( !strftime(s, STRFTIME_MAXSIZE, "%c\n", &THIS->t) )
+            push_undefined();
+          else
+            push_text(s);
         }
     }
 
     PIKEFUN string _sprintf( int flag, mapping options )
     {
-        int post_sum = 1;
+        int post_sum = 0;
         switch( flag )
         {
           case 'O':
@@ -433,10 +232,10 @@ PIKECLASS TM
           case 's':
             f_TM_asctime(0);
             push_static_text("\n");
-            if( GET_ZONE(&(THIS->t)) )
+            if( GET_ZONE(THIS) )
             {
                 push_static_text(" ");
-                push_text( GET_ZONE(&(THIS->t)) );
+                push_text( GET_ZONE(THIS) );
                 f_add( 2 );
             }
             else
@@ -486,8 +285,8 @@ PIKECLASS TM
      */
     PIKEFUN string `zone() {
         FIX_THIS();
-        if( GET_ZONE(&(THIS->t)) )
-            push_text( GET_ZONE(&(THIS->t)) );
+        if( GET_ZONE(THIS) )
+            push_text( GET_ZONE(THIS) );
         else
             push_undefined();
     }
@@ -500,16 +299,6 @@ PIKECLASS TM
         push_int( GET_GMTOFF(&(THIS->t)) );
     }
 
-    /* Setting the zone does not work, so.. */
-
-    /* PIKEFUN string `zone=(string x) { */
-    /*     if( THIS->set_zone ) */
-    /*         free_string( THIS->set_zone ); */
-    /*     THIS->set_zone = x; */
-    /*     MODIFY( tm_zone = x->str ); */
-    /*     x->refs++; */
-    /* } */
-
     /*! @decl int(0..1) localtime( int time )
      *! Initialize the struct tm to the local time for the specified
      *! unix time_t.
@@ -520,10 +309,6 @@ PIKECLASS TM
         struct tm *res = localtime_zone( &t, &THIS->t );
         if( !res )
             RETURN 0;
-
-        /* These are supposedly correctly by localtime_zone. */
-        SET_GMTOFF(res, GET_GMTOFF(&(THIS->t)));
-        SET_ZONE(res, GET_ZONE(&(THIS->t)));
 
         THIS->t = *res;
         THIS->modified = 1;
@@ -544,19 +329,46 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
+	SET_ZONE(THIS, "UTC");	/* Override timezone */
         THIS->modified = 1;
         RETURN 1;
     }
 
-    /*! @decl void create(int t)
+    /*! @decl int(0..1) gmtime( Gmp.mpz time )
+     *! Initialize the struct tm to the UTC time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) gmtime( object(Gmp.mpz)|object(Gmp.bignum) _t )
+    {
+      INT64 t_int64 = 0;
+      time_t t;
+      struct tm *res;
+
+      if (!low_int64_from_bignum(&t_int64, _t))
+	RETURN 0;
+
+      t = t_int64;
+      res = gmtime( &t );
+
+      if( !res )
+	RETURN 0;
+
+      THIS->t = *res;
+      SET_ZONE(THIS, "UTC");	/* Override timezone */
+      THIS->modified = 1;
+      RETURN 1;
+    }
+
+    /*! @decl void create(int|Gmp.mpz t)
      *! Create a new @[TM] initialized from a unix time_t.
      *! The timezone will always be UTC when using this function.
      */
-    PIKEFUN void create( int _t )
+    PIKEFUN void create( int|object(Gmp.mpz)|object(Gmp.bignum) _t )
     {
         f_TM_gmtime( 1 );
         if( Pike_sp[-1].u.integer == 0 )
             Pike_error("time out of range\n");
+        pop_stack();
     }
 
     /*! @decl void create()
@@ -582,6 +394,7 @@ PIKECLASS TM
                          string|void timezone )
     {
         struct tm *t = &THIS->t;
+        int use_utc = 0;
         t->tm_isdst = -1;
         t->tm_year = year - 1900;
         t->tm_mon = mon;
@@ -589,30 +402,25 @@ PIKECLASS TM
         t->tm_hour = hour;
         t->tm_min = min;
         t->tm_sec = sec;
-	if (THIS->set_zone) {
-	    free_string(THIS->set_zone);
-	    THIS->set_zone = NULL;
-	}
-        if( !timezone ) /* gmtime. */
-	    SET_ZONE(t, "UTC");
-        else
-        {
-	    add_ref(timezone);
-            THIS->set_zone = timezone;
-            SET_ZONE(t, timezone->str);
+        if (timezone) {
+          if (strcmp(timezone->str, "UTC"))
+            Pike_error("Timezone must either be UTC or omitted.\n");
+          use_utc = 1;
         }
-        THIS->unix_time = mktime_zone( t );
+        if (use_utc)
+          t->tm_isdst = 0;
+        THIS->unix_time = mktime_zone(&THIS->t, use_utc, 0);
+        /* Setting it to other timezones than UTC is not supported (yet) */
+        if (use_utc)
+          SET_ZONE(THIS, "UTC");
+        pop_n_elems(args);
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT {
-        THIS->set_zone = 0;
         THIS->modified = 0;
     }
-
-    EXIT {
-        if( THIS->set_zone )
-            free_string( THIS->set_zone );
-    }
+#endif
 }
 /*! @endclass
  */
@@ -901,13 +709,20 @@ PIKEFUN string int2hex(int|object x)
 }
 
 
-/*! @decl string string2hex(string data, void|int uppercase)
+/*! @decl string string2hex(string data, void|int(0..) flags)
  *! @appears String.string2hex
  *!
  *! Convert a string of binary data to a hexadecimal string.
  *!
- *! @param uppercase
- *!   If set, the string will use upper cased characters.
+ *! @param flags
+ *!   The binary or of the following flags:
+ *!   @int
+ *!     @value 1
+ *!       Use upper case characters.
+ *!
+ *!     @value 2
+ *!       The input is in little-endian byte order.
+ *!   @endint
  *!
  *! @seealso
  *!   @[hex2string()]
@@ -924,40 +739,41 @@ static const char HEXCHAR[] = {
 };
 
 PMOD_EXPORT
-  PIKEFUN string(48..102) string2hex(string s, void|int uppercase)
+  PIKEFUN string(48..102) string2hex(string s, void|int flags)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *hex;
   unsigned char *p,*st = (unsigned char *)s->str;
-  int i, l;
+  const char *hextab = hexchar;
+  int i, l, d = 1;
 
   if (s->size_shift)
     Pike_error("Bad argument 1 to string2hex(), expected 8-bit string.\n");
+
+  if (flags && (flags->u.integer & 1)) {
+    hextab = HEXCHAR;
+  }
 
   hex = begin_shared_string(2 * s->len);
   p = (unsigned char *)hex->str;
   l = s->len;
 
-  if( uppercase && uppercase->u.integer > 0)
-  {
-    for (i=0; i<l; i++) {
-      *p++   = HEXCHAR[*st>>4];
-      *p++   = HEXCHAR[*st&15];
-      st++;
-    }
+  if (flags && (flags->u.integer & 2)) {
+    d = -1;
+    st += l-1;
   }
-  else
-  {
-    for (i=0; i<l; i++) {
-      *p++   = hexchar[*st>>4];
-      *p++   = hexchar[*st&15];
-      st++;
-    }
+
+  for (i=0; i<l; i++) {
+    *p++   = hextab[*st>>4];
+    *p++   = hextab[*st&15];
+    st += d;
   }
 
   RETURN end_shared_string(hex);
 }
+
+extern const unsigned char hexdecode[256];
 
 /*! @decl string(8bit) hex2string(string(8bit) hex)
  *! @appears String.hex2string
@@ -1130,7 +946,7 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
       gc_trace = level;
     }
     else {
-      bad_arg_error("trace", Pike_sp-args, args, 2,
+      bad_arg_error("trace", args, 2,
 		   "trace facility identifier", Pike_sp-args+1,
                    "Bad argument 2 to trace(). Unknown trace facility.");
     }
@@ -1327,7 +1143,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
  *! a negative @[timestamp].
  *!
  *! @seealso
- *! @[time()], @[localtime()], @[mktime()], @[gmtime()]
+ *!   @[strftime()], @[time()], @[localtime()], @[gmtime()], @[mktime()]
  */
 PMOD_EXPORT
 PIKEFUN string ctime(longest timestamp)
@@ -1368,7 +1184,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
   if(ind->size != val->size)
-    bad_arg_error("mkmapping", Pike_sp-args, args, 2, "array", Pike_sp+1-args,
+    bad_arg_error("mkmapping", args, 2, "array", Pike_sp+1-args,
 		  "mkmapping called on arrays of different sizes (%d != %d)\n",
 		  ind->size, val->size);
 
@@ -1527,10 +1343,10 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 
   {
     unsigned bshift = shift, wshift;
-    if(whitespace)
-      if(!(wlen = whitespace->len))
+    if(whitespace) {
+      if(!(wlen = whitespace->len)) {
         REF_RETURN s;
-      else {
+      } else {
         ws = whitespace->str; wshift = whitespace->size_shift;
         replspace = index_shared_string(whitespace, 0);
 	if(replspace > 0xffff)
@@ -1555,7 +1371,7 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 	  ws = wstemp;
 	}
       }
-    else
+    } else
       ws = 0;
 
     init_string_builder_alloc (&sb, len, bshift);
@@ -1844,6 +1660,25 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
   }
 }
 
+/*! @decl void m_clear(mapping map)
+ *!
+ *!   Clear the contents of a mapping.
+ *!
+ *!   This function clears the content of the mapping @[map] so
+ *!   that it becomes empty. This is an atomic operation.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN void m_clear(mapping map)
+  efun
+  optflags OPT_SIDE_EFFECT;
+{
+  /* FIXME: Add an LFUN__M_CLEAR analogous with LFUN__M_DELETE? */
+  clear_mapping(map);
+}
+
 /*! @decl int get_weak_flag(array|mapping|multiset m)
  *!
  *! Returns the weak flag settings for @[m]. It's a combination of
@@ -1958,7 +1793,7 @@ PIKEFUN string function_name(program|function func)
     case PIKE_T_FUNCTION:
       if((f = SUBTYPEOF(*func)) == FUNCTION_BUILTIN) break;
       if(!(p = func->u.object->prog))
-	bad_arg_error("function_name", Pike_sp-args, args, 1,
+        bad_arg_error("function_name", args, 1,
 		      "function", Pike_sp-args,
 		      "Destructed object.\n");
       if(p == pike_trampoline_program)
@@ -2090,11 +1925,13 @@ PIKECLASS RandomInterface
   CVAR UINT64 int_buffer;
   CVAR int   buffer_bits;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->int_buffer = 0;
     THIS->buffer_bits = 0;
   }
+#endif
 
   /*! @decl string(8bit) random_string(int(0..))
    *!
@@ -2118,8 +1955,11 @@ PIKECLASS RandomInterface
     THIS->int_buffer = ((INT64 *)Pike_sp[-1].u.string->str)[0];
 #else
     /* Big endian. */
-    for (int i = 0; i < 8; i++) {
-      ((p_wchar0 *)&THIS->int_buffer)[i] = STR0(Pike_sp[-1].u.string)[7-i];
+    {
+      int i;
+      for (i = 0; i < 8; i++) {
+	((p_wchar0 *)&THIS->int_buffer)[i] = STR0(Pike_sp[-1].u.string)[7-i];
+      }
     }
 #endif
     THIS->buffer_bits = 64;
@@ -2177,8 +2017,8 @@ PIKECLASS RandomInterface
    */
   PIKEFUN float random(float f)
   {
-    if(f<=0.0) RETURN 0.0;
     UINT64 value;
+    if(f<=0.0) RETURN 0.0;
     if (THIS->buffer_bits < 64)
         fill_int_buffer();
     value = THIS->int_buffer;
@@ -2245,7 +2085,7 @@ PIKECLASS RandomInterface
           }
       }
 
-    UNREACHABLE();
+    UNREACHABLE(return);
   }
 
   /*! @decl mixed random(object o)
@@ -2325,7 +2165,7 @@ PIKECLASS RandomSystem
     char *str;
 
     if( !len )
-      RETURN empty_pike_string;
+      REF_RETURN empty_pike_string;
     if( len<0 )
       Pike_error("Bad argument 1 to random_string(). Expected int(0..).\n");
 
@@ -2593,16 +2433,18 @@ PIKECLASS backtrace_frame
   CVAR PIKE_OPCODE_T *pc;
 
   /* These two are considered to be uninitialized from prog, pc and
-   * fun as long as lineno == -1. */
+   * fun as long as lineno == 0. */
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->pc = NULL;
-    THIS->lineno = -1;
+    THIS->lineno = 0;
     THIS->filename = NULL;
   }
+#endif
 
   EXIT
     gc_trivial;
@@ -2612,7 +2454,7 @@ PIKECLASS backtrace_frame
       THIS->filename = NULL;
     }
     THIS->pc = NULL;
-    THIS->lineno = -1;
+    THIS->lineno = 0;
   }
 
   /* NOTE: Use old-style getter/setter syntax for compatibility with
@@ -2649,7 +2491,7 @@ PIKECLASS backtrace_frame
   static void fill_in_file_and_line()
   {
     struct pike_string *file = NULL;
-    assert (THIS->lineno == -1);
+    assert (THIS->lineno == 0);
 
     if (THIS->pc && THIS->prog) {
       file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
@@ -2666,7 +2508,7 @@ PIKECLASS backtrace_frame
       }
 #endif
       file = low_get_function_line (THIS->_fun.u.object, SUBTYPEOF(THIS->_fun),
-				    &THIS->lineno);
+                                    &THIS->lineno);
     }
     else if (THIS->prog) {
       file = low_get_program_line (THIS->prog, &THIS->lineno);
@@ -2686,6 +2528,7 @@ PIKECLASS backtrace_frame
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
   PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
   {
     pop_n_elems(args);
 
@@ -2696,7 +2539,7 @@ PIKECLASS backtrace_frame
 
     push_static_text("backtrace_frame(");
 
-    if (THIS->lineno == -1) fill_in_file_and_line();
+    if (THIS->lineno == 0) fill_in_file_and_line();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
@@ -2752,6 +2595,7 @@ PIKECLASS backtrace_frame
   /*! @decl int(3..) _sizeof()
    */
   PIKEFUN int(3..) _sizeof()
+    flags ID_PROTECTED;
   {
     if (THIS->args) {
       push_int(THIS->args->size + 3);
@@ -2764,6 +2608,7 @@ PIKECLASS backtrace_frame
    *! The BacktraceFrame object can be indexed as an array.
    */
   PIKEFUN mixed `[](int index, int|void end_or_none)
+    flags ID_PROTECTED;
   {
     INT_TYPE end = index;
     INT32 numargs = 3;
@@ -2774,10 +2619,10 @@ PIKECLASS backtrace_frame
 
     if (!end_or_none) {
       if (index < 0)
-	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
 		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
       else if (index >= numargs)
-	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
 		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
     } else
       end = end_or_none->u.integer;
@@ -2797,14 +2642,14 @@ PIKECLASS backtrace_frame
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-	if (THIS->lineno == -1) fill_in_file_and_line();
+        if (THIS->lineno == 0) fill_in_file_and_line();
 	if (THIS->filename)
 	  ref_push_string(THIS->filename);
 	else
 	  push_int(0);
 	break;
       case 1:	/* Linenumber */
-	if (THIS->lineno == -1) fill_in_file_and_line();
+        if (THIS->lineno == 0) fill_in_file_and_line();
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
@@ -2816,7 +2661,7 @@ PIKECLASS backtrace_frame
 	    push_svalue(THIS->args->item + (i - 3));
 	    break;
 	  }
-	  bad_arg_error("`[]", Pike_sp-args, args, 1,
+          bad_arg_error("`[]", args, 1,
 			"int(0..)", Pike_sp-args,
 			"Bad argument 1 to backtrace_frame->`[](): "
 			"Expected int(0..%d)\n",
@@ -2832,6 +2677,7 @@ PIKECLASS backtrace_frame
   /*! @decl mixed `[]=(int index, mixed value)
    */
   PIKEFUN mixed `[]=(int index, mixed value)
+    flags ID_PROTECTED;
   {
     INT32 numargs = 3;
 
@@ -2839,7 +2685,7 @@ PIKECLASS backtrace_frame
       numargs += THIS->args->size;
 
     if ((index < -numargs) || (index >= numargs))
-	index_error("pike_frame->`[]=", Pike_sp-args, args, NULL, Pike_sp-args,
+        index_error("pike_frame->`[]=", args, NULL, Pike_sp-args,
 		    "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
 		    index, numargs-1);
     else if (index < 0)
@@ -2852,7 +2698,7 @@ PIKECLASS backtrace_frame
 
     switch(index) {
     case 0:	/* Filename */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
@@ -2872,14 +2718,14 @@ PIKECLASS backtrace_frame
       break;
 
     case 1:	/* Linenumber */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_ARG_TYPE_ERROR("`[]=", 2, "int(1..)");
       THIS->lineno = value->u.integer;
       break;
 
     case 2:	/* Function */
-      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (THIS->lineno == 0) fill_in_file_and_line();
       assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
@@ -2914,6 +2760,9 @@ PIKECLASS backtrace_frame
  *!     @member int "int_size"
  *!       The number of bits in the native integer type.
  *!       Usually @expr{32@} or @expr{64@}.
+ *!     @member int "time_size"
+ *!       The number of bits in the native @tt{time_t@} type.
+ *!       This is typically the same value as @expr{"int_size"@}.
  *!     @member int "float_size"
  *!       The number of bits in the native floating point type.
  *!       Usually @expr{32@} or @expr{64@}.
@@ -2934,11 +2783,13 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(PIKE_BYTEORDER);
   push_static_text("int_size");
   push_int(sizeof(INT_TYPE) * 8);
+  push_static_text("time_size");
+  push_int(sizeof(time_t) * 8);
   push_static_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
   push_static_text("auto_bignum");
   push_int(1);
-  f_aggregate_mapping(6*2);
+  f_aggregate_mapping(7*2);
 }
 
 /*! @endmodule
@@ -2959,11 +2810,9 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   push_array(res);
 
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
-    struct object *o = low_clone(backtrace_frame_program);
+    struct object *o = fast_clone_object(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
     struct identifier *function = NULL;
-
-    call_c_initializers(o);
 
     size--;
 
@@ -2971,12 +2820,19 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 
     bf = OBJ2_BACKTRACE_FRAME(o);
 
+    SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
+
+    if (!f->context) {
+      if (f->pc == (void *)do_gc) {
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, make_shared_string("gc"));
+      }
+      continue;
+    }
+
     if ((bf->prog = f->context->prog)) {
       add_ref(bf->prog);
       bf->pc = f->pc;
     }
-
-    SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
     if (f->current_object && f->current_object->prog) {
       if (f->fun == FUNCTION_BUILTIN) {
@@ -3087,500 +2943,6 @@ PIKEFUN array(mixed) backtrace()
   low_backtrace(& Pike_interpreter);
 }
 
-/*! @module String
- */
-
-#define PROG_BUFFER_ID	PROG_STRING_BUFFER_ID
-
-/*! @class Buffer
- *!    A buffer, used for building strings. It's
- *!    conceptually similar to a string, but you can only @[add]
- *!    strings to it, and you can only @[get] the value from it once.
- *!
- *!    There is a reason for those seemingly rather odd limitations,
- *!    it makes it possible to do some optimizations that really speed
- *!    things up.
- *!
- *!    You do not need to use this class unless you add very many
- *!    strings together, or very large strings.
- *!
- *! @example
- *!    For the fastest possible operation, write your code like this:
- *!
- *! @code
- *! String.Buffer b = String.Buffer( );
- *!
- *! function add = b->add;
- *!
- *! .. call add several times in code ...
- *!
- *! string result = b->get(); // also clears the buffer
- *! @endcode
- */
-PIKECLASS Buffer
-{
-  CVAR struct string_builder str;
-  CVAR int initial;
-
-  PIKEFUN int _size_object()
-  {
-      if( THIS->str.s )
-          RETURN THIS->str.malloced;
-      RETURN 0;
-  }
-
-  void f_Buffer_get_copy( INT32 args );
-  void f_Buffer_get( INT32 args );
-  void f_Buffer_add( INT32 args );
-
-  /*! @decl void create(int initial_size)
-   *!
-   *!   Initializes a new buffer.
-   *!
-   *!   If no @[initial_size] is specified, 256 is used. If you
-   *!   know approximately how big the buffer will be, you can optimize
-   *!   the operation of @[add()] (slightly) by passing the size to this
-   *!   function.
-   */
-  PIKEFUN void create( int|void size )
-  {
-    struct Buffer_struct *str = THIS;
-    if( size )
-      str->initial = MAXIMUM( size->u.integer, 512 );
-    else
-      str->initial = 256;
-  }
-
-  /*! @decl string _sprintf( int flag, mapping flags )
-   *! It is possible to @[sprintf] a String.Buffer object
-   *! as @tt{%s@} just as if it was a string.
-   */
-  PIKEFUN string _sprintf( int flag, mapping flags )
-  {
-    switch( flag )
-    {
-      case 'O':
-	{
-	  struct pike_string *res;
-	  struct Buffer_struct *str = THIS;
-	  push_static_text( "Buffer(%d /* %d */)" );
-	  if( str->str.s )
-	  {
-	    push_int(str->str.s->len);
-	    push_int(str->str.malloced);
-	  }
-	  else
-	  {
-	    push_int( 0 );
-	    push_int( 0 );
-	  }
-	  f_sprintf( 3 );
-	  dmalloc_touch_svalue(Pike_sp-1);
-	  res = Pike_sp[-1].u.string;
-	  Pike_sp--;
-	  RETURN res;
-	}
-
-      case 's':
-	{
-	  pop_n_elems( args );
-	  if( Pike_fp->current_object->refs != 1 )
-	    f_Buffer_get_copy( 0 );
-	  else
-	    f_Buffer_get( 0 );
-	}
-	return;
-
-      case 't':
-	RETURN make_shared_binary_string("Buffer",6);
-    }
-    pop_n_elems( args );
-    push_undefined();
-  }
-
-  /*! @decl mixed cast( string type )
-   *! It is possible to cast a String.Buffer object to
-   *! a @expr{string@} and an @expr{int@}.
-   */
-  PIKEFUN mixed cast( string type )
-    flags ID_PROTECTED;
-  {
-    if( type == literal_string_string )
-    {
-      pop_stack();
-      if( Pike_fp->current_object->refs != 1 )
-	f_Buffer_get_copy( 0 );
-      else
-	f_Buffer_get( 0 );
-      return;
-    }
-
-    if( type == literal_int_string )
-    {
-      struct Buffer_struct *str = THIS;
-      pop_stack();
-      if( Pike_fp->current_object->refs != 1 )
-	f_Buffer_get_copy( 0 );
-      else
-	f_Buffer_get( 0 );
-      o_cast_to_int( );
-      return;
-    }
-
-    pop_stack();
-    push_undefined();
-  }
-
-  /*! @decl String.Buffer `+( string|String.Buffer what )
-   */
-  PIKEFUN object `+( string|Buffer what )
-    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
-  {
-    struct Buffer_struct *str = THIS, *str2;
-    struct object *res = fast_clone_object( Buffer_program );
-    str2 = OBJ2_BUFFER( res );
-    str2->initial = str->initial;
-    if( str->str.s )
-      init_string_builder_copy (&str2->str, &str->str);
-    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-        res->flags |= OBJECT_CLEAR_ON_EXIT;
-    apply( res, "add", 1 );
-    RETURN res;
-  }
-
-  /*! @decl String.Buffer `+=( string|String.Buffer what )
-   */
-  PIKEFUN object `+=( string|Buffer what )
-    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
-  {
-    f_Buffer_add( 1 );
-    REF_RETURN Pike_fp->current_object;
-  }
-
-  /*! @decl int add(string|String.Buffer ... data)
-   *!
-   *!   Adds @[data] to the buffer.
-   *!
-   *! @returns
-   *!   Returns the size of the buffer.
-   *!
-   *! @note
-   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
-   *!   directly.
-   */
-  PIKEFUN int add( string|Buffer ... arg1 )
-    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
-  {
-    struct Buffer_struct *str = THIS;
-
-    if (args) {
-      int init_from_arg0 = 0, j;
-      ptrdiff_t sum = 0;
-      int shift = 0;
-      for (j=0; j < args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		   (Pike_sp[j-args].u.object->prog != Buffer_program))
-	  SIMPLE_ARG_TYPE_ERROR("add", j+1, "string|String.Buffer");
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	sum += a->len;
-	shift |= a->size_shift;
-      }
-      shift |= str->str.known_shift;
-      shift = shift & ~(shift >> 1);
-      /* We know it will be a string that really is this wide. */
-      str->str.known_shift = shift;
-
-      if (!str->str.s) {
-	if (sum <= str->initial)
-	  sum = str->initial;
-	else
-	  sum <<= 1;
-
-	init_string_builder_alloc(&str->str, sum, shift);
-      } else
-	string_build_mkspace(&str->str, sum, shift);
-
-      for(sum = str->str.s->len, j = 0; j<args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, sum), a);
-	sum += a->len;
-      }
-
-      str->str.s->len = sum;
-    }
-
-    RETURN str->str.s ? str->str.s->len : 0;
-  }
-
-  /*! @decl void putchar(int c)
-   *! Appends the character @[c] at the end of the string.
-   */
-  PIKEFUN void putchar(int c) {
-    struct Buffer_struct *str = THIS;
-    if(!str->str.s)
-      init_string_builder_alloc(&str->str, str->initial, 0);
-    string_builder_putchar(&str->str, c);
-  }
-
-  /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
-   *! Appends the output from @[sprintf] at the end of the string.
-   *! Returns the resulting size of the String.Buffer.
-   */
-  PIKEFUN int sprintf(mixed ... arguments)
-    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
-		   tAttr("sprintf_args", tMix), tStr);
-
-  {
-    // FIXME: Reset length on exception?
-    struct Buffer_struct *str = THIS;
-    if(!str->str.s)
-      init_string_builder_alloc(&str->str, str->initial, 0);
-    low_f_sprintf(args, &str->str);
-    RETURN str->str.s->len;
-  }
-
-  /*! @decl string get_copy()
-   *!
-   *!   Get the data from the buffer. Significantly slower than @[get],
-   *!   but does not clear the buffer.
-   *!
-   *! @seealso
-   *!   @[get()]
-   */
-  PIKEFUN string get_copy()
-  {
-    struct pike_string *str = THIS->str.s;
-    ptrdiff_t len;
-    if( str && (len = str->len) > 0 )
-    {
-      char *d = (char *)str->str;
-      switch( str->size_shift )
-      {
-        case 0:
-          str=make_shared_binary_string0((p_wchar0 *)d,len);
-          break;
-        case 1:
-          str=make_shared_binary_string1((p_wchar1 *)d,len);
-          break;
-        case 2:
-          str=make_shared_binary_string2((p_wchar2 *)d,len);
-          break;
-      }
-      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-          str->flags |= STRING_CLEAR_ON_EXIT;
-      RETURN str;
-    }
-    push_empty_string();
-    return;
-  }
-
-  /*! @decl string get()
-   *!
-   *!   Get the data from the buffer.
-   *!
-   *! @note
-   *!   This will clear the data in the buffer
-   *!
-   *! @seealso
-   *!   @[get_copy()], @[clear()]
-   */
-  PIKEFUN string get( )
-  {
-    struct Buffer_struct *str = THIS;
-    pop_n_elems(args);
-    if( str->str.s )
-    {
-      struct pike_string *s = finish_string_builder( &str->str );
-      str->str.malloced = 0;
-      str->str.s = NULL;
-      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-          s->flags |= STRING_CLEAR_ON_EXIT;
-      push_string(s);
-    }
-    else
-      push_empty_string();
-  }
-
-  /*! @decl void clear()
-   *!
-   *!   Empty the buffer, and don't care about the old content.
-   *!
-   *! @note
-   *!   This function was not available in Pike 7.8 and earlier.
-   *!
-   *! @seealso
-   *!   @[get()]
-   */
-  PIKEFUN void clear()
-  {
-    /* FIXME: Support resetting the initial size? */
-    struct Buffer_struct *str = THIS;
-    if (str->str.s) {
-      /* FIXME: There's also the alternative of using
-       *        reset_string_builder() here.
-       */
-      free_string_builder(&str->str);
-      str->str.s = NULL;
-    }
-  }
-
-  /*! @decl int _sizeof()
-   *!
-   *!   Returns the size of the buffer.
-   */
-  PIKEFUN int _sizeof()
-    flags ID_PROTECTED;
-  {
-    struct Buffer_struct *str = THIS;
-    RETURN str->str.s ? str->str.s->len : 0;
-  }
-
-  /*! @decl int(0..) _search(int character, int|void start, int|void end)
-   *!
-   *! Search for a @[character] in the buffer, starting the scan
-   *! from @[start] and ending at @[end] (inclusive).
-   *!
-   *! @returns
-   *!   Returns to position in the buffer where the character was found
-   *!   on success, and @[UNDEFINED] on failure.
-   *!
-   *! @seealso
-   *!   @[Stdio.Buffer()->_search()], @[search()], @[lfun::_search()]
-   */
-  PIKEFUN int(0..) _search(int character, int|void start, int|void end)
-  {
-    PCHARP buf = MKPCHARP_STR(THIS->str.s);
-    ptrdiff_t len = THIS->str.s->len;
-    ptrdiff_t i;
-
-    if (end && (end->u.integer + 1 < len)) {
-      len = end->u.integer + 1;
-    }
-    if (len > 0 && start && (start->u.integer > 0)) {
-      INC_PCHARP(buf, start->u.integer);
-      len -= start->u.integer;
-    }
-    if (len <= 0) {
-      push_int(-1);
-      return;
-    }
-    if (UNLIKELY(THIS->str.s->size_shift == thirtytwobit)) {
-#if SIZEOF_INT_TYPE > 4
-      if (UNLIKELY((0x7fffffff < character) || (character < -0x80000000))) {
-        push_int(-1);
-	return;
-      }
-#endif
-    } else if (UNLIKELY((1L<<(8<<THIS->str.s->size_shift)) <= character) ||
-	       UNLIKELY(character < 0)) {
-      push_int(-1);
-      return;
-    }
-    for (i = 0; i < len; i++) {
-      p_wchar2 c = INDEX_PCHARP(buf, i);
-      if (c == character) {
-        if(start)
-          i += start->u.integer;
-	push_int64(i);
-	return;
-      }
-    }
-    push_int(-1);
-  }
-
-  /*! @decl int(0..) _search(string substring, int|void start, int|void end)
-   *!
-   *! Search for a @[substring] in the buffer, starting the scan
-   *! from @[start] and ending at @[end] (inclusive).
-   *!
-   *! @returns
-   *!   Returns to position in the buffer where the substring was found
-   *!   on success, and @[UNDEFINED] on failure.
-   *!
-   *! @seealso
-   *!   @[Stdio.Buffer()->_search()], @[search()], @[lfun::_search()]
-   */
-  PIKEFUN int(0..) _search(string substring, int|void start, int|void end)
-  {
-    PCHARP buf = MKPCHARP_STR(THIS->str.s);
-    ptrdiff_t len = THIS->str.s->len;
-    ptrdiff_t i;
-    SearchMojt mojt;
-    PCHARP res;
-
-    if (end && (end->u.integer + 1 < len)) {
-      len = end->u.integer + 1;
-    }
-    if (len > 0 && start && (start->u.integer > 0)) {
-      INC_PCHARP(buf, start->u.integer);
-      len -= start->u.integer;
-    }
-    if (len < substring->len) {
-      push_undefined();
-      return;
-    }
-    if (!substring->len) {
-      push_int(0);
-      return;
-    }
-    if (substring->size_shift > THIS->str.s->size_shift) {
-      push_undefined();
-      return;
-    }
-
-    mojt = compile_memsearcher(MKPCHARP_STR(substring), substring->len,
-			       len, substring);
-
-    res = mojt.vtab->funcN(mojt.data, buf, len);
-
-    if (!res.ptr) {
-      push_undefined();
-    } else {
-      push_int64((((char *)res.ptr) - ((char *)buf.ptr)) >>
-		 THIS->str.s->size_shift);
-    }
-  }
-
-  INIT
-    {
-      struct Buffer_struct *str = THIS;
-      memset( str, 0, sizeof( *str ) );
-    }
-
-  EXIT
-    gc_trivial;
-    {
-      struct Buffer_struct *str = THIS;
-      if( str->str.s )
-      {
-          if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
-              guaranteed_memset( str->str.s->str, 0, str->str.s->len );
-          free_string_builder( &str->str );
-      }
-    }
-
-  GC_RECURSE
-  {
-    if (mc_count_bytes (Pike_fp->current_object) && THIS->str.s)
-      mc_counted_bytes += THIS->str.malloced;
-  }
-}
-
-/*! @endclass
- */
-
 /*! @class Replace
  *!
  *! This is a "compiled" version of the @[replace] function applied on
@@ -3647,10 +3009,10 @@ PIKECLASS multi_string_replace
 	f_allocate(2);
 	to_arg = Pike_sp - 1;
       }
-      if (TYPEOF(*to_arg) != T_ARRAY) {
+      else if (TYPEOF(*to_arg) != T_ARRAY) {
 	SIMPLE_ARG_TYPE_ERROR("replace", 2, "array(string)|string");
       }
-      if (from_arg->u.array->size != to_arg->u.array->size) {
+      else if (from_arg->u.array->size != to_arg->u.array->size) {
 	Pike_error("Replace must have equal-sized from and to arrays.\n");
       }
       add_ref(THIS->from = from_arg->u.array);
@@ -3661,11 +3023,13 @@ PIKECLASS multi_string_replace
       THIS->from = mapping_indices(from_arg->u.mapping);
       THIS->to = mapping_values(from_arg->u.mapping);
     } else {
+      pop_n_elems(args);
       return;
     }
 
     if (!THIS->from->size) {
       /* Enter no-op mode. */
+      pop_n_elems(args);
       return;
     }
 
@@ -3679,6 +3043,7 @@ PIKECLASS multi_string_replace
       SIMPLE_ARG_TYPE_ERROR("replace", 2, "array(string)|string");
 
     compile_replace_many(&THIS->ctx, THIS->from, THIS->to, 1);
+    pop_n_elems(args);
   }
 
   /*! @decl string `()(string str)
@@ -3721,10 +3086,12 @@ PIKECLASS multi_string_replace
     f_multi_string_replace_create(i);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     memset(&THIS->ctx, 0, sizeof(struct replace_many_context));
   }
+#endif
 
   EXIT
     gc_trivial;
@@ -3776,7 +3143,10 @@ PIKECLASS single_string_replace
       THIS->to = NULL;
     }
 
-    if (!del) return;
+    if (!del) {
+      pop_n_elems(args);
+      return;
+    }
 
     if (!to) {
       SIMPLE_ARG_TYPE_ERROR("replace", 2, "string");
@@ -3784,6 +3154,7 @@ PIKECLASS single_string_replace
 
     if (del == to) {
       /* No-op... */
+      pop_n_elems(args);
       return;
     }
 
@@ -3793,6 +3164,7 @@ PIKECLASS single_string_replace
     if (del->len) {
       THIS->mojt = simple_compile_memsearcher(del);
     }
+    pop_n_elems(args);
   }
 
   /*** replace function ***/
@@ -3835,9 +3207,10 @@ PIKECLASS single_string_replace
 
       switch(str->size_shift)
       {
-      case 0: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
-      case 1: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
-      case 2: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
+      case eightbit: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
+      case sixteenbit: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
+      case thirtytwobit: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
+      default: UNREACHABLE(break);
       }
 
       if(del->len == to->len)
@@ -4366,6 +3739,7 @@ PIKECLASS automap_marker
       if(THIS->arg) free_array(THIS->arg);
       add_ref(THIS->arg=a);
       THIS->depth=d;
+      pop_n_elems(2);
     }
 
   PIKEFUN string _sprintf(int mode, mapping flags)
@@ -4410,8 +3784,7 @@ static void low_automap(int d,
     {
       if(TYPEOF(tmpargs[e]) != T_ARRAY)
 	index_error("__automap__",
-		    Pike_sp-args,
-		    args,
+                    args,
 		    tmpargs,
 		    NULL,
 		    "Automap on non-array.\n");
@@ -4699,6 +4072,19 @@ PIKECLASS Null
     pop_n_elems(args);
     push_constant_text ("null");
   }
+}
+
+/*! @endclass
+ */
+
+/*! @class DestructImmediate
+ *! An empty class that can be intherited to get the PROGRAM_DESTRUCT_IMMEDIATE
+ *! flag set.
+ */
+
+PIKECLASS DestructImmediate
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
+{
 }
 
 /*! @endclass
@@ -6058,6 +5444,258 @@ PIKECLASS List
 /*! @endmodule
  */
 
+/*! @module __builtin
+ */
+
+/*! @class Stack
+ *! This class implements a simple stack. Instead of adding and removing
+ *! elements to an array, and thus making it vary in size for every push
+ *! and pop operation, this stack tries to keep the stack size constant.
+ *! If however the stack risks to overflow, it will allocate double its
+ *! current size, i.e. pushing an element on an full 32 slot stack will
+ *! result in a 64 slot stack with 33 elements.
+ *!
+ *! @note
+ *!   This class is usually accessed as @[ADT.LowLevelStack].
+ */
+PIKECLASS Stack
+{
+  PIKEVAR array arr;
+
+  /*! @decl void push(mixed val)
+   *! Push an element on the top of the stack.
+   */
+  PIKEFUN void push(mixed val)
+  {
+    if (!THIS->arr) {
+      THIS->arr = real_allocate_array(1, 31);
+      array_set_index_no_free(THIS->arr, 0, val);
+    } else {
+      THIS->arr = array_insert(THIS->arr, val, THIS->arr->size);
+    }
+    push_int(0);
+  }
+
+  /*! @decl mixed top()
+   *! Returns the top element from the stack, without
+   *! popping it.
+   *! @throws
+   *!   Throws an error if called on an empty stack.
+   */
+  PIKEFUN mixed top()
+  {
+    if (THIS->arr && THIS->arr->size) {
+      push_svalue(ITEM(THIS->arr) + THIS->arr->size - 1);
+      return;
+    }
+    Pike_error("Stack underflow\n");
+  }
+
+  /*! @decl mixed pop(void|int val)
+   *! Pops and returns entry @[val] from the stack, counting
+   *! from the top. If no value is given the top element is
+   *! popped and returned. All popped entries are freed from
+   *! the stack.
+   */
+  PIKEFUN mixed pop(void|int val)
+  {
+    if (!THIS->arr || !THIS->arr->size) {
+      Pike_error("Stack underflow\n");
+    }
+
+    if (val && (val->u.integer > 0)) {
+      ptrdiff_t new_size;
+      ptrdiff_t old_size;
+
+      new_size = THIS->arr->size - val->u.integer;
+      if (new_size < 0) new_size = 0;
+
+      /* NB: Steal reference from the array element. */
+      *Pike_sp = ITEM(THIS->arr)[new_size];
+      old_size = THIS->arr->size;
+      THIS->arr->size = new_size;
+      Pike_sp++;
+
+      free_svalues(ITEM(THIS->arr) + new_size + 1, old_size - (new_size + 1),
+		   THIS->arr->type_field);
+    } else {
+      /* NB: Steal reference from the array element. */
+      THIS->arr->size--;
+      *Pike_sp = ITEM(THIS->arr)[THIS->arr->size];
+      Pike_sp++;
+    }
+  }
+
+  /*! @decl void quick_pop(void|int val)
+   *! Pops @[val] entries from the stack, or one entry
+   *! if no value is given. The popped entries are not
+   *! returned.
+   */
+  PIKEFUN void quick_pop(void|int val)
+  {
+    apply_current(f_Stack_pop_fun_num, args);
+    push_int(0);
+  }
+
+  /*! @decl void reset(int|void initial_size)
+   *! Empties the stack, resets the stack pointer
+   *! and shrinks the stack size to the given value
+   *! or 32 if none is given.
+   *! @seealso
+   *!   @[create]
+   */
+  PIKEFUN void reset(int|void initial_size)
+  {
+    ptrdiff_t size = 32;
+    if (initial_size && (initial_size->u.integer > 0)) {
+      size = initial_size->u.integer;
+    }
+
+    if (THIS->arr) {
+      free_array(THIS->arr);
+      THIS->arr = NULL;
+    }
+
+    /* NB: The initial size MUST != 0 else the empty array will be returned. */
+    THIS->arr = real_allocate_array(1, size-1);
+    THIS->arr->size = 0;
+  }
+
+  /*! @decl void create(int|void initial_size)
+   *! An initial stack size can be given when
+   *! a stack is cloned. The default value is
+   *! 32.
+   */
+  PIKEFUN void create(int|void initial_size)
+  {
+    apply_current(f_Stack_reset_fun_num, args);
+  }
+
+  /*! @decl void set_stack(array stack)
+   *! Sets the stacks content to the provided array.
+   */
+  PIKEFUN void set_stack(array stack)
+  {
+    if (THIS->arr) {
+      free_array(THIS->arr);
+    }
+    add_ref(THIS->arr = stack);
+  }
+
+  /*! @decl int _sizeof()
+   *! @[sizeof] on a stack returns the number of entries
+   *! in the stack.
+   */
+  PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
+  {
+    push_int(THIS->arr ? THIS->arr->size : 0);
+  }
+
+  /*! @decl array _values()
+   *! @[values] on a stack returns all the entries in
+   *! the stack, in order.
+   */
+  PIKEFUN array _values()
+    flags ID_PROTECTED;
+  {
+    if (THIS->arr) {
+      push_array(copy_array(THIS->arr));
+    } else {
+      ref_push_array(&empty_array);
+    }
+  }
+
+  /*! @decl int _search(mixed item)
+   *! Return the stack-depth to @[item].
+   *!
+   *! This function makes it possible to use
+   *! eg @[search()] and @[has_value()] on the stack.
+   */
+  PIKEFUN int _search(mixed item)
+    flags ID_PROTECTED;
+  {
+    if (!THIS->arr || !THIS->arr->size) {
+      push_int(-1);
+    } else {
+      push_int(array_search(THIS->arr, item, 0));
+    }
+  }
+
+  /*! @decl this_program `+(this_program s)
+   *! A stack added with another stack yields a new
+   *! stack with all the elements from both stacks,
+   *! and the elements from the second stack at the
+   *! top of the new stack.
+   */
+  PIKEFUN Stack `+(Stack s)
+    flags ID_PROTECTED;
+  {
+    struct Stack_struct *other_st = get_storage(s, Stack_program);
+    int cnt = 0;
+    if (!other_st) {
+      SIMPLE_BAD_ARG_ERROR("`+", 1, "Stack");
+    }
+    if (THIS->arr) {
+      ref_push_array(THIS->arr);
+      cnt++;
+    }
+    if (other_st->arr) {
+      ref_push_array(other_st->arr);
+      cnt++;
+    }
+    if (cnt == 1) {
+      ref_push_array(&empty_array);
+    }
+    if (cnt) {
+      f_add(2);
+#ifdef PIKE_DEBUG
+      if (TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY) {
+	Pike_fatal("Stack addition failure.\n");
+      }
+#endif
+      push_object(s = fast_clone_object(Stack_program));
+      other_st = get_storage(s, Stack_program);
+#ifdef PIKE_DEBUG
+      if (!other_st) {
+	Pike_fatal("Stack lost storage.\n");
+      }
+#endif
+      add_ref(other_st->arr = Pike_sp[-2].u.array);
+      return;
+    }
+    push_object(clone_object(Stack_program, 0));
+  }
+
+  PIKEFUN mixed cast(string to)
+    flags ID_PROTECTED;
+  {
+    if( to == MK_STRING("array") ) {
+      apply_current(f_Stack_cq__values_fun_num, 0);
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN string _sprintf(int t)
+    flags ID_PROTECTED;
+  {
+    if (t != '0') {
+      push_undefined();
+    }
+
+    push_constant_text("%O%O");
+    ref_push_program(Pike_fp->current_program);
+    apply_current(f_Stack_cq__values_fun_num, 0);
+    f_sprintf(3);
+  }
+}
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*! @module Pike
  */
 
@@ -6168,10 +5806,12 @@ PIKECLASS pike_trampoline
 
   DECLARE_STORAGE;
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->trampoline.frame=0;
   }
+#endif
 
   EXIT
   {

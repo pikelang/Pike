@@ -38,7 +38,7 @@ void create(?int anti_alias)
   if (args) {
     INT_TYPE aa;
     GtkWidget *gc;
-    get_all_args("create",args,"%i",&aa);
+    get_all_args(NULL,args,"%i",&aa);
     if (aa)
       gc=gnome_canvas_new_aa();
     else
@@ -149,7 +149,7 @@ array(int) w2c(float wx, float wy)
   {
     FLOAT_TYPE wx,wy;
     int cx,cy;
-    get_all_args("w2c",args,"%f%f",&wx,&wy);
+    get_all_args(NULL,args,"%f%f",&wx,&wy);
     gnome_canvas_w2c(GNOME_CANVAS(THIS->obj),wx,wy,&cx,&cy);
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(cx);
@@ -166,7 +166,7 @@ array(float) w2c_d(float wx, float wy)
   {
     FLOAT_TYPE wx,wy;
     double cx,cy;
-    get_all_args("w2c_d",args,"%f%f",&wx,&wy);
+    get_all_args(NULL,args,"%f%f",&wx,&wy);
     gnome_canvas_w2c_d(GNOME_CANVAS(THIS->obj),wx,wy,&cx,&cy);
     pgtk2_pop_n_elems(args);
     push_float(cx);
@@ -182,7 +182,7 @@ array(float) c2w(int cx, int cy)
   {
     INT_TYPE cx,cy;
     double wx,wy;
-    get_all_args("c2w",args,"%i%i",&cx,&cy);
+    get_all_args(NULL,args,"%i%i",&cx,&cy);
     gnome_canvas_c2w(GNOME_CANVAS(THIS->obj),cx,cy,&wx,&wy);
     pgtk2_pop_n_elems(args);
     push_float(wx);
@@ -200,7 +200,7 @@ array(float) window_to_world(float winx, float winy)
   {
     FLOAT_TYPE winx,winy;
     double worldx,worldy;
-    get_all_args("window_to_world",args,"%f%f",&winx,&winy);
+    get_all_args(NULL,args,"%f%f",&winx,&winy);
     gnome_canvas_window_to_world(GNOME_CANVAS(THIS->obj),winx,winy,
 			&worldx,&worldy);
     pgtk2_pop_n_elems(args);
@@ -217,7 +217,7 @@ array(float) world_to_window(float worldx, float worldy)
   {
     FLOAT_TYPE worldx,worldy;
     double winx,winy;
-    get_all_args("world_to_window",args,"%f%f",&worldx,&worldy);
+    get_all_args(NULL,args,"%f%f",&worldx,&worldy);
     gnome_canvas_world_to_window(GNOME_CANVAS(THIS->obj),worldx,worldy,
 			&winx,&winy);
     pgtk2_pop_n_elems(args);
@@ -235,7 +235,7 @@ GDK2.Color get_color(?string spec)
   {
     GdkColor *color = NULL;
     char *spec=NULL;
-    get_all_args("get_color",args,".%s",&color);
+    get_all_args(NULL,args,".%s",&color);
     if (!color) {
       /* FIXME: This looks like a leak. /mast */
       color=(GdkColor *)g_malloc(sizeof(GdkColor));

@@ -8,7 +8,6 @@
 #define MEMORY_H
 
 #include "global.h"
-#include "stralloc.h"
 
 #ifdef USE_VALGRIND
 
@@ -41,7 +40,7 @@
     PIKE_MEM_NA_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_NA_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_NOACCESS(addr, bytes));		\
+    VALGRIND_MAKE_MEM_NOACCESS(addr, bytes);                            \
   } while (0)
 
 /* Write Only -- Will become RW when having been written to */
@@ -49,7 +48,7 @@
     PIKE_MEM_WO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_WO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes);                           \
   } while (0)
 
 /* Read/Write */
@@ -57,7 +56,7 @@
     PIKE_MEM_RW_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RW_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_DEFINED(addr, bytes);                             \
   } while (0)
 
 /* Read Only -- Not currently supported by valgrind */
@@ -65,7 +64,7 @@
     PIKE_MEM_RO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+    VALGRIND_MAKE_MEM_DEFINED(addr, bytes);                             \
   } while (0)
 
 /* Return true if a memchecker is in use. */
@@ -152,17 +151,9 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
-/*
- * The purpose of this function is to avoid dead store elimination in cases when
- * sensitive data has to be cleared from memory.
- */
-static inline void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size_t n) {
-    volatile char * _p = (char *)p;
-    while (n--) *_p++ = c;
-    return (void *)p;
-}
+PMOD_EXPORT void secure_zero(void *p, size_t n);
 
-#ifdef __x86_64__
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
 /* it is faster to just do the unaligned operation. */
 static inline UINT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
   return *(UINT64*)ptr;
@@ -198,7 +189,7 @@ static inline void ATTRIBUTE((unused)) set_unaligned64(void * ptr, UINT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static inline UINT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
+static inline unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;
@@ -219,22 +210,16 @@ static inline void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT1
 }
 #endif
 
-#include "pike_search.h"
-
-#include "block_alloc_h.h"
 extern int page_size;
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
-PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz) ATTRIBUTE((pure));
-PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
+PMOD_EXPORT long pcharp_strlen(const PCHARP a)  ATTRIBUTE((pure));
 
 #define MEMCHR0 memchr
 p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 
-/* PMOD_EXPORT void swap(char *a, char *b, size_t size); */
-PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
-PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
+void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order);
 
 size_t hashmem_siphash24( const void *s, size_t len );
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
@@ -242,18 +227,12 @@ extern PMOD_EXPORT
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
 #else
-PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
+PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, UINT64 key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
-/*
-PMOD_EXPORT void memfill(char *to,
-	     INT32 tolen,
-	     char *from,
-	     INT32 fromlen,
-	     INT32 offset);
-*/
+
 #define MALLOC_FUNCTION  ATTRIBUTE((malloc)) PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 
 PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
@@ -275,8 +254,6 @@ void exit_pike_memory (void);
 PMOD_EXPORT void * system_malloc(size_t) MALLOC_FUNCTION;
 PMOD_EXPORT void system_free(void *);
 #endif
-
-#undef BLOCK_ALLOC
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	IF

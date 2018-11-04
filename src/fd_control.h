@@ -16,6 +16,7 @@
  *     but should work on other OSs as well, since
  *     accept4(2) is emulated by us anyway.
  */
+#if !defined(SOCK_NONBLOCK) || !defined(SOCK_CLOEXEC)
 enum pike_sock_flags {
 #ifndef SOCK_CLOEXEC
 #if !defined(SOCK_NONBLOCK) || (SOCK_NONBLOCK != 0x80000)
@@ -36,6 +37,7 @@ enum pike_sock_flags {
 #define SOCK_NONBLOCK	SOCK_NONBLOCK
 #endif
 };
+#endif /* !SOCK_NONBLOCK || !SOCK_CLOEXEC */
 #endif /* !HAVE_ACCEPT4 */
 
 /* Prototypes begin here */

@@ -49,9 +49,9 @@ variant Sql.Result big_query(string query, mapping bindings)
 {
   Sql.Result res = ::big_query(query, bindings);
 
-  res->master_res[0]->bindings = sprintf("%O", bindings);
-  res->master_res[0]->query = query;
-  res->master_res[0]->bindings_query = query;
+  res->_values[0]->bindings = sprintf("%O", bindings);
+  res->_values[0]->query = query;
+  res->_values[0]->bindings_query = query;
   return res;
 }
 
@@ -75,7 +75,7 @@ variant Sql.Result big_query(string query,
 {
   Sql.Result res = ::big_query(query, extraarg, @extraargs);
 
-  res->master_res[0]->query = query;
-  res->master_res[0]->args = sprintf("%O", ({ extraarg }) + extraargs);
+  res->_values[0]->query = query;
+  res->_values[0]->args = sprintf("%O", ({ extraarg }) + extraargs);
   return res;
 }

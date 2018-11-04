@@ -315,7 +315,7 @@ class TimeRange
 //! method array(TimeRange) split(int|float n, void|TimeRange with)
 //!	This divides the called timerange into
 //!	n pieces. The returned timerange type
-//!	is not neccesarily of the same type as the called one.
+//!	is not necessarily of the same type as the called one.
 //!     If the optional timerange is specified then the resulting timeranges
 //!     will be multiples of that range (except for the last one).
 //!
@@ -688,7 +688,7 @@ class TimeRange
        what->ruleset()==ruleset() && equals(what);
    }
 
-   int __hash();
+   protected int __hash();
 
 //     int(0..1) _equal(TimeRange what)
 //     {
@@ -1257,6 +1257,11 @@ protected class cNullTimeRange
    int(1..1) `!()
    {
       return 1;
+   }
+
+   protected int __hash()
+   {
+      return 0;
    }
 
    protected string _sprintf(int t)

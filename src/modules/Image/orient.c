@@ -35,8 +35,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
-
 static const double c0=0.70710678118654752440;
 static const double my_PI=3.14159265358979323846;
 
@@ -154,7 +152,7 @@ void image_orient(INT32 args)
   double mag;
   int i, w, h;
 
-  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
+  CHECK_INIT();
 
   this=THIS;
 
@@ -273,7 +271,7 @@ void image_orient4(INT32 args)
   struct object *o[5];
   struct image *img[5];
 
-  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
+  CHECK_INIT();
 
   pop_n_elems(args);
   _image_orient(THIS,o,img);

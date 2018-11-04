@@ -558,7 +558,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 #endif /* COLORTABLE_DEBUG */
 	       return &NCTLU_FLAT_CUBICLES_NAME;
 	 }
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
 
       default:
 	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",

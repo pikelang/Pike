@@ -72,6 +72,11 @@ if test x$ac_cv_header_gssapi_h = xyes -o \
 
   if test "$ac_cv_header_gssapi_krb5_h:$ac_cv_header_gssapi_gssapi_krb5_h:$ac_cv_header_gssglue_gssapi_gssapi_krb5_h" = "no:no:no"; then
     PIKE_CHECK_GSS_OID(GSS_KRB5_NT_PRINCIPAL_NAME)
+  else
+    # NB: On FreeBSD 10.3 -lgssapi contains gss_wrap(), but
+    #     the definitions for GSS_KRB5_NT_PRINCIPAL_NAME are
+    #     in -lgssapi_krb5 (which doesn't contain gss_wrap()).
+    AC_CHECK_LIB(gssapi_krb5, main)
   fi
   PIKE_CHECK_GSS_OID(GSS_C_NT_USER_NAME)
   PIKE_CHECK_GSS_OID(GSS_C_NT_MACHINE_UID_NAME)

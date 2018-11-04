@@ -20,7 +20,6 @@
 #include "program.h"
 
 #include "image.h"
-#include "builtin_functions.h"
 #include "module_support.h"
 
 
@@ -210,7 +209,7 @@ static void low_image_f_wbf_decode( int args, int mode )
   int map_num_elems = 0;
   struct buffer buff;
 
-  get_all_args( "decode", args, "%S", &s );
+  get_all_args( NULL, args, "%S", &s );
 
   buff.len = s->len;
   buff.str = (unsigned char *)s->str;
@@ -241,6 +240,7 @@ static void low_image_f_wbf_decode( int args, int mode )
         push_static_text( "image" );
         low_image_f_wbf_decode_type0( &wh, &buff );
         map_num_elems++;
+	/* FALLTHRU */
 
       case 0: /* Header only */
         push_static_text( "format" );

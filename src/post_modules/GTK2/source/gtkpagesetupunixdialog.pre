@@ -14,7 +14,7 @@ void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
       GtkWidget *gp;
       struct object *o1=NULL;
 
-      get_all_args("create",args,"%T.%o",&t,&o1);
+      get_all_args(NULL,args,"%T.%o",&t,&o1);
       ref_push_string(t);
       f_string_to_utf8(1);
       gp=gtk_page_setup_unix_dialog_new(CGSTR0(Pike_sp[-1].u.string),get_gobject(o1));

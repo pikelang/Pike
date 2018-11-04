@@ -14,6 +14,7 @@ mapping(int:string) replycodes =
    421:"<host> Service not available, closing transmission channel "
        "[This may be a reply to any command if the service knows it "
        "must shut down]",
+   454:"TLS not available due to temporary reason",
    450:"Requested mail action not taken: mailbox unavailable "
        "[E.g., mailbox busy]",
    451:"Requested action aborted: local error in processing",
@@ -108,15 +109,15 @@ class Client
   //! @decl void create()
   //! @decl void create(Stdio.File server)
   //! @decl void create(string server, void|int port)
-  //! Creates an SMTP mail client and connects it to the
-  //! the @[server] provided. The server parameter may
-  //! either be a string with the hostname of the mail server,
-  //! or it may be a file object acting as a mail server.
-  //! If @[server] is a string, then an optional port parameter
-  //! may be provided. If no port parameter is provided, port
-  //! 25 is assumed. If no parameters at all is provided
-  //! the client will look up the mail host by searching
-  //! for the DNS MX record.
+  //!
+  //! Creates an SMTP mail client and connects it to the the @[server]
+  //! provided. The server parameter may either be a string with the
+  //! hostname of the mail server, or it may be a file object acting
+  //! as a mail server.  If @[server] is a string, then an optional
+  //! port parameter may be provided. If no port parameter is
+  //! provided, port 25 is assumed. If no parameters at all is
+  //! provided the client will look up the mail host by searching for
+  //! the DNS MX record.
   //!
   //! @throws
   //!   Throws an exception if the client fails to connect to
@@ -171,10 +172,10 @@ class Client
     return MIME.quote(tokens);
   }
 
-  //! Sends a mail message from @[from] to the mail addresses
-  //! listed in @[to] with the mail body @[body]. The body
-  //! should be a correctly formatted mail DATA block, e.g.
-  //! produced by @[MIME.Message].
+  //! Sends a mail message from @[from] to the mail addresses listed
+  //! in @[to] with the mail body @[body]. The body should be a
+  //! correctly formatted mail DATA block, e.g.  produced by
+  //! @[MIME.Message].
   //!
   //! @seealso
   //!   @[simple_mail]
@@ -462,20 +463,19 @@ class AsyncClient
     }
   }
 
-  //! Creates an SMTP mail client and connects it to the
-  //! the @[server] provided. The server parameter may
-  //! either be a string with the hostname of the mail server,
-  //! or it may be a file object acting as a mail server.
-  //! If @[server] is a string, then an optional port parameter
-  //! may be provided. If no port parameter is provided, port
-  //! 25 is assumed. If no parameters at all is provided
-  //! the client will look up the mail host by searching
-  //! for the DNS MX record.
+  //! Creates an SMTP mail client and connects it to the the @[server]
+  //! provided. The server parameter may either be a string with the
+  //! hostname of the mail server, or it may be a file object acting
+  //! as a mail server.  If @[server] is a string, then an optional
+  //! port parameter may be provided. If no port parameter is
+  //! provided, port 25 is assumed. If no parameters at all is
+  //! provided the client will look up the mail host by searching for
+  //! the DNS MX record.
   //!
-  //! The callback will first be called when the connection is established
-  //! (@expr{cb(1, @@args)@}) or fails to be established with an error. The
-  //! callback will also be called with an error if one occurs during the
-  //! delivery of mails.
+  //! The callback will first be called when the connection is
+  //! established (@expr{cb(1, @@args)@}) or fails to be established
+  //! with an error. The callback will also be called with an error if
+  //! one occurs during the delivery of mails.
   //!
   //! In the error cases, the @expr{cb@} gets called the following ways:
   //! @ul
@@ -530,16 +530,16 @@ class AsyncClient
     {
       // Lookup MX record here (Using DNS.pmod)
       dns->async_get_mx(gethostname(), lambda(array a)
-			{
-			   if (a)
-			   {
-			      dns->async_host_to_ip(a[0], lambda(string host, string ip)
-						    {
-						      initiate_connection(ip, port, cb, @args);
-						    });
-			   } else
-			      error("Failed to connect to mail server.\n");
-			});
+        {
+          if (a)
+          {
+            dns->async_host_to_ip(a[0], lambda(string host, string ip)
+              {
+                initiate_connection(ip, port, cb, @args);
+              });
+          } else
+            error("Failed to connect to mail server.\n");
+        });
     } else
     {
        if (is_ip(server))
@@ -548,9 +548,9 @@ class AsyncClient
        }
        else
 	  dns->async_host_to_ip(server, lambda(string host, string ip)
-				{
-			           initiate_connection(ip, port, cb, @args);
-				});
+            {
+              initiate_connection(ip, port, cb, @args);
+            });
     }
   }
 
@@ -1437,7 +1437,7 @@ class Connection {
      call_out(handle_timeout, 300, "'First connexion'");
    }
 
-   void destroy()
+   protected void _destruct()
    {
      shutdown_fd();
    }
@@ -1462,9 +1462,6 @@ class Server {
      destruct(fd);
    }
 
-   //! @decl void create(array(string) _domains, void|int port,@
-   //! 				void|string ip, function _cb_mailfrom,@
-   //!				function _cb_rcptto, function _cb_data)
    //!	Create a receiving SMTP server. It implements @rfc{2821@},
    //!	@rfc{2822@} and @rfc{1854@}.
    //!
@@ -1531,10 +1528,10 @@ class Server {
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
-   void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom,
-     function _cb_rcptto, function _cb_data)
+   void create(array(string) domains, void|int port, void|string ip,
+               function cb_mailfrom, function cb_rcptto, function cb_data)
    {
-     config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
+     config = Configuration(domains, cb_mailfrom, cb_rcptto, cb_data);
      if(!port)
        port = 25;
      fdport = Stdio.Port(port, accept_callback, ip);

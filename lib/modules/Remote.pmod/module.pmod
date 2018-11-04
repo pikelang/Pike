@@ -272,7 +272,7 @@ class Connection {
 #endif
   }
 
-  void destroy()
+  protected void _destruct()
   {
     catch (try_close());
   }

@@ -273,9 +273,9 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
-  case 3: addchar_unsafe((char)((num >> 24)&0xff));
-  case 2: addchar_unsafe((char)((num >> 16)&0xff));
-  case 1: addchar_unsafe((char)((num >> 8)&0xff));
+  case 3: addchar_unsafe((char)((num >> 24)&0xff)); /* FALLTHRU */
+  case 2: addchar_unsafe((char)((num >> 16)&0xff)); /* FALLTHRU */
+  case 1: addchar_unsafe((char)((num >> 8)&0xff));  /* FALLTHRU */
   case 0: addchar_unsafe((char)(num&0xff));
   }
 }
@@ -344,7 +344,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	t = t->cdr;
       }
       addchar(T_MANY);
-      /* FALL_THROUGH */
+      /* FALLTHRU */
     case T_MANY:
       encode_type(t->car, data);
       t = t->cdr;
@@ -659,9 +659,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      pike_ftype=Pike_FP_NINF;
 	      break;
 
+#ifdef HAVE_ISZERO
 	    case Pike_FP_PZERO:
 	      pike_ftype=Pike_FP_NZERO;
 	      break;
+#endif
 	  }
 	}
 
@@ -876,7 +878,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    break;
 	  }
-	  /* FALL THROUGH */
+          /* FALLTHRU */
 
 	default:
 	  code_entry(TAG_OBJECT, 0,data);
@@ -936,7 +938,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_PROGRAM:
     {
       int d;
-      if (val->u.program->id < PROG_DYNAMIC_ID_START) {
+      if ((val->u.program->id < PROG_DYNAMIC_ID_START) &&
+	  (val->u.program->id >= 0)) {
 	code_entry(TAG_PROGRAM, 3, data);
 	push_int(val->u.program->id);
 	encode_value2(Pike_sp-1, data, 0);
@@ -1743,7 +1746,7 @@ void f_encode_value(INT32 args)
   int i;
   data=&d;
 
-  check_all_args("encode_value", args,
+  check_all_args(NULL, args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -1821,7 +1824,7 @@ void f_encode_value_canonic(INT32 args)
   int i;
   data=&d;
 
-  check_all_args("encode_value_canonic", args,
+  check_all_args(NULL, args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -3052,9 +3055,11 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  old_pragmas = c->lex.pragmas;
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
+	  /* We also don't want to generate deprecation warnings. */
+	  c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
 
 	  /* Start the new program. */
-	  low_start_new_program(p, 1, NULL, 0, NULL);
+	  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
 	  p->flags = p_flags;
 
@@ -4362,7 +4367,7 @@ void f_decode_value(INT32 args)
   int debug = 0;
 #endif /* ENCODE_DEBUG */
 
-  check_all_args("decode_value", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG

@@ -30,7 +30,7 @@ void create(string|mapping(string:mixed)|void title,
       char *label=NULL;
       struct object *o1=NULL;
 
-      get_all_args("create",args,"%s.%o",&label,&o1);
+      get_all_args(NULL,args,"%s.%o",&label,&o1);
 
       if (o1) {
 #ifdef HAVE_GTK24
@@ -73,7 +73,7 @@ void set_group(GTK2.RadioMenuItem groupmember)
 {
   struct object *o;
   GSList *mylist;
-  get_all_args("set_group",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   mylist=gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(get_gobject(o)));
   gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(THIS->obj),mylist);
   RETURN_THIS();

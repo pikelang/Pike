@@ -559,6 +559,54 @@ test_any([[
   return B("foo")->s;
 ]], "foo")
 
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return indices(B);
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return indices(B);
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return values(B);
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return values(B);
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return indices(B());
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return indices(B());
+]], ({ "sym" }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ constant sym = 2; inherit A; }
+  return values(B());
+]], ({ 2 }))
+
+test_any_equal([[
+  class A{ constant sym = 1; }
+  class B{ inherit A; constant sym = 2; }
+  return values(B());
+]], ({ 2 }))
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
@@ -746,6 +794,11 @@ test_eq([[
 test_eq([[
   `()(){ return 1; }
 ]], 1)
+
+test_equal([[
+  lambda(array a, function f) { return f(@a); }
+	(({ 0, 1, 2, 3 })){ return __ARGS__; }
+]], ({ 0, 1, 2, 3}))
 
 // Argument checking
 
@@ -938,6 +991,31 @@ test_compile_warning([[
   };
 ]])
 //
+
+test_compile_warning([[
+  // Warning: Compat: Substituting destroy() for _destruct().
+  class A {
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+#pragma no_deprecation_warnings
+  class A {
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+  class A {
+    protected void _destruct() {}
+    protected void destroy() {}
+  }
+]])
+test_compile_any([[
+  class A {
+    protected void destroy() {}
+    protected void _destruct() {}
+  }
+]])
 
 test_any([[
   class Foo {
@@ -1245,6 +1323,22 @@ test_any([[
   return Bar()->f();
 ]], 1)
 
+dnl equal() on functions.
+test_any([[
+  class A { int a(){} }
+  return equal(A()->a, A()->a);
+]], 1)
+test_any([[
+  class A { int a(){} }
+  class B { inherit A; }
+  return equal(A()->a, B()->a);
+]], 1)
+test_any([[
+  class A { int a(){} }
+  class B { inherit A; int a(){} }
+  return equal(A()->a, B()->a);
+]], 0)
+
 test_do([[
 class Foo
 {
@@ -1441,7 +1535,7 @@ test_do([[
 	c = count++;
       }
 
-      void destroy()
+      void _destruct()
       {
 	count--;
 	if (count != c)
@@ -2383,11 +2477,11 @@ test_compile_error(1())
 test_compile_error(""())
 test_compile_error(([])())
 test_compile_error(([])())
-test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
-test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
+test_eval_error([[ class Z { int _destruct() { return 1/y; } }(); ]])
 
-test_any([[ class X { int y; class Z { protected void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
 ifefun(_debug,
@@ -3232,6 +3326,20 @@ test_any([[
 
   return Test()->bar;
 ]], 0)
+
+test_compile_error([[
+  class {
+  int a() { }
+  void b() { return a(); }
+  }
+]])
+
+test_do([[
+  class {
+  void a() { }
+  void b() { return a(); }
+  }
+]])
 
 test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
 
@@ -5446,6 +5554,16 @@ cond_begin([[all_constants()->thread_create]])
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
 
+  test_any_equal([[
+    // Check the compiler for too aggressive constant folding.
+#pragma dynamic_dot
+    int test_thread() {
+      return Thread.this_thread()->id_number() ==
+	     Thread.this_thread().id_number();
+    }
+    return ({ Thread.Thread, Thread.Thread })(test_thread)->wait();
+  ]], ({ 1, 1 }))
+
 cond_end // thread_create
 cond(0, [[
   test_any([[
@@ -6336,7 +6454,7 @@ test_any([[
     class Refcounter()
     { mapping state;
       void create(mapping m) { state = m; state->refs++;}
-      void destroy() {state->refs--;}
+      void _destruct() {state->refs--;}
     };
     int final_res;
     function foo()
@@ -6364,7 +6482,7 @@ test_any([[
     {
       object c;
       class A {object b;}
-      class B {object a; void destroy() {c = class{}();}}
+      class B {object a; void _destruct() {c = class{}();}}
       mixed test()
       {
 	object a = A(), b = B();
@@ -6394,43 +6512,43 @@ test_any([[
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Dead(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     array a = set_weak_flag(({Live()}), 1);
     gc();
     return set_weak_flag(a, 0);
   }]], ({0}))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     multiset l = set_weak_flag((<Live()>), 1);
     gc();
     return set_weak_flag(l, 0);
   }]], (<>))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     mapping m = set_weak_flag(([0: Live()]), 1);
     gc();
     return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     mapping m = set_weak_flag(([Live(): 0]), 1);
     gc();
     return set_weak_flag(m, 0);
@@ -6446,7 +6564,7 @@ test_any([[
       array g;
       array a = ({17});
       void create() {g = ({this});}
-      void destroy() {all_constants()->kablutt = a;}
+      void _destruct() {all_constants()->kablutt = a;}
     }();
     o = 0;
     gc();
@@ -6457,7 +6575,7 @@ test_any([[
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
-      void destroy() {
+      void _destruct() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
@@ -6470,7 +6588,7 @@ test_any([[
       array g;
       array a = set_weak_flag (({({17})}), 1);
       void create() {g = ({this});}
-      void destroy() {all_constants()->blatinka = a;}
+      void _destruct() {all_constants()->blatinka = a;}
     }();
     o = 0;
     gc();
@@ -6511,14 +6629,14 @@ test_do(add_constant("blatinka");)
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Live(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void destroy() {}};
+    class Live {object o; void _destruct() {}};
     object o = Dead(); o->o = Live();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
@@ -6569,7 +6687,7 @@ test_do(add_constant("blatinka");)
     class Foo {
       array(Foo) f = ({this});
       multiset(Foo) g = set_weak_flag((<this>), 1);
-      void destroy() {add_constant("beltbent_oblivion", 1);}
+      void _destruct() {add_constant("beltbent_oblivion", 1);}
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
     gc();
@@ -6615,7 +6733,7 @@ test_do(add_constant("blatinka");)
 	array b = set_weak_flag (({a}), 1);
 	a[0] = b;
       }
-      void destroy()
+      void _destruct()
       {
 	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
 	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
@@ -6634,7 +6752,7 @@ test_do(add_constant("blatinka");)
     class Live
     {
       Foo f;
-      void destroy()
+      void _destruct()
       {
 	if (!f->l || !f->a || !f->a[0] || !f->a[1])
 	  add_constant ("my_little_error", "GC garbed live things.\n");
@@ -7023,7 +7141,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    mapping a = ([1: this]);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7038,7 +7156,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    multiset a = (<this>);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7053,7 +7171,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    array a = ({this});
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7063,13 +7181,13 @@ test_do(add_constant("blatinka");)
   ]], 1)
   test_any([[
     return class {
-      class Obj (object o) {void destroy() {}}
+      class Obj (object o) {void _destruct() {}}
       Obj x;
       int test()
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7085,7 +7203,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void destroy() {x = a;}
+	    void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7496,6 +7614,33 @@ test_program([[
     return s > 0;
   }
 ]])
+
+// Pike.identify_cycle
+test_any_equal([[
+  class Foo { Foo next; int counter; };
+  array(Foo) foos = allocate(10, Foo)();
+  for (int i = 0; i < 10; i++) {
+    foos[i]->next = foos[(i+1)%10];
+    foos[i]->counter = i;
+  }
+  return Pike.identify_cycle(foos[0])->counter;
+]], ({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }))
+test_any([[
+  // PIKE-106: Mutex not unlocked properly on error in identify_cycle().
+  class Foo {
+    int cnt;
+    int __hash() { return 0; }
+    int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
+  };
+  catch {
+    // This triggered an error.
+    Pike.identify_cycle(allocate(2, Foo)());
+  };
+  catch {
+    // This hanged due to the mc_mutex not having been released.
+    Pike.identify_cycle(allocate(2, Foo)());
+  };
+]], 0)
 
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
@@ -7976,7 +8121,7 @@ test_true(intp(signum("SIGKILL")))
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 [[
   test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
   test_do(kill(getpid(),signum("SIGFPE")))
@@ -9072,6 +9217,14 @@ test_eval_error([[(int)class { mixed cast() { return UNDEFINED; } }();]])
 test_eval_error([[(string)class { mixed cast() { return UNDEFINED; } }();]])
 test_eval_error([[(mapping)class { mixed cast() { return UNDEFINED; } }();]])
 
+test_any([[
+  // Cast to subtyped object.
+  class A(int val) {
+    int next() { return ++val; }
+  }
+  return ((object(A))17)->next();
+]], 18)
+
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
 test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
@@ -9725,15 +9878,17 @@ ifefun(_verify_internals,
 test_compile_any([[import Stdio.Readline; mapping x=([]);]])
 
 // testing preprocessor
-test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"#line 1 \"-\"\n\n( (A) ) ( (B) )")
-test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"#line 1 \"-\"\n\nFOO BAR")
-test_eq([[cpp("#define F 'F'\nF")]],"#line 1 \"-\"\n\n'F'")
-test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"#line 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
-test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
+test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"\n( (A) ) ( (B) )")
+test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"\nFOO BAR")
+test_eq([[cpp("#define F 'F'\nF")]],"\n'F'")
+test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
+test_eq([[cpp("\t  foo\xfeff""bar \xfeff gazonk")]],
+        [[cpp("\t  foobar  gazonk")]])
+test_eq([[cpp("\t  foobar  gazonk\n")]], "\t  foobar  gazonk\n")
 test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
-	"#line 1 \"-\"\n\n\n \"foo\" ")
-test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "#line 1 \"-\"\n\n\n \"\" \n");
-test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "#line 1 \"-\"\n\n\n \"\"   \n" /* Note: Added extra spaces for \r. */);
+	"\n\n \"foo\" ")
+test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "\n\n \"\" \n");
+test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "\n\n \"\" \n");
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[
@@ -9749,14 +9904,14 @@ test_equal([[
 		 "constant val = TOSTR2(FOO);\n")()->val;
 ]], "")
 test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
-  "#line 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
+  "foo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
 test_equal([[
   compile_string(Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
-test_eq([[cpp("\\\n")]], "#line 1 \"-\"\n\n")
-test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "#line 1 \"-\"\n\n\n\n\n")
+test_eq([[cpp("\\\n")]], "\n")
+test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "\n\n\n\n")
 test_any([[
   #define TOSTR(X)	#X
   return TOSTR(FOO  "String with \\ and \" and  space"  BAR);
@@ -9940,7 +10095,7 @@ test_do([[
 test_any([[
   class handler {mapping get_predefines() {return (["x": "1", "y": "", "z": 0]);}};
   return cpp ("x y z p", "-", 0, handler());
-]], "#line 1 \"-\"\n1   p");
+]], "1   p");
 test_eval_error([[
   class handler {mixed get_predefines() {return (<"x">);}};
   cpp ("x y z", "-", 0, handler());
@@ -10570,6 +10725,18 @@ return 0;
 // FIXME: add tests for real pragmas
 test_compile_warning([[
 #pragma whatever
+return 1;
+]])
+test_any([[
+#if 0
+#pragma whatever
+#endif
+return 1;
+]], 1)
+test_compile_warning([[
+#if 1
+#pragma whatever
+#endif
 return 1;
 ]])
 
@@ -11255,6 +11422,9 @@ test_eq([[combine_path(".", "bar")]],"bar")
 test_eq([[combine_path("./", "bar")]],"bar")
 test_eq([[combine_path(".", "../bar")]],"../bar")
 test_eq([[combine_path("./", "../bar")]],"../bar")
+test_eq([[combine_path("./bar")]],"bar")
+test_eq([[combine_path("./bar")]],"bar")
+test_eq([[combine_path("./../bar")]],"../bar")
 
 // - combine_path_nt
 test_eq([[combine_path_nt("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
@@ -11861,8 +12031,43 @@ test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 // - load_module
 
 // - localtime
-ifefun(localtime,[[
+cond([[all_constants()->localtime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
   test_true(mappingp(localtime(0)))
+  test_eq(localtime(1<<31)->year, 138)
+  test_eq(localtime(1<<32)->year, 206)
+  test_eq(localtime(1<<33)->year, 342)
+  test_equal(sort(indices(localtime(0))),({
+     "hour",
+     "isdst",
+     "mday",
+     "min",
+     "mon",
+     "sec",
+     "timezone",
+     "wday",
+     "yday",
+     "year"
+  }))
+  test_do([[int t = -1; catch(localtime(t));]])
+]])
+cond([[all_constants()->localtime && (Pike.get_runtime_info()->time_size == 32)]],
+[[
+  test_true(mappingp(localtime(0)))
+  test_eval_error([[return localtime(1<<31)->year]])
+  test_eq(localtime((1<<31)-1)->year, 138)
+  test_equal(sort(indices(localtime(0))),({
+     "hour",
+     "isdst",
+     "mday",
+     "min",
+     "mon",
+     "sec",
+     "timezone",
+     "wday",
+     "yday",
+     "year"
+  }))
   test_do([[int t = -1; catch(localtime(t));]])
 ]])
 cond([[all_constants()->localtime && all_constants()->mktime]],
@@ -11952,55 +12157,59 @@ test_equal(lower_case((string) ({
 // when UnicodeData.txt is changed.
 // Part 2: 0x1000 -
 0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f8, 0x13fe, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1e00,
-0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00, 0x1f08,
-0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30, 0x1f38,
-0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53, 0x1f54,
-0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b, 0x1f5c,
-0x1f5d, 0x1f5e, 0x1f5f, 0x1f60, 0x1f68, 0x1f70, 0x1f72, 0x1f76,
-0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f88, 0x1f90, 0x1f98,
-0x1fa0, 0x1fa8, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb8, 0x1fba,
-0x1fbc, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1fc8, 0x1fcc,
-0x1fcd, 0x1fd0, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe0, 0x1fe2,
-0x1fe5, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ff3, 0x1ff4,
-0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a, 0x212b,
-0x212c, 0x2132, 0x2133, 0x214e, 0x214f, 0x2160, 0x2180, 0x2183,
-0x2185, 0x24b6, 0x24d0, 0x24ea, 0x2c00, 0x2c2f, 0x2c30, 0x2c5f,
-0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x2c65, 0x2c66, 0x2c67, 0x2c6d,
-0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75, 0x2c77,
-0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4, 0x2d00,
-0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa640, 0xa66e, 0xa680,
-0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d, 0xa77e,
-0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796, 0xa7aa,
-0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7b0, 0xa7b1, 0xa7b2, 0xa7b3,
-0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0, 0xff21, 0xff3b,
-0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x10c80, 0x10cb3, 0x10cc0,
-0x010cf3, 0x0118a0, 0x0118e0, })), (string) ({
+0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
+0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x1e00, 0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00,
+0x1f08, 0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30,
+0x1f38, 0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
+0x1f54, 0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b,
+0x1f5c, 0x1f5d, 0x1f5e, 0x1f5f, 0x1f60, 0x1f68, 0x1f70, 0x1f72,
+0x1f76, 0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f88, 0x1f90,
+0x1f98, 0x1fa0, 0x1fa8, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb8,
+0x1fba, 0x1fbc, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1fc8,
+0x1fcc, 0x1fcd, 0x1fd0, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe0,
+0x1fe2, 0x1fe5, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ff3,
+0x1ff4, 0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a,
+0x212b, 0x212c, 0x2132, 0x2133, 0x214e, 0x214f, 0x2160, 0x2180,
+0x2183, 0x2185, 0x24b6, 0x24d0, 0x24ea, 0x2c00, 0x2c2f, 0x2c30,
+0x2c5f, 0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x2c65, 0x2c66, 0x2c67,
+0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75,
+0x2c77, 0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4,
+0x2d00, 0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa640, 0xa66e,
+0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
+0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
+0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
+0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
+0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0x10ce, 0xab70, 0x13f8,
-0x13f6, 0x13f8, 0x13fe, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1e01,
-0x1e96, 0x1e9b, 0x1e9c, 0x00df, 0x1e9f, 0x1ea1, 0x1f00, 0x1f00,
-0x1f10, 0x1f16, 0x1f10, 0x1f1e, 0x1f20, 0x1f20, 0x1f30, 0x1f30,
-0x1f40, 0x1f46, 0x1f40, 0x1f4e, 0x1f51, 0x1f52, 0x1f53, 0x1f54,
-0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f51, 0x1f5a, 0x1f53, 0x1f5c,
-0x1f55, 0x1f5e, 0x1f57, 0x1f60, 0x1f60, 0x1f70, 0x1f72, 0x1f76,
-0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f80, 0x1f90, 0x1f90,
-0x1fa0, 0x1fa0, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb0, 0x1f70,
-0x1fb3, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1f72, 0x1fc3,
-0x1fcd, 0x1fd0, 0x1fd2, 0x1fd0, 0x1f76, 0x1fdc, 0x1fe0, 0x1fe2,
-0x1fe5, 0x1fe6, 0x1fe0, 0x1f7a, 0x1fe5, 0x1fed, 0x1ff3, 0x1ff4,
-0x1f78, 0x1f7c, 0x1ff3, 0x1ffd, 0x03c9, 0x2127, 0x006b, 0x00e5,
-0x212c, 0x214e, 0x2133, 0x214e, 0x214f, 0x2170, 0x2180, 0x2184,
-0x2185, 0x24d0, 0x24d0, 0x24ea, 0x2c30, 0x2c2f, 0x2c30, 0x2c5f,
-0x2c61, 0x026b, 0x1d7d, 0x027d, 0x2c65, 0x2c66, 0x2c68, 0x0251,
-0x0271, 0x0250, 0x0252, 0x2c71, 0x2c73, 0x2c74, 0x2c76, 0x2c77,
-0x023f, 0x2c81, 0x2ce4, 0x2cec, 0x2cef, 0x2cf3, 0x2cf4, 0x2d00,
-0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa641, 0xa66e, 0xa681,
-0xa69c, 0xa723, 0xa730, 0xa733, 0xa770, 0xa77a, 0x1d79, 0xa77f,
-0xa788, 0xa78c, 0x0265, 0xa78e, 0xa791, 0xa794, 0xa797, 0x0266,
-0x025c, 0x0261, 0x026c, 0xa7ae, 0x029e, 0x0287, 0x029d, 0xab53,
-0xa7b5, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0, 0xff41, 0xff3b,
-0xff41, 0xff5b, 0x10428, 0x10428, 0x10450, 0x10cc0, 0x10cb3, 0x10cc0,
-0x10cf3, 0x118c0, 0x118e0, }))
+0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
+0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x1e01, 0x1e96, 0x1e9b, 0x1e9c, 0x00df, 0x1e9f, 0x1ea1, 0x1f00,
+0x1f00, 0x1f10, 0x1f16, 0x1f10, 0x1f1e, 0x1f20, 0x1f20, 0x1f30,
+0x1f30, 0x1f40, 0x1f46, 0x1f40, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
+0x1f54, 0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f51, 0x1f5a, 0x1f53,
+0x1f5c, 0x1f55, 0x1f5e, 0x1f57, 0x1f60, 0x1f60, 0x1f70, 0x1f72,
+0x1f76, 0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f80, 0x1f90,
+0x1f90, 0x1fa0, 0x1fa0, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb0,
+0x1f70, 0x1fb3, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1f72,
+0x1fc3, 0x1fcd, 0x1fd0, 0x1fd2, 0x1fd0, 0x1f76, 0x1fdc, 0x1fe0,
+0x1fe2, 0x1fe5, 0x1fe6, 0x1fe0, 0x1f7a, 0x1fe5, 0x1fed, 0x1ff3,
+0x1ff4, 0x1f78, 0x1f7c, 0x1ff3, 0x1ffd, 0x03c9, 0x2127, 0x006b,
+0x00e5, 0x212c, 0x214e, 0x2133, 0x214e, 0x214f, 0x2170, 0x2180,
+0x2184, 0x2185, 0x24d0, 0x24d0, 0x24ea, 0x2c30, 0x2c2f, 0x2c30,
+0x2c5f, 0x2c61, 0x026b, 0x1d7d, 0x027d, 0x2c65, 0x2c66, 0x2c68,
+0x0251, 0x0271, 0x0250, 0x0252, 0x2c71, 0x2c73, 0x2c74, 0x2c76,
+0x2c77, 0x023f, 0x2c81, 0x2ce4, 0x2cec, 0x2cef, 0x2cf3, 0x2cf4,
+0x2d00, 0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa641, 0xa66e,
+0xa681, 0xa69c, 0xa723, 0xa730, 0xa733, 0xa770, 0xa77a, 0x1d79,
+0xa77f, 0xa788, 0xa78c, 0x0265, 0xa78e, 0xa791, 0xa794, 0xa797,
+0x0266, 0x025c, 0x0261, 0x026c, 0x026a, 0xa7af, 0x029e, 0x0287,
+0x029d, 0xab53, 0xa7b5, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0xff41, 0xff3b, 0xff41, 0xff5b, 0x10428, 0x10428, 0x10450, 0x104d8,
+0x104d4, 0x104d8, 0x104fc, 0x10cc0, 0x10cb3, 0x10cc0, 0x10cf3, 0x118c0,
+0x118e0, 0x1e922, 0x1e922, 0x1e944, }))
 
 // - m_delete
 // - map
@@ -12035,7 +12244,6 @@ ifefun(mktime,
 [[
   test_true([[mktime( ([
   "sec":58,
-  "isdst":1,
   "year":98,
   "mon":3,
   "mday":26,
@@ -12043,9 +12251,9 @@ ifefun(mktime,
   "min":51
 ]))]])
 
-  test_eq([[mktime(58,51,1,26,3,98,1,0)]],[[mktime( ([
+  test_eq([[mktime(58,51,1,26,3,98,0,0)]],[[mktime( ([
   "sec":58,
-  "isdst":1,
+  "isdst":0,
   "year":98,
   "mon":3,
   "mday":26,
@@ -12057,18 +12265,46 @@ ifefun(mktime,
   test_any([[foreach(({1075550400,94691300,220921700,347152100,473382500,
 		       599612900,725843300,852073700,978304100,1104534500,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
-		       1861916900,1988147300,2114377700
+                       1861916900,1988147300,2114377700,1500033813,
+                       0,1,2,(1<<31)-1,
+                       -1<<31,(-1<<31)+1,-2,-1,
+		      }),int t) {
+	       if (mixed err = catch {
+	           int res = mktime (gmtime (t));
+	           if(res!=t) return ({t, res});
+	         }) {
+	         log_msg("Failure for %d (0x%08x).\n", t, t & 0xffffffff);
+	         throw(err);
+	       }
+	     }
+	     return 0;]], 0)
+]])
+
+cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
+  test_any([[foreach(({-1<<33,-1<<32,
+                       1<<31,(1<<31)+1,1<<32,1<<33,(-1<<31)-1,
 		      }),int t) {
 	       int res = mktime (gmtime (t));
 	       if(res!=t) return ({t, res});
 	     }
 	     return 0;]], 0)
+]])
 
+ifefun(mktime,
+[[
   test_eq(mktime (0, 0, 0, -200, -6, 101, 0, 0), 945043200);
   test_eq(mktime (0, 0, 0, -1, 2, 107, 0, 0), 1172534400);
   test_eq(mktime (0, 0, 0, 200, 1, 107, 0, 0), 1187481600);
   test_eq(mktime (200, 200, 200, 200, 1, 107, 0, 0), 1188213800);
   test_eq(mktime (-200, -200, -200, 200, 1, 107, 0, 0), 1186749400);
+  test_eq(mktime (33, 3, 12, 14, 6, 117, 0, 0), 1500033813);
+  test_eq(mktime ((["sec":33, "min":3, "hour":12,
+   "mday":14, "mon":6, "year":117, "isdst":0, "timezone":0])), 1500033813);
+
+  test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(0)), "1970/01/01 00:00:00");
+  test_eq(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "2009/02/13 23:31:30");
+  test_eq(mktime(strptime(strftime("%Y/%m/%d %H:%M:%S", gmtime(1234567890)), "%Y/%m/%d %H:%M:%S") + (["timezone": 0])), 1234567890);
 
   test_any( [[
   // bug [2861] ------------------------------------------------------------
@@ -12304,11 +12540,25 @@ test_eq(search("foobargazonk","o",3),9)
 test_eq(search("foobargazonk","o",9),9)
 test_eq(search("foobargazonk","o",10),-1)
 test_eq(search("foobargazonk","x",9),-1)
+test_eq(search("foobargazonk",'o',3),9)
+test_eq(search("foobargazonk",'o',9),9)
+test_eq(search("foobargazonk",'o',10),-1)
+test_eq(search("foobargazonk",'x',9),-1)
 test_eq(search(({56,8,2,6,2,7,3,56,7}),8),1)
 test_eq(search(({56,8,2,6,2,7,3,56,7}),56,0),0)
 test_eq(search(({56,8,2,6,2,7,3,56,7}),56,1),7)
 test_eq(search(({56,8,2,6,2,7,3,56,7}),56,7),7)
 test_eq(search(({56,8,2,6,2,7,3,56,7}),56,8),-1)
+test_eq(search("foobargazonk","oo", 0, 2),-1)
+test_eq(search("foobargazonk","o", 3, 9),-1)
+test_eq(search("foobargazonk","o", 3, 10), 9)
+test_eq(search("foobargazonk",'o', 3, 9),-1)
+test_eq(search("foobargazonk",'o', 3, 10), 9)
+test_eq(search(({56,8,2,6,2,7,3,56,7}), 8, 0, 1),-1)
+test_eq(search(({56,8,2,6,2,7,3,56,7}),56, 0, 1),0)
+test_eq(search(({56,8,2,6,2,7,3,56,7}),56, 1, 7),-1)
+test_eq(search(({56,8,2,6,2,7,3,56,7}),56, 7, 8),7)
+test_eq(search(({56,8,2,6,2,7,3,56,7}),56, 7, 7),-1)
 test_eq(search(({"foo"}),"foo"),0)
 test_eq(search("fo-obar|gazonk"/"|","fo-obar"),0)
 test_eq(search("fo-obar|gazonk"/"|","gazonk"),1)
@@ -12550,6 +12800,8 @@ test_eval_error(return unicode_to_string(" "))
 test_eq(string_to_utf8("foo"), "foo")
 test_eq(string_to_utf8("blä"), "bl\303\244")
 test_eq(string_to_utf8("\77077"), "\347\270\277")
+test_eq(string_to_utf8("\U0010ffff\U00100000\U00010000"), "\364\217\277\277\364\200\200\200\360\220\200\200")
+test_eq(string_to_utf8("\U0010ffff\U00100000\U00010000", 2), "\355\257\277\355\277\277\355\257\200\355\260\200\355\240\200\355\260\200")
 test_eq(string_to_utf8("\7077077", 1), "\367\207\270\277")
 test_eq(string_to_utf8("\77077077", 1), "\370\277\207\270\277")
 test_eq(string_to_utf8("\7077077077", 1), "\374\270\277\207\270\277")
@@ -12584,6 +12836,9 @@ test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\37077077077")
 test_eq(utf8_to_string("\374\270\277\207\270\277", 1), "\7077077077")
 test_eq(utf8_to_string("\370\277\207\270\277", 1), "\77077077")
 test_eq(utf8_to_string("\367\207\270\277", 1), "\7077077")
+test_eval_error(return utf8_to_string("\355\257\277\355\277\277\355\257\200\355\260\200\355\240\200\355\260\200"))
+test_eq(utf8_to_string("\355\257\277\355\277\277\355\257\200\355\260\200\355\240\200\355\260\200", 2), "\U0010ffff\U00100000\U00010000")
+test_eq(utf8_to_string("\364\217\277\277\364\200\200\200\360\220\200\200"), "\U0010ffff\U00100000\U00010000")
 test_eq(utf8_to_string("\347\270\277"), "\77077")
 test_eq(utf8_to_string("bl\303\244"), "blä")
 test_eq(utf8_to_string("foo"), "foo")
@@ -12652,6 +12907,83 @@ test_eq(utf8_to_string ("\u00fc\u0084\u0080\u0080\u0080\u0080", 1), "\U04000000"
 test_eval_error(return utf8_to_string ("\u00fe\u0080\u0080\u0080\u0080\u0080\u0080", 1))
 test_eval_error(return utf8_to_string ("\u00fe\u0081\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
 test_eq(utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1), "\U80000000")
+
+// validate_utf8
+test_true(validate_utf8("foo"))
+test_false(validate_utf8("blä"))
+test_true(validate_utf8("bl\303\244"))
+test_false(validate_utf8([string(8bit)](mixed)"\77077"))
+test_true(validate_utf8("\347\270\277"))
+test_false(validate_utf8([string(8bit)](mixed)"\7077077"))
+test_false(validate_utf8("\367\207\270\277"))
+test_true(validate_utf8("\367\207\270\277", 1))
+test_false(validate_utf8("\370\277\207\270\277"))
+test_true(validate_utf8("\370\277\207\270\277", 1))
+test_false(validate_utf8([string(8bit)](mixed)"\7077077077"))
+test_false(validate_utf8("\374\270\277\207\270\277"))
+test_true(validate_utf8("\374\270\277\207\270\277", 1))
+
+test_false(validate_utf8("\376\203\270\277\207\270\277"))
+test_true(validate_utf8("\376\203\270\277\207\270\277", 1))
+
+test_false(validate_utf8("\277"));
+test_false(validate_utf8("\377"));
+test_false(validate_utf8("\376\203\270\277\207\270", 1));
+test_false(validate_utf8("\374\270\277\207\270"));
+test_false(validate_utf8("\370\277\207\270"));
+test_false(validate_utf8("\367\207\270"));
+test_false(validate_utf8("\347\270"));
+test_false(validate_utf8("\303"));
+test_false(validate_utf8("\376\203\270\277\207\270a"));
+test_false(validate_utf8("\374\270\277\207\270a"));
+test_false(validate_utf8("\370\277\207\270a"));
+test_false(validate_utf8("\367\207\270a"));
+test_false(validate_utf8("\347\270a"));
+test_false(validate_utf8("\303a"));
+
+// Invalid ranges
+test_true(validate_utf8("\u00ed\u009f\u00bf"))
+test_false(validate_utf8("\u00ed\u00a0\u0080"))
+test_true(validate_utf8("\u00ed\u00a0\u0080", 1))
+test_false(validate_utf8("\u00ed\u00a0\u0080", 2))
+test_false(validate_utf8("\u00ed\u00bf\u00bf"))
+test_true(validate_utf8("\u00ed\u00bf\u00bf", 1))
+test_false(validate_utf8("\u00ed\u00bf\u00bf", 2))
+test_true(validate_utf8("\u00ed\u00a0\u0080\u00ed\u00bf\u00bf", 2))
+
+test_true(validate_utf8("\u00ee\u0080\u0080"))
+test_true(validate_utf8("\u00f4\u008f\u00bf\u00bf"))
+test_false(validate_utf8("\u00f4\u0090\u0080\u0080"))
+test_true(validate_utf8("\u00f4\u0090\u0080\u0080", 1))
+test_false(validate_utf8("\u00f4\u0090\u0080\u0080", 2))
+
+test_false(validate_utf8("\u00f8\u0088\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00fc\u0084\u0080\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080"))
+test_true(validate_utf8("\u00fe\u0083\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
+test_false(validate_utf8("\u00fe\u0084\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00ff"))
+test_false(validate_utf8("\u00ff", 1))
+
+// Non-shortest forms
+test_false(validate_utf8("\u00c0\u0080"))
+test_false(validate_utf8("\u00c1\u00bf"))
+test_true(validate_utf8("\u00c2\u0080"))
+test_false(validate_utf8("\u00e0\u0080\u0080"))
+test_false(validate_utf8("\u00e0\u009f\u00bf"))
+test_true(validate_utf8("\u00e0\u00a0\u0080"))
+test_false(validate_utf8("\u00f0\u0080\u0080\u0080"))
+test_false(validate_utf8("\u00f0\u008f\u00bf\u00bf"))
+test_true(validate_utf8("\u00f0\u0090\u0080\u0080"))
+test_false(validate_utf8("\u00f8\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00f8\u0087\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00f8\u0088\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fc\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fc\u0083\u00bf\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00fc\u0084\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fe\u0080\u0080\u0080\u0080\u0080\u0080", 1))
+test_false(validate_utf8("\u00fe\u0081\u00bf\u00bf\u00bf\u00bf\u00bf", 1))
+test_true(validate_utf8("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1))
 
 // - stringp
 // Tested in foop
@@ -13107,7 +13439,7 @@ test_equal(upper_case((string) ({
 0x023e, 0x023f, 0x0241, 0x0243, 0x0244, 0x0245, 0x0246, 0x0250,
 0x0251, 0x0252, 0x0253, 0x0254, 0x0255, 0x0256, 0x0258, 0x0259,
 0x025a, 0x025b, 0x025c, 0x025d, 0x0260, 0x0261, 0x0262, 0x0263,
-0x0264, 0x0265, 0x0266, 0x0267, 0x0268, 0x0269, 0x026a, 0x026b,
+0x0264, 0x0265, 0x0266, 0x0267, 0x0268, 0x0269, 0xa7ae, 0x026b,
 0x026c, 0x026d, 0x026f, 0x0270, 0x0271, 0x0272, 0x0273, 0x0275,
 0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0283, 0x0284, 0x0287,
 0x0288, 0x0289, 0x028a, 0x028c, 0x028d, 0x0292, 0x0293, 0x029d,
@@ -13134,7 +13466,7 @@ test_equal(upper_case((string) ({
 0x023e, 0x2c7e, 0x0241, 0x0243, 0x0244, 0x0245, 0x0246, 0x2c6f,
 0x2c6d, 0x2c70, 0x0181, 0x0186, 0x0255, 0x0189, 0x0258, 0x018f,
 0x025a, 0x0190, 0xa7ab, 0x025d, 0x0193, 0xa7ac, 0x0262, 0x0194,
-0x0264, 0xa78d, 0xa7aa, 0x0267, 0x0197, 0x0196, 0x026a, 0x2c62,
+0x0264, 0xa78d, 0xa7aa, 0x0267, 0x0197, 0x0196, 0xa7ae, 0x2c62,
 0xa7ad, 0x026d, 0x019c, 0x0270, 0x2c6e, 0x019d, 0x0273, 0x019f,
 0x0276, 0x2c64, 0x027e, 0x01a6, 0x0281, 0x01a9, 0x0284, 0xa7b1,
 0x01ae, 0x0244, 0x01b1, 0x0245, 0x028d, 0x01b7, 0x0293, 0xa7b2,
@@ -13153,55 +13485,59 @@ test_equal(upper_case((string) ({
 // when UnicodeData.txt is changed.
 // Part 2: 0x1000 -
 0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f8, 0x13fe, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1e00,
-0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00, 0x1f08,
-0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30, 0x1f38,
-0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53, 0x1f54,
-0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b, 0x1f5c,
-0x1f5d, 0x1f5e, 0x1f5f, 0x1f60, 0x1f68, 0x1f70, 0x1f72, 0x1f76,
-0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f88, 0x1f90, 0x1f98,
-0x1fa0, 0x1fa8, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb8, 0x1fba,
-0x1fbc, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1fc8, 0x1fcc,
-0x1fcd, 0x1fd0, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe0, 0x1fe2,
-0x1fe5, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ff3, 0x1ff4,
-0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a, 0x212b,
-0x212c, 0x2132, 0x2133, 0x214e, 0x214f, 0x2160, 0x2180, 0x2183,
-0x2185, 0x24b6, 0x24d0, 0x24ea, 0x2c00, 0x2c2f, 0x2c30, 0x2c5f,
-0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x2c65, 0x2c66, 0x2c67, 0x2c6d,
-0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75, 0x2c77,
-0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4, 0x2d00,
-0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa640, 0xa66e, 0xa680,
-0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d, 0xa77e,
-0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796, 0xa7aa,
-0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7b0, 0xa7b1, 0xa7b2, 0xa7b3,
-0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0, 0xff21, 0xff3b,
-0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x10c80, 0x10cb3, 0x10cc0,
-0x10cf3, 0x118a0, 0x118e0, })), (string) ({
+0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
+0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x1e00, 0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00,
+0x1f08, 0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30,
+0x1f38, 0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
+0x1f54, 0x1f55, 0x1f56, 0x1f57, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b,
+0x1f5c, 0x1f5d, 0x1f5e, 0x1f5f, 0x1f60, 0x1f68, 0x1f70, 0x1f72,
+0x1f76, 0x1f78, 0x1f7a, 0x1f7c, 0x1f7e, 0x1f80, 0x1f88, 0x1f90,
+0x1f98, 0x1fa0, 0x1fa8, 0x1fb0, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb8,
+0x1fba, 0x1fbc, 0x1fbd, 0x1fbe, 0x1fbf, 0x1fc3, 0x1fc4, 0x1fc8,
+0x1fcc, 0x1fcd, 0x1fd0, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe0,
+0x1fe2, 0x1fe5, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ff3,
+0x1ff4, 0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a,
+0x212b, 0x212c, 0x2132, 0x2133, 0x214e, 0x214f, 0x2160, 0x2180,
+0x2183, 0x2185, 0x24b6, 0x24d0, 0x24ea, 0x2c00, 0x2c2f, 0x2c30,
+0x2c5f, 0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x2c65, 0x2c66, 0x2c67,
+0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75,
+0x2c77, 0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4,
+0x2d00, 0x2d26, 0x2d27, 0x2d28, 0x2d2d, 0x2d2e, 0xa640, 0xa66e,
+0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
+0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
+0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
+0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
+0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f0, 0x13fe, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e, 0x1e00,
-0x1e96, 0x1e60, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f08, 0x1f08,
-0x1f18, 0x1f16, 0x1f18, 0x1f1e, 0x1f28, 0x1f28, 0x1f38, 0x1f38,
-0x1f48, 0x1f46, 0x1f48, 0x1f4e, 0x1f59, 0x1f52, 0x1f5b, 0x1f54,
-0x1f5d, 0x1f56, 0x1f5f, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b, 0x1f5c,
-0x1f5d, 0x1f5e, 0x1f5f, 0x1f68, 0x1f68, 0x1fba, 0x1fc8, 0x1fda,
-0x1ff8, 0x1fea, 0x1ffa, 0x1f7e, 0x1f88, 0x1f88, 0x1f98, 0x1f98,
-0x1fa8, 0x1fa8, 0x1fb8, 0x1fb2, 0x1fbc, 0x1fb4, 0x1fb8, 0x1fba,
-0x1fbc, 0x1fbd, 0x0399, 0x1fbf, 0x1fcc, 0x1fc4, 0x1fc8, 0x1fcc,
-0x1fcd, 0x1fd8, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe8, 0x1fe2,
-0x1fec, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ffc, 0x1ff4,
-0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a, 0x212b,
-0x212c, 0x2132, 0x2133, 0x2132, 0x214f, 0x2160, 0x2180, 0x2183,
-0x2185, 0x24b6, 0x24b6, 0x24ea, 0x2c00, 0x2c2f, 0x2c00, 0x2c5f,
-0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x023a, 0x023e, 0x2c67, 0x2c6d,
-0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75, 0x2c77,
-0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4, 0x10a0,
-0x2d26, 0x10c7, 0x2d28, 0x10cd, 0x2d2e, 0xa640, 0xa66e, 0xa680,
-0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d, 0xa77e,
-0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796, 0xa7aa,
-0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7b0, 0xa7b1, 0xa7b2, 0xa7b3,
-0xa7b4, 0xa7b8, 0xa7b3, 0xab54, 0x13a0, 0xabc0, 0xff21, 0xff3b,
-0xff21, 0xff5b, 0x10400, 0x10400, 0x10450, 0x10c80, 0x10cb3, 0x10c80,
-0x10cf3, 0x118a0, 0x118e0, }))
+0x13f6, 0x13f0, 0x13fe, 0x0412, 0x0414, 0x041e, 0x0421, 0x0422,
+0x042a, 0x0462, 0xa64a, 0x1c89, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e,
+0x1e00, 0x1e96, 0x1e60, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f08,
+0x1f08, 0x1f18, 0x1f16, 0x1f18, 0x1f1e, 0x1f28, 0x1f28, 0x1f38,
+0x1f38, 0x1f48, 0x1f46, 0x1f48, 0x1f4e, 0x1f59, 0x1f52, 0x1f5b,
+0x1f54, 0x1f5d, 0x1f56, 0x1f5f, 0x1f58, 0x1f59, 0x1f5a, 0x1f5b,
+0x1f5c, 0x1f5d, 0x1f5e, 0x1f5f, 0x1f68, 0x1f68, 0x1fba, 0x1fc8,
+0x1fda, 0x1ff8, 0x1fea, 0x1ffa, 0x1f7e, 0x1f88, 0x1f88, 0x1f98,
+0x1f98, 0x1fa8, 0x1fa8, 0x1fb8, 0x1fb2, 0x1fbc, 0x1fb4, 0x1fb8,
+0x1fba, 0x1fbc, 0x1fbd, 0x0399, 0x1fbf, 0x1fcc, 0x1fc4, 0x1fc8,
+0x1fcc, 0x1fcd, 0x1fd8, 0x1fd2, 0x1fd8, 0x1fda, 0x1fdc, 0x1fe8,
+0x1fe2, 0x1fec, 0x1fe6, 0x1fe8, 0x1fea, 0x1fec, 0x1fed, 0x1ffc,
+0x1ff4, 0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a,
+0x212b, 0x212c, 0x2132, 0x2133, 0x2132, 0x214f, 0x2160, 0x2180,
+0x2183, 0x2185, 0x24b6, 0x24b6, 0x24ea, 0x2c00, 0x2c2f, 0x2c00,
+0x2c5f, 0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x023a, 0x023e, 0x2c67,
+0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75,
+0x2c77, 0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4,
+0x10a0, 0x2d26, 0x10c7, 0x2d28, 0x10cd, 0x2d2e, 0xa640, 0xa66e,
+0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
+0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
+0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b3, 0xab54, 0x13a0, 0xabc0,
+0xff21, 0xff3b, 0xff21, 0xff5b, 0x10400, 0x10400, 0x10450, 0x104b0,
+0x104d4, 0x104b0, 0x104fc, 0x10c80, 0x10cb3, 0x10c80, 0x10cf3, 0x118a0,
+0x118e0, 0x1e900, 0x1e900, 0x1e944, }))
 
 // - utf8_to_string
 // See string_to_utf8
@@ -13318,7 +13654,8 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 test_do(add_constant("test"))
 test_do(add_constant("test2"))
 
-test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
+test_eval_error(return class {int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
+test_compile_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
 test_eq(a,this_object()->a)
 
 // - catch
@@ -14372,5 +14709,92 @@ test_do([[
     return A(0)->get(UNDEFINED);
 ]])
 
+
+dnl Verify some coding practices.
+test_tests([[
+  constant srcdir="]]SRCDIR[[";
+
+  void report_test(array res, int failed, string fail_msg, mixed ... extra)
+  {
+    if (!failed) {
+      res[0]++;
+      return;
+    }
+    res[1]++;
+    log_msg(fail_msg, @extra);
+  }
+
+  array(int) test_dir(string dir)
+  {
+    log_status("Testing directory %s/.\n", dir);
+
+    string configure_script =
+      Stdio.read_bytes(combine_path(srcdir, dir, "configure.in"));
+    array(int) res = ({ 0, 0 });
+
+    if (!configure_script) return res;
+
+    // Makefile.in should exist.
+    string makefile_in =
+      Stdio.read_bytes(combine_path(srcdir, dir, "Makefile.in"));
+    report_test(res, !makefile_in,
+		"Makefile.in missing in directory %O.\n", dir);
+
+    if (sscanf(configure_script, "%*sAC_CONFIG_HEADER(%s)", string config_h)) {
+      // acconfig.h should exist.
+      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, "acconfig.h")),
+		  "acconfig.h missing in directory %s.\n", dir);
+      // config_h + ".in" should exist.
+      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, config_h + ".in")),
+		  "%s missing in directory %s.\n", config_h + ".in", dir);
+      // The Makefile should regenerate config_h et al.
+      report_test(res,
+		  !has_value(makefile_in||"", "CONFIG_HEADERS=@CONFIG_HEADERS@"),
+		  "Makefile.in in directory %s is missing CONFIG_HEADERS.\n", dir);
+    }
+
+    foreach(get_dir(combine_path(srcdir, dir)), string f) {
+      if (has_prefix(f, ".#")) continue;	// Auto-save file.
+      if (has_suffix(f, ".cmod")) {
+	// Ensure that there's an explicit rule to precompile the file.
+	string fbase = f[..<sizeof(".cmod")];
+	int found;
+	foreach(replace(makefile_in, "\\\n", " ")/"\n", string line) {
+	  sscanf(line, "%s#%*s", line);
+	  if (!has_value(line, ":")) continue;
+	  if (!has_prefix(line, fbase + ".o")) continue;
+	  if (has_value((line/":")[1..]*":", "$(SRCDIR)/" + fbase + ".c")) {
+	    found = 1;
+	    break;
+	  }
+	}
+	report_test(res, !found,
+		    "No explicit makefile rule to generate %s.c from %s in %s/.\n",
+		    fbase, f, dir);
+      }
+    }
+    return res;
+  }
+
+  array(int) recur_test_dir(string dir)
+  {
+    array(int) res = test_dir(dir);
+
+    foreach(get_dir(combine_path(srcdir, dir)), string f) {
+      string path = combine_path(dir, f);
+      if (Stdio.is_dir(combine_path(srcdir, path))) {
+	array(int) delta = recur_test_dir(path);
+	res[0] += delta[0];
+	res[1] += delta[1];
+      }
+    }
+    return res;
+  }
+
+  array(int) a()
+  {
+    return recur_test_dir(".");
+  }
+]])
 
 END_MARKER

@@ -156,13 +156,14 @@ string usage = #"[options] <from> > <to>
                   type, e.g. tInt, tMix etc.
    errname;       The name used when throwing errors.
    name;          The name used when doing add_function.
+   c_name;        The name to use for a PIKEVAR in a C struct.
    prototype;     Ignore the function body, just add a prototype entry.
    program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
                   is an EXIT function, the gc has to take the same care as if
-                  there is a destroy function. But if the EXIT function
+                  there is a _destruct function. But if the EXIT function
                   doesn't mind that arbitrary referenced pike objects gets
                   destructed before this one (a very common trait since most
                   EXIT functions only do simple cleanup), then this attribute
@@ -223,7 +224,7 @@ mapping(string:string) strings = ([
   // lfuns:
   "__INIT":"lfun_strings[LFUN___INIT]",
   "create":"lfun_strings[LFUN_CREATE]",
-  "destroy":"lfun_strings[LFUN_DESTROY]",
+  "_destruct":"lfun_strings[LFUN__DESTRUCT]",
   "`+":"lfun_strings[LFUN_ADD]",
   "`-":"lfun_strings[LFUN_SUBTRACT]",
   "`&":"lfun_strings[LFUN_AND]",
@@ -369,6 +370,9 @@ int parse_type(array t, int p)
 	  case "type":
 	  case "string":
 	    if(arrayp(t[p])) p++;
+	  case "utf8_string":
+	  case "sprintf_format":
+	  case "sprintf_args":
 	  case "bignum":
 	  case "longest":
 	  case "float":
@@ -533,6 +537,21 @@ class PikeType
     return a;
   }
 
+  protected void replace_names(array tok, mapping(string:string) names)
+  {
+    int scoped = 0;
+    foreach(tok; int i; object(PC.Token)|array t)
+      if (arrayp(t)) {
+	replace_names(t, names);
+	scoped = 0;
+      } else if (((string)t) == "::" || ((string)t) == ".")
+	scoped = 1;
+      else if (scoped)
+	scoped = 0;
+      else if (names[(string)t])
+	t->text = names[(string)t];
+  }
+
   /*
    * return the 'one-word' description of this type
    */
@@ -583,6 +602,7 @@ class PikeType
 	case "8":
 	case "9":
 	case "bignum":
+        case "sprintf_args":
 	  return "mixed";
 
 	  // FIXME: Guess the special "longest" type ought to be
@@ -604,6 +624,10 @@ class PikeType
       case "void":
       case "zero":
 	return ret;
+
+      case "utf8_string":
+      case "sprintf_format":
+	return "string";
 
 	default: return "object";
       }
@@ -653,6 +677,7 @@ class PikeType
 	case "8":
 	case "9":
 
+        case "sprintf_args":
 	case "mixed":
 	  return ({
 	    "int",
@@ -685,6 +710,10 @@ class PikeType
       case "void":
       case "zero":
 	return ({ ret });
+
+      case "utf8_string":
+      case "sprintf_format":
+	return ({ "string" });
 
 	case "bignum":
 	case "longest":
@@ -746,6 +775,7 @@ class PikeType
 	case "float":
 	  return (may_be_void_or_zero (1, 2) == 1 ?
 		  "struct svalue *" : "FLOAT_TYPE");
+        case "utf8_string": case "sprintf_format":
 	case "string": return "struct pike_string *";
 
 	case "array":
@@ -760,6 +790,7 @@ class PikeType
 	case "function":
 	case "mixed":
 	case "bignum":
+        case "sprintf_args":
 	  if (is_struct_entry) {
 	    return "struct svalue";
 	  } else {
@@ -874,6 +905,9 @@ class PikeType
 	    return sprintf("tNStr(%s)",
 			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
+	case "utf8_string": return "tUtf8Str";
+        case "sprintf_format": return "tAttr(\"sprintf_format\", tStr)";
+        case "sprintf_args": return "tAttr(\"sprintf_args\", tMix)";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
@@ -978,6 +1012,15 @@ class PikeType
 	  if(has_suffix(ret, "(..)")) return ret[..sizeof(ret)-5];
 	  return ret;
 
+        case "utf8_string":
+	  return "utf8_string";
+
+        case "sprintf_format":
+	  return "string";
+
+        case "sprintf_args":
+	  return "mixed";
+
 	case "bignum":
 	case "longest":
 	  return "int";
@@ -1037,7 +1080,7 @@ class PikeType
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
   void create(string|array(PC.Token)|PC.Token|array(array) tok,
-	      void|array(PikeType) a)
+	      void|array(PikeType)|mapping(string:string) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -1054,6 +1097,9 @@ class PikeType
 	  /* strip parenthesis */
 	  while(sizeof(tok) == 1 && arrayp(tok[0]))
 	    tok=tok[0][1..sizeof(tok[0])-2];
+
+	  if (a)
+	    replace_names(tok, a);
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
 	  tmp=tok/({"|"});
@@ -1271,6 +1317,15 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
       if (res[0] > res[1]) return UNDEFINED;
       return res;
     }
+
+  case "sprintf_format":
+    return ({ -0x80000000, 0x7fffffff });
+
+  case "utf8_string":
+    if (ranged_type == "string") {
+      return ({ 0, 255 });
+    }
+    // FALL_THROUGH
   default:
     if (((string)complex_type->t) == ranged_type) {
       array(PikeType) args = complex_type->args;
@@ -1341,7 +1396,7 @@ class Argument
 	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
-  void create(array x)
+  void create(array x, void|mapping(string:string) names)
     {
       PC.Token t;
       if( arrayp(x[-1]) )
@@ -1356,7 +1411,7 @@ class Argument
       }
       _file=t->file;
       _line=t->line;
-      _type=PikeType(x[..sizeof(x)-2]);
+      _type=PikeType(x[..sizeof(x)-2], names);
     }
 
   string _sprintf(int how)
@@ -1471,6 +1526,7 @@ constant valid_attributes = (<
   "rawtype",
   "errname",
   "name",
+  "c_name",		/* Override of generated C-symbol */
   "prototype",
   "program_flags",
 >);
@@ -1593,7 +1649,7 @@ class FuncData
   int min_args;
   array(Argument) args;
 
-  string _sprintf()
+  string _sprintf(int c)
     {
       return sprintf("FuncData(%s)",define);
     }
@@ -1802,12 +1858,12 @@ array generate_overload_func_for(array(FuncData) d,
 
     mapping m=y[best_method];
     mapping m2=m+([]);
-    foreach(indices(m), string type)
+    foreach(sort(indices(m)), string type)
       {
 	array tmp=m[type];
 	if(tmp && sizeof(tmp))
 	{
-	  foreach(indices(m), string t2)
+	  foreach(sort(indices(m)), string t2)
 	    {
 	      if(equal(tmp, m[t2]) && !sizeof(tmp ^ m[t2]))
 	      {
@@ -1831,7 +1887,7 @@ array generate_overload_func_for(array(FuncData) d,
 			 indent,
 			 attributes->errname || name,
 			 best_method+1,
-			 indices(m2)*"|")),
+			 sort(indices(m2))*"|")),
 	PC.Token(sprintf("%*n}\n",indent)),
 	});
   }
@@ -1850,7 +1906,8 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
-  void create(array(array|PC.Token) x, string base, string class_name)
+  void create(array(array|PC.Token) x, string base, string class_name,
+	      mapping(string:string) names)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1878,7 +1935,7 @@ class ParseBlock
 	  if ((e+2 < sizeof(x)) && (((string)x[e+1])[0] == '\"') &&
 	      arrayp(x[e+2])) {
 	    // C++ syntax support...
-	    create(x[e+2], base, class_name);
+	    create(x[e+2], base, class_name, names);
 	    ret += ({ x[e+1], code });
 	    code = ({});
 	    e += 2;
@@ -1975,7 +2032,7 @@ sprintf("        } else {\n"
 		     name->file, name->line);
 	      }
 	    } else if (name) {
-	      p = mkname((string)name, "program");
+	      p = mkname(names[(string)name]||(string)name, "program");
 	    }
 	    addfuncs +=
 	      IFDEF(define,
@@ -2026,9 +2083,10 @@ sprintf("        } else {\n"
 	    string name=(string)proto[0];
 	    string lname = mkname(base, name);
 	    mapping attributes=parse_attributes(proto[1..]);
-
+	    names[name] = lname;
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					     mkname(base, name), name);
+					     mkname(base, name), name,
+					     copy_value(names));
 	    string program_var = mkname(base, name, "program");
 
 	    string define = make_unique_name("class", base, name, "defined");
@@ -2043,6 +2101,10 @@ sprintf("        } else {\n"
 			      program_var)}));
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
+	    // Restore THIS to the parent class.
+	    ret+=
+	      IFDEF("THIS_" + upper_case(base),
+		    DEFINE("THIS", "THIS_" + upper_case(base)));
 
             need_obj_defines["tObjImpl_"+upper_case(lname)] = 1;
             map_types[subclass->local_id] = ({ define, "return "+program_var+"->id;" });
@@ -2109,7 +2171,7 @@ sprintf("        } else {\n"
 	    int pos = search(x, PC.Token(";",0), e);
 	    int pos2 = parse_type(x, e+1);
 	    mixed name = x[pos2];
-	    PikeType type = PikeType(x[e+1..pos2-1]);
+	    PikeType type = PikeType(x[e+1..pos2-1], names);
 	    string define = make_unique_name("var",name,base,"defined");
         while( x[pos2+1] == "." )
         {
@@ -2118,11 +2180,15 @@ sprintf("        } else {\n"
         }
 	    mapping attributes = parse_attributes(x[pos2+1..pos]);
 //    werror("type: %O\n",type);
-        if( !has_value( name, "." ) )
+	    mixed csym = attributes->c_name || name;
+        if( !has_value( csym, "." ) )
         {
             thestruct+=
                 IFDEF(define,
-                      ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
+                      ({ PC.Token(sprintf("  %s %s;\n",
+					  type->c_storage_type(1), csym),
+				  x[pos2]->line),
+		      }));
         }
         else
         {
@@ -2133,11 +2199,12 @@ sprintf("        } else {\n"
 	    addfuncs+=
 	      IFDEF(define,
 		    ({
-		      sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
-			      "                    %s, %s, %s);",
-                              ((string)name/".")[-1], base, base, name,
-			      type->output_c_type(), type->type_number(),
-			      attributes->flags || "0"),
+		      PC.Token(sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
+				       "                    %s, %s, %s);",
+				       ((string)name/".")[-1], base, base, csym,
+				       type->output_c_type(), type->type_number(),
+				       attributes->flags || "0"),
+			       x[pos2]->line),
 		    }));
 	    ret+=DEFINE(define);
 	    ret+=({ PC.Token("DECLARE_STORAGE") });
@@ -2261,7 +2328,7 @@ sprintf("        } else {\n"
 	 * variable definition
 	 */
 	string structname = base+"_struct";
-	string this=sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage))",structname);
+	string this = sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage + %s_storage_offset))", structname, base);
 
 	/* FIXME:
 	 * Add runtime debug to these defines...
@@ -2339,6 +2406,12 @@ static struct %s *%s_gdb_dummy_ptr;
 	  if(arrayp(func[p]) && func[p][0]=="{")
 	    break;
 
+	if (p >= sizeof(func)) {
+	  error("%s:%d: Invalid function declaration.\n",
+		func[0]->file||"-",
+		func[0]->line);
+	}
+
 	array proto=func[..p-1];
 	array body=func[p];
 	array rest=func[p+1..];
@@ -2352,7 +2425,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	};
 
 	p=parse_type(proto,0);
-	PikeType rettype=PikeType(proto[..p-1]);
+	PikeType rettype=PikeType(proto[..p-1], names);
 
 	if(arrayp(proto[p]))
 	{
@@ -2432,7 +2505,7 @@ static struct %s *%s_gdb_dummy_ptr;
           warn("%s:%s Failed to parse types\n", location,name);
       }
 	}
-	array(Argument) args=map(args_tmp,Argument);
+	array(Argument) args=map(args_tmp,Argument,names);
 	// werror("%O %O\n",proto,args);
 	// werror("parsed args: %O\n", args);
 
@@ -2457,7 +2530,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	else if(attributes->type)
 	{
 	  mixed err=catch {
-	    type=PikeType(attributes->type);
+	    type=PikeType(attributes->type, names);
 	  };
 	  if(err)
 	  {
@@ -2557,7 +2630,16 @@ static struct %s *%s_gdb_dummy_ptr;
 				 name,
 				 min_args), proto[0]->line)
 	      });
-	    }
+	    } else {
+	      ret+=({
+                "#ifdef PIKE_DEBUG\n",
+		PC.Token(sprintf("if(args < 0) Pike_fatal(%O);\n",
+                                 "CMOD function argument negative.\n")),
+                "#else\n",
+		PC.Token("STATIC_ASSUME(args >= 0);\n"),
+                "#endif\n"
+	      });
+            }
 
 	    if(max_args != 0x7fffffff && max_args != -1) {
 	      ret+=({
@@ -3064,8 +3146,9 @@ array resolve_obj_defines()
   if( sizeof( need_obj_defines ) )
   {
     res += ({ "{ int i=0;\n"});
-    foreach( need_obj_defines; string key; string id )
+    foreach( sort(indices(need_obj_defines)), string key )
     {
+      string id = need_obj_defines[key];
       int local_id = ++gid;
       res += ({
         sprintf("#ifndef %s\n"
@@ -3248,7 +3331,7 @@ int main(int argc, array(string) argv)
 
   x = recursive(allocate_strings, x);
 
-  ParseBlock tmp=ParseBlock(x, base, "");
+  ParseBlock tmp=ParseBlock(x, base, "", ([]));
 
   tmp->declarations += ({
     "\n\n"
@@ -3370,8 +3453,9 @@ int main(int argc, array(string) argv)
   if( sizeof(map_types) )
   {
     x += ({ "  switch(id) {\n" });
-    foreach( map_types; int i; string how )
+    foreach( sort(indices(map_types)), int i )
     {
+      string how = map_types[i];
       if( how[0] )
         x += ({ "#ifdef "+how[0]+"\n" });
       x += ({  "  case "+i+":\n    "+how[1]+"\n    break;\n" });
@@ -3443,7 +3527,7 @@ int main(int argc, array(string) argv)
   x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
 
   array(string) cond_used = ({});
-  foreach( check_used; string key; )
+  foreach( sort(indices(check_used)), string key)
   {
     if( find_identifier( x, key ) )
       tmp->declarations +=({ "#define "+key+"_used 1\n" });

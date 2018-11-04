@@ -474,7 +474,7 @@ class Client
 #endif
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(connected)
       disconnect();

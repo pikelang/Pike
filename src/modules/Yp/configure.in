@@ -5,6 +5,9 @@ AC_MODULE_INIT()
 
 AC_CHECK_LIB(nsl, gethostbyname)
 
+# Glibc 2.26 and later don't include the Sun RPC implementation anymore.
+PIKE_PKG_CONFIG(libtirpc)
+
 AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h \
 		rpcsvc/ypclnt.h rpcsvc/yp_prot.h,,,[
 #ifdef HAVE_RPC_TYPES_H
@@ -35,9 +38,7 @@ AC_CACHE_VAL(pike_cv_yp_order_type, [
   for order_type in "unsigned long" "long" "unsigned int" "int"; do
     for str_type in "char" "const char"; do
       AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif /* HAVE_RPC_TYPES_H */
@@ -85,9 +86,7 @@ if test "$av_cv_func_yperr_string" = "yes"; then
   AC_CACHE_VAL(pike_cv_prototype_yperr_string_missing, [
     AC_TRY_COMPILE([
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif /* HAVE_RPC_TYPES_H */

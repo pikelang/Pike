@@ -8,8 +8,9 @@
  * Postgres95 and PostgreSQL support for Pike 0.5 and up.
  */
 
-#include "global.h"
+#include "module.h"
 #include "pgres_config.h"
+#include "module_support.h"
 
 /* Some versions of Postgres define this, and it conflicts with pike_error.h */
 #undef JMP_BUF
@@ -19,15 +20,8 @@
 /* #define PGDEBUG */
 
 /* Pike includes */
-#include "svalue.h"
 #include "las.h"
-#include "machine.h"
-#include "pike_memory.h"
-#include "svalue.h"
 #include "threads.h"
-#include "stralloc.h"
-#include "object.h"
-#include "module_support.h"
 #include "operators.h"
 
 #include "pgresult.h"
@@ -290,7 +284,7 @@ static void set_error (char * newerror)
 	PGconn * conn;
 	PQ_FETCH();
 
-	get_all_args("create",args,
+        get_all_args(NULL,args,
 		     ".%s%s%s%s%d%G",
 		     &host,
 		     &db,
@@ -363,7 +357,7 @@ PIKEFUN void select(string db_)
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
-	get_all_args("select_db",args,"%s", &db);
+        get_all_args(NULL,args,"%s", &db);
 
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "
@@ -667,13 +661,18 @@ yupbegin:       res=PQexec(conn,"BEGIN");
  *!   big_query
  */
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
+	int clearit = clear && clear->u.integer;
         pop_n_elems(args);
 
-	if (THIS->last_error)
+	if (THIS->last_error) {
 		ref_push_string(THIS->last_error);
-	else
+        	if (clearit) {
+			free_string(THIS->last_error);
+			THIS->last_error = 0;
+		}
+	} else
 		push_int(0);
 	return;
 }
@@ -760,8 +759,7 @@ PIKEFUN void trace(int trace_level)
 
 PIKEFUN void _set_notify_callback(function|void cb)
 {
-	check_all_args("postgres->_set_notify_callback()",
-		       args, BIT_INT|BIT_FUNCTION, 0);
+        check_all_args(NULL, args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
 		if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {
@@ -827,7 +825,7 @@ PIKEFUN string _quote(string s_)
 	struct pike_string *s;
 	char *err_msg;
 
-	get_all_args("_quote", args, "%S", &s);
+        get_all_args(NULL, args, "%S", &s);
 
 	ret = begin_shared_string(s->len * 2 + 1);
 #ifdef HAVE_PQESCAPESTRINGCONN
@@ -869,8 +867,6 @@ PIKE_MODULE_EXIT
 
 #else /* HAVE_POSTGRES */
 #include "program.h"
-#include "module.h"
-#include "module_support.h"
 PIKE_MODULE_INIT {
   HIDE_MODULE();
 }

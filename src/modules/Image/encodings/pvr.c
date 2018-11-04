@@ -17,7 +17,6 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_types.h"
@@ -330,7 +329,7 @@ static void gla(struct gla_state *st, int max_iter)
 
 static struct gla_state *alloc_gla(int K, int M, INT32 N)
 {
-  struct gla_state *st = xalloc(sizeof(struct gla_state));
+  struct gla_state *st = ALLOC_STRUCT(gla_state);
   st->K = K;
   st->M = M;
   st->N = N;
@@ -583,8 +582,8 @@ void image_pvr_f_encode(INT32 args)
   unsigned char *dst;
   struct gla_state *gla_st = NULL;
 
-  get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
-                                "%o%m":"%o"), &imgo, &optm);
+  get_all_args(NULL, args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
+                            "%o%m":"%o"), &imgo, &optm);
 
   if((img=get_storage(imgo, image_program))==NULL)
     Pike_error("Image.PVR.encode: illegal argument 1\n");
@@ -1037,7 +1036,7 @@ void img_pvr_decode(INT32 args,int header_only)
    INT32 attr;
    unsigned int h, w, x;
 
-   get_all_args("_decode", args, "%S", &str);
+   get_all_args(NULL, args, "%S", &str);
    s = (unsigned char *)str->str;
    len = str->len;
    pop_n_elems(args-1);
@@ -1100,29 +1099,29 @@ void img_pvr_decode(INT32 args,int header_only)
      switch(attr&0xff00) {
       case MODE_TWIDDLE_MIPMAP:
 	mipmap = 1;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case MODE_TWIDDLE:
 	twiddle = 1;
 	if(w != h || w<8 || w>1024 || (w&(w-1)))
 	  Pike_error("invalid size for twiddle texture\n");
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case MODE_RECTANGLE:
       case MODE_STRIDE:
 	break;
       case MODE_TWIDDLED_RECTANGLE:
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
-	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
+	   (w>=h && (h<8 || h>1024 || (h&(h-1)) || w%h)))
 	  Pike_error("invalid size for twiddle rectangle texture\n");
 	break;
       case MODE_COMPRESSED_MIPMAP:
 	mipmap = 1;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case MODE_COMPRESSED:
 	compress = 1;
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
-	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
+	   (w>=h && (h<8 || h>1024 || (h&(h-1)) || w%h)))
 	  Pike_error("invalid size for vq texture\n");
 	break;
       case MODE_CLUT4:
@@ -1138,7 +1137,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_ARGB1555:
       case MODE_ARGB4444:
 	hasalpha=1;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case MODE_RGB565:
       case MODE_RGB555:
 	bpp=2; break;

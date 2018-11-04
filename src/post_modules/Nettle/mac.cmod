@@ -4,16 +4,11 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-
-/* For this_object() */
-#include "object.h"
 #include "module_support.h"
 #include "pike_compiler.h"
-#include "pike_memory.h"
 
 #include "nettle_config.h"
 
@@ -152,10 +147,12 @@ PIKECLASS MAC
     push_int(THIS->meta->iv_size);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->meta = NULL;
   }
+#endif
 
   /*! @class State
    *!
@@ -172,24 +169,7 @@ PIKECLASS MAC
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.MAC.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
 #define GET_META(o)						\
@@ -214,6 +194,7 @@ PIKECLASS MAC
       NO_WIDE_STRING(key);
 
       meta->set_key(ctx, key->len, STR0(key));
+      pop_stack();
     }
 
     /*! @decl State set_iv(string(0..255) iv)
@@ -352,10 +333,12 @@ PIKECLASS MAC
       push_string(end_shared_string(digest));
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->ctx = NULL;
     }
+#endif
 
     EXIT
     {

@@ -4,21 +4,44 @@
 
 //! Various cryptographic classes and functions.
 //!
-//! @b{Hash functions@}
-//! These are based on the @[Hash] API; @[MD2], @[MD4], @[MD5],
-//! @[SHA1], @[SHA256].
+//! @dl
+//!   @item Hash modules
+//!     These are based on the @[Nettle.Hash] API.
+//!     Examples include @[MD5], @[SHA1], @[SHA256] and @[SHA3_256].
 //!
-//! @b{Stream cipher functions@}
-//! These are based on the @[Cipher] API; @[AES], @[Arcfour],
-//! @[Blowfish], @[CAST], @[DES], @[DES3], @[IDEA], @[Serpent],
-//! @[Twofish]. The @[Substitution] program is compatible with the
-//! CipherState. Also conforming to the API are the helper modules
-//! @[Buffer], @[CBC], @[GCM] and @[Pipe].
+//!   @item Cipher modules
+//!     These are based on the @[Nettle.Cipher] API.
+//!     Examples include @[AES], @[Arcfour], @[DES], @[DES3], @[CAMELLIA].
 //!
-//! As the cryptographic services offered from this module isn't
+//!     The @[Substitution] program is compatible with @[Cipher.State].
+//!
+//!     Also conforming to the API are several helper modules such as
+//!     @[Buffer], @[predef::Nettle.BlockCipher.CBC],
+//!     @[predef::Nettle.BlockCipher16.GCM] and @[Pipe].
+//!
+//!   @item Message Authentication Code modules (MACs)
+//!     @[MAC] algorithms are provided as sub-modules to their corresponding
+//!     @[Hash] or @[Cipher] module.
+//!     Examples include @[SHA1.HMAC] and @[AES.UMAC32].
+//!
+//!   @item Authenticated Encryption with Associated Data modules (AEADs)
+//!     @[AEAD]s combine ciphers with authentication codes, and may optionally
+//!     also take into account some associated data that is provided out of band.
+//!     This API is compatible with both @[Cipher] and @[Hash].
+//!     AEADs are provided as sub-modules to their corresponding ciphers.
+//!     Examples include @[AES.CCM], @[AES.GCM] and @[CAMELLIA.EAX].
+//! @enddl
+//!
+//! As the cryptographic services offered from this module aren't
 //! necessarily used for security applications, none of the strings
-//! inputted or outputted are marked as secure. This is up to the
+//! input or output are marked as secure. That is up to the
 //! caller.
+//!
+//! @note
+//!   Most of the APIs in this module work on 8 bit binary strings unless
+//!   otherwise noted.
+//!   For conversions to and from hexadecimal notation @[String.string2hex()]
+//!   and @[String.hex2string()] may be of interest.
 //!
 //! @note
 //!   This module is only available if Pike has been compiled with
@@ -55,6 +78,7 @@ class Sign {
   //! Returns the printable name of the signing algorithm.
   string(7bit) name();
 
+  //!
   class State {
     inherit __builtin.Nettle.Sign;
   }

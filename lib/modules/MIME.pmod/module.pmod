@@ -161,30 +161,66 @@ protected class StringRange
   }
 }
 
-#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 413))
-// Compat with some older Pikes...
+private string boundary_prefix;
 
-// Support has_prefix on objects.
-protected int(0..1) has_prefix(string|object s, string prefix)
+//! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
+//! prefix when creating a boundary string.
+//!
+//! @throws
+//!  An error is thrown if @[boundary_prefix] doesn't adhere to @rfc{1521@}.
+//!
+//! @seealso
+//!  @[MIME.generate_boundary()], @[MIME.get_boundary_prefix()]
+//!
+//! @param boundary_prefix
+//!  This must adhere to @rfc{1521@} and can not be longer than 56 characters.
+void set_boundary_prefix(string(8bit) boundary_prefix)
 {
-  if (!objectp(s)) return predef::has_prefix(s, prefix);
-  for(int i = 0; i < sizeof(prefix); i++) {
-    if (s[i] != prefix[i]) return 0;
+  // 5 upto 14 chars is randomly added to the boundary so the prefix must not
+  // risking overflowing the max-length of 70 chars
+  if (boundary_prefix && (sizeof(boundary_prefix) + 14) > 70) {
+    error("Too long boundary prefix. The boundary prefix can not be longer "
+          "than 56 characters.\n");
   }
-  return 1;
+
+  sscanf(boundary_prefix, "%*s%[^0-9a-zA-Z'()+_,./:=?-]", string illegal);
+
+  if (illegal && sizeof(illegal)) {
+    error("An illegal character (%q) was found in the boundary prefix.\n",
+          illegal);
+  }
+
+  this::boundary_prefix = boundary_prefix;
 }
 
-#endif
+//! Returns the @tt{boundary_prefix@} set via @[set_boundary_prefix()].
+//!
+//! @seealso
+//!  @[MIME.set_boundary_prefix()], @[MIME.Message.setboundary()]
+string(8bit) get_boundary_prefix()
+{
+  return boundary_prefix;
+}
 
 //! This function will create a string that can be used as a separator string
-//! for multipart messages.  The generated string is guaranteed not to appear
+//! for multipart messages. If a boundary prefix has been set
+//! using @[MIME.set_boundary_prefix()], the generated string will be prefixed
+//! with the boundary prefix.
+//!
+//! The generated string is guaranteed not to appear
 //! in @tt{base64@}, @tt{quoted-printable@}, or @tt{x-uue@} encoded data.
 //! It is also unlikely to appear in normal text.  This function is used by
 //! the cast method of the @tt{Message@} class if no boundary string is
 //! specified.
 //!
+//! @seealso
+//! @[MIME.set_boundary_prefix()]
+//!
 string generate_boundary( )
 {
+  if (boundary_prefix) {
+    return boundary_prefix + random( 1000000000 );
+  }
   return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
 }
 
@@ -1520,7 +1556,7 @@ class Message {
 	} else
 	  error("boundary missing from multipart-body\n");
       }
-      if ((epilogue != "") && !guess) {
+      if (epilogue != "" && epilogue != "\n" && epilogue != "\r\n" && !guess) {
 	error("multipart message improperly terminated (%O%s)\n",
 	      epilogue[..200],
 	      sizeof(epilogue) > 201 ? "[...]" : "");
@@ -1624,18 +1660,4 @@ int|object reconstruct_partial(array(object) collection)
     }
     return reconstructed;
   } else return (maxgot>total? -1 : total-got);
-}
-
-//! Encode strings according to @rfc{4648@} base64url encoding.
-string(7bit) encode_base64url(string(8bit) x)
-{
-  x = replace(encode_base64(x,1),({ "+", "/" }),({ "-", "_" }));
-  while( sizeof(x) && x[-1]=='=' ) x=x[..<1];
-  return x;
-}
-
-//! Decode strings according to @rfc{4648@} base64url encoding.
-string(8bit) decode_base64url(string(7bit) x)
-{
-  return decode_base64(replace(x,({ "-", "_" }),({ "+", "/" })));
 }

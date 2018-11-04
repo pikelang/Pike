@@ -20,7 +20,7 @@ void drag_finish(int success, int del)
 //! time is the current time.
 {
   INT_TYPE a,b,t;
-  get_all_args("drag_finish",args,"%i%i",&a,&b);
+  get_all_args(NULL,args,"%i%i",&a,&b);
   gtk_drag_finish((GdkDragContext *)THIS->obj,a,b,time(NULL));
   RETURN_THIS();
 }
@@ -29,7 +29,7 @@ void drag_status(int action)
 //! Setting action to -1 means use the suggested action
 {
   INT_TYPE o,t;
-  get_all_args("status",args,"%i",&o);
+  get_all_args(NULL,args,"%i",&o);
   if (o==-1)
     o=((GdkDragContext *)THIS->obj)->suggested_action;
   gdk_drag_status((GdkDragContext *)THIS->obj,o,time(NULL));
@@ -40,7 +40,7 @@ void drag_drop(int time)
 //! Drag drop.
 {
   INT_TYPE t;
-  get_all_args("drop",args,"%i",&t);
+  get_all_args(NULL,args,"%i",&t);
   gdk_drag_drop((GdkDragContext *)THIS->obj,t);
   RETURN_THIS();
 }
@@ -50,7 +50,7 @@ void drag_abort(int time)
 //! Abort the drag
 {
   INT_TYPE t;
-  get_all_args("abort",args,"%i",&t);
+  get_all_args(NULL,args,"%i",&t);
   gdk_drag_abort((GdkDragContext *)THIS->obj,t);
   RETURN_THIS();
 }
@@ -59,7 +59,7 @@ void drop_reply(int ok)
 //! Drop reply.
 {
   INT_TYPE t,o;
-  get_all_args("reply",args,"%i",&o);
+  get_all_args(NULL,args,"%i",&o);
   gdk_drop_reply((GdkDragContext *)THIS->obj,o,time(NULL));
   RETURN_THIS();
 }
@@ -70,7 +70,7 @@ void drag_set_icon_widget(GTK2.Widget widget, int hot_x, int hot_y)
 {
   struct object *_o;
   INT_TYPE x,y;
-  get_all_args("drag_set_icon_window",args,"%o%i%i",
+  get_all_args(NULL,args,"%o%i%i",
                 &_o,&x,&y);
   gtk_drag_set_icon_widget((GdkDragContext *)THIS->obj,
                            GTK_WIDGET(get_gobject(_o)),

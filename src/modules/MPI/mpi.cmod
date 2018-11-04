@@ -1,0 +1,1496 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+#include "object.h"
+#include "interpret.h"
+#include "program.h"
+#include "pike_error.h"
+#include "builtin_functions.h"
+#include "threads.h"
+
+#include <mpi.h>
+
+#include "module_support.h"
+
+/*
+ * TODO:
+ * communicators
+ * all kinds of send/recv
+ * reduce
+ * all_reduce (reduced result present everywhere)
+ * reduce_scatter
+ * gather
+ * scatter
+ * scan etc?
+ */
+
+struct mpi_info {
+    unsigned int length;
+    unsigned int type_size;
+    unsigned int shift;
+    void * data;
+    MPI_Datatype type;
+    unsigned char clone;
+};
+
+DECLARATIONS
+
+/*! @module MPI */
+
+#define mpi_INITIALIZED	1
+#define mpi_FINALIZED	2
+static unsigned char mpi_status = 0;
+
+static void initialize_mpi(const char * name) {
+    if (mpi_status != mpi_FINALIZED) {
+	int provided;
+
+	mpi_status = mpi_INITIALIZED;
+	/* MPI specification expects &argc, &argv as first arguments,
+	 * but does not operate them in any way. The implmenentations
+	 * that I have encountered operate fine with NULL, NULL. */
+	MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+	if (provided != MPI_THREAD_MULTIPLE)
+	    Pike_fatal("MPI cannot deliver: %d vs %d.\n",
+		       MPI_THREAD_MULTIPLE, provided);
+    } else
+	Pike_error("%s: Operation not possible because MPI has already been finalized.\n",
+		   name);
+}
+
+static inline void using_mpi(const char *name) {
+    if (mpi_status != mpi_INITIALIZED)
+	initialize_mpi(name);
+}
+
+#define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
+					      MPI_IntArray_program)	\
+			|| -1 != low_get_storage((x)->prog,		\
+						 MPI_FloatArray_program)\
+			|| -1 != low_get_storage((x)->prog,		\
+						 MPI_Sentinel_program)))
+
+#define IS_SENTINEL_OR_PTR(x) (IS_SENTINEL(x) || -1 			\
+			       != low_get_storage((x)->prog,		\
+						  MPI_Pointer_program))
+
+#define ENSURE_SENTINEL(x, fun, argnum) do { if (!IS_SENTINEL(x))	\
+      SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"      \
+			 "inherits(MPI.FloatArray)|"			\
+			 "inherits(MPI.Sentinel)");			\
+} while (0)
+#define ENSURE_SENTINEL_OR_NULL(x, fun, argnum) do {			\
+    if ((x) && !IS_SENTINEL(x))						\
+	SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"	\
+			     "inherits(MPI.FloatArray)|"		\
+			     "inherits(MPI.Sentinel)|void");		\
+} while (0)
+
+#define FAIL_SENTINEL_OR_PTR(fun, argnum) do {				\
+    SIMPLE_ARG_TYPE_ERROR(fun, argnum, "inherits(MPI.IntArray)|"        \
+			 "inherits(MPI.FloatArray)|"			\
+			 "inherits(MPI.Sentinel)|string");		\
+} while (0)
+
+#define ENSURE_SENTINEL_OR_PTR(x, fun, argnum) do {			\
+    if (!(IS_SENTINEL_OR_PTR(x)))					\
+	FAIL_SENTINEL_OR_PTR(fun, argnum);				\
+} while (0)
+
+/*! @class IntArray
+ *! This class implements an array of 32 bit integers.
+ */
+PIKECLASS IntArray
+{
+#cmod_define pike_type int
+#cmod_define c_type int
+#cmod_define name_prefix Int
+#cmod_define ARRAY_STORAGE OBJ2_MPI_INTARRAY
+#cmod_define PUSH push_int
+#cmod_define MPI_DATATYPE MPI_INT
+#cmod_define MPI_SHIFT (1<<3)
+#cmod_define CPIKE_TYPE PIKE_T_INT
+#cmod_define CPIKE_SUBTYPE NUMBER_NUMBER
+#cmod_define U_IND integer
+#cmod_include "typed_array.H"
+}
+/*! @endclass */
+
+/*! @class FloatArray
+ *! This class implements an array of double precision floats.
+ *!
+ *! @note
+ *! 	Values will be converted to and from the Pike float type,
+ *! 	which may introduce rounding errors if the types don't match in
+ *! 	your installation.
+ */
+PIKECLASS FloatArray
+{
+#cmod_define pike_type float
+#cmod_define c_type double
+#cmod_define name_prefix Float
+#cmod_define ARRAY_STORAGE OBJ2_MPI_FLOATARRAY
+#cmod_define PUSH push_float
+#cmod_define MPI_DATATYPE MPI_DOUBLE
+#cmod_define MPI_SHIFT (2<<3)
+#cmod_define CPIKE_TYPE T_FLOAT
+#cmod_define CPIKE_SUBTYPE 0
+#cmod_define U_IND float_number
+#cmod_include "typed_array.H"
+}
+/*! @endclass */
+
+/*! @class SingleArray
+ *! This class implements an array of single precision floats.
+ *!
+ *! @note
+ *! 	Values will be converted to and from the Pike float type,
+ *! 	which may introduce rounding errors if the types don't match in
+ *! 	your installation.
+ */
+PIKECLASS SingleArray
+{
+#cmod_define pike_type float
+#cmod_define c_type float
+#cmod_define name_prefix Single
+#cmod_define ARRAY_STORAGE OBJ2_MPI_SINGLEARRAY
+#cmod_define PUSH push_float
+#cmod_define MPI_DATATYPE MPI_FLOAT
+#cmod_define MPI_SHIFT (3<<3)
+#cmod_define CPIKE_TYPE T_FLOAT
+#cmod_define CPIKE_SUBTYPE 0
+#cmod_define U_IND float_number
+#cmod_include "typed_array.H"
+}
+/*! @endclass */
+
+/*! @class Status
+ *! Objects of this class can be passed as the last argument to the receive
+ *! operation of @[MPI.Comm] communicators. After the operation has finished,
+ *! they will contain information about the sender the message was received
+ *! from and the tag used for communication.
+ *!
+ *! Therefore, Status objects are particularly helpful in combination with
+ *! @[MPI.ANY_SOURCE] and @[MPI.ANY_TAG].
+ *!
+ *! @seealso
+ *! 	@[MPI.Comm()->Recv()]
+ */
+PIKECLASS Status {
+    CVAR MPI_Status status;
+
+    /*! @decl int SOURCE
+     *! Contains the source that the message was received from.
+     *!
+     *! @example
+     *!int main() {
+     *!	if (MPI.world->rank) {
+     *!		sleep(random(MPI.world->size)/10.0);
+     *!		MPI.world->Send(gethostname(), MPI.world->rank), 0);
+     *!	} else {
+     *!		MPI.Status status;
+     *!		MPI.Pointer p;
+     *!
+     *!		for (int i = 0; i < MPI.world->size; i++) {
+     *!			MPI.world->Recv(p, MPI.ANY_SOURCE, 0, status);
+     *!			write("Rank %d has hostname %s.\n", status->SOURCE, p());
+     *!		}
+     *!	}
+     *!
+     *!	return 0;
+     *!}
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()]
+     */
+    PIKEFUN int `SOURCE()
+    {
+	push_int(THIS->status.MPI_SOURCE);
+    }
+
+    /*! @decl int TAG
+     *! Contains the tag that was used in the @[MPI.Comm()->Recv] operation.
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()]
+     */
+    PIKEFUN int `TAG()
+    {
+	push_int(THIS->status.MPI_TAG);
+    }
+}
+/*! @endclass */
+
+/*! @class Sentinel
+ *! A @[Sentinel] is a kind of handle that can be given out by objects if
+ *! they want to allow @[MPI] to send from/receive into the memory areas
+ *! pointed to by the Sentinel.
+ *!
+ *! Other than that, @[Sentinel]s are not that useful from Pike.
+ *!
+ *! @seealso
+ *! 	@[Math.FMatrix()->get_sentinel()], @[Math.FMatrix]
+ */
+PIKECLASS Sentinel {
+    CVAR struct mpi_info i;
+    CVAR struct object * other;
+
+    INIT {
+	THIS->other = NULL;
+    }
+
+    EXIT {
+	if (THIS->other) {
+	    free_object(THIS->other);
+	    THIS->other = NULL;
+	}
+	
+    }
+}
+
+/*! @endclass */
+
+PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
+					       unsigned int length,
+					       unsigned int type_size,
+					       unsigned int shift,
+					       void * p,
+					       struct object * other) {
+    struct object * o = low_clone(MPI_Sentinel_program);
+
+    OBJ2_MPI_SENTINEL(o)->i.length = length;
+    OBJ2_MPI_SENTINEL(o)->i.type_size = type_size;
+    OBJ2_MPI_SENTINEL(o)->i.shift = shift;
+    OBJ2_MPI_SENTINEL(o)->i.type = type;
+    OBJ2_MPI_SENTINEL(o)->i.data = p;
+    OBJ2_MPI_SENTINEL(o)->other = other;
+    add_ref(other);
+    return o;
+}
+
+PMOD_EXPORT struct op_info {
+    struct object *o;
+    void **data;
+};
+
+/*! @class Op
+ *! Objects of this class represent MPI operations used in collective
+ *! operations like @[MPI.Comm()->reduce()]. You can use operations
+ *! predefined by MPI or create your own.
+ *!
+ *! Other than that, @[Op]s are not that useful from Pike.
+ *!
+ *! @seealso
+ *! 	@[MPI] constants, @[MPI.Op_create()], @[MPI.Comm->Reduce()].
+ */
+PIKECLASS Op
+{
+    CVAR MPI_Op op;
+    CVAR unsigned int *refcnt;
+    CVAR struct svalue ufun;
+    CVAR struct op_info (*create)(void *);
+    CVAR void *info;
+    CVAR unsigned int len, shift;
+
+    EXIT
+    {
+	if (THIS->refcnt) {
+	    if (!--*THIS->refcnt) {
+		if (mpi_status != mpi_FINALIZED) MPI_Op_free(&THIS->op);
+		free(THIS->refcnt);
+		if (THIS->info) free(THIS->info);
+	    }
+
+	    free_svalue(&THIS->ufun);
+	}
+    }
+}
+/*! @endclass */
+
+PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op, unsigned int *refcnt)
+{
+    struct object *o = low_clone(MPI_Op_program);
+
+    OBJ2_MPI_OP(o)->op = op;
+    OBJ2_MPI_OP(o)->refcnt = refcnt;
+    return o;
+}
+
+static inline struct object *mpi_clone_array(struct program *prog, unsigned int length, void *data)
+{
+    struct object *r = low_clone(prog);
+
+    OBJ2_MPI_INTARRAY(r)->i.clone = 1;
+    OBJ2_MPI_INTARRAY(r)->i.data = data;
+    OBJ2_MPI_INTARRAY(r)->i.length = length;
+
+    return r;
+}
+
+/* Any ideas appreciated! */
+struct {
+    struct svalue ufun;
+    struct program *bufprog;
+    struct object *op;
+} mpi_pike_user_function;
+
+struct mpi_user_function_errstruct {
+    struct object *v1;
+    struct object *v2;
+    void **p1, **p2;
+};
+
+static void mpi_user_function_error(struct mpi_user_function_errstruct *v)
+{
+    INVALIDATE_CURRENT_TIME();
+
+    if (v->p1) *v->p1 = *v->p2 = NULL;
+
+    debug_malloc_touch(v->v1);
+    destruct_object(v->v1, DESTRUCT_EXPLICIT);
+    debug_malloc_touch(v->v2);
+    destruct_object(v->v2, DESTRUCT_EXPLICIT);
+    destruct_objects_to_destruct();
+
+    free(v);
+}
+
+static void mpi_user_function(void *invec, void *outvec, int *len,
+			      MPI_Datatype *type)
+{
+    ONERROR err;
+    struct program *p;
+    struct mpi_user_function_errstruct *v
+            = ALLOC_STRUCT(mpi_user_function_errstruct);
+    struct svalue *old_sp = Pike_sp;
+
+
+    push_svalue(&mpi_pike_user_function.ufun);
+
+
+    if (mpi_pike_user_function.bufprog) {
+	v->v1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
+	v->v2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
+	v->p1 = v->p2 = NULL;
+    } else {
+	struct op_info oinfo;
+	unsigned int tsize;
+
+	MPI_Type_size(*type, (int*)&tsize);
+
+	/* TODO: can this even happen? i think not, but have to be sure! */
+	if (*(unsigned int*)len * tsize
+		!= OBJ2_MPI_OP(mpi_pike_user_function.op)->len)
+	    Pike_fatal("Pike defined MPI operation with nonmatching length (%d (%d)received vs %d in op).\n",
+		       *len * tsize, tsize, OBJ2_MPI_OP(mpi_pike_user_function.op)->len);
+
+	oinfo = OBJ2_MPI_OP(mpi_pike_user_function.op)->create(OBJ2_MPI_OP(mpi_pike_user_function.op)->info);
+	v->v1 = oinfo.o;
+	*(v->p1 = oinfo.data) = invec;
+	oinfo = OBJ2_MPI_OP(mpi_pike_user_function.op)->create(OBJ2_MPI_OP(mpi_pike_user_function.op)->info);
+	v->v2 = oinfo.o;
+	*(v->p2 = oinfo.data) = outvec;
+    }
+
+    ref_push_object(v->v1);
+    ref_push_object(v->v2);
+
+    SET_ONERROR(err, mpi_user_function_error, v);
+    f_call_function(3);
+    UNSET_ONERROR(err);
+    INVALIDATE_CURRENT_TIME();
+
+    if (v->p1) *v->p1 = *v->p2 = NULL;
+
+    debug_malloc_touch(v->v1);
+    destruct_object(v->v1, DESTRUCT_EXPLICIT);
+    debug_malloc_touch(v->v2);
+    destruct_object(v->v2, DESTRUCT_EXPLICIT);
+    destruct_objects_to_destruct();
+
+    free(v);
+
+#ifndef PIKE_DEBUG
+    if (Pike_sp-old_sp > 0)
+	pop_n_elems(Pike_sp-old_sp);
+#else
+    if (Pike_sp-old_sp == 1)
+	pop_n_elems(1);
+    else if (Pike_sp-old_sp != 0)
+	Pike_fatal("MPI: Pike defined operation caused stack malfunction (detection): %d\n",
+		   Pike_sp-old_sp);
+#endif
+}
+
+static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
+	       MPI_Op op, int root, MPI_Comm comm)
+{
+    unsigned int shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift,
+		 length = OBJ2_MPI_INTARRAY(sendbuf)->i.length;
+    int rank;
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    MPI_Comm_rank(comm, &rank);
+
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
+	Pike_fatal("Reduce: recvbuf and sendbuf differ in shift (%u vs %u).\n",
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.shift, OBJ2_MPI_INTARRAY(sendbuf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length != OBJ2_MPI_INTARRAY(sendbuf)->i.length)
+	Pike_fatal("Reduce: recvbuf and sendbuf differ in size (%u vs %u).\n",
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
+
+    if (rank != root) {
+	if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
+	    Pike_fatal("Cannot Reduce magic shift %u into buffer of magic shift %u.\n",
+		       shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+	if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)
+	    Pike_fatal("Cannot Reduce magic shift %u and length %d into buffer of length %d.\n",
+		       shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
+    }
+
+    INVALIDATE_CURRENT_TIME();
+
+    return MPI_Reduce(OBJ2_MPI_INTARRAY(sendbuf)->i.data,
+		      OBJ2_MPI_INTARRAY(recvbuf)->i.data, length,
+		      OBJ2_MPI_INTARRAY(sendbuf)->i.type, op,
+		      root, comm);
+}
+
+#define GEN(_name_) static inline int mpi_ ## _name_(			\
+				       struct object *sendbuf,		\
+				       struct object *recvbuf,		\
+				       MPI_Op op, MPI_Comm comm)	\
+{									\
+    unsigned int shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift,		\
+		 length = OBJ2_MPI_INTARRAY(sendbuf)->i.length;		\
+    int rank;								\
+									\
+    MPI_Bcast(&shift, 1, MPI_INT, 0, comm);				\
+    MPI_Bcast(&length, 1, MPI_INT, 0, comm);				\
+									\
+    MPI_Comm_rank(comm, &rank);						\
+									\
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.shift					\
+	    != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)				\
+	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in shift (%u vs %u).\n",\
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.shift,			\
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.shift);			\
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length				\
+	    != OBJ2_MPI_INTARRAY(sendbuf)->i.length)			\
+	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in size (%u vs %u).\n",\
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length,			\
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.length);			\
+									\
+    if (rank) {								\
+	if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)			\
+	    Pike_fatal("Cannot " #_name_ " magic shift %u into buffer of magic shift %u.\n",\
+		       shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);	\
+	if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)			\
+	    Pike_fatal("Cannot " #_name_ " magic shift %u and length %d into buffer of length %d.\n",\
+		       shift, length,				\
+		       OBJ2_MPI_INTARRAY(recvbuf)->i.length);		\
+    }									\
+									\
+    INVALIDATE_CURRENT_TIME();						\
+									\
+    return MPI_ ## _name_(OBJ2_MPI_INTARRAY(sendbuf)->i.data,		\
+		      OBJ2_MPI_INTARRAY(recvbuf)->i.data, length,		\
+		      OBJ2_MPI_INTARRAY(sendbuf)->i.type, op,		\
+		      comm);						\
+}
+
+GEN(Allreduce)
+GEN(Scan)
+GEN(Exscan)
+
+#undef GEN
+
+static inline int mpi_Recv(struct object *buf, int source, int tag,
+			   MPI_Comm comm, MPI_Status *status)
+{
+    unsigned int shift, length;
+    MPI_Status int_status;
+    int r;
+
+    if (!status) status = &int_status;
+
+    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, status);
+    MPI_Recv(&length, 1, MPI_INT, status->MPI_SOURCE, status->MPI_TAG, comm, NULL);
+
+    if (shift != OBJ2_MPI_INTARRAY(buf)->i.shift)
+	Pike_error("Trying to receive shift %u into buffer of shift %u.\n",
+		   shift, OBJ2_MPI_INTARRAY(buf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(buf)->i.length < length)
+#if 0
+	Pike_error("Cannot receive MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d) into MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d).\n",
+		   length, OBJ2_MPI_INTARRAY(buf)->i.length);
+#else
+	Pike_error("Cannot receive magic shift %u length %d into length %d.\n",
+		   shift, length, OBJ2_MPI_INTARRAY(buf)->i.length);
+#endif
+
+    INVALIDATE_CURRENT_TIME();
+
+    return MPI_Recv(OBJ2_MPI_INTARRAY(buf)->i.data, length,
+		    OBJ2_MPI_INTARRAY(buf)->i.type, status->MPI_SOURCE,
+		    status->MPI_TAG, comm, NULL);
+}
+
+static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
+				  struct pike_string **ps, MPI_Status *status)
+{
+    unsigned int shift, length;
+    MPI_Status int_status;
+    struct svalue sval;
+    struct string_builder buf;
+    int r;
+    int x1, x2;
+
+    if (!status) status = &int_status;
+
+    mark_free_svalue(&sval);
+
+    INVALIDATE_CURRENT_TIME();
+
+    THREADS_ALLOW();
+
+    x1=MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &int_status);
+    x2=MPI_Recv(&length, 1, MPI_INT, int_status.MPI_SOURCE, int_status.MPI_TAG, comm,
+	     NULL);
+
+    THREADS_DISALLOW();
+
+    if (shift > 2)
+	Pike_error("Cannot receive shift %u as a string. (x1, x2: %d, %d)\n", shift, x1, x2);
+
+    init_string_builder_alloc(&buf, length >> shift, shift);
+
+    THREADS_ALLOW();
+
+    r = MPI_Recv(buf.s->str, length, MPI_CHAR, int_status.MPI_SOURCE, int_status.MPI_TAG,
+		 comm, NULL);
+
+    buf.s->len = length >> shift;
+
+    THREADS_DISALLOW();
+
+    if (status) *status = int_status;
+
+    *ps = finish_string_builder(&buf);
+
+    return r;
+}
+
+static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
+{
+    unsigned int length = OBJ2_MPI_INTARRAY(buf)->i.length,
+		 shift = OBJ2_MPI_INTARRAY(buf)->i.shift;
+    int rank;
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    MPI_Comm_rank(comm, &rank);
+
+    if (rank != root) {
+	if (shift != OBJ2_MPI_INTARRAY(buf)->i.shift)
+	    Pike_fatal("Cannot (receive) broadcast of shift %u into buffer of shift %u.\n",
+		       shift, OBJ2_MPI_INTARRAY(buf)->i.shift);
+	if (length > OBJ2_MPI_INTARRAY(buf)->i.length)
+	    Pike_fatal("Buffer of shift %u and size %d to small for transmission of size %d.\n",
+		       shift, OBJ2_MPI_INTARRAY(buf)->i.length, length);
+    }
+
+    return MPI_Bcast(OBJ2_MPI_INTARRAY(buf)->i.data, length,
+		     OBJ2_MPI_INTARRAY(buf)->i.type, root, comm);
+}
+
+static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm, PIKE_MUTEX_T *m)
+{
+    unsigned int shift, length;
+    int r, rank;
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Comm_rank(comm, &rank);
+
+    if (rank != root) {
+	struct string_builder buf;
+
+	THREADS_ALLOW();
+	mt_lock(m);
+
+	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
+
+	if (shift > 2)
+	    Pike_error("Cannot receive shift %u as a string.\n", shift);
+
+	init_string_builder_alloc(&buf, length >> shift, shift);
+
+	THREADS_ALLOW();
+	mt_lock(m);
+
+	r = MPI_Bcast(buf.s->str, length, MPI_CHAR, root, comm);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
+
+	buf.s->len = length >> shift;
+
+	*ps = finish_string_builder(&buf);
+    } else {
+	shift = (*ps)->size_shift;
+	length = (*ps)->len << ((*ps)->size_shift);
+
+	THREADS_ALLOW();
+	mt_lock(m);
+
+	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+	r = MPI_Bcast((*ps)->str, length, MPI_CHAR, root, comm);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
+    }
+
+    return r;
+}
+
+
+static inline int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
+{
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Send(&OBJ2_MPI_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
+    MPI_Send(&OBJ2_MPI_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
+    return MPI_Send(OBJ2_MPI_INTARRAY(buf)->i.data, OBJ2_MPI_INTARRAY(buf)->i.length,
+		    OBJ2_MPI_INTARRAY(buf)->i.type, dest, tag, comm);
+}
+
+static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int root, MPI_Comm comm)
+{
+    unsigned int shift, length;
+    int rank, size;
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	if (!IS_SENTINEL(recvbuf))
+	    Pike_error("Gather: Rank root (%d) really needs a recvbuf.\n", root);
+	shift = OBJ2_MPI_INTARRAY(recvbuf)->i.shift;
+	length = OBJ2_MPI_INTARRAY(recvbuf)->i.length / size;
+    }
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
+	Pike_error("Cannot Gather magic shift %u into buffer of magic shift %u.\n",
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (length > OBJ2_MPI_INTARRAY(sendbuf)->i.length)
+	Pike_error("Cannot Gather buffer of magic shift %u, length %u into buffer of length %u.\n",
+		   shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
+
+    return MPI_Gather(OBJ2_MPI_INTARRAY(sendbuf)->i.data, length, OBJ2_MPI_INTARRAY(sendbuf)->i.type,
+		      recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.data : NULL, length,
+		      recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.type
+			      : OBJ2_MPI_INTARRAY(sendbuf)->i.type,
+		      root, comm);
+}
+
+static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, int root, MPI_Comm comm)
+{
+    unsigned int shift, length;
+    int rank, size;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	if (!IS_SENTINEL(sendbuf))
+	    Pike_error("Scatter: Rank root (%d) really needs a sendbuf.\n",
+		       root);
+	shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift;
+	length = OBJ2_MPI_INTARRAY(sendbuf)->i.length / size;
+    }
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
+	Pike_error("Cannot Scatter magic shift %u into buffer of magic shift %u.\n",
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)
+	Pike_error("Cannot Scatter buffer of magic shift %u, length %u into buffer of length %u.\n",
+		   shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
+
+    return MPI_Scatter(sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.data : NULL, length,
+		       sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.type
+			       : OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+		       OBJ2_MPI_INTARRAY(recvbuf)->i.data, length, OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+		       root, comm);
+}
+
+static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
+			       struct object *displ, struct object *recvbuf,
+			       int root, MPI_Comm comm)
+{
+    unsigned int shift;
+    int rank, size;
+    unsigned int count;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	int i;
+
+	if (!IS_SENTINEL(sendbuf))
+	    Pike_error("Scatterv: root (%d) really needs a sendbuf.\n",
+		       root);
+	if (!IS_SENTINEL(counts))
+	    Pike_error("Scatterv: root (%d) really needs a counts array.\n",
+		       root);
+	if (!IS_SENTINEL(displ))
+	    Pike_error("Scatterv: root (%d) really needs a displacements array.\n",
+		       root);
+
+	shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift;
+
+	if (OBJ2_MPI_INTARRAY(counts)->i.length != (unsigned int)size)
+	    Pike_error("Scatterv: count array of wrong size (%u vs %U).\n",
+		       OBJ2_MPI_INTARRAY(counts)->i.length, size);
+	if (OBJ2_MPI_INTARRAY(displ)->i.length != (unsigned int)size)
+	    Pike_error("Scatterv: displacements array of wrong size (%u vs %u).\n",
+		       OBJ2_MPI_INTARRAY(displ)->i.length, size);
+
+	for (i = 0; i < size; i++) {
+	    if (((int*)OBJ2_MPI_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_MPI_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_MPI_INTARRAY(sendbuf)->i.length
+		|| (int)OBJ2_MPI_INTARRAY(sendbuf)->i.length < 0)
+		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
+			   i, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
+	}
+    }
+
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Scatter(counts ? OBJ2_MPI_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
+		&count, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
+	Pike_error("Cannot Scatterv magic shift %u into buffer of magic shift %u.\n",
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length < count)
+	Pike_error("Scatterv: to small buffer (%u vs %u) on rank %d.\n",
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length, count, rank);
+
+    return MPI_Scatterv(sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.data : NULL,
+			counts ? (int*)OBJ2_MPI_INTARRAY(counts)->i.data : NULL,
+			displ ? (int*)OBJ2_MPI_INTARRAY(displ)->i.data : NULL,
+			sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.type
+				: OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+			OBJ2_MPI_INTARRAY(recvbuf)->i.data, count,
+			OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+			root, comm);
+}
+
+static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
+			      struct object *counts, struct object *displ,
+			      int root, MPI_Comm comm)
+{
+    unsigned int shift;
+    int rank, size;
+    unsigned int count;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	int i;
+
+	if (!IS_SENTINEL(recvbuf))
+	    Pike_error("Gatherv: root (%d) really needs a recvbuf.\n",
+		       root);
+	if (!IS_SENTINEL(counts))
+	    Pike_error("Gatherv: root (%d) really needs a counts array.\n",
+		       root);
+	if (!IS_SENTINEL(displ))
+	    Pike_error("Gatherv: root (%d) really needs a displacements array.\n",
+		       root);
+
+	shift = OBJ2_MPI_INTARRAY(recvbuf)->i.shift;
+
+	if (OBJ2_MPI_INTARRAY(counts)->i.length != (unsigned int)size)
+	    Pike_error("Gatherv: count array of wrong size (%u vs %U).\n",
+		       OBJ2_MPI_INTARRAY(counts)->i.length, size);
+	if (OBJ2_MPI_INTARRAY(displ)->i.length != (unsigned int)size)
+	    Pike_error("Gatherv: displacements array of wrong size (%u vs %u).\n",
+		       OBJ2_MPI_INTARRAY(displ)->i.length, size);
+
+	for (i = 0; i < size; i++) {
+	    if (((int*)OBJ2_MPI_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_MPI_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_MPI_INTARRAY(recvbuf)->i.length
+		|| (int)OBJ2_MPI_INTARRAY(recvbuf)->i.length < 0)
+		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
+			   i, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
+	}
+    }
+
+
+    INVALIDATE_CURRENT_TIME();
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Scatter(counts ? OBJ2_MPI_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
+		&count, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
+	Pike_error("Cannot Gatherv magic shift %u into buffer of magic shift %u.\n",
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.shift, shift);
+    if (OBJ2_MPI_INTARRAY(sendbuf)->i.length < count)
+	Pike_error("Gatherv: to small buffer (%u vs %u) on rank %d.\n",
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.length, count, rank);
+
+    return MPI_Gatherv(OBJ2_MPI_INTARRAY(sendbuf)->i.data,
+		       count, OBJ2_MPI_INTARRAY(sendbuf)->i.type,
+		       recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.data : NULL,
+		       counts ? (int*)OBJ2_MPI_INTARRAY(counts)->i.data : NULL,
+		       displ ? (int*)OBJ2_MPI_INTARRAY(displ)->i.data : NULL,
+		       recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.type : MPI_INT,
+		       root, comm);
+}
+
+/*! @class Pointer
+ *! A pointer like class. Because @[MPI.Comm->Recv()] et al do not return
+ *! "results" but take references/pointers to the target storage, you need to
+ *! pass a @[Pointer] to @[MPI.Comm()->recv()] in order to receive the string.
+ *!
+ *! @example
+ *!int main() {
+ *!	string s;
+ *!	MPI.Pointer p = MPI.Pointer();
+ *!
+ *!	MPI.Init();
+ *!
+ *!	if (MPI.world->rank())
+ *!		MPI.world->Send(ctime(time(1)), 0);
+ *!	else
+ *!		for (int i = 1; i < MPI.world->size; i++) {
+ *!			MPI.world->Recv(p, i);
+ *!			write("Rank %03d says now is %s.\n", p());
+ *!		}
+ *!
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ */
+PIKECLASS Pointer
+{
+    CVAR struct svalue x;
+    CVAR int y;
+
+    /*! @decl void create()
+     *! @decl void create(mixed m)
+     *! If @expr{m@} is given, point to @expr{m@}, else point to
+     *! @expr{UNDEFINED@}.
+     */
+    PIKEFUN void create(mixed|void m)
+	flags ID_PROTECTED;
+    {
+	if (m) assign_svalue(&THIS->x, m);
+	pop_n_elems(args);
+    }
+
+    /*! @decl mixed `()()
+     *! @decl mixed `()(mixed m)
+     *! If called with 0 arguments, returns the pointee. If called with
+     *! argument @expr{m@}, now points to @expr{m@}.
+     */
+    PIKEFUN mixed `()()
+	flags ID_PROTECTED;
+    {
+	push_svalue(&THIS->x);
+    }
+
+    PIKEFUN mixed `()(mixed m)
+	flags ID_PROTECTED;
+    {
+	assign_svalue(&THIS->x, m);
+    }
+
+    INIT
+    {
+	SET_SVAL(THIS->x, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+    }
+
+    EXIT
+    {
+	free_svalue(&THIS->x);
+    }
+}
+/*! @endclass */
+
+/*! @class Comm
+ *! A communicator object holds a group of processes both relate messages
+ *! between those processes as well as perform collective operations,
+ *! in which all member processes of the communicator are involved.
+ */
+PIKECLASS Comm
+{
+    CVAR MPI_Comm comm;
+    CVAR PIKE_MUTEX_T sm, bm;
+
+    /*! @decl void Send(string buf, int dest, int|void tag)
+     *! @decl void Send(MPI.IntArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.FloatArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.SingleArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.Sentinel buf, int dest, int|void tag)
+     *! Sends the buffer @expr{buf@} to the process with @[rank] @expr{dest@},
+     *! marked with @expr{tag@}.
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()], @[MPI.Comm()->Bcast()], MPI_Send(3).
+     */
+
+    INIT {
+	mt_init(&THIS->sm);
+	mt_init(&THIS->bm);
+    }
+
+    EXIT {
+	mt_destroy(&THIS->sm);
+	mt_destroy(&THIS->bm);
+	if (mpi_status == mpi_INITIALIZED
+		&& THIS->comm != MPI_COMM_WORLD
+		&& THIS->comm != MPI_COMM_NULL) {
+	    MPI_Comm_free(&THIS->comm);
+	}
+    }
+
+    PIKEFUN void Send(string buf, int dest, int|void tag)
+    {
+	unsigned int shift = buf->size_shift,
+		     length = buf->len << shift;
+	MPI_Comm comm = THIS->comm;
+	PIKE_MUTEX_T *im = &THIS->sm;
+
+	using_mpi("Send");
+
+	INVALIDATE_CURRENT_TIME();
+
+	if (shift > 2) {
+	    Pike_fatal("Sending broken shift %d.\n", shift);
+	}
+
+	THREADS_ALLOW();
+	mt_lock(im);
+
+	MPI_Send(&shift, 1, MPI_INT, dest, tag ? tag->u.integer : 0, comm);
+	MPI_Send(&length, 1, MPI_INT, dest, tag ? tag->u.integer : 0, comm);
+	MPI_Send(buf->str, length, MPI_CHAR, dest, tag ? tag->u.integer : 0, comm);
+
+	mt_unlock(im);
+	THREADS_DISALLOW();
+
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Send(object buf, int dest, int|void tag)
+    {
+	PIKE_MUTEX_T *im = &THIS->sm;
+
+	using_mpi("Send");
+
+	ENSURE_SENTINEL(buf, "Send", 1);
+	mt_lock(im);
+	mpi_Send(buf, dest, tag ? tag->u.integer : 0, THIS->comm);
+	mt_unlock(im);
+	pop_n_elems(args);
+    }
+
+    /*! @decl void Recv(MPI.Pointer buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.IntArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.FloatArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.SingleArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.Sentinel buf, int source, int|void tag, MPI.Status|void status)
+     *! Receives a message from @expr{source@} with matching @expr{tag@} into
+     *! @expr{buf@}, storing the sender's rank and the tag used into the
+     *! optionally given @[MPI.Status].
+     *!
+     *! @note
+     *! 	The type of the buffer of the receiver site has to match the
+     *! 	type of the buffer of the sender. @b{Exception:@} If a string
+     *! 	is sent, it has to be received into a @[MPI.Pointer].
+     *!
+     *! @example
+     *!int main() {
+     *!	MPI.IntArray ia = MPI.IntArray(5);
+     *!
+     *! MPI.Init();
+     *!
+     *!	write("This is rank %d, %d processes total.\n", MPI.world->rank,
+     *!	      MPI.world->size);
+     *!
+     *!	if (MPI.world->rank) {
+     *!		for (int i = 0; i < sizeof(ia); i++) {
+     *!			ia[i] = MPI.world->rank + i;
+     *!		}
+     *!
+     *!		MPI.world->Send(ia, 0); // send to rank 0
+     *!	} else {
+     *!		for (int i = 0; i < MPI.world->size; i++) {
+     *!			MPI.world->Recv(ia, i);
+     *!			write("Rank %d sent %O to rank 0.\n", i, (array)ia);
+     *!		}
+     *!	}
+     *!
+     *!	MPI.Finalize();
+     *!	return 0;
+     *!}
+     *!
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm->Send()], @[MPI.Comm->Bcast()], @[MPI.ANY_SOURCE],
+     *!		@[MPI.ANY_TAG], MPI_Send(3).
+     */
+    PIKEFUN void Recv(object buf, int source, int|void tag, object|void status)
+    {
+	struct pike_string *ps = NULL;
+
+	using_mpi("Recv");
+
+	if (status && -1 == low_get_storage(status->prog, MPI_Status_program)) {
+	    SIMPLE_ARG_TYPE_ERROR("Recv", 4, "inherits(MPI.Status)");
+	}
+
+	if (IS_SENTINEL(buf)) {
+	    mpi_Recv(buf, source, tag ? tag->u.integer : 0, THIS->comm,
+		     status ? &OBJ2_MPI_STATUS(status)->status : NULL);
+	    pop_n_elems(args);
+	} else {
+	    if (-1 == low_get_storage(buf->prog, MPI_Pointer_program))
+		FAIL_SENTINEL_OR_PTR("Recv", 1);
+	    mpi_string_Recv(source, tag ? tag->u.integer : 0, THIS->comm, &ps,
+			    status ? &OBJ2_MPI_STATUS(status)->status : NULL);
+	    pop_n_elems(args-1);
+	    push_string(ps);
+	    f_call_function(2);
+	    pop_n_elems(1);
+	}
+    }
+
+    PIKEFUN void Bcast(string buf, int root)
+    {
+	int rank;
+
+	using_mpi("Bcast");
+
+	MPI_Comm_rank(THIS->comm, &rank);
+
+	if (rank != root)
+	    Pike_error("Bcast cannot receive into strings.\n");
+
+	mpi_string_Bcast(&buf, root, THIS->comm, &THIS->bm);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Bcast(object buf, int root)
+    {
+	using_mpi("Bcast");
+
+	if (IS_SENTINEL(buf)) {
+	    mpi_Bcast(buf, root, THIS->comm);
+	    pop_n_elems(args);
+	} else {
+	    struct pike_string *ps = NULL;
+
+	    if (-1 == low_get_storage(buf->prog, MPI_Pointer_program))
+		FAIL_SENTINEL_OR_PTR("Bcast", 1);
+
+	    mpi_string_Bcast(&ps, root, THIS->comm, &THIS->bm);
+	    pop_n_elems(args-1);
+	    push_string(ps);
+	    f_call_function(2);
+	    pop_n_elems(1);
+	}
+
+    }
+
+    PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
+    {
+	using_mpi("Reduce");
+
+	if (-1 == low_get_storage(op->prog, MPI_Op_program))
+	    SIMPLE_ARG_TYPE_ERROR("Reduce", 3, "inherits(MPI.Op)");
+	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
+	ENSURE_SENTINEL(recvbuf, "Reduce", 2);
+
+	if (OBJ2_MPI_OP(op)->refcnt) {
+	    assign_svalue_no_free(&mpi_pike_user_function.ufun,
+				  &OBJ2_MPI_OP(op)->ufun);
+	    sub_ref(mpi_pike_user_function.ufun.u.dummy);
+	    if (!OBJ2_MPI_OP(op)->create) {
+		/* mpi_Reduce et al. check for the same shift in both buffers
+		 * (and fail if those differ). As shifts should differ easier
+		 * than programs (i.e. Sentinel_program - lots of shifts, one
+		 * program) - we just need to store any one ->prog. */
+		mpi_pike_user_function.bufprog = recvbuf->prog;
+	    } else {
+		if (OBJ2_MPI_OP(op)->len != OBJ2_MPI_SENTINEL(recvbuf)->i.length
+			* OBJ2_MPI_SENTINEL(recvbuf)->i.type_size)
+		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",
+			       OBJ2_MPI_OP(op)->len,
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.length
+			       * OBJ2_MPI_SENTINEL(recvbuf)->i.type_size);
+		if (OBJ2_MPI_OP(op)->shift != OBJ2_MPI_SENTINEL(recvbuf)->i.shift)
+		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",
+			       OBJ2_MPI_OP(op)->shift,
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.shift);
+		mpi_pike_user_function.bufprog = NULL;
+		mpi_pike_user_function.op = op;
+	    }
+	}
+
+	mpi_Reduce(sendbuf, recvbuf, OBJ2_MPI_OP(op)->op, root, THIS->comm);
+	pop_n_elems(args);
+    }
+
+#cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
+					     object recvbuf, object op)	\
+    {									\
+	using_mpi(#_name_);						\
+	if (-1 == low_get_storage(op->prog, MPI_Op_program))		\
+	    SIMPLE_ARG_TYPE_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
+	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
+	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
+									\
+	if (OBJ2_MPI_OP(op)->refcnt) {					\
+	    assign_svalue_no_free(&mpi_pike_user_function.ufun,		\
+				  &OBJ2_MPI_OP(op)->ufun);			\
+	    sub_ref(mpi_pike_user_function.ufun.u.dummy);		\
+	    if (!OBJ2_MPI_OP(op)->create) {					\
+		mpi_pike_user_function.bufprog = recvbuf->prog;		\
+	    } else {							\
+		if (OBJ2_MPI_OP(op)->len != OBJ2_MPI_SENTINEL(recvbuf)->i.length\
+			* OBJ2_MPI_SENTINEL(recvbuf)->i.type_size)		\
+		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",\
+			       OBJ2_MPI_OP(op)->len,			\
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.length		\
+			       * OBJ2_MPI_SENTINEL(recvbuf)->i.type_size);	\
+		if (OBJ2_MPI_OP(op)->shift					\
+			!= OBJ2_MPI_SENTINEL(recvbuf)->i.shift)		\
+		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",\
+			       OBJ2_MPI_OP(op)->shift,			\
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.shift);	\
+		mpi_pike_user_function.bufprog = NULL;			\
+		mpi_pike_user_function.op = op;				\
+	    }								\
+	}								\
+									\
+	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_MPI_OP(op)->op, THIS->comm);	\
+	pop_n_elems(args);						\
+    }
+
+    GEN(Allreduce)
+    GEN(Scan)
+    GEN(Exscan)
+
+#cmod_undef GEN
+
+#cmod_define ID(x) x
+#cmod_define NONE(x)
+#cmod_define GEN(_name_, GATHER, SCATTER)				\
+PIKEFUN void _name_(object SCATTER(|void) sendbuf,			\
+		    object GATHER(|void) recvbuf, 			\
+		    int root)						\
+    {									\
+	using_mpi(#_name_);						\
+cmod_CONCAT_EVAL(ENSURE_SENTINEL,SCATTER(##_OR_NULL))(sendbuf, #_name_, 1); \
+cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
+									\
+	mpi_ ## _name_(sendbuf, recvbuf, root, THIS->comm);		\
+	pop_n_elems(args);						\
+    }
+
+    GEN(Scatter, NONE, ID)
+    GEN(Gather, ID, NONE)
+
+#cmod_undef GEN
+#cmod_undef NONE
+#cmod_undef ID
+
+    PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
+			  object|void displ, object recvbuf, int root)
+    {
+	using_mpi("Scatterv");
+
+	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
+	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
+	    SIMPLE_ARG_TYPE_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
+	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
+	    SIMPLE_ARG_TYPE_ERROR("Scatterv", 3, "inherits(MPI.IntArray)");
+	ENSURE_SENTINEL(recvbuf, "Scatterv", 4);
+
+	mpi_Scatterv(sendbuf, counts, displ, recvbuf, root, THIS->comm);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Gatherv(object sendbuf, object|void recvbuf,
+			 object|void counts, object|void displ,
+			 int root)
+    {
+	using_mpi("Gatherv");
+	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
+	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
+	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
+	    SIMPLE_ARG_TYPE_ERROR("Gatherv", 3, "inherits(MPI.IntArray)|void");
+	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
+	    SIMPLE_ARG_TYPE_ERROR("Gatherv", 4, "inherits(MPI.IntArray)|void");
+
+	mpi_Gatherv(sendbuf, recvbuf, counts, displ, root, THIS->comm);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Abort(int errorcode)
+    {
+	using_mpi("Abort");
+	MPI_Abort(THIS->comm, errorcode);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Barrier()
+    {
+	using_mpi("Barrier");
+	INVALIDATE_CURRENT_TIME();
+	MPI_Barrier(THIS->comm);
+    }
+
+    PIKEFUN int `rank()
+    {
+	int rank;
+
+	using_mpi("->rank");
+
+	MPI_Comm_rank(THIS->comm, &rank);
+	push_int(rank);
+    }
+
+    PIKEFUN int `size()
+    {
+	int size;
+
+	using_mpi("->size");
+
+	MPI_Comm_size(THIS->comm, &size);
+	push_int(size);
+    }
+
+    PIKEFUN object dup() {
+	MPI_Comm comm;
+	struct object *o;
+
+	using_mpi("dup");
+
+	o = clone_object(MPI_Comm_program, 0);
+
+	MPI_Comm_dup(THIS->comm, &comm);
+
+	OBJ2_MPI_COMM(o)->comm = comm;
+
+	RETURN o;
+    }
+}
+/*! @endclass */
+
+/* TODO: guard against multiple calls */
+/*! @decl void Init()
+ *! Initializes @[MPI]. @[MPI] in Pike will auto-initialize once the
+ *! first @[MPI]-operation is called. You can call this function to
+ *! initialize the parallel @[MPI] at a specific time, since
+ *! initialization is a collective operation and will block the process
+ *! until all member processes of the parallel program are present.
+ *!
+ *! @example
+ *!int main() {
+ *!	MPI.Init();
+ *!	write("I am process %d of %d.\n", MPI.world->rank,
+ *!	      MPI.world->size);
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ *! @seealso
+ *!	@[Finalize()], MPI_Init(3)
+ */
+PIKEFUN void Init()
+{
+    int provided;
+
+    if (mpi_status == mpi_FINALIZED)
+	Pike_error("Cannot initialize MPI after MPI.Finalize()\n");
+    else if (mpi_status)
+	return;
+
+    mpi_status = mpi_INITIALIZED;
+    /* MPI Specification does not use &argc, &argv for anything, nor
+     * operate on it in any other way. AFAIK this holds for all
+     * implementations, but at least does for OpenMPI. */
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+    if (provided != MPI_THREAD_MULTIPLE)
+	Pike_fatal("MPI cannot deliver: %d vs %d.\n", MPI_THREAD_MULTIPLE, provided);
+    return;
+}
+
+
+/*! @decl void Finalize()
+ *! Cleans up the @[MPI] stack. Will be called automatically upon
+ *! termination of the Pike program, but can be called explicitly
+ *! when it is required that some of the parallel processes continue
+ *! running and some terminate.
+ *!
+ *! @seealso
+ *!	@[Init()], MPI_Finalize(3)
+ */
+PIKEFUN void Finalize()
+{
+    if (mpi_status == mpi_FINALIZED)
+	return;
+    mpi_status = mpi_FINALIZED;
+    MPI_Finalize();
+}
+
+/*! @decl Op Op_create(function(object,object:void) ufun, int commute)
+ *! Creates a user-defined MPI operation.
+ *!
+ *! @param ufun
+ *!	The function that implements the @[MPI.Op] to be created.
+ *!
+ *! @param commute
+ *!	Set to @expr{1@} if the operation commutes.
+ *!
+ *! @example
+ *!void my_add_fun(object invec, object outvec) {
+ *!	for (int i = 0; i < sizeof(outvec); i++) {
+ *!	outvec[i] += invec[i];
+ *!}
+ *!
+ *!int main() {
+ *!	MPI.Op myadd;
+ *!	MPI.IntArray ia = MPI.IntArray(10), results;
+ *!
+ *!	MPI.Init();
+ *!
+ *!	myadd = MPI.Op_create(my_add_fun, 1);
+ *!
+ *!	for (int i = 0; i < sizeof(ia); i++)
+ *!		ia[i] = random(1000);
+ *!
+ *!	if (!MPI.world->rank) results = MPI.IntArray(sizeof(ia));
+ *!	MPI.world->Reduce(ia, results, 0);
+ *!	if (!MPI.world->rank)
+ *!		for (int i; i < sizeof(results); i++)
+ *!			write("%02d: %d\n", i, results[i]);
+ *!
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ *!
+ *! @note
+ *!	User-defined MPI operations may @b{not@} call any MPI operations
+ *!	themselves.
+ *!
+ *! @seealso
+ *!	@[MPI.Comm->Reduce()], MPI_Op_create(3)
+ */
+PIKEFUN object Op_create(function ufun, int commute)
+{
+    struct object *op;
+    MPI_Op mpiop;
+    unsigned int *refcnt = xalloc(sizeof(unsigned int));
+
+    *refcnt = 1;
+
+    MPI_Op_create(mpi_user_function, commute, &mpiop);
+    op = mpi_clone_op(mpiop, refcnt);
+    assign_svalue_no_free(&OBJ2_MPI_OP(op)->ufun, ufun);
+
+    pop_n_elems(args);
+    push_object(op);
+}
+
+PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct svalue *ufun, int commute, void *info, int shift, int len) {
+    struct object *o;
+    MPI_Op mpiop;
+    unsigned int *refcnt = xalloc(sizeof(unsigned int));
+
+    *refcnt = 1;
+
+    MPI_Op_create(mpi_user_function, commute, &mpiop);
+    o = mpi_clone_op(mpiop, refcnt);
+    OBJ2_MPI_OP(o)->create = create;
+    OBJ2_MPI_OP(o)->info = info;
+    OBJ2_MPI_OP(o)->shift = shift;
+    OBJ2_MPI_OP(o)->len = len;
+    assign_svalue_no_free(&OBJ2_MPI_OP(o)->ufun, ufun);
+
+    return o;
+}
+
+PIKE_MODULE_INIT
+{
+    struct object *co;
+
+    INIT;
+
+    ADD_INT_CONSTANT("ANY_SOURCE", MPI_ANY_SOURCE, 0);
+    ADD_INT_CONSTANT("ANY_TAG", MPI_ANY_TAG, 0);
+    add_object_constant("world", co = clone_object(MPI_Comm_program, 0), 0);
+    OBJ2_MPI_COMM(co)->comm = MPI_COMM_WORLD;
+
+#define EXPORT_OP(_op_) add_object_constant(		\
+	#_op_, mpi_clone_op(MPI_ ## _op_, NULL), 0);
+    EXPORT_OP(MAX)
+    EXPORT_OP(MIN)
+    EXPORT_OP(SUM)
+    EXPORT_OP(PROD)
+    EXPORT_OP(LAND)
+    EXPORT_OP(BAND)
+    EXPORT_OP(LOR)
+    EXPORT_OP(BOR)
+    EXPORT_OP(LXOR)
+    EXPORT_OP(BXOR)
+    EXPORT_OP(MAXLOC)
+    EXPORT_OP(MINLOC)
+#undef EXPORT_OP
+}
+
+PIKE_MODULE_EXIT
+{
+    EXIT;
+
+    if (mpi_status == mpi_INITIALIZED) {
+	mpi_status = mpi_FINALIZED;
+	MPI_Finalize();
+    }
+} 
+
+/*! @endmodule */

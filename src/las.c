@@ -228,6 +228,7 @@ static int low_count_args(node *n)
   {
   case F_COMMA_EXPR:
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
   case F_ARG_LIST:
     a=count_args(CAR(n));
     if(a==-1) return -1;
@@ -312,6 +313,7 @@ INT32 count_args(node *n)
     int val;
     while ((n->token == F_COMMA_EXPR) ||
 	   (n->token == F_VAL_LVAL) ||
+	   (n->token == F_FOREACH_VAL_LVAL) ||
 	   (n->token == F_ARG_LIST)) {
       if (CAR(n)) {
 	CAR(n)->parent = n;
@@ -444,10 +446,10 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   }
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
-    if (CAR(p) == n) {
+    if (p && (CAR(p) == n)) {
       (_CAR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
 	->parent = p;
-    } else if (CDR(p) == n) {
+    } else if (p && (CDR(p) == n)) {
       (_CDR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
 	->parent = p;
     } else {
@@ -758,6 +760,14 @@ node *debug_mknode(int token, node *a, node *b)
       }
       break;
 
+    case F_ASSIGN:
+    case F_MULTI_ASSIGN:
+    case F_ASSIGN_SELF:
+      if ((!a || a->token == F_CONSTANT) &&
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
+	yyerror("Illegal lvalue.");
+      }
+      break;
 #ifdef PIKE_DEBUG
     case F_CAST:
     case F_SOFT_CAST:
@@ -886,6 +896,12 @@ node *debug_mknode(int token, node *a, node *b)
       }
       res->node_info |= OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
+      if (res->node_info & OPT_EXTERNAL_DEPEND) {
+	/* Applying something that has external dependencies
+	 * renders a result that isn't constant.
+	 */
+	res->tree_info |= OPT_NOT_CONST;
+      }
     }
     break;
 
@@ -898,7 +914,7 @@ node *debug_mknode(int token, node *a, node *b)
 
   case F_MAGIC_SET_INDEX:
     res->node_info |= OPT_ASSIGNMENT;
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_MAGIC_INDEX:
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
@@ -1130,6 +1146,9 @@ node *debug_mklocalnode(int var, int depth)
 
   res->node_info = OPT_NOT_CONST;
   res->tree_info = res->node_info;
+  if (res->type && (res->type->type == PIKE_T_AUTO)) {
+    res->node_info |= OPT_TYPE_NOT_FIXED;
+  }
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
@@ -1181,9 +1200,7 @@ node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
     f->lexical_scope|=SCOPE_SCOPED;
   f->lexical_scope|=SCOPE_SCOPE_USED;
 
-#ifdef SHARED_NODES
   res->u.trampoline.prog = Pike_compiler->new_program;
-#endif /* SHARED_NODES */
 
   check_tree(res,0);
   return res;
@@ -1376,7 +1393,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (Pike_compiler->compiler_pass == 2 && type->type != PIKE_T_AUTO ) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+      type->type != PIKE_T_AUTO ) {
     if (type == void_type_string) {
       yywarning("Soft cast to void.");
       return mknode(F_POP_VALUE, n, 0);
@@ -1481,7 +1499,7 @@ void resolv_constant(node *n)
       return;
 
     case F_UNDEFINED:
-      if(Pike_compiler->compiler_pass==2) {
+      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Ought to have the name of the identifier in the message. */
 	yyerror("Expected constant, got undefined identifier.");
       }
@@ -1545,7 +1563,7 @@ void resolv_constant(node *n)
 	push_svalue(&PROG_FROM_INT(p, numid)->
 		    constants[i->func.const_info.offset].sval);
       }else{
-	if(Pike_compiler->compiler_pass!=1)
+	if(Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
 	  yyerror("Constant is not defined yet.");
 	push_int(0);
       }
@@ -1575,7 +1593,7 @@ void resolv_class(node *n)
       break;
 
     default:
-      if (Pike_compiler->compiler_pass!=1)
+      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
@@ -1586,42 +1604,96 @@ void resolv_class(node *n)
   }
 }
 
-/* This one always leaves a program if possible */
-void resolv_program(node *n)
+void resolv_type(node *n)
 {
-  if (!n) {
-    push_int(0);
-    return;
+  resolv_constant(n);
+
+  if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+    /* Program name, etc */
+    if (call_handle_inherit(n->u.sval.u.string)) {
+      stack_swap();
+      pop_stack();
+    }
   }
 
-  check_tree(n,0);
+  if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
+    /* "typedef" */
+    push_finished_type(Pike_sp[-1].u.type);
+  } else {
+    /* object type */
+    struct program *p = NULL;
 
-  fix_type_field(n);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      if(!(p = Pike_sp[-1].u.object->prog))
+      {
+	pop_stack();
+	push_int(0);
+	yyerror("Destructed object used as program identifier.");
+      }else{
+	int f = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
+			  LFUN_CALL);
+	if(f!=-1)
+	{
+	  SET_SVAL_SUBTYPE(Pike_sp[-1],
+			   f + p->inherits[SUBTYPEOF(Pike_sp[-1])].
+			   identifier_level);
+	  SET_SVAL_TYPE(Pike_sp[-1], T_FUNCTION);
+	}else{
+	  extern void f_object_program(INT32);
+	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+	    yywarning("Using object as program identifier.");
+	  f_object_program(1);
+	}
+      }
+    }
 
-  if (!pike_types_le(n->type, inheritable_type_string) &&
-      (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-    yytype_report(REPORT_WARNING,
-		  n->current_file, n->line_number, inheritable_type_string,
-		  n->current_file, n->line_number, n->type,
-		  0, "Not a valid object type.\n");
-  }
-
-  resolv_class(n);
-  switch(TYPEOF(Pike_sp[-1]))
-  {
+    switch(TYPEOF(Pike_sp[-1])) {
     case T_FUNCTION:
-      if(program_from_function(Pike_sp-1))
+      if((p = program_from_function(Pike_sp-1))) {
+        push_object_type(0, p->id);
 	break;
+      } else {
+	/* Attempt to get the return type for the function. */
+	struct pike_type *a, *b;
+	a = get_type_of_svalue(Pike_sp-1);
+	/* Note: check_splice_call() below eats a reference from a.
+	 * Note: CALL_INHIBIT_WARNINGS is needed since we don't
+	 *       provide a function name (and we don't want
+	 *       warnings here anyway).
+	 */
+	a = check_splice_call(NULL, a, 0, mixed_type_string, NULL,
+			      CALL_INHIBIT_WARNINGS);
+	if (a) {
+	  b = new_get_return_type(a, 0);
+	  free_type(a);
+	  if (b) {
+	    push_finished_type(b);
+	    free_type(b);
+	    break;
+	  }
+	}
+      }
+      /* FALLTHRU */
 
     default:
-      if (Pike_compiler->compiler_pass!=1)
-	yyerror("Illegal program identifier");
-      pop_stack();
-      push_int(0);
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	/* The type isn't fully known yet, so do an extra pass. */
+	struct compilation *c = THIS_COMPILATION;
+	c->flags |= COMPILER_NEED_EXTRA_PASS;
+      } else {
+	my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
+      }
+      push_object_type(0, 0);
+      break;
 
     case T_PROGRAM:
+      p = Pike_sp[-1].u.program;
+      push_object_type(0, p->id);
       break;
+    }
   }
+
+  pop_stack();
 }
 
 node *index_node(node * const n, char *node_name, struct pike_string *id)
@@ -1633,8 +1705,8 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 
   if (!is_const(n)) {
     /* Index dynamically. */
-    if (Pike_compiler->compiler_pass == 2 && !(THIS_COMPILATION->lex.pragmas
-                                               & ID_DYNAMIC_DOT))
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+	!(THIS_COMPILATION->lex.pragmas & ID_DYNAMIC_DOT))
     {
       yywarning("Using . to index dynamically.");
     }
@@ -1708,6 +1780,7 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 	  }
 	}
       }
+      /* FALLTHRU */
 
     default:
     {
@@ -1837,10 +1910,8 @@ int node_is_eq(node *a,node *b)
   switch(a->token)
   {
   case F_TRAMPOLINE: /* FIXME, the context has to be the same! */
-#ifdef SHARED_NODES
     if(a->u.trampoline.prog != b->u.trampoline.prog)
       return 0;
-#endif
     return a->u.trampoline.ident == b->u.trampoline.ident &&
       a->u.trampoline.frame == b->u.trampoline.frame;
 
@@ -1926,7 +1997,7 @@ node *debug_mksvaluenode(struct svalue *s)
   case T_OBJECT:
 #ifdef PIKE_DEBUG
     if (s->u.object->prog == placeholder_program &&
-	Pike_compiler->compiler_pass == 2)
+	Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
       Pike_fatal("Got placeholder object in second pass.\n");
 #endif
     if(s->u.object == Pike_compiler->fake_object)
@@ -2235,16 +2306,16 @@ static void low_print_tree(node *foo,int needlval)
     break;
 
   case F_ASSIGN:
-    low_print_tree(_CDR(foo),1);
+    low_print_tree(_CAR(foo),1);
     fputc('=', stderr);
-    low_print_tree(_CAR(foo),0);
+    low_print_tree(_CDR(foo),0);
     break;
 
   case F_ASSIGN_SELF:
-    low_print_tree(_CDR(foo),1);
+    low_print_tree(_CAR(foo),1);
     fputc(':', stderr);
     fputc('=', stderr);
-    low_print_tree(_CAR(foo),0);
+    low_print_tree(_CDR(foo),0);
     break;
 
   case F_POP_VALUE:
@@ -2323,6 +2394,7 @@ static void low_print_tree(node *foo,int needlval)
   }
 
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     low_print_tree(_CAR(foo),0);
     fputs(",&", stderr);
     low_print_tree(_CDR(foo),0);
@@ -2424,8 +2496,8 @@ struct used_vars
   struct scope_info *externals;	/* External scopes. scope_id == program_id */
 };
 
-#define VAR_BLOCKED   0
-#define VAR_UNUSED    1
+#define VAR_UNUSED    0 /* Rely on unused being 0 for calloc call. */
+#define VAR_BLOCKED   1
 #define VAR_USED      3
 
 /* FIXME: Shouldn't the following two functions be named "*_or_vars"? */
@@ -2478,7 +2550,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
   struct used_vars *ret;
   struct scope_info *src;
   struct scope_info **dst;
-  ret=xalloc(sizeof(struct used_vars));
+  ret=ALLOC_STRUCT(used_vars);
   src = a->locals;
   dst = &(ret->locals);
   *dst = NULL;
@@ -2562,8 +2634,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
     fputs("Creating new scope.\n", stderr);
   }
 #endif /* PIKE_DEBUG */
-  new = (struct scope_info *)xalloc(sizeof(struct scope_info));
-  memset(new, VAR_UNUSED, sizeof(struct scope_info));
+  new = (struct scope_info *)xcalloc(1, sizeof(struct scope_info));
   new->next = *a;
   new->scope_id = scope_id;
   *a = new;
@@ -2653,8 +2724,8 @@ static int find_used_variables(node *n,
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    find_used_variables(CAR(n),p,noblock,0);
-    find_used_variables(CDR(n),p,noblock,1);
+    find_used_variables(CDR(n),p,noblock,0);
+    find_used_variables(CAR(n),p,noblock,1);
     break;
 
   case '?':
@@ -2779,8 +2850,8 @@ static void find_written_vars(node *n,
   case F_ASSIGN:
   case F_ASSIGN_SELF:
   case F_MULTI_ASSIGN:
-    find_written_vars(CAR(n), p, 0);
-    find_written_vars(CDR(n), p, 1);
+    find_written_vars(CDR(n), p, 0);
+    find_written_vars(CAR(n), p, 1);
     break;
 
   case F_APPEND_MAPPING:
@@ -2806,6 +2877,7 @@ static void find_written_vars(node *n,
     break;
 
   case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
     break;
@@ -3017,7 +3089,7 @@ static int depend2_p(node *n, node *lval)
 
   /* Make a temporary node (lval = 0), so that we can use depend_p(). */
   ADD_NODE_REF2(lval,
-		tmp = mknode(F_ASSIGN, mkintnode(0), lval));
+		tmp = mknode(F_ASSIGN, lval, mkintnode(0)));
   ret = depend_p(n, tmp);
   free_node(tmp);
   return ret;
@@ -3025,11 +3097,45 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
-void check_foreach_type(node *expression, node *lvalues,
-                         struct pike_type **ind_type,
-                         struct pike_type **val_type )
+static void fix_auto_node(node *n, struct pike_type *type)
+{
+  free_type(n->type);
+  copy_pike_type(n->type, type);
+  switch(n->token) {
+  case F_LOCAL:
+    if (!n->u.integer.b) {
+      struct local_variable *var =
+	&Pike_compiler->compiler_frame->variable[n->u.integer.a];
+      if (var->type) free_type(var->type);
+      copy_pike_type(var->type, type);
+    }
+    break;
+  case F_EXTERNAL:
+    if (n->u.integer.a == Pike_compiler->new_program->id) {
+      struct identifier *id =
+	ID_FROM_INT(Pike_compiler->new_program, n->u.integer.b);
+      if( id )
+      {
+	if (id->type) free_type(id->type);
+	copy_pike_type(id->type, type);
+      }
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void fix_foreach_type(node *val_lval)
 {
   struct compilation *c = THIS_COMPILATION;
+  node *expression, *lvalues;
+
+  if (!val_lval || (val_lval->token != F_FOREACH_VAL_LVAL)) return;
+
+  fix_type_field(val_lval);
+  expression = CAR(val_lval);
+  lvalues = CDR(val_lval);
 
   if (!expression || pike_types_le(expression->type, void_type_string)) {
     yyerror("foreach(): Looping over a void expression.");
@@ -3081,7 +3187,7 @@ void check_foreach_type(node *expression, node *lvalues,
         } else {
           if( CAR(lvalues)->type->type == PIKE_T_AUTO )
           {
-            if(ind_type)copy_pike_type(*ind_type,index_type);
+	    fix_auto_node(CAR(lvalues), index_type);
           }
           else if (!pike_types_le(index_type, CAR(lvalues)->type)) {
             int level = REPORT_NOTICE;
@@ -3121,7 +3227,7 @@ void check_foreach_type(node *expression, node *lvalues,
         } else {
           if( CDR(lvalues)->type->type == PIKE_T_AUTO )
           {
-            if(val_type) copy_pike_type(*val_type,value_type);
+	    fix_auto_node(CDR(lvalues), value_type);
           }
           else if (!pike_types_le(value_type, CDR(lvalues)->type)) {
             int level = REPORT_NOTICE;
@@ -3164,10 +3270,13 @@ void check_foreach_type(node *expression, node *lvalues,
 	  /* No loop variable. Will be converted to a counted loop
 	   * by treeopt. */
         } else if( lvalues->type->type == PIKE_T_AUTO ) {
-          if(val_type)
-            copy_pike_type( *val_type, expression->type->car );
+	  fix_auto_node(lvalues, expression->type->car);
 	} else if (pike_types_le(lvalues->type, void_type_string)) {
-	  yyerror("Bad argument 2 to foreach().");
+	  yytype_report(REPORT_ERROR,
+			NULL, 0, lvalues->type,
+			NULL, 0, expression->type->car,
+			0,
+			"Bad argument 2 to foreach().");
 	} else {
 	  struct pike_type *array_value_type;
 
@@ -3350,8 +3459,8 @@ void fix_type_field(node *n)
     These two are needed if we want to extract types
     from nodes while building the tree.
   */
-  if( CAR(n) ) fix_type_field(CAR(n));
-  if( CDR(n) ) fix_type_field(CDR(n));
+  if( car_is_node(n) ) fix_type_field(CAR(n));
+  if( cdr_is_node(n) ) fix_type_field(CDR(n));
 
   switch(n->token)
   {
@@ -3375,7 +3484,7 @@ void fix_type_field(node *n)
 		      "Soft cast with non-type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CAST:
     /* Type-field is correct by definition. */
     if (old_type) {
@@ -3425,9 +3534,6 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CAR(n)->type);
     } else {
       struct pike_type *tmp;
-      /* Ensure that the type-fields are up to date. */
-      fix_type_field(CAR(n));
-      fix_type_field(CDR(n));
       type_stack_mark();
       push_finished_type(CDR(n)->type);
       push_type(T_ARRAY);
@@ -3438,21 +3544,18 @@ void fix_type_field(node *n)
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
-    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+    if (!CDR(n) || (CDR(n)->type == void_type_string)) {
       yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
-    } else if (!CDR(n)) {
-      copy_pike_type(n->type, CAR(n)->type);
+    } else if (!CAR(n)) {
+      copy_pike_type(n->type, CDR(n)->type);
     } else {
-      /* Ensure that the type-fields are up to date. */
       struct pike_type *t;
-      fix_type_field(CAR(n));
-      fix_type_field(CDR(n));
-      if( CAR(n)->type->type == PIKE_T_AUTO )
+      if( CDR(n)->type->type == PIKE_T_AUTO )
       {
           /* Update to actual type (assign from soft-cast to auto). */
-          free_type( CAR(n)->type );
-          copy_pike_type( CAR(n)->type, CDR(n)->type );
+          free_type( CDR(n)->type );
+          copy_pike_type( CDR(n)->type, CAR(n)->type );
 
           /* potential extension: fix general case:
              auto z;
@@ -3464,9 +3567,9 @@ void fix_type_field(node *n)
       }
 #if 0
       /* This test isn't sufficient, see below. */
-      check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
+      check_node_type(CDR(n), CAR(n)->type, "Bad type in assignment.");
 #else /* !0 */
-      if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
+      if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
 	 *
 	 * FIXME: Exactly what case is the problem?
@@ -3477,16 +3580,16 @@ void fix_type_field(node *n)
 	 *   tmp->foo = 7;		// Multi-assign.
 	 *	/grubba 2007-04-27
 	 */
-	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
-	     !(match_types(array_type_string, CADR(n)->type))) &&
-	    !match_types(CDR(n)->type,CAR(n)->type)) {
-	  yytype_report(REPORT_ERROR, NULL, 0, CDR(n)->type,
-			NULL, 0, CAR(n)->type,
+	if (((CAR(n)->token != F_INDEX && CAR(n)->token != F_ARROW) ||
+	     !(match_types(array_type_string, CAAR(n)->type))) &&
+	    !match_types(CAR(n)->type, CDR(n)->type)) {
+	  yytype_report(REPORT_ERROR, NULL, 0, CAR(n)->type,
+			NULL, 0, CDR(n)->type,
 			0, "Bad type in assignment.");
 	} else {
 	  if (c->lex.pragmas & ID_STRICT_TYPES) {
-	    struct pike_string *t1 = describe_type(CAR(n)->type);
-	    struct pike_string *t2 = describe_type(CDR(n)->type);
+	    struct pike_string *t1 = describe_type(CDR(n)->type);
+	    struct pike_string *t2 = describe_type(CAR(n)->type);
 #ifdef PIKE_DEBUG
 	    if (l_flag > 0) {
 	      fputs("Warning: Invalid assignment: ", stderr);
@@ -3499,13 +3602,13 @@ void fix_type_field(node *n)
 	    free_string(t1);
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
-	    _CAR(n) = mksoftcastnode(CDR(n)->type,
-				     mkcastnode(mixed_type_string, CAR(n)));
+	    _CDR(n) = mksoftcastnode(CAR(n)->type,
+				     mkcastnode(mixed_type_string, CDR(n)));
 	  }
 	}
       }
 #endif /* 0 */
-      n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
+      n->type = and_pike_types(CDR(n)->type, CAR(n)->type);
     }
     break;
 
@@ -3738,7 +3841,6 @@ void fix_type_field(node *n)
 
   case F_RETURN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yywarning("Returning a void expression. Converted to zero.");
       if (!CAR(n)) {
 	_CAR(n) = mkintnode(0);
 	copy_pike_type(n->type, CAR(n)->type);
@@ -3746,7 +3848,12 @@ void fix_type_field(node *n)
 	_CAR(n) = mknode(F_COMMA_EXPR, CAR(n), mkintnode(0));
 	copy_pike_type(n->type, CDAR(n)->type);
       }
-      break;
+      if (!Pike_compiler->compiler_frame ||
+	  Pike_compiler->compiler_frame->current_return_type !=
+	  void_type_string) {
+	yywarning("Returning a void expression. Converted to zero.");
+	break;
+      }
     }
     else if(Pike_compiler->compiler_frame &&
             Pike_compiler->compiler_frame->current_return_type)
@@ -3758,7 +3865,9 @@ void fix_type_field(node *n)
 	if( t->car != zero_type_string )
 	{
 	  /* Not the first one.. */
-	  push_finished_type( or_pike_types( t->car, CAR(n)->type, 1 ) );
+	  struct pike_type *t2;
+	  push_finished_type( t2 = or_pike_types( t->car, CAR(n)->type, 1 ) );
+	  free_type(t2);
 	}
 	else
 	{
@@ -3769,11 +3878,17 @@ void fix_type_field(node *n)
 	free_type( t );
 	t = pop_type();
 	Pike_compiler->compiler_frame->current_return_type = t;
-      } else if ((Pike_compiler->compiler_frame->current_return_type !=
+      } else {
+	node *retval = CAR(n);
+	if (retval->token == F_COMMA_EXPR) {
+	  retval = CDR(retval);
+	}
+	if ((Pike_compiler->compiler_frame->current_return_type !=
 		  void_type_string) ||
-		 (CAR(n)->token != F_CONSTANT) ||
-		 !SAFE_IS_ZERO(&CAR(n)->u.sval)) {
-	check_node_type(CAR(n), t, "Wrong return type.");
+	    (retval->token != F_CONSTANT) ||
+	    !SAFE_IS_ZERO(&retval->u.sval)) {
+	  check_node_type(CAR(n), t, "Wrong return type.");
+	}
       }
     }
     copy_pike_type(n->type, void_type_string);
@@ -3815,7 +3930,7 @@ void fix_type_field(node *n)
 	}
       }
     }
-    if (CDR(n) && (Pike_compiler->compiler_pass == 2)) {
+    if (CDR(n) && (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       fix_type_field(CDR(n));
       if (!match_types(CDR(n)->type, enumerable_type_string)) {
 	yytype_report(REPORT_WARNING,
@@ -3824,9 +3939,9 @@ void fix_type_field(node *n)
 		      0, "Case value is not an enumerable type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CASE:
-    if (CAR(n) && (Pike_compiler->compiler_pass == 2)) {
+    if (CAR(n) && (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
       fix_type_field(CAR(n));
       if (!match_types(CAR(n)->type, enumerable_type_string)) {
 	yytype_report(REPORT_WARNING,
@@ -3835,7 +3950,7 @@ void fix_type_field(node *n)
 		      0, "Case value is not an enumerable type.");
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -3877,13 +3992,13 @@ void fix_type_field(node *n)
     break;
 
   case F_FOREACH:
-    if (!CAR(n) || (CAR(n)->token != F_VAL_LVAL)) {
+    if (!CAR(n) || (CAR(n)->token != F_FOREACH_VAL_LVAL)) {
       yyerror("foreach(): No expression to loop over.");
     } else {
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
-        check_foreach_type( CAAR(n), CDAR(n), NULL, NULL);
+        fix_foreach_type(CAR(n));
       }
     }
     copy_pike_type(n->type, void_type_string);
@@ -3932,6 +4047,17 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_TYPEOF:
+    if (CAR(n)) {
+      push_finished_type(CAR(n)->type);
+    } else {
+      push_finished_type(mixed_type_string);
+    }
+    push_type(T_TYPE);
+    if (n->type) free_type(n->type);
+    n->type = pop_type();
+    break;
+
   case F_UNDEFINED:
     copy_pike_type(n->type, zero_type_string);
     break;
@@ -3941,7 +4067,7 @@ void fix_type_field(node *n)
       /* Propagate the changed type all the way up to the apply node. */
       n->parent->node_info |= OPT_TYPE_NOT_FIXED;
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_COMMA_EXPR:
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
@@ -3967,6 +4093,21 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_LOCAL:
+    {
+      struct compiler_frame *f = Pike_compiler->compiler_frame;
+      int e;
+      for (e = 0; f && (e < n->u.integer.b); e++) {
+	f = f->previous;
+      }
+      if (f) {
+	copy_pike_type(n->type, f->variable[n->u.integer.a].type);
+      } else {
+	copy_pike_type(n->type, mixed_type_string);
+      }
+      break;
+    }
+
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
     MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_INDEX);
@@ -3988,7 +4129,7 @@ void fix_type_field(node *n)
     break;
 
   case F_CATCH:
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   default:
     copy_pike_type(n->type, mixed_type_string);
   }
@@ -4046,721 +4187,6 @@ static void zapp_try_optimize(node *n)
   n->parent = parent;
 }
 
-#if defined(SHARED_NODES) && 0
-/* FIXME: Ought to use parent pointer to avoid recursion. */
-static void find_usage(node *n, unsigned char *usage,
-		       unsigned char *switch_u,
-		       const unsigned char *cont_u,
-		       const unsigned char *break_u,
-		       const unsigned char *catch_u)
-{
-  if (!n)
-    return;
-
-  fatal_check_c_stack(16384);
-
-  switch(n->token) {
-  case F_ASSIGN:
-  case F_ASSIGN_SELF:
-    if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
-      usage[CDR(n)->u.integer.a] = 0;
-    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-    }
-    find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-    return;
-
-  case F_SSCANF:
-    {
-      int i;
-
-      /* catch_usage is restored if sscanf throws an error. */
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_u[i];
-      }
-      /* Only the first two arguments are evaluated. */
-      if (CAR(n)) {
-	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      }
-      return;
-    }
-
-  case F_CATCH:
-    {
-      unsigned char catch_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(catch_usage, usage, MAX_LOCAL);
-      find_usage(CAR(n), usage, switch_u, cont_u, catch_usage, catch_usage);
-      for(i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_usage[i];
-      }
-      return;
-    }
-
-  case F_AUTO_MAP:
-  case F_APPLY:
-    {
-      int i;
-
-      /* catch_usage is restored if the function throws an error. */
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_u[i];
-      }
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case F_LVALUE_LIST:
-    find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-    if (CAR(n)) {
-      if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
-	usage[CAR(n)->u.integer.a] = 0;
-      }
-    }
-    return;
-
-  case F_ARRAY_LVALUE:
-    find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-    return;
-
-  case F_CONTINUE:
-    memcpy(usage, cont_u, MAX_LOCAL);
-    return;
-
-  case F_BREAK:
-    memcpy(usage, break_u, MAX_LOCAL);
-    return;
-
-  case F_DEFAULT:
-  case F_CASE:
-  case F_CASE_RANGE:
-    {
-      int i;
-
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      for(i = 0; i < MAX_LOCAL; i++) {
-	switch_u[i] |= usage[i];
-      }
-      return;
-    }
-
-  case F_SWITCH:
-    {
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char switch_usage[MAX_LOCAL];
-      int i;
-
-      memset(switch_usage, 0, MAX_LOCAL);
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      find_usage(CDR(n), usage, switch_usage, cont_u, break_usage, catch_u);
-
-      for(i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= switch_usage[i];
-      }
-
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case F_RETURN:
-    memset(usage, 0, MAX_LOCAL);
-    /* FIXME: The function arguments should be marked "used", since
-     * they are seen in backtraces.
-     */
-    return;
-
-  case F_LOR:
-  case F_LAND:
-    {
-      unsigned char trail_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(trail_usage, usage, MAX_LOCAL);
-
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-      for(i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= trail_usage[i];
-      }
-
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case '?':
-    {
-      unsigned char cadr_usage[MAX_LOCAL];
-      unsigned char cddr_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(cadr_usage, usage, MAX_LOCAL);
-      memcpy(cddr_usage, usage, MAX_LOCAL);
-
-      find_usage(CADR(n), cadr_usage, switch_u, cont_u, break_u, catch_u);
-      find_usage(CDDR(n), cddr_usage, switch_u, cont_u, break_u, catch_u);
-
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] = cadr_usage[i] | cddr_usage[i];
-      }
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case F_DO:
-    {
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      find_usage(CDR(n), usage, switch_u, cont_u, break_usage, catch_u);
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-
-      find_usage(CAR(n), usage, switch_u, break_usage, continue_usage,
-		 catch_u);
-      return;
-    }
-
-  case F_FOR:
-    {
-      unsigned char loop_usage[MAX_LOCAL];
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      /* for(;a;b) c; is handled like:
-       *
-       * if (a) { do { c; b; } while(a); }
-       */
-
-      memset(loop_usage, 0, MAX_LOCAL);
-
-      find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
-      if (CDR(n)) {
-	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
-		   catch_u);
-
-	memcpy(continue_usage, loop_usage, MAX_LOCAL);
-
-	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
-		   catch_u);
-      }
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= loop_usage[i];
-      }
-
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case F_FOREACH:
-    {
-      unsigned char loop_usage[MAX_LOCAL];
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      /* Find the usage from the loop */
-
-      memset(loop_usage, 0, MAX_LOCAL);
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-
-      find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
-		 catch_u);
-      if (CDAR(n)->token == F_LOCAL) {
-	if (!(CDAR(n)->u.integer.b)) {
-	  loop_usage[CDAR(n)->u.integer.a] = 0;
-	}
-      } else if (CDAR(n)->token == F_LVALUE_LIST) {
-	find_usage(CDAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
-      }
-
-      for(i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= loop_usage[i];
-      }
-
-      find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return;
-    }
-
-  case F_LOCAL:
-    /* Use of local variable. */
-    if (!n->u.integer.b) {
-      /* Recently used, and used at all */
-      usage[n->u.integer.a] = 3;
-    }
-    return;
-
-  default:
-    if (cdr_is_node(n)) {
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-    }
-    if (car_is_node(n)) {
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-    }
-    return;
-  }
-}
-
-/* Note: Always builds a new tree. */
-static node *low_localopt(node *n,
-			  unsigned char *usage,
-			  unsigned char *switch_u,
-			  const unsigned char *cont_u,
-			  const unsigned char *break_u,
-			  const unsigned char *catch_u)
-{
-  node *car, *cdr;
-
-  if (!n)
-    return NULL;
-
-  switch(n->token) {
-    /* FIXME: Does not support F_LOOP yet. */
-  case F_ASSIGN:
-  case F_ASSIGN_SELF:
-    if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
-      /* Assignment of local variable */
-      if (!(usage[CDR(n)->u.integer.a] & 1)) {
-	/* Value isn't used. */
-	struct pike_type *ref_type;
-	MAKE_CONSTANT_TYPE(ref_type, tOr(tComplex, tString));
-	if (!match_types(CDR(n)->type, ref_type)) {
-	  /* The variable doesn't hold a refcounted value. */
-	  free_type(ref_type);
-	  return low_localopt(CAR(n), usage, switch_u, cont_u,
-			      break_u, catch_u);
-	}
-	free_type(ref_type);
-      }
-      usage[CDR(n)->u.integer.a] = 0;
-      cdr = CDR(n);
-      ADD_NODE_REF(cdr);
-    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-    } else {
-      cdr = CDR(n);
-      ADD_NODE_REF(cdr);
-    }
-    return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u, catch_u), cdr);
-
-  case F_SSCANF:
-    {
-      int i;
-
-      /* catch_usage is restored if sscanf throws an error. */
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_u[i];
-      }
-      /* Only the first two arguments are evaluated. */
-      if (CAR(n)) {
-	cdr = low_localopt(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-	if (CDR(n)) {
-	  ADD_NODE_REF(CDR(n));
-	}
-	return mknode(F_SSCANF, mknode(F_ARG_LIST, car, cdr), CDR(n));
-      }
-      ADD_NODE_REF(n);
-      return n;
-    }
-
-  case F_CATCH:
-    {
-      unsigned char catch_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(catch_usage, usage, MAX_LOCAL);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, catch_usage,
-			 catch_usage);
-      for(i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_usage[i];
-      }
-      return mknode(F_CATCH, car, 0);
-    }
-    break;
-
-  case F_AUTO_MAP:
-  case F_APPLY:
-    {
-      int i;
-
-      /* catch_usage is restored if the function throws an error. */
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= catch_u[i];
-      }
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return mknode(n->token, car, cdr);
-    }
-
-  case F_LVALUE_LIST:
-    cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-    if (CAR(n)) {
-      if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
-	/* Array assignment of local variable. */
-	if (!(usage[CDR(n)->u.integer.a] & 1)) {
-	  /* Variable isn't used. */
-	  /* FIXME: Warn? */
-	}
-	usage[CAR(n)->u.integer.a] = 0;
-      }
-      ADD_NODE_REF(CAR(n));
-    }
-    return mknode(F_LVALUE_LIST, CAR(n), cdr);
-
-  case F_ARRAY_LVALUE:
-    return mknode(F_ARRAY_LVALUE, low_localopt(CAR(n), usage, switch_u, cont_u,
-					       break_u, catch_u), 0);
-
-
-
-  case F_CAST:
-    return mkcastnode(n->type, low_localopt(CAR(n), usage, switch_u, cont_u,
-					    break_u, catch_u));
-
-  case F_SOFT_CAST:
-    return mksoftcastnode(n->type, low_localopt(CAR(n), usage, switch_u,
-						cont_u, break_u, catch_u));
-
-  case F_CONTINUE:
-    memcpy(usage, cont_u, MAX_LOCAL);
-    ADD_NODE_REF(n);
-    return n;
-
-  case F_BREAK:
-    memcpy(usage, break_u, MAX_LOCAL);
-    ADD_NODE_REF(n);
-    return n;
-
-  case F_DEFAULT:
-  case F_CASE:
-  case F_CASE_RANGE:
-    {
-      int i;
-
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      for(i = 0; i < MAX_LOCAL; i++) {
-	switch_u[i] |= usage[i];
-      }
-      return mknode(n->token, car, cdr);
-    }
-
-  case F_SWITCH:
-    {
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char switch_usage[MAX_LOCAL];
-      int i;
-
-      memset(switch_usage, 0, MAX_LOCAL);
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      cdr = low_localopt(CDR(n), usage, switch_usage, cont_u, break_usage,
-			 catch_u);
-
-      for(i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= switch_usage[i];
-      }
-
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return mknode(F_SWITCH, car, cdr);
-    }
-
-  case F_RETURN:
-    memset(usage, 0, MAX_LOCAL);
-    /* FIXME: The function arguments should be marked "used", since
-     * they are seen in backtraces.
-     */
-    return mknode(F_RETURN, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u, catch_u), 0);
-
-  case F_LOR:
-  case F_LAND:
-    {
-      unsigned char trail_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(trail_usage, usage, MAX_LOCAL);
-
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-      for(i=0; i < MAX_LOCAL; i++) {
-	usage[i] |= trail_usage[i];
-      }
-
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-      return mknode(n->token, car, cdr);
-    }
-
-  case '?':
-    {
-      unsigned char cadr_usage[MAX_LOCAL];
-      unsigned char cddr_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(cadr_usage, usage, MAX_LOCAL);
-      memcpy(cddr_usage, usage, MAX_LOCAL);
-
-      car = low_localopt(CADR(n), cadr_usage, switch_u, cont_u, break_u,
-			 catch_u);
-      cdr = low_localopt(CDDR(n), cddr_usage, switch_u, cont_u, break_u,
-			 catch_u);
-
-      for (i=0; i < MAX_LOCAL; i++) {
-	usage[i] = cadr_usage[i] | cddr_usage[i];
-      }
-      cdr = mknode(':', car, cdr);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return mknode('?', car, cdr);
-    }
-
-  case F_DO:
-    {
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      /* Find the usage from the loop */
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-
-      find_usage(CAR(n), usage, switch_u, continue_usage, break_usage,
-		 catch_u);
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= break_usage[i];
-      }
-
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_usage,
-			 catch_u);
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-
-      car = low_localopt(CAR(n), usage, switch_u, continue_usage, break_usage,
-			 catch_u);
-
-      return mknode(F_DO, car, cdr);
-    }
-
-  case F_FOR:
-    {
-      unsigned char loop_usage[MAX_LOCAL];
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      /*
-       * if (a A|B) {
-       *     B
-       *   do {
-       *       B
-       *     c;
-       *   continue:
-       *       D
-       *     b;
-       *       C
-       *   } while (a A|B);
-       *     A
-       * }
-       * break:
-       *   A
-       */
-
-      /* Find the usage from the loop. */
-
-      memset(loop_usage, 0, MAX_LOCAL);
-
-      find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
-      if (CDR(n)) {
-	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
-		   catch_u);
-
-	memcpy(continue_usage, loop_usage, MAX_LOCAL);
-
-	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
-		   catch_u);
-      }
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= loop_usage[i];
-      }
-
-      /* The last thing to be evaluated is the conditional */
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
-
-      if (CDR(n)) {
-	node *cadr, *cddr;
-
-	/* The incrementor */
-	cddr = low_localopt(CDDR(n), usage, switch_u, cont_u, break_usage,
-			    catch_u);
-
-	memcpy(continue_usage, usage, MAX_LOCAL);
-
-	/* The body */
-	cadr = low_localopt(CADR(n), usage, switch_u, continue_usage,
-			    break_usage, catch_u);
-	cdr = mknode(':', cadr, cddr);
-      } else {
-	cdr = 0;
-      }
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= break_usage[i];
-      }
-
-      /* The conditional is also the first thing to be evaluated. */
-      find_usage(car, usage, switch_u, cont_u, break_u, catch_u);
-
-      return mknode(F_FOR, car, cdr);
-    }
-
-  case F_FOREACH:
-    {
-      unsigned char loop_usage[MAX_LOCAL];
-      unsigned char break_usage[MAX_LOCAL];
-      unsigned char continue_usage[MAX_LOCAL];
-      int i;
-
-      memcpy(break_usage, usage, MAX_LOCAL);
-
-      /*
-       *   D
-       * arr = copy_value(arr);
-       * int i = 0;
-       *   A|B
-       * while (i < sizeof(arr)) {
-       *     B
-       *   loopvar = arr[i];
-       *     C
-       *   body;
-       *   continue:
-       *     A|B
-       * }
-       * break:
-       *   A
-       */
-
-      /* Find the usage from the loop */
-      memset(loop_usage, 0, MAX_LOCAL);
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-
-      find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
-		 catch_u);
-      if (CDAR(n)->token == F_LOCAL) {
-	if (!(CDAR(n)->u.integer.b)) {
-	  loop_usage[CDAR(n)->u.integer.a] = 0;
-	}
-      } else if (CDAR(n)->token == F_LVALUE_LIST) {
-	find_usage(CDAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
-      }
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= loop_usage[i];
-      }
-
-      memcpy(continue_usage, usage, MAX_LOCAL);
-      cdr = low_localopt(CDR(n), usage, switch_u, continue_usage, break_usage,
-			 catch_u);
-      if (CDAR(n)->token == F_LOCAL) {
-	if (!(CDAR(n)->u.integer.b)) {
-	  usage[CDAR(n)->u.integer.a] = 0;
-	}
-      } else if (CDAR(n)->token == F_LVALUE_LIST) {
-	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      }
-
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= break_usage[i];
-      }
-
-      car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      ADD_NODE_REF(CDAR(n));
-      return mknode(F_FOREACH, mknode(F_VAL_LVAL, car, CDAR(n)), cdr);
-    }
-
-  case F_LOCAL:
-    /* Use of local variable. */
-    if (!n->u.integer.b) {
-      /* Recently used, and used at all */
-      usage[n->u.integer.a] = 3;
-    }
-    ADD_NODE_REF(n);
-    return n;
-
-  default:
-    if (cdr_is_node(n)) {
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
-      return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					   break_u, catch_u),
-		    cdr);
-    }
-    if (car_is_node(n)) {
-      ADD_NODE_REF(CDR(n));
-      return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					   break_u, catch_u),
-		    CDR(n));
-    }
-    ADD_NODE_REF(n);
-    return n;
-  }
-}
-
-static node *localopt(node *n)
-{
-  unsigned char usage[MAX_LOCAL];
-  unsigned char b_usage[MAX_LOCAL];
-  unsigned char c_usage[MAX_LOCAL];
-  unsigned char s_usage[MAX_LOCAL];
-  unsigned char catch_usage[MAX_LOCAL];
-  node *n2;
-
-  memset(usage, 0, MAX_LOCAL);
-  memset(b_usage, 0, MAX_LOCAL);
-  memset(c_usage, 0, MAX_LOCAL);
-  memset(s_usage, 0, MAX_LOCAL);
-  memset(catch_usage, 0, MAX_LOCAL);
-
-  n2 = low_localopt(n, usage, s_usage, c_usage, b_usage, catch_usage);
-
-#ifdef PIKE_DEBUG
-  if (l_flag > 0) {
-    if ((n2 != n) || (l_flag > 4)) {
-      fputs("\nBefore localopt: ", stderr);
-      print_tree(n);
-
-      fputs("After localopt:  ", stderr);
-      print_tree(n2);
-    }
-  }
-#endif /* PIKE_DEBUG */
-
-  free_node(n);
-  return n2;
-}
-#endif /* SHARED_NODES && 0 */
 
 static void optimize(node *n)
 {
@@ -4794,8 +4220,6 @@ static void optimize(node *n)
     if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
     if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
 
-    if(!n->parent) break;
-
     if(n->tree_info & (OPT_NOT_CONST|
 		       OPT_SIDE_EFFECT|
 		       OPT_EXTERNAL_DEPEND|
@@ -4811,7 +4235,8 @@ static void optimize(node *n)
 				OPT_RETURN|
 				OPT_FLAG_NODE)) &&
 	 (CAR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
-	 CAR(n)->token != F_VAL_LVAL)
+	 CAR(n)->token != F_VAL_LVAL &&
+	 CAR(n)->token != F_FOREACH_VAL_LVAL)
       {
 	_CAR(n) = eval(CAR(n));
 	if(CAR(n)) CAR(n)->parent = n;
@@ -4837,6 +4262,8 @@ static void optimize(node *n)
       fix_type_field(n);
     }
     debug_malloc_touch(n->type);
+
+    if(!n->parent) break;
 
 #ifdef PIKE_DEBUG
     if(l_flag > 3 && n)
@@ -4920,7 +4347,7 @@ static void optimize(node *n)
 void optimize_node(node *n)
 {
   if(n &&
-     Pike_compiler->compiler_pass==2 &&
+     Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
      (n->node_info & OPT_TRY_OPTIMIZE))
   {
     optimize(n);
@@ -5252,11 +4679,17 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
      (a_flag > 1) ||
 #endif
-     (c->lex.pragmas & ID_DISASSEMBLE))
+     ((c->lex.pragmas & ID_DISASSEMBLE) &&
+      (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
             (unsigned long)PIKE_PC);
 
   args=count_arguments(type);
+#ifdef PIKE_DEBUG
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
+    fprintf(stderr, "args: %d\n", args);
+#endif
+
   if(args < 0)
   {
     args=~args;
@@ -5272,11 +4705,11 @@ int dooptcode(struct pike_string *name,
     vargs|=IDENTIFIER_SCOPE_USED;
 
 #ifdef PIKE_DEBUG
-  if(a_flag > 5)
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Extra identifier flags:0x%02x\n", vargs);
 #endif
 
-  if(Pike_compiler->compiler_pass==1)
+  if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
   {
     tmp.offset=-1;
 #ifdef PIKE_DEBUG
@@ -5287,12 +4720,6 @@ int dooptcode(struct pike_string *name,
     }
 #endif
   }else{
-#if defined(SHARED_NODES) && 0
-    /* Try the local variable usage analyser. */
-    n = localopt(n);
-    /* Try optimizing some more. */
-    optimize(n);
-#endif /* SHARED_NODES && 0 */
     n = mknode(F_ARG_LIST, n, 0);
 
     if((foo=is_stupid_func(n, args, vargs, type)))
@@ -5359,6 +4786,12 @@ int dooptcode(struct pike_string *name,
       remove_clear_locals=0x7fffffff;
       Pike_compiler->compiler_frame->current_function_number = saved_fun_num;
     }
+#ifdef PIKE_DEBUG
+    if(a_flag > 2)
+    {
+      fputs("Coded\n", stderr);
+    }
+#endif
   }
 
   ret=define_function(name,

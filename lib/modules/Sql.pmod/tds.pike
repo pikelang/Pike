@@ -263,7 +263,7 @@ protected {
 	inpos = 0;
       }
 
-      protected void destroy()
+      protected void _destruct()
       {
 	// Return the connection to the idle state.
 	while (!done) {

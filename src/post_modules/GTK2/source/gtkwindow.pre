@@ -67,7 +67,7 @@ void create(int|mapping(string:mixed) props)
     
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       GtkWidget *gw;
-      get_all_args("create",args,"%i",&wt);
+      get_all_args(NULL,args,"%i",&wt);
       gw=gtk_window_new(wt);
       THIS->obj=G_OBJECT(gw); 
     } else {
@@ -195,7 +195,7 @@ void set_geometry_hints(GTK2.Widget widget, mapping(string:int) geometry)
     GdkGeometry geo;
 /*    GdkWindowHints mask; */
     long mask;
-    get_all_args("set_geometry_hints",args,"%o%m",&o1,&m);
+    get_all_args(NULL,args,"%o%m",&o1,&m);
     GET_ARG(min_width,PIKE_T_INT,GDK_HINT_MIN_SIZE);
     GET_ARG(min_height,PIKE_T_INT,GDK_HINT_MIN_SIZE);
     GET_ARG(max_width,PIKE_T_INT,GDK_HINT_MAX_SIZE);
@@ -662,7 +662,7 @@ void set_icon_list(array(GDK2.Pixbuf) list)
     GdkPixbuf *gp;
     int i;
 
-    get_all_args("set_icon_list",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       SIMPLE_ARG_ERROR("set_icon_list",args,"Invalid array");
     for (i=0; i<a->size; i++) {

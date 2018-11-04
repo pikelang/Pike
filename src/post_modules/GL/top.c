@@ -22,6 +22,9 @@
 /* OpenGL/gl.h, a MacOSX-ism, precludes GL/gl.h and GL/glx.h */
 #ifdef HAVE_OPENGL_GL_H
 #include <OpenGL/gl.h>
+#ifdef HAVE_OPENGL_GLEXT_H
+#include <OpenGL/glext.h>
+#endif
 #else 
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
@@ -29,6 +32,9 @@
 #ifdef HAVE_GL_GLX_H
 #include <GL/glx.h>
 #endif /* HAVE_GL_GLX_H */
+#ifdef HAVE_GL_GLEXT_H
+#include <GL/glext.h>
+#endif
 #endif /* HAVE_OPENGL_GL_H */
 
 
@@ -57,7 +63,7 @@ static void f_glGet(INT32 args)
   GLboolean b[4];
   GLfloat f[16];
 
-  check_all_args("glGet", args, BIT_INT, 0);
+  check_all_args(NULL, args, BIT_INT, 0);
 
   arg1=Pike_sp[0-args].u.integer;
 
@@ -391,10 +397,29 @@ PIKE_MODULE_INIT
 			"function(int:int|float|array(int)|array(float))",
 			OPT_SIDE_EFFECT);
   GL_add_auto_funcs();
+
+#ifdef HAVE_GLSL
+  {
+    struct program *glsl;
+    struct object *glsl_module;
+    start_new_program();
+    init_pike_GLSL();
+    glsl = end_program();
+    glsl_module = clone_object(glsl, 0);
+    add_object_constant("GLSL", glsl_module, 0);
+    free_object(glsl_module);
+    free_program(glsl);
+  }
+#endif /* HAVE_GLSL */
+#else /* !HAVE_GL */
+  HIDE_MODULE();
 #endif /* HAVE_GL */
 }
 
 
 PIKE_MODULE_EXIT
 {
+#ifdef HAVE_GLSL
+  exit_pike_GLSL();
+#endif /* HAVE_GLSL */
 }

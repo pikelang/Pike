@@ -277,6 +277,12 @@ void chapter_ref_expansion(Node n, string dir) {
   foreach(n->get_elements(), Node c)
     switch(c->get_tag_name()) {
 
+
+    case "ul":
+    case "li":
+    case "dl":
+    case "dt":
+    case "dd":
     case "p":
       break;
 

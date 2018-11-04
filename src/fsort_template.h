@@ -4,7 +4,7 @@
 || for more information.
 */
 
-#include "stuff.h"
+#include "pike_cpulib.h"
 
 #ifdef SORT_BY_INDEX
 /* Sort by index. */

@@ -14,12 +14,12 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_error.h"
+#include "module_support.h"
 
 #include "image.h"
 
@@ -31,9 +31,6 @@ extern struct program *image_program;
 #undef THIS /* Needed for NT */
 #endif
 #define THIS ((struct image *)(Pike_fp->current_storage))
-#define THISOBJ (Pike_fp->current_object)
-
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 static const double c0=0.70710678118654752440;
 static const double pi=3.14159265358979323846;
@@ -78,8 +75,11 @@ void image_dct(INT32 args)
    double *costbl;
    rgb_group *pix;
 
-   if (!THIS->img)
-     Pike_error("Called Image.Image object is not initialized\n");
+   CHECK_INIT();
+
+   get_all_args(NULL, args, "%d%d", &x, &y);
+   x = MAXIMUM(1, x);
+   y = MAXIMUM(1, y);
 
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
@@ -92,27 +92,14 @@ void image_dct(INT32 args)
    if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
    {
       free(area);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
-
-   if (args>=2
-       && TYPEOF(sp[-args]) == T_INT
-       && TYPEOF(sp[1-args]) == T_INT)
-   {
-      img->xsize=MAXIMUM(1,sp[-args].u.integer);
-      img->ysize=MAXIMUM(1,sp[1-args].u.integer);
-   }
-   else {
-     free(area);
-     free(costbl);
-     free_object(o);
-     bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
-		   "Bad arguments to image->dct()\n");
-   }
+   img->xsize = x;
+   img->ysize = y;
 
    if (!(img->img=malloc(sizeof(rgb_group)*
                          img->xsize*img->ysize+RGB_VEC_PAD)))
@@ -120,7 +107,7 @@ void image_dct(INT32 args)
       free(area);
       free(costbl);
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      out_of_memory_error(NULL, -1, 0);
    }
 
    xsz2=THIS->xsize*2.0;

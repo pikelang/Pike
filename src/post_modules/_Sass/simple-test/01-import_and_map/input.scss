@@ -1,0 +1,8 @@
+
+@import 'vars';
+@import 'http://pike.local:8282/test.scss';
+
+a {
+  color: $link-color;
+  background: $external;
+}

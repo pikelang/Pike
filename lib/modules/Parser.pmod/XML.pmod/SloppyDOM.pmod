@@ -64,9 +64,13 @@ class Node
   Node get_first_child() {return 0;}
   Node get_last_child() {return 0;}
   Node get_previous_sibling()
-    {return parent_node && parent_node->_get_child_by_pos (pos_in_parent - 1);}
+  {
+    return parent_node && parent_node->_get_child_by_pos (pos_in_parent - 1);
+  }
   Node get_next_sibling()
-    {return parent_node && parent_node->_get_child_by_pos (pos_in_parent + 1);}
+  {
+    return parent_node && parent_node->_get_child_by_pos (pos_in_parent + 1);
+  }
 
   //NamedNodeMap get_attributes() {return 0;}
   Document get_owner_document() {return owner_document;}
@@ -960,19 +964,31 @@ class Document
 #if 0
   // Disabled for now since the tree can't be manipulated anyway.
   Element create_element (string tag_name)
-    {return Element (this, tag_name);}
+  {
+    return Element (this, tag_name);
+  }
   //DocumentFragment create_document_fragment();
   Text create_text_node (string data)
-    {return Text (this, data);}
+  {
+    return Text (this, data);
+  }
   Comment create_comment (string data)
-    {return Comment (this, data);}
+  {
+    return Comment (this, data);
+  }
   CDATASection create_cdata_section (string data)
-    {return CDATASection (this, data);}
+  {
+    return CDATASection (this, data);
+  }
   ProcessingInstruction create_processing_instruction (string target, string data)
-    {return ProcessingInstruction (this, target, data);}
+  {
+    return ProcessingInstruction (this, target, data);
+  }
   //Attr create_attribute (string name, string|void default_value);
   EntityReference create_entity_reference (string name)
-    {return EntityReference (this, name);}
+  {
+    return EntityReference (this, name);
+  }
 #endif
 
   //NodeList get_elements_by_tag_name (string tagname);
@@ -1022,7 +1038,7 @@ class Document
 
   /*protected*/ void _xml_format (String.Buffer into) {xml_format_children (into);}
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (arrayp (content))
       foreach (content, string|Node child)
@@ -1047,11 +1063,17 @@ class Element
   //NamedNodeMap get_attributes();
 
   string get_attribute (string name)
-    {return attributes[name] || "";}
+  {
+    return attributes[name] || "";
+  }
   void set_attribute (string name, string value)
-    {attributes[name] = value;}
+  {
+    attributes[name] = value;
+  }
   void remove_attribute (string name)
-    {m_delete (attributes, name);}
+  {
+    m_delete (attributes, name);
+  }
 
   //Attr get_attribute_node (string name);
   //Attr set_attribute_node (Attr new_attr);
@@ -1110,15 +1132,25 @@ class CharacterData
   int get_length() {return sizeof (node_value);}
 
   string substring_data (int offset, int count)
-    {return node_value[offset..offset + count - 1];}
+  {
+    return node_value[offset..offset + count - 1];
+  }
   void append_data (string arg)
-    {node_value += arg;}
+  {
+    node_value += arg;
+  }
   void insert_data (int offset, string arg)
-    {node_value = node_value[..offset - 1] + arg + node_value[offset..];}
+  {
+    node_value = node_value[..offset - 1] + arg + node_value[offset..];
+  }
   void delete_data (int offset, int count)
-    {node_value = node_value[..offset - 1] + node_value[offset + count..];}
+  {
+    node_value = node_value[..offset - 1] + node_value[offset + count..];
+  }
   void replace_data (int offset, int count, string arg)
-    {node_value = node_value[..offset - 1] + arg + node_value[offset + count..];}
+  {
+    node_value = node_value[..offset - 1] + arg + node_value[offset + count..];
+  }
 
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)

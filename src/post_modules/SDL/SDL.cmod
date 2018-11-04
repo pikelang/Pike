@@ -552,6 +552,7 @@ PIKECLASS Keysym {
 
 /*! @endclass Keysym */
 
+#undef CHECK_INIT
 #define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
 
 #if !defined(SDL_ALPHA_OPAQUE) || !SDL_ALPHA_OPAQUE

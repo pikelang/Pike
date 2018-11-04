@@ -221,7 +221,11 @@ test_true( glob( "\\**", "\\*a") )
 test_true( glob( "\\[abc\\]*", "\\[abc\\]d") )
 test_true( glob( "[abc]*", "[abc]d") )
 
-
-
+test_any([[
+  Debug->globals->x = 1;
+  class A { void destroy() { Debug->globals->x=2; } };
+  destruct(A());
+  return Debug->globals->x;
+]], 2)
 
 END_MARKER

@@ -103,6 +103,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
   DOUBLELINK(first_callable, f);
 #endif
   INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
+  gc_init_marker(f);
   f->function=fun;
   f->name=name;
   f->type=type;

@@ -20,25 +20,15 @@
  * Includes
  */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "module.h"
 
-#include "svalue.h"
-#include "object.h"
-#include "array.h"
-#include "stralloc.h"
 #include "interpret.h"
 #include "operators.h"
 #include "pike_compiler.h"
 #include "pike_types.h"
-#include "pike_memory.h"
 #include "threads.h"
 #include "module_support.h"
-#include "mapping.h"
-#include "multiset.h"
 #include "builtin_functions.h"
 #include "pike_macros.h"
 #include "version.h"
@@ -101,7 +91,7 @@
  * -Hubbe
  *
  * One possible cause could be running out of stack in
- * f_big_typed_query_create() due to the old struct bind_block
+ * f_TypedResult_create() due to the old struct bind_block
  * being huge. I haven't tried raising the limit since shrinking
  * struct bind_block.
  * -Grubba 2005-08-04
@@ -192,11 +182,6 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define Pike_thread_id thread_id
 #endif
 
-#ifndef Pike_sp
-#define Pike_sp sp
-#define Pike_fp fp
-#endif
-
 #ifndef CHECK_INTERPRETER_LOCK
 #define CHECK_INTERPRETER_LOCK()
 #endif
@@ -278,7 +263,7 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULT_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(2, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(parent_storage(1, Oracle_oracle_compile_query_program),DBQUERY_MAGIC,"dbquery"))
-#define THIS_RESULT ((struct Oracle_oracle_compile_query_big_typed_query_struct *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
+#define THIS_RESULT ((struct Oracle_oracle_compile_query_TypedResult_struct *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct Oracle_oracle_compile_query_dbresultinfo_struct *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct Oracle_oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
@@ -521,6 +506,10 @@ PIKECLASS oracle
 
     mt_destroy( & THIS_DBCON->lock );
   }
+
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
 
 #ifdef LOCAL_ENV
 #define ENVOF(X) (X)->env
@@ -797,7 +786,7 @@ OCIError *get_global_error_handle(void)
       time_t t;
       sword rc;
 
-      check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
+      check_all_args(NULL,args,BIT_INT|BIT_STRING,0);
       switch(TYPEOF(*date))
       {
       case T_STRING:
@@ -913,15 +902,15 @@ OCIError *get_global_error_handle(void)
 #endif
     }
 
+    /*! @decl inherit Val.Null
+     */
+    /*! @decl constant is_oracle_null
+     */
     EXTRA
     {
-      /*! @decl inherit Val.Null
-       */
       struct pike_string *null_string = make_shared_string("Null");
       low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
       free_string(null_string);
-      /*! @decl constant is_oracle_null
-       */
       add_integer_constant("is_oracle_null", 1, 0);
     }
 
@@ -986,7 +975,7 @@ OCIError *get_global_error_handle(void)
 #endif
     CVAR OCIStmt *statement;
     CVAR INT_TYPE query_type;
-    CVAR DEFINE_MUTEX(lock);
+    CVAR DEFINE_MUTEX(lock);	/* FIXME: Probably ought to be an IMUTEX_T. */
 
     CVAR INT_TYPE cols;
     CVAR struct array *field_info;
@@ -1068,16 +1057,13 @@ OCIError *get_global_error_handle(void)
         PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, real_type),tInt,T_INT,0);
 
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
+                     tFunc(tStr tMix,tVoid), ID_PROTECTED);
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
-#ifdef ORACLE_DEBUG
-	set_gc_check_callback(gc_dbresultinfo_struct);
-#endif
+		     tFunc(tStr tMix,tVoid), ID_PROTECTED);
       }
 
 #ifdef ORACLE_DEBUG
-      static void gc_dbresultinfo_struct(struct object *UNUSED(o))
+      GC_CHECK
       {
 	THIS_RESULTINFO;
       }
@@ -1091,9 +1077,9 @@ OCIError *get_global_error_handle(void)
     /*! @endclass dbresultinfo
      */
 
-    /*! @class big_typed_query
+    /*! @class TypedResult
      */
-    PIKECLASS big_typed_query
+    PIKECLASS TypedResult
       program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_DESTRUCT_IMMEDIATE;
     {
 #ifdef PIKE_DEBUG
@@ -1138,6 +1124,10 @@ OCIError *get_global_error_handle(void)
 	}
       }
 
+      /*! @decl inherit __builtin.Sql.Result
+       */
+      INHERIT "__builtin.Sql.Result";
+
       PIKEFUN int num_rows()
       {
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
@@ -1170,7 +1160,7 @@ OCIError *get_global_error_handle(void)
 
       PIKEFUN int num_fields()
       {
-	struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
+	struct Oracle_oracle_compile_query_TypedResult_struct *dbresult = THIS_RESULT;
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
 	struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
@@ -1340,7 +1330,7 @@ OCIError *get_global_error_handle(void)
 
       PIKEFUN array(mapping(string:mixed)) fetch_fields()
       {
-	struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
+	struct Oracle_oracle_compile_query_TypedResult_struct *dbresult = THIS_RESULT;
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
 	struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 	INT32 i;
@@ -1353,7 +1343,7 @@ OCIError *get_global_error_handle(void)
 	  /* Get the number of rows */
 	  if(dbquery->cols == -2)
 	  {
-	    f_Oracle_oracle_compile_query_big_typed_query_num_fields(0);
+	    f_Oracle_oracle_compile_query_TypedResult_num_fields(0);
 	    pop_stack();
 	  }
 
@@ -1492,7 +1482,7 @@ OCIError *get_global_error_handle(void)
 	    case SQLT_TIMESTAMP_LTZ:
 	      /* Assume a reasonable expansion. */
 	      size *= 10;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case SQLT_STR: /* string */
 	    case SQLT_AFC: /* char */
 	    case SQLT_AVC: /* charz */
@@ -1751,9 +1741,8 @@ OCIError *get_global_error_handle(void)
 	case SQLT_CLOB:
 	case SQLT_BLOB:
 	  /* FIXME: Consider using parent pointers? */
-	  push_object(low_clone(Oracle_oracle_LOB_program));
-	  call_c_initializers(Pike_sp[-1].u.object);
-	  ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
+          push_object(fast_clone_object(Oracle_oracle_LOB_program));
+          ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
 	    (inout->ftype == SQLT_CLOB);
 	  ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->lob =
 	    inout->u.lob;
@@ -1770,9 +1759,8 @@ OCIError *get_global_error_handle(void)
 	  fprintf(stderr,"\n");
 #endif
 
-	  push_object(low_clone(Oracle_oracle_Date_program));
-	  call_c_initializers(Pike_sp[-1].u.object);
-	  ((struct Oracle_oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
+          push_object(fast_clone_object(Oracle_oracle_Date_program));
+          ((struct Oracle_oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
 	    inout->u.date;
 	  break;
 
@@ -1781,7 +1769,7 @@ OCIError *get_global_error_handle(void)
 	  memmove(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
 	  inout->u.shortstr[0]=inout->xlen;
 
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
 	case SQLT_VNU:
 	  {
 	    INT64 integer;
@@ -1903,7 +1891,7 @@ OCIError *get_global_error_handle(void)
       {
 	int i = 0;
 	sword rc;
-	struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
+	struct Oracle_oracle_compile_query_TypedResult_struct *dbresult = THIS_RESULT;
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
 	struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
@@ -1918,7 +1906,7 @@ OCIError *get_global_error_handle(void)
 
 	if(!dbquery->field_info)
 	{
-	  f_Oracle_oracle_compile_query_big_typed_query_fetch_fields(0);
+	  f_Oracle_oracle_compile_query_TypedResult_fetch_fields(0);
 	  pop_stack();
 	}
 
@@ -2168,7 +2156,7 @@ OCIError *get_global_error_handle(void)
 	flags ID_PROTECTED;
       {
 	sword rc;
-	struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
+	struct Oracle_oracle_compile_query_TypedResult_struct *dbresult = THIS_RESULT;
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
 	struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 	ONERROR err;
@@ -2213,7 +2201,7 @@ OCIError *get_global_error_handle(void)
 	   PARENTOF(PARENTOF(THISOBJ)) != new_parent)
 	{
 	  if(new_parent->prog != PARENTOF(PARENTOF(PARENTOF(THISOBJ)))->prog)
-	    Pike_error("Bad argument 3 to big_typed_query.\n");
+	    Pike_error("Bad argument 3 to TypedResult.\n");
 
 	  /* We might need to check that there are no locks held here
 	   * but I don't beleive that could happen, so just go with it...
@@ -2287,8 +2275,18 @@ OCIError *get_global_error_handle(void)
 		  &((struct Oracle_oracle_NULL_struct *)STORAGE(value->u.object))->type;
 		goto retry;
 	      }
+	      {
+		size_t buf_len;
+		if( get_memory_object_memory(value->u.object, &addr,
+					     &buf_len, NULL) != MEMOBJ_NONE )
+		{
+		  len = buf_len;
+		  fty = SQLT_LBI;
+		  break;
+		}
+	      }
 	      Pike_error("Bad value type in argument 2 to "
-			 "Oracle.oracle->big_typed_query()\n");
+			 "Oracle.oracle->TypedResult()\n");
 	      break;
 
 	    case T_STRING:
@@ -2350,11 +2348,12 @@ OCIError *get_global_error_handle(void)
 		  fty = SQLT_LBI;
 		  break;
 		}
-	      }
+              }
+              /* Fallthrough */
 
 	    default:
 	      Pike_error("Bad value type in argument 2 to "
-			 "Oracle.oracle->big_typed_query()\n");
+			 "Oracle.oracle->TypedResult()\n");
 	    }
 
 	    assign_svalue_no_free(& bind.bind[bind.bindnum].val, value);
@@ -2409,7 +2408,7 @@ OCIError *get_global_error_handle(void)
 	    else
 	    {
 	      Pike_error("Bad index type in argument 2 to "
-			 "Oracle.oracle->big_typed_query()\n");
+			 "Oracle.oracle->TypedResult()\n");
 	    }
 	    if(rc)
 	    {
@@ -2517,7 +2516,7 @@ OCIError *get_global_error_handle(void)
 #endif
       }
     }
-    /*! @endclass big_typed_query
+    /*! @endclass TypedResult
      */
 
     PIKEFUN void create(string query)
@@ -2754,8 +2753,7 @@ PIKE_MODULE_INIT
   add_object_constant("NULLfloat", nullfloat_object =
 		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 
-  push_object(low_clone(Oracle_oracle_Date_program));
-  call_c_initializers(Pike_sp[-1].u.object);
+  push_object(fast_clone_object(Oracle_oracle_Date_program));
   add_object_constant("NULLdate", nulldate_object =
 		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 #ifdef OCI_UTF16ID

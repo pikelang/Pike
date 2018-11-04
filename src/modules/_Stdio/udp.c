@@ -251,7 +251,7 @@ static void udp_bind(INT32 args)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->bind: failed to create socket (%d, %d, %d)\n",
+    Pike_error("Failed to create socket (%d, %d, %d)\n",
 	       SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   }
 
@@ -268,7 +268,7 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
+    Pike_error("setsockopt SO_REUSEADDR failed\n");
   }
 
 #if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
@@ -303,7 +303,7 @@ static void udp_bind(INT32 args)
       out packets with protocol type RAW to the network. */
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&one, sizeof(int)))
-	Pike_error("Stdio.UDP->bind: setsockopt IP_HDRINCL failed\n");
+        Pike_error("setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
   THREADS_ALLOW_UID();
@@ -317,7 +317,7 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Stdio.UDP->bind: failed to bind to port %d\n", port);
+    Pike_error("Failed to bind to port %d\n", port);
     return;
   }
 
@@ -325,7 +325,7 @@ static void udp_bind(INT32 args)
   {
     while (fd_close(fd) && errno == EINTR)
       ;
-    Pike_error("Object destructed in Stdio.UDP->bind()\n");
+    Pike_error("Object destructed.\n");
   }
 
   change_fd_for_box (&THIS->box, fd);
@@ -344,7 +344,7 @@ static void udp_set_fd(INT32 args)
 {
   int fd;
 
-  get_all_args("set_fd", args, "%d", &fd);
+  get_all_args(NULL, args, "%d", &fd);
 
   if(FD != -1)
   {
@@ -414,7 +414,7 @@ void udp_enable_multicast(INT32 args)
   char *ip;
   PIKE_SOCKADDR reply;
 
-  get_all_args("enable_multicast", args, "%s", &ip);
+  get_all_args(NULL, args, "%s", &ip);
 
   get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -468,7 +468,7 @@ void udp_enable_multicast(INT32 args)
 void udp_set_multicast_ttl(INT32 args)
 {
   int ttl;
-  get_all_args("set_multicast_ttl", args, "%d", &ttl);
+  get_all_args(NULL, args, "%d", &ttl);
   pop_n_elems(args);
 #ifdef AF_INET6
   if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
@@ -513,7 +513,7 @@ void udp_add_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -599,7 +599,7 @@ void udp_drop_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -674,14 +674,14 @@ void udp_wait(INT32 args)
   int res;
   int e;
 
-  get_all_args("wait", args, "%F", &timeout);
+  get_all_args(NULL, args, "%F", &timeout);
 
   if (timeout < 0.0) {
     timeout = 0.0;
   }
 
   if (fd < 0) {
-    Pike_error("udp->wait(): Port not bound!\n");
+    Pike_error("Port not bound!\n");
   }
 
 #ifdef HAVE_POLL
@@ -702,7 +702,7 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    Pike_error("udp->wait(): poll() failed with errno %d\n", e);
+    Pike_error("poll() failed with errno %d\n", e);
   } else {
     /* Success? */
     if (pollfds->revents) {
@@ -714,8 +714,8 @@ void udp_wait(INT32 args)
 #else /* !HAVE_POLL */
   THREADS_ALLOW();
 
-  FD_ZERO(&rset);
-  FD_SET(fd, &rset);
+  fd_FD_ZERO(&rset);
+  fd_FD_SET(fd, &rset);
   tv.tv_sec = (int)timeout;
   tv.tv_usec = (int)((timeout - ((int)timeout)) * 1000000.0);
   res = fd_select(fd+1, &rset, NULL, NULL, &tv);
@@ -726,10 +726,10 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    Pike_error("udp->wait(): select() failed with errno %d\n", e);
+    Pike_error("select() failed with errno %d\n", e);
   } else {
     /* Success? */
-    if (FD_ISSET(fd, &rset)) {
+    if (fd_FD_ISSET(fd, &rset)) {
       res = 1;
     } else {
       res = 0;
@@ -789,13 +789,13 @@ void udp_read(INT32 args)
 #endif /* MSG_PEEK */
     }
     if(Pike_sp[-args].u.integer & ~3) {
-      Pike_error("Illegal 'flags' value passed to udp->read([int flags])\n");
+      Pike_error("Illegal flags argument.\n");
     }
   }
   pop_n_elems(args);
   fd = FD;
   if (FD < 0)
-    Pike_error("Stdio.UDP->read: not open\n");
+    Pike_error("Not open\n");
   do {
     THREADS_ALLOW();
     res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
@@ -839,7 +839,7 @@ void udp_read(INT32 args)
 	 if (!(flags & MSG_OOB)) {
 	   Pike_error("Socket read failed with EINVAL.\n");
 	 }
-	 /* FALL_THROUGH */
+	 /* FALLTHRU */
        case EWOULDBLOCK:
 	  push_int( 0 );
 	  return;
@@ -930,7 +930,7 @@ void udp_sendto(INT32 args)
   if(FD < 0)
     Pike_error("UDP: not open\n");
 
-  check_all_args("send", args,
+  check_all_args(NULL, args,
 		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
 
   if(args>3)
@@ -946,8 +946,7 @@ void udp_sendto(INT32 args)
 #endif /* MSG_DONTROUTE */
     }
     if(Pike_sp[3-args].u.integer & ~3) {
-      Pike_error("Illegal 'flags' value passed to "
-		 "Stdio.UDP->send(string to, int|string port, string message, int flags)\n");
+      Pike_error("Illegal flags argument.\n");
     }
   }
 
@@ -1134,7 +1133,7 @@ static void udp_connect(INT32 args)
 
   int tmp;
 
-  get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
+  get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
@@ -1154,7 +1153,7 @@ static void udp_connect(INT32 args)
      if(FD < 0)
      {
 	THIS->my_errno=errno;
-	Pike_error("Stdio.UDP->connect: failed to create socket\n");
+        Pike_error("Failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
 
@@ -1181,7 +1180,7 @@ static void udp_connect(INT32 args)
   if(tmp < 0)
   {
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->connect: failed to connect\n");
+    Pike_error("Failed to connect\n");
   }else{
     THIS->my_errno=0;
     pop_n_elems(args);
@@ -1204,7 +1203,7 @@ static void udp_query_address(INT32 args)
   ACCEPT_SIZE_T len;
 
   if(fd <0)
-    Pike_error("Stdio.UDP->query_address(): Port not bound yet.\n");
+    Pike_error("Port not bound yet.\n");
 
   THREADS_ALLOW();
 
@@ -1309,7 +1308,7 @@ static void udp_set_type(INT32 args)
 {
    int type, proto = 0;
 
-   get_all_args("set_type",args,"%d.%d",&type,&proto);
+   get_all_args(NULL,args,"%d.%d",&type,&proto);
 
    THIS->type=type;
    THIS->protocol=proto;
@@ -1354,9 +1353,9 @@ static void udp_set_buffer(INT32 args)
   char *c = NULL;
 
   if(FD==-1)
-    Pike_error("Stdio.UDP->set_buffer() on closed file.\n");
+    Pike_error("Port is closed.\n");
 
-  get_all_args("set_buffer", args, "%+.%s", &bufsize, &c);
+  get_all_args(NULL, args, "%+.%s", &bufsize, &c);
 
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");

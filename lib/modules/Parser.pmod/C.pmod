@@ -7,6 +7,19 @@
 
 protected constant splitter = Parser._parser._Pike.tokenize;
 
+// NB: This module is used by several of the precompilers,
+//     and may thus be used before the Unicode module has
+//     been compiled!
+#if constant(Unicode.is_whitespace)
+protected constant is_whitespace = Unicode.is_whitespace;
+#else
+protected constant whitespace_tab = (< ' ', '\t', '\14', '\r', '\n', >);
+protected int is_whitespace(int c)
+{
+  return whitespace_tab[c];
+}
+#endif
+
 class UnterminatedStringError
 //! Error thrown when an unterminated string token is encountered.
 {
@@ -200,7 +213,7 @@ array(Token|array) group(array(string|Token) tokens,
       case 0: ret+=({token}); break;
       case 1: stack->push(ret); ret=({token}); break;
       case 2:
-	if (!sizeof(ret) || !stack->ptr ||
+	if (!sizeof(ret) || !sizeof(stack) ||
             (groupings[(string)ret[0]] != (string)token)) {
 #if 0
 	  // Mismatch
@@ -254,28 +267,20 @@ array hide_whitespaces(array tokens)
 {
   array(Token) ret=({tokens[0]});
   foreach(tokens[1..], array|object(Token) t)
+  {
+    if(arrayp(t))
     {
-      if(arrayp(t))
-      {
-	ret+=({ hide_whitespaces(t) });
-      }else{
-	switch( ((string)t) [0])
-	{
-	  case ' ':
-	  case '\t':
-	  case '\14':
-	  case '\r':
-	  case '\n':
-	    mixed tmp=ret[-1];
-	    while(arrayp(tmp)) tmp=tmp[-1];
-	    tmp->trailing_whitespaces+=(string)t;
-	    break;
-
-	  default:
-	    ret+=({t});
-	}
-      }
+      ret+=({ hide_whitespaces(t) });
     }
+    else if( is_whitespace(t->text[0]) )
+    {
+      mixed tmp=ret[-1];
+      while(arrayp(tmp)) tmp=tmp[-1];
+      tmp->trailing_whitespaces+=t->text+t->trailing_whitespaces;
+    }
+    else
+      ret+=({t});
+  }
   return ret;
 }
 

@@ -553,7 +553,7 @@ protected string(8bit) generate_key_block(string(8bit) client_random,
 }
 
 #ifdef SSL3_DEBUG
-protected void printKey(string name, string key)
+protected void printKey(string name, string(8bit) key)
 {
   werror("%s:  len:%d \t\t%x\n", name, sizeof(key), key);
 }

@@ -494,7 +494,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
   if (has_prefix(tag, "/")) {
     // End tag. Pop to starttag.
     tag = tag[1..];
-    if (!has_value(nesting->arr[..nesting->ptr-1], tag)) {
+    if (!has_value(nesting, tag)) {
       // Extraneous end-tag -- remove it.
       return ({""});
     }

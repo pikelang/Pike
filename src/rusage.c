@@ -15,21 +15,26 @@
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+
 #ifdef HAVE_MACH_MACH_H
 #include <mach/mach.h>
 #ifdef HAVE_PTHREAD_MACH_THREAD_NP
 #include <pthread.h>
 #endif
 #endif
+
 #ifdef HAVE_MACH_THREAD_ACT_H
 #include <mach/thread_act.h>
 #endif
+
 #ifdef HAVE_MACH_CLOCK_H
 #include <mach/clock.h>
 #endif
@@ -38,6 +43,7 @@
 #include "time_stuff.h"
 #include "fd_control.h"
 #endif
+
 #include "pike_error.h"
 
 /*
@@ -130,9 +136,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 #else /* __NT__ */
 #ifdef GETRUSAGE_THROUGH_PROCFS
 #include <sys/procfs.h>
-#ifndef CONFIGURE_TEST
-#include "fd_control.h"
-#endif
 
 static inline long get_time_int(timestruc_t * val)
 {

@@ -24,7 +24,7 @@ void create(int|mapping(string:mixed) uniformp_or_props, ?int padding)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE uniformp,padding;
       GtkWidget *gv;
-      get_all_args("create",args,"%i%i",&uniformp,&padding);
+      get_all_args(NULL,args,"%i%i",&uniformp,&padding);
       gv=gtk_vbox_new(uniformp,padding);
       THIS->obj=G_OBJECT(gv);
     } else {

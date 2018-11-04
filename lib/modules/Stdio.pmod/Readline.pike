@@ -124,7 +124,7 @@ class OutputController
 				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     disable();
   }
@@ -447,7 +447,7 @@ class InputController
 
   int dumb=0;
 
-  protected void destroy()
+  protected void _destruct()
   {
     catch{ infd->set_blocking(); };
     if(dumb)
@@ -1230,6 +1230,17 @@ class History
     maxhistory = maxhist;
   }
 
+  //! Pop the last string off the history, discarding it.
+  //! If text is provided, will only pop that string.
+  //! Returns 1 if a string was removed, 0 if not.
+  int(0..1) pop(string|void text)
+  {
+    if (sizeof(historylist) < 2) return 0; //Not enough to pop
+    if (text && historylist[-2] != text) return 0; //Wrong string
+    historylist = historylist[..<2] + ({historylist[-1]});
+    return 1;
+  }
+
   //!
   void create(int maxhist, void|array(string) hist)
   {
@@ -1692,7 +1703,7 @@ History get_history()
   return historyobj;
 }
 
-protected void destroy()
+protected void _destruct()
 {
   if(input_controller)
     destruct(input_controller);
@@ -1718,7 +1729,7 @@ protected void destroy()
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
-  atexit(destroy);
+  atexit(_destruct);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
   DefaultEditKeys(this);

@@ -129,7 +129,7 @@ int closed()
   return !!port;
 }
 
-void destroy()
+protected void _destruct()
 {
   DEBUGMSG("destruct" + (port ? " - closing listening port\n" : "\n"));
   catch (destruct (port));

@@ -60,6 +60,14 @@
 
 #define IS_ERR(x) ((x) != kDNSServiceErr_NoError)
 
+/* Include these for htons(3SOCKET) et al. */
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 /* Instance variables for each service registration */
 struct service {
   DNSServiceRef  service_ref;
@@ -164,10 +172,8 @@ static DNSServiceErrorType start_service(struct service *svc,
 
 static void stop_service(struct service *svc)
 {
-  if (svc->service_ref) {
+  if (svc->service_ref)
     DNSServiceRefDeallocate(svc->service_ref);
-    svc->service_ref = NULL;
-  }
 }
 
 
@@ -317,7 +323,7 @@ static void exit_howl_module(void)
 
 static void f_update_txt(INT32 args)
 {
-  check_all_args("Service->update_txt", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,	/* txt */
 		 0);
 
@@ -339,7 +345,7 @@ static void f_create(INT32 args)
   char                *name, *service, *domain, *txt;
   int                 port, txtlen, err;
 
-  check_all_args("Service->create", args,
+  check_all_args(NULL, args,
 		 BIT_STRING,		/* name */
 		 BIT_STRING,		/* service */
 		 BIT_STRING,		/* domain */
@@ -369,12 +375,6 @@ static void f_create(INT32 args)
 }
 
 
-static void init_service_struct(struct object *UNUSED(o))
-{
-  THIS->service_ref = 0;
-}
-
-
 static void exit_service_struct(struct object *UNUSED(o))
 {
   /* Stop an existing service */
@@ -388,7 +388,6 @@ PIKE_MODULE_INIT
 
   ADD_STORAGE(struct service);
 
-  set_init_callback(init_service_struct);
   set_exit_callback(exit_service_struct);
 
   /* function(string, string, string, int, string|void:void) */

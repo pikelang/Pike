@@ -120,7 +120,6 @@
 
 
       new_frame->locals = Pike_sp - args;
-      new_frame->expendible_offset = 0;
       new_frame->args = args;
       new_frame->pc = 0;
       new_frame->scope=scope;
@@ -214,8 +213,8 @@
 	  push_object(tmp);
 	  break;
 	}
-	/* Fall through */
       }
+      /* FALLTHRU */
 
       case IDENTIFIER_VARIABLE:
       {

@@ -24,7 +24,7 @@ void TYPE_STACK_DEBUG(const char *fun);
  */
 struct pike_type
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   unsigned INT32 hash;
   struct pike_type *next;
   unsigned INT32 flags;
@@ -176,6 +176,7 @@ PMOD_EXPORT extern struct pike_type *enumerable_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
+PMOD_EXPORT extern struct pike_type *utf8_type_string;
 
 PMOD_EXPORT extern struct pike_string *literal_string_string;
 PMOD_EXPORT extern struct pike_string *literal_int_string;

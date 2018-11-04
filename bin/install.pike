@@ -1582,7 +1582,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2017 IDA, Linköping University
+#" Copyright (C) 1994-2018 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
@@ -2548,6 +2548,7 @@ void dump_modules()
   // very short memory for application arguments.
 
   int offset = 1;
+ dumploop:
   foreach(to_dump/25.0, array delta_dump)
   {
     mixed err = catch {
@@ -2560,10 +2561,12 @@ void dump_modules()
 				 }) : ({}) ) +
 			       delta_dump, options);
       int retcode=p->wait();
-      if (retcode)
+      if (retcode) {
 	error_msg("Dumping of some modules failed (not fatal) (0x%:08x):\n"
 		  "%{  %O\n%}",
 		  retcode, delta_dump);
+	break dumploop;
+      }
     };
     if (err) {
       error_msg ("Failed to spawn module dumper (not fatal):\n"

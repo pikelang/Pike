@@ -3,11 +3,13 @@
   constant BSONJavascript = 1;
 
   protected string data;
+  mapping scope;
 
   //!
-  protected void create(string _data)
+protected void create(string _data, void|mapping _scope)
   {
      data = _data;
+     scope = _scope || ([]);
   }
 
   protected int _sizeof()

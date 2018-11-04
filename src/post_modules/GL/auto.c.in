@@ -20,11 +20,12 @@
 #include "mapping.h"
 #include "pike_types.h"
 
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#else
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
-#ifdef HAVE_OPENGL_GL_H
-#include <OpenGL/gl.h>
 #endif /* HAVE_OPENGL_GL_H */
 
 
@@ -540,7 +541,7 @@ static void post_init(void)
 @@
 static void my_glGenTextures( INT32 args )
 {
-  GLint *res;
+  GLuint *res;
   struct array *a;
   int ntexts;
   int i;
@@ -549,7 +550,7 @@ static void my_glGenTextures( INT32 args )
   ntexts = Pike_sp[-1].u.integer;
   pop_stack();
 
-  res = xcalloc( sizeof( GLint ), ntexts );
+  res = xcalloc( sizeof( GLuint ), ntexts );
   glGenTextures( ntexts, res );
   a = allocate_array( ntexts );
   for( i = 0; i<ntexts; i++ )
@@ -604,7 +605,7 @@ static void my_glFrustum(INT32 args)
 {
   FLOAT_TYPE right,left,bottom,top,close,away;
   GLdouble m[16];
-  get_all_args("glFrustum", args, "%f%f%f%f%f%f",
+  get_all_args(NULL, args, "%f%f%f%f%f%f",
 	       &left, &right, &bottom, &top, &close, &away);
 
   if (right == left) {

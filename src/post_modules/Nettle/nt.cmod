@@ -1,15 +1,16 @@
-/* -*- c -*- */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-#include "global.h"
+#include "module.h"
 
 #ifdef __NT__
 
 #include "interpret.h"
-#include "svalue.h"
-#include "object.h"
 #include "module_support.h"
 #include "pike_macros.h"
-#include "stralloc.h"
 
 #include "nettle.h"
 
@@ -114,10 +115,13 @@ PIKECLASS CryptContext
     }
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->handle = 0;
   }
+#endif
+
   EXIT
     gc_trivial;
   {

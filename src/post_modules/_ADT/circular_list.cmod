@@ -771,7 +771,7 @@ PIKECLASS CircularList
 
   /*! @decl void push_front(mixed value)
    *!
-   *! Add a new value at the end of the list.
+   *! Add a new value at the front of the list.
    *!
    *! @param value
    *!    The value to add.
@@ -813,6 +813,7 @@ PIKECLASS CircularList
       add_ref(THIS->a=arg->u.array);
       THIS->size=THIS->a->size;
     }
+    pop_stack();
   }
 
   /*! @decl CircularListIterator _get_iterator(void|int ind)
@@ -847,21 +848,20 @@ PIKECLASS CircularList
    */
 
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
     THIS->a=NULL;
     THIS->pos=0;
     THIS->size=0;
   }
+#endif
 
   EXIT
     gc_trivial;
   {
     if( THIS->a )
-    {
       free_array(THIS->a);
-      THIS->a = NULL;
-    }
   }
 
 
@@ -904,11 +904,13 @@ PIKECLASS CircularList
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
 			 THIS->pos,
 			 THIS->list->size);
-	  }
+          }
+          pop_n_elems(2);
 	}
 	else
 	{
-	  THIS->pos = 0;
+          THIS->pos = 0;
+          pop_stack();
 	}
       }
     }
@@ -966,7 +968,7 @@ PIKECLASS CircularList
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
@@ -1019,7 +1021,7 @@ PIKECLASS CircularList
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
@@ -1245,21 +1247,20 @@ PIKECLASS CircularList
       }
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->list=0;
       THIS->pos=0;
       THIS->obj = NULL;
     }
+#endif
 
     EXIT
       gc_trivial;
     {
       if( THIS->obj )
-      {
         free_object(THIS->obj);
-        THIS->obj = NULL;
-      }
     }
 
   }

@@ -94,7 +94,7 @@ protected constant hmac_jwa_id = "";
 //!   @[Crypto.HMAC]
 
 //! @ignore
-private class _HMAC
+protected class _HMAC
 {
 //! @endignore
 
@@ -140,14 +140,18 @@ private class _HMAC
   {
     inherit ::this_program;
 
-    protected string ikey; /* ipad XOR:ed with the key */
-    protected string okey; /* opad XOR:ed with the key */
+    protected string(8bit) ikey; /* ipad XOR:ed with the key */
+    protected string(8bit) okey; /* opad XOR:ed with the key */
 
     protected global::State h;
 
     //! @param passwd
     //!   The secret password (K).
-    protected void create (string passwd, void|int b)
+    //!
+    //! @param b
+    //!   Block size. Must be larger than or equal to the @[digest_size()].
+    //!   Defaults to the @[block_size()].
+    protected void create (string(8bit) passwd, void|int b)
     {
       if (!b)
 	b = block_size();
@@ -158,8 +162,8 @@ private class _HMAC
       if (sizeof(passwd) < b)
 	passwd = passwd + "\0" * (b - sizeof(passwd));
 
-      ikey = passwd ^ ("6" * b);
-      okey = passwd ^ ("\\" * b);
+      ikey = [string(8bit)](passwd ^ ("6" * b));
+      okey = [string(8bit)](passwd ^ ("\\" * b));
     }
 
     string(8bit) name()
@@ -177,12 +181,12 @@ private class _HMAC
     //! the hash value.
     //!
     //! This works as a combined @[update()] and @[digest()].
-    string `()(string text)
+    string(8bit) `()(string(8bit) text)
     {
       return hash(okey + hash(ikey + text));
     }
 
-    this_program update(string data)
+    this_program update(string(8bit) data)
     {
       if( !h )
       {
@@ -193,14 +197,14 @@ private class _HMAC
       return this;
     }
 
-    this_program init(string|void data)
+    this_program init(string(8bit)|void data)
     {
       h = 0;
       if (data) update(data);
       return this;
     }
 
-    string digest(int|void length)
+    string digest(int(0..)|void length)
     {
       string res = hash(okey + h->digest());
       h = 0;
@@ -221,16 +225,47 @@ private class _HMAC
 
     //! Hashes the @[text] according to the HMAC algorithm and returns
     //! the hash value as a PKCS-1 digestinfo block.
-    string digest_info(string text)
+    string(8bit) digest_info(string(8bit) text)
     {
       return pkcs_digest(okey + hash(ikey + text));
     }
+
+    //! Generate a JWK-style mapping of the object.
+    //!
+    //! @param private_key
+    //!   Ignored.
+    //!
+    //! @returns
+    //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+    //!   on failure.
+    //!
+    //! @seealso
+    //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.4@}
+    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    {
+      if (!jwa()) return 0;	// Not supported for this hash.
+      mapping(string(7bit):string(7bit)) jwk = ([
+	"kty":"oct",
+	"alg":jwa(),
+	"k": MIME.encode_base64url(ikey ^ ("6" * block_size())),
+      ]);
+      return jwk;
+    }
   }
 
-  //! Returns a new @[State] object initialized with a @[password].
-  State `()(string password, void|int b)
+  //! Returns a new @[State] object initialized with a @[password],
+  //! and optionally block size @[b]. Block size defaults to the hash
+  //! function block size.
+  State `()(string(8bit) password, void|int b)
   {
-    return State(password, b);
+    if (!b || (b == block_size())) {
+      return State(password);
+    }
+    // Unusual block size.
+    // NB: Nettle's implementation of HMAC doesn't support
+    //     non-standard block sizes, so always use the
+    //     generic implementation in this case.
+    return local::State(password, b);
   }
 
 //! @ignore
@@ -455,7 +490,8 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
 //!
 //! @seealso
 //!   @[hkdf()], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf2(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
@@ -463,12 +499,12 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   object(_HMAC.State) hmac = HMAC(password);
   password = "CENSORED";
 
-  string res = "";
+  string(8bit) res = "";
   int dsz = digest_size();
   int fragno;
   while (sizeof(res) < bytes) {
-    string frag = "\0" * dsz;
-    string buf = salt + sprintf("%4c", ++fragno);
+    string(8bit) frag = "\0" * dsz;
+    string(8bit) buf = salt + sprintf("%4c", ++fragno);
     for (int j = 0; j < rounds; j++) {
       buf = hmac(buf);
       frag ^= buf;
@@ -486,42 +522,45 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
 //! number or cipher suite). It does not however support multiple
 //! rounds of hashing to add computational cost to brute force
 //! attacks.
-//!
-//! @param password
-//!   Password for the keygenerator.
-//!
-//! @param salt
-//! @param info
-//!   Both the salt and info arguments are optional for the function
-//!   and can either be 0.
-//!
-//! @param bytes
-//!   The number of bytes of output.
-//!
-//! @returns
-//!   Returns the derived key.
-//!
-//! @seealso
-//!   @[pbkdf2()]
-string hkdf(string password, string salt, string info, int bytes)
+class HKDF
 {
-  // RFC 5869 2.2 Extract
-  if(!salt) salt = "\0"*digest_size();
-  object(_HMAC.State) hmac = HMAC(HMAC(salt)(password));
+  protected string(8bit) prk;
+  protected object(_HMAC.State) hmac;
 
-  // RFC 5869 2.3 Expand
-  string t = "";
-  string res = "";
-  if(!info) info = "";
-  int i;
-  while (sizeof(res) < bytes )
+  //! Initializes the HKDF object with a RFC 5869 2.2
+  //! HKDF-Extract(salt, IKM) call.
+  protected void create(string(8bit) password, void|string(8bit) salt)
   {
-    i++;
-    t = hmac(sprintf("%s%s%c", t, info, i));
-    res += t;
+    if(!salt) salt = "\0"*digest_size();
+    prk = salt;
+    extract(password);
   }
 
-  return res[..bytes-1];
+  //! This is similar to the RFC 5869 2.2 HKDF-Extract(salt, IKM)
+  //! function, but the salt is the previously generated PRK.
+  string(8bit) extract(string(8bit) password)
+  {
+    prk = HMAC(prk)(password);
+    hmac = HMAC(prk);
+  }
+
+  //! This is similar to the RFC 5869 2.3 HKDF-Expand(PRK, info, L)
+  //! function, but PRK is taken from the object.
+  string(8bit) expand(string(8bit) info, int bytes)
+  {
+    string(8bit) t = "";
+    string(8bit) res = "";
+    if(!info) info = "";
+    int(8bit) i;
+    while (sizeof(res) < bytes )
+    {
+      i++;
+      t = hmac(sprintf("%s%s%c", t, info, i));
+      res += t;
+    }
+
+    return res[..bytes-1];
+  }
 }
 
 //! Password Based Key Derivation Function from OpenSSL.
@@ -537,11 +576,12 @@ string hkdf(string password, string salt, string info, int bytes)
 //!
 //! @seealso
 //!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
-string openssl_pbkdf(string password, string salt, int rounds, int bytes)
+string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
+			   int rounds, int bytes)
 {
-  string out = "";
-  string h = "";
-  string seed = password + salt;
+  string(8bit) out = "";
+  string(8bit) h = "";
+  string(8bit) seed = password + salt;
 
   password = "CENSORED";
 
@@ -556,21 +596,14 @@ string openssl_pbkdf(string password, string salt, int rounds, int bytes)
   return out[..bytes-1];
 }
 
-protected function(string, this_program:string) build_digestinfo;
-
 //! Make a PKCS-1 digest info block with the message @[s].
 //!
 //! @seealso
 //!   @[Standards.PKCS.build_digestinfo()]
-string pkcs_digest(string s)
+string(8bit) pkcs_digest(object|string(8bit) s)
 {
-  if (!build_digestinfo) {
-    // NB: We MUST NOT use other modules at compile-time,
-    //     so we load Standards.PKCS.Signature on demand.
-    object pkcs = [object]master()->resolv("Standards.PKCS.Signature");
-    build_digestinfo = [function(string,this_program:string)]pkcs->build_digestinfo;
-  }
-  return build_digestinfo(s, this);
+  return [string(8bit)]
+    Pike.Lazy.Standards.PKCS.Signature.build_digestinfo(s, this);
 }
 
 //! This is the Password-Based Key Derivation Function used in TLS.
@@ -586,11 +619,12 @@ string pkcs_digest(string s)
 //!
 //! @param bytes
 //!   The number of bytes to generate.
-string P_hash(string password, string salt, int rounds, int bytes)
+string(8bit) P_hash(string(8bit) password, string(8bit) salt,
+		    int rounds, int bytes)
 {
   _HMAC.State hmac = HMAC(password);
-  string temp = salt;
-  string res="";
+  string(8bit) temp = salt;
+  string(8bit) res="";
 
   while (sizeof(res) < bytes) {
     temp = hmac(temp);
@@ -996,10 +1030,10 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!   The maximum number of digits of the one-time password. Defaults
 //!   to 6. Note that the result is usually 0-padded to this length
 //!   for user display purposes.
-int hotp(string secret, int factor, void|int length)
+int hotp(string(8bit) secret, int factor, void|int length)
 {
   // 1
-  string hs = HMAC(secret)(sprintf("%8c",factor));
+  string(8bit) hs = HMAC(secret)(sprintf("%8c",factor));
 
   // 2
   int offset = hs[-1] & 0xf;
@@ -1009,4 +1043,209 @@ int hotp(string secret, int factor, void|int length)
 
   // 3
   return snum % [int]pow(10, length||6);
+}
+
+// Salted password cache for SCRAM
+// FIXME: Consider mark as weak?
+private mapping(string:string(8bit)) SCRAM_salted_password_cache = ([]);
+
+final string(8bit) SCRAM_get_salted_password(string key) {
+  mapping(string:string(8bit)) m = SCRAM_salted_password_cache;
+  return m && m[key];
+}
+
+final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
+  mapping(string:string(8bit)) m = SCRAM_salted_password_cache;
+  if (!m || sizeof(m) > 16)
+    SCRAM_salted_password_cache = m = ([]);
+  m[key] = SaltedPassword;
+}
+
+//! SCRAM, defined by @rfc{5802@}.
+//!
+//! This implements both the client- and the serverside.
+//! You normally run either the server or the client, but if you would
+//! run both (use a separate client and a separate server object!),
+//! the sequence would be:
+//!
+//! @[client_1] -> @[server_1] -> @[server_2] -> @[client_2] ->
+//! @[server_3] -> @[client_3]
+//!
+//! @note
+//! If you are a client, you must use the @ref{client_*@} methods; if you are
+//! a server, you must use the @ref{server_*@} methods.
+//! You cannot mix both client and server methods in a single object.
+//!
+//! @note
+//!   This implementation does not pretend to support the full protocol.
+//!   Most notably optional extension arguments are not supported (yet).
+//!
+//! @seealso
+//!   @[client_1], @[server_1]
+class SCRAM
+{
+  private string(8bit) first, nonce;
+
+  private string(7bit) encode64(string(8bit) raw) {
+    return MIME.encode_base64(raw, 1);
+  }
+
+  private string(7bit) randomstring() {
+    return encode64(random_string(18));
+  }
+
+  private string(7bit) clientproof(string(8bit) salted_password) {
+    _HMAC.State hmacsaltedpw = HMAC(salted_password);
+    salted_password = hmacsaltedpw("Client Key");
+    // Returns ServerSignature through nonce
+    nonce = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
+    return encode64([string(8bit)]
+		    (salted_password ^ HMAC(hash(salted_password))(first)));
+  }
+
+  //! Client-side step 1 in the SCRAM handshake.
+  //!
+  //! @param username
+  //!   The username to feed to the server.  Some servers already received
+  //!   the username through an alternate channel (usually during
+  //!   the hash-function selection handshake), in which case it
+  //!   should be omitted here.
+  //!
+  //! @returns
+  //!   The client-first request to send to the server.
+  //!
+  //! @seealso
+  //!   @[client_2]
+  string(7bit) client_1(void|string username) {
+    nonce = randomstring();
+    return [string(7bit)](first = [string(8bit)]sprintf("n,,n=%s,r=%s",
+      username && username != "" ? Standards.IDNA.to_ascii(username, 1) : "",
+      nonce));
+  }
+
+  //! Server-side step 1 in the SCRAM handshake.
+  //!
+  //! @param line
+  //!   The received client-first request from the client.
+  //!
+  //! @returns
+  //!   The username specified by the client.  Returns null
+  //!   if the response could not be parsed.
+  //!
+  //! @seealso
+  //!   @[server_2]
+  string server_1(string(8bit) line) {
+    constant format = "n,,n=%s,r=%s";
+    string username, r;
+    catch {
+      first = [string(8bit)]line[3..];
+      [username, r] = array_sscanf(line, format);
+      nonce = [string(8bit)]r;
+      r = Standards.IDNA.to_unicode(username);
+    };
+    return r;
+  }
+
+  //! Server-side step 2 in the SCRAM handshake.
+  //!
+  //! @param salt
+  //!   The salt corresponding to the username that has been specified earlier.
+  //!
+  //! @param iters
+  //!   The number of iterations the hashing algorithm should perform
+  //!   to compute the authentication hash.
+  //!
+  //! @returns
+  //!   The server-first challenge to send to the client.
+  //!
+  //! @seealso
+  //!   @[server_3]
+  string(7bit) server_2(string(8bit) salt, int iters) {
+    string response = sprintf("r=%s,s=%s,i=%d",
+      nonce += randomstring(), encode64(salt), iters);
+    first += "," + response + ",";
+    return [string(7bit)]response;
+  }
+
+  //! Client-side step 2 in the SCRAM handshake.
+  //!
+  //! @param line
+  //!   The received server-first challenge from the server.
+  //!
+  //! @param pass
+  //!   The password to feed to the server.
+  //!
+  //! @returns
+  //!   The client-final response to send to the server.  If the response is
+  //!   null, the server sent something unacceptable or unparseable.
+  //!
+  //! @seealso
+  //!   @[client_3]
+  string(7bit) client_2(string(8bit) line, string(8bit) pass) {
+    constant format = "r=%s,s=%s,i=%d";
+    string(8bit) r, salt;
+    int iters;
+    if (!catch([r, salt, iters] = [array(string(8bit)|int)]
+				   array_sscanf(line, format))
+	&& iters > 0
+	&& has_prefix(r, nonce)) {
+      line = [string(8bit)]sprintf("c=biws,r=%s", r);
+      first = [string(8bit)]sprintf("%s,r=%s,s=%s,i=%d,%s",
+				    first[3..], r, salt, iters, line);
+      if (pass != "")
+	pass = [string(7bit)]Standards.IDNA.to_ascii(pass);
+      salt = MIME.decode_base64(salt);
+      nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
+      if (!(r = SCRAM_get_salted_password(nonce))) {
+	r = pbkdf2(pass, salt, iters, digest_size());
+	SCRAM_set_salted_password(r, nonce);
+      }
+      salt = sprintf("%s,p=%s", line, clientproof(r));
+      first = 0;                         // Free memory
+    } else
+      salt = 0;
+    return [string(7bit)]salt;
+  }
+
+  //! Final server-side step in the SCRAM handshake.
+  //!
+  //! @param line
+  //!   The received client-final challenge and response from the client.
+  //!
+  //! @param salted_password
+  //!   The salted (using the salt provided earlier) password belonging
+  //!   to the specified username.
+  //!
+  //! @returns
+  //!   The server-final response to send to the client.  If the response
+  //!   is null, the client did not supply the correct credentials or
+  //!   the response was unparseable.
+  string(7bit) server_3(string(8bit) line,
+			string(8bit) salted_password) {
+    constant format = "c=biws,r=%s,p=%s";
+    string r, p;
+    if (!catch([r, p] = array_sscanf(line, format))
+	&& r == nonce) {
+      first += sprintf("c=biws,r=%s", r);
+      p = p == clientproof(salted_password) && sprintf("v=%s", nonce);
+    }
+    return [string(7bit)]p;
+  }
+
+  //! Final client-side step in the SCRAM handshake.  If we get this far, the
+  //! server has already verified that we supplied the correct credentials.
+  //! If this step fails, it means the server does not have our
+  //! credentials at all and is an imposter.
+  //!
+  //! @param line
+  //!   The received server-final verification response.
+  //!
+  //! @returns
+  //!   True if the server is valid, false if the server is invalid.
+  int(0..1) client_3(string(8bit) line) {
+    constant format = "v=%s";
+    string v;
+    return !catch([v] = array_sscanf(line, format))
+      && v == nonce;
+  }
 }

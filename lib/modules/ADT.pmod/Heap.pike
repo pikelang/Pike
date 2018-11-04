@@ -99,6 +99,10 @@ protected int adjust_up(int elem)
 //!   Returns an element handle, which can be used with
 //!   @[adjust()] and @[remove()].
 //!
+//! @note
+//!   If @[value] is a @[Heap.Element] and already present on the heap
+//!   this is equivalent to calling @[adjust()].
+//!
 //! @seealso
 //!   @[pop()], @[remove()]
 Element push(mixed value)
@@ -106,6 +110,12 @@ Element push(mixed value)
   Element ret;
   if (objectp(value) && value->is_adt_heap_element) {
     ret = value;
+
+    if (ret->pos >= 0) {
+      // Element already on the Heap.
+      // FIXME: Verify that the element is on *this* heap?
+      return adjust(ret);
+    }
   } else {
     ret = Element(value);
   }

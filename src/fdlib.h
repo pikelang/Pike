@@ -54,13 +54,6 @@
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
-#ifndef FD_SETSIZE
-/*
- * in reality: almost unlimited actually.
- */
-#define FD_SETSIZE 65536
-#endif /* FD_SETSIZE */
-
 #include <winbase.h>
 
 typedef int FD;
@@ -87,6 +80,14 @@ typedef off_t PIKE_OFF_T;
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
+#define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
+#define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
+#define fd_unlink(FILE)	debug_fd_unlink(FILE)
+#define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
+#define fd_rename(O,N)	debug_fd_rename(O,N)
+#define fd_chdir(DIR)	debug_fd_chdir(DIR)
+#define fd_get_current_dir_name()	debug_fd_get_current_dir_name()
+#define fd_normalize_path(PATH)	debug_fd_normalize_path(PATH)
 #define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
@@ -121,11 +122,23 @@ typedef off_t PIKE_OFF_T;
 
 /* Prototypes begin here */
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
+int fd_to_handle(int fd, int *type, HANDLE *handle);
+void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
 void fd_exit(void);
+PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
+PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
+PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
+PMOD_EXPORT int debug_fd_rmdir(const char *dir);
+PMOD_EXPORT int debug_fd_unlink(const char *file);
+PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
+PMOD_EXPORT int debug_fd_rename(const char *old, const char *new);
+PMOD_EXPORT int debug_fd_chdir(const char *dir);
+PMOD_EXPORT char *debug_fd_get_current_dir_name(void);
+PMOD_EXPORT char *debug_fd_normalize_path(const char *path);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -202,44 +215,11 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
 
-struct my_fd_set_s
-{
-  char bits[FD_SETSIZE/8];
-};
-
-typedef struct my_fd_set_s my_fd_set;
-
 #ifdef PIKE_DEBUG
 #define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
 #else
 #define fd_check_fd(X)
 #endif /* PIKE_DEBUG */
-
-#define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
-#define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
-#define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
-#define my_FD_ZERO(S) memset(& (S)->bits, 0, sizeof(my_fd_set))
-
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {                   \
-    int e_,d_,max_=MINIMUM(FD_SETSIZE>>3,(max+7)>>3);                   \
-    (TO)->fd_count=0;							\
-    for(e_=0;e_<max_;e_++)						\
-    {									\
-      int b_=(FROM)->bits[e_];						\
-      if(b_)								\
-      {									\
-        for(d_=0;d_<8;d_++)						\
-        {								\
-          if(b_ & (1<<d_))						\
-          {								\
-            int fd_=(e_<<3)+d_;						\
-            fd_check_fd(fd_);						\
-            (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
-          }								\
-        }								\
-      }									\
-    }									\
-  }while(0)
 
 extern HANDLE da_handle[FD_SETSIZE];
 extern int fd_type[FD_SETSIZE];
@@ -266,8 +246,9 @@ extern int fd_type[FD_SETSIZE];
 
 #ifdef EMULATE_DIRECT
 
-#define d_name cFileName
-#define direct _WIN32_FIND_DATAA
+struct direct {
+  char *d_name;
+};
 #define dirent direct
 #define MAXPATHLEN MAX_PATH
 #define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -275,8 +256,9 @@ extern int fd_type[FD_SETSIZE];
 typedef struct DIR_s
 {
   int first;
-  WIN32_FIND_DATA find_data;
+  WIN32_FIND_DATAW find_data;
   HANDLE h;
+  struct direct direct;
 } DIR;
 
 PMOD_EXPORT DIR *opendir(char *dir);
@@ -340,6 +322,90 @@ typedef off_t PIKE_OFF_T;
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
+#ifdef HAVE_TRUNCATE64
+#define fd_truncate(F,LEN)	truncate64(F,LEN)
+#else
+#define fd_truncate(F,LEN)	truncate(F,LEN)
+#endif
+#define fd_rmdir(DIR)	rmdir(DIR)
+#define fd_unlink(FILE)	unlink(FILE)
+#if MKDIR_ARGS == 2
+#define fd_mkdir(DIR,MODE)	mkdir(DIR,MODE)
+#else
+/* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
+static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
+{
+  /* NB: Attempt to set the mode via the umask. */
+  int mask = umask(~mode & 0777);
+  int ret;
+
+  umask(~mode & mask & 0777);
+  ret = mkdir(dir);
+  umask(mask);
+
+  /* NB: We assume that the umask trick worked. */
+  return ret;
+}
+#define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
+#endif
+#define fd_rename(O,N)	rename(O,N)
+#define fd_chdir(DIR)	chdir(DIR)
+#ifdef HAVE_GET_CURRENT_DIR_NAME
+/* Glibc extension... */
+#define fd_get_current_dir_name()	get_current_dir_name()
+#elif defined(HAVE_WORKING_GETCWD)
+#if HAVE_WORKING_GETCWD
+/* Glibc and win32 (HAVE_WORKING_GETCWD == 1).
+ *
+ * getcwd(NULL, 0) gives malloced buffer.
+ */
+#define fd_get_current_dir_name()	getcwd(NULL, 0)
+#else
+/* Solaris-style (HAVE_WORKING_GETCWD == 0).
+ *
+ * getcwd(NULL, x) gives malloced buffer as long as x > 0, and the path fits.
+ */
+static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
+{
+  char *buf;
+  size_t buf_size = 128;
+  do {
+    buf = getcwd(NULL, buf_size);
+    if (buf) return buf;
+    buf_size <<= 1;
+  } while (errno == ERANGE);
+  return NULL;
+}
+#define fd_get_current_dir_name()	debug_get_current_dir_name()
+#endif
+#else
+static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
+{
+  char *buf;
+  size_t buf_size = 128;
+  do {
+    buf = malloc(buf_size);
+
+    if (!buf) {
+      errno = ENOMEM;
+      return NULL;
+    }
+
+    if (!getcwd(buf, buf_size-1)) {
+      free(buf);
+
+      if (errno == ERANGE) {
+	buf_size <<= 1;
+	continue;
+      }
+
+      return NULL;
+    }
+    return buf;
+  } while (1);
+}
+#define fd_get_current_dir_name()	debug_get_current_dir_name()
+#endif
 #define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
@@ -367,7 +433,11 @@ typedef off_t PIKE_OFF_T;
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
+#ifdef HAVE_FTRUNCATE64
+#define fd_ftruncate(fd,X) ftruncate64(dmalloc_touch_fd(fd),(X))
+#else
 #define fd_ftruncate(fd,X) ftruncate(dmalloc_touch_fd(fd),(X))
+#endif
 #define fd_fstat(fd,X) fstat(dmalloc_touch_fd(fd),(X))
 #define fd_select select /* fixme */
 #define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
@@ -414,25 +484,8 @@ typedef off_t PIKE_OFF_T;
 #define fd_shutdown_write 1
 #define fd_shutdown_both 2
 
-struct my_fd_set_s
-{
-  fd_set tmp;
-};
-
-typedef struct my_fd_set_s my_fd_set;
-
-#define my_FD_CLR(FD,S) FD_CLR((FD), & (S)->tmp)
-#define my_FD_SET(FD,S) FD_SET((FD), & (S)->tmp)
-#define my_FD_ISSET(FD,S) FD_ISSET((FD), & (S)->tmp)
-#define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
-
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
-   memcpy((TO),&(FROM)->tmp,sizeof(*(TO)))
-
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
-#ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
-#endif /* __amigaos__ */
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 

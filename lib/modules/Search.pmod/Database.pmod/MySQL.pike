@@ -6,6 +6,8 @@ inherit .Base;
 
 //#define SEARCH_DEBUG
 
+//#define SEARCH_DB_CONSISTENCY_CHECKS
+
 #define DB_MAX_WORD_SIZE 64
 
 protected
@@ -38,7 +40,7 @@ void create(string db_url, void|mapping _options)
 }
 
 #ifdef SEARCH_DEBUG
-void destroy()
+void _destruct()
 {
   if (blobs_dirty)
     werror("Search.Database.MySQL: WARNING: Forgot to sync before "
@@ -166,12 +168,12 @@ void init_tables()
 void clear()
 {
   Sql.Sql db = get_db();
-  db->query("delete from word_hit");
-  db->query("delete from uri");
-  db->query("delete from document");
-  db->query("delete from deleted_document");
-  db->query("delete from metadata");
-  db->query("delete from lastmodified");
+  db->query("TRUNCATE word_hit");
+  db->query("TRUNCATE uri");
+  db->query("TRUNCATE document");
+  db->query("TRUNCATE deleted_document");
+  db->query("TRUNCATE metadata");
+  db->query("TRUNCATE lastmodified");
 }
 
 
@@ -958,6 +960,10 @@ protected void store_to_db( void|string mergedfilename )
 
     //  Don't unlock and lock every word to reduce overhead
     if (q % 32 == 0) {
+      // Flush the accumulated updates before releasing the lock.
+      if( sizeof( multi_query ) )
+	db->query( multi_query->get());
+
       db->query("UNLOCK TABLES");
       db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
     }
@@ -967,6 +973,7 @@ protected void store_to_db( void|string mergedfilename )
     //  the only code path that adds words also invalidates the old docid and
     //  gets a fresh one.
 
+    // FIXME: The following two functions ought to be able to use multi_query().
     void add_padded_blobs(string word, array new_blobs)
     {
       //  Write all blobs except the last one that should be padded
@@ -989,6 +996,19 @@ protected void store_to_db( void|string mergedfilename )
 		"     VALUES (%s, %d, %d, %d, CONCAT(%s, SPACE(%d)))",
 		word, first_doc_id, new_used_len, new_real_len,
 		blob, space_count);
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      array new = db->query("SELECT real_len, LENGTH(hits) AS actual_len "
+			    "  FROM word_hit "
+			    " WHERE word = %s "
+			    "   AND first_doc_id = %d",
+			    word, first_doc_id);
+      if (!sizeof(new)) {
+	werror("Search.Database: Added blob not in db!\n");
+      } else if (new_real_len != (int)new[0]->actual_len) {
+	werror("Search.Database: Added blob has different real_len: %d != %d\n",
+	       new_real_len, (int)new[0]->actual_len);
+      }
+#endif
     };
 
     void add_oldstyle_blobs(string word, array new_blobs)
@@ -1003,18 +1023,34 @@ protected void store_to_db( void|string mergedfilename )
       }
     };
 
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+    string consistency_log = "";
+#define CONSISTENCY_LOG(X ...)			do {	\
+      consistency_log += sprintf(X);			\
+    } while(0)
+#else
+#define CONSISTENCY_LOG(X ...)
+#endif
+
     //  We only care about the most recent blob for the given word so look
     //  for the highest document ID.
     int first_doc_id;
     array old;
     if (use_padded_blobs) {
       old = db->query("  SELECT first_doc_id, used_len, real_len "
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+		      "  , LENGTH(hits) AS actual_len "
+#endif
 		      "    FROM word_hit "
 		      "   WHERE word=%s "
 		      "ORDER BY first_doc_id DESC "
 		      "   LIMIT 1", word);
     } else {
-      old = db->query("  SELECT first_doc_id, LENGTH(hits) AS used_len "
+      old = db->query("  SELECT first_doc_id, LENGTH(hits) AS used_len, "
+		      "         LENGTH(hits) AS real_len "
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+		      "  , LENGTH(hits) AS actual_len "
+#endif
 		      "    FROM word_hit "
 		      "   WHERE word=%s "
 		      "ORDER BY first_doc_id DESC "
@@ -1022,41 +1058,75 @@ protected void store_to_db( void|string mergedfilename )
     }
 
     if (sizeof(old)) {
-      int used_len = (int) old[-1]->used_len;
-      int real_len = use_padded_blobs ? ((int) old[-1]->real_len) : used_len;
-      int first_doc_id = (int) old[-1]->first_doc_id;
+      int used_len = (int) old[0]->used_len;
+      int real_len = (int) old[0]->real_len;
+      int first_doc_id = (int) old[0]->first_doc_id;
+      int new_used_len = used_len + sizeof(blob);
+      int new_real_len = new_used_len;	// NB: No padding.
 
-      //  Can the new blob fit in the existing padding space?
-      //
-      //  NOTE: This is never true for old-style blobs.
-      if (real_len - used_len >= sizeof(blob)) {
-	//  Yes, update in place
-	db->query(" UPDATE word_hit "
-		  "    SET hits = INSERT(hits, %d, %d, %s), "
-		  "        used_len = %d "
-		  "  WHERE word = %s "
-		  "    AND first_doc_id = %d",
-		  used_len + 1, sizeof(blob), blob,
-		  used_len + sizeof(blob),
-		  word, first_doc_id);
-      } else if (used_len + sizeof(blob) <= max_blob_size) {
-	//  The old blob can grow to accomodate the new data without
-	//  exceeding the maximum blob size.
+      array new_blobs = ({ blob });
+
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      if (real_len != (int)old[0]->actual_len) {
+	werror("Search.Database: Broken accounting for old word %O: %d != %d\n",
+	       word, real_len, (int)old[0]->actual_len);
+	CONSISTENCY_LOG("Broken accounting for old word %O: %d != %d\n",
+			word, real_len, (int)old[0]->actual_len);
+      }
+#endif
+
+      if (new_used_len > max_blob_size) {
+	//  Need to split blobs
+	new_blobs = split_blobs(used_len, blob, max_blob_size);
+	CONSISTENCY_LOG("Splitting old %d byte blob into %d bytes.\n",
+			sizeof(blob), sizeof(new_blobs[0][1]));
+	blob = new_blobs[0][1];
+	new_used_len = used_len + sizeof(blob);
+
+	// NB: No extra padding!
+	new_real_len = new_used_len;
+      } else if (use_padded_blobs) {
+	// Add padding.
+	new_real_len = get_padded_blob_length(new_used_len);
+      }
+
+      // Do we need to grow the old blob?
+      if (new_real_len != real_len) {
+	CONSISTENCY_LOG("Old (%d bytes) and new real_len (%d bytes) differ.\n",
+			real_len, new_real_len);
 	if (use_padded_blobs) {
-	  //  Make sure we make room for new padding for future use
-	  int new_used_len = used_len + sizeof(blob);
-	  int new_real_len = get_padded_blob_length(new_used_len);
-	  int space_count = new_real_len - new_used_len;
+	  //  We can grow the old blob to accomodate the new data without
+	  //  exceeding the maximum blob size.
+
+	  int space_count = new_real_len - real_len;
+	  int repl_size = sizeof(blob);
+
+	  if (space_count < 0) {
+	    // Truncate hits to new_real_len size (typically == new_used_len).
+	    //
+	    // Increase the third argument to INSERT() with the number of
+	    // padding bytes to remove. Note that space_count is negative.
+	    repl_size -= space_count;
+	    space_count = 0;
+	    CONSISTENCY_LOG("Truncating old hits by %d bytes.\n",
+			    repl_size - sizeof(blob));
+	  }
+
+	  // NB: Concat the padding first, and then overwrite it with INSERT(),
+	  //     to work around the corner case that INSERT() doesn't support
+	  //     being a CONCAT().
 	  db->query("UPDATE word_hit "
-		    "   SET hits = INSERT(hits, %d, %d, CONCAT(%s, SPACE(%d))),"
+		    "   SET hits = INSERT(CONCAT(hits, SPACE(%d)), %d, %d, %s),"
 		    "       used_len = %d, "
 		    "       real_len = %d "
 		    " WHERE word = %s "
 		    "   AND first_doc_id = %d",
-		    used_len + 1, sizeof(blob) + space_count, blob, space_count,
+		    space_count, used_len + 1, repl_size, blob,
 		    new_used_len,
 		    new_real_len,
 		    word, first_doc_id);
+	  CONSISTENCY_LOG("Updating used_len %d ==> %d and real_len %d ==> %d.\n",
+			  used_len, new_used_len, real_len, new_real_len);
 	} else {
 	  //  Append blob data to old record
 	  db->query("UPDATE word_hit "
@@ -1066,34 +1136,41 @@ protected void store_to_db( void|string mergedfilename )
 		    blob, word, first_doc_id);
 	}
       } else {
-	//  Need to split blobs
-	array new_blobs = split_blobs(used_len, blob, max_blob_size);
-	blob = new_blobs[0][1];
+	//  NOTE: This is never true for old-style blobs.
+	//
+	//  Update in place
+	db->query(" UPDATE word_hit "
+		  "    SET hits = INSERT(hits, %d, %d, %s), "
+		  "        used_len = %d "
+		  "  WHERE word = %s "
+		  "    AND first_doc_id = %d",
+		  used_len + 1, sizeof(blob), blob,
+		  used_len + sizeof(blob),
+		  word, first_doc_id);
+	CONSISTENCY_LOG("Updating in place (real_len: %d). used_len %d ==> %d\n",
+			real_len, used_len, used_len + sizeof(blob));
+      }
 
-	if (use_padded_blobs) {
-	  //  Write the first chunk at the end of the existing blob and remove
-	  //  any left-over padding by giving a sufficiently bigger blob size
-	  //  as third parameter compared to the actual data.
-	  int new_used_len = used_len + sizeof(blob);
-	  db->query("UPDATE word_hit "
-		    "   SET hits = INSERT(hits, %d, %d, %s), "
-		    "       used_len = %d, "
-		    "       real_len = %d "
-		    " WHERE word = %s "
-		    "   AND first_doc_id = %d",
-		    used_len + 1, sizeof(blob) + max_blob_size, blob,
-		    new_used_len,
-		    new_used_len,
-		    word, first_doc_id);
-	} else {
-	  //  Write the first chunk at the end of the existing blob
-	  db->query("UPDATE word_hit "
-		    "   SET hits = CONCAT(hits, %s) "
-		    " WHERE word = %s "
-		    "   AND first_doc_id = %d",
-		    blob, word, first_doc_id);
+#ifdef SEARCH_DB_CONSISTENCY_CHECKS
+      if (use_padded_blobs) {
+	array new = db->query("SELECT used_len, real_len, "
+			      "       LENGTH(hits) AS actual_len "
+			      "  FROM work_hit "
+			      " WHERE word = %s "
+			      "   AND first_doc_id = %d",
+			      word, first_doc_id);
+	if (!sizeof(new)) {
+	  werror("Search.Database: Lost track of word %O!\n", word);
+	  werror("Log:\n%s\n", consistency_log);
+	} else if (new[0]->real_len != new[0]->actual_len) {
+	  werror("Search.Database: Broken accounting for new word %O: %d != %d\n",
+		 word, (int)new[0]->real_len, (int)new[0]->actual_len);
+	  werror("Log:\n%s\n", consistency_log);
 	}
+      }
+#endif
 
+      if (sizeof(new_blobs) > 1) {
 	//  Write remaining ones
 	if (use_padded_blobs)
 	  add_padded_blobs(word, new_blobs[1..]);
@@ -1327,7 +1404,7 @@ array(array) get_most_common_words(void|int count)
 void list_url_by_prefix(string url_prefix, function(string:void) cb)
 {
   Sql.Sql db = get_db();
-  Sql.sql_result q =
+  Sql.Result q =
     db->big_query("SELECT uri "
 		  "  FROM uri "
 		  " WHERE uri LIKE '"+db->quote(url_prefix)+"%'");

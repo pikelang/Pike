@@ -178,7 +178,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '+': case '&':  case '|':
 	if( data[pos+1] == data[pos] ) pos++;
 	else if( data[pos+1] == '=' ) pos++;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case '*': case '%':
       case '^': case '!':  case '~':  case '=':
@@ -186,22 +186,14 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  pos++;
 	break;
 
-      case ' ':
-      case '\n':
-      case '\r':
-      case '\t':
-      case '\14':
-	pos++;
+      SPACECASE
+        pos++;
 	while( pos < len )
 	{
 	  switch(data[pos])
-	  {
-	    case ' ':
-	    case '\n':
-	    case '\r':
-	    case '\t':
-	    case '\14':
-	      pos++;
+          {
+            SPACECASE
+              pos++;
 	      continue;
 	  }
 	  break;

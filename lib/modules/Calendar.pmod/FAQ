@@ -154,6 +154,7 @@ A:  ->format_xxx();
     format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
     format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
     format_iso_short      "20010110T10:49:57"
+    format_mdy            "10/1/1"
     format_mod            "10:49"
     format_month          "2001-01"
     format_month_short    "200101"

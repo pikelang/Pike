@@ -83,7 +83,7 @@ struct my_file
    *   Note that to avoid races between the call to
    *   send_fd() and the call to write(), these fds
    *   are dup(2)'ed in send_fd() and close(2)'ed after
-   *   sending in write() (or close() or destroy()).
+   *   sending in write() (or close() or _destruct()).
    */
 #endif
 

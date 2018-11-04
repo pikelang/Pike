@@ -180,9 +180,27 @@ static void APPEND_PATH(struct string_builder *s,
 	continue;
       }
 #else /* !AMIGAOS_COMBINE_PATH */
-      while(s->s->len && IS_SEP(LAST_PUSHED()))
-	s->s->len--;
-      PUSH('/');
+      do {
+	/* Remove sequences of ending slashes and single dots
+	 * from the result path.
+	 */
+	while(s->s->len && IS_SEP(LAST_PUSHED()))
+	  s->s->len--;
+	if (LAST_PUSHED() == '.') {
+	  if (s->s->len == 1) {
+	    /* Result path started with "./". */
+	    s->s->len = 0;
+	    break;
+	  } else if (IS_SEP(index_shared_string(s->s, s->s->len-2))) {
+	    /* Result path ended with "/./". */
+	    s->s->len -= 2;
+	    continue;
+	  }
+	}
+	/* Restore a single slash as directory separator. */
+	PUSH('/');
+	break;
+      } while (1);
       if(from<len && INDEX_PCHARP(path, from) == '.')
       {
 	int c3;
@@ -198,7 +216,7 @@ static void APPEND_PATH(struct string_builder *s,
 	{
 	  case '.':
 	    c3=INDEX_PCHARP(path, from+2);
-	    if(IS_SEP(c3) || !c3)
+	    if(s->s->len && (IS_SEP(c3) || !c3))
 	    {
 	      /* Handle "..". */
 	      int tmp=s->s->len-1;
@@ -213,13 +231,16 @@ static void APPEND_PATH(struct string_builder *s,
 
 	      if (tmp < abs)
 		tmp = abs;
-	      else
-		if ((tmp+1 < s->s->len) &&
-		    (index_shared_string(s->s,tmp)=='.') &&
-		    (index_shared_string(s->s,tmp+1)=='.') &&
-		    ( (tmp+2 == s->s->len) ||
-		      IS_SEP(index_shared_string(s->s,tmp+2))))
-		  break;
+	      else {
+		if (index_shared_string(s->s,tmp)=='.') {
+		  if ((tmp+1 < s->s->len) &&
+		      (index_shared_string(s->s,tmp+1)=='.') &&
+		      ( (tmp+2 == s->s->len) ||
+			IS_SEP(index_shared_string(s->s,tmp+2)))) {
+		    break;
+		  }
+		}
+	      }
 
 	      from+=(c3? 3:2);
 	      s->s->len=tmp;
@@ -281,7 +302,7 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
   struct string_builder ret;
   ONERROR tmp;
 
-  check_all_args(DEFINETOSTR(COMBINE_PATH),args,
+  check_all_args(NULL,args,
 		 BIT_STRING, BIT_STRING | BIT_MANY | BIT_VOID, 0);
 
   init_string_builder(&ret, 0);

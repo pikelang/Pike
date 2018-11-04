@@ -39,7 +39,7 @@ void create(?GTK2.SourceBuffer buffer)
   if (args) {
     struct object *o1;
     GtkSourcePrintJob *gs;
-    get_all_args("create",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gs=gtk_source_print_job_new_with_buffer(NULL,
 			GTK_SOURCE_BUFFER(get_gobject(o1)));
     THIS->obj=G_OBJECT(gs);
@@ -101,7 +101,7 @@ void set_font_desc(Pango.FontDescription desc);
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_font_desc",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_source_print_job_set_font_desc(GTK_SOURCE_PRINT_JOB(THIS->obj),
 			(PangoFontDescription *)THIS-
 */
@@ -171,7 +171,7 @@ void print_range(GTK2.TextIter start, GTK2.TextIter end)
   {
     struct object *o1,*o2;
     void *res;
-    get_all_args("print_range",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     res=gtk_source_print_job_print_range(GTK_SOURCE_PRINT_JOB(THIS->obj),
 			(GtkTextIter *)get_gobject(o1),
 			(GtkTextIter *)get_gobject(o2));
@@ -197,7 +197,7 @@ void print_range_async(GTK2.TextIter start, GTK2.TextIter end)
   {
     struct object *o1,*o2;
     int res;
-    get_all_args("print_range_async",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     res=gtk_source_print_job_print_range_async(GTK_SOURCE_PRINT_JOB(THIS->obj),
 			(GtkTextIter *)get_gobject(o1),
 			(GtkTextIter *)get_gobject(o2));

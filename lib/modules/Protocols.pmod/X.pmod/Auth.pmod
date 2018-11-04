@@ -106,7 +106,7 @@ class lock_key
     return my_hardlink(c_name, l_name) && this;
   }
 
-  void destroy()
+  protected void _destruct()
   {
     rm(c_name);
     rm(l_name);

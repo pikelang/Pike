@@ -1,4 +1,3 @@
-
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
 ifdef([substr], ,[m4_copy([m4_substr],[substr])])
@@ -77,26 +76,6 @@ pushdef([AC_PROG_CC],
 	CFLAGS=
       fi
     else :; fi
-  fi
-
-  AC_MSG_CHECKING([if we are using TCC (TenDRA C Compiler)])
-  AC_CACHE_VAL(pike_cv_prog_tcc, [
-    if $CC -V 2>&1 | grep -i TenDRA >/dev/null; then
-      pike_cv_prog_tcc="yes"
-    else
-      pike_cv_prog_tcc="no"
-    fi
-  ])
-  if test "x$pike_cv_prog_tcc" = "xyes"; then
-    AC_MSG_RESULT(yes)
-    TCC="yes"
-    if echo "$CC $CFLAGS $CPPFLAGS" | grep " -Y" >/dev/null; then :; else
-      # We want to use the system API's...
-      CPPFLAGS="-Ysystem $CPPFLAGS"
-    fi
-  else
-    AC_MSG_RESULT(no)
-    TCC=no
   fi
 
   AC_MSG_CHECKING([if we are using ICC (Intel C Compiler)])
@@ -249,6 +228,130 @@ define([MY_AC_PROG_CC],
   fi
 ])
 
+dnl Not available before Autoconf 2.60.
+ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
+  AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
+[/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable non-POSIX declarations on Darwin. */
+#ifndef _DARWIN_C_SOURCE
+# undef _DARWIN_C_SOURCE
+#endif
+/* Enable non-POSIX declarations on NetBSD. */
+#ifndef _NETBSD_SOURCE
+# undef _NETBSD_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+])
+  AC_DEFINE(_GNU_SOURCE)
+  AC_DEFINE(_DARWIN_C_SOURCE)
+  AC_DEFINE(_NETBSD_SOURCE)
+  AC_DEFINE(_POSIX_PTHREAD_SEMANTICS)
+  AC_DEFINE(_TANDEM_SOURCE)
+])
+
+AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
+[
+  dnl Autoconf default extensions macro.
+  AC_REQUIRE([AC_USE_SYSTEM_EXTENSIONS])dnl
+
+  AH_VERBATIM([USE_POSIX_C_EXTENSIONS],
+[
+#ifndef POSIX_SOURCE
+ /* We must define this *always* */
+# define POSIX_SOURCE	1
+#endif
+#ifndef _POSIX_C_SOURCE
+  /* Version of POSIX that we want to support.
+   * Note that POSIX.1-2001 and later require C99, and the earlier
+   * require C89.
+   *	undef		Not POSIX.
+   *	1		POSIX.1-1990
+   *	2		POSIX.2-1992
+   *	199309L		POSIX.1b-1993 (Real Time)
+   *	199506L		POSIX.1c-1995 (POSIX Threads)
+   *	200112L		POSIX.1-2001 (Austin Group Revision)
+   *	200809L		POSIX.1-2008
+   */
+# undef _POSIX_C_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
+  /* Version of XPG that we want to support.
+   * Note that this interacts with _POSIX_C_SOURCE above.
+   *	undef		Not XPG (X Open Group).
+   *	1		XPG 3 or 4 or 4v2 (see below).
+   *	500		XPG 5 (POSIX.1c-1995).
+   *	600		XPG 6 (POSIX.1-2001).
+   *	700		XPG 7 (POSIX.1-2008).
+   */
+# undef _XOPEN_SOURCE
+
+# if defined(_XOPEN_SOURCE) && ((_XOPEN_SOURCE + 0) < 500)
+   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below). */
+#  undef _XOPEN_VERSION
+
+   /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
+#  undef _XOPEN_SOURCE_EXTENDED
+# endif
+#endif
+#ifndef _DARWIN_C_SOURCE
+#undef _DARWIN_C_SOURCE
+#endif
+#ifndef _NETBSD_SOURCE
+#undef _NETBSD_SOURCE
+#endif
+#ifndef __BSD_VISIBLE
+#undef __BSD_VISIBLE
+#endif
+])
+
+  AC_DEFINE(POSIX_SOURCE, 1)
+
+  AC_MSG_CHECKING(for level of POSIX to support)
+  AC_CACHE_VAL(pike_cv_posix_c_source, [
+    ORIG_CPPFLAGS="$CPPFLAGS"
+    # NB: Older Solaris fails on attempts to enable newer POSIX
+    #     than supported.
+    for pike_cv_posix_c_source in 200809L 200112L 199506L 199309L 2 1; do
+      CPPFLAGS="$ORIG_CPPFLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
+      AC_TRY_CPP([
+#include <stdio.h>
+#include <stdlib.h>
+      ],break;)
+    done
+    CPPFLAGS="$ORIG_CPPFLAGS"
+  ])
+  AC_MSG_RESULT($pike_cv_posix_c_source)
+  AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
+
+  # NB: _XOPEN_SOURCE overrides _POSIX_C_SOURCE on FreeBSD 10.3.
+  if test "$pike_cv_posix_c_source" = "200809L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 700)
+  elif test "$pike_cv_posix_c_source" = "200112L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 600)
+  elif test "$pike_cv_posix_c_source" = "199506L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 500)
+  else
+    # Attempt XPG 4v2.
+    AC_DEFINE(_XOPEN_SOURCE, 1)
+    AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1)
+  fi
+
+  AC_DEFINE(_DARWIN_C_SOURCE)
+  AC_DEFINE(_NETBSD_SOURCE)
+  # Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
+  AC_DEFINE(__BSD_VISIBLE, 1)
+])
+
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
 dnl proper declarations are required to test function presence in
 dnl AC_CHECK_FUNC. Necessary on Windows since various attributes cause
@@ -265,7 +368,17 @@ AC_DEFUN([PIKE_FUNCS_NEED_DECLS],
 [
   test "x$1" != x && pike_cv_funcs_need_decls="$1"
   if test "x$pike_cv_funcs_need_decls" = xyes; then
-    echo > hdrlist.h
+    cat > hdrlist.h <<EOF
+/* Some C89 header files. */
+#include <math.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+EOF
   fi
 ])
 
@@ -442,7 +555,7 @@ pushdef([AC_CHECK_SIZEOF],
   changequote(<<, >>)dnl
   define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
   changequote([, ])dnl
-  if test "x$cross_compiling" = "xyes" -o "x$TCC" = "xyes"; then
+  if test "x$cross_compiling" = "xyes"; then
     AC_MSG_CHECKING(size of $1 ... crosscompiling or tcc)
     AC_CACHE_VAL(AC_CV_NAME,[
       cat > conftest.$ac_ext <<EOF
@@ -450,21 +563,6 @@ dnl This sometimes fails to find confdefs.h, for some reason.
 dnl [#]line __oline__ "[$]0"
 [#]line __oline__ "configure"
 #include "confdefs.h"
-
-/* The worlds most stringent C compiler? */
-#ifdef __TenDRA__
-/* We want to be able to use 64bit arithmetic */
-#ifdef HAVE_PRAGMA_TENDRA_LONGLONG
-#pragma TenDRA longlong type allow
-#endif /* HAVE_PRAGMA_TENDRA_LONGLONG */
-#ifdef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-#pragma TenDRA set longlong type : long long
-#endif /* HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE */
-
-#ifdef _NO_LONGLONG
-#undef _NO_LONGLONG
-#endif /* _NO_LONGLONG */
-#endif /* __TenDRA__ */
 
 #include <stdio.h>
 
@@ -712,6 +810,8 @@ define([AC_LOW_MODULE_INIT],
   MY_AC_PROG_CC
 
   PIKE_SELECT_ABI
+
+  PIKE_USE_SYSTEM_EXTENSIONS
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the
@@ -1173,9 +1273,19 @@ EOF
 
 #############################################################################
 
+AC_DEFUN(AC_SYS_COMPILER_FLAG_REQUIREMENTS,
+[
+  # The following are needed to detect broken handling of __STDC__ == 1
+  # on Solaris with old header files.
+  AC_CHECK_HEADER(sys/types.h)
+  AC_CHECK_SIZEOF(off64_t, 0)
+])
+
 # option, cache_name, variable, do_if_failed, do_if_ok, paranoia_test
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
+  dnl AC_REQUIRE(AC_SYS_COMPILER_FLAG_REQUIREMENTS)
+
   AC_MSG_CHECKING($1)
   if test "x[$]pike_disabled_option_$2" = "xyes"; then
     AC_MSG_RESULT(disabled)
@@ -1187,20 +1297,31 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       CPPFLAGS="[$]OLD_CPPFLAGS $1"
       old_ac_link="[$]ac_link"
       ac_link="[$]old_ac_link 2>conftezt.out.2"
-      AC_TRY_RUN([
+      AC_TRY_LINK([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#if SIZEOF_OFF64_T != 0
+        /* Make sure that __STDC__ doesn't get set to 1
+         * on Solaris with old headers.
+         */
+        off64_t off64_value = (off64_t)17;
+#endif
+#endif
         int foo;
-        int main(int argc, char **argv)
+        int bar(int argc, char **argv)
         {
-	  /* The following code triggs gcc:s generation of aline opcodes,
-	   * which some versions of as does not support.
-	   */
+          /* The following code triggs gcc:s generation of aline opcodes,
+           * which some versions of as does not support.
+           */
 	  if (argc > 0) argc = 0;
 	  return argc;
         }
+      ],[
+        return bar(0, (void *)0);
       ],pike_cv_option_$2=yes,
-        pike_cv_option_$2=no, [
-        AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
-      ])
+        pike_cv_option_$2=no)
       if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
         pike_cv_option_$2=no
       elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
@@ -1311,6 +1432,47 @@ define([DO_IF_OS],
 
 # ABI selection.
 
+dnl variable, file-path
+AC_DEFUN(PIKE_CHECK_FILE_ABI,
+[
+  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/.*://'`
+  case "[$]PIKE_filetype" in
+    *64-bit*)
+      $1=64
+      ;;
+    *32-bit*)
+      $1=32
+      ;;
+    *64*)
+      $1=64
+      ;;
+    *32*)
+      $1=32
+      ;;
+    *386*)
+      # Probably NT or SCO file for i386:
+      #   iAPX 386 executable (COFF)
+      #   80386 COFF executable
+      $1=32
+      ;;
+    *ppc*)
+      # Probably 32-bit MacOS X object file:
+      #   Mach-O object ppc
+      $1=32
+      ;;
+    *)
+      # Unknown. Probably cross-compiling.
+      PIKE_MSG_WARN([Unrecognized object file format: $filetype])
+      if dd if="$2" count=2 bs=1 2>/dev/null | \
+	grep 'L' >/dev/null; then
+	# A common case is rntcl...
+	# If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
+	$1=32
+      fi
+      ;;
+  esac
+])
+
 AC_DEFUN(PIKE_CHECK_DEFAULT_ABI,
 [
   if test "x$ac_cv_objext" = "x"; then
@@ -1331,42 +1493,7 @@ int main(int argc, char **argv)
 EOF
     pike_cv_default_compiler_abi="unknown"
     if (eval $ac_compile) 2>&AC_FD_CC; then
-      filetype=`file "conftest.$ac_cv_objext" 2>/dev/null | sed -e 's/.*://'`
-      case "$filetype" in
-        *64-bit*)
-          pike_cv_default_compiler_abi=64
-	  ;;
-        *32-bit*)
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *64*)
-          pike_cv_default_compiler_abi=64
-	  ;;
-        *32*)
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *386*)
-          # Probably NT or SCO file for i386:
-          #   iAPX 386 executable (COFF)
-          #   80386 COFF executable
-          pike_cv_default_compiler_abi=32
-	  ;;
-	*ppc*)
-          # Probably 32-bit MacOS X object file:
-          #   Mach-O object ppc
-          pike_cv_default_compiler_abi=32
-	  ;;
-        *)
-          # Unknown. Probably cross-compiling.
-          PIKE_MSG_WARN([Unrecognized object file format: $filetype])
-	  if dd if="conftest.$ac_cv_objext" count=2 bs=1 2>/dev/null | \
-	     grep 'L' >/dev/null; then
-	    # A common case is rntcl...
-	    # If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
-            pike_cv_default_compiler_abi=32
-	  fi
-          ;;
-      esac
+      PIKE_CHECK_FILE_ABI(pike_cv_default_compiler_abi, conftest.$ac_cv_objext)
     fi
     rm -f conftest.$ac_cv_objext conftest.$ac_ext
   ])
@@ -1533,6 +1660,40 @@ AC_DEFUN(PIKE_SELECT_ABI,
   ])
   AC_MSG_RESULT($pike_cv_abi_suffixes)
 
+  # Prefix for pkg-config and other tools that don't support multiple ABIs
+  # natively.
+  if test "x$ac_tool_prefix" = x; then
+    AC_MSG_CHECKING(For $pike_cv_abi ABI tool prefix)
+    AC_CACHE_VAL(pike_cv_tool_prefix, [
+      SAVE_IFS="$IFS"
+      IFS=":"
+      file_abi=""
+      for d in $PATH; do
+	IFS="$SAVE_IFS"
+	for f in "$d/"*-pkg-config"$exeext"; do
+	  if test -f "$f"; then
+	    PIKE_CHECK_FILE_ABI(file_abi, "$f")
+	    if test "x$file_abi" = "x$pike_cv_abi"; then
+	      pike_cv_tool_prefix=`echo "$f" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
+	      break;
+	    fi
+	  fi
+	done
+        if test "x$pike_cv_tool_prefix" = x; then :; else
+	  break;
+	fi
+      done
+      IFS="$SAVE_IFS"
+    ])
+    if test "x$pike_cv_tool_prefix" = "x"; then
+      AC_MSG_RESULT(no)
+    else
+      AC_MSG_RESULT($pike_cv_tool_prefix)
+    fi
+  else
+    pike_cv_tool_prefix="$ac_tool_prefix"
+  fi
+
   # Compat
   with_abi="$pike_cv_abi"
 ])
@@ -1668,7 +1829,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 		*ELFCLASS32*)
 		  abi_32=yes
 		  ;;
-		*ELF4*)
+		*ELF64*)
 		  abi_64=yes
 		  ;;
 		*ELF32*)
@@ -1836,7 +1997,8 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
-  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
+  # NB: pkg-config does not have native support for multiple ABIs.
+  MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
 ])
 
 dnl package, variable, options
@@ -1848,20 +2010,48 @@ AC_DEFUN(PIKE_LOW_PKG_CONFIG,
   $2="[$]$2 ${pkg_stuff}"
 ])
 
-dnl package
+dnl package, on_success_opt, on_failure_opt
 AC_DEFUN(PIKE_PKG_CONFIG,
 [
   AC_REQUIRE([PIKE_PROG_PKG_CONFIG])dnl
+  pike_cv_pkg_config_$1=no
   if test "${PKG_CONFIG}" = no; then :; else
     AC_MSG_CHECKING([if a pkg-config based $1 is installed])
     if "${PKG_CONFIG}" "$1"; then
       AC_MSG_RESULT(yes)
+      PKG_SAVE_CPPFLAGS="$CPPFLAGS"
+      PKG_SAVE_CFLAGS="$CFLAGS"
+      PKG_SAVE_LDFLAGS="$LDFLAGS"
+      PKG_SAVE_LIBS="$LIBS"
       PIKE_LOW_PKG_CONFIG([$1], [CPPFLAGS], [--cflags-only-I])
       PIKE_LOW_PKG_CONFIG([$1], [CFLAGS],   [--cflags-only-other])
       PIKE_LOW_PKG_CONFIG([$1], [LDFLAGS],  [--libs-only-L])
       PIKE_LOW_PKG_CONFIG([$1], [LIBS],     [--libs-only-l --libs-only-other])
+      AC_MSG_CHECKING([if $1 breaks compilation...])
+      AC_TRY_COMPILE([
+#include <stdio.h>
+],[
+        printf("Hello, world\n");
+	exit(0);
+      ],[
+	AC_MSG_RESULT([no, everything seems ok])
+	pike_cv_pkg_config_$1=yes
+      ],[
+	AC_MSG_RESULT([yes, do not use])
+	CPPFLAGS="$PKG_SAVE_CPPFLAGS"
+	CFLAGS="$PKG_SAVE_CFLAGS"
+	LDFLAGS="$PKG_SAVE_LDFLAGS"
+	LIBS="$PKG_SAVE_LIBS"
+      ])
     else
       AC_MSG_RESULT(no)
     fi
   fi
+  ifelse([$2$3], , , [
+    if test "x$pike_cv_pkg_config_$1" = "xno"; then
+      ifelse([$3], , :, [$3])
+    else
+      ifelse([$2], , :, [$2])
+    fi
+  ])
 ])

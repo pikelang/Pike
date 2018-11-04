@@ -55,7 +55,7 @@ void set_paper_size(GTK2.PaperSize size)
   {
     struct object *o1;
 
-    get_all_args("set_paper_size",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_page_setup_set_paper_size(GTK_PAGE_SETUP(THIS->obj),
 		(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));
   }
@@ -93,7 +93,7 @@ void set_paper_size_and_default_margins(GTK2.PaperSize size)
   {
     struct object *o1;
 
-    get_all_args("set_paper_size_and_default_margins",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_page_setup_set_paper_size_and_default_margins(
 		GTK_PAGE_SETUP(THIS->obj),
 		(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));

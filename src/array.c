@@ -22,6 +22,8 @@
 #include "cyclic.h"
 #include "multiset.h"
 #include "mapping.h"
+#include "bignum.h"
+#include "pike_search.h"
 
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
@@ -81,34 +83,35 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
 {
   struct array *v;
+  size_t length = size;
 
-  if(size+extra_space == 0)
+  if (DO_SIZE_T_ADD_OVERFLOW(length, (size_t)extra_space, &length)) goto TOO_BIG;
+
+  if(length == 0)
   {
     add_ref(&empty_array);
     return &empty_array;
   }
 
-  /* Limits size to (1<<29)-4 */
-  if( (size_t)(size+extra_space-1) >
-      (LONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
-    Pike_error("Too large array (size %ld exceeds %ld).\n",
-	       (long)(size+extra_space-1),
-	       (long)((LONG_MAX-sizeof(struct array))/sizeof(struct svalue)) );
-  v=malloc(sizeof(struct array)+
-           (size+extra_space-1)*sizeof(struct svalue));
-  if(!v)
-    Pike_error(msg_out_of_mem_2, sizeof(struct array)+
-	       (size+extra_space-1)*sizeof(struct svalue));
+  /*
+   * Do we really need this limit?
+   *    - arne
+   */
+  if (length > 1U<<29) goto TOO_BIG;
+
+  /* struct array contains one svalue already */
+  length --;
+
+  if (DO_SIZE_T_MUL_OVERFLOW(length, sizeof(struct svalue), &length) ||
+      DO_SIZE_T_ADD_OVERFLOW(length, sizeof(struct array), &length)) goto TOO_BIG;
+
+  v=xcalloc(length, 1);
 
   GC_ALLOC(v);
+  gc_init_marker(v);
 
-
-  if (size+extra_space)
-    /* for now, we don't know what will go in here */
-    v->type_field = BIT_MIXED | BIT_UNFINISHED;
-  else
-    v->type_field = 0;
-  v->flags=0;
+  /* for now, we don't know what will go in here */
+  v->type_field = BIT_MIXED | BIT_UNFINISHED;
 
   v->malloced_size = (INT32)(size + extra_space);
   v->item=v->real_item;
@@ -116,14 +119,9 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
 
-  {
-    struct svalue *item = ITEM(v);
-    struct svalue *item_end = item + v->size;
-    while (item < item_end)
-      *item++ = svalue_int_zero;
-  }
-
   return v;
+TOO_BIG:
+  Pike_error("Too large array (size %ld is too big).\n", length);
 }
 
 /**
@@ -298,11 +296,11 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 	struct svalue tmp;
 	SET_SVAL(tmp, T_ARRAY, 0, array, a);
 	if (a->size) {
-	  index_error(0,0,0,&tmp,ind,
+          index_error(0,0,&tmp,ind,
 		      "Index %"PRINTPIKEINT"d is out of array range "
 		      "%d..%d.\n", p, -a->size, a->size-1);
 	} else {
-	  index_error(0,0,0,&tmp,ind,
+          index_error(0,0,&tmp,ind,
 		      "Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
 	}
       }
@@ -320,7 +318,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
       {
 	struct svalue tmp;
 	SET_SVAL(tmp, T_ARRAY, 0, array, a);
-	index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
+        index_error(0,0,&tmp,ind,"Array index is neither int nor string.\n");
       }
   }
 }
@@ -380,7 +378,7 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
     {
       struct svalue tmp;
       SET_SVAL(tmp, T_ARRAY, 0, array, a);
-      index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
+      index_error(0,0,&tmp,ind,"Array index is neither int nor string.\n");
     }
   }
 }
@@ -1422,7 +1420,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 /**
  * Reorganize an array in the order specified by 'order'.
  */
-PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order)
 {
   reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
   return v;
@@ -1432,7 +1430,7 @@ PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 /**
  * Copy and reorganize an array.
  */
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order)
 {
   INT32 e;
   struct array *ret;
@@ -2393,9 +2391,10 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 
     switch(str->size_shift)
     {
-      case 0: f=(explode_searchfunc)mojt.vtab->func0; break;
-      case 1: f=(explode_searchfunc)mojt.vtab->func1; break;
-      case 2: f=(explode_searchfunc)mojt.vtab->func2; break;
+      case eightbit:     f=(explode_searchfunc)mojt.vtab->func0; break;
+      case sixteenbit:   f=(explode_searchfunc)mojt.vtab->func1; break;
+      case thirtytwobit: f=(explode_searchfunc)mojt.vtab->func2; break;
+      default: Pike_fatal("Invalid size_shift: %d.\n", str->size_shift);
     }
 
     while((tmp = f(mojt.data, s, (end-s)>> str->size_shift)))
@@ -2679,7 +2678,7 @@ ptrdiff_t do_gc_weak_array(struct array *a)
   INT32 e;
   ptrdiff_t res = 0;
 
-  if (!a->flags & ARRAY_WEAK_FLAG) {
+  if (!(a->flags & ARRAY_WEAK_FLAG)) {
     return 0;
   }
 
@@ -2798,7 +2797,7 @@ static void gc_check_array(struct array *a)
   } GC_LEAVE;
 }
 
-void gc_mark_array_as_referenced(struct array *a)
+PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a)
 {
   if(gc_mark(a, T_ARRAY))
     GC_ENTER (a, T_ARRAY) {
@@ -2843,7 +2842,7 @@ void gc_mark_array_as_referenced(struct array *a)
     } GC_LEAVE;
 }
 
-void real_gc_cycle_check_array(struct array *a, int weak)
+PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak)
 {
   GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG

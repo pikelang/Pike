@@ -27,20 +27,15 @@
  */
 
 #include "sybase_config.h"
-#include "global.h"
+#include "module.h"
 
 #ifdef HAVE_SYBASE
 
-
-#include "stralloc.h"
 #include "pike_error.h"
-#include "program.h"
 #include "las.h"
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "multiset.h"
-#include "mapping.h"
 
 #include "sybase.h"
 
@@ -184,8 +179,11 @@ PIKECLASS sybase
 
   DECLARE_STORAGE;
 
-  typedef struct sybase_sybase_struct pike_sybase_connection;
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
 
+  typedef struct sybase_sybase_struct pike_sybase_connection;
 
 /*
  * Must be called in a MT-safe fashion
@@ -409,15 +407,18 @@ EXIT
 /* exported functions */
 /**********************/
 
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
+  int clearit = clear && clear->u.integer;
   pike_sybase_connection *this=THIS;
 
   pop_n_elems(args);
 
-  if (this->had_error)
+  if (this->had_error) {
     push_text(this->error);
-  else
+    if (clearit)
+      this->had_error = 0;
+  } else
     push_int(0);
 }
 
@@ -435,12 +436,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   int usernamelen=0, passlen=0, hostnamelen=CS_UNUSED;
   pike_sybase_connection *this=THIS;
 
-
   sybdebug("sybase::connect(args=%d)\n",args);
-  check_all_args("sybase->connect",args,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_VOID,0);
 
   /* fetch arguments, so that we can enable threads */
   if (TYPEOF(sp[2-args]) == T_STRING && sp[2-args].u.string->len) { /*username*/
@@ -555,11 +551,6 @@ PIKEFUN void create(string|void host_, string|void db_,
 
   sybdebug("sybase::create(args=%d)\n",args);
 
-  check_all_args("sybase->create",args,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_MAPPING|BIT_VOID, 0);
-
   /* if connected, disconnect */
   if (this->context)
     sybase_destroy(Pike_fp->current_object);
@@ -620,6 +611,7 @@ PIKEFUN void create(string|void host_, string|void db_,
    is *function_result */
 
 PIKEFUN object|string big_query(string query_)
+  flags ID_VARIANT;
 {
   pike_sybase_connection *this=THIS;
   char *query, *err=NULL, *function_result=NULL;
@@ -633,10 +625,8 @@ PIKEFUN object|string big_query(string query_)
   CS_SMALLINT *nulls;
   int toreturn=PS_NORESULT; /* one of the #defines here above */
 
-
-
   /* check, get and pop args */
-  check_all_args("sybase->big_query",args,BIT_STRING,0);
+  check_all_args(NULL,args,BIT_STRING,0);
   query=sp[-args].u.string->str;
   querylen=sp[-args].u.string->len;
   sybdebug("query: '%s'\n",query);
@@ -1228,9 +1218,6 @@ PIKE_MODULE_INIT {
 
 
 #else /* HAVE_SYBASE */
-/* This must be included last! */
-#include "module.h"
-
 PIKE_MODULE_INIT {}
 PIKE_MODULE_EXIT {}
 #endif /* HAVE_SYBASE */

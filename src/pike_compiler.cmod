@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -26,7 +26,6 @@
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "cyclic.h"
-#include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
 #include "block_allocator.h"
@@ -36,6 +35,7 @@
 #include "module_support.h"
 #include "bitvector.h"
 #include "sprintf.h"
+#include "cpp.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -92,7 +92,7 @@ static const int lock_depth = 1;
 #define CDFPRINTF(...)
 #endif /* COMPILER_DEBUG */
 
-static struct program *reporter_program = NULL;
+struct program *reporter_program = NULL;
 struct program *compilation_program = 0;
 struct program *compilation_env_program = 0;
 struct object *compilation_environment = NULL;
@@ -462,7 +462,7 @@ static void f_reporter_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber, &subsystem, &message);
 
   /* Ignore informational level messages */
@@ -611,21 +611,27 @@ static void f_compilation_env_compile(INT32 args)
 }
 
 /*! @decl mixed resolv(string identifier, string filename, @
- *!		       object|void handler)
+ *!		       object|void handler, object|void compat_handler)
  *!
  *!   Look up @[identifier] in the current context.
  *!
  *!   The default implementation calls the corresponding
- *!   function in the master object.
+ *!   function in the handlers (if any), falling back to
+ *!   the master object.
+ *!
+ *! @returns
+ *!   Returns the value of the @[identifier] if found, and
+ *!   @[UNDEFINED] if not.
  */
 static void f_compilation_env_resolv(INT32 args)
 {
   struct pike_string *ident;
   struct pike_string *filename;
   struct object *handler = NULL;
+  struct object *compat_handler = NULL;
 
-  get_all_args("resolv", args, "%W%W.%O",
-	       &ident, &filename, &handler);
+  get_all_args(NULL, args, "%W%W.%O%O",
+	       &ident, &filename, &handler, &compat_handler);
 
   if(get_master())
   {
@@ -636,7 +642,7 @@ static void f_compilation_env_resolv(INT32 args)
     }else{
       SET_CYCLIC_RET(1);
 
-      APPLY_MASTER("resolv", args);
+      low_unsafe_apply_handler("resolv", handler, compat_handler, args);
     }
     END_CYCLIC();
   } else {
@@ -727,6 +733,28 @@ static void f_compilation_env_handle_inherit(INT32 args)
   }
 }
 
+/*! @decl program handle_import(string module, string current_file, @
+ *!                             object|void handler)
+ *!
+ *!   Look up an import @[module].
+ *!
+ *!   The default implementation calls the corresponding function
+ *!   in the master object.
+ *!
+ *! @seealso
+ *!   @[MasterObject()->handle_import()].
+ */
+static void f_compilation_env_handle_import(INT32 args)
+{
+  if(get_master())
+  {
+    APPLY_MASTER("handle_import", args);
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 #if 0
 /* @decl int filter_exception(SeverityLevel level, mixed err)
  *
@@ -745,7 +773,7 @@ static void f_compilation_env_filter_exception(INT32 args)
   int level;
   struct svalue *err;
 
-  get_all_args("filter_exception", args, "%d%*", &level, &err);
+  get_all_args(NULL, args, "%d%*", &level, &err);
   if (args > 2) {
     pop_n_elems(args-2);
     args = 2;
@@ -975,7 +1003,7 @@ static int run_pass1(struct compilation *c)
     return 0;
   }
 
-  low_start_new_program(c->target,1,0,0,0);
+  low_start_new_program(c->target, COMPILER_PASS_FIRST, 0, 0, 0);
   c->supporter.prog = Pike_compiler->new_program;
 
   CDFPRINTF("th(%ld) %p run_pass1() start: "
@@ -1048,6 +1076,44 @@ static int run_pass1(struct compilation *c)
   return ret;
 }
 
+void run_pass_extra(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  debug_malloc_touch(c->placeholder);
+
+  if (!c->p) {
+    c->flags &= ~(COMPILER_BUSY);
+    c->flags |= COMPILER_DONE;
+    return;
+  }
+
+  run_init(c);
+  low_start_new_program(c->p, COMPILER_PASS_EXTRA, 0, 0, 0);
+  free_program(c->p);
+  c->p=0;
+
+  run_init2(c);
+
+  CDFPRINTF("th(%ld) %p run_pass_extra() start: "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), Pike_compiler->new_program,
+            lock_depth, c->compilation_depth);
+
+  verify_supporters();
+
+  do_yyparse();  /* Parse da program */
+
+  CDFPRINTF("th(%ld) %p run_pass2() done for %s\n",
+            (long)th_self(), Pike_compiler->new_program,
+            c->lex.current_file->str);
+
+  verify_supporters();
+
+  c->p=debug_malloc_pass(end_first_pass(0));
+
+  run_exit(c);
+}
+
 void run_pass2(struct compilation *c)
 {
   debug_malloc_touch(c);
@@ -1060,7 +1126,7 @@ void run_pass2(struct compilation *c)
   }
 
   run_init(c);
-  low_start_new_program(c->p,2,0,0,0);
+  low_start_new_program(c->p, COMPILER_PASS_LAST, 0, 0, 0);
   free_program(c->p);
   c->p=0;
 
@@ -1215,7 +1281,13 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   add_ref(cc->supporter.self);
   low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
 
-  if(finish && cc->p) run_pass2(cc);
+  if (finish && cc->p) {
+    if (cc->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running delayed EXTRA PASS\n");
+      run_pass_extra(cc);
+    }
+    run_pass2(cc);
+  }
   run_cleanup(cc,1);
 
   exit_compiler();
@@ -1332,7 +1404,7 @@ static void f_compilation_report(INT32 args)
   /* FIXME: get_all_args() ought to have a marker
    *        indicating that we accept more arguments...
    */
-  get_all_args("report", args, "%d", &level);
+  get_all_args(NULL, args, "%d", &level);
 
   if ((c->handler || c->compat_handler)) {
     const char *fun_name = "compile_warning";
@@ -1371,7 +1443,7 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
 
@@ -1450,7 +1522,7 @@ static void f_compilation_create(INT32 args)
 
   STACK_LEVEL_START(args);
 
-  get_all_args("create", args, ".%W%O%d%d%P%O",
+  get_all_args(NULL, args, ".%W%O%d%d%P%O",
 	       &aprog, &ahandler,
 	       &amajor, &aminor,
 	       &atarget, &aplaceholder);
@@ -1518,7 +1590,7 @@ static void f_compilation_compile(INT32 args)
     Pike_error("PikeCompiler in use.\n");
   }
 
-  get_all_args("compile", args, "");
+  get_all_args(NULL, args, "");
 
   check_c_stack(65536);
 
@@ -1539,7 +1611,7 @@ static void f_compilation_compile(INT32 args)
 
   if (!c->prog) {
     /* No program text. */
-    low_start_new_program(c->target, 1, NULL, 0, NULL);
+    low_start_new_program(c->target, COMPILER_PASS_FIRST, NULL, 0, NULL);
     c->p = end_program();
     c->flags |= COMPILER_DONE;
     pop_n_elems(args);
@@ -1581,6 +1653,10 @@ static void f_compilation_compile(INT32 args)
   }else{
     CDFPRINTF("th(%ld) %p f_compilation_compile() finish now.\n",
               (long) th_self(), c->target);
+    if (c->flags & COMPILER_NEED_EXTRA_PASS) {
+      CDFPRINTF("Running EXTRA PASS\n");
+      run_pass_extra(c);
+    }
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
@@ -1594,13 +1670,13 @@ static void f_compilation_compile(INT32 args)
       CDFPRINTF("th(%ld) %p f_compilation_compile() reporting failure "
                 "since a dependant failed.\n",
                 (long) th_self(), c->target);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
       CDFPRINTF("th(%ld) %p f_compilation_compile() failed.\n",
                 (long) th_self(), c->target);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
 			 "Compilation failed.\n");
     }
     debug_malloc_touch(ret);
@@ -1618,29 +1694,39 @@ static void f_compilation_compile(INT32 args)
     push_int(0);
 }
 
-/*! @decl mixed resolv(string identifier, string filename, @
- *!                    object handler)
+/*! @decl mixed resolv(string identifier)
  *!
  *!   Resolve the symbol @[identifier].
  *!
- *!   The default implementation calls the corresponding function
- *!   in any active handler, and otherwise falls back to
- *!   @[CompilerEnvironment()->resolv()] in the parent object.
+ *!   The default implementation calls @[CompilerEnvironment()->resolv()]
+ *!   in the parent object, with the remaining arguments taken from the
+ *!   current @[PikeCompiler] context.
+ *!
+ *! @returns
+ *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
  */
 static void f_compilation_resolv(INT32 args)
 {
+  struct pike_string *sym;
   struct compilation *c = THIS_COMPILATION;
   struct object *handler;
   int fun = -1;
 
-  if (((handler = c->handler) && handler->prog &&
-       ((fun = find_identifier("resolv", handler->prog)) != -1)) ||
-      ((handler = c->compat_handler) && handler->prog &&
-       ((fun = find_identifier("resolv", handler->prog)) != -1))) {
-    apply_low(handler, fun, args);
+  get_all_args(NULL, args, "%W", &sym);
+
+  ref_push_string(sym);
+  ref_push_string(c->lex.current_file);
+  if (c->handler) {
+    ref_push_object(c->handler);
   } else {
-    apply_external(1, CE_RESOLV_FUN_NUM, args);
+    push_undefined();
   }
+  if (c->compat_handler) {
+    ref_push_object(c->compat_handler);
+  } else {
+    push_undefined();
+  }
+  apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
 /*! @decl object get_compilation_handler(int major, int minor)
@@ -1715,8 +1801,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
 
   STACK_LEVEL_START(args);
 
-  get_all_args("change_compiler_compatibility", args, "%d%d",
-	       &major, &minor);
+  get_all_args(NULL, args, "%d%d", &major, &minor);
 
   if ((major == -1) && (minor == -1)) {
     major = PIKE_MAJOR_VERSION;
@@ -1848,6 +1933,35 @@ static void f_compilation_handle_inherit(INT32 args)
   }
 }
 
+/*! @decl program handle_import(string module)
+ *!
+ *!   Look up an import @[module].
+ */
+static void f_compilation_handle_import(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct object *handler;
+  int fun = -1;
+
+  if (args > 1) pop_n_elems(args-1);
+
+  ref_push_string(c->lex.current_file);
+  if (c->handler && c->handler->prog) {
+    ref_push_object(c->handler);
+    args = 3;
+  }
+  else args = 2;
+
+  if (((handler = c->handler) && handler->prog &&
+       ((fun = find_identifier("handle_import", handler->prog)) != -1)) ||
+      ((handler = c->compat_handler) && handler->prog &&
+       ((fun = find_identifier("handle_import", handler->prog)) != -1))) {
+    apply_low(handler, fun, args);
+  } else {
+    apply_external(1, CE_HANDLE_IMPORT_FUN_NUM, args);
+  }
+}
+
 /*! @decl int(0..1) pop_type_attribute(string attribute, type a, type b)
  *!
  *!   Type attribute handler.
@@ -1874,9 +1988,9 @@ static void f_compilation_pop_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("pop_type_attribute", args, "%W%*%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
@@ -1916,9 +2030,9 @@ static void f_compilation_push_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("push_type_attribute", args, "%W%*%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -1972,9 +2086,9 @@ static void f_compilation_apply_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("apply_type_attribute", args, "%W%*.%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*.%*", &attr, &a, &b);
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -2036,7 +2150,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct pike_string *attribute;
   struct pike_string *test;
   struct svalue *sval;
-  get_all_args("apply_attribute_constant", args, "%S%*", &attribute, &sval);
+  get_all_args(NULL, args, "%S%*", &attribute, &sval);
 
   if ((TYPEOF(*sval) == T_INT) && !sval->u.integer) {
     pop_n_elems(args);
@@ -2120,7 +2234,7 @@ static void low_enter_compiler(struct object *ce, int inherit)
    */
   new_frame->current_program = ce->prog;
   add_ref(new_frame->current_program);
-  new_frame->context = compilation_program->inherits + inherit;
+  new_frame->context = ce->prog->inherits + inherit;
   new_frame->current_storage = ce->storage + new_frame->context->storage_offset;
 #ifdef PIKE_DEBUG
   if (new_frame->context->prog != compilation_program) {
@@ -2130,7 +2244,6 @@ static void low_enter_compiler(struct object *ce, int inherit)
 #endif /* PIKE_DEBUG */
   new_frame->fun = new_frame->context->identifier_level + PC_COMPILE_FUN_NUM;
   new_frame->locals = Pike_sp;
-  new_frame->expendible_offset = 0;
   new_frame->save_sp_offset = 0;
   new_frame->save_mark_sp = Pike_mark_sp;
   new_frame->args = 0;
@@ -2168,8 +2281,8 @@ PMOD_EXPORT void enter_compiler(struct pike_string *filename,
 PMOD_EXPORT void exit_compiler(void)
 {
 #ifdef PIKE_DEBUG
-  if ((Pike_fp->current_program != compilation_program) ||
-      (Pike_fp->fun != PC_COMPILE_FUN_NUM)) {
+  if ((Pike_fp->context->prog != compilation_program) ||
+      (Pike_fp->fun != Pike_fp->context->identifier_level + PC_COMPILE_FUN_NUM)) {
     Pike_fatal("exit_compiler(): Frame stack out of whack!\n");
   }
 #endif /* PIKE_DEBUG */
@@ -2477,7 +2590,7 @@ static void compile_compiler(void)
   /* Add the initial inherit, this is needed for clone_object()
    * to actually call the event handler, and for low_enter_compiler()
    * to find the storage and context. */
-  p->inherits = inh = xalloc(sizeof(struct inherit));
+  p->inherits = inh = ALLOC_STRUCT(inherit);
   inh->prog = p;
   inh->inherit_level = 0;
   inh->identifier_level = 0;
@@ -2507,7 +2620,7 @@ static void compile_compiler(void)
   p2->alignment_needed = ALIGNOF(struct compilation);
   p2->storage_needed = p2->xstorage + sizeof(struct compilation);
 
-  p2->inherits = inh = xalloc(sizeof(struct inherit));
+  p2->inherits = inh = ALLOC_STRUCT(inherit);
   inh->prog = p2;
   inh->inherit_level = 0;
   inh->identifier_level = 0;
@@ -2526,7 +2639,7 @@ static void compile_compiler(void)
 
   low_enter_compiler(co, 0);
 
-  low_start_new_program(p, 1, NULL, 0, NULL);
+  low_start_new_program(p, COMPILER_PASS_FIRST, NULL, 0, NULL);
   free_program(p);	/* Remove the extra ref we just got... */
 
   /* NOTE: The order of these identifiers is hard-coded in
@@ -2547,7 +2660,7 @@ static void compile_compiler(void)
   ADD_FUNCTION("resolv", f_compilation_env_resolv,
 	       tFunc(tStr tStr tObj, tMix), 0);
 
-  low_start_new_program(p2, 1, NULL, 0, NULL);
+  low_start_new_program(p2, COMPILER_PASS_FIRST, NULL, 0, NULL);
 
   /* low_start_new_program() has zapped the inherit we created
    * for p2 above, so we need to repair the frame pointer.
@@ -2593,6 +2706,9 @@ static void compile_compiler(void)
   ADD_FUNCTION("handle_inherit", f_compilation_handle_inherit,
 	       tFunc(tStr, tPrg(tObj)), 0);
 
+  ADD_FUNCTION("handle_import", f_compilation_handle_import,
+	       tFunc(tStr, tPrg(tObj)), 0);
+
   ADD_FUNCTION("pop_type_attribute", f_compilation_pop_type_attribute,
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
@@ -2636,7 +2752,7 @@ static void compile_compiler(void)
   PIKE_MAP_VARIABLE("p", OFFSETOF(compilation, p),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
-		    tStr, PIKE_T_STRING, ID_HIDDEN);
+		    tStr, PIKE_T_STRING, ID_PROTECTED);
   PIKE_MAP_VARIABLE("default_module", OFFSETOF(compilation, default_module),
 		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
@@ -2660,6 +2776,9 @@ static void compile_compiler(void)
 	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
 
   ADD_FUNCTION("handle_inherit", f_compilation_env_handle_inherit,
+	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
+
+  ADD_FUNCTION("handle_import", f_compilation_env_handle_import,
 	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
 
   /* Reporter */
@@ -2694,6 +2813,8 @@ static void compile_compiler(void)
   Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
   end_class("lock", 0);
 
+  init_cpp_compilerenv_classes();
+
   compilation_env_program = end_program();
 
   add_global_program("CompilerEnvironment", compilation_env_program);
@@ -2704,130 +2825,6 @@ static void compile_compiler(void)
   low_add_constant("DefaultCompilerEnvironment", Pike_sp-1);
   pop_stack();
 }
-
-struct program *compile(struct pike_string *aprog,
-			struct object *ahandler,/* error handler */
-			int amajor, int aminor,
-			struct program *atarget,
-			struct object *aplaceholder)
-{
-  int delay, dependants_ok = 1;
-  struct program *ret;
-#ifdef PIKE_DEBUG
-  ONERROR tmp;
-#endif
-  struct object *ce;
-  struct compilation *c;
-
-  /* FIXME! */
-
-  Pike_fatal("Old C-level compile() function called!\n");
-
-  CDFPRINTF("th(%ld) %p compile() enter, placeholder=%p\n",
-            (long) th_self(), atarget, aplaceholder);
-
-  ce = clone_object(compilation_program, 0);
-  c = (struct compilation *)ce->storage;
-
-  debug_malloc_touch(c);
-
-  verify_supporters();
-
-  c->p = NULL;
-  add_ref(c->prog=aprog);
-  if((c->handler=ahandler)) add_ref(ahandler);
-  c->major=amajor;
-  c->minor=aminor;
-  if((c->target=atarget)) add_ref(atarget);
-  if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
-  SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
-
-  if (c->handler)
-  {
-    if (safe_apply_handler ("get_default_module", c->handler, NULL,
-			    0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
-      if(SAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	ref_push_mapping(get_builtin_constants());
-      }
-    } else {
-      ref_push_mapping(get_builtin_constants());
-    }
-  }else{
-    ref_push_mapping(get_builtin_constants());
-  }
-  free_svalue(& c->default_module);
-  move_svalue (&c->default_module, --Pike_sp);
-
-#ifdef PIKE_DEBUG
-  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
-#endif
-
-  lock_pike_compiler();
-#ifdef PIKE_THREADS
-  c->saved_lock_depth = lock_depth;
-#endif
-
-  init_supporter(& c->supporter,
-		 (supporter_callback *) call_delayed_pass2,
-		 (void *)c);
-
-  delay=run_pass1(c);
-  dependants_ok = call_dependants(& c->supporter, !!c->p );
-#ifdef PIKE_DEBUG
-  /* FIXME */
-  UNSET_ONERROR(tmp);
-#endif
-
-  if(delay)
-  {
-    CDFPRINTF("th(%ld) %p compile() finish later, placeholder=%p.\n",
-              (long) th_self(), c->target, c->placeholder);
-    /* finish later */
-    add_ref(c->p);
-    verify_supporters();
-    return c->p; /* freed later */
-  }else{
-    CDFPRINTF("th(%ld) %p compile() finish now\n",
-              (long) th_self(), c->target);
-    /* finish now */
-    if(c->p) run_pass2(c);
-    debug_malloc_touch(c);
-    run_cleanup(c,0);
-
-    ret=c->p;
-    /* FIXME: Looks like ret should get an extra ref here, but I'm not
-     * sure. Besides, this function isn't used anymore. /mast */
-
-    debug_malloc_touch(c);
-    free_object(ce);
-
-    if (!dependants_ok) {
-      CDFPRINTF("th(%ld) %p compile() reporting failure "
-                "since a dependant failed.\n",
-                (long) th_self(), c->target);
-      if (ret) free_program(ret);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
-			 "Compilation failed.\n");
-    }
-    if(!ret) {
-      CDFPRINTF("th(%ld) %p compile() failed.\n",
-                (long) th_self(), c->target);
-      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
-			 "Compilation failed.\n");
-    }
-    debug_malloc_touch(ret);
-#ifdef PIKE_DEBUG
-    if (a_flag > 2) {
-      dump_program_tables(ret, 0);
-    }
-#endif /* PIKE_DEBUG */
-    verify_supporters();
-    return ret;
-  }
-}
-
 
 void push_compiler_frame(int lexical_scope)
 {
@@ -2862,11 +2859,11 @@ node *low_pop_local_variables(int level, node *block)
       block = mknode(F_COMMA_EXPR, block,
 		     mknode(F_POP_VALUE,
 			    mknode(F_ASSIGN,
-				   mkintnode(0),
-				   mklocalnode(e, 0)),
+				   mklocalnode(e, 0),
+				   mkintnode(0)),
 			    NULL));
     }
-    if ((Pike_compiler->compiler_pass == 2) &&
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
       ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
@@ -2897,7 +2894,7 @@ node *pop_local_variables(int level, node *block)
      *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
-      if ((Pike_compiler->compiler_pass == 2) &&
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
@@ -3036,6 +3033,14 @@ void init_pike_compiler(void)
 
     SET_SVAL(s, T_OBJECT, 0, object, placeholder_object);
     low_add_constant("__placeholder_object", &s);
+  }
+
+  {
+    struct pike_string *attr;
+    struct svalue s;
+    MAKE_CONST_STRING(attr, "utf8_string");
+    SET_SVAL(s, T_TYPE, 0, type, utf8_type_string);
+    low_add_efun(attr, &s);
   }
 
   exit_compiler();

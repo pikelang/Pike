@@ -26,8 +26,6 @@
 #include "cyclic.h"
 #include "pike_float.h"
 
-#define sp Pike_sp
-
 PMOD_EXPORT const struct svalue svalue_undefined = SVALUE_INIT (T_INT, NUMBER_UNDEFINED, 0);
 PMOD_EXPORT const struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
 PMOD_EXPORT const struct svalue svalue_int_one = SVALUE_INIT_INT (1);
@@ -42,6 +40,17 @@ PMOD_EXPORT const char msg_sval_obj_wo_refs[] =
 PMOD_EXPORT const char msg_ssval_obj_wo_refs[] =
   "(short) Svalue to object without references.\n";
 #endif
+
+PMOD_EXPORT void check_destructed(struct svalue *s)
+{
+  if(IS_DESTRUCTED(s)) {
+    free_object(s->u.object);
+    SET_SVAL(*s, PIKE_T_INT,
+	     NUMBER_DESTRUCTED,
+	     integer, 0);
+  }
+}
+
 
 /*
  * This routine frees a short svalue given a pointer to it and
@@ -284,6 +293,28 @@ PMOD_EXPORT TYPE_FIELD assign_svalues(struct svalue *to,
   return assign_svalues_no_free(to,from,num,type_hint);
 }
 
+PMOD_EXPORT void assign_no_ref_svalue(struct svalue *to,
+				      const struct svalue *val,
+				      const struct object *owner)
+{
+  if (((TYPEOF(*to) != PIKE_T_OBJECT) &&
+       (TYPEOF(*to) != PIKE_T_FUNCTION)) ||
+      (to->u.object != owner)) {
+    free_svalue(to);
+  }
+  if (val) {
+    if (((TYPEOF(*val) != PIKE_T_OBJECT) &&
+	 (TYPEOF(*val) != PIKE_T_FUNCTION)) ||
+	(val->u.object != owner)) {
+      assign_svalue_no_free(to, val);
+    } else {
+      *to = *val;
+    }
+  } else {
+    SET_SVAL(*to, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+  }
+}
+
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    const struct svalue *s)
@@ -431,9 +462,9 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
-	if(TYPEOF(sp[-1]) == T_INT)
+	if(TYPEOF(Pike_sp[-1]) == T_INT)
 	{
-	  q=sp[-1].u.integer;
+	  q=Pike_sp[-1].u.integer;
 	}else{
 	  q=0;
 	}
@@ -443,7 +474,7 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	return q;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
   default:
     q = hash_ptr(s->u.ptr);
     break;
@@ -471,7 +502,7 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	break;
     }
 #endif
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case T_INT:
     q=(size_t)s->u.integer;
     break;
@@ -542,7 +573,7 @@ int complex_svalue_is_true( const struct svalue *s )
 
       apply_low(s->u.object,
                 fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
-      if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
+      if(TYPEOF(Pike_sp[-1]) == T_INT && Pike_sp[-1].u.integer == 0)
       {
 	  pop_stack();
 	  return 1;
@@ -606,7 +637,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0,
 			"`!");
-	if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
+	if(TYPEOF(Pike_sp[-1]) == T_INT && Pike_sp[-1].u.integer == 0)
 	{
 	  pop_stack();
 	  return 1;
@@ -616,6 +647,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	}
       }
     }
+    /* FALLTHRU */
 
   default:
     return 1;
@@ -698,7 +730,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	  push_svalue(b);
 	  apply_low(a->u.object,
 		    fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	  if(UNSAFE_IS_ZERO(sp-1))
+	  if(UNSAFE_IS_ZERO(Pike_sp-1))
 	  {
 	    pop_stack();
 	    return 0;
@@ -710,7 +742,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if(TYPEOF(*b) != T_OBJECT) return 0;
       }
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
     case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):
@@ -732,7 +764,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	  push_svalue(a);
 	  apply_low(b->u.object,
 		    fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-	  if(UNSAFE_IS_ZERO(sp-1))
+	  if(UNSAFE_IS_ZERO(Pike_sp-1))
 	  {
 	    pop_stack();
 	    return 0;
@@ -820,13 +852,14 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 			     const struct svalue *b,
 			     struct processing *proc)
 {
+  struct program *p;
+
   check_svalue_type (a);
   check_svalue_type (b);
   check_refs(a);
   check_refs(b);
 
   {
-    struct program *p;
     int fun;
 
     if(TYPEOF(*a) == T_OBJECT) {
@@ -839,7 +872,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	push_svalue(b);
 	apply_low(a->u.object,
 		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(Pike_sp-1))
 	{
 	  pop_stack();
 	  return 0;
@@ -856,7 +889,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       push_svalue(a);
       apply_low(b->u.object,
 		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-      if(UNSAFE_IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return 0;
@@ -871,6 +904,17 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 
   if(UNSAFE_IS_ZERO(a) && UNSAFE_IS_ZERO(b)) return 1;
 
+  /* NB: Don't allow DWIM casting of objects to programs here,
+   *     as that leads to unwanted matches...
+   *
+   * The other cases (functions, programs and types) that
+   * program_from_svalue() supports are fine.
+   */
+  if ((TYPEOF(*a) != T_OBJECT) && (TYPEOF(*b) != T_OBJECT) &&
+      (p = program_from_svalue(a)) && (p == program_from_svalue(b))) {
+    return 1;
+  }
+
   if(TYPEOF(*a) != TYPEOF(*b)) return 0;
 
   switch(TYPEOF(*a))
@@ -878,9 +922,44 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
     case T_INT:
     case T_STRING:
     case T_FLOAT:
-    case T_FUNCTION:
     case T_PROGRAM:
       return 0;
+
+    case T_FUNCTION:
+      {
+	/* Consider functions the same if they are references to the same
+	 * identifier in the same class.
+	 */
+	struct object *a_obj = NULL, *b_obj = NULL;
+	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
+	struct identifier *a_id, *b_id;
+	if ((a_fun == FUNCTION_BUILTIN) || (b_fun == FUNCTION_BUILTIN)) {
+	  /* NB: Handled by is_eq() above. */
+	  return 0;
+	}
+	a_obj = a->u.object;
+	b_obj = b->u.object;
+	if ((a_obj->prog == pike_trampoline_program) &&
+	    (a_fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))) {
+	  struct pike_trampoline *a_tramp = get_storage(a_obj, pike_trampoline_program);
+	  if (!a_tramp || !a_tramp->frame) return 0;
+	  a_obj = a_tramp->frame->current_object;
+	  a_fun = a_tramp->func;
+	}
+	if ((b_obj->prog == pike_trampoline_program) &&
+	    (b_fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))) {
+	  struct pike_trampoline *b_tramp = get_storage(b_obj, pike_trampoline_program);
+	  if (!b_tramp || !b_tramp->frame) return 0;
+	  b_obj = b_tramp->frame->current_object;
+	  b_fun = b_tramp->func;
+	}
+	if (a_obj->prog == b_obj->prog) {
+	  /* Common case. */
+	  if (a_fun == b_fun) return 1;
+	}
+	/* Consider a and b the same if they are the same identifier. */
+	return ID_FROM_INT(a_obj->prog, a_fun) == ID_FROM_INT(b_obj->prog, b_fun);
+      }
 
     case T_TYPE:
       return pike_types_le(a->u.type, b->u.type) &&
@@ -1007,9 +1086,9 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
 	push_svalue(b);
 	apply_low(a->u.object,
 		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(Pike_sp-1))
 	{
-	  if(!SUBTYPEOF(sp[-1]))
+	  if(!SUBTYPEOF(Pike_sp[-1]))
 	  {
 	    pop_stack();
 	    return 0;
@@ -1046,9 +1125,9 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       push_svalue(a);
       apply_low(b->u.object,
 		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
-      if(UNSAFE_IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
       {
-	if(!SUBTYPEOF(sp[-1]))
+	if(!SUBTYPEOF(Pike_sp[-1]))
 	{
 	  pop_stack();
 	  return 0;
@@ -1153,7 +1232,12 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
     struct pike_type *b_type = NULL;
     int res;
     if ((TYPEOF(*a) == TYPEOF(*b)) &&
-	(a->u.ptr == b->u.ptr)) return 1;  /* eq */
+	(a->u.ptr == b->u.ptr)) {
+      if ((TYPEOF(*a) != PIKE_T_FUNCTION) ||
+	  (SUBTYPEOF(*a) == SUBTYPEOF(*b))) {
+	return 1;  /* eq */
+      }
+    }
     if (TYPEOF(*a) == T_TYPE) {
       add_ref(a_type = a->u.type);
     } else {
@@ -1301,6 +1385,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	      int e;
 	      /* Add line breaks to make the output easier to read. */
 	      buffer_add_str_unsafe(buf, "\\n\"\n");
+	      buffer_ensure_space(buf, indent);
 	      for (e = 2; e < indent; e++) {
 		buffer_add_char_unsafe(buf, ' ');
 	      }
@@ -1445,9 +1530,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      debug_malloc_touch(s->u.program);
 
-	      if(!SAFE_IS_ZERO(sp-1))
+	      if(!SAFE_IS_ZERO(Pike_sp-1))
 		{
-		  if(TYPEOF(sp[-1]) != T_STRING)
+		  if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_static_text("(master returned illegal value from describe_module)");
@@ -1455,7 +1540,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                  dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 		  dsv_add_string_to_buf(buf, name);
 
 		  pop_stack();
@@ -1552,9 +1637,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      debug_malloc_touch(obj);
 
-	      if(!SAFE_IS_ZERO(sp-1))
+	      if(!SAFE_IS_ZERO(Pike_sp-1))
 		{
-		  if(TYPEOF(sp[-1]) != T_STRING)
+		  if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_static_text("(object returned illegal value from _sprintf)");
@@ -1562,7 +1647,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		  Pike_interpreter.trace_level=save_t_flag;
 
-		  dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                  dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 		  pop_stack();
 		  END_CYCLIC();
@@ -1592,9 +1677,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	    debug_malloc_touch(obj);
 
-	    if(!SAFE_IS_ZERO(sp-1))
+	    if(!SAFE_IS_ZERO(Pike_sp-1))
 	      {
-		if(TYPEOF(sp[-1]) != T_STRING)
+		if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		  {
 		    pop_stack();
 		    push_static_text("(master returned illegal value from describe_object)");
@@ -1602,7 +1687,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 		Pike_interpreter.trace_level=save_t_flag;
 
-		dsv_add_string_to_buf(buf,  sp[-1].u.string );
+                dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 		pop_stack();
 		END_CYCLIC();
@@ -1668,9 +1753,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	  debug_malloc_touch(prog);
 
-	  if(!SAFE_IS_ZERO(sp-1))
+	  if(!SAFE_IS_ZERO(Pike_sp-1))
 	    {
-	      if(TYPEOF(sp[-1]) != T_STRING)
+	      if(TYPEOF(Pike_sp[-1]) != T_STRING)
 		{
 		  pop_stack();
 		  push_static_text("(master returned illegal value from describe_program)");
@@ -1678,7 +1763,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
 	      Pike_interpreter.trace_level=save_t_flag;
 
-	      dsv_add_string_to_buf(buf,  sp[-1].u.string );
+              dsv_add_string_to_buf(buf, Pike_sp[-1].u.string );
 
 	      pop_stack();
 	      END_CYCLIC();
@@ -2102,7 +2187,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 #define GC_CHECK_SWITCH(U, T, ZAP, GC_DO, PRE, DO_FUNC, DO_OBJ)		\
   switch (T) {								\
     case T_FUNCTION:							\
-      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+      PRE DO_FUNC(U, T, ZAP, GC_DO) /* FALLTHRU */			\
     case T_OBJECT:							\
       PRE DO_OBJ(U, T, ZAP, GC_DO) break;				\
     case T_STRING:							\
@@ -2236,7 +2321,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 			  DO_FUNC, DO_OBJ, DO_STR, DO_TYPE, DO_SKIP)	\
   switch (T) {								\
     case T_FUNCTION:							\
-      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+      PRE DO_FUNC(U, T, ZAP, GC_DO) /* FALLTHRU */			\
     case T_OBJECT:							\
       PRE								\
       if (!U.object->prog) {						\
@@ -2529,11 +2614,11 @@ PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
       }else{
 	apply_low(s->u.object,
 		  fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
-	if(TYPEOF(sp[-1]) != T_INT)
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("Bad return type from o->_sizeof() (not int)\n");
 	dmalloc_touch_svalue(Pike_sp-1);
-	sp--;
-	return sp->u.integer;
+	Pike_sp--;
+	return Pike_sp->u.integer;
       }
     }
   default:

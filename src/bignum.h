@@ -352,9 +352,12 @@ PMOD_EXPORT struct object *make_bignum_object(void);
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
 PMOD_EXPORT struct object *create_double_bignum(INT_TYPE low, INT_TYPE high);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
+PMOD_EXPORT int low_compare_bignums(MP_INT *a, MP_INT *b);
+PMOD_EXPORT int compare_bignums(struct object *a, struct object *b);
 
 PMOD_EXPORT void push_int64(INT64 i);
 PMOD_EXPORT void push_ulongest(UINT64 i);
+PMOD_EXPORT void ulongest_to_svalue_no_free(struct svalue *sv, UINT64 i);
 
 /* Returns low 64 bits and nonzero if bignum. */
 PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum);

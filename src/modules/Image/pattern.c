@@ -38,8 +38,6 @@ extern struct program *image_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
-
 /**************** noise ************************/
 
 #define NOISE_PTS 1024
@@ -267,7 +265,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 	 *vp = s->u.array->item[i].u.float_number;
       else
 	 bad_arg_error(where,
-		       0,0, 1, "array of int|float,color", 0,
+                       0, 1, "array of int|float,color", 0,
 		       "%s: expected int or float at element %d"
 		       " of colorrange\n",where,i);
 
@@ -277,7 +275,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
       if (!image_color_svalue(s->u.array->item+i+1,&rgbt))
 	 bad_arg_error(where,
-		       0,0, 1, "array of int|float,color", 0,
+                       0, 1, "array of int|float,color", 0,
 		       "%s: no color at element %d"
 		       " of colorrange\n",where,i+1);
 
@@ -540,13 +538,14 @@ static void select_random_string(INT32 args)
   }
   else if(TYPEOF(sp[-1])==T_INT)
   {
+    struct program *p;
     push_constant_text("Random.Deterministic");
     SAFE_APPLY_MASTER("resolv_or_error",1);
     if(TYPEOF(sp[-1])!=T_PROGRAM)
       Pike_error("Unable to resolve Random.Deterministic program.\n");
-    struct program *o = sp[-1].u.program;
+    p = sp[-1].u.program;
     stack_swap();
-    push_object(clone_object(o, 1));
+    push_object(clone_object(p, 1));
     push_constant_text("random_string");
     o_index();
     if(TYPEOF(sp[-1])!=T_FUNCTION)

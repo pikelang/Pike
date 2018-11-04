@@ -17,25 +17,45 @@
 #define IMAGE_EMMX  8
 extern int image_cpuid;
 
-
-#define MAX_NUMCOL 32768
-
-#define QUANT_SELECT_CACHE 6
-
 #define COLORTYPE unsigned char
-#define COLORSIZE 1
 #define COLORMAX 255
 #define COLORLMAX 0x7fffffff
 #define COLORLBITS 31
-#define COLORBITS 8
 
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
 #define COLORL_TO_FLOAT(X) ((float)((((float)(X))/(float)(COLORLMAX>>8))/256.0))
 
+#define CHECK_INIT() if(!THIS->img) \
+    Pike_error("Image object not initialized.\n");
+
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
+
+#define testrange(x) _testrange((int)x)
+
+static inline int _testrange(int x)
+{
+  if(x>255) return 255;
+  if(x<0) return 0;
+  return x;
+}
+
+static inline int absdiff(int a, int b)
+{
+  return a<b?(b-a):(a-b);
+}
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+
+#define apply_alpha(x,y,alpha) \
+   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
+
+#define set_rgb_group_alpha(dest,src,alpha) \
+   ((dest).r=apply_alpha((dest).r,(src).r,alpha), \
+    (dest).g=apply_alpha((dest).g,(src).g,alpha), \
+    (dest).b=apply_alpha((dest).b,(src).b,alpha))
 
 static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
 {

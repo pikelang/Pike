@@ -91,6 +91,10 @@ Identifier rsa_sha384_id = pkcs_1_id->append(12);
 Identifier rsa_sha512_id = pkcs_1_id->append(13);
 Identifier rsa_sha224_id = pkcs_1_id->append(14);
 
+// RFC 8017 a.2.4
+Identifier rsa_sha512_224_id = pkcs_1_id->append(15);
+Identifier rsa_sha512_256_id = pkcs_1_id->append(16);
+
 // RFC 4055 2.2:
 Identifier mgf1_id = pkcs_1_id->append(8);
 
@@ -119,10 +123,27 @@ Identifier ec_mqw_id = Identifier(1, 3, 132, 1, 13);
 /* Elliptic Curves from RFC 5480 */
 Identifier ecc_secp192r1_id = Identifier(1, 2, 840, 10045, 3, 1, 1);
 Identifier ecc_sect163k1_id = Identifier(1, 3, 132, 0, 1);
+Identifier ecc_sect163r1_id = Identifier(1, 3, 132, 0, 2);
+Identifier ecc_sect239k1_id = Identifier(1, 3, 132, 0, 3);
+Identifier ecc_sect113r1_id = Identifier(1, 3, 132, 0, 4);
+Identifier ecc_sect113r2_id = Identifier(1, 3, 132, 0, 5);
+Identifier ecc_secp112r1_id = Identifier(1, 3, 132, 0, 6);
+Identifier ecc_secp112r2_id = Identifier(1, 3, 132, 0, 7);
+Identifier ecc_secp160r1_id = Identifier(1, 3, 132, 0, 8);
+Identifier ecc_secp160k1_id = Identifier(1, 3, 132, 0, 9);
+Identifier ecc_secp256k1_id= Identifier(1, 3, 132, 0, 10);
 Identifier ecc_sect163r2_id = Identifier(1, 3, 132, 0, 15);
+Identifier ecc_sect131r1_id = Identifier(1, 3, 132, 0, 22);
+Identifier ecc_sect131r2_id = Identifier(1, 3, 132, 0, 23);
+Identifier ecc_sect193r1_id = Identifier(1, 3, 132, 0, 24);
+Identifier ecc_sect193r2_id = Identifier(1, 3, 132, 0, 25);
 Identifier ecc_secp224r1_id = Identifier(1, 3, 132, 0, 33);
 Identifier ecc_sect233k1_id = Identifier(1, 3, 132, 0, 26);
 Identifier ecc_sect233r1_id = Identifier(1, 3, 132, 0, 27);
+Identifier ecc_secp128r1_id = Identifier(1, 3, 132, 0, 28);
+Identifier ecc_secp128r2_id = Identifier(1, 3, 132, 0, 29);
+Identifier ecc_secp160r2_id = Identifier(1, 3, 132, 0, 30);
+Identifier ecc_secp192k1r1_id = Identifier(1, 3, 132, 0, 31);
 Identifier ecc_secp256r1_id = Identifier(1, 2, 840, 10045, 3, 1, 7);
 Identifier ecc_sect283k1_id = Identifier(1, 3, 132, 0, 16);
 Identifier ecc_sect283r1_id = Identifier(1, 3, 132, 0, 17);
@@ -153,6 +174,15 @@ Identifier brainpool_p384t1 = ec_curve_ver1_id->append(12);
 Identifier brainpool_p521r1 = ec_curve_ver1_id->append(13);
 Identifier brainpool_p521t1 = ec_curve_ver1_id->append(14);
 
+/* Edwards curves from draft-ietf-curdle-pkix-03. */
+protected Identifier ed_curve_algs_id = Identifier(1, 3, 101);
+Identifier x25519_id = ed_curve_algs_id->append(110);
+Identifier x448_id = ed_curve_algs_id->append(111);
+Identifier eddsa25519_id = ed_curve_algs_id->append(112);
+Identifier eddsa448_id = ed_curve_algs_id->append(113);
+Identifier eddsa25519ph_id = ed_curve_algs_id->append(114);	/* pre-hash */
+Identifier eddsa448ph_id = ed_curve_algs_id->append(115);	/* pre-hash */
+
 /* For public key
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
@@ -179,6 +209,10 @@ Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
 Identifier sha384_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 2);
 Identifier sha512_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 3);
 Identifier sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 4);
+
+// RFC 8017 B.1:
+Identifier sha512_224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 5);
+Identifier sha512_256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 6);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */

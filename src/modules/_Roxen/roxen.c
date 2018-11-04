@@ -17,7 +17,6 @@
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "machine.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
@@ -194,7 +193,7 @@ static void f_hp_feed( INT32 args )
 
   /*leftovers*/
   push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
-  headers = allocate_mapping( 5 );
+
   in = hp->headers;
   l = pp - hp->headers;
 
@@ -211,8 +210,11 @@ static void f_hp_feed( INT32 args )
 
   in += i; l -= i;
 
+  headers = allocate_mapping( 5 );
+  push_mapping(headers);
+
   /* Parse headers. */
-  for(i = 0; i < l; i++)
+  for(i = 0; i < l-2; i++)
   {
     if(!keep_case && (in[i] > 64 && in[i] < 91))
     {
@@ -278,14 +280,16 @@ static void f_hp_feed( INT32 args )
     {
       if( THP->mode & FLAG_THROW_ERROR )
       {
-        /* FIXME: Reset stack so that backtrace shows faulty header. */
+        /* Reset stack so that backtrace shows faulty header. */
+        pop_n_elems(3);
+        push_string(make_shared_binary_string((const char*)(hp->pnt - str_len),
+                                              str_len));
         Pike_error("Malformed HTTP header.\n");
       }
       else
         os = i+1;
     }
   }
-  push_mapping( headers );
   f_aggregate( 3 );             /* data, firstline, headers */
 }
 
@@ -313,7 +317,8 @@ static void f_hp_create( INT32 args )
   INT_TYPE throw_errors = 0;
   INT_TYPE keep_case = 0;
   INT_TYPE no_fold = 0;
-  get_all_args("create",args,".%i%i%i", &throw_errors, &keep_case, &no_fold);
+  get_all_args(NULL,args,".%i%i%i", &throw_errors, &keep_case, &no_fold);
+  pop_n_elems(args);
 
   if (THP->headers) {
     free(THP->headers);
@@ -687,7 +692,7 @@ static void f_websocket_mask( INT32 args ) {
     size_t len;
     unsigned INT32 m;
 
-    get_all_args("websocket_mask", args, "%n%n", &str, &mask);
+    get_all_args(NULL, args, "%n%n", &str, &mask);
 
     if (mask->len != 4) Pike_error("Wrong mask length.\n");
 

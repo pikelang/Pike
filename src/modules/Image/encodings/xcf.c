@@ -11,11 +11,8 @@
 #include "object.h"
 #include "module_support.h"
 #include "interpret.h"
-#include "object.h"
 #include "svalue.h"
 #include "threads.h"
-#include "interpret.h"
-#include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
@@ -63,6 +60,7 @@ struct substring
 };
 
 static struct program *substring_program;
+#undef SS
 #define SS(X) ((struct substring*)X->storage)
 
 static void f_substring_cast( INT32 args )
@@ -199,10 +197,7 @@ static void push_substring( struct pike_string *s,
 static void free_substring(struct object *UNUSED(o))
 {
   if( SS(fp->current_object)->s )
-  {
     free_string( SS(fp->current_object)->s );
-    SS(fp->current_object)->s = 0;
-  }
 }
 
 
@@ -522,7 +517,7 @@ static struct level read_level( struct buffer *buff,
   {
     struct buffer ob = *initial;
     int offset2 = read_uint( buff );
-    struct tile *tile = xalloc(sizeof(struct tile));
+    struct tile *tile = ALLOC_STRUCT(tile);
     read_data( &ob, offset );
     if(last_tile)
       last_tile->next = tile;
@@ -574,7 +569,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s = xalloc(sizeof(struct property));
+      struct property *s = ALLOC_STRUCT(property);
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -611,7 +606,7 @@ static struct channel read_channel( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s = xalloc( sizeof(struct property ));
+      struct property *s = ALLOC_STRUCT(property);
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -650,7 +645,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s=xalloc( sizeof(struct property ));
+      struct property *s=ALLOC_STRUCT(property);
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -663,7 +658,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   if(lm_offset)
   {
     struct buffer loffset = *initial;
-    struct layer_mask *m=xalloc(sizeof(struct layer_mask));
+    struct layer_mask *m=ALLOC_STRUCT(layer_mask);
     res.mask = m;
     read_data( &loffset, lm_offset );
     memset(m, 0, sizeof( struct layer_mask ));
@@ -718,7 +713,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_property( data );
     if(tmp.type)
     {
-      struct property *s=xalloc( sizeof(struct property ));
+      struct property *s=ALLOC_STRUCT(property);
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -733,7 +728,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_layer( &layer_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct layer *s = xalloc( sizeof(struct layer));
+      struct layer *s = ALLOC_STRUCT(layer);
       *s = tmp;
       s->next = res.first_layer;
       res.first_layer = s;
@@ -748,7 +743,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_channel( &channel_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct channel *s = xalloc( sizeof(struct channel));
+      struct channel *s = ALLOC_STRUCT(channel);
       *s = tmp;
       s->next = res.first_channel;
       res.first_channel = s;
@@ -892,7 +887,7 @@ static void image_xcf____decode( INT32 args )
   struct buffer b;
   struct gimp_image res;
   ONERROR err;
-  get_all_args( "___decode", args, "%S", &s );
+  get_all_args( NULL, args, "%S", &s );
   if(args > 1)
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
@@ -1186,7 +1181,7 @@ void image_xcf_f__decode_tiles( INT32 args )
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
   ONERROR err;
-  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%i%d%d",
+  get_all_args( NULL, args, "%o%O%a%i%i%O%i%d%d",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 
@@ -1295,7 +1290,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
     if( (size_t)(tile.len) < (size_t)(eheight * ewidth * bpp ))
     {
-      if( df ) free( df ); df=0;
+      if( df ) {free( df ); df=0;}
       continue;
     }
     s = (unsigned char *)tile.str;
@@ -1503,7 +1498,6 @@ void init_image_xcf(void)
   ADD_FUNCTION("get_uint", f_substring_get_uint, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("_sprintf",f_substring__sprintf, tFunc(tInt tMapping,tMix), 0);
 
-/*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
   substring_program = end_program();
 }

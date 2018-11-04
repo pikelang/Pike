@@ -226,7 +226,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     }
 
     case '8': case '9':
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
 	yywarning("%c is not a valid octal digit.", c);
       break;
 
@@ -335,7 +335,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     /* Warn about this as it is commonly due to broken escaping,
      * and to be forward compatible with adding future new escapes.
      */
-    if (Pike_compiler->compiler_pass == 1) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       yywarning("Redundant backslash-escape: \'\\%c\'.", c);
     }
     break;
@@ -365,16 +365,16 @@ static p_wchar2 char_const(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       return 0;
     case 4: case 5: case 6:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too large character value in escape.");
       c = -1;
       break;
     case 7:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
-      if( Pike_compiler->compiler_pass == 1 )
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\U escape.");
       return '\\';
   }
@@ -397,7 +397,8 @@ static struct pike_string *readstring(struct lex *lex)
     char *buf;
     size_t len;
 
-    READBUF(((C > '\\') || ((C != '"') && (C != '\\') && (C != '\n'))));
+    READBUF(((C > '\\') ||
+	     ((C != '"') && (C != '\\') && (C != '\n') && (C != '\r'))));
     if (len) {
 #if (SHIFT == 0)
       string_builder_binary_strcat(&tmp, buf, len);
@@ -413,7 +414,7 @@ static struct pike_string *readstring(struct lex *lex)
       yyerror("End of file in string.");
       break;
 
-    case '\n':
+    case '\n': case '\r':
       lex->current_line++;
       yyerror("Newline in string.");
       break;
@@ -495,6 +496,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('a','r'):
 	  if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
+	case TWO_CHAR('a','w'):
+	  if (ISWORD("await")) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	      yywarning("await will soon be a reserved keyword.");
+	    }
+	    break;
+	  }
+	  break;
 	case TWO_CHAR('a','u'):
 	  if(ISWORD("auto")) return TOK_AUTO_ID;
 	  break;
@@ -512,7 +521,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("constant")) return TOK_CONSTANT;
 	  if(ISWORD("continue")) return TOK_CONTINUE;
 	  if(ISWORD("const")) {
-	    if (Pike_compiler->compiler_pass == 1) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	      yywarning("const will soon be a reserved keyword.");
 	    }
 	    break;
@@ -557,6 +566,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('i','m'):
 	  if(ISWORD("import")) return TOK_IMPORT;
+	  if(ISWORD("implement")) return TOK_IMPLEMENT;
 	  break;
 	case TWO_CHAR('i','n'):
 	  if(ISWORD("int")) return TOK_INT_ID;
@@ -618,6 +628,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('w','h'):
 	  if(ISWORD("while")) return TOK_WHILE;
+	  break;
+	case TWO_CHAR('_','S'):
+	  if(ISWORD("_Static_assert")) return TOK_STATIC_ASSERT;
 	  break;
 	case TWO_CHAR('_','_'):
 	  if(len < 5) break;
@@ -731,7 +744,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
     case '#':
       SKIPSPACE();
-      READBUF(C!='\n' && C!=' ' && C!='\t');
+      READBUF(!wide_isspace(C));
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
@@ -742,9 +755,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
 	  if (LOOK() < '0' || LOOK() > '9') goto unknown_directive;
 
-	  READBUF(C!='\n' && C!=' ' && C!='\t');
-	  /* fallthrough */
+	  READBUF(!wide_isspace(C));
 	} else goto unknown_directive;
+	/* FALLTHRU */
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	lex->current_line = lex_strtol(buf, NULL, 10)-1;
@@ -755,7 +768,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  free_string(lex->current_file);
 	  lex->current_file = dmalloc_touch(struct pike_string *, tmp);
 	}
-	if (Pike_compiler->compiler_pass == 1 &&
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
 	    !Pike_compiler->new_program->num_linenumbers) {
 	  /* A nested program will always get an entry right away in
 	   * language.yacc. */
@@ -771,7 +784,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	if(ISWORD("pragma"))
 	{
 	  SKIPSPACE();
-	  READBUF(C!='\n'&&C!=' ');
+	  READBUF(!wide_isspace(C));
 	  if (ISWORD("all_inline"))
 	  {
 	    lex->pragmas |= ID_INLINE;
@@ -818,7 +831,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
           }
           else
           {
-            if( Pike_compiler->compiler_pass == 1 )
+            if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
               yywarning("Unknown #pragma directive.");
           }
 	  break;
@@ -846,7 +859,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       default:
 unknown_directive:
@@ -873,6 +886,7 @@ unknown_directive:
 
     case ' ':
     case '\t':
+    case '\r':
       continue;
 
     case '\'':
@@ -987,7 +1001,7 @@ unknown_directive:
 	return TOK_NUMBER;
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
@@ -1175,6 +1189,8 @@ unknown_directive:
 
       /* if( GOBBLE('.' ) ) */
       /*   return TOK_SAFE_INDEX; */
+
+      /* FALLTHRU */
 
     case ']':
     case ',':

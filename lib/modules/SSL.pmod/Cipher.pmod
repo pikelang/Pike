@@ -1139,7 +1139,7 @@ class KeyExchangeECDHE
 {
   inherit KeyExchange;
 
-  protected Gmp.mpz secret;
+  protected Gmp.mpz|string(8bit) secret;
   protected Crypto.ECC.Curve.Point point;
 
   int(0..1) init_client()
@@ -1200,7 +1200,8 @@ class KeyExchangeECDHE
 		   packet_data, version>>8, version & 0xff);
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
-    Gmp.mpz secret = session->curve->new_scalar(context->random);
+    object(Gmp.mpz)|string(8bit) secret =
+      session->curve->new_scalar(context->random);
     Crypto.ECC.Curve.Point p = session->curve * secret;
 
     // RFC 4492 5.10:
@@ -1209,9 +1210,7 @@ class KeyExchangeECDHE
     // Conversion Primitive, has constant length for any given
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
-    string premaster_secret =
-      sprintf("%*c",(session->curve->size() + 7)>>3,
-	      (point*secret)->get_x());
+    string premaster_secret = (point*secret)->get_x_str();
     secret = 0;
 
     packet_data->add_hstring(p->encode(), 1);
@@ -1254,9 +1253,7 @@ class KeyExchangeECDHE
     // Conversion Primitive, has constant length for any given
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
-
-    premaster_secret =
-      sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
+    premaster_secret = (point*secret)->get_x_str();
 
     return premaster_secret;
   }

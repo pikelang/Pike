@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#if constant(thread_create)
+#if constant(__builtin.thread_id)
 constant Thread=__builtin.thread_id;
 
 optional constant MutexKey=__builtin.mutex_key;
@@ -10,10 +10,10 @@ optional constant _Disabled=__builtin.threads_disabled;
 optional constant Local=__builtin.thread_local;
 
 optional constant thread_create = predef::thread_create;
-
 optional constant this_thread = predef::this_thread;
-
 optional constant all_threads = predef::all_threads;
+optional constant get_thread_quanta = predef::get_thread_quanta;
+optional constant set_thread_quatna = predef::set_thread_quanta;
 
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
@@ -380,8 +380,12 @@ optional class Queue {
     buffer[w_ptr] = value;
     w_ptr++;
     int items = w_ptr - r_ptr;
-    r_cond::signal();
+    // NB: The mutex MUST be released before the broadcast to work
+    //     around bugs in glibc 2.24 and earlier. This seems to
+    //     affect eg RHEL 7 (glibc 2.17).
+    //     cf https://sourceware.org/bugzilla/show_bug.cgi?id=13165
     key=0;
+    r_cond::broadcast();
     return items;
   }
 
@@ -398,6 +402,9 @@ optional class Farm
   protected Mutex mutex = Mutex();
   protected Condition ft_cond = Condition();
   protected Queue job_queue = Queue();
+  protected object dispatcher_thread;
+  protected function(object, string:void) thread_name_cb;
+  protected string thread_name_prefix;
 
   //! An asynchronous result.
   class Result
@@ -506,6 +513,16 @@ optional class Farm
 
     protected int ready;
 
+    void update_thread_name(int is_exiting)
+    {
+      if (thread_name_cb) {
+        string th_name =
+          !is_exiting &&
+          sprintf("%s Handler 0x%x", thread_name_prefix, thread->id_number());
+        thread_name_cb(thread, th_name);
+      }
+    }
+
     void handler()
     {
       array(object|array(function|array)) q;
@@ -535,14 +552,16 @@ optional class Farm
           total_time += st/1000.0;
           handled++;
           job = 0;
+          q = 0;
           if( st > max_time )
             max_time = st;
           ft_cond->broadcast();
-        } else  {
+        } else {
           object lock = mutex->lock();
           threads -= ({ this });
           free_threads -= ({ this });
           lock = 0;
+          update_thread_name(1);
           destruct();
           return;
         }
@@ -578,6 +597,7 @@ optional class Farm
     protected void create()
     {
       thread = thread_create( handler );
+      update_thread_name(0);
     }
 
 
@@ -619,8 +639,12 @@ optional class Farm
 
   protected void dispatcher()
   {
-    while( array q = [array]job_queue->read() )
+    while( array q = [array]job_queue->read() ) {
       aquire_thread()->run( q[1], q[0] );
+      q = 0;
+    }
+    if (thread_name_cb)
+      thread_name_cb(this_thread(), 0);
   }
 
   protected class ValueAdjuster( object r, object r2, int i, mapping v )
@@ -774,6 +798,34 @@ optional class Farm
     return omnt;
   }
 
+  //! Provide a callback function to track names of threads created by the
+  //! farm.
+  //!
+  //! @param cb
+  //!   The callback function. This will get invoked with the thread as the
+  //!   first parameter and the name as the second whenever a thread is
+  //!   created. When the same thread terminates the callback is invoked
+  //!   again with @[0] as the second parameter. Set @[cb] to @[0] to stop
+  //!   any previously registered callbacks from being called.
+  //!
+  //! @param prefix
+  //!   An optional name prefix to distinguish different farms. If not given
+  //!   a prefix will be generated automatically.
+  void set_thread_name_cb(function(object, string:void) cb, void|string prefix)
+  {
+    thread_name_cb = cb;
+    thread_name_prefix =
+      cb &&
+      (prefix || sprintf("Thread.Farm 0x%x", dispatcher_thread->id_number()));
+
+    //  Give a name to all existing threads
+    if (thread_name_cb) {
+      thread_name_cb(dispatcher_thread, thread_name_prefix + " Dispatcher");
+      foreach (threads, Handler t)
+        t->update_thread_name(0);
+    }
+  }
+
   //! Get some statistics for the thread farm.
   string debug_status()
   {
@@ -798,7 +850,83 @@ optional class Farm
 
   protected void create()
   {
-    thread_create( dispatcher );
+    dispatcher_thread = thread_create( dispatcher );
+  }
+}
+
+//! When this key is destroyed, the corresponding resource counter
+//! will be decremented.
+//!
+//! @seealso
+//!   @[ResourceCount], @[MutexKey]
+//!
+optional class ResourceCountKey {
+
+  private inherit __builtin.DestructImmediate;
+
+  /*semi*/private ResourceCount parent;
+
+  /*semi*/private void create(ResourceCount _parent) {
+    parent = _parent;
+  }
+
+  /*semi*/private void _destruct() {
+    MutexKey key = parent->_mutex->lock();
+    --parent->_count;
+    parent->_cond->signal();
+  }
+}
+
+//! Implements an inverted-semaphore-like resource
+//! counter.  A thread can poll or perform a blocking wait for the
+//! resource-count to drop below a certain @ref{level@}.
+//!
+//! @seealso
+//!   @[ResourceCountKey], @[Condition], @[Mutex]
+optional class ResourceCount {
+  /*semi*/final int _count;
+  /*semi*/final Condition _cond = Condition();
+  /*semi*/final Mutex _mutex = Mutex();
+
+  //! @param level
+  //!   The maximum level that is considered drained.
+  //!
+  //! @returns
+  //!   True if the resource counter drops to equal or below @ref{level@}.
+  /*semi*/final int(0..1) drained(void|int level) {
+    return level >= _count;
+  }
+
+  //! Blocks until the resource-counter dips to max @ref{level@}.
+  //!
+  //! @param level
+  //!   The maximum level that is considered drained.
+  /*semi*/final void wait_till_drained(void|int level) {
+    MutexKey key = _mutex->lock();
+    while (_count > level)		// Recheck before allowing further
+      _cond->wait(key);
+  }
+
+  //! Increments the resource-counter.
+  //! @returns
+  //!   A @[ResourceCountKey] to decrement the resource-counter again.
+  /*semi*/final ResourceCountKey acquire() {
+    MutexKey key = _mutex->lock();
+    _count++;
+    return ResourceCountKey(this);
+  }
+
+  /*semi*/private string _sprintf(int type) {
+    string res = UNDEFINED;
+    switch(type) {
+      case 'O':
+        res = sprintf("Count: %d", _count);
+        break;
+      case 'd':
+        res = sprintf("%d", _count);
+        break;
+    }
+    return res;
   }
 }
 
@@ -826,7 +954,7 @@ optional class MutexKey (protected function(:void) dec_locks)
     return 1;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     if (dec_locks) dec_locks();
   }

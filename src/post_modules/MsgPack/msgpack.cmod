@@ -627,7 +627,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                 if (len == (size_t)s->len) {
                     memcpy(dst, STR0(s), len);
                 } else {
-                    pike_string_utf8_encode(dst, s);
+                    pike_string_utf8_encode(dst, s, 0);
                 }
 
                 io->len += len;
@@ -678,7 +678,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                     io->len += 5;
                     *(dst++) = 0xdf;
                     set_unaligned_be32(dst, len);
-                } else Pike_error("Array too large.\n");
+                } else Pike_error("Mapping too large.\n");
 
                 NEW_MAPPING_LOOP(m->data) {
                     mpack_low_encode(ctx, &k->ind, 1);
@@ -751,7 +751,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                     break;
                 }
             }
-            /* FALL THROUGH */
+            /* FALLTHRU */
         default:
             /* we pass anything else to the handler */
             ref_push_object(ctx->buffer);
@@ -830,6 +830,8 @@ PIKEFUN void encode_to(object to, mixed value, function|object handler) {
     ctx.handler = handler;
 
     mpack_low_encode(&ctx, value, 1);
+
+    io_trigger_output(io);
 }
 
 /*! @endmodule */

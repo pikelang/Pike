@@ -90,9 +90,7 @@ union node_data
   {
     int ident;
     struct compiler_frame *frame;
-#ifdef SHARED_NODES
     struct program *prog;
-#endif
   } trampoline;
   struct svalue sval;
   struct
@@ -132,34 +130,6 @@ struct node_s
 #endif
   union node_data u;
 };
-
-#define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
-				    * only used in node_info
-				    */
-#define OPT_NOT_CONST       0x2    /* isn't constant */
-#define OPT_SIDE_EFFECT     0x4    /* has side effects */
-#define OPT_ASSIGNMENT      0x8    /* does assignments */
-#define OPT_TRY_OPTIMIZE    0x10   /* might be worth optimizing */
-#define OPT_EXTERNAL_DEPEND 0x20   /* the value depends on external
-				    * influences (such as read_file or so)
-				    */
-#define OPT_CASE            0x40   /* contains case(s) */
-#define OPT_CONTINUE        0x80   /* contains continue(s) */
-#define OPT_BREAK           0x100  /* contains break(s) */
-#define OPT_RETURN          0x200  /* contains return(s) */
-#define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
-#define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
-#define OPT_APPLY           0x1000 /* contains apply */
-#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
-				    * parent also is optimized away */
-#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
-				    * isn't counted as side effect). Only used
-				    * in tree_info. */
-
-
-/* This is a statement which got custom break/continue label handling.
- * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
-#define OPT_CUSTOM_LABELS   0x10000
 
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
@@ -223,10 +193,8 @@ int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_type *type,
 	      int modifiers);
-void resolv_program(node *n);
-void check_foreach_type(node *expression, node *lvalues,
-                        struct pike_type **ind_type,
-                        struct pike_type **val_type );
+void resolv_type(node *n);
+void fix_foreach_type(node *lval_lval);
 /* Prototypes end here */
 
 /* Handling of nodes */
@@ -272,13 +240,8 @@ void check_foreach_type(node *expression, node *lvalues,
 #define _CDAR(n) _CDR(_CAR(n))
 #define _CDDR(n) _CDR(_CDR(n))
 
-#ifdef SHARED_NODES
 #define ADD_NODE_REF(n)	do { if (n) add_ref(n); } while(0)
 #define ADD_NODE_REF2(n, code)	do { ADD_NODE_REF(n); code; } while(0)
-#else /* !SHARED_NODES */
-#define ADD_NODE_REF(n)	(n = 0)
-#define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
-#endif /* SHARED_NODES */
 
 #define CAR(n) _CAR(n)
 #define CDR(n) _CDR(n)

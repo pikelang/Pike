@@ -47,15 +47,18 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #include "code/ppc64.h"
 #define PIKE_BYTECODE_METHOD_NAME	"ppc64"
-#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-#include "code/computedgoto.h"
-#define PIKE_BYTECODE_METHOD_NAME	"computed_goto"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
 #include "code/arm32.h"
 #define PIKE_BYTECODE_METHOD_NAME	"arm32"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #include "code/arm64.h"
 #define PIKE_BYTECODE_METHOD_NAME	"arm64"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#include "code/riscv.h"
+#define PIKE_BYTECODE_METHOD_NAME	"rv32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#include "code/riscv.h"
+#define PIKE_BYTECODE_METHOD_NAME	"rv64"
 #else
 #include "code/bytecode.h"
 #define PIKE_BYTECODE_METHOD_NAME	"default"

@@ -10,12 +10,8 @@
  * Henrik Grubbström 1996-12-21
  */
 
-/* Master Pike headerfile */
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "module.h"
 
 #ifdef HAVE_MYSQL
 
@@ -61,19 +57,13 @@
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
-#include "module.h"
-#include "svalue.h"
-#include "object.h"
-#include "stralloc.h"
 #include "interpret.h"
 #include "pike_compiler.h"
 #include "pike_error.h"
 #include "threads.h"
-#include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fd_control.h"
-#include "mapping.h"
 #include "bignum.h"
 #include "signal_handler.h"
 #include "module_support.h"
@@ -262,24 +252,24 @@ EXIT
 EXTRA
 {
 #ifndef USE_OLD_FUNCTIONS
-  add_integer_constant( "MYSQL_NO_ADD_DROP_DB", 1, 0 );
+  add_integer_constant( "MYSQL_NO_ADD_DROP_DB", 1, ID_OPTIONAL );
 #endif
 
-  add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
-  add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
-  add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, 0);
+  add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, ID_OPTIONAL);
+  add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, ID_OPTIONAL);
+  add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, ID_OPTIONAL);
 #ifdef CLIENT_INTERACTIVE
-  add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, 0);
+  add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, ID_OPTIONAL);
 #endif
-  add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, 0);
-  add_integer_constant( "CLIENT_ODBC", CLIENT_ODBC, 0);
+  add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, ID_OPTIONAL);
+  add_integer_constant( "CLIENT_ODBC", CLIENT_ODBC, ID_OPTIONAL);
 
 #ifdef HAVE_MYSQL_SSL
-  add_integer_constant( "CLIENT_SSL", CLIENT_SSL, 0);
+  add_integer_constant( "CLIENT_SSL", CLIENT_SSL, ID_OPTIONAL);
 #endif
 
 #ifdef HAVE_MYSQL_FIELD_CHARSETNR
-  add_integer_constant ("HAVE_MYSQL_FIELD_CHARSETNR", 1, 0);
+  add_integer_constant ("HAVE_MYSQL_FIELD_CHARSETNR", 1, ID_OPTIONAL);
 #endif
 
   /* NB: Nest the Result program in the connection program. */
@@ -979,10 +969,18 @@ PIKEFUN int insert_id()
  *!
  *! Returns @expr{0@} (zero) if there was no error.
  */
-PIKEFUN string error()
+PIKEFUN string error(void|int clear)
 {
   const char *error_msg;
-  error_msg = mysql_error(PIKE_MYSQL->mysql);
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  error_msg = mysql_error(mysql);
+
+  if (clear && clear->u.integer) {
+    MYSQL_ALLOW();
+    mysql_ping(mysql);
+    MYSQL_DISALLOW();
+  }
 
   pop_n_elems(args);
 
@@ -1842,11 +1840,41 @@ PIKEFUN string(8bit) client_info()
 {
   pop_n_elems(args);
 
-#ifndef MYSQL_COMPILATION_COMMENT
-#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#if defined(HAVE_MARIADB_GET_INFO) && defined(HAVE_MARIADB_CLIENT_VERSION)
+  /* MariaDB 10.2 and later (and probably some earlier versions as well). */
+  push_static_text("MariaDB/");
+  {
+    char *vers = NULL;
+    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers) < 0) {
+      vers = "unknown";
+    }
+    push_text(vers);
+  }
+  f_add(2);
+#else
+#ifndef MYSQL_SERVER_VERSION
+  /* NB: MariaDB 10.2 <mysql/mysql.h> doesn't include this file,
+   *     and also doesn't define MYSQL_SERVER_VERSION.
+   */
+#include <mysql/mysql_version.h>
 #endif
 
+#ifndef MYSQL_COMPILATION_COMMENT
+#ifdef LIBMARIADB
+#define MYSQL_COMPILATION_COMMENT "MariaDB"
+#else
+#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#endif
+#endif
+
+#ifdef LIBMYSQL_VERSION
+  /* MariaDB 10.2 and later (and probably some earlier versions as well). */
+  push_static_text(MYSQL_COMPILATION_COMMENT "/" LIBMYSQL_VERSION);
+#else
+  /* Older MySQL and MariaDB. */
   push_static_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+#endif
+#endif
 }
 
 /*! @endmodule

@@ -514,6 +514,7 @@ PIKECLASS Sequence
       free_array(THIS->a);
       add_ref(THIS->a=arg->u.array);
     }
+    pop_stack();
   }
 
 
@@ -553,7 +554,6 @@ PIKECLASS Sequence
   INIT
   {
     add_ref(THIS->a = &empty_array);
-    THIS->pos=0;
   }
 
   EXIT
@@ -600,11 +600,13 @@ PIKECLASS Sequence
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
 			 THIS->pos,
 			 THIS->sequence->a->size);
-	  }
+          }
+          pop_n_elems(2);
 	}
 	else
 	{
-	  THIS->pos = 0;
+          THIS->pos = 0;
+          pop_stack();
 	}
       }
 
@@ -662,7 +664,7 @@ PIKECLASS Sequence
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct object *o=fast_clone_object(Sequence_SequenceIterator_program);
       struct Sequence_SequenceIterator_struct *new;
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
@@ -714,7 +716,7 @@ PIKECLASS Sequence
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct object *o=fast_clone_object(Sequence_SequenceIterator_program);
       struct Sequence_SequenceIterator_struct *new;
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
@@ -943,21 +945,20 @@ PIKECLASS Sequence
       }
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       THIS->sequence=0;
       THIS->pos=0;
       THIS->obj = NULL;
     }
+#endif
 
     EXIT
       gc_trivial;
     {
       if( THIS->obj )
-      {
         free_object(THIS->obj);
-        THIS->obj = NULL;
-      }
     }
 
   }

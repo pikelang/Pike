@@ -69,7 +69,7 @@ void set_mime_types(?array(string) types)
   if (args) {
     struct array *a;
     GSList *gsl=NULL;
-    get_all_args("set_mime_types",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL || a->size<1) {
       gtk_source_language_set_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj),NULL);
     } else {
@@ -109,7 +109,7 @@ mapping(string:mixed) get_tag_style(string id)
     GtkSourceTagStyle *gs;
     GdkColor *fg,*bg;
     char *id;
-    get_all_args("get_tag_style",args,"%s",&id);
+    get_all_args(NULL,args,"%s",&id);
     gs=gtk_source_language_get_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id);
     pgtk2_pop_n_elems(args);
     if (gs) {
@@ -144,7 +144,7 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
   GtkSourceTagStyle *sts = NULL;
 
   pgtk2_verify_inited();
-  get_all_args("set_tag_style",args,"%s.%m",&id,&m);
+  get_all_args(NULL,args,"%s.%m",&id,&m);
 
   if (m) {
     struct svalue *sv;
@@ -197,7 +197,7 @@ mapping(string:mixed) get_tag_default_style(string id)
     GtkSourceTagStyle *gs;
     GdkColor *fg,*bg;
     char *id;
-    get_all_args("get_tag_default_style",args,"%s",&id);
+    get_all_args(NULL,args,"%s",&id);
     gs=gtk_source_language_get_tag_default_style(GTK_SOURCE_LANGUAGE(THIS->obj),
 			id);
     pgtk2_pop_n_elems(args);

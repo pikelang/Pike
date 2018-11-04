@@ -712,7 +712,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   {
   case F_MARK2 - F_OFFSET:
     sparc_mark(0);
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_SYNCH_MARK - F_OFFSET:
   case F_MARK - F_OFFSET:
     sparc_mark(0);
@@ -727,14 +727,14 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
   case F_MARK_AND_CONST0 - F_OFFSET:
     sparc_mark(0);
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CONST0 - F_OFFSET:
     sparc_push_int(0, 0);
     return;
 
   case F_MARK_AND_CONST1 - F_OFFSET:
     sparc_mark(0);
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   case F_CONST1 - F_OFFSET:
     sparc_push_int(1, 0);
     return;

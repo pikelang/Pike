@@ -1,9 +1,14 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef BITVECTOR_H
 #define BITVECTOR_H
 
 #include "machine.h"
 #include "global.h"
-#include "pike_int_types.h"
 
 #if defined(HAS__BITSCANFORWARD) || defined(HAS__BITSCANFORWARD64) || defined(HAS__BITSCANREVERSE) || defined(HAS__BITSCANREVERSE64)
 # include <intrin.h>
@@ -34,8 +39,10 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
     return i ? __cntlz4(i) : 32;
 #elif defined(HAS__BITSCANREVERSE)
     unsigned long index;
-    if (_BitScanReverse(&index, (unsigned long)i))
-	return (unsigned INT32)index;
+    if (_BitScanReverse(&index, (unsigned long)i)) {
+	/* NB: index is the bit number of the highest set bit [0..31]. */
+	return (unsigned INT32)(31 - index);
+    }
     return 32;
 #else
     unsigned INT32 t;
@@ -84,6 +91,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
 #define ctz16(i) (i ? ctz32(i) : 16)
 #define ctz8(i) (i ? ctz32(i) : 8)
 
+#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32)
 /**
  * Reverses the bytes in the 32-bit integer x.
  */
@@ -99,6 +107,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
             | ((x & 0x00ff0000) >> 8) | ((x & 0x0000ff00) << 8));
 #endif
 }
+#endif /* !HAVE___BSWAP32 && !HAVE_BSWAP32 */
 
 /**
  * Counts the number of leading zeros in a 64-bit unsigned
@@ -113,8 +122,10 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(UINT64 i) {
     return i ? __cntlz8(i) : 64;
 # elif defined(HAS__BITSCANREVERSE64)
     unsigned long index;
-    if (_BitScanReverse64(&index, i))
-	return index;
+    if (_BitScanReverse64(&index, i)) {
+	/* NB: index is the bit number of the highest set bit [0..63]. */
+	return (63 - index);
+    }
     return 64;
 # else
     UINT64 t;
@@ -167,6 +178,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(UINT64 i) {
 # endif
 }
 
+#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64)
 /**
  * Reverses the bytes in the 64-bit integer x.
  */
@@ -181,6 +193,7 @@ static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
     return bswap32(x >> 32) | (UINT64)bswap32(x & 0xffffffff) << 32;
 #endif
 }
+#endif /* !HAVE___BSWAP64 && !HAVE_BSWAP64 */
 
 static inline UINT64 PIKE_UNUSED_ATTRIBUTE round_up64(UINT64 v) {
     unsigned INT32 i;
@@ -252,7 +265,9 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
 
+#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16)
 #define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
+#endif /* !HAVE___BSWAP16 && !HAVE_BSWAP16 */
 
 #if PIKE_BYTEORDER == 1234
 #define get_unaligned_le16 get_unaligned16

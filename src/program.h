@@ -8,14 +8,13 @@
 #define PROGRAM_H
 
 #include "global.h"
-#include "pike_macros.h"
 #include "pike_error.h"
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
-#include "pike_rusage.h"
 #include "block_allocator.h"
 #include "string_builder.h"
+#include "gc_header.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
@@ -60,7 +59,7 @@ extern struct pike_string *type_check_system_string;
 enum LFUN {
     LFUN___INIT,
     LFUN_CREATE,
-    LFUN_DESTROY,
+    LFUN__DESTRUCT,
     LFUN_ADD,
     LFUN_SUBTRACT,
     LFUN_AND,
@@ -129,11 +128,6 @@ struct node_s;
 typedef struct node_s node;
 #endif
 
-#ifndef STRUCT_OBJECT_DECLARED
-#define STRUCT_OBJECT_DECLARED
-struct object;
-#endif
-
 #undef EXTERN
 #undef STRUCT
 #undef PUSH
@@ -149,7 +143,7 @@ struct object;
 /* Byte-code method identification. */
 #define PIKE_BYTECODE_PORTABLE	-1	/* Only used by the codec. */
 #define PIKE_BYTECODE_DEFAULT	0
-#define PIKE_BYTECODE_GOTO	1
+#define PIKE_BYTECODE_GOTO	1       /* Not in use */
 #define PIKE_BYTECODE_SPARC	2
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32    4
@@ -157,6 +151,8 @@ struct object;
 #define PIKE_BYTECODE_PPC64    6
 #define PIKE_BYTECODE_ARM32    7
 #define PIKE_BYTECODE_ARM64    8
+#define PIKE_BYTECODE_RV32     9
+#define PIKE_BYTECODE_RV64     10
 
 #ifndef PIKE_BYTECODE_METHOD
 #error PIKE_BYTECODE_METHOD not set.
@@ -172,13 +168,14 @@ struct object;
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #define PIKE_OPCODE_T unsigned INT32
-#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-#define PIKE_OPCODE_T void *
-#define PIKE_INSTR_T void *
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#define PIKE_OPCODE_T unsigned INT16
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#define PIKE_OPCODE_T unsigned INT16
 #else
 #define PIKE_OPCODE_T unsigned INT8
 #endif
@@ -425,6 +422,7 @@ struct inherit
   /* All the identifier references in the inherited program have been
    * copied to this program with the first one at this offset. */
   INT16 identifier_level;
+  /* TODO: why is this signed. */
 
   /* The index of the identifier reference in the parent program for
    * the identifier from which this inherit was done. -1 if there's no
@@ -624,9 +622,9 @@ struct identifier_lookup_cache
 
 struct program
 {
-  INT32 refs;
-
+  GC_MARKER_MEMBERS;
   INT32 id;             /* used to identify program in caches */
+
   /* storage_needed - storage needed in object struct
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.
@@ -666,29 +664,56 @@ struct program
 };
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
+
 #ifdef PIKE_DEBUG
-static inline int PIKE_UNUSED_ATTRIBUTE CHECK_IDREF_RANGE (int x, const struct program *p)
-{
-  if (x < 0 || x >= p->num_identifier_references) {
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x, const struct program *p) {
+  if (x >= p->num_identifier_references) {
     dump_program_tables(p, 4);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
   }
   return x;
 }
-#else
-#define CHECK_IDREF_RANGE(X, P) (X)
+#else /* !PIKE_DEBUG */
+PIKE_UNUSED_ATTRIBUTE
+static inline unsigned INT16 CHECK_IDREF_RANGE(unsigned INT16 x,
+					       const struct program *PIKE_UNUSED(p)) {
+  return x;
+}
 #endif
 
-#define PTR_FROM_INT(P, X)	((P)->identifier_references + \
-				 CHECK_IDREF_RANGE((X), (P)))
+static inline struct reference *PTR_FROM_INT(const struct program *p, unsigned INT16 x) {
+  x = CHECK_IDREF_RANGE(x, p);
+  return p->identifier_references + x;
+}
 
-#define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
-#define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
-#define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
-#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
-#define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
+static inline struct inherit *INHERIT_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *,p)->inherits + x->inherit_offset;
+}
+
+static inline struct program *PROG_FROM_PTR(const struct program *p, const struct reference *x) {
+  return dmalloc_touch(struct program *, INHERIT_FROM_PTR(p,x)->prog);
+}
+
+static inline struct identifier *ID_FROM_PTR(const struct program *p, const struct reference *x) {
+  return PROG_FROM_PTR(p,x)->identifiers + x->identifier_offset;
+}
+
+static inline struct inherit *INHERIT_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return INHERIT_FROM_PTR(p, ref);
+}
+
+static inline struct program *PROG_FROM_INT(const struct program *p, const unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return PROG_FROM_PTR(p, ref);
+}
+
+static inline struct identifier *ID_FROM_INT(const struct program *p, unsigned INT16 x) {
+  struct reference *ref = PTR_FROM_INT(p, x);
+  return ID_FROM_PTR(p, ref);
+}
 
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
@@ -758,6 +783,7 @@ void unuse_modules(INT32 howmany);
 node *find_module_identifier(struct pike_string *ident,
 			     int see_inherit);
 node *find_predef_identifier(struct pike_string *ident);
+int low_resolve_identifier(struct pike_string *ident);
 node *resolve_identifier(struct pike_string *ident);
 PMOD_EXPORT struct program *resolve_program(struct pike_string *ident);
 node *find_inherited_identifier(struct program_state *inherit_state,
@@ -804,9 +830,9 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 							  int f);
 PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 						   int e,
-						   struct pike_string *name,
+                                                   struct pike_string *name,
 						   int flags);
-int find_inherit(struct program *p, struct pike_string *name);
+int find_inherit(const struct program *p, const struct pike_string *name);
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
 					       struct pike_string *name);
@@ -823,15 +849,20 @@ PMOD_EXPORT void low_inherit(struct program *p,
 			     int parent_offset,
 			     INT32 flags,
 			     struct pike_string *name);
+PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
+					    struct pike_string *symbol,
+					    INT32 flags,
+					    int failure_severity_level);
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
 void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
+void compiler_do_implement(node *n);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
-int isidentifier(struct pike_string *s);
+int isidentifier(const struct pike_string *s);
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
@@ -893,7 +924,7 @@ INT32 define_function(struct pike_string *name,
 		      unsigned function_flags,
 		      union idptr *func,
 		      unsigned opt_flags);
-PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_string *name,
 							 const struct program *prog,
 							 int flags);
 int really_low_find_variant_identifier(struct pike_string *name,
@@ -904,7 +935,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
 PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun);
 PMOD_EXPORT int find_lfun_fatal(struct program *p, enum LFUN lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
-int low_find_shared_string_identifier(struct pike_string *name,
+int low_find_shared_string_identifier(const struct pike_string *name,
 				      const struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
@@ -1002,6 +1033,12 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 						   const char *opcode,
 						   const char **params,
 						   const char *comment);
+enum Pike_opcodes;
+PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
+						   const PIKE_OPCODE_T *addr,
+						   enum Pike_opcodes op,
+						   int arg1,
+						   int arg2);
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr);
 PMOD_EXPORT void simple_add_reverse_symbol(const char *sym, void *addr);
 PMOD_EXPORT void init_reverse_symbol_table();
@@ -1022,7 +1059,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 }
 
 #define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
-    low_quick_add_function(__builtin_constant_p(NAME)                           \
+    low_quick_add_function(STATIC_IS_CONSTANT(NAME)                             \
                            ? make_shared_static_string(NAME, NLEN, eightbit)    \
                            : make_shared_binary_string(NAME, NLEN),             \
                            FUNC, TYPE, TLEN, FLAGS, OPT)
@@ -1108,12 +1145,32 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
     (Pike_compiler->compat_major == (MAJOR) && \
      Pike_compiler->compat_minor <= (MINOR)))
 
-#endif /* PROGRAM_H */
 
-/* Kludge... */
-#ifndef LAS_H
-/* FIXME: Needed for the OPT_??? macros.
- * Maybe they should be moved here, since las.h includes this file anyway?
- */
-#include "las.h"
-#endif /* !LAS_H */
+#define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
+				    * only used in node_info
+				    */
+#define OPT_NOT_CONST       0x2    /* isn't constant */
+#define OPT_SIDE_EFFECT     0x4    /* has side effects */
+#define OPT_ASSIGNMENT      0x8    /* does assignments */
+#define OPT_TRY_OPTIMIZE    0x10   /* might be worth optimizing */
+#define OPT_EXTERNAL_DEPEND 0x20   /* the value depends on external
+				    * influences (such as read_file or so)
+				    */
+#define OPT_CASE            0x40   /* contains case(s) */
+#define OPT_CONTINUE        0x80   /* contains continue(s) */
+#define OPT_BREAK           0x100  /* contains break(s) */
+#define OPT_RETURN          0x200  /* contains return(s) */
+#define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
+#define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
+#define OPT_APPLY           0x1000 /* contains apply */
+#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
+				    * parent also is optimized away */
+#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
+				    * isn't counted as side effect). Only used
+				    * in tree_info. */
+
+/* This is a statement which got custom break/continue label handling.
+ * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
+#define OPT_CUSTOM_LABELS   0x10000
+
+#endif /* PROGRAM_H */

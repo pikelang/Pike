@@ -8,6 +8,7 @@
 #define PORT_H
 
 #include "global.h"
+#include "pike_memory.h"
 
 #ifdef __MINGW32__
 /******************************************************/
@@ -96,14 +97,8 @@
 
 #endif /* __MINGW32__ */
 
-
-#ifndef STRUCT_TIMEVAL_DECLARED
-#define STRUCT_TIMEVAL_DECLARED
-struct timeval;
-#endif
-
 #ifndef HAVE_GETTIMEOFDAY
-void GETTIMEOFDAY(struct timeval *t);
+PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #else
 #  ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
 #    define GETTIMEOFDAY(X) gettimeofday((X),NULL)
@@ -115,6 +110,12 @@ void GETTIMEOFDAY(struct timeval *t);
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
+#endif
+
+#ifndef HAVE_RINT
+#define rintf(X) floorf ((X) + 0.5)
+#define rint(X) floor( (X) + 0.5 )
+#define rintl(X) floorl ((X) + 0.5)
 #endif
 
 #ifndef HAVE_STRCASECMP
@@ -150,43 +151,10 @@ char *strchr(const char *s,int c);
 static inline int EXTRACT_CHAR(const char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #endif
 
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-#  define EXTRACT_UWORD(p) (*(unsigned INT16 *)(p))
-#  define EXTRACT_WORD(p) (*(INT16 *)(p))
-#  define EXTRACT_INT(p) (*(INT32 *)(p))
-#else
-#ifdef PIKE_DEBUG
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p);
-PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p);
-PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p);
-#else
-/*@unused@*/ static inline unsigned EXTRACT_UWORD_(const unsigned char *p)
-{
-  unsigned INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-/*@unused@*/ static inline int EXTRACT_WORD_(const unsigned char *p)
-{
-  INT16 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-
-/*@unused@*/ static inline INT32 EXTRACT_INT_(const unsigned char *p)
-{
-  INT32 a;
-  memcpy(&a,p,sizeof(a));
-  return a;
-}
-#endif
-
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((const unsigned char *)(p))
-#define EXTRACT_WORD(p) EXTRACT_WORD_((const unsigned char *)(p))
-#define EXTRACT_INT(p) EXTRACT_INT_((const unsigned char *)(p))
-
-#endif
+/* Implementation in pike_memory.h */
+#define EXTRACT_UWORD(p) (get_unaligned16(p))
+#define EXTRACT_WORD(p) ((INT16)get_unaligned16(p))
+#define EXTRACT_INT(p) ((INT32)get_unaligned32(p))
 
 PMOD_EXPORT void sysleep(double left);
 
@@ -198,12 +166,6 @@ void own_gethrtime_update(struct timeval *ptr);
 long long gethrtime(void);
 
 #define hrtime_t long long
-#endif
-
-#ifdef __MINGW32__
-#ifndef HAVE__DOSMAPERR
-void _dosmaperr(int x);
-#endif
 #endif
 
 #ifdef __clang__

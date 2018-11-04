@@ -5,6 +5,7 @@
 */
 
 #include "global.h"
+#include "pike_compiler.h"
 #include "interpret.h"
 #include "backend.h"
 #include "module_support.h"
@@ -12,13 +13,17 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+#include "multiset.h"
 #include "threads.h"
 #include "bignum.h"
 #include "pike_types.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
+
 #include <sqlite3.h>
 #include <time.h>
 
@@ -26,6 +31,10 @@
 
 DECLARATIONS
 
+/* NB: On Solaris 11 with __EXTENSIONS__ defined <stdlib.h> et el indirectly
+ *     include <sys/regset.h> which has a conflicting definition of ERR...
+ */
+#undef ERR
 #define ERR(X, db)				\
 if((X)!=SQLITE_OK) {				\
   SQLite_handle_error((db));			\
@@ -61,9 +70,18 @@ static int step(sqlite3_stmt *stmt) {
   return ret;
 }
 
+/* NOTE: SQLite is flexible about the data stored within any field 
+    and as such, any field in any row may hold any type of data, 
+    regardless of the field's definition. Thus, when using bindings,
+    this module will use the datatype of the value to determine the
+    type stored in the field: ints and floats as numbers, strings as
+    text. Binary (blob) data may be stored by wrapping the string
+    containing the binary data in a
+     String.Buffer/Stdio.Buffer/System.Memory object.
+*/
 static void bind_arguments(sqlite3 *db,
-			   sqlite3_stmt *stmt,
-			   struct mapping *bindings) {
+                           sqlite3_stmt *stmt,
+                           struct mapping *bindings) {
   struct mapping_data *md = bindings->data;
   INT32 e;
   struct keypair *k;
@@ -92,31 +110,58 @@ static void bind_arguments(sqlite3 *db,
     case T_STRING:
       {
 	struct pike_string *s = k->val.u.string;
-	switch(s->size_shift) {
-	case 0:
-	  ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
-				 SQLITE_STATIC),
-	       db);
-	  break;
-	case 1:
-	case 2:
-	  ref_push_string(s);
-	  f_string_to_utf8(1);
-	  s = Pike_sp[-1].u.string;
-	  ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
-				 SQLITE_TRANSIENT),
-	       db);
-	  pop_stack();
-	  break;
-        }
+	ref_push_string(s);
+	f_string_to_utf8(1);
+	s = Pike_sp[-1].u.string;
+	ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
+			 SQLITE_TRANSIENT),
+	     db);
+        pop_stack();
       }
       break;
     case T_FLOAT:
       ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
 	   db);
       break;
+
+    case T_MULTISET:
+      if(multiset_sizeof(k->val.u.multiset) == 1) {
+        struct pike_string *s;
+        {
+          struct svalue tmp;
+          if (TYPEOF(*use_multiset_index (k->val.u.multiset,
+                    multiset_first (k->val.u.multiset),
+                    tmp)) == T_STRING)
+            s = tmp.u.string;
+          else
+            s = NULL;
+        }
+        if(s) {
+          ERR(sqlite3_bind_blob(stmt, idx, s->str, s->len,
+                SQLITE_TRANSIENT),
+                db);
+        }
+        sub_msnode_ref(k->val.u.multiset);
+        if(s) break;
+      }
+      Pike_error("Can only bind string|int|float or single-valued multiset(string)|String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
+      break;
+
+    case T_OBJECT:
+      {
+        size_t len;
+        void *ptr;
+        if( get_memory_object_memory(k->val.u.object, &ptr, &len, NULL)!=
+            MEMOBJ_NONE )
+        {
+          ERR(sqlite3_bind_blob(stmt, idx, ptr, len, SQLITE_STATIC), db);
+          break;
+        }
+      }
+      /* Fallthrough */
+
     default:
-      Pike_error("Can only bind string|int|float.\n");
+      Pike_error("Can only bind string|int|float or single-valued multiset(string)|String.Buffer|Stdio.Buffer|System.Memory as blob.\n");
     }
   }
 }
@@ -139,13 +184,33 @@ static void push_field(sqlite3_stmt *stmt, int field)
       f_utf8_to_string(1);
     break;
   case SQLITE_NULL:
-    push_int(0); /* Val.Null instead? */
+    push_int(0); /* FIXME: Ought to be Val.Null. */
+    break;
+  }
+}
+
+static void push_string_field(sqlite3_stmt *stmt, int field)
+{
+  switch( sqlite3_column_type(stmt, field) ) {
+  case SQLITE_INTEGER:
+  case SQLITE_FLOAT:
+    push_text( (char*)sqlite3_column_text(stmt, field) );
+    break;
+  case SQLITE_BLOB:
+  case SQLITE_TEXT:
+    push_string( make_shared_binary_string
+                 ( sqlite3_column_blob(stmt, field),
+                   sqlite3_column_bytes(stmt, field) ) );
+    if( sqlite3_column_type(stmt, field)==SQLITE_TEXT )
+      f_utf8_to_string(1);
+    break;
+  case SQLITE_NULL:
+    push_int(0);
     break;
   }
 }
 
 /*! @class SQLite
- *! @appears predef::Sql.sqlite
  *!
  *! Low-level interface to SQLite3 databases.
  *!
@@ -157,12 +222,16 @@ PIKECLASS SQLite
 {
   CVAR sqlite3 *db;
 
-/*! @class ResObj
+  /*! @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
+
+/*! @class TypedResult
  *!
- *! Result object from @[big_query()].
+ *! Result object from @[typed_big_query()].
  */
 
-PIKECLASS ResObj
+PIKECLASS TypedResult
   flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
 {
   CVAR struct object *dbobj;
@@ -171,7 +240,11 @@ PIKECLASS ResObj
   CVAR int eof;
   CVAR int columns;
 
-  static void ResObj_handle_error(void) {
+  /*! @decl inherit __builtin.Sql.Result
+   */
+  INHERIT "__builtin.Sql.Result";
+
+  static void SQLite_TypedResult_handle_error(void) {
     Pike_error("Sql.SQLite: %s\n",
 	       sqlite3_errmsg(OBJ2_SQLITE(THIS->dbobj)->db));
   }
@@ -289,7 +362,7 @@ PIKECLASS ResObj
     case SQLITE_ROW:
       break;
     default:
-      ResObj_handle_error();
+      SQLite_TypedResult_handle_error();
     }
 
     for(i=0; i<THIS->columns; i++)
@@ -298,31 +371,76 @@ PIKECLASS ResObj
   }
 
   INIT {
-    THIS->eof = 0;
     THIS->columns = -1;
+#ifdef PIKE_NULL_IS_SPECIAL
+    THIS->eof = 0;
     THIS->dbobj = NULL;
     THIS->stmt = NULL;
     THIS->bindings = NULL;
+#endif
   }
 
   EXIT
     gc_trivial;
   {
     if(THIS->stmt)
-    {
       sqlite3_finalize(THIS->stmt);
-      THIS->stmt = NULL;
-    }
     if(THIS->dbobj)
-    {
       free_object(THIS->dbobj);
-      THIS->dbobj = NULL;
-    }
     if(THIS->bindings)
-    {
       free_mapping(THIS->bindings);
-      THIS->bindings = NULL;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class Result
+ *!
+ *! Result object from @[big_query()].
+ */
+
+PIKECLASS Result
+  flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
+{
+  /*! @decl inherit TypedResult */
+  INHERIT SQLite_TypedResult;
+
+  /* Access the inherited variables directly... */
+#undef THIS
+#define THIS	THIS_SQLITE_TYPEDRESULT
+
+  /*! @decl array fetch_row()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_row()]
+   */
+  PIKEFUN array fetch_row()
+  {
+    int i;
+    sqlite3_stmt *stmt = THIS->stmt;
+
+    if(THIS->eof) {
+      push_int(0);
+      return;
     }
+
+    switch( step(stmt) ) {
+    case SQLITE_DONE:
+      THIS->eof = 1;
+      sqlite3_finalize(stmt);
+      THIS->stmt = 0;
+      push_int(0);
+      return;
+    case SQLITE_ROW:
+      break;
+    default:
+      SQLite_TypedResult_handle_error();
+    }
+
+    for(i=0; i<THIS->columns; i++)
+      push_string_field(stmt, i);
+    f_aggregate(THIS->columns);
   }
 }
 
@@ -346,17 +464,21 @@ PIKECLASS ResObj
     ERR( sqlite3_open(Pike_sp[-1].u.string->str, &THIS->db), THIS->db );
   }
 
-  /*! @decl array|int query(string query, @
-   *!			    mapping(string|int:mixed)|void bindings)
+  /*! @decl array|int typed_query(string query, @
+   *!			          mapping(string|int:mixed)|void bindings)
    *!
-   *! Perform a query against a SQLite database.
+   *! Perform a typed_query against a SQLite database.
+   *!
+   *! @note
+   *!   This was the behavior of @[query()] in Pike 8.0 and earlier.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->query()]
+   *!   @[Sql.Sql()->query()], @[query()]
    */
-  PIKEFUN array|int query(string query,
-			  mapping(string|int:mixed)|void bindings) {
-
+  PIKEFUN array|int typed_query(string query,
+				mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
     sqlite3_stmt *stmt;
     const char *tail;
     struct pike_string *q;
@@ -371,7 +493,7 @@ PIKECLASS ResObj
     ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
 	 THIS->db);
     if( tail[0] )
-      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
+      Pike_error("Sql.SQLite->typed_query: Trailing query data (\"%s\")\n",
 		 tail);
     pop_stack();
 
@@ -425,21 +547,109 @@ PIKECLASS ResObj
     }
   }
 
-  /*! @decl ResObj big_query(string query, @
-   *!			     mapping(string|int:mixed)|void bindings)
+  /*! @decl array|int query(string query, @
+   *!			    mapping(string|int:mixed)|void bindings)
    *!
-   *! Perform a streaming query against a SQLite database.
+   *! Perform a query against a SQLite database.
+   *!
+   *! @note
+   *!   In Pike 8.0 and earlier this function behaved as @[typed_query()].
    *!
    *! @seealso
-   *!   @[Sql.Sql()->big_query()]
+   *!   @[Sql.Sql()->query()], @[typed_query()]
    */
-  PIKEFUN object big_query(string query,
-			   mapping(string|int:mixed)|void bindings) {
+  PIKEFUN array|int query(string query,
+			  mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct pike_string *q;
+    INT32 res_count = 0;
+    INT32 columns;
+    INT32 i;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+    }
+
+    columns = sqlite3_column_count(stmt);
+
+    check_stack(128);
+
+    BEGIN_AGGREGATE_ARRAY(100) {
+      while(stmt) {
+
+	int sr=step(stmt);
+
+	switch(sr) {
+	case SQLITE_OK:		/* Fallthrough */
+	case SQLITE_DONE:
+	  sqlite3_finalize(stmt);
+	  stmt = 0;
+	  break;
+
+	case SQLITE_ROW:
+	  for(i=0; i<columns; i++) {
+            push_text(sqlite3_column_name(stmt, i));
+            f_utf8_to_string(1);
+            push_string_field(stmt, i);
+          }
+	  f_aggregate_mapping(columns*2);
+	  DO_AGGREGATE_ARRAY(100);
+	  break;
+
+	case SQLITE_MISUSE:
+	  Pike_error("Sql.SQLite: Library misuse.");
+
+	default:
+	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));
+	}
+      }
+    } END_AGGREGATE_ARRAY;
+
+    if (!Pike_sp[-1].u.array->size && !columns) {
+      /* No rows and no columns. */
+      pop_stack();
+      push_int(0);
+    }
+  }
+
+  /*! @decl TypedResult big_typed_query(string query, @
+   *!			                mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming typed query against a SQLite database.
+   *!
+   *! @note
+   *!   This was the behavior of @[big_query()] in Pike 8.0 and earlier.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_typed_query()], @[big_query()]
+   */
+  PIKEFUN object big_typed_query(string query,
+			         mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
 
     struct object *res;
     sqlite3_stmt *stmt;
     const char *tail;
-    struct SQLite_ResObj_struct *store;
+    struct SQLite_TypedResult_struct *store;
     struct pike_string *q;
 
     if(args==2) stack_swap();
@@ -453,12 +663,15 @@ PIKECLASS ResObj
 		 tail);
     pop_stack();
 
-    res=fast_clone_object(SQLite_ResObj_program);
-    store = OBJ2_SQLITE_RESOBJ(res);
+    res=fast_clone_object(SQLite_TypedResult_program);
+    store = OBJ2_SQLITE_TYPEDRESULT(res);
     store->stmt = stmt;
 
     /* Add a reference to the database to prevent it from being
-       destroyed before the query object. */
+     * destroyed before the query object.
+     *
+     * FIXME: Use parent pointer instead?
+     */
     store->dbobj = this_object();
 
     if(bindings) {
@@ -470,7 +683,63 @@ PIKECLASS ResObj
       store->bindings = bindings;
     }
 
-    apply_low(res, f_SQLite_ResObj_create_fun_num, 0);
+    apply_low(res, f_SQLite_TypedResult_create_fun_num, 0);
+    push_object(res);
+  }
+
+  /*! @decl Result big_query(string query, @
+   *!			     mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming query against a SQLite database.
+   *!
+   *! @note
+   *!   In Pike 8.0 and earlier this function behaved as @[big_typed_query()].
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_query()], @[big_typed_query()]
+   */
+  PIKEFUN object big_query(string query,
+			   mapping(string|int:mixed)|void bindings)
+    flags ID_VARIANT;
+  {
+    struct object *res;
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct SQLite_TypedResult_struct *store;
+    struct pike_string *q;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+    res=fast_clone_object(SQLite_Result_program);
+    store = OBJ2_SQLITE_TYPEDRESULT(res);
+    store->stmt = stmt;
+
+    /* Add a reference to the database to prevent it from being
+     * destroyed before the query object.
+     *
+     * FIXME: Use parent pointer instead?
+     */
+    store->dbobj = this_object();
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+
+      /* Add a reference so that the bound strings are kept, which in
+	 turn allows us to use SQLITE_STATIC. */
+      add_ref(bindings);
+      store->bindings = bindings;
+    }
+
+    apply_low(res, f_SQLite_TypedResult_create_fun_num, 0);
     push_object(res);
   }
 
@@ -537,17 +806,20 @@ PIKECLASS ResObj
     push_int64 (sqlite3_last_insert_rowid(THIS->db));
   }
 
-  /*! @decl string error()
+  /*! @decl string error(void|int clear)
    *!
    *! Get the latest error message.
    *!
    *! @seealso
    *!   @[Sql.Sql()->error()]
    */
-  PIKEFUN string error()
+  PIKEFUN string error(void|int clear)
     optflags OPT_EXTERNAL_DEPEND;
   {
+    int clearit = clear && clear->u.integer;
+    pop_n_elems(args);
     push_text(sqlite3_errmsg(THIS->db));
+    /* FIXME: any way to support clearit? */
     f_utf8_to_string(1);
   }
 
@@ -604,9 +876,11 @@ PIKECLASS ResObj
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
+#ifndef PIKE_NULL_IS_ZERO
   INIT {
     THIS->db = NULL;
   }
+#endif
 
   EXIT
     gc_trivial;

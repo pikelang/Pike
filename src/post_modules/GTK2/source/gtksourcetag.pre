@@ -55,7 +55,7 @@ void set_style(mapping(string:mixed) style)
     GtkSourceTagStyle *sts;
     struct mapping *m;
     struct svalue *sv;
-    get_all_args("set_style",args,"%m",&m);
+    get_all_args(NULL,args,"%m",&m);
     if (m==NULL)
       Pike_error("No mapping.\n");
     sts=gtk_source_tag_style_new();

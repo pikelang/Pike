@@ -183,7 +183,7 @@ constant response_codes =
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
   }
 
   if (url->scheme == "http") {
@@ -193,6 +193,7 @@ constant response_codes =
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;
@@ -282,7 +283,8 @@ constant response_codes =
   if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
 
   if(!request_headers)
     request_headers = default_headers;
@@ -413,7 +415,8 @@ void do_async_method(string method,
   if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""));
+							(url->password || ""),
+                                                        1);
   request_headers = default_headers | request_headers;
 
   string query=url->query;
@@ -453,8 +456,14 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 {
   con->set_callbacks(@orig_cb_info);
 
+  // Install the timeout handler for the interval until
+  // the TLS connection is up.
+  con->init_async_timeout();
   con->con->set_nonblocking(0,
 			    lambda() {
+			      // Remove the timeout handler; it will be
+			      // reinstated by do_async_method() below.
+			      con->remove_async_timeout();
 			      do_async_method(method, url, query_variables,
 					      request_headers, con, data);
 			    }, con->async_failed);
@@ -531,7 +540,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
       proxy_headers = request_headers + ([]);
 
     proxy_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64((user || "") + ":" + (password || ""));
+      + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
   }
 
   if (url->scheme == "http") {
@@ -541,6 +550,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
     string web_url = (string)url;
 
     // Note: url object is wrecked here
+    url->scheme = proxy->scheme;
     url->host = proxy->host;
     url->port = proxy->port;
     query_variables = url->query = 0;

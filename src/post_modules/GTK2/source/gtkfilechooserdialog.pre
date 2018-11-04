@@ -45,9 +45,9 @@ void create(string title, int|GTK2.Window parent, int mode,
   int i;
 
   if (TYPEOF(Pike_sp[2-1-args]) == PIKE_T_INT)
-    get_all_args("create",args,"%s%i%i%a",&s1,&xx,&mm,&a);
+    get_all_args(NULL,args,"%s%i%i%a",&s1,&xx,&mm,&a);
   else
-    get_all_args("create",args,"%s%O%i%a",&s1,&o,&mm,&a); 
+    get_all_args(NULL,args,"%s%O%i%a",&s1,&o,&mm,&a); 
   gpa=g_ptr_array_new();
   if (TYPEOF(Pike_sp[4-1-args]) != PIKE_T_ARRAY)
     Pike_error("Wrong type of argument 4.\n");
@@ -144,7 +144,7 @@ void create(string title, GTK2.Window parent, int mode,
     int i;
     GtkWidget *gf;
 
-    get_all_args("create",args,"%t%O%i%A",&title,&o1,&mode,&a);
+    get_all_args(NULL,args,"%t%O%i%A",&title,&o1,&mode,&a);
     ref_push_string(title);
     f_string_to_utf8(1);
     gf=gtk_file_chooser_dialog_new(CGSTR0(Pike_sp[-1].u.string),

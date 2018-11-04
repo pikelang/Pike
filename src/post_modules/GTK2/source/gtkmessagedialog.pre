@@ -38,7 +38,7 @@ void create(mapping(string:mixed)|int flags, ?int type, ?int buttons,
     const gchar *msg2;
     GtkWidget *gmd;
 
-    get_all_args("create",args,"%i%i%i%t.%o",&flags,&type,&buttons,
+    get_all_args(NULL,args,"%i%i%i%t.%o",&flags,&type,&buttons,
 		 &message,&o1);
     ref_push_string(message);
     f_string_to_utf8(1);
@@ -75,7 +75,7 @@ void format_secondary_text(string text)
   {
     struct pike_string *t;
     const gchar *t2;
-    get_all_args("format_secondary_text",args,"%t",&t);
+    get_all_args(NULL,args,"%t",&t);
     ref_push_string(t);
     f_string_to_utf8(1);
     t2=GSTR0(Pike_sp[-1].u.string);
@@ -97,7 +97,7 @@ void format_secondary_markup(string text)
   {
     struct pike_string *t;
     const gchar *t2;
-    get_all_args("format_secondary_markup",args,"%t",&t);
+    get_all_args(NULL,args,"%t",&t);
     ref_push_string(t);
     f_string_to_utf8(1);
     t2=GSTR0(Pike_sp[-1].u.string);

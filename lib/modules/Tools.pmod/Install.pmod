@@ -20,7 +20,7 @@ array(string) features()
   if (runtime_info->auto_bignum)
     a += ({"auto_bignum"});
 
-  if (!(<"default", "computed_goto">)[runtime_info->bytecode_method])
+  if (!(<"default">)[runtime_info->bytecode_method])
     a += ({"machine_code"});
 
 #if constant(load_module)
@@ -69,7 +69,7 @@ array(string) features()
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
 	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
-	     "VCDiff", "ZXID", "System.FSEvents.EventStream",
+	     "Web.Sass", "VCDiff", "ZXID", "System.FSEvents.EventStream",
 	     "System.Inotify" }),
 	  string modname)
   {
@@ -232,9 +232,9 @@ class Readline
     exit(1);
   }
 
-  void destroy()
+  protected void _destruct()
   {
-    ::destroy();
+    ::_destruct();
     signal(signum("SIGINT"));
   }
 

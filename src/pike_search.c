@@ -7,7 +7,6 @@
 /* New memory searcher functions */
 
 #include "global.h"
-#include "stuff.h"
 #include "mapping.h"
 #include "object.h"
 #include "pike_memory.h"
@@ -70,7 +69,7 @@ static const struct SearchMojtVtable nil_search_vtable = {
 
 #define HUBBE_ALIGN0(q) q=(p_wchar0 *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
-#define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
+#define GET_4_UNALIGNED_CHARS0(PTR)  (INT32)get_unaligned32(PTR)
 
 #define HUBBE_ALIGN1(q)
 #define GET_4_ALIGNED_CHARS1 GENERIC_GET4_CHARS

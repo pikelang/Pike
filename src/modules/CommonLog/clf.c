@@ -171,7 +171,7 @@ static void f_read( INT32 args )
   }
   old_sp = sp;
 
-  get_all_args("read", args, "%*%*", &logfun, &file);
+  get_all_args(NULL, args, "%*%*", &logfun, &file);
   if(TYPEOF(*logfun) != T_FUNCTION)
     SIMPLE_ARG_TYPE_ERROR("read", 1, "function");
 

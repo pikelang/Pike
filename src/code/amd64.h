@@ -2,6 +2,7 @@
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
 #define OPCODE_INLINE_RETURN
+#define OPCODE_INLINE_CATCH
 #define USE_APPLY_N
 
 #if defined(_M_X64) && !defined(__GNUC__)
@@ -38,6 +39,9 @@ void amd64_ins_entry(void);
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #define ENTRY_PROLOGUE_SIZE	0x14
 
+void amd64_ins_start_function(void);
+#define INS_START_FUNCTION amd64_ins_start_function
+
 void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
 
@@ -66,7 +70,7 @@ void amd64_init_interpreter_state(void);
 #endif
 
 #define LOW_GET_JUMP()							\
-  EXTRACT_INT(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+  (INT32)get_unaligned32(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #define LOW_SKIPJUMP()							\
   (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
@@ -81,7 +85,7 @@ void amd64_init_interpreter_state(void);
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
-#define read_program_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
+#define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
 
 void amd64_update_pc(void);
 

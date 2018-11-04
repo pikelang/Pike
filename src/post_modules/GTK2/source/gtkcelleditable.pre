@@ -14,7 +14,7 @@ void start_editing(?GDK2.Event event)
   pgtk2_verify_inited();
   if (args) {
     struct object *o1;
-    get_all_args("start_editing",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_cell_editable_start_editing(GTK_CELL_EDITABLE(THIS->obj),
 		(GdkEvent *)get_gdkobject(o1,event));
   } else

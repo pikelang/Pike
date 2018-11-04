@@ -34,7 +34,7 @@ void create(mapping(string:mixed)|string props_or_name,
     int virtual;
     struct object *o1;
 
-    get_all_args("create",args,"%s%o%i",&name,&o1,&virtual);
+    get_all_args(NULL,args,"%s%o%i",&name,&o1,&virtual);
     gp=gtk_printer_new(name,get_gobject(o1),virtual);
     pgtk2_pop_n_elems(args);
     THIS->obj=G_OBJECT(gp);

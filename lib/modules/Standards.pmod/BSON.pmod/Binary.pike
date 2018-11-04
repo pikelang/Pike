@@ -2,23 +2,22 @@
 
   constant BSONBinary = 1;
 
-  protected string data;
-  protected int subtype = 0x00;
+  string data;
+  int subtype = 0x00;
 
   // NB: Code duplication from module.pmod to avoid circular dependencies.
   private constant BINARY_OLD = 0x02;
 
   //!
-  protected void create(string _data, int|void _subtype)
+  protected void create(string data, int|void subtype)
   {
-     subtype = _subtype;
-     if(subtype == BINARY_OLD)
-     {
-       if( !sscanf(data, "%-4H", data) )
-         throw(Error.Generic("old binary data length does not match actual data length.\n"));
-     }
-     else
-       data = _data;
+    this::subtype = subtype;
+    this::data = data;
+    if(subtype == BINARY_OLD)
+    {
+      if( !sscanf(data, "%-4H", this::data) )
+        throw(Error.Generic("old binary data length does not match actual data length.\n"));
+    }
   }
 
   int get_subtype()
@@ -42,12 +41,11 @@
   protected mixed cast(string type)
   {
     if(type == "string")
-    {
-      // the docs are a little sketchy about this, do we need to NULL
-      // terminate?
-       if(subtype == BINARY_OLD)
-         return sprintf("%-4H", data);
-       else return data;
-    }
+      return data;
     return UNDEFINED;
+  }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(0x%02x, %O)", this_program, subtype, data);
   }

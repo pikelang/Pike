@@ -7,9 +7,15 @@
 #include "global.h"
 #include "file_machine.h"
 
-#if defined(HAVE_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
 
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#else /* HAVE_SYS_TERMIOS_H */
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
+#endif
+
 #include <errno.h>
 #include <sys/ioctl.h>
 
@@ -379,7 +385,7 @@ void file_tcflush(INT32 args)
       MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
-      get_all_args( "tcflush", args, "%S", &a );
+      get_all_args( NULL, args, "%S", &a );
       if(a == s_tciflush )
 	action=TCIFLUSH;
       else if(a == s_tcoflush )
@@ -401,7 +407,7 @@ void file_tcsendbreak(INT32 args)
 {
   INT_TYPE len=0;
 
-  get_all_args("tcsendbreak", args, "%i", &len);
+  get_all_args(NULL, args, "%i", &len);
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }

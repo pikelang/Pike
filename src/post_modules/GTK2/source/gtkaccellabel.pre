@@ -17,7 +17,7 @@ void create(string|mapping(string:mixed) text_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *ga;
-      get_all_args("create",args,"%T",&t);
+      get_all_args(NULL,args,"%T",&t);
       ga=gtk_accel_label_new((char *)STR0(t));
       THIS->obj=G_OBJECT(ga);
     } else {

@@ -737,7 +737,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
     }
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     closedown();
   }
 

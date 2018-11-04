@@ -734,7 +734,7 @@ class DHTNode {
     check_node_callout = 0;
   }
 
-  protected void destroy() {
+  protected void _destruct() {
     cancel_check_node();
   }
 
@@ -1908,7 +1908,7 @@ protected void create(void|string my_node_id) {
   ]);
 }
 
-protected void destroy() {
+protected void _destruct() {
   // Do some cleanup before we die...
   stop();
 }

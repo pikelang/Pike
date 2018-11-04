@@ -16,6 +16,8 @@ protected private object(Thread.Mutex) mutex = Thread.Mutex();
 
 #define ERROR(X ...) predef::error(X)
 
+inherit __builtin.Sql.Connection;
+
 protected object(Stdio.File) sock;
 protected int seqno = 0;
 
@@ -189,13 +191,15 @@ array(mapping(string:mixed)) list_fields(string ... args)
 
 string quote(string s)
 {
-  return do_request('q');
+  return do_request('q', s);
 }
 
 protected class RemoteResult(protected function(int,mixed:mixed) do_request,
 			     protected mixed qid)
 {
-  void destroy()
+  inherit __builtin.Sql.Result;
+
+  protected void _destruct()
   {
     do_request('Z', qid);
   }
@@ -231,41 +235,26 @@ protected class RemoteResult(protected function(int,mixed:mixed) do_request,
   }
 }
 
-int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
+variant RemoteResult big_query(object|string q)
 {
-  if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this);
-
   mixed qid = do_request('Q', q);
   return qid && RemoteResult(do_request, qid);
 }
 
-int|object big_typed_query(object|string q,
-			   mapping(string|int:mixed)|void bindings)
+variant RemoteResult big_typed_query(object|string q)
 {
-  if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this);
-
   mixed qid = do_request('Q', ({ "big_typed_query", q }));
   return qid && RemoteResult(do_request, qid);
 }
 
-int|object streaming_query(object|string q,
-			   mapping(string|int:mixed)|void bindings)
+variant RemoteResult streaming_query(object|string q)
 {
-  if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this);
-
   mixed qid = do_request('Q', ({ "streaming_query", q }));
   return qid && RemoteResult(do_request, qid);
 }
 
-int|object streaming_typed_query(object|string q,
-				 mapping(string|int:mixed)|void bindings)
+variant RemoteResult streaming_typed_query(object|string q)
 {
-  if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this);
-
   mixed qid = do_request('Q', ({ "streaming_typed_query", q }));
   return qid && RemoteResult(do_request, qid);
 }

@@ -206,7 +206,7 @@ int set_resolution( int x, int y )
   return set_mode( is_full, bpp, x, y, 0 );
 }
 
-int set_mode( int fullscreen, int depth,
+int set_mode( bool fullscreen, int depth,
 	      int width, int height, int _gl_flags )
 {
   if( depth == 16 )

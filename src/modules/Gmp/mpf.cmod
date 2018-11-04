@@ -4,26 +4,19 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gmp_machine.h"
 
 #include "my_gmp.h"
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
-#include "program.h"
-#include "stralloc.h"
-#include "object.h"
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "bignum.h"
 #include "operators.h"
-#include "mapping.h"
 #include "gc.h"
 
 #include <math.h>
@@ -173,7 +166,7 @@ PIKECLASS mpf
 	  Pike_error("Bad argument 3 to Gmp.mpf, must be 2 <= base <= 36, not %d.\n",base);
 	if(TYPEOF(sp[-args]) != T_STRING)
 	  Pike_error("First argument to Gmp.mpf must be a string when specifying a base.\n");
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 2:
 	if(TYPEOF(sp[1-args]) == T_INT)
@@ -189,7 +182,7 @@ PIKECLASS mpf
 	    mpf_set_prec(THISMPF, sp[1-args].u.integer);
 	  }
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 1:
 	if(x && (TYPEOF(*x) == T_STRING))
@@ -203,6 +196,7 @@ PIKECLASS mpf
 
       case 0: break;
     }
+    pop_n_elems(args);
   }
 
   /*! @decl protected int __hash()

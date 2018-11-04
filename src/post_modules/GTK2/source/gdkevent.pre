@@ -20,7 +20,7 @@ int pgtk2_last_event_time()
 }
 %}
 
-void destroy()
+void _destruct()
 {
   if( THIS->obj && THIS->owned )
     g_free( THIS->obj );

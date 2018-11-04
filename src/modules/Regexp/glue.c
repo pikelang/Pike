@@ -4,11 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #include "interpret.h"
 #include "svalue.h"
@@ -90,7 +87,7 @@ static void regexp_create(INT32 args)
   {
     const char *str;
     do_free();
-    get_all_args("create", args, "%s", &str);
+    get_all_args(NULL, args, "%s", &str);
     THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str);
   }
 }
@@ -182,7 +179,7 @@ static void regexp_split(INT32 args)
   struct pike_string *s;
   struct regexp *r;
 
-  get_all_args("split", args, "%S", &s);
+  get_all_args(NULL, args, "%S", &s);
 
   if(pike_regexec(r=THIS->regexp, s->str))
   {
@@ -207,11 +204,6 @@ static void regexp_split(INT32 args)
     pop_n_elems(args);
     push_int(0);
   }
-}
-
-static void init_regexp_glue(struct object *UNUSED(o))
-{
-  THIS->regexp=0;
 }
 
 static void exit_regexp_glue(struct object *UNUSED(o))
@@ -243,7 +235,6 @@ PIKE_MODULE_INIT
   /* function(string:string*) */
   ADD_FUNCTION("split",regexp_split,tFunc(tStr,tArr(tStr)),0);
 
-  set_init_callback(init_regexp_glue);
   set_exit_callback(exit_regexp_glue);
   end_class("_SimpleRegexp", 0);
 }

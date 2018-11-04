@@ -647,11 +647,7 @@ static void polyfill_some(struct image *img,
 #ifdef POLYDEBUG
 	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
-
-#define apply_alpha(x,y,alpha) \
-   ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
-
-	  d->r = apply_alpha( d->r,
+          d->r = apply_alpha( d->r,
 			      (COLORTYPE)((d->r*(1.0-buf[i]))+
                                           (img->rgb.r*buf[i])),
 			      THIS->alpha );
@@ -786,8 +782,7 @@ void image_polyfill(INT32 args)
    double *buf;
    ONERROR err;
 
-   if (!THIS->img)
-      Pike_error("Image.Image->polyfill: no image\n");
+   CHECK_INIT();
 
    buf=xalloc(sizeof(double)*(THIS->xsize+1));
    SET_ONERROR(err, free, buf);

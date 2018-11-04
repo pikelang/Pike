@@ -126,7 +126,7 @@ void f_aap_scan_for_query(INT32 args)
   if(args)
   {
     struct pike_string *_s;
-    get_all_args("scan_for_query", args, "%S", &_s);
+    get_all_args(NULL, args, "%S", &_s);
     s = (char *)_s->str;
     len = _s->len;
   }
@@ -320,7 +320,7 @@ void f_aap_index_op(INT32 args)
   }
 
   if(!THIS->request) Pike_error("Reply called. No data available\n");
-  get_all_args("`[]", args, "%S", &s);
+  get_all_args(NULL, args, "%S", &s);
 
   if(s == s_not_query || s==s_query )
   {
@@ -834,7 +834,7 @@ void f_aap_reply_with_cache(INT32 args)
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 
-  get_all_args("reply_with_cache", args, "%S%i", &reply, &time_to_keep);
+  get_all_args(NULL, args, "%S%i", &reply, &time_to_keep);
 
   if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {
@@ -903,11 +903,6 @@ void f_low_aap_reqo__init(struct c_request_object *o)
   IINSERT(o->misc_variables, s_time, aap_get_time());
   TINSERT(o->misc_variables, s_rawurl,
 	  o->request->res.url, o->request->res.url_len);
-}
-
-void aap_init_request_object(struct object *UNUSED(o))
-{
-  memset(THIS, 0, sizeof(*THIS));
 }
 
 void aap_exit_request_object(struct object *UNUSED(o))

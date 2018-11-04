@@ -7,6 +7,7 @@
 /* #define ALIGN_PIKE_JUMPS 8 */
 
 #include "pike_cpulib.h"
+#include "pike_memory.h"
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
@@ -49,7 +50,7 @@ void ia32_ins_entry(void);
 #endif
 
 #define LOW_GET_JUMP()							\
-  EXTRACT_INT(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+  (INT32)get_unaligned32(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #define LOW_SKIPJUMP()							\
   (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
@@ -64,7 +65,7 @@ void ia32_ins_entry(void);
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
-#define read_program_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
+#define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
 
 void ia32_update_pc(void);
 

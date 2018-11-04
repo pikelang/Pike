@@ -565,13 +565,36 @@ void add_query_variables(mapping(string:string) vars) {
 // RFC 1738, 2.2. URL Character Encoding Issues
 protected constant url_non_corresponding = enumerate(0x21) +
   enumerate(0x81,1,0x7f);
-protected constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
-				'|', '\\', '^', '~', '[', ']', '`' });
-protected constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+// RFC 3986 2.2: gen-delims
+protected constant url_gen_delims = ({
+  ':', '/', '?', '#', '[', ']', '@',
+});
+// RFC 3986 2.2: sub-delims
+protected constant url_sub_delims = ({
+  '!', '$', '&', '\'', '(', ')',
+  '*', '+', ',', ';', '=',
+});
+// RFC 3986 2.2: reserved
+protected constant url_reserved = url_gen_delims + url_sub_delims;
+protected constant rfc1738_url_unsafe = ({
+  // RFC 1738 5: punctuation
+  '%', '"',
+  // RFC 1738 5: national
+  '{', '}', '|', '\\', '^', '~', '`',
+}) - ({
+  /* RFC 3986 2.3:
+   *   For consistency, percent-encoded octets in the ranges of ALPHA
+   *   (%41-%5A and %61-%7A), DIGIT (%30-%39), hyphen (%2D), period
+   *   (%2E), underscore (%5F), or tilde (%7E) should not be created
+   *   by URI producers and, when found in a URI, should be decoded to
+   *   their corresponding unreserved characters by URI normalizers.
+   */
+  '~',
+});
 
 // Encode these chars
-protected constant url_chars = url_non_corresponding + url_unsafe +
-  url_reserved + ({ '+', '\'' });
+protected constant url_chars = url_reserved + rfc1738_url_unsafe +
+  url_non_corresponding;
 protected constant url_from = sprintf("%c", url_chars[*]);
 protected constant url_to   = sprintf("%%%02x", url_chars[*]);
 

@@ -1,4 +1,10 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * The following is the reference implementation of siphash as of
  * november 2013. All tests have been removed from the file and the
  * function signatures have been changed to match the one used by pike.
@@ -25,6 +31,8 @@
 
 #include "bitvector.h"
 #include "pike_macros.h"
+#include "stralloc.h"
+#include "siphash24.h"
 
 #define ROTL(x,b) (UINT64)( ((x) << (b)) | ( (x) >> (64 - (b))) )
 
@@ -47,7 +55,7 @@ ATTRIBUTE((fastcall))
 #endif
 ATTRIBUTE((hot))
 PMOD_EXPORT UINT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbytes,
-                                                  UINT64 key )
+					  UINT64 key )
 {
   const unsigned char * in = (const unsigned char*)s;
   unsigned long long inlen = MINIMUM(len, nbytes);
@@ -80,17 +88,17 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbyt
 
   switch( left )
   {
-  case 7: b |= ( ( UINT64 )in[ 6] )  << 48;
+  case 7: b |= ( ( UINT64 )in[ 6] )  << 48; /* FALLTHRU */
 
-  case 6: b |= ( ( UINT64 )in[ 5] )  << 40;
+  case 6: b |= ( ( UINT64 )in[ 5] )  << 40; /* FALLTHRU */
 
-  case 5: b |= ( ( UINT64 )in[ 4] )  << 32;
+  case 5: b |= ( ( UINT64 )in[ 4] )  << 32; /* FALLTHRU */
 
-  case 4: b |= ( ( UINT64 )in[ 3] )  << 24;
+  case 4: b |= ( ( UINT64 )in[ 3] )  << 24; /* FALLTHRU */
 
-  case 3: b |= ( ( UINT64 )in[ 2] )  << 16;
+  case 3: b |= ( ( UINT64 )in[ 2] )  << 16; /* FALLTHRU */
 
-  case 2: b |= ( ( UINT64 )in[ 1] )  <<  8;
+  case 2: b |= ( ( UINT64 )in[ 1] )  <<  8; /* FALLTHRU */
 
   case 1: b |= ( ( UINT64 )in[ 0] ); break;
 
@@ -152,9 +160,9 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24_uint16( const unsigned INT16 *in, size_
 
   switch( left )
   {
-  case 3: b |= ( ( UINT64 )in[ 2] )  << 32;
+  case 3: b |= ( ( UINT64 )in[ 2] )  << 32; /* FALLTHRU */
 
-  case 2: b |= ( ( UINT64 )in[ 1] )  << 16;
+  case 2: b |= ( ( UINT64 )in[ 1] )  << 16; /* FALLTHRU */
 
   case 1: b |= ( ( UINT64 )in[ 0] ); break;
 

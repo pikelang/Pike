@@ -5,7 +5,7 @@ constant name="call_out handling";
 
 constant m = 5000; /* the target size of the mapping */
 
-constant funs = ({ write, werror, file_stat, Stdio.cp, Array.uniq, master()->compile_error, Stdio.stdin->read, Stdio.stdout->write });
+array(function) funs = ({ write, werror, file_stat, Stdio.cp, Array.uniq, master()->compile_error, Stdio.stdin->read, Stdio.stdout->write });
 
 int perform()
 {

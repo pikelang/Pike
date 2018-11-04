@@ -29,7 +29,7 @@ void create(int|void size_or_props, ?float min, ?float max,
     int i,j;
     GtkWidget *gsb;
 
-    get_all_args("create",args,"%i%f%f%f%A",&size,&min,&max,&step,&a);
+    get_all_args(NULL,args,"%i%f%f%f%A",&size,&min,&max,&step,&a);
     if (a==NULL || a->size<1)
       Pike_error("Invalid array argument 5.\n");
     icons=g_new0(const gchar *,a->size+1);
@@ -60,7 +60,7 @@ void set_icons(array icons)
     int i,j;
     const gchar **icons;
 
-    get_all_args("set_icons",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL || a->size<1)
         Pike_error("Invalid array argument 1.\n");
     icons=g_new0(const gchar *,a->size+1);

@@ -22,7 +22,6 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
-#include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
@@ -1389,7 +1388,7 @@ void image_jpeg_quant_tables(INT32 args)
    if (args)
    {
       INT_TYPE q;
-      get_all_args("quant_tables",args,"%i",&q);
+      get_all_args(NULL,args,"%i",&q);
       jpeg_set_quality(&cinfo,q,0);
    }
 

@@ -4,10 +4,8 @@
 || for more information.
 */
 
-#include "config.h"
-
-#include "global.h"
 #include "module.h"
+#include "config.h"
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -24,15 +22,10 @@
 #endif /* HAVE_LIBTTF */
 
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
-#include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
 
@@ -270,13 +263,13 @@ static void image_ttf_make(INT32 args)
 #define THISf ((struct image_ttf_face_struct *)get_storage(THISOBJ,image_ttf_face_program))
 #define THISi ((struct image_ttf_faceinstance_struct *)get_storage(THISOBJ,image_ttf_faceinstance_program))
 
-static void image_ttf_face_exit(struct object *o)
+static void image_ttf_face_exit(struct object *UNUSED(o))
 {
   if(THISf)
     TT_Close_Face(THISf->face);
 }
 
-static void image_ttf_faceinstance_exit(struct object *o)
+static void image_ttf_faceinstance_exit(struct object *UNUSED(o))
 {
   if (THISi) {
     if(THISi->faceobj->prog)
@@ -659,17 +652,17 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
       my_tt_error(where,"TT_Set_Instance_CharSize: ",res);
 
    face_i->baseline=
-      DOUBLE_TO_INT(((double)(towhat/64.0+towhat/640.0)*
-		     prop.horizontal->Ascender)/
-		    (prop.horizontal->Ascender - prop.horizontal->Descender));
+     (int)(((double)(towhat/64.0+towhat/640.0)*
+	    prop.horizontal->Ascender)/
+	   (prop.horizontal->Ascender - prop.horizontal->Descender));
 
    face_i->height= (towhat/64 + towhat/640);
 
    face_i->trans = ~63 &
       (32 +
-       DOUBLE_TO_INT(64*((towhat/64.0+towhat/640.0)*
-			 prop.horizontal->Ascender)/
-		     (prop.horizontal->Ascender-prop.horizontal->Descender)));
+       (int)(64*((towhat/64.0+towhat/640.0)*
+		 prop.horizontal->Ascender)/
+	     (prop.horizontal->Ascender-prop.horizontal->Descender)));
 }
 
 static void image_ttf_faceinstance_create(INT32 args)
@@ -706,7 +699,7 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    if (TYPEOF(sp[-args]) == T_INT)
       h = sp[-args].u.integer*64;
    else if (TYPEOF(sp[-args]) == T_FLOAT)
-      h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
+     h = (int)(sp[-args].u.float_number*64);
    else
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
@@ -1081,7 +1074,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 if(has_kerning && i<slen[a]-1)
 	 {
 	   int kern = find_kerning( kerning, ind, sstr[a][i+1] );
-	   pos += DOUBLE_TO_INT(kern * (scalefactor/65535.0));
+	   pos += (int)(kern * (scalefactor/65535.0));
 	 }
 	 if ((res=TT_Done_Glyph(glyph)))
 	    { errs="TT_Done_Glyph: "; break; }
@@ -1193,7 +1186,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if(has_kerning && i<slen[a]-1)
 	    {
 	      int kern = find_kerning( kerning, sstr[a][i], sstr[a][i+1] );
-	      pos += DOUBLE_TO_INT(kern * (scalefactor/65535.0));
+	      pos += (int)(kern * (scalefactor/65535.0));
 /* 	      fprintf(stderr, "Adjusted is %d\n", */
 /* 		      (int)(kern * (scalefactor/65535.0))); */
 	    }

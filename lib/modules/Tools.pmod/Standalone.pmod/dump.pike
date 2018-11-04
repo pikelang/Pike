@@ -253,6 +253,12 @@ do_dump: {
       }
     }
 
+    else if (arrayp(err) && err[0] == "Required feature missing.\n") {
+	ok = 1;			// Don't count this as a failure.
+	if(!quiet)
+	  logmsg("Not dumped due to missing feature.\n");
+    }
+
     else {
       // This should never happen. If it does then it's not safe to
       // continue dumping since later modules might do #if constant(...)
@@ -318,13 +324,14 @@ void setup_logging(void|string file) {
 
 int pos;
 array files;
+int result;
 
 void dump_files() {
 
   if(pos>=sizeof(files)) {
     if (update_stamp)
       Stdio.write_file (update_stamp, version());
-    exit(0);
+    exit(result);
   }
 
 #if constant(alarm)
@@ -345,8 +352,10 @@ void dump_files() {
     outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
   }
 
-  if (!dumpit(file, outfile) && !nt_install)
+  if (!dumpit(file, outfile) && !nt_install) {
+    result = 1;
     pos = sizeof(files); // exit
+  }
 
 #if constant(alarm)
   alarm(0);

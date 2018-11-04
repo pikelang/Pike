@@ -219,7 +219,8 @@
 		    CB_ADD_KEY_REF(THIS->lastkey);
 		}
 		THIS->lastnode = t;
-	    }
+            }
+            pop_n_elems(args);
         }
 
 	PIKEFUN object _get_iterator() {

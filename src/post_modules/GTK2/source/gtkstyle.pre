@@ -28,7 +28,7 @@ GTK2.Style attach(GTK2.Widget window)
   {
     GtkStyle *gs;
     struct object *o1;
-    get_all_args("attach",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gs=gtk_style_attach(GTK_STYLE(THIS->obj),
 			TWIN(get_gobject(o1)));
     THIS->obj=G_OBJECT(gs);
@@ -47,7 +47,7 @@ void set_background(GTK2.Widget window, int state)
   {
     struct object *o1;
     INT_TYPE state;
-    get_all_args("set_background",args,"%o%i",&o1,&state);
+    get_all_args(NULL,args,"%o%i",&o1,&state);
     gtk_style_set_background(GTK_STYLE(THIS->obj),
 			TWIN(get_gobject(o1)),state);
   }
@@ -61,7 +61,7 @@ GTK2.IconSet lookup_icon_set(string stock_id)
   {
     char *stock_id;
     GtkIconSet *gi;
-    get_all_args("lookup_icon_set",args,"%s",&stock_id);
+    get_all_args(NULL,args,"%s",&stock_id);
     gi=gtk_style_lookup_icon_set(GTK_STYLE(THIS->obj),stock_id);
     pgtk2_pop_n_elems(args);
     push_gobjectclass(gi,pgtk2_icon_set_program);
@@ -79,7 +79,7 @@ GDK2.Pixbuf render_icon(GTK2.IconSource source, int direction, int state,
     struct object *o1,*o2;
     INT_TYPE dir,state,size;
     char *detail;
-    get_all_args("render_icon",args,"%o%i%i%i%o%s",&o1,&dir,&state,&size,
+    get_all_args(NULL,args,"%o%i%i%i%o%s",&o1,&dir,&state,&size,
 				&o2,&detail);
     pixbuf=gtk_style_render_icon(GTK_STYLE(THIS->obj),
 			(GtkIconSource *)get_gobject(o1),dir,state,size,
@@ -100,7 +100,7 @@ void paint_arrow(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,arrow,fill,x,y,width,height;
     char *detail;
-    get_all_args("paint_arrow",args,"%o%i%i%o%o%s%i%i%i%i%i%i",
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i%i",
 		 &o1,&state,&shadow,&o2,&o3,&detail,&arrow,&fill,
 		 &x,&y,&width,&height);
     gtk_paint_arrow(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,shadow,
@@ -121,7 +121,7 @@ void paint_box(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_box",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,&shadow,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,&shadow,
 		 &o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_box(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,shadow,
 		  (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -142,7 +142,7 @@ void paint_box_gap(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side,gap_x,gap_width;
     char *detail;
-    get_all_args("paint_box_gap",args,"%o%i%i%o%o%s%i%i%i%i%i%i%i",
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i%i%i",
 		 &o1,&state,&shadow,&o2,&o3,&detail,&x,&y,&width,&height,
 		 &gap_side,&gap_x,&gap_width);
     gtk_paint_box_gap(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,shadow,
@@ -163,7 +163,7 @@ void paint_check(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_check",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_check(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,shadow,
 		    (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -182,7 +182,7 @@ void paint_diamond(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_diamond",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_diamond(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		      shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -201,7 +201,7 @@ void paint_extension(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side;
     char *detail;
-    get_all_args("paint_extension",args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,
 		 &state,&shadow,&o2,&o3,&detail,&x,&y,&width,&height,
 		 &gap_side);
     gtk_paint_extension(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
@@ -222,7 +222,7 @@ void paint_flat_box(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_flat_box",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_flat_box(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		       shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -241,7 +241,7 @@ void paint_focus(GTK2.Widget window, int state, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,x,y,width,height;
     char *detail;
-    get_all_args("paint_focus",args,"%o%i%o%o%s%i%i%i%i",&o1,&state,&o2,
+    get_all_args(NULL,args,"%o%i%o%o%s%i%i%i%i",&o1,&state,&o2,
 		 &o3,&detail,&x,&y,&width,&height);
     gtk_paint_focus(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		    (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -260,7 +260,7 @@ void paint_handle(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,orient;
     char *detail;
-    get_all_args("paint_handle",args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height,&orient);
     gtk_paint_handle(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		     shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -279,7 +279,7 @@ void paint_hline(GTK2.Widget window, int state, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,x1,x2,y;
     char *detail;
-    get_all_args("paint_hline",args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
+    get_all_args(NULL,args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
 		 &detail,&x1,&x2,&y);
     gtk_paint_hline(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		    (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -298,7 +298,7 @@ void paint_option(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_option",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_option(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		     shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -321,7 +321,7 @@ void paint_shadow(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_shadow",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_shadow(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		     shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -342,7 +342,7 @@ void paint_shadow_gap(GTK2.Widget window, int state, int shadow,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side,gap_x,gap_width;
     char *detail;
-    get_all_args("paint_shadow_gap",args,"%o%i%i%o%o%s%i%i%i%i%i%i%i",&o1,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i%i%i",&o1,
 		 &state,&shadow,&o2,&o3,&detail,&x,&y,&width,&height,
 		 &gap_side,&gap_x,&gap_width);
     gtk_paint_shadow_gap(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
@@ -363,7 +363,7 @@ void paint_slider(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,orient;
     char *detail;
-    get_all_args("paint_slider",args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i%i",&o1,&state,
 		 &shadow,&o2,&o3,&detail,&x,&y,&width,&height,&orient);
     gtk_paint_slider(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		     shadow,(GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -383,7 +383,7 @@ void paint_tab(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
     char *detail;
-    get_all_args("paint_tab",args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,&shadow,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%i%i",&o1,&state,&shadow,
 		 &o2,&o3,&detail,&x,&y,&width,&height);
     gtk_paint_tab(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,shadow,
 		  (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -401,7 +401,7 @@ void paint_vline(GTK2.Widget window, int state, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,y1,y2,x;
     char *detail;
-    get_all_args("paint_vline",args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
+    get_all_args(NULL,args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
 		 &detail,&y1,&y2,&x);
     gtk_paint_vline(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		    (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -427,7 +427,7 @@ void paint_expander(GTK2.Widget window, int state, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,x,y,style;
     char *detail;
-    get_all_args("paint_expander",args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
+    get_all_args(NULL,args,"%o%i%o%o%s%i%i%i",&o1,&state,&o2,&o3,
 		 &detail,&x,&y,&style);
     gtk_paint_expander(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 		       (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -448,7 +448,7 @@ void paint_layout(GTK2.Widget window, int state, int use_text,
     struct object *o1,*o2,*o3,*o4;
     INT_TYPE state,use_text,x,y;
     char *detail;
-    get_all_args("paint_layout",args,"%o%i%i%o%o%s%i%i%o",&o1,&state,&use_text,
+    get_all_args(NULL,args,"%o%i%i%o%o%s%i%i%o",&o1,&state,&use_text,
 		 &o2,&o3,&detail,&x,&y,&o4);
     gtk_paint_layout(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,use_text,
 		     (GdkRectangle *)get_gdkobject(o2,rectangle),
@@ -469,7 +469,7 @@ void paint_resize_grip(GTK2.Widget window, int state, GDK2.Rectangle rect,
     struct object *o1,*o2,*o3;
     INT_TYPE state,edge,x,y,width,height;
     char *detail;
-    get_all_args("paint_resize_grip",args,"%o%i%o%o%s%i%i%i%i%i",&o1,&state,
+    get_all_args(NULL,args,"%o%i%o%o%s%i%i%i%i%i",&o1,&state,
 		 &o2,&o3,&detail,&edge,&x,&y,&width,&height);
     gtk_paint_resize_grip(GTK_STYLE(THIS->obj),TWIN(get_gobject(o1)),state,
 			  (GdkRectangle *)get_gdkobject(o2,rectangle),

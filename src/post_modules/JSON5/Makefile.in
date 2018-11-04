@@ -1,0 +1,46 @@
+
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=JSON5
+MODDIR=Standards.pmod/
+MODULE_PMOD_IN=$(SRCDIR)/JSON5.pmod.in
+MODULE_WRAPPER_PREFIX=_
+OBJS=json5.o
+
+@dynamic_module_makefile@
+
+# Ragel targets
+
+# Enable this to include ragel in the build chain.
+#ENABLE_RAGEL=yes
+
+RAGEL = ragel -G2 -C
+
+RAGEL_TARGETS=json5_parser.c json5_string.c json5_mapping.c json5_array.c json5_number.c json5_string_utf8.c
+
+$(SRCDIR)/%.c: rl/%.rl rl/json5_defaults.rl
+	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
+	  if ragel --version | head -1 | grep -q 'version [7-9].' ; then \
+	    echo "cd $(SRCDIR) && $(RAGEL) -o $*.c rl/$*.rl"; \
+	    cd "$(SRCDIR)" && $(RAGEL) -o $*.c rl/$*.rl; \
+	  else \
+	    echo "Too old ragel version"; \
+	    false; \
+	  fi \
+	elif [ -f $@ ]; then \
+	  echo "touch $@"; \
+	  touch $@; \
+	else \
+	  echo "C target $@ missing."; \
+	  false; \
+	fi
+
+source: $(RAGEL_TARGETS)
+
+ragel_clean:
+	cd "$(SRCDIR)" && $(RM) $(RAGEL_TARGETS)
+
+json5.o : $(SRCDIR)/json5.c $(RAGEL_TARGETS)
+
+@dependencies@

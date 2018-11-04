@@ -154,65 +154,34 @@ static struct program *pike_sendfile_prog = NULL;
  * Struct init code.
  */
 
-static void init_pike_sendfile(struct object *UNUSED(o))
-{
-  memset(THIS, 0, sizeof(struct pike_sendfile));
-
-  /* callback doesn't actually need to be initialized since it is a
-   * mapped variable, but since we just zapped it with zeroes we need
-   * to set the type to T_INT again.. /Hubbe
-   */
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-}
-
 static void exit_pike_sendfile(struct object *UNUSED(o))
 {
   SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
 
-  if (THIS->iovs) {
+  if (THIS->iovs)
     free(THIS->iovs);
-    THIS->iovs = NULL;
-  }
-  if (THIS->buffer) {
+
+  if (THIS->buffer)
     free(THIS->buffer);
-    THIS->buffer = NULL;
-  }
-  if (THIS->headers) {
+
+  if (THIS->headers)
     free_array(THIS->headers);
-    THIS->headers = NULL;
-  }
-  if (THIS->trailers) {
+
+  if (THIS->trailers)
     free_array(THIS->trailers);
-    THIS->trailers = NULL;
-  }
-  if (THIS->from_file) {
+
+  if (THIS->from_file)
     free_object(THIS->from_file);
-    THIS->from_file = NULL;
-  }
-  if (THIS->to_file) {
+
+  if (THIS->to_file)
     free_object(THIS->to_file);
-    THIS->to_file = NULL;
-  }
-  if (THIS->args) {
-    free_array(THIS->args);
-    THIS->args = NULL;
-  }
-  if (THIS->self) {
-    /* This can occur if Pike exits before the backend has started. */
+
+  /* This can occur if Pike exits before the backend has started. */
+  if (THIS->self)
     free_object(THIS->self);
-    THIS->self = NULL;
-  }
-  /* This is not required since this is a mapped variable.
-   * /Hubbe
-   * But we do it anyway for paranoia reasons.
-   * /grubba 1999-10-14
-   */
-  free_svalue(&(THIS->callback));
-  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
-  if (THIS->backend_callback) {
+
+  if (THIS->backend_callback)
     remove_callback (THIS->backend_callback);
-    THIS->backend_callback = NULL;
-  }
 }
 
 /*
@@ -899,7 +868,7 @@ static void sf_create(INT32 args)
   memset(&sf, 0, sizeof(struct pike_sendfile));
   SET_SVAL(sf.callback, T_INT, NUMBER_NUMBER, integer, 0);
 
-  get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
+  get_all_args(NULL, args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
 	       &len, &(sf.trailers), &(sf.to_file), &cb);
 
@@ -1190,8 +1159,7 @@ static void sf_create(INT32 args)
 	sf.from->flags &= ~FILE_LOCK_FD;
       }
       free_object(THIS->self);
-      resource_error("Stdio.sendfile", sp, 0, "threads", 1,
-		     "Failed to create thread.\n");
+      Pike_error("Failed to create thread.\n");
     }
 #endif /* 0 */
   }
@@ -1221,7 +1189,6 @@ void init_stdio_sendfile(void)
 	       tFuncV(tArr(tStr) tObj tInt tInt tArr(tStr) tObj
 		      tFuncV(tInt, tMix, tVoid), tMix, tVoid), 0);
 
-  set_init_callback(init_pike_sendfile);
   set_exit_callback(exit_pike_sendfile);
 
   pike_sendfile_prog = end_program();

@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
+#include "gc_header.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MAPPING_WEAK_INDICES	2
@@ -26,7 +27,7 @@ struct keypair
 
 struct mapping_data
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   INT32 valrefs; /* lock values too */
   INT32 hardlinks;
   INT32 size, hashsize;
@@ -43,7 +44,7 @@ struct mapping_data
 
 struct mapping
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif
@@ -71,11 +72,12 @@ extern struct mapping *gc_internal_mapping;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<(md)->hashsize;e++) for(k=(md)->hash[e];k;k=k->next)
-
+#define MD_FULLP(md) (!(md)->free_list)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define NEW_MAPPING_LOOP(md) \
   for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
+#define MD_FULLP(md) ((md)->size >= (md)->num_keypairs)
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
@@ -126,7 +128,6 @@ PMOD_EXPORT void really_free_mapping(struct mapping *md);
 }while(0)
 
 /* Prototypes begin here */
-void really_free_mapping(struct mapping * m);
 void count_memory_in_mappings(size_t * num, size_t * size);
 
 
@@ -246,7 +247,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
   * @see simple_mapping_string_lookup
   */
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p);
+                                                     const struct pike_string *p);
 
 /** A shortcut function for inserting an entry into a mapping for cases
   * where the key is a Pike string.
@@ -353,6 +354,7 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m);
 PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
 PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
 PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
+PMOD_EXPORT void clear_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
 PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,

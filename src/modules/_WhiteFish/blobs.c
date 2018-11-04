@@ -1,6 +1,11 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -109,7 +114,7 @@ static void f_blobs_add_words( INT32 args )
   int i;
   struct blobs *blbl = THIS;
 
-  get_all_args( "add_words", args, "%d%a%d",
+  get_all_args( NULL, args, "%d%a%d",
 		&docid, &words, &field_id);
 
   for( i = 0; i<words->size; i++ )
@@ -181,8 +186,8 @@ static void f_blobs_read( INT32 args )
 
   SET_SVAL(a->item[0], PIKE_T_STRING, 0, string, t->next_h->id);
   SET_SVAL(a->item[1], PIKE_T_STRING, 0, string,
-	   make_shared_binary_string( (char*)t->next_h->buffer->data,
-				      t->next_h->buffer->size ));
+	   make_shared_binary_string0( t->next_h->buffer->data,
+				       t->next_h->buffer->size ));
   wf_buffer_free( t->next_h->buffer );
   t->next_h->buffer = 0;
   t->next_h->id = 0;
@@ -203,12 +208,13 @@ static int compare_wordarrays( const void *_a, const void *_b )
 
 /*! @decl array(array(string)) read_all_sorted()
  *!
- *! returns ({({ string word1_id, string blob1  }),...}), sorted by word_id in octed order.
+ *! Returns ({({ string word1_id, string blob1  }),...}),
+ *! sorted by word_id in octet order.
  *!
- *! As a side-effect,
- *! this function frees the blobs and the word_ids, so you can only read
- *! the blobs struct once. Also, once you have called @[read] or @[read_all_sorted],
- *! @[add_words] will no longer work as expected.
+ *! @note
+ *! This function also frees the blobs and the word_ids, so you can only read
+ *! the blobs struct once. Also, once you have called @[read] or
+ *! @[read_all_sorted], @[add_words] will no longer work as expected.
  */
 static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 {
@@ -234,17 +240,15 @@ static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 
 static void init_blobs_struct(struct object *UNUSED(o))
 {
-  memset( THIS, 0, sizeof( struct blobs ) );
   THIS->size = sizeof( struct blobs ) + 128;
 }
 
-static void exit_blobs_struct(struct object *o)
+static void exit_blobs_struct(struct object *UNUSED(o))
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blobs_struct(o);
 }
 
 static struct program *blobs_program;

@@ -4,10 +4,9 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gmp_machine.h"
 #include "pike_float.h"
-#include "module.h"
 
 #if !defined(HAVE_GMP_H)
 #error "Gmp is required to build Pike!"
@@ -16,13 +15,8 @@
 #include "my_gmp.h"
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
 #include "program.h"
-#include "stralloc.h"
-#include "object.h"
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
@@ -30,7 +24,6 @@
 #include "bignum.h"
 #include "operators.h"
 #include "gc.h"
-#include "mapping.h"
 #include "constants.h"
 
 #if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
@@ -303,6 +296,24 @@ PMOD_EXPORT void push_ulongest (UINT64 i)
     push_object (fast_clone_object (bignum_program));
     mpz = OBTOMPZ (sp[-1].u.object);
 
+#if SIZEOF_LONG >= SIZEOF_INT64
+    mpz_set_ui (mpz, i);
+#else
+    mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
+  }
+}
+
+PMOD_EXPORT void ulongest_to_svalue_no_free(struct svalue *sv, UINT64 i)
+{
+  if (i <= MAX_INT_TYPE) {
+    SET_SVAL(*sv, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)i);
+  }
+  else {
+    MP_INT *mpz;
+
+    SET_SVAL(*sv, PIKE_T_OBJECT, 0, object, fast_clone_object(bignum_program));
+    mpz = OBTOMPZ(sv->u.object);
 #if SIZEOF_LONG >= SIZEOF_INT64
     mpz_set_ui (mpz, i);
 #else
@@ -707,7 +718,7 @@ static void mpzmod_encode_json(INT32 args)
  *! @expr{256@} and @expr{-256@}. The default base is 10.
  *!
  *! @note
- *!   The bases 37 to 62 are not available When compiled with GMP
+ *!   The bases 37 to 62 are not available when compiled with GMP
  *!   earlier than version 5.
  *! @seealso
  *!   @[cast]
@@ -1275,7 +1286,10 @@ static void mpzmod_div(INT32 args)
       int negate = 0;
 
       if(!i)
+      {
+        free_object(res);
         SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+      }
 
       if (i < 0) {
         i = -i;
@@ -1315,7 +1329,10 @@ static void mpzmod_div(INT32 args)
     /* Fallthrough */
   default:
     if (!mpz_sgn(get_mpz(sp-1, 1, "`/", 1, 1)))
+    {
+      free_object(res);
       SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+    }
 
     mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[-1].u.object));
   }
@@ -1941,10 +1958,11 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``**(int|float|Gmp.mpz x)
+/*! @decl Gmp.mpz|Gmp.mpq ``**(int|float|Gmp.mpz|Gmp.mpq x)
  *!
  *! Return @[x] raised to the value of this object. The case when zero is
- *! raised to zero yields one.
+ *! raised to zero yields one. When this object has a negative value and
+ *! @[x] is not a float, a @[Gmp.mpq] object will be returned.
  *!
  *! @seealso
  *!   @[pow]
@@ -1952,6 +1970,10 @@ static void mpzmod_powm(INT32 args)
 static void mpzmod_rpow(INT32 args)
 {
   DECLARE_THIS();
+
+  if (args != 1) {
+    SIMPLE_WRONG_NUM_ARGS_ERROR("``**", 1);
+  }
 
   if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
   {
@@ -1984,12 +2006,6 @@ static void mpzmod_rpow(INT32 args)
     }
   }
 
-  if( mpz_sgn(THIS) < 0 ) /* integer whatever ** -x -> 0 */
-  {
-    push_int(0);
-    return;
-  }
-
   /* Convert the argument to a bignum. */
   get_mpz(sp-1, 1, "``**", 1, args);
   assert(TYPEOF(sp[-1]) == PIKE_T_OBJECT);
@@ -2018,16 +2034,29 @@ static void mpzmod_pow(INT32 args)
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
 
-  if (TYPEOF(sp[-1]) == T_INT)
-  {
-    if( sp[-1].u.integer < 0 )
-    {
-        push_int(0);
-        return;
-    }
+  if (TYPEOF(sp[-1]) == T_INT) {
     exponent = sp[-1].u.integer;
-  }
-  else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+    if (sp[-1].u.integer < 0) {
+    negative_exponent:
+      if (!mpz_sgn(THIS)) {
+	Pike_error("Division by zero.\n");
+      }
+      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0) {
+	/* Not -1 or +1. */
+	o_negate();	/* NB: Use o_negate() to handle MIN_INT_TYPE. */
+	mpzmod_pow(1);
+	push_int(1);
+	stack_swap();
+	push_object(clone_object(mpq_program, 2));
+	return;
+      }
+      /* We are either -1 or +1 here. Flipping the sign of the
+       * exponent is ok. And we only care about the exponent
+       * being even or odd.
+       */
+      exponent &= 1;
+    }
+  } else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
   {
       sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
       return;
@@ -2051,13 +2080,11 @@ static void mpzmod_pow(INT32 args)
       else
       {
           mi = get_mpz(sp-1, 1, "pow", 1, 1);
-          if(mpz_sgn(mi)<0)
-          {
-              pop_n_elems(args);
-              push_int(0);
-              return;
-          }
           exponent=mpz_get_ui(mi);
+	  if(mpz_sgn(mi)<0)
+	  {
+	    goto negative_exponent;
+	  }
       }
   }
 
@@ -2489,6 +2516,30 @@ PIKE_MODULE_INIT
   pike_init_mpq_module();
   pike_init_mpf_module();
   pike_init_smpz_module();
+
+  /* @decl constant version
+   * The version of the current GMP library, e.g. "6.1.0".
+   */
+#ifdef __NT__
+  /* NB: <gmp.h> lacks sufficient export declarations to export
+   *     and import variables like gmp_version to gmp.lib.
+   *     We thus need to look up the symbol by hand.
+   */
+  {
+    HINSTANCE gmp_dll = LoadLibrary("gmp");
+    if (gmp_dll) {
+      const char **gmp_version_var =
+	GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
+      if (gmp_version_var) {
+	const char *gmp_version = *gmp_version_var;
+	add_string_constant("version", gmp_version, 0);
+      }
+      FreeLibrary(gmp_dll);
+    }
+  }
+#else
+  add_string_constant("version", gmp_version, 0);
+#endif
 }
 
 PIKE_MODULE_EXIT

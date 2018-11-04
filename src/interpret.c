@@ -72,10 +72,6 @@
 #define LOW_SVALUE_STACK_MARGIN 20
 #define LOW_C_STACK_MARGIN 500
 
-#ifdef HAVE_COMPUTED_GOTO
-PIKE_OPCODE_T *fcode_to_opcode = NULL;
-struct op_2_f *opcode_to_fcode = NULL;
-#endif /* HAVE_COMPUTED_GOTO */
 
 PMOD_EXPORT const char Pike_check_stack_errmsg[] =
   "Svalue stack overflow. "
@@ -91,6 +87,10 @@ PMOD_EXPORT const char msg_pop_neg[] =
   "Popping negative number of args.... (%"PRINTPTRDIFFT"d) \n";
 #endif
 
+PMOD_EXPORT extern void check_c_stack_margin(void)
+{
+  check_c_stack(Pike_interpreter.c_stack_margin);
+}
 
 #ifdef PIKE_DEBUG
 static char trace_buffer[2000];
@@ -108,6 +108,10 @@ PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 static void do_trace_call(struct byte_buffer *buf, INT32 args);
 static void do_trace_func_return (int got_retval, struct object *o, int fun);
 static void do_trace_return (struct byte_buffer *buf, int got_retval);
+static void do_trace_efun_call(const struct svalue *s, INT32 args);
+#ifdef PIKE_DEBUG
+static void do_trace_efun_return(const struct svalue *s, int got_retval);
+#endif
 
 void push_sp_mark(void)
 {
@@ -303,7 +307,7 @@ PMOD_EXPORT void init_interpreter(void)
     }
   }
 #endif
-#if defined(HAVE_COMPUTED_GOTO) || defined(PIKE_USE_MACHINE_CODE)
+#ifdef PIKE_USE_MACHINE_CODE
   {
     static int tables_need_init=1;
     if(tables_need_init) {
@@ -311,32 +315,13 @@ PMOD_EXPORT void init_interpreter(void)
 #if !defined(OPCODE_INLINE_RETURN)
       eval_instruction(NULL);
 #endif
-#if defined(PIKE_USE_MACHINE_CODE) && !defined(PIKE_DEBUG)
-      /* Simple operator opcodes... */
-#define SET_INSTR_ADDRESS(X, Y)	(instrs[(X)-F_OFFSET].address = (void *)Y)
-      SET_INSTR_ADDRESS(F_COMPL,		o_compl);
-      SET_INSTR_ADDRESS(F_LSH,			o_lsh);
-      SET_INSTR_ADDRESS(F_RSH,			o_rsh);
-      SET_INSTR_ADDRESS(F_SUBTRACT,		o_subtract);
-      SET_INSTR_ADDRESS(F_AND,			o_and);
-      SET_INSTR_ADDRESS(F_OR,			o_or);
-      SET_INSTR_ADDRESS(F_XOR,			o_xor);
-      SET_INSTR_ADDRESS(F_MULTIPLY,		o_multiply);
-      SET_INSTR_ADDRESS(F_DIVIDE,		o_divide);
-      SET_INSTR_ADDRESS(F_MOD,			o_mod);
-      SET_INSTR_ADDRESS(F_CAST,			f_cast);
-      SET_INSTR_ADDRESS(F_CAST_TO_INT,		o_cast_to_int);
-      SET_INSTR_ADDRESS(F_CAST_TO_STRING,	o_cast_to_string);
-      SET_INSTR_ADDRESS(F_RANGE,		o_range2);
-      SET_INSTR_ADDRESS(F_SSCANF,		o_sscanf);
-#endif /* PIKE_USE_MACHINE_CODE && !PIKE_DEBUG */
       tables_need_init=0;
 #ifdef INIT_INTERPRETER_STATE
       INIT_INTERPRETER_STATE();
 #endif
     }
   }
-#endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
+#endif /* PIKE_USE_MACHINE_CODE */
 }
 
 /*
@@ -407,9 +392,9 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
 
     default:
       if(SAFE_IS_ZERO(lval))
-	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
-	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
   }
   return run_time_type;
 }
@@ -466,9 +451,9 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 
   default:
    if(SAFE_IS_ZERO(lval))
-     index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+     index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
    else
-     index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+     index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
   }
 }
 
@@ -504,9 +489,9 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 
     default:
       if(SAFE_IS_ZERO(lval))
-	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
+        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
-	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
+        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
       return 0;
   }
 }
@@ -801,7 +786,7 @@ void print_return_value(void)
     safe_describe_svalue(&buf, Pike_sp-1,0,0);
     if(buffer_content_length(&buf) > TRACE_LEN)
     {
-      buffer_remove(&buf, buffer_content_length(&buf) - TRACE_LEN - 3);
+      buffer_remove(&buf, buffer_content_length(&buf) - TRACE_LEN);
       buffer_add_str(&buf, "...");
     }
     fprintf(stderr,"-    value: %s\n",buffer_get_string(&buf));
@@ -874,15 +859,8 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     free_string(filep);
   }
 
-#ifdef HAVE_COMPUTED_GOTO
-  if (instr)
-    ADD_RUNNED(instr);
-  else
-    Pike_fatal("NULL Instruction!\n");
-#else /* !HAVE_COMPUTED_GOTO */
   if(instr + F_OFFSET < F_MAX_OPCODE)
     ADD_RUNNED(instr);
-#endif /* HAVE_COMPUTED_GOTO */
 
   if(d_flag )
   {
@@ -1019,13 +997,6 @@ PMOD_EXPORT void dump_backlog(void)
 #endif
 
       file = get_line(backlog[e].pc,p, &line);
-#ifdef HAVE_COMPUTED_GOTO
-      fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
-	      file->str,
-	      (long)line,
-	      backlog[e].pc - p->program,
-	      get_opcode_name(backlog[e].instruction));
-#else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
 	fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): ILLEGAL INSTRUCTION %d\n",
@@ -1058,7 +1029,6 @@ PMOD_EXPORT void dump_backlog(void)
       }
       fprintf(stderr," %ld, %ld\n", (long)backlog[e].stack,
               (long)backlog[e].mark_stack);
-#endif /* HAVE_COMPUTED_GOTO */
       free_string(file);
     }
   }while(e!=backlogp);
@@ -1071,7 +1041,25 @@ PMOD_EXPORT void dump_backlog(void)
 
 #endif	/* !PIKE_DEBUG */
 
-
+#ifdef OPCODE_INLINE_CATCH
+#define POP_CATCH_CONTEXT do {                                         \
+    struct catch_context *cc = Pike_interpreter.catch_ctx;             \
+    DO_IF_DEBUG (                                                      \
+      TRACE((3,"-   Popping catch context %p ==> %p\n",                        \
+            cc, cc ? cc->prev : NULL));                                \
+      if (!cc)                                                         \
+       Pike_fatal ("Catch context dropoff.\n");                        \
+      if (cc->frame != Pike_fp)                                                \
+       Pike_fatal ("Catch context doesn't belong to this frame.\n");   \
+      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
+       Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+    );                                                                 \
+    debug_malloc_touch (cc);                                           \
+    UNSETJMP (cc->recovery);                                           \
+    Pike_interpreter.catch_ctx = cc->prev;                             \
+    really_free_catch_context (cc);                                    \
+  } while (0)
+#else
 #define POP_CATCH_CONTEXT do {                                         \
     struct catch_context *cc = Pike_interpreter.catch_ctx;             \
     DO_IF_DEBUG (                                                      \
@@ -1088,10 +1076,10 @@ PMOD_EXPORT void dump_backlog(void)
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
-    frame_set_expendible(Pike_fp, cc->save_expendible);                \
     Pike_interpreter.catch_ctx = cc->prev;                             \
     really_free_catch_context (cc);                                    \
   } while (0)
+#endif
 
 static struct catch_context *free_catch_context;
 static int num_catch_ctx, num_free_catch_ctx;
@@ -1128,7 +1116,7 @@ struct catch_context *alloc_catch_context(void)
     else
     {
         num_catch_ctx++;
-        res = xalloc( sizeof( struct catch_context ) );
+        res = ALLOC_STRUCT( catch_context );
     }
     return res;
 }
@@ -1215,7 +1203,6 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 #else
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
-    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
     new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr)
       /* We need to run the entry prologue... */
       - ENTRY_PROLOGUE_SIZE;
@@ -1227,8 +1214,6 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
       });
   }
-
-  Pike_fp->expendible_offset = Pike_fp->num_locals;
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1292,7 +1277,6 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
-	frame_set_expendible(Pike_fp, cc->save_expendible);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
@@ -1317,12 +1301,92 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 }
 
 void *do_inter_return_label = (void*)(ptrdiff_t)-1;
-#else
+#else /* OPCODE_INLINE_RETURN */
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
 void *dummy_label = NULL;
+#endif /* OPCODE_INLINE_RETURN */
+
+#ifdef OPCODE_INLINE_CATCH
+/* Helper function for F_CATCH machine code.
+   For a description of the addr argument, see inter_return_opcode_F_CATCH.
+   Returns the jump destination (for the catch body). */
+PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
+{
+#ifdef PIKE_DEBUG
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (F_CATCH - F_OFFSET);
+    if (Pike_interpreter.trace_level>3) {
+      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      write_to_stderr(trace_buffer,strlen(trace_buffer));
+    }
+  }
 #endif
+  {
+    struct catch_context *new_catch_ctx = alloc_catch_context();
+#ifdef PIKE_DEBUG
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+#else
+      init_recovery (&new_catch_ctx->recovery, 0);
+#endif
+
+    /* Note: no prologue. */
+    new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr);
+
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
+  }
+
+  /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+   * address to the continue position after the catch block. */
+  return (PIKE_OPCODE_T *) ((INT32 *) addr + 1) + ENTRY_PROLOGUE_SIZE;
+}
+
+/* Helper function for F_CATCH machine code. Called when an exception
+   is caught. Pops the catch context and returns the continue jump
+   destination. */
+PIKE_OPCODE_T *handle_caught_exception(void)
+{
+  /* Caught an exception. */
+  struct catch_context *cc = Pike_interpreter.catch_ctx;
+  PIKE_OPCODE_T *addr;
+
+  DO_IF_DEBUG ({
+      TRACE((3,"-   Caught exception. catch context: %p\n", cc));
+      if (!cc) Pike_fatal ("Catch context dropoff.\n");
+      if (cc->frame != Pike_fp)
+	Pike_fatal ("Catch context doesn't belong to this frame.\n");
+    });
+
+  debug_malloc_touch_named (cc, "(3)");
+  UNSETJMP (cc->recovery);
+  move_svalue (Pike_sp++, &throw_value);
+  mark_free_svalue (&throw_value);
+  low_destruct_objects_to_destruct();
+
+  if (cc->continue_reladdr < 0)
+    FAST_CHECK_THREADS_ON_BRANCH();
+  addr = cc->next_addr + cc->continue_reladdr;
+
+  DO_IF_DEBUG({
+      TRACE((3,"-   Popping catch context %p ==> %p\n",
+	     cc, cc->prev));
+      if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+    });
+
+  Pike_interpreter.catch_ctx = cc->prev;
+  really_free_catch_context (cc);
+
+  return addr;
+}
+
+#endif /* OPCODE_INLINE_CATCH */
 
 #ifndef CALL_MACHINE_CODE
 #define CALL_MACHINE_CODE(pc)					\
@@ -1559,8 +1623,6 @@ ptrdiff_t PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define OPCODE1_ALIAS(O,N,F,C)
 #define OPCODE2_ALIAS(O,N,F,C)
 
-#undef HAVE_COMPUTED_GOTO
-
 #ifdef GLOBAL_DEF_PROG_COUNTER
 GLOBAL_DEF_PROG_COUNTER;
 #endif
@@ -1582,12 +1644,9 @@ GLOBAL_DEF_PROG_COUNTER;
 #pragma optimize("y", off)
 #endif
 
-static void do_trace_efun_call(const struct svalue *s, INT32 args);
-#ifdef PIKE_DEBUG
-static void do_trace_efun_return(const struct svalue *s, int got_retval);
-#endif
-
+#define ADVERTISE_FALLTHROUGH
 #include "interpret_functions_fixed.h"
+#undef ADVERTISE_FALLTHROUGH
 
 #if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
 /* Restore optimization */
@@ -1712,21 +1771,10 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
 #endif /* SET_PROG_COUNTER */
 
-#ifdef HAVE_COMPUTED_GOTO
-int lookup_sort_fun(const void *a, const void *b)
-{
-  return (int)(((ptrdiff_t)((struct op_2_f *)a)->opcode) -
-	       ((ptrdiff_t)((struct op_2_f *)b)->opcode));
-}
-#endif /* HAVE_COMPUTED_GOTO */
 
-/* NOTE: Due to the implementation of computed goto,
- *       interpreter.h may only be included once.
- */
-#if defined(PIKE_DEBUG) && !defined(HAVE_COMPUTED_GOTO)
+#if defined(PIKE_DEBUG)
 #define eval_instruction eval_instruction_with_debug
-#include "interpreter_debug.h"
-
+#include "interpreter.h"
 #undef eval_instruction
 #define eval_instruction eval_instruction_without_debug
 
@@ -1754,7 +1802,7 @@ static inline int eval_instruction(unsigned char *pc)
 }
 
 
-#else /* !PIKE_DEBUG || HAVE_COMPUTED_GOTO */
+#else /* !PIKE_DEBUG */
 #include "interpreter.h"
 #endif
 
@@ -1786,7 +1834,7 @@ static void do_trace_call(struct byte_buffer *b, INT32 args)
 
   if(buffer_content_length(b) > TRACE_LEN)
   {
-    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN);
     buffer_add_str(b, "...");
   }
 
@@ -1917,7 +1965,7 @@ static void do_trace_return (struct byte_buffer *b, int got_retval)
 
   if(buffer_content_length(b) > TRACE_LEN)
   {
-    buffer_remove(b, buffer_content_length(b) - TRACE_LEN - 3);
+    buffer_remove(b, buffer_content_length(b) - TRACE_LEN);
     buffer_add_str(b, "...");
   }
 
@@ -1970,13 +2018,16 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     DO_IF_DEBUG(
         if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)
             Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));
+    if (X->flags & PIKE_FRAME_SAVE_LOCALS) {
+      free(X->save_locals_bitmask);
+      X->flags &= ~PIKE_FRAME_SAVE_LOCALS;
+    }
   DO_IF_DMALLOC(
     X->current_program=0;
     X->context=0;
     X->scope=0;
     X->current_object=0;
     X->flags=0;
-    X->expendible_offset=0;
     X->locals=0;
   );
   X->next = free_pike_frame;
@@ -1994,11 +2045,14 @@ struct pike_frame *alloc_pike_frame(void)
       PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
       free_pike_frame = res->next;
       PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
+      gc_init_marker(res);
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
       res->flags=0;
       res->next=0;
       res->scope=0;
+      res->pc = NULL;
+
       return res;
     }
 
@@ -2022,6 +2076,61 @@ struct pike_frame *alloc_pike_frame(void)
       num_pike_frames+=FRAMES_PER_CHUNK;
     }
     return alloc_pike_frame();
+}
+
+void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
+{
+  debug_malloc_touch(frame);
+
+  if (frame->flags & PIKE_FRAME_SAVE_LOCALS) {
+    int num_new_locals = 0;
+    int num_locals = frame->num_locals;
+    int i;
+
+    /* find the highest set bit */
+    for (i = num_locals - 1; i >= 0; i--) {
+      unsigned INT16 bitmask = frame->save_locals_bitmask[i / 16];
+
+      if (bitmask & (1 << (i % 16))) {
+        num_new_locals = i + 1;
+        break;
+      }
+    }
+
+    if (num_new_locals)
+    {
+      struct svalue *s = xcalloc(sizeof(struct svalue), num_new_locals);
+      struct svalue *locals = frame->locals;
+      unsigned INT16 bitmask = 0;
+
+      for (i = 0; i < num_new_locals; i++) {
+        unsigned INT16 bitmask = frame->save_locals_bitmask[i / 16];
+
+        if (bitmask & (1 << (i % 16))) {
+          assign_svalue_no_free(s + i, locals + i);
+        }
+#ifdef PIKE_DEBUG
+        else
+          mark_free_svalue(s + i);
+#endif
+      }
+
+      frame->locals = s;
+      frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
+    } else {
+      frame->locals = NULL;
+    }
+
+    frame->flags &= ~PIKE_FRAME_SAVE_LOCALS;
+
+    free(frame->save_locals_bitmask);
+
+    frame->num_locals = num_new_locals;
+  } else {
+    frame->locals = NULL;
+  }
+
+  frame->next=0;
 }
 
 void count_memory_in_pike_frames(size_t *num, size_t *size )
@@ -2086,6 +2195,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           constant = &context->prog->constants[function->func.const_info.offset].sval;
           if( TYPEOF(*constant) != PIKE_T_PROGRAM )
             break;
+	  /* FALLTHRU */
         case IDENTIFIER_C_FUNCTION:
         case IDENTIFIER_PIKE_FUNCTION:
           if( !new_frame )
@@ -2119,7 +2229,6 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           new_frame->locals = save_sp;
           new_frame->args = args;
           new_frame->save_sp_offset = 0;
-          new_frame->expendible_offset = 0;
 
 #ifdef PIKE_DEBUG
           if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
@@ -2263,7 +2372,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     args--;
     arg1=(void *)(Pike_sp-args-1);
 
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   case APPLY_SVALUE:
   case APPLY_SVALUE_STRICT:
@@ -2615,7 +2724,7 @@ void unlink_previous_frame(void)
    */
   frame_set_save_sp(current, frame_get_save_sp(prev));
   current->save_mark_sp=prev->save_mark_sp;
-  current->flags = prev->flags;
+  current->flags = prev->flags & PIKE_FRAME_RETURN_MASK;
 
   /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
@@ -2811,7 +2920,6 @@ PMOD_EXPORT void call_handle_error(void)
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-          buf = BUFFER_INIT();
 	  safe_describe_svalue(&buf, Pike_sp - 1, 0, 0);
 	  pop_stack();
 	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
@@ -2883,7 +2991,6 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   add_ref(new_frame->current_program = prog);
   new_frame->context = prog->inherits;
   new_frame->locals = Pike_sp;
-  new_frame->expendible_offset=0;
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
@@ -3040,18 +3147,20 @@ void low_safe_apply_handler(const char *fun,
 
 PMOD_EXPORT void push_text( const char *x )
 {
+    struct pike_string *s = make_shared_string(x);
     struct svalue *_sp_ = Pike_sp++;
     SET_SVAL_SUBTYPE(*_sp_, 0);
-    _sp_->u.string=make_shared_string(x);
+    _sp_->u.string=s;
     debug_malloc_touch(_sp_->u.string);
     SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);
 }
 
 PMOD_EXPORT void push_static_text( const char *x )
 {
+    struct pike_string *s = make_shared_static_string(x, strlen(x), eightbit);
     struct svalue *_sp_ = Pike_sp++;
     SET_SVAL_SUBTYPE(*_sp_, 0);
-    _sp_->u.string=make_shared_static_string(x, strlen(x), eightbit);
+    _sp_->u.string=s;
     debug_malloc_touch(_sp_->u.string);
     SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);
 }
@@ -3192,6 +3301,33 @@ PMOD_EXPORT void apply_external(int depth, int fun, INT32 args)
   } else {
     PIKE_ERROR("destructed object", "Apply on parent of destructed object.\n",
 	       Pike_sp, args);
+  }
+}
+
+/* mode=1 : Exception on lookup and on execution
+ * mode=2 : Exception on lookup but not execution
+ * mode=3 : No exceptions
+ */
+PMOD_EXPORT void apply_master(const char* fun, INT32 args, int mode)
+{
+  static int id_=-1;
+  struct object *master_ob=master();
+  if(master_ob->prog->id != 0)
+    id_=find_identifier(fun, master_ob->prog);
+
+  if (id_ >= 0) {
+    if( mode==1 )
+      apply_low(master_ob, id_, args);
+    else
+      safe_apply_low2(master_ob, id_, args, fun);
+  } else {
+    if( mode==3 )
+    {
+      pop_n_elems(args);
+      push_undefined();
+    }
+    else
+      Pike_error("Cannot call undefined function \"%s\" in master.\n", fun);
   }
 }
 
@@ -3342,7 +3478,11 @@ void gdb_backtrace (
 	if(of) {
           tmp = of->locals - f->locals;
         } else {
+#ifdef PIKE_THREADS
           tmp = ts->state.stack_pointer - f->locals;
+#else
+          tmp = f->num_args; /* FIXME */
+#endif
         }
         args = (INT32)tmp;
 	args = MAXIMUM(MINIMUM(args, f->num_args),0);

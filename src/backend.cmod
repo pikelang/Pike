@@ -25,8 +25,6 @@
 #include "threads.h"
 #include "array.h"
 #include <math.h>
-#include "interpret.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "mapping.h"
@@ -150,25 +148,15 @@ static void check_set_timer(struct timeval when);
 
 /* CALL OUT STUFF */
 
-#ifdef PIKE_DEBUG
-#define MESS_UP_BLOCK(X) do {\
- (X)->next_arr=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
- (X)->next_fun=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
- (X)->prev_arr=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
- (X)->prev_fun=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
- (X)->pos=-1; \
- } while(0)
-#else
-#define MESS_UP_BLOCK(X)
-#endif
-
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do { \
-  *(X->prev_arr)=X->next_arr; \
-  if(X->next_arr) X->next_arr->prev_arr=X->prev_arr; \
-  *(X->prev_fun)=X->next_fun; \
-  if(X->next_fun) X->next_fun->prev_fun=X->prev_fun; \
-  MESS_UP_BLOCK(X); \
+#define EXIT_CO(X) do {						\
+    if(X->prev_arr) *(X->prev_arr) = X->next_arr;		\
+    if(X->next_arr) X->next_arr->prev_arr = X->prev_arr;	\
+    if(X->prev_fun) *(X->prev_fun) = X->next_fun;		\
+    if(X->next_fun) X->next_fun->prev_fun = X->prev_fun;	\
+    (X)->next_arr = NULL;					\
+    (X)->next_fun = NULL;					\
+    (X)->prev_arr = NULL;					\
+    (X)->prev_fun = NULL;					\
   } while(0)
 
 struct hash_ent
@@ -272,6 +260,43 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   low_set_backend_for_fd(fd, default_backend);
   return default_backend;
 }
+
+/* Not all of these are primes, but they should be adequate */
+static const INT32 hashprimes[32] =
+{
+  31,        /* ~ 2^0  = 1 */
+  31,        /* ~ 2^1  = 2 */
+  31,        /* ~ 2^2  = 4 */
+  31,        /* ~ 2^3  = 8 */
+  31,        /* ~ 2^4  = 16 */
+  31,        /* ~ 2^5  = 32 */
+  61,        /* ~ 2^6  = 64 */
+  127,       /* ~ 2^7  = 128 */
+  251,       /* ~ 2^8  = 256 */
+  541,       /* ~ 2^9  = 512 */
+  1151,      /* ~ 2^10 = 1024 */
+  2111,      /* ~ 2^11 = 2048 */
+  4327,      /* ~ 2^12 = 4096 */
+  8803,      /* ~ 2^13 = 8192 */
+  17903,     /* ~ 2^14 = 16384 */
+  32321,     /* ~ 2^15 = 32768 */
+  65599,     /* ~ 2^16 = 65536 */
+  133153,    /* ~ 2^17 = 131072 */
+  270001,    /* ~ 2^18 = 264144 */
+  547453,    /* ~ 2^19 = 524288 */
+  1109891,   /* ~ 2^20 = 1048576 */
+  2000143,   /* ~ 2^21 = 2097152 */
+  4561877,   /* ~ 2^22 = 4194304 */
+  9248339,   /* ~ 2^23 = 8388608 */
+  16777215,  /* ~ 2^24 = 16777216 */
+  33554431,  /* ~ 2^25 = 33554432 */
+  67108863,  /* ~ 2^26 = 67108864 */
+  134217727, /* ~ 2^27 = 134217728 */
+  268435455, /* ~ 2^28 = 268435456 */
+  536870911, /* ~ 2^29 = 536870912 */
+  1073741823,/* ~ 2^30 = 1073741824 */
+  2147483647,/* ~ 2^31 = 2147483648 */
+};
 
 /*! @module Pike
  */
@@ -497,7 +522,7 @@ PIKECLASS Backend
      *! The array containing the function and arguments.
      */
     PIKEVAR array args
-      flags ID_STATIC;
+      flags ID_PROTECTED;
     CVAR struct object *this;
 
     DECLARE_STORAGE;
@@ -706,7 +731,7 @@ PIKECLASS Backend
 	free_object(this->this);
 	this->this = NULL;
       }
-      EXIT_BLOCK(this);
+      EXIT_CO(this);
     }
 
     /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
@@ -918,7 +943,6 @@ PIKECLASS Backend
     struct svalue *save_sp = Pike_sp;
     backend_count_memory_in_call_outs(THIS);
     f_aggregate_mapping(Pike_sp - save_sp);
-    stack_pop_n_elems_keep_top(args);
   }
 
    /* FIXME */
@@ -975,7 +999,7 @@ PIKECLASS Backend
        apply_current(Backend_CallOut_program_fun_num, args);
        args = 1;
 
-       get_all_args("low_call_out", args, "%o", &co);
+       get_all_args(NULL, args, "%o", &co);
 
        c = get_storage(co, Backend_CallOut_program);
 
@@ -1031,6 +1055,17 @@ PIKECLASS Backend
 	   free_array(cc->args);
 	 }
 	 cc->args = NULL;
+	 /* Unlink the call_out from the call_hash hash table directly.
+	  *
+	  * NB: Don't wait for the EXIT callback to run, as this
+	  *     would cause a race-condition with respect to
+	  *     - Growing the call_hash hash table (which would
+	  *       leave live pointers to the old hash table).
+	  *     - backend_find_call_out() (which would dereference
+	  *       cc->args (ie NULL)).
+	  *     until destruct_objects_to_destruct() is run.
+	  */
+	 EXIT_CO(cc);
 	 free_object(cc->this);
 
 	 check_destructed(Pike_sp - args);
@@ -1798,9 +1833,9 @@ PIKECLASS Backend
     int old_events = box->events;
     check_box (box, INT_MAX);
     PDWERR("[%d]BACKEND[%d]: set_fd_callback_events: "
-           "fd %d, events from 0x%x to 0x%x, object %p\n",
-           THR_NO, box->backend->id, box->fd, old_events, events,
-           box->ref_obj);
+           "fd %d, events from 0x%x [0x%x] to 0x%x [0x%x], object %p\n",
+           THR_NO, box->backend->id,
+	   box->fd, old_events, box->flags, events, flags, box->ref_obj);
     if (box->fd >= 0) {
       update_fd_set (box->backend, box->fd, old_events, events, flags);
     }
@@ -2170,8 +2205,9 @@ PIKECLASS Backend
 	  return -1;
 	}
 	return 1;
-      } else {
+      } else
 #endif
+      {
 	/* It's actually not a problem to make this function
 	 * reentrant, but that'd introduce a risk of races in the
 	 * callbacks (i.e. between when a read callback is called
@@ -2371,8 +2407,7 @@ PIKECLASS Backend
 	 * Note: This disables any further callbacks.
 	 */
 	old_events = box->events;
-	set_fd_callback_events(box, box->events & PIKE_BIT_FD_ERROR,
-			       box->flags);
+	set_fd_callback_events(box, box->events & PIKE_BIT_FD_ERROR, 0);
 	if (WANT_EVENT (box, ERROR)) {
           PDWERR("[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
                  THR_NO, me->id, fd, box->ref_obj);
@@ -2669,7 +2704,6 @@ PIKECLASS Backend
  * Used on:
  *   Solaris 7 + patches and above.
  *   OSF/1 + patches and above.
- *   IRIX 5.6.15m and above.
  */
 
 #define POLL_EVENT	struct pollfd
@@ -3121,33 +3155,27 @@ int pdb_MY_FD_SET2(int *pfd, int fd, int filter, int fflags)
 
 struct sb_selectors
 {
-  int max_fd;
-  my_fd_set sets[3];
-};
-
-struct sb_active_selectors
-{
-  fd_set asets[3];
+  fd_set sets[3];
   int max_fd;
 };
 
 #define SB_SELECT(SET, TIMEOUT)					\
   fd_select((SET).max_fd + 1,					\
-	    (SET).asets + MY_READSET,				\
-	    (SET).asets + MY_WRITESET,				\
-	    (SET).asets + MY_EXCEPTSET,				\
+	    (SET).sets + MY_READSET,				\
+	    (SET).sets + MY_WRITESET,				\
+	    (SET).sets + MY_EXCEPTSET,				\
 	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
 
 void sb_MY_FD_CLR(struct sb_selectors *me, int fd, int setno)
 {
   if(fd > me->max_fd) return;
-  my_FD_CLR(fd, me->sets + setno);
+  fd_FD_CLR(fd, me->sets + setno);
   if(fd == me->max_fd)
   {
     while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, me->sets + MY_READSET) &&
-	  !my_FD_ISSET(me->max_fd, me->sets + MY_WRITESET)
-	  && !my_FD_ISSET(me->max_fd, me->sets + MY_EXCEPTSET)
+	  !fd_FD_ISSET(me->max_fd, me->sets + MY_READSET) &&
+	  !fd_FD_ISSET(me->max_fd, me->sets + MY_WRITESET)
+	  && !fd_FD_ISSET(me->max_fd, me->sets + MY_EXCEPTSET)
       )
       me->max_fd--;
   }
@@ -3155,23 +3183,9 @@ void sb_MY_FD_CLR(struct sb_selectors *me, int fd, int setno)
 
 void sb_MY_FD_SET(struct sb_selectors *me, int fd, int setno)
 {
-  my_FD_SET(fd, me->sets + setno);
+  fd_FD_SET(fd, me->sets + setno);
   if(fd > me->max_fd) me->max_fd=fd;
 }
-
-#ifndef HAVE_POLL
-static void sb_copy_selectors(struct sb_active_selectors *to,
-			      struct sb_selectors *from)
-{
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_READSET,
-			      from->sets + MY_READSET, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_WRITESET,
-			      from->sets + MY_WRITESET, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(to->asets + MY_EXCEPTSET,
-			      from->sets + MY_EXCEPTSET, from->max_fd+1);
-  to->max_fd=from->max_fd;
-}
-#endif
 
 #ifndef POLL_SET_SIZE
 #define POLL_SET_SIZE		32
@@ -3220,7 +3234,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 /*! @class PollDeviceBackend
  *! @inherit __Backend
  *!
- *! @[Backend] implemented with @tt{/dev/poll@} (Solaris, OSF/1 and IRIX),
+ *! @[Backend] implemented with @tt{/dev/poll@} (Solaris and OSF/1),
  *! @tt{epoll(2)@} (Linux) or @tt{kqueue(2)@} (MacOS X, FreeBSD, OpenBSD, etc).
  *!
  *! @seealso
@@ -3256,18 +3270,30 @@ PIKECLASS PollDeviceBackend
 
   DECLARE_STORAGE
 
-  /*! @decl void set_signal_event_callback(int signum, function cb)
+  /*! @decl optional void set_signal_event_callback(int signum, function cb)
+   *!
+   *! Request @[cb] to be called from the backend when the signal
+   *! @[signum] is received.
    *!
    *! @note
    *!   This function is a noop except for the @tt{kqueue@} case.
+   *!
+   *! @note
+   *!   Caveat emptor: Unlikely to work.
+   *!
+   *! @seealso
+   *!   @[signal()]
    */
   PIKEFUN void set_signal_event_callback(int signum, function cb)
+    flags ID_OPTIONAL;
   {
     int q;
 #ifdef BACKEND_USES_KQUEUE
     struct kevent ev[2];
     EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
     q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
+
+    /* FIXME: Shouldn't cb be registered somewhere? */
 #endif
   }
 
@@ -3326,8 +3352,8 @@ PIKECLASS PollDeviceBackend
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_FS_EVENT) {
-      /* kqueue TODO generate fflags from the high bits of
-       *             the wanted_events argument.
+      /* kqueue TODO: Generate fflags from the high bits of
+       *              the wanted_events argument.
        */
       EV_SET(ev+nev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
       nev++;
@@ -3601,6 +3627,26 @@ PIKECLASS PollDeviceBackend
 	}
       }
 
+      if (new_events & PIKE_BIT_FD_FS_EVENT) {
+	struct fd_callback_box *box = safe_get_box(me, fd);
+	if (flags != box->flags) {
+	  changed_events |= PIKE_BIT_FD_FS_EVENT;
+	}
+      }
+      if (changed_events & PIKE_BIT_FD_FS_EVENT) {
+	if ((new_events & PIKE_BIT_FD_FS_EVENT) && flags) {
+	  /* kqueue TODO: Generate fflags from the high bits of
+	   *              the wanted_events argument.
+	   */
+          PDWERR("[%d]BACKEND[%d]: fd:%d FSEVENT, ADD [0x%08x]\n",
+		 THR_NO, me->id, fd, flags);
+	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
+	} else {
+          PDWERR("[%d]BACKEND[%d]: fd:%d FSEVENT, DISABLE\n",
+                 THR_NO, me->id, fd);
+	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
+	}
+      }
 #else  /* !BACKEND_USES_POLL_DEVICE */
       if (changed_events & PIKE_BIT_FD_READ) {
 	if (new_events & PIKE_BIT_FD_READ) {
@@ -5070,7 +5116,7 @@ PIKECLASS SelectBackend
    * POLL/SELECT fd sets
    */
   CVAR struct sb_selectors set;
-  CVAR struct sb_active_selectors active_set;
+  CVAR struct sb_selectors active_set;
 
   DECLARE_STORAGE
 
@@ -5162,9 +5208,9 @@ PIKECLASS SelectBackend
       /* FIXME: OOB? */
       for(e=0;e<=sb->set.max_fd;e++)
       {
-	if(my_FD_ISSET(e, sb->set.sets + MY_READSET)
-	   || my_FD_ISSET(e, sb->set.sets + MY_WRITESET)
-	   || my_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
+	if(fd_FD_ISSET(e, sb->set.sets + MY_READSET)
+	   || fd_FD_ISSET(e, sb->set.sets + MY_WRITESET)
+	   || fd_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
 	  )
 	{
 	  int ret;
@@ -5227,7 +5273,7 @@ PIKECLASS SelectBackend
 
       poll_timeout = *next_timeout;
 
-      sb_copy_selectors(& sb->active_set, &sb->set);
+      sb->active_set = sb->set;
 
       PDWERR("[%d]BACKEND[%d]: Doing poll on fds:\n", THR_NO, me->id);
 
@@ -5273,7 +5319,7 @@ PIKECLASS SelectBackend
 	box->revents = 0;
 	box->flags = 0;
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_EXCEPTSET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_EXCEPTSET)) {
 	  /* Check for errors. GNU libc says this isn't set on error, but
 	   * POSIX does. FIXME: What bits will be set for errors on GNU
 	   * systems, then? Should we always check for that? */
@@ -5290,12 +5336,12 @@ PIKECLASS SelectBackend
 	  }
 	}
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_READSET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_READSET)) {
           PDWERR("[%d]BACKEND[%d]: read on %d\n", THR_NO, me->id, i);
 	  box->revents |= PIKE_BIT_FD_READ;
 	}
 
-	if(fd_FD_ISSET(i, sb->active_set.asets + MY_WRITESET)) {
+	if(fd_FD_ISSET(i, sb->active_set.sets + MY_WRITESET)) {
           PDWERR("[%d]BACKEND[%d]: write on %d\n", THR_NO, me->id, i);
 	  /* OOB can by BSD definition always be written, so if we can
 	   * write normal data it's reasonable to assume OOB can be
@@ -5357,7 +5403,7 @@ PIKECLASS SelectBackend
       case EBADF:
 	/* TODO: Fix poll version! */
 
-	sb_copy_selectors(&sb->active_set, &sb->set);
+	sb->active_set = sb->set;
 
 	timeout->tv_usec=0;
 	timeout->tv_sec=0;
@@ -5377,16 +5423,16 @@ PIKECLASS SelectBackend
 	  case EBADF:
 	    {
 	      FOR_EACH_ACTIVE_FD_BOX (me, box) {
-		fd_FD_ZERO(sb->active_set.asets + MY_READSET);
-		fd_FD_ZERO(sb->active_set.asets + MY_WRITESET);
-		fd_FD_ZERO(sb->active_set.asets + MY_EXCEPTSET);
+		fd_FD_ZERO(sb->active_set.sets + MY_READSET);
+		fd_FD_ZERO(sb->active_set.sets + MY_WRITESET);
+		fd_FD_ZERO(sb->active_set.sets + MY_EXCEPTSET);
 
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_READSET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_READSET);
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_WRITESET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_WRITESET);
-		if(my_FD_ISSET(box->fd, sb->set.sets + MY_EXCEPTSET))
-		  fd_FD_SET(box->fd, sb->active_set.asets + MY_EXCEPTSET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_READSET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_READSET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_WRITESET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_WRITESET);
+		if(fd_FD_ISSET(box->fd, sb->set.sets + MY_EXCEPTSET))
+		  fd_FD_SET(box->fd, sb->active_set.sets + MY_EXCEPTSET);
 
 		timeout->tv_usec=0;
 		timeout->tv_sec=0;
@@ -5534,19 +5580,21 @@ PIKECLASS SelectBackend
     me->handler_data = THIS;
 
     THIS->set.max_fd=0;
-    my_FD_ZERO(THIS->set.sets + MY_READSET);
-    my_FD_ZERO(THIS->set.sets + MY_WRITESET);
-    my_FD_ZERO(THIS->set.sets + MY_EXCEPTSET);
+    fd_FD_ZERO(THIS->set.sets + MY_READSET);
+    fd_FD_ZERO(THIS->set.sets + MY_WRITESET);
+    fd_FD_ZERO(THIS->set.sets + MY_EXCEPTSET);
     /* FIXME: Should there be something else here? */
     /* me->set.num_fds=0; */
   }
 
+#ifdef POLL_DEBUG
   EXIT
     gc_trivial;
   {
     struct Backend_struct *me = THIS->backend;
     PDWERR("[%d]BACKEND[%d]: exit generic backend\n", THR_NO, me->id);
   }
+#endif /* POLL_DEBUG */
 }
 
 /*! @endclass
@@ -5746,9 +5794,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
   UNREACHABLE(return 0);
 }
 
-#define WRAP(CB, EVENT_BIT)						\
-  void PIKE_CONCAT3(set_, CB, _callback)				\
-       (int fd, file_callback cb, void *data)				\
+#define LOW_WRAP_SET_CB(CB, EVENT_BIT, SFLAGS, CFLAGS)			\
   {									\
     struct Backend_struct *b = really_get_backend_for_fd (fd);		\
     struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
@@ -5778,17 +5824,18 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 									\
     if (cb)								\
       set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_BIT, \
-			      cbox->flags);				\
+			      (SFLAGS));				\
     else {								\
       set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_BIT, \
-			      cbox->flags);				\
+			      (CFLAGS));				\
       if (!cbox->box.events) {						\
 	unhook_fd_callback_box (&cbox->box);				\
 	really_free_compat_cb_box (cbox);				\
       }									\
     }									\
-  }									\
-  									\
+  }
+
+#define LOW_WRAP(CB, EVENT_BIT)						\
   file_callback PIKE_CONCAT3(query_, CB, _callback) (int fd)		\
   {									\
     struct Backend_struct *b=get_backend_for_fd (fd);			\
@@ -5829,88 +5876,21 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     return cbox->PIKE_CONCAT (CB, _data);				\
   }
 
+#define WRAP(CB, EVENT_BIT)						\
+  void PIKE_CONCAT3(set_, CB, _callback)				\
+       (int fd, file_callback cb, void *data)				\
+  {									\
+    LOW_WRAP_SET_CB(CB, EVENT_BIT, cbox->flags, cbox->flags);		\
+  }									\
+  LOW_WRAP(CB, EVENT_BIT)
+
 #define WRAP2(CB, EVENT_BIT)						\
   void PIKE_CONCAT3(set_, CB, _callback)				\
        (int fd, file_callback cb, void *data, int flags)		\
   {									\
-    struct Backend_struct *b = really_get_backend_for_fd (fd);		\
-    struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
-    struct compat_cb_box *cbox;						\
-									\
-    PDWERR("[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",      \
-           THR_NO, b->id, fd, cb, data);                                \
-									\
-    if (box) {								\
-      check_box (box, fd);						\
-      DO_IF_DEBUG (							\
-	if (box->callback != compat_box_dispatcher)			\
-	  Pike_fatal ("Mixing old and new style "			\
-		      "backend interfaces for fd %d.\n", fd);		\
-      );								\
-      cbox = (struct compat_cb_box *) box;				\
-    }									\
-    else {								\
-      if (!cb) return;							\
-      cbox = alloc_compat_cb_box();					\
-      INIT_FD_CALLBACK_BOX (&cbox->box, b, NULL,			\
-			    fd, 0, compat_box_dispatcher, flags);	\
-    }									\
-									\
-    cbox->CB = cb;							\
-    cbox->PIKE_CONCAT (CB, _data) = data;				\
-									\
-    if (cb)								\
-      set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_BIT, \
-			      cbox->flags);				\
-    else {								\
-      set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_BIT, \
-			      cbox->flags);				\
-      if (!cbox->box.events) {						\
-	unhook_fd_callback_box (&cbox->box);				\
-	really_free_compat_cb_box (cbox);				\
-      }									\
-    }									\
+    LOW_WRAP_SET_CB(CB, EVENT_BIT, flags, 0);				\
   }									\
-  									\
-  file_callback PIKE_CONCAT3(query_, CB, _callback) (int fd)		\
-  {									\
-    struct Backend_struct *b=get_backend_for_fd (fd);			\
-    struct fd_callback_box *box;					\
-    struct compat_cb_box *cbox;						\
-									\
-    if (!b) return NULL;						\
-    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
-    check_box (box, fd);						\
-    DO_IF_DEBUG (							\
-      if (box->callback != compat_box_dispatcher)			\
-	Pike_fatal ("Mixing old and new style "				\
-		    "backend interfaces for fd %d.\n", fd);		\
-    );									\
-									\
-    cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
-    return cbox->CB;							\
-  }									\
-  									\
-  void *PIKE_CONCAT3(query_, CB, _callback_data) (int fd)		\
-  {									\
-    struct Backend_struct *b=get_backend_for_fd (fd);			\
-    struct fd_callback_box *box;					\
-    struct compat_cb_box *cbox;						\
-									\
-    if (!b) return NULL;						\
-    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
-    check_box (box, fd);						\
-    DO_IF_DEBUG (							\
-      if (box->callback != compat_box_dispatcher)			\
-	Pike_fatal ("Mixing old and new style "				\
-		    "backend interfaces for fd %d.\n", fd);		\
-    );									\
-									\
-    cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
-    return cbox->PIKE_CONCAT (CB, _data);				\
-  }
+  LOW_WRAP(CB, EVENT_BIT)
 
 WRAP(read, PIKE_BIT_FD_READ)
 WRAP(write, PIKE_BIT_FD_WRITE)

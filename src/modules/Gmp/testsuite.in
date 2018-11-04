@@ -58,6 +58,7 @@ START_MARKER
           "\23\320D\330\346\231\211 \363\252\221\377\37\3")
 
   // _random
+cond_resolv(Random.Deterministic, [[
   test_do( add_constant("real_random", random) )
   test_do( add_constant("random", Random.Deterministic(54321)->random) )
   test_eq(random(Gmp.mpz(-1)), 0)
@@ -79,6 +80,7 @@ START_MARKER
   test_eval_error(random(Gmp.mpz(4711)))
   test_do( add_constant("random", real_random) )
   test_do( add_constant("real_random") )
+]])
 
   // _encode / _decode
   test_eq(decode_value(encode_value(Gmp.mpz(-1))), Gmp.mpz(-1))
@@ -228,6 +230,7 @@ START_MARKER
   test_eval_error(Gmp.mpz(17) - 18 - "19")
   test_compile_error(return Gmp.mpz(17) / 0)
   test_eval_error([[ int i; return Gmp.mpz(17)/i; ]])
+  test_eval_error([[ return Gmp.mpz(17)/Gmp.mpz(0); ]])
   test_compile_error(return Gmp.mpz(49) % 0)
   test_eval_error([[ int i; return Gmp.mpz(17)%i; ]])
   test_eval_error(1<<Gmp.mpz("100000000000000000000"))
@@ -349,6 +352,12 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
   test_true(stringp((string)Gmp.mpq(17)))
   test_eq((string)Gmp.mpq(17),"17")
   test_eq((string)Gmp.mpq(1.25),"1.25")
+  test_eq((string)Gmp.mpq(0.25),"0.25")
+  test_eq((string)Gmp.mpq(-0.25),"-0.25")
+  test_eq((string)Gmp.mpq(0.5), "0.5")
+  test_eq((string)Gmp.mpq(-0.5), "-0.5")
+  test_eq((string)Gmp.mpq(0.75),"0.75")
+  test_eq((string)Gmp.mpq(-0.75),"-0.75")
   test_eq((int)Gmp.mpq(17),17)
   test_false(Gmp.mpq(0))
   test_true(Gmp.mpq(1))

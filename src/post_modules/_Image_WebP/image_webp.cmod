@@ -14,7 +14,6 @@
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "threads.h"
 #include "operators.h"
 #include "module_support.h"
 #include "modules/Image/image.h"

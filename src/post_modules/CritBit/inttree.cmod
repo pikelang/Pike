@@ -66,6 +66,7 @@ cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
 	if (e > 32) Pike_error("Mask is too big!");
 	key.len.chars = 0;
 	key.len.bits = WASTED_BITS + e;
+	/* FALLTHRU */
     case 4:
 	if (a > 255 || b > 255 || c > 255 || d > 255)
 	    Pike_error("Bad ip.\n");

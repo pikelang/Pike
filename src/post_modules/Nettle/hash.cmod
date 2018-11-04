@@ -4,16 +4,11 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-
-/* For this_object() */
-#include "object.h"
 #include "module_support.h"
 #include "pike_compiler.h"
-#include "pike_memory.h"
 
 #include "nettle_config.h"
 
@@ -36,6 +31,12 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_GOSTHASH94_H
 #include <nettle/gosthash94.h>
 #endif
+#ifdef HAVE_NETTLE_PBKDF2_H
+#include <nettle/pbkdf2.h>
+#endif
+#ifdef HAVE_NETTLE_HMAC_H
+#include <nettle/hmac.h>
+#endif
 
 #include "fdlib.h"
 
@@ -54,7 +55,7 @@ PIKECLASS Hash
 
   CVAR const struct nettle_hash *meta;
 
-  /*! @decl string(0..255) name(void)
+  /*! @decl string(0..255) name()
    *!
    *! Returns a human readable name for the algorithm.
    */
@@ -67,7 +68,7 @@ PIKECLASS Hash
       push_text(THIS->meta->name);
     }
 
-  /*! @decl int(0..) digest_size(void)
+  /*! @decl int(0..) digest_size()
    *!
    *! Returns the size of a hash digest.
    */
@@ -80,7 +81,7 @@ PIKECLASS Hash
       push_int(THIS->meta->digest_size);
     }
 
-  /*! @decl int(0..) block_size(void)
+  /*! @decl int(0..) block_size()
    *!
    *! Returns the internal block size of the hash algorithm.
    */
@@ -151,7 +152,7 @@ PIKECLASS Hash
     return 0;
   }
 
-  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int bytes)
+  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int(0..) bytes)
    *!
    *!  Works as a (faster) shortcut for e.g.
    *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
@@ -167,7 +168,7 @@ PIKECLASS Hash
    *!   @[Stdio.File], @[State()->update()] and
    *!   @[State()->digest()].
    */
-  PIKEFUN string(0..255) hash(object in, void|int bytes)
+  PIKEFUN string(0..255) hash(object in, void|int(0..) bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
@@ -189,7 +190,7 @@ PIKECLASS Hash
     if( get_memory_object_memory(in, (void **)&read_buffer, &len, NULL) )
     {
       if( bytes )
-        len = MINIMUM(len, MAXIMUM(bytes->u.integer,0) );
+        len = MINIMUM(len, (size_t)MAXIMUM(bytes->u.integer,0) );
       meta->update( ctx, len, (const uint8_t*)read_buffer);
       goto ret_meta;
     }
@@ -260,11 +261,19 @@ PIKECLASS Hash
    *!
    *!   The @[password] memory will be cleared before released.
    *!
+   *!   Rounds will never be set to less than 1000. If @[rounds] is 0
+   *!   it will be set to 5000.
+   *!
    *! @seealso
    *!   @[crypt_md5()]
    */
-  PIKEFUN string(0..127) crypt_hash(string(0..255) password,
-				    string(0..255) salt, int rounds)
+  PIKEFUN string(0..127) crypt_hash(string password,
+				    string salt, int rounds)
+    /* NB: We use a weaker type above to allow us to delay
+     *     throwing errors on wide strings until we've had
+     *     time to censor the password string.
+     */
+    rawtype tFunc(tStr8 tStr8 tInt, tStr7);
   {
     struct pike_string *res;
     const struct nettle_hash *meta = THIS->meta;
@@ -277,16 +286,24 @@ PIKECLASS Hash
     unsigned char *s;
     int plen;
     int slen;
-    int dsz = meta->digest_size;
+    int dsz;
 
     int i;
     int r;
 
     int a, b, c;
 
+    if (!meta)
+      Pike_error("HashInfo not properly initialized.\n");
+
     if (!rounds) rounds = 5000;
     if (rounds < 1000) rounds = 1000;
     if (rounds > 999999999) rounds = 999999999;
+
+    /* Censor the password. */
+    push_string(password);
+    args++;
+    add_ref(Pike_sp[-args].u.string = MK_STRING("censored"));
 
     NO_WIDE_STRING(password);
     NO_WIDE_STRING(salt);
@@ -443,11 +460,13 @@ PIKECLASS Hash
     memset(abcbuf, 0, 3*dsz);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       werror("Hash->INIT\n");
       THIS->meta = NULL;
     }
+#endif
 
   /*! @class State
    *!
@@ -464,24 +483,7 @@ PIKECLASS Hash
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.Hash.
        */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  parent_State_fun_num =
-	    really_low_reference_inherited_identifier(Pike_compiler->previous,
-						      0, parent_State_fun_num);
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
-	}
-      }
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
     }
 
 #define GET_META(o)						\
@@ -525,7 +527,7 @@ PIKECLASS Hash
       push_object(this_object());
     }
 
-    /*! @decl string(0..255) digest(int|void length)
+    /*! @decl string(0..255) digest(int(0..)|void length)
      *!
      *! Generates a digest, and resets the hashing contents.
      *!
@@ -536,7 +538,7 @@ PIKECLASS Hash
      *! @returns
      *!   The digest.
      */
-    PIKEFUN string(0..255) digest(int|void arg)
+    PIKEFUN string(0..255) digest(int(0..)|void arg)
     {
       const struct nettle_hash *meta;
       struct pike_string *digest;
@@ -551,9 +553,7 @@ PIKECLASS Hash
 	length = meta->digest_size;
       else
 	{
-	  if (TYPEOF(*arg) != PIKE_T_INT)
-	    Pike_error("Bad argument type.\n");
-	  if (arg->u.integer < 0)
+          if (arg->u.integer < 0)
 	    Pike_error("Invalid length, must be positive.\n");
 	  if ((unsigned)arg->u.integer > meta->digest_size)
 	    Pike_error("Unsupported digest length.\n");
@@ -566,11 +566,13 @@ PIKECLASS Hash
       push_string(end_shared_string(digest));
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
       werror("State->INIT\n");
       THIS->ctx = NULL;
     }
+#endif
 
     EXIT
     {
@@ -595,6 +597,8 @@ PIKECLASS Hash
 /* The algorithm objects can be overloaded in pike. */
 
 #cmod_define TOSTR(DEF)	#DEF
+#undef SPECIAL_PBKDF2
+
 
 #cmod_define PIKE_NAME MD5
 #cmod_define NETTLE_NAME md5
@@ -616,7 +620,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA1
 #cmod_define NETTLE_NAME sha1
+#define SPECIAL_PBKDF2
 #cmod_include "hash.H"
+#undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -632,7 +638,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA256
 #cmod_define NETTLE_NAME sha256
+#define SPECIAL_PBKDF2
 #cmod_include "hash.H"
+#undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 

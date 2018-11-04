@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-#require constant(Regexp.PCRE)
+#require constant(Regexp.PCRE.Widestring)
 
 //! This is a port of the Javascript Markdown parser
 //! @url{https://github.com/chjj/marked Marked@}. The only method needed to

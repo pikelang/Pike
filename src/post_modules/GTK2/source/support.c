@@ -270,8 +270,7 @@ void push_gobjectclass(void *obj, struct program *def) {
       ref_push_object(o);
       return;
     }
-  o=low_clone(def);
-  call_c_initializers(o);
+  o=fast_clone_object(def);
   ((struct object_wrapper *)o->storage)->obj=obj;
   pgtk2__init_object(o);
 
@@ -287,8 +286,7 @@ void push_pgdk2object(void *obj, struct program *def, int owned) {
     push_int(0);
     return;
   }
-  o=low_clone(def);
-  call_c_initializers(o);
+  o=fast_clone_object(def);
   ((struct object_wrapper *)o->storage)->obj=obj;
   ((struct object_wrapper *)o->storage)->owned = owned;
   push_object(o);

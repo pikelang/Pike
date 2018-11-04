@@ -9,6 +9,7 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
+#include "gc_header.h"
 
 /* This debug tool writes out messages whenever arrays with unfinished
  * type fields are encountered. */
@@ -22,7 +23,7 @@
  */
 struct array
 {
-  INT32 refs;
+  GC_MARKER_MEMBERS;
   INT32 size;		/**< number of svalues in this array */
   INT32 malloced_size;	/**< number of svalues that can fit in this array */
   TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
@@ -91,6 +92,9 @@ extern struct array *gc_internal_array;
       really_free_array(v_);						\
   }while(0)
 
+#define low_allocate_array(size, extra_space)				\
+  dmalloc_touch (struct array *,					\
+		 real_allocate_array ((size), (extra_space)))
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
 
@@ -103,11 +107,6 @@ extern struct array *gc_internal_array;
 typedef int (*cmpfun)(const struct svalue *, const struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
 typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
-
-
-#define low_allocate_array(size, extra_space)				\
-  dmalloc_touch (struct array *,					\
-		 real_allocate_array ((size), (extra_space)))
 
 /* Prototypes begin here */
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
@@ -147,8 +146,8 @@ PMOD_EXPORT INT32 *get_switch_order(struct array *a);
 PMOD_EXPORT INT32 *get_alpha_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
 INT32 switch_lookup(struct array *a, struct svalue *s);
-PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order);
-PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
+PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order);
+PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order);
 PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void array_check_type_field(struct array *v);
@@ -198,8 +197,8 @@ PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
 #endif
 PMOD_EXPORT void visit_array (struct array *a, int action, void *extra);
-void gc_mark_array_as_referenced(struct array *a);
-void real_gc_cycle_check_array(struct array *a, int weak);
+PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a);
+PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);
 void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);

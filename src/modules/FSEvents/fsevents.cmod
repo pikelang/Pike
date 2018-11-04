@@ -10,14 +10,9 @@
 /*! @module FSEvents
  */
 
-#include "global.h"
-#include "interpret.h"
 #include "module.h"
-#include "program.h"
-#include "stralloc.h"
-#include "svalue.h"
+#include "interpret.h"
 #include "threads.h"
-#include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
 
@@ -414,6 +409,9 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
 
 }
 
+/*! @endclass
+ */
+
 #endif /* HAVE_FRAMEWORK_CORESERVICES */
 
 PIKE_MODULE_INIT
@@ -625,9 +623,6 @@ PIKE_MODULE_EXIT
 {
   EXIT;
 }
-
-/*! @endclass
- */
 
 /*! @endmodule
  */

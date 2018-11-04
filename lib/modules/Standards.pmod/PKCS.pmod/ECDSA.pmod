@@ -103,3 +103,24 @@ variant Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_ke
   if (!o || o->type_name != "SEQUENCE") return UNDEFINED;
   return parse_private_key([object(Sequence)]o, c);
 }
+
+//! Create a DER-coded ECPublicKey structure
+//! @param ecdsa
+//!   @[Crypto.ECC.Curve()->ECDSA] object.
+//! @returns
+//!   ASN.1 coded ECPublicKey structure as specified in
+//!   @rfc{5480:2@}.
+string(8bit) public_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
+{
+  return ecdsa->pkcs_public_key()->get_der();
+}
+
+//! Get an initialized ECDSA object from an ECC curve and an ec public key.
+//!
+//! See @rfc{5280:4.1.2.7@} and @rfc{5480:2.2@}.
+Crypto.ECC.SECP_521R1.ECDSA parse_public_key(string(8bit) key, Crypto.ECC.Curve c)
+{
+  Crypto.ECC.SECP_521R1.ECDSA res = c->ECDSA();
+  res->set_public_key(key);
+  return res;
+}

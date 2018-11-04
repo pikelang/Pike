@@ -1,0 +1,227 @@
+START_MARKER
+
+cond_begin(Web["Sass"])
+
+  test_true([[ programp(Web.Sass.Compiler) ]])
+  test_true([[ Web.Sass.libsass_version() != "" ]])
+
+  test_do([[
+    Web.Sass.Compiler c = Web.Sass.Compiler();
+    c->set_options(([ "include_path" : "./",
+                      "output_style" : Web.Sass.STYLE_COMPRESSED ]));
+    add_constant("sassc", c);
+    add_constant("sassopt", c->set_options);
+    add_constant("scss_str", #"
+      $color: #0087cc;
+
+      a {
+        color: $color
+      }
+    ");
+  ]])
+
+  dnl *** Should raise errors
+
+  test_eval_error([[ sassopt(([ "include_path"        : 1     ])) ]])
+  test_eval_error([[ sassopt(([ "output_style"        : 1024  ])) ]])
+  test_eval_error([[ sassopt(([ "output_style"        : "foo" ])) ]])
+  test_eval_error([[ sassopt(([ "source_map_file"     : 1     ])) ]])
+  test_eval_error([[ sassopt(([ "source_map_embed"    : "yes" ])) ]])
+  test_eval_error([[ sassopt(([ "source_map_root"     : 1     ])) ]])
+  test_eval_error([[ sassopt(([ "omit_source_map_url" : "y"   ])) ]])
+  test_eval_error([[ sassopt(([ "source_comments"     : "y"   ])) ]])
+  test_eval_error([[ sassopt(([ "precision"           : "y"   ])) ]])
+  test_eval_error([[ sassopt(([ "unknown_opt"         : "y"   ])) ]])
+  test_eval_error([[
+    string input = "@import 'i-do-not-exist';";
+    sassc->compile_string(input);
+  ]])
+  test_eval_error([[
+    string input = #"
+    a {
+      color: #fff  // missing semicolon
+      background: lime
+    }";
+
+    sassc->compile_string(input);
+  ]])
+
+  dnl --- Test error handling propagated from the Pike level to the CMOD level
+  test_eval_error([[
+    object compiler = (class {
+      inherit Web.Sass.Compiler;
+
+      protected string(8bit) handle_sass_import(string(8bit) path) {
+        error("I don't exist! ");
+      }
+    }());
+
+    compiler->compile_string("@import 'no-such-file';");
+  ]])
+
+  dnl *** End: Should raise errors
+
+  test_do([[
+    sassopt(([ "include_path" : "./",
+               "output_style" : Web.Sass.STYLE_COMPRESSED ]));
+  ]])
+
+  test_eq(sassc->include_path, "./")
+
+  dnl *** Simple compile_string tests
+
+  test_eq([[ sassc->output_style ]], Web.Sass.STYLE_COMPRESSED)
+  test_eq([[ sassc->compile_string(scss_str)->css ]], "a{color:#0087cc}\n")
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_COMPACT,
+             sassc->compile_string(scss_str)->css ]], "a { color: #0087cc; }\n")
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_NESTED,
+             sassc->compile_string(scss_str)->css ]], "a {\n"
+                                                 "  color: #0087cc; }\n")
+  test_eq([[ sassc->output_style = Web.Sass.STYLE_EXPANDED,
+             sassc->compile_string(scss_str)->css ]], "a {\n"
+                                                 "  color: #0087cc;\n"
+                                                 "}\n")
+
+  dnl *** End: Simple compile_string tests
+
+  dnl *** Create some simple files and write them to disk, and compile them
+  dnl     without writing the CSS and MAP to disk.
+  test_do([[
+    string vars = #"
+      $color: #fff;
+      $font:  Arial;
+
+      @mixin fun() {
+        &::before {
+          color: $color;
+        }
+      }
+    ";
+
+    string style = #"
+      // Comment
+      @import 'testvars';
+
+      html {
+        font-family: $font;
+
+        body {
+          @include fun();
+        }
+      }
+    ";
+
+    Stdio.write_file("_testvars.scss", vars);
+    Stdio.write_file("teststyle.scss", style);
+
+    mapping(string(8bit):string(8bit)) r =
+      sassc->compile_file("teststyle.scss");
+
+    add_constant("scss_comp_file", r);
+  ]])
+
+  dnl *** Expected result of the first compile_file test.
+  define(scss_expected_style_1,
+         "html {\n"
+         "  font-family: Arial;\n"
+         "}\n"
+         "\n"
+         "html body::before {\n"
+         "  color: #fff;\n"
+         "}\n")
+
+  test_eq([[ scss_comp_file->map ]], 0)
+  test_eq([[ scss_comp_file->css ]], scss_expected_style_1)
+
+  define(compile_to_disk, [[ test_do([[
+    sassc->source_map_file = "teststyle.css.map";
+    sassc->compile_file("teststyle.scss", "teststyle.css");
+
+    string s = Stdio.read_file("teststyle.css");
+    mapping m = Standards.JSON.decode(Stdio.read_file("teststyle.css.map"));
+
+    add_constant("scss_comp_file", s);
+    add_constant("scss_comp_map", m);
+  ]]) ]])
+
+  compile_to_disk()
+
+  define(scss_expected_style_2, scss_expected_style_1
+                                "\n"
+                                "/*# sourceMappingURL=teststyle.css.map */")
+
+  test_eq([[ scss_comp_file ]], scss_expected_style_2)
+  test_eq([[ scss_comp_map->file ]], "teststyle.css")
+  test_equal([[ scss_comp_map->sources ]], ({ "teststyle.scss","_testvars.scss" }))
+  dnl *** Removing this test temporarily since the output seems to vary heavily
+  dnl *** which might have to with which libsass version is being used.
+  dnl   test_eq([[ scss_comp_map->mappings ]],
+  dnl           [[ "AAIM,AAAA,IAAI,CAAC;EACH,WAAW,ECHL,KAAK;CDQZ;;AAND,ACCE,IDDE,"
+  dnl              "CAGF,IAAI,ACFH,QAAQ,CAAC;EACR,KAAK,EALD,IAAI;CAMT" ]])
+
+
+  test_do([[ sassc->source_comments = true; ]])
+
+  compile_to_disk();
+
+  test_true([[ sscanf(scss_comp_file, "%*s/* line %*d, %*s.scss */") == 3 ]])
+
+  dnl *** Test SASS syntax on compile_string()
+  test_do([[
+    string sass_str = #"
+h1
+  small
+    color: blue
+  font-size: 32";
+
+    sassc->set_options(([
+      "source_map_file" : UNDEFINED,
+      "source_comments" : false,
+      "sass_syntax"     : true,
+    ]));
+
+    mapping(string:string) res = sassc->compile_string(sass_str);
+    sassc->sass_syntax = false;
+  ]])
+
+  dnl *** Test sass2scss()
+  dnl     This simply converts Sass syntax to SCSS syntax.
+  test_do([[
+    string sass_str = #"
+body
+  font:
+    family: arial
+    size: 12
+";
+
+    string res = Web.Sass.sass2scss(sass_str);
+    add_constant("sass2scss_res", res);
+  ]])
+
+  test_eq([[ sass2scss_res ]], #"
+body {
+  font: {
+    family: arial;
+    size: 12; } }
+");
+
+  dnl *** Clean up
+
+  test_do([[
+    rm("_testvars.scss");
+    rm("teststyle.scss");
+    rm("teststyle.css");
+    rm("teststyle.css.map");
+    add_constant("sass2scss_res");
+    add_constant("scss_comp_file");
+    add_constant("scss_comp_map");
+    add_constant("scss_str");
+    add_constant("sassopt");
+    add_constant("sassc");
+  ]])
+
+  dnl *** End clean up
+
+cond_end
+
+END_MARKER

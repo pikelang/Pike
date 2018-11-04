@@ -36,7 +36,7 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember, ?int mnemo
       GtkRadioButton *gb=NULL;
       INT_TYPE nem=0;
 
-      get_all_args("create",args,"%T.%o%i",&t,&o1,&nem);
+      get_all_args(NULL,args,"%T.%o%i",&t,&o1,&nem);
 /*
       if (o1)
 	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
@@ -94,7 +94,7 @@ void set_group(GTK2.RadioButton groupmember)
   {
     struct object *o=NULL;
     GSList *mylist;
-    get_all_args("set_group", args, "%o", &o );
+    get_all_args(NULL, args, "%o", &o );
 
     mylist=gtk_radio_button_get_group(GTK_RADIO_BUTTON(get_gobject(o)));
     gtk_radio_button_set_group(GTK_RADIO_BUTTON(THIS->obj),mylist);

@@ -4,11 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #include "pike_macros.h"
 #include "stralloc.h"
@@ -604,7 +601,7 @@ static inline int isHexChar(INT32 c)
 void PIKE_CONCAT(f_,X) (INT32 args)		\
 {						\
   INT_TYPE i;					\
-  get_all_args(#X, args, "%i", &i);		\
+  get_all_args(NULL, args, "%i", &i);		\
   pop_n_elems(args);				\
   push_int( X (i) );				\
 }
@@ -649,9 +646,6 @@ PIKECLASS Simple
   CVAR int flags;
 
   DECLARE_STORAGE
-
-  /* Forward decl. */
-  DEFAULT_CMOD_STORAGE int Simple_Context_program_fun_num;
 
   struct xmlinput
   {
@@ -1633,6 +1627,7 @@ static void read_attvalue(struct string_builder *X,
 
       case 0x0d:
 	if (!keepspace && PEEK(1)==0x0a) READ(1);	/* cr/lf */
+	/* FALLTHRU */
       case 0x20:
       case 0x0a:
       case 0x09:
@@ -1666,7 +1661,7 @@ static void read_pubid(struct string_builder *X,
     }
     switch(PEEK(0))
     {
-      case 0x0d: if(PEEK(1)==0x0a) READ(1);
+      case 0x0d: if(PEEK(1)==0x0a) READ(1); /* FALLTHRU */
       case 0x20:
       case 0x0a:
       case 0x09:
@@ -1726,6 +1721,7 @@ static void read_entityvalue(struct string_builder *X,
 	  break;
 	}
 #endif
+	/* FALLTHRU */
 
       default:
 	POKE(*X, PEEK(0));
@@ -1938,7 +1934,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	{
 	  case 0:
 	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  default:
 	    XMLERROR("Expected | or ,");
@@ -2180,6 +2176,7 @@ static int really_low_parse_dtd(void)
 			SYS();
 			break;
 		      }
+		      /* FALLTHRU */
 
 		    default:
 		  not_system:
@@ -2386,7 +2383,7 @@ static int really_low_parse_dtd(void)
 			      goto comefrom_fixed;
 			    }
 
-			    /* FALL_THROUGH */
+			    /* FALLTHRU */
 
 			  default:
 			bad_defaultdecl:
@@ -2495,10 +2492,11 @@ static int really_low_parse_dtd(void)
 			break;
 
 		      }
+		      /* FALLTHRU */
 
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
-		      /* FALL_THROUGH */
+		      /* FALLTHRU */
 
 		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
@@ -2823,6 +2821,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		  SYS();
 		  break;
 		}
+		/* FALLTHRU */
 
 	      default:
 		XMLERROR("Invalid entry.");
@@ -3158,7 +3157,6 @@ static int low_parse_xml(struct pike_string *end)
 	push_static_text("previous");
 	ref_push_mapping(i->next->callbackinfo);
 	mapping_insert(i->callbackinfo, sp-2, sp-1);
-	pop_n_elems(2);
       } else {
 	THIS->input->callbackinfo = allocate_mapping(0);
       }
@@ -3167,6 +3165,7 @@ static int low_parse_xml(struct pike_string *end)
 				     MK_STRING("context"), context);
       }
       CHECK_INPUT(THIS->input);
+      pop_n_elems(args);
     }
 
     /*! @decl void create(string s, string context, int flags, @
@@ -3252,7 +3251,7 @@ PIKEFUN string autoconvert(string s)
 	  pop_stack();
 	  push_string(end_shared_string(t));
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
@@ -3275,7 +3274,7 @@ PIKEFUN string autoconvert(string s)
     {
       case 0x0000feff:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x0000003c: /* UCS4 1234 byte order (big endian) */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(1234) detected.\n"));
 	init_string_builder(&b,4);
@@ -3288,7 +3287,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0xfffe0000:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x3c000000: /* UCS4 4321 byte order (little endian)*/
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(4321) detected.\n"));
 	init_string_builder(&b,4);
@@ -3301,7 +3300,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0x0000fffe:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x00003c00: /* UCS4 2143 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(2143) detected.\n"));
 	init_string_builder(&b,4);
@@ -3314,7 +3313,7 @@ PIKEFUN string autoconvert(string s)
 
       case 0xfeff0000:
 	pos = 4;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case 0x003c0000: /* UCS4 3412 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(3412) detected.\n"));
 	init_string_builder(&b,4);

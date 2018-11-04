@@ -10,12 +10,8 @@
  * Henrik Grubbström 1996-12-21
  */
 
-/* Pike master headerfile */
-#include "global.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "global.h"
 
 #ifdef HAVE_MYSQL
 /*
@@ -556,23 +552,28 @@ PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
-/*! @decl void seek(int rows)
+/*! @decl void low_seek(int row)
  *!
- *! Skip ahead @[rows] rows.
+ *! Seek to the specified @[row].
  *!
  *! @note
- *!   Can only seek forward.
+ *!   In Pike 8.0 and earlier this function was named @[seek()], but
+ *!   as it has a conflicting behavior vis-a-vis @[Sql.Result()->seek()],
+ *!   and was shadowed by a function that did use relative row addressing,
+ *!   it has been renamed in Pike 8.1.
+ *!
+ *! @bugs
+ *!   This function currently does NOT update @[index].
  *!
  *! @seealso
- *!   @[fetch_row()]
+ *!   @[fetch_row()], @[seek()]
  */
-PIKEFUN void seek(int skip)
+PIKEFUN void low_seek(int row)
 {
   if (!PIKE_MYSQL_RES->result)
     Pike_error("Can't seek in uninitialized result object.\n");
 
-  mysql_data_seek(PIKE_MYSQL_RES->result, skip);
-
+  mysql_data_seek(PIKE_MYSQL_RES->result, row);
   pop_n_elems(args);
 }
 
@@ -634,7 +635,7 @@ PIKEFUN int|array(string) fetch_row()
 	      break;
 	    }
 
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 	  case FIELD_TYPE_TINY:
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
@@ -645,7 +646,7 @@ PIKEFUN int|array(string) fetch_row()
 #if defined (HAVE_MYSQL_FETCH_LENGTHS)
 	  case FIELD_TYPE_BIT:
             if (row_lengths[i] <= SIZEOF_INT64) {
-              unsigned INT64 val = 0;
+              UINT64 val = 0;
 	      unsigned j;
 	      for (j = 0; j < row_lengths[i]; j++)
 		val = (val << 8) | (unsigned char) row[i][j];
@@ -711,7 +712,7 @@ PIKEFUN int|array(string) fetch_row()
 	      apply_svalue (&mpq_program, 1);
 	      break;
 	    }
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
@@ -811,7 +812,7 @@ static void json_escape(struct string_builder *res,
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       default:
 	string_builder_putchar(res, str[i]);
 	break;

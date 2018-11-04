@@ -73,7 +73,7 @@ void set_popdown_strings(array(string) strings)
   GList *s = NULL;
   struct array *a;
   int i;
-  get_all_args("set_popdown_strings", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
   for(i=0; i<a->size; i++)
     if(TYPEOF(a->item[i]) == PIKE_T_STRING)
       s = g_list_append( s, a->item[i].u.string->str );

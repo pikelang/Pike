@@ -13,11 +13,12 @@ AC_SUBST(SVG_LIBS)
 if test x$with_svg = xyes ; then
   PIKE_FEATURE_NODEP(Image.SVG)
 
-  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
-  if ${ac_tool_prefix}pkg-config librsvg-2.0 2>/dev/null ; then
-    SVG_CFLAGS="`${ac_tool_prefix}pkg-config librsvg-2.0 --cflags`"
-    SVG_LIBS="`${ac_tool_prefix}pkg-config librsvg-2.0 --libs`"
-    SVG_VERSION="`${ac_tool_prefix}pkg-config librsvg-2.0 --modversion`"
+  PIKE_PROG_PKG_CONFIG
+
+  if ${PKG_CONFIG} librsvg-2.0 2>/dev/null ; then
+    SVG_CFLAGS="`${PKG_CONFIG} librsvg-2.0 --cflags`"
+    SVG_LIBS="`${PKG_CONFIG} librsvg-2.0 --libs`"
+    SVG_VERSION="`${PKG_CONFIG} librsvg-2.0 --modversion`"
     AC_MSG_CHECKING(if librsvg actually works)
 
     OLDCPPFLAGS="$CPPFLAGS"

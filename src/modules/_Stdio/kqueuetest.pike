@@ -6,6 +6,7 @@ string testdata = random_string(TEST_SIZE);
 
 int verbose;
 int testno;
+int failures;
 
 mixed call_out_id;
 object tf;
@@ -17,10 +18,17 @@ object tf;
 constant log_msg = Tools.Testsuite.log_msg;
 constant log_status = Tools.Testsuite.log_status;
 
-void exit_test (int failure)
+void exit_test()
 {
-  Tools.Testsuite.report_result (max (testno - !!failure, 0), !!failure);
-  exit (failure);
+  Tools.Testsuite.report_result (max (testno - failures, 0), failures);
+  exit(!!failures);
+}
+
+void fail_test(string msg)
+{
+  log_msg("Test %d failed: %s.\n", testno, msg);
+  failures++;
+  call_out(next, 0);
 }
 
 /*
@@ -32,19 +40,13 @@ void next()
   testno++;
 
   function test;
-  if (!(test = this["test"+testno])) exit_test(0);
+  if (!(test = this["test"+testno])) exit_test();
   mixed err;
   if (err = catch {
     log_status("Kqueue test: %d", testno);
     test();
   }) {
-    catch {
-      log_msg("Test %d failed!\n"
-	      "%s\n",
-	      testno,
-	      describe_backtrace(err));
-    };
-    exit_test(1);
+    fail_test(describe_backtrace(err));
   }
 }
 
@@ -52,11 +54,6 @@ void done()
 {
   remove_call_out(call_out_id);
   tf->close();
- if(0)
- {
-    log_msg("Test %d failed.\n", testno);
-    exit_test(1);
-  }
   call_out(next, 0);
 }
 
@@ -68,11 +65,12 @@ void done()
 
 void test6()
 {
+  log_status("kqueue: NOTE_DELETE\n");
   tf = Stdio.File("kqueue.test");
-  
+
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout.");
+
   tf->set_fs_event_callback(done, Stdio.NOTE_DELETE);
 
   call_out(do_delete, 0);
@@ -80,11 +78,12 @@ void test6()
 
 void test5()
 {
+  log_status("kqueue: NOTE_ATTRIB\n");
   tf = Stdio.File("kqueue.test");
-  
+
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout.");
+
   tf->set_fs_event_callback(done, Stdio.NOTE_ATTRIB);
 
   call_out(do_chmod, 0);
@@ -92,11 +91,12 @@ void test5()
 
 void test4()
 {
+  log_status("kqueue: NOTE_LINK\n");
   tf = Stdio.File("kqueue.test");
-  
+
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout.");
+
   tf->set_fs_event_callback(done, Stdio.NOTE_LINK);
 
   call_out(do_link, 0);
@@ -104,11 +104,12 @@ void test4()
 
 void test3()
 {
+  log_status("kqueue: NOTE_RENAME\n");
   tf = Stdio.File("kqueue.tst");
-  
+
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout.");
+
   tf->set_fs_event_callback(done, Stdio.NOTE_RENAME);
 
   call_out(do_rename, 0);
@@ -116,29 +117,31 @@ void test3()
 
 void test2()
 {
+  log_status("kqueue: NOTE_WRITE\n");
   tf = Stdio.File("kqueue.tst");
-  tf->set_nonblocking();  
+  tf->set_nonblocking();
   tf->set_fs_event_callback(done, Stdio.NOTE_WRITE);
 
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout.");
+
   call_out(do_write, 0.1);
 }
 
 void test1()
 {
+  log_status("kqueue: NOTE_EXTEND\n");
   /* first, create a test file */
   tf = Stdio.File("kqueue.tst", "crw");
   tf->close();
 
   tf = Stdio.File("kqueue.tst");
-  tf->set_nonblocking();  
+  tf->set_nonblocking();
   tf->set_fs_event_callback(done, Stdio.NOTE_EXTEND);
 
   // our failure timeout
-  call_out_id = call_out(exit_test, 5, 1);
-  
+  call_out_id = call_out(fail_test, 5, "Timeout");
+
   call_out(do_extend, 0.1);
 }
 
@@ -150,7 +153,7 @@ void do_rename()
 
 void do_chmod()
 {
-  System.chmod("kqueue.tst", 777);
+  System.chmod("kqueue.tst", 0640);
 }
 
 void do_write()
@@ -187,6 +190,7 @@ void do_delete()
 int main(int argc, array(string) argv)
 {
   verbose = (int) (getenv()->TEST_VERBOSITY || 2);
+  umask(0022);
 #if constant(alarm)
   alarm(5*60);	// 5 minutes should be sufficient for this test.
 #endif

@@ -32,9 +32,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   AC_MSG_CHECKING(if sendfile takes 4(Linux) or 7(FreeBSD) arguments)
   AC_CACHE_VAL(pike_cv_freebsd_sendfile, [
     AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */

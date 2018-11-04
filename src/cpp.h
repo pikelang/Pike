@@ -14,6 +14,7 @@ struct hash_entry;
 
 /* Prototypes begin here */
 void f_cpp(INT32 args);
+void init_cpp_compilerenv_classes(void);
 void init_cpp(void);
 void add_predefine(const char *s);
 void exit_cpp(void);

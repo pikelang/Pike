@@ -22,7 +22,7 @@ void create(array(mixed) types)
     struct array *a;
     struct store_data *sd;
     int i,cols;
-    get_all_args("create",args,"%A",&a);
+    get_all_args(NULL,args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid argument.\n");
     if (!a->size)
@@ -97,7 +97,7 @@ void set_row(GTK2.TreeIter iter, array(mixed) values)
     GValue gv={0};
     struct svalue *sv;
     int i;
-    get_all_args("set_row",args,"%o%A",&o1,&a);
+    get_all_args(NULL,args,"%o%A",&o1,&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
     sd=g_object_get_data(G_OBJECT(THIS->obj),"store-data");
@@ -123,7 +123,7 @@ void set_value(GTK2.TreeIter iter, int column, mixed value)
     struct svalue *sv;
     struct store_data *sd;
     GValue gv={0};
-    get_all_args("set_value",args,"%o%i%*",&o1,&col,&sv);
+    get_all_args(NULL,args,"%o%i%*",&o1,&col,&sv);
     sd=g_object_get_data(G_OBJECT(THIS->obj),"store-data");
     if (!sd)
       Pike_error("store-data not found.\n");
@@ -146,7 +146,7 @@ void remove(GTK2.TreeIter iter)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("remove",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_list_store_remove(GTK_LIST_STORE(THIS->obj),
 	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
   }
@@ -164,7 +164,7 @@ void remove(GTK2.TreeIter iter)
     struct object *o1;
     INT_TYPE pos;
     GtkTreeIter *gt;
-    get_all_args("insert",args,"%o%i",&o1,&pos);
+    get_all_args(NULL,args,"%o%i",&o1,&pos);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert",sizeof(GtkTreeIter));
@@ -183,7 +183,7 @@ void remove(GTK2.TreeIter iter)
   {
     struct object *o1=NULL;
     GtkTreeIter *gt;
-    get_all_args("insert_before",args,".%o",&o1);
+    get_all_args(NULL,args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_before",sizeof(GtkTreeIter));
@@ -203,7 +203,7 @@ void remove(GTK2.TreeIter iter)
   {
     struct object *o1=NULL;
     GtkTreeIter *gt;
-    get_all_args("insert_after",args,".%o",&o1);
+    get_all_args(NULL,args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_after",sizeof(GtkTreeIter));
@@ -257,7 +257,7 @@ void swap(GTK2.TreeIter a, GTK2.TreeIter b)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2;
-    get_all_args("swap",args,"%o%o",&o1,&o2);
+    get_all_args(NULL,args,"%o%o",&o1,&o2);
     gtk_list_store_swap(GTK_LIST_STORE(THIS->obj),
 	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
 	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
@@ -275,7 +275,7 @@ void move_before(GTK2.TreeIter iter, ?GTK2.TreeIter position)
   {
     struct object *o1,*o2;
     o2=NULL;
-    get_all_args("move_before",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     gtk_list_store_move_before(GTK_LIST_STORE(THIS->obj),
 	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
 	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));
@@ -293,7 +293,7 @@ void move_after(GTK2.TreeIter iter, ?GTK2.TreeIter position)
   {
     struct object *o1,*o2;
     o2=NULL;
-    get_all_args("move_after",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     gtk_list_store_move_after(GTK_LIST_STORE(THIS->obj),
 	(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),
 	(GtkTreeIter *)get_pg2object(o2,pgtk2_tree_iter_program));

@@ -90,6 +90,7 @@ void wf_buffer_rewind_w( struct buffer *b, int n )
     b->size -= n;
   else
     b->size = 0;
+  if (b->size > b->rpos) b->rpos = b->size;
 }
 
 int wf_buffer_rbyte( struct buffer *b )
@@ -101,18 +102,23 @@ int wf_buffer_rbyte( struct buffer *b )
 
 unsigned int wf_buffer_rint( struct buffer *b )
 {
-  return (((((wf_buffer_rbyte( b )<<8) |
-	     wf_buffer_rbyte( b ))<<8) |
-	   wf_buffer_rbyte( b ))<<8)   |
-         wf_buffer_rbyte( b );
+  unsigned int res = wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  res = res<<8 | wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_memcpy( struct buffer *d,
 		      struct buffer *s,
 		      int nelems )
 {
-  if( (s->rpos+nelems) > s->size )
+  if( (s->rpos+nelems) > s->size ) {
+#ifdef PIKE_DEBUG
+    Pike_fatal("wf_buffer_memcpy(%p, %p, %d): Attempt to copy more than source (%d).\n",
+	       d, s, nelems, s->size-s->rpos);
+#endif
     nelems = s->size-s->rpos;
+  }
   if( nelems <= 0 )
     return 0;
   wf_buffer_make_space( d, nelems );
@@ -124,7 +130,8 @@ int wf_buffer_memcpy( struct buffer *d,
 
 int wf_buffer_rshort( struct buffer *b )
 {
-  return (wf_buffer_rbyte( b ) << 8) | wf_buffer_rbyte( b );
+  int res = wf_buffer_rbyte(b);
+  return res<<8 | wf_buffer_rbyte(b);
 }
 
 int wf_buffer_eof( struct buffer *b )

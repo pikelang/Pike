@@ -26,6 +26,8 @@ test_tree_eq([[ ("<p>a<![CDATA[b]""]>c</p>")[0][0]->get_text() ]],
 [[ "abc" ]])
 test_tree_eq([[ ("<?xml version=\"1.0\"?><!DOCTYPE greeting SYSTEM \"hello.dtd\"><!-- comment -- --><x/>")->render_xml() ]],
 [[ "<?xml version='1.0' encoding='utf-8'?><!DOCTYPE greeting SYSTEM \"hello.dtd\"><!-- comment -- --><x/>" ]])
+test_tree_eq([[ ("<x><a foo='x\"'/><b bar=\"x'y\"/></x>")->render_xml() ]],
+[[ "<x><a foo='x\"'/><b bar=\"x'y\"/></x>" ]])
 
 // Check that any xml and/or doctype header survives the parsing.
 // Check also that the headers are rendered properly.

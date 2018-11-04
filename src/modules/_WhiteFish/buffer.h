@@ -28,7 +28,7 @@ struct buffer
  * They also handle unaligned data
  */
 
-struct buffer *wf_buffer_new( );
+struct buffer *wf_buffer_new( void );
 /* Create a new (uninitalized) buffer. Use wf_buffer_set_empty or
  * wf_buffer_set_pike_string to initialize it.
  */

@@ -1,0 +1,314 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+//
+// WebSocket testsuite
+//
+
+constant loopback = "127.0.0.1";
+
+int successes;
+int fails;
+int skips;
+
+Thread.Mutex mux = Thread.Mutex();
+
+Thread.Condition cond = Thread.Condition();
+
+enum brokeness {
+  NOT_WEBSOCKET,
+  BAD_HDR_VERSION,
+  BAD_HDR_KEY_ACCEPT,
+  BAD_HDR_CONNECTION,
+  MAX_BROKENESS,
+};
+
+class BrokenPort
+{
+  constant is_broken = 1;
+
+  inherit Protocols.WebSocket.Port;
+
+  protected int brokeness_state;
+  int next_brokeness()
+  {
+    brokeness_state++;
+    if (brokeness_state < MAX_BROKENESS) return 1;
+    return 0;
+  }
+
+  class BrokenRequest
+  {
+    inherit Protocols.WebSocket.Request;
+
+    protected array(mapping(string:string)|array)
+      low_websocket_accept(string protocol,
+			   void|array extensions,
+			   void|mapping extra_headers)
+    {
+      [mapping heads, array _extensions] =
+	::low_websocket_accept(protocol, extensions, extra_headers);
+
+      switch(brokeness_state) {
+      case NOT_WEBSOCKET:
+	Tools.Testsuite.log_status("Refusing WebSocket attempt.\n");
+	m_delete(heads, "Sec-WebSocket-Accept");
+	break;
+      case BAD_HDR_VERSION:
+	Tools.Testsuite.log_status("Testing bad WebSocket Version header.\n");
+	heads["Sec-WebSocket-Version"] = "999";
+	break;
+      case BAD_HDR_KEY_ACCEPT:
+	Tools.Testsuite.log_status("Testing bad WebSocket Accept header.\n");
+	heads["Sec-WebSocket-Accept"] = "INVALID";
+	break;
+      case BAD_HDR_CONNECTION:
+	Tools.Testsuite.log_status("Testing bad Connection header.\n");
+	heads["Connection"] = "Downgrade";
+	break;
+      }
+      object key = mux->lock();
+      done |= 4;	// Forced server failure.
+      return ({ heads, _extensions });
+    }
+  }
+
+  protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
+			function(array(string), BrokenRequest:void)|void ws_cb,
+			void|int portno, void|string interface) {
+
+    ::create(http_cb, UNDEFINED, portno, interface);
+
+    if (ws_cb)
+      request_program = Function.curry(BrokenRequest)(ws_cb);
+  }
+
+  protected string _sprintf(int c)
+  {
+    return sprintf("%O(), brokeness: %d", this_program, brokeness_state);
+  }
+}
+
+class BrokenConnection
+{
+  constant is_broken = 1;
+
+  inherit Protocols.WebSocket.Connection;
+
+  protected int brokeness_state;
+  int next_brokeness()
+  {
+    brokeness_state++;
+    if (brokeness_state < MAX_BROKENESS) return 1;
+    return 0;
+  }
+
+  protected array(mapping) low_connect(Standards.URI endpoint,
+				       mapping(string:string) extra_headers,
+				       void|array extensions)
+  {
+    [mapping heads, mapping rext] =
+      ::low_connect(endpoint, extra_headers, extensions);
+
+    switch(brokeness_state) {
+    case NOT_WEBSOCKET:
+      Tools.Testsuite.log_status("Testing without WebSocket Key header.\n");
+      m_delete(heads, "Sec-WebSocket-Key");
+      break;
+    case BAD_HDR_VERSION:
+      Tools.Testsuite.log_status("Testing bad WebSocket Version header.\n");
+      heads["Sec-WebSocket-Version"] = "999";
+      break;
+    case BAD_HDR_KEY_ACCEPT:
+      Tools.Testsuite.log_status("Testing with empty WebSocket Key header.\n");
+      heads["Sec-WebSocket-Key"] = "";
+      break;
+    case BAD_HDR_CONNECTION:
+      Tools.Testsuite.log_status("Testing bad Connection header.\n");
+      heads["Connection"] = "Downgrade";
+      break;
+    }
+
+    return ({ heads, rext });
+  }
+
+  protected string _sprintf(int c)
+  {
+    return sprintf("%s, brokeness: %d", ::_sprintf(c), brokeness_state);
+  }
+}
+
+int done;
+
+void got_server_fail()
+{
+  object key = mux->lock();
+  done |= 5;
+  cond->broadcast();
+}
+
+void got_server_ok()
+{
+  object key = mux->lock();
+  done |= 1;
+  cond->broadcast();
+}
+
+void got_client_fail()
+{
+  object key = mux->lock();
+  done |= 10;
+  cond->broadcast();
+}
+
+void got_client_ok()
+{
+  object key = mux->lock();
+  done |= 2;
+  cond->broadcast();
+}
+
+void got_server_http(Protocols.WebSocket.Request req)
+{
+  req->response_and_finish(([ "error": Protocols.HTTP.HTTP_BAD,
+			      "data": "Bad request\n",
+			      "type": "text/plain" ]));
+  got_server_fail();
+}
+
+void got_client_close(Protocols.WebSocket.CLOSE_STATUS cause)
+{
+  Tools.Testsuite.log_status("Got close: %d\n", cause);
+  if (cause != Protocols.WebSocket.CLOSE_NORMAL) got_client_fail();
+}
+
+void got_server_ws(array(string) protocols, Protocols.WebSocket.Request wsr)
+{
+  Tools.Testsuite.log_status("Got web socket\n");
+  wsr->websocket_accept(sizeof(protocols)?protocols[0]:UNDEFINED);
+  got_server_ok();
+}
+
+void wait_for_completion(int|void expect_failure)
+{
+  object key = mux->lock();
+  while ((done & 3) != 3) {
+    Tools.Testsuite.log_status("Main: Waiting for completion (done: %d).\n",
+			       done);
+    cond->wait(key);
+  }
+
+  int expected = expect_failure?15:3;
+
+  if (done == expected) {
+    Tools.Testsuite.log_status("Ok: Done: %d\n", done);
+    successes++;
+  } else {
+    Tools.Testsuite.log_msg("Failure: Done: %d (expected: %d)\n",
+			    done, expected);
+    fails++;
+  }
+}
+
+void run_tests()
+{
+  foreach(({ Protocols.WebSocket.Port, Protocols.WebSocket.SSLPort,
+	     BrokenPort,
+	  }), program(Protocols.WebSocket.Port) port_prog) {
+    Tools.Testsuite.log_status("Attempting to open a %O port.\n", port_prog);
+    // NB: The API doesn't allow for the ANY port.
+    int port_no;
+    Protocols.WebSocket.Port port;
+    mixed err;
+    for (port_no = 16384; port_no < 65536; port_no++) {
+      err = catch {
+	  port = port_prog(got_server_http,
+			   got_server_ws,
+			   port_no, loopback);
+	};
+      if (port) break;
+    }
+    if (!port) {
+      fails++;
+      Tools.Testsuite.log_msg("Failed to open %O port: %s\n",
+			      port_prog, describe_backtrace(err));
+      continue;
+    }
+    successes++;
+    Tools.Testsuite.log_status("%O port opened on %s:%d\n",
+			       port_prog, loopback, port_no);
+
+    Protocols.WebSocket.Connection client =
+      Protocols.WebSocket.Connection();
+
+    client->onopen = got_client_ok;
+    client->onclose = got_client_close;
+
+    Standards.URI ws_uri =
+      Standards.URI(sprintf("ws://%s:%d/path", loopback, port_no));
+    if(port->ctx) {
+      ws_uri->scheme = "wss";
+    }
+
+    if (!port->is_broken) {
+      Tools.Testsuite.log_status("Connecting to %O...\n", ws_uri);
+      done = 0;
+      if (!client->connect(ws_uri)) {
+	fails++;
+	Tools.Testsuite.log_msg("Failed to connect to %O.\n", ws_uri);
+	continue;
+      }
+      successes++;
+
+      wait_for_completion();
+
+      if (!port->ctx) {
+	client = BrokenConnection();
+	client->onopen = got_client_ok;
+	do {
+	  // NB: onclose is zapped after calling.
+	  client->onclose = got_client_close;
+
+	  Tools.Testsuite.log_status("Connecting to %O with broken client...\n", ws_uri);
+	  done = 0;
+	  if (!client->connect(ws_uri)) {
+	    fails++;
+	    Tools.Testsuite.log_msg("Failed to connect with %O.\n", client);
+	    continue;
+	  }
+	  successes++;
+
+	  wait_for_completion(1);
+	} while (client->next_brokeness());
+      }
+    } else {
+      // BrokenPort.
+      do {
+	// NB: onclose is zapped after calling.
+	client->onclose = got_client_close;
+
+	Tools.Testsuite.log_status("Connecting to %O...\n", ws_uri);
+	done = 0;
+	if (!client->connect(ws_uri)) {
+	  fails++;
+	  Tools.Testsuite.log_msg("Failed to connect to %O.\n", port);
+	  continue;
+	}
+	successes++;
+
+	wait_for_completion(1);
+      } while (port->next_brokeness());
+    }
+  }
+
+  Tools.Testsuite.report_result(successes, fails, skips);
+
+  // NB: Paranoia: Call exit(0) AFTER our thread has terminated.
+  call_out(exit, 1, 0);
+}
+
+int main(int argc, array(string) argv)
+{
+  Tools.Testsuite.log_status("Testing Protocols.WebSocket...\n");
+
+  Thread.thread_create(run_tests);
+  return -1;
+}

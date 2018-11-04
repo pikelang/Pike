@@ -18,16 +18,15 @@ protected Gmp.mpz read_number(Stdio.Buffer b)
 //     @member int validity
 //     @member object key
 //   @endmapping
-protected mapping decode_public_key(string|Stdio.Buffer s) {
-
-  Stdio.Buffer b = objectp(s)?s:Stdio.Buffer(s);
+protected mapping decode_public_key(Stdio.Buffer b)
+{
   mapping r = ([]);
 
-  r->version = b->read_int(1);
-  r->tstamp  = b->read_int(4);
+  r->version = b->read_int8();
+  r->tstamp  = b->read_int32();
   if( r->version < 4 )
-    r->validity = b->read(2);
-  r->type    = b->read_int(1);
+    r->validity = b->read16();
+  r->type    = b->read_int8();
 
   switch(r->type) {
   case 1: {
@@ -87,12 +86,11 @@ protected mapping decode_public_key(string|Stdio.Buffer s) {
   return r;
 }
 
-protected mapping decode_secret_key(string s)
+protected mapping decode_secret_key(Stdio.Buffer b)
 {
-  Stdio.Buffer b = Stdio.Buffer(s);
   mapping r = decode_public_key(b);
 
-  int usage = b->read_int(1);
+  int usage = b->read_int8();
   if( usage != 0 )
   {
     r->_error = "Only unencrypted string-to-key usage supported.";
@@ -133,23 +131,23 @@ protected mapping decode_secret_key(string s)
 //     @member Gmp.mpz digest_r
 //     @member Gmp.mpz digest_s
 //   @endmapping
-protected mapping decode_signature(string s) {
-
+protected mapping decode_signature(Stdio.Buffer b)
+{
   mapping r = ([]);
-  int l5, l;
-  string dig;
-  sscanf(s, "%1c%1c%1c%4c%8s%1c%1c%2c%2c%s", r->version, l5, r->classification,
-	 r->tstamp, r->key_id, r->type, r->digest_algorithm,
-	 r->md_csum, l, dig);
+  r->version = b->read_int8();
+  int l5 = b->read_int8();
+  r->classification = b->read_int8();
+  r->tstamp = b->read_int32();
+  r->key_id = b->read(8);
+  r->type = b->read_int8();
+  r->digest_algorithm = b->read_int8();
+  r->md_csum = b->read_int16();
+
   if(r->type == 1) {
-    l = (l+7)>>3;
-    r->digest = Gmp.mpz(dig[..l-1],256);
+    r->digest = read_number(b);
   } else if(r->type == 17) {
-    l = (l+7)>>3;
-    r->digest_r = Gmp.mpz(dig[..l-1],256);
-    sscanf(dig[l..], "%2c%s", l, dig);
-    l = (l+7)>>3;
-    r->digest_s = Gmp.mpz(dig[..l-1],256);
+    r->digest_r = read_number(b);
+    r->digest_s = read_number(b);
   }
   return r;
 }
@@ -208,38 +206,47 @@ protected mapping(string:function) pgp_decoder = ([
 ]);
 
 //! Decodes PGP data.
-mapping(string:string|mapping) decode(string s) {
-
-  mapping(string:string|mapping) r = ([]);
-  int i = 0;
-  while(i<strlen(s)) {
-    int h = s[i++];
-    int data_l = 0;
-    switch(h&3) {
-     case 0:
-       sscanf(s[i..i], "%1c", data_l);
-       i++;
-       break;
-     case 1:
-       sscanf(s[i..i+1], "%2c", data_l);
-       i+=2;
-       break;
-     case 2:
-       sscanf(s[i..i+3], "%4c", data_l);
-       i+=4;
-       break;
-     case 3:
-       data_l = strlen(s)-i;
-       break;
+mapping(string:string|mapping|array) decode(string s)
+{
+  Stdio.Buffer buf = Stdio.Buffer(s);
+  mapping(string:string|mapping|array) r = ([]);
+  while( sizeof(buf) )
+  {
+    int h = buf->read_int8();
+    Stdio.Buffer data;
+    if( (h&3) == 3 )
+    {
+      data = buf;
     }
-    if(i+data_l > strlen(s))
-      error("Bad PGP data\n");
-    h>>=2;
-    if(pgp_id[h])
-      r[pgp_id[h]] = (pgp_decoder[pgp_id[h]] || `+)(s[i..i+data_l-1]);
     else
-      r[sprintf("unknown_%07b",h)] = s[i..i+data_l-1];
-    i += data_l;
+    {
+      int len = 1<<(h&3);
+      data = buf->read_hbuffer( len );
+      if( !data )
+      {
+        if( len<=sizeof(buf) )
+          len = buf->read_int(len);
+        error("Attempt to read %d from %d bytes of data.\n", len, sizeof(buf));
+      }
+    }
+
+    h >>= 2;
+    string id = pgp_id[h] || sprintf("unknown_%07b",h);
+    mapping|string val;
+    if(pgp_decoder[id])
+      val = pgp_decoder[id](data);
+    else
+      val = data->read();
+
+    if( r[id] )
+    {
+      if(!arrayp(r[id]))
+        r[id] = ({ r[id], val });
+      else
+        r[id] += ({ r[id] });
+    }
+    else
+      r[id] = val;
   }
   return r;
 }

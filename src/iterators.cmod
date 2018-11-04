@@ -19,13 +19,10 @@
 #include "gc.h"
 #include "stralloc.h"
 #include "opcodes.h"
-#include "pike_error.h"
 #include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "constants.h"
-
-#define sp Pike_sp
 
 #define DEFAULT_CMOD_STORAGE
 
@@ -274,13 +271,14 @@ PIKECLASS Iterator
 
 /* Calls the random(int) function of the top of the stack with the
    given range limit. */
-static INT32 call_random(INT32 limit)
+static unsigned INT_TYPE call_random(unsigned INT_TYPE limit)
 {
+  unsigned INT_TYPE value;
   push_int(limit);
   apply_svalue(&Pike_sp[-2], 1);
   if( TYPEOF(Pike_sp[-1])!=T_INT )
     Pike_error("Wrong return type from random.\n");
-  int value = Pike_sp[-1].u.integer;
+  value = Pike_sp[-1].u.integer;
   if( value >= limit )
     Pike_error("random returned value out of bounds.\n");
   pop_stack();
@@ -330,7 +328,7 @@ PIKECLASS mapping_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->md) {
       push_int(THIS->md->size);
@@ -469,8 +467,10 @@ PIKECLASS mapping_iterator
       THIS->bucket=-1;
       step_bucket(THIS);
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+      pop_stack();
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->m=0;
@@ -478,6 +478,7 @@ PIKECLASS mapping_iterator
       THIS->current=0;
       THIS->bucket=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -534,7 +535,7 @@ PIKECLASS array_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->a) {
       push_int(THIS->a->size);
@@ -611,13 +612,16 @@ PIKECLASS array_iterator
 	Pike_error("Array iterators cannot be reused.\n");
 
       add_ref(THIS->a=a);
+      pop_stack();
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->a=0;
       THIS->pos=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -669,7 +673,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->l) {
       push_int(THIS->l->msd->size);
@@ -818,12 +822,15 @@ PIKECLASS multiset_iterator
       add_ref (THIS->l = l);
       THIS->lock_index = 0;
       THIS->nodepos = multiset_first (THIS->l);
+      pop_stack();
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->l = NULL;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -838,7 +845,6 @@ PIKECLASS multiset_iterator
 #endif
 	}
 	free_multiset (THIS->l);
-	THIS->l = NULL;
       }
     }
 };
@@ -885,7 +891,7 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN int _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (THIS->s) {
       push_int(THIS->s->len);
@@ -980,13 +986,16 @@ PIKECLASS string_iterator
 	Pike_error("String iterators cannot be reused.\n");
 
       add_ref(THIS->s=s);
+      pop_stack();
     }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->s=0;
       THIS->pos=0;
     }
+#endif
 
   EXIT
     gc_trivial;
@@ -1154,33 +1163,30 @@ PIKECLASS file_line_iterator
       THIS->current = NULL;
       THIS->index = -1;
       fl_find_next(THIS);
+      pop_stack();
     }
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       THIS->buffer = NULL;
       THIS->current = NULL;
       THIS->offset = 0;
       THIS->index = 0;
+#endif
       mark_free_svalue (&THIS->feed);
     }
 
   EXIT
     gc_trivial;
     {
-      if (THIS->buffer) {
+      if (THIS->buffer)
 	free_string(THIS->buffer);
-	THIS->buffer = NULL;
-      }
-      if (THIS->current) {
+      if (THIS->current)
 	free_string(THIS->current);
-	THIS->current = NULL;
-      }
       free_svalue(&THIS->feed);
       assert_free_svalue (&THIS->feed);
     }
-
-
 }
 
 /*! @module String
@@ -1642,10 +1648,12 @@ PIKECLASS string_split_iterator
       THIS->current = NULL;
       THIS->index = -1;
       find_next(THIS);
+      pop_n_elems(args);
     }
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       THIS->buffer = NULL;
       THIS->current = NULL;
       THIS->offset = 0;
@@ -1653,22 +1661,18 @@ PIKECLASS string_split_iterator
       THIS->split_set = NULL;
       THIS->split_set_size = 0;
       THIS->flags = 0;
+#endif
       mark_free_svalue (&THIS->feed);
     }
 
   EXIT
     gc_trivial;
     {
-      if (THIS->buffer) {
+      if (THIS->buffer)
 	free_string(THIS->buffer);
-	THIS->buffer = NULL;
-      }
-      if (THIS->current) {
+      if (THIS->current)
 	free_string(THIS->current);
-	THIS->current = NULL;
-      }
       free(THIS->split_set);
-      THIS->split_set = NULL;
       free_svalue(&THIS->feed);
       mark_free_svalue (&THIS->feed);
     }
@@ -1898,7 +1902,7 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
       {
 	apply_low (data->u.object,
 		   fun + p->inherits[SUBTYPEOF(*data)].identifier_level, 0);
-	if (TYPEOF(sp[-1]) != T_OBJECT) {
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  /* FIXME: Ought to include what we got in the error message. */
 	  pop_stack();
 	  SIMPLE_ARG_ERROR ("get_iterator", 1,
@@ -1917,7 +1921,7 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
   }
 }
 
-/* sp[-4] = index; sp[-2] = value */
+/* Pike_sp[-4] = index; Pike_sp[-2] = value */
 int foreach_iterate(struct object *o, int do_step)
 {
   struct program *prog = o->prog;

@@ -38,7 +38,7 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit BASE_CIPHER
   DOCEND()
-  INHERIT cmod_CONCAT_EVAL(Nettle_, BASE_CIPHER);
+  INHERIT BASE_CIPHER;
 
   static const struct pike_cipher cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
     _PIKE_CIPHER(NETTLE_NAME, PIKE_NAME);

@@ -8,22 +8,15 @@
 #include "module.h"
 
 #ifdef HAVE_SVG
-#include "global.h"
 
-#include "stralloc.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "array.h"
-#include "mapping.h"
 #include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
-#include "program.h"
 #include "pike_types.h"
 
 #include "modules/Image/image.h"

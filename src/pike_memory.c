@@ -30,13 +30,7 @@
 
 int page_size;
 
-ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz)
-{
-  return generic_quick_binary_strcmp((char *)a.ptr, sz, a.shift,
-				     (char *)b.ptr, sz, b.shift);
-}
-
-long pcharp_strlen(PCHARP a)
+long pcharp_strlen(const PCHARP a)
 {
   long len;
   for(len=0;INDEX_PCHARP(a,len);len++);
@@ -56,97 +50,56 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
   return (p_wchar2 *)NULL;
 }
 
-static void swap(char *a, char *b, size_t size)
-{
-  size_t tmp;
-  char tmpbuf[1024];
-  while(size)
-  {
-    tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
-    memcpy(tmpbuf,a,tmp);
-    memcpy(a,b,tmp);
-    memcpy(b,tmpbuf,tmp);
-    size-=tmp;
-    a+=tmp;
-    b+=tmp;
-  }
-}
-
-void reverse(char *memory, size_t nitems, size_t size)
-{
-
-#define DOSIZE(X,Y)						\
- case X:							\
- {								\
-  Y tmp;							\
-  Y *start=(Y *) memory;					\
-  Y *end=start+nitems-1;					\
-  while(start<end){tmp=*start;*(start++)=*end;*(end--)=tmp;}	\
-  break;							\
- }
-
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  switch(size)
-#else
-  switch( (((size_t)memory) % size) ? 0 : size)
-#endif
-  {
-    DOSIZE(1,B1_T)
-#ifdef B2_T
-    DOSIZE(2,B2_T)
-#endif
-#ifdef B4_T
-    DOSIZE(4,B4_T)
-#endif
-#ifdef B16_T
-    DOSIZE(8,B8_T)
-#endif
-#ifdef B16_T
-    DOSIZE(16,B8_T)
-#endif
-  default:
-  {
-    char *start = (char *) memory;
-    char *end=start+(nitems-1)*size;
-    while(start<end)
-    {
-      swap(start,end,size);
-      start+=size;
-      end-=size;
-    }
-  }
-  }
-}
-
 /*
  * This function may NOT change 'order'
  * This function is hopefully fast enough...
  */
-void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
+void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order)
 {
-  INT32 e;
+  INT32 e, aok;
   char *tmp;
-  if(nitems<2) return;
-
-
+  if(UNLIKELY(nitems<2)) return;
+  aok = 0;
+  /*
+   * Prime the cache for the order array, and check the array for
+   * correct ordering.  At the first order mismatch, bail out and
+   * start the actual reordering beyond the ordered prefix.
+   * If the order turns out to be correct already, perform an early return.
+   */
+  do
+    if (UNLIKELY(order[aok] != aok))
+      goto unordered;
+  while (LIKELY(++aok < nitems));
+  return;
+unordered:
+  order += aok;
+  nitems -= aok;
   tmp=xalloc(size * nitems);
+  e = 0;
 
 #undef DOSIZE
+#undef CHECK_ALIGNED
+
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define CHECK_ALIGNED(X)	0
+#else
+#define CHECK_ALIGNED(X)			\
+ if ((ptrdiff_t)memory & ((X)-1)) goto unaligned
+#endif
+
 #define DOSIZE(X,Y)				\
- case X:					\
+ case (X):					\
+ CHECK_ALIGNED(X);				\
  {						\
   Y *from=(Y *) memory;				\
   Y *to=(Y *) tmp;				\
-  for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
+  do						\
+     to[e] = from[order[e]];			\
+  while (LIKELY(++e < nitems));			\
   break;					\
  }
 
-
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
-#else
-  switch( (((size_t)memory) % size) ? 0 : size )
-#endif
  {
    DOSIZE(1,B1_T)
 #ifdef B2_T
@@ -158,15 +111,23 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #ifdef B8_T
      DOSIZE(8,B8_T)
 #endif
+#undef CHECK_ALIGNED
+     // Force aligned check for 128 bit values
+     // GCC-7.2 messes up otherwise
+#define CHECK_ALIGNED(X)			\
+ if ((ptrdiff_t)memory & ((X)-1)) goto unaligned
 #ifdef B16_T
-    DOSIZE(16,B16_T)
+     DOSIZE(16,B16_T)
 #endif
 
   default:
-    for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
+unaligned:
+    do
+      memcpy(tmp+e*size, memory+order[e]*size, size);
+    while (LIKELY(++e < nitems));
   }
 
-  memcpy(memory, tmp, size * nitems);
+  memcpy(memory + aok * size, tmp, size * nitems);
   free(tmp);
 }
 
@@ -227,7 +188,7 @@ ATTRIBUTE((target("sse4")))
 #endif
 ATTRIBUTE((hot))
 static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
-					     size_t nbytes, size_t key )
+					     size_t nbytes, UINT64 key )
 {
   unsigned int h = len;
   const unsigned int *p = s;
@@ -315,14 +276,15 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
      * however, those are only available when compiling to amd64.
      */
   return (((size_t)h)<<32) | h;
-#endif
+#else
   return h;
+#endif
 }
 
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+  size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
 
 static void init_hashmem()
 {
@@ -335,7 +297,7 @@ static void init_hashmem()
 static void init_hashmem(){}
 
 ATTRIBUTE((hot))
-  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
+  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, UINT64 key_)
 {
     return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
@@ -2819,7 +2781,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	 * has the same type. */
 	unsigned char *str_bin_base =
 	  (unsigned char *) str->str + len + strlen (str->str + len) + 1;
-	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
+        unsigned int str_bin_len = get_unaligned16 (str_bin_base);
 	str_bin_base += 2;
 	if (str_bin_len != bin_data_len ||
 	    memcmp (bin_data, str_bin_base, str_bin_len))
@@ -2975,7 +2937,7 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
     int i, frames;
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
-    unsigned int bin_len = EXTRACT_UWORD (bin_base);
+    unsigned int bin_len = get_unaligned16 (bin_base);
     memcpy (bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 
@@ -3248,6 +3210,53 @@ static void cleanup_debug_malloc(void)
 }
 
 #endif	/* DEBUG_MALLOC */
+
+#if defined(__GNUC__) && defined(__SSE__) && defined(HAVE_EMMINTRIN_H)
+#include <emmintrin.h>
+#define SSE2
+#endif
+
+static inline void low_zero(void *p, size_t n)
+{
+    volatile char * _p = (char *)p;
+    while (n--) *_p++ = 0;
+}
+
+PMOD_EXPORT void secure_zero(void *p, size_t n)
+{
+#ifdef SSE2
+  if( n > 256 )
+  {
+    char *ptr = (char *)p;
+    char *end = ptr + n;
+    int left = ((long)ptr) & 63;
+
+    if( left )
+    {
+      low_zero(ptr, left);
+      ptr += left;
+    }
+
+    /* Clear memory without evicting CPU cache. */
+    for( ; ptr <= (end-64); ptr += 64 )
+    {
+      __m128i i = _mm_set_epi8(0, 0, 0, 0,
+                               0, 0, 0, 0,
+                               0, 0, 0, 0,
+                               0, 0, 0, 0);
+      _mm_stream_si128((__m128i *)&ptr[0], i);
+      _mm_stream_si128((__m128i *)&ptr[16], i);
+      _mm_stream_si128((__m128i *)&ptr[32], i);
+      _mm_stream_si128((__m128i *)&ptr[48], i);
+    }
+
+    if( end-ptr )
+      low_zero(ptr, end-ptr);
+  }
+  else
+#endif
+    low_zero(p, n);
+}
 
 void init_pike_memory (void)
 {

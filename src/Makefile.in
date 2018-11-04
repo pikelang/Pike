@@ -108,6 +108,8 @@ CXX=@CXX@
 CPP=@CPP@
 GDB=gdb
 
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
 CANDLE=@CANDLE@ -nologo
 LIGHT=@LIGHT@ -nologo
 RCEXE=@RCEXE@
@@ -180,7 +182,6 @@ CORE_OBJ= \
  sscanf.o \
  stralloc.o \
  string_builder.o \
- stuff.o \
  threads.o \
  version.o \
  queue.o \
@@ -465,7 +466,7 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
+.SUFFIXES: .c .h .S .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -496,6 +497,16 @@ undump_modules: delete_dumped_modules
 	  exit $$status; \
 	fi
 
+.c.S:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -S $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -S $< -o $@" >&2 ;\
+	  exit $$status; \
+	fi
+
 .m.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
@@ -503,6 +514,16 @@ undump_modules: delete_dumped_modules
 	  status=$$?; \
 	  echo "Compilation command was:" >&2;\
 	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
+	  exit $$status; \
+	fi
+
+.m.S:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -S $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -S $< -o $@" >&2 ;\
 	  exit $$status; \
 	fi
 
@@ -1057,17 +1078,11 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 
 las.o: $(SRCDIR)/treeopt.h
 
-
-# unbug needs interpreter_nd.h to be able to
-# set separate breakpoints in eval_instruction_with/without_debug
-interpreter_debug.h: interpreter.h
-	cp "$(SRCDIR)/interpreter.h" "$@"
-
-interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
+interpret.o: $(SRCDIR)/interpret_functions_fixed.h
 
 # make dependencies
 depend: $(SRC_TARGETS)
-	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
+	$(CC) -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
@@ -1167,10 +1182,10 @@ modules/modlist_headers.h: static-modules-stamp
 
 modules/linker_options: static-modules-stamp
 
-post-module-pike-stamp: @BUILD_PIKE@ dynamic-modules-stamp
+post-module-pike-stamp: @BUILD_PIKE@@EXEEXT@ dynamic-modules-stamp
 	@touch post-module-pike-stamp
 
-module.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
+pike_modules.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
 
 tmodule.o:  modules/modlist_headers.h modules/modlist.h
 
@@ -1243,6 +1258,8 @@ backend.o: $(SRCDIR)/backend.c
 libpike.o: $(SRCDIR)/libpike.c
 
 pike_compiler.o: $(SRCDIR)/pike_compiler.c
+
+string_builder.o: $(SRCDIR)/string_builder.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
@@ -1331,8 +1348,8 @@ $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	  rm $(SRCDIR)/stamp-h.in; $(MAKE) $(SRCDIR)/stamp-h.in; \
 	fi
 
-machine.h: stamp-h
-	@if test -f machine.h; then :; else \
+$(CONFIG_HEADERS): stamp-h
+	@if test -f $(CONFIG_HEADERS); then :; else \
 	  rm stamp-h; $(MAKE) stamp-h; \
 	fi
 
@@ -1342,7 +1359,7 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
 	  arb=31; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
-	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status || \
+	CONFIG_FILES="" CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	touch stamp-h
 	-@rm cfl.$@
@@ -1392,7 +1409,6 @@ HFILES=						\
   stralloc.protos					\
   mapping.protos					\
   block_allocator.protos					\
-  stuff.protos					\
   dynamic_buffer.protos				\
   buffer.protos				\
   svalue.protos					\
@@ -1434,7 +1450,7 @@ $(SRCDIR)/pikecode.h: \
   $(SRCDIR)/code/ppc64.h \
   $(SRCDIR)/code/arm32.h \
   $(SRCDIR)/code/arm64.h \
-  $(SRCDIR)/code/computedgoto.h \
+  $(SRCDIR)/code/riscv.h \
   $(SRCDIR)/code/bytecode.h
 	touch $(SRCDIR)/pikecode.h
 
@@ -1446,7 +1462,7 @@ $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/ppc64.c \
   $(SRCDIR)/code/arm32.c \
   $(SRCDIR)/code/arm64.c \
-  $(SRCDIR)/code/computedgoto.c \
+  $(SRCDIR)/code/riscv.c \
   $(SRCDIR)/code/bytecode.c
 	touch $(SRCDIR)/pikecode.c
 

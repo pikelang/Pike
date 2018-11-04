@@ -84,12 +84,6 @@
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
-
-/* Ugly patch for AIX 3.2 */
-#ifdef u
-#undef u
-#endif
-
 #endif
 
 #ifdef HAVE_SYS_PROTOSW_H
@@ -131,11 +125,6 @@
 #define SMALL_NETBUF		2048
 #define INUSE_BUSYWAIT_DELAY	0.01
 #define INUSE_TIMEOUT		0.1
-
-/* Don't try to use socketpair() on AmigaOS, socketpair_ultra works better */
-#ifdef __amigaos__
-#undef HAVE_SOCKETPAIR
-#endif
 
 #ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
@@ -453,13 +442,18 @@ static void init_fd(int fd, int open_mode, int flags)
 
 /* Use ptrdiff_t for the fd since we're passed a void * and should
  * read it as an integer of the same size. */
-static void do_close_fd(ptrdiff_t fd)
+static int do_close_fd(ptrdiff_t fd)
 {
   int ret;
-  if (fd < 0) return;
+  int preve;
+  if (fd < 0) return 0;
+  errno = 0;
   do {
+    preve = errno;
     ret = fd_close(fd);
   } while ((ret == -1) && (errno == EINTR));
+  if ((ret == -1) && preve) return 0;
+  return ret;
 }
 
 #ifdef HAVE_PIKE_SEND_FD
@@ -561,72 +555,21 @@ static void free_fd_stuff(void)
   }
 }
 
-static void close_fd_quietly(void)
+static void close_fd(int quiet)
 {
   int fd=FD;
+  int olde = 0;
   if(fd<0) return;
 
   free_fd_stuff();
   SUB_FD_EVENTS (THIS, ~0);
-  change_fd_for_box (&THIS->box, -1);
-
-  while(1)
-  {
-    int i, e;
-    THREADS_ALLOW_UID();
-    i=fd_close(fd);
-    e=errno;
-    THREADS_DISALLOW_UID();
-
-    check_threads_etc();
-
-    if(i < 0)
-    {
-      switch(e)
-      {
-	default: {
-	  JMP_BUF jmp;
-	  if (SETJMP (jmp))
-	    call_handle_error();
-	  else {
-	    ERRNO=errno=e;
-	    change_fd_for_box (&THIS->box, fd);
-	    push_int(e);
-	    f_strerror(1);
-	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
-	  }
-	  UNSETJMP (jmp);
-	  break;
-	}
-
-	case EBADF:
-	  break;
-
-#ifdef SOLARIS
-	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
-#endif
-
-       case EINTR:
-	 continue;
-      }
-    }
-    break;
-  }
-}
-
-static void close_fd(void)
-{
-  int fd=FD;
-  if(fd<0) return;
-
-  free_fd_stuff();
-  SUB_FD_EVENTS (THIS, ~0);
+  /* NB: The fd will always be closed on return from fd_close()
+   *     (except for the EINTR case on eg HPUX).
+   */
   change_fd_for_box (&THIS->box, -1);
 
   if ( (THIS->flags & FILE_NOT_OPENED) )
-     return;
+    return;
 
   while(1)
   {
@@ -636,32 +579,65 @@ static void close_fd(void)
     e=errno;
     THREADS_DISALLOW_UID();
 
+    /* fprintf(stderr, "fd_close(%d): ret: %d, errno: %d\n", fd, i, e); */
+
     check_threads_etc();
 
     if(i < 0)
     {
+      ERRNO = errno = e;
       switch(e)
       {
 	default:
-	  ERRNO=errno=e;
-	  change_fd_for_box (&THIS->box, fd);
 	  push_int(e);
 	  f_strerror(1);
-	  Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+
+	  if (quiet) {
+	    /* NB: FIXME: This has quite a bit of overhead... */
+	    JMP_BUF jmp;
+	    if (SETJMP (jmp))
+	      call_handle_error();
+	    else {
+	      Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	    }
+	    UNSETJMP (jmp);
+	  } else {
+	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+	  }
 	  break;
 
+#if 0
+#ifdef ENOSPC
+        case ENOSPC:
+	  /* FreeBSD: The underlying object did not fit, cached data was lost. */
+	  break;
+#endif
+#endif
+#ifdef ECONNRESET
+        case ECONNRESET:
+	  /* FreeBSD: The peer shut down the connection before all pending data
+	   *          was delivered.
+	   */
+	  break;
+#endif
+
 	case EBADF:
+	  if (olde) {
+	    /* Probably an OS where fds are closed on EINTR (ie most). */
+	    ERRNO = errno = 0;
+	    break;
+	  }
 	  Pike_error("Internal error: Closing a non-active file descriptor %d.\n",fd);
 	  break;
 
 #ifdef SOLARIS
 	  /* It's actually OK. This is a bug in Solaris 8. */
-       case EAGAIN:
-         break;
+        case EAGAIN:
+	  break;
 #endif
-
-       case EINTR:
-	 continue;
+        case EINTR:
+	  olde = e;
+	  continue;
       }
     }
     break;
@@ -740,54 +716,73 @@ static int map(int flags)
   return ret;
 }
 
+/* read only once */
+#define PIKE_READ_ONCE       1U
+
+/* ignore the number of bytes, read as much as possible.
+ * count is used as the numer of bytes read per call
+ * to read(2). */
+#define PIKE_READ_NO_LENGTH  2U
+
 static struct pike_string *do_read(int fd,
-				   INT32 r,
-				   int all,
+				   size_t count,
+				   unsigned int mode,
 				   INT_TYPE *err)
 {
-  size_t bytes = r;
   struct byte_buffer buf = BUFFER_INIT();
   int e = 0;
 
   buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-  THREADS_ALLOW();
+  while (1) {
 
-  while (bytes) {
-      size_t len = MINIMUM(DIRECT_BUFSIZE, bytes);
-      ptrdiff_t i;
+    THREADS_ALLOW();
 
-      /* make space for exactly len bytes plus the terminating null byte */
+    while (count) {
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
+      ptrdiff_t bytes_read;
+
+      /* make space for exactly len bytes plus the terminating null byte. */
+      /* NOTE: as long as count comes from pike, it was signed, i.e. len+1
+       * cannot overflow */
       if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
-          buffer_free(&buf);
-          e = ENOMEM;
-          break;
+        e = ENOMEM;
+        break;
       }
 
-      i = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
+      bytes_read = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
 
-      if (LIKELY(i >= 0)) {
-          if ((size_t)i < len) buffer_remove(&buf, len - i);
-          bytes -= i;
-          if (!i || !all) break;
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
+
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
+
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
       } else {
-          e=errno;
-          if (e == EINTR) {
-              e = 0;
-              buffer_remove(&buf, len);
-              continue;
-          }
-
-          buffer_free(&buf);
-          break;
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
       }
+    }
+
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if (e == EINTR) {
+      e = 0;
+      continue;
+    }
+
+    break;
   }
 
-  THREADS_DISALLOW();
-
-  check_threads_etc();
-
-  if (e) {
+  if (e && !buffer_content_length(&buf)) {
+    buffer_free(&buf);
     *err = e;
     return NULL;
   }
@@ -796,6 +791,36 @@ static struct pike_string *do_read(int fd,
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
   return buffer_finish_pike_string(&buf);
+}
+
+static ptrdiff_t do_read_into_buffer(int fd,
+                                     void * ptr,
+                                     size_t len,
+                                     INT_TYPE *err)
+{
+  int e;
+  ptrdiff_t bytes_read;
+  
+  do {
+    e = 0;
+    bytes_read = fd_read(fd, ptr, len);
+
+    if (UNLIKELY(bytes_read == 0)) {
+      e=errno;
+    }
+
+    check_threads_etc();
+  } while (e == EINTR);
+
+  if (e && !bytes_read) {
+    *err = e;
+    return -1;
+  }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  return bytes_read;
 }
 
 /* This function is used to analyse anonymous fds, so that
@@ -970,18 +995,16 @@ static void check_message(struct msghdr *msg)
 #define CMSG_LEN(x)	(x)
 #endif
 
-static struct pike_string *do_recvmsg(INT32 r, int all)
+static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *err)
 {
-  ONERROR ebuf;
-  ptrdiff_t bytes_read = 0, i;
-  int fd = FD;
   struct {
     struct msghdr msg;
     struct iovec iov;
     char cmsgbuf[CMSG_LEN(sizeof(int)*128)];
   } message;
-
-  ERRNO=0;
+  struct byte_buffer buf = BUFFER_INIT();
+  int e = 0;
+  ptrdiff_t bytes_read = 0;
 
   message.msg.msg_name = NULL;
   message.msg.msg_namelen = 0;
@@ -992,29 +1015,21 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
   message.msg.msg_flags = 0;
 #endif
 
-  {
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     */
-    struct byte_buffer b = BUFFER_INIT();
+  buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
-    buffer_set_flags(&b, BUFFER_GROW_EXACT);
+  while (1) {
 
-    /* for small reads we allocate the whole size in the beginning,
-     * instead of only by individual chunks. We may want to change
-     * what small means.
-     */
-    if (r < 65*1024) buffer_ensure_space(&b, r+1);
+    THREADS_ALLOW();
 
-    SET_ONERROR(ebuf, buffer_free, &b);
-    do{
-      int e;
-      const INT32 CHUNK = 1024 * 8;
-      INT32 try_read=MINIMUM(CHUNK,r);
+    while (count) {
+      size_t len = MINIMUM(DIRECT_BUFSIZE, count);
 
-      /* allocate try_read bytes + the trailing null byte */
-      buffer_ensure_space(&b, try_read+1);
+      /* make space for exactly len bytes plus the terminating null byte */
+      /* as long as count comes from pike, it was signed, i.e. len+1 is safe */
+      if (UNLIKELY(!buffer_ensure_space_nothrow(&buf, len+1))) {
+        e = ENOMEM;
+        break;
+      }
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
       message.msg.msg_control = &message.cmsgbuf;
@@ -1023,20 +1038,23 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
-      message.iov.iov_base = buffer_alloc(&b, try_read);
-      message.iov.iov_len = try_read;
+      message.iov.iov_base = buffer_alloc_unsafe(&buf, len);
+      message.iov.iov_len = len;
 
-      THREADS_ALLOW();
-      i = recvmsg(fd, &message.msg, 0);
+      bytes_read = recvmsg(fd, &message.msg, 0);
       e=errno;
-      THREADS_DISALLOW();
 
-      check_threads_etc();
+      if (LIKELY(bytes_read >= 0)) {
+        /* if less than len were read, rewind the buffer to
+         * the last byte */
+        if ((size_t)bytes_read < len)
+          buffer_remove(&buf, len - bytes_read);
 
-      if(i>0)
-      {
-	bytes_read+=i;
-	r-=i;
+        if (!(mode & PIKE_READ_NO_LENGTH))
+          count -= bytes_read;
+
+        if (!bytes_read || mode & PIKE_READ_ONCE) break;
+
 	if (
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	    message.msg.msg_controllen
@@ -1044,42 +1062,57 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
 	    message.msg.msg_accrightslen
 #endif
 	    ) {
-	  check_message(&message.msg);
-	}
-	if (i != try_read) {
-	  buffer_remove(&b, try_read - i);
-	}
-	if(!all) break;
+          /* we have to call receive_fds, so break out of the loop */
+          break;
+        }
+      } else {
+        e=errno;
+        buffer_remove(&buf, len);
+        break;
       }
-      else if(i==0)
-      {
-	buffer_remove(&b, try_read);
-	break;
+    }
+
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if (e) {
+      if (e == EINTR) {
+        e = 0;
+        continue;
       }
-      else
-      {
-	buffer_remove(&b, try_read);
-	if(e != EINTR)
-	{
-	  ERRNO=e;
-	  if(!bytes_read)
-	  {
-            buffer_free(&b);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-    }while(r);
+      break;
+    }
 
-    UNSET_ONERROR(ebuf);
-
-    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
-      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
-
-    return buffer_finish_pike_string(&b);
+    if (UNLIKELY(
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+        message.msg.msg_controllen
+#else
+        message.msg.msg_accrightslen
+#endif
+        )) {
+      ONERROR ebuf;
+      SET_ONERROR(ebuf, buffer_free, &buf);
+      check_message(&message.msg);
+      UNSET_ONERROR(ebuf);
+      if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
+    }
+    break;
   }
+
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+  if (e) {
+    *err = e;
+
+    if (!buffer_content_length(&buf)) {
+      buffer_free(&buf);
+      return NULL;
+    }
+  }
+
+  return buffer_finish_pike_string(&buf);
 }
 
 /* Send a set of iovecs and fds over an fd. */
@@ -1139,7 +1172,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 #endif /* HAVE_PIKE_SEND_FD */
 
 static struct pike_string *do_read_oob(int UNUSED(fd),
-				       INT32 r,
+				       ptrdiff_t r,
 				       int all,
 				       INT_TYPE *err)
 {
@@ -1267,65 +1300,140 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  *! @seealso
  *!   @[read_oob()], @[write()], @[receive_fd()], @[send_fd()]
  */
+
+/*!
+ *! @decl int read(Stdio.Buffer|String.Buffer dst)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst]. Tries to
+ *! read as many bytes as buffer space available.
+ *! Will advance the write position in @[dst] by the number of bytes
+ *! read.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
+
+/*!
+ *! @decl int read(System.Memory dst, void|int(0..) offset)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst] at offset
+ *! @[offset]. Tries to read as many bytes as buffer space available.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
 static void file_read(INT32 args)
 {
-  struct pike_string *tmp;
-  INT32 all, len;
+  struct my_file *file = THIS;
 
-  if(FD < 0)
+  int fd = file->box.fd;
+
+  if(fd < 0)
     Pike_error("File not open.\n");
 
-  if(!args)
-  {
-    len=0x7fffffff;
-  }
-  else
-  {
-    if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
-    len=Pike_sp[-args].u.integer;
-    if(len<0)
-      Pike_error("Cannot read negative number of characters.\n");
-    if (!len && SUBTYPEOF(Pike_sp[-args])) {
-      len = 0x7fffffff;
+  if (args && TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+    struct pike_memory_object m;
+    struct object *o = Pike_sp[-args].u.object;
+    enum memobj_type type = pike_get_memory_object(o, &m, 1);
+    ptrdiff_t bytes_read;
+
+    if (type == MEMOBJ_NONE)
+      SIMPLE_BAD_ARG_ERROR("read()", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
+
+    if (m.shift)
+      Pike_error("Cannot read into wide-string buffer.\n");
+
+    if (args > 1)
+    {
+      INT_TYPE offset;
+
+      if (TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT || Pike_sp[-args+1].u.integer < 0)
+        SIMPLE_BAD_ARG_ERROR("read()", 2, "int(0..)");
+
+      if (type != MEMOBJ_SYSTEM_MEMORY)
+        SIMPLE_BAD_ARG_ERROR("read()", 1, "System.Memory");
+
+      offset = Pike_sp[-args+1].u.integer;
+
+      if ((size_t)offset > m.len)
+        Pike_error("Offset out of bounds.\n");
+
+      m.len -= offset;
+      m.ptr = (char*)m.ptr + offset;
     }
-  }
 
-  if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
-  {
-    all=0;
-  }else{
-    all=1;
-  }
+    if (!m.len)
+      Pike_error("No buffer space.\n");
 
-  pop_n_elems(args);
+    bytes_read = do_read_into_buffer(fd, m.ptr, (size_t)m.len, &file->my_errno);
+
+    if (bytes_read > 0)
+      pike_advance_memory_object(o, type, bytes_read);
+    
+    pop_n_elems(args);
+    push_int(bytes_read);
+  } else {
+    struct pike_string *tmp;
+    unsigned INT32 mode = 0;
+    size_t count = DIRECT_BUFSIZE;
+
+    if(!args)
+    {
+      mode |= PIKE_READ_NO_LENGTH;
+    }
+    else
+    {
+      INT_TYPE len;
+      if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
+        SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
+      len=Pike_sp[-args].u.integer;
+      if(len<0)
+        Pike_error("Cannot read negative number of characters.\n");
+      if (!len && SUBTYPEOF(Pike_sp[-args])) {
+        mode |= PIKE_READ_NO_LENGTH;
+      } else {
+        count = len;
+      }
+    }
+
+    if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
+    {
+      mode |= PIKE_READ_ONCE;
+    }
+
+    pop_n_elems(args);
 
 #ifdef HAVE_PIKE_SEND_FD
-  /* Check if there's any need to use recvmsg(2). */
-  if ((THIS->open_mode & fd_SEND_FD) &&
-      (THIS->flags & FILE_HAVE_RECV_FD)) {
-    if ((tmp = do_recvmsg(len, all)))
-      push_string(tmp);
-    else {
-      errno = ERRNO;
-      push_int(0);
-    }
-  } else
+    /* Check if there's any need to use recvmsg(2). */
+    if ((file->open_mode & fd_SEND_FD) &&
+        (file->flags & FILE_HAVE_RECV_FD)) {
+      if ((tmp = do_recvmsg(fd, count, mode, & file->my_errno)))
+        push_string(tmp);
+      else {
+        errno = file->my_errno;
+        push_int(0);
+      }
+    } else
 #endif /* HAVE_PIKE_SEND_FD */
-    if((tmp=do_read(FD, len, all, & ERRNO)))
-      push_string(tmp);
-    else {
-      errno = ERRNO;
-      push_int(0);
+    {
+      if((tmp=do_read(fd, count, mode, & file->my_errno)))
+        push_string(tmp);
+      else {
+        errno = file->my_errno;
+        push_int(0);
+      }
     }
+  }
 
-  if (!(THIS->open_mode & FILE_NONBLOCKING))
+  if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
 
   /* Race: A backend in another thread might have managed to set these
    * again for something that arrived after the read above. Not that
    * bad - it will get through in a later backend round. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+  file->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
 #ifdef HAVE_AND_USE_POLL
@@ -1401,7 +1509,7 @@ static void file_peek(INT32 args)
   int not_eof = 0;
   FLOAT_TYPE tf = 0.0;
 
-  get_all_args("peek",args,".%F%d",&tf,&not_eof);
+  get_all_args(NULL, args, ".%F%d", &tf, &not_eof);
 
   {
 #ifdef HAVE_AND_USE_POLL
@@ -1693,6 +1801,7 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *! @decl int write(string format, mixed ... extras)
  *! @decl int write(array(string) data)
  *! @decl int write(array(string) format, mixed ... extras)
+ *! @decl int write(Stdio.Buffer|String.Buffer|System.Memory data, void|int(0..) offset)
  *!
  *! Write data to a file or a stream.
  *!
@@ -1709,6 +1818,9 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *!   If more than one argument is given, @[sprintf()] is used to format
  *!   them using @[format]. If @[format] is an array, the strings in it
  *!   are concatenated and the result is used as format string.
+ *!
+ *! @param offset
+ *!   The offset in data to start writing from.
  *!
  *! @returns
  *!   Writes @[data] and returns the number of bytes that were
@@ -1756,37 +1868,333 @@ static void file__disable_callbacks(INT32 UNUSED(args))
  *!   data somehow, e.g. with @[string_to_utf8] or with one of the
  *!   charsets supported by @[Charset.encoder].
  *!
+ *! @note
+ *!   The variant of this function using a buffer object does not release
+ *!   the interpreter lock.
+ *!
  *! @seealso
  *!   @[read()], @[write_oob()], @[send_fd()]
  */
-static void file_write(INT32 args)
+#ifdef HAVE_WRITEV
+static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 {
   ptrdiff_t written, i;
-  struct pike_string *str;
+  struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
+  struct iovec *iov = iovbase;
+  int iovcnt = a->size;
+  int e = 0;
 
-  if(args<1 || ((TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) &&
-		(TYPEOF(Pike_sp[-args]) != PIKE_T_ARRAY)))
-    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
+  i = a->size;
+  while(i--) {
+    struct pike_string *s = a->item[i].u.string;
 
-  if(FD < 0)
+    if (s->size_shift) {
+      free(iovbase);
+      Pike_error("Bad argument 1 to file->write().\n"
+                 "Element %ld is a wide string.\n",
+                 (long)i);
+    }
+
+    if (s->len) {
+      iov[i].iov_base = s->str;
+      iov[i].iov_len = s->len;
+    } else {
+      iov++;
+      iovcnt--;
+    }
+  }
+
+  for(written = 0; iovcnt; check_signals(0,0,0)) {
+    int fd = file->box.fd;
+    int cnt = iovcnt;
+#ifdef HAVE_PIKE_SEND_FD
+    int *fd_info = NULL;
+    int num_fds = 0;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
+    }
+#endif
+    THREADS_ALLOW();
+
+#ifdef IOV_MAX
+    if (cnt > IOV_MAX) cnt = IOV_MAX;
+#endif
+
+#ifdef MAX_IOVEC
+    if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
+#endif
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) {
+      i = writev_fds(fd, iov, cnt, fd_info + 2, num_fds);
+    } else
+#endif
+      i = writev(fd, iov, cnt);
+
+    if (i < 0) e = errno;
+
+    THREADS_DISALLOW();
+
+    /* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
+       fd, (unsigned int)iov, cnt, i); */
+
+    check_threads_etc();
+
+    if(i<0)
+    {
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+        restore_fd_info(fd_info);
+      }
+#endif
+      switch(e)
+      {
+      default: break;
+      case EINTR: continue;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
+        /* FIXME: Special case for ENOTSOCK? */
+      }
+      break;
+    }else{
+      written += i;
+
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+        file->fd_info = fd_info;
+        if (i) {
+          do_close_fd_info(file->fd_info = fd_info);
+        }
+      }
+#endif
+
+      /* Avoid extra writev() */
+      if(THIS->open_mode & FILE_NONBLOCKING)
+        break;
+
+      while(i) {
+        if ((ptrdiff_t)iov->iov_len <= i) {
+          i -= iov->iov_len;
+          iov++;
+          iovcnt--;
+        } else {
+          /* Use cast since iov_base might be a void pointer */
+          iov->iov_base = ((char *) iov->iov_base) + i;
+          iov->iov_len -= i;
+          i = 0;
+        }
+      }
+    }
+  }
+
+  free(iovbase);
+
+  file->my_errno = errno = e;
+
+  return written;
+}
+#endif /* HAVE_WRITEV */
+
+static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
+{
+  ptrdiff_t written;
+  int e = 0;
+
+  for(written=0;(size_t)written < len;check_signals(0,0,0))
+  {
+    int fd=file->box.fd;
+    int i;
+    void *start = (char*)ptr + written;
+#ifdef HAVE_PIKE_SEND_FD
+    int *fd_info = NULL;
+    int num_fds = 0;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+/*  fprintf(stderr, "fd_info: %p\n", file->fd_info); */
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
+    }
+#endif
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) {
+      struct iovec iov;
+      iov.iov_base = start;
+      iov.iov_len = len - written;
+      i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
+    } else
+#endif
+      i=fd_write(fd, start, len - written);
+    if (i < 0 ) e = errno;
+
+    if(i<0)
+    {
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+	restore_fd_info(fd_info);
+      }
+#endif
+      switch(e)
+      {
+      default: break;
+      case EINTR: continue;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
+	/* FIXME: Special case for ENOTSOCK? */
+      }
+      break;
+    }else{
+      written+=i;
+
+#ifdef HAVE_PIKE_SEND_FD
+      if (i && fd_info) {
+	do_close_fd_info(file->fd_info = fd_info);
+      }
+#endif
+      /* Avoid extra write() */
+      if(file->open_mode & FILE_NONBLOCKING)
+	break;
+    }
+  }
+
+  file->my_errno=errno=e;
+
+  return written;
+}
+
+static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str)
+{
+  ptrdiff_t written = 0;
+  int e = 0;
+
+  if(str->size_shift)
+    Pike_error("Stdio.File->write(): cannot output wide strings.\n");
+
+  for(written=0;written < str->len;check_signals(0,0,0))
+  {
+    int fd=file->box.fd;
+    int i;
+#ifdef HAVE_PIKE_SEND_FD
+    int *fd_info = NULL;
+    int num_fds = 0;
+#endif
+
+#ifdef _REENTRANT
+    /* check_signals() may have done something... */
+    if (fd < 0) break;
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+/*  fprintf(stderr, "fd_info: %p\n", file->fd_info); */
+    if (file->fd_info && (num_fds = file->fd_info[1])) {
+      fd_info = file->fd_info;
+      file->fd_info = NULL;
+    }
+#endif
+
+    THREADS_ALLOW();
+
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) {
+      struct iovec iov;
+      iov.iov_base = str->str + written;
+      iov.iov_len = str->len - written;
+      i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
+    } else
+#endif
+      i=fd_write(fd, str->str + written, str->len - written);
+    if (i < 0) e = errno;
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+
+    if(i<0)
+    {
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+	restore_fd_info(fd_info);
+      }
+#endif
+      switch(e)
+      {
+      default: break;
+      case EINTR: continue;
+      case EWOULDBLOCK:
+        e = 0;
+        break;
+	/* FIXME: Special case for ENOTSOCK? */
+      }
+      break;
+    }else{
+      written+=i;
+
+#ifdef HAVE_PIKE_SEND_FD
+      if (i && fd_info) {
+	do_close_fd_info(file->fd_info = fd_info);
+      }
+#endif
+      /* Avoid extra write() */
+      if(file->open_mode & FILE_NONBLOCKING)
+	break;
+    }
+  }
+
+  /* Why do we reset errno ? */
+  file->my_errno = errno = e;
+
+  return written;
+}
+
+static void file_write(INT32 args)
+{
+  enum PIKE_TYPE first_arg = args > 0 ? TYPEOF(Pike_sp[-args]) : T_VOID;
+  ptrdiff_t written;
+
+  struct my_file *file = THIS;
+
+  if(file->box.fd < 0)
     Pike_error("File not open for write.\n");
 
-  if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY) {
-    struct array *a = Pike_sp[-args].u.array;
+  if (!(file->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
 
-    if( (a->type_field & ~BIT_STRING) &&
-	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
+  switch (first_arg) {
+  case PIKE_T_ARRAY:
+    {
+      struct array *a = Pike_sp[-args].u.array;
 
-    i = a->size;
-    while(i--)
-      if (a->item[i].u.string->size_shift)
-	Pike_error("Bad argument 1 to file->write().\n"
-		   "Element %ld is a wide string.\n",
-                   (long)i);
+      if (!a->size) {
+        file->my_errno = 0;
+        written = 0;
+        break;
+      }
 
 #ifdef HAVE_WRITEV
-    if (args > 1) {
+      if (args == 1)
+      {
+        if( (a->type_field & ~BIT_STRING) &&
+            (array_fix_type_field(a) & ~BIT_STRING) )
+          SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)");
+
+        written = file_write_array(file, a);
+        break;
+      }
 #endif /* HAVE_WRITEV */
       ref_push_array(a);
       push_empty_string();
@@ -1798,248 +2206,68 @@ static void file_write(INT32 args)
 
 #ifdef PIKE_DEBUG
       if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) {
-	Pike_error("Bad return value from string multiplication.\n");
+        Pike_error("Bad return value from string multiplication.\n");
       }
 #endif /* PIKE_DEBUG */
-#ifdef HAVE_WRITEV
-    } else if (!a->size) {
-      /* Special case for empty array */
-      ERRNO = 0;
-      pop_stack();
-      push_int(0);
-      return;
-    } else {
-      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
-      struct iovec *iov = iovbase;
-      int iovcnt = a->size;
-
-      if (!(THIS->open_mode & FILE_NONBLOCKING))
-	INVALIDATE_CURRENT_TIME();
-
-      i = a->size;
-      while(i--) {
-	if (a->item[i].u.string->len) {
-	  iov[i].iov_base = a->item[i].u.string->str;
-	  iov[i].iov_len = a->item[i].u.string->len;
-	} else {
-	  iov++;
-	  iovcnt--;
-	}
-      }
-
-      for(written = 0; iovcnt; check_signals(0,0,0)) {
-	int fd = FD;
-	int e;
-	int cnt = iovcnt;
-#ifdef HAVE_PIKE_SEND_FD
-	int *fd_info = NULL;
-	int num_fds = 0;
-	if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-	  fd_info = THIS->fd_info;
-	  THIS->fd_info = NULL;
-	}
-#endif
-	THREADS_ALLOW();
-
-#ifdef IOV_MAX
-	if (cnt > IOV_MAX) cnt = IOV_MAX;
-#endif
-
-#ifdef MAX_IOVEC
-	if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
-#endif
-#ifdef HAVE_PIKE_SEND_FD
-	if (fd_info) {
-	  i = writev_fds(fd, iov, cnt, fd_info + 2, num_fds);
-	} else
-#endif
-	  i = writev(fd, iov, cnt);
-	THREADS_DISALLOW();
-
-	/* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
-	   fd, (unsigned int)iov, cnt, i); */
-
-	e=errno; /* check_threads_etc may effect errno */
-	check_threads_etc();
-
-	if(i<0)
-	{
-#ifdef HAVE_PIKE_SEND_FD
-	  if (fd_info) {
-	    restore_fd_info(fd_info);
-	  }
-#endif
-	  switch(e)
-	  {
-	  default:
-	    free(iovbase);
-	    ERRNO=errno=e;
-	    pop_n_elems(args);
-	    if (!written) {
-	      push_int(-1);
-	    } else {
-	      push_int(written);
-	    }
-	    /* Minor race - see below. */
-	    THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-	    return;
-
-	  case EINTR: continue;
-	  case EWOULDBLOCK: break;
-	    /* FIXME: Special case for ENOTSOCK? */
-	  }
-	  break;
-	}else{
-	  written += i;
-
-#ifdef HAVE_PIKE_SEND_FD
-	  if (fd_info) {
-	    THIS->fd_info = fd_info;
-	    if (i) {
-	      do_close_fd_info(THIS->fd_info = fd_info);
-	    }
-	  }
-#endif
-
-	  /* Avoid extra writev() */
-	  if(THIS->open_mode & FILE_NONBLOCKING)
-	    break;
-
-	  while(i) {
-	    if ((ptrdiff_t)iov->iov_len <= i) {
-	      i -= iov->iov_len;
-	      iov++;
-	      iovcnt--;
-	    } else {
-	      /* Use cast since iov_base might be a void pointer */
-	      iov->iov_base = ((char *) iov->iov_base) + i;
-	      iov->iov_len -= i;
-	      i = 0;
-	    }
-	  }
-	}
-#ifdef _REENTRANT
-	if (FD<0) {
-	  free(iovbase);
-	  Pike_error("File closed while in file->write.\n");
-	}
-#endif
-      }
-
-      free(iovbase);
-
-      /* Minor race - see below. */
-      THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-
-      if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-      ERRNO=0;
-
-      pop_stack();
-      push_int(written);
-      return;
     }
-#endif /* HAVE_WRITEV */
-  }
-
-  /* At this point TYPEOF(Pike_sp[-args]) is PIKE_T_STRING */
-
-  if(args > 1)
-  {
-    f_sprintf(args);
-    args=1;
-  }
-
-  str=Pike_sp[-args].u.string;
-  if(str->size_shift)
-    Pike_error("Stdio.File->write(): cannot output wide strings.\n");
-
-  for(written=0;written < str->len;check_signals(0,0,0))
-  {
-    int fd=FD;
-    int e;
-#ifdef HAVE_PIKE_SEND_FD
-    int *fd_info = NULL;
-    int num_fds = 0;
-/*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
-    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
-      fd_info = THIS->fd_info;
-      THIS->fd_info = NULL;
-    }
-#endif
-    THREADS_ALLOW();
-#ifdef HAVE_PIKE_SEND_FD
-    if (fd_info) {
-      struct iovec iov;
-      iov.iov_base = str->str + written;
-      iov.iov_len = str->len - written;
-      i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
-    } else
-#endif
-      i=fd_write(fd, str->str + written, str->len - written);
-    e=errno;
-    THREADS_DISALLOW();
-
-    check_threads_etc();
-
-    if (!(THIS->open_mode & FILE_NONBLOCKING))
-      INVALIDATE_CURRENT_TIME();
-
-    if(i<0)
+    /* FALL THROUGH */
+  case PIKE_T_STRING:
+    if (args > 1)
     {
-#ifdef HAVE_PIKE_SEND_FD
-      if (fd_info) {
-	restore_fd_info(fd_info);
-      }
-#endif
-      switch(e)
-      {
-      default:
-	ERRNO=errno=e;
-	pop_n_elems(args);
-	if (!written) {
-	  push_int(-1);
-	} else {
-	  push_int64(written);
-	}
-	/* Minor race - see below. */
-	THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-	return;
-
-      case EINTR: continue;
-      case EWOULDBLOCK: break;
-	/* FIXME: Special case for ENOTSOCK? */
-      }
-      break;
-    }else{
-      written+=i;
-
-#ifdef HAVE_PIKE_SEND_FD
-      if (i && fd_info) {
-	do_close_fd_info(THIS->fd_info = fd_info);
-      }
-#endif
-      /* Avoid extra write() */
-      if(THIS->open_mode & FILE_NONBLOCKING)
-	break;
+      f_sprintf(args);
+      args=1;
     }
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
+    written = file_write_string(file, Pike_sp[-args].u.string);
+    break;
+  case PIKE_T_OBJECT:
+    {
+      struct object *o = Pike_sp[-args].u.object;
+      size_t len;
+      int shift;
+      void *src;
+
+      enum memobj_type type = get_memory_object_memory(o, &src, &len, &shift);
+
+      if (type != MEMOBJ_NONE) {
+        INT_TYPE offset = 0;
+
+        if (shift)
+          Pike_error("Stdio.File->write(): cannot output wide strings.\n");
+
+        if (args > 1 && TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT)
+        {
+          offset = Pike_sp[-args+1].u.integer;
+
+          if (UNLIKELY(offset < 0 || (size_t)offset > len)) {
+            Pike_error("Offset out of bounds.\n");
+          }
+        }
+
+        written = file_write_buffer(file, (char*)src + offset, len - offset);
+        break;
+      }
+    }
+    /* FALL THROUGH */
+  default:
+    SIMPLE_ARG_TYPE_ERROR("write", 1, "string|array(string)|Stdio.Buffer|String.Buffer|System.Memory");
   }
 
 #ifdef _REENTRANT
-  /* check_signals() may have done something... */
-  if(FD<0) Pike_error("File closed while in file->write.\n");
+  if (file->box.fd < 0)
+    Pike_error("File closed while in file->write.\n");
 #endif
+
+  if (!file->my_errno) {
+    if(!SAFE_IS_ZERO(& file->event_cbs[PIKE_FD_WRITE]))
+      ADD_FD_EVENTS (file, PIKE_BIT_FD_WRITE);
+  } else {
+    if (!written) written = -1;
+  }
+
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-
-  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
-    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
-  ERRNO=0;
+  file->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
   pop_n_elems(args);
   push_int64(written);
@@ -2286,7 +2514,7 @@ static void file_linger(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("linger", args, ".%d", &linger);
+  get_all_args(NULL, args, ".%d", &linger);
 
   if ((linger < -1) || (linger > 0xffff)) {
     SIMPLE_ARG_TYPE_ERROR("linger", 1, "int(-1..65535)");
@@ -2344,10 +2572,10 @@ static void file_nodelay(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("set_nodelay", args, ".%d", &state);
+  get_all_args(NULL, args, ".%d", &state);
 
   if (state && state != 1) {
-    SIMPLE_BAD_ARG_ERROR("set_nodelay()", 1, "int(0..1)");
+    SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
   }
 
   errno = 0;
@@ -2363,6 +2591,13 @@ static void file_nodelay(INT32 args)
     push_int(1);
   }
 }
+#endif
+
+#ifndef SHUT_RD
+#define SHUT_RD	0
+#endif
+#ifndef SHUT_WR
+#define SHUT_WR	1
 #endif
 
 static int do_close(int flags)
@@ -2382,12 +2617,12 @@ static int do_close(int flags)
     if(f->open_mode & FILE_WRITE)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 0);
+      fd_shutdown(FD, SHUT_RD);
       f->open_mode &=~ FILE_READ;
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
@@ -2395,7 +2630,7 @@ static int do_close(int flags)
     if(f->open_mode & FILE_READ)
     {
       SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB|PIKE_BIT_FD_FS_EVENT);
-      fd_shutdown(FD, 1);
+      fd_shutdown(FD, SHUT_WR);
       f->open_mode &=~ FILE_WRITE;
 #ifdef HAVE_PIKE_SEND_FD
       if (f->fd_info) do_close_fd_info(f->fd_info);
@@ -2403,13 +2638,13 @@ static int do_close(int flags)
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
-      close_fd();
+      close_fd(0);
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
     f->flags&=~FILE_NOT_OPENED;
-    close_fd();
+    close_fd(0);
     return 1;
 
   default:
@@ -2496,12 +2731,12 @@ static void file_grantpt( INT32 args )
  *! Close a file or stream.
  *!
  *! If direction is not specified, both the read and the write
- *! direction is closed. Otherwise only the directions specified is
+ *! direction are closed. Otherwise only the directions specified is
  *! closed.
  *!
  *! @returns
- *! Nonzero is returned if the file or stream wasn't open in the
- *! specified direction, zero otherwise.
+ *!   Returns @expr{1@} if the file or stream now is closed in
+ *!   all directions, and @expr{0@} otherwise.
  *!
  *! @throws
  *! An exception is thrown if an I/O error occurs.
@@ -2619,7 +2854,7 @@ static void file_open(INT32 args)
   int access;
   int err;
   struct pike_string *str, *flag_str;
-  close_fd();
+  close_fd(0);
 
   if(args < 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR("open", 2);
@@ -2723,7 +2958,7 @@ static void file_openat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("openat", args, "%S%S.%d", &str, &flag_str, &access);
+  get_all_args(NULL, args, "%S%S.%d", &str, &flag_str, &access);
 
   flags = parse(flag_str->str);
 
@@ -2779,7 +3014,7 @@ static void file_openpt(INT32 args)
 #ifdef HAVE_POSIX_OPENPT
   struct pike_string *flag_str;
 #endif
-  close_fd();
+  close_fd(0);
 
   if(args < 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("openpt", 1);
@@ -3106,11 +3341,8 @@ static void file_truncate(INT32 args)
     Pike_error("File not open.\n");
 
   ERRNO=0;
-#ifdef HAVE_FTRUNCATE64
-  res = ftruncate64 (FD, len);
-#else
+
   res=fd_ftruncate(FD, len);
-#endif
 
   pop_n_elems(args);
 
@@ -3198,7 +3430,7 @@ static void file_statat(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("statat", args, "%S.%d", &path, &nofollow);
+  get_all_args(NULL, args, "%S.%d", &path, &nofollow);
 
   if (string_has_null(path)) {
     /* Filenames with NUL are not supported. */
@@ -3253,7 +3485,7 @@ static void file_unlinkat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("unlinkat", args, "%S", &str);
+  get_all_args(NULL, args, "%S", &str);
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
@@ -3317,10 +3549,9 @@ static void file_get_dir(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("get_dir", args, ".%S", &path);
+  get_all_args(NULL, args, ".%S", &path);
 
   if (path && string_has_null(path)) {
-    fprintf(stderr, "NULL\n");
     /* Filenames with NUL are not supported. */
     ERRNO = errno = ENOENT;
     pop_n_elems(args);
@@ -3333,7 +3564,10 @@ static void file_get_dir(INT32 args)
 
   while(1) {
     THREADS_ALLOW_UID();
-    if (!path) {
+    /* NB: The empty string is also an alias for the current directory.
+     *     This is a convenience eg when recursing with dirname().
+     */
+    if (!path || !path->len) {
       dfd = dup(fd);
     } else {
       dfd = openat(fd, path->str, O_RDONLY);
@@ -3458,7 +3692,7 @@ static void file_getxattr(INT32 args)
   ssize_t res;
   char *name;
 
-  get_all_args( "getxattr", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
 
   THREADS_ALLOW();
   do {
@@ -3518,7 +3752,7 @@ static void file_removexattr( INT32 args )
   char *name;
   int mfd = FD;
   int rv;
-  get_all_args( "removexattr", args, "%s", &name );
+  get_all_args( NULL, args, "%s", &name );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fremovexattr( mfd, name, 0 )) < 0) && (errno == EINTR))
@@ -3566,7 +3800,7 @@ static void file_setxattr( INT32 args )
   int flags;
   int rv;
   int mfd = FD;
-  get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
+  get_all_args( NULL, args, "%s%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fsetxattr( mfd, ind, val->str,
@@ -3872,9 +4106,8 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
     f->flags |= (THIS->flags & FILE_HAVE_RECV_FD);
   } else {
     /* Clone a plain Fd object. */
-    o = low_clone(file_program);
+    o = fast_clone_object(file_program);
     f = (struct my_file *) o->storage + file_program->inherits->storage_offset;
-    call_c_initializers(o);
   }
   change_fd_for_box(&f->box, fd);
   if (fd >= 0) {
@@ -4278,13 +4511,13 @@ static void file_pipe(INT32 args)
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
   int reverse;
 
-  check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
   if(args && !SUBTYPEOF(Pike_sp[-1])) type = Pike_sp[-args].u.integer;
 
   reverse = type & fd_REVERSE;
   type &= ~fd_REVERSE;
 
-  close_fd();
+  close_fd(0);
   pop_n_elems(args);
   ERRNO=0;
 
@@ -4397,7 +4630,7 @@ static void file_handle_events(int event)
       if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
 		       FILE_LOCK_FD |
 		       FILE_NOT_OPENED)))
-	close_fd_quietly();
+	close_fd(1);
       else
 	free_fd_stuff();
 #ifdef HAVE_PIKE_SEND_FD
@@ -4580,7 +4813,7 @@ static void file_open_socket(INT32 args)
   int fd;
   int family=-1;
 
-  close_fd();
+  close_fd(0);
 
   if (args > 2 && TYPEOF(Pike_sp[2-args]) == PIKE_T_INT &&
       Pike_sp[2-args].u.integer != 0)
@@ -4775,7 +5008,7 @@ static void file_set_keepalive(INT32 args)
   int tmp, i;
   INT_TYPE t;
 
-  get_all_args("set_keepalive", args, "%i", &t);
+  get_all_args(NULL, args, "%i", &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t;
@@ -4820,7 +5053,7 @@ static void file_setsockopt(INT32 args)
   int tmp, i, opt, level;
   INT_TYPE o, t, l;
 
-  get_all_args("setsockopt", args, "%i%i%i", &l, &o, &t);
+  get_all_args(NULL, args, "%i%i%i", &l, &o, &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t; opt = o; level = l;
@@ -4896,7 +5129,7 @@ static void file_connect_unix( INT32 args )
 #endif
   pop_n_elems(args);
 
-  close_fd();
+  close_fd(0);
   change_fd_for_box (&THIS->box, socket(AF_UNIX,SOCK_STREAM,0));
 
   if( FD < 0 )
@@ -4970,12 +5203,12 @@ static void file_connect(INT32 args)
 
   if (args < 4)
   {
-    get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
+    get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
   }
   else if( args == 5 )
   {
     struct svalue *src_sv;
-    get_all_args("connect", args, "%S%*%*%*%S",
+    get_all_args(NULL, args, "%S%*%*%*%S",
                  &dest_addr, &dest_port, &src_sv, &src_port, &data);
     if(TYPEOF(*src_sv) != PIKE_T_INT )
     {
@@ -4984,7 +5217,7 @@ static void file_connect(INT32 args)
       src_addr = src_sv->u.string;
     }
   } else {
-    get_all_args("connect", args, "%S%*%S%*",
+    get_all_args(NULL, args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 
@@ -5213,8 +5446,9 @@ static void file_create(INT32 args)
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("create", 1, "int|string");
 
-  close_fd();
+  close_fd(0);
   file_open(args);
+  pop_stack();
 }
 
 #ifdef _REENTRANT
@@ -5286,7 +5520,7 @@ void file_proxy(INT32 args)
   int from, to;
 
   THREAD_T id;
-  check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
+  check_all_args(NULL, args, BIT_OBJECT,0);
   f=get_file_storage(Pike_sp[-args].u.object);
   if(!f)
     SIMPLE_ARG_TYPE_ERROR("proxy", 1, "Stdio.File");
@@ -5494,16 +5728,7 @@ static void exit_file_lock_key(struct object *DEBUGUSED(o))
       }
     }while(err<0 && errno==EINTR);
 
-#ifdef _REENTRANT
-    THIS_KEY->owner = NULL;
-    if(THIS_KEY->owner_obj)
-    {
-      free_object(THIS_KEY->owner_obj);
-      THIS_KEY->owner_obj = NULL;
-    }
-#endif
     THIS_KEY->f->key = 0;
-    THIS_KEY->f = 0;
   }
 }
 
@@ -5553,7 +5778,9 @@ static void f_get_all_active_fd(INT32 args)
   pop_n_elems(args);
   sp = Pike_sp;
   {
+#ifndef __NT__
     DIR *tmp;
+#endif
     THREADS_ALLOW();
 #ifndef __NT__
     if( (tmp = opendir(
@@ -5572,11 +5799,10 @@ static void f_get_all_active_fd(INT32 args)
       {
         INT_TYPE fd;
         char *ep;
-        struct dirent ent, *res;
+        struct dirent *res;
         /* solaris, linux, cygwin, darwin, netbsd et.al. */
         res = NULL;
-        while( UNLIKELY(readdir_r( tmp, &ent, &res ))
-               && UNLIKELY(errno==EINTR))
+        while( UNLIKELY(!(res = readdir(tmp))) && UNLIKELY(errno==EINTR))
           ;
         if( !res )
           break;
@@ -5986,7 +6212,7 @@ static void f_getprotobyname(INT32 args) {
     struct protoent *proto;
     const char *name;
 
-    get_all_args("getprotobyname", args, "%c", &name);
+    get_all_args(NULL, args, "%c", &name);
 
     proto = getprotobyname(name);
 
@@ -6256,6 +6482,10 @@ PIKE_MODULE_INIT
   add_integer_constant("__HAVE_UNLINKAT__",1,0);
 #endif
 #endif /* 0 */
+
+#ifdef __NT__
+  add_integer_constant("__HAVE_UTF8_FS__", 1, 0);
+#endif
 
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);

@@ -7,6 +7,14 @@ PIKE_FEATURE_WITHOUT(GTK2)
 
 AC_MODULE_INIT()
 
+# some Darwin/OSX headers have Objective-C syntax, so we need 
+# to enable that on the compiler in order for header checks to succeed.
+case "$pike_cv_sys_os" in
+  Darwin)
+    CFLAGS="$CFLAGS -x objective-c"
+;;
+esac
+
 dnl AC_DEFINE(FUNCPROTO)
 dnl AC_DEFINE(HAVE_GNOME)
 dnl AC_DEFINE(HAVE_DPMS)
@@ -21,7 +29,7 @@ AC_CHECK_HEADERS( netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
 
 AC_CHECK_FUNCS( gethrtime sigaction )
 
-AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
+PIKE_PROG_PKG_CONFIG
 
 AC_SUBST(pgtk2_have_x11)
 pgtk2_have_x11=nox11
@@ -89,7 +97,7 @@ AC_DEFUN([AC_CHECK_PKG],
 [
   AC_MSG_CHECKING([for $1])
   AC_CACHE_VAL([pgtk2_cv_pkg_]translit([$1], [-+.], [___]), [
-    if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+    if [$]PKG_CONFIG $1 2>/dev/null; then
       [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=yes
     else
       [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=no
@@ -107,8 +115,8 @@ AC_DEFUN([AC_CHECK_PKG],
     #   /grubba 2005-10-05
     OLD_CFLAGS="$CFLAGS"
     OLD_LIBS="$LIBS"
-    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
-    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
+    LIBS="`[$]PKG_CONFIG --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
+    CFLAGS="`[$]PKG_CONFIG --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
 
     # Header check necessary for PIKE_FUNCS_NEED_DECLS.
     ifelse([$2],,,[AC_CHECK_HEADERS($2)])
@@ -133,7 +141,7 @@ dnl package
 AC_DEFUN(PGTK_CHECK_VERSION, [
   AC_MSG_CHECKING(for $1 version)
   AC_CACHE_VAL([pgtk2_cv_ver_]translit([$1], [-+.], [___]), [
-    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
+    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`[$]PKG_CONFIG --modversion $1 2>/dev/null`
   ])
   AC_MSG_RESULT($[pgtk2_cv_ver_]translit([$1], [-+.], [___]))
 ])
@@ -360,8 +368,8 @@ else
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
     #       both of which should already be present.
     #   /grubba 2005-10-05
-    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
-    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_CFLAGS="`[$]PKG_CONFIG --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_LIBS="`[$]PKG_CONFIG --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
 
     AC_DEFINE(PGTK_AUTO_UTF8)
   fi
@@ -372,6 +380,8 @@ OLD_CFLAGS="$CFLAGS"
 OLD_LIBS="$LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
 LIBS="$LIBS $GTK_LIBS"
+
+AC_CHECK_HEADERS( gdk/gdkx.h gdk/gdkwin32.h gdk/gdkquartz.h )
 
 AC_CHECK_FUNCS(gtk_tree_selection_unselect_range g_value_get_schar g_value_set_schar)
 
@@ -410,6 +420,14 @@ if test "x$pgtk2_have_x11" = "xx11"; then
 else
   AC_MSG_RESULT(no)
 fi
+
+# some Darwin/OSX headers have Objective-C syntax,
+# so we need to enable that on the compiler.
+case "$pike_cv_sys_os" in
+  Darwin)
+    GTK_CFLAGS="$GTK_CFLAGS -x objective-c"
+;;
+esac
 
 LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
@@ -450,5 +468,7 @@ AC_SUBST(WITH_GTK)
 PGTK_CFLAGS="$GTK_CFLAGS"
 PGTK_LIBS="$GTK_LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
+
 LIBS="$MODULE_LDFLAGS $LIBS"
+
 AC_OUTPUT(Makefile options)

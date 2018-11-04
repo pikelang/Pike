@@ -64,7 +64,11 @@ int main(int num, array(string) args) {
   write("\nRuntime options\n");
   mapping(string:string|int) rt = Pike.get_runtime_info();
   item(sprintf("%d-bit ABI", rt->abi), 1);
-  item("Machine code", !(<"default", "computed_goto">)[rt->bytecode_method]);
+  if (!(<"default">)[rt->bytecode_method]) {
+    item(sprintf("Machine code: %s", rt->bytecode_method), 1);
+  } else {
+    item("Machine code", 0);
+  }
 
   test_ipv6();
 
@@ -118,7 +122,6 @@ int main(int num, array(string) args) {
   F(setsid);
   F(setuid);
   F(symlink);
-  F(syslog);
   F(thread_set_concurrency); // UNIX_THREADS
   F(ualarm);
   F(uname);
@@ -178,6 +181,7 @@ int main(int num, array(string) args) {
 
   write("\nGL\n");
   M(GL.glGet);
+  M(GL.GLSL.glCreateShader);
 
   write("\nGLUT\n");
   M(GLUT.glutGet);
@@ -243,9 +247,6 @@ int main(int num, array(string) args) {
   write("\nMIME\n");
   M(MIME.Message);
 
-  write("\nMird\n");
-  M(Mird.Mird);
-
   write("\nMsql\n");
   M(Msql.version);
 #if 0 // if Msql version is >2
@@ -261,7 +262,7 @@ int main(int num, array(string) args) {
   // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
   string license = "Unknown";
   string version = "Unknown";
-  string client_info = mysql_obj?->client_info && mysql_obj->client_info();
+  string client_info = mysql_obj[?"client_info"] && mysql_obj["client_info"]();
   if (client_info) {
     sscanf(client_info, "%*s(%s)%*s/%s", license, version);
   }
@@ -392,6 +393,7 @@ int main(int num, array(string) args) {
 #endif
   F(System.setpwent);
   F(System.setrlimit);
+  F(System.syslog);
   F(System.usleep);
   F(System.FSEvents.EventStream);
   F(System.Inotify);
@@ -403,7 +405,11 @@ int main(int num, array(string) args) {
   // System.Memory.__MMAP__
 
   write("\nVCDiff\n");
-  M(VCDiff.Encoder);
+  F(VCDiff.Decoder);
+  F(VCDiff.Encoder);
+
+  write("\nWeb\n");
+  M(Web.Sass.Compiler);
 
   write("\nYp\n");
   M(Yp.default_domain);

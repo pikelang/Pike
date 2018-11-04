@@ -392,7 +392,7 @@ class Server
 
 class Killer
 {
-  void destroy()
+  protected void _destruct()
   {
     exit(0);
   }

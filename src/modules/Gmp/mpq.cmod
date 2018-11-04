@@ -4,27 +4,19 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gmp_machine.h"
 #include "my_gmp.h"
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
-#include "program.h"
-#include "stralloc.h"
-#include "object.h"
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "bignum.h"
 #include "operators.h"
-#include "mapping.h"
 #include "gc.h"
-#include "pike_types.h"
 
 #include <math.h>
 
@@ -455,7 +447,7 @@ float_fallback:
 	       x->u.object->prog != mpzmod_program)
 	      SIMPLE_ARG_TYPE_ERROR ("create", 1, "int|string");
 
-	    /* FALL_THROUGH */
+	    /* FALLTHRU */
 
 	  case T_INT:
 	    if (TYPEOF(*base) != T_INT &&
@@ -470,7 +462,7 @@ float_fallback:
 	  }
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 1:
 	if (x) {
@@ -480,7 +472,7 @@ float_fallback:
 	    get_new_mpq(THISMPQ, x, 1, "create", 1, args);
 	  break;
 	}
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case 0:
 	break;
@@ -488,6 +480,7 @@ float_fallback:
       default:
 	SIMPLE_WRONG_NUM_ARGS_ERROR ("create", 2);
     }
+    pop_n_elems(args);
   }
 
   /*! @decl int get_int()
@@ -529,7 +522,7 @@ float_fallback:
       prec++;
       /* present 'num' and insert dot */
       len += 3;
-      s = begin_shared_string(len);
+      s = begin_shared_string(len + 1);	  /* +1 to cater for a leading 0 */
       if(len/2 > prec)
       {
 	/* Shift the integer part forward to make room for the dot. */
@@ -550,6 +543,11 @@ float_fallback:
 		s->str+len-prec,
 		prec+1);
 	len++;
+      }
+      /* Make sure numbers start with a digit */
+      if ((len == prec) || ((unsigned)(s->str[len-prec-1] - '0') > 9)) {
+        memmove(s->str+len-prec+1, s->str+len-prec, prec);
+        s->str[len++ -prec] = '0';
       }
       s->str[len-prec]='.';
       push_string (end_and_resize_shared_string (s, len));
@@ -716,7 +714,7 @@ float_fallback:
       {
         return sv->u.integer;
       }else{
-        bad_arg_error (name, Pike_sp - args, args, arg, NULL, Pike_sp + arg - 1 - args,
+        bad_arg_error (name, args, arg, NULL, Pike_sp + arg - 1 - args,
                        "Bad argument %d to %s(). "
                        "The field \"%s\" doesn't hold an integer.\n",
                        arg, name, ind);

@@ -59,4 +59,6 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr);
 #endif
 #endif
 
+PMOD_EXPORT int my_log2(UINT64 x) ATTRIBUTE((const));
+
 #endif /* PIKE_CPULIB_H */

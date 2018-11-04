@@ -16,7 +16,7 @@
   } while(0)
 #define ins_byte(VAL)		add_to_program((VAL))
 #define ins_data(VAL)		add_relocated_int_to_program((VAL))
-#define read_program_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
+#define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
 
 #define PROG_COUNTER pc
 

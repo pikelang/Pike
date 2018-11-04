@@ -10,11 +10,9 @@
 
 #define COM_DEBUG
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include "global.h"
+
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -583,7 +581,7 @@ static void cval_push_result(INT32 args, int flags)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-    UNREACHBLE(return);
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -806,7 +804,7 @@ static void f_cval__sprintf(INT32 args)
   INT_TYPE flag_left, method;
   struct string_builder s;
 
-/*   get_all_args("_sprintf",args,"%i",&x); */
+/*   get_all_args(NULL,args,"%i",&x); */
   if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cval->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
@@ -906,7 +904,7 @@ static void f_cobj_create(INT32 args)
 
   if (args > 0)
   {
-    get_all_args("create", args, "%W", &progID);
+    get_all_args(NULL, args, "%W", &progID);
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
@@ -972,7 +970,7 @@ static void f_cobj_getprop(INT32 args)
   struct pike_string *prop;
   PCHARP propU;
 
-  get_all_args("get_prop", args, "%W", &prop);
+  get_all_args(NULL, args, "%W", &prop);
   propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
   pike_string_cpy(propU, prop);
   SET_INDEX_PCHARP(propU, prop->len, 0);
@@ -1382,7 +1380,7 @@ static void f_create_object(INT32 args)
   PCHARP progID2;
   IDispatch *pDispatch;
 
-  get_all_args("create_object", args, "%W", &progID);
+  get_all_args(NULL, args, "%W", &progID);
 
   progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
   pike_string_cpy(progID2, progID);
@@ -1964,7 +1962,7 @@ PIKE_MODULE_INIT
                tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid),tObj), 0);
   ADD_FUNCTION("GetTypeInfo", f_get_typeinfo, tFunc(tObj,tMix), 0);
   ADD_FUNCTION("GetConstants", f_get_constants,
-               tFunc(tOr(tObj,Str),tMapping), 0);
+               tFunc(tOr(tObj,tStr),tMapping), 0);
   ADD_FUNCTION("_sprintf", f_com__sprintf, tFunc(tMix,tMix), 0);
 
 #ifdef USE_COM_PROG

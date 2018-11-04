@@ -278,4 +278,42 @@ cond_begin([[ System["__MMAP__"] ]])
 
 cond_end // System["__MMAP__"]
 
+test_equal(sort(indices(System.Time())), ({ "sec","usec","usec_full" }))
+test_eq(abs(time()-System.Time()->sec)<2, 1)
+test_eq(System.Time()->usec-System.Time()->usec<=0, 1)
+
+test_do(System.TM())
+test_do((int)System.TM(0), 0)
+test_do((int)System.TM((1<<31)-1), (1<<31)-1)
+cond_begin([[ Pike.get_runtime_info()->time_size > 32 ]])
+test_do((int)System.TM(1<<31), 1<<31)
+test_do((int)System.TM(1<<32), 1<<32)
+test_do((int)System.TM(1<<33), 1<<33)
+cond_end // time_size > 32
+test_do(System.TM(2017,11,21,16,15,01,"UTC"))
+test_do(System.TM(2017,6,21,16,15,01,"UTC"))
+test_do(System.TM(2017,6,21,16,15,01))
+
+test_eq(System.TM(1513871300)->year, 2017)
+test_eq(System.TM(1513871300)->mon, 11)
+test_eq(System.TM(1513871300)->mday, 21)
+test_eq(System.TM(1513871300)->wday, 4)
+test_eq(System.TM(1513871300)->yday, 354)
+test_eq(System.TM(1513871300)->hour, 15)
+test_eq(System.TM(1513871300)->min, 48)
+test_eq(System.TM(1513871300)->sec, 20)
+test_eq(System.TM(1513871300)->isdst, 0)
+test_eq(intp(System.TM(1513871300)->gmtoff), 1)
+test_eq(stringp(System.TM(1513871300)->zone), 1)
+test_eq(stringp(System.TM(1513871300)->asctime()), 1)
+test_eq(System.TM(1513871300)->unix_time(), 1513871300)
+test_equal(map("%d%D%e%G%g%H%I%k%l%M%m%p%r%R%T%u%U%V%w"/2,
+               System.TM(1513871300)->strftime),
+  ({ "21", "12/21/17", "21", "2017", "17",
+     "15", "03", "15", " 3", "48", "12", "PM",
+     "03:48:20 PM", "15:48", "15:48:20", "4", "51", "51", "4" }))
+
+test_eq(stringp((string)System.TM(1513871300)), 1)
+test_eq((int)System.TM(1513871300), 1513871300)
+
 END_MARKER

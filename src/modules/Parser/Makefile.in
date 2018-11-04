@@ -10,6 +10,8 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
+pike.o : $(SRCDIR)/pike.c
+
 xml.o : $(SRCDIR)/xml.c
 
 @dependencies@

@@ -12,7 +12,7 @@ int drag_data_delete(GTK2.TreePath path)
   {
     struct object *o1;
     int res;
-    get_all_args("drag_data_delete",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_drag_source_drag_data_delete(
 			GTK_TREE_DRAG_SOURCE(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
@@ -29,7 +29,7 @@ int drag_data_delete(GTK2.TreePath path)
     GtkSelectionData *sel;
     struct object *o1;
     int res;
-    get_all_args("drag_data_get",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     sel=(GtkSelectionData *)g_malloc(sizeof(GtkSelectionData));
     if (sel==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("drag_data_get",sizeof(GtkSelectionData));
@@ -53,7 +53,7 @@ int row_draggable(GTK2.TreePath path)
   {
     struct object *o1;
     int res;
-    get_all_args("row_draggable",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     res=gtk_tree_drag_source_row_draggable(
 			GTK_TREE_DRAG_SOURCE(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));

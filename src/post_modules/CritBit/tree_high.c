@@ -25,9 +25,9 @@ static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
 #ifdef CB_PRINT_CHAR
 	CB_PRINT_CHAR(buf, key.str, i.chars);
 #else
-	string_builder_sprintf(buf, "(%d, %d) b: ", i.chars, CB_WIDTH(s));
+	string_builder_sprintf(buf, "(%d, %d) b: ", i.chars, CB_WIDTH(key.str));
 
-	for (i.bits = 0; i.bits < CB_WIDTH(s); i.bits++) {
+	for (i.bits = 0; i.bits < CB_WIDTH(key.str); i.bits++) {
 	    string_builder_sprintf(buf, "%d", CB_GET_BIT(key.str, i));
 	}
 	string_builder_putchar(buf, ' ');
@@ -53,7 +53,7 @@ static inline void cb_print_key(struct string_builder * buf, const cb_key key) {
     cb_size i;
 
     for (i.chars = 0; i.chars < key.len.chars; i.chars++) {
-	for (i.bits = 0; i.bits < CB_WIDTH(s); i.bits++) {
+	for (i.bits = 0; i.bits < CB_WIDTH(key.str); i.bits++) {
 	    string_builder_putchar(buf, CB_GET_BIT(key.str, i) ? '1' : '0');
 	}
     }

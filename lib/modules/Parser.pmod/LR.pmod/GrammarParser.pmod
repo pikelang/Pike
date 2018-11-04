@@ -177,7 +177,7 @@ protected private int add_nonterminal(string id)
   int nt = nonterminal_lookup[id];
 
   if (!nt) {
-    nt = nonterminal_lookup[id] = id_stack->ptr;
+    nt = nonterminal_lookup[id] = sizeof(id_stack);
     id_stack->push(id);
   }
   return nt;
@@ -212,8 +212,8 @@ protected private string internal_symbol_to_string(int|string symbol)
 protected private string symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
-    if (symbol < id_stack->ptr)
-      return id_stack->arr[symbol];
+    if (symbol < sizeof(id_stack))
+      return values(id_stack)[symbol];
     else
       /* Only happens with the initial(automatic) rule */
       return "nonterminal"+symbol;

@@ -30,12 +30,15 @@
 #include "code/ppc32.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #include "code/ppc64.c"
-#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-#include "code/computedgoto.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
 #include "code/arm32.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #include "code/arm64.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV32
+#include "code/riscv.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_RV64
+#include "code/riscv.c"
 #else
 #include "code/bytecode.c"
 #endif
+

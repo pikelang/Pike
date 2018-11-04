@@ -42,7 +42,7 @@ void INAME(INT32 args)
   int needle_average=0;
   int needle_size=1;
 
-  if (!THIS->img) { Pike_error("no image\n");  return; }
+  CHECK_INIT();
   this=THIS;
   haystacki=this->img;
   haystack=this;

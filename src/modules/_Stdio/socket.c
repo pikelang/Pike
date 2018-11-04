@@ -38,12 +38,6 @@
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
-
-/* Ugly patch for AIX 3.2 */
-#ifdef u
-#undef u
-#endif
-
 #endif
 
 #ifdef HAVE_SYS_PROTOSW_H
@@ -143,7 +137,7 @@ static void do_close(struct port *p)
  */
 static void port_set_id(INT32 args)
 {
-  check_all_args("Port->set_id", args, BIT_MIXED, 0);
+  check_all_args(NULL, args, BIT_MIXED, 0);
   assign_svalue(& THIS->id, Pike_sp-args);
   pop_n_elems(args-1);
 }
@@ -194,7 +188,7 @@ static void port_listen_fd(INT32 args)
   int fd;
   do_close(p);
 
-  get_all_args("listen_fd", args, "%d.%*", &fd, &cb);
+  get_all_args(NULL, args, "%d.%*", &fd, &cb);
 
   if(fd<0)
   {
@@ -407,7 +401,7 @@ static void bind_unix(INT32 args)
 
   do_close(p);
 
-  get_all_args("bind_unix", args, "%n.%*", &path, &cb);
+  get_all_args(NULL, args, "%n.%*", &path, &cb);
 
   /* NOTE: Some operating systems (eg Linux 2.6) do not support
    *       paths longer than what fits into a plain struct sockaddr_un.
@@ -504,7 +498,8 @@ static void port_close (INT32 UNUSED(args))
  *!
  *! When called with @expr{"stdin"@} as argument, a socket is created
  *! out of the file descriptor 0. This is only useful if that actually
- *! IS a socket to begin with.
+ *! IS a socket to begin with, and is equivalent to creating a port and
+ *! initializing it with @[listen_fd](0).
  *!
  *! @seealso
  *!   @[bind], @[listen_fd]
@@ -803,7 +798,7 @@ void init_stdio_port(void)
   /* function(:object) */
   port_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", port_fd_factory, tFunc(tNone,tObjIs_STDIO_FD),
-		 ID_STATIC);
+                 ID_PROTECTED);
   ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create", port_create,

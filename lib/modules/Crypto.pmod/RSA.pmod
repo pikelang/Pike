@@ -72,6 +72,9 @@ protected class LowState {
   //! The mapping can either contain integer values, or be an @rfc{7517@}
   //! JWK-style mapping with @tt{kty@} set to @expr{"RSA"@} and contain
   //! @[MIME.encode_base64url()]-encoded values.
+  //!
+  //! @seealso
+  //!   @[jwk()]
   protected void create(mapping(string(8bit):Gmp.mpz|int|string(7bit))|void params)
   {
     if(!params) return;
@@ -319,6 +322,37 @@ protected class LowState {
   Gmp.mpz raw_sign(string(8bit) digest);
   int(0..1) raw_verify(string(8bit) digest, Gmp.mpz s);
 
+  //! Generate a JWK-style mapping of the object.
+  //!
+  //! @param private_key
+  //!   If true, include the private key in the result.
+  //!   Note that if the private key isn't known, the function
+  //!   will fail (and return @expr{0@}).
+  //!
+  //! @returns
+  //!   Returns a JWK-style mapping on success, and @expr{0@} (zero)
+  //!   on failure.
+  //!
+  //! @seealso
+  //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.3@}
+  mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+  {
+    if (!n) return 0;	// Not initialized.
+    mapping(string(7bit):string(7bit)) jwk = ([
+      "kty":"RSA",
+      "n": MIME.encode_base64url(n->digits(256)),
+      "e": MIME.encode_base64url(e->digits(256)),
+    ]);
+    if (private_key) {
+      if (!d) return 0;	// Private key not known.
+
+      jwk->d = MIME.encode_base64url(d->digits(256));
+      jwk->p = MIME.encode_base64url(p->digits(256));
+      jwk->q = MIME.encode_base64url(q->digits(256));
+    }
+    return jwk;
+  }
+
   //
   // Prototypes for switching between different signature methods.
   //
@@ -348,7 +382,7 @@ class OAEPState {
     //! Get the OAEP encryption state.
     this_program `OAEP() { return this_program::this; }
 
-    string(7bit) name() { return "RSAES-OEAP"; }
+    string(7bit) name() { return "RSAES-OAEP"; }
 
     protected .Hash hash_alg = .SHA1;
 
@@ -475,9 +509,14 @@ class PSSState {
 
     protected int(0..1) _equal(mixed x)
     {
-      return objectp(x) && (object_program(x) == this_program) &&
-	(salt_size == ([object(this_program)]x)->salt_size) &&
-	::_equal(x);
+      if (!objectp(x) || (object_program(x) != object_program(this))) {
+	return 0;
+      }
+      if (object_program(this) == this::this_program) {
+	// We've got a PSSState object.
+	if (salt_size != ([object(this_program)]x)->salt_size) return 0;
+      }
+      return ::_equal(x);
     }
 
     //! Signs the @[message] with a RSASSA-PSS signature using hash
@@ -990,7 +1029,7 @@ class PKCS1_5State
     // Content independent size information. Not timing sensitive.
     if( sizeof(s)!=(n->size(256)-1) ) return 0;
 
-    int i = Nettle.rsa_unpad(s, type);
+    int i = Nettle.rsa_unpad(s, [int(1..2)]type);
     if( !i ) return 0;
 
     return s[i..];

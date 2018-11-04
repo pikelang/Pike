@@ -19,7 +19,7 @@ typedef string|Standards.URI|SessionURL URL;
 //!	@[Request.follow_redirects]
 int follow_redirects=20;
 
-#define RUNTIME_RESOLV(X) master().resolv(#X)
+#define RUNTIME_RESOLV(X) master()->resolv(#X)
 
 //! Default HTTP headers.
 mapping default_headers = ([
@@ -98,7 +98,7 @@ class Request
       if(url->user || url->password)
 	 request_headers->authorization = "Basic "
 	    + MIME.encode_base64((url->user || "") + ":" +
-				 (url->password || ""));
+				 (url->password || ""), 1);
 
       request_headers->connection=
 	 (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive";
@@ -372,13 +372,18 @@ class Request
 
 // ----------------
 
-//! 	@[destroy] is called when an object is destructed.
 //!	But since this clears the HTTP connection from the Request object,
 //!	it can also be used to reuse a @[Request] object.
    void destroy()
    {
       if (con) return_connection(url_requested,con);
       con=0;
+   }
+
+//! 	@[_destruct] is called when an object is destructed.
+   protected void _destruct()
+   {
+      destroy();
    }
 
 // ----------------

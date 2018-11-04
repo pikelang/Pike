@@ -7,8 +7,8 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-$(srcdir)/mysql.c: mysql.cmod
+mysql.o: $(SRCDIR)/mysql.c
 
-$(srcdir)/result.c: result.cmod
+result.o: $(SRCDIR)/result.c
 
 @dependencies@

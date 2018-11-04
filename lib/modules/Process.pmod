@@ -6,7 +6,7 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
-#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
+#if defined(__NT__)
 constant path_separator = ";";
 #else
 constant path_separator = ":";
@@ -389,7 +389,7 @@ class Process
   }
 #endif /* __HAVE_SEND_FD__ */
 
-  protected void destroy() {
+  protected void _destruct() {
     remove_call_out(watcher);
     remove_call_out(killer);
 #if constant(Stdio.__HAVE_SEND_FD__)
@@ -923,11 +923,9 @@ Process spawn(string command, void|Stdio.Stream stdin,
       command[0] != '\"' || command[sizeof(command)-1] != '\"')
     command = "\"" + command + "\"";
   return Process(({ "cmd", "/c", command }),data);
-#elif defined(__amigaos__)
-  return Process(split_quoted_string(command),data);
-#else /* !__NT__||__amigaos__ */
+#else /* !__NT__ */
   return Process(({ "/bin/sh", "-c", command }),data);
-#endif /* __NT__||__amigaos__ */
+#endif /* __NT__ */
 }
 
 //! @decl string popen(string command)

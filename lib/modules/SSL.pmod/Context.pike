@@ -47,21 +47,34 @@ protected void create()
   preferred_suites = get_suites(128, 1, blocked);
 }
 
-//! The minimum supported protocol version.
-//!
-//! Defaults to @[PROTOCOL_TLS_1_0].
-//!
-//! @note
-//!   This value should not be greater than @[max_version].
-ProtocolVersion min_version = PROTOCOL_TLS_1_0;
+//! List of supported versions, in order of preference. Defaults to
+//! @[PROTOCOL_TLS_1_2], @[PROTOCOL_TLS_1_1] and @[PROTOCOL_TLS_1_0].
+array(ProtocolVersion) supported_versions = ({
+  PROTOCOL_TLS_1_2,
+  PROTOCOL_TLS_1_1,
+  PROTOCOL_TLS_1_0,
+});
 
-//! The maximum supported protocol version.
-//!
-//! Defaults to @[PROTOCOL_TLS_MAX].
-//!
-//! @note
-//!   This value should not be less than @[min_version].
-ProtocolVersion max_version = PROTOCOL_TLS_MAX;
+//! Returns a list of possible versions to use, given the version in
+//! the client hello header.
+array(ProtocolVersion) get_versions(ProtocolVersion client)
+{
+  // Do we support exactly the version the client advertise?
+  int pos = search(supported_versions, client);
+  if(pos!=-1) return supported_versions[pos..];
+
+  // Client is TLS 1.2 and we have something later supported? Then we
+  // expect supported_versions extension.
+  int high = max(@supported_versions);
+  if( client==PROTOCOL_TLS_1_2 && high > PROTOCOL_TLS_1_2 )
+    return ({ PROTOCOL_IN_EXTENSION });
+
+  // Return all versions lower than the given client version.
+  return filter(supported_versions, lambda(ProtocolVersion v)
+    {
+      return v<client;
+    });
+}
 
 //! List of advertised protocols using using TLS application level
 //! protocol negotiation.
@@ -462,7 +475,7 @@ array(int) sort_suites(array(int) suites)
 //!
 //! @note
 //!   The list of suites is also filtered on the current settings of
-//!   @[min_version] and @[max_version].
+//!   @[supported_versions].
 //!
 //! @note
 //!   Note that the effective keylength may differ from
@@ -575,7 +588,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, blacklisted_ciphermodes);
   }
 
-  switch(min_version) {
+  switch(min(@supported_versions)) {
   case PROTOCOL_TLS_1_3:
     res = filter(res,
 		 lambda(int suite) {
@@ -621,10 +634,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
     break;
   }
 
-  if (!max_version || (max_version > PROTOCOL_TLS_MAX)) {
-    max_version = PROTOCOL_TLS_MAX;
-  }
-  switch(max_version) {
+  switch(max(@supported_versions)) {
   case PROTOCOL_TLS_1_1:
   case PROTOCOL_TLS_1_0:
   case PROTOCOL_SSL_3_0:
@@ -702,6 +712,7 @@ void filter_weak_suites(int min_keylength)
 void configure_suite_b(int(128..)|void min_keylength,
 		       int(0..)|void strictness_level)
 {
+  if( !min_keylength ) min_keylength = 256;
   if (min_keylength!=256)
     error("Only keylength 256 supported.\n");
 
@@ -709,14 +720,17 @@ void configure_suite_b(int(128..)|void min_keylength,
     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
   });
 
-  max_version = PROTOCOL_TLS_MAX;
-  min_version = PROTOCOL_TLS_1_2;
+  supported_versions = ({ PROTOCOL_TLS_1_2 });
 
   if (strictness_level < 2) {
     // Transitional or permissive mode.
 
     // Allow TLS 1.0.
-    min_version = PROTOCOL_TLS_1_0;
+    supported_versions = ({
+      PROTOCOL_TLS_1_2,
+      PROTOCOL_TLS_1_1,
+      PROTOCOL_TLS_1_0,
+    });
 
     // First add the transitional suites.
     preferred_suites += ({
@@ -1295,4 +1309,45 @@ __deprecated__ void `encrypt_then_mac=(int(0..1) i)
 __deprecated__ int(0..1) `encrypt_then_mac()
 {
   return !!extensions[EXTENSION_encrypt_then_mac];
+}
+
+//! @decl int min_version
+//! @decl int max_version
+//!
+//! The accepted range of versions for the client/server. List
+//! specific versions in @[supported_versions] instead.
+//!
+//! @deprecated supported_versions
+
+ProtocolVersion `min_version()
+{
+  return min(@supported_versions);
+}
+
+ProtocolVersion `max_version()
+{
+  return max(@supported_versions);
+}
+
+protected void generate_versions(ProtocolVersion min, ProtocolVersion max)
+{
+  supported_versions = [array(int(16bit))]reverse(enumerate([int(16bit)](max-min+1), 1, min));
+}
+
+void `min_version=(ProtocolVersion version)
+{
+  ProtocolVersion m = max_version;
+  if( version > m )
+    supported_versions = ({ version });
+  else
+    generate_versions(version, m);
+}
+
+void `max_version=(ProtocolVersion version)
+{
+  ProtocolVersion m = min_version;
+  if( version < m )
+    supported_versions = ({ version });
+  else
+    generate_versions(m, version);
 }

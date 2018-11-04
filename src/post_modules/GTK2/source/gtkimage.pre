@@ -37,13 +37,13 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
 
       if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
 	char *filename;
-	get_all_args("create",args,"%s",&filename);
+	get_all_args(NULL,args,"%s",&filename);
 	gi=gtk_image_new_from_file(filename);
       } else {
 	struct object *o1;
 	GObject *go;
 
-	get_all_args("create",args,"%o",&o1);
+	get_all_args(NULL,args,"%o",&o1);
 	go=get_gobject(o1);
 	if (GDK_TYPE_IMAGE==G_TYPE_FROM_INSTANCE(go)) {
 	  gi=gtk_image_new_from_image(GDK_IMAGE(go),NULL);
@@ -63,7 +63,7 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
       int size;
       int t=0;
 
-      get_all_args("create",args,"%t%d",&s1,&size);
+      get_all_args(NULL,args,"%t%d",&s1,&size);
       if (s1->size_shift==0)
 	t=gtk_stock_lookup(CGSTR0(s1),&item);
       if (t)
@@ -78,7 +78,7 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
       GtkWidget *gi;
       struct object *o1,*o2;
 
-      get_all_args("create",args,"%o%o",&o1,&o2);
+      get_all_args(NULL,args,"%o%o",&o1,&o2);
       image=GDK_IMAGE(get_gobject(o1));
 /*      bitmap=(GdkBitmap *)get_gdkobject(o2,bitmap); */
       bitmap=GDK_PIXMAP(get_gobject(o2));
@@ -223,7 +223,7 @@ void set_from_icon_set(GTK2.IconSet icon_set, int size)
     INT_TYPE size;
     GtkIconSet *is;
 
-    get_all_args("set_from_icon_set",args,"%o%i",&o1,&size);
+    get_all_args(NULL,args,"%o%i",&o1,&size);
     is=(GtkIconSet *)get_gobject(o1);
     if (!is)
       SIMPLE_ARG_ERROR("set_from_icon_set",args,"Invalid GTK2.IconSet");
@@ -238,7 +238,7 @@ void set_from_image(GDK2.Image gdk_image, ?GDK2.Bitmap mask)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
-    get_all_args("set_from_image",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     gtk_image_set_from_image(GTK_IMAGE(THIS->obj),(GdkImage *)get_gobject(o1),
 		o2?(GdkBitmap *)get_gobject(o2):NULL);
   }
@@ -254,7 +254,7 @@ void set_from_pixmap(GDK2.Pixmap pixmap, ?GDK2.Bitmap mask)
   pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
-    get_all_args("set_from_pixmap",args,"%o.%o",&o1,&o2);
+    get_all_args(NULL,args,"%o.%o",&o1,&o2);
     gtk_image_set_from_pixmap(GTK_IMAGE(THIS->obj),(GdkPixmap *)get_gobject(o1),
 		o2?(GdkBitmap *)get_gobject(o2):NULL);
   }
@@ -273,7 +273,7 @@ void set_from_animation(GDK2.PixbufAnimation anim)
   pgtk2_verify_inited();
   {
     struct object *o1;
-    get_all_args("set_from_animation",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtk_image_set_from_animation(GTK_IMAGE(THIS->obj),
 		GDK_PIXBUF_ANIMATION(get_gobject(o1)));
   }

@@ -4,18 +4,13 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gdbm_machine.h"
 #include "threads.h"
 
 /* Todo: make sure only one thread accesses the same gdbmmod */
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "module.h"
-#include "array.h"
-#include "program.h"
 #include "module_support.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
@@ -720,18 +715,6 @@ static void gdbmmod_close(INT32 UNUSED(args))
   do_free();
 }
 
-static void init_gdbm_glue(struct object *UNUSED(o))
-{
-  THIS->dbf=0;
-  THIS->iter=0;
-}
-
-static void init_gdbm_iterator(struct object *UNUSED(o))
-{
-  THIS->dbf=0;
-  THIS->iter=0;
-}
-
 static void exit_gdbm_glue(struct object *UNUSED(o))
 {
   do_free();
@@ -810,7 +793,6 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("_values",gdbmmod_values,tFunc(tNone,tArr(tStr8)),0);
   ADD_FUNCTION("_indices",gdbmmod_indices,tFunc(tNone,tArr(tStr8)),0);
 
-  set_init_callback(init_gdbm_glue);
   set_exit_callback(exit_gdbm_glue);
   db = end_program();
   add_program_constant( "DB", db, 0 );
@@ -824,7 +806,6 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("index", gdbmmod_iter_index,tFunc(tNone,tStr8),0);
   ADD_FUNCTION("value", gdbmmod_iter_value,tFunc(tNone,tStr8),0);
   ADD_FUNCTION("`!",    gdbmmod_iter_no_value,tFunc(tNone,tInt01),0);
-  set_init_callback(init_gdbm_iterator);
   set_exit_callback(exit_gdbm_iterator);
   iterator = end_program();
   add_program_constant( "Iterator", iterator, 0 );

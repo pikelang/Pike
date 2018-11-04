@@ -15,13 +15,7 @@
 //! overhead monitoring; other systems use a less efficient polling approach.
 //!
 //! @seealso
-//!  @[System.FSEvents], @[System.Inotify]
-
-#ifdef FILESYSTEM_MONITOR_DEBUG
-#define MON_WERR(X...)	werror(X)
-#else
-#define MON_WERR(X...)
-#endif
+//!  @[Filesystem.Monitor.symlinks], @[System.FSEvents], @[System.Inotify]
 
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
@@ -56,7 +50,46 @@ protected int max_dir_check_interval = default_max_dir_check_interval;
 protected int file_interval_factor = default_file_interval_factor;
 protected int stable_time = default_stable_time;
 
+protected inline constant SeverityLevel = DefaultCompilerEnvironment.SeverityLevel;
+protected inline constant NOTICE = DefaultCompilerEnvironment.NOTICE;
+protected inline constant WARNING = DefaultCompilerEnvironment.WARNING;
+protected inline constant ERROR = DefaultCompilerEnvironment.ERROR;
+protected inline constant FATAL = DefaultCompilerEnvironment.FATAL;
+
 // Callbacks
+
+//! Event tracing callback.
+//!
+//! @param level
+//!   Severity level of the event.
+//!
+//! @param fun
+//!   Name of the function that called @[report()].
+//!
+//! @param format
+//!   @[sprintf()] formatting string describing the event.
+//!
+//! @param args
+//!   Optional extra arguments for the @[format] string.
+//!
+//! This function is called in various places to provide
+//! granular tracing of the monitor state.
+//!
+//! The default implementation calls @[werror()] with
+//! @[format] and @[args] if @[level] is @[ERROR] or higher,
+//! or if @tt{FILESYSTEM_MONITOR_DEBUG@} has been defined.
+protected void report(SeverityLevel level, string(7bit) fun,
+		      sprintf_format format, sprintf_args ... args)
+{
+#ifndef FILESYSTEM_MONITOR_DEBUG
+  if (level < ERROR) return;
+#endif
+  werror(format, @args);
+}
+
+#define MON_WERR(X...)	report(NOTICE,	__func__, X)
+#define MON_WARN(X...)	report(WARNING,	__func__, X)
+#define MON_ERROR(X...)	report(ERROR,	__func__, X)
 
 //! File content changed callback.
 //!
@@ -104,7 +137,7 @@ void attr_changed(string path, Stdio.Stat st);
 //! for the monitor.
 //!
 //! @note
-//!   For directories, @[file_created()] will be called for the subpaths
+//!   For directories, @[file_exists()] will be called for the subpaths
 //!   before the call for the directory itself. This can be used to detect
 //!   when the initialization for a directory is finished.
 //!
@@ -112,6 +145,13 @@ void attr_changed(string path, Stdio.Stat st);
 //! path is checked (and only if it exists).
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback has similar semantics to @[file_created()], but
+//!   is called at initialization time.
+//!
+//! @seealso
+//!   @[file_created()], @[file_deleted()], @[stable_data_change()]
 void file_exists(string path, Stdio.Stat st);
 
 //! File creation callback.
@@ -129,6 +169,13 @@ void file_exists(string path, Stdio.Stat st);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback has similar semantics to @[file_exists()], but
+//!   is called at run time.
+//!
+//! @seealso
+//!   @[file_exists()], @[file_deleted()], @[stable_data_change()]
 void file_created(string path, Stdio.Stat st);
 
 //! File deletion callback.
@@ -143,6 +190,9 @@ void file_created(string path, Stdio.Stat st);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @seealso
+//!   @[file_created()], @[file_exists()], @[stable_data_change()]
 void file_deleted(string path);
 
 //! Stable change callback.
@@ -162,6 +212,15 @@ void file_deleted(string path);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
+//!
+//! @note
+//!   This callback being called does not mean that the contents
+//!   or inode has changed, just that they don't seem to change any
+//!   more. In particular it is called for paths found during
+//!   initialization after @[stable_time] seconds have passed.
+//!
+//! @seealso
+//!   @[file_created()], @[file_exists()], @[file_deleted()]
 void stable_data_change(string path, Stdio.Stat st);
 
 //! Flags for @[Monitor]s.
@@ -192,7 +251,33 @@ protected class Monitor(string path,
 				// to indicate immediate stabilization
 				// (avoid an extra check() round to
 				// let the stat stabilize).
+  private bool initialized = false;
   array(string) files;
+
+  //! Event tracing callback.
+  //!
+  //! @param level
+  //!   Severity level of the event.
+  //!
+  //! @param fun
+  //!   Name of the function that called @[report()].
+  //!
+  //! @param format
+  //!   @[sprintf()] formatting string describing the event.
+  //!
+  //! @param args
+  //!   Optional extra arguments for the @[format] string.
+  //!
+  //! This function is called in various places to provide
+  //! granular tracing of the monitor state.
+  //!
+  //! The default implementation just calls @[global::report()]
+  //! with the same arguments.
+  protected void report(SeverityLevel level, string(7bit) fun,
+			sprintf_format format, sprintf_args ... args)
+  {
+    global::report(level, fun, format, @args);
+  }
 
   //! Register the @[Monitor] with the monitoring system.
   //!
@@ -205,6 +290,11 @@ protected class Monitor(string path,
       MON_WERR("Registering %O for polling.\n", path);
       mixed key = monitor_mutex->lock();
       monitor_queue->push(this);
+      if (monitor_queue->peek() == this) {
+	if (co_id) {
+	  reschedule_backend_check();
+	}
+      }
     }
   }
 
@@ -234,6 +324,24 @@ protected class Monitor(string path,
     register_path(1);
   }
 
+  //! Returns the parent monitor, or UNDEFINED if no such monitor exists.
+  this_program parent()
+  {
+    string parent_path = canonic_path (dirname (path));
+    return monitors[parent_path];
+  }
+
+  //! To be called when a (direct) submonitor is released.
+  void submonitor_released (this_program submon)
+  {
+    if (files) {
+      string filename = basename (submon->path);
+      MON_WERR("%O->submonitor_released(%O): Removing list state for %O.\n",
+	       this, submon, filename);
+      files -= ({ filename });
+    }
+  }
+
   //! Call a notification callback.
   //!
   //! @param cb
@@ -261,6 +369,9 @@ protected class Monitor(string path,
   //! attribute for a monitored file or directory.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation calls @[global::attr_changed()] or
+  //! @[global::data_changed()] depending on the state.
   //!
   //! @note
   //!   If there is a @[data_changed()] callback, it may supersede this
@@ -292,6 +403,16 @@ protected class Monitor(string path,
   //!
   //! Called by @[check()] and @[check_monitor()] the first time a monitored
   //! path is checked (and only if it exists).
+  //!
+  //! The default implementation registers the path, and
+  //! calls @[global::file_exists()].
+  //!
+  //! @note
+  //!   This callback has similar semantics to @[file_created()], but
+  //!   is called at initialization time.
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_deleted()], @[stable_data_change()]
   protected void file_exists(string path, Stdio.Stat st)
   {
     MON_WERR("file_exists(%O, %O)\n", path, st);
@@ -316,6 +437,16 @@ protected class Monitor(string path,
   //! monitored directory.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation registers the path, and
+  //! calls @[global::file_deleted()].
+  //!
+  //! @note
+  //!   This callback has similar semantics to @[file_exists()], but
+  //!   is called at run time.
+  //!
+  //! @seealso
+  //!   @[file_exists()], @[file_deleted()], @[stable_data_change()]
   protected void file_created(string path, Stdio.Stat st)
   {
     MON_WERR("file_created(%O, %O)\n", path, st);
@@ -337,6 +468,12 @@ protected class Monitor(string path,
   //! monitored directory.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation unregisters the path, and
+  //! calls @[global::file_deleted()].
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_exists()], @[stable_data_change()]
   protected void file_deleted(string path, Stdio.Stat|void old_st)
   {
     MON_WERR("file_deleted(%O, %O)\n", path, st);
@@ -357,6 +494,17 @@ protected class Monitor(string path,
   //! changes for at lease @[stable_time] seconds.
   //!
   //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! The default implementation calls @[global::stable_data_change()].
+  //!
+  //! @note
+  //!   This callback being called does not mean that the contents
+  //!   or inode has changed, just that they don't seem to change any
+  //!   more. In particular it is called for paths found during
+  //!   initialization after @[stable_time] seconds have passed.
+  //!
+  //! @seealso
+  //!   @[file_created()], @[file_exists()], @[file_deleted()]
   protected void stable_data_change(string path, Stdio.Stat st)
   {
     MON_WERR("stable_data_change(%O, %O)\n", path, st);
@@ -391,7 +539,7 @@ protected class Monitor(string path,
       next_poll -= (next_poll - now) / 2;
     adjust_monitor(this);
 
-    if ((flags & MF_RECURSE) && st->isdir && files) {
+    if ((flags & MF_RECURSE) && st && st->isdir && files) {
       // Bump the files in the directory as well.
       foreach(files, string file) {
 	file = canonic_path(Stdio.append_path(path, file));
@@ -415,15 +563,21 @@ protected class Monitor(string path,
     int delta = max_dir_check_interval || global::max_dir_check_interval;
     this::st = st;
 
+    if (st && !st->isdir) {
+      delta *= file_interval_factor || global::file_interval_factor;
+    }
+
     if (st) {
       //  Start with a delta proportional to the time since mtime/ctime,
       //  but bound this to the max setting. A stat in the future will be
       //  adjusted to the max interval.
-      int d =
-	(stable_time || global::stable_time) +
-	((time(1) - max(st->mtime, st->ctime)) >> 2);
-      if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
-      if (d < delta) delta = d;
+      int mtime = max(st->mtime, st->ctime);
+      int d = ((time(1) - mtime) >> 2);
+      if (!initialized && (d >= 0)) {
+	// Assume that mtime is reasonable at startup.
+	last_change = mtime;
+      }
+      if ((d >= 0) && (d < delta)) delta = d;
     }
     if (last_change <= time(1)) {
       // Time until stable.
@@ -431,15 +585,16 @@ protected class Monitor(string path,
       d >>= 1;
       if (d < 0) d = 1;
       if (d < delta) delta = d;
-    } else if (!st || !st->isdir) {
-      delta *= file_interval_factor || global::file_interval_factor;
+    }
+    if (!initialized) {
+      // Attempt to distribute polls evenly at startup, and to
+      // make sure that the full set of directory contents is
+      // found reasonably fast.
+      delta = 1 + random(delta >> 2);
+      initialized = true;
     }
 
-    if (!next_poll) {
-      // Attempt to distribute polls evenly at startup.
-      delta = 1 + random(delta);
-    }
-
+    MON_WERR("Next poll in %d seconds.\n", (delta || 1));
     next_poll = time(1) + (delta || 1);
     adjust_monitor(this);
   }
@@ -448,8 +603,15 @@ protected class Monitor(string path,
   void check_for_release(int mask, int flags)
   {
     if ((this::flags & mask) == flags) {
+      MON_WERR("Releasing in %O->check_for_release(%O, %O)\n",
+	       this, mask, flags);
       m_delete(monitors, path);
       release_monitor(this);
+      if (this_program par = parent()) {
+	par->submonitor_released (this);
+      } else {
+	MON_WERR("%O has no parent monitor.\n", this);
+      }
     }
   }
 
@@ -624,6 +786,9 @@ protected class Monitor(string path,
 	}
 	// Signal file_exists for path as an end marker.
 	file_exists(path, st);
+      } else  {
+	// The path we're supposed to monitor is already gone.
+	check_for_release(MF_AUTO, MF_AUTO);
       }
       return 1;
     }
@@ -638,15 +803,9 @@ protected class Monitor(string path,
 	    file = canonic_path(Stdio.append_path(path, file));
 	    if (Monitor submon = monitors[file]) {
 	      // Adjust next_poll, so that the monitor will be checked soon.
-	      // Accelerated monitors will never get polled so check them
-	      // right away.
-	      if (submon->accellerated) {
-		submon->check(flags);
-	      } else {
-		submon->next_poll = time(1)-1;
-		adjust_monitor(submon);
-		delay = 1;
-	      }
+	      submon->next_poll = time(1)-1;
+	      adjust_monitor(submon);
+	      delay = 1;
 	    }
 	  }
 	}
@@ -741,7 +900,7 @@ protected class Monitor(string path,
     return 0;
   }
 
-  protected void destroy(int cause)
+  protected void _destruct(int cause)
   {
     // NB: Cause #0 == DESTRUCT_EXPLICIT.
     //     Any other cause and unregistering is irrelevant.
@@ -783,7 +942,7 @@ protected array(string) eventstream_paths = ({});
 
 //! This function is called when the FSEvents EventStream detects a change
 //! in one of the monitored directories.
-protected void eventstream_callback(string path, int flags, int event_id)
+protected void low_eventstream_callback(string path, int flags, int event_id)
 {
   MON_WERR("eventstream_callback(%O, 0x%08x, %O)\n", path, flags, event_id);
   if(path[-1] == '/') path = path[0..<1];
@@ -807,82 +966,62 @@ protected void eventstream_callback(string path, int flags, int event_id)
   }
 
   if (!found)
-    MON_WERR("No monitor found for path %O.\n", path);
+    MON_WARN("No monitor found for path %O.\n", path);
 }
 
-//! FSEvents EventStream-accellerated @[Monitor].
+protected void eventstream_callback(string path, int flags, int event_id)
+{
+  if (backend)
+    backend->call_out(low_eventstream_callback, 0, path, flags, event_id);
+  else
+    low_eventstream_callback(path, flags, event_id);
+}
+
+protected void start_accelerator()
+{
+  // Make sure that the main backend is in CF-mode.
+  Pike.DefaultBackend.enable_core_foundation(1);
+
+  MON_WERR("Creating event stream.\n");
+#if constant (System.FSEvents.kFSEventStreamCreateFlagFileEvents)
+  int flags = System.FSEvents.kFSEventStreamCreateFlagFileEvents;
+#else
+  int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
+#endif
+
+  // Note: We let the polling system find the initial contents of
+  //       any pre-existing directories.
+  eventstream =
+    System.FSEvents.EventStream(({}), 0.1,
+				System.FSEvents.kFSEventStreamEventIdSinceNow,
+				flags);
+  eventstream->callback_func = eventstream_callback;
+}
+
+//! FSEvents EventStream-accelerated @[Monitor].
 protected class EventStreamMonitor
 {
   inherit Monitor;
 
-  int(0..1) accellerated;
-
-  protected void do_stable_check()
-  {
-    check();
-    if (last_change != 0x7fffffff) {
-      // Not stable yet.
-      int t = time(1) - last_change;
-      if (t < 0) t = 0;
-      t = (stable_time || global::stable_time) + 1 - t;
-      if (t <= 0) t = 1;
-      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
-    }
-  }
-
-  protected void file_exists(string path, Stdio.Stat st)
-  {
-    ::file_exists(path, st);
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-  }
-
-  protected void file_created(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::file_created(path, st);
-  }
-
-  protected void attr_changed(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::attr_changed(path, st);
-  }
-
   protected void register_path(int|void initial)
   {
-    if (backend) {
-      // CFRunLoop only works with the primary backend.
-      ::register_path(initial);
-      return;
-    }
 #ifndef INHIBIT_EVENTSTREAM_MONITOR
-    if (!initial) return;
+    if (initial) {
+      if (Pike.DefaultBackend.executing_thread() != Thread.this_thread()) {
+	// eventstream stuff (especially start()) must be called from
+	// the backend thread, otherwise events will be fired in
+	// CFRunLoop contexts where noone listens.
+	MON_WERR("%O: Switching to backend thread.\n", this_function);
+	call_out(register_path, 0, initial);
+	return;
+      }
 
-    if (Pike.DefaultBackend.executing_thread() != Thread.this_thread()) {
-      // eventstream stuff (especially start()) must be called from
-      // the backend thread, otherwise events will be fired in
-      // CFRunLoop contexts where noone listens.
-      call_out (register_path, 0, initial);
-      return;
-    }
+      // We're now in the main backend.
 
-    if (!eventstream) {
-      // Make sure that the main backend is in CF-mode.
-      Pike.DefaultBackend.enable_core_foundation(1);
+      if (!eventstream) {
+	start_accelerator();
+      }
 
-      MON_WERR("Creating event stream.\n");
-#if constant (System.FSEvents.kFSEventStreamCreateFlagFileEvents)
-      int flags = System.FSEvents.kFSEventStreamCreateFlagFileEvents;
-#else
-      int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
-#endif
-
-      eventstream =
-	System.FSEvents.EventStream(({}), 1.0,
-				    System.FSEvents.kFSEventStreamEventIdSinceNow,
-                                    flags);
-      eventstream->callback_func = eventstream_callback;
-    } else {
       string found;
       foreach(eventstream_paths;;string p) {
 	if((path == p) || has_prefix(path, p + "/")) {
@@ -892,35 +1031,30 @@ protected class EventStreamMonitor
 	}
       }
       if (found) {
-	MON_WERR("Path %O is accellerated via %O.\n", path, found);
-	accellerated = 1;
-	monitors[path] = this;
-        check();
-	return;
+	MON_WERR("Path %O is accelerated via %O.\n", path, found);
+      } else {
+	// NB: Eventstream doesn't notify on the monitored path;
+	//     only on its contents.
+	mixed err = catch {
+	    MON_WERR("Adding %O to the set of monitored paths.\n", path);
+	    eventstream_paths += ({path});
+	    if(eventstream->is_started())
+	      eventstream->stop();
+	    eventstream->add_path(path);
+	    eventstream->start();
+	  };
+
+	if (err) {
+	  MON_ERROR("%O: Failed to register path %O.\n", this_function, path);
+	  master()->handle_error(err);
+	}
       }
+      // Note: Falling through to ::register_path() below.
+      //       This is needed to handle paths mounted on eg network
+      //       filesystems that are modified on other machines.
+      // It is also used to find the initial contents of a monitored directory.
     }
-
-    mixed err = catch {
-        MON_WERR("Adding %O to the set of monitored paths.\n", path);
-        eventstream_paths += ({path});
-        if(eventstream->is_started())
-          eventstream->stop();
-        eventstream->add_path(path);
-        eventstream->start();
-      };
-
-    if (!err) {
-      monitors[path] = this;
-      check();
-      return;
-    }
-
-    werror (describe_backtrace (err));
-    // Note: falling through to ::register_path() below.
-
 #endif /* !INHIBIT_EVENTSTREAM_MONITOR */
-    // NB: Eventstream doesn't notify on the monitored path;
-    //     only on its contents.
     ::register_path(initial);
   }
 }
@@ -946,10 +1080,27 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
   Monitor m;
   if((m = monitors[icookie])) {
     if (sizeof (path)) {
-      string full_path = canonic_path (combine_path (m->path, path));
+      string full_path = canonic_path(Stdio.append_path(m->path, path));
       // We're interested in the sub monitor, if it exists.
-      if (Monitor submon = monitors[full_path])
+      if (Monitor submon = monitors[full_path]) {
+	MON_WERR ("inotify_event: Got submonitor %O.\n", submon);
+
 	m = submon;
+      } else {
+	MON_WERR ("inotify_event: Forcing check of %O.\n", m);
+	// No monitor exists for the path yet (typically happens for
+	// IN_CREATE events). Force a check on the directory monitor.
+	m->check(m->flags);
+
+	// Try again after directory check.
+	if (Monitor submon2 = monitors[full_path]) {
+	  MON_WERR ("inotify_event: Got submonitor %O on retry.\n", submon2);
+	  m = submon2;
+	} else {
+	  MON_WERR ("inotify_event: Failed to get monitor for file %s "
+		    "in %O.\n", path, m);
+	}
+      }
     }
   }
 
@@ -970,131 +1121,95 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
       master()->handle_error(err);
     }
   } else {
-    MON_WERR("No monitor found for path %O.\n", path);
+    // Most likely not reached.
+    MON_WARN("Monitor not found for cookie %O, path %O.\n", icookie, path);
   }
 }
 
-//! Inotify-accellerated @[Monitor].
+protected void start_accelerator()
+{
+  MON_WERR("Creating Inotify monitor instance.\n");
+  instance = System.Inotify._Instance();
+  if (backend) instance->set_backend(backend);
+  instance->set_event_callback(inotify_event);
+  if (co_id) {
+    MON_WERR("Turning on nonblocking mode for Inotify.\n");
+    instance->set_nonblocking();
+  }
+}
+
+//! Inotify-accelerated @[Monitor].
 protected class InotifyMonitor
 {
   inherit Monitor;
 
   protected int wd = -1;
-  int `accellerated() { return wd != -1; }
   protected int(0..) out_of_inotify_space;
-
-  protected void do_stable_check()
-  {
-    check();
-    if (last_change != 0x7fffffff) {
-      // Not stable yet.
-      int t = time(1) - last_change;
-      if (t < 0) t = 0;
-      t = (stable_time || global::stable_time) + 1 - t;
-      if (t <= 0) t = 1;
-      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
-    }
-  }
-
-  protected void file_exists(string path, Stdio.Stat st)
-  {
-    ::file_exists(path, st);
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-  }
-
-  protected void file_created(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::file_created(path, st);
-  }
-
-  protected void attr_changed(string path, Stdio.Stat st)
-  {
-    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
-    ::attr_changed(path, st);
-  }
 
   protected void register_path(int|void initial)
   {
-    if (wd != -1) return;
-
 #ifndef INHIBIT_INOTIFY_MONITOR
-    if (initial && !instance) {
-      MON_WERR("Creating Inotify monitor instance.\n");
-      instance = System.Inotify._Instance();
-      if (backend) instance->set_backend(backend);
-      instance->set_event_callback(inotify_event);
-      if (co_id) {
-	MON_WERR("Turning on nonblocking mode for Inotify.\n");
-	instance->set_nonblocking();
+    if (wd == -1) {
+      if (!instance) {
+	start_accelerator();
       }
-    }
 
-    // NB: We need to follow symlinks here.
-    // Currently we only support changing symlinks and symlinks to directories.
-    // FIXME: Handle broken symlinks where the target later shows up and
-    //        symlinks to changing files.
-    Stdio.Stat st = file_stat(path);
-    mixed err;
-    if (st && (!(flags & MF_AUTO) || st->isdir)) {
-      // Note: We only want to add watchers on directories. File
-      // notifications will take place on the directory watch
-      // descriptors. Expansion of the path to cover notifications
-      // on individual files is handled in the inotify_event
-      // callback.
+      // NB: We need to follow symlinks here.
+      // Currently we only support changing symlinks and symlinks to directories.
+      // FIXME: Handle broken symlinks where the target later shows up and
+      //        symlinks to changing files.
+      Stdio.Stat st = file_stat(path, 1);
+      mixed err;
+      if (st && (!(flags & MF_AUTO) || st->isdir)) {
+	// Note: We only want to add watchers on directories. File
+	// notifications will take place on the directory watch
+	// descriptors. Expansion of the path to cover notifications
+	// on individual files is handled in the inotify_event
+	// callback.
 
-      if (err = catch {
-	  int new_wd = instance->add_watch(path,
-					   System.Inotify.IN_MOVED_FROM |
-					   System.Inotify.IN_UNMOUNT |
-					   System.Inotify.IN_MOVED_TO |
-					   System.Inotify.IN_MASK_ADD |
-					   System.Inotify.IN_MOVE_SELF |
-					   System.Inotify.IN_DELETE |
-					   System.Inotify.IN_MOVE |
-					   System.Inotify.IN_MODIFY |
-					   System.Inotify.IN_ATTRIB |
-					   System.Inotify.IN_DELETE_SELF |
-					   System.Inotify.IN_CREATE |
-					   System.Inotify.IN_CLOSE_WRITE);
+	if (err = catch {
+	    int new_wd = instance->add_watch(path,
+					     System.Inotify.IN_MOVED_FROM |
+					     System.Inotify.IN_UNMOUNT |
+					     System.Inotify.IN_MOVED_TO |
+					     System.Inotify.IN_MASK_ADD |
+					     System.Inotify.IN_MOVE_SELF |
+					     System.Inotify.IN_DELETE |
+					     System.Inotify.IN_MOVE |
+					     System.Inotify.IN_MODIFY |
+					     System.Inotify.IN_ATTRIB |
+					     System.Inotify.IN_DELETE_SELF |
+					     System.Inotify.IN_CREATE |
+					     System.Inotify.IN_CLOSE_WRITE);
 
-	  if (new_wd != -1) {
-	    MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
-	    out_of_inotify_space = 0;
-	    // We shouldn't need to be polled.
-	    if (!initial) {
-	      MON_WERR("Unregistering from polling.\n");
-	      release_monitor(this);
+	    if (new_wd != -1) {
+	      MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
+	      out_of_inotify_space = 0;
+	      wd = new_wd;
+	      monitors[inotify_cookie(wd)] = this;
 	    }
-	    wd = new_wd;
-	    monitors[inotify_cookie(wd)] = this;
+	  }) {
+	  if (!has_value(lower_case(describe_error(err)), "no space left")) {
+	    master()->handle_error(err);
+	  } else if (!(out_of_inotify_space++ % 100)) {
+	    werror("%O: Out of inotify space (%d attempts):\n",
+		   this_function, out_of_inotify_space);
+	    master()->handle_error(err);
+	    werror("Consider increasing '/proc/sys/fs/inotify/max_user_watches'.\n");
 	  }
-	}) {
-	if (!has_value(lower_case(describe_error(err)), "no space left")) {
-	  master()->handle_error (err);
-	} else if (!(out_of_inotify_space++ % 100)) {
-	  werror("Out of inotify space (%d attempts):\n", out_of_inotify_space);
-	  master()->handle_error (err);
-	  werror("Consider increasing '/proc/sys/fs/inotify/max_user_watches'.\n");
 	}
       }
     }
 
-    if (st && !err)
-      return; // Return early if setup was successful, i.e. avoid
-              // registering a polling monitor.
-
 #endif /* !INHIBIT_INOTIFY_MONITOR */
-    MON_WERR("Registering %O for polling.\n", path);
     ::register_path(initial);
   }
 
   protected void unregister_path(int|void dying)
   {
-    MON_WERR("Unregistering %O...\n", path);
     if (wd != -1) {
       // NB: instance may be null if the main object has been destructed
-      //     and we've been called via a destroy().
+      //     and we've been called via a _destruct().
       if (instance && dying) {
 	MON_WERR("### Unregistering from inotify.\n");
 	// NB: Inotify automatically removes watches for deleted files,
@@ -1106,17 +1221,11 @@ protected class InotifyMonitor
 	    instance->rm_watch(wd);
 	  };
 	if (err) {
-	  MON_WERR("### Failed: %s\n", describe_backtrace(err));
+	  MON_WARN("### Failed to unregister %O: %s\n",
+		   path, describe_backtrace(err));
 	}
       }
       wd = -1;
-      if (!dying && !(flags & MF_AUTO)) {
-	// We now need to be polled...
-	MON_WERR("Registering for polling.\n");
-	mixed key = monitor_mutex->lock();
-	monitor_queue->push(this);
-	key = UNDEFINED;
-      }
     }
     ::unregister_path(dying);
   }
@@ -1194,7 +1303,7 @@ protected void create(int|void max_dir_check_interval,
   clear();
 }
 
-protected void destroy()
+protected void _destruct()
 {
   // Destruct monitors before we're destructed ourselves, since they
   // will attempt to unregister with us.
@@ -1225,7 +1334,6 @@ void clear()
 //!   @[release()]
 protected void release_monitor(Monitor m)
 {
-  if (m->accellerated) return;
   mixed key = monitor_mutex->lock();
   monitor_queue->remove(m);
 }
@@ -1234,9 +1342,23 @@ protected void release_monitor(Monitor m)
 //! to account for an updated next_poll value.
 protected void adjust_monitor(Monitor m)
 {
-  if (m->accellerated) return;
+  // NB: May be called with monitors not on the monitor_queue due
+  //     to double checks when using acceleration.
+  if (m->pos < 0) return;	// Not on the monitor_queue.
+
   mixed key = monitor_mutex->lock();
+  if (m->pos < 0) return;	// Not on the monitor_queue any more (race).
+
   monitor_queue->adjust(m);
+  if (monitor_queue->peek() != m) {
+    return;
+  }
+
+  if (co_id) {
+    // Nonblocking mode and we need to poll earlier,
+    // so reschedule the call_out.
+    reschedule_backend_check();
+  }
 }
 
 //! Create a new @[Monitor] for a @[path].
@@ -1291,7 +1413,7 @@ protected DefaultMonitor monitor_factory(string path, MonitorFlags|void flags,
 //!
 //! @seealso
 //!   @[release()]
-void monitor(string path, MonitorFlags|void flags,
+Monitor|void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void max_dir_check_interval,
 	     int(0..)|void file_interval_factor,
 	     int(0..)|void stable_time)
@@ -1322,6 +1444,7 @@ void monitor(string path, MonitorFlags|void flags,
     // NB: Registering with the monitor_queue is done as
     //     needed by register_path() as called by create().
   }
+  return m;
 }
 
 int filter_file(string path)
@@ -1571,9 +1694,6 @@ protected Pike.Backend backend;
 //! Call-out identifier for @[backend_check()] if in
 //! nonblocking mode.
 //!
-//! Set to @expr{1@} when non_blocking mode without call_outs
-//! is in use.
-//!
 //! @seealso
 //!   @[set_nonblocking()], @[set_blocking()]
 protected mixed co_id;
@@ -1588,18 +1708,6 @@ void set_backend(Pike.Backend|void backend)
   set_blocking();
   this::backend = backend;
 #if HAVE_EVENTSTREAM
-#if 0 /* FIXME: The following does NOT work properly. */
-  if (eventstream && backend) {
-    mixed key = monitor_mutex->lock();
-    foreach(monitors; string path; Monitor m) {
-      if (m->accellerated) {
-	m->accellerated = 0;
-	monitor_queue->push(m);
-      }
-    }
-    key = UNDEFINED;
-  }
-#endif
 #elif HAVE_INOTIFY
   if (instance) {
     instance->set_backend(backend || Pike.DefaultBackend);
@@ -1638,7 +1746,8 @@ void set_blocking()
 //!   @[check()], @[set_nonblocking()]
 protected void backend_check()
 {
-  if (co_id != 1) co_id = 0;
+  co_id = 0;
+
   int t;
   mixed err = catch {
       t = check(0);
@@ -1647,9 +1756,49 @@ protected void backend_check()
   if (err) throw(err);
 }
 
+//! Reschedule beckend check.
+//!
+//! @param suggested_t
+//!   Suggested time in seconds until next call of @[check()].
+//!
+//! Register suitable callbacks with the backend to automatically
+//! call @[check()].
+//!
+//! @[check()] and thus all the callbacks will be called from the
+//! backend thread.
+protected void reschedule_backend_check(int|void suggested_t)
+{
+  // NB: Other stuff than plain files may be used with the monitoring
+  //     system, so the call_out may be needed even with accelerators.
+  //
+  // NB: Also note that Inotify doesn't support monitoring of non-existing
+  //     paths, so it still needs the call_out-loop.
+  MON_WERR("Rescheduling call_out.\n");
+
+  int t = max_dir_check_interval;
+  if (sizeof(monitor_queue)) {
+    Monitor m = monitor_queue->peek();
+    if (m) {
+      t = m->next_poll - time(1);
+    }
+    if (t > max_dir_check_interval) t = max_dir_check_interval;
+  }
+  if (!undefinedp(suggested_t) && (suggested_t < t)) {
+    t = suggested_t;
+  }
+  if (t < 0) t = 0;
+
+  if (co_id) {
+    if (backend) backend->remove_call_out(co_id);
+    else remove_call_out(co_id);
+  }
+  if (backend) co_id = backend->call_out(backend_check, t);
+  else co_id = call_out(backend_check, t);
+}
+
 //! Turn on nonblocking mode.
 //!
-//! @param t
+//! @param suggested_t
 //!   Suggested time in seconds until next call of @[check()].
 //!
 //! Register suitable callbacks with the backend to automatically
@@ -1664,7 +1813,7 @@ protected void backend_check()
 //!
 //! @seealso
 //!   @[set_blocking()], @[check()].
-void set_nonblocking(int|void t)
+void set_nonblocking(int|void suggested_t)
 {
 #if HAVE_INOTIFY
   if (instance) {
@@ -1672,26 +1821,10 @@ void set_nonblocking(int|void t)
   }
 #endif
   if (co_id) return;
-  // NB: Other stuff than plain files may be used with the monitoring
-  //     system, so the call_out may be needed even with accellerators.
-  //
-  // NB: Also note that Inotify doesn't support monitoring of non-existing
-  //     paths, so it still needs the call_out-loop.
-  if (undefinedp(t)) {
-    if (sizeof(monitor_queue)) {
-      Monitor m = monitor_queue->peek();
-      t = (m && m->next_poll - time(1)) || max_dir_check_interval;
-    } else {
-      t = max_dir_check_interval;
-    }
-    if (t > max_dir_check_interval) t = max_dir_check_interval;
-    if (t < 0) t = 0;
-  }
-  if (backend) co_id = backend->call_out(backend_check, t);
-  else co_id = call_out(backend_check, t);
+  reschedule_backend_check(suggested_t);
 }
 
-//! Set the @[default_max_dir_check_interval].
+//! Set the @[max_dir_check_interval].
 void set_max_dir_check_interval(int max_dir_check_interval)
 {
   if (max_dir_check_interval > 0) {
@@ -1701,12 +1834,22 @@ void set_max_dir_check_interval(int max_dir_check_interval)
   }
 }
 
-//! Set the @[default_file_interval_factor].
+//! Set the @[file_interval_factor].
 void set_file_interval_factor(int file_interval_factor)
 {
   if (file_interval_factor > 0) {
     this::file_interval_factor = file_interval_factor;
   } else {
     this::file_interval_factor = default_file_interval_factor;
+  }
+}
+
+//! Set the @[stable_time].
+void set_stable_time (int stable_time)
+{
+  if (stable_time > 0) {
+    this::stable_time = stable_time;
+  } else {
+    this::stable_time = default_stable_time;
   }
 }

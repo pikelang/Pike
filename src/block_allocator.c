@@ -1,6 +1,13 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "pike_error.h"
 #include "pike_memory.h"
+#include "pike_macros.h"
 
 #include "block_allocator.h"
 #include "bitvector.h"

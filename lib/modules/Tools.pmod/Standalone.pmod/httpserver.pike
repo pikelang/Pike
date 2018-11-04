@@ -19,16 +19,19 @@ the world without any authentication.
   constant port_help = "Port to use. Defaults to 8080.";
   constant version_help = "Displays version information.";
   constant headers_help = "Set additional header and value, e.g. --header X-Content-Type-Options:nosniff";
+  constant allow_help = "Limit access to a specific IP, IP-range or CIDR net.";
   constant log_help = "Logs request in 'commonlog', 'raw' or 'string' format.";
 
   Opt port = Int(HasOpt("--port")|Default(8080));
   Opt version = NoOpt("--version");
   Opt headers = Multiple(HasOpt("--header"));
+  Opt allow = Multiple(HasOpt("--allow"));
   Opt log = HasOpt("--log");
 }
 
 Options opt;
 mapping headers = ([]);
+NetUtils.IpRangeLookup ip_whitelist;
 
 int main(int argc, array(string) argv)
 {
@@ -36,6 +39,8 @@ int main(int argc, array(string) argv)
 
   if(opt->version)
     exit(0, version);
+  if(opt->help)
+    exit(0);
 
   int port = opt->port;
   if(sizeof(argv=opt[Arg.REST]))
@@ -55,6 +60,11 @@ int main(int argc, array(string) argv)
       if(sizeof(h)<2) error("Illegal header format %O.\n", hdr);
       headers[h[0]] = h[1..]*":";
     }
+  }
+
+  if( opt->allow )
+  {
+    ip_whitelist = NetUtils.IpRangeLookup( ([ 1 : opt->allow ]) );
   }
 
   Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
@@ -113,6 +123,8 @@ void handle_request(Protocols.HTTP.Server.Request request)
     string file = "."+combine_path("/",request->not_query);
     file = Protocols.HTTP.uri_decode(file);
     Stdio.Stat s = file_stat( file );
+    int ipblock = ip_whitelist &&
+      !ip_whitelist->lookup_range(request->my_fd->query_address());
 
     switch(opt->log)
     {
@@ -120,13 +132,15 @@ void handle_request(Protocols.HTTP.Server.Request request)
     case "commonlog":
       {
         object now = Calendar.now();
+        int code = 404;
+        if( s ) code = 200;
+        if( ipblock ) code = 401;
         write("%s - - [%d/%s/%d:%02d:%02d:%02d %s] %O %d %d\n",
               (request->my_fd->query_address()/" ")[0],
               now->month_day(), now->month_name()[..2], now->year_no(),
               now->hour_no(), now->minute_no(), now->second_no(),
               now->tzname_utc_offset(),
-              request->request_raw,
-              s ? 200 : 404,
+              request->request_raw, code,
               s && s->isreg && s->size); // Not showing generated data.
       }
       break;
@@ -140,7 +154,13 @@ void handle_request(Protocols.HTTP.Server.Request request)
       break;
     }
 
-    if( !s )
+    if( ipblock )
+      request->response_and_finish( (["data": "Permission denied for "+
+                                      (request->my_fd->query_address()/" ")[0],
+                                      "type":"text/plain",
+                                      "extra_heads" : headers,
+                                      "error":401]) );
+    else if( !s )
 	request->response_and_finish( (["data":
 					file_not_found(request->not_query),
 					"type":"text/html",

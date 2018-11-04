@@ -21,7 +21,7 @@
 //! > abs(class { inherit Debug.Subject; int `<(mixed ... args) { return 1; } }());
 //! create()
 //! `-()
-//! destroy()
+//! _destruct()
 //! (3) Result: 0
 //! > pow(s,2);
 //! `[]("pow")
@@ -44,7 +44,7 @@ void create(mixed ... args)
     id = "(" + args[0] + ") ";
 }
 
-void PROXY(destroy, 0);
+void PROXY(_destruct, 0);
 
 mixed PROXY(`->, 0);
 mixed PROXY(`->=, 0);

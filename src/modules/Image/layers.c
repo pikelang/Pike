@@ -689,10 +689,6 @@ static void free_layer(struct layer *UNUSED(l))
    if (THIS->image) free_object(THIS->image);
    if (THIS->alpha) free_object(THIS->alpha);
    if (THIS->misc)  free_mapping(THIS->misc);
-   THIS->image=NULL;
-   THIS->alpha=NULL;
-   THIS->img=NULL;
-   THIS->alp=NULL;
 }
 
 static void exit_layer(struct object *UNUSED(dummy))
@@ -841,7 +837,7 @@ static void image_layer_alpha(INT32 args)
 static void image_layer_set_alpha_value(INT32 args)
 {
    FLOAT_TYPE f;
-   get_all_args("set_alpha_value",args,"%F",&f);
+   get_all_args(NULL,args,"%F",&f);
    if (f<0.0 || f>1.0)
       SIMPLE_ARG_TYPE_ERROR("set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
@@ -1196,7 +1192,7 @@ static void image_layer_fill_alpha(INT32 args)
 
 static void image_layer_set_offset(INT32 args)
 {
-   get_all_args("set_offset",args,"%d%d", /* INT32! */
+   get_all_args(NULL,args,"%d%d", /* INT32! */
 		&(THIS->xoffs),&(THIS->yoffs));
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1237,7 +1233,7 @@ static void image_layer_ysize(INT32 args)
 static void image_layer_set_tiled(INT32 args)
 {
    INT_TYPE tiled;
-   get_all_args("set_tiled",args,"%i",&tiled);
+   get_all_args(NULL,args,"%i",&tiled);
    THIS->tiled=!!tiled;
    THIS->really_optimize_alpha=really_optimize_p(THIS);
    pop_n_elems(args);
@@ -1338,7 +1334,7 @@ static inline void try_parameter_pair(char *a,char *b,void (*f)(INT32))
 
 static void image_layer_create(INT32 args)
 {
-   if (!args)
+  if (!args)
       return;
    if (TYPEOF(Pike_sp[-args]) == T_MAPPING)
    {
@@ -1351,13 +1347,14 @@ static void image_layer_create(INT32 args)
       try_parameter_pair("xoffset","yoffset",image_layer_set_offset);
       try_parameter_pair("fill","fill_alpha",image_layer_set_fill);
       try_parameter("tiled",image_layer_set_tiled);
+      pop_stack();
    }
    else if (TYPEOF(Pike_sp[-args]) == T_INT && args>1
 	    && TYPEOF(Pike_sp[1-args]) == T_INT)
    {
       rgb_group col=black,alpha=white;
 
-      get_all_args("create",args,"%d%d", /* watch the type: INT32 */
+      get_all_args(NULL,args,"%d%d", /* watch the type: INT32 */
 		   &(THIS->xsize),&(THIS->ysize));
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
@@ -1365,7 +1362,8 @@ static void image_layer_create(INT32 args)
 
       if (args>3)
 	 if (!image_color_arg(3-args,&alpha))
-	    SIMPLE_ARG_TYPE_ERROR("create",4,"Image.Color");
+            SIMPLE_ARG_TYPE_ERROR("create",4,"Image.Color");
+      pop_n_elems(args);
 
       push_int(THIS->xsize);
       push_int(THIS->ysize);
@@ -1382,16 +1380,18 @@ static void image_layer_create(INT32 args)
       push_object(clone_object(image_program,5));
 
       image_layer_set_image(2);
+      pop_stack();
    }
    else if (TYPEOF(Pike_sp[-args]) == T_OBJECT || args>1)
    {
       if (args>2)
       {
-	 image_layer_set_mode(args-2);
-	 pop_stack();
-	 args=2;
+         image_layer_set_mode(args-2);
+         pop_n_elems(args-2);
+         args=2;
       }
       image_layer_set_image(args);
+      pop_stack();
    }
    else
       SIMPLE_ARG_TYPE_ERROR("create",1,"mapping|int|Image.Image");
@@ -2180,8 +2180,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       }
       else
       {
+	 UINT64 *rnd;
          push_random_string(len*8);
-         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
+         rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len]%(255*255) <
@@ -2199,8 +2200,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       int v = (int)(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
       {
+         unsigned char *rnd;
          push_random_string(len);
-         unsigned char *rnd = (unsigned char*)Pike_sp[-1].u.string->str;
+         rnd = (unsigned char*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len] < (unsigned)v)
@@ -2213,8 +2215,9 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       }
       else
       {
+	 UINT64 *rnd;
          push_random_string(len*8);
-         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
+         rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
             if (rnd[len]%(255*255) <
@@ -2737,8 +2740,7 @@ void img_lay(struct layer **layer,
       if (aline1) free(aline1);
       if (line2) free(line2);
       if (aline2) free(aline2);
-      resource_error(NULL,0,0,"memory",4*(sizeof(rgb_group)*width + RGB_VEC_PAD),
-		     "Out of memory.\n");
+      out_of_memory_error(NULL, -1, 4*(sizeof(rgb_group)*width + RGB_VEC_PAD));
    }
 #endif
 
@@ -2872,7 +2874,7 @@ void image_lay(INT32 args)
 
    if (args>1)
    {
-      get_all_args("lay",args-1,"%i%i%i%i",
+      get_all_args(NULL,args-1,"%i%i%i%i",
 		   &xoffset,&yoffset,&xsize,&ysize);
       if (xsize<1)
 	 SIMPLE_ARG_TYPE_ERROR("lay",4,"int(1..)");
@@ -3049,7 +3051,7 @@ static void image_layer_crop(INT32 args)
    int zot=0;
    struct image *img = NULL;
 
-   get_all_args("crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
+   get_all_args(NULL,args,"%i%i%i%i",&x,&y,&xz,&yz);
 
    l=clone_this_layer();
    if (x<=l->xoffs) x=l->xoffs; else zot++;
@@ -3157,7 +3159,7 @@ static void image_layer_find_autocrop(INT32 args)
    INT_TYPE l=1,r=1,t=1,b=1;
 
    if (args>3)
-      get_all_args("find_autocrop",args,"%i%i%i%i",&l,&r,&t,&b);
+      get_all_args(NULL,args,"%i%i%i%i",&l,&r,&t,&b);
 
    if (!THIS->tiled) {
       if (THIS->alpha)

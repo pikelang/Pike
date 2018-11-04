@@ -62,6 +62,9 @@
 /* Define if your statfs struct has the f_bavail member */
 #undef HAVE_STATFS_F_BAVAIL
 
+/* Define if your statfs struct has the f_fstypename member */
+#undef HAVE_STATFS_F_FSTYPENAME
+
 /* Define if you have the struct fs_data */
 #undef HAVE_STRUCT_FS_DATA
 
@@ -92,9 +95,6 @@
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
 
-/* Define if you have a working getcwd */
-#undef HAVE_WORKING_GETCWD
-
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
@@ -103,9 +103,6 @@
 
 /* Buffer size to use on open sockets */
 #undef SOCKET_BUFFER_MAX
-
-/* Number of args to mkdir() */
-#define MKDIR_ARGS 2
 
 /* With termios */
 #undef WITH_TERMIOS

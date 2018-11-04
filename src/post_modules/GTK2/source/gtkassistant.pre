@@ -133,7 +133,7 @@ void set_forward_page_func(function f, mixed data)
   struct svalue *sv1,*sv2;
   struct signal_data *sd;
 
-  get_all_args("set_forward_page_func",args,"%*%*",&sv1,&sv2);
+  get_all_args(NULL,args,"%*%*",&sv1,&sv2);
   sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
   if (sd==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("set_forward_page_func",sizeof(struct signal_data));

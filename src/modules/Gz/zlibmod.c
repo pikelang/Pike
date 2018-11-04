@@ -4,11 +4,8 @@
 || for more information.
 */
 
-#include "global.h"
-#include "zlib_machine.h"
 #include "module.h"
-#include "program.h"
-#include "mapping.h"
+#include "zlib_machine.h"
 #include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
@@ -18,12 +15,7 @@
 #ifdef HAVE_ZLIB_H
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
-#include "stralloc.h"
-#include "object.h"
 #include "pike_types.h"
 #include "threads.h"
 #include "buffer.h"
@@ -245,6 +237,8 @@ LVL_CHECK:
       Pike_error("Invalid compression strategy for gz_deflate->create()\n");
     }
   }
+
+  pop_n_elems(args);
 
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
@@ -530,7 +524,7 @@ static void gz_compress(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("compress", args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
+  get_all_args(NULL, args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
                &wbits);
 
   switch (TYPEOF(*data_arg))
@@ -550,8 +544,8 @@ static void gz_compress(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       SIMPLE_ARG_TYPE_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
@@ -636,8 +630,8 @@ static void gz_deflate(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
   }
@@ -697,7 +691,6 @@ static void gz_deflate(INT32 args)
 static void init_gz_deflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -712,7 +705,6 @@ static void exit_gz_deflate(struct object *UNUSED(o))
   deflateEnd(&THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -783,7 +775,7 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
+  if(args && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
   {
     struct mapping *m = Pike_sp[-1].u.mapping;
     struct svalue *tmp;
@@ -811,6 +803,7 @@ static void gz_inflate_create(INT32 args)
       tmp=inflateInit( &THIS->gz );
     }
   }
+  pop_n_elems(args);
 
 /*    mt_lock(& THIS->lock);  */
 /*    mt_unlock(& THIS->lock); */
@@ -998,8 +991,8 @@ static void gz_uncompress(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       SIMPLE_ARG_TYPE_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
@@ -1076,8 +1069,8 @@ static void gz_inflate(INT32 args)
                                                     &data.shift);
       if (t != MEMOBJ_NONE)
         break;
-      // fall through
     }
+    /* FALLTHRU */
     default:
       Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
   }
@@ -1146,7 +1139,6 @@ static void gz_end_of_stream(INT32 args)
 static void init_gz_inflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -1161,7 +1153,6 @@ static void exit_gz_inflate(struct object *UNUSED(o))
   inflateEnd(& THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -1367,25 +1358,3 @@ PIKE_MODULE_INIT
 }
 
 PIKE_MODULE_EXIT {}
-
-#if defined(HAVE___VTBL__9TYPE_INFO) || defined(HAVE___T_9__NOTHROW)
-/* Super-special kluge for IRIX 6.3 */
-#ifdef HAVE___VTBL__9TYPE_INFO
-extern void __vtbl__9type_info(void);
-#endif /* HAVE___VTBL__9TYPE_INFO */
-#ifdef HAVE___T_9__NOTHROW
-extern void __T_9__nothrow(void);
-#endif /* HAVE___T_9__NOTHROW */
-/* Don't even think of calling this one
- * Not static, so the compiler can't optimize it away totally.
- */
-void zlibmod_strap_kluge(void)
-{
-#ifdef HAVE___VTBL__9TYPE_INFO
-  __vtbl__9type_info();
-#endif /* HAVE___VTBL__9TYPE_INFO */
-#ifdef HAVE___T_9__NOTHROW
-  __T_9__nothrow();
-#endif /* HAVE___T_9__NOTHROW */
-}
-#endif /* HAVE___VTBL__9TYPE_INFO || HAVE___T_9__NOTHROW */

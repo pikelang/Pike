@@ -15,7 +15,6 @@
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "opcodes.h"
 #include "builtin_functions.h"
@@ -378,14 +377,14 @@ INT32 assemble(int store_linenumbers)
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
 
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
-	      /* FALL_THROUGH */
+	      /* FALLTHRU */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;
@@ -533,9 +532,13 @@ INT32 assemble(int store_linenumbers)
 
     switch(c->opcode)
     {
+    case F_START_FUNCTION:
+#ifdef INS_START_FUNCTION
+      INS_START_FUNCTION();
+#endif
+      break;
     case F_NOP:
     case F_NOTREACHED:
-    case F_START_FUNCTION:
       break;
     case F_ALIGN:
       ins_align(c->arg);
@@ -570,7 +573,7 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("max_label calculation failed!\n");
 
       if(labels[c->arg] != -1)
-	Pike_fatal("Duplicate label!\n");
+	Pike_fatal("Duplicate label %d!\n", c->arg);
 #endif
       FLUSH_CODE_GENERATOR_STATE();
       labels[c->arg] = (INT32)PIKE_PC;
@@ -645,8 +648,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_TWO_ARGS */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */
@@ -676,8 +679,8 @@ INT32 assemble(int store_linenumbers)
 	}
 #endif /* INS_F_JUMP_WITH_ARG */
 
-	/* FALL_THROUGH
-	 *
+	/* FALLTHRU */
+	/*
 	 * Note that the pointer in this case will be handled by the
 	 * next turn through the loop.
 	 */

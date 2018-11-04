@@ -103,7 +103,7 @@ mixed query_id()
 //! @decl int bind(int port, @
 //!                function(SSL.File|void, mixed|void: int) callback, @
 //!                string|void ip,@
-//!                int|void share)
+//!                int|void reuse_port)
 //!
 //! Bind an SSL port.
 //!
@@ -122,8 +122,8 @@ mixed query_id()
 //! @param ip
 //!   Optional IP-number to bind.
 //!
-//! @param share
-//!   If true, share the port with other processes
+//! @param reuse_port
+//!   If true, enable SO_REUSEPORT if the OS supports it.
 //!
 //! @returns
 //!   Returns @expr{1@} if binding of the port succeeded,
@@ -132,10 +132,10 @@ mixed query_id()
 //! @seealso
 //!   @[Stdio.Port()->bind()], @[File()->set_accept_callback()],
 //!   @[listen_fd()]
-int bind(int port, function callback, string|void ip, int|void share)
+int bind(int port, function callback, string|void ip, int|void reuse_port)
 {
   accept_callback = callback;
-  return socket::bind(port, ssl_callback, ip, share);
+  return socket::bind(port, ssl_callback, ip, reuse_port);
 }
 
 //! @decl int listen_fd(int fd, @

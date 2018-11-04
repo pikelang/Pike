@@ -130,7 +130,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     tmp<<=8;
     tmp|=*(q++);
 #else
-    /* FIXME tmp=EXTRACT_INT(q); */
+    /* FIXME tmp=(INT32)get_unaligned32(q); */
     tmp=NameN(GET_4_UNALIGNED_CHARS)(q);
     q++;
 #endif
@@ -336,18 +336,16 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 	for(prev = md->hash + e; (k = *prev);) {
 	  count++;
 	  if (REFCOUNTED_TYPE(TYPEOF(k->val)) &&
-	      (*k->val.u.refs == 1)) {
-	    /* map_delete(memsearch_cache, &k->ind); */
-	    *prev = k->next;
+              (*k->val.u.refs == 1))
+          {
+            *prev = k->next;
 	    free_svalue(&k->ind);
 	    free_svalue(&k->val);
 	    mapping_free_keypair(md, k);
 	    md->size--;
 	    continue;
-	  } else if (count < 10) {
-	    // locate_references(k->val.u.refs);
-	  }
-	  prev = &k->next;
+          }
+          prev = &k->next;
 	}
       }
       memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;

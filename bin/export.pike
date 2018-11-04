@@ -77,17 +77,18 @@ void run( string cmd, mixed ... args )
   }
 }
 
-void fix_configure(string dir)
+void fix_configure(string dir, Stdio.Stat aclocal)
 {
   Stdio.Stat config=file_stat(dir+"/configure");
   Stdio.Stat config_in=file_stat(dir+"/configure.in");
 
   if(config_in)
   {
-    if(!config || config_in->mtime > config->mtime)
+    if(!config || config_in->mtime > config->mtime ||
+       (aclocal && aclocal->mtime > config->mtime))
     {
       werror("Fixing configure in "+dir+".\n");
-      run( "autoconf", ([ "cwd":dir ]) );
+      run( pike_base_name+"/src/run_autoconfig", "--no-recursion", dir );
     }
   }
 }
@@ -215,6 +216,7 @@ array(string) build_file_list(string list_file)
 constant stamp=#"Pike export stamp
 time:%t
 type:%type
+branch:%branch
 major:%maj
 minor:%min
 build:%bld
@@ -308,12 +310,13 @@ int main(int argc, array(string) argv)
   if(!srcdir || !export_list || !filename)
     exit(1, documentation);
 
-  if (tag) {
-    main_branch = git_cmd("symbolic-ref", "-q", "HEAD");
-    if (!has_prefix(main_branch, "refs/heads/"))
-      exit(1, "Unexpected HEAD: %O\n", main_branch);
+  main_branch = git_cmd("symbolic-ref", "-q", "HEAD");
+  if (!has_prefix(main_branch, "refs/heads/"))
+    exit(1, "Unexpected HEAD: %O\n", main_branch);
 
-    main_branch = main_branch[sizeof("refs/heads/")..];
+  main_branch = main_branch[sizeof("refs/heads/")..];
+
+  if (tag) {
     string remote = git_cmd("remote");
     if (!sizeof(remote)) remote = 0;
     if (remote) git_cmd("pull", "--rebase", remote);
@@ -359,6 +362,7 @@ int main(int argc, array(string) argv)
   mapping m = gmtime(t);
   array(int) version = getversion();
   mapping symbols=([
+    "%branch": main_branch,
     "%maj":(string) version[0],
     "%min":(string) version[1],
     "%bld":(string) version[2],
@@ -379,11 +383,18 @@ int main(int argc, array(string) argv)
   if (snapshot)
     vpath = sprintf("Pike-v%d.%d-snapshot", @version);
 
-  fix_configure(pike_base_name+"/src");
+  Stdio.Stat aclocal=file_stat(pike_base_name+"/src/aclocal.m4");
+
+  fix_configure(pike_base_name+"/src", aclocal);
+  fix_configure(pike_base_name+"/src/modules", aclocal);
+  fix_configure(pike_base_name+"/src/post_modules", aclocal);
 
   foreach(get_dir(pike_base_name+"/src/modules"), string fn)
     if(Stdio.is_dir(pike_base_name+"/src/modules/"+fn))
-      fix_configure("modules/"+fn);
+      fix_configure(pike_base_name+"/src/modules/"+fn, aclocal);
+  foreach(get_dir(pike_base_name+"/src/post_modules"), string fn)
+    if(Stdio.is_dir(pike_base_name+"/src/post_modules/"+fn))
+      fix_configure(pike_base_name+"/src/post_modules/"+fn, aclocal);
 
   rm(vpath);
   symlink(".", vpath);

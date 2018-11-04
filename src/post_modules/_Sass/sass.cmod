@@ -1,0 +1,642 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "module.h"
+#include "interpret.h"
+#include "builtin_functions.h"
+#include "pike_types.h"
+#include "module_support.h"
+
+#include "config.h"
+
+DECLARATIONS
+
+#ifdef HAVE_LIBSASS
+
+#include "pike_sass.h"
+#include <sass.h>
+
+#ifndef HAVE_LIBSASS_COPY_C_STRING
+static char *sass_copy_c_string(const char *str)
+{
+  size_t len = strlen(str);
+  char *res = malloc(len+1);
+  if (!res) return NULL;
+  memcpy(res, str, len+1);
+  return res;
+}
+#endif /* !HAVE_LIBSASS_COPY_C_STRING */
+
+/*! @module Web
+ */
+/*! @module Sass
+ */
+/*! @class Api
+ *!
+ *! Low-level Sass/SCSS compiler.
+ *!
+ *! You probably want to use @[Compiler] instead of this class.
+ *!
+ *! @seealso
+ *!   @[Compiler]
+ */
+PIKECLASS Api
+{
+  /*! @decl int(0..3) output_style = 0
+   *!
+   *! Determines the level of compression on the generated output.
+   *!
+   *! @seealso
+   *!  @[STYLE_NESTED], @[STYLE_EXPANDED], @[STYLE_COMPACT] and
+   *!  @[STYLE_COMPRESSED].
+   */
+  PIKEVAR int(0..3)    output_style;
+
+  /*! @decl string(8bit) source_map_file = UNDEFINED
+   *!
+   *! Set the path of the source map file.
+   */
+  PIKEVAR string(8bit) source_map_file;
+
+  /*! @decl string(8bit) source_map_root
+   *!
+   *! Set the root path of the source files, relative to where the source.map
+   *! file is written.
+   */
+  PIKEVAR string(8bit) source_map_root;
+
+  /*! @decl string(8bit) include_path
+   *!
+   *! The base path of @tt{@@import@}s. Note! This needs to be set when
+   *! @[compile_string()] is used.
+   */
+  PIKEVAR string(8bit) include_path;
+
+  /*! @decl int precision
+   *!
+   *! Set the precision of fractional numbers. Default is @tt{5@}.
+   */
+  PIKEVAR int(0..)     precision;
+
+  /*! @decl bool source_comments
+   *!
+   *! Emit comments in the generated CSS indicating the corresponding source
+   *! line. Default is @tt{false@}.
+   */
+  PIKEVAR int(0..1)    source_comments;
+
+  /*! @decl bool source_map_embed
+   *!
+   *! Set whether embedding @tt{sourceMappingUrl=#@} as data uri or not.
+   */
+  PIKEVAR int(0..1)    source_map_embed;
+
+  /*! @decl bool omit_source_map_url
+   *!
+   *! Set whether writing the @tt{sourceMappingUrl=#@} or not.
+   */
+  PIKEVAR int(0..1)    omit_source_map_url;
+
+  /*! @decl bool sass_syntax
+   *!
+   *! Set whether the code is Sass syntax, i.e. indented syntax or not. Only
+   *! necessary when using @[compile_string()]
+   */
+  PIKEVAR int(0..1)    sass_syntax;
+
+  // Documented in the pmod
+  PIKEFUN string(8bit)|array(string(8bit))
+  handle_sass_import (string(8bit) path,
+                      void|string(8bit) absolute_path,
+                      void|string(8bit) relative_path)
+  flags ID_PROTECTED; {
+    // This method is overridden in module.pmod, but if someone would inherit
+    // this base class directly (it really isn't exposed though) and don't
+    // implement this method we by returning UNDEFINED leave the import
+    // resolution back to libsass.
+    push_undefined ();
+  }
+
+  // Identifier ID of handle_sass_import
+  CVAR int id_handle_import;
+
+  void set_options (struct Sass_Context *ctx)
+  {
+    struct Sass_Options *s_opts = sass_context_get_options (ctx);
+
+    sass_option_set_precision (s_opts, THIS->precision);
+    sass_option_set_output_style (s_opts, THIS->output_style);
+
+    if (THIS->include_path) {
+      sass_option_set_include_path (
+        s_opts, sass_copy_c_string (THIS->include_path->str));
+    }
+
+    sass_option_set_is_indented_syntax_src (s_opts, THIS->sass_syntax);
+    sass_option_set_omit_source_map_url (s_opts, THIS->omit_source_map_url);
+    sass_option_set_source_comments (s_opts, THIS->source_comments);
+
+    if (THIS->source_map_file != NULL) {
+      sass_option_set_source_map_file (
+        s_opts, sass_copy_c_string (THIS->source_map_file->str));
+      sass_option_set_omit_source_map_url (s_opts, false);
+      sass_option_set_source_map_contents (s_opts, true);
+    }
+    else {
+      sass_option_set_source_map_embed (s_opts, THIS->source_map_embed);
+    }
+
+    if (THIS->source_map_root != NULL) {
+      sass_option_set_source_map_root (
+        s_opts, sass_copy_c_string (THIS->source_map_root->str));
+    }
+  }
+
+
+  // Libsass import callback. This will be called for every @import directive
+  // in the Sass files. See the doc comment for __importer_cb.
+  Sass_Import_List pike_sass_importer (const char *path,
+                                       Sass_Importer_Entry UNUSED(cb),
+                                       struct Sass_Compiler *comp)
+  {
+    if (THIS->id_handle_import > -1) {
+      JMP_BUF recovery;
+      Sass_Import_Entry last_imp = sass_compiler_get_last_import (comp);
+      const char *abs_path = sass_import_get_abs_path (last_imp);
+      const char *imp_path = sass_import_get_imp_path (last_imp);
+      Sass_Import_List list = sass_make_import_list(1);
+
+      push_text (path);
+
+      push_text (abs_path);
+      push_text (imp_path);
+
+      if (SETJMP(recovery)) {
+        list[0] = sass_make_import_entry(path, 0, 0);
+        sass_import_set_error(list[0],
+                              sass_copy_c_string("Importer error."), 0, 0);
+        if (!IS_UNDEFINED(&throw_value)) {
+          push_svalue(&throw_value);
+        }
+        UNSETJMP(recovery);
+        return list;
+      }
+
+      apply_low (Pike_fp->current_object, THIS->id_handle_import, 3);
+
+      if (TYPEOF (Pike_sp[-1]) == T_STRING) {
+        if (Pike_sp[-1].u.string->size_shift != eightbit) {
+          Pike_error ("Widestring returned from sass importer.\n");
+        }
+
+        UNSETJMP(recovery);
+
+        list[0] = sass_make_import_entry (
+                    path,
+                    sass_copy_c_string (Pike_sp[-1].u.string->str),
+                    0);
+
+        pop_stack();
+
+        return list;
+      }
+      // FIXME: I'm not 100% sure about the code below since it took me some
+      //        Pike source code browsing to come up with it.
+      else if (TYPEOF (Pike_sp[-1]) == T_ARRAY) {
+        struct array *v = Pike_sp[-1].u.array;
+
+        if (v->size != 2) {
+          Pike_error("Arrays returned from handle_sass_import() must "
+                     "contain two indices: source and absolute path.\n");
+        }
+
+        if (TYPEOF (ITEM(v)[0]) == T_STRING &&
+            TYPEOF (ITEM(v)[1]) == T_STRING)
+        {
+          // Contents of the imported file.
+          struct pike_string *_data = ITEM(v)[0].u.string;
+          // Absolute path of the imported file.
+          struct pike_string *_absp = ITEM(v)[1].u.string;
+
+          if (_data->size_shift != eightbit) {
+            Pike_error ("Widestring returned in array index one from "
+                        "importer function.\n");
+          }
+
+          if (_absp->size_shift != eightbit) {
+            Pike_error ("Widestring returned in array index two from "
+                        "importer function.\n");
+          }
+
+          UNSETJMP(recovery);
+
+          list[0] = sass_make_import (path, _absp->str,
+                                      // libsass takes ownership of _data->str
+                                      // and will free it when the context
+                                      // is destroyd, hence the copy.
+                                      sass_copy_c_string(_data->str),
+                                      0);
+
+          pop_stack();
+
+          return list;
+        }
+      }
+
+      /* FIXME: Complain about unsupported return-value? */
+      pop_stack();
+
+      UNSETJMP(recovery);
+    }
+
+    return NULL;
+  }
+
+
+  void register_importer (struct Sass_Context *ctx)
+  {
+    struct Sass_Options *s_opts = sass_context_get_options (ctx);
+
+    Sass_Importer_Entry c_imp = sass_make_importer (pike_sass_importer, 0, 0);
+
+    Sass_Importer_List imp_list = sass_make_importer_list (1);
+    sass_importer_set_list_entry (imp_list, 0, c_imp);
+    sass_option_set_c_importers (s_opts, imp_list);
+  }
+
+
+  // Compile the file input_file and return the result.
+  // This method is over ridden in the the pmod.
+  PIKEFUN mapping(string(8bit):string(8bit)) compile_file (string input_file)
+  {
+    struct Sass_File_Context *ctx;
+    struct Sass_Context      *ctx_out;
+    int err;
+    const char *scss;
+    ONERROR uwp;
+
+    SASS_TRACE ("compile_file(%s)\n", input_file->str);
+
+    ctx = sass_make_file_context (sass_copy_c_string (input_file->str));
+    ctx_out = sass_file_context_get_context (ctx);
+
+    set_options (ctx_out);
+    register_importer (ctx_out);
+
+    // Since the Pike layer can throw below we register a cleanup
+    // callback here so that we can free the context properly.
+
+    /* Sentinel for holding Pike errors.
+     *
+     * Pike errors are caught by the low-level code and pushed
+     * on the stack, so that we can rethrow them here.
+     */
+    push_undefined();
+
+    SET_ONERROR(uwp, sass_delete_file_context, ctx);
+
+    err = sass_compile_file_context (ctx);
+
+    if (!IS_UNDEFINED(Pike_sp-1)) {
+      /* Sentinel has changed. Rethrow. */
+      f_throw(1);
+    }
+
+    if (err) {
+      const char *errstr = sass_context_get_error_message (ctx_out);
+      Pike_error("Sass compile error (code: %d):\n%s\n", err, errstr);
+    }
+
+    scss = sass_context_get_output_string (ctx_out);
+
+    if (scss) {
+      const char *smap = NULL;
+      struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
+
+      if (sass_option_get_source_map_file (s_opts)) {
+        smap = sass_context_get_source_map_string (ctx_out);
+
+        if ((err = sass_context_get_error_status (ctx_out))) {
+          const char *errstr = sass_context_get_error_message (ctx_out);
+          Pike_error("Failed generating source map (code: %ld): %s\n",
+                     err, errstr);
+        }
+      }
+
+      push_constant_text ("css"); push_text (scss);
+      push_constant_text ("map");
+
+      if (smap != NULL) {
+        push_text (smap);
+      }
+      else {
+        push_undefined ();
+      }
+
+      f_aggregate_mapping (4);
+    }
+    else  {
+      push_undefined ();
+    }
+
+    CALL_AND_UNSET_ONERROR(uwp);
+  }
+
+
+  /*! @decl string(8bit) compile_string(string(8bit) source)
+   *!
+   *! Compiles the string @[source] and returns the generated CSS.
+   *!
+   *! @note
+   *!  If the @[source] contain @tt{@@import@} directives you have to
+   *!  explicitly set the include path via @[include_path].
+   *!
+   *! @param source
+   *!  The string to compile
+   */
+  PIKEFUN mapping(string(8bit):string(8bit))
+  compile_string (string(8bit) source)
+  {
+    struct Sass_Data_Context *ctx;
+    struct Sass_Context      *ctx_out;
+    int err;
+    const char *out;
+    ONERROR uwp;
+
+    ctx = sass_make_data_context (sass_copy_c_string (source->str));
+    ctx_out = sass_data_context_get_context (ctx);
+
+    set_options (ctx_out);
+    register_importer (ctx_out);
+
+    // Since the Pike layer can throw below we register a cleanup
+    // callback here so that we can free the context properly.
+
+    /* Sentinel for holding Pike errors.
+     *
+     * Pike errors are caught by the low-level code and pushed
+     * on the stack, so that we can rethrow them here.
+     */
+    push_undefined();
+
+    SET_ONERROR(uwp, sass_delete_data_context, ctx);
+
+    sass_compile_data_context (ctx);
+
+    if (!IS_UNDEFINED(Pike_sp-1)) {
+      /* Sentinel has changed. Rethrow. */
+      f_throw(1);
+    }
+
+    err = sass_context_get_error_status (ctx_out);
+
+    if (err) {
+      const char *errstr = sass_context_get_error_message (ctx_out);
+      Pike_error("Sass compile error (code: %ld):\n%s\n", err, errstr);
+    }
+
+    out = sass_context_get_output_string (ctx_out);
+
+    if (out) {
+      const char *smap = NULL;
+      struct Sass_Options *s_opts = sass_context_get_options (ctx_out);
+
+      if (sass_option_get_source_map_file (s_opts)) {
+        smap = sass_context_get_source_map_string (ctx_out);
+
+        if ((err = sass_context_get_error_status (ctx_out))) {
+          const char *errstr = sass_context_get_error_message (ctx_out);
+          Pike_error("Failed generating source map (code: %ld): %s\n",
+                     err, errstr);
+        }
+      }
+
+      push_constant_text ("css"); push_text (out);
+      push_constant_text ("map");
+
+      if (smap != NULL) {
+        push_text (smap);
+      }
+      else {
+        push_undefined ();
+      }
+
+      f_aggregate_mapping (4);
+    }
+    else {
+      push_undefined ();
+    }
+
+    CALL_AND_UNSET_ONERROR(uwp);
+  }
+
+  INIT {
+    SASS_TRACE ("INIT ___Sass.Api\n");
+    THIS->precision = 5;
+    THIS->output_style = SASS_STYLE_NESTED;
+    THIS->id_handle_import =
+      really_low_find_shared_string_identifier (MK_STRING ("handle_sass_import"),
+                                                Pike_fp->current_object->prog,
+                                                SEE_PROTECTED|SEE_PRIVATE);
+
+    SASS_TRACE ("Handle Import ID: %d\n", THIS->id_handle_import);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    SASS_TRACE ("EXIT ___Sass.Api\n");
+  }
+}
+/*! @endclass */
+
+
+/*! @decl string(8bit) sass2scss(string(8bit) data)
+ *! @decl string(8bit) sass2scss(string(8bit) data, int options)
+ *!
+ *! Convert Sass syntax (i.e. indented syntax) to SCSS syntax.
+ *!
+ *! @param data
+ *!  Sass syntax text to convert to SCSS syntax.
+ *!
+ *! @param options
+ *!  This is a bitwise union of compression level (@[STYLE_NESTED],
+ *!  @[STYLE_EXPANDED], @[STYLE_COMPACT] and $[STYLE_COMPRESSED]) and the
+ *!  @tt{SASS2SCSS_*@} constants @[SASS2SCSS_KEEP_COMMENT],
+ *!  @[SASS2SCSS_STRIP_COMMENT] and @[SASS2SCSS_CONVERT_COMMENT].
+ *!  It defaults to @expr{STYLE_NESTED|SASS2SCSS_KEEP_COMMENT@}.
+ *!
+ *! @returns
+ *!  @[data] converted to SCSS syntax.
+ */
+PIKEFUN string(8bit) sass2scss (string(8bit) data, void|int options)
+{
+  const char *conv;
+
+  /* NB: SASS2SCSS_PRETTIFY_1 is == SASS_STYLE_NESTED. */
+  int opts = SASS2SCSS_PRETTIFY_1 | SASS2SCSS_KEEP_COMMENT;
+
+  if (options && TYPEOF (*options) == T_INT) {
+    opts = options->u.integer;
+  }
+
+  conv = sass2scss (data->str, opts);
+  push_text (conv);
+}
+
+
+/*! @decl string libsass_version()
+ *!
+ *! Returns the @tt{libsass@} version this module was compiled against
+ */
+PIKEFUN string libsass_version ()
+{
+  push_text (libsass_version ());
+}
+
+
+/*! @decl string sass2scss_version()
+ *!
+ *! Returns the @tt{sass2scss@} version this module was compiled against
+ */
+PIKEFUN string sass2scss_version ()
+{
+  push_text (sass2scss_version ());
+}
+
+
+#if HAVE_LIBSASS_LANGUAGE_VERSION
+/*! @decl string libsass_language_version()
+ *!
+ *! Returns the @tt{language@} version of Sass this module was compiled against
+ */
+PIKEFUN string libsass_language_version ()
+{
+  push_text (libsass_language_version ());
+}
+#endif
+
+
+PIKE_MODULE_INIT
+{
+  /*! @decl constant LIBSASS_VERSION = ""
+   *!
+   *! The @tt{libsass@} version, as a string, this module was compiled agains.
+   */
+
+  add_string_constant ("LIBSASS_VERSION",   LIBSASS_VERSION, 0);
+
+  /*! @decl constant STYLE_NESTED = 1
+   *! @decl constant STYLE_EXPANDED = 1
+   *! @decl constant STYLE_COMPACT = 1
+   *! @decl constant STYLE_COMPRESSED = 1
+   *!
+   *! Styling of output. Use as argument to @[Compiler.set_output_style()]
+   *!
+   *! @string
+   *! @value STYLE_NESTED
+   *! The default setting. The output will look like:
+   *! @code
+   *! a {
+   *!   property: value;
+   *!   other-property: value; }
+   *!   a:hover {
+   *!     property: value; }
+   *! b {
+   *!   property: value; }
+   *! @endcode
+   *!
+   *! @value STYLE_EXPANDED
+   *! Fully expanded output:
+   *! @code
+   *! a {
+   *!   property: value;
+   *!   other-property: value;
+   *! }
+   *! a:hover {
+   *!   property: value;
+   *! }
+   *! b {
+   *!   property: value;
+   *! }
+   *! @endcode
+   *!
+   *! @value STYLE_COMPACT
+   *! Somewhat minified output:
+   *! @code
+   *! a { property: value; other-prop: value }
+   *! a:hover { property: value; }
+   *! b { property: value; }
+   *! @endcode
+   *!
+   *! @value STYLE_COMPRESSED
+   *! Minified output
+   *! @code
+   *! a{property:value;other-property:value}a:hover{property:value}b{property:value}
+   *! @endcode
+   *! @endstring
+   */
+
+  add_integer_constant ("STYLE_NESTED",     SASS_STYLE_NESTED,     0);
+  add_integer_constant ("STYLE_EXPANDED",   SASS_STYLE_EXPANDED,   0);
+  add_integer_constant ("STYLE_COMPACT",    SASS_STYLE_COMPACT,    0);
+  add_integer_constant ("STYLE_COMPRESSED", SASS_STYLE_COMPRESSED, 0);
+
+  /*! @decl constant HTTP_IMPORT_NONE = 0
+   *! @decl constant HTTP_IMPORT_GREEDY = 1
+   *! @decl constant HTTP_IMPORT_ANY = 2
+   *!
+   *! Description:
+   *!
+   *! @string
+   *! @value HTTP_IMPORT_NONE
+   *!  Default value of @[Compiler.http_import]. Prohibits imports over HTTP.
+   *! @value HTTP_IMPORT_GREEDY
+   *!  Allow imports over HTTP only if the returned content type is
+   *!  @tt{text/scss@}.
+   *! @value HTTP_IMPORT_ANY
+   *!  Anything goes.
+   *! @endstring
+   */
+
+  add_integer_constant ("HTTP_IMPORT_NONE",   0, 0);
+  add_integer_constant ("HTTP_IMPORT_GREEDY", 1, 0);
+  add_integer_constant ("HTTP_IMPORT_ANY",    2, 0);
+
+  /**
+   * @decl constant SASS2SCSS_KEEP_COMMENT = 32
+   * @decl constant SASS2SCSS_STRIP_COMMENT = 64
+   * @decl constant SASS2SCSS_CONVERT_COMMENT = 128
+   *
+   * Constants that can be given as option to @[sass2scss()].
+   */
+
+  add_integer_constant ("SASS2SCSS_KEEP_COMMENT", SASS2SCSS_KEEP_COMMENT, 0);
+  add_integer_constant ("SASS2SCSS_STRIP_COMMENT", SASS2SCSS_STRIP_COMMENT, 0);
+  add_integer_constant ("SASS2SCSS_CONVERT_COMMENT", SASS2SCSS_CONVERT_COMMENT, 0);
+
+  INIT
+}
+
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+
+/*! @endmodule
+ */
+/*! @endmodule
+ */
+
+#else  /* HAVE_LIBSASS */
+
+PIKE_MODULE_INIT {
+  HIDE_MODULE();
+}
+PIKE_MODULE_EXIT {}
+
+#endif /* HAVE_LIBSASS */

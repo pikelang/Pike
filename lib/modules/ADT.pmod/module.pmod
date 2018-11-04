@@ -9,6 +9,10 @@ inherit _ADT;
 
 constant List = __builtin.List;
 
+#if constant(__builtin.Stack)
+constant LowLevelStack = __builtin.Stack;
+#endif
+
 // Internal stuff for ADT.Struct
 protected int item_counter;
 int get_item_id() { return item_counter++; }

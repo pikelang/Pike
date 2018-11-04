@@ -213,7 +213,7 @@ class File
   //!  adding more data to the output buffer will work as well.
   //!
   //! @seealso
-  //!  @[get_buffer_mode()]
+  //!  @[query_buffer_mode()]
   void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
     if (in && inbuffer && sizeof(inbuffer)) {
@@ -479,7 +479,7 @@ class File
   //!
   //! Note that TCP_FAST_OPEN requires server support, the connection
   //! might fail even though the remote server exists. It might be
-  //! advicable to retry without TCP_FAST_OPEN (and remember this
+  //! advisable to retry without TCP_FAST_OPEN (and remember this
   //! fact)
   //!
   //! @returns
@@ -1037,7 +1037,7 @@ class File
 
 #else /* !STDIO_CALLBACK_TEST_MODE */
 
-  int write(sprintf_format|array(string) data_or_format,
+  int write(sprintf_format|array(string)|object data_or_format,
 	    sprintf_args ... args)
   {
     if (outbuffer) {
@@ -1120,16 +1120,18 @@ class File
     }
 
     if (!errno()) {
-      if( inbuffer )
+      if( object buffer = inbuffer )
       {
-        switch( inbuffer->input_from( this,UNDEFINED,1 ) )
+        buffer->allocate(DATA_CHUNK_SIZE);
+
+        int bytes = ::read(buffer);
+
+        if (bytes > 0)
         {
-        case 1..:
-          return ___read_callback( ___id||this, inbuffer );
-        case 0:
-	  ::set_read_callback(__stdio_read_callback);
-	  return 0;
-        case ..-1:
+          return ___read_callback( ___id||this, buffer );
+        }
+        else
+        {
           return __read_callback_error();
         }
       }
@@ -1762,9 +1764,9 @@ class File
      ::set_nonblocking();
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
-    BE_WERR("destroy()");
+    BE_WERR("_destruct()");
     register_close_file (open_file_id);
   }
 }
@@ -1806,7 +1808,8 @@ class Port
   //!
   //! When create is called with @expr{"stdin"@} as the first argument, a
   //! socket is created out of the file descriptor @expr{0@}. This is only
-  //! useful if it actually is a socket to begin with.
+  //! useful if it actually is a socket to begin with, and is equivalent to
+  //! creating a port and initializing it with @[listen_fd](0).
   //!
   //! @seealso
   //! @[bind]
@@ -1986,8 +1989,8 @@ class FILE
     if( charset != "iso-8859-1" &&
 	charset != "ascii")
     {
-      object in =  master()->resolv("Charset.decoder")( charset );
-      object out = master()->resolv("Charset.encoder")( charset );
+      object in =  Pike.Lazy.Charset.decoder( charset );
+      object out = Pike.Lazy.Charset.encoder( charset );
 
       input_conversion =
 	[function(string:string)]lambda( string s ) {
@@ -3416,7 +3419,7 @@ protected class nb_sendfile
   }
 
 #ifdef SENDFILE_DEBUG
-  void destroy()
+  protected void _destruct()
   {
     werror("Stdio.sendfile(): Destructed.\n");
   }
@@ -3446,13 +3449,6 @@ protected class nb_sendfile
 	  hd = tr;
 	}
 	tr = 0;
-      }
-
-      if (!hd || !sizeof(hd - ({ "" }))) {
-	// NOOP!
-	SF_WERR("NOOP!");
-	backend->call_out(cb, 0, 0, @a);
-	return;
       }
     }
 
@@ -3518,12 +3514,8 @@ protected class nb_sendfile
       if (blocking_from) {
 	SF_WERR("Reading some data.");
 	do_read();
-	if (!sizeof(to_write)) {
-	  SF_WERR("NOOP!");
-	  backend->call_out(cb, 0, 0, @args);
-	}
       }
-      if (sizeof(to_write)) {
+      if (!from || sizeof(to_write)) {
 	SF_WERR("Starting the writer.");
 	start_writer();
       }

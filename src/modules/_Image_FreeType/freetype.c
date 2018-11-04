@@ -4,10 +4,13 @@
 || for more information.
 */
 
+#include "module.h"
 #include "config.h"
-#include "global.h"
 
 #ifdef HAVE_LIBFT2
+/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+#undef TYPEOF
+
 #ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
 #include <freetype/ftsnames.h>
@@ -19,22 +22,17 @@
 #include FT_TRUETYPE_IDS_H
 #endif
 
-/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+/* Restore the Pike TYPEOF() macro. */
 #undef TYPEOF
+#define TYPEOF(SVAL)	PIKE_TYPEOF(SVAL)
 #endif /* HAVE_LIBFT2 */
 
-#include "module.h"
 #include "pike_compiler.h"
 #include "pike_error.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
-#include "mapping.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
@@ -110,10 +108,12 @@ static void image_ft_error(const char *msg, FT_Error errcode)
  *! A FreeType font face. We recommend using the more generic font handling
  *! interfaces in @[Image.Fonts] instead.
  */
+#ifdef PIKE_NULL_IS_SPECIAL
 static void image_ft_face_init( struct object *UNUSED(o) )
 {
   TFACE = NULL;
 }
+#endif
 
 static void image_ft_face_free( struct object *UNUSED(o) )
 {
@@ -194,7 +194,7 @@ static void image_ft_face_get_kerning( INT32 args )
 {
   INT_TYPE l, r;
   FT_Vector kern;
-  get_all_args( "get_kerning", args, "%i%i", &l, &r );
+  get_all_args( NULL, args, "%i%i", &l, &r );
   l = FT_Get_Char_Index( TFACE, l );
   r = FT_Get_Char_Index( TFACE, r );
   if( FT_Get_Kerning( TFACE, l, r, ft_kerning_default, &kern ) )
@@ -210,7 +210,7 @@ static void image_ft_face_attach_file( INT32 args )
 {
   char *path;
   FT_Error errcode;
-  get_all_args( "attach_file", args, "%s", &path );
+  get_all_args( NULL, args, "%s", &path );
   if ((errcode = FT_Attach_File( TFACE, path )))
     image_ft_error("Failed to attach file", errcode);
 }
@@ -356,7 +356,7 @@ static void image_ft_face_create( INT32 args )
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
 
-  get_all_args("create", args, "%s.%d", &font, &face_number);
+  get_all_args(NULL, args, "%s.%d", &font, &face_number);
 
   if (face_number < 0)
     SIMPLE_ARG_TYPE_ERROR("create", 2, "int(0..)");
@@ -454,7 +454,9 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
     set_init_callback( image_ft_face_init );
+#endif
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();

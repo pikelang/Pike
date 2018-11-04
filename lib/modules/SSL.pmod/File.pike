@@ -27,7 +27,7 @@
 //!   @[is_open], connection init (@[create]) and close (@[close]) can
 //!   do both reading and writing.
 //! @item
-//!   @[destroy] attempts to close the stream properly by sending the
+//!   @[_destruct] attempts to close the stream properly by sending the
 //!   close packet, but since it can't do blocking I/O it's not
 //!   certain that it will succeed. The stream should therefore always
 //!   be closed with an explicit @[close] call.
@@ -62,7 +62,7 @@ protected string stream_descr;
 
 protected Stdio.File stream;
 // The stream is closed by shutdown(), which is called directly or
-// indirectly from destroy() or close() but not from anywhere else.
+// indirectly from _destruct() or close() but not from anywhere else.
 //
 // Note that a close in nonblocking callback mode might not happen
 // right away. In that case stream remains set after close() returns,
@@ -490,7 +490,7 @@ int(1bit) accept(string|void pending_data)
 //!   will be sent after any data already queued for sending.
 //!
 //! @seealso
-//!  @[get_buffer_mode()]
+//!   @[query_buffer_mode()]
 void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
 {
   if (!in) {
@@ -667,7 +667,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
     // Even in nonblocking mode we call direct_write here to try to
     // put the close packet in the send buffer before we return. That
     // way it has a fair chance to get sent even when we're called
-    // from destroy() (in which case it won't work to just install the
+    // from _destruct() (in which case it won't work to just install the
     // write callback as usual and wait for the backend to call it).
 
     if (!direct_write() || close_errno) {
@@ -826,7 +826,7 @@ Stdio.File shutdown()
   } LEAVE;
 }
 
-protected void destroy()
+protected void _destruct()
 //! Try to close down the connection properly since it's customary to
 //! close files just by dropping them. No guarantee can be made that
 //! the close packet gets sent successfully though, because we can't
@@ -835,7 +835,7 @@ protected void destroy()
 //! @seealso
 //!   @[close]
 {
-  SSL3_DEBUG_MSG ("SSL.File->destroy()\n");
+  SSL3_DEBUG_MSG ("SSL.File->_destruct()\n");
 
   // We don't know which thread this will be called in if the refcount
   // garb or the gc got here. That's not a race problem since it won't
@@ -1696,6 +1696,13 @@ function(void|mixed:int) query_close_callback()
   return close_callback;
 }
 
+int query_fd()
+//! @returns
+//!   Returns the file descriptor number associated with this object.
+{
+  return stream->query_fd ? stream->query_fd() : -1;
+}
+
 void set_id (mixed id)
 //! Set the value to be sent as the first argument to the
 //! callbacks installed by @[set_callbacks].
@@ -1902,7 +1909,7 @@ protected int queue_write()
     res = 0;
   }
 
-  if (!sizeof(write_buffer)) {
+  if (!sizeof(write_buffer) || write_errno) {
     if (stream) stream->set_write_callback(0);
     if (conn && !(conn->state & CONNECTION_handshaking)) {
       SSL3_DEBUG_MSG("queue_write: Write buffer empty -- ask for some more data.\n");
@@ -2191,11 +2198,15 @@ protected int ssl_write_callback (int ignored)
 
     schedule_poll();
 
-    if ((close_state >= NORMAL_CLOSE &&
-	 (conn->state & CONNECTION_local_closing)) || write_errno) {
+    if ((close_state >= NORMAL_CLOSE) &&
+	(conn->state & CONNECTION_local_closing)) {
       SSL3_DEBUG_MSG ("ssl_write_callback: "
 		      "In or after local close - shutting down\n");
       shutdown();
+    } else if (write_errno) {
+      SSL3_DEBUG_MSG ("ssl_write_callback: "
+		      "Write failure - unregistering callback.\n");
+      stream->set_write_callback(0);
     }
   } LEAVE;
   return ret;

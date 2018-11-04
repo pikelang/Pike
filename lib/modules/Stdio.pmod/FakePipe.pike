@@ -325,7 +325,7 @@ protected class InternalSocket( protected this_program other,
     return other;
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     close();
     other->close();

@@ -100,7 +100,10 @@ class Inf {
     return arg==this;
   }
   protected int(0..1) _is_type(mixed type) { return (< "int", "object" >)[type]; }
-  protected mixed _random() { return this; }
+  protected mixed _random(function rnd_string, function rnd) {
+    if (neg) return 0;
+    return this;
+  }
   protected mixed _sqrt() { return this; }
   // % == nan
   // & == nan

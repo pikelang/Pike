@@ -19,7 +19,7 @@ void create(mapping(string:mixed)|GTK2.RecentManager|void props)
       GtkRecentManager *grm;
       GtkWidget *gw;
 
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       grm=GTK_RECENT_MANAGER(get_gobject(o1));
       if (grm)
         gw=gtk_recent_chooser_widget_new_for_manager(grm);

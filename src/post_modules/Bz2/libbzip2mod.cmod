@@ -11,7 +11,6 @@
 #include "array.h"
 #include "pike_macros.h"
 #include "program.h"
-#include "stralloc.h"
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"
@@ -455,6 +454,7 @@ PIKECLASS Deflate
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       bz_stream *s;
       s = &THIS->strm;
       s->bzalloc = NULL;
@@ -464,6 +464,7 @@ PIKECLASS Deflate
       s->next_out = NULL;
       s->avail_in = 0;
       s->avail_out = 0;
+#endif
 
       buffer_init(&THIS->buffer);
     }
@@ -676,6 +677,7 @@ PIKECLASS Inflate
 
   INIT
     {
+#ifdef PIKE_NULL_IS_SPECIAL
       bz_stream *s;
       s = &THIS->strm;
       s->bzalloc = NULL;
@@ -685,6 +687,7 @@ PIKECLASS Inflate
       s->next_out = NULL;
       s->avail_in = 0;
       s->avail_out = 0;
+#endif
 
       buffer_init(&THIS->buffer);
     }
@@ -984,6 +987,7 @@ PIKECLASS File
     RETURN(0);
   }
 
+#ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {
       THIS->small = 0;
@@ -992,11 +996,12 @@ PIKECLASS File
       THIS->mode = NO_FILE_MODE;
       THIS->file = NULL;
     }
+#endif
 
   EXIT
     gc_trivial;
     {
-      if(THIS->fp != NULL){
+      if(THIS->fp){
 	switch(THIS->mode){
 	case READ_MODE:
 	  bzReadClose(&THIS->bzerror,THIS->file);
@@ -1012,8 +1017,6 @@ PIKECLASS File
 #endif
 	}
 	fclose(THIS->fp);
-	THIS->fp = NULL;
-	THIS->mode = NO_FILE_MODE;
       }
     }
 }

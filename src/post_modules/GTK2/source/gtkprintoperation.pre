@@ -153,7 +153,7 @@ int run(int action, GTK2.Window parent)
     GError *error=NULL;
     GtkPrintOperationResult res;
 
-    get_all_args("run",args,"%i%o",&action,&o1);
+    get_all_args(NULL,args,"%i%o",&action,&o1);
     res=gtk_print_operation_run(GTK_PRINT_OPERATION(THIS->obj),
 			action,GTK_WINDOW(get_gobject(o1)),&error);
     pgtk2_pop_n_elems(args);

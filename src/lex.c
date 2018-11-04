@@ -5,13 +5,25 @@
 */
 
 #include "global.h"
+#include "las.h"
 #include "lex.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "pike_compiler.h"
 #include "interpret.h"
 
 #include <ctype.h>
+
+
+static double my_strtod(const char *nptr, char **endptr)
+{
+  double tmp=strtod(nptr,endptr);
+  if(*endptr>nptr)
+  {
+    if(endptr[0][-1]=='.')
+      endptr[0]--;
+  }
+  return tmp;
+}
 
 #define LEXDEBUG 0
 

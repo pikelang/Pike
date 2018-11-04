@@ -21,7 +21,7 @@
 #include "stralloc.h"
 #include "block_allocator.h"
 #include "opcodes.h"
-#include "stuff.h"
+#include "pike_cpulib.h"
 
 /* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4
@@ -179,6 +179,16 @@ static struct mapping_data weak_both_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
+/*
+ * This rounds an integer up to the next power of two. For x a power
+ * of two, this will just return the same again.
+ */
+static unsigned INT32 find_next_power(unsigned INT32 x)
+{
+    if( x == 0 ) return 1;
+    return 1<<(my_log2(x-1)+1);
+}
+
 /** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
  * allocated space.
@@ -241,6 +251,7 @@ static void init_mapping(struct mapping *m,
     }
   }
   add_ref(md);
+  gc_init_marker(md);
   m->data=md;
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = md->size;
@@ -540,7 +551,10 @@ static struct mapping *rehash(struct mapping *m, int hashsize)
   /* NB: Code duplication from init_mapping(). */
   if (hashsize & (hashsize - 1))
     hashsize = find_next_power(hashsize);
-  if ((md->hashsize == hashsize) && (md->refs == 1)) return m;
+  if ((md->hashsize == hashsize) && (md->refs == 1)
+      /* FIXME: Paranoia check below; is this needed? */
+      && !MD_FULLP(md))
+    return m;
 
   init_mapping(m, hashsize, md->flags);
   debug_malloc_touch(m);
@@ -671,6 +685,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
   nmd=(struct mapping_data *)xalloc(size);
   memcpy(nmd, md, size);
+  gc_init_marker(nmd);
   off=((char *)nmd) - ((char *)md);
 
   RELOC(nmd->free_list);
@@ -718,6 +733,34 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
 #define MAPPING_DATA_IN_USE(MD) ((MD)->refs != (MD)->hardlinks + 1)
 
+/**
+ * void LOW_FIND(int (*FUN)(const struct svalue *IND, const struct svalue *KEY),
+ *               const struct svalue *KEY,
+ *               CODE_IF_FOUND,
+ *               CODE_IF_NOT_FOUND)
+ *
+ * Needs local variables:
+ *   struct mapping *m;
+ *   struct mapping_data *md;
+ *   size_t h, h2;
+ *   struct svalue *key;
+ *   struct keypair *k, **prev;
+ *
+ * CODE_IF_FOUND must end with a return, goto or longjmp to
+ * avoid CODE_IF_NOT_FOUND being called afterwards, or for
+ * potential multiple matches.
+ *
+ * On entry:
+ *   m is the mapping to search.
+ *   key === KEY.
+ *   h2 = hash_svalue(key).
+ *
+ * Internals:
+ *   md = m->data.
+ *   md gets an extra ref.
+ *
+ * When CODE_IF_FOUND gets executed k points to the matching keypair.
+ */
 #define LOW_FIND(FUN, KEY, FOUND, NOT_FOUND) do {		\
   md=m->data;                                                   \
   add_ref(md);						        \
@@ -808,6 +851,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 #define PREPARE_FOR_INDEX_CHANGE2() \
   if(md->refs>1) COPYMAP2()
 
+#if 0
 #define PROPAGATE() do {			\
    if(md->refs==1)				\
    {						\
@@ -817,6 +861,9 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
      md->hash[h]=k;				\
    }						\
  }while(0)
+#else
+#define PROPAGATE()
+#endif
 
 
 /* Assumes md is locked */
@@ -898,6 +945,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md, *omd;
+  int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -938,7 +987,16 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
   if(!overwrite) return;
   PREPARE_FOR_DATA_CHANGE2();
   PROPAGATE(); /* propagate after preparing */
@@ -959,18 +1017,23 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  grow_md = MD_FULLP(md);
+
   /* We do a re-hash here instead of copying the mapping. */
-  if(
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-     (!md->free_list) ||
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-     (md->size >= md->num_keypairs) ||
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-     md->refs>1)
+  if(grow_md || md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->hashsize?(md->hashsize<<1):AVG_LINK_LENGTH);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1018,6 +1081,8 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   size_t h, h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
+  int grow_md;
+  int refs;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -1062,7 +1127,16 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag)
     check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
   if(TYPEOF(k->val) == t)
   {
     PREPARE_FOR_DATA_CHANGE2();
@@ -1080,21 +1154,25 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag)
     check_mapping(m);
 #endif
-  free_mapping_data(md);
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
 
   if(t != T_INT) return 0;
 
+  grow_md = MD_FULLP(md);
+
   /* no need to call PREPARE_* because we re-hash instead */
-  if(
-#ifndef PIKE_MAPPING_KEYPAIR_LOOP
-     !(md->free_list) ||
-#else /* PIKE_MAPPING_KEYPAIR_LOOP */
-     (md->size >= md->num_keypairs) ||
-#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-     md->refs>1)
+  if(grow_md || md->refs>1)
   {
     debug_malloc_touch(m);
-    rehash(m, md->hashsize?(md->hashsize<<1):AVG_LINK_LENGTH);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
     md=m->data;
   }
   h=h2 & ( md->hashsize - 1);
@@ -1316,10 +1394,13 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-                                                     struct pike_string *p)
+                                                     const struct pike_string *p)
 {
   struct svalue tmp;
-  SET_SVAL(tmp, T_STRING, 0, string, p);
+  /* Expanded SET_SVALUE macro to silence discard const warning. */
+  struct svalue *ptr = &tmp;
+  ptr->u.string = (struct pike_string *)p;
+  SET_SVAL_TYPE_SUBTYPE(*ptr, T_STRING, 0);
   return low_mapping_lookup(m, &tmp);
 }
 
@@ -1563,6 +1644,33 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
   for(e=0;e<ind->size;e++) low_mapping_insert(m, i++, v++, 2);
 
   return m;
+}
+
+PMOD_EXPORT void clear_mapping(struct mapping *m)
+{
+  struct mapping_data *md = m->data;
+  int flags = md->flags;
+
+  if (!md->size) return;
+  unlink_mapping_data(md);
+
+  switch (flags & MAPPING_WEAK) {
+  case 0: md = &empty_data; break;
+  case MAPPING_WEAK_INDICES: md = &weak_ind_empty_data; break;
+  case MAPPING_WEAK_VALUES: md = &weak_val_empty_data; break;
+  default: md = &weak_both_empty_data; break;
+  }
+
+  /* FIXME: Increment hardlinks & valrefs?
+   *    NB: init_mapping() doesn't do this.
+   */
+  add_ref(md);
+  /* gc_init_marker(md); */
+
+  m->data = md;
+#ifdef MAPPING_SIZE_DEBUG
+  m->debug_size = md->size;
+#endif
 }
 
 /* deferred mapping copy! */

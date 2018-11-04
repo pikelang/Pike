@@ -14,11 +14,9 @@
  * Includes
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include "global.h"
+
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -41,6 +39,11 @@
 #undef UNUSED
 #include <jni.h>
 #endif /* HAVE_JNI_H */
+
+#ifdef HAVE_JAVAVM_JNI_H
+#undef UNUSED
+#include <JavaVM/jni.h>
+#endif /* HAVE_JAVAVM_JNI_H */
 
 #ifdef HAVE_WINBASE_H
 #include <winbase.h>
@@ -381,10 +384,8 @@ static void f_jobj_cast(INT32 args)
   JNIEnv *env;
   jstring jstr;
 
-  if(args < 1)
-    Pike_error("cast() called without arguments.\n");
-  if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    Pike_error("Bad argument 1 to cast().\n");
+  if(args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("cast", 1, "string");
 
   if(Pike_sp[-args].u.string != literal_string_string)
   {
@@ -457,10 +458,10 @@ static void f_jobj_instance(INT32 args)
   struct object *cls;
   int n=0;
 
-  get_all_args("is_instance_of", args, "%o", &cls);
+  get_all_args(NULL, args, "%o", &cls);
 
   if((c = get_storage(cls, jclass_program)) == NULL)
-    Pike_error("Bad argument 1 to is_instance_of().\n");
+    SIMPLE_ARG_TYPE_ERROR("is_instance_of", 1, "Java class");
 
   if((env=jvm_procure_env(jo->jvm))) {
     if((*env)->IsInstanceOf(env, jo->jobj, c->jobj))
@@ -553,10 +554,10 @@ static void f_method_create(INT32 args)
   JNIEnv *env;
   char *p;
 
-  get_all_args("create", args, "%S%S%o", &name, &sig, &class);
+  get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
-    Pike_error("Bad argument 3 to create().\n");
+    SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
     destruct(Pike_fp->current_object);
@@ -918,7 +919,7 @@ static void f_call_virtual(INT32 args)
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = get_storage(Pike_sp[-args].u.object,
-					      jobj_program))==NULL)
+                                              jobj_program))==NULL)
     Pike_error("Bad argument 1 to `().\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
@@ -1175,14 +1176,14 @@ static void f_field_create(INT32 args)
   JNIEnv *env;
 
   if(args==1) {
-    get_all_args("create", args, "%o", &class);
+    get_all_args(NULL, args, "%o", &class);
     name = NULL;
     sig = NULL;
   } else
-    get_all_args("create", args, "%S%S%o", &name, &sig, &class);
+    get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
-    Pike_error("Bad argument 3 to create().\n");
+    SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
 
   f->field = 0;
 
@@ -1226,12 +1227,12 @@ static void f_field_set(INT32 args)
   char dorelease;
 
   if(args!=2)
-    Pike_error("Incorrect number of arguments to set.\n");
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set", 2);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = get_storage(Pike_sp[-args].u.object,
-					      jobj_program))==NULL)
-    Pike_error("Bad argument 1 to set.\n");
+                                              jobj_program))==NULL)
+    SIMPLE_ARG_TYPE_ERROR("set", 1, "Java object");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1291,7 +1292,7 @@ static void f_field_get(INT32 args)
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
-    Pike_error("Bad argument 1 to get.\n");
+    SIMPLE_ARG_TYPE_ERROR("get", 1, "Java object");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1368,7 +1369,7 @@ static void f_static_field_set(INT32 args)
   char dorelease;
 
   if(args!=1)
-    Pike_error("Incorrect number of arguments to set.\n");
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set", 1);
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1497,7 +1498,7 @@ struct native_method_context;
  *   data	Value to prepend in the argument list.
  *   statc	dispatch is a static method.
  *   dispatch	Function to call.
- *   args	Number of integer equvivalents to pass along.
+ *   args	Number of integer equivalents to pass along.
  *   flt_args	bitfield: There are float arguments at these positions.
  *   dbl_args	bitfield: There are double arguments at these positions.
  */
@@ -1647,8 +1648,14 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+  /* FIXME: Use ffi_closure_alloc() et al. */
+  s = ffi_prep_closure_loc (&ctx->closure, &ctx->cif,
+			    ffi_dispatch, data, &ctx->closure);
+#else
   s = ffi_prep_closure (&ctx->closure, &ctx->cif,
 			ffi_dispatch, data);
+#endif
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
@@ -2466,6 +2473,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       break;
     case 'D':
       dbl_args |= 1<<FLT_ARG_OFFS;
+      /* FALLTHRU */
     case 'J':
       args ++;
       wargs ++;
@@ -2480,8 +2488,10 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       if(!*p)
 	break;
       if(*p++ != 'L') { args++; break; }
+      /* FALLTHRU */
     case 'L':
       while(*p && *p++!=';');
+      /* FALLTHRU */
     default:
       args++;
     }
@@ -2573,10 +2583,10 @@ static void f_natives_create(INT32 args)
   int i, rc=-1;
   JNIEnv *env;
 
-  get_all_args("create", args, "%a%o", &arr, &cls);
+  get_all_args(NULL, args, "%a%o", &arr, &cls);
 
   if((c = get_storage(cls, jclass_program)) == NULL)
-    Pike_error("Bad argument 2 to create().\n");
+    SIMPLE_ARG_TYPE_ERROR("create", 2, "Java class");
 
   if(n->num_methods)
     Pike_error("create() called twice in Java.natives object.\n");
@@ -2597,8 +2607,8 @@ static void f_natives_create(INT32 args)
     }
 
     if (!(n->cons = (struct native_method_context *)
-	  mexec_alloc(arr->size * sizeof(struct native_method_context)))) {
-      Pike_error("Out of memory.\n");
+          mexec_alloc(arr->size * sizeof(struct native_method_context)))) {
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",0);
     }
 
     for(i=0; i<arr->size; i++) {
@@ -2674,7 +2684,7 @@ static void f_throw_new(INT32 args)
   JNIEnv *env;
   char *cn;
 
-  get_all_args("throw_new", args, "%s", &cn);
+  get_all_args(NULL, args, "%s", &cn);
 
   if((env = jvm_procure_env(jo->jvm))) {
 
@@ -2721,7 +2731,7 @@ static void f_new_array(INT32 args)
     args++;
   }
 
-  get_all_args("new_array", args, "%i%O", &n, &o);
+  get_all_args(NULL, args, "%i%O", &n, &o);
 
   if((env = jvm_procure_env(jo->jvm))) {
     make_jargs(&i, -1, &dorelease, "L", jo->jvm, env);
@@ -2742,7 +2752,7 @@ static void f_get_method(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_method", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(method_program, args+1);
@@ -2758,7 +2768,7 @@ static void f_get_static_method(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_static_method", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(static_method_program, args+1);
@@ -2774,7 +2784,7 @@ static void f_get_field(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_field", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(field_program, args+1);
@@ -2790,7 +2800,7 @@ static void f_get_static_field(INT32 args)
 {
   struct object *oo;
 
-  check_all_args("get_static_field", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args(NULL, args, BIT_STRING, BIT_STRING, 0);
 
   push_object(this_object());
   oo=clone_object(static_field_program, args+1);
@@ -2806,7 +2816,7 @@ static void f_get_static_field(INT32 args)
 static void f_register_natives(INT32 args)
 {
   struct object *oo;
-  check_all_args("register_natives", args, BIT_ARRAY, 0);
+  check_all_args(NULL, args, BIT_ARRAY, 0);
   push_object(this_object());
   oo=clone_object(natives_program, args+1);
   if(oo->prog!=NULL)
@@ -3261,7 +3271,7 @@ static void f_att_create(INT32 args)
   struct jvm_storage *jvm;
   struct att_storage *att = THIS_ATT;
 
-  get_all_args("create", args, "%o", &j);
+  get_all_args(NULL, args, "%o", &j);
 
   if((jvm = get_storage(j, jvm_program))==NULL)
     Pike_error("Bad argument 1 to create().\n");
@@ -3335,7 +3345,7 @@ static void f_monitor_create(INT32 args)
   struct monitor_storage *m=THIS_MONITOR;
   struct object *obj;
 
-  get_all_args("create", args, "%o", &obj);
+  get_all_args(NULL, args, "%o", &obj);
 
   if(get_storage(obj, jobj_program) == NULL)
     Pike_error("Bad argument 1 to create().\n");
@@ -3588,7 +3598,7 @@ static void f_find_class(INT32 args)
   char *cn;
   jclass c;
 
-  get_all_args("find_class", args, "%s", &cn);
+  get_all_args(NULL, args, "%s", &cn);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->FindClass(env, cn);
     pop_n_elems(args);
@@ -3609,7 +3619,7 @@ static void f_define_class(INT32 args)
   char *name;
   jclass c;
 
-  get_all_args("define_class", args, "%s%o%S", &name, &obj, &str);
+  get_all_args(NULL, args, "%s%o%S", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
     Pike_error("Bad argument 2 to define_class().\n");
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3675,7 +3685,7 @@ static void f_javafatal(INT32 args)
   JNIEnv *env;
   char *msg;
 
-  get_all_args("fatal", args, "%s", &msg);
+  get_all_args(NULL, args, "%s", &msg);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->FatalError(env, msg);
     jvm_vacate_env(Pike_fp->current_object, env);
@@ -3687,7 +3697,7 @@ static void f_new_boolean_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_boolean_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3703,7 +3713,7 @@ static void f_new_byte_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_byte_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3719,7 +3729,7 @@ static void f_new_char_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_char_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3735,7 +3745,7 @@ static void f_new_short_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_short_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3751,7 +3761,7 @@ static void f_new_int_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_int_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3767,7 +3777,7 @@ static void f_new_long_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_long_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3783,7 +3793,7 @@ static void f_new_float_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_float_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3799,7 +3809,7 @@ static void f_new_double_array(INT32 args)
   JNIEnv *env;
   INT_TYPE n;
 
-  get_all_args("new_double_array", args, "%i", &n);
+  get_all_args(NULL, args, "%i", &n);
   pop_n_elems(args);
 
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3816,6 +3826,9 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_JAVA
   struct svalue prog;
+#ifdef HAVE_GC_PROC_BUF_SIZE
+  extern size_t GC_proc_buf_size;
+#endif
 
 #ifdef __NT__
   switch(open_nt_dll()) {
@@ -3840,6 +3853,13 @@ PIKE_MODULE_INIT
     /* Debug... */
     extern char *ibmFindDLL(void);
     fprintf(stderr, "ibmFindDLL(): \"%s\"\n", ibmFindDLL());
+  }
+#endif
+
+#ifdef HAVE_GC_PROC_BUF_SIZE
+  if (GC_proc_buf_size < 16384) {
+    /* Attempt to make Boem-gc in gcj happy. */
+    GC_proc_buf_size = 16384;
   }
 #endif
 

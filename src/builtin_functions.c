@@ -31,7 +31,6 @@
 #include "encode.h"
 #include <ctype.h>
 #include "module_support.h"
-#include "module.h"
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
@@ -41,7 +40,6 @@
 #include "docode.h"
 #include "lex.h"
 #include "pike_float.h"
-#include "stuff.h"
 #include "pike_compiler.h"
 #include "port.h"
 #include "siphash24.h"
@@ -905,8 +903,9 @@ void f_query_num_arg(INT32 args)
   push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
-/*! @decl int search(string haystack, string|int needle, int|void start)
- *! @decl int search(array haystack, mixed needle, int|void start)
+/*! @decl int search(string haystack, string|int needle, int|void start, @
+ *!                  int|void end)
+ *! @decl int search(array haystack, mixed needle, int|void start, int|void end)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *! @decl mixed search(object haystack, mixed needle, mixed|void start, @
  *!                    mixed ... extra_args)
@@ -948,6 +947,10 @@ void f_query_num_arg(INT32 args)
  *!   If the optional argument @[start] is present search is started at
  *!   this position. This has no effect on mappings.
  *!
+ *! @param end
+ *!   If the optional argument @[end] is present, the search will terminate
+ *!   at this position (exclusive) if not found earlier.
+ *!
  *! @returns
  *!   Returns the position of @[needle] in @[haystack] if found.
  *!
@@ -977,6 +980,7 @@ void f_query_num_arg(INT32 args)
 PMOD_EXPORT void f_search(INT32 args)
 {
   ptrdiff_t start;
+  ptrdiff_t end;
 
   if(args < 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR("search", 2);
@@ -988,6 +992,7 @@ PMOD_EXPORT void f_search(INT32 args)
     struct pike_string *haystack = Pike_sp[-args].u.string;
 
     start=0;
+    end = haystack->len;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
@@ -995,15 +1000,35 @@ PMOD_EXPORT void f_search(INT32 args)
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
+      }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(start<0) {
+            bad_arg_error("search", args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
       }
     }
 
     if(haystack->len < start)
-      bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp-args,
+      bad_arg_error("search", args, 3, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
+
+    if (end <= start) {
+      pop_n_elems(args);
+      push_int(-1);
+      return;
+    }
 
     if ((TYPEOF(Pike_sp[1-args]) == T_INT) ||
 	((TYPEOF(Pike_sp[1-args]) == T_STRING) &&
@@ -1029,7 +1054,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -1042,7 +1067,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	    start = -1;
 	    break;
 	  }
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == val) break;
 	    start++;
 	  }
@@ -1051,15 +1076,12 @@ PMOD_EXPORT void f_search(INT32 args)
       case 2:
 	{
 	  p_wchar2 *str = STR2(haystack);
-	  while (start < haystack->len) {
+	  while (start < end) {
 	    if (str[start] == (p_wchar2)val) break;
 	    start++;
 	  }
 	}
 	break;
-      }
-      if (start >= haystack->len) {
-	start = -1;
       }
     } else if(TYPEOF(Pike_sp[1-args]) == T_STRING) {
       /* Handle searching for the empty string. */
@@ -1067,17 +1089,22 @@ PMOD_EXPORT void f_search(INT32 args)
 	start = string_search(haystack,
 			      Pike_sp[1-args].u.string,
 			      start);
+	end -= Pike_sp[1-args].u.string->len-1;
       }
     } else {
       SIMPLE_ARG_TYPE_ERROR("search", 2, "string | int");
     }
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
   }
 
   case T_ARRAY:
     start=0;
+    end = Pike_sp[-args].u.array->size;
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
@@ -1085,12 +1112,29 @@ PMOD_EXPORT void f_search(INT32 args)
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
+        bad_arg_error("search", args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
+      }
+
+      if (args > 3) {
+	if(TYPEOF(Pike_sp[3-args]) != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR("search", 4, "int");
+
+	if (Pike_sp[3-args].u.integer < end) {
+	  end = Pike_sp[3-args].u.integer;
+	  if(end<0) {
+            bad_arg_error("search", args, 4, "int(0..)",
+			  Pike_sp+3-args,
+			  "End must be greater or equal to zero.\n");
+	  }
+	}
       }
     }
     start=array_search(Pike_sp[-args].u.array,Pike_sp+1-args,start);
     pop_n_elems(args);
+    if (start >= end) {
+      start = -1;
+    }
     push_int64(start);
     break;
 
@@ -1169,7 +1213,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	}
       }
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
   default:
     SIMPLE_ARG_TYPE_ERROR("search", 1, "string|array|mapping|object");
   }
@@ -1501,7 +1545,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
 
 	 /Noring */
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_MULTISET:
       /* FIXME: This behavior for multisets isn't clean. It should be
@@ -1510,7 +1554,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
       f_values(1);
       stack_swap();
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case T_STRING:   /* Strings are odd. /Noring */
     case T_ARRAY:
@@ -1883,7 +1927,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
 
   if (in->len & 1) {
-    bad_arg_error("unicode_to_string", Pike_sp-args, args, 1, "string", Pike_sp-args,
+    bad_arg_error("unicode_to_string", args, 1, "string", Pike_sp-args,
 		  "String length is odd.\n");
   }
 
@@ -2100,19 +2144,30 @@ static void f_string_filter_non_unicode( INT32 args )
   }
 }
 
-/*! @decl string(0..255) string_to_utf8(string s)
- *! @decl string(0..255) string_to_utf8(string s, int extended)
+/*! @decl utf8_string string_to_utf8(string s)
+ *! @decl utf8_string string_to_utf8(string s, int extended)
  *!
- *!   Converts a string into an UTF-8 compliant byte-stream.
+ *!   Convert a string into a UTF-8 compliant byte-stream.
+ *!
+ *! @param s
+ *!   String to encode into UTF-8.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept and encode the characters outside the valid ranges
+ *!       using the same algorithm. Such encoded characters are
+ *!       however not UTF-8 compliant.
+ *!     @value 2
+ *!       Encode characters outside the BMP with UTF-8 encoded UTF-16
+ *!       (ie split them into surrogate pairs and encode).
+ *!   @endint
  *!
  *! @note
  *!   Throws an error if characters not valid in an UTF-8 stream are
  *!   encountered. Valid characters are in the ranges
  *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}.
- *!
- *!   If @[extended] is 1 then characters outside the valid ranges are
- *!   accepted too and encoded using the same algorithm. Such encoded
- *!   characters are however not UTF-8 compliant.
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()],
@@ -2147,7 +2202,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   }
   out = begin_shared_string(len);
 
-  dst = pike_string_utf8_encode(STR0(out), in);
+  dst = pike_string_utf8_encode(STR0(out), in, extended);
 #ifdef PIKE_DEBUG
   if (len != dst - STR0(out)) {
     Pike_fatal("string_to_utf8(): Calculated and actual lengths differ: "
@@ -2159,8 +2214,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-/*! @decl string utf8_to_string(string(0..255) s)
- *! @decl string utf8_to_string(string(0..255) s, int extended)
+/*! @decl string utf8_to_string(utf8_string s)
+ *! @decl string utf8_to_string(utf8_string s, int extended)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
@@ -2186,7 +2241,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
- *!   @[unicode_to_string()]
+ *!   @[unicode_to_string()], @[validate_utf8()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
@@ -2220,6 +2275,162 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   pop_n_elems(args);
 
   push_string(out);
+}
+
+/*! @decl string validate_utf8(utf8_string s)
+ *! @decl string validate_utf8(utf8_string s, int extended)
+ *!
+ *!   Checks whether a string is a valid UTF-8 byte-stream.
+ *!
+ *! @param s
+ *!   String of UTF-8 encoded data to validate.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept the extension used by @[string_to_utf8()], including
+ *!       lone UTF-16 surrogates.
+ *!     @value 2
+ *!       Accept UTF-8 encoded UTF-16 (ie accept valid surrogate-pairs).
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the stream is not a legal
+ *!   UTF-8 byte-stream, and @expr{1@} if it is.
+ *!
+ *! @note
+ *!   In conformance with @rfc{3629@} and Unicode 3.1 and later,
+ *!   non-shortest forms are considered invalid.
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[unicode_to_string()], @[utf8_to_string()]
+ */
+PMOD_EXPORT void f_validate_utf8(INT32 args)
+{
+  struct pike_string *in;
+  ptrdiff_t i;
+  INT_TYPE extended = 0;
+  INT32 min, max;
+  int ret = 1;
+  p_wchar1 expect_low_surrogate = 0;
+
+  get_all_args("validate_utf8", args, "%T.%i", &in, &extended);
+
+  if (in->size_shift) {
+    /* Wide string -- not UTF-8. */
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+
+  for(i=0; ret && (i < in->len); i++) {
+    p_wchar0 c = STR0(in)[i];
+    /* NB: unsigned INT64 to handle bit 33. */
+    unsigned INT64 ch;
+    unsigned INT64 full_mask = 0x3f;
+    unsigned INT64 hi_mask = 0x3e;
+
+    /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+     * Byte Sequences
+     *
+     *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+     * 000000-00007f   00-7f
+     * 000080-0007ff   c2-df     80-bf
+     * 000800-000fff    e0       a0-bf     80-bf
+     * 001000-00cfff   e1-ec     80-bf     80-bf
+     * 00d000-00d7ff    ed       80-9f     80-bf
+     * 00e000-00ffff   ee-ef     80-bf     80-bf
+     * 010000-03ffff    f0       90-bf     80-bf     80-bf
+     * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+     * 100000-10ffff    f4       80-8f     80-bf     80-bf
+     */
+
+    if (!(c & 0x80)) {
+      if (expect_low_surrogate) ret = 0;	/* Expected low surrogate. */
+      continue;
+    }
+
+    if (!(c & 0x40)) {
+      /* Invalid continuation char. */
+      ret = 0;
+      break;
+    }
+
+    if (c == 0xff) {
+      /* Invalid UTF-8 code-point. */
+      ret = 0;
+      break;
+    }
+
+    ch = c;
+
+    while (c & 0x40) {
+      /* NB: We rely on the NUL-terminator in pike_strings. */
+      p_wchar0 cc = STR0(in)[++i];
+      if ((cc & 0xc0) != 0x80) {
+	/* Expected continuation char. */
+	ret = 0;
+	break;
+      }
+      ch = ch<<6 | (cc & 0x3f);
+      full_mask |= full_mask << 5;
+      hi_mask <<= 5;
+      c <<= 1;
+    }
+
+    ch = ch & full_mask;
+
+    if (!(ch & hi_mask) || (ch < 0x80)) {
+      /* The 5 most significant bits of ch are all zero.
+       * This means that it was a non-minimal form.
+       *
+       * Note that a special case is needed for the range 0x40..0x7f.
+       */
+      ret = 0;
+      break;
+    }
+
+    if ((ch & ~0x7ff) == 0xd800) {
+      /* Surrogate */
+      if (!(extended & 3)) {
+	ret = 0;
+	break;
+      }
+      if (!(extended & 1) && ((ch & 0x400) != expect_low_surrogate)) {
+	/* Bad surrogate pair. */
+	ret = 0;
+	break;
+      }
+      expect_low_surrogate = (ch & 0x400) ^ 0x400;
+    } else if (!(extended & 1) && expect_low_surrogate) {
+      ret = 0;
+      break;
+    } else if (ch >= 0x110000) {
+      /* Character out of range. */
+      if (!(extended & 1) || (ch >= (((unsigned INT64)1) << 32))) {
+	ret = 0;
+	break;
+      }
+    }
+  }
+
+  if (!(extended & 1) && expect_low_surrogate) {
+    ret = 0;
+  }
+
+  pop_n_elems(args);
+  push_int(ret);
 }
 
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
@@ -2424,6 +2635,42 @@ PMOD_EXPORT void f_all_constants(INT32 args)
 {
   pop_n_elems(args);
   ref_push_mapping(get_builtin_constants());
+}
+
+/*! @decl CompilerEnvironment.PikeCompiler get_active_compiler()
+ *!
+ *!   Returns the most recent of the currently active pike compilers,
+ *!   or @[UNDEFINED] if none is active.
+ *!
+ *! @note
+ *!   This function should only be used during a call of @[compile()].
+ *!
+ *! @seealso
+ *!   @[get_active_error_handler()], @[compile()],
+ *!   @[master()->get_compilation_handler()], @[CompilationHandler]
+ */
+PMOD_EXPORT void f_get_active_compiler(INT32 args)
+{
+  struct compilation *c = NULL;
+
+  /* NB: This is an efun, so we need to keep the stack clean. */
+  pop_n_elems(args);
+
+  if (compilation_program) {
+    struct pike_frame *compiler_frame = Pike_fp;
+
+    while (compiler_frame &&
+	   (compiler_frame->context->prog != compilation_program)) {
+      compiler_frame = compiler_frame->next;
+    }
+
+    if (compiler_frame && compiler_frame->current_object->prog) {
+      ref_push_object(compiler_frame->current_object);
+      return;
+    }
+  }
+
+  push_undefined();
 }
 
 /*! @decl CompilationHandler get_active_compilation_handler()
@@ -2784,19 +3031,20 @@ void f__exit(INT32 args)
  *!   This function returns the number of seconds since 00:00:00 UTC, 1 Jan 1970.
  *!
  *!   The second syntax does not query the system for the current
- *!   time. Instead the latest done by the pike process is returned
- *!   again. That's slightly faster but can be wildly inaccurate. Pike
+ *!   time, instead the last time value used by the pike process is returned
+ *!   again. It avoids a system call, and thus is slightly faster,
+ *!   but can be wildly inaccurate. Pike
  *!   queries the time internally when a thread has waited for
  *!   something, typically in @[sleep] or in a backend (see
  *!   @[Pike.Backend]).
  *!
- *!   The third syntax can be used to measure time more preciely than one
- *!   second. It return how many seconds has passed since @[t]. The precision
+ *!   The third syntax can be used to measure time more precisely than one
+ *!   second. It returns how many seconds have passed since @[t]. The precision
  *!   of this function varies from system to system.
  *!
  *! @seealso
  *!   @[ctime()], @[localtime()], @[mktime()], @[gmtime()],
- *!   @[System.gettimeofday], @[gethrtime]
+ *!   @[System.gettimeofday()], @[gethrtime()]
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
@@ -2866,6 +3114,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
       f_minus(2);
     } while(Pike_sp[-1].u.string->len<8);
     pwd = Pike_sp[-1].u.string->str;
+    args++;
   }
 
   if(saltp)
@@ -2938,7 +3187,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @expr{o->destroy()@}, and then clears all variables in the
+ *!   Calls @expr{o->_destruct()@}, and then clears all variables in the
  *!   object. If no argument is given, the current object is destructed.
  *!
  *!   All pointers and function pointers to this object will become zero.
@@ -3053,7 +3302,7 @@ PMOD_EXPORT void f_indices(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("indices", 1,
@@ -3222,9 +3471,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	  copy_pike_type(types[argno], arg->type);
 	}
 	argno = !argno;
-	/* Handle the special case where CAR & CDR are the same.
-	 * Only occurrs with SHARED_NODES.
-	 */
+	/* Handle the special case where CAR & CDR are the same.  */
       } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
       goto retrace;
     }
@@ -3358,7 +3605,7 @@ PMOD_EXPORT void f_values(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("values", 1,
@@ -3454,7 +3701,7 @@ PMOD_EXPORT void f_types(INT32 args)
 	break;
       }
     }
-    /* FALL THROUGH */
+    /* FALLTHRU */
 
   default:
     SIMPLE_ARG_TYPE_ERROR("types", 1,
@@ -4090,7 +4337,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
  *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equvivalent to @expr{@[mkmapping](@[from], @[to])@} can be
+ *!   a mapping equivalent to @expr{@[mkmapping](@[from], @[to])@} can be
  *!   used.
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which
@@ -4598,7 +4845,7 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 
 /*! @decl void sleep(int|float s, void|int abort_on_signal)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep, and only when
  *!   @[abort_on_signal] is set. If more than one thread is running
@@ -4640,7 +4887,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
 
 /*! @decl void delay(int|float s)
  *!
- *!   This function makes the program stop for @[s] seconds.
+ *!   This function makes the thread stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during delay. Beware that this function uses busy-waiting
@@ -4698,7 +4945,7 @@ PMOD_EXPORT void f_delay(INT32 args)
  *!   mappings, multisets, objects and programs that had no nonweak
  *!   external references during the garbage collection. It's normally
  *!   the same as the number of freed things, but there might be some
- *!   difference since destroy() functions are called during freeing,
+ *!   difference since _destruct() functions are called during freeing,
  *!   which can cause more things to be freed or allocated.
  *!
  *! @seealso
@@ -4813,7 +5060,7 @@ PMOD_EXPORT void f_programp(INT32 args)
       push_int(1);
       return;
     }
-    /* FALL_THROUGH */
+    /* FALLTHRU */
 
   default:
     pop_n_elems(args);
@@ -4952,7 +5199,7 @@ PMOD_EXPORT void f_sort(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("sort", e+1, "array");
 
     if(Pike_sp[e-args].u.array->size != a->size)
-      bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
+      bad_arg_error("sort", args, e+1, "array", Pike_sp+e-args,
 		    "Argument %d has wrong size.\n", (e+1));
   }
 
@@ -5062,7 +5309,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-static void encode_struct_tm(struct tm *tm)
+static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 {
   push_static_text("sec");
   push_int(tm->tm_sec);
@@ -5084,6 +5331,28 @@ static void encode_struct_tm(struct tm *tm)
   push_int(tm->tm_yday);
   push_static_text("isdst");
   push_int(tm->tm_isdst);
+
+  push_static_text("timezone");
+  push_int(gmtoffset);
+
+  f_aggregate_mapping(20);
+}
+
+static void encode_tm_tz(const struct tm*tm)
+{
+  encode_struct_tm(tm,
+#ifdef STRUCT_TM_HAS_GMTOFF
+   -tm->tm_gmtoff
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+   -tm->__tm_gmtoff
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+   /* Assume dst is one hour. */
+   timezone - 3600*tm->tm_isdst
+#else
+   /* Assume dst is one hour. */
+   -3600*tm->tm_isdst
+#endif
+                                 );
 }
 
 /*! @decl mapping(string:int) gmtime(int timestamp)
@@ -5094,7 +5363,8 @@ static void encode_struct_tm(struct tm *tm)
  *!   not adjusted for the local time zone.
  *!
  *! @seealso
- *!   @[localtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -5123,11 +5393,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
                        "the timestamp %"PRINTINT64"d.\n", (INT64) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
-
-  push_static_text("timezone");
-  push_int(0);
-  f_aggregate_mapping(20);
+  encode_struct_tm(tm, 0);
 }
 
 /*! @decl mapping(string:int) localtime(int timestamp)
@@ -5154,9 +5420,9 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   	@member int(0..365) "yday"
  *!   	  Day of the year.
  *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	  Is daylight-saving time active.
  *!   	@member int "timezone"
- *!   	  Offset from UTC, including daylight savings time adjustment.
+ *!   	  Offset from UTC, including daylight-saving time adjustment.
  *!   @endmapping
  *!
  *! An error is thrown if the localtime(2) call failed on the system.
@@ -5165,10 +5431,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!
  *! @note
  *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
- *!   present, and was sometimes not adjusted for daylight savings time.
+ *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
  *! @seealso
- *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
+ *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
+ *!   @[strptime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
@@ -5188,241 +5455,140 @@ PMOD_EXPORT void f_localtime(INT32 args)
   if (!tm) Pike_error ("localtime() on this system cannot handle "
 		       "the timestamp %ld.\n", (long) t);
   pop_n_elems(args);
-  encode_struct_tm(tm);
+  encode_tm_tz(tm);
+}
 
-  push_static_text("timezone");
-#ifdef STRUCT_TM_HAS_GMTOFF
-  push_int(-tm->tm_gmtoff);
-#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
-  push_int(-tm->__tm_gmtoff);
-#elif defined(HAVE_EXTERNAL_TIMEZONE)
-  /* Assume dst is one hour. */
-  push_int(timezone - 3600*tm->tm_isdst);
+time_t mktime_zone(struct tm *date, int other_timezone, int tz)
+{
+  time_t retval;
+  int normalised_time;
+
+  if (tz <= -3600*100 || tz >= 3600*100)
+    Pike_error("Invalid timezone specified.\n");
+
+  date->tm_wday = -1;		/* flag to determine failure */
+
+  {
+    int sec, min, hour;
+    sec = date->tm_sec;
+    min = date->tm_min;
+    hour = date->tm_hour;
+
+    min += sec / 60;
+    if ((sec %= 60) < 0)
+      min--, sec += 60;
+    hour += min / 60;
+    if ((min %= 60) < 0)
+      hour--, min += 60;
+    if ((hour %= 24) < 0)
+      hour += 24;
+    normalised_time = ((hour * 60) + min) * 60 + sec;
+  }
+
+  retval = mktime(date);
+  if (date->tm_wday < 0) {
+    if (other_timezone) {
+      /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+      const char *orig_tz = getenv("TZ");
+      char tzbuf[20];
+      ONERROR uwp;
+      char *tzsgn = tz < 0 ? "-" : "+";
+      if (tz < 0) tz = -tz;
+      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+	      tzsgn,
+	      tz/3600,
+	      (tz/60)%60,
+	      tz % 60);
+      putenv(tzbuf);
+      if (!orig_tz) {
+#ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
+	orig_tz = "TZ=";
 #else
-  /* Assume dst is one hour. */
-  push_int(-3600*tm->tm_isdst);
+	orig_tz = "TZ";
 #endif
-  f_aggregate_mapping(20);
-}
-
-#define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
-
-static const int mon_lengths[2][12] = {
-  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-};
-
-static void normalize_date (struct tm *t)
-/* Normalizes t->tm_mday and t->tm_mon. */
-{
-  int q, year, mon, mday, leap;
-
-  q = t->tm_mon / 12;
-  if (t->tm_mon < 0) q--;
-  t->tm_mon -= q * 12;
-  t->tm_year += q;
-
-  year = t->tm_year + 1900;
-  leap = isleap (year);
-  mon = t->tm_mon;
-  mday = t->tm_mday;
-
-  if (mday > 0) {
-    int mon_len = mon_lengths[leap][mon];
-    if (mday <= mon_len) return;
-    do {
-      mday -= mon_len;
-      if (++mon == 12) mon = 0, year++, leap = isleap (year);
-    } while (mday > (mon_len = mon_lengths[leap][mon]));
-  }
-
-  else
-    do {
-      if (mon == 0) mon = 11, year--, leap = isleap (year);
-      else mon--;
-      mday += mon_lengths[leap][mon];
-    } while (mday < 1);
-
-  t->tm_year = year - 1900;
-  t->tm_mon = mon;
-  t->tm_mday = mday;
-}
-
-#define CHECKED_DIFF_MULT(RES, A, B, MULT, OVERFLOW) do {		\
-    RES = (A - B) * (MULT);						\
-    if ((A > B) != (RES > 0)) {OVERFLOW;}				\
-  } while (0)
-
-#define CHECKED_ADD(ACC, DIFF, OVERFLOW) do {				\
-    time_t res_ = ACC + DIFF;						\
-    if ((ACC > 0) == (DIFF > 0) && (ACC > 0) != (res_ > 0))		\
-      {OVERFLOW;}							\
-    else								\
-      ACC = res_;							\
-  } while (0)
-
-/* Returns the approximate difference in seconds between the
- * two struct tm's.
- */
-static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
-{
-  time_t base, diff;
-
-  /* Win32 localtime() returns NULL for all dates before Jan 01, 1970. */
-  if (!t2) return -1;
-
-  CHECKED_DIFF_MULT (base, t1->tm_year, t2->tm_year, 60*60*24*31*12,
-		     return base < 0 ? MAX_TIME_T : MIN_TIME_T);
-
-  /* Overflow detection not necessary on these fields since we can
-   * assume they're all in the valid ranges here. */
-  diff =
-    (t1->tm_mon - t2->tm_mon) * (60*60*24*31) +
-    (t1->tm_mday - t2->tm_mday) * (60*60*24) +
-    (t1->tm_hour - t2->tm_hour) * (60*60) +
-    (t1->tm_min - t2->tm_min) * 60 +
-    (t1->tm_sec - t2->tm_sec);
-
-  CHECKED_ADD (base, diff,
-	       return diff < 0 ? MIN_TIME_T : MAX_TIME_T);
-
-  return base;
-}
-
-typedef struct tm *time_fn (const time_t *);
-
-/* Inverse operation of gmtime or localtime. Unlike mktime(3), this
- * doesn't fill in a normalized time in target_tm.
- */
-static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn)
-{
-  struct tm norm_tm = *target_tm;
-  time_t current_ts = 0;
-  time_t displacement;
-  time_t diff_ts, old_diff_ts = 0;
-  int loop_cnt, tried_dst_displacement = 0;
-
-#ifdef DEBUG_MY_TIME_INVERSE
-  fprintf (stderr, "target: y %d m %d d %d h %d m %d isdst %d\n",
-	   target_tm->tm_year, target_tm->tm_mon, target_tm->tm_mday,
-	   target_tm->tm_hour, target_tm->tm_min, target_tm->tm_isdst);
-#endif
-
-  /* An hour, minute or second value outside the valid range is
-   * treated as a displacement rather than an absolute time spec. We
-   * therefore zero them in the target time spec and add the
-   * displacement seconds back to the time_t afterwards. This way we
-   * don't need to worry about them in the date normalization. */
-
-  /* It's quicker to always move the seconds to the displacement. It
-   * works just as well and we don't need to consider leap seconds. */
-  displacement = norm_tm.tm_sec;
-  norm_tm.tm_sec = 0;
-
-  /* Bug: The following conversions to seconds ought to compensate for
-   * leap seconds. That should only happen if timefn takes leap
-   * seconds into account however, which it might not do. */
-  if (norm_tm.tm_min < 0 || norm_tm.tm_min >= 60) {
-    time_t d;
-    CHECKED_DIFF_MULT (d, norm_tm.tm_min, 0, 60, return 0);
-    CHECKED_ADD (displacement, d, return 0);
-    norm_tm.tm_min = 0;
-  }
-  if (norm_tm.tm_hour < 0 || norm_tm.tm_hour >= 60) {
-    time_t d;
-    CHECKED_DIFF_MULT (d, norm_tm.tm_hour, 0, 60*60, return 0);
-    CHECKED_ADD (displacement, d, return 0);
-    norm_tm.tm_hour = 0;
-  }
-
-  /* Normalize the date. This is necessary since the simplistic diff
-   * calculation in my_tm_diff doesn't work on invalid dates like
-   * November 100th or March -10th. (Can't use the displacement
-   * variable for an invalid tm_mday since the number of seconds per
-   * day isn't constant.) */
-  normalize_date (&norm_tm);
-#ifdef DEBUG_MY_TIME_INVERSE
-  fprintf (stderr, "normalized: y %d m %d d %d h %d m %d isdst %d\n"
-	   "displacement: %ld\n",
-	   norm_tm.tm_year, norm_tm.tm_mon, norm_tm.tm_mday,
-	   norm_tm.tm_hour, norm_tm.tm_min, norm_tm.tm_isdst,
-	   (long) displacement);
-#endif
-
-  /* This loop seems stable, and usually converges in two passes.
-   * The loop counter is for paranoia reasons.
-   */
-  for (loop_cnt = 0; loop_cnt < 20; loop_cnt++, old_diff_ts = diff_ts) {
-    struct tm *current_tm = timefn(&current_ts);
-#ifdef DEBUG_MY_TIME_INVERSE
-    fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
-	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
-	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-#endif
-
-    diff_ts = my_tm_diff (&norm_tm, current_tm);
-#ifdef DEBUG_MY_TIME_INVERSE
-    fprintf (stderr, "diff: %ld\n", (long) diff_ts);
-#endif
-
-    if (!current_tm) {
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "outside range for timefn().\n");
-#endif
-      return 0;
-    }
-
-    if (!diff_ts) {
-      /* Got a satisfactory time, but if norm_tm has an opinion on
-       * DST we should check if we can return an alternative in the
-       * same DST zone, to cope with the overlapping DST adjustment at
-       * fall. */
-      if (norm_tm.tm_isdst >= 0 &&
-	  norm_tm.tm_isdst != current_tm->tm_isdst &&
-	  !tried_dst_displacement) {
-	/* Offset the time a day and iterate some more (only once
-	 * more, really), so that we approach the target time from the
-	 * right direction. */
-	if (norm_tm.tm_isdst)
-	  current_ts -= 24 * 3600;
-	else
-	  current_ts += 24 * 3600;
-	tried_dst_displacement = 1;
-#ifdef DEBUG_MY_TIME_INVERSE
-	fprintf (stderr, "dst displacement\n");
-#endif
-	continue;
       }
-      break;
+      SET_ONERROR(uwp, putenv, orig_tz);
+      /* NB: No need to call tzset(); mktime() will call it. */
+      retval = mktime_zone(date, 0, 0);
+      CALL_AND_UNSET_ONERROR(uwp);
+      return retval;
     }
-
-    if (diff_ts == -old_diff_ts) {
-      /* We're oscillating. Shouldn't happen since norm_tm ought to be
-       * valid. */
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "oscillation detected: %ld <-> %ld\n",
-	       (long) old_diff_ts, (long) diff_ts);
-#endif
-      return 0;
-    }
-
-    /* It's ok to not add the full diff here since we're looping. Do
-     * this since the diff calculation can overshoot the target
-     * time. */
-    CHECKED_ADD (current_ts, diff_ts, {
-	if (diff_ts > 0 && current_ts < MAX_TIME_T)
-	  current_ts = MAX_TIME_T;
-	else if (diff_ts < 0 && current_ts > MIN_TIME_T)
-	  current_ts = MIN_TIME_T;
-	else
-	  return 0;
-      });
+    Pike_error("Time conversion unsuccessful.\n");
   }
 
-  CHECKED_ADD (current_ts, displacement, return 0);
+  if(other_timezone)
+  {
+    normalised_time -= ((date->tm_hour * 60) + date->tm_min) * 60 + date->tm_sec;
+    if (normalised_time < -12*60*60)
+      normalised_time += 24*60*60;
+    else if (normalised_time > 12*60*60)
+      normalised_time -= 24*60*60;
 
-  *result = current_ts;
-  return 1;
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    retval += date->__tm_gmtoff;
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+    retval += date->tm_gmtoff;
+#elif defined(HAVE_EXTERNAL_TIMEZONE) && defined(HAVE_EXTERNAL_ALTZONE)
+    if (date->tm_isdst) {
+      retval -= altzone;
+    } else {
+      retval -= timezone;
+    }
+#else
+    {
+      /* NB: The tm from gmtime(3F) will always have tm_isdst == 0,
+       *     but mktime() is always in the local time zone, and will
+       *     adjust it and tm_hour if the local time zone is in dst.
+       *     This causes an error of typically one hour in dst when
+       *     used without preadjustment.
+       */
+      struct tm gmt_tm = *gmtime(&retval);
+      gmt_tm.tm_isdst = date->tm_isdst;
+      normalised_time += retval - mktime(&gmt_tm);
+    }
+#endif
+    retval += normalised_time + tz;
+  }
+  return retval;
+}
+
+static void unwind_tm()
+{
+  push_static_text("sec");
+  push_static_text("min");
+  push_static_text("hour");
+  push_static_text("mday");
+  push_static_text("mon");
+  push_static_text("year");
+  push_static_text("isdst");
+  push_static_text("timezone");
+  f_aggregate(8);
+  f_rows(2);
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
+  push_array_items(Pike_sp->u.array);
+}
+
+static int get_tm(const char *fname, int args, struct tm *date)
+{
+  INT_TYPE sec, min, hour, mday, mon, year;
+  INT_TYPE isdst = -1, tz = 0;
+
+  get_all_args(fname, args, "%i%i%i%i%i%i.%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+
+  memset(date, 0, sizeof(*date));
+  date->tm_sec = sec;
+  date->tm_min = min;
+  date->tm_hour = hour;
+  date->tm_mday = mday;
+  date->tm_mon = mon;
+  date->tm_year = year;
+  date->tm_isdst = isdst;
+#ifdef NULL_IS_SPECIAL
+  date->tm_zone = NULL;
+#endif
+  return tz;
 }
 
 /*! @decl int mktime(mapping(string:int) tm)
@@ -5447,91 +5613,56 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
  *!   	  Month of the year.
  *!   	@member int(0..) "year"
  *!   	  Year since 1900.
- *!   	@member int(0..1) "isdst"
- *!   	  Is daylight savings time.
+ *!   	@member int(-1..1) "isdst"
+ *!   	  Is daylight-saving time active.  If omitted or set to @expr{-1@},
+ *!       it means that the information is not available.
  *!   	@member int "timezone"
- *!   	  The timezone offset from UTC in seconds. If left out, the time
+ *!   	  The timezone offset from UTC in seconds. If omitted, the time
  *!       will be calculated in the local timezone.
  *!   @endmapping
  *!
  *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @note
+ *!   For proper UTC calculations ensure that @expr{isdst = 0@} @b{and@}
+ *!   @expr{timezone = 0@}; omitting either one of these parameters
+ *!   @b{will@} mess up the UTC calculation.
+ *!
+ *! @note
  *!   On some operating systems (notably AIX and Win32), dates before
  *!   00:00:00 UTC, Jan 1, 1970 are not supported.
  *!
- *!   On most systems, the supported range of dates are Dec 13, 1901
- *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!   On most 32-bit systems, the supported range of dates is from Dec 13, 1901
+ *!   20:45:52 UTC through to Jan 19, 2038 03:14:07 UTC (inclusive).
+ *!
+ *!   On most 64-bit systems, the supported range of dates is expressed
+ *!   in 56 bits and is thus practically
+ *!   unlimited (at least up to 1141 milion years in the past
+ *!   and into the future).
  *!
  *! @seealso
- *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
+ *!   @[time()], @[ctime()], @[localtime()], @[gmtime()], @[strftime()]
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
-  INT_TYPE sec, min, hour, mday, mon, year;
-  INT_TYPE isdst = -1, tz = 0;
   struct tm date;
   time_t retval;
+  int normalised_time, tz;
 
   if (args<1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
-    memset(&date, 0, sizeof(date));
-
-    push_static_text("sec");
-    push_static_text("min");
-    push_static_text("hour");
-    push_static_text("mday");
-    push_static_text("mon");
-    push_static_text("year");
-    push_static_text("isdst");
-    push_static_text("timezone");
-    f_aggregate(8);
-    f_rows(2);
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
-    push_array_items(Pike_sp->u.array);
-
-    args=8;
+    unwind_tm();
+    args += 7;
   }
 
-  get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
-	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+  tz = get_tm("mktime", args, &date);
 
-  memset(&date, 0, sizeof(date));
-  date.tm_sec=sec;
-  date.tm_min=min;
-  date.tm_hour=hour;
-  date.tm_mday=mday;
-  date.tm_mon=mon;
-  date.tm_year=year;
-  date.tm_isdst=isdst;
-
-  /* date.tm_zone = NULL; */
-
-  if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-  {
-    /* UTC-relative time. Use gmtime. */
-    if (!my_time_inverse (&date, &retval, gmtime))
-      PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
-    retval += tz;
-  } else
-
-  {
-    retval = mktime(&date);
-    if (retval == -1)
-    {
-      /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
-       * so try our own inverse function with localtime.
-       *
-       * Note that localtime on Win32 will also fail for dates before 1970.
-       */
-      if (!my_time_inverse (&date, &retval, localtime))
-	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
-    }
-  }
+  retval = mktime_zone(&date,
+                       args > 7 && SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER,
+	               tz);
 
   pop_n_elems(args);
 #if SIZEOF_TIME_T > SIZEOF_INT_TYPE
@@ -5539,6 +5670,268 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #else
   push_int(retval);
 #endif
+}
+
+#ifdef HAVE_STRPTIME
+/*! @decl mapping(string:int) strptime(string(1..255) data, string(1..255) format)
+ *!
+ *! Parse the given @[data] using the format in @[format] as a date.
+ *!
+ *! @dl
+ *!   @item %%
+ *!     The % character.
+ *!
+ *!   @item %a or %A
+ *!     The weekday name according to the C locale, in abbreviated
+ *!     form or the full name.
+ *!
+ *!   @item %b or %B or %h
+ *!     The month name according to the C locale, in abbreviated form
+ *!     or the full name.
+ *!
+ *!   @item %c
+ *!     The date and time representation for the C locale.
+ *!
+ *!   @item %C
+ *!     The century number (0-99).
+ *!
+ *!   @item %d or %e
+ *!     The day of month (1-31).
+ *!
+ *!   @item %D
+ *!     Equivalent to %m/%d/%y.
+ *!
+ *!   @item %H
+ *!     The hour (0-23).
+ *!
+ *!   @item %I
+ *!     The hour on a 12-hour clock (1-12).
+ *!
+ *!   @item %j
+ *!     The day number in the year (1-366).
+ *!
+ *!   @item %m
+ *!     The month number (1-12).
+ *!
+ *!   @item %M
+ *!     The minute (0-59).
+ *!
+ *!   @item %n
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %p
+ *!     The C locale's equivalent of AM or PM.
+ *!
+ *!   @item %R
+ *!     Equivalent to %H:%M.
+ *!
+ *!   @item %S
+ *!     The second (0-60; 60 may occur for leap seconds;
+ *!     earlier also 61 was allowed).
+ *!
+ *!   @item %t
+ *!     Arbitrary whitespace.
+ *!
+ *!   @item %T
+ *!     Equivalent to %H:%M:%S.
+ *!
+ *!   @item %U
+ *!     The week number with Sunday the first day of the week (0-53).
+ *!
+ *!   @item %w
+ *!     The weekday number (0-6) with Sunday = 0.
+ *!
+ *!   @item %W
+ *!     The week number with Monday the first day of the week (0-53).
+ *!
+ *!   @item %x
+ *!     The date, using the C locale's date format.
+ *!
+ *!   @item %X
+ *!     The time, using the C locale's time format.
+ *!
+ *!   @item %y
+ *!     The year within century (0-99).  When a century is not
+ *!     otherwise specified, values in the range 69-99 refer to years
+ *!     in the twentieth century (1969-1999); values in the range
+ *!     00-68 refer to years in the twenty-first century (2000-2068).
+ *!
+ *!   @item %Y
+ *!     The year, including century (for example, 1991).
+ *! @enddl
+ *!
+ *! @seealso
+ *!  @[localtime()], @[gmtime()], @[strftime()]
+ */
+PMOD_EXPORT void f_strptime (INT32 args)
+{
+    struct tm tm;
+    const char* ret;
+    if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+    memset(&tm, 0, sizeof(tm));
+    ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
+    pop_n_elems(args);
+    if (ret)
+      encode_tm_tz(&tm);
+    else
+      push_int(0);
+}
+#endif /* HAVE_STRPTIME */
+/*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
+ *!
+ *! Convert the structure to a string.
+ *!
+ *! @dl
+ *!   @item %a
+ *!     The abbreviated weekday name according to the current locale
+ *!
+ *!   @item %A
+ *!     The full weekday name according to the current locale.
+ *!
+ *!   @item %b
+ *!     The abbreviated month name according to the current locale.
+ *!
+ *!   @item %B
+ *!     The full month name according to the current locale.
+ *!
+ *!   @item %c
+ *!     The preferred date and time representation for the current locale.
+ *!
+ *!   @item %C
+ *!     The century number (year/100) as a 2-digit integer.
+ *!
+ *!   @item %d
+ *!     The day of the month as a decimal number (range 01 to 31).
+ *!
+ *!   @item %D
+ *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+ *!     Americans should note that in other countries @expr{%d/%m/%y@}
+ *!     is rather common. This means that in international context
+ *!     this format is ambiguous and should not be used.)
+ *!
+ *!   @item %e
+ *!     Like @expr{%d@}, the day of the month as a decimal number,
+ *!     but a leading zero is replaced by a space.
+ *!
+ *!   @item %E
+ *!     Modifier: use alternative format, see below.
+ *!
+ *!   @item %F
+ *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!
+ *!   @item %G
+ *!     The ISO 8601 week-based year (see NOTES) with century as a
+ *!     decimal number. The 4-digit year corresponding to the ISO
+ *!     week number (see @expr{%V@}). This has the same format and
+ *!     value as @expr{%Y@}, except that if the ISO week number
+ *!     belongs to the previous or next year, that year is used instead.
+ *!
+ *!   @item %g
+ *!     Like @expr{%G@}, but without century, that is,
+ *!     with a 2-digit year (00-99). (TZ)
+ *!
+ *!   @item %h
+ *!     Equivalent to %b.
+ *!
+ *!   @item %H
+ *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!
+ *!   @item %I
+ *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!
+ *!   @item %j
+ *!     The day of the year as a decimal number (range 001 to 366).
+ *!
+ *!   @item %k
+ *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
+ *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
+ *!
+ *!   @item %l
+ *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
+ *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
+ *!
+ *!   @item %m
+ *!     The month as a decimal number (range 01 to 12).
+ *!
+ *!   @item %M
+ *!     The minute as a decimal number (range 00 to 59).
+ *!
+ *!   @item %n
+ *!     A newline character. (SU)
+ *!
+ *!   @item %O
+ *!     Modifier: use alternative format, see below. (SU)
+ *!
+ *!   @item %p
+ *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+ *!     value, or the corresponding strings for the current locale.
+ *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+ *!
+ *!   @item %P
+ *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+ *!     or a corresponding string for the current locale.
+ *!
+ *!   @item %r
+ *!     The time in a.m. or p.m. notation. In the POSIX locale this is
+ *!     equivalent to @expr{%I:%M:%S %p@}.
+ *!
+ *!   @item %R
+ *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
+ *!     For a version including the seconds, see @expr{%T@} below.
+ *!
+ *!   @item %s
+ *!     The number of seconds since the Epoch,
+ *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!
+ *!   @item %S
+ *!     The second as a decimal number (range 00 to 60).
+ *!     (The range is up to 60 to allow for occasional leap seconds.)
+ *!
+ *!   @item %t
+ *!     A tab character. (SU)
+ *!
+ *!   @item %T
+ *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!
+ *!   @item %u
+ *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
+ *!     See also @expr{%w@}. (SU)
+ *!
+ *!   @item %U
+ *!     The week number of the current year as a decimal number,
+ *!     range 00 to 53, starting with the first Sunday as the first
+ *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!
+ *!   @item %V
+ *!     The ISO 8601 week number of the current year as a decimal number,
+ *!     range 01 to 53, where week 1 is the first week that has at least
+ *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!
+ *!   @item %w
+ *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
+ *!     See also @expr{%u@}.
+ *! @enddl
+ *!
+ *! @seealso
+ *!  @[ctime()], @[mktime()], @[strptime()], @[Gettext.setlocale]
+ */
+PMOD_EXPORT void f_strftime (INT32 args)
+{
+    char buffer[8192];
+    struct tm date;
+    buffer[0] = 0;
+
+    unwind_tm();
+    get_tm("strftime", 8, &date);
+    pop_n_elems(8);
+    if (Pike_sp[-1].u.string->size_shift)
+      Pike_error("Only 8bit strings are supported\n");
+
+    strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
+
+    pop_stack();
+    push_text( buffer );
 }
 
 #define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
@@ -5618,7 +6011,7 @@ static int does_match_8_8( const unsigned char *s, int j, int sl,
 
      case '\\':
        if (++i==ml) return 0;
-       /* falthrough */
+       /* FALLTHRU */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -5665,7 +6058,7 @@ static int does_match_16_8( const unsigned short *s, int j, int sl,
 
      case '\\':
        if (++i==ml) return 0;
-       /* falthrough */
+       /* FALLTHRU */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -5705,7 +6098,7 @@ static int does_match_x_x(struct pike_string *s,int j,
 
      case '\\':
        if (++i==m->len) return 0;
-       /* falthrough */
+       /* FALLTHRU */
      default:
        if(j>=s->len ||
 	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;
@@ -5875,7 +6268,7 @@ static void f_interleave_array(INT32 args)
   int nelems = 0;
   int i;
 
-  get_all_args("interleave_array", args, "%a", &arr);
+  get_all_args(NULL, args, "%a", &arr);
 
   /* We're not interrested in any other arguments. */
   pop_n_elems(args-1);
@@ -6121,7 +6514,7 @@ static void f_longest_ordered_sequence(INT32 args)
   struct array *a = NULL;
   struct array *aa = NULL;
 
-  get_all_args("longest_ordered_sequence", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
@@ -6812,7 +7205,7 @@ PMOD_EXPORT void f_permute( INT32 args )
   struct array *a;
   struct svalue *it;
 
-  get_all_args("permute", args, "%a%+", &a, &n);
+  get_all_args(NULL, args, "%a%+", &a, &n);
 
   if( a->refs>1 )
   {
@@ -6861,7 +7254,7 @@ PMOD_EXPORT void f_diff(INT32 args)
    struct array *a, *b;
    int uniq;
 
-   get_all_args("diff", args, "%a%a", &a, &b);
+   get_all_args(NULL, args, "%a%a", &a, &b);
 
    if ((a == b) || !a->size || !b->size) {
      if (!a->size && !b->size) {
@@ -6933,7 +7326,7 @@ PMOD_EXPORT void f_diff_compare_table(INT32 args)
   struct array *a;
   struct array *b;
 
-  get_all_args("diff_compare_table", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   push_array(diff_compare_table(a, b, NULL));
 }
@@ -6952,7 +7345,7 @@ PMOD_EXPORT void f_diff_longest_sequence(INT32 args)
   struct array *b;
   struct array *cmptbl;
 
-  get_all_args("diff_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl = diff_compare_table(a, b, NULL);
   push_array(cmptbl);
@@ -6979,7 +7372,7 @@ PMOD_EXPORT void f_diff_dyn_longest_sequence(INT32 args)
   struct array *b;
   struct array *cmptbl;
 
-  get_all_args("diff_dyn_longest_sequence", args, "%a%a", &a, &b);
+  get_all_args(NULL, args, "%a%a", &a, &b);
 
   cmptbl=diff_compare_table(a, b, NULL);
   push_array(cmptbl);
@@ -7120,10 +7513,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(callback);
   COUNT(catch_context);
   COUNT(compat_cb_box);
-  COUNT(destroy_called_mark);
+  COUNT(destruct_called_mark);
   COUNT(gc_rec_frame);
   COUNT(mapping);
-  COUNT(marker);
   COUNT(mc_marker);
   COUNT(multiset);
   COUNT(node_s);
@@ -7243,7 +7635,16 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
             break;
     }
     res /= *s->u.refs;
-    low_mapping_lookup(*m,s)->u.integer = res;
+
+    /* NB: We added s to the mapping above the switch, so we should
+     *     always find something here, but...
+     */
+    x = low_mapping_lookup(*m, s);
+    assert(x);
+    assert(TYPEOF(*x) == PIKE_T_INT);
+    assert(!SUBTYPEOF(*x));
+    x->u.integer = res;
+
     return res;
 }
 
@@ -7369,11 +7770,11 @@ PMOD_EXPORT void f_replace_master(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("replace_master", 1, "object");
   new_master = Pike_sp[-args].u.object;
   if(!new_master->prog)
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
 
   if (SUBTYPEOF(Pike_sp[-args]))
-    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("replace_master", args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
 
   push_static_text ("is_pike_master");
@@ -7562,12 +7963,17 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 static void f_gethrdtime(INT32 args)
 {
   int nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
-  cpu_time_t time = threads_disabled_acc_time;
-  pop_n_elems(args);
-
+  cpu_time_t time;
+#ifdef PIKE_THREADS
+  time = threads_disabled_acc_time;
   if (threads_disabled) {
     time += get_real_time() - threads_disabled_start;
   }
+#else
+  time = get_real_time();
+#endif
+  pop_n_elems(args);
+
   if (nsec) {
     push_int64(time);
 #ifndef LONG_CPU_TIME
@@ -7684,7 +8090,7 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   get_all_args("variablep",args,"%o%S",&o, &s);
 
   if(!o->prog)
-    bad_arg_error("variablep", Pike_sp-args, args, 1, "object", Pike_sp-args,
+    bad_arg_error("variablep", args, 1, "object", Pike_sp-args,
 		  "Called on destructed object.\n");
 
   /* FIXME: Ought to be overloadable, since `[]=() is... */
@@ -7724,7 +8130,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   struct mapping *m;
   int i, j=0,size=0;
 
-  get_all_args("uniq", args, "%a", &a);
+  get_all_args(NULL, args, "%a", &a);
   if( !a->size )
   {
     push_empty_array();
@@ -7769,7 +8175,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 PMOD_EXPORT void f_splice(INT32 args)
 {
   struct array *out;
-  INT32 size=0x7fffffff;
+  INT32 size=MAX_INT32;
   INT32 i,j,k;
 
   for(i=0;i<args;i++)
@@ -7799,8 +8205,8 @@ PMOD_EXPORT void f_splice(INT32 args)
   return;
 }
 
-/*! @decl array(mixed) everynth(array(mixed) a, void|int n, @
- *!                             void|int start)
+/*! @decl array(mixed) everynth(array(mixed) a, void|int(1..) n, @
+ *!                             void|int(0..) start)
  *!
  *!   Return an array with every @[n]:th element of the array @[a].
  *!
@@ -7818,7 +8224,7 @@ PMOD_EXPORT void f_everynth(INT32 args)
   TYPE_FIELD types;
   INT32 size=0;
 
-  check_all_args("everynth", args,
+  check_all_args(NULL, args,
 		 BIT_ARRAY, BIT_INT | BIT_VOID, BIT_INT | BIT_VOID , 0);
 
   switch(args)
@@ -7827,13 +8233,15 @@ PMOD_EXPORT void f_everynth(INT32 args)
     case 3:
      start=Pike_sp[2-args].u.integer;
      if(start<0)
-       bad_arg_error("everynth", Pike_sp-args, args, 3, "int", Pike_sp+2-args,
+       bad_arg_error("everynth", args, 3, "int", Pike_sp+2-args,
 		     "Argument negative.\n");
+     /* FALLTHRU */
     case 2:
       n=Pike_sp[1-args].u.integer;
       if(n<1)
-	bad_arg_error("everynth", Pike_sp-args, args, 2, "int", Pike_sp+1-args,
+        bad_arg_error("everynth", args, 2, "int", Pike_sp+1-args,
 		      "Argument negative.\n");
+     /* FALLTHRU */
     case 1:
       ina=Pike_sp[-args].u.array;
   }
@@ -8716,10 +9124,10 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   struct pike_string *file = NULL;
 
   if( !(p = program_from_svalue(Pike_sp-args)) )
-      Pike_error("Illegal argument 1 to defined(program,string)\n");
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 1, "program");
 
   if( TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING )
-      Pike_error("Illegal argument 2 to defined(program,string)\n");
+    SIMPLE_ARG_TYPE_ERROR("program_identifier_defined", 2, "string");
   else
       ident = Pike_sp[-args+1].u.string;
 
@@ -8784,7 +9192,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
   struct object *par;
   int parid,e,q=0;
 
-  get_all_args("inherit_list",args,"%*",&arg);
+  get_all_args(NULL, args, "%*", &arg);
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
     f_object_program(1);
 
@@ -8869,7 +9277,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
-  check_all_args("Function.defined",args,BIT_FUNCTION, 0);
+  check_all_args(NULL, args, BIT_FUNCTION, 0);
 
   if(SUBTYPEOF(Pike_sp[-args]) != FUNCTION_BUILTIN &&
      Pike_sp[-args].u.object->prog)
@@ -9003,6 +9411,10 @@ void init_builtin_efuns(void)
 	   tFunc(tNone,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
 
   /* function(:object) */
+  ADD_EFUN("get_active_compiler", f_get_active_compiler,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+
+  /* function(:object) */
   ADD_EFUN("get_active_compilation_handler",
 	   f_get_active_compilation_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
@@ -9023,7 +9435,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
 #ifdef __amigaos__
@@ -9052,7 +9464,7 @@ void init_builtin_efuns(void)
 
   /* function(array(0=mixed),int|void,int|void:array(0)) */
   ADD_FUNCTION2("everynth",f_everynth,
-		tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
+                tFunc(tArr(tSetvar(0,tMix)) tOr(tInt1Plus,tVoid) tOr(tIntPos,tVoid),
 		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
 
   /* function(int:void) */
@@ -9175,9 +9587,9 @@ void init_builtin_efuns(void)
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
-	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt),
+	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
-		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
                       tOr(tVoid,tVar(1)), tVar(1)),
@@ -9290,16 +9702,20 @@ void init_builtin_efuns(void)
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
 	   tFunc(tStr8 tOr(tInt02,tVoid),tStr), OPT_TRY_OPTIMIZE);
 
-  /* function(string,int|void:string(0..255)) */
+  /* function(string,int|void:utf8_string) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
-	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tInt,tVoid),tUtf8Str), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("string_filter_non_unicode", f_string_filter_non_unicode,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
 
-  /* function(string(0..255),int|void:string) */
+  /* function(utf8_string,int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
-	   tFunc(tStr8 tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tUtf8Str tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(string(8bit),int|void:int(0..1)) */
+  ADD_EFUN("validate_utf8", f_validate_utf8,
+	   tFunc(tStr8 tOr(tInt,tVoid),tInt01), OPT_TRY_OPTIMIZE);
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
@@ -9336,11 +9752,21 @@ void init_builtin_efuns(void)
   /* function(int:mapping(string:int)) */
   ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
 
-  /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
+  /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping(string:int):int) */
   ADD_EFUN("mktime",f_mktime,
 	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
-	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
+	       tFunc(tOr(tObj, tMap(tStr, tInt)),tInt)),OPT_TRY_OPTIMIZE);
+
+#ifdef HAVE_STRPTIME
+  /* function(string, string:mapping(string:int)) */
+  ADD_EFUN("strptime", f_strptime,
+           tFunc(tStr tStr, tMap(tStr, tInt)), OPT_TRY_OPTIMIZE);
+#endif
+
+  /* function(string,mapping(string:int):string) */
+  ADD_EFUN("strftime", f_strftime,
+           tFunc(tStr tMap(tStr,tInt), tStr), OPT_TRY_OPTIMIZE);
 
   /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,

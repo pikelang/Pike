@@ -163,112 +163,6 @@ MACRO void ra_free(enum arm32_register reg);
 void break_my_arm(void) {
 }
 
-#ifdef ARM32_LOW_DEBUG
-static unsigned INT32 stats_m[F_MAX_INSTR - F_OFFSET];
-static unsigned INT32 stats_b[F_MAX_INSTR - F_OFFSET];
-
-#define OPCODE0(X,Y,F) case X: return #X;
-#define OPCODE1(X,Y,F) case X: return #X;
-#define OPCODE2(X,Y,F) case X: return #X;
-#define OPCODE0_TAIL(X,Y,F) case X: return #X;
-#define OPCODE1_TAIL(X,Y,F) case X: return #X;
-#define OPCODE2_TAIL(X,Y,F) case X: return #X;
-#define OPCODE0_JUMP(X,Y,F) case X: return #X;
-#define OPCODE1_JUMP(X,Y,F) case X: return #X;
-#define OPCODE2_JUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_PTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE1_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE2_TAILPTRJUMP(X,Y,F) case X: return #X;
-#define OPCODE0_RETURN(X,Y,F) case X: return #X;
-#define OPCODE1_RETURN(X,Y,F) case X: return #X;
-#define OPCODE2_RETURN(X,Y,F) case X: return #X;
-#define OPCODE0_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE1_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE2_TAILRETURN(X,Y,F) case X: return #X;
-#define OPCODE0_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_BRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE1_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE2_TAILBRANCH(X,Y,F) case X: return #X;
-#define OPCODE0_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
-#define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
-
-const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
-    switch (code+F_OFFSET) {
-#include "interpret_protos.h"
-    default:
-        return "<unknown>";
-    }
-}
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_ALIAS
-#undef OPCODE1_ALIAS
-#undef OPCODE2_ALIAS
-
-ATTRIBUTE((destructor))
-MACRO void write_stats() {
-    int i;
-    FILE* file = fopen("/home/el/opcode.state", "a");
-
-    for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
-        if (!stats_m[i] && !stats_b[i]) continue;
-
-        fprintf(file, "%s\t%u\t%u\n", arm_get_opcode_name(i), stats_b[i], stats_m[i] - stats_b[i]);
-    }
-
-    fclose(file);
-}
-#endif
-
-MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
-    code = code; /* prevent unused warning */
-    bytecode = bytecode;
-#ifdef ARM32_LOW_DEBUG
-    if (bytecode) {
-        stats_b[code - F_OFFSET] ++;
-    } else {
-        stats_m[code - F_OFFSET] ++;
-    }
-#endif
-}
 
 OPCODE_FUN set_cond(unsigned INT32 instr, enum arm32_condition cond) {
     return (instr&0x0fffffff)|cond;
@@ -904,15 +798,9 @@ void arm32_init_interpreter_state(void) {
     ARM_ASSERT(sizeof(struct svalue) == 8);
     ARM_ASSERT(OFFSETOF(pike_frame, num_locals) % 4 == 0);
     ARM_ASSERT(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
-
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
 MACRO void ra_init(void) {
-    /* FIXME: this ought to happen in init_interpreter_state, only, but it is currently overwritten
-     * later */
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-
     /* all register r0 through r10 are unused */
     compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(12);
     compiler_state.dirt = 0;
@@ -1533,7 +1421,8 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
-  record_opcode(opcode, 1);
+  if (opcode == F_CATCH)
+    addr = inter_return_opcode_F_CATCH;
 
   arm32_maybe_update_pc();
 
@@ -1801,7 +1690,7 @@ static void low_ins_f_byte(unsigned int opcode)
           switch (opcode) {
           case F_NE:
               negate = 1;
-              /* FALL THROUGH */
+              /* FALLTHRU */
           case F_EQ: {
                   enum arm32_register tmp1, tmp2;
 
@@ -2093,6 +1982,109 @@ static void low_ins_f_byte(unsigned int opcode)
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
       return;
+  case F_DUP:
+      arm32_debug_instr_prologue_0(opcode);
+      arm32_load_sp_reg();
+      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      return;
+  case F_SWAP:
+      arm32_debug_instr_prologue_0(opcode);
+      {
+        enum arm32_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        ARM_ASSERT(tmp1 < tmp2 && tmp2 < tmp3 && tmp3 < tmp4);
+
+        arm32_load_sp_reg();
+        load_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp3, tmp1, tmp3);
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        xor_reg_reg(tmp4, tmp2, tmp4);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
+  case F_NOT:
+      arm32_debug_instr_prologue_0(opcode);
+      {
+          struct label done, check_rval, complex;
+          enum arm32_register type, value;
+
+          ARM_ASSERT(ARM_REG_ARG1 == ARM_REG_RVAL);
+          ARM_ASSERT(PIKE_T_INT == 0);
+
+          ra_alloc(ARM_REG_ARG1);
+          value = ra_alloc_persistent();
+
+          label_init(&done);
+          label_init(&check_rval);
+          label_init(&complex);
+
+          arm32_load_sp_reg();
+
+          load16_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
+                        -sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
+
+          arm32_mov_int(value, 1);
+          lsl_reg_reg(value, value, ARM_REG_ARG1);
+
+          /* everything which is neither function, object or int is true */
+          arm32_tst_int(value, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
+          /* here we use the fact that the type is nonzero */
+          b_imm(label_dist(&check_rval), ARM_COND_Z);
+
+          arm32_tst_int(value, BIT_INT);
+
+          b_imm(label_dist(&complex), ARM_COND_Z);
+
+          load32_reg_imm(value, ARM_REG_PIKE_SP, -sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          /* jump to the check, we are done */
+          b_imm(label_dist(&done), ARM_COND_AL);
+
+          label_generate(&complex);
+          arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm32_call(complex_svalue_is_true);
+          ra_free(ARM_REG_ARG1);
+
+          mov_reg(value, ARM_REG_RVAL);
+
+          label_generate(&check_rval);
+
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+
+          label_generate(&done);
+          /* push integer to stack */
+
+          arm32_cmp_int(value, 0);
+
+          ARM_IF(ARM_COND_NE, {
+            arm32_mov_int(value, 0);
+          });
+          ARM_IF(ARM_COND_EQ, {
+            arm32_mov_int(value, 1);
+          });
+
+          type = ra_alloc_any();
+
+          ARM_ASSERT(type < value);
+
+          arm32_mov_int(type, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(type)|RBIT(value));
+
+          ra_free(type);
+          ra_free(value);
+      }
+      return;
   }
 
   arm32_call_c_opcode(opcode);
@@ -2114,15 +2106,11 @@ static void low_ins_f_byte(unsigned int opcode)
 
 void ins_f_byte(unsigned int opcode)
 {
-  record_opcode(opcode, 0);
-
   low_ins_f_byte(opcode);
 }
 
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
-  record_opcode(opcode, 0);
-
   switch (opcode) {
   case F_NUMBER:
       arm32_debug_instr_prologue_1(opcode, arg1);
@@ -2282,20 +2270,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           }
 
           ra_free(tmp);
-          return;
-      }
-  case F_PROTECT_STACK:
-      {
-          enum arm32_register reg;
-
-          arm32_debug_instr_prologue_1(opcode, arg1);
-
-          arm32_load_fp_reg();
-          reg = ra_alloc_any();
-          arm32_mov_int(reg, arg1);
-          store16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
-
-          ra_free(reg);
           return;
       }
   case F_THIS_OBJECT:
@@ -2512,8 +2486,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
 void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 {
-  record_opcode(opcode, 0);
-
   switch (opcode) {
   case F_MARK_AND_EXTERNAL:
       ins_f_byte(F_MARK);
@@ -2621,8 +2593,6 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
 
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
-
-    record_opcode(opcode, 0);
 
     switch (opcode) {
     case F_QUICK_BRANCH_WHEN_ZERO:
@@ -2765,8 +2735,6 @@ int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
 
-    record_opcode(opcode, 0);
-
     arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
 
     instr = arm32_low_ins_f_jump(opcode, backward_jump);
@@ -2781,8 +2749,6 @@ int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, in
 
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
-
-    record_opcode(opcode, 0);
 
     arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
     arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg2);

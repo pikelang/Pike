@@ -1532,7 +1532,8 @@ protected mapping(string:int)
 //!
 //! @note
 //!   If a certificate directory contains a file named
-//!   @expr{"ca-certificates.crt"@}, it is assumed to
+//!   @expr{"ca-certificates.crt"@}, @expr{"ca-bundle.crt"@} or
+//!   @expr{"ca-bundle.trust.crt"@}, it is assumed to
 //!   contain a concatenation of all the certificates
 //!   in the directory.
 //!
@@ -1632,6 +1633,27 @@ mapping(string:array(Verifier))
     if(tbs->not_before > time(1))
       expire = min(expire, tbs->not_before);
   };
+  int(0..1) add_cert(TBSCertificate|string(8bit) cert)
+  {
+    TBSCertificate tbs = verify_ca_certificate(cert);
+    if (!tbs) return 0;
+    string subj = tbs->subject->get_der();
+    if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+    {
+      update_expire(tbs);
+      res[subj] += ({ tbs->public_key });
+    }
+    return 1;
+  };
+  int(0..1) add_pem(string(8bit) pem)
+  {
+    int(0..1) found;
+    Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
+    foreach(messages->get_certificates(), string m) {
+      found |= add_cert(m);
+    }
+    return found;
+  };
 
   foreach(root_cert_dirs, string dir) {
     if (!Stdio.is_dir(dir)) continue;
@@ -1641,20 +1663,9 @@ mapping(string:array(Verifier))
     // Try the merged certificate files first.
     foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
 	    string fname) {
-      string pem = Stdio.read_bytes(combine_path(dir, fname));
+      string(8bit) pem = Stdio.read_bytes(combine_path(dir, fname));
       if (pem) {
-	Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
-	foreach(messages->get_certificates(), string m) {
-	  TBSCertificate tbs = verify_ca_certificate(m);
-	  if (!tbs) continue;
-	  string subj = tbs->subject->get_der();
-	  if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
-	  {
-	    update_expire(tbs);
-	    res[subj] += ({ tbs->public_key });
-	  }
-	  found = 1;
-	}
+	found |= add_pem(pem);
       }
     }
     if (found) continue;
@@ -1678,14 +1689,7 @@ mapping(string:array(Verifier))
       if (keychain) {
 	Apple.Keychain chain = Apple.Keychain(keychain);
 	foreach(chain->certs, TBSCertificate tbs) {
-	  if (!verify_ca_certificate(tbs)) continue;
-	  string subj = tbs->subject->get_der();
-	  if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
-	  {
-	    update_expire(tbs);
-            res[subj] += ({ tbs->public_key });
-	  }
-	  found = 1;
+	  found |= add_cert(tbs);
 	}
       }
     }
@@ -1699,18 +1703,9 @@ mapping(string:array(Verifier))
       }
       fname = combine_path(dir, fname);
       if (!Stdio.is_file(fname)) continue;
-      string pem = Stdio.read_bytes(fname);
+      string(8bit) pem = Stdio.read_bytes(fname);
       if (!pem) continue;
-      string cert = Standards.PEM.simple_decode(pem);
-      if (!cert) continue;
-      TBSCertificate tbs = verify_ca_certificate(cert);
-      if (!tbs) continue;
-      string subj = tbs->subject->get_der();
-      if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
-      {
-        update_expire(tbs);
-        res[subj] += ({ tbs->public_key });
-      }
+      add_pem(pem);
     }
   }
 

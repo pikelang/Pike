@@ -5,7 +5,7 @@ class GTK2.IconInfo;
 
 //! Contains information found when looking up an icon in an icon theme.
 
-void destroy()
+void _destruct()
 {
   if (THIS->obj && THIS->owned )
     gtk_icon_info_free((GtkIconInfo *)THIS->obj);

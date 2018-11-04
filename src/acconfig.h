@@ -7,21 +7,6 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-/* We must define this *always* */
-#ifndef POSIX_SOURCE
-#define POSIX_SOURCE	1
-#endif
-
-/* Get more declarations in GNU libc. */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-/* Get more declarations from AIX libc. */
-#ifndef _ALL_SOURCE
-#define _ALL_SOURCE
-#endif
-
 /* Building as a library? */
 #undef LIBPIKE
 
@@ -70,9 +55,6 @@
 /* Define this to simulate dynamic module loading with static modules. */
 #undef USE_SEMIDYNAMIC_MODULES
 
-/* Define this if you want to enable the shared nodes mode of the optimizer. */
-#undef SHARED_NODES
-
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
 
@@ -81,6 +63,9 @@
 
 /* Enable internal profiling */
 #undef INTERNAL_PROFILING
+
+/* Enable machine code stack frames */
+#undef MACHINE_CODE_STACK_FRAMES
 
 /* If possible, the expansion for a "#define short" to avoid that bison
  * uses short everywhere internally. */
@@ -102,6 +87,9 @@
 /* Define this if your ld uses -rpath, but your cc wants -Wl,-rpath, */
 #undef USE_Wl
 
+/* Define this if your ld uses Darwin-style -rpath, but your cc wants -Wl,-rpath, */
+#undef USE_Wl_rpath_darwin
+
 /* Define this if your ld uses -R, but your cc wants -Wl,-R */
 #undef USE_Wl_R
 
@@ -117,38 +105,30 @@
 /* Define this on OS X to get two-level namespace support in ld */
 #undef USE_OSX_TWOLEVEL_NAMESPACE
 
-/* Define if your tcc supports #pragma TenDRA longlong type allow. */
-#undef HAVE_PRAGMA_TENDRA_LONGLONG
-
-/* Define if your tcc supports #pragma TenDRA set longlong type : long long. */
-#undef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-
-/* The worlds most stringent C compiler? */
-#ifdef __TenDRA__
-/* We want to be able to use 64bit arithmetic */
-#ifdef HAVE_PRAGMA_TENDRA_LONGLONG
-#pragma TenDRA longlong type allow
-#endif /* HAVE_PRAGMA_TENDRA_LONGLONG */
-#ifdef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
-#pragma TenDRA set longlong type : long long
-#endif /* HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE */
-
-#ifdef _NO_LONGLONG
-#undef _NO_LONGLONG
-#endif /* _NO_LONGLONG */
-#endif /* __TenDRA__ */
-
 @TOP@
 
 /* Define this if your compiler attempts to use _chkstk, but libc contains
  * __chkstk. */
 #undef HAVE_BROKEN_CHKSTK
 
+/* Define if you have a working getcwd(3) (ie one that returns a malloc()ed
+ * buffer if the first argument is NULL).
+ *
+ * Define to 1 if the second argument being 0 causes getcwd(3) to allocate
+ * a buffer of suitable size (ie never fail with ERANGE).
+ *
+ * Define to 0 if the second argument MUST be > 0.
+ */
+#undef HAVE_WORKING_GETCWD
+
 /* Define for solaris */
 #undef SOLARIS
 
 /* Define if the closedir function returns void instead of int.  */
 #undef VOID_CLOSEDIR
+
+/* Number of args to mkdir() */
+#define MKDIR_ARGS 2
 
 /* Define to 'int' if <sys/time.h> doesn't */
 #undef time_t
@@ -295,17 +275,20 @@
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
 
+/* Define if you have rint.  */
+#undef HAVE_RINT
+
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 
 /* Define this if eval_instruction gets large on your platform. */
 #undef PIKE_SMALL_EVAL_INSTRUCTION
 
-/* Define if you have gcc-style computed goto, and want to use them. */
-#undef HAVE_COMPUTED_GOTO
-
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
+
+/* Define this if NULL ptr is not exactly 0 on your plaform. */
+#undef PIKE_NULL_IS_SPECIAL
 
 /* Define if you have the RDTSC instruction */
 #undef HAVE_RDTSC
@@ -381,6 +364,9 @@
 
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE
+
+/* define this if #include <time.h> provides an external int altzone */
+#undef HAVE_EXTERNAL_ALTZONE
 
 /* define this if your struct tm has a tm_gmtoff */
 #undef STRUCT_TM_HAS_GMTOFF

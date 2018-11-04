@@ -18,7 +18,7 @@ void create(GTK2.TreeModel model, ?GTK2.TreePath root)
     struct object *o1,*o2;
     GtkTreeModel *gtm;
 
-    get_all_args("create", args, "%o%o", &o1, &o2);
+    get_all_args(NULL, args, "%o%o", &o1, &o2);
     gtm=gtk_tree_model_filter_new(GTK_TREE_MODEL(get_gobject(o1)),
 				  o2?(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program):NULL);
      THIS->obj=G_OBJECT(gtm);
@@ -52,7 +52,7 @@ void set_visible_func(function f, mixed user_data)
     struct svalue *sv1,*sv2;
     struct signal_data *sd;
 
-    get_all_args("set_visible_func",args,"%*%*",&sv1,&sv2);
+    get_all_args(NULL,args,"%*%*",&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_visible_func",sizeof(struct signal_data));
@@ -76,7 +76,7 @@ void set_visible_func(function f, mixed user_data)
     struct object *o1;
     GtkTreePath *gtp;
 
-    get_all_args("convert_child_path_to_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtp=gtk_tree_model_filter_convert_child_path_to_path(
                         GTK_TREE_MODEL_FILTER(THIS->obj),
                         (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
@@ -94,7 +94,7 @@ void set_visible_func(function f, mixed user_data)
     struct object *o1;
     GtkTreeIter *gti,*gt2;
 
-    get_all_args("convert_child_iter_to_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gt2=g_malloc(sizeof(GtkTreeIter));
     if (gt2==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("convert_child_iter_to_iter",sizeof(GtkTreeIter
@@ -115,7 +115,7 @@ void set_visible_func(function f, mixed user_data)
     struct object *o1;
     GtkTreePath *gtp;
 
-    get_all_args("convert_path_to_child_path",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gtp=gtk_tree_model_filter_convert_path_to_child_path(
                         GTK_TREE_MODEL_FILTER(THIS->obj),
                         (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
@@ -133,7 +133,7 @@ void set_visible_func(function f, mixed user_data)
     struct object *o1;
     GtkTreeIter *gti,*gt2;
 
-    get_all_args("convert_iter_to_child_iter",args,"%o",&o1);
+    get_all_args(NULL,args,"%o",&o1);
     gt2=g_malloc(sizeof(GtkTreeIter));
     if (gt2==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("convert_iter_to_child_iter",sizeof(GtkTreeIter

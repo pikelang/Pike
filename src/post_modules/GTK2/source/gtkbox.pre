@@ -68,7 +68,7 @@ mapping(string:int) query_child_packing(GTK2.Widget child)
   guint pa;
   gboolean ex,fi;
   GtkPackType ty;
-  get_all_args("query_child_packing",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   gtk_box_query_child_packing(GTK_BOX(THIS->obj),
                               GTK_WIDGET(get_gobject(o)),
                               &ex,&fi,&pa,&ty);

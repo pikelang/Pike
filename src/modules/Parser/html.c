@@ -942,7 +942,7 @@ static void html__set_entity_callback(INT32 args)
 
 static void html_add_tag(INT32 args)
 {
-   check_all_args("add_tag",args,BIT_STRING,
+   check_all_args(NULL,args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
@@ -977,7 +977,7 @@ static void html_add_tag(INT32 args)
 
 static void html_add_container(INT32 args)
 {
-   check_all_args("add_container",args,BIT_STRING,
+   check_all_args(NULL,args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
@@ -1017,7 +1017,7 @@ static void html_add_container(INT32 args)
 
 static void html_add_entity(INT32 args)
 {
-   check_all_args("add_entity",args,BIT_STRING,
+   check_all_args(NULL,args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
@@ -1053,7 +1053,7 @@ static void html_add_quote_tag(INT32 args)
   struct svalue *val;
   ONERROR uwp;
 
-  check_all_args("add_quote_tag",args,BIT_STRING,
+  check_all_args(NULL,args,BIT_STRING,
 		 BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
 		 BIT_STRING|BIT_VOID,0);
    if (TYPEOF(sp[1-args]) == T_ARRAY) {
@@ -1195,7 +1195,7 @@ static void html_add_tags(INT32 args)
    INT32 e;
    struct keypair *k;
    struct mapping_data *md;
-   check_all_args("add_tags",args,BIT_MAPPING,0);
+   check_all_args(NULL,args,BIT_MAPPING,0);
 
    md = sp[-1].u.mapping->data;
 
@@ -1216,7 +1216,7 @@ static void html_add_containers(INT32 args)
    INT32 e;
    struct keypair *k;
    struct mapping_data *md;
-   check_all_args("add_containers",args,BIT_MAPPING,0);
+   check_all_args(NULL,args,BIT_MAPPING,0);
 
    md = sp[-1].u.mapping->data;
 
@@ -1237,7 +1237,7 @@ static void html_add_entities(INT32 args)
    INT32 e;
    struct keypair *k;
    struct mapping_data *md;
-   check_all_args("add_entities",args,BIT_MAPPING,0);
+   check_all_args(NULL,args,BIT_MAPPING,0);
 
    md = sp[-1].u.mapping->data;
 
@@ -1743,7 +1743,7 @@ static int scan_forward(struct piece *feed,
 	    }
 	    break;
 	 }
-	 /* FALL THROUGH */
+         /* FALLTHRU */
 
       default:  /* num_look_for > 1 */
 	 while (feed)
@@ -2492,6 +2492,7 @@ static newstate handle_result(struct parser_html_storage *this,
 		 put_out_feed_range(this,*head,*c_head,pos,cpos);
 		 if (skip) skip_feed_range(st,head,c_head,pos,cpos);
 		 this->out_ctx = CTX_TAG;
+		 pop_stack();
 		 return STATE_REREAD;
 	       }
 	       else if (*head) {
@@ -2701,6 +2702,7 @@ static newstate data_callback (struct parser_html_storage *this,
 	    push_svalue(v->u.array->item);				\
 	    break;							\
 	 }								\
+	 /* FALLTHRU */							\
       default:								\
 	 Pike_error("Parser.HTML: illegal type found "			\
 		    "when trying to call " TYPESTR " callback\n");	\
@@ -3608,7 +3610,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	ctx = this->out_ctx = CTX_TAG_QUOTED_ARG + quote;
       }
 
-        /* FALL THROUGH */
+        /* FALLTHRU */
     parse_entity: {
 	p_wchar2 end_found;
 
@@ -3826,7 +3828,7 @@ static void try_feed(int finished)
 	      }
 	    }
 
-	    /* FALL THROUGH */
+            /* FALLTHRU */
 	 case STATE_DONE: /* done, pop stack */
 	    if (!THIS->top.local_feed) THIS->feed_end=NULL;
 
@@ -3852,7 +3854,7 @@ static void try_feed(int finished)
 
 	 case STATE_REPARSE: /* user requested another go at the current data */
 	    if (st == THIS->stack) ignore_tag_cb = 1;
-	    /* FALL THROUGH */
+            /* FALLTHRU */
 
 	 state_reread:
 	 case STATE_REREAD: /* reread stack head */
@@ -4474,7 +4476,7 @@ static void html_tag_name(INT32 args)
 static void html_tag_args(INT32 args)
 {
    struct svalue def;
-   check_all_args("tag_args",args,BIT_MIXED|BIT_VOID,0);
+   check_all_args(NULL,args,BIT_MIXED|BIT_VOID,0);
    if (args) assign_svalue_no_free(&def,sp-args);
    pop_n_elems(args);
 
@@ -4552,7 +4554,7 @@ static void html_tag_content(INT32 args)
 
 static void html_tag(INT32 args)
 {
-   check_all_args("tag",args,BIT_MIXED|BIT_VOID,0);
+   check_all_args(NULL,args,BIT_MIXED|BIT_VOID,0);
 
    html_tag_args(args);
    html_tag_name(0);
@@ -4612,7 +4614,7 @@ static void html_context(INT32 args)
 static void html_parse_tag_name(INT32 args)
 {
    struct piece feed;
-   check_all_args("parse_tag_name",args,BIT_STRING,0);
+   check_all_args(NULL,args,BIT_STRING,0);
    feed.s=sp[-args].u.string;
    feed.next=NULL;
    tag_name(THIS,&feed,0,0);
@@ -4635,7 +4637,7 @@ static void html_parse_tag_name(INT32 args)
 static void html_parse_tag_args(INT32 args)
 {
    struct piece feed;
-   check_all_args("parse_tag_args",args,BIT_STRING,0);
+   check_all_args(NULL,args,BIT_STRING,0);
    feed.s=sp[-args].u.string;
    feed.next=NULL;
    tag_args(THIS,&feed,0,NULL,0,0);
@@ -4939,7 +4941,7 @@ static void html_get_extra(INT32 args)
 static void html_splice_arg (INT32 args)
 {
   struct pike_string *old = THIS->splice_arg;
-   check_all_args("splice_arg",args,BIT_VOID|BIT_STRING|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_STRING|BIT_INT,0);
    if (args) {
      if (TYPEOF(sp[-args]) == T_STRING)
        add_ref (THIS->splice_arg = sp[-args].u.string);
@@ -5063,7 +5065,7 @@ static void html_splice_arg (INT32 args)
 static void html_ignore_tags(INT32 args)
 {
    int o=!(THIS->flags & FLAG_PARSE_TAGS);
-   check_all_args("ignore_tags",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags &= ~FLAG_PARSE_TAGS;
      else THIS->flags |= FLAG_PARSE_TAGS;
@@ -5076,7 +5078,7 @@ static void html_ignore_tags(INT32 args)
 static void html_case_insensitive_tag(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_CASE_INSENSITIVE_TAG);
-   check_all_args("case_insensitive_tag",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_CASE_INSENSITIVE_TAG;
      else THIS->flags &= ~FLAG_CASE_INSENSITIVE_TAG;
@@ -5115,7 +5117,7 @@ static void html_case_insensitive_tag(INT32 args)
 static void html_lazy_argument_end(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_LAZY_END_ARG_QUOTE);
-   check_all_args("lazy_argument_end",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_END_ARG_QUOTE;
      else THIS->flags &= ~FLAG_LAZY_END_ARG_QUOTE;
@@ -5128,7 +5130,7 @@ static void html_lazy_argument_end(INT32 args)
 static void html_lazy_entity_end(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_LAZY_ENTITY_END);
-   check_all_args("lazy_entity_end",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_ENTITY_END;
      else THIS->flags &= ~FLAG_LAZY_ENTITY_END;
@@ -5144,7 +5146,7 @@ static void html_lazy_entity_end(INT32 args)
 static void html_nestling_entity_end(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_NESTLING_ENTITY_END);
-   check_all_args("nestling_entity_end",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_NESTLING_ENTITY_END;
      else THIS->flags &= ~FLAG_NESTLING_ENTITY_END;
@@ -5156,7 +5158,7 @@ static void html_nestling_entity_end(INT32 args)
 static void html_match_tag(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_MATCH_TAG);
-   check_all_args("match_tag",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_MATCH_TAG;
      else THIS->flags &= ~FLAG_MATCH_TAG;
@@ -5168,7 +5170,7 @@ static void html_match_tag(INT32 args)
 static void html_mixed_mode(INT32 args)
 {
    int o=THIS->out_max_shift < 0;
-   check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) {
        if (!o) {
@@ -5204,7 +5206,7 @@ static void html_mixed_mode(INT32 args)
 static void html_reparse_strings(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_REPARSE_STRINGS);
-   check_all_args("reparse_strings",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_REPARSE_STRINGS;
      else THIS->flags &= ~FLAG_REPARSE_STRINGS;
@@ -5216,7 +5218,7 @@ static void html_reparse_strings(INT32 args)
 static void html_ignore_unknown(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_IGNORE_UNKNOWN);
-   check_all_args("ignore_unknown",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_UNKNOWN;
      else THIS->flags &= ~FLAG_IGNORE_UNKNOWN;
@@ -5228,7 +5230,7 @@ static void html_ignore_unknown(INT32 args)
 static void html_xml_tag_syntax(INT32 args)
 {
    int o=THIS->flags;
-   check_all_args("xml_tag_syntax",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      THIS->flags &= ~(FLAG_XML_TAGS|FLAG_STRICT_TAGS);
      switch (sp[-args].u.integer) {
@@ -5252,7 +5254,7 @@ static void html_xml_tag_syntax(INT32 args)
 static void html_ws_before_tag_name(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_WS_BEFORE_TAG_NAME);
-   check_all_args("ws_before_tag_name",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_WS_BEFORE_TAG_NAME;
      else THIS->flags &= ~FLAG_WS_BEFORE_TAG_NAME;
@@ -5264,7 +5266,7 @@ static void html_ws_before_tag_name(INT32 args)
 static void html_max_stack_depth(INT32 args)
 {
    int o=THIS->max_stack_depth;
-   check_all_args("max_stack_depth",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      THIS->max_stack_depth = sp[-args].u.integer;
    }
@@ -5276,7 +5278,7 @@ static void html_max_stack_depth(INT32 args)
 static void html_debug_mode(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_DEBUG_MODE);
-   check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_DEBUG_MODE;
      else THIS->flags &= ~FLAG_DEBUG_MODE;
@@ -5293,7 +5295,7 @@ static void html_debug_mode(INT32 args)
 static void html_ignore_comments(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_IGNORE_COMMENTS);
-   check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
+   check_all_args(NULL,args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_COMMENTS;
      else THIS->flags &= ~FLAG_IGNORE_COMMENTS;
@@ -5328,7 +5330,7 @@ static void html_quote_stapling(INT32 args)
 {
   int of = !!(THIS->flags & FLAG_QUOTE_STAPLING);
   int f = of;
-  get_all_args("quote_stapling", args, ".%d", &f);
+  get_all_args(NULL, args, ".%d", &f);
   if (f) {
     THIS->flags |= FLAG_QUOTE_STAPLING;
   } else {

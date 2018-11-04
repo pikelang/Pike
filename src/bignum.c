@@ -50,3 +50,15 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
 }
+
+PMOD_EXPORT int low_compare_bignums(MP_INT *a, MP_INT *b)
+{
+  return mpz_cmp(a, b);
+}
+
+PMOD_EXPORT int compare_bignums(struct object *a, struct object *b)
+{
+  if (!is_bignum_object(a)) Pike_error("First object is not a bignum.\n");
+  if (!is_bignum_object(b)) Pike_error("Second object is not a bignum.\n");
+  return low_compare_bignums((MP_INT *)a->storage, (MP_INT *)b->storage);
+}

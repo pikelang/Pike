@@ -225,6 +225,7 @@ class YMD
 //! method int leap_year()
 //! method int minute_no()
 //! method int month_day()
+//! method int month_days()
 //! method int month_no()
 //! method int second_no()
 //! method int utc_offset()
@@ -311,6 +312,12 @@ class YMD
    {
       if (md==CALUNKNOWN) make_month();
       return md;
+   }
+
+   int month_days()
+   {
+      if (mnd==CALUNKNOWN) make_month();
+      return mnd;
    }
 
    int week_day()
@@ -458,6 +465,7 @@ class YMD
 //! method string format_ymd();
 //! method string format_ymd_short();
 //! method string format_ymd_xshort();
+//! method string format_mdy();
 //! method string format_iso_week();
 //! method string format_iso_week_short();
 //! method string format_week();
@@ -568,6 +576,12 @@ class YMD
    {
       if (m==CALUNKNOWN) make_month();
       return sprintf("%04d-%02d-%02d",y,m,md);
+   }
+
+   string format_mdy()
+   {
+      if (m==CALUNKNOWN) make_month();
+      return sprintf("%d/%d/%d",m,md,y%100);
    }
 
    string format_ymd_short()

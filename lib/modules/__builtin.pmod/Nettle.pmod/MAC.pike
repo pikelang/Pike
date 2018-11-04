@@ -83,11 +83,11 @@ class State
     headers += ([ "alg": alg ]);
     string(7bit) tbs =
       sprintf("%s.%s",
-	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
-	      MIME.encode_base64url(message));
+              [string(7bit)]Pike.Lazy.MIME.encode_base64url(string_to_utf8([string]Pike.Lazy.Standards.JSON.encode(headers))),
+              [string(7bit)]Pike.Lazy.MIME.encode_base64url(message));
     init(tbs);
     string(8bit) raw = digest();
-    return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
+    return sprintf("%s.%s", tbs, [string(7bit)]Pike.Lazy.MIME.encode_base64url(raw));
   }
 
   //! Verify and decode a JOSE JWS MAC signed value.
@@ -117,14 +117,14 @@ class State
     mapping(string(7bit):string(7bit)|int) headers;
     catch {
       headers = [mapping(string(7bit):string(7bit)|int)](mixed)
-	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+        Pike.Lazy.Standards.JSON.decode(utf8_to_string([string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[0])));
       if (!mappingp(headers)) return 0;
       if (headers->alg != alg) return 0;
       string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
       init(tbs);
       string(8bit) raw = digest();
-      if (MIME.encode_base64url(raw) == segments[2]) {
-	return ({ headers, MIME.decode_base64url(segments[1]) });
+      if (Pike.Lazy.MIME.encode_base64url(raw) == segments[2]) {
+        return ({ headers, [string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[1]) });
       }
     };
     return 0;

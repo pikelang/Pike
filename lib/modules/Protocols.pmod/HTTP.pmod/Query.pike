@@ -31,7 +31,7 @@
 #define DBG(X ...)
 #endif
 
-#define RUNTIME_RESOLVE(X) master().resolv(#X)
+#define RUNTIME_RESOLVE(X) master()->resolv(#X)
 /****** variables **************************************************/
 
 // open
@@ -102,6 +102,16 @@ object conthread;
 
 local function request_ok,request_fail;
 array extra_args;
+
+void init_async_timeout()
+{
+  call_out(async_timeout, timeout);
+}
+
+void remove_async_timeout()
+{
+  remove_call_out(async_timeout);
+}
 
 /****** internal stuff *********************************************/
 
@@ -195,28 +205,76 @@ protected int ponder_answer( int|void start_position )
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
       switch(n=lower_case(n))
       {
-	 case "set-cookie":
-	    headers[n]=(headers[n]||({}))+({d});
-	    break;
-	 default:
-	   headers[n]=d;
+      case "set-cookie":
+        headers[n]=(headers[n]||({}))+({d});
+        break;
+
+      case "accept-ranges":
+      case "age":
+      case "connection":
+      case "content-type":
+      case "content-encoding":
+      case "content-range":
+      case "content-length":
+      case "date":
+      case "etag":
+      case "keep-alive":
+      case "last-modified":
+      case "location":
+      case "retry-after":
+      case "transfer-encoding":
+        headers[n]=d;
+        break;
+
+      case "allow":
+      case "cache-control":
+      case "vary":
+        if( headers[n] )
+          headers[n] += ", " +d;
+        else
+          headers[n] = d;
+        break;
+
+      default:
+        if( headers[n] )
+          headers[n] += "; " +d;
+        else
+          headers[n] = d;
+        break;
       }
    }
 
    // done
    ok=1;
-   remove_call_out(async_timeout);
+   remove_async_timeout();
    TOUCH_TIMEOUT_WATCHDOG();
+
    if (request_ok) request_ok(this,@extra_args);
    return 1;
 }
 
-protected void close_connection()
+protected void close_connection(int|void terminate_now)
 {
-  Stdio.File con = this::con;
+  object(Stdio.File)|SSL.File con = this::con;
   if (!con) return;
   this::con = 0;
   con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
+
+  if (terminate_now) {
+    // We don't want to wait for the close() to complete...
+    con->set_nonblocking();
+    con->close();
+
+    if (!con->shutdown) return;
+
+    // Probably SSL.
+    //
+    // Force the connection to shutdown.
+    con = con->shutdown();
+
+    if (!con) return;
+  }
+
   con->close();
 }
 
@@ -264,19 +322,41 @@ protected void connect(string server,int port,int blocking)
 {
    DBG("<- (connect %O:%d)\n",server,port);
 
-   int success;
-   if(con->_fd)
-     success = con->connect(server, port);
-   else
-     // What is this supposed to do? /mast
-     success = con->connect(server, port, blocking);
+   int count;
+   while(1) {
+     int success;
+     if(con->_fd)
+       success = con->connect(server, port);
+     else
+       // What is this supposed to do? /mast
+       // SSL.File?
+       success = con->connect(server, port, blocking);
 
-   if(!success) {
+     if (success) {
+       if (count) DBG("<- (connect success)\n");
+       break;
+     }
+
      errno = con->errno();
      DBG("<- (connect error: %s)\n", strerror (errno));
-     close_connection();
-     ok = 0;
-     return;
+     count++;
+     if ((count > 10) || (errno != System.EADDRINUSE)) {
+       DBG("<- (connect fail)\n");
+       close_connection();
+       ok = 0;
+       return;
+     }
+     // EADDRINUSE: All tuples hostip:hport:serverip:sport are busy.
+     // Wait for a bit to allow the OS to recycle some ports.
+     sleep(0.1);
+     if (con->_fd) {
+       // Normal file. Close and reopen.
+       // NB: This seems to be needed on Solaris 11 as otherwise
+       //     the connect() above instead will fail with ETIMEDOUT.
+       close_connection();
+       con = Stdio.File();
+       con->open_socket(-1, 0, server);
+     }
    }
 
    DBG("<- %O\n",request);
@@ -355,7 +435,7 @@ protected void low_async_failed(int errno)
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
 
-   remove_call_out(async_timeout);
+   remove_async_timeout();
 }
 
 protected void async_failed()
@@ -409,25 +489,29 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   con->async_connect(server, port,
-		      lambda(int success)
-		      {
-			if (success) {
-			  // Connect ok.
-			  if(https) {
-			    start_tls(0, 1);
-			  }
-			  else
-			    async_connected();
-			} else {
-			  // Connect failed.
-			  if (!con->is_open())
-			    // Other code assumes an existing con is
-			    // an open one.
-			    con = 0;
-			  async_failed();
-			}
-		      });
+   if( !con->async_connect(server, port,
+                           lambda(int success)
+                           {
+                             if (success) {
+                               // Connect ok.
+                               if(https) {
+                                 start_tls(0, 1);
+                               }
+                               else
+                                 async_connected();
+                             } else {
+                               // Connect failed.
+                               if (!con->is_open())
+                                 // Other code assumes an existing con is
+                                 // an open one.
+                                 con = 0;
+                               async_failed();
+                             }
+                           }))
+   {
+     DBG("Failed to open socket: %s.\n", strerror(con->errno()));
+     async_failed();
+   }
    // NOTE: In case of failure the timeout is already in place.
 }
 
@@ -441,7 +525,7 @@ void async_fetch_read(mixed dummy,string data)
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       REMOVE_MAXTIME_CALL_OUT();
-      remove_call_out(async_timeout); // Bug 4773
+      remove_async_timeout(); // Bug 4773
       con->set_nonblocking(0,0,0);
       request_ok(this, @extra_args);
    }
@@ -465,7 +549,7 @@ OUTER: while (sizeof(buf) > cpos) {
 		if (sscanf(buf[cpos..f], "%x", np)) {
 		    if (np) cpos = f+np+4;
 		    else {
-			if (sscanf(buf[cpos..f+3], "%*x%*[ ]%s", data)
+			if (sscanf(buf[cpos..f+3], "%*x%*[^\r\n]%s", data)
 				== 3 && sizeof(data) == 4) break;
 			return;
 		    }
@@ -475,7 +559,7 @@ OUTER: while (sizeof(buf) > cpos) {
 	    }
 	    return;
 	} while(0);
-	remove_call_out(async_timeout);
+	remove_async_timeout();
 	con->set_nonblocking(0,0,0);
         REMOVE_MAXTIME_CALL_OUT();
 	request_ok(this, @extra_args);
@@ -487,7 +571,7 @@ void async_fetch_close()
 {
    DBG("-> close\n");
    close_connection();
-   remove_call_out(async_timeout);
+   remove_async_timeout();
    REMOVE_MAXTIME_CALL_OUT();
    if (errno) {
      if (request_fail) (request_fail)(this, @extra_args);
@@ -625,6 +709,7 @@ string dns_lookup(string hostname)
        //  Prefer IPv4 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
+       
        if (sizeof(v4))
 	 return v4[random(sizeof(v4))];
        return sizeof(v6) && v6[random(sizeof(v6))];
@@ -764,6 +849,9 @@ this_program sync_request(string server, int port, string query,
         this::host, this::port);
     close_connection();	// Close any old connection.
 
+    this::host = server;
+    this::port = port;
+
     string ip = dns_lookup( server );
     if(ip) server = ip; // cheaty, if host doesn't exist
 
@@ -775,9 +863,6 @@ this_program sync_request(string server, int port, string query,
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
     }
     con = new_con;
-
-    this::host = server;
-    this::port = port;
   }
 
   // prepare the request
@@ -855,7 +940,7 @@ this_program async_request(string server,int port,string query,
 
    // start open the connection
 
-   call_out(async_timeout,timeout);
+   init_async_timeout();
 
    // prepare the request
 
@@ -928,7 +1013,7 @@ string data(int|void max_length)
 
 	 DBG("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
 
-	 if (sscanf(rbuf,"%x%*[ ]\r\n%s",len,s)==3)
+	 if (sscanf(rbuf,"%x%*[^\r\n]\r\n%s",len,s)==3)
 	 {
 	    if (len==0)
 	    {
@@ -995,7 +1080,7 @@ string data(int|void max_length)
    }
 
    int len=(int)headers["content-length"];
-   int l = Int.NATIVE_MAX;
+   int l = (1<<31)-1;
 
    if(!undefinedp( len ))
    {
@@ -1253,14 +1338,18 @@ object datafile()
    return PseudoFile(buf[datapos..], (int)(headers["content-length"]||0x7ffffff));
 }
 
-protected void destroy()
+protected void _destruct()
 {
    if (async_id) {
      remove_call_out(async_id);
    }
    async_id = 0;
+   if(async_dns) {
+     async_dns->close();
+     async_dns = 0;
+   }
 
-   catch(close());
+   catch(close_connection(1));
 }
 
 //! Close all associated file descriptors.
@@ -1274,15 +1363,18 @@ void close()
   }
 }
 
-private int(0..1) is_empty_response() {
-  // FIXME: a response to a HEAD request also does not have a body
-  return (status >= 100 && status < 200 || status == 204 || status == 304);
+private int(0..1) is_empty_response()
+{
+  return (status >= 100 && status < 200) ||
+    (status == 204) || (status == 304) ||
+    (request && (upper_case(request[..4]) == "HEAD "));
 }
 
-private int(0..1) body_is_fetched() {
+private int(0..1) body_is_fetched()
+{
   // There is no body in these requests
   // and the content-length header must be ignored
-  if (status >= 100 && status < 200 || status == 204 || status == 304 || !con) {
+  if (is_empty_response() || !con) {
     return 1;
   }
 
@@ -1340,6 +1432,9 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
+  cpos = datapos;
+
+  // NB: Different timeout than init_async_timeout().
   call_out(async_timeout, data_timeout || timeout);
 
   // NB: The timeout is currently not reset on each read, so the whole

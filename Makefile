@@ -327,7 +327,7 @@ xenofarm_export:
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
-	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
+	  "EXPORT_NAME=Pike%branch-%Y%M%D-%h%m%s" \
 	  "EXPORTARGS=--snapshot $(EXPORTARGS)" \
 	  _make_in_builddir >>export_result.txt 2>&1
 	@echo Export done
@@ -394,11 +394,7 @@ distclean:
 	-rm -f bin/pike
 
 srcclean:
-	for d in `find src -type d -print`; do \
-	  if test -f "$$d/.gitignore"; then \
-	    (cd "$$d" && rm -f `cat ".gitignore"`); \
-	  else :; fi; \
-	done
+	@git clean -X -f
 
 gitclean: srcclean distclean docclean
 	-rm -rf build

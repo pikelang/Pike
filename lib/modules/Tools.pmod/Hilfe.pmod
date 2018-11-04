@@ -13,21 +13,18 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle named lambdas.
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
-- Filter exit/quit from history. Could be done by adding a 'pop'
-  method to Readline.History and calling it from StdinHilfe's
-  destroy.
 - Add some better multiline edit support.
 - Improve doc command to get documentation from c-code.
 ";
 
 // The Big To Do:
 // The parser part of Hilfe should really be redesigned once again.
-// The user input is first run through Parser.Pike.split and outputted
-// as a token stream. This stream is fed into a streming parser which
+// The user input is first run through Parser.Pike.split and output
+// as a token stream. This stream is fed into a streaming parser which
 // then relocates the variables and outputs expression objects with
 // evaluation destinations already assigned. Note that the streaming
 // parser can not start on the next expression before the previous
-// expression has been evaulated, because the variable table might not
+// expression has been evaluated, because the variable table might not
 // be up to date.
 
 //! Abstract class for Hilfe commands.
@@ -225,7 +222,7 @@ protected class CommandSet {
     }
 
     if(arg_check("assembler_debug")) {
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
       e->assembler_debug_level = (int)words[2];
 #else
       write("Assembler debug not available.\n");
@@ -234,7 +231,7 @@ protected class CommandSet {
     }
 
     if(arg_check("compiler_trace")) {
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
       e->compiler_trace_level = (int)words[2];
 #else
       write("Compiler trace not available.\n");
@@ -302,6 +299,10 @@ protected class CommandExit {
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
+    if (e->readline) {
+      e->readline->get_history()->pop(line);
+      e->save_history();
+    }
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
@@ -429,19 +430,19 @@ protected class CommandDot {
   inherit Command;
   string help(string what) { return 0; }
 
-  protected constant usr_vector_a = ({
+  local protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
     32, 72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108,
     115, 32, 103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111,
     117, 32, 115, 101, 101, 32 });
-  protected constant usr_vector_b = ({
+  local protected constant usr_vector_b = ({
     32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97,
     110, 121, 32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114,
     111, 109, 32, 104, 101, 114, 101, 46 });
-  protected constant usr_vector_c = ({
+  local protected constant usr_vector_c = ({
     32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110,
     103, 32 });
-  protected constant usr_vector_d = usr_vector_c[..8] + ({
+  local protected constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
   protected array(string) thing(array|mapping|object thing, string what,
@@ -557,7 +558,7 @@ class CommandDump {
       write(e->history->status());
       return;
     case "memory":
-      write(master()->resolv("Debug.pp_memory_usage")());
+      write(Pike.Lazy.Debug.pp_memory_usage());
       return;
     case "":
       dump(e);
@@ -675,7 +676,7 @@ protected class SubSysBackend {
 
   protected void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
-    object backend = master()->resolv("Pike.DefaultBackend");
+    object backend = Pike.DefaultBackend;
     mixed err;
     do {
       err = catch {
@@ -712,7 +713,7 @@ protected class SubSysLogger {
       running = 1;
     }
 
-    protected void destroy() {
+    protected void _destruct() {
       e && e->remove_input_hook(this);
       running = 0;
     }
@@ -864,6 +865,8 @@ protected class SubSystems {
   }
 }
 
+local {
+
 protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
@@ -906,6 +909,8 @@ protected constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)",
 // All of the above except ".", "|", "&" and "~".
 protected constant notype = (infix+prefix+postfix+prepostfix+seperator) -
   (< ".", "|", "&", "~" >);
+
+}
 
 string typeof_token(string|array token)
 {
@@ -1159,7 +1164,7 @@ class Expression {
 
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
 //! that manages the current state of the parser. Essentially tokens are
-//! entered in one end and complete expressions are outputted in the other.
+//! entered in one end and complete expressions are output in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 protected class ParserState {
   protected ADT.Stack pstack = ADT.Stack();
@@ -1355,7 +1360,7 @@ protected class ParserState {
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(sizeof(pstack)) return 0;
-    if(low_state->in_token) return 0;
+    if(low_state->remains) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -1601,24 +1606,28 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokenize the input
+    int(0..1) finished = state->finishedp();
     array(string) tokens = state->push_string(s+"\n");
     array(string) words = s/" ";
     string command = words[0];
 
-    // See if first token is a command and not a defined entity.
-    if(commands[command] && !has_index(constants, command) &&
-       !has_index(variables, command) && !has_index(functions, command) &&
-       (sizeof(words)==1 || words[1]!=";")) {
-      commands[command]->exec(this, s, words, tokens);
-      return;
-    }
+    if(finished)
+    {
+      // See if first token is a command and not a defined entity.
+      if(commands[command] && !has_index(constants, command) &&
+         !has_index(variables, command) && !has_index(functions, command) &&
+         (sizeof(words)==1 || words[1]!=";")) {
+        commands[command]->exec(this, s, words, tokens);
+        return;
+      }
 
-    // See if the command is executed in overridden mode.
-    if(sizeof(command) && command[0]=='.') {
-      command = command[1..];
-      if(commands[command]) {
-	commands[command]->exec(this, s, words, tokens);
-	return;
+      // See if the command is executed in overridden mode.
+      if(sizeof(command) && command[0]=='.') {
+        command = command[1..];
+        if(commands[command]) {
+          commands[command]->exec(this, s, words, tokens);
+          return;
+        }
       }
     }
 
@@ -2114,12 +2123,12 @@ class Evaluator {
 
   //! The current trace level.
   int trace_level;
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
   //! The current assembler debug level.
   //! Only available if Pike is compiled with RTL debug.
   int assembler_debug_level;
 #endif
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
   //! The current compiler trace level.
   //! Only available if Pike is compiled with RTL debug.
   int compiler_trace_level;
@@ -2146,7 +2155,7 @@ class Evaluator {
   //! Gets as arguments in order: The safe_write function
   //! (function(string, mixed ...:int), the result as a string (string),
   //! the history entry number (int), the result (mixed), the compilation
-  //! time (int) and the evaulation time (int). If the evaluated expression
+  //! time (int) and the evaluation time (int). If the evaluated expression
   //! didn't return anything (e.g. a for loop) then 0 will be given as the
   //! result string.
   function reswrite = std_reswrite;
@@ -2154,6 +2163,7 @@ class Evaluator {
 
   protected string hch_errors = "";
   protected string hch_warnings = "";
+
   protected class HilfeCompileHandler (int stack_level) {
 
     protected void create() {
@@ -2218,7 +2228,7 @@ class Evaluator {
       if (sizeof(hch_warnings))
         safe_write(hch_warnings);
     }
-  };
+  }
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
   //! If a new variable is compiled to be tested, its name
@@ -2289,13 +2299,13 @@ class Evaluator {
     program p;
     mixed err;
 
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
     if(assembler_debug_level)
-      _assembler_debug(assembler_debug_level);
+      Debug.assembler_debug(assembler_debug_level);
 #endif
-#if constant(_compiler_trace)
+#if constant(Debug.compiler_trace)
     if(compiler_trace_level)
-      _compiler_trace(compiler_trace_level);
+      Debug.compiler_trace(compiler_trace_level);
 #endif
 
     float compile_time = gauge {
@@ -2303,11 +2313,11 @@ class Evaluator {
     };
     last_compile_time = (int)(compile_time*1000000);
 
-#if constant(_assembler_debug)
-    _assembler_debug(0);
+#if constant(Debug.assembler_debug)
+    Debug.assembler_debug(0);
 #endif
-#if constant(_compiler_trace)
-    _compiler_trace(0);
+#if constant(Debug.compiler_trace)
+    Debug.compiler_trace(0);
 #endif
 
     if(warnings||err)

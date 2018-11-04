@@ -14,7 +14,7 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void pos_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkWidget *gv;
-      get_all_args("create",args,"%o",&o1);
+      get_all_args(NULL,args,"%o",&o1);
       gv=gtk_vscrollbar_new(GTK_ADJUSTMENT(get_gobject(o1)));
       THIS->obj=G_OBJECT(gv);
     } else {

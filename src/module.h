@@ -7,6 +7,9 @@
 #ifndef MODULE_H
 #define MODULE_H
 
+/* global.h includes machine.h, pike_int_type.h, port.h, dmalloc.h,
+   <stdio.h>, <stdarg.h>, <stdlib.h>, <stddef.h>, <string.h>,
+   <limits.h>, <float.h>, <assert.h> and <alloca.h> */
 #include "global.h"
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__)
@@ -17,16 +20,49 @@
 #define PIKE_MODULE_EXIT PMOD_EXPORT void pike_module_exit(void)
 #endif /* DYNAMIC_MODULE && __NT__ */
 
-/* Prototypes begin here */
-struct static_module;
-const struct static_module *find_semidynamic_module(const char *name,
-						    int namelen);
-void *get_semidynamic_init_fun(const struct static_module *sm);
-void *get_semidynamic_exit_fun(const struct static_module *sm);
-void init_modules(void);
-void exit_modules(void);
 PIKE_MODULE_INIT;
 PIKE_MODULE_EXIT;
-/* Prototypes end here */
+
+/*
+   pike_memory.h -> block_alloc_h.h
+*/
+#include "pike_memory.h"
+
+/*
+   svalue.h  -> buffer.h -> bitvector.h
+*/
+#include "svalue.h"
+
+/*
+    array.h -> dmalloc.h
+ */
+#include "array.h"
+
+/*
+    mapping.h -> dmalloc.h
+              -> svalue.h
+ */
+#include "mapping.h"
+
+/*
+   multiset.h -> dmalloc.h
+              -> svalue.h
+              -> rbtree.h -> array.h
+*/
+#include "multiset.h"
+
+/*
+    stralloc.h -> pike_macros.h -> pike_memory.h
+ */
+#include "stralloc.h"
+
+#include "object.h"
+
+/*
+    program.h -> pike_error.h
+              -> svalue.h
+              -> time_stuff.h
+ */
+#include "program.h"
 
 #endif

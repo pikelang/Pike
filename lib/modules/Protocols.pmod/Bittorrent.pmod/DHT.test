@@ -227,6 +227,129 @@ constant random_hashes = ({ /* 20 elements */
   "f53eeea763629e57a4167c6d3619bcc50d735280"
 });
 
+class FakeUDPNet
+{
+  mapping(string:FakeUDP) ports = ([]);
+
+  int(0..1) bind(int port, string addr, FakeUDP udp)
+  {
+    addr += " " + port;
+    if (ports[addr]) return 0;
+    ports[addr] = udp;
+    return 1;
+  }
+
+  int(0..1) send(string addr, int port, mapping msg)
+  {
+    addr += " " + port;
+    if (ports[addr]) {
+      if (!ports[addr]->lossyness ||
+	  (Crypto.Random.random(256) >= ports[addr]->lossyness)) {
+	call_out(ports[addr]->internal_recv, ports[addr]->lag/65536.0, msg);
+      }
+      return 1;
+    }
+    return 0;
+  }
+
+  void close(string addr, int port)
+  {
+    m_delete(ports, addr + " " + port);
+  }
+}
+
+FakeUDPNet fake_udp_net = FakeUDPNet();
+
+class FakeUDP
+{
+  string addr;
+  int port;
+  function read_callback;
+  array extras;
+  int nonblocking_mode;
+  int(0..65536) lag;
+  int(0..256) lossyness;
+
+  void bind(int|string port, string|void addr, int(0..1) no_reuseaddr)
+  {
+    addr = addr || "127.0.0.1";
+    if (!fake_udp_net->bind(port, addr, this)) {
+      error("Unable to bind address %O:%d.\n", addr, port);
+    }
+    this::addr = addr;
+    this::port = port;
+  }
+
+  object set_nonblocking(function|void f, mixed ... extras)
+  {
+    if (f) {
+      read_callback = f;
+      this::extras = extras;
+    }
+    nonblocking_mode = 1;
+    return this;
+  }
+
+  void internal_recv(mapping msg)
+  {
+    if (read_callback) {
+      read_callback(msg, @(extras||({})));
+    }
+  }
+
+  object set_blocking()
+  {
+    nonblocking_mode = 0;
+    return this;
+  }
+
+  string query_address()
+  {
+    if (!addr) {
+      error("Port not bound yet.\n");
+    }
+    return addr;
+  }
+
+  int(0..1) close()
+  {
+    fake_udp_net->close(addr, port);
+    addr = 0;
+    port = 0;
+    read_callback = 0;
+    extras = 0;
+    nonblocking_mode = 0;
+    return 1;
+  }
+
+  int send(string to, int|string port, string message, int|void flags)
+  {
+    if (!lossyness || (Crypto.Random.random(256) >= lossyness)) {
+      mapping msg = ([
+	"data":message,
+	"ip": addr,
+	"port": this::port,
+      ]);
+      call_out(fake_udp_net->send, lag/65536.0, to, port, msg);
+    }
+    return sizeof(message);
+  }
+}
+
+class MyDHT
+{
+  inherit Protocols.Bittorrent.DHT;
+
+  void start(int port, void|string bind_address)
+  {
+    if (is_running) return 0;
+    is_running = 1;
+    this_program::port = FakeUDP();
+    this_program::port->bind(port, bind_address, 1);
+    this_program::port->set_nonblocking(read_callback);
+  }
+}
+
 array(mapping) dhts = ({});
 mapping(string:object) dhts_by_id = ([]);
 
@@ -259,7 +382,8 @@ void run_tests() {
                                     bad++;
 				    Tools.Testsuite.log_msg("Failed to perform bootstrap request on node %s\n",
 							    String.string2hex(dht->get_node_id()));
-				    run_tests();
+                                    run_tests();
+                                    return;
 				  }
 				  state->op = 0;
                                   good++;
@@ -381,7 +505,11 @@ int main(int argc, array(string) argv) {
     mapping tmp = ([
       "node_id" : node_id,
       "port"    : port,
-      "dht"     : Protocols.Bittorrent.DHT(node_id),
+#ifndef DHT_TEST_USE_UDP
+      "dht"     : MyDHT(node_id),
+#else
+      "dht"	: DHT(node_id),
+#endif
     ]);
     dhts += ({ tmp });
     dhts_by_id[node_id] = tmp->dht;

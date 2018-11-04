@@ -7,7 +7,6 @@
 #include "global.h"
 #include "fdlib.h"
 #include "backend.h"
-#include "module.h"
 #include "object.h"
 #include "lex.h"
 #include "pike_types.h"

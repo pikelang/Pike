@@ -89,7 +89,10 @@
 # include <sys/termio.h>
 #endif
 
-#ifdef HAVE_SYS_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
 # include <sys/termios.h>
 #endif
 
@@ -305,6 +308,7 @@
 #define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
 
 #define INIT_FIFO(pre,TYPE)
+#define REINIT_FIFO(pre,TYPE)
 
 #else /* NEED_SIGNAL_SAFE_FIFO */
 
@@ -348,6 +352,12 @@
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[0], 1);	\
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
 }while(0)
+
+#define REINIT_FIFO(pre,TYPE) do {			\
+  close(PIKE_CONCAT(pre,_fd)[0]);			\
+  close(PIKE_CONCAT(pre,_fd)[1]);			\
+  INIT_FIFO(pre,TYPE);					\
+} while(0)
 
 #endif /* else NEED_SIGNAL_SAFE_FIFO */
 
@@ -933,7 +943,7 @@ static void f_signal(int args)
 #endif
     )
   {
-    Pike_error("Signal out of range.\n");
+    Pike_error("Signal %d out of range.\n", signum);
   }
 
   if(!signal_evaluator_callback)
@@ -1817,7 +1827,7 @@ static void f_pid_status_set_priority(INT32 args)
   char *to;
   int r;
 
-  get_all_args("set_priority", args, "%s", &to);
+  get_all_args(NULL, args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
   push_int(r);
@@ -1995,7 +2005,7 @@ static void f_proc_reg_index(INT32 args)
     Pike_error("Process not stopped.\n");
   }
 
-  get_all_args("`[]", args, "%+", &regno);
+  get_all_args(NULL, args, "%+", &regno);
 
   if (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))
     SIMPLE_ARG_TYPE_ERROR("`[]", 1, "register number");
@@ -2090,6 +2100,9 @@ static void free_perishables(struct perishables *storage)
 
 #ifdef __NT__
 
+/* NB: Handles returned by this function are only safe as
+ *     long as the interpreter lock isn't released.
+ */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
 				     int for_reading)
@@ -2102,6 +2115,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     if(TYPEOF(*tmp) == T_OBJECT)
     {
       INT32 fd=fd_from_object(tmp->u.object);
+      HANDLE h;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
@@ -2112,21 +2126,23 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
 	create_proxy_pipe(tmp->u.object, for_reading);
 	fd=fd_from_object(Pike_sp[-1].u.object);
-
-	if(fd == -1)
-	  Pike_error("Proxy thread creation failed for %s.\n",name);
       }
 
+      if(fd_to_handle(fd, NULL, &h) < 0)
+	Pike_error("File for %s is not open.\n",name);
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
-			  da_handle[fd],
+			  h,
 			  GetCurrentProcess(),	/* Target process */
 			  &ret,
 			  0,			/* Access */
 			  1,
-			  DUPLICATE_SAME_ACCESS))
-	  /* This could cause handle-leaks */
-	  Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+			  DUPLICATE_SAME_ACCESS)) {
+	release_fd(fd);
+	/* This could cause handle-leaks */
+	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+      }
+      release_fd(fd);
     }
   }
   pop_n_elems(Pike_sp-save_stack);
@@ -2763,7 +2779,7 @@ void f_create_process(INT32 args)
   struct svalue *tmp;
   int e;
 
-  check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
+  check_all_args(NULL, args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
   switch(args)
   {
@@ -2774,7 +2790,7 @@ void f_create_process(INT32 args)
       if(m_ind_types(optional) & ~BIT_STRING)
 	Pike_error("Bad index type in argument 2 to Process->create()\n");
 
-      /* FALL_THROUGH */
+      /* FALLTHRU */
 
     case 1: cmd=Pike_sp[-args].u.array;
       if(cmd->size < 1)
@@ -2800,6 +2816,7 @@ void f_create_process(INT32 args)
     int ret,err;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     void *env=NULL;
+    struct byte_buffer buf;
 
     /* Quote command to allow all characters (if possible) */
     /* Damn! NT doesn't have quoting! The below code attempts to
@@ -2810,7 +2827,6 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
-      struct byte_buffer buf;
       buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
@@ -2889,7 +2905,7 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line=(TCHAR *)buf.s.str;
+      command_line = (TCHAR *)buffer_get_string(&buf);
     }
 
     /* FIXME: Ought to set filename properly.
@@ -2997,7 +3013,7 @@ void f_create_process(INT32 args)
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
     if(env) pop_stack();
-    if(command_line) free(command_line);
+    buffer_free(&buf);
 #if 1
     if(t1 != INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2 != INVALID_HANDLE_VALUE) CloseHandle(t2);
@@ -4287,8 +4303,7 @@ void Pike_f_fork(INT32 args)
     }
 #endif
 
-    o=low_clone(pid_status_program);
-    call_c_initializers(o);
+    o=fast_clone_object(pid_status_program);
     p=get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;
@@ -4301,6 +4316,10 @@ void Pike_f_fork(INT32 args)
     /* forked copy. there is now only one thread running, this one. */
     num_threads=1;
 #endif
+
+    REINIT_FIFO(sig, unsigned char);
+    REINIT_FIFO(wait,wait_data);
+
     /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
     push_int(0);
@@ -4476,7 +4495,7 @@ static void f_pid_status_kill(INT32 args)
   INT_TYPE signum;
   int res, save_errno;
 
-  get_all_args("kill", args, "%+", &signum);
+  get_all_args(NULL, args, "%+", &signum);
 
   PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
@@ -4572,7 +4591,7 @@ static void f_pid_status_kill(INT32 args)
 {
   INT_TYPE signum;
 
-  get_all_args("kill", args, "%i", &signum);
+  get_all_args(NULL, args, "%i", &signum);
 
   pop_n_elems(args);
 

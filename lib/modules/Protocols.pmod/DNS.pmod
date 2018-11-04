@@ -432,6 +432,11 @@ class protocol
 		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
 		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
 		      );
+     case T_CAA:
+       if (entry->tag == "" || !entry->tag)
+         error("An empty tag is not permitted.\n");
+       return sprintf("%c%H%s", entry->flags | (!!entry->critical << 7),
+                      entry->tag, entry->value || "");
     default:
        return "";
     }
@@ -697,6 +702,16 @@ class protocol
   //!           @mapping
   //!             @member string "spf"
   //!           @endmapping
+  //!         @value T_CAA
+  //!           @mapping
+  //!             @member int "critical"
+  //!               Sets the critical bit of the flag field.
+  //!             @member int "flags"
+  //!
+  //!             @member string "tag"
+  //!               Cannot be empty.
+  //!             @member string "value"
+  //!         @endmapping
   //!       @endint
   //!   @endarray
   array decode_entries(string s,int num, array(int) next)
@@ -809,6 +824,15 @@ class protocol
       case T_SPF:
 	m->spf = decode_string(s, next);
 	break;
+      case T_CAA:
+        {
+          string tag;
+
+          m->critical = !!((m->flags = decode_byte(s, next)) & 0x80);
+          tag = m->tag = decode_string(s, next);
+          m->value = s[next[0]..next[0] + m->len - 3 - sizeof(tag)];
+        }
+        break;
     }
 
     next[0]=tmp+m->len;
@@ -1030,6 +1054,29 @@ class server_base
     // This is a stub intended to simplify servers which allow recursion
   }
 
+  //! Report a failure to decode a DNS request.
+  //!
+  //! The default implementation writes a backtrace to stderr.  This
+  //! method exists so that derived servers can replace it with more
+  //! appropriate error handling for their environment.
+  protected void report_decode_error(mixed err, mapping m, Stdio.UDP|object udp)
+  {
+    werror("DNS: Failed to read %s packet.\n%s\n",
+	   udp->tcp_connection ? "TCP" : "UDP",
+	   describe_backtrace(err));
+  }
+
+  //! Respond to a query that cannot be decoded.
+  //!
+  //! This method exists so that servers can override the default behaviour.
+  protected void handle_decode_error(mapping err, mapping m,
+				     Stdio.UDP|object udp)
+  {
+    if(m && m->data && sizeof(m->data)>=2)
+      send_reply((["rcode":1]),
+                 mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+  }
+
   //! Low-level DNS-data receiver.
   //!
   //! This function receives the raw DNS-data from the @[Stdio.UDP] socket
@@ -1042,12 +1089,8 @@ class server_base
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror("DNS: Failed to read %s packet.\n%s\n",
-	     udp->tcp_connection ? "TCP" : "UDP",
-	     describe_backtrace(err));
-      if(m && m->data && sizeof(m->data)>=2)
-	send_reply((["rcode":1]),
-		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
+      report_decode_error(err, m, udp);
+      handle_decode_error(err, m, udp);
     }
     else if(q->qr)
       handle_response(q, m, udp);
@@ -1058,7 +1101,7 @@ class server_base
   protected void send_reply(mapping r, mapping q, mapping m,
 			    Stdio.UDP|object con);
 
-  protected void destroy()
+  protected void _destruct()
   {
     if(sizeof(ports))
     {
@@ -1220,7 +1263,7 @@ class tcp_server
       c_id = call_out(destruct, 120, this);
     }
 
-    void destroy() {
+    protected void _destruct() {
       if (con) con->close();
       destruct(con);
       m_delete(connections, this);
@@ -1286,13 +1329,13 @@ class tcp_server
     }
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
     foreach (connections; Connection con;) {
       destruct(con);
     }
 
-    ::destroy();
+    ::_destruct();
   }
 }
 
@@ -1322,9 +1365,9 @@ class dual_server {
     ::create(arg1, @args);
   }
 
-  protected void destroy()
+  protected void _destruct()
   {
-    ::destroy();
+    ::_destruct();
   }
 }
 
@@ -1348,30 +1391,30 @@ class client
     }),string key)
     {
       catch {
-	res += ({ RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
+	res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
       };
     }
 
-#if constant(RegGetKeyNames)
-    /* Catch if RegGetKeyNames() doesn't find the directory. */
+#if constant(System.RegGetKeyNames)
+    /* Catch if System.RegGetKeyNames() doesn't find the directory. */
     catch {
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
 				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
-      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+      foreach(System.RegGetKeyNames(HKEY_LOCAL_MACHINE,
 			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 			     "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
-				"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
+	  res += ({ System.RegGetValue(HKEY_LOCAL_MACHINE,
+                                "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
@@ -1646,7 +1689,7 @@ class client
   protected mapping low_gethostbyname(string s, int type)
   {
     mapping m;
-    if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
+    if(sizeof(domains) && sizeof(s) && s[-1] != '.' && sizeof(s/".") < 3) {
       mapping m = do_sync_query(mkquery(s, C_IN, type));
       if(!m || !m->an || !sizeof(m->an))
 	foreach(domains, string domain)
@@ -1988,7 +2031,7 @@ class async_client
       {
 	string req=low_mkquery(lid,domain,cl,type);
 
-	object r = Request(domain, req, callback, args);
+        object r = Request(domain, req, callback, args);
 	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
 	requests[lid] = r;
 	udp::send(nameservers[0], 53, req);

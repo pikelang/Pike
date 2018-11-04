@@ -7,6 +7,7 @@
 #endif
 
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+constant websocket_version = 13;
 
 //! This module implements the WebSocket protocol as described in
 //! @rfc{6455@}.
@@ -242,7 +243,7 @@ Frame parse(Connection con, Stdio.Buffer in) {
 }
 
 class Frame {
-    //!
+    //! Type of frame eg @expr{FRAME_TEXT@} or @expr{FRAME_BINARY@}
     FRAME opcode;
 
     //! Set to @expr{1@} if this a final frame, i.e. the last frame of a
@@ -468,6 +469,50 @@ class Connection {
         state = CLOSED; // We are closed until we have connected and upgraded the connection;
     }
 
+    protected array(mapping) low_connect(Standards.URI endpoint,
+					 mapping(string:string) extra_headers,
+					 void|array extensions)
+    {
+      string host = endpoint->host;
+
+      if (endpoint->port) host += ":" + endpoint->port;
+
+      mapping headers = ([
+	"Host" : host,
+	"Connection" : "Upgrade",
+	"User-Agent" : agent,
+	"Accept": "*/*",
+	"Upgrade" : "websocket",
+	"Sec-WebSocket-Key" :
+	  MIME.encode_base64(Crypto.Random.random_string(16), 1),
+	"Sec-WebSocket-Version": (string)websocket_version,
+      ]);
+
+      foreach(extra_headers; string idx; string val) {
+	headers[idx] = val;
+      }
+
+      expected_accept =
+	MIME.encode_base64(Crypto.SHA1.hash(headers["Sec-WebSocket-Key"] +
+					    websocket_id));
+
+      mapping rext;
+
+      if (arrayp(extensions)) {
+	rext = ([]);
+
+	foreach (extensions; int i; extension_factory f) {
+	  mixed o = f(1, 0, rext);
+	  if (objectp(o)) extensions[i] = o;
+	}
+
+	if (sizeof(rext))
+	  headers["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
+      }
+
+      return ({ headers, rext });
+    }
+
     //! Connect to the remote @[endpoint] with optional request
     //! headers specified in @[headers]. This method will send the
     //! actual HTTP request to switch protocols to the server and once
@@ -477,14 +522,13 @@ class Connection {
                 void|array extensions) {
         if (stringp(endpoint)) endpoint = Standards.URI(endpoint);
         this_program::endpoint = endpoint;
-        this_program::extra_headers = extra_headers || ([]);
+        this_program::extra_headers = extra_headers = extra_headers || ([]);
 
         if (endpoint->path == "") endpoint->path = "/";
 
         Stdio.File f = Stdio.File();
         state = CONNECTING;
 
-        string host = endpoint->host;
         int port;
 
         if (endpoint->scheme == "ws") {
@@ -492,8 +536,6 @@ class Connection {
         } else if (endpoint->scheme == "wss") {
             port = endpoint->port || 443;
         } else error("Not a WebSocket URL.\n");
-
-        if (endpoint->port) host += ":" + endpoint->port;
 
         int res = f->connect(endpoint->host, port);
 
@@ -519,45 +561,24 @@ class Connection {
 
         buffer_mode = 0;
 
-        mapping headers = ([
-            "Host" : host,
-            "Connection" : "Upgrade",
-            "User-Agent" : agent,
-            "Accept": "*/*",
-            "Upgrade" : "websocket",
-            "Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
-            "Sec-WebSocket-Version": "13",
-        ]);
-
-        foreach(this_program::extra_headers; string idx; string val) {
-            headers[idx] = val;
-        }
-
-        mapping rext;
-
         if (arrayp(extensions)) {
-            rext = ([]);
+	    // NB: extensions is altered destructively by low_connect().
             extensions = extensions + ({ });
+	}
 
-            foreach (extensions; int i; extension_factory f) {
-              mixed o = f(1, 0, rext);
-              if (objectp(o)) extensions[i] = o;
-            }
-
-            if (sizeof(rext))
-                headers["Sec-WebSocket-Extensions"] = encode_websocket_extensions(rext);
-        }
+	[mapping headers, mapping rext] =
+	  low_connect(endpoint, extra_headers, extensions);
 
         stream->set_nonblocking(curry_back(http_read, _Roxen.HeaderParser(), extensions, rext),
                                 websocket_write, websocket_closed);
 
 
         // We use our output buffer to generate the request.
-        out->add("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
+        send_raw("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
-            out->add(h, ": ", v, "\r\n");
+            send_raw(h, ": ", v, "\r\n");
         }
-        out->add("\r\n");
+        send_raw("\r\n");
         return res;
     }
 
@@ -588,6 +609,7 @@ class Connection {
         stream->write("");
     }
 
+    protected string expected_accept;
 
     //! Read HTTP response from remote endpoint and handle connection
     //! upgrade.
@@ -607,17 +629,83 @@ class Connection {
             mapping headers = tmp[2];
             string status_desc;
 
-            if (sscanf(tmp[1], "HTTP/%d.%d %d %s", major, minor, status, status_desc) != 4) {
+	    WS_WERR(2, "http_read: header done. Parsed: %O\n", tmp);
+
+	    // RFC 6455 4.1.(3)
+
+	    // 1:
+	    //   If the status code received from the server is not 101, the
+            //   client handles the response per HTTP [RFC2616] procedures.
+            //   In particular, the client might perform authentication if it
+            //   receives a 401 status code; the server might redirect the
+            //   client using a 3xx status code (but clients are not required
+            //   to follow them), etc.
+
+            if (sscanf(tmp[1], "HTTP/%d.%d %d %s",
+		       major, minor, status, status_desc) != 4) {
                 websocket_closed();
                 return;
             }
 
-            switch(status) {
-              case 100..199: break;
-              default:
-                  websocket_closed();
-                  return;
+            if (status != 101) {
+	        WS_WERR(1, "http_read: Bad http status code: %d.\n", status);
+	        websocket_closed();
+	        return;
             }
+
+	    // 2:
+	    //   If the response lacks an |Upgrade| header field or the
+	    //   |Upgrade| header field contains a value that is not an
+	    //   ASCII case-insensitive match for the value "websocket",
+	    //   the client MUST _Fail the WebSocket Connection_.
+
+	    if (lower_case(headers["upgrade"] || "") != "websocket") {
+	      WS_WERR(1, "http_read: No upgrade header.\n");
+	      websocket_closed();
+	      return;
+	    }
+
+	    // 3:
+	    //   If the response lacks a |Connection| header field or the
+            //   |Connection| header field doesn't contain a token that is an
+            //   ASCII case-insensitive match for the value "Upgrade", the
+	    //   client MUST _Fail the WebSocket Connection_.
+
+	    if (lower_case(headers["connection"] || "") != "upgrade") {
+	      WS_WERR(1, "http_read: No connection header with upgrade.\n");
+	      websocket_closed();
+	      return;
+	    }
+
+	    // 4:
+	    //   If the response lacks a |Sec-WebSocket-Accept| header field
+            //   or the |Sec-WebSocket-Accept| contains a value other than
+            //   the base64-encoded SHA-1 of the concatenation of the
+	    //   |Sec-WebSocket-Key| (as a string, not base64-decoded) with
+	    //   the string "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" but
+	    //   ignoring any leading and trailing whitespace, the client
+	    //   MUST _Fail the WebSocket Connection_.
+
+	    if (headers["sec-websocket-accept"] != expected_accept) {
+	      WS_WERR(1, "http_read: Missing or invalid Sec-WebSocket-Accept.\n");
+	      websocket_closed();
+	      return;
+	    }
+
+	    // NB: The RFC does not have a requirement for the server to
+	    //     send a Sec-WebSocket-Version header, unless it doesn't
+	    //     support the version that the client requested. It seems
+	    //     prudent to require the header (if any) to contain the
+	    //     version we requested.
+
+	    if (!has_value((array(int))((headers["sec-websocket-version"] ||
+					 (string)websocket_version)/","),
+			   websocket_version)) {
+	      WS_WERR(1, "http_read: Unsupported Sec-WebSocket-Version: %O.\n",
+		      headers["sec-websocket-version"]);
+	      websocket_closed();
+	      return;
+	    }
 
             if (arrayp(extensions)) {
                 mapping ext = parse_websocket_extensions(headers["sec-websocket-extensions"]);
@@ -811,38 +899,90 @@ class Request(function(array(string), Request:void) cb) {
     inherit Protocols.HTTP.Server.Request;
 
     protected int parse_variables() {
-	if (!has_index(request_headers, "sec-websocket-key"))
+        WS_WERR(2, "parse_variables: headers: %O\n", request_headers);
+        WS_WERR(2, "parse_variables: query: %O\n", query);
+        WS_WERR(2, "parse_variables: variables: %O\n", variables);
+
+	// RFC 6455 4.1.(2)
+	//
+	// 2:
+	//   The method of the request MUST be GET, and the HTTP version MUST
+        //   be at least 1.1.
+	if ((request_type != "GET") || !has_prefix(protocol, "HTTP/") ||
+	    (protocol[sizeof("HTTP/")..] < "1.1")) {
+	  WS_WERR(1, "parse_variables: Not a websocket request (2).\n");
+	  return ::parse_variables();
+	}
+
+	// 5:
+	//   The request MUST contain an |Upgrade| header field whose value
+        //   MUST include the "websocket" keyword.
+
+	if (!has_value(lower_case(request_headers["upgrade"] || ""),
+		       "websocket")) {
+	  WS_WERR(1, "parse_variables: Not a websocket request (5).\n");
+	  return ::parse_variables();
+	}
+
+	// 6:
+	//   The request MUST contain a |Connection| header field whose value
+        //   MUST include the "Upgrade" token.
+
+	if (!has_value(lower_case(request_headers["connection"] || ""),
+		       "upgrade")) {
+	  WS_WERR(1, "parse_variables: Not a websocket request (6).\n");
+	  return ::parse_variables();
+	}
+
+	// 7:
+	//   The request MUST include a header field with the name
+        //   |Sec-WebSocket-Key|.  The value of this header field MUST be a
+        //   nonce consisting of a randomly selected 16-byte value that has
+        //   been base64-encoded (see Section 4 of [RFC4648]).  The nonce
+        //   MUST be selected randomly for each connection.
+	string raw_key;
+	catch {
+	  raw_key = MIME.decode_base64(request_headers["sec-websocket-key"]);
+	};
+	if (!raw_key || (sizeof(raw_key) != 16)) {
+	    WS_WERR(1, "parse_variables: Not a websocket request (7).\n");
 	    return ::parse_variables();
+	}
+
+	// 9:
+	//   The request MUST include a header field with the name
+        //   |Sec-WebSocket-Version|.  The value of this header field MUST be
+        //   13.
+
+	if (request_headers["sec-websocket-version"] !=
+	    (string)websocket_version) {
+	  WS_WERR(1, "parse_variables: Not a websocket request (9).\n");
+	  return ::parse_variables();
+	}
+
 	if (query!="")
 	    .HTTP.Server.http_decode_urlencoded_query(query,variables);
 	flatten_headers();
+	string proto = request_headers["sec-websocket-protocol"];
+	array(string) protocols =  proto ? proto / ", " : ({});
+	WS_WERR(1, "websocket request: %O\n", protocols);
 	if (cb) {
-	    string proto = request_headers["sec-websocket-protocol"];
-	    array(string) protocols =  proto ? proto / ", " : ({});
-            WS_WERR(1, "websocket request: %O\n", protocols);
 	    cb(protocols, this);
 	}
 	return 0;
     }
 
-    //! Calling @[websocket_accept] completes the WebSocket connection
-    //! handshake.
-    //! The @expr{protocol@} parameter should be either @expr{0@} or one of
-    //! the protocols advertised by the client when initiating the WebSocket connection.
-    //! Extensions can be specified using the @expr{extensions@}
-    //! parameter.
-    //! Additional HTTP headers in the response can be specified using the @expr{extra_headers@}
-    //! argument.
-    //! 
-    //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
-                                void|mapping extra_headers) {
+    array(mapping(string:string)|array)
+        low_websocket_accept(string|void protocol,
+			     array(extension_factory)|void extensions,
+			     mapping(string:string)|void extra_headers)
+    {
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
-	    "Sec-Websocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "Sec-Websocket-Version" : "13",
+	    "Sec-WebSocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
+            "Sec-WebSocket-Version" : (string)websocket_version,
             "Server" : agent,
 	]);
 
@@ -867,6 +1007,24 @@ class Request(function(array(string), Request:void) cb) {
         }
 
 	if (protocol) heads["Sec-Websocket-Protocol"] = protocol;
+
+	return ({ heads, _extensions });
+    }
+
+    //! Calling @[websocket_accept] completes the WebSocket connection
+    //! handshake.
+    //! The @expr{protocol@} parameter should be either @expr{0@} or one of
+    //! the protocols advertised by the client when initiating the WebSocket connection.
+    //! Extensions can be specified using the @expr{extensions@}
+    //! parameter.
+    //! Additional HTTP headers in the response can be specified using the @expr{extra_headers@}
+    //! argument.
+    //!
+    //! The returned connection object is in state @[Connection.OPEN].
+    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
+                                void|mapping extra_headers) {
+        [mapping heads, array _extensions] =
+	    low_websocket_accept(protocol, extensions, extra_headers);
 
         Connection ws = Connection(my_fd, _extensions);
         WS_WERR(2, "Using extensions: %O\n", _extensions);
@@ -898,6 +1056,7 @@ class Request(function(array(string), Request:void) cb) {
 class Port {
     inherit Protocols.HTTP.Server.Port;
 
+    //!
     protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
                           function(array(string), Request:void)|void ws_cb,
                           void|int portno, void|string interface) {

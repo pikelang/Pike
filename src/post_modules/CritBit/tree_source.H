@@ -109,7 +109,8 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		NEW_MAPPING_LOOP(md) {
 		    cb_key key = CB_KEY_FROM_SVALUE(&k->ind);
 		    cb_insert(& THIS->tree, key, &k->val);
-		}
+                }
+                pop_stack();
 		return;
 	    }
 	    case PIKE_T_ARRAY: {
@@ -120,7 +121,8 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		for (i = 0; i < o->u.array->size; i+=2) {
 		    cb_key key = CB_KEY_FROM_SVALUE(ITEM(o->u.array)+i);
 		    cb_insert(& THIS->tree, key, ITEM(o->u.array)+i+1);
-		}
+                }
+                pop_stack();
 		return;
 	    }
 	  }

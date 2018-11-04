@@ -28,10 +28,31 @@
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
 #define FL(FN) PIKE_CONCAT(FN,l)
-#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
+#elif defined (WITH_DOUBLE_PRECISION_SVALUE) || !defined(HAVE_COSF)
 #define FL(FN) FN
 #else
 #define FL(FN) PIKE_CONCAT(FN,f)
+#endif
+
+#ifndef HAVE_ASINH
+/* Visual Studio versions prior to 2013 did not implement
+ * the arcus hyperbolic functions.
+ */
+FLOAT_TYPE FL(asinh)(FLOAT_TYPE x)
+{
+  if (x < 0) {
+    return -FL(log)(FL(sqrt)(x*x + 1.0) - x);
+  }
+  return FL(log)(FL(sqrt)(x*x + 1.0) + x);
+}
+FLOAT_TYPE FL(acosh)(FLOAT_TYPE x)
+{
+  return FL(log)(FL(sqrt)(x*x - 1.0) + x);
+}
+FLOAT_TYPE FL(atanh)(FLOAT_TYPE x)
+{
+  return 0.5 * (FL(log)(1.0 + x) - FL(log)(1.0 - x));
+}
 #endif
 
 /*! @decl float sin(int|float f)
@@ -513,7 +534,7 @@ void f_abs(INT32 args)
   struct svalue zero;
   SET_SVAL(zero, T_INT, NUMBER_NUMBER, integer, 0);
 
-  check_all_args("abs",args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
+  check_all_args(NULL,args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
   pop_n_elems(args-1);
   if(is_lt(sp-1,&zero)) o_negate();
 }
@@ -534,7 +555,7 @@ void f_abs(INT32 args)
 void f_sgn(INT32 args)
 {
   TRIM_STACK(2);
-  check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
+  check_all_args(NULL,args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
   if(args<2)
     push_int(0);
 

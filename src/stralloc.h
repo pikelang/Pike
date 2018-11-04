@@ -9,12 +9,9 @@
 #include "global.h"
 
 #include "pike_macros.h"
+#include "gc_header.h"
 
 #define STRINGS_ARE_SHARED
-
-#ifndef STRUCT_PIKE_STRING_DECLARED
-#define STRUCT_PIKE_STRING_DECLARED
-#endif
 
 enum string_type {
     STRING_ALLOC_STATIC   =0,
@@ -31,11 +28,25 @@ enum struct_type {
 
 struct pike_string
 {
+#ifdef PIKE_DEBUG
+  GC_MARKER_MEMBERS;
+#else
   INT32 refs;
+#endif
   unsigned char flags;
+#ifdef __GCC__
   enum size_shift   size_shift:2;
   enum string_type  alloc_type:5;
   enum struct_type struct_type:1;
+#else /* !__GCC__ */
+  /* NB: Some compliers (eg MSVC) use signed integers for the
+   *     enum bit fields, causing thirtytwobit (2) to be -2
+   *     when extracted from the size_shift field.
+   */
+  unsigned char size_shift:2;
+  unsigned char alloc_type:5;
+  unsigned char struct_type:1;
+#endif /* __GCC__ */
   unsigned char  min;
   unsigned char  max;
   ptrdiff_t len; /* Not counting terminating NUL. */
@@ -57,6 +68,8 @@ struct substring_pike_string {
 #define STRING_CONTENT_CHECKED      8 /* if true, min and max are valid */
 #define STRING_IS_LOWERCASE        16
 #define STRING_IS_UPPERCASE        32
+
+#define STRING_IS_LOCKED	   64	/* The str field MUST NOT be reallocated. */
 
 #define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
 
@@ -82,10 +95,16 @@ struct substring_pike_string {
 #define STR2(X) ((p_wchar2 *)(X)->str)
 #endif
 
-#ifndef PIKE_DEBUG
-static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
+PMOD_EXPORT extern const char Pike_isidchar_vector[];
+#define isidchar(X)	(Pike_isidchar_vector[((unsigned)(X))&0xff] == '1')
 
-static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str, int size, ptrdiff_t pos)
+#ifndef PIKE_DEBUG
+static p_wchar2 generic_extract (const void *str, enum size_shift size,
+				 ptrdiff_t pos) ATTRIBUTE((pure));
+
+static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str,
+							      enum size_shift size,
+							      ptrdiff_t pos)
 {
 /* this gives better code than a lot of other versions I have tested.
 
@@ -103,7 +122,8 @@ static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE index_shared_string(const struct pi
   return generic_extract(s->str,s->size_shift,pos);
 }
 #else
-PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos);
+PMOD_EXPORT p_wchar2 generic_extract (const void *str, enum size_shift size,
+				      ptrdiff_t pos);
 PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t pos);
 #endif
 
@@ -384,7 +404,8 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
 PMOD_EXPORT int wide_isspace(int c);
 PMOD_EXPORT int wide_isidchar(int c);
 PMOD_EXPORT size_t pike_string_utf8_length(const struct pike_string *s, INT32 args, int extended);
-PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const struct pike_string *s);
+PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const struct pike_string *s,
+                                                   int extended);
 PMOD_EXPORT size_t pike_string_utf8_decode_length(const unsigned char *in, size_t inlen,
                                                   INT32 args, int extended, int *_shift);
 PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
@@ -501,7 +522,7 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
 #else
-#define make_shared_string(s) (__builtin_constant_p(s)                                  \
+#define make_shared_string(s) (STATIC_IS_CONSTANT(s)                                     \
                                ? make_shared_static_string(s, strlen(s), eightbit)       \
                                : debug_make_shared_string(s))
 

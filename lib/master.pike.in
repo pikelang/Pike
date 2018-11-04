@@ -56,17 +56,13 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //        or at least some functions that use them should be.
 //        cf Tools.Shoot.runpike.
 //	/grubba 2004-04-11
-#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
+#if defined(__NT__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
 #endif
 
-#ifdef __amigaos__
-#define UPDIR "/"
-#else
 #define UPDIR "../"
-#endif
 
 //! @decl constant out_of_date_warning = 1
 //! Should Pike complain about out of date compiled files.
@@ -76,13 +72,26 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //! If not zero compilation warnings will be written out on stderr.
 int want_warnings = PIKE_WARNINGS;
 
+//! Major pike version to emulate.
 //!
+//! This is typically set via the option @expr{"-V"@}.
+//!
+//! @seealso
+//!   @[compat_minor]
 int compat_major=-1;
 
+//! Minor pike version to emulate.
 //!
+//! This is typically set via the option @expr{"-V"@}.
+//!
+//! @seealso
+//!   @[compat_major]
 int compat_minor=-1;
 
+//! Show compilation warnings from compilation of @[cpp()]
+//! @expr{#if constant()@} expressions.
 //!
+//! This is typically set via the option @expr{"--picky-cpp"@}.
 int show_if_constant_errors = 0;
 
 int is_pike_master = 0;
@@ -430,7 +439,8 @@ protected class Pike_8_0_master
 //!   @[get_compat_master()]
 protected inherit Pike_8_0_master;
 
-//! @appears error
+//! @namespace predef::
+
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(sprintf_format f, sprintf_args ... args) {
@@ -500,18 +510,13 @@ string unrelocate_module(string s)
 #endif // PIKE_MODULE_RELOC
 
 
-//! @appears is_absolute_path
 //! Check if a path @[p] is fully qualified (ie not relative).
 //!
 //! @returns
 //! Returns 1 if the path is absolute, 0 otherwise.
 int is_absolute_path(string p)
 {
-#ifdef __amigaos__
-#define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
-  return IS_ABSOLUTE_PATH(p);
-#else
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
@@ -520,16 +525,14 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) has_prefix((X),"/")
 #endif
   return has_prefix(p,"/");
-#endif
 }
 
-#if defined(__NT__) || defined(__OS2__)
+#if defined(__NT__)
 #define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
 #else
 #define EXPLODE_PATH(X) ((X)/"/")
 #endif
 
-//! @appears explode_path
 //! Split a path @[p] into its components.
 //!
 //! This function divides a path into its components. This might seem like
@@ -539,21 +542,12 @@ int is_absolute_path(string p)
 //!
 array(string) explode_path(string p)
 {
-#ifdef __amigaos__
-  int colon = search(reverse(p), ":");
-  if(colon >= 0)
-    return ({ p[..<colon] }) + explode_path(p[<colon+1..]);
-  array(string) r = p/"/";
-  return replace(r[..<1], "", "/")+r[<0..];
-#else
   array(string) r = EXPLODE_PATH(p);
   if(r[0] == "" && sizeof(p))
     r[0] = "/";
   return r;
-#endif
 }
 
-//! @appears dirname
 //! Returns all but the last segment of a path. Some example inputs and
 //! outputs:
 //!
@@ -571,34 +565,22 @@ array(string) explode_path(string p)
 string dirname(string x)
 {
   if(x=="") return "";
-#ifdef __amigaos__
   array(string) tmp=x/":";
   array(string) tmp2=tmp[-1]/"/";
   tmp[-1]=tmp2[..<1]*"/";
   if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
   return tmp*":";
-#else
-  array(string) tmp=EXPLODE_PATH(x);
-  if(x[0]=='/' && sizeof(tmp)<3) return "/";
-  return tmp[..<1]*"/";
-#endif
 }
 
-//! @appears basename
 //! Returns the last segment of a path.
 //!
 //! @seealso
 //! @[dirname()], @[explode_path()]
 string basename(string x)
 {
-#ifdef __amigaos__
-  return ((x/":")[-1]/"/")[-1];
-#define BASENAME(X) ((((X)/":")[-1]/"/")[-1])
-#else
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
-#endif
 }
 
 #ifdef PIKE_AUTORELOAD
@@ -645,7 +627,265 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
-//! @appears compile_string
+protected class CompilerEnvironment
+{
+  inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
+
+  mixed resolv(string identifier, string filename,
+	       object|void handler, object|void compat_handler)
+  {
+    return master()->resolv(identifier, filename,
+			    handler, compat_handler);
+  }
+
+  program handle_inherit(string inh, string current_file,
+			 object|void handler, object|void compat_handler)
+  {
+    return master()->handle_inherit(inh, current_file,
+				    handler, compat_handler);
+  }
+
+  program handle_import(string module, string current_file,
+			object|void handler, object|void compat_handler)
+  {
+    return master()->handle_import(module, current_file,
+				   handler, compat_handler);
+  }
+
+  object get_compilation_handler(int major, int minor)
+  {
+    return master()->get_compilation_handler(major, minor);
+  }
+
+  int compile_exception(mixed err)
+  {
+    function(mixed:int) fun = master()->compile_exception;
+    return fun && fun(err);
+  }
+
+  string format_exception(mixed err)
+  {
+    return 0;
+  }
+
+  class CPP
+  {
+    inherit ::this_program;
+
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    object handler;
+    object compat_handler;
+#endif
+
+    protected mixed apply_handler(string fun, mixed ... args)
+    {
+      function f;
+      foreach(({ handler, compat_handler }), object o) {
+	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
+	  return f(@args);
+	}
+      }
+      return CompilerEnvironment::`->(fun)(@args);
+    }
+
+    //! @decl void report(SeverityLevel severity, @
+    //!                   string filename, int(1..) linenumber, @
+    //!                   string subsystem, @
+    //!                   sprintf_format message, sprintf_args ... extra_args)
+    //!
+    //!   Report a diagnostic from the preprocessor.
+    //!
+    //! @param severity
+    //!   The severity of the diagnostic.
+    //!
+    //! @param filename
+    //! @param linenumber
+    //!   Location which triggered the diagnostic.
+    //!
+    //! @param subsystem
+    //!   Typically @expr{"cpp"@}.
+    //!
+    //! @param message
+    //!   String with the diagnostic message, with optional
+    //!   @[sprintf()]-style formatting (if any @[extra_args]).
+    //!
+    //! @param extra_args
+    //!   Extra arguments to @[sprintf()].
+    //!
+    //!   The default implementation does the following:
+    //!
+    //!   @ul
+    //!     @item
+    //!       If there's a handler which implements @[Reporter()->report()],
+    //!       call it with the same arguments.
+    //!     @item
+    //!       Otherwise if there's a handler which implements
+    //!       @[compile_warning()] or @[compile_error()] that matches
+    //!       @[severity], call it with suitable arguments.
+    //!     @item
+    //!       Otherwise if there's a compat handler, use it in the same
+    //!       manner as the handler.
+    //!     @item
+    //!       Otherwise fall back to calling @[::report()] with the
+    //!       same arguments.
+    //!   @endul
+    //!
+    //! @note
+    //!   In Pike 8.0 and earlier @[MasterObject()->report()] was not called.
+    //!
+    //! @seealso
+    //!   @[Reporter()->report()]
+    void report(SeverityLevel severity, string filename, int linenumber,
+		string subsystem,
+		sprintf_format message, sprintf_args ... extra_args)
+    {
+      foreach(({ handler, compat_handler }), object o) {
+	if (!objectp(o)) continue;
+	if (functionp(o->report)) {
+	  o->report(severity, filename, linenumber,
+		    subsystem, message, @extra_args);
+	  return;
+	}
+	if (severity < WARNING) continue;
+	if (severity >= ERROR) {
+	  if (functionp(o->compile_error)) {
+	    o->compile_error(filename, linenumber,
+			     sizeof(extra_args)?
+			     sprintf(message, @extra_args):
+			     message);
+	    return;
+	  }
+	} else {
+	  if (functionp(o->compile_warning)) {
+	    o->compile_warning(filename, linenumber,
+			       sizeof(extra_args)?
+			       sprintf(message, @extra_args):
+			       message);
+	    return;
+	  }
+	}
+      }
+      ::report(severity, filename, linenumber, subsystem, message, @extra_args);
+    }
+
+    object get_compilation_handler(int major, int minor)
+    {
+      return apply_handler(__func__, major, minor);
+    }
+
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    mapping(string:string|function|object) get_predefines()
+    {
+      return apply_handler(__func__);
+    }
+
+    mixed resolv(string sym)
+    {
+      return apply_handler(__func__, sym, current_file,
+			   handler, compat_handler);
+    }
+
+    string handle_include(string header_file, string current_file,
+			  int(0..1) is_local_ref)
+    {
+      return apply_handler(__func__, header_file, current_file,
+			   is_local_ref);
+    }
+
+    string read_include(string filename)
+    {
+      return apply_handler(__func__, filename);
+    }
+
+    string decode_charset(string data, string charset)
+    {
+      return apply_handler(__func__, data, charset);
+    }
+#endif
+
+    string evaluate_define(string def, string|void arguments)
+    {
+      return apply_handler(__func__, def, arguments);
+    }
+
+    void change_cpp_compatibility(int major, int minor)
+    {
+      if ((compat_major == major) && (compat_minor == minor)) {
+	return;
+      }
+
+      if (((major == __REAL_MAJOR__) && (minor == __REAL_MINOR__)) ||
+	  (major < 0)) {
+	compat_handler = UNDEFINED;
+      } else {
+	compat_handler = get_compilation_handler(major, minor);
+      }
+      ::change_cpp_compatibility(major, minor);
+    }
+
+    int compile_exception(mixed err)
+    {
+      return apply_handler(__func__, err);
+    }
+
+    string format_exception(mixed err)
+    {
+      string ret = apply_handler(__func__, err);
+      if (ret) return ret;
+      if (compile_exception(err)) {
+	return "";
+      }
+      return 0;
+    }
+
+#if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+
+    protected void create(mapping(string:mixed) options)
+    {
+      // werror("CPP(%O)\n", options);
+      handler = options->handler;
+      compat_handler = UNDEFINED;
+      ::create(options);
+    }
+
+    protected variant void create(string|void current_file,
+				  int|string|void charset, object|void handler,
+				  void|int compat_major, void|int compat_minor,
+				  void|int picky_cpp)
+    {
+      mapping(string:mixed) options = ([]);
+#define CPP_OPT(X)	do { if (X) { options->X = X; } } while(0)
+      CPP_OPT(current_file);
+      CPP_OPT(charset);
+      CPP_OPT(handler);
+      CPP_OPT(compat_major);
+      CPP_OPT(compat_minor);
+      CPP_OPT(picky_cpp);
+#undef CPP_OPT
+      local::create(options);
+    }
+#endif
+  }
+}
+
+protected CompilerEnvironment DefaultCompilerEnvironment =
+  CompilerEnvironment();
+
+protected string cpp(string data, mapping|string|void current_file,
+		     int|string|void charset, object|void handler,
+		     void|int compat_major, void|int compat_minor,
+		     void|int picky_cpp)
+{
+  CompilerEnvironment.CPP cpp_obj =
+    DefaultCompilerEnvironment->CPP(current_file, charset,
+				    handler || UNDEFINED,
+				    compat_major, compat_minor,
+				    picky_cpp);
+
+  cpp_obj->init_pike_cpp();
+  return cpp_obj->high_cpp(data);
+}
+
 //! Compile the Pike code in the string @[source] into a program.
 //! If @[filename] is not specified, it will default to @expr{"-"@}.
 //!
@@ -686,7 +926,20 @@ program compile_string(string source, void|string filename,
   return ret;
 }
 
+//! @endnamespace
+
+//! Read a file from the master filesystem.
 //!
+//! The master filesystem defaults to the system filesystem,
+//! but additional mountpoints may be added via
+//! @[add_filesystem_handler()].
+//!
+//! All file I/O performed by the @[MasterObject] is performed
+//! via this function and its related functions.
+//!
+//! @seealso
+//!   @[add_filesystem_handler()], @[find_handler_for_path()],
+//!   @[master_get_dir()], @[master_file_stat()]
 string master_read_file(string file)
 {
   string x = find_handler_for_path(file);
@@ -839,6 +1092,8 @@ array master_get_dir(string file)
 //!  master()->add_filesystem_handler("/foo/bar.zip", Filesystem.Zip("/foo/bar.zip"));
 //!  master()->add_module_path("/foo/bar.zip/lib");
 //!
+//! @seealso
+//!  @[find_handler_for_path()]
 mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ filesystem)
 {
   mixed rv = fs_map[mountpoint];
@@ -846,6 +1101,11 @@ mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ files
   return rv;
 }
 
+//! Return the mountpoint for the filesystem handler handling the
+//! @[file] (if any).
+//!
+//! @seealso
+//!   @[add_filesystem_handler()]
 string find_handler_for_path(string file)
 {
 // TODO: maybe some caching would be worthwhile here. maybe.
@@ -872,6 +1132,8 @@ protected void set_lc_env (mapping(string:string) env)
     environment[lower_case (var)] = val;
 }
 #endif
+
+//! @namespace predef::
 
 //! @decl mapping(string:string) getenv (void|int force_update)
 //!
@@ -997,7 +1259,6 @@ void putenv (string varname, void|string value)
 }
 
 
-//! @appears compile_file
 //! Compile the Pike code contained in the file @[filename] into a program.
 //!
 //! This function will compile the file @[filename] to a Pike program that can
@@ -1031,7 +1292,6 @@ program compile_file(string filename,
 }
 
 
-//! @appears normalize_path
 //! Replaces "\" with "/" if runing on MS Windows. It is
 //! adviced to use @[System.normalize_path] instead.
 string normalize_path( string path )
@@ -1042,6 +1302,8 @@ string normalize_path( string path )
   return replace(path,"\\","/");
 #endif
 }
+
+//! @endnamespace
 
 //! Mapping containing the cache of currently compiled files.
 //!
@@ -1232,6 +1494,16 @@ protected int prio_from_filename(string fname)
   return 0;
 }
 
+protected bool is_joinnode(mixed o)
+{
+  return objectp(o) && object_program(o)->is_resolv_joinnode;
+}
+
+protected bool is_dirnode(mixed o)
+{
+  return objectp(o) && object_program(o)->is_resolv_dirnode;
+}
+
 //! Find the files in which @[mod] is defined, as they may be hidden away in
 //! joinnodes and dirnodes
 //!
@@ -1248,14 +1520,14 @@ array(string) module_defined(object|program mod)
     return ({ Builtin.program_defined([program]mod) });
 
   array mods;
-  if (mod->is_resolv_joinnode)
+  if (is_joinnode(mod))
     mods = mod->joined_modules;
   else
     mods = ({ mod });
 
   foreach (mods;; object mod)
   {
-    if (mod->is_resolv_dirnode)
+    if (is_dirnode(mod))
       files += ({ Builtin.program_defined(object_program(mod->module)) });
     else
       files += ({ Builtin.program_defined(object_program(mod)) });
@@ -1292,9 +1564,9 @@ object show_doc(program|object|function obj)
   }
   if (objectp(obj))
   {
-    if (obj->is_resolv_joinnode)
+    if (is_joinnode(obj))
       obj = obj->joined_modules[0]; // FIXME: check for multiples
-    if (obj->is_resolv_dirnode)
+    if (is_dirnode(obj))
       prog = object_program(obj->module);
     else
       prog = object_program(obj);
@@ -1562,12 +1834,12 @@ void unregister(program p)
     mixed n = has_value (name, '.') ?
       resolv ((name / ".")[..<1] * ".") :
       get_root_module();
-    if (objectp (n) && (n->is_resolv_dirnode || n->is_resolv_joinnode))
+    if (is_dirnode(n) || is_joinnode(n))
       n->delete_value (p);
 
     fname = dirname (fname);
     if ( fname!="" && objectp (n = fc[fname]) )
-      if (n->is_resolv_dirnode) // Won't find joinnodes in fc.
+      if (is_dirnode(n)) // Won't find joinnodes in fc.
 	n->delete_value (p);
   }
 
@@ -1728,6 +2000,39 @@ void handle_error(array|object trace)
   // predef::trace(0);
 }
 
+//! This function is called in runtime check_types mode (@tt{-rt@}),
+//! when encountering a soft cast to an attributed type.
+//!
+//! @param value
+//!   Value that is about to receive the attribute.
+//!
+//! @param attribute
+//!   Type attribute to validate.
+//!
+//! @returns
+//!   Returns one of:
+//!   @int
+//!     @value 1
+//!       If the attribute is valid for the value.
+//!     @value 0
+//!       If the attribute is not valid for the value.
+//!     @value UNDEFINED
+//!       If the attribute is unsupported.
+//!   @endint
+//!
+//! The default master implements validation of the @expr{"utf8"@}
+//! attribute.
+optional int(0..1) handle_attribute(mixed value, string attribute)
+{
+  switch(attribute) {
+#if constant(validate_utf8)
+  case "utf8":
+    return stringp(value) && validate_utf8(value, 3);
+#endif
+  }
+  return UNDEFINED;
+}
+
 /* This array contains the names of the functions
  * that a replacing master-object may want to override.
  */
@@ -1761,8 +2066,6 @@ constant master_efuns = ({
 #endif
 });
 
-enum bool { false=0, true=1 };
-
 //! Prefix for Pike-related C header files.
 string include_prefix;
 
@@ -1775,21 +2078,53 @@ string cflags;
 //! Flags suitable for use when linking Pike C modules
 string ldflags; // Not yet used
 
+//! @namespace predef::
+//!
+//! This is the default namespace and contains lots of global symbols.
+
+//! Boolean datatype.
+enum bool { false=0, true=1 };
 
 //! @decl int write(string fmt, mixed ... args)
-//! @appears write
 //! Writes a string on stdout. Works just like @[Stdio.File.write]
 //! on @[Stdio.stdout].
 
 //! @decl int werror(string fmt, mixed ... args)
-//! @appears werror
 //! Writes a string on stderr. Works just like @[Stdio.File.write]
 //! on @[Stdio.stderr].
+
+//! @decl array random(mapping m)
+//! @decl float random(float max)
+//! @decl int random(int max)
+//! @decl mixed random(object o)
+//! @decl mixed random(array|multiset x)
+//!
+//!   Get a random value generated by the default @[RandomSystem].
+//!
+//! @seealso
+//!   @[RandomSystem()->random()], @[random_string()]
+
+//! @decl string random_string(int len)
+//!
+//!   Get a string of random characters @expr{0..255@} with the length @[len]
+//!   from the default @[RandomSystem].
+//!
+//! @seealso
+//!   @[RandomSystem()->random_string()], @[random()]
+
+//! @decl int cp(string from, string to)
+//!
+//!   Copies the file @[from] to the new position @[to]. This is an
+//!   alias for @[Stdio.cp].
 
 /* Note that create is called before add_precompiled_program
  */
 protected void create()
 {
+  add_constant("CompilerEnvironment", CompilerEnvironment);
+  add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
+  add_constant("cpp", cpp);
+
   foreach(master_efuns, string e)
     if (has_index(this, e))
       add_constant(e, this[e]);
@@ -1867,6 +2202,7 @@ protected void create()
   system_module_path=pike_module_path;
 }
 
+//! @endnamespace
 
 //! This function is called whenever a inherit is called for.
 //! It is supposed to return the program to inherit.
@@ -2402,8 +2738,7 @@ class joinnode (array(object|mapping) joined_modules,
     path = combine_path(getcwd(), path);
     joined_modules = filter(joined_modules,
 			    lambda(dirnode node) {
-			      return !objectp(node) ||
-				!node->is_resolv_dirnode ||
+                              return !is_dirnode(node) ||
 				(node->dirname != path);
 			    });
     cache = ([]);
@@ -2420,8 +2755,7 @@ class joinnode (array(object|mapping) joined_modules,
       mixed ret;
       if (!undefinedp(ret = o[index]))
       {
-	if (objectp(ret) &&
-	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
+        if (is_dirnode(ret) || is_joinnode(ret))
         {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
@@ -2547,7 +2881,7 @@ class joinnode (array(object|mapping) joined_modules,
 	joined_modules = joined_modules[..i - 1] + joined_modules[i + 1..];
 	i--;
       }
-      else if (objectp (o) && (o->is_resolv_dirnode || o->is_resolv_joinnode))
+      else if (is_dirnode(o) || is_joinnode(o))
 	o->delete_value (val);
       else if (string name = mappingp (o) && search (o, val))
 	m_delete (o, name);
@@ -2556,7 +2890,10 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected int `== (mixed other)
   {
-    return objectp (other) && (other->is_resolv_joinnode == 1) &&
+    // NB: Index the program instead of the object to avoid issues
+    //     with modules overloading lfun::`->() with stuff that has
+    //     side-effects (here's looking at you Calendar.Events).
+    return is_joinnode(other) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
   }
 
@@ -2574,10 +2911,6 @@ class joinnode (array(object|mapping) joined_modules,
 joinnode handle_import(string path, string|void current_file,
 		       object|void current_handler)
 {
-#ifdef __amigaos__
-  if(path == ".")
-    path = "";
-#endif
   if(current_file)
   {
     path = combine_path_with_cwd(dirname(current_file), path);
@@ -2914,25 +3247,6 @@ class CompatResolver
     return predefines;
   }
 
-  string evaluate_define(string def, string arguments)
-  {
-      mixed val = arguments ? predefines[def+"()"] : predefines[def];
-      if( callablep(val) )
-      {
-          object C = resolv("Parser.C");
-          array args;
-          if( arguments )
-              args = map(
-                  map(C.group(C.split(arguments))/({","}),C.simple_reconstitute),
-                  Builtin.string_trim);
-          else
-              args = ({});
-
-          val = val( @args );
-      }
-      return (string)val;
-  }
-
   //! Instantiate static modules in the same way that dynamic modules
   //! are instantiated.
   protected mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
@@ -2971,7 +3285,11 @@ class CompatResolver
     return res;
   }
 
+  //! Return the default module for the @[CompatResolver].
   //!
+  //! This is the mapping that corresponds to the @[predef::]
+  //! name space for the compatibility level, and is the
+  //! value returned by @[all_constants()] for the same.
   mapping get_default_module()
   {
     resolv_debug ("%O->get_default_module()\n", this);
@@ -3027,10 +3345,9 @@ class CompatResolver
                       ([ "_static_modules" : static_modules ]),
                       instantiate_static_modules(static_modules),
                        // Copy relevant stuff from the root module.
-		       @filter(root_module->joined_modules,
-			       lambda(mixed x) {
-				 return objectp(x) && x->is_resolv_dirnode;
-			       }) }),
+                       @filter(root_module->joined_modules,
+                               is_dirnode)
+                    }),
 		    current_handler,
 		    root_module->fallback_module,
 		    "predef::");
@@ -3038,9 +3355,10 @@ class CompatResolver
     return node;
   }
 
-  //!
+  //! Look up @[identifier] in the root module.
   mixed resolv_base(string identifier, string|void current_file,
-		    object|void current_handler)
+		    object|void current_handler,
+		    object|void current_compat_handler)
   {
     //      werror("Resolv_base(%O)\n",identifier);
     return get_root_module(current_handler)[identifier];
@@ -3056,9 +3374,14 @@ class CompatResolver
     return res;
   }
 
+  //! Resolve the @[identifier] expression.
   //!
+  //! @returns
+  //!   Returns the value of the @[identifier] if it exists,
+  //!   and @[UNDEFINED] otherwise.
   mixed resolv(string identifier, string|void current_file,
-	       object|void current_handler)
+	       object|void current_handler,
+	       object|void current_compat_handler)
   {
     resolv_debug("resolv(%O, %O)\n",identifier, current_file);
     INC_RESOLV_MSG_DEPTH();
@@ -3071,8 +3394,8 @@ class CompatResolver
     }
 
     if (current_file && !stringp(current_file)) {
-      error("resolv(%O, %O, %O): current_file is not a string!\n",
-	    identifier, current_file, current_handler);
+      error("resolv(%O, %O, %O, %O): current_file is not a string!\n",
+	    identifier, current_file, current_handler, current_compat_handler);
     }
 
     array(string) tmp = identifier/"::";
@@ -3104,7 +3427,8 @@ class CompatResolver
       }
     } else {
       tmp = identifier/".";
-      ret = resolv_base(tmp[0], current_file, current_handler);
+      ret = resolv_base(tmp[0], current_file,
+			current_handler, current_compat_handler);
       tmp = tmp[1..];
     }
     foreach(tmp,string index) {
@@ -3129,7 +3453,10 @@ class CompatResolver
 
   //! This function is called whenever an #include directive is
   //! encountered. It receives the argument for #include and should
-  //! return the file name of the file to include
+  //! return the file name of the file to include.
+  //!
+  //! @seealso
+  //!   @[read_include()]
   string handle_include(string f,
 			string current_file,
 			int local_include)
@@ -3156,7 +3483,10 @@ class CompatResolver
     return 0;
   }
 
+  //! Read the file specified by @[handle_include()].
   //!
+  //! @seealso
+  //!   @[handle_include()]
   string read_include(string f)
   {
     AUTORELOAD_CHECK_FILE(f);
@@ -3173,6 +3503,90 @@ class CompatResolver
 }
 
 inherit CompatResolver;
+
+//! @namespace predef::
+
+//! @class __dirnode
+
+//! @decl inherit MasterObject.dirnode
+
+//! @endclass
+
+//! @class __joinnode
+
+//! @decl inherit MasterObject.joinnode
+
+//! @endclass
+
+//! @decl void add_include_path(string tmp)
+//! Add a directory to search for include files.
+//!
+//! This is the same as the command line option @tt{-I@}.
+//!
+//! @note
+//! Note that the added directory will only be searched when using
+//! < > to quote the included file.
+//!
+//! @seealso
+//! @[remove_include_path()]
+//!
+
+//! @decl void remove_include_path(string tmp)
+//! Remove a directory to search for include files.
+//!
+//! This function performs the reverse operation of @[add_include_path()].
+//!
+//! @seealso
+//! @[add_include_path()]
+//!
+
+//! @decl void add_module_path(string path, string|void subpath)
+//! Add a directory to search for modules.
+//!
+//! This is the same as the command line option @tt{-M@}.
+//!
+//! @seealso
+//! @[remove_module_path()]
+//!
+//! @param path
+//!   a string containing a path to search for Pike modules. May be a
+//!   directory, or a path to a ZIP archive. If a ZIP archive path is
+//!   provided, modules will be loaded from a directory, "modules" within
+//!   the ZIP archive (see the subpath argument).
+//!
+//! @param subpath
+//!   if path is a ZIP archive, this argument will determine the path within
+//!   the archive to be searched.
+//!
+
+//! @decl void remove_module_path(string tmp)
+//! Remove a directory to search for modules.
+//!
+//! This function performs the reverse operation of @[add_module_path()].
+//!
+//! @seealso
+//! @[add_module_path()]
+//!
+
+//! @decl void add_program_path(string tmp)
+//! Add a directory to search for programs.
+//!
+//! This is the same as the command line option @tt{-P@}.
+//!
+//! @seealso
+//! @[remove_program_path()]
+//!
+
+//! @decl void remove_program_path(string tmp)
+//! Remove a directory to search for programs.
+//!
+//! This function performs the reverse operation of @[add_program_path()].
+//!
+//! @seealso
+//! @[add_program_path()]
+//!
+
+//! @endnamespace
 
 //! These are useful if you want to start other Pike processes
 //! with the same options as this one was started with.
@@ -3404,7 +3818,7 @@ void _main(array(string(0..255)) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright © 1994-2017 Linköping University\n"
+        exit(0, string_to_utf8(version() + " Copyright © 1994-2018 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
             "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));
@@ -3874,11 +4288,11 @@ void runtime_warning (string where, string what, mixed... args)
     switch (where + "." + what) {
       case "gc.bad_cycle":
 	// args[0] is an array containing the objects in the cycle
-	// which aren't destructed and have destroy() functions.
+	// which aren't destructed and have _destruct() functions.
 #if 0
 	// Ignore this warning for now since we do not yet have a weak
 	// modifier, so it can't be avoided in a reasonable way.
-	werror ("GC warning: Garbing cycle where destroy() will be called "
+	werror ("GC warning: Garbing cycle where _destruct() will be called "
 		"in arbitrary order:\n%{            %s\n%}",
 		sprintf("%O", args[0][*]));
 #endif
@@ -3911,6 +4325,7 @@ string decode_charset(string data, string charset)
 }
 
 
+//! Class used by @[describe_backtrace()] to describe values in backtraces.
 class Describer
 {
   int clipped=0;
@@ -4300,7 +4715,8 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   return res + (describe_program(parent_fun)||"unknown_program") + "()->";
 }
 
-//!
+//! Function called by @expr{sprintf("%O")@} for objects that don't
+//! have an @[lfun::_sprintf()], or have one that returns @expr{UNDEFINED@}.
 string describe_object(object o)
 {
   string s;
@@ -4343,7 +4759,7 @@ string describe_object(object o)
   return 0;
 }
 
-//!
+//! Function called by @expr{sprintf("%O")@} for programs.
 string describe_program(program|function p)
 {
   string s;
@@ -4370,7 +4786,8 @@ string describe_program(program|function p)
   return search(all_constants(), p);
 }
 
-//!
+//! Function called by @[describe_backtrace()] to describe
+//! functions in the backtrace.
 string describe_function (function f)
 {
   if (!f) return 0;
@@ -4409,7 +4826,8 @@ string describe_function (function f)
  * readable message.
  */
 
-//! @appears describe_backtrace
+//! @namespace predef::
+
 //! Return a readable message that describes where the backtrace
 //! @[trace] was made (by @[backtrace]).
 //!
@@ -4650,8 +5068,6 @@ string describe_backtrace(mixed trace, void|int linewidth)
   return ret;
 }
 
-//! @appears describe_error
-//!
 //! Return the error message from an error object or array (typically
 //! caught by a @[catch]). The type of the error is checked, hence
 //! @[err] is declared as @expr{mixed@} and not @expr{object|array@}.
@@ -4701,8 +5117,6 @@ string describe_error (mixed /* object|array */ err)
     return sprintf ("<Invalid error container: %O>\n", err);
 }
 
-//! @appears get_backtrace
-//!
 //! Return the backtrace array from an error object or array
 //! (typically caught by a @[catch]), or zero if there is none. Errors
 //! are thrown on if there are problems retrieving the backtrace.
@@ -4739,6 +5153,8 @@ array get_backtrace (object|array err)
 
   return bt;
 }
+
+//! @endnamespace
 
 void thread_quanta_exceeded(object thread, int ns)
 {
@@ -4885,13 +5301,13 @@ class Encoder
 	  break compare;
 	}
 
-	if ((resolved->is_resolv_joinnode) &&
+        if (is_joinnode(resolved) &&
 	    (sizeof(resolved->joined_modules) == 1)) {
 	  ENC_MSG("  compare_resolved: %O is a single element joinnode.\n",
 		  resolved);
 	  resolved = resolved->joined_modules[0];
 	}
-	if (resolved->is_resolv_dirnode) {
+        if (is_dirnode(resolved)) {
 	  if (resolved->module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
@@ -4911,7 +5327,7 @@ class Encoder
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
 	// and we don't know that.
-	if (resolved->is_resolv_joinnode) {
+        if (is_joinnode(resolved)) {
 	  ENC_MSG ("  compare_resolved: searching for %O in joinnode %O\n",
 		   what, resolved);
 	  foreach (resolved->joined_modules, mixed part)
@@ -4965,7 +5381,7 @@ class Encoder
 
     if (objectp (what)) {
 
-      if (what->is_resolv_dirnode) {
+      if (is_dirnode(what)) {
 	ENC_MSG ("  is a dirnode\n");
 	string name = program_path_to_name (what->dirname);
 	if (string|array ref = compare_resolved (name, what, resolv (name),
@@ -4973,17 +5389,16 @@ class Encoder
 	  ENC_RETURN (ref);
       }
 
-      else if (what->is_resolv_joinnode) {
+      else if (is_joinnode(what)) {
 	ENC_MSG ("  is a joinnode\n");
 	object modules = Builtin.array_iterator (what->joined_modules);
 	object|mapping value;
       check_dirnode:
-	if (modules && objectp (value = modules->value()) &&
-	    value->is_resolv_dirnode) {
+        if (modules && (value = modules->value()) && is_dirnode(value)) {
 	  string name = program_path_to_name (value->dirname);
 	  modules += 1;
 	  foreach (modules;; value)
-	    if (!objectp (value) || !value->is_resolv_dirnode ||
+            if (!is_dirnode(value) ||
 		program_path_to_name (value->dirname) != name)
 	      break check_dirnode;
 	  ENC_MSG ("  joinnode has consistent name %O\n", name);
@@ -5303,11 +5718,11 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	}
 	else switch (op) {
 	  case 'm':
-	    if (objectp (subres) && ([object]subres)->is_resolv_joinnode) {
+            if (is_joinnode(subres)) {
 	      dirnode found;
 	      foreach (([object(joinnode)]subres)->joined_modules,
 		       object|mapping part)
-		if (objectp (part) && part->is_resolv_dirnode && part->module) {
+                if (is_dirnode(part) && part->module) {
 		  if (found)
 		    error ("There are ambiguous module objects in %O.\n",
 			   subres);
@@ -5317,7 +5732,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	      if (found) subres = found;
 	    }
 
-	    if (objectp (subres) && ([object]subres)->is_resolv_dirnode) {
+            if (is_dirnode(subres)) {
 	      if (([object]subres)->module) {
 		subres = ([object]subres)->module;
 		DEC_MSG ("  got dirnode module %O\n", subres);

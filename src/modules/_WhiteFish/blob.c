@@ -1,6 +1,11 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
 #include "interpret.h"
 #include "program.h"
 #include "object.h"
@@ -18,12 +23,21 @@
 
 #define sp Pike_sp
 
-static void exit_blob_struct( );
+static void exit_blob_struct(struct object *o);
 
 /*
   +-----------+----------+---------+---------+---------+
   | docid: 32 | nhits: 8 | hit: 16 | hit: 16 | hit: 16 |...
   +-----------+----------+---------+---------+---------+
+
+  For hit < 0xc000, hit in body (HIT_BODY).
+  Note: Old wf_buf_low_add() had a bug where the max was 0x3fff.
+
+             +----+---------------+--------+
+  Otherwise: | 11 | field_type: 6 | hit: 8 | (HIT_FIELD).
+             +----+---------------+--------+
+
+  cf wf_blob_hit() and wf_buf_low_add().
 */
 
 int wf_blob_next( Blob *b )
@@ -196,7 +210,7 @@ struct blob_data
 struct program *blob_program;
 static struct hash *low_new_hash( int doc_id )
 {
-  struct hash *res =  xalloc( sizeof( struct hash ) );
+  struct hash *res = ALLOC_STRUCT( hash );
   res->doc_id = doc_id;
   res->next = 0;
   res->data = wf_buffer_new();
@@ -273,13 +287,62 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
   {
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
-    struct hash *h = find_hash( d, docid );
-    /* Make use of the fact that this dochash should be empty, and
-     * assume that the incoming data is valid
-     */
-    wf_buffer_rewind_r( b, 5 );
-    wf_buffer_rewind_w( h->data, -1 );
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );
+    int remaining = b->size - b->rpos;
+    int orig_rpos = b->rpos;
+    int i;
+    int prev;
+    struct hash *h;
+    if (nhits > (remaining>>1)) {
+      fprintf(stderr, "Invalid blob entry for doc 0x%08x: %d hits of %d missing.\n",
+	      (unsigned INT32)docid, nhits - (remaining>>1), nhits);
+      nhits = remaining>>1;
+      remaining = -1;
+    }
+    if (!nhits) {
+      fprintf(stderr, "Invalid blob entry for document 0x%08x (0 hits!).\n",
+	      (unsigned INT32)docid);
+      break;
+    }
+
+    /* Perform some minimal validation of the entry. */
+    prev = -1;
+    for (i = 0; i < nhits; i++) {
+      int val = wf_buffer_rshort(b);
+      if (prev == val) {
+	/* Check if we're at max hit for the field. */
+	if ((val < 0xbfff) || ((val & 0xff) != 0xff)) {
+	  /* Probably some junk like 2020202020202020202020... */
+	  /* Skip this entry and remainder of blob. */
+	  if (val == 0x3fff) {
+	    /* Special case for common broken max due to broken
+	     * wf_buf_low_add().
+	     */
+	    continue;
+	  }
+	  fprintf(stderr,
+		  "Duplicate hits in blob entry for document 0x%08x: 0x%04x.\n",
+		  (unsigned INT32)docid, val);
+	  remaining = -1;
+	  nhits = 0;
+	  break;
+	}
+      }
+      prev = val;
+    }
+
+    /* Restore read position. */
+    b->rpos = orig_rpos;
+
+    if (nhits) {
+      h = find_hash( d, docid );
+      /* Make use of the fact that this dochash should be empty, and
+       * assume that the incoming data is valid
+       */
+      wf_buffer_rewind_w( h->data, 1 );
+      wf_buffer_wbyte(h->data, nhits);
+      wf_buffer_memcpy( h->data, b, nhits*2 );
+    }
+    if (remaining < 0) break;
   }
   wf_buffer_free( b );
 }
@@ -301,6 +364,7 @@ static void f_blob_create( INT32 args )
     if( TYPEOF(sp[-1]) != PIKE_T_STRING )
       Pike_error("Expected a string\n");
     _append_blob( THIS, s );
+    pop_n_elems(args);
   }
 }
 
@@ -324,7 +388,7 @@ static void f_blob_remove( INT32 args )
   struct hash *h;
   struct hash *p = NULL;
 
-  get_all_args("remove", args, "%d", &doc_id);
+  get_all_args(NULL, args, "%d", &doc_id);
   r = ((unsigned int)doc_id) % HSIZE;
   h = THIS->hash[r];
 
@@ -360,7 +424,7 @@ static void f_blob_remove_list( INT32 args )
   struct array *docs;
   int i;
 
-  get_all_args("remove_list", args, "%a", &docs);
+  get_all_args(NULL, args, "%a", &docs);
 
   for( i = 0; i<docs->size; i++ )
   {
@@ -403,9 +467,11 @@ void wf_blob_low_add( struct object *o,
   switch( field )
   {
     case 0:
-      s = off>((1<<14)-1)?((1<<14)-1):off;
+      /* Body. 0 <= hits <= 0xbfff */
+      s = off>((3<<14)-1)?((3<<14)-1):off;
       break;
     default:
+      /* Field. 0b11 | (field-1):6 | off:8 */
       s = (3<<14) | ((field-1)<<8) | (off>255?255:off);
       break;
   }
@@ -420,7 +486,7 @@ static void f_blob_add( INT32 args )
   int docid;
   int field;
   int off;
-  get_all_args("add", args, "%d%d%d", &docid, &field, &off);
+  get_all_args(NULL, args, "%d%d%d", &docid, &field, &off);
   wf_blob_low_add( Pike_fp->current_object, docid, field, off );
   pop_n_elems( args );
 }
@@ -516,18 +582,35 @@ static void f_blob__cast( INT32 args )
   /* 2: Sort in the blobs */
   for( i = 0; i<zp; i++ )
   {
-    int nh;
+    unsigned int nh;
 #ifdef PIKE_DEBUG
-    if( zipp[i].b->size < 7 )
-      Pike_fatal( "Expected at least 7 bytes! (1 hit)\n");
-    else
+    /* NB: As new_hash() returns a zero-length hash struct (ie 5 bytes),
+     *     requiring 7 bytes is a bit excessive.
+     */
+    if( zipp[i].b->size < 5 ) {
+      fprintf(stderr, "zipp[%d]: doc_id: %d, b: %p (%d bytes)\n",
+	      i, zipp[i].id, zipp[i].b->data, zipp[i].b->size);
+      Pike_fatal( "Expected at least 5 bytes! (0 hits)\n");
+    }
 #endif
     if((nh = zipp[i].b->data[4]) > 1 )
     {
 #ifdef HANDLES_UNALIGNED_READ
+#ifdef PIKE_DEBUG
+      if (nh<<1 != zipp[i].b->size-5) {
+	Pike_fatal("Unexpected blob size: %d != %d\n",
+		   nh<<1, zipp[i].b->size-5);
+      }
+#endif
       fsort( zipp[i].b->data+5, nh, 2, (void *)cmp_hit );
 #else
       short *data = malloc( nh * 2 );
+#ifdef PIKE_DEBUG
+      if (nh<<1 != zipp[i].b->size-5) {
+	Pike_fatal("Unexpected blob size: %d != %d\n",
+		   nh<<1, zipp[i].b->size-5);
+      }
+#endif
       memcpy( data,  zipp[i].b->data+5, nh * 2 );
       fsort( data, nh, 2, (void *)cmp_hit );
       memcpy( zipp[i].b->data+5, data, nh * 2 );
@@ -544,7 +627,7 @@ static void f_blob__cast( INT32 args )
 
   free( zipp );
 
-  exit_blob_struct(); /* Clear this buffer */
+  exit_blob_struct(NULL); /* Clear this buffer */
   pop_n_elems( args );
   push_string( make_shared_binary_string( (char *)res->data, res->size ) );
   wf_buffer_free( res );
@@ -556,19 +639,17 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void init_blob_struct(struct object * UNUSED(o))
-{
-  memset( THIS, 0, sizeof( struct blob_data ) );
-}
-
-static void exit_blob_struct(struct object * o)
+/* NB: This function is called directly from f_blob__cast() above,
+ *     and thus needs to be prepared to be called again.
+ */
+static void exit_blob_struct(struct object * UNUSED(o))
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  /* why? */
-  init_blob_struct(o);
+  /* Prepare for next use. */
+  memset(THIS, 0, sizeof(struct blob_data));
 }
 
 void init_blob_program(void)
@@ -582,7 +663,6 @@ void init_blob_program(void)
   ADD_FUNCTION( "remove_list", f_blob_remove_list, tFunc(tArr(tInt),tVoid), 0);
   ADD_FUNCTION( "data", f_blob__cast, tFunc(tVoid,tStr), 0 );
   ADD_FUNCTION( "memsize", f_blob_memsize, tFunc(tVoid,tInt), 0 );
-  set_init_callback( init_blob_struct );
   set_exit_callback( exit_blob_struct );
   blob_program = end_program( );
   add_program_constant( "Blob", blob_program, 0 );

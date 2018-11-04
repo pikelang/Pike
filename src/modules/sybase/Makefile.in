@@ -10,6 +10,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-$(SRCDIR)/sybase.c: sybase.cmod
+sybase.o: $(SRCDIR)/sybase.c
 
 @dependencies@

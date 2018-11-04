@@ -21,8 +21,7 @@
 #include "pike_types.h"
 #include "sscanf.h"
 #include "bitvector.h"
-
-#define sp Pike_sp
+#include "pike_search.h"
 
 /*
  * helper functions for sscanf %O
@@ -46,6 +45,18 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
   return res;
 }
 #define READ() next_char(str,len)
+
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define NOINLINE_UNALIGNED
+#else
+/* Workaround for gcc 4.7.4 and others "optimizing" away calls to memcpy(),
+ * and replacing them with direct (unaligned) memory accesses.
+ * This generates broken code for eg %F on sparc.
+ * cf https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50569
+ * Note that the patch for the above bug is in gcc 4.7.4, but isn't sufficient.
+ */
+#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC((noinline))
+#endif
 
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
 {
@@ -438,7 +449,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Unterminated negated sscanf set.\n");	\
+      Pike_error("Unterminated negated sscanf set.\n");         \
   }else{							\
     set->neg=0;							\
   }								\
@@ -489,7 +500,7 @@ MATCH_IS_WIDE(							\
       }								\
       else							\
       {								\
-	sp[-1].u.integer=match[cnt];				\
+        Pike_sp[-1].u.integer=match[cnt];                       \
       }								\
 )								\
     } else {							\
@@ -501,9 +512,9 @@ MATCH_IS_WIDE(							\
 MATCH_IS_WIDE(							\
       else{							\
         if(set_size &&						\
-	   ((p_wchar2)sp[-1].u.integer) == last-1)		\
+	   ((p_wchar2)Pike_sp[-1].u.integer) == last-1)		\
         {							\
-	  sp[-1].u.integer++;					\
+          Pike_sp[-1].u.integer++;                              \
         }else{							\
 	  check_stack(2);					\
 	  push_int(last);					\
@@ -549,20 +560,27 @@ MATCH_IS_WIDE(							\
 
 #ifdef NEED_CUSTOM_IEEE
 
-static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
+static inline FLOAT_TYPE low_parse_IEEE_float(const char *b, int sz)
 {
   unsigned INT32 f, extra_f;
   int s, e;
   unsigned char x[4];
   double r;
 
-  x[0] = EXTRACT_UCHAR(b);
-  x[1] = EXTRACT_UCHAR(b+1);
-  x[2] = EXTRACT_UCHAR(b+2);
-  x[3] = EXTRACT_UCHAR(b+3);
+  if (sz < 0) {
+    x[0] = EXTRACT_UCHAR(b-sz-1);
+    x[1] = EXTRACT_UCHAR(b-sz-2);
+    x[2] = EXTRACT_UCHAR(b-sz-3);
+    x[3] = EXTRACT_UCHAR(b-sz-4);
+  } else {
+    x[0] = EXTRACT_UCHAR(b);
+    x[1] = EXTRACT_UCHAR(b+1);
+    x[2] = EXTRACT_UCHAR(b+2);
+    x[3] = EXTRACT_UCHAR(b+3);
+  }
   s = ((x[0]&0x80)? 1 : 0);
 
-  if(sz==4) {
+  if(sz==4 || sz==-4) {
     e = (((int)(x[0]&0x7f))<<1)|((x[1]&0x80)>>7);
     f = (((unsigned INT32)(x[1]&0x7f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
     extra_f = 0;
@@ -576,10 +594,16 @@ static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   } else {
     e = (((int)(x[0]&0x7f))<<4)|((x[1]&0xf0)>>4);
     f = (((unsigned INT32)(x[1]&0x0f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
-    extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+4))<<24)|
-      (((unsigned INT32)EXTRACT_UCHAR(b+5))<<16)|
-      (((unsigned INT32)EXTRACT_UCHAR(b+6))<<8)|
-      ((unsigned INT32)EXTRACT_UCHAR(b+7));
+    if (sz < 0)
+      extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+3))<<24)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+2))<<16)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+1))<<8)|
+	((unsigned INT32)EXTRACT_UCHAR(b));
+    else
+      extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+4))<<24)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+5))<<16)|
+	(((unsigned INT32)EXTRACT_UCHAR(b+6))<<8)|
+	((unsigned INT32)EXTRACT_UCHAR(b+7));
     if(e==2047)
       e = 9999;
     else if(e>0) {
@@ -588,14 +612,17 @@ static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
     } else
       e -= 1022+20;
   }
+
   if(e>=9999)
+  {
     if(f||extra_f) {
       /* NAN */
       return (FLOAT_TYPE)MAKE_NAN();
     } else {
       /* +/- Infinity */
-      return (FLOAT_TYPE)MAKE_INF(s? -1:1);
+      return (FLOAT_TYPE)MAKE_INF() * (s? -1:1);
     }
+  }
 
   r = (double)f;
   if(extra_f)
@@ -605,68 +632,92 @@ static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 
 #endif
 
-static float extract_float_be(const char * x) {
-    float f;
-
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_float_be(const char * x) {
 #ifdef FLOAT_IS_IEEE_BIG
-    memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_LITTLE
-    unsigned INT32 tmp = get_unaligned32(x);
-    tmp = bswap32(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    f = low_parse_IEEE_float(x, 4);
-#endif
-    return f;
-}
-
-static double extract_double_be(const char * x) {
-    double f;
-
-#ifdef FLOAT_IS_IEEE_BIG
-    memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_LITTLE
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    f = low_parse_IEEE_float(x, 8);
-#endif
-    return f;
-}
-
-static float extract_float_le(const char * x) {
     float f;
-
-#ifdef FLOAT_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_BIG
+    return f;
+#elif FLOAT_IS_IEEE_LITTLE
+    float f;
     unsigned INT32 tmp = get_unaligned32(x);
     tmp = bswap32(tmp);
     memcpy(&f, &tmp, sizeof(f));
-#else
-    unsigned INT32 tmp = get_unaligned32(x);
-    tmp = bswap32(tmp);
-    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
-#endif
     return f;
+#else
+    return low_parse_IEEE_float(x, 4);
+#endif
 }
 
-static double extract_double_le(const char * x) {
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_be(const char * x) {
+#ifdef DOUBLE_IS_IEEE_BIG
     double f;
-
-#ifdef FLOAT_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
-#elif FLOAT_IS_IEEE_BIG
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    memcpy(&f, &tmp, sizeof(f));
-#else
-    UINT64 tmp = get_unaligned64(x);
-    tmp = bswap64(tmp);
-    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
-#endif
     return f;
+#elif DOUBLE_IS_IEEE_LITTLE
+    double f;
+#ifdef UINT64
+    UINT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+#else
+    char tmp[8];
+    tmp[7] = x[0];
+    tmp[6] = x[1];
+    tmp[5] = x[2];
+    tmp[4] = x[3];
+    tmp[3] = x[4];
+    tmp[2] = x[5];
+    tmp[1] = x[6];
+    tmp[0] = x[7];
+#endif
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, 8);
+#endif
+}
+
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_float_le(const char * x) {
+#ifdef FLOAT_IS_IEEE_LITTLE
+    float f;
+    memcpy(&f, x, sizeof(f));
+    return f;
+#elif FLOAT_IS_IEEE_BIG
+    float f;
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, -4);
+#endif
+}
+
+static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_le(const char * x) {
+#ifdef DOUBLE_IS_IEEE_LITTLE
+    double f;
+    memcpy(&f, x, sizeof(f));
+    return f;
+#elif DOUBLE_IS_IEEE_BIG
+    double f;
+#ifdef UINT64
+    UINT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+#else
+    char tmp[8];
+    tmp[7] = x[0];
+    tmp[6] = x[1];
+    tmp[5] = x[2];
+    tmp[4] = x[3];
+    tmp[3] = x[4];
+    tmp[2] = x[5];
+    tmp[1] = x[6];
+    tmp[0] = x[7];
+#endif
+    memcpy(&f, &tmp, sizeof(f));
+    return f;
+#else
+    return low_parse_IEEE_float(x, -8);
+#endif
 }
 
 #define EXTRACT_FLOAT(SVAL, input, shift, fun)    do {      \
@@ -695,9 +746,10 @@ static double extract_double_le(const char * x) {
     (SVAL).u.float_number = fun(x);                         \
 } while (0)
 
-static struct pike_string *get_string_slice( void *input, int shift,
-                                             ptrdiff_t offset, ptrdiff_t len,
-                                             struct pike_string *str )
+static struct pike_string * NOINLINE_UNALIGNED
+  get_string_slice( void *input, int shift,
+		    ptrdiff_t offset, ptrdiff_t len,
+		    struct pike_string *str )
 {
     if( !shift && str )
         return string_slice( str, offset, len );
@@ -855,9 +907,9 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  SET_ONERROR(err, do_free_array, sval.u.array);		 \
 									 \
 	  while(input_len-eye)						 \
-	  {								 \
+          {								 \
 	    int yes;							 \
-	    struct svalue *save_sp=sp;					 \
+            struct svalue *save_sp=Pike_sp;                              \
 	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)( \
                          input+eye,					 \
 			 input_len-eye,					 \
@@ -867,12 +919,12 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          &yes,0);                                        \
 	    if(yes && tmp)						 \
 	    {								 \
-              f_aggregate((INT32)(sp-save_sp));                          \
-	      sval.u.array=append_array(sval.u.array,sp-1);		 \
+              f_aggregate((INT32)(Pike_sp-save_sp));                     \
+              sval.u.array=append_array(sval.u.array,Pike_sp-1);         \
 	      pop_stack();						 \
 	      eye+=tmp;							 \
 	    }else{							 \
-	      pop_n_elems(sp-save_sp);					 \
+              pop_n_elems(Pike_sp-save_sp);                              \
 	      break;							 \
 	    }								 \
 	  }								 \
@@ -906,7 +958,7 @@ INPUT_IS_WIDE(								 \
 INPUT_IS_WIDE(								 \
           for(e=0;e<field_length;e++)					 \
           {								 \
-	    if((unsigned INT32) input[eye+e] > 255)			\
+            if((unsigned INT32) input[eye+e] > 255)			 \
              {								 \
                chars_matched[0]=eye;					 \
                return matches;						 \
@@ -916,7 +968,7 @@ INPUT_IS_WIDE(								 \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
-	     int pos=0;						 \
+             int pos=0;                                                  \
 	     if (field_length >= 0) {					 \
 	       pos = (eye += field_length);				 \
 	     }								 \
@@ -938,7 +990,7 @@ INPUT_IS_WIDE(								 \
 		   o_or();						 \
 		 }							 \
                  dmalloc_touch_svalue(Pike_sp-1);			 \
-		 sval=*--sp;						 \
+                 sval=*--Pike_sp;                                        \
 		 break;							 \
 	       }							 \
 	       sval.u.integer<<=8;					 \
@@ -964,7 +1016,7 @@ INPUT_IS_WIDE(								 \
 		   eye++;						 \
 		 }							 \
                  dmalloc_touch_svalue(Pike_sp-1);			 \
-		 sval=*--sp;						 \
+                 sval=*--Pike_sp;                                        \
 		 break;							 \
 	       }							 \
 	       sval.u.integer<<=8;					 \
@@ -975,60 +1027,60 @@ INPUT_IS_WIDE(								 \
 	  break;							 \
         }								 \
  								         \
-      case 'H':								\
-	{								\
+      case 'H':								 \
+        {								 \
           unsigned long len=0;                                           \
-          if(field_length == -1)					\
-	    field_length=1;						\
-          if(field_length == 0)                                         \
-            Pike_error("%%H size field is 0.\n");                       \
-          if(eye+field_length > input_len)				\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  INPUT_IS_WIDE (						\
-	    for(e=0;e<field_length;e++)					\
-	    {								\
-	      if((unsigned INT32) input[eye+e] > 255)			\
-	      {								\
-		chars_matched[0]=eye;					\
-		return matches;						\
-	      }								\
-	    }								\
-	  );								\
-	  if (minus_flag)						\
-	  {								\
-	    int pos=0;							\
-	    pos = (eye += field_length);				\
-            while(--field_length >= 0)					\
-	    {								\
-	      len<<=8;							\
-	      len |= input[--pos];					\
-	    }								\
-	  } else {							\
-	    while(--field_length >= 0)					\
-	    {								\
-	      len<<=8;							\
-	      len |= input[eye];					\
-	      eye++;							\
-	    }								\
-	  }								\
-	  if(len > (unsigned long)(input_len-eye))                      \
-	  {								\
-	    chars_matched[0]=eye-field_length;				\
-	    return matches;						\
-	  }								\
-	  if (no_assign) {						\
-	    no_assign = 2;						\
-	  } else {							\
-	    SET_SVAL(sval, T_STRING, 0, string,				\
-		     PIKE_CONCAT(make_shared_binary_string,		\
-				 INPUT_SHIFT)(input+eye, len));		\
-	  }								\
-	  eye+=len;							\
-	  break;							\
-        }								\
+          if(field_length == -1)					 \
+            field_length=1;						 \
+          if(field_length == 0)                                          \
+            Pike_error("%%H size field is 0.\n");                        \
+          if(eye+field_length > input_len)				 \
+          {								 \
+            chars_matched[0]=eye;					 \
+            return matches;						 \
+          }								 \
+          INPUT_IS_WIDE (						 \
+            for(e=0;e<field_length;e++)					 \
+            {								 \
+              if((unsigned INT32) input[eye+e] > 255)			 \
+              {								 \
+                chars_matched[0]=eye;					 \
+                return matches;						 \
+              }								 \
+            }								 \
+          );								 \
+          if (minus_flag)						 \
+          {								 \
+            int pos=0;							 \
+            pos = (eye += field_length);				 \
+            while(--field_length >= 0)					 \
+            {								 \
+              len<<=8;							 \
+              len |= input[--pos];					 \
+            }								 \
+          } else {							 \
+            while(--field_length >= 0)					 \
+            {								 \
+              len<<=8;							 \
+              len |= input[eye];					 \
+              eye++;							 \
+            }								 \
+          }								 \
+          if(len > (unsigned long)(input_len-eye))                       \
+          {								 \
+            chars_matched[0]=eye-field_length;				 \
+            return matches;						 \
+          }								 \
+          if (no_assign) {						 \
+            no_assign = 2;						 \
+          } else {							 \
+            SET_SVAL(sval, T_STRING, 0, string,				 \
+                     PIKE_CONCAT(make_shared_binary_string,		 \
+                                 INPUT_SHIFT)(input+eye, len));		 \
+          }								 \
+          eye+=len;							 \
+          break;							 \
+        }								 \
 									 \
         case 'b':							 \
         case 'o':							 \
@@ -1094,9 +1146,9 @@ INPUT_IS_WIDE(								 \
 	case 'F':							 \
 	  if(field_length == -1) field_length = 4;			 \
 	  if(field_length != 4 && field_length != 8)			 \
-	    Pike_error("Invalid IEEE width %ld in sscanf format string.\n",	 \
-                       (long)field_length);                             \
-	  if(eye+field_length > input_len)				 \
+            Pike_error("Invalid IEEE width %ld in sscanf format string.\n", \
+                       (long)field_length);                              \
+          if(eye+field_length > input_len)				 \
 	  {								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
@@ -1104,13 +1156,17 @@ INPUT_IS_WIDE(								 \
 	  SET_SVAL(sval, T_FLOAT, 0, float_number, 0.0);		 \
 	  switch(field_length) {					 \
 	    case 4:							 \
-              if (minus_flag) EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le);    \
-              else EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be);               \
-	      eye += 4;							 \
-	      break;							 \
+              if (minus_flag)                                            \
+                EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le); \
+              else                                                       \
+                EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be); \
+              eye += 4;                                                  \
+              break;							 \
 	    case 8:							 \
-              if (minus_flag) EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le);    \
-              else EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be);               \
+              if (minus_flag)                                            \
+                EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le); \
+              else                                                       \
+                EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be); \
 	      eye += 8;							 \
 	      break;							 \
 	  }								 \
@@ -1218,7 +1274,7 @@ INPUT_IS_WIDE(								 \
 		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
 						    s-match+1,		 \
 						    &set,		 \
-						    match_len);         \
+                                                    match_len);          \
 		  set.neg=!set.neg;					 \
 		  goto match_set;					 \
 	      }								 \
@@ -1406,7 +1462,7 @@ INPUT_IS_WIDE(								 \
 	free_svalue(&sval);						 \
     } else {								 \
       check_stack(1);							 \
-      *sp++=sval;							 \
+      *Pike_sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
       DO_IF_DEBUG(INVALIDATE_SVAL(sval));				 \
     }									 \
@@ -1734,22 +1790,22 @@ void o_sscanf(INT32 args)
 {
   INT32 i=0;
   int x;
-  struct svalue *save_sp=sp;
+  struct svalue *save_sp=Pike_sp;
 
-  if(TYPEOF(sp[-args]) != T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("sscanf", 1, "string");
 
-  if(TYPEOF(sp[1-args]) != T_STRING)
+  if(TYPEOF(Pike_sp[1-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("sscanf", 2, "string");
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
 
-  if(sp-save_sp > args/2-1)
+  if(Pike_sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
 
-  for(x=0;x<sp-save_sp;x++)
+  for(x=0;x<Pike_sp-save_sp;x++)
     assign_lvalue(save_sp-args+2+x*2,save_sp+x);
-  pop_n_elems(sp-save_sp +args);
+  pop_n_elems(Pike_sp-save_sp +args);
 
 #ifdef PIKE_DEBUG
   if(Pike_interpreter.trace_level >2)
@@ -1778,14 +1834,14 @@ void o_sscanf(INT32 args)
 PMOD_EXPORT void f_sscanf(INT32 args)
 {
   INT32 i;
-  struct svalue *save_sp=sp;
+  struct svalue *save_sp=Pike_sp;
   struct array *a;
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
 
-  a = aggregate_array(sp - save_sp);
+  a = aggregate_array(Pike_sp - save_sp);
   pop_n_elems(args);
   push_array(a);
 }
@@ -1811,7 +1867,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '*':
 	no_assign=1;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
 
       case '-':
       case '+':
@@ -1937,7 +1993,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      ch = INDEX_PCHARP(format, cnt);
 	    }
 	  }
-	  /* FALL_THROUGH */
+	  /* FALLTHRU */
       case 's':
       case 'H':
 	if (!no_assign)
@@ -2029,7 +2085,7 @@ void f___handle_sscanf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;
@@ -2122,7 +2178,7 @@ void f___handle_sscanf_format(INT32 args)
       case PIKE_T_ATTRIBUTE:
 	if (arg->car == (struct pike_type *)attr)
 	  break;
-	/* FALL_THROUGH */
+	/* FALLTHRU */
       case PIKE_T_NAME:
 	arg = arg->cdr;
 	continue;

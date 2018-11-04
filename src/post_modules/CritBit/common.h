@@ -1,18 +1,12 @@
 #ifdef __SSE4_2__
 # include <smmintrin.h>
 #endif
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
 #include "module.h"
-#include "array.h"
+#include "cyclic.h"
+#include "interpret.h"
 #include "pike_error.h"
 #include "pike_float.h"
 #include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
 #include "operators.h"
 #include "builtin_functions.h"
 

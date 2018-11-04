@@ -14,11 +14,6 @@ inherit Connection;
 array(int) client_cert_types;
 array(string(8bit)) client_cert_distinguished_names;
 
-//! Active key share offers.
-//!
-//! NB: Only used with TLS 1.3 and later.
-mapping(int:Cipher.KeyExchange) keyshares = ([]);
-
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
@@ -30,7 +25,9 @@ protected Packet client_hello(string(8bit)|void server_name,
   Buffer struct = Buffer();
   /* Build client_hello message */
   client_version = version;
-  struct->add_int(client_version, 2); /* version */
+  // Clamp version to TLS 1.2. 1.3 and later are negotiated using
+  // supported versions extension.
+  struct->add_int(min(client_version, PROTOCOL_TLS_1_2), 2);
 
   // The first four bytes of the client_random is specified to be the
   // timestamp on the client side. This is to guard against bad random
@@ -52,7 +49,7 @@ protected Packet client_hello(string(8bit)|void server_name,
    // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
 
-    if (client_version < context->max_version) {
+    if (client_version < max(@context->supported_versions)) {
       // Negotiating a version lower than the max supported version.
       //
       // RFC 7507 4:
@@ -88,6 +85,13 @@ protected Packet client_hello(string(8bit)|void server_name,
       extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
     }
+  };
+
+  ext (EXTENSION_supported_versions, client_version >= PROTOCOL_TLS_1_3) {
+    Buffer versions = Buffer();
+    foreach(context->supported_versions;; ProtocolVersion v)
+      v->add_int(v, 2);
+    return versions;
   };
 
   ext (EXTENSION_renegotiation_info, secure_renegotiation) {
@@ -156,9 +160,11 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   ext (EXTENSION_extended_master_secret,
        context->extended_master_secret &&
-       context->min_version < PROTOCOL_TLS_1_3) {
+       ( has_value(context->supported_versions, PROTOCOL_TLS_1_0) ||
+         has_value(context->supported_versions, PROTOCOL_TLS_1_1) ||
+         has_value(context->supported_versions, PROTOCOL_TLS_1_2) )) {
     // draft-ietf-tls-session-hash
-    // NB: This extension is implicit in TLS 1.3.
+    // NB: This extension is implicit in TLS 1.3 and N/A in SSL.
     return Buffer();
   };
 
@@ -268,65 +274,6 @@ protected Packet client_hello(string(8bit)|void server_name,
   return ret;
 }
 
-protected void make_key_share_offer(int group)
-{
-  SSL3_DEBUG_MSG("make_key_share_offer(%s)\n",
-		 fmt_constant(group, "GROUP"));
-  if (keyshares[group]) return;
-
-  Cipher.KeyExchange ke;
-
-  if ((group & 0xff00) == 0x0100) {
-    if (!FFDHE_GROUPS[group] && !context->private_ffdhe_groups[group]) return;
-    ke = Cipher.KeyShareDHE(context, 0, this, client_version);
-    // ke->init_client();
-    ke->set_group(group);
-#if constant(Crypto.ECC.Curve)
-  } else if (!(group & 0xff00)) {
-    if (!ECC_CURVES[group]) return;
-    ke = Cipher.KeyShareECDHE(context, 0, this, client_version);
-    // ke->init_client();
-    ke->set_group(group);
-#endif
-  } else {
-    SSL3_DEBUG_MSG("Can't create key share for unknown group: %s\n",
-		   fmt_constant(group, "GROUP"));
-  }
-
-  keyshares[group] = ke;
-}
-
-protected Packet client_key_share_packet()
-{
-  Stdio.Buffer offers = Stdio.Buffer();
-
-  // NB: Prefer any ECDHE exchange to any DHE exchange.
-
-  SSL3_DEBUG_MSG("Key shares: %O\n", keyshares);
-
-#if constant(Crypto.ECC.Curve)
-  foreach(context->ecc_curves, int c) {
-    Cipher.KeyExchange ke = keyshares[c];
-    if (!ke) continue;
-    SSL3_DEBUG_MSG("%s: %O\n",
-		   fmt_constant(c, "GROUP"), ke);
-    ke->make_key_share_offer(offers);
-  }
-#endif
-
-  foreach(context->ffdhe_groups, int g) {
-    Cipher.KeyExchange ke = keyshares[g];
-    if (!ke) continue;
-    SSL3_DEBUG_MSG("%s: %O\n",
-		   fmt_constant(g, "GROUP"), ke);
-    ke->make_key_share_offer(offers);
-  }
-
-  Stdio.Buffer struct = Stdio.Buffer();
-  struct->add_hstring(offers, 2);
-  return handshake_packet(HANDSHAKE_client_key_share, struct);
-}
-
 protected Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
@@ -386,39 +333,9 @@ protected void create(Context ctx, string(8bit)|void server_name,
     this_program::session->ffdhe_groups = ctx->ffdhe_groups;
   }
 
-  if (ctx->max_version >= PROTOCOL_TLS_1_3) {
-    // Generate some key shares.
-    SSL3_DEBUG_MSG("Generating default key shares for %s.\n",
-		   fmt_version(ctx->max_version));
-#if constant(Crypto.ECC.Curve)
-    if (sizeof(ctx->ecc_curves)) {
-      make_key_share_offer(ctx->ecc_curves[0]);
-    }
-#endif
-    if (sizeof(ctx->ffdhe_groups)) {
-      make_key_share_offer(ctx->ffdhe_groups[0]);
-    }
-  }
-
-  if (ctx->min_version >= PROTOCOL_TLS_1_3) {
-    // TLS 1.3.
-    SSL3_DEBUG_MSG("CLIENT: True TLS 1.3 handshake.\n");
-    send_packet(client_hello(server_name));
-    send_packet(client_key_share_packet());
-  } else if (ctx->max_version >= PROTOCOL_TLS_1_3) {
-    // Backward compat mode TLS 1.3.
-    SSL3_DEBUG_MSG("CLIENT: Compat TLS 1.3 handshake.\n");
-    // NB: The client key share packet is not to be hashed separately.
-    Buffer save_handshake_messages = handshake_messages;
-    handshake_messages = Buffer();
-    Packet cksp = client_key_share_packet();
-    handshake_messages = save_handshake_messages;
-    send_packet(client_hello(server_name, ({ cksp })));
-  } else {
-    // Pre-TLS 1.3.
-    SSL3_DEBUG_MSG("CLIENT: Legacy TLS handshake.\n");
-    send_packet(client_hello(server_name));
-  }
+  // Pre-TLS 1.3.
+  SSL3_DEBUG_MSG("CLIENT: TLS <= 1.2 handshake.\n");
+  send_packet(client_hello(server_name));
 }
 
 //! Renegotiate the connection (client initiated).
@@ -500,38 +417,23 @@ protected int send_certs()
   COND_FATAL(!session->has_required_certificates(),
              ALERT_unexpected_message, "Certificate message missing.\n");
 
-  if (version < PROTOCOL_TLS_1_3) {
-    Packet key_exchange = client_key_exchange_packet();
+  Packet key_exchange = client_key_exchange_packet();
 
-    if (key_exchange) {
-      send_packet(key_exchange);
-    }
-
-    if(cert) {
-      // We sent a certificate, so we should send the verification.
-      send_packet(certificate_verify_packet());
-    }
-
-    send_packet(change_cipher_packet());
-
-  } else {
-
-    if(cert) {
-      // We sent a certificate, so we should send the verification.
-      send_packet(certificate_verify_packet(SIGN_client_certificate_verify));
-    }
-
-    derive_master_secret(session->master_secret);
+  if (key_exchange) {
+    send_packet(key_exchange);
   }
+
+  if(cert) {
+    // We sent a certificate, so we should send the verification.
+    send_packet(certificate_verify_packet());
+  }
+
+  send_packet(change_cipher_packet());
 
   if(version == PROTOCOL_SSL_3_0)
     send_packet(finished_packet("CLNT"));
   else if(version >= PROTOCOL_TLS_1_0) {
     send_packet(finished_packet("client finished"));
-    if (version >= PROTOCOL_TLS_1_3) {
-      send_packet(change_cipher_packet());
-      handle_change_cipher(1);
-    }
   }
 
   // NB: The server direction hash will be calculated
@@ -674,53 +576,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   case STATE_wait_for_hello:
     add_handshake_message(raw);
     switch(type) {
-    case HANDSHAKE_hello_retry_request:
-      SSL3_DEBUG_MSG("SSL.ClientConnection: HELLO_RETRY_REQUEST\n");
-      if (version >= PROTOCOL_TLS_1_3) {
-	// The server didn't like our key shares.
-	// Add the one requested.
-
-	ProtocolVersion suggested_version =
-	  [int(0..0)|ProtocolVersion]input->read_int(2);
-	int suggested_suite = input->read_int(2);
-	int suggested_group = input->read_int(2);
-
-	string(8bit) extensions = input->read_hstring(2);
-	// NB: We currently don't care about the extensions.
-	extensions = 0;	// Silence warning.
-
-	SSL3_DEBUG_MSG("Suggested: %s %s %s.\n",
-		       fmt_version(suggested_version),
-		       fmt_cipher_suite(suggested_suite),
-		       fmt_constant(suggested_group, "GROUP"));
-
-	if ((suggested_version >= PROTOCOL_TLS_1_3) &&
-	    (suggested_version <= version) &&
-	    has_value(context->preferred_suites, suggested_suite) &&
-	    (has_value(context->ecc_curves, suggested_group) ||
-	     has_value(context->ffdhe_groups, suggested_group))) {
-	  // Valid parameters.
-	  COND_FATAL(suggested_version < context->min_version,
-                     ALERT_protocol_version,
-                     "Unsupported protocol version.\n");
-
-	  // Generate the suggested keyshare.
-	  make_key_share_offer(suggested_group);
-
-	  // Resend the hello.
-	  // NB: No need for TLS 1.2 and earlier compat here, as we
-	  //     know that the server supports TLS 1.3 and later.
-	  send_packet(client_hello(session->server_name));
-	  send_packet(client_key_share_packet());
-	  handshake_state = STATE_wait_for_hello;
-	  previous_handshake = 0;
-	  break;
-	}
-	SSL3_DEBUG_MSG("Invalid suggestion.\n");
-      } else {
-	SSL3_DEBUG_MSG("Not valid in %s.\n", fmt_version(version));
-      }
-      // FALL_THROUGH
     default:
       COND_FATAL(1, ALERT_unexpected_message, "Expected server hello.\n");
       break;
@@ -736,6 +591,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       cipher_suite = input->read_int(2);
       compression_method = input->read_int(1);
 
+      if( !has_value(context->supported_versions, version) )
+      {
+        SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested {%s}).\n",
+                       fmt_version(version),
+                       fmt_version(context->supported_versions[*])*",");
+        version = client_version;
+        COND_FATAL(1, ALERT_protocol_version, "Unsupported version.\n");
+      }
+      SSL3_DEBUG_MSG("Selecting version %s.\n", fmt_version(version));
+
       if( !has_value(context->preferred_suites, cipher_suite) ||
 	  !has_value(context->preferred_compressors, compression_method) ||
 	  !session->is_supported_suite(cipher_suite, ~0, version))
@@ -747,20 +612,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                    "Server selected bad suite.\n");
       }
 
-      if (((version & ~0xff) != PROTOCOL_SSL_3_0) ||
-	  (version < context->min_version) ||
-	  (version > client_version)) {
-	SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested %s).\n",
-		       fmt_version(version), fmt_version(client_version));
-	version = client_version;
-	COND_FATAL(1, ALERT_protocol_version, "Unsupported version.\n");
-      }
-      if (client_version > version) {
-	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
-		       fmt_version(client_version),
-		       fmt_version(version));
-      }
-
+      SSL3_DEBUG_MSG("Server selected suite %s.\n",
+                     fmt_cipher_suite(cipher_suite));
       COND_FATAL(!session->set_cipher_suite(cipher_suite, version,
                                             context->signature_algorithms,
                                             512),
@@ -777,7 +630,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 		     "version = %s\n"
 		     "session_id=%O\n"
-		     "cipher suite: %O\n"
+                     "cipher suite: 0x%x\n"
 		     "compression method: %O\n",
 		     fmt_version(version),
 		     session_id, cipher_suite, compression_method);
@@ -898,14 +751,26 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  case EXTENSION_extended_master_secret:
 	    {
 	      COND_FATAL(sizeof(extension_data) ||
-                         (context->min_version >= PROTOCOL_TLS_1_3),
+                         (min(@context->supported_versions) >= PROTOCOL_TLS_1_3),
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
 	      SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
 	      session->extended_master_secret = 1;
 	    }
-	    break;
+            break;
+
+          case EXTENSION_supported_versions:
+            {
+              COND_FATAL(sizeof(extension_data)!=2,
+                         ALERT_illegal_parameter,
+                         "Illegal size of supported version extension.\n");
+              version = extension_data->read_int16();
+              COND_FATAL( !has_value(context->supported_versions, version),
+                         ALERT_illegal_parameter,
+                         "Received version not offered.\n");
+            }
+            break;
 
 	  case EXTENSION_encrypt_then_mac:
 	    {
@@ -959,14 +824,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if ((session_id == session->identity) && sizeof(session_id)) {
 	SSL3_DEBUG_MSG("Resuming session %O.\n", session_id);
 
-	if (version < PROTOCOL_TLS_1_3) {
-	  new_cipher_states();
-	  send_packet(change_cipher_packet());
-	} else {
-	  derive_master_secret(session->master_secret);
-	  send_packet(change_cipher_packet());
-	  handle_change_cipher(1);
-	}
+        new_cipher_states();
+        send_packet(change_cipher_packet());
 
 	if (tickets_enabled) {
 	  handshake_state = STATE_wait_for_ticket;
@@ -992,54 +851,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
 
       session->identity = session_id;
-      if (version >= PROTOCOL_TLS_1_3) {
-	handshake_state = STATE_wait_for_key_share;
-      } else {
-	handshake_state = STATE_wait_for_peer;
-      }
-      break;
-    }
-    break;
-
-  case STATE_wait_for_key_share:
-    if (version < PROTOCOL_TLS_1_3) {
-      error("Waiting for key share in %s.\n", fmt_version(version));
-    }
-    add_handshake_message(raw);
-    switch(type)
-    {
-    default:
-      COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
-      break;
-    case HANDSHAKE_server_key_share:
-      {
-	int group = input->read_int(2);
-	string(8bit) key_offer = input->read_hstring(2);
-
-        // Not a group that we've offered.
-	COND_FATAL(!(ke = keyshares[group]), ALERT_handshake_failure,
-                   "Unknown key share offer.\n");
-
-	string(8bit) premaster_secret;
-	premaster_secret = ke->receive_key_share_offer(key_offer);
-        COND_FATAL(!premaster_secret, ALERT_decode_error,
-                   "Unable to decode key share offer.\n");
-
-	// Derive the handshake master secret.
-	derive_master_secret(premaster_secret);
-	send_packet(change_cipher_packet());
-	handle_change_cipher(1);
-
-	if (session->cipher_spec->signature_alg == SIGNATURE_anonymous) {
-	  handshake_state = STATE_wait_for_finish;
-	} else {
-	  handshake_state = STATE_wait_for_peer;
-	}
-
-	ke = UNDEFINED;
-
-	// NB: From this point encryption is enabled on our side.
-      }
+      handshake_state = STATE_wait_for_peer;
       break;
     }
     break;
@@ -1064,10 +876,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           return -1;
 
         certificate_state = CERT_received;
-
-	if (version >= PROTOCOL_TLS_1_3) {
-	  handshake_state = STATE_wait_for_verify;
-	}
         break;
       }
 
@@ -1183,17 +991,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  send_packet(finished_packet("CLNT"));
 	else if(version <= PROTOCOL_TLS_1_2)
 	  send_packet(finished_packet("client finished"));
-	else if (version >= PROTOCOL_TLS_1_3) {
-	  // NB: send_certs() sends the finished_packet for us.
-	  if (reuse) {
-	    // Derive the extended master secret.
-	    derive_master_secret(session->master_secret);
-	    send_packet(finished_packet("client finished"));
-	    send_packet(change_cipher_packet());
-	    handle_change_cipher(1);
-	  } else if (send_certs()) return -1;
-	}
-	if (context->heartbleed_probe &&
+        if (context->heartbleed_probe &&
 	    session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
 	  // Probe for the Heartbleed vulnerability (CVE-2014-0160).
 	  send_packet(heartbleed_packet());

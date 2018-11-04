@@ -14,7 +14,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -34,8 +33,6 @@ extern struct program *image_program;
 #endif
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
-
-#define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 static const double c0=0.70710678118654752440;
 static const double my_PI=3.14159265358979323846;
@@ -242,7 +239,7 @@ static inline int my_abs(int a) { return (a<0)?-a:a; }
 **!        string foo=Stina->make_ascii(@Stina4,40,4,8);
 **!     </pre>
 **!
-**! returns some nice acsii-art.
+**! returns some nice ASCII art.
 **! see also: orient, orient4
 **! note
 **!	<b>experimental status</b>; may not be exact the same
@@ -261,7 +258,7 @@ void image_make_ascii(INT32 args)
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max;
   struct pike_string *s;
 
-  get_all_args("make_ascii", args, "%o%o%o%o.%d%d%d",
+  get_all_args(NULL, args, "%o%o%o%o.%d%d%d",
 	       &objs[0], &objs[1], &objs[2], &objs[3],
 	       &tlevel, &xchar_size, &ychar_size);
 
@@ -481,7 +478,7 @@ static inline rgb_group _pixel_apply_max(struct image *img,
    else
      res.g = (COLORTYPE)testrange(g * qdiv + default_rgb.g);
    if (sumb)
-     res.b = (COLORTYPE)testrange(default_rgb.g + b/(sumb * div));
+     res.b = (COLORTYPE)testrange(default_rgb.b + b/(sumb * div));
    else
      res.b = (COLORTYPE)testrange(b * qdiv + default_rgb.b);
 #ifdef MATRIX_DEBUG
@@ -617,20 +614,14 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-     bad_arg_error("apply_max",sp-args,args,0,"",sp-args,
-                   "Bad arguments to apply_max.\n");
+     SIMPLE_ARG_TYPE_ERROR("apply_max", 1, "array");
 
    if (args>3)
-      if (TYPEOF(sp[1-args]) != T_INT ||
-	  TYPEOF(sp[2-args]) != T_INT ||
-	  TYPEOF(sp[3-args]) != T_INT)
-	 Pike_error("Illegal argument(s) (2,3,4) to apply_max.\n");
-      else
-      {
-	 default_rgb.r=sp[1-args].u.integer;
-	 default_rgb.g=sp[1-args].u.integer;
-	 default_rgb.b=sp[1-args].u.integer;
-      }
+   {
+     struct array *a;
+     get_all_args(NULL, args, "%a%d%d%d", &a,
+                  &default_rgb.r, &default_rgb.g, &default_rgb.b);
+   }
    else
    {
       default_rgb.r=0;

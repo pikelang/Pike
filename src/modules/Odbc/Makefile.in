@@ -8,8 +8,8 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-$(srcdir)/odbc.c: odbc.cmod
+odbc.o: $(SRCDIR)/odbc.c
 
-$(srcdir)/odbc_result.c: odbc_result.cmod
+odbc_result.o: $(SRCDIR)/odbc_result.c
 
 @dependencies@

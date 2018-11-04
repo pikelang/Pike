@@ -22,7 +22,7 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
 
   pgtk2_verify_setup();
   pgtk2_verify_not_inited();
-  get_all_args("create",args,"%o.%m",&o,&m);
+  get_all_args(NULL,args,"%o.%m",&o,&m);
   memset(&values,0,sizeof(values)); 
 
   if (m!=NULL) {
@@ -130,7 +130,7 @@ void set_foreground(GDK2.Color color)
   {
     struct object *o;
 
-    get_all_args("set_foreground",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_set_foreground(GDK_GC(THIS->obj),get_gdkobject(o,color));
   }
   RETURN_THIS();
@@ -143,7 +143,7 @@ void set_background(GDK2.Color color)
   {
     struct object *o;
 
-    get_all_args("set_background",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_set_background(GDK_GC(THIS->obj),get_gdkobject(o,color));
   }
   RETURN_THIS();
@@ -155,7 +155,7 @@ void set_font(GDK22.Font font)
 //! Deprecated: Use Pango.Layout instead.
 {
   struct object *o;
-  get_all_args("set_font",args,"%o",&o);
+  get_all_args(NULL,args,"%o",&o);
   gdk_gc_set_font(GDK_GC(THIS->obj),get_gdkobject(o,font));
   RETURN_THIS();
 }
@@ -168,7 +168,7 @@ void set_clip_origin(int x, int y)
   {
     INT_TYPE x,y;
 
-    get_all_args("set_clip_origin",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     gdk_gc_set_clip_origin(GDK_GC(THIS->obj),x,y);
   }
   RETURN_THIS();
@@ -181,7 +181,7 @@ void set_clip_mask(GDK2.Bitmap mask)
   {
     struct object *o;
 
-    get_all_args("set_clip_mask",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_set_clip_mask(GDK_GC(THIS->obj),GDK_DRAWABLE(get_gobject(o)));
   }
   RETURN_THIS();
@@ -195,7 +195,7 @@ void set_function(int fun)
   {
     INT_TYPE a;
 
-    get_all_args("set_function",args,"%i",&a);
+    get_all_args(NULL,args,"%i",&a);
     gdk_gc_set_function(GDK_GC(THIS->obj),a);
   }
   RETURN_THIS();
@@ -209,7 +209,7 @@ void set_subwindow(int draw_on_subwindows)
   {
     INT_TYPE a;
  
-    get_all_args("set_subwindow",args,"%i",&a);
+    get_all_args(NULL,args,"%i",&a);
     gdk_gc_set_subwindow(GDK_GC(THIS->obj),a);
   }
   RETURN_THIS();
@@ -222,7 +222,7 @@ void set_fill(int fill)
   {
     INT_TYPE i;
 
-    get_all_args("set_fill",args,"%d",&i);
+    get_all_args(NULL,args,"%d",&i);
     gdk_gc_set_fill(GDK_GC(THIS->obj),i);
   }
   RETURN_THIS();
@@ -235,7 +235,7 @@ void set_tile(GDK2.Pixmap tile)
   {
     struct object *o;
 
-    get_all_args("set_background",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     if (GDK_IS_PIXMAP(get_gobject(o)))
       gdk_gc_set_tile(GDK_GC(THIS->obj),GDK_PIXMAP(get_gobject(o)));
   }
@@ -249,7 +249,7 @@ void set_stipple(GDK2.Bitmap stipple)
   {
     struct object *o;
 
-    get_all_args("set_stipple",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     if (GDK_IS_DRAWABLE(get_gobject(o)))
       gdk_gc_set_stipple(GDK_GC(THIS->obj),GDK_DRAWABLE(get_gobject(o)));
   }
@@ -265,7 +265,7 @@ void set_ts_origin(int x, int y)
   {
     INT_TYPE x,y;
 
-    get_all_args("set_ts_origin",args,"%i%i",&x,&y);
+    get_all_args(NULL,args,"%i%i",&x,&y);
     gdk_gc_set_ts_origin(GDK_GC(THIS->obj),x,y);
   }
   RETURN_THIS();
@@ -279,7 +279,7 @@ void set_clip_rectangle(?GDK2.Rectangle rect)
   if (args==1) {
     struct object *o;
 
-    get_all_args("set_clip_rectangle",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_set_clip_rectangle(GDK_GC(THIS->obj),get_gdkobject(o,rectangle));
   } else
     gdk_gc_set_clip_rectangle(GDK_GC(THIS->obj),NULL);
@@ -294,7 +294,7 @@ void set_clip_region(GDK2.Region rect)
   if (args==1) {
     struct object *o;
 
-    get_all_args("set_clip_region",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_set_clip_region(GDK_GC(THIS->obj),get_gdkobject(o,region));
   } else
     gdk_gc_set_clip_region(GDK_GC(THIS->obj),NULL);
@@ -314,7 +314,7 @@ void set_dashes(int offset, array dashes)
     struct array *a;
     gint8 *list;
 
-    get_all_args("set_dashes",args,"%d%a",&o,&a);
+    get_all_args(NULL,args,"%d%a",&o,&a);
     list=xalloc(a->size);
     for (i=0; i<a->size; i++)
       list[i]=a->item[i].u.integer;
@@ -336,7 +336,7 @@ void set_line_attributes(int line_width, int line_style, int cap_style,
   {
     INT_TYPE a,b,c,d;
 
-    get_all_args("set_line_attributes",args,"%d%d%d%d",&a,&b,&c,&d);
+    get_all_args(NULL,args,"%d%d%d%d",&a,&b,&c,&d);
     gdk_gc_set_line_attributes(GDK_GC(THIS->obj),a,b,c,d);
   }
   RETURN_THIS();
@@ -349,7 +349,7 @@ void copy(GDK2.GC source)
   {
     struct object *o;
 
-    get_all_args("copy",args,"%o",&o);
+    get_all_args(NULL,args,"%o",&o);
     gdk_gc_copy(GDK_GC(THIS->obj),GDK_GC(get_gobject(o)));
   }
   RETURN_THIS();
@@ -364,7 +364,7 @@ void set_exposures(int exp)
   {
     INT_TYPE a;
 
-    get_all_args("set_exposures",args,"%i",&a);
+    get_all_args(NULL,args,"%i",&a);
     gdk_gc_set_exposures(GDK_GC(THIS->obj),a);
   }
   RETURN_THIS();

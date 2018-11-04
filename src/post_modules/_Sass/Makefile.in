@@ -1,0 +1,16 @@
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=Sass
+MODDIR=Web.pmod/
+AUTODOC_SRC_IN=$(MODULE_PMOD_ID) $(SRCDIR)/sass.c
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @CMOD_LIBS@
+MODULE_CFLAGS=@CMOD_CFLAGS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+OBJS=sass.o
+
+@dynamic_module_makefile@
+
+sass.o: $(SRCDIR)/sass.c
+
+@dependencies@

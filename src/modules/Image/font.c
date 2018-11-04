@@ -177,27 +177,26 @@ static inline void free_font_struct(struct font *font)
       if (font->mem && font->mem!=image_default_font)
       {
 #ifdef HAVE_MMAP
-	 if (font->mmaped_size) {
+         if (font->mmaped_size)
 	    munmap(font->mem,font->mmaped_size);
-	 } else
 #else
-	   free(font->mem);
+         free(font->mem);
 #endif
-	 font->mem = NULL;
       }
       free(font);
    }
 }
 
+#ifdef PIKE_NULL_IS_SPECIAL
 static void init_font_struct(struct object *UNUSED(o))
 {
   THIS=NULL;
 }
+#endif
 
 static void exit_font_struct(struct object *UNUSED(obj))
 {
    free_font_struct(THIS);
-   THIS=NULL;
 }
 
 /***************** internals ***********************************/
@@ -306,7 +305,7 @@ void font_load(INT32 args)
   int size = 0;
   char *filename = NULL;
 
-  get_all_args("load", args, ".%s", &filename);
+  get_all_args(NULL, args, ".%s", &filename);
 
   if (!filename)
   {
@@ -490,6 +489,7 @@ void font_load(INT32 args)
 void font_create(INT32 args)
 {
    font_load(args);
+   pop_stack();
 }
 
 /*! @decl Image.Image write(string text, string ... more_text_lines)
@@ -806,7 +806,7 @@ void font_set_xspacing_scale(INT32 args)
   FLOAT_TYPE f;
 
   if(!THIS) Pike_error("font->set_xspacing_scale(): No font loaded.\n");
-  get_all_args("set_xspaxing_scale", args, "%f", &f);
+  get_all_args(NULL, args, "%f", &f);
 
   if(f < 0.0) f=0.1;
   THIS->xspacing_scale = (double)f;
@@ -818,7 +818,7 @@ void font_set_yspacing_scale(INT32 args)
   FLOAT_TYPE f;
 
   if(!THIS) Pike_error("font->set_yspacing_scale(): No font loaded.\n");
-  get_all_args("set_yspacing_scale", args, "%f", &f);
+  get_all_args(NULL, args, "%f", &f);
 
   if(f <= 0.0) f=0.1;
   THIS->yspacing_scale = (double)f;
@@ -933,7 +933,9 @@ void init_image_font(void)
    /* function(void:void) */
    ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
 
+#ifdef PIKE_NULL_IS_SPECIAL
    set_init_callback(init_font_struct);
+#endif
    set_exit_callback(exit_font_struct);
 }
 

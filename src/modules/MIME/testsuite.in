@@ -12,6 +12,10 @@ define(test_base64,[[
   test_eq(MIME.encode_base64($1),$2)
   test_eq(MIME.decode_base64($2),$1)
 ]])
+define(test_base64url,[[
+  test_eq(MIME.encode_base64url($1),$2)
+  test_eq(MIME.decode_base64url($2),$1)
+]])
 
 // Test vectors from RFC 4648
 test_base64("","")
@@ -21,9 +25,18 @@ test_base64("foo","Zm9v")
 test_base64("foob","Zm9vYg==")
 test_base64("fooba","Zm9vYmE=")
 test_base64("foobar","Zm9vYmFy")
+test_base64url("","")
+test_base64url("f","Zg")
+test_base64url("fo","Zm8")
+test_base64url("foo","Zm9v")
+test_base64url("foob","Zm9vYg")
+test_base64url("fooba","Zm9vYmE")
+test_base64url("foobar","Zm9vYmFy")
 
 test_base64("\0\0\0", "AAAA")
 test_base64("\0\377", "AP8=")
+test_base64url("\0\0\0", "AAAA")
+test_base64url("\0\377", "AP8")
 test_eval_error(MIME.encode_base64("\400"))
 test_eq([[MIME.encode_base64("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?")]],
@@ -140,4 +153,16 @@ test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->getencoded()]], "foo
 test_equal([[MIME.Message((string)MIME.Message("foo\r\n",
 		(["mImE-veRsion":"1.0"])))->headers]],
 	(["mime-version":"1.0","content-length":"5"]))
+
+test_any([[
+  string pf_in = "My-Pr3f1x(.0/9)";
+  MIME.set_boundary_prefix(pf_in);
+  string pf_out = MIME.get_boundary_prefix();
+  string boundary = MIME.generate_boundary();
+  int nm = sscanf(boundary, pf_out + "%d%s", int n, string suffix);
+  return pf_in == pf_out &&
+         boundary[0..sizeof(pf_out)-1] == pf_out &&
+         nm == 2 && n <= 1000000000 && suffix == "";
+]], 1)
+
 END_MARKER

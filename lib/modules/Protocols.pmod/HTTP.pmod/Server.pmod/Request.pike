@@ -1,34 +1,42 @@
 #pike __REAL_VERSION__
 
-// There are three different read callbacks that can be active, which
-// has the following call graphs. read_cb is the default read
-// callback, installed by attach_fd.
-//
-//   | (Incoming data)
-//   v
-// read_cb
-//   | If complete headers are read
-//   v
-// parse_request
-//   v
-// parse_variables
-//   | If callback isn't changed to read_cb_chunked or read_cb_post
-//   v
-// finalize
-//
-//   | (Incoming data)
-//   v
-// read_cb_post
-//   | If enough data has been received
-//   v
-// finalize
-//
-//   | (Incoming data)
-//   v
-// read_cb_chunked
-//   | If all data chunked transfer-encoding needs
-//   v
-// finalize
+//! This class represents a connection from a client to the server.
+//!
+//! There are three different read callbacks that can be active, which
+//! have the following call graphs. @[read_cb] is the default read
+//! callback, installed by @[attach_fd].
+//!
+//! @code
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb]
+//!     | If complete headers are read
+//!     v
+//!   @[parse_request]
+//!     v
+//!   @[parse_variables]
+//!     | If callback isn't changed to @[read_cb_chunked] or @[read_cb_post]
+//!     v
+//!   @[finalize]
+//! @endcode
+//!
+//! @code
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb_post]
+//!     | If enough data has been received
+//!     v
+//!   @[finalize]
+//! @endcode
+//!
+//! @code
+//!     | (Incoming data)
+//!     v
+//!   @[read_cb_chunked]
+//!     | If all data chunked transfer-encoding needs
+//!     v
+//!   @[finalize]
+//! @endcode
 
 
 int max_request_size = 0;
@@ -48,7 +56,7 @@ protected class Port {
 	      void|int _portno,
 	      void|string _interface);
   void close();
-  void destroy();
+  protected void _destruct();
 }
 
 //! The socket that this request came in on.
@@ -166,6 +174,14 @@ protected void flatten_headers()
       request_headers[x] = request_headers[x]*";";
 }
 
+//! Called when the client is attempting opportunistic TLS on this
+//! HTTP port. Overload to handle, i.e. send the data to a TLS
+//! port. By default the connection is simply closed.
+void opportunistic_tls(string s)
+{
+  close_cb();
+}
+
 // Appends data to raw and feeds the header parse with data. Once the
 // header parser has enough data parse_request() and parse_variables()
 // are called. If parse_variables() deems the request to be finished
@@ -175,6 +191,13 @@ protected void read_cb(mixed dummy,string s)
 {
    if( !sizeof( raw ) )
    {
+     // Opportunistic TLS.
+     if( has_prefix(s, "\x16\x03\x01") )
+     {
+       opportunistic_tls(s);
+       return;
+     }
+
       sscanf(s,"%*[ \t\n\r]%s", s );
       if( !strlen( s ) )
          return;
@@ -329,7 +352,19 @@ private void read_cb_chunked( mixed dummy, string data )
 	  if( sscanf( header, "%s:%s", hk, hv ) == 2 )
 	  {
 	    hk = String.trim_whites(lower_case(hk));
-	    hv = String.trim_whites(hv);
+            hv = String.trim_whites(hv);
+
+            // RFC 7230 4.1.2: Ignore framing, routing, modifiers,
+            // authentication and response control headers.
+            if( (< "transfer-encoding", "content-length",
+                   "host", "cache-control", "expect",
+                   "max-forwards", "pragma", "range", "te",
+                   "age", "expires", "date", "location",
+                   "retry-after", "vary", "warning",
+                   "authentication", "proxy-authenticate",
+                   "proxy-authorization", "www-authenticate" >)[ hk ] )
+              continue;
+
 	    if( request_headers[hk] )
 	    {
 	      if( !arrayp( request_headers[hk] ) )
@@ -337,7 +372,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	      request_headers[hk]+=({hv});
 	    }
 	    else
-	      request_headers[hk] = hk;
+              request_headers[hk] = hv;
 	  }
 	}
 
@@ -381,11 +416,6 @@ protected int parse_variables()
     body_raw = buf[..l-1];
     buf = buf[l..];
     return 1;
-  }
-  else if (request_type == "PUT" )
-  {
-    body_raw = buf;
-    return 1; // do not read body when method is PUT
   }
 
   my_fd->set_read_callback(read_cb_post);
@@ -563,46 +593,65 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
          break;
    }
 
-   if (!m->type)
-      m->type = .filename_to_type(not_query);
+   array extra = ({});
+   if (m->extra_heads)
+   {
+      foreach (m->extra_heads;string name;array|string arr)
+      {
+        extra += ({ lower_case(name) });
+        if( name=="connection" && has_value(arr, "keep-alive") )
+          keep_alive=1;
+        foreach (Array.arrayify(arr);;string value)
+          radd(name, ": ", value);
+      }
+   }
 
-   if( m->error == 206 )
+   if( !has_value(extra, "content-type") )
+   {
+     if (!m->type)
+       m->type = .filename_to_type(not_query);
+     radd("Content-Type: ", m->type);
+   }
+
+   if( m->error == 206 && !has_value(extra, "content-range") )
       radd("Content-Range: bytes ", m->start,"-",m->stop,"/",
            has_index(m, "instance_size") ? m->instance_size : "*");
 
-   radd("Content-Type: ",m->type);
 
-   if( m->size >= 0 )
+   if( m->size >= 0 && !has_value(extra, "content-length") )
       radd("Content-Length: ",(string)m->size);
 
-   radd("Server: ", m->server || .http_serverid);
+   if( !has_value(extra, "server") )
+     radd("Server: ", m->server || .http_serverid);
 
    string http_now = .http_date(time(1));
-   radd("Date: ",http_now);
-
-   if (m->modified)
-      radd("Last-Modified: ", .http_date(m->modified));
-   else if (m->stat)
-      radd("Last-Modified: ", .http_date(m->stat->mtime));
-   else
-      radd("Last-Modified: ", http_now);
-
-   if (m->extra_heads)
-      foreach (m->extra_heads;string name;array|string arr)
-	 foreach (Array.arrayify(arr);;string value)
-	    radd(String.capitalize(name),": ",value);
-
-// FIXME: insert cookies here?
-   string cc = lower_case(request_headers["connection"]||"");
-
-   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+   if( !has_value(extra, "date") )
    {
+     radd("Date: ",http_now);
+   }
+
+   if( !has_value(extra, "last-modified") )
+   {
+     if (m->modified)
+       radd("Last-Modified: ", .http_date(m->modified));
+     else if (m->stat)
+       radd("Last-Modified: ", .http_date(m->stat->mtime));
+     else
+       radd("Last-Modified: ", http_now);
+   }
+
+   if( !has_value(extra, "connection") )
+   {
+     string cc = lower_case(request_headers["connection"]||"");
+     if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+     {
        radd("Connection: keep-alive");
        keep_alive=1;
-   }
-   else
-   {
+     }
+     else
+     {
        radd("Connection: close");
+     }
    }
 
    res->add("\r\n");
@@ -851,8 +900,21 @@ void send_write()
 
    int n = send_buf->output_to(my_fd);
 
-   if ( n <= 0 || (send_stop==(sent+=n)) )
-      finish(sent==send_stop);
+   // SSL.File->write() does not guarantee that all data has been
+   // written upon return; this can cause premature disconnects.
+   // By waiting for any buffers to empty before calling finish, we 
+   // help ensure the full result has been transmitted.
+   if(my_fd->query_version) {
+     if( n == 0 && send_stop == sent)
+        finish(1);
+     else if(n <= 0)
+        finish(sent == send_stop);
+     else
+        sent += n;
+   } else {
+     if ( n <= 0 || (send_stop==(sent+=n)) )
+        finish(sent==send_stop);
+   }
 }
 
 void send_timeout()

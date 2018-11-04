@@ -115,6 +115,11 @@ test_true(functionp(Standards.JSON.validate))
 test_eq(Val.true, Standards.JSON.decode("true"))
 test_eq(Val.false, Standards.JSON.decode("false"))
 test_eq(Val.null, Standards.JSON.decode("null"))
+test_eq(1, Standards.JSON.decode("true", Standards.JSON.NO_OBJECTS))
+test_eq(0, Standards.JSON.decode("false", Standards.JSON.NO_OBJECTS))
+test_false(undefinedp(Standards.JSON.decode("false", Standards.JSON.NO_OBJECTS)))
+test_eq(0, Standards.JSON.decode("null", Standards.JSON.NO_OBJECTS))
+test_true(undefinedp(Standards.JSON.decode("null", Standards.JSON.NO_OBJECTS)))
 
 // test numbers
 test_eq(Standards.JSON.decode("0E4"), 0.0)

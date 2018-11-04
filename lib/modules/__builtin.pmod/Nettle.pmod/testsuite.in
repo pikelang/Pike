@@ -50,7 +50,9 @@ class HASH(object alg)
   }
 };
 add_constant("SHA256", HASH(Crypto.SHA256));
+#if constant(Crypto.SHA512)
 add_constant("SHA512", HASH(Crypto.SHA512));
+#endif
 ]])
 
 test_eq(S(SHA256->hash("foo"*1000)),
@@ -64,13 +66,15 @@ test_eq(S(SHA256->HMAC("hello")("hi")),
         "42eb9553cf9288e53d3389208d00db1ac80d3666f1fa74fe02e1038672d0c83a")
 test_eq(SHA256->crypt_hash("Hello world!", "saltstring", 5000),
         "5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5")
+cond_resolv(Crypto.SHA512, [[
 test_eq(SHA512->crypt_hash("Hello world!", "saltstring", 5000),
         "svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1")
+]])
 test_eq(S(SHA256->pbkdf1("aaaa","bbbb",64,16)),
         "d879716a511f8e1cf23d6974802a6e6e")
 test_eq(S(SHA256->pbkdf2("aaaa","bbbb",64,16)),
         "458592c0b81415bd3d752d5bd2a894b0")
-test_eq(S(SHA256->hkdf("aaaa","bbbb","cccc",16)),
+test_eq(S(SHA256->HKDF("aaaa","bbbb")->expand("cccc",16)),
         "57ccec229e98b315ab330a97d7fcfedf")
 test_eq(S(SHA256->openssl_pbkdf("aaaa","bbbb",64,16)),
         "098c455f22f5a62b1047982b4dd2481c")
@@ -80,7 +84,9 @@ test_eq(S(SHA256->P_hash("aaaa","bbbb",64,16)),
 test_eq(S(SHA256->pkcs_digest("hi")),
 "3031300d0609608648016503040201050004208f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4")
 
+cond_resolv(Crypto.SHA512, [[
 test_do(add_constant("SHA512"))
+]])
 test_do(add_constant("SHA256"))
 
 dnl From pkcs-1v2-1d2-vec: pss-int.txt

@@ -27,9 +27,7 @@
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
-#include "global.h"
 #include "module.h"
-
 #include "config.h"
 
 #ifdef WITH_GIF
@@ -37,17 +35,12 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
 #include "pike_compiler.h"
 #include "pike_macros.h"
-#include "object.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
-#include "threads.h"
 #include "pike_types.h"
 
 #include "../Image/image.h"
@@ -55,7 +48,6 @@
 
 #include "builtin_functions.h"
 #include "operators.h"
-#include "mapping.h"
 #include "bignum.h"
 #include "module_support.h"
 

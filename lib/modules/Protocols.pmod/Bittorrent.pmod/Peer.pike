@@ -36,15 +36,36 @@ constant CONNECTION_DROP_RETRY=30;
 constant CONNECTION_HANDSHAKE_DROP_RETRY=-1;
 constant GARB_DELAY=600;
 
-constant MSG_CHOKE = 0;
-constant MSG_UNCHOKE = 1;
-constant MSG_INTERESTED = 2;
-constant MSG_NOT_INTERESTED = 3;
-constant MSG_HAVE = 4;
-constant MSG_BITFIELD = 5;
-constant MSG_REQUEST = 6;
-constant MSG_PIECE = 7;
-constant MSG_CANCEL = 8;
+// Assignments from BEP0004 http://bittorrent.org/beps/bep_0004.html
+
+// Core Protocol
+constant MSG_CHOKE          = 0x00;
+constant MSG_UNCHOKE        = 0x01;
+constant MSG_INTERESTED     = 0x02;
+constant MSG_NOT_INTERESTED = 0x03;
+constant MSG_HAVE           = 0x04;
+constant MSG_BITFIELD       = 0x05;
+constant MSG_REQUEST        = 0x06;
+constant MSG_PIECE          = 0x07;
+constant MSG_CANCEL         = 0x08;
+
+// DHT Extension
+constant MSG_PORT           = 0x09;
+
+// Fast Extension
+constant MSG_SUGGEST        = 0x0D;
+constant MSG_HAVE_ALL       = 0x0E;
+constant MSG_HAVE_NONE      = 0x0F;
+constant MSG_REJECT_REQUEST = 0x10;
+constant MSG_ALLOWED_FAST   = 0x11;
+
+constant MSG_LTEP_HANDSHAKE = 0x14;
+
+// Hash Transfer Protocol
+constant MSG_HASH_REQUEST   = 0x15;
+constant MSG_HASHES         = 0x16;
+constant MSG_HASH_REJECT    = 0x17;
+
 typedef int(0..8) message_id;
 
 constant msg_to_string=([
@@ -1024,7 +1045,7 @@ string _sprintf(int t)
    return 0;
 }
 
-void destroy()
+protected void _destruct()
 {
    drop(0);
 }
