@@ -12,7 +12,7 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit AEAD
   DOCEND()
-  INHERIT Nettle_AEAD;
+  INHERIT AEAD;
 
   static const struct pike_aead cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
     _PIKE_AEAD(NETTLE_NAME, PIKE_NAME);

@@ -12,7 +12,7 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit Hash
   DOCEND()
-  INHERIT Nettle_Hash;
+  INHERIT Hash;
 
   INIT
     {

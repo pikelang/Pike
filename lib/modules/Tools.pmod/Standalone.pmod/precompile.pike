@@ -537,6 +537,21 @@ class PikeType
     return a;
   }
 
+  protected void replace_names(array tok, mapping(string:string) names)
+  {
+    int scoped = 0;
+    foreach(tok; int i; object(PC.Token)|array t)
+      if (arrayp(t)) {
+	replace_names(t, names);
+	scoped = 0;
+      } else if (((string)t) == "::" || ((string)t) == ".")
+	scoped = 1;
+      else if (scoped)
+	scoped = 0;
+      else if (names[(string)t])
+	t->text = names[(string)t];
+  }
+
   /*
    * return the 'one-word' description of this type
    */
@@ -1065,7 +1080,7 @@ class PikeType
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
   void create(string|array(PC.Token)|PC.Token|array(array) tok,
-	      void|array(PikeType) a)
+	      void|array(PikeType)|mapping(string:string) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -1082,6 +1097,9 @@ class PikeType
 	  /* strip parenthesis */
 	  while(sizeof(tok) == 1 && arrayp(tok[0]))
 	    tok=tok[0][1..sizeof(tok[0])-2];
+
+	  if (a)
+	    replace_names(tok, a);
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
 	  tmp=tok/({"|"});
@@ -1378,7 +1396,7 @@ class Argument
 	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
-  void create(array x)
+  void create(array x, void|mapping(string:string) names)
     {
       PC.Token t;
       if( arrayp(x[-1]) )
@@ -1393,7 +1411,7 @@ class Argument
       }
       _file=t->file;
       _line=t->line;
-      _type=PikeType(x[..sizeof(x)-2]);
+      _type=PikeType(x[..sizeof(x)-2], names);
     }
 
   string _sprintf(int how)
@@ -1888,7 +1906,8 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
-  void create(array(array|PC.Token) x, string base, string class_name)
+  void create(array(array|PC.Token) x, string base, string class_name,
+	      mapping(string:string) names)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1916,7 +1935,7 @@ class ParseBlock
 	  if ((e+2 < sizeof(x)) && (((string)x[e+1])[0] == '\"') &&
 	      arrayp(x[e+2])) {
 	    // C++ syntax support...
-	    create(x[e+2], base, class_name);
+	    create(x[e+2], base, class_name, names);
 	    ret += ({ x[e+1], code });
 	    code = ({});
 	    e += 2;
@@ -2013,7 +2032,7 @@ sprintf("        } else {\n"
 		     name->file, name->line);
 	      }
 	    } else if (name) {
-	      p = mkname((string)name, "program");
+	      p = mkname(names[(string)name]||(string)name, "program");
 	    }
 	    addfuncs +=
 	      IFDEF(define,
@@ -2064,9 +2083,10 @@ sprintf("        } else {\n"
 	    string name=(string)proto[0];
 	    string lname = mkname(base, name);
 	    mapping attributes=parse_attributes(proto[1..]);
-
+	    names[name] = lname;
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					     mkname(base, name), name);
+					     mkname(base, name), name,
+					     copy_value(names));
 	    string program_var = mkname(base, name, "program");
 
 	    string define = make_unique_name("class", base, name, "defined");
@@ -2151,7 +2171,7 @@ sprintf("        } else {\n"
 	    int pos = search(x, PC.Token(";",0), e);
 	    int pos2 = parse_type(x, e+1);
 	    mixed name = x[pos2];
-	    PikeType type = PikeType(x[e+1..pos2-1]);
+	    PikeType type = PikeType(x[e+1..pos2-1], names);
 	    string define = make_unique_name("var",name,base,"defined");
         while( x[pos2+1] == "." )
         {
@@ -2405,7 +2425,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	};
 
 	p=parse_type(proto,0);
-	PikeType rettype=PikeType(proto[..p-1]);
+	PikeType rettype=PikeType(proto[..p-1], names);
 
 	if(arrayp(proto[p]))
 	{
@@ -2485,7 +2505,7 @@ static struct %s *%s_gdb_dummy_ptr;
           warn("%s:%s Failed to parse types\n", location,name);
       }
 	}
-	array(Argument) args=map(args_tmp,Argument);
+	array(Argument) args=map(args_tmp,Argument,names);
 	// werror("%O %O\n",proto,args);
 	// werror("parsed args: %O\n", args);
 
@@ -2510,7 +2530,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	else if(attributes->type)
 	{
 	  mixed err=catch {
-	    type=PikeType(attributes->type);
+	    type=PikeType(attributes->type, names);
 	  };
 	  if(err)
 	  {
@@ -3302,7 +3322,7 @@ int main(int argc, array(string) argv)
 
   x = recursive(allocate_strings, x);
 
-  ParseBlock tmp=ParseBlock(x, base, "");
+  ParseBlock tmp=ParseBlock(x, base, "", ([]));
 
   tmp->declarations += ({
     "\n\n"
