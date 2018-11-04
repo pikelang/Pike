@@ -943,7 +943,6 @@ PIKECLASS Backend
     struct svalue *save_sp = Pike_sp;
     backend_count_memory_in_call_outs(THIS);
     f_aggregate_mapping(Pike_sp - save_sp);
-    stack_pop_n_elems_keep_top(args);
   }
 
    /* FIXME */
