@@ -496,6 +496,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('a','r'):
 	  if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
+	case TWO_CHAR('a','w'):
+	  if (ISWORD("await")) {
+	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+	      yywarning("await will soon be a reserved keyword.");
+	    }
+	    break;
+	  }
+	  break;
 	case TWO_CHAR('a','u'):
 	  if(ISWORD("auto")) return TOK_AUTO_ID;
 	  break;
