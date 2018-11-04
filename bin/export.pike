@@ -216,6 +216,7 @@ array(string) build_file_list(string list_file)
 constant stamp=#"Pike export stamp
 time:%t
 type:%type
+branch:%branch
 major:%maj
 minor:%min
 build:%bld
@@ -309,12 +310,13 @@ int main(int argc, array(string) argv)
   if(!srcdir || !export_list || !filename)
     exit(1, documentation);
 
-  if (tag) {
-    main_branch = git_cmd("symbolic-ref", "-q", "HEAD");
-    if (!has_prefix(main_branch, "refs/heads/"))
-      exit(1, "Unexpected HEAD: %O\n", main_branch);
+  main_branch = git_cmd("symbolic-ref", "-q", "HEAD");
+  if (!has_prefix(main_branch, "refs/heads/"))
+    exit(1, "Unexpected HEAD: %O\n", main_branch);
 
-    main_branch = main_branch[sizeof("refs/heads/")..];
+  main_branch = main_branch[sizeof("refs/heads/")..];
+
+  if (tag) {
     string remote = git_cmd("remote");
     if (!sizeof(remote)) remote = 0;
     if (remote) git_cmd("pull", "--rebase", remote);
@@ -360,6 +362,7 @@ int main(int argc, array(string) argv)
   mapping m = gmtime(t);
   array(int) version = getversion();
   mapping symbols=([
+    "%branch": main_branch,
     "%maj":(string) version[0],
     "%min":(string) version[1],
     "%bld":(string) version[2],
