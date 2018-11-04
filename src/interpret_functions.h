@@ -272,6 +272,7 @@ OPCODE2(F_REARRANGE,"rearrange",0,{
 OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
+  ADVERTISE_FALLTHROUGH;
   OPCODE1(F_STRING, "string", I_UPDATE_SP, {
     ref_push_string(Pike_fp->context->prog->strings[arg1]);
     print_return_value();
@@ -346,6 +347,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
 OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
+  ADVERTISE_FALLTHROUGH;
   OPCODE1(F_GLOBAL, "global", I_UPDATE_SP, {
     low_index_current_object_no_free(Pike_sp, arg1);
     Pike_sp++;
@@ -470,6 +472,7 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
 OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
+  ADVERTISE_FALLTHROUGH;
   OPCODE2(F_EXTERNAL,"external", I_UPDATE_SP, {
     struct external_variable_context loc;
 
@@ -1256,6 +1259,7 @@ OPCODE0_TAIL(F_MARK2, "mark mark", I_UPDATE_M_SP, {
 
 /* This opcode is only used when running with -d. Identical to F_MARK,
  * but with a different name to make the debug printouts more clear. */
+  ADVERTISE_FALLTHROUGH;
   OPCODE0_TAIL(F_SYNCH_MARK, "synch mark", I_UPDATE_M_SP, {
 
     OPCODE0(F_MARK, "mark", I_UPDATE_M_SP, {

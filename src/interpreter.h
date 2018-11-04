@@ -20,7 +20,7 @@
 #define JUMP_DONE DONE
 
 
-#define CASE(X)		case (X)-F_OFFSET:
+#define CASE(X)		case (X):
 #define DONE		break
 #define FETCH
 
@@ -79,34 +79,38 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       low_debug_instr_prologue (instr);
 #endif
 
-    switch(instr)
+    switch(instr + F_OFFSET)
     {
       /* NOTE: The prefix handling is not needed in computed-goto mode. */
       /* Support to allow large arguments */
-      CASE(F_PREFIX_256); prefix+=256; DONE;
-      CASE(F_PREFIX_512); prefix+=512; DONE;
-      CASE(F_PREFIX_768); prefix+=768; DONE;
-      CASE(F_PREFIX_1024); prefix+=1024; DONE;
-      CASE(F_PREFIX_24BITX256);
+      case F_PREFIX_256: prefix+=256; break;
+      case F_PREFIX_512: prefix+=512; break;
+      case F_PREFIX_768: prefix+=768; break;
+      case F_PREFIX_1024: prefix+=1024; break;
+      case F_PREFIX_24BITX256:
         prefix += (unsigned INT32)(pc++)[0]<<24;
-      CASE(F_PREFIX_WORDX256);
+      /* FALLTHRU */
+      case F_PREFIX_WORDX256:
         prefix += (unsigned INT32)(pc++)[0]<<16;
-      CASE(F_PREFIX_CHARX256);
+      /* FALLTHRU */
+      case F_PREFIX_CHARX256:
         prefix += (pc++)[0]<<8;
-      DONE;
+        break;
 
       /* Support to allow large arguments */
-      CASE(F_PREFIX2_256); prefix2+=256; DONE;
-      CASE(F_PREFIX2_512); prefix2+=512; DONE;
-      CASE(F_PREFIX2_768); prefix2+=768; DONE;
-      CASE(F_PREFIX2_1024); prefix2+=1024; DONE;
-      CASE(F_PREFIX2_24BITX256);
+      case F_PREFIX2_256: prefix2+=256; break;
+      case F_PREFIX2_512: prefix2+=512; break;
+      case F_PREFIX2_768: prefix2+=768; break;
+      case F_PREFIX2_1024: prefix2+=1024; break;
+      case F_PREFIX2_24BITX256:
         prefix2 += (unsigned INT32)(pc++)[0]<<24;
-      CASE(F_PREFIX2_WORDX256);
+      /* FALLTHRU */
+      case F_PREFIX2_WORDX256:
         prefix2 += (unsigned INT32)(pc++)[0]<<16;
-      CASE(F_PREFIX2_CHARX256);
+      /* FALLTHRU */
+      case F_PREFIX2_CHARX256:
         prefix2 += (pc++)[0]<<8;
-      DONE;
+      break;
 
 
 #define INTERPRETER
@@ -177,7 +181,15 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE1_TAILBRANCH	OPCODE1_TAILPTRJUMP
 #define OPCODE2_TAILBRANCH	OPCODE2_TAILPTRJUMP
 
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 7
+# define ADVERTISE_FALLTHROUGH ATTRIBUTE((fallthrough));
+#else
+# define ADVERTISE_FALLTHROUGH
+#endif
+
 #include "interpret_functions.h"
+
+#undef ADVERTISE_FALLTHROUGH
 
     default:
       Pike_fatal("Strange instruction %ld\n",(long)instr);

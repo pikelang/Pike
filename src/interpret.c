@@ -1644,7 +1644,9 @@ GLOBAL_DEF_PROG_COUNTER;
 #pragma optimize("y", off)
 #endif
 
+#define ADVERTISE_FALLTHROUGH
 #include "interpret_functions_fixed.h"
+#undef ADVERTISE_FALLTHROUGH
 
 #if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
 /* Restore optimization */
