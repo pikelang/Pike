@@ -539,9 +539,9 @@ float_fallback:
 	len-=5;
 	if (len < 0) len = 0;
 	while(s->str[len]) len++;
-	memmove(s->str+len-prec+1,
-		s->str+len-prec,
-		prec+1);
+	memmove(s->str+len-prec+2,
+		s->str+len-prec+1,
+		prec);
 	len++;
       }
       /* Make sure numbers start with a digit */
