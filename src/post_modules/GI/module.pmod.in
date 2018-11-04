@@ -5,20 +5,20 @@ inherit @module@ : GI;
 #if constant(@module@.Repository)
 
 class DynamicImporter {
-  static Repository repository = get_default_repository();
+  protected Repository repository = get_default_repository();
 
   class IntrospectionModule {
 
-    static string namespace;
+    protected string namespace;
 
-    class Function(static FunctionInfo info)
+    class Function(protected FunctionInfo info)
     {
-      static mixed `()(mixed ... args)
+      protected mixed `()(mixed ... args)
       {
 	return info->invoke(@args);
       }
 
-      static string _sprintf(int mode)
+      protected string _sprintf(int mode)
       {
 	return mode == 'O' && sprintf("%O.%s",
 				      IntrospectionModule::this,
@@ -28,24 +28,24 @@ class DynamicImporter {
 
     class Object
     {
-      static ObjectInfo info;
-      static mapping(string:mixed) attrs = ([]);
+      protected ObjectInfo info;
+      protected mapping(string:mixed) attrs = ([]);
 
       class Method
       {
 	inherit Function;
 
-	class BoundMethod(static object obj)
+	class BoundMethod(protected object obj)
 	{
-	  static mixed `()(mixed ... args) {
+	  protected mixed `()(mixed ... args) {
 	    return Function::`()(obj, @args);
 	  }
-	  static string _sprintf(int mode) {
+	  protected string _sprintf(int mode) {
 	    return mode == 'O' && sprintf("%O->%s", obj, info->get_name());
 	  }
 	}
 
-	static string _sprintf(int mode)
+	protected string _sprintf(int mode)
 	{
 	  return mode == 'O' && sprintf("%O.%s", Object::this,
 					info->get_name());
@@ -55,21 +55,21 @@ class DynamicImporter {
       class Instance {
 	inherit GObject;
 
-	static private string _sprintf(int mode)
+	protected private string _sprintf(int mode)
 	{
 	  return mode == 'O' && sprintf("%O()", Object::this);
 	}
 	
-	static private mixed bind(mixed value)
+	protected private mixed bind(mixed value)
 	{
 	  if (objectp(value) && object_program(value) == Method)
 	    return value->BoundMethod(this);
 	}
 
-	static array(string) _indices() { return Object::_indices(); }
-	static array(mixed) _values() { return Object::_values(); }
-	static mixed `[](string index) { return bind(Object::`[](index)); }
-	static mixed `->(string index, object|void o, int|void n) {
+	protected array(string) _indices() { return Object::_indices(); }
+	protected array(mixed) _values() { return Object::_values(); }
+	protected mixed `[](string index) { return bind(Object::`[](index)); }
+	protected mixed `->(string index, object|void o, int|void n) {
 	  if (o != Instance::this) {
 	    mixed real_value = ::`->(index, this);
 	    if(real_value != UNDEFINED) return real_value;
@@ -77,20 +77,20 @@ class DynamicImporter {
 	  return bind(Object::`->(index));
 	}
 
-	static void create(mapping(string:mixed)|void properties)
+	protected void create(mapping(string:mixed)|void properties)
 	{
 	  ::create(info, properties);
 	}
       };
 
-      static string _sprintf(int mode)
+      protected string _sprintf(int mode)
       {
 	return mode == 'O' && sprintf("%O.%s",
 				      IntrospectionModule::this,
 				      info->get_name());
       }
 
-      static void create(ObjectInfo oi)
+      protected void create(ObjectInfo oi)
       {
 	info = oi;
 	while (oi) {
@@ -105,13 +105,13 @@ class DynamicImporter {
 	}
       }
 
-      static array(string) _indices() { return indices(attrs); }
-      static array(mixed) _values() { return values(attrs); }
-      static mixed `[](string index) { return attrs[index]; }
-      static mixed `->(string index) { return attrs[index]; }
-      static program cast(string type) { return type=="program" && Instance; }
+      protected array(string) _indices() { return indices(attrs); }
+      protected array(mixed) _values() { return values(attrs); }
+      protected mixed `[](string index) { return attrs[index]; }
+      protected mixed `->(string index) { return attrs[index]; }
+      protected program cast(string type) { return type=="program" && Instance; }
 
-      static Instance `()(mapping(string:mixed)|void properties)
+      protected Instance `()(mapping(string:mixed)|void properties)
       {
 	return Instance(properties);
       }
@@ -119,11 +119,11 @@ class DynamicImporter {
 
     class Struct
     {
-      static StructInfo info;
-      static mapping(string:FieldInfo) fields = ([]);
-      static mapping(string:Method) methods = ([]);
+      protected StructInfo info;
+      protected mapping(string:FieldInfo) fields = ([]);
+      protected mapping(string:Method) methods = ([]);
 
-      static string _sprintf(int mode)
+      protected string _sprintf(int mode)
       {
 	return mode == 'O' && sprintf("%O.%s",
 				      IntrospectionModule::this,
@@ -134,17 +134,17 @@ class DynamicImporter {
       {
 	inherit Function;
 
-	class BoundMethod(static object box)
+	class BoundMethod(protected object box)
 	{
-	  static mixed `()(mixed ... args) {
+	  protected mixed `()(mixed ... args) {
 	    return Function::`()(box, @args);
 	  }
-	  static string _sprintf(int mode) {
+	  protected string _sprintf(int mode) {
 	    return mode == 'O' && sprintf("%O->%s", box, info->get_name());
 	  }
 	}
 
-	static string _sprintf(int mode)
+	protected string _sprintf(int mode)
 	{
 	  return mode == 'O' && sprintf("%O.%s", Struct::this,
 					info->get_name());
@@ -154,7 +154,7 @@ class DynamicImporter {
       class Instance {
 	inherit GBoxed;
 
-	static private string format_fields()
+	protected private string format_fields()
 	{
 	  string s = 0;
 	  foreach(fields; string name; FieldInfo info)
@@ -163,12 +163,12 @@ class DynamicImporter {
 	  return s || "";
 	}
 
-	static private string _sprintf(int mode)
+	protected private string _sprintf(int mode)
 	{
 	  return mode == 'O' && sprintf("%O(%s)", Struct::this, format_fields());
 	}
 
-	static private mixed bind(mixed value)
+	protected private mixed bind(mixed value)
 	{
 	  if (objectp(value) && object_program(value) == FieldInfo)
 	    return value->get_field(this);
@@ -176,40 +176,40 @@ class DynamicImporter {
 	    return value->BoundMethod(this);
 	}
 
-	static array(string) _indices() { return indices(fields)+Struct::_indices(); }
-	static array(mixed) _values() { return values(fields)->get_field(this)+Struct::_values(); }
-	static mixed `[](string index) { return bind(fields[index] || Struct::`[](index)); }
-	static mixed `->(string index, object|void o, int|void n) {
+	protected array(string) _indices() { return indices(fields)+Struct::_indices(); }
+	protected array(mixed) _values() { return values(fields)->get_field(this)+Struct::_values(); }
+	protected mixed `[](string index) { return bind(fields[index] || Struct::`[](index)); }
+	protected mixed `->(string index, object|void o, int|void n) {
 	  if (o != Instance::this) {
 	    mixed real_value = ::`->(index, this);
 	    if(real_value != UNDEFINED) return real_value;
 	  }
 	  return bind(fields[index] || Struct::`[](index));
 	}
-	static mixed `->=(string index, mixed value, object|void o, int|void n) {
+	protected void `->=(string index, mixed value, object|void o, int|void n) {
 	  if(fields[index])
 	    fields[index]->set_field(this, value);
 	  else
-	    return ::`->=(index, value);
+	    ::`->=(index, value);
 	}
-	static mixed `[]=(string index, mixed value) {
+	protected mixed `[]=(string index, mixed value) {
 	  if(fields[index])
 	    fields[index]->set_field(this, value);
 	}
 
-	static void create(mapping(string:mixed)|void properties)
+	protected void create(mapping(string:mixed)|void properties)
 	{
 	  ::create(info, properties);
 	}
       }
 
-      static array(string) _indices() { return indices(methods); }
-      static array(mixed) _values() { return values(methods); }
-      static mixed `[](string index) { return methods[index]; }
-      static mixed `->(string index) { return methods[index]; }
-      static program cast(string type) { return type=="program" && Instance; }
+      protected array(string) _indices() { return indices(methods); }
+      protected array(mixed) _values() { return values(methods); }
+      protected mixed `[](string index) { return methods[index]; }
+      protected mixed `->(string index) { return methods[index]; }
+      protected program cast(string type) { return type=="program" && Instance; }
 
-      static void create(StructInfo si)
+      protected void create(StructInfo si)
       {
 	info = si;
 	array(FieldInfo) fs = si->get_fields();
@@ -218,7 +218,7 @@ class DynamicImporter {
 	methods = mkmapping(ms->get_name(), map(ms, Method));
       }
 
-      static Instance `()(mapping(string:mixed)|void properties)
+      protected Instance `()(mapping(string:mixed)|void properties)
       {
 	return Instance(properties);
       }
@@ -226,41 +226,41 @@ class DynamicImporter {
 
     class Enum
     {
-      static EnumInfo info;
-      static mapping(string:int) map;
+      protected EnumInfo info;
+      protected mapping(string:int) map;
 
-      static string _sprintf(int mode)
+      protected string _sprintf(int mode)
       {
 	return mode == 'O' && sprintf("%O.%s",
 				      IntrospectionModule::this,
 				      info->get_name());
       }
 
-      static void create(EnumInfo ei)
+      protected void create(EnumInfo ei)
       {
 	info = ei;
 	array(ObjectInfo) vals = info->get_values();
 	map = mkmapping(upper_case(vals->get_name()[*]), vals->get_value());
       }
 
-      static array(string) _indices() { return indices(map); }
-      static array(int) _values() { return values(map); }
-      static mixed `[](string index) { return map[index]; }
-      static mixed `->(string index) { return map[index]; }
+      protected array(string) _indices() { return indices(map); }
+      protected array(int) _values() { return values(map); }
+      protected mixed `[](string index) { return map[index]; }
+      protected mixed `->(string index) { return map[index]; }
     }
 
-    static void create(string namespace_, string|void version)
+    protected void create(string namespace_, string|void version)
     {
       namespace = namespace_;
       repository->require(namespace, version);
     }
 
-    static string _sprintf(int mode)
+    protected string _sprintf(int mode)
     {
       return mode == 'O' && sprintf("%O.%s", DynamicImporter::this, namespace);
     }
 
-    static mixed wrap(BaseInfo info)
+    protected mixed wrap(BaseInfo info)
     {
       if (object_program(info) == ObjectInfo)
 	return Object([object(ObjectInfo)]info);
@@ -276,27 +276,27 @@ class DynamicImporter {
       return info;
     }
 
-    static mixed `[](string name)
+    protected mixed `[](string name)
     {
       BaseInfo info = repository->find_by_name(namespace, name);
       if (!info) return UNDEFINED;
       return wrap(info);
     }
 
-    static array(string) _indices()
+    protected array(string) _indices()
     {
       return Array.uniq(repository->get_infos(namespace)->get_name());
     }
 
-    static array(mixed) _values()
+    protected array(mixed) _values()
     {
       return rows(this, _indices());
     }
   };
 
-  static mapping(string:mixed) cache = ([]);
+  protected mapping(string:mixed) cache = ([]);
 
-  static mixed `[](string namespace)
+  protected mixed `[](string namespace)
   {
     if (cache[namespace])
       return cache[namespace];
@@ -308,8 +308,8 @@ class DynamicImporter {
     return m;
   }
 
-  static array(string) _indices() { return indices(cache); }
-  static array(mixed) _values() { return values(cache); }
+  protected array(string) _indices() { return indices(cache); }
+  protected array(mixed) _values() { return values(cache); }
 }
 
 DynamicImporter repository = DynamicImporter();
