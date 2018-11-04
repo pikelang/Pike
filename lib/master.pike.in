@@ -2934,19 +2934,28 @@ joinnode handle_import(string path, string|void current_file,
   module_node node = module_node_cache[current_handler][path] =
     module_node("import::"+path, 0, current_handler);
 #endif /* 0 */
-  joinnode node = joinnode(({}), current_handler);
+  auto path_stat = file_stat(path);
+  if (!path_stat)
+    compile_cb_error("Failed to stat file: %O\n", path);
+  joinnode node;
+  if (path_stat->isreg) {
+    node = low_cast_to_object(path, current_file, current_handler);
+  }
+  if (path_stat->isdir) {
+    node = joinnode(({}), current_handler);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled,
-  // we might need to map to multiple directories.
-  if(path == "/${PIKE_MODULE_PATH}" ||
-     has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
-    string tmp = path[21..];
-    foreach(pike_module_path, string prefix) {
-      node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
-    }
-  } else
+    // If we have PIKE_MODULE_RELOC enabled,
+    // we might need to map to multiple directories.
+    if(path == "/${PIKE_MODULE_PATH}" ||
+       has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
+      string tmp = path[21..];
+      foreach(pike_module_path, string prefix) {
+        node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+      }
+    } else
 #endif /* PIKE_MODULE_RELOC */
-    node->add_path(path);
+      node->add_path(path);
+  }
   return node;
 }
 
