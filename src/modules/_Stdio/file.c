@@ -1357,7 +1357,7 @@ static void file_read(INT32 args)
 
       offset = Pike_sp[-args+1].u.integer;
 
-      if (offset > m.len)
+      if ((size_t)offset > m.len)
         Pike_error("Offset out of bounds.\n");
 
       m.len -= offset;
