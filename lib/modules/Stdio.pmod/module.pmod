@@ -1037,7 +1037,7 @@ class File
 
 #else /* !STDIO_CALLBACK_TEST_MODE */
 
-  int write(sprintf_format|array(string) data_or_format,
+  int write(sprintf_format|array(string)|object data_or_format,
 	    sprintf_args ... args)
   {
     if (outbuffer) {
@@ -1120,16 +1120,18 @@ class File
     }
 
     if (!errno()) {
-      if( inbuffer )
+      if( object buffer = inbuffer )
       {
-        switch( inbuffer->input_from( this,UNDEFINED,1 ) )
+        buffer->allocate(DATA_CHUNK_SIZE);
+
+        int bytes = ::read(buffer);
+
+        if (bytes > 0)
         {
-        case 1..:
-          return ___read_callback( ___id||this, inbuffer );
-        case 0:
-	  ::set_read_callback(__stdio_read_callback);
-	  return 0;
-        case ..-1:
+          return ___read_callback( ___id||this, buffer );
+        }
+        else
+        {
           return __read_callback_error();
         }
       }

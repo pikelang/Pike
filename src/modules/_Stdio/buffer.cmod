@@ -2347,6 +2347,20 @@ PIKECLASS Buffer
     io_trim(io);
   }
 
+  /*! @decl void allocate( int(0..) n )
+   *!
+   *! Make sure that at least @[n] bytes of space are available in this buffer.
+   */
+  PIKEFUN void allocate( int n )
+  {
+    Buffer *io = THIS;
+    Pike_sp--;
+    if (!n) return;
+    if (n < 0)
+      SIMPLE_BAD_ARG_ERROR("allocate()", 1, "int(0..1)");
+    io_add_space(io, n, 0);
+  }
+
   /*! @decl int(0..)|int(-1..-1) consume( int(0..) n )
    *!
    *! Discard the first @[n] bytes from the buffer

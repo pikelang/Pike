@@ -147,7 +147,18 @@ enum memobj_type{
     MEMOBJ_STDIO_IOBUFFER,
 };
 
+struct pike_memory_object {
+  void *ptr;
+  size_t len;
+  int shift;
+};
+
 PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift );
+PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pike_memory_object *m,
+                                                     int writeable );
+PMOD_EXPORT int pike_advance_memory_object( struct object *o,
+                                            enum memobj_type type,
+                                            size_t length );
 
 
 unsigned gc_touch_all_objects(void);
