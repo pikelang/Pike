@@ -2473,6 +2473,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       break;
     case 'D':
       dbl_args |= 1<<FLT_ARG_OFFS;
+      /* FALLTHRU */
     case 'J':
       args ++;
       wargs ++;
@@ -2487,8 +2488,10 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       if(!*p)
 	break;
       if(*p++ != 'L') { args++; break; }
+      /* FALLTHRU */
     case 'L':
       while(*p && *p++!=';');
+      /* FALLTHRU */
     default:
       args++;
     }
