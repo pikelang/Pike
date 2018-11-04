@@ -36,10 +36,10 @@ static void free_glist_full_free(void *p)
   g_list_free_full(p, free);
 }
 
-struct GBoxed_struct;
+struct GI_GBoxed_struct;
 static void push_gi_info(GIBaseInfo *info);
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
-static void make_gboxed(struct GBoxed_struct *this, struct object *info, gboolean allocate);
+static void make_gboxed(struct GI_GBoxed_struct *this, struct object *info, gboolean allocate);
 static void push_gvalue(const GValue *v);
 static void set_gvalue_from_svalue(GValue *v, const struct svalue *s);
 
@@ -350,9 +350,9 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Failed to instantiate GI object class.\n");
       {
-	struct GObject_struct *that =
-	  (struct GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
-						GObject_program);
+	struct GI_GObject_struct *that =
+	  (struct GI_GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
+						GI_GObject_program);
 	if (that == NULL)
 	  Pike_error("No storage for GObject!\n");
 	if (that->obj != NULL)
@@ -388,9 +388,9 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to instantiate GI box class.\n");
     {
-      struct GBoxed_struct *that =
-	(struct GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
-					     GBoxed_program);
+      struct GI_GBoxed_struct *that =
+	(struct GI_GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
+					     GI_GBoxed_program);
       if (that == NULL)
 	Pike_error("No storage for GBoxed!\n");
       if (that->box != NULL)
@@ -528,8 +528,8 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
     if (TYPEOF(*s) != T_OBJECT)
       Pike_error("object expected\n");
     else {
-      struct GObject_struct *that =
-	(struct GObject_struct *)get_storage (s->u.object, GObject_program);
+      struct GI_GObject_struct *that =
+	(struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
       if (that == NULL)
 	Pike_error("argument is not a GObject\n");
       if (that->obj == NULL ||
@@ -549,8 +549,8 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
     if (TYPEOF(*s) != T_OBJECT)
       Pike_error("object expected\n");
     else {
-      struct GBoxed_struct *that =
-	(struct GBoxed_struct *)get_storage (s->u.object, GBoxed_program);
+      struct GI_GBoxed_struct *that =
+	(struct GI_GBoxed_struct *)get_storage (s->u.object, GI_GBoxed_program);
       if (that == NULL)
 	Pike_error("argument is not a GBoxed\n");
       if (that->box == NULL ||
@@ -836,9 +836,9 @@ PIKECLASS FunctionInfo
 	GIBaseInfo *cont = g_base_info_get_container(THIS->info);
 	if (g_base_info_get_type(cont) == GI_INFO_TYPE_OBJECT ||
 	    g_base_info_get_type(cont) == GI_INFO_TYPE_INTERFACE) {
-	  struct GObject_struct *that =
-	    (struct GObject_struct *)get_storage (mark->u.object,
-						  GObject_program);
+	  struct GI_GObject_struct *that =
+	    (struct GI_GObject_struct *)get_storage (mark->u.object,
+						  GI_GObject_program);
 	  if (that == NULL)
 	    Pike_error("Instance argument is not a GObject\n");
 	  if (that->obj == NULL ||
@@ -848,9 +848,9 @@ PIKECLASS FunctionInfo
 		       g_base_info_get_name(cont));
 	  in_args[0].v_pointer = that->obj;
 	} else {
-	  struct GBoxed_struct *that =
-	    (struct GBoxed_struct *)get_storage (mark->u.object,
-						 GBoxed_program);
+	  struct GI_GBoxed_struct *that =
+	    (struct GI_GBoxed_struct *)get_storage (mark->u.object,
+						 GI_GBoxed_program);
 	  if (that == NULL)
 	    Pike_error("Instance argument is not a GBoxed\n");
 	  if (that->box == NULL ||
@@ -950,8 +950,8 @@ PIKECLASS FieldInfo
     GIArgument value;
     GITypeInfo *ti;
     GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
-    struct GBoxed_struct *that =
-      (struct GBoxed_struct *)get_storage (box, GBoxed_program);
+    struct GI_GBoxed_struct *that =
+      (struct GI_GBoxed_struct *)get_storage (box, GI_GBoxed_program);
     if (that == NULL)
       Pike_error("argument is not a GBoxed\n");
     if (that->box == NULL ||
@@ -977,8 +977,8 @@ PIKECLASS FieldInfo
     GIArgument val;
     GITypeInfo *ti;
     GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
-    struct GBoxed_struct *that =
-      (struct GBoxed_struct *)get_storage (box, GBoxed_program);
+    struct GI_GBoxed_struct *that =
+      (struct GI_GBoxed_struct *)get_storage (box, GI_GBoxed_program);
     if (that == NULL)
       Pike_error("argument is not a GBoxed\n");
     if (that->box == NULL ||
@@ -1268,33 +1268,33 @@ static void push_gi_info(GIBaseInfo *info)
     Pike_error("Missing info\n");
   switch(g_base_info_get_type(info)) {
   case GI_INFO_TYPE_FUNCTION:
-    p = FunctionInfo_program; break;
+    p = GI_FunctionInfo_program; break;
   case GI_INFO_TYPE_CALLBACK:
-    p = CallbackInfo_program; break;
+    p = GI_CallbackInfo_program; break;
   case GI_INFO_TYPE_STRUCT:
-    p = StructInfo_program; break;
+    p = GI_StructInfo_program; break;
   case GI_INFO_TYPE_ENUM:
   case GI_INFO_TYPE_FLAGS:
-    p = EnumInfo_program; break;
+    p = GI_EnumInfo_program; break;
   case GI_INFO_TYPE_OBJECT:
-    p = ObjectInfo_program; break;
+    p = GI_ObjectInfo_program; break;
   case GI_INFO_TYPE_INTERFACE:
-    p = InterfaceInfo_program; break;
+    p = GI_InterfaceInfo_program; break;
   case GI_INFO_TYPE_CONSTANT:
-    p = ConstantInfo_program; break;
+    p = GI_ConstantInfo_program; break;
   case GI_INFO_TYPE_UNION:
-    p = UnionInfo_program; break;
+    p = GI_UnionInfo_program; break;
   case GI_INFO_TYPE_VALUE:
-    p = ValueInfo_program; break;
+    p = GI_ValueInfo_program; break;
   case GI_INFO_TYPE_FIELD:
-    p = FieldInfo_program; break;
+    p = GI_FieldInfo_program; break;
   default:
     Pike_error("No class for %d\n", g_base_info_get_type(info));
   }
   {
     struct object *o = clone_object(p, 0);
-    struct BaseInfo_struct *that =
-      (struct BaseInfo_struct *)get_storage (o, BaseInfo_program);
+    struct GI_BaseInfo_struct *that =
+      (struct GI_BaseInfo_struct *)get_storage (o, GI_BaseInfo_program);
     that->info = g_base_info_ref(info);
     push_object(o);
   }
@@ -1479,8 +1479,8 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
     if (TYPEOF(*s) != T_OBJECT)
       Pike_error("object expected\n");
     else {
-      struct GObject_struct *that =
-	(struct GObject_struct *)get_storage (s->u.object, GObject_program);
+      struct GI_GObject_struct *that =
+	(struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
       if (that == NULL)
 	Pike_error("argument is not a GObject\n");
       if (that->obj == NULL ||
@@ -1570,13 +1570,13 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
 {
   ONERROR onerror;
   GIObjectInfo *ginfo;
-  struct BaseInfo_struct *that;
+  struct GI_BaseInfo_struct *that;
   GType gt;
   GObject *obj;
   struct gparams_list params = { 0, NULL };
   if (info == NULL ||
       (that =
-       (struct BaseInfo_struct *)get_storage (info, BaseInfo_program))
+       (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
       == NULL || that->info == NULL)
     Pike_error("ObjectInfo missing\n");
   ginfo = (GIObjectInfo *)that->info;
@@ -1602,12 +1602,12 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
   return obj;
 }
 
-static void make_gboxed(struct GBoxed_struct *this, struct object *info, gboolean allocate)
+static void make_gboxed(struct GI_GBoxed_struct *this, struct object *info, gboolean allocate)
 {
-  struct BaseInfo_struct *that;
+  struct GI_BaseInfo_struct *that;
   if (info == NULL ||
       (that =
-       (struct BaseInfo_struct *)get_storage (info, BaseInfo_program))
+       (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
       == NULL || that->info == NULL)
     Pike_error("StructInfo missing\n");
   this->type = g_registered_type_info_get_g_type(that->info);
@@ -1737,9 +1737,9 @@ PIKEFUN Repository get_default_repository()
 {
   static struct object *default_repository = NULL;
   if (default_repository == NULL) {
-    struct object *o = clone_object(Repository_program, 0);
-    struct Repository_struct *that =
-      (struct Repository_struct *)get_storage (o, Repository_program);
+    struct object *o = clone_object(GI_Repository_program, 0);
+    struct GI_Repository_struct *that =
+      (struct GI_Repository_struct *)get_storage (o, GI_Repository_program);
     that->repository = g_irepository_get_default();
     default_repository = o;
   }
