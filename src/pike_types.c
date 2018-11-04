@@ -9021,7 +9021,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case T_OR:
       case T_AND:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
-      /* FALL_THOUGH */
+      /* FALLTHOUGH */
       case PIKE_T_ARRAY:
       case PIKE_T_MULTISET:
       case T_NOT:
