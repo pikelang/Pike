@@ -2630,7 +2630,16 @@ static struct %s *%s_gdb_dummy_ptr;
 				 name,
 				 min_args), proto[0]->line)
 	      });
-	    }
+	    } else {
+	      ret+=({
+                "#ifdef PIKE_DEBUG\n",
+		PC.Token(sprintf("if(args < 0) Pike_fatal(%O);\n",
+                                 "CMOD function argument negative.\n")),
+                "#else\n",
+		PC.Token("STATIC_ASSUME(args >= 0);\n"),
+                "#endif\n"
+	      });
+            }
 
 	    if(max_args != 0x7fffffff && max_args != -1) {
 	      ret+=({
