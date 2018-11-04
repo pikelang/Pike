@@ -718,7 +718,7 @@ static void mpzmod_encode_json(INT32 args)
  *! @expr{256@} and @expr{-256@}. The default base is 10.
  *!
  *! @note
- *!   The bases 37 to 62 are not available When compiled with GMP
+ *!   The bases 37 to 62 are not available when compiled with GMP
  *!   earlier than version 5.
  *! @seealso
  *!   @[cast]

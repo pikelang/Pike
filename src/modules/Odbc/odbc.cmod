@@ -20,7 +20,6 @@
 #include "interpret.h"
 #include "threads.h"
 #include "pike_compiler.h"
-#include "program.h"
 #include "module_support.h"
 #include "bignum.h"
 #include "builtin_functions.h"

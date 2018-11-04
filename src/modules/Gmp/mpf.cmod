@@ -4,25 +4,19 @@
 || for more information.
 */
 
-#include "global.h"
+#include "module.h"
 #include "gmp_machine.h"
 
 #include "my_gmp.h"
 
 #include "interpret.h"
-#include "svalue.h"
-#include "stralloc.h"
-#include "array.h"
 #include "pike_macros.h"
-#include "program.h"
-#include "object.h"
 #include "pike_types.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "bignum.h"
 #include "operators.h"
-#include "mapping.h"
 #include "gc.h"
 
 #include <math.h>

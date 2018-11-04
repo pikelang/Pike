@@ -8,12 +8,10 @@
 #define PROGRAM_H
 
 #include "global.h"
-#include "pike_macros.h"
 #include "pike_error.h"
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
-#include "pike_rusage.h"
 #include "block_allocator.h"
 #include "string_builder.h"
 #include "gc_header.h"

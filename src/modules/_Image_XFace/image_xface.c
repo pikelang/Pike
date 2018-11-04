@@ -4,19 +4,14 @@
 || for more information.
 */
 
-#include "global.h"
 #include "module.h"
 #include "config.h"
 
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
 #include "threads.h"
-#include "array.h"
-#include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "buffer.h"
 #include "operators.h"
 #include "builtin_functions.h"

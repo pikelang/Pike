@@ -61,7 +61,6 @@
 #include "pike_compiler.h"
 #include "pike_error.h"
 #include "threads.h"
-#include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fd_control.h"

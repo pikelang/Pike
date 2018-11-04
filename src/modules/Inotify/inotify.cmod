@@ -14,7 +14,6 @@
 #include "inotify_config.h"
 
 #include "interpret.h"
-#include "program.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
 #include "fdlib.h"

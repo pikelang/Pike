@@ -783,8 +783,6 @@ void ppc64_decode_program(struct program *p)
 }
 #endif
 
-#ifdef PIKE_DEBUG
-
 void ppc64_disassemble_code(void *addr, size_t bytes)
 {
   /*
@@ -1250,5 +1248,3 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
     }
   }
 }
-
-#endif

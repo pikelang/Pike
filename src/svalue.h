@@ -426,17 +426,6 @@ extern struct program *pike_trampoline_program;
           && PIKE_SUBTYPEOF(*(X)) ==					\
 	  QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL)))))
 
-#define check_destructed(S)			\
-  do{						\
-    struct svalue *_s=(S);			\
-    if(IS_DESTRUCTED(_s)) {			\
-      free_object(_s->u.object);		\
-      SET_SVAL(*_s, PIKE_T_INT,			\
-	       NUMBER_DESTRUCTED,		\
-	       integer, 0);			\
-    }						\
-  }while(0)
-
 /* var MUST be a variable!!! */
 #define safe_check_destructed(var) do{ \
     if(IS_DESTRUCTED(var))	       \
@@ -749,6 +738,7 @@ static inline struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct calla
   } while (0)
 
 /* Prototypes begin here */
+PMOD_EXPORT void check_destructed(struct svalue *s);
 PMOD_EXPORT void really_free_short_svalue_ptr(void **s, TYPE_T type);
 PMOD_EXPORT void really_free_svalue(struct svalue *s);
 PMOD_EXPORT void do_free_svalue(struct svalue *s);

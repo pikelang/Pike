@@ -12,7 +12,7 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit MAC
   DOCEND()
-  INHERIT Nettle_MAC;
+  INHERIT MAC;
 
   static const struct pike_mac cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
     _PIKE_MAC(NETTLE_NAME, PIKE_NAME);

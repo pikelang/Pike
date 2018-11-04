@@ -9,7 +9,6 @@
 #include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
-#include "program.h"
 #include "module_support.h"
 
 #include "config.h"

@@ -4966,7 +4966,9 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 static int call_handle_import(struct pike_string *s)
 {
   ref_push_string(s);
-  if (safe_apply_current(PC_HANDLE_IMPORT_FUN_NUM, 1)) {
+  if (safe_apply_low2(Pike_fp->current_object,
+                      PC_HANDLE_IMPORT_FUN_NUM
+                      + Pike_fp->context->identifier_level, 1, NULL)) {
     if ((1 << TYPEOF(Pike_sp[-1])) &
 	(BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO)) {
       if (SAFE_IS_ZERO(Pike_sp - 1)) {

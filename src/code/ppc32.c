@@ -784,8 +784,6 @@ void ppc32_decode_program(struct program *p)
 }
 #endif
 
-#ifdef PIKE_DEBUG
-
 void ppc32_disassemble_code(void *addr, size_t bytes)
 {
   /*
@@ -1163,5 +1161,3 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
     }
   }
 }
-
-#endif

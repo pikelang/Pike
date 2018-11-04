@@ -7,7 +7,6 @@
 #include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
-#include "program.h"
 #include "operators.h"
 
 #include "pdf_machine.h"

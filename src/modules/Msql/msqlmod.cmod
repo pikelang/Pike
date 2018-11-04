@@ -22,7 +22,6 @@
 #endif /*HAVE_MSQL*/
 
 #include "module.h"
-#include "program.h"
 #include "pike_compiler.h"
 #include "module_support.h"
 

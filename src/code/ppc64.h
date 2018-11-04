@@ -320,7 +320,5 @@ void ppc64_ins_entry(void);
 #endif /* OPCODE_INLINE_RETURN */
 
 
-#ifdef PIKE_DEBUG
 void ppc64_disassemble_code(void *addr, size_t bytes);
 #define DISASSEMBLE_CODE(ADDR, BYTES)	ppc64_disassemble_code(ADDR, BYTES)
-#endif
