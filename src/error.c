@@ -952,6 +952,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
+static const char* get_fname(const char *fname)
+{
+  if (fname) return fname;
+  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
+}
 
 /* Throw a preallocated error object.
  *
@@ -1006,6 +1011,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *desc, ...)  ATTRIBUTE((noreturn))
 {
   const struct svalue *base_sp = args>=0 ? Pike_sp-args : NULL;
+  func = get_fname(func);
   INIT_ERROR(bad_argument);
   ERROR_COPY(bad_argument, which_argument);
   if (expected_type)
