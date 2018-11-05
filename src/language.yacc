@@ -317,6 +317,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_IDENTIFIER
 %type <n> TOK_RESERVED
 %type <n> TOK_VERSION
+%type <n> annotation
 %type <n> attribute
 %type <n> assoc_pair
 %type <n> line_number_info
@@ -343,6 +344,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> continue
 %type <n> default
 %type <n> do
+%type <n> constant_expr
 %type <n> safe_expr0
 %type <n> splice_expr
 %type <n> expr01
@@ -1064,6 +1066,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | constant {}
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
+  | annotation ';' { free_node($1); }
   | typedef {}
   | static_assertion expected_semicolon {}
   | error TOK_LEX_EOF
@@ -1263,10 +1266,21 @@ magic_identifier: TOK_IDENTIFIER | TOK_RESERVED
   }
   ;
 
+annotation: '@' constant_expr
+  {
+    $$ = $2;
+  }
+  ;
+
 modifiers: modifier_list
  {
    $$=Pike_compiler->current_modifiers=$1 |
      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+ }
+ | annotation ':' modifiers
+ {
+   if ($1) free_node($1);
+   $$ = $3;
  }
  ;
 
@@ -1921,6 +1935,37 @@ local_name_list: new_local_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3); }
   ;
 
+
+constant_expr: safe_expr0
+  {
+    /* Ugly hack to make sure that $1 is optimized */
+    {
+      int tmp = Pike_compiler->compiler_pass;
+      $$ = mknode(F_COMMA_EXPR, $1, 0);
+      optimize_node($$);
+      Pike_compiler->compiler_pass = tmp;
+    }
+
+    if(!is_const($$)) {
+      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+	yyerror("Expected constant expression.");
+      push_int(0);
+    } else {
+      ptrdiff_t tmp = eval_low($$, 1);
+      if(tmp < 1)
+      {
+	if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+	  yyerror("Error evaluating constant expression.");
+	push_int(0);
+      } else {
+        pop_n_elems((INT32)(tmp - 1));
+      }
+    }
+    free_node($$);
+    $$ = mksvaluenode(Pike_sp - 1);
+    pop_stack();
+  }
+  ;
 
 local_constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
