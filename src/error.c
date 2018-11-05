@@ -849,18 +849,11 @@ static void f_error_create(INT32 args)
 /*! @endmodule
  */
 
-#ifdef ERROR_DEBUG
-#define DWERROR(...)	fprintf(stderr, __VA_ARGS__)
-#else /* !ERROR_DEBUG */
-#define DWERROR(...)
-#endif /* ERROR_DEBUG */
-
 #define INIT_ERROR(FEL)\
   va_list foo; \
   struct object *o; \
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
-  DWERROR("%s(): Throwing a " #FEL " error\n", func); \
   o=fast_clone_object(PIKE_CONCAT(FEL,_error_program))
 
 #define ERROR_DONE() \
@@ -976,7 +969,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   va_list foo;
   va_start(foo,desc);
   ASSERT_THREAD_SWAPPED_IN();
-  DWERROR("%s(): Throwing an error object\n", func);
   ERROR_DONE();
 }
 
@@ -1022,8 +1014,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
 
-  DWERROR("%s():Bad arg %d (expected %s)\n",
-          func, which_argument, expected_type);
   ERROR_DONE();
 }
 
