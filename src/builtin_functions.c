@@ -8630,13 +8630,13 @@ PMOD_EXPORT void f_everynth(INT32 args)
     case 3:
      start=Pike_sp[2-args].u.integer;
      if(start<0)
-       bad_arg_error("everynth", args, 3, "int", Pike_sp+2-args,
+       bad_arg_error(NULL, args, 3, "int", Pike_sp+2-args,
 		     "Argument negative.\n");
      /* FALLTHRU */
     case 2:
       n=Pike_sp[1-args].u.integer;
       if(n<1)
-        bad_arg_error("everynth", args, 2, "int", Pike_sp+1-args,
+        bad_arg_error(NULL, args, 2, "int", Pike_sp+1-args,
 		      "Argument negative.\n");
      /* FALLTHRU */
     case 1:

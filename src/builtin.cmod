@@ -946,7 +946,7 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
       gc_trace = level;
     }
     else {
-      bad_arg_error("trace", args, 2,
+      bad_arg_error(NULL, args, 2,
 		   "trace facility identifier", Pike_sp-args+1,
                    "Bad argument 2 to trace(). Unknown trace facility.");
     }
@@ -2657,15 +2657,16 @@ PIKECLASS backtrace_frame
         break;
       default:	/* Arguments */
         {
+          struct svalue this;
 	  if ((i > 2) && (THIS->args) && (i-3 < THIS->args->size)) {
 	    push_svalue(THIS->args->item + (i - 3));
 	    break;
-	  }
-          bad_arg_error("`[]", args, 1,
-			"int(0..)", Pike_sp-args,
-			"Bad argument 1 to backtrace_frame->`[](): "
-			"Expected int(0..%d)\n",
-			numargs + 2);
+          }
+          SET_SVAL(this, PIKE_T_OBJECT, 0, object, Pike_fp->current_object);
+          index_error(args, &this, Pike_sp-args,
+                      "Bad argument 1 to backtrace_frame->`[](): "
+                      "Expected int(0..%d)\n",
+                      numargs + 2);
         }
         UNREACHABLE(break);
       }
