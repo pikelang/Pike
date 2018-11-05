@@ -296,11 +296,11 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 	struct svalue tmp;
 	SET_SVAL(tmp, T_ARRAY, 0, array, a);
 	if (a->size) {
-          index_error(0,0,&tmp,ind,
+          index_error(0,&tmp,ind,
 		      "Index %"PRINTPIKEINT"d is out of array range "
 		      "%d..%d.\n", p, -a->size, a->size-1);
 	} else {
-          index_error(0,0,&tmp,ind,
+          index_error(0,&tmp,ind,
 		      "Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
 	}
       }
@@ -318,7 +318,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
       {
 	struct svalue tmp;
 	SET_SVAL(tmp, T_ARRAY, 0, array, a);
-        index_error(0,0,&tmp,ind,"Array index is neither int nor string.\n");
+        index_error(0,&tmp,ind,"Array index is neither int nor string.\n");
       }
   }
 }
@@ -378,7 +378,7 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
     {
       struct svalue tmp;
       SET_SVAL(tmp, T_ARRAY, 0, array, a);
-      index_error(0,0,&tmp,ind,"Array index is neither int nor string.\n");
+      index_error(0,&tmp,ind,"Array index is neither int nor string.\n");
     }
   }
 }

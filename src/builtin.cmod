@@ -2619,10 +2619,10 @@ PIKECLASS backtrace_frame
 
     if (!end_or_none) {
       if (index < 0)
-        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+        index_error(args, NULL, Pike_sp-args,
 		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
       else if (index >= numargs)
-        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+        index_error(args, NULL, Pike_sp-args,
 		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
     } else
       end = end_or_none->u.integer;
@@ -2685,7 +2685,7 @@ PIKECLASS backtrace_frame
       numargs += THIS->args->size;
 
     if ((index < -numargs) || (index >= numargs))
-        index_error("pike_frame->`[]=", args, NULL, Pike_sp-args,
+        index_error(args, NULL, Pike_sp-args,
 		    "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
 		    index, numargs-1);
     else if (index < 0)
@@ -3783,11 +3783,7 @@ static void low_automap(int d,
        OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
     {
       if(TYPEOF(tmpargs[e]) != T_ARRAY)
-	index_error("__automap__",
-                    args,
-		    tmpargs,
-		    NULL,
-		    "Automap on non-array.\n");
+        index_error(args, tmpargs, NULL, "Automap on non-array.\n");
       tmp=tmpargs[e].u.array->size;
       if(tmp < size)
 	size=tmp;
