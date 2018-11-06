@@ -318,6 +318,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_RESERVED
 %type <n> TOK_VERSION
 %type <n> annotation
+%type <n> annotation_list
 %type <n> attribute
 %type <n> assoc_pair
 %type <n> line_number_info
@@ -484,6 +485,10 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared inherit.");
     }
+    if (Pike_compiler->current_annotations &&
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
+      yywarning("Annotations not supported for inherits.");
+    }
     if($3)
     {
       struct pike_string *s=Pike_sp[-1].u.string;
@@ -526,6 +531,10 @@ implement: modifiers TOK_IMPLEMENT inherit_ref ';'
   {
     if ($1 && (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Modifiers ignored for implement.");
+    }
+    if (Pike_compiler->current_annotations &&
+	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
+      yywarning("Annotations not supported for implements.");
     }
     if($3) {
       compiler_do_implement($3);
@@ -1066,7 +1075,12 @@ def: modifiers optional_attributes simple_type optional_constant
   | constant {}
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
-  | annotation ';' { free_node($1); }
+  | annotation ';'
+  {
+    $1 = mknode(F_COMMA_EXPR, $1, NULL);
+    compiler_add_annotations(-1, $1);
+    free_node($1);
+  }
   | typedef {}
   | static_assertion expected_semicolon {}
   | error TOK_LEX_EOF
@@ -1092,6 +1106,9 @@ def: modifiers optional_attributes simple_type optional_constant
     {
       $<number>$=THIS_COMPILATION->lex.pragmas;
       THIS_COMPILATION->lex.pragmas|=$1;
+      if (Pike_compiler->current_annotations) {
+	yywarning("Annotation blocks are not supported.");
+      }
     }
       program
    close_brace_or_eof
@@ -1272,17 +1289,21 @@ annotation: '@' constant_expr
   }
   ;
 
-modifiers: modifier_list
- {
-   $$=Pike_compiler->current_modifiers=$1 |
-     (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
- }
- | annotation ':' modifiers
- {
-   if ($1) free_node($1);
-   $$ = $3;
- }
- ;
+annotation_list: /* empty */ { $$ = NULL; }
+  | annotation ':' annotation_list
+  {
+    $$ = mknode(F_COMMA_EXPR, $1, $3);
+  }
+  ;
+
+modifiers: annotation_list modifier_list
+  {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = $1;
+    $$ = Pike_compiler->current_modifiers = $2 |
+      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+  }
+  ;
 
 modifier_list: /* empty */ { $$ = 0; }
   | modifier_list modifier { $$ = $1 | $2; }
@@ -1962,7 +1983,7 @@ constant_expr: safe_expr0
       }
     }
     free_node($$);
-    $$ = mksvaluenode(Pike_sp - 1);
+    $$ = mkconstantsvaluenode(Pike_sp - 1);
     pop_stack();
   }
   ;
@@ -3710,6 +3731,8 @@ apply:
 
 implicit_modifiers:
   {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
     $$ = Pike_compiler->current_modifiers = ID_PROTECTED|ID_INLINE|ID_PRIVATE |
       (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
   }

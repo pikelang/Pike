@@ -1528,6 +1528,7 @@ PMOD_EXPORT void do_free_program (struct program *p)
 #define RELOCATE_strings(ORIG,NEW)
 #define RELOCATE_inherits(ORIG,NEW)
 #define RELOCATE_identifiers(ORIG,NEW)
+#define RELOCATE_annotations(ORIG,NEW)
 #define RELOCATE_constants(ORIG,NEW)
 #define RELOCATE_relocations(ORIG,NEW)
 
@@ -1755,6 +1756,10 @@ static int low_add_identifier(struct compilation *c,
   dummy.total_time=0;
 #endif
   debug_add_to_identifiers(dummy);
+
+  if (Pike_compiler->current_annotations) {
+    compiler_add_annotations(n, Pike_compiler->current_annotations);
+  }
 
   return n;
 }
@@ -3470,6 +3475,12 @@ static void exit_program_struct(struct program *p)
       if(p->strings[e])
 	free_string(p->strings[e]);
 
+  if (p->annotations) {
+    for (e = 0; e < p->num_annotations; e++) {
+      do_free_array(p->annotations[e]);
+    }
+  }
+
   if(p->identifiers)
   {
     for(e=0; e<p->num_identifiers; e++)
@@ -3681,6 +3692,11 @@ static void toss_compilation_resources(void)
   {
     free_string(Pike_compiler->last_file);
     Pike_compiler->last_file=0;
+  }
+
+  if (Pike_compiler->current_annotations) {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
   }
 
   if (Pike_compiler->current_attributes) {
@@ -4198,6 +4214,45 @@ static int add_variant_dispatcher(struct pike_string *name,
   dispatch_fun.c_fun = f_dispatch_variant;
   return define_function(name, type, id_flags & ~(ID_VARIANT|ID_LOCAL),
 			 IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
+}
+
+/**
+ * Add a single annotation for a symbol in the current program
+ * being compiled.
+ *
+ * @param id
+ *   Identifier to annotate, -1 for the current program.
+ *
+ * @param val
+ *   Annotation value. Should be an object implementing
+ *   the Pike.Annotation interface.
+ */
+static void add_annotation(int id, struct svalue *val)
+{
+  id += 1;
+  while (Pike_compiler->new_program->num_annotations <= id) {
+    add_to_annotations(NULL);
+  }
+
+  if (val) {
+    if (Pike_compiler->new_program->annotations[id]) {
+      Pike_compiler->new_program->annotations[id] =
+	append_array(Pike_compiler->new_program->annotations[id], val);
+    } else {
+      push_svalue(val);
+      Pike_compiler->new_program->annotations[id] = aggregate_array(1);
+    }
+  }
+}
+
+void compiler_add_annotations(int id, node *annotations)
+{
+  while(annotations) {
+    node *val_node = CAR(annotations);
+    annotations = CDR(annotations);
+    if (val_node->token != F_CONSTANT) continue;
+    add_annotation(id, &val_node->u.sval);
+  }
 }
 
 /**
