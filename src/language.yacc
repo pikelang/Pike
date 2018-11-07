@@ -1081,6 +1081,10 @@ def: modifiers optional_attributes simple_type optional_constant
     compiler_add_annotations(-1, $1);
     free_node($1);
   }
+  | '@' TOK_CONSTANT ';'
+  {
+    Pike_compiler->new_program->flags |= PROGRAM_CONSTANT;
+  }
   | typedef {}
   | static_assertion expected_semicolon {}
   | error TOK_LEX_EOF
