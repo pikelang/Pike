@@ -175,8 +175,10 @@ node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
 void pop_compiler_frame(void);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
+void low_init_pike_compiler(void);
 void init_pike_compiler(void);
 void cleanup_pike_compiler(void);
+void low_cleanup_pike_compiler(void);
 /* Prototypes end here */
 
 #endif	/* !PIKE_COMPILER_H */

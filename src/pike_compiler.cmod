@@ -2997,21 +2997,23 @@ PIKECLASS placeholder
   }
 }
 
-void init_pike_compiler(void)
+void low_init_pike_compiler(void)
 {
 #ifdef PIKE_THREADS
   co_init(&Pike_compiler_cond);
 #endif
 
   compile_compiler();
+}
 
-  enter_compiler(NULL, 0);
 
-  /*
-   * Now that the compiler has been compiled,
-   * we can use the usual cmod stuff.
-   */
+/*
+ * Now that the compiler has been compiled,
+ * we can use the usual cmod stuff.
+ */
 
+void init_pike_compiler(void)
+{
   INIT;
 
   {
@@ -3042,14 +3044,15 @@ void init_pike_compiler(void)
     SET_SVAL(s, T_TYPE, 0, type, utf8_type_string);
     low_add_efun(attr, &s);
   }
-
-  exit_compiler();
 }
 
 void cleanup_pike_compiler(void)
 {
   EXIT;
+}
 
+void low_cleanup_pike_compiler(void)
+{
   if (compilation_program) {
     free_program(compilation_program);
     compilation_program = 0;

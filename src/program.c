@@ -8511,7 +8511,7 @@ void init_program(void)
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
 
-  init_pike_compiler();
+  low_init_pike_compiler();
 
   enter_compiler(NULL, 0);
 
@@ -8565,7 +8565,7 @@ void cleanup_program(void)
   }
 #endif
 
-  cleanup_pike_compiler();
+  low_cleanup_pike_compiler();
 }
 
 

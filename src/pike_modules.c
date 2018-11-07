@@ -62,6 +62,9 @@ static void init_builtin_modules(void)
   dmalloc_accept_leak (&weak_empty_array);
 #endif
 
+  TRACE("Init pike compiler...\n");
+  init_pike_compiler();
+
   TRACE("Init String.Buffer...\n");
   init_string_buffer();
 
@@ -120,6 +123,7 @@ static void exit_builtin_modules(void)
   exit_builtin();
   exit_cpp();
   exit_string_buffer();
+  cleanup_pike_compiler();
   cleanup_interpret();
   exit_builtin_constants();
   cleanup_module_support();
