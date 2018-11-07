@@ -912,7 +912,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   if (fmt) {
     struct string_builder s;
     init_string_builder(&s, 0);
-    string_builder_vsprintf(&s, fmt, *fmt_args);
+    if( fmt_args )
+      string_builder_vsprintf(&s, fmt, *fmt_args);
+    else
+      string_builder_strcat(&s, fmt);
 
     if (err->error_message) free_string(err->error_message);
     err->error_message = finish_string_builder(&s);
@@ -1022,6 +1025,13 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   ERROR_COPY_SVALUE(bad_argument, got_value);
 
   ERROR_DONE();
+}
+
+/* coverity[+kill] */
+PMOD_EXPORT DECLSPEC(noreturn) void bad_args_error(int args)
+{
+  const char *fname = get_fname(NULL);
+  generic_error(fname, Pike_sp, args, "Bad arguments to %s().\n", fname);
 }
 
 /* coverity[+kill] */

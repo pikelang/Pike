@@ -2024,9 +2024,8 @@ static void image_gradients(INT32 args)
 	  ( (a->type_field & ~BIT_INT) &&
 	    (array_fix_type_field(a) & ~BIT_INT) ))
       {
-	 while (first) { c=first; first=c->next; free(c); }
-         bad_arg_error("gradients",args,0,"",sp-args,
-                       "Bad arguments to gradients.\n");
+         while (first) { c=first; first=c->next; free(c); }
+         GENERIC_ARGS_ERROR();
       }
       c=malloc(sizeof(struct gr_point));
       if (!c)
@@ -4036,16 +4035,12 @@ static void image_apply_curve( INT32 args )
        for( i = 0; i<3; i++ )
          if( TYPEOF(sp[-args+i]) != T_ARRAY ||
              sp[-args+i].u.array->size != 256 )
-           bad_arg_error("apply_curve",
-                         args, i+1, "array(int(8bit))", sp-args,
-                         "Bad argument to apply_curve.\n");
+           SIMPLE_ARG_TYPE_ERROR(NULL, i+1, "array(int(8bit))");
          else
            for( j = 0; j<256; j++ ) {
              if( TYPEOF(sp[-args+i].u.array->item[j]) != T_INT ) {
-	       bad_arg_error("apply_curve",
-                             args, i+1, "array(int(8bit))", sp-args,
-			     "Bad argument to apply_curve.\n");
-	     }
+               SIMPLE_ARG_TYPE_ERROR(NULL, i+1, "array(int(8bit))");
+             }
 	     curve[i][j]=MINIMUM(sp[-args+i].u.array->item[j].u.integer,255);
 	   }
        pop_n_elems( args );
@@ -4062,17 +4057,12 @@ static void image_apply_curve( INT32 args )
 	 SIMPLE_ARG_TYPE_ERROR("apply_curve", 1, "string");
        if( TYPEOF(sp[-args+1]) != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-	 bad_arg_error("apply_curve",
-                       args, 2, "array(int(8bit))", sp-args,
-		       "Bad argument to apply_curve.\n");
+         SIMPLE_ARG_TYPE_ERROR(NULL, 2, "array(int(8bit))");
 
        for( j = 0; j<256; j++ ) {
-	 if( TYPEOF(sp[-args+1].u.array->item[j]) != T_INT ) {
-	   bad_arg_error("apply_curve",
-                         args, 2, "array(int(8bit))", sp-args,
-			 "Bad argument to apply_curve.\n");
-	 }
-	 curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+         if( TYPEOF(sp[-args+1].u.array->item[j]) != T_INT )
+           SIMPLE_ARG_TYPE_ERROR(NULL, 2, "array(int(8bit))");
+         curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
        }
 
        MAKE_CONST_STRING(s_red,"red");
@@ -4144,17 +4134,12 @@ static void image_apply_curve( INT32 args )
        unsigned char curve[256];
        if( TYPEOF(sp[-args]) != T_ARRAY ||
            sp[-args].u.array->size != 256 )
-         bad_arg_error("apply_curve",
-                       args, 0, "array(int(8bit))", sp-args,
-                       "Bad argument to apply_curve.\n" );
+         SIMPLE_ARG_TYPE_ERROR(NULL, 2, "array(int(8bit))");
        else
          for( j = 0; j<256; j++ ) {
-           if(TYPEOF(sp[-args].u.array->item[j]) != T_INT) {
-	     bad_arg_error("apply_curve",
-                           args, 0, "array(int(8bit))", sp-args,
-			   "Bad argument to apply_curve.\n");
-	   }
-	   curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
+           if(TYPEOF(sp[-args].u.array->item[j]) != T_INT)
+             SIMPLE_ARG_TYPE_ERROR(NULL, 2, "array(int(8bit))");
+           curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
 	 }
        pop_n_elems( args );
        image_apply_curve_1( curve );

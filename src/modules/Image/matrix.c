@@ -386,8 +386,7 @@ void image_scale(INT32 args)
    else
    {
       free_object(o);
-      bad_arg_error("scale",args,0,"",sp-args,
-                    "Bad arguments to scale.\n");
+      GENERIC_ARGS_ERROR();
    }
    pop_n_elems(args);
    push_object(o);
@@ -884,8 +883,7 @@ void image_skewx(INT32 args)
    else if (TYPEOF(sp[-args])== T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("skewx",args,0,"",sp-args,
-                    "Bad arguments to skewx.\n");
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    CHECK_INIT();
 
@@ -948,8 +946,7 @@ void image_skewy(INT32 args)
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("skewy",args,0,"",sp-args,
-                    "Bad arguments to skewy.\n");
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    CHECK_INIT();
 
@@ -976,8 +973,7 @@ void image_skewx_expand(INT32 args)
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("skewx_expand",args,0,"",sp-args,
-                    "Bad arguments to skewx_expand.\n");
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    CHECK_INIT();
 
@@ -1004,8 +1000,7 @@ void image_skewy_expand(INT32 args)
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("skewx_expand",args,0,"",sp-args,
-                    "Bad arguments to skewy_expand.\n");
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    CHECK_INIT();
 
@@ -1035,8 +1030,7 @@ void img_rotate(INT32 args,int xpn)
    else if (TYPEOF(sp[-args]) == T_INT)
       angle = (double)sp[-args].u.integer;
    else
-      bad_arg_error("rotate",args,0,"",sp-args,
-                    "Bad arguments to rotate.\n");
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    CHECK_INIT();
 
@@ -1137,13 +1131,11 @@ void img_translate(INT32 args,int expand)
 
    if (TYPEOF(sp[-args]) == T_FLOAT) xt=sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT) xt=sp[-args].u.integer;
-   else bad_arg_error("translate",args,1,"",sp+1-1-args,
-                      "Bad argument 1 to translate.\n");
+   else SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int|float");
 
    if (TYPEOF(sp[1-args]) == T_FLOAT) yt=sp[1-args].u.float_number;
    else if (TYPEOF(sp[1-args]) == T_INT) yt=sp[1-args].u.integer;
-   else bad_arg_error("translate",args,2,"",sp+2-1-args,
-                      "Bad argument 2 to translate.\n");
+   else SIMPLE_ARG_TYPE_ERROR(NULL, 2, "int|float");
 
    getrgb(THIS,2,args,"translate");
 

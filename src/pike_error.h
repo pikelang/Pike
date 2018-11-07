@@ -254,6 +254,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *expected_type,
   struct svalue *got,
   const char *desc, ...)  ATTRIBUTE((noreturn));
+PMOD_EXPORT DECLSPEC(noreturn) void bad_args_error(
+  int args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func, int args,
   struct svalue *number,
@@ -276,7 +278,8 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * and EXPECT will be inserted into "Bad argument %d to %s(). Expected
  * %s.\n"
  *
- * @param FUNC The name of the function, e.g. "create".
+ * @param FUNC The name of the function, e.g. "create". If NULL the
+ *        name will be looked up from the current frame.
  * @param ARG The number of the argument, e.g. 1 for the first.
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */
@@ -294,9 +297,10 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
  * Throw an exception that there is some problem with the argument
  * other than the wrong type. PROBLEM is a full sentence without a
  * trailing newline. Together with FUNC and ARG they will be inserted
- * into "Bad argument %d to %s(). %s\n"
+ * into "Bad argument %d to %s(). %s\n".
  *
- * @param FUNC The name of the function, e.g. "create".
+ * @param FUNC The name of the function, e.g. "create". If NULL the
+ *        name will be looked up from the current frame.
  * @param ARG The number of the argument, e.g. 1 for the first.
  * @param PROBLEM Describes the problem with the argument, e.g. "The
  * number of bytes has to be even."
@@ -304,6 +308,12 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
   bad_arg_error (FUNC, args, ARG, NULL, Pike_sp+ARG-1-args, \
 		 msg_bad_arg_2, ARG, FUNC, PROBLEM)
+
+/**
+ * Throw an exception that there is a generic problem with the
+ * arguments, not tied to any one specific argument.
+ */
+#define GENERIC_ARGS_ERROR() bad_args_error(args)
 
 /**
  * Throw an exception that the number of arguents to the function is

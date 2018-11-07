@@ -940,7 +940,7 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
 
       if (!image_color_svalue(arr->item+i,
 			      &(flat.entries[n].color)))
-	 bad_arg_error("create",
+         bad_arg_error(NULL,
                        0, 1, "array of colors or 0", 0,
 		       "Bad element %d of colorlist.\n",i);
 
@@ -2298,9 +2298,8 @@ static void image_colortable_add(INT32 args)
 	       }
 	    }
             else
-               bad_arg_error("add",args,2,"",sp+2-1-args,
-                             "Bad argument 2 to add.\n");
-	 else
+              SIMPLE_ARG_TYPE_ERROR(NULL, 2, "int");
+         else
 	 {
 	    THIS->u.flat=_img_get_flat_from_image(img,256);
 	    if (THIS->u.flat.numentries>256)
@@ -2309,8 +2308,8 @@ static void image_colortable_add(INT32 args)
 	    THIS->type=NCT_FLAT;
 	 }
       }
-      else bad_arg_error("add",args,1,"",sp+1-1-args,
-                         "Bad argument 1 to add.\n");
+      else
+        SIMPLE_ARG_TYPE_ERROR(NULL, 1, "Image.Image|Image.Colortable|array|string|int");
    }
    else if (TYPEOF(sp[-args]) == T_ARRAY)
    {
@@ -2322,7 +2321,7 @@ static void image_colortable_add(INT32 args)
       if (args>1)
       {
 	 if (TYPEOF(sp[1-args]) != T_INT)
-	    SIMPLE_ARG_TYPE_ERROR("add",2,"int");
+            SIMPLE_ARG_TYPE_ERROR(NULL, 2, "int");
 	 switch (sp[1-args].u.integer)
 	 {
 	    case 0: /* rgb */
@@ -2336,7 +2335,7 @@ static void image_colortable_add(INT32 args)
 		  _img_get_flat_from_bgrz_string(sp[-args].u.string);
 	       break;
 	    default:
-	       SIMPLE_ARG_TYPE_ERROR("add",2,"int(0..2)");
+               SIMPLE_ARG_TYPE_ERROR(NULL, 2, "int(0..2)");
 	 }
       }
       else
@@ -2348,8 +2347,9 @@ static void image_colortable_add(INT32 args)
       THIS->u.cube=_img_get_cube_from_args(args);
       THIS->type=NCT_CUBE;
    }
-   else bad_arg_error("add",args,0,"",sp-args,
-                      "Bad arguments to add.\n");
+   else
+     SIMPLE_ARG_TYPE_ERROR(NULL, 1, "Image.Image|Image.Colortable|array|string|int");
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 
@@ -2514,8 +2514,7 @@ void image_colortable_operator_plus(INT32 args)
 	 if (!src) abort();
       }
       else {
-        bad_arg_error("`+",args,0,"",sp-args,
-                      "Bad arguments to `+.\n");
+        GENERIC_ARGS_ERROR();
         UNREACHABLE(src = NULL);
       }
 
