@@ -4279,9 +4279,12 @@ class Describer
       /* object or type. */
       if (catch {
 	if(string tmp=sprintf("%O", m)) res = tmp;
+	if (sizeof(res) > maxlen) error("Too long.\n");
       }) {
 	// Extra paranoia case.
-	res = sprintf("Instance of %O", _typeof(m));
+	if (objectp(m)) {
+	  res = sprintf("%O(...)", object_program(m));
+	}
       }
       break;
     }
@@ -4304,8 +4307,13 @@ class Describer
     int len=maxlen;
     int done=0;
 
+    mapping(mixed:int|string) saved_ident = ident + ([]);
+
     while(1)
     {
+      int saved_clipped = clipped;
+      int saved_canclip = canclip;
+
       array(string) z=allocate(clip);
       array(int) isclipped=allocate(clip);
       array(int) clippable=allocate(clip);
@@ -4318,6 +4326,9 @@ class Describer
 	clippable[e]=canclip;
       }
 
+      clipped = saved_clipped;
+      canclip = saved_canclip;
+
       while(1)
       {
 	string ret = z[..clip-1]*",";
@@ -4329,6 +4340,15 @@ class Describer
 	  {
 	    clipped++;
 	    ret+=",,,"+tmp;
+
+	    // Ensure that we don't lose any relevant ident assignments
+	    // due to the clipping.
+	    //
+	    // Note that this means that we may get duplicate assignments
+	    // for the same value and/or unused ident numbers, but this
+	    // is better than getting getting references to ident numbers
+	    // without any assignent. Cf [PIKE-141].
+	    ident = saved_ident;
 	  }
 	  canclip++;
 	  return ret;
