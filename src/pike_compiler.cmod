@@ -2577,6 +2577,7 @@ static void compile_compiler(void)
   struct object *co;
   struct inherit *inh;
 
+  p->id = PROG_COMPILERENVIRONMENT_ID;
   p->parent_info_storage = -1;
   /* p->event_handler = compilation_env_event_handler; */
   p->flags |= PROGRAM_HAS_C_METHODS;
@@ -2611,6 +2612,7 @@ static void compile_compiler(void)
   /* Once more, this time for p2...
    */
 
+  p2->id = PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID;
   p2->parent_info_storage = 0;
   p2->xstorage = sizeof(struct parent_info);
   p2->event_handler = compilation_event_handler;
@@ -2727,6 +2729,8 @@ static void compile_compiler(void)
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_PROTECTED);
 
   start_new_program();
+  Pike_compiler->new_program->id =
+    PROG_COMPILERENVIRONMENT_PIKECOMPILER_COMPILERSTATE_ID;
 
   ADD_STORAGE(struct program_state);
   Pike_compiler->new_program->event_handler = program_state_event_handler;
@@ -2786,6 +2790,8 @@ static void compile_compiler(void)
   {
     struct svalue type_value;
 
+    Pike_compiler->new_program->id = PROG_COMPILERENVIRONMENT_REPORTER_ID;
+
     ADD_FUNCTION("report", f_reporter_report,
 		 tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
 			tStr tStr, tMix, tVoid),0);
@@ -2808,6 +2814,7 @@ static void compile_compiler(void)
   low_inherit(reporter_program, NULL, -1, 0, 0, 0);
 
   start_new_program();
+  Pike_compiler->new_program->id = PROG_COMPILERENVIRONMENT_LOCK_ID;
   Pike_compiler->new_program->event_handler =
     compiler_environment_lock_event_handler;
   Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
