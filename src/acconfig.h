@@ -235,15 +235,6 @@
 /* If so, is it restricted to user and system time? */
 #undef GETRUSAGE_RESTRICTED
 
-/* Solaris has rusage as an ioctl on procfs */
-#undef GETRUSAGE_THROUGH_PROCFS
-
-/* So has True64, but no useful information in prstatus_t */
-#undef GETRUSAGE_THROUGH_PROCFS_PRS
-
-/* Define if you have infnan */
-#undef HAVE_INFNAN
-
 /* Define if you have _isnan */
 #undef HAVE__ISNAN
 
