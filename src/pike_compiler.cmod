@@ -3021,6 +3021,8 @@ void low_init_pike_compiler(void)
 
 void init_pike_compiler(void)
 {
+  add_program_constant("CompilerEnvironment", compilation_env_program, 0);
+
   INIT;
 
   {
