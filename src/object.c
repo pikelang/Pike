@@ -2130,6 +2130,7 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
     {
       struct identifier *id = ID_FROM_INT(p,p->identifier_index[e]);
       SET_SVAL(ITEM(a)[e], PIKE_T_TYPE, 0, type, id->type);
+      add_ref(id->type);
     }
     a->type_field = BIT_TYPE;
   }else{
