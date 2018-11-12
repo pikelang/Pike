@@ -5595,15 +5595,6 @@ void compiler_do_inherit(node *n,
   }
 }
 
-void compiler_do_implement(node *n)
-{
-  if (!n) {
-    yyerror("Invalid implement directive.");
-    return;
-  }
-  /* FIXME: Implement. */
-}
-
 int call_handle_inherit(struct pike_string *s)
 {
   struct compilation *c = THIS_COMPILATION;

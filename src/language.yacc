@@ -74,7 +74,6 @@
 %token TOK_RESERVED "reserved identifier"
 %token TOK_IF "if"
 %token TOK_IMPORT "import"
-%token TOK_IMPLEMENT "implement"
 %token TOK_INHERIT "inherit"
 %token TOK_INLINE "inline"
 %token TOK_LOCAL_ID "local"
@@ -525,52 +524,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
     yyerror("Unexpected end of file.");
   }
   | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
-  ;
-
-implement: modifiers TOK_IMPLEMENT inherit_ref ';'
-  {
-    if ($1 && (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-      yywarning("Modifiers ignored for implement.");
-    }
-    if (Pike_compiler->current_annotations &&
-	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-      yywarning("Annotations not supported for implements.");
-    }
-    if($3) {
-      compiler_do_implement($3);
-    }
-    pop_stack();
-    if ($3) free_node($3);
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error ';'
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerrok;
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error TOK_LEX_EOF
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error '}'
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerror("Missing ';'.");
-  }
-  | modifiers TOK_IMPLEMENT error ';' { yyerrok; }
-  | modifiers TOK_IMPLEMENT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_IMPLEMENT error '}'
-  {
-    yyerror("Missing ';'.");
-  }
   ;
 
 import: TOK_IMPORT idents ';'
@@ -1070,7 +1023,6 @@ def: modifiers optional_attributes simple_type optional_constant
   }
   | modifiers optional_attributes simple_type optional_constant name_list ';'
   | inheritance {}
-  | implement {}
   | import {}
   | constant {}
   | modifiers named_class { free_node($2); }
@@ -1266,7 +1218,6 @@ magic_identifiers3:
   | TOK_DEFAULT    { $$ = "default"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
-  | TOK_IMPLEMENT  { $$ = "implement"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
   | TOK_PREDEF     { $$ = "predef"; }
   | TOK_RETURN     { $$ = "return"; }
@@ -4668,8 +4619,6 @@ bad_expr_ident:
   { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
-  | TOK_IMPLEMENT
-  { yyerror_reserved("implement"); }
   ;
 
 /*
