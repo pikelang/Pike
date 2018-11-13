@@ -8677,6 +8677,10 @@ void gc_mark_program_as_referenced(struct program *p)
 	gc_mark_type_as_referenced (p->identifiers[e].type);
 #endif
 
+      for (e = p->num_annotations-1; e >= 0; e--) {
+	if (p->annotations[e])
+	  gc_mark_array_as_referenced(p->annotations[e]);
+      }
     } GC_LEAVE;
 }
 
@@ -8697,6 +8701,11 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 
 	if(e && p->inherits[e].prog)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
+      }
+
+      for (e = p->num_annotations - 1; e >= 0; e--) {
+	if (p->annotations[e])
+	  gc_cycle_check_array(p->annotations[e], 0);
       }
 
       /* Strong ref follows. It must be last. */
@@ -8760,6 +8769,10 @@ static void gc_check_program(struct program *p)
 		      " as identifier type in a program");
 #endif
 
+    for (e = p->num_annotations - 1; e >= 0; e--) {
+      if (p->annotations[e])
+	debug_gc_check(p->annotations[e], " as annotations in a program");
+    }
   } GC_LEAVE;
 }
 
@@ -8855,6 +8868,11 @@ size_t gc_free_all_unreferenced_programs(void)
 	  free_program(p->inherits[e].prog);
 	  p->inherits[e].prog=0;
 	}
+      }
+
+      for (e = 0; e < p->num_annotations; e++) {
+	do_free_array(p->annotations[e]);
+	p->annotations[e] = NULL;
       }
 
       gc_free_extra_ref(p);
