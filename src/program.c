@@ -1758,7 +1758,11 @@ static int low_add_identifier(struct compilation *c,
   debug_add_to_identifiers(dummy);
 
   if (Pike_compiler->current_annotations) {
+    /* FIXME: What about annotations for eg variant functions? */
     compiler_add_annotations(n, Pike_compiler->current_annotations);
+    /* Only annotate a single identifier. */
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
   }
 
   return n;
@@ -3170,6 +3174,7 @@ void low_start_new_program(struct program *p,
 #endif
     }
   }else{
+    int e;
     tmp.u.program=p;
     add_ref(p);
     if((pass != COMPILER_PASS_FIRST) && name)
@@ -3181,6 +3186,12 @@ void low_start_new_program(struct program *p,
       i=ID_FROM_INT(Pike_compiler->new_program, id);
       free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
+    }
+
+    /* Reset annotations so that they can be readded properly. */
+    for (e = 0; e < p->num_annotations; e++) {
+      do_free_array(p->annotations[e]);
+      p->annotations[e] = NULL;
     }
   }
   if (pass == COMPILER_PASS_FIRST) {
@@ -5920,7 +5931,17 @@ int define_variable(struct pike_string *name,
     if(n==-1)
       yyerror("Pass2: Variable disappeared!");
     else {
-      struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,n);
+      struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+      struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+      if (Pike_compiler->current_annotations) {
+	compiler_add_annotations(ref->identifier_offset,
+				 Pike_compiler->current_annotations);
+	/* Only annotate a single identifier. */
+	free_node(Pike_compiler->current_annotations);
+	Pike_compiler->current_annotations = NULL;
+      }
+
       free_type(id->type);
       copy_pike_type(id->type, type);
       return n;
@@ -6174,8 +6195,17 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     {
       yyerror("Pass2: Constant disappeared!");
     }else{
-      struct identifier *id;
-      id=ID_FROM_INT(Pike_compiler->new_program,n);
+      struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+      struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+      if (Pike_compiler->current_annotations) {
+	compiler_add_annotations(ref->identifier_offset,
+				 Pike_compiler->current_annotations);
+	/* Only annotate a single identifier. */
+	free_node(Pike_compiler->current_annotations);
+	Pike_compiler->current_annotations = NULL;
+      }
+
       if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
 	/* FIXME: We probably ought to do something here... */
       } else if(id->func.const_info.offset>=0) {
@@ -6691,6 +6721,13 @@ INT32 define_function(struct pike_string *name,
 
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
+      if (Pike_compiler->current_annotations) {
+	compiler_add_annotations(ref.identifier_offset,
+				 Pike_compiler->current_annotations);
+	/* Only annotate a single identifier. */
+	free_node(Pike_compiler->current_annotations);
+	Pike_compiler->current_annotations = NULL;
+      }
 
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
