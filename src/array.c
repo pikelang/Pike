@@ -1932,7 +1932,8 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 
 /** Remove all instances of an svalue from an array
 */
-static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
+PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
+						struct svalue *b)
 {
   size_t size = a->size;
   size_t from=0, to=0;
