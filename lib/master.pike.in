@@ -3641,9 +3641,19 @@ void load_debugger() {
    set_debugger(1);
      // load the debugger support
    function d;
+
    mixed err = catch {
+     function f = main_resolv("Debug.debug",
+                         get_compilation_handler(compat_major, compat_minor));
+   };
+   if(err) {
+    werror("Debugging is only available when Pike is compiled with RTL debug.\n");
+    exit(1); 
+   }
+
+   err = catch {
      d = main_resolv("Debug.Debugger.debug_server",
-			 get_compilation_handler(compat_major, compat_minor));
+                         get_compilation_handler(compat_major, compat_minor));
     };
 
     if(!d){  werror("Unable to load debugger.\n");
